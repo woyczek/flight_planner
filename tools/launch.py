@@ -29,6 +29,7 @@ import sim_position  # position du simulateur de ce poste (X-Plane 12, Little Na
 import relay_access  # appareils des pilotes par le relais de la compagnie (R1a) : codes, jetons, révocation
 import lan_access  # appareils du réseau local (tablette, téléphone) appairés par un code : état, essais, appareils
 import vfr_import  # compilation VFR des cartes VAC (tools/report-vfr) importée dans sia/vfr/ du dépôt des données
+import outbound  # requêtes sortantes : un User-Agent nommé, chaque échec dit en console (hôte, chemin, code)
 import regen_jobs  # travaux longs du module Données (régénération) : un à la fois, état, annulation ; état du poste
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -1806,8 +1807,9 @@ IVAO_SCOPE = 'openid tracker'
 IVAO_STATE_TTL = 600
 _ivao_oidc = {'meta': None, 'at': 0.0, 'pending': {}}
 def OIDC_OPEN(req, timeout=20):
-    """Ouvreur des appels OpenID : jamais une redirection suivie (remplacé par les essais : aucun appel réel)."""
-    return urllib.request.build_opener(_NoRedirect).open(req, timeout=timeout)
+    """Ouvreur des appels OpenID : jamais une redirection suivie, le User-Agent du lanceur (Cloudflare refuse celui de urllib
+    devant api.ivao.aero : 403), un échec dit en console (remplacé par les essais : aucun appel réel)."""
+    return outbound.opener(_NoRedirect, what='IVAO').open(req, timeout=timeout)
 
 
 def ivao_oauth_cfg():
@@ -1848,7 +1850,7 @@ def ivao_oauth_start(device, redirect):
     try:
         meta = ivao_oidc_meta(cfg[2])
     except (OSError, ValueError) as e:
-        return {'ok': False, 'status': 502, 'message': f'IVAO discovery: {type(e).__name__}'}
+        return {'ok': False, 'status': 502, 'message': f'IVAO discovery: {outbound.reason(e)}'}
     verifier = secrets.token_urlsafe(48)
     challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).decode().rstrip('=')
     state = secrets.token_urlsafe(24)
@@ -1942,7 +1944,8 @@ def ivao_oauth_refresh(refresh_token):
         j = _ivao_token({'grant_type': 'refresh_token', 'refresh_token': refresh_token})
     except (OSError, ValueError, KeyError) as e:
         return {'ok': False, 'status': 401 if isinstance(e, urllib.error.HTTPError) and e.code in (400, 401) else 502,
-                'message': 'IVAO refused the refresh' if isinstance(e, urllib.error.HTTPError) else 'IVAO unreachable'}
+                'message': f'IVAO refused the refresh ({outbound.reason(e)})' if isinstance(e, urllib.error.HTTPError) else
+                f'IVAO unreachable ({outbound.reason(e)})'}
     out = _ivao_tokens(j)
     out['refresh_token'] = out['refresh_token'] or refresh_token
     return out
@@ -2131,8 +2134,8 @@ def vatsim_bookings():
     if _vatsim['data'] is not None and time.time() - _vatsim['at'] < 300:
         return _vatsim['data']
     try:
-        req = urllib.request.Request(VATSIM_BOOKINGS, headers={'User-Agent': 'DEFA-suite', 'Accept': 'application/json'})
-        with urllib.request.urlopen(req, timeout=15) as r:
+        req = urllib.request.Request(VATSIM_BOOKINGS, headers={'Accept': 'application/json'})
+        with outbound.urlopen(req, timeout=15) as r:
             data = json.load(r)
     except (OSError, ValueError) as e:
         return {'error': str(e)}
@@ -2277,7 +2280,7 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-GITLAB_OPENER = urllib.request.build_opener(_NoRedirect)
+GITLAB_OPENER = outbound.opener(_NoRedirect, what='GitLab')
 GITLAB_OPEN = GITLAB_OPENER.open  # remplacé par les essais (aucun appel réel)
 
 
@@ -2473,7 +2476,7 @@ def secrets_test(service):
         try:
             ivao_oidc_meta(cfg[2])
         except (OSError, ValueError) as e:
-            return {'ok': False, 'error': type(e).__name__}
+            return {'ok': False, 'error': f'IVAO discovery: {outbound.reason(e)}'}
         return {'ok': True}
     if service != 'ivao':
         return {'ok': False, 'error': 'service sans clé à tester'}
@@ -2731,7 +2734,7 @@ class _RelayRedirect(urllib.request.HTTPRedirectHandler):
         return new
 
 
-NET_OPENER = urllib.request.build_opener(_RelayRedirect(), _RelayHTTPSHandler(context=ssl.create_default_context()))
+NET_OPENER = outbound.opener(_RelayRedirect(), _RelayHTTPSHandler(context=ssl.create_default_context()), what='relais')
 
 
 def frame_net(a, site_ok=True):
@@ -2745,7 +2748,7 @@ def frame_net(a, site_ok=True):
     method = str(a.get('method') or 'GET').upper()
     if method not in (('GET',) if site else ('GET', 'POST')):
         return 405, {'Content-Type': 'application/json'}, json.dumps({'error': 'méthode refusée'}).encode()
-    headers = {'User-Agent': 'SOG-suite', 'Accept': str(a.get('accept') or '*/*')}
+    headers = {'Accept': str(a.get('accept') or '*/*')}  # User-Agent : celui du lanceur (outbound)
     if NET_HOSTS.get(u.hostname) == 'ivao':
         key = ivao_key()
         if key:
@@ -2864,8 +2867,8 @@ def ivao_key():
 
 def _ivao_get(path, key):
     """GET sur l'API IVAO avec la clé d'API du lanceur ; JSON de la réponse."""
-    req = urllib.request.Request(IVAO_API + path, headers={'User-Agent': 'SOG-suite', 'Accept': 'application/json', 'apiKey': key})
-    with urllib.request.urlopen(req, timeout=20) as r:
+    req = urllib.request.Request(IVAO_API + path, headers={'Accept': 'application/json', 'apiKey': key})
+    with outbound.urlopen(req, timeout=20) as r:
         return json.load(r)
 
 
@@ -2983,8 +2986,7 @@ def defa_refresh(force=False, auto=False, pages=None):
                     continue
             r['url'] = url
             try:
-                req = urllib.request.Request(url, headers={'User-Agent': 'SOG-suite (flotte et journal)'})
-                with urllib.request.urlopen(req, timeout=30) as f:
+                with outbound.urlopen(urllib.request.Request(url), timeout=30) as f:
                     raw = f.read()
                 with tempfile.NamedTemporaryFile(delete=False, suffix='.html') as f:
                     f.write(raw)
@@ -3233,8 +3235,8 @@ def ivao_last_flight(vid='', session=''):
 
 
 def _vatsim_get(path):
-    req = urllib.request.Request(VATSIM_API + path, headers={'User-Agent': 'SOG-suite', 'Accept': 'application/json'})
-    with urllib.request.urlopen(req, timeout=20) as r:
+    req = urllib.request.Request(VATSIM_API + path, headers={'Accept': 'application/json'})
+    with outbound.urlopen(req, timeout=20) as r:
         return json.load(r)
 
 

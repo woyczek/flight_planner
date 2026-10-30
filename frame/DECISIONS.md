@@ -2029,6 +2029,21 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
     credentials and tokens no longer reach a third-party script); every purge uses `regen_jobs.inside` (the rule of
     `base/purge`, now shared: `base_sources._inside` is it), `files_under` and `prune_empty`, so that a junction inside a cache
     is neither descended nor emptied (I17, I18 with a real junction).
+- **30 Oct 2026 — One named User-Agent for every outgoing request; failures said in the console** (blocking bug of the
+  user's IVAO trial, Simplification's rule):
+  - « Connexion à IVAO impossible (IVAO discovery: HTTPError) », nothing in the console: `api.ivao.aero` answers 403
+    (Cloudflare) to urllib's default User-Agent and 200 to any named one.
+  - `tools/outbound.py`: `UA` (« SOG-launcher/<version> (+project) », the version read from `config/repository_tree`),
+    `opener(*handlers, what, quiet)` (the launcher's openers: OpenID, GitLab, the relay of `/__setup/net`, the jobs'
+    download, EAD) and `urlopen` (the IVAO and VATSIM APIs, the airline's pages, `aero_fetch`, the SIA). The per-call
+    User-Agents (`SOG-suite`, `DEFA-suite/1.0`, `SOG-aerodb-builder`, `SOG-vfr-fetch`, `SOG-proc-fetch`) are gone; EAD
+    keeps « Mozilla/5.0 (X11; Linux x86_64) » before the launcher's name, its portal not having been tried without it.
+  - Each failure: one line `[sortant] échec <service> : <host>/<path> : <HTTP code or network error>`; never the query,
+    a header, a body or a token. Left as they are: the loopback calls (`ours()`, the simulator's position, polled every
+    second, whose failures are normal) and `AircraftDB/update_aircraft_db.py`, a script of its own run as a child, which
+    sends a browser User-Agent on purpose to the sites it reads.
+  - noreg I20 (a server that refuses urllib's default: discovery, GitLab, job, aero_fetch, SIA and HEAD get through with
+    the named User-Agent; a failure's line without the query or the token), K57 patched on `outbound.urlopen`.
 - **30 Oct 2026 — Launcher jobs for procedures per State; merge, download and environment rules for every job** (V3 § 10.34
   A1, the Settings session's request; security review of ab0258453 folded in):
   - `proc/fetch`, `build`, `purge { states }` in `tools/regen/proc.py`, beside `ead-fetch` and `eaip-fetch`: `LF` from the SIA

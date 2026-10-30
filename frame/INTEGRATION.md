@@ -1075,6 +1075,13 @@ in the launcher; `resume` finds it again.
   `vfr/build`, `proc/build` and a real `aircraft/publish` return `merge-pending`, the one-aerodrome verbs `failed` with its message
   (aerodb's reasons unchanged). **Every download** of a job goes through `regen_jobs.download`: read by pieces and stopped at a cap
   (200 MB, 50 MB for a VAC chart; `TooLarge`), a redirection followed only to the same host (and never from https to http).
+  **Every outgoing request of the launcher** (`tools/outbound.py`, 30 Oct 2026: the IVAO discovery, its token and revocation,
+  the IVAO and VATSIM APIs, GitLab, the relayed sites of `/__setup/net`, the airline's pages, the jobs' downloads, `aero_fetch`,
+  the SIA eAIP, EAD Basic) carries one named User-Agent, `SOG-launcher/<version> (+https://framagit.org/asr/flight_planner)`
+  (EAD keeps a browser prefix before it); urllib's default `Python-urllib/3.x` is refused by Cloudflare in front of
+  `api.ivao.aero` (403). Each failure writes one console line, `[sortant] échec <service> : <host>/<path> : HTTP 403` (or
+  the network error's kind), never the address's parameters, a header, a body or a token; a 404 / 410 that a job reads as an
+  absence (a VAC chart not published) is not written. The messages carry the code: « IVAO discovery: HTTP 403 ».
   `GET /__setup/status` (the detection only, the same shape everywhere; the workstation's own settings are `GET
   /__setup/workstation`, workstation only) also carries `lnm`: the sorted list of Little Navmap database kinds present on the workstation (the
   `little_navmap_<kind>.sqlite` files of its `little_navmap_db` folder; names only, `[]` when absent); `FrameData.launcher.detect()` hands it on in

@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Launcher: one named User-Agent for every outgoing request, each failure said in the console** (`tools/outbound.py`,
+  `tools/launch.py`, `tools/regen_jobs.py`, `tools/aero_fetch.py`, `tools/proc_sia.py`, `tools/proc_ead.py`; frame
+  INTEGRATION § 15, DECISIONS; noreg I20) — the IVAO sign-in failed (« IVAO discovery: HTTPError »): Cloudflare refused
+  urllib's default User-Agent; the messages now carry the HTTP code; host, path and code in the console, never a token.
 - **Fuel: the sheets editor is removed, the « Fiches » list is read-only** (`modules/fuel/module.js` −556 lines, V3 § 10.34 A2
   step 5; help ×4; F79) — sheets are edited in Maintenance › Appareils only; Fuel keeps the list, « Utiliser » and the links
   « Modifier / Créer dans Maintenance »; `perf_prompt.js` moves to `modules/aircraft/`.

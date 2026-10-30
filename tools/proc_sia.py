@@ -24,6 +24,7 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 
+import outbound  # le User-Agent du lanceur, chaque échec dit en console
 import proc_geometry as G
 from proc_layouts import BY_NAME, alt_constraint, alt_ft, DASHES, detect_layout, dms, fingerprint, FIXLESS, _is_leg_row, KNOWN_FINGERPRINTS, MONTHS, page_date, PATH_TERMINATORS
 from proc_pdf import PDF_NAME, first_page_rows, safe_path, pdf_pages, PdfTimeout, scan_pdf, show_page
@@ -893,7 +894,7 @@ def index_of(files_by_icao, cycle):
 
 # ---------------------------------------------------------------------------------------------------------- réseau et CLI
 def fetch(url, timeout=60):
-    with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': 'SOG-aerodb-builder'}), timeout=timeout) as r:
+    with outbound.urlopen(urllib.request.Request(url), timeout=timeout) as r:
         return r.read()
 
 
@@ -943,7 +944,7 @@ def eaip_url(cycle):
 def url_exists(url, timeout=30):
     """L'adresse répond-elle à une requête HEAD ? (faux au moindre échec : sert à savoir si une carte est publiée)."""
     try:
-        urllib.request.urlopen(urllib.request.Request(url, method='HEAD', headers={'User-Agent': 'SOG-aerodb-builder'}), timeout=timeout)
+        outbound.urlopen(urllib.request.Request(url, method='HEAD'), timeout=timeout, absent_ok=True)  # une carte absente n'est pas un échec
         return True
     except Exception:
         return False

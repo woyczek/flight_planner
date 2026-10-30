@@ -317,7 +317,7 @@ def _cifp_name(cycle):
 def _get(url, timeout=120):
     """Les octets d'une adresse calculée ici (eAIP du SIA, CIFP de la FAA) : plafonnée, redirection vers un autre hôte refusée ; une
     erreur HTTP lève OSError."""
-    status, body = regen_jobs.download(url, timeout, ua='SOG-proc-fetch')
+    status, body = regen_jobs.download(url, timeout)
     if status != 200:
         raise OSError(f'http-{status}')
     return body

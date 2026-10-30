@@ -21,11 +21,13 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+import outbound  # le User-Agent du lanceur, chaque échec dit en console
+
 HOST = os.environ.get('EAD_PROBE_HOST', 'https://www.ead.eurocontrol.int') if os.environ.get('EAD_PROBE_HOST', '').startswith('http://127.0.0.1') \
     else 'https://www.ead.eurocontrol.int'      # EAD_PROBE_HOST : seulement pour l'essai sur une copie locale (tests/v3), jamais un autre hôte
 LOGIN_PAGE = HOST + '/cms-eadbasic/opencms/en/login/ead-basic/'
 LOGIN_POST = HOST + '/fwf-eadbasic/ajaxlogin/ajax_security_check.jspx'
-UA = 'Mozilla/5.0 (X11; Linux x86_64) SOG-aerodb-probe'
+UA = 'Mozilla/5.0 (X11; Linux x86_64) ' + outbound.UA  # le préfixe d'un navigateur gardé (portail EAD), le lanceur nommé
 
 
 # ---------------------------------------------------------------------------------------------------------- nettoyage
@@ -222,7 +224,7 @@ class StayOnHost(urllib.request.HTTPRedirectHandler):
 class Session:
     def __init__(self, secrets):
         self.jar = http.cookiejar.CookieJar()
-        self.op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar), StayOnHost())
+        self.op = outbound.opener(urllib.request.HTTPCookieProcessor(self.jar), StayOnHost(), what='EAD')
         self.secrets = secrets
         self.n = 0
 

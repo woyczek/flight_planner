@@ -40,7 +40,9 @@ aéronautiques.
 import email.utils, json, os, re, sys, urllib.error, urllib.parse, urllib.request
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-UA = {'User-Agent': 'DEFA-suite/1.0 (+https://framagit.org/asr/flight_planner)'}
+import outbound  # noqa: E402 (le User-Agent du lanceur, chaque échec dit en console)
+
+UA = {'User-Agent': outbound.UA}
 TIMEOUT = 120
 OPENAIP = 'https://s3.openaip.net/openaip-system-exports/{cc}_{layer}.geojson'
 OPENAIP_LAYERS = ('asp', 'apt', 'nav', 'rpp')
@@ -66,7 +68,7 @@ def get(url, since=None):
     if since:
         headers['If-Modified-Since'] = email.utils.formatdate(since, usegmt=True)
     try:
-        with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=TIMEOUT) as r:
+        with outbound.urlopen(urllib.request.Request(url, headers=headers), timeout=TIMEOUT) as r:
             size = r.headers.get('Content-Length')
             if size and size.isdigit() and int(size) > MAX_BYTES:
                 raise TooLarge(f'réponse de {int(size) // 1048576} Mo, plus de {MAX_BYTES // 1048576} Mo : téléchargement arrêté')

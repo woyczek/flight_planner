@@ -35,7 +35,6 @@ ICAO = re.compile(r'LF[A-Z0-9]{2}')
 MAX_ICAOS = 800
 PAUSE = 0.3  # s entre deux demandes au SIA
 MIN_GAP = {('vfr', 'fetch'): 30}
-UA = 'SOG-vfr-fetch'
 
 
 def cycle_in_force():
@@ -102,7 +101,7 @@ class _View:
 
 def _get(url, timeout=60):
     """(statut, octets) ; statut 404 / 410 : absente. Réponse plafonnée, redirection vers un autre hôte refusée (regen_jobs.download)."""
-    return regen_jobs.download(url, timeout, max_bytes=50 * 1024 * 1024, ua=UA)
+    return regen_jobs.download(url, timeout, max_bytes=50 * 1024 * 1024)
 
 
 GET = _get  # remplacé par les essais (aucun appel réel)

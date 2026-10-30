@@ -535,11 +535,11 @@ def k57(c):
     c.eq(NC.current_url('<a href="https://www.navcanada.ca/a/dah20260101.pdf"><a href="https://www.navcanada.ca/a/dah20270101.pdf">', '20261029'),
          'https://www.navcanada.ca/a/dah20260101.pdf', 'NAV CANADA: the latest edition already in force', what='navcan in force')
     # --- get(): 200 MB at most, stopped cleanly (an OSError: the source fails as network, the present file is kept)
-    saved = (AF.urllib.request.urlopen, AF.MAX_BYTES)
+    saved = (AF.outbound.urlopen, AF.MAX_BYTES)
     try:
         AF.MAX_BYTES = 1000
         for body, length, ok in ((b'x' * 999, 999, True), (b'x' * 1000, None, True), (b'x' * 1001, None, False), (b'x' * 10, 5000, False), (b'x' * 3000, 10, False)):
-            AF.urllib.request.urlopen = lambda req, timeout=None, b=body, n=length: _Resp(b, n)
+            AF.outbound.urlopen = lambda req, timeout=None, b=body, n=length: _Resp(b, n)
             try:
                 got = AF.get('https://example.invalid/x')
                 res = ('ok', len(got))
@@ -547,5 +547,5 @@ def k57(c):
                 res = ('too-large', BS.classify(e)['error'])
             c.eq(res, ('ok', len(body)) if ok else ('too-large', 'network'), f'get: {len(body)} bytes, Content-Length {length} -> {"read" if ok else "stopped (network)"}', what=f'get {len(body)}/{length}')
     finally:
-        AF.urllib.request.urlopen, AF.MAX_BYTES = saved
+        AF.outbound.urlopen, AF.MAX_BYTES = saved
     c.eq(AF.MAX_BYTES, 200 * 1024 * 1024, 'the cap is 200 MB per response', what='MAX_BYTES')

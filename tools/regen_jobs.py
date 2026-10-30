@@ -26,6 +26,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+
+import outbound  # le User-Agent du lanceur, chaque échec dit en console
 from secrets import token_urlsafe  # jeton d'un travail (le paramètre « secrets » des fonctions est un dossier)
 
 # sorties publiées (chemins de data/) et sorties locales jamais publiées ; caches des sources : data/sia/<source>/
@@ -481,15 +483,15 @@ class _SameHost(urllib.request.HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-_OPENER = urllib.request.build_opener(_SameHost)
+_OPENER = outbound.opener(_SameHost, what='travail', quiet=(404, 410))  # une absence (404, 410) : le travail la dit
 
 
-def download(url, timeout=120, max_bytes=None, ua='SOG-launcher'):
+def download(url, timeout=120, max_bytes=None):
     """(statut, octets) d'une adresse calculée par un verbe : réponse lue par morceaux et arrêtée au plafond (TooLarge), redirection
     vers un autre hôte refusée ; une erreur HTTP rend son statut et b''."""
     cap = MAX_DOWNLOAD if max_bytes is None else max_bytes
     try:
-        with _OPENER.open(urllib.request.Request(url, headers={'User-Agent': ua}), timeout=timeout) as r:
+        with _OPENER.open(urllib.request.Request(url), timeout=timeout) as r:
             size = r.headers.get('Content-Length')
             if size and size.isdigit() and int(size) > cap:
                 raise TooLarge(f'response of {int(size) // 1048576} MB, over {cap // 1048576} MB')

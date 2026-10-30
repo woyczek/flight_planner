@@ -1283,3 +1283,97 @@ def i19(c):
     src = (c.root / 'tools' / 'regen' / 'base.py').read_text(encoding='utf-8') + (c.root / 'tools' / 'regen' / 'base_sources.py').read_text(encoding='utf-8')
     c.ok('env=regen_jobs.child_env()' in src and 'env=regen_jobs.git_child_env()' in src and 'git_env() if git_env else os.environ' not in src, '',
          'the headless browser and git of the base set run with the reduced environment')
+
+
+@case('I20', 'Outgoing requests of the launcher: one named User-Agent, every failure said in the console without a secret', 'I', static=True,
+      rule='Simplification 30 Oct (the user’s IVAO trial: « IVAO discovery: HTTPError », nothing in the console; Cloudflare answers 403 to urllib’s default User-Agent): « SOG-launcher/<version> (+project) » on every outgoing request, the HTTP code in the messages, host, path and code in the console, never a parameter, header or token')
+def i20(c):
+    import contextlib
+    import http.server
+    import importlib
+    import io as _io
+    import json
+    import threading
+    import urllib.error
+    sys.path.insert(0, str(c.root / 'tools'))
+    OB = importlib.import_module('outbound')
+    seen = []
+
+    class H(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            ua = self.headers.get('User-Agent') or ''
+            seen.append(ua)
+            if ua.startswith('Python-urllib') or self.path.startswith('/deny'):  # like Cloudflare in front of api.ivao.aero
+                self.send_response(403)
+                self.end_headers()
+                return
+            body = json.dumps({'authorization_endpoint': 'https://sso.example.invalid/authorize', 'token_endpoint': 'https://api.example.invalid/token'}).encode()
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        do_HEAD = do_GET
+
+        def log_message(self, *a):
+            pass
+    srv = http.server.ThreadingHTTPServer(('127.0.0.1', 0), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    base = f'http://127.0.0.1:{srv.server_port}'
+    try:
+        c.ok(re.fullmatch(r'SOG-launcher/[0-9A-Za-z.+-]+ \(\+https://framagit\.org/asr/flight_planner\)', OB.UA) and OB.VERSION != '0', OB.UA,
+             'the User-Agent names the launcher, its version (config/repository_tree) and the project')
+        # the server refuses urllib's default: the launcher's openers get through
+        L = importlib.import_module('launch')
+        RJ = importlib.import_module('regen_jobs')
+        AF = importlib.import_module('aero_fetch')
+        S = importlib.import_module('proc_sia')
+        kept = dict(L._ivao_oidc)
+        try:
+            L._ivao_oidc.update(meta=None, at=0.0)
+            meta = L.ivao_oidc_meta(base + '/.well-known/openid-configuration')
+        finally:
+            L._ivao_oidc.clear()
+            L._ivao_oidc.update(kept)
+        c.eq(meta.get('token_endpoint'), 'https://api.example.invalid/token', 'the IVAO discovery passes a server that refuses urllib’s User-Agent', what='discovery')
+        with L.GITLAB_OPENER.open(base + '/api', timeout=5) as r:
+            r.read()
+        st, _ = RJ.download(base + '/file', 5)
+        AF.get(base + '/aero')
+        S.fetch(base + '/sia')
+        S.url_exists(base + '/vac')
+        c.eq(st, 200, 'a job’s download too', what='download')
+        c.ok(seen and all(u == OB.UA for u in seen), json.dumps(seen), 'every request carried the launcher’s User-Agent (discovery, GitLab, job, aero_fetch, SIA, HEAD)')
+        c.ok(importlib.import_module('proc_ead').UA.endswith(OB.UA), importlib.import_module('proc_ead').UA, 'EAD keeps a browser prefix, then the launcher named')
+        # a failure: one console line, host, path and code; never the query, a header or a token
+        out = _io.StringIO()
+        req = L._gitlab_request(base + '/deny/projects?private_token=glpat-SECRET-1', 'GET', None, 'glpat-SECRET-2')
+        with contextlib.redirect_stdout(out):
+            try:
+                L.GITLAB_OPENER.open(req, timeout=5)
+                failed = None
+            except urllib.error.HTTPError as e:
+                failed = OB.reason(e)
+            try:
+                S.url_exists(base + '/deny/vac.pdf')
+            except Exception:
+                pass
+        line = out.getvalue()
+        c.eq(failed, 'HTTP 403', 'the reason is the HTTP code', what='reason')
+        c.ok('GitLab' in line and f'127.0.0.1/deny/projects : HTTP 403' in line and 'SECRET' not in line and 'private_token' not in line, line,
+             'the console says the service, host, path and code; no parameter, no token')
+        c.ok(line.count('[sortant]') == 2, line, 'the failed HEAD is said too (a 403 is no absence)')
+        out = _io.StringIO()
+        with contextlib.redirect_stdout(out):
+            RJ.download(base + '/file', 5)
+        c.eq(out.getvalue(), '', 'a success writes nothing', what='console after a success')
+    finally:
+        srv.shutdown()
+        srv.server_close()
+    # the messages carry the code; no bare urlopen left in what the launcher runs (the loopback check ours() apart)
+    src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
+    c.ok("f'IVAO discovery: {outbound.reason(e)}'" in src and 'IVAO discovery: {type(e).__name__}' not in src, '', 'the discovery error says « HTTP 403 »')
+    bare = {f: (c.root / 'tools' / f).read_text(encoding='utf-8').count('urllib.request.urlopen(')
+            for f in ('launch.py', 'regen_jobs.py', 'aero_fetch.py', 'proc_sia.py', 'proc_ead.py', 'regen/vfr.py', 'regen/proc.py', 'regen/base.py', 'regen/base_sources.py', 'regen/aircraft.py')}
+    c.eq(bare, {**{f: 0 for f in bare}, 'launch.py': 1}, 'every outgoing call goes through tools/outbound.py (launch.py keeps its loopback check)', what='bare urlopen')
