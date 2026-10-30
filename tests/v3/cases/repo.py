@@ -551,12 +551,12 @@ def i10(c):
     c.eq(sorted(k for k, v in L.ROUTES.items() if v[2]), sorted([('GET', '/__setup/status'), ('GET', '/__setup/changes'), ('POST', '/__setup/batch'),
                                                             ('POST', '/__setup/sync'), ('POST', '/__setup/net'),
                                                             ('POST', '/__setup/ivao/oauth/start'), ('POST', '/__setup/ivao/oauth/refresh'),
-                                                            ('POST', '/__setup/ivao/oauth/revoke')]),
+                                                            ('POST', '/__setup/ivao/oauth/revoke'), ('GET', '/__setup/ivao/oauth')]),
          'the routes open to the relay: status, changes, batch, sync, net, and the IVAO sign-in (R1b)', what='relay routes')
     c.eq(lan, sorted([('GET', '/__setup/status'), ('GET', '/__setup/changes'), ('GET', '/__setup/sim/position'),
                       ('GET', '/__setup/lnmperf'), ('GET', '/__setup/lnmperf-folder'), ('POST', '/__setup/batch'),
                       ('POST', '/__setup/sync'), ('POST', '/__setup/net'), ('POST', '/__setup/ivao/oauth/start'),
-                      ('POST', '/__setup/ivao/oauth/refresh'), ('POST', '/__setup/ivao/oauth/revoke')]),
+                      ('POST', '/__setup/ivao/oauth/refresh'), ('POST', '/__setup/ivao/oauth/revoke'), ('GET', '/__setup/ivao/oauth')]),
          'the routes open to a paired device are the Pilot app\'s (and the IVAO sign-in, R1b)', what='lan routes')
     missing = [f'{m} {p} -> {v[0]}' for (m, p), v in L.ROUTES.items() if not callable(getattr(L.Setup, v[0], None))]
     c.eq(missing, [], 'each route names a method of the server', what='routes without handler')
@@ -747,7 +747,17 @@ def i14(c):
     try:
         L.SECRETS, L.OIDC_OPEN = str(tmp), fake
         L._ivao_oidc.update(meta=None, at=0.0, pending={})
-        c.eq(L.ivao_oauth_start('d1', 'https://relay/__relay/ivao/callback').get('status'), 409, 'no IVAO application on the relay: refused', what='without secret')
+        no = L.ivao_oauth_start('d1', 'https://relay/__relay/ivao/callback')
+        c.eq((no.get('status'), no.get('redirect'), no.get('relay')), (409, 'https://relay/__relay/ivao/callback', True),
+             'no IVAO application: refused, with the exact return address to declare and where (relay)', what='without secret')
+        # IVAO's own refusal is said, even when the state is not one in progress (a client unknown at IVAO, a wrong return address)
+        c.eq(L.ivao_oauth_finish('nope', '', 'invalid_client', '', 'http://127.0.0.1:8000/__relay/ivao/callback').get('error'), 'ivao:invalid_client',
+             'an error from IVAO is said as IVAO\'s, never as « state »', what='IVAO refusal')
+        c.eq(L.ivao_oauth_finish('nope', 'C', '', '', 'http://127.0.0.1:8000/__relay/ivao/callback').get('error'), 'state',
+             'a return without a sign-in in progress (no IVAO error): « state »', what='forged or expired return')
+        no = L.ivao_oauth_start('', 'http://127.0.0.1:8000/__relay/ivao/callback')
+        c.eq((no.get('redirect'), no.get('relay')), ('http://127.0.0.1:8000/__relay/ivao/callback', False),
+             'on the workstation: its own return address, not the relay', what='without secret, workstation')
         (tmp / 'ivao_oauth.json').write_text(json.dumps({'clientId': 'cid', 'clientSecret': 'S3CRET', 'discovery': 'https://ivao.test/.well-known/openid-configuration'}), encoding='utf-8')
         s = L.ivao_oauth_start('d1', 'https://relay/__relay/ivao/callback')
         q = urllib.parse.parse_qs(urllib.parse.urlsplit(s['url']).query)

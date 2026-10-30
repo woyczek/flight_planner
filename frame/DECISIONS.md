@@ -1987,3 +1987,21 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   `f-desk`: never on the icon rail nor on the bottom bar (A42: 390, 800 × 600 and 1280 with a mouse, then a window widened
   step by step from 700 to 1300 px; red without the fix). A touch tablet in portrait above 760 px has the rail with labels
   and so Aqua when chosen.
+- **30 Oct 2026 — IVAO account without an application: the button off, the place said, the assistant one tap away** (the
+  user, on the workstation: the red message read « sur le relais », the button stayed on, the page left and came back with
+  « Connexion à IVAO refusée (state) »):
+  - `GET /__setup/ivao/oauth` (local network and relay) → `{ app, relay }`, no secret: the « Compte IVAO » card draws its
+    button off when the application is missing, its title the reason, and says « sur ce poste » or « sur le relais »; on
+    the workstation a link leads to Settings' assistant « Application IVAO » (`#settings?card=ivaoapp`, the Settings
+    session's, which shows the return address and writes the file): the procedure lives there only.
+  - A 409 at start never navigates and says the same; the launcher's refusal carries the return address and the place.
+  - The return addresses are computed in one place, `ivao_redirects(port)` (`launch.py`): the start, the return, the 409
+    and the Settings assistant's `ivaoRedirects` (GET `/__setup/secrets`) read it; `GET /__setup/ivao/oauth` carries no
+    address, only `{ app, relay }`.
+  - IVAO's own refusal (a client unknown at IVAO, a return address not declared, an access denied) comes back with IVAO's
+    code (`ivao:<code>`), before the state is judged: « state » is kept for a return that matches no sign-in in progress
+    (expired, launcher restarted, made elsewhere), and the frame says that in a sentence ×4, never « (state) ».
+  - Found on the way, fixed by the Settings session in b98589ae4 (one condition kept, its own): on
+    `#settings?card=<one card>` with a launcher, the local network card's refresh started without its card
+    (`null.isConnected`, on the very address IVAO's return lands on). noreg A44 (button off, title, link, nothing leaves even forced, on with an application, a stray
+    return's sentence), I14 (IVAO's refusal said as IVAO's, a stray return as « state »), I10.

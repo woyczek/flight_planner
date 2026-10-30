@@ -197,8 +197,9 @@ cartographique (`apps/cpco/map_parser.html`).
   le lanceur du poste) : « Se connecter à IVAO » ouvre la page d'IVAO, puis revient ici. Le relais garde le secret de
   l'application de la compagnie ; votre jeton reste sur cet appareil, renouvelé de lui-même, jamais dans une sauvegarde.
   « Délier » l'efface et demande à IVAO de retirer l'accès ; si IVAO ne le peut pas, la suite vous dit de le retirer
-  dans votre compte IVAO. Pour essayer sur le poste, sans relais : l'adresse de retour à déclarer dans l'application IVAO
-  de la compagnie est `http://127.0.0.1:<port>/__relay/ivao/callback` (le port du lanceur).
+  dans votre compte IVAO. Sans application IVAO réglée, le bouton est éteint et la carte dit où elle manque : sur ce poste,
+  Administration › « Application IVAO » la règle (elle donne l'adresse de retour à déclarer chez IVAO) ; sur le relais,
+  l'administrateur la règle.
 - **Appareils du relais** : quand le lanceur tourne en relais de la compagnie (derrière le proxy inverse du NAS, en
   https), un pilote appaire chaque appareil une fois avec un code à 8 chiffres que l'administrateur demande dans
   Maintenance › « Appareils du relais » pour son trigramme (une fois, 10 minutes) ; ses écritures sont signées de ce

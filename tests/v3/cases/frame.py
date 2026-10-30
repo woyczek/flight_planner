@@ -1331,3 +1331,50 @@ def a43(c):
     c.until("!!document.querySelector('#fView [data-ivao-old]')", timeout=15000, what='the update line')
     c.eq(norm(c.text('#fView [data-ivao-old]')), norm(t('ivaoRedirOld')), 'update the launcher to see the return address', what='old launcher')
     c.eq(c.count('#fView [data-ivao-redirects] button'), 0, 'no address, no Copy button', what='copy buttons')
+
+
+@case('A44', 'IVAO account without an application: the button off, nothing leaves; « state » only for a real stray return', 'A', designs=('standard',),
+      screens=False, night=False, rule='user 30 Oct (the button stayed on, the page left and came back with « state »): without secrets/ivao_oauth.json the button is disabled (title = the reason) and nothing leaves; a stray return says what happened, never « state » alone')
+def a44(c):
+    starts, app = [], {'on': False}
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True,
+              'relaxNav': False, 'host': 'TEST', 'lan': False}
+
+    def launcher(route):
+        req = route.request
+        path = urllib.parse.urlparse(req.url).path
+        body = {}
+        if path.endswith('/__setup/status'):
+            body = status
+        elif path.endswith('/__setup/ivao/oauth'):
+            body = {'app': app['on'], 'relay': False}
+        elif path.endswith('/__setup/ivao/oauth/start'):
+            starts.append(1)
+            body = {'ok': False, 'status': 409, 'message': 'no IVAO application here', 'redirect': 'http://127.0.0.1:8000/__relay/ivao/callback', 'relay': False}
+            return route.fulfill(status=409, content_type='application/json', body=json.dumps(body))
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    c.open('settings?card=ivao', docs=LEVEL3)
+    btn = '[data-card="ivao"] [data-act="ivaoConnect"]'
+    c.until(f"!!document.querySelector('{btn}') && document.querySelector('{btn}').disabled", what='the button is off without an application')
+    why = norm(tx('frame/settings/settings.js', 'ivaoNoAppHere', c.lang))
+    c.eq(norm(c.attr(btn, 'title')), why, 'its title says why (this workstation, the file missing)', what='button title')
+    c.eq(norm(c.text('[data-card="ivao"] [data-msg]')), why, 'the card says it too', what='card message')
+    c.ok(c.js("!document.querySelector('[data-card=\"ivao\"] [data-ivao-app]').hidden"), '', 'the link to the IVAO application assistant (Administration)')
+    c.eq(c.attr('[data-card="ivao"] [data-ivao-app] a', 'href'), '#settings?card=ivaoapp', 'the link goes to Settings\u2019 assistant', what='link')
+    c.page.click(btn, force=True)                                   # even forced, a disabled button sends nothing
+    c.wait(300)
+    c.eq((len(starts), c.js('location.hash').split('?')[0]), (0, '#settings'), 'nothing leaves: no start, the page stays', what='after a click')
+    # with an application: the button is on
+    app['on'] = True
+    c.go('help')
+    c.go('settings?card=ivao')
+    c.until(f"!!document.querySelector('{btn}')", what='the card is drawn again')
+    c.wait(400)
+    c.ok(not c.js(f"document.querySelector('{btn}').disabled"), '', 'with an application the button is on')
+    # a stray return: the plain sentence, never the word « state »
+    c.js("() => { location.hash = '#ivao-return?error=state' }")
+    c.until("location.hash.startsWith('#settings')", what='the return is taken and the address replaced')
+    c.until("[...document.querySelectorAll('.f-note')].some(n => n.textContent.trim())", what='a notification')
+    note = norm(c.js("[...document.querySelectorAll('.f-note')].map(n => n.textContent).join(' ')"))
+    c.ok(norm(tx('frame/app.js', 'ivaoFailState', c.lang)) in note and '(state)' not in note, note[:200], 'a stray return says what happened, never « (state) »')

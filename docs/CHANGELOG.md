@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Settings › IVAO account without an application** (`tools/launch.py`, `frame/app.js`, `frame/settings/settings.js`;
+  Settings help ×4, frame DECISIONS; noreg A44, I14, I10): the button is off with the reason
+  (this workstation or the relay) and nothing leaves; on the workstation a link opens the « IVAO application » assistant;
+  IVAO's own refusal is said with its code, a stray return in a plain sentence, never « (state) ».
 - **Settings: the IVAO application assistant** (`frame/settings/launcher.js` `ivaoAppHtml`, `tools/launch.py`; help ×4; A43) — a card
   "IVAO application (pilots' sign-in)" in the Administration group (`#settings?card=ivaoapp`, linked from the keys panel): the
   steps at developers.ivao.aero, the return addresses to declare (`GET /__setup/secrets` now answers `ivaoRedirects`) with a Copy

@@ -401,6 +401,18 @@
     ivaoOk: ['Compte IVAO relié à cet appareil.', 'IVAO account linked to this device.', 'IVAO-Konto mit diesem Gerät verbunden.',
       'Cuenta IVAO vinculada a este dispositivo.'
     ],
+    ivaoFailState: [
+      'Ce retour d’IVAO ne correspond à aucune connexion en cours (demande expirée, lanceur redémarré ou demande faite ailleurs) : reconnectez-vous.',
+      'This return from IVAO matches no sign-in in progress (request expired, launcher restarted or request made elsewhere): sign in again.',
+      'Diese Rückkehr von IVAO passt zu keiner laufenden Anmeldung (Anfrage abgelaufen, Starter neu gestartet oder anderswo gestellt): erneut anmelden.',
+      'Este retorno de IVAO no corresponde a ningún inicio de sesión en curso (solicitud caducada, lanzador reiniciado o hecha en otro lugar): vuelva a iniciar sesión.'
+    ],
+    ivaoFailIvao: ['IVAO a refusé la connexion ({e}).', 'IVAO refused the sign-in ({e}).', 'IVAO hat die Anmeldung abgelehnt ({e}).',
+      'IVAO rechazó el inicio de sesión ({e}).'
+    ],
+    ivaoFailConfig: ['Pas d’application IVAO réglée sur le lanceur.', 'No IVAO application set on the launcher.',
+      'Keine IVAO-Anwendung auf dem Starter eingerichtet.', 'Ninguna aplicación IVAO configurada en el lanzador.'
+    ],
     ivaoFail: ['Connexion à IVAO refusée ({e}).', 'IVAO sign-in refused ({e}).', 'IVAO-Anmeldung abgelehnt ({e}).',
       'Inicio de sesión en IVAO rechazado ({e}).'
     ],
@@ -693,9 +705,15 @@
     if (!location.hash.startsWith('#ivao-return?')) return;
     const q = new URLSearchParams(location.hash.slice('#ivao-return?'.length));
     history.replaceState(null, '', `${location.pathname}${location.search}#settings?card=ivao`);
-    const at = q.get('access_token') || '';
-    if (!at) return notify(t(T.ivaoFail, {
-      e: (q.get('error') || 'refused').slice(0, 40)
+    const at = q.get('access_token') || '',
+      err = (q.get('error') || 'refused').slice(0, 60);
+    // la vraie raison : un retour sans demande en cours (expirée, lanceur redémarré, faite ailleurs), un refus d'IVAO avec son
+    // code, une application absente ; jamais « state » seul
+    if (!at) return notify(err === 'state' ? t(T.ivaoFailState) : err === 'config' ? t(T.ivaoFailConfig) : err.startsWith('ivao:') ? t(
+      T.ivaoFailIvao, {
+        e: err.slice(5)
+      }) : t(T.ivaoFail, {
+      e: err
     }), 'err');
     ivaoTok = {
       access_token: at,
@@ -729,8 +747,19 @@
       return {
         ok: false,
         status: r?.status || 0,
-        message: r?.body?.message || ''
+        message: r?.body?.message || '',
+        // sans application IVAO réglée (409) : l'adresse de retour à déclarer chez IVAO, et si c'est celle du relais
+        redirect: typeof r?.body?.redirect === 'string' ? r.body.redirect : '',
+        relay: r?.body?.relay === true
       };
+    },
+    /** L'application IVAO est-elle réglée sur ce lanceur (le poste ou le relais) ? { app, relay } ; null sans lanceur. */
+    async setup() {
+      const r = await launcherRequest('ivao/oauth');
+      return r?.body && typeof r.body.app === 'boolean' ? {
+        app: r.body.app,
+        relay: r.body.relay === true
+      } : null;
     },
     /** Délier : le jeton révoqué chez IVAO par le lanceur (s'il le peut), puis effacé ici ; { revoked }. */
     async disconnect() {

@@ -357,10 +357,20 @@
       'IVAO-Konto auf diesem Gerät getrennt. Entziehen Sie der Anwendung auch in Ihrem IVAO-Konto den Zugriff.',
       'Cuenta IVAO desvinculada en este dispositivo. Retire también el acceso de la aplicación en su cuenta IVAO.'
     ],
-    ivaoNoApp: ['Pas d’application IVAO sur le relais (secrets/ivao_oauth.json) : à régler par l’administrateur.',
-      'No IVAO application on the relay (secrets/ivao_oauth.json): for the administrator to set.',
-      'Keine IVAO-Anwendung auf dem Relais (secrets/ivao_oauth.json): vom Administrator einzurichten.',
-      'Ninguna aplicación IVAO en el relé (secrets/ivao_oauth.json): la configura el administrador.'
+    ivaoNoAppHere: [
+      'Pas encore d’application IVAO sur ce poste : le lanceur est bien là, il lui manque le fichier secrets/ivao_oauth.json.',
+      'No IVAO application on this workstation yet: the launcher is there, it lacks the file secrets/ivao_oauth.json.',
+      'Noch keine IVAO-Anwendung auf diesem Arbeitsplatz: Der Starter ist da, ihm fehlt die Datei secrets/ivao_oauth.json.',
+      'Todavía no hay aplicación IVAO en este puesto: el lanzador está, le falta el archivo secrets/ivao_oauth.json.'
+    ],
+    ivaoNoAppRelay: [
+      'Pas encore d’application IVAO sur le relais de la compagnie : il lui manque le fichier secrets/ivao_oauth.json (l’administrateur le pose).',
+      'No IVAO application on the airline’s relay yet: it lacks the file secrets/ivao_oauth.json (the administrator sets it).',
+      'Noch keine IVAO-Anwendung auf dem Relais der Fluggesellschaft: Ihm fehlt die Datei secrets/ivao_oauth.json (der Administrator legt sie an).',
+      'Todavía no hay aplicación IVAO en el relé de la aerolínea: le falta el archivo secrets/ivao_oauth.json (lo pone el administrador).'
+    ],
+    ivaoAppLink: ['Régler l’application IVAO (Administration)', 'Set the IVAO application (Administration)',
+      'IVAO-Anwendung einrichten (Verwaltung)', 'Configurar la aplicación IVAO (Administración)'
     ],
     ivaoErr: ['Connexion à IVAO impossible ({e}).', 'IVAO sign-in impossible ({e}).', 'IVAO-Anmeldung unmöglich ({e}).',
       'Inicio de sesión en IVAO imposible ({e}).'
@@ -629,7 +639,7 @@
       const st = iv.status();
       cards.push(`<div class="f-card" data-card="ivao"><h2>${esc(t(T.ivao))}</h2><p class="f-muted">${esc(t(T.ivaoHint))}</p>
         <p><b data-ivao-state="${st.connected ? 'on' : 'off'}">${esc(st.connected ? t(T.ivaoOn, { d: new Date(st.expires_at * 1000).toISOString().slice(0, 16).replace('T', ' ') + 'Z' }) : t(T.ivaoOff))}</b></p>
-        <p class="f-msg" data-msg></p><div class="f-row"><button type="button" class="primary" data-act="ivaoConnect">${esc(t(st.connected ? T.ivaoAgain : T.ivaoConnect))}</button>${st.connected ? `<button type="button" data-act="ivaoOut">${esc(t(T.ivaoOut))}</button>` : ''}</div></div>`);
+        <p class="f-msg" data-msg></p><p data-ivao-app hidden><a href="#settings?card=ivaoapp">${esc(t(T.ivaoAppLink))}</a></p><div class="f-row"><button type="button" class="primary" data-act="ivaoConnect">${esc(t(st.connected ? T.ivaoAgain : T.ivaoConnect))}</button>${st.connected ? `<button type="button" data-act="ivaoOut">${esc(t(T.ivaoOut))}</button>` : ''}</div></div>`);
     }
     // clé météo de l'appareil, avec ou sans lanceur (le cadre la garde hors de device/ et de toute sauvegarde)
     const wk = c.weatherKey;
@@ -687,6 +697,19 @@
     };
     /** Redessine tout l'écran. */
     const again = () => render(view, c);
+    /** Carte « Compte IVAO » selon le lanceur ({ app, relay }) : sans application, le bouton éteint avec la raison en titre, le
+     *  lieu dit (ce poste ou le relais) et, sur le poste, le renvoi vers l'assistant « Application IVAO » (Administration). */
+    const paintIvaoApp = s => {
+      const k = card('ivao'),
+        b = k?.querySelector('[data-act="ivaoConnect"]');
+      if (!b || s.app) return;
+      const why = t(s.relay ? T.ivaoNoAppRelay : T.ivaoNoAppHere);
+      b.disabled = true;
+      b.title = why;
+      say('ivao', why, 'warn');
+      const link = k.querySelector('[data-ivao-app]');
+      if (link) link.hidden = !!s.relay; // en relais, l'administrateur la règle sur le relais : pas d'écran ici
+    };
     P.groups.markAttention(view);
     // ordinateur ↔ téléphone (« frame-desk » du cadre) : la liste des designs et la ligne « réservé à l'ordinateur » suivent,
     // si l'écran est toujours là (une écoute par vue)
@@ -770,6 +793,8 @@
       };
     }
     P.launcher.live(env); // accès du poste (relève toutes les 5 s), clé IVAO, fenêtre Oui / Non annoncée
+    // compte IVAO : sans application réglée sur ce poste ou le relais, le bouton est éteint (sa raison en titre), rien ne part
+    if (card('ivao') && c.ivao?.setup) c.ivao.setup().then(s => s && paintIvaoApp(s)).catch(() => {});
 
     // actions
     view.onclick = async e => {
@@ -838,10 +863,15 @@
       if (act === 'ivaoConnect') {
         say('ivao', '…', 'warn');
         const r = await c.ivao.connect();
-        if (!r.ok) say('ivao', r.status === 409 ? t(T.ivaoNoApp) : t(T.ivaoErr, {
+        if (r.ok) return;
+        // sans application IVAO (409) : rien n'est parti ; le lieu et le renvoi vers l'assistant, comme au dessin de la carte
+        if (r.status === 409) return paintIvaoApp({
+          app: false,
+          relay: r.relay
+        });
+        return say('ivao', t(T.ivaoErr, {
           e: r.message || r.status || '?'
         }), 'err');
-        return;
       }
       if (act === 'ivaoOut') {
         if (!await c.ask(t(T.ivaoOutAsk))) return;

@@ -395,7 +395,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
 
     def _ivao_redirect(self):
         """Adresse de retour déclarée chez IVAO : celle du relais (https, hôte public), sinon celle du poste."""
-        return f'https://{RELAY["host"]}{IVAO_CALLBACK}' if self._relay() else f'http://127.0.0.1:{self.port}{IVAO_CALLBACK}'
+        return ivao_redirects(self.port)['relay' if self._relay() else 'poste']
 
     def _relay_page(self, nxt, code=200, msg=''):
         """Page d'appairage du relais (sans script : formulaire envoyé à /__relay/pair), dans la langue du navigateur."""
@@ -1047,6 +1047,12 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             return self._json({'error': 'refusé'}, 403)
         return self._json(vatsim_bookings())
 
+    @route('GET', '/__setup/ivao/oauth', public='lan', relay=True)
+    def _get_ivao_oauth(self, path):
+        # application IVAO réglée sur ce lanceur (le poste ou le relais) ? La carte « Compte IVAO » éteint son bouton sinon ;
+        # aucun secret, seulement sa présence
+        return self._json({'app': bool(ivao_oauth_cfg()), 'relay': self._relay()})
+
     @route('POST', '/__setup/ivao/oauth/start', '/__setup/ivao/oauth/refresh', '/__setup/ivao/oauth/revoke', public='lan', relay=True)
     def _post_ivao_oauth(self, path, body):
         # OpenID d'IVAO par le relais (R1b) : start → l'adresse d'autorisation (PKCE S256, état lié à cet appareil) ;
@@ -1124,8 +1130,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         view = secrets_view(q.get('tri', [''])[0])
         # adresses de retour à déclarer chez IVAO pour l'application OpenID (assistant des Réglages) : celle de ce poste,
         # et celle du relais de la compagnie quand son hôte public est réglé ; adresses publiques, aucun secret
-        view['ivaoRedirects'] = [f'http://127.0.0.1:{self.port}{IVAO_CALLBACK}'] + (
-            [f'https://{RELAY["host"]}{IVAO_CALLBACK}'] if RELAY['host'] else [])
+        r = ivao_redirects(self.port)
+        view['ivaoRedirects'] = [r['poste']] + ([r['relay']] if r['relay'] else [])
         return self._json(view)
 
     @route('GET', '/__setup/secrets/test', public='poste')
@@ -1787,6 +1793,12 @@ NB = '\u202f'  # espace fine insécable avant : ; ! ? en français
 # (jamais écrites en dur) ; le pilote reçoit son propre jeton (portée tracker) et le refresh_token, une fois, par le fragment
 # d'une page de retour du même origine ; le téléphone lit ensuite le tracker directement
 IVAO_CALLBACK = '/__relay/ivao/callback'
+
+
+def ivao_redirects(port):
+    """Les adresses de retour d'IVAO, calculées ici seulement (démarrage, retour, refus 409, assistant des Réglages) :
+    { poste: http://127.0.0.1:<port>/…, relay: https://<hôte public>/… ou '' sans relais }."""
+    return {'poste': f'http://127.0.0.1:{port}{IVAO_CALLBACK}', 'relay': f'https://{RELAY["host"]}{IVAO_CALLBACK}' if RELAY['host'] else ''}
 IVAO_DISCOVERY = 'https://api.ivao.aero/.well-known/openid-configuration'
 IVAO_SCOPE = 'openid tracker'
 IVAO_STATE_TTL = 600
@@ -1828,7 +1840,9 @@ def ivao_oauth_start(device, redirect):
     gardé ici (10 minutes)."""
     cfg = ivao_oauth_cfg()
     if not cfg:
-        return {'ok': False, 'status': 409, 'message': 'no IVAO application on the relay (secrets/ivao_oauth.json)'}
+        # l'adresse de retour exacte à déclarer chez IVAO (celle du poste ou du relais) : la page la montre avec la marche à suivre
+        return {'ok': False, 'status': 409, 'message': 'no IVAO application here (secrets/ivao_oauth.json)', 'redirect': redirect,
+                'relay': redirect.startswith('https://')}
     try:
         meta = ivao_oidc_meta(cfg[2])
     except (OSError, ValueError) as e:
@@ -1900,10 +1914,12 @@ def ivao_oauth_finish(state, code, error, device, redirect):
     """Retour d'IVAO : l'état d'une demande en cours, du même appareil et de la même adresse de retour ; le code échangé.
     { ok, access_token, refresh_token, expires_at, scope } ou { ok: False, error }."""
     p = _ivao_oidc['pending'].pop(str(state or ''), None)
+    if error:  # IVAO a refusé (client inconnu, adresse de retour, accès refusé) : sa raison, même sans état reconnu ; aucun jeton
+        return {'ok': False, 'error': 'ivao:' + (re.sub(r'[^a-z0-9_]', '', str(error).lower())[:40] or 'denied')}
     if not p or time.time() - p['at'] >= IVAO_STATE_TTL or p['device'] != device or p['redirect'] != redirect:
         return {'ok': False, 'error': 'state'}
-    if error or not code:
-        return {'ok': False, 'error': 'denied' if error else 'code'}
+    if not code:
+        return {'ok': False, 'error': 'code'}
     if not ivao_oauth_cfg():
         return {'ok': False, 'error': 'config'}
     try:
