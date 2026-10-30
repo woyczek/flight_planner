@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data: a map of the zones to tick** (`modules/data/`; help ×4; noreg L20): above the zone list of the base panel and the State list of the procedures panel, an inline SVG of the outlines read from `ctx.aerodb.zoneOutlines()` (equirectangular, 5 % margin, at most 260 px high). A tap, a click or Space/Enter changes the selection the list reads and both are redrawn from it (one writer); each zone is a keyboard-reachable `role=checkbox` whose `title` and `aria-label` give the name AND the state in words; colours are the frame's tokens, a ticked zone has a thick stroke and a solid tint; a one-line legend names the tones. No map (the list alone, no error line) when the outlines are missing or when a zone would be under 44 px at the current width (re-evaluated on resize, one listener removed at unmount); frozen while an operation runs.
 - **Noreg: a targeted pass no longer waits for another worktree's full pass** (`tests/v3/run.py`; tests/v3 README, frame
   DECISIONS; noreg I27) — it runs beside it at 4 runs at a time; two full passes stay exclusive.
 - **Fuel: F82, the weather corridor** (a « no case » debt of the SPEC): the radius, the order along the route, the aerodromes without a

@@ -780,6 +780,24 @@ export const TX = {
     'Assistenten der Ersteinrichtung öffnen',
     'Abrir el asistente de primera instalación'
   ],
+  // la carte des zones à cocher (même sélection que la liste) : son nom, ce que dit chaque teinte, la légende
+  zoneMap: {
+    base: ['Carte des zones à cocher', 'Map of the zones to tick', 'Karte der anzukreuzenden Zonen', 'Mapa de las zonas por marcar'],
+    proc: ['Carte des États à cocher', 'Map of the States to tick', 'Karte der anzukreuzenden Staaten', 'Mapa de los Estados por marcar']
+  },
+  mapTone: {
+    ok: ['à jour', 'up to date', 'aktuell', 'al día'],
+    warn: ['cycle dépassé ou absent', 'cycle out of date or missing', 'Zyklus überholt oder fehlend', 'ciclo superado o ausente'],
+    accent: ['en cours', 'running', 'läuft', 'en curso'],
+    muted: ['hors couverture', 'not in the coverage', 'nicht in der Abdeckung', 'fuera de la cobertura']
+  },
+  mapTicked: ['cochée', 'ticked', 'angekreuzt', 'marcada'],
+  mapLegend: ['Légende', 'Legend', 'Legende', 'Leyenda'],
+  mapLegendNote: ['Trait épais et teinte pleine : zone cochée ; touchez une zone ou appuyez sur Espace pour la cocher.',
+    'Thick outline and solid tint: zone ticked; tap a zone or press Space to tick it.',
+    'Dicker Rand und volle Tönung: Zone angekreuzt; tippen Sie auf eine Zone oder drücken Sie die Leertaste.',
+    'Trazo grueso y tono lleno: zona marcada; toque una zona o pulse Espacio para marcarla.'
+  ],
   // prendre le fichier téléchargé à la main dans Téléchargements (base/pickup) : le bouton, la question, la fin
   pickup: ['Prendre le fichier téléchargé', 'Take the downloaded file', 'Heruntergeladene Datei übernehmen',
     'Tomar el archivo descargado'

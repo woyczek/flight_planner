@@ -108,6 +108,21 @@ const STYLE = `
 [data-module="data"] [data-update-all] [data-reason]{margin:6px 0 0}
 [data-module="data"] [data-update-all] [data-chain],[data-module="data"] [data-update-all] [data-chain-result]{margin-top:10px;display:grid;gap:6px}
 [data-module="data"] .f-status-dot[data-attn]{display:inline-block;vertical-align:middle;margin-left:6px}
+[data-module="data"] .d-map{margin:6px 0}
+[data-module="data"] .d-map svg{display:block;max-width:100%;height:auto;margin:0 auto}
+[data-module="data"] .d-map path{cursor:pointer;fill-opacity:.25;stroke-width:1;vector-effect:non-scaling-stroke;fill:var(--sog-muted);stroke:var(--sog-muted)}
+[data-module="data"] .d-map path[data-tone=ok],[data-module="data"] .d-sw[data-tone=ok]{fill:var(--sog-ok);stroke:var(--sog-ok)}
+[data-module="data"] .d-map path[data-tone=warn],[data-module="data"] .d-sw[data-tone=warn]{fill:var(--sog-warn);stroke:var(--sog-warn)}
+[data-module="data"] .d-map path[data-tone=accent],[data-module="data"] .d-sw[data-tone=accent]{fill:var(--sog-accent);stroke:var(--sog-accent)}
+[data-module="data"] .d-map path[data-tone=muted],[data-module="data"] .d-sw[data-tone=muted]{fill:var(--sog-muted);stroke:var(--sog-muted)}
+[data-module="data"] .d-map path[aria-checked=true]{fill-opacity:.65;stroke-width:3}
+[data-module="data"] .d-map path[aria-disabled=true]{cursor:default}
+[data-module="data"] .d-map path:focus-visible{outline:2px solid var(--sog-accent);outline-offset:1px}
+[data-module="data"] .d-sw{display:inline-block;width:12px;height:12px;vertical-align:middle;margin:0 4px 0 8px;background:currentColor;border:1px solid}
+[data-module="data"] .d-sw[data-tone=ok]{background:var(--sog-ok);border-color:var(--sog-ok)}
+[data-module="data"] .d-sw[data-tone=warn]{background:var(--sog-warn);border-color:var(--sog-warn)}
+[data-module="data"] .d-sw[data-tone=accent]{background:var(--sog-accent);border-color:var(--sog-accent)}
+[data-module="data"] .d-sw[data-tone=muted]{background:var(--sog-muted);border-color:var(--sog-muted)}
 [data-module="data"] .d-journal{margin-top:var(--sog-gap-s)}
 [data-module="data"] .d-journal summary{min-height:var(--sog-touch);display:flex;align-items:center}
 [data-module="data"] .d-ops{list-style:none;margin:0;padding:0;display:grid;gap:4px}
@@ -173,6 +188,7 @@ async function load() {
     ]);
   if (S !== me) return; // démonté, ou remplacé, pendant la lecture
   S.pub.status = status;
+  if (S.outlines === false) S.outlines = null; // un échec de lecture des contours : la lecture suivante réessaie
   const list = Array.isArray(zones) ? zones : null,
     cov = M.coverageIds(stored, list, pub);
   S.d = {
@@ -896,6 +912,7 @@ function buildInner() {
       .verb]; // « Prendre le fichier téléchargé » : le verbe base/pickup, grisé pour sa propre raison
   return `<h2>${esc(tt(TX.buildTitle))}</h2>
     <h3>${esc(tt(TX.buildZones))}</h3>
+    ${zoneMapHtml('base')}
     <div class="d-opts" data-build-zones>${ids.map(z => optHtml('data-build-zone', z, M.zoneName(S.d.zones, z, li()), S.ticked?.has(z), busy)).join('')}</div>
     ${pers.length ? `<h3>${esc(tt(TX.personalTitle))}</h3><div data-personal-box>${pers.map(p => `<div class="d-pers" data-personal-row="${p.id}">
       ${optHtml('data-personal', p.id, personalName(p.id), S.personal.has(p.id), busy)}
@@ -983,6 +1000,7 @@ function setInner(panel) {
     why = gate.reason ? tt(TX.greyReason[gate.reason]) : '';
   return `<h2>${esc(tt(TX.setTitle[panel]))}</h2>
     <h3>${esc(tt(TX.setItems[panel]))}</h3>
+    ${panel === 'proc' ? zoneMapHtml('proc') : ''}
     ${choiceHtml(panel, frozen())}
     ${verbsHtml(gate, panel)}
     ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
@@ -1006,7 +1024,8 @@ function panelsHtml(group) {
 function redrawPanel(box) {
   const a = box.contains(document.activeElement) ? document.activeElement : null,
     q = (attr, v) => `[${attr}="${CSS.escape(v)}"]`,
-    sel = a ? a.dataset.buildZone ? q('data-build-zone', a.dataset.buildZone) : a.dataset.personal ? q('data-personal', a.dataset
+    sel = a ? a.dataset.mapZone ? q('data-map-zone', a.dataset.mapZone) : a.dataset.buildZone ? q('data-build-zone', a.dataset.buildZone) :
+    a.dataset.personal ? q('data-personal', a.dataset
       .personal) : a.dataset
     .item ? q('data-item', a.dataset.item) : a.dataset.f ? q('data-f', a.dataset.f) : a.dataset.verb ? q('data-verb', a.dataset.verb) : '' :
     '',
@@ -1630,6 +1649,94 @@ async function startOp(set, verb) {
   } : args, ids, dry, args), true);
 }
 
+// ---------------------------------------------------------------- la carte des zones à cocher
+/** Les contours des zones, demandés à `ctx.aerodb.zoneOutlines()` seul (jamais par adresse) au premier dessin d'un panneau avec carte, une fois ; sans réponse ou en
+ *  échec : la liste seule, sans ligne d'erreur. Redessine quand ils arrivent. */
+function loadOutlines() {
+  if (S.outlines !== null) return;
+  S.outlines = 'loading';
+  const me = S;
+  ask('zoneOutlines').then(o => {
+    if (S !== me) return;
+    S.outlines = o && typeof o === 'object' && Object.keys(o).length ? o : false;
+    renderBuild();
+  });
+}
+/** La largeur, en pixels, que la carte peut prendre (celle de l'écran moins les marges de la carte du panneau). */
+const mapWidth = () => Math.max(0, (S.body?.clientWidth || 0) - 40);
+/** Le contour d'un élément de la carte : ceux des zones d'aerodb qu'il dessine (la zone elle-même pour la base, la France pour « LF », les États-Unis pour « K »), réunis ;
+ *  null sans contour connu. */
+function outlineOf(kind, id) {
+  const zs = (kind === 'base' ? [id] : M.PROC_ZONES[id] || []).map(z => S.outlines[z]).filter(Boolean);
+  if (!zs.length) return null;
+  return {
+    id,
+    rings: zs.flatMap(z => z.rings || []),
+    box: zs.map(z => z.box).reduce((b, x) => [Math.min(b[0], x[0]), Math.min(b[1], x[1]), Math.max(b[2], x[2]), Math.max(b[3], x[3])])
+  };
+}
+/** Les éléments que la carte dessine : ceux que la liste du panneau propose (zones de la couverture, États en bloc), avec leur contour. */
+function mapEntries(kind) {
+  const ids = kind === 'base' ? buildZones().ids : procList().map(i => i.id);
+  return ids.map(id => outlineOf(kind, id)).filter(Boolean);
+}
+/** Le nom d'un élément de la carte dans la langue (celui des contours pour une zone, à défaut celui de zones()). */
+function mapName(kind, id) {
+  return kind === 'base' ? S.outlines[id]?.name?.[li()] || M.zoneName(S.d.zones, id, li()) : itemName('proc', id);
+}
+/** La teinte d'un élément : hors couverture, en cours (une opération du panneau le traite), à reconstruire (rien de publié ou cycle dépassé), à jour. */
+function mapToneOf(kind, id) {
+  const zone = kind === 'base' ? id : M.PROC_ZONES[id]?.[0],
+    pub = S.d.pub,
+    cycle = kind === 'base' ? M.baseOf(pub?.base, [zone]).cycle : pub?.proc?.inForce || null;
+  return M.mapTone({
+    inCoverage: S.d.cov.ids.includes(zone),
+    running: !!S.run && S.run.set === kind && S.ids.includes(id),
+    published: !!cycle,
+    stale: !!cycle && M.staleLevel(S.airac, cycle, S.now) !== null
+  });
+}
+/** La carte d'un panneau (`kind` : base ou proc), vue de la MÊME sélection que la liste (S.ticked, S.picked) : un trait épais et une teinte pleine pour une zone cochée,
+ *  la teinte du jeton du cadre pour son état, le nom ET l'état en toutes lettres dans `title` et `aria-label`, une légende d'une ligne. Rien (la liste seule) sans contours,
+ *  ou si l'une des zones à cocher fait moins de 44 px à la largeur actuelle. */
+function zoneMapHtml(kind) {
+  loadOutlines();
+  if (!S.outlines || S.outlines === 'loading' || !S.airac) return '';
+  S.mapW = mapWidth();
+  const m = M.zoneMap(mapEntries(kind), S.mapW);
+  if (!m || m.small) return '';
+  const sel = kind === 'base' ? S.ticked : S.picked,
+    off = frozen(),
+    paths = m.shapes.map(sh => {
+      const on = !!sel?.has(sh.id),
+        tone = mapToneOf(kind, sh.id),
+        label = `${mapName(kind, sh.id)} — ${tt(TX.mapTone[tone])}${on ? `, ${tt(TX.mapTicked)}` : ''}`;
+      return `<path d="${sh.d}" fill-rule="evenodd" data-map-zone="${esc(sh.id)}" data-tone="${tone}" role="checkbox" aria-checked="${on}" tabindex="0"${off ? ' aria-disabled="true"' : ''} aria-label="${esc(label)}"><title>${esc(label)}</title></path>`;
+    }).join('');
+  return `<div class="d-map" data-zone-map="${kind}"><svg viewBox="${m.vb.join(' ')}" width="${m.w}" height="${m.h}" role="group" aria-label="${esc(tt(TX.zoneMap[kind]))}">${paths}</svg>
+    <p class="f-muted" data-zone-legend>${esc(tt(TX.mapLegend))} :${['ok', 'warn', 'accent', 'muted'].map(t => `<span class="d-sw" data-tone="${t}"></span>${esc(tt(TX.mapTone[t]))}`).join(' · ')}. ${esc(tt(TX.mapLegendNote))}</p></div>`;
+}
+/** Coche ou décoche, dans la sélection du module (S.ticked pour la base, S.picked pour les États), l'élément d'une zone de la carte, puis redessine les panneaux : la carte
+ *  et la liste se lisent toutes deux de cette sélection, jamais l'une de l'autre. Sans effet pendant une marche, ou pour un élément que la liste ne propose pas. */
+function toggleMapZone(el) {
+  const kind = el.closest('[data-zone-map]')?.dataset.zoneMap,
+    id = el.dataset.mapZone;
+  if (frozen() || !S.d) return;
+  const set = kind === 'base' && buildZones().ids.includes(id) ? S.ticked : kind === 'proc' && procList().some(i => i.id === id) ? S
+    .picked : null;
+  if (!set) return;
+  if (set.has(id)) set.delete(id);
+  else set.add(id);
+  renderBuild();
+}
+/** Espace ou Entrée sur une zone de la carte la coche ou la décoche, comme un toucher. */
+function onKey(e) {
+  const mz = e.target.closest?.('[data-map-zone]');
+  if (!mz || (e.key !== ' ' && e.key !== 'Enter')) return;
+  e.preventDefault();
+  toggleMapZone(mz);
+}
+
 // ---------------------------------------------------------------- prendre le fichier téléchargé (base/pickup)
 /** Le motif d'un échec de prise : sa phrase pour les codes connus (rien d'utile dans le zip, zip illisible, chemin refusé), « zip de plus de 500 Mo » pour le
  *  message de taille du lanceur, sinon le texte tel que le lanceur le donne. */
@@ -2080,6 +2187,8 @@ function opOf(v) {
 }
 /** Retient le groupe touché en dernier (le « ? » du cadre ouvre l'aide au paragraphe du groupe ouvert), puis le geste d'un bouton. */
 function onClick(e) {
+  const mz = e.target.closest?.('[data-map-zone]');
+  if (mz) return toggleMapZone(mz);
   const g = e.target.closest?.('details.f-group > summary')?.parentElement;
   if (g) S.focus = g.dataset.group;
   const v = e.target.closest?.('button[data-verb]');
@@ -2146,6 +2255,9 @@ export async function mount(el, ctx) {
     lastOp: null, // la fin de la dernière opération suivie : { set, verb, out, text } (la chaîne la lit)
     groups: null, // les groupes de l'écran (buildGroups), calculés à chaque dessin
     attn: {}, // les groupes dont le cycle publié est dépassé : { base, proc } (le cycle « AANN » ou null)
+    outlines: null, // les contours des zones (ctx.aerodb.zoneOutlines) : null (pas demandés), 'loading', l'objet, ou false (sans réponse : la liste seule)
+    mapW: 0, // la largeur pour laquelle la carte a été calculée
+    rz: 0, // l'image d'animation en attente du recalcul à la taille de la fenêtre
     picked: new Set(), // États des procédures cochés (aucun par défaut)
     codes: '', // le champ des types OACI des appareils (vide : les types de la flotte)
     codesBad: [], // les types refusés au dernier geste (dits dans le panneau, aucun appel)
@@ -2177,6 +2289,14 @@ export async function mount(el, ctx) {
   S.body.addEventListener('click', onClick);
   S.body.addEventListener('change', onChange);
   S.body.addEventListener('input', onInput);
+  S.body.addEventListener('keydown', onKey);
+  S.onResize = () => { // la carte des zones se recalcule quand la largeur change (une seule écoute, retirée au démontage)
+    cancelAnimationFrame(S.rz);
+    S.rz = requestAnimationFrame(() => {
+      if (S?.body && S.outlines && S.outlines !== 'loading' && mapWidth() !== S.mapW) renderBuild();
+    });
+  };
+  window.addEventListener('resize', S.onResize);
   S.onNet = () => renderBuild(); // « hors ligne » : la raison du bouton suit le réseau
   window.addEventListener('online', S.onNet);
   window.addEventListener('offline', S.onNet);
@@ -2208,6 +2328,8 @@ export function unmount() {
   window.removeEventListener('frame-titled', S.srTitle);
   window.removeEventListener('online', S.onNet);
   window.removeEventListener('offline', S.onNet);
+  window.removeEventListener('resize', S.onResize);
+  cancelAnimationFrame(S.rz);
   clearTimeout(S.again);
   stopTimer(); // le suivi s'arrête de lui-même au démontage (le cadre) : le travail, lui, continue sur le lanceur
   for (const f of S.stops) f?.();

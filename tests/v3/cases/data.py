@@ -7,6 +7,9 @@ Rules covered
   * L19 « Prendre le fichier téléchargé » (base/pickup) against the fake launcher: the fourth verb of the base panel, the plan (dry sent) then ONE question (zip found, file
     missing with its pattern, where the files go), No takes nothing, Yes sends dry false, the summary and the hint, one journal entry, nothing found says the missing files
     without a question, a partial end, the button under the manual sources of a download, grey when the launcher does not know the verb.
+  * L20 the map of the zones to tick (stubbed ctx.aerodb.zoneOutlines): one selection with the list (a click or a key, both redrawn from the module state), the frame's tokens
+    for the colours, the state in words in the title and aria-label, the 44 px rule (no map on a phone with thin zones), frozen while an operation runs, no map without outlines
+    (the list alone, no error line), the resize listener removed at unmount.
   * L16 / L17 (V3 § 10.34, lot A1: the same panel for every group): L16 the pure functions (the SETS table, the verbs a launcher knows and the
     old-launcher fallback, the grey reason of a panel, the States offered, the ICAO types field, the arguments, the view and the end of any set's job,
     the sheets plan, the journal entries); L17 the panels against the fake launcher (regen/verbs, proc build / purge, VAC and aircraft grey, one
@@ -44,7 +47,7 @@ Rules covered
     (shared-fr, kept-tracked), No does nothing, Yes sends the real job without dry, the end sentences, one journal entry, an empty plan without a question;
     one operation at a time (the other verbs grey while any runs); a running download found at mount is followed with its own lines.
 
-Cases: L1 .. L19.  The suite never reads a real data repository, never reaches the network and never meets a real launcher.
+Cases: L1 .. L20.  The suite never reads a real data repository, never reaches the network and never meets a real launcher.
 """
 import datetime
 import json
@@ -269,7 +272,7 @@ def _stub(cfg):
     return """(() => { const cfg = %s; cfg.fns = new Set(); window.__stub = cfg; let ab;
   const patch = (A) => {
     const ok = (name, key) => async () => { const k = window.__stub.calls = window.__stub.calls || {}; k[name] = (k[name] || 0) + 1; if (window.__stub.fail.includes(name)) throw new Error('stub: ' + name); return window.__stub[key] };
-    A.publication = ok('publication', 'publication'); A.zones = ok('zones', 'zones'); A.coverageByState = ok('coverageByState', 'states');
+    A.publication = ok('publication', 'publication'); A.zones = ok('zones', 'zones'); A.coverageByState = ok('coverageByState', 'states'); A.zoneOutlines = ok('zoneOutlines', 'outlines');
     const s = A.sources; A.sources = async () => { const r = await s.call(A); if (cfg.pv) return { ...r, PARSER_VERSION: cfg.pv }; const { PARSER_VERSION, ...rest } = r; return rest };  // pv null: the catalogue without its constant (aerodb has carried one since 567b94440)
     const on = A.on; A.on = function (ev, fn) { const un = on.call(A, ev, fn); if (ev === 'change') window.__stub.fns.add(fn); return () => { window.__stub.fns.delete(fn); un() } };
     return A };
@@ -2599,3 +2602,149 @@ def l19(c):
          [True, ['download', 'build', 'purge'], norm(T('unknown-verb', 'greyReason: {')), 0], 'unknown to this launcher: the button is grey with the usual reason, the three others are live', what='unknown')
     _screen_ok(c, 'old launcher')
     c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ L20
+_FAILOUT_JS = """(() => { try { if (sessionStorage.getItem('__failOutlines') && window.__stub) window.__stub.fail.push('zoneOutlines') } catch {} })()"""
+_RESIZE_JS = """(() => { window.__mapResize = 0; const a = window.addEventListener, r = window.removeEventListener;
+  window.addEventListener = function (t, f, o) { if (t === 'resize' && String(f).includes('mapWidth')) window.__mapResize++; return a.call(this, t, f, o) };
+  window.removeEventListener = function (t, f, o) { if (t === 'resize' && String(f).includes('mapWidth')) window.__mapResize--; return r.call(this, t, f, o) } })()"""
+_ZONE_NAMES = {'fr': ['France', 'France', 'Frankreich', 'Francia'], 'gb': ['Royaume-Uni', 'United Kingdom', 'Vereinigtes Königreich', 'Reino Unido'],
+               'es': ['Espagne', 'Spain', 'Spanien', 'España'], 'us': ['États-Unis', 'United States', 'Vereinigte Staaten', 'Estados Unidos']}
+# flat rectangles, 2 degrees tall: wide enough for a finger on a desktop, too thin for one on a phone
+_RECTS = {'fr': [0, 45, 12, 47], 'gb': [-12, 45, 0, 47], 'es': [-12, 43, 0, 45], 'us': [12, 45, 24, 47]}
+
+
+def _outlines():
+    """What the stubbed ctx.aerodb.zoneOutlines() answers: the shape of the real one ({ name ×4, rings, box })."""
+    return {z: {'name': _ZONE_NAMES[z], 'rings': [[[w, s], [e, s], [e, n], [w, n], [w, s]]], 'box': [w, s, e, n]} for z, (w, s, e, n) in _RECTS.items()}
+
+
+_L20_JS = r"""async () => {
+  const M = await import('/modules/data/model.js');
+  const out = {};
+  out.tone = [{ inCoverage: false }, { inCoverage: true, running: true, published: true }, { inCoverage: true, published: false }, { inCoverage: true, published: true, stale: true },
+    { inCoverage: true, published: true, stale: false }, { inCoverage: false, running: true }].map(M.mapTone);
+  const sq = (id, w, s, e, n) => ({ id, rings: [[[w, s], [e, s], [e, n], [w, n], [w, s]]], box: [w, s, e, n] });
+  const one = M.zoneMap([sq('a', 0, 0, 10, 10)], 400);
+  out.one = [one.vb, one.shapes.map(s => s.id), one.shapes[0].d.startsWith('M0 0L') && one.shapes[0].d.endsWith('Z'), one.small, one.h <= 260.0001];
+  const flat = [sq('fr', 0, 45, 12, 47), sq('gb', -12, 45, 0, 47)];
+  out.flat = [M.zoneMap(flat, 1000).small, M.zoneMap(flat, 350).small, M.zoneMap([], 400), M.zoneMap(null, 400), M.zoneMap([{ id: 'x', rings: [], box: [0, 0, 'a', 1] }], 400), M.zoneMap(flat, 0).small];
+  out.zones = [M.PROC_ZONES, M.MAP_MIN_PX];
+  return out;
+}"""
+
+
+@case('L20', 'Données: the map of the zones to tick (one selection with the list, tokens, words for the state, 44 px rule, keyboard, no map without outlines, listener removed)',
+      'L', tags=('data',), langs4=True, designs=('standard',),
+      rule='modules/data/SPEC 3 (the screen); ergonomics: one writer, never colour alone, 44 px')
+def l20(c):
+    lang = c.lang
+    li = {'fr': 0, 'en': 1, 'de': 2, 'es': 3}[lang]
+    T = lambda key, after=None, row=0: _trow(key, lang, after, row)
+    tone = lambda t: T(t, 'mapTone: {')
+    # ---- A: the pure functions (projection, 5 % margin, the 44 px rule, tones)
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest', wait_until='load')
+    r = c.js(_L20_JS)
+    c.eq(r['tone'], ['muted', 'accent', 'warn', 'warn', 'ok', 'muted'], 'a zone outside the coverage is muted, a running one accent, nothing published or a cycle gone by warn, else ok', what='mapTone')
+    vb, ids, path_ok, small, h_ok = r['one']
+    c.ok(abs(vb[0] + 0.498) < 0.002 and vb[1] == -10.5 and abs(vb[2] - 10.958) < 0.002 and vb[3] == 11, vb, 'equirectangular x = lon·cos φ0, y = −lat, 5 % margin all round')
+    c.eq([ids, path_ok, small, h_ok], [['a'], True, False, True], 'one path per zone, projected rings closed, a big square is not small, the height is bounded', what='zoneMap one')
+    c.eq(r['flat'], [False, True, None, None, None, True], 'two thin zones: tickable at 1000 px, too small for a finger at 350 px; no zone, no map; an unreadable box is dropped; no width: small', what='zoneMap small')
+    c.eq(r['zones'], [{'LF': ['fr'], 'K': ['us']}, 44], 'the States draw France and the United States; 44 px', what='constants')
+    # ---- B: the screen with the stubbed outlines
+    cfg, _ = _fixture()
+    cfg['outlines'] = _outlines()
+    c.page.add_init_script(_RESIZE_JS)
+    _open(c, cfg)
+    c.page.add_init_script(_FAILOUT_JS)
+    _all_open(c)
+    wide = c.js('window.innerWidth') >= 700
+    names = {z: _ZONE_NAMES[z][li] for z in _ZONE_NAMES}
+    list_ids = c.js("[...document.querySelectorAll('[data-build-zone]')].map(i => i.dataset.buildZone)")
+    c.eq(list_ids, ['ca', 'es', 'fr', 'gb', 'us'], 'the list is what it was: every zone of the coverage', what='list')
+    if not wide:
+        c.wait(600)
+        c.eq([c.count('[data-zone-map]'), c.count('[data-map-zone]'), len(c.js("[...document.querySelectorAll('[data-build-zone]')]")), c.js('window.__stub.calls.zoneOutlines > 0')], [0, 0, 5, True],
+             'on a phone the thin zones would be smaller than 44 px: no map, nothing said, the list remains (the outlines were asked)', what='no map at 390')
+        c.eq(c.count('[data-zone-legend]'), 0, 'no legend without the map', what='legend')
+        c.check_errors()
+        return
+    c.until("!!document.querySelector('[data-zone-map=base]')", timeout=8000, what='the map of the zones is drawn')
+    c.eq(c.js("[...document.querySelectorAll('[data-zone-map=base] [data-map-zone]')].map(p => p.dataset.mapZone)"), ['es', 'fr', 'gb', 'us'],
+         'a path per zone of the panel that has an outline (the list still has Canada)', what='paths')
+    c.eq(c.js("document.querySelectorAll('[data-zone-map=base] svg').length"), 1, 'inline SVG', what='svg')
+    c.eq(c.js("(() => { const s = document.querySelector('[data-zone-map=base] svg').getBoundingClientRect(); return [s.width <= document.documentElement.clientWidth, s.height <= 261] })()"), [True, True], 'bounded: not wider than the screen, at most 260 px high', what='size')
+    legend = norm(c.text('[data-zone-legend]'))
+    c.ok(all(norm(tone(t)) in legend for t in ('ok', 'warn', 'accent', 'muted')) and norm(T('mapLegendNote')) in legend, legend, 'the one-line legend names each tone in words and says what ticked looks like')
+    # roles, state in words (title and aria-label), tabindex
+    fr = c.js("(() => { const p = document.querySelector('[data-map-zone=fr]'); return [p.getAttribute('role'), p.getAttribute('aria-checked'), p.tabIndex, p.getAttribute('aria-label'), p.querySelector('title').textContent, p.dataset.tone] })()")
+    c.eq(fr, ['checkbox', 'true', 0, f"{names['fr']} — {tone('warn')}, {T('mapTicked')}", f"{names['fr']} — {tone('warn')}, {T('mapTicked')}", 'warn'],
+         'role checkbox, keyboard reachable; the name AND the state in words (France is one cycle behind, ticked), in the title and the aria-label', what='fr attributes')
+    # the colours are the frame's tokens
+    col = c.js("""() => { const probe = t => { const s = document.createElement('span'); s.style.color = 'var(--sog-' + t + ')'; document.body.append(s); const v = getComputedStyle(s).color; s.remove(); return v };
+      const g = z => { const cs = getComputedStyle(document.querySelector('[data-map-zone=' + z + ']')); return [cs.fill, cs.stroke] };
+      return { warn: probe('warn'), ok: probe('ok'), fr: g('fr'), gb: g('gb'), sw: [...document.querySelectorAll('[data-zone-legend] .d-sw')].map(e => getComputedStyle(e).backgroundColor), tok: ['ok', 'warn', 'accent', 'muted'].map(probe) } }""")
+    c.eq([col['fr'], col['gb']], [[col['warn'], col['warn']], [col['ok'], col['ok']]], 'colours by computed style equal the tokens: --sog-warn for the stale zone, --sog-ok for an up-to-date one (fill and stroke)', what='tokens')
+    c.eq(col['sw'], col['tok'] * 2, 'the legend swatches (one legend per map) are the same tokens', what='swatches')
+    widths = c.js("[...document.querySelectorAll('[data-map-zone]')].map(p => [p.dataset.mapZone, getComputedStyle(p).strokeWidth, getComputedStyle(p).fillOpacity])")
+    c.ok(all(w[1] == '3px' and float(w[2]) > 0.5 for w in widths if w[0] in ('fr', 'gb', 'es', 'us')), widths, 'every zone starts ticked: thick stroke and a solid tint, not colour alone')
+    # ---- C: a click toggles the selection the list reads, both redrawn from it
+    c.tap('[data-map-zone=fr]')
+    c.eq([c.js("document.querySelector('[data-build-zone=fr]').checked"), c.attr('[data-map-zone=fr]', 'aria-checked'), c.js("getComputedStyle(document.querySelector('[data-map-zone=fr]')).strokeWidth")], [False, 'false', '1px'],
+         'a click unticks the zone: the checkbox, the path and its stroke follow the same state', what='click off')
+    c.eq(c.attr('[data-map-zone=fr]', 'aria-label'), f"{names['fr']} — {tone('warn')}", 'unticked: the label drops « ticked »', what='label off')
+    c.tap('[data-map-zone=fr]')
+    c.eq([c.js("document.querySelector('[data-build-zone=fr]').checked"), c.attr('[data-map-zone=fr]', 'aria-checked')], [True, 'true'], 'and back', what='click on')
+    c.tap('[data-build-zone=gb]')
+    c.eq(c.attr('[data-map-zone=gb]', 'aria-checked'), 'false', 'the list changes the selection: the map follows', what='list to map')
+    c.tap('[data-build-zone=gb]')
+    # keyboard
+    c.page.focus('[data-map-zone=es]')
+    c.page.keyboard.press('Space')
+    c.eq([c.attr('[data-map-zone=es]', 'aria-checked'), c.js("document.querySelector('[data-build-zone=es]').checked"), c.js("document.activeElement.dataset.mapZone")], ['false', False, 'es'], 'Space toggles the focused zone, the focus stays on it', what='space')
+    c.page.keyboard.press('Enter')
+    c.eq([c.attr('[data-map-zone=es]', 'aria-checked'), c.js("document.querySelector('[data-build-zone=es]').checked")], ['true', True], 'Enter toggles it back', what='enter')
+    # ---- D: the States map (France and the United States)
+    c.until("!!document.querySelector('[data-zone-map=proc]')", timeout=8000, what='the map of the States is drawn')
+    c.eq(c.js("[...document.querySelectorAll('[data-zone-map=proc] [data-map-zone]')].map(p => [p.dataset.mapZone, p.getAttribute('aria-checked')])"), [['K', 'false'], ['LF', 'false']], 'the States with a bulk source, none ticked', what='proc paths')
+    c.tap('[data-zone-map=proc] [data-map-zone=K]')
+    c.eq([c.js("document.querySelector('[data-set-panel=proc] [data-item=K]').checked"), c.js("document.querySelector('[data-set-panel=proc] [data-item=LF]').checked"),
+          c.attr('[data-zone-map=proc] [data-map-zone=K]', 'aria-label')], [True, False, f"{K_NAME[lang]} — {tone('ok')}, {T('mapTicked')}"],
+         'a click on the United States ticks the State K in the panel\'s selection', what='proc click')
+    # ---- E: a running operation freezes the map as it freezes the list
+    st = _launcher(c, [_view(step='Zone fr', done=0, zones={'fr': _zs('building', 1, 4), 'es': _zs('waiting')})], verbs=BASE3)
+    c.page.reload(wait_until='load')
+    _head(c)
+    _all_open(c)
+    c.until("!!document.querySelector('[data-zone-map=base]')", timeout=8000, what='the map is drawn again')
+    _untick(c, 'ca', 'gb', 'us')
+    c.tap('[data-build] [data-verb=build]')
+    c.until("!!document.querySelector('[data-build] [data-running]')", what='a build runs')
+    c.eq([c.attr('[data-map-zone=fr]', 'aria-disabled'), c.attr('[data-map-zone=gb]', 'aria-disabled')], ['true', 'true'], 'frozen while it runs', what='frozen')
+    c.until("document.querySelector('[data-map-zone=fr]')?.dataset.tone === 'accent'", timeout=6000, what='the running zone takes the accent tone')
+    c.eq(c.js("(() => { const s = document.createElement('span'); s.style.color = 'var(--sog-accent)'; document.body.append(s); const v = getComputedStyle(s).color; s.remove(); return getComputedStyle(document.querySelector('[data-map-zone=fr]')).fill === v })()"),
+         True, 'the accent token', what='accent')
+    before = c.attr('[data-map-zone=es]', 'aria-checked')
+    c.js("document.querySelector('[data-map-zone=es]').dispatchEvent(new MouseEvent('click', { bubbles: true }))")
+    c.eq(c.attr('[data-map-zone=es]', 'aria-checked'), before, 'a click while it runs changes nothing', what='click frozen')
+    # ---- F: the listener is there once and goes with the module
+    c.eq(c.js('window.__mapResize'), 1, 'one resize listener while the module is mounted', what='listener')
+    ids = c.js("[...document.querySelectorAll('#fMenu a[data-id]')].map(a => a.dataset.id)")
+    other = next((i for i in ids if i != 'data'), None)
+    c.ok(other is not None, ids, 'the Maintenance rail has another entry to leave the module')
+    c.tap(f'#fMenu a[data-id="{other}"]')
+    c.until("!document.querySelector('[data-module=data]')", timeout=8000, what='the module is unmounted')
+    c.eq(c.js('window.__mapResize'), 0, 'the listener is removed at unmount', what='listener removed')
+    # ---- G: a failing zoneOutlines: the list alone, no error line
+    c.page.evaluate("sessionStorage.setItem('__failOutlines', '1')")
+    c.open('data', docs=LEVEL3, wait=False, app='maintenance')   # back on the module (the init scripts stay), now with a failing zoneOutlines
+    _head(c)
+    _all_open(c)
+    c.wait(800)
+    c.eq([c.count('[data-zone-map]'), c.count('[data-map-zone]'), c.count('[data-build-zone]'), c.count('[data-error]'), c.js('window.__stub.calls.zoneOutlines >= 1')], [0, 0, 5, 0, True],
+         'zoneOutlines throws: no map, the list is all there is, no error line', what='failure')
+    c.check_errors()
+
+
+K_NAME = {'fr': 'États-Unis', 'en': 'United States', 'de': 'Vereinigte Staaten', 'es': 'Estados Unidos'}

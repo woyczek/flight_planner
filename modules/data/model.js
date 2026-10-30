@@ -1268,6 +1268,52 @@ export function openChain(list) {
   return [...list].reverse().find(e => e.set === 'all' && e.verb === 'update' && e.result === 'running') || null;
 }
 
+// ---------------------------------------------------------------- la carte des zones à cocher
+/** Les zones d'aerodb que dessine la carte pour chaque État du panneau des procédures : la France pour « LF », les États-Unis pour « K ». */
+export const PROC_ZONES = {
+  LF: ['fr'],
+  K: ['us']
+};
+/** Le côté, en pixels, sous lequel une zone n'est pas assez grande pour le doigt : sans carte si l'une des zones à cocher est plus petite (SPEC § 3). */
+export const MAP_MIN_PX = 44;
+/** La teinte d'une zone sur la carte : 'muted' (hors de la couverture), 'accent' (une opération la traite), 'warn' (rien de publié ou cycle dépassé), 'ok' (à jour). */
+export function mapTone({
+  inCoverage,
+  running,
+  published,
+  stale
+}) {
+  return !inCoverage ? 'muted' : running ? 'accent' : !published || stale ? 'warn' : 'ok';
+}
+/** Un nombre arrondi à trois décimales (les coordonnées du dessin). */
+const r3 = v => Math.round(v * 1000) / 1000;
+/** La carte de zones, projetée et mesurée : `entries` [{ id, rings [[[lon, lat], …]], box [w, s, e, n] }], `widthPx` la largeur disponible, `maxH` la hauteur maximale.
+ *  Projection équirectangulaire x = lon·cos φ0, y = −lat sur le cadre qui réunit les zones (φ0 : sa latitude médiane), 5 % de marge. Rend null sans zone ; sinon { vb [x, y, w, h]
+ *  (le viewBox), w, h (pixels), scale (pixels par unité), small (une zone à cocher fait moins de MAP_MIN_PX en largeur ou en hauteur : pas de carte), shapes [{ id, d }] }. */
+export function zoneMap(entries, widthPx, maxH = 260) {
+  const list = (entries || []).filter(e => e && Array.isArray(e.box) && e.box.length === 4 && e.box.every(Number.isFinite) && Array.isArray(
+    e.rings));
+  if (!list.length) return null;
+  const box = list.reduce((b, e) => [Math.min(b[0], e.box[0]), Math.min(b[1], e.box[1]), Math.max(b[2], e.box[2]), Math.max(b[3], e.box[
+      3])], [180, 90, -180, -90]),
+    k = Math.max(0.05, Math.cos((box[1] + box[3]) / 2 * Math.PI / 180)),
+    W = Math.max(1e-6, (box[2] - box[0]) * k),
+    H = Math.max(1e-6, box[3] - box[1]),
+    vb = [box[0] * k - W * 0.05, -box[3] - H * 0.05, W * 1.1, H * 1.1],
+    scale = Math.min(Math.max(0, widthPx) / vb[2], maxH / vb[3]);
+  return {
+    vb: vb.map(r3),
+    w: r3(vb[2] * scale),
+    h: r3(vb[3] * scale),
+    scale,
+    small: list.some(e => (e.box[2] - e.box[0]) * k * scale < MAP_MIN_PX || (e.box[3] - e.box[1]) * scale < MAP_MIN_PX),
+    shapes: list.map(e => ({
+      id: e.id,
+      d: e.rings.map(ring => `M${ring.map(([lon, lat]) => `${r3(lon * k)} ${r3(-lat)}`).join('L')}Z`).join('')
+    }))
+  };
+}
+
 // ---------------------------------------------------------------- publier la base (échange avec le dépôt des données)
 /** L'état du bouton « Publier » : { disabled, reason } ; reason : 'no-launcher' | 'publishing' | 'building' | 'busy' | 'no-gesture' |
  *  'nothing' | 'offline' | null. `s` : { launcher (le poste en a un), publishing (une publication tourne, ou sa question est posée),
