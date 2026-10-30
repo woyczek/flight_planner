@@ -4,6 +4,11 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **30 Oct 2026 — the procedure card opens folded** (§ 10.31, user's answer 2): two summary lines, one side unfolded at a time.
+  Folded rows are hidden with `visibility: hidden; height: 0`, not `display: none`: the grid keeps the columns of both sides (F34's
+  « one grid ») and the selects stay out of reach. A side without data is never folded (the reading is its only gesture). The
+  tests open a side before a pick (`unfold`, `pick_proc`, `wait_rows`); F35 keeps the focus on the open side while the folded one
+  changes. The AD name stays in the line (the user asked for it on 29 Oct). Case F72.
 - **30 Oct 2026 — the aerodrome name rule moves to frame/lib/adnames.js** (Simplification: the Map needs « LFPO Paris-Orly » at the
   pin, § 10.30 fourth reading). The pure part only (`adLabel`, `adTitle`, `adLine`); the completion and the drawing stay in
   modules/fuel/adnames.js, which imports it, as does the procedure card's title. The base has no city field: the rule takes one when

@@ -435,6 +435,24 @@ def title_of(label, *reasons):
 def wait_rows(c, side='arr'):
     c.until("(s) => !!document.querySelector('[data-module=fuel] [data-proc=\"' + s + '\"]')", side, timeout=15000, what=f'the {side} procedure row is drawn')
     c.settle()
+    unfold(c, side)
+
+
+def unfold(c, side):
+    """Unfolds a side of the procedure card (§ 10.31: two summary lines at opening, one side unfolded at a time) by its ▸ button."""
+    if c.js("(s) => !!document.querySelector('[data-module=fuel] .fu-proc.fu-folded[data-proc=\"' + s + '\"]')", side):
+        # the button is tapped when it is on screen; a card of another step (not shown) is unfolded by a click on it
+        if c.shown(f'{FUEL} [data-proc="{side}"] .fu-procfold'):
+            c.tap(f'{FUEL} [data-proc="{side}"] .fu-procfold')
+        else:
+            c.js("(s) => document.querySelector('[data-module=fuel] [data-proc=\"' + s + '\"] .fu-procfold').click()", side)
+        c.until("(s) => !document.querySelector('[data-module=fuel] .fu-proc.fu-folded[data-proc=\"' + s + '\"]')", side, what=f'the {side} side unfolds')
+
+
+def pick_proc(c, k, value):
+    """Chooses `value` in the procedure list data-k=`k` (p-dep-… / p-arr-…), its side unfolded first."""
+    unfold(c, k.split('-')[1])
+    c.page.select_option(f'{FUEL} select[data-k="{k}"]', value)
 
 
 def cf_doc(c, pred, what, timeout=8000):
@@ -473,7 +491,7 @@ def f11(c):
     names = [lab.split(' ·')[0] for v, lab in stars if v not in ('', '__none')]
     c.ok('MEN1A' in names and 'MEN2B' in names, f'STAR options {stars}', 'without a runway both STARs are offered')
     # a runway does not cut the lists any more: the STAR that does not serve it stays selectable, marked in conflict (F25)
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-rwy"]', '13R')
+    pick_proc(c, 'p-arr-rwy', '13R')
     c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-star\"]'); return !!s && [...s.options].some(o => /MEN2B.*⚠/.test(o.textContent)) })()",
             what='the STAR of the other runway is marked in conflict with the runway 13R')
     labs = [lab for _, lab in sel_opts(c, 'p-arr-star')]
@@ -482,10 +500,10 @@ def f11(c):
     c.eq(d['route']['procedures']['by'], 'fuel', 'by is fuel', what='procedures.by')
     c.ok(c.js("(t) => !isNaN(Date.parse(t))", d['route']['procedures'].get('at')), f"at {d['route']['procedures'].get('at')!r}", 'at is an ISO date')
     # a STAR with a transition offers the transition select; an approach without one does not
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', 'LFML.STAR.MEN1A.RW13R.NONE')
+    pick_proc(c, 'p-arr-star', 'LFML.STAR.MEN1A.RW13R.NONE')
     c.until("!!document.querySelector('[data-module=fuel] select[data-k=\"p-arr-trans\"]')", what='the transition select appears with a STAR that has transitions')
     c.eq([lab for _, lab in sel_opts(c, 'p-arr-trans')], ['—', 'NEPIX'], 'the transitions of the chosen STAR', what='transition options')
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-app"]', 'LFML.APP.I13R.RW13R.NONE')
+    pick_proc(c, 'p-arr-app', 'LFML.APP.I13R.RW13R.NONE')
     d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == 'LFML.APP.I13R.RW13R.NONE', 'the approach is written')
     c.eq(d['route']['procedures']['arr'], {'rwy': '13R', 'star': 'LFML.STAR.MEN1A.RW13R.NONE', 'app': 'LFML.APP.I13R.RW13R.NONE'},
          'identifiers of the aerodb schema', what='route.procedures.arr')
@@ -498,11 +516,11 @@ def f12(c):
     open_proc(c, procs=V2_PROCS)
     wait_rows(c)
     c.eq(c.js("document.querySelector('[data-module=fuel] select[data-k=\"p-arr-star\"]').value"), 'LFML.STAR.MEN1A.RW13R.NONE', 'the chosen STAR is selected', what='STAR select')
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', '__none')
+    pick_proc(c, 'p-arr-star', '__none')
     d = cf_doc(c, lambda d: 'star' in (procs_of(d, 'arr') or {}) and procs_of(d, 'arr')['star'] is None, '"aucune" writes star: null')
     c.eq(procs_of(d, 'arr').get('app'), 'LFML.APP.I13R.RW13R.NONE', 'the approach is not touched', what='approach')
     c.eq(c.js("document.querySelector('[data-module=fuel] select[data-k=\"p-arr-star\"]').value"), '__none', 'the select shows "aucune"', what='STAR select')
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', '')
+    pick_proc(c, 'p-arr-star', '')
     d = cf_doc(c, lambda d: 'star' not in (procs_of(d, 'arr') or {'star': 1}), 'the empty option removes the field')
     c.ok('star' not in procs_of(d, 'arr'), f"arr {procs_of(d, 'arr')}", 'a STAR not chosen is absent, not null')
 
@@ -597,7 +615,7 @@ def f16(c):
     c.eq(c.count(f'{FUEL} [data-procbox="route"] select'), 0, 'the step Route no longer carries the rows after the start', what='rows in the Route step')
     c.ok(c.count(f'{FUEL} [data-proc="dep"] select') >= 1, 'no departure select', 'the departure row is editable after the start')
     before, bpath = d['quote'], d['profile']['path']
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', '__none')
+    pick_proc(c, 'p-arr-star', '__none')
     d2 = cf_doc(c, lambda d: len(((d.get('quote') or {}).get('legs')) or []) != len(before['legs']), 'the legs follow the new choice (no STAR)', timeout=10000)
     q = d2['quote']
     for k in ('block', 'trip', 'minutes', 'levelFt', 'unit', 'taxiMin', 'distanceNm'):
@@ -754,7 +772,7 @@ def f21(c):
     # the approach first: it serves one runway (13R), which becomes the runway; the STAR of the other runway stays in the list
     open_proc(c)
     wait_rows(c, 'arr')
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-app"]', 'LFML.APP.I13R.RW13R.NONE')
+    pick_proc(c, 'p-arr-app', 'LFML.APP.I13R.RW13R.NONE')
     d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == 'LFML.APP.I13R.RW13R.NONE', 'the approach is written')
     c.eq(procs_of(d, 'arr'), {'rwy': '13R', 'app': 'LFML.APP.I13R.RW13R.NONE'}, 'the approach serves one runway: it is the runway', what='route.procedures.arr')
     c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-rwy\"]'); return !!s && s.value === '13R' })()", what='the runway select shows 13R')
@@ -765,10 +783,10 @@ def f21(c):
     c.eq(o['cls'].split(), ['outdated'], 'only the class outdated', what='class')
     c.eq(o['title'], title_of('MAN1A ⌛', row(c, 'procOutdatedTitle')), 'and its whole label then its single reason in the title', what='title')
     # the STAR chosen next, then another runway: both choices are kept, marked ⚠ (no notification: the mark and the title are enough)
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', 'LFML.STAR.MEN1A.RW13R.NONE')
+    pick_proc(c, 'p-arr-star', 'LFML.STAR.MEN1A.RW13R.NONE')
     cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('star') == 'LFML.STAR.MEN1A.RW13R.NONE', 'the STAR is written')
     n0 = len(c.note_log())
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-rwy"]', '31L')
+    pick_proc(c, 'p-arr-rwy', '31L')
     d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('rwy') == '31L', 'the other runway is written')
     c.eq(procs_of(d, 'arr'), {'rwy': '31L', 'star': 'LFML.STAR.MEN1A.RW13R.NONE', 'app': 'LFML.APP.I13R.RW13R.NONE'},
          'the STAR and the approach that do not serve 31L are kept', what='route.procedures.arr')
@@ -779,7 +797,7 @@ def f21(c):
     # a transition belongs to its STAR: another STAR drops it
     open_proc(c, procs={'arr': {'star': 'LFML.STAR.MEN1A.RW13R.NONE', 'trans': 'LFML.STAR.MEN1A.RW.NEPIX'}, 'by': 'fuel', 'at': '2026-10-28T09:00:00Z'})
     wait_rows(c, 'arr')
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', 'LFML.STAR.MEN2B.RW31L.NONE')
+    pick_proc(c, 'p-arr-star', 'LFML.STAR.MEN2B.RW31L.NONE')
     d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('star') == 'LFML.STAR.MEN2B.RW31L.NONE', 'the other STAR is written')
     c.eq(procs_of(d, 'arr'), {'rwy': '31L', 'star': 'LFML.STAR.MEN2B.RW31L.NONE'}, 'another STAR drops the transition and sets its single runway', what='route.procedures.arr')
 
@@ -797,7 +815,7 @@ def f22(c):
     set_icao(c, 'dep', 'LFVA')
     c.until("[...document.querySelectorAll('[data-module=fuel] select[data-k=\"p-dep-rwy\"] option')].some(o => o.value === '09')", what='the departure runways of LFVA are offered')
     c.eq([v for v, _ in sel_opts(c, 'p-dep-rwy')], ['', '09', '27'], 'and on the departure row, although LFVA has no SID', what='LFVA departure runways')
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-rwy"]', '27')
+    pick_proc(c, 'p-arr-rwy', '27')
     d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('rwy') == '27', 'a runway of that list is written')
     c.eq(procs_of(d, 'arr'), {'rwy': '27'}, 'it is the pilot\'s choice', what='route.procedures.arr')
     c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-app\"]'); return !!s && [...s.options].some(o => /⚠/.test(o.textContent)) })()", what='the approaches of the other runway are marked')
@@ -882,7 +900,7 @@ def f26(c):
     c.until("[...document.querySelectorAll('[data-module=fuel] select[data-k=\"p-arr-star\"] option')].some(o => /ARR1A/.test(o.textContent))", what='the row of LFVC is drawn')
     c.eq(opt_groups(c, 'p-arr-star'), 0, 'flat list: no group', what='STAR groups')
     # a runway: the STAR and the approach of the other runway stay selectable, marked
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-rwy"]', '27')
+    pick_proc(c, 'p-arr-rwy', '27')
     c.until("[...document.querySelectorAll('[data-module=fuel] select[data-k=\"p-arr-star\"] option')].some(o => /ARR2B.*⚠/.test(o.textContent))", what='ARR2B is marked')
     o = opt_info(c, 'p-arr-star', 'ARR2B')
     c.eq(o['label'], 'ARR2B ⚠', 'a runway is chosen: the label ends with the warning, without the runway the procedure serves', what='label')
@@ -891,12 +909,12 @@ def f26(c):
     c.eq(opt_info(c, 'p-arr-star', 'ARR1A')['label'], 'ARR1A', 'the STAR of 27 is not marked, nor suffixed', what='ARR1A label')
     # choosing the conflicting STAR keeps the choice and says nothing
     n0 = len(c.note_log())
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', 'LFVC.STAR.ARR2B.RW09.NONE')
+    pick_proc(c, 'p-arr-star', 'LFVC.STAR.ARR2B.RW09.NONE')
     d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('star') == 'LFVC.STAR.ARR2B.RW09.NONE', 'the conflicting STAR is written')
     c.eq(procs_of(d, 'arr'), {'rwy': '27', 'star': 'LFVC.STAR.ARR2B.RW09.NONE'}, 'the choice is kept and the runway stays', what='route.procedures.arr')
     c.eq(c.quiet("(window.__notes || []).length") - n0, 0, 'a conflicting choice says nothing: the mark and the title are enough', what='new notifications')
     # the approach of 27 chosen: ARR2B keeps its single runway reason; continuity is never a conflict (ARR2B joins nothing, IC301 is not marked)
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-app"]', 'LFVC.APP.ILS27.RW27.NONE')
+    pick_proc(c, 'p-arr-app', 'LFVC.APP.ILS27.RW27.NONE')
     cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == 'LFVC.APP.ILS27.RW27.NONE', 'the approach is written')
     c.until("!!document.querySelector('[data-module=fuel] select[data-k=\"p-arr-appTrans\"]')", what='the approach transition select appears')
     o = opt_info(c, 'p-arr-star', 'ARR2B')
@@ -906,7 +924,7 @@ def f26(c):
     c.eq(t['label'], 'via IC301', 'a transition that does not start at the end of the chosen STAR is not marked', what='transition label')
     # a STAR that agrees: no warning left on the transition, and no new notification
     n1 = len(c.note_log())
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', 'LFVC.STAR.ARR1A.RW27.NONE')
+    pick_proc(c, 'p-arr-star', 'LFVC.STAR.ARR1A.RW27.NONE')
     cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('star') == 'LFVC.STAR.ARR1A.RW27.NONE', 'the agreeing STAR is written')
     c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-appTrans\"]'); return !!s && ![...s.options].some(o => /⚠/.test(o.textContent)) })()", what='the transition is no longer marked')
     c.eq(c.quiet("(window.__notes || []).length") - n1, 0, 'a choice without conflict says nothing', what='notifications after ARR1A')
@@ -984,15 +1002,15 @@ def f31(c):
     c.eq(c.count(f'{FUEL} [data-proc="arr"] .fu-procmeta [data-source-slot]'), 1, 'with the slot the Source link of 10.25 will take, at the end of the same line', what='source slot')
     c.eq(c.count(f'{FUEL} [data-proc="dep"] .fu-procunread'), 0, 'an aerodrome with nothing unread shows no line', what='departure line')
     # compatible first: runway 25 chosen, the STAR and the approach of 25 lead, those of 07 follow marked
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-rwy"]', '25')
+    pick_proc(c, 'p-arr-rwy', '25')
     c.until("[...document.querySelectorAll('[data-module=fuel] select[data-k=\"p-arr-star\"] option')].some(o => /ORD1A.*⚠/.test(o.textContent))", what='the STAR of 07 is marked')
     c.eq([lab for v, lab in sel_opts(c, 'p-arr-star') if v not in ('', '__none')], ['ORD2B', 'ORD1A ⚠'], 'the compatible STAR first, the warning after (a runway is chosen: no runway in the labels)', what='STAR options')
     c.eq([lab for v, lab in sel_opts(c, 'p-arr-app') if v not in ('', '__none')], ['ILS25', 'ILS07 ⚠'], 'and the approaches the same way', what='approach options')
     # the runway list is led by the runway of the chosen approach
     c.eq([v for v, _ in sel_opts(c, 'p-arr-rwy')], ['', '07', '25'], 'without a chosen SID or approach the runways are in natural order', what='runways')
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-app"]', 'LFVD.APP.ILS25.RW25.NONE')
+    pick_proc(c, 'p-arr-app', 'LFVD.APP.ILS25.RW25.NONE')
     cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == 'LFVD.APP.ILS25.RW25.NONE', 'the approach is written')
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-rwy"]', '')
+    pick_proc(c, 'p-arr-rwy', '')
     cf_doc(c, lambda d: 'rwy' not in (procs_of(d, 'arr') or {'rwy': 1}), 'the runway is cleared')
     c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-rwy\"]'); return !!s && s.value === '' })()", what='the runway select is back to not chosen')
     c.eq([v for v, _ in sel_opts(c, 'p-arr-rwy')], ['', '25', '07'], 'the runway of the chosen approach comes first', what='runways')
@@ -1096,8 +1114,8 @@ def f34(c):
       rule='V3 spec 10.29 e: the options of the existing selects are replaced, the box is never rebuilt, the focus never moves; the structure changes only with the aerodrome, the start or a transition list appearing')
 def f35(c):
     open_proc(c, procs=V2_PROCS)
-    wait_rows(c, 'dep')
     wait_rows(c, 'arr')
+    wait_rows(c, 'dep')   # one side unfolded at a time (§ 10.31): the departure, where the focus goes
     c.js("""() => { const q = k => document.querySelector('[data-module=fuel] select[data-k="' + k + '"]');
         window.__keep = { sid: q('p-dep-sid'), star: q('p-arr-star'), rwy: q('p-dep-rwy'), box: q('p-dep-sid').closest('.fu-procbox'), dep: q('p-dep-sid').closest('.fu-proc') }; q('p-dep-sid').focus() }""")
     # the departure runway changes by script (no focus move): the SID list is re-marked while the focus is in it
@@ -1107,11 +1125,12 @@ def f35(c):
         star: window.__keep.star.isConnected })""")
     c.eq(same['focus'], True, 'the focus is still on the same SID select after its options changed', what='activeElement')
     c.ok(all(same.values()), f'{same}', 'no node of the card was replaced (box, side, selects)')
-    # another side changes while the focus is in the arrival list: the focus stays there
-    c.js("() => { document.querySelector('[data-module=fuel] select[data-k=\"p-arr-star\"]').focus() }")
+    # the other side changes (by script, the arrival is folded) while the focus is in the departure list: the focus stays there
+    c.js("""() => { const r = document.querySelector('[data-module=fuel] select[data-k="p-arr-rwy"]'); r.value = '31L'; r.dispatchEvent(new Event('change', { bubbles: true })) }""")
+    c.until("[...window.__keep.star.options].some(o => /MEN1A.*⚠/.test(o.textContent))", what='the STAR of the other runway is marked on the folded arrival side')
+    c.eq(c.js("() => document.activeElement === window.__keep.sid"), True, 'the focus stays on the departure SID list while the arrival lists change', what='activeElement')
     c.js("""() => { const r = window.__keep.rwy; r.value = '03'; r.dispatchEvent(new Event('change', { bubbles: true })) }""")
     c.until("![...window.__keep.sid.options].some(o => /NTS1A.*⚠/.test(o.textContent))", what='NTS1A is no longer marked, the list is back to the runway 03')
-    c.eq(c.js("() => document.activeElement === window.__keep.star"), True, 'the focus stays on the arrival STAR list while the departure lists change', what='activeElement')
     # a change of structure (the SID removed: its transition list disappears) keeps the focus on its select by name
     c.js("() => { document.querySelector('[data-module=fuel] select[data-k=\"p-dep-sid\"]').focus() }")
     c.js("""() => { const s = document.querySelector('[data-module=fuel] select[data-k="p-dep-sid"]'); s.value = ''; s.dispatchEvent(new Event('change', { bubbles: true })) }""")
@@ -1252,7 +1271,7 @@ def f42(c):
     wait_rows(c, 'arr')
     slot = f'{FUEL} [data-proc="arr"] [data-source-slot]'
     c.eq(c.count(f'{slot} a'), 0, 'no procedure chosen: no link', what='links before')
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', 'LFML.STAR.MEN1A.RW13R.NONE')
+    pick_proc(c, 'p-arr-star', 'LFML.STAR.MEN1A.RW13R.NONE')
     c.until("!!document.querySelector('[data-module=fuel] [data-proc=arr] [data-source-slot] a')", what='the link appears once the STAR is chosen')
     a = c.js("(() => { const a = document.querySelector('[data-module=fuel] [data-proc=arr] [data-source-slot] a'); return { href: a.getAttribute('href'), t: a.target, rel: a.rel, text: a.textContent.trim(), title: a.title } })()")
     c.eq(a['href'], 'https://www.sia.aviation-civile.gouv.fr/test/eAIP/Cartes/LFML/AD_2_LFML_STAR_TEST.pdf', 'the address aerodb gives, as is', what='href')
@@ -1260,7 +1279,7 @@ def f42(c):
     c.eq(norm(a['text']), norm(row(c, 'procSource')), '"Source" in the language of the run', what='text')
     c.eq(a['title'], 'AD_2_LFML_STAR_TEST.pdf', 'the page\'s name in the title', what='title')
     # the approach of another source (no page address): no second link, its document in the line\'s title
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-app"]', 'LFML.APP.I13R.RW13R.NONE')
+    pick_proc(c, 'p-arr-app', 'LFML.APP.I13R.RW13R.NONE')
     cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == 'LFML.APP.I13R.RW13R.NONE', 'the approach is written')
     c.settle()
     c.eq(c.count(f'{slot} a'), 1, 'a record without source.url gets no link', what='links after the approach')
@@ -1437,7 +1456,7 @@ def f47(c):
     wait_quote(c)
     to_step(c, 4)
     c.until(named, what='after the start the summary still names them')
-    c.eq(c.count(f'{FUEL} [data-block="summary"] [data-do="cancelstart"]'), 1, 'the flight is started', what='started')
+    c.until("document.querySelectorAll('[data-module=fuel] [data-block=summary] [data-do=cancelstart]').length === 1", what='the flight is started (its summary offers the cancel)')
 
 
 @case('F48', 'The aerodrome field is a search: a full name proposes, only a code reaches the route, leaving it unchosen reverts', 'F', tags=('fuel', 'aerodb'),
@@ -1630,17 +1649,17 @@ def f66(c):
     ils = apps[0][0]
     t = c.js("(v) => [...document.querySelector('[data-module=fuel] select[data-k=\"p-arr-app\"]').options].find(o => o.value === v).title", ils)
     c.ok('ILS CAT I or CAT II or CAT III RWY 06' in t, t, 'the published name in the title')
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-app"]', ils)
+    pick_proc(c, 'p-arr-app', ils)
     c.until("!!document.querySelector('[data-module=fuel] select[data-k=\"p-arr-appTrans\"]')", what='the final has transitions: the segments of its runway')
     tr = [(v, lab) for v, lab in sel_opts(c, 'p-arr-appTrans') if v]
     c.eq([lab for _, lab in tr], ['via ALPAG · ALPAG 1E', 'via BISON · BISON 1E', 'via OKAPI · OKAPI 1A'], 'the segments, IAF then published name, by IAF', what='transition options')
     c.eq(sel_opts(c, 'p-arr-appTrans')[0][0], '', 'no transition (direct to the IF) stays the first choice', what='first option')
     okapi = tr[2][0]
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-appTrans"]', okapi)
+    pick_proc(c, 'p-arr-appTrans', okapi)
     d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('appTrans') == okapi, 'the segment is written as the approach transition')
     c.eq((procs_of(d, 'arr') or {}).get('app'), ils, 'with its final', what='approach')
     # the other final of the runway offers the same segments
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-app"]', apps[1][0])
+    pick_proc(c, 'p-arr-app', apps[1][0])
     c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-appTrans\"]'); return !!s && s.options.length === 4 })()", what='the RNP offers the same three segments')
     c.until("[...document.querySelectorAll('[data-module=fuel] [data-proc=arr] .fu-procsum > span')].some(e => e.textContent.trim() === 'RNP 06')", what='the summary says the short label')
 
@@ -1740,14 +1759,14 @@ def f70(c):
                                         {'id': 'MEN11', 'lat': 44.0, 'lon': 3.9, 'type': 'RNAV'}]})
     wait_rows(c, 'dep')
     rt = f"document.querySelector('{FUEL} [data-k=rtext]').value"
-    c.page.select_option(f'{FUEL} select[data-k="p-dep-sid"]', 'LFRS.SID.NTS1A.RW03.NONE')
+    pick_proc(c, 'p-dep-sid', 'LFRS.SID.NTS1A.RW03.NONE')
     c.until(f"{rt} === 'LFRS NTS1A NT102 DCT LUGEN DCT NEPIX LFML'", timeout=8000,
             what='the SID name then its exit after the departure, in ICAO form: « LFRS NTS1A NT102 DCT LUGEN DCT NEPIX LFML »')
     line = norm(row(c, 'procExitDct')).replace('{sid}', 'NTS1A').replace('{exit}', 'NT102').replace('{next}', 'LUGEN')
     c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\u00a0\u202f]+/g, ' ').trim() === w)", line, timeout=6000, what=f'the line « {line} »')
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', 'LFML.STAR.MEN1A.RW13R.NONE')
+    pick_proc(c, 'p-arr-star', 'LFML.STAR.MEN1A.RW13R.NONE')
     c.until(f"{rt}.endsWith('NEPIX DCT MEN01 MEN1A LFML')", timeout=8000, what='the STAR entry then its name before the arrival')
-    c.page.select_option(f'{FUEL} select[data-k="p-arr-app"]', 'LFML.APP.I13R.RW13R.NONE')
+    pick_proc(c, 'p-arr-app', 'LFML.APP.I13R.RW13R.NONE')
     cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == 'LFML.APP.I13R.RW13R.NONE', 'the approach is written')
     c.settle()
     c.ok('I13R' not in c.js(rt), c.js(rt), 'the approach never appears in the text (not an item of the flight plan)')
@@ -1769,4 +1788,32 @@ def f71(c):
         raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'frame/lib/test/adnames.html') from None
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
     c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}", 'every check of the bench passes')
+
+
+@case('F72', 'The procedure card opens folded: two summary lines, one side unfolded at a time by a tap on its line', 'F', tags=('fuel', 'layout'),
+      designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.31 (user: « l\'étape procédures doit se lire sans défiler, pire sur téléphone »): two summary lines with one « Sur la carte » each, '
+      'the lists and the secondary line folded under them; a tap on a line unfolds that side and folds the other; fewer than seven things visible')
+def f72(c):
+    open_proc(c, procs=V2_PROCS)
+    c.until("(s) => !!document.querySelector('[data-module=fuel] [data-proc=\"arr\"]')", None, timeout=15000, what='the card is drawn')
+    c.settle()
+    vis = """() => { const box = [...document.querySelectorAll('[data-module=fuel] .fu-procbox')].find(b => b.offsetParent);
+        const shown = el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden' };
+        return { selects: [...box.querySelectorAll('select')].filter(shown).length, controls: [...box.querySelectorAll('button, select, a')].filter(shown).length,
+                 meta: [...box.querySelectorAll('.fu-procmeta')].filter(shown).length, onmap: [...box.querySelectorAll('[data-do=onmap]')].filter(shown).length } }"""
+    v = c.js(vis)
+    c.eq((v['selects'], v['meta']), (0, 0), 'at opening no list and no secondary line is visible: the two summary lines only', what='visible lists, lines')
+    c.eq(v['onmap'], 2, 'one « Sur la carte » per side', what='visible « Sur la carte »')
+    c.ok(v['controls'] < 7, f'{v}', 'fewer than seven controls visible at opening')
+    c.ok(not c.js("!!document.querySelector('[data-module=fuel] .fu-proctitle [data-do=procfetch], [data-module=fuel] .fu-proctitle [data-source-slot]')"), 'title',
+         '« Relire » and « Source » are not in the summary line')
+    # a tap on the arrival line (not on a button) unfolds it; then the departure line unfolds the departure and folds the arrival
+    c.tap(f'{FUEL} [data-proc="arr"] .fu-prochead')
+    c.until("!document.querySelector('[data-module=fuel] .fu-proc.fu-folded[data-proc=arr]')", what='the arrival unfolds')
+    c.eq(c.js(vis)['selects'], 4, 'the arrival lists are visible (runway, STAR, its transition, approach)', what='visible lists')
+    c.tap(f'{FUEL} [data-proc="dep"] .fu-prochead')
+    c.until("!document.querySelector('[data-module=fuel] .fu-proc.fu-folded[data-proc=dep]') && !!document.querySelector('[data-module=fuel] .fu-proc.fu-folded[data-proc=arr]')",
+            what='the departure unfolds and the arrival folds: one side at a time')
+    c.eq(c.attr(f'{FUEL} [data-proc="dep"] .fu-procfold', 'aria-expanded'), 'true', 'the button says the side is unfolded', what='aria-expanded')
 

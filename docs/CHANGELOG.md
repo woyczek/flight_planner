@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the procedure card opens folded** (`modules/fuel/procedures.js`; help ×4; F72) — one summary line per side, a tap
+  unfolds its lists, one side at a time; readable without scrolling on a phone.
 - **Noreg: 2.6 times faster, and a targeted pass before a push** (`tests/v3/run.py`, `tests/v3/domains.py`,
   `tests/v3/cases/aerodb.py`; tests README, frame DECISIONS): the static cases beside the browser workers, the slowest
   jobs first, 10 workers by default (the full pass in 359 s instead of 926 s); `--touched` = the changed files' cases plus

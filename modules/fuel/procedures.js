@@ -77,6 +77,10 @@ export const PROC_STYLE = `
 [data-module="fuel"] .fu-procbox{display:grid;grid-template-columns:minmax(0,1fr);column-gap:8px;row-gap:4px}
 [data-module="fuel"] .fu-proc{display:grid;grid-column:1/-1;grid-template-columns:subgrid;row-gap:2px;align-items:end;margin-top:10px}
 [data-module="fuel"] .fu-proc>.fu-proctitle,[data-module="fuel"] .fu-proc>.fu-procmeta{grid-column:1/-1}
+/* replié : ni vu ni atteignable au clavier, sans hauteur, mais gardé dans la grille (les colonnes restent celles des deux côtés) */
+[data-module="fuel"] .fu-proc.fu-folded>.fu-procmeta,[data-module="fuel"] .fu-proc.fu-folded>.fu-pf{visibility:hidden;height:0;min-height:0;overflow:hidden;margin:0;padding:0}
+[data-module="fuel"] .fu-proctitle{cursor:pointer}
+[data-module="fuel"] .fu-procfold{min-width:44px;min-height:44px;padding:0;margin:-12px 0 -12px -12px;border:0;background:none;color:inherit;font:inherit;cursor:pointer;vertical-align:middle}
 [data-module="fuel"] .fu-proctitle{font-size:1.05em}
 [data-module="fuel"] .fu-procsum{display:block;font-size:.92em;margin-top:2px}
 [data-module="fuel"] .fu-procsum>span{display:inline-block;margin-right:1em;white-space:nowrap}
@@ -113,6 +117,7 @@ export function createProcedures(host) {
   let seq = 0, // dernière demande de dessin : seule elle est dessinée
     key = null, // clé de ce que la carte montre (null : à redessiner)
     wantFocus = '', // côté dont la première liste doit prendre le focus dès qu'il est dessiné (« Changer » de la Carte)
+    openSide = '', // le côté déplié (§ 10.31 : deux lignes de résumé à l'ouverture, un côté déplié à la fois) ; '' : les deux repliés
     timer = null; // fin de série de choix
 
   /** État d'un terrain, créé au besoin. */
@@ -377,9 +382,10 @@ export function createProcedures(host) {
     // la piste porte la couleur de son vent (severity) et ses raisons en infobulle, comme dans la liste
     return parts.length ? `<span class="fu-procsum">${parts.map(p => p === s.rwy && w ? `<span class="wind-${w.level}" title="${esc([p, ...w.why].join(' · '))}">${esc(p)}</span>` : `<span>${esc(p)}</span>`).join('')}</span>` : '';
   }
-  /** Ligne de titre d'un côté : « Départ LFPO Paris-Orly » (le code seul pour un terrain inconnu d'aerodb), « Sur la carte », puis
-   *  le résumé du choix (summaryHtml). */
-  const titleHtml = (side, m) => `<b class="fu-prochead">${esc(tt(TX[side]))}</b> <span class="fu-procicao">${esc(m.icao)}</span>${m.name ? ` <span class="fu-procname">${esc(m.name)}</span>` : ''}${m.nodata ? '' : ` <button type="button" class="fu-linkbtn fu-onmap" data-do="onmap" data-side="${side}" data-icao="${esc(m.icao)}">${esc(tt(TX.procOnMap))}</button>`}${summaryHtml(side, m)}`;
+  /** Ligne de titre d'un côté, la ligne de résumé de la carte repliée (§ 10.31) : un bouton ▸ / ▾ qui déplie le côté (toute la ligne
+   *  le fait aussi), « Départ LFPO Paris-Orly » (le code seul pour un terrain inconnu d'aerodb), « Sur la carte », puis le résumé du
+   *  choix (summaryHtml). « Relire » et « Source » sont sur la ligne discrète, dépliée avec les listes. */
+  const titleHtml = (side, m) => `${m.nodata ? '' : `<button type="button" class="fu-procfold" data-do="procfold" data-side="${side}" aria-expanded="${openSide === side}" aria-label="${esc(tt(TX[side]))}">${openSide === side ? '▾' : '▸'}</button>`}<b class="fu-prochead">${esc(tt(TX[side]))}</b> <span class="fu-procicao">${esc(m.icao)}</span>${m.name ? ` <span class="fu-procname">${esc(m.name)}</span>` : ''}${m.nodata ? '' : ` <button type="button" class="fu-linkbtn fu-onmap" data-do="onmap" data-side="${side}" data-icao="${esc(m.icao)}">${esc(tt(TX.procOnMap))}</button>`}${summaryHtml(side, m)}`;
   /** Un bouton de lecture (même geste « Lire » et « Relire » : data-do procfetch, un seul chemin dans read) ; occupé tant que la lecture
    *  de ce terrain est en cours. */
   const readButton = (icao, text, again) => {
@@ -454,9 +460,10 @@ export function createProcedures(host) {
     if (sel && !(coarse() && el.tagName === 'SELECT')) el.querySelector(sel)?.focus();
   }
   /** Squelette d'un côté : titre, ligne discrète et une étiquette avec sa liste par champ (vides : patchSide les remplit). */
-  const skeleton = (side, m, fields) => `<div class="fu-proc" data-proc="${side}" data-icao="${esc(m.icao)}"><div class="fu-proctitle" data-r="title"></div><div class="fu-procmeta f-muted" data-r="meta"></div>${fields.map(f => `<label class="f-field fu-pf fu-pf-${f.cls}">${esc(tt(f.label))}<select data-k="${f.k}"></select></label>`).join('')}</div>`;
+  const skeleton = (side, m, fields) => `<div class="fu-proc${openSide === side || m.nodata ? '' : ' fu-folded'}"${m.nodata ? ' data-nodata="1"' : ''} data-proc="${side}" data-icao="${esc(m.icao)}"><div class="fu-proctitle" data-r="title" data-do="procfold" data-side="${side}"></div><div class="fu-procmeta f-muted" data-r="meta"></div>${fields.map(f => `<label class="f-field fu-pf fu-pf-${f.cls}">${esc(tt(f.label))}<select data-k="${f.k}"></select></label>`).join('')}</div>`;
   /** Met un côté à jour sur place : le titre, la ligne discrète et les options de chaque liste, chacun seulement s'il a changé. */
   function patchSide(el, side, m, fields) {
+    el.classList.toggle('fu-folded', openSide !== side && !m.nodata); // sans donnée, la ligne de lecture reste visible
     setHtml(el.querySelector('[data-r="title"]'), titleHtml(side, m));
     const meta = el.querySelector('[data-r="meta"]');
     setHtml(meta, metaHtml(m, side));
@@ -536,6 +543,23 @@ export function createProcedures(host) {
   /** Demande le focus du premier champ d'un côté (« Changer » de la Carte, #fuel?focus=arr), pris dès que le côté est dessiné. */
   function focus(side) {
     wantFocus = side;
+    openSide = side; // le côté demandé est déplié : sa première liste est visible
+  }
+  /** Déplie un côté (et replie l'autre), ou le replie s'il l'était (une tape sur sa ligne de résumé, § 10.31). */
+  function fold(side) {
+    openSide = openSide === side ? '' : side;
+    const body = host.body();
+    for (const el of body?.querySelectorAll('.fu-proc[data-proc]') || []) {
+      const on = el.dataset.proc === openSide,
+        b = el.querySelector('.fu-procfold');
+      el.classList.toggle('fu-folded', !on && !el.dataset.nodata);
+      if (b) {
+        b.setAttribute('aria-expanded', String(on));
+        b.textContent = on ? '▾' : '▸';
+      }
+    }
+    const box = body?.querySelector('.fu-procbox:not(:empty)');
+    if (box) fitGrid(box);
   }
   /** Donne le focus à la première liste du côté demandé, dès qu'elle est dessinée et que l'écran n'est plus inerte. */
   function applyFocus() {
@@ -885,6 +909,7 @@ export function createProcedures(host) {
     read,
     onChange,
     focus,
+    fold,
     applyFocus,
     textModel,
     snapshot,

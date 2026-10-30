@@ -373,6 +373,11 @@ mount. Inside a mount, the two buttons switch as before.
      departure or the arrival (an OFP repeats its level at every point). "Last SimBrief OFP": through `ctx.net`, the SimBrief identifier
      of the identity (never typed here), the OFP kept on the device only, its route, level, average wind, ISA
      deviation and aircraft taken into the current flight.
+     **The card opens folded** (§ 10.31, user: « l'étape procédures doit se lire sans défiler, pire sur téléphone »): each side's
+     title is its summary line — ▸ / ▾ button (`data-do="procfold"`, `aria-expanded`), side, code, name, « Sur la carte », the
+     summary (`summaryOf`); a tap anywhere on the line but its other buttons unfolds that side and folds the other (`P.fold`); the
+     folded lists and secondary line are `visibility: hidden; height: 0` (out of reach, kept in the shared grid so both sides keep the
+     same columns); a side without data never folds (its line offers the reading); `P.focus(side)` (the Map's « Changer ») unfolds it.
      **The route text is a view of the procedures** (§ 10.31, 30 Oct 2026): `route.text` is normalised in ICAO form (`RT.textFromTokens`
      with `dct`: « DCT » between two en-route points with nothing between them, never against the departure or the arrival). After a
      procedure choice (Fuel's lists, the Map's proposal, the OFP: `procsSettled`) and once the two aerodromes' records are drawn
