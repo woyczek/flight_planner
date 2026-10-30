@@ -14,7 +14,7 @@ mes vols, passage au site de la compagnie. Elle marche sur un téléphone comme 
   outils s'en servent pour préremplir.
 - **Le niveau.** Toujours dans les Réglages, « Niveau » choisit ce que le menu montre : Découverte, Courant ou Complet.
   Un outil caché reste joignable par son adresse.
-- **L'aide.** Chaque outil a en tête un volet replié « Comment s'en servir » ; le bouton ? de l'en-tête (sur un téléphone
+- **L'aide.** Chaque outil a, sous son contenu, un volet replié « Comment s'en servir » ; le bouton ? de l'en-tête (sur un téléphone
   comme sur un écran) ouvre ce manuel au chapitre de l'écran où vous êtes.
 - **L'état, sur le bouton ⚙.** Dans l'en-tête, le bouton ⚙ porte une pastille : verte quand quelque chose vous attend (un
   vol démarré, un compte rendu à écrire), orange (sur un téléphone) quand il faut y prêter attention : pas de trigramme,

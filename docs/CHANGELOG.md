@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the help panel and the welcome card below a module's content** (`frame/app.js`; frame/help SPEC § 3, DECISIONS;
+  help ×4; noreg A52) — they arrive after the module's first drawing and no longer push the page down under a pilot's tap.
 - **Aircraft SPEC as a state** (`modules/aircraft/SPEC.md`): each rule with its case M, what became false removed (the Registre view, the
   type completion, the count in the removal question), the history in DECISIONS; new cases M12–M15 for the writes that had none (new
   sheet, file import, completion from another sheet, ChatGPT reply).

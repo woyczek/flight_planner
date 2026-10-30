@@ -1404,8 +1404,12 @@ def a45(c):
     c.until("""() => { const n = document.getElementById('fNotes').getBoundingClientRect(), b = document.querySelector('[data-test-bar]').getBoundingClientRect();
                        return n.bottom <= b.top - 7 }""", what='the notes sit above the bar')
     clear = c.js("document.getElementById('fNotes').style.getPropertyValue('--f-bar-clear')")
-    bar = c.box('[data-test-bar]')
-    c.eq(float(clear.replace('px', '')), round(c.page.viewport_size['height'] - bar['t'] + 8), 'the distance from the bar\u2019s top to the foot, plus 8 px',
+    # the highest bar wholly in view in the lower half: this one, or the module's own when it is drawn there (Fuel's
+    # « no sheet » line, now that the help goes below the module, A52)
+    top = c.js("""() => Math.min(...[...document.querySelectorAll('.f-bar')].map(b => b.getBoundingClientRect())
+                 .filter(r => r.height && r.top > innerHeight / 2 && r.bottom <= innerHeight + 1).map(r => r.top))""")
+    c.ok(top <= c.box('[data-test-bar]')['t'] + 1, f'{top}', 'the test bar is among the bars measured')
+    c.eq(float(clear.replace('px', '')), round(c.page.viewport_size['height'] - top + 8), 'the distance from the highest bar’s top to the foot, plus 8 px',
          tol=1, what='--f-bar-clear')
     # the bar taller: followed while the note is there
     c.js("() => { document.querySelector('[data-test-bar]').style.height = '120px' }")
@@ -1722,3 +1726,21 @@ def a51(c):
             what='done, said')
     c.eq(posted, [{'channel': 'early'}], 'the channel only goes to the launcher', what='request')
     c.ok('lancer.cmd' in c.text('[data-card="update"] [data-msg]'), c.text('[data-card="update"] [data-msg]'), 'the launcher to restart by hand, said')
+
+
+@case('A52', 'The help panel and the welcome card go below the module: nothing moves after its first drawing', 'A', designs=('standard',), screens=False,
+      night=False, rule='Simplification 30 Oct (Features SOG: M2 / M3 tapped the wrong row because the help panel pushed the page down once it arrived): the « Comment s’en servir » panel and the welcome card after the module’s element, never before it; a control of the module keeps its place when they arrive')
+def a52(c):
+    c.open('flightlog', flights=3)
+    m = '[data-module="flightlog"]'
+    c.until(f"!!document.querySelector('{m}') && !!document.querySelector('{m}').parentElement.querySelector(':scope > .f-help')", timeout=15000,
+            what='the module and its help panel')
+    order = c.js(f"[...document.querySelector('{m}').parentElement.children].map(e => e.matches('{m}') ? 'module' : e.matches('.f-help') ? 'help' : e.matches('[data-welcome]') ? 'welcome' : e.className)")
+    c.ok(order.index('module') < order.index('help') and ('welcome' not in order or order.index('module') < order.index('welcome') < order.index('help')),
+         str(order), 'the module first, then the welcome card (first opening), then the help panel')
+    # a control of the module: the same place with and without what the help adds
+    sel = f'{m} button, {m} a, {m} input'
+    before = c.js(f"Math.round(document.querySelector('{sel}').getBoundingClientRect().top + scrollY)")
+    c.js(f"() => document.querySelector('{m}').parentElement.querySelectorAll(':scope > .f-help, :scope > [data-welcome]').forEach(e => e.remove())")
+    after = c.js(f"Math.round(document.querySelector('{sel}').getBoundingClientRect().top + scrollY)")
+    c.eq(after, before, 'the help’s arrival moves nothing of the module', tol=0.5, what='first control top')

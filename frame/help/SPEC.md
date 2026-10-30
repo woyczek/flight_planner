@@ -39,8 +39,10 @@ decisions: [DECISIONS.md](DECISIONS.md); how a module gets its help: [INTEGRATIO
 
 ## 3. In-page panel
 
-- Drawn by the frame before the module's element when the module's chapter exists (and `meta.help` is not `false`);
-  the module writes no code.
+- Drawn by the frame **after** the module's element when the module's chapter exists (and `meta.help` is not `false`);
+  the module writes no code. Below the content, never above (30 Oct 2026, Simplification): the panel arrives after the
+  module's first drawing, and above it pushed the whole page down — a tap just after the opening hit the wrong row (M2,
+  M3). The welcome card of the tutorials goes there too, before the panel. The header's « ? » stays the direct way in.
 - A folded `<details>` card: its summary is the first section's title (at least 44 px high), its body the section's
   paragraphs, then "Read the whole chapter" → `#help?m=<id>`.
 - Open or folded is remembered per module on the device (`device/help.json`, cache policy).

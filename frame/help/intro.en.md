@@ -13,7 +13,7 @@ hand-off to the airline website. It works on a phone as on a computer, with or w
   prefill.
 - **The level.** Also in Settings, "Level" chooses what the menu shows: Discovery, Everyday or Full. A hidden tool stays
   reachable by its address.
-- **Help.** Each tool has a folded "How to use" panel at its top; the ? button of the header (on a phone as on a screen) opens
+- **Help.** Each tool has a folded "How to use" panel below its content; the ? button of the header (on a phone as on a screen) opens
   this manual at the chapter of the screen you are on.
 - **The status, on the ⚙ button.** In the header, the ⚙ button carries a dot: green when something is waiting for you (a
   flight started, a report to write), amber (on a phone) when something needs attention: no trigram, pending writes,

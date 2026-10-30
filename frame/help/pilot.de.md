@@ -17,7 +17,7 @@ Computer, mit oder ohne Netz.
   Werkzeuge nutzen sie zum Vorausfüllen.
 - **Die Stufe.** Ebenfalls in den Einstellungen wählt „Stufe“, was das Menü zeigt: Einstieg, Alltag oder Vollständig.
   Ein ausgeblendetes Werkzeug bleibt über seine Adresse erreichbar.
-- **Die Hilfe.** Jedes Werkzeug hat oben einen eingeklappten Bereich „So geht’s“; die Schaltfläche ? der Kopfzeile (auf
+- **Die Hilfe.** Jedes Werkzeug hat unter seinem Inhalt einen eingeklappten Bereich „So geht’s“; die Schaltfläche ? der Kopfzeile (auf
   einem Telefon wie auf einem Bildschirm) öffnet dieses Handbuch beim Kapitel des Bildschirms, auf dem Sie sind.
 - **Der Status auf der Schaltfläche ⚙.** In der Kopfzeile trägt die Schaltfläche ⚙ einen Punkt: grün, wenn etwas auf Sie
   wartet (ein gestarteter Flug, ein zu schreibender Bericht), orange (auf einem Telefon), wenn etwas Aufmerksamkeit braucht:

@@ -403,7 +403,7 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   flex: 1;
   min-width: 0
 }
-/* aide (frame/help/help.js) : panneau replié en tête d'un module, écran #help ; tableaux en listes sur téléphone */
+/* aide (frame/help/help.js) : panneau replié sous le contenu d'un module, écran #help ; tableaux en listes sur téléphone */
 .f-help>summary>span {
   flex: 1;
   min-width: 0

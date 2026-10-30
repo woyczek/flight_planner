@@ -2121,17 +2121,19 @@
     if (tok !== navSeq || location.hash !== at || !box.isConnected) return;
     return id === 'help' ? SogHelp.screen(box, helpCtx(), query) : SogRoadmap.screen(box, helpCtx());
   }
-  /** Aide en page d'un module monté : panneau replié « Comment s'en servir » tiré de son chapitre (frame/help), posé
-   *  avant lui, et carte d'accueil des tutoriels à la première ouverture ; chargée après le module, jamais avant. */
+  /** Aide en page d'un module monté : panneau replié « Comment s'en servir » tiré de son chapitre (frame/help), et carte
+   *  d'accueil des tutoriels à la première ouverture ; chargés après le module, jamais avant, et posés SOUS lui (la carte
+   *  d'accueil d'abord, le panneau ensuite) : rien ne glisse après le premier dessin du module, une tape juste après
+   *  l'ouverture tombe où le pilote la voit (Simplification, 30 oct. 2026) ; le « ? » de l'en-tête reste l'accès direct. */
   function moduleHelp(entry, meta, el, view) {
     if (meta.fixed === true) return; // vue fixe sans défilement : ni panneau replié ni carte d'accueil (le ? ouvre le chapitre)
     need('help').then(() => {
       if (!el.isConnected) return;
-      if (meta.help !== false) SogHelp.panel(entry.id, helpCtx()).then(p => p && el.isConnected && view.insertBefore(p, el))
-        .catch(e => console.warn('help', e));
+      if (meta.help !== false) SogHelp.panel(entry.id, helpCtx()).then(p => p && el.isConnected && (view.querySelector(
+        ':scope > [data-welcome]') || el).after(p)).catch(e => console.warn('help', e));
       // carte d'accueil des tutoriels : celle de Pilote, pas d'une autre application (APP.welcome: false)
-      if (APP.welcome !== false) SogHelp.welcome?.(helpCtx()).then(w => w && el.isConnected && view.prepend(w)).catch(e => console
-        .warn('help', e));
+      if (APP.welcome !== false) SogHelp.welcome?.(helpCtx()).then(w => w && el.isConnected && el.after(w)).catch(e => console.warn(
+        'help', e));
     }).catch(e => console.warn('help', e));
   }
   /** Fichiers de l'aide dans la langue de l'appli (manuel, tutoriels), gardés dès l'installation. */

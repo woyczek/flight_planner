@@ -18,7 +18,7 @@ The help agent's memory: every choice, dated, with its reason. Newest last. Proj
     paragraph, subject in bold, order of use;
   - `frame/help/help.js` (classic script) and a copy of V2's renderer in `frame/lib/markdown.js` (V2 frozen; the
     frame's service worker keeps only `frame/` and `modules/`);
-  - the panel is drawn by the frame's `route()` before the module's element, without delaying the mount; a module has
+  - the panel is drawn by the frame's `route()` before the module's element (after it since 30 Oct 2026, see below), without delaying the mount; a module has
     a panel as soon as its chapter is in the manual (`meta.help: false` hides it) — no change to any module's meta;
   - `#help` is routed apart from the frame's other screens (`renderConflicts(view, all)` takes another second
     argument), with the address's query;
@@ -99,3 +99,12 @@ The help agent's memory: every choice, dated, with its reason. Newest last. Proj
   neither French nor English (the tutorials' own fallback). The frame now keeps only those at installation, instead of
   the four manuals and every tutorial in the service worker's shell. `help.js` and `markdown.js` are injected by the
   frame on demand: after a module mounts (its panel), or when `#help` opens.
+
+## 30 October 2026 — the in-page panel below the module's content
+
+Features SOG traced M2 / M3's instability to the panel: drawn above the module once the module had drawn, it pushed the whole
+page down, and on a slow phone a pilot's tap just after the opening hit the wrong row (another aircraft edited). Rule
+(Simplification): no layout shift after a module's first drawing without a gesture. The panel and the welcome card of the
+tutorials now go **after** the module's element (the welcome card first, then the panel): the help follows the content, it
+does not precede it; the header's « ? » stays the direct way in. Reserving the room above before the mount was the other
+way, not taken (an empty band on every screen while the help loads). noreg A52.

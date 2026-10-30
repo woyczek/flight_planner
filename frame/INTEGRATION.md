@@ -424,7 +424,7 @@ A module that is a map plus a sheet (maps) declares `fixed: true` in `meta`. The
   `overflow: auto` under it. **This rule has no weight** (`:where()`): a module that wants another layout sets its own
   `display` on its root (`[data-module="maps"] { display: grid }`) and wins with no `!important`; a module that sets
   none keeps the column;
-- no folded help panel and no welcome card above it (the "?" of the header opens the module's chapter, on a phone as on a
+- no folded help panel and no welcome card below it (the "?" of the header opens the module's chapter, on a phone as on a
   screen, so a fixed module needs no help button of its own);
 - **nothing between the header and the module**: no sub-tabs row, no padding, no margin; the module's top is exactly
   `--f-head-h` (the module draws its own margins);

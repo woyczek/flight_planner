@@ -17,7 +17,7 @@ vuelos, paso al sitio de la aerolínea. Funciona en un teléfono como en un orde
   los usan para prerrellenar.
 - **El nivel.** También en Ajustes, «Nivel» elige lo que muestra el menú: Descubrimiento, Habitual o Completo. Una
   herramienta oculta sigue accesible por su dirección.
-- **La ayuda.** Cada herramienta tiene arriba un panel plegado «Cómo usarlo»; el botón ? de la cabecera (en un teléfono
+- **La ayuda.** Cada herramienta tiene, bajo su contenido, un panel plegado «Cómo usarlo»; el botón ? de la cabecera (en un teléfono
   como en una pantalla) abre este manual en el capítulo de la pantalla en la que está.
 - **El estado, en el botón ⚙.** En la cabecera, el botón ⚙ lleva un punto: verde cuando algo le espera (un vuelo
   iniciado, un informe por escribir), naranja (en un teléfono) cuando algo requiere atención: sin trigrama, escrituras
