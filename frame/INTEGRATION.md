@@ -227,6 +227,14 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   (F32). `conflictsOf` and `orderProcedures` are still re-exported by `flight_path.js` (hence `current_flight.js`) during the transition.
   Since § 10.30 (30 Oct 2026): `runwayOf(proc)` (the single runway a procedure serves, else null) and `firstServing(list, rwy)` (the
   first of the group that serves the runway: « Choisir OKRIX5B »).
+  Second reading of § 10.30 (30 Oct 2026): `familyOf(name)` (« ABLI4L » → `{ family: 'ABLI4', suffix: 'L' }`, a form only),
+  `siblingsOf(list, proc)` (the records of its family when at least two suffixes exist, else `[]`: never a guess on a lone name),
+  `familiesOf(list)` (the rows `{ name, recs, runways }`, families grouped), `compatible(list, { rwy, sid, star, app }, byId)` (what
+  fits the OTHER families of the choice, in any order: runway → SID / STAR serving it and approaches to it; STAR → its runways and the
+  approaches it joins; approach → its runways and the STARs joining it; a value may be a record, an id or an array — a family chosen
+  before its runway —; absent, null or unknown filters nothing) and `summaryOf(side, { byId, wind, via })` (the three lines of a
+  side's choice, `{ rwy, proc, app }`: undefined not chosen, null « Aucune » (the caller's word), else « 28L · ↑ 12 kt · ← 6 kt »,
+  « ABLI4L via ABLIN », « ILS28L via PIZSA »): the Map's pane and Fuel's side title print the same text. Bench F32.
 - **The wind on a runway** (`frame/lib/wind.js`, 30 Oct 2026, § 10.30): `components(runwayTrueHeading, windDirTrue, windKt)` →
   `{ head, cross, side }` (knots rounded, `head` negative for a tail wind, `side` 'L' | 'R' or null) or null when a value is missing
   (a VRB wind has no direction: nothing invented); `label(c)` → « ↑ 12 kt · ← 6 kt » (arrows: where the wind comes from, seen from

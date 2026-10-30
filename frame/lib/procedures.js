@@ -7,10 +7,19 @@
 //   conflictsOf(key, rec, choice, byId), orderProcedures(list, key, choice, byId) : les ⚠ et l'ordre des listes, en données.
 //   transitionsOf(recs, id) : les transitions d'une SID ou d'une STAR ; appChoices(apps) : les approches listées une fois, avec leurs
 //     transitions ; runwayChoices(known, all, ad) : les pistes à proposer pour un terrain.
+//   runwayOf(proc), firstServing(list, rwy) : la piste unique d'une procédure, la première qui dessert une piste (§ 10.30).
+//   familyOf(name), siblingsOf(list, proc), familiesOf(list) : les familles de SID / STAR (ABLI4L, ABLI4R → une ligne « ABLI4 »).
+//   compatible(list, { rwy, sid, star, app }, byId) : ce qui va avec le choix, les trois familles dans n'importe quel ordre.
+//   summaryOf(side, { byId, wind, via }) : les trois lignes du choix (« 28L · ↑ 12 kt · ← 6 kt », « ABLI4L via ABLIN »,
+//     « ILS 28L via PIZSA »), le même texte dans le volet de la Carte et le titre d'un côté de Carburant (§ 10.30, seconde lecture).
 //
 // Transition : conflictsOf et orderProcedures ont d'abord vécu dans frame/lib/current_flight.js (29/10/2026), puis flight_path.js,
 // qui les ré-exporte encore (current_flight.js ré-exporte flight_path.js), pour que les imports de la Carte continuent de marcher ;
 // les appelants importent d'ici, et la ré-exportation partira quand la Carte aura changé ses imports.
+
+import {
+  label as windLabel
+} from './wind.js';
 
 /** Piste sans « RW » ni espaces, en majuscules (« RW23 » → « 23 »). */
 export const rwNum = x => String(x ?? '').trim().toUpperCase().replace(/^RW/, '');
@@ -151,4 +160,112 @@ export function runwayOf(proc) {
  *  Sans piste, la première de la liste. */
 export function firstServing(list, rwy) {
   return (list || []).find(p => p && servesRwy(p, rwy)) || null;
+}
+
+// ------------------------------------------------------------ seconde lecture du § 10.30 : familles, compatibilité, résumé
+/** Le découpage d'un nom de SID ou de STAR en famille et suffixe : « ABLI4L » → { family: 'ABLI4', suffix: 'L' } (lettres, un chiffre,
+ *  une lettre) ; null pour un autre nom. Ce n'est qu'une forme : un nom seul ne fait pas une famille (siblingsOf décide, d'après les
+ *  autres fiches du terrain). */
+export function familyOf(name) {
+  const m = /^([A-Z]{2,6})(\d)([A-Z])$/.exec(String(name ?? '').trim().toUpperCase());
+  return m ? {
+    family: m[1] + m[2],
+    suffix: m[3]
+  } : null;
+}
+
+/** Les fiches de la famille de proc parmi list : même sorte, même radical et même chiffre, sans transition, dès que le dernier
+ *  caractère diffère entre elles (au moins deux suffixes) ; [] sinon (une procédure seule de sa forme est une ligne ordinaire : jamais
+ *  de devinette sur un nom seul). Dans l'ordre de list. */
+export function siblingsOf(list, proc) {
+  const f = familyOf(nameOf(proc));
+  if (!f) return [];
+  const same = (list || []).filter(r => r && !r.transition && (!proc.kind || r.kind === proc.kind) && familyOf(nameOf(r))?.family === f
+    .family);
+  return new Set(same.map(r => familyOf(nameOf(r)).suffix)).size > 1 ? same : [];
+}
+
+/** Les lignes d'une liste de SID ou de STAR, familles regroupées, dans l'ordre de leur première fiche : [{ name, recs, runways }].
+ *  name : la famille (« ABLI4 ») ou le nom de la procédure seule ; recs : ses fiches (sans transition) ; runways : les pistes qu'elles
+ *  nomment, triées (les petites étiquettes de la ligne ; [] pour une fiche qui les dessert toutes). */
+export function familiesOf(list) {
+  const rows = [],
+    byKey = new Map();
+  for (const r of list || []) {
+    if (!r || r.transition) continue;
+    const f = siblingsOf(list, r).length ? familyOf(nameOf(r)).family : null,
+      key = f ? `${r.kind}:${f}` : null;
+    if (key && byKey.has(key)) {
+      byKey.get(key).recs.push(r);
+      continue;
+    }
+    const row = {
+      name: f || nameOf(r),
+      recs: [r]
+    };
+    rows.push(row);
+    if (key) byKey.set(key, row);
+  }
+  for (const row of rows) row.runways = [...new Set(row.recs.flatMap(x => servesAll(x) ? [] : x.runways.map(rwNum)))].sort(rwOrder);
+  return rows;
+}
+
+/** Une STAR rejoint une approche quand elle dessert une piste de l'approche (l'une ou l'autre les desservant toutes : oui) ; la
+ *  continuité des points n'est jamais exigée (§ 10.23). */
+const joins = (star, app) => servesAll(app) || servesAll(star) || app.runways.some(x => servesRwy(star, x));
+
+/** Ce qui, dans list, va avec le choix : une liste de pistes (chaînes ou { id }), de SID, de STAR ou d'approches, filtrée par les AUTRES
+ *  familles du choix, dans n'importe quel ordre (§ 10.30, seconde lecture) :
+ *    piste choisie → les SID et STAR qui la desservent, les approches vers elle ;
+ *    STAR choisie → les pistes qu'elle dessert, les approches qu'elle rejoint ; SID choisie → les pistes qu'elle dessert ;
+ *    approche choisie → sa piste (ses pistes), les STAR qui la rejoignent.
+ *  choice : { rwy, sid, star, app }, chaque valeur une fiche, un identifiant (byId : Map, objet ou fonction, comme conflictsOf) ou un
+ *  tableau (une famille choisie avant sa piste : ce qui va avec l'une de ses fiches) ; un champ absent, null (« Aucune ») ou introuvable
+ *  ne filtre pas. Nouveau tableau, dans l'ordre de list. */
+export function compatible(list, choice, byId) {
+  const o = choice || {},
+    recs = v => [].concat(v ?? []).map(x => typeof x === 'string' ? recById(byId, x) : x).filter(x => x && typeof x === 'object'),
+    sid = recs(o.sid),
+    star = recs(o.star),
+    app = recs(o.app),
+    rwy = rwNum(o.rwy),
+    any = (arr, f) => !arr.length || arr.some(f),
+    onRwy = r => !rwy || servesRwy(r, rwy);
+  return [...(list || [])].filter(r => {
+    if (typeof r === 'string' || !r?.kind) {
+      const id = typeof r === 'string' ? r : r?.id;
+      return any(sid, s => servesRwy(s, id)) && any(star, s => servesRwy(s, id)) && any(app, a => servesRwy(a, id));
+    }
+    if (r.kind === 'SID') return onRwy(r);
+    if (r.kind === 'STAR') return onRwy(r) && any(app, a => joins(r, a));
+    if (r.kind === 'APP') return onRwy(r) && any(star, s => joins(s, r));
+    return true;
+  });
+}
+
+/** Les trois lignes du choix d'un côté (route.procedures v2 : { rwy, sid | star, trans, app, appTrans }) : { rwy, proc, app }, chacune
+ *  undefined (pas choisi), null (« Aucune » : le mot est celui de l'appelant) ou un texte : « 28L · ↑ 12 kt · ← 6 kt » (wind : les
+ *  composantes de frame/lib/wind.js pour cette piste, ou rien), « ABLI4L via ABLIN » (la transition choisie), « ILS 28L via PIZSA ».
+ *  Les noms viennent des fiches (byId), sinon de l'identifiant ; une transition se dit par son point d'entrée. via : le mot de liaison
+ *  (« via » par défaut, le même dans les quatre langues de la suite). */
+export function summaryOf(side, {
+  byId,
+  wind,
+  via = 'via'
+} = {}) {
+  const o = side || {},
+    name = id => nameOf(recById(byId, id), id) || String(id),
+    entry = id => {
+      const r = recById(byId, id);
+      return String(r?.transition ?? '').trim() || nameOf(r, id) || String(id);
+    },
+    line = (k, sub) => o[k] === undefined ? undefined : o[k] === null ? null : [name(o[k]), typeof o[sub] === 'string' && o[sub] ? entry(o[
+      sub]) : ''].filter(Boolean).join(` ${via} `),
+    rwy = rwNum(o.rwy),
+    w = windLabel(wind);
+  return {
+    rwy: rwy ? w ? `${rwy} · ${w}` : rwy : undefined,
+    proc: line('sid' in o ? 'sid' : 'star', 'trans'),
+    app: line('app', 'appTrans')
+  };
 }

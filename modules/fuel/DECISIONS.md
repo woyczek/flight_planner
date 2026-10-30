@@ -4,6 +4,11 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **30 Oct 2026 — § 10.30 second reading, the rules first** (Simplification, after the user's test of af261d3e3; BUGS SOG waits for
+  them): `familyOf`, `siblingsOf`, `familiesOf`, `compatible`, `summaryOf` in frame/lib/procedures.js, pure, benched (F32). A family
+  needs two suffixes among the aerodrome's records (`familyOf` alone is only a form). A STAR joins an approach when it serves one of
+  its runways, never by point continuity (§ 10.23). `summaryOf` keeps « Aucune » to the caller (null) and joins with « via », the same
+  word in the four languages; the wind is the label of wind.js. Fuel's side title reading summaryOf comes next.
 - **30 Oct 2026 — § 10.30, the Map's return in one trip and the wind on each runway** (Simplification, keys confirmed with BUGS SOG):
   the address keys are `rwy sid star app apptrans`, lower case, only those (no SID / STAR transition): `trans` and `appTrans` are
   no longer consumed; `apptrans` is mapped to the field `appTrans`. `applyProposal` makes its choices quietly (`choose(k, v, true)`:

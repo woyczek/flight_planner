@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: procedure families, compatibility and the choice summary** (`frame/lib/procedures.js`: `familyOf`, `siblingsOf`,
+  `familiesOf`, `compatible`, `summaryOf`; bench F32) — the rules of the Map's three-tap pane and of Fuel's side title (§ 10.30).
 - **Fuel: the Map's choice comes back in one trip, and each runway shows its wind** (`modules/fuel/procedures.js`, `module.js`,
   `frame/lib/wind.js` `label`; help ×4; cases F63, F64) — runway, procedure and approach applied together with one change line;
   « 13R — ↑ 12 kt · ← 6 kt » from the known METAR, orange for a tail wind over 5 kt.

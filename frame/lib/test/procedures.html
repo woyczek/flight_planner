@@ -38,7 +38,12 @@
     appChoices,
     runwayChoices,
     runwayOf,
-    firstServing
+    firstServing,
+    familyOf,
+    siblingsOf,
+    familiesOf,
+    compatible,
+    summaryOf
   } from '../procedures.js?v=0';
   const rows = [],
     out = document.getElementById('out');
@@ -300,6 +305,101 @@
     ?.id === 'B' && firstServing([fa, fb], 'RW25')?.id === 'A' && firstServing([fa, fb], '14') === null && firstServing([fa, fb], '')
     ?.id ===
     'A' && firstServing(null, '07') === null);
+  // seconde lecture du § 10.30 : familles, compatibilité, résumé (données inventées)
+  const qP = (kind, name, runways, transition = null, id = null) => ({
+      id: id || `LFVX.${kind}.${name}.RW${runways.length === 1 ? runways[0] : 'ALL'}.${transition || 'NONE'}`,
+      kind,
+      name,
+      runways,
+      transition
+    }),
+    qS4l = qP('STAR', 'ABLI4L', ['28L']),
+    qS4r = qP('STAR', 'ABLI4R', ['28R']),
+    qS4lt = qP('STAR', 'ABLI4L', [], 'ABLIN'),
+    qS2a = qP('STAR', 'MOLU2A', ['10L', '10R']),
+    qS5x = qP('STAR', 'OKRIX5X', ['28L']),
+    qSAll = qP('STAR', 'TOTO1B', []),
+    qI28l = qP('APP', 'ILS28L', ['28L']),
+    qI28lt = qP('APP', 'ILS28L', ['28L'], 'PIZSA'),
+    qI10r = qP('APP', 'ILS10R', ['10R']),
+    qD1 = qP('SID', 'ABLI4L', ['28L']),
+    qStars = [qS4l, qS4r, qS4lt, qS2a, qS5x, qSAll],
+    qById = new Map([...qStars, qI28l, qI28lt, qI10r, qD1].map(r => [r.id, r])),
+    qIds = l => l.map(r => typeof r === 'string' ? r : r.id || r.name).join();
+  ck('familyOf : lettres, un chiffre, une lettre ; rien d’autre', JSON.stringify(familyOf('abli4l')) ===
+    '{"family":"ABLI4","suffix":"L"}' &&
+    familyOf('ILS28L') === null && familyOf('NTS') === null && familyOf('') === null && familyOf(null) === null);
+  ck('siblingsOf : même radical et chiffre, au moins deux suffixes, sans transition, même sorte', qIds(siblingsOf(qStars, qS4l)) === qIds([
+    qS4l,
+    qS4r
+  ]) && siblingsOf([...qStars, qD1], qS4r).every(r => r.kind === 'STAR'));
+  ck('siblingsOf : une forme seule n’est pas une famille (jamais de devinette)', siblingsOf(qStars, qS5x).length === 0 && siblingsOf(qStars,
+    qS2a).length === 0 && siblingsOf(qStars, qP('STAR', 'NTS', ['03'])).length === 0);
+  const qRowsF = familiesOf(qStars);
+  ck('familiesOf : ABLI4L et ABLI4R en une ligne ABLI4 avec ses pistes ; les autres seules, dans l’ordre', qRowsF.map(r => `${r.name}:${r
+    .runways.join('/')}`)
+    .join() === 'ABLI4:28L/28R,MOLU2A:10L/10R,OKRIX5X:28L,TOTO1B:', qRowsF.map(r => `${r.name}:${r.runways.join('/')}`)
+    .join());
+  const qRwys = ['10L', '10R', '28L', '28R'];
+  ck('compatible : sans choix, tout', qIds(compatible(qStars, {})) === qIds(qStars) && qIds(compatible(qRwys, null)) === qIds(qRwys));
+  ck('compatible : piste → STAR qui la desservent (et celles qui les desservent toutes), approches vers elle', qIds(compatible([qS4l, qS4r,
+    qS2a,
+    qSAll
+  ], {
+    rwy: '28L'
+  })) === qIds([qS4l, qSAll]) && qIds(compatible([qI28l, qI10r], {
+    rwy: 'RW28L'
+  })) === qIds([qI28l]));
+  ck('compatible : STAR → pistes qu’elle dessert, approches qu’elle rejoint', qIds(compatible(qRwys, {
+    star: qS2a.id
+  }, qById)) === '10L,10R' && qIds(compatible([qI28l, qI10r], {
+    star: qS2a
+  })) === qIds([qI10r]));
+  ck('compatible : approche → sa piste, STAR qui la rejoignent', qIds(compatible(qRwys.map(id => ({
+    id
+  })), {
+    app: qI28l.id
+  }, qById)) === '28L' && qIds(compatible([qS4l, qS4r, qS2a, qSAll], {
+    app: qI28l
+  })) === qIds([qS4l, qSAll]));
+  ck('compatible : une famille choisie avant sa piste (tableau) → ses pistes', qIds(compatible(qRwys, {
+    star: [qS4l, qS4r]
+  })) === '28L,28R');
+  ck('compatible : SID → ses pistes ; trois choix croisés', qIds(compatible(qRwys, {
+    sid: qD1
+  })) === '28L' && qIds(compatible([qI28l, qI10r], {
+    rwy: '28L',
+    star: qS4l
+  })) === qIds([qI28l]));
+  ck('compatible : absent, null (« Aucune ») ou introuvable ne filtre pas', qIds(compatible(qRwys, {
+    star: null,
+    app: 'LFVX.APP.NOPE.RW01.NONE'
+  }, qById)) === qIds(qRwys));
+  const qSum = summaryOf({
+    rwy: '28L',
+    star: qS4l.id,
+    trans: qS4lt.id,
+    app: qI28l.id,
+    appTrans: qI28lt.id
+  }, {
+    byId: qById,
+    wind: {
+      head: 12,
+      cross: 6,
+      side: 'L'
+    }
+  });
+  ck('summaryOf : « 28L · ↑ 12 kt · ← 6 kt », « ABLI4L via ABLIN », « ILS28L via PIZSA »', qSum.rwy === '28L · ↑ 12 kt · ← 6 kt' && qSum
+    .proc === 'ABLI4L via ABLIN' && qSum.app === 'ILS28L via PIZSA', JSON.stringify(qSum));
+  const qSum2 = summaryOf({
+    rwy: '10R',
+    sid: null,
+    app: 'LFVX.APP.VOR10.RW10R.NONE',
+    appTrans: null
+  });
+  ck('summaryOf : sans vent la piste seule ; « Aucune » = null ; sans fiche, le nom de l’identifiant ; rien de choisi = undefined',
+    qSum2.rwy === '10R' && qSum2.proc === null && qSum2.app === 'VOR10' && JSON.stringify(summaryOf({})) === '{}' && summaryOf(null)
+    .rwy === undefined, JSON.stringify(qSum2));
   ck('runwayChoices : rien de rien, rien', runwayChoices([], [], null).length === 0 && runwayChoices(null, null, {}).length === 0);
 
   window.__bench = {
