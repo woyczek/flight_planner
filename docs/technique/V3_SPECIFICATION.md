@@ -1243,8 +1243,33 @@ redesigned for touch at that point.
        - **Categories follow the airline's kind** (`airline/settings.json` `kind`: `sog` | `va` | …): a rule per
          kind decides which mission categories are active (ferry, passenger, cargo for a commercial VA; the SOG's own
          ones), never a hard-coded list in a module.
-       Lots: none before the stabilisation; then a reader of the V2 missions (survey), `missionFlight` with a bench
-       (fuel), the usage "équipier" (frame), the mission list (new module), the Map's drawing (maps).
+       **The group mode is NOT abandoned (user, 30 Oct evening: "tu commences à l'implémenter, quelque part, en
+       proposant les missions au choix et / ou en aléatoire : c'est le premier pas vers le module équipage")**. What was
+       dropped on 21 Oct is the signed accounts (S3 / S4), not the group mode: playing missions as a crew stays the
+       suite's purpose. Corrections and framing:
+       - **First step, now**: a module "Missions" of the Pilot application that lists the common missions and lets the
+         pilot **choose one or draw one at random** (one gesture each, the draw excludes the missions already flown by
+         this pilot when the flight log says so), and hands it to Fuel as the flight's source (§ 10.32 above). This is
+         the seed of the **crew module** ("Équipage"), not a side feature.
+       - **Envelope and page-by-page reader**: the mission opens as the envelope and the page-by-page reader designed
+         in V2 for the exercise folds (one envelope per design, Aqua's `Default.png`); in V3 they are two primitives of
+         the frame's design layer — the textured skin on the computer designs (Aqua), a plain skin on Standard and on
+         the phone — the same reader, one content, two skins. The CPCO's mission registry reuses the textured page the
+         same way.
+       - **Meeting the crew**: a mission carries, filled at assignment by the CPCO, the rendezvous of the crew — a
+         Discord channel (link), an SRS server and frequency, a JoinFS session, or any other named channel — shown by the
+         crew module with "Ouvrir" / "Copier", pre-filled and never typed again by the pilot. Rule: these are mission
+         data of the shared repository, readable by every pilot of the airline (same access model as the fleet); a
+         session secret (a password) is a known limit, said in the SPEC, not a reason to build accounts.
+       - **Objection recorded (ergonomics session)**: the user asked for stabilisation first; starting the crew
+         module now adds a fifth front while the four sessions carry the administration lots and the refactoring.
+         Proposal: the SPEC of the Missions module now (this §, then `modules/missions/SPEC.md` with the data shape read
+         from the V2 missions), the code by a dedicated session or by Features SOG after R-F3, never by squeezing it
+         between two refactoring lots. The user decides who and when.
+       Lots: `modules/missions/SPEC.md` (ergonomics session + survey of the V2 mission files), the V2 mission reader
+       into `missions/`, `missionFlight` with a bench (fuel), the usage "équipier" and the two design primitives
+       (frame, design), the Missions module (new owner), the Map's drawing (maps), then the crew rendezvous and the
+       CPCO registry page.
 
    33. **Refactoring after the stabilisation: the "do and undo" since 28 Oct** (user, 30 Oct: "challenger tout ce
        qu'on a fait évoluer depuis hier voire avant-hier, pour supprimer les faire et défaire vers un point documenté,
