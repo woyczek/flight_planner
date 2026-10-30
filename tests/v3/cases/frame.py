@@ -1199,10 +1199,14 @@ def a39(c):
     _bench(c, 'frame/settings/test/pilot_tokens.html', '__tokensBench')
 
 
-@case('A40', 'Relay devices screen bench', 'A', designs=('standard',), screens=False, night=False,
-      rule='frame R1a (29 Oct): Maintenance › Relay devices: without a launcher, relay off or on, a code shown once and wiped when the screen is left, revoke a device or a pilot after the question')
+@case('A40', 'Devices screen bench (one list for the local network and the relay)', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame R1a (29 Oct), one pairing R-C2 (30 Oct): Maintenance › Appareils: without a launcher, both channels’ state, each device with its channel, « code de console » and « Nommer », a code shown once (valid on both channels) and wiped when the screen is left, revoke a device or a pilot after the question')
 def a40(c):
-    _bench(c, 'frame/settings/test/relay_devices.html', '__relayBench')
+    _bench(c, 'frame/settings/test/devices.html', '__devicesBench')
+    # the old address leads to the new screen
+    c.open('settings', app='maintenance', docs=LEVEL3)
+    c.go('relay-devices')
+    c.until("location.hash === '#devices'", what='#relay-devices is replaced by #devices')
 
 
 @case('A41', 'IVAO sign-in return through the relay', 'A', designs=('standard',), screens=False, night=False,

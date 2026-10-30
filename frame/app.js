@@ -279,10 +279,10 @@
       level: 3,
       launcher: true
     }, {
-      // appareils des pilotes par le relais de la compagnie (R1a) : codes d'appairage, révocation
-      id: 'relay',
-      href: '#relay-devices',
-      label: ['Appareils du relais', 'Relay devices', 'Geräte des Relais', 'Dispositivos del relé'],
+      // appareils des pilotes, réseau local et relais de la compagnie (R-C2) : codes d'appairage, révocation
+      id: 'devices',
+      href: '#devices',
+      label: ['Appareils', 'Devices', 'Geräte', 'Dispositivos'],
       icon: 'globe',
       level: 3,
       launcher: true
@@ -312,11 +312,11 @@
         routes: ['gitlab/tokens', 'gitlab/tokens/revoke']
       }
     }, {
-      id: 'relay-devices',
-      scripts: ['settings/relay_devices.js?v=0'],
+      id: 'devices',
+      scripts: ['settings/devices.js?v=0'],
       level: 3,
       launcher: {
-        routes: ['relay', 'relay/devices', 'relay/devices/revoke']
+        routes: ['devices', 'devices/revoke', 'devices/name']
       }
     }]
   };
@@ -2447,6 +2447,10 @@
       preventScroll: true
     });
   }
+  // écrans déplacés : l'ancienne adresse mène à la nouvelle (#relay-devices → #devices, un seul écran d'appareils, R-C2)
+  const MOVED = Object.freeze({
+    'relay-devices': 'devices'
+  });
   let current = null, // { id, mod }
     navSeq = 0; // jeton de navigation : le dernier changement d'adresse gagne
   /** Affiche l'écran de l'adresse (#module, #module?…, #conflicts, #settings) ; démonte le module précédent. Une seule
@@ -2455,6 +2459,9 @@
   async function route() {
     // retour de l'OpenID d'IVAO arrivé sans recharger la page (même document) : jetons rangés, adresse remplacée, puis le routage
     if (location.hash.startsWith('#ivao-return?')) return void takeIvaoReturn().then(route);
+    // ancienne adresse d'un écran gardée en renvoi (l'adresse remplacée : le retour arrière ne la rejoue pas)
+    const moved = MOVED[parseHash().id];
+    if (moved) return void location.replace(`#${moved}`);
     const h = parseHash(),
       id = h.id || visibleModules()[0]?.id || 'settings';
     // écrans du cadre (aide, feuille de route, réglages, conflits) par-dessus le module courant, qui reste monté
@@ -3131,10 +3138,18 @@
         newCode: () => lanCall({
           code: true
         }),
-        // un appareil (son id) ou tous
-        forget: id => lanCall({
-          forget: id || true
-        })
+        // un appareil (son id) ou tous ceux du réseau local : la révocation de la liste unique (R-C2), puis l'état
+        forget: async id => {
+          const r = await launcherRequest('devices/revoke', {
+            json: id ? {
+              id
+            } : {
+              channel: 'lan'
+            }
+          });
+          if (!r || r.status >= 400) throw new Error(`devices/revoke ${r ? r.status : 'offline'}`);
+          return lanCall();
+        }
       } : null,
       // après un clone ou une reprise de data/ par le lanceur : relevé de nouveau, transport rebranché
       redetect: async () => {

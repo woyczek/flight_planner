@@ -1,0 +1,203 @@
+<!doctype html>
+<!-- Banc de l'écran « Appareils » (frame/settings/devices.js ; refonte R-C2, un seul appairage pour le réseau local et le
+     relais) : sans lanceur, état des deux canaux, liste avec le canal de chaque appareil, « code de console » et « Nommer »,
+     code montré une fois et effacé en quittant l'écran, trigramme refusé, révocation d'un appareil et d'un pilote après
+     question. Contexte du cadre simulé : aucun appel réel. window.__devicesBench = { done, pass, fail, rows }. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>devices — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">devices.js — bench</h1>
+<pre id="out"></pre>
+<div id="view"></div>
+<script src="../devices.js?v=0"></script>
+<script>
+  (async () => {
+    const out = document.getElementById('out'),
+      rows = [];
+    const ck = (name, ok, info = '') => {
+      rows.push([ok ? 'PASS' : 'FAIL', name, info]);
+      out.insertAdjacentHTML('beforeend', `<span class="${ok ? 'PASS' : 'FAIL'}">${ok ? 'PASS' : 'FAIL'}</span> ${name}${ok ? '' : ' — ' + String(info).replace(/</g, '&lt;')}\n`);
+    };
+    const tick = (ms = 40) => new Promise(r => setTimeout(r, ms));
+    const t = (row, v = {}) => String(row[0]).replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '');
+    try {
+      const S = window.SogScreens.devices,
+        view = document.getElementById('view'),
+        calls = [];
+      let relayOn = false,
+        lanOn = false,
+        devices = [],
+        answer = true;
+      const routes = {
+        call: async (route, body) => {
+          calls.push([route, body]);
+          if (route === 'devices' && !body) return {
+            devices,
+            pending: [],
+            lan: {
+              on: lanOn,
+              urls: lanOn ? ['http://192.168.1.10:8000/frame/'] : []
+            },
+            relay: {
+              on: relayOn,
+              host: relayOn ? 'sog.example.org' : ''
+            }
+          };
+          if (route === 'devices') return {
+            ok: true,
+            code: '12345678',
+            trigram: body.trigram,
+            expires_in: 600
+          };
+          if (route === 'devices/revoke') {
+            const before = devices.length;
+            devices = devices.filter(d => !(body.id ? d.id === body.id : d.trigram === body.trigram));
+            return {
+              ok: true,
+              removed: before - devices.length
+            };
+          }
+          if (route === 'devices/name') {
+            const d = devices.find(x => x.id === body.id && !x.trigram);
+            if (d) d.trigram = body.trigram;
+            return d ? {
+              ok: true
+            } : {
+              ok: false,
+              status: 400
+            };
+          }
+          return {
+            ok: false,
+            status: 404
+          };
+        }
+      };
+      const ctx = (withRoutes = true) => ({
+        t,
+        notify: () => {},
+        ask: async () => answer,
+        routes: () => withRoutes ? routes : null
+      });
+      S.screen(view, ctx(false));
+      await tick();
+      ck('sans lanceur : la carte le dit, aucun appel', !!view.querySelector('[data-devices-nolauncher]') && calls.length === 0);
+      S.screen(view, ctx());
+      await tick();
+      ck('relais coupé, réseau local fermé : il le dit', view.querySelector('[data-relay-state]')?.dataset.relayState === 'off' && view
+        .querySelector('[data-lan-state]')?.dataset.lanState === 'off');
+      relayOn = lanOn = true;
+      devices = [{
+        id: 'a1',
+        channel: 'relay',
+        trigram: 'ABC',
+        label: 'iPhone',
+        at: '2026-10-29T22:00:00+00:00',
+        last: '',
+        expires: '2027-10-29T22:00:00+00:00'
+      }, {
+        id: 'a2',
+        channel: 'lan',
+        trigram: 'ABC',
+        label: 'Android',
+        at: '2026-10-29T22:10:00+00:00',
+        last: '',
+        expires: '2027-10-29T22:10:00+00:00'
+      }, {
+        id: 'b1',
+        channel: 'relay',
+        trigram: 'XYZ',
+        label: 'iPad',
+        at: '2026-10-29T22:20:00+00:00',
+        last: '',
+        expires: '2027-10-29T22:20:00+00:00'
+      }, {
+        id: 'c1',
+        channel: 'lan',
+        trigram: '',
+        label: 'Windows · Edge',
+        at: '2026-10-29T22:30:00+00:00',
+        last: '',
+        expires: '2027-10-29T22:30:00+00:00'
+      }];
+      S.screen(view, ctx());
+      await tick();
+      ck('deux canaux en marche : l’hôte et l’adresse, quatre appareils, une révocation par pilote', /sog\.example\.org/.test(view
+          .textContent) && /192\.168\.1\.10/.test(view.textContent) && view.querySelectorAll('[data-device]').length === 4 && view
+        .querySelectorAll('[data-act=revokeAll]').length === 2);
+      ck('chaque appareil dit son canal', ['relay', 'lan', 'relay', 'lan'].every((c, i) => view.querySelectorAll('[data-device]')[i]
+        .dataset.channel === c) && view.querySelector('[data-device=a2] [data-channel-name]')?.textContent === 'Réseau local');
+      ck('un appareil du code de console : « code de console » et « Nommer »', /code de console/.test(view.querySelector(
+          '[data-device=c1]')
+        ?.textContent) && !!view.querySelector('[data-device=c1] [data-act=name]') && !view.querySelector(
+        '[data-device=a1] [data-act=name]'));
+      view.querySelector('[data-device=c1] [data-act=name]').click();
+      await tick();
+      view.querySelector('[data-f=name][data-id=c1]').value = 'q';
+      view.querySelector('[data-act=nameOk][data-id=c1]').click();
+      await tick();
+      ck('Nommer : un trigramme invalide n’est pas envoyé', !calls.some(c => c[0] === 'devices/name'));
+      view.querySelector('[data-f=name][data-id=c1]').value = 'qrs';
+      view.querySelector('[data-act=nameOk][data-id=c1]').click();
+      await tick(80);
+      ck('Nommer : le trigramme posé, la ligne le montre', calls.some(c => c[0] === 'devices/name' && c[1]?.id === 'c1' && c[1]
+        ?.trigram === 'QRS') && /QRS/.test(view.querySelector('[data-device=c1]')?.textContent) && !view.querySelector(
+        '[data-device=c1] [data-act=name]'));
+      view.querySelector('[data-f=tri]').value = 'a';
+      view.querySelector('[data-act=make]').click();
+      await tick();
+      ck('trigramme refusé : un message, aucun code demandé', /2 à 5/.test(view.querySelector('[data-msg]').textContent) && !calls.some(
+        c => c[0] === 'devices' && c[1]));
+      view.querySelector('[data-f=tri]').value = 'abc';
+      view.querySelector('[data-act=make]').click();
+      await tick(80);
+      ck('code demandé : montré une fois, valable sur les deux canaux', view.querySelector('[data-devices-code]')?.textContent ===
+        '12345678' && calls.some(c => c[0] === 'devices' && c[1]?.trigram === 'ABC') && /réseau local comme par le relais/.test(view
+          .querySelector('[data-devices-new]')?.textContent));
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+      await tick();
+      ck('quitter l’écran efface le code', !view.querySelector('[data-devices-code]') && !view.innerHTML.includes('12345678'));
+      answer = false;
+      view.querySelector('[data-act=revoke]').click();
+      await tick();
+      ck('révocation : rien sans l’accord', !calls.some(c => c[0] === 'devices/revoke'));
+      answer = true;
+      view.querySelector('[data-act=revoke][data-id=a1]').click();
+      await tick(80);
+      ck('révocation d’un appareil', calls.some(c => c[0] === 'devices/revoke' && c[1]?.id === 'a1') && view.querySelectorAll(
+        '[data-device]').length === 3);
+      view.querySelector('[data-act=revokeAll][data-name=ABC]').click();
+      await tick(80);
+      ck('révocation de tous les appareils d’un pilote, sur les deux canaux', calls.some(c => c[0] === 'devices/revoke' && c[1]
+        ?.trigram === 'ABC') && view.querySelectorAll('[data-device]').length === 2);
+    } catch (x) {
+      ck('exception du banc', false, x?.stack || x);
+    }
+    const pass = rows.filter(r => r[0] === 'PASS').length;
+    window.__devicesBench = {
+      done: true,
+      pass,
+      fail: rows.length - pass,
+      rows
+    };
+    out.insertAdjacentHTML('beforeend', `\n${pass}/${rows.length}\n`);
+  })();
+</script>
+</body>
+</html>

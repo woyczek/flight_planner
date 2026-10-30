@@ -269,7 +269,7 @@ same cycle) → **VFR** (the importer matches the base's `vrp.json`) → aircraf
 ### 2.7 The launcher: what exists, what is missing
 
 Every route is the workstation's own: header `X-SOG-Setup: 1`, local host, same origin (`Setup._allowed`), not in
-`lan_access.ROUTES` (a paired phone on the local network cannot call them), POST body up to 512 MB (`MAX_UPLOAD`).
+the launcher's `ROUTES` table (a paired phone on the local network cannot call them), POST body up to 512 MB (`MAX_UPLOAD`).
 
 **Existing, reused**
 

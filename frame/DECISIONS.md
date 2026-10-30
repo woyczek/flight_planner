@@ -2059,6 +2059,26 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
     credentials and tokens no longer reach a third-party script); every purge uses `regen_jobs.inside` (the rule of
     `base/purge`, now shared: `base_sources._inside` is it), `files_under` and `prune_empty`, so that a junction inside a cache
     is neither descended nor emptied (I17, I18 with a real junction).
+- **30 Oct 2026 — Refactor R-C2: one pairing and one list of devices for the local network and the relay** (§ 10.33,
+  the user's question « appareils du relais : différent des appareils appairés ? »; target form validated by
+  Simplification before the code):
+  - `tools/lan_access.py` and `tools/relay_access.py` were two copies of the same machine (code, attempts, hashed tokens,
+    a list, revocation) with two files. `tools/device_access.py` is the one machine: one list `tools/.devices.json` with a
+    `channel` column (the two old files taken up at the first reading, then removed: a paired device stays paired), one
+    code, one counter of attempts, one `forget()`; a token opens its own channel only (cookies unchanged, one per channel).
+  - One code: 8 digits for both channels. Simplification's answers: one rule, one length (the local network's 6 digits
+    are the only behaviour change, said in the help ×4); a code asked on the screen needs a trigram and works on both
+    channels, the row noting the channel used; the console code (`--lan`, « Nouveau code » of the access card) has none
+    and works on the local network only, its row says « code de console » and « Nommer » sets a trigram afterwards.
+  - Also changed in passing, said: a new code no longer lifts an address's one-minute wait (it did on the local
+    network, not on the relay: the stricter rule kept); a local network device's last use is noted, as the relay's.
+  - Routes: `/__setup/devices` (GET, POST a code, `/revoke`, `/name`) replace `/__setup/relay` and
+    `/__setup/relay/devices[/revoke]`; `/__setup/lan` keeps opening, closing and the console code, its `forget` moved to
+    `devices/revoke` (no V2 page read either route, checked). One screen, Maintenance › « Appareils » (`#devices`,
+    `frame/settings/devices.js`, which replaced `relay_devices.js`); `#relay-devices` is replaced by `#devices`
+    (`MOVED` in app.js); the Pilot's access card keeps the local network's view.
+  - noreg I22 (the take-up, the channel binding, the console code, « Nommer », the shared counter, the revocations), A40
+    (the screen's bench, the old address), I13 (the relay trial on the new routes), I16 unchanged.
 - **30 Oct 2026 — The noreg runner replays a run whose browser crashed** (Simplification's rule, after Features SOG's full
   pass on 552e0889d: four « browser crashed: Target crashed », D4, K52, L15, L17, green alone):
   - `lib.worker_run`: a crash outside the case (a context or a page that cannot open) or inside it (an error naming a

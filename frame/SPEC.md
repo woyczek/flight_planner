@@ -814,7 +814,7 @@ touch only the element they are given.
 | `frame/lib/sheet.js` | frame | maps, atmosphere (any fixed module) | the three-position sheet under a map (collapsed / default / expanded): `createSheet({ root, panel, head, grip, pos, ignore, labels, locked, onChange, onSettle })` → `{ pos, set(pos, instant), settle(), stop() }`. The header line is the drag handle (pointer capture, live follow by one CSS variable written once per move, a 200 ms glide to the nearest position, flick above 0.8 px/ms to the next one, a tap collapses or restores and never expands; **while the sheet moves a module redraws nothing and `onSettle` is called once, when the size has stopped**: V3 spec § 7.1 rule 19), the keyboard and the ARIA of the grip are done; heights are the frame tokens `--f-sheet-*` read from the root, the look is `.f-sheet*` in `primitives.css`. **Under `html.f-land` (landscape on a phone) the sheet is a column at the right of the map**, as high as the view, two positions (`default` 40 % of the root's width, 280 px at least; `expanded` 60 %; tokens `--f-sheet-side`, `-side-min`, `-side-max`), no collapsed position, a tap toggles the two, a horizontal drag is accepted; `onChange` / `onSettle` give the same names, `frame-orientation` makes it re-place itself. It writes no text (the caller passes `labels`) and keeps no state (the caller keeps the position). Contract: INTEGRATION § 11 |
 | `frame/lib/website.js` | website | report, website | the flight's fields for the airline website, the `#defa=` address, the line to copy, the "→ Vol" bookmark (moved from `modules/report/website_handoff.js`) |
 
-### 3.10 Devices of the local network (`tools/lan_access.py`, `tools/launch.py`)
+### 3.10 Devices of the local network (`tools/device_access.py`, `tools/launch.py`)
 
 A pilot flies on the computer (the launcher, X-Plane) and wants the Pilot application on a tablet or a phone. The
 launcher can serve that device over the local network, so the device works as the computer does: the computer's
@@ -841,21 +841,24 @@ launcher can serve that device over the local network, so the device works as th
     adopt, imports, maintenance, relax, `/__setup/lan`) answers 403 "reserved to the computer". A `PUT` is never
     open.
 - **Pairing** (`/__lan/pair`, a form without script, in the browser's language):
-  - The 6-digit code is shown in the console and in the computer's Settings. It works **once** and lasts
+  - The **console code** (8 digits since 30 Oct 2026, one rule for both channels, § 3.12; 6 before) is shown in the
+    console and in the computer's Settings, without a trigram, for the local network only. It works **once** and lasts
     **10 minutes**: after a pairing, or past that time, there is no code until the computer asks for a new one
-    (`POST /__setup/lan { code: true }`, "New code"). Opening the access issues the first.
+    (`POST /__setup/lan { code: true }`, "New code"). Opening the access issues the first. A code asked for a pilot's
+    trigram on Maintenance › « Appareils » works here too.
   - Once the code is right, the device gets a long random token as a cookie (`sog_lan_<port>`, so two launchers on
     one computer keep their devices apart; `HttpOnly`, `SameSite=Strict`, one year), then goes back to the page it
     asked for (a path of this server only).
-  - Only the token's SHA-256 is kept, in `tools/.lan.json` (local, git-ignored), so a device pairs **once**: it stays
+  - Only the token's SHA-256 is kept, in the one list `tools/.devices.json` (channel `lan`; local, git-ignored), so a device pairs **once**: it stays
     paired when access is closed and reopened, or the launcher restarted, as long as the computer keeps its address.
   - 5 wrong codes from one address: a one-minute wait (429). 30 wrong codes in an hour, all addresses together:
     pairing **closes** (403) until the computer asks for a new code.
-  - A device is forgotten on its own (`{ forget: '<id>' }`, "Forget" next to it), or all of them (`{ forget: true }`,
-    "Forget the devices"). A forgotten device must enter a code again.
+  - A device is forgotten on its own ("Forget" next to it), or all those of the local network ("Forget the devices"),
+    through the one revocation `POST /__setup/devices/revoke { id | channel: 'lan' }` (§ 3.12). A forgotten device must
+    enter a code again.
 - **`GET /__setup/lan`** (computer only): `{ on, urls (opened, the main first), available (every private address),
-  code, expires (s), closed, devices (count), paired ([{ id, label, at }]: a short name from the browser, never the
-  hash), host }`.
+  code, expires (s), closed, devices (count), paired ([{ id, channel, trigram, label, at, last, expires }]: the local
+  network's rows of the one list, a short name from the browser, never the hash), host }`.
 - **A paired device is a trusted member**, as the computer itself for the Pilot application's data: it reads and
   writes all of `data/` (records, `utilisateurs/`, `airline/settings.json`…) through the batch, and triggers the git
   exchange. Pair only your own devices.
@@ -889,10 +892,12 @@ launcher can serve that device over the local network, so the device works as th
   truncated when narrow). Its tooltip says the data, simulator and relay are the computer's, and that offline use
   is not available.
 - **Settings context** (computer only; `null` on a paired device): `lan()` returns `{ state(), open(), close(),
-  forget() }`, each resolving to the `GET /__setup/lan` state. The card "Computer access" (code, addresses, QR code
-  through `SogQR`, open / close, forget) belongs to `frame/settings/`.
+  newCode(), forget(id?) }`, each resolving to the `GET /__setup/lan` state (`forget` revokes through `devices/revoke`).
+  The card "Computer access" (code, addresses, QR code through `SogQR`, open / close, the local network's devices with
+  their trigram or « code de console », forget) belongs to `frame/settings/`; every device of both channels is on
+  Maintenance › « Appareils » (§ 3.12).
 
-### 3.11 The airline's relay (`tools/relay_access.py`, `tools/launch.py --relay`; lot R1a, 29 Oct 2026)
+### 3.11 The airline's relay (`tools/device_access.py`, `tools/launch.py --relay`; lot R1a, 29 Oct 2026)
 
 The launcher can serve the Pilot application to the pilots' devices through the airline's relay: on the NAS (Container
 Manager), behind its reverse proxy (https, Let's Encrypt), the launcher listening on 127.0.0.1 only (`launch.py --relay
@@ -912,9 +917,9 @@ explicit go** (R3).
   DENY`, CSP `default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'`), without
   script.
 - A device pairs once with an 8-digit code the administrator asks for, on the workstation, for the pilot's trigram
-  (one use, 10 minutes): Maintenance › « Appareils du relais » (`#relay-devices`). It gets a long token (cookie
+  (one use, 10 minutes): Maintenance › « Appareils » (`#devices`; the old `#relay-devices` leads there). It gets a long token (cookie
   `sog_relay`, HttpOnly, Secure, SameSite=Lax so that a pilot following a link arrives paired; one year), of which only
-  the hash is kept (`tools/.relay.json`), with the trigram; revocable by device or by pilot. The code is accepted from
+  the hash is kept (`tools/.devices.json`, channel `relay`), with the trigram; revocable by device or by pilot. The code is accepted from
   the pairing page only (`Sec-Fetch-Site: same-origin`, or `Origin` the public host): another site cannot pair the
   pilot's browser with its own code. 5 wrong codes from an address: one minute (attempts older than an hour forgotten);
   30 in an hour: pairing closed until the next code. The return after pairing is a path of this server (no `//`, `\`,
@@ -952,6 +957,35 @@ explicit go** (R3).
   being bound to another device or to none.
 - To come: the invitations by link (R2), the deployment and the security review (R3). Debt: one day, bound a device's
   writes to its pilot's prefixes (`pilot/<TRI>/`, their reports, their availabilities).
+
+### 3.12 One pairing, one list for both channels (refactor R-C2, 30 Oct 2026)
+
+The local network (§ 3.10) and the relay (§ 3.11) pair devices the same way, in one module (`tools/device_access.py`,
+which replaced `lan_access.py` and `relay_access.py`):
+
+- **One list**, `tools/.devices.json` (`{ schema: 1, devices: [{ id, hash, channel: 'lan' | 'relay', trigram, label, at,
+  last, expires }] }`, local, git-ignored). At its first reading the two old files (`.lan.json`, `.relay.json`) are taken
+  up — a paired device stays paired, a local network device keeps its id (the start of its hash), without trigram — then
+  removed. A token opens **its own channel only**: a local network cookie is worth nothing on the relay, and back.
+- **One code**: 8 digits, one use, 10 minutes. Asked on Maintenance › « Appareils » for a pilot's trigram (required), it
+  works on **both** channels, and the device's row notes the channel it came by. The console code of the local network
+  (§ 3.10) has no trigram and works on the local network only; its row says « code de console », and « Nommer » sets a
+  trigram on it afterwards (`POST /__setup/devices/name { id, trigram }`, a row without trigram only). The relay never
+  pairs without a trigram (it signs the device's writes with it).
+- **One counter**: 5 wrong codes from an address, a minute; 30 in an hour, all addresses and channels, pairing closed
+  until the next code asked on the computer. A new code reopens a closed pairing but never lifts an address's wait.
+- **One revocation**: `POST /__setup/devices/revoke { id | trigram | channel | all: true }` → `{ ok, removed }`.
+- **Routes** (computer only): `GET /__setup/devices` → `{ devices: [{ id, channel, trigram, label, at, last, expires }]
+  (never a hash), pending: [{ trigram, channels, expires_in }] (never a code), lan: <GET /__setup/lan>, relay: { on, host }
+  }`; `POST /__setup/devices { trigram }` → `{ ok, code, trigram, expires_in }`; `/revoke`; `/name`. `/__setup/lan` keeps
+  opening and closing the local network and its console code; the cookies stay one per channel (`sog_lan_<port>` Strict,
+  `sog_relay` Secure Lax).
+- **Screens**: one, Maintenance › « Appareils » (`#devices`, `frame/settings/devices.js`): both channels' state, the
+  list (device, channel, trigram or « code de console » with « Nommer », paired on, last use, expiry, Revoke), « Revoke
+  all their devices » per pilot, « Demander un code » for a trigram. The Pilot's card « Accès du poste » shows the local
+  network's view only (open / close, its code, its devices, forget). The old addresses lead there (`#relay-devices` →
+  `#devices`, replaced in the history).
+- The only behaviour change: the local network's code went from 6 to 8 digits (one rule, one length).
 
 ## 4. To come in the frame
 

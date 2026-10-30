@@ -828,7 +828,7 @@ Vuela en el equipo (X-Plane) y quiere el mapa en una tableta o un teléfono: en 
 «Acceso del equipo» abre la aplicación Piloto a los dispositivos de la misma red local (o inicie `lancer.cmd --lan`).
 
 1. **Abrir a los dispositivos de la red local**: la tarjeta muestra la dirección que abrir en el dispositivo, su
-   código QR y un código de vinculación de 6 cifras. Windows puede pedir que autorice Python: acéptelo solo para
+   código QR y un código de vinculación de 8 cifras (6 hasta el 30 de octubre de 2026). Windows puede pedir que autorice Python: acéptelo solo para
    redes privadas.
 2. En la tableta, escanee el código QR con la cámara (o escriba la dirección) y luego introduzca el código. Se pide
    **una sola vez por dispositivo**.
@@ -930,10 +930,12 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   que lo retire en su cuenta IVAO. Sin aplicación IVAO configurada, el botón está apagado y la tarjeta dice dónde falta: en este
   puesto, Administración › «Aplicación IVAO» la configura (da la dirección de retorno que se declara en IVAO); en el relé,
   la configura el administrador.
-- **Dispositivos del relé**: cuando el lanzador funciona como relé de la aerolínea (detrás del proxy inverso del NAS,
-  en https), un piloto vincula cada dispositivo una vez con un código de 8 cifras que el administrador pide en
-  Maintenance › «Dispositivos del relé» para su trigrama (una vez, 10 minutos); sus escrituras llevan ese trigrama. Un
-  dispositivo perdido, o todos los de un piloto que se va, se revocan allí.
+- **Dispositivos**: una sola pantalla, Mantenimiento › «Dispositivos», para todos los dispositivos de los pilotos, vengan
+  de la red local o del relé de la aerolínea (cuando el lanzador funciona como relé, detrás del proxy inverso del NAS, en
+  https). Un piloto vincula cada dispositivo una vez con un código de 8 cifras que el administrador pide allí para su
+  trigrama (una vez, 10 minutos, en uno u otro canal); sus escrituras llevan ese trigrama. Cada línea dice el canal del
+  dispositivo; la de un dispositivo vinculado con el código de la consola dice «código de consola», y «Nombrar» le pone un
+  trigrama. Un dispositivo perdido, o todos los de un piloto que se va, se revocan allí.
 - **Tokens de los pilotos (GitLab)**: en la aplicación Maintenance, en el equipo del lanzador, «Tokens de los pilotos»
   crea un token de acceso de proyecto por piloto (con su trigrama, rol Developer, un año como máximo), lo muestra una sola
   vez y lo revoca. El lanzador usa allí el token del administrador (secrets/gitlab.json), que nunca muestra. Configure la

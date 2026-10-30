@@ -94,7 +94,7 @@ You fly on the computer (X-Plane) and want the map on a tablet or a phone: on th
 “Computer access” opens the Pilot application to devices of the same local network (or start `lancer.cmd --lan`).
 
 1. **Open to devices of the local network**: the card shows the address to open on the device, its QR code and a
-   6-digit pairing code. Windows may ask to allow Python: accept for private networks only.
+   8-digit pairing code (6 until 30 October 2026). Windows may ask to allow Python: accept for private networks only.
 2. On the tablet, scan the QR code with the camera (or type the address), then enter the code. It is asked only
    **once per device**.
 3. The tablet then sees the computer's data, the simulator's position in the flight badge, and “Launcher on
@@ -188,9 +188,11 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   to withdraw the access; if IVAO cannot, the suite tells you to withdraw it in your IVAO account. Without an IVAO
   application set, the button is off and the card says where it is missing: on this workstation, Administration › « IVAO
   application » sets it (it gives the return address to declare at IVAO); on the relay, the administrator sets it.
-- **Relay devices**: when the launcher runs as the airline's relay (behind the NAS's reverse proxy, in https), a pilot
-  pairs each device once with an 8-digit code the administrator asks for in Maintenance › « Relay devices » for their
-  trigram (once, 10 minutes); their writes are signed with that trigram. A lost device, or all those of a pilot who
+- **Devices**: one screen, Maintenance › « Devices », for every pilot's device, whether it comes from the local network
+  or the airline's relay (when the launcher runs as the relay, behind the NAS's reverse proxy, in https). A pilot pairs
+  each device once with an 8-digit code the administrator asks for there for their trigram (once, 10 minutes, on either
+  channel); their writes are signed with that trigram. Each row says the device's channel; a device paired with the
+  console's code says « console code », and « Name » sets a trigram on it. A lost device, or all those of a pilot who
   leaves, are revoked there.
 - **Pilots' tokens (GitLab)**: in the Maintenance application, on the launcher's computer, « Pilots' tokens » creates
   one project access token per pilot (named after the trigram, Developer role, one year at most), shows it once only, and

@@ -1116,7 +1116,7 @@ in the launcher; `resume` finds it again.
   path) → (handler, public); `do_GET` / `do_POST` dispatch by it. `public='lan'`: also open to a paired device of the local
   network (the Pilot app's routes: `status`, `changes`, `sim/position`, `lnmperf`, `lnmperf-folder`, `batch`, `sync`,
   `net`); `'poste'` (the default): this workstation only. The local network's gate reads the table — there is no second
-  list any more (`tools/lan_access.py` lost its `ROUTES`). A new route is declared with its public, in one place (noreg
+  list any more (the old `tools/lan_access.py` lost its `ROUTES`; the devices of both channels: `tools/device_access.py`). A new route is declared with its public, in one place (noreg
   I10: the open set is the Pilot app's, each route has its handler, nothing is written outside the table, every route the
   frame calls is in it).
 - The frame itself uses the same client for its own calls (Settings' `setup()`, aerodb's `.lnmperf` sheets, the

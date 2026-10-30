@@ -189,10 +189,10 @@
     ],
     lanCode: ['Code d’appairage', 'Pairing code', 'Kopplungscode', 'Código de vinculación'],
     lanCodeHint: [
-      'Un code sert une seule fois et dure 10 minutes. 5 essais par minute et par appareil ; après 30 codes faux en une heure, l’appairage se ferme jusqu’au prochain « Nouveau code ».',
-      'A code works only once and lasts 10 minutes. 5 tries a minute per device; after 30 wrong codes in an hour, pairing closes until the next “New code”.',
-      'Ein Code gilt nur einmal und 10 Minuten. 5 Versuche pro Minute und Gerät; nach 30 falschen Codes in einer Stunde schließt sich die Kopplung bis zum nächsten „Neuer Code“.',
-      'Un código sirve una sola vez y dura 10 minutos. 5 intentos por minuto y dispositivo; tras 30 códigos erróneos en una hora, la vinculación se cierra hasta el siguiente «Código nuevo».'
+      'Un code sert une seule fois et dure 10 minutes. 5 essais par minute et par appareil ; après 30 codes faux en une heure, l’appairage se ferme jusqu’au prochain « Nouveau code ». Un code pour le trigramme d’un pilote, et tous les appareils (réseau local et relais) : Maintenance › Appareils.',
+      'A code works only once and lasts 10 minutes. 5 tries a minute per device; after 30 wrong codes in an hour, pairing closes until the next “New code”. A code for a pilot’s trigram, and every device (local network and relay): Maintenance › Devices.',
+      'Ein Code gilt nur einmal und 10 Minuten. 5 Versuche pro Minute und Gerät; nach 30 falschen Codes in einer Stunde schließt sich die Kopplung bis zum nächsten „Neuer Code“. Ein Code für das Kürzel eines Piloten und alle Geräte (lokales Netz und Relais): Wartung › Geräte.',
+      'Un código sirve una sola vez y dura 10 minutos. 5 intentos por minuto y dispositivo; tras 30 códigos erróneos en una hora, la vinculación se cierra hasta el siguiente «Código nuevo». Un código para el trigrama de un piloto, y todos los dispositivos (red local y relé): Mantenimiento › Dispositivos.'
     ],
     lanCodeLeft: ['{c} — encore {m} min', '{c} — {m} min left', '{c} — noch {m} min', '{c} — quedan {m} min'],
     lanNoCode: ['aucun code en cours : « Nouveau code » pour appairer un appareil',
@@ -213,6 +213,8 @@
     ],
     lanOpenAll: ['Les ouvrir aussi', 'Open them too', 'Auch öffnen', 'Abrirlas también'],
     lanForgetOne: ['Oublier', 'Forget', 'Vergessen', 'Olvidar'],
+    // un appareil appairé par le code de console (sans trigramme ; Maintenance › Appareils le nomme)
+    lanConsole: ['code de console', 'console code', 'Konsolencode', 'código de consola'],
     lanForgetOneAsk: ['Oublier l’appareil « {d} » ? Il devra saisir un nouveau code.',
       'Forget the device “{d}”? It will have to enter a new code.',
       'Das Gerät „{d}“ vergessen? Es muss einen neuen Code eingeben.',
@@ -570,7 +572,7 @@
           c: s.code,
           m: min
         })).replace(esc(s.code), `<b class="f-num">${esc(s.code)}</b>`) : esc(t(T.lanNoCode)),
-        devs = (s.paired || []).map(d => `<div class="f-row"><span>${esc(d.label)} — ${esc(d.at ? c.time?.fmtDateZ(d.at) || d.at : '?')}</span><button type="button" data-forget="${esc(d.id)}" data-label="${esc(d.label)}">${esc(t(T.lanForgetOne))}</button></div>`).join('');
+        devs = (s.paired || []).map(d => `<div class="f-row" data-lan-device="${esc(d.id)}"><span><b>${esc(d.trigram || t(T.lanConsole))}</b> ${esc(d.label)} — ${esc(d.at ? c.time?.fmtDateZ(d.at) || d.at : '?')}</span><button type="button" data-forget="${esc(d.id)}" data-label="${esc(d.label)}">${esc(t(T.lanForgetOne))}</button></div>`).join('');
       let qr = '';
       if (s.on && url && window.SogQR) try {
         qr = `<figure class="f-qr"><div>${SogQR.svg(url, { ecl: 'M', scale: 4 })}</div><figcaption class="f-muted">${esc(t(T.lanQr))}</figcaption></figure>`;

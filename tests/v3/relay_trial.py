@@ -1,5 +1,6 @@
 """Essai du mode relais du lanceur (R1a ; noreg I13) : un lanceur --relay sur un port libre et un dépôt des données de
-essai, requêtes du « proxy inverse » (127.0.0.1, Host public, X-Forwarded-*) ; tools/.relay.json du dépôt rendu tel quel.
+essai, requêtes du « proxy inverse » (127.0.0.1, Host public, X-Forwarded-*) ; tools/.devices.json (et les anciens .lan.json,
+.relay.json) du dépôt rendus tels quels.
 Usage : python tests/v3/relay_trial.py <racine du dépôt>"""
 import http.client
 import json
@@ -60,8 +61,8 @@ def run(check, ROOT):
     check('the public host is set before the relay listens', 0 < src.find('RELAY.update(host=a.relay.lower()') < src.find('rsrv.serve_forever'))
     port, rport = free_port(), free_port()
     data = tempfile.mkdtemp(prefix='sog-relay-data-')
-    relay_file = os.path.join(ROOT, 'tools', '.relay.json')
-    kept = open(relay_file, 'rb').read() if os.path.exists(relay_file) else None
+    files = [os.path.join(ROOT, 'tools', n) for n in ('.devices.json', '.lan.json', '.relay.json')]  # la liste des appareils de ce dépôt
+    kept = {f: open(f, 'rb').read() if os.path.exists(f) else None for f in files}
     for args in (['init', '-q', '-b', 'main'], ['config', 'user.name', 'essai'], ['config', 'user.email', 'essai@example.invalid']):
         subprocess.run(['git', '-C', data, *args], capture_output=True)
     open(os.path.join(data, 'data_tree.js'), 'w').write('window.DATA_TREE = {}' + chr(10))
@@ -103,14 +104,14 @@ def run(check, ROOT):
         # port du relais : tout y est relais, même sans en-tête de mandataire et avec l'hôte du poste
         check('on the relay port without any proxy header: relay (https required), never the workstation',
               [req(rport, m, p, f'127.0.0.1:{port}', headers={'X-SOG-Setup': '1'})[0]
-               for m, p in (('GET', '/__setup/secrets'), ('GET', '/__setup/relay'), ('GET', '/__relay/whoami'))] == [403] * 3)
+               for m, p in (('GET', '/__setup/secrets'), ('GET', '/__setup/devices'), ('GET', '/__relay/whoami'))] == [403] * 3)
         check('on the relay port with the workstation\'s host, unpaired: 401, never the workstation',
               [req(rport, 'GET', p, f'127.0.0.1:{port}', headers={'X-SOG-Setup': '1', 'X-Forwarded-Proto': 'https'})[0]
-               for p in ('/__setup/secrets', '/__setup/relay', '/__setup/status')] == [401] * 3)
+               for p in ('/__setup/secrets', '/__setup/devices', '/__setup/status')] == [401] * 3)
         # proxy qui réécrit Host en 127.0.0.1:port : jamais pris pour le poste (échec fermé)
         check('a proxy that rewrites Host is refused, never taken for the workstation',
               [req(port, m, p, local, headers={**api, 'Sec-Fetch-Site': 'same-origin', **xh})[0]
-               for m, p in (('GET', '/__setup/secrets'), ('GET', '/__setup/relay'), ('POST', '/__relay/pair'))
+               for m, p in (('GET', '/__setup/secrets'), ('GET', '/__setup/devices'), ('POST', '/__relay/pair'))
                for xh in ({'X-Forwarded-For': '203.0.113.7'}, {'Forwarded': 'for=203.0.113.7'}, {'X-Real-IP': '203.0.113.7'})] == [403] * 9)
         st, h, b = req(rport, 'GET', '/__relay/whoami', HOST, headers=prox)
         check('the start check: a request on the public host comes back as the relay', st == 200 and json.loads(b).get('relay') is True, (st, b[:80]))
@@ -121,10 +122,10 @@ def run(check, ROOT):
         st, h, b = req(rport, 'POST', '/__relay/pair', HOST, 'code=00000000&next=/frame/',
                        {**prox, 'Content-Type': 'application/x-www-form-urlencoded'})
         check('pairing without an origin refused', st == 403, st)
-        st, h, b = req(port, 'POST', '/__setup/relay/devices', local, {'trigram': 'abc'}, headers={'X-SOG-Setup': '1'})
+        st, h, b = req(port, 'POST', '/__setup/devices', local, {'trigram': 'abc'}, headers={'X-SOG-Setup': '1'})
         code = json.loads(b).get('code', '')
         check('the workstation issues an 8-digit code for a trigram', st == 200 and len(code) == 8 and code.isdigit(), b[:120])
-        check('the relay cannot issue codes', req(rport, 'POST', '/__setup/relay/devices', HOST, {'trigram': 'ABC'}, headers=api)[0] == 401)
+        check('the relay cannot issue codes', req(rport, 'POST', '/__setup/devices', HOST, {'trigram': 'ABC'}, headers=api)[0] == 401)
         for _ in range(5):
             req(rport, 'POST', '/__relay/pair', HOST, 'code=00000000&next=/frame/', {**prox, 'Content-Type': 'application/x-www-form-urlencoded', 'Origin': ORIGIN})
         st, h, b = req(rport, 'POST', '/__relay/pair', HOST, f'code={code}&next=/frame/', {**prox, 'Content-Type': 'application/x-www-form-urlencoded', 'Origin': ORIGIN})
@@ -145,7 +146,7 @@ def run(check, ROOT):
         auth = {**api, 'Cookie': tok}
         check('paired: status 200', req(rport, 'GET', '/__setup/status', HOST, headers=auth)[0] == 200)
         check('paired: a page is served', req(rport, 'GET', '/frame/', HOST, headers={**prox, 'Cookie': tok, 'Accept': 'text/html'})[0] == 200)
-        check('paired: workstation routes refused', [req(rport, 'GET', p, HOST, headers=auth)[0] for p in ('/__setup/workstation', '/__setup/relay',
+        check('paired: workstation routes refused', [req(rport, 'GET', p, HOST, headers=auth)[0] for p in ('/__setup/workstation', '/__setup/devices',
                                                                                                               '/__setup/secrets', '/__setup/sim/position')] == [403] * 4)
         st, h, b = req(rport, 'POST', '/__setup/net', HOST, {'url': 'https://example.com/x'}, headers=auth)
         check('paired: net outside the whitelist refused', st == 403, st)
@@ -156,10 +157,11 @@ def run(check, ROOT):
                                                               'changes': [{'path': 'pilot/ABC/relay.json', 'text': '{}' + chr(10)}]}, headers=auth)
         who = subprocess.run(['git', '-C', data, 'log', '-1', '--format=%an'], capture_output=True, text=True).stdout.strip()
         check('a batch through the relay is signed with the device trigram, never the page author', st == 200 and who == 'ABC', (st, b[:120], who))
-        st, h, b = req(port, 'GET', '/__setup/relay', local, headers={'X-SOG-Setup': '1'})
+        st, h, b = req(port, 'GET', '/__setup/devices', local, headers={'X-SOG-Setup': '1'})
         lst = json.loads(b)
-        check('the workstation lists the device, never a hash', lst['on'] and lst['devices'][0]['trigram'] == 'ABC' and 'hash' not in json.dumps(lst), b[:200])
-        req(port, 'POST', '/__setup/relay/devices/revoke', local, {'trigram': 'ABC'}, headers={'X-SOG-Setup': '1'})
+        check('the workstation lists the device with its channel, never a hash', lst['relay']['on'] and lst['devices'][0]['trigram'] == 'ABC'
+              and lst['devices'][0]['channel'] == 'relay' and 'hash' not in json.dumps(lst), b[:200])
+        req(port, 'POST', '/__setup/devices/revoke', local, {'trigram': 'ABC'}, headers={'X-SOG-Setup': '1'})
         check('revoked: 401 again', req(rport, 'GET', '/__setup/status', HOST, headers=auth)[0] == 401)
     finally:
         p.terminate()
@@ -168,11 +170,12 @@ def run(check, ROOT):
         except subprocess.TimeoutExpired:
             p.kill()
         shutil.rmtree(data, ignore_errors=True)
-        if kept is None:
-            if os.path.exists(relay_file):
-                os.remove(relay_file)
-        else:
-            open(relay_file, 'wb').write(kept)
+        for f, v in kept.items():
+            if v is None:
+                if os.path.exists(f):
+                    os.remove(f)
+            else:
+                open(f, 'wb').write(v)
 
 
 if __name__ == '__main__':

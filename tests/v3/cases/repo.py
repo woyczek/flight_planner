@@ -1476,3 +1476,65 @@ def i21(c):
     src = (c.root / 'tests' / 'v3' / 'run.py').read_text(encoding='utf-8')
     c.ok('CRASH_LIMIT, LOW_JOBS = 3, 6' in src and 'crashes > CRASH_LIMIT and limit > LOW_JOBS' in src and 'args.lowered' in src, '',
          'more than 3 crashes: 6 runs at a time for the rest, said in the console and the report')
+
+
+@case('I22', 'One pairing for the local network and the relay (device_access)', 'I', static=True,
+      rule='refactor R-C2 (30 Oct, Simplification): one list (.devices.json, the two old files taken up then removed), one 8-digit code (a screen code with a trigram on both channels, the console code without one on the local network only), one counter, a token valid on its own channel only, « Nommer » on a console device, one revocation')
+def i22(c):
+    import importlib
+    import json
+    sys.path.insert(0, str(c.root / 'tools'))
+    D = importlib.import_module('device_access')
+    tmp = Path(tempfile.mkdtemp(prefix='sog-devices-'))
+    kept = D.FILE, dict(D.OLD), {k: (dict(v) if isinstance(v, dict) else list(v) if isinstance(v, list) else v) for k, v in D.state.items()}
+    try:
+        D.FILE = str(tmp / '.devices.json')
+        D.OLD = {'lan': str(tmp / '.lan.json'), 'relay': str(tmp / '.relay.json')}
+        D._devices.update(mtime=None, list=[])
+        D.state.update(codes={}, fails={}, wrong=[], closed=False)
+        h = D._hash
+        (tmp / '.lan.json').write_text(json.dumps({'devices': [{'hash': h('lan-old'), 'label': 'iPad · Safari', 'at': '2026-10-01T10:00:00+00:00'}]}), encoding='utf-8')
+        (tmp / '.relay.json').write_text(json.dumps({'devices': [{'id': 'r1', 'hash': h('relay-old'), 'trigram': 'ABC', 'label': 'iPhone', 'at': '2026-10-02T10:00:00+00:00',
+                                                                  'last': '', 'expires': '2099-01-01T00:00:00+00:00'}]}), encoding='utf-8')
+        rows = D.listing()
+        c.eq(sorted((r['channel'], r['trigram'], r['id']) for r in rows), [('lan', '', h('lan-old')[:12]), ('relay', 'ABC', 'r1')],
+             'the two old files taken up (the local network device keeps its id, the relay one its trigram)', what='take-up')
+        c.ok((tmp / '.devices.json').is_file() and not (tmp / '.lan.json').exists() and not (tmp / '.relay.json').exists(), str(list(tmp.iterdir())),
+             'one file left, the old ones removed')
+        c.ok(D.paired('lan-old', 'lan') and D.paired('relay-old', 'relay') and not D.paired('lan-old', 'relay') and not D.paired('relay-old', 'lan'), '',
+             'a paired device stays paired, on its own channel only')
+        # one code, 8 digits: a screen code (trigram) on either channel, the console code on the local network only
+        c.eq((D.new_code(None), D.new_code('a'), D.new_code(None, ('relay',))), (None, None, None), 'no code without a valid trigram for the relay', what='refused codes')
+        code = D.new_code('xyz')
+        c.ok(re.fullmatch(r'\d{8}', code or ''), str(code), 'an 8-digit code')
+        res, tok, tri = D.attempt('10.0.0.5', code, 'Mozilla/5.0 (Linux; Android 14) Chrome/120', 'lan')
+        c.eq((res, tri), ('ok', 'XYZ'), 'a screen code works on the local network, with its trigram', what='screen code on lan')
+        c.eq(D.attempt('10.0.0.5', code, '', 'relay')[0], 'expired', 'it works once', what='second use')
+        console = D.console_code()
+        c.eq(D.attempt('203.0.113.7', console, '', 'relay')[0], 'expired', 'the console code is not offered to the relay', what='console code on relay')
+        c.eq(D.console_state().get('code'), console, 'the console code is the one shown', what='console_state')
+        res, tok2, tri2 = D.attempt('10.0.0.6', console, 'Windows Edg/120', 'lan')
+        c.eq((res, tri2), ('ok', ''), 'the console code pairs a local network device without trigram', what='console code on lan')
+        dev = D.paired(tok2, 'lan')
+        c.ok(dev and not dev['trigram'], str(dev), 'its row has no trigram')
+        c.ok(D.name(dev['id'], 'qrs') and D.paired(tok2, 'lan')['trigram'] == 'QRS' and not D.name(dev['id'], 'ZZZ'), '',
+             '« Nommer » sets a trigram once, on a row without one')
+        # one counter for both channels
+        D.new_code('abc')
+        got = [D.attempt('198.51.100.1', '00000000', '', ch)[0] for ch in ('lan', 'relay', 'lan', 'relay', 'lan', 'relay')]
+        c.eq(got, ['bad'] * 5 + ['wait'], 'five wrong codes from an address, whatever the channel: wait', what='shared counter')
+        # one revocation: a device, a pilot, a channel
+        c.eq(D.forget(trigram='xyz'), 1, 'a pilot’s devices revoked', what='forget trigram')
+        c.ok(not D.paired(tok, 'lan'), '', 'its token no longer opens')
+        c.eq(D.forget(channel='lan'), 2, 'the local network devices revoked (the old one and the named one)', what='forget channel')
+        c.eq([r['channel'] for r in D.listing()], ['relay'], 'the relay device stays', what='left')
+        c.ok('hash' not in json.dumps(D.listing()), '', 'the listing never carries a hash')
+    finally:
+        D.FILE, D.OLD = kept[0], kept[1]
+        D.state.clear()
+        D.state.update(kept[2])
+        D._devices.update(mtime=None, list=[])
+        shutil.rmtree(tmp, ignore_errors=True)
+    src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
+    c.ok(not (c.root / 'tools' / 'lan_access.py').exists() and not (c.root / 'tools' / 'relay_access.py').exists() and 'lan_access' not in src
+         and 'relay_access' not in src and 'pattern="[0-9]{{6}}"' not in src, '', 'the two old modules are gone; no 6-digit field left')

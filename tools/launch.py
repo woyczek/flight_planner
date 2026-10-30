@@ -26,8 +26,7 @@ import aero_fetch  # données aéronautiques d'autres pays (Paramètres › Main
 from check_binaries import POINTER as LFS_POINTER  # début d'un pointeur Git LFS (fichier non récupéré)
 import version_stamps  # empreintes ?v=… posées au moment de servir (pages, scripts, feuilles des designs)
 import sim_position  # position du simulateur de ce poste (X-Plane 12, Little Navmap) pour le cadre V3
-import relay_access  # appareils des pilotes par le relais de la compagnie (R1a) : codes, jetons, révocation
-import lan_access  # appareils du réseau local (tablette, téléphone) appairés par un code : état, essais, appareils
+import device_access  # appareils appairés, réseau local et relais : un code, une liste, une révocation (R-C2)
 import vfr_import  # compilation VFR des cartes VAC (tools/report-vfr) importée dans sia/vfr/ du dépôt des données
 import outbound  # requêtes sortantes : un User-Agent nommé, chaque échec dit en console (hôte, chemin, code)
 import regen_jobs  # travaux longs du module Données (régénération) : un à la fois, état, annulation ; état du poste
@@ -266,8 +265,8 @@ def hidden(parts):
 # 127.0.0.1:<port> exigée, en-tête X-SOG-Setup : une autre page web ne peut pas l'envoyer sans pré-vérification CORS,
 # à laquelle ce serveur ne répond pas)
 # routes /__setup/ du lanceur : (méthode, chemin) → (gestionnaire, public, relay) ; public 'lan' : ouverte aussi à un appareil
-# appairé du réseau local (tools/lan_access.py la lit ici) ; 'poste' (par défaut) : ce poste seulement ; relay : ouverte aussi à
-# un appareil d'un pilote par le relais de la compagnie (--relay, tools/relay_access.py ; R1a). Une route nouvelle se déclare
+# appairé du réseau local ; 'poste' (par défaut) : ce poste seulement ; relay : ouverte aussi à un appareil d'un pilote par
+# le relais de la compagnie (--relay ; R1a) — les appareils des deux canaux : tools/device_access.py. Une route nouvelle se déclare
 # là où elle est écrite (@route), jamais dans une liste à part.
 ROUTES = {}
 ROUTE_PATHS = set()
@@ -355,7 +354,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             jar.load(self.headers.get('Cookie') or '')
         except http.cookies.CookieError:
             pass
-        dev = relay_access.paired(jar[relay_access.COOKIE].value if relay_access.COOKIE in jar else '')
+        name = device_access.RELAY_COOKIE
+        dev = device_access.paired(jar[name].value if name in jar else '', 'relay')
         if not dev:
             if self.command == 'GET' and 'text/html' in (self.headers.get('Accept') or '') and not path.startswith('/__setup/'):
                 self._relay_page(safe_next(self.path), 401)
@@ -441,10 +441,10 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             size = 0
         form = urllib.parse.parse_qs(self.rfile.read(size).decode('utf-8', 'replace') if size > 0 else '')
         nxt = safe_next((form.get('next') or ['/frame/'])[0])
-        res, val, tri = relay_access.attempt(self._client_ip(), (form.get('code') or [''])[0], self.headers.get('User-Agent') or '')
+        res, val, tri = device_access.attempt(self._client_ip(), (form.get('code') or [''])[0], self.headers.get('User-Agent') or '', 'relay')
         if res == 'ok':
             self.send_response(303)
-            self.send_header('Set-Cookie', f'{relay_access.COOKIE}={val}; Path=/; Max-Age={relay_access.MAX_AGE}; HttpOnly; Secure; SameSite=Lax')
+            self.send_header('Set-Cookie', f'{device_access.RELAY_COOKIE}={val}; Path=/; Max-Age={device_access.MAX_AGE}; HttpOnly; Secure; SameSite=Lax')
             self.send_header('Location', nxt)
             self.send_header('Content-Length', '0')
             self.send_header('Cache-Control', 'no-store')
@@ -463,10 +463,10 @@ class Setup(http.server.SimpleHTTPRequestHandler):
     def _lan_gate(self):
         """Appareil du réseau local : adresse privée et hôte exact exigés, appairage (cookie) exigé pour tout — page
         d'appairage pour une page demandée, 401 sinon —, puis seulement les routes /__setup/ de l'appli Pilote
-        (tools/lan_access.py). Vrai si la requête a reçu sa réponse ici."""
+        (tools/device_access.py). Vrai si la requête a reçu sa réponse ici."""
         if not self._lan():
             return False
-        if not lan_access.private(self.client_address[0]) or not self._local_host():
+        if not device_access.private(self.client_address[0]) or not self._local_host():
             self._json({'error': 'refusé'}, 403)
             return True
         path = self.path.split('?', 1)[0].split('#', 1)[0]
@@ -478,9 +478,9 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             jar.load(self.headers.get('Cookie') or '')
         except http.cookies.CookieError:
             pass
-        name = lan_access.cookie_name(self.port)
+        name = device_access.lan_cookie(self.port)
         token = jar[name].value if name in jar else ''
-        if not lan_access.paired(token):
+        if not device_access.paired(token, 'lan'):
             if self.command == 'GET' and 'text/html' in (self.headers.get('Accept') or '') and not path.startswith('/__setup/'):
                 self._lan_page(safe_next(self.path), 401)
             else:
@@ -510,8 +510,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 f'<h1 style="font-size:1.3em">{e(tx["title"])}</h1><p>{e(tx["intro"].format(host=socket.gethostname()))}</p>'
                 + (f'<p role="alert" style="color:#b00020"><b>{e(msg)}</b></p>' if msg else '')
                 + f'<form method="post" action="/__lan/pair"><input type="hidden" name="next" value="{e(nxt)}">'
-                f'<label>{e(tx["code"])}<br><input name="code" inputmode="numeric" pattern="[0-9]{{6}}" maxlength="6" '
-                f'autocomplete="one-time-code" required autofocus style="font-size:1.6em;letter-spacing:.2em;width:7em;margin:8px 0"></label><br>'
+                f'<label>{e(tx["code"])}<br><input name="code" inputmode="numeric" pattern="[0-9]{{8}}" maxlength="8" '
+                f'autocomplete="one-time-code" required autofocus style="font-size:1.6em;letter-spacing:.2em;width:9em;margin:8px 0"></label><br>'
                 f'<button type="submit" style="font-size:1.1em;padding:8px 20px">{e(tx["pair"])}</button></form>'
                 f'<p style="color:#666;font-size:.9em">{e(tx["note"])}</p></body></html>').encode('utf-8')
         self.send_response(code)
@@ -537,10 +537,10 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             size = 0
         form = urllib.parse.parse_qs(self.rfile.read(size).decode('utf-8', 'replace') if size > 0 else '')
         nxt = safe_next((form.get('next') or ['/frame/'])[0])
-        res, val = lan_access.attempt(self.client_address[0], (form.get('code') or [''])[0], self.headers.get('User-Agent') or '')
+        res, val, _ = device_access.attempt(self.client_address[0], (form.get('code') or [''])[0], self.headers.get('User-Agent') or '', 'lan')
         if res == 'ok':
             self.send_response(303)
-            self.send_header('Set-Cookie', f'{lan_access.cookie_name(self.port)}={val}; Path=/; Max-Age={lan_access.MAX_AGE}; HttpOnly; SameSite=Strict')
+            self.send_header('Set-Cookie', f'{device_access.lan_cookie(self.port)}={val}; Path=/; Max-Age={device_access.MAX_AGE}; HttpOnly; SameSite=Strict')
             self.send_header('Location', nxt)
             self.send_header('Content-Length', '0')
             self.send_header('Cache-Control', 'no-store')
@@ -1079,18 +1079,19 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             v = ivao_oauth_start(dev['id'] if dev else '', self._ivao_redirect())
         return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
 
-    @route('GET', '/__setup/relay', public='poste')
-    def _get_relay(self, path):
-        # relais de la compagnie (R1a) : en marche ou non, l'hôte public, les appareils (trigramme, appareil, dates ; jamais
-        # une empreinte) et les codes en cours (sans leur valeur) — ce poste seulement
+    @route('GET', '/__setup/devices', public='poste')
+    def _get_devices(self, path):
+        # appareils appairés des deux canaux (R-C2) : la liste (canal, trigramme, appareil, dates ; jamais une empreinte), les
+        # codes en cours (sans leur valeur), l'état du réseau local et du relais — ce poste seulement
         if not self._allowed() or self._lan():
             return self._json({'error': 'refusé'}, 403)
-        return self._json({'on': bool(RELAY['host']), 'host': RELAY['host'], 'devices': relay_access.listing(),
-                           'pending': relay_access.pending()})
+        return self._json({'devices': device_access.listing(), 'pending': device_access.pending(), 'lan': lan_state(),
+                           'relay': {'on': bool(RELAY['host']), 'host': RELAY['host']}})
 
-    @route('POST', '/__setup/relay/devices', '/__setup/relay/devices/revoke', public='poste')
-    def _post_relay_devices(self, path, body):
-        # un code d'appairage pour un pilote (8 chiffres, 10 minutes, une fois), ou la révocation d'un appareil ou d'un pilote
+    @route('POST', '/__setup/devices', '/__setup/devices/revoke', '/__setup/devices/name', public='poste')
+    def _post_devices(self, path, body):
+        # un code d'appairage pour un pilote (8 chiffres, 10 minutes, une fois, les deux canaux), la révocation d'un appareil,
+        # d'un pilote ou d'un canal, ou le trigramme posé sur un appareil appairé par un code de console
         if self._lan():
             return self._json({'error': 'refusé'}, 403)
         try:
@@ -1099,12 +1100,20 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
         a = a if isinstance(a, dict) else {}
         if path.endswith('/revoke'):
-            n = relay_access.forget(device_id=str(a.get('id') or '') or None, trigram=str(a.get('trigram') or '') or None)
+            ch = str(a.get('channel') or '')
+            if ch and ch not in device_access.CHANNELS:
+                return self._json({'ok': False, 'message': 'canal inconnu'}, 400)
+            n = device_access.forget(device_id=str(a.get('id') or '') or None, trigram=str(a.get('trigram') or '') or None,
+                                     channel=ch or None, every=a.get('all') is True)
             return self._json({'ok': True, 'removed': n})
-        code = relay_access.new_code(a.get('trigram'))
+        if path.endswith('/name'):
+            if not device_access.name(str(a.get('id') or ''), a.get('trigram')):
+                return self._json({'ok': False, 'message': 'trigramme attendu, appareil sans trigramme'}, 400)
+            return self._json({'ok': True})
+        code = device_access.new_code(a.get('trigram'))
         if not code:
             return self._json({'ok': False, 'message': 'trigramme attendu (2 à 5 lettres ou chiffres)'}, 400)
-        return self._json({'ok': True, 'code': code, 'trigram': str(a.get('trigram')).upper(), 'expires_in': relay_access.CODE_TTL})
+        return self._json({'ok': True, 'code': code, 'trigram': str(a.get('trigram')).upper(), 'expires_in': device_access.CODE_TTL})
 
     @route('GET', '/__setup/gitlab/tokens', public='poste')
     def _get_gitlab_tokens(self, path):
@@ -1377,16 +1386,12 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         if a.get('open') is True and RELAY['host']:
             # relais de la compagnie : le poste n'écoute que sur 127.0.0.1, jamais aussi sur le réseau local
             return self._json({'error': 'relais : réseau local fermé'}, 409)
-        if a.get('forget') is True:
-            lan_access.forget()
-        elif isinstance(a.get('forget'), str):
-            lan_access.forget(a['forget'])
         if a.get('open') is True:
             lan_open(bool(a.get('all')))
         elif a.get('open') is False:
             lan_close()
         if a.get('code') and LAN['servers']:
-            say(f'  Réseau local : nouveau code d’appairage : {lan_access.new_code()} (10 minutes)')
+            say(f'  Réseau local : nouveau code d’appairage : {device_access.console_code()} (10 minutes)')
         return self._json(lan_state())
 
     @route('POST', '/__setup/vfr-import', public='poste')
@@ -1788,7 +1793,7 @@ class Server6(Server):
     address_family = socket.AF_INET6
 
 
-# ---- réseau local (lot 18, tools/lan_access.py) : serveurs sur les adresses privées de ce poste, même port, ouverts sur
+# ---- réseau local (lot 18, tools/device_access.py) : serveurs sur les adresses privées de ce poste, même port, ouverts sur
 # demande et fermés avec le lanceur
 LAN = {'servers': [], 'hosts': set(), 'order': [], 'handler': None, 'port': 0}
 LAN_MAX_BODY = 16 * 1024 * 1024  # corps d'un POST venu du réseau local (un lot d'écritures, un relais)
@@ -2048,10 +2053,10 @@ def lan_state():
     """État de l'accès du réseau local : ouvert, adresses de l'appli Pilote (la principale d'abord), code, appareils
     appairés, nom du poste."""
     on = bool(LAN['servers'])
-    cs = lan_access.code_state() if on else {}
+    cs = device_access.console_state() if on else {}
     return {'on': on, 'urls': [f'http://{h}/frame/' for h in LAN['order']] if on else [],
-            'available': lan_access.addresses(), 'code': cs.get('code', ''), 'expires': cs.get('expires', 0),
-            'closed': bool(cs.get('closed')), 'devices': len(lan_access.devices()), 'paired': lan_access.listing(),
+            'available': device_access.addresses(), 'code': cs.get('code', ''), 'expires': cs.get('expires', 0),
+            'closed': bool(cs.get('closed')), 'devices': len(lan := device_access.listing('lan')), 'paired': lan,
             'host': socket.gethostname()}
 
 
@@ -2065,7 +2070,7 @@ def lan_open(every=False):
             return lan_state()
         was_open = bool(LAN['servers'])
         order = list(LAN['order'])
-        for ip in lan_access.addresses()[:None if every else 1]:
+        for ip in device_access.addresses()[:None if every else 1]:
             if f'{ip}:{LAN["port"]}' in LAN['hosts']:
                 continue
             try:
@@ -2084,7 +2089,7 @@ def lan_open(every=False):
         if was_open:
             say(f'  Réseau local : adresses ouvertes : {", ".join(order)}')
             return lan_state()
-        code = lan_access.new_code()
+        code = device_access.console_code()
         say('')
         say(f'  Réseau local ouvert : http://{order[0]}/frame/ — code d’appairage : {code} (une fois, 10 minutes)')
         say('  Windows peut demander d’autoriser Python : acceptez pour les réseaux privés seulement.')
@@ -2102,7 +2107,7 @@ def lan_close():
         if LAN['servers']:
             say('  Réseau local fermé.')
         LAN.update(servers=[], hosts=set(), order=[])
-        lan_access.clear_code()
+        device_access.clear_console()
     return lan_state()
 
 

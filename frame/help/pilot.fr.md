@@ -811,7 +811,7 @@ Vous volez sur le poste (X-Plane) et voulez la carte sur une tablette ou un tél
 lanceur, « Accès du poste » ouvre l'appli Pilote aux appareils du même réseau local (ou lancez `lancer.cmd --lan`).
 
 1. **Ouvrir aux appareils du réseau local** : la carte montre l'adresse à ouvrir sur l'appareil, son code QR et un
-   code d'appairage à 6 chiffres. Windows peut demander d'autoriser Python : acceptez pour les réseaux privés
+   code d'appairage à 8 chiffres (6 jusqu'au 30 octobre 2026). Windows peut demander d'autoriser Python : acceptez pour les réseaux privés
    seulement.
 2. Sur la tablette, scannez le code QR avec l'appareil photo (ou tapez l'adresse), puis saisissez le code. Il n'est
    demandé qu'**une fois par appareil**.
@@ -912,10 +912,12 @@ cartographique (`apps/cpco/map_parser.html`).
   dans votre compte IVAO. Sans application IVAO réglée, le bouton est éteint et la carte dit où elle manque : sur ce poste,
   Administration › « Application IVAO » la règle (elle donne l'adresse de retour à déclarer chez IVAO) ; sur le relais,
   l'administrateur la règle.
-- **Appareils du relais** : quand le lanceur tourne en relais de la compagnie (derrière le proxy inverse du NAS, en
-  https), un pilote appaire chaque appareil une fois avec un code à 8 chiffres que l'administrateur demande dans
-  Maintenance › « Appareils du relais » pour son trigramme (une fois, 10 minutes) ; ses écritures sont signées de ce
-  trigramme. Un appareil perdu, ou tous ceux d'un pilote qui part, s'y révoquent.
+- **Appareils** : un seul écran, Maintenance › « Appareils », pour tous les appareils des pilotes, qu'ils viennent du
+  réseau local ou du relais de la compagnie (quand le lanceur tourne en relais, derrière le proxy inverse du NAS, en
+  https). Un pilote appaire chaque appareil une fois avec un code à 8 chiffres que l'administrateur demande là pour son
+  trigramme (une fois, 10 minutes, sur l'un ou l'autre canal) ; ses écritures sont signées de ce trigramme. Chaque ligne
+  dit le canal de l'appareil ; celle d'un appareil appairé par le code de la console dit « code de console », et
+  « Nommer » lui pose un trigramme. Un appareil perdu, ou tous ceux d'un pilote qui part, s'y révoquent.
 - **Jetons des pilotes (GitLab)** : dans l'application Maintenance, sur le poste du lanceur, « Jetons des pilotes »
   crée un jeton d'accès de projet par pilote (à son trigramme, rôle Developer, un an au plus), le montre une seule fois,
   et le révoque. Le lanceur s'y sert du jeton de l'administrateur (secrets/gitlab.json), qu'il ne montre jamais. Réglez

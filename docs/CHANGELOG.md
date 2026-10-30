@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refactor R-C2, no behaviour change but one: one pairing for the local network and the relay**
+  (`tools/device_access.py` replaces `lan_access.py` and `relay_access.py`; `tools/launch.py`, `frame/settings/devices.js`
+  replaces `relay_devices.js`, `frame/settings/launcher.js`, `frame/app.js`; frame SPEC § 3.10–3.12, INTEGRATION,
+  DECISIONS; help ×4; noreg I22, A40, I13) — one list of devices with their channel, one code, one revocation, one
+  Maintenance screen « Appareils » (`#relay-devices` leads there); the local network's pairing code has 8 digits, no
+  longer 6.
 - **Map: a light drawing while panning** (`modules/maps/light.js`, `draw.js`, `render.js`; maps help ×4, DECISIONS; noreg D68).
   During a gesture the map is no longer frozen on its last image: at most every 120 ms it redraws its lines only (airspaces,
   airways, route, aerodromes as small squares) from paths cached in Mercator, under a millisecond on the real Paris base; the

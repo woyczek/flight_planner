@@ -101,7 +101,7 @@ Starter bedient, öffnet „Zugang des Rechners“ die Pilot-App für Geräte im
 `lancer.cmd --lan`).
 
 1. **Für Geräte im lokalen Netz öffnen**: Die Karte zeigt die auf dem Gerät zu öffnende Adresse, ihren QR-Code und
-   einen 6-stelligen Kopplungscode. Windows fragt eventuell, ob Python erlaubt werden soll: nur für private
+   einen 8-stelligen Kopplungscode (bis zum 30. Oktober 2026 6-stellig). Windows fragt eventuell, ob Python erlaubt werden soll: nur für private
    Netzwerke zulassen.
 2. Scannen Sie auf dem Tablet den QR-Code mit der Kamera (oder tippen Sie die Adresse), dann geben Sie den Code ein.
    Er wird nur **einmal pro Gerät** abgefragt.
@@ -207,10 +207,12 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   IVAO-Anwendung ist die Schaltfläche aus und die Karte sagt, wo sie fehlt: auf diesem Arbeitsplatz richtet Verwaltung ›
   „IVAO-Anwendung“ sie ein (sie nennt die bei IVAO anzugebende Rückkehradresse); auf dem Relais richtet der Administrator
   sie ein.
-- **Geräte des Relais**: Läuft der Starter als Relais der Fluggesellschaft (hinter dem Reverse-Proxy des NAS, in
-  https), koppelt ein Pilot jedes Gerät einmal mit einem 8-stelligen Code, den der Administrator in Maintenance › „Geräte
-  des Relais“ für sein Kürzel anfordert (einmal, 10 Minuten); seine Änderungen tragen dieses Kürzel. Ein verlorenes Gerät
-  oder alle eines Piloten, der geht, werden dort widerrufen.
+- **Geräte**: ein einziger Bildschirm, Wartung › „Geräte“, für alle Geräte der Piloten, ob sie aus dem lokalen Netz oder
+  über das Relais der Fluggesellschaft kommen (wenn der Starter als Relais läuft, hinter dem Reverse-Proxy des NAS, in
+  https). Ein Pilot koppelt jedes Gerät einmal mit einem 8-stelligen Code, den der Administrator dort für sein Kürzel
+  anfordert (einmal, 10 Minuten, auf dem einen oder anderen Kanal); seine Änderungen tragen dieses Kürzel. Jede Zeile
+  nennt den Kanal des Geräts; ein mit dem Konsolencode gekoppeltes Gerät zeigt „Konsolencode“, und „Benennen“ gibt ihm ein
+  Kürzel. Ein verlorenes Gerät oder alle eines Piloten, der geht, werden dort widerrufen.
 - **Token der Piloten (GitLab)**: In der Anwendung Maintenance erstellt „Token der Piloten“ auf dem Rechner des Starters
   ein Projektzugangstoken je Pilot (nach seinem Kürzel benannt, Rolle Developer, höchstens ein Jahr), zeigt es nur einmal
   und widerruft es. Der Starter verwendet dafür das Token des Administrators (secrets/gitlab.json), das er nie zeigt.
