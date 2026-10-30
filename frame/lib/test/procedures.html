@@ -48,7 +48,8 @@
     labelOf,
     transitionLabelOf,
     exitOf,
-    entryOf
+    entryOf,
+    arincApp
   } from '../procedures.js?v=0';
   const rows = [],
     out = document.getElementById('out');
@@ -513,6 +514,83 @@
     })) === '' && qIdsOf(compatible([rS1, rS2], {
       route: []
     })) === 'S1,S2');
+  // une transition d'approche avec une STAR : son IAF est sur la STAR (sa fin comprise), sinon pas proposée
+  const sT = {
+      id: 'ST',
+      kind: 'STAR',
+      runways: [],
+      points: [{
+        id: 'OKAPI'
+      }, {
+        id: 'BISON'
+      }]
+    },
+    tOk = {
+      id: 'TA',
+      kind: 'APP',
+      name: 'INA RNAV RWY 06',
+      transition: 'BISON 1E',
+      runways: ['06'],
+      points: [{
+        id: 'BISON'
+      }, {
+        id: 'ZP617'
+      }]
+    },
+    tNo = {
+      ...tOk,
+      id: 'TB',
+      transition: 'ALPAG 1E',
+      points: [{
+        id: 'ALPAG'
+      }, {
+        id: 'ZP621'
+      }]
+    };
+  ck('compatible : une transition d’approche va avec une STAR quand son IAF est sur la STAR (sa fin comprise), sinon non', qIdsOf(
+    compatible(
+      [tOk, tNo], {
+        star: sT
+      })) === 'TA' && qIdsOf(compatible([tOk, tNo], {})) === 'TA,TB');
+  // même nom, une fiche par piste (« AMB 9E » de 02, 06 et 07 à LFPO) : une famille, une ligne, ses pistes en étiquettes
+  const amb = rw => ({
+      id: `AMB9E.${rw}`,
+      kind: 'STAR',
+      name: 'AMB 9E',
+      runways: [rw],
+      points: [{
+        id: 'AMB'
+      }]
+    }),
+    ambs = [amb('02'), amb('06'), amb('07')],
+    ambRows = familiesOf([...ambs, qS5x]);
+  ck('siblingsOf / familiesOf : des fiches de même nom pour des pistes différentes font une famille, une ligne', qIdsOf(siblingsOf(ambs,
+      ambs[0])) === qIdsOf(ambs) && ambRows.length === 2 && ambRows[0].name === 'AMB 9E' && ambRows[0].runways.join() === '02,06,07' &&
+    siblingsOf([amb('02'), {
+      ...amb('02'),
+      id: 'DUP'
+    }], amb('02')).length === 0, JSON.stringify(ambRows.map(r => [r.name, r.runways])));
+  ck('arincApp : déjà ARINC tel quel ; ILS → I, RNP → R, LOC → L, VOR/DME → D, la lettre après un tiret ; rien sinon', arincApp({
+    name: 'I13R'
+  }) === 'I13R' && arincApp({
+    name: 'ILS CAT I or CAT II or CAT III RWY 02'
+  }) === 'I02' && arincApp({
+    name: 'RNP Y RWY 06'
+  }) === 'R06-Y' && arincApp({
+    name: 'ILS CAT I or CAT II and CAT III or LOC RWY 07'
+  }) === 'I07' && arincApp({
+    name: 'VOR/DME RWY 24'
+  }) === 'D24' && arincApp({
+    name: 'LOC RWY 25'
+  }) === 'L25' && arincApp({
+    name: 'VISUAL RWY 25'
+  }) === '' && arincApp({
+    name: 'Circling'
+  }) === '', [arincApp({
+    name: 'RNP Y RWY 06'
+  }), arincApp({
+    name: 'VOR/DME RWY 24'
+  })].join());
   ck('runwayChoices : rien de rien, rien', runwayChoices([], [], null).length === 0 && runwayChoices(null, null, {}).length === 0);
 
   window.__bench = {

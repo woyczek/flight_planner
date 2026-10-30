@@ -4,6 +4,14 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **30 Oct 2026 — the .fms export, APP and CYCLE; a shared rule for the Map** (BUGS SOG's walk). `APP` is the ARINC 424
+  identifier (`PR.arincApp`: the name when it already is one, « I13R »; else derived from the published name, ILS → I, LOC → L,
+  RNP / RNAV / GNSS → R, VOR → V, VOR/DME → D, NDB → N, NDB/DME → Q, the SIA letter after a dash, « R06-Y »), else the name without
+  spaces. `CYCLE` is the published base's cycle when Fuel knows it (`aerodb.status()`: the open zones, else the latest published),
+  then the records' cycle, then the date. In `compatible({ star })`, an approach transition fits when its IAF is a point of the
+  STAR (its end included), else it is not proposed with that STAR (for the Map's pane). Records of the SAME name serving
+  different runways (« AMB 9E » of 02, 06, 07 at LFPO) are a family too (`siblingsOf`, `familiesOf`: one row, the runways as tags),
+  besides the suffix families (ABLI4L / ABLI4R). Benches fms (36), procedures (60).
 - **30 Oct 2026 — anomalies 9 to 13 of BUGS SOG's walk.** 13: one distance — the route line gives the extended path's distance
   when the chosen procedures are read (the quote's and the profile's), « d'après la route, procédures comprises »; the TOD tile says
   « TOD avant l'arrivée » (another quantity). 12: « · » separators with spaces. 10: the change line « SID → AMOLO 7A » when nothing

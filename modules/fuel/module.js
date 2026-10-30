@@ -4615,7 +4615,10 @@ async function exportFms(which) {
   if (placedPoints() < 2) return;
   try {
     const procs = s.procs?.key === procsKey(f) ? s.procs.procs || {} : await CF.loadProcedures(s.ctx.aerodb, f).catch(() => ({})),
-      look = await fmsLookups(f);
+      look = await fmsLookups(f),
+      // le cycle de la base publiée (CYCLE du .fms) : celui des zones ouvertes, sinon le plus récent des zones publiées
+      st = await Promise.resolve().then(() => s.ctx.aerodb?.status?.()).catch(() => null),
+      cycle = st?.cycle || Object.values(st?.published || {}).filter(Boolean).sort().pop() || null;
     if (gone(s)) return;
     const file = FMS.exportOf({
       xp11: 'fms1100',
@@ -4623,6 +4626,7 @@ async function exportFms(which) {
       pln: 'pln2020'
     } [which] || 'fms1100', f, CF.expandedPath(f, procs || {}), {
       procs: procs || {},
+      cycle,
       ...look
     });
     download(file.name, file.text, `${file.type};charset=utf-8`);

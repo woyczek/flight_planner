@@ -14,7 +14,8 @@ import {
 } from './flight_path.js';
 import {
   nameOf,
-  rwNum
+  rwNum,
+  arincApp
 } from './procedures.js';
 
 /** Fin de ligne des fichiers écrits : CR LF (X-Plane et MSFS lisent les deux ; la forme de Windows, où ces fichiers vivent). */
@@ -185,12 +186,16 @@ function procsOf(flight, opts) {
     arrRwy: rw(a.rwy, P.arrRwy),
     star: nm(P.star, a.star),
     starTrans: typeof a.trans === 'string' ? transOf(P.starTrans, a.trans) : '',
-    app: nm(P.app, a.app),
+    // l'identifiant ARINC (« I02 », « R06-Y ») quand la fiche en porte un ou qu'il se déduit, sinon le nom sans espaces
+    app: (P.app && arincApp(P.app)) || nm(P.app, a.app).replace(/\s+/g, ''),
     appTrans: typeof a.appTrans === 'string' ? transOf(P.appTrans, a.appTrans) : ''
   };
 }
-/** Cycle AIRAC du fichier : celui des fiches de procédures choisies, sinon celui du jour du vol. */
+/** Cycle AIRAC du fichier : celui de la base publiée quand l'appelant le donne (opts.cycle, « 2610 » ou sa date), sinon celui des
+ *  fiches de procédures choisies, sinon celui du jour du vol. */
 function cycleOf(flight, opts) {
+  const base = airacOfField(opts?.cycle);
+  if (base) return base;
   const P = opts?.procs || {};
   for (const rec of [P.sid, P.star, P.app, P.sidTrans, P.starTrans, P.appTrans]) {
     const c = airacOfField(rec?.source?.cycle ?? rec?.cycle);

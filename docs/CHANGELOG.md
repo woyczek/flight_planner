@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Flight plan export: APP as the ARINC identifier, CYCLE of the published base** (`frame/lib/fms.js`, `procedures.js`
+  `arincApp`; `compatible({ star })` for approach transitions) — « APP I02 », « CYCLE 2610 ».
 - **Map and Fuel: approach labels without repeats** (`modules/maps/choose.js`, `frame/lib/procedures.js` `transitionLabelOf`;
   Fuel and Map help ×4, maps SPEC, frame INTEGRATION; noreg D70, F66, procedures unit page). The runway tag goes when the label
   already says it ("ILS 02", not "ILS 02 02"); a transition whose published name starts with its IAF reads "via MOLBA 1E" (not

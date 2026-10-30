@@ -190,6 +190,29 @@ export function labelOf(app, list) {
   return mine[2];
 }
 
+/** L'identifiant ARINC 424 d'une approche, pour les fichiers de plan de vol (X-Plane : APP ; parcours de BUGS SOG, 30 octobre) :
+ *  le nom quand il en est déjà un (CIFP : « I13R », « R06-Y ») ; sinon déduit du nom publié, le type puis la piste (ILS → I, LOC → L,
+ *  RNP / RNAV / GNSS → R, VOR → V, VOR/DME → D, NDB → N, NDB/DME → Q), la lettre du SIA après un tiret (« RNP Y RWY 06 » → « R06-Y ») ;
+ *  '' quand rien ne se déduit (l'appelant écrit alors le nom nettoyé). */
+export function arincApp(rec) {
+  const n = String(nameOf(rec) ?? '').trim().toUpperCase().replace(/\s+/g, ' ');
+  if (/^[A-Z]\d{2}[LRC]?(-[A-Z])?$/.test(n)) return n;
+  const p = appParts(rec);
+  if (!p) return '';
+  const head = n.split(' RWY')[0],
+    t = /VOR\s*\/?\s*DME/.test(head) ? 'D' : /NDB\s*\/?\s*DME/.test(head) ? 'Q' : {
+      ILS: 'I',
+      LOC: 'L',
+      RNP: 'R',
+      RNAV: 'R',
+      GNSS: 'R',
+      GPS: 'R',
+      VOR: 'V',
+      NDB: 'N'
+    } [p.type];
+  return t ? `${t}${p.rwy}${p.letter ? `-${p.letter}` : ''}` : '';
+}
+
 /** Libellé d'une transition d'approche : « via ODILO 1A » quand le nom publié commence par l'IAF (son premier point) ; sinon
  *  « via ABC1 · ABC 1A » (l'IAF, puis le nom) ; « via VA201 » quand le nom est l'IAF. via : le mot de liaison (« via », le même dans
  *  les quatre langues). */
@@ -247,15 +270,25 @@ export function familyOf(name) {
 }
 
 /** Les fiches de la famille de proc parmi list : même sorte, même radical et même chiffre, sans transition, dès que le dernier
- *  caractère diffère entre elles (au moins deux suffixes) ; [] sinon (une procédure seule de sa forme est une ligne ordinaire : jamais
- *  de devinette sur un nom seul). Dans l'ordre de list. */
+ *  caractère diffère entre elles (au moins deux suffixes) ; sinon les fiches du MÊME nom qui desservent des pistes différentes (une
+ *  fiche par piste) ; [] sinon (une procédure seule de sa forme est une ligne ordinaire : jamais de devinette sur un nom seul). Dans
+ *  l'ordre de list. */
 export function siblingsOf(list, proc) {
-  const f = familyOf(nameOf(proc));
-  if (!f) return [];
-  const same = (list || []).filter(r => r && !r.transition && (!proc.kind || r.kind === proc.kind) && familyOf(nameOf(r))?.family === f
-    .family);
-  return new Set(same.map(r => familyOf(nameOf(r)).suffix)).size > 1 ? same : [];
+  const kin = r => r && !r.transition && (!proc?.kind || r.kind === proc.kind),
+    f = familyOf(nameOf(proc));
+  if (f) {
+    const same = (list || []).filter(r => kin(r) && familyOf(nameOf(r))?.family === f.family);
+    if (new Set(same.map(r => familyOf(nameOf(r)).suffix)).size > 1) return same;
+  }
+  // le même nom pour plusieurs pistes (une fiche par piste : « AMB 9E » de 02, 06 et 07 à LFPO) est aussi une famille (§ 10.30,
+  // parcours de BUGS SOG du 30 octobre) ; la piste choisie résout la fiche
+  const key = sameNameKey(proc),
+    named = key ? (list || []).filter(r => kin(r) && sameNameKey(r) === key) : [];
+  return named.length > 1 && new Set(named.map(r => (r.runways || []).map(rwNum).sort().join())).size > 1 ? named : [];
 }
+
+/** La clé d'un nom pour les familles de même nom : majuscules, sans espaces (« AMB 9E » et « AMB9E » se valent). */
+const sameNameKey = r => String(nameOf(r) ?? '').toUpperCase().replace(/\s+/g, '');
 
 /** Les lignes d'une liste de SID ou de STAR, familles regroupées, dans l'ordre de leur première fiche : [{ name, recs, runways }].
  *  name : la famille (« ABLI4 ») ou le nom de la procédure seule ; recs : ses fiches (sans transition) ; runways : les pistes qu'elles
@@ -265,8 +298,11 @@ export function familiesOf(list) {
     byKey = new Map();
   for (const r of list || []) {
     if (!r || r.transition) continue;
-    const f = siblingsOf(list, r).length ? familyOf(nameOf(r)).family : null,
-      key = f ? `${r.kind}:${f}` : null;
+    const sib = siblingsOf(list, r),
+      // famille par suffixe (« ABLI4 ») quand les suffixes diffèrent, sinon famille de même nom (« AMB 9E »)
+      bySuffix = sib.length && new Set(sib.map(x => nameOf(x))).size > 1,
+      f = !sib.length ? null : bySuffix ? familyOf(nameOf(r)).family : nameOf(r),
+      key = f ? `${r.kind}:${bySuffix ? f : sameNameKey(r)}` : null;
     if (key && byKey.has(key)) {
       byKey.get(key).recs.push(r);
       continue;
@@ -302,7 +338,10 @@ const joins = (star, app) => servesAll(app) || servesAll(star) || app.runways.so
  *  choice : { rwy, sid, star, app }, chaque valeur une fiche, un identifiant (byId : Map, objet ou fonction, comme conflictsOf) ou un
  *  tableau (une famille choisie avant sa piste : ce qui va avec l'une de ses fiches) ; un champ absent, null (« Aucune ») ou introuvable
  *  ne filtre pas. route (§ 10.31, axe « vers votre route ») : les identifiants des points de la route tapée ; une SID va avec quand sa
- *  sortie y est, une STAR quand son entrée y est ; une route vide ne filtre pas. Nouveau tableau, dans l'ordre de list. */
+ *  sortie y est, une STAR quand son entrée y est ; une route vide ne filtre pas. Une transition d'approche (segment d'approche
+ *  initiale, ou fiche d'approche à transition) avec une STAR choisie : elle va avec quand son IAF (son premier point) est un point de
+ *  la STAR, sa fin comprise ; sinon elle n'est pas proposée avec cette STAR (parcours de BUGS SOG, 30 octobre). Nouveau tableau, dans
+ *  l'ordre de list. */
 export function compatible(list, choice, byId) {
   const o = choice || {},
     recs = v => [].concat(v ?? []).map(x => typeof x === 'string' ? recById(byId, x) : x).filter(x => x && typeof x === 'object'),
@@ -321,6 +360,10 @@ export function compatible(list, choice, byId) {
     }
     if (r.kind === 'SID') return onRwy(r) && onRoute(exitOf(r));
     if (r.kind === 'STAR') return onRwy(r) && any(app, a => joins(r, a)) && onRoute(entryOf(r));
+    if (r.kind === 'APP' && (isAppTransition(r) || r.transition)) {
+      const iaf = pointsOf(r)[0];
+      return onRwy(r) && any(star, s => !iaf || pointsOf(s).includes(iaf));
+    }
     if (r.kind === 'APP') return onRwy(r) && any(star, s => joins(s, r));
     return true;
   });

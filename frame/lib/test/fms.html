@@ -233,7 +233,7 @@
     .join('|'));
   ck('1100 : en-tête ADEP / DEPRWY / SID / SIDTRANS / ADES / DESRWY / STAR / STARTRANS / APP dans l’ordre, noms sans espace ni point',
     L.slice(3, ne).join('|') ===
-    'ADEP LFXA|DEPRWY RW07|SID ALPHA1A|SIDTRANS ZZAAA|ADES EIXB|DESRWY RW25L|STAR BRAVO2B|STARTRANS ZZV|APP ILSZRWY25L', L.slice(3,
+    'ADEP LFXA|DEPRWY RW07|SID ALPHA1A|SIDTRANS ZZAAA|ADES EIXB|DESRWY RW25L|STAR BRAVO2B|STARTRANS ZZV|APP I25L-Z', L.slice(3,
       ne).join('|'));
   ck('1100 : NUMENR est le nombre de lignes qui suivent', +L[ne].split(' ')[1] === rowsX.length && rowsX.length === 9, `${L[ne]} / ${rowsX.length}`);
   ck('1100 : une ligne par point de la route seulement (aucun point de procédure)', !/DB101|ST201|AP30/.test(x) && rowsX.every(l =>
@@ -264,6 +264,12 @@
   ck('1100 : sans procédure choisie, aucune ligne de procédure ni de piste ; le cycle vient de la date', !/^(DEPRWY|SID|STAR|APP|DESRWY)/m
     .test(bare) && /^ADEP LFXA\r\nADES EIXB\r\nNUMENR 9/m
     .test(bare) && /CYCLE 2611/.test(bare), bare.slice(0, 120));
+  // le cycle de la base publiée donné par l'appelant l'emporte (parcours de BUGS SOG, 30 octobre : CYCLE 2610, la base)
+  const based = toFms1100(flight, path, {
+    ...opts,
+    cycle: '2026-10-01'
+  });
+  ck('1100 : CYCLE de la base publiée quand elle est donnée', /CYCLE 2610\r\n/.test(based), based.slice(0, 40));
   const ids = toFms1100({
     ...flight
   }, path, {});
