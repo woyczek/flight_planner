@@ -1437,9 +1437,9 @@ def _trail_wait(c, want, what):
     return got
 
 
-@case('D61', 'The flown track comes from the frame: read at mount, the whole flight, then the Map adds its newer positions', 'D',
+@case('D61', 'The flown track comes from the frame alone: read at mount, the whole flight, joined to the current position', 'D',
       tags=('maps',), screens=False, designs=('standard',), night=False,
-      rule='INTEGRATION § 6 (29 Oct; local since 30 Oct): ctx.live.trail() = { from: started.at, trail: [[lat, lon, altFt, s since started.at]] }, kept on the device; the Map starts its track from it at mount (a tab change no longer loses it), points older than 30 min kept, and only adds positions newer than its last point')
+      rule='INTEGRATION § 6 (29 Oct; local since 30 Oct; refactor R-M6): ctx.live.trail() = { from: started.at, trail: [[lat, lon, altFt, s since started.at]] }, kept on the device, is the only source of the track: read at each reading of the flight (a tab change no longer loses it), points older than 30 min kept, joined to the actual position when it is newer than its last point; the Map keeps no position of its own')
 def d61(c):
     t0 = now() - datetime.timedelta(minutes=60)
     trail = [[47.1569, -1.6078, 400, 0], [46.9, -1.45, 12000, 1800], [46.6, -1.21, 20000, 3000]]

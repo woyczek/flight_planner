@@ -1711,6 +1711,10 @@ Target: one boxed-label primitive in the render kit (text runs, hue, full / fade
 slice → 0bbe7ebbb (V3 Frame) device-local `ctx.live.trail()`. Left: the Map still merges the frame's trail with its own
 positions (`S.trail`, `TRAIL_MS`, de-duplication of consecutive points): two sources for one track.
 Target: the frame's trail is the only source, the Map draws it and keeps nothing.
+Done (R-M6, 30 Oct): `S.trail` is derived at each reading — the frame's trail, then the actual position when it is newer than
+its last point and elsewhere; `TRAIL_MS` and the merge of the Map's own positions are gone. Between two points of the frame's
+trail (one per NM or per minute) the line now goes straight from the last one to the aircraft instead of through the positions
+the Map had seen in between: the same line to within the frame's own sampling.
 
 **Order proposed** (after the stabilisation): 4 and 6 (small, state removed), 3, then 1 with its bench, then 2 and 5 together
 (one label model). Each lot: cases first (current D cases as the safety net), one commit per zone, the full noreg after.

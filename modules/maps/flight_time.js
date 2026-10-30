@@ -46,9 +46,8 @@ import {
 export {
   isStarted
 };
-/** Position réelle plus vieille que 2 min : grisée ; trace gardée : les 30 dernières minutes. */
-const STALE_MS = 120e3,
-  TRAIL_MS = 30 * 60e3;
+/** Position réelle plus vieille que 2 min : grisée. */
+const STALE_MS = 120e3;
 /** Vrai si le vol démarré est arrivé (progress.phase « arrived »). */
 export const isArrived = f => isStarted(f) && f?.progress?.phase === 'arrived';
 /** Même route (points, niveau, départ) : seule la progression a changé. */
@@ -112,15 +111,13 @@ export function progressUpdate() {
     return writeNotes();
   }
   const a = actualOf(f),
-    now = Date.now(),
-    // la trace du cadre (ctx.live.trail(), frame/lib/trail.js) : tout le vol depuis started.at, relue à chaque
-    // lecture (un changement d'onglet ne la perd plus) ; la Carte n'y ajoute que ses positions plus récentes que son dernier point
+    // la trace du cadre, seule source (ctx.live.trail(), frame/lib/trail.js ; refonte R-M6) : tout le vol depuis started.at, relue à
+    // chaque lecture (un changement d'onglet ne la perd plus), jointe à la position réelle quand elle est plus récente que son
+    // dernier point ; la Carte ne garde aucune position à elle (S.trail se refait à chaque lecture)
     own = trailOf(f, t0),
-    last = own.length ? Date.parse(own.at(-1).at) : -Infinity,
-    mine = [...(S.trail || []), ...(a ? [a] : [])].filter(p => !p.at || !Number.isFinite(t0) || Date.parse(p.at) >=
-      t0) // rien du vol précédent
-    .filter(p => p.at && Date.parse(p.at) > last && now - Date.parse(p.at) <= TRAIL_MS);
-  S.trail = [...own, ...mine].filter((p, i, all) => !i || p.lat !== all[i - 1].lat || p.lon !== all[i - 1].lon).slice(-(TRAIL_MAX + 400));
+    end = own.at(-1),
+    newer = a?.at && Date.parse(a.at) > (end ? Date.parse(end.at) : -Infinity) && (a.lat !== end?.lat || a.lon !== end?.lon);
+  S.trail = newer ? [...own, a] : own;
   const st = progressState();
   S.progHtml = progressHtml(st);
   writeNotes();

@@ -833,9 +833,10 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
     14:32Z"; on the ground at the departure while taxiing; on the profile a circle at the planned distance and altitude;
   - **actual position** (`progress.actual`, the frame's; one older than `started.at` is the previous flight's and is
     ignored, trail included): filled red aircraft turned to `trackDeg` (else the bearing from the previous position), the
-    trail dotted: the frame's `actual.trail` (`[lat, lon, altFt, s since started.at]`, the whole flight, frame/lib/trail.js),
-    read again at each reading of the flight (a change of tab no longer loses it), followed by the Map's own positions newer
-    than its last point (those of the last 30 minutes); older than 2 minutes: greyed,
+    trail dotted: the frame's trail, the only source (`ctx.live.trail()`, `[lat, lon, altFt, s since started.at]`, the whole
+    flight, frame/lib/trail.js; refactor R-M6), read again at each reading of the flight (a change of tab no longer loses it),
+    joined to the actual position when it is newer than its last point; the Map keeps no position of its own (`S.trail` is
+    derived at each reading); older than 2 minutes: greyed,
     "Position from n min ago"; the source labelled (`gps`, `network`, `ivao`, `vatsim`, `xplane` "X-Plane", `lnm` "Little
     Navmap"; any other value: no label); on the profile a filled dot at the actual distance and altitude;
   - **the progress line** (first of the notes): ahead or late in minutes and NM (both positions projected on the route;
