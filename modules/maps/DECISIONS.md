@@ -1598,3 +1598,55 @@ SPEC § 6.11, INTEGRATION § 3 ter. Choices of the session, with their reasons:
   dropped rather than overlapping. Hover follows the pointer across every family (the user: "survoler une STAR ne surligne
   plus : pas intuitif"). The wind's colour comes from `wind.severity` and its arrows from `wind.label` (where it blows, runway
   upward), Fuel's rules, so the two screens print the same thing.
+
+## Inventaire du 30/10 : à refondre
+
+Read-only inventory (BUGS SOG, 30 Oct, for the user's challenge "supprimer les faire et défaire vers un point documenté, éviter le
+code mort et les empilages"), from 28 Oct to 1ad1b897b. Per zone: what was done then undone or replaced, what is left doubled or
+dead, the target in one sentence. Nothing is changed by this section.
+
+**1. Choose mode** (`choose.js`). 5b713f77e one family per trip (`pickFamily`, `chTitle`, runway chips, full-length arrows) →
+afdb5db1f one scroll surface → af261d3e3 three families, local selection, one return → 43df712ef second reading (compatible
+only, family rows, summary) → 1f23b7d73 third reading (draw order, family labels, severity, table of contents) → 8ba329f66
+approaches as the SIA publishes them → 1ad1b897b "towards your route". Undone on the way: the one-family trip, the chips, the
+"sans nom" rows, the local `isDoubt` copy, `chMore`. Left: the mode's state has nine fields with overlapping roles (`sel`, `pend`,
+`more`, `focus`, `last`, `hl`, `items`, `view`, `hits`); `C.view` is recomputed in three places (`refresh`, the fold toggle,
+`setHl`); `itemsOf` mutates rows after the fact (`why`, `off` set in `viewOf`); two exits (`chooseExit` for the card,
+`chooseFinish`). D60 was rewritten four times and the fixtures `_CH_FILE`, `_CH2_FILE`, `_CH3_FILE` overlap.
+Target: one pure function `paneModel(records, side, sel, route)` → groups, rows, folds, summary, corrections (bench without a
+browser, in `frame/lib` beside `procedures.js`), `choose.js` keeping only `{ sel, pend, open, hl }` and rendering.
+
+**2. Labels and the collision pass** (`render.js`, `render_airspace.js`, `procs.js`, `choose.js`, `aero_symbols.js`).
+ab37f44dd airway box over the route → e14a078af procedure labels painted last → 19cb208b3 one layer list → 24197a867 one label
+per airway segment, priority order → 20233a006 airway boxes under the dim veil (a `splice` of the layer list) → b6b2043e6 runway
+numbers inside the points layer. Left: the priority is implicit (reserve phase vs paint phase, layer order, one `splice`, the
+towns moved to their paint); each part places its own labels with its own sliding rule; `many()` still deduplicates by object
+identity, which frozen copies defeat, so the airway dedup lives in `drawAirways` instead of at the source.
+Target: every layer declares its labels `{ box(es) along an anchor, priority }`, one pass sorts them by priority and places them
+(slide along the anchor, else hide); `many()` deduplicates by a key per kind.
+
+**3. Panning** (`draw.js`, `screen.js`). c9238c050: `moving` / `follow` / `settle` / `request` / `schedule` and `S.moving` — four
+entry points into drawing; `keepFrame` copies the canvas after every full drawing (≈ 1.2 ms on the real base) even when nothing
+moves. Target: one scheduler with three states (draw, follow, rest), the image kept only at `movestart`.
+
+**4. Runways** (`procs.js`, `data.js`, `draw.js`). 949f7cbd7 full-length arrow of the chosen runway (§ 10.24, `procRwy`
+threshold) → the choose mode's arrows (agent) → 20233a006 24 px threshold vector from `runwayZoom` (`procRwy` removed) →
+b6b2043e6 every aerodrome's runways. Left: two caches for one thing — `S.rwys` (departure and arrival, read in `loadProcs`)
+and `S.adRwys` (the others, asked from the previous drawing's `S.adHits`, one frame late); the default 11 written three times
+(`readSettings`, `RWY_ZOOM`, `?? 11` in `draw.js`); `arrowOf(…, side, …)` keeps a `side` the vector no longer uses; `gcNmPlain`
+is dead; `magVarOf` scans the aerodromes at each call.
+Target: one store `S.runways` (Map icao → records, departure and arrival included) filled by one request path, `runwayZoom`
+read once with its default in `readSettings`.
+
+**5. Labels of procedures** (`procs.js` `layout` / `drawLabels`, `choose.js` `L.top`, `render_airspace.js` airway boxes). Three
+drawers of boxed labels with their own fonts, paddings and line heights (`LINE_H`, `LINE_SM`); `procLabel` per procedure outside
+the mode, `cartText` per family inside; `drawLines` exported from `procs.js` for the first choose mode, used nowhere else.
+Target: one boxed-label primitive in the render kit (text runs, hue, full / faded), used by the three.
+
+**6. Flown trail** (`flight_time.js`). a158edbe5 trail read from `progress.actual.trail` → f7bad9970 bounds and `TRAIL_MAX`
+slice → 0bbe7ebbb (V3 Frame) device-local `ctx.live.trail()`. Left: the Map still merges the frame's trail with its own
+positions (`S.trail`, `TRAIL_MS`, de-duplication of consecutive points): two sources for one track.
+Target: the frame's trail is the only source, the Map draws it and keeps nothing.
+
+**Order proposed** (after the stabilisation): 4 and 6 (small, state removed), 3, then 1 with its bench, then 2 and 5 together
+(one label model). Each lot: cases first (current D cases as the safety net), one commit per zone, the full noreg after.

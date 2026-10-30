@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: inventory "à refondre" of 28–30 Oct** (`modules/maps/DECISIONS.md`, docs only). Per zone (choose mode, labels and the
+  collision pass, panning, runways, procedure labels, flown trail): what was done then undone, what is left doubled or dead, and
+  the target form in one sentence, with an order for after the stabilisation.
 - **Map, choosing on the map: SIDs and STARs towards your route first; aerodromes named by the shared rule**
   (`modules/maps/choose.js`, `draw.js`, `render.js`, `texts.js`, `style.js`; help ×4, maps SPEC; noreg D71, D72; V3 § 10.31,
   § 10.30). Among the procedures that fit the choice, the SIDs whose exit and the STARs whose entry is on the typed route come
