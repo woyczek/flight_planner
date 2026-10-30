@@ -1087,8 +1087,12 @@ in the launcher; `resume` finds it again.
   the SIA eAIP, EAD Basic) carries one named User-Agent, `SOG-launcher/<version> (+https://framagit.org/asr/flight_planner)`
   (EAD keeps a browser prefix before it); urllib's default `Python-urllib/3.x` is refused by Cloudflare in front of
   `api.ivao.aero` (403). Each failure writes one console line, `[sortant] échec <service> : <host>/<path> : HTTP 403` (or
-  the network error's kind), never the address's parameters, a header, a body or a token; a 404 / 410 that a job reads as an
-  absence (a VAC chart not published) is not written. The messages carry the code: « IVAO discovery: HTTP 403 ».
+  the network error's kind), never the address's parameters (each path segment is cut at its first `;`: EAD Basic's
+  `;jsessionid=…`), a header, a body or a token; a 404 / 410 that a job reads as an absence (a VAC chart not published) is
+  not written. The messages carry the code: « IVAO discovery: HTTP 403 ». **Every zip the launcher reads** (the FAA's CIFP,
+  the data archive of a first start) is checked before any read (`regen_jobs.zip_check`): the sum of its entries' unpacked
+  sizes at most 2 GB (`MAX_UNZIP`, `TooLarge`), the CIFP's entries at its root only. A redirect is followed to the same
+  host only, never from https to http (`outbound.SameHost`, the default of every opener that brings no rule of its own).
   `GET /__setup/status` (the detection only, the same shape everywhere; the workstation's own settings are `GET
   /__setup/workstation`, workstation only) also carries `lnm`: the sorted list of Little Navmap database kinds present on the workstation (the
   `little_navmap_<kind>.sqlite` files of its `little_navmap_db` folder; names only, `[]` when absent); `FrameData.launcher.detect()` hands it on in

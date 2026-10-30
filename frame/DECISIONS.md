@@ -2043,6 +2043,18 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
     credentials and tokens no longer reach a third-party script); every purge uses `regen_jobs.inside` (the rule of
     `base/purge`, now shared: `base_sources._inside` is it), `files_under` and `prune_empty`, so that a junction inside a cache
     is neither descended nor emptied (I17, I18 with a real junction).
+- **30 Oct 2026 — No path parameter in the console; every zip bounded** (security review of 37b043e68 and 622936805):
+  - `outbound.where` kept `urlsplit`'s path, which keeps the `;` parameters: an EAD Basic failure would have written its
+    `;jsessionid=…` (audit, line 4: never a session identifier or a ViewState in a log). Each segment is now cut at its
+    first `;`.
+  - The CIFP's zip was opened without a bound on its unpacked size. `regen_jobs.zip_check` sums the entries' announced
+    sizes before any read (zipfile never yields more than an entry's announced size; a false one ends in a CRC error),
+    2 GB at most, and refuses an entry in a folder when the reader expects a single level (the CIFP); the launcher's
+    data archive goes through it too. noreg I20.
+  - One redirect rule for every source (AeroDB's pending note on 38a9d39b7, frame/aerodb/DECISIONS « Pending », closed
+    here): `outbound.opener` adds `SameHost` (a redirect followed to the same host only, never from https to http) unless a
+    redirect handler is given (`_NoRedirect` of OpenID and GitLab, `_RelayRedirect` of `/__setup/net`, `StayOnHost` of
+    EAD); `aero_fetch`, the SIA and the jobs' downloads go through it. noreg I20 (a redirect to another host refused).
 - **30 Oct 2026 — One named User-Agent for every outgoing request; failures said in the console** (blocking bug of the
   user's IVAO trial, Simplification's rule):
   - « Connexion à IVAO impossible (IVAO discovery: HTTPError) », nothing in the console: `api.ivao.aero` answers 403

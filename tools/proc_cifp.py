@@ -16,6 +16,8 @@ import json
 import re
 import sys
 import zipfile
+
+import regen_jobs  # zip_check : le zip du CIFP borné avant lecture
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -267,6 +269,7 @@ def lines_of(path):
     p = Path(path)
     if p.suffix.lower() == '.zip':
         z = zipfile.ZipFile(p)
+        regen_jobs.zip_check(z, depth=0)  # taille décompressée plafonnée, un seul niveau (le fichier de la FAA à la racine), avant toute lecture
         name = next(n for n in z.namelist() if n.upper().startswith('FAACIFP'))
         return io.TextIOWrapper(z.open(name), encoding='latin-1')
     return open(p, encoding='latin-1')

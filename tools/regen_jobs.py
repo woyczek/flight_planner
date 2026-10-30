@@ -470,20 +470,27 @@ MAX_DOWNLOAD = 200 * 1024 * 1024  # plafond d'une réponse (comme aero_fetch : u
 
 
 class TooLarge(Exception):
-    """Réponse au-delà de MAX_DOWNLOAD : arrêtée."""
+    """Réponse au-delà de MAX_DOWNLOAD, ou zip au-delà de MAX_UNZIP : arrêté."""
 
 
-class _SameHost(urllib.request.HTTPRedirectHandler):
-    """Une redirection n'est suivie que vers le même hôte (et en https si l'adresse l'était) ; sinon une erreur."""
-
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
-        a, b = urllib.parse.urlsplit(req.full_url), urllib.parse.urlsplit(newurl)
-        if b.hostname != a.hostname or (a.scheme == 'https' and b.scheme != 'https'):
-            raise urllib.error.HTTPError(newurl, code, f'redirect to another host refused: {b.hostname}', headers, fp)
-        return super().redirect_request(req, fp, code, msg, headers, newurl)
+MAX_UNZIP = 2 * 1024 ** 3  # plafond de la taille décompressée d'un zip lu par le lanceur (CIFP, archive des données)
 
 
-_OPENER = outbound.opener(_SameHost, what='travail', quiet=(404, 410))  # une absence (404, 410) : le travail la dit
+def zip_check(zf, max_bytes=None, depth=None):
+    """Les entrées d'un zip lu par le lanceur, contrôlé avant toute lecture : la somme des tailles décompressées annoncées
+    (ZipInfo.file_size) au plus max_bytes (MAX_UNZIP par défaut ; zipfile ne rend jamais plus que la taille annoncée d'une
+    entrée, une taille fausse finit en erreur de CRC), sinon TooLarge ; depth : une entrée sous plus de depth dossiers, ValueError."""
+    infos = zf.infolist()
+    cap = MAX_UNZIP if max_bytes is None else max_bytes
+    total = sum(i.file_size for i in infos)
+    if total > cap:
+        raise TooLarge(f'zip of {total // 1048576} MB once unpacked, over {cap // 1048576} MB')
+    if depth is not None and any(i.filename.replace('\\', '/').strip('/').count('/') > depth for i in infos):
+        raise ValueError(f'zip-too-deep: entries under more than {depth} folder(s)')
+    return infos
+
+
+_OPENER = outbound.opener(what='travail', quiet=(404, 410))  # même hôte (outbound.SameHost) ; une absence (404, 410) : le travail la dit
 
 
 def download(url, timeout=120, max_bytes=None):

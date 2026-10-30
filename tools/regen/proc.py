@@ -471,7 +471,7 @@ def states_build(job, args, ctx):
             if c.get('warning'):
                 job.log(f'{s}: git: {c["warning"]}')
             view.set(s, state='done')
-        except (OSError, ValueError, SystemExit) as e:
+        except (OSError, ValueError, SystemExit, regen_jobs.TooLarge) as e:  # un zip du CIFP trop grand ou trop profond : cet État seulement
             err = 'no-cache' if isinstance(e, FileNotFoundError) and str(e) == 'no-cache' else str(e)[:120] or e.__class__.__name__
             failed.append({'state': s, 'error': err})
             view.set(s, state='failed', error=err)

@@ -100,6 +100,7 @@ def extract_data(z, quiet=False):
     .git et exécutables ignorés (SKIP_EXT)."""
     try:
         with zipfile.ZipFile(z) as zf:
+            regen_jobs.zip_check(zf)  # taille décompressée plafonnée (2 Go), avant toute lecture
             marker = next((n for n in zf.namelist() if n.endswith('data_tree.js')), None)
             if not marker:
                 return False
@@ -123,6 +124,9 @@ def extract_data(z, quiet=False):
             if skipped:
                 say(f'  {len(skipped)} fichier(s) ignoré(s) (dossier .git ou exécutable) : ' + ', '.join(skipped[:5]) + ('…' if len(skipped) > 5 else ''))
             return True
+    except regen_jobs.TooLarge as e:
+        say(f'  Archive des données refusée : {e}')
+        return False
     except (zipfile.BadZipFile, OSError):
         return False
 

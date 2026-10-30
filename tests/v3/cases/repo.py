@@ -1303,6 +1303,11 @@ def i20(c):
         def do_GET(self):
             ua = self.headers.get('User-Agent') or ''
             seen.append(ua)
+            if self.path.startswith('/away'):  # a redirect to another host (localhost is not 127.0.0.1 for the rule)
+                self.send_response(302)
+                self.send_header('Location', f'http://localhost:{self.server.server_port}/aero')
+                self.end_headers()
+                return
             if ua.startswith('Python-urllib') or self.path.startswith('/deny'):  # like Cloudflare in front of api.ivao.aero
                 self.send_response(403)
                 self.end_headers()
@@ -1346,6 +1351,17 @@ def i20(c):
         c.eq(st, 200, 'a job’s download too', what='download')
         c.ok(seen and all(u == OB.UA for u in seen), json.dumps(seen), 'every request carried the launcher’s User-Agent (discovery, GitLab, job, aero_fetch, SIA, HEAD)')
         c.ok(importlib.import_module('proc_ead').UA.endswith(OB.UA), importlib.import_module('proc_ead').UA, 'EAD keeps a browser prefix, then the launcher named')
+        # one redirect rule for every source: never to another host (AeroDB's pending note on 38a9d39b7)
+        refused = []
+        with contextlib.redirect_stdout(_io.StringIO()):
+            for name, call in (('aero_fetch', lambda: AF.get(base + '/away')), ('SIA', lambda: S.fetch(base + '/away')), ('urlopen', lambda: OB.urlopen(base + '/away', timeout=5))):
+                try:
+                    call()
+                    refused.append((name, False))
+                except urllib.error.HTTPError as e:
+                    refused.append((name, e.code == 302 and 'another host' in str(e.reason)))
+        c.eq(refused, [('aero_fetch', True), ('SIA', True), ('urlopen', True)], 'a redirect off the starting host is refused', what='redirects')
+        c.eq(RJ.download(base + '/away', 5)[0], 302, 'a job’s download too (its status, nothing read)', what='download redirect')
         # a failure: one console line, host, path and code; never the query, a header or a token
         out = _io.StringIO()
         req = L._gitlab_request(base + '/deny/projects?private_token=glpat-SECRET-1', 'GET', None, 'glpat-SECRET-2')
@@ -1377,3 +1393,38 @@ def i20(c):
     bare = {f: (c.root / 'tools' / f).read_text(encoding='utf-8').count('urllib.request.urlopen(')
             for f in ('launch.py', 'regen_jobs.py', 'aero_fetch.py', 'proc_sia.py', 'proc_ead.py', 'regen/vfr.py', 'regen/proc.py', 'regen/base.py', 'regen/base_sources.py', 'regen/aircraft.py')}
     c.eq(bare, {**{f: 0 for f in bare}, 'launch.py': 1}, 'every outgoing call goes through tools/outbound.py (launch.py keeps its loopback check)', what='bare urlopen')
+    # a path parameter (« ;jsessionid=… » of EAD Basic) never reaches the console (security review of 37b043e68, audit line 4)
+    c.eq([OB.where('https://www.ead.eurocontrol.int/fwf-eadbasic/a.jspx;jsessionid=ABC123?ViewState=XYZ'), OB.where('https://h.example/a;x=1/b;jsessionid=Q/c')],
+         ['www.ead.eurocontrol.int/fwf-eadbasic/a.jspx', 'h.example/a/b/c'], 'each path segment cut at its first « ; »', what='where')
+    # every zip the launcher reads: the unpacked size capped before reading (2 GB), the CIFP on one level (the FAA's file at the root)
+    import zipfile
+    RJ = importlib.import_module('regen_jobs')
+    PC = importlib.import_module('proc_cifp')
+    c.eq(RJ.MAX_UNZIP, 2 * 1024 ** 3, 'the cap of an unpacked zip is 2 GB', what='MAX_UNZIP')
+    tmp = Path(tempfile.mkdtemp(prefix='sog-zip-'))
+    try:
+        big, deep, flat = tmp / 'big.zip', tmp / 'deep.zip', tmp / 'flat.zip'
+        with zipfile.ZipFile(big, 'w', zipfile.ZIP_DEFLATED) as z:
+            z.writestr('FAACIFP18', 'x' * 5000)                 # 5 KB unpacked from a few bytes
+        with zipfile.ZipFile(deep, 'w') as z:
+            z.writestr('CIFP/FAACIFP18', 'HDR')
+        with zipfile.ZipFile(flat, 'w') as z:
+            z.writestr('FAACIFP18', 'HDR')
+        with zipfile.ZipFile(big) as z:
+            try:
+                RJ.zip_check(z, max_bytes=1000)
+                capped = False
+            except RJ.TooLarge:
+                capped = True
+        c.ok(capped, '', 'a zip over the cap once unpacked is refused before any read (TooLarge)')
+        try:
+            PC.lines_of(deep)
+            refused = False
+        except ValueError as e:
+            refused = 'zip-too-deep' in str(e)
+        c.ok(refused, '', 'a CIFP zip with an entry in a folder is refused')
+        c.eq(PC.lines_of(flat).readline().strip(), 'HDR', 'the FAA’s file at the root is read', what='CIFP at the root')
+        src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
+        c.ok('regen_jobs.zip_check(zf)' in src, '', 'the data archive of the launcher is checked too')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)

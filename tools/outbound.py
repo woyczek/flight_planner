@@ -37,10 +37,12 @@ UA = f'SOG-launcher/{VERSION} (+{PROJECT})'
 
 
 def where(url):
-    """« hôte/chemin » d'une adresse, sans identifiants, paramètres ni ancre (ce qui peut porter un jeton) ; 160 signes au plus."""
+    """« hôte/chemin » d'une adresse, sans identifiants, requête ni ancre (ce qui peut porter un jeton) ; chaque segment du
+    chemin coupé à son premier « ; » (EAD Basic y met « ;jsessionid=… », que urlsplit laisse dans le chemin) ; 160 signes au plus."""
     try:
         u = urllib.parse.urlsplit(str(url))
-        return f'{u.hostname or "?"}{u.path or "/"}'[:160]
+        path = '/'.join(s.split(';')[0] for s in (u.path or '/').split('/'))
+        return f'{u.hostname or "?"}{path}'[:160]
     except ValueError:
         return '?'
 
@@ -60,10 +62,25 @@ def log(url, e, what=''):
     print(f'[sortant] échec{" " + what if what else ""} : {where(url)} : {reason(e)}', file=sys.stdout, flush=True)
 
 
+class SameHost(urllib.request.HTTPRedirectHandler):
+    """Une redirection n'est suivie que vers le même hôte (et en https si l'adresse l'était) ; sinon une erreur : les contrôles
+    faits sur une adresse (lue sur une page, calculée par un verbe) valent pour toute la requête, pas pour la première seulement."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        a, b = urllib.parse.urlsplit(req.full_url), urllib.parse.urlsplit(newurl)
+        if b.hostname != a.hostname or (a.scheme == 'https' and b.scheme != 'https'):
+            raise urllib.error.HTTPError(newurl, code, f'redirect to another host refused: {b.hostname}', headers, fp)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def opener(*handlers, what='', quiet=()):
-    """Un ouvreur urllib qui pose UA (si la requête n'a pas le sien) et journalise chaque échec (sauf les codes de quiet : une
-    absence attendue, 404 d'une carte non publiée, que le travail dit lui-même)."""
-    op = urllib.request.build_opener(*handlers)
+    """Un ouvreur urllib qui pose UA (si la requête n'a pas le sien), ne suit une redirection que sur le même hôte (SameHost,
+    sauf si un gestionnaire de redirection est donné : _NoRedirect d'OpenID et de GitLab, _RelayRedirect du relais, StayOnHost
+    d'EAD) et journalise chaque échec (sauf les codes de quiet : une absence attendue, 404 d'une carte non publiée, que le
+    travail dit lui-même)."""
+    redirect = any(isinstance(h, type) and issubclass(h, urllib.request.HTTPRedirectHandler)
+                   or isinstance(h, urllib.request.HTTPRedirectHandler) for h in handlers)
+    op = urllib.request.build_opener(*handlers, *(() if redirect else (SameHost,)))
     op.addheaders = [('User-agent', UA)]
     raw = op.open
 

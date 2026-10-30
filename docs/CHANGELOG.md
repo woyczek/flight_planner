@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Launcher: no session identifier in the console, every zip bounded, no redirect to another host**
+  (`tools/outbound.py`, `tools/regen_jobs.py`, `tools/proc_cifp.py`, `tools/launch.py`; frame INTEGRATION § 15, DECISIONS,
+  aerodb DECISIONS; noreg I20) — a failed address loses its `;jsessionid=…`; the CIFP and the data archive are refused
+  over 2 GB unpacked, the CIFP's file read at its root only; every source follows a redirect on its own host only.
 - **Refonte, sans changement de comportement — R-F2a, une seule notion de transition d'approche** (`frame/lib/procedures.js`
   `appChoices`; the « fiche qui en alimente une autre » rule and its fallback removed, `isAppTransition` already covers them; the
   dead re-export of `conflictsOf` / `orderProcedures` in `flight_path.js` removed; benches F32 and current_flight).
