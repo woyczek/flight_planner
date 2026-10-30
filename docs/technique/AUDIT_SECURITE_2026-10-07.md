@@ -943,6 +943,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 91 | Refactor R-M6: the frame's track as the Map's only source (e0cabb221) | acceptable |
 | 92 | Zone outlines (d6011f983), Fuel offline files (6379d2b18), a test (7691a3397), sheets on a phone (7fc062bd1) | acceptable |
 | 93 | Refactors R-M3 (70e63c907) and R-F6 (d734c3572); 83e75ad89, 5590b5f72 | acceptable, no change of behaviour |
+| 94 | Fuel test cases (d24772b8a, bb9076aca, ad2f8330c); Map plain background from aerodb (bb9c98570) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1828,6 +1829,11 @@ and change CSS.
 **93. R-M3, R-F6 and two small commits (70e63c907, d734c3572, 83e75ad89, 5590b5f72) — acceptable, no change of
 behaviour.** R-M3 rewrites the Map's drawing scheduler (canvas and timers only); R-F6 reduces Fuel's procedures-card state
 to two flags (pure); a file added to the Report's offline list; a test. No write, network or HTML added; no guard involved.
+
+**94. Test cases and the Map's plain background (d24772b8a, bb9076aca, ad2f8330c, bb9c98570) — acceptable.** The three
+Fuel commits touch the test cases only (two merged, a new case finally running Fuel's six pure benches). The Map's plain
+background now reads the zone outlines through `aerodb.zoneOutlines()` (a file of the code, 92), the former outline file
+kept as a fallback; offline file lists completed; no write, network or HTML.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
