@@ -178,7 +178,10 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
 
 - **IVAO account**: the « IVAO account » card links this device to your IVAO account through the airline's relay (or
   the workstation's launcher): « Sign in to IVAO » opens IVAO's page, then comes back here. The relay keeps the airline
-  application's secret; your token stays on this device, renewed by itself, never in a backup. « Unlink » erases it.
+  application's secret; your token stays on this device, renewed by itself, never in a backup. « Unlink » erases it and asks IVAO
+  to withdraw the access; if IVAO cannot, the suite tells you to withdraw it in your IVAO account. To try on the
+  workstation, without the relay: the return address to declare in the airline's IVAO application is
+  `http://127.0.0.1:<port>/__relay/ivao/callback` (the launcher's port).
 - **Relay devices**: when the launcher runs as the airline's relay (behind the NAS's reverse proxy, in https), a pilot
   pairs each device once with an 8-digit code the administrator asks for in Maintenance › « Relay devices » for their
   trigram (once, 10 minutes); their writes are signed with that trigram. A lost device, or all those of a pilot who

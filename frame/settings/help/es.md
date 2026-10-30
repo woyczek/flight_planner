@@ -188,7 +188,9 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
 - **Cuenta IVAO**: la tarjeta «Cuenta IVAO» vincula este dispositivo a su cuenta IVAO por el relé de la aerolínea (o
   el lanzador del puesto): «Iniciar sesión en IVAO» abre la página de IVAO y luego vuelve aquí. El relé guarda el secreto
   de la aplicación de la aerolínea; su token se queda en este dispositivo, renovado solo, nunca en una copia de
-  seguridad. «Desvincular» lo borra.
+  seguridad. «Desvincular» lo borra y pide a IVAO que retire el acceso; si IVAO no puede, la suite le dice
+  que lo retire en su cuenta IVAO. Para probar en el puesto, sin relé: la dirección de retorno que se declara en la
+  aplicación IVAO de la aerolínea es `http://127.0.0.1:<port>/__relay/ivao/callback` (el puerto del lanzador).
 - **Dispositivos del relé**: cuando el lanzador funciona como relé de la aerolínea (detrás del proxy inverso del NAS,
   en https), un piloto vincula cada dispositivo una vez con un código de 8 cifras que el administrador pide en
   Maintenance › «Dispositivos del relé» para su trigrama (una vez, 10 minutos); sus escrituras llevan ese trigrama. Un

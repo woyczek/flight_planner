@@ -195,7 +195,10 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
 - **IVAO-Konto**: Die Karte „IVAO-Konto“ verbindet dieses Gerät über das Relais der Fluggesellschaft (oder den
   Starter des Arbeitsplatzes) mit Ihrem IVAO-Konto: „Bei IVAO anmelden“ öffnet die Seite von IVAO und kehrt dann hierher
   zurück. Das Relais verwahrt das Geheimnis der Anwendung der Fluggesellschaft; Ihr Token bleibt auf diesem Gerät, wird
-  von selbst erneuert, nie in einer Sicherung. „Trennen“ löscht es.
+  von selbst erneuert, nie in einer Sicherung. „Trennen“ löscht es und bittet IVAO, den Zugriff zu
+  entziehen; kann IVAO das nicht, sagt Ihnen die Suite, ihn in Ihrem IVAO-Konto zu entziehen. Zum Ausprobieren am
+  Arbeitsplatz ohne Relais: Die in der IVAO-Anwendung der Fluggesellschaft anzugebende Rückkehradresse ist
+  `http://127.0.0.1:<port>/__relay/ivao/callback` (der Port des Starters).
 - **Geräte des Relais**: Läuft der Starter als Relais der Fluggesellschaft (hinter dem Reverse-Proxy des NAS, in
   https), koppelt ein Pilot jedes Gerät einmal mit einem 8-stelligen Code, den der Administrator in Maintenance › „Geräte
   des Relais“ für sein Kürzel anfordert (einmal, 10 Minuten); seine Änderungen tragen dieses Kürzel. Ein verlorenes Gerät

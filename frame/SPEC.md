@@ -920,7 +920,14 @@ explicit go** (R3).
   IVAO comes back to `/__relay/ivao/callback`, which exchanges the code and sends the device to
   `/frame/index.html#ivao-return?…` (`Referrer-Policy: no-referrer`); the frame keeps the tokens with the device keys
   (`device/keys.json`, never in a backup) and replaces the address at once, on start or on the same document.
-  `POST /__setup/ivao/oauth/refresh` renews them (the secret stays on the relay). `ctx.ivao` gives the screens
+  `POST /__setup/ivao/oauth/refresh` renews them (the secret stays on the relay); « Délier » asks
+  `POST /__setup/ivao/oauth/revoke` to revoke the token at IVAO (the discovery's `revocation_endpoint`, https,
+  client authenticated) before erasing it, and tells the pilot to withdraw the access in their IVAO account when there is
+  no revocation or it fails. Three sign-ins in progress per device at most (100 in all). On the workstation without
+  relay, IVAO comes back to `http://127.0.0.1:<port>/__relay/ivao/callback` (to declare in the airline's IVAO
+  application): that navigation from IVAO's site is served by one narrow exception (this exact path, GET,
+  `Sec-Fetch-Dest: document` and `Sec-Fetch-Mode: navigate`, the workstation itself on a local host, a state of the
+  workstation in progress), nothing else opened. `ctx.ivao` gives the screens
   `status()`, `connect()`, `disconnect()` and `token()` (renewed five minutes before it expires).
   The callback is a GET that changes a state: under `SameSite=Lax` IVAO's redirect carries the device's cookie (with
   `Strict` it would not, and the callback would be refused), and a callback forged by another site fails, its state

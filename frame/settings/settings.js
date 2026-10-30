@@ -347,6 +347,16 @@
       'Das IVAO-Konto von diesem Gerät trennen? Das Token wird hier gelöscht.',
       '¿Desvincular la cuenta IVAO de este dispositivo? El token se borra aquí.'
     ],
+    ivaoRevoked: ['Compte IVAO délié : IVAO a retiré l’accès de l’application.',
+      'IVAO account unlinked: IVAO withdrew the application’s access.',
+      'IVAO-Konto getrennt: IVAO hat der Anwendung den Zugriff entzogen.',
+      'Cuenta IVAO desvinculada: IVAO retiró el acceso de la aplicación.'
+    ],
+    ivaoOutManual: ['Compte IVAO délié sur cet appareil. Retirez aussi l’accès de l’application dans votre compte IVAO.',
+      'IVAO account unlinked on this device. Also withdraw the application’s access in your IVAO account.',
+      'IVAO-Konto auf diesem Gerät getrennt. Entziehen Sie der Anwendung auch in Ihrem IVAO-Konto den Zugriff.',
+      'Cuenta IVAO desvinculada en este dispositivo. Retire también el acceso de la aplicación en su cuenta IVAO.'
+    ],
     ivaoNoApp: ['Pas d’application IVAO sur le relais (secrets/ivao_oauth.json) : à régler par l’administrateur.',
       'No IVAO application on the relay (secrets/ivao_oauth.json): for the administrator to set.',
       'Keine IVAO-Anwendung auf dem Relais (secrets/ivao_oauth.json): vom Administrator einzurichten.',
@@ -830,8 +840,9 @@
       }
       if (act === 'ivaoOut') {
         if (!await c.ask(t(T.ivaoOutAsk))) return;
-        await c.ivao.disconnect();
-        c.notify(t(T.saved), 'ok');
+        const r = await c.ivao.disconnect();
+        if (r?.revoked) c.notify(t(T.ivaoRevoked), 'ok');
+        else c.notify(t(T.ivaoOutManual), 'warn');
         return again();
       }
       if (act === 'wxSave') {

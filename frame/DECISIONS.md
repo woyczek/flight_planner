@@ -1792,12 +1792,14 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     header guard stays on the interface's port as a belt. I13: on the relay port, without a header and with the
     workstation's `Host`, a request is the relay's (403 without https, 401 unpaired), never the workstation's; a relay
     port equal to the interface's stops the launcher at start.
+  - Review of ee6044e8b (acceptable): the public host is set before the relay port listens, `_relay()` is true on that
+    server whatever happens, and a relay server without its public host answers 503 (never served as the workstation).
   - Lax checked: a GET navigation from another site carries the cookie, so no GET open to the relay may change a state.
     They are `status` and `changes` (read the data's head and tree; `changes` keeps a two-second memo of the tree),
     the pages and the data files (read; the pool's indexes rebuilt before being served are derived), `/__relay/pair`
     (the form) and `/__relay/whoami`; `net` is POST only. The only write is the device's « last used » mark, at most once
     an hour. The fail-closed refusal runs first, before the other guards (pages, data files and `/__setup/` alike).
-  - Tested on the workstation only: a real launcher `--relay` and requests shaped like the proxy's (noreg I13, 30 checks:
+  - Tested on the workstation only: a real launcher `--relay` and requests shaped like the proxy's (noreg I13, 32 checks:
     https only, dedicated relay port, proxy request on the interface's port, start check, pairing page headers, pairing from another site or
     without origin, return path, no local network, pairing, single use, attempt limit, forged X-Forwarded-For,
     workstation routes refused, whitelist, PUT, author from the token, revocation), the screen against a simulated
@@ -1818,3 +1820,14 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   - The callback `/__relay/ivao/callback` is the relay's only GET that changes a state (it consumes a state and exchanges
     a code): `SameSite=Lax` is what lets IVAO's redirect carry the device's cookie; a callback sent by another site fails
     on its state (bound to the device that started the sign-in, used once).
+  - Security review of R1b (acceptable, nothing blocking), three touches: « Délier » revokes the token at IVAO (the
+    discovery's `revocation_endpoint`, https, client authenticated, no redirect followed) before erasing it; without a
+    revocation endpoint or when it fails, a warning tells the pilot to withdraw the application's access in their IVAO
+    account (said after the attempt rather than in the question: only then is it known). The return on the workstation,
+    to try the sign-in without the relay: `http://127.0.0.1:<port>/__relay/ivao/callback`, to declare in the airline's
+    IVAO application; IVAO's redirect is a navigation from another site, served by one narrow exception in `_refused`
+    (exact path, GET, `Sec-Fetch-Dest: document` and `Sec-Fetch-Mode: navigate`, the workstation itself — neither the
+    local network nor the relay — on a local host, and a state of the workstation in progress with its return address);
+    nothing else is opened. Three sign-ins in progress per device, 100 in all.
+  - The relay refreshes with the airline's secret for any paired device: a device that should no longer use IVAO is
+    revoked on the relay, and a pilot withdraws the application's access at IVAO (the answer at IVAO's side).

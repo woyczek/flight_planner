@@ -46,6 +46,18 @@ def run(check, ROOT):
     check('the return after pairing stays on this server (tab, //, backslash, controls, /__)',
           all(launch.safe_next(x) == '/frame/' for x in bad) and launch.safe_next('/frame/index.html#maps') == '/frame/index.html#maps',
           [x for x in bad if launch.safe_next(x) != '/frame/'])
+    # serveur du relais sans hôte public posé : 503, jamais le poste ; l'hôte est posé avant d'écouter (sans course)
+    h = launch.Setup.__new__(launch.Setup)
+    h.server, h.command, h.path, h.headers, h.client_address = type('Srv', (), {'relay': True})(), 'GET', '/__setup/secrets', {}, ('127.0.0.1', 1)
+    got, kept_relay = [], dict(launch.RELAY)
+    h._json = lambda body, code=200: got.append(code)
+    launch.RELAY['host'] = ''
+    try:
+        check('a relay server without its public host answers 503, never as the workstation', h._relay() and h._relay_gate() is True and got == [503], got)
+    finally:
+        launch.RELAY.update(kept_relay)
+    src = open(os.path.join(ROOT, 'tools', 'launch.py'), encoding='utf-8').read()
+    check('the public host is set before the relay listens', 0 < src.find('RELAY.update(host=a.relay.lower()') < src.find('rsrv.serve_forever'))
     port, rport = free_port(), free_port()
     data = tempfile.mkdtemp(prefix='sog-relay-data-')
     relay_file = os.path.join(ROOT, 'tools', '.relay.json')

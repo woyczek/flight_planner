@@ -550,12 +550,13 @@ def i10(c):
     lan = sorted(k for k, v in L.ROUTES.items() if v[1] == 'lan')
     c.eq(sorted(k for k, v in L.ROUTES.items() if v[2]), sorted([('GET', '/__setup/status'), ('GET', '/__setup/changes'), ('POST', '/__setup/batch'),
                                                             ('POST', '/__setup/sync'), ('POST', '/__setup/net'),
-                                                            ('POST', '/__setup/ivao/oauth/start'), ('POST', '/__setup/ivao/oauth/refresh')]),
+                                                            ('POST', '/__setup/ivao/oauth/start'), ('POST', '/__setup/ivao/oauth/refresh'),
+                                                            ('POST', '/__setup/ivao/oauth/revoke')]),
          'the routes open to the relay: status, changes, batch, sync, net, and the IVAO sign-in (R1b)', what='relay routes')
     c.eq(lan, sorted([('GET', '/__setup/status'), ('GET', '/__setup/changes'), ('GET', '/__setup/sim/position'),
                       ('GET', '/__setup/lnmperf'), ('GET', '/__setup/lnmperf-folder'), ('POST', '/__setup/batch'),
                       ('POST', '/__setup/sync'), ('POST', '/__setup/net'), ('POST', '/__setup/ivao/oauth/start'),
-                      ('POST', '/__setup/ivao/oauth/refresh')]),
+                      ('POST', '/__setup/ivao/oauth/refresh'), ('POST', '/__setup/ivao/oauth/revoke')]),
          'the routes open to a paired device are the Pilot app\'s (and the IVAO sign-in, R1b)', what='lan routes')
     missing = [f'{m} {p} -> {v[0]}' for (m, p), v in L.ROUTES.items() if not callable(getattr(L.Setup, v[0], None))]
     c.eq(missing, [], 'each route names a method of the server', what='routes without handler')
@@ -715,7 +716,7 @@ def i14(c):
     L = importlib.import_module('launch')
     tmp = Path(tempfile.mkdtemp(prefix='sog-oidc-'))
     kept = L.SECRETS, L.OIDC_OPEN, dict(L._ivao_oidc)
-    seen, ch = [], ['']
+    seen, ch, rev = [], [''], ['yes']
 
     class Resp:
         def __init__(self, b):
@@ -733,7 +734,12 @@ def i14(c):
     def fake(req, timeout=20):
         seen.append((req.full_url, req.get_header('Authorization'), req.data))
         if 'well-known' in req.full_url:
-            return Resp(json.dumps({'authorization_endpoint': 'https://sso.ivao.test/authorize', 'token_endpoint': 'https://api.ivao.test/oauth/token'}).encode())
+            return Resp(json.dumps({'authorization_endpoint': 'https://sso.ivao.test/authorize', 'token_endpoint': 'https://api.ivao.test/oauth/token',
+                                    **({'revocation_endpoint': 'https://api.ivao.test/oauth/revoke'} if rev[0] else {})}).encode())
+        if req.full_url.endswith('/revoke'):
+            if rev[0] == 'refuse':
+                raise L.urllib.error.HTTPError(req.full_url, 400, 'bad', {}, None)
+            return Resp(b'')
         f = urllib.parse.parse_qs(req.data.decode())
         if f['grant_type'][0] == 'authorization_code':
             assert base64.urlsafe_b64encode(hashlib.sha256(f['code_verifier'][0].encode()).digest()).decode().rstrip('=') == ch[0], 'PKCE'
@@ -761,6 +767,41 @@ def i14(c):
         rf = L.ivao_oauth_refresh('RT-long-enough')
         c.ok(rf['ok'] and rf['access_token'] == 'AT', str(rf)[:120], 'the refresh by the relay')
         c.eq(L.ivao_oauth_refresh('x').get('status'), 400, 'a refresh token is checked', what='short refresh token')
+        # Délier : révocation chez IVAO (RFC 7009), client authentifié ; sans point de révocation ou refusée : revoked faux
+        rv = L.ivao_oauth_revoke('RT-long-enough')
+        last = seen[-1]
+        c.ok(rv == {'ok': True, 'revoked': True} and last[0] == 'https://api.ivao.test/oauth/revoke' and (last[1] or '').startswith('Basic ')
+             and urllib.parse.parse_qs(last[2].decode()).get('token') == ['RT-long-enough'], str((rv, last[0])), 'unlink revokes the token at IVAO, client authenticated')
+        rev[0] = 'refuse'
+        c.eq(L.ivao_oauth_revoke('RT-long-enough'), {'ok': True, 'revoked': False}, 'a refused revocation is said', what='revocation refused')
+        rev[0] = ''
+        L._ivao_oidc.update(meta=None, at=0.0)
+        c.eq(L.ivao_oauth_revoke('RT-long-enough'), {'ok': True, 'revoked': False}, 'no revocation endpoint: said, the device erases anyway',
+             what='no revocation endpoint')
+        # 3 demandes en cours au plus par appareil (100 en tout)
+        c.eq([bool(L.ivao_oauth_start('d3', 'https://relay/__relay/ivao/callback').get('ok')) for _ in range(4)], [True, True, True, False],
+             'three sign-ins in progress per device at most', what='pending per device')
+        # retour sur le poste : l'état d'une demande en cours du poste, sans le consommer
+        s = L.ivao_oauth_start('', 'http://127.0.0.1:8000/__relay/ivao/callback')
+        st = urllib.parse.parse_qs(urllib.parse.urlsplit(s['url']).query)['state'][0]
+        c.ok(L.ivao_state_open(st, '', 'http://127.0.0.1:8000/__relay/ivao/callback') and not L.ivao_state_open(st, 'd1', 'http://127.0.0.1:8000/__relay/ivao/callback')
+             and not L.ivao_state_open(st, '', 'https://relay/__relay/ivao/callback') and not L.ivao_state_open('nope', '', 'http://127.0.0.1:8000/__relay/ivao/callback')
+             and L.ivao_state_open(st, '', 'http://127.0.0.1:8000/__relay/ivao/callback'), '', 'the workstation return needs a state of the workstation in progress, not consumed by the check')
+        # l'exception de _refused, sur un gestionnaire du poste : toutes les conditions, sinon refusé comme avant
+        def refused(path, method='GET', **hd):
+            h = L.Setup.__new__(L.Setup)
+            h.command, h.path, h.port, h.client_address = method, path, 8000, ('127.0.0.1', 50000)
+            h.server = type('Srv', (), {})()
+            h.headers = {'Host': '127.0.0.1:8000', 'Sec-Fetch-Site': 'cross-site', **hd}
+            return h._refused()
+        nav = {'Sec-Fetch-Dest': 'document', 'Sec-Fetch-Mode': 'navigate'}
+        cb = f'{L.IVAO_CALLBACK}?state={st}&code=C'
+        c.eq([refused(cb, **nav), refused(cb, **{**nav, 'Sec-Fetch-Mode': 'no-cors'}), refused(cb, **{**nav, 'Sec-Fetch-Dest': 'image'}),
+              refused(cb, 'POST', **nav), refused(f'{L.IVAO_CALLBACK}?state=nope&code=C', **nav), refused('/frame/index.html', **nav),
+              refused(cb, **{**nav, 'Host': 'evil.example'})],
+             ['', 'autre site', 'autre site', 'autre site', 'autre site', 'autre site', 'hôte'],
+             'IVAO\'s return on the workstation: exact path, GET, document navigation, a state of the workstation; nothing else opened',
+             what='workstation return')
         c.eq(L.ROUTES[('POST', '/__setup/ivao/oauth/start')][1:], ('lan', True), 'start and refresh are relay routes', what='route public')
         src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
         c.ok("loc = f'/frame/index.html#ivao-return?{frag}'" in src and "'Referrer-Policy', 'no-referrer'" in src, '', 'the tokens leave by the fragment of the frame address, no referrer')

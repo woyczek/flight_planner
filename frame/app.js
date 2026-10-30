@@ -723,9 +723,19 @@
         message: r?.body?.message || ''
       };
     },
+    /** Délier : le jeton révoqué chez IVAO par le lanceur (s'il le peut), puis effacé ici ; { revoked }. */
     async disconnect() {
+      const tok = ivaoTok?.refresh_token || ivaoTok?.access_token || '';
+      const r = tok ? await launcherRequest('ivao/oauth/revoke', {
+        json: {
+          token: tok
+        }
+      }) : null;
       ivaoTok = null;
       await keepKeys();
+      return {
+        revoked: r?.body?.revoked === true
+      };
     },
     async token() {
       if (!ivaoTok) return null;
