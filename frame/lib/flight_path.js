@@ -141,15 +141,35 @@ const samePoint = (a, b) => {
   return a.id && b.id && a.id.toUpperCase() === b.id.toUpperCase() ? d < 3 : d < .3;
 };
 /** Points de plusieurs procédures bout à bout ; le point partagé par deux d'entre elles (fin de transition, début de
- *  procédure) une seule fois, avec les contraintes de la seconde ; au-delà de ce point, la fin du premier est écartée. */
+ *  procédure) une seule fois, avec les contraintes de la seconde ; au-delà de ce point, la fin du premier est écartée. Entre une
+ *  transition d'approche et sa finale (§ 10.30, quatrième lecture) : au PREMIER point commun, où qu'il soit dans la finale (un
+ *  segment d'approche initiale du SIA finit à l'IF de la finale, ou ailleurs) ; sans point commun, le premier point de la finale porte
+ *  join 'direct' (un direct en tireté, la règle du § 10.20). */
 function chainOf(parts) {
   const out = [];
+  let transFrom = -1; // où commence, dans out, la transition d'approche
   for (const [rec, origin, phase] of parts) {
-    // jonction : le premier point de cet enregistrement déjà dans la chaîne (une transition qui reprend le début de
-    // l'approche, une STAR qui va au-delà de son point de sortie) : la chaîne est coupée à ce point, la fin propre du
-    // précédent n'est jamais volée et aucun tronçon ne l'est deux fois
+    let from = 0,
+      direct = false;
     const first = rec?.points?.length ? procPoint(rec.points[0], origin, phase) : null;
-    if (first && first.origin !== 'missed') {
+    if (origin === 'app' && phase === 'main' && transFrom >= 0 && first) {
+      // finale après sa transition : le premier point de la transition qui est aussi un point de la finale
+      const pts = rec.points.map(p => procPoint(p, origin, phase));
+      let hit = null;
+      for (let i = transFrom; i < out.length && !hit; i++)
+        for (let j = 0; j < pts.length; j++)
+          if (out[i].origin !== 'missed' && pts[j].origin !== 'missed' && samePoint(out[i], pts[j])) {
+            hit = [i, j];
+            break;
+          }
+      if (hit) {
+        out.length = hit[0];
+        from = hit[1];
+      } else direct = true;
+    } else if (first && first.origin !== 'missed') {
+      // jonction : le premier point de cet enregistrement déjà dans la chaîne (une transition qui reprend le début de
+      // l'approche, une STAR qui va au-delà de son point de sortie) : la chaîne est coupée à ce point, la fin propre du
+      // précédent n'est jamais volée et aucun tronçon ne l'est deux fois
       let k = -1;
       for (let i = out.length - 1; i >= 0; i--)
         if (out[i].origin !== 'missed' && samePoint(out[i], first)) {
@@ -158,9 +178,14 @@ function chainOf(parts) {
         }
       if (k >= 0) out.length = k + 1;
     }
-    for (const p of rec?.points || []) {
+    if (origin === 'app' && phase === 'trans' && rec?.points?.length) transFrom = out.length;
+    for (const p of (rec?.points || []).slice(from)) {
       const q = procPoint(p, origin, phase),
         last = out.at(-1);
+      if (direct && q.origin !== 'missed') {
+        q.join = 'direct'; // le premier point de la finale, rejoint par un direct depuis la fin de la transition
+        direct = false;
+      }
       if (last && last.origin !== 'missed' && q.origin !== 'missed' && samePoint(last, q)) {
         out[out.length - 1] = {
           ...last,

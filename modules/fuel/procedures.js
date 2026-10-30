@@ -145,7 +145,10 @@ export function createProcedures(host) {
   /** Nom d'une procédure d'après son identifiant (« LFBD.SID.ROYAN6P.RW23.NONE » → « ROYAN6P ») ; pour une transition, la
    *  transition (cinquième champ) quand l'identifiant la porte. */
   function nameOfId(id, k) {
-    const p = String(id || '').split('.');
+    const p = String(id || '').split('.'),
+      rec = recsNow().get(id);
+    if (rec?.kind === 'APP') return k === 'appTrans' || PR.isAppTransition(rec) ? String(rec.transition || PR.nameOf(rec, id) || id) : PR
+      .labelOf(rec, PR.appChoices([...recsNow().values()].filter(r => r.kind === 'APP' && String(r.id).split('.')[0] === p[0])).list);
     if ((k === 'trans' || k === 'appTrans') && p[4] && p[4] !== 'NONE') return p[4];
     // sans nom dans la source : « STAR sans nom » (la sorte, deuxième champ), pas « NONAME »
     const n = PR.nameOf(null, id);
@@ -247,18 +250,21 @@ export function createProcedures(host) {
    *  null ou un identifiant. Une fiche périmée : ⌛ et classe outdated ; une fiche en conflit avec la piste choisie : ⚠ après ⌛ et
    *  classe conflict (orange) ; les deux se cumulent. Chaque option porte son libellé entier en infobulle (title), suivi de ses raisons.
    *  Une fiche en conflit reste choisissable. */
-  function optionsHtml(recs, cur, k, none, o) {
+  function optionsHtml(recs, cur, k, none, o, lab) {
     const sub = k === 'trans' || k === 'appTrans',
       opt = (v, l, on, rec) => {
-        const why = rec ? [rec.outdated ? tt(TX.procOutdatedTitle) : '', ...conflictsOf(k, rec, o)].filter(Boolean) : [],
+        const pub = lab && rec ? String(rec.name || '').trim() : '', // le nom publié, quand le libellé est court (« ILS 06 »)
+          why = rec ? [pub && !l.startsWith(pub) ? pub : '', rec.outdated ? tt(TX.procOutdatedTitle) : '', ...conflictsOf(k, rec, o)]
+          .filter(
+            Boolean) : [],
           cls = [rec?.outdated ? 'outdated' : '', rec && conflictsOf(k, rec, o).length ? 'conflict' : ''].filter(Boolean).join(' ');
         return `<option value="${esc(v)}"${on ? ' selected' : ''}${cls ? ` class="${cls}"` : ''} title="${esc([l, ...why].join(' · '))}">${esc(l)}</option>`;
       },
       list = PR.orderProcedures([...new Map(recs.map(r => [r.id, r])).values()], k, o, recsNow()),
       html = [opt('', '—', cur === undefined), none ? opt('__none', tt(TX.procNone), cur === null) : ''],
       mark = r => conflictsOf(k, r, o).length ? PROC_CONFLICT : '';
-    for (const r of list) html.push(opt(r.id, (sub ? (r.transition || r.name) + (r.outdated ? PROC_OLD : '') : procLabel(r, o)) + mark(r), r
-      .id === cur, r));
+    for (const r of list) html.push(opt(r.id, (lab ? lab(r) : sub ? (r.transition || r.name) + (r.outdated ? PROC_OLD : '') : procLabel(r,
+      o)) + mark(r), r.id === cur, r));
     if (typeof cur === 'string' && cur && !list.some(r => r.id === cur)) html.push(opt(cur, nameOfId(cur, k), true));
     return html.join('');
   }
@@ -323,7 +329,7 @@ export function createProcedures(host) {
         label,
         html
       }),
-      sel = (field, cls, label, recs, none = true) => add(field, cls, label, optionsHtml(recs, o[field], field, none, o)),
+      sel = (field, cls, label, recs, none = true, lab) => add(field, cls, label, optionsHtml(recs, o[field], field, none, o, lab)),
       main = recs => recs.filter(r => !r.transition);
     if (o.appTrans && o.appTrans === o.app) delete o.appTrans; // un ancien choix : la transition n'est pas l'approche elle-même
     add('rwy', 'rwy', TX.procRwy, runwayOptionsHtml(m, o));
@@ -337,10 +343,14 @@ export function createProcedures(host) {
       if (t.length) sel('trans', 'trans', TX.procTrans, t, false);
       // l'approche, listée une fois (une approche que l'eAIP donne par point d'entrée n'a que sa fiche finale), et ses transitions
       // (PR.appChoices : règle pure partagée avec la Carte)
-      const ac = PR.appChoices(m.lists.APP);
-      sel('app', 'app', TX.procApp, ac.list);
+      // les segments d'approche initiale du SIA (« INA RNAV RWY 06 ») ne sont jamais des lignes : ce sont les transitions de toutes
+      // les finales de leur piste (§ 10.30, quatrième lecture) ; une finale par son libellé court (« ILS 06 »), le nom publié en
+      // infobulle ; une transition « via ODILO · ODILO 1A »
+      const ac = PR.appChoices(m.lists.APP),
+        xp = r => r.status === 'xplane' || r.local ? ` · ${tt(TX.procXplane)}` : '';
+      sel('app', 'app', TX.procApp, ac.list, true, r => PR.labelOf(r, ac.list) + xp(r) + (r.outdated ? PROC_OLD : ''));
       const at = ac.transitionsOf(o.app);
-      if (at.length) sel('appTrans', 'apptrans', TX.procAppTrans, at, false);
+      if (at.length) sel('appTrans', 'apptrans', TX.procAppTrans, at, false, r => PR.transitionLabelOf(r) + (r.outdated ? PROC_OLD : ''));
     }
     return out;
   }

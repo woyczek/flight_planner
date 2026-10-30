@@ -901,8 +901,8 @@ def f26(c):
     o = opt_info(c, 'p-arr-star', 'ARR2B')
     c.eq(o['title'], title_of('ARR2B ⚠', row(c, 'procConflictRwy').replace('{rwy}', '27')), 'the runway is the only reason, even though ARR2B joins no point of the approach', what='ARR2B title')
     c.eq(opt_info(c, 'p-arr-star', 'ARR1A')['label'], 'ARR1A', 'ARR1A is not marked', what='ARR1A label')
-    t = opt_info(c, 'p-arr-appTrans', 'IC301')
-    c.eq(t['label'], 'IC301', 'a transition that does not start at the end of the chosen STAR is not marked', what='transition label')
+    t = opt_info(c, 'p-arr-appTrans', 'via IC301')  # « via » + IAF (§ 10.30, fourth reading); the name is the IAF here
+    c.eq(t['label'], 'via IC301', 'a transition that does not start at the end of the chosen STAR is not marked', what='transition label')
     # a STAR that agrees: no warning left on the transition, and no new notification
     n1 = len(c.note_log())
     c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', 'LFVC.STAR.ARR1A.RW27.NONE')
@@ -1613,4 +1613,33 @@ def f65(c):
     c.eq(c.js("document.querySelector('[data-module=fuel] [data-proc=arr] .fu-procsum > span').className"), 'wind-alert', 'the runway of the summary carries the colour of its wind', what='class')
     dep = c.js(f"({parts})('dep')")
     c.eq(dep, ['03', norm(f"{row(c, 'procSid')} {row(c, 'procNone')}")], 'no METAR: the runway alone; « Aucune » said with its kind', what='departure summary')
+
+
+@case('F66', 'Approaches the SIA way: initial segments are transitions of every final of the runway, short labels', 'F', tags=('fuel', 'aerodb'),
+      designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.30 (fourth reading): "INA RNAV RWY 06" records are never rows but the transitions of every final of runway 06, '
+      '"via OKAPI · OKAPI 1A", by IAF; a final reads "ILS 06", "RNP 06", its published name in the title; apptrans is the segment\'s id')
+def f66(c):
+    open_proc(c)
+    wait_rows(c, 'arr')
+    set_icao(c, 'arr', 'LFVE')
+    c.until("[...document.querySelectorAll('[data-module=fuel] select[data-k=\"p-arr-app\"] option')].some(o => /LFVE/.test(o.value))", what='the approach list of LFVE is drawn')
+    apps = [(v, lab) for v, lab in sel_opts(c, 'p-arr-app') if v not in ('', '__none')]
+    c.eq([lab for _, lab in apps], ['ILS 06', 'RNP 06'], 'two finals, short labels; no row "INA RNAV RWY 06" (the six identical rows of LFPO)', what='approach options')
+    ils = apps[0][0]
+    t = c.js("(v) => [...document.querySelector('[data-module=fuel] select[data-k=\"p-arr-app\"]').options].find(o => o.value === v).title", ils)
+    c.ok('ILS CAT I or CAT II or CAT III RWY 06' in t, t, 'the published name in the title')
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-app"]', ils)
+    c.until("!!document.querySelector('[data-module=fuel] select[data-k=\"p-arr-appTrans\"]')", what='the final has transitions: the segments of its runway')
+    tr = [(v, lab) for v, lab in sel_opts(c, 'p-arr-appTrans') if v]
+    c.eq([lab for _, lab in tr], ['via ALPAG · ALPAG 1E', 'via BISON · BISON 1E', 'via OKAPI · OKAPI 1A'], 'the segments, IAF then published name, by IAF', what='transition options')
+    c.eq(sel_opts(c, 'p-arr-appTrans')[0][0], '', 'no transition (direct to the IF) stays the first choice', what='first option')
+    okapi = tr[2][0]
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-appTrans"]', okapi)
+    d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('appTrans') == okapi, 'the segment is written as the approach transition')
+    c.eq((procs_of(d, 'arr') or {}).get('app'), ils, 'with its final', what='approach')
+    # the other final of the runway offers the same segments
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-app"]', apps[1][0])
+    c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-appTrans\"]'); return !!s && s.options.length === 4 })()", what='the RNP offers the same three segments')
+    c.until("[...document.querySelectorAll('[data-module=fuel] [data-proc=arr] .fu-procsum > span')].some(e => e.textContent.trim() === 'RNP 06')", what='the summary says the short label')
 

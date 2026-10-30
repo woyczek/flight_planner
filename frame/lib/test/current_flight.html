@@ -697,6 +697,50 @@
     idsT = FT.map(p => p.id).join(' ');
   ck('expandedPath : transition au-delà du point commun, aucun tronçon deux fois', idsT === 'LFBD AAA BBB CCC T1 IF1 FAF1 LFPO', idsT);
   ck('expandedPath : le point de jonction prend les contraintes de l’approche', FT.find(p => p.id === 'IF1')?.alt?.ft === 3000);
+  // § 10.30, quatrième lecture : jonction au PREMIER point commun, où qu'il soit dans la finale ; sans point commun, un direct en tireté
+  const inaTr = (id, pts) => ({
+      id: `LFPO.APP.INARNAVRWY24.RW24.${id}`,
+      icao: 'LFPO',
+      kind: 'APP',
+      name: 'INA RNAV RWY 24',
+      transition: id,
+      points: pts.map(([pid, lat, lon], i) => ({
+        seq: i + 1,
+        id: pid,
+        lat,
+        lon
+      }))
+    }),
+    inaXF = flownPath(expandedPath(fl({}), {
+      appTrans: inaTr('X1', [
+        ['X1', 48.4, 1.7],
+        ['X2', 48.5, 1.9],
+        ['FAF1', 48.66, 2.25]
+      ]),
+      app: AP2
+    })).map(p => p.id).join(' ');
+  ck('expandedPath : transition qui rejoint la finale à son FAF (pas à son premier point) : coupée là, l’IF de la finale écarté', inaXF ===
+    'LFBD AAA BBB CCC X1 X2 FAF1 LFPO', inaXF);
+  const inaXG = expandedPath(fl({}), {
+      appTrans: inaTr('Y1', [
+        ['Y1', 48.4, 1.7],
+        ['Y2', 48.5, 1.9],
+        ['', null, null]
+      ]),
+      app: AP2
+    }),
+    inaIds = flownPath(inaXG).map(p => p.id).join(' ');
+  ck('expandedPath : transition sans point commun avec la finale : la finale entière, son premier point en join direct (tireté)', inaIds ===
+    'LFBD AAA BBB CCC Y1 Y2 IF1 FAF1 LFPO' && inaXG.find(p => p.id === 'IF1')?.join === 'direct', `${inaIds} / ${inaXG.find(p => p.id === 'IF1')
+    ?.join}`);
+  ck('expandedPath : une transition qui rejoint la finale n’a pas de direct sur la finale', !expandedPath(fl({}), {
+    appTrans: inaTr('X1', [
+      ['X1', 48.4, 1.7],
+      ['X2', 48.5, 1.9],
+      ['FAF1', 48.66, 2.25]
+    ]),
+    app: AP2
+  }).some(p => p.origin === 'app' && p.id === 'FAF1' && p.join === 'direct'));
 
   // routage des voies : la fin de la SID et le début de l'arrivée choisies (utilisateur, 29 octobre : départ FINOT de LFBO,
   // route qui commence à GOSAD, « Auto » ne trouvait pas G36)

@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Approaches the SIA way: initial segments are transitions, finals read short** (`frame/lib/procedures.js` `isAppTransition`,
+  `labelOf`, `transitionLabelOf`, `appChoices`; `frame/lib/flight_path.js` junction at the first common point; Fuel's approach list;
+  help ×4; F66) — no more six identical « INA RNAV RWY 06 » rows at LFPO: « ILS 06 » via « ODILO · ODILO 1A ».
 - **Map: the runways as 24 px threshold vectors from the airline's zoom; the choice above the base's labels** (`modules/maps/procs.js`,
   `draw.js`, `data.js`, `render.js`, `layers.js`, `choose.js`; help ×4, maps SPEC, DECISIONS; noreg D58; V3 § 10.30, fourth
   reading). The full-length runway arrow of § 10.24 is gone: every runway of the departure and arrival aerodromes is a short

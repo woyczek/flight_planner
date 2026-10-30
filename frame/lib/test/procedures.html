@@ -43,7 +43,10 @@
     siblingsOf,
     familiesOf,
     compatible,
-    summaryOf
+    summaryOf,
+    isAppTransition,
+    labelOf,
+    transitionLabelOf
   } from '../procedures.js?v=0';
   const rows = [],
     out = document.getElementById('out');
@@ -245,13 +248,14 @@
   ck('appChoices : celles d’une approche à fiche principale sont ses transitions, jamais elle-même', ac.transitionsOf(main.id).map(r => r
       .id).join() === mainTr.id &&
     ac.transitionsOf(null).length === 0);
-  ck('appChoices : sans fiche finale reconnue (boucle), toutes les fiches d’entrée', appChoices([Pr('a', 'APP', 'R', ['07'], {
+  // des fiches d'entrée qui bouclent sans atteindre la piste sont des segments d'approche initiale (§ 10.30, quatrième lecture) : aucune ligne
+  ck('appChoices : fiches d’entrée en boucle, sans piste : des segments, aucune ligne', appChoices([Pr('a', 'APP', 'R', ['07'], {
     transition: 'A',
     points: [fx('P', 1), fx('Q', 1)]
   }), Pr('b', 'APP', 'R', ['07'], {
     transition: 'B',
     points: [fx('Q', 1), fx('P', 1)]
-  })]).list.length === 2 && appChoices([]).list.length === 0);
+  })]).list.length === 0 && appChoices([]).list.length === 0);
 
   // pistes à proposer, par ses trois sources
   const rw = (...ids) => ids.map(id => ({
@@ -306,6 +310,7 @@
     ?.id ===
     'A' && firstServing(null, '07') === null);
   // seconde lecture du § 10.30 : familles, compatibilité, résumé (données inventées)
+  const qIdsOf = l => l.map(r => r.id).join();
   const qP = (kind, name, runways, transition = null, id = null) => ({
       id: id || `LFVX.${kind}.${name}.RW${runways.length === 1 ? runways[0] : 'ALL'}.${transition || 'NONE'}`,
       kind,
@@ -400,6 +405,66 @@
   ck('summaryOf : sans vent la piste seule ; « Aucune » = null ; sans fiche, le nom de l’identifiant ; rien de choisi = undefined',
     qSum2.rwy === '10R' && qSum2.proc === null && qSum2.app === 'VOR10' && JSON.stringify(summaryOf({})) === '{}' && summaryOf(null)
     .rwy === undefined, JSON.stringify(qSum2));
+  // quatrième lecture du § 10.30 : la forme des fiches du SIA (segments d'approche initiale « INA RNAV RWY nn » portant la transition,
+  // finales « ILS CAT I or CAT II or CAT III RWY nn », « RNP RWY nn ») ; terrain, points et noms inventés
+  const A = (name, rwy, pts, transition = null) => ({
+      id: `LFVZ.APP.${name.replace(/\W/g, '')}.RW${rwy}${transition ? '.' + transition.replace(/\W/g, '') : ''}`,
+      kind: 'APP',
+      name,
+      runways: [rwy],
+      transition,
+      points: pts.map((id, i) => ({
+        seq: i + 1,
+        id,
+        phase: id.startsWith('M') ? 'missed' : undefined
+      }))
+    }),
+    zIls = A('ILS CAT I or CAT II or CAT III RWY 06', '06', ['IZZ06', 'RW06', 'MZ1']),
+    zRnp = A('RNP RWY 06', '06', ['IZZ06', 'FZZ06', 'RW06', 'MZ1']),
+    zLoc = A('ILS CAT I or CAT II and CAT III or LOC RWY 07', '07', ['RW07', 'MZ2']),
+    zT1 = A('INA RNAV RWY 06', '06', ['OKAPI', 'ZP609', 'IZZ06'], 'OKAPI 1A'),
+    zT2 = A('INA RNAV RWY 06', '06', ['BISON', 'ZP617', ''], 'BISON 1E'),
+    zT3 = A('INA RNAV RWY 06', '06', ['ALPAG', 'ZP621', ''], 'ALPAG 1E'),
+    zT7 = A('INA RNAV RWY 07', '07', ['BISON', 'ZP617', ''], 'BISON 1E'),
+    zEnt = A('RNP RWY 20', '20', ['ZP421', 'IZZ20', 'RW20'], 'ZP421'),
+    zApps = [zIls, zRnp, zT1, zT2, zT3, zLoc, zT7, zEnt],
+    zAc = appChoices(zApps);
+  ck('isAppTransition : « INA … », ou une transition qui n’atteint pas la piste ; jamais une finale', isAppTransition(zT1) &&
+    isAppTransition(
+      zT2) && !isAppTransition(zIls) && !isAppTransition(zEnt) && isAppTransition(A('VOR RWY 09', '09', ['VZ1', 'VZ2'], 'VZ1')) &&
+    !isAppTransition({
+      ...zT1,
+      kind: 'STAR'
+    }));
+  ck('appChoices : les segments INA ne sont jamais des lignes (plus six lignes identiques)', qIdsOf(zAc.list) === qIdsOf([zIls, zRnp, zLoc,
+    zEnt
+  ]), qIdsOf(zAc.list));
+  ck('appChoices : les segments de la piste appartiennent à TOUTES ses finales, triés par IAF', qIdsOf(zAc.transitionsOf(zIls.id)) ===
+    qIdsOf([zT3, zT2, zT1]) && qIdsOf(zAc.transitionsOf(zRnp.id)) === qIdsOf([zT3, zT2, zT1]) && qIdsOf(zAc.transitionsOf(zLoc.id)) ===
+    qIdsOf([zT7]), qIdsOf(zAc.transitionsOf(zIls.id)));
+  ck('labelOf : type et piste seulement, sans catégories ni « RWY » ; un autre nom tel quel', labelOf(zIls, zAc.list) === 'ILS 06' &&
+    labelOf(zRnp, zAc.list) === 'RNP 06' && labelOf(zLoc, zAc.list) === 'ILS 07' && labelOf(zEnt, zAc.list) === 'RNP 20' && labelOf({
+      id: 'X',
+      name: 'I13R'
+    }) === 'I13R', [zIls, zRnp, zLoc, zEnt].map(r => labelOf(r, zAc.list)).join());
+  const zY = A('RNP Y RWY 06', '06', ['IZZ06', 'RW06']),
+    zZ = A('RNP Z RWY 06', '06', ['IZY06', 'RW06']),
+    zDup = A('RNP RWY 06', '06', ['IZX06', 'RW06'], null);
+  zDup.id += '.BIS';
+  ck('labelOf : deux finales de même type et piste gardent la lettre ; jamais deux libellés identiques (le premier point s’ajoute)',
+    labelOf(zY, [zY, zZ]) === 'RNP Y 06' && labelOf(zZ, [zY, zZ]) === 'RNP Z 06' && labelOf(zRnp, [zRnp, zDup]) === 'RNP 06 · IZZ06' &&
+    labelOf(zDup, [zRnp, zDup]) === 'RNP 06 · IZX06' && labelOf(zY, [zY]) === 'RNP 06');
+  ck('transitionLabelOf : « via OKAPI · OKAPI 1A » (IAF puis nom publié) ; « via ZP421 » quand le nom est l’IAF', transitionLabelOf(zT1) ===
+    'via OKAPI · OKAPI 1A' && transitionLabelOf(zEnt) === 'via ZP421', transitionLabelOf(zT1));
+  const zSum = summaryOf({
+    rwy: '06',
+    app: zIls.id,
+    appTrans: zT1.id
+  }, {
+    byId: new Map(zApps.map(r => [r.id, r]))
+  });
+  ck('summaryOf : la finale par son libellé court, via le nom publié de la transition', zSum.app === 'ILS 06 via OKAPI 1A', JSON.stringify(
+    zSum));
   ck('runwayChoices : rien de rien, rien', runwayChoices([], [], null).length === 0 && runwayChoices(null, null, {}).length === 0);
 
   window.__bench = {

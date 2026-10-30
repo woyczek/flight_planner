@@ -227,6 +227,13 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   (F32). `conflictsOf` and `orderProcedures` are still re-exported by `flight_path.js` (hence `current_flight.js`) during the transition.
   Since § 10.30 (30 Oct 2026): `runwayOf(proc)` (the single runway a procedure serves, else null) and `firstServing(list, rwy)` (the
   first of the group that serves the runway: « Choisir OKRIX5B »).
+  Fourth reading of § 10.30 (30 Oct 2026, LFPO): `isAppTransition(rec)` (an APP record named « INA … », or with a transition and
+  points that never reach a runway threshold « RWnn »: an initial approach segment, never a row); `appChoices` lists only the finals
+  and its `transitionsOf(id)` adds the segments of the final's name and those no final names that serve its runway (the SIA's
+  segments are common to ILS, RNP, LOC…), sorted by IAF; `labelOf(app, list)` (« ILS 06 », « RNP 06 »: type and runway, the SIA
+  letter when two finals would read the same, then the first point); `transitionLabelOf(rec)` (« via ODILO · ODILO 1A »). In
+  `flight_path.js`, `chainOf` joins an approach transition to its final at their first common point, wherever it is in the final,
+  else marks the final's first point `join: 'direct'` (dashed, § 10.20); the STAR → approach join is unchanged.
   Second reading of § 10.30 (30 Oct 2026): `familyOf(name)` (« ABLI4L » → `{ family: 'ABLI4', suffix: 'L' }`, a form only),
   `siblingsOf(list, proc)` (the records of its family when at least two suffixes exist, else `[]`: never a guess on a lone name),
   `familiesOf(list)` (the rows `{ name, recs, runways }`, families grouped), `compatible(list, { rwy, sid, star, app }, byId)` (what

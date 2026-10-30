@@ -4,6 +4,13 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **30 Oct 2026 — § 10.30 fourth reading, the SIA's initial approach segments** (user at LFPO: six identical rows « INA RNAV RWY
+  06 »): an APP record that never reaches a runway threshold, or named « INA », is a transition (`isAppTransition`). A segment named
+  like a final stays that final's own (the CIFP way: ILS09 via VA201); a segment no final names is shared by every final serving its
+  runway (the SIA way). Consequence: entry records that loop without a runway are segments, no longer rows (bench updated). Labels:
+  the type and the runway; the SIA letter only when two finals collide, then the first point. The junction rule moves into
+  `chainOf` for appTrans → app only (BUGS SOG agreed not to touch it meanwhile). No AIP data in the repository: the benches and the
+  fixture LFVE are invented records of the same shape as LFPO's. Cases F66, F26 (« via IC301 »); benches procedures (55), current_flight (81).
 - **30 Oct 2026 — § 10.30 third reading, the wind arrows turned and three colours** (user: « on atterrit toujours à contre-vent, la
   flèche vers le bas ; vert / orange / rouge »): `label()` now says where the wind blows in the runway's frame (↓ head, ↑ tail, ←
   from the right, → from the left), which reverses the arrows of 25b887349. `severity()` and `LIMITS` join wind.js, the Map reads

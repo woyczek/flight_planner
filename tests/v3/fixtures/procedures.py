@@ -85,6 +85,21 @@ def proc_docs(cycle=PROC_CYCLE):
         nameless,
         rec('LFVD', 'STAR', 'GHOST1', ['07'], [pt(1, 'ID301', 45.9, 3.2), pt(2, 'ID302', 45.8, 3.3)], status='doubt'),
     ]
+    # LFVE (invented, the shape of the SIA's records, § 10.30 fourth reading): two finals of runway 06 named the SIA way ("ILS CAT I or
+    # CAT II or CAT III RWY 06", "RNP RWY 06", from the IF), and three initial approach segments "INA RNAV RWY 06" carrying the transition
+    # ("OKAPI 1A" ends at the IF; "BISON 1E" and "ALPAG 1E" end on an unnamed point, no final leg); ids without spaces, as aerodb's
+    def sia(name, pts, transition=None):
+        r = rec('LFVE', 'APP', name, ['06'], pts, transition=transition)
+        r['id'] = r['id'].replace(' ', '')
+        return r
+    lfve = [
+        sia('ILS CAT I or CAT II or CAT III RWY 06', [pt(1, 'IVE06', 46.0, 2.6, {'type': 'at', 'ft': 3000}), pt(2, 'RW06', 46.05, 2.8),
+                                                     pt(3, 'VE412', 46.1, 3.0, phase='missed')]),
+        sia('RNP RWY 06', [pt(1, 'IVE06', 46.0, 2.6, {'type': 'at', 'ft': 3000}), pt(2, 'FVE06', 46.02, 2.7), pt(3, 'RW06', 46.05, 2.8)]),
+        sia('INA RNAV RWY 06', [pt(1, 'OKAPI', 45.8, 2.0), pt(2, 'VE609', 45.9, 2.3), pt(3, 'IVE06', 46.0, 2.6)], 'OKAPI 1A'),
+        sia('INA RNAV RWY 06', [pt(1, 'BISON', 46.3, 2.1), pt(2, 'VE617', 46.2, 2.3), pt(3, '', None, None)], 'BISON 1E'),
+        sia('INA RNAV RWY 06', [pt(1, 'ALPAG', 45.7, 2.9), pt(2, 'VE621', 45.85, 2.5), pt(3, '', None, None)], 'ALPAG 1E'),
+    ]
     rw_lfrs = [{'id': '03', 'lat': 47.138, 'lon': -1.62, 'elev': 90, 'qfu': 30}, {'id': '21', 'lat': 47.17, 'lon': -1.595, 'elev': 60, 'qfu': 210}]
     # the coded page of MEN1A and the public base of the charts (an invented path under the SIA's host, the only one aerodb links to: 97bf5577f): aerodb sets its source.url (§ 10.25)
     lfml[0]['source']['ref'] = 'AD_2_LFML_STAR_TEST.pdf'
@@ -94,6 +109,7 @@ def proc_docs(cycle=PROC_CYCLE):
     return [[f'proc/{cycle}/LFRS.json', file('LFRS', lfrs, rw_lfrs), 'reference'], [f'proc/{cycle}/LFML.json', {**file('LFML', lfml, rw_lfml), 'charts': {'base': 'https://www.sia.aviation-civile.gouv.fr/test/eAIP/', 'items': []}}, 'reference'],
             [f'proc/{cycle}/LFVA.json', file('LFVA', lfva), 'reference'], [f'proc/{cycle}/LFVB.json', file('LFVB', lfvb), 'reference'],
             [f'proc/{cycle}/LFVC.json', file('LFVC', lfvc), 'reference'], [f'proc/{cycle}/LFVD.json', file('LFVD', lfvd), 'reference'],
+            [f'proc/{cycle}/LFVE.json', file('LFVE', lfve), 'reference'],
             ['proc/manual/LFML.json', file('LFML', [old], cy='2025-01-01'), 'reference'], ['proc/local/LFML.json', file('LFML', [xpl]), 'reference'],
             # the index of the hand-read files: LFML was read on 29 Oct 16:53Z under an earlier cycle (coverage('LFML').read_at, outdated)
             ['proc/manual/index.json', {'schema': 1, 'aerodromes': {'LFML': {'STAR': 1, 'cycle': '2025-01-01', 'updated_at': '2026-10-29T16:53:00Z'}}}, 'reference']]

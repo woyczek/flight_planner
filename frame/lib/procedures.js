@@ -10,6 +10,9 @@
 //   runwayOf(proc), firstServing(list, rwy) : la piste unique d'une procédure, la première qui dessert une piste (§ 10.30).
 //   familyOf(name), siblingsOf(list, proc), familiesOf(list) : les familles de SID / STAR (ABLI4L, ABLI4R → une ligne « ABLI4 »).
 //   compatible(list, { rwy, sid, star, app }, byId) : ce qui va avec le choix, les trois familles dans n'importe quel ordre.
+//   isAppTransition(rec), labelOf(app, list), transitionLabelOf(rec) : les segments d'approche initiale (« INA RNAV RWY 06 ») en
+//     transitions communes aux finales de la piste, le libellé court d'une finale (« ILS 06 »), celui d'une transition
+//     (« via ODILO · ODILO 1A ») (§ 10.30, quatrième lecture).
 //   summaryOf(side, { byId, wind, via }) : les trois lignes du choix (« 28L · ↓ 12 kt · ← 6 kt », « ABLI4L via ABLIN »,
 //     « ILS 28L via PIZSA »), le même texte dans le volet de la Carte et le titre d'un côté de Carburant (§ 10.30, seconde lecture).
 //
@@ -109,25 +112,91 @@ export function transitionsOf(recs, id) {
   return name ? list.filter(r => r.transition && nameOf(r) === name && (!kind || !r.kind || r.kind === kind)) : [];
 }
 
-/** Les approches d'un terrain, listées une fois : { list, transitionsOf(id) }. list : les approches sans transition et, pour une
- *  approche que l'eAIP ne donne que par point d'entrée (une fiche par entrée, toutes avec une transition), sa fiche finale seule : celle
- *  qu'aucune autre fiche de même nom ne suit (une fiche alimente une autre quand son dernier repère est le premier de l'autre) ; sans
- *  fiche finale reconnue, toutes les fiches d'entrée. transitionsOf(id) : pour une approche donnée par ses entrées, les fiches qui
- *  mènent à sa fiche finale ; sinon ses transitions (même nom, avec une transition), jamais elle-même. */
+/** La fiche atteint-elle la piste : un de ses points (hors approche interrompue) est un seuil « RWnn ». */
+const reachesRunway = rec => (rec?.points || []).some(p => p?.phase !== 'missed' && /^RW\d/i.test(String(p?.id ?? '')));
+
+/** Segment d'approche initiale, jamais une ligne d'approche (§ 10.30, quatrième lecture) : une fiche APP nommée « INA … » (le SIA publie
+ *  ainsi les segments de l'IAF à l'IF, « INA RNAV RWY 06 » avec transition « ODILO 1A »), ou portant une transition et des points
+ *  sans atteindre la piste (elle finit avant l'IF). */
+export const isAppTransition = rec => rec?.kind === 'APP' && (/^INA\b/i.test(String(rec?.name ?? '').trim()) || !!rec?.transition && !!rec
+  .points?.length && !reachesRunway(rec));
+
+/** Les approches d'un terrain, listées une fois : { list, transitionsOf(id) }. Les segments d'approche initiale (isAppTransition) ne
+ *  sont jamais des lignes. list : parmi les autres fiches, les approches sans transition et, pour une approche que l'eAIP ne donne que
+ *  par point d'entrée (une fiche par entrée jusqu'à la piste, toutes avec une transition), sa fiche finale seule : celle qu'aucune
+ *  autre fiche de même nom ne suit (une fiche alimente une autre quand son dernier repère est le premier de l'autre) ; sans fiche finale
+ *  reconnue, toutes les fiches d'entrée. transitionsOf(id) : pour une approche donnée par ses entrées, les fiches qui mènent à sa fiche
+ *  finale ; sinon ses transitions de même nom ; plus les segments d'approche initiale : ceux de son nom, et ceux qu'aucune finale ne
+ *  nomme et qui desservent sa piste (le SIA les publie une fois pour toutes les finales de la piste : ILS, RNP, LOC…) ; jamais elle-même,
+ *  triées par IAF (premier point) puis par transition. */
 export function appChoices(apps) {
-  const all = apps || [],
+  const every = apps || [],
+    init = every.filter(isAppTransition),
+    all = every.filter(r => !isAppTransition(r)),
     main = all.filter(r => !r.transition),
     named = new Set(main.map(r => nameOf(r))),
     entry = all.filter(r => r.transition && !named.has(nameOf(r))),
     feeds = (a, b) => a !== b && nameOf(a) === nameOf(b) && !!a.points?.at(-1)?.id && a.points.at(-1).id === b.points?.[0]?.id,
-    finals = entry.filter(r => !entry.some(x => feeds(r, x)));
+    finals = entry.filter(r => !entry.some(x => feeds(r, x))),
+    list = [...main, ...(finals.length ? finals : entry)],
+    listed = new Set(list.map(r => nameOf(r))),
+    iaf = r => String(r?.points?.[0]?.id ?? ''),
+    shares = (r, app) => servesAll(r) || servesAll(app) || r.runways.some(x => servesRwy(app, x));
   return {
-    list: [...main, ...(finals.length ? finals : entry)],
+    list,
     transitionsOf: id => {
-      const chosen = entry.find(r => r.id === id);
-      return chosen ? entry.filter(r => feeds(r, chosen)) : transitionsOf(all, id).filter(r => r.id !== id);
+      const chosen = entry.find(r => r.id === id),
+        app = list.find(r => r.id === id) || every.find(r => r.id === id) || null,
+        own = chosen ? entry.filter(r => feeds(r, chosen)) : transitionsOf(all, id).filter(r => r.id !== id),
+        segs = app ? init.filter(r => nameOf(r) === nameOf(app) || !listed.has(nameOf(r)) && shares(r, app)) : [];
+      return [...new Map([...own, ...segs].filter(r => r.id !== id).map(r => [r.id, r])).values()].sort((a, b) => iaf(a).localeCompare(
+        iaf(b)) || String(a.transition ?? '').localeCompare(String(b.transition ?? '')));
     }
   };
+}
+
+/** Les parties d'un nom d'approche publié « TYPE [lettre] … RWY nn » : { type, letter, rwy } ; null pour un autre nom (« I13R »,
+ *  « ILS09 » : gardés tels quels). « ILS CAT I or CAT II or CAT III RWY 06 » → ILS, '', 06 ; « RNP Y RWY 06 » → RNP, Y, 06. */
+function appParts(rec) {
+  const m = /^(.+?)\s+RWY\s*(\d{2}[LRC]?)$/.exec(String(nameOf(rec) ?? '').trim().toUpperCase().replace(/\s+/g, ' '));
+  if (!m) return null;
+  const t = m[1].split(' ');
+  return {
+    type: t[0],
+    letter: /^[A-Z]$/.test(t[1] || '') ? t[1] : '',
+    rwy: m[2]
+  };
+}
+
+/** Libellé court d'une finale (§ 10.30, quatrième lecture) : le type et la piste, sans les catégories (« CAT I or CAT II… »,
+ *  « or LOC ») ni « RWY » : « ILS 06 », « RNP 06 », « LOC 07 » ; le nom publié reste celui de la fiche (title). Jamais deux libellés
+ *  identiques dans list (les lignes d'approche, appChoices().list) : deux finales de même type et piste gardent la lettre du SIA
+ *  (« RNP Y 06 ») ; si cela ne suffit pas, le premier point rejoint le libellé (« RNP 06 · IPO06 »). Un nom d'une autre forme est
+ *  gardé tel quel. */
+export function labelOf(app, list) {
+  if (!app) return '';
+  const others = [...new Map([app, ...(list || [])].filter(Boolean).map(r => [r.id, r])).values()].filter(r => r.id !== app.id),
+    levels = r => {
+      const p = appParts(r),
+        n = nameOf(r, r?.id) || '';
+      if (!p) return [n, n, n];
+      const two = [p.type, p.letter, p.rwy].filter(Boolean).join(' ');
+      return [`${p.type} ${p.rwy}`, two, r.points?.[0]?.id ? `${two} · ${r.points[0].id}` : two];
+    },
+    mine = levels(app);
+  for (let i = 0; i < 2; i++)
+    if (!others.some(r => levels(r)[i] === mine[i])) return mine[i];
+  return mine[2];
+}
+
+/** Libellé d'une transition d'approche : « via ODILO · ODILO 1A » (l'IAF, son premier point, puis le nom publié avec sa lettre) ;
+ *  « via VA201 » quand le nom est l'IAF. via : le mot de liaison (« via », le même dans les quatre langues). */
+export function transitionLabelOf(rec, {
+  via = 'via'
+} = {}) {
+  const iaf = String(rec?.points?.[0]?.id ?? '').trim(),
+    t = String(rec?.transition ?? '').trim();
+  return [iaf ? `${via} ${iaf}` : '', t && t !== iaf ? t : ''].filter(Boolean).join(' · ') || nameOf(rec, rec?.id) || '';
 }
 
 /** Pistes à proposer pour un terrain, [{ id }] : celles d'aerodb (known : fiches de pistes, ou déduites des fiches) ; sinon celles que
@@ -254,7 +323,12 @@ export function summaryOf(side, {
   via = 'via'
 } = {}) {
   const o = side || {},
-    name = id => nameOf(recById(byId, id), id) || String(id),
+    values = byId instanceof Map ? [...byId.values()] : byId && typeof byId === 'object' ? Object.values(byId) : [],
+    finals = appChoices(values.filter(r => r?.kind === 'APP')).list,
+    name = id => {
+      const r = recById(byId, id);
+      return r?.kind === 'APP' && !isAppTransition(r) ? labelOf(r, finals) : nameOf(r, id) || String(id);
+    },
     entry = id => {
       const r = recById(byId, id);
       return String(r?.transition ?? '').trim() || nameOf(r, id) || String(id);
