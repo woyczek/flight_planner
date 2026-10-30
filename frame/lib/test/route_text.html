@@ -27,6 +27,9 @@
     provenance,
     tokenize,
     textFromTokens,
+    textFromPoints,
+    icaoCoord,
+    formatLevel,
     withProcedures,
     proceduresOfText
   } from '../route_text.js?v=0';
@@ -149,6 +152,82 @@
     sid: 'AMOLO7A',
     star: 'AMB9E'
   }));
+
+  // repris de l'ancien banc modules/fuel/test/route_text.html (refonte § 10.33 R-F4c : un seul banc, lu par F69), points et voies
+  // inventés ; textFromPoints écrit maintenant la forme OACI, avec ses « DCT » (un seul écrivain : textFromTokens)
+  const qP = {
+      XDEP: [47.16, -1.61],
+      QLUG: [46.58, -1.2],
+      QNEP: [45.9, 0.6],
+      XARR: [43.44, 5.22],
+      QXRY: [46.9, -1.4]
+    },
+    qpt = (id, alt) => ({
+      id,
+      lat: qP[id][0],
+      lon: qP[id][1],
+      ...(alt ? {
+        alt_ft: alt
+      } : {})
+    }),
+    qeq = (name, got, want) => ck(name, JSON.stringify(got) === JSON.stringify(want), JSON.stringify(got));
+  qeq('tokenize : texte libre', tokenize('xdep n0300f270 dct qlug q869 QNEP/N0300F280 4530N00030E xarr').map(t =>
+    `${t.kind}:${t.id || ''}${t.alt_ft ? '@' + t.alt_ft : ''}${t.airway ? '*' : ''}`), ['name:XDEP', 'group:@27000', 'name:QLUG',
+    'name:Q869*', 'name:QNEP@28000', 'coord:4530N00030E', 'name:XARR'
+  ]);
+  qeq('tokenize : liste d’OFP', tokenize('XDEP 47.16 -1.61/N0300F270,\nXARR 43.44 5.22').map(t => [t.kind, t.id, t.alt_ft]), [
+    ['coord', 'XDEP', 27000],
+    ['coord', 'XARR', 0]
+  ]);
+  qeq('tokenize : NOM lat lon dans une ligne', tokenize('XDEP PT1 45.5 0.5 XARR').map(t => t.kind + ':' + t.id), ['name:XDEP', 'coord:PT1',
+    'name:XARR'
+  ]);
+  qeq('icaoCoord', icaoCoord(45.5, -0.8), '4530N00048W');
+  qeq('textFromTokens : texte normalisé', textFromTokens([{
+    pt: qpt('XDEP')
+  }, {
+    keep: 'Q869'
+  }, {
+    pt: qpt('QLUG', 28000)
+  }, {
+    pt: {
+      id: '',
+      lat: 45.5,
+      lon: .5
+    }
+  }]), 'XDEP Q869 QLUG/F280 4530N00030E');
+  const qTyped = 'XDEP Q869 QLUG DCT QNEP Q3 XARR',
+    qBefore = ['XDEP', 'QLUG', 'QNEP', 'XARR'].map(id => qpt(id)),
+    qMoved = {
+      ...qpt('QLUG'),
+      lat: 46.2,
+      lon: -0.9
+    };
+  qeq('textFromPoints : mêmes points, même texte (forme OACI)', textFromPoints(qBefore, qTyped, qBefore), 'XDEP Q869 QLUG DCT QNEP Q3 XARR');
+  qeq('textFromPoints : un point inséré dans le direct, les deux voies restent', textFromPoints([qpt('XDEP'), qpt('QLUG'), qpt('QXRY'), qpt(
+    'QNEP'), qpt('XARR')], qTyped, qBefore), 'XDEP Q869 QLUG DCT QXRY DCT QNEP Q3 XARR');
+  qeq('textFromPoints : un point d’une voie déplacé, cette voie tombe, l’autre reste', textFromPoints([qpt('XDEP'), qMoved, qpt('QNEP'), qpt(
+    'XARR')], qTyped, qBefore), 'XDEP QLUG DCT QNEP Q3 XARR');
+  qeq('textFromPoints : un point retiré, ses voies tombent', textFromPoints([qpt('XDEP'), qpt('QNEP'), qpt('XARR')], qTyped, qBefore),
+    'XDEP QNEP Q3 XARR');
+  qeq('textFromPoints : ordre changé, la voie d’une paire rompue tombe', textFromPoints([qpt('XDEP'), qpt('QNEP'), qpt('QLUG'), qpt('XARR')],
+    qTyped), 'XDEP QNEP DCT QLUG XARR');
+  qeq('textFromPoints : un niveau sur un point, écrit, les voies gardées', textFromPoints([qpt('XDEP'), qpt('QLUG'), qpt('QNEP', 28000), qpt(
+    'XARR')], qTyped), 'XDEP Q869 QLUG DCT QNEP/F280 Q3 XARR');
+  qeq('textFromPoints : sans positions d’avant, mêmes noms = inchangés', textFromPoints([qpt('XDEP'), qpt('QLUG'), qpt('QXRY'), qpt('QNEP'),
+    qpt('XARR')
+  ], qTyped), 'XDEP Q869 QLUG DCT QXRY DCT QNEP Q3 XARR');
+  qeq('textFromPoints : un point sans nom utilisable, en coordonnées OACI', textFromPoints([qpt('XDEP'), {
+    id: 'point 1',
+    lat: 45.5,
+    lon: .5
+  }, qpt('XARR')], 'XDEP XARR'), 'XDEP 4530N00030E XARR');
+  qeq('textFromPoints : le groupe vitesse-niveau de l’ancien texte ignoré', textFromPoints(qBefore, 'XDEP N0300F270 Q869 QLUG QNEP Q3 XARR'),
+    'XDEP Q869 QLUG DCT QNEP Q3 XARR');
+  qeq('formatLevel : FL060 au-dessus de la transition, FL050 à la transition', [formatLevel(6000), formatLevel(5000)], ['FL060', 'FL050']);
+  qeq('formatLevel : en dessous, des pieds (espace fine), arrondis à la centaine ; une autre transition ; sans valeur', [formatLevel(3500),
+    formatLevel(3449), formatLevel(6000, 7000), formatLevel(null)
+  ], ['3\u202f500 ft', '3\u202f400 ft', '6\u202f000 ft', '']);
 
   window.__bench = {
     done: true,

@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refonte — R-F4c, un seul écrivain du texte de route** (`frame/lib/route_text.js` `textFromPoints` through `textFromTokens({ dct:
+  true })`; bench merged into `frame/lib/test/route_text.html`, F69) — after an edit on the Map the text has its « DCT », the ICAO
+  form of Fuel's field; a kept airway stays an airway.
 - **Status block: every line leads somewhere, the dot reads as a status** (`frame/app.js` `statusItems`, `frame/frame.css` `.f-status-dot`; user captures of 30 Oct) — the Weather line leads to the weather key card and the Offline line to Synchronisation
   (a chevron on every line); the dot takes the design's token (green, warning) as a filled disc ringed by 1 px of the same tint,
   so it no longer reads as a dirty icon when the token renders dark (Standard light); case A50.

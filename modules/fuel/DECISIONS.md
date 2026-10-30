@@ -1175,6 +1175,12 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   already in the text but not its exit, Auto inserted the exit right after the departure and routed backwards (LFBO EXIT MIDPT…)
   while the text joined at the common point — two rules for one fact; the text's wins. Bench `procedures.html` (endsOf).
 
+- **30 Oct 2026 — R-F4c, one writer of the route text** (refactoring § 10.33; BUGS SOG agreed: « one ICAO form for the same route,
+  wherever it was written »): `RT.textFromPoints` (the Map's edit, Fuel's `routeEdited`) builds its tokens and writes them through
+  `textFromTokens({ dct: true })`; a kept airway stays an airway, two points that follow each other with nothing between them get
+  « DCT », as in Fuel's field. Visible on the Map only (Fuel normalised the text right after anyway). The old bench
+  `modules/fuel/test/route_text.html`, run by no case, is merged into `frame/lib/test/route_text.html` (F69), on invented points.
+
 ## Inventaire du 30/10 : à refondre
 
 Read-only inventory (Features SOG, 30 Oct, for the user's challenge « supprimer les faire et défaire, le code mort, les

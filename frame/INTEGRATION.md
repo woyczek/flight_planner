@@ -238,7 +238,8 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   read from its text on the base the caller passes (`ctx.aerodb`'s `coords`, `airways`, `state`), and `AIRWAY_WORD`; Fuel's
   `routePoints` moved there unchanged; bench `frame/lib/test/route_model.html` (F69). R-F4b: `procedures.js`
   `endsOf(procs, points, { dep, arr })` → `{ exit, entry }` (`{ id, lat, lon, origin }` or null), the ends of the chosen procedures
-  for the route text and Auto, null when a point of the procedure is already on the route; `flight_path.js` `routingChain` removed. In `route_text.js`: `textFromTokens(tokens, { dct })`
+  for the route text and Auto, null when a point of the procedure is already on the route; `flight_path.js` `routingChain` removed.
+  R-F4c: `textFromPoints` writes through `textFromTokens({ dct: true })`, one ICAO form for the Map's edit and Fuel's field. In `route_text.js`: `textFromTokens(tokens, { dct })`
   (ICAO form), `withProcedures(text, o)` (the procedures written into the text) and `proceduresOfText(text, o)` (read back), with
   `provenance(words, prev)` for Auto; bench `frame/lib/test/route_text.html` (F69).
   Fourth reading of § 10.30 (30 Oct 2026, LFPO): `isAppTransition(rec)` (an APP record named « INA … », or with a transition and

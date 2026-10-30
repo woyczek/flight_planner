@@ -16,7 +16,8 @@
 //   textFromPoints(points, previousText, previousPoints) : texte refait depuis les points ; entre deux points
 //     consécutifs inchangés qui se suivaient déjà dans previousText, les mots qui les séparaient (voie, procédure) sont
 //     gardés ; ailleurs, rien (direct). Inchangé : même identifiant, et même position à 0,5 NM près si previousPoints
-//     est donné. Niveaux en /Fnnn d'après alt_ft ; coordonnées OACI pour un point sans nom utilisable.
+//     est donné. Niveaux en /Fnnn d'après alt_ft ; coordonnées OACI pour un point sans nom utilisable. Écrit par textFromTokens
+//     en forme OACI, avec ses « DCT » (refonte § 10.33 R-F4c : un seul écrivain du texte, la Carte et Carburant).
 //   icaoCoord(lat, lon) : « 4530N00030E » (degrés et minutes).
 //   provenance(words, prev) : pour chaque mot du texte, vrai s'il vient du dernier « Auto » (voie ou nœud qu'il a écrit), faux
 //     s'il est posé (tapé par le pilote, départ, arrivée) ; prev : [{ w, g }] gardé avec la route (route.auto.seq) (§ 10.31).
@@ -267,16 +268,23 @@ export function textFromPoints(points, previousText = '', previousPoints = null)
       const q = prevPos.get(id);
       return !!q && nm(p, q) <= .5;
     };
+  // un seul écrivain du texte (refonte § 10.33 R-F4c) : les jetons passent par textFromTokens, en forme OACI avec ses « DCT »
   const out = [];
   pts.forEach((p, i) => {
     if (i) {
       const a = pts[i - 1],
         key = `${String(a.id || '').toUpperCase()}>${String(p.id || '').toUpperCase()}`;
-      if (between.has(key) && unchanged(a) && unchanged(p)) out.push(...between.get(key));
+      if (between.has(key) && unchanged(a) && unchanged(p)) out.push(...between.get(key).map(keep => ({
+        keep
+      })));
     }
-    out.push(pointWord(p));
+    out.push({
+      pt: p
+    });
   });
-  return out.join(' ');
+  return textFromTokens(out, {
+    dct: true
+  });
 }
 
 /** Niveau ou altitude d'un vol (voir l'en-tête) ; chaîne vide sans valeur. */
