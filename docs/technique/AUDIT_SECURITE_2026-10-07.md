@@ -937,6 +937,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 85 | Map: labels in the collision pass (ccedbd6c6, 1d137874f) | acceptable |
 | 86 | Refactor R-F4c (81ff938e2), status lines that lead somewhere (232e92bb3) | acceptable |
 | 87 | Refactors R-C1 (one Relay identity, 68b2f4dbe) and R-F5 (one completion list, f7183950a); 39a28c9b0 | acceptable; no guard lost |
+| 88 | Refactor R-M4: one runway store on the Map (0422d2d2a) | acceptable |
+| 89 | `base/pickup` from Downloads (25beba925); refactor R-C5 (29db3a2fb); 64e5f2d98 | acceptable, two notes |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1791,6 +1793,20 @@ loopback; on it, 503 without a host, then https, pairing on the `relay` channel,
 nine relay routes and the three local-network-only routes (Little Navmap sheets and folder, the simulator's position), as
 recommended in 83. R-F5: one completion list (`modules/fuel/suggest.js`), its values, labels and data attributes escaped,
 its options from the code; the cursor insertion and the filtered choice are unchanged. 39a28c9b0: a text defined once.
+
+**88. Refactor R-M4 (0422d2d2a) — acceptable.** One runway store read from aerodb, the bearing from the common rule of
+R-F1; three helpers removed with no caller left; canvas only, no write, network or HTML.
+
+**89. `base/pickup`, R-C5 and a card move (25beba925, 29db3a2fb, 64e5f2d98) — acceptable, two notes.** `base/pickup`
+takes zones and `dry` (true by default) only; the zip is the newest file of the workstation's Downloads folders whose name
+follows a pattern of the code (links and folders skipped), refused over 500 MB before opening, then `zip_check` before any
+reading; each entry is taken by its final name alone (an ASCII pattern, no separator or `:`), so `../../evil.xml` becomes
+`evil.xml` in the target folder; the target (`data/sia/` or `data/sia/zones/gb/`) is checked again with `inside()`; files
+are written atomically; nothing runs and nothing is committed. Notes: pass the final name through `data_path` too (Windows
+device names, a trailing dot or space); NATS's filter keeps any `.xml`, so an entry named like another source's file of
+the same folder would overwrite it (start the filter with `^EG_`). R-C5: the workstation's resumption now commits through
+`_commit_local` (the `.js` check, literal paths, the pool only), the same guards it used to write by hand; each
+resumption keeps its backup reference, its plan and the pending-merge check.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
