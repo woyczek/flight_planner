@@ -931,6 +931,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 79 | Refactor R-C3: IVAO's return in one place (7426e127d) | acceptable; no guard lost, surface reduced; notes of 77 and 41.4 settled |
 | 80 | Map: Layers chip (a314a352c), approach transitions filtered by the STAR (c884c8b3d) | acceptable |
 | 81 | Refactor R-F4b: procedure ends computed once (ddf10e3b8) | acceptable |
+| 82 | Data module: « Update everything » chain (3a908fa44) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1747,6 +1748,13 @@ code's texts and constant attributes; the return to Fuel is still checked by `ad
 **81. Refactor R-F4b (ddf10e3b8) — acceptable.** `PR.endsOf` is pure; `routingChain` is removed from `flight_path.js` and
 its re-export, with no caller left; Fuel's Auto adds no write (still the flight's bounded save), no network or HTML; the
 intended fix (the exit followed in the right direction) only concerns the route's computation.
+
+**82. « Update everything » (3a908fa44) — acceptable.** No new route: the chain runs `regen/job` (fetch then build per
+set) and publishes through `ctx.data.sync({ gesture: true })`; arguments stay identifiers. One question at the start (cycle,
+sets, skipped sets, the publication). The publication skips its own question only after **every** set succeeded (the first
+failure or a stop ends the chain without publishing), and the publish gate is evaluated again just before (a build
+running, no gesture, nothing to publish). Display through closed lists and escaped text; a chain cut by a reload is said,
+never resumed by itself.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
