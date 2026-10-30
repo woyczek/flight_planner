@@ -307,7 +307,10 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
     plus the hairline plus the device's safe area (`padding-bottom: env(safe-area-inset-bottom)`, the viewport has
     `viewport-fit=cover`). `--f-tab-space` (bar + hairline + safe area) is what anything stuck at the bottom of the
     window must clear: the sticky result bar `.f-bar` (`bottom: var(--f-tab-space, 0px)`) and the notifications. The
-    view is above the bar in the grid, so nothing hides under it.
+    view is above the bar in the grid, so nothing hides under it. The notifications also clear a view's `.f-bar` stuck at
+    the bottom (30 Oct 2026): while a note is shown the frame sets `--f-bar-clear` on `.f-notes` (the distance from the
+    bar's top to the foot of the window, plus 8 px; followed when the bar, the window or the scroll changes, removed with
+    the last note), on a phone and on a computer alike.
   - **The selected tab changes form, not only colour**: its icon switches from the outline to the **filled variant**
     (`frame/lib/icons.js`: fuel, map, edit, list, cloud, settings) on a soft rounded pill (12 to 14 % of the accent mixed into
     the surface); its label takes the link colour and a heavier weight; the others are outline icons in `--sog-muted`.
@@ -528,7 +531,7 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
 | `data` | the module's part of the data layer (2.7), limited to the prefixes of its `meta` |
 | `aerodb` | the aeronautical service, one instance for all modules (`frame/aerodb/INTEGRATION.md`); its data adapter is declared by aerodb itself (`AeroDB.declaration()`: SIA base, aircraft base, references, airline, planner, the aircraft registry and its sheets) |
 | `t(row, vars)`, `lang()` | texts as `[fr, en, de, es]` rows, `{name}` filled in, French typography; the language of the application |
-| `notify(text, kind)` | floating notification (`info`, `ok`, `warn`, `err`), closed by itself or by its ✕ |
+| `notify(text, kind)` | floating notification (`info`, `ok`, `warn`, `err`), closed by itself or by its ✕; shown above a sticky `.f-bar` of the view |
 | `ask(text)`, `askText(text, { value })` | the frame's own question windows (never a native dialog); promise of true / false, of the text or null |
 | `net.fetch(url, init)`, `net.online()` | outgoing calls through the frame, never an exception: offline or on a network failure, an immediate 503 marked `x-sog-offline`; same origin: direct; SimBrief, IVAO, VATSIM, aviationweather.gov (METAR / TAF): relayed by the launcher when the page is served by one (`POST /__setup/net`), otherwise direct for the sites that allow it (SimBrief, IVAO; aviationweather.gov sends no CORS header, so without a launcher it gets the 503); the airline's website (`airline.site`, https): the same, GET only (any other method: 503); any other site: 503 marked `x-sog-unreachable` |
 | `identity` | read only: the identity record of the device (`trigram`, `ivao`, `vatsim`, `simbrief`), an empty object when there is none |

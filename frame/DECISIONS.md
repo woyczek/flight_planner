@@ -2007,6 +2007,15 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
     `#settings?card=<one card>` with a launcher, the local network card's refresh started without its card
     (`null.isConnected`, on the very address IVAO's return lands on). noreg A44 (button off, title, link, nothing leaves even forced, on with an application, a stray
     return's sentence), I14 (IVAO's refusal said as IVAO's, a stray return as « state »), I10.
+- **30 Oct 2026 — The notes above a view's sticky bar** (Features SOG's request, from BUGS SOG's walk, anomaly 10):
+  - On a phone, Fuel's result bar (`.f-bar`) lay under the notes (`.f-notes` cleared the tab bar only). A module must not
+    restyle `.f-notes`, so the frame does it: `notesClear` (app.js) measures the visible `.f-bar` stuck in the lower half
+    of the window and sets `--f-bar-clear` on `.f-notes`, which `frame.css` takes as `bottom: max(<usual>, var(--f-bar-clear))`.
+  - Measured only while a note is shown (on each note added or removed, the bar's size by a ResizeObserver, the window's
+    size and the scroll), written only when the value changes, removed with the last note: no observer of the page.
+    Asked as « --f-bar-space from the bar's height »; done as the distance from the bar's top, which also holds when the
+    bar does not sit right on the tab bar.
+  - noreg A45 (a bar drawn as a module would, taller while the note is there, the variable gone with the note).
 - **30 Oct 2026 — Launcher jobs for the aircraft set** (V3 § 10.34 A1, the Settings session's request, base/* contract):
   - `tools/regen/aircraft.py` splits the V2 updater's single pass (`AircraftDB/update_aircraft_db.py`, unchanged) into the
     four verbs: fetch runs it with the network into thrown-away copies (only its caches stay), build runs it offline on

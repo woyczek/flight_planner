@@ -261,7 +261,8 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
 - Offline is normal. The application starts offline once visited, and your module's files (entry point and
   `meta.files`) are kept from the first visit: draw from `ctx.data` first, and treat a 503 from `ctx.net` as "not now", not as an error.
 - `ctx.notify(text, kind)`, `ctx.ask(text)`, `ctx.askText(text, { value })`: the frame's notifications and question
-  windows.
+  windows. The notes rise above your sticky result bar by themselves when it has the class `.f-bar` and sits in the
+  lower half of the window: never restyle `.f-notes` from a module.
 
 - `data.watch(prefix, paths => …)`: called after a synchronisation, after a write in this tab or in another tab. Re-read
   what you show; do not assume who changed it.

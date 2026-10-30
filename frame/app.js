@@ -594,6 +594,60 @@
   };
 
   // ---------------------------------------------------------------- notifications et questions (jamais de dialogue natif)
+  /** Les notes au-dessus de la barre collante d'une vue (.f-bar, résultat ou enregistrement) quand elle est collée en bas de
+   *  la fenêtre : --f-bar-clear sur .f-notes (frame.css) = la distance du haut de la barre au bas de la fenêtre, plus 8 px.
+   *  Suivi seulement tant qu'une note est affichée (taille de la barre, fenêtre, défilement) ; écrit seulement si cela change. */
+  const notesClear = (() => {
+    let bar = null,
+      clear = '',
+      raf = 0,
+      on = false;
+    const ro = new ResizeObserver(() => later()),
+      later = () => raf ||= requestAnimationFrame(measure),
+      OPT = {
+        capture: true,
+        passive: true
+      };
+
+    function measure() {
+      raf = 0;
+      const box = $('fNotes'),
+        h = innerHeight;
+      let best = null,
+        top = h;
+      // la barre visible la plus haute parmi celles collées dans la moitié basse de la fenêtre (une vue cachée n'a pas de boîte)
+      for (const b of box.childElementCount ? document.querySelectorAll('.f-bar') : []) {
+        const r = b.getClientRects().length ? b.getBoundingClientRect() : null;
+        if (r && r.height && r.top > h / 2 && r.top < top && r.bottom <= h + 1) {
+          best = b;
+          top = r.top;
+        }
+      }
+      if (best !== bar) {
+        if (bar) ro.unobserve(bar);
+        bar = best;
+        if (bar) ro.observe(bar);
+      }
+      const v = bar ? `${Math.ceil(h - top + 8)}px` : '';
+      if (v !== clear) {
+        clear = v;
+        if (v) box.style.setProperty('--f-bar-clear', v);
+        else box.style.removeProperty('--f-bar-clear');
+      }
+      const want = box.childElementCount > 0;
+      if (want !== on) {
+        on = want;
+        const listen = on ? 'addEventListener' : 'removeEventListener';
+        window[listen]('resize', later, OPT);
+        document[listen]('scroll', later, OPT);
+        if (!on && bar) {
+          ro.unobserve(bar);
+          bar = null;
+        }
+      }
+    }
+    return later;
+  })();
   /** Notification flottante : effacée seule (6 s, erreur 12 s) ou par sa croix. kind : info, ok, warn, err. o.action
    *  { label, run } : un bouton d'action, et la notification reste jusqu'au clic. */
   function notify(text, kind = 'info', o = {}) {
@@ -601,13 +655,18 @@
     n.className = 'f-note';
     n.dataset.kind = kind;
     n.innerHTML = `<span>${esc(text)}</span>${o.action ? `<button type="button" data-act>${esc(o.action.label)}</button>` : ''}<button type="button" data-x aria-label="${esc(t(T.close))}">✕</button>`;
-    n.querySelector('[data-x]').onclick = () => n.remove();
-    if (o.action) n.querySelector('[data-act]').onclick = () => {
+    const drop = () => {
       n.remove();
+      notesClear();
+    };
+    n.querySelector('[data-x]').onclick = drop;
+    if (o.action) n.querySelector('[data-act]').onclick = () => {
+      drop();
       o.action.run();
     };
     $('fNotes').append(n);
-    if (!o.action) setTimeout(() => n.remove(), kind === 'err' ? 12e3 : 6e3);
+    notesClear();
+    if (!o.action) setTimeout(drop, kind === 'err' ? 12e3 : 6e3);
   }
   /** Fenêtre de question du cadre : html du contenu, boutons ; promesse résolue par onDone(valeur) ; Échap : annuler. */
   function modal(html, onReady, cls = '') {

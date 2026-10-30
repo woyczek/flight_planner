@@ -1378,3 +1378,28 @@ def a44(c):
     c.until("[...document.querySelectorAll('.f-note')].some(n => n.textContent.trim())", what='a notification')
     note = norm(c.js("[...document.querySelectorAll('.f-note')].map(n => n.textContent).join(' ')"))
     c.ok(norm(tx('frame/app.js', 'ivaoFailState', c.lang)) in note and '(state)' not in note, note[:200], 'a stray return says what happened, never « (state) »')
+
+
+@case('A45', 'Floating notes above a view\u2019s sticky bar', 'A', designs=('standard',), screens=False, night=False,
+      rule='Features SOG 30 Oct (BUGS SOG walk, anomaly 10): on a phone Fuel\u2019s result bar (.f-bar) lay under the notes; the frame lifts .f-notes above a .f-bar stuck at the bottom while a note is shown (--f-bar-clear), never a module')
+def a45(c):
+    c.open('fuel', trigram='')                                      # no trigram: the frame asks in a note that stays (an action)
+    c.until("!!document.querySelector('#fNotes .f-note')", what='a note is shown')
+    # a bar stuck at the foot of the view, as a module draws it (.f-bar), then a resize: the frame measures it again
+    c.js("""() => { const b = document.createElement('div'); b.className = 'f-bar'; b.dataset.testBar = '';
+                    b.style.cssText = 'position:fixed;left:0;right:0;bottom:var(--f-tab-space,0px);height:72px';
+                    b.textContent = 'Bloc'; document.getElementById('fView').append(b); dispatchEvent(new Event('resize')) }""")
+    c.until("""() => { const n = document.getElementById('fNotes').getBoundingClientRect(), b = document.querySelector('[data-test-bar]').getBoundingClientRect();
+                       return n.bottom <= b.top - 7 }""", what='the notes sit above the bar')
+    clear = c.js("document.getElementById('fNotes').style.getPropertyValue('--f-bar-clear')")
+    bar = c.box('[data-test-bar]')
+    c.eq(float(clear.replace('px', '')), round(c.page.viewport_size['height'] - bar['t'] + 8), 'the distance from the bar\u2019s top to the foot, plus 8 px',
+         tol=1, what='--f-bar-clear')
+    # the bar taller: followed while the note is there
+    c.js("() => { document.querySelector('[data-test-bar]').style.height = '120px' }")
+    c.until("""() => { const n = document.getElementById('fNotes').getBoundingClientRect(), b = document.querySelector('[data-test-bar]').getBoundingClientRect();
+                       return n.bottom <= b.top - 7 }""", what='the notes follow a taller bar')
+    # the last note gone: nothing left on .f-notes
+    c.js("() => document.querySelectorAll('#fNotes .f-note [data-x]').forEach(x => x.click())")
+    c.until("!document.querySelector('#fNotes .f-note') && !document.getElementById('fNotes').style.getPropertyValue('--f-bar-clear')",
+            what='no note: --f-bar-clear removed')

@@ -300,6 +300,9 @@ def j3(c):
     for hhmm, p in (('09:10', 'timeline.takeoff'), ('10:05', 'timeline.landing')):
         c.page.fill(f'[data-module="report"] [data-path="{p}"]', hhmm)
     blur(c)
+    # the « n fields filled » note rises above the sticky save bar (A45), over the step buttons, until it fades: closed by its ✕
+    for _ in range(c.count('#fNotes .f-note')):
+        c.tap('#fNotes .f-note [data-x]')
     for n in (1, 2):
         c.tap(f'[data-module="report"] .rp-next button[data-step="{n}"]')
         c.until(f"document.querySelector('[data-module=report] .f-steps button[data-step=\"{n}\"]').getAttribute('aria-current') === 'step'", what=f'step {n + 1} becomes active')

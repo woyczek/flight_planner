@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the floating notes rise above a view's sticky bar** (`frame/app.js`, `frame/frame.css`; frame SPEC § 3,
+  INTEGRATION, DECISIONS; noreg A45) — on a phone Fuel's result bar is no longer covered by a note.
 - **Launcher: one named User-Agent for every outgoing request, each failure said in the console** (`tools/outbound.py`,
   `tools/launch.py`, `tools/regen_jobs.py`, `tools/aero_fetch.py`, `tools/proc_sia.py`, `tools/proc_ead.py`; frame
   INTEGRATION § 15, DECISIONS; noreg I20) — the IVAO sign-in failed (« IVAO discovery: HTTPError »): Cloudflare refused
