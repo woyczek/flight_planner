@@ -345,8 +345,6 @@ export const PERSONAL = {
 };
 /** Dernières opérations gardées dans cache/data/journal.json. */
 export const JOURNAL_MAX = 50;
-/** Les verbes du jeu « base » que l'écran suit, tels que le lanceur les nomme (base/build, base/fetch, base/purge). */
-export const VERBS = ['build', 'fetch', 'purge'];
 /** États d'une zone dans la vue d'un travail, par verbe. */
 const ZONE_STATES = {
   build: ['waiting', 'building', 'built', 'failed', 'cancelled'],
@@ -386,16 +384,6 @@ export function personalSources(zoneIds) {
       id,
       kind: p.kind
     }));
-}
-/** L'état du bouton « Construire » : { disabled, reason } ; reason : 'no-launcher' | 'busy' | 'no-zone' | 'offline' | null.
- *  `s` : { launcher (le poste en a un), busy (une opération tourne, la nôtre ou une autre), zones (nombre de zones cochées),
- *  offline }. Une seule raison, la première de cet ordre. */
-export function buildState(s) {
-  const reason = !s.launcher ? 'no-launcher' : s.busy ? 'busy' : s.offline ? 'offline' : !(s.zones > 0) ? 'no-zone' : null;
-  return {
-    disabled: !!reason,
-    reason
-  };
 }
 /** Le code d'échec d'une zone : ceux du verbe, sinon 'unknown' ; pour la purge (codes non fixés par le lanceur) le code court tel quel ;
  *  `loose` (les jeux autres que la base : leurs constructeurs sont en Python, codes non fixés) garde aussi le code court d'une construction ou d'un téléchargement. */
@@ -467,22 +455,6 @@ export function progress(view, ids) {
 export function clock(sec) {
   const s = Math.max(0, Math.round(sec || 0));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-}
-/** Le verbe du jeu « base » dont une vue est le travail : 'build' | 'fetch' | 'purge', ou null (un autre travail du lanceur). Une vue
- *  qui dit son jeu et son verbe (le lanceur le fait) est lue d'après eux ; une vue sans verbe qui porte ses zones est une construction. */
-export function viewVerb(v) {
-  if (!v || typeof v !== 'object') return null;
-  if (v.set === 'base' && VERBS.includes(v.verb)) return v.verb;
-  const zones = !!v.zones && typeof v.zones === 'object' && !Array.isArray(v.zones);
-  return zones && !v.verb ? 'build' : null;
-}
-/** La vue d'un travail est-elle celle d'une construction de la base ? */
-export function isBuildView(v) {
-  return viewVerb(v) === 'build';
-}
-/** La vue d'un travail est-elle un plan de purge (args.dry) ? */
-export function isDry(v) {
-  return viewVerb(v) === 'purge' && v.args?.dry === true;
 }
 /** La fin d'un travail de construction, d'après sa dernière vue : { kind, built: [zone], failed: [{ zone, error }] } ; kind :
  *  'done' | 'partial' | 'failed' | 'cancelled' | 'interrupted' | 'no-browser' | 'xplane-in-page'. Le résultat du lanceur
@@ -907,8 +879,8 @@ export function setArgs(set, verb, sel = {}) {
   };
 }
 /** Le jeu et le verbe dont une vue est le travail : { set, verb } ou null (un autre travail du lanceur). Une vue qui dit son jeu et son verbe
- *  (le lanceur le fait) est lue d'après eux ; une vue sans verbe qui porte ses zones est une construction de la base (viewVerb reste la lecture du
- *  seul jeu « base »). `aircraft/publish` est connu aussi. */
+ *  (le lanceur le fait) est lue d'après eux ; une vue sans verbe qui porte ses zones est une construction de la base.
+ *  `aircraft/publish` est connu aussi. */
 export function viewOp(v) {
   if (!v || typeof v !== 'object') return null;
   if (SETS[v.set]?.verbs.includes(v.verb)) return {
@@ -1088,8 +1060,6 @@ export function setEntry(set, verb, {
     } : {}) // vfr/fetch : les cartes téléchargées, déjà là, pas encore publiées
   };
 }
-/** Le nombre d'éléments d'une liste de fiches ou d'un nombre ; 0 sinon. */
-const listLen = v => Array.isArray(v) ? v.length : num(v) ?? 0;
 /** Le plan d'une publication de fiches (aircraft/publish à blanc), d'après la dernière vue : { remove: [..], copy: [..] } ; le plan est
  *  `result.plan`, à défaut le résultat lui-même ; { removed, copied } sont les comptes. */
 export function sheetsPlan(final) {
@@ -1100,8 +1070,8 @@ export function sheetsPlan(final) {
   return {
     remove: list(p.remove),
     copy: list(p.copy),
-    removed: listLen(p.remove),
-    copied: listLen(p.copy),
+    removed: countOf(p.remove),
+    copied: countOf(p.copy),
     bytes: size(p.remove) + size(p.copy)
   };
 }

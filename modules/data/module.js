@@ -314,7 +314,7 @@ function urlOf(src) {
  *  (javascript:, data:, http:…) n'est jamais un lien, seulement écrite. */
 function linkHtml(src) {
   const url = String(urlOf(src) ?? '');
-  if (!/^https:\/\/[^\s"'<>]+$/i.test(url)) return url ? `<span class="d-url f-muted">${esc(url)}</span>` : '';
+  if (!M.isHttps(url)) return url ? `<span class="d-url f-muted">${esc(url)}</span>` : '';
   return `<a class="f-btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(tt(TX.openTitle, { s: src.n[li()] }))}">${esc(tt(TX.open))}</a>
     <span class="d-url f-muted">${esc(url)}</span>`;
 }
@@ -348,7 +348,7 @@ function detailHtml(r, src) {
 /** Une ligne de jeu de données. Un jeu utilisé : une carte repliable (nom, cycle ou édition, âge, taille, pastille d'état ; le détail
  *  sous le toucher). Un jeu envisagé ou écarté : une carte à plat, sans état, avec son lien, sa licence et son statut. */
 function rowHtml(r) {
-  const src = S.d.cat.byId ? S.d.cat.byId(r.id) : S.d.cat.SOURCES.find(s => s.id === r.id),
+  const src = catSource(r.id),
     name = esc(src.n[li()]);
   if (r.status !== 'used') return `<div class="f-card" data-set="${esc(r.id)}" data-status="${esc(r.status)}"><p><b>${name}</b>
       <span class="f-badge"${kind(STATUS_KIND[r.status])}>${esc(tt(TX.statuses[r.status]))}</span></p>
@@ -427,10 +427,14 @@ function gateOf(set, items, verbs) {
 function buildGate(ticked) {
   return gateOf('base', ticked.length);
 }
+/** Une source du catalogue d'aerodb par son identifiant (byId, à défaut une recherche dans SOURCES) ; undefined si elle n'y est pas. */
+function catSource(id) {
+  const cat = S.d.cat;
+  return cat?.byId ? cat.byId(id) : cat?.SOURCES?.find(s => s.id === id);
+}
 /** Le nom d'une source sous licence personnelle : celui du catalogue d'aerodb, à défaut un texte du module. */
 function personalName(id) {
-  const src = S.d.cat?.byId ? S.d.cat.byId(id) : S.d.cat?.SOURCES?.find(s => s.id === id);
-  return src?.n?.[li()] || tt(TX.personalName[id]);
+  return catSource(id)?.n?.[li()] || tt(TX.personalName[id]);
 }
 /** Les sources sous licence personnelle cochées ET proposées (celles d'une zone décochée ne partent pas). */
 function personalPicked(ticked) {
@@ -442,8 +446,7 @@ function optHtml(attr, id, label, checked, disabled) {
 }
 /** Le nom d'une source téléchargée : celui du catalogue d'aerodb, à défaut son identifiant. */
 function sourceName(id) {
-  const src = S.d.cat?.byId ? S.d.cat.byId(id) : S.d.cat?.SOURCES?.find(s => s.id === id);
-  return src?.n?.[li()] || id;
+  return catSource(id)?.n?.[li()] || id;
 }
 /** Le motif d'un échec de source : « HTTP 404 » (code et statut), « le réseau ne répond pas »… */
 function fetchWhy(code, status) {
@@ -1025,14 +1028,16 @@ function openGroup(set, verb) {
   const g = S.body?.querySelector(`details.f-group[data-group="${id}"]`);
   if (g) g.open = true;
 }
+/** Le texte d'un mot du journal (verbe, résultat, jeu) dans la langue : celui de la table `map`, à défaut le mot tel que le journal le porte. */
+const wordOf = (map, key) => tt(map[key] || [key, key, key, key]);
 /** La ligne d'une opération du journal : heure UTC, jeu (hors base), verbe, éléments, résultat. */
 function opHtml(e) {
   const set = e.set || 'base',
-    items = e.set === 'all' ? (e.items || []).map(i => `${chainName(i.set)} : ${tt(TX.chainWord[i.result] || [i.result, i.result, i.result, i.result])}`).join(', ') :
+    items = e.set === 'all' ? (e.items || []).map(i => `${chainName(i.set)} : ${wordOf(TX.chainWord, i.result)}`).join(', ') :
     (e.items || e.zones || []).map(z => itemName(set, z)).join(', '),
     zs = e.verb === 'publish' ? count('file', M.num(e.committed) ?? 0) : items,
-    label = set === 'base' || set === 'all' ? '' : `${tt(TX.setLabel[set] || [set, set, set, set])} · `;
-  return `<li data-op data-result="${esc(e.result)}" data-op-verb="${esc(e.verb)}" data-op-set="${esc(set)}"><time datetime="${esc(e.at)}">${esc(fmtDateZ(e.at, lang()))}</time> · ${esc(label)}${esc(tt(TX.opVerb[e.verb] || [e.verb, e.verb, e.verb, e.verb]))} · ${esc(e.set === 'aircraft' && e.verb === 'publish' ? count('sheet', M.num(e.copied) ?? 0) : zs)} · ${esc(tt(TX.opResult[e.result] || [e.result, e.result, e.result, e.result]))}</li>`;
+    label = set === 'base' || set === 'all' ? '' : `${wordOf(TX.setLabel, set)} · `;
+  return `<li data-op data-result="${esc(e.result)}" data-op-verb="${esc(e.verb)}" data-op-set="${esc(set)}"><time datetime="${esc(e.at)}">${esc(fmtDateZ(e.at, lang()))}</time> · ${esc(label)}${esc(wordOf(TX.opVerb, e.verb))} · ${esc(e.set === 'aircraft' && e.verb === 'publish' ? count('sheet', M.num(e.copied) ?? 0) : zs)} · ${esc(wordOf(TX.opResult, e.result))}</li>`;
 }
 /** Le journal, replié, au pied de l'écran : les opérations les plus récentes d'abord. */
 function journalHtml() {
@@ -1306,14 +1311,14 @@ async function endRun(me, final, live) {
   S.other = null;
   S.view = final;
   if (dry && !live) return renderBuild(); // le plan terminé avant l'ouverture : il n'est plus à poser
-  if (verb === 'publish') return dry ? endSheetsPlan(me, final, run) : endSheets(me, final, live, seconds);
-  if (verb === 'fetch') return endFetch(me, final, live, seconds, set);
-  if (verb === 'purge') return dry ? endPlan(me, final, live, run) : endPurge(me, final, live, seconds, set);
-  return endBuild(me, final, live, seconds, set);
+  if (verb === 'publish') return dry ? endSheetsPlan(me, final, run) : endSheets(final, live, seconds);
+  if (verb === 'fetch') return endFetch(final, live, seconds, set);
+  if (verb === 'purge') return dry ? endPlan(me, final, live, run) : endPurge(final, live, seconds, set);
+  return endBuild(final, live, seconds, set);
 }
 /** Fin d'une construction : le résumé dans le panneau, une notification (si on l'a suivie jusqu'au bout), le journal, puis la
  *  relecture de ce qui est publié. */
-async function endBuild(me, final, live, seconds, set = 'base') {
+async function endBuild(final, live, seconds, set = 'base') {
   const out = M.setOutcome(set, 'build', final).out;
   S.result = {
     set,
@@ -1342,7 +1347,7 @@ async function endBuild(me, final, live, seconds, set = 'base') {
 }
 /** Fin d'un téléchargement : le résumé, les sources manuelles et les lignes dans le panneau, une notification (le résumé, et les fichiers
  *  hors synchronisation s'il y en a), le journal (verbe « download »), puis la relecture de ce qui est publié. */
-async function endFetch(me, final, live, seconds, set = 'base') {
+async function endFetch(final, live, seconds, set = 'base') {
   const out = M.setOutcome(set, 'fetch', final).out,
     sm = fetchSummary(out, set);
   S.result = {
@@ -1369,7 +1374,7 @@ async function endFetch(me, final, live, seconds, set = 'base') {
   if (live && !quiet) await load();
 }
 /** Fin d'une purge réelle : le résumé et les phrases des avertissements dans le panneau, une notification, le journal, puis la relecture. */
-async function endPurge(me, final, live, seconds, set = 'base') {
+async function endPurge(final, live, seconds, set = 'base') {
   const out = M.setOutcome(set, 'purge', final).out,
     sm = purgeSummary(out);
   S.result = {
@@ -1481,7 +1486,7 @@ async function endSheetsPlan(me, final, run) {
   }, []), true);
 }
 /** Fin d'une publication de fiches réelle : le résumé dans le panneau, une notification, le journal, puis la relecture. */
-async function endSheets(me, final, live, seconds) {
+async function endSheets(final, live, seconds) {
   const out = M.sheetsOutcome(final),
     sm = sheetsSummary(out);
   S.result = {

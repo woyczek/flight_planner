@@ -467,7 +467,7 @@ after, CHANGELOG « refactor, no behaviour change », `:recycle:`, one lot at a 
 
 **Found, by zone**
 - **modules/data/model.js** (≈1 290 lines, 61 KB): `viewVerb`, `isBuildView`, `isDry`, `buildState` are dead in the source (the
-  module uses `viewOp`, `opDry`, `setGate`) and only pinned by L5, L13, L15; `countOf` and `listLen` are the same helper; the
+  module uses `viewOp`, `opDry`, `setGate`) and only pinned by L6, L14, L16 (done: R-S1); `countOf` and `listLen` are the same helper; the
   outcome functions (`outcome`, `fetchOutcome`, `purgeOutcome`) and the journal entries (`journalEntry`, `fetchEntry`,
   `purgeEntry`, then `setEntry` renaming `zones` to `items`) repeat one chain per verb. **Target**: one outcome reader and one
   entry builder per verb, no pre-SETS leftover.

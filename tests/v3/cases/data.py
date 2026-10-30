@@ -481,13 +481,13 @@ _L6_JS = r"""async () => {
   const out = {};
   out.personal = [[], ['fr'], ['es'], ['gb'], ['es', 'gb', 'fr']].map(z => M.personalSources(z).map(p => p.id + ':' + p.kind));
   out.gate = [{ launcher: false, busy: true, zones: 0, offline: true }, { launcher: true, busy: true, zones: 0 }, { launcher: true, busy: false, zones: 2, offline: true },
-    { launcher: true, zones: 0 }, { launcher: true, zones: 2 }].map(M.buildState);
+    { launcher: true, zones: 0 }, { launcher: true, zones: 2 }].map(s => { const g = M.setGate({ set: 'base', launcher: s.launcher, busy: s.busy, offline: s.offline, items: s.zones }); return { disabled: g.verbs.build.disabled, reason: g.verbs.build.reason } });
   out.phrase = [undefined, { state: 'building', done: 2, total: 5 }, { state: 'building' }, { state: 'built' }, { state: 'failed', error: 'timeout' },
     { state: 'failed', error: 'zzz' }, { state: 'cancelled' }, { state: 'weird' }].map(z => { const p = M.zonePhrase(z); return [p.state, p.key, p.n, p.m, p.code] });
   out.rows = M.zoneRows({ zones: { fr: { state: 'built' }, us: { state: 'building', done: 1, total: 3 } } }, ['fr', 'gb']).map(r => [r.zone, r.key]);
   out.progress = [M.progress({ done: 2, total: 5 }, ['a']), M.progress(null, ['a', 'b']), M.progress({ done: 9, total: 5 }, []), M.progress(null, [])];
   out.clock = [0, 59, 125, -3, 3600].map(M.clock);
-  out.isBuild = [{ zones: {} }, { set: 'base', verb: 'build' }, { state: 'done' }, null, { zones: [] }].map(M.isBuildView);
+  out.isBuild = [{ zones: {} }, { set: 'base', verb: 'build' }, { state: 'done' }, null, { zones: [] }].map(v => { const o = M.viewOp(v); return !!o && o.set === 'base' && o.verb === 'build' });
   const z = s => ({ state: s }), zf = e => ({ state: 'failed', error: e });
   const o = f => { const r = M.outcome(f); return [r.kind, r.built, r.failed] };
   out.outcome = [
@@ -523,7 +523,7 @@ def l6(c):
     c.eq(r['personal'], [[], ['xplane:xplane'], ['enaire:licence', 'xplane:xplane'], ['nats:licence', 'xplane:xplane'], ['enaire:licence', 'nats:licence', 'xplane:xplane']],
          'a personal source is offered only when it feeds a ticked zone (X-Plane feeds every zone, none ticked: nothing)', what='personalSources')
     c.eq([[g['disabled'], g['reason']] for g in r['gate']],
-         [[True, 'no-launcher'], [True, 'busy'], [True, 'offline'], [True, 'no-zone'], [False, None]], 'one reason, in the order: launcher, busy, offline, no zone', what='buildState')
+         [[True, 'no-launcher'], [True, 'busy'], [True, 'offline'], [True, 'no-zone'], [False, None]], 'one reason, in the order: launcher, busy, offline, no zone', what='setGate base')
     c.eq(r['phrase'], [['waiting', 'waiting', None, None, None], ['building', 'buildingN', 2, 5, None], ['building', 'building', None, None, None], ['built', 'built', None, None, None],
                        ['failed', 'failed', None, None, 'timeout'], ['failed', 'failed', None, None, 'unknown'], ['cancelled', 'cancelled', None, None, None], ['waiting', 'waiting', None, None, None]],
          'the phrase of a zone: n / m sources only when both are known, the error code kept or « unknown », an unknown state waits', what='zonePhrase')
@@ -531,7 +531,7 @@ def l6(c):
     c.eq(r['progress'], [{'done': 2, 'total': 5, 'pct': 40}, {'done': 0, 'total': 2, 'pct': 0}, {'done': 5, 'total': 5, 'pct': 100}, {'done': 0, 'total': 0, 'pct': None}],
          'the bar: done / total of the view, else 0 over the zones asked; never above the total; no total, no percentage', what='progress')
     c.eq(r['clock'], ['0:00', '0:59', '2:05', '0:00', '60:00'], 'elapsed time as minutes:seconds', what='clock')
-    c.eq(r['isBuild'], [True, True, False, False, False], 'a view is a base build when it carries its zones (or says set and verb)', what='isBuildView')
+    c.eq(r['isBuild'], [True, True, False, False, False], 'a view is a base build when it carries its zones (or says set and verb)', what='viewOp base build')
     c.eq(r['outcome'], [['done', ['fr', 'gb'], []], ['partial', ['fr'], [{'zone': 'gb', 'error': 'timeout'}]], ['failed', [], [{'zone': 'fr', 'error': 'invalid-output'}]],
                         ['cancelled', ['fr'], []], ['interrupted', ['fr'], []], ['no-browser', [], []], ['xplane-in-page', [], []],
                         ['partial', ['fr'], [{'zone': 'gb', 'error': 'timeout'}]], ['failed', [], [{'zone': 'fr', 'error': 'x'}]], ['cancelled', ['fr'], []]],
@@ -1213,12 +1213,12 @@ _L14_JS = r"""async () => {
   const out = {};
   // which verb of the base set a view is (the launcher says it; a view without a verb that carries its zones is a build)
   out.verbs = [{ set: 'base', verb: 'fetch', zones: {} }, { set: 'base', verb: 'purge' }, { set: 'base', verb: 'build' }, { zones: {} }, { zones: {}, verb: 'x' },
-    { set: 'other', verb: 'fetch', zones: {} }, { state: 'done' }, null, { zones: [] }].map(M.viewVerb);
-  out.isBuild = [{ set: 'base', verb: 'fetch', zones: {} }, { zones: {} }, { set: 'base', verb: 'build' }].map(M.isBuildView);
-  out.dry = [{ set: 'base', verb: 'purge', args: { dry: true }, zones: {} }, { set: 'base', verb: 'purge', args: { zones: ['fr'] } }, { set: 'base', verb: 'fetch', args: { dry: true } }, null].map(M.isDry);
+    { set: 'other', verb: 'fetch', zones: {} }, { state: 'done' }, null, { zones: [] }].map(M.viewOp);
+  out.isBuild = [{ set: 'base', verb: 'fetch', zones: {} }, { zones: {} }, { set: 'base', verb: 'build' }].map(v => { const o = M.viewOp(v); return !!o && o.set === 'base' && o.verb === 'build' });
+  out.dry = [{ set: 'base', verb: 'purge', args: { dry: true }, zones: {} }, { set: 'base', verb: 'purge', args: { zones: ['fr'] } }, { set: 'base', verb: 'fetch', args: { dry: true } }, null].map(M.opDry);
   // the one grey reason of the three verbs
   out.gate = [{ launcher: false, busy: true, zones: 0 }, { launcher: true, busy: true, zones: 0 }, { launcher: true, zones: 0, offline: true }, { launcher: true, zones: 2, offline: true }, { launcher: true, zones: 2 }]
-    .map(s => M.buildState(s).reason);
+    .map(s => M.setGate({ set: 'base', launcher: s.launcher, busy: s.busy, offline: s.offline, items: s.zones }).reason);
   // sizes
   const B = [0, 512, 1023, 1024, 1536, 14470348, 14994636, 1048575, 2.5 * 2 ** 30, 5 * 2 ** 40, NaN, -1, null];
   out.bytes = Object.fromEntries(['fr', 'en', 'de', 'es', 'xx'].map(l => [l, B.map(n => M.fmtBytes(n, l))]));
@@ -1279,11 +1279,12 @@ _L14_JS = r"""async () => {
 def l14(c):
     c.page.goto(f'{c.base}/frame/manifest.webmanifest', wait_until='load')
     r = c.js(_L14_JS)
-    c.eq(r['verbs'], ['fetch', 'purge', 'build', 'build', None, None, None, None, None],
-         'a view is a fetch / purge / build when it says set base and its verb; without a verb its zones make it a build; another set, no zones: none', what='viewVerb')
-    c.eq(r['isBuild'], [False, True, True], 'a fetch view carries its zones but is no build any more', what='isBuildView')
-    c.eq(r['dry'], [True, False, False, False], 'only a purge with args.dry is a plan', what='isDry')
-    c.eq(r['gate'], ['no-launcher', 'busy', 'offline', 'offline', None], 'the one reason of the three buttons: launcher, busy, offline, no zone (the order of Construire)', what='buildState')
+    B = lambda verb: {'set': 'base', 'verb': verb}
+    c.eq(r['verbs'], [B('fetch'), B('purge'), B('build'), B('build'), None, None, None, None, None],
+         'a view is a fetch / purge / build when it says set base and its verb; without a verb its zones make it a build; another set, no zones: none', what='viewOp base')
+    c.eq(r['isBuild'], [False, True, True], 'a fetch view carries its zones but is no build any more', what='viewOp base build')
+    c.eq(r['dry'], [True, False, False, False], 'only a purge with args.dry is a plan', what='opDry')
+    c.eq(r['gate'], ['no-launcher', 'busy', 'offline', 'offline', None], 'the one reason of the three buttons: launcher, busy, offline, no zone (the order of Construire)', what='setGate base')
     mo = ['0 o', '512 o', '1023 o', '1,0 Ko', '1,5 Ko', '13,8 Mo', '14,3 Mo', '1,0 Mo', '2,5 Go', '5120,0 Go', '', '', '']
     gb = lambda units, sep: [x.replace(',', sep).replace(' o', ' B').replace('Ko', 'KB').replace('Mo', 'MB').replace('Go', 'GB') if units else x for x in mo]
     c.eq(r['bytes']['fr'], mo, 'sizes in French: « 13,8 Mo », one decimal, octets whole under 1 Ko, no 1024,0, nothing for NaN, negative, null', what='fmtBytes fr')
@@ -1717,7 +1718,7 @@ _L16_JS = r"""async () => {
   out.jset = [M.journalSet(jl, { at: 'c', verb: 'x', job: 'j1', result: 'done' }).map(e => e.result ?? e.verb), M.journalSet(jl, { at: 'd', verb: 'z', job: 'j2' }).map(e => e.at), M.journalSet(jl, { at: 'e', verb: 'z' }, 2).map(e => e.at)];
   out.chainEntry = M.chainEntry({ at: Date.parse('2026-10-30T10:00:00Z'), items: [{ set: 'base', result: 'done', why: 'x' }, { set: 'proc', result: 'skipped' }], seconds: 12.6, result: 'failed', job: 'chain-1' });
   out.open = [M.openChain([{ set: 'all', verb: 'update', result: 'done', job: 'a' }, { set: 'all', verb: 'update', result: 'running', job: 'b' }, { set: 'base', verb: 'build', result: 'running' }])?.job, M.openChain([]), M.openChain([{ set: 'all', verb: 'update', result: 'interrupted' }])];
-  out.verbOfBase = [{ set: 'base', verb: 'fetch', zones: {} }, { set: 'proc', verb: 'fetch', states: {} }].map(M.viewVerb);
+  out.verbOfBase = [{ set: 'base', verb: 'fetch', zones: {} }, { set: 'proc', verb: 'fetch', states: {} }].map(M.viewOp);
   return out;
 }"""
 
@@ -1763,7 +1764,7 @@ def l16(c):
          'the arguments: base zones (+ personal, not for a purge), proc states, vfr cycle (effective date; its purge has none: the caches of all cycles), aircraft codes (none for the purge, which touches the caches only)', what='setArgs')
     c.eq(r['ops'], [{'set': 'proc', 'verb': 'build'}, {'set': 'aircraft', 'verb': 'publish'}, None, {'set': 'base', 'verb': 'build'}, {'set': 'proc', 'verb': 'build'}, None, None, {'set': 'aircraft', 'verb': 'fetch'}],
          'a view is a known set and verb (aircraft/publish too); one without a verb that carries its zones is the base\'s build; an unknown verb or set: none', what='viewOp')
-    c.eq(r['verbOfBase'], ['fetch', None], 'viewVerb stays the base set\'s reading', what='viewVerb')
+    c.eq(r['verbOfBase'], [{'set': 'base', 'verb': 'fetch'}, {'set': 'proc', 'verb': 'fetch'}], 'a base view is read as before, another set\'s as its own', what='viewOp base and proc')
     c.eq(r['dry'], [True, False, True, False, True, False], 'a plan is a purge or a publish with args.dry true, of any set', what='opDry')
     c.eq(r['baseKept'], True, 'the base\'s view is returned as it is', what='normView base')
     c.eq(r['norm'], [['LF', 'EG'], 'EG', 'LF', ['LF']], 'another set\'s view is brought to the base\'s shape: its items under zones, its failures and manual sources under `zone`', what='normView proc')

@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refactor R-S1, no behaviour change** (`modules/data/`; noreg L6, L14, L16 moved onto the generic functions): `viewVerb`, `isBuildView`, `isDry`, `buildState` and `VERBS` are gone (the module already used `viewOp`, `opDry`, `setGate`); `countOf` and `listLen` are one helper; `linkHtml` uses `isHttps`; the unused `me` parameter of `endBuild`, `endFetch`, `endPurge` and `endSheets` is dropped; the catalogue lookup written three times is `catSource`; the journal line's three « word or itself » fallbacks are `wordOf`.
 - **Launcher: `base/pickup`, the SIA and NATS files taken from Downloads** (`tools/regen/base_sources.py`, `tools/launch.py`;
   frame and aerodb INTEGRATION; noreg I24, K54) — for France and the United Kingdom, the downloaded zip with the expected name is
   checked and its useful files put where the build reads them; dry first; the page gives the zone only.
