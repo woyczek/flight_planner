@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: every file it imports is kept offline from the installation** (`modules/fuel/module.js` `meta.files`: `frame/lib/wind.js`,
+  `route_model.js`, `adnames.js`, `metar.js` were missing) — a pilot who went offline before ever opening Fuel could not load it.
 - **aerodb: `zoneOutlines()`, the zones' outlines for the modules** (`frame/aerodb/aerodb.js`; aerodb SPEC, INTEGRATION,
   DECISIONS; noreg K21) — loaded once, served frozen in the GeoJSON order, with each zone's box; the Data module's map of
   zones reads it, the Map's background will.
