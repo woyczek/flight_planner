@@ -15,7 +15,8 @@ zona del vuelo, el mapa muestra el sinóptico mundial publicado con la aplicaci�
 
 **El mapa meteorológico.** Isobaras, isotermas, nubes, viento, corriente en chorro y convección, al nivel elegido con la
 pastilla del nivel («Suelo», el nivel solicitado, la trayectoria calculada o una altitud fija). El botón de capas (arriba
-a la izquierda) elige lo que se dibuja. Toque un punto del mapa para abrir su corte.
+a la izquierda) abre un panel sobre el mapa: elige lo que se dibuja en el mapa y en el perfil, y el corte sigue visible
+abajo, redibujado con cada casilla; la cruz o Escape lo cierra. Toque un punto del mapa para abrir su corte.
 
 **La zona del vuelo y el mundo.** Una línea fina rodea la zona del vuelo: dentro, la previsión fina cargada para el vuelo
 (Météo-France AROME 1,3 km y ARPEGE 0,1° sobre Francia, ICON en Europa); fuera, el sinóptico mundial (GFS de la NOAA,
@@ -23,7 +24,9 @@ publicado con una malla de 5°). Los dos modelos no dicen exactamente lo mismo: 
 es normal. El panel de capas nombra los dos modelos y su malla.
 
 **La fecha del vuelo.** El cursor bajo el asa adelanta la hora de 0 a 72 horas desde la salida prevista: el mapa, el
-corte y los cortes de punto siguen.
+corte y los cortes de punto siguen. Cuando una parte del cursor queda fuera de la previsión leída (una salida prevista ya
+pasada, días aún no cargados), una banda bajo el cursor muestra las horas cubiertas; fuera de ellas se muestra la hora más
+cercana, ⚠ lo indica en la línea del cursor y en el asa, y aparece un aviso.
 
 **El corte y los cortes de punto.** Bajo el mapa, el corte muestra la ruta de un extremo a otro, del suelo hasta por
 encima del nivel del vuelo. Tóquelo para abrir el corte del punto más cercano (el perfil vertical de la atmósfera allí);
@@ -52,4 +55,4 @@ un toque en la leyenda, en la pastilla o Escape la cierra.
   el sinóptico mundial viene de GFS (NOAA), cada 3 horas hasta 72 horas.
 - Lo cargado se queda en el aparato y sirve sin conexión; el Mapa reutiliza su corte meteorológico.
 
-<!-- fr: 0d64bc05e5c1 -->
+<!-- fr: acaaf2c98cee -->

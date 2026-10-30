@@ -17,8 +17,11 @@ the phone's whole frame; portrait only for now (the landscape layout is a later 
 - **Map** (top, all the height the block leaves): at the altitude chosen with its chip — sea level (MSL isobars every
   2 hPa, highs and lows, 2 m isotherms, cloud, 10 m wind), the requested level, each planned step, fixed levels
   (5,000 ft … FL300), or the computed trajectory (route coloured by the temperature met, thicker in cloud, ❄ where
-  icing is possible); aloft, isobars at constant true altitude. The Layers button opens, in the bottom block (the map stays in
-  view), the layers of the map and of the profile side by side, each with its key. **A tap on the map opens the local slice at that point** (said once per page in a notification; nothing is
+  icing is possible); aloft, isobars at constant true altitude. The Layers button opens a **panel over the map**, under its
+  button (scrolling when taller than the map, never over the sheet), with the layers of the map and of the profile side by side,
+  each with its key; the cut stays in the bottom block and is redrawn by each box (user, 29 Oct 2026: "choisir les éléments météo
+  masque le profil vertical"). The panel is written only when its rows change; a box's state is set in place, so one tap is one
+  toggle. Its cross, Escape, or another content of the block (Flight, Details) closes it. **A tap on the map opens the local slice at that point** (said once per page in a notification; nothing is
   written over the map). What the map shows (its time, level and lines) heads the Layers content.
 - **Bottom block**: the frame's sheet (`frame/lib/sheet.js`) — three heights (collapsed to its header, default, expanded) pulled by
   its handle, its content scrolling inside. **Its handle line carries the title: the content, then its context** — the

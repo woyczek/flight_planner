@@ -353,7 +353,13 @@ export function trajectory(points, {
   profile = {},
   depFt = 0,
   arrFt = 0,
-  cruiseKt = 180
+  cruiseKt = 180,
+  // chemin vertical de Carburant (profile.path [{ nm, ft }], distances du chemin volé, procédures comprises) : suivi exactement,
+  // ramené au prorata sur la route (utilisateur, 29 octobre : « la coupe ignore les altitudes imposées »)
+  path = null,
+  // vent de face (kt, négatif : arrière) à une distance et une altitude : le temps suit la vitesse sol (30 kt de face = 30 kt de
+  // vitesse sol en moins)
+  headAt = null
 } = {}) {
   const pts = points || [],
     nmOf = [0];
@@ -396,36 +402,66 @@ export function trajectory(points, {
     fwd[i] = alt;
   }
   const descent = nm => arrFt + (total - nm) * downG,
+    vp = Array.isArray(path) ? path.filter(p => Number.isFinite(+p?.nm) && Number.isFinite(+p?.ft)) : [],
+    scale = vp.length >= 2 && total > 0 ? +vp.at(-1).nm / total : 0,
+    onPath = nm => {
+      const x = nm * scale;
+      if (x <= +vp[0].nm) return +vp[0].ft;
+      for (let i = 1; i < vp.length; i++)
+        if (x <= +vp[i].nm) {
+          const a = vp[i - 1],
+            b = vp[i],
+            k = +b.nm - +a.nm;
+          return k > 0 ? +a.ft + (x - +a.nm) / k * (+b.ft - +a.ft) : +b.ft;
+        }
+      return +vp.at(-1).ft;
+    },
     computed = nm => {
+      if (scale > 0) return onPath(Math.max(0, Math.min(total, nm)));
       const x = Math.max(0, Math.min(n, nm / d)),
         i = Math.floor(x),
         f = x - i,
         v = i >= n ? fwd[n] : fwd[i] + (fwd[i + 1] - fwd[i]) * f;
       return Math.max(Math.min(v, descent(nm)), Math.min(depFt, arrFt) - 1e3);
     };
+  if (scale > 0)
+    for (let i = 0; i <= n; i++) fwd[i] = computed(Math.min(total, i * d));
   let toc = null,
     tod = null;
   // TOC : premier palier atteint (le niveau demandé, ou un palier planifié pris pendant la montée)
-  for (let i = 0; i <= n; i++)
-    if (toc == null && Math.abs(fwd[i] - planned(Math.min(total, i * d))) < 1) toc = i * d;
-  for (let i = n; i >= 0; i--)
-    if (descent(i * d) >= fwd[i] - 1) {
-      tod = Math.min(total, i * d);
-      break;
-    }
+  if (scale > 0) {
+    // sur le chemin de Carburant : TOC et TOD au premier et au dernier point du niveau le plus haut
+    const hi = Math.max(...fwd);
+    for (let i = 0; i <= n; i++)
+      if (toc == null && fwd[i] >= hi - 1) toc = Math.min(total, i * d);
+    for (let i = n; i >= 0; i--)
+      if (fwd[i] >= hi - 1) {
+        tod = Math.min(total, i * d);
+        break;
+      }
+  } else {
+    for (let i = 0; i <= n; i++)
+      if (toc == null && Math.abs(fwd[i] - planned(Math.min(total, i * d))) < 1) toc = i * d;
+    for (let i = n; i >= 0; i--)
+      if (descent(i * d) >= fwd[i] - 1) {
+        tod = Math.min(total, i * d);
+        break;
+      }
+  }
   const phase = nm => {
     if (tod != null && nm >= tod) return 'descent';
     const a = computed(Math.max(0, nm - 1)),
       b = computed(Math.min(total, nm + 1));
     return b - a > 50 ? 'climb' : a - b > 50 ? 'descent' : 'cruise';
   };
-  // temps (min) : vitesse vraie de la phase, sans vent (approximation de la maquette)
+  // temps (min) : vitesse vraie de la phase, moins le vent de face quand headAt le donne (vitesse sol, jamais sous 40 kt)
   const minutesAt = nm => {
     let m = 0;
     for (let x = 0; x < nm; x += 1) {
       const ph = phase(x + 0.5),
-        kt = ph === 'climb' ? climbKt : ph === 'descent' ? descKt : cruiseKt;
-      m += Math.min(1, nm - x) / kt * 60;
+        tas = ph === 'climb' ? climbKt : ph === 'descent' ? descKt : cruiseKt,
+        head = headAt ? +headAt(x + 0.5, computed(x + 0.5)) || 0 : 0;
+      m += Math.min(1, nm - x) / Math.max(40, tas - head) * 60;
     }
     return m;
   };

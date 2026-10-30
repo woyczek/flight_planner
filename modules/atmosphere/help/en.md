@@ -13,8 +13,9 @@ route and around it. Nothing is asked at opening: the page shows what the device
 area, the map shows the world synoptic published with the application, asking for nothing.
 
 **The weather map.** Isobars, isotherms, cloud, wind, jet stream and convection, at the level chosen with the level chip
-("SFC", the requested level, the computed path or a fixed altitude). The layers button (top left) chooses what is
-drawn. Touch a point of the map to open its slice.
+("SFC", the requested level, the computed path or a fixed altitude). The layers button (top left) opens a panel over
+the map: it chooses what is drawn on the map and in the profile, and the cut stays in view below, redrawn by each box; the
+cross or Escape closes it. Touch a point of the map to open its slice.
 
 **The flight area and the world.** A thin line surrounds the flight area: inside, the fine forecast loaded for the flight
 (Météo-France AROME 1.3 km and ARPEGE 0.1° over France, ICON in Europe); outside, the world synoptic (NOAA GFS,
@@ -22,7 +23,9 @@ published on a 5° grid). The two models do not say quite the same thing: a jump
 is normal. The layers panel names both models and their grid.
 
 **The flight date.** The slider under the grip moves the time from 0 to 72 hours after the planned departure: the map,
-the cross-section and the slices follow.
+the cross-section and the slices follow. When part of the slider is outside the forecast read (a planned departure
+already past, days not loaded yet), a band under the slider shows the hours covered; elsewhere the nearest hour is shown,
+⚠ says so on the slider line and in the grip, and a warning appears.
 
 **The cross-section and the slices.** Under the map, the cross-section shows the route from end to end, from the ground
 to above the flight level. Touch it to open the slice of the nearest point (the vertical profile of the atmosphere
@@ -51,4 +54,4 @@ the legend, the chip or Escape closes it.
   world synoptic comes from GFS (NOAA), every 3 hours up to 72 hours.
 - What is loaded stays on the device and works offline; the Map reuses its weather cross-section.
 
-<!-- fr: 0d64bc05e5c1 -->
+<!-- fr: acaaf2c98cee -->

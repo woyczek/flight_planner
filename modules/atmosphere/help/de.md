@@ -14,7 +14,8 @@ Außerhalb des Fluggebiets zeigt die Karte die mit der Anwendung veröffentlicht
 
 **Die Wetterkarte.** Isobaren, Isothermen, Wolken, Wind, Jetstream und Konvektion in der mit dem Höhenchip gewählten
 Höhe („Boden", die angeforderte Höhe, die berechnete Bahn oder eine feste Höhe). Die Ebenen-Schaltfläche (oben links)
-wählt, was gezeichnet wird. Tippen Sie auf einen Punkt der Karte, um seinen Schnitt zu öffnen.
+öffnet ein Feld über der Karte: Es wählt, was auf der Karte und im Profil gezeichnet wird, und der Schnitt bleibt unten
+sichtbar und wird bei jedem Kästchen neu gezeichnet; das Kreuz oder Esc schließt es. Tippen Sie auf einen Punkt der Karte, um seinen Schnitt zu öffnen.
 
 **Das Fluggebiet und die Welt.** Eine dünne Linie umgibt das Fluggebiet: innen die für den Flug geladene feine Vorhersage
 (Météo-France AROME 1,3 km und ARPEGE 0,1° über Frankreich, ICON in Europa); außen die Weltsynoptik (NOAA GFS, mit
@@ -22,7 +23,9 @@ einem 5°-Raster veröffentlicht). Die beiden Modelle sagen nicht ganz dasselbe:
 ist normal. Das Ebenen-Feld nennt beide Modelle und ihr Raster.
 
 **Das Flugdatum.** Der Regler unter dem Griff verschiebt die Zeit von 0 bis 72 Stunden nach dem geplanten Abflug: Karte,
-Schnitt und Punktschnitte folgen.
+Schnitt und Punktschnitte folgen. Liegt ein Teil des Reglers außerhalb der gelesenen Vorhersage (ein geplanter Abflug in
+der Vergangenheit, noch nicht geladene Tage), zeigt ein Band unter dem Regler die abgedeckten Stunden; sonst wird die
+nächste Stunde gezeigt, ⚠ sagt es in der Zeile des Reglers und im Griff, und eine Warnung erscheint.
 
 **Der Schnitt und die Punktschnitte.** Unter der Karte zeigt der Schnitt die Route von Anfang bis Ende, vom Boden bis
 über die Flughöhe. Tippen Sie darauf, um den Schnitt des nächsten Punkts zu öffnen (das senkrechte Profil der
@@ -51,4 +54,4 @@ die Legende, den Chip oder Escape schließt sie.
   die Weltsynoptik kommt von GFS (NOAA), alle 3 Stunden bis 72 Stunden.
 - Das Geladene bleibt auf dem Gerät und dient offline; die Karte übernimmt seinen Wetterschnitt.
 
-<!-- fr: 0d64bc05e5c1 -->
+<!-- fr: acaaf2c98cee -->

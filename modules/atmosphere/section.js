@@ -179,21 +179,26 @@ export function sectionModel({
   const {
     tocNm,
     todNm,
+    path,
     ...rates
   } = profile || {};
-  const traj = A.trajectory(points, {
-    levelFt,
-    profile: levelFt === profileLevelFt ? profile : rates,
-    depFt: c0.sfc.pa,
-    arrFt: cN.sfc.pa,
-    cruiseKt
-  });
-  const smp = samples.map(s => ({
+  // le chemin vertical de Carburant (profile.path) n'est valable qu'au niveau où il a été calculé, comme TOC / TOD
+  const same = levelFt === profileLevelFt,
+    opts = {
+      levelFt,
+      profile: same ? profile : rates,
+      depFt: c0.sfc.pa,
+      arrFt: cN.sfc.pa,
+      cruiseKt,
+      path: same ? path : null
+    };
+  let traj = A.trajectory(points, opts),
+    smp = samples.map(s => ({
       ...s,
       t: depTime + traj.minutesAt(s.nm) * 60
     })),
-    cols = smp.map((s, i) => A.column(locs[i], A.hourIndex(locs[i].times, s.t))),
-    times = locs[0].times;
+    cols = smp.map((s, i) => A.column(locs[i], A.hourIndex(locs[i].times, s.t)));
+  const times = locs[0].times;
   /** Lecture à une distance et une altitude pression, entre les deux lieux qui l'encadrent (chacun à son heure). */
   function sampleAt(nm, ft) {
     let i = 1;
@@ -225,6 +230,25 @@ export function sectionModel({
       out.kt = Math.hypot(vx, vy);
     }
     return out;
+  }
+  // seconde passe : le temps à la vitesse sol, le vent de face lu tous les 1 NM sur la trajectoire aux heures de la première passe
+  // (utilisateur, 29 octobre : « 30 kt de face = 30 kt de vitesse sol en moins »)
+  {
+    const heads = [];
+    for (let nm = 0; nm <= Math.ceil(traj.total); nm++) {
+      const x = sampleAt(Math.min(nm, traj.total), traj.computed(Math.min(nm, traj.total))),
+        p = A.posAt(points, traj.nmOf, Math.min(nm, traj.total));
+      heads.push(x && !x.below && x.dirDeg != null ? A.windComponents(x.dirDeg, x.kt, p.track).head : 0);
+    }
+    traj = A.trajectory(points, {
+      ...opts,
+      headAt: nm => heads[Math.max(0, Math.min(heads.length - 1, Math.floor(nm)))]
+    });
+    smp = samples.map(s => ({
+      ...s,
+      t: depTime + traj.minutesAt(s.nm) * 60
+    }));
+    cols = smp.map((s, i) => A.column(locs[i], A.hourIndex(locs[i].times, s.t)));
   }
   // champ de la coupe : NX × NY cellules
   const NX = 200,

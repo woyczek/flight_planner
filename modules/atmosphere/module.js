@@ -17,6 +17,9 @@
 import * as A from './atmo.js';
 import * as Demo from './demo.js';
 import {
+  routeMidpoint
+} from '../../frame/lib/flight_path.js';
+import {
   weatherStore,
   callWeight
 } from './weather_store.js';
@@ -95,7 +98,8 @@ export const meta = {
   files: ['atmo.js?v=0', 'demo.js?v=0', 'weather_store.js?v=0', 'world.js?v=0', 'lib/weather_map.js?v=0', 'section.js?v=0',
     'texts.js?v=0',
     '../maps/lib/map_base.js?v=0', '../maps/lib/axis_window.js?v=0',
-    '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0', '../fuel/winds.js?v=0', '../fuel/weather.js?v=0',
+    '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0', '../../frame/lib/flight_path.js?v=0',
+    '../../frame/lib/flight_time.js?v=0', '../fuel/winds.js?v=0', '../fuel/weather.js?v=0',
     '../maps/render.js?v=0',
     '../../frame/lib/route_text.js?v=0', '../../frame/lib/metar.js?v=0', '../../frame/lib/icons.js?v=0'
   ],
@@ -175,6 +179,11 @@ const STYLE = `
 [data-module="atmosphere"] :is(button,select,input,label){touch-action:manipulation}
 [data-module="atmosphere"] canvas.at-over{position:absolute;left:0;top:0;width:var(--at-full-w,100%);height:var(--at-full-h,100%);z-index:2;pointer-events:none}
 [data-module="atmosphere"] .at-box.at-flat canvas.at-over{pointer-events:auto}
+[data-module="atmosphere"] .at-layerpop{position:absolute;z-index:5;width:min(440px,calc(100% - 64px));max-height:calc(100% - 12px - var(--at-pop-top,0px));overflow:auto;box-sizing:border-box;padding:6px 10px 8px;background:var(--sog-surface);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s,6px);box-shadow:var(--sog-shadow);overscroll-behavior:contain}
+[data-module="atmosphere"] .at-layerpop[hidden]{display:none}
+[data-module="atmosphere"] .at-layerpop-head{display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:-6px;margin:-6px -10px 2px;padding:4px 4px 4px 10px;background:var(--sog-surface);border-bottom:1px solid var(--sog-border)}
+[data-module="atmosphere"] .at-layerpop-x{flex:none;width:36px;height:36px;border:0;border-radius:var(--sog-radius-s,6px);background:none;color:var(--sog-muted);font-size:16px;cursor:pointer}
+[data-module="atmosphere"] .at-layerpop-x:hover{color:var(--sog-fg);background:var(--sog-chart-grid)}
 [data-module="atmosphere"] .at-layers{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 16px;font-size:.92em}
 [data-module="atmosphere"] .at-layers>div{display:flex;flex-direction:column;min-width:0}
 [data-module="atmosphere"] .at-layers b{margin:2px 0}
@@ -208,8 +217,15 @@ const STYLE = `
 [data-module="atmosphere"] .at-legend>div{display:flex;gap:8px;align-items:center}
 [data-module="atmosphere"] .at-legend svg{flex:none}
 [data-module="atmosphere"] .at-when{flex:none;display:flex;align-items:center;gap:10px;height:30px;padding:0 12px;font-size:12px}
+/* la ligne d'heure a une largeur fixe : un texte plus long (le jour ajouté, l'alerte) ne raccourcit jamais le curseur, dont le
+   bouton glisserait sous le doigt et changerait l'heure en boucle */
+[data-module="atmosphere"] .at-when .at-track{position:relative;flex:1 1 auto;min-width:0;display:flex;align-items:center;height:100%}
 [data-module="atmosphere"] .at-when input{flex:1 1 auto;min-width:0;margin:0;accent-color:var(--sog-accent);touch-action:manipulation}
-[data-module="atmosphere"] .at-when output{flex:none;min-width:9.5em;text-align:right;font-variant-numeric:tabular-nums;color:var(--sog-muted)}
+[data-module="atmosphere"] .at-when output{flex:none;box-sizing:border-box;width:17em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums;color:var(--sog-muted)}
+@container (max-width:560px){[data-module="atmosphere"] .at-when output{width:13em}}
+/* heures du curseur couvertes par la prévision lue (montrée seulement quand une partie ne l'est pas) */
+[data-module="atmosphere"] .at-cover{position:absolute;bottom:7px;height:3px;border-radius:2px;background:var(--sog-accent);opacity:.45;pointer-events:none;left:calc(8px + (100% - 16px) * var(--a,0));width:calc((100% - 16px) * (var(--b,1) - var(--a,0)))}
+[data-module="atmosphere"] .at-cover[hidden]{display:none}
 [data-module="atmosphere"] .at-when output.at-out{color:var(--sog-warn,#b26a00)}
 [data-module="atmosphere"] .f-sheet-body.at-dbody.at-plot{overflow-x:hidden;overflow-y:auto}
 [data-module="atmosphere"] .at-tip{position:absolute;pointer-events:none;background:var(--sog-chart-bg);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s,6px);padding:6px 8px;font-size:12px;line-height:1.4;box-shadow:var(--sog-shadow);white-space:nowrap;z-index:5;display:none;font-variant-numeric:tabular-nums}
@@ -287,8 +303,11 @@ export async function mount(el, ctx) {
     map: null,
     geo: null,
     daySpent: 0,
-    // bloc du bas : 'profile' (coupe globale), 'slice' (tranche locale), 'info' (« i »), 'settings' (« Vol »)
+    // bloc du bas : 'profile' (coupe globale), 'slice' (tranche locale), 'info' (« i »), 'settings' (« Vol ») ; les couches sont un
+    // volet sur la carte (layersOpen), jamais un contenu du bloc
     view: 'profile',
+    // volet des couches posé sur la carte (son bouton, sa croix, Échap)
+    layersOpen: false,
     // tranche locale : { kind: 'route', i, lat, lon } (un lieu de lecture) ou { kind: 'point', lat, lon, col, nm, t, offNm }
     local: null,
     xsLayers: {
@@ -379,7 +398,7 @@ export async function mount(el, ctx) {
     <button type="button" class="at-whole" data-at="whole" hidden title="${esc(T('winWholeHelp'))}" aria-label="${esc(T('winWholeHelp'))}">${esc(T('winWhole'))}</button>
     <div class="at-chips" role="group" data-at="chips" aria-label="${esc(T('sliceNav'))}" hidden><button type="button" data-at="prev" aria-label="${esc(T('slicePrev'))}" title="${esc(T('slicePrev'))}">◀</button><button type="button" data-at="next" aria-label="${esc(T('sliceNext'))}" title="${esc(T('sliceNext'))}">▶</button><button type="button" class="at-chip-i" data-at="legendBtn" aria-pressed="false" aria-label="${esc(T('legend'))}" title="${esc(T('legend'))}">i</button></div>
     <button type="button" class="f-sheet-close" data-at="dclose" aria-label="${esc(T('backProfile'))}" title="${esc(T('backProfile'))}" hidden>✕</button></div>
-  <div class="at-when" data-at="when"><input type="range" min="0" max="${SHIFT_MAX}" step="1" value="0" data-at="shift" aria-label="${esc(T('whenAria'))}"><output data-at="whenOut"></output></div>
+  <div class="at-when" data-at="when"><span class="at-track"><input type="range" min="0" max="${SHIFT_MAX}" step="1" value="0" data-at="shift" aria-label="${esc(T('whenAria'))}"><span class="at-cover" data-at="cover" hidden title="${esc(T('coverHelp'))}"></span></span><output data-at="whenOut"></output></div>
   <div class="f-sheet-body at-dbody" data-at="dbody"></div>
 </section>`;
   el.classList.add('f-sheet');
@@ -392,7 +411,7 @@ export async function mount(el, ctx) {
       label: T('layers'),
       pressed: false,
       side: 'left',
-      onClick: () => show(S.view === 'layers' ? 'profile' : 'layers')
+      onClick: () => setLayers(!S.layersOpen)
     }),
     btnFlight = ov.button({
       icon: 'plane',
@@ -423,11 +442,20 @@ export async function mount(el, ctx) {
   ov.right.insertBefore(lvlChip, btnLoad.nextSibling);
   probe.style.display = 'none';
   el.append(probe);
-  // les couches de la carte et du profil : un contenu du bloc du bas (la carte reste visible), construit à son ouverture
+  // les couches de la carte et de la coupe : un volet posé sur la carte sous son bouton (défilant s'il est plus haut qu'elle), pas
+  // un contenu du bloc du bas — la coupe reste visible pendant qu'on coche, et suit chaque case (utilisateur, 29 octobre : « choisir
+  // les éléments météo masque le profil vertical »)
+  const layersPop = document.createElement('div');
+  layersPop.className = 'at-layerpop';
+  layersPop.hidden = true;
+  layersPop.innerHTML = `<div class="at-layerpop-head"><b>${esc(T('layers'))}</b><button type="button" class="at-layerpop-x" data-at="layersClose" aria-label="${esc(T('layersClose'))}" title="${esc(T('layersClose'))}">✕</button></div>`;
   const layersBox = document.createElement('div');
-  layersBox.className = 'at-layers at-pad';
+  layersBox.className = 'at-layers';
   layersBox.setAttribute('role', 'group');
   layersBox.setAttribute('aria-label', T('layers'));
+  layersPop.append(layersBox);
+  let layersHtml = ''; // ce que porte le volet, sans l'état des cases (layersCard)
+  $('box').append(layersPop);
   // le formulaire « Vol » est construit une fois et gardé (les champs gardent leur saisie d'un affichage à l'autre)
   const form = document.createElement('form');
   form.className = 'f-grid at-form at-pad';
@@ -552,14 +580,18 @@ export async function mount(el, ctx) {
     cacheOnly,
     stale
   }) {
-    const days = forecastDaysFor(cacheOnly);
+    const {
+      days,
+      from
+    } = forecastDaysFor(cacheOnly);
     if (S.data === 'demo') return {
-      locs: A.locations(Demo.forecast(places, vars, Date.now(), days * 24)),
+      locs: A.locations(Demo.forecast(places, vars, from, days * 24)),
       weight: 0
     };
     const r = await W.forecast(places, vars, {
       model: S.model.id,
       days,
+      from,
       cacheOnly,
       stale,
       onWait: s => setStatus(T('waitQuota', {
@@ -572,13 +604,20 @@ export async function mount(el, ctx) {
     };
   }
 
-  /** Jours de prévision (UTC, depuis aujourd'hui) : en lecture de la réserve, ceux du vol à l'heure choisie ; au
-   *  chargement, tous ceux que le curseur peut atteindre (prévu + 72 h + le vol) — Open-Meteo compte les lieux et les
-   *  variables, pas les jours (jusqu'à deux semaines) : le curseur ne coûte ensuite plus rien. */
+  /** Jours de prévision (UTC) : { from (premier jour, ms : aujourd'hui, ou le jour du départ d'un vol daté d'avant), days } ;
+   *  en lecture de la réserve, ceux du vol à l'heure choisie ; au chargement, tous ceux que le curseur peut atteindre (prévu +
+   *  72 h + le vol) — Open-Meteo compte les lieux et les variables, pas les jours : le curseur ne coûte ensuite plus rien. */
   function forecastDaysFor(cacheOnly) {
     const until = (cacheOnly ? S.depTime || depValue() : depValue() + SHIFT_MAX * 3600) + 10 * 3600,
-      today = Date.parse(new Date().toISOString().slice(0, 10));
-    return clamp(Math.ceil((until * 1000 - today) / 864e5), 2, 16);
+      today = Date.parse(new Date().toISOString().slice(0, 10)),
+      // un vol daté d'avant aujourd'hui : ses jours passés sont demandés aussi (Open-Meteo les sert, jusqu'à 92 jours ;
+      // utilisateur, 29 octobre : « pas de météo avant H+56 » sur un vol du 26), sinon la lecture commence aujourd'hui
+      depDay = Date.parse(new Date(Math.min(S.depTime || depValue(), depValue()) * 1000).toISOString().slice(0, 10)),
+      from = Math.max(today - 92 * 864e5, Math.min(today, depDay));
+    return {
+      from,
+      days: clamp(Math.ceil((until * 1000 - from) / 864e5), 2, 16 + Math.round((today - from) / 864e5))
+    };
   }
   /** TAF d'un terrain : gardé 30 min sur l'appareil (cache/atmosphere/taf/) ; cacheOnly : seulement ce qui est gardé. */
   async function taf(id, cacheOnly) {
@@ -707,9 +746,9 @@ export async function mount(el, ctx) {
   function show(view) {
     if (S.view !== view && sheet?.pos === 'collapsed') sheet.set('default', true);
     S.view = view;
+    if (S.layersOpen && view !== 'profile' && view !== 'slice') setLayers(false);
     setAttr(btnFlight, 'aria-pressed', String(view === 'settings'));
     setAttr(btnInfo, 'aria-pressed', String(view === 'info'));
-    setAttr(btnLayers, 'aria-pressed', String(view === 'layers'));
     $('dclose').hidden = view === 'profile';
     // ◀ ▶ des tranches de la route : en colonne à droite du dessin (portrait), en ligne au-dessus (paysage), comme les puces de
     // la Carte (§ 7.1.13) ; le dessin laisse la place de la colonne
@@ -733,12 +772,6 @@ export async function mount(el, ctx) {
       return;
     }
     if (v === 'wpoint') return drawWorldPoint();
-    if (v === 'layers') {
-      sheetTitle(T('layers'));
-      layersCard();
-      if (layersBox.parentNode !== dbody) dbody.replaceChildren(layersBox);
-      return;
-    }
     if (!S.traj) {
       baseTitle();
       const p = document.createElement('p');
@@ -1418,7 +1451,7 @@ export async function mount(el, ctx) {
       if (!alive) return;
       baseTitle();
       if (S.view === 'wpoint') drawData();
-      if (S.view === 'layers') layersCard();
+      if (S.layersOpen) layersCard();
       schedule();
     }
   });
@@ -1457,10 +1490,13 @@ export async function mount(el, ctx) {
   function worldTitle() {
     const i = wm.info();
     if (!i.world) return T(i.worldReading ? 'worldReading' : 'worldNone');
+    if (i.world.time == null || i.world.h == null) return i.world.run ? T('worldTitleRun', {
+      run: fmtHM(i.world.run)
+    }) : T('worldReading');
     return T('worldTitle', {
       at: fmtHM(i.world.time),
-      run: i.world.run ? fmtHM(i.world.run) : '—',
-      h: i.world.h ?? '—'
+      run: fmtHM(i.world.run),
+      h: i.world.h
     });
   }
   /** Heure montrée par la carte météo : celle de la carte (passage du vol), sinon le départ, sinon maintenant. */
@@ -1686,13 +1722,18 @@ export async function mount(el, ctx) {
     const mid = dark() ? '#383835' : '#f0efec',
       ramp = `linear-gradient(90deg,#0d366b,#6da7ec,${mid},#ec8a85,#9e2a2a)`,
       key = (style, ramped) => ramped ? `<span class="at-ramp" style="background:${style}"></span>` : `<span class="at-key" style="${style}"></span>`,
-      row = (group, k, label, k2) => `<label><input type="checkbox" data-g="${group}" data-k="${k}"${S[group][k] ? ' checked' : ''}> ${k2 || ''} ${esc(T(label))}</label>`,
+      row = (group, k, label, k2) => `<label><input type="checkbox" data-g="${group}" data-k="${k}"> ${k2 || ''} ${esc(T(label))}</label>`,
       cloud = `rgba(${cloudRgb()},.7)`,
       barbKey = '<span class="at-key" style="border:0;height:auto;text-align:center">⟋</span>';
-    const note = mapNote();
-    // les couches de la carte météo : la légende de la bibliothèque (la Carte étiquette son panneau de la même façon)
-    layersBox.innerHTML = (note ? `<p class="at-mapnote">${esc(T('mapTitle'))} · ${esc(note)}</p>` : '') + `<div><b>${esc(T('mapTitle'))}</b>` +
-      wm.legend().map(ly => `<label><input type="checkbox" data-g="mapLayers" data-k="${ly.key}"${ly.on ? ' checked' : ''}> ${ly.swatch
+    const note = mapNote(),
+      on = {
+        mapLayers: Object.fromEntries(wm.legend().map(ly => [ly.key, !!ly.on]))
+      };
+    // les couches de la carte météo : la légende de la bibliothèque (la Carte étiquette son panneau de la même façon) ; les cases
+    // sans leur état : le volet n'est réécrit que si ses lignes changent (une note, une couche de plus), jamais à chaque case ni
+    // à chaque statut (une réécriture entre l'appui et le relâché perdait le toucher : « cliquer deux fois »)
+    const html = (note ? `<p class="at-mapnote">${esc(T('mapTitle'))} · ${esc(note)}</p>` : '') + `<div><b>${esc(T('mapTitle'))}</b>` +
+      wm.legend().map(ly => `<label><input type="checkbox" data-g="mapLayers" data-k="${ly.key}"> ${ly.swatch
         .barb ? barbKey : key(ly.swatch.css, ly.swatch.ramp)} ${esc(ly.label)}</label>`).join('') +
       // les deux côtés de la limite tracée : le modèle et la maille de la zone du vol, ceux du synoptique autour
       (wm.edge ? wm.info().zones.map(z => `<p class="at-zone">${key(z.key === 'flight' ? 'border:1px solid var(--sog-fg);height:8px' :
@@ -1708,6 +1749,35 @@ export async function mount(el, ctx) {
       row('xsLayers', 'rh', 'lyRh', key('linear-gradient(90deg,transparent,rgba(42,120,214,.6))', true)) +
       row('xsLayers', 'da', 'lyDa', key(ramp, true)) +
       `</div><p>${esc(T('lgPaths'))}</p>`;
+    if (layersHtml !== html) {
+      layersHtml = html;
+      layersBox.innerHTML = html;
+    }
+    // l'état des cases, posé en place et seulement s'il change
+    for (const c of layersBox.querySelectorAll('input[data-g]')) {
+      const v = !!(c.dataset.g === 'mapLayers' ? on.mapLayers[c.dataset.k] : S[c.dataset.g]?.[c.dataset.k]);
+      if (c.checked !== v) c.checked = v;
+    }
+  }
+  /** Volet des couches ouvert ou fermé : posé sous son bouton (mesuré à l'ouverture), la coupe montrée dans le bloc du bas (un
+   *  autre contenu, Vol ou détails, lui rend la place). */
+  function setLayers(open) {
+    S.layersOpen = !!open;
+    setAttr(btnLayers, 'aria-pressed', String(S.layersOpen));
+    if (S.layersOpen) {
+      if (S.view !== 'profile' && S.view !== 'slice') show('profile');
+      const b = btnLayers.getBoundingClientRect(),
+        box = $('box').getBoundingClientRect(),
+        top = `${Math.max(4, Math.round(b.bottom - box.top + 8))}px`,
+        left = `${Math.max(4, Math.round(b.left - box.left))}px`;
+      if (layersPop.style.top !== top) {
+        layersPop.style.top = top;
+        layersPop.style.setProperty('--at-pop-top', top); // la hauteur restante sous le volet
+      }
+      if (layersPop.style.left !== left) layersPop.style.left = left;
+      layersCard();
+    }
+    if (layersPop.hidden === S.layersOpen) layersPop.hidden = !S.layersOpen;
   }
 
   // ---------------------------------------------------------------- état, chargement
@@ -1776,8 +1846,9 @@ export async function mount(el, ctx) {
   /** Titre du profil et des informations : le contenu, puis le vol en bref (ou l'état de la lecture). */
   function baseTitle() {
     const ctxt = s => S.sum ? `${s} · ${S.sum}` : s;
-    // la carte montre le synoptique monde (vue hors de la grille du vol, ou sans vol) : le titre dit ce qu'on regarde
-    if (S.view === 'profile' && S.worldShown) return sheetTitle(worldTitle());
+    // sans coupe, la carte montre le synoptique monde (vue hors de la grille du vol, ou sans vol) : le titre dit ce qu'on
+    // regarde ; avec une coupe, le bloc la montre et le titre reste le sien (élargir le bloc ne le change pas)
+    if (S.view === 'profile' && S.worldShown && !S.traj) return sheetTitle(worldTitle());
     if (S.view === 'profile') sheetTitle(ctxt(T('profileTitle')), S.route ? T('xsSub', {
       n: S.route.samples.length
     }) : '');
@@ -1813,10 +1884,46 @@ export async function mount(el, ctx) {
       }) : T('whenPlanned', {
         at: fmtWhen(t)
       });
-    setText(out, s);
-    out.classList.toggle('at-out', !!(S.route && S.outOfRange));
+    // hors de la prévision lue : l'alerte dite sur la ligne du curseur, bloc déplié comme replié (le titre la porte aussi)
+    const oor = !!(S.route && S.outOfRange);
+    setText(out, oor ? `⚠ ${s}` : s);
+    setAttr(out, 'title', oor ? `${s}
+${T('outOfRange')}` : s);
+    out.classList.toggle('at-out', oor);
+    coverBand();
     const v = String(S.shiftH);
     if ($('shift').value !== v) $('shift').value = v;
+  }
+  /** Bande des heures du curseur couvertes par la prévision lue (le vol entier dedans) : montrée quand une partie du curseur
+   *  ne l'est pas, ces heures-là montrant l'heure la plus proche. */
+  function coverBand() {
+    const band = $('cover'),
+      tm = S.route?.locs?.[0]?.times,
+      end = S.route?.samples?.at(-1)?.t;
+    let a = 0,
+      b = 1;
+    if (S.route && tm?.length && Number.isFinite(end) && Number.isFinite(S.depTime)) {
+      const base = depValue(),
+        dur = Math.max(0, end - S.depTime);
+      a = clamp((tm[0] - 3600 - base) / 3600 / SHIFT_MAX, 0, 1);
+      b = clamp((tm.at(-1) + 3600 - dur - base) / 3600 / SHIFT_MAX, 0, 1);
+    }
+    const part = a > 0 || b < 1;
+    if (band.hidden === part) band.hidden = !part;
+    if (!part) return;
+    // aucune heure du curseur ne couvre le vol entier : bande vide, l'alerte seule le dit
+    const va = a.toFixed(4),
+      vb = Math.max(a, b).toFixed(4);
+    if (band.style.getPropertyValue('--a') !== va) band.style.setProperty('--a', va);
+    if (band.style.getPropertyValue('--b') !== vb) band.style.setProperty('--b', vb);
+  }
+  /** Alerte flottante quand l'heure du vol sort de la prévision lue (une fois par sortie, au relâché ou après une lecture). */
+  let rangeWarned = false;
+
+  function warnRange() {
+    const oor = !!(S.route && S.outOfRange);
+    if (oor && !rangeWarned) notify(T('outOfRange'));
+    rangeWarned = oor;
   }
   /** Le vol en bref, connu avant la météo : appareil, route, niveau, départ, modèle et run. */
   function flightSum() {
@@ -1832,7 +1939,7 @@ export async function mount(el, ctx) {
     $('srcTag').classList.toggle('at-hidden', !tag);
     whenText(); // l'heure de départ du vol lu (sa date du vol), même sans prévision
     if (!f) return setSum('');
-    setSum([ac, `${f.dep} → ${f.arr}`, fmtLvl(S.levelFt), fmtHM(S.depTime), S.data === 'demo' ? T('demoSrc') :
+    setSum([ac, `${f.dep} → ${f.arr}`, fmtLvl(S.levelFt), fmtWhen(S.depTime), S.data === 'demo' ? T('demoSrc') :
       `${S.model?.name || ''}${S.run ? ` · run ${fmtHM(S.run)}` : ''}`
     ].filter(Boolean).join(' · ') + (S.outOfRange ? ' ⚠' : ''));
   }
@@ -1859,7 +1966,7 @@ export async function mount(el, ctx) {
           n: spentNow
         }) : T('stCached')) + ` · ${T('stDay', { n: Math.round(S.daySpent) })}` : '') +
       (S.outOfRange ? ` · ${T('outOfRange')}` : ''));
-    if (S.view === 'layers') layersCard();
+    if (S.layersOpen) layersCard();
     whenText();
   }
 
@@ -1915,8 +2022,9 @@ export async function mount(el, ctx) {
       $f('cruiseKt').value = S.cruiseKt;
       if (f.when && !$f('dep').dataset.touched) setDep(Date.parse(f.when) / 1000);
       S.depTime = depValue() + S.shiftH * 3600;
-      const mid = f.points[Math.floor(f.points.length / 2)];
-      S.model = A.modelFor(mid.lat, A.wrapLon(mid.lon));
+      // le point qui choisit le modèle : le même que la Carte (frame/lib/flight_path.js routeMidpoint, mi-longueur de la route)
+      const mid = routeMidpoint(f.points);
+      S.model = A.modelFor(mid.lat, mid.lon);
       S.run = null;
       flightSum();
       syncWeather();
@@ -1986,6 +2094,7 @@ export async function mount(el, ctx) {
       show(S.view);
       render();
       fitMap();
+      warnRange();
       let grid;
       try {
         grid = await gridP;
@@ -1996,7 +2105,7 @@ export async function mount(el, ctx) {
         return;
       }
       if (stale()) return;
-      if (!grid) return S.view === 'layers' && layersCard();
+      if (!grid) return S.layersOpen && layersCard();
       S.grid = {
         g: gr,
         locs: grid.locs,
@@ -2116,11 +2225,14 @@ export async function mount(el, ctx) {
     showLegend();
   };
   const legendKey = ev => {
-    if (ev.key === 'Escape' && S.legend) {
+    if (ev.key !== 'Escape') return;
+    if (S.layersOpen) return setLayers(false);
+    if (S.legend) {
       S.legend = false;
       showLegend();
     }
   };
+  $('layersClose').onclick = () => setLayers(false);
   document.addEventListener('keydown', legendKey);
   $('prev').onclick = () => openRouteSlice((S.local?.i ?? 0) - 1);
   $('next').onclick = () => openRouteSlice((S.local?.i ?? 0) + 1);
@@ -2166,7 +2278,8 @@ export async function mount(el, ctx) {
   $('shift').onchange = () => {
     if (S.route && S.outOfRange) load({
       cacheOnly: true
-    });
+    }).then(warnRange, () => {});
+    else warnRange();
   };
   whenText();
   $f('levelSel').onchange = () => {
@@ -2194,7 +2307,7 @@ export async function mount(el, ctx) {
     if (c.dataset.g === 'mapLayers') {
       syncWeather();
       schedule();
-    } else if (S.view === 'profile') drawData();
+    } else if (S.view === 'profile' || S.view === 'slice') drawData(); // la coupe, visible sous le volet, suit la case
   };
   // tailles : la carte (MapLibre suit, la surcouche est redessinée) et le bloc du bas (coupe ou tranche à sa nouvelle
   // taille) ; design ou ton changés : fond et dessins repris (réaction à un événement : rien n'est réécrit hors du module)
@@ -2217,7 +2330,7 @@ export async function mount(el, ctx) {
     }));
     drawData();
     schedule();
-    if (S.view === 'layers') layersCard();
+    if (S.layersOpen) layersCard();
   };
   const mo = new MutationObserver(repaint);
   mo.observe(document.documentElement, {
@@ -2244,7 +2357,7 @@ export async function mount(el, ctx) {
         edge: d?.edge !== false && d?.edge?.show !== false
       });
       schedule();
-      if (S.view === 'layers') layersCard();
+      if (S.layersOpen) layersCard();
     };
   readEdge();
   const unwatchEdge = data.watch(PROFILES, readEdge);
