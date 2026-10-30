@@ -415,9 +415,26 @@ def proc_flight(procs=None, started=False, actual=None):
 
 
 def to_step(c, n):
-    """Shows the step `n` (0 Flight ... 4 Departure) of the plan when it is not the one on screen (a phone shows one step at a time)."""
-    if not c.shown(f'{FUEL} section.fu-step[data-s="{n}"]'):
-        c.tap(f'{FUEL} .fu-steps button[data-step="{n}"]')
+    """Shows the step `n` (0 Flight ... 4 Departure) of the plan when it is not the one on screen (a phone shows one step at a time), and
+    makes sure it stays: its section on screen, outside an inert zone, its first control (if any) shown and active, after the page has
+    settled. Measured (F34 at 1280 beside the Map, 2 runs in 10): the step was seen on screen while the module still showed all five steps,
+    then the Map's dual view narrowed it to one step at a time and it fell back on the kept step; so the step is tapped again until it holds."""
+    sec = f'{FUEL} section.fu-step[data-s="{n}"]'
+    ready = """(s) => { const e = document.querySelector(s); if (!e || !window.__t.shown(e) || e.closest('[inert]')) return false;
+        const f = [...e.querySelectorAll('input:not([type=hidden]), select, textarea, button')].find(x => window.__t.shown(x));
+        return !f || !f.closest('[inert]') }"""
+    for attempt in range(4):
+        c.settle()
+        if not c.shown(sec):
+            c.tap(f'{FUEL} .fu-steps button[data-step="{n}"]')
+        try:
+            c.until(ready, sec, timeout=4000, what=f'the step {n} is on screen')
+            c.settle()
+            if c.js(ready, sec):
+                return
+        except Fail:
+            pass
+    raise Fail(f'the step {n} never held on screen', f'step {n} shown', 'to_step')
 
 
 def open_proc(c, target='fuel', procs=None, started=False, actual=None, aero_extra=None):
@@ -737,21 +754,9 @@ def f19(c):
 
 def set_icao(c, side, icao):
     """Types an aerodrome in the departure or arrival field (step Flight), then goes back to the step Route where the rows are."""
-    # the step Flight really on screen, the field editable, the step settled. Measured (F34 at 1280, 2 runs in 10): to_step saw step 0
-    # shown while the module still showed all five steps, then the Map's dual view narrowed it to one step at a time and it fell back on
-    # the kept step 2 Route — the field stayed hidden. So: tap the step again until its field is on screen and editable
-    editable = ("(k) => { const i = document.querySelector('[data-module=fuel] input[data-k=\"' + k + '\"]'); return !!i && window.__t.shown(i) && "
-                "!i.disabled && !i.readOnly && !i.closest('[inert]') }")
-    for attempt in range(4):
-        c.settle()
-        to_step(c, 0)
-        try:
-            c.until(editable, side, timeout=4000, what=f'the {side} field is on screen and editable')
-            break
-        except Fail:
-            if attempt == 3:
-                raise
-    c.settle()
+    to_step(c, 0)  # the step held on screen (to_step waits for it)
+    c.until("(k) => { const i = document.querySelector('[data-module=fuel] input[data-k=\"' + k + '\"]'); return !!i && window.__t.shown(i) && "
+            "!i.disabled && !i.readOnly }", side, timeout=10000, what=f'the {side} field is on screen and editable')
     c.page.fill(f'{FUEL} input[data-k="{side}"]', icao)
     to_step(c, 1)
 
