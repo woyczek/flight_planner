@@ -952,6 +952,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 100 | Help panel and welcome card placed under the module (09c9cacb4) | acceptable |
 | 101 | Refactor R-M2 + R-M5 (b): every Map label through one request, aerodb answers deduplicated by key (87748d47a) | acceptable, no change of behaviour |
 | 102 | Refactor R-C6: one base for the GitHub and GitLab transports (72ba695a8) | acceptable, no guard lost |
+| 103 | Suite update refused while a job or a sync runs; trust stated (2a02aedde): the notes of 97 closed | acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1906,6 +1907,14 @@ pagination is unchanged and checked before the call (the `next` link is kept onl
 publishing loop (cancellation, 100 MB per file, progress, failed rank, resumption) is the former one, written once, and each
 commit still reads the head just before. The base loads before both transports in the page and the service worker list, and
 each transport stands down without it.
+
+**103. The notes of 97 (2a02aedde) — acceptable, one note.** `update_suite` refuses with `busy` while a regeneration
+job runs (read under the jobs lock) or while `SYNC_LOCK` is taken (a non-blocking acquire, so no deadlock with a sync taking
+the locks in the other order); both locks are held during the update and released on every exit (`with`, `finally`); the
+help and the SPEC state that the target is not verified (unsigned tags, the same trust as a manual pull). Note (operation,
+not security): the jobs lock is held during the whole update, `git fetch` included, while `view`, `cancel`, `claim` and
+`put` take the same lock, so the Data module's polls and “Stop” hang until the update ends; plan with the fetch outside
+the locks and hold them for the writing phase only, or raise an “update running” flag that `start()` refuses.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
