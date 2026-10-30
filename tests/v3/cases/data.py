@@ -958,7 +958,7 @@ def l11(c):
 _SYNC_JS = """(() => { let cfg = null; try { cfg = JSON.parse(sessionStorage.getItem('__fakeSync') || 'null') } catch {}
   window.__sync = { calls: [] }; if (!cfg) return; let fd;
   const patch = F => { const a = F.adapter; F.adapter = function (...x) { const d = a.apply(this, x);
-    const f = async o => { window.__sync.calls.push(o === undefined ? null : o); if (cfg.delay) await new Promise(r => setTimeout(r, cfg.delay)); return JSON.parse(JSON.stringify(cfg.result)) };
+    const f = async o => { window.__sync.calls.push(o === undefined ? null : o); if (cfg.hold) await new Promise(r => { window.__sync.release = r }); else if (cfg.delay) await new Promise(r => setTimeout(r, cfg.delay)); return JSON.parse(JSON.stringify(cfg.result)) };
     if (cfg.gesture) f.gesture = true; d.sync = f; return d }; return F };
   Object.defineProperty(window, 'FrameData', { configurable: true, get() { return fd }, set(v) { fd = v && v.adapter && !v.__fake ? (v.__fake = 1, patch(v)) : v } }) })()"""
 
@@ -966,10 +966,11 @@ FILES = {'fr': ('fichier', 'fichiers'), 'en': ('file', 'files'), 'de': ('Datei',
 COMMITS = {'fr': ('commit', 'commits'), 'en': ('commit', 'commits'), 'de': ('Commit', 'Commits'), 'es': ('commit', 'commits')}
 
 
-def _sync_cfg(c, gesture=True, result=None, delay=0):
-    """Sets what the fake frame sync does at the next load (the init script reads sessionStorage)."""
+def _sync_cfg(c, gesture=True, result=None, delay=0, hold=False):
+    """Sets what the fake frame sync does at the next load (the init script reads sessionStorage); hold: the sync waits until the case
+    calls window.__sync.release() (a running state read without racing a delay)."""
     res = result if result is not None else {'ok': True, 'exchange': {'committed': 3, 'held': 0, 'received': 1, 'pushed': True, 'conflicts': 0, 'refused': 0}}
-    c.page.evaluate("v => sessionStorage.setItem('__fakeSync', v)", json.dumps({'gesture': gesture, 'result': res, 'delay': delay}))
+    c.page.evaluate("v => sessionStorage.setItem('__fakeSync', v)", json.dumps({'gesture': gesture, 'result': res, 'delay': delay, 'hold': hold}))
 
 
 def _pub_ok(c, what):
@@ -982,16 +983,16 @@ def _pub_ok(c, what):
     c.ge(min(m['hs']), 44, f'{what}: the button is 44 px', what='touch height')
 
 
-def _pub_open(c, st_sync, gesture=True, result=None, delay=0, launcher=None):
+def _pub_open(c, st_sync, gesture=True, result=None, delay=0, launcher=None, hold=False):
     """Opens the screen with the fake launcher (sync-status: `st_sync`) and the fake frame sync; returns the launcher's record."""
     if launcher is None:                       # the first opening: the fake launcher and the init scripts are installed once
         c.page.goto(f'{c.base}/frame/manifest.webmanifest', wait_until='load')
-        _sync_cfg(c, gesture, result, delay)
+        _sync_cfg(c, gesture, result, delay, hold)
         st = _launcher(c, sync=st_sync)
         c.page.add_init_script(_SYNC_JS)
         _open(c, _fixture()[0])
         return st
-    _sync_cfg(c, gesture, result, delay)       # the next ones: the same page, another configuration at the next load
+    _sync_cfg(c, gesture, result, delay, hold)       # the next ones: the same page, another configuration at the next load
     launcher['sync'] = st_sync
     c.open('data', docs=LEVEL3, wait=False, app='maintenance')  # le module Données est dans l'application Maintenance
     c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the head of the Données screen is drawn')
@@ -1026,7 +1027,7 @@ def l12(c):
     pub = norm(_trow('publish', lang))
     last_iso = '2026-10-29T09:30:00Z'
     # ---- A: 3 files, 2 commits; the state line, the question, a refusal, then the gesture
-    st = _pub_open(c, {'changes': 3, 'ahead': 2, 'merging': False, 'last': {'at': last_iso, 'pushed': True}}, delay=700)
+    st = _pub_open(c, {'changes': 3, 'ahead': 2, 'merging': False, 'last': {'at': last_iso, 'pushed': True}}, hold=True)
     s = _publish_state(c)
     c.ok(s['first'], s, 'the Publier panel follows the Construire panel')
     want = f"{_trow('pubFiles', lang, row=1).replace('{n}', '3')} · {_trow('pubCommits', lang, row=1).replace('{n}', '2')}"
@@ -1062,6 +1063,7 @@ def l12(c):
     c.eq(c.js('window.__sync.calls'), [{'gesture': True}], 'ctx.data.sync called once, with { gesture: true }', what='sync calls')
     c.eq(_notes_with(c, _trow('pubDone', lang).split('{c}')[0]), [], 'no notification on the way', what='notifications before the end')
     _pub_ok(c, 'running')
+    c.js('window.__sync.release()')                    # the fake sync answers now: the running state was read without a race
     c.until("!!document.querySelector('[data-publish-result]')", timeout=8000, what='the result is drawn')
     done = _trow('pubDone', lang).replace('{c}', '3').replace('{r}', '1')
     s = _publish_state(c)
