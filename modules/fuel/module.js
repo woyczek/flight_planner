@@ -15,6 +15,7 @@ import * as PG from './progress.js';
 import * as RT from '../../frame/lib/route_text.js';
 import * as RG from '../../frame/lib/routing.js'; // voies aériennes du bouton « Auto » (bibliothèque du cadre)
 import * as CF from '../../frame/lib/current_flight.js';
+import * as PR from '../../frame/lib/procedures.js'; // noms, sortie et entrée des procédures pour le texte de route (§ 10.31)
 import * as FMS from '../../frame/lib/fms.js'; // plan de vol écrit pour X-Plane (.fms) et MSFS (.pln), V3 § 10.28
 import {
   createProcedures,
@@ -174,6 +175,11 @@ const TX = {
   // « A VOIE B » où la voie ne relie pas A à B dans le couloir du tronçon (§ 10.31) : le tronçon reste direct
   awyBad: ['{w} ne relie pas {a} à {b} : tronçon direct', '{w} does not join {a} to {b}: direct leg',
     '{w} verbindet {a} nicht mit {b}: direkter Abschnitt', '{w} no une {a} con {b}: tramo directo'
+  ],
+  // la SID choisie rejoint la route tapée par un direct depuis sa sortie (§ 10.31)
+  procExitDct: ['{sid} sort à {exit} : {exit} DCT {next}', '{sid} exits at {exit}: {exit} DCT {next}',
+    '{sid} endet bei {exit}: {exit} DCT {next}',
+    '{sid} sale por {exit}: {exit} DCT {next}'
   ],
   autoNoLeg: ['Aucun tronçon sans voie à compléter.', 'No leg without an airway to fill in.',
     'Kein Abschnitt ohne Luftstraße zu ergänzen.',
@@ -1126,7 +1132,10 @@ async function routePoints(text, dep, arr, known = new Map(), chain = []) {
 const AIRWAY_WORD = /^[A-Z]{1,2}\d{1,4}[A-Z]?(-[A-Z]{1,2}\d{1,4}[A-Z]?)*$/;
 /** Texte normalisé de la route : « DEP PT1 UN460 PT2/F280 … ARR » — points par leur identifiant (niveau en /Fnnn là
  *  où il change), voies, procédures et mots inconnus gardés à leur place, une seule ligne (frame/lib/route_text.js). */
-const routeText = RT.textFromTokens;
+/** Texte normalisé du champ de route, en forme OACI avec ses « DCT » (V3 § 10.31). */
+const routeText = tokens => RT.textFromTokens(tokens, {
+  dct: true
+});
 
 // ---------------------------------------------------------------- données (vol courant, réglages, fiches)
 /** Chemin d'un document du pilote (trigramme de l'identité, ANON sans identité). */
@@ -1306,9 +1315,90 @@ function ensureProcs() {
 /** Fin d'une série de choix de procédures (400 ms sans nouveau choix, procedures.js) : un seul devis et une seule écriture du vol.
  *  Les procédures choisies sont lues par aerodb (ensureProcs) avant le devis ; le vol est alors écrit avec lui, sinon tout de suite. */
 function procsSettled() {
+  procsToText(true); // le texte de route suit le choix (§ 10.31)
   if (procsPending()) S.writeAfterProcs = true;
   else saveFlight();
   refresh();
+}
+// ---------------------------------------------------------------- le texte de route, vue du modèle (V3 § 10.31)
+/** Même texte de route, aux « DCT » et à la casse près. */
+const sameRoute = (a, b) => [a, b].map(t => String(t || '').toUpperCase().split(/\s+/).filter(w => w && w !== 'DCT').join(' ')).reduce((x,
+    y) =>
+  x === y);
+/** Le texte de route suit le choix des procédures (RT.withProcedures) : le nom de la SID et sa sortie après le départ, l'entrée et le
+ *  nom de la STAR avant l'arrivée ; jamais l'approche (elle n'est pas un élément du plan de vol). La sortie (l'entrée) n'est écrite
+ *  que si aucun point de la procédure n'est déjà dans la route ; quand elle l'est et que say est vrai, une ligne dit la jonction par
+ *  un direct (« NTS1A sort à NT102 : NT102 DCT LUGEN »). Rien tant que les fiches ne sont pas lues, ni pendant la frappe dans le
+ *  champ, ni quand le texte est déjà le bon. */
+function procsToText(say) {
+  const m = S?.P?.textModel?.(),
+    r = S?.flight?.route,
+    ta = S?.body?.querySelector('[data-k="rtext"]');
+  if (!m || !r || (ta && document.activeElement === ta)) return;
+  const o = CF.proceduresOf(S.flight),
+    rec = id => typeof id === 'string' ? m.recs.get(id) || null : null,
+    name = (id, x) => typeof id === 'string' ? (PR.nameOf(x, id) || '').toUpperCase() || null : null,
+    sid = rec(o.dep?.sid),
+    sidT = rec(o.dep?.trans),
+    star = rec(o.arr?.star),
+    starT = rec(o.arr?.trans),
+    sidName = name(o.dep?.sid, sid),
+    exit = PR.exitOf(sidT || sid),
+    res = RT.withProcedures(r.text || '', {
+      dep: r.dep,
+      arr: r.arr,
+      sid: sidName,
+      star: name(o.arr?.star, star),
+      exit,
+      entry: PR.entryOf(starT || star),
+      sidPoints: [...PR.pointsOf(sid), ...PR.pointsOf(sidT)],
+      starPoints: [...PR.pointsOf(starT), ...PR.pointsOf(star)],
+      sidNames: [...m.sid.keys()],
+      starNames: [...m.star.keys()]
+    });
+  if (sameRoute(res.text, r.text)) return;
+  r.text = res.text;
+  r.from = 'route';
+  if (ta) ta.value = r.text;
+  resolveRoute(true); // relu et normalisé (forme OACI, « DCT »), écrit, devis refait
+  if (say && res.exitAdded && res.next) S.ctx.notify(tt(TX.procExitDct, {
+    sid: sidName,
+    exit,
+    next: res.next
+  }), 'ok');
+}
+/** Relecture d'un texte de route que le pilote a édité (V3 § 10.31) : le premier nom d'une SID de route.dep pose cette SID (la fiche
+ *  qui dessert la piste choisie, sinon la première), le dernier nom d'une STAR de route.arr pose cette STAR ; l'absence du nom d'une
+ *  procédure choisie la retire (« Aucune » reste « Aucune ») ; un mot inconnu reste un point nommé (la ligne des points non reconnus le
+ *  dit). Le choix passe par le même chemin qu'une liste de la carte des procédures ; sans changement, le texte reprend sa forme. */
+function textToProcs() {
+  const m = S.P?.textModel?.(),
+    r = S.flight?.route;
+  if (!m || !r) return;
+  const o = CF.proceduresOf(S.flight),
+    found = RT.proceduresOfText(r.text, {
+      sidNames: [...m.sid.keys()],
+      starNames: [...m.star.keys()]
+    }),
+    nameOf = id => typeof id === 'string' ? (PR.nameOf(m.recs.get(id), id) || '').toUpperCase() : null;
+  let changed = false;
+  const set = (side, k, byName, want) => {
+    const cur = o[side]?.[k];
+    if (want && nameOf(cur) !== want) {
+      const list = byName.get(want) || [],
+        pick = PR.firstServing(list, o[side]?.rwy) || list[0];
+      if (pick) {
+        S.P.choose(`p-${side}-${k}`, pick.id);
+        changed = true;
+      }
+    } else if (!want && typeof cur === 'string') {
+      S.P.choose(`p-${side}-${k}`, '');
+      changed = true;
+    }
+  };
+  set('dep', 'sid', m.sid, found.sid);
+  set('arr', 'star', m.star, found.star);
+  if (!changed) procsToText(true);
 }
 /** Signature de la route (points, distance, saisie à la main) : ce qui, changé après le départ, refait tout le devis. */
 const routeSig = () => {
@@ -1838,6 +1928,7 @@ function onPlanInput(e) {
       r.text = v;
       if (e.type === 'input') r.from = 'route';
       resolveRoute(e.type === 'change'); // pendant la frappe : points relus ; à la sortie : texte normalisé
+      if (e.type === 'change') textToProcs(); // à la sortie : les noms de SID et de STAR du texte posent ou retirent le choix (§ 10.31)
       break;
     case 'addpt':
       return; // ajouté par « Ajouter » ou Entrée
@@ -3447,11 +3538,16 @@ async function autoAirways() {
           };
         // après le départ, la sortie de la SID s'écrit après le nom de la SID s'il le suit (« LFBO LACOU7B LACOU LMG ») : le tronçon
         // sortie → premier point est alors adjacent et routé (utilisateur, 30 octobre : « LACOU LMG n'est toujours pas trouvée »)
-        let at = tokens.findIndex(t => t.pt === prev) + 1;
-        if (k === 1)
-          while (tokens[at]?.keep && !AIRWAY_WORD.test(tokens[at].keep)) at++;
-        tokens.splice(at, 0, tok);
-        genTok.add(tok);
+        // le texte la nomme déjà sans que la base la connaisse comme point (mot gardé tel quel) : ce mot devient le point
+        const named = tokens.findIndex(t => t.keep && t.keep.toUpperCase() === String(p.id).toUpperCase());
+        if (named >= 0) tokens[named] = tok;
+        else {
+          let at = tokens.findIndex(t => t.pt === prev) + 1;
+          if (k === 1)
+            while (tokens[at]?.keep && !AIRWAY_WORD.test(tokens[at].keep)) at++;
+          tokens.splice(at, 0, tok);
+          genTok.add(tok);
+        }
         points.splice(points.indexOf(prev) + 1, 0, p);
         procPts.add(p);
         ext[k] = p;

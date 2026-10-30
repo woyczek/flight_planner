@@ -9,7 +9,8 @@
 //     transitions ; runwayChoices(known, all, ad) : les pistes à proposer pour un terrain.
 //   runwayOf(proc), firstServing(list, rwy) : la piste unique d'une procédure, la première qui dessert une piste (§ 10.30).
 //   familyOf(name), siblingsOf(list, proc), familiesOf(list) : les familles de SID / STAR (ABLI4L, ABLI4R → une ligne « ABLI4 »).
-//   compatible(list, { rwy, sid, star, app }, byId) : ce qui va avec le choix, les trois familles dans n'importe quel ordre.
+//   compatible(list, { rwy, sid, star, app, route }, byId) : ce qui va avec le choix, les trois familles dans n'importe quel ordre ;
+//     route : les points de la route tapée (axe « vers votre route », § 10.31). exitOf(proc), entryOf(proc), pointsOf(proc).
 //   isAppTransition(rec), labelOf(app, list), transitionLabelOf(rec) : les segments d'approche initiale (« INA RNAV RWY 06 ») en
 //     transitions communes aux finales de la piste, le libellé court d'une finale (« ILS 06 »), celui d'une transition
 //     (« via ODILO · ODILO 1A ») (§ 10.30, quatrième lecture).
@@ -279,6 +280,14 @@ export function familiesOf(list) {
   return rows;
 }
 
+/** Les identifiants des points nommés d'une procédure, dans l'ordre, hors approche interrompue et hors seuils « RWnn ». */
+export const pointsOf = proc => (proc?.points || []).filter(p => p?.phase !== 'missed').map(p => String(p?.id ?? '').trim().toUpperCase())
+  .filter(id => id && !/^RW\d/.test(id));
+/** La sortie d'une SID (ou d'une transition de SID) : son dernier point nommé ; null sans point. */
+export const exitOf = proc => pointsOf(proc).at(-1) || null;
+/** L'entrée d'une STAR (ou d'une transition de STAR) : son premier point nommé ; null sans point. */
+export const entryOf = proc => pointsOf(proc)[0] || null;
+
 /** Une STAR rejoint une approche quand elle dessert une piste de l'approche (l'une ou l'autre les desservant toutes : oui) ; la
  *  continuité des points n'est jamais exigée (§ 10.23). */
 const joins = (star, app) => servesAll(app) || servesAll(star) || app.runways.some(x => servesRwy(star, x));
@@ -290,7 +299,8 @@ const joins = (star, app) => servesAll(app) || servesAll(star) || app.runways.so
  *    approche choisie → sa piste (ses pistes), les STAR qui la rejoignent.
  *  choice : { rwy, sid, star, app }, chaque valeur une fiche, un identifiant (byId : Map, objet ou fonction, comme conflictsOf) ou un
  *  tableau (une famille choisie avant sa piste : ce qui va avec l'une de ses fiches) ; un champ absent, null (« Aucune ») ou introuvable
- *  ne filtre pas. Nouveau tableau, dans l'ordre de list. */
+ *  ne filtre pas. route (§ 10.31, axe « vers votre route ») : les identifiants des points de la route tapée ; une SID va avec quand sa
+ *  sortie y est, une STAR quand son entrée y est ; une route vide ne filtre pas. Nouveau tableau, dans l'ordre de list. */
 export function compatible(list, choice, byId) {
   const o = choice || {},
     recs = v => [].concat(v ?? []).map(x => typeof x === 'string' ? recById(byId, x) : x).filter(x => x && typeof x === 'object'),
@@ -298,15 +308,17 @@ export function compatible(list, choice, byId) {
     star = recs(o.star),
     app = recs(o.app),
     rwy = rwNum(o.rwy),
+    route = new Set([...(o.route || [])].map(x => String(typeof x === 'string' ? x : x?.id ?? '').trim().toUpperCase()).filter(Boolean)),
     any = (arr, f) => !arr.length || arr.some(f),
-    onRwy = r => !rwy || servesRwy(r, rwy);
+    onRwy = r => !rwy || servesRwy(r, rwy),
+    onRoute = id => !route.size || route.has(id);
   return [...(list || [])].filter(r => {
     if (typeof r === 'string' || !r?.kind) {
       const id = typeof r === 'string' ? r : r?.id;
       return any(sid, s => servesRwy(s, id)) && any(star, s => servesRwy(s, id)) && any(app, a => servesRwy(a, id));
     }
-    if (r.kind === 'SID') return onRwy(r);
-    if (r.kind === 'STAR') return onRwy(r) && any(app, a => joins(r, a));
+    if (r.kind === 'SID') return onRwy(r) && onRoute(exitOf(r));
+    if (r.kind === 'STAR') return onRwy(r) && any(app, a => joins(r, a)) && onRoute(entryOf(r));
     if (r.kind === 'APP') return onRwy(r) && any(star, s => joins(s, r));
     return true;
   });

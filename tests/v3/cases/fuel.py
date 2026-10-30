@@ -338,18 +338,11 @@ def f28(c):
     to_step(c, 1)
     wait_rows(c, 'dep')
     rt = f'{FUEL} [data-k="rtext"]'
-    c.page.fill(rt, 'LFRS NEPIX LFML')
-    c.page.locator(rt).blur()
-    c.until(f"/\\(3\\)/.test(document.querySelector('{FUEL} [data-ptsn]').textContent)", timeout=6000, what='the route resolves to three points')
-    c.tap(f'{FUEL} [data-do="rauto"]')
-    c.until(f"document.querySelector('{FUEL} [data-k=rtext]').value.includes('G36')", timeout=8000, what='Auto writes the airway that leaves the SID')
-    c.eq(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value"), 'LFRS NT102 G36 NEPIX LFML',
-         'the end of the SID is written after the departure and the airway starts there; LFRS - NT102 is the SID, never routed', what='route text')
     # the SID's name in the text (user, 30 Oct: « LFBO LACOU7B LMG … la route LACOU LMG n'est toujours pas trouvée »): the exit is written after
     # the name, so the leg exit → first point is adjacent and routed (§ 10.31)
     c.page.fill(rt, 'LFRS NTS1A NEPIX LFML')
     c.page.locator(rt).blur()
-    c.until(f"/\\(3\\)/.test(document.querySelector('{FUEL} [data-ptsn]').textContent)", timeout=6000, what='the route with the SID name resolves to three points')
+    c.until(f"/\\([34]\\)/.test(document.querySelector('{FUEL} [data-ptsn]').textContent)", timeout=6000, what='the route with the SID name resolves (its exit may be written after the SID name, § 10.31)')
     c.tap(f'{FUEL} [data-do="rauto"]')
     c.until(f"document.querySelector('{FUEL} [data-k=rtext]').value === 'LFRS NTS1A NT102 G36 NEPIX LFML'", timeout=8000,
             what='the exit after the SID name, then the airway: « LFRS NTS1A NT102 G36 NEPIX LFML »')
@@ -1723,4 +1716,45 @@ def f68(c):
     line = norm(row(c, 'awyBad')).replace('{w}', 'A3').replace('{a}', 'GILUX').replace('{b}', 'MOTAL')
     c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\u00a0\u202f]+/g, ' ').trim() === w)", line, timeout=6000, what=f'the line « {line} »')
     c.ok('A3' in c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value").split(), 'text', 'the word the pilot typed stays in the text')
+
+
+@case('F69', 'Route text bench', 'F', tags=('fuel',), designs=('standard',), screens=False,
+      rule='frame/lib/route_text.js (V3 spec 10.31): provenance of an Auto, ICAO form with DCT, SID / STAR names rendered and read back; its bench passes')
+def f69(c):
+    c.page.goto(f'{c.base}/frame/lib/test/route_text.html', wait_until='load')
+    try:
+        c.page.wait_for_function('window.__bench && window.__bench.done', timeout=30000)
+    except Exception:
+        raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'frame/lib/test/route_text.html') from None
+    r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
+    c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}", 'every check of the bench passes')
+
+
+@case('F70', 'The route text is a view of the procedures: a choice writes its name, an edit sets or clears the choice', 'F', tags=('fuel', 'aerodb'),
+      designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.31: the SID name and its exit after the departure, the STAR entry and name before the arrival, never the approach; a SID '
+      'joined by a direct is said (« NTS1A sort à NT102 : NT102 DCT LUGEN »); a name typed sets the choice, its absence clears it')
+def f70(c):
+    # the exit of NTS1A and the entries of the STARs are points of the base (as in a real one): they are read as points
+    open_proc(c, aero_extra={'points': [{'id': 'NT102', 'lat': 46.8, 'lon': -1.35, 'type': 'RNAV'}, {'id': 'MEN01', 'lat': 44.2, 'lon': 3.6, 'type': 'RNAV'},
+                                        {'id': 'MEN11', 'lat': 44.0, 'lon': 3.9, 'type': 'RNAV'}]})
+    wait_rows(c, 'dep')
+    rt = f"document.querySelector('{FUEL} [data-k=rtext]').value"
+    c.page.select_option(f'{FUEL} select[data-k="p-dep-sid"]', 'LFRS.SID.NTS1A.RW03.NONE')
+    c.until(f"{rt} === 'LFRS NTS1A NT102 DCT LUGEN DCT NEPIX LFML'", timeout=8000,
+            what='the SID name then its exit after the departure, in ICAO form: « LFRS NTS1A NT102 DCT LUGEN DCT NEPIX LFML »')
+    line = norm(row(c, 'procExitDct')).replace('{sid}', 'NTS1A').replace('{exit}', 'NT102').replace('{next}', 'LUGEN')
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\u00a0\u202f]+/g, ' ').trim() === w)", line, timeout=6000, what=f'the line « {line} »')
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-star"]', 'LFML.STAR.MEN1A.RW13R.NONE')
+    c.until(f"{rt}.endsWith('NEPIX DCT MEN01 MEN1A LFML')", timeout=8000, what='the STAR entry then its name before the arrival')
+    c.page.select_option(f'{FUEL} select[data-k="p-arr-app"]', 'LFML.APP.I13R.RW13R.NONE')
+    cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == 'LFML.APP.I13R.RW13R.NONE', 'the approach is written')
+    c.settle()
+    c.ok('I13R' not in c.js(rt), c.js(rt), 'the approach never appears in the text (not an item of the flight plan)')
+    # an edit of the text: the SID name removed clears the SID; a STAR name typed sets that STAR
+    field = f'{FUEL} [data-k="rtext"]'
+    c.page.fill(field, 'LFRS LUGEN NEPIX MEN2B LFML')
+    c.page.locator(field).blur()
+    d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('star') == 'LFML.STAR.MEN2B.RW31L.NONE', 'the STAR named in the text is chosen', timeout=8000)
+    c.ok('sid' not in (procs_of(d, 'dep') or {}), f"{procs_of(d, 'dep')}", 'the SID whose name left the text is no longer chosen')
 

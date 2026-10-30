@@ -227,6 +227,11 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   (F32). `conflictsOf` and `orderProcedures` are still re-exported by `flight_path.js` (hence `current_flight.js`) during the transition.
   Since § 10.30 (30 Oct 2026): `runwayOf(proc)` (the single runway a procedure serves, else null) and `firstServing(list, rwy)` (the
   first of the group that serves the runway: « Choisir OKRIX5B »).
+  § 10.31 (30 Oct 2026): `pointsOf(proc)`, `exitOf(proc)` (a SID's last named point), `entryOf(proc)` (a STAR's first), and
+  `compatible(list, { …, route })` — `route`, the typed route's point ids: a SID fits when its exit is on it, a STAR when its entry
+  is (the Map's « vers votre route » axis; an empty route filters nothing). In `route_text.js`: `textFromTokens(tokens, { dct })`
+  (ICAO form), `withProcedures(text, o)` (the procedures written into the text) and `proceduresOfText(text, o)` (read back), with
+  `provenance(words, prev)` for Auto; bench `frame/lib/test/route_text.html` (F69).
   Fourth reading of § 10.30 (30 Oct 2026, LFPO): `isAppTransition(rec)` (an APP record named « INA … », or with a transition and
   points that never reach a runway threshold « RWnn »: an initial approach segment, never a row); `appChoices` lists only the finals
   and its `transitionsOf(id)` adds the segments of the final's name and those no final names that serve its runway (the SIA's

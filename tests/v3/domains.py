@@ -31,6 +31,7 @@ RULES = [
     ('frame/lib/test/current_flight.html', ['D', 'I'], 'the flight in time: bench (D38)'),
     ('frame/lib/procedures.js', ['F', 'D', 'I'], "procedure rules shared by fuel's lists and the Map's choose mode"),
     ('frame/lib/test/procedures.html', ['F', 'I'], 'procedure rules bench (F32)'),
+    ('frame/lib/test/route_text.html', ['F'], 'route text bench (F69)'),
     ('frame/lib/wind.js', ['F', 'D', 'I'], 'wind components on a runway, shared by fuel and the Map (V3 § 10.30)'),
     ('frame/lib/test/wind.html', ['F', 'I'], 'wind components bench (F62)'),
     ('frame/lib/test/time.html', ['F', 'I'], 'time formats bench (F39)'),

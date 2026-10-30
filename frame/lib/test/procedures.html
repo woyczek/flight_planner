@@ -46,7 +46,9 @@
     summaryOf,
     isAppTransition,
     labelOf,
-    transitionLabelOf
+    transitionLabelOf,
+    exitOf,
+    entryOf
   } from '../procedures.js?v=0';
   const rows = [],
     out = document.getElementById('out');
@@ -465,6 +467,52 @@
   });
   ck('summaryOf : la finale par son libellé court, via le nom publié de la transition', zSum.app === 'ILS 06 via OKAPI 1A', JSON.stringify(
     zSum));
+  // § 10.31 : sortie, entrée, axe « vers votre route »
+  const rS1 = {
+      id: 'S1',
+      kind: 'SID',
+      runways: ['32L'],
+      points: [{
+        id: 'RW32L'
+      }, {
+        id: 'TOU01'
+      }, {
+        id: 'LACOU'
+      }]
+    },
+    rS2 = {
+      id: 'S2',
+      kind: 'SID',
+      runways: ['32L'],
+      points: [{
+        id: 'FINOT'
+      }]
+    },
+    rT1 = {
+      id: 'T1',
+      kind: 'STAR',
+      runways: [],
+      points: [{
+        id: 'OKRIX'
+      }, {
+        id: 'PO401'
+      }, {
+        id: 'M1',
+        phase: 'missed'
+      }]
+    };
+  ck('exitOf / entryOf : le dernier et le premier point nommé, hors seuil et interrompue', exitOf(rS1) === 'LACOU' && entryOf(rT1) ===
+    'OKRIX' && exitOf({
+      points: []
+    }) === null);
+  ck('compatible : axe « vers votre route » — les SID dont la sortie est sur la route, les STAR dont l’entrée y est ; route vide : rien',
+    qIdsOf(compatible([rS1, rS2], {
+      route: ['LACOU', 'LMG']
+    })) === 'S1' && qIdsOf(compatible([rT1], {
+      route: ['LMG']
+    })) === '' && qIdsOf(compatible([rS1, rS2], {
+      route: []
+    })) === 'S1,S2');
   ck('runwayChoices : rien de rien, rien', runwayChoices([], [], null).length === 0 && runwayChoices(null, null, {}).length === 0);
 
   window.__bench = {

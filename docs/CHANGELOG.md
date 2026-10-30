@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the route text is a view of the procedures** (`frame/lib/route_text.js` `withProcedures`, `proceduresOfText`,
+  `textFromTokens` dct; `frame/lib/procedures.js` `exitOf`, `entryOf`, `compatible({ route })`; help ×4; F69, F70) — ICAO form with
+  DCT, the SID and STAR names written from the choice and read back from an edit; « NTS1A sort à NT102 : NT102 DCT LUGEN ».
 - **Map: from the airline's zoom, every aerodrome shows its runways and its name** (`modules/maps/procs.js`, `draw.js`,
   `render.js`, `lib/aero_symbols.js`; help ×4, maps SPEC; noreg D71; V3 § 10.30 fourth reading, point 3). Above `runwayZoom`
   each aerodrome drawn has its runways read on demand and drawn as thin 24 px vectors with their numbers at the thresholds, in

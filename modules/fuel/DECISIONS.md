@@ -4,6 +4,14 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **30 Oct 2026 — § 10.31 parts 2 and 3, the text is a view of the procedures** (user: « on doit pouvoir modifier le FPL après
+  sélection SID / STAR »). The text follows the model at every settled choice and once the records are drawn; it is read back when
+  the pilot leaves the field (not while typing: no choice flickers). The names are matched on the main records of the two
+  aerodromes (a waypoint never ends with a digit and a letter the way a procedure does). The exit / entry is written only when no
+  point of the procedure (transition included) is on the route: the join is then at the first common point (expandedPath, § 10.20).
+  DCT is opt-in in `textFromTokens` (Fuel's field), so routing.js keeps its « PT1 UN460 PT2 » texts. A chosen SID whose name the
+  pilot deleted is cleared — the old flights get the names written at their first drawing, so an edit never clears a choice the
+  text did not show. The Map's ranking of SIDs by exit uses `compatible({ route })`. Cases F69 (bench), F70; F28 adapted.
 - **30 Oct 2026 — a typed airway is never a point** (user: « LFBO … GILUX A3 MOTAL J18 KOTAP LFPO » gave 1 871 NM and a trace to
   Gibraltar, « transitoire et inexplicable »). Diagnosis on the user's flight (read only): `route.points` held { id: 'A3', 36.05 N
   5.30 W }: routePoints asked `aerodb.coords()` for every name-shaped word, and some point of the base carries the identifier A3. The

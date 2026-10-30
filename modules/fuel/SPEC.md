@@ -373,6 +373,17 @@ mount. Inside a mount, the two buttons switch as before.
      departure or the arrival (an OFP repeats its level at every point). "Last SimBrief OFP": through `ctx.net`, the SimBrief identifier
      of the identity (never typed here), the OFP kept on the device only, its route, level, average wind, ISA
      deviation and aircraft taken into the current flight.
+     **The route text is a view of the procedures** (§ 10.31, 30 Oct 2026): `route.text` is normalised in ICAO form (`RT.textFromTokens`
+     with `dct`: « DCT » between two en-route points with nothing between them, never against the departure or the arrival). After a
+     procedure choice (Fuel's lists, the Map's proposal, the OFP: `procsSettled`) and once the two aerodromes' records are drawn
+     (`host.drawn`), `procsToText` writes the SID's name then its exit after the departure, the STAR's entry then its name before the
+     arrival (`RT.withProcedures`; the exit / entry only when no point of the procedure is on the route already; never the approach);
+     when the exit is added, one line says « NTS1A sort à NT102 : NT102 DCT LUGEN ». Nothing while the field has the focus. When the
+     pilot leaves the field, `textToProcs` reads it back (`RT.proceduresOfText`): the first SID name of `route.dep` sets that SID (the
+     record serving the chosen runway, else the first), the last STAR name of `route.arr` that STAR; a chosen procedure whose name left
+     the text is cleared (« Aucune » stays); the choice goes through `P.choose`. Auto turns an exit word the base does not know as a
+     point into the inserted exit point. `compatible()` takes `route` (the typed points): a SID fits when its exit is on it, a STAR when
+     its entry is (axis « vers votre route » for the Map).
      **A typed airway** (§ 10.31, 30 Oct 2026): in « A VOIE B », a word of airway form between two named points is an airway when the
      base has an airway of that name near A (a ±2° box), and then never a point of the same identifier taken elsewhere (the user's
      « A3 », a point near Gibraltar: 1 871 NM); without such an airway nearby the identifier stays a point (PO421…). The airway is

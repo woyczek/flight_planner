@@ -18,7 +18,7 @@
 //     drop(),              les procédures lues du vol sont périmées (le chemin du devis est à relire)
 //     refresh()            redessine l'écran (devis compris)
 //   }
-//   api = { sync, render, reset, choose, read, onChange, focus, applyFocus, snapshot, applyOfp, stop }
+//   api = { sync, render, reset, choose, read, onChange, focus, applyFocus, textModel, snapshot, applyOfp, stop }
 //
 // État : un seul objet par terrain (ads : fiches montrées au dernier dessin, comptes de la dernière lecture). La carte se met à
 // jour sur place : quand seules les listes changent, les options des listes existantes sont remplacées, le focus n'est jamais
@@ -513,6 +513,7 @@ export function createProcedures(host) {
       adOf(m.icao).rwys = m.rwys.map(r => String(r.id)); // les pistes proposées : seules admises dans une proposition de la Carte
     }
     paint(box, models);
+    host.drawn?.(); // les fiches des deux terrains sont connues : le texte de route peut suivre le choix (§ 10.31)
     applyFocus();
     if (proposal)
       applyProposal(); // la proposition de la Carte, une fois les fiches des terrains connues (une piste unique suit son choix)
@@ -776,6 +777,30 @@ export function createProcedures(host) {
     for (const line of changeLines(before, after, [side])) ctx.notify(line, 'ok');
   }
 
+  // ------------------------------------------------------------ le texte de route (§ 10.31)
+  /** Ce que le texte de route sait des procédures : { recs (fiches par identifiant), sid / star : Map nom → [fiches principales] } ;
+   *  null tant que les fiches du départ et de l'arrivée ne sont pas lues (le texte n'est alors ni réécrit ni relu). */
+  function textModel() {
+    const r = host.route(),
+      d = ads.get(String(r.dep || '').toUpperCase())?.recs,
+      a = ads.get(String(r.arr || '').toUpperCase())?.recs;
+    if (!d || !a) return null;
+    const by = (recs, kind) => {
+      const m = new Map();
+      for (const x of recs.values())
+        if (x.kind === kind && !x.transition && PR.nameOf(x)) {
+          const n = PR.nameOf(x).toUpperCase();
+          m.set(n, [...(m.get(n) || []), x]);
+        }
+      return m;
+    };
+    return {
+      recs: new Map([...d, ...a]),
+      sid: by(d, 'SID'),
+      star: by(a, 'STAR')
+    };
+  }
+
   // ------------------------------------------------------------ l'OFP
   /** La vue des procédures d'avant l'OFP, avec les terrains : { dep, arr, depIcao, arrIcao } (un côté d'un autre terrain n'est pas comparé). */
   function snapshot() {
@@ -855,6 +880,7 @@ export function createProcedures(host) {
     onChange,
     focus,
     applyFocus,
+    textModel,
     snapshot,
     applyOfp,
     afterRead,
