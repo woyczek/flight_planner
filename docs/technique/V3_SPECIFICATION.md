@@ -1203,6 +1203,21 @@ redesigned for touch at that point.
        43df712ef, 1f23b7d73, 8ba329f66, b6b2043e6, 1ad1b897b).
        **Noreg discipline (30 Oct, after a driver crash)**: one full pass at a time on the workstation; `--touched`
        passes may run beside it; the runner refuses a second full pass while one runs (lock, V3 Frame).
+       **Fifth reading: the walkthrough on the real base (maps session, 30 Oct, LFBO → LFPO at 1280 and 390 px, read
+       only; fifteen findings, two serious)**. Rules added, lots dispatched the same day:
+       - Fuel: rendering the route text from the model is idempotent (procedure, exit and entry tokens already present
+         are recognised, never written twice: the text doubled the SID at every return from the Map); Auto starts from
+         the chosen SID's exit, never from the aerodrome; one distance, the expanded path's, said "procédures
+         comprises"; a family of records (AMOLO 7A for 14L and 14R) is one row in Fuel's lists as in the pane; the
+         names through `adTitle`, the return notification "SID → AMOLO 7A" out of the fuel block; the `.fms` approach
+         is the ARINC identifier (I02) when it can be derived, and CYCLE the published base's cycle.
+       - Map: TOC / TOD tolerate a 100 ft drift of the level; the pane frames the aerodrome and the compatible
+         procedures only; the "vers votre route" axis is silent on a route without points, replaced by the bearing of
+         the exit towards the arrival ("vers LFPO" first); a label never repeats the runway it already carries, "via
+         MOLBA 1E" when the transition's name starts with its IAF, the cartouche uses the list's label; an approach
+         transition is offered with a STAR only when its IAF is on that STAR (`compatible({ star })`); the sheet takes
+         the available height with "Terminer" always in view; near the aerodrome its label wins over the traces and
+         the runway numbers yield to the navaid boxes; the vertical cut goes through the same collision pass.
 
    32. **Missions in V3, first framing** (user, 30 Oct: "les missions actuelles sont communes : je suis le seul à en
        créer, d'autres en profitent ; la numérotation est la mienne ; le premier acte du rôle « équipier enrôlé dans une
