@@ -21,6 +21,60 @@
     }
     return s;
   };
+  /** Points de la trace à 16, 32, 48 et 64 px de q le long de chacun des tronçons q → b (bs : leurs autres bouts, à l'écran), en
+   *  alternant les tronçons ; un point plus près de l'autre bout que 8 px n'est pas pris (jamais hors de la trace). */
+  function along(q, bs) {
+    const out = [];
+    for (const d of [16, 32, 48, 64])
+      for (const b of bs) {
+        const len = b ? Math.hypot(b.x - q.x, b.y - q.y) : 0;
+        if (len > d + 8) out.push({
+          x: q.x + (b.x - q.x) * d / len,
+          y: q.y + (b.y - q.y) * d / len
+        });
+      }
+    return out;
+  }
+  /** Noms de TOC et TOD (plan : [{ name, q, w, along(d) }], w la largeur du nom) : au nord-est du losange, au sud-est, au
+   *  nord-ouest, au sud-ouest, puis les mêmes places autour d'un point glissé le long de la trace (along, de 16 à 64 px de part et
+   *  d'autre) ; sans place, le nom se tait (le losange reste). Rend [{ name, r }], r la place prise ({ x, y, align } du texte) ou
+   *  null. */
+  function planLabels(plan, pl) {
+    const out = [],
+      corners = (q, w) => [
+        [8, -9, 'left'],
+        [8, 10, 'left'],
+        [-8, -9, 'right'],
+        [-8, 10, 'right']
+      ].map(([dx, dy, align]) => {
+        const x0 = align === 'left' ? q.x + dx : q.x + dx - w;
+        return {
+          x0,
+          x1: x0 + w,
+          y0: q.y + dy - 7,
+          y1: q.y + dy + 7,
+          x: q.x + dx,
+          y: q.y + dy,
+          align
+        };
+      });
+    for (const m of plan || []) {
+      const o = {
+        name: m.name,
+        r: null
+      };
+      out.push(o);
+      R.kit.ask(pl, {
+        layer: 'routeLabels',
+        rank: 'route',
+        key: `plan:${m.name}`,
+        anchor: m.q,
+        boxes: [m.q, ...[16, -16, 32, -32, 48, -48, 64, -64].map(d => m.along?.(d))].filter(Boolean).flatMap(q => corners(q, m.w)),
+        paint: r => o.r = r
+      });
+    }
+    return out;
+  }
   /** Libellés de la route (points : identifiant et niveau ; marques NM) réservés dans le placeur avant tout le reste :
    *  [{ text, x, y, size, align }] ; les extrémités sont toujours écrites. */
   function routeLabels(route, toC, scale, pl, mk = [], level = null, env) {
@@ -61,7 +115,8 @@
         })
       });
       // heure estimée du point (vol démarré, de près : p.eta, posé par l'écran) : sous son nom, sinon au-dessus du point,
-      // sinon à sa gauche ; réservée avec les libellés de la route, avant les terrains (jamais sur « LFBD »)
+      // sinon à sa gauche, puis glissée le long des tronçons du point (le suivant d'abord), jamais hors de la trace ; sans place
+      // elle se tait (le terrain et ses balises passent avant, rang route)
       if (p.eta) {
         const fe = f * .85,
           we = p.eta.length * fe * .6,
@@ -71,6 +126,8 @@
             [q.x - 9 * scale - we, q.y + 2 * scale, 'left'],
             [q.x - 9 * scale - we, q.y - 6 * scale - fe * 1.2, 'left']
           ];
+        for (const s of along(q, [pts[i + 1], pts[i - 1]].map(n => n && toC(n.lat, n.lon))))
+          spots.push([s.x + 4 * scale, s.y + 3 * scale, 'left'], [s.x + 4 * scale, s.y - 3 * scale - fe * 1.2, 'left']);
         R.kit.ask(pl, {
           layer: 'routeLabels',
           rank: 'route',
@@ -184,6 +241,7 @@
     value: Object.freeze({
       routeLegs,
       routeLabels,
+      planLabels,
       drawRoute
     }),
     enumerable: true

@@ -2167,3 +2167,9 @@ page is served to `Sec-Fetch-Site: none`, refused to `cross-site`, and, where th
 - **Parser version 19 → 20** (`COMPAT` stays 14): the builder's output changed, not the format; zones built with 19 show as outdated until rebuilt.
   `aerodromes.json` grows by about 100 bytes per runway end (10,398 ends in the 6,656 openAIP aerodromes held).
 - **Bench**: K58 (`tests/v3/fixtures/openaip_apt_runways.geojson`, an invented export of the real shape).
+
+## 30 October 2026 — the SIA key does not identify an airspace
+
+- **Rule**: an airspace's `key` (as the SIA publishes it) is not unique in a published base — LF600 is both a SUR and a PRN, 74 keys of the
+  French base name several airspaces — so a consumer that needs an airspace's identity takes its type, key, name, limits and first ring point
+  together (unique in the fr, es, de and gb bases; the Map's `keyOf`, `modules/maps/data.js`, SPEC § 3). The base keeps the key as published.

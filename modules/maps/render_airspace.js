@@ -163,19 +163,19 @@
       },
       hits = [];
     let cur = null;
-    // placeur partagé, vu au travers : chaque cadre réservé pendant le libellé d'un espace lui est attribué
+    // placeur de la passe, vu au travers : chaque place donnée au libellé d'un espace lui est attribuée
     const seen = pl ? new Proxy(pl, {
       get(o, p) {
-        if (p === 'take') return r => {
-          const ok = o.take(r);
-          if (ok && cur) hits.push({
+        if (p === 'ask') return req => {
+          const r = o.ask(req);
+          if (r && cur) hits.push({
             x0: r.x0,
             y0: r.y0,
             x1: r.x1,
             y1: r.y1,
             a: cur
           });
-          return ok;
+          return r;
         };
         const v = o[p];
         return typeof v === 'function' ? v.bind(o) : v;
@@ -295,8 +295,9 @@
         }),
         // le milieu, puis de part et d'autre, sans sortir du tronçon (un demi-cartouche des bouts)
         lim = Math.min(.45, Math.max(0, .5 - (r + 4) / Math.max(1, len))),
-        spots = [0, .1, -.1, .2, -.2, .3, -.3, .4, -.4].filter(d => Math.abs(d) <= lim).map(d => at(.5 + d)),
-        got = ask(pl, {
+        spots = [0, .1, -.1, .2, -.2, .3, -.3, .4, -.4].filter(d => Math.abs(d) <= lim).map(d => at(.5 + d));
+      if (len < 2 * r) continue; // le tronçon plus court que son étiquette : pas d'étiquette, rien de réservé (le trait reste)
+      const got = ask(pl, {
           layer: 'airways',
           rank: along ? 'route' : 'airway',
           key: `${g.route}|${g.a.id}|${g.b.id}`,
@@ -307,7 +308,7 @@
           }))
         }),
         c = got?.q;
-      if (!c || len < 2 * r) continue; // le tronçon plus court que son étiquette : pas d'étiquette (le trait reste)
+      if (!c) continue;
       const {
         x,
         y
@@ -385,6 +386,7 @@
             layer: 'airwayNames',
             rank: 'airway',
             key: `${g.route}|${from.id}>${to.id}`,
+            parent: `${g.route}|${g.a.id}|${g.b.id}`, // le cartouche de la voie tu, ses routes vraies se taisent avec lui
             anchor: {
               x: px,
               y: py

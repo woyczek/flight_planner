@@ -355,7 +355,9 @@ de la route sont aussi repérés sur le profil.
 
 **Montée et descente.** Les losanges violets marquent la fin de la montée (TOC) et le début de la descente (TOD),
 sur la carte comme sur le profil. Ils viennent du calcul de Carburant ; sans lui, la carte les estime avec des taux
-de montée et de descente courants.
+de montée et de descente courants. Quand la place manque, la carte écrit d'abord le nom du terrain, puis les numéros de
+piste, les balises, les procédures, la route (noms, heures, TOC / TOD), enfin le reste ; une heure estimée ou le nom
+de TOC / TOD glisse le long de la route avant de se taire (le losange reste).
 
 **Les cartes de mission.** La liste en bas des couches (le bouton aux calques) choisit ce que montre la carte : le vol prévu, ou une mission
 de la compagnie. Pour une mission, une seconde liste choisit parmi ses cartes (vue d'ensemble, cible, détail…).

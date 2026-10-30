@@ -264,7 +264,8 @@
     W,
     H,
     scale = .8,
-    window: win = null
+    window: win = null,
+    placer = null // le placeur de la passe de la coupe (profile_view.js)
   }) {
     const geo = P().draw(ctx, data, {
       W,
@@ -279,7 +280,8 @@
       limits: false,
       strictLabels: true,
       maxLabels: 7, // au plus 7 espaces étiquetés par écran ; les autres dans la liste du dessous
-      reserveBottom: 18 * scale // marques NM posées par module.js au bas de la coupe
+      reserveBottom: 18 * scale, // marques NM posées par module.js au bas de la coupe
+      placer
     });
     geo.drawn.terrain = !!data.terrainOk;
     geo.drawn.mora = !data.terrainOk && data.samples.some(q => Number.isFinite(q.mora));

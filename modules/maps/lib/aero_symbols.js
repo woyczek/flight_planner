@@ -365,9 +365,10 @@
   /** Une demande d'étiquette (refonte R-M2 de la Carte, modules/maps/SPEC.md § 3) : { layer, rank, key, anchor, boxes: [rect, …],
    *  paint(rect), force } — boxes : les places candidates dans l'ordre de glissement de la couche ; la première libre est prise et
    *  l'étiquette peinte là ; sans place : force 'paint' la peint à la première sans la réserver, 'reserve' la réserve et la peint
-   *  quand même, sinon elle se tait. Sans placeur (pl null) : peinte à la première place. Rend la place, ou null. Lot (b) : posée
-   *  à l'appel, dans l'ordre d'aujourd'hui ; rank, key et anchor servent à la passe unique (lot c). */
+   *  quand même, sinon elle se tait. Sans placeur (pl null) : peinte à la première place. Rend la place, ou null. Dans la passe
+   *  unique (pass), le placeur répond lui-même (pl.ask) : au premier tour il note la demande, au second il rend sa décision. */
   function ask(pl, req) {
+    if (pl?.ask) return pl.ask(req);
     const boxes = (req.boxes || []).filter(Boolean);
     if (!boxes.length) return null;
     if (!pl) {
@@ -383,6 +384,126 @@
     if (req.force === 'reserve') pl.add(boxes[0]);
     req.paint?.(boxes[0]);
     return boxes[0];
+  }
+
+  // ---- la passe unique (refonte R-M2, lot c ; modules/maps/SPEC.md § 3) : le dessin est joué deux fois. Le premier tour, sur un
+  // contexte muet (rien n'est peint, les mesures de texte sont vraies), recense les demandes ; elles sont placées dans l'ordre de la
+  // liste fermée de l'appelant (rankOf), une seule boîte par clé ; le second tour peint, chaque demande retrouvant sa décision.
+  const MUTE = new WeakMap(),
+    STUB = Object.freeze({
+      addColorStop() {},
+      setTransform() {}
+    });
+  let MEASURE = null,
+    measured = ''; // la police posée sur MEASURE (partagé par tous les contextes muets)
+  /** Contexte muet du premier tour, un par canevas (les motifs mis en cache par contexte le restent) : toute méthode de dessin ne
+   *  fait rien, measureText mesure vraiment. */
+  function muted(real) {
+    const cv = real?.canvas || null,
+      had = cv && MUTE.get(cv);
+    if (had) return had;
+    MEASURE ||= document.createElement('canvas').getContext('2d');
+    const m = {
+      canvas: cv,
+      font: '10px sans-serif',
+      measureText(t) {
+        if (measured !== this.font) MEASURE.font = measured = this.font;
+        return MEASURE.measureText(t);
+      },
+      createPattern: () => STUB,
+      createLinearGradient: () => STUB,
+      createRadialGradient: () => STUB,
+      createConicGradient: () => STUB,
+      getLineDash: () => []
+    };
+    const proto = window.CanvasRenderingContext2D?.prototype || {};
+    for (const k of Object.getOwnPropertyNames(proto))
+      if (!(k in m) && typeof Object.getOwnPropertyDescriptor(proto, k).value === 'function') m[k] = () => {};
+    if (cv) MUTE.set(cv, m);
+    return m;
+  }
+  /** Joue run(ctx, pl, first) deux fois (first : vrai au tour muet) et rend ce que rend le second tour. rankOf(rank) : la place
+   *  d'un rang dans la liste fermée (plus petit d'abord) ; une réservation directe pl.add(r, rank), un symbole, prend la place de
+   *  son rang, avant tout sans rang. Une clé (req.key, non vide) n'a qu'une boîte : celle de la demande du meilleur rang, les autres
+   *  se taisent ; une demande dont le parent (req.parent, une clé) s'est tu se tait aussi. Au second tour, une demande retrouve sa décision par couche, clé et rang d'apparition ; une demande que le premier tour
+   *  n'a pas vue (son code a pris un autre chemin) prend une place encore libre, sans rien déplacer. */
+  function pass(ctx, run, rankOf) {
+    const seen = [],
+      id = (counts, req) => {
+        const k = `${req.layer || ''}|${req.key || ''}`,
+          n = counts.get(k) || 0;
+        counts.set(k, n + 1);
+        return `${k}#${n}`;
+      },
+      c1 = new Map();
+    run(muted(ctx), {
+      ask(req) {
+        const boxes = (req.boxes || []).filter(Boolean);
+        if (!boxes.length) return null;
+        seen.push({
+          req,
+          boxes,
+          id: id(c1, req),
+          at: seen.length
+        });
+        return boxes[0];
+      },
+      add(r, rank) {
+        seen.push({
+          fixed: r,
+          rank,
+          at: seen.length
+        });
+        return true;
+      },
+      free: () => true,
+      take: () => true
+    }, true);
+    const pl = placer(),
+      rk = s => s.fixed ? s.rank ? rankOf(s.rank) ?? -Infinity : -Infinity : rankOf(s.req.rank) ?? Infinity,
+      won = new Map(), // clé → place de la demande retenue (null : elle s'est tue)
+      done = new Map(); // identifiant de la demande → place prise, ou null
+    for (const s of seen.sort((a, b) => rk(a) - rk(b) || a.at - b.at)) {
+      if (s.fixed) {
+        pl.add(s.fixed);
+        continue;
+      }
+      const {
+        req,
+        boxes
+      } = s;
+      let got = null;
+      if (!(req.key && won.has(req.key)) && !(req.parent && !won.get(req.parent))) {
+        got = boxes.find(r => pl.take(r)) || null;
+        if (!got && req.force) {
+          if (req.force === 'reserve') pl.add(boxes[0]);
+          got = boxes[0];
+        }
+      }
+      if (req.key && !won.has(req.key)) won.set(req.key, got);
+      done.set(s.id, got);
+    }
+    const c2 = new Map(),
+      same = (a, b) => Math.abs(a.x0 - b.x0) < .01 && Math.abs(a.y0 - b.y0) < .01 && Math.abs(a.x1 - b.x1) < .01 && Math.abs(a.y1 -
+        b.y1) < .01;
+    return run(ctx, {
+      ask(req) {
+        const boxes = (req.boxes || []).filter(Boolean);
+        if (!boxes.length) return null;
+        const k = id(c2, req);
+        let got;
+        if (done.has(k)) {
+          const d = done.get(k);
+          got = d && (boxes.find(r => same(r, d)) || boxes.find(r => pl.take(r)));
+        } else got = boxes.find(r => pl.take(r)) || (req.force ? boxes[0] : null);
+        if (!got) return null;
+        req.paint?.(got);
+        return got;
+      },
+      add: () => true,
+      free: r => pl.free(r),
+      take: r => pl.take(r)
+    }, false);
   }
 
   // ---- dessin
@@ -601,7 +722,8 @@
       ask(pl2, {
         layer: 'zoneLabels',
         rank: 'zone',
-        key: t.a.key || t.a.name,
+        // un espace par type, clé, nom et limites (la clé du SIA seule n'identifie pas un espace : LF600 est un SUR et un PRN)
+        key: `zone:${t.a.type}|${t.a.key || ''}|${t.a.name || ''}|${t.a.lower || ''}|${t.a.upper || ''}`,
         anchor: spots[0],
         boxes: spots.map(sp => {
           const x0 = sp.align === 'left' ? sp.x - size.left : sp.x - size.w / 2 - size.left / 2;
@@ -1183,9 +1305,9 @@
         x1: p.x + s * k,
         y1: p.y + s * k
       });
-    /** Réserve la place d'un symbole ou d'une étiquette (placement sans chevauchement). */
-    const reserve = r => {
-      if (place) place.add(r);
+    /** Réserve la place d'un symbole (placement sans chevauchement) ; rank : son rang dans la passe unique (adSymbol, navSymbol). */
+    const reserve = (r, rank) => {
+      if (place) place.add(r, rank);
     };
     if (aerodromes) {
       const ads = (data.aerodromes || []).filter(a => detailed || a.public || a.state).map(a => ({
@@ -1195,7 +1317,7 @@
       const shown = ads.filter(x => adPl.take(sym(x.p, x.a.hardLen > 2300 ? 1.7 : 1.2)));
       shown.forEach(x => {
         drawAerodrome(ctx, x.a, x.p, s, 0);
-        reserve(sym(x.p));
+        reserve(sym(x.p), 'adSymbol');
       });
       if (adLabels) shown.forEach(x => drawAerodrome(ctx, x.a, x.p, s, Object.assign(new Number(font * .85), {
         full: pxPerDegree >= 900,
@@ -1233,7 +1355,7 @@
       }
       [...shown].reverse().forEach(x => {
         drawNavaid(ctx, x.n, x.p, s, 0, detailed ? nearestMag(x.n.lat, x.n.lon) : 0, detailed ? rose : 0);
-        reserve(sym(x.p));
+        reserve(sym(x.p), 'navSymbol');
       });
       if (navLabels) shown.forEach(x => drawNavaid(ctx, x.n, x.p, s, font * .85, 0, 0, true));
       navHits = shown.map(x => ({
@@ -1296,6 +1418,7 @@
     labelSize,
     placer,
     ask,
+    pass,
     drawPoints,
     drawAerodrome,
     drawNavaid,

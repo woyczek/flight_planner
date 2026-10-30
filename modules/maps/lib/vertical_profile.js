@@ -494,11 +494,14 @@
     // V3 maps (ajout, sans effet par défaut) : strictLabels — les espaces où entre la trajectoire prévue passent d'abord,
     // un libellé ne se pose que contre sa bande, et sans place libre il n'est pas posé : compté dans geo.skipped et
     // résumé en « +n » en haut à droite de la coupe (case réservée) ; TOC / TOD réservés avant, reserveBottom px gardés
-    // libres au bas de la coupe (marques posées ensuite par l'appelant), cases prises rendues dans geo.taken
+    // libres au bas de la coupe (marques posées ensuite par l'appelant), le placeur rendu dans geo.placer
     strictLabels = false,
     // V3 maps (ajout, sans effet par défaut) : maxLabels — au plus autant d'espaces étiquetés (les premiers dans l'ordre de tri)
     maxLabels = Infinity,
     reserveBottom = 0,
+    // V3 maps : placer — le placeur de la passe unique de la Carte (SiaAero.pass, liste fermée de la coupe : TOC / TOD, contraintes
+    // des procédures, paliers, espaces, obstacles) ; sans lui, un placeur à soi, les étiquettes posées dans l'ordre du dessin
+    placer = null,
     // V3 maps (ajout, sans effet par défaut) : win { s0, s1 } (mètres depuis le départ) — fenêtre sur l'axe des distances : seule cette
     // portion est dessinée, l'axe vertical se recale sur ce qui y est visible (relief, obstacles, espaces, trajectoire, niveaux des
     // points), les points, TOC / TOD et niveaux hors fenêtre ne sont pas posés ; la géométrie rendue dit la fenêtre (w0, w1)
@@ -612,8 +615,12 @@
     // espaces : bande plancher → plafond (plancher / plafond ASFC suivant le relief)
     const drawnZones = new Map(), // V3 maps : type d'espace → couleur, pour la légende (ce qui est réellement dessiné)
       labels = [],
-      taken = [],
-      free = r => !taken.some(q => r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0);
+      AE = window.SiaAero,
+      pl = placer || AE.placer(),
+      ask = req => AE.ask(pl, {
+        layer: 'profile',
+        ...req
+      });
     // fenêtre : espaces, relief et obstacles sont tracés plus large que la fenêtre (jusqu'au premier échantillon de chaque côté) et
     // rognés au cadre de la coupe
     if (zoomed) {
@@ -726,10 +733,11 @@
           x1: x + 18 * scale,
           y1: y + f / 2
         };
-      if (free(r)) {
-        taken.push(r);
-        ctx.fillText(String(Math.round(o.elev || 0)), x, y);
-      }
+      if (ask({
+          rank: 'obstacle',
+          key: `ob:${o.s}`,
+          boxes: [r]
+        })) ctx.fillText(String(Math.round(o.elev || 0)), x, y);
     }
     if (zoomed) ctx.restore(); // fin du rognage au cadre (espaces, relief, obstacles)
     // libellés de TOUS les espaces traversés (visibles dans la coupe) : dans la bande, au-dessus, en
@@ -748,24 +756,7 @@
       x1: iR,
       y1: iT + f * 1.6
     } : null;
-    if (more) taken.push(more);
-    if (strictLabels && data.plan)
-      for (const [m, name] of [
-          [data.plan.toc, 'TOC'],
-          [data.plan.tod, 'TOD']
-        ]) {
-        if (!m || !inWin(m.s) || (name === 'TOD' && Math.abs(data.plan.tod.s - data.plan.toc.s) < data.total * .005)) continue;
-        const w = ctx.measureText(`${name} ${(m.s / NM).toFixed(0)} NM`).width + 6 * scale,
-          x = Math.min(W - padR - w / 2, Math.max(padL + w / 2, X(m
-            .s))), // fenêtre : le libellé d'un repère près du bord reste dans le cadre
-          y = Y(m.alt);
-        taken.push({
-          x0: x - w / 2,
-          y0: y - 20 * scale,
-          x1: x + w / 2,
-          y1: y - 6 * scale
-        });
-      }
+    if (more) pl.add(more); // la case « +n » : réservée avant tout
     for (const l of labels.sort((a, b) => strictLabels ? (b.entered - a.entered) || (b.w - a.w) : b.w - a.w)) {
       const w = Math.max(ctx.measureText(l.text).width, ctx.measureText(l.sub).width) + 8 * scale,
         hgt = f * (l.sub ? 2.3 : 1.4);
@@ -779,7 +770,7 @@
           x,
           y
         });
-      const ok = r => r.y0 >= iT - 2 && r.y1 <= iB && r.x0 >= iL - 1 && r.x1 <= iR + 1 && free(r);
+      const ok = r => r.y0 >= iT - 2 && r.y1 <= iB && r.x0 >= iL - 1 && r.x1 <= iR + 1;
       const cands = [rect(cx(l.x), Math.max(iT + hgt / 2, (Math.max(l.y0, iT) + l.y1) / 2)), rect(cx(l.x), l.y0 - hgt / 2 - 2 * scale),
         rect(cx(l.x), l.y1 + hgt / 2 + 2 * scale)
       ];
@@ -789,12 +780,17 @@
         for (const x of xs) cands.push(rect(x, y));
       const yT = Math.max(l.y0, iT),
         near = r => r.x1 > l.xa && r.x0 < l.xb && r.y1 >= yT - hgt - 4 * scale && r.y0 <= l.y1 + hgt + 4 * scale;
-      const r = placedZones >= maxLabels ? null : strictLabels ? cands.find(c => ok(c) && near(c)) : cands.find(ok) || cands[0];
+      // sans place : en mode strict il n'est pas posé (« +n »), sinon il l'est quand même à la première place
+      const r = placedZones >= maxLabels ? null : ask({
+        rank: 'zone',
+        key: `zone:${l.text}|${l.sub}|${Math.round(l.xa)}`,
+        boxes: strictLabels ? cands.filter(c => ok(c) && near(c)) : [...cands.filter(ok), cands[0]],
+        force: strictLabels ? false : 'reserve'
+      });
       if (!r) {
         skipped++;
         continue;
       }
-      taken.push(r);
       placedZones++;
       if (r.y1 < l.y0 || r.y0 > l.y1 || r.x < l.xa || r.x > l.xb) { // trait de rappel vers la bande
         const bx = Math.min(l.xb, Math.max(l.xa, r.x)),
@@ -917,13 +913,19 @@
             x1: lx + w / 2,
             y1: y - 6 * scale
           };
+        // premier de la liste de la coupe, toujours écrit : les autres libellés l'évitent
+        ask({
+          rank: 'plan',
+          key: `plan:${name}`,
+          boxes: [r],
+          force: 'reserve'
+        });
         ctx.fillStyle = 'rgba(255,255,255,.85)';
         ctx.fillRect(r.x0, r.y0, w, r.y1 - r.y0);
         ctx.fillStyle = col;
         ctx.font = `bold ${f}px Arial, sans-serif`;
         ctx.fillText(t, lx, (r.y0 + r.y1) / 2);
         ctx.font = `${f}px Arial, sans-serif`;
-        taken.push(r);
       }
       for (const l of plan.levels) {
         let ls = l.s;
@@ -944,8 +946,11 @@
             x1: x + w / 2,
             y1: y + f * .6
           };
-        if (!free(r)) continue;
-        taken.push(r);
+        if (!ask({
+            rank: 'level',
+            key: `lv:${l.alt}@${Math.round(ls)}`,
+            boxes: [r]
+          })) continue;
         ctx.fillStyle = 'rgba(255,255,255,.85)';
         ctx.fillRect(r.x0, r.y0, w, r.y1 - r.y0);
         ctx.fillStyle = col;
@@ -971,7 +976,7 @@
       w1: s0 + dspan,
       zoomed,
       skipped,
-      taken: strictLabels ? taken : undefined,
+      placer: pl, // le placeur de la coupe : les contraintes des procédures s'y posent (procs.js, drawProfileCons)
       drawn: { // V3 maps : ce que la coupe a dessiné (la légende de la feuille le lit, jamais un texte fixe)
         plan: !!data.plan,
         tocTod: tocShown,

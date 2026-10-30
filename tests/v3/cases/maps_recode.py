@@ -2146,25 +2146,28 @@ def d79(c):
 
 
 # ------------------------------------------------------------------------------------------------------ D80
-_CONS_BOXES = """async () => { const S = window.__mp.S, ctx = S.pc.getContext('2d'), got = [], o = ctx.fillText, P = await import('/modules/maps/procs.js');
-  const g = { ...S.geo, taken: [...(S.geo.taken || [])] }, before = g.taken.length;
-  ctx.fillText = function (t, x, y, w) { got.push(String(t)); return o.call(this, t, x, y, w) };
-  P.drawProfileCons(ctx, g); delete ctx.fillText;
-  const mine = g.taken.slice(before), hit = (r, q) => r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0;
-  return { n: mine.length, overlaps: mine.filter((r, i) => g.taken.some((q, j) => j !== before + i && hit(r, q))).length, texts: got } }"""
+# the profile's pass, read at its painting round: every request with its rank and the place it got (null: left out)
+_CONS_BOXES = """async () => { const A = window.SiaAero, o = A.pass, rounds = [];
+  A.pass = function (ctx, run, rankOf) { return o.call(this, ctx, (c, pl, first) => first ? run(c, pl, first) : run(c, new Proxy(pl, { get(t, k) {
+    if (k === 'ask') return req => { const r = t.ask(req); rounds.push({ rank: req.rank, r }); return r };
+    const v = t[k]; return typeof v === 'function' ? v.bind(t) : v } }), first), rankOf) };
+  try { (await import('/modules/maps/profile_view.js')).drawProfile() } finally { A.pass = o }
+  const hit = (r, q) => r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0, put = rounds.filter(x => x.r),
+    cons = put.filter(x => x.rank === 'constraint');
+  return { n: cons.length, ranks: [...new Set(put.map(x => x.rank))], overlaps: cons.filter(x => put.some(y => y !== x && hit(x.r, y.r))).length } }"""
 
 
-@case('D80', 'The profile: the constraints’ texts take a free place or none, never over a space’s label, TOC / TOD or a level', 'D',
+@case('D80', 'The profile: the constraints’ texts take a free place or none, never over TOC / TOD, a level, a space’s label or another text', 'D',
       tags=('maps',), screens=False, designs=('standard',), night=False,
-      rule='usage walk of 30 Oct, point 15 (« PARIS / PARIS 1 / 205 / FL100 / ORE » over each other on the profile): the texts of the procedures’ constraints go through the profile’s collision pass (g.taken: spaces’ labels, TOC / TOD, levels): above right, above left, below, else no text (the step stays)')
+      rule='usage walk of 30 Oct, point 15 (« PARIS / PARIS 1 / 205 / FL100 / ORE » over each other on the profile): the texts of the procedures’ constraints go through the profile’s collision pass (SiaAero.pass, its closed list PROFILE_RANK: TOC / TOD, constraints, levels, spaces, obstacles, airway points): above right, above left, below, else no text (the step stays); a level or a space’s label gives way to a constraint (refactor R-M2 (c))')
 def d80(c):
     f = _proc_flight(planned_at=iso(now() + datetime.timedelta(hours=2)), by='fuel')
     _open_proc(c, f, view='maps?view=-1.5,46.35,-0.9,46.8')
     c.until("() => !!(window.__mp.S.prof && window.__mp.S.geo)", timeout=10000, what='the profile is drawn')
     c.wait(300)
     r = c.js(_CONS_BOXES)
-    c.ok(r['n'] >= 1, f'{r}', 'the constraints write their texts')
-    c.eq(r['overlaps'], 0, 'no constraint text over a space’s label, TOC / TOD, a level or another text', what=f'{r}')
+    c.ok(r['n'] >= 1, f'{r}', 'the constraints write their texts, in the profile’s pass')
+    c.eq(r['overlaps'], 0, 'no constraint text over TOC / TOD, a level, a space’s label or another text', what=f'{r}')
 
 
 
@@ -2250,3 +2253,78 @@ def d84(c):
     c.eq(r['kinds'], ['A34', 'SUR', 'PRN'], 'one airway segment for two frozen copies; the SUR and the PRN of key LF600 both kept', what='many()')
     c.eq([r['painted'], r['none']], [['a', 'b@20', 'f'], True], 'a request takes its first free place, else slides; force paints without room; else it is left out',
          what='requests')
+
+
+# ------------------------------------------------------------------------------------------------------ D85
+# LFBO with its real positions (eAIP and SIA base of the 2026 cycle: thresholds, ILS DMEs, VOR TOU, the SID AMOLO 7A of runway 14R)
+_LFBO = {'icao': 'LFBO', 'name': 'TOULOUSE BLAGNAC', 'lat': 43.635128, 'lon': 1.367856, 'elev': 499, 'magVar': 1.66, 'public': True,
+         'controlled': True, 'hardLen': 3503, 'bearing': 322.9}
+_LFBO_NAV = [{'kind': 'VOR', 'id': 'TOU', 'name': 'TOULOUSE', 'freq': '117.7', 'lat': 43.680833, 'lon': 1.3098, 'dme': True},
+             {'kind': 'DME', 'ils': True, 'id': 'TD', 'name': '', 'freq': '', 'channel': '20Y', 'lat': 43.616972, 'lon': 1.376806},
+             {'kind': 'DME', 'ils': True, 'id': 'TBS', 'name': '', 'freq': '110.7', 'channel': '44X', 'lat': 43.642456, 'lon': 1.349575},
+             {'kind': 'DME', 'ils': True, 'id': 'TBN', 'name': '', 'freq': '', 'channel': '30X', 'lat': 43.621836, 'lon': 1.371458}]
+_LFBO_FILE = {'schema': 1, 'icao': 'LFBO', 'cycle': AERO_CYCLE, 'updated_at': '2026-10-01T00:00:00Z',
+              'runways': [{'id': '14L', 'lat': 43.637364, 'lon': 1.357625, 'elev': 489, 'qfu': 141, 'true': 142.91, 'length': 3025},
+                          {'id': '32R', 'lat': 43.615636, 'lon': 1.380236, 'elev': 497, 'qfu': 321, 'true': 322.91, 'length': 3025},
+                          {'id': '14R', 'lat': 43.644114, 'lon': 1.345933, 'elev': 488, 'qfu': 141, 'true': 142.9, 'length': 3503},
+                          {'id': '32L', 'lat': 43.618964, 'lon': 1.372117, 'elev': 497, 'qfu': 321, 'true': 322.9, 'length': 3503}],
+              'procedures': [{'id': 'LFBO.SID.AMOLO7A.RW14R.NONE', 'icao': 'LFBO', 'kind': 'SID', 'name': 'AMOLO7A', 'runways': ['14R'],
+                              'transition': None, 'status': 'official', 'source': {'kind': 'eaip', 'ref': 'test', 'cycle': AERO_CYCLE, 'at': '2026-10-01'},
+                              'points': [{'seq': 1, 'id': 'RW14R', 'lat': 43.644114, 'lon': 1.345933, 'alt': None, 'phase': 'main'},
+                                         {'seq': 2, 'id': 'BO140', 'lat': 43.574528, 'lon': 1.420639, 'alt': {'type': 'min', 'ft': 4000}, 'phase': 'main'},
+                                         {'seq': 3, 'id': 'BO143', 'lat': 43.701833, 'lon': 1.70425, 'alt': None, 'phase': 'main'},
+                                         {'seq': 4, 'id': 'BO145', 'lat': 43.861083, 'lon': 1.8675, 'alt': None, 'phase': 'main'},
+                                         {'seq': 5, 'id': 'MEDAP', 'lat': 43.921567, 'lon': 2.021647, 'alt': None, 'phase': 'main'},
+                                         {'seq': 6, 'id': 'AMOLO', 'lat': 43.827939, 'lon': 2.57875, 'alt': {'type': 'min', 'ft': 20000}, 'phase': 'main'}]}]}
+# the map's pass, read at its painting round (the profile's left aside): every request with its rank, key, force and place
+_MAP_PASS = """() => { const A = window.SiaAero; if (!A.__d85) { const o = A.pass; A.__d85 = 1;
+  A.pass = function (ctx, run, rankOf) { const got = [];
+    const out = o.call(this, ctx, (c, pl, first) => first ? run(c, pl, first) : run(c, new Proxy(pl, { get(t, k) {
+      if (k === 'ask') return req => { const r = t.ask(req); got.push({ layer: req.layer, rank: req.rank, key: String(req.key || ''), force: req.force || '',
+        r: r && { x0: r.x0, y0: r.y0, x1: r.x1, y1: r.y1 } }); return r };
+      const v = t[k]; return typeof v === 'function' ? v.bind(t) : v } }), first), rankOf);
+    if (!got.some(x => x.layer === 'profile')) window.__mapPass = got;
+    return out } } return true }"""
+
+
+@case('D85', 'LFBO, real positions: the runway numbers at the thresholds, then the threshold beacons, then the procedure, then the route — one pass, by rank', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='refactor R-M2 + R-M5 (c), § 10.33, SPEC § 3: one collision pass over every label of the map, by the closed list (aerodrome, runway numbers, beacons, procedures, route, the rest); at LFBO (14L / 14R, the ILS DMEs TD, TBS, TBN at the thresholds, VOR TOU, SID AMOLO 7A) the four runway numbers are written, the beacons’ boxes next, the procedure’s name then slides where they are not; no two placed labels overlap')
+def d85(c):
+    c.page.add_init_script("(() => { const t = setInterval(() => { if (window.SiaAero && window.SiaAero.pass) { clearInterval(t); (" + _MAP_PASS + ")() } }, 5) })()")
+    f = flight()
+    f['route'] = {'text': 'LFBO AMOLO', 'dep': 'LFBO', 'arr': 'LFPO', 'points': [{'id': 'LFBO', 'lat': 43.635128, 'lon': 1.367856},
+                  {'id': 'AMOLO', 'lat': 43.827939, 'lon': 2.57875}, {'id': 'LFPO', 'lat': 48.723333, 'lon': 2.379444}],
+                  'procedures': {'dep': {'rwy': '14R', 'sid': 'LFBO.SID.AMOLO7A.RW14R.NONE'}, 'arr': {}, 'by': 'fuel', 'at': '2026-10-30T10:00:00Z'}}
+
+    def kind(k, data):
+        return [f'sia/base/fr/{AERO_CYCLE}/{k}.json', {'schema': 2, 'zone': 'fr', 'cycle': AERO_CYCLE, 'kind': k, 'parserVersion': 1, 'data': data,
+                                                       'updated_at': f'{AERO_CYCLE}T00:00:00Z'}, 'reference']
+    docs = fdocs(f) + [['proc/manual/LFBO.json', _LFBO_FILE, 'reference'], ['cache/maps/ui.json', {'preset': 'auto', 'layers': {}}, 'cache'],
+                       ['sia/base/index.json', {'zones': {'fr': {'cycle': AERO_CYCLE, 'prefixes': ['LF'], 'kb': {},
+                                                                 'cells': {'43': [[1, 3]], '48': [[2, 3]]}}}}, 'reference'],
+                       kind('meta', {}), kind('airspaces', []), kind('navaids', _LFBO_NAV),
+                       kind('aerodromes', [_LFBO, {'icao': 'LFPO', 'name': 'PARIS ORLY', 'lat': 48.723333, 'lon': 2.379444, 'elev': 291}]),
+                       kind('points', [{'id': 'AMOLO', 'type': 'ICAO', 'lat': 43.827939, 'lon': 2.57875}])]
+    c.open('maps?view=1.305,43.60,1.395,43.69', docs=docs, flight=False, wait=False)   # zoom 11.6 on 390 px: above runwayZoom
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.route && window.__mp.S.route.path && window.__mp.S.route.path.some(p => p.origin === 'sid'))",
+            timeout=12000, what='the path holds the SID AMOLO 7A')
+    c.until("() => (window.__mapPass || []).filter(x => x.rank === 'runway' && x.r).length >= 4", timeout=12000, what='the four runway numbers placed')
+    c.wait(300)
+    got = c.js('() => window.__mapPass')
+    placed = [x for x in got if x['r']]
+    rw = sorted(x['key'][4:].split('@')[0] for x in placed if x['rank'] == 'runway')
+    c.eq(rw, ['14L', '14R', '32L', '32R'], 'every runway of LFBO has its number at its threshold (rank 2)', what='runway numbers')
+    navs = sorted(x['key'].split('@')[0] for x in placed if x['rank'] == 'navaid')
+    c.eq(navs, ['TBN', 'TBS', 'TD', 'TOU'], 'the threshold DMEs and TOU have their boxes (rank 3), before the procedure and the route', what='beacon boxes')
+    proc = [x for x in placed if x['rank'] == 'procedure']
+    c.ok(bool(proc), f'{proc}', 'the procedure’s name is written')
+    hit = lambda r, q: r['x0'] < q['x1'] and r['x1'] > q['x0'] and r['y0'] < q['y1'] and r['y1'] > q['y0']
+    # what the pass placed (a forced label painted without room aside) never overlaps
+    free = [x for x in placed if x['force'] != 'paint']
+    bad = [(a['key'], b['key']) for i, a in enumerate(free) for b in free[i + 1:] if hit(a['r'], b['r'])]
+    c.eq(bad, [], 'no two placed labels overlap', what='overlaps')
+    over = [x['key'] for x in proc if any(hit(x['r'], y['r']) for y in placed if y['rank'] in ('runway', 'navaid'))]
+    c.eq(over, [], 'the procedure’s name is never over a runway number or a beacon’s box (it slides)', what='procedure name')

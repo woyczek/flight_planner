@@ -12,6 +12,18 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: one collision pass over every label, by the closed priority list (R-M2 + R-M5 c, § 10.33)** (`modules/maps/lib/aero_symbols.js`
+  `SiaAero.pass`, `render.js` `RANK`, `render_route.js`, `render_airspace.js`, `draw.js`, `procs.js`, `choose.js`, `profile_view.js`,
+  `profile.js`, `lib/vertical_profile.js`; SPEC § 3, § 5, § 8.4, § 13.2; DECISIONS; help ×4; noreg D80 adapted, D85). The drawing is
+  played twice — a mute round lists every label, the pass places them by rank (aerodrome name, runway numbers, beacons, procedures,
+  route, then the rest), the painting round writes each at its place — so the order of the calls no longer decides who wins. A
+  beacon, fix or VRP that is a route point is written once; the ETA and the names of TOC / TOD slide along the route before giving
+  up; the vertical profile goes through the same pass with its own list (TOC / TOD, constraints, levels, airspaces, obstacles,
+  airway points). Visible changes: at LFBO « (D) TBS 110.7 » is written and « RW14R » slides beside it; at Paris in VFR the airway
+  fixes and VRP come before the obstacles' heights; in the profile a constraint wins over a level or an airspace's name. Drawing
+  at rest on the real base under 16 ms (worst 13.6 ms, Paris VFR zoom 9, was 10.1). The SIA key does not identify an airspace
+  (`frame/aerodb/DECISIONS.md`, SPEC § 3).
+
 - **Data: pickup with a bad zip name; refusal during a suite update** (`modules/data/`; help ×4; noreg L8, L16, L17, L18, L19): a zip whose name is outside the launcher's rule is shown in the pickup plan as « file name to rename: letters, digits, . _ - » and never run (`pickupSplit`: the real run carries only the ready sources, in `zones` and in `zips`; with none ready there is no question and nothing is called); a 409 with reason `updating` is its own refusal ×4 (« Suite update under way: try again after the launcher restarts ») for every job start (base, sets, chain, pickup, sheets).
 - **Update the suite, « suivi »: the fast-forward goes to the commit the plan read** (`tools/suite_update.py`; Settings
   SPEC 9a-bis; noreg I25) — Sécurisation's review of 513f6fb5b: never the name `origin/<branch>`, which another check's

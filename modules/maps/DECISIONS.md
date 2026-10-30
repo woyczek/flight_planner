@@ -961,20 +961,6 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     line is gone from the map, so the note is the only way left to the setting.
 - **24 Oct 2026 — icons and `hidden` come from the frame** (relay cloud): `localIcon` and its three SVG copies are gone; the buttons use
   `cloud`, `undo` and `move4` of `frame/lib/icons.js`, and the `[hidden]` rule on overlay buttons is the frame's (`primitives.css`).
-Done (R-M2 b, 30 Oct): every place of a label is a request `{ layer, rank, key, anchor, boxes, paint, force }` through one
-function, `SiaAero.ask(pl, req)` (also `MapsRender.kit.ask`): the aerodromes' codes, the navaids' boxes, the obstacles'
-heights, the airspaces' names, the airway fixes, VRP, towns, mission zones and points, the graticule, MORA, the airway boxes and
-track degrees, AAR, NAT, the route's labels, ETA and NM marks, the procedures' labels (`place`), the runway numbers and the
-choose mode's aerodrome code — no `pl.take` / `pl.add` left in the Map (the studio's `drawSites` keeps its own symbol placer).
-Placed at the call, in today's order: the canvas of six real scenes hashes the same before (3e65a0465) and after — LFBO with
-AMOLO 7A, the choose mode at LFBO, the low airways at Toulouse (17 boxes) and Paris (10), VFR close in at Paris (62 VRP, 400
-towns, 40 obstacles) and Toulouse. `many()` keeps one answer per `keyOf`: the SIA's airspace `key` is not unique (74 keys in the
-French base, « LF600 » a SUR and a PRN), so an airspace is keyed by type, key, name, limits and first point (no duplicate in the
-fr, es, de and gb bases) — the first try, the key alone, dropped one airspace at Paris and the hash said so. `drawAirways` keeps
-its own deduplication for the lists that do not come from `many()` (D67 feeds one directly), with the same key. Colours: the
-`--sog-map-*` tokens go to the canvas only (an invalid string is ignored there) and pass `CSS.supports('color', …)` with the hex
-fallback; the day one of them or any theme colour enters HTML (`style="--c:…"`), it goes through `K.cssColor` with a hex fallback
-(Securisation's review of 3e65a0465). Noreg D84.
 
 - **24 Oct 2026 — ETA of a flight that is not started** (relay cloud, fuel lot "flight date"; the only change in maps, `withEta`).
   The ETA labels of the route points were drawn only for a started flight. Fuel now also writes `progress.eta` for a flight that is
@@ -1713,6 +1699,47 @@ towns moved to their paint); each part places its own labels with its own slidin
 identity, which frozen copies defeat, so the airway dedup lives in `drawAirways` instead of at the source.
 Target: every layer declares its labels `{ box(es) along an anchor, priority }`, one pass sorts them by priority and places them
 (slide along the anchor, else hide); `many()` deduplicates by a key per kind.
+Done (R-M2 b, 30 Oct): every place of a label is a request `{ layer, rank, key, anchor, boxes, paint, force }` through one
+function, `SiaAero.ask(pl, req)` (also `MapsRender.kit.ask`): the aerodromes' codes, the navaids' boxes, the obstacles'
+heights, the airspaces' names, the airway fixes, VRP, towns, mission zones and points, the graticule, MORA, the airway boxes and
+track degrees, AAR, NAT, the route's labels, ETA and NM marks, the procedures' labels (`place`), the runway numbers and the
+choose mode's aerodrome code — no `pl.take` / `pl.add` left in the Map (the studio's `drawSites` keeps its own symbol placer).
+Placed at the call, in today's order: the canvas of six real scenes hashes the same before (3e65a0465) and after — LFBO with
+AMOLO 7A, the choose mode at LFBO, the low airways at Toulouse (17 boxes) and Paris (10), VFR close in at Paris (62 VRP, 400
+towns, 40 obstacles) and Toulouse. `many()` keeps one answer per `keyOf`: the SIA's airspace `key` is not unique (74 keys in the
+French base, « LF600 » a SUR and a PRN), so an airspace is keyed by type, key, name, limits and first point (no duplicate in the
+fr, es, de and gb bases) — the first try, the key alone, dropped one airspace at Paris and the hash said so. `drawAirways` keeps
+its own deduplication for the lists that do not come from `many()` (D67 feeds one directly), with the same key. Colours: the
+`--sog-map-*` tokens go to the canvas only (an invalid string is ignored there) and pass `CSS.supports('color', …)` with the hex
+fallback; the day one of them or any theme colour enters HTML (`style="--c:…"`), it goes through `K.cssColor` with a hex fallback
+(Securisation's review of 3e65a0465). Noreg D84.
+Done (R-M2 c, 30 Oct): one collision pass, `SiaAero.pass(ctx, run, rankOf)`. The drawing is played twice: a mute round (a context
+whose methods do nothing and whose `measureText` measures; the layers that only stroke are skipped) lists every request and every
+symbol reservation; they are placed by the closed list (`RANK` of `render.js`: aerodrome symbols, aerodrome name, runway numbers,
+navaid symbols, navaid boxes, procedures, route, then airways, AAR / NAT, fixes, VRP, obstacles, airspaces, MORA, graticule,
+towns, mission zones), one box per key (a navaid, fix or VRP that is a route point is written once, by its own box), a request
+whose `parent` was left out is left out (an airway's true tracks); the painting round replays the drawing, each request finding
+its decision. Why two rounds rather than requests collected in one: the layers paint their shapes and labels interleaved (the
+route over the airway boxes, the dim veil between the map and the screen's traces, the boxes over the route), and that order is
+the picture; the mute round keeps it whole. TOC / TOD left `drawPlanOnMap` for the pass (their names a request of rank route,
+sliding along the trace by `MapsProfile.posAt`), the ETA slides along the point's legs, the profile goes through the same pass
+with `PROFILE_RANK` (TOC / TOD, constraints, levels, airspaces, obstacles, airway points; `geo.taken` is gone, `geo.placer`
+replaces it). An airway segment shorter than its box no longer reserves a place it does not write.
+Winners that changed (each is the list's rule, SPEC § 3): beacons over procedure names and route labels (LFBO: « (D) TBS 110.7 »
+now written, « RW14R » slides left of it); airway fixes and VRP over obstacle heights (Paris VFR: BH4, BH5, BH6, IH1, WH5, PDB
+written, five heights left out, four more towns placed); the route's labels now avoid the beacons' symbols and the aerodromes'
+names; in the profile a constraint wins over a level, an airspace's name and an obstacle (it used to give way to them). Of the
+suite's cases one only was adapted: D80 (the constraint gave way to the spaces, levels and TOC / TOD; now TOC / TOD only come
+before it). New case D85: LFBO with its real positions (thresholds 14L / 14R / 32L / 32R, the ILS DMEs TD, TBS, TBN, VOR TOU,
+SID AMOLO 7A of 14R): the four numbers, the four boxes, the procedure's name beside them, no two placed labels overlapping.
+Measured at rest on the real fr base, old (87748d47a) and new served side by side and drawn alternately (24 drawings per view,
+1280 × 900, complexity +2), median / worst in ms — auto: Paris z9 4.8 / 6.2 → 5.3 / 6.7, z10 4.2 / 5.1 → 4.8 / 5.3, z11 3.8 /
+5.2 → 3.8 / 4.3, Toulouse z9 3.9 / 4.8 → 4.2 / 5.5, z10 3.8 / 4.3 → 4.1 / 7.2, z11 3.2 / 3.8 → 3.5 / 5.0; VFR: Paris z9 8.8 /
+10.1 → 11.3 / 13.6, z10 6.7 / 7.3 → 8.3 / 8.9, z11 5.5 / 6.3 → 6.4 / 6.9, Toulouse z9 6.3 / 6.8 → 7.6 / 7.9, z10 4.7 / 5.0 →
+5.3 / 6.1, z11 4.3 / 4.8 → 4.8 / 5.3 — under the 16 ms budget everywhere; the mute round costs 1 to 3.5 ms (748 requests at Paris
+VFR z9), the placement under 1 ms. The profile: 1.8 → 3.2 ms (Toulouse). The first try shared one measuring canvas between the
+map's and the profile's mute contexts, each remembering its own font: widths came out wrong, and every box the painting round
+looked for was a different one (the beacons vanished); the font set on that canvas is now one variable.
 
 **3. Panning** (`draw.js`, `screen.js`). c9238c050: `moving` / `follow` / `settle` / `request` / `schedule` and `S.moving` — four
 entry points into drawing; `keepFrame` copies the canvas after every full drawing (≈ 1.2 ms on the real base) even when nothing

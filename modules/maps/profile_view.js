@@ -172,26 +172,42 @@ export function drawProfile() {
     dpr
   } = fit(S.pc, S.profBox), raw = S.pc.getContext('2d'), ctx = MapsRender.themed(raw, S.theme);
   raw.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const g = S.geo = MapsProfile.draw(ctx, S.prof, {
-    W,
-    H,
-    scale: W < 500 ? .78 : 1,
-    window: windowNm()
-  });
-  // paliers de contraintes des procédures choisies, sur la trajectoire prévue
-  S.lgCons = !onMission() && drawProfileCons(ctx, g) > 0;
+  // une seule passe de collision, celle de la Carte (SiaAero.pass), avec la liste fermée de la coupe (PROFILE_RANK)
+  const g = S.geo = window.SiaAero.pass(ctx, (c, pl) => paintProfile(c, pl, W, H), r => PROFILE_RANK.get(r));
+  S.lgCons = g.cons > 0;
+  S.lgFixes = g.fixes > 0; // la légende ne dit que ce qui est dessiné
   setData(S.pc, 'axis', g.axisOk ? '1' : '0');
   setData(S.pc, 'marks', String(g.marks));
   // la fenêtre au centième de NM, comme la coupe (deux arrondis différents d'une même fenêtre ne se comparent pas)
   setData(S.pc, 'window', `${(g.w0 / FT_NM).toFixed(2)},${(g.w1 / FT_NM).toFixed(2)}`);
   setData(S.pc, 'scale', `${g.bottom},${g.top}`);
+  setData(S.pc, 'plot', `${Math.round(g.padL)},${Math.round(g.W - g.padR)}`);
+  setData(S.pc, 'ticks', g.ticks.map(m => m.nm).join(','));
+  legendSync();
+  drawCursor();
+  winSync();
+}
+/** La liste fermée des priorités de la coupe (SPEC § 3) : TOC / TOD, contraintes des procédures choisies, paliers, espaces,
+ *  obstacles, points des voies ; la case « +n » des espaces est réservée avant tout. */
+const PROFILE_RANK = new Map(['plan', 'constraint', 'level', 'zone', 'obstacle', 'fix'].map((k, i) => [k, i]));
+/** Un tour de la passe de la coupe (ctx, placeur pl) : la coupe (SiaProfile), les contraintes, les marques NM au bas du cadre, les
+ *  points des voies ; rend la géométrie, avec cons (contraintes dessinées), ticks (marques NM) et fixes (points des voies
+ *  écrits). */
+function paintProfile(ctx, pl, W, H) {
+  const g = MapsProfile.draw(ctx, S.prof, {
+    W,
+    H,
+    scale: W < 500 ? .78 : 1,
+    window: windowNm(),
+    placer: pl
+  });
+  // paliers de contraintes des procédures choisies, sur la trajectoire prévue
+  g.cons = onMission() ? 0 : drawProfileCons(ctx, g);
   // marques NM (celles de la carte) ; dans une fenêtre, des repères au pas rond de ce qui est visible
   const yb = g.H - g.padB,
     inX = x => x >= g.padL - .5 && x <= g.W - g.padR + .5,
-    ticks = (g.zoomed ? nmTicks(g.w0 / FT_NM, g.w1 / FT_NM, g.W - g.padL - g.padR) : S.marks || []).filter(m => inX(MapsProfile.xOf(g, m
-      .nm * FT_NM)));
-  setData(S.pc, 'plot', `${Math.round(g.padL)},${Math.round(g.W - g.padR)}`);
-  setData(S.pc, 'ticks', ticks.map(m => m.nm).join(','));
+    ticks = g.ticks = (g.zoomed ? nmTicks(g.w0 / FT_NM, g.w1 / FT_NM, g.W - g.padL - g.padR) : S.marks || []).filter(m => inX(MapsProfile
+      .xOf(g, m.nm * FT_NM)));
   ctx.save();
   ctx.strokeStyle = '#8e24aa';
   ctx.fillStyle = '#8e24aa';
@@ -231,7 +247,17 @@ export function drawProfile() {
   for (const m of marks) {
     const y = yb - 22,
       w = ctx.measureText(m.id).width / 2 + 2;
-    if (m.x - lastX < 30 || (g.taken || []).some(r => m.x - w < r.x1 && m.x + w > r.x0 && y - 14 < r.y1 && y + 3 > r.y0)) continue;
+    if (m.x - lastX < 30 || !MapsRender.kit.ask(pl, {
+        layer: 'profile',
+        rank: 'fix',
+        key: `fx:${m.id}`,
+        boxes: [{
+          x0: m.x - w,
+          y0: y - 14,
+          x1: m.x + w,
+          y1: y + 3
+        }]
+      })) continue;
     lastX = m.x;
     nFix++;
     ctx.beginPath();
@@ -243,10 +269,8 @@ export function drawProfile() {
     ctx.fillText(m.id, m.x, y - 5);
   }
   ctx.restore();
-  S.lgFixes = nFix > 0; // la légende ne dit que ce qui est dessiné
-  legendSync();
-  drawCursor();
-  winSync();
+  g.fixes = nFix;
+  return g;
 }
 /** « Vol entier » : dans l'en-tête, devant un dessin, tant que la fenêtre est resserrée ; écrit seulement s'il change. */
 export function winSync() {

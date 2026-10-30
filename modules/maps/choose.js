@@ -629,7 +629,9 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
     text: C.icao,
     col: C.input.ad?.state ? '#d6173f' : '#1d4a9e'
   } : null;
+  // rejouée par chaque tour de la passe unique : les lignes touchables et les places repartent de zéro
   L.reserve = pl => {
+    C.hits.rows.length = 0;
     ctx.save();
     if (L.ad) {
       ctx.font = AD_FONT;
@@ -657,6 +659,8 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
       const w = Math.max(...g.rows.map(it => rowWidth(ctx, it, g))) + 2 * PAD + 2;
       const h = g.rows.length * (g.full ? LINE_H : LINE_SM) + 2 * PAD,
         r = place(pl, g.q, w, h, force);
+      g.hidden = false;
+      g.r = null;
       // sous le zoom où deux cartouches se recouvrent, celle d'une famille non surlignée est cachée (sa trace reste)
       if (!r) return g.hidden = true;
       // le cartouche reste dans la carte, hors de la colonne des boutons de droite

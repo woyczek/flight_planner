@@ -359,7 +359,9 @@ giro de la ruta también se marcan en el perfil.
 
 **Ascenso y descenso.** Los rombos violetas marcan el final del ascenso (TOC) y el inicio del descenso (TOD), tanto en
 el mapa como en el perfil. Vienen del cálculo de Combustible; sin él, el mapa los estima con regímenes de ascenso y de
-descenso habituales.
+descenso habituales. Cuando falta sitio, el mapa escribe primero el nombre del aeródromo, luego los números de pista,
+las radioayudas, los procedimientos, la ruta (nombres, horas, TOC / TOD) y por último lo demás; una hora estimada o el
+nombre de TOC / TOD se desliza a lo largo de la ruta antes de callarse (el rombo queda).
 
 **Los mapas de misión.** La lista al pie de las capas (el botón de capas) elige lo que muestra el mapa: el vuelo previsto, o una misión de
 la aerolínea. Para una misión, una segunda lista elige entre sus mapas (vista de conjunto, objetivo, detalle…). Cada
@@ -409,7 +411,7 @@ ciclo, una línea lo dice: los espacios aéreos pueden haber cambiado desde ento
 entonces el perfil habitual del tipo de mapa (detallado para un objetivo o un detalle, simplificado si no) y lo indica.
 Basta con abrir la misión en el estudio y guardarla para que conserve después el suyo.
 
-<!-- fr: 6711a441ef6a -->
+<!-- fr: 78fe0876fa39 -->
 
 <!-- chapter: report -->
 # Informe

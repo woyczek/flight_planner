@@ -376,7 +376,9 @@ Die Wegpunkte der Route sind auch auf dem Profil markiert.
 
 **Steig- und Sinkflug.** Die violetten Rauten markieren das Ende des Steigflugs (TOC) und den Beginn des Sinkflugs
 (TOD), auf der Karte wie im Profil. Sie stammen aus der Berechnung in Kraftstoff; ohne sie schätzt die Karte sie mit
-üblichen Steig- und Sinkraten.
+üblichen Steig- und Sinkraten. Wenn der Platz knapp ist, schreibt die Karte zuerst den Namen des Flugplatzes, dann die
+Pistennummern, die Funkfeuer, die Verfahren, die Route (Namen, Zeiten, TOC / TOD), zuletzt den Rest; eine geschätzte
+Zeit oder der Name von TOC / TOD gleitet entlang der Route, bevor sie entfällt (die Raute bleibt).
 
 **Die Missionskarten.** Die Liste unten in den Ebenen (die Ebenen-Schaltfläche) wählt, was die Karte zeigt: den geplanten Flug oder eine Mission der
 Fluggesellschaft. Für eine Mission wählt eine zweite Liste unter ihren Karten (Übersicht, Ziel, Detail…). Jede Karte
@@ -428,7 +430,7 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: 6711a441ef6a -->
+<!-- fr: 78fe0876fa39 -->
 
 <!-- chapter: report -->
 # Bericht

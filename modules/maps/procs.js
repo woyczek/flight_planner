@@ -300,8 +300,10 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
     pts,
     near,
     labels: [],
-    /** Réserve dans le placeur pl : les noms des procédures, puis (de près) les noms de points et les contraintes. */
+    /** Réserve dans le placeur pl : les noms des procédures, puis (de près) les noms de points et les contraintes ; rejouée par
+     *  chaque tour de la passe unique, elle repart d'une liste vide. */
     reserve(pl) {
+      L.labels.length = 0;
       ctx.save();
       for (const n of names) {
         ctx.font = '700 12px Arial,sans-serif';
@@ -477,30 +479,36 @@ export function drawProfileCons(ctx, g) {
       ctx.arc(x, y0, 2.5, 0, Math.PI * 2);
       ctx.fill();
     }
-    // le texte quand il reste 40 px depuis le précédent, à une place libre de la coupe (g.taken : libellés des espaces, TOC / TOD,
-    // paliers) : au-dessus à droite, à gauche, puis dessous ; sans place, le palier seul (parcours du 30/10, point 15)
+    // le texte quand il reste 40 px depuis le précédent, à une place libre de la coupe (g.placer, la passe de la coupe : après
+    // TOC / TOD, avant les paliers, les espaces et les obstacles) : au-dessus à droite, à gauche, puis dessous ; sans place, le
+    // palier seul (parcours du 30/10, point 15)
     if (x - lastX >= 40) {
       const parts = altParts(a),
         w = parts.reduce((s, c) => (ctx.font = '600 10px Arial,sans-serif', s + ctx.measureText(c.t).width), 0),
         at = v => Math.min(g.H - g.padB - 8, Math.max(g.padT + 8, v)),
-        taken = g.taken ||= [],
         box = ([bx, by]) => ({
           x0: bx - 1,
           y0: by - 7,
           x1: bx + w + 1,
-          y1: by + 7
+          y1: by + 7,
+          bx,
+          by
         }),
-        free = r => r.x0 >= g.padL && r.x1 <= g.W - g.padR && !taken.some(q => r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0),
-        spot = [
-          [x + 8, at(y1 - 12)],
-          [x - 8 - w, at(y1 - 12)],
-          [x + 8, at(y0 + 12)],
-          [x - 8 - w, at(y0 + 12)]
-        ].find(q => free(box(q)));
+        spot = MapsRender.kit.ask(g.placer, {
+          layer: 'profile',
+          rank: 'constraint',
+          key: `cons:${p.id || ''}@${p.nm}`,
+          boxes: [
+            [x + 8, at(y1 - 12)],
+            [x - 8 - w, at(y1 - 12)],
+            [x + 8, at(y0 + 12)],
+            [x - 8 - w, at(y0 + 12)]
+          ].map(box).filter(r => r.x0 >= g.padL && r.x1 <= g.W - g.padR)
+        });
       if (!spot) continue;
       lastX = x;
-      taken.push(box(spot));
-      let [tx, y] = spot;
+      let tx = spot.bx,
+        y = spot.by;
       ctx.textBaseline = 'middle';
       ctx.textAlign = 'left';
       for (const c of parts) {

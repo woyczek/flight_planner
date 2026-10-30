@@ -1005,7 +1005,7 @@
       A().ask(pl, {
         layer: 'missionZones',
         rank: 'mission',
-        key: z.id || text,
+        key: `mz:${z.id || text}`,
         anchor: top,
         boxes: [{
           x0: top.x - w / 2,
@@ -1048,8 +1048,8 @@
       const q = toC(p.lat, p.lon);
       A().ask(pl, {
         layer: 'missionPoints',
-        rank: 'mission',
-        key: p.id || p.name,
+        rank: 'missionPoint',
+        key: `mp:${p.id || p.name}`,
         anchor: q,
         force: 'reserve',
         boxes: [{
@@ -1179,7 +1179,7 @@
       A().ask(pl, {
         layer: 'gridMora',
         rank: 'mora',
-        key: `${m.lat},${m.lon}`,
+        key: `mora:${m.lat},${m.lon}`,
         anchor: q,
         force: 'reserve',
         boxes: (pl ? [
@@ -1312,6 +1312,32 @@
 
   /** Surcouche complète (drawFrame) ; le thème du dessin (T) est remis à null en sortie, même sur une erreur : rien ne reste
    *  d'un dessin à l'autre (§ 10.29 e). */
+  /** La liste fermée des priorités de la passe unique (SPEC § 3, lot c de la refonte R-M2 ; arbitrage de l'utilisateur du 30/10 :
+   *  les pistes avant les balises) : nom du terrain, numéros de piste au seuil, boîtes des balises, cartouches des procédures (dans
+   *  l'ordre où l'écran les demande : surlignée, choisies, famille touchée, autres), points de la route (noms, niveaux, heures,
+   *  marques NM, TOC / TOD ; sur une carte de mission, ses points) et cartouches des voies que suit le chemin, puis le reste : voies
+   *  hors du chemin et leurs routes vraies, AAR et NAT, fixes, points de report, obstacles, espaces, MORA, canevas, villes, mission.
+   *  Les symboles se réservent à leur rang (pl.add) : ceux des terrains avant tout, ceux des balises après les numéros de piste (un
+   *  numéro au seuil passe avant le symbole d'un DME posé au seuil). */
+  const RANK = new Map([
+    ['adSymbol'],
+    ['aerodrome'],
+    ['runway'],
+    ['navSymbol'],
+    ['navaid'],
+    ['procedure'],
+    ['route', 'missionPoint'],
+    ['airway', 'track'],
+    ['fix'],
+    ['vrp'],
+    ['obstacle'],
+    ['zone'],
+    ['mora'],
+    ['grid'],
+    ['town'],
+    ['mission']
+  ].flatMap((g, i) => g.map(k => [k, i])));
+
   function draw(ctx, opts = {}) {
     try {
       return drawFrame(ctx, opts);
@@ -1337,7 +1363,7 @@
     hideVrp = null, // identifiants de VRP que l'écran dessine lui-même (terrain survolé ou épinglé) : pas deux fois
     lines = null, // suites de points que la route trace (null : toute la route), voir drawRoute
     cov = null, // couche « Procédures » : cov(icao) → niveau de couverture ('green' | 'orange' | 'red') ou rien, voir coverPins
-    reserve = null, // reserve(placeur) : l'écran réserve ses libellés (procédures choisies) juste après ceux de la route
+    reserve = null, // reserve(placeur) : l'écran demande la place de ses libellés (procédures choisies), à leur rang dans la passe
     // chemin volé (route et procédures, points nommés dans l'ordre) : ses tronçons portent les cartouches des voies qu'ils
     // suivent par-dessus leur trait ; sans lui, la route
     legs = null,
@@ -1349,23 +1375,21 @@
     // de nom du § 10.27 ; le seuil runwayZoom de la compagnie, V3 § 10.30) ; null : le code seul
     adName = null,
     // runways(ctx, pl) : l'écran peint les vecteurs et numéros des pistes juste après les terrains, dans la même passe de collision ;
-    // runwayLabels(ctx, pl) : il réserve d'abord la place de leurs numéros, avant celle des terrains et des balises
+    // runwayLabels(ctx, pl) : il demande la place de leurs numéros (rang runway : après les noms des terrains, avant les balises)
     runways = null,
     runwayLabels = null,
     // dim (0 à 1) : la part dont les couches de la Carte, de la route comprise, sont éteintes avant ce que l'écran peint au niveau de
     // la route (mode « choisir sur la carte », V3 § 10.23) ; 0 : aucune
-    dim = 0
+    dim = 0,
+    // plan : [{ name, q, w, along(d) }] — TOC et TOD de la coupe à leur place sur la carte ; along(d) : le point de la trace à d px
+    // (signé) de q, null hors de la trace ; leur nom est une demande de la passe (rang route), l'écran peint losange et nom
+    plan = null
   }) {
     if (!A()) throw new Error('maps: SiaAero missing');
     // le thème ne vit que le temps du dessin (§ 10.29 e) : posé ici, remis à null en sortie (draw) ; les parties le reçoivent
     // dans env, gelé, avec le placeur et la palette
     T = theme || tokens();
-    const pl = A().placer(),
-      env = Object.freeze({
-        theme: T,
-        placer: pl,
-        pal: palette(T.dark)
-      }),
+    const pal = palette(T.dark),
       PA = window.MapsRender.parts.airspace,
       PR = window.MapsRender.parts.route,
       c = {
@@ -1381,197 +1405,220 @@
     profile = migrated(profile); // l'ancien airwayLabels lu comme awLabels (§ 10.29 g)
     if (!mission) profile = atZoom(profile, zv);
     const shown = mission ? data : byZoom(data, profile, zv, tier);
-    // les couches de la carte dans l'ordre de dessin de la SPEC § 3 (§ 10.29 d) : chacune { id, reserve(), paint(ctx) } ; toutes
-    // les réservations dans le placeur d'abord, dans l'ordre de la liste (libellés de la route, de l'écran, points de mission,
-    // villes : les deux premiers n'ont rien à peindre), puis tous les dessins
-    let labels = [],
-      towns = [],
-      ends = new Map(),
-      pts = {},
-      vrpHits = [],
-      zoneLabels = [];
-    // une seule passe de collision (le placeur pl), dans l'ordre des priorités (V3 § 10.30) : les libellés de l'écran (procédure
-    // surlignée, puis choisies), les tronçons de la route, les cartouches des voies, les terrains, les balises et fixes, le reste
-    // (points de report, espaces, villes) ; une étiquette sans place glisse le long de son ancre, sinon elle se cache
-    const layers = [{
-      id: 'screenLabels', // l'écran réserve ses libellés d'abord (procédure surlignée, puis choisies)
-      reserve: () => reserve && reserve(pl)
-    }, {
-      id: 'routeLabels',
-      reserve: () => labels = PR.routeLabels(route, toC, scale, pl, mk, level, env)
-    }, {
-      id: 'zoneShapes',
-      paint: c => PA.drawZones(c, shown.airspaces || [], toC, W, H, scale, pl, profile, 'shapes')
-    }, {
-      id: 'airways',
-      paint: c => ends = PA.drawAirways(c, shown.airways, toC, scale, bbox, pl, profile, mission ? 'near' : tier, PR.routeLegs(legs ||
-        route), env)
-    }, {
-      id: 'points',
-      paint: c => {
-        // les numéros de piste d'abord (« a minima le numéro de piste au seuil ») : une balise qui tomberait dessus cède ou glisse
-        runwayLabels && runwayLabels(c, pl);
-        // points des voies dessinées (sauf de loin) : les balises avec leur symbole (ajoutées aux balises montrées), les
-        // autres en triangle
-        const fixes = [],
-          endNavs = [];
-        if (ends.size && el(profile, 'fixes') !== false) {
-          const byId = new Map((data.navaids || []).map(n => [n.id, n]));
-          for (const e of ends.values()) {
-            const n = byId.get(e.id);
-            if (n && Math.abs(n.lat - e.lat) < .05 && Math.abs(n.lon - e.lon) < .05) endNavs.push(n);
-            else fixes.push(e);
-          }
+    // une seule passe de collision (SiaAero.pass, SPEC § 3) : les couches sont jouées deux fois, un tour muet qui recense les
+    // étiquettes, puis le dessin, chaque étiquette à la place que la liste fermée des priorités (RANK) lui a donnée
+    return A().pass(ctx, layered, r => RANK.get(r));
+
+    /** Les couches de la carte dans l'ordre de dessin de la SPEC § 3 (§ 10.29 d), sur le placeur pl de la passe : chacune { id,
+     *  reserve(), paint(ctx), bare } ; les demandes des reserve() d'abord, puis les dessins (l'ordre d'appel ne décide plus des
+     *  places). Au tour muet (first), les couches bare (aucune étiquette, que des traits) ne sont pas jouées. */
+    function layered(ctx, pl, first) {
+      const env = Object.freeze({
+        theme: T,
+        placer: pl,
+        pal
+      });
+      let labels = [],
+        towns = [],
+        ends = new Map(),
+        pts = {},
+        vrpHits = [],
+        zoneLabels = [],
+        planned = [];
+      const layers = [{
+        id: 'screenLabels', // les libellés de l'écran (procédure surlignée, puis choisies ; en choix, le code du terrain)
+        reserve: () => reserve && reserve(pl)
+      }, {
+        id: 'routeLabels',
+        reserve: () => {
+          labels = PR.routeLabels(route, toC, scale, pl, mk, level, env);
+          planned = PR.planLabels(plan, pl);
         }
-        // balises montrées : celles du profil (et de la densité), plus celles qui sont des bouts de voies
-        const navAll = on(profile, 'navaids'),
-          // nom long d'une balise : trop petit (7 px) hors de la vue rapprochée, l'identifiant et la fréquence suffisent
-          navShown = [...new Set([...(navAll ? shown.navaids || [] : []), ...endNavs])].map(n => mission || tier === 'near' ? n : {
-            ...n,
-            name: ''
-          });
-        pts = drawPoints(c, {
+      }, {
+        id: 'zoneShapes',
+        bare: true,
+        paint: c => PA.drawZones(c, shown.airspaces || [], toC, W, H, scale, pl, profile, 'shapes')
+      }, {
+        id: 'airways',
+        paint: c => ends = PA.drawAirways(c, shown.airways, toC, scale, bbox, pl, profile, mission ? 'near' : tier, PR.routeLegs(
+          legs ||
+          route), env)
+      }, {
+        id: 'points',
+        paint: c => {
+          // les numéros de piste (« a minima le numéro de piste au seuil », rang runway) : une balise qui tomberait dessus cède ou glisse
+          runwayLabels && runwayLabels(c, pl);
+          // points des voies dessinées (sauf de loin) : les balises avec leur symbole (ajoutées aux balises montrées), les
+          // autres en triangle
+          const fixes = [],
+            endNavs = [];
+          if (ends.size && el(profile, 'fixes') !== false) {
+            const byId = new Map((data.navaids || []).map(n => [n.id, n]));
+            for (const e of ends.values()) {
+              const n = byId.get(e.id);
+              if (n && Math.abs(n.lat - e.lat) < .05 && Math.abs(n.lon - e.lon) < .05) endNavs.push(n);
+              else fixes.push(e);
+            }
+          }
+          // balises montrées : celles du profil (et de la densité), plus celles qui sont des bouts de voies
+          const navAll = on(profile, 'navaids'),
+            // nom long d'une balise : trop petit (7 px) hors de la vue rapprochée, l'identifiant et la fréquence suffisent
+            navShown = [...new Set([...(navAll ? shown.navaids || [] : []), ...endNavs])].map(n => mission || tier === 'near' ? n :
+            {
+              ...n,
+              name: ''
+            });
+          pts = drawPoints(c, {
+            ...shown,
+            aerodromes: adName ? (shown.aerodromes || []).map(a => a.icao ? {
+              ...a,
+              label: adName(a) || a.icao
+            } : a) : shown.aerodromes,
+            navaids: navShown
+          }, toC, W, H, scale, bbox, pl, navShown.length && !navAll ? {
+            ...profile,
+            elements: {
+              ...profile.elements,
+              navaids: true
+            }
+          } : profile, cov);
+          drawFixes(c, fixes, toC, W, H, scale, pl);
+          // les pistes des terrains (vecteurs de seuil et numéros), juste après eux : leurs numéros prennent leur place avant les
+          // balises, les points de report et le reste
+          runways && runways(c, pl);
+        }
+      }, {
+        // axes de ravitaillement et tracks NAT (mode CAM, cartes de mission qui les demandent)
+        id: 'aar',
+        paint: c => on(profile, 'aarTracks') && PA.drawAar(c, data.aar, toC, scale, bbox, pl, env)
+      }, {
+        id: 'nat',
+        paint: c => on(profile, 'natTracks') && PA.drawNat(c, data.nat, toC, scale, bbox, pl, env)
+      }, {
+        id: 'airwayNames', // étiquettes des voies posées après leurs points
+        paint: () => {
+          for (const f of ends.later || []) f();
+        }
+      }, {
+        id: 'vrp',
+        paint: c => vrpHits = drawVrp(c, hideVrp?.size ? {
           ...shown,
-          aerodromes: adName ? (shown.aerodromes || []).map(a => a.icao ? {
-            ...a,
-            label: adName(a) || a.icao
-          } : a) : shown.aerodromes,
-          navaids: navShown
-        }, toC, W, H, scale, bbox, pl, navShown.length && !navAll ? {
-          ...profile,
-          elements: {
-            ...profile.elements,
-            navaids: true
-          }
-        } : profile, cov);
-        drawFixes(c, fixes, toC, W, H, scale, pl);
-        // les pistes des terrains (vecteurs de seuil et numéros), juste après eux : leurs numéros prennent leur place avant les
-        // balises, les points de report et le reste
-        runways && runways(c, pl);
-      }
-    }, {
-      // axes de ravitaillement et tracks NAT (mode CAM, cartes de mission qui les demandent)
-      id: 'aar',
-      paint: c => on(profile, 'aarTracks') && PA.drawAar(c, data.aar, toC, scale, bbox, pl, env)
-    }, {
-      id: 'nat',
-      paint: c => on(profile, 'natTracks') && PA.drawNat(c, data.nat, toC, scale, bbox, pl, env)
-    }, {
-      id: 'airwayNames', // étiquettes des voies posées après leurs points
-      paint: () => {
-        for (const f of ends.later || []) f();
-      }
-    }, {
-      id: 'vrp',
-      paint: c => vrpHits = drawVrp(c, hideVrp?.size ? {
-        ...shown,
-        vrp: (shown.vrp || []).filter(v => !hideVrp.has(v.id))
-      } : shown, toC, W, H, scale, bbox, pl, profile)
-    }, {
-      id: 'zoneLabels',
-      paint: c => zoneLabels = PA.drawZones(c, shown.airspaces || [], toC, W, H, scale, pl, profile, 'labels')
-    }, {
-      id: 'gridMora',
-      paint: c => drawGridMora(c, shown.moraCells, toC, bbox, W, H, scale, pl, profile)
-    }, {
-      id: 'missionZones',
-      paint: c => drawMissionZones(c, mission?.zones, toC, scale, pl, profile)
-    }, {
-      id: 'missionPoints',
-      reserve: () => reservePoints(pl, mission?.points, toC, scale, profile),
-      paint: c => drawMissionPoints(c, mission?.points, toC, W, H, scale, profile)
-    }, {
-      id: 'cities', // les villes après les terrains, balises et points de report : leur place n'est plus réservée d'avance
-      paint: c => {
-        towns = cityList(shown.cities, profile, toC, bbox, scale, pl);
-        drawCities(c, towns, profile, scale, W, H);
-      }
-    }, {
-      id: 'route',
-      paint: c => PR.drawRoute(c, route, toC, scale, labels, {
-        marks: mk,
-        lines
-      }, env)
-    }, {
-      // couches de la Carte éteintes : la part dim de ce qui est déjà peint s'efface (destination-out), le fond MapLibre l'est par la
-      // classe de la boîte ; ce que l'écran peint ensuite est entier
-      id: 'dim',
-      paint: c => {
-        if (!(dim > 0)) return;
-        c.save();
-        c.globalCompositeOperation = 'destination-out';
-        c.globalAlpha = Math.min(1, dim);
-        c.fillStyle = '#000';
-        c.fillRect(0, 0, W, H);
-        c.restore();
-      }
-    }, {
-      id: 'screenTraces', // l'écran peint ses tracés au niveau de la route (procédures choisies)
-      paint: c => overRoute && overRoute(c, pl) // le placeur : les numéros de piste de l'écran cèdent aux balises déjà posées
-    }, {
-      // cartouches des voies que suit le chemin (route et procédures) : par-dessus son trait (le mode Édition de l'écran
-      // dessine ensuite ses poignées)
-      id: 'airwayOver',
-      paint: () => {
-        for (const f of ends.over || []) f();
-      }
-    }, {
-      id: 'screenTop', // ce que l'écran peint en dernier (noms et contraintes des procédures)
-      paint: c => top && top(c)
-    }];
-    // couches estompées (mode « choisir sur la carte », V3 § 10.30) : les cartouches des voies passent sous le voile avec le reste de
-    // la Carte ; ce que l'écran dessine (traces, vecteurs, cartouches des procédures) reste au-dessus de toutes les étiquettes
-    if (dim > 0) layers.splice(layers.findIndex(l => l.id === 'dim'), 0, ...layers.splice(layers.findIndex(l => l.id === 'airwayOver'),
-      1));
-    for (const l of layers) l.reserve?.();
-    for (const l of layers) l.paint?.(ctx);
-    // cadres posés, pour les infobulles et les libellés ajoutés par l'écran (TOC, TOD) : cartouches des voies, libellés
-    // d'espaces, libellés de la route
-    return {
-      // zoom effectif comparé aux seuils et ce que la vue en garde (mesures, page d'essai : window.__maps.mod)
-      zoom: {
-        shifted: zs,
-        effective: zv,
-        tier,
-        kept: mission ? null : {
-          airspaces: shown.airspaces?.length || 0,
-          // par famille de seuil (asTma, asCtr, asP, asR, asD, …) : ce que les curseurs gardent, pour les mesures
-          byKey: (shown.airspaces || []).reduce((n, a) => {
-            const k = zoneKey(a.type);
-            n[k] = (n[k] || 0) + 1;
-            return n;
-          }, {}),
-          aerodromes: shown.aerodromes?.length || 0,
-          navaids: shown.navaids?.length || 0,
-          vrp: shown.vrp?.length || 0,
-          obstacles: shown.obstacles?.length || 0,
-          moraCells: shown.moraCells?.length || 0,
-          cities: shown.cities?.length || 0
+          vrp: (shown.vrp || []).filter(v => !hideVrp.has(v.id))
+        } : shown, toC, W, H, scale, bbox, pl, profile)
+      }, {
+        id: 'zoneLabels',
+        paint: c => zoneLabels = PA.drawZones(c, shown.airspaces || [], toC, W, H, scale, pl, profile, 'labels')
+      }, {
+        id: 'gridMora',
+        paint: c => drawGridMora(c, shown.moraCells, toC, bbox, W, H, scale, pl, profile)
+      }, {
+        id: 'missionZones',
+        paint: c => drawMissionZones(c, mission?.zones, toC, scale, pl, profile)
+      }, {
+        id: 'missionPoints',
+        reserve: () => reservePoints(pl, mission?.points, toC, scale, profile),
+        bare: true, // le dessin seul : la place de leurs noms est demandée par reserve
+        paint: c => drawMissionPoints(c, mission?.points, toC, W, H, scale, profile)
+      }, {
+        id: 'cities', // les villes après les terrains, balises et points de report : leur place n'est plus réservée d'avance
+        paint: c => {
+          towns = cityList(shown.cities, profile, toC, bbox, scale, pl);
+          if (!first) drawCities(c, towns, profile, scale, W, H);
         }
-      },
-      airways: ends.hits || [],
-      // les listes montrées (espaces, voies, terrains) : le dessin léger d'un geste les reprend en traits seuls (light.js)
-      light: mission ? null : {
-        airspaces: shown.airspaces || [],
-        airways: shown.airways || [],
-        aerodromes: shown.aerodromes || []
-      },
-      // terrains dessinés dans le cadre, à leur place à l'écran (survol et toucher d'un terrain : points de report VFR)
-      // balises dessinées et celles qui leur sont rattachées faute de place (même endroit) : infobulle
-      navaids: pts.navs,
-      vrps: vrpHits || [],
-      aerodromes: (pts.ads || []).map(a => ({
-        a,
-        ...toC(+a.lat, +a.lon)
-      })).filter(h => h.x > -10 && h.y > -10 && h.x < W + 10 && h.y < H + 10),
-      zoneLabels,
-      routeLabels: labels.map(l => ({
-        x0: l.align === 'center' ? l.x - l.text.length * l.size * .3 : l.x,
-        x1: l.align === 'center' ? l.x + l.text.length * l.size * .3 : l.x + l.text.length * l.size * .6,
-        y0: l.y - l.size * .6,
-        y1: l.y + l.size * .6
-      }))
-    };
+      }, {
+        id: 'route',
+        bare: true,
+        paint: c => PR.drawRoute(c, route, toC, scale, labels, {
+          marks: mk,
+          lines
+        }, env)
+      }, {
+        // couches de la Carte éteintes : la part dim de ce qui est déjà peint s'efface (destination-out), le fond MapLibre l'est par la
+        // classe de la boîte ; ce que l'écran peint ensuite est entier
+        id: 'dim',
+        bare: true,
+        paint: c => {
+          if (!(dim > 0)) return;
+          c.save();
+          c.globalCompositeOperation = 'destination-out';
+          c.globalAlpha = Math.min(1, dim);
+          c.fillStyle = '#000';
+          c.fillRect(0, 0, W, H);
+          c.restore();
+        }
+      }, {
+        id: 'screenTraces', // l'écran peint ses tracés au niveau de la route (procédures choisies)
+        paint: c => overRoute && overRoute(c, pl) // le placeur : les numéros de piste de l'écran cèdent aux balises déjà posées
+      }, {
+        // cartouches des voies que suit le chemin (route et procédures) : par-dessus son trait (le mode Édition de l'écran
+        // dessine ensuite ses poignées)
+        id: 'airwayOver',
+        bare: true,
+        paint: () => {
+          for (const f of ends.over || []) f();
+        }
+      }, {
+        id: 'screenTop', // ce que l'écran peint en dernier (noms et contraintes des procédures)
+        bare: true,
+        paint: c => top && top(c)
+      }];
+      // couches estompées (mode « choisir sur la carte », V3 § 10.30) : les cartouches des voies passent sous le voile avec le reste de
+      // la Carte ; ce que l'écran dessine (traces, vecteurs, cartouches des procédures) reste au-dessus de toutes les étiquettes
+      if (dim > 0) layers.splice(layers.findIndex(l => l.id === 'dim'), 0, ...layers.splice(layers.findIndex(l => l.id === 'airwayOver'),
+        1));
+      for (const l of layers) l.reserve?.();
+      for (const l of layers)
+        if (!(first && l.bare)) l.paint?.(ctx);
+      // cadres posés, pour les infobulles et les libellés ajoutés par l'écran (TOC, TOD) : cartouches des voies, libellés
+      // d'espaces, libellés de la route
+      return {
+        // zoom effectif comparé aux seuils et ce que la vue en garde (mesures, page d'essai : window.__maps.mod)
+        zoom: {
+          shifted: zs,
+          effective: zv,
+          tier,
+          kept: mission ? null : {
+            airspaces: shown.airspaces?.length || 0,
+            // par famille de seuil (asTma, asCtr, asP, asR, asD, …) : ce que les curseurs gardent, pour les mesures
+            byKey: (shown.airspaces || []).reduce((n, a) => {
+              const k = zoneKey(a.type);
+              n[k] = (n[k] || 0) + 1;
+              return n;
+            }, {}),
+            aerodromes: shown.aerodromes?.length || 0,
+            navaids: shown.navaids?.length || 0,
+            vrp: shown.vrp?.length || 0,
+            obstacles: shown.obstacles?.length || 0,
+            moraCells: shown.moraCells?.length || 0,
+            cities: shown.cities?.length || 0
+          }
+        },
+        airways: ends.hits || [],
+        // les listes montrées (espaces, voies, terrains) : le dessin léger d'un geste les reprend en traits seuls (light.js)
+        light: mission ? null : {
+          airspaces: shown.airspaces || [],
+          airways: shown.airways || [],
+          aerodromes: shown.aerodromes || []
+        },
+        // terrains dessinés dans le cadre, à leur place à l'écran (survol et toucher d'un terrain : points de report VFR)
+        // balises dessinées et celles qui leur sont rattachées faute de place (même endroit) : infobulle
+        navaids: pts.navs,
+        vrps: vrpHits || [],
+        aerodromes: (pts.ads || []).map(a => ({
+          a,
+          ...toC(+a.lat, +a.lon)
+        })).filter(h => h.x > -10 && h.y > -10 && h.x < W + 10 && h.y < H + 10),
+        zoneLabels,
+        routeLabels: labels.map(l => ({
+          x0: l.align === 'center' ? l.x - l.text.length * l.size * .3 : l.x,
+          x1: l.align === 'center' ? l.x + l.text.length * l.size * .3 : l.x + l.text.length * l.size * .6,
+          y0: l.y - l.size * .6,
+          y1: l.y + l.size * .6
+        })),
+        // TOC et TOD : la place de leur nom sur la carte (null : sans place, il se tait ; le losange reste), l'écran les peint
+        plan: planned
+      };
+    }
   }
 
   window.MapsRender = {

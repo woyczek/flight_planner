@@ -114,7 +114,9 @@ the profile.
 
 **Climb and descent.** The purple diamonds mark the top of climb (TOC) and the top of descent (TOD), on the map as on
 the profile. They come from the Fuel calculation; without it, the map estimates them with common rates of climb and
-descent.
+descent. When room is short, the map writes the aerodrome's name first, then the runway numbers, the beacons, the
+procedures, the route (names, times, TOC / TOD), then the rest; an estimated time or the name of TOC / TOD slides
+along the route before it gives up (the diamond stays).
 
 **Mission maps.** The list at the bottom of the layers (the layers button) chooses what the map shows: the planned flight, or a mission of the
 airline. For a mission, a second list chooses among its maps (overview, target, detail…). Each map is redrawn as in
@@ -163,4 +165,4 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: 6711a441ef6a -->
+<!-- fr: 78fe0876fa39 -->

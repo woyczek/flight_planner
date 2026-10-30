@@ -505,6 +505,8 @@ function draw() {
     runwayLabels: rwys.length ? (c, pl) => reserveRunways(c, rwys, pl) : null,
     adName: !mission && !pick && zReal >= S.runwayZoom ? a => adTitle(a, a.icao) : null,
     top: pick ? c => pick.top(c) : procs ? c => drawProcLabels(c, procs) : null,
+    // TOC et TOD : leurs noms dans la passe (rang route), glissés le long de la trace ; pas pendant le choix sur la carte
+    plan: pick ? null : planMarks(ctx, toC),
     mission: mission && S.mission ? {
       points: S.mission.points,
       zones: S.mission.zones
@@ -525,8 +527,7 @@ function draw() {
   S.vrpHits = got0.vrps || [];
   // mode choix : rien par-dessus les procédures à choisir (ni dégagement, ni TOC / TOD, ni points de report, ni vents, ni position)
   if (altn && !pick) drawAltn(ctx, toC, altn, true);
-  if (!pick) drawPlanOnMap(ctx, toC, [...(got0.routeLabels || []), ...(procs?.labels || []).map(l => l
-    .r)]); // TOC / TOD : ni sur la route ni sur une procédure
+  if (!pick) drawPlanOnMap(ctx, toC, got0.plan || []); // TOC / TOD : leurs noms là où la passe les a posés
   if (!mission && !pick) drawVfr(ctx, toC);
   S.windHits = !mission && !pick && L.wind && zoomOn('wind') ? drawWinds(ctx, toC) : [];
   if (!mission && !pick && isStarted(S.route.flight)) drawProgress(ctx, toC);
@@ -552,9 +553,45 @@ function stat(z) {
   if (d.zoomEff !== eff) d.zoomEff = eff;
   if (d.kept !== kept) d.kept = kept;
 }
-/** TOC et TOD (losanges violets) et curseur commun (rond bleu) sur la carte, aux distances de la coupe ; le libellé de TOC /
- *  TOD au nord-est, sinon au sud-est, au nord-ouest, au sud-ouest : là où il ne couvre pas un libellé de la route (taken). */
-function drawPlanOnMap(ctx, toC, taken = []) {
+/** TOC et TOD de la coupe à leur place sur la carte, pour la passe unique : [{ name, s, q, w, along(d) }] — q le point à l'écran, w
+ *  la largeur de son nom, along(d) le point de la trace à d px (signé) de q en suivant la coupe (null au-delà de ses bouts) ; null
+ *  sans coupe. */
+function planMarks(ctx, toC) {
+  const pr = S.prof;
+  if (!pr?.plan) return null;
+  ctx.save();
+  ctx.font = '700 11px Arial,sans-serif';
+  const out = [];
+  for (const [m, name] of [
+      [pr.plan.toc, 'TOC'],
+      [pr.plan.tod, 'TOD']
+    ]) {
+    if (!m || (name === 'TOD' && Math.abs(pr.plan.tod.s - pr.plan.toc.s) < pr.total * .005)) continue;
+    const at = s => {
+        const g = MapsProfile.posAt(pr, s);
+        return toC(g.lat, g.lon);
+      },
+      q = at(m.s),
+      ds = Math.max(1, pr.total * .001),
+      q1 = at(Math.min(pr.total, m.s + ds)),
+      k = Math.hypot(q1.x - q.x, q1.y - q.y) / ds; // px par mètre de trace, près du repère
+    out.push({
+      name,
+      s: m.s,
+      q,
+      w: ctx.measureText(name).width,
+      along: d => {
+        const s = m.s + d / (k || Infinity);
+        return k > 0 && s >= 0 && s <= pr.total ? at(s) : null;
+      }
+    });
+  }
+  ctx.restore();
+  return out;
+}
+/** TOC et TOD (losanges violets) et curseur commun (rond bleu) sur la carte, aux distances de la coupe ; le nom de TOC / TOD à la
+ *  place que la passe unique lui a donnée (planned : [{ name, r }], r null sans place : le losange seul). */
+function drawPlanOnMap(ctx, toC, planned = []) {
   const pr = S.prof,
     col = MapsRender.palette(!!S.theme.dark).plan;
   if (!pr) return;
@@ -562,13 +599,9 @@ function drawPlanOnMap(ctx, toC, taken = []) {
   ctx.font = '700 11px Arial,sans-serif';
   ctx.textBaseline = 'middle';
   ctx.lineJoin = 'round';
-  for (const [m, name] of [
-      [pr.plan?.toc, 'TOC'],
-      [pr.plan?.tod, 'TOD']
-    ]) {
-    if (!m || (name === 'TOD' && Math.abs(pr.plan.tod.s - pr.plan.toc.s) < pr.total * .005)) continue;
-    const g = MapsProfile.posAt(pr, m.s),
-      q = toC(g.lat, g.lon);
+  for (const m of planMarks(ctx, toC) || []) {
+    const q = m.q,
+      r = planned.find(p => p.name === m.name)?.r;
     ctx.beginPath();
     ctx.moveTo(q.x, q.y - 7);
     ctx.lineTo(q.x + 7, q.y);
@@ -580,26 +613,11 @@ function drawPlanOnMap(ctx, toC, taken = []) {
     ctx.strokeStyle = S.theme.bg;
     ctx.lineWidth = 2;
     ctx.stroke();
-    const w = ctx.measureText(name).width,
-      spot = [
-        [8, -9, 'left'],
-        [8, 10, 'left'],
-        [-8, -9, 'right'],
-        [-8, 10, 'right']
-      ].find(([dx, dy, al]) => {
-        const x0 = al === 'left' ? q.x + dx : q.x + dx - w,
-          r = {
-            x0,
-            x1: x0 + w,
-            y0: q.y + dy - 7,
-            y1: q.y + dy + 7
-          };
-        return !taken.some(k => r.x0 < k.x1 && r.x1 > k.x0 && r.y0 < k.y1 && r.y1 > k.y0);
-      }) || [8, -9, 'left'];
-    ctx.textAlign = spot[2];
+    if (!r) continue;
+    ctx.textAlign = r.align;
     ctx.lineWidth = 3;
-    ctx.strokeText(name, q.x + spot[0], q.y + spot[1]);
-    ctx.fillText(name, q.x + spot[0], q.y + spot[1]);
+    ctx.strokeText(m.name, r.x, r.y);
+    ctx.fillText(m.name, r.x, r.y);
     ctx.textAlign = 'left';
   }
   if (S.cursor != null) {

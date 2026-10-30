@@ -93,8 +93,7 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - `draw(ctx, { toC, W, H, scale, bbox, profile, data, route, marks, hideVrp, zoom, lines, reserve })`, where `lines` are the
   polylines of the route's points that the route itself traces (null: all of them; § 5, Procedures) and `reserve(placer)` is
   called right after the route's labels so that the screen reserves its own (the chosen procedures' names and constraints), drawing order:
-  1. the route's labels (points, levels, ETA, NM marks) are reserved first in the shared label placer
-     (`SiaAero.placer`);
+  1. every label of every layer gets its place from **one collision pass** (below), whatever the layer's drawing order;
   2. airspace shapes (ICAO symbology, `SiaAero.drawAirspaces`);
   3. airways (all strokes, then all names, so that no stroke crosses a name);
   4. aerodromes and navaids (`SiaAero.drawPoints`, § 3.2);
@@ -106,12 +105,10 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   procedures SID / STAR / approach, terrain, MORA, alternate, actual position, winds, VFR, mission zones) comes from one palette,
   `MapsRender.palette(dark)`, day and night, read by the renderer and the screen (procedures, legend, position, barbs); the
   "paper" colours stay the design tokens (`tokens`, `themed`).
-  In the code (V3 § 10.29 d) this order is **one list of layers** in `draw()`, each `{ id, reserve(), paint(ctx) }`: every
-  reservation first, in the order of the list (`screenLabels`, `routeLabels`, `missionPoints`), then every painting, the
-  `cities` placing their names at their own painting (V3 § 10.30: **one collision pass** per drawing, the placer `pl`, by
-  priority — the screen's labels (the highlighted procedure, then the chosen ones), the route's segments, the airway boxes, the
-  aerodromes, the navaids and fixes, then the rest; a label without room slides along its anchor or is left out; the base
-  map's own labels do not move):
+  In the code (V3 § 10.29 d) this order is **one list of layers** in `draw()`, each `{ id, reserve(), paint(ctx), bare }`: every
+  `reserve()` first (`screenLabels`, `routeLabels`, `missionPoints`), then every `paint(ctx)`; the order of the calls no longer
+  decides any place (V3 § 10.30: **one collision pass** per drawing, by the closed priority list below; a label without room
+  slides along its anchor or is left out; the base map's own labels do not move):
   `zoneShapes`, `airways`, `points` (aerodromes, navaids, airway fixes), `aar`, `nat`, `airwayNames`, `vrp`, `zoneLabels`,
   `gridMora`, `missionZones`, `missionPoints`, `cities`, `route`, `dim` (the choose mode: `dim` option, 0 to 1, the share by which what is
   already painted fades), `screenTraces` (the screen's `overRoute`: the chosen
@@ -128,18 +125,41 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - **(b) every layer declares its labels** instead of taking the placer itself: `{ layer, prio, key, anchor, boxes: [rect, …],
     paint(ctx, rect) }` — `boxes` the candidate rectangles in the layer's own order of preference (its sliding along the anchor),
     `paint` writes the label in the rectangle the pass gives; `many()` of `data.js` deduplicates the answers of aerodb **by a key
-    per kind** (airspace `key`, airway segment `route|a|b`, aerodrome `icao`, navaid / point / VRP `id@lat,lon`, town `name@lat,lon`)
-    instead of by object identity (which frozen copies defeat), so `drawAirways` no longer deduplicates for it.
-  - **(c) one collision pass** (`MapsRender.labelPass(requests, placer)`) replaces the placements scattered in the parts: every
-    request of every layer, sorted by **the closed priority list** below (stable inside a rank: the layer's own order), each
-    takes its first free candidate or is left out; then the layers paint in their drawing order (§ 3), each label at the rectangle
-    it was given. The vertical profile goes through the same pass with its own list (TOC / TOD, levels, constraints, the spaces
-    entered, the fixes, the other spaces).
-  - **The closed priority list** (the user's arbitration of 30 Oct 2026; no number scattered in the layers): 1. the aerodrome's
-    name (code, and name from `runwayZoom`); 2. the runway numbers at the threshold; 3. the navaids' boxes; 4. the procedures'
-    labels (the highlighted procedure, then the chosen ones, then the touched family, then the others); 5. the route's points
-    (names, levels, ETA) and the cartouches of the airways the path follows; 6. the rest, in this order: airway boxes off the
-    path, airway fixes, VRP, airspace names, MORA, towns, mission points and zones.
+    per kind** (`keyOf`: airspace `type|key|name|lower|upper|first ring point`, airway segment `route|a|b`, aerodrome `icao`,
+    navaid / point / VRP `id@lat,lon`, town `name@lat,lon`) instead of by object identity (which frozen copies defeat), so
+    `drawAirways` no longer deduplicates for it. **The SIA key does not identify an airspace**: in the published bases one key
+    can name several airspaces (LF600 is both a SUR and a PRN; 74 such keys in the French base), so an airspace is the whole of
+    its type, key, name, limits and first ring point (unique in the fr, es, de and gb bases); the label requests of the airspaces
+    use the same rule (`zone:type|key|name|lower|upper`).
+  - **(c) one collision pass**, `SiaAero.pass(ctx, run, rankOf)` (`lib/aero_symbols.js`), replaces the placements in the order
+    of the calls. The drawing `run(ctx, pl, first)` is played **twice**: a mute round on a context that paints nothing (its
+    `measureText` measures for real; the `bare` layers, strokes only, are skipped) lists every request `pl.ask(req)` and every
+    symbol reservation `pl.add(rect, rank)`; the pass then places them in the order of `rankOf` (stable inside a rank: the order
+    in which the layers asked), each taking its first free candidate or none; the painting round replays the drawing, each
+    request finding its decision by layer, key and occurrence (a request the first round did not see, its code having taken
+    another path, takes a place still free without moving anything). Rules of the pass:
+    - **one box per key**: requests sharing a non-empty `key` get one box, the best rank's; a navaid, airway fix or VRP that is
+      also a route point (`id@lat,lon`, four decimals) is written once, by its own box — the route adds none, its ETA stays;
+    - a request with a `parent` (a key) is left out when its parent is: the true tracks of an airway ("097°") go with its box;
+    - `force: 'paint'` (the route's ends, the procedures' names) paints at the first candidate without reserving when nothing is
+      free; `force: 'reserve'` (the choose mode's aerodrome code, a mission point, TOC / TOD in the profile) reserves it anyway;
+    - the pass hides nothing because of a zoom: what a zoom hides is the zoom rule's (below).
+    The map's list is `RANK` of `render.js`; the vertical profile goes through the same pass (`profile_view.js`, the profile's
+    canvas and its own placer) with its own list `PROFILE_RANK`: TOC / TOD, the chosen procedures' constraints, the cruise levels,
+    the airspaces' names, the obstacles' elevations, the airway points; its "+n" box is reserved before them.
+  - **The closed priority list** (the user's arbitration of 30 Oct 2026; no number scattered in the layers), `RANK` of
+    `render.js`: aerodrome symbols (reserved, not written); 1. the aerodrome's name (code, and name from `runwayZoom`; the choose
+    mode's code first); 2. the runway numbers at the threshold; navaid symbols (a number at the threshold wins over a DME symbol
+    standing on it); 3. the navaids' boxes; 4. the procedures' labels (in the order the screen asks: the highlighted procedure,
+    the chosen ones, the touched family, the others; in flight, the names, then the points and constraints); 5. the route: its
+    points (names, levels, ETA), NM marks, TOC / TOD, the cartouches of the airways the path follows, and on a mission map its
+    points; 6. the rest, in this order: airway boxes off the path and their true tracks, AAR and NAT names, airway fixes, VRP,
+    obstacles, airspace names, MORA, graticule, towns, mission zones.
+  - **Sliding before silence.** At a terminal the aerodrome and its navaids win over the route; the route's ETA then tries, after
+    its four places around the point (under the name, above, left, above left), places beside the trace 16, 32, 48 and 64 px
+    along the next and the previous legs; TOC and TOD try their four corners, then the same corners around a point of the trace
+    16 to 64 px on either side (following the profile's path, `MapsProfile.posAt`); never off the trace, and silent when nothing
+    is free (the diamond stays).
   - **What a zoom hides is said by the zoom rule**: a label left out at a zoom because of its kind is the profile's threshold of
     that element (`map_profiles.json`, `runwayZoom`, the tuning page's thresholds § 14), never a pixel or zoom threshold hidden in
     a layer; what remains in a layer is geometry (a label longer than its segment is not written).
@@ -157,7 +177,8 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   longer segment's stays).
 - **Airways** (`drawAirways`), as en-route charts: low airways solid blue, high airways dashed purple, the name in a
   filled box laid on the segment (readable left to right), at its middle; when that place is taken (the route's labels are
-  reserved first) the box slides along the segment, never beside it, and is left out if no place is free. The box of an
+  placed first by rank) the box slides along the segment, never beside it, and is left out if no place is free; a segment shorter
+  than its box asks for nothing. The box of an
   airway that a route leg follows (the leg's two points are the segment's ends) is painted after the route's line, over it,
   with a background edge that interrupts the line; its place does not depend on the route (no jump when a leg is added).
   In Edit mode the dragged point and its ring stay above everything (the screen draws them last). Segment ends after them
@@ -284,7 +305,7 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   (300 px per degree and more) everything in the view is read whatever the layer says.
 - **The alternate**: a grey dashed line from the arrival, a grey dot and its code.
 - **TOC and TOD**: purple diamonds; their label goes north-east of the diamond, else south-east, north-west, south-west,
-  wherever it does not cover a route label.
+  then slides along the trace (§ 3, the collision pass, rank 5), silent without room (the diamond stays).
 - **Procedures** (V3_SPECIFICATION § 10.20): the runway, SID, STAR and approach the pilot **chose in Fuel** (`route.procedures` v2,
   read through `proceduresOf`: a side whose aerodrome is not the route's is read as not chosen; the map never writes it, not even
   in Edit mode, which keeps it as it is). The records come from `aerodb.procedure(id)`, the runways from `aerodb.runways(icao)`
@@ -731,7 +752,7 @@ brown step line, and the notes say so.
   first (then the widest), each label against its own band only, never over another label, TOC / TOD or the bottom 18 px;
   a label without room is not drawn and counts in "+n" at the top right. Then the NM marks of the map as ticks at the
   bottom, the airway points and beacons within 3 NM of the route (small triangle and id, at least 30 px apart, skipped
-  where an airspace label sits, `geo.taken`), and the cursor on its own canvas (a vertical line and a dot at the planned
+  where a label of a higher rank sits: the profile's collision pass, § 3), and the cursor on its own canvas (a vertical line and a dot at the planned
   altitude, `--sog-accent`).
 - **Fit to the body**: the canvas is drawn at the body's exact height, the x axis always visible, nothing to scroll; level
   labels thin first (one in two under 160 px, one in four under 110 px, never two closer than 13 px, grid lines with them),
@@ -882,9 +903,9 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
 
 ### 13.2 What the map shows
 
-- **ETA** labels: "ETA 14:52Z" for each route point in a close view (300 px per degree and more), in the accent colour, reserved
-  in the placer with the other route labels before the aerodromes (under the point's name, else above the point, else on
-  its left, the first free place); departure and arrival add the device's local time, "ETA 16:10Z (18:10)". Shown for a
+- **ETA** labels: "ETA 14:52Z" for each route point in a close view (300 px per degree and more), in the accent colour, a request
+  of rank 5 of the collision pass (§ 3), after the aerodromes and navaids: under the point's name, else above the point, else on
+  its left, then sliding along the point's legs, silent without room; departure and arrival add the device's local time, "ETA 16:10Z (18:10)". Shown for a
   started flight and for a dated one. Times come from `frame/lib/time.js` (`fmtZ`, `fmtZLocal`).
 - **Started flight** (`started` set; fuel sets it back to null when the start is cancelled, Report when the report is saved):
   - **planned position**: hollow aircraft in the accent colour, turned to the route's track there, labelled "planned
