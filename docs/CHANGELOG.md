@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Sheets on a phone** (user, 30 Oct: « bug d'affichage sur les fiches, sur téléphone », iPhone, cupertino;
+  `modules/aircraft/sheets.js`, `modules/fuel/module.js`; aircraft SPEC § 6; cases M5, F79) — the sheet form had three columns of
+  96 px (labels on three lines, lists cut, empty fields stretched to the row, checkboxes as wide as their label): two columns of
+  150 px, fields at their own height; a row of the sheets list, in Fuel and Maintenance, squeezed its text to one word a line beside
+  « Utiliser » and « Modifier dans Maintenance »: the text takes the width, the actions go under it below 480 px.
 - **Fuel: every file it imports is kept offline from the installation** (`modules/fuel/module.js` `meta.files`: `frame/lib/wind.js`,
   `route_model.js`, `adnames.js`, `metar.js` were missing) — a pilot who went offline before ever opening Fuel could not load it.
 - **aerodb: `zoneOutlines()`, the zones' outlines for the modules** (`frame/aerodb/aerodb.js`; aerodb SPEC, INTEGRATION,

@@ -28,10 +28,19 @@ import {
 } from './sheets_texts.js';
 
 /** Style de la vue (jetons et classes du cadre, quelques règles en plus ; repris des règles « fu- » de Fuel). */
-export const SHEETS_STYLE = `[data-module="aircraft"] .ac-g3{--f-min:96px}
+// la grille des champs : deux colonnes au téléphone (150 px au moins par case : 96 px en faisait trois, libellés sur trois lignes,
+// listes tronquées), chaque champ à sa hauteur (étirés à la rangée, les champs vides grandissaient : retour de l'utilisateur, 30/10) ;
+// une case à cocher à sa taille (la largeur pleine des champs du cadre la prenait aussi : son libellé passait sur trois lignes) ; une
+// ligne de la liste : le texte prend la largeur restante, sous 480 px les actions passent dessous, à droite (iPhone, cupertino, 30/10)
+export const SHEETS_STYLE = `[data-module="aircraft"] .ac-g3{--f-min:150px;align-items:start}
+[data-module="aircraft"] .ac-g3 .f-check input{width:auto;flex:none}
 [data-module="aircraft"] .f-table .ac-txt{white-space:normal;overflow-wrap:anywhere;min-width:9em}
 [data-module="aircraft"] .ac-hide{display:none}
 [data-module="aircraft"] .ac-cat{margin:var(--sog-gap) 0 4px;font-size:1em;color:var(--sog-muted)}
+[data-module="aircraft"] [data-sheets] .f-list .f-item>div:first-child{min-width:0}
+[data-module="aircraft"] [data-sheets] .f-list .f-item>div:first-child>:is(a,b):first-child{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+[data-module="aircraft"] [data-sheets] .f-list .f-item>.f-row{justify-content:flex-end}
+@container (max-width: 479px){[data-module="aircraft"] [data-sheets] .f-list .f-item>div:first-child{grid-column:1/-1} [data-module="aircraft"] [data-sheets] .f-list .f-item>.f-row{grid-column:1/3;grid-row:2} [data-module="aircraft"] [data-sheets] .f-list .f-item::after{grid-row:2}}
 [data-module="aircraft"] .ac-origin{display:block}`;
 
 /** Échappe un texte pour le HTML. */

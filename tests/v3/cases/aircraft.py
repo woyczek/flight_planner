@@ -125,8 +125,11 @@ def m4(c):
     c.eq(sorted(a['registration'] for a in d['aircraft']), ['F-TST1', 'F-TST2'], 'the others stay', what='fleet')
 
 
-@case('M5', 'Fleet at 390 px: no overflow, 44 px rows, few controls at a time', 'M', tags=('aircraft', 'layout'), designs=('standard',), screens=False,
-      rule='frame rules: seven elements at most per screen, 44 px targets, no horizontal overflow on a phone')
+@case('M5', 'Fleet and sheet editor at 390 px: no overflow, 44 px rows, few controls at a time, two columns of fields at most, no stretched field',
+      'M', tags=('aircraft', 'layout'), designs=('standard', 'cupertino'), screens=False,
+      rule='frame rules: seven elements at most per screen, 44 px targets, no horizontal overflow on a phone; the sheet form readable on a phone '
+      '(user, 30 Oct: « bug d\'affichage sur les fiches, sur téléphone »: three columns of 96 px, labels on three lines, empty fields stretched; '
+      'in the list the text of a row takes the width and its actions go under it)')
 def m5(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     open_fleet(c, 12)
@@ -136,6 +139,28 @@ def m5(c):
     c.ok(r['over'] <= 0, f"{r['over']} px", 'no horizontal overflow at 390 px')
     c.ok(all(h >= 44 for h in r['rows']), f"{r['rows']}", 'every row is a 44 px target')
     c.ok(r['controls'] <= 10, f"{r['controls']}", 'the list shows its seven rows plus search, « Ajouter » and « N autres », nothing else')
+    # the list of the sheets: the text of a row takes the width, its actions under it
+    open_sheets(c)
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-id] [data-do=edit]')", what='the sheets are listed')
+    lay = c.js(f"""(() => [...document.querySelectorAll('{M} {SHEETS} .f-list .f-item')].map(r => {{ const b = r.getBoundingClientRect(),
+        t = r.firstElementChild.getBoundingClientRect(), a = r.querySelector('.f-row').getBoundingClientRect();
+        return [r.dataset.id || r.dataset.type, Math.round(100 * t.width / b.width), a.top >= t.bottom - 1] }}))()""")
+    c.ok(all(w >= 80 and under for _, w, under in lay), f'{lay}', 'at 390 px the text of a row takes the width (80 % or more) and its actions go under it')
+    # the sheet editor, every group open: two columns at most, each field at its own height (an empty input never grows to the row)
+    edit_sheet(c, 'EC25')
+    c.js(f"document.querySelectorAll('{M} {SHEETS} details').forEach(d => d.open = true)")
+    c.wait(300)
+    e = c.js(f"""(() => {{ const grids = [...document.querySelectorAll('{M} {SHEETS} .ac-g3')];
+        return {{ over: document.documentElement.scrollWidth - innerWidth,
+                  cols: Math.max(...grids.map(g => new Set([...g.children].map(f => Math.round(f.getBoundingClientRect().left))).size)),
+                  tall: [...document.querySelectorAll('{M} {SHEETS} .ac-g3 input:not([type=checkbox]), {M} {SHEETS} .ac-g3 select')]
+                    .map(i => Math.round(i.getBoundingClientRect().height)).filter(h => h > 60),
+                  boxes: [...document.querySelectorAll('{M} {SHEETS} .ac-g3 input[type=checkbox]')].map(i => Math.round(i.getBoundingClientRect().width))
+                    .filter(w => w > 40) }} }})()""")
+    c.ok(e['over'] <= 0, f"{e['over']} px", 'the sheet editor does not overflow at 390 px')
+    c.ok(e['cols'] <= 2, f"{e['cols']} columns", 'two columns of fields at most on a phone (labels with their unit stay readable)')
+    c.ok(not e['tall'], f"{e['tall']}", 'no input or list stretched to the height of its row')
+    c.ok(not e['boxes'], f"{e['boxes']} px", 'a checkbox keeps its size: its label is not squeezed onto three lines')
 
 
 # ---------------------------------------------------------------- the Fiches view (SPEC 4; the editor moved here from Fuel)

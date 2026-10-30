@@ -1901,8 +1901,9 @@ def f75(c):
 
 
 @case('F79', 'The Sheets view of Fuel is read-only: the list, the sheet of the flight marked, links to the editor of Maintenance', 'F', tags=('fuel', 'aerodb'),
-      designs=('standard',), screens=False, langs4=True,
-      rule='V3 spec 10.34 (lot A2, step 5): one editor, in Maintenance; Fuel keeps the list, « Utiliser » and plain links to ?app=maintenance#aircraft?sheet=<id>')
+      designs=('standard', 'cupertino'), screens=False, langs4=True,
+      rule='V3 spec 10.34 (lot A2, step 5): one editor, in Maintenance; Fuel keeps the list, « Utiliser » and plain links to ?app=maintenance#aircraft?sheet=<id>; '
+      'at 390 px the text of a row takes the width and its actions go under it (user, 30 Oct, iPhone: the text squeezed to one word a line)')
 def f79(c):
     ec25 = {'id': 'EC25', 'name': 'EC25', 'icao': 'EC25', 'usableFuel': 2000, 'maxCrosswindKt': 17, 'cruise': {'tasKt': 141, 'fuelFlowPerHour': 650}}
     c25 = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'usableFuel': 20000, 'cruise': {'tasKt': 330, 'fuelFlowPerHour': 2000}}
@@ -1912,6 +1913,10 @@ def f79(c):
     cf_doc(c, lambda d: ((d.get('aircraft') or {}).get('sheetId') == 'EC25'), 'the flight uses EC25')
     c.tap(f'{FUEL} [data-view="sheets"]')
     c.until(f"() => document.querySelectorAll('{FUEL} [data-sheets] [data-id]').length === 2", what='back on the list')
+    lay = c.js(f"""() => [...document.querySelectorAll('{FUEL} [data-sheets] [data-id]')].map(r => {{ const b = r.getBoundingClientRect(),
+        t = r.firstElementChild.getBoundingClientRect(), a = r.querySelector('.f-row').getBoundingClientRect();
+        return [r.dataset.id, Math.round(100 * t.width / b.width), a.top >= t.bottom - 1] }})""")
+    c.ok(all(w >= 80 and under for _, w, under in lay), f'{lay}', 'at 390 px the text of a row takes the width (80 % or more) and its actions go under it')
     r = c.js(f"""() => ({{ inputs: document.querySelectorAll('{FUEL} [data-sheets] input, {FUEL} [data-sheets] select, {FUEL} [data-sheets] textarea, {FUEL} [data-sheets] [data-path]').length,
         rows: [...document.querySelectorAll('{FUEL} [data-sheets] [data-id]')].map(r => [r.dataset.id, [...r.querySelectorAll('a')].map(a => a.getAttribute('href')),
                                                                                    !!r.querySelector('[data-used]'), !!r.querySelector('[data-do=use]')]) }})""")

@@ -1376,6 +1376,12 @@ const STYLE = `
 [data-module="fuel"] input.fu-code{text-transform:uppercase}
 [data-module="fuel"] .fu-hide{display:none}
 [data-module="fuel"] .fu-cat{margin:var(--sog-gap) 0 4px;font-size:1em;color:var(--sog-muted)}
+/* une ligne de la liste des fiches : le texte prend la largeur restante, le nom en une ligne ; sous 480 px, les actions sous le texte,
+   à droite, le chevron du design avec elles (retour de l'utilisateur, 30/10 : sur iPhone, le texte écrasé à la largeur d'un mot) */
+[data-module="fuel"] .f-list[data-sheets] .f-item>div:first-child{min-width:0}
+[data-module="fuel"] .f-list[data-sheets] .f-item>div:first-child>:is(a,b):first-child{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+[data-module="fuel"] .f-list[data-sheets] .f-item>.f-row{justify-content:flex-end}
+@container (max-width: 479px){[data-module="fuel"] .f-list[data-sheets] .f-item>div:first-child{grid-column:1/-1} [data-module="fuel"] .f-list[data-sheets] .f-item>.f-row{grid-column:1/3;grid-row:2} [data-module="fuel"] .f-list[data-sheets] .f-item::after{grid-row:2}}
 [data-module="fuel"] .fu-block{display:block}
 [data-module="fuel"] [data-acsel]{flex-wrap:nowrap}
 [data-module="fuel"] [data-acsel] .f-muted{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

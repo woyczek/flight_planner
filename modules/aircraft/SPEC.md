@@ -91,6 +91,9 @@ the same Maintenance application on his device: no second path.
 - `meta.writes`: `{ prefix: 'airline/fleet.json', merge: 'record' }`, `{ prefix: 'cache/aircraft/', policy: 'cache' }`;
   sheets through aerodb (its own declaration).
 - Texts `[fr, en, de, es]`; ≤ 7 controls visible per view; 44 px targets; `ctx.ask` for every removal; no native dialog.
+- On a phone (user, 30 Oct 2026): the sheet form has two columns at most (150 px a cell), each field at its own height, a checkbox at
+  its size; a row of the sheets list gives its text the width, its actions go under it below 480 px of module (the cupertino
+  chevron with them). The same rule for Fuel's read-only list. Case M5 (and F79), standard and cupertino.
 - A status line in `cache/aircraft/status.json` (§ 10.0): « N appareils, M fiches, K types de la flotte sans fiche »,
   shown in Maintenance's status block; the « sans fiche » count links to the Fiches view.
 - Help chapter `modules/aircraft/help/{fr,en,de,es}.md`, anchors `aircraft-…`.
