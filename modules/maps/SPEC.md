@@ -132,8 +132,10 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     its type, key, name, limits and first ring point (unique in the fr, es, de and gb bases); the label requests of the airspaces
     use the same rule (`zone:type|key|name|lower|upper`).
   - **(c) one collision pass**, `SiaAero.pass(ctx, run, rankOf)` (`lib/aero_symbols.js`), replaces the placements in the order
-    of the calls. The drawing `run(ctx, pl, first)` is played **twice**: a mute round on a context that paints nothing (its
-    `measureText` measures for real; the `bare` layers, strokes only, are skipped) lists every request `pl.ask(req)` and every
+    of the calls. The drawing `run(ctx, pl, first)` is played **twice**: a mute round on a context that paints nothing **by
+    construction** — a local object of the Map's own (`muted`, one per canvas: every drawing method a no-op, `measureText` on a
+    measuring canvas of its own), never a Proxy over the real context, so no stroke of the first round can reach the screen; the
+    `bare` layers, strokes only, are skipped — lists every request `pl.ask(req)` and every
     symbol reservation `pl.add(rect, rank)`; the pass then places them in the order of `rankOf` (stable inside a rank: the order
     in which the layers asked), each taking its first free candidate or none; the painting round replays the drawing, each
     request finding its decision by layer, key and occurrence (a request the first round did not see, its code having taken
@@ -149,8 +151,8 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     the airspaces' names, the obstacles' elevations, the airway points; its "+n" box is reserved before them.
   - **The closed priority list** (the user's arbitration of 30 Oct 2026; no number scattered in the layers), `RANK` of
     `render.js`: aerodrome symbols (reserved, not written); 1. the aerodrome's name (code, and name from `runwayZoom`; the choose
-    mode's code first); 2. the runway numbers at the threshold; navaid symbols (a number at the threshold wins over a DME symbol
-    standing on it); 3. the navaids' boxes; 4. the procedures' labels (in the order the screen asks: the highlighted procedure,
+    mode's code first); 2. the runway numbers at the threshold; navaid symbols (the symbol of a DME standing on a threshold gives way
+    to the runway number: without it « 32L » vanished under TBN at LFBO); 3. the navaids' boxes; 4. the procedures' labels (in the order the screen asks: the highlighted procedure,
     the chosen ones, the touched family, the others; in flight, the names, then the points and constraints); 5. the route: its
     points (names, levels, ETA), NM marks, TOC / TOD, the cartouches of the airways the path follows, and on a mission map its
     points; 6. the rest, in this order: airway boxes off the path and their true tracks, AAR and NAT names, airway fixes, VRP,

@@ -25,7 +25,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   airway points). Visible changes: at LFBO « (D) TBS 110.7 » is written and « RW14R » slides beside it; at Paris in VFR the airway
   fixes and VRP come before the obstacles' heights; in the profile a constraint wins over a level or an airspace's name. Drawing
   at rest on the real base under 16 ms (worst 13.6 ms, Paris VFR zoom 9, was 10.1). The SIA key does not identify an airspace
-  (`frame/aerodb/DECISIONS.md`, SPEC § 3).
+  (`frame/aerodb/DECISIONS.md`, SPEC § 3). SPEC § 3 also says that the mute round's context is the Map's own object, never a Proxy
+  over the real one, and that a DME symbol on a threshold gives way to the runway number.
 
 - **Data: pickup with a bad zip name; refusal during a suite update** (`modules/data/`; help ×4; noreg L8, L16, L17, L18, L19): a zip whose name is outside the launcher's rule is shown in the pickup plan as « file name to rename: letters, digits, . _ - » and never run (`pickupSplit`: the real run carries only the ready sources, in `zones` and in `zips`; with none ready there is no question and nothing is called); a 409 with reason `updating` is its own refusal ×4 (« Suite update under way: try again after the launcher restarts ») for every job start (base, sets, chain, pickup, sheets).
 - **Update the suite, « suivi »: the fast-forward goes to the commit the plan read** (`tools/suite_update.py`; Settings
