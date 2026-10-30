@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the runways as 24 px threshold vectors from the airline's zoom; the choice above the base's labels** (`modules/maps/procs.js`,
+  `draw.js`, `data.js`, `render.js`, `layers.js`, `choose.js`; help ×4, maps SPEC, DECISIONS; noreg D58; V3 § 10.30, fourth
+  reading). The full-length runway arrow of § 10.24 is gone: every runway of the departure and arrival aerodromes is a short
+  screen vector from its threshold along its true bearing, the designator behind the threshold, the chosen one bold in its
+  side's hue, from `runwayZoom` of `airline/map_profiles.json` (8 to 16, 11 by default; Settings › Administration) only; the
+  runways are read with the flight even without a chosen procedure; the thresholds page loses `procRwy`. In the choose mode the
+  airway boxes go under the dim veil, so the mode's traces, vectors and labels are above every label of the base.
 - **Wind on a runway: arrows where the wind blows, and three colours** (`frame/lib/wind.js` `label`, `severity`; Fuel's runway
   list and side title; help ×4; F62, F64, F65) — « ↓ 12 kt » is a head wind (the runway drawn upward); green, orange, red by one rule.
 - **Fuel: each side's title ends with the summary of its choice** (`modules/fuel/procedures.js`, `summaryOf`; help ×4; case F65) —

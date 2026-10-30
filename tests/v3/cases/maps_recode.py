@@ -740,26 +740,45 @@ def d57(c):
     c.eq(n, [True, True, False, False], 'free route (FRA) and W / weather research zones are left out of the profile (unless « Other airspaces » is on)', what='noise')
 
 
-_RWY_JS = """(px) => { const pr = window.__pr, k = Math.cos(47.15 * Math.PI / 180), toC = (lat, lon) => ({ x: (lon + 2) * px * k, y: (48 - lat) * px });
-  return pr.runwayArrows(toC, px, null).map(w => ({ side: w.side, tip: w.tip, name: w.name, col: w.col,
-    brg: (Math.atan2(w.b.x - w.a.x, -(w.b.y - w.a.y)) * 180 / Math.PI + 360) % 360, len: Math.hypot(w.b.x - w.a.x, w.b.y - w.a.y) / px * 60,
+_RWY_JS = """([px, zoom]) => { const pr = window.__pr, k = Math.cos(47.15 * Math.PI / 180), toC = (lat, lon) => ({ x: (lon + 2) * px * k, y: (48 - lat) * px });
+  return pr.runwayArrows(toC, zoom).map(w => ({ side: w.side, name: w.name, col: w.col, lw: w.lw,
+    brg: (Math.atan2(w.b.x - w.a.x, -(w.b.y - w.a.y)) * 180 / Math.PI + 360) % 360, len: Math.hypot(w.b.x - w.a.x, w.b.y - w.a.y),
     sid: pr.colOf('sid'), app: pr.colOf('app') })) }"""
+_PROFILES_PUT = """(v) => window.FrameData.adapter({ id: 't-rz', reads: ['airline/'], writes: ['airline/'] }).put('airline/map_profiles.json', v)"""
 
 
-@case('D58', 'The chosen runway as an arrow from its threshold', 'D', tags=('maps',), screens=False, designs=('standard',), night=False,
-      rule='V3 § 10.24 (user 29 Oct: « quand on choisit une piste, un vecteur sur la carte indiquant la piste (flèche) »)')
+@case('D58', 'The runways as threshold vectors, above the airline’s zoom threshold', 'D', tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='V3 § 10.30 (replacing the full-length arrow of § 10.24): a 24 px screen vector from each threshold along the true bearing, the designator at its tail, the chosen runway bold in its side’s hue; only from maps.runwayZoom (airline/map_profiles.json runwayZoom, 8 to 16, 11 by default)')
 def d58(c):
     _open_proc(c, _proc_flight())
     c.until("() => !!(window.__mp.S.procs && window.__mp.S.procs.depRwy && window.__mp.S.rwys)", timeout=8000, what='the runways read')
-    near = c.js(_RWY_JS, 4000)
-    c.eq(sorted(w['side'] for w in near), ['arr', 'dep'], 'at the aerodrome view both chosen runways are arrows', what=f'arrows {near}')
+    c.eq(c.js("() => window.__mp.S.runwayZoom"), 11, 'no setting: the threshold is 11', what='runwayZoom')
+    near = c.js(_RWY_JS, [4000, 12])
+    c.eq(sorted(w['side'] for w in near), ['arr', 'dep'], 'above the threshold, the runways of both aerodromes are vectors', what=f'vectors {near}')
     d = next(w for w in near if w['side'] == 'dep')
     a = next(w for w in near if w['side'] == 'arr')
-    c.eq((d['tip'], a['tip']), ('b', 'a'), 'the tip at the end of the runway for a departure, at its threshold for an arrival', what='tips')
     c.eq((d['name'], a['name']), ('03', '31'), 'named by the runway', what='names')
+    c.ok(all(abs(w['len'] - 24) < .5 for w in near), f"{[round(w['len'], 1) for w in near]}", '24 px on the screen, whatever the zoom')
+    c.ok(abs(c.js(_RWY_JS, [40000, 15])[0]['len'] - 24) < .5, 'length changes with the zoom', 'still 24 px ten times closer')
     c.ok(abs(((d['brg'] - 30 + 180) % 360) - 180) < 3, f"{d['brg']:.1f}°", 'a runway read from its number (03) points to 030° (its QFU)')
-    c.eq((d['col'], a['col']), (d['sid'], a['app']), 'in the hue of its side (SID, approach)', what='hues')
-    c.eq(c.js(_RWY_JS, 300), [], 'never at the scale of the route', what='arrows far out')
+    c.eq((d['col'], a['col'], d['lw'], a['lw']), (d['sid'], a['app'], 3.5, 3.5), 'the chosen runway bold, in its side’s hue (SID, approach)', what='hue and width')
+    c.eq(c.js(_RWY_JS, [4000, 10.9]), [], 'below the threshold nothing is drawn', what='vectors at zoom 10.9')
+    # the airline's setting moves the threshold; a value out of 8..16 falls back to 11
+    c.js(_PROFILES_PUT, {'runwayZoom': 14})
+    c.until("() => window.__mp.S.runwayZoom === 14", timeout=8000, what='the setting is read again on its change')
+    c.eq(c.js(_RWY_JS, [4000, 13]), [], 'threshold 14: nothing at zoom 13', what='vectors at zoom 13')
+    c.eq(len(c.js(_RWY_JS, [4000, 14])), 2, 'from zoom 14 they are drawn', what='vectors at zoom 14')
+    c.js(_PROFILES_PUT, {'runwayZoom': 30})
+    c.until("() => window.__mp.S.runwayZoom === 11", timeout=8000, what='an out-of-range value is 11')
+    # a flight without chosen procedures: the runways are read all the same, thin
+    f = _proc_flight()
+    f['route']['procedures'] = {'dep': {}, 'arr': {}, 'by': 'fuel', 'at': '2026-10-29T10:00:00Z'}
+    c.open('maps?view=-1.8,46.95,-1.1,47.35', docs=fdocs(f) + [list(d) for d in _PROC_DOCS], flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.rwys && window.__mp.S.rwys.dep.length)", timeout=10000, what='the runways read without procedures')
+    w = c.js(_RWY_JS, [4000, 12])
+    c.ok(len(w) == 2 and all(x['lw'] == 2 for x in w), f'{w}', 'every runway thin when none is chosen')
     b = c.js("""() => { const B = window.__pr.runwayBearing;
       return [B({ id: '20', true: 198.35, qfu: 197 }, [], 1.8), B({ id: '20', lat: 48.738, lon: 2.387, qfu: 197 }, [{ id: '02', lat: 48.7175, lon: 2.3767 }], 1.8),
         B({ id: '20', qfu: 197 }, [], 1.8), B({ id: '20', qfu: 197 }, [], null)] }""")

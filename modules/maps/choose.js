@@ -684,7 +684,7 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
   for (const it of C.items.rwy || []) {
     const a = arrowOf(toC, C.side, it.rec, C.known, C.ad?.magVar, it.chosen ? S.theme.fg : S.theme.muted);
     if (!a) continue;
-    a.lw = it.chosen ? 6 : it.id === hl ? 4.5 : 3;
+    a.lw = it.chosen ? 3.5 : it.id === hl ? 2.8 : 2;
     L.arrows.push(a);
     C.hits.lines.push({
       id: it.id,

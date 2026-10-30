@@ -262,14 +262,17 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     route's labels, forced when no place is free); the state of the source follows: "· X-Plane, local" (status `xplane`),
     "· Little Navmap, local" (`lnm`), "· outdated" (a hand-read file whose cycle is past); the texts are in `texts.js`;
   - **names, fixes and constraints by zoom thresholds** of the tuning page (§ 14; user, 29 Oct: "ils disparaissent trop tôt en zoom arrière"): `procNames` (the procedures' names, [0, 24] to start: every scale) and `procCons` (their fixes and constraints, [6.25, 24]: from the regional view, about 110 px per degree); the names have a fallback anchor (the middle of the longest leg of the procedure's fixes, its threshold included when it has fewer than two) and all procedure labels are painted last, over the airway boxes (`MapsRender.draw` `top`);
-  - **the chosen runway as an arrow** (V3 § 10.24, without the aids for now; `procs.js` `runwayArrows`, `drawRunways`): the runway of
-    `route.procedures` (`dep.rwy`, `arr.rwy`) from its threshold (the landing threshold `dthr` at the arrival) over its `length`
-    (metres; else to the opposite threshold, else 1 NM) along its **true** bearing — the record's `true`, else threshold to
-    opposite threshold, else `qfu` + the aerodrome's `magVar`, else `qfu` (a derived runway) —, the tip at the end of the runway
-    for a departure, at the threshold for an arrival, both pointing the way of the runway; its number at the threshold; the hue
-    of its side (SID; approach, else STAR), one notch wider than the procedure trace (4.5 px on an 8 px paper edge); from the
-    aerodrome view only (zoom threshold `procRwy`, [11.25, 24] ≈ 60 px per NM), never at the scale of the route; the runways of
-    both aerodromes are read with the procedures (`S.rwys`, `aerodb.runways`) to find the opposite threshold;
+  - **the runways as threshold vectors** (V3 § 10.30, replacing the full-length arrow of § 10.24, "pas convaincante", hidden by its
+    label; `procs.js` `runwayArrows`, `arrowOf`, `drawRunways`): every runway of the departure and arrival aerodromes (`S.rwys`,
+    read with the flight even without a chosen procedure) is a **24 px screen vector** (never geographic) from its threshold along
+    its **true** bearing — the record's `true`, else threshold to opposite threshold, else `qfu` + the aerodrome's `magVar`, else
+    `qfu` —, a small head at its end, the designator at its tail, behind the threshold (never on the vector); the runway of
+    `route.procedures` bold in its side's hue (SID; approach, else STAR), the others thin and muted. Only from the airline's
+    `runwayZoom` (`airline/map_profiles.json`, integer 8 to 16, 11 by default; read with the profiles, `readSettings`, redrawn
+    on the watch of that file), compared with the real zoom of the view (`MapsRender.zoomOf`); below it nothing is drawn. The
+    tuning page's `procRwy` threshold is gone. In the choose mode every runway of the aerodrome is a vector, the one in force
+    bold; while the Map is dimmed the airway boxes go under the dim veil (`render.js`: `airwayOver` before `dim`), so the
+    mode's traces, vectors and labels are above every label of the base;
   - **constraints**, as on the AIP charts, written after the fix's name: altitude **underlined** = at or above
     (`min`), **overlined** = at or below (`max`), both = exactly (`at`), "5000–7000" for `between` (the lower underlined, the higher
     overlined), "≤ 220 kt" for the speed; altitudes as `formatLevel` writes them (FL from the transition altitude, else the feet).

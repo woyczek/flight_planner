@@ -125,17 +125,26 @@ export function loadProcs() {
     key = procKey(f);
   if (key === S.procsKey) return;
   S.procsKey = key;
-  if (!isChosen(f) || !S.ctx.aerodb) {
+  // les pistes des deux terrains, lues avec les procédures ou seules : les vecteurs de seuil de la carte (§ 10.30) et le seuil
+  // opposé d'une piste (relèvement)
+  const A = S.ctx.aerodb,
+    r = f?.route || {},
+    rwList = icao => icao && A?.runways ? Promise.resolve().then(() => A.runways(String(icao).toUpperCase())).catch(() => []) : [];
+  if (!isChosen(f) || !A) {
     if (S.procs) {
       S.procs = null;
       afterPath();
     }
+    if (A) Promise.all([rwList(r.dep || r.points?.[0]?.id), rwList(r.arr || r.points?.at?.(-1)?.id)]).then(([rd, ra]) => {
+      if (!S || S.procsKey !== key) return;
+      S.rwys = {
+        dep: rd || [],
+        arr: ra || []
+      };
+      schedule();
+    }, () => {});
     return;
   }
-  // les pistes des deux terrains avec les procédures : la flèche de la piste choisie trouve son seuil opposé (§ 10.24)
-  const A = S.ctx.aerodb,
-    r = f.route || {},
-    rwList = icao => icao && A.runways ? Promise.resolve().then(() => A.runways(String(icao).toUpperCase())).catch(() => []) : [];
   Promise.all([loadProcedures(A, f), rwList(r.dep || r.points?.[0]?.id), rwList(r.arr || r.points?.at?.(-1)?.id)]).then(([procs, rd,
     ra
   ]) => {
@@ -265,6 +274,9 @@ export async function readSettings() {
   const F = await S.ctx.data.get(`pilot/${S.ctx.identity?.trigram || 'ANON'}/fuel.json`).catch(() => null);
   if (!S) return;
   S.repoProfiles = P?.profiles && typeof P.profiles === 'object' ? P.profiles : null;
+  // seuil de zoom des vecteurs de piste (V3 § 10.30 ; Réglages › Administration ; frame/settings/INTEGRATION.md § 4)
+  const z = P?.runwayZoom;
+  S.runwayZoom = Number.isInteger(z) && z >= 8 && z <= 16 ? z : 11;
   S.altUnit = F?.displayAlt === 'm' ? 'm' : 'ft';
 }
 /** Réglages de l'écran gardés sur cet appareil (cache/maps/ui.json) : mode et couches par mode (seulement ce qui diffère des

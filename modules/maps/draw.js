@@ -308,7 +308,7 @@ function draw() {
     // sur les couches de la Carte éteintes ; null hors du mode
     pick = mission ? null : chooseLayout(ctx, toC, W, H),
     procs = mission || pick ? null : procLayout(ctx, toC, pxDeg, zoomOn),
-    rwys = mission || pick ? [] : runwayArrows(toC, pxDeg, zoomOn),
+    rwys = mission || pick ? [] : runwayArrows(toC, zReal), // vecteurs de seuil au-dessus du réglage de la compagnie (runwayZoom)
     // couche « Procédures » : le niveau de couverture des terrains visibles (null : couche cachée ou absente)
     cov = mission || pick ? null : covSync();
   if (S.tuneEl) got('tune')?.markTune(zReal, zv, (shown.n + shown.s) / 2, W, H);

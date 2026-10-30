@@ -622,9 +622,10 @@ export function cardHtml(icao) {
   ).join('');
 }
 
-// ---------------------------------------------------------------- la piste choisie en flèche (V3_SPECIFICATION § 10.24)
-/** Vue terrain : la flèche de la piste choisie à partir de 3 600 px par degré (≈ 60 px par NM) sans seuils (page d'essai). */
-const RWY_PX = 3600;
+// ---------------------------------------------------------------- les pistes en vecteur de seuil (V3_SPECIFICATION § 10.30)
+/** Longueur du vecteur (px écran, jamais géographique) et seuil de zoom par défaut (maps.runwayZoom de la compagnie). */
+const VEC_PX = 24,
+  RWY_ZOOM = 11;
 /** Numéro de la piste opposée (« 24 » → « 06 », « 27L » → « 09R »). */
 const oppositeId = id => {
   const m = /^(?:RW)?(\d{2})([LRC]?)$/i.exec(String(id || '').trim());
@@ -657,53 +658,64 @@ const magVarOf = icao => {
   const a = (S.data?.data?.aerodromes || []).find(x => String(x.icao || x.id || '').toUpperCase() === String(icao || '').toUpperCase());
   return num(a?.magVar) ? +a.magVar : null;
 };
-/** Flèches des pistes choisies (route.procedures, dep.rwy / arr.rwy ; fiches de loadProcedures et pistes du terrain, S.rwys) : [{ a, b
- *  (points écran du seuil et du bout), tip ('b' au départ : la pointe au bout de la piste ; 'a' à l'arrivée : au seuil), name, col,
- *  side }] ; dès la vue terrain (zoomOn('procRwy'), sinon RWY_PX), jamais à l'échelle de la route ; [] sinon. */
-export function runwayArrows(toC, pxDeg, zoomOn = null) {
-  if (zoomOn ? !zoomOn('procRwy') : pxDeg < RWY_PX) return [];
+/** Vecteurs de seuil des pistes du vol (V3 § 10.30) : toutes les pistes connues des terrains de départ et d'arrivée (S.rwys, lues avec
+ *  le vol), celle choisie dans route.procedures en gras et dans la teinte de son côté, les autres fines ; seulement à partir du seuil
+ *  de zoom de la compagnie (airline/map_profiles.json, runwayZoom, S.runwayZoom ; 11 sans réglage) ; [] en dessous. zoom : le zoom
+ *  réel de la vue (MapsRender.zoomOf). */
+export function runwayArrows(toC, zoom) {
+  if (!(zoom >= (S.runwayZoom ?? RWY_ZOOM))) return [];
   const f = S.route?.flight,
     v = f ? proceduresOf(f) : null,
     r = f?.route || {},
     P = S.procs || {},
     out = [];
-  for (const [side, rw, icao] of [
-      ['dep', P.depRwy, r.dep || r.points?.[0]?.id],
-      ['arr', P.arrRwy, r.arr || r.points?.at?.(-1)?.id]
+  for (const [side, icao] of [
+      ['dep', r.dep || r.points?.[0]?.id],
+      ['arr', r.arr || r.points?.at?.(-1)?.id]
     ]) {
-    if (!rw || !v?.[side]?.rwy || rwNo(rw.id) !== rwNo(v[side].rwy)) continue;
-    const a = arrowOf(toC, side, rw, S.rwys?.[side] || [], magVarOf(icao), colOf(side === 'dep' ? 'sid' : P.app ? 'app' : 'star'));
-    if (a) out.push(a);
+    const list = S.rwys?.[side] || [],
+      chosen = rwNo(v?.[side]?.rwy),
+      col = colOf(side === 'dep' ? 'sid' : P.app ? 'app' : 'star');
+    for (const rw of list) {
+      const on = !!chosen && rwNo(rw.id) === chosen,
+        a = arrowOf(toC, side, rw, list, magVarOf(icao), on ? col : S.theme.muted);
+      if (!a) continue;
+      a.lw = on ? 3.5 : 2;
+      out.push(a);
+    }
   }
   return out;
 }
-/** Flèche d'une piste rw (fiche d'aerodb) du côté side, parmi les pistes list du terrain : { side, a, b, tip, name, col } (le seuil
- *  d'atterrissage, décalé, à l'arrivée ; le seuil de la piste au départ ; longueur de la fiche, sinon jusqu'au seuil opposé, sinon
- *  1 NM) ; null sans position ni relèvement. Partagée avec le mode « choisir sur la carte » (choose.js), qui les dessine toutes. */
+/** Vecteur de seuil d'une piste rw (fiche d'aerodb) parmi les pistes list du terrain : { side, a (le seuil), b (VEC_PX plus loin le long
+ *  du relèvement vrai, sur l'écran), name, col } ; null sans position ni relèvement. Partagé avec le mode « choisir sur la carte »
+ *  (choose.js), qui les dessine toutes. */
 export function arrowOf(toC, side, rw, list, magVar, col) {
-  const th = side === 'arr' && rw.dthr && num(rw.dthr.lat) && num(rw.dthr.lon) ? rw.dthr : rw;
-  if (!num(th.lat) || !num(th.lon)) return null;
+  if (!num(rw?.lat) || !num(rw?.lon)) return null;
   const brg = runwayBearing(rw, list, magVar);
   if (brg === null) return null;
-  const o = list.find(x => rwNo(x?.id) === oppositeId(rw.id)),
-    lenNm = num(rw.length) && +rw.length > 0 ? +rw.length / 1852 : o && num(o.lat) ? gcNmPlain(th, o) : 1,
-    end = ahead({
-      lat: +th.lat,
-      lon: +th.lon
-    }, brg, lenNm);
+  // le sens sur l'écran : un point 1 NM plus loin, projeté ; le vecteur a toujours VEC_PX, quel que soit le zoom
+  const end = ahead({
+      lat: +rw.lat,
+      lon: +rw.lon
+    }, brg, 1),
+    a = toC(+rw.lat, +rw.lon),
+    e = toC(end.lat, nearLon(end.lon, +rw.lon)),
+    len = Math.hypot(e.x - a.x, e.y - a.y) || 1;
   return {
     side,
-    a: toC(+th.lat, +th.lon),
-    b: toC(end.lat, nearLon(end.lon, +th.lon)),
-    tip: side === 'dep' ? 'b' : 'a',
+    a,
+    b: {
+      x: a.x + (e.x - a.x) / len * VEC_PX,
+      y: a.y + (e.y - a.y) / len * VEC_PX
+    },
     name: rwNo(rw.id),
     col
   };
 }
 /** Distance (NM) entre deux points proches (plan local). */
 const gcNmPlain = (a, b) => Math.hypot((+b.lat - +a.lat) * 60, (((+b.lon - +a.lon) + 540) % 360 - 180) * 60 * Math.cos(+a.lat * RAD));
-/** Dessine les flèches de piste : un cran plus larges que le tracé des procédures, liseré du fond, la pointe au bout (départ) ou
- *  au seuil (arrivée) dans le sens de la piste, le numéro au seuil. */
+/** Dessine les vecteurs de seuil : un trait court du seuil vers le sens de la piste (épaisseur lw, liseré du fond), une petite pointe
+ *  au bout, l'indicatif en queue, derrière le seuil. */
 export function drawRunways(ctx, arrows) {
   if (!arrows?.length) return;
   ctx.save();
@@ -715,43 +727,39 @@ export function drawRunways(ctx, arrows) {
       len = Math.hypot(dx, dy) || 1,
       ux = dx / len,
       uy = dy / len,
-      h = 11,
-      // la pointe : au bout (départ) ou au seuil (arrivée), toujours dans le sens de la piste
-      t = w.tip === 'b' ? w.b : {
-        x: w.a.x + ux * h,
-        y: w.a.y + uy * h
-      },
+      lw = w.lw || 2,
+      h = 5 + lw,
       base = {
-        x: t.x - ux * h,
-        y: t.y - uy * h
+        x: w.b.x - ux * h,
+        y: w.b.y - uy * h
       };
-    for (const [col, lw] of [
-        [S.theme.bg, (w.lw || 4.5) + 3.5],
-        [w.col, w.lw || 4.5]
+    for (const [col, k] of [
+        [S.theme.bg, lw + 3],
+        [w.col, lw]
       ]) {
       ctx.strokeStyle = col;
-      ctx.lineWidth = lw;
+      ctx.lineWidth = k;
       ctx.beginPath();
       ctx.moveTo(w.a.x, w.a.y);
-      ctx.lineTo(w.b.x, w.b.y);
+      ctx.lineTo(base.x, base.y);
       ctx.stroke();
     }
     ctx.fillStyle = w.col;
     ctx.strokeStyle = S.theme.bg;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(t.x, t.y);
-    ctx.lineTo(base.x - uy * h * .6, base.y + ux * h * .6);
-    ctx.lineTo(base.x + uy * h * .6, base.y - ux * h * .6);
+    ctx.moveTo(w.b.x, w.b.y);
+    ctx.lineTo(base.x - uy * h * .55, base.y + ux * h * .55);
+    ctx.lineTo(base.x + uy * h * .55, base.y - ux * h * .55);
     ctx.closePath();
     ctx.stroke();
     ctx.fill();
-    // le numéro au seuil, de l'autre côté de la piste
-    ctx.font = '700 12px Arial,sans-serif';
+    // l'indicatif en queue, derrière le seuil
+    ctx.font = `${lw > 2.5 ? 700 : 600} 11px Arial,sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const nx = w.a.x - ux * 14,
-      ny = w.a.y - uy * 14;
+    const nx = w.a.x - ux * 11,
+      ny = w.a.y - uy * 11;
     ctx.lineWidth = 3;
     ctx.strokeStyle = S.theme.bg;
     ctx.strokeText(w.name, nx, ny);

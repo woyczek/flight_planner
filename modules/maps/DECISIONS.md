@@ -1566,3 +1566,9 @@ SPEC § 6.11, INTEGRATION § 3 ter. Choices of the session, with their reasons:
   (`pend`) and the runway resolves it, so no record is guessed. The summary at the top uses `summaryOf`, the same text Fuel
   writes in its side's title. Rows are 36 px with no gap: the frame's buttons ask 44 px, the pane's rows set `min-height: 0`
   (the rows are contiguous, each one its own target).
+- **The runway as a 24 px threshold vector, from the airline's zoom (fourth reading, 30 Oct).** The full-length arrow of § 10.24
+  was found "not convincing" at LFPO and hidden by its own label: it is replaced, on the general Map and in the choose mode, by a
+  screen-sized vector from each threshold with the designator behind the threshold. The zoom from which it appears is an
+  airline setting (`runwayZoom` in `airline/map_profiles.json`, written by Settings › Administration): the thresholds page's
+  `procRwy` went with the arrow. In the choose mode the airway boxes, painted over the route on the general Map, now go under the
+  dim veil, so nothing of the base covers the choice.

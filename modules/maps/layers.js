@@ -125,9 +125,7 @@ const ZOOM_IFR = {
     // procédures choisies (utilisateur, 29 octobre : « ils disparaissent trop tôt en zoom arrière, c'est une info hyper
     // importante ») : leurs noms à toutes les échelles, leurs points et contraintes dès la vue régionale (≈ 110 px par degré)
     procNames: [0, 24],
-    procCons: [6.25, 24],
-    // la piste choisie en flèche : dès la vue terrain (≈ 60 px par NM), jamais à l'échelle de la route (§ 10.24)
-    procRwy: [11.25, 24]
+    procCons: [6.25, 24]
   },
   ZOOM_VFR = {
     ...ZOOM_IFR,

@@ -1321,6 +1321,10 @@
       id: 'screenTop', // ce que l'écran peint en dernier (noms et contraintes des procédures)
       paint: c => top && top(c)
     }];
+    // couches estompées (mode « choisir sur la carte », V3 § 10.30) : les cartouches des voies passent sous le voile avec le reste de
+    // la Carte ; ce que l'écran dessine (traces, vecteurs, cartouches des procédures) reste au-dessus de toutes les étiquettes
+    if (dim > 0) layers.splice(layers.findIndex(l => l.id === 'dim'), 0, ...layers.splice(layers.findIndex(l => l.id === 'airwayOver'),
+      1));
     for (const l of layers) l.reserve?.();
     for (const l of layers) l.paint?.(ctx);
     // cadres posés, pour les infobulles et les libellés ajoutés par l'écran (TOC, TOD) : cartouches des voies, libellés
