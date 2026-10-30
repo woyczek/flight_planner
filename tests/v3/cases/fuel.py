@@ -1692,6 +1692,21 @@ def f68(c):
     c.ok('A3' in c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value").split(), 'text', 'the word the pilot typed stays in the text')
 
 
+@case('F80', 'Fuel\'s pure benches: quote, levels, winds aloft, METAR and TAF, progress, current flight', 'F', tags=('fuel',), designs=('standard',),
+      screens=False, rule='modules/fuel SPEC 2-3 (quote), 7 (levels), 10 (weather), 11 (winds aloft), 12 (progress), 4 (current flight): '
+      'each bench of modules/fuel/test/ passes; before this case no case ran them (refactoring 10.33, SPEC as a state)')
+def f80(c):
+    for page in ('quote', 'levels', 'winds', 'metar', 'progress', 'current_flight'):
+        c.page.goto(f'{c.base}/modules/fuel/test/{page}.html', wait_until='load')
+        # these benches write their verdict in the title: « fuel — quote bench: OK (63/63) » or « … FAIL (…) »
+        try:
+            c.page.wait_for_function("/: (OK|FAIL) \\(/.test(document.title)", timeout=30000)
+        except Exception:
+            raise Fail(f'the {page} bench never wrote its verdict in its title', 'a finished bench', f'modules/fuel/test/{page}.html') from None
+        t = c.js('document.title')
+        c.ok(': OK (' in t, t, f'every check of the {page} bench passes')
+
+
 @case('F69', 'Route text and route model benches', 'F', tags=('fuel',), designs=('standard',), screens=False,
       rule='frame/lib/route_text.js (V3 spec 10.31): provenance of an Auto, ICAO form with DCT, SID / STAR names rendered and read back; '
       'frame/lib/route_model.js (refactoring 10.33 R-F4): the route read from its text on an invented base; both benches pass')
