@@ -25,6 +25,8 @@ import {
 } from './lib/map_base.js';
 import {
   schedule,
+  moving,
+  settle,
   mapSize,
   mapBase,
   relief,
@@ -396,8 +398,8 @@ export async function startTiles() {
       mapBase(map);
       mapSize(); // le cadre a pu changer de taille pendant le chargement des tuiles
       relief();
-      map.on('move', schedule);
-      map.on('moveend', schedule);
+      map.on('move', moving); // pendant le geste l'image suit (draw.js), le dessin complet au repos
+      map.on('moveend', settle); // repos : le dessin complet
       map.on('click', e => S && tapAt(e.point.x, e.point.y, e.lngLat.lat, e.lngLat.lng));
       // survol à la souris seulement (les événements souris qui suivent un toucher sont ignorés)
       map.on('mousemove', e => {

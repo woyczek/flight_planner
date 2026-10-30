@@ -1646,3 +1646,51 @@ def d66(c):
     _ch_open(c, {'rwy': '13'}, file=_CH2_FILE)
     c.tap('.mp-ch-row[data-id="fam:OKRI5"]')
     c.until("() => (document.querySelector('.mp-ch-sum[data-fam=star] .mp-ch-sum-v') || {}).textContent === 'OKRI5R'", what='runway 13 chosen: the family resolves to OKRI5R')
+
+
+# ------------------------------------------------------------------------------------------------------ D68
+def _dense_base():
+    """A dense base around Paris: 2 000 aerodromes, 600 airspaces of 41 points, deterministic."""
+    import random
+    rnd = random.Random(7)
+
+    def ring(la, lo, r, n=40):
+        return [[la + r * math.sin(2 * math.pi * k / n), lo + r * 1.4 * math.cos(2 * math.pi * k / n)] for k in range(n)] + [[la, lo + r * 1.4]]
+    ads = [{'icao': f'X{i:03d}', 'name': f'AD {i}', 'lat': 46 + rnd.random() * 4, 'lon': -1 + rnd.random() * 6, 'elev': 100,
+            'hardLen': 1500 + rnd.random() * 2000, 'public': True} for i in range(2000)]
+    spaces = [{'type': rnd.choice(['CTR', 'TMA', 'R', 'D', 'P']), 'cls': 'D', 'name': f'ZONE {i}', 'lower': rnd.choice(['SFC', '1500 FT', 'FL065']),
+               'upper': rnd.choice(['FL115', 'FL195', '4500 FT']), 'rings': [ring(46 + rnd.random() * 4, -1 + rnd.random() * 6, .05 + rnd.random() * .3)]}
+              for i in range(600)]
+    return ads, spaces, {str(y): [[-2, 7]] for y in range(45, 52)}
+
+
+@case('D68', 'Panning a dense map: the drawn image follows the gesture, the full drawing waits for rest (under 16 ms of work per image)', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='user 30 Oct (« déplacement de carte sur la région de Paris : très saccadé (2 fps ?) »): during a pan nothing is projected again — the last full image follows by its two geographic corners; labels, vectors and collisions are drawn at rest (end of the gesture or 150 ms without movement); threshold: 16 ms of work per image of a 20-image drag')
+def d68(c):
+    ads, spaces, cells = _dense_base()
+    c.page.add_init_script(_FREEZE_AERO)
+    ui = ['cache/maps/ui.json', {'preset': 'vfr', 'layers': {'vfr': {'detail': 2}}}, 'cache']
+    c.open('maps?view=1.6,48.4,3.2,49.2', docs=fdocs(flight()) + [ui], flight=False, airfields=True, airspaces=spaces,
+           aero_extra={'aerodromes': ads, 'cells': cells}, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.map && window.__mp.S.data && (window.__mp.S.data.data.airspaces || []).length > 50 && window.__mp.S.frame && window.__mp.S.frame.ok)",
+            timeout=40000, what='the dense map drawn once (MapLibre base)')
+    c.wait(800)
+    box = c.js("() => { const r = window.__mp.S.box.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2] }")
+    c.page.mouse.move(box[0], box[1])
+    c.wait(500)                                 # the hover of the pointer drawn, then the gesture alone is measured
+    c.js("() => performance.clearMeasures()")
+    c.page.mouse.down()
+    # a continuous drag: 20 moves in a row (no round trip between them, which would let the 150 ms rest pass)
+    c.page.mouse.move(box[0] - 400, box[1] - 120, steps=20)
+    during = c.js("""() => ({ draws: performance.getEntriesByName('maps:draw').map(e => e.duration),
+      follows: performance.getEntriesByName('maps:follow').map(e => e.duration),
+      times: [...performance.getEntriesByName('maps:draw').map(e => 'D' + Math.round(e.startTime)), ...performance.getEntriesByName('maps:follow').map(e => 'f' + Math.round(e.startTime))] })""")
+    c.page.mouse.up()
+    c.until("() => performance.getEntriesByName('maps:draw').length > 0", timeout=4000, what='the full drawing at rest')
+    c.eq(len(during['draws']), 0, 'no full drawing during the gesture (nothing projected again)', what=f"full drawings while panning {sorted(during['times'], key=lambda x: int(x[1:]))}")
+    c.ok(len(during['follows']) >= 10, f"{len(during['follows'])}", 'the drawn image follows the gesture')
+    worst = max(during['follows'] or [0])
+    c.le(round(worst, 1), 16, 'under 16 ms of work per image of the drag', what=f'worst image {worst:.1f} ms')

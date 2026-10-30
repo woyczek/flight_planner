@@ -62,17 +62,90 @@ import {
 
 // ---------------------------------------------------------------- un dessin par tour d'animation
 let frame = 0;
-/** Demande un dessin au prochain tour d'animation (un seul, quel que soit le nombre de demandes). */
-export const schedule = () => {
+/** Dessin complet au prochain tour d'animation (un seul, quel que soit le nombre de demandes). */
+const request = () => {
   if (!frame) frame = requestAnimationFrame(() => {
     frame = 0;
     draw();
   });
 };
+/** Demande un dessin au prochain tour d'animation ; pendant un geste sur la carte (S.moving), la demande attend le repos (un survol,
+ *  une lecture qui aboutit ne relancent pas tout le dessin au milieu d'un pan). */
+export const schedule = () => {
+  if (S?.moving) return;
+  request();
+};
 /** Dessin demandé abandonné (démontage). */
 export function cancelDraw() {
   if (frame) cancelAnimationFrame(frame);
   frame = 0;
+  if (quick) cancelAnimationFrame(quick);
+  quick = 0;
+  clearTimeout(rest);
+}
+
+// ---------------------------------------------------------------- pendant un geste : l'image déjà dessinée suit la carte
+// (V3 maps, 30 octobre : « déplacement de carte sur la région de Paris : très saccadé ») — chaque image d'un pan reprojetait tous
+// les anneaux des espaces et reposait toutes les étiquettes ; pendant le mouvement, la dernière image complète est recopiée,
+// translatée et mise à l'échelle par deux de ses coins géographiques, rien n'est reprojeté ; le dessin complet (étiquettes,
+// vecteurs, collisions, lectures) revient au repos : fin du geste, ou 150 ms sans mouvement
+const REST_MS = 150;
+let quick = 0,
+  rest = 0;
+/** La carte bouge (événement « move » de MapLibre) : l'image gardée suit au prochain tour d'animation, le dessin complet attend le
+ *  repos. Sans image gardée (premier dessin, fond uni), le dessin complet tout de suite. */
+export function moving() {
+  clearTimeout(rest);
+  rest = setTimeout(settle, REST_MS);
+  if (!S?.map || !S.frame?.ok) return request();
+  S.moving = true;
+  if (!quick) quick = requestAnimationFrame(() => {
+    quick = 0;
+    if (S?.map && S.frame?.ok && !frame) follow();
+  });
+}
+/** Repos (fin du geste, ou REST_MS sans mouvement) : le dessin complet, les demandes faites pendant le geste comprises. */
+export function settle() {
+  clearTimeout(rest);
+  if (!S) return;
+  S.moving = false;
+  request();
+}
+/** Recopie la dernière image complète là où ses deux coins géographiques sont maintenant (pan et zoom ; une rotation de la carte
+ *  n'existe pas ici). */
+function follow() {
+  const F = S.frame,
+    a = S.map.project(F.g0),
+    b = S.map.project(F.g1),
+    c = S.canvas,
+    g = c.getContext('2d'),
+    dpr = c.width / Math.max(1, F.W);
+  performance.mark('maps:follow:start');
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, c.width, c.height);
+  g.drawImage(F.bmp, a.x * dpr, a.y * dpr, (b.x - a.x) * dpr, (b.y - a.y) * dpr);
+  performance.measure('maps:follow', 'maps:follow:start');
+}
+/** Garde l'image complète qui vient d'être dessinée et ses deux coins géographiques (le haut gauche et le bas droit de la carte). */
+function keepFrame(W, H) {
+  if (!S.map) return;
+  const F = S.frame ||= {
+      bmp: document.createElement('canvas')
+    },
+    c = S.canvas;
+  if (F.bmp.width !== c.width || F.bmp.height !== c.height) {
+    F.bmp.width = c.width;
+    F.bmp.height = c.height;
+  }
+  const g = F.bmp.getContext('2d');
+  g.clearRect(0, 0, c.width, c.height);
+  g.drawImage(c, 0, 0);
+  const p0 = S.map.unproject([0, 0]),
+    p1 = S.map.unproject([W, H]);
+  F.g0 = [p0.lng, p0.lat];
+  F.g1 = [p1.lng, p1.lat];
+  F.W = W;
+  F.ok = true;
 }
 
 // ---------------------------------------------------------------- fond uni : contours des pays
@@ -275,6 +348,8 @@ function drawAltn(ctx, toC, altn, on) {
 /** Redessine la surcouche (et le fond uni sans tuiles) ; données relues si la vue sort de celles chargées. */
 function draw() {
   if (!S?.canvas || !S.fit || !S.route.points.length) return;
+  performance.mark('maps:draw:start');
+  clearTimeout(rest); // ce dessin complet tient lieu de celui du repos (un nouveau mouvement le redemande)
   mapSize();
   const {
     W,
@@ -377,6 +452,8 @@ function draw() {
   const want = wantBox(shown),
     corr = corridorFor(shown, W);
   if (!within(want, S.data?.box) || corr !== S.data?.corridor) refresh(want, corr);
+  keepFrame(W, H);
+  performance.measure('maps:draw', 'maps:draw:start');
 }
 /** Zoom effectif et éléments gardés par les seuils, posés sur l'élément de la carte (data-zoom-eff, data-kept : § 18) ; écrits
  *  seulement s'ils changent. */

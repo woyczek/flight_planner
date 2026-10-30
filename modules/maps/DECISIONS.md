@@ -1572,3 +1572,16 @@ SPEC § 6.11, INTEGRATION § 3 ter. Choices of the session, with their reasons:
   airline setting (`runwayZoom` in `airline/map_profiles.json`, written by Settings › Administration): the thresholds page's
   `procRwy` went with the arrow. In the choose mode the airway boxes, painted over the route on the general Map, now go under the
   dim veil, so nothing of the base covers the choice.
+- **Panning: the drawn image follows the gesture, the full drawing waits for rest (30 Oct, "déplacement de carte sur la région
+  de Paris : très saccadé (2 fps ?)").** Every MapLibre `move` event drew the whole overlay: each airspace ring re-projected
+  point by point (`fromLngLat`, `coordinatePoint`, `ringPath`, `screenBox`), every label measured and placed again, several
+  times per frame (MapLibre fires more than one `move` per pointer step). Now, during a gesture (`S.moving`, set by `moving()`),
+  the last full image is copied where its two geographic corners now are (`follow`: one `drawImage`, pan and zoom), and every
+  other drawing request (a hover, a reading that lands) waits; the full drawing comes at rest — `moveend`, or 150 ms without
+  movement — once (`settle`, one `requestAnimationFrame`). Also, the themed context's proxy bound a new function at every
+  method access; the bound methods are now kept per name.
+  Measured on a synthetic dense base (2 000 aerodromes, 600 airspaces of 41 points, all frozen as on the device; Paris,
+  zoom ≈ 9.5, VFR mode, complexity +2; a 20-step mouse drag, Chromium, this machine): **before**, 51 full drawings during the
+  drag, 8 ms each on average, 12 ms at worst (the user's real base is far denser: "2 fps"); **after**, no full drawing during
+  the drag, 20 copies of 0.2 ms at worst, then one full drawing at rest (14–19 ms). Case D68 holds the rule (no full drawing
+  during a 20-image drag, under 16 ms of work per image).

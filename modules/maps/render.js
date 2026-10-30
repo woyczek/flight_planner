@@ -135,10 +135,15 @@
       memo.set(k, out);
       return out;
     };
+    // une méthode liée une fois par nom (un bind à chaque appel créait des milliers de fonctions par dessin : travail du ramasse-miettes)
+    const bound = new Map();
     return new Proxy(ctx, {
       get(o, p) {
         const v = o[p];
-        return typeof v === 'function' ? v.bind(o) : v;
+        if (typeof v !== 'function') return v;
+        let f = bound.get(p);
+        if (!f) bound.set(p, f = v.bind(o));
+        return f;
       },
       set(o, p, v) {
         o[p] = p === 'fillStyle' || p === 'strokeStyle' ? map(v) : v;

@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: fluid panning on a dense map** (`modules/maps/draw.js`, `screen.js`, `render.js`; maps DECISIONS; noreg D68; user, 30 Oct:
+  "déplacement de carte sur la région de Paris : très saccadé (2 fps ?)"). Every move event of the base map redrew the whole
+  overlay — every airspace ring re-projected, every label placed again, several times per frame. During a gesture the last full
+  image now follows the map by its two geographic corners (one copy, no projection), other drawing requests wait, and the full
+  drawing comes once at rest (end of the gesture, or 150 ms without movement). The drawing context's proxy no longer binds a
+  new function at each call. Measured (synthetic dense base, 20-step drag): 51 full drawings of 8–12 ms during the drag before,
+  none after (20 copies of 0.2 ms, one full drawing at rest).
+
 - **Approaches the SIA way: initial segments are transitions, finals read short** (`frame/lib/procedures.js` `isAppTransition`,
   `labelOf`, `transitionLabelOf`, `appChoices`; `frame/lib/flight_path.js` junction at the first common point; Fuel's approach list;
   help ×4; F66) — no more six identical « INA RNAV RWY 06 » rows at LFPO: « ILS 06 » via « ODILO · ODILO 1A ».
