@@ -1577,26 +1577,29 @@ def route_metar(c, items):
 
 
 @case('F64', 'Wind on each runway of the procedure card, from the known METAR', 'F', tags=('fuel', 'weather'), designs=('standard',),
-      screens=False, langs4=True, rule='V3 spec 10.30: each runway option ends with "↑ 12 kt · ← 6 kt" (frame/lib/wind.js label) from the '
-      'METAR of the Departure step; tail wind over 5 kt in orange with its reason; no METAR, no suffix')
+      screens=False, langs4=True, rule='V3 spec 10.30: each runway option ends with "↓ 12 kt · ← 6 kt" (frame/lib/wind.js label: where the wind '
+      'blows, runway upward) from the METAR of the Departure step; green / orange / red by wind.severity, the reason in the title; no METAR, no suffix')
 def f64(c):
     route_metar(c, {'LFML': (310, 12)})
     open_proc(c)
     wait_rows(c, 'arr')
     c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-rwy\"]'); return !!s && [...s.options].some(o => o.textContent.includes('kt')) })()",
             timeout=20000, what='the runway list gets the wind of the METAR')
-    o = c.js("""[...document.querySelector('[data-module=fuel] select[data-k="p-arr-rwy"]').options].map(o => ({ v: o.value, t: o.textContent, w: o.classList.contains('windwarn'), title: o.title }))""")
+    o = c.js("""[...document.querySelector('[data-module=fuel] select[data-k="p-arr-rwy"]').options].map(o => ({ v: o.value, t: o.textContent, cls: o.className, title: o.title,
+        color: getComputedStyle(o).color, ok: getComputedStyle(document.querySelector('[data-module=fuel]')).getPropertyValue('--sog-ok').trim() }))""")
     by = {x['v']: x for x in o}
-    c.ok('↑ 12 kt' in by['31L']['t'] and not by['31L']['w'], f"{by['31L']}", 'runway 31L: 12 kt of head wind, not orange')
-    c.ok('↓ 12 kt' in by['13R']['t'] and by['13R']['w'], f"{by['13R']}", 'runway 13R: 12 kt of tail wind, in orange')
-    c.ok(norm(row(c, 'procWindTail').replace('{kt}', '12')) in norm(by['13R']['title']), by['13R']['title'], 'the reason in the title, in the language of the run')
+    # the arrows say where the wind blows, the runway drawn upward (§ 10.30, third reading): head wind ↓, tail wind ↑
+    c.ok('↓ 12 kt' in by['31L']['t'] and by['31L']['cls'] == 'wind-ok', f"{by['31L']}", 'runway 31L: 12 kt of head wind, « ↓ », green (wind-ok)')
+    c.ok('↑ 12 kt' in by['13R']['t'] and by['13R']['cls'] == 'wind-alert', f"{by['13R']}", 'runway 13R: 12 kt of tail wind, « ↑ », red (wind-alert: over 5 kt)')
+    c.ok(norm(row(c, 'procWindTail').replace('{kt}', '12').replace('{max}', '5')) in norm(by['13R']['title']), by['13R']['title'], 'the reason in the title, in the language of the run')
+    c.ok(by['31L']['color'] != by['13R']['color'], f"{by['31L']['color']} / {by['13R']['color']}", 'the two levels are drawn in two colours (semantic tokens of the design)')
     # the departure (LFRS) has no METAR: no suffix, nothing invented
     dep = c.js("""[...(document.querySelector('[data-module=fuel] select[data-k="p-dep-rwy"]')?.options || [])].map(o => o.textContent)""")
     c.ok(dep and not any('kt' in t for t in dep), f'{dep}', 'no METAR for the departure: no wind on its runways')
 
 
 @case('F65', 'Each side\'s title ends with the summary of its choice, the rule of the Map\'s pane', 'F', tags=('fuel', 'maps', 'weather'), designs=('standard',),
-      screens=False, langs4=True, rule='V3 spec 10.30 (second reading): the side title reads summaryOf: « 13R · ↓ 12 kt », « MEN1A », « I13R »; '
+      screens=False, langs4=True, rule='V3 spec 10.30 (second reading): the side title reads summaryOf: « 13R · ↑ 12 kt », « MEN1A », « I13R »; '
       '« Aucune » said with its kind; the wind of the chosen runway from the known METAR')
 def f65(c):
     route_metar(c, {'LFML': (310, 12)})
@@ -1606,7 +1609,8 @@ def f65(c):
     parts = "(s) => [...document.querySelectorAll('[data-module=fuel] [data-proc=\"' + s + '\"] .fu-procsum > span')].map(e => e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim())"
     c.until(f"(() => ({parts})('arr').some(t => t.includes('kt')))()", timeout=20000, what='the arrival summary gets the wind of the METAR')
     arr = c.js(f"({parts})('arr')")
-    c.eq(arr, ['13R · ↓ 12 kt', 'MEN1A via NEPIX', 'I13R'], 'runway with its wind, STAR via its transition, approach', what='arrival summary')
+    c.eq(arr, ['13R · ↑ 12 kt', 'MEN1A via NEPIX', 'I13R'], 'runway with its wind (tail: « ↑ »), STAR via its transition, approach', what='arrival summary')
+    c.eq(c.js("document.querySelector('[data-module=fuel] [data-proc=arr] .fu-procsum > span').className"), 'wind-alert', 'the runway of the summary carries the colour of its wind', what='class')
     dep = c.js(f"({parts})('dep')")
     c.eq(dep, ['03', norm(f"{row(c, 'procSid')} {row(c, 'procNone')}")], 'no METAR: the runway alone; « Aucune » said with its kind', what='departure summary')
 

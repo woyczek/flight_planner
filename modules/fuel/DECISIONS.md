@@ -4,6 +4,12 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **30 Oct 2026 — § 10.30 third reading, the wind arrows turned and three colours** (user: « on atterrit toujours à contre-vent, la
+  flèche vers le bas ; vert / orange / rouge »): `label()` now says where the wind blows in the runway's frame (↓ head, ↑ tail, ←
+  from the right, → from the left), which reverses the arrows of 25b887349. `severity()` and `LIMITS` join wind.js, the Map reads
+  the same call. In Fuel the option and the summary's runway take `wind-ok | wind-warn | wind-alert` on `--sog-ok / --sog-warn /
+  --sog-err` (no hard-coded colour, the fallbacks removed); the reasons: a tail wind (any, then over 5 kt), a crosswind over 10 kt,
+  over 20 kt or over the sheet's limit. A sheet limit replaces only `cross`, never `crossWarn`. F64, F65, benches F62 and F32.
 - **30 Oct 2026 — the side's title reads summaryOf** (§ 10.30, second reading): one `.fu-procsum` line under the title, one span per
   part (runway with its wind, procedure via its transition, approach via its transition), separated by space, not by a character
   (the wind label already holds « · »). The wind is `runwayWind` of the chosen runway (it now returns the components `c` too). The

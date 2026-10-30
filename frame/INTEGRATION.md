@@ -237,8 +237,11 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   « ABLI4L via ABLIN », « ILS28L via PIZSA »): the Map's pane and Fuel's side title print the same text. Bench F32.
 - **The wind on a runway** (`frame/lib/wind.js`, 30 Oct 2026, § 10.30): `components(runwayTrueHeading, windDirTrue, windKt)` →
   `{ head, cross, side }` (knots rounded, `head` negative for a tail wind, `side` 'L' | 'R' or null) or null when a value is missing
-  (a VRB wind has no direction: nothing invented); `label(c)` → « ↑ 12 kt · ← 6 kt » (arrows: where the wind comes from, seen from
-  the runway; a zero component left out, « 0 kt » when both are), the one text of the Map's pane and Fuel's runway list. Pure, shared by the Map's pane and Fuel's runway list. Bench
+  (a VRB wind has no direction: nothing invented); `label(c)` → « ↓ 12 kt · ← 6 kt » (arrows: where the wind blows, the runway drawn
+  upward as on final — ↓ head, ↑ tail, ← from the right, → from the left; a zero component left out, « 0 kt » when both are), the one
+  text of the Map's pane and Fuel's runway list; `severity(c, { tail, crossWarn, cross })` → 'ok' | 'warn' | 'alert' (head wind ok;
+  tail warn up to 5 kt, alert above; crosswind ok up to 10, warn up to 20 or the sheet's `maxCrosswindKt`, alert above; the worse of
+  the two; `LIMITS` holds the defaults), the colour of the label on the design's semantic tokens (§ 10.30, third reading). Pure, shared by the Map's pane and Fuel's runway list. Bench
   `frame/lib/test/wind.html` (F62).
 - Offline is normal. The application starts offline once visited, and your module's files (entry point and
   `meta.files`) are kept from the first visit: draw from `ctx.data` first, and treat a 503 from `ctx.net` as "not now", not as an error.

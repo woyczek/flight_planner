@@ -38,9 +38,13 @@ export const TX = {
   // la page codée d'une procédure choisie (§ 10.25) : lien public du SIA pour une fiche de l'eAIP
   procSource: ['Source', 'Source', 'Quelle', 'Fuente'],
   procOnMap: ['Sur la carte', 'On the map', 'Auf der Karte', 'En el mapa'],
-  // le vent sur une piste (§ 10.30) : les raisons de l'orange, en infobulle de la piste
-  procWindTail: ['Vent arrière {kt} kt (plus de 5 kt)', 'Tail wind {kt} kt (over 5 kt)', 'Rückenwind {kt} kt (über 5 kt)',
-    'Viento de cola {kt} kt (más de 5 kt)'
+  // le vent sur une piste (§ 10.30) : les raisons de l'orange et du rouge, en infobulle de la piste
+  procWindTailSome: ['Vent arrière {kt} kt', 'Tail wind {kt} kt', 'Rückenwind {kt} kt', 'Viento de cola {kt} kt'],
+  procWindTail: ['Vent arrière {kt} kt (plus de {max} kt)', 'Tail wind {kt} kt (over {max} kt)', 'Rückenwind {kt} kt (über {max} kt)',
+    'Viento de cola {kt} kt (más de {max} kt)'
+  ],
+  procWindCrossOver: ['Travers {kt} kt (plus de {max} kt)', 'Crosswind {kt} kt (over {max} kt)', 'Seitenwind {kt} kt (über {max} kt)',
+    'Viento cruzado {kt} kt (más de {max} kt)'
   ],
   procWindCross: ['Travers {kt} kt, au-delà de la limite de la fiche ({max} kt)', 'Crosswind {kt} kt, over the sheet’s limit ({max} kt)',
     'Seitenwind {kt} kt, über der Grenze des Datenblatts ({max} kt)',

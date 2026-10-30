@@ -389,7 +389,7 @@
       side: 'L'
     }
   });
-  ck('summaryOf : « 28L · ↑ 12 kt · ← 6 kt », « ABLI4L via ABLIN », « ILS28L via PIZSA »', qSum.rwy === '28L · ↑ 12 kt · ← 6 kt' && qSum
+  ck('summaryOf : « 28L · ↓ 12 kt · → 6 kt », « ABLI4L via ABLIN », « ILS28L via PIZSA »', qSum.rwy === '28L · ↓ 12 kt · → 6 kt' && qSum
     .proc === 'ABLI4L via ABLIN' && qSum.app === 'ILS28L via PIZSA', JSON.stringify(qSum));
   const qSum2 = summaryOf({
     rwy: '10R',

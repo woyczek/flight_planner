@@ -27,7 +27,9 @@ import * as CF from '../../frame/lib/current_flight.js';
 import * as PR from '../../frame/lib/procedures.js';
 import {
   components as windComponents,
-  label as windLabel
+  label as windLabel,
+  severity as windSeverity,
+  LIMITS as WIND_LIMITS
 } from '../../frame/lib/wind.js';
 import {
   fmtDayZ
@@ -82,7 +84,9 @@ export const PROC_STYLE = `
 [data-module="fuel"] .fu-proc select{width:100%;min-width:0}
 [data-module="fuel"] .fu-proc option.outdated{color:var(--sog-muted)}
 [data-module="fuel"] .fu-proc option.conflict{color:var(--sog-warn,#c2410c)}
-[data-module="fuel"] .fu-proc option.windwarn{color:var(--sog-warn,#c2410c)}
+[data-module="fuel"] .fu-proc .wind-ok{color:var(--sog-ok)}
+[data-module="fuel"] .fu-proc .wind-warn{color:var(--sog-warn)}
+[data-module="fuel"] .fu-proc .wind-alert{color:var(--sog-err)}
 @container (min-width: 480px){
   [data-module="fuel"] .fu-procbox:not(.fu-one){grid-template-columns:6em minmax(max-content,1fr) minmax(max-content,1fr)}
   [data-module="fuel"] .fu-procbox:not(.fu-one) .fu-pf-rwy{grid-column:1;grid-row:3}
@@ -258,36 +262,50 @@ export function createProcedures(host) {
     if (typeof cur === 'string' && cur && !list.some(r => r.id === cur)) html.push(opt(cur, nameOfId(cur, k), true));
     return html.join('');
   }
-  /** Le vent sur une piste d'après le METAR connu du terrain (m.wind, celui de l'étape Départ) : { text, why } ou null sans METAR ou
-   *  sans vent dirigé (VRB : rien d'inventé, § 10.30). Axe vrai : `true` de la fiche de piste, sinon son QFU (ou son numéro × 10)
-   *  plus la déclinaison du terrain. why : vent arrière au-delà de 5 kt, travers au-delà de la limite de la fiche de l'appareil
-   *  (lim, quand elle en a une). */
+  /** Le vent sur une piste d'après le METAR connu du terrain (m.wind, celui de l'étape Départ) : { c, text, level, why } ou null sans
+   *  METAR ou sans vent dirigé (VRB : rien d'inventé, § 10.30). Axe vrai : `true` de la fiche de piste, sinon son QFU (ou son numéro
+   *  × 10) plus la déclinaison du terrain. level : severity de frame/lib/wind.js (vert, orange, rouge ; lim : la limite de travers de
+   *  la fiche de l'appareil quand elle en a une) ; why : les raisons d'un orange ou d'un rouge, pour l'infobulle. */
   function runwayWind(m, r, lim) {
     const w = m.wind;
     if (!w) return null;
     const mag = r.qfu != null && Number.isFinite(+r.qfu) ? +r.qfu : parseInt(PR.rwNum(r.id), 10) * 10,
       c = windComponents(r.true != null && Number.isFinite(+r.true) ? +r.true : mag + (+w.magVar || 0), w.dir, w.kt);
     if (!c) return null;
+    const L = {
+        ...WIND_LIMITS,
+        ...(lim > 0 ? {
+          cross: lim
+        } : {})
+      },
+      tail = c.head < 0 ? -c.head : 0;
     return {
       c,
       text: windLabel(c),
-      why: [c.head < -5 ? tt(TX.procWindTail, {
-        kt: -c.head
-      }) : '', lim > 0 && c.cross > lim ? tt(TX.procWindCross, {
+      level: windSeverity(c, L),
+      why: [tail > L.tail ? tt(TX.procWindTail, {
+        kt: tail,
+        max: L.tail
+      }) : tail ? tt(TX.procWindTailSome, {
+        kt: tail
+      }) : '', c.cross > L.cross ? tt(lim > 0 ? TX.procWindCross : TX.procWindCrossOver, {
         kt: c.cross,
-        max: lim
+        max: L.cross
+      }) : c.cross > L.crossWarn ? tt(TX.procWindCrossOver, {
+        kt: c.cross,
+        max: L.crossWarn
       }) : ''].filter(Boolean)
     };
   }
-  /** Options de la liste des pistes : « — », les pistes de PR.orderProcedures, chacune suivie du vent du METAR connu (« 13R — ↑ 12 kt
-   *  · ← 6 kt », orange au-delà des seuils, la raison en infobulle), puis la piste choisie si elle n'y est plus. */
+  /** Options de la liste des pistes : « — », les pistes de PR.orderProcedures, chacune suivie du vent du METAR connu (« 13R — ↓ 12 kt
+   *  · ← 6 kt », en vert, orange ou rouge selon severity, la raison en infobulle), puis la piste choisie si elle n'y est plus. */
   function runwayOptionsHtml(m, o) {
     const rwys = PR.orderProcedures([...new Map(m.rwys.map(r => [r.id, r])).values()], 'rwy', o, recsNow()),
       lim = +host.crossLimit?.() || 0,
       opt = r => {
         const w = runwayWind(m, r, lim),
           l = w ? `${r.id} — ${w.text}` : String(r.id);
-        return `<option value="${esc(r.id)}"${PR.rwNum(r.id) === PR.rwNum(o.rwy) ? ' selected' : ''}${w?.why.length ? ' class="windwarn"' : ''}${w ? ` title="${esc([l, ...w.why].join(' · '))}"` : ''}>${esc(l)}</option>`;
+        return `<option value="${esc(r.id)}"${PR.rwNum(r.id) === PR.rwNum(o.rwy) ? ' selected' : ''}${w ? ` class="wind-${w.level}"` : ''}${w ? ` title="${esc([l, ...w.why].join(' · '))}"` : ''}>${esc(l)}</option>`;
       };
     return `<option value=""${o.rwy ? '' : ' selected'}>—</option>${rwys.map(opt).join('')}${o.rwy && !rwys.some(r => PR.rwNum(r.id) === PR.rwNum(o.rwy)) ? `<option value="${esc(o.rwy)}" selected>${esc(o.rwy)}</option>` : ''}`;
   }
@@ -328,18 +346,20 @@ export function createProcedures(host) {
   }
   /** Le résumé du choix d'un côté, la même règle que le volet de la Carte (PR.summaryOf, § 10.30) : « 13R · ↑ 12 kt · ← 6 kt »,
    *  « MEN1A via NEPIX », « I13R » ; « Aucune » dit avec sa sorte (« SID aucune ») ; '' sans choix. Le vent est celui de la piste
-   *  choisie, du METAR connu (runwayWind). */
+   *  choisie, du METAR connu (runwayWind), en couleur. */
   function summaryHtml(side, m) {
     const o = CF.proceduresOf(host.flight())[side] || {},
       r = o.rwy ? m.rwys.find(x => PR.rwNum(x.id) === PR.rwNum(o.rwy)) : null,
+      w = r ? runwayWind(m, r, +host.crossLimit?.() || 0) : null,
       s = PR.summaryOf(o, {
         byId: adOf(m.icao).recs || new Map(),
-        wind: r ? runwayWind(m, r, 0)?.c : null
+        wind: w?.c
       }),
       none = k => `${tt(TX[k])} ${tt(TX.procNone)}`,
       parts = [s.rwy, s.proc === null ? none(side === 'dep' ? 'procSid' : 'procStar') : s.proc, s.app === null ? none('procApp') : s.app]
       .filter(Boolean);
-    return parts.length ? `<span class="fu-procsum">${parts.map(p => `<span>${esc(p)}</span>`).join('')}</span>` : '';
+    // la piste porte la couleur de son vent (severity) et ses raisons en infobulle, comme dans la liste
+    return parts.length ? `<span class="fu-procsum">${parts.map(p => p === s.rwy && w ? `<span class="wind-${w.level}" title="${esc([p, ...w.why].join(' · '))}">${esc(p)}</span>` : `<span>${esc(p)}</span>`).join('')}</span>` : '';
   }
   /** Ligne de titre d'un côté : « Départ LFPO Paris-Orly » (le code seul pour un terrain inconnu d'aerodb), « Sur la carte », puis
    *  le résumé du choix (summaryHtml). */

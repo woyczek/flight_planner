@@ -1367,8 +1367,8 @@ def d60(c):
     # the wind of the METAR known on every runway: headwind on 31, tailwind (orange) on 13
     _ch_open(c, {}, extra=[_CH_METAR])
     rw = {x['id']: x for x in _grp(c.js(_CH_ROWS), 'rwy')['rows'] if x['id'] != 'none'}
-    c.eq([rw['31']['wind'], rw['31']['tail']], ['↑ 12 kt', False], 'runway 31 (true 107° here) faces the 107° wind: 12 kt head', what='wind on 31')
-    c.eq([rw['13']['wind'], rw['13']['tail']], ['↓ 12 kt', True], 'runway 13: 12 kt tail, in orange', what='wind on 13')
+    c.eq([rw['31']['wind'], rw['31']['tail']], ['↓ 12 kt', False], 'runway 31 (true 107° here) faces the 107° wind: 12 kt head', what='wind on 31')
+    c.eq([rw['13']['wind'], rw['13']['tail']], ['↑ 12 kt', True], 'runway 13: 12 kt tail, in orange', what='wind on 13')
     # the departure: runway and SID, the transitions drawn for the highlighted SID only
     _ch_open(c, {'rwy': '03'}, 'dep', 'LFRS')
     r = c.js(_CH_ROWS)

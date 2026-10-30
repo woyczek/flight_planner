@@ -12,8 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Wind on a runway: arrows where the wind blows, and three colours** (`frame/lib/wind.js` `label`, `severity`; Fuel's runway
+  list and side title; help ×4; F62, F64, F65) — « ↓ 12 kt » is a head wind (the runway drawn upward); green, orange, red by one rule.
 - **Fuel: each side's title ends with the summary of its choice** (`modules/fuel/procedures.js`, `summaryOf`; help ×4; case F65) —
-  « 13R · ↓ 12 kt », « MEN1A via NEPIX », « I13R », the same text as the Map's pane.
+  « 13R · ↑ 12 kt », « MEN1A via NEPIX », « I13R », the same text as the Map's pane.
 - **Map, choosing on the map, second reading: compatible rows only, families as rows, condensed** (`modules/maps/choose.js`,
   `texts.js`, `style.js`; help ×4, maps SPEC § 5.1, DECISIONS; noreg D60, D66; V3 § 10.30 second reading, the user after
   af261d3e3: "en trois clics … qu'on ne voie que les compatibles, mais qu'on puisse changer facilement … condenser"). The three

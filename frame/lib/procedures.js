@@ -10,7 +10,7 @@
 //   runwayOf(proc), firstServing(list, rwy) : la piste unique d'une procédure, la première qui dessert une piste (§ 10.30).
 //   familyOf(name), siblingsOf(list, proc), familiesOf(list) : les familles de SID / STAR (ABLI4L, ABLI4R → une ligne « ABLI4 »).
 //   compatible(list, { rwy, sid, star, app }, byId) : ce qui va avec le choix, les trois familles dans n'importe quel ordre.
-//   summaryOf(side, { byId, wind, via }) : les trois lignes du choix (« 28L · ↑ 12 kt · ← 6 kt », « ABLI4L via ABLIN »,
+//   summaryOf(side, { byId, wind, via }) : les trois lignes du choix (« 28L · ↓ 12 kt · ← 6 kt », « ABLI4L via ABLIN »,
 //     « ILS 28L via PIZSA »), le même texte dans le volet de la Carte et le titre d'un côté de Carburant (§ 10.30, seconde lecture).
 //
 // Transition : conflictsOf et orderProcedures ont d'abord vécu dans frame/lib/current_flight.js (29/10/2026), puis flight_path.js,
@@ -244,7 +244,7 @@ export function compatible(list, choice, byId) {
 }
 
 /** Les trois lignes du choix d'un côté (route.procedures v2 : { rwy, sid | star, trans, app, appTrans }) : { rwy, proc, app }, chacune
- *  undefined (pas choisi), null (« Aucune » : le mot est celui de l'appelant) ou un texte : « 28L · ↑ 12 kt · ← 6 kt » (wind : les
+ *  undefined (pas choisi), null (« Aucune » : le mot est celui de l'appelant) ou un texte : « 28L · ↓ 12 kt · ← 6 kt » (wind : les
  *  composantes de frame/lib/wind.js pour cette piste, ou rien), « ABLI4L via ABLIN » (la transition choisie), « ILS 28L via PIZSA ».
  *  Les noms viennent des fiches (byId), sinon de l'identifiant ; une transition se dit par son point d'entrée. via : le mot de liaison
  *  (« via » par défaut, le même dans les quatre langues de la suite). */
