@@ -458,3 +458,47 @@ rule 18); only the lab entry has it. The lab screen starts with a "Settings › 
   - « Ouvrir » sends an id from a fixed list (`FOLDER_IDS`), never a path; the launcher opens its own path (`os.startfile`
     on Windows, `open` / `xdg-open` with the jobs' reduced environment elsewhere); an unknown id 400, a missing folder 409;
     the workstation only. noreg A47 (×4), I23.
+
+## 30 October 2026 — Inventaire du 30/10 : à refondre (V3 § 10.33; frame/settings and modules/data)
+
+Written after two days of lots by several agents (28–30 Oct), read at 33912e247. Rules of the refactoring: no behaviour change,
+the target in the SPEC before the code, dead code deleted (never commented out), `--touched` before the push and a full pass
+after, CHANGELOG « refactor, no behaviour change », `:recycle:`, one lot at a time.
+
+**Found, by zone**
+- **modules/data/model.js** (≈1 290 lines, 61 KB): `viewVerb`, `isBuildView`, `isDry`, `buildState` are dead in the source (the
+  module uses `viewOp`, `opDry`, `setGate`) and only pinned by L5, L13, L15; `countOf` and `listLen` are the same helper; the
+  outcome functions (`outcome`, `fetchOutcome`, `purgeOutcome`) and the journal entries (`journalEntry`, `fetchEntry`,
+  `purgeEntry`, then `setEntry` renaming `zones` to `items`) repeat one chain per verb. **Target**: one outcome reader and one
+  entry builder per verb, no pre-SETS leftover.
+- **modules/data/module.js** (≈2 070 lines, 99 KB): the base panel (`buildInner`, `buildZones`) duplicates the generic set panel
+  (`setInner`, `choiceHtml`), the verbs' markup is written twice, `redrawPanel` / `opOf` branch on `[data-build]` vs
+  `[data-set-panel]`; four endings (`endBuild`, `endFetch`, `endPurge`, `endSheets`) copy « result, render, notify, journal,
+  reload », `endPlan` / `endSheetsPlan` are twins; two summary tables (`summary` / `setSummary`, `TX.sum*` / `TX.setSum.*`);
+  same-meaning texts under several keys (`TX.build…` vs `opVerb`, group names vs `setLabel`, the waiting / failed / cancelled
+  phrases per verb); small repeats (`linkHtml` re-writes `M.isHttps`, the catalogue lookup three times). **Target**: one generic
+  set panel driven by SETS with the base as one entry (keeping `data-build` for the tests), one job follower with one ending,
+  one summary table, texts keyed by meaning, the file split by responsibility (screen, panels, follower, chain).
+- **frame/settings/admin.js**: `readEdge` / `writeEdge` / `readRunwayZoom` / `writeRunwayZoom` are one pattern on one file, and
+  settings.js reads that file twice. **Target**: one profile reader / writer by key.
+- **Provider and host knowledge in five places** (config.js `kind` / `providerOf` / `webUrl`, join.js links, admin.js invitation
+  link, access.js `/api/v4` trimmed by hand, launcher.js `providerHtml`). **Target**: one provider table in `SogConfig`, read by all.
+- **frame/settings/launcher.js**: the secrets cards (IVAO key, EAD, IVAO application) repeat one « fields emptied, call, paint
+  the state » pattern. **Target**: one secrets helper.
+- **frame/settings (texts)**: the same meaning under several keys across files (trigram prompts, revoke / expires, copy link /
+  copied, pending / online / last error). **Target**: shared texts in the kit, one key per meaning; tests that scrape `tx(file,
+  key)` move with them.
+- **Size**: settings.js `render` (≈510 lines, card builders mixed with actions), launcher.js `run` (≈210), join.js `render` (≈280).
+  **Target**: card builders apart from their actions.
+
+**Not dead** (checked): the `edge` and `runwayZoom` readers, the `sources` screen link (pinned by A20; the Data module did not
+remove it, D1b), the single readers of `regen/verbs`, `sync-status`, `sync-remote`, `secrets`; no `rail: false` left in code.
+
+**Not refactoring, fixed apart**: `T.ivaoAppLink` is defined twice in the shared `T` (settings.js and launcher.js) with different
+texts, the later loaded wins — a text bug, its own `:bug:` commit. The `ivao` card is in no settings group (groups.js): to ask the
+ergonomics session. The launcher's LAN card still lists paired devices next to the Devices screen (R-C2): to ask V3 Frame.
+
+**Order of the lots** (smallest risk first): R-S1 dead helpers of model.js and small repeats (L5, L13, L15 move to `viewOp` /
+`setGate`); R-S2 one profile reader / writer (A12); R-S3 one secrets helper (A32, A43); R-S4 one provider table (A12, A49);
+R-S5 one outcome reader and entry builder (L7, L13–L18); R-S6 one job ending and one summary table; R-S7 the base as a SETS entry;
+R-S8 module.js then model.js split by responsibility; R-S9 settings.js `render` split and shared texts.
