@@ -1,0 +1,18 @@
+AD 2 LFBO DATA RWY14L FNA RNP CODEAIP
+19 MAR 2026FRANCE
+TOULOUSE BLAGNAC
+PRECODING FNA RNP RWY 14L
+AMDT 03/26© Service de l'Information Aéronautique, France
+FNA RNP RWY 14L
+RMK - MAG VAR 2025 1.7°E REF NAVAID :
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) Navigation Accuracy (NM)
+HLDG - FUZAP - ---- - - -- -
+I F I O 1 4 L - ---- 3000 - 210 - -
+TF FO14L - 141 142.8 3.6 - 3000 3000 - - 1.0
+TF RW14L Yes 141 142.8 7.7 - - - - -3.00 / 50 0.3
+TF BO512 - 143 144.6 5.7 - - - - - 1.0
+APCH
+TF BO513 - 079 080.9 4.4 - 3000 - 190 - 1.0
+TF BO514 - 001 002.7 6.1 - - - - - 1.0
+TF BO515 - 330 331.8 11.0 - 4000 4000 - - 1.0
+TF FUZAP Yes 007 008.6 8.9 - 5000 - -- 1.0

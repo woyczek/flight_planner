@@ -1,0 +1,16 @@
+AD 2 LFBO DATA RWY14R FNA ILS Z LOC Z CODEAIP
+19 MAR 2026FRANCE
+TOULOUSE BLAGNAC
+PRECODING FNA ILS Z or LOC Z RWY 14R
+AMDT 03/26© Service de l'Information Aéronautique, France
+FNA ILS Z or LOC Z RWY 14R
+RMK RNAV1 transition to ILS - GNSS only MAG VAR 2025 1.7°E REF NAVAID :
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) Navigation Accuracy (NM)
+HLDG - FUZAP - ---- - - -- -
+I F I O 1 4 R - ---- 3000 - 210 - -
+See chart FNA ILS Z CAT 123 LOC Z RWY 14R
+- BO512 - 141 142.9 6.3 - - - - - 1.0
+APCH TF BO513 - 079 080.9 4.4 - 3000 - 190 - 1.0
+TF BO514 - 001 002.7 6.1 - - - - - 1.0
+TF BO515 - 330 331.8 11.0 - 4000 4000 - - 1.0
+TF FUZAP Yes 007 008.6 8.9 - 5000 - -- 1.0

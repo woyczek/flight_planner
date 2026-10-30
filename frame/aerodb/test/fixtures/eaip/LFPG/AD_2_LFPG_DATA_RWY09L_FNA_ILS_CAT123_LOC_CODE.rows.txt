@@ -1,0 +1,15 @@
+AD 2 LFPG DATA RWY09L FNA ILS CAT123 LOC CODEAIP
+11 JUN 2026FRANCE
+PARIS CHARLES DE GAULLE
+PRECODING FNA ILS CAT 123 LOC RWY 09L
+AMDT 06/26© Service de l'Information Aéronautique, France
+FNA ILS CAT I ou/or CAT II et/and CAT III ou/or LOC RWY 09L
+RMK - MAG VAR 2020 1.1°E REF NAVAID : BT
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) Navigation Accuracy (NM)
+IF IG09L - --- - 4000 - -- -
+See chart FNA ILS CAT I ou/or CAT II et/and CAT III ou/or LOC RWY 09L
+CA -- 084 085.3 -- 1000 -- - 1.0
+APCH
+→ VI -- 054 055.3 -- - - -- 1 . 0
+→ CF PG671 - 084 085.3 -- - - -- 1 . 0
+TF PG672 - 051 052.1 4.4 - 4000 4000 - - 1.0

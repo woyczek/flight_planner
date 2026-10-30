@@ -1,0 +1,36 @@
+AIP AD 2 LFPO DATA SID RWY07 RNAV CODE 04
+FRANCE 31 OCT 24
+PARIS ORLY (LFPO)
+Réacteurs (R) et hélices (H) / Jets (R) and Propellers (H)
+OPALE - ATREX - NURMO - OKASI - PILUL - ELCOB - LGL - DIKOL - BAXIR
+RANUX - BUBLI - AGOPA - ERIXU - LATRA - OLZOM - MONOT - DORDI
+(Protégés pour / Protected for CAT A, B, C, D)
+SID RNAV RWY 07
+RMK GNSS ou/or DME/DME MAG VAR 2020 1.0°E Ref N AVAID : BT
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+DORDI 2E
+- CF PO081 Yes 073 074,4 - - - - - 1,0
+- DF PO082 Yes - - - - -- - 1,0
+- D F D O R D I - ---- - - - 1,0
+OLZOM 2E
+- CF PO081 Yes 073 074,4 - - - - - 1,0
+- DF PO082 Yes - - - - -- - 1,0
+- D F O L Z O M - ---- - - - 1,0
+MONOT 2E
+- CF PO081 Yes 073 074,4 - - - - - 1,0
+- DF PO082 Yes - - - - -- - 1,0
+- D F M O N O T - ---- - - - 1,0
+DORDI 2G
+- CF PO081 Yes 073 074,4 - - - - - 1,0
+- DF PO082 Yes - - - - -- - 1,0
+- D F D O R D I - ---- - - - 1,0
+OLZOM 2G
+- CF PO081 Yes 073 074,4 - - - - - 1,0
+- DF PO082 Yes - - - - -- - 1,0
+- D F O L Z O M - ---- - - - 1,0
+MONOT 2G
+- CF PO081 Yes 073 074,4 - - - - - 1,0
+- DF PO082 Yes - - - - -- - 1,0
+- D F M O N O T - ---- - - - 1,0
+AMDT 11/24 © SIA

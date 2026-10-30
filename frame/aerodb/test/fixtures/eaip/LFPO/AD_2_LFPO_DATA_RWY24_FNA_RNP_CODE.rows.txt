@@ -1,0 +1,16 @@
+AD 2 LFPO DATA RWY24 FNA RNP CODEAIP
+10 JUL 2025FRANCE
+PARIS ORLY
+PRECODING FNA RNP RWY 24
+AMDT 07/25© Service de l'Information Aéronautique, France
+FNA RNP RWY 24
+RMK - MAG VAR 2020 1,0°E REF NAVAID : -
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) Navigation Accuracy (NM)
+IF IPO24 -- - -- 3000 -- - 1.0
+TF FPO24 - 241 242.1 3.5 - 3000 3000 -- 1.0
+TF RW24 Yes 241 242.0 8.4 - - - - -3.0°/53,0 0.3
+APCH
+TF PO431 Yes 241 241.9 13.2 - - 2000 -- 1.0
+DF MLN - --- L- 4000 -- 1.0
+TF MOLBA Yes 133 133.9 13.9 - FL 070 FL 070 230 - 1.0
+HLDG - MOLBA -- - -- -- - - -

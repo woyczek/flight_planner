@@ -1,0 +1,31 @@
+AIP AD 2 LFPG DATA SID RWY26L-26R POGO LFPO RNAV CODE 01
+FRANCE 31 OCT 2 4
+PARIS CHARLES DE GAULLE (LFPG)
+Réacteurs (R) et hélices (H) / Jets (R) and propellers (H)
+RWY 26L - 26R
+Protégés pour / Protected for CAT A, B, C, D
+AMDT 11 /2 4 © SIA
+SID RNAV POGO RWY 26L-26R
+RMK GNSS ou / or DME/DME MAG VAR 2020 1.1°E Ref NAVAID : PGS
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Nav Spec
+PO 6B
+RWY26L - 267 268.4
+CF PG263 - - - - - RNAV 1
+RWY26R - 264 265.3
+- TF PG264 Yes 264 265.2 4.7 - - - - RNAV 1
+- TF PG266 - 264 265.2 9.3 - - - - RNAV 1
+- TF PG823 - 153 154.4 9.7 L - - - RNAV 1
+- TF OXCEL - 129 129.9 8.9 - - - - RNAV 1
+- TF PG824 - 129 130.0 12.0 - - - - RNAV 1
+- TF PG825 - 083 084.2 3.6 - - FL 080 220 RNAV 1
+- FM PG825 - 083 084.2 - - - - - -
+PO 6E
+RWY26L - 267 268.4
+- - RNAV 1CF PG263 - - -
+RWY26R - 264 265.3
+- TF PG264 Yes 264 265.2 4.7 - - - - RNAV 1
+- TF PG266 - 264 265.2 9.3 - - - - RNAV 1
+- TF PG821 - 262 263.4 6.2 - - - - RNAV 1
+- TF PG822 - 200 200.9 4.9 - - 5000 220 RNAV 1
+- FM PG822 - 200 200.9 - - - - - -

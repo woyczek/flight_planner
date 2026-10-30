@@ -1,0 +1,36 @@
+AIP AD 2 LFPO DATA SID RWY24 RNAV CODE 05
+FRANCE 31 OCT 24
+PARIS ORLY (LFPO)
+Réacteurs (R) et hélices (H) / Jets (R) and Propellers (H)
+OPALE - ATREX - NURMO - OKASI - PILUL - ELCOB - LGL - DIKOL - BAXIR
+RANUX - BUBLI - AGOPA - ERIXU - LATRA - OLZOM - MONOT - DORDI
+(Protégés pour / Protected for CAT A, B, C, D)
+SID RNAV RWY 24
+RMK GNSS ou/or DME/DME MAG VAR 2020 1.0°E Ref NAVAID : BT
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+ELCOB 2W
+- CF PO245 Yes 236 237.2 - - - - - 1.0
+- D F P O 2 4 8 Y e s ---- - - - 1.0
+- D F P O 1 8 9 - ---- - - - 1.0
+- TF PO191 - 286 287.5 17.0 - - - - 1.0
+-T F ELCOB - 327 328.4 20.0 - - - - 1.0
+LGL 2W
+- CF PO245 Yes 236 237.2 - - - - - 1.0
+- D F P O 2 4 8 Y e s ---- - - - 1.0
+- D F P O 1 8 9 - ---- - - - 1.0
+- TF PO191 - 286 287.5 17.0 - - - - 1.0
+- TF LGL - 273 274.2 38.0 - - - - 1.0
+ELCOB 2Q
+- CF PO245 Yes 236 237.2 - - - - - 1.0
+- D F P O 2 4 8 Y e s ---- - - - 1.0
+- D F P O 1 8 9 - ---- - - - 1.0
+- TF PO191 - 286 287.5 17.0 - - - - 1.0
+-T F ELCOB - 327 328.4 20.0 - - - - 1.0
+LGL 2Q
+- CF PO245 Yes 236 237.2 - - - - - 1.0
+- D F P O 2 4 8 Y e s ---- - - - 1.0
+- D F P O 1 8 9 - ---- - - - 1.0
+- TF PO191 - 286 287.5 17.0 - - - - 1.0
+- TF LGL - 273 274.2 38.0 - - - - 1.0
+AMDT 11/24 © SIA

@@ -1,0 +1,40 @@
+AD 2 LFPG DATA STAR RWY09L RNAV CODE 05AIP
+11 JUN 2026FRANCE
+PARIS CHARLES DE GAULLE (LFPG)
+STAR RNAV RWY 09L
+STAR RNAV Réacteurs et Hélices / Turbofans and Turboprops
+RMK RWY 09L MAG VAR 2020 1,1°E REF NAVAID : -
+Procedure Path Waypoint
+Identifcation Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+ROMGO 9E (UIR FIR)
+- IF ROMGO - ---- - - - -
+-T F FF501 - 061 062.4 8.5 - FL150 FL150 - 1.0
+- TF NERKI - 062 062.6 13.2 - - FL120 250 1.0
+- TF BANOX - 062 062.6 8.0 - FL090 FL110 250 1.0
+BIBAX 9D (Utilisable uniquement sur instruction du contrôle / Use on ATC instruction only )
+- IF BIBAX - ---- - FL240 250 -
+- TF BIBA1 - 178 179.1 12.3 - - - - 1.0
+- TF BIBA2 - 233 233.7 7.0 - - - - 1.0
+- TF BIBA3 - 218 219.2 10.0 - - - - 1.0
+- TF BIBA4 - 204 204.7 10.0 - - - - 1.0
+- TF BIBA5 - 189 190.3 10.0 L - - - 1.0
+- TF KOLIV - 092 093.0 40.0 - FL100 FL110 250 1.0
+- TF MOPAR - 093 093.8 7.4 - FL080 FL100 250 1.0
+LUKIP 9D (Utilisable uniquement sur instruction du contrôle / Use on ATC instruction only )
+- IF LUKIP - ---- - FL240 250 -
+- TF LUKI1 - 068 069.0 8.1 - - - - 1.0
+- TF LUKI2 - 009 010.3 7.0 - - - - 1.0
+- TF LUKI3 - 024 024.7 8.8 - - - - 1.0
+- TF LUKI4 - 038 039.2 8.8 - - - - 1.0
+- TF LUKI5 - 053 053.6 8.7 R - - - 1.0
+- TF KOLIV - 150 150.9 35.0 - FL100 FL110 250 1.0
+- TF MOPAR - 093 093.8 7.4 - FL080 FL100 250 1.0
+BIBAX 9E
+- IF BIBAX - ---- - FL240 280 -
+- TF KOLIV - 153 154.1 50.5 - FL100 FL110 250 1.0
+- TF MOPAR - 093 093.8 7.4 - FL080 FL100 250 1.0
+LUKIP 9E
+- IF LUKIP - ---- - FL240 280 -
+- TF KOLIV - 090 090.9 42.2 - FL100 FL110 250 1.0
+- TF MOPAR - 093 093.8 7.4 - FL080 FL100 250 1.0
+AMDT 06/26© Service de l'Information Aéronautique, France

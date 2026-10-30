@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>aerodb — procedures load time</title>
+<!-- Banc du temps de chargement des procédures (V3 § 10.29, « Carburant + Carte : très long à charger », 29 octobre 2026).
+     Un lecteur en mémoire qui reproduit le coût par appel de la couche de données du cadre (FrameData.read : deux lectures
+     IndexedDB et un JSON.parse du texte À CHAQUE appel ; list() : tous les documents gardés, avec leur texte) et COMPTE ses
+     appels. Deux jeux :
+       - synthétique (toujours) : un terrain, 60 procédures dont la moitié des points sont sans position (placés par la base),
+         deux zones ; sert aux assertions de comptes (K40) ;
+       - réel (?data=/perfdata/, hors dépôt) : la copie des fichiers de l'utilisateur (proc/manual/{LFPO,LFBO,LFPG,EIDW}.json,
+         sia/base/{fr,ie,gb}/…, plus un listing __list.json) servie par un petit serveur local ; sert aux mesures chiffrées.
+     Paramètres : ?data=<préfixe> ?lat=<ms par lecture> ?idb=0 (cache en mémoire au lieu d'IndexedDB) ?scan=0 (list() sans le coût du balayage) ?save=<nom> (POST /__save/<nom>).
+     Résultat : window.__perfBench = { done, pass, fail, rows, table, digest }. -->
+<style>
+  body {
+    font: 14px/1.45 system-ui, sans-serif;
+    margin: 16px
+  }
+  li.ok::marker {
+    content: '✓ '
+  }
+  li.ko::marker {
+    content: '✗ '
+  }
+  pre {
+    font-size: 12px
+  }
+</style></head>
+<body>
+<h1>aerodb — procedures load time</h1>
+<p id="state">running…</p>
+<ol id="out"></ol>
+<pre id="table"></pre>
+<script src="../zones.js?v=0"></script>
+<script src="../procedures.js?v=0"></script>
+<script src="../aerodb.js?v=0"></script>
+<script>
+  (async () => {
+    const Q = new URLSearchParams(location.search),
+      DATA = Q.get('data') || '',
+      LAT = +Q.get('lat') || 0,
+      SCAN = Q.get('scan') !== '0',
+      IDB = Q.get('idb') !== '0' && typeof indexedDB !== 'undefined', // vraie base IndexedDB pour le cache (comme le cadre)
+      NOW = Date.parse('2026-10-29T12:00:00Z'),
+      clock = {
+        t: Date.parse('2026-10-29T12:00:00Z')
+      },
+      CYCLE = AeroDB.airacCycles(1, NOW)[0],
+      results = [],
+      table = [],
+      check = (name, ok, detail) => results.push({
+        name,
+        ok: !!ok,
+        detail: ok ? '' : JSON.stringify(detail)
+      }),
+      round = n => Math.round(n * 10) / 10,
+      sleep = ms => new Promise(r => setTimeout(r, ms));
+    const digest = {};
+    try {
+      // ------------------------------------------------------------------ les jeux de données
+      const files = new Map(), // chemin → texte : « le cache » du cadre (documents déjà lus)
+        tree = new Set(); // chemins du dépôt (listing)
+      /** Jeu synthétique : zone « zz » (terrain ZZAA, balises et points) et zone « zy » (un point que « zz » n'a pas) ; ZZAA a 60
+       *  procédures de 8 points, la moitié sans position. L'identifiant « DUP » existe deux fois dans « zz » (le plus proche du
+       *  premier point placé doit gagner). Rend les positions attendues, calculées ici. */
+      const synthetic = () => {
+        const put = (p, v) => {
+            files.set(p, typeof v === 'string' ? v : JSON.stringify(v));
+            tree.add(p);
+          },
+          part = (zone, kind, data) => ({
+            schema: 2,
+            zone,
+            cycle: CYCLE,
+            kind,
+            data
+          }),
+          pts = [],
+          want = {}; // identifiant → position attendue
+        for (let i = 0; i < 40; i++) {
+          const id = `FX${String(i).padStart(3, '0')}`,
+            p = {
+              id,
+              type: 'ICAO',
+              lat: 45 + i * 0.01,
+              lon: 3 + i * 0.01
+            };
+          pts.push(p);
+          want[id] = [p.lat, p.lon];
+        }
+        pts.push({
+          id: 'DUP',
+          type: 'ICAO',
+          lat: 50,
+          lon: 9
+        }, {
+          id: 'DUP',
+          type: 'ICAO',
+          lat: 45.1,
+          lon: 3.1
+        });
+        want.DUP = [45.1, 3.1];
+        put('sia/base/index.json', {
+          schema: 2,
+          kind: 'index',
+          zones: {
+            zz: {
+              cycle: CYCLE,
+              prefixes: ['ZZ'],
+              kb: {}
+            },
+            zy: {
+              cycle: CYCLE,
+              prefixes: ['ZY'],
+              kb: {}
+            }
+          }
+        });
+        for (const z of ['zz', 'zy']) {
+          const b = `sia/base/${z}/${CYCLE}/`;
+          put(`${b}meta.json`, part(z, 'meta', {}));
+          put(`${b}aerodromes.json`, part(z, 'aerodromes', z === 'zz' ? [{
+            id: 'ZZAA',
+            icao: 'ZZAA',
+            name: 'BENCH',
+            lat: 45,
+            lon: 3,
+            elev: 500
+          }] : []));
+          put(`${b}navaids.json`, part(z, 'navaids', []));
+          put(`${b}vrp.json`, part(z, 'vrp', []));
+          put(`${b}points.json`, part(z, 'points', z === 'zz' ? pts : [{
+            id: 'FARAWAY',
+            type: 'ICAO',
+            lat: 10,
+            lon: 10
+          }]));
+        }
+        want.FARAWAY = [10, 10];
+        const procs = [];
+        for (let n = 0; n < 60; n++) {
+          const kind = ['SID', 'STAR', 'APP'][n % 3],
+            rw = n % 2 ? '04' : '22',
+            points = [];
+          for (let i = 0; i < 8; i++) {
+            const placed = i % 2 === 0;
+            // un point sur deux sans position : le plus souvent FXnnn, parfois DUP, parfois un point que seule « zy » porte
+            const id = placed ? `P${n}_${i}` : i === 3 ? 'DUP' : i === 5 && n % 7 === 0 ? 'FARAWAY' : `FX${String((n * 3 + i) % 40).padStart(3, '0')}`;
+            points.push(placed ? {
+              seq: i + 1,
+              id,
+              lat: 45 + i * 0.002,
+              lon: 3 + i * 0.002
+            } : {
+              seq: i + 1,
+              id,
+              lat: null,
+              lon: null
+            });
+          }
+          procs.push({
+            id: `ZZAA.${kind}.N${n}.RW${rw}`,
+            icao: 'ZZAA',
+            kind,
+            name: `N${n}${kind[0]}`,
+            runways: [rw],
+            transition: null,
+            points,
+            source: {
+              kind: 'eaip',
+              cycle: CYCLE
+            },
+            status: 'check'
+          });
+        }
+        put('proc/manual/ZZAA.json', {
+          schema: 1,
+          icao: 'ZZAA',
+          cycle: CYCLE,
+          updated_at: '2026-10-29T10:00:00+00:00',
+          procedures: procs,
+          runways: [{
+            id: '04',
+            lat: 45.01,
+            lon: 3.01,
+            elev: 500,
+            qfu: 40,
+            source: 'eaip'
+          }, {
+            id: '22',
+            lat: 44.99,
+            lon: 2.99,
+            elev: 500,
+            qfu: 220,
+            source: 'eaip'
+          }]
+        });
+        put('proc/manual/index.json', {
+          schema: 1,
+          folder: 'manual',
+          aerodromes: {
+            ZZAA: {
+              SID: 20,
+              STAR: 20,
+              APP: 20,
+              status: 'check',
+              cycle: CYCLE
+            }
+          }
+        });
+        return {
+          want,
+          icaos: ['ZZAA']
+        };
+      };
+      const real = async () => {
+        for (const p of await (await fetch(`${DATA}__list.json`)).json()) tree.add(p);
+        return {
+          icaos: ['LFPO', 'LFBO', 'EIDW', 'LFPG']
+        };
+      };
+      const ds = DATA ? await real() : synthetic();
+      /** Zones du manifeste que la copie n'a pas : des fichiers vides (le coût de les parcourir est celui d'un fichier court) */
+      const stub = path => {
+        const m = /^sia\/base\/([a-z0-9_-]+)\/(\d{4}-\d{2}-\d{2})\/([a-z_]+)\.json$/.exec(path);
+        if (!m) return null;
+        const k = m[3];
+        return JSON.stringify({
+          schema: 2,
+          zone: m[1],
+          cycle: m[2],
+          kind: k,
+          data: k === 'meta' || k === 'obstaclemax' ? {} : k === 'aeroindex' ? {
+            fields: [],
+            rows: []
+          } : []
+        });
+      };
+      const textOf = async path => {
+        if (files.has(path)) return files.get(path);
+        if (!DATA) return null;
+        if (/^sia\/base\//.test(path) && stubZones.has(path.split('/')[2])) {
+          const s = stub(path);
+          if (s) files.set(path, s);
+          return s;
+        }
+        if (!tree.has(path)) return null;
+        const r = await fetch(DATA + path);
+        const t = r.ok ? await r.text() : null;
+        if (t !== null) files.set(path, t);
+        return t;
+      };
+      const stubZones = new Set();
+      if (DATA) {
+        const mv = JSON.parse(await (await fetch(`${DATA}sia/base/index.json`)).text());
+        for (const id of Object.keys(mv.zones || {}))
+          if (!tree.has(`sia/base/${id}/${mv.zones[id].cycle}/meta.json`)) {
+            stubZones.add(id);
+            for (const k of ['meta', 'aerodromes', 'navaids', 'points', 'vrp', 'airways', 'airspaces', 'obstacles', 'aeroindex', 'mora',
+                'obstaclemax', 'cities'
+              ]) tree.add(`sia/base/${id}/${mv.zones[id].cycle}/${k}.json`);
+          }
+      }
+
+      // ------------------------------------------------------------------ le lecteur, ses compteurs
+      const S = {
+        reads: 0,
+        readMs: 0,
+        misses: 0, // lectures d'un fichier absent
+        procReads: 0, // lectures de fichiers de procédures (proc/, proc-seen/)
+        lists: 0,
+        listMs: 0,
+        log: [] // lectures de la base : { path, ms }
+      };
+      const idle = async () => {
+        if (LAT) await sleep(LAT);
+      };
+      // cache du cadre : une vraie base IndexedDB (docs, pending, meta), les mêmes opérations que FrameData (idb(store, op, arg))
+      let dbP = null;
+      const open = () => dbP ||= new Promise((res, rej) => {
+        const r = indexedDB.open('aerodb-perf-bench', 1);
+        r.onupgradeneeded = () => {
+          for (const [n, k] of [
+              ['docs', 'path'],
+              ['pending', 'path'],
+              ['meta', 'key']
+            ]) r.result.createObjectStore(n, {
+            keyPath: k
+          });
+        };
+        r.onsuccess = () => res(r.result);
+        r.onerror = () => rej(r.error);
+      });
+      const idb = async (store, op, arg) => {
+        const d = await open();
+        return new Promise((res, rej) => {
+          const q = d.transaction(store, /^get/.test(op) ? 'readonly' : 'readwrite').objectStore(store)[op](arg);
+          q.onsuccess = () => res(q.result);
+          q.onerror = () => rej(q.error);
+        });
+      };
+      /** Charge le cache : tous les fichiers de la copie (et les zones vides du manifeste) sont déjà « lus » — l'état d'une session
+       *  qui a ouvert la base. Hors mesure. */
+      const preload = async () => {
+        const d = await open();
+        await idb('docs', 'clear');
+        await idb('pending', 'clear');
+        const paths = [...tree];
+        for (let i = 0; i < paths.length; i += 20) await Promise.all(paths.slice(i, i + 20).map(async p => {
+          const t = await textOf(p);
+          if (t !== null) await idb('docs', 'put', {
+            path: p,
+            text: t,
+            base: t,
+            rev: 'r' + t.length,
+            at: NOW,
+            policy: 'reference'
+          });
+        }));
+        await idb('meta', 'put', {
+          key: 'remote',
+          head: 'h',
+          tree: Object.fromEntries(paths.map(p => [p, 'r']))
+        });
+        void d;
+      };
+      const watchers = [],
+        lazy =
+        new Set(); // fichiers du dépôt pas encore dans le cache : leur première lecture les y fait arriver (annonce aux observateurs)
+      const reader = {
+        read: async path => {
+          const t0 = performance.now();
+          S.reads++;
+          if (/^proc/.test(path)) S.procReads++;
+          await idle();
+          let text = null;
+          if (lazy.has(path)) {
+            // première arrivée d'un fichier dans le cache du cadre, demandée par aerodb lui-même : annoncée aux observateurs PENDANT la lecture
+            lazy.delete(path);
+            if (IDB) await idb('docs', 'put', {
+              path,
+              text: files.get(path),
+              base: files.get(path),
+              rev: 'r' + files.get(path).length,
+              at: NOW,
+              policy: 'reference'
+            });
+            reader.announce(path);
+          }
+          if (IDB) {
+            await idb('pending', 'get', path);
+            const d = await idb('docs', 'get', path);
+            text = d ? d.text : null;
+            if (text === null) await idb('meta', 'get', 'remote'); // fichier absent : le cadre regarde l'arbre du dépôt
+          } else {
+            await Promise.resolve();
+            await Promise.resolve();
+            text = await textOf(path);
+          }
+          let r = null;
+          if (text !== null) r = {
+            text,
+            value: JSON.parse(text), // le cadre analyse le texte à chaque lecture
+            rev: 'r' + text.length,
+            cached: true,
+            pending: false,
+            at: NOW
+          };
+          else S.misses++;
+          const ms = performance.now() - t0;
+          S.readMs += ms;
+          if (/^sia\/base\//.test(path)) S.log.push({
+            path,
+            ms: round(ms),
+            kb: Math.round((text || '').length / 1024)
+          });
+          return r;
+        },
+        list: async prefix => {
+          const t0 = performance.now();
+          S.lists++;
+          await idle();
+          // le cadre charge tous les documents gardés, avec leur texte, pour n'en garder que les chemins du préfixe (deux fois)
+          let n = 0;
+          if (IDB) {
+            await idb('meta', 'get', 'remote');
+            await idb('pending', 'getAll');
+            n += (await idb('docs', 'getAll')).length;
+            n += (await idb('docs', 'getAll')).length;
+          } else if (SCAN) structuredClone([...files].map(([path, text]) => ({
+            path,
+            text
+          })));
+          const out = [...tree].filter(p => p.startsWith(prefix)).sort();
+          S.listMs += performance.now() - t0;
+          return out;
+        },
+        watch: (prefix, fn) => {
+          const w = {
+            prefix,
+            fn
+          };
+          watchers.push(w);
+          return () => watchers.splice(watchers.indexOf(w), 1);
+        },
+        // écriture d'un fichier par un autre appareil / une lecture à la demande : annonce aux observateurs
+        changeFile: (path, text) => {
+          files.set(path, text);
+          tree.add(path);
+          if (IDB) idb('docs', 'put', {
+            path,
+            text,
+            base: text,
+            rev: 'r' + text.length,
+            at: NOW,
+            policy: 'reference'
+          });
+          for (const w of watchers.slice())
+            if (path.startsWith(w.prefix)) w.fn([path]);
+        },
+        announce: path => {
+          for (const w of watchers.slice())
+            if (path.startsWith(w.prefix)) w.fn([path]);
+        }
+      };
+
+      // ------------------------------------------------------------------ les compteurs d'aerodb (sans toucher à aerodb.js)
+      const P = window.AeroDBProcedures,
+        C = {};
+      const resetC = () => {
+        Object.assign(C, {
+          coordsAll: 0,
+          coordsAllMs: 0, // somme des durées
+          coordsAllWall: 0, // temps où au moins un appel est en cours
+          coordsAllEmpty: 0, // appels sans réponse
+          coords: 0,
+          aerodromes: 0,
+          merge: 0,
+          mergeMs: 0,
+          phases: 0,
+          phasesMs: 0,
+          missed: 0,
+          missedMs: 0,
+          filter: 0,
+          filterMs: 0,
+          zones: []
+        });
+        S.reads = S.readMs = S.misses = S.lists = S.listMs = S.procReads = 0;
+        S.log = [];
+      };
+      resetC();
+      const timed = (obj, name, key) => {
+        const orig = obj[name];
+        obj[name] = function(...a) {
+          const t0 = performance.now();
+          try {
+            return orig.apply(this, a);
+          } finally {
+            C[key]++;
+            C[key + 'Ms'] += performance.now() - t0;
+          }
+        };
+      };
+      timed(P, 'merge', 'merge');
+      timed(P, 'withPhases', 'phases');
+      timed(P, 'markMissed', 'missed');
+      timed(P, 'filter', 'filter');
+      const make = () => {
+        const db = AeroDB.create({
+          reader,
+          lnmperf: false,
+          now: () => clock.t
+        });
+        let active = 0,
+          wallT = 0;
+        const orig = db.coordsAll;
+        db.coordsAll = async (...a) => {
+          const t0 = performance.now();
+          if (!active++) wallT = t0;
+          C.coordsAll++;
+          try {
+            const r = await orig(...a);
+            if (!r.length) C.coordsAllEmpty++;
+            return r;
+          } finally {
+            const t1 = performance.now();
+            C.coordsAllMs += t1 - t0;
+            if (!--active) C.coordsAllWall += t1 - wallT;
+          }
+        };
+        const oc = db.coords;
+        db.coords = (...a) => (C.coords++, oc(...a));
+        const oa = db.aerodromes;
+        db.aerodromes = (...a) => (C.aerodromes++, oa(...a));
+        db.on('change', e => e && e.zone && C.zones.push(e.zone));
+        return db;
+      };
+      /** Mesure un appel (ou un enchaînement) : durée et compteurs, remis à zéro avant. */
+      const probe = async (label, fn, db) => {
+        resetC();
+        const s0 = db?.procedureStats?.();
+        const t0 = performance.now();
+        const value = await fn();
+        const ms = performance.now() - t0,
+          s1 = db?.procedureStats?.();
+        const row = {
+          label,
+          ms: round(ms),
+          reads: S.reads,
+          procReads: S.procReads,
+          readMs: round(S.readMs),
+          misses: S.misses,
+          lists: S.lists,
+          listMs: round(S.listMs),
+          coordsAll: C.coordsAll,
+          coordsAllMs: round(C.coordsAllMs),
+          coordsAllWall: round(C.coordsAllWall),
+          coordsAllEmpty: C.coordsAllEmpty,
+          merge: round(C.mergeMs),
+          phases: round(C.phasesMs),
+          missed: C.missed,
+          missedMs: round(C.missedMs),
+          zones: [...C.zones],
+          zoneReads: S.log.map(x => `${x.path.replace(/^sia\/base\//, '')} ${x.ms}ms`),
+          merges: s0 && s1 ? s1.merges - s0.merges : null,
+          hits: s0 && s1 ? s1.hits - s0.hits : null
+        };
+        table.push(row);
+        return {
+          row,
+          value
+        };
+      };
+
+      if (IDB) await preload();
+
+      // ------------------------------------------------------------------ 1. un terrain à la fois, instance neuve : zone d'abord, puis procédures
+      const sums = {};
+      const dig = (k, o) => {
+        const s = JSON.stringify(o);
+        let h = 2166136261;
+        for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+        digest[k] = {
+          len: s.length,
+          hash: (h >>> 0).toString(16)
+        };
+        if (Q.get('save'))(digest.__full ||= {})[k] = s;
+      };
+      for (const k of ds.icaos) {
+        const db = make();
+        await probe(`${k} base zone load (coords)`, () => db.coords(k), db);
+        const a = await probe(`${k} procedures COLD (zone in memory)`, () => db.procedures(k), db);
+        const b = await probe(`${k} procedures WARM`, () => db.procedures(k), db);
+        await probe(`${k} runways WARM`, () => db.runways(k), db);
+        await probe(`${k} coverage 1st`, () => db.coverage(k), db);
+        await probe(`${k} coverage WARM`, () => db.coverage(k), db);
+        const id = a.value.find(p => p.kind === 'APP')?.id || a.value[0]?.id;
+        await probe(`${k} procedure(id) WARM`, () => db.procedure(id), db);
+        await probe(`${k} procedureIndex WARM`, () => db.procedureIndex(), db);
+        // appels répétés et simultanés
+        await probe(`${k} procedures x10 in a row`, async () => {
+          for (let i = 0; i < 10; i++) await db.procedures(k);
+        }, db);
+        await probe(`${k} procedures x10 concurrent`, () => Promise.all(Array.from({
+          length: 10
+        }, () => db.procedures(k))), db);
+        dig(`${k}.procedures`, a.value);
+        dig(`${k}.runways`, await db.runways(k));
+        dig(`${k}.procedure`, await db.procedure(id));
+        sums[k] = {
+          n: a.value.length,
+          // points sans position dans le fichier lu à la main (avant la pose des positions de la base)
+          unplaced: JSON.parse(files.get(`proc/manual/${k}.json`)).procedures.reduce((n, p) => n + p.points.filter(x => x.lat == null && x.id)
+            .length, 0),
+          placedNow: a.value.reduce((n, p) => n + p.points.filter(x => x.lat != null).length, 0),
+          stillUnplaced: a.value.reduce((n, p) => n + p.points.filter(x => x.lat == null && x.id).length, 0)
+        };
+        check(`${k}: warm procedures() equal to the cold answer`, JSON.stringify(a.value) === JSON.stringify(b.value), 0);
+      }
+
+      // ------------------------------------------------------------------ 2. instance neuve, sans rien en mémoire : le premier appel de l'utilisateur
+      const cold = {};
+      for (const k of ds.icaos) {
+        const db = make();
+        cold[k] = (await probe(`${k} procedures COLD (nothing in memory)`, () => db.procedures(k), db)).row;
+      }
+
+      // ------------------------------------------------------------------ 3. la suite dans l'ordre de l'utilisateur, une instance (Carburant puis la Carte)
+      if (DATA) {
+        const seq = make();
+        for (const k of ['LFBO', 'LFPO', 'EIDW', 'LFPG']) {
+          await probe(`seq ${k} procedures COLD`, () => seq.procedures(k), seq);
+        }
+        for (const k of ['LFBO', 'LFPO', 'EIDW', 'LFPG']) await probe(`seq ${k} procedures WARM`, () => seq.procedures(k), seq);
+        await probe('seq: LFPO again after EIDW and LFPG loaded their zones', () => seq.procedures('LFPO'), seq);
+      }
+
+      // ------------------------------------------------------------------ 4. ce que font Carburant et la Carte au montage (LFPO → EIDW, ou le terrain synthétique pour les deux bouts)
+      const dep = DATA ? 'LFPO' : 'ZZAA',
+        arr = DATA ? 'EIDW' : 'ZZAA';
+      let FP = null;
+      try {
+        FP = await import('../../lib/flight_path.js');
+      } catch (e) {
+        check('frame/lib/flight_path.js loads in the bench', false, String(e));
+      }
+      const pick = async () => {
+        const o = make(),
+          dl = await o.procedures(dep),
+          al = await o.procedures(arr);
+        const first = (l, kind) => l.find(p => p.kind === kind && !(p.transition));
+        const sid = first(dl, 'SID'),
+          star = first(al, 'STAR'),
+          app = first(al, 'APP'),
+          rw = x => (x?.runways || [])[0] || '';
+        return {
+          route: {
+            dep,
+            arr,
+            points: [{
+              id: dep
+            }, {
+              id: arr
+            }],
+            procedures: {
+              dep: {
+                sid: sid?.id,
+                rwy: rw(sid)
+              },
+              arr: {
+                star: star?.id,
+                app: app?.id,
+                rwy: rw(app)
+              }
+            }
+          }
+        };
+      };
+      const flight = await pick();
+      const sideModel = async (db, icao) => {
+        const [known, every, cov] = await Promise.all([db.runways(icao), db.procedures(icao), db.coverage(icao)]);
+        await db.aerodromes({
+          icao
+        });
+        return [known.length, every.length, !!cov];
+      };
+      const mount = async (db, who) => {
+        if (who === 'fuel') {
+          await Promise.all([sideModel(db, dep), sideModel(db, arr)]);
+        }
+        if (FP) await FP.loadProcedures(db, flight);
+        if (who === 'map') {
+          // la couche de couverture : les terrains de l'image, en un lot
+          const list = ds.icaos.length ? [...new Set([dep, arr, ...ds.icaos])] : [dep, arr];
+          await Promise.all(list.map(k => db.coverage(k)));
+        }
+      };
+      {
+        const db = make();
+        await probe('mount 1: Fuel (both sides + loadProcedures) COLD', () => mount(db, 'fuel'), db);
+        await probe('mount 2: Map (loadProcedures + coverage) right after', () => mount(db, 'map'), db);
+        await probe('mount 3: Fuel again (a redraw)', () => mount(db, 'fuel'), db);
+      }
+
+      // ------------------------------------------------------------------ 5. assertions de comptes (valent pour le jeu synthétique et le réel)
+      const byLabel = l => table.filter(r => r.label.includes(l));
+      for (const k of ds.icaos) {
+        const warm = byLabel(`${k} procedures WARM`)[0],
+          rwy = byLabel(`${k} runways WARM`)[0],
+          pid = byLabel(`${k} procedure(id) WARM`)[0],
+          cov = byLabel(`${k} coverage WARM`)[0],
+          seqRows = byLabel(`${k} procedures x10 in a row`)[0],
+          conc = byLabel(`${k} procedures x10 concurrent`)[0];
+        check(`${k}: a warm procedures() reads no file and lists nothing (memo trusted until an invalidation)`, warm.reads === 0 && warm.lists === 0, warm);
+        check(`${k}: a warm runways() / procedure(id) / coverage() reads no file and lists nothing`, rwy.reads + pid.reads + cov.reads + rwy.lists + pid.lists + cov.lists === 0, [rwy, pid, cov]);
+        check(`${k}: a warm procedures() merges nothing and places nothing (no coordsAll call)`, warm.merges === 0 && warm.coordsAll === 0 && warm.merge === 0, warm);
+        check(`${k}: ten calls in a row: no build, no read`, seqRows.merges === 0 && seqRows.reads === 0 && seqRows.hits === 10, seqRows);
+        check(`${k}: ten simultaneous calls: no build, no read`, conc.merges === 0 && conc.reads === 0 && conc.hits === 10, conc);
+        const c = byLabel(`${k} procedures COLD (zone in memory)`)[0];
+        // budgets larges (la machine de l'essai n'est pas connue) : de quoi attraper une relecture ou une reconstruction à chaque appel
+        check(`${k}: ten warm calls in a row cost under 200 ms (${seqRows.ms} ms); the cold build under 5 s (${c.ms} ms)`, seqRows.ms < 200 && c.ms < 5000, [seqRows.ms, c.ms]);
+        // à la construction : une recherche de position par IDENTIFIANT distinct, pas par point (la synthèse a 240 points sans position pour 42 identifiants ; les vrais fichiers, 864 pour 82)
+        if (!DATA) {
+          check(`${k}: the build looks each unplaced identifier up once, not once per point (${c.coordsAll} coordsAll calls for ${sums[k].unplaced} points)`, c.coordsAll <= 45, c);
+          check(`${k}: a cold build reads each of its proc files once (${c.procReads} reads)`, c.procReads <= 4, c);
+        }
+      }
+      // positions : celles que l'on calcule ici, indépendamment d'aerodb
+      if (!DATA) {
+        const db = make(),
+          list = await db.procedures('ZZAA');
+        let bad = 0,
+          seen = 0;
+        for (const p of list)
+          for (const pt of p.points) {
+            const w = ds.want[pt.id];
+            if (!w) continue;
+            seen++;
+            if (pt.lat !== w[0] || pt.lon !== w[1]) bad++;
+          }
+        check(`placed positions are the base's (nearest of a duplicated identifier, a point of the second zone): ${seen} points`, seen > 100 && bad === 0, {
+          seen,
+          bad
+        });
+        check('every point with an identifier is placed', list.every(p => p.points.every(pt => pt.lat != null)), 0);
+        // invalidations : un fichier changé annoncé par l'observateur est relu ; l'écho d'une lecture d'aerodb ne compte pas
+        resetC();
+        const before = db.procedureStats();
+        reader.announce('proc/manual/ZZAA.json'); // révision inchangée : l'écho de sa propre lecture
+        await sleep(20);
+        await db.procedures('ZZAA');
+        check('the watcher: an echo of a read (same revision) drops nothing', db.procedureStats().merges === before.merges, db
+          .procedureStats());
+        const text = files.get('proc/manual/ZZAA.json'),
+          o = JSON.parse(text);
+        o.procedures = o.procedures.slice(0, 30);
+        o.updated_at = '2026-10-29T11:00:00+00:00';
+        reader.changeFile('proc/manual/ZZAA.json', JSON.stringify(o));
+        await sleep(20);
+        const after = await db.procedures('ZZAA');
+        check('the watcher: a changed revision drops the entry (the next call reads and merges again, 30 procedures)', after.length ===
+          30 && db.procedureStats().merges === before.merges + 1, [after.length, db.procedureStats()]);
+        reader.changeFile('proc/manual/ZZAA.json', text);
+        await sleep(20);
+        check('the watcher: the file restored, 60 procedures again', (await db.procedures('ZZAA')).length === 60, 0);
+        // refresh() jette tout
+        const m0 = db.procedureStats().merges;
+        db.refresh();
+        await db.procedures('ZZAA');
+        check('refresh() drops the memo', db.procedureStats().merges === m0 + 1, db.procedureStats());
+        // un point que la base n'a pas : la base entière a été ouverte pour le dire, l'entrée est crue ensuite (pas de reconstruction à chaque appel)
+        reader.changeFile('proc/manual/ZZAC.json', JSON.stringify({
+          schema: 1,
+          icao: 'ZZAC',
+          cycle: CYCLE,
+          procedures: [{
+            id: 'ZZAC.SID.A.RW01',
+            icao: 'ZZAC',
+            kind: 'SID',
+            name: 'A',
+            runways: ['01'],
+            points: [{
+              seq: 1,
+              id: 'P1',
+              lat: 45,
+              lon: 3
+            }, {
+              seq: 2,
+              id: 'NOWHERE',
+              lat: null,
+              lon: null
+            }],
+            source: {
+              kind: 'eaip',
+              cycle: CYCLE
+            },
+            status: 'check'
+          }]
+        }));
+        await sleep(20);
+        const ac = await db.procedures('ZZAC'),
+          m1 = db.procedureStats().merges;
+        await db.procedures('ZZAC');
+        await db.runways('ZZAC');
+        check('a point the whole base lacks stays unplaced and the entry is built once (base fully open)', ac[0].points[1].lat ==
+          null && db.procedureStats().merges === m1, [ac[0].points[1], db.procedureStats()]);
+        const rr = (await probe('ZZAC warm', () => db.procedures('ZZAC'), db)).row;
+        check('... and a warm call reads nothing', rr.reads === 0 && rr.lists === 0 && rr.coordsAll === 0, rr);
+        // la base a changé (fichier publié remplacé, révision autre) : toute fiche qui a lu la base est refaite avec la nouvelle position
+        const ptsPath = `sia/base/zz/${CYCLE}/points.json`,
+          ptsText = files.get(ptsPath),
+          pts = JSON.parse(ptsText);
+        pts.data.find(x => x.id === 'FX000').lat = 46.5;
+        reader.changeFile(ptsPath, JSON.stringify(pts));
+        await sleep(60);
+        const moved = (await db.procedures('ZZAA')).flatMap(r => r.points).filter(x => x.id === 'FX000');
+        check('a changed file of the published base: the next call places the point at its new position', moved.length > 0 && moved
+          .every(x => x.lat === 46.5), moved.slice(0, 2));
+        reader.changeFile(ptsPath, ptsText);
+        await sleep(60);
+        // un fichier absent n'est pas gardé : le terrain arrive plus tard (lecture à la demande)
+        const e0 = await db.procedures('ZZAB');
+        reader.changeFile('proc/manual/ZZAB.json', JSON.stringify({
+          schema: 1,
+          icao: 'ZZAB',
+          cycle: CYCLE,
+          procedures: [{
+            id: 'ZZAB.SID.A.RW01',
+            icao: 'ZZAB',
+            kind: 'SID',
+            name: 'A',
+            runways: ['01'],
+            points: [{
+              seq: 1,
+              id: 'X',
+              lat: 1,
+              lon: 1
+            }],
+            source: {
+              kind: 'eaip',
+              cycle: CYCLE
+            },
+            status: 'check'
+          }]
+        }));
+        await sleep(20);
+        // un fichier qui arrive dans le cache PENDANT la lecture d'aerodb (annoncé aux observateurs) n'est pas un changement : une construction
+        files.set('proc/manual/ZZAE.json', JSON.stringify({
+          schema: 1,
+          icao: 'ZZAE',
+          cycle: CYCLE,
+          procedures: [{
+            id: 'ZZAE.SID.A.RW01',
+            icao: 'ZZAE',
+            kind: 'SID',
+            name: 'A',
+            runways: ['01'],
+            points: [{
+              seq: 1,
+              id: 'X',
+              lat: 1,
+              lon: 1
+            }],
+            source: {
+              kind: 'eaip',
+              cycle: CYCLE
+            },
+            status: 'check'
+          }]
+        }));
+        tree.add('proc/manual/ZZAE.json');
+        lazy.add('proc/manual/ZZAE.json');
+        const ev = [],
+          off = db.on('change', e => ev.push(e)),
+          mz = db.procedureStats().merges;
+        await db.procedures('ZZAE');
+        await db.procedures('ZZAE');
+        off();
+        check('a file arriving in the cache during the own read of aerodb is no change: one build, no event for the terrain', db
+          .procedureStats().merges === mz + 1 && !ev.some(e => e.procedures === 'ZZAE'), [db.procedureStats(), ev]);
+        // sans fichier : crue 30 s seulement (le lecteur n'avait peut-être pas encore le fichier)
+        const g1 = (await probe('ZZAD no file, 1st', () => db.procedures('ZZAD'), db)).row,
+          g2 = (await probe('ZZAD no file, 2nd (same instant)', () => db.procedures('ZZAD'), db)).row;
+        clock.t += 31e3;
+        const g3 = (await probe('ZZAD no file, 31 s later', () => db.procedures('ZZAD'), db)).row;
+        clock.t -= 31e3;
+        check('a terrain with no file is read once, not again at the same instant, and again 31 s later', g1.reads > 0 && g2.reads ===
+          0 && g3.reads > 0, [g1.reads, g2.reads, g3.reads]);
+        check('a terrain with no file (0 procedures) is served again once its file arrives', e0.length === 0 && (await db.procedures(
+          'ZZAB')).length === 1, e0);
+      }
+
+      // ------------------------------------------------------------------ rapport
+      const f = (r, ...keys) => keys.map(k => `${k}=${Array.isArray(r[k]) ? r[k].length : r[k]}`).join(' ');
+      const lines = table.map(r => `${r.label.padEnd(58)} ${String(r.ms).padStart(8)} ms | reads ${String(r.reads).padStart(3)} (${String(r.readMs).padStart(6)}) lists ${r.lists} (${r.listMs}) | coordsAll ${String(r.coordsAll).padStart(4)} sum ${r.coordsAllMs} wall ${r.coordsAllWall} empty ${r.coordsAllEmpty} | merge ${r.merge} phases ${r.phases} missed ${r.missed}/${r.missedMs} | merges ${r.merges} hits ${r.hits} | zones ${r.zones.join(',')}${r.zoneReads.length ? ' | ' + r.zoneReads.join('; ') : ''}`);
+      document.getElementById('table').textContent = lines.join('\n');
+      window.__perfBench = {
+        table,
+        digest,
+        sums,
+        lines
+      };
+    } catch (e) {
+      check('the bench ran to the end', false, String(e && e.stack || e));
+    }
+    const ol = document.getElementById('out');
+    results.forEach(r => {
+      const li = document.createElement('li');
+      li.className = r.ok ? 'ok' : 'ko';
+      li.textContent = r.name + (r.detail ? ' — ' + r.detail.slice(0, 600) : '');
+      ol.appendChild(li);
+    });
+    const fail = results.filter(r => !r.ok).length;
+    document.getElementById('state').textContent = `${results.length - fail} passed, ${fail} failed`;
+    window.__perfBench = Object.assign(window.__perfBench || {}, {
+      done: true,
+      pass: results.length - fail,
+      fail,
+      rows: results.map(r => (r.ok ? 'ok   ' : 'FAIL ') + r.name + (r.detail ? ' — ' + r.detail.slice(0, 600) : ''))
+    });
+  })();
+</script>
+</body></html>

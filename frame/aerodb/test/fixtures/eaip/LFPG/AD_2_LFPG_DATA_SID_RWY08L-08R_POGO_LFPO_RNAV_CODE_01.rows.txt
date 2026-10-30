@@ -1,0 +1,28 @@
+AD 2 LFPG DATA SID RWY08L-08R POGO LFPO RNAV CODE 01AIP
+01 OCT 2026FRANCE
+PARIS CHARLES DE GAULLE (LFPG)
+SID RNAV POGO RWY 08L-08R
+Réacteurs (R) et hélices (H) / Turbofans (R) and turboprops (H)
+RMK MAG VAR 2020 1.1°E Ref NAVAID : PGS
+RWY 08L - 08R
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM) (Protégés pour / Protected for CAT A, B, C, D)
+PO 7H
+RWY08L - 084 085.4
+CF PG081 - - - - - 1.0
+RWY08R - 081 082.4
+- TF PG084 Yes 084 085.5 4.8 - 2000 2000 - 1.0
+- DF PG109 - - - - R - - - 1.0
+- TF PG800 - 229 230.2 24.0 - - - - 1.0
+- TF PG801 - 271 272.4 4.1 - - - 220 1.0
+- FM PG801 - 271 272.4 - - - - - -
+PO 7L
+RWY08L - 084 085.4
+-- 1.0CF PG081 - - -
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - 1.0
+- DF PG085 - - - - - - - - 1.0
+- TF PG802 - 187 187.7 9.2 R - - - 1.0
+- TF PG803 - 254 254.9 5.0 - - 4000 220 1.0
+- FM PG803 - 254 254.9 - - - - - -
+AMDT 10/26© Service de l'Information Aéronautique, France

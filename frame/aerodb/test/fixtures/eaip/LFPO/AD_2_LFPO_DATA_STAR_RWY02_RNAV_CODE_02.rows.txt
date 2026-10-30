@@ -1,0 +1,46 @@
+AIP AD 2 LFPO DATA STAR RWY02 RNAV CODE 02
+FRANCE 31 OCT 24
+PARIS ORL Y
+Réacteurs et Hélices / Jets and Propellers
+(Protégées pour / Protected for CA T A, B, C, D)
+STAR RNAV RWY 02
+RMK GNSS - DME/DME MAG VAR 2020 1,0°E REF N AVAID :
+Procedure Path Waypoint
+Identifcation Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+NIMER 9E (UIR)
+I F N I M E R - ---- - - - 1,0
+TF SOMED - 094 095,1 23,9 - - FL240 280 1,0
+TF DIBES - 056 056,9 7,9 - - - - 1,0
+TF CAD - 018 018,9 35,0 - FL130 FL130 - 1,0
+TF SOTIP - 033 034,0 5,2 - - FL120 250 1,0
+TF ODILO - 033 034,1 8,0 - FL100 FL100 - 1,0
+AMB 9E (UIR FIR)
+I F A M B - ---- - F L 2 4 0 2 8 0 1,0
+→ TF DIBES - 018 019,2 5,0 - - - - 1,0
+TF CAD - 018 018,9 35,0 - FL130 FL130 - 1,0
+TF SOTIP - 033 034,0 5,2 - - FL120 250 1,0
+TF ODILO - 033 034,1 8,0 - FL100 FL100 - 1,0
+LUMAN 9E (FIR)
+I F L U M A N - ---- - - 2 8 0 1,0
+TF CAD - 078 079,3 39,9 - FL130 FL130 - 1,0
+TF SOTIP - 033 034,0 5,2 - - FL120 250 1,0
+TF ODILO - 033 034,1 8,0 - FL100 FL100 - 1,0
+BOBSA 9E (FIR)
+I F B O B S A - ---- - - - 1,0
+TF BENAR - 164 165,2 15,1 - FL130 FL130 280 1,0
+TF CAD - 113 114,0 28,3 - FL130 FL130 - 1,0
+TF SOTIP - 033 034,0 5,2 - - FL120 250 1,0
+TF ODILO - 033 034,1 8,0 - FL100 FL100 - 1,0
+CAD 9E (UIR FIR)
+I F C A D - ---- FL130 FL130 - 1,0
+TF SOTIP - 033 034,0 5,2 - - FL120 250 1,0
+TF ODILO - 033 034,1 8,0 - FL100 FL100 - 1,0
+HOLDING
+LORNI - L O R N I - ---- - - - -
+MOLBA - M O L B A - ---- - - - -
+ODILO - O D I L O - ---- - - - -
+XERAM - X E R A M - ---- - - - -
+OKRIX - O K R I X - ---- - - - -
+CAD - C A D - ---- - - - -
+DIBES - D I B E S - ---- - - - -
+AMDT 11/24 © SIA

@@ -79,20 +79,29 @@ def tenths(text):
     return int(v) if v == int(v) else v
 
 
+def fix_at(coords, apt, ident, sec, reg):
+    """Position d'un point d'après sa section : en route (EA), radiobalise (D, DB), propre au terrain (PC, PG, PN, PA) avec repli."""
+    if sec == 'EA':
+        return coords['E'].get((ident, reg)) or coords['E'].get(ident)
+    if sec in ('D ', 'DB'):
+        return coords['N'].get((ident, reg)) or coords['N'].get(ident)
+    return coords['T'].get((apt, ident)) or coords['E'].get((ident, reg)) or coords['N'].get((ident, reg))
+
+
 def leg_of(l, coords, apt):
-    """Tronçon d'un enregistrement de procédure : (point du schéma commun sans seq, clé de fix) ou (None, raison)."""
+    """Tronçon d'un enregistrement de procédure : (point du schéma commun sans seq, raison ou None). Un tronçon sans point
+    (VA, CA, VM, FM… : un cap jusqu'à une altitude ou jusqu'à un guidage) est GARDÉ, sans position (`id`, `lat`, `lon` null),
+    avec son cap et sa contrainte : la Carte le dessine comme un trait le long du cap (§ 10.20), jamais un point inventé."""
     ident = l[29:34].strip()
     pt = l[47:49]
-    if not ident:
-        return None, 'sans point'
     sec, reg = l[36:38], l[34:36]
-    if sec == 'EA':
-        c = coords['E'].get((ident, reg)) or coords['E'].get(ident)
-    elif sec in ('D ', 'DB'):
-        c = coords['N'].get((ident, reg)) or coords['N'].get(ident)
-    else:                                                   # PC, PG, PN, PA : propres au terrain, sinon repli sur les points en route
-        c = coords['T'].get((apt, ident)) or coords['E'].get((ident, reg)) or coords['N'].get((ident, reg))
-    p = {'id': ident, 'lat': c[0] if c else None, 'lon': c[1] if c else None, 'alt': constraint(l[82], l[84:89], l[89:94]), 'leg': pt}
+    c = fix_at(coords, apt, ident, sec, reg) if ident else None
+    p = {'id': ident or None, 'lat': c[0] if c else None, 'lon': c[1] if c else None, 'alt': constraint(l[82], l[84:89], l[89:94]), 'leg': pt}
+    if pt == 'RF':                                          # arc à rayon constant : son centre (champ 5.144) et son rayon (5.204, NM, 3 décimales)
+        cid = l[106:111].strip()
+        cc = fix_at(coords, apt, cid, l[114:116], l[112:114]) if cid else None
+        if cc and re.fullmatch(r'\d{6}', l[56:62]):
+            p['arc'] = {'centre': {'id': cid, 'lat': cc[0], 'lon': cc[1]}, 'radius': int(l[56:62]) / 1000}
     if l[43] in 'LR':
         p['turn'] = l[43]
     if re.fullmatch(r'\d{3}', l[44:47]) and l[44:47] != '000':
@@ -110,14 +119,15 @@ def leg_of(l, coords, apt):
     if l[40] == 'Y':
         p['over'] = True
     p['_missed'] = l[42] == 'M'
-    p['_found'] = c is not None
-    return p, None
+    p['_found'] = c is not None or not ident               # un tronçon sans point n'a pas de position à trouver
+    return p, (None if ident else 'sans point')
 
 
 def parse(lines):
     """Lignes ARINC 424-18 → ({ terrain: fichier }, cycle 'AANN'). `lines` : chaînes de 132 caractères (sans fin de ligne)."""
     coords = {'T': {}, 'E': {}, 'N': {}}
     proc = {}
+    runways = {}
     cycle = None
     for l in lines:
         if l.startswith('HDR01'):
@@ -131,6 +141,12 @@ def parse(lines):
             c = latlon(l[32:51])
             if c:
                 coords['T'][(l[6:10].strip(), l[6:10].strip() if l[12] == 'A' else l[13:18].strip())] = c
+            if l[12] == 'G' and c and l[13:15] == 'RW':     # piste (5.4 PG) : seuil, altitude du seuil, QFU, seuil décalé, longueur, largeur
+                num = lambda t: int(t) if t.strip().isdigit() else None
+                brg = num(l[27:31])
+                runways.setdefault(l[6:10].strip(), []).append({
+                    'id': l[15:18].strip(), 'lat': c[0], 'lon': c[1], 'elev': num(l[66:71]), 'qfu': brg / 10 if brg is not None else None,
+                    'displaced': num(l[71:75]) or 0, 'length': num(l[22:27]), 'width': num(l[77:80]), 'source': 'cifp'})
         elif s2 == 'EA':
             c = latlon(l[32:51])
             if c:
@@ -143,7 +159,7 @@ def parse(lines):
                 coords['N'].setdefault(l[13:17].strip(), c)
         elif l[4] == 'P' and l[5] == ' ' and l[12] in 'DEF' and l[38] == '0':
             proc.setdefault(l[6:10].strip(), []).append(l)
-    return {apt: build(apt, ls, coords) for apt, ls in proc.items()}, cycle
+    return {apt: {**build(apt, ls, coords), 'runways': sorted(runways.get(apt, []), key=lambda r: r['id'])} for apt, ls in proc.items()}, cycle
 
 
 def _seq(legs):
@@ -158,20 +174,19 @@ def build(apt, lines, coords):
     skipped = 0
     missing = set()
 
-    def legs(key):
+    def legs(key, phase='main'):
+        """Tronçons d'un enregistrement, chacun avec sa phase : `phase` (main, trans pour une transition), missed après le
+        point d'approche interrompue."""
         nonlocal skipped
         out, missed = [], False
         for l in sorted(groups[key], key=lambda x: x[26:29]):
             p, why = leg_of(l, coords, apt)
-            if p is None:
+            if why:
                 skipped += 1
-                missed = missed or l[42] == 'M'
-                continue
             if not p.pop('_found'):
                 missing.add(p['id'])
             m = p.pop('_missed')
-            if missed:
-                p['phase'] = 'missed'
+            p['phase'] = 'missed' if missed else phase
             if m:
                 missed = True
             out.append(p)
@@ -219,29 +234,29 @@ def build(apt, lines, coords):
                 pts = [p for s in seqs for p in s]
                 add(sub, name, run, None, pts, kind, rwtag=(r[3] if r else None))
             for e in en_t:
-                add(sub, name, [], e[3], legs(e), kind)
+                add(sub, name, [], e[3], legs(e, 'trans'), kind)
         else:
             finals = [k for k in keys if k[2] != 'A']
             trans = [k for k in keys if k[2] == 'A']
             for f in finals:
                 fl = legs(f)
-                run = sorted({p['id'][2:] for p in fl if re.fullmatch(r'RW\d\d[LRC]?', p['id'])}) or []
+                run = sorted({p['id'][2:] for p in fl if re.fullmatch(r'RW\d\d[LRC]?', p['id'] or '')}) or []
                 m = re.search(r'(\d\d[LRC]?)', name)
                 run = run[-1:] or ([m.group(1)] if m else [])
                 add(sub, name, run, None, fl, 'APP', {'type': APP_TYPES.get(f[2], f[2])})
                 for t in trans:
-                    tl = legs(t)
-                    if tl and fl and tl[-1]['id'] == fl[0]['id']:
+                    tl = legs(t, 'trans')
+                    if tl and fl and tl[-1]['id'] and tl[-1]['id'] == fl[0]['id']:
                         fl2 = fl[1:]
                     else:
                         fl2 = fl
                     add(sub, name, run, t[3], tl + [dict(p) for p in fl2], 'APP', {'type': APP_TYPES.get(f[2], f[2])})
             if not finals:
                 for t in trans:
-                    add(sub, name, [], t[3], legs(t), 'APP')
+                    add(sub, name, [], t[3], legs(t, 'trans'), 'APP')
     warnings = []
     if skipped:
-        warnings.append(f'{skipped} tronçon(s) sans point (cap ou montée jusqu\'à une altitude) laissés de côté')
+        warnings.append(f'{skipped} tronçon(s) sans point (cap ou montée jusqu\'à une altitude) gardés sans position')
     if missing:
         warnings.append(f'coordonnées introuvables: {", ".join(sorted(missing))}')
     return {'procedures': procs, 'warnings': warnings}
@@ -283,7 +298,7 @@ def main(argv=None):
         for p in d['procedures']:
             p['source'].update({'cycle': eff, 'at': eff})
         doc = {'schema': 1, 'icao': apt, 'cycle': eff, 'updated_at': datetime.now(timezone.utc).isoformat(timespec='seconds'),
-               'procedures': d['procedures'], 'warnings': d['warnings'], 'notice': NOTICE}
+               'procedures': d['procedures'], 'runways': d.get('runways', []), 'warnings': d['warnings'], 'notice': NOTICE}
         f.write_text(json.dumps(doc, ensure_ascii=False, separators=(',', ':')) + '\n', encoding='utf-8')
         c = {'SID': 0, 'STAR': 0, 'APP': 0}
         for p in d['procedures']:

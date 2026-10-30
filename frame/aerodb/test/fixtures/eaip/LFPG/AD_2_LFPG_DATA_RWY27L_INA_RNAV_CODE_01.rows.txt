@@ -1,0 +1,62 @@
+AIP AD 2 LFPG DATA RWY27L INA RNAV CODE
+01
+10 JUL 2025FRANCE
+INA RNAV RWY 27L PARIS CHARLES DE GAULLE
+RMK (1) Réacteurs / Jets = (R) - Hélices / Propellers = (H) MAG VAR 2020 1.1°E REF NAVAID : BT
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (m) Navigation Accuracy (NM) PRECODING INA RNAV LORNI-VEBEK-OKIPA-BANOX-MOPAR-MOBRO RWY 27L
+HLDG - LORNI - ---- - - -- -
+HLDG - OKIPA - ---- - - -- -
+HLDG - BANOX - ---- - - -- -
+HLDG - MOPAR - ---- - - -- -
+IF LORNI - ---- FL070 FL130 250 - 1,0
+INA
+TF PG520 - 208 209,5 10,0 - - - - - 1,0
+LORNI 1W
+FM - - 208 - - - - - - - -
+IF VEBEK - ---- FL080 FL110 250 - 1,0
+INA
+TF CTL - 207 207,9 8,9 - - - - - 1,0
+VEBEK 1W
+FM - - 224 - - - - - - - -
+FL070 (R) (1) FL110 (R) (1)
+IF OKIPA - - 1,0 - - - 250 -
+INA FL070 (H) (1) FL100 (H) (1)
+OKIPA 1W TF PG522 - 329 330,1 12,0 - - - - - 1,0
+FM - - 329 - - - - - - - -
+FL140 (R) (1) FL150 (R) (1)
+IF BANOX - - - - - 300 1,0 -
+FL140 (H) (1) FL140 (H) (1)
+TF DOMUS - 043 043,8 26,2 - - - - - 1,0
+INA TF PG510 - 084 084,9 9,9 - - - - - 1,0
+BANOX 1W TF PG515 - 084 085,1 9,8 - - - - - 1,0
+TF PG516 - 088 088,9 8,0 - - - - - 1,0
+TF PG517 Y 088 089,1 13,5 - - - - - 1,0
+FM - - 088 - - - - - - - -
+IF BANOX - ---- FL170 FL180 300 - 1,0
+TF DOMUS - 043 043,8 26,2 - FL140 FL160 - - 1,0
+TF PG510 - 084 084,9 9,9 - FL130 FL140 250 - 1,0
+INA
+TF PG515 - 084 085,1 9,8 - - - - - 1,0
+BANOX 1X
+TF PG516 - 088 088,9 8,0 - - - - - 1,0
+TF PG517 Y 088 089,1 13,5 - - - - - 1,0
+FM - - 088 - - - - - - - -
+IF MOPAR - ---- FL110 FL120 300 - 1,0
+TF PG534 - 093 093,9 24,8 - - - - - 1,0
+INA
+TF CREIL - 093 094,4 5,0 - - - - - 1,0
+MOPAR 1W
+TF PG536 - 099 100,1 8,0 - - - - - 1,0
+FM - - 099 - - - - - - - -
+IF MOPAR - ---- FL150 FL160 300 - 1,0
+TF PG534 - 093 093,9 24,8 - - - - - 1,0
+INA
+TF CREIL - 093 094,4 5,0 - FL110 FL120 250 - 1,0
+MOPAR 1X
+TF PG536 - 099 100,1 8,0 - - - - - 1,0
+FM - - 099 - - - - - - - -
+IF MOBRO - ---- FL070 (H) (1) FL070 (H) (1) 250 - 1,0
+INA TF BOV - 092 092,9 21,4 - - - - - 1,0
+MOBRO 1W TF PG528 - 106 107,2 15,6 - - - - - 1,0
+FM - - 106 - - - - - - - -
+AMDT 07/25© Service de l'Information Aéronautique, France

@@ -1,0 +1,14 @@
+AD 2 LFPG DATA RWY26R FNA ILS CAT123 LOC CODEAIP
+01 OCT 2026FRANCE
+PARIS CHARLES DE GAULLE
+PRECODING FNA ILS CAT 123 LOC RWY 26R
+AMDT 10/26© Service de l'Information Aéronautique, France
+FNA ILS CAT I ou/or CAT II et/and CAT III ou/or LOC RWY 26R
+RMK API / Missed approach : RNAV 1 requis / required MAG VAR 2020 1.1°E REF NAVAID : -
+Leg
+sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (m) NAV Spec
+IF IG26R - --- - 400 0 - -- 1.0
+See chart FNA ILS CAT I ou/or CAT II et/and CAT III ou/or LOC RWY 26R
+APCH CA - - 264 265.3 - - 2500 - -- 1.0
+DF PG442 -- - - - -- - - 1.0
+TF AMJUS - 339 339.8 11.5 - 400 0 400 0 - - 1.0

@@ -1,0 +1,96 @@
+AD 2 LFPG DATA SID RWY26L-26R RNAV CODE 03AIP
+01 OCT 2026FRANCE
+PARIS CHARLES DE GAULLE
+Réacteurs (R) et hélices (H) / Turbofans (R) and turboprops (H)
+SID RNAV RWY 26L - 26R
+(Protégés pour / Protected for CAT A, B, C, D)
+AMDT 10/26© Service de l'Information Aéronautique, France
+SID RNAV RWY 26L - 26R
+RM K MAG VAR 2020 1.1°E Ref NAVAID : BT
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+ERIXU 7B
+RWY26L - 267 268.4
+CF PG263 - - - - - 1.0
+RWY26R - 264 265.3
+- TF PG264 Y 264 265.2 4.7 - - - - 1.0
+- TF PG268 - 264 265.2 13.8 - - - - 1.0
+- TF RBT - 179 180.5 18.7 - - - - 1.0
+- TF EDOXA - 157 158.4 23.4 - - - - 1.0
+- TF ERIXU - 170 170.8 12.6 - - - 280 1.0
+LATRA 7B
+RWY26L - 267 268.4
+CF PG263 - - - -- 1.0
+RWY26R - 264 265.3
+- TF PG264 Y 264 265.2 4.7 - - - - 1.0
+- TF PG267 - 264 265.2 11.2 - - - - 1.0
+- TF DEROL - 170 171.4 17.5 -- - - 1.0
+- TF LALUX - 154 154.7 26.1 -- - - 1.0
+- TF LATRA - 159 160.4 12.9 - - - 280 1.0
+OKASI 7B
+RWY26L - 267 268.4
+CF PG263 - - - - - 1.0
+RWY26R - 264 265.3
+- TF PG264 Y 264 265.2 4.7 - - - - 1.0
+- TF PG266 - 264 265.2 9.3 - - - - 1.0
+- TF PG289 - 161 162.2 9.6 - - - - 1.0
+- TF DOPAP - 156 157.4 7.4 -- - - 1.0
+- TF ODEBU - 149 149.9 29.4 -- - - 1.0
+- TF OKASI - 152 152.8 13.3 - - - 280 1.0
+PILUL 7B
+RWY26L - 267 268.4
+CF PG263 - - - -- 1.0
+RWY26R - 264 265.3
+- TF PG264 Y 264 265.2 4.7 - - - - 1.0
+- TF PG266 - 264 265.2 9.3 - - - - 1.0
+- TF PG289 - 161 162.2 9.6 - - - - 1.0
+- TF OXCEL - 122 123.3 9.7 - - - - 1.0
+- TF PEKIM - 146 147.3 32.3 - - - - 1.0
+- TF PILUL - 141 142.2 14.6 - - - 280 1.0
+AGOPA 7E
+RWY26L - 267 268.4
+CF PG263 - - - - - 1.0
+RWY26R - 264 265.3
+- TF PG264 Y 264 265.2 4.7 - - - - 1.0
+- TF PG268 - 264 265.2 13.8 - - - - 1.0
+- TF RBT - 179 180.5 18.7 - - - - 1.0
+- TF ADAD A - 178 179.0 21.6 - - - - 1.0
+- TF AGOPA - 178 178.9 12.7 - - - 280 1.0
+ERIXU 7E
+RWY26L - 267 268.4
+CF PG263 - - - -- 1.0
+RWY26R - 264 265.3
+- TF PG264 Y 264 265.2 4.7 - - - - 1.0
+- TF PG268 - 264 265.2 13.8 - - - - 1.0
+- TF RBT - 179 180.5 18.7 - - - - 1.0
+- TF EDOXA - 157 158.4 23.4 - - - - 1.0
+- TF ERIXU - 170 170.8 12.6 - - - 280 1.0
+LATRA 7E
+RWY26L - 267 268.4
+CF PG263 - - - - - 1.0
+RWY26R - 264 265.3
+- TF PG264 Y 264 265.2 4.7 - - - - 1.0
+- TF PG267 - 264 265.2 11.2 - - - - 1.0
+- TF DEROL - 170 171.4 17.5 -- - - 1.0
+- TF LALUX - 154 154.7 26.1 -- - - 1.0
+- TF LATRA - 159 160.4 12.9 - - - 280 1.0
+OKASI 7E
+RWY26L - 267 268.4
+CF PG263 - - - -- 1.0
+RWY26R - 264 265.3
+- TF PG264 Y 264 265.2 4.7 - - - - 1.0
+- TF PG266 - 264 265.2 9.3 - - - - 1.0
+- TF PG289 - 161 162.2 9.6 - - - - 1.0
+- TF DOPAP - 156 157.4 7.4 -- - - 1.0
+- TF ODEBU - 149 149.9 29.4 -- - - 1.0
+- TF OKASI - 152 152.8 13.3 - - - 280 1.0
+PILUL 7E
+RWY26L - 267 268.4
+CF PG263 - - - - - 1.0
+RWY26R - 264 265.3
+- TF PG264 Y 264 265.2 4.7 - - - - 1.0
+- TF PG266 - 264 265.2 9.3 - - - - 1.0
+- TF PG289 - 161 162.2 9.6 - - - - 1.0
+- TF OXCEL - 122 123.3 9.7 - - - - 1.0
+- TF PEKIM - 146 147.3 32.3 - - - - 1.0
+- TF PILUL - 141 142.2 14.6 - - - 280 1.0

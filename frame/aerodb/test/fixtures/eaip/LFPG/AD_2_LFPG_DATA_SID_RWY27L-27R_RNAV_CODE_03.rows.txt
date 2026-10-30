@@ -1,0 +1,101 @@
+AD 2 LFPG DATA SID RWY27L-27R RNAV CODE 03AIP
+01 OCT 2026FRANCE
+PARIS CHARLES DE GAULLE SID RNAV RWY 27L - 27R
+RMK Réacteurs (R) et hélices (H) / Turbofans (R) and turboprops (H) MAG VAR 2020 1.1°E Ref NAVAID : BT
+Procedure Identification Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM) SID RNAV RWY 27L - 27R
+(Protégés pour / Protected for CAT A, B, C, D)
+LATRA 7A
+RWY27L - 264 265.3
+CF PG271 - - - - - 1.0
+RWY27R - 261 261.6
+- TF PG272 Y 264 265.2 3.3 - - - - 1.0
+- CF PG280 Y 273 274.0 -- - - - 1.0
+- DF DEROL - - - - - - - - 1.0
+- TF LALUX - 154 154.7 26.1 -- -- 1.0
+- TF LATRA - 159 160.4 12.9 - - - 280 1.0
+OKASI 7A
+RWY27L - 264 265.3
+CF PG271 - - - - - 1.0
+RWY27R - 261 261.6
+- TF PG272 Y 264 265.2 3.3 - - - - 1.0
+- CF PG280 Y 273 274.0 -- - - - 1.0
+- DF PG289 - - - - - - - - 1.0
+- TF DOPAP - 156 157.4 7.4 -- -- 1.0
+- TF ODEBU - 149 149.9 29.4 -- -- 1.0
+- TF OKASI - 152 152.8 13.3 - - - 280 1.0
+PILUL 7A
+RWY27L - 264 265.3
+CF PG271 - - - - - 1.0
+RWY27R - 261 261.6
+- TF PG272 Y 264 265.2 3.3 - - - - 1.0
+- CF PG280 Y 273 274.0 -- - - - 1.0
+- DF PG289 - - - - - - - - 1.0
+- TF OXCEL - 122 123.3 9.7 - - - - 1.0
+- TF PEKIM - 146 147.3 32.3 - - - - 1.0
+- TF PILUL - 141 142.2 14.6 - - - 280 1.0
+AGOPA 7D
+RWY27L - 264 265.3
+CF PG271 - - - - - 1.0
+RWY27R - 261 261.6
+- TF PG272 Y 264 265.2 3.3 - - - - 1.0
+- CF PG280 Y 273 274.0 -- - - - 1.0
+- DF RBT - - - - - - - - 1.0
+- TF ADAD A - 178 179.0 21.6 - - - - 1.0
+- TF AGOPA - 178 178.9 12.7 - - - 280 1.0
+ERIXU 7D
+RWY27L - 264 265.3
+CF PG271 - - - - - 1.0
+RWY27R - 261 261.6
+- TF PG272 Y 264 265.2 3.3 - - - - 1.0
+- CF PG280 Y 273 274.0 -- - - - 1.0
+- DF RBT - - - - - - - - 1.0
+- TF EDOX A - 157 158.4 23.4 - - - - 1.0
+- TF ERIXU - 170 170.8 12.6 - - - 280 1.0
+LATRA 7D
+RWY27L - 264 265.3
+CF PG271 - - - - - 1.0
+RWY27R - 261 261.6
+- TF PG272 Y 264 265.2 3.3 - - - - 1.0
+- CF PG280 Y 273 274.0 -- - - - 1.0
+- DF DEROL - - - - - - - - 1.0
+- TF LALUX - 154 154.7 26.1 -- -- 1.0
+- TF LATRA - 159 160.4 12.9 - - - 280 1.0
+OKASI 7D
+RWY27L - 264 265.3
+CF PG271 - - - - - 1.0
+RWY27R - 261 261.6
+- TF PG272 Y 264 265.2 3.3 - - - - 1.0
+- CF PG280 Y 273 274.0 -- - - - 1.0
+- DF PG289 - - - - - - - - 1.0
+- TF DOPAP - 156 157.4 7.4 -- -- 1.0
+- TF ODEBU - 149 149.9 29.4 -- -- 1.0
+- TF OKASI - 152 152.8 13.3 - - - 280 1.0
+PILUL 7D
+RWY27L - 264 265.3
+CF PG271 - - - - - 1.0
+RWY27R - 261 261.6
+- TF PG272 Y 264 265.2 3.3 - - - - 1.0
+- CF PG280 Y 273 274.0 -- - - - 1.0
+- DF PG289 - - - - - - - - 1.0
+- TF OXCEL - 122 123.3 9.7 - - - - 1.0
+- TF PEKIM - 146 147.3 32.3 - - - - 1.0
+- TF PILUL - 141 142.2 14.6 - - - 280 1.0
+AGOPA 7Z
+RWY27L - 264 265.3
+CF PG270 - - - - - 1.0
+RWY27R - 261 262.5
+- TF PG290 Y 327 327.9 3.8 - - - - 1.0
+-C F AMJUS - 271 272.0 -- - - - 1.0
+- TF RBT - 182 183.6 26.6 - - - - 1.0
+- TF ADAD A - 178 179.0 21.6 - - - - 1.0
+- TF AGOPA - 178 178.9 12.7 - - - 280 1.0
+ERIXU 7Z
+RWY27L - 264 265.3
+CF PG270 - - - - - 1.0
+RWY27R - 261 262.5
+- TF PG290 Y 327 327.9 3.8 - - - - 1.0
+-C F AMJUS - 271 272.0 -- - - - 1.0
+- TF RBT - 182 183.6 26.6 - - - - 1.0
+- TF EDOX A - 157 158.4 23.4 - - - - 1.0
+- TF ERIXU - 170 170.8 12.6 - - - 280 1.0
+AMDT 10/26© Service de l'Information Aéronautique, France

@@ -1,0 +1,17 @@
+AIP AD 2 LFPO DATA RWY06 FNA ILS CAT123
+LOC CODE
+10 JUL 2025FRANCE
+PARIS ORLY
+PRECODING FNA ILS CAT 123 LOC RWY06
+AMDT 07/25© Service de l'Information Aéronautique, France
+FNA ILS CAT I or CAT II or CAT III RWY06
+RMK ILS procedure only - LOC ONLY prohibited MAG VAR 2020 1.0°E REF NAVAID : -
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (m) Navigation Accuracy (NM)
+IF IPO06 -- - -- 4000 -- - -
+See chart AD 2 LFPO IAC RWY06 FNA ILS CAT123
+- PO411 - -- -- - 2000 - - 1.0
+APCH
+TF PO412 - 158 158.6 6.6 R 2000 2000 - - 1.0
+TF MLN - 158 158.7 16.8 - - 4000 - - 1.0
+TF MOLBA Yes 133 133.9 13.9 - FL 070 FL 070 230 - 1.0
+HLDG - MOLBA -- - - - - - - - -

@@ -1,0 +1,16 @@
+AD 2 LFPO DATA RWY02 FNA ILS CAT1 LOC CODEAIP
+01 OCT 2026FRANCE
+PARIS ORLY
+PRECODING FNA ILS CAT1 LOC RWY 02
+AMDT 10/26© Service de l'Information Aéronautique, France
+FNA ILS LOC RWY 02
+RMK - MAG VAR 2020 1.0°E REF NAVAID : -
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) Navigation Accuracy (NM)
+HLDG MOLBA - - ---- - - -- -
+IF IPO02 - ---- 3000 - - - -
+See chart ILS or LOC RWY 02
+- PO403 Yes - - - - -- - - 1.0
+APCH
+DF PO406 -- - - R - 2000 - - 1.0
+TF MLN - 150 151.5 20.2 - - 4000 - - 1.0
+TF MOLBA - 133 133.9 13.9 FL070 FL070 230 - 1.0

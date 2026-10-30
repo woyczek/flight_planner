@@ -1,0 +1,138 @@
+{
+ "icao": "LFBO",
+ "cycle": "2026-10-01",
+ "source": "SIA eAIP",
+ "generated_at": "2026-10-29T18:06:58+00:00",
+ "pages": [
+  {
+   "file": "AD_2_LFBO_DATA_01.pdf",
+   "pages": 1,
+   "rows": 44,
+   "sha256": "13e876723fc3e578a2fd09a9a8a493f41ab64cb7d15d7c47410a06298a364a82"
+  },
+  {
+   "file": "AD_2_LFBO_DATA_02.pdf",
+   "pages": 1,
+   "rows": 45,
+   "sha256": "0883a71b8a3137135946d65dc207b5cd02d64a30f099fb81e8019d9c0acee462"
+  },
+  {
+   "file": "AD_2_LFBO_DATA_03.pdf",
+   "pages": 1,
+   "rows": 33,
+   "sha256": "4078d34697a11ed32912aa47d9aa6e5f522585cf335695e842ea565a38810bda"
+  },
+  {
+   "file": "AD_2_LFBO_DATA_RWY14L_FNA_ILS_Z_LOC_Z_CODE.pdf",
+   "pages": 1,
+   "rows": 16,
+   "sha256": "93c595c4b8f0ae846115c1abb7b03ffa4ef1cd6f84fd5221c4b53d1890ed24dc"
+  },
+  {
+   "file": "AD_2_LFBO_DATA_RWY14L_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 18,
+   "sha256": "122f85f0c6a33a766e1a5e0d43a13b9376079f08a2522879368db635b3ca4288"
+  },
+  {
+   "file": "AD_2_LFBO_DATA_RWY14L_INA_CODE_GNSS.pdf",
+   "pages": 1,
+   "rows": 27,
+   "sha256": "e347f802900d3e8472de9ac6dfafc135fcf5377245c57260d8cad5698f923907"
+  },
+  {
+   "file": "AD_2_LFBO_DATA_RWY14R_FNA_ILS_Z_LOC_Z_CODE.pdf",
+   "pages": 1,
+   "rows": 16,
+   "sha256": "ce37b456cd0c009ba40e26fd98b7d68e5c68b6b3720abf17eb99fb765dab4d10"
+  },
+  {
+   "file": "AD_2_LFBO_DATA_RWY14R_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 18,
+   "sha256": "d8659e59c925979d0f57b5444babe45dec1d132c145e0ea7bba7d62c5a409406"
+  },
+  {
+   "file": "AD_2_LFBO_DATA_RWY14R_INA_CODE_GNSS.pdf",
+   "pages": 1,
+   "rows": 26,
+   "sha256": "170d141e7df4de81997bc820521120a42c2cbf38bce1d4da43d91806b34980e4"
+  },
+  {
+   "file": "AD_2_LFBO_DATA_RWY32L_FNA_ILS_Z_LOC_Z_CODE.pdf",
+   "pages": 1,
+   "rows": 16,
+   "sha256": "e56b3837057172e4d45e2bb9b11418cd7c6d126494a19d9ba549b43c069609e1"
+  },
+  {
+   "file": "AD_2_LFBO_DATA_RWY32L_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 18,
+   "sha256": "3f6c058b63a352e73ad46a2b4c7aa51890f9be9d4b7bb7ac5e5e27dace2510d9"
+  },
+  {
+   "file": "AD_2_LFBO_DATA_RWY32L_INA_CODE_GNSS.pdf",
+   "pages": 1,
+   "rows": 34,
+   "sha256": "6fc40406bffbfe20f29035b0f609c35c8bd4fe76dead8f61bb0e9d38123ef294"
+  },
+  {
+   "file": "AD_2_LFBO_DATA_RWY32R_FNA_ILS_Z_LOC_Z_CODE.pdf",
+   "pages": 1,
+   "rows": 16,
+   "sha256": "8687df230772ac3cf17ce112d31a26afaa6844ac99015726a812b6934c631f86"
+  },
+  {
+   "file": "AD_2_LFBO_DATA_RWY32R_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 18,
+   "sha256": "cd4d3022e6d0208f2e5e83c279b17988fb01f0e9050e40efeaa1cdd819e00556"
+  },
+  {
+   "file": "AD_2_LFBO_DATA_RWY32R_INA_CODE_GNSS.pdf",
+   "pages": 1,
+   "rows": 34,
+   "sha256": "533a19595248a047a65eb49859b6a4c249ea521524ed05aa7cf10bcff172e23a"
+  },
+  {
+   "file": "AD_2_LFBO_DATA_SID_RWY14L-14R_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 70,
+   "sha256": "eb0420fecd3d4f5f9db05ef131e225a735db0f3ee16edee1b4b4f6fb5cc3723d"
+  },
+  {
+   "file": "AD_2_LFBO_DATA_SID_RWY14L-14R_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 31,
+   "sha256": "aff8c235550114e4eac036d5f6d981d7cc26e0e434681aad74474fa5172dbac4"
+  },
+  {
+   "file": "AD_2_LFBO_DATA_SID_RWY32L-32R_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 59,
+   "sha256": "42e102779ec5395feb3b6a14381c7f96d470b7b6084a9481ed90ccf95e5371fd"
+  },
+  {
+   "file": "AD_2_LFBO_DATA_SID_RWY32L-32R_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 31,
+   "sha256": "118e6c3be6e3af2762177e0d2e38427b852d63c9715867920dbb99b68b3c0f54"
+  },
+  {
+   "file": "AD_2_LFBO_DATA_STAR_RWY14_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 46,
+   "sha256": "199b45e80ce076345221ba2c6d32b6cde503ee315626860a851a1d8aa6589959"
+  },
+  {
+   "file": "AD_2_LFBO_DATA_STAR_RWY32_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 47,
+   "sha256": "b0623477ffe14bb86748d0c6f30ac7cab8fe99ffb46e407bd2cac055483de59f"
+  }
+ ],
+ "ad2_12": {
+  "file": "FR-AD-2.LFBO.AD-2.12.html",
+  "sha256": "87b09ac410894927f101a631386f0e9aa4747cc570446d4e7da481b5afa2200c"
+ }
+}

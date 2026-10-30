@@ -1,14 +1,11 @@
-"""Sonde EAD Basic : explore la bibliothèque AIP avec VOTRE compte, en lecture seule, et écrit un compte rendu à me renvoyer.
+"""Bibliothèque EAD Basic (EUROCONTROL) : connexion, relevé des États, récupération des documents de procédures d'UN terrain, lecture des tables de codage.
 
-  python tools/proc_ead.py --probe [--user NOM] [--state "United Kingdom"] [--icao EGLL] [--name EGLL] [--download] [--out ead_probe]
+  python tools/proc_ead.py --survey all|EG,ED,LF [--user NOM] [--out dossier]     relevé par État (survey.json, survey.txt)
+  python tools/proc_ead.py --fetch EGLL [--user NOM] [--out dossier] [--manual-dir dossier]     les documents d'UN terrain, lus
 
-Ce que la sonde fait : se connecte (formulaire AJAX de la page de connexion publique), parcourt les pages jusqu'à la bibliothèque AIP, lit son
-formulaire (listes déroulantes, boutons), tente une recherche (État choisi, partie AD, type AIP, langue EN) et liste les documents trouvés.
-Ce qu'elle ne fait pas : télécharger un PDF (sauf --download : un seul, dans ead_probe/cache/), écrire quoi que ce soit hors du dossier --out, garder le mot de passe (demandé à l'invite, ou
-variable EAD_PASSWORD), le montrer, ou l'envoyer ailleurs qu'à www.ead.eurocontrol.int. Le compte rendu (report.txt) est nettoyé : ni mot de passe, ni nom
-d'utilisateur, ni cookie, ni jeton d'état de page, ni adresse de courriel. Relisez-le avant de me le transmettre.
-Écrite sans avoir vu l'écran connecté : si une étape échoue, le compte rendu dit laquelle et garde la page reçue (nettoyée) pour la suite.
-Bibliothèque standard seulement. Aucun PDF, aucune dépendance (pypdf n'est pas nécessaire ici).
+La sonde de découverte (lecture seule, compte rendu à renvoyer) est dans tools/ead_probe.py depuis V3 § 10.29 (b) : elle partage avec ce module l'adresse du site, la session et la
+lecture des formulaires, et rien d'autre. Mot de passe demandé à l'invite ou variable EAD_PASSWORD ; jamais gardé ni journalisé (sanitize). Bibliothèque standard seulement (pypdf et
+l'OCR à la demande, par proc_pdf et proc_ocr).
 """
 import argparse
 import getpass
@@ -138,11 +135,6 @@ def fields_by_label(markup):
     return labels, {n: v for n, v, t in ids.values() if t in ('text', 'hidden')}
 
 
-def pager_text(body):
-    """Texte du paginateur PrimeFaces (« Page 1 of 16 », « 1-15 of 1155 ») s'il y en a un."""
-    return [text_of(m) for m in re.findall(r'(?is)ui-paginator-current[^>]*>(.*?)</span>', body)][:2]
-
-
 def result_info(body):
     """(lignes, nombre, message) des RÉSULTATS d'une réponse : lignes du <tbody id=…searchResults_data> seulement (les autres tableaux de la page sont de la mise en page), nombre
     de « Number of search results: N » et « No data found. » s'ils y sont."""
@@ -160,6 +152,18 @@ def result_info(body):
     return rows, count, msg
 
 
+def page_rows(body, table):
+    """(lignes, trouvé) d'une réponse à un changement de page : la mise à jour `<update id=table>` ne contient que des lignes nues `<tr data-ri=…>` (sans <table> ni <tbody …_data> : c'est ce
+    que veut dire _skipChildren de PrimeFaces, vu sur le vrai écran le 28 octobre 2026) ; si elle a un <tbody>, result_info les lit. `trouvé` est faux quand la réponse n'a aucune mise à jour du tableau."""
+    frag = next((f for i, f in partial_updates(body) if i == table), None)
+    if frag is None:
+        rows, _, _ = result_info(body)
+        return rows, bool(rows)
+    if re.search(r'(?i)<tbody\b', frag):
+        return result_info(body)[0], True
+    return [r for r in parse_rows('<table><tbody>' + frag + '</tbody></table>') if not (len(r['cells']) == 1 and r['cells'][0].startswith('No data found'))], True
+
+
 def describe(body):
     """Résumé d'une réponse JSF partielle : taille, composants mis à jour (id et taille), erreurs, redirection, messages affichés."""
     ups = [(m.group(1), len(m.group(2))) for m in re.finditer(r'(?s)<update id="([^"]*)">\s*<!\[CDATA\[(.*?)\]\]>\s*</update>', body)]
@@ -167,11 +171,6 @@ def describe(body):
     red = re.findall(r'<redirect url="([^"]*)"', body)
     msg = [text_of(m)[:160] for m in re.findall(r'(?is)ui-messages?-(?:error|warn|info|fatal)[^>]*>(.*?)</(?:div|ul|span|li)>', body)][:4]
     return f'{len(body)} octets | mises à jour: ' + ', '.join(f'{i[-45:]}({n})' for i, n in ups[:12]) + (f' | erreurs: {err}' if err else '') + (f' | redirection: {red}' if red else '') + (f' | messages: {msg}' if msg else '') + (' | début: ' + text_of(body)[:160] if not ups else '')
-
-
-def sent_summary(d):
-    """Noms des paramètres envoyés, avec la valeur des courts hors jetons d'état : pour comparer avec la requête du navigateur."""
-    return {k: ('<état>' if re.search(r'ViewState|jid|token|nonce', k, re.I) else (v if len(str(v)) <= 40 else '<long>')) for k, v in sorted(d.items())}
 
 
 def view_state(body):
@@ -244,221 +243,6 @@ class Session:
             raise SystemExit('redirection hors de www.ead.eurocontrol.int refusée: ' + sanitize(str(e), self.secrets)) from None
 
 
-def probe(user, password, state, icao, out, name=None, download=False, aip_type='AIP', docs=None):
-    out = Path(out)
-    out.mkdir(parents=True, exist_ok=True)
-    s = Session([user, password])
-    rep = []
-    say = lambda *a: rep.append(sanitize(' '.join(str(x) for x in a), s.secrets))
-
-    def keep(name, body):
-        s.n += 1
-        (out / f'{s.n:02d}_{name}.html').write_text(sanitize(body, s.secrets), encoding='utf-8')
-    say('SONDE EAD BASIC — état demandé:', state, '— terrain:', icao)
-    code, url, body = s.call(LOGIN_PAGE)
-    say('1. page de connexion:', code)
-    code, url, body = s.call(LOGIN_POST, {'j_username': user, 'j_password': password},
-                             {'X-Requested-With': 'XMLHttpRequest', 'Referer': LOGIN_PAGE})
-    ok, msg = login_result(body)
-    say('2. connexion:', 'OUI' if ok else 'NON', '| code', code, '|', msg[:200])
-    if not ok:
-        return finish(out, rep, s)
-    j = login_json(body) or {}
-    home = j.get('redirect') or '/fwf-eadbasic/public/static/home.faces'
-    home = urllib.parse.urljoin(HOST, home)
-    code, url, body = s.call(home)
-    keep('accueil', body)
-    say('3. accueil:', code, sanitize(url, s.secrets))
-    links = parse_links(body)
-    say('   liens de la page d\'accueil (texte -> adresse):')
-    for label, href in links[:80]:
-        say('     ', label[:70], '->', href[:140])
-    lib = next(((l, h) for l, h in links if re.search(r'AIP', l + h, re.I) and re.search(r'librar|bibli', l + h, re.I)), None) \
-        or next(((l, h) for l, h in links if re.search(r'AIP', l, re.I)), None)
-    if not lib:
-        say('4. bibliothèque AIP: lien introuvable dans l\'accueil (voir 01_accueil.html nettoyé)')
-        return finish(out, rep, s)
-    code, url, body = s.call(urllib.parse.urljoin(url, lib[1]))
-    keep('bibliotheque', body)
-    say('4. bibliothèque AIP:', lib[0], '| code', code, '|', sanitize(url, s.secrets))
-    forms = parse_forms(body)
-    for f in forms:
-        say('   formulaire', f['id'], f['method'], f['action'][:100])
-        say('     champs:', {k: ('<état>' if re.search(r'ViewState|jid|token|nonce', k, re.I) else (v[:30] if len(v) < 40 else '<long>')) for k, v in f['fields'].items()})
-        say('     cases à cocher:', f['checkboxes'])
-        for sel_name, opts in f['selects'].items():
-            say(f'     liste {sel_name}: {len(opts)} options:', '; '.join(f'{v}={l}'[:60] for v, l in opts[:400]))
-        for b in f['buttons']:
-            say('     bouton', b)
-    form = next((f for f in forms if f['selects']), forms[0] if forms else None)
-    if not form:
-        say('5. aucun formulaire dans la page de la bibliothèque')
-        return finish(out, rep, s)
-    data = dict(form['fields'])
-    chosen = {}
-    for sel, opts in form['selects'].items():
-        labels = ' | '.join(l for _, l in opts)
-        for kind, test, wanted in (('État', lambda: pick(opts, state) is not None, state), ('partie', lambda: re.search(r'\bENR\b', labels) and re.search(r'\bAD\b', labels), r'^AD$'),
-                                   ('type', lambda: re.search(r'\bAMDT\b', labels) and re.search(r'\bSUP\b', labels), '^' + re.escape(aip_type) + '$'),
-                                   ('langue', lambda: re.search(r'\bEN\b', labels), r'^EN\b|^English')):
-            if kind not in chosen.values() and test():
-                v = pick(opts, wanted)
-                if v is not None:
-                    chosen[sel] = kind
-                    data[sel] = v
-                    break
-    for sel, opts in form['selects'].items():
-        if sel not in data:
-            civil = pick(opts, r'^Civil') if re.search(r'Civil', ' '.join(l for _, l in opts)) else None
-            data[sel] = civil if civil is not None else form['defaults'].get(sel, '')          # le navigateur envoie TOUTES les listes
-            chosen[sel] = 'défaut' if civil is None else 'type d\'autorité'
-    say('5. choix faits dans les listes:', chosen or 'aucun (voir les options ci-dessus)')
-    adv = next((k for k in form['checkboxes'] if re.search(r'advanced', k, re.I)), None)
-    btn = next((b for b in form['buttons'] if re.search(r'search|suche|recherche', b['label'] + b['value'] + b['id'], re.I)), form['buttons'][0] if form['buttons'] else None)
-    action = urllib.parse.urljoin(url, form['action'] or url)
-    hdr = {'Faces-Request': 'partial/ajax', 'X-Requested-With': 'XMLHttpRequest', 'Referer': url}
-    rows_of = lambda body: result_info(body)[0]
-    if not btn:
-        say('6. aucun bouton de recherche reconnu')
-        return finish(out, rep, s)
-    src = btn['id'] or btn['name']
-
-    sent = {}
-
-    def ajax(extra, tag, source, event=None, execute='@all', render='@all'):
-        d = dict(data)
-        d.update(extra)
-        d.update({'javax.faces.partial.ajax': 'true', 'javax.faces.source': source, 'javax.faces.partial.execute': execute, 'javax.faces.partial.render': render})
-        if event:
-            d['javax.faces.partial.event'] = event
-        sent['last'] = d
-        code, _, body = s.call(action, d, hdr)
-        keep(tag, body)
-        vs = view_state(body)
-        if vs:
-            data['javax.faces.ViewState'] = vs          # JSF peut renouveler l'état de la page : le suivant est utilisé
-        return code, body
-
-    last = {'body': ''}
-
-    def search(extra, tag, execute='mainForm', render='mainForm'):
-        code, body = ajax({**extra, src: src}, tag, src, execute=execute, render=render)
-        if rows_of(body):
-            last['body'] = body                           # la dernière réponse qui portait des lignes
-        return code, body, rows_of(body)
-    st = next((k for k, v in chosen.items() if v == 'État'), None)
-    if st:                                               # le navigateur déclenche un événement à la sélection de l'État : on le rejoue avant de chercher
-        w = st[:-6] if st.endswith('_input') else st
-        for event in ('valueChange', 'change'):
-            code, cb = ajax({}, 'changement_etat', w, event=event, execute=w)
-            ok_ev = '<error' not in cb and 'redirect' not in cb and code == 200
-            say('   sélection de l\'État, événement', event, '->', code, describe(cb)[:260])
-            if ok_ev:
-                break
-    code, body, rows = search({}, 'recherche_ajax')
-    say('6. recherche (État + partie AD):', code, len(body), 'octets |', len(rows), 'ligne(s) de résultats | nombre annoncé:', result_info(body)[1], result_info(body)[2], '| paginateur:', pager_text(body) or 'aucun')
-    say('   réponse:', describe(body))
-    say('   paramètres envoyés:', sent_summary(sent['last']))
-    result_ids = [m.group(1) for m in re.finditer(r'(?s)<update id="([^"]*)">\s*<!\[CDATA\[(.*?)\]\]>', body) if 'searchResults' in m.group(2) and 'ViewState' not in m.group(1)]
-    say('   composant(s) portant les lignes:', result_ids or 'aucun identifié')
-    hit = lambda r: icao.upper() in ' '.join(r['cells'] + [h for _, h in r['links']]).upper()
-    field = None
-    if name:
-        if adv:
-            wid = adv[:-6] if adv.endswith('_input') else adv
-            labels, extra_fields = {}, {}
-            for event in ('valueChange', 'change'):
-                code, tb = ajax({adv: 'on'}, 'recherche_avancee', wid, event=event, execute=wid)
-                labels, extra_fields = fields_by_label(tb)
-                if any(re.search(r'document.?name', l, re.I) for l in labels) or extra_fields:
-                    break
-            say('   case recherche avancée', adv, '->', code, '| champs apparus:', labels or extra_fields or 'aucun')
-            data[adv] = 'on'
-            data.update({k: v for k, v in extra_fields.items() if not re.search(r'ViewState', k)})
-            field = next((n for l, n in labels.items() if re.search(r'document.?name', l, re.I)), None)
-        else:
-            field = next((k for k in form['fields'] if re.search(r'document.?name', k, re.I)), None)
-            say('   case recherche avancée: aucune dans le formulaire')
-        say('   champ « Document Name »:', field or 'INTROUVABLE')
-        code, cbody, crows = search({}, 'recherche_apres_bascule')
-        say('   contrôle: la recherche sans nom, après la bascule, rend', len(crows), 'ligne(s) de résultats, nombre annoncé', result_info(cbody)[1], '|', describe(cbody)[:300])
-        if field:
-            variants = [('ciblée, tout le formulaire', 'mainForm', 'mainForm'),      # la seule forme qui a rendu des lignes sur le vrai écran (28 octobre)
-                        ('formulaire (execute @form, render @all)', '@form', '@all'), ('tout (execute et render @all)', '@all', '@all'),
-                        ('ciblée (execute champs + bouton, render composants des lignes)', f'{src} {field} {adv}', ' '.join(result_ids) or '@all')]
-            use = {'v': variants[0]}
-
-            def by_name(text, tag):
-                code, body, rs = search({field: text}, tag, use['v'][1], use['v'][2])
-                say(f'   nom « {text} »:', code, len(rs), 'ligne(s) de résultats | nombre annoncé:', result_info(body)[1], result_info(body)[2], '| paginateur:', pager_text(body) or 'aucun')
-                if not rs:
-                    say('      réponse:', describe(body)[:400])
-                return rs
-            for v in variants:
-                use['v'] = v
-                code, vbody, vrs = search({field: name}, 'variante', v[1], v[2])
-                say('   variante', v[0], '->', len(vrs), 'ligne(s)')
-                if len(vrs) or v is variants[-1]:
-                    say('   paramètres envoyés (variante):', sent_summary(sent['last']))
-                    if len(vrs):
-                        break
-            rows = [] if docs else by_name(name, 'recherche_nom')
-            tail = name.split('_', 1)[1] if '_' in name else name
-            contains = by_name(tail, 'recherche_nom_contient') if tail != name and not docs else []
-            if not docs:
-                say('   le champ fait', '« contient »' if contains else ('« commence par » (ou rien de plus large trouvé)' if rows else 'pas de résultat'), f'(« {name} »: {len(rows)}, « {tail} »: {len(contains)})')
-            if not rows and not docs:
-                say('   repli: noms exacts', f'{name}_<section>-<n>_en.pdf', '(section 1 à 8, n de 1 à 9, arrêt au premier vide par section)')
-                for sec in range(1, 9):
-                    for n in range(1, 10):
-                        rs = by_name(f'{name}_{sec}-{n}_en.pdf', f'recherche_{sec}_{n}')
-                        if not rs:
-                            break
-                        rows += rs
-    tables = [t for _, frag in partial_updates(last['body']) for t in re.findall(r'(?is)<table\b.*?</table>', frag)]
-    if tables:
-        (out / 'tables.html').write_text(sanitize('\n\n'.join(tables)[:40000], s.secrets), encoding='utf-8')
-        say('   ead_probe/tables.html: le(s) <table> des résultats, nettoyé(s) (à coller si je le demande)')
-    say('7. tableau des résultats retenu:', len(rows), 'ligne(s) |', sum(1 for r in rows if hit(r)), 'pour', icao)
-    for r in rows[:300]:
-        say('     ', f"[{r['ri']}]", ' | '.join(c[:70] for c in r['cells']), '| liens:', [(l[:40], h[:100]) for l, h in r['links']][:3],
-            '| boutons:', [(b['id'][-40:], b['name'][-40:], b['onclick'][:60]) for b in r['buttons']][:2], '| commandes:', r['actions'][:2])
-    def fetch(rs, label0):
-        """Télécharge le document de la première ligne de `rs` (lien direct, sinon bouton ▶ de la ligne) dans ead_probe/cache/ ; PDF seulement."""
-        row = next((r for r in rs if hit(r)), None)
-        target = next(((l, h) for l, h in row['links'] if h), None) if row else None
-        raw, label = b'', ''
-        if row and not target and row['buttons']:
-            bt = row['buttons'][-1]                          # le bouton ▶ de la ligne : envoi classique du formulaire avec ce bouton
-            d = dict(data)
-            d[bt['name'] or bt['id']] = bt['value'] or bt['name'] or bt['id']
-            code, u3, raw = s.call(action, d, {'Referer': url}, raw=True)
-            label = label0 or ' '.join(row['cells'])[:60]
-            say('8. téléchargement par le bouton', bt['id'][-40:], 'de', label, ':', code, len(raw), 'octets', '| PDF' if raw[:5] == b'%PDF-' else '| PAS un PDF')
-            if raw[:5] != b'%PDF-':
-                say('   début de la réponse:', sanitize(raw[:300].decode('utf-8', 'replace'), s.secrets).replace('\n', ' '))
-        elif target:
-            code, u3, raw = s.call(urllib.parse.urljoin(url, target[1]), headers={'Referer': url}, raw=True)
-            label = label0 or target[0]
-            say('8. téléchargement de', label[:60], ':', code, len(raw), 'octets', '| PDF' if raw[:5] == b'%PDF-' else '| PAS un PDF')
-        else:
-            say('8. téléchargement:', label0 or icao, ': aucune ligne')
-        if raw[:5] == b'%PDF-':
-            cache = out / 'cache'
-            cache.mkdir(exist_ok=True)
-            (cache / ((re.sub(r'[^A-Za-z0-9._-]+', '_', label)[:80] or 'page').removesuffix('.pdf') + '.pdf')).write_bytes(raw)
-            say('   gardé dans', 'ead_probe/cache/ (cache local: ne va jamais dans le dépôt)')
-    if docs and field:
-        for d_name in docs:                                  # noms exacts demandés (--docs) : une recherche et un téléchargement chacun
-            rs = by_name(d_name, 'recherche_doc')
-            say('   document', d_name, ':', len(rs), 'ligne(s)')
-            if rs:
-                fetch(rs, d_name)
-    elif download:
-        fetch(rows, '')
-    return finish(out, rep, s)
-
-
 # ---------------------------------------------------------------------------------------------------------- bibliothèque AIP : relevé des États et récupération d'un terrain
 SELECT_KINDS = [('authority', r'AuthorityCode', r'Albania|Belgium|France'), ('atype', r'AuthorityType', r'Civil'), ('lang', r'Language', r'^EN$'),
                 ('type', r'AipType', r'AMDT'), ('part', r'AipPart', r'ENR')]
@@ -467,6 +251,14 @@ SURVEY_KEYS = {'CODING': 'CODING', 'SID': 'DEPARTURE', 'STAR': 'ARRIVAL', 'IAP':
 ALT_KEYS = ['SID', 'STAR', 'IAC', 'RNAV', 'CODAGE', 'ARRIVEE', 'DEPART', 'APPROCHE']
 SHAPES = [('mainForm', 'mainForm'), ('@form', '@all'), ('@all', '@all')]
 MIN_DELAY = 1.0  # secondes au moins entre deux requêtes de la bibliothèque (conditions d'accès automatisé inconnues : EAD_BASIC.md § 1)
+# Pagination du tableau de résultats (PrimeFaces, 15 lignes par page). NOMS DE PARAMÈTRES NON VUS sur le vrai écran (28 octobre 2026) : ce sont ceux que PrimeFaces envoie
+# pour un changement de page de <p:dataTable> ; si l'EAD répond autrement, la console imprime ce qui a été envoyé et l'anatomie de la réponse (voir EadLibrary._more_pages), et ce
+# dictionnaire seul est à corriger. {t} = identifiant du tableau (mainForm:searchResults), {first} = rang de la première ligne de la page demandée.
+PAGE_ROWS = 15
+MAX_PAGES = 50      # pages parcourues au plus par recherche (jamais de boucle sans fin)
+PAGE_TABLE = 'mainForm:searchResults'
+PAGE_PARAMS = {'{t}': '{t}', '{t}_pagination': 'true', '{t}_first': '{first}', '{t}_rows': str(PAGE_ROWS), '{t}_skipChildren': 'true', '{t}_encodeFeature': 'true'}
+SAFE_NAME = re.compile(r'^[A-Za-z0-9._-]+$')  # le nom d'un document d'EAD Basic, tel qu'il devient un nom de fichier du cache (proc_pdf.safe_path)
 ICAO_RE = re.compile(r'^[A-Z0-9]{4}$')  # un code OACI : entre dans un nom de fichier (cache, interprétation manuelle), jamais un chemin
 
 
@@ -488,6 +280,7 @@ class EadLibrary:
         self.say, self.keep, self.delay = say, keep or (lambda n, b: None), max(MIN_DELAY, float(delay or 0))
         self.data, self.sel, self.opts, self.f = {}, {}, {}, {}
         self.shape, self.url, self.action, self.src = 0, '', '', ''
+        self.last_sent, self._page_diag = {}, False
 
     def _wait(self):
         if self.delay:
@@ -552,6 +345,7 @@ class EadLibrary:
         d.update({'javax.faces.partial.ajax': 'true', 'javax.faces.source': source, 'javax.faces.partial.execute': execute, 'javax.faces.partial.render': render})
         if event:
             d['javax.faces.partial.event'] = event
+        self.last_sent = d
         code, _, body = self.s.call(self.action, d, {'Faces-Request': 'partial/ajax', 'X-Requested-With': 'XMLHttpRequest', 'Referer': self.url})
         self.keep(tag, body)
         vs = view_state(body)
@@ -582,8 +376,10 @@ class EadLibrary:
                 break
         return True
 
-    def search(self, name=None, heading=None):
-        """Recherche avec les listes en cours et les filtres « nom du document » et « titre » (contient) ; rend { rows, count, msg } ; la forme de requête qui marche est gardée."""
+    def search(self, name=None, heading=None, all_pages=False):
+        """Recherche avec les listes en cours et les filtres « nom du document » et « titre » (contient) ; rend { rows, count, msg } ; la forme de requête qui marche est gardée.
+        `all_pages` : parcourt aussi les pages suivantes du tableau (15 lignes par page), chacune par une requête espacée comme les autres ; la clé `warning` dit pourquoi le parcours
+        s'est arrêté avant d'avoir lu toutes les lignes annoncées (réponse d'erreur, page sans ligne nouvelle, 50 pages) ; `pages` compte les pages lues."""
         extra = {self.f['name']: name or '', self.src: self.src}
         if self.f.get('heading'):
             extra[self.f['heading']] = heading or ''
@@ -593,8 +389,44 @@ class EadLibrary:
             rows, count, msg = result_info(body)
             if count is not None or rows:
                 self.shape = (self.shape + i) % len(SHAPES)
-                return {'rows': rows, 'count': count if count is not None else len(rows), 'msg': msg}
-        return {'rows': [], 'count': 0, 'msg': 'réponse sans tableau de résultats'}
+                res = {'rows': rows, 'count': count if count is not None else len(rows), 'msg': msg, 'pages': 1, 'warning': ''}
+                if all_pages and rows and res['count'] > len(rows):
+                    self._more_pages(res, extra, body)
+                return res
+        return {'rows': [], 'count': 0, 'msg': 'réponse sans tableau de résultats', 'pages': 0, 'warning': ''}
+
+    def _more_pages(self, res, extra, first_body):
+        """Lit les pages 2, 3… du tableau de résultats (changement de page PrimeFaces, requête partielle sur le tableau) et ajoute leurs lignes à `res`. S'arrête quand les lignes lues
+        atteignent le nombre annoncé, quand une page ne donne aucune ligne nouvelle, quand la réponse est une erreur, une redirection ou n'a pas de mise à jour du tableau (ses lignes y sont nues, sans <tbody>), ou après MAX_PAGES pages : `res['warning']`
+        dit alors combien de lignes ont été lues. La première fois, la console imprime les paramètres envoyés et l'anatomie de la réponse (les noms de PAGE_PARAMS n'ont pas été vus)."""
+        m = re.search(r'id="([^"]*searchResults)_data"', first_body)
+        table = m.group(1) if m else PAGE_TABLE
+        key = lambda r: (tuple(r['cells']), tuple(h for _, h in r['links']))
+        seen = {key(r) for r in res['rows']}
+        base = {k: v for k, v in extra.items() if k != self.src}          # le bouton « Search » n'est pas cliqué par un changement de page
+        for page in range(1, MAX_PAGES):
+            if len(res['rows']) >= res['count']:
+                return
+            params = {k.format(t=table, first=''): v.format(t=table, first=page * PAGE_ROWS) for k, v in PAGE_PARAMS.items()}
+            code, body = self._ajax({**base, **params}, 'page', table, execute=table, render=table)
+            if not self._page_diag:
+                self._page_diag = True
+                # deux lignes courtes (le journal du lanceur coupe vers 500 caractères) : l'anatomie de la réponse, puis les seuls NOMS des paramètres envoyés
+                self.say('pagination (noms de paramètres non vus sur le vrai écran), réponse :', describe(body))
+                self.say('pagination, paramètres envoyés :', ', '.join(sorted(self.last_sent)))
+            got, found = page_rows(body, table)
+            if code != 200 or '<error' in body or '<redirect' in body or not found:
+                res['warning'] = f'{len(res["rows"])} ligne(s) lue(s) sur {res["count"]} : la page {page + 1} a répondu par une erreur ou sans tableau de résultats'
+                return
+            new = [r for r in got if key(r) not in seen]
+            if not new:
+                res['warning'] = f'{len(res["rows"])} ligne(s) lue(s) sur {res["count"]} : la page {page + 1} ne donne aucune ligne nouvelle'
+                return
+            seen.update(key(r) for r in new)
+            res['rows'] += new
+            res['pages'] += 1
+        if len(res['rows']) < res['count']:
+            res['warning'] = f'{len(res["rows"])} ligne(s) lue(s) sur {res["count"]} : arrêt après {MAX_PAGES} pages'
 
     def fetch(self, row):
         """Octets du document d'une ligne de résultats (lien direct, sinon bouton ▶ de la ligne), ou None."""
@@ -702,21 +534,28 @@ def survey(lib, states, out, say=print):
     return res
 
 
-def fetch_ad(lib, icao, out, say=print, manual_dir=None):
+def fetch_ad(lib, icao, out, say=print, manual_dir=None, step=None):
     """Récupère les documents de procédures d'UN terrain, à la demande : cartes (Charts) dont le titre dit CODING / DEPARTURE / ARRIVAL / APPROACH et nom contenant AD_2_<OACI>_ ;
     télécharge et lit les tables de codage (textes lisibles ; disposition inconnue ou dessinée en vecteurs signalée, jamais devinée ; un fichier d'interprétation manuelle
-    <manual_dir>/<OACI>.json est ajouté s'il est là) ; écrit <out>/<OACI>.json (format publié) et la liste de tous les documents trouvés (adresses de cartes pour le lecteur PDF)."""
+    <manual_dir>/<OACI>.json est ajouté s'il est là) ; écrit <out>/<OACI>.json (format publié) et la liste de tous les documents trouvés (adresses de cartes pour le lecteur PDF).
+    `step(texte, fait, total, unité)` : l'avancement chiffré (le lanceur le donne au travail, d'où la page lit « 12/31 ») — les 4 recherches, les documents téléchargés, lus puis analysés
+    (une lecture de PDF dure de 1 à 2 s : sans ces nombres, les trois minutes d'un terrain à 31 documents se passent sans rien montrer) ; `fait` est le nombre de pas déjà terminés quand le texte
+    annonce le suivant."""
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    import proc_eaip
+    import proc_pdf
+    import proc_records
+    step = step or (lambda *a: None)
     icao = icao_code(icao)
     if not lib.authority(icao[:2]):
         raise SystemExit(f'autorité {icao[:2]} non proposée par la bibliothèque')
     lib.choose('part', 'AD')
     found = {}
     lib.choose('type', 'Charts')
-    for k, kw in SURVEY_KEYS.items():
-        r = lib.search(name=f'AD_2_{icao}_', heading=kw)
-        say(f'{icao}: {k}: {r["count"]} document(s)' + (f' (ATTENTION : {len(r["rows"])} seulement lus, la page suivante n\'est pas parcourue)' if r['count'] > len(r['rows']) else ''))
+    for i, (k, kw) in enumerate(SURVEY_KEYS.items()):
+        step(f'{icao}: recherche des documents {k}', i, len(SURVEY_KEYS), 'recherches')
+        r = lib.search(name=f'AD_2_{icao}_', heading=kw, all_pages=True)
+        say(f'{icao}: {k}: {r["count"]} document(s)' + (f' en {r["pages"]} pages' if r['pages'] > 1 else '')
+            + (f' (ATTENTION : {r["warning"] or str(len(r["rows"])) + " seulement lus"})' if r['count'] > len(r['rows']) else ''))
         for row in r['rows']:
             name, title = row_summary(row)
             found.setdefault(name, {'name': name, 'title': title, 'kinds': [], 'row': row})['kinds'].append(k)
@@ -725,20 +564,38 @@ def fetch_ad(lib, icao, out, say=print, manual_dir=None):
     pdfs = []
     # sans document « CODING » (ex. Arménie, Albanie), on télécharge les cartes SID / STAR / IAP : seules celles dont la disposition est connue seront lues, les autres signalées
     only_coding = any('CODING' in d['kinds'] for d in found.values())
-    for name, d in sorted(found.items()):
-        if 'CODING' in d['kinds'] or not only_coding:
-            raw = lib.fetch(d['row'])
-            say(f'  {name}: téléchargé' if raw else f'  {name}: téléchargement impossible')
-            if raw:
-                (cache / name).write_bytes(raw)
-                pdfs.append(name)
-    doc = proc_eaip.build_pdf_dir(icao, pdfs, lambda n: safe_pages(cache / n), lib_cycle(out)) if pdfs else \
+    wanted = [(name, d) for name, d in sorted(found.items()) if 'CODING' in d['kinds'] or not only_coding]
+    for i, (name, d) in enumerate(wanted):
+        step(f'{icao}: téléchargement de {name}', i, len(wanted), 'documents')
+        try:
+            target = proc_pdf.safe_path(cache, name, SAFE_NAME)       # le nom vient du serveur : un simple nom de fichier, sous le dossier du terrain, sinon rien n'est téléchargé
+        except ValueError:
+            say(f'  {name[:80]!r}: nom refusé (pas un simple nom de fichier), ignoré')
+            continue
+        raw = lib.fetch(d['row'])
+        say(f'  {name}: téléchargé' if raw else f'  {name}: téléchargement impossible')
+        if raw:
+            target.write_bytes(raw)
+            pdfs.append(name)
+    read = []
+
+    def rows_of(name):
+        step(f'{icao}: lecture de {name}', len(read), len(pdfs), 'documents')
+        read.append(name)
+        return safe_pages(cache / name)
+    doc = proc_records.build_pdf_dir(icao, pdfs, rows_of, lib_cycle(out)) if pdfs else \
         {'schema': 1, 'icao': icao, 'cycle': lib_cycle(out), 'procedures': [], 'formats': [], 'warnings': ['aucun document de tables de codage trouvé']}
+    kinds = {}                                       # le type d'un PDF se lit UNE fois par document (une lecture dans un processus à part), pas une fois par page
+    n_files = len({f['file'] for f in doc['formats']})
     for fm in doc['formats']:
-        k = classify_name(cache / fm['file'])
+        if fm['file'] not in kinds:
+            step(f'{icao}: analyse de {fm["file"]}', len(kinds), n_files, 'documents')
+            kinds[fm['file']] = classify_name(cache / fm['file'])
+        k = kinds[fm['file']]
         fm['pdf'] = k
         say(f'  {"OK " if fm["ok"] else "NON"} {fm["file"]} | {k.get("kind")} | {fm["layout"]} ' + ''.join(f'| {x}' for x in fm['problems']))
-    ocr_pass(doc, pdfs, cache, icao, out, say)
+    step(f'{icao}: documents analysés', n_files, n_files, 'documents')
+    ocr = ocr_pass(doc, pdfs, cache, icao, out, say)
     mf = Path(manual_dir) / f'{icao}.json' if manual_dir else None
     if mf and mf.is_file():
         man = json.loads(mf.read_text(encoding='utf-8'))
@@ -748,36 +605,46 @@ def fetch_ad(lib, icao, out, say=print, manual_dir=None):
     doc['documents'] = [{'name': d['name'], 'title': d['title'], 'kinds': d['kinds']} for d in found.values()]
     (Path(out) / f'{icao}.json').write_text(json.dumps(doc, ensure_ascii=False, separators=(',', ':')) + '\n', encoding='utf-8')
     say(f'{icao}: {len(doc["procedures"])} procédure(s), {len(doc["documents"])} document(s) listé(s), {len(doc["warnings"])} avertissement(s)')
+    # quel fichier contient quelles procédures, et la commande qui installe chacun (un fichier sans procédure n'est pas à installer : proc_manual le refuse)
+    install = lambda f: f'python tools/proc_manual.py {f} --out <dépôt de données>/proc'
+    text_file = Path(out) / f'{icao}.json'
+    say(f'  {text_file.name} (tables de texte' + (' et interprétation manuelle' if mf and mf.is_file() else '') + f') : {len(doc["procedures"])} procédure(s)'
+        + (f' ; à installer par {install(text_file)}' if doc['procedures'] else ' ; rien à installer'))
+    if ocr is not None:
+        ocr_file = Path(out) / f'{icao}.ocr.json'
+        say(f'  {ocr_file.name} (pages lues par OCR) : {len(ocr["procedures"])} procédure(s)' + (f' ; à installer par {install(ocr_file)}' if ocr['procedures'] else ' ; rien à installer'))
     return doc
 
 
 def ocr_pass(doc, pdfs, cache, icao, out, say=print):
     """Lecture par OCR des documents dont aucune page n'a de disposition connue ET que la lecture signale « dessinés en vecteurs ou image » (pas de couche de texte). Sans moteur
     d'OCR (tools/proc_ocr.py : pypdfium2 et Tesseract ou rapidocr-onnxruntime), le message d'installation est affiché et on continue. Avec un moteur, chaque document est lu page par
-    page, les pages fusionnées dans <out>/<OACI>.ocr.json (que tools/proc_manual.py installe : il refait caps et distances) ; la console dit ce qui a été lu et ce que la porte géométrique
-    a écarté. Rend le document OCR, ou None."""
+    page, les pages fusionnées dans <out>/<OACI>.ocr.json (que tools/proc_manual.py installe : il refait caps et distances) ; la console dit ce qui a été lu et ce que le contrôle de géométrie
+    a marqué à vérifier. Rend le document OCR, ou None."""
     vect = [fm['file'] for fm in doc['formats'] if 'pages' in fm and any('vecteurs' in x for x in fm['problems'])]
     if not vect:
         return None
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    import proc_eaip
     import proc_ocr
+    import proc_pdf
+    import proc_records
     if not proc_ocr.backend():
         say(f'{icao}: {len(vect)} document(s) sans couche de texte, non lu(s) : ' + str(proc_ocr._missing()).replace('OCR manque : ', 'OCR absent, ') )
         return None
-    merged = {'schema': 1, 'icao': icao, 'cycle': doc['cycle'], 'procedures': [], 'formats': [], 'warnings': [], 'notice': proc_eaip.ead_notice(icao)}
+    merged = {'schema': 1, 'icao': icao, 'cycle': doc['cycle'], 'procedures': [], 'formats': [], 'warnings': [], 'notice': proc_records.ead_notice(icao)}
     have = set()
     for name in vect:
         try:
             # rendu et OCR dans un processus séparé, au plus OCR_TIMEOUT s par document (un PDF piégé ou démesuré ne bloque pas l'outil)
-            d = proc_eaip.limited('read_document', cache / name, icao, doc['cycle'], module='proc_ocr', timeout=proc_ocr.OCR_TIMEOUT, file=name)
+            d = proc_pdf.limited('read_document', cache / name, icao, doc['cycle'], module='proc_ocr', timeout=proc_pdf.OCR_TIMEOUT, file=name)
         except (SystemExit, Exception) as e:
             say(f'  {name}: OCR impossible : {str(e)[:150]}')
             continue
         dropped = [x for x in d['warnings'] if 'NON retenue' in x]
         read = [f for f in d['formats'] if f['layout']]
+        doubtful = sum(1 for x in d['procedures'] if x.get('status') == 'doubt')
         say(f'  OCR {name}: {len(d["formats"])} page(s), {len(read)} de disposition reconnue ({", ".join(sorted({f["layout"] for f in read})) or "aucune"}), '
-            f'{len(d["procedures"])} procédure(s) retenue(s), {len(dropped)} table(s) écartée(s) par la porte géométrique ou les comptes')
+            f'{len(d["procedures"])} procédure(s) retenue(s), dont {doubtful} à vérifier (contrôle de géométrie, proc_geometry), {len(dropped)} table(s) écartée(s) par les comptes')
         merged['formats'] += d['formats']
         merged['warnings'] += d['warnings']
         for rec in d['procedures']:
@@ -788,16 +655,19 @@ def ocr_pass(doc, pdfs, cache, icao, out, say=print):
         return None
     dest = Path(out) / f'{icao}.ocr.json'
     dest.write_text(json.dumps(merged, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
-    say(f'{icao}: {len(merged["procedures"])} procédure(s) lue(s) par OCR dans {dest.name} ; à installer par python tools/proc_manual.py {dest} --out <dépôt de données>/proc (contrôle de caps et distances refait)')
+    if merged['procedures']:
+        say(f'{icao}: {len(merged["procedures"])} procédure(s) lue(s) par OCR dans {dest.name} ; à installer par python tools/proc_manual.py {dest} --out <dépôt de données>/proc (contrôle de caps et distances refait)')
+    else:
+        say(f'{icao}: aucune procédure retenue par OCR ({dest.name} écrit pour ses avertissements) : rien à installer depuis ce fichier')
     return merged
 
 
 def safe_rows(path, page=1):
     """Lignes de la page `page` (à partir de 1 ; la meilleure page du relevé), ou [] si le fichier n'est pas un PDF lisible."""
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    import proc_eaip
+    import proc_pdf
     try:
-        _, pages = proc_eaip.pdf_some_pages(path, [page - 1])   # lu dans un processus séparé, au plus PDF_TIMEOUT s
+        _, pages = proc_pdf.pdf_some_pages(path, [page - 1])   # lu dans un processus séparé, au plus PDF_TIMEOUT s
         return pages[0] if pages else []
     except (SystemExit, Exception):
         return []
@@ -806,18 +676,18 @@ def safe_rows(path, page=1):
 def safe_pages(path):
     """Lignes de TOUTES les pages (liste de pages), ou [] si le fichier n'est pas un PDF lisible (le terrain est alors signalé « disposition non reconnue », rien n'est deviné)."""
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    import proc_eaip
+    import proc_pdf
     try:
-        return proc_eaip.pdf_pages(path)             # lu dans un processus séparé, au plus PDF_TIMEOUT s
+        return proc_pdf.pdf_pages(path)             # lu dans un processus séparé, au plus PDF_TIMEOUT s
     except (SystemExit, Exception):
         return []
 
 
 def classify_name(path):
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    import proc_eaip
+    import proc_pdf
     try:
-        return proc_eaip.pdf_kind(path)             # lu dans un processus séparé, au plus PDF_TIMEOUT s
+        return proc_pdf.pdf_kind(path)             # lu dans un processus séparé, au plus PDF_TIMEOUT s
     except (SystemExit, Exception) as e:
         return {'kind': 'erreur', 'error': str(e)[:80]}
 
@@ -829,35 +699,18 @@ def lib_cycle(out):
     return (ref + timedelta(days=28 * ((today - ref).days // 28))).isoformat()
 
 
-def finish(out, rep, s):
-    text = '\n'.join(rep) + '\n'
-    (out / 'report.txt').write_text(text, encoding='utf-8')
-    for secret in s.secrets:
-        assert not secret or secret not in text, 'secret dans le compte rendu: écriture abandonnée'
-    print(text)
-    print(f'Compte rendu: {out / "report.txt"} (pages nettoyées dans le même dossier). Relisez-le avant de le transmettre.', file=sys.stderr)
-
-
 def main(argv=None):
     for stream in (sys.stdout, sys.stderr):              # console cp1252 : un caractère exotique ne doit pas faire échouer l'affichage
         if hasattr(stream, 'reconfigure'):
             stream.reconfigure(encoding='utf-8', errors='replace')
     ap =argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    ap.add_argument('--probe', action='store_true', help='explorer la bibliothèque AIP (lecture seule)')
     ap.add_argument('--user', default=os.environ.get('EAD_USER'))
-    ap.add_argument('--state', default='United Kingdom')
-    ap.add_argument('--icao', default='EGLL')
     ap.add_argument('--out', default='ead_probe')
-    ap.add_argument('--name', default=None, help='filtre « nom de document » (recherche avancée), ex. EGLL')
-    ap.add_argument('--aip-type', default='AIP', help='type de document : AIP, AMDT, SUP, AIC ou Charts (les cartes, dont les tables de codage du Royaume-Uni)')
     ap.add_argument('--survey', default=None, help="relevé par État : « all » ou une liste de préfixes (EG,ED,LF…) ; écrit survey.json et survey.txt dans --out")
     ap.add_argument('--fetch', default=None, help='récupère les documents de procédures d\'UN terrain (code OACI) : tables de codage téléchargées et lues, liste des documents')
     ap.add_argument('--manual-dir', default=None, help='dossier d\'interprétations manuelles <OACI>.json ajoutées à --fetch')
     ap.add_argument('--delay', type=float, default=1.0, help='pause entre deux requêtes (relevé et récupération), en secondes')
-    ap.add_argument('--docs', default=None, help='noms exacts à chercher et télécharger, séparés par des virgules (avec --name pour ouvrir la recherche avancée)')
-    ap.add_argument('--download', action='store_true', help='télécharge UN document du terrain dans ead_probe/cache/ (cache local)')
     a = ap.parse_args(argv)
-    a.icao = icao_code(a.icao)
     if a.fetch:
         # EAD Basic : un terrain par appel, sur un geste de l'utilisateur ; jamais en masse (décision de l'utilisateur, EAD_BASIC.md § 1)
         if re.search(r'[,;\s]', a.fetch.strip()):
@@ -885,12 +738,7 @@ def main(argv=None):
             fetch_ad(lib, a.fetch, out, say, a.manual_dir)
         (out / 'report.txt').write_text('\n'.join(lines) + '\n', encoding='utf-8')
         return
-    if not a.probe:
-        raise SystemExit('rien à faire: ajouter --probe, --survey ou --fetch')
-    user = a.user or input('EAD Basic, nom d\'utilisateur: ').strip()
-    password = os.environ.get('EAD_PASSWORD') or getpass.getpass('EAD Basic, mot de passe (non gardé): ')
-    docs = [d.strip() for d in a.docs.split(',') if d.strip()] if a.docs else None
-    probe(user, password, a.state, a.icao, a.out, a.name or (docs[0] if docs else None), a.download, a.aip_type, docs)
+    raise SystemExit('rien à faire: ajouter --survey ou --fetch (la sonde est tools/ead_probe.py)')
 
 
 if __name__ == '__main__':

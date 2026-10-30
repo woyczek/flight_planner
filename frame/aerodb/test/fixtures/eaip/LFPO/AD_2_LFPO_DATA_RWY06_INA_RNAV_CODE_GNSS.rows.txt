@@ -1,0 +1,40 @@
+AIP AD 2 LFPO DATA RWY06 INA RNAV CODE
+GNSS
+04 SEP 2025FRANCE
+PARIS ORLY
+PRECODING INA RNAV VEBEK 1E / 1Y (GNSS) RWY 06
+PRECODING INA RNAV MOLBA 1E (GNSS) RWY 06
+PRECODING INA RNAV ODILO 1E / 1A (GNSS) RWY 06
+AMDT 09/25© Service de l'Information Aéronautique, France
+INA RNAV RWY 06
+RMK MAG VAR 2020 1,0°E REF NAVAID : -
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) NavigationAccuracy (NM)
+HLDG - LORNI - - - - - - - - - -
+HLDG - MOLBA - - - - - - - - - -
+HLDG - ODILO - - - - - - - - - -
+IF VEBEK - - - - - FL110 FL110 300 - -
+TF LARPO - 257 257.8 44.1 - - - 250 - 1.0
+INA
+TF PO617 - 267 268.5 34.7 - - - - - 1.0
+VEBEK 1E
+TF ASVOK - 226 227.3 11.5 - - - - - 1.0
+FM - - 180 - - - - - - - 1.0
+IF VEBEK - - - - - FL110 FL110 250 - -
+TF CTL - 207 207.9 8.9 - - - - - 1.0
+INA TF VALPO - 224 224.9 25.6 - - - - - 1.0
+VEBEK 1Y TF MLN - 207 208.4 25.9 - - - - - 1.0
+TF PO621 - 272 272.6 7.0 - - - - - 1.0
+FM - - 272 - - - - - - - 1.0
+IF MOLBA - - - - - FL100 FL100 250 - -
+INA TF MLN - 313 314.1 13.9 - - - - - 1.0
+MOLBA 1E TF PO621 - 272 272.6 7.0 - - - - - 1.0
+FM - - 272 - - - - - - - 1.0
+IF ODILO - - - - - FL100 FL100 250 - -
+INA
+TF PO604 - 033 034,2 11.0 - - - - - 1.0
+ODILO 1E
+FM - - 033 - - - - - - - 1.0
+IF ODILO - - - - - FL100 - 250 - -
+INA TF PO609 - 033 034,2 9.6 - FL100 - - - 1.0
+ODILO 1A TF PO611 - 033 034,2 14.7 - - - - - 1.0
+TF IPO06 - 060 061,5 3.4 - 4000 - - - 1.0

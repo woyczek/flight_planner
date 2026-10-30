@@ -1,0 +1,68 @@
+AIP AD 2 LFPO DATA SID RWY06 RNAV CODE 03
+FRANCE 31 OCT 24
+PARIS ORLY (LFPO)
+Réacteurs (R) et hélices (H) / Jets (R) and Propellers (H)
+OPALE - ATREX - NURMO - OKASI - PILUL - ELCOB - LGL - DIKOL - BAXIR
+RANUX - BUBLI - AGOPA - ERIXU - LATRA - OLZOM - MONOT - DORDI
+(Protégés pour / Protected for CAT A, B, C, D)
+SID RNAV RWY 06
+RMK GNSS ou/or DME/DME MAG VAR 2020 1.0°E Ref N AVAID : BT
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+AGOPA 2F
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- D F P O 0 8 5 - ---- - - - 1.0
+- TF ABORO - 229 230.4 11.0 - - - - 1.0
+- TF ADADA - 229 230.2 21.4 - - - - 1.0
+- TF AGOPA - 178 178.9 12.7 - - - - 1.0
+ERIXU 2F
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- D F P O 0 8 5 - ---- - - - 1.0
+- TF ABORO - 229 230.4 11.0 - - - - 1.0
+- TF EDOXA - 209 210.5 16.2 - - - - 1.0
+- TF ERIXU - 170 170.8 12.6 - - - - 1.0
+LATRA 2F
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- D F P O 0 8 5 - ---- - - - 1.0
+- TF OBAMO - 206 207.2 12.2 - - - - 1.0
+- TF LALUX - 196 196.9 10.9 - - - - 1.0
+- TF LATRA - 159 160.4 12.9 - - - - 1.0
+OKASI 2F
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- DF PO085 - - --- - - - 1.0
+- TF OBAMO - 206 207.2 12.2 - - - - 1.0
+- TF ODEBU - 152 152.8 12.1 - - - - 1.0
+- TF OKASI - 152 152.8 13.3 - - - - 1.0
+PILUL 2F
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- D F P O 0 8 5 - ---- - - - 1.0
+- TF OBAMO - 206 207.2 12.2 - - - - 1.0
+- TF PEKIM - 128 129.3 17.5 - - - - 1.0
+- TF PILUL - 141 142.2 14.6 - - - - 1.0
+AGOPA 2H
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- D F P O 0 8 5 - ---- - - - 1.0
+- TF ABORO - 229 230.4 11.0 - - - - 1.0
+- TF ADADA - 229 230.2 21.4 - - - - 1.0
+- TF AGOPA - 178 178.9 12.7 - - - - 1.0
+ERIXU 2H
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- D F P O 0 8 5 - ---- - - - 1.0
+- TF ABORO - 229 230.4 11.0 - - - - 1.0
+- TF EDOXA - 209 210.5 16.2 - - - - 1.0
+- TF ERIXU - 170 170.8 12.6 - - - - 1.0
+LATRA 2H
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- D F P O 0 8 5 - ---- - - - 1.0
+- TF OBAMO - 206 207.2 12.2 - - - - 1.0
+- TF LALUX - 196 196.9 10.9 - - - - 1.0
+- TF LATRA - 159 160.4 12.9 - - - - 1.0
+AMDT 11/24 © SIA

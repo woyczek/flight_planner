@@ -1,0 +1,16 @@
+AD 2 LFPG DATA RWY26L FNA RNP CODEAIP
+01 OCT 2026FRANCE
+PARIS CHARLES DE GAULLE
+PRECODING FNA RNP RWY 26L
+AMDT 10/26© Service de l'Information Aéronautique, France
+FNA RNP RWY26L
+RMK - MAG VAR 2020 1.1°E REF NAVAID : -
+Leg
+sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) Navigation Accuracy (NM)
+IF PG441 - ---- 4000 - - - -
+TF FG26 L - 265 265.7 5.1 - 4000 4000 - - 1.0
+TF RW26 L Yes 265 265.6 11.4 - - - - -3.0°/57 0.3
+APCH
+CA - - 264 265.4 -- 250 0 -- - 1.0
+DF PG442 - ---- - - - - 1.0
+TF AMJUS - 339 339.8 11.5 - 4000 4000 - - 1.0

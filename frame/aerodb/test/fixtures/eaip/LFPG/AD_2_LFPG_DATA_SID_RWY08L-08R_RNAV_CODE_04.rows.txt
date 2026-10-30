@@ -1,0 +1,80 @@
+AIP AD 2 LFPG DATA SID RWY08L-08R RNAV CODE 04
+FRANCE 31 OCT 2 4
+PARIS CHARLES DE GAULLE
+Réacteurs (R) et hélices (H) / Jets (R) and propellers (H)
+SID RNAV RWY 08L - 08R
+Protégés pour / Protected for CAT A, B, C, D
+SID RNAV RWY 08L - 08R
+RMK GNSS ou / or DME/DME Ref NAVAID : BTMAG VAR 2020 1.1°E
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Nav Spec
+OKASI 6L
+RWY08L - 084 085.4
+CF PG081 - - - - - RNAV 1
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- DF PG088 Yes ---- - - - 1RNAV
+- DF OSTIP - ---- - - - 1 RNAV
+- TF ODEBU - 176 177.2 12.5 - - - - RNAV 1
+- TF OKASI - 152 152.8 13.3 - - - 280 RNAV 1
+PILUL 6L
+RWY08L - 084 085.4
+CF PG081 - - - - - RNAV 1
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- DF PG088 Yes ---- - - - 1RNAV
+- DF CLM - ---- - - - 1 RNAV
+- TF MLN - 198 198.9 24.7 - - - - RNAV 1
+- TF PEKIM - 176 177.4 10.8 - - - - RNAV 1
+- TF PILUL - 141 142.2 14.6 - - - 280 RNAV 1
+DORDI 6H
+RWY08L - 084 085.4
+RNAV 1CF PG081 - - - - -
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- TF PG085 - 097 098.5 9.5 - - - - RNAV 1
+- TF CLM - 177 178.4 8.3 - - - 220 RNAV 1
+- TF PG109 - 225 226.0 10.3 - - - - RNAV 1
+- TF MLN - 181 182.0 16.2 - - - - RNAV 1
+- TF DORDI - 182 183.5 14.2 - - - - RNAV 1
+OLZOM 6H
+RWY08L - 084 085.4
+RNAV 1CF PG081 - - - - -
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- TF PG085 - 097 098.5 9.5 - - - - RNAV 1
+- TF CLM - 177 178.4 8.3 - - - 220 RNAV 1
+- TF PG113 - 225 226.0 38.8 - - - - RNAV 1
+- TF OLZOM - 187 188.2 14.5 - - - - RNAV 1
+MONOT 6H
+RWY08L - 084 085.4
+RNAV 1CF PG081 - - - - -
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- TF PG085 - 097 098.5 9.5 - - - - RNAV 1
+- TF CLM - 177 178.4 8.3 - - - 220 RNAV 1
+- TF PG111 - 225 226.0 33.1 - - - - RNAV 1
+- TF MONOT - 175 176.0 22.7 - - - - RNAV 1
+DORDI 6L
+RWY08L - 084 085.4
+RNAV 1CF PG081 - - - - -
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- TF PG085 - 097 098.5 9.5 - - - - RNAV 1
+- TF PG103 - 177 178.4 5.0 - - - 220 RNAV 1
+- TF PG105 - 260 261.4 8.9 - - - - RNAV 1
+- TF PG107 - 255 255.8 13.1 - - - - RNAV 1
+- TF OXCEL - 208 209.5 6.5 - - - 250 RNAV 1
+- TF DORDI - 151 152.2 34.6 - - - - RNAV 1
+OLZOM 6L
+RWY08L - 084 085.4
+- - RNAV 1CF PG081 - - -
+RWY08R - 081 082.4
+- TF PG082 Yes 084 085.5 2.7 - - - - RNAV 1
+- TF PG085 - 097 098.5 9.5 - - - - RNAV 1
+- TF PG103 - 177 178.4 5.0 - - - 220 RNAV 1
+- TF PG105 - 260 261.4 8.9 - - - - RNAV 1
+- TF PG107 - 255 255.8 13.1 - - - - RNAV 1
+- TF OXCEL - 208 209.5 6.5 - - - 250 RNAV 1
+- TF OLZOM - 187 188.3 34.9 - - - - RNAV 1
+AMDT 11 /2 4 © SIA

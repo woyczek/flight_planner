@@ -22,10 +22,15 @@ never saw a credential. Facts are marked **read** (public page opened today) or 
   functionalities of the EAD operational system (EAD Pro). This tool is not connected to the EAD operational database and does not display the
   latest available information for a specific service. Consequently, the information displayed shall not be used for operational purposes. »
   **The user's decision**: a **simulation** use is admitted; the data are **not operational**, and every procedure file read through EAD Basic
-  carries that mention (`notice`, written by `proc_eaip.ead_notice()`, as the CIFP files carry the FAA's); the access is **manual**:
+  carries that mention (`notice`, written by `proc_records.ead_notice()`, as the CIFP files carry the FAA's); the access is **manual**:
   - the **survey** (the list of documents per State, one sample each, `--survey`) is admitted, run by hand, at least one second between requests;
   - an **aerodrome is read one at a time, on an explicit gesture of the user**: `--fetch <ICAO>` typed by hand today (it refuses a list), a
-    Settings › Maintenance button "manual access / reading" later (a lot to come, not now);
+    gesture in the screens later — **in Fuel** (« Lire les procédures de LFXX », when an aerodrome has none; § 10.20 of the
+    specification), then **in the Données module** (its EAD line, « Relire » for an outdated one) — through
+    `aerodb.fetchProcedures(icao)`, never in Settings › Maintenance (amended 28 Oct 2026, the ergonomics session). **Wired on 28 Oct 2026**: the gesture
+    goes through the launcher job `proc/ead-fetch` (`tools/regen/proc.py`, one four-character code, nothing else accepted); the account is read on the
+    workstation only, from `secrets/ead.json` (`{ "user", "password" }`) or `EAD_USER` / `EAD_PASSWORD`, never shown, never logged (every message is
+    cleaned of both values) and never sent to a page; the request spacing is the library's one second;
   - **never scheduled, never in bulk**.
 - **Rights of the States' AIPs**: each State's AIP stays that State's (the DFS notice, read on 25 October: use "by the organisation to which it
   was issued", no storage or redistribution without permission). What is read through EAD Basic is for personal use, kept in the airline's
@@ -54,7 +59,7 @@ What to look for on a first real page (the checklist that decides everything):
    (the SIA's "REF ENR 4.4" case, solved by `AeroDB.coords`).
 5. **Amendment date** of the page (the SIA's pages date from 2022 to 2024 inside a 2026 cycle).
 
-## 3. What `tools/proc_eaip.py` would become (not written before a real page)
+## 3. What `tools/proc_sia.py` would become (not written before a real page)
 
 The SIA code is split in two parts that already have the right seam: *rows of text from a PDF* (`rows_from_pdf`) and *table parsers*
 (`parse_code_table`, `parse_data01`) producing an intermediate table `{ kind, runways, title, groups: [{ label, legs }] }` that
@@ -149,8 +154,8 @@ pages (a); (3) which State and which aerodrome first.
 python tools/proc_ead.py --probe --state "United Kingdom" --icao EGLL
 ```
 
-It asks for the EAD Basic user name and the password (typed, hidden, **never stored, shown or sent anywhere but `www.ead.eurocontrol.int`**;
-`EAD_USER` / `EAD_PASSWORD` can stand in for the prompts). It then, read-only: logs in through the login page's own form, follows the home page to
+It asks for the EAD Basic user name and the password (typed, hidden, **never shown or sent anywhere but `www.ead.eurocontrol.int`**;
+`EAD_USER` / `EAD_PASSWORD` can stand in for the prompts). The probe and `--fetch` never keep the password: it is typed at the prompt or read from `EAD_PASSWORD`; it is kept, in clear, only in `secrets/ead.json` when the user chose so (the launcher's `proc/ead-fetch` job reads it there), and that folder is git-ignored and must never sit inside a synchronised folder (Synology Drive, OneDrive). It then, read-only: logs in through the login page's own form, follows the home page to
 the **AIP Library**, reads its form (lists, buttons), chooses *United Kingdom* / part *AD* / type *AIP* / language *EN* in the lists it
 recognises, tries the search (JSF partial request, then a classic submit) and lists the documents found, noting those for EGLL. **It downloads no
 PDF and writes nothing outside `ead_probe/`.**
@@ -267,7 +272,7 @@ fetched it: `EG_AD_2_EGLL_en.pdf`, a **PDF of 3,038,627 bytes** (the whole AD 2 
   listed under type **Charts** (not searched yet).
 - The row's "eAIP" cell carries the text "IB-903: File not found" (no eAIP link for this document): harmless.
 
-**Next** (nothing to download again): look inside the PDF for coding tables with `python tools/proc_eaip.py --scan-pdf ead_probe/cache/EG_AD_2_EGLL_en.pdf` (needs `pypdf`). It reports, page
+**Next** (nothing to download again): look inside the PDF for coding tables with `python tools/proc_sia.py --scan-pdf ead_probe/cache/EG_AD_2_EGLL_en.pdf` (needs `pypdf`). It reports, page
 by page, **titles and keywords only** (Path Terminator, Fly Over, Coding, Waypoint Identification, SID, STAR, RNAV, RNP, Approach), copies no content, and lists the pages that probably carry a table of legs. The owner
 pastes that report; the session decides from it whether this document holds coding tables (then the layout parser follows, on text rows of one page) or only charts (then the *Charts* type is searched).
 
@@ -285,7 +290,7 @@ table, name the document where the coded data is published, or only state a rule
 The scan's coding lines on pages 40 and 41 of `EG_AD_2_EGLL_en.pdf`: **"STANDARD INSTRUMENT ARRIVAL CODING TABLES"** (the STARs, e.g. OTMET 1H, ROXOG 1H, ALESO 1H, TANET 1Z, SIRIC 1H…),
 **"RNAV HOLD CODING TABLES"** (BIG, BNN, BRASO, FITBO, HON, LAM, LOGAN…) and **"INSTRUMENT APPROACH PROCEDURE CODING TABLES - RNP RWY 09L/R and 27L/R"**. So EGLL's AD 2 carries
 STAR and RNP coding tables, but **not under the SIA's header words** (no "Path Terminator"): its layout is its own. No SID table was seen (the SIDs are in the charts). The layout is now read page by page:
-`python tools/proc_eaip.py --scan-pdf FILE --page 40` prints that page's text rows (numbered, 160 characters, 90 rows), the very rows the analysers would read; the owner pastes pages 40 and 41 here (a UK AIP
+`python tools/proc_sia.py --scan-pdf FILE --page 40` prints that page's text rows (numbered, 160 characters, 90 rows), the very rows the analysers would read; the owner pastes pages 40 and 41 here (a UK AIP
 excerpt in the session only, never in the repository). The UK layout parser, a second entry of the layout registry (§ 3), is then written on them.
 
 ## 6 nonies. Pages 40–41 of the UK document, read (28 October 2026): the coding tables are separate *Charts* documents
@@ -306,7 +311,7 @@ By the library's naming, these are `EG_AD_2_EGLL_7-13_en.pdf` … `EG_AD_2_EGLL_
 python tools/proc_ead.py --probe --state "United Kingdom" --icao EGLL --aip-type Charts --docs EG_AD_2_EGLL_7-13_en.pdf,EG_AD_2_EGLL_7-14_en.pdf,EG_AD_2_EGLL_7-15_en.pdf,EG_AD_2_EGLL_7-16_en.pdf,EG_AD_2_EGLL_7-17_en.pdf,EG_AD_2_EGLL_8-13_en.pdf
 ```
 
-(`--docs` searches each exact name and downloads its row's document into `ead_probe/cache/`, named after it; nothing else is downloaded.) Then `python tools/proc_eaip.py --scan-pdf ead_probe/cache/EG_AD_2_EGLL_7-13_en.pdf` and
+(`--docs` searches each exact name and downloads its row's document into `ead_probe/cache/`, named after it; nothing else is downloaded.) Then `python tools/proc_sia.py --scan-pdf ead_probe/cache/EG_AD_2_EGLL_7-13_en.pdf` and
 `--scan-pdf … --page 1` show what those pages look like, and the UK layout (a second entry of the registry, § 3) is written on that evidence.
 
 ## 6 decies. Checking the format of the pages by script (the owner's request, 28 October 2026)
@@ -346,7 +351,7 @@ a co-ordinate, whether made by OCR, by a person or by a model, moves a course or
    came from (when the page changes, the file is flagged obsolete, as the VAC interpretations are). No dependency, but not automatic: redone by hand at each amendment of those pages.
 3. **Leave the UK STARs out**: for a flight the STAR of the SimBrief OFP already gives its fixes (lot 1), and 8-13's RNP approaches are read.
 
-`python tools/proc_eaip.py EGLL --pdf-dir <folder of the downloaded PDFs> --cycle 2026-10-01 [--check]` reads every PDF of a folder: a known layout is read, an unknown or text-less one is reported (`NON`), never guessed;
+`python tools/proc_sia.py EGLL --pdf-dir <folder of the downloaded PDFs> --cycle 2026-10-01 [--check]` reads every PDF of a folder: a known layout is read, an unknown or text-less one is reported (`NON`), never guessed;
 `--check` writes nothing and exits 1 if a page is refused. (Tested here on 8-13 and 7-13 together: 4 procedures read, 7-13 reported.)
 
 ## 6 duodecies. The UK STARs of EGLL, read from the page images (28 October 2026)
@@ -370,13 +375,15 @@ The owner's question: how to automate the retrieval of these documents aerodrome
 
 - `python tools/proc_ead.py --survey all --out ead_survey` (or `--survey EG,ED,LF`): for each State, the number of AD documents and charts, the number of charts whose heading says CODING / DEPARTURE / ARRIVAL / APPROACH,
   and **one** coding document (else a STAR, else a SID) downloaded and classified (`text` / `vector` / `image` / `sparse`, layout, fingerprint). Output: `survey.txt` (one line per State, to paste back) and `survey.json`.
-  Requests are spaced by `--delay` (default 1 s); the password is asked, never kept.
+  Requests are spaced by `--delay` (default 1 s); the password is asked at the prompt or read from `EAD_PASSWORD`; it is kept, in clear, only in `secrets/ead.json` when the user chose so (git-ignored; that folder must never sit inside a synchronised folder such as Synology Drive or OneDrive).
 - `python tools/proc_ead.py --fetch EGLL --out proc_work [--manual-dir DIR]`: the on-demand job for one aerodrome: charts named `AD_2_<ICAO>_` per heading keyword, coding documents downloaded to the local cache, each
   one read when its layout is known (format and geometry guards), reported when it is not (nothing guessed), a hand-read `<ICAO>.json` from `--manual-dir` added for vector pages. Result: `<ICAO>.json` with `procedures`,
   `formats`, `warnings` and `documents` (chart names and headings, for the PDF reader).
 
 Not done yet: the Settings › Maintenance button that launches `--fetch` from the page (§ 5), the layouts of States other than FR / UK, OCR for vector pages. The survey tells which layouts exist before any parser is written.
 Whether EAD Basic's terms allow automated access is still unanswered; the owner kept the status quo (a Basic account, spaced requests, read-only).
+
+**Paging, seen on the real screen (29 Oct 2026).** The PrimeFaces page change (`mainForm:searchResults_pagination=true`, `_first`, `_rows=15`, `_skipChildren=true`, `_encodeFeature=true`, source / execute / render = the table, the whole form sent, ViewState renewed) is accepted and answers with an `<update id="mainForm:searchResults">` holding only the bare `<tr data-ri=…>` rows of that page (no table body): `page_rows` reads them; the walk stops at the announced count, on an error or redirect, or after 50 pages, 1 s between pages (EIDW: 22 approach documents in 2 pages).
 
 ## 6 quaterdecies. Probe run by the user on the workstation (28 October 2026, United Kingdom / EGLL)
 
@@ -408,29 +415,29 @@ then the layout registry on it.
 
 Some EAD Basic AIP pages are drawn as vector outlines or images: they have no text layer and `pypdf` returns nothing. Owner decision of 28 October 2026, "OCR inclus": OCR becomes an optional dependency of the workstation builders only (never the launcher, never a page), like `pypdf`, with a clear message when it is missing.
 
-`tools/proc_ocr.py` does three things. `render_page` rasterises a page with `pypdfium2` (300 dpi by default). `ocr_words` reads the image with one of two backends, detected at run time: `tesseract` (the program on `PATH`, word boxes from its TSV output) or `rapidocr-onnxruntime` (`python -m pip install rapidocr-onnxruntime`; it gives line boxes, each kept as one "word"). `rows_from_words` groups the words into text rows by vertical centre and sorts them by x, producing the same kind of rows as `proc_eaip.rows_from_pdf`, so the layout detection and the parsers are shared. `--deps` tells which backends are present.
+`tools/proc_ocr.py` does three things. `render_page` rasterises a page with `pypdfium2` (300 dpi by default). `ocr_words` reads the image with one of two backends, detected at run time: `tesseract` (the program on `PATH`, word boxes from its TSV output) or `rapidocr-onnxruntime` (`python -m pip install rapidocr-onnxruntime`; it gives line boxes, each kept as one "word"). `rows_from_words` groups the words into text rows by vertical centre and sorts them by x, producing the same kind of rows as `proc_pdf.rows_from_pdf`, so the layout detection and the parsers are shared. `--deps` tells which backends are present.
 
 Both engines are supported; since 28 October 2026 `pypdfium2` and `rapidocr-onnxruntime` are installed in the workstation Python (`tools/proc_ocr.py --deps` reports both present, Tesseract absent).
 
-The gate: OCR output is never trusted. `document_from_rows` runs the usual layout detection and parser, then drops every table whose printed true course and distance disagree with its own co-ordinates (a misread digit), reports it as "NON retenue", and marks the file `via: 'ocr'`, status `check`. The written `<ICAO>.ocr.json` is installed only through `python tools/proc_manual.py <file> --out <data repo>/proc`, which repeats the geometry check. The SIA coding layout is read by the eAIP builder, not by OCR; an unknown layout is reported, never guessed.
+The geometry check: OCR output is never trusted. `document_from_rows` runs the usual layout detection and parser, then drops every table whose printed true course and distance disagree with its own co-ordinates (a misread digit), reports it as "NON retenue", and marks the file `via: 'ocr'`, status `check`. The written `<ICAO>.ocr.json` is installed only through `python tools/proc_manual.py <file> --out <data repo>/proc`, which repeats the geometry check. The SIA coding layout is read by the eAIP builder, not by OCR; an unknown layout is reported, never guessed.
 
 
 ### 7.1 Real trial and layouts read through OCR (28 Oct 2026)
 
 - **Trial** on the owner's workstation, in a scratch virtual environment (nothing installed in the system Python): `rapidocr-onnxruntime` 1.2.3 + `onnxruntime` 1.31.1 + `pypdfium2` 5.14.0 work on Python 3.14.7 (the package name `rapidocr` >= 3 is also accepted). Tesseract was not tried (not installed). Cost: about 5-10 s per page at 300 dpi, engine load included.
-- **Control**: the UK approach coding page already read through the text layer (`uk-app`) gives, through OCR at 300 and 400 dpi, the same 4 tables and 12 legs, gate clean; at 200 dpi one table is lost. Use 300 dpi or more. Only the fly-over flag ("Y") is not read: it stays `None`, with one warning per table.
+- **Control**: the UK approach coding page already read through the text layer (`uk-app`) gives, through OCR at 300 and 400 dpi, the same 4 tables and 12 legs, geometry check clean; at 200 dpi one table is lost. Use 300 dpi or more. Only the fly-over flag ("Y") is not read: it stays `None`, with one warning per table.
 - **Row grouping**: words are grouped by vertical centre, tolerance 0.4 x the median word height. Per-layout normalisers repair known defects: a missing sequence number, and letters O / I read as 0 / 1 in co-ordinate cells only (never elsewhere).
-- **Output**: a manual-interpretation document `<ICAO>.ocr.json` (points with `trk` and `nm`); only `tools/proc_manual.py` installs it, after its geometry gate (status `check`, source reference prefixed `ocr:`). Every table failing the gate is dropped and listed in `formats.problems`.
+- **Output**: a manual-interpretation document `<ICAO>.ocr.json` (points with `trk` and `nm`); only `tools/proc_manual.py` installs it, after its geometry check (status `check`, source reference prefixed `ocr:`). Every table failing the geometry check is dropped and listed in `formats.problems`.
 - **CLI**: `--deps`, `--page`, `--dpi`, `--engine`, `--icao` / `--cycle` / `--out`. Case K14 (fake word boxes; the backend-missing message is tested).
 - **Layouts only reachable through OCR**:
-  - `uk-star` (`parse_uk_star`): the UK "Standard Instrument Arrival Coding Tables", vector pages. Three-line leg form as in `uk-app` (latitude and magnetic course before; leg row with designator, sequence, path terminator, waypoint, distance, magnetic variation, turn direction in words, level, speed, RNAVn; longitude and true course after). On the five EGLL STAR documents: 18 tables, 79 legs (18 IF + 61 TF), 0 rejected by the gate - the same 61 TF legs as the hand transcription of § 6 duodecies, now automatic. Case K16 on an invented page.
+  - `uk-star` (`parse_uk_star`): the UK "Standard Instrument Arrival Coding Tables", vector pages. Three-line leg form as in `uk-app` (latitude and magnetic course before; leg row with designator, sequence, path terminator, waypoint, distance, magnetic variation, turn direction in words, level, speed, RNAVn; longitude and true course after). On the five EGLL STAR documents: 18 tables, 79 legs (18 IF + 61 TF), 0 rejected by the geometry check - the same 61 TF legs as the hand transcription of § 6 duodecies, now automatic. Case K16 on an invented page.
   - `at-coding` (`parse_at_coding`): Austria, "RNAV Transition Coding Table of ..." on the RNAV arrival charts, vector pages; compact co-ordinates (hemisphere letter + digits and decimals), fly-over yes / no. On the LOWG chart pages 2-3: 2 tables per page (7 and 6 legs), 0 rejected. Runways come from the page's "TRANSITION to RWY ..." line (whole page, not per table). Case K17 on an invented page.
 
-- **Installation and multi-resolution re-read (owner: « Oui, OCR EB et UG »)**: `python -m pip install pypdfium2 rapidocr-onnxruntime` in Python 3.14.7. `proc_ocr.read_document` re-reads a page at 300, then 500, then 200 dpi while it is not fully read and keeps the best reading (at 300 dpi one runway-point line of the Belgian list was lost and the gate rejected the table; 500 dpi read both tables). `OCR_LAYOUTS` lists the layouts readable through OCR: `uk-app`, `uk-star`, `am-coding`, `at-coding`, `ei-coding`, `be-coding`, `ge-coding`. `tools/proc_ead.py --fetch` runs `ocr_pass` on documents whose pages are all unknown and drawn, writes `<ICAO>.ocr.json` and prints what was read, what the gate dropped and the `proc_manual.py` command; without an engine it prints the install message and goes on (K12).
-  - `be-coding` (Belgium, IAC page): ARINC coding table drawn in vectors; columns sequence, path terminator, waypoint, role, fly-over, true course, turn, altitude constraint, speed, vertical path angle; no distance nor magnetic course. A "WAYPOINTS COORDINATES" list in degrees and decimal minutes is read by `be_coords` (also used by `waypoint_coords` for text pages). On the EBBE sample: 2 APP tables, 10 legs each, 20 of 20 points resolved from the list, gate clean.
-  - `be-coding` SID / STAR variant (EBBE SID chart): the page prints a true course for only some TF legs and no distance, so a SID table is kept, with the warning "cap non imprimé : géométrie non contrôlable", only if every point is resolved from its own co-ordinate list (a point listed twice on the page must have identical co-ordinates), the first leg is IF or CF, all legs are IF / TF / CF / DF and every course that is printed passes the gate; otherwise it is dropped. On the real EBBE page the three IAC / SID documents give 6 tables, 5 kept; the one dropped (IAC 21, RWY 22L approach) is a printed value (40.0 deg) that the printed co-ordinates contradict (38.8 deg), read identically at 200, 300, 400 and 500 dpi, so it is a print inconsistency, not an OCR error: the gate tolerance is never widened.
-  - `ge-coding` (Georgia, "RNAV Transition Coding Tables - RWY nn - ILSz"): one-line legs with degrees-minutes-seconds co-ordinates. On the UGKO sample: 2 APP tables (one per transition), 2 legs each, gate clean; the holding table is left out by design.
-  - Limits: single-letter cells (fly-over Y/N, turn L/R) are lost by the OCR, so `over` and `turn` stay `None` on OCR-read pages; the gate checks true courses and printed distances only, altitude and speed constraints are not verified; points come from the OCR, not from an official base. K14 covers a Belgian invented page, a list in degrees-minutes and a corrupted list co-ordinate (table dropped).
+- **Installation and multi-resolution re-read (owner: « Oui, OCR EB et UG »)**: `python -m pip install pypdfium2 rapidocr-onnxruntime` in Python 3.14.7. `proc_ocr.read_document` re-reads a page at 300, then 500, then 200 dpi while it is not fully read and keeps the best reading (at 300 dpi one runway-point line of the Belgian list was lost and the geometry check rejected the table; 500 dpi read both tables). `OCR_LAYOUTS` lists the layouts readable through OCR: `uk-app`, `uk-star`, `am-coding`, `at-coding`, `ei-coding`, `be-coding`, `ge-coding`. `tools/proc_ead.py --fetch` runs `ocr_pass` on documents whose pages are all unknown and drawn, writes `<ICAO>.ocr.json` and prints what was read, what the geometry check dropped and the `proc_manual.py` command; without an engine it prints the install message and goes on (K12).
+  - `be-coding` (Belgium, IAC page): ARINC coding table drawn in vectors; columns sequence, path terminator, waypoint, role, fly-over, true course, turn, altitude constraint, speed, vertical path angle; no distance nor magnetic course. A "WAYPOINTS COORDINATES" list in degrees and decimal minutes is read by `be_coords` (also used by `waypoint_coords` for text pages). On the EBBE sample: 2 APP tables, 10 legs each, 20 of 20 points resolved from the list, geometry check clean.
+  - `be-coding` SID / STAR variant (EBBE SID chart): the page prints a true course for only some TF legs and no distance, so a SID table is kept, with the warning "cap non imprimé : géométrie non contrôlable", only if every point is resolved from its own co-ordinate list (a point listed twice on the page must have identical co-ordinates), the first leg is IF or CF, all legs are IF / TF / CF / DF and every course that is printed passes the geometry check; otherwise it is dropped. On the real EBBE page the three IAC / SID documents give 6 tables, 5 kept; the one dropped (IAC 21, RWY 22L approach) is a printed value (40.0 deg) that the printed co-ordinates contradict (38.8 deg), read identically at 200, 300, 400 and 500 dpi, so it is a print inconsistency, not an OCR error: the geometry check tolerance is never widened.
+  - `ge-coding` (Georgia, "RNAV Transition Coding Tables - RWY nn - ILSz"): one-line legs with degrees-minutes-seconds co-ordinates. On the UGKO sample: 2 APP tables (one per transition), 2 legs each, geometry check clean; the holding table is left out by design.
+  - Limits: single-letter cells (fly-over Y/N, turn L/R) are lost by the OCR, so `over` and `turn` stay `None` on OCR-read pages; the geometry check verifies true courses and printed distances only, altitude and speed constraints are not verified; points come from the OCR, not from an official base. K14 covers a Belgian invented page, a list in degrees-minutes and a corrupted list co-ordinate (table dropped).
 
 Out of scope: OCR of chart drawings (image-only charts such as Albania's). Only tables are read.
 
@@ -440,11 +447,11 @@ Survey of all 47 authorities run by the owner (one sample per State, delay 1 s).
 
 | Group | States | Sample and reading |
 |---|---|---|
-| Read, known layout | UD, ED, EG, BI, EY, LI, LD, LA, RP, EI, LO, LZ, LU, LP, EP, EB, UG (17); EB `be-coding` via OCR (IAC page, ARINC table, list in degrees-minutes); UG `ge-coding` via OCR (RNAV transition coding tables, degrees-minutes-seconds) | UD `am-coding`; ED `de-route`; EG text `uk-app` + vector `uk-star` via OCR; BI `icao-tab` (6+5 STAR tables, kind carried from page 1 to 2); EY `icao-tab` (4 tables, 18 legs, co-ordinates from the list on page 3); LI `icao-tab` (page 3, 4 tables, 11 legs, list on the same page); LD vector page 1, text pages 2-4 `icao-tab` with a Route column, list on page 5; LA image page 1, page 2 shifted-glyph font decoded, `icao-tab`; RP vector page 1, pages 2-3 shifted-glyph font decoded, route table + list + `icao-tab`; EI `ei-coding` (page 2, 7 blocks, 6 read, 32 legs, gate clean, 1 rejected for a name split by the text layer); LO `at-coding` (pages 2-3, 2 tables per page, 7 and 6 legs); LZ `at-coding` (pages 2-4, 3+3+1 tables, 28 legs, gate clean); LU, LP, EP `de-route` widened (page 2; 5, 7 and 4 STAR tables, no co-ordinates) |
+| Read, known layout | UD, ED, EG, BI, EY, LI, LD, LA, RP, EI, LO, LZ, LU, LP, EP, EB, UG (17); EB `be-coding` via OCR (IAC page, ARINC table, list in degrees-minutes); UG `ge-coding` via OCR (RNAV transition coding tables, degrees-minutes-seconds) | UD `am-coding`; ED `de-route`; EG text `uk-app` + vector `uk-star` via OCR; BI `icao-tab` (6+5 STAR tables, kind carried from page 1 to 2); EY `icao-tab` (4 tables, 18 legs, co-ordinates from the list on page 3); LI `icao-tab` (page 3, 4 tables, 11 legs, list on the same page); LD vector page 1, text pages 2-4 `icao-tab` with a Route column, list on page 5; LA image page 1, page 2 shifted-glyph font decoded, `icao-tab`; RP vector page 1, pages 2-3 shifted-glyph font decoded, route table + list + `icao-tab`; EI `ei-coding` (page 2, 7 blocks, 6 read, 32 legs, geometry check clean, 1 rejected for a name split by the text layer); LO `at-coding` (pages 2-3, 2 tables per page, 7 and 6 legs); LZ `at-coding` (pages 2-4, 3+3+1 tables, 28 legs, geometry check clean); LU, LP, EP `de-route` widened (page 2; 5, 7 and 4 STAR tables, no co-ordinates) |
 | Charts only, no table in the sample | UB, EK, EE, XX, BG, LH, LJ, EH, ES, EV, LY, UK, LK, LM, LR, EF (16) | XX: files named EK_, label recorded; LK: VFR chart, 686,000 path operations (pypdf stream limit raised); LM: VFR strings; LR: aeronautical data tabulation, waypoint list only; EF: omnidirectional departures and obstacles only |
 | Image only | LQ, LG (2) | not readable |
-| Prose route descriptions, no table, no co-ordinates | EN, OJ, LE (bilingual), LC, LW, LS, BG Greenland (7) | not parsed by design: nothing the geometry gate can check |
-| Outdated edition | LF (1) | EAD sample is a 2015 SIA "PRECODING" edition (older `sia-code`, "Leg sequence / P/T / ID" header, chart text in a /MTnn glyph font): not parsed; France comes from the SIA's own eAIP through `tools/proc_eaip.py` |
+| Prose route descriptions, no table, no co-ordinates | EN, OJ, LE (bilingual), LC, LW, LS, BG Greenland (7) | not parsed by design: nothing the geometry check can check |
+| Outdated edition | LF (1) | EAD sample is a 2015 SIA "PRECODING" edition (older `sia-code`, "Leg sequence / P/T / ID" header, chart text in a /MTnn glyph font): not parsed; France comes from the SIA's own eAIP through `tools/proc_sia.py` |
 | Nothing obtained | BK (no files), LB and LT (no coding / SID / STAR headings, IAP charts only), UA and UC (download failed: rows without a direct link) (5) | |
 
 ### 8.1 One State per line, and what follows (ergonomics session's decision, 28 Oct 2026)
@@ -492,7 +499,7 @@ Survey of all 47 authorities run by the owner (one sample per State, delay 1 s).
 | LW | prose | route descriptions in text, no co-ordinates |
 | LS | prose | route descriptions in text, no co-ordinates |
 | BG | prose | route descriptions in text, no co-ordinates |
-| LF | from the SIA | France comes from the SIA's own eAIP (`tools/proc_eaip.py`), never from EAD (EAD's sample is a 2015 edition) |
+| LF | from the SIA | France comes from the SIA's own eAIP (`tools/proc_sia.py`), never from EAD (EAD's sample is a 2015 edition) |
 | BK | nothing | no file, or no coding / SID / STAR document, or a failed download |
 | LB | nothing | no file, or no coding / SID / STAR document, or a failed download |
 | LT | nothing | no file, or no coding / SID / STAR document, or a failed download |
@@ -500,15 +507,15 @@ Survey of all 47 authorities run by the owner (one sample per State, delay 1 s).
 | UC | nothing | no file, or no coding / SID / STAR document, or a failed download |
 
 - **A State without coding tables**: the per-flight source stays the SimBrief OFP (status `ofp`, `proc-seen/`). An aerodrome of such a State is
-  read only on demand, by the owner's manual gesture, through the geometry gate, status `check`.
+  read only on demand, by the owner's manual gesture, through the geometry check, status `check`.
 - **No model reads chart drawings or prose** without an explicit request for that aerodrome.
-- **France comes from the SIA** (`tools/proc_eaip.py`), never from EAD.
+- **France comes from the SIA** (`tools/proc_sia.py`), never from EAD.
 - **Reserve**: one sample per State only; another form of the same State's pages is caught by the format check (`formats`, `ok: false`), never
   guessed.
 
-Tooling of the lot: `build_pdf_dir` reads every page of every PDF; `classify_pdf` reports `table_page` and `page_kinds`; shifted-glyph fonts are decoded by font (`chr(c+29)`, fragile, guarded by the format and geometry checks); `waypoint_coords(rows)` reads co-ordinate lists in five printed forms and `build_pdf_dir` fills points with `lat` `None` from them (`coords_from: 'liste'`) before the gate; `check_geometry` also checks a leg without a printed true course when it has a magnetic course (within 30 degrees) or a distance (within 0.55 NM); `survey.json` records the authority label; `kind_hint` is carried between pages of a document. New layouts: `icao-tab` (K18), `ei-coding` (K19), `at-coding` text order (K17 extended), `de-route` widened to LU / LP / EP (K15 extended), waypoint lists (K20). `python tests/v3/run.py --grep K`: 19 cases pass.
+Tooling of the lot: `build_pdf_dir` reads every page of every PDF; `classify_pdf` reports `table_page` and `page_kinds`; shifted-glyph fonts are decoded by font (`chr(c+29)`, fragile, guarded by the format and geometry checks); `waypoint_coords(rows)` reads co-ordinate lists in five printed forms and `build_pdf_dir` fills points with `lat` `None` from them (`coords_from: 'liste'`) before the geometry check; `check_geometry` also checks a leg without a printed true course when it has a magnetic course (within 30 degrees) or a distance (within 0.55 NM); `survey.json` records the authority label; `kind_hint` is carried between pages of a document. New layouts: `icao-tab` (K18), `ei-coding` (K19), `at-coding` text order (K17 extended), `de-route` widened to LU / LP / EP (K15 extended), waypoint lists (K20). `python tests/v3/run.py --grep K`: 19 cases pass.
 
-**`de-route`** (`parse_de_route`): the German AIP's textual SID / STAR route tables (Designator / Significant points / Mag track / Distance / Minimum altitude); one STAR page seen through EAD. The page carries no co-ordinates: points keep `lat` / `lon` `None` with the warning "to be resolved by aerodb from the points base", so the geometry gate has nothing to check; instead the counts are checked (fixes = legs + 1) and a table that disagrees is rejected. Case K15 on an invented page. The parsers are now chosen through the `PARSERS` dispatch dictionary in `build_pdf_dir`.
+**`de-route`** (`parse_de_route`): the German AIP's textual SID / STAR route tables (Designator / Significant points / Mag track / Distance / Minimum altitude); one STAR page seen through EAD. The page carries no co-ordinates: points keep `lat` / `lon` `None` with the warning "to be resolved by aerodb from the points base", so the geometry check has nothing to check; instead the counts are checked (fixes = legs + 1) and a table that disagrees is rejected. Case K15 on an invented page. The parsers are now chosen through the `PARSERS` dispatch dictionary in `build_pdf_dir`.
 
 **Survey changes**: records carry `rows_head` (first 30 text rows of the sample's first page; local `survey.json` only, git-ignored), `alt_keys` / `sample_alt` (second keyword set SID, STAR, IAC, RNAV, CODAGE, ARRIVEE, DEPART, APPROCHE, tried when CODING / DEPARTURE / ARRIVAL / APPROACH all count 0, e.g. France, whose headings are not in English) and `sample_any` (first 5 rows of a plain Charts search for `AD_2_`); the `survey.txt` line gets the alternative hits. Console output is UTF-8; private-use characters are dropped like control characters (such a page crashed `--scan-pdf` on a cp1252 console). Case K12 extended.
 
@@ -521,3 +528,61 @@ Owner decisions still open:
 - installing the UK and Austrian OCR files in `data/proc` and committing `data/proc` in the data repository;
 - the Settings › Maintenance button (not done);
 - unsigned altitudes in `de-route` tables typed "min" when the header says Minimum altitude (session choice, to confirm).
+
+## 10. Ireland, Dublin (EIDW): the second layout of `ei-coding` (29 October 2026)
+
+**Reported** (the user, on the workstation): « Lire les procédures » for EIDW (Dublin; `EAD_STATES` EI, outcome `read`) ran 3.5 minutes and ended `{ ok: false, reason: 'failed', message: 'no procedure could be read for this aerodrome' }`:
+`CODING: 0 document(s)`, 31 chart documents downloaded (SID 12, STAR 4, IAP 22 of which 15 listed), every one « disposition non reconnue ». Nothing was shown in Fuel during the reading or after it.
+
+**Cause 1 — the layout was not recognised.** `detect_layout` asked for the words `terminator` and the phrase `magnetic track`; Dublin prints `Term` and `Mag track` (the initial-approach pages print `performance descriptor` and no terminator at all, and one
+page splits `WPT` in `W PT`). The rule now asks for the stable words (path, latitude, longitude, name, upper, lower, speed, limit, true, track), one of `wpt` / `w pt`, one of `terminator` / `term` / `descriptor`, `mag` or `magnetic`, a `Fly - By`,
+**and at least one co-ordinate row** (`DDMMSS.s / DDDMMSS.s`, digits possibly spaced): the header alone is no longer enough.
+
+**Cause 2 — the columns are not in the order of the 28 October page.** Two orders are read now, told apart **by the line itself** (a row that both patterns could read is ambiguous and is not read):
+
+| | order A (28 October) | order B (Dublin, 29 October) |
+|---|---|---|
+| row | `RNAV 1 TF GIVOL lat / lon Fly - By 29.5 311.6 / 315 - / 6000 - -` | `RNAV1 DW682 530541.9 / 0061715.9 TF Fly - By 200.2 / 203 11.2 - - Turn R` |
+| cells | nav spec, **terminator**, name, lat / lon, fly-by, **distance**, true / mag track, limits, speed, remarks | nav spec, name, lat / lon, **terminator**, fly-by, true / mag track, **distance**, limits, speed, [VPA / TCH], remarks |
+| seen on | the page of 28 October; the *initial approach* pages with a `Navigational Path` header (`KERAV 1T INITIAL APPROACH CAT A/B/C/D ILS RWY16`) | SID, STAR, RNP and ILS pages of Dublin |
+
+Other things the Dublin pages do, each handled:
+
+- **First leg of a departure without a point**: `RNAV1 RWY28 - CA - 275.2 / 278 - - / A750 + - -` (some pages: `RNAV 1 - - CA - 275.3 / 277 - - / + A750`). It becomes a **CA leg with `id: null`**, the runway course (`crs` 278, `true` 275.2) and the altitude
+  (`A750 +` = at or above 750 ft: `min`). `RWYnn` must be the runway of the block title, else the block is not read. No « co-ordinates to resolve » warning for a point-less leg.
+- **Limits**: columns `Upper limit / Lower limit` read as everywhere (**upper = maximum, lower = minimum, equal = at**): `A 4000 / -` = at or below 4000 ft, `- / A750 +` = at or above 750 ft, `FL080 / FL080` = at FL080, `-FL170 / +FL150` = between. The printed sign
+  must be the column's (`-` upper, `+` lower), possibly apart from the level (`- FL240 / -`, `+ A3000`); a contrary sign rejects the block. Levels are `A 4 000` / `A 30 00` / `FL 19 0` (digits spaced by the text layer), `A750+`, `+A3000`, `FL90`. A level that is
+  not a usual step (a multiple of 50 ft, of 5 FL) is a digit lost or swallowed: the row is not read.
+- **Turn**: `Turn L`, `Turn R`, `Turn R , VOR`, `Turn R, IAF`, and a lone `L` / `R` (ILS and RNP pages) → `turn`, the direction of the turn onto that leg (as in the SIA tables).
+- **Digits spaced by the text layer**: `52284 3 . 7` (lat), `007232 8 . 6` (lon), `15 7` (magnetic track), `092. 6`, `1 0.6` (distance), `2 2 0` (speed) are joined (on the digit counts: 6 + decimals, 7 + decimals, 3, 3).
+- **Names cut in two** (`DW0 24`, `OLONO 1B`): a **point** name is joined only if the **same co-ordinates** carry the whole name elsewhere in the aerodrome's pages (`DW024` appears whole in the 2020 pages; the 2022 pages call the same point `ATGOW`: both
+  names are admitted); otherwise the block is rejected (« nom coupé non confirmé »). Block titles and short designators are read as they come (`OLONO 1B`, `OLON 1B`, `BAMLI 1NCAT A/B`).
+- **STAR pages whose text comes backwards**: the text layer gives the lines of each block, then its header, its short designator (`NIMA4L`) and its title (`NIMAT 4L STAR RWY 28L/R`), the whole page being in reverse reading order. A page where a leg row precedes the first
+  title is read from the end. `RWY 28L/R` gives two runways.
+- **RNP pages**: the navigation specification is cut around the row (`RNP` / `DUB 532957.8 / … IF …` / `APCH`): the three lines are joined; a VPA / TCH column (`3 / 54`: `vpa` −3.0). The missed approach after the runway point `RWnn` is marked `phase: 'missed'`
+  (existing rule of `records_uk_app`).
+- **Incomplete rows**: `… 3.8 - / A950` (three RNP blocks of RWY 34) and `… 23.5 - FL230 / - Turn R` (a SID) lack their last cells (the text layer lost them): read with no speed, said in a warning. Anything else that does not parse rejects the block.
+- **Skipped on purpose**: a *missed approach table alone* (`Dublin ILS RWY 28L MISSED APP`, 4 of them): it is not a procedure (the ILS final and the interruption are not coded together), said in a warning; the holding tables (`Hold Identification`); the
+  `Descent Angle … Fix Coordinates` tables of the ILS / LOC / VOR pages and the `SBAS FAS Data Block` pages (no legs).
+- **Naming**: a SID / STAR is named by its **coded designator** (`ABID1B`, `NIMA4L`: the line under the title), as before; an approach by its title without the aerodrome (`RNP RWY 28L via DUB`, `KERAV 1T INITIAL APPROACH ILS RWY16`). The `ILS … via <fix>` pages
+  and the `INITIAL APPROACH` pages code the initial and intermediate segments only: those are the legs read.
+
+**Measured on the 31 documents of the user's run** (offline, `build_pdf_dir` on the text of the downloaded PDF; the old code: 0 page recognised, 0 procedure):
+
+| | |
+|---|---|
+| documents / pages | 31 / 80 |
+| pages recognised and read | **43** (`ei-coding`; before: 0) ; 2 documents (the two VOR approaches, `Fix Coordinates` tables) stay « mise en page non reconnue » |
+| pages not recognised, not tables of legs | 31 chart pages (page 1), 4 `SBAS FAS Data Block` pages, the 2 VOR pages |
+| procedures read | **196**: 115 SID, 43 STAR, 38 APP (RNP and initial approaches); 0 nameless, 0 in doubt, 0 removed |
+| leg rows / legs kept | 1 012 / 999 (the other 13 are the rows of the 4 missed-approach tables left out) |
+| geometry check (`check_geometry`: true track and distance against the printed co-ordinates) | 659 TF legs checked, **0 table rejected** ; `proc_manual.verify` finds nothing |
+| rows read without speed | 4 (NEVRI of NEVR1N; DW033 in the three RWY 34 RNP blocks) |
+
+**Fixtures**: three **synthetic** pages in `frame/aerodb/test/fixtures/ead/` (invented points and positions computed to agree, the layout and the text-layer faults of the real pages reproduced: SID with two blocks, STAR in reverse order, RNP with the missed approach
+table alone). The real rows are not committed (§ 4: a State's AIP does not go into the public repository). Bench: K26 (new), K19 (adjusted), K22, K12.
+
+**Pagination of the survey** (`EadLibrary.search(all_pages=True)`, written on 28 October, untested without EAD): the IAP search found 22 documents and read 15. The code asks for the second page with the PrimeFaces data-table parameters (`mainForm:searchResults`,
+`…_pagination=true`, `…_first=15`, `…_rows=15`, `…_skipChildren`, `…_encodeFeature`, `execute` and `render` on the table, no `javax.faces.partial.event`); the names were not seen on the real screen. When the answer to page 2 is an error or has no result table, it stops
+with `« 15 ligne(s) lue(s) sur 22 : la page 2 a répondu par une erreur ou sans tableau de résultats »` and goes on with what it has. The first paging request logs once what was sent and the anatomy of the answer (`pagination (noms de paramètres non vus…`): that
+line is in the job log. Not changed. The numbering of the documents read (AD 2.24-10 … 42) lacks 24-31 and 24-34: charts of the missing seven could be among them.

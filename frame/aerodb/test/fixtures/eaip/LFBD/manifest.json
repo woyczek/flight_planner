@@ -1,0 +1,29 @@
+{
+ "icao": "LFBD",
+ "cycle": "2026-10-01",
+ "source": "SIA eAIP",
+ "regenerable": false,
+ "note": "not regenerable: source PDF not cached",
+ "pages": [
+  {
+   "file": "AD_2_LFBD_DATA_01.pdf",
+   "rows": 50
+  },
+  {
+   "file": "AD_2_LFBD_DATA_02.pdf",
+   "rows": 60
+  },
+  {
+   "file": "AD_2_LFBD_DATA_RWY23_RNP_CODE.pdf",
+   "rows": 35
+  },
+  {
+   "file": "AD_2_LFBD_DATA_SID_RWY23_RNAV_CODE_01.pdf",
+   "rows": 29
+  },
+  {
+   "file": "AD_2_LFBD_DATA_STAR_RWY_ALL_RNAV_CODE_01.pdf",
+   "rows": 41
+  }
+ ]
+}

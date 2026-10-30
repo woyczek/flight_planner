@@ -1,0 +1,91 @@
+AD 2 LFPG DATA SID RWY26L-26R RNAV CODE 02AIP
+01 OCT 2026FRANCE
+PARIS CHARLES DE GAULLE
+Réacteurs (R) et hélices (H) / Turbofans (R) and turboprops (H)
+SID RNAV RWY 26L - 26R
+(Protégés pour / Protected for CAT A, B, C, D)
+AMDT 10/26© Service de l'Information Aéronautique, France
+SID RNAV RWY 26L - 26R
+RMK MAG VAR 2020 1.1°E Ref NAVAID : BT
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+BAXIR 7B
+RWY26 L - 267 268. 4
+CF PG263 - - - - - 1.0
+RWY26R - 264 265.3
+- TF PG264 Y 264 265.2 4.7 - - - - 1.0
+- TF PG265 - 264 265.3 6.7 - - - - 1.0
+- TF PIVER - 160 161.6 11.3 - - - - 1.0
+- TF CLM - 083 084.1 29.7 - - - - 1.0
+- TF BEKOS - 094 095.1 21.3 - - - - 1.0
+- TF BAXIR - 094 095.6 12.8 - - - - 1.0
+BUBLI 7B
+RWY26 L - 267 268. 4
+CF PG263 - - - -- 1.0
+RWY26R - 264 265.3
+- TF PG264 Y 264 265.2 4.7 - - - - 1.0
+- TF PG265 - 264 265.3 6.7 - - - - 1.0
+- TF PIVER - 160 161.6 11.3 - - - - 1.0
+- TF CLM - 083 084.1 29.7 - - - - 1.0
+- TF BEKOS - 094 095.1 21.3 - - - - 1.0
+- TF BUBLI - 094 095.5 24.0 - - - - 1.0
+DIKOL 7E
+RWY26 L - 267 268. 4
+CF PG263 - - - - - 1.0
+RWY26R - 264 265.3
+- TF PG264 Y 264 265.2 4.7 - - - - 1.0
+- TF PG265 - 264 265.3 6.7 - - - - 1.0
+- TF PIVER - 160 161.6 11.3 - - - - 1.0
+- TF CLM - 083 084.1 29.7 - - - - 1.0
+- TF NEPAR - 054 055.5 25.7 - - - - 1.0
+- TF DIKOL - 080 080.9 19.9 - - - - 1.0
+RANUX 7E
+RWY26 L - 267 268. 4
+CF PG263 - - - -- 1.0
+RWY26R - 264 265.3
+- TF PG264 Y 264 265.2 4.7 - - - - 1.0
+- TF PG265 - 264 265.3 6.7 - - - - 1.0
+- TF PIVER - 160 161.6 11.3 - - - - 1.0
+- TF CLM - 083 084.1 29.7 - - - - 1.0
+- TF NEPAR - 054 055.5 25.7 - - - - 1.0
+- TF RANUX - 083 084.0 32.1 - - - - 1.0
+LANVI 7E
+RWY26 L - 267 268. 4
+CF PG263 - - - - - 1.0
+RWY26R - 264 265.3
+- TF PG264 Y 264 265.2 4.7 - - - - 1.0
+- TF PG265 - 264 265.3 6.7 - - - - 1.0
+- TF PIVER - 160 161.6 11.3 - - - - 1.0
+- TF CLM - 083 084.1 29.7 - - - - 1.0
+- TF LUPAM - 074 074.9 21.9 - - - - 1.0
+- TF LASIV - 093 094.5 26.9 - - - - 1.0
+- TF LANVI - 118 118.9 71.8 - - - - 1.0
+BAXIR 7E
+RWY26 L - 267 268. 4
+CF PG263 - - - -- 1.0
+RWY26R - 264 265.3
+- TF PG264 Y 264 265.2 4.7 - - - - 1.0
+- TF PG265 - 264 265.3 6.7 - - - - 1.0
+- TF PIVER - 160 161.6 11.3 - - - - 1.0
+- TF CLM - 083 084.1 29.7 - - - - 1.0
+- TF BEKOS - 094 095.1 21.3 - - - - 1.0
+- TF BAXIR - 094 095.6 12.8 - - - - 1.0
+BUBLI 7E
+RWY26 L - 267 268. 4
+CF PG263 - - - - - 1.0
+RWY26R - 264 265.3
+- TF PG264 Y 264 265.2 4.7 - - - - 1.0
+- TF PG265 - 264 265.3 6.7 - - - - 1.0
+- TF PIVER - 160 161.6 11.3 - - - - 1.0
+- TF CLM - 083 084.1 29.7 - - - - 1.0
+- TF BEKOS - 094 095.1 21.3 - - - - 1.0
+- TF BUBLI - 094 095.5 24.0 - - - - 1.0
+AGOPA 7B
+RWY26 L - 267 268. 4
+-- 1.0CF PG263 - - -
+RWY26R - 264 265.3
+- TF PG264 Y 264 265.2 4.7 - - - - 1.0
+- TF PG268 - 264 265.2 13.8 - - - - 1.0
+- TF RBT - 179 180.5 18.7 - - - - 1.0
+- TF ADADA - 178 179.0 21.6 - - - - 1.0
+- TF AGOPA - 178 178.9 12.7 - - - 280 1.0

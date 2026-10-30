@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>aerodb — cycles, catalogue, publication</title>
+<!-- Banc du lot D1 d'aerodb pour le module Données (SPEC § 4 « Cycle names », § 5, § 5 sexies) : le cycle AIRAC (airac.js), le
+     catalogue (catalogue.js : schéma, adresses du cycle, lecteurs de noms de fichiers, issues d'EAD par État) et les trois appels
+     publication(), zones(), sources() sur un lecteur en mémoire (aucun réseau, aucun lanceur). Résultat : window.__catBench. -->
+<style>
+  body {
+    font: 14px/1.45 system-ui, sans-serif;
+    margin: 16px
+  }
+  li.ok::marker {
+    content: '✓ '
+  }
+  li.ko::marker {
+    content: '✗ '
+  }
+</style></head>
+<body>
+<h1>aerodb — cycles, catalogue, publication</h1>
+<p id="state">running…</p>
+<ol id="out"></ol>
+<script src="../zones.js?v=0"></script>
+<script src="../aerodb.js?v=0"></script>
+<script src="../airac.js?v=0"></script>
+<script src="../catalogue.js?v=0"></script>
+<script>
+  (async () => {
+    const results = [],
+      check = (name, ok, detail) => results.push({
+        name,
+        ok: !!ok,
+        detail: ok ? '' : JSON.stringify(detail)
+      });
+    const J = JSON.stringify;
+    try {
+      // ------------------------------------------------------------------ le cycle AIRAC
+      const A = AeroAirac,
+        c1 = A.cycleOf('2026-10-26'),
+        c2 = A.cycleOf('2026-10-29'),
+        c3 = A.cycleOf('2026-12-31'),
+        c4 = A.cycleOf(Date.UTC(2024, 0, 25));
+      check('in force on 26 Oct 2026: 2610 (1 Oct), next 2611 (29 Oct), previous 2609 (3 Sep)', c1.id === '2610' && c1.date ===
+        '2026-10-01' && c1.next.id === '2611' &&
+        c1.next.date === '2026-10-29' && c1.prev.id === '2609' && c1.prev.date === '2026-09-03', c1);
+      check('in force on its first day: 29 Oct 2026 is 2611', c2.id === '2611' && c2.date === '2026-10-29', c2);
+      check('year end: 31 Dec 2026 is 2613, next 2701 on 21 Jan 2027', c3.id === '2613' && c3.next.id === '2701' && c3.next.date ===
+        '2027-01-21', c3);
+      check('the anchor: 25 Jan 2024 is 2401', c4.id === '2401' && c4.date === '2024-01-25' && A.ANCHOR === '2024-01-25', c4);
+      check('cycleDate: 2610 → 2026-10-01, 2701 → 2027-01-21, 2601 → 2026-01-22; 2614 and a bad id → ""', A.cycleDate('2610') ===
+        '2026-10-01' && A.cycleDate('2701') ===
+        '2027-01-21' && A.cycleDate('2601') === '2026-01-22' && A.cycleDate('2614') === '' && A.cycleDate('x') === '', [A.cycleDate(
+          '2610'), A.cycleDate('2614')]);
+      check('next / prev / idOf by date', A.next('2026-10-15') === '2026-10-29' && A.prev('2026-10-15') === '2026-09-03' && A.idOf(
+        '2026-10-15') === '2610', 0);
+      check('every cycle from 2401 to 2712 round-trips (id ↔ date)', (() => {
+        for (let ms = Date.UTC(2024, 0, 25); ms < Date.UTC(2028, 0, 1); ms += 28 * 864e5) {
+          const c = A.cycleOf(ms);
+          if (A.cycleDate(c.id) !== c.date) return false;
+        }
+        return true;
+      })(), 0);
+      check('inForce: the latest already in force, else the oldest published in advance', A.inForce(['2026-09-03', '2026-10-01',
+          '2026-10-29'
+        ], '2026-10-20') ===
+        '2026-10-01' && A.inForce(['2026-10-29', '2026-11-26'], '2026-10-20') === '2026-10-29' && A.inForce([], '2026-10-20') ===
+        null, 0);
+      // ------------------------------------------------------------------ le catalogue
+      const K = AeroCatalogue,
+        Z = window.AERODB_ZONES;
+      check('every source has its group, fetch, build and publish (schema of SPEC § 5 sexies)', K.SOURCES.every(s => K.GROUPS.includes(s
+            .group) && ['launcher', 'pick', 'none']
+          .includes(s.fetch?.how) && ['worker', 'python', 'none'].includes(s.build?.runtime) && typeof s.publish === 'boolean' && (s
+            .zones === '*' || Array.isArray(s
+              .zones)) && K.ORDER.includes(s.status) && s.n.length === 4 && s.gives.length === 4 && s.lic.length === 4), K.SOURCES
+        .filter(s => !K.GROUPS.includes(s.group)).map(s =>
+          s.id));
+      check('the zones a source feeds are zones the suite knows', K.SOURCES.every(s => s.zones === '*' || s.zones.every(z => Z[z])), K
+        .SOURCES.filter(s => s.zones !== '*' && !s
+          .zones.every(z => Z[z])).map(s => s.id));
+      check('the four groups each have a source; aircraft types are one', K.GROUPS.every(g => K.SOURCES.some(s => s.group === g)) && K
+        .byId('aircraft')?.group === 'aircraft', 0);
+      check('nothing from X-Plane or Navigraph is published; abandoned sources neither', !K.byId('xpcifp').publish && K.SOURCES.filter(
+        s => s.status === 'abandoned').every(s => !
+        s.publish), 0);
+      check('every link is https, the dated ones built for a cycle', K.SOURCES.every(s => /^https:\/\//.test(K.urlOf(s,
+          '2026-10-01'))) && K.urlOf(K.byId('eaip'), '2026-10-01')
+        .includes('eAIP_01_OCT_2026/FRANCE/AIRAC-2026-10-01') && K.urlOf(K.byId('cifp'), '2610').endsWith('CIFP_261001.zip') && K
+        .urlOf(K.byId('sia'), '2026-10-01').endsWith(
+          'airac-10-26.html'), [K.urlOf(K.byId('eaip'), '2026-10-01'), K.urlOf(K.byId('cifp'), '2610')]);
+      const a = K.siaFileInfo('export_xml_bd_SIA_2026-10-01-v02.zip'),
+        b = K.siaFileInfo('export_xml_bd_sia_2026-10-01-v02 (1).zip'),
+        cf = K.cifpFileInfo('CIFP_261029.zip');
+      check('SIA file name: date, version and cycle read from the name, any case, a copy "(1)" accepted', a.ok && a.version === 2 && a
+        .cycle === '2026-10-01' && a.id === '2610' &&
+        b.ok && b.cycle === a.cycle && !K.siaFileInfo('data.zip').ok, [a, b]);
+      check('CIFP file name: cycle read from the name', cf.ok && cf.cycle === '2026-10-29' && cf.id === '2611' && !K.cifpFileInfo(
+        'cifp.zip').ok, cf);
+      const st = K.EAD_STATES,
+        read = Object.keys(st).filter(x => st[x].outcome === 'read');
+      check('EAD Basic outcome of the 47 States: 17 read with a layout, France from the SIA', Object.keys(st).length === 47 && read
+        .length === 17 && read.every(x => st[x].layout) &&
+        st.LF.outcome === 'sia' && st.EB.ocr && st.LQ.outcome === 'images', [Object.keys(st).length, read.length]);
+      // les libellés de la carte de couverture (§ 10.22) : onze raisons, quatre langues, typographie française
+      const CV = K.COVERAGE,
+        cvKeys = ['held', 'partial', 'sia', 'ead', 'lnm', 'images', 'labels', 'points', 'prose', 'vfr', 'none', 'unknown'];
+      check('COVERAGE: the 12 reasons, each with four non-empty strings [fr, en, de, es], and the catalogue serves it', J(Object.keys(
+        CV).sort()) === J([...cvKeys].sort()) && Object.values(CV).every(v => Array.isArray(v) && v.length === 4 && v.every(t =>
+        typeof t === 'string' && t.trim())) && AeroSources.COVERAGE === CV, Object.keys(CV));
+      check(
+        'COVERAGE: every reason aerodb can answer for a State is there (the EAD outcomes but « read » and « sia », plus held, partial, sia, ead, lnm, unknown)',
+        ['images', 'labels', 'points', 'prose', 'vfr', 'none'].every(o => Object.values(K.EAD_STATES).some(x => x.outcome === o) &&
+          CV[o]),
+        0);
+      check(
+        'COVERAGE: French has no plain space before : ; ! ? » nor after «, a narrow no-break space (U+202F) instead where one is needed',
+        Object.values(CV).every(v => !/ [:;!?»]|« /.test(v[0]) && !/[:;!?»]/.test(v[0].replace(/\u202f[:;!?»]|«\u202f/g, ''))), Object
+        .values(CV).map(v => v[0]).filter(t => / [:;!?»]|« /.test(t)));
+      check('COVERAGE: the four languages differ (no French text left in en / de / es for the readable-on-demand lines)', ['sia', 'ead',
+        'lnm'
+      ].every(k => new Set(CV[k]).size === 4), CV.sia);
+      // le nom de chaque État en quatre langues (le module Données et coverageByState() les servent), la version du format de la base
+      const nmOk = Object.entries(st).every(([k, v]) => Array.isArray(v.names) && v.names.length === 4 && v.names.every(t =>
+        typeof t === 'string' && t.trim()));
+      check(
+        'EAD_STATES: every one of the 47 prefixes has `names` [fr, en, de, es], four non-empty strings; France is France / France / Frankreich / Francia',
+        nmOk && J(st.LF.names) === J(['France', 'France', 'Frankreich', 'Francia']) && st.GE === undefined, Object.entries(st).filter(
+          ([k, v]) => !v.names).map(x => x[0]));
+      check(
+        'EAD_STATES names: French has no plain space before : ; ! ? » nor after «; no name is left in French in the English / German / Spanish slots of a State written differently',
+        Object.values(st).every(v => !/ [:;!?»]|« /.test(v.names[0])) && st.ED.names[1] === 'Germany' && st.ED.names[2] ===
+        'Deutschland' && st.ED.names[3] === 'Alemania' &&
+        st.EG.names[0] === 'Royaume-Uni' && st.EG.names[3] === 'Reino Unido', [st.ED.names, st.EG.names]);
+      check('PARSER_VERSION is a number served by the catalogue (K21 compares it with shared/sia_base.js VERSION)', Number.isInteger(K
+        .PARSER_VERSION) && AeroSources.PARSER_VERSION === K.PARSER_VERSION, K.PARSER_VERSION);
+      window.__parserVersion = K.PARSER_VERSION;
+      // les raisons de lecture (§ 10.29 c) : les codes de page non lue et de procédure douteuse, chacun avec quatre libellés
+      const RR = K.READ_REASONS,
+        rrKeys = ['layout', 'low-read', 'title', 'no-legs', 'counts', 'vector', 'timeout', 'geometry', 'unresolved', 'name', 'repeat',
+          'zigzag',
+          'unread'
+        ];
+      check(
+        'READ_REASONS: the 7 page codes and the 6 doubt codes, each with four non-empty strings [fr, en, de, es], and the catalogue serves it',
+        J(Object.keys(RR).sort()) === J([...rrKeys].sort()) && Object.values(RR).every(v => Array.isArray(v) && v.length === 4 && v
+          .every(t =>
+            typeof t === 'string' && t.trim())) && AeroSources.READ_REASONS === RR, Object.keys(RR));
+      check('READ_REASONS: French has no plain space before : ; ! ? % » nor after «, a narrow no-break space (U+202F) instead',
+        Object.values(RR).every(v => !/ [:;!?%»]|« /.test(v[0])), Object.values(RR).map(v => v[0]).filter(t => / [:;!?%»]|« /.test(t))
+      );
+      check('READ_REASONS: the four languages differ for every code', Object.values(RR).every(v => new Set(v).size === 4), Object.keys(
+        RR).filter(
+        k => new Set(RR[k]).size !== 4));
+      check('the Sources screen still finds its object (AeroSources with the cycle helpers)', AeroSources.SOURCES === K.SOURCES &&
+        AeroSources.cycleOf('2026-10-26').id === '2610',
+        0);
+      // ------------------------------------------------------------------ publication(), zones(), sources()
+      const files = new Map(Object.entries({
+          'sia/base/index.json': {
+            zones: {
+              fr: {
+                cycle: '2026-10-01',
+                prefixes: ['LF'],
+                kb: {}
+              }
+            }
+          },
+          'sia/base/fr/2026-09-03/meta.json': {
+            schema: 2,
+            zone: 'fr',
+            cycle: '2026-09-03',
+            kind: 'meta',
+            parserVersion: 16,
+            updated_at: '2026-09-01T10:00:00Z',
+            data: {}
+          },
+          'sia/base/fr/2026-09-03/airspaces.json': {
+            data: []
+          },
+          'sia/base/fr/2026-10-01/meta.json': {
+            schema: 2,
+            zone: 'fr',
+            cycle: '2026-10-01',
+            kind: 'meta',
+            parserVersion: 17,
+            updated_at: '2026-09-29T08:00:00Z',
+            builtAt: '2026-09-29T08:00:00Z',
+            builtBy: 'ABC',
+            data: {}
+          },
+          'sia/base/fr/2026-10-01/airspaces.json': {
+            data: []
+          },
+          'sia/base/be/2026-10-01.json': {
+            schema: 1
+          },
+          'proc/2026-10-01/index.json': {
+            cycle: '2026-10-01',
+            aerodromes: {
+              LFBD: {
+                SID: 1,
+                status: 'check'
+              },
+              KSEA: {
+                SID: 3,
+                status: 'official'
+              },
+              KLAX: {
+                STAR: 2
+              }
+            }
+          },
+          'proc/2026-10-01/LFBD.json': {},
+          'sia/vfr/index.json': {
+            schema: 2,
+            cycle: '2026-10-01',
+            generatedAt: '2026-10-02T12:00:00Z',
+            aerodromes: [{
+              ad: 'LFBD'
+            }, {
+              ad: 'LFBO'
+            }]
+          },
+          'AircraftDB/aircraft_db.json': {
+            A320: {},
+            C30J: {},
+            updated_at: '2026-10-20'
+          }
+        }).map(([k, v]) => [k, JSON.stringify(v)])),
+        reads = [],
+        reader = {
+          read: async p => {
+            reads.push(p);
+            return files.has(p) ? {
+              value: JSON.parse(files.get(p)),
+              rev: 'r'
+            } : null;
+          },
+          list: async prefix => [...files.keys()].filter(p => p.startsWith(prefix))
+        },
+        db = AeroDB.create({
+          reader,
+          lnmperf: false,
+          now: () => Date.parse('2026-10-20T12:00:00Z')
+        });
+      const pub = await db.publication();
+      check('base: both cycles of fr, the one in force, parser version, at / by from the builders', J(Object.keys(pub.base.fr
+          .cycles)) === J(['2026-09-03', '2026-10-01']) && pub
+        .base.fr.inForce === '2026-10-01' && pub.base.fr.cycles['2026-10-01'].parserVersion === 17 && pub.base.fr.cycles['2026-10-01']
+        .by === 'ABC' && pub.base.fr.cycles[
+          '2026-09-03'].by === null && pub.base.fr.cycles['2026-09-03'].at === '2026-09-01T10:00:00Z', pub.base.fr);
+      check('base: a zone in the whole format is listed without being read', pub.base.be?.cycles['2026-10-01']?.format === 'whole' && !
+        reads.includes('sia/base/be/2026-10-01.json'),
+        pub.base.be);
+      check('proc: cycle, aerodromes and their statuses from the index', pub.proc.inForce === '2026-10-01' && pub.proc.cycles[
+        '2026-10-01'].aerodromes === 3 && J(pub.proc.cycles[
+        '2026-10-01'].byStatus) === J({
+        check: 1,
+        official: 2
+      }), pub.proc);
+      check('vfr and aircraft: cycle, date and counts', pub.vfr?.cycle === '2026-10-01' && pub.vfr.count === 2 && pub.aircraft
+        ?.types === 2 && pub.aircraft.at === '2026-10-20', [pub
+          .vfr, pub.aircraft
+        ]);
+      check('without loading the data: no kind file other than meta.json is read', !reads.some(p =>
+        /\/(airspaces|aerodromes|navaids|points|vrp|airways|obstacles|mora|cities)\.json$/
+        .test(p)) && !reads.some(p => /^proc\/[^/]+\/[A-Z]{4}\.json$/.test(p)), reads);
+      const zs = await db.zones();
+      check('zones(): every known zone, published or not, with its names', zs.length === Object.keys(Z).length && zs.find(z => z.id ===
+        'fr').published && !zs.find(z => z.id ===
+        'de').published && zs.find(z => z.id === 'de').names.length === 4, zs.slice(0, 3));
+      const src = await db.sources();
+      check('sources(): the catalogue and the AIRAC helpers', src.SOURCES === K.SOURCES && src.airac === A && typeof src.siaFileInfo ===
+        'function', Object.keys(src));
+    } catch (e) {
+      check('no exception', false, String(e && e.stack || e));
+    }
+    const pass = results.filter(r => r.ok).length;
+    document.getElementById('state').textContent = `${pass} passed, ${results.length - pass} failed`;
+    document.getElementById('out').innerHTML = results.map(r => `<li class="${r.ok ? 'ok' : 'ko'}">${r.name.replace(/</g, '&lt;')}${r.ok ? '' : ' — ' + r.detail.replace(/</g, '&lt;').slice(0, 400)}</li>`).join('');
+    window.__catBench = {
+      done: true,
+      pass,
+      fail: results.length - pass,
+      rows: results.map(r => `${r.ok ? 'PASS' : 'FAIL'} ${r.name}${r.ok ? '' : ' — ' + r.detail}`)
+    };
+  })();
+</script>
+</body></html>

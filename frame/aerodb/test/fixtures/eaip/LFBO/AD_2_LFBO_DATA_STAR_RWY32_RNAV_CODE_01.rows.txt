@@ -1,0 +1,47 @@
+AIP AD 2 LFBO DA T A ST AR RWY32 RNAV CODE
+01
+02 OCT 2025FRANCE
+TOULOUSE BLAGNAC
+STAR RNAV RWY 32
+(Protégées pour / Protected for CA T A, B, C, D)
+STAR RNAV RWY 32
+RMK GNSS only REF NAVAID :MAG VAR 2025 1.7°E
+Procedure Path Waypoint
+Identifcation Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+HLDG
+ADIMO - ADIMO - - - - - - - - - -
+FUZAP - FUZAP - - - - - - - - - -
+SULIT - SULIT - ---- - - - -
+AFRIC 8N
+- IF AFRIC - ---- - - - -
+- TF FARCI - 220 222.0 19.1 - - - - 1.0
+- TF ADIMO - 263 264.9 29.3 - FL 080 - - 1.0
+ASPET 8N
+- IF ASPET - ---- - - - -
+- TF OGRIL - 031 32.5 20.8 - FL 080 - 250 1.0
+- TF SULIT - 006 7.9 5.5 - FL 080 - - 1.0
+LMB 8N
+- I F L M B - ---- - - - -
+- TF TALOL - 107 108.9 26.7 - - - - 1.0
+- TF BOGRO - 092 93.9 8.4 - FL 150 FL 170 - 1.0
+- TF OGRIL - 091 92.9 21.3 - FL 080 - 250 1.0
+- TF SULIT - 006 7.9 5.5 - FL 080 - - 1.0
+NARAK 8N
+- IF NARAK - ---- - F L 1 9 0 - 1 . 0
+- TF FUZAP - 213 214.6 22.9 - FL 080 - - 1.0
+ORBIL 8N
+- IF ORBIL - ---- - - - -
+- TF SALSI - 326 327.8 11.2 - - - - 1.0
+- TF ADIMO - 292 294.0 21.4 - FL 080 - - 1.0
+SECHE 8N
+- IF SECHE - ---- F L 1 5 0 F L 2 4 0 - -
+- TF AGN - 153 154.8 36.5 - - - - 1.0
+- TF AGENO - 142 143.7 29.6 - FL 080 - - 1.0
+- TF SULIT - 187 188.6 6.4 - FL 080 - - 1.0
+TOPTU 8N
+- IF TOPTU - ---- - - - -
+- TF LALGO - 051 53.0 24.6 - FL 200 - - 1.0
+- TF BOGRO - 052 53.3 27.2 - FL 150 FL 170 - 1.0
+- TF OGRIL - 091 92.9 21.3 - FL 080 - 250 1.0
+- TF SULIT - 006 7.9 5.5 - FL 080 - - 1.0
+AMDT 10/25© Service de l'Information Aéronautique, France

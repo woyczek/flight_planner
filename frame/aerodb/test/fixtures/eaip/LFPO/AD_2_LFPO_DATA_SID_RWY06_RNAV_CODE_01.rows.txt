@@ -1,0 +1,66 @@
+AIP AD 2 LFPO DATA SID RWY06 RNAV CODE 01
+FRANCE 31 OCT 24
+PARIS ORLY (LFPO)
+Réacteurs (R) et hélices (H) / Jets (R) and Propellers (H)
+OPALE - ATREX - NURMO - OKASI - PILUL - ELCOB - LGL - DIKOL - BAXIR
+RANUX - BUBLI - AGOPA - ERIXU - LATRA - OLZOM - MONOT - DORDI
+(Protégés pour / Protected for CAT A, B, C, D)
+SID RNAV RWY 06
+RMK GNSS ou/or DME/DME MAG VAR 2020 1.0°E Ref N AVAID : BT
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+OPALE 2F
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- DF PO181 - - - - R - - - 1.0
+- TF PO183 - 247 247.8 4.0 - - - - 1.0
+- TF PO088 - 298 299.0 13.5 - - - - 1.0
+- TF PO090 - 007 007.6 23.5 - - - - 1.0
+- TF BOV - 007 007.6 18.2 - - - - 1.0
+- TF OPALE - 338 339.5 29.7 - - - - 1.0
+ATREX 2F
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- DF PO181 - - - - R - - - 1.0
+- TF PO183 - 247 247.8 4.0 - - - - 1.0
+- TF PO088 - 298 299.0 13.5 - - - - 1.0
+- TF PO090 - 007 007.6 23.5 - - - - 1.0
+- TF EGOZE - 031 031.8 29.5 - - - - 1.0
+- TF ATREX - 340 341.4 14.7 - - - - 1.0
+NURMO 2F
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- DF PO181 - - - - R - - - 1.0
+- TF PO183 - 247 247.8 4.0 - - - - 1.0
+- TF PO088 - 298 299.0 13.5 - - - - 1.0
+- TF PO090 - 007 007.6 23.5 - - - - 1.0
+- TF EGOZE - 031 031.8 29.5 - - - - 1.0
+- TF NURMO - 031 032.1 19.4 - - - - 1.0
+OPALE 2H
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- DF PO181 - - - - R - - - 1.0
+- TF PO183 - 247 247.8 4.0 - - - - 1.0
+- TF PO092 - 298 299.0 24.0 - - - - 1.0
+- TF PO262 - 021 022.0 26.0 - - - - 1.0
+- TF BOV - 021 022.1 13.2 - - - - 1.0
+- TF OPALE - 338 339.5 29.7 - - - - 1.0
+ATREX 2H
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- DF PO181 - - - - R - - - 1.0
+- TF PO183 - 247 247.8 4.0 - - - - 1.0
+- TF PO092 - 298 299.0 24.0 - - - - 1.0
+- TF PO262 - 021 022.0 26.0 - - - - 1.0
+- TF BOV - 021 022.1 13.2 - - - - 1.0
+- TF ATREX - 021 021.8 22.6 - - - - 1.0
+NURMO 2H
+- CF PO060 Yes 061 061.8 - - - 2000 - 1.0
+- D F P O 0 6 1 Y e s ---- - - - 1.0
+- DF PO181 - - - - R - - - 1.0
+- TF PO183 - 247 247.8 4.0 - - - - 1.0
+- TF PO092 - 298 299.0 24.0 - - - - 1.0
+- TF PO262 - 021 022.0 26.0 - - - - 1.0
+- TF EGOZE - 042 043.3 26.4 - - - - 1.0
+- TF NURMO - 031 032.1 19.4 - - - - 1.0
+AMDT 11/24 © SIA

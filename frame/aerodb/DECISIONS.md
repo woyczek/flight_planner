@@ -390,6 +390,11 @@ Serving `sia/base/` like the world synoptic (no token) would make the base reada
 
 - Stop writing the whole format when the ergonomics session says so; aerodb's fallback goes with it.
 - Nothing planned: requests from the modules (maps next).
+- **30 Oct 2026 — improvement pending (security review of 38a9d39b7): no redirect off the starting host.** `urllib` follows a
+  redirect to any host and from https to http, so the checks on an address read from a page (NAV CANADA on its own host, ENAIRE
+  under its own folder) hold for the first request only. One shared opener (a `HTTPRedirectHandler` that refuses a redirect leaving
+  the starting host or https), used by `tools/aero_fetch.py`, `tools/proc_sia.py` and `tools/proc_ead.py`, would close the rule
+  for every source at once; with a K case on a fake redirect. Not done yet.
 - **23 Oct 2026 — VFR reporting points of the VAC charts (user's compilation, plan validated by the ergonomics
   session).**
   - **A kind of its own, `sia/vfr/`, not an enrichment of `vrp`**: the published base and machine-extracted
@@ -1124,7 +1129,7 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
   layout `uk-app` with its fingerprint, `build_pdf_dir` and `--pdf-dir` / `--cycle` / `--check`; case K10 on an **invented** page of the same layout (no UK AIP text in the repository).
 - **Open question to the owner**: OCR (a new optional dependency, needs their word and an amendment of CLAUDE.md), a one-off transcription kept privately, or leaving the UK STARs out. See `EAD_BASIC.md` § 6 undecies.
 
-## 28 October 2026 — UK STARs of EGLL transcribed from the images, installed through a geometry gate
+## 28 October 2026 — UK STARs of EGLL transcribed from the images, installed through a geometry check
 
 - **Word of the user**: « on a des informations avec des fix rnav, des altitudes et vitesse. le sens de virage est (peut-être ?) à conserver, je ne parviens pas à me le figurer. Dans l'immédiat, on cherche à afficher
   l'enchainement des fix et la contrainte vitesse/altitude, comme pour les AWY. » Decision: option 2 of the previous choice (one-off reading of the pictures), kept as information only for the turn direction (a TF leg is
@@ -1146,7 +1151,7 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 
 - **Word of the user**: « OCR inclus ».
 - **Decision**: OCR (`pypdfium2` + Tesseract or `rapidocr-onnxruntime`) is an optional dependency of the workstation builders only, after `pypdf`; never the launcher, never a page; a clear message when missing.
-- **Done**: `tools/proc_ocr.py` (render, OCR, rows, existing layout detection and parsers); output `<ICAO>.ocr.json` installed only by `tools/proc_manual.py` after its geometry gate (source prefixed `ocr:`). Real trial: 5-10 s per page, 300 dpi or more needed. K14.
+- **Done**: `tools/proc_ocr.py` (render, OCR, rows, existing layout detection and parsers); output `<ICAO>.ocr.json` installed only by `tools/proc_manual.py` after its geometry check (source prefixed `ocr:`). Real trial: 5-10 s per page, 300 dpi or more needed. K14.
 - **Open**: engine choice (rapidocr proven, Tesseract untried); installing the scratch environment's packages in the workstation Python.
 
 ## 28 Oct 2026 — cheaper agents for the lots
@@ -1165,16 +1170,16 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 ## 28 Oct 2026 — survey of all 47 authorities, whole-document reading
 
 - **Word of the user**: survey run by the owner on every authority of EAD Basic, one sample per State, delay 1 s.
-- **Decision**: a State is parsed only when its layout is seen; charts-only, image-only and prose States are listed, not parsed (nothing the geometry gate can check); France comes from the SIA's own eAIP (the EAD sample is an older edition); unsigned altitudes of `de-route` tables are typed "min" when the header says Minimum altitude (session choice, to confirm).
-- **Done**: 14 States read (5 new layouts or extensions: K15, K17, K18, K19, K20), 2 with vector tables, 16 charts only, 2 image only, 7 prose, 1 outdated edition, 5 nothing obtained; all pages of every PDF read; waypoint lists fill co-ordinates; the gate also covers a leg without a printed true course. `python tests/v3/run.py --grep K`: 19 cases pass.
-- **Open**: OCR engine and its installation in the workstation Python; OCR of the two vector-table States (same gate); States to skip; the Settings › Maintenance button; the "min" choice.
+- **Decision**: a State is parsed only when its layout is seen; charts-only, image-only and prose States are listed, not parsed (nothing the geometry check can check); France comes from the SIA's own eAIP (the EAD sample is an older edition); unsigned altitudes of `de-route` tables are typed "min" when the header says Minimum altitude (session choice, to confirm).
+- **Done**: 14 States read (5 new layouts or extensions: K15, K17, K18, K19, K20), 2 with vector tables, 16 charts only, 2 image only, 7 prose, 1 outdated edition, 5 nothing obtained; all pages of every PDF read; waypoint lists fill co-ordinates; the geometry check also covers a leg without a printed true course. `python tests/v3/run.py --grep K`: 19 cases pass.
+- **Open**: OCR engine and its installation in the workstation Python; OCR of the two vector-table States (same geometry check); States to skip; the Settings › Maintenance button; the "min" choice.
 
 ## 28 Oct 2026 — OCR installed, Belgian and Georgian tables read
 
 - **Word of the user**: « Oui, OCR EB et UG ».
-- **Decision**: `pypdfium2` and `rapidocr-onnxruntime` are installed in the workstation Python 3.14.7 (`rapidocr-onnxruntime` 1.2.3; Tesseract absent); EB and UG tables are read through OCR with the same geometry gate; `--fetch` runs the OCR pass by itself on documents whose pages are all unknown and drawn.
-- **Done**: layouts `be-coding` (ARINC coding table in vectors, no distance nor magnetic course; its "WAYPOINTS COORDINATES" list in degrees and decimal minutes is read by `be_coords`, also used by `waypoint_coords`) and `ge-coding` (one-line legs, degrees-minutes-seconds; holding table left out by design); `read_document` re-reads a page at 300, 500 then 200 dpi while it is not fully read and keeps the best reading; `OCR_LAYOUTS` lists the 7 layouts readable through OCR; `ocr_pass` in `--fetch`. Results: 2 Belgian APP tables (10 legs each, 20 of 20 points resolved), 2 Georgian APP tables (2 legs each), gate clean, installed in the private data repository (cycle 2026-10-01). K14 extended, 19 K cases pass.
-- **Open**: single-letter cells (fly-over, turn) are lost by the OCR, so `over` and `turn` stay `None`; the gate checks true courses and printed distances only, not altitude nor speed; points come from the OCR, not from an official base; installing the UK and Austrian OCR files in `data/proc`; commit of `data/proc` in the data repository; Settings › Maintenance button; States to skip.
+- **Decision**: `pypdfium2` and `rapidocr-onnxruntime` are installed in the workstation Python 3.14.7 (`rapidocr-onnxruntime` 1.2.3; Tesseract absent); EB and UG tables are read through OCR with the same geometry check; `--fetch` runs the OCR pass by itself on documents whose pages are all unknown and drawn.
+- **Done**: layouts `be-coding` (ARINC coding table in vectors, no distance nor magnetic course; its "WAYPOINTS COORDINATES" list in degrees and decimal minutes is read by `be_coords`, also used by `waypoint_coords`) and `ge-coding` (one-line legs, degrees-minutes-seconds; holding table left out by design); `read_document` re-reads a page at 300, 500 then 200 dpi while it is not fully read and keeps the best reading; `OCR_LAYOUTS` lists the 7 layouts readable through OCR; `ocr_pass` in `--fetch`. Results: 2 Belgian APP tables (10 legs each, 20 of 20 points resolved), 2 Georgian APP tables (2 legs each), geometry check clean, installed in the private data repository (cycle 2026-10-01). K14 extended, 19 K cases pass.
+- **Open**: single-letter cells (fly-over, turn) are lost by the OCR, so `over` and `turn` stay `None`; the geometry check verifies true courses and printed distances only, not altitude nor speed; points come from the OCR, not from an official base; installing the UK and Austrian OCR files in `data/proc`; commit of `data/proc` in the data repository; Settings › Maintenance button; States to skip.
 
 ## 28 October 2026 — integration of the cloud session's EAD lot (branch `v3-aerodb-proc-15`), with the review's fixes
 
@@ -1199,7 +1204,7 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 - **Done**: `proc_eaip.ead_notice()` writes the "not operational" mention in every file read through EAD Basic (`build_pdf_dir`, the OCR
   document, the OCR pass of `--fetch`, and `proc_manual` when an installed file holds `ead-basic` procedures); `--fetch` refuses a list of
   aerodromes (K12); `EAD_BASIC.md` § 1 rewritten, § 8.1 one State per line with its outcome and the rules for States without coding tables
-  (ergonomics session's decision: OFP as the per-flight source, manual gesture and geometry gate otherwise, no model reading drawings or prose
+  (ergonomics session's decision: OFP as the per-flight source, manual gesture and geometry check otherwise, no model reading drawings or prose
   without a request per aerodrome, France from the SIA only, one sample per State as a reserve).
 
 ## 28 October 2026 — contracts with the Données module (aerodb review of its SPEC, validated by the ergonomics session)
@@ -1226,8 +1231,8 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 ## 28 Oct 2026 — the real `--fetch` run, Belgian SID tables (session aerodb procedures, worktree E:\DEFA-v3-aerodb-ocr)
 
 - **Word of the user**: « j'ai besoin de savoir si tous les wrappers pour tous les pays sont bons. OCR doit pouvoir fonctionner sur un terrain donné ».
-- **Done**: first real end-to-end `--fetch` with OCR on three aerodromes (local outputs only): EGLL 4 approaches (`uk-app`) + 18 STAR by OCR (`uk-star`), gate clean, the two RNAV holding documents reported unread (out of scope); LOWG 4 procedures (`at-coding`, text); EBBE 3 of 6 tables before the fix, 5 of 6 after.
-- **Decision**: a `be-coding` SID/STAR table whose middle legs print no course is kept with a warning when all its points come from its own list, the first leg is IF or CF and every leg is IF/TF/CF/DF; the printed courses still pass the gate; approaches keep the strict rule. The sixth EBBE table prints a course 1.2° off its own co-ordinates at every resolution: an AIP printing inconsistency, rejected by design (no tolerance widening, no consensus trick).
+- **Done**: first real end-to-end `--fetch` with OCR on three aerodromes (local outputs only): EGLL 4 approaches (`uk-app`) + 18 STAR by OCR (`uk-star`), geometry check clean, the two RNAV holding documents reported unread (out of scope); LOWG 4 procedures (`at-coding`, text); EBBE 3 of 6 tables before the fix, 5 of 6 after.
+- **Decision**: a `be-coding` SID/STAR table whose middle legs print no course is kept with a warning when all its points come from its own list, the first leg is IF or CF and every leg is IF/TF/CF/DF; the printed courses still pass the geometry check; approaches keep the strict rule. The sixth EBBE table prints a course 1.2° off its own co-ordinates at every resolution: an AIP printing inconsistency, rejected by design (no tolerance widening, no consensus trick).
 - **Honest status of the wrappers**: each layout is verified on one real sample per State (17 States) and an invented K page, not on every aerodrome; an unknown shape is reported, never guessed. Known limits: single-letter cells (fly-over, turn) are lost by the OCR; `--fetch` reads only the first results page (15 rows per search).
 
 ## 28 October 2026 — hand-read files kept and marked outdated (the user's amendment)
@@ -1245,3 +1250,896 @@ Words of the user, 27 Oct, iPhone iOS 18.7, Safari, laboratory pass 2 (`e79838de
 - **The principle** at the head of the SPEC: compiling the raw sources (builders, workstation) is strictly apart from using the compiled data
   (reader, devices); the compiled JSON live in the private data repository, on the user's side.
 - **To code** (next aerodb lot after D1): `tools/proc_manual.py` installs into `proc/manual/`; the reader merges it and marks `outdated`.
+
+## 28 October 2026 — lot D1 for the Données module: airac.js, catalogue.js, publication(), zones(), sources()
+
+- **Done**: `frame/aerodb/airac.js` (`AeroAirac`: `cycleOf` with next and previous, `cycleDate`, `idOf`, `next`, `prev`, `inForce`, the anchor 2401 =
+  2024-01-25), the one calculation of the AIRAC cycle; `catalogue.js` (was `sources_data.js`, moved so that its history follows) with the extended
+  schema (group, zones fed, fetch, build, publish), the EAD Basic outcome of the 47 States, `siaFileInfo` / `cifpFileInfo` back, a twentieth source
+  (the aircraft types, group « Appareils »); `aerodb.publication()`, `zones()`, `sources()` (SPEC § 5). The Sources screen keeps working
+  (`window.AeroSources`, its declaration in `frame/app.js` loading `airac.js` and `catalogue.js`) until the module replaces it.
+- **Two details against the contract of the morning**: `proc` gives `byStatus` (the index carries a status per aerodrome, not a source); a zone still
+  in the whole format is listed (`format: 'whole'`) but never read, its file being the whole zone. `aircraft` also gives the number of files.
+- **Bench** `frame/aerodb/test/catalogue.html` (K21, 24 checks): the cycles of 2024 to 2027 round-trip, the year end, the anchor; the schema of every
+  source, zones the suite knows, https links, the dated links of 2610, the file names, the 47 States; `publication()` on a reader in memory with
+  two cycles of `fr`, a whole-format zone, an index of procedures, the VFR index and the aircraft base, reading no kind file but `meta.json`;
+  `zones()` and `sources()`. K21 also checks that `airac.js` and the Python calculation (`proc_ead.lib_cycle`, the 28-day suite) agree.
+
+## 28 October 2026 — procedures chosen in the preparation (§ 10.20), aerodb's first commit: the API
+
+- **Asked** (§ 10.20 and its two refinements, the ergonomics session's go): runways and transitions in `procedures()`, `phase` on every leg, `arc`
+  for RF legs, what each source provides (legs without a fix said), `runways(icao)`, the `proc/manual/` code, an OFP procedure found by its
+  identifier, the contract of `fetchProcedures` (implemented in the second commit, with the frame's `ctx.launcher.job`), `EAD_BASIC.md` § 1 amended.
+- **Done**:
+  - `tools/proc_cifp.py`: legs without a fix kept (`id`, `lat`, `lon` null, course and constraint; they were left out); `phase` main / trans
+    (enroute transitions, an approach's transition legs) / missed; `arc { centre, radius }` of RF legs (ARINC 5.144, 5.204); `runways` from the
+    PG records (threshold, elevation, magnetic bearing, displaced threshold, length, width) written in the aerodrome file. Data published before
+    keep their shape until the next build (the reader gives the phase a default; nothing invents the left-out legs).
+  - `tools/proc_manual.py`: installs into `proc/manual/<ICAO>.json` and `proc/manual/index.json` (with `cycle`), each procedure keeping its page's cycle.
+  - reader (`aerodb.js`, `procedures.js`): `procedures()` merges `proc/manual/`, marks `outdated`, gives every leg its phase, never places a leg
+    without a fix; at equal status a procedure that is not outdated wins; `procedure(id)`, `runways(icao)`, `procedureIndex()` with
+    `proc/manual/`, `fetchProcedures()` answering `bad-icao`, `cancelled` or `unavailable` until the job is wired.
+  - INTEGRATION: the table of what each source provides; `EAD_BASIC.md` § 1: the gesture lives in Fuel, then in the Données module.
+  - **`proc/local/`** (the ergonomics session's addition, the user's decision): the workstation's X-Plane fallback, status `xplane`
+    (lowest rank), forced by the reader, `local: true`; never synchronised (`frame/store/frame_data.js`: `LOCAL_ONLY`, like
+    `pilot/ANON/` — a small edit of the frame, reported), invariant 6. The file's shape is the aerodrome file's; the converter belongs
+    to the procedures survey session, which also keeps the folder out of the data repository's commits.
+- **Bench**: K1 (`procedures.html`, 28 checks: the manual folder and `outdated`, phases, the leg without a fix, `procedure(id)` with an OFP record,
+  `runways`, the index, `fetchProcedures`), K4 (CIFP: the VA leg kept, phases, the runway record, an RF arc built from the fixture), K11
+  (`proc/manual/`, never a cycle folder).
+
+
+## 28 October 2026 — airframe and propulsion replace engineType in the sheets (the user's decision, fuel's lot `v3-fuel-sheets`)
+
+- **Schema**: `engineType` (jet | turboprop | piston | auto) is replaced by `airframe` (aeroplane, helicopter, gyroplane,
+  glider, balloon, airship) and `propulsion` (piston, turboprop, turboshaft, jet, electric, none, other). `sheets.js` stays
+  owned by aerodb; fuel edited it through its API, as agreed.
+- **Deduced from the ICAO catalogue**: `catalogFacts(sheet)` (pure, exported) gives `{ airframe?, propulsion?, pressurized? }`,
+  each key only when the catalogue gives it. Code = `icao`, else `type`, else `id` (`aKey`). `GLID` → glider + none, `BALL` →
+  balloon + none. Airframe: `kind` airship or balloon, else letter 1 of the description (H helicopter, G gyroplane, L / A /
+  S aeroplane; T tiltrotor or unknown: not deduced). Propulsion: balloon none, else letter 3 (J jet, P piston, E electric,
+  T turboshaft for a helicopter and turboprop otherwise; R or empty: not deduced). **`pressurized`**: only when the record
+  carries a boolean `pressurized`; **no catalogue does today**, the hook is kept and nothing is deduced. `effectiveFacts`
+  is the value in force: the sheet's own when the user set one, else the catalogue's.
+- **Never empty, never asked**: `sheetMissingPaths` drops the keys of `catalogFacts`; `parseGptReply` deletes them from the
+  returned profile (the catalogue wins over ChatGPT). Free words are mapped (turbofan, turbojet → jet; …shaft → turboshaft;
+  …prop → turboprop; reciprocating → piston; heli… → helicopter; autogyro, gyro… → gyroplane; sailplane → glider; blimp →
+  airship; airplane → aeroplane); anything else is dropped with the existing "values discarded" warning. `gptEngines` prints
+  `airframe = …` and `propulsion = …` from the values in force.
+- **Migration at reading** (`normalize`): `engineType` is deleted; a jet / turboprop / piston value becomes `propulsion` only
+  when the sheet has none and the catalogue gives none (turboprop → turboshaft when the airframe, stored or deduced, is a
+  helicopter). `auto` (and `airframe` / `propulsion` set to `auto`) is simply dropped. An EC45 sheet with a ChatGPT-guessed
+  `engineType: turboprop` ends with nothing stored: the catalogue says helicopter + turboshaft.
+- **RPM fields stay counted and asked** (the user): taxi / climb / cruise / descent `rpmNominal` and `rpmFuelCurve`.
+- **`sheetMissingFamilies(paths)`** (pure, exported): rpm, speeds, cruise, rates, flows, taxi, runway, fuel, aircraft, other,
+  in that order; Fuel prints their names in its sheets list.
+- **Form**: two `select:` rows after "Type / ICAO" in "Identité et format", `lnm` flag false like `engineType`.
+- **Prompt**: `PROMPT_PROFIL_PERFORMANCES.md` gets the two keys; the V2 planner keeps its own `perf_prompt.js` (not built on
+  this line, V2 being maintained on `v2-maintenance`).
+## 28 October 2026 — procedures chosen in the preparation (§ 10.20), aerodb's second commit: `fetchProcedures` wired
+
+- **Asked** (the ergonomics session, commit 2 of § 10.20): `aerodb.fetchProcedures(icao, { onProgress, signal })` becomes real — a launcher job reads ONE
+  aerodrome in EAD Basic, installs it under `data/proc/manual/`, commits it in the data repository and returns the merged procedures; the frame hands
+  aerodb the launcher's `job`; no push, no real data, no password written anywhere.
+- **Done**:
+  - `tools/regen_jobs.py`: verb `proc/ead-fetch` (args check: exactly `{ icao }`, four characters `[A-Z0-9]` after upper-casing; a list, an extra key or a
+    wrong length is a 400). Credentials from `secrets/ead.json` (`user`, `password`), else `EAD_USER` / `EAD_PASSWORD`; none → `no-credentials` before any
+    request. Every message of the reading goes through `proc_ead.sanitize` with both values before the job's log and step (a leak is replaced by
+    `<secret>`); the result carries neither. Then `EadLibrary(..., delay=1.0)`, `fetch_ad` into the cache `data/local/ead/` (never published), the
+    geometry check of `proc_manual.verify` on the document (and on `<ICAO>.ocr.json` when THIS run wrote it: a file older than the start is ignored),
+    `proc_manual.install(replace=False)` (another source's file is never overwritten: `failed`). Nothing read is `failed` (no empty file installed).
+    Cancellation is looked at at every message and before the install (a private `BaseException`, so that the `except Exception` of the readers do not
+    swallow it); once the files are written the job goes to the commit, otherwise `data/` would stay dirty.
+  - **The commit** : `git add -- <the two paths>`, then `git commit -m … -- <the two paths>`. With paths, `commit` is `--only`: the commit is HEAD plus
+    those files as they are on the disk, built apart from the index, so a file the user has staged, or modified, elsewhere in `data/` is not in it and stays
+    staged / modified (case K22 checks both). No push. No repository, git failing, or nothing changed: `ok` stays true, `commit: null`, a warning.
+    A repository without an identity gets `POSTE <poste@defa.local>` for this one commit, like the launcher's other commits.
+  - `frame/app.js` (reported to the frame owner): `AeroDB.create({ launcher: { request, info, job } })`, `job` = `launcherClient()?.forModule({ routes: ['regen/job'] })
+    .job(route, body, opts)`, null without a client. aerodb's own `fetchProcedures` only ever asks `regen/job`.
+  - `aerodb.js` `fetchProcedures`: `bad-icao`, `cancelled` (signal already aborted), `no-launcher` (no `launcher.job` or no `info()`), `paired` (`info().lan`),
+    `unknown-layout` (`EAD_STATES[prefix].outcome !== 'read'`, the outcome handed back: France is `sia`, i.e. never EAD), `busy` (a map of the readings in
+    progress, registered before the first `await`, so two calls of the same instant are not both run; the launcher's 409 is `busy` too), then the job; the
+    answer is mapped: `result.reason` (`no-credentials`, `cancelled`, `failed`) with its `message`; 403 `paired`; any other failure (400 unknown operation of an
+    older launcher, 404, state `error`) is `failed` with the launcher's message. A job cancelled too late to be (files already installed) counts as done.
+  - **The reader's copies** (the point to review). After a success the files were written by the launcher, outside the data layer, so its local copies of
+    `proc/manual/<ICAO>.json` and `proc/manual/index.json` (policy `reference`) are stale: aerodb calls `reader.evict(path)` on both (the adapter offers it). That
+    is enough with a transport that exchanges (launcher, GitHub): a path the cached tree does not know makes the layer read the tree again. Without
+    exchange (transport `local`, the single-user case with a launcher) the tree of the references is kept as it is (`refTree`) and does not know a new file,
+    so aerodb also calls `reader.sync()` when `reader.status().transport === 'local'`: in that mode a pass only revalidates the references (`pullRefs`), no
+    exchange, no push. With an exchanging transport it does NOT call `sync()` (it would exchange the repository, which this job promised not to do). A
+    bench reader without `evict` / `status` / `sync` has nothing to forget. Known limit: a pass already running when the job ends is the one `sync()` returns,
+    and it may have read the head before the commit; the next pass (2 s after any write, or the 30 s tick) completes it.
+  - Docs: SPEC § 5 quinquies (the row of `fetchProcedures`), INTEGRATION (the button of Fuel and the reasons a module words), frame INTEGRATION § 15.1,
+    EAD_BASIC § 1, § 10.20 of the specification (aerodb's status only), CHANGELOG, help bundle regenerated.
+- **Bench**: K1 (`procedures.html`, 38 checks; the `fetchProcedures` ones replace the old « unavailable »: a fake launcher passed to `AeroDB.create` — `no-launcher`
+  (none, no `job`, no survey), `paired`, `unknown-layout` (`LBSF` none, `LFBD` sia), two concurrent calls (`busy`), the verb and the fixed body, the
+  progress forwarded through a listener that throws, the success reading what the fake job wrote into `proc/manual/`, the reader made to forget both
+  files and `sync` called once, every mapped answer) and K22 (`regen_jobs._ead_fetch` with `EadLibrary` and `fetch_ad` replaced, no network: the args check,
+  `no-credentials` and the environment fallback, the install and the commit of two paths with an unrelated staged file and an unrelated modified file left alone,
+  no user name or password in the log, the result, any file or the commit, git absent, a foreign file, a refused login, a failing geometry, nothing read, the OCR
+  file of this run, cancellation, and `Jobs` refusing a second job with 409 then marking the cancelled one).
+- **Not done / to say**: the real EAD Basic site was never contacted and no credential exists in this session; the job is exercised on fakes only. The first
+  real run is the user's (a gesture in Fuel, then the Données module).
+- **Addendum (same day, the user)**: `engineCriticalAltFt` is counted by `sheetMissingPaths` and asked to ChatGPT only when the
+  effective propulsion (`effectiveFacts`: the sheet's, else the catalogue's) is `piston` or unknown; for jet, turboprop,
+  turboshaft, electric, none and other it is never listed. The prompt's rule 7 asks ChatGPT to leave it null then.
+
+## 28 October 2026 (evening) — on-demand reading dispatched by State: France reads the SIA eAIP (§ 10.20)
+
+- **Asked** (the user: "bug sur les AD français, pourtant prioritaires"): Fuel's « Lire les procédures de LFPO » answered « sa mise en page n'est pas connue » because
+  `fetchProcedures` knew EAD Basic only and France is not an EAD `read` State (its outcome is `sia`). France is read in the SIA's own eAIP, free and without account.
+- **Done**:
+  - `aerodb.js` `fetchProcedures` dispatches by the prefix before any job: `LF` → verb `eaip-fetch` (no `EAD_STATES` lookup, never a layout refusal);
+    `EAD_STATES[prefix].outcome === 'read'` → `ead-fetch` as before; any other State → `{ ok: false, reason: 'no-tables', outcome, lnm }` without asking the
+    launcher. `unknown-layout` is gone from the contract (a module words `no-tables`: « aucune table publiée pour cet État »). `onProgress` and the success answer
+    carry `source` (`'eaip'` | `'ead'`). The job's own `no-tables` (the aerodrome's page lists no coding PDF) is mapped through. Everything else is unchanged.
+  - `tools/regen_jobs.py` verb `proc/eaip-fetch`: the arguments check is `ead-fetch`'s plus a code starting with `LF`. No credentials. **No address comes from the page**:
+    the AIRAC folder is computed in Python from the cycle in force (`proc_ead.lib_cycle`, the 28-day calendar from 2024-01-25, the helper that already existed)
+    by `proc_eaip.eaip_url(cycle)` — English three-letter month, same address as `eaipBase()` of `catalogue.js` (K21 compares them).
+  - `tools/proc_eaip.py`: the per-aerodrome body of `main()` (fetch the AD 2 page, `pdf_names`, `CODE_PAGE` check, `rows_of` with a cache, the VAC `HEAD`,
+    `build_aerodrome`) became `read_aerodrome(eaip, icao, cache, resolve, say, rows_dir, step)`, used by `main()` (same output, same messages) and by the job. Helpers `eaip_url`,
+    `url_exists`, `gaps_of`. Cache: `data/local/eaip/<cycle>/` (under `local/`, never published). `resolve`: `base_resolver` on `data/sia/base/fr/<cycle>/` (the
+    workstation's SIA base, `navaids.json` and `points.json`) when that folder is there, else none (aerodb places the en-route points at read time anyway).
+  - **Geometry** (the point to review). `proc_manual.verify` is NOT applied to the eAIP records: it is made for hand readings and asks the printed TRUE course (`trk`),
+    which the SIA tables do not print (they print the magnetic course `crs` and the leg distance `nm`); and `build_aerodrome` has no geometry check of its own
+    (only the page check: layout known, at least 85 % of the leg rows read). The job runs `proc_eaip.gaps_of` on each procedure: the broad branch of `check_geometry`
+    (magnetic course within 30°, distance within 0.55 NM, only for legs whose two points have a position). A procedure that fails is **not installed** and a
+    warning names it (« NON retenue »), like `build_pdf_dir` does; none left → `failed`. The fixture pages of LFBD (14 procedures) pass; a point put 800 km away fails.
+  - Install and commit as for EAD: `proc_manual.install(replace=False)` (a `proc/manual/LFxx.json` that carries another source's procedures — EAD Basic, a hand
+    reading, an official file — is never overwritten: `failed` with the reason), then `_ead_commit(..., source='eaip')` for `proc/manual/<ICAO>.json` and
+    `proc/manual/index.json` only, message `:card_file_box: Procédures LFPO lues dans l'eAIP du SIA (à la demande)`, no push. Records keep `source.kind: 'eaip'` and
+    status `check`. Result `{ ok, icao, procedures, warnings, commit, source: 'eaip', cycle }`; `ead-fetch` now answers `source: 'ead'`.
+    Failures: no coding table on the page → `no-tables`; HTTP 404 → `failed`, the message says the AIRAC folder of the cycle is not published yet (or the aerodrome has
+    no AD 2 page); another network error or `pypdf` missing → `failed` with its message; cancellation looked at at every message and every PDF, before the install.
+  - **Little Navmap hint** (support itself stays in § 10.21): `tools/launch.py` `/__setup/status` has `lnm`, the sorted kinds of the `little_navmap_<kind>.sqlite`
+    files in `%APPDATA%\ABarthel\little_navmap_db` (Windows) or `~/.config/ABarthel/little_navmap_db`; names only, `[]` when absent, never raising.
+    `FrameData.launcher.detect()` filtered the status to four fields: it now passes `lnm` (strings only). aerodb answers `lnm: true` when the list is not empty
+    (`[]` is truthy in JavaScript, so the test is on the length), which a module words as « Little Navmap a des bases sur ce poste ».
+  - Docs: SPEC § 5 quinquies (the row), INTEGRATION (the refusal table, `source`), frame INTEGRATION § 15.1 (verb, `lnm`), § 10.20 of the specification, CHANGELOG, help bundle.
+- **Bench**: K1 (43 checks: `no-tables` with its outcome and `lnm` true / false, LF → `eaip-fetch` and `source` in the progress and the answer, an EAD State → `ead-fetch`,
+  the job's `no-tables`, no `unknown-layout`), K23 (`regen_jobs._eaip_fetch` with `proc_eaip.fetch`, `first_page_rows` and `url_exists` replaced, the fixture pages of LFBD read
+  by the real parsers: the arguments check, the address for 2026-10-01 and 2026-10-29, no table, the install and the two-path commit with an unrelated modified file left alone,
+  only addresses under the computed folder, a wrong base position dropped by the geometry check, a foreign file, git absent, 404 and network error, cancellation through `Jobs`,
+  `proc_eaip.main()` unchanged, `lnm_db_kinds()`), K21 (the Python address equals `eaipBase()`).
+- **Not done / to say**: the SIA site was not contacted (fakes only); the first real run of « Lire les procédures de LFPO » is the user's. The `trk` question stays open for a later
+  step if the SIA ever prints true courses.
+
+## 28 October 2026 (late evening) — coverage of the procedures: `coverage(icao)`, `coverageByState()`, `AeroCatalogue.COVERAGE` (V3 § 10.22)
+
+- **Asked** (the user, 28 Oct evening: "une carte des ADs connus, et/ou des zones vertes, orange, rouges"; contract promised to the BUGS SOG session, which codes the Map's
+  « Procédures » layer against it): aerodb says, per aerodrome and per State, what this device can give for the procedures — held (green), readable on demand (orange), nothing (red).
+- **Done** (`aerodb.js`, `catalogue.js`; bench K1 63 checks, K21 28):
+  - `coverage(icao)`: one table built once from `procedureIndex()` and `EAD_STATES` (shared build promise for the first concurrent calls), then a map lookup. The base is never loaded.
+    Green carries `source` (published > manual > local: `procedureIndex` already keeps one entry per aerodrome, the best source first), `outdated` (hand reading of a past cycle only),
+    `counts`. Orange: `sia` if `LF`, else `ead` if the outcome is `read`, else `lnm` when `launcher.info().lnm` is not empty. Red: the EAD outcome (`images`, `labels`, `points`, `prose`,
+    `vfr`, `none`), `unknown` for a State absent from `EAD_STATES`. `here` = a launcher with `job`, not paired (the test of `fetchProcedures`), read at each call.
+  - `coverageByState()`: the same rules per prefix without held aerodromes (`LF` included), each with its four-language label.
+  - **Invalidation**: the table is dropped and `{ coverage: true }` emitted (a) after a successful `fetchProcedures` (the existing `emit({ procedures })` gains `coverage: true`),
+    (b) in `refresh()` (the existing `{ refreshed: true }` gains `coverage: true`), (c) by a new `reader.watch('proc/')`: a changed `proc/<cycle>/index.json`, `proc/manual/index.json` or
+    `proc/local/index.json` (revision changed, or never read by aerodb; the echo of aerodb's own read does not count, as for `AircraftDB/`). An in-flight build is not stored if the
+    table was dropped meanwhile.
+  - `AeroCatalogue.COVERAGE`: eleven short labels × four languages (French with the narrow no-break space), served by `sources()`. SPEC § 6 invariant 4 names it, with `n` / `gives` /
+    `lic`, as the catalogue's own texts: `coverage()` answers codes, never a sentence.
+- **Choices to review**: an index entry whose counts are all zero is not « held » (it would colour a pin green with nothing behind it); the catalogue failing to load does not cache
+  the table (every State then reads `unknown` for that call only); `outdated` is computed by `procedureIndex` at build time, so a cycle change while a page stays open is seen at the next
+  invalidation, not at midnight.
+
+## 29 October 2026 — « Lire les procédures » for Toulouse and Orly: the SIA's real layouts, counts, a fresh file, runways from the records (§ 10.20)
+
+- **Asked** (the user's report, Fuel through `proc/eaip-fetch`): LFBO installs 18 approaches and no SID / STAR, LFPO 160 procedures but whole pages missing; the first run answers « 0 procédures » although the files were installed
+  (the next shows them); LFPO offers no runway in Fuel; the notification must give counts. The Map session added: the RNP page of LFPO RWY 20 has no missed approach.
+- **Causes** (read on the real pages of the cycle, kept as trimmed rows in the fixtures): (1) the extractor spells some cells one character at a time and cuts or glues others (`Y e s`, `1 . 0`, `D F P O 2 0 4`, `F L 070`, `L-`, `F M--`, `PB 096`), so a leg
+  row had the wrong count of cells and was dropped — silently when it was not even counted among the leg rows; (2) Toulouse prints, under each departure, a runway header (`RWY14R 141 142.9`) before the runway's own first legs (a CA to 1000 ft,
+  or the first DF), the CA row sometimes scrambled; (3) Orly writes decimal commas (`198,4`, `-3,4° / 49`), the vertical-angle row of RWY 20 included, so the threshold point `RW20` was never read and the missed approach never began;
+  (4) STAR titles carry `(FIR)` / `(UIR)`, so a whole page became one procedure; (5) INA and ILS pages were not titled nor shaped like RNP pages (labels `INA` / `VEBEK 1E` scattered between rows, « See chart » hiding a leg type); (6) the aerodb answer was built from the
+  reader's copy, still the old file when the job ended; (7) `runways()` knew only `RWnn` points, which Orly's tables position for three runways of six.
+- **Done**: see SPEC § 5 quinquies (« Layouts read »), INTEGRATION (« `stats` »), the tests K24 (real pages: every page read, each row counted once, a new column still refused), K23 (`stats`, `file`, replacement of a former reading), K1 (stale reader,
+  runways from records). Before / after on the 74 pages: LFBO 18 → 78 procedures (APP 18 → 26, SID 0 → 38, STAR 0 → 14), LFPO 160 → 316 (SID 137 → 181, STAR 18 → 102, APP 5 → 33); pages read 43 / 74 → 74 / 74 (LFBO 7 / 18 → 18 / 18, LFPO 36 / 56 → 56 / 56).
+- **Choices to review**:
+  - **Departures for several runways**: the table does not say where a runway's own legs end. Read as: the legs under a runway header are that runway's, the legs after the LAST header are the common route (so the last runway has only the
+    common route, the others their own CA first). It matches every page seen (one CA row, then the common route starting with the DF of the other runway), and ARINC's runway-transition / common-route structure; a procedure for runway 14R then starts
+    `CA 141° to 1000 ft, DF BO140…` where 14L starts `DF BO140…`. A warning says it on each page. If the SIA's chart says otherwise, only `parse_code_table` changes.
+  - **CA altitude of a scrambled row** goes in the MNM column as on the clean rows of the same page (the row is read by content: CA, one altitude, the accuracy 1.0, six empty cells).
+  - **Missing cells rebuilt only when unique** (`_fit`): the extractor loses a dash now and then; the row is rebuilt when exactly one placement of the empty cells fits every column's type (Fly Over `Yes`, courses, distance, turn L / R, altitudes, speed, accuracy) — never when two fit.
+  - **INA transitions are not joined to the FNA page** (they end on the initial fix of the ILS / RNP page, `IO14L`): separate procedures named `INA RNAV (GNSS) RWY 14R` with the transition `ADIMO`; two transitions from one initial fix are told apart by the STAR designators when the page prints
+    them in order, else both are left out with a warning.
+  - **ILS pages** keep the initial fix as `main` and what follows « See chart » as `missed` with `gap: true` on the first leg (no line from the previous point; the geometry check skips it); the leg type hidden by « See chart » is deduced as TF only when a course and a
+    distance are printed (said in a warning).
+  - **A new eAIP reading replaces the former eAIP reading of the aerodrome** in `proc/manual/` (`proc_manual.install(…, replace_source='eaip')`): an identifier changed by a better reading would otherwise stay beside the new one. Other sources' files are still never touched.
+  - **`stats.reasons` texts are French phrases of the tool**, as the warnings; Fuel maps them to its four languages.
+  - **`runways` in the eAIP file only when a threshold has a position** (it has none for LFBO / LFPO: the DATA pages refer to AD 2.12); aerodb names the runways from the records instead, `lat` / `lon` null, `approx: true`.
+  - Known and left: one STAR row of LFPO (`TF SOTIP`, three empty cells lost) stays unread, reported; the first fix of the RNP page of RWY 20 (`(*) PO420`, its type hidden by the footnote mark) is not read, so its transition starts at PO421.
+
+## 29 October 2026 — the launcher's jobs: errors cleaned, 30 s between two EAD Basic readings
+
+- **Asked** (the ergonomics session's security review of the chain, nothing blocking): `Jobs._run` logged and returned `str(e)` as it was:
+  an exception from `proc_ead` or `urllib` carrying an address with a `jsessionid` or the user name would have reached the job's log served
+  by `/__setup/regen/job`; and « never in bulk » held only by one job at a time.
+- **Done** (`tools/regen_jobs.py`): `clean_error()` (the workstation's EAD credentials when set, `proc_ead.sanitize` — tokens, session
+  identifiers, mail addresses — then `user:password@` and the session / token / key / password parameters of an address) before the log
+  and the result of a failed job; `MIN_GAP` `{ ('proc', 'ead-fetch'): 30 }`: a second start within 30 s answers 429 `{ reason: 'too-soon',
+  wait }`; `frame/lib/launcher.js` hands a refusal's `reason` and `wait` on (nothing else of the body; a small edit of the frame, reported);
+  `fetchProcedures` answers `too-soon` with `wait`. The eAIP of the SIA has no gap (free, no account).
+- **Bench**: K22 (the cleaned error, the gap and its end), K1 (`too-soon` and its `wait`).
+
+## 29 October 2026 — procedure files arrived by the synchronisation are announced
+
+- **Asked** (Features SOG through the ergonomics session): aerodb watched only the procedure indexes, so a `proc/manual/<ICAO>.json`
+  read on the workstation and synchronised to another device was never announced, and Fuel kept its empty answer in cache.
+- **Done**: the `proc/` watcher (and a new one on `proc-seen/`) also takes the aerodrome files of `proc/<cycle>/`, `proc/manual/`,
+  `proc/local/` and `proc-seen/`: a file whose revision changed, or that aerodb never read, drops the coverage table and is announced
+  `{ procedures: ICAO, coverage: true }`; more than 50 at once (a published cycle) give one `{ coverage: true, refreshed: true }`. The
+  echo of aerodb's own read does not count (its read records the revision).
+- **Bench**: K1 (an arrived file announced once, not again after its read; `proc-seen/` likewise; a path that is no procedure file ignored).
+
+## 29 October 2026 (afternoon) — ILS approaches of Orly and Toulouse: the runway thresholds from AD 2.12, the ILS final as IF → threshold (§ 10.20)
+
+- **Asked** (the user's bug at LFPO and LFBO): the ILS approaches come out unusable. The SIA's ILS pages code only the initial fix (`IF IPO06 … 4000`), then « See chart AD 2 LFPO IAC RWY06 … » (the final along the localizer is not coded), then the missed approach
+  (PO412, MLN, MOLBA): the records were the IF and the missed approach, no final, no runway. And no runway threshold has a position anywhere: the `RWnn` points of the RNP pages have `lat` / `lon` null, because the DATA pages refer thresholds to AD 2.12.
+  Wanted: an ILS = at least IF (/FAF) → runway threshold, the « See chart » missed approach accepted as read (possibly empty).
+- **Done**: (1) `proc_eaip.ad212_runways(html, icao, warnings)` reads the section AD 2.12 of the aerodrome page (`FR-AD-2.<ICAO>-fr-FR.html`, which `read_aerodrome` already fetches to list the PDFs): the section is found by its `<div id="LFPO-AD-2.12">`
+  (depth of the `div`s followed; no regex on the whole page), the table by its column headers (« Position GEO THR », « THR elevation… », « True and Mag Bearing », « Dimensions of RWY »), one runway per row: `id`, `lat` / `lon` / `elev` of the THR, `qfu` (the
+  magnetic bearing in parentheses), `true`, `length`, `width`, `displaced` (ft, as the CIFP's: the THR → DTHR distance, 0 without one), `dthr` (`null` or the DTHR `{ lat, lon, elev }`), `source: 'eaip'`. Never guessed: a runway whose THR position does not parse, or whose true bearing is more than 30° off its number, is left out and reported.
+  (2) `build_aerodrome(…, ad2=None)` takes the page (or the parsed list): `doc['runways']` comes from AD 2.12 (priority over `runways_of`), and, before any table is read, `coords['RWnn']` is the landing point, so the RNP `RWnn` points are placed.
+  (3) `with_threshold` (called by `records` on an ILS page, i.e. an APP group with the « See chart » gap) inserts `{ id: 'RWnn', leg: 'CF', alt: null, synthetic: 'threshold' }` between the initial fix and the first missed leg; that leg keeps `gap: true`. (4) `read_aerodrome`
+  and the command line pass the page; `regen_jobs._eaip_fetch` is unchanged. aerodb's `runways()` already spreads a file's runway records, so `true` and `displaced` pass through.
+- **Choice to review — which position for a displaced runway (THR or DTHR)?** Decided by the coding tables, on the cached pages of cycle 2026-10-01: for each `TF RWnn` leg of the RNP pages, distance computed from the previous fix to each candidate minus the printed distance
+  (the page prints the tenth of a NM):
+
+  | Runway | printed | to THR | to DTHR |
+  |---|---|---|---|
+  | LFPO 06 (DTHR) | 11.5 NM | 11.30 (−0.20) | 11.47 (**−0.03**) |
+  | LFPO 25 (DTHR) | 8.4 NM | 8.09 (−0.31) | 8.32 (**−0.08**) |
+  | the eight runways with no displaced threshold (LFPO 02 07 20 24, LFBO 14L 14R 32L 32R) | | | within ±0.06 |
+
+  The tables agree with the DTHR (error inside the page's rounding, like the other eight); the THR is 3 to 5 times off. So the point `RWnn` — in the RNP tables and in the threshold added to an ILS — is the **landing point: the DTHR when the runway has one, else the THR**
+  (`proc_eaip.landing_position`). The runway record keeps the THR in `lat` / `lon` and the DTHR in `dthr` (`displaced` stays a distance in ft for every source: one type, reviewed before the commit).
+- **Choices to review**: the added point is a `CF` with no course and no altitude (nothing is coded: it is the end of the localizer, not a fix of the table); `synthetic: 'threshold'` says it is not printed. The IF → threshold line is straight: checked on the seven ILS of the two
+  aerodromes whose initial fix has a position (Orly 25 and 07 have none to compare), the bearing from the IF to the point is the runway's true bearing within 0.5° and the distance is 11–15 NM (the final). The FAF is not added: the DATA pages give « FAF LOC RWY 06 » positions (equal to the RNP `FPO06`) but under a name the ILS table does not use. `displaced` in the eAIP
+  runway record is the point, not the CIFP's distance in ft: the two sources differ, a reader tests the type (INTEGRATION). A page that starts with the missed approach (LFPO RWY 07: the IF row is not read, the `- PO410` row has no leg type) still gets the threshold first, with a warning.
+- **Before / after** (offline, cached pages, gap check `proc_eaip.gaps_of`): LFPO 316 procedures read, 316 kept, 0 dropped, before and after; LFBO 78 / 78 / 0. The check now compares 17 more legs (LFPO 148 → 159, LFBO 64 → 70: the `TF RWnn` of the RNP pages and the legs that leave the threshold): none fails. APP at LFPO 33 (ILS 5, RNP 6, INA 22),
+  LFBO 26 (ILS 4, RNP 4, INA 18): unchanged counts, each ILS now has its threshold (IF → RWnn → missed: 4 of 5 at Orly with an IF, 4 of 4 at Toulouse; Orly RWY 07 starts at the threshold). Runways in the file: 0 → 6 (LFPO), 0 → 4 (LFBO).
+- **Bench**: K24 (AD 2.12 of LFPO and LFBO on the real sections, an unreadable latitude, a page without the section, the THR / DTHR measure, ILS 06 / 25 / 07 of Orly and 14L of Toulouse, the page without AD 2.12). Fixtures: `FR-AD-2.LFPO.AD-2.12.html`, `FR-AD-2.LFBO.AD-2.12.html` (the section's first table), five more rows files (SOURCES.md).
+
+## 29 October 2026 — Orly STAR RWY20: a leading arrow cut AMB 9W in two
+
+- **Reported** (the user, through BUGS SOG): LFPO's STARs for runway 20 should be NIMER 9W, AMB 9W, LUMAN 9W, BOBSA 9W and CAD 9W; the
+  installed file had one nameless STAR per runway. That file was read on 28 Oct at 18:01, with the reader before 636a020f4 (one
+  concatenated procedure per STAR page). With the current reader, four of the five were right; AMB 9W was cut in two (AMB alone, then
+  a « NONAME » DIBES → ODILO) because its second row starts with an arrow glyph (« → TF DIBES »).
+- **Done** (`tools/proc_eaip.py`): `norm_tokens` drops arrow glyphs leading a row; a block without a title (a procedure begun at the
+  bottom of the previous page, LFPO SID RWY07 _05) that repeats point for point a named procedure of the same kind and runway is
+  removed, with a warning; otherwise it stays « NONAME », with a warning. Offline, LFPO: 7 nameless records → 0, 316 → 310 (the six
+  duplicates merged into their named procedure). The constraints are read where the table prints them (FL260 and 280 kt at SOMED for
+  NIMER 9W, at the IF for AMB 9W).
+- **Bench**: K24 (the real page STAR RWY20 _02, the arrow, the untitled repeat of SID RWY07 _04 / _05).
+
+## 29 October 2026 (night) — Paris-CDG (LFPG, cycle 2026-10-29): the SIA's third family of layouts, point merge, and doubt instead of a bad install
+
+- **Reported** (the user, LFPG installed from the eAIP): `LFPG.STAR.NONAME.RW27L` with 30 points (several STARs glued, the sequencing arcs BIBA1-5 / LUKI1-5 read as a
+  route, drawn as a zigzag); the STARs of 08L / 08R / 09L / 09R repeating VEDUS XERAM ENORI DEVIM LORNI three times, those of 26L / 26R / 27R reduced to VEDUS XERAM VEBEK;
+  `LFPG.SID.NONAME.RWALL`; 23 of 85 coding pages `ok: false` (« en-tête inconnu », fingerprints 2a61bb49b1, 98fd783174, 1f4d62dd72, f1aa6bb8c7, a43004fbdd, b3f1a81baf).
+  Offline with the 90 cached PDF of the cycle: 62 pages read, 23 rejected, 296 procedures (84 SID, 200 STAR, 12 APP), **9 nameless**.
+- **Causes, by layout** (each page of LFPG; the same extractor, a different print):
+  1. **STAR pages (the glue)** — titles are `ENORI 9W (UIR FIR)`, `VEDUS 9W (UIR FIR FL > 105)`, `ENORI 9J (UIR FIR Sur instruction / On instruction )`, `BIBAX 9V (Utilisable uniquement sur instruction … )`. The reader knew
+     only `(FIR)`, `(UIR)`, `(FIR UIR)` after the name: any other parenthesis was not a title, so the next block's legs were appended to the previous one (a title never cut, hence « several STARs in one
+     procedure », and the nameless record when a block began a page). The title is now the name and designator, whatever follows between parentheses (airspace of the entry point, conditions of use); the arrow
+     glyph that leads some titles (`→ KOVAK 9X (…)`) is ignored as for the rows.
+  2. **SID 08 / 09 and POGO 26** (fingerprint 2a61bb49b1, 0 to 8 rows of 40 read) — the table has a **« Nav Spec » last column** (`RNAV 1`, two words) instead of the accuracy in NM, a first column « Procedure Identification » that
+     prints a dash on every leg row, runway headers with that dash (`RWY09L - 087 088.4`, which the header pattern did not accept, so the per-runway starts were never recognised, on 26 / 27 too), and the extractor
+     **moves the « RNAV 1 » text** when the cell wraps over two lines (`RNAV 1CF PG081 …`, `CF - RNAV 1 PG091 - - - -`, `… 1 RNAV`, `1RNAV`). The word is taken out where it stands and put back at the end of the row (the other cells
+     keep their order); the dash before the point of a scrambled first leg is dropped; `RNAV 1` is read as an accuracy of 1 NM. A row that lost up to four empty cells is rebuilt if ONE layout fits (it was three).
+  3. **INA pages** (1f4d62dd72, 98fd783174, 71818f794d) — a title followed by the aerodrome name (`INA RNAV RWY 27L PARIS CHARLES DE GAULLE`) was not a title (« titre de la page non reconnu »); and the **initial-fix rows**
+     come out scrambled (`--LORNIIF -- - -300 1,0`, `IF OKIPA - - 1,0- - - 300 -`, `---- 3 0 0 1,0IF LORNI - -`): not readable as cells, so the group they open was glued to the previous one. The point (the word IF and the
+     identifier) is certain, the altitudes and speed are not: the leg is kept as `IF <point>` without constraints, said in a warning, and the next group starts there.
+  4. **FNA pages 26L / 26R / 27R** (a43004fbdd, f1aa6bb8c7, b3f1a81baf) — identifiers and numbers **spaced** by the extractor: `IG26 L`, `PG65 0`, `26 4 265. 7`, `400 0`. On approach pages only: an identifier (two letters and two digits, or `RWnn`)
+     followed by a lone `L` / `R` / `C` / digit and then the fly-over cell is one word; two digits then a digit (a magnetic course is three digits), `265.` then a digit, three digits then `0` (an altitude of four digits) are joined.
+  5. **Small things on pages that were « ok »**: `-T F FF501` (the empty cell glued to the terminator) lost its leg silently, **in LFPO too** (ten Orly SIDs ELCOB 2x were missing their last leg); `ADAD A`, `EDOX A` for ADADA, EDOXA (a four-letter
+     identifier, a lone letter, then the fly-over cell: joined, and both are in the DATA pages).
+- **Point merge** (what the tables give and what is kept). The tables print **nothing** about the system: no title, no column, no remark; only the points' names. LFPG's STAR `BIBAX 9V` is `IF BIBAX`, `TF BIBA1 … BIBA5` (the last with a turn
+  direction), `TF KOLIV` (course 092, 40 NM: from BIBA5), `TF MOPAR`; `BIBAX 9W` is the direct `IF BIBAX`, `TF KOLIV` (153°, 50.5 NM), `TF MOPAR`. Rule (strict, `_arc_of`): after the IF, at least three consecutive TF whose ids are the first
+  letters of the entry fix and 1, 2, 3 …, followed by a leg to a point. Those legs leave the procedure and go to the aerodrome file: `point_merge: [{ name: 'BIBAX' (the entry fix; no system name is printed), merge: 'KOLIV', arc: ['BIBA1' … 'BIBA5'],
+  runways: [the runways of the pages that print it], source: { file } }]`. The leg to the merge point, whose printed course and distance start at BIBA5, becomes a **`DF`** without `crs` / `nm` (a TF would be compared to the straight line
+  BIBAX → KOLIV and fail): the STAR ends at its entry fix, then the merge point. LFPG: two systems (BIBAX and LUKIP) on one merge point (KOLIV), on the eight runways. Not stored: the arc's turn direction, the speeds on the arc.
+- **Guards, and what the user's rule changed** (V3 § 10.26: a doubtful reading is kept and marked, never purged). After the records are built, `build_aerodrome` gives **`status: 'doubt'` and `doubt: <reason>`** to: a nameless record (after the removal of
+  the untitled repeats, which stays the only real removal); one that passes twice through a point **outside a holding** (consecutive legs on a fix, `HA` / `HF` / `HM` / `PI` and the missed approach against the approach do not count); a **zigzag** (path longer than 3 × the
+  distance from the first to the last named point, both positioned, three positioned points at least, the missed approach not counted: measured on the real procedures, 1 to 2.5); a record from which a **leg row was left out** (the page rows that stay
+  ambiguous, e.g. `TF PG275 - 190 190.7 4.2 - 220 1.0`, one cell short with 220 which fits several columns; before, such a row was only counted and the record installed incomplete as if sure). The geometry check (`gaps_of`) — the launcher's
+  job runs it after the en-route points are placed — marks the same way (`mark_geometry`) instead of dropping. Not done: « a leg longer than the page's footprint » (the page extent is not read; nothing cheap measures it).
+  `stats` gets `doubt`; `dropped` is now only the really removed; `reasons` counts both. The index (`proc/manual/index.json`) does not count the `doubt` records; `proc_manual` ranks them last and refreshes them with the source.
+- **Reader** (`procedures.js`, `aerodb.js`): `RANK.doubt = 4` (after `xplane`); `procedures(icao, q)` and `procedure(id, q)` leave out `doubt` records unless `q.doubt === true`; merged with another reading of the same procedure, the other one represents it.
+  Bench K1 (three checks).
+- **Result, offline** (the 90 PDF of 2026-10-29; the SIA base is not on this workstation, so the en-route fixes are unpositioned and the geometry and zigzag guards see only what the DATA pages place): **LFPG 85 / 85 pages read** (62 before),
+  **711 procedures** (308 SID, 316 STAR, 87 APP: 71 INA, 8 ILS, 8 RNP) against 296, **0 nameless**, 0 removed, **2 in doubt** (OLZOM 7B 26L and 26R: the row above). STARs per runway: 38 on 08L / 08R / 09L / 09R, 41 on 26L / 26R / 27L / 27R, each starting at its IF
+  and named after it; RWY27L has BIBAX 9P / 9V / 9W / 9X and LUKIP 9P / 9V / 9W / 9X. The SIDs of 26 and 27 are now per runway (`RW26L`, `RW26R`, … instead of `RWALL`: the runway headers are recognised). **LFPO**: the same 309 identifiers
+  (180 SID, 96 STAR, 33 APP), ten SIDs complete (ELCOB 2x), one STAR (`CAD 9E` RW07) now `doubt`: its `TF SOTIP` row was unreadable and the record had only ODILO. **LFBO**: the same 78, no change.
+- **Stays unread or approximate, and why**: the constraints of the scrambled initial fixes (`IF` rows of the INA pages: altitude and speed absent, said); the INA transitions that the page labels in an order the reader cannot match to the groups (as before:
+  `skip`); the `NIGHT` / `(R)` / `(H)` altitude variants of the INA pages (printed as separate lines of altitudes with `(1)` notes; the reader takes the cells it can place and ignores the notes); `TF PG275 …` and its like. The `point_merge` arc is a
+  memory of the system, not a drawing: the points BIBA1 … BIBA5 are positioned by the DATA page, the module may draw the arc from them.
+- **Bench**: K25 (ten trimmed LFPG pages as fixtures: SID 09L-09R, SID 26 with the ambiguous row, SID 27 with ADAD A, STAR 27L ×2 with the point merge, STAR 08L, INA 08L, FNA 26L ILS / RNP, FNA 27R RNP; synthetic records for the guards); K1, K22, K23, K24 adjusted for `doubt`.
+
+## 29 October 2026 — § 10.29, aerodb in the browser (memo, missed approach in the reader, no orange without a reader, `read_at`)
+
+The second aerodb lot of the refactoring of V3 § 10.29 (the first one is the Python tools). Four parts, four commits; the files are `frame/aerodb/aerodb.js`, `procedures.js`, bench K1 (`test/procedures.html`) and, for (j), one line of `tools/proc_manual.py` with its check in K11.
+
+- **(g) One merge per revision of the files.** `procedures(k)` rebuilt the merged list at every call, and `procedure(id)` and `runways(icao)` each called it again (and `runways()` read the files a second time): the Map and Fuel asked
+  several times per redraw. The merged + phased + placed list (before the query filter) is now kept per aerodrome in a memo, keyed by the revisions the reader gives for `proc/<cycle>/<K>.json`, `proc/manual/<K>.json`, `proc-seen/<K>.json` and
+  `proc/local/<K>.json`, plus the cycle in force (`outdated` depends on it) and the date of a fresh job file. The files are still read at every call (the frame's reader keeps them; it is where the revision comes from); what is saved is the
+  merge, the phases, the placement of the en-route points and the runway table, all done once per revision. `procedure()` and `runways()` read the same entry. The entry goes with the existing invalidation paths (the `proc/` and
+  `proc-seen/` watcher, a successful `fetchProcedures`, `refresh()`), and with `rememberOfp` (its own write). **Two cases are not kept**: a file read without a revision (nothing says it changed) and a list that waits for the base (a point with
+  no position yet, an approach with neither threshold nor aerodrome) — the base can arrive at any time, and keeping that list would freeze the gap; a counter of base changes (`zone` loaded or released, `changed`) also makes every entry
+  to be rebuilt, because the positions and the elevation come from it. Callers get copies of the records and of the runways. `procedureStats()` gives `{ memo, merges, hits, guessed }` for the bench and for a diagnosis. Bench: 300 calls cost
+  one merge (three file reads per call, no more), 300 simultaneous calls share one, a changed revision gives the new list, `procedure()` and `runways()` hit the memo, the watcher drops it for a changed revision and not for an echo.
+- **(h) The missed approach is guessed by the reader, and counted.** `frame/lib/current_flight.js` `withMissed` marked `missed` the points after the one nearest to the threshold of an approach that had no `missed` point (LFPO RNP 20, 28 Oct):
+  a rule about the data, kept in the consumer, so that every other consumer (the Map's choose mode, Fuel's profile) had to know it. It moves to the reader's common post-read pass, after the phases and the placement: for an `APP` without a `missed`
+  point, the points after the one nearest to the landing threshold of its runway (the `dthr` of `runways(icao)` when it has one, else `lat` / `lon`, else the position of the aerodrome; the nearest of the runways the record names when it names
+  several) are marked `missed`, unless that point is the last. **Counted, never silent**: the record gets `guessed: ['missed']` (new optional key, in the SPEC) and `procedureStats().guessed.missed` counts the guesses made at the build of a list.
+  The consumer's copy is left to the maps lot, which removes it: its `withMissed` is a no-op on a record the reader has already marked (it returns as soon as a point has phase `missed`). One difference from the consumer's rule: the reader does not
+  know the runway chosen for the flight, so it uses the runways the approach names, which is what the approach serves anyway.
+- **(i) No orange without a reader.** `coverage()` and `coverageByState()` no longer give the orange `lnm` (the workstation has a Little Navmap database): Little Navmap has no reader yet (V3 § 10.21), so that orange promised a button which
+  does nothing (the challenge of 29 Oct). The key stays in `AeroCatalogue.COVERAGE`, never produced, for the day a reader exists. The `lnm` hint of `fetchProcedures` in `no-tables` stays: it is a hint in a sentence, not a colour.
+- **(j) The date of the reading.** `coverage(icao).read_at` (ISO 8601 UTC to the second, or `null`) comes from `updated_at` of the aerodrome's entry in `proc/manual/index.json` and `proc/local/index.json` (the most recent), even when the published cycle
+  provides the counts; `tools/proc_manual.py` `install()` writes it (the file's own date, else the one already in the entry, else now): a date taken at each install would make a new commit for a reading that did not change. Every record
+  served from `proc/manual/` carries `source.read_at`, the file's `updated_at`. Fuel and the Map use it for « lu le … » with « Relire »; `null` gives the button alone. **Not done here, by decision**: `manualFresh` and `revs` stay until the frame
+  delivers `FD.revalidate(paths)`; the memo's signature takes the fresh job file into account meanwhile.
+
+## 29 October 2026 — OpenAir limits: the M of « MSL » is no metre (X-Plane airspaces)
+
+- **Seen** (the user's point sheet near Rathcoole, Dublin): the airspaces of the X-Plane source read « DUBLIN CTA 3000 m AMSL | 24500 m AMSL »,
+  « WESTON … SFC | 2000 m » — feet. `shared/aero_sources.js` `oaLim` took the « M » of « MSL » (« 3000MSL », « 3000 MSL ») for the metre unit.
+- **Done**: the unit is a whole word (`M(?![A-Z])`, `F(?![A-Z])`); « 300 m AGL » stays metres, feet and flight levels unchanged.
+- **Data**: every zone of the base built with X-Plane's airspaces carries the wrong limits until rebuilt (cycle 2026-10-01: be 53, de 657, dz 25,
+  es 200, fr 72, gb 172, ie 70, ma 48, nl 80, pt 171 airspaces of source `xplane`, all in metres). Nothing is rewritten by hand: the zones are
+  rebuilt by their builder.
+- **Also seen, not ours**: openAIP's Dublin CTA 3 to 6 are discs containing the airport (the AIP's annular sectors without their inner
+  boundary); the base reproduces the source. The ergonomics session decided: a build statistic for same-family overlaps with different floors,
+  a note on the point sheet (BUGS SOG), the AIP of Ireland as a source in the backlog (§ 10.28).
+- **Bench**: K27.
+
+## 29 October 2026 (late) — Dublin (EIDW): the second layout of the Irish tables, and a job that says what it does
+
+- **Reported** (the user, « Lire les procédures » for EIDW on the workstation): 3.5 minutes, then `no procedure could be read for this aerodrome`; `CODING: 0 document(s)`, 31 charts downloaded (SID 12, STAR 4, IAP 22 of which 15 listed), every one « disposition
+  non reconnue »; nothing in Fuel during or after (« aucun log »). Offline with the 31 downloaded PDF: **0 page recognised, 0 procedure**.
+- **Causes**: (1) `detect_layout` wanted `terminator` and `magnetic track`; Dublin prints `Term` and `Mag track` (and `performance descriptor`, `W PT`). (2) `parse_ei_coding` expected the terminator before the name; Dublin prints name, co-ordinates, terminator,
+  true / mag track, distance. (3) the first leg of a departure has no point (`RWY28 - CA`). (4) the text layer: spaced digits, names cut in two, STAR pages in reverse order, `RNP / row / APCH` over three lines. (5) the pagination of the IAP search (below, not changed).
+- **Decisions**
+  1. **One tolerant row reader, two column orders, told apart by the line** (`_ei_cells`): order A (28 October) and order B (Dublin) cannot both read the same line (the terminator is before the name or after the co-ordinates); if they do, or if the end of the line reads in
+     both orders (distance and track swapped), the line is ambiguous and **its block is not read** (« NON retenue », with the line). The header only gives the hemispheres and the presence of the VPA column; the `detect_layout` rule also needs a co-ordinate row.
+  2. **Limits**: upper = maximum, lower = minimum, equal = at (as before). Signs are checked against their column and a contrary sign rejects the block; a level that is not a usual step (a multiple of 50 ft / 5 FL) is not read: the digits of a spaced level
+     could swallow those of the speed. `A 4000 / -` is therefore **at or below 4000 ft**, `- / A750 +` at or above 750 ft. The meaning of `A` (altitude, not flight level) is taken from the print, the direction from the column.
+  3. **A name cut in two is joined only when confirmed** by the same co-ordinates carrying the whole name elsewhere in the aerodrome's pages (`DW0 24` ← `DW024`; `DW024` and `ATGOW` are the same point in two editions: both admitted). A split name alone keeps rejecting the
+     block, as on 28 October (K19 keeps both cases: confirmed and not).
+  4. **The CA leg without a point** is a leg with `id: null` (like the SIA's CA / VA legs), the runway course and the altitude; `records_uk_app` no longer reports it as « co-ordinates to resolve » and no longer fails on an id `None`. `RWYnn` must be the title's runway.
+  5. **A page given backwards is read from the end** when a leg row precedes the first title in text order and the reverse order does not.
+  6. **Missed approach tables alone are not procedures** (said in a warning, the page stays « read »). **Incomplete rows** (speed cell lost at the end of the line) are read without speed and said. Everything else that does not parse rejects its block.
+  7. **Names**: SID / STAR by their coded designator (as on 28 October); approaches by their title without the aerodrome. `vpa` (negative) is kept for the RNP pages.
+  8. **Fixtures are synthetic** (`frame/aerodb/test/fixtures/ead/EI_SYNTH_*.rows.txt`): the repository is public and `SOURCES.md` / `EAD_BASIC.md` § 4 keep the pages of a State other than France out of it. They reproduce the layout and the faults of the real pages with invented
+     points; the real pages were used for the measure only (outside the repository). To use real rows instead, the owner has to accept the Irish AIP's terms (§ 4).
+  9. **The EAD job gives the page numbers and the counts** (`regen_jobs._ead_fetch`, `proc_ead.fetch_ad(…, step=)`): `job.step(text, done, total, unit)` for the 4 searches, the documents downloaded (i of n), read (i of n, 1 to 2 s each) and analysed (the type of a PDF
+     is read once per document, no longer once per page entry: 45 reads for these 31 documents before), so `onProgress` has numbers; **`stats` on every outcome** that got as far as the pages (nothing read, geometry check failed, another source's file) — `pages / read / rejected /
+     procedures / dropped / doubt / reasons`, the same keys as a success — and the job log ends with the summary line in every case. The failure `message` says what was seen: `no procedure could be read for this aerodrome: 31 document(s), 0 of 31 page(s) read (mise en page
+     non reconnue ×31)` (the launcher's messages are English and shown as they come; the reasons are the tool's French phrases). `aerodb.fetchProcedures` already passed `stats`, `warnings`, `message` and `done` / `total` through on failure (bench `procedures.html`); no change there.
+     **Fuel's failure branch shows the message only, not `stats`** (a point for the Fuel session).
+- **Result, offline** (the 31 PDF): **43 pages read of 45 entries** (the 2 others are the VOR approaches), **196 procedures** (115 SID, 43 STAR, 38 APP), 999 legs, 659 TF legs through the geometry check with **no table rejected**, `proc_manual.verify` clean, 4 rows without speed,
+  4 missed-approach tables left out. Details and the table: `EAD_BASIC.md` § 10.
+- **Stays unread, and why**: the VOR approach pages (`Fix Coordinates` tables of fixes with bearings and distances from a navaid, not legs); the ILS / LOC final and the missed approach as separate tables (not assembled with the initial segments: the `ILS … via` procedures end at
+  the IF/FAF segment); the holding tables; the SBAS FAS data blocks; the chart pages (page 1 of each document: drawings).
+- **Pagination** (not changed, cannot be tested without EAD): see `EAD_BASIC.md` § 10. The IAP search stops at 15 of 22 documents; the second page is asked with PrimeFaces parameter names that were never seen on the real screen. The log of the job holds the one diagnostic
+  line (what was sent, what came back).
+- **Bench**: K26 (three synthetic pages: layout, both blocks of the SID page, the reversed STAR page, the RNP page, the chain, five rejections, the orphan rows, the geometry), K19 (a confirmed and an unconfirmed split name), K22 (progress numbers, stats and message on
+  a failure, summary in the log), K12 (steps of `fetch_ad`). `python tests/v3/run.py --grep K`: 25 cases, all green.
+
+## 29 October 2026 — parser version 18: the zones built with X-Plane's airspaces show as outdated
+
+- **Seen** (the Réglages session, after ef49b73c3): nothing told the user which zones to rebuild — `shared/sia_base.js` `VERSION` had not moved,
+  so the published files kept their `parserVersion` and the V2 maintenance page marked nothing.
+- **Done**: `VERSION` 17 → 18 (the builder's result changed: X-Plane's OpenAir limits in feet); `COMPAT` stays 14 (the format is unchanged: a
+  base 14 to 17 is read, marked `outdated`). The Données module will show « Parseur ancien » from `publication().parserVersion` later.
+
+## 29 October 2026 — after a reading, FD.revalidate instead of hand-made freshness
+
+- **Delivered by the frame** (2c87a031b): `FD.revalidate(paths)` reads these paths only against the repository and awaits the changed copies.
+- **Done**: `fetchProcedures`, on success, awaits `reader.revalidate([proc/manual/<ICAO>.json, proc/manual/index.json])` instead of `evict` +
+  `sync` (local transport) and the in-memory `manualFresh` override; the procedure memo's signature no longer carries that override.
+- **Kept**: `revs` (path → revision read): it filters the echo of aerodb's own reads in the watchers of the zones, the aircraft types and
+  `proc/` — a role `revalidate` does not take; removing it is not part of this commit.
+- **Bench**: K1 (the fake reader's `revalidate` catches up on the installed file; both paths revalidated, nothing else).
+
+## 29 October 2026 — § 10.29 (a): `tools/proc_geometry.py`, one geometry check and one policy for every reader
+
+- **Why**: three checks lived apart (`proc_eaip.check_geometry` with two branches, `proc_eaip.gaps_of` for the eAIP records, `proc_manual.verify` for hand readings), the guards (`doubts_of`, `mark_geometry`, `doubt_key`) were in the eAIP
+  reader, and EAD and OCR dropped a whole table when one failed. The reason of a doubt was a French phrase, `stats.reasons` carried phrases. V3 § 10.26 asks for one definition and codes.
+- **The check**: the printed course and distance against the ones recomputed from the positions, **tolerance chosen by what the source prints**, a table (`TOLERANCES`) and one function (`basis_of`): a true course
+  (`trk`) → 0.25° / 0.2 NM (every OCR reading, UK, Ireland, Austria, Belgium, hand readings); a magnetic course or a distance only (`crs`, `nm`) → 30° / 0.55 NM (SIA, Germany); neither → `uncheckable`, a warning, never a doubt.
+  The choice is made leg by leg, as before (a table may print a true course on some legs only). A `gap` leg is not compared with the previous one.
+- **The policy**: a record that fails is **kept**, `status: 'doubt'`, its reason a **code** in `doubt` (`geometry`, `unresolved`, `name`, `repeat`, `zigzag`, `unread`; several: joined by `,`, the first is the one counted); the human
+  detail (« géométrie incohérente: A → B: cap calculé … », « point répété hors attente: KOLIV ») lives only in the console and the file's `warnings` (`<id> À VÉRIFIER, <detail>`), not in the record: no `doubt_detail`. `uncheckable`
+  is not a doubt code (`DOUBT_CODES`). `mark` is idempotent (a code is said once), `review(proc)` is the one call a reader makes on a record it has built.
+- **Where**: `build_aerodrome` runs `review` on every record (guards and geometry); the launcher's second pass (`mark_geometry`) is gone. `records_uk_app` (EAD, OCR) runs `review` on each built record and now keeps the printed
+  true course on the points (`trk`, it used to be added by `proc_ocr` afterwards). **No reader refuses a table or an aerodrome for a record that fails**: the K cases that expected a dropped table (K10, K13, K14, K16, K17, K19,
+  K20, K26) now expect a kept `doubt` record with the code `geometry` — that is the policy, not an adaptation of strings. A block whose counts disagree (no record can be built) stays `NON retenue`, and so does a Belgian block whose point is
+  missing from the list: left for the common pass of § 10.29 (b), which will check after resolution (`positions=REQUIRED` exists for that and is covered by K28, no reader uses it yet).
+- **The guards are the same for every reader** (coordinator, 29 Oct): `name` applies to every kind; `repeat` and `zigzag` to SID and STAR only, never to APP. Measured on EIDW (196 procedures), the guards applied to the EAD records flagged five
+  RNP approaches « via » a beacon (`RNP RWY 28L VIA DUB`: the path comes back near the initial point, ratio 6 to 66) — a false positive that comes from the KIND, not the source (an approach loops on purpose: via a VOR, a procedure turn, a
+  racetrack). So the rule sits in `proc_geometry.guardrails`, for eAIP, EAD and OCR alike; `records_uk_app` calls `review` with the guards on. There is no per-reader switch.
+- **proc_manual** keeps its refusal **per procedure** (`screen(doc)` → the file without the refused procedures, and why; `verify` = `file_problems` + the refusals, kept for the callers and the cases): a hand reading that fails is not installed, named,
+  the others are; the file is refused only when its header or its identifiers are wrong, or when none is left. A procedure the reader already marked `doubt` is not rechecked (it is kept as doubtful, never refused). `regen_jobs._ead_fetch` goes
+  through `screen` as well; its `geometry check failed` answer stays for the case where every procedure is refused.
+- **stats**: `stats_of(formats, procedures, dropped, doubt)` takes one code per doubt procedure (`proc_geometry.doubt_codes`) and `reasons` carries it; the rejected pages and the dropped keep a phrase until (c). The console (`_summary`, `_nothing_read`)
+  says the phrase of a code (`proc_geometry.phrase`). Fuel (`procWhy`, `procWhyText`) shows an unknown reason as it is: it must translate the six codes (see the report of the lot).
+- **Removed** from `proc_eaip.py`: `check_geometry`, `gaps_of`, `mark_geometry`, `doubts_of`, `doubt_key`, `repeated_points`, `zigzag_ratio`, `HOLD_LEGS`, `ZIGZAG_MAX`; `bearing_nm` moved to `proc_geometry` and is re-exported by
+  `proc_eaip` (the cases and the invented pages use `P.bearing_nm`). No other session's code called them (`grep` over the repository). **Bench**: K1 to K28; K28 is new (tolerance table, basis, uncheckable, unresolved, review, screen).
+- **Measure** (cached pages, offline, same reading before and after): LFPO 309 procedures (1 doubt, `unread`), LFBO 78 (0), LFPG 711 (2 `unread`; with the SIA base of the workstation 6 `geometry`, identical), EIDW 196 (0): same identifiers, same doubts.
+
+## 29 October 2026 — § 10.29 (b): `proc_eaip.py` split into five modules, no logic changed
+
+- **Why**: `tools/proc_eaip.py` (2 718 lines) held four trades (the SIA eAIP, the foreign layouts, PDF reading, lines → records) and everyone imported it: `proc_ocr` and `proc_manual` pulled the whole eAIP reader for a regex and a notice.
+- **Cut** (the modules in `SPEC.md` § 5 quinquies, « Module map of the builders »): `proc_layouts.py` (the layouts and their parsers), `proc_pdf.py` (PDF reading shared), `proc_records.py` (records and the whole-aerodrome pass),
+  `proc_sia.py` (the SIA eAIP, the runway table, HTTP, the command line), `tools/ead_probe.py` (the probe, out of `proc_ead.py`). `proc_eaip.py` is **removed**, not kept as a shim: nothing outside `tools/proc_*` and the K cases imported it
+  (grep over the repository: `regen_jobs.py` is ours and was switched; `frame/aerodb/catalogue.js` only carries the builder's name, now `proc_sia`). The command line moves with it: `python tools/proc_sia.py …` (same options).
+- **The layouts are an ordered list** (constraint 1 of the survey session): `LAYOUTS = [Layout(name, detect, read, fingerprints, ocr_normaliser, ocr_readable, tolerances, kind_hint, known_names), …]`. `detect_layout` iterates it; the old
+  cascade of `if` is the order of the list (uk-star, at-coding, be-coding, ge-coding, am-coding, ei-coding, icao-tab, de-route, sia-code, uk-app), each condition copied as it was. `PARSERS`, `OCR_LAYOUTS`, `NORMALIZERS` and
+  `KNOWN_FINGERPRINTS` are derived from it; the OCR normalisers moved from `proc_ocr` to `proc_layouts` (they are about a layout, not about OCR). `read_page(name, rows, kind_hint, known)` calls the right parser (the type carried from
+  page to page for `icao-tab`, the confirmed names for `ei-coding`): `build_pdf_dir` and `proc_ocr` no longer know which. `sia-code` has `read=None`: `proc_sia.parse_code_table` reads it (a table with groups, another contract).
+  `tolerances` (`true` / `magnetic`, keys of `proc_geometry.TOLERANCES`) **describes** what the layout prints and is checked by K29; the geometry still chooses per leg by what the leg prints (as since (a)), so no result moves.
+- **The common pass already receives all pages of all documents** (constraint 2) in `build_pdf_dir`: the coordinate lists of every PDF complete the points before the geometry is judged, the type read on a page is carried to the next page of
+  the document, the split names are confirmed from page to page. What is **not** in the common pass yet, and was left alone to keep the logic: the SIA reader (`build_aerodrome`) works page by page and its own points come from the DATA pages
+  and the base; the Belgian block with a point missing from the list is still refused by its parser (`NON retenue`), not marked `unresolved` after resolution (§ (a)). `positions=REQUIRED` of `proc_geometry` is ready for it.
+- **`proc_pdf` imports `proc_layouts`** (`classify_pdf` recognises a layout, `waypoint_coords` reads the Belgian list): the shared module is above the layouts, never the other way. `limited` defaults to its own module. `OCR_TIMEOUT` moved
+  there from `proc_ocr` (`proc_ead` reads it from `proc_pdf`).
+- **The probe**: `ead_probe.py` keeps `probe`, `finish`, `pager_text`, `sent_summary` and its command line (`--user --state --icao --name --aip-type --docs --download --out`); it reads the site address, the session and the form readers
+  from `proc_ead` **by attribute** (`E.HOST`, `E.Session`…), so that K6, which reloads `proc_ead` with `EAD_PROBE_HOST`, still reaches its local server. `proc_ead.py --probe` is gone: `python tools/ead_probe.py`.
+- **Measure** (the same cached pages, offline, before = the commit of (a)): LFPO, LFBO, LFPG (with and without the SIA base) and EIDW, the **whole documents** (procedures with every field, formats, warnings, charts, runways; only `updated_at`
+  left out) are byte-identical, and so is the summary (counts, doubt by code). **Bench**: K1 to K29 (K29 is new: the list, its order, the derived tables); the cases read the modules through one namespace (`_proc()`), the ones that replace a
+  name (`fetch`, `first_page_rows`, `url_exists`) do it on `proc_sia`, and K6 calls `ead_probe.probe`.
+- **Point schema**: written once in `SPEC.md` § 5 quinquies (every key, its type, its meaning, which source fills it), replacing the descriptions scattered through the section. One correction on the way: the true course is `trk` on a point
+  (`true` is the key of the layouts' legs only).
+
+## 29 October 2026 — § 10.29 (c): reasons as codes, the layout's tolerance as a fallback, the Belgian missing point, security review of the split
+
+- **Page reasons are codes** (constraint 6 of the survey session): every `formats[]` entry with `ok: false` carries `reason` ∈ `layout` (no known layout), `low-read` (fewer than 85 % of the leg rows read), `title` (title not recognised, or
+  leg rows with no title), `no-legs` (known layout, no leg row), `counts` (a block whose counts or contents disagree: no record can be built), `vector` (a drawn page, no text layer), `timeout` (the PDF reading was abandoned); `problems` keeps the French
+  detail beside it, for the console. `proc_records.reason_of` / `page_reason` map the French problems to the codes; an entry without `reason` (a file read before this commit) is mapped the same way when `stats_of` counts it (an unknown text is `layout`).
+  The sources: `proc_sia.build_aerodrome` (from `verify_page`), `build_pdf_dir` (NON retenue → `counts`, no table → `no-legs`, an unreadable PDF → `timeout`, an unknown layout → `layout`, or `vector` under 8 rows), `proc_ocr.document_from_rows`.
+- **`stats.reasons` is `[code, count]`, codes only**: page codes, the doubt codes, and `name` for the dropped (the untitled repeat that is removed: `dropped[].reason` is `name` now, the text is in the warning). The French phrase lives in one table
+  (`proc_geometry.PHRASES`, page codes added; `phrase(code)`), which the console uses (`regen_jobs._summary`, `_nothing_read`, the ead console line); the message of a failure still reads « (mise en page non reconnue ×31) ».
+- **`AeroCatalogue.READ_REASONS`** (`frame/aerodb/catalogue.js`): the 13 codes (7 page, 6 doubt; `uncheckable` is a warning, not a reading reason) × `[fr, en, de, es]`, short, French typography (U+202F before `%`). Same exception to invariant 4 as `COVERAGE`
+  (SPEC § 6). The test page checks every code × 4 non-empty, the four languages differ, no plain space before `: ; ! ? % »`; K30 checks that the keys are exactly the codes of `proc_geometry`.
+- **Fallback tolerance** (the survey session's point a): `Layout.tolerances` is no longer descriptive. A leg that prints neither a true nor a magnetic course (a distance only) takes its layout's key (`proc_geometry.check_legs(legs, fallback)`,
+  `review(..., basis)`), a leg that prints a course keeps its own basis. `records_uk_app` and `build_pdf_dir` / `document_from_rows` pass the layout; `build_aerodrome` passes `sia-code` (magnetic: no change). On the cached pages (LFPO, LFBO, LFPG with and
+  without the base, EIDW) no result moved: the fallback only counts for a leg with a distance and no course.
+- **The Belgian missing point is a doubt** (point b): `parse_be_coding` no longer refuses a block because a point is missing from the list (`absent de la liste` is gone from its reasons; two lists that disagree still refuse: concurrent readings);
+  the leg stays without a position, `build_pdf_dir` completes it from the lists of the aerodrome's other documents, and `Layout.positions == 'required'` (be-coding only: its page must give every position) makes `proc_geometry.review(positions=REQUIRED)` mark
+  `unresolved` what is still missing; the warning « à résoudre par aerodb » is not written for it. For the other layouts the position is aerodb's to resolve (warning, the record stays sure). `proc_ocr.read_document` now re-reads a page at the next
+  resolution while any of its procedures is a doubt (a missing list line at 300 dpi may be there at 500), as it did when the table was refused.
+- **Security review of the split** (« relecture de sécurité de la scission »): (1) a PDF name taken from the AD 2 page is kept only if it matches `^[A-Za-z0-9._-][A-Za-z0-9._ -]*\.pdf$` (the brief said `^[A-Za-z0-9._-]+\.pdf$`, which dropped two real LFBO charts whose names carry a space, `…ILS_Y_CAT_ 1_2_3_LOC_Y.pdf`; a space is no path) (`proc_sia.pdf_names`, the others are listed and said), and every write or read in the cache
+  goes through `proc_pdf.safe_path` (plain name, resolved path under the cache); the same for the document names of EAD Basic in `proc_ead.fetch_ad` (`SAFE_NAME`, refused before any download); (2) the command line of `proc_sia.py` without `--cache` uses
+  `<repository>/data/local/eaip` when the data folder exists, else `.proc_cache/`, now in `.gitignore`; (3) the ICAO codes of the command line, and `read_aerodrome`, are checked with `^[A-Z0-9]{4}$` and refused with a clear message. K32 covers them
+  (`../../x.pdf`, `a/b.pdf`, `..\x.pdf` never written or asked, a bad ICAO refused, the EAD names refused).
+- **Not in this commit** (as decided): `coverage(icao)` reason `partial`; Fuel and the Map translating (see INTEGRATION). `frame/aerodb/aerodb.js` needed no change: `fetchProcedures` passes `stats` through as the job gave it, now with codes.
+
+## 29 October 2026 — § 10.29 (d): one reading job, `tools/regen/proc.py`, driven by a source table
+
+- **Why**: the frame's base (`regen_jobs.py`, `load_verbs()`, `commit_outputs`, `job.author`, d6f31448a) wants each set's verbs in `tools/regen/<set>.py`. `_ead_fetch` and `_eaip_fetch` were two copies of one job (about 240 lines each of the same steps),
+  and the « LF » rule lived in `_eaip_args` while the page chose the verb from `EAD_STATES`.
+- **The module**: `tools/regen/proc.py` exports `VERBS = { ('proc','ead-fetch'): (fn, check), ('proc','eaip-fetch'): (fn, check) }` and `MIN_GAP = { ('proc','ead-fetch'): 30 }` (the 30 s of EAD Basic's conditions; the base keeps the longest gap).
+  It holds `SOURCES`, the table of what differs — the States it reads (`eaip`: `('LF',)`, never EAD; `ead`: any other State the page chose, EAD_STATES « read »; the launcher re-checks the code against the verb as before: `proc/eaip-fetch` refuses a code outside France, `ead-fetch`
+  accepts any four-character code), whether it needs the account, how it is read (`_read_eaip`: `proc_sia.read_aerodrome`, cache `data/local/eaip/<cycle>/`, the SIA base for the en-route points, the HTTP errors said in clear; `_read_ead`: login, `proc_ead.fetch_ad`, the OCR document written by THIS job),
+  whether the hand screen applies (`proc_manual.screen`: EAD only, the SIA tables are judged by `proc_geometry` while they are read), whether a re-reading replaces the former one (`replace_source`) and which « nothing read » message is given — and ONE function `fetch(source)` for the rest: progress and cancel (`_Cancelled`, a
+  `BaseException` so that the `except Exception` of the PDF and OCR readers do not swallow it), the log without secret, `stats`, install by `proc_manual`, the commit, the result. Adding a State family is one entry and one `read`.
+- **The commit is the base's**: `regen_jobs.commit_outputs(ctx, job.author, ['proc/manual/<ICAO>.json', 'proc/manual/index.json'], message)`; the author is the page's trigram, not the workstation's `POSTE`; without a trigram, or without a repository, nothing is committed (`commit: null`, and the reason in `warnings` as `git: …`). The two commit messages are unchanged.
+  The local `_ead_commit` is gone.
+- **Left in `regen_jobs.py`** (373 lines, from 656): the base (`state`, `Job`, `Jobs`, `clean_error`, `commit_outputs`, `load_verbs`, `state/scan`) and `_ead_credentials`, which `clean_error` needs to strip the account from any job's text. Gone: `_Cancelled`, `_ead_args`, `_ead_commit`, `_installed_file`, `_geometry`, `_summary`,
+  `_nothing_read`, `_ead_fetch`, `_eaip_args`, `_eaip_fetch`, our two REGISTRY entries and our MIN_GAP entry (both moved to `proc.py`).
+- **Measure** (offline, the two jobs end to end with the library faked as K22 / K23 do: EIDW through `ead-fetch`, LFPG through `eaip-fetch`, no repository): the result dicts are identical to the former ones — procedures, stats, warnings, file, steps — except the text of the git warning (now the base's:
+  `git: data/ is not a git repository: nothing committed`). Two small differences, accepted: the eAIP job now writes the « installation de N procédure(s) » log line the EAD job always wrote, and the `stats.procedures` of an eAIP install that is refused is 0 (nothing installed) instead of the number read.
+  One thing NOT done on purpose: `proc_ead.sanitize` is applied only when there is an account (it took the name of a PDF for a token).
+- **Bench**: K22 and K23 call the verbs through `regen_jobs.load_verbs()` (`_regen()`), jobs have an author (`TST`), the « nothing changed » warning is the base's (`no commit`); I8 (the base) and K1 to K32 green.
+
+## 29 October 2026 — § 10.29 (e): one page set per French aerodrome, regenerable by a tool
+
+- **Before**: `frame/aerodb/test/fixtures/eaip/` held loose `.rows.txt` files of the aerodromes (and two AD 2.12 extracts), some cut by hand at a procedure boundary, no manifest, no way to rebuild them.
+- **Now**: `eaip/<ICAO>/` per aerodrome (LFPO, LFBO, LFPG, LFBD, LFAV): one `<PDF>.rows.txt` per data or coding page (first page of the PDF, the lines `proc_sia.read_aerodrome` reads), the AD 2.12 extract (LFPO, LFBO, LFPG: the section's heading and first
+  table, reproduced byte for byte from the page) and `manifest.json` `{ icao, cycle, source: 'SIA eAIP', generated_at, pages: [{ file, pages, rows, sha256 }], ad2_12 }`. **France only** (constraint 5: the SIA's open licence; the foreign layouts stay on invented pages, `ead/` and K10, K13–K19 untouched).
+- **Size, measured first**: all the pages of the three cached aerodromes — LFPO 60 pages (110 KB of rows), LFBO 21 (27 KB), LFPG 90 (198 KB) — plus LFBD and LFAV as they were (11 KB) are **346 KB of rows** (about 0.45 MB with the AD 2.12 extracts and manifests), far under 1.5 MB:
+  so ALL the pages are kept, not a sample. K24 and K25 now read whole aerodromes (LFBO and LFPO: 81 pages; LFPG: 85 coding pages).
+- **The tool** `tools/make_eaip_fixtures.py` (standard library + `proc_pdf` / `proc_sia`): `LFPO --cache <folder of PDF> [--ad2 <page>] [--pages <glob>] [--cycle …] [--out …]` rebuilds the set; `--check` compares it with the cache (rows, hash of the PDF, pages in the cache but not in the manifest, the AD 2.12 extract) and
+  exits 1 on a difference; `--fetch` downloads the missing PDF first (the only network use, never in a test; names pass `proc_pdf.safe_path`); `--adopt` writes the manifest of a set whose PDF are not cached (`regenerable: false`, « not regenerable: source PDF not cached »: LFBD and LFAV, whose pages
+  predate the cache). LFPO, LFBO and LFPG were rebuilt from the cache (`2026-10-01` for the first two, `2026-10-29` for LFPG) and `--check` passes on them.
+- **K cases**: one helper (`_eaip_rows`, `_eaip_names`, behind `_eaip(c)`) reads the sets; K2, K3, K23 read the same pages. K24 and K25 keep their meaning and now assert on whole pages — the lists of departures and STARs are the whole page's (LFBO SID 14: seven departures instead of three, LFPG SID 09: nine, …), and
+  the page count is 85. **One real finding**: in LFPO STAR RWY07 page 2 a row (`TF SOTIP 033 034,0 5,2 FL120 250 1,0`, 7 cells instead of 10) cannot be placed; the reader leaves it out and keeps CAD 9E as a doubt (`unread`). It is the only page of LFBO / LFPO with a row lost, and K24 now asserts exactly that (it was invisible on the trimmed pages).
+  New K33 (the five sets, their manifests agree with the files, size ≤ 1.5 MB, no loose file) and K34 (`make_eaip_fixtures.check` on LFBO against the cached PDF; **skipped with the reason** where `data/local/eaip/<cycle>` or `EAIP_FIXTURE_CACHE` is not there — the cache is not in the repository).
+- **Security review of `tools/regen/proc.py`** (« relecture de sécurité de proc.py »): (1) before `proc_manual.install`, the job refuses (failed, « the file read is not <ICAO>'s … », nothing installed) a document whose `icao`, or whose procedures' `icao`, differs from the code of its arguments — the file written is the one `commit_outputs` validates
+  (`proc/manual/<ICAO>.json`); (2) the table has `not_states: ('LF',)` for EAD: `check_icao('ead')` refuses a French code (France is never read through EAD; the State rule stays in the table). K22 checks both.
+
+## 29 October 2026 — ILS final approach fix: IF → FAF → threshold → missed (§ 10.20 refinement)
+
+- **Decided by the ergonomics session**: an ILS of the SIA eAIP codes only the IF then « See chart »; the DATA pages print the FAF of each runway (« FAF LOC RWY 06  48°37'50.4'' N 002°03'57.2'' E »). The ILS now draws IF → FAF → threshold → missed.
+- **Rule** (`proc_sia.parse_faf`, `proc_records.with_threshold` / `_faf_leg`): the FAF LOC positions are read from every `DATA_0n` page of the aerodrome (the « FAF VOR » rows of the VOR approaches are not used); the point `{ id: 'FAF' + runway, leg: 'CF', alt: null, synthetic: 'faf' }` carries its position (`pos`, since no list
+  names it) and is inserted between the initial fix and the threshold **only if it lies on the final**: the initial fix is positioned, the FAF is nearer to the threshold than the initial fix, and the bearing FAF → threshold is within 10° of the runway's true bearing (AD 2.12). Otherwise, or with no FAF row, the procedure stays IF → threshold and a
+  warning says why. The pages print neither a name nor an altitude (the name `FAFnn` and `alt: null` are ours; the FPOnn points of the RNP pages are the same places under another name, not used here).
+- **One more reading, needed by the check**: `parse_data01` now reads an ILS initial fix printed as `IG08L ( IF ILS/LOC RWY 08L )  48°58'16.5'' N …` (Paris-CDG), which it ignored: those IF points had no position from the page.
+- **Measure** (the page sets and AD 2.12 extracts, the SIA base of the workstation for the en-route fixes): 16 of the 17 ILS get their FAF, the exception being LFPO RWY 07, which has no IF row in its table (« aucun point initial dans la table »). Without the base, LFPO RWY 07 and 25 lack a positioned initial fix and keep IF → threshold (warning).
+  | aerodrome | ILS | with FAF | FAF → threshold (NM) | initial fix → threshold (NM) | bearing off the runway (°) |
+  |---|---|---|---|---|---|
+  | LFPO | 5 | 4 (3 without the base) | 8.3 to 11.5 | 11.8 to 15.0 | 0.1 to 0.3 |
+  | LFBO | 4 | 4 | 7.7 | 11.3 | 0.0 to 0.2 |
+  | LFPG | 8 | 8 | 11.2 to 14.4 | 13.8 to 17.4 | 0.2 to 0.3 |
+  The FAF is 8 to 14 NM from the threshold, not 4 to 6. Procedure counts and doubts are identical to before (LFPO 309 / 1, LFBO 78 / 0, LFPG 711 / 2, or 6 with the base).
+- **Bench**: K24 (LFPO ILS 06 with its FAF, LFBO 14L with and without DATA 03, a FAF behind the IF or off the axis refused) and K25 (LFPG ILS 26L, IG26L positioned from the DATA page); K1 to K34 green.
+
+## 29 October 2026 — procedures load time (« Fuel + Map: very long to load before the procedures appear »)
+
+- **Report**: Fuel and the Map, on LFBO → LFPO and LFPO → EIDW with the real files (`proc/manual/`: LFPO 309 records, LFPG 291, EIDW 196, LFBO 78), took several seconds before the procedures appeared; the Map session measured 250–325 ms for **every** `procedure()` and
+  `runways()` call, even in parallel, and the same again when the Map redid what Fuel had just done.
+- **Bench**: `frame/aerodb/test/perf_procedures.html` (case K40). A reader in memory that **counts** its `read` / `list` calls and costs what the frame's data layer costs (a real IndexedDB: two gets per read, the JSON parsed again at every read, `list()` = `getAll` of the whole cache
+  with its texts, twice), loaded with the copy of the user's files (`?data=<folder>`, not in the repository: the `fr`, `ie`, `gb` zones, the 22 other zones of the manifest as empty files) or, without it, with a synthetic aerodrome. Counters wrapped around `coordsAll` and
+  `AeroDBProcedures.merge / withPhases / markMissed` from the page: aerodb.js carries no timing code. Chromium headless, this workstation, the cache preloaded with the 22 MB of the copy.
+- **Measured before** (ms; one aerodrome at a time on a fresh instance, its zone already open):
+
+  | call | LFPO | LFBO | EIDW | LFPG |
+  |---|---|---|---|---|
+  | `procedures()` cold (reads + list + merge + placement + zones) | 573 (126 reads, 1 list, 945 `coordsAll`) | 421 (186 `coordsAll`) | 398 (1 `coordsAll`) | 380 (1440 `coordsAll`) |
+  | `procedures()` **warm** (nothing changed) | **402** | 315 | 306 | 252 |
+  | `runways()` warm | 362 | 468 | 283 | 233 |
+  | `procedure(id)` warm | 393 | 329 | 341 | 271 |
+  | `procedureIndex()` warm | 270 | 317 | 274 | 286 |
+  | ten `procedures()` in a row | 2868 (10 merges) | 3224 | 3000 | 3252 |
+
+  A warm LFPO call is: `list('proc/')` **377**, three reads 19, 945 `coordsAll` 12 (wall), merge + phases 5, `markMissed` 0. The cost is the **list**, one per call: the frame's `list(prefix)` loads every cached document with its text (22 MB here) to keep a prefix.
+  Fuel's mount (both sides + `loadProcedures`), then the Map's (`loadProcedures` + coverage), then a Fuel redraw: **2179 + 1259 + 1754 ms** (156 + 15 + 27 reads, 11 + 5 + 9 lists, 5 + 2 + 4 merges).
+- **Causes** (three, in this order):
+  1. **`procEntry` read the four files and asked `list('proc/')` at every call** (`procSource` → `procCycle` → `reader.list`, then four `read`) to compare revisions with the memo's signature. The memo saved the merge, not the I/O; with the frame's reader that I/O is the whole cost (the list above all; a read is two
+     IndexedDB gets and a JSON parse of 330 KB). `procedureIndex()` and the coverage table did the same (`indexParts`).
+  2. **The memo was not kept for LFPO, LFBO and LFPG**: a list that waits for the base (a point still without position, an approach with neither threshold nor known aerodrome) was dropped after each call, and these three aerodromes always have points the base does not give (LFPO `PO771` … `PO724`, LFPG `IG08L` …, LFBO
+     `BO142` …: terminal waypoints that the SIA's en-route files do not publish). Every call was a full rebuild, **945 `coordsAll` (LFPO) or 1440 (LFPG)**, one per point, each unfound identifier walking all 25 published zones.
+  3. **`coordsAll` once per point**, not once per identifier: 864 points without a position for 82 identifiers (LFPO).
+- **The fix** (`frame/aerodb/aerodb.js`; same answers, checked: `procedures()`, `runways()` and `procedure(id)` of the four aerodromes have the same hash before and after):
+  - **One read and one analysis per aerodrome, trusted until an invalidation** (`procEntry` / `trusted`): a call looks the memo up first and reads **nothing** (no `read`, no `list`); concurrent calls share the entry's promise; the entry is dropped by the `proc/` and `proc-seen/` watcher
+    on a changed revision (not on an echo), `fetchProcedures`, `refresh()`, `rememberOfp`, a change of the day, and by the base: `baseEpoch` (published files replaced or released: every entry that read the base) and `loadEpoch` (a zone opened: only an entry that lacked a point or a terrain).
+    What is **not** trusted for ever: an aerodrome with **no file** at all, an entry the base has not finished telling (below), and an entry on a reader without `watch`; they are believed `EMPTY_RETRY` (30 s) only.
+  - **« The base has said all »** (`baseFinal`): a point or an aerodrome the base lacks is absent for good once every published zone is open (or without file); the entry is then complete and trusted. This is what keeps LFPO, LFBO and LFPG: the first build opens the 25 zones (once), the unfound
+    points stay unplaced, the entry stays.
+  - **One lookup per identifier per build** (`lookups()`): `placeProc` takes its candidates from a map identifier → places shared by all the records of the build (945 calls → 83 for LFPO); the choice among the places (the nearest to the first placed point of the record) is unchanged.
+  - **The choice of the cycle is kept** (`cycleMemo`, one list of `proc/` shared by all aerodromes: `procList`), dropped by the same paths; `indexParts()` (behind `procedureIndex()` and the coverage table) is kept (`idxP`, dropped by `dropCoverage`) and `procedureIndex()` returns a copy.
+  - **The arrival of a file that aerodb itself is reading** (the frame announces it to the watchers during the read) is no change (`reading`): it dropped the entry being built and made Fuel and the Map re-ask (a second build and an event at each first read).
+- **Measured after** (same bench, same files): every warm call (`procedures`, `runways`, `procedure(id)`, `procedureIndex`, `coverage`) **0 ms, 0 reads, 0 lists, 0 `coordsAll`**; ten in a row and ten at once 0.3 ms, no build. Cold, zone open: LFPO 320 (83 `coordsAll`), LFBO 266, EIDW 260, LFPG 278 — what is left is the
+  `list('proc/')` of the frame (~250 ms) and the opening of the 25 zones for an unfound identifier (126 reads, 40–90 ms), once per session. Mount: **Fuel 456 ms (2 lists = 450 of them), the Map 0.1 ms, a redraw 0.2 ms**, against 2179 + 1259 + 1754. The three together: 135 reads, 2 lists, 86 `coordsAll`, 2 merges.
+- **What is left, and not aerodb's**: `FrameData.list(prefix)` loads every cached document with its text (twice, plus the pending writes) to return paths: ~200–300 ms per call on 22 MB of cache, and aerodb still needs two per session (`sia/base/` for the zones, `proc/` for the cycles). An answer from the tree or from a key-only cursor
+  (`getAllKeys`) would make them free. `FrameData.read` parses the JSON of a cached document at every call (330 KB for LFPO: ~3 ms) and an absent file (`proc/local/`, `proc-seen/`, `proc/<cycle>/` of an aerodrome the cycle does not publish) goes through `fetchOne` / `getMeta('remote')` each time: both now happen once per aerodrome, no longer per call.
+- **Not changed on purpose**: an identifier the aerodrome's zone does not know still walks all published zones (once per build, memoised per identifier); restricting it to the zones of the aerodrome's prefix would change which place is chosen when two countries share an identifier. `procedures()` still returns shallow copies (a caller that changes a point's `lat`
+  changes the memo): unchanged. `aircraft()` reads `AircraftDB/` and the registry; nothing in `frame/`, `modules/`, `shared/`, `tools/` reads `aircraft_http_cache.json` (grep).
+- **Bench** (K40, `perf_procedures.html`, synthetic: 60 procedures, half the points unplaced, two zones, IndexedDB cache): a warm call reads and lists nothing; ten calls in a row and ten at once build nothing; a cold build reads its `proc` files once and looks up each identifier once (42 `coordsAll` for 240 points); placed positions equal
+  the ones computed by the page (nearest of a duplicated identifier, a point only the second zone has); the watcher drops on a changed revision and not on an echo; `refresh()` drops; a file arriving during aerodb's read is no change; a changed published file moves the point; a terrain with no file is read again after 30 s only and when its file
+  arrives; budgets generous (ten warm calls under 200 ms, a cold build under 5 s). K1 (`procedures.html`) follows the new contract: its reader announces what it is given to the watchers, 300 calls read no file, an entry waiting for the base is kept 30 s (clock in hand).
+
+## 29 October 2026 — `source.file`: the document a record was read from (§ 10.25)
+
+- **What `source.ref` held**: for the eAIP, already the coding page's PDF name (`ref: 'AD_2_LFPO_DATA_STAR_RWY20_RNAV_CODE_02.pdf'`); for EAD layouts `ead-basic/<State>/<document>`, for OCR `ocr:` + that. So `file` is set consistently from the same name and `ref` is left as it was.
+- **Rule**: every record read from a document carries `source.file`, the NAME of that document without folder — eAIP: the coding page the record was built from (`proc_records.records`; one page per table, so a record built from several legs of one page has that page); EAD layouts and OCR: the downloaded document
+  (`records_uk_app`, without the `ocr:` mark); a hand reading: the input file's name when it is installed from one (`proc_manual.install(source_file=…)`, from the command line), else absent (the launcher's reading job passes none: its records already have theirs); CIFP, X-Plane and OFP records have none.
+  `charts.base` stays on the aerodrome file.
+- **The « Source » link** is for the eAIP only: `charts.base` + `Cartes/<ICAO>/` + `source.file` (INTEGRATION); the other sources show the name in a `title` (the lots of Fuel and the Map).
+- **Measure** (the page sets for LFPO, LFBO, LFPG; EIDW from its rows): every record has `source.file`, it names a page of the set (309 / 78 / 711 / 196 of 309 / 78 / 711 / 196) and agrees with `ref`; counts and doubts unchanged (309 / 1, 78 / 0, 711 / 2, 196 / 0).
+  Bench: K11 (hand reading), K14 (OCR), K24 (eAIP), K26 (EAD layout).
+
+## 29 October 2026 — same-family overlaps in the build statistics (Dublin CTA 3 to 6)
+
+- **Decided** (the ergonomics session, after the user's question near Rathcoole; see « OpenAir limits », « Also seen, not ours »):
+  openAIP codes Dublin CTA 3 to 6 as discs that contain the airport (the AIP's annular sectors without their inner boundary).
+  (a) the build **reports** sectors of one family that overlap with different floors, counted per zone; (b) **nothing is cut**
+  or guessed: the base reproduces the source; (c) the Irish AIP as a source stays in the backlog (§ 10.28). The point sheet's
+  note is the Map's (BUGS SOG); this section says what it can read.
+- **Where it runs.** `SiaBase.sameFamilyOverlaps(airspaces, read)` (`shared/sia_base.js`), called by `splitZones` — the place
+  where the airspaces of each zone are final (after the merge of the sources and the distribution into zones) and before
+  `publishSplit` writes `meta.json`. Pure: it copies the airspaces it flags (`{ ...a, ovl }`), the base in memory is not touched,
+  and a stale `ovl` is removed from the others. `read` is the base's limit reader (`window.SiaAero.limitRead`, loaded by the pages
+  that publish); without it the check is skipped (`null`) and the zone has no statistics — it never says « 0 families » for
+  « not checked ».
+- **Rule.** Group by (`src`, `type`, `cls`, family), the family being the name without its trailing sector number or letters
+  (the regular expression of the point sheet's note in `modules/maps/lv.js`, so that the note and the flag agree on what a family
+  is). Inside a group only, in this order: floors differ by more than 20 ft (SFC = 0, FL × 100, m converted; ASFC and AMSL are
+  different references) → vertical extents share a volume (ceiling of one above the floor of the other by more than 20 ft; an
+  unreadable or UNL ceiling goes to the top) → bounding boxes meet → the outlines share a real surface. The last test is
+  standard and without a library: a vertex of one ring inside the other by more than 0.005° (≈ 0.3 NM), either way, or two sides
+  that cross outright (both ends of each more than 0.005° from the other's line, on both sides); in a flat projection per group.
+  So a boundary shared by two neighbouring sectors, even drawn a few hundred metres apart, and two identical outlines, are not overlaps.
+- **Output.** `meta.json` of the zone: `data.overlaps` = { `count` (families, total), `airspaces`, `families` (50 largest at
+  most): [{ `family`, `type`, `cls`, `src`, `members`, `floors` (same order) }] }; on each airspace involved, `ovl` = the family
+  name (« DUBLIN CTA »). **What the Map can read**: `a.ovl` (a non-empty string) on any airspace of `airspaces.json`; the
+  family is (`a.ovl`, `a.type`, `a.cls`, `a.src`); the other members and their floors are in the zone's `meta.overlaps`. It is
+  the source's data, not an error: the note says so.
+- **Parser version 18 → 19** (`COMPAT` stays 14): the builder's output changed (a field on the airspaces, a statistic in `meta`),
+  not the format; the zones built with 18 show as outdated and carry neither until rebuilt. Bench `vrp_sources.html` tests `VERSION >= 19`.
+- **Measure** (offline, Chromium, the published zones of cycle 2026-10-01, read only; time = the check alone):
+
+  | zone | airspaces | families | members | time |
+  |---|---|---|---|---|
+  | ie | 142 | 3 | 12 | 3 ms |
+  | de | 921 | 5 | 56 | 12–16 ms |
+  | fr | 2576 | 5 | 12 | 14–23 ms |
+  | gb | 1740 | 0 | 0 | 9 ms |
+  | es | 779 | 1 | 3 | 2 ms |
+  | in | 423 | 6 | 21 | 2 ms |
+  | iq | 68 | 3 | 18 | 1 ms |
+  | tr | 318 | 2 | 7 | 1 ms |
+  | af, be, ch, dz, id, ir, it, kh, ma, mm, nat, nl, pk, pt, sy, th, vn | — | 0 | 0 | < 5 ms |
+
+  Ireland: `DUBLIN CTA` (openAIP: CTA 1, 2, 3, 4, 5, 6 and 8, floors 1500 to 5000 ft), `SHANNON CTA` (1, 2, 3) and `SHANNON CTA CORK`
+  (1, 2): the same pattern as Dublin. Without the source in the key, gb jumps from 0 to 13 families (83 members) and Dublin gains
+  two members: the same space in two sources (AIXM and X-Plane or openAIP), not sectors of one structure. Without the vertical
+  test, fr went from 5 to 49 families, es from 1 to 5, in from 6 to 13, be, gb, ma, pt and it gained some: stacked layers (a sector
+  from the surface to 5000 ft under one from 5000 ft to FL 245). Tolerance: 0.0005° gives fr 10, gb 7, de 6 and ie 4 families
+  (neighbours drawn a little apart, `EIR16 B/C`); 0.005 and 0.02 give the same families (one member fewer in iq at 0.02).
+- **What is left, to be read as reports.** de (X-Plane: FRANKFURT, BERLIN, MUNICH, DUESSELDORF/COLOGNE-BONN, BREMEN SECTOR), in
+  and iq (X-Plane TMAs), tr (BATUMI, YEREVAN): the whole TMA outline with the lowest floor plus sectors with higher floors, the
+  Dublin pattern as the X-Plane files give it. fr: `114 A/B/C`, `163 A/B` (restricted areas), `BALE`, `LUXEUIL`, `RHONE`: floors
+  that differ over a shared surface; es `BADAJOZ, SECTOR A/B/C` (A from the surface to FL 450 over B and C). Whether these are
+  mistakes of the source or deliberate (an inner volume carved out by a lower neighbour) is not for the build to say: it reports,
+  it never removes. The rule excludes nothing more; if the Map finds the lists too long it can show the note only where the
+  point is inside one of the `members`.
+- **Bench**: K41 (invented polygons: Dublin pattern reported with its flags and floors in order; same floors, other family,
+  disjoint, shared boundary, layers, identical outlines, other class, other source, unreadable floor, none reported; two crossing
+  bands reported by their sides; stale flag removed; no reader → `null`; cap at 50 families with the total; `splitZones` carries
+  statistics and flags), K5 (`VERSION >= 19`).
+
+## 29 October 2026 — coverage `partial` (§ 10.26) and the Données module's contract (lot 1b)
+
+- **`coverage(icao)` reason `partial`**: an aerodrome held whose file has pages not read (`formats[].ok === false`) or records of status `doubt` answers `level: 'orange'`, `reason: 'partial'`, with the fields of `held` (`source`, `outdated`, `counts`, `read_at`) and `partial: { pages, doubt }`. The table stays built from the indexes, never from the files: `tools/proc_manual.py install` writes
+  `pages_unread` (formats with `ok` false of the file as merged) and `doubt` (records of status `doubt`, not counted in SID/STAR/APP) into the aerodrome's entry of `proc/manual/index.json` (always, zeros included); aerodb reads them in `coverageTable()`. **An entry without the counts is not partial** (a file installed before, a published cycle's index, `proc/local/`): the aerodrome turns orange the next time it is read again.
+  Checked on the real files of 29 Oct: LFPG 23 pages not read, EIDW 9, EBBE 3, LFPO 1 record to check, LFBO none — so LFPG, EIDW, EBBE and LFPO turn orange once reinstalled. The answer carries `partial` as a copy. `AeroCatalogue.COVERAGE.partial` ×4 (« Lu en partie : pages non lues ou procédures à vérifier »).
+  Fuel and the Map must read `reason`, not `level`, to tell « held » from « to read » (INTEGRATION).
+- **`coverageByState()` for the Données module** (shape agreed with the settings session): `{ [prefix]: { level, reason, label, names, held } }`. `held` counts the aerodromes held in the State (partial ones included) from the coverage table; `held > 0` → `green` / `held`, else the rules without a held aerodrome as before. `names` = `AeroCatalogue.EAD_STATES[prefix].names`: the 47 States (France included) in fr, en, de, es
+  (a name is data, kept in the catalogue like `n` of the sources; « Serbie et Monténégro » for LY, « Groenland » for BG, `XX` — the EAD authority whose files are named `EK_` — is named as such, not guessed). The answer now depends on the table, so it must be asked again after `{ coverage: true }`.
+- **`AeroCatalogue.PARSER_VERSION` = 19** (18 when written, raised with the overlap check of the same night), the `VERSION` of `shared/sia_base.js`, with a comment that it must follow it; K21 reads both files and compares them (a bump in `sia_base.js` without the catalogue fails the case).
+- **Bench**: K1 (`procedures.html`: partial with the counts, zeros and no counts green, a copy; `coverageByState` `held` per State and `names`), K21 (`catalogue.html`: 12 reasons, `names` ×4 for every prefix, typography; `PARSER_VERSION` vs `sia_base.js`), K11 (`proc_manual.install` writes `pages_unread` and `doubt`).
+
+
+## 30 October 2026 — D5: the base built on the launcher, one headless browser per zone
+
+*First delivery. Revised the same day: one instance for all the zones by default, the frame's route, the token off the command line — see the section « D5 revised » below.*
+
+**Decision** (ergonomics session, 29–30 Oct; Données SPEC § 5.4): the aeronautical base is built **on the launcher, one process
+per zone**, by running the **existing** JavaScript builders in the workstation's browser without a window (Edge, else
+Chrome), orchestrated by `tools/regen/base.py` (set `base`, verb `build`, args `{ zones }`). No port to Python, no Node.
+Contract: SPEC § 5 septies, INTEGRATION « Building on the workstation ». The page path of the module is unchanged
+(`'no-browser'` → the module builds in the page).
+
+**What was written.** `tools/regen/base.py` (verb, scheduler, browser, transport, validation, commit), `frame/aerodb/build/headless.html` +
+`headless.js` (the build page), and in `shared/sia_base.js` a per-zone entry that **shares** the V2 code instead of copying it:
+`buildZone` (build with the zone alone → `splitZones` → `zoneBodies` + `zoneEntry`), `zoneSettings`, `citiesByZone`, `majorCities`,
+`frenchFirRings` / `priorityRingsFromXmlSia`; `publishSplit` now calls the same `zoneBodies` / `zoneEntry` / `citiesByZone`;
+`build` takes `settings` and `priorityRings`; `splitZones` takes `mainZone`; `esc` is read at the call (the page has no kit).
+**The V2 page and the Worker path are unchanged in behaviour**: the same ten zones published by the new `sia_base.js` and by
+the old one (`git show HEAD:shared/sia_base.js`) give 133 files, identical but for `cachedAt` / `updated_at`.
+
+**Measure** (this workstation: 24 cores, 63 GB, 24 GB free; Edge; the real `data/sia` copied, 10 zones `fr gb es de it be ch ie nl nat`,
+default settings, no X-Plane; Windows working set / private bytes of the whole browser process tree, sampled twice a second):
+
+| Run | Wall time | Instances | Peak memory (sum of the trees) |
+|---|---|---|---|
+| **Job, 10 zones in parallel** | **12.0 s** (10.5 s first run) | 10 | 6.1 GB working set, **3.6 GB private** |
+| Job, one instance at a time (`cores: 2`) | 28.0 s | 1 | 1.5 GB WS, 1.2 GB private (fr) |
+| **The page's own build, ten zones in one page** (`build` + `publish`, golden) | **6.3 s** (3.5 s `build`) | 1 | 1.7 GB WS, 1.3 GB private |
+
+| Zone | Alone (s) | In parallel (s) | Peak per instance, private (MB) | Peak, working set (MB) | Output (MB) |
+|---|---|---|---|---|---|
+| fr | 5.9 | 10.6 | 1183 | 1533 | 6.7 |
+| gb | 1.9 | 3.4 | 407 | 745 | 0.9 |
+| es | 2.0 | 5.1 | 436 | 795 | 0.7 |
+| de | 4.0 | 7.3 | 448 | 812 | 0.9 |
+| it | 2.0 | 5.8 | 450 | 810 | 1.5 |
+| be | 2.9 | 6.1 | 448 | 847 | 0.4 |
+| ch | 2.1 | 6.7 | 412 | 760 | 0.3 |
+| ie | 2.0 | 7.2 | 430 | 761 | 0.2 |
+| nl | 2.1 | 5.2 | 447 | 839 | 0.3 |
+| nat | 2.0 | 5.2 | 367 | 698 | 0.0 |
+
+- **Parallel is 2.3× faster than one process at a time, but 1.9× slower than the page building all ten zones in one go**: on this data
+  set (about 150 MB of inputs) the whole build takes 3.5 s on the main thread, and each process pays about 2 s of browser start,
+  scripts and the 70 000 cities before it reads its own files. The one-process-per-zone design pays when zones are heavy
+  (X-Plane world data, FAA class airspaces) or when the page must stay free; **it does not pay on a refresh of the current
+  zones**. Reported, not hidden: the decision was taken before the measure.
+- Memory: **≈ 420 MB per instance for an openAIP zone, 1.2 GB for France** (44 MB of AIXM read as text and DOM). The scheduler counts
+  `500 MB + 15 × the largest input` per zone (`need_of`), reserves it for 15 s after the start (the instance has not taken it yet), and
+  starts the heavy zones first. The 500 MB of the brief is right for a small zone and too low for `fr`.
+- **Largest output**: `fr`, **6.7 MB** of JSON in 12 files (+ 0.43 MB `cities_major.json`), **7.9 MB** as the body of the put request; the
+  largest file is `fr/airspaces.json`, 2.8 MB. The 64 MB limit planned for the launcher's route is 8× the largest zone of the
+  published set; `us` (FAA classes) was not measured (no data here): 64 MB is a sound limit, the job-scoped server uses it too.
+
+**Golden test.** The ten zones built the page's way (`SiaBase.build` for all ten, then `SiaBase.publish` into a folder in memory,
+the V2 path) against the job's output, `updated_at` aside: **102 of 122 files identical**. The 20 others, all explained, none a
+loss of data:
+- `fr/meta.json`: `xmlInventoryData` lists the files read — France's only, in the zone built alone.
+- **Near-duplicates between zones are kept.** `AeroSources.merge` removes an airspace of the same type and name or the same shape, a navaid /
+  point / VFR point at the same place and identifier, that an earlier source already gave (France's SIA first, then the files in name order). A zone
+  built alone cannot see the others: `be` +3 airspaces (TMA LILLE 2 and 9, LUXEMBOURG TMA 4), `ch` +7 airspaces +1 aerodrome +3 navaids +6 VFR points
+  (Geneva, Basle), `de` +3 (BALE-MULHOUSE), `es` +5 navaids, `gb` +1 navaid, `ie` +1 airspace, `it` +2 airspaces +2 navaids, `nl` +1; `ch/aeroindex` and `index.json` follow.
+  The spec shares France's **outlines** only (§ 5.4); the exact dedupe would need France's other data (a two-phase build: `fr` first, the
+  others reading its output) and cannot be exact between two zones that are not France anyway (file order). **Decision needed**: accept the
+  duplicates (the reader that joins zones can drop them), or build `fr` first and give the others its kind files.
+- `obstaclemax.json` of `be`, `ch`, `de`, `es`: the cells the French AIXM computes in a neighbour's degree squares (8 in all) stay in `fr`; the
+  whole build moved them to the neighbour. The union is the same (`joinZones` merges); nothing is lost.
+Everything else (airspaces, aerodromes, navaids, points, VFR points, airways, MORA cells, cities, meta of every other zone) has the same content.
+
+**Transport — decision and what replaces it.** The browser loads **exactly one origin** and the job needs three things from it: the build page
+and its scripts, the zone's inputs, and a way to hand the output back. The launcher has none of the last (no `regen/put`; `tools/launch.py` is the frame's file). So:
+- **Now**: a **job-scoped server** in `base.py` (`Transport`): 127.0.0.1, ephemeral port, stopped at the end of the job; serves **only** the
+  nine code files of the page (`CODE_FILES`) and the inputs the job listed (`/data/sia/<name>`, whitelist by exact name, no traversal, no folder, no link);
+  one POST `/__setup/regen/job/put` with `X-SOG-Setup: 1`, the token in the body, `Origin` and `Host` checked, size limit from `Content-Length`
+  before reading (413), 409 not the running job / 403 bad token (`hmac.compare_digest`) / 400 zone not in the job or file name outside
+  `^[a-z0-9_.-]{1,64}\.json$`. The token is in the **fragment** of the page address, never in a query or a log.
+- **The frame session's decision** (30 Oct): a **launcher route** `/__setup/regen/job/put` with the job's `token`, `job.take(zone, timeout)` and
+  `job.put(zone, files)` (the contract above, mirrored here by `ZoneInbox` and `Transport.accept`). The switch is **one function and one address**:
+  `inbox_of(job, zones)` returns the frame's `job.token/take/put` when the `Job` has them and `Transport` is not started; the page is then given
+  `ctx['origin']` (the launcher's address). The page code, the paths (`/frame/…`, `/shared/…`, `/data/sia/…`) and the POST body do not change.
+  **To do on the frame's side**: the three `Job` members, the route, and serving the nine code files and `data/sia/` to the build page (the launcher already
+  serves the tree with its policy); `inputs` stay a list the job builds (the page receives it in the fragment).
+
+**Security, one by one** (the analysis session reviews before integration):
+1. **Executable by absolute path only** (`browser_candidates`, `find_browser`): Program Files, Program Files (x86), `%LOCALAPPDATA%` (per-user Chrome; the
+   variable must itself be absolute), the usual absolute paths on macOS and Linux. **Never** `shutil.which`, never a bare name, never the current folder
+   (K42 plants a fake `msedge.exe` in PATH and in the current folder and checks it is not chosen); the file must exist and be a file, not a link.
+2. **Closed option list** (`browser_args`, K42): `--headless=new`, `--user-data-dir=<mkdtemp>`, `--no-first-run --no-default-browser-check --disable-extensions
+   --disable-sync --disable-background-networking --disable-component-update --disable-default-apps --metrics-recording-only --mute-audio --disable-gpu
+   --disable-breakpad --no-pings`; no `--no-sandbox`, no debugging port; the console goes to stderr (`--enable-logging=stderr --v=0`), which is the progress channel.
+3. **Temporary profile** created per instance and **deleted after, whatever happens** (`finally`: kill, then `remove_tree` with retries); K46/K47 check none is left.
+4. **No network beyond the job's one address**: `--proxy-server=127.0.0.1:9 --proxy-bypass-list=<-loopback>;127.0.0.1:<port>` and
+   `--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1`. **Measured, and the reason for `<-loopback>`**: with the bypass list alone, Chrome keeps its
+   implicit bypass of loopback and the page could reach any other local port (the launcher's, a database's); with `<-loopback>` the other ports, `localhost`, `[::1]` and every outside
+   host fail (tested on Edge with two local servers).
+5. **One origin, token in the fragment**: the fragment is never sent in a request, so the token is not in the server's view, in a log or in a referrer; `headless.js` also
+   removes it from the address (`history.replaceState`). It is in the browser's command line (visible to a process of the same user, who could write `data/` anyway) and
+   never in `view()`, `.regen_last.json`, the journal or a result (K46).
+6. **A time limit per zone** (15 min, `ZONE_TIMEOUT`) and the cancel: the process tree is killed (`taskkill /PID /T /F` by number with an argument list, `shell` never; the
+   process group elsewhere), then the profile deleted. K47: two hanging instances, cancelled — browsers and children dead (a child that beats a file stops beating), profiles gone,
+   nothing written or committed.
+7. **Nothing from the page is a path, an address or a command**: the zones are checked against the list of `aero_zones_geo.js`; the job lists the inputs itself (no link, safe
+   names, `sia/` root, three source folders and `zones/<zone>/`); the zone, the cycle and the 13 or 14 file names of the output are validated (`validate`) before any write; a rendered
+   file of another zone, a missing file, a wrong header or type refuses the whole zone (K46).
+8. **The job log is the base's** (`job.log`, `job.step` cleaned by `clean_error`); `base.py` logs the zone, the counts and the commit, never an address or a token.
+9. **Personal sources off by default** (`zoneSettings`): `enaire`, `nats` and X-Plane are dropped unless the owner's declaration comes in `args.personal` (invariant 1).
+
+**Open points.** (1) The launcher route and `Job.token/take/put` (frame session). (2) Near-duplicates between zones: accept, or two-phase (above). (3) The data set here is
+small, so parallel does not beat the page; measure again with X-Plane and the FAA classes before advertising speed. (4) The page cannot read the X-Plane folder (a handle kept in the
+page's own browser): a local-only build with X-Plane stays in the page. (5) `fr/meta.xmlInventoryData` and the obstacle cells in neighbours (above). (6) Old whole-format files
+(`sia/base/<zone>/<cycle>.json`, `cities.json`) are neither written nor removed here. (7) The acorn check of `tools/verify_format.html` needs the network; here the formatted blocks were
+compared token for token (identical but for white space).
+
+## 30 October 2026 — D5 revised: one headless instance builds all the zones; the frame's route; the token off the command line
+
+*The start (start.html, the launcher exception) and the per-zone option of this section are superseded by « route B » below; the measures stand.*
+
+**Decision** (ergonomics session, on the measure above): **one** window-less instance builds **all** the requested zones with the page's own functions
+(`SiaBase.buildZones`: the V2 `build`, then `splitZones`, `zoneBodies`, `zoneEntry`), off the page's thread, and hands each zone back as soon as it is ready; the
+job writes and commits it alone. **One instance per zone stays as an internal option** (`args.parallel`, false by default, not on the screen); its scheduler
+(`can_start`, `need_of`) is kept because it costs nothing to keep. The sections above describe the first delivery (per-zone instances by default); where
+they differ, this section holds.
+
+**Numbers, same data and machine.** Ten zones `fr gb es de it be ch ie nl nat`, through the real launcher:
+
+| Mode | Wall (the job's `seconds`) | Memory | Output against the page's |
+|---|---|---|---|
+| **One instance, all zones (default)** | **10.4 – 12.2 s** (22 s once, the machine busy with other sessions): the first zone out at 6 to 8 s, then about 0.45 s per zone (write and git commit, serial) | **1.3 GB private**, 1.7 GB working set | **identical, 122 of 122 files** (`updated_at` aside) |
+| One instance per zone (`parallel`) | 12.0 s with the job called directly, 17.4 s through the launcher (ten commits compete) | 3.6 GB private, 6.1 GB working set | 98 of 122 |
+| The page's own build (`build` + `publish`, no commits) | 6.3 s | 1.3 GB private | (the reference) |
+
+Per-zone instances cost about 2 s of start per instance (browser, scripts, the 70,000 cities) and lose the cross-zone duplicate removal. What would
+justify them: a **heavy source** that one instance would read for minutes — X-Plane world data, the FAA class airspaces (`faaclass`) — spread over several
+cores while the page stays free, and enough memory for 420 MB to 1.2 GB per instance. Measure again with such a source before turning them on.
+
+**The frame's route replaces the interim server.** The job-scoped server (`Transport`) and the shim (`ZoneInbox`) are **gone**: `regen_jobs.Job` has `token`,
+`put` and `take`, `Jobs.put` and POST `/__setup/regen/job/put` do the checks (409 / 403 / 400 / 413, 64 MB), the page loads everything from the launcher's
+address (`ctx['origin']`, or the running launcher's port) and the verb waits with `job.take(zone, timeout)`. The proxy flags bypass that address only. The largest output
+is `fr`, 6.7 MB of JSON (7.9 MB as a request body, 8 times under the 64 MB).
+
+**The token never on a command line** (security review). The browser's command line can be read from other accounts, so it carries only
+`file:///…/<temporary profile>/start.html`; that file (created with owner-only rights in a `mkdtemp` folder, checked to be under the user's temporary
+folder) holds a script that goes to `<launcher>/frame/aerodb/build/headless.html#job=…&t=<token>&…`. The page reads its fragment and clears it
+(`history.replaceState`), says `started` on the console, and the job **deletes `start.html` at once** (the profile at the end). The console lines `SOGB` carry
+the zone, counts and messages, never the address; nothing else of the browser's console is read (and a debugging line is cut before the `#`). K48 checks
+the argv, that the file is gone after the start, and the view, the journal and the result.
+
+**What the launcher must allow (frame session; open).** A navigation from a `file://` page to the launcher is `Sec-Fetch-Site: cross-site`, which
+`_same_origin()` of `tools/launch.py` refuses (measured: the page never loads; the job fails after 45 s with `browser-failed`). The smallest exception, tested on a copy of the
+launcher in memory:
+```python
+return self.headers.get('Sec-Fetch-Site') in (None, 'same-origin', 'none') or (
+    self.headers.get('Sec-Fetch-Mode') == 'navigate' and self.headers.get('Sec-Fetch-Dest') == 'document'
+    and self.path.split('?', 1)[0].split('#', 1)[0] == '/frame/aerodb/build/headless.html')
+```
+Only that document, only as a navigation; every script, data file and route stays same-origin only. A web page that sends the user's browser there starts a build
+that cannot hand anything back (it has no token). Case **K50** starts the real launcher and asks for exactly this; it is listed in `known_failures.py` until the
+exception is in, then the line goes. With it, the end-to-end run through the launcher gives the numbers above.
+
+**Writes** go through the launcher's path rule (`data_sync.data_path`: no `..`, `:`, device name, link out of `data/`) and a check that the real path stays under
+`data/sia/base/<zone>/` (`target_of`, K48). **Shape for the module**: `zones` a dict by zone at the root of the job view (`state`, `done`, `total`, `error`
+code), the result `built`, `failed: [{ zone, error }]`, `commits: [{ zone, commit }]`, `reason`; `args.personal` a list of source ids; no browser: `reason: 'no-browser'`;
+`'xplane'` in `personal`: `reason: 'xplane-in-page'`, for the job (the X-Plane folder is a handle held by the page).
+
+## 30 October 2026 — `source.url`: the « Source » link served by the reader (§ 10.25)
+
+- **Asked** (Features SOG, for Fuel and the Map): `charts.base` lives in the aerodrome file and no call gave it to a module; files read before
+  `source.file` (8685b9eeb) carry the page's name in `source.ref` only.
+- **Done** (`aerodb.js` `withSourceUrl`): every record of source `eaip` served by `procedures()` / `procedure()` carries `source.url` =
+  `charts.base` + `Cartes/<ICAO>/` + the page's name (`source.file`, else `source.ref`, then copied into `file`), only when the name is a
+  plain PDF name and the base is https; other sources get no link (their name is enough). Checked on the user's LFPO file: the address answers
+  200 `application/pdf` on the SIA site.
+- **Bench**: K1 (an eAIP record with `ref` only, an EAD record, a bad name).
+- **Security review of `source.url`** (30 Oct 2026): `charts.base` is accepted only under the SIA's host (`https://www.sia.aviation-civile.gouv.fr/`,
+  the host of `proc_sia.eaip_url`, no `..`), and the ICAO key inserted in the path must match `^[A-Z0-9]{4}$` — the aerodrome file is in the
+  synchronised repository, editable by any member of the group, so another host would make a phishing link under a trusted label. Bench K1:
+  another host, a look-alike host, a dot-dot path and plain http give no link.
+
+## 30 October 2026 — D5, route B: the browser is started on the launcher's page, the page claims its parameters; no exception, no bootstrap file, no per-zone mode
+
+**Why the start changed.** The previous start (a `start.html` of the temporary profile whose script goes to the launcher with the token in the fragment) needed the
+launcher to let a navigation from a `file://` page through its same-origin check. That navigation (`Sec-Fetch-Site: cross-site`) is **indistinguishable from a hostile
+site's**: any exception for it opens the page to every site. No exception is made.
+
+**Route B.** The browser is started on `<launcher>/frame/aerodb/build/headless.html#job=<id>` — a navigation started by the browser itself, `Sec-Fetch-Site: none`, which
+the launcher already accepts. Nothing secret or variable is in the address or on the command line: before the start the verb **offers** `{ zones, cycle, personal, inputs }`
+to the job (`job.offer`; any JSON object without the keys `ok`, `job`, `token`, `status`), and the page makes **one** `POST /__setup/regen/job/claim { job }` (same origin,
+`X-SOG-Setup: 1`) that answers `{ …offer, ok: true, job, token }`; the claim marks the job as started, a second claim, a claim for another job, or with nothing
+offered, is refused (409). `start.html`, its writing, its deletion and the fragment parameters are gone.
+
+**The page validates the answer before it reads anything**: the job equals the address's, the cycle is a date, every zone matches the zone pattern and is in the list
+of zones, every source is an identifier, every file name is relative without `..`, empty component, leading `/`, `\` or `:`; else it says `page-error` and reads
+nothing. K51 runs the real page in a real browser against twelve hostile answers (another job, a path as a cycle, an unknown zone, a zone as a path, a source as a
+path, `..`, an absolute path, a backslash, a drive, an empty component, a short token, no zone): each one an error and not one file read.
+
+**The per-zone mode is gone, and not as an option.** With one claim per job, ten instances cannot each learn their zone; and a mode that any page script could ask
+for (`args.parallel`) was refused by the security review. The scheduler (`can_start`, `need_of`, the memory read) went with it; it stays in the history (8755aad9c)
+with the numbers of the section above, and the case that would justify it (a heavy source — X-Plane world data, FAA class airspaces — read for minutes) is
+unchanged: it would come back with a job that can hand each instance its zone, as a measuring bench first.
+
+**Defence in depth** (same review): `--force-webrtc-ip-handling-policy=disable_non_proxied_udp` in the closed option list; `taskkill.exe` is found in the system folder
+given by `GetSystemDirectoryW`, not by `%SystemRoot%`; the `sog-base-*` folders of the temp folder older than an hour (twice the time limit of a build) are purged when
+the verbs are loaded, only that prefix, only folders, a link is never followed (K45).
+
+**`aerodb`'s declaration** now lists `regen/job/cancel` next to `regen/job`: the frame covers the sub-routes of a route only when it ends with `/`, so cancelling an EAD or an eAIP reading
+was refused (403). K43 reads the declaration.
+
+**Tests.** The suite runs the verb with the real `Job` (token, take, put) and a launcher-like handler for the two routes; on a base that does not yet carry the frame's
+`Job.offer` / `Jobs.claim`, the cases install the documented contract (`_d5_offer_shim`) and use the frame's own as soon as it is there. K50 starts the real launcher: the
+page is served to `Sec-Fetch-Site: none`, refused to `cross-site`, and, where the frame's route exists, the job is run end to end with the real browser and the real claim
+(that part is made once the work is rebased on the frame's route; the case says so).
+
+## 30 October 2026 — the build job's temporary profile, deleted for good
+
+- **Seen** (the full noreg of Features SOG, then measured on a clean tree at the head of v3): K49 left its `sog-base-*` profile 2 runs in 3. The
+  job's `finally` killed the browser tree and `rmtree` succeeded, but a browser process outside the killed tree (the crash reporter) wrote into
+  the profile just afterwards and re-created the folder.
+- **Done** (`tools/regen/base.py`): `--disable-crash-reporter` in the closed option list; `remove_tree` holds the deletion for done only when the
+  folder stays absent at two checks 0.5 s apart (up to 15 s). K49: 6 runs in 6 clean; K42–K51 green. `purge_stale` still clears, an hour later,
+  a profile a killed launcher left behind.
+
+
+## 30 October 2026 — the raw sources leave the data repository: `base/fetch` and `base/purge`
+
+- **Decided** (user): the raw sources (`sia/openaip/`, `sia/zones/`, `sia/aixm5/`, `sia/geojson/`, `sia/miam-*.xml`, the aircraft HTTP cache) are no longer
+  published. They are fetched on a workstation when needed and purged when not; only the built base (`sia/base/`), `proc/` and the aircraft database go through the
+  data repository. The template `.gitignore` (`tools/data_template/.gitignore`) says it, with `**/__pycache__/`; the existing lines (AIXM, `XML_SIA`,
+  `sia-airspaces`, `_archives/`) stay. The user's own `data/` is not touched by this change: the files already tracked stay tracked until they are removed from the index.
+- **Two verbs in a file of their own** (`tools/regen/base_sources.py`, set `base`, next to `base/build` of `base.py` which is another lot's): `base/fetch` and `base/purge`
+  (SPEC § 5 septies, INTEGRATION). Contract agreed with the Données module, which codes its panels against it.
+- **No commit.** Fetching writes untracked, ignored files; there is nothing to commit and a commit would put raw sources back in the repository. The job does not call
+  `commit_outputs` (whose outputs list does not even contain `sia/openaip/`).
+- **Tracked files** are the exception to every rule. A file that `git ls-files` reports in `data/` is **never removed by `base/purge`** (it would leave the repository for every
+  workstation; kept and counted, `kept-tracked`), and a file **modified by `base/fetch`** that git tracks is **counted** (`outside_sync`, warning `outside-sync`): it now differs from
+  the repository, outside the synchronisation, until the owner decides (commit it or remove it from the index). git failing means « unknown », not « untracked »: a purge then
+  fails for the zone and removes nothing.
+- **A mirror in Python of `shared/aero_zones.js`** rather than a browser or a second source of truth: the launcher needs only the sources' kinds, personal flags, links, names and
+  the file → zone rule. Case K52 compares it with the page's file (every source, every zone's list, `fileSource` on sample paths, the folders aero_fetch writes), so the two cannot drift
+  silently. `local` (X-Plane) and `computed` (MORA) sources are not left to the fetch job at all (no line in the view or the result); `manual` and `pdf` ones are reported as `manual`
+  with their `https` address and four names for the screen to word.
+- **`aero_fetch` reused, not copied**: its functions are called per layer for `openaip` and `faa` (so a cancel falls between two files), whole for `enaire`, `ukmil`, `navcan`, `nat`. Its
+  messages are texts, sorted into codes by `classify()` (`HTTP n` → `http` + status; unexpected forms → `parse`; the rest → `network`); `aero_fetch.py` itself is unchanged and the
+  old route `POST /__setup/aero-fetch` keeps working. ENAIRE (personal licence) is fetched only when the owner declared it (`personal`), as the build does for the published files.
+- **A country without an openAIP export** (every layer 403 / 404) is a failure `http` 404, and so are the zones without a two-letter code (`cyn`, `kas`, `sol`): the screen can say
+  « no export » instead of a silent empty line.
+- **Purging France is shared** (`shared-fr`): the FIR outlines read in `XML_SIA` are used to build every zone, so the screen warns before and after. `miam-*.xml` at the root go with
+  France although `fileSource` knows only `miam-enr-5-7-tracks.xml`.
+- **Confinement**: purge walks only the root of `sia/`, `openaip/`, `aixm5/`, `geojson/` and `zones/<zone>/` (and `local/eaip/` for caches), follows no link or junction, and
+  re-checks each file resolves under the real `data/sia` or `data/local` before removing it. `sia/base/` and `proc/` are never walked.
+- **Bench**: K52 to K56 (`tests/v3/cases/base_sources.py`); no test downloads anything.

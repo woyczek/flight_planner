@@ -1,0 +1,63 @@
+AD 2 LFPG DATA STAR RWY09R RNAV CODE 04AIP
+11 JUN 2026FRANCE
+PARIS CHARLES DE GAULLE (LFPG)
+STAR RNAV RWY 09R
+STAR RNAV Réacteurs et Hélices / Turbofans and Turboprops
+RMK RWY 09R MAG VAR 2020 1,1°E REF NAVAID : -
+Procedure Path Waypoint
+Identifcation Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+RLP 9X (FIR, Réacteurs uniquement / Jets only , Sur instruction / On instruction )
+- IF RLP - - - - - - FL190 - -
+- TF ERTIP - 291 292.3 36.6 - - - - 1.0
+- TF NANOP - 318 318.8 10.2 - - - 300 1.0
+- TF URELO - 308 309.5 26.2 - - - - 1.0
+- TF OKIPA - 302 303.0 8.0 - - FL190 300 1.0
+TINIL 9X (UIR, Réacteurs uniquement / Jets only , Sur instruction / On instruction )
+- IF TINIL - - - - - - FL340 - -
+- TF ERTIP - 319 319.8 43.1 - - - - 1.0
+- TF NANOP - 318 318.8 10.2 - - FL260 300 1.0
+- TF URELO - 308 309.5 26.2 - - FL200 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL180 FL190 300 1.0
+DJL 9X (FIR, Réacteurs uniquement / Jets only , Sur instruction / On instruction )
+- IF DJL - - - - - - FL190 - -
+- TF TRO - 321 322.5 74.7 - - - 300 1.0
+- TF URELO - 331 331.9 19.6 - - - - 1.0
+- TF OKIPA - 302 303.0 8.0 - - FL190 300 1.0
+PIBAT 9X (FIR, Réacteurs uniquement / Jets only , Sur instruction / On instruction )
+- IF PIBAT - - - - - - FL190 - -
+- TF AVLON - 337 338.2 48.8 - - - - 1.0
+- TF TRO - 007 008.2 41.9 - - - 300 1.0
+- TF URELO - 331 331.9 19.6 - - - - 1.0
+- TF OKIPA - 302 303.0 8.0 - - FL190 300 1.0
+MOU 9X (FIR, Réacteurs uniquement / Jets only , Sur instruction / On instruction )
+- IF MOU - - - - - - FL190 - -
+- TF AVLON - 007 008.2 51.8 - - - - 1.0
+- TF TRO - 007 008.2 41.9 - - - 300 1.0
+- TF URELO - 331 331.9 19.6 - - - - 1.0
+- TF OKIPA - 302 303.0 8.0 - - FL190 300 1.0
+TRO 9X (UIR, Réacteurs uniquement / Jets only , Sur instruction / On instruction )
+- IF TRO - - - - - - FL260 300 -
+- TF URELO - 331 331.9 19.6 - - FL200 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL180 FL190 300 1.0
+KEPER 9E (UIR)
+- IF KEPER - - - - - - FL240 - -
+- TF LUMAN - 034 035.1 9.8 - - - 280 1.0
+- TF ROMGO - 034 035.1 30.0 - - - - 1.0
+-T F FF501 - 061 062.4 8.5 - FL150 FL150 - 1.0
+- TF NERKI - 062 062.6 13.2 - - FL120 250 1.0
+- TF BANOX - 062 062.6 8.0 - FL090 FL110 250 1.0
+KOVAK 9E (FIR)
+- IF KOVAK - - - - - - - 280 -
+- TF BENAR - 344 345.3 16.1 - - - - 1.0
+- TF ROMGO - 034 035.4 6.9 - - - - 1.0
+-T F FF501 - 061 062.4 8.5 - FL150 FL150 - 1.0
+- TF NERKI - 062 062.6 13.2 - - FL120 250 1.0
+- TF BANOX - 062 062.6 8.0 - FL090 FL110 250 1.0
+SABLE 9E (FIR)
+- IF SABLE - - - - - - - - -
+- TF LUMAN - 078 078.8 27.3 - - - 280 1.0
+- TF ROMGO - 034 035.1 30.0 - - - - 1.0
+-T F FF501 - 061 062.4 8.5 - FL150 FL150 - 1.0
+- TF NERKI - 062 062.6 13.2 - - FL120 250 1.0
+- TF BANOX - 062 062.6 8.0 - FL090 FL110 250 1.0
+AMDT 06/26© Service de l'Information Aéronautique, France

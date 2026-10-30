@@ -1,0 +1,62 @@
+AD 2 LFPG DATA STAR RWY09L RNAV CODE 02AIP
+11 JUN 2026FRANCE
+PARIS CHARLES DE GAULLE (LFPG)
+STAR RNAV RWY 09L
+STAR RNAV Réacteurs et Hélices / Turbofans and Turboprops
+RMK RWY 09L MAG VAR 2020 1,1°E REF NAVAID : -
+Procedure Path Waypoint
+Identifcation Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+VEDUS 9H (UIR FIR FL > 105)
+- IF VEDUS - ---- - FL280 300 -
+- TF XERAM - 269 270.5 27.9 - - - - 1.0
+- TF ENORI - 236 237.2 13.5 - - - - 1.0
+- TF DEVIM - 255 255.6 5.9 - - FL130 - 1.0
+- TF LORNI - 254 255.5 7.3 - FL110 FL120 300 1.0
+ENORI 9X (UIR FIR, Réacteurs uniquement / Jets only , Sur instruction / On instruction )
+- IF ENORI - ---- - - 3 0 0 -
+- TF DEVIM - 255 255.6 5.9 - - FL180 - 1.0
+- TF LORNI - 254 255.5 7.3 - FL160 FL170 300 1.0
+MOPIL 9X (UIR, Réacteurs uniquement / Jets only , Sur instruction / On instruction )
+- IF MOPIL - ---- - - 3 0 0 -
+- TF XERAM - 182 182.7 33.1 - - - - 1.0
+- TF ENORI - 236 237.2 13.5 - - - - 1.0
+- TF DEVIM - 255 255.6 5.9 - - FL180 - 1.0
+- TF LORNI - 254 255.5 7.3 - FL160 FL170 300 1.0
+VEDUS 9X (UIR FIR FL > 105, Réacteurs uniquement / Jets only , Sur instruction / On instruction )
+- IF VEDUS - ---- - - 3 0 0 -
+- TF XERAM - 269 270.5 27.9 - - - - 1.0
+- TF ENORI - 236 237.2 13.5 - - - - 1.0
+- TF DEVIM - 255 255.6 5.9 - - FL180 - 1.0
+- TF LORNI - 254 255.5 7.3 - FL160 FL170 300 1.0
+EPL 9E (UIR)
+- I F E P L - ---- - - - -
+- TF NANOP - 267 268.0 73.0 - - - - 1.0
+-T F FF301 - 308 309.5 8.1 - - FL200 300 1.0
+- TF URELO - 308 309.4 18.1 - - FL160 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL140 FL150 - 1.0
+RLP 9E (FIR)
+- I F R L P - ---- - - - -
+- TF ERTIP - 291 292.3 36.6 - - - - 1.0
+- TF NANOP - 318 318.8 10.2 - - - - 1.0
+-T F FF301 - 308 309.5 8.1 - - FL200 300 1.0
+- TF URELO - 308 309.4 18.1 - - FL160 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL140 FL150 - 1.0
+TINIL 9E (UIR)
+- IF TINIL - ---- - - - -
+-T F FF302 - 319 319.8 11.7 - - FL280 - 1.0
+- TF NANOP - 318 319.5 41.6 - - - - 1.0
+-T F FF301 - 308 309.5 8.1 - - FL200 300 1.0
+- TF URELO - 308 309.4 18.1 - - FL160 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL140 FL150 - 1.0
+DJL 9E (FIR)
+- I F D J L - ---- - - - -
+- TF TRO - 321 322.5 74.6 - - FL190 300 1.0
+- TF URELO - 331 331.9 19.6 - - FL160 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL140 FL150 - 1.0
+PIBAT 9E (FIR)
+- IF PIBAT - ---- - - - -
+- TF AVLON - 337 338.2 48.8 - - - - 1.0
+- TF TRO - 007 008.2 41.9 - - FL190 300 1.0
+- TF URELO - 331 331.9 19.6 - - FL160 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL140 FL150 - 1.0
+AMDT 06/26© Service de l'Information Aéronautique, France

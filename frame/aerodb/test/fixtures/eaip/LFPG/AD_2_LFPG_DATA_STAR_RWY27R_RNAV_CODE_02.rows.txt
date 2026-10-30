@@ -1,0 +1,60 @@
+AD 2 LFPG DATA STAR RWY27R RNAV CODE 02AIP
+11 JUN 2026FRANCE
+PARIS CHARLES DE GAULLE (LFPG)
+STAR RNAV RWY 27R
+STAR RNAV Réacteurs et Hélices / Turbofans and Turboprops
+RMK RWY 27R MAG VAR 2020 1,1°E REF NAVAID : -
+Procedure Path Waypoint
+Identifcation Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+VEDUS 9J (UIR FIR FL > 105 Sur instruction / On instruction )
+- IF VEDUS - ---- - FL260 280 -
+- TF XERAM - 269 270.5 27.9 -- -- 1.0
+- TF VEBEK - 216 217.5 24.8 - FL080 FL110 250 1.0
+EPL 9W (UIR)
+- IF EPL - ---- - - - -
+- TF NANOP - 267 268.0 73.0 -- -- 1.0
+- TF FF301 - 308 309.5 8.1 -- FL160 250 1.0
+- TF URELO - 308 309.4 18.1 -- FL120 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL070 FL110 - 1.0
+RLP 9W (FIR)
+- IF RLP - ---- - - - -
+- TF ERTIP - 291 292.3 36.6 -- -- 1.0
+- TF NANOP - 318 318.8 10.2 -- -- 1.0
+- TF FF301 - 308 309.5 8.1 -- FL160 250 1.0
+- TF URELO - 308 309.4 18.1 -- FL120 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL070 FL110 - 1.0
+TINIL 9W (UIR)
+- IF TINIL - ---- - - - -
+- TF FF302 - 319 319.8 11.7 -- FL280 280 1.0
+- TF NANOP - 318 319.5 41.6 -- -- 1.0
+- TF FF301 - 308 309.5 8.1 -- FL160 250 1.0
+- TF URELO - 308 309.4 18.1 -- FL120 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL070 FL110 - 1.0
+DJL 9W (FIR)
+- IF DJL - ---- - - - -
+- TF FF304 - 321 322.5 25.3 -- -- 1.0
+- TF TRO - 321 322.2 49.3 -- FL160 250 1.0
+- TF URELO - 331 331.9 19.6 -- FL120 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL070 FL110 - 1.0
+PIBAT 9W (FIR)
+- IF PIBAT - ---- - - - -
+- TF AVLON - 337 338.2 48.8 -- -- 1.0
+- TF TRO - 007 008.2 41.9 -- FL160 250 1.0
+- TF URELO - 331 331.9 19.6 -- FL120 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL070 FL110 - 1.0
+MOU 9W (FIR)
+- IF MOU - ---- - - - -
+- TF TRO - 007 008.2 93.7 -- FL160 250 1.0
+- TF URELO - 331 331.9 19.6 -- FL120 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL070 FL110 - 1.0
+TRO 9W (UIR FIR)
+- IF TRO - ---- - FL160 250 -
+- TF URELO - 331 331.9 19.6 -- FL120 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL070 FL110 - 1.0
+EPL 9P (UIR)
+- IF EPL - ---- - - - -
+- TF NANOP - 267 268.0 73.0 -- -- 1.0
+- TF FF301 - 308 309.5 8.1 -- FL150 250 1.0
+- TF URELO - 308 309.4 18.1 -- FL100 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL070 FL100 - 1.0
+AMDT 06/26© Service de l'Information Aéronautique, France

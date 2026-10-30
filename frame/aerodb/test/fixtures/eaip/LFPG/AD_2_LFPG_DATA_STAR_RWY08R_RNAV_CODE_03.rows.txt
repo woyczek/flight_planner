@@ -1,0 +1,64 @@
+AD 2 LFPG DATA STAR RWY08R RNAV CODE 03AIP
+11 JUN 2026FRANCE
+PARIS CHARLES DE GAULLE (LFPG)
+STAR RNAV RWY 08R
+STAR RNAV Réacteurs et Hélices / Turbofans and Turboprops
+RMK RWY 08R MAG VAR 2020 1,1°E REF NAVAID : -
+Procedure Path Waypoint
+Identifcation Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+TRO 9E (UIR FIR)
+- I F T R O - ---- - FL190 300 -
+- TF URELO - 331 331.9 19.6 - - FL160 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL140 FL150 - 1.0
+EPL 9H (UIR)
+- I F E P L - ---- - - - -
+- TF NANOP - 267 268.0 73.0 - - - - 1.0
+-T F FF301 - 308 309.5 8.1 - - FL190 300 1.0
+- TF URELO - 308 309.4 18.1 - - FL140 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL140 FL140 - 1.0
+RLP 9H (FIR)
+- I F R L P - ---- - - - -
+- TF ERTIP - 291 292.3 36.6 - - - - 1.0
+- TF NANOP - 318 318.8 10.2 - - - - 1.0
+-T F FF301 - 308 309.5 8.1 - - FL190 300 1.0
+- TF URELO - 308 309.4 18.1 - - FL140 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL140 FL140 - 1.0
+DJL 9H (UIR FIR)
+- I F D J L - ---- - - - -
+-T F FF304 - 321 322.5 25.3 - - FL280 - 1.0
+- TF TRO - 321 321.5 48.5 - - FL190 300 1.0
+- TF URELO - 331 331.9 19.6 - - FL140 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL140 FL140 - 1.0
+PIBAT 9H (FIR)
+- IF PIBAT - ---- - - - -
+- TF AVLON - 337 338.2 48.8 - - - - 1.0
+- TF TRO - 007 008.2 41.9 - - FL190 300 1.0
+- TF URELO - 331 331.9 19.6 - - FL140 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL140 FL140 - 1.0
+MOU 9H (FIR)
+- I F M O U - ---- - - - -
+- TF TRO - 007 008.2 93.7 - - FL190 300 1.0
+- TF URELO - 331 331.9 19.6 - - FL140 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL140 FL140 - 1.0
+TRO 9H (UIR FIR)
+- I F T R O - ---- - FL190 300 -
+- TF URELO - 331 331.9 19.6 - - FL140 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL140 FL140 - 1.0
+EPL 9X (UIR, Réacteurs uniquement / Jets only , Sur instruction / On instruction )
+- I F E P L - ---- - FL240 - -
+- TF NANOP - 267 268.0 73.0 - - FL240 300 1.0
+- TF URELO - 308 309.5 26.2 - - FL200 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL180 FL190 300 1.0
+RLP 9X (FIR, Réacteurs uniquement / Jets only , Sur instruction / On instruction )
+- I F R L P - ---- - FL190 - -
+- TF ERTIP - 291 292.3 36.6 - - - - 1.0
+- TF NANOP - 318 318.8 10.2 - - - 300 1.0
+- TF URELO - 308 309.5 26.2 - - - - 1.0
+- TF OKIPA - 302 303.0 8.0 - - FL190 300 1.0
+TINIL 9X (UIR, Réacteurs uniquement / Jets only , Sur instruction / On instruction )
+- IF TINIL - ---- - FL340 - -
+- TF ERTIP - 319 319.8 43.1 - - - - 1.0
+- TF NANOP - 318 318.8 10.2 - - FL260 300 1.0
+- TF URELO - 308 309.5 26.2 - - FL200 - 1.0
+- TF OKIPA - 302 303.0 8.0 - FL180 FL190 300 1.0
+AMDT 06/26© Service de l'Information Aéronautique, France

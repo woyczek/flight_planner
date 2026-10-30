@@ -148,7 +148,7 @@ L.on(s => …); await L.sync();       // state; a pass now
   arrival. `aerodb.procedureIndex()` says which aerodromes have some. A published point without position is placed by
   `procedures()` from the SIA base; a point still without `lat` is skipped by the drawing.
 - **Publishing the procedures of the eAIP** (workstation, by the owner of the data repository, once per AIRAC cycle):
-  `pip install pypdf`, then, from a clone of the suite, `python tools/proc_eaip.py --all --delay 0.3 --eaip
+  `pip install pypdf`, then, from a clone of the suite, `python tools/proc_sia.py --all --delay 0.3 --eaip
   https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_<DD>_<MON>_<YYYY>/FRANCE/AIRAC-<YYYY-MM-DD> --out <clone of the data
   repository>/proc [--base-dir <clone>/sia/base/fr/<cycle>]`, read the `warnings` in each `<ICAO>.json`, then commit and push the
   data repository (the frame synchronises it like the SIA base). `--all` takes the 141 aerodromes of the eAIP menu (about 0.7 MB of
@@ -182,19 +182,126 @@ Until then: a phone keeps reading the base it has, which is valid (`COMPAT` 14 t
 reporting points", planner and CPCO map pages). The V3 pages do not read `parserVersion` and show nothing. A base of a parser older
 than `COMPAT` would be ignored; this one is not.
 
+### Procedures chosen in the preparation (§ 10.20 of the specification) — what aerodb gives Fuel and the Map
+
+- **Calls**: `procedures(icao, q)` (lists for the selects: runways in `runways` of each record, transitions in `transition`),
+  `procedure(id)` (the record of an identifier kept in `route.procedures`, an OFP one included), `runways(icao)`,
+  `procedureIndex()`, `fetchProcedures(icao, { onProgress, signal })` (the on-demand reading; refused with a reason, never
+  silent). SPEC § 5 quinquies. Fuel writes `route.procedures`; the Map never does; aerodb never writes the flight.
+- **The on-demand reading** (`fetchProcedures`, wired): Fuel's « Lire les procédures de LFXX » button (shown when an aerodrome has none) calls
+  `aerodb.fetchProcedures(icao, { onProgress, signal })` and nothing else: no launcher route in Fuel's `meta`, the frame hands `launcher.job` to aerodb.
+  One aerodrome per gesture, never a list; aerodb picks the source from the aerodrome's State (France: the SIA eAIP, no account; a State readable in EAD Basic: EAD Basic;
+  any other: `no-tables`) — the button is the same, and a module never branches on it. It takes minutes (about one request a second): show `onProgress({ step, done, total, source })` (`source`: `eaip` | `ead`), offer a cancel
+  (`signal`). On success `procedures` is the merged list read again (the answer carries `source` too), the files are installed and committed in the data repository of the workstation
+  (not pushed: the usual synchronisation carries them). A refusal is `{ ok: false, reason, message? }` and the module words it — never silent:
+
+  | `reason` | What to tell the pilot |
+  |---|---|
+  | `bad-icao` | not a four-character code (a programming error: the button should not be there) |
+  | `no-launcher` | this device has no workstation launcher; the SimBrief OFP stays the source of the flight's procedures |
+  | `paired` | the device is paired to a workstation: do the reading on the workstation |
+  | `no-tables` | « aucune table publiée pour cet État » (×4): no coding table is published for this State, or the aerodrome's page lists none (`outcome` says why: images, prose, VFR only…). When `lnm` is `true` the workstation has Little Navmap databases: add that they may hold the procedures (a hint only, not a coverage; reading them is planned, § 10.21) |
+  | `no-credentials` | (a State read in EAD Basic only, never France) no EAD Basic account is set on the workstation (`secrets/ead.json` or `EAD_USER` / `EAD_PASSWORD`): set it there |
+  | `too-soon` | (EAD Basic only) a reading started less than 30 s ago: EAD Basic is read one aerodrome per gesture, never in bulk; `wait` gives the seconds left (« Patientez {n} s avant la lecture suivante ») |
+  | `busy` | this aerodrome is already being read, or the workstation is busy with another job: wait |
+  | `cancelled` | the pilot cancelled |
+  | `failed` | the reading failed; `message` has the cause (login refused, the eAIP folder of the cycle not published yet, nothing read, geometry check failed, another source's file, a launcher older than the page: restart it) |
+
+  `warnings` of a success are the reading's own (a table dropped by the geometry check, coordinates to resolve): show them as floating notifications.
+- **`stats` — the counts for the notification** (success, and failure when the job has them; `null` from an older launcher): `{ pages, read, rejected, procedures, dropped, doubt, reasons }` — `pages` the coding pages found, `read` those read,
+  `rejected` those not read, `procedures` installed (**the `doubt` ones included**), `dropped` really removed (an untitled block that repeats a named procedure), `doubt` installed with status `doubt` (kept, to be checked), `reasons` the three
+  most frequent `[code, count]` over the pages not read, the procedures removed and those in doubt (**a code, never a phrase** since V3 § 10.29 (c): `layout`, `low-read`, `title`, `no-legs`, `counts`, `vector`, `timeout` for a page; `geometry`, `unresolved`, `name`, `repeat`, `zigzag`, `unread` for a procedure in doubt; the dropped untitled blocks count under `name`; **translate with `AeroCatalogue.READ_REASONS[code]`** → `[fr, en, de, es]`, and show the code itself when it is unknown, never a sentence of the tool). The same codes are on the pages of the aerodrome file (`formats[].reason`, present when `ok` is false) and on a procedure in doubt (`doubt`, the codes joined by a comma): Fuel's « N non lues » line and the Map's legend read them the same way. Never answer a bare « 0 procédures » :
+  suggested French wording « 18 procédures lues sur 22 pages ; 4 pages non lues (motif le plus fréquent : lignes de tronçon illisibles) » — `procedures.length` of the answer for the first number (it is built from the file the job
+  returned, so it is right on the first reading), `stats.pages`, `stats.rejected` and `stats.reasons[0][0]`; with `doubt` > 0 add « · 2 procédures à vérifier (statut doubt, gardées) » and the first reason; with `dropped` > 0 « · 1 bloc sans titre retiré ». Fuel words and translates it; aerodb gives numbers. **EAD Basic readings** (29 Oct): a failure that got as far as the pages (nothing read, geometry check failed, another source's file) carries `stats` too, and the « nothing read » `message` says what was seen (`no procedure could be read for this aerodrome: 31 document(s), 0 of 31 page(s) read (mise en page non reconnue ×31)`): show it after the reason, as Fuel already does for `message`. `onProgress` of an EAD reading has numbers all along (`done` / `total`: the 4 searches, then the documents downloaded, read and analysed, one after the other; the step text changes, the unit is not given to the page): show `done/total`.
+- **Runways** (`runways(icao)`): a file built from the SIA eAIP carries every runway of the section AD 2.12 of the aerodrome page, complete (`approx: false`): threshold `lat` / `lon` / `elev`, magnetic bearing `qfu`, `true` bearing, `length`, `width`, `displaced` (the THR → DTHR distance in ft,
+  0 without one, as the FAA CIFP's) and `dthr` (`null` or the displaced threshold `{ lat, lon, elev }`). A French aerodrome read before that (an older file) still has runways from the procedures' `runways` lists with `lat` / `lon` null and `approx: true`: select them by `id`, never draw them.
+- **ILS from the eAIP**: the final along the localizer is not coded by the SIA. The approach is IF → the final approach fix `FAFnn` (`synthetic: 'faf'`, `leg: 'CF'`, `alt: null`: the position of « FAF LOC RWY nn » on the DATA page, when there is one and it lies on the final; a procedure without one goes straight IF → threshold) → the runway point `RWnn` (`synthetic: 'threshold'`, `leg: 'CF'`, `alt: null`; the landing point: the displaced threshold if there is one) → the missed approach (`phase: 'missed'`,
+  first leg `gap: true`). Draw the IF → FAF → threshold segments straight, as for any CF; the FAF and the threshold are not published fixes of the table (`synthetic`), and their altitudes are not coded.
+- **The « Source » link** (Fuel's secondary line, the Map's aerodrome card; V3 § 10.25): read **`source.url`**, served by aerodb on every record of source `eaip` (`charts.base` + `Cartes/` + the ICAO + `/` + the page's name: a public https address of the SIA; a file read before `source.file` gives its `source.ref`); absent for any other source (EAD, OCR, manual): show its `source.file` in a `title`, no link.
+- **Every leg** carries `phase` (`main` | `trans` | `missed`); a leg without a fix (`id` null: VA, CA, VM, FM…) has no
+  position, only its course and constraint: draw it along its course (a 2 NM stroke, then dashes to the next point), never
+  invent a point. Hand-read procedures may be `outdated` (show « périmé »).
+- **What each source provides** (what a module can count on; a field a source does not give is absent, never guessed):
+
+  | Source (`source.kind`) | Status | Positions | Constraints `alt` / speed `kt` | Course `crs`, `nm`, `turn`, `over` | `phase` | RF `arc` | Legs without a fix | Runways |
+  |---|---|---|---|---|---|---|---|---|
+  | FAA CIFP (`cifp`) | official | every fix (terminal, enroute, navaid records) | yes / yes | yes (and `vpa`, `rnp`) | main, trans, missed (from the next build; before: defaults) | yes, centre and radius (from the next build) | kept, `id` null, with course (from the next build; before: left out, counted in `warnings`) | complete (PG records, from the next build) |
+  | SIA eAIP (`eaip`) | official or check; **`doubt`** for a reading that failed a guard (`doubt` has the reason) | from the DATA pages, en-route fixes placed from the base (`placed: 'base'`) | yes / yes | yes (and `vpa`, `rnp`) | missed after the missed-approach point, else default | no | as printed, without a position | complete, from AD 2.12 of the aerodrome page (`approx: false`); an ILS final is IF → threshold (`synthetic`) |
+  | EAD Basic, read by layout (`ead-basic`) | check | from the table or the State's list of points; some to be placed | yes / yes | course and distance (for the geometry check), turn and fly-over when printed | missed after the runway, else default | no | as printed | derived (`approx`) |
+  | EAD Basic, through OCR (`ead-basic`, `how: ocr`) | check | as the layout | yes / yes | course and distance; **turn and fly-over lost** (single-letter cells) | as the layout | no | as printed | derived (`approx`) |
+  | Manual reading (`manual`, `how: hand`) | check | as written, checked by the geometry check | as written | true course `trk` and `nm` | default | no | — | derived (`approx`) |
+  | SimBrief OFP (`simbrief`, `proc-seen/`) | ofp | the navlog's fixes | **no** (only the plan's altitude `planned`) | no | default (`main`) | no | — | none |
+  | X-Plane fallback (`xplane`, `proc/local/`, the workstation only, `local: true`) | xplane (lowest) | as the converter writes them (ARINC 424 like the CIFP) | as converted | as converted | as converted, else default | as converted | as converted | as converted, else derived |
+
+  **eAIP, what the reader keeps apart or marks** (LFPG, 29 Oct 2026): the sequencing arcs of a **point merge** (`BIBA1` … `BIBA5`, `LUKI1` … `LUKI5`) are NOT in any STAR's points; the file has them in `point_merge` (`name`, `merge`, `arc`,
+  `runways`, `source`), and the STAR goes from its entry fix to the merge point (a `DF`). A nameless record, a record that passes twice through a point outside a holding, a zigzag, a record with a leg row left out, a geometry that
+  contradicts the printed courses: written with **`status: 'doubt'`** and a `doubt` reason, never installed as sure and never purged. `procedures(icao, q)` and `procedure(id)` leave them out; a module asks `{ doubt: true }` **only** to show
+  them as « à vérifier » (with the reason as title), never to offer them as a normal choice.
+
+  A record with `local: true` comes from the workstation's X-Plane: label it « X-Plane, local » (four languages), never
+  copy it into the flight's files or a shared document; keep its identifier only.
+
+### Coverage of the procedures (§ 10.22 of the specification) — what aerodb gives the Map and the Données module
+
+The Map's « Procédures » layer colours aerodrome pins by what this device can give; the Données module shows the same three colours per State.
+Neither reads an index or the catalogue: they ask aerodb.
+
+- **`coverage(icao)`** → `Promise<object | null>`, **without loading the base**. `null` for a malformed code (not four characters `A-Z 0-9` after trim and
+  upper-casing). Otherwise `{ level, reason, state, here, read_at }`:
+
+  | `level` | `reason` | Meaning | Extra fields |
+  |---|---|---|---|
+  | `green` | `held` | procedures held: the published cycle, `proc/manual/` or `proc/local/` | `source` (`published` > `manual` > `local`, the best held), `outdated` (true only when the one holding is a hand reading of a past cycle), `counts { SID, STAR, APP }` (and `read_at`, below) |
+  | `orange` | `partial` | procedures held, **not all read** (V3 § 10.26): pages of the file not read (`formats[].ok === false`) or records of status `doubt` | the fields of `held`, plus `partial { pages, doubt }` |
+  | `orange` | `sia` | readable on demand: State `LF`, the SIA eAIP | |
+  | `orange` | `ead` | readable on demand: the State's `EAD_STATES` outcome is `read` (EAD Basic) | |
+  | `red` | `images`, `labels`, `points`, `prose`, `vfr`, `none` | nothing to read: the State's `EAD_STATES` outcome says why | |
+  | `red` | `unknown` | State absent from `EAD_STATES` (or an unexpected outcome) | |
+
+  `state` is the two-letter prefix. `here` is true when this device can start the reading (a launcher with `job`, not paired): **orange stays orange where `here`
+  is false** (the reading is then made on the workstation); the Map words « lire sur le poste » from it, and offers the gesture (`fetchProcedures`) where it is true.
+  The closed list of reasons: `held`, `partial`, `sia`, `ead`, `images`, `labels`, `points`, `prose`, `vfr`, `none`, `unknown`. **There is no orange `lnm`** (V3 § 10.29): Little Navmap has no reader yet, so the workstation's databases
+  change nothing in `coverage()` and `coverageByState()` (the key stays in `AeroCatalogue.COVERAGE` for the day a reader exists; a module never receives it). The `lnm` hint of `fetchProcedures` (`no-tables`) is not a coverage and stays.
+- **`read_at`** (every answer of `coverage()`; ISO 8601 UTC to the second, or `null`): when the aerodrome's file was last read on the workstation, from `updated_at` of the aerodrome's entry in `proc/manual/index.json` (written by
+  `tools/proc_manual.py` at install) or in `proc/local/index.json`, the most recent of the two, even where the published cycle gives the counts. **Fuel and the Map**: `read_at` present → the line « lu le … » with « Relire »;
+  `null` → the « Lire les procédures de LFXX » button alone, no date (an orange or red aerodrome, a published-only one, or an index entry from before the date existed). The same date is on every record served from `proc/manual/`
+  as `source.read_at`; a published record has none.
+- **`coverageByState()`** → `{ [prefix]: { level, reason, label: [fr, en, de, es], names: [fr, en, de, es], held } }` for every `EAD_STATES` prefix (France included).
+  `held` is the number of aerodromes held in the State (partial ones included): `held > 0` → `green` / `held`; none → the rules of `coverage()` **without a held
+  aerodrome** — a State is readable on demand or not (the workstation's Little Navmap databases change nothing). `label` is `AeroCatalogue.COVERAGE[reason]`,
+  `names` the State's name in the four languages (`AeroCatalogue.EAD_STATES[prefix].names`). This is the shape agreed with the Données module (29 Oct 2026); that
+  module also reads `AeroCatalogue.PARSER_VERSION` (the format version the builders write = `VERSION` of `shared/sia_base.js`) to flag a zone « à reconstruire ».
+- **Labels**: `AeroCatalogue.COVERAGE[reason]` → `[fr, en, de, es]` (served by `sources()`), short, for a legend line or a tooltip. A module that words a reason
+  differently (a longer sentence) keys on `reason`, never on the label.
+- **Cost and cache**: the first `coverage()` builds, once, an in-memory table from `procedureIndex()` (the published cycle index, `proc/manual/index.json` and
+  `proc/local/index.json`, already merged with their `manual` / `outdated` / `local` flags) and `EAD_STATES`; concurrent first calls share the one build; every
+  other call is a map lookup (hundreds of pins cost nothing). `here` is read at each call, not cached; `read_at` comes from the same indexes (no extra read). An index entry that counts
+  no procedure is not « held ».
+- **Staying current**: `aerodb.on('change', fn)` receives `{ coverage: true }` when the index may have changed (after a successful `fetchProcedures`, which
+  also carries `procedures: icao`; on `refresh()`, which also carries `refreshed`; when a procedure index changes in the data layer: synchronisation, another
+  tab; when one aerodrome's file arrives or changes there — a reading made on the workstation and synchronised to this device —, `procedures: icao` comes
+  with it, so Fuel re-asks `procedures(icao)` instead of keeping an empty answer; more than 50 at once (a published cycle): one `{ coverage, refreshed }`).
+  aerodb has already dropped its table: **ask again, never keep an answer past that event** — the Map redraws its pins, the Données module its State
+  list. `coverageByState()` is built from the same table (`held`): ask it again after `{ coverage: true }` too.
+- **`partial` for Fuel and the Map**: a partial aerodrome is **orange**, not green, though `source`, `counts`, `outdated` and `read_at` are there as for `held` —
+  the Map colours the pin orange and words `COVERAGE.partial` (plus `partial.pages` / `partial.doubt` if it wants numbers); Fuel keeps its « lu le … » line and its « N non lues » line
+  (from `stats`) and must not take `orange` for « nothing held » (test `reason`, not `level`, to decide whether the « Lire » button stands alone). The counts exist only for
+  files installed after this change (`tools/proc_manual.py`); read an aerodrome again to have them.
+
 ### The Données module (`modules/data/`, Full level) — contracts of 28 Oct 2026
 
 What aerodb gives the module that regenerates the published data (its SPEC and INTEGRATION § 2, written with the settings
 session, which keeps the module's files):
 
-- **Reading** (lot D1): `aerodb.publication()` (what is published, per zone and cycle, without loading the data),
+- **Reading** (lot D1, delivered 28 Oct 2026, bench K21): `aerodb.publication()` (what is published, per zone and cycle, without loading the data),
   `aerodb.zones()` (every known zone, published or not), `aerodb.sources()` (the catalogue: groups, zones fed, fetch and
   build modes, links by cycle, licences, statuses, EAD outcome per State, file-name readers). SPEC § 5. The module reads
   nothing else of aerodb and never `sia/base/`, `proc/` or `AircraftDB/` itself.
 - **Cycles**: dates `YYYY-MM-DD` in every answer, the AIRAC id `YYNN` only on screen, converted by `frame/aerodb/airac.js`
   (SPEC § 4). Three cycles kept for the base and `proc/`.
-- **Building** (lot D5): two stages, pieces per source (`worker` or `python`) and an assembler per zone; nothing written by
-  them (SPEC § 5 septies). A lot « complete readers » comes first.
+- **Building** (lot D5): with a launcher, the job `base/build` runs the existing builders in one window-less browser for all the requested
+  zones and commits each zone alone (below; SPEC § 5 septies); the two-stage plan (pieces per source and an assembler per zone, nothing
+  written by them) stays the direction for the sources that leave `sia_base.js`.
 - **Procedures**: EAD Basic reads one aerodrome per gesture (*Charts* documents `AD_2_<ICAO>_…`, first page of results only,
   15 rows); its output is installed by `tools/proc_manual.py`, which refuses another source's file without `--replace`:
   the module asks « remplacer ou fusionner » then. Hand-read files (EAD Basic, manual, OCR) live in `proc/manual/<ICAO>.json`,
@@ -203,9 +310,76 @@ session, which keeps the module's files):
   (devices) stay apart; the compiled JSON live in the private data repository (SPEC § 1). Grey reasons that come from aerodb's side:
   « pypdf manque », « OCR manque » (drawn pages: UK STARs, Belgium, Georgia), « Mise en page inconnue pour cet État ».
 
+### Building on the workstation: the job `base/build` (lot D5, 30 Oct 2026)
+
+What the Données module calls to build the base **with a launcher**; the page's own build does not exist as a fallback in this lot: without a browser the
+job answers `reason: 'no-browser'` and the screen says it. Full contract: SPEC § 5 septies, « The job `base/build` ».
+
+```js
+const r = await ctx.launcher.job('regen/job', { set: 'base', verb: 'build', args: { zones: ['fr', 'gb', 'es'], personal: [] } },
+  { onProgress: j => draw(j.zones, j.step, j.done, j.total), signal });   // after a reload: ctx.launcher.resume('regen/job', …)
+// j.zones  = { fr: { state: 'waiting'|'building'|'built'|'failed'|'cancelled', done, total, error, commit?, warning?, files?, seconds? }, … }
+// r.result = { ok, cycle, built: ['fr', …], failed: [{ zone, error }], commits: [{ zone, commit }], instances, seconds, reason? }
+```
+
+- **One window-less browser builds every requested zone** with the page's own functions (output identical to the page's, byte for byte), and hands
+  each zone back as soon as it is ready; the job writes and **commits it alone** (the page's trigram as author, no push) while the next ones come; the
+  module lets `aerodb` read the new files and sends the commits with « Synchroniser ». A zone that fails publishes nothing; the others go on. The job
+  goes on if the page closes (`resume`).
+- **Per-zone line**: `state` `'waiting'` (« en attente »), `'building'` with `done` / `total` (« construction (n / m sources) »), `'built'`
+  (« construite »), `'failed'` with `error` (a code: `browser-failed`, `browser-exited`, `timeout`, `page-error`, `invalid-output`, `write-failed`;
+  `message` has the detail), `'cancelled'`. The head: `step` « N zones sur M », `done` / `total` in zones. The journal also gets `gb: construite, 13
+  fichier(s) écrit(s), commit …`.
+- **Refusals**: 400 (unknown zone, extra field), 409 (a job is running), and `ok: false` with `reason` `'no-browser'` / `'no-input'` /
+  `'xplane-in-page'` (a build that needs the X-Plane folder, which only the page holds: it stays in the page) at once.
+- `args.personal` is a **list of source ids** (`'enaire'`, `'nats'`…) the owner declared for a published build (the line « À cocher seulement si le
+  dépôt de données n'est utilisé que par vous »); absent or `[]`, nothing personal is published. Nothing else is an argument: there is no mode in the API.
+- **How the page is started (route B)**: the verb offers `{ zones, cycle, personal, inputs }` to the job (`job.offer`), starts the browser on
+  `<launcher>/frame/aerodb/build/headless.html#job=<id>` and nothing else (no token, no parameter on the command line); the page makes one
+  `POST regen/job/claim` and gets the offer and the token, checks them, and reads. The module has nothing to do with it.
+- **Cost, measured on 30 Oct 2026** (24 cores, ten zones `fr gb es de it be ch ie nl nat`): 10 to 12 s through the launcher (the first zone out after 6 to
+  8 s, then 0.45 s per zone for the write and the git commit), 1.3 GB private at most; the page's own build of the same zones in one page: 6 s, without the
+  commits (DECISIONS 30 Oct 2026).
+
+### Fetching and purging the raw sources on the workstation: the jobs `base/fetch` and `base/purge` (30 Oct 2026)
+
+The raw sources (openAIP, FAA, ENAIRE, UK Mil, NAV CANADA, NAT files in `data/sia/…`) **leave the data repository**: the template `.gitignore` ignores
+`sia/openaip/`, `sia/zones/`, `sia/aixm5/`, `sia/geojson/`, `sia/miam-*.xml`, the aircraft HTTP cache and `**/__pycache__/` (DECISIONS 30 Oct 2026). The
+Données module fetches and purges them per zone through two more verbs of the set `base` (`tools/regen/base_sources.py`, SPEC § 5 septies « The jobs
+`base/fetch` and `base/purge` »). Neither commits anything.
+
+```js
+const r = await ctx.launcher.job('regen/job', { set: 'base', verb: 'fetch', args: { zones: ['gb', 'es', 'ca'], personal: ['enaire'] } },
+  { onProgress: j => draw(j.zones, j.step, j.done, j.total), signal });
+// j.zones = { gb: { state: 'waiting'|'fetching'|'done'|'failed'|'cancelled', done, total, error?, sources: { openaip: { state: 'downloaded'|'unchanged'|'failed'|'skipped'|'manual', files?, bytes?, error?, status? }, … } }, … }
+// r.result = { ok, fetched: ['gb'], unchanged: [], failed: [{ zone, source, error, status? }], manual: [{ zone, source, url?, name: [fr, en, de, es] }], outside_sync, warnings: [{ code: 'outside-sync', count }], reason? }
+const p = await ctx.launcher.job('regen/job', { set: 'base', verb: 'purge', args: { zones: ['gb'], what: ['sources', 'caches'], dry: true } }, { onProgress });
+// j.zones = { gb: { state: 'waiting'|'purging'|'done'|'failed', files, bytes, error? } };  p.result = { ok, removed: { gb: { files, bytes } }, warnings: [{ code, count? }], reason? }
+```
+
+- **`base/fetch`**: for each zone, the sources of the catalogue whose `kind` is `download` are fetched by `tools/aero_fetch.py` (nothing copied) where it writes
+  today: `openaip` (the zone's country, layer by layer), `faa` and `faaclass` (`us`), `enaire` (`es`, **only if `'enaire'` is in `personal`**: else the
+  source is `skipped` with `error: 'personal'`), `ukmil` (`gb`), `navcan` (`ca`), `nat` (`nat`). A `manual` or `pdf` source (`sia`, `nats`, `dircam`) is never
+  downloaded: `state: 'manual'`, and the result lists it in `manual` with its `https` address (when the catalogue has one) and its four names, for the
+  screen to say what to do by hand. `local` (X-Plane) and `computed` (MORA) sources are not this job's and appear nowhere. A source that fails does not stop the others
+  (`error`: `network`, `http` with `status`, `parse`); the zone is `failed` when one of its sources failed. A country with no openAIP export is `failed`,
+  `http`, `404`. The cancel is looked at between two files.
+  What `aero_fetch` takes from a server is checked before use (security review, 30 Oct 2026): an ENAIRE file name read from its page must match
+  `^LE_[A-Za-z0-9._-]+_AIP_DS_FULL_(Airspace|EnRoute)\.xml$` and resolve under `sia/aixm5` (`proc_pdf.safe_path`, for the write and for the removal of the
+  previous amendment); the NAV CANADA guide address is requested only in `https` on `www.navcanada.ca`; a response over **200 MB** (announced or read) is stopped,
+  nothing is written and the present file is kept (`network`).
+- **`outside_sync`**: the number of files **tracked by git** in `data/` that the job modified (a rewritten file, a previous ENAIRE amendment removed): they
+  now differ from the repository and will not follow the synchronisation. The screen says it (`warnings: [{ code: 'outside-sync', count }]`).
+- **`base/purge`**: removes a zone's raw sources under `data/sia/` (what the catalogue's `fileSource` attributes to the zone, and for France the root AIXM,
+  `XML_SIA`, `sia-airspaces` and `miam-*.xml` files) and its caches under `data/local/` (France: `local/eaip/`). **Never** `sia/base/`, `proc/`, **a file tracked
+  by git** (kept, counted: `warnings: [{ code: 'kept-tracked', count }]`: it would leave the repository for every workstation), a link or a path that leaves
+  `data/sia` and `data/local` (`unsafe-path`). Purging `fr` adds `{ code: 'shared-fr' }`: France's FIR outlines, read in `XML_SIA`, serve the build of every zone.
+  `dry: true` gives the same view and result and removes nothing. `what` is `['sources']`, `['caches']` or both (the default).
+- **Refusals**: 400 (unknown zone or source, extra key, `dry` not a boolean), 409 (a job is running), 429 for `base/fetch` (30 s between two starts).
+
 ### Sources screen (`#sources`)
 
-A frame screen drawn by aerodb (`frame/aerodb/sources.js` and its data `sources_data.js`), not a module: nothing to mount, nothing to
+A frame screen drawn by aerodb (`frame/aerodb/sources.js`, with `airac.js` and the catalogue `catalogue.js`), not a module: nothing to mount, nothing to
 call. The frame declares it in `APP.screens` (`frame/app.js`: Full level, its two scripts, no data adapter, no GitHub transport) and the
 Administration card of Settings links to it. It shows links only (`frame/aerodb/SPEC.md` § 5 sexies): no fetch, so no host in the page
 policy. It replaced the data laboratory (`#datalab`) on 28 October 2026; the laboratory's stream readers (`xml_stream.js`, `zip_stream.js`)

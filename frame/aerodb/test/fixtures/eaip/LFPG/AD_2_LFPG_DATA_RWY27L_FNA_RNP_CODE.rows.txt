@@ -1,0 +1,15 @@
+AD 2 LFPG DA T A RWY27L FNA RNP CODEAIP
+01 OCT 2026FRANCE
+P ARIS CHARLES DE GAULLE
+PRECODING FNA RNP RWY 27L
+AMDT 10/26© Service de l'Information Aéronautique, France
+FNA RNP RWY27L
+RMK - MAG VAR 2020 1.1° E REF NAVAID : B T
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) Navigation Accuracy (NM)
+IF PG660 - - - - - 5000 - - - -
+TF FG27L - 264 265.7 3.6 - 5000 5000 - - 1.0
+TF RW27L Yes 264 265.6 14.3 -- -- -3.0°/56 0.3
+APCH CA -- 264 265.3 - - 1000 - - - 1.0
+VI -- 299 300.3 - - - - - - 1.0
+CF PG651 - 264 265.4 -- - - - - 1.0
+TF AMJUS - 264 265.4 7.5 - 5000 5000 -- 1.0

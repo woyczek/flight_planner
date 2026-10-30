@@ -1,0 +1,67 @@
+AIP AD 2 LFPG DATA RWY08L INA RNAV CODE
+01
+10 JUL 2025FRANCE
+INA RNAV RWY 08L PARIS CHARLES DE GAULLE
+RMK MAG VAR 2020 1.1°E REF NAVAID : (1) Réacteurs / Jets = (R) - Hélices / Propellers = (H)
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (m) Navigation Accuracy (NM) PRECODING INA RNAV LORNI-OKIPA-BANOX-MOPAR RWY 08L
+HLDG - LORNI - ---- - - -- -
+HLDG - OKIPA - ---- - - -- -
+HLDG - BANOX - ---- - - -- -
+HLDG - MOPAR - ---- - - -- -
+FL110 (R) (1) FL150 (R) (1)
+--LORNIIF -- - -300 1,0
+FL110 (H) (1) FL120 (H) (1)
+INA
+TF BUNOR - 247 247,8 37,3 - - - - - 1,0
+LORNI 1E
+TF PG501 - 267 268,2 8,0 - - - - - 1,0
+FM - - 267 - - - - - - - -
+IF LORNI - ---- FL160 FL170 300 - 1,0
+INA TF BUNOR - 247 247,8 37,3 - FL110 FL120 250 - 1,0
+LORNI 1X TF PG501 - 267 268,2 8,0 - - - - - 1,0
+FM - - 267 - - - - - - - -
+FL140 (R) (1) FL150 (R) (1)
+IF OKIPA - ---- 1,0300 -
+FL140 (H) (1) FL140 (H) (1)
+TF CLM - 302 302,9 25,9 - - - - - 1,0
+INA
+TF MOSUD - 311 312,5 8,3 - - - - - 1,0
+OKIPA 1E
+TF PG503 - 264 265,5 15,9 - - - - - 1,0
+TF PG505 Y 264 265,2 13,2 - - - - - 1,0
+FM - - 264 - - - - - - - -
+IF OKIPA - ---- FL180 FL190 300 - 1,0
+TF CLM - 302 302,9 25,9 - - - - - 1,0
+INA TF MOSUD - 311 312,5 8,3 - FL140 FL150 250 - 1,0
+OKIPA 1X TF PG503 - 264 265,5 15,9 - - - - - 1,0
+TF PG505 Y 264 265,2 13,2 - - - - - 1,0
+FM - - 264 - - - - - - - -
+FL140 (R) (1) FL150 (R) (1)
+IF OKIPA - - 1,0- - - 300 -
+FL140 (H) (1) FL140 (H) (1)
+TF CLM - 302 302,9 25,9 - - - - - 1,0
+INA TF MOSUD - 311 312,5 8,3 - - - - - 1,0
+OKIPA 1N TF LARPO - 313 314,0 14,8 - - - - - 1,0
+TF PG502 - 267 268,5 8,0 - - - - - 1,0
+TF PG504 Y 267 268,3 10,9 - - - - - 1,0
+FM - - 267 - - - - - - - -
+IF OKIPA - ---- FL180 FL190 300 - 1,0
+TF CLM - 302 302,9 25,9 - - - - - 1,0
+TF MOSUD - 311 312,5 8,3 - FL140 FL150 250 - 1,0
+INA
+TF LARPO - 313 314,0 14,8 - - - - - 1,0
+OKIPA 1R
+TF PG502 - 267 268,5 8,0 - - - - - 1,0
+TF PG504 Y 267 268,3 10,9 - - - - - 1,0
+FM - - 267 - - - - - - - -
+IF BANOX - ---- FL090 FL110 250 - 1,0
+INA
+TF SUBOX - 025 026,0 11,7 - - - - - 1,0
+BANOX 1E
+FM - - 025 - - - - - - - 1,0
+IF MOPAR - ---- FL080 FL100 250 - 1,0
+INA
+TF PG527 - 155 156,1 8,0 - - - - - 1,0
+MOPAR 1E
+FM - - 155 - - - - - - - -
+AMDT 07/25© Service de l'Information Aéronautique, France

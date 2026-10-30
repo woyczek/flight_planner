@@ -1,0 +1,80 @@
+AIP AD 2 LFPG DATA SID RWY09L-09R RNAV CODE 02
+FRANCE 31 OCT 2 4
+PARIS CHARLES DE GAULLE (LFPG)
+Réacteurs (R) et hélices (H) / Jets (R) and propellers (H)
+SID RNAV RWY 09L - 09R
+Protégés pour / Protected for CAT A, B, C, D
+SID RNAV RWY 09L - 09R
+RMK GNSS ou / or DME/DME MAG VAR 2020 1.1°E Ref NAVAID : BT
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Nav Spec
+BAXIR 6G
+RWY09L - 087 088.4
+CF PG091 - - - - - RNAV 1
+RWY09R - 084 085.4
+- TF PG092 Yes 084 085.4 2.1 - - - - RNAV 1
+- DF PG094 Yes - - - - - - - RNAV 1
+- DF BEKOS - - - - - - - - RNAV 1
+- TF BAXIR - 094 095.6 12.8 - - - - RNAV 1
+BUBLI 6G
+RWY09L - 087 088.4
+CF PG091 - - - - - RNAV 1
+RWY09R - 084 085.4
+- TF PG092 Yes 084 085.4 2.1 - - - - RNAV 1
+- DF PG094 Yes - - - - - - - RNAV 1
+- DF BEKOS - - - - - - - - RNAV 1
+- TF BUBLI - 094 095.5 24.0 - - - - RNAV 1
+DIKOL 6K
+RWY09L - 087 088.4
+CF PG091 - - - - - RNAV 1
+RWY09R - 084 085.4
+- TF PG092 Yes 084 085.4 2.1 - - - - RNAV 1
+- DF PG094 Yes - - - - - - - RNAV 1
+- DF NEPAR - - - - - - - - RNAV 1
+- TF DIKOL - 080 080.9 19.9 - - - - RNAV 1
+RANUX 6K
+RWY09L - 087 088.4
+CF PG091 - - - - - RNAV 1
+RWY09R - 084 085.4
+- TF PG092 Yes 084 085.4 2.1 - - - - RNAV 1
+- DF PG094 Yes - - - - - - - RNAV 1
+- DF NEPAR - - - - - - - - RNAV 1
+- TF RANUX - 083 084.0 32.1 - - - - RNAV 1
+LANVI 6K
+RWY09L - 087 088.4
+CF PG091 - - - - - RNAV 1
+RWY09R - 084 085.4
+- TF PG092 Yes 084 085.4 2.1 - - - - RNAV 1
+- DF PG094 Yes - - - - - - - RNAV 1
+- DF LUPAM - - - - - - - - RNAV 1
+- TF LASIV - 093 094.5 26.9 - - - - RNAV 1
+- TF LANVI - 118 118.9 71.8 - - - - RNAV 1
+BAXIR 6K
+RWY09L - 087 088.4
+CF PG091 - - - - - RNAV 1
+RWY09R - 084 085.4
+- TF PG092 Yes 084 085.4 2.1 - - - - RNAV 1
+- DF PG094 Yes - - - - - - - RNAV 1
+- DF BEKOS - - - - - - - - RNAV 1
+- TF BAXIR - 094 095.6 12.8 - - - - RNAV 1
+BUBLI 6K
+RWY09L - 087 088.4
+CF PG091 - - - - - RNAV 1
+RWY09R - 084 085.4
+- TF PG092 Yes 084 085.4 2.1 - - - - RNAV 1
+- DF PG094 Yes - - - - - - - RNAV 1
+- DF BEKOS - - - - - - - - RNAV 1
+- TF BUBLI - 094 095.5 24.0 - - - - RNAV 1
+AGOPA 6G
+RWY09L - 087 088.4
+- - RNAV 1CF PG091 - - -
+RWY09R - 084 085.4
+- TF PG092 Yes 084 085.4 2.1 - - - - RNAV 1
+- DF PG095 - - - - - - - - RNAV 1
+- TF PG100 Yes 177 178.4 6.3 - - - - RNAV 1
+- DF PG101 - - - - - - - - RNAV 1
+- TF OXCEL - 234 234.7 11.3 - - - - RNAV 1
+- TF ABOBO - 210 210.9 15.4 - - - - RNAV 1
+- TF ADADA - 209 210.3 14.9 - - - - RNAV 1
+- TF AGOPA - 178 178.9 12.7 - - - 280 RNAV 1
+AMDT 11 /2 4 © SIA

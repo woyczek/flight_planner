@@ -31,7 +31,19 @@
         detail: ok ? '' : JSON.stringify(detail)
       });
     try {
-      const files = new Map(),
+      // le lecteur annonce ce qu'on y pose aux observateurs (reader.watch), comme la couche de données du cadre : aerodb ne relit plus
+      // ses fichiers à chaque appel (mémo des fiches), il compte sur ces annonces (procWatch) ; `settle()` laisse le temps de les traiter
+      const watchers = [],
+        settle = () => new Promise(r => setTimeout(r, 5));
+      class Announcing extends Map {
+        set(p, v) {
+          super.set(p, v);
+          for (const w of watchers.slice())
+            if (p.startsWith(w.prefix)) w.fn([p]);
+          return this;
+        }
+      }
+      const files = new Announcing(),
         puts = [],
         reader = {
           read: async p => files.has(p) ? {
@@ -39,6 +51,14 @@
             rev: 'r' + files.get(p).length
           } : null,
           list: async prefix => [...files.keys()].filter(p => p.startsWith(prefix)),
+          watch: (prefix, fn) => {
+            const w = {
+              prefix,
+              fn
+            };
+            watchers.push(w);
+            return () => watchers.splice(watchers.indexOf(w), 1);
+          },
           put: async (p, v) => {
             puts.push(p);
             files.set(p, JSON.stringify(v));
@@ -261,6 +281,1479 @@
         lnmperf: false
       });
       check('a reader that does not write: rememberOfp answers null', (await ro.rememberOfp(ofp)) === null, null);
+      // ---------------------------------------------------------- § 10.20 : proc/manual, phases, tronçon sans point, procédure par
+      // identifiant, pistes, index, lecture à la demande (l'heure du banc : 25 octobre 2026, cycle en vigueur 2026-10-01)
+      const pt = (id, lat, lon, extra = {}) => ({
+        seq: 0,
+        id,
+        lat,
+        lon,
+        alt: null,
+        leg: 'TF',
+        ...extra
+      });
+      const man = (id, kind, name, cycle, points, extra = {}) => ({
+        id,
+        icao: 'LFZZ',
+        kind,
+        name,
+        runways: [],
+        transition: null,
+        points,
+        source: {
+          kind: 'ead-basic',
+          cycle
+        },
+        status: 'check',
+        ...extra
+      });
+      files.set('proc/manual/LFZZ.json', JSON.stringify({
+        schema: 1,
+        icao: 'LFZZ',
+        cycle: '2026-09-03',
+        procedures: [man('LFZZ.STAR.OLD1A.RWALL', 'STAR', 'OLD1A', '2026-09-03', [pt('AAAAA', 45, 1), pt('BBBBB', 45.1, 1.1)]),
+          man('LFZZ.STAR.BOTH1A.RWALL', 'STAR', 'BOTH1A', '2026-09-03', [pt('CCCCC', 45, 1), pt('DDDDD', 45.1, 1.1)]),
+          man('LFZZ.STAR.BOTH1A.RWALL.TRANS', 'STAR', 'BOTH1A', '2026-10-01', [pt('EEEEE', 46, 1), pt('CCCCC', 45, 1)], {
+            transition: 'TRANS'
+          }),
+          man('LFZZ.APP.R27.RW27', 'APP', 'R27', '2026-10-01', [pt('FFFFF', 45, 2), pt('RW27', 45.01, 2.2, {
+            alt: {
+              type: 'at',
+              ft: 500
+            }
+          }), pt(null, null, null, {
+            leg: 'VA',
+            crs: 270,
+            phase: 'missed'
+          })], {
+            runways: ['27']
+          })
+        ]
+      }));
+      files.set('proc/2026-10-08/LFZZ.json', JSON.stringify({
+        schema: 1,
+        icao: 'LFZZ',
+        cycle: '2026-10-08',
+        runways: [{
+          id: '09',
+          lat: 45.0,
+          lon: 2.0,
+          elev: 410,
+          qfu: 92,
+          displaced: 0,
+          length: 2400,
+          width: 45,
+          source: 'cifp'
+        }],
+        procedures: [{
+          ...man('LFZZ.STAR.BOTH1A.RWALL', 'STAR', 'BOTH1A', null, [pt('CCCCC', 45, 1), pt('DDDDD', 45.1, 1.1)]),
+          source: {
+            kind: 'eaip'
+          }
+        }]
+      }));
+      files.set('proc/manual/index.json', JSON.stringify({
+        schema: 1,
+        folder: 'manual',
+        aerodromes: {
+          LFZZ: {
+            STAR: 3,
+            APP: 1,
+            status: 'check',
+            cycle: '2026-10-01'
+          },
+          LFYY: {
+            SID: 2,
+            status: 'check',
+            cycle: '2026-09-03'
+          }
+        }
+      }));
+      const zz = await db.procedures('LFZZ'),
+        by = id => zz.find(p => p.id === id);
+      check('proc/manual/: a procedure of a past cycle is served as it is, marked outdated; one of the cycle in force is not', by(
+          'LFZZ.STAR.OLD1A.RWALL')?.outdated ===
+        true && !by('LFZZ.APP.R27.RW27')?.outdated && by('LFZZ.STAR.OLD1A.RWALL').points.length === 2, zz.map(p => [p.id, p.outdated])
+      );
+      check('the same procedure published for the cycle and read by hand earlier: the one not outdated wins, both sources listed', by(
+        'LFZZ.STAR.BOTH1A.RWALL') && !by(
+        'LFZZ.STAR.BOTH1A.RWALL').outdated && by('LFZZ.STAR.BOTH1A.RWALL').sources.length === 2, by('LFZZ.STAR.BOTH1A.RWALL'));
+      check('every leg has a phase: main by default, trans for an enroute transition, missed kept', by('LFZZ.STAR.OLD1A.RWALL').points
+        .every(p => p.phase === 'main') && by(
+          'LFZZ.STAR.BOTH1A.RWALL.TRANS').points.every(p => p.phase === 'trans') && by('LFZZ.APP.R27.RW27').points[2].phase ===
+        'missed', zz.map(p => p.points.map(q => q
+          .phase)));
+      const va = by('LFZZ.APP.R27.RW27').points[2];
+      check('a leg without a fix (VA) keeps no position and is never placed', va.id === null && va.lat === null && va.placed ===
+        undefined && va.crs === 270, va);
+      check('the reader\'s copy of proc/manual/ is not modified (outdated and phases are on copies)', !JSON.parse(files.get(
+          'proc/manual/LFZZ.json')).procedures[0]
+        .outdated && !JSON.parse(files.get('proc/manual/LFZZ.json')).procedures[0].points[0].phase, null);
+      const byOfp = await db.procedure('LFML.STAR.MTL2A.RW31R.LUC'),
+        byMan = await db.procedure('lfzz.app.r27.rw27');
+      check('procedure(id): an OFP procedure found by its identifier (proc-seen/, status ofp), a hand-read one too; unknown → null',
+        byOfp?.status === 'ofp' &&
+        byOfp.points.length >= 1 && (await db.procedure('LFBD.SID.ROYAN6P.RW23'))?.sources.some(x => x.status === 'ofp') && byMan
+        ?.id === 'LFZZ.APP.R27.RW27' && (await db.procedure('LFZZ.SID.NONE.RWALL')) === null && (
+          await db.procedure('x')) === null, [byOfp
+          ?.id, byMan?.id
+        ]);
+      const rws = await db.runways('LFZZ');
+      check('runways(icao): the full record from the file, the others from the RWnn points (threshold, QFU of the number, approx)', rws
+        .length === 2 && rws[0].id === '09' &&
+        rws[0].approx === false && rws[0].elev === 410 && rws[1].id === '27' && rws[1].approx === true && rws[1].qfu === 270 && rws[1]
+        .lat === 45.01, rws);
+      // France : les points RWnn n'ont que 02, 06, 07 (pistes du SIA sans seuil dans les tables) alors que les listes `runways` des fiches nomment aussi 20, 24, 25 ; jamais ALL, « 16B » coupé
+      files.set('proc/manual/LFPX.json', JSON.stringify({
+        schema: 1,
+        icao: 'LFPX',
+        cycle: '2026-10-01',
+        updated_at: '2026-10-28T10:00:00+00:00',
+        procedures: [
+          ...['02', '06', '07'].map(r => ({
+            ...man(`LFPX.APP.RNP${r}.RW${r}`, 'APP', `RNP RWY ${r}`, '2026-10-01', [pt('IPO' + r, 48.5, 2.3), pt('RW' + r, 48.7, 2.4)], {
+              icao: 'LFPX',
+              runways: [r],
+              source: {
+                kind: 'eaip',
+                cycle: '2026-10-01'
+              }
+            })
+          })),
+          ...['20', '24', '25'].map(r => ({
+            ...man(`LFPX.SID.OPALE.RW${r}`, 'SID', 'OPALE ' + r, '2026-10-01', [pt(null, null, null, {
+              leg: 'CA',
+              crs: 197
+            }), pt('PO' + r, 48.8, 2.5)], {
+              icao: 'LFPX',
+              runways: [r],
+              source: {
+                kind: 'eaip',
+                cycle: '2026-10-01'
+              }
+            })
+          })),
+          man('LFPX.STAR.ALL1A.RWALL', 'STAR', 'ALL1A', '2026-10-01', [pt('AAAAA', 48, 2)], {
+            icao: 'LFPX',
+            runways: ['ALL', 'RWALL']
+          }),
+          man('LFPX.SID.PAR1A.RW16B', 'SID', 'PAR1A', '2026-10-01', [pt('BBBBB', 48, 2)], {
+            icao: 'LFPX',
+            runways: ['16B']
+          }),
+          man('LFPX.STAR.TOU1A.RW14', 'STAR', 'TOU1A', '2026-10-01', [pt('CCCCC', 48, 2)], {
+            icao: 'LFPX',
+            runways: ['14', '14L', '14R']
+          })
+        ]
+      }));
+      const lfpx = await db.runways('LFPX');
+      check(
+        'runways(icao): the runways named by the records (SID, STAR) with no threshold in the tables are added (lat and lon null, QFU of the number, approx), never ALL; 16B is split; a bare 14 is dropped when 14L and 14R are there',
+        lfpx.map(r => r.id).join() === '02,06,07,14L,14R,16L,16R,20,24,25' && lfpx.filter(r => r.lat === null).map(r => r.id)
+        .join() ===
+        '14L,14R,16L,16R,20,24,25' &&
+        lfpx.every(r => r.approx === true) && lfpx.find(r => r.id === '24').qfu === 240 && lfpx.find(r => r.id === '02').lat === 48.7,
+        lfpx);
+      check('runways(): nothing without data, nothing for a bad code', (await db.runways('LFXX')).length === 0 && (await db.runways(
+        '??')).length === 0, null);
+      const ix = await db.procedureIndex();
+      check('procedureIndex(): the hand-read aerodromes added, marked manual, outdated when their cycle is past', ix.aerodromes.LFYY
+        ?.manual === true && ix.aerodromes.LFYY
+        .outdated === true && ix.aerodromes.LFBD?.SID === 1 && !ix.aerodromes.LFBD.manual, ix.aerodromes);
+      files.set('proc/local/LFZZ.json', JSON.stringify({
+        schema: 1,
+        icao: 'LFZZ',
+        procedures: [{
+          ...man('LFZZ.STAR.BOTH1A.RWALL', 'STAR', 'BOTH1A', null, [pt('XXXXX', 44, 1), pt('DDDDD', 45.1, 1.1)]),
+          source: {
+            kind: 'xplane'
+          },
+          status: 'official'
+        }, {
+          ...man('LFZZ.SID.XP1A.RW27', 'STAR', 'XP1A', null, [pt('RW27', 45.01, 2.2), pt('GGGGG', 45.2, 2.5)]),
+          kind: 'SID',
+          source: {
+            kind: 'xplane'
+          }
+        }]
+      }));
+      const zl = await db.procedures('LFZZ'),
+        xp = zl.find(p => p.id === 'LFZZ.SID.XP1A.RW27'),
+        both = zl.find(p => p.id === 'LFZZ.STAR.BOTH1A.RWALL');
+      check('proc/local/ (X-Plane fallback): served last, status forced to xplane and local, never above another source', xp?.status ===
+        'xplane' && xp.local === true && both.points[0].id === 'CCCCC' && both.sources.at(-1).status === 'xplane' && (await db
+          .procedure(
+            'LFZZ.SID.XP1A.RW27'))?.local === true, [xp, both.sources]);
+      // lectures douteuses (statut `doubt`, SPEC § 5 quinquies) : gardées dans le fichier, rendues seulement sur demande, jamais devant une autre lecture
+      const dq = (id, kind, name, status, points, extra = {}) => ({
+        ...man(id, kind, name, '2026-10-01', points, {
+          icao: 'LFQQ',
+          status,
+          ...extra
+        })
+      });
+      files.set('proc/manual/LFQQ.json', JSON.stringify({
+        schema: 1,
+        icao: 'LFQQ',
+        cycle: '2026-10-01',
+        procedures: [dq('LFQQ.STAR.GOOD1A.RWALL', 'STAR', 'GOOD1A', 'check', [pt('AAAAA', 45, 1), pt('BBBBB', 45.1, 1.1)]),
+          dq('LFQQ.STAR.NONAME.RWALL', 'STAR', null, 'doubt', [pt('CCCCC', 45, 1), pt('DDDDD', 45.1, 1.1)], {
+            doubt: 'name'
+          }),
+          dq('LFQQ.STAR.TWIN1A.RW27', 'STAR', 'TWIN1A', 'doubt', [pt('EEEEE', 45, 1), pt('FFFFF', 45.1, 1.1), pt('EEEEE', 45,
+            1)], {
+            runways: ['27'],
+            doubt: 'repeat'
+          }),
+          dq('LFQQ.STAR.TWIN1A.RWALL', 'STAR', 'TWIN1A', 'check', [pt('EEEEE', 45, 1), pt('FFFFF', 45.1, 1.1)]),
+          dq('LFQQ.STAR.XPTW1A.RWALL', 'STAR', 'XPTW1A', 'doubt', [pt('GGGGG', 45, 1), pt('HHHHH', 45.1, 1.1), pt('GGGGG', 45,
+            1)], {
+            doubt: 'zigzag'
+          })
+        ]
+      }));
+      files.set('proc/local/LFQQ.json', JSON.stringify({
+        schema: 1,
+        icao: 'LFQQ',
+        procedures: [{
+          ...dq('LFQQ.STAR.XPTW1A.RWALL', 'STAR', 'XPTW1A', 'check', [pt('GGGGG', 45, 1), pt('HHHHH', 45.1, 1.1)]),
+          source: {
+            kind: 'xplane'
+          }
+        }]
+      }));
+      const dFlat = await db.procedures('LFQQ'),
+        dAll = await db.procedures('LFQQ', {
+          doubt: true
+        }),
+        dTwin = dFlat.find(p => p.name === 'TWIN1A'),
+        dXp = dFlat.find(p => p.name === 'XPTW1A');
+      check('doubt: procedures() leaves out the records of status doubt unless q.doubt === true, which returns them with their reason',
+        dFlat.map(p => p.name).sort().join() === 'GOOD1A,TWIN1A,XPTW1A' && dAll.length === 4 && dAll.find(p => p.id ===
+          'LFQQ.STAR.NONAME.RWALL')
+        ?.status === 'doubt' && dAll.find(p => p.id === 'LFQQ.STAR.NONAME.RWALL').doubt === 'name', [dFlat.map(p => p.id), dAll
+          .map(p => p.id)
+        ]);
+      check(
+        'doubt: merged with another reading of the same procedure, the doubt one never wins (even against the X-Plane fallback); the source list keeps it',
+        dTwin?.status === 'check' && dTwin.points.length === 2 && !dTwin.doubt && dTwin.sources.map(x => x.status).join() ===
+        'check,doubt' && dXp?.status ===
+        'xplane' && dXp.sources.map(x => x.status).join() === 'xplane,doubt' && window.AeroDBProcedures.RANK.doubt > window
+        .AeroDBProcedures.RANK.xplane, [dTwin, dXp]);
+      check('doubt: procedure(id) answers null for a doubt record unless q.doubt === true',
+        (await db.procedure('LFQQ.STAR.NONAME.RWALL')) === null && (await db.procedure('LFQQ.STAR.NONAME.RWALL', {
+          doubt: true
+        }))?.doubt === 'name' && (await db.procedure('LFQQ.STAR.GOOD1A.RWALL'))?.status === 'check', null);
+      const ac = new AbortController();
+      ac.abort();
+      // fetchProcedures() : le travail du poste est simulé par un faux lanceur (aucun réseau) ; chaque refus a sa raison
+      const fetchDb = launcher => AeroDB.create({
+          reader,
+          lnmperf: false,
+          launcher,
+          now: () => Date.parse('2026-10-25T12:00:00Z')
+        }),
+        installed = {
+          schema: 1,
+          icao: 'EGLL',
+          cycle: '2026-10-08',
+          procedures: [{
+            id: 'EGLL.STAR.OCK1H.RW27L',
+            icao: 'EGLL',
+            kind: 'STAR',
+            name: 'OCK1H',
+            runways: ['27L'],
+            transition: null,
+            points: [{
+              seq: 1,
+              id: 'AAAAA',
+              lat: 51.4,
+              lon: -0.5,
+              leg: 'IF'
+            }, {
+              seq: 2,
+              id: 'BBBBB',
+              lat: 51.5,
+              lon: -0.4,
+              leg: 'TF'
+            }],
+            source: {
+              kind: 'ead-basic',
+              ref: 'ead-basic/EG/x',
+              cycle: '2026-10-08'
+            },
+            status: 'check'
+          }]
+        },
+        calls = [],
+        jobAnswer = {
+          r: null
+        },
+        fake = (over = {}) => ({
+          info: () => ({
+            data: true,
+            lan: false
+          }),
+          request: async () => null,
+          job: async (route, body, opts) => {
+            calls.push({
+              route,
+              body,
+              opts
+            });
+            opts.onProgress?.({
+              step: 'EGLL: login',
+              done: 1,
+              total: 3
+            });
+            await new Promise(r => setTimeout(r, 30));
+            return typeof jobAnswer.r === 'function' ? jobAnswer.r() : jobAnswer.r;
+          },
+          ...over
+        }),
+        reasonOf = async (d, icao = 'EGLL', o) => (await d.fetchProcedures(icao, o)).reason;
+      check('fetchProcedures(): bad code and a signal already aborted answer at once', (await db.fetchProcedures('XX')).reason ===
+        'bad-icao' && (await db.fetchProcedures('LFZZ', {
+          signal: ac.signal
+        })).reason === 'cancelled', null);
+      check('fetchProcedures(): no launcher (none given, no job, no survey) is « no-launcher »', await reasonOf(db) ===
+        'no-launcher' && await reasonOf(fetchDb({
+          request: async () => null,
+          info: () => ({
+            data: true
+          })
+        })) === 'no-launcher' && await reasonOf(fetchDb(fake({
+          info: () => null
+        }))) === 'no-launcher' && calls.length === 0, calls);
+      check('fetchProcedures(): a device paired to the workstation (lan) is « paired », nothing is asked', await reasonOf(fetchDb(
+        fake({
+          info: () => ({
+            data: true,
+            lan: true
+          })
+        }))) === 'paired' && calls.length === 0, calls);
+      // un État ni LF ni lisible dans EAD Basic : « no-tables », rien n'est lancé ; lnm dit si le poste a des bases de Little Navmap
+      const ul = await fetchDb(fake()).fetchProcedures('LBSF'),
+        ulLnm = await fetchDb(fake({
+          info: () => ({
+            data: true,
+            lan: false,
+            lnm: ['navigraph']
+          })
+        })).fetchProcedures('LBSF'),
+        ulNone = await fetchDb(fake({
+          info: () => ({
+            data: true,
+            lan: false,
+            lnm: []
+          })
+        })).fetchProcedures('LBSF');
+      check('fetchProcedures(): a State with no coding table to read is « no-tables » with its outcome, nothing is asked', ul.reason ===
+        'no-tables' && ul.outcome === 'none' && ul.lnm === false && calls.length === 0, [ul, calls.length]);
+      check('fetchProcedures(): « no-tables » carries lnm = true when the workstation reports Little Navmap databases, false when none',
+        ulLnm.reason === 'no-tables' && ulLnm.lnm === true && ulNone.reason === 'no-tables' && ulNone.lnm === false && [ul, ulLnm,
+          ulNone
+        ]
+        .every(x => x.reason !== 'unknown-layout') && calls.length === 0, [ulLnm, ulNone]);
+      // le travail : un faux lanceur qui écrit proc/manual/ comme le ferait le poste, puis rend le résultat du verbe
+      // revalidate (FD.revalidate) : relit les chemins donnés ; le faux lecteur rattrape, comme le vrai, le fichier que le poste a
+      // installé (le résultat du travail en porte une copie, `file`) avant de rendre
+      let revalidated = [];
+      const rdr = {
+          ...reader,
+          revalidate: async ps => {
+            revalidated.push(...ps);
+            const f = typeof jobAnswer.r === 'object' && jobAnswer.r?.result?.file;
+            if (f) files.set(ps[0], JSON.stringify(f));
+            return {
+              changed: ps,
+              unchanged: [],
+              offline: false
+            };
+          }
+        },
+        okDb = AeroDB.create({
+          reader: rdr,
+          lnmperf: false,
+          launcher: fake(),
+          now: () => Date.parse('2026-10-25T12:00:00Z')
+        }),
+        progress = [];
+      jobAnswer.r = () => {
+        files.set('proc/manual/EGLL.json', JSON.stringify(installed));
+        files.set('proc/manual/index.json', JSON.stringify({
+          schema: 1,
+          folder: 'manual',
+          aerodromes: {
+            EGLL: {
+              SID: 0,
+              STAR: 1,
+              APP: 0,
+              status: 'check',
+              cycle: '2026-10-08'
+            }
+          }
+        }));
+        return {
+          ok: true,
+          state: 'done',
+          result: {
+            ok: true,
+            icao: 'EGLL',
+            procedures: 1,
+            warnings: ['w1'],
+            commit: 'a'.repeat(40),
+            ocr: false
+          }
+        };
+      };
+      const before = (await okDb.procedures('EGLL')).length,
+        two = [okDb.fetchProcedures('EGLL', {
+          onProgress: st => {
+            progress.push(st);
+            throw new Error('a listener that fails must not stop the job');
+          }
+        }), okDb.fetchProcedures('egll'), okDb.fetchProcedures(' EGLL ')],
+        res = await Promise.all(two);
+      check(
+        'fetchProcedures(): one reading per aerodrome at a time (the others are « busy »), the job is asked once with the fixed verb',
+        res.filter(x => x.ok).length === 1 && res.filter(x => x.reason === 'busy').length === 2 && calls.length === 1 && calls[0]
+        .route === 'regen/job' && JSON.stringify(calls[0].body) === '{"set":"proc","verb":"ead-fetch","args":{"icao":"EGLL"}}', [res
+          .map(x => x.reason || 'ok'), calls
+        ]);
+      const win = res.find(x => x.ok);
+      check(
+        'fetchProcedures(): the success gives the merged procedures read after the install, the warnings and the commit; progress forwarded',
+        before === 0 && win.procedures.length === 1 && win.procedures[0].id === 'EGLL.STAR.OCK1H.RW27L' && win.procedures[0]
+        .status ===
+        'check' && win.icao === 'EGLL' && win.warnings.join() === 'w1' && win.commit === 'a'.repeat(40) && progress[0].step ===
+        'EGLL: login' && progress[0].total === 3 && progress[0].source === 'ead' && win.source === 'ead', [before, win, progress]);
+      check('fetchProcedures(): both files are revalidated (FD.revalidate) before the answer, nothing else',
+        revalidated.length === 2 && revalidated.includes('proc/manual/EGLL.json') && revalidated.includes('proc/manual/index.json'),
+        revalidated);
+      check('fetchProcedures(): the aerodrome can be read again once the first reading is over',
+        (await okDb.fetchProcedures('EGLL')).ok === true && calls.length === 2, calls.length);
+      // les raisons rendues par le poste, et celles du lanceur lui-même
+      const answers = {
+          'no-credentials': {
+            ok: true,
+            state: 'done',
+            result: {
+              ok: false,
+              reason: 'no-credentials'
+            }
+          },
+          failed: {
+            ok: true,
+            state: 'done',
+            result: {
+              ok: false,
+              reason: 'failed',
+              message: 'login refused'
+            }
+          },
+          'cancelled (result)': {
+            ok: false,
+            state: 'cancelled',
+            result: {
+              ok: false,
+              reason: 'cancelled'
+            }
+          },
+          'cancelled (signal)': {
+            ok: false,
+            cancelled: true
+          },
+          busy: {
+            ok: false,
+            status: 409,
+            message: 'a job is already running'
+          },
+          'too-soon': {
+            ok: false,
+            status: 429,
+            reason: 'too-soon',
+            wait: 12,
+            message: 'too soon: wait 12 s'
+          },
+          paired: {
+            ok: false,
+            status: 403,
+            refused: true
+          },
+          'no-tables': {
+            ok: true,
+            state: 'done',
+            result: {
+              ok: false,
+              reason: 'no-tables'
+            }
+          },
+          'failed (older launcher)': {
+            ok: false,
+            status: 400,
+            message: 'unknown operation proc/ead-fetch'
+          },
+          'failed (error state)': {
+            ok: false,
+            state: 'error',
+            result: {
+              message: 'boom'
+            }
+          },
+          'no-launcher': null
+        },
+        want = {
+          'no-credentials': 'no-credentials',
+          'no-tables': 'no-tables',
+          failed: 'failed',
+          'cancelled (result)': 'cancelled',
+          'cancelled (signal)': 'cancelled',
+          busy: 'busy',
+          'too-soon': 'too-soon',
+          paired: 'paired',
+          'failed (older launcher)': 'failed',
+          'failed (error state)': 'failed',
+          'no-launcher': 'no-launcher'
+        },
+        got = {};
+      for (const [name, r] of Object.entries(answers)) {
+        jobAnswer.r = r;
+        got[name] = await okDb.fetchProcedures('EGLL');
+      }
+      check(
+        'fetchProcedures(): every answer of the job maps to its reason (no-credentials, no-tables, failed, cancelled, busy, too-soon, paired, no-launcher)',
+        Object.keys(want).every(k => got[k].ok === false && got[k].reason === want[k]), got);
+      check('fetchProcedures(): too-soon hands on the seconds to wait (EAD Basic, 30 s between two readings)', got['too-soon'].wait ===
+        12, got[
+          'too-soon']);
+      check('fetchProcedures(): the message of a failure is handed on (login refused, older launcher, error state)', got.failed
+        .message === 'login refused' && /unknown operation/.test(got['failed (older launcher)'].message) && got[
+          'failed (error state)']
+        .message === 'boom', got);
+      // l'aiguillage par État : la France (LF) lit l'eAIP du SIA (eaip-fetch, jamais un refus de disposition), un État lisible dans EAD
+      // Basic prend ead-fetch ; la source est dite dans la progression et dans la réponse
+      calls.length = 0;
+      const lfProgress = [];
+      jobAnswer.r = {
+        ok: true,
+        state: 'done',
+        result: {
+          ok: true,
+          icao: 'LFPO',
+          procedures: 3,
+          warnings: [],
+          commit: 'b'.repeat(40),
+          source: 'eaip',
+          cycle: '2026-10-01'
+        }
+      };
+      const lf = await okDb.fetchProcedures('lfpo', {
+        onProgress: st => lfProgress.push(st)
+      });
+      check('fetchProcedures(): a French aerodrome (LF) asks the verb eaip-fetch, with the code and nothing else', lf.ok === true &&
+        calls.length === 1 && calls[0].route === 'regen/job' && JSON.stringify(calls[0].body) ===
+        '{"set":"proc","verb":"eaip-fetch","args":{"icao":"LFPO"}}', [lf, calls.map(x => x.body)]);
+      check('fetchProcedures(): the progress of a French reading carries source « eaip », and so does the answer', lfProgress.length >
+        0 && lfProgress.every(x => x.source === 'eaip') && lf.source === 'eaip', [lfProgress, lf.source]);
+      calls.length = 0;
+      jobAnswer.r = {
+        ok: true,
+        state: 'done',
+        result: {
+          ok: false,
+          reason: 'no-tables'
+        }
+      };
+      const lfNone = await okDb.fetchProcedures('LFXX');
+      check('fetchProcedures(): a French aerodrome whose page lists no coding table is « no-tables » (never « unknown-layout »)',
+        lfNone.ok === false && lfNone.reason === 'no-tables' && calls.length === 1, lfNone);
+      calls.length = 0;
+      jobAnswer.r = () => ({
+        ok: true,
+        state: 'done',
+        result: {
+          ok: true,
+          icao: 'EGLL',
+          procedures: 1,
+          warnings: [],
+          commit: null,
+          source: 'ead'
+        }
+      });
+      const ead = await okDb.fetchProcedures('EGLL');
+      check('fetchProcedures(): a State readable in EAD Basic (EG) still asks ead-fetch', ead.ok === true && ead.source === 'ead' &&
+        calls.length === 1 && calls[0].body.verb === 'ead-fetch', [ead, calls.map(x => x.body)]);
+      // ------------------------------------------------------------------ copie périmée du lecteur : le résultat du travail fait foi (lecture « 0 procédures »)
+      calls.length = 0;
+      const oldLfbx = man('LFBW.SID.OLD1A.RW14', 'SID', 'OLD1A', '2026-10-01', [pt('AAAAA', 45, 1)], {
+          icao: 'LFBW',
+          runways: ['14'],
+          source: {
+            kind: 'eaip',
+            cycle: '2026-10-01'
+          }
+        }),
+        mkLfbx = (at, ps) => ({
+          schema: 1,
+          icao: 'LFBW',
+          cycle: '2026-10-01',
+          updated_at: at,
+          procedures: ps
+        }),
+        freshLfbx = mkLfbx('2026-10-28T10:00:00+00:00', [oldLfbx, {
+          ...oldLfbx,
+          id: 'LFBW.SID.NEW1A.RW14',
+          name: 'NEW1A'
+        }, {
+          ...oldLfbx,
+          id: 'LFBW.SID.NEW1A.RW32',
+          name: 'NEW1A',
+          runways: ['32']
+        }]);
+      files.set('proc/manual/LFBW.json', JSON.stringify(mkLfbx('2026-10-27T10:00:00+00:00', [])));
+      jobAnswer.r = {
+        ok: true,
+        state: 'done',
+        result: {
+          ok: true,
+          icao: 'LFBW',
+          procedures: 3,
+          warnings: [],
+          commit: null,
+          source: 'eaip',
+          cycle: '2026-10-01',
+          stats: {
+            pages: 22,
+            read: 18,
+            rejected: 4,
+            procedures: 3,
+            dropped: 0,
+            reasons: [
+              ['low-read', 4]
+            ]
+          },
+          file: freshLfbx
+        }
+      };
+      const staleRead = await okDb.fetchProcedures('LFBW');
+      check(
+        'fetchProcedures(): the reader held the OLD file when the job ended: revalidate brings the installed one before the answer (3 procedures, not 0), with the stats',
+        staleRead.ok === true && staleRead.procedures.length === 3 && staleRead.stats?.read === 18 && staleRead.stats.rejected ===
+        4 && staleRead.stats.reasons[0][1] === 4, staleRead);
+      check(
+        'fetchProcedures(): procedures() goes on serving the fresh file while the reader has not caught up (same updated_at not reached)',
+        (await okDb.procedures('LFBW')).length === 3 && (await okDb.runways('LFBW')).map(r => r.id).join() === '14,32', null);
+      files.set('proc/manual/LFBW.json', JSON.stringify(mkLfbx('2026-10-28T10:00:00+00:00', [oldLfbx])));
+      await settle(); // l'observateur de proc/ voit la révision changée
+      check('fetchProcedures(): once the reader holds a copy as recent, the reader\'s copy is served again (the override is dropped)',
+        (await okDb.procedures('LFBW')).length === 1, null);
+      jobAnswer.r = {
+        ok: true,
+        state: 'done',
+        result: {
+          ok: false,
+          reason: 'failed',
+          message: 'no procedure could be read for this aerodrome',
+          warnings: ['w'],
+          stats: {
+            pages: 3,
+            read: 0,
+            rejected: 3,
+            procedures: 0,
+            dropped: 0,
+            reasons: [
+              ['layout', 3]
+            ]
+          }
+        }
+      };
+      const failStats = await okDb.fetchProcedures('LFBW');
+      check('fetchProcedures(): a failure passes the stats on when the job gives them', failStats.ok === false && failStats.reason ===
+        'failed' && failStats.stats?.rejected === 3 && failStats.warnings[0] === 'w', failStats);
+      // ------------------------------------------------------------------ coverage(icao), coverageByState() (§ 10.22)
+      // un lecteur en mémoire à révisions (un fichier changé change de révision), qui compte ses lectures et garde les observateurs
+      const cf = new Map(),
+        ver = new Map(),
+        cReads = [],
+        cWatch = [],
+        cput = (path, v) => {
+          cf.set(path, JSON.stringify(v));
+          ver.set(path, (ver.get(path) || 0) + 1);
+        },
+        cReader = {
+          read: async path => {
+            cReads.push(path);
+            return cf.has(path) ? {
+              value: JSON.parse(cf.get(path)),
+              rev: 'r' + ver.get(path)
+            } : null;
+          },
+          list: async prefix => [...cf.keys()].filter(x => x.startsWith(prefix)),
+          watch: (prefix, fn) => cWatch.push({
+            prefix,
+            fn
+          })
+        },
+        covDb = (launcher = null, rd = cReader) => AeroDB.create({
+          reader: rd,
+          lnmperf: false,
+          launcher,
+          now: () => Date.parse('2026-10-25T12:00:00Z') // le cycle en vigueur est 2026-10-01
+        });
+      cput('proc/2026-10-01/index.json', {
+        schema: 1,
+        cycle: '2026-10-01',
+        aerodromes: {
+          LFBD: {
+            SID: 2,
+            STAR: 1,
+            APP: 3,
+            status: 'official'
+          },
+          KSEA: {
+            SID: 0,
+            STAR: 0,
+            APP: 0,
+            status: 'official'
+          }
+        }
+      });
+      cput('proc/manual/index.json', {
+        schema: 1,
+        folder: 'manual',
+        aerodromes: {
+          EGLL: {
+            SID: 0,
+            STAR: 1,
+            APP: 0,
+            status: 'check',
+            cycle: '2026-09-03' // un cycle passé : périmé
+          },
+          EGKK: {
+            SID: 1,
+            STAR: 0,
+            APP: 1,
+            status: 'check',
+            cycle: '2026-10-01' // le cycle en vigueur : pas périmé
+          },
+          // lecture en partie (§ 10.26) : les comptes écrits à l'installation (pages non lues, fiches à vérifier)
+          EGPH: {
+            SID: 1,
+            STAR: 1,
+            APP: 0,
+            status: 'check',
+            cycle: '2026-10-01',
+            pages_unread: 2,
+            doubt: 1
+          },
+          EGPF: {
+            SID: 1,
+            STAR: 0,
+            APP: 0,
+            status: 'check',
+            cycle: '2026-09-03',
+            pages_unread: 0,
+            doubt: 3
+          },
+          EGPD: {
+            SID: 1,
+            STAR: 0,
+            APP: 0,
+            status: 'check',
+            cycle: '2026-10-01',
+            pages_unread: 0,
+            doubt: 0
+          },
+          EGPE: {
+            SID: 1,
+            STAR: 0,
+            APP: 0,
+            status: 'check',
+            cycle: '2026-10-01' // installé avant les comptes : pas « partial »
+          },
+          LFBD: {
+            SID: 9,
+            STAR: 9,
+            APP: 9,
+            status: 'check',
+            cycle: '2026-09-03' // déjà publié : le publié l'emporte
+          }
+        }
+      });
+      cput('proc/local/index.json', {
+        schema: 1,
+        folder: 'local',
+        aerodromes: {
+          LFMN: {
+            SID: 4,
+            STAR: 2,
+            APP: 5
+          },
+          EGKK: {
+            SID: 7,
+            STAR: 7,
+            APP: 7
+          }
+        }
+      });
+      const noLnm = fake({
+          info: () => ({
+            data: true,
+            lan: false,
+            lnm: []
+          })
+        }),
+        withLnm = fake({
+          info: () => ({
+            data: true,
+            lan: false,
+            lnm: ['navigraph']
+          })
+        }),
+        c0 = covDb(noLnm),
+        cvg = await Promise.all(['LFBD', 'EGLL', 'EGKK', 'LFMN', 'LFPO', 'EDDF', 'LQSA', 'ZZZZ', 'KSEA'].map(x => c0.coverage(x)));
+      const [cLfbd, cEgll, cEgkk, cLfmn, cLfpo, cEddf, cLqsa, cZzzz, cKsea] = cvg;
+      check('coverage(): a published aerodrome is green « held », source published, with its counts and State', cLfbd.level ===
+        'green' && cLfbd.reason === 'held' && cLfbd.source === 'published' && cLfbd.outdated === false && JSON.stringify(cLfbd
+          .counts) ===
+        '{"SID":2,"STAR":1,"APP":3}' && cLfbd.state === 'LF' && cLfbd.here === true, cLfbd);
+      check('coverage(): a hand reading of a past cycle is green, source manual, outdated; of the cycle in force, not outdated',
+        cEgll.level === 'green' && cEgll.source === 'manual' && cEgll.outdated === true && cEgll.counts.STAR === 1 && cEgkk.source ===
+        'manual' && cEgkk.outdated === false, [cEgll, cEgkk]);
+      check(
+        'coverage(): the best holding wins (published over manual over local); a local aerodrome is green, source local, not outdated',
+        cLfbd.counts.SID === 2 && cEgkk.source === 'manual' && cEgkk.counts.SID === 1 && cLfmn.level === 'green' && cLfmn.source ===
+        'local' && cLfmn.outdated ===
+        false && cLfmn.counts.APP === 5, [cLfbd, cEgkk, cLfmn]);
+      const [cPh, cPf, cPd, cPe] = await Promise.all(['EGPH', 'EGPF', 'EGPD', 'EGPE'].map(x => c0.coverage(x)));
+      check(
+        'coverage(): a held aerodrome with pages not read or procedures to check is orange « partial », with the fields of « held » and partial { pages, doubt }',
+        cPh.level === 'orange' && cPh.reason === 'partial' && cPh.source === 'manual' && cPh.outdated === false && JSON.stringify(cPh
+          .counts) ===
+        '{"SID":1,"STAR":1,"APP":0}' && JSON.stringify(cPh.partial) === '{"pages":2,"doubt":1}' && cPh.state === 'EG' && cPh.here ===
+        true && 'read_at' in cPh &&
+        cPf.reason === 'partial' && cPf.outdated === true && JSON.stringify(cPf.partial) === '{"pages":0,"doubt":3}', [cPh, cPf]);
+      check('coverage(): zero counts, or an entry from before the counts, is green « held », without partial', cPd.level === 'green' &&
+        cPd.reason === 'held' &&
+        !('partial' in cPd) && cPe.level === 'green' && cPe.reason === 'held' && !('partial' in cPe) && !('partial' in cLfbd), [cPd,
+          cPe
+        ]);
+      cPh.partial.pages = 99;
+      check('coverage(): the answer is a copy (partial changed by the caller does not change the next answer)', (await c0.coverage(
+        'EGPH')).partial.pages === 2, null);
+      check('coverage(): an index entry without any procedure is not « held »', cKsea.level === 'red' && cKsea.reason === 'unknown' &&
+        cKsea
+        .state === 'KS', cKsea);
+      check('coverage(): LF without data is orange « sia »; a State read in EAD Basic is orange « ead »', cLfpo.level === 'orange' &&
+        cLfpo.reason === 'sia' && cLfpo.state === 'LF' && cEddf.level === 'orange' && cEddf.reason === 'ead' && cEddf.state === 'ED',
+        [
+          cLfpo, cEddf
+        ]);
+      check('coverage(): a State whose outcome is « images » is red « images »; a State missing from EAD_STATES is red « unknown »',
+        cLqsa.level === 'red' && cLqsa.reason === 'images' && cZzzz.level === 'red' && cZzzz.reason === 'unknown' && cZzzz.state ===
+        'ZZ', [cLqsa, cZzzz]);
+      const reasons = {};
+      for (const [icao, why] of [
+          ['UBBB', 'labels'],
+          ['LKPR', 'vfr'],
+          ['LROP', 'points'],
+          ['ENGM', 'prose'],
+          ['LTFM', 'none']
+        ]) reasons[why] = (await c0.coverage(icao)).reason;
+      check('coverage(): every other EAD outcome (labels, vfr, points, prose, none) is the red reason', JSON.stringify(reasons) ===
+        '{"labels":"labels","vfr":"vfr","points":"points","prose":"prose","none":"none"}', reasons);
+      const lnmDb = covDb(withLnm),
+        [lZ, lQ, lF, lD, lH] = await Promise.all(['ZZZZ', 'LQSA', 'LFPO', 'EDDF', 'LFBD'].map(x => lnmDb.coverage(x)));
+      check(
+        'coverage(): Little Navmap databases on the workstation change nothing (no reader yet, § 10.29): a red State stays red, sia and ead stay orange, green untouched, no answer is ever « lnm »',
+        lZ.level === 'red' && lZ.reason === 'unknown' && lQ.level === 'red' && lQ.reason === 'images' && lF.reason === 'sia' && lD
+        .reason ===
+        'ead' && lH.level === 'green' && JSON.stringify([lZ, lQ]) === JSON.stringify([cZzzz, cLqsa]), [lZ, lQ, lF, lD, lH]);
+      check('coverage(): lnm [] or no lnm field is the same answer as with a database', cZzzz.reason === 'unknown' && (await covDb(
+        fake({
+          info: () => ({
+            data: true,
+            lan: false
+          })
+        })).coverage('ZZZZ')).reason === 'unknown', cZzzz);
+      const bad = await Promise.all([null, undefined, '', 'LFP', 'LFPOX', 'LF-O', 'ÉGLL', 12, {}].map(x => c0.coverage(x))),
+        spaced = await c0.coverage(' lfbd ');
+      check('coverage(): a malformed code gives null; the code is trimmed and upper-cased', bad.every(x => x === null) && spaced
+        ?.level === 'green' && spaced.counts.APP === 3, [bad, spaced]);
+      // here : cet appareil peut-il lancer la lecture ? (lanceur avec job, non appairé) ; l'orange reste orange sans cela
+      const hereOf = async l => (await covDb(l).coverage('LFPO'));
+      const hNone = await hereOf(null),
+        hLan = await hereOf(fake({
+          info: () => ({
+            data: true,
+            lan: true
+          })
+        })),
+        hNoJob = await hereOf({
+          request: async () => null,
+          info: () => ({
+            data: true,
+            lan: false
+          })
+        }),
+        hNoInfo = await hereOf(fake({
+          info: () => null
+        })),
+        hOk = await hereOf(fake());
+      check('coverage(): « here » is true only with a launcher that has job and is not paired; the orange stays orange without it',
+        hNone.here === false && hLan.here === false && hNoJob.here === false && hNoInfo.here === false && hOk.here === true && [hNone,
+          hLan, hNoJob, hNoInfo, hOk
+        ].every(x => x.level === 'orange' && x.reason === 'sia'), [hNone, hLan, hNoJob, hNoInfo, hOk]);
+      check('coverage(): a launcher paired by lan keeps the green and the orange, here false', (await covDb(fake({
+        info: () => ({
+          data: true,
+          lan: true
+        })
+      })).coverage('LFBD')).here === false, 0);
+      // la table est bâtie une fois : 300 appels (simultanés puis suivants) ne lisent pas plus qu'un procedureIndex()
+      const base = cReads.length;
+      await covDb(noLnm).procedureIndex();
+      const oneIndex = cReads.length - base,
+        c1 = covDb(noLnm),
+        mark = cReads.length;
+      await Promise.all(Array.from({
+        length: 300
+      }, (_, i) => c1.coverage(['LFBD', 'EGLL', 'LFPO', 'ZZZZ'][i % 4])));
+      const afterFirst = cReads.length - mark;
+      for (let i = 0; i < 300; i++) await c1.coverage('LFBD');
+      check('coverage(): the table is built once for 300 simultaneous calls and 300 more (as many reads as one procedureIndex())',
+        oneIndex > 0 && afterFirst === oneIndex && cReads.length - mark === oneIndex, [oneIndex, afterFirst, cReads.length - mark]);
+      check('coverage(): the base is never loaded (no sia/base file read)', !cReads.some(x => x.startsWith('sia/base/')), cReads.filter(
+        x => x.startsWith('sia/base/')));
+      // un État de EAD_STATES à l'issue inattendue (« sia » ailleurs qu'en France) : 'unknown', jamais une raison inventée
+      const KS = (await c0.sources()).EAD_STATES;
+      KS.ZQ = {
+        outcome: 'sia'
+      };
+      const odd = await covDb(noLnm).coverage('ZQAA'),
+        oddState = (await covDb(noLnm).coverageByState()).ZQ;
+      delete KS.ZQ;
+      check('coverage(): an unexpected outcome (« sia » for a State other than LF) is red « unknown »', odd.level === 'red' && odd
+        .reason === 'unknown' && oddState.reason === 'unknown', [odd, oddState]);
+      // invalidation : fetchProcedures réussie, refresh(), observateur de proc/
+      cput('proc/manual/index.json', { // l'état d'avant la lecture : EGLL n'y est pas
+        schema: 1,
+        folder: 'manual',
+        aerodromes: {
+          EGKK: {
+            SID: 1,
+            STAR: 0,
+            APP: 1,
+            status: 'check',
+            cycle: '2026-10-01'
+          }
+        }
+      });
+      cf.delete('proc/manual/EGLL.json');
+      const inv = covDb(fake()),
+        wp = cWatch.filter(x => x.prefix === 'proc/').pop(),
+        evs = [],
+        off = inv.on('change', e => evs.push(e)),
+        before2 = await inv.coverage('EGLL');
+      cput('proc/manual/EGLL.json', installed);
+      jobAnswer.r = () => {
+        cput('proc/manual/index.json', {
+          schema: 1,
+          folder: 'manual',
+          aerodromes: {
+            EGLL: {
+              SID: 0,
+              STAR: 1,
+              APP: 0,
+              status: 'check',
+              cycle: '2026-10-01'
+            },
+            EGKK: {
+              SID: 1,
+              STAR: 0,
+              APP: 1,
+              status: 'check',
+              cycle: '2026-10-01'
+            }
+          }
+        });
+        return {
+          ok: true,
+          state: 'done',
+          result: {
+            ok: true,
+            icao: 'EGLL',
+            procedures: 1,
+            warnings: [],
+            commit: null,
+            source: 'ead'
+          }
+        };
+      };
+      const before3 = await inv.coverage('EGLL'); // la table d'avant, gardée
+      const got2 = await inv.fetchProcedures('EGLL'),
+        after2 = await inv.coverage('EGLL');
+      check('coverage(): a successful fetchProcedures() announces { coverage: true } and the next coverage() sees the new file',
+        before2.level === 'orange' && before2.reason === 'ead' && before3.level === 'orange' && got2.ok === true && evs.some(e => e
+          .coverage === true && e.procedures === 'EGLL') && after2.level === 'green' && after2.source === 'manual' && after2
+        .outdated ===
+        false, [before2, before3, got2.ok, evs, after2]);
+      evs.length = 0;
+      cput('proc/manual/index.json', {
+        schema: 1,
+        folder: 'manual',
+        aerodromes: {
+          EGKK: {
+            SID: 1,
+            STAR: 0,
+            APP: 1,
+            status: 'check',
+            cycle: '2026-10-01'
+          },
+          EGSS: {
+            SID: 3,
+            STAR: 0,
+            APP: 0,
+            status: 'check',
+            cycle: '2026-10-01'
+          }
+        }
+      });
+      const stale = await inv.coverage('EGSS');
+      inv.refresh();
+      const fresh = await inv.coverage('EGSS');
+      check('coverage(): refresh() announces { refreshed, coverage } and drops the table', stale.level === 'orange' && evs.some(e => e
+        .refreshed === true && e.coverage === true) && fresh.level === 'green' && fresh.counts.SID === 3, [stale, evs, fresh]);
+      // l'observateur du dossier proc/ : un index dont la révision a changé invalide, l'écho d'une lecture d'aerodb ne compte pas
+      evs.length = 0;
+      await wp.fn(['proc/manual/index.json', 'proc/manual/notes.txt']);
+      const echo = evs.length;
+      cput('proc/manual/index.json', {
+        schema: 1,
+        folder: 'manual',
+        aerodromes: {
+          EGSS: {
+            SID: 3,
+            STAR: 0,
+            APP: 0,
+            status: 'check',
+            cycle: '2026-10-01'
+          },
+          EGBB: {
+            SID: 0,
+            STAR: 2,
+            APP: 0,
+            status: 'check',
+            cycle: '2026-10-01'
+          }
+        }
+      });
+      const stale2 = await inv.coverage('EGBB');
+      await wp.fn(['proc/manual/index.json']);
+      const fresh2 = await inv.coverage('EGBB'),
+        gone = await inv.coverage('EGKK');
+      check(
+        'coverage(): the proc/ watcher ignores an unchanged file and a path that is no procedure file, and drops the table for a changed index',
+        echo === 0 && stale2.level === 'orange' && evs.filter(e => e.coverage === true).length === 1 && fresh2.level === 'green' &&
+        fresh2.counts.STAR === 2 && gone.source === 'local', [echo, stale2, evs, fresh2, gone]);
+      // le fichier d'un terrain arrivé par la synchronisation (autre appareil) : annoncé { procedures: OACI, coverage } ; relu, il ne
+      // s'annonce plus tant qu'il ne change pas ; proc-seen/ de même
+      evs.length = 0;
+      cput('proc/manual/EGZZ.json', {
+        schema: 1,
+        icao: 'EGZZ',
+        cycle: '2026-10-01',
+        procedures: []
+      });
+      await wp.fn(['proc/manual/EGZZ.json']);
+      const arrived = evs.slice();
+      await inv.procedures('EGZZ');
+      evs.length = 0;
+      await wp.fn(['proc/manual/EGZZ.json']);
+      const again = evs.length,
+        ws = cWatch[cWatch.indexOf(wp) + 1]; // le même lecteur d'aerodb : proc-seen/ observé juste après proc/
+      cput('proc-seen/EGZZ.json', {
+        schema: 1,
+        icao: 'EGZZ',
+        procedures: []
+      });
+      await ws?.fn(['proc-seen/EGZZ.json']);
+      check(
+        'procedures: a file of an aerodrome arrived by the synchronisation is announced { procedures, coverage } (Fuel and the Map re-read it), once',
+        arrived.length === 1 && arrived[0].procedures === 'EGZZ' && arrived[0].coverage === true && again === 0 && evs.some(e => e
+          .procedures === 'EGZZ'), [arrived, again, evs]);
+      off();
+      // coverageByState : les mêmes règles sans terrain détenu
+      const cs = await c0.coverageByState(),
+        csL = await lnmDb.coverageByState(),
+        cat = (await c0.sources()).COVERAGE;
+      check(
+        'coverageByState(): LF is orange « sia » with a label of four strings, ED orange « ead », LQ red « images »; every EAD_STATES prefix',
+        cs.LF.label.length === 4 && cs.LF.label.every(t => typeof t ===
+          'string' &&
+          t) && JSON.stringify(cs.LF.label) === JSON.stringify(cat.held) && cs.ED.reason === 'ead' && cs.LQ.level === 'red' && cs.LQ
+        .reason === 'images' && JSON.stringify(cs.LQ.label) === JSON.stringify(cat.images) && Object.keys(cs).length === Object.keys((
+          await c0.sources()).EAD_STATES).length && Object.values(cs).every(x => ['green', 'orange', 'red'].includes(x.level) &&
+          typeof x.held === 'number'), [cs.LF, cs.LQ]);
+      // le nombre de terrains détenus par État (la table de coverage()), et le nom de l'État en quatre langues
+      const held = {};
+      for (const k of Object.keys((await c0.procedureIndex()).aerodromes))
+        if ((await c0.coverage(k)).level !== 'red') held[k.slice(0, 2)] = (held[k.slice(0, 2)] || 0) + 1;
+      const heldKeys = Object.keys(held).filter(x => cs[x]);
+      check(
+        'coverageByState(): `held` = the aerodromes held in the State (partial ones included); held > 0 → green « held » with the label of « held »; none → as before',
+        cs.LF.held >= 2 && cs.LF.level === 'green' && cs.LF.reason === 'held' && cs.EG.held === 6 && cs.EG.level === 'green' && cs.EG
+        .reason === 'held' &&
+        heldKeys.every(x => cs[x].held === held[x] && cs[x].level === 'green') && cs.ED.held === 0 && cs.ED.level === 'orange' && cs
+        .ED.reason === 'ead' && cs.LQ.held === 0 &&
+        cs.LQ.level === 'red', [cs.LF, cs.EG, held]);
+      const nm = (await c0.sources()).EAD_STATES;
+      check('coverageByState(): `names` = the State name [fr, en, de, es] of AeroCatalogue.EAD_STATES, for every prefix, a copy',
+        Object.keys(cs).every(x => Array.isArray(cs[x].names) && cs[x].names.length === 4 && cs[x].names.every(t => typeof t ===
+            'string' && t) &&
+          JSON.stringify(cs[x].names) === JSON.stringify(nm[x].names) && cs[x].names !== nm[x].names) && cs.LF.names[0] ===
+        'France' && cs.ED.names[2] === 'Deutschland', [cs.LF, cs.ED]);
+      check(
+        'coverageByState(): Little Navmap on the workstation changes nothing (same answer as without; no State is ever orange « lnm »)',
+        JSON.stringify(csL) === JSON.stringify(cs) && csL.LQ.level === 'red' && csL.LQ.reason === 'images' && !Object.values(csL)
+        .some(x => x
+          .reason === 'lnm'), [csL.LQ, csL.BK]);
+      check('COVERAGE keeps the key « lnm » for later, but no coverage answer carries it', Array.isArray((await c0.sources()).COVERAGE
+          .lnm) &&
+        !JSON.stringify([cvg, lZ, lQ, cs, csL]).includes('"lnm"'), cvg.map(x => x.reason));
+      // ------------------------------------------------------------------ § 10.29 : mémo des fiches, approche interrompue devinée, read_at
+      // LFMM : un fichier lu à la main (proc/manual/) avec ses pistes (27 : seuil décalé `dthr` ; 09 : lat / lon) et cinq approches
+      const mp = (id, lat, lon, extra = {}) => pt(id, lat, lon, extra),
+        mapp = (name, rw, points) => man(`LFMM.APP.${name}.RW${rw}`, 'APP', name, '2026-10-01', points, {
+          icao: 'LFMM',
+          runways: [rw]
+        }),
+        lfmm = at => ({
+          schema: 1,
+          icao: 'LFMM',
+          cycle: '2026-10-01',
+          updated_at: at,
+          runways: [{
+            id: '27',
+            lat: 45.0,
+            lon: 2.0,
+            dthr: {
+              lat: 45.0,
+              lon: 2.12,
+              elev: 400
+            },
+            elev: 390,
+            qfu: 270,
+            displaced: 400,
+            length: 2400,
+            width: 45,
+            source: 'eaip'
+          }, {
+            id: '09',
+            lat: 45.2,
+            lon: 3.0,
+            dthr: null,
+            elev: 350,
+            qfu: 90,
+            displaced: 0,
+            length: 2000,
+            width: 45,
+            source: 'eaip'
+          }],
+          procedures: [
+            // 27 : aucune approche interrompue marquée ; le point le plus proche du seuil décalé est P3 (celui de lat / lon serait P2)
+            mapp('R27', '27', [mp('P1', 45.0, 1.0), mp('P2', 45.0, 1.92), mp('P3', 45.0, 2.12), mp('P4', 45.05, 2.4), mp('P5', 45.1,
+              2.6)]),
+            // 09 : sans seuil décalé, le seuil de lat / lon ; le point le plus proche est Q2
+            mapp('R09', '09', [mp('Q1', 45.2, 2.0), mp('Q2', 45.2, 2.95), mp('Q3', 45.2, 3.2), mp('Q4', 45.3, 3.3)]),
+            // 09 encore, mais l'approche interrompue est marquée : rien à deviner, rien à toucher
+            mapp('R09M', '09', [mp('M1', 45.2, 2.0), mp('M2', 45.2, 2.95), mp('M3', 45.2, 3.2, {
+              phase: 'missed'
+            })]),
+            // 18 : se termine à son seuil (point RW18, le dernier) : rien après lui, rien à marquer
+            mapp('R18', '18', [mp('N1', 46.0, 3.0), mp('N2', 45.95, 3.0), mp('RW18', 45.9, 3.0)]),
+            man('LFMM.STAR.S1A.RWALL', 'STAR', 'S1A', '2026-10-01', [mp('S1', 46, 1), mp('S2', 45.5, 1.5)])
+          ]
+        });
+      cput('proc/manual/LFMM.json', lfmm('2026-10-28T10:00:00+00:00'));
+      const ix0 = JSON.parse(cf.get('proc/manual/index.json')),
+        lx0 = JSON.parse(cf.get('proc/local/index.json'));
+      cput('proc/manual/index.json', {
+        ...ix0,
+        aerodromes: {
+          ...ix0.aerodromes,
+          LFBD: {
+            ...ix0.aerodromes.LFBD,
+            updated_at: '2026-10-27T09:15:00+00:00' // un terrain publié relu à la main : la date vient de proc/manual/
+          },
+          LFMM: {
+            SID: 0,
+            STAR: 1,
+            APP: 4,
+            status: 'check',
+            cycle: '2026-10-01',
+            updated_at: '2026-10-28T10:00:00+00:00'
+          },
+          LFMO: {
+            SID: 1,
+            STAR: 0,
+            APP: 0,
+            status: 'check',
+            cycle: '2026-10-01' // une entrée d'avant la date : pas de read_at
+          },
+          LFMP: {
+            SID: 1,
+            STAR: 0,
+            APP: 0,
+            status: 'check',
+            cycle: '2026-10-01',
+            updated_at: '2026-10-26T08:00:00Z'
+          }
+        }
+      });
+      cput('proc/local/index.json', {
+        ...lx0,
+        aerodromes: {
+          ...lx0.aerodromes,
+          LFMM: {
+            SID: 1,
+            STAR: 0,
+            APP: 0,
+            updated_at: '2026-10-29T08:30:00Z' // plus récent que proc/manual/ : c'est la plus récente des deux qui compte
+          },
+          LFMP: {
+            SID: 2,
+            STAR: 0,
+            APP: 0,
+            updated_at: '2026-10-20T08:00:00Z' // plus ancien : la date de proc/manual/ reste
+          }
+        }
+      });
+      // (g) 300 appels, une fusion
+      const mm = covDb(noLnm),
+        wpm = cWatch.filter(x => x.prefix === 'proc/').pop(),
+        s0 = mm.procedureStats(),
+        r0 = cReads.length,
+        first = await mm.procedures('LFMM'),
+        oneRead = cReads.length - r0;
+      const s1 = mm.procedureStats();
+      for (let i = 0; i < 300; i++) await mm.procedures('LFMM');
+      const s2 = mm.procedureStats(),
+        calls300 = cReads.length - r0 - oneRead,
+        togetherDb = covDb(noLnm),
+        sT = togetherDb.procedureStats();
+      await Promise.all(Array.from({
+        length: 300
+      }, () => togetherDb.procedures('LFMM')));
+      check(
+        'procedures(): 300 calls after the first cost no merge and read no file (the first call read proc/manual/, proc-seen/ and proc/local/; the list is built once per revision)',
+        s1.merges - s0.merges === 1 && s2.merges === s1.merges && s2.hits - s1.hits === 300 && calls300 === 0 && oneRead >= 3 &&
+        first.length === 5 && s2.memo === 1, [s0, s1, s2, oneRead, calls300]);
+      check('procedures(): 300 simultaneous calls share one merge', togetherDb.procedureStats().merges - sT.merges === 1, [sT,
+        togetherDb
+        .procedureStats()
+      ]);
+      const sB = mm.procedureStats();
+      const pById = await mm.procedure('LFMM.APP.R27.RW27'),
+        pMissing = await mm.procedure('LFMM.APP.NONE.RW27'),
+        rwM = await mm.runways('LFMM'),
+        sA = mm.procedureStats();
+      check('procedure(id) and runways(icao) read the memo: no merge, one hit each', sA.merges === sB.merges && sA.hits - sB.hits ===
+        3 &&
+        pById?.id === 'LFMM.APP.R27.RW27' && pMissing === null && rwM.map(r => r.id).join() === '09,18,27', [sB, sA, rwM.map(r => r
+          .id)]);
+      check(
+        'runways(icao) from the memo: the file\'s runways complete, the one named by a record\'s RW point derived (approx), elevation kept',
+        rwM.find(r => r.id === '27').approx === false && rwM.find(r => r.id === '27').dthr.lon === 2.12 && rwM.find(r => r.id ===
+          '18')
+        .approx === true && rwM.find(r => r.id === '18').lat === 45.9, rwM);
+      rwM[0].lat = 99;
+      first[0].name = 'CHANGED';
+      check('what the memo returns are copies: a caller changing a record or a runway does not change the next answer', (await mm
+        .runways(
+          'LFMM')).find(r => r.id === '09').lat === 45.2 && (await mm.procedures('LFMM')).every(p => p.name !== 'CHANGED'), null);
+      // une révision changée donne la nouvelle liste (une fusion de plus)
+      const withNew = JSON.parse(cf.get('proc/manual/LFMM.json'));
+      withNew.procedures.push(man('LFMM.STAR.S2A.RWALL', 'STAR', 'S2A', '2026-10-01', [mp('S3', 46, 1.2), mp('S4', 45.5, 1.7)]));
+      cput('proc/manual/LFMM.json', withNew);
+      await wpm.fn(['proc/manual/LFMM.json']); // le cadre annonce le fichier changé : l'entrée est jetée
+      const sC = mm.procedureStats(),
+        changed = await mm.procedures('LFMM'),
+        sD = mm.procedureStats();
+      check('a changed file revision gives the new list (one more merge, then the memo again)', changed.length === 6 && changed.some(
+          p => p
+          .name === 'S2A') && sD.merges - sC.merges === 1 && (await mm.procedures('LFMM')).length === 6 && mm.procedureStats()
+        .merges === sD
+        .merges, [sC, sD, changed.length]);
+      // les voies d'invalidation : l'observateur de proc/ (écho ignoré, révision changée jetée), refresh()
+      const echo2 = mm.procedureStats().memo;
+      await wpm.fn(['proc/manual/LFMM.json']);
+      const afterEcho = mm.procedureStats().memo;
+      cput('proc/manual/LFMM.json', lfmm('2026-10-28T11:00:00+00:00'));
+      await wpm.fn(['proc/manual/LFMM.json']);
+      const afterChange = mm.procedureStats().memo;
+      await mm.procedures('LFMM');
+      mm.refresh();
+      const afterRefresh = mm.procedureStats().memo;
+      const sE = mm.procedureStats();
+      await mm.procedures('LFMM');
+      check('the memo entry is dropped by the proc/ watcher (a changed revision, not an echo) and by refresh()', echo2 === 1 &&
+        afterEcho === 1 &&
+        afterChange === 0 && afterRefresh === 0 && mm.procedureStats().merges - sE.merges === 1, [echo2, afterEcho, afterChange,
+          afterRefresh
+        ]);
+      // (h) l'approche interrompue devinée par le lecteur
+      cput('proc/manual/LFMM.json', lfmm('2026-10-28T10:00:00+00:00')); // l'état d'origine
+      await wpm.fn(['proc/manual/LFMM.json']);
+      const g0 = mm.procedureStats().guessed.missed,
+        gl = await mm.procedures('LFMM', {
+          kind: 'APP'
+        }),
+        g = n => gl.find(p => p.name === n),
+        phases = n => g(n).points.map(p => p.phase).join();
+      check(
+        'an approach with no missed phase: marked after the point nearest the threshold (the displaced one, not the runway\'s lat/lon), guessed set',
+        phases('R27') === 'main,main,main,missed,missed' && JSON.stringify(g('R27').guessed) === '["missed"]', g('R27'));
+      check('without a displaced threshold the runway\'s lat / lon is the reference', phases('R09') === 'main,main,missed,missed' &&
+        JSON.stringify(g('R09').guessed) === '["missed"]', g('R09'));
+      check('an approach that already has a missed phase is untouched (no guessed); one ending at its threshold too', phases('R09M') ===
+        'main,main,missed' && g('R09M').guessed === undefined && phases('R18') === 'main,main,main' && g('R18').guessed === undefined,
+        [
+          g('R09M'), g('R18')
+        ]);
+      check('the counter counts the guesses made when the list is built (once per revision, not per call)', mm.procedureStats().guessed
+        .missed - g0 === 2 && (await mm.procedures('LFMM')).length === 5 && mm.procedureStats().guessed.missed - g0 === 2, [g0, mm
+          .procedureStats()
+        ]);
+      check('procedure(id) serves the same guessed record; the reader\'s copy is not modified (no guessed, no added phase in the file)',
+        (await mm.procedure('LFMM.APP.R27.RW27')).guessed?.[0] === 'missed' && !JSON.stringify(JSON.parse(cf.get(
+          'proc/manual/LFMM.json')))
+        .includes('guessed') && JSON.parse(cf.get('proc/manual/LFMM.json')).procedures[0].points.every(p => !p.phase), null);
+      check('an SID or a STAR is never given a missed approach', (await mm.procedures('LFMM', {
+        kind: 'STAR'
+      })).every(p => !p.guessed && p.points.every(q => q.phase === 'main')), null);
+      // sans piste placée ni terrain connu : rien n'est deviné, et la liste n'est pas gardée (une base peut arriver)
+      cput('proc/manual/LFMX.json', {
+        schema: 1,
+        icao: 'LFMX',
+        cycle: '2026-10-01',
+        procedures: [man('LFMX.APP.RNAV.RWALL', 'APP', 'RNAV', '2026-10-01', [mp('X1', 45, 1), mp('X2', 45, 1.5), mp('X3', 45,
+          2)], {
+          icao: 'LFMX'
+        })]
+      });
+      await wpm.fn(['proc/manual/LFMX.json']);
+      // une horloge à la main : une entrée à qui la base n'a pas tout dit (ici, aucune zone publiée) n'est crue que 30 s
+      const clock = {
+          t: Date.parse('2026-10-25T12:00:00Z')
+        },
+        xDb = AeroDB.create({
+          reader: cReader,
+          lnmperf: false,
+          now: () => clock.t
+        }),
+        sX = xDb.procedureStats(),
+        x1 = await xDb.procedures('LFMX'),
+        x2 = await xDb.procedures('LFMX'),
+        sX2 = xDb.procedureStats();
+      clock.t += 31e3;
+      const x3 = await xDb.procedures('LFMX');
+      check('an approach with no runway position and no known aerodrome is left as read, and kept 30 s only (a base may arrive)', x1[
+          0].guessed === undefined &&
+        x1[0].points.every(p => p.phase === 'main') && x2.length === 1 && x3.length === 1 && sX2.merges - sX.merges === 1 && xDb
+        .procedureStats().merges - sX.merges === 2, [x1, xDb.procedureStats()]);
+      // (j) read_at et source.read_at
+      const cov = async x => (await covDb(noLnm).coverage(x)),
+        [vMm, vMo, vMp, vBd, vEgll, vLfpo] = await Promise.all(['LFMM', 'LFMO', 'LFMP', 'LFBD', 'EGLL', 'LFPO'].map(cov));
+      check('coverage().read_at: the most recent of the proc/manual/ and proc/local/ entries, ISO 8601 UTC to the second', vMm
+        .read_at ===
+        '2026-10-29T08:30:00Z' && vMp.read_at === '2026-10-26T08:00:00Z', [vMm, vMp]);
+      check(
+        'coverage().read_at: a published aerodrome read again by hand carries the date of that reading; an entry without updated_at, an orange and a published-only aerodrome are null',
+        vBd.source === 'published' && vBd.read_at === '2026-10-27T09:15:00Z' && vMo.level === 'green' && vMo.read_at === null &&
+        vEgll.read_at === null && vLfpo.level === 'orange' && vLfpo.read_at === null && cLfmn.read_at === null, [vBd, vMo, vEgll,
+          vLfpo
+        ]);
+      const mrec = (await mm.procedures('LFMM'))[0],
+        fpx = (await db.procedures('LFPX'))[0],
+        fpub = (await db.procedures('LFBD')).find(p => p.kind === 'SID');
+      check(
+        'source.read_at: a record served from proc/manual/ carries the file\'s updated_at (also in sources); absent from a published one and from a file without the date',
+        mrec.source.read_at === '2026-10-28T10:00:00Z' && mrec.sources[0].read_at === '2026-10-28T10:00:00Z' && fpx.source.read_at ===
+        '2026-10-28T10:00:00Z' && fpub.source.read_at === undefined && fpub.sources.every(x => x.read_at === undefined) && zz.every(
+          p => p
+          .source.read_at === undefined), [mrec.source, fpx.source, fpub.source]);
+      // § 10.25 : lien « Source » d'une fiche de l'eAIP (charts.base + Cartes/<OACI>/ + nom de la page), rien pour les autres sources
+      const srec = (id, name, kind, file, ref, pts) => ({
+        id,
+        icao: 'LFZX',
+        kind: 'STAR',
+        name,
+        runways: [],
+        transition: null,
+        points: pts,
+        source: {
+          kind,
+          ...(file ? {
+            file
+          } : {}),
+          ...(ref ? {
+            ref
+          } : {}),
+          cycle: '2026-10-29'
+        },
+        status: 'check'
+      });
+      files.set('proc/manual/LFZX.json', JSON.stringify({
+        schema: 1,
+        icao: 'LFZX',
+        cycle: '2026-10-29',
+        charts: {
+          base: 'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_29_OCT_2026/FRANCE/AIRAC-2026-10-29/html/eAIP/'
+        },
+        procedures: [srec('LFZX.STAR.AAA1A.RWALL', 'AAA1A', 'eaip', null, 'AD_2_LFZX_DATA_STAR_RWY09_RNAV_CODE_01.pdf', [pt(
+          'AAAAA',
+          45, 1), pt('BBBBB', 45.1, 1.1)]), srec('LFZX.STAR.BBB1A.RWALL', 'BBB1A', 'ead-basic', 'doc.pdf',
+          'ead-basic/LF/doc.pdf', [
+            pt('CCCCC', 45, 1), pt('DDDDD', 45.2, 1.1)
+          ]), srec('LFZX.STAR.CCC1A.RWALL', 'CCC1A', 'eaip', '../x.pdf', null, [pt('EEEEE', 45, 1.3), pt('FFFFF', 45.1,
+          1.4)])]
+      }));
+      const zx = await db.procedures('LFZX'),
+        zA = zx.find(p => p.name === 'AAA1A'),
+        zB = zx.find(p => p.name === 'BBB1A'),
+        zC = zx.find(p => p.name === 'CCC1A');
+      check(
+        'source.url (§ 10.25): an eAIP record gets charts.base + Cartes/<ICAO>/ + its page (file, else ref of an older file); an EAD record and a bad name get none',
+        zA?.source.url ===
+        'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_29_OCT_2026/FRANCE/AIRAC-2026-10-29/html/eAIP/Cartes/LFZX/AD_2_LFZX_DATA_STAR_RWY09_RNAV_CODE_01.pdf' &&
+        zA.source.file === 'AD_2_LFZX_DATA_STAR_RWY09_RNAV_CODE_01.pdf' && zB && zB.source.url === undefined && zC && zC.source
+        .url ===
+        undefined, [zA?.source, zB?.source, zC?.source]);
+      // une base hors de l'hôte du SIA (fichier du terrain modifié dans le dépôt synchronisé) : jamais de lien
+      for (const [code, base] of [
+          ['LFZW', 'https://evil.example/eAIP/'],
+          ['LFZV', 'https://www.sia.aviation-civile.gouv.fr.evil.example/eAIP/'],
+          ['LFZU', 'https://www.sia.aviation-civile.gouv.fr/media/../../x/'],
+          ['LFZT', 'http://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP/']
+        ]) files.set(`proc/manual/${code}.json`, JSON.stringify({
+        schema: 1,
+        icao: code,
+        cycle: '2026-10-29',
+        charts: {
+          base
+        },
+        procedures: [{
+          ...srec(`${code}.STAR.AAA1A.RWALL`, 'AAA1A', 'eaip', null, 'AD_2_X_CODE_01.pdf', [pt('AAAAA', 45, 1), pt('BBBBB', 45.1,
+            1.1)]),
+          icao: code
+        }]
+      }));
+      const evil = await Promise.all(['LFZW', 'LFZV', 'LFZU', 'LFZT'].map(async c => (await db.procedures(c))[0]?.source));
+      check('source.url: a charts.base outside the SIA host (another host, a look-alike, a dot-dot path, plain http) gives no link',
+        evil.every(s => s && s.url === undefined), evil);
     } catch (e) {
       check('no exception', false, String(e && e.stack || e));
     }

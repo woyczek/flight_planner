@@ -1,0 +1,15 @@
+AD 2 LFPG DATA RWY09R FNA RNP CODEAIP
+11 JUN 2026FRANCE
+PARIS CHARLES DE GAULLE
+PRECODING FNA RNP RWY 09R
+AMDT 06/26© Service de l'Information Aéronautique, France
+FNA RNP RWY09R
+RMK - MAG VAR 2020 1.1°E REF NAVAID : BT
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) Navigation Accuracy (NM)
+IF PG680 -- - -- 4000 -- - -
+TF FG09R - 084 085.0 5.4 - 4000 4000 -- 1.0
+TF RW09R Yes 084 085.1 11.2 - - - - -3.0°/54 0.3
+APCH CA -- 084 085.3 - - 1000 - -- 1.0
+VI - - 054 055.3 - -- - -- 1.0
+→ CF PG671 - 084 085.3 - - - - - - 1.0
+→ TF PG672 - 051 052.1 4.4 - 4000 4000 - - 1.0

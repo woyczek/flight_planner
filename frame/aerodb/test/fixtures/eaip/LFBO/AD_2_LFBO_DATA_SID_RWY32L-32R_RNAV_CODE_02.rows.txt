@@ -1,0 +1,31 @@
+AD 2 LFBO DATA SID RWY32L-32R RNAV CODE 02AIP
+19 MAR 2026FRANCE
+TOULOUSE BLAGNAC SID RNAV RWY 32L/32R
+RMK GNSS only MAG VAR 2025 1.7°E REF NAVAID : TOU SID RNAV RWY 32L / 32R
+Procedure Path Waypoint (Protégés pour / Protected for CAT A, B, C, D)
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+MEN 7B
+RWY32R 321 322.9
+CA - - -- 1000 - - 1.0
+RWY32L 321 322.9
+- D F T O U Y e s ---- - - - 1 . 0
+- DF BO321 - - - - R - - - 1.0
+- TF MEDAP - 072 073.2 21.4 - - - - 1.0
+- TF MEN - 048 049.6 64.2 - - - - 1.0
+MORIL 7B
+RWY32R 321 322.9
+CA - - - - 1000 - - 1.0
+RWY32L 321 322.9
+- D F T O U Y e s ---- - - - 1 . 0
+- DF BO325 - - - - R FL 060 -- 1 . 0
+- TF GALDO - 141 142.9 24.6 - - - - 1.0
+- TF MORIL - 112 113.4 29.0 - - - - 1.0
+RIBOU 7B
+RWY32R 321 322.9
+1000 - - 1.0CA - - - -
+RWY32L 321 322.9
+- D F T O U Y e s ---- - - - 1 . 0
+- DF BO325 - - - - R FL 060 -- 1 . 0
+- TF GALDO - 141 142.9 24.6 - - - - 1.0
+- TF RIBOU - 142 143.2 13.4 - FL 120 - - 1.0
+AMDT 03/26© Service de l'Information Aéronautique, France

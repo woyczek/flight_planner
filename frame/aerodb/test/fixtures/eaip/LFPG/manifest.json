@@ -1,0 +1,552 @@
+{
+ "icao": "LFPG",
+ "cycle": "2026-10-29",
+ "source": "SIA eAIP",
+ "generated_at": "2026-10-29T18:07:42+00:00",
+ "pages": [
+  {
+   "file": "AD_2_LFPG_DATA_01.pdf",
+   "pages": 1,
+   "rows": 51,
+   "sha256": "52b5e2c7b9887a1130ca1cf068d1273041ac758a65660a9307c4ad63a3dd4e9f"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_02.pdf",
+   "pages": 1,
+   "rows": 54,
+   "sha256": "08392bd1e8c7ad91d66c0b389cf55e40d0b3d329c6d1a8e2254467d203af84f2"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_03.pdf",
+   "pages": 1,
+   "rows": 59,
+   "sha256": "1952fdde6677588952c6852565dd8bab6bded1580b91e2be75c67c9dc45e0672"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_04.pdf",
+   "pages": 1,
+   "rows": 64,
+   "sha256": "f5556d2d8b0d08a463b8d97c48123dfcb021abaff5fec4811489c8378150da85"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_05.pdf",
+   "pages": 1,
+   "rows": 46,
+   "sha256": "9a4fd9148275945239c6a1a95764a1cb459c06a4d55f69e6d02efb19b2b4dd0c"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY08L_FNA_ILS_CAT123_LOC_CODE.pdf",
+   "pages": 1,
+   "rows": 13,
+   "sha256": "be3bd4f643097c4f6a1b9309f160b45d8fa68acbd08db816d3182afb078987dc"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY08L_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 15,
+   "sha256": "76f259fb6d2b3625d68ca73d5fce2dcdd99bfa1bc9b703c3f0f23253a3909bd6"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY08L_INA_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 67,
+   "sha256": "1e5ba412a0f5fedcdb772d168959b9f59dc3ccfd929f4d49d32b66df0570d953"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY08R_FNA_ILS_CAT123_LOC_CODE.pdf",
+   "pages": 1,
+   "rows": 13,
+   "sha256": "aae57aec160fdd63f0be5e0f39b347df2bbea309f4697f97fbb5cbef2591562d"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY08R_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 15,
+   "sha256": "d5df6180e38763c07d9500866a96becce47442394573bb167a6369b9619deb8b"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY08R_INA_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 91,
+   "sha256": "c3c19a18f9c6ec2ede6b3aa5aae0522e166c42141ef5b9b5e473303d7a7be8b2"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY09L_FNA_ILS_CAT123_LOC_CODE.pdf",
+   "pages": 1,
+   "rows": 15,
+   "sha256": "530afb627b811e089ba55c47654232ba2dd8280b64475adfdd9f68b19e762daf"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY09L_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 15,
+   "sha256": "be6f0897447b1e5d6ee8ab967b71750c2aa8b78fa74c6a9aa0f72724d5714ec4"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY09L_INA_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 93,
+   "sha256": "1bbf0742d4457a93d0604e6e873ba3e807d2a1f1bc95203de3ee4ee7babad94e"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY09R_FNA_ILS_CAT123_LOC_CODE.pdf",
+   "pages": 1,
+   "rows": 15,
+   "sha256": "d87f56344b93887160607f850f1ce81d1c43ea5dbd4e6fbac7316d73a8dc2aa9"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY09R_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 15,
+   "sha256": "2411f838eae4b3d5b8852ab5f356204fde025affcbbbced9c11ec74382d55bba"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY09R_INA_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 67,
+   "sha256": "597d146aac47d62195bdec6a4cf957ad5c74794b4ab14afd8ba0ef96d1ebe71b"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY26L_FNA_ILS_CAT123_LOC_CODE.pdf",
+   "pages": 1,
+   "rows": 14,
+   "sha256": "dac0f42b5ac6b8826b34b29585f7074d950fad509dea7b4a018ed6b98dbf56a4"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY26L_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 16,
+   "sha256": "60f27bea656d553082202adfe5906463aeda6306a3118ab02f19929cab4df233"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY26L_INA_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 96,
+   "sha256": "0d9352fa80777969c5aab81264eb697b8d6e4d7ab49f37b19217ec3848c70a2d"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY26R_FNA_ILS_CAT123_LOC_CODE.pdf",
+   "pages": 1,
+   "rows": 14,
+   "sha256": "148992ef1b8aab539f6a312a6ceb85cb1f6bd969222dcb3d61358265796bb649"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY26R_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 16,
+   "sha256": "61d53f8e74db8f5b0570343559bb28539245de88ccca0c3ae22ce0257544299d"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY26R_INA_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 62,
+   "sha256": "279e6bddec068abfda6f3d040a2a04425e95b82fa2b6ce731f84a18bdd82a3be"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY27L_FNA_ILS_CAT123_LOC_CODE.pdf",
+   "pages": 1,
+   "rows": 16,
+   "sha256": "27345491b304559aa6f7cd2643a257b71e47767e7ffe3735d20d3f6ab4a4cf88"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY27L_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 15,
+   "sha256": "e74a591cc771249959f0d2add5b88e0df60d640e38661a5937c5c30aa933b8b1"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY27L_INA_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 62,
+   "sha256": "2ed6cce05676d7502a389c710c05d1a7f40123391fc7136e6a4d2ebd05bf94a1"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY27R_FNA_ILS_CAT123_LOC_CODE.pdf",
+   "pages": 1,
+   "rows": 15,
+   "sha256": "8bd11492d7324398c13d40e4af94e1d30d6262b7e690abc6248cecf43b02dfa0"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY27R_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 16,
+   "sha256": "0cf9d4f83ffc080b0dc5a7645b9d7236cc12d579cbb90c743e92badc349649d5"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_RWY27R_INA_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 98,
+   "sha256": "623b62fd44a2872b74d5a206c625fcf1c8e081b3060a52d53b7acecbeddb6f2d"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_SID_RWY08L-08R_POGO_LFPO_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 28,
+   "sha256": "978eb7cb3a463ae6c7bffe6ca481dcc77250e2cccea6a10bca5769e08037f983"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_SID_RWY08L-08R_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 80,
+   "sha256": "ef8eea08b15552d37458733916e6cd4a1d34e3ad40d29af8941d8967b270daee"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_SID_RWY08L-08R_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 82,
+   "sha256": "c37c4b880f427aaa46512513c6612d7583038b303eec6c0ac0c41505b9e7982f"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_SID_RWY08L-08R_RNAV_CODE_03.pdf",
+   "pages": 1,
+   "rows": 72,
+   "sha256": "0e28648bba0fafdeaee536d01fa9dcfaeaf9c36aecc21112367cde5c24b4d96d"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_SID_RWY08L-08R_RNAV_CODE_04.pdf",
+   "pages": 1,
+   "rows": 80,
+   "sha256": "1f83e8d39783d32d7c4e2247bca7a2ea5b806eb12c4d61ae0060852c9804a88b"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_SID_RWY08L-08R_RNAV_CODE_05.pdf",
+   "pages": 1,
+   "rows": 55,
+   "sha256": "7df76fe72374f30861afc2b9d91c8dd8593b4d8f7bf834a2f5dc7d90a9a99fff"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_SID_RWY09L-09R_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 74,
+   "sha256": "abd5010de1fc4a415014dd3cf6c9b40c2e82505429fe7d10b21cf95d16be3124"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_SID_RWY09L-09R_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 80,
+   "sha256": "8ff3431d2f2d89ebf55c793a084da9c1a508b210a5ca95384190ea3c785d527d"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_SID_RWY09L-09R_RNAV_CODE_03.pdf",
+   "pages": 1,
+   "rows": 89,
+   "sha256": "2d2ce296411c4f8912df4945a9db248dcbe3207728e910ba5cf079c166b72f14"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_SID_RWY09L-09R_RNAV_CODE_04.pdf",
+   "pages": 1,
+   "rows": 81,
+   "sha256": "528602a449dff0b16113d7a83d0975bae233a3d8ed51b793c59af1cb142c085d"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_SID_RWY09L-09R_RNAV_CODE_05.pdf",
+   "pages": 1,
+   "rows": 61,
+   "sha256": "75289b0fcac8efff667adedc5f6f9bb864ef7425170ef002a3d76a29352f857d"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_SID_RWY26L-26R_POGO_LFPO_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 31,
+   "sha256": "fa2ac8116b53d33dafc2a6d4d697e0f73893a77e0eadb632f6d2da8cb1fc7da2"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_SID_RWY26L-26R_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 86,
+   "sha256": "3465a707760c1514606bd738bd3cee797d39bda029356e7712aa17457cff71fc"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_SID_RWY26L-26R_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 91,
+   "sha256": "a2e698d95f49d814b3aa40571476cfe5080dbc94f389bafb420cb434c9a9cb21"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_SID_RWY26L-26R_RNAV_CODE_03.pdf",
+   "pages": 1,
+   "rows": 96,
+   "sha256": "3a2c7f5f30aede484d36c77b9c11a13ef89575eb2224e18a70fdf709fa911d07"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_SID_RWY26L-26R_RNAV_CODE_04.pdf",
+   "pages": 1,
+   "rows": 96,
+   "sha256": "60d13c28e8b0b731e24222497de9aa481ef9c040ff3ee6e00aaa4cebb4bc6774"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_SID_RWY27L-27R_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 72,
+   "sha256": "f726cd73485378b1b2035c910bde6e56e9be47c0dbaae708a251115df0074ec3"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_SID_RWY27L-27R_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 83,
+   "sha256": "8fdcc88ab715123b73a89286d6b3dc2d59285e576693a71661e98f72f0996749"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_SID_RWY27L-27R_RNAV_CODE_03.pdf",
+   "pages": 1,
+   "rows": 101,
+   "sha256": "98556c14893d45dd23384092b4dc18a321c4a124a1b2486c6c555a88b6b0d426"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_SID_RWY27L-27R_RNAV_CODE_04.pdf",
+   "pages": 1,
+   "rows": 83,
+   "sha256": "0179bd0fc31df1e0633d7a5673aceb699363642a2cb53aec24db62383641e202"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_SID_RWY27L-27R_RNAV_CODE_05.pdf",
+   "pages": 1,
+   "rows": 97,
+   "sha256": "03120a3f87547657a08764d9990dc08d341979b34b0430184d89ab9376d5d945"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY08L_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 54,
+   "sha256": "2a5c590d1440b8140083c033abfe603d19f80e59bcce2ac85f45ed39385128e8"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY08L_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 62,
+   "sha256": "ebaa1470369a3b17e6c3bac289b21d8fa7694708bea717038c9d4eecc881ef03"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY08L_RNAV_CODE_03.pdf",
+   "pages": 1,
+   "rows": 57,
+   "sha256": "77d9810d18df2c936e3144a05313384d31c70480de28e27555deeecf4147284b"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY08L_RNAV_CODE_04.pdf",
+   "pages": 1,
+   "rows": 63,
+   "sha256": "31cd8732e8b27af3560ed5ff432bd8c034e4764cbbe592fd575e44e173c96fbd"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY08L_RNAV_CODE_05.pdf",
+   "pages": 1,
+   "rows": 40,
+   "sha256": "bc478405e7aa746617dea424b77e0431efb10e29502096e1c67184bace18129a"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY08R_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 54,
+   "sha256": "1f53025a5d11128fe533a13d6c71ea21795b28e73d858a2048a238e8ec524c9b"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY08R_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 68,
+   "sha256": "f3467e0b978ed0b21c6a6c0224af7c76a8ea0224070ffea74dd74ff5a9d14d1d"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY08R_RNAV_CODE_03.pdf",
+   "pages": 1,
+   "rows": 64,
+   "sha256": "a5337999e6ed90c8021d7f2e34a162866b7349ff8739e467d3de60832b8bf854"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY08R_RNAV_CODE_04.pdf",
+   "pages": 1,
+   "rows": 56,
+   "sha256": "a45efefb4a87ede761148183cac1be929858b19fde7f7cecb3f03fb689a07c6e"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY08R_RNAV_CODE_05.pdf",
+   "pages": 1,
+   "rows": 35,
+   "sha256": "73fa3e20b248b300b93d1ce6130ecfa9134e74e29f0dfd010339407b90be5e88"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY09L_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 54,
+   "sha256": "e24eb01ca30dabaedf88cecfdab8d1374d942765a0796be1410fc720c1611aa6"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY09L_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 62,
+   "sha256": "0fe585e1dcff1ac1c452b40bbae5233996bdfb42e7b1201007dee5255f149d7d"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY09L_RNAV_CODE_03.pdf",
+   "pages": 1,
+   "rows": 57,
+   "sha256": "bf2495a02caeffc8f3a063818e8d39bda7258c896d9e824545165d7e1a33cbab"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY09L_RNAV_CODE_04.pdf",
+   "pages": 1,
+   "rows": 63,
+   "sha256": "f62de8142d8ca45ebd9c60be5ed1d5d9ee6bdcf443201c86c032cb8cb2d1404b"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY09L_RNAV_CODE_05.pdf",
+   "pages": 1,
+   "rows": 40,
+   "sha256": "5bd199860c00e8ce051793fbd32a119518285ece5cf0a478321d571a7761cbec"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY09R_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 54,
+   "sha256": "6e23b24ea0addae637ceb14bbe4e1b61ce118e151c93b62dc04ce5750dde3dfb"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY09R_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 56,
+   "sha256": "0fc1441009429824dd1ddad5ea259664c365a34715f0d6bda94d7f9b60adff1b"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY09R_RNAV_CODE_03.pdf",
+   "pages": 1,
+   "rows": 63,
+   "sha256": "b72a008707783a6e03f37884392b1afab4b79d4240209fd220cec5c955fd6e68"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY09R_RNAV_CODE_04.pdf",
+   "pages": 1,
+   "rows": 63,
+   "sha256": "4b055c7bd1decf266e8f7c4534eeb627f02660d2a4023feae8c43ed32cb192d1"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY09R_RNAV_CODE_05.pdf",
+   "pages": 1,
+   "rows": 40,
+   "sha256": "a430e2eda95c5c410df0560feed1210a7f1b410d77071731fe26beb0af27f0c5"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY26L_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 53,
+   "sha256": "b46cfcd5ad6232425f91258a55f02a8b4849d9fce1e55c6dbadb1147b3a46c3d"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY26L_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 60,
+   "sha256": "ead90b2d9569334278a8886fbec8125ffdcd5a8731778b85bef9f60cf3e1c8ec"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY26L_RNAV_CODE_03.pdf",
+   "pages": 1,
+   "rows": 63,
+   "sha256": "ddac7a138559bb7d66efe3726da5209bd9b80a3a25ead334689622a5698a23f5"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY26L_RNAV_CODE_04.pdf",
+   "pages": 1,
+   "rows": 58,
+   "sha256": "0aab36a79eb7e55f8b7755eb28c4bdbb7a9611c2013f3a8bb26b53a6096e4ebd"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY26L_RNAV_CODE_05.pdf",
+   "pages": 1,
+   "rows": 49,
+   "sha256": "6f318cc11291627b7a5eb112ca1bf8693e72b6dfac24e6b5d795a79a9789eb2c"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY26R_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 53,
+   "sha256": "1e48a86745bda31e28a44e72baa828343965ca43d9675e848f19668df330861a"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY26R_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 60,
+   "sha256": "41521c58ac25f100afceae84163182b277977152d9274eb5aa6133682f67511a"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY26R_RNAV_CODE_03.pdf",
+   "pages": 1,
+   "rows": 63,
+   "sha256": "c0dcdd5e05097e4a6b74dfd2d04ac8071b30263854c83aec88cd5919ae9d7488"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY26R_RNAV_CODE_04.pdf",
+   "pages": 1,
+   "rows": 58,
+   "sha256": "bdcd4e58a16f329a4c45e3086c2bca04666a63440c63ae84a6d3078c09138a7c"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY26R_RNAV_CODE_05.pdf",
+   "pages": 1,
+   "rows": 49,
+   "sha256": "1cb8bec89ff759509c6cb45f06d93ec4ef16311f77657f621b471eb899cf82be"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY27L_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 57,
+   "sha256": "997d34b2533cec432bb5c687343cbce611e03143102cd925271dd047e416d07f"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY27L_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 56,
+   "sha256": "f704401467821bef0779083523fbb664dbd5de3b5a09c634b08ba28d968d4cfd"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY27L_RNAV_CODE_03.pdf",
+   "pages": 1,
+   "rows": 63,
+   "sha256": "1c8e6c06c9cf919c1ecf0cc74e297958f991d9f467f2ed2dece847d1bd0ae176"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY27L_RNAV_CODE_04.pdf",
+   "pages": 1,
+   "rows": 58,
+   "sha256": "7723b21d0fc9d956def7568d6feef9d6e63d0f76d78ce6b0212dc9fbb4a49a32"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY27L_RNAV_CODE_05.pdf",
+   "pages": 1,
+   "rows": 49,
+   "sha256": "59e3d3806f00f2e638022d1b4300d2fcdb6f76db3b0ab1ffaaf029632a7f7d5c"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY27R_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 53,
+   "sha256": "1cf2a398b67e558cb48655f9f3c84b181c062a0c0a8f0cc42d121a618cffea36"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY27R_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 60,
+   "sha256": "3a62602ec830a72cc622a57075c199a32f75345d2e7181a996429727e2cf96ba"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY27R_RNAV_CODE_03.pdf",
+   "pages": 1,
+   "rows": 58,
+   "sha256": "3d5d792827ca47a3dad208b17ed394cd20bc052cb1ad25f0f58f957802f12b39"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY27R_RNAV_CODE_04.pdf",
+   "pages": 1,
+   "rows": 53,
+   "sha256": "dfb9afa89e1430cad5d34bf93770f458848be377146c52e56d2ae903e04fd442"
+  },
+  {
+   "file": "AD_2_LFPG_DATA_STAR_RWY27R_RNAV_CODE_05.pdf",
+   "pages": 1,
+   "rows": 59,
+   "sha256": "06880cb1a63ae66e4ac0f8e72dccabe4f8c7454292c3d93a189527c1bf8e18e0"
+  }
+ ],
+ "ad2_12": {
+  "file": "FR-AD-2.LFPG.AD-2.12.html",
+  "sha256": "6b1221a082cc58bcf78b03c31370739b0e567bc81ae3607fd0d03d3e7fd7fa29"
+ }
+}

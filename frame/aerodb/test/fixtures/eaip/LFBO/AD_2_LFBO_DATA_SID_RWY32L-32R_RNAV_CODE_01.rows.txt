@@ -1,0 +1,59 @@
+AIP AD 2 LFBO DA T A SID RWY32L-32R RNAV
+CODE 01
+02 OCT 2025FRANCE
+TOULOUSE BLAGNAC
+SID RNAV RWY 32L / 32R
+(Protégés pour / Protected for CA T A, B, C, D)
+SID RNAV RWY 32L/32R
+RMK GNSS only REF NAVAID : TOUMAG VAR 2025 1.7°E
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+AMOLO 7B
+RWY32R 321 322.9
+CA - - - - 1000 - - 1.0
+RWY32L 321 322.9
+- D F T O U Y e s ---- - - - 1 . 0
+- DF BO321 - - - - R - - - 1.0
+- TF MEDAP - 072 073.2 21.4 - - - - 1.0
+- TF AMOLO - 101 102.9 24.8 - FL 200 - - 1.0
+FINOT 7B
+RWY32R 321 322.9
+CA - - - - 1000 - - 1.0
+RWY32L 321 322.9
+- D F T O U Y e s ---- - - - 1 . 0
+- DF BO323 - - - - R - - - 1.0
+- TF FINOT - 090 092.1 16.4 - - - - 1.0
+FISTO 7B
+RWY32L 321 322.9
+CA - - - 1000 - - - 1.0
+RWY32R 321 322.9
+- DF BO320 - ---- - - - 1 . 0
+- TF BO322 - 345 346.6 3.2 - 5000 - - 1.0
+- TF BO324 - 357 358.6 27.0 - FL 150 - - 1.0
+- TF FISTO - 357 358.6 14.4 - - - - 1.0
+GAUDE 7B
+RWY32L 321 322.9
+CA - - 1000 - - 1.0--
+RWY32R 321 322.9
+- D F T O U Y e s ---- - - - 1 . 0
+- FA TOU Yes 306 307.5 - - 4000 - - 1.0
+- VI - - 169 171.1 - L - - - 1.0
+- CF BO852 - 214 216.1 - - - - - 1.0
+- TF GAUDE - 214 215.8 22.8 - FL 200 - - 1.0
+LACOU 7B
+RWY32L 321 322.9
+CA - - - - 1000 - - 1.0
+RWY32R 321 322.9
+- DF BO320 - ---- - - - 1 . 0
+- TF BO322 - 345 346.6 3.2 - 5000 - - 1.0
+- TF LACOU - 333 334.7 34.9 - - - - 1.0
+LMB 7B
+RWY32L 321 322.9
+CA - - -- 1000 - - 1.0
+RWY32R 321 322.9
+- D F T O U Y e s ---- - - - 1 . 0
+- FA TOU Yes 306 307.5 - - 4000 - - 1.0
+VI - - 211 213.0 - L - - - 1.0
+- CF BO850 - 256 258.0 - - - - - 1.0
+- TF LMB - 256 257.6 34.4 - - - - 1.0
+AMDT 10/25© Service de l'Information Aéronautique, France

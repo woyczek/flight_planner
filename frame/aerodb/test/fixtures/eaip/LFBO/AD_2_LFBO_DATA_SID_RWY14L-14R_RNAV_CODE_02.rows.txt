@@ -1,0 +1,31 @@
+AIP AD 2 LFBO DA T A SID RWY14L-14R RNAV
+CODE 02
+02 OCT 2025FRANCE
+TOULOUSE BLAGNAC
+SID RNAV RWY 14L / 14R
+(Protégés pour / Protected for CA T A, B, C)
+SID RNAV RWY 14L/14R
+RMK GNSS only MAG VAR 2025 1.7°E REF NAVAID :
+Procedure Path Waypoint
+Identification Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+AMOLO 7H
+RWY14R 141 142.9
+CA - -- 1.0- - 1000 -
+RWY14L 141 142.9
+- DF BO141 - - - - L - - - 1.0
+- TF MEDAP - 057 059.0 27.3 - - - - 1.0
+- TF AMOLO - 101 102.9 24.8 - FL 200 - - 1.0
+FINOT 7H
+RWY14R 141 142.9
+CA - - - - 1000 - - 1.0
+RWY14L 141 142.9
+- DF BO141 - - - - L - - - 1.0
+- TF FINOT - 084 086.1 23.9 R - - - 1.0
+MEN 7H
+RWY14R 141 142.9
+CA - - - - 1000 - - 1.0
+RWY14L 141 142.9
+- DF BO141 - - - - L - - - 1.0
+- TF MEDAP - 057 059.0 27.3 - - - - 1.0
+- TF MEN - 048 049.6 64.2 - - - - 1.0
+AMDT 10/25© Service de l'Information Aéronautique, France
