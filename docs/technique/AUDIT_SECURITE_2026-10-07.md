@@ -948,6 +948,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 96 | Refactor R-M1: the Map's choose pane on one model (5e4b9433f, 7112b1b3b, e70eacb38) | acceptable, no change of behaviour |
 | 97 | Suite update by channel, `/__setup/update` (4fc473e5d); the two notes of 89 closed | acceptable, two notes |
 | 98 | Refactor R-M2 + R-M5 (a): one cartouche, procedure hues from the theme tokens (3e65a0465) | acceptable, no change of behaviour |
+| 99 | Data module, the zone map to tick (4b201ca99); noreg locks (b939f4051) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1874,6 +1875,14 @@ scenes). The procedure hues now read `--sog-map-sid`, `-star` and `-app`: they c
 suite's code; nothing sets them at run time) and reach the canvas only, where an invalid string is ignored; the hues placed
 in a `style` attribute of the choose pane are still the palette's hex constants. Rule kept: a colour read from the theme
 that ever goes into HTML passes through `cssColor` with a hex fallback.
+
+**99. The Data module's zone map and the noreg locks (4b201ca99, b939f4051) — acceptable.** The map draws the outlines
+of `ctx.aerodb.zoneOutlines()` only (92); the SVG path, view box and size are made of numbers alone (rounded with
+`Math.round`, never a string from the data); the zone identifier, the name and the state go into `data-*`, `aria-label` and
+`<title>` escaped; the tone comes from a closed list; a tap or a key ticks only an identifier the panel's list offers, in
+the same selection, and nothing while an operation runs. No network or write added. The noreg locks live at constant paths
+in the temporary folder, are created exclusively, are removed when stale only if their process is gone, and only by their
+owner otherwise; no path comes from an argument.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
