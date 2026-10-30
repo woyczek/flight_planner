@@ -936,6 +936,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 84 | Map choose pane (c47470399); data repository's provider read from its address (48079d78f) | acceptable |
 | 85 | Map: labels in the collision pass (ccedbd6c6, 1d137874f) | acceptable |
 | 86 | Refactor R-F4c (81ff938e2), status lines that lead somewhere (232e92bb3) | acceptable |
+| 87 | Refactors R-C1 (one Relay identity, 68b2f4dbe) and R-F5 (one completion list, f7183950a); 39a28c9b0 | acceptable; no guard lost |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1781,6 +1782,15 @@ code, runway numbers, the profile's constraint texts): no HTML, write, network o
 **86. R-F4c and the status lines (81ff938e2, 232e92bb3) — acceptable.** R-F4c writes the edited route's text through
 one pure rule (`textFromTokens`), the bench moved into `frame/lib/test`; no write, network or HTML. The status lines now
 lead to internal Settings cards only (fixed `card:` targets from the code); the CSS change loads nothing.
+
+**87. R-C1, R-F5 and a text (68b2f4dbe, f7183950a, 39a28c9b0) — acceptable; no guard lost.** R-C1: a `Relay` class
+replaces the former dictionary; `start()` sets the host and port before listening; `_relay()` stays the server's mark;
+the relay's gate still runs first: off the relay port, `_proxy_belt()` answers 403 to a proxied request from the
+loopback; on it, 503 without a host, then https, pairing on the `relay` channel, GET / HEAD / POST, `relay=True` routes;
+`POST /__relay/pair` still requires the same origin; no former dictionary access is left. The noreg (I10) now freezes the
+nine relay routes and the three local-network-only routes (Little Navmap sheets and folder, the simulator's position), as
+recommended in 83. R-F5: one completion list (`modules/fuel/suggest.js`), its values, labels and data attributes escaped,
+its options from the code; the cursor insertion and the filtered choice are unchanged. 39a28c9b0: a text defined once.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
