@@ -1240,7 +1240,16 @@ def _ch_open(c, cur, side='arr', icao='LFML'):
       rule='V3 § 10.23: #maps?choose=arr&icao=LFXX consumed; one family at a time; "Aucune" first, 7 rows then scroll; runway chips filter; a tap leads to #fuel?focus=arr&star=ID (none for "Aucune"); the Map writes nothing to the flight; doubt records never listed')
 def d60(c):
     _ch_open(c, {'rwy': '31'})
+    # one scrolling surface (V3 § 10.30): the list never scrolls by itself; beyond six procedures the rest is folded under "N more"
     r = c.js(_CH_ROWS)
+    folded = [x for x in r['rows'] if x['id'] not in (None, 'none')]
+    c.eq(len(folded), 6, 'six procedures shown, the rest folded', what='rows before unfolding')
+    c.ok(not r['scrolls'], f"{r['rows']}", 'the list does not scroll by itself (no second scrollbar)')
+    c.eq(norm(c.text('.mp-ch-more')), norm(tx(M, 'chMore', c.lang).replace('{n}', '3')), '"3 more" folds the other three', what='more row')
+    c.tap('.mp-ch-more')
+    c.until("() => !document.querySelector('.mp-ch-more')", what='the list unfolds in place')
+    r = c.js(_CH_ROWS)
+    c.ok(not r['scrolls'], 'the list scrolls', 'unfolded, the list still does not scroll by itself: the sheet does')
     c.eq(r['hash'], '#maps', 'the request is consumed: choose and icao are gone from the address', what='address')
     c.eq(r['title'], tx(M, 'star', c.lang, after='chTitle: {').replace('{icao}', 'LFML'), 'the runway is chosen: the family shown is the STAR', what='title')
     rows = r['rows']
@@ -1251,8 +1260,6 @@ def d60(c):
     c.ok(not any('DOUBTX' in n for n in names), f'{names}', 'the record the reading doubted is never listed')
     c.ok(not any('NONAME' in n or 'EN11' in n for n in names), f'{names}', 'a record without a name is never listed (as in Fuel)')
     c.ok(any('S4A' in n and '⌛' in n for n in names), f'{names}', 'a STAR read under an earlier cycle ends with the hourglass')
-    seen = sum(1 for x in rows if x['seen'])
-    c.ok(seen <= 7 and r['scrolls'], f'{seen} rows seen of {len(rows)}', 'at most 7 rows visible, then the list scrolls')
     L = c.js(_CH_LAYOUT, 'LFML.STAR.S3A.RW31.NONE')
     hues = [x['c'] for x in rows[1:]]
     c.eq(hues, L['hues'], 'the hue of a row is the hue the trace is drawn in', what='hues')

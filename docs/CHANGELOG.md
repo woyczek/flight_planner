@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map, choose mode: one scrolling surface** (`modules/maps/choose.js`, `style.js`, `texts.js`; help ×4, maps SPEC § 5.1; noreg
+  D60). The list scrolled inside the sheet that scrolled too (two scrollbars, V3 § 10.30). It now shows "Aucune" and six
+  procedures, the others folded under "N more…" ×4 which unfolds them in place (a procedure highlighted from the map unfolds
+  them too); only the sheet scrolls.
+
 - **Settings: the runway thresholds zoom** (`frame/settings/admin.js`, `admin_links.js`, `settings.js`; V3 § 10.30) — Settings › Administration (Full level) has the line « Seuils de piste sur la carte »: a list from 8 to 16 (11 by default), saved
   at once for the airline in `airline/map_profiles.json`, key `runwayZoom` (the rest of the file kept, like `edge`); the Map draws
   the runway thresholds from that zoom and reads the key with its profiles (`frame/settings/INTEGRATION.md` § 4); help ×4; case A12.

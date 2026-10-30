@@ -55,8 +55,10 @@ const ORDER = {
 };
 /** Familles dont la liste se filtre par piste (les pistes elles-mêmes et les transitions ne se filtrent pas). */
 const FILTERED = ['sid', 'star', 'app'];
-/** Au plus 7 puces de piste, 7 lignes visibles (le reste défile). */
-const MAX_CHIPS = 7;
+/** Au plus 7 puces de piste ; au plus 7 lignes montrées par liste (« Aucune » et six), le reste replié sous « N autres » qui le
+ *  déplie sur place : la feuille est la seule surface qui défile (V3 § 10.30 : jamais deux barres de défilement). */
+const MAX_CHIPS = 7,
+  MAX_ROWS = 6;
 /** Part dont les couches de la Carte sont éteintes (render.js, option dim du dessin). */
 export const DIM = .6;
 const PAD = 3;
@@ -293,8 +295,12 @@ function rowHtml(C, it) {
 function bodyHtml(C) {
   const vis = visible(C),
     chips = chipsOf(C),
-    none = `<button type="button" class="mp-ch-row mp-ch-none" data-id="none" data-hl="0"><span class="mp-ch-name">${esc(tt(TX.chNone))}</span></button>`;
-  return `<div class="mp-ch" data-family="${C.family}"><p class="f-muted mp-ch-hint">${esc(tt(TX.chHint))}</p>${chips.length ? `<div class="mp-ch-chips" role="group" aria-label="${esc(tt(TX.chChips))}">${chips.map(r => `<button type="button" class="mp-ch-chip" data-rwy="${esc(r)}" aria-pressed="${C.chip === r}" title="${esc(tt(TX.chChipTip, { r }))}">${esc(r)}</button>`).join('')}</div>` : ''}<div class="mp-ch-list" role="group" aria-label="${esc(titleOf(C))}">${none}${vis.map(it => rowHtml(C, it)).join('')}</div>${vis.length ? '' : `<p class="f-muted mp-ch-empty">${esc(tt(C.chip ? TX.chEmptyChip : TX.chEmpty, { icao: C.icao, r: C.chip || '' }))}</p>`}</div>`;
+    none = `<button type="button" class="mp-ch-row mp-ch-none" data-id="none" data-hl="0"><span class="mp-ch-name">${esc(tt(TX.chNone))}</span></button>`,
+    // au-delà de six procédures : repliées sous « N autres » (ou dépliées ; une surbrillance venue de la carte les déplie)
+    fold = !C.more && vis.length > MAX_ROWS + 1,
+    shown = fold ? vis.slice(0, MAX_ROWS) : vis,
+    more = fold ? `<button type="button" class="mp-ch-row mp-ch-more" data-more="1">${esc(tt(TX.chMore, { n: vis.length - MAX_ROWS }))}</button>` : '';
+  return `<div class="mp-ch" data-family="${C.family}"><p class="f-muted mp-ch-hint">${esc(tt(TX.chHint))}</p>${chips.length ? `<div class="mp-ch-chips" role="group" aria-label="${esc(tt(TX.chChips))}">${chips.map(r => `<button type="button" class="mp-ch-chip" data-rwy="${esc(r)}" aria-pressed="${C.chip === r}" title="${esc(tt(TX.chChipTip, { r }))}">${esc(r)}</button>`).join('')}</div>` : ''}<div class="mp-ch-list" role="group" aria-label="${esc(titleOf(C))}">${none}${shown.map(it => rowHtml(C, it)).join('')}${more}</div>${vis.length ? '' : `<p class="f-muted mp-ch-empty">${esc(tt(C.chip ? TX.chEmptyChip : TX.chEmpty, { icao: C.icao, r: C.chip || '' }))}</p>`}</div>`;
 }
 /** (Re)dessine le contenu de la feuille ; écrit seulement si le HTML change (openData). */
 export function chooseRender() {
@@ -312,6 +318,10 @@ export function setHl(id, fromMap = false) {
   if (C.hl === hl) return;
   C.hl = hl;
   for (const b of S.dbodyEl.querySelectorAll('.mp-ch-row')) setData(b, 'hl', b.dataset.id === hl ? '1' : '0');
+  if (hl && fromMap && !C.more && !S.dbodyEl.querySelector(`.mp-ch-row[data-id="${CSS.escape(hl)}"]`)) {
+    C.more = true; // la procédure surlignée sur la carte est repliée : la liste se déplie
+    chooseRender();
+  }
   if (hl && fromMap) {
     const row = [...S.dbodyEl.querySelectorAll('.mp-ch-row')].find(b => b.dataset.id === hl);
     row?.scrollIntoView({
@@ -350,6 +360,10 @@ export function chooseEvents() {
       if (!on()) return;
       const chip = e.target.closest('[data-rwy]');
       if (chip) return setChip(chip.dataset.rwy);
+      if (e.target.closest('[data-more]')) {
+        S.choose.more = true;
+        return chooseRender();
+      }
       const row = e.target.closest('.mp-ch-row');
       if (row) chooseDo(row.dataset.id);
     },

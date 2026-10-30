@@ -321,7 +321,8 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
   `drawRunways`), the chosen one bold.
 - **Sheet** (`openData('choose', …)`): the title ("STAR · LFPO"), the hint (expanded sheet only), the runway chips (at most 7, a
   filter by `servesRwy`, none for the runways or the transitions, none with one runway), then the list: **"Aucune" first**, **seven
-  rows visible**, the rest scrolls; ✕ and Escape leave the mode (the Map takes the whole flight back).
+  rows at most** ("Aucune" and six), the rest folded under "N more…" which unfolds it in place — the sheet is the only surface
+  that scrolls, the list never scrolls by itself (V3 § 10.30: never two scrollbars); ✕ and Escape leave the mode (the Map takes the whole flight back).
 - **One tap chooses**: a tap on a row, a label or a trace (the nearest within 14 px) does `location.replace('#fuel?focus=<side>&
   <key>=<id>')` (`none` for "Aucune", the runway without "RW"); the Map writes nothing to the flight. "Cancel" is the frame's
   "← Fuel". Fuel consumes the key (`ctx.consume`), writes and says what changed.

@@ -342,6 +342,7 @@ export const TX = {
     'Spur, Beschriftung oder Zeile antippen, um zu wählen.', 'Toque un trazado, una etiqueta o una línea para elegir.'
   ],
   chNone: ['Aucune', 'None', 'Keine', 'Ninguna'],
+  chMore: ['{n} autres…', '{n} more…', '{n} weitere…', '{n} más…'],
   chRwy: ['Piste {r}', 'Runway {r}', 'Piste {r}', 'Pista {r}'],
   chChips: ['Filtrer par piste', 'Filter by runway', 'Nach Piste filtern', 'Filtrar por pista'],
   chChipTip: ['Seulement ce qui dessert la piste {r}', 'Only what serves runway {r}', 'Nur was Piste {r} bedient',
