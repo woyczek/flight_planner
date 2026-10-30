@@ -1649,3 +1649,29 @@ def a49(c):
     c.eq([gh['ph'], norm(gh['label']), norm(gh['hint'])],
          ['compte/flight_planner_data', norm(tx(access_file, 'repo', c.lang)), norm(tx(access_file, 'tokenHint', c.lang))],
          'GitHub keeps today’s field and hint', what='GitHub access card')
+
+
+@case('A50', 'Status block: every line leads somewhere; the dot is a ringed disc in the design\'s token', 'A', designs=('standard',), screens=False,
+      night=False, rule='user captures of 30 Oct (ergonomics session): the Weather line had no chevron; the warning dot read as a dirty icon')
+def a50(c):
+    # every status item built by the frame carries a destination (go): no line without a chevron
+    src = (ROOT / 'frame' / 'app.js').read_text(encoding='utf-8')
+    body = src[src.index('function statusItems()'):src.index('const statusRows')]
+    pushes = re.findall(r"items\.push\(\{\s*k: '([\w-]+)'(.*?)\n    \}\)", body, re.S)
+    c.ok(len(pushes) >= 5, [k for k, _ in pushes], 'the status items are found in frame/app.js')
+    c.eq([k for k, rest in pushes if 'go:' not in rest], [], 'every status line has a destination (go)', what='lines without go')
+    # the dot: the design's token, filled, ringed by 1 px of the same tint (a visible dot if any, else a hidden one shown for the measure)
+    c.open('settings', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-card=\"status\"] .f-status-dot')", what='the status block is drawn')
+    d = c.js(DOT_JS)
+    c.eq([d['bg'], d['color']], [d['want'], d['want']], "the dot takes the design's token", what=f"dot colour ({d['tok']})")
+    c.ok(d['ring'] not in ('', 'none') and d['want'].replace(' ', '') in d['ring'].replace(' ', ''), d['ring'], 'the dot is ringed by its own tint')
+    c.check_errors()
+
+
+DOT_JS = """() => { const sel = '[data-card="status"] .f-status-dot';
+  const e = document.querySelector(sel + ':not([hidden])') || document.querySelector(sel); e.hidden = false;
+  const s = getComputedStyle(e), tok = e.hasAttribute('data-attn') ? '--sog-warn' : '--sog-ok';
+  const probe = document.createElement('i'); probe.style.color = 'var(' + tok + ')'; document.body.append(probe);
+  const want = getComputedStyle(probe).color; probe.remove();
+  return { bg: s.backgroundColor, color: s.color, want, ring: s.boxShadow, tok } }"""

@@ -895,12 +895,16 @@ p.f-back {
   flex: none;
   color: var(--sog-muted)
 }
+/* pastille d'état : le jeton sémantique du design (vert à jour, orange avertissement), disque plein cerclé de 1 px de la même teinte
+   détaché par un liseré de fond — elle se lit comme un statut même quand le jeton rend sombre (Standard clair) */
 .f-status-dot {
   flex: none;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--sog-ok)
+  color: var(--sog-ok);
+  background: currentColor;
+  box-shadow: 0 0 0 1px var(--sog-surface, transparent), 0 0 0 2px currentColor
 }
 /* pas de pastille : sa place reste vide, les textes restent alignés */
 .f-status-dot[hidden] {
@@ -908,7 +912,7 @@ p.f-back {
   visibility: hidden
 }
 .f-status-dot[data-attn] {
-  background: var(--sog-warn)
+  color: var(--sog-warn)
 }
 /* la ligne « Position » remplace, sur téléphone, le bouton de position de l'en-tête : sur un écran l'en-tête le garde */
 @media (min-width: 761px) {

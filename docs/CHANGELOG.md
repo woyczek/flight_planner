@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Status block: every line leads somewhere, the dot reads as a status** (`frame/app.js` `statusItems`, `frame/frame.css` `.f-status-dot`; user captures of 30 Oct) — the Weather line leads to the weather key card and the Offline line to Synchronisation
+  (a chevron on every line); the dot takes the design's token (green, warning) as a filled disc ringed by 1 px of the same tint,
+  so it no longer reads as a dirty icon when the token renders dark (Standard light); case A50.
 - **Map: the profile's constraint texts in the collision pass; runway numbers before the beacons** (`modules/maps/procs.js`,
   `render.js`, `draw.js`, `choose.js`; maps help ×4; noreg D80, D79). The texts of the procedures' constraints on the profile
   ("FL100", "3000"…) take a free place (above right, above left, below) or none, never over a space's label, TOC / TOD or a

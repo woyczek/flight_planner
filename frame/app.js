@@ -1761,12 +1761,14 @@
       }),
       sub: t(T.info.weatherSub, {
         max: (10000).toLocaleString(lang())
-      })
+      }),
+      go: 'card:wx' // chaque ligne de ce bloc mène quelque part : ici, la clé météo de l'appareil (Réglages)
     });
     if (!net.online()) items.push({
       k: 'offline',
       text: t(T.info.offline),
-      attn: true
+      attn: true,
+      go: 'card:sync,usages' // hors ligne : la carte Synchronisation dit ce qui attend sur l'appareil
     });
     // réservée au téléphone (l'en-tête d'un écran garde sa pastille de position) : cachée au-dessus de 760 px
     if (live.active) items.push({
