@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: « Auto » is idempotent and routes the SID exit** (`modules/fuel/module.js`, `frame/lib/route_text.js` `provenance`;
+  help ×4; F8, F28, F67) — it recomputes from the pinned points and replaces what a previous Auto wrote (no more loops through
+  Spain on LFBO → LFPO); a leg left direct says why; « LFBO LACOU7B LACOU LMG » routes LACOU → LMG.
 - **Map, choosing on the map, third reading: what is looked at goes on top** (`modules/maps/choose.js`, `texts.js`, `style.js`;
   help ×4, maps SPEC § 5.1, DECISIONS; noreg D60, D69; V3 § 10.30). The highlighted procedure is drawn last with its own label
   and full name, the others below (⌛, ⚠, compatible, chosen); one small label per family and point ("NIMER 9"), never one per

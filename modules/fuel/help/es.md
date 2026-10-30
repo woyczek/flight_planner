@@ -48,7 +48,7 @@ salida directas a 60 NM como máximo y sin desvío de más del 40 %. El texto pa
 intermedios de la aerovía, que el texto no escribe, se guardan en los puntos (la distancia, el mapa y el perfil los siguen).
 Una notificación da el resultado («3 aerovías inscritas, 254 NM») o «Ninguna aerovía útil entre X y Y». Límites: las aerovías
 se toman en los dos sentidos (la base aún no lleva el sentido único), sin restricción fina de nivel ni SID / STAR; la ruta
-sigue por verificar.
+sigue por verificar. «Auto» parte siempre de los puntos fijados —la salida, el final de la SID elegida, los puntos que usted escribió, la entrada de la STAR, la llegada— y sustituye lo que un «Auto» anterior había escrito: dos «Auto» seguidos dan el mismo texto, nunca una ruta que crece en bucle. Un tramo que pasaría dos veces por un punto, o que alargaría demasiado el conjunto, queda directo, y la notificación dice por qué («ninguna aerovía cerca de LACOU», «desvío de más del 40 %»). Cuando el nombre de la SID está en el texto, su final se escribe después («LFBO LACOU7B LACOU …») y el tramo del final al primer punto se rutea.
 
 El desplegable «Puntos» enumera los puntos reconocidos, de la salida a la llegada. Las flechas suben o bajan un punto en
 la lista, la cruz lo quita; el campo de abajo añade uno antes de la llegada: un identificador (radioayuda, punto,
@@ -193,4 +193,4 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
   tarjeta lo dice y responde el METAR en su lugar. La tarjeta meteorológica indica de dónde vienen los mensajes. Sin red
   alguna, muestra la última meteorología guardada, con su hora.
 
-<!-- fr: 36264bdf624a -->
+<!-- fr: 5792a22ddfce -->

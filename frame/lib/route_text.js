@@ -14,6 +14,8 @@
 //     gardés ; ailleurs, rien (direct). Inchangé : même identifiant, et même position à 0,5 NM près si previousPoints
 //     est donné. Niveaux en /Fnnn d'après alt_ft ; coordonnées OACI pour un point sans nom utilisable.
 //   icaoCoord(lat, lon) : « 4530N00030E » (degrés et minutes).
+//   provenance(words, prev) : pour chaque mot du texte, vrai s'il vient du dernier « Auto » (voie ou nœud qu'il a écrit), faux
+//     s'il est posé (tapé par le pilote, départ, arrivée) ; prev : [{ w, g }] gardé avec la route (route.auto.seq) (§ 10.31).
 //   formatLevel(ft, transitionFt = 5000) : une seule notation des niveaux dans la suite — « FL060 » à partir de
 //     l'altitude de transition, « 3 500 ft » en dessous (centaines, espace fine insécable entre les milliers).
 
@@ -24,6 +26,36 @@ const COORD = /^([A-Z0-9]{2,7})\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)(?:\/(?:[
   AIRWAY = /^[A-Z]{1,2}\d{1,4}[A-Z]?$/,
   PROC = /\d[A-Z]$/,
   NAME = /^[A-Z0-9]{2,7}$/;
+
+/** La provenance des mots d'un texte de route face au dernier texte écrit par « Auto » (V3 § 10.31 : les voies et les nœuds d'un
+ *  Auto précédent ne sont jamais des contraintes) : pour chaque mot de words, vrai quand il vient de cet Auto, faux quand il est posé
+ *  (tapé par le pilote, ou gardé par l'Auto comme point posé). prev : [{ w, g }] (le mot, généré ou non), gardé avec la route.
+ *  L'alignement est la plus longue sous-suite commune : un mot que le pilote ajoute ou retire ne décale rien, un mot nouveau est
+ *  posé. Sans prev, rien n'est généré. Majuscules indifférentes. */
+export function provenance(words, prev) {
+  const a = (words || []).map(w => String(w ?? '').toUpperCase()),
+    b = (prev || []).filter(x => x && x.w).map(x => ({
+      w: String(x.w).toUpperCase(),
+      g: !!x.g
+    })),
+    n = a.length,
+    m = b.length,
+    L = Array.from({
+      length: n + 1
+    }, () => new Int32Array(m + 1));
+  for (let i = n - 1; i >= 0; i--)
+    for (let j = m - 1; j >= 0; j--) L[i][j] = a[i] === b[j].w ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  const out = a.map(() => false);
+  for (let i = 0, j = 0; i < n && j < m;) {
+    if (a[i] === b[j].w) {
+      out[i] = b[j].g;
+      i++;
+      j++;
+    } else if (L[i + 1][j] >= L[i][j + 1]) i++;
+    else j++;
+  }
+  return out;
+}
 
 /** Jetons d'un texte de route (voir l'en-tête). */
 export function tokenize(text) {

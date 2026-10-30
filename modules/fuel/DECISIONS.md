@@ -4,6 +4,16 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **30 Oct 2026 — § 10.31 part 1, Auto idempotent** (user, LFBO → LFPO: successive Autos made a loop through Spain, and « LACOU
+  LMG n'est toujours pas trouvée »). Two causes. (1) The SID exit was inserted right after the departure, before the SID's name
+  (« LFBO LACOU LACOU7B LMG »): the leg LACOU → LMG was never adjacent, never routed. It is now written after the name. (2) Every
+  word of a previous Auto stayed a constraint, and a stale `via` on a pinned point blocked its leg: Autos stacked. The provenance
+  is now kept with the route (`route.auto.seq`, aligned by longest common subsequence in `route_text.js provenance`, so a word the
+  pilot adds or removes shifts nothing); generated words are dropped before routing, `via` is re-derived from the pinned airway
+  words, the intermediate points of a generated airway go with it. Rejections: a loop (a node already on the route), then the
+  most stretched legs while the chain exceeds `detourPct`. The reason of a direct leg is in the line (four texts). The text keeps
+  no « DCT » for now: the ICAO rendering with DCT comes with part 2 (the text as a view of the model). F8 updated (a second Auto
+  recomputes and says so), F28 extended (SID name in the text), F67 new.
 - **30 Oct 2026 — § 10.30 fourth reading, the SIA's initial approach segments** (user at LFPO: six identical rows « INA RNAV RWY
   06 »): an APP record that never reaches a runway threshold, or named « INA », is a transition (`isAppTransition`). A segment named
   like a final stays that final's own (the CIFP way: ILS09 via VA201); a segment no final names is shared by every final serving its

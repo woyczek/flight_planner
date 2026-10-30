@@ -160,8 +160,16 @@ const TX = {
   ],
   autoOne: ['1 voie inscrite, {d}', '1 airway written, {d}', '1 Luftstraße eingetragen, {d}', '1 aerovía inscrita, {d}'],
   autoMany: ['{n} voies inscrites, {d}', '{n} airways written, {d}', '{n} Luftstraßen eingetragen, {d}', '{n} aerovías inscritas, {d}'],
-  autoNone: ['Aucune voie utile entre {a} et {b}{more}', 'No useful airway between {a} and {b}{more}',
-    'Keine nutzbare Luftstraße zwischen {a} und {b}{more}', 'Ninguna aerovía útil entre {a} y {b}{more}'
+  autoNone: ['Aucune voie utile entre {a} et {b} ({why}){more}', 'No useful airway between {a} and {b} ({why}){more}',
+    'Keine nutzbare Luftstraße zwischen {a} und {b} ({why}){more}', 'Ninguna aerovía útil entre {a} y {b} ({why}){more}'
+  ],
+  // la raison d'un tronçon resté direct (§ 10.31 : « route non trouvée » est un fait que le pilote lit, jamais un silence)
+  autoWhyNone: ['pas de voie près de {a}', 'no airway near {a}', 'keine Luftstraße nahe {a}', 'ninguna aerovía cerca de {a}'],
+  autoWhyFar: ['trop loin des voies', 'too far from the airways', 'zu weit von den Luftstraßen', 'demasiado lejos de las aerovías'],
+  autoWhyDetour: ['détour de plus de {p} %', 'detour of more than {p} %', 'Umweg von mehr als {p} %', 'desvío de más del {p} %'],
+  autoWhyLoop: ['la route repasserait par un point', 'the route would pass a point twice',
+    'die Route würde einen Punkt zweimal überfliegen',
+    'la ruta pasaría dos veces por un punto'
   ],
   autoNoLeg: ['Aucun tronçon sans voie à compléter.', 'No leg without an airway to fill in.',
     'Kein Abschnitt ohne Luftstraße zu ergänzen.',
@@ -3300,7 +3308,11 @@ function resolveRoute(normalize = true) {
   }, 500);
 }
 /** Bouton « Auto » : inscrit les voies aériennes entre les points nommés consécutifs qui n'en ont pas, au niveau prévu
- *  (celui du vol, sinon celui du devis, sinon 6 500 ft comme la V2 — dit dans une notification). Le routage est celui de
+ *  (celui du vol, sinon celui du devis, sinon 6 500 ft comme la V2 — dit dans une notification). Idempotent (V3 § 10.31) : il
+ *  recalcule depuis les points POSÉS seulement (départ, sortie de la SID choisie, points tapés, entrée de la STAR, arrivée) et
+ *  remplace ; les voies et nœuds d'un Auto précédent (route.auto.seq, RT.provenance) ne sont jamais des contraintes : même entrée,
+ *  même texte. Un tronçon qui repasserait par un point, puis, tant que l'ensemble dépasse la chaîne directe de plus de detourPct,
+ *  le tronçon le plus allongé, restent directs ; un tronçon sans voie le dit avec sa raison, jamais en silence. Le routage est celui de
  *  la bibliothèque du cadre (frame/lib/routing.js : plus court chemin sur les segments de la base publiée, tronçons
  *  ouverts au niveau, détour limité à 40 %, pas de sens unique ni de restriction fine). Écrit route.text (« PT1 UN460 PT2 »)
  *  et route.points (les points de la voie y compris ceux que le texte n'écrit pas : distance et carte suivent la voie), puis
@@ -3322,6 +3334,40 @@ async function autoAirways() {
         tokens
       } = await routePoints(r.text, r.dep, r.arr, known, r.points || []);
     if (gone(s) || seq !== S.routeSeq) return;
+    // les mots d'un Auto précédent (voies, nœuds, sortie de SID et entrée de STAR qu'il a ajoutées) sont retirés : jamais le départ
+    // ni l'arrivée ; un point gardé ne garde sa voie d'arrivée que si le mot qui le précède est une voie posée ; les points
+    // intermédiaires d'une voie posée restent (distance et carte la suivent), ceux d'une voie générée partent avec elle
+    const wordOf = t => t.pt ? t.pt.id : t.keep,
+      gen = RT.provenance(tokens.map(wordOf), r.auto?.seq),
+      ends = new Set([points[0], points.at(-1)]),
+      dropped = tokens.some((t, i) => gen[i] && !(t.pt && ends.has(t.pt)));
+    if (dropped) {
+      const asTok = new Set(tokens.filter(t => t.pt).map(t => t.pt)),
+        kept = tokens.filter((t, i) => !gen[i] || t.pt && ends.has(t.pt));
+      kept.forEach((t, i) => {
+        if (!t.pt) return;
+        const before = kept[i - 1];
+        if (before?.keep && AIRWAY_WORD.test(before.keep)) t.pt.via = before.keep;
+        else delete t.pt.via;
+      });
+      const keptPts = new Set(kept.filter(t => t.pt).map(t => t.pt)),
+        pts = [];
+      let pend = [];
+      for (const p of points) {
+        if (!asTok.has(p)) {
+          pend.push(p);
+          continue;
+        }
+        if (keptPts.has(p)) {
+          if (p.via) pts.push(...pend);
+          pts.push(p);
+        }
+        pend = [];
+      }
+      tokens.splice(0, tokens.length, ...kept);
+      points.splice(0, points.length, ...pts);
+    }
+    const genTok = new Set(); // jetons que cet Auto écrit (provenance gardée dans route.auto.seq)
     // procédures choisies et lues : la fin de la SID après le départ et le début de l'arrivée avant l'arrivée entrent dans la chaîne
     // (CF.routingChain, quand la route ne les a pas), pour que le routage parte de la sortie de la SID (LFBO FINOT G36 GOSAD) ; ces
     // points sont écrits dans le texte, le tronçon terrain ↔ point de procédure n'est jamais routé (la procédure le couvre)
@@ -3336,10 +3382,17 @@ async function autoAirways() {
             id: ext[k].id,
             lat: ext[k].lat,
             lon: ext[k].lon
+          },
+          tok = {
+            pt: p
           };
-        tokens.splice(tokens.findIndex(t => t.pt === prev) + 1, 0, {
-          pt: p
-        });
+        // après le départ, la sortie de la SID s'écrit après le nom de la SID s'il le suit (« LFBO LACOU7B LACOU LMG ») : le tronçon
+        // sortie → premier point est alors adjacent et routé (utilisateur, 30 octobre : « LACOU LMG n'est toujours pas trouvée »)
+        let at = tokens.findIndex(t => t.pt === prev) + 1;
+        if (k === 1)
+          while (tokens[at]?.keep && !AIRWAY_WORD.test(tokens[at].keep)) at++;
+        tokens.splice(at, 0, tok);
+        genTok.add(tok);
         points.splice(points.indexOf(prev) + 1, 0, p);
         procPts.add(p);
         ext[k] = p;
@@ -3353,7 +3406,7 @@ async function autoAirways() {
       adj = idx.map((t, i) => idx[i + 1] === t + 1 && !(i === 0 && procPts.has(chain[1])) && !(i === last - 1 && procPts.has(chain[i]))),
       entry = idx.map(i => !!tokens[i + 1]?.keep && AIRWAY_WORD.test(tokens[i + 1].keep)),
       free = i => !(chain[i].via || entry[i]);
-    if (chain.length < 2 || !adj.some(Boolean)) return S.ctx.notify(tt(TX.autoNoLeg), 'warn');
+    if (chain.length < 2 || !adj.some(Boolean)) return dropped ? writeAuto(tokens, points, []) : S.ctx.notify(tt(TX.autoNoLeg), 'warn');
     const planned = +f.level?.ft || +S.C?.q?.levelFt || 0,
       base = planned || RG.DEFAULTS.ifrMinFt,
       at = [];
@@ -3390,20 +3443,53 @@ async function autoAirways() {
     if (!planned) S.ctx.notify(tt(TX.autoNoLevel, {
       l: flTxt(base)
     }), 'warn');
+    // rejet (§ 10.31) : un tronçon routé qui repasse par un point déjà sur la route (posé, ou d'un tronçon précédent) reste direct ;
+    // puis, tant que l'ensemble dépasse la chaîne directe de plus de detourPct, le tronçon routé le plus allongé reste direct
+    const seen = new Set(chain.map(p => p.id));
+    res.legs.forEach(l => {
+      if (l.status !== 'routed') return;
+      const mid = l.points.slice(1, -1).map(p => p.id);
+      if (mid.some(id => seen.has(id))) l.status = 'loop';
+      else mid.forEach(id => seen.add(id));
+    });
+    const direct = chain.slice(1).map((p, i) => gcNm(chain[i], p)),
+      lenOf = () => res.legs.reduce((a, l, i) => a + (l.status === 'routed' ? +l.nm || direct[i] : direct[i]), 0),
+      sum = direct.reduce((a, b) => a + b, 0);
+    while (lenOf() > sum * (1 + RG.DEFAULTS.detourPct / 100)) {
+      const worst = res.legs.map((l, i) => l.status === 'routed' ? [(+l.nm || 0) - direct[i], i] : null).filter(Boolean).sort((a, b) => b[
+          0] -
+        a[0])[0];
+      if (!worst) break;
+      res.legs[worst[1]].status = 'detour';
+    }
     // un tronçon sans voie compte comme un échec s'il ne touche pas une voie déjà écrite (l'entrée ou la sortie directe
-    // d'une voie, que le routage a choisie, ne se retente pas sans bruit)
-    const failed = res.legs.map((l, i) => ['none', 'far', 'detour'].includes(l.status) && free(i) && free(i + 1) ? i : -1).filter(i =>
+    // d'une voie, que le routage a choisie, ne se retente pas sans bruit) ; sa raison est dite
+    const failed = res.legs.map((l, i) => ['none', 'far', 'detour', 'loop'].includes(l.status) && free(i) && free(i + 1) ? i : -1).filter(
+        i =>
         i >= 0),
       noway = () => {
-        const [i] = failed;
+        const [i] = failed,
+        why = {
+          none: TX.autoWhyNone,
+          far: TX.autoWhyFar,
+          detour: TX.autoWhyDetour,
+          loop: TX.autoWhyLoop
+        } [res.legs[i].status];
         S.ctx.notify(tt(TX.autoNone, {
           a: chain[i].id,
           b: chain[i + 1].id,
+          why: tt(why, {
+            a: chain[i].id,
+            p: RG.DEFAULTS.detourPct
+          }),
           more: failed.length > 1 ? ` (+${failed.length - 1})` : ''
         }), 'warn');
       };
     const done = res.legs.map((l, i) => l.status === 'routed' ? i : -1).filter(i => i >= 0);
-    if (!done.length) return failed.length ? noway() : S.ctx.notify(tt(TX.autoNoLeg), 'warn');
+    if (!done.length) {
+      if (dropped) writeAuto(tokens, points, []);
+      return failed.length ? noway() : dropped ? null : S.ctx.notify(tt(TX.autoNoLeg), 'warn');
+    }
     // texte et points réécrits : les tronçons routés reçoivent les jetons et les points de leur voie avant leur point d'arrivée
     const dest = new Map(done.map(i => [chain[i + 1], res.legs[i]])),
       newTokens = [],
@@ -3414,9 +3500,13 @@ async function autoAirways() {
       };
     for (const t of tokens) {
       const l = t.pt && dest.get(t.pt);
-      if (l) newTokens.push(...RG.tokensOf(l.points, {
-        dct: false
-      }).slice(1, -1));
+      if (l)
+        for (const w of RG.tokensOf(l.points, {
+            dct: false
+          }).slice(1, -1)) {
+          newTokens.push(w);
+          genTok.add(w);
+        }
       newTokens.push(t);
     }
     for (const p of points) {
@@ -3429,16 +3519,7 @@ async function autoAirways() {
       }
       newPoints.push(p);
     }
-    r.points = newPoints;
-    r.text = routeText(newTokens);
-    r.from = 'route';
-    const ta = S.body?.querySelector('[data-k="rtext"]');
-    if (ta && ta.value !== r.text) ta.value = r.text;
-    routeDerived(r);
-    renderPts();
-    saveFlight();
-    refresh();
-    resolveRoute(); // relecture (position des extrémités de voie prise dans route.points), distance, météo, devis
+    writeAuto(newTokens, newPoints, genTok);
     const names = new Set(done.flatMap(i => res.legs[i].routes));
     S.ctx.notify(tt(names.size === 1 ? TX.autoOne : TX.autoMany, {
       n: names.size,
@@ -3450,6 +3531,29 @@ async function autoAirways() {
     const b = s.body?.querySelector('[data-do="rauto"]');
     if (b) b.disabled = false;
   }
+}
+/** Écrit le résultat d'« Auto » : route.points, route.text, et sa provenance route.auto.seq ([{ w, g }] : chaque mot du texte, g vrai
+ *  pour ce que cet Auto a écrit — voies, nœuds, sortie de SID et entrée de STAR ajoutées), relue par l'Auto suivant (§ 10.31) ;
+ *  puis la route est relue (positions, distance, météo, devis). */
+function writeAuto(tokens, points, gen) {
+  const r = S.flight.route,
+    g = gen instanceof Set ? gen : new Set(gen);
+  r.points = points;
+  r.text = routeText(tokens);
+  r.auto = {
+    seq: tokens.filter(t => t.pt || t.keep).map(t => ({
+      w: t.pt ? t.pt.id : t.keep,
+      g: g.has(t)
+    }))
+  };
+  r.from = 'route';
+  const ta = S.body?.querySelector('[data-k="rtext"]');
+  if (ta && ta.value !== r.text) ta.value = r.text;
+  routeDerived(r);
+  renderPts();
+  saveFlight();
+  refresh();
+  resolveRoute(); // relecture (position des extrémités de voie prise dans route.points), distance, météo, devis
 }
 /** Dernier OFP SimBrief (identifiant de l'identité) par ctx.net : gardé sur l'appareil (cache), route, niveau, vent et
  *  appareil repris dans le vol courant. */

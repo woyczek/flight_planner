@@ -373,7 +373,14 @@ mount. Inside a mount, the two buttons switch as before.
      departure or the arrival (an OFP repeats its level at every point). "Last SimBrief OFP": through `ctx.net`, the SimBrief identifier
      of the identity (never typed here), the OFP kept on the device only, its route, level, average wind, ISA
      deviation and aircraft taken into the current flight.
-     **"Auto" button** (25 Oct 2026, next to the route field, 44 px, in the field's row): with SID / STAR / approach chosen and read, the chain first gets the end of the SID after the departure and the start of the arrival before the arrival (`CF.routingChain`, 29 Oct 2026), written in the text, the aerodrome ↔ procedure leg never routed; for each pair of consecutive named
+     **"Auto" button** (25 Oct 2026, next to the route field, 44 px, in the field's row; **idempotent since § 10.31**, 30 Oct
+     2026: it recomputes from the pinned points only — departure, the chosen SID's exit, the points the pilot typed, the STAR's
+     entry, arrival — and replaces: the words a previous Auto wrote (airways, nodes, the exit and entry it added) are found by
+     `RT.provenance(words, route.auto.seq)` and dropped, never constraints; `route.auto.seq` = [{ w, g }] is written with each
+     result; a routed leg that would visit a point already on the route stays direct (`loop`), then the most stretched leg while
+     the whole exceeds the direct chain by more than `detourPct`; a leg left direct says why, « Aucune voie utile entre A et B
+     (pas de voie près de A | trop loin des voies | détour de plus de 40 % | la route repasserait par un point) »; the SID exit is
+     written after the SID's name when the text holds it, so the exit → first point leg is adjacent and routed): with SID / STAR / approach chosen and read, the chain first gets the end of the SID after the departure and the start of the arrival before the arrival (`CF.routingChain`, 29 Oct 2026), written in the text, the aerodrome ↔ procedure leg never routed; for each pair of consecutive named
      points with nothing between them in the text (no airway, no procedure), the shortest path over the published base's
      airways (`AeroDB.airways`, V2's rules ported in `frame/lib/routing.js`: a leg open at the level when floor − 100 ≤
      level ≤ ceiling + 100 ft, direct entry and exit within 60 NM, no detour over 40 %, no leg of 40 NM or less unless its

@@ -104,7 +104,7 @@ geplante Flugfläche 6 500 ft, eine Meldung sagt es), mit direktem Einflug und A
 Der Text wird zu „LFRS TSA01 UT460 TSA05 LFML“; die Zwischenpunkte der Luftstraße, die der Text nicht schreibt, bleiben in den
 Punkten (Entfernung, Karte und Profil folgen ihnen). Eine Meldung nennt das Ergebnis („3 Luftstraßen eingetragen, 254 NM“)
 oder „Keine nutzbare Luftstraße zwischen X und Y“. Grenzen: Die Luftstraßen gelten in beiden Richtungen (die Datenbank kennt
-noch keine Einbahnstraßen), ohne feine Flugflächenbeschränkungen und ohne SID / STAR; die Route bleibt zu prüfen.
+noch keine Einbahnstraßen), ohne feine Flugflächenbeschränkungen und ohne SID / STAR; die Route bleibt zu prüfen. „Auto“ geht immer von den gesetzten Punkten aus — Abflug, Ausgang der gewählten SID, die von Ihnen getippten Punkte, Eingang der STAR, Ankunft — und ersetzt, was ein vorheriges „Auto“ geschrieben hat: zweimal „Auto“ hintereinander ergibt denselben Text, nie eine Route, die in Schleifen wächst. Ein Abschnitt, der einen Punkt zweimal überfliegen oder das Ganze zu sehr verlängern würde, bleibt direkt, und die Benachrichtigung sagt warum („keine Luftstraße nahe LACOU“, „Umweg von mehr als 40 %“). Steht der Name der SID im Text, wird ihr Ausgang danach geschrieben („LFBO LACOU7B LACOU …“) und der Abschnitt vom Ausgang zum ersten Punkt wird geroutet.
 
 Der aufklappbare Bereich „Punkte“ listet die erkannten Punkte auf, vom Abflug bis zur Ankunft. Die Pfeile schieben einen
 Punkt in der Liste nach oben oder unten, das Kreuz entfernt ihn; das Feld unten fügt einen vor der Ankunft hinzu: eine
@@ -257,7 +257,7 @@ Datenblättern ändert sich nichts.
   Schlüssel sagt es die Karte, und das METAR antwortet stattdessen. Die Wetterkarte sagt, woher die Meldungen stammen.
   Ganz ohne Netz zeigt sie das zuletzt gespeicherte Wetter mit seiner Uhrzeit.
 
-<!-- fr: 36264bdf624a -->
+<!-- fr: 5792a22ddfce -->
 
 <!-- chapter: maps -->
 # Karte

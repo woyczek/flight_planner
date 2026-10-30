@@ -96,7 +96,7 @@ with a direct entry and exit within 60 NM and no detour of more than 40 %. The t
 the airway's middle points, which the text does not write, are kept in the points (distance, map and profile follow them).
 A notification gives the result (“3 airways written, 254 NM”) or “no useful airway between X and Y”. Limits: airways are
 taken in both directions (the base does not carry one-way yet), with no fine level restriction nor SID / STAR; check the
-route.
+route. "Auto" always starts again from the pinned points — the departure, the chosen SID's exit, the points you typed, the STAR's entry, the arrival — and replaces what a previous "Auto" wrote: two "Auto" in a row give the same text, never a route that grows in loops. A leg that would pass a point twice, or lengthen the whole too much, stays direct, and the notification says why ("no airway near LACOU", "detour of more than 40 %"). When the SID's name is in the text, its exit is written after it ("LFBO LACOU7B LACOU …") and the leg from the exit to the first point is routed.
 
 The “Points” fold lists the recognised points, from departure to arrival. The arrows move a point up or down the list,
 the cross removes it; the field at the bottom adds one before the arrival: an identifier (beacon, fix, airfield) or
@@ -237,7 +237,7 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: 36264bdf624a -->
+<!-- fr: 5792a22ddfce -->
 
 <!-- chapter: maps -->
 # Map

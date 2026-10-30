@@ -303,11 +303,11 @@ def f8(c):
     want = norm(row(c, 'autoOne')).split('{d}')[0]
     c.ok(any(n.startswith(want) and n.endswith('NM') for n in note), f'notifications {note}', f'a notification "{want}… NM"')
     c.until_doc('pilot/ABC/current_flight.json', lambda d: (d.get('quote') or {}).get('distanceNm') in (None, f['distanceNm']) and bool(d.get('quote')), 'the quote is computed on the new distance')
-    # a second tap has nothing to add: the legs left are the airway's entry and exit, short
+    # a second tap recomputes from the pinned points only (§ 10.31): the same text
+    n0 = c.js("(window.__notes || []).length")
     c.tap(f'{FUEL} [data-do="rauto"]')
-    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", norm(row(c, 'autoNoLeg')), timeout=6000, what='the second tap says there is nothing to fill in')
-    c.eq(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value"), 'LFRS TSA01 UT460 TSA05 LFML', 'a second tap leaves the text as it is', what='route text after a second tap')
-    c.ok(norm(row(c, 'autoNoLeg')) in [norm(n) for n in c.note_log()], f'notifications {[norm(n) for n in c.note_log()]}', 'and says there is nothing to fill in')
+    c.until("(n) => (window.__notes || []).length > n", n0, timeout=6000, what='the second tap says what it wrote')
+    c.eq(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value"), 'LFRS TSA01 UT460 TSA05 LFML', 'a second tap gives the same text', what='route text after a second tap')
     # FL100: the only airway open is the low one, a detour of more than 40 %
     c.tap(f'{FUEL} .fu-steps button[data-step="0"]')
     c.page.fill(f'{FUEL} .fu-flight [data-k="fl"]', '100')
@@ -316,7 +316,7 @@ def f8(c):
     c.page.locator(rt).blur()
     c.until(f"/\\(2\\)/.test(document.querySelector('{FUEL} [data-ptsn]').textContent)", timeout=6000, what='the bare route resolves again')
     c.tap(f'{FUEL} [data-do="rauto"]')
-    none = norm(row(c, 'autoNone')).replace('{a}', 'LFRS').replace('{b}', 'LFML').replace('{more}', '')
+    none = norm(row(c, 'autoNone')).replace('{a}', 'LFRS').replace('{b}', 'LFML').replace('{more}', '').replace('{why}', norm(row(c, 'autoWhyDetour')).replace('{p}', '40'))
     c.until("(n) => (window.__notes || []).some(x => x.replace(/[\\s\u00a0\u202f]+/g, ' ').trim() === n)", none, timeout=6000, what=f'the notification "{none}"')
     c.eq(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value"), 'LFRS LFML', 'no airway serves FL100: the text is unchanged', what='route text at FL100')
 
@@ -345,6 +345,14 @@ def f28(c):
     c.until(f"document.querySelector('{FUEL} [data-k=rtext]').value.includes('G36')", timeout=8000, what='Auto writes the airway that leaves the SID')
     c.eq(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value"), 'LFRS NT102 G36 NEPIX LFML',
          'the end of the SID is written after the departure and the airway starts there; LFRS - NT102 is the SID, never routed', what='route text')
+    # the SID's name in the text (user, 30 Oct: « LFBO LACOU7B LMG … la route LACOU LMG n'est toujours pas trouvée »): the exit is written after
+    # the name, so the leg exit → first point is adjacent and routed (§ 10.31)
+    c.page.fill(rt, 'LFRS NTS1A NEPIX LFML')
+    c.page.locator(rt).blur()
+    c.until(f"/\\(3\\)/.test(document.querySelector('{FUEL} [data-ptsn]').textContent)", timeout=6000, what='the route with the SID name resolves to three points')
+    c.tap(f'{FUEL} [data-do="rauto"]')
+    c.until(f"document.querySelector('{FUEL} [data-k=rtext]').value === 'LFRS NTS1A NT102 G36 NEPIX LFML'", timeout=8000,
+            what='the exit after the SID name, then the airway: « LFRS NTS1A NT102 G36 NEPIX LFML »')
 
 
 @case('F33', 'Procedure rows drawn before the aircraft registry is read', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
@@ -1642,4 +1650,37 @@ def f66(c):
     c.page.select_option(f'{FUEL} select[data-k="p-arr-app"]', apps[1][0])
     c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-appTrans\"]'); return !!s && s.options.length === 4 })()", what='the RNP offers the same three segments')
     c.until("[...document.querySelectorAll('[data-module=fuel] [data-proc=arr] .fu-procsum > span')].some(e => e.textContent.trim() === 'RNP 06')", what='the summary says the short label')
+
+
+@case('F67', 'Auto is idempotent: it recomputes from the pinned points and replaces; the SID exit is routed', 'F', tags=('fuel', 'maps'), designs=('standard',),
+      screens=False, langs4=True, rule='V3 spec 10.31: the airways and nodes of a previous Auto are never constraints (route.auto, route_text provenance); '
+      'same pinned points, same text; a leg without a way stays direct and says why; the SID exit written after the SID name is routed')
+def f67(c):
+    c.open('fuel', flight=True, airfields=True, airways=synthetic_airways())
+    wait_quote(c)
+    to_step(c, 1)
+    rt = f'{FUEL} [data-k="rtext"]'
+    text = f"document.querySelector('{FUEL} [data-k=rtext]').value"
+    c.page.fill(rt, 'LFRS LFML')
+    c.page.locator(rt).blur()
+    c.until(f"/\\(2\\)/.test(document.querySelector('{FUEL} [data-ptsn]').textContent)", timeout=6000, what='the bare route resolves')
+    c.tap(f'{FUEL} [data-do="rauto"]')
+    c.until(f"{text}.includes('UT460')", timeout=6000, what='Auto writes the airway')
+    first = c.js(text)
+    d = c.until_doc('pilot/ABC/current_flight.json', lambda d: ((d.get('route') or {}).get('auto') or {}).get('seq'), 'the provenance is kept with the route')
+    c.eq([(x['w'], x['g']) for x in d['route']['auto']['seq']], [('LFRS', False), ('TSA01', True), ('UT460', True), ('TSA05', True), ('LFML', False)],
+         'what Auto wrote is marked generated; the departure and the arrival are pinned', what='route.auto.seq')
+    for _ in range(2):
+        n0 = c.js("(window.__notes || []).length")
+        c.tap(f'{FUEL} [data-do="rauto"]')
+        c.until("(n) => (window.__notes || []).length > n", n0, timeout=6000, what='Auto says what it did')
+        c.eq(c.js(text), first, 'the same pinned points give the same text (no loop growing from Auto to Auto)', what='route text')
+    # FL100: no airway is open but the low detour; the previous Auto's words are not constraints: the text goes back to the pinned points
+    to_step(c, 0)
+    c.page.fill(f'{FUEL} .fu-flight [data-k="fl"]', '100')
+    to_step(c, 1)
+    c.tap(f'{FUEL} [data-do="rauto"]')
+    c.until(f"{text} === 'LFRS LFML'", timeout=6000, what='Auto replaces: the airway of the previous Auto is gone, the leg stays direct')
+    why = norm(row(c, 'autoWhyDetour')).replace('{p}', '40')
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\u00a0\u202f]+/g, ' ').includes(w))", why, timeout=6000, what=f'the line says why ({why})')
 
