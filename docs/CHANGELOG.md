@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel SPEC as a state, part 3a** (`modules/fuel/SPEC.md`; refactoring § 10.33): sections 1–12 in order, the files as they are, each
+  rule with its case (or « no case »), dates and lots moved to DECISIONS; § 9 (screens) in part 3b.
 - **Data: « Take the downloaded file »** (`modules/data/`; help ×4; noreg L19): the launcher's `base/pickup` as the second button of the base panel and under the manual sources of a download that carry `pickup: true` (with their expected name): the plan first (`dry` sent), then ONE question (the zip found with its files and size, the file missing with its pattern, where the raw files go, never committed); nothing found says what is missing without a question; the real run (`dry: false`) ends with « Taken: n files (x MB) », the failures named and « Now start Build »; one journal entry; grey with the usual reason when the launcher does not know the verb; never part of « Update all ».
 - **Map: the choose pane rendered from its model, refactor without change of behaviour (R-M1 b, § 10.33)**
   (`modules/maps/choose.js`, `frame/lib/pane_model.js`; DECISIONS; noreg D60, D62, D66, D70, D77 read the new state). The pane

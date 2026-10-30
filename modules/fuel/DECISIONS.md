@@ -1193,6 +1193,19 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   drawn, emptied when given); in `module.js`, `S.focusArr` and `S.focusRoute` become one `S.focus`, what the address asked at mount
   (`'route' | 'dep' | 'arr' | ''`). Same behaviour (F41, F63, F72).
 
+- **30 Oct 2026 — the SPEC as a state, part 3a** (refactoring § 10.33; Simplification: sections in order, each rule cites its case or
+  says « no case », dates and readings here). Sections 1 to 12 in order (10, 11, 12 came before 6); the header lists the files as they
+  are (`sheets.js` left Fuel for aerodb; `procedures.js`, `adnames.js`, `routecomplete.js`, `suggest.js` and the shared `frame/lib/`
+  files were missing); § 5 says Fuel reads the sheets and never writes them (the V2 `planner/` file is aerodb's); § 8 is aerodb's
+  `aircraft().lib` as Fuel's quote reads it; § 10 and § 11 keep Fuel's rules and point at the frame's weather layer for its sources,
+  models, cells and call count (frame INTEGRATION § 14); § 11's level of a place is the profile's altitude (F29), not the plan's
+  level then the steps' as the old text said; the dates, lots and readings left (lot 3, lot 4, lot C, lot F, lot H, « 23 / 24 /
+  28 Oct 2026 », « rectified by the user »), their entries being here already. New case F80 runs the pure benches the sections cite.
+  **No case** (code, but no check; to write when one of them moves): the corridor of the weather card, the card's order and folding,
+  the surface-wind mean of « Real weather », the « forecast loading » state, the aloft table and the atmosphere drawing, the line of
+  what changed at the start, the « Planned progress » card, the redraw on a change written elsewhere, invariants 2 and 5 (rules of
+  the repository). § 9 follows in part 3b.
+
 ## Inventaire du 30/10 : à refondre
 
 Read-only inventory (Features SOG, 30 Oct, for the user's challenge « supprimer les faire et défaire, le code mort, les
