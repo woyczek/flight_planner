@@ -1881,3 +1881,23 @@ def d72(c):
     entry = tx(M, 'chEntry', c.lang)
     c.ok(all(off == entry.replace('{p}', 'ENT1' if n in ('S1A', 'S2A') else f'EN0{n[1]}') for n, off in g['rows'][1:]), f"{g['rows']}",
          'the others follow, each marked with its entry')
+
+
+# ------------------------------------------------------------------------------------------------------ D73
+_CH_VIEW = """() => { const S = window.__mp.S, b = S.map && S.map.getBounds && S.map.getBounds();
+  return b ? { s: b.getSouth(), n: b.getNorth(), w: b.getWest(), e: b.getEast() } : S.fit }"""
+
+
+@case('D73', 'Choosing on the Map: the view frames the aerodrome and its compatible procedures, a chosen one widens it', 'D', tags=('maps',),
+      screens=False, designs=('standard',), night=False,
+      rule='V3 § 10.31 (usage walk of 30/10, point 3): the choose view frames the aerodrome, its runways and the points of the compatible procedures within 40 NM of it — the far STAR entries stay out; a chosen procedure that leaves the view widens it to that procedure alone')
+def d73(c):
+    _ch_open(c, {})
+    fit = c.js("() => window.__mp.S.fit")
+    c.ok(fit['s'] < 43.44 < fit['n'] and fit['w'] < 5.2 < fit['e'], f'{fit}', 'the aerodrome is in the frame')
+    c.ok(fit['s'] < 43.6 and fit['w'] < 4.9, f'{fit}', 'the STARs’ points near the aerodrome (MD.., 16 NM) are in the frame')
+    c.ok(fit['n'] < 43.95, f'{fit}', 'the far entries (EN.., 50 NM and more) stay out of the frame')
+    c.js("async ([id]) => (await import('/modules/maps/choose.js')).choosePick('star', id)", [_CH_STAR1])
+    c.until(f"() => {{ const v = ({_CH_VIEW})(); return v.n >= 43.95 && v.w <= 4.3 }}", timeout=6000, what='the view widened to S1A’s entry ENT1')
+    v = c.js(_CH_VIEW)
+    c.ok(v['n'] < 44.2, f'{v}', 'the view widens to the chosen STAR alone, not to every entry (EN09 at 44.35)')

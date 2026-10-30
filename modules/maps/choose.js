@@ -83,6 +83,9 @@ const PAD = 3,
 const EDGE = 4,
   EDGE_R = 56;
 const num = v => v !== null && v !== undefined && v !== '' && Number.isFinite(+v);
+/** Rayon du cadre autour du terrain (NM) : les points des procédures au-delà (entrées lointaines des STAR, sorties des SID) restent
+ *  hors cadre, sauf ceux d'une procédure choisie. */
+const FRAME_NM = 40;
 
 // ---------------------------------------------------------------- l'entrée : l'adresse
 /** La demande de l'adresse, lue et retirée d'elle (ctx.consume, une seule écriture) : { side, icao, … } ou null (rien demandé, une
@@ -317,6 +320,8 @@ function viewOf(C, fam) {
     if (it.chosen && !shown.includes(it)) shown.push(it);
   return {
     shown,
+    // les lignes compatibles avec le choix en vigueur (sur la route d'abord), pour le cadre
+    ok: order,
     hidden: list.length - shown.length,
     // l'étiquette « vers votre route » n'a de sens que si des lignes hors de la route suivent
     toRoute: route.length && near.some(it => shown.includes(it)) ? fits.filter(it => shown.includes(it)).length : 0
@@ -385,16 +390,55 @@ export async function chooseLoad() {
   }
   // la famille touchée d'abord : la première du côté que le vol n'a pas choisie, sinon la première qui a quelque chose
   C.focus = FAMS[C.side].find(f => C.cur[f] === undefined && C.items[f]?.length) || FAMS[C.side].find(f => C.items[f]?.length);
-  const own = [...(C.items.rwy || []).map(i => i.rec), ...allItems(C).flatMap(i => i.pts)],
-    box = MapsRender.bboxOf([...own, ...(num(at?.lat) && num(at?.lon) ? [at] : [])].filter(p => num(p.lat) && num(p.lon)).map(p => ({
-      lat: +p.lat,
-      lon: +p.lon
-    })), 3);
+  C.at = num(at?.lat) && num(at?.lon) ? {
+    lat: +at.lat,
+    lon: +at.lon
+  } : null;
+  const box = frameOf(C);
   if (box) {
     C.fit = box;
     S.fit = box;
   }
   C.ready = true;
+}
+/** Points d'une ligne (une famille : ceux de sa fiche choisie, sinon de la première). */
+const ptsOf = it => it.members ? (it.members.find(m => m.chosen) || it.members[0]).pts : it.pts;
+/** Le cadre du mode : le terrain, ses pistes et les points des procédures COMPATIBLES avec le choix à moins de FRAME_NM du terrain
+ *  (les entrées lointaines hors cadre) ; les procédures choisies entières. Sans position du terrain, tous les points compatibles. */
+function frameOf(C) {
+  const c = C.at,
+    k = c ? Math.cos(c.lat * Math.PI / 180) : 1,
+    near = p => !c || Math.hypot((p.lat - c.lat) * 60, (p.lon - c.lon) * 60 * k) <= FRAME_NM,
+    ok = [...famsOf(C).filter(f => f !== 'rwy').flatMap(f => C.view[f]?.ok || []), ...(C.items.appTrans || [])],
+    pts = [...(c ? [c] : []), ...(C.items.rwy || []).map(i => i.rec), ...ok.flatMap(ptsOf).filter(near), ...allItems(C).filter(it => it
+      .chosen).flatMap(ptsOf)];
+  return MapsRender.bboxOf(pts.filter(p => num(p.lat) && num(p.lon)).map(p => ({
+    lat: +p.lat,
+    lon: +p.lon
+  })), 3);
+}
+/** Après un choix : la procédure choisie qui sort de la vue l'élargit à elle seule (la vue ne rétrécit jamais d'elle-même). */
+function widenTo(it) {
+  const pts = it ? ptsOf(it) : [];
+  if (!pts.length || !S.fit) return;
+  const bb = S.map?.getBounds?.(),
+    v = bb ? {
+      s: bb.getSouth(),
+      n: bb.getNorth(),
+      w: bb.getWest(),
+      e: bb.getEast()
+    } : S.fit;
+  if (pts.every(p => p.lat >= v.s && p.lat <= v.n && p.lon >= v.w && p.lon <= v.e)) return;
+  const box = MapsRender.bboxOf([{
+    lat: v.s,
+    lon: v.w
+  }, {
+    lat: v.n,
+    lon: v.e
+  }, ...pts], 3);
+  if (!box) return;
+  S.fit = box;
+  if (S.map) fitMap(true);
 }
 /** Le mode est-il ouvert ? (la classe de la boîte suit : le fond MapLibre s'estompe). */
 export function chooseView() {
@@ -498,6 +542,7 @@ export function choosePick(fam, id) {
   }
   refresh(C);
   chooseRender();
+  if (v && fam !== 'rwy') widenTo(allItems(C).find(it => it.fam === fam && it.chosen));
   schedule();
 }
 /** Le groupe d'une famille sous les yeux (une tape sur son libellé dans la sélection) : déplié s'il était replié, la feuille

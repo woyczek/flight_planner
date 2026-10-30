@@ -1599,6 +1599,15 @@ SPEC § 6.11, INTEGRATION § 3 ter. Choices of the session, with their reasons:
   plus : pas intuitif"). The wind's colour comes from `wind.severity` and its arrows from `wind.label` (where it blows, runway
   upward), Fuel's rules, so the two screens print the same thing.
 
+## Choosing on the map: the frame (usage walk of 30 Oct 2026, point 3)
+
+The real LFPO holds 95 STARs whose entries reach 100 NM and more: framing every point gave zoom 7, the aerodrome's traces
+tiny. The frame is now the aerodrome, its runways and the points of the procedures that suit the current choice
+(`viewOf().ok`: on the route first, then the other compatible ones) within `FRAME_NM` = 40 NM of the aerodrome, plus the
+chosen procedures whole. 40 NM holds a terminal area and the initial approach segments; the entries beyond stay out.
+A pick whose procedure leaves the view widens it to that procedure alone (`widenTo`: the view's corners plus its points);
+the view never shrinks by itself and hover never moves it (only a tap). Noreg D73.
+
 ## Inventaire du 30/10 : à refondre
 
 Read-only inventory (BUGS SOG, 30 Oct, for the user's challenge "supprimer les faire et défaire vers un point documenté, éviter le
