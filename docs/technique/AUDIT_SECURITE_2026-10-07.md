@@ -922,6 +922,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 70 | Session id cut from the log, zip ceilings, same host by default (423ae3f98) | acceptable; points of 66, 61 and 30 settled |
 | 71 | Data module: VAC and Procedures panels on the launcher's verbs (3b6df2ada) | acceptable |
 | 72 | Map: « around the flight only » layer switch (4f9dca4c3), test D31 (422ed8b3f) | acceptable |
+| 73 | Refactors R-F2b (4ae61e552) and R-F3 (fd959f911) | acceptable, no change of behaviour |
+| 74 | Frame: the application switcher and per-application identity (1d11ae81c) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1677,6 +1679,17 @@ lists; text goes through `esc` or the translations.
 setting (`cache/maps/ui.json`, policy cache); no network or other write; layer keys and hues come from the code; names
 composed as « type + name » are text only (drawn on the canvas, escaped in the pane). The second commit only touches a
 test.
+
+**73. Refactors R-F2b and R-F3 (4ae61e552, fd959f911) — acceptable, no change of behaviour.** R-F2b keeps
+`frame/lib/procedures.js` pure (one name rule, private reasons behind unchanged signatures); the two edge differences only
+change displayed or compared text, and Fuel still escapes the names. R-F3 adds three colour tokens (no `url()` or
+`@import`) that Fuel reads instead of hard-coded colours.
+
+**74. Application switcher (1d11ae81c) — acceptable.** The list is built from the code's `APPS` table, escaped;
+Maintenance greyed below the Complete level (a display guard; the real ones stay at the launcher, 24). Navigation goes only
+to an entry of `APPS`, the address made of the current path, the query updated through `URLSearchParams` and the
+application's first module. The favicon reads the suite's own SVG and only sets the path's `fill` to the token's computed
+colour, as an encoded `data:` URL (an SVG favicon runs no script).
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
