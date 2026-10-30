@@ -654,7 +654,10 @@
       remote: L ? P.launcher.remoteHtml(env) : '',
       keys: L ? P.launcher.keysHtml(env) : ''
     }) : '';
-    const all = [...cards, P.diagnostic.aboutHtml(env), adminHtml],
+    // assistant « Application IVAO (connexion des pilotes) » : groupe Administration, avec un lanceur, au niveau Complet ou atteint
+    // par son adresse (#settings?card=ivaoapp)
+    const ivaoApp = L && (lvl === 3 || focus === 'ivaoapp') ? P.launcher.ivaoAppHtml(env) : '';
+    const all = [...cards, P.diagnostic.aboutHtml(env), adminHtml, ivaoApp],
       one = focus ? P.groups.pick(all, focus) : '';
     // carte demandée par l'adresse : elle seule, sous « ← Réglages » ; sinon la liste, rangée selon le niveau
     view.innerHTML = one ? `<h1>${esc(t(T.title))}</h1><p><a class="f-btn" href="#settings" data-settings-back>${esc(t(T.backToList))}</a></p>${one}` :

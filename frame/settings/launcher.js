@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // V3 — Réglages, cartes du lanceur (frame/settings/SPEC.md § 3.6, 3.9, 3.9c) : la carte Accès d'un poste servi par le
-  // lanceur (dépôt distant de data/, ou la porte pour le prendre en git), les clés d'API de la compagnie (IVAO, EAD Basic), l'accès du
+  // lanceur (dépôt distant de data/, ou la porte pour le prendre en git), les clés d'API de la compagnie (IVAO, EAD Basic) et l'assistant « Application IVAO » (connexion des pilotes), l'accès du
   // poste aux appareils du réseau local (code d'appairage, QR, appareils) ; la fenêtre Oui / Non du lanceur annoncée avant
   // le clic. Routes /__setup/* du lanceur ; jamais de secret gardé par la page.
   const {
@@ -278,6 +278,93 @@
     eadErased: ['Identifiants EAD Basic effacés du lanceur.', 'EAD Basic credentials erased from the launcher.',
       'EAD-Basic-Zugangsdaten aus dem Starter gelöscht.', 'Credenciales de EAD Basic borradas del lanzador.'
     ],
+
+    // assistant « Application IVAO (connexion des pilotes) » : écrit secrets/ivao_oauth.json par le lanceur, sans éditer de fichier
+    ivaoAppTitle: ['Application IVAO (connexion des pilotes)', 'IVAO application (pilots’ sign-in)',
+      'IVAO-Anwendung (Anmeldung der Piloten)', 'Aplicación IVAO (conexión de los pilotos)'
+    ],
+    ivaoAppIntro: [
+      'Les pilotes se connectent à IVAO par le relais de la compagnie ou par ce poste ; pour cela, la compagnie déclare une application chez IVAO. Son secret reste dans le lanceur (dossier secrets/), jamais dans la page ni dans les données.',
+      'Pilots sign in to IVAO through the airline’s relay or this workstation; for that, the airline registers an application with IVAO. Its secret stays in the launcher (secrets/ folder), never in the page or in the data.',
+      'Die Piloten melden sich über das Relais der Fluggesellschaft oder über diesen Rechner bei IVAO an; dafür registriert die Fluggesellschaft eine Anwendung bei IVAO. Ihr Geheimnis bleibt im Starter (Ordner secrets/), nie in der Seite oder in den Daten.',
+      'Los pilotos se conectan a IVAO por el relé de la compañía o por este equipo; para ello, la compañía registra una aplicación en IVAO. Su secreto se queda en el lanzador (carpeta secrets/), nunca en la página ni en los datos.'
+    ],
+    ivaoStep1: ['Ouvrez cette page d’IVAO (compte IVAO requis) :', 'Open this IVAO page (an IVAO account is required):',
+      'Öffnen Sie diese IVAO-Seite (IVAO-Konto erforderlich):', 'Abra esta página de IVAO (se necesita una cuenta IVAO):'
+    ],
+    ivaoStep2: [
+      'Remplissez le formulaire : Name = le nom de la compagnie ; App Type = Third Party ; Active = Enabled.',
+      'Fill in the form: Name = the airline’s name; App Type = Third Party; Active = Enabled.',
+      'Füllen Sie das Formular aus: Name = Name der Fluggesellschaft; App Type = Third Party; Active = Enabled.',
+      'Rellene el formulario: Name = el nombre de la compañía; App Type = Third Party; Active = Enabled.'
+    ],
+    ivaoStep3: [
+      'Cliquez « + Add Redirect URL » une fois par adresse de retour listée ci-dessous, en la collant telle quelle.',
+      'Click “+ Add Redirect URL” once for each return address listed below, pasting it exactly as it is.',
+      'Klicken Sie „+ Add Redirect URL“ einmal pro unten aufgeführter Rücksprungadresse und fügen Sie sie unverändert ein.',
+      'Pulse «+ Add Redirect URL» una vez por cada dirección de retorno de la lista de abajo, pegándola tal cual.'
+    ],
+    ivaoStep4: [
+      'Cliquez Submit, puis recopiez dans les champs ci-dessous le Client ID et le Client Secret qu’IVAO affiche.',
+      'Click Submit, then copy the Client ID and the Client Secret that IVAO shows into the fields below.',
+      'Klicken Sie Submit und übertragen Sie die von IVAO angezeigte Client ID und das Client Secret in die Felder unten.',
+      'Pulse Submit y copie en los campos de abajo el Client ID y el Client Secret que muestra IVAO.'
+    ],
+    ivaoRedirTitle: ['Adresses de retour', 'Return addresses', 'Rücksprungadressen', 'Direcciones de retorno'],
+    ivaoRedirHint: [
+      'Déclarez chacune chez IVAO ; la seconde n’apparaît que si le relais de la compagnie est réglé.',
+      'Declare each one with IVAO; the second one only appears when the airline’s relay is set.',
+      'Deklarieren Sie jede bei IVAO; die zweite erscheint nur, wenn das Relais der Fluggesellschaft eingerichtet ist.',
+      'Declárelas todas en IVAO; la segunda solo aparece si el relé de la compañía está configurado.'
+    ],
+    ivaoRedirOld: ['Mettez le lanceur à jour pour voir l’adresse de retour.', 'Update the launcher to see the return address.',
+      'Aktualisieren Sie den Starter, um die Rücksprungadresse zu sehen.', 'Actualice el lanzador para ver la dirección de retorno.'
+    ],
+    ivaoCopy: ['Copier', 'Copy', 'Kopieren', 'Copiar'],
+    ivaoCopied: ['Adresse copiée.', 'Address copied.', 'Adresse kopiert.', 'Dirección copiada.'],
+    ivaoAppSet: ['Application enregistrée le {d}', 'Application saved on {d}', 'Anwendung gespeichert am {d}',
+      'Aplicación guardada el {d}'
+    ],
+    ivaoAppMissing: ['Application absente', 'Application missing', 'Anwendung fehlt', 'Aplicación ausente'],
+    ivaoClientId: ['Client ID', 'Client ID', 'Client ID', 'Client ID'],
+    ivaoClientSecret: ['Client Secret', 'Client Secret', 'Client Secret', 'Client Secret'],
+    ivaoAppBoth: ['Renseignez le Client ID et le Client Secret.', 'Fill in the Client ID and the Client Secret.',
+      'Client ID und Client Secret eingeben.', 'Rellene el Client ID y el Client Secret.'
+    ],
+    ivaoAppAsk: ['Effacer l’application IVAO du lanceur ? Les pilotes ne pourront plus se connecter à IVAO.',
+      'Erase the IVAO application from the launcher? Pilots will no longer be able to sign in to IVAO.',
+      'Die IVAO-Anwendung vom Starter löschen? Die Piloten können sich dann nicht mehr bei IVAO anmelden.',
+      '¿Borrar la aplicación IVAO del lanzador? Los pilotos ya no podrán conectarse a IVAO.'
+    ],
+    ivaoAppSaved: ['Application IVAO enregistrée dans le lanceur.', 'IVAO application saved in the launcher.',
+      'IVAO-Anwendung im Starter gespeichert.', 'Aplicación IVAO guardada en el lanzador.'
+    ],
+    ivaoAppErased: ['Application IVAO effacée du lanceur.', 'IVAO application erased from the launcher.',
+      'IVAO-Anwendung aus dem Starter gelöscht.', 'Aplicación IVAO borrada del lanzador.'
+    ],
+    ivaoAppTestOk: ['Découverte OpenID d’IVAO jointe : l’application est prête.',
+      'IVAO OpenID discovery reached: the application is ready.',
+      'OpenID-Discovery von IVAO erreicht: Die Anwendung ist bereit.',
+      'Descubrimiento OpenID de IVAO alcanzado: la aplicación está lista.'
+    ],
+    ivaoAppTestMissing: ['Enregistrez d’abord l’application.', 'Save the application first.',
+      'Speichern Sie zuerst die Anwendung.', 'Guarde primero la aplicación.'
+    ],
+    ivaoAppTestFail: [
+      'Enregistrée ; IVAO n’a pas répondu : essayez par « Se connecter à IVAO ».',
+      'Saved; IVAO did not answer: try “Sign in to IVAO”.',
+      'Gespeichert; IVAO hat nicht geantwortet: Versuchen Sie „Bei IVAO anmelden“.',
+      'Guardada; IVAO no respondió: pruebe con «Conectarse a IVAO».'
+    ],
+    ivaoAppKeyNote: [
+      'La clé API de l’application (secrets/ivao.json, lecture du tracker par la compagnie) est un autre réglage ; une nouvelle application a sa propre clé API, vous pouvez la reporter dans « Clé IVAO » ci-dessus.',
+      'The application’s API key (secrets/ivao.json, the airline’s tracker reading) is another setting; a new application has its own API key, which you can carry over to “IVAO key” above.',
+      'Der API-Schlüssel der Anwendung (secrets/ivao.json, Tracker-Abfrage der Fluggesellschaft) ist eine andere Einstellung; eine neue Anwendung hat ihren eigenen API-Schlüssel, den Sie oben unter „IVAO-Schlüssel“ eintragen können.',
+      'La clave API de la aplicación (secrets/ivao.json, lectura del tracker por la compañía) es otro ajuste; una aplicación nueva tiene su propia clave API, que puede trasladar a «Clave IVAO» más arriba.'
+    ],
+    ivaoAppLink: ['Créer l’application IVAO des pilotes : pas à pas', 'Create the pilots’ IVAO application: step by step',
+      'IVAO-Anwendung der Piloten anlegen: Schritt für Schritt', 'Crear la aplicación IVAO de los pilotos: paso a paso'
+    ],
   });
 
   /** L'opération ouvrira-t-elle la fenêtre Oui / Non du lanceur ? Réponse du lanceur pour cette adresse (POST adopt dry,
@@ -345,7 +432,55 @@
       <div class="f-row"><button type="button" class="primary" data-act="keySave">${esc(t(T.save))}</button><button type="button" data-act="keyTest">${esc(t(T.test))}</button><button type="button" data-act="keyErase">${esc(t(T.erase))}</button></div>
       <div data-card="ead"><h3>${esc(t(T.eadTitle))}</h3><p class="f-msg" data-kind="warn">${esc(t(T.eadNotice))}</p><p class="f-muted">${esc(t(T.eadHint))}</p>
         <p><b data-ead>…</b></p>${fld('eadUser', T.eadUser, '')}${fld('eadPassword', T.eadPassword, '', { type: 'password' })}<p class="f-msg" data-msg></p>
-        <div class="f-row"><button type="button" class="primary" data-act="eadSave">${esc(t(T.save))}</button><button type="button" data-act="eadErase">${esc(t(T.erase))}</button></div></div></div>`;
+        <div class="f-row"><button type="button" class="primary" data-act="eadSave">${esc(t(T.save))}</button><button type="button" data-act="eadErase">${esc(t(T.erase))}</button></div></div>
+      <p><a href="#settings?card=ivaoapp" data-ivaoapp-link>${esc(t(T.ivaoAppLink))}</a></p></div>`;
+  }
+  /** Carte « Application IVAO (connexion des pilotes) » (assistant pas à pas qui écrit secrets/ivao_oauth.json par le
+   *  lanceur) : étapes chez IVAO, adresses de retour à y déclarer (remplies par paintKeys), état, Client ID et Client
+   *  Secret donnés une fois, jamais relus. */
+  function ivaoAppHtml(env) {
+    const {
+      t,
+      fld
+    } = env;
+    return `<div class="f-card" data-card="ivaoapp"><h2>${esc(t(T.ivaoAppTitle))}</h2><p class="f-muted">${esc(t(T.ivaoAppIntro))}</p>
+      <ol data-ivao-steps><li>${esc(t(T.ivaoStep1))} <a href="https://developers.ivao.aero/create" target="_blank" rel="noopener noreferrer">developers.ivao.aero/create</a></li>
+        <li>${esc(t(T.ivaoStep2))}</li><li>${esc(t(T.ivaoStep3))}</li><li>${esc(t(T.ivaoStep4))}</li></ol>
+      <h3>${esc(t(T.ivaoRedirTitle))}</h3><ul data-ivao-redirects><li class="f-muted">…</li></ul><p class="f-muted">${esc(t(T.ivaoRedirHint))}</p>
+      <p><b data-ivaoapp>…</b></p>${fld('ivaoClientId', T.ivaoClientId, '')}${fld('ivaoClientSecret', T.ivaoClientSecret, '', { type: 'password' })}<p class="f-msg" data-msg></p>
+      <div class="f-row"><button type="button" class="primary" data-act="ivaoAppSave">${esc(t(T.save))}</button><button type="button" data-act="ivaoAppTest">${esc(t(T.test))}</button><button type="button" data-act="ivaoAppErase">${esc(t(T.erase))}</button></div>
+      <p class="f-muted">${esc(t(T.ivaoAppKeyNote))}</p></div>`;
+  }
+  /** Adresses de retour et état de l'application IVAO (carte ivaoapp) d'après la lecture de GET /__setup/secrets : une ligne
+   *  « adresse + Copier » par adresse de `ivaoRedirects` (un lanceur plus ancien n'en donne pas : une ligne le dit), et
+   *  « enregistrée le … » quand le Client ID et le Client Secret sont réglés (date la plus récente), « absente » sinon. */
+  function paintIvaoApp(env, s) {
+    const {
+      view,
+      t
+    } = env;
+    const ul = view.querySelector('[data-ivao-redirects]');
+    if (ul) {
+      const list = Array.isArray(s?.ivaoRedirects) ? s.ivaoRedirects.filter(u => typeof u === 'string' && u) : null;
+      ul.innerHTML = list ? list.map(u => `<li><code>${esc(u)}</code> <button type="button" data-act="ivaoCopy" data-text="${esc(u)}">${esc(t(T.ivaoCopy))}</button></li>`).join('') :
+        `<li class="f-muted" data-ivao-old>${esc(t(T.ivaoRedirOld))}</li>`;
+    }
+    paintIvaoState(env, s?.app?.ivao_oauth);
+  }
+  /** Ligne d'état de l'application IVAO ([data-ivaoapp]) d'après { clientId, clientSecret } du lanceur (set, at). */
+  function paintIvaoState(env, o) {
+    const {
+      view,
+      c,
+      t
+    } = env;
+    const b = view.querySelector('[data-ivaoapp]');
+    if (!b) return;
+    const both = !!o?.clientId?.set && !!o?.clientSecret?.set,
+      at = [o?.clientId?.at, o?.clientSecret?.at].filter(Boolean).sort().pop() || '';
+    b.textContent = both ? t(T.ivaoAppSet, {
+      d: at ? c.time?.fmtDateZ(at) || at : '?'
+    }) : t(T.ivaoAppMissing);
   }
   /** Ligne d'état des identifiants EAD Basic ([data-ead]) d'après { user, password } du lanceur (set, at) : « enregistrés le … »
    *  quand les deux sont réglés (date la plus récente), « absents » sinon. */
@@ -363,8 +498,8 @@
       d: at ? c.time?.fmtDateZ(at) || at : '?'
     }) : t(T.eadMissing);
   }
-  /** Clés du lanceur (niveau Complet) : l'état de la clé IVAO ([data-key]) et celui des identifiants EAD Basic ([data-ead]),
-   *  d'une seule lecture de GET /__setup/secrets. */
+  /** Clés du lanceur (niveau Complet) : l'état de la clé IVAO ([data-key]), celui des identifiants EAD Basic ([data-ead]) et
+   *  la carte de l'application IVAO (adresses de retour, état), d'une seule lecture de GET /__setup/secrets. */
   async function paintKeys(env) {
     const {
       view,
@@ -377,6 +512,7 @@
       h: k.hint || '••••'
     });
     paintEad(env, s?.app?.ead);
+    paintIvaoApp(env, s);
   }
   /** Adresses privées de ce poste encore fermées au réseau local (état du lanceur : available moins celles des urls). */
   function closedIps(s) {
@@ -444,7 +580,7 @@
       box.innerHTML = `<dl class="f-dl">${row(T.lanState, esc(t(s.on ? T.lanOn : T.lanOff)))}${s.on ? row(T.lanUrl, `<b>${esc(url)}</b>`) +
         (s.urls.length > 1 ? row(T.lanOther, esc(s.urls.slice(1).join(', '))) : '') + row(T.lanCode, code) : ''}${row(T.lanDevices, esc(String(s.devices ?? 0)))}</dl>${devs}${qr}${s.on ? `<p class="f-muted">${esc(t(T.lanCodeHint))}</p>` : ''}${s.on && closed.length ? `<p class="f-muted">${esc(t(T.lanOtherClosed, { u: closed.join(', ') }))}</p><div class="f-row"><button type="button" data-act="lanAll">${esc(t(T.lanOpenAll))}</button></div>` : ''}`;
     };
-    if (lanApi) {
+    if (lanApi && card('lan')) { // une autre carte seule (#settings?card=…) : pas de carte d'accès à relever
       const el = card('lan'),
         tick = async () => {
           if (!el.isConnected) return; // écran quitté ou redessiné : la relève s'arrête
@@ -453,7 +589,7 @@
         };
       tick();
     }
-    if (L && (view.querySelector('[data-key]') || view.querySelector('[data-ead]'))) paintKeys(
+    if (L && (view.querySelector('[data-key]') || view.querySelector('[data-ead]') || view.querySelector('[data-ivaoapp]'))) paintKeys(
       env); // volet des clés : niveau Complet seulement
 
     // indication « fenêtre Oui / Non sur ce poste » sous le bouton, selon l'adresse saisie
@@ -586,6 +722,42 @@
       c.notify(t(act === 'eadErase' ? T.eadErased : T.eadSaved), 'ok');
       return paintEad(env, r.app?.ead);
     }
+    if (act === 'ivaoCopy') {
+      // une adresse de retour copiée (ou montrée sélectionnée si la copie est impossible ici)
+      const how = await copy(b.dataset.text || '', {
+        near: b.closest('li')
+      });
+      return c.notify(t(how === 'shown' ? T.copyShown : T.ivaoCopied), how === 'shown' ? 'warn' : 'ok');
+    }
+    if (act === 'ivaoAppSave' || act === 'ivaoAppErase') {
+      const box = card('ivaoapp'),
+        cid = val('ivaoClientId', box),
+        sec = val('ivaoClientSecret', box);
+      if (act === 'ivaoAppSave' && (!cid || !sec)) return say('ivaoapp', t(T.ivaoAppBoth));
+      if (act === 'ivaoAppErase' && !await c.ask(t(T.ivaoAppAsk))) return;
+      // la page ne garde aucun secret : champs vidés avant l'appel
+      box.querySelectorAll('[data-f]').forEach(x => x.value = '');
+      say('ivaoapp', '');
+      const r = await setup('secrets', {
+        scope: 'app',
+        service: 'ivao_oauth',
+        values: act === 'ivaoAppErase' ? {
+          clientId: '',
+          clientSecret: ''
+        } : {
+          clientId: cid,
+          clientSecret: sec
+        }
+      });
+      if (!r?.ok) return say('ivaoapp', r?.message || t(T.launcherOld));
+      c.notify(t(act === 'ivaoAppErase' ? T.ivaoAppErased : T.ivaoAppSaved), 'ok');
+      return paintIvaoState(env, r.app?.ivao_oauth);
+    }
+    if (act === 'ivaoAppTest') {
+      const r = await setup('secrets/test?service=ivao_oauth');
+      return say('ivaoapp', r?.ok ? t(T.ivaoAppTestOk) : r?.key === 'missing' ? t(T.ivaoAppTestMissing) : t(T.ivaoAppTestFail), r?.ok ?
+        'ok' : r?.key === 'missing' ? 'warn' : 'err');
+    }
     if (act === 'histResume') {
       // historique réécrit : le plan d'abord (rien changé), une question, puis la reprise et une synchronisation
       const tri = c.identity().trigram || '';
@@ -676,7 +848,8 @@
   }
 
   (window.SogSettingsParts ||= {}).launcher = {
-    acts: ['lanToggle', 'lanForget', 'lanCode', 'lanAll', 'keySave', 'keyErase', 'keyTest', 'eadSave', 'eadErase', 'remoteCheck',
+    acts: ['lanToggle', 'lanForget', 'lanCode', 'lanAll', 'keySave', 'keyErase', 'keyTest', 'eadSave', 'eadErase', 'ivaoCopy',
+      'ivaoAppSave', 'ivaoAppTest', 'ivaoAppErase', 'remoteCheck',
       'remoteSave', 'gitClone',
       'gitAdopt', 'histResume'
     ],
@@ -684,6 +857,7 @@
     accessHtml,
     remoteHtml,
     keysHtml,
+    ivaoAppHtml,
     lanHtml,
     live,
     onClick,

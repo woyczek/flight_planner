@@ -27,8 +27,10 @@ Rules covered
   * the frame's launcher and publication services: their benches pass (A29, A30); the end-of-cycle line of the Status block, ×4 (A31).
 
   * the launcher's keys panel gives the EAD Basic user name and password once, and never reads them back (A32).
+  * the IVAO application assistant (Settings, Administration group): the steps at IVAO, the return addresses with a Copy button each, the
+    Client ID and Secret given once to the launcher and never read back, Test, Erase, the card alone by its address (A43).
 
-Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A25 A26 A27 A28 A29 A30 A31 A32 A33 A34.
+Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A25 A26 A27 A28 A29 A30 A31 A32 A33 A34 A43.
 """
 import json
 import re
@@ -1214,3 +1216,118 @@ def a41(c):
     c.page.goto(f'{c.base}/frame/index.html#ivao-return?error=denied', wait_until='load')
     c.until("location.hash === '#settings?card=ivao'", timeout=15000, what='the address replaced after an error')
     c.until("window.__notes && window.__notes.some(n => /IVAO/.test(n))", timeout=5000, what='the refusal said')
+
+
+@case('A43', 'IVAO application assistant', 'A', langs4=True, designs=('standard',), screens=False, night=False,
+      rule='frame/settings SPEC 3 item 9: the airline registers an IVAO application; the Client ID and Secret go once to the launcher (secrets/ivao_oauth.json), never read back')
+def a43(c):
+    posts = []
+    file = 'frame/settings/launcher.js'
+
+    def t(key):
+        return tx(file, key, c.lang)
+    redirects = ['http://127.0.0.1:8000/__relay/ivao/callback', 'https://relay.example.test/__relay/ivao/callback']
+    unset = {'clientId': {'set': False, 'at': ''}, 'clientSecret': {'set': False, 'at': ''}}
+    state = {'oauth': unset, 'redirects': redirects, 'test': {'ok': True}}
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True,
+              'relaxNav': False, 'host': 'TEST', 'lan': False}
+
+    def secrets():
+        view = {'app': {'ivao': {'apiKey': {'set': False, 'hint': ''}},
+                        'ead': {'user': {'set': False, 'at': ''}, 'password': {'set': False, 'at': ''}},
+                        'ivao_oauth': state['oauth']}, 'user': {}}
+        if state['redirects'] is not None:
+            view['ivaoRedirects'] = state['redirects']
+        return view
+
+    def launcher(route):
+        req = route.request
+        path = urllib.parse.urlparse(req.url).path
+        body = {}
+        if path.endswith('/__setup/status'):
+            body = status
+        elif path.endswith('/__setup/secrets/test'):
+            body = state['test']
+        elif path.endswith('/__setup/secrets'):
+            if req.method == 'POST':
+                post = json.loads(req.post_data or '{}')
+                posts.append(post)
+                vals = post.get('values') or {}
+                full = bool(vals.get('clientId')) and bool(vals.get('clientSecret'))
+                state['oauth'] = {k: {'set': full, 'at': '2026-10-30T10:00:00Z' if full else ''} for k in ('clientId', 'clientSecret')}
+                body = {'ok': True, **secrets()}
+            else:
+                body = secrets()
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    c.open('settings', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-group=\"admin\"] [data-card=\"ivaoapp\"]')", what='the card is in the Administration group at the Full level')
+    if not c.js("document.querySelector('[data-group=\"admin\"]').open"):
+        c.tap('[data-group="admin"] > summary')
+    card = '[data-card="ivaoapp"]'
+    msg = f"document.querySelector('{card} [data-msg]').textContent.trim()"
+    c.eq(norm(c.text(f'{card} h2')), norm(t('ivaoAppTitle')), 'the card is titled', what='title')
+    c.eq(c.count(f'{card} ol[data-ivao-steps] > li'), 4, 'four steps', what='steps')
+    link = f'{card} [data-ivao-steps] a'
+    c.eq(c.attr(link, 'href'), 'https://developers.ivao.aero/create', "a real link to IVAO's application form", what='link')
+    c.ok('noopener' in c.attr(link, 'rel') and c.attr(link, 'target') == '_blank', f"{c.attr(link, 'rel')} {c.attr(link, 'target')}", 'a new tab, noopener')
+    # the return addresses, filled from the one read of the secrets
+    c.until(f"document.querySelectorAll('{card} [data-ivao-redirects] li code').length === 2", what='both return addresses are listed')
+    c.eq(c.js(f"[...document.querySelectorAll('{card} [data-ivao-redirects] li code')].map(e => e.textContent)"), redirects, 'this workstation first, then the relay', what='addresses')
+    c.eq(c.js(f"[...document.querySelectorAll('{card} [data-ivao-redirects] li button[data-act=\"ivaoCopy\"]')].map(b => b.dataset.text)"), redirects, 'a Copy button for each, carrying the address as it is', what='copy buttons')
+    c.until(f"document.querySelector('{card} [data-ivaoapp]').textContent.trim() !== '…'", what='the state is painted')
+    c.eq(norm(c.text(f'{card} [data-ivaoapp]')), norm(t('ivaoAppMissing')), 'nothing saved yet: absent', what='state')
+    c.eq(c.attr(f'{card} input[data-f="ivaoClientSecret"]', 'type'), 'password', 'the secret is hidden while typed', what='secret type')
+    # one field alone: refused in the card, no call
+    c.page.fill(f'{card} input[data-f="ivaoClientId"]', 'test-client-id')
+    c.tap(f'{card} [data-act="ivaoAppSave"]')
+    c.wait(300)
+    c.eq(len(posts), 0, 'a Client ID without a Secret is refused in the card, no call', what='posts')
+    c.eq(norm(c.text(f'{card} [data-msg]')), norm(t('ivaoAppBoth')), 'the card says what is missing', what='message')
+    # both: ONE call, the fields emptied, the values shown nowhere, the state follows
+    c.page.fill(f'{card} input[data-f="ivaoClientSecret"]', 'test-client-secret')
+    c.tap(f'{card} [data-act="ivaoAppSave"]')
+    for _ in range(30):
+        if posts:
+            break
+        c.wait(100)
+    c.eq(posts, [{'scope': 'app', 'service': 'ivao_oauth', 'values': {'clientId': 'test-client-id', 'clientSecret': 'test-client-secret'}}],
+         'one call with the scope, the service and both values', what='posts')
+    c.eq(c.js(f"[...document.querySelectorAll('{card} input[data-f]')].map(i => i.value)"), ['', ''], 'both fields are emptied: the page keeps no secret', what='fields')
+    c.until(f"/2026/.test(document.querySelector('{card} [data-ivaoapp]').textContent)", what='the state says when the application was saved')
+    body = c.js('document.body.innerText')
+    c.ok('test-client-id' not in body and 'test-client-secret' not in body, 'a value is shown', 'the values are shown nowhere')
+    c.ok(norm(c.text(f'{card} [data-ivaoapp]')).startswith(norm(t('ivaoAppSet').split('{d}')[0])), c.text(f'{card} [data-ivaoapp]'), 'saved on <date>')
+    # Test: the discovery answers, then the application is missing, then IVAO does not answer
+    def tested(answer, key, what):
+        state['test'] = answer
+        before = c.js(msg)
+        c.tap(f'{card} [data-act="ivaoAppTest"]')
+        c.until(f"{msg} !== {json.dumps(before)}", what=f'the test answers: {what}')
+        c.eq(norm(c.text(f'{card} [data-msg]')), norm(t(key)), what, what='test message')
+    tested({'ok': True}, 'ivaoAppTestOk', 'the discovery document answered: the application is ready')
+    tested({'ok': False, 'key': 'missing'}, 'ivaoAppTestMissing', 'no application: save it first')
+    tested({'ok': False, 'error': 'URLError'}, 'ivaoAppTestFail', 'IVAO did not answer: saved, try signing in')
+    # Erase: asked, then a call with empty values
+    c.tap(f'{card} [data-act="ivaoAppErase"]')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", what='the question is asked')
+    c.eq(len(posts), 1, 'nothing is erased before the answer', what='posts')
+    c.tap('.f-modal [data-ok]')
+    for _ in range(30):
+        if len(posts) == 2:
+            break
+        c.wait(100)
+    c.eq(posts[1:], [{'scope': 'app', 'service': 'ivao_oauth', 'values': {'clientId': '', 'clientSecret': ''}}], 'one call with empty values', what='erase post')
+    c.until(f"document.querySelector('{card} [data-ivaoapp]').textContent.trim() === {json.dumps(t('ivaoAppMissing'))}", what='the state is absent again')
+    # the card alone by its address
+    c.page.evaluate("location.hash = '#settings?card=ivaoapp'")
+    c.until("!!document.querySelector('#fView [data-settings-back]')", what='the card shown alone')
+    c.eq(c.count('#fView [data-card]'), 1, 'only the card under the back link', what='cards')
+    c.eq(norm(c.text('#fView [data-settings-back]')), norm(tx('frame/settings/settings.js', 'backToList', c.lang)), 'the way back to the settings', what='back link')
+    c.until(f"document.querySelectorAll('{card} [data-ivao-redirects] li code').length === 2", what='the addresses are painted when the card is alone')
+    # an older launcher: no ivaoRedirects, one line says to update it
+    state['redirects'] = None
+    c.page.reload(wait_until='load')
+    c.until("!!document.querySelector('#fView [data-ivao-old]')", timeout=15000, what='the update line')
+    c.eq(norm(c.text('#fView [data-ivao-old]')), norm(t('ivaoRedirOld')), 'update the launcher to see the return address', what='old launcher')
+    c.eq(c.count('#fView [data-ivao-redirects] button'), 0, 'no address, no Copy button', what='copy buttons')

@@ -777,6 +777,8 @@ the data. “Test” checks that IVAO answers; “Erase” removes it.
 
 Under the IVAO key, the “EAD Basic (EUROCONTROL)” block takes the user name and password of your EAD Basic account: you give them once to this computer’s launcher (`secrets/` folder), which keeps them; the page never shows them again, it only says whether they are saved and when. They are used by “Read an aerodrome from EAD” (one aerodrome per gesture). EAD Basic is a demonstration tool with non-operational data, to be used for simulation only (the warning stays displayed). “Erase” removes them from the launcher.
 
+<a id="settings-ivao-app"></a>Under the EAD Basic block, a link leads to the “IVAO application (pilots’ sign-in)” assistant (the card of the same name, “Administration” group, or `#settings?card=ivaoapp`). It lets pilots sign in to IVAO through the airline’s relay or this workstation: it guides you through IVAO (`https://developers.ivao.aero/create`: Name = the airline’s name, App Type = Third Party, Active = Enabled), lists the return addresses to declare with “+ Add Redirect URL” (this workstation’s, and the relay’s when its public address is set; “Copy” gives them exactly as they must be pasted), then takes the Client ID and the Client Secret that IVAO shows. The launcher writes them to `secrets/ivao_oauth.json`: you edit no file, and the page never shows them again (it only says whether the application is saved, and when). “Test” reaches IVAO’s OpenID discovery document; “Erase” removes the application. The application’s API key (`secrets/ivao.json`) is another setting: a new application’s key is carried over into “IVAO key”.
+
 ## The tablet next to the simulator
 
 You fly on the computer (X-Plane) and want the map on a tablet or a phone: on the computer served by the launcher,
@@ -901,4 +903,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: c49c76673bd9 -->
+<!-- fr: 67895245b728 -->

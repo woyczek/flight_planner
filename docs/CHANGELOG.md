@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Settings: the IVAO application assistant** (`frame/settings/launcher.js` `ivaoAppHtml`, `tools/launch.py`; help ×4; A43) — a card
+  "IVAO application (pilots' sign-in)" in the Administration group (`#settings?card=ivaoapp`, linked from the keys panel): the
+  steps at developers.ivao.aero, the return addresses to declare (`GET /__setup/secrets` now answers `ivaoRedirects`) with a Copy
+  button each, the Client ID and Client Secret given once to `secrets/ivao_oauth.json` through the launcher, never read back;
+  "Test" (`secrets/test?service=ivao_oauth`) reads IVAO's OpenID discovery document again.
 - **Frame: one criterion for the layout and the computer's design** (`frame/app.js`, `frame/index.html`; INTEGRATION
   § 9.1, DECISIONS; noreg A42): a computer's window wider than high no longer falls into the phone's landscape rail;
   Aqua applies exactly with the computer's rail with labels.

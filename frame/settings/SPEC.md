@@ -163,6 +163,16 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    (asks). `POST /__setup/secrets { scope: 'app', service: 'ead', values: { user, password } }` writes
    `secrets/ead.json` (`{ user, password, savedAt }`), read by `tools/regen_jobs.py` for the verb `proc/ead-fetch`; never
    synchronised (`secrets/` is outside the data repository). No "Test" button: signing in to EAD belongs to the EAD line.
+   Under it, one line links to the **IVAO application assistant** (`#settings?card=ivaoapp`), a card of its own in the
+   Administration group (launcher, Full level, or reached by its address; `launcher.js` `ivaoAppHtml`): the steps at
+   `https://developers.ivao.aero/create` (Name, App Type = Third Party, Active = Enabled, "+ Add Redirect URL", Submit), the
+   return addresses to declare (`GET /__setup/secrets` `ivaoRedirects`: this workstation's, plus the relay's when `RELAY['host']` is
+   set; one "Copy" button each; an older launcher without the field gets one line saying to update it), the state
+   (`app.ivao_oauth.{clientId,clientSecret}` = `{ set, at }`, blind like EAD), Client ID and Client Secret fields (the
+   secret is `type=password`), "Save" (both required; fields emptied before the call;
+   `POST /__setup/secrets { scope: 'app', service: 'ivao_oauth', values: { clientId, clientSecret } }` writes
+   `secrets/ivao_oauth.json`), "Test" (`/__setup/secrets/test?service=ivao_oauth`: the OpenID discovery document is read again,
+   no secret in the answer) and "Erase" (asks). Read once with the keys panel (a single `GET /__setup/secrets`).
 9b. **Little Navmap sheets (.lnmperf)** (page served by a launcher, when `aerodb.lnmperf` exists): an empty, hidden
    `[data-card="lnmperf"]` block that settings places after the launcher keys; its content and states (folder, Little
    Navmap folders found, "Save", "Synchronise now", "Stop", last pass, sheets not written) are drawn by aerodb

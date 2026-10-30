@@ -33,7 +33,7 @@
     ['data', ['usages', 'offline', 'lnmperf']],
     ['device', ['backup', 'wx', 'lan']],
     ['display', ['level', 'design']],
-    ['admin', ['admin']],
+    ['admin', ['admin', 'ivaoapp']],
     ['help', ['about']]
   ];
   const OPEN = new Set(); // groupes ouverts à la main, gardés d'un dessin à l'autre (le temps de la page)

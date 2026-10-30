@@ -828,6 +828,8 @@ Fluggesellschaft (IVAO, EAD Basic)“ der Karte „Verwaltung“ die Einstellung
 
 Unter dem IVAO-Schlüssel nimmt der Block „EAD Basic (EUROCONTROL)“ Benutzername und Passwort Ihres EAD-Basic-Kontos auf: Sie geben sie einmal dem Starter dieses Rechners (Ordner `secrets/`), der sie verwahrt; die Seite zeigt sie nie wieder an, sie sagt nur, ob und wann sie gespeichert sind. Sie dienen zum „Flugplatz aus EAD lesen“ (ein Flugplatz pro Geste). EAD Basic ist ein Demonstrationswerkzeug mit nicht operativen Daten, nur für die Simulation zu verwenden (der Hinweis bleibt angezeigt). „Löschen“ entfernt sie aus dem Starter.
 
+<a id="settings-ivao-app"></a>Unter dem Block EAD Basic führt ein Link zum Assistenten „IVAO-Anwendung (Anmeldung der Piloten)“ (die gleichnamige Karte, Gruppe „Verwaltung“, oder `#settings?card=ivaoapp`). Er ermöglicht den Piloten, sich über das Relais der Fluggesellschaft oder über diesen Rechner bei IVAO anzumelden: Er führt Sie durch IVAO (`https://developers.ivao.aero/create`: Name = Name der Fluggesellschaft, App Type = Third Party, Active = Enabled), listet die mit „+ Add Redirect URL“ zu deklarierenden Rücksprungadressen auf (die dieses Rechners und, wenn seine öffentliche Adresse eingerichtet ist, die des Relais; „Kopieren“ liefert sie unverändert) und nimmt dann die von IVAO angezeigte Client ID und das Client Secret entgegen. Der Starter schreibt sie nach `secrets/ivao_oauth.json`: Sie bearbeiten keine Datei, und die Seite zeigt sie nie wieder an (sie sagt nur, ob und wann die Anwendung gespeichert ist). „Testen“ erreicht das OpenID-Discovery-Dokument von IVAO; „Löschen“ entfernt die Anwendung. Der API-Schlüssel der Anwendung (`secrets/ivao.json`) ist eine andere Einstellung: Der Schlüssel einer neuen Anwendung wird unter „IVAO-Schlüssel“ übernommen.
+
 ## Das Tablet neben dem Simulator
 
 Sie fliegen am Rechner (X-Plane) und möchten die Karte auf einem Tablet oder Telefon: Auf dem Rechner, den der
@@ -964,4 +966,4 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: c49c76673bd9 -->
+<!-- fr: 67895245b728 -->

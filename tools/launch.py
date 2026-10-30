@@ -1121,7 +1121,12 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         if not self._allowed():
             return self._json({'error': 'refusé'}, 403)
         q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
-        return self._json(secrets_view(q.get('tri', [''])[0]))
+        view = secrets_view(q.get('tri', [''])[0])
+        # adresses de retour à déclarer chez IVAO pour l'application OpenID (assistant des Réglages) : celle de ce poste,
+        # et celle du relais de la compagnie quand son hôte public est réglé ; adresses publiques, aucun secret
+        view['ivaoRedirects'] = [f'http://127.0.0.1:{self.port}{IVAO_CALLBACK}'] + (
+            [f'https://{RELAY["host"]}{IVAO_CALLBACK}'] if RELAY['host'] else [])
+        return self._json(view)
 
     @route('GET', '/__setup/secrets/test', public='poste')
     def _get_secrets_test(self, path):
@@ -2439,6 +2444,18 @@ def registry_history(limit=500):
 
 def secrets_test(service):
     """Appel de contrôle d'une clé de la suite (« Tester ») : IVAO, sessions du tracker de la dernière heure."""
+    if service == 'ivao_oauth':
+        # application OpenID d'IVAO : le document de découverte est relu (cache vidé) avec l'adresse enregistrée ; jamais un
+        # secret dans la réponse
+        cfg = ivao_oauth_cfg()
+        if not cfg:
+            return {'ok': False, 'key': 'missing'}
+        _ivao_oidc.update(meta=None, at=0.0)
+        try:
+            ivao_oidc_meta(cfg[2])
+        except (OSError, ValueError) as e:
+            return {'ok': False, 'error': type(e).__name__}
+        return {'ok': True}
     if service != 'ivao':
         return {'ok': False, 'error': 'service sans clé à tester'}
     key = ivao_key()
