@@ -1315,6 +1315,35 @@ redesigned for touch at that point.
        device list first** (user's question of the day: relay devices versus LAN devices) → R-C3 IVAO return → R-C4
        routes → R-C1 relay identity → R-C5 one data/ recovery → R-C6 transports → R-C7 trail reprise after 6 Nov →
        R-C8/9/10 when touched; Réglages: a short inventory of frame/settings and modules/data first, then its lots.
+       **State (30 Oct, night)**: Fuel R-F1 to R-F6 done, cases merged, the SPEC rewritten as a state (3a e3d23846e,
+       3b 533dd175f; each rule cites its case or says "no case"; the 22 "no case" rules are debts in DECISIONS, the
+       three biggest get a case each, one commit per case, no behaviour change: "Cancel the start" F81, the "Real
+       weather" surface-wind mean in the METAR bench F80, the weather corridor; a gap found on the way — a station
+       without a wind direction was read as 0° — is fixed as a separate bug commit: such a station leaves the mean and
+       the screen says on how many aerodromes the mean is made, or that there is none). Map R-M4, R-M6, R-M3 and R-M1
+       (a)(b)(c) done (pure `frame/lib/pane_model.js`, one state, one exit `chooseClose`; audit line 96). Réglages
+       R-S1 done, "Prendre le fichier téléchargé" delivered (c62d555e6, audit line 95: the real pickup will carry the
+       zip shown by the plan — launcher key `zips: { <source>: { name, size } }`, refused per source when the newest
+       zip no longer matches, the name compared only, never used as a path — then R-S2).
+       **R-M2+5, plan accepted (BUGS SOG)**, three lots pushed separately, target form in `modules/maps/SPEC.md` § 3:
+       (a) one cartouche primitive in the render core (frame, halo, runs, swatch, full / faded) used by the procedure
+       labels, the choose pane's top and the airway boxes, and `PALETTE.sid / star / app` read from the `--sog-map-*`
+       tokens at every theme change, pixel-identical; (b) every layer declares its labels as requests { layer,
+       priority, key, anchor, candidate boxes in sliding order, paint } and `many()` deduplicates by key, the
+       in-order placer keeping today's winners; the hidden "full name at pxPerDegree ≥ 900" threshold moves to the
+       zoom rule; (c) **one label pass** sorting every request by the closed list below (stable at equal rank), each
+       taking its first free candidate or staying silent; the vertical cut goes through the same pass with its own
+       list (TOC / TOD, levels, constraints, entered airspaces, fixes, other airspaces). The closed list: 1 the
+       aerodrome's name; 2 the runway numbers; 3 the navaid boxes; 4 the procedure cartouches (highlighted, chosen,
+       touched family, others); 5 the route's points and the path's airway cartouches — or the mission's points on a
+       mission map; 6 the rest (airways off the path, fixes, VRP, airspace names, MORA, towns). Decisions: at a
+       terminal the aerodrome and the navaids win over TOC and the ETAs, which slide along their leg before going
+       silent; a navaid or a fix that is also a route point is one box (the highest rank, by key), the ETA stays on
+       the leg; a case adapted by (c) is said one by one with the old and the new winner, written here as a rule; the
+       drawing at rest is measured before and after on the real base (Paris, Toulouse), under 16 ms or the lot stops.
+       New cases: the three kinds of cartouche pixel-identical and the hue following the token; a dense fixture with
+       identical positions before and after (b); LFBO 14L / 14R with AMOLO 7A / 7H and the threshold navaids at zoom
+       11–12, no box overlapping, LFBO and every runway number written, the navaids yielding.
 
    34. **Administration: what is still missing to turn V2 off** (user, 30 Oct: "j'attends une carte réellement
        utilisable, et un module d'admin"; inventory V2 → V3 of the same day, scope confirmed). The Maintenance
