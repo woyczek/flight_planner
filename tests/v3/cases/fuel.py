@@ -737,9 +737,21 @@ def f19(c):
 
 def set_icao(c, side, icao):
     """Types an aerodrome in the departure or arrival field (step Flight), then goes back to the step Route where the rows are."""
-    to_step(c, 0)
-    # the field on screen first (F26 timed out in fill under ten workers: the step was still being drawn)
-    c.until("(k) => window.__t.shown(document.querySelector('[data-module=fuel] input[data-k=\"' + k + '\"]'))", side, timeout=10000, what=f'the {side} field is on screen')
+    # the step Flight really on screen, the field editable, the step settled. Measured (F34 at 1280, 2 runs in 10): to_step saw step 0
+    # shown while the module still showed all five steps, then the Map's dual view narrowed it to one step at a time and it fell back on
+    # the kept step 2 Route — the field stayed hidden. So: tap the step again until its field is on screen and editable
+    editable = ("(k) => { const i = document.querySelector('[data-module=fuel] input[data-k=\"' + k + '\"]'); return !!i && window.__t.shown(i) && "
+                "!i.disabled && !i.readOnly && !i.closest('[inert]') }")
+    for attempt in range(4):
+        c.settle()
+        to_step(c, 0)
+        try:
+            c.until(editable, side, timeout=4000, what=f'the {side} field is on screen and editable')
+            break
+        except Fail:
+            if attempt == 3:
+                raise
+    c.settle()
     c.page.fill(f'{FUEL} input[data-k="{side}"]', icao)
     to_step(c, 1)
 
