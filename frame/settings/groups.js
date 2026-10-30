@@ -28,7 +28,7 @@
   // groupes de cartes, dans l'ordre du chemin (ce qu'on règle une fois en haut) ; une carte d'aucun groupe (le bloc
   // d'état, les cartes de circonstance) reste en tête, à plat
   const GROUPS = [
-    ['identity', ['identity']],
+    ['identity', ['identity', 'ivao']], // le compte IVAO du pilote à côté de son identité (ergonomie, 30/10)
     ['access', ['access', 'sync']],
     ['data', ['usages', 'offline', 'lnmperf']],
     ['device', ['backup', 'wx', 'lan']],
