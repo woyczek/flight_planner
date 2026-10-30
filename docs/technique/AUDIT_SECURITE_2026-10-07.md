@@ -882,6 +882,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 40 | R1a fix (1e573d782); `escText` (d18a739b4) | the blocking point of 38 lifted for the case described; one residual case to close before exposure |
 | 41 | Frame R1b: IVAO OpenID through the relay (a9840bd19) | acceptable, four notes |
 | 42 | Frame: a port dedicated to the relay (ee6044e8b) | acceptable; **the residual case of 40 is closed**; one note |
+| 43 | Frame: R1b retouches and start-up order (b27cae045) | acceptable; notes of 41 and 42 settled |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1437,6 +1438,21 @@ of range or busy (`--lan` with `--relay` was already refused); the probe expects
 the relay server starts serving before `RELAY` gets its host, so during that instant a request on it would be an ordinary
 one (still refused: `_local_host` expects the interface's port); set `RELAY` before serving, make `_relay()` true on that
 server whatever happens, and answer 503 in `_relay_gate` when the host is not set.
+
+**43. R1b retouches and start-up order (b27cae045) — acceptable; the notes of 41 and 42 are settled.** `RELAY` is set
+before the relay server listens; `_relay()` is the server's mark alone; a relay server without a public host answers 503
+before any guard. The workstation's exception for IVAO's return runs in `_refused()` after `_local_host()` and holds only
+when everything is true: the exact path in GET, `Sec-Fetch-Dest: document` and `Sec-Fetch-Mode: navigate`, neither the
+local network nor the relay, a pending state of the workstation with its return address (checked without consuming it,
+then consumed by the callback); otherwise « another site » stays the rule, and nothing else is opened. Revocation uses
+discovery's `revocation_endpoint` (https only), `client_secret_basic` with `add_unredirected_header` and an opener
+without redirects; the device erases its token in every case and tells the pilot when revocation was not possible.
+Pending sign-ins: 100 in all, three per device. The workstation's return address is now `http://127.0.0.1:<port>`,
+consistent with `_local_host` (to register as such in IVAO's application).
+
+**State of the relay (R1a, R1b, dedicated port), 30 October.** No open point in the code. Before any exposure: the proxy's
+configuration (aim at the relay port, keep `Host`), a green probe at start-up, and IVAO's application registered with the
+two return addresses.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
