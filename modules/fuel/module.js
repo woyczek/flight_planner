@@ -168,6 +168,12 @@ const TX = {
   autoWhyNone: ['pas de voie près de {a}', 'no airway near {a}', 'keine Luftstraße nahe {a}', 'ninguna aerovía cerca de {a}'],
   autoWhyFar: ['trop loin des voies', 'too far from the airways', 'zu weit von den Luftstraßen', 'demasiado lejos de las aerovías'],
   autoWhyDetour: ['détour de plus de {p} %', 'detour of more than {p} %', 'Umweg von mehr als {p} %', 'desvío de más del {p} %'],
+  // une voie relie bien les deux points mais n'est pas ouverte au niveau du tronçon (§ 10.31 : la plage ouverte, le pilote décide)
+  autoWhyClosed: ['{w} relie {a} à {b}, fermée au {lvl} (ouverte de {lo} au {hi}) : tronçon direct',
+    '{w} joins {a} to {b}, closed at {lvl} (open from {lo} to {hi}): direct leg',
+    '{w} verbindet {a} mit {b}, gesperrt auf {lvl} (offen von {lo} bis {hi}): direkter Abschnitt',
+    '{w} une {a} con {b}, cerrada a {lvl} (abierta de {lo} a {hi}): tramo directo'
+  ],
   autoWhyLoop: ['la route repasserait par un point', 'the route would pass a point twice',
     'die Route würde einen Punkt zweimal überfliegen',
     'la ruta pasaría dos veces por un punto'
@@ -3673,7 +3679,28 @@ async function autoAirways() {
     const failed = res.legs.map((l, i) => ['none', 'far', 'detour', 'loop'].includes(l.status) && free(i) && free(i + 1) ? i : -1).filter(
         i =>
         i >= 0),
-      noway = () => {
+      noway = async () => {
+        // une voie qui relie les deux points mais fermée au niveau du tronçon : elle est nommée, avec sa plage ouverte (§ 10.31,
+        // utilisateur : « AGN A34 LACOU … LMG » dit « pas de voie près de LACOU » au FL260, A34 étant plafonnée au FL195) ; le premier
+        // tronçon qui en a une, sinon le premier
+        for (const k of failed) {
+          const a = chain[k],
+            b = chain[k + 1],
+            segs = await Promise.resolve().then(() => S.ctx.aerodb?.airways?.({
+              bbox: RG.corridor([a, b])
+            })).catch(() => null),
+            j = segs ? RG.joiningAirway(segs, a, b) : null,
+            lvl = legAlt(k);
+          if (gone(s)) return;
+          if (j && (lvl > j.ceiling || lvl < j.floor)) return S.ctx.notify(tt(TX.autoWhyClosed, {
+            w: j.name,
+            a: a.id,
+            b: b.id,
+            lvl: flTxt(lvl),
+            lo: flTxt(j.floor),
+            hi: Number.isFinite(j.ceiling) ? flTxt(j.ceiling) : '∞'
+          }) + (failed.length > 1 ? ` (+${failed.length - 1})` : ''), 'warn');
+        }
         const [i] = failed,
         why = {
           none: TX.autoWhyNone,

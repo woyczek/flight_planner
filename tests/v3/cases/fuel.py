@@ -1841,3 +1841,37 @@ def f73(c):
          '« Points (N) » counts the pilot\'s points and the three groups')
     c.ok(c.js(f"!document.querySelector('{FUEL} .fu-ptgrp[data-kind=sid]').open"), 'open', 'a group row is folded: its fixes under a tap')
 
+
+@case('F74', 'A leg left direct names the airway that joins its points and why it is closed at the leg\'s level, with its open band', 'F', tags=('fuel', 'maps'),
+      designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.31 (user, 30 Oct: « AGN A34 LACOU … LMG », « pas de voie près de LACOU » at FL260 while A34 stops at FL195): « A34 relie LACOU '
+      'à LMG, fermée au FL260 (ouverte de 6 500 ft au FL195) : tronçon direct »; never « follow it anyway »')
+def f74(c):
+    import math
+
+    def gc(a, b):
+        r = math.pi / 180
+        h = math.sin((b[0] - a[0]) * r / 2) ** 2 + math.cos(a[0] * r) * math.cos(b[0] * r) * math.sin((b[1] - a[1]) * r / 2) ** 2
+        return round(2 * 3440.065 * math.asin(math.sqrt(h)), 1)
+    # invented: a lower airway Z34 LACOU - RUMEL - LMG (6 500 ft - FL195), the flight at FL270; the legs to and from the aerodromes are short
+    fix = {'LACOU': (46.9, -1.3), 'RUMEL': (45.4, 1.8), 'LMG': (43.7, 4.9)}
+
+    def seg(a, b):
+        return {'route': 'Z34', 'a': {'id': a, 'lat': fix[a][0], 'lon': fix[a][1]}, 'b': {'id': b, 'lat': fix[b][0], 'lon': fix[b][1]},
+                'lower': 6500, 'upper': 19500, 'nm': gc(fix[a], fix[b])}
+    c.open('fuel', flight=True, airfields=True, airways=[seg('LACOU', 'RUMEL'), seg('RUMEL', 'LMG')],
+           aero_extra={'points': [{'id': k, 'lat': v[0], 'lon': v[1], 'type': 'RNAV'} for k, v in fix.items()]})
+    wait_quote(c)
+    to_step(c, 1)
+    rt = f'{FUEL} [data-k="rtext"]'
+    c.page.fill(rt, 'LFRS LACOU LMG LFML')
+    c.page.locator(rt).blur()
+    c.until(f"/\\(4\\)/.test(document.querySelector('{FUEL} [data-ptsn]').textContent)", timeout=6000, what='the route resolves to four points')
+    c.tap(f'{FUEL} [data-do="rauto"]')
+    head = norm(row(c, 'autoWhyClosed').split('{lvl}')[0].replace('{w}', 'Z34').replace('{a}', 'LACOU').replace('{b}', 'LMG'))
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\u00a0\u202f]+/g, ' ').trim().startsWith(w))", head, timeout=8000,
+            what=f'a line naming the airway: « {head}… »')
+    line = next(norm(n) for n in c.note_log() if norm(n).startswith(head))
+    c.ok('FL195' in line and '6' in line.split('FL195')[0], line, 'the line gives the open band (6 500 ft to FL195) so that the pilot decides')
+    c.eq(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value").replace(' DCT', ''), 'LFRS LACOU LMG LFML', 'the leg stays direct: never « follow it anyway »', what='route text')
+

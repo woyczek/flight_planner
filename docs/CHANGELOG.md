@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: Auto names the airway that joins two points but is closed at the leg's level** (`frame/lib/routing.js`
+  `joiningAirway`; help ×4; F74) — « A34 relie LACOU à LMG, fermée au FL260 (ouverte de 6 500 ft au FL195) : tronçon direct ».
 - **Tests: the choose-mode cases and D68 hold under load** (`tests/v3/cases/maps_recode.py`). D60 read the pane before it was drawn
   (the mode's state is ready a moment before the sheet): the cases now wait for the pane itself, and a missing group says so;
   their waits are 10 s. D68 checks the rule rather than a timing: a full drawing during a drag is only the one of rest (no copy

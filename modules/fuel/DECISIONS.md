@@ -4,6 +4,11 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **30 Oct 2026 — A34 « pas de voie près de LACOU » was a wrong reason** (user's answer 1 of § 10.31). Diagnosed on the real base
+  (read only): A34 is complete (AGN LACOU RUMEL BUGUS PERIG MAVAC LMG …, 91.3 NM along it for 91.4 NM direct), every segment from
+  6 500 ft to FL195; the user's flight is at FL260, so A34 (and G39, T258 at LACOU) are closed for that leg. The base is not at
+  fault. Rule agreed: the line names the airway joining the two points and its open band (`RG.joiningAirway`), the leg stays
+  direct; no heuristic that follows a closed airway (it would write a route that cannot be filed). Case F74 on invented segments.
 - **30 Oct 2026 — the points list groups the procedures** (the user confirmed the objection recorded in § 10.31: « une procédure
   pourrait être un point comme un autre » in the text, never in the point list). One folded `<details>` row per chosen procedure,
   in the Map's hue (copied from modules/maps/render.js PALETTE: sid, star, app — a shared token would be better, noted for the

@@ -407,7 +407,10 @@ mount. Inside a mount, the two buttons switch as before.
      `RT.provenance(words, route.auto.seq)` and dropped, never constraints; `route.auto.seq` = [{ w, g }] is written with each
      result; a routed leg that would visit a point already on the route stays direct (`loop`), then the most stretched leg while
      the whole exceeds the direct chain by more than `detourPct`; a leg left direct says why, « Aucune voie utile entre A et B
-     (pas de voie près de A | trop loin des voies | détour de plus de 40 % | la route repasserait par un point) »; the SID exit is
+     (pas de voie près de A | trop loin des voies | détour de plus de 40 % | la route repasserait par un point) »; and when an airway does
+     join the two points along its own nodes but is closed at the leg's level (`RG.joiningAirway` on the leg's corridor, levels
+     ignored), the line names it with its open band instead: « A34 relie LACOU à LMG, fermée au FL260 (ouverte de 6 500 ft au
+     FL195) : tronçon direct » (the first failed leg that has one); the leg stays direct, never « follow it anyway »; the SID exit is
      written after the SID's name when the text holds it, so the exit → first point leg is adjacent and routed): with SID / STAR / approach chosen and read, the chain first gets the end of the SID after the departure and the start of the arrival before the arrival (`CF.routingChain`, 29 Oct 2026), written in the text, the aerodrome ↔ procedure leg never routed; for each pair of consecutive named
      points with nothing between them in the text (no airway, no procedure), the shortest path over the published base's
      airways (`AeroDB.airways`, V2's rules ported in `frame/lib/routing.js`: a leg open at the level when floor − 100 ≤

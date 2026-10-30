@@ -416,6 +416,41 @@ export function along(segments, name, a, b) {
   }];
 }
 
+/** La voie qui relie a à b le long de ses propres nœuds, niveaux ignorés (V3 § 10.31 : dire pourquoi un tronçon reste direct,
+ *  « A34 relie LACOU à LMG, fermée au FL260 ») : { name, floor, ceiling, nm } — floor : le plus haut plancher, ceiling : le plus
+ *  bas plafond des segments du passage (ft) ; la plus courte quand plusieurs relient a et b ; null sans voie. segments : ceux du
+ *  couloir du tronçon. */
+export function joiningAirway(segments, a, b) {
+  const segs = (segments || []).filter(s => s && isNum(s.a?.lat) && isNum(s.b?.lat)),
+    same = (n, p) => String(n.id || '').toUpperCase() === String(p.id || '').toUpperCase() && nm(n, p) < 3 || nm(n, p) < .5,
+    names = [...new Set(segs.filter(s => same(s.a, a) || same(s.b, a)).map(s => String(s.route || '').toUpperCase()))];
+  let best = null;
+  for (const name of names) {
+    const path = along(segs, name, a, b);
+    if (!path) continue;
+    let floor = 0,
+      ceiling = Infinity,
+      len = 0;
+    for (let i = 1; i < path.length; i++) {
+      const p = path[i - 1],
+        q = path[i],
+        s = segs.find(x => String(x.route || '').toUpperCase() === name && (same(x.a, p) && same(x.b, q) || same(x.a, q) && same(x.b, p)));
+      if (s) {
+        floor = Math.max(floor, +s.lower || 0);
+        ceiling = Math.min(ceiling, isNum(s.upper) ? +s.upper : Infinity);
+      }
+      len += nm(p, q);
+    }
+    if (!best || len < best.nm) best = {
+      name,
+      floor,
+      ceiling,
+      nm: len
+    };
+  }
+  return best;
+}
+
 /** Tronçons d'une chaîne de points { id, lat, lon[, altFt] } routés sur les voies ouvertes à leur niveau.
  *  opts : altFt (niveau, ft ; défaut DEFAULTS.ifrMinFt) ; altOf(i) → niveau du tronçon i (de chain[i] à chain[i + 1]) ;
  *  skip(i) → vrai pour garder le tronçon i direct (déjà sur une voie, procédure…) ; reachNm, detourPct, minNm, padPct.
