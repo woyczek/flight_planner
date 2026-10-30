@@ -912,6 +912,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 60 | Fuel two-word procedure name (bae413f55), Map TOC / TOD (3ed39a3e4) | acceptable |
 | 61 | Launcher: procedures by State (622936805) | acceptable; notes of 58 settled; one note |
 | 62 | Fuel anomalies 9–13 (c5f771b7a), Map framing and heading order (e54c0b00e, 1367d3523) | acceptable |
+| 63 | Aircraft module: sheets editor (224d3cdbe), fleet view (86fa1c5ff) | acceptable, one note |
+| 64 | Fuel `.fms` with ARINC approach (232f85dfe), approach labels (e315c2e0b) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1614,6 +1616,19 @@ Note: the CIFP zip is opened without a ceiling on its uncompressed size; sum the
 
 **62. Three small commits (c5f771b7a, e54c0b00e, 1367d3523) — acceptable.** No new write or network; Fuel's procedure
 labels go through `opt()`, which escapes; the Map pane's values come from the code.
+
+**63. Aircraft module, sheets and fleet (224d3cdbe, 86fa1c5ff) — acceptable, one note.** Pasted content (OFP, lnmperf,
+CSV, JSON, a ChatGPT answer) is never read as HTML: preview, fields, labels with their unit, origins and kept values,
+names and options are all escaped; field paths come from the code. Sheets are written only through aerodb's
+`sheets.put` / `sheets.remove` (prefix `aircraft/sheets/`), removal after `ctx.ask`; exports download on a gesture under
+the sheet's id; `#aircraft?sheet=<id>` is consumed once and looked up among the sheets; no network. The fleet view reads
+`airline/fleet.json` again just before writing and merges per aircraft (unknown fields kept), registrations upper-case
+and unique, retirement after `ctx.ask`, everything escaped. Note (access model, not a defect): the fleet is shared data
+of the airline; the Maintenance application and the Complete level are an interface guard only, so any pilot whose device
+writes to the repository (GitLab Developer token, relay) can change it, as for other shared data; to keep in mind for
+invitations (R2) and for the relay's prefixes debt (38).
+
+**64. Two pure commits (232f85dfe, e315c2e0b) — acceptable.** No write, network or new HTML.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
