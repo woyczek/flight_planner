@@ -85,9 +85,11 @@ en .lnmperf.
 
 ## Les clés d'API de la compagnie
 
-Sur un poste servi par le lanceur, au niveau Complet, le bouton « Clés d'API de la compagnie (IVAO) » de la carte
+Sur un poste servi par le lanceur, au niveau Complet, le bouton « Clés d'API de la compagnie (IVAO, EAD Basic) » de la carte
 « Administration » déplie le réglage de la clé de l'API IVAO : elle reste dans le dossier `secrets/` du lanceur, jamais
 dans le navigateur ni dans les données. « Tester » vérifie qu'IVAO répond ; « Effacer » la retire.
+
+Sous la clé IVAO, le bloc « EAD Basic (EUROCONTROL) » reçoit l'identifiant et le mot de passe de votre compte EAD Basic : vous les donnez une seule fois au lanceur de cet ordinateur (dossier `secrets/`), qui les garde ; la page ne les réaffiche jamais, elle dit seulement s'ils sont enregistrés et quand. Ils servent à « Lire un terrain depuis EAD » (un terrain par geste). EAD Basic est un outil de démonstration, aux données non opérationnelles, à n'utiliser qu'en simulation (l'avertissement reste affiché). « Effacer » les retire du lanceur.
 
 ## La tablette à côté du simulateur
 
@@ -131,6 +133,11 @@ seulement signalé.
   sur cet ordinateur). Sans `data/`, « Récupérer les données » le clone ; avec un `data/` sans git (données d'exemple
   ou archive), « Reprendre data/ dans ce dépôt » le relie au dépôt. La carte suit le travail et relit l'état à la fin ;
   un échec est expliqué, rien n'est perdu.
+- **Historique du dépôt réécrit** (par exemple pour en purger de gros fichiers) : la synchronisation de ce poste refuse
+  alors toute fusion et le dit ; rien n'est perdu. Ici, « Reprendre le nouvel historique » montre d'abord ce qui
+  repartira (vos commits, les fichiers des données reportés), pose une question, garde l'ancien état dans une référence
+  locale, reporte vos fichiers des données sur le nouvel historique, puis synchronise. Un fichier hors des données
+  synchronisées n'est jamais renvoyé.
 
 ## Configurer un pilote
 
@@ -156,8 +163,9 @@ fois le jeton testé ; « Tester » dit ce qui ne va pas : invitation pas encore
 sans droit sur le contenu. Un jeton classique ouvre tous les dépôts du compte : pour le dépôt d'un utilisateur, un
 compte GitHub dédié au vol est conseillé. Un fichier d'un autre format est refusé avec un message. La compagnie n'est
 écrite dans le dépôt que s'il n'en a pas encore. Sur un poste dont data/ suit déjà ce dépôt, l'assistant saute le compte
-et le jeton. Sans lanceur, l'appli ne joint qu'un dépôt GitHub : pour un dépôt framagit ou GitLab, faites l'accès sur un
-poste avec le lanceur.
+et le jeton. Sans lanceur, l'appli joint un dépôt GitHub ou un projet sur une instance GitLab (gitlab.com, framagit…) :
+collez l'adresse du projet (https://gitlab.com/groupe/projet) et le jeton d'accès de projet que l'administrateur vous a
+donné ; le jeton n'est envoyé qu'à cette instance.
 
 ## Administration
 
@@ -165,9 +173,9 @@ poste avec le lanceur.
 », réunit les pages d'administration et d'essai, **un bouton par page**, chacun avec une phrase ; aux autres niveaux, elle
 n'apparaît pas, et rien de l'administrateur n'est sur les autres cartes. Dans l'appli : le bouton « Réglage des seuils de la carte » (`#maps?tune=1`, en lecture seule sur un téléphone ; il ouvre la page de réglage : pour chaque élément de la carte et chaque mode, les zooms où il apparaît, enregistrés pour la compagnie, `airline/map_profiles.json` ; un mode que vous n'avez jamais enregistré reprend les seuils d'un mode réglé, la page le dit ; le curseur « Complexité » de la carte ne fait que décaler le zoom), retour par la flèche de retour ; le bouton « Limite de la zone du vol »,
 qui déplie une case « Afficher le filet de la limite de la zone du vol » (enregistrée aussitôt pour la compagnie, avec les seuils, dans
-`airline/map_profiles.json`, clé `edge` ; le filet est affiché tant que vous n'avez rien réglé) ; le bouton « Exporter une
+`airline/map_profiles.json`, clé `edge` ; le filet est affiché tant que vous n'avez rien réglé) ; le bouton « Seuils de piste sur la carte », qui déplie une liste de 8 à 16 : le zoom à partir duquel la carte dessine les seuils de piste (enregistré aussitôt pour la compagnie, même fichier, clé `runwayZoom` ; 11 tant que vous n'avez rien réglé) ; le bouton « Exporter une
 configuration pour un pilote » (voir « Configurer un pilote ») ; sur un poste servi par le lanceur, les boutons
-« Dépôt distant de data/ » et « Clés d'API de la compagnie (IVAO) », qui déplient leur réglage (voir « Un dépôt git pour
+« Dépôt distant de data/ » et « Clés d'API de la compagnie (IVAO, EAD Basic) », qui déplient leur réglage (voir « Un dépôt git pour
 data/ » et « Les clés d'API de la compagnie ») ; la feuille de route (`#roadmap`) et le diagnostic de la carte « À propos ».
 
 <a id="settings-sources"></a>**Sources des données.** Le bouton « Sources des données » (`#sources`, niveau Complet) liste les sources des données aéronautiques que la suite utilise, envisage ou a écartées : pour chacune, ce qu'elle donne, sa licence, son statut et un lien qui s'ouvre dans un nouvel onglet ; pour celles qui changent à chaque cycle AIRAC (SIA, VAC, eAIP, CIFP), le lien est celui du cycle en vigueur, écrit en haut de l'écran. L'écran ne télécharge rien. Sous le bouton de la carte Administration, l'adresse absolue de l'écran, à ouvrir ou à mettre en favori (« Copier le lien »). Il remplace le laboratoire des données, retiré le 28 octobre 2026.
@@ -183,14 +191,29 @@ cartographique (`apps/cpco/map_parser.html`).
 
 ## Bon à savoir
 
-- **Le jeton** : un jeton à grain fin de github.com, sur le seul dépôt des données, « Contents » en lecture et
-  écriture, 90 jours au plus. Il n'est jamais réaffiché ; ne le collez dans aucun message.
+- **Compte IVAO** : la carte « Compte IVAO » relie cet appareil à votre compte IVAO par le relais de la compagnie (ou
+  le lanceur du poste) : « Se connecter à IVAO » ouvre la page d'IVAO, puis revient ici. Le relais garde le secret de
+  l'application de la compagnie ; votre jeton reste sur cet appareil, renouvelé de lui-même, jamais dans une sauvegarde.
+  « Délier » l'efface et demande à IVAO de retirer l'accès ; si IVAO ne le peut pas, la suite vous dit de le retirer
+  dans votre compte IVAO. Pour essayer sur le poste, sans relais : l'adresse de retour à déclarer dans l'application IVAO
+  de la compagnie est `http://127.0.0.1:<port>/__relay/ivao/callback` (le port du lanceur).
+- **Appareils du relais** : quand le lanceur tourne en relais de la compagnie (derrière le proxy inverse du NAS, en
+  https), un pilote appaire chaque appareil une fois avec un code à 8 chiffres que l'administrateur demande dans
+  Maintenance › « Appareils du relais » pour son trigramme (une fois, 10 minutes) ; ses écritures sont signées de ce
+  trigramme. Un appareil perdu, ou tous ceux d'un pilote qui part, s'y révoquent.
+- **Jetons des pilotes (GitLab)** : dans l'application Maintenance, sur le poste du lanceur, « Jetons des pilotes »
+  crée un jeton d'accès de projet par pilote (à son trigramme, rôle Developer, un an au plus), le montre une seule fois,
+  et le révoque. Le lanceur s'y sert du jeton de l'administrateur (secrets/gitlab.json), qu'il ne montre jamais. Réglez
+  la branche des données pour que le rôle Developer puisse y pousser.
+- **Le jeton** : sur github.com, un jeton à grain fin, sur le seul dépôt des données, « Contents » en lecture et
+  écriture, 90 jours au plus ; sur GitLab, un jeton d'accès de projet (un par pilote, à son trigramme), créé par
+  l'administrateur. Il n'est jamais réaffiché ; ne le collez dans aucun message.
 - **Vos réglages restent après la fermeture du navigateur** : l'identité, le jeton et la clé météo sont rangés au même
   endroit de l'appareil, jamais synchronisés ni dans une sauvegarde. Si Safari vous les a quand même fait perdre (il
   efface le stockage d'un site peu visité), ajoutez l'appli à l'écran d'accueil : elle y est mieux gardée. Le diagnostic
   (« Copier ») dit si le navigateur a promis de ne pas effacer (`storage.persisted`).
 - **Couper l'accès** : efface le jeton de cet appareil ; vos écritures en attente restent et partiront quand l'accès
-  sera de nouveau réglé. Téléphone perdu ou volé : supprimez aussi le jeton sur github.com.
+  sera de nouveau réglé. Téléphone perdu ou volé : supprimez aussi le jeton chez l'hébergeur (github.com, gitlab.com…).
 - **Réglages de la V2** : si ce navigateur a déjà servi à la V2, la carte « Réglages de la V2 trouvés » propose une fois
   de reprendre votre identité et votre accès.
 - **À propos** : liens vers cette aide et la feuille de route (ce qui est livré, en cours, prévu), puis le

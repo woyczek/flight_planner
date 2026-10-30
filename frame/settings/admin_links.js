@@ -3,7 +3,8 @@
   // V3 — pages d'administration (carte « Administration » des réglages, niveau Complet ; frame/settings/SPEC.md § 6) :
   // une liste déclarée, sans dépendance à aucun module ; la carte montre UN BOUTON par entrée (règle 18 de
   // docs/technique/V3_SPECIFICATION.md § 7.1), rien de l'administrateur n'est sur les autres cartes. Chaque entrée :
-  // { id, href (adresse de l'appli « #… », ou chemin relatif à la racine de la suite), act (action de la carte, au lieu
+  // { id, href (adresse de l'appli « #… », ou chemin relatif à la racine de la suite ; same : ouvert dans le même onglet,
+  // pour une autre application du cadre « frame/?app=… »), act (action de la carte, au lieu
   // d'une adresse), panel (le bouton déplie un volet de la carte, écrit par settings.js : edge, cfg, remote, keys), primary
   // (bouton d'une page de réglage de l'administrateur), where (app : partout ; bench : un banc ou une démonstration, bouton
   // actif seulement sur un poste avec lanceur ; v2 : page V2 du poste, montrée seulement si un lanceur sert la page ;
@@ -34,6 +35,20 @@
       'The edge line around the flight zone on the map: shown (the default) or hidden, for the whole airline; saved with the map thresholds.',
       'Die Linie um die Flugzone auf der Karte: angezeigt (Standard) oder ausgeblendet, für die ganze Fluggesellschaft; zusammen mit den Kartenschwellen gespeichert.',
       'La línea que bordea la zona del vuelo en el mapa: mostrada (por omisión) u oculta, para toda la aerolínea; guardada con los umbrales del mapa.'
+    ]
+  }, {
+    id: 'runwayZoom',
+    panel: 'runway',
+    where: 'app',
+    primary: true,
+    title: ['Seuils de piste sur la carte', 'Runway thresholds on the map', 'Pistenschwellen auf der Karte',
+      'Umbrales de pista en el mapa'
+    ],
+    text: [
+      'Le zoom à partir duquel la carte dessine les seuils de piste (petit vecteur et numéro), pour toute la compagnie ; en dessous, rien n’est dessiné.',
+      'The zoom from which the map draws the runway thresholds (small vector and designator), for the whole airline; below it, nothing is drawn.',
+      'Die Zoomstufe, ab der die Karte die Pistenschwellen zeichnet (kleiner Vektor und Bezeichnung), für die ganze Fluggesellschaft; darunter wird nichts gezeichnet.',
+      'El zoom a partir del cual el mapa dibuja los umbrales de pista (pequeño vector y designador), para toda la aerolínea; por debajo, no se dibuja nada.'
     ]
   }, {
     id: 'cfg',
@@ -68,14 +83,30 @@
     panel: 'keys',
     where: 'launcher',
     primary: true,
-    title: ['Clés d’API de la compagnie (IVAO)', 'Airline API keys (IVAO)', 'API-Schlüssel der Fluggesellschaft (IVAO)',
-      'Claves API de la aerolínea (IVAO)'
+    title: ['Clés d’API de la compagnie (IVAO, EAD Basic)', 'Airline API keys (IVAO, EAD Basic)',
+      'API-Schlüssel der Fluggesellschaft (IVAO, EAD Basic)',
+      'Claves API de la aerolínea (IVAO, EAD Basic)'
     ],
     text: [
-      'Gardées par le lanceur de ce poste (dossier secrets/), jamais par le navigateur ni dans les données.',
-      'Kept by this computer’s launcher (secrets/ folder), never by the browser nor in the data.',
-      'Vom Starter dieses Rechners verwahrt (Ordner secrets/), nie vom Browser und nie in den Daten.',
-      'Guardadas por el lanzador de este equipo (carpeta secrets/), nunca por el navegador ni en los datos.'
+      'La clé IVAO et les identifiants EAD Basic, gardés par le lanceur de ce poste (dossier secrets/), jamais par le navigateur ni dans les données.',
+      'The IVAO key and the EAD Basic credentials, kept by this computer’s launcher (secrets/ folder), never by the browser nor in the data.',
+      'Der IVAO-Schlüssel und die EAD-Basic-Zugangsdaten, vom Starter dieses Rechners verwahrt (Ordner secrets/), nie vom Browser und nie in den Daten.',
+      'La clave IVAO y las credenciales de EAD Basic, guardadas por el lanzador de este equipo (carpeta secrets/), nunca por el navegador ni en los datos.'
+    ]
+  }, {
+    id: 'data',
+    href: 'frame/?app=maintenance#data',
+    same: true, // une autre application du même cadre : dans le même onglet
+    // l'application Maintenance (décision de l'utilisateur, 29 oct 2026 : les réglages d'administration des données hors de
+    // Pilote) : la ligne l'ouvre sur son module Données
+    copyLink: true, // l'adresse à copier : à ouvrir sur un téléphone, en lecture seule
+    where: 'app',
+    title: ['Maintenance', 'Maintenance', 'Wartung', 'Mantenimiento'],
+    text: [
+      'Les données de la compagnie : la couverture par pays et par État, et l’état de chaque jeu de données (cycle, âge, parseur) ; sur un téléphone, en lecture seule.',
+      'The airline’s data: the coverage by country and by State, and the state of each data set (cycle, age, parser); read only on a phone.',
+      'Die Daten der Fluggesellschaft: die Abdeckung nach Land und Staat und der Zustand jedes Datensatzes (Zyklus, Alter, Parser); auf einem Telefon nur lesbar.',
+      'Los datos de la aerolínea: la cobertura por país y por Estado, y el estado de cada conjunto de datos (ciclo, antigüedad, analizador); solo lectura en un teléfono.'
     ]
   }, {
     id: 'sources',

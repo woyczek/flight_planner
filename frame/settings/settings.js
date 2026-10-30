@@ -328,6 +328,43 @@
     storageState: ['{u} utilisé(s) sur {q}', '{u} used of {q}', '{u} von {q} belegt', '{u} usado(s) de {q}'],
     unknown: ['inconnu', 'unknown', 'unbekannt', 'desconocido'],
     // clé météo de l'appareil (TAF par avwx.rest sans lanceur ; frame lot 12 : weatherKey du contexte)
+    ivao: ['Compte IVAO', 'IVAO account', 'IVAO-Konto', 'Cuenta IVAO'],
+    ivaoHint: [
+      'Relie cet appareil à votre compte IVAO par le relais de la compagnie : l’appli lit alors vos vols sur le tracker d’IVAO directement. Le relais garde le secret de l’application ; votre jeton reste sur cet appareil, jamais dans une sauvegarde.',
+      'Links this device to your IVAO account through the airline’s relay: the app then reads your flights on IVAO’s tracker directly. The relay keeps the application’s secret; your token stays on this device, never in a backup.',
+      'Verbindet dieses Gerät über das Relais der Fluggesellschaft mit Ihrem IVAO-Konto: Die App liest dann Ihre Flüge direkt im IVAO-Tracker. Das Relais verwahrt das Geheimnis der Anwendung; Ihr Token bleibt auf diesem Gerät, nie in einer Sicherung.',
+      'Vincula este dispositivo a su cuenta IVAO por el relé de la aerolínea: la aplicación lee entonces sus vuelos en el tracker de IVAO directamente. El relé guarda el secreto de la aplicación; su token se queda en este dispositivo, nunca en una copia de seguridad.'
+    ],
+    ivaoOn: ['Relié (jeton valable jusqu’au {d}, renouvelé de lui-même).', 'Linked (token valid until {d}, renewed by itself).',
+      'Verbunden (Token gültig bis {d}, erneuert sich selbst).', 'Vinculado (token válido hasta el {d}, se renueva solo).'
+    ],
+    ivaoOff: ['Non relié.', 'Not linked.', 'Nicht verbunden.', 'No vinculado.'],
+    ivaoConnect: ['Se connecter à IVAO', 'Sign in to IVAO', 'Bei IVAO anmelden', 'Iniciar sesión en IVAO'],
+    ivaoAgain: ['Se reconnecter à IVAO', 'Sign in to IVAO again', 'Erneut bei IVAO anmelden', 'Volver a iniciar sesión en IVAO'],
+    ivaoOut: ['Délier', 'Unlink', 'Trennen', 'Desvincular'],
+    ivaoOutAsk: ['Délier le compte IVAO de cet appareil ? Le jeton est effacé d’ici.',
+      'Unlink the IVAO account from this device? The token is erased here.',
+      'Das IVAO-Konto von diesem Gerät trennen? Das Token wird hier gelöscht.',
+      '¿Desvincular la cuenta IVAO de este dispositivo? El token se borra aquí.'
+    ],
+    ivaoRevoked: ['Compte IVAO délié : IVAO a retiré l’accès de l’application.',
+      'IVAO account unlinked: IVAO withdrew the application’s access.',
+      'IVAO-Konto getrennt: IVAO hat der Anwendung den Zugriff entzogen.',
+      'Cuenta IVAO desvinculada: IVAO retiró el acceso de la aplicación.'
+    ],
+    ivaoOutManual: ['Compte IVAO délié sur cet appareil. Retirez aussi l’accès de l’application dans votre compte IVAO.',
+      'IVAO account unlinked on this device. Also withdraw the application’s access in your IVAO account.',
+      'IVAO-Konto auf diesem Gerät getrennt. Entziehen Sie der Anwendung auch in Ihrem IVAO-Konto den Zugriff.',
+      'Cuenta IVAO desvinculada en este dispositivo. Retire también el acceso de la aplicación en su cuenta IVAO.'
+    ],
+    ivaoNoApp: ['Pas d’application IVAO sur le relais (secrets/ivao_oauth.json) : à régler par l’administrateur.',
+      'No IVAO application on the relay (secrets/ivao_oauth.json): for the administrator to set.',
+      'Keine IVAO-Anwendung auf dem Relais (secrets/ivao_oauth.json): vom Administrator einzurichten.',
+      'Ninguna aplicación IVAO en el relé (secrets/ivao_oauth.json): la configura el administrador.'
+    ],
+    ivaoErr: ['Connexion à IVAO impossible ({e}).', 'IVAO sign-in impossible ({e}).', 'IVAO-Anmeldung unmöglich ({e}).',
+      'Inicio de sesión en IVAO imposible ({e}).'
+    ],
     wx: ['Clé météo (TAF, avwx.rest)', 'Weather key (TAF, avwx.rest)', 'Wetterschlüssel (TAF, avwx.rest)',
       'Clave meteorológica (TAF, avwx.rest)'
     ],
@@ -427,6 +464,7 @@
   const DESK = new WeakSet(); // vues qui écoutent déjà « frame-desk »
   /** Dessine l'écran des réglages dans view ; c : contexte du cadre (voir l'en-tête). */
   async function render(view, c) {
+    window.SogSettingsKit.bind(c.launcherRequest); // les routes du lanceur passent par le client du cadre
     const {
       t,
       FD
@@ -461,6 +499,7 @@
     // carte Administration (niveau Complet, ou atteinte par son adresse) : le filet de la limite de la zone du vol, option
     // enregistrée avec les seuils
     const edgeShow = (c.level?.() || 2) === 3 || focus === 'admin' ? await P.admin.readEdge(c) : true;
+    const runwayZoom = (c.level?.() || 2) === 3 || focus === 'admin' ? await P.admin.readRunwayZoom(c) : 11;
     let inErr = '';
     if (q.get('config') && window.SogConfig && window.SogJoin) {
       try {
@@ -583,6 +622,15 @@
     // données hors ligne
     if (lvl > 1 || focus === 'offline') cards.push(`<div class="f-card" data-card="offline"><h2>${esc(t(T.offlineData))}</h2><dl class="f-dl" data-offline><dt>${esc(t(T.zones))}</dt><dd>…</dd><dt>${esc(t(T.storage))}</dt><dd>…</dd></dl>
       <div data-zones></div>${!L?.data && !gh ? `<p class="f-warn">${esc(t(T.noBases))}</p>` : ''}<p class="f-muted">${esc(t(T.zoneHint))}</p></div>`);
+    // compte IVAO du pilote par le relais (R1b) : avec un lanceur (le relais de la compagnie ou ce poste) ; le jeton n'est
+    // jamais montré, seulement l'état
+    const iv = c.ivao;
+    if (iv && L && (lvl > 1 || focus === 'ivao')) {
+      const st = iv.status();
+      cards.push(`<div class="f-card" data-card="ivao"><h2>${esc(t(T.ivao))}</h2><p class="f-muted">${esc(t(T.ivaoHint))}</p>
+        <p><b data-ivao-state="${st.connected ? 'on' : 'off'}">${esc(st.connected ? t(T.ivaoOn, { d: new Date(st.expires_at * 1000).toISOString().slice(0, 16).replace('T', ' ') + 'Z' }) : t(T.ivaoOff))}</b></p>
+        <p class="f-msg" data-msg></p><div class="f-row"><button type="button" class="primary" data-act="ivaoConnect">${esc(t(st.connected ? T.ivaoAgain : T.ivaoConnect))}</button>${st.connected ? `<button type="button" data-act="ivaoOut">${esc(t(T.ivaoOut))}</button>` : ''}</div></div>`);
+    }
     // clé météo de l'appareil, avec ou sans lanceur (le cadre la garde hors de device/ et de toute sauvegarde)
     const wk = c.weatherKey;
     if (wk && (lvl > 1 || focus === 'wx')) cards.push(`<div class="f-card" data-card="wx"><h2>${esc(t(T.wx))}</h2><p class="f-muted">${esc(t(T.wxHint))}</p>
@@ -602,6 +650,7 @@
     const adminHtml = lvl === 3 || focus === 'admin' ? P.admin.adminCard(t, L, {
       cfg: cfgOut,
       edge: edgeShow,
+      runway: runwayZoom,
       remote: L ? P.launcher.remoteHtml(env) : '',
       keys: L ? P.launcher.keysHtml(env) : ''
     }) : '';
@@ -782,6 +831,21 @@
         const f = view.querySelector('[data-file]');
         f.dataset.mode = act === 'replace' ? 'replace' : 'merge';
         return f.click();
+      }
+      if (act === 'ivaoConnect') {
+        say('ivao', '…', 'warn');
+        const r = await c.ivao.connect();
+        if (!r.ok) say('ivao', r.status === 409 ? t(T.ivaoNoApp) : t(T.ivaoErr, {
+          e: r.message || r.status || '?'
+        }), 'err');
+        return;
+      }
+      if (act === 'ivaoOut') {
+        if (!await c.ask(t(T.ivaoOutAsk))) return;
+        const r = await c.ivao.disconnect();
+        if (r?.revoked) c.notify(t(T.ivaoRevoked), 'ok');
+        else c.notify(t(T.ivaoOutManual), 'warn');
+        return again();
       }
       if (act === 'wxSave') {
         const f = card('wx').querySelector('[data-f="wxKey"]'),

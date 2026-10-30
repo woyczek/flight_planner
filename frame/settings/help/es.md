@@ -83,9 +83,11 @@ se escriben. En un teléfono, Combustible descarga la ficha en .lnmperf.
 
 ## Las claves API de la aerolínea
 
-En un puesto servido por el lanzador, en el nivel Completo, el botón «Claves API de la aerolínea (IVAO)» de la tarjeta
+En un puesto servido por el lanzador, en el nivel Completo, el botón «Claves API de la aerolínea (IVAO, EAD Basic)» de la tarjeta
 «Administración» despliega el ajuste de la clave de la API IVAO: se queda en la carpeta `secrets/` del lanzador, nunca en
 el navegador ni en los datos. «Probar» comprueba que IVAO responde; «Borrar» la quita.
+
+Bajo la clave IVAO, el bloque «EAD Basic (EUROCONTROL)» recibe el usuario y la contraseña de su cuenta EAD Basic: los entrega una sola vez al lanzador de este equipo (carpeta `secrets/`), que los guarda; la página no los vuelve a mostrar nunca, solo dice si están guardados y cuándo. Sirven para «Leer un aeródromo desde EAD» (un aeródromo por gesto). EAD Basic es una herramienta de demostración con datos no operativos, para usar solo en simulación (el aviso sigue visible). «Borrar» los quita del lanzador.
 
 ## La tableta junto al simulador
 
@@ -130,6 +132,11 @@ se señala.
   «Recordar» los confía a Git en este equipo). Sin `data/`, «Recuperar los datos» lo clona; con un `data/` sin git
   (datos de ejemplo o archivo), «Retomar data/ en este repositorio» lo enlaza al repositorio. La tarjeta sigue el trabajo
   y vuelve a leer el estado al final; un fallo se explica, nada se pierde.
+- **Historial del repositorio reescrito** (por ejemplo para purgar archivos grandes): la sincronización de este equipo
+  rechaza entonces toda fusión y lo dice; no se pierde nada. Aquí, «Retomar el nuevo historial» muestra primero lo que
+  saldrá (sus commits, los archivos de datos trasladados), pregunta, guarda el estado anterior en una referencia local,
+  traslada sus archivos de datos al nuevo historial y luego sincroniza. Un archivo fuera de los datos sincronizados
+  nunca se vuelve a enviar.
 
 ## Configurar un piloto
 
@@ -155,8 +162,9 @@ probado el token; «Probar» dice qué falla: invitación aún no aceptada, toke
 sobre el contenido. Un token clásico abre todos los repositorios de la cuenta: para el repositorio de un usuario, se
 aconseja una cuenta de GitHub dedicada al vuelo. Un archivo de otro formato se rechaza con un mensaje. La aerolínea solo
 se escribe en el repositorio si aún no tiene una. En un puesto cuyo data/ ya sigue este repositorio, el asistente se
-salta la cuenta y el token. Sin lanzador, la aplicación solo llega a un repositorio de GitHub: para un repositorio de
-framagit o GitLab, configure el acceso en un puesto con el lanzador.
+salta la cuenta y el token. Sin lanzador, la aplicación llega a un repositorio de GitHub o a un proyecto en una
+instancia GitLab (gitlab.com, framagit…): pegue la dirección del proyecto (https://gitlab.com/grupo/proyecto) y el token
+de acceso de proyecto que le dio el administrador; el token solo se envía a esa instancia.
 
 ## Administración
 
@@ -164,8 +172,8 @@ framagit o GitLab, configure el acceso en un puesto con el lanzador.
 de», reúne las páginas de administración y de prueba, **un botón por página**, cada una con una frase; en los demás niveles no aparece, y nada del administrador está en las demás tarjetas. En la
 aplicación: el botón «Ajuste de los umbrales del mapa» (`#maps?tune=1`, solo lectura en un teléfono; abre la página de ajuste: para cada elemento del mapa y cada modo, los zooms en que aparece, guardados para la aerolínea, `airline/map_profiles.json`; un modo que nunca guardó toma los umbrales de un modo ajustado, la página lo dice; el control «Complejidad» del mapa solo desplaza el zoom), vuelta con la flecha de retroceso; el botón «Límite de la zona del vuelo», que despliega una casilla
 «Mostrar la línea del límite de la zona del vuelo» (guardada al instante para la aerolínea, con los umbrales, en `airline/map_profiles.json`,
-clave `edge`; la línea se muestra mientras no ajuste nada); el botón «Exportar una configuración para un piloto» (véase «Configurar un piloto»); en un puesto servido por el
-lanzador, los botones «Repositorio remoto de data/» y «Claves API de la aerolínea (IVAO)», que despliegan su ajuste (véase
+clave `edge`; la línea se muestra mientras no ajuste nada); el botón «Umbrales de pista en el mapa», que despliega una lista de 8 a 16: el zoom a partir del cual el mapa dibuja los umbrales de pista (guardado al instante para la aerolínea, mismo archivo, clave `runwayZoom`; 11 mientras no ajuste nada); el botón «Exportar una configuración para un piloto» (véase «Configurar un piloto»); en un puesto servido por el
+lanzador, los botones «Repositorio remoto de data/» y «Claves API de la aerolínea (IVAO, EAD Basic)», que despliegan su ajuste (véase
 «Un repositorio git para data/» y «Las claves API de la aerolínea»);
 la hoja de ruta (`#roadmap`) y el diagnóstico de la tarjeta «Acerca de».
 
@@ -182,14 +190,29 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
 
 ## Conviene saber
 
-- **El token**: un token de grano fino de github.com, solo sobre el repositorio de datos, «Contents» lectura y
-  escritura, 90 días como máximo. Nunca se vuelve a mostrar; no lo pegue en ningún mensaje.
+- **Cuenta IVAO**: la tarjeta «Cuenta IVAO» vincula este dispositivo a su cuenta IVAO por el relé de la aerolínea (o
+  el lanzador del puesto): «Iniciar sesión en IVAO» abre la página de IVAO y luego vuelve aquí. El relé guarda el secreto
+  de la aplicación de la aerolínea; su token se queda en este dispositivo, renovado solo, nunca en una copia de
+  seguridad. «Desvincular» lo borra y pide a IVAO que retire el acceso; si IVAO no puede, la suite le dice
+  que lo retire en su cuenta IVAO. Para probar en el puesto, sin relé: la dirección de retorno que se declara en la
+  aplicación IVAO de la aerolínea es `http://127.0.0.1:<port>/__relay/ivao/callback` (el puerto del lanzador).
+- **Dispositivos del relé**: cuando el lanzador funciona como relé de la aerolínea (detrás del proxy inverso del NAS,
+  en https), un piloto vincula cada dispositivo una vez con un código de 8 cifras que el administrador pide en
+  Maintenance › «Dispositivos del relé» para su trigrama (una vez, 10 minutos); sus escrituras llevan ese trigrama. Un
+  dispositivo perdido, o todos los de un piloto que se va, se revocan allí.
+- **Tokens de los pilotos (GitLab)**: en la aplicación Maintenance, en el equipo del lanzador, «Tokens de los pilotos»
+  crea un token de acceso de proyecto por piloto (con su trigrama, rol Developer, un año como máximo), lo muestra una sola
+  vez y lo revoca. El lanzador usa allí el token del administrador (secrets/gitlab.json), que nunca muestra. Configure la
+  rama de datos para que el rol Developer pueda enviar a ella.
+- **El token**: en github.com, un token de grano fino, solo sobre el repositorio de datos, «Contents» lectura y
+  escritura, 90 días como máximo; en GitLab, un token de acceso de proyecto (uno por piloto, con su trigrama), creado por
+  el administrador. Nunca se vuelve a mostrar; no lo pegue en ningún mensaje.
 - **Sus ajustes se quedan al cerrar el navegador**: la identidad, el token y la clave meteorológica se guardan en el mismo
   sitio del dispositivo, nunca sincronizados ni en una copia. Si Safari se los hizo perder igualmente (borra el almacenamiento
   de un sitio poco visitado), añada la aplicación a la pantalla de inicio: allí está mejor guardada. El diagnóstico
   («Copiar») dice si el navegador prometió no borrar (`storage.persisted`).
 - **Cortar el acceso**: borra el token de este dispositivo; sus escrituras pendientes se quedan y saldrán cuando el
-  acceso vuelva a configurarse. Teléfono perdido o robado: borre también el token en github.com.
+  acceso vuelva a configurarse. Teléfono perdido o robado: borre también el token en el alojamiento (github.com, gitlab.com…).
 - **Ajustes de la V2**: si este navegador ya se usó para la V2, la tarjeta «Ajustes de la V2 encontrados» propone una
   vez retomar su identidad y su acceso.
 - **Acerca de**: enlaces a esta ayuda y a la hoja de ruta (lo entregado, en curso, previsto), luego el
@@ -198,4 +221,4 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: 47f9199a8ffd -->
+<!-- fr: c49c76673bd9 -->

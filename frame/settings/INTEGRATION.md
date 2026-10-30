@@ -69,6 +69,11 @@ saves too. The file is a `record` (the newest `updated_at` wins), `by` is the la
   `airline/map_profiles.json`, already in the maps `meta.reads` / `meta.writes`); settings declares the same prefix
   (`merge: 'record'`) through its own adapter `settings-admin`. Settings never touches a module and a module never writes
   `edge`. More options of the same kind go in the same object (`edge.<name>`): a reader ignores what it does not know.
+- **`runwayZoom`** (integer, 8 to 16; V3 § 10.30, `maps.runwayZoom`): the zoom from which the Map draws the runway
+  thresholds (a short vector and the designator); below it nothing is drawn. **Absent, not an integer or out of bounds means
+  11**: a module reads `Number.isInteger(f?.runwayZoom) && f.runwayZoom >= 8 && f.runwayZoom <= 16 ? f.runwayZoom : 11`.
+  Written by the card's « Seuils de piste sur la carte » line (a list 8–16, saved at once, the rest of the file kept);
+  the Map reads it with the profiles (`get` and `watch` of the same file), no event of its own.
 
 ## 5. Where the device's keys are
 

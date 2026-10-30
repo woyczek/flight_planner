@@ -11,26 +11,17 @@
   const now = () => new Date().toISOString();
   const T = window.SogSettingsT ||= {}; // textes [fr, en, de, es] de l'écran, complétés par chaque fichier
 
-  /** Appel d'une route du lanceur (/__setup/<route>) ; GET sans corps, POST avec ; null en cas d'échec. */
+  // appels au lanceur : par le client du cadre (frame/lib/launcher.js, frame/INTEGRATION.md § 15), donné au premier
+  // dessin de l'écran (bind) ; plus aucun fetch des Réglages vers le lanceur
+  let request = null;
+  /** Le client du cadre (contexte des Réglages : launcherRequest). */
+  const bind = fn => void(request = typeof fn === 'function' ? fn : request);
+  /** Appel d'une route du lanceur (/__setup/<route>) ; GET sans corps, POST avec ; son JSON, ou null en cas d'échec. */
   async function setup(route, body) {
-    try {
-      const r = await fetch(new URL(`__setup/${route}`, ROOT), {
-        method: body ? 'POST' : 'GET',
-        cache: 'no-store',
-        headers: {
-          'X-SOG-Setup': '1',
-          ...(body ? {
-            'Content-Type': 'application/json'
-          } : {})
-        },
-        ...(body ? {
-          body: JSON.stringify(body)
-        } : {})
-      });
-      return await r.json();
-    } catch {
-      return null;
-    }
+    const r = request ? await request(route, body ? {
+      json: body
+    } : {}) : null;
+    return r ? r.body : null;
   }
 
   /** Copie vers le presse-papiers, aussi hors contexte sûr (appareil appairé en http) : frame/lib/clipboard.js (module,
@@ -67,6 +58,7 @@
     esc,
     now,
     T,
+    bind,
     setup,
     copy,
     sameRepo,

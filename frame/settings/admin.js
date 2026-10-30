@@ -78,6 +78,16 @@
     adminHint: ['Les pages d’administration et d’essai, réunies ici.', 'The administration and test pages, gathered here.',
       'Die Verwaltungs- und Testseiten, hier gesammelt.', 'Las páginas de administración y de prueba, reunidas aquí.'
     ],
+    runwayZoom: ['Zoom des seuils de piste', 'Runway thresholds zoom', 'Zoomstufe der Pistenschwellen',
+      'Zoom de los umbrales de pista'
+    ],
+    byDefault: ['par défaut', 'default', 'Standard', 'por defecto'],
+    runwayHint: [
+      'Pour toute la compagnie. La carte lit ce réglage avec les seuils (airline/map_profiles.json, clé runwayZoom) ; sans réglage, 11.',
+      'For the whole airline. The map reads this setting with the thresholds (airline/map_profiles.json, key runwayZoom); with no setting, 11.',
+      'Für die ganze Fluggesellschaft. Die Karte liest diese Einstellung mit den Schwellen (airline/map_profiles.json, Schlüssel runwayZoom); ohne Einstellung 11.',
+      'Para toda la aerolínea. El mapa lee este ajuste con los umbrales (airline/map_profiles.json, clave runwayZoom); sin ajuste, 11.'
+    ],
     edgeShow: ['Afficher le filet de la limite de la zone du vol', 'Show the edge line of the flight zone limit',
       'Linie der Flugzonengrenze anzeigen', 'Mostrar la línea del límite de la zona del vuelo'
     ],
@@ -110,6 +120,34 @@
       merge: 'record'
     }]
   });
+  // zoom à partir duquel la carte dessine les seuils de piste (V3 § 10.30) : entier de RUNWAY_MIN à RUNWAY_MAX, RUNWAY_DEFAULT sans réglage
+  const RUNWAY_MIN = 8,
+    RUNWAY_MAX = 16,
+    RUNWAY_DEFAULT = 11;
+  /** Le zoom des seuils de piste lu dans le fichier (runwayZoom) : un entier dans les bornes, sinon la valeur par défaut. */
+  const runwayZoomOf = f => Number.isInteger(f?.runwayZoom) && f.runwayZoom >= RUNWAY_MIN && f.runwayZoom <= RUNWAY_MAX ? f.runwayZoom :
+    RUNWAY_DEFAULT;
+  /** Le zoom à partir duquel la carte dessine les seuils de piste, pour la compagnie (runwayZoom ; 11 par défaut). */
+  async function readRunwayZoom(c) {
+    return runwayZoomOf(await profilesOf(c).get(PROFILES, {
+      wait: true
+    }).catch(() => null));
+  }
+  /** Enregistre runwayZoom dans airline/map_profiles.json sans toucher au reste du fichier ; refuse une valeur hors des bornes. */
+  async function writeRunwayZoom(c, zoom) {
+    if (!Number.isInteger(zoom) || zoom < RUNWAY_MIN || zoom > RUNWAY_MAX) throw new Error(`runwayZoom ${zoom}`);
+    const data = profilesOf(c),
+      cur = (await data.get(PROFILES, {
+        wait: true
+      }).catch(() => null)) || {};
+    await data.put(PROFILES, {
+      schema: 1,
+      ...cur,
+      runwayZoom: zoom,
+      by: 'settings',
+      updated_at: now()
+    });
+  }
   /** Le filet de la limite de la zone du vol est-il affiché pour la compagnie ? (edge.show ; affiché par défaut) */
   async function readEdge(c) {
     const f = await profilesOf(c).get(PROFILES, {
@@ -145,7 +183,9 @@
     if (!links.length) return '';
     /** Panneau replié d'une ligne d'administration (edge : bord de publication, cfg : configuration). */
     const panel = x => `<div class="f-adminpanel" data-adminpanel="${esc(x.panel)}" hidden>${x.panel === 'edge' ? `<label class="f-check"><input type="checkbox" data-edge ${panels.edge ? 'checked' : ''}>${esc(t(T.edgeShow))}</label>
-      <p class="f-muted">${esc(t(T.edgeHint))}</p><p class="f-msg" data-msg></p>` : panels[x.panel] || ''}</div>`;
+      <p class="f-muted">${esc(t(T.edgeHint))}</p><p class="f-msg" data-msg></p>` : x.panel === 'runway' ? `<label>${esc(t(T.runwayZoom))} <select data-runway-zoom>
+      ${Array.from({ length: RUNWAY_MAX - RUNWAY_MIN + 1 }, (_, i) => RUNWAY_MIN + i).map(z => `<option value="${z}"${z === panels.runway ? ' selected' : ''}>${z}${z === RUNWAY_DEFAULT ? ` (${esc(t(T.byDefault))})` : ''}</option>`).join('')}</select></label>
+      <p class="f-muted">${esc(t(T.runwayHint))}</p><p class="f-msg" data-msg></p>` : panels[x.panel] || ''}</div>`;
     /** Ligne de la liste d'administration : titre, lien, bouton de copie et panneau éventuel. */
     const row = x => {
       const label = esc(t(x.title)),
@@ -153,15 +193,16 @@
         cls = `f-btn${x.primary ? ' primary' : ''}`;
       const btn = x.panel ? `<button type="button" class="${cls}" data-act="adminPanel" data-panel="${esc(x.panel)}" aria-expanded="false">${label}</button>` : x.act ?
         `<button type="button" class="${cls}" data-act="${esc(x.act)}">${label}</button>` : x.where === 'bench' && !L ? `<button type="button" class="${cls}" disabled>${label}</button>` :
-        `<a class="${cls}" href="${esc(out ? new URL(x.href, ROOT).href : x.href)}"${out ? ' target="_blank" rel="noopener"' : ''}>${label}</a>`;
+        `<a class="${cls}" href="${esc(out ? new URL(x.href, ROOT).href : x.href)}"${out && !x.same ? ' target="_blank" rel="noopener"' : ''}>${label}</a>`;
       // `copyLink` : sous le lien, l'adresse absolue de la page, construite depuis location (publiée sur GitHub Pages ou locale), à
       // ouvrir ou à mettre en favori sur le téléphone, copiable par un appui
-      const abs = x.copyLink && x.href ? new URL(x.href, location.href).href : '',
+      const abs = x.copyLink && x.href ? new URL(x.href, x.href.startsWith('#') ? location.href : ROOT).href : '',
         under = abs ? `<span class="f-muted f-admin-url">${esc(t(T.linkOpen))} <code data-adminurl>${esc(abs)}</code></span>
         <span class="f-row"><button type="button" data-act="adminCopy" data-text="${esc(abs)}">${esc(t(T.copyLink))}</button></span>` : '';
       return `<li data-admin="${esc(x.id)}">${btn}<span class="f-muted">${esc(t(x.text))}${x.where === 'bench' ? ` — ${esc(t(T.launcherOnly))}` : ''}</span>${under}${x.panel ? panel(x) : ''}</li>`;
     };
-    const shown = links.filter(x => (!['v2', 'launcher'].includes(x.where) || L) && (!x.panel || x.panel === 'edge' || panels[x.panel]));
+    const shown = links.filter(x => (!['v2', 'launcher'].includes(x.where) || L) && (!x.panel || x.panel === 'edge' || x.panel ===
+      'runway' || panels[x.panel]));
     return `<div class="f-card" data-card="admin"><h2>${esc(t(T.admin))}</h2><p class="f-muted">${esc(t(T.adminHint))}</p>
       <ul class="f-admin">${shown.map(row).join('')}</ul></div>`;
   }
@@ -295,6 +336,22 @@
       say
     } = env;
     // filet de la limite de la zone du vol (carte Administration) : enregistré aussitôt, pour la compagnie
+    // zoom des seuils de piste (carte Administration) : enregistré aussitôt, pour la compagnie
+    view.querySelector('[data-runway-zoom]')?.addEventListener('change', async e => {
+      const sel = e.target,
+        before = sel.dataset.was || String(RUNWAY_DEFAULT);
+      sel.disabled = true;
+      try {
+        await writeRunwayZoom(c, Number(sel.value));
+        sel.dataset.was = sel.value;
+        say('admin', '');
+        c.notify(t(T.saved), 'ok');
+      } catch (err) {
+        sel.value = before;
+        say('admin', err?.message || String(err));
+      }
+      sel.disabled = false;
+    });
     view.querySelector('[data-edge]')?.addEventListener('change', async e => {
       const box = e.target;
       box.disabled = true;
@@ -343,6 +400,7 @@
   (window.SogSettingsParts ||= {}).admin = {
     acts: ['adminCopy', 'adminPanel', 'cfgMake', 'cfgCopy'],
     readEdge,
+    readRunwayZoom,
     adminCard,
     cfgPanel,
     live,

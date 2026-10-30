@@ -20,19 +20,26 @@
   Object.assign(T, {
     // accès
     access: ['Accès aux données', 'Data access', 'Datenzugang', 'Acceso a los datos'],
-    repo: ['Dépôt (compte/dépôt)', 'Repository (account/repository)', 'Repository (Konto/Repository)',
-      'Repositorio (cuenta/repositorio)'
+    repo: ['Dépôt (compte/dépôt GitHub, ou adresse d’un projet GitLab)',
+      'Repository (GitHub account/repository, or the address of a GitLab project)',
+      'Repository (GitHub-Konto/Repository oder Adresse eines GitLab-Projekts)',
+      'Repositorio (cuenta/repositorio de GitHub, o dirección de un proyecto GitLab)'
     ],
     branch: ['Branche', 'Branch', 'Zweig', 'Rama'],
     token: ['Jeton personnel', 'Personal token', 'Persönliches Token', 'Token personal'],
     tokenSet: ['jeton enregistré — vide : inchangé', 'token saved — empty: unchanged', 'Token gespeichert — leer: unverändert',
       'token guardado — vacío: sin cambios'
     ],
+    tokenSet: ['Jeton enregistré sur cet appareil (jamais réaffiché) : le remplacer, le coller de nouveau ci-dessus.',
+      'Token saved on this device (never shown again): to replace it, paste it again above.',
+      'Token auf diesem Gerät gespeichert (nie wieder angezeigt): zum Ersetzen oben erneut einfügen.',
+      'Token guardado en este dispositivo (nunca se vuelve a mostrar): para sustituirlo, péguelo de nuevo arriba.'
+    ],
     tokenHint: [
-      'Jeton personnel GitHub : « classique » avec la case « repo » pour le dépôt d’un utilisateur, à grain fin (ce seul dépôt, « Contents » en lecture et écriture) pour celui d’une organisation ; un an au plus. Gardé sur cet appareil seulement, jamais réaffiché ; ne le collez dans aucun message.',
-      'GitHub personal token: “classic” with the “repo” box for a user’s repository, fine-grained (this repository only, “Contents” read and write) for an organisation’s; one year at most. Kept on this device only, never shown again; never paste it in a message.',
-      'Persönliches GitHub-Token: „klassisch“ mit dem Kästchen „repo“ für das Repository eines Benutzers, feingranular (nur dieses Repository, „Contents“ lesen und schreiben) für das einer Organisation; höchstens ein Jahr. Nur auf diesem Gerät gespeichert, nie wieder angezeigt; in keine Nachricht einfügen.',
-      'Token personal de GitHub: «clásico» con la casilla «repo» para el repositorio de un usuario, de grano fino (solo este repositorio, «Contents» lectura y escritura) para el de una organización; un año como máximo. Guardado solo en este dispositivo, nunca se vuelve a mostrar; no lo pegue en ningún mensaje.'
+      'GitHub : jeton personnel « classique » avec la case « repo » pour le dépôt d’un utilisateur, à grain fin (ce seul dépôt, « Contents » en lecture et écriture) pour celui d’une organisation ; un an au plus. GitLab (gitlab.com, framagit…) : collez l’adresse du projet et le jeton d’accès de projet que l’administrateur vous a donné, il n’est envoyé qu’à cette instance. Gardé sur cet appareil seulement, jamais réaffiché ; ne le collez dans aucun message.',
+      'GitHub: a “classic” personal token with the “repo” box for a user’s repository, fine-grained (this repository only, “Contents” read and write) for an organisation’s; one year at most. GitLab (gitlab.com, framagit…): paste the project’s address and the project access token the administrator gave you, it is sent to that instance only. Kept on this device only, never shown again; never paste it in a message.',
+      'GitHub: persönliches Token „klassisch“ mit dem Kästchen „repo“ für das Repository eines Benutzers, feingranular (nur dieses Repository, „Contents“ lesen und schreiben) für das einer Organisation; höchstens ein Jahr. GitLab (gitlab.com, framagit…): Adresse des Projekts und das Projektzugangstoken einfügen, das der Administrator Ihnen gegeben hat; es wird nur an diese Instanz gesendet. Nur auf diesem Gerät gespeichert, nie wieder angezeigt; in keine Nachricht einfügen.',
+      'GitHub: token personal «clásico» con la casilla «repo» para el repositorio de un usuario, de grano fino (solo este repositorio, «Contents» lectura y escritura) para el de una organización; un año como máximo. GitLab (gitlab.com, framagit…): pegue la dirección del proyecto y el token de acceso de proyecto que le dio el administrador; solo se envía a esa instancia. Guardado solo en este dispositivo, nunca se vuelve a mostrar; no lo pegue en ningún mensaje.'
     ],
     accessRead: [
       'Sans échange coché, l’accès ne sert qu’à lire les bases aéronautiques et des appareils publiées dans le dépôt des données : rien n’est envoyé.',
@@ -44,15 +51,20 @@
       'Repository erreichbar, Zweig {b} gefunden.',
       'Repositorio accesible, rama {b} encontrada.'
     ],
+    newTarget: ['Nouvel hôte ou nouveau dépôt : {h} — collez le jeton pour celui-ci (l’ancien jeton n’y est jamais envoyé).',
+      'New host or new repository: {h} — paste the token for it (the previous token is never sent there).',
+      'Neuer Host oder neues Repository: {h} — fügen Sie das Token dafür ein (das bisherige Token wird nie dorthin gesendet).',
+      'Nuevo alojamiento o nuevo repositorio: {h} — pegue el token para este (el token anterior nunca se envía allí).'
+    ],
     needRepo: ['Dépôt et jeton nécessaires.', 'Repository and token needed.', 'Repository und Token nötig.',
       'Repositorio y token necesarios.'
     ],
     cut: ['Couper l’accès', 'Cut access', 'Zugang trennen', 'Cortar el acceso'],
     cutAsk: [
-      'Couper l’accès ? Le jeton est effacé de cet appareil ; vos écritures en attente restent ici et partiront quand l’accès sera de nouveau réglé. Téléphone perdu ou volé : supprimez aussi le jeton sur github.com.',
-      'Cut access? The token is erased from this device; your pending writes stay here and will leave once access is set again. Lost or stolen phone: also delete the token on github.com.',
-      'Zugang trennen? Das Token wird von diesem Gerät gelöscht; ausstehende Änderungen bleiben hier und gehen hinaus, sobald der Zugang wieder eingestellt ist. Telefon verloren oder gestohlen: das Token auch auf github.com löschen.',
-      '¿Cortar el acceso? El token se borra de este dispositivo; sus escrituras pendientes se quedan aquí y saldrán cuando el acceso vuelva a configurarse. Teléfono perdido o robado: borre también el token en github.com.'
+      'Couper l’accès ? Le jeton est effacé de cet appareil ; vos écritures en attente restent ici et partiront quand l’accès sera de nouveau réglé. Téléphone perdu ou volé : supprimez aussi le jeton chez l’hébergeur du dépôt (github.com, gitlab.com…).',
+      'Cut access? The token is erased from this device; your pending writes stay here and will leave once access is set again. Lost or stolen phone: also delete the token at the repository’s host (github.com, gitlab.com…).',
+      'Zugang trennen? Das Token wird von diesem Gerät gelöscht; ausstehende Änderungen bleiben hier und gehen hinaus, sobald der Zugang wieder eingestellt ist. Telefon verloren oder gestohlen: das Token auch beim Anbieter des Repositorys löschen (github.com, gitlab.com…).',
+      '¿Cortar el acceso? El token se borra de este dispositivo; sus escrituras pendientes se quedan aquí y saldrán cuando el acceso vuelva a configurarse. Teléfono perdido o robado: borre también el token en el alojamiento del repositorio (github.com, gitlab.com…).'
     ],
     cutDone: ['Accès coupé : jeton effacé de cet appareil.', 'Access cut: token erased from this device.',
       'Zugang getrennt: Token von diesem Gerät gelöscht.', 'Acceso cortado: token borrado de este dispositivo.'
@@ -89,8 +101,8 @@
       fld
     } = env;
     return `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2>${exchange ? '' : `<p class="f-muted">${esc(t(T.accessRead))}</p>`}
-        ${fld('repo', T.repo, gh?.repo, { ph: 'compte/flight_planner_data' })}${fld('branch', T.branch, gh?.branch || 'main')}${fld('token', T.token, '', { type: 'password', ph: gh ? t(T.tokenSet) : '' })}
-        <p class="f-muted">${esc(t(T.tokenHint))}</p><p class="f-msg" data-msg></p>
+        ${fld('repo', T.repo, gh?.provider === 'gitlab' ? `${String(gh.api || '').replace(/\/api\/v4$/, '')}/${gh.repo}` : gh?.repo, { ph: 'compte/flight_planner_data' })}${fld('branch', T.branch, gh?.branch || 'main')}${fld('token', T.token, '', { type: 'password', ph: gh ? t(T.tokenSet) : '' })}
+        ${gh?.token ? `<p data-token-set>${esc(t(T.tokenSet))}</p>` : ''}<p class="f-muted">${esc(t(T.tokenHint))}</p><p class="f-msg" data-msg></p>
         <div class="f-row"><button type="button" class="primary" data-act="access">${esc(t(T.save))}</button><button type="button" data-act="test">${esc(t(T.test))}</button>${gh ? `<button type="button" data-act="cut">${esc(t(T.cut))}</button>` : ''}</div></div>`;
   }
   /** Carte Synchronisation : montrée si un échange est coché ou tant que des écritures attendent (suit l'état). */
@@ -153,15 +165,20 @@
     } = env;
     if (act === 'access' || act === 'test') {
       const r = card('access'),
-        cfg = {
+        // adresse d'un projet collée : l'instance et son api en viennent ; le jeton enregistré n'est repris que pour la même
+        // cible (FD.github.resolve : fournisseur, origine de l'API, projet), jamais vers un nouvel hôte
+        cfg = FD.github.resolve({
           repo: val('repo', r),
           branch: val('branch', r) || 'main',
-          token: val('token', r) || gh?.token || '',
-          ...(gh?.api ? {
+          token: val('token', r),
+          ...(gh?.api && gh.provider !== 'gitlab' ? {
             api: gh.api
           } : {})
-        };
-      if (!cfg.repo || !cfg.token) return say('access', t(T.needRepo));
+        });
+      if (!cfg.repo) return say('access', t(T.needRepo));
+      if (!cfg.token) return say('access', gh ? t(T.newTarget, {
+        h: cfg.newTarget
+      }) : t(T.needRepo));
       if (act === 'test') {
         say('access', '…', 'ok');
         try {

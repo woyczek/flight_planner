@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // V3 — Réglages, cartes du lanceur (frame/settings/SPEC.md § 3.6, 3.9, 3.9c) : la carte Accès d'un poste servi par le
-  // lanceur (dépôt distant de data/, ou la porte pour le prendre en git), les clés d'API de la compagnie (IVAO), l'accès du
+  // lanceur (dépôt distant de data/, ou la porte pour le prendre en git), les clés d'API de la compagnie (IVAO, EAD Basic), l'accès du
   // poste aux appareils du réseau local (code d'appairage, QR, appareils) ; la fenêtre Oui / Non du lanceur annoncée avant
   // le clic. Routes /__setup/* du lanceur ; jamais de secret gardé par la page.
   const {
@@ -31,6 +31,39 @@
       'Dirección del repositorio (git@host:cuenta/repo.git o https://…)'
     ],
     remoteCheck: ['Vérifier', 'Check', 'Prüfen', 'Comprobar'],
+    histWarn: [
+      'L’historique du dépôt des données a été réécrit (aucun ancêtre commun) : rien n’est fusionné, les écritures de ce poste restent dans data/.',
+      'The data repository’s history was rewritten (no common ancestor): nothing is merged, this computer’s writes stay in data/.',
+      'Die Historie des Daten-Repositorys wurde neu geschrieben (kein gemeinsamer Vorfahr): nichts wird zusammengeführt, die Änderungen dieses Rechners bleiben in data/.',
+      'El historial del repositorio de datos se reescribió (sin antepasado común): no se fusiona nada, las escrituras de este equipo se quedan en data/.'
+    ],
+    histResume: ['Reprendre le nouvel historique', 'Take up the new history', 'Neue Historie übernehmen',
+      'Retomar el nuevo historial'
+    ],
+    histReading: ['Lecture du dépôt distant…', 'Reading the remote repository…', 'Entferntes Repository wird gelesen…',
+      'Leyendo el repositorio remoto…'
+    ],
+    histAsk: [
+      'Reprendre le nouvel historique ? {c} commit(s) de ce poste, {n} fichier(s) des données reportés sur le nouvel historique, {p} modification(s) en cours commitées d’abord{k}. L’ancien état reste gardé dans une référence locale ; rien n’est supprimé. Puis une synchronisation.',
+      'Take up the new history? {c} commit(s) of this computer, {n} data file(s) carried onto the new history, {p} change(s) in progress committed first{k}. The old state stays kept in a local reference; nothing is deleted. Then a synchronisation.',
+      'Neue Historie übernehmen? {c} Commit(s) dieses Rechners, {n} Datendatei(en) auf die neue Historie übertragen, {p} laufende Änderung(en) zuerst committet{k}. Der alte Stand bleibt in einer lokalen Referenz; nichts wird gelöscht. Danach eine Synchronisation.',
+      '¿Retomar el nuevo historial? {c} commit(s) de este equipo, {n} archivo(s) de datos trasladados al nuevo historial, {p} cambio(s) en curso confirmados antes{k}. El estado anterior queda guardado en una referencia local; no se borra nada. Luego una sincronización.'
+    ],
+    histKept: [' ; {k} fichier(s) hors des données synchronisées recopiés dans data/ tels que sur ce poste, jamais envoyés',
+      '; {k} file(s) outside the synchronised data copied back into data/ as they are on this computer, never sent',
+      '; {k} Datei(en) außerhalb der synchronisierten Daten werden so, wie sie auf diesem Rechner sind, wieder in data/ kopiert, nie gesendet',
+      '; {k} archivo(s) fuera de los datos sincronizados se copian de nuevo en data/ tal como están en este equipo, nunca enviados'
+    ],
+    histDone: ['Nouvel historique repris : {n} fichier(s) reportés, puis synchronisé.',
+      'New history taken up: {n} file(s) carried over, then synchronised.',
+      'Neue Historie übernommen: {n} Datei(en) übertragen, dann synchronisiert.',
+      'Nuevo historial retomado: {n} archivo(s) trasladados, luego sincronizado.'
+    ],
+    histNoTri: ['Réglez d’abord votre trigramme (Mon profil) : il signe le commit de reprise.',
+      'Set your trigram first (My profile): it signs the take-up commit.',
+      'Legen Sie zuerst Ihr Kürzel fest (Mein Profil): Es zeichnet den Übernahme-Commit.',
+      'Configure primero su trigrama (Mi perfil): firma el commit de recuperación.'
+    ],
     remoteSaving: [
       'Enregistrement, puis vérification… Autre dépôt que l’actuel : confirmez dans la fenêtre que le lanceur ouvre sur l’ordinateur.',
       'Saving, then checking… Another repository than the current one: confirm in the window the launcher opens on the computer.',
@@ -214,6 +247,37 @@
       'Clave válida: la API IVAO responde.'
     ],
     keyBad: ['Clé IVAO : {e}', 'IVAO key: {e}', 'IVAO-Schlüssel: {e}', 'Clave IVAO: {e}'],
+    // identifiants EAD Basic (volet des clés) : donnés une fois au lanceur, jamais relus par la page
+    eadTitle: ['EAD Basic (EUROCONTROL)', 'EAD Basic (EUROCONTROL)', 'EAD Basic (EUROCONTROL)', 'EAD Basic (EUROCONTROL)'],
+    eadNotice: ['EAD Basic (EUROCONTROL) : outil de démonstration, données non opérationnelles, usage simulation.',
+      'EAD Basic (EUROCONTROL): a demonstration tool, non-operational data, for simulation use.',
+      'EAD Basic (EUROCONTROL): Demonstrationswerkzeug, keine operativen Daten, nur für die Simulation.',
+      'EAD Basic (EUROCONTROL): herramienta de demostración, datos no operativos, uso en simulación.'
+    ],
+    eadHint: [
+      'Donnés une seule fois au lanceur de cet ordinateur (dossier secrets/), jamais réaffichés, jamais dans les données. Ils servent à « Lire un terrain depuis EAD » (un terrain par geste).',
+      'Given once to this computer’s launcher (secrets/ folder), never shown again, never in the data. Used by “Read an aerodrome from EAD” (one aerodrome per gesture).',
+      'Einmalig dem Starter dieses Rechners übergeben (Ordner secrets/), nie wieder angezeigt, nie in den Daten. Sie dienen zum „Flugplatz aus EAD lesen“ (ein Flugplatz pro Geste).',
+      'Se entregan una sola vez al lanzador de este equipo (carpeta secrets/), no se vuelven a mostrar, nunca están en los datos. Sirven para «Leer un aeródromo desde EAD» (un aeródromo por gesto).'
+    ],
+    eadUser: ['Identifiant EAD Basic', 'EAD Basic user name', 'EAD-Basic-Benutzername', 'Usuario de EAD Basic'],
+    eadPassword: ['Mot de passe EAD Basic', 'EAD Basic password', 'EAD-Basic-Passwort', 'Contraseña de EAD Basic'],
+    eadSet: ['Identifiants enregistrés le {d}', 'Credentials saved on {d}', 'Zugangsdaten gespeichert am {d}',
+      'Credenciales guardadas el {d}'
+    ],
+    eadMissing: ['Identifiants absents', 'Credentials missing', 'Zugangsdaten fehlen', 'Credenciales ausentes'],
+    eadBoth: ['Renseignez l’identifiant et le mot de passe.', 'Fill in the user name and the password.',
+      'Benutzername und Passwort eingeben.', 'Rellene el usuario y la contraseña.'
+    ],
+    eadEraseAsk: ['Effacer les identifiants EAD Basic du lanceur ?', 'Erase the EAD Basic credentials from the launcher?',
+      'Die EAD-Basic-Zugangsdaten vom Starter löschen?', '¿Borrar las credenciales de EAD Basic del lanzador?'
+    ],
+    eadSaved: ['Identifiants EAD Basic enregistrés dans le lanceur.', 'EAD Basic credentials saved in the launcher.',
+      'EAD-Basic-Zugangsdaten im Starter gespeichert.', 'Credenciales de EAD Basic guardadas en el lanzador.'
+    ],
+    eadErased: ['Identifiants EAD Basic effacés du lanceur.', 'EAD Basic credentials erased from the launcher.',
+      'EAD-Basic-Zugangsdaten aus dem Starter gelöscht.', 'Credenciales de EAD Basic borradas del lanzador.'
+    ],
   });
 
   /** L'opération ouvrira-t-elle la fenêtre Oui / Non du lanceur ? Réponse du lanceur pour cette adresse (POST adopt dry,
@@ -239,11 +303,6 @@
       <div class="f-row"><button type="button" class="primary" data-act="${state === 'absent' ? 'gitClone' : 'gitAdopt'}">${esc(t(state === 'absent' ? T.clone : T.adopt))}</button></div>${state === 'absent' ? '' : `<p class="f-muted" data-confirm-hint hidden>${esc(t(T.confirmHint))}</p>`}
       <p><a href="#help?a=${encodeURIComponent(t(T.noGitAnchor))}">${esc(t(T.helpLink))}</a></p>`;
   }
-  /** État de la clé IVAO du lanceur : { set, hint, env } ; null sans réponse. */
-  async function launcherKey() {
-    return (await setup('secrets'))?.app?.ivao?.apiKey || null;
-  }
-
   /** Dépôt distant de data/ (GET /__setup/sync-remote), relu à chaque dessin ; les réponses « dry » mémorisées sont oubliées. */
   async function readRemote() {
     Object.keys(dryCache).forEach(k => delete dryCache[k]);
@@ -269,18 +328,55 @@
       fld
     } = env;
     if (gitState !== 'repo' || !remote) return '';
-    return `<div data-card="remote"><p data-remote-now>${esc(remote.url ? (/^[\w./-]+$/.test(remote.branch || '') ? t(T.remoteNow, { u: remote.url, b: remote.branch }) : t(T.remoteNowBare, { u: remote.url })) : t(T.remoteNone))}</p>
+    const hist = remote.rewritten ? `<div data-card="hist"><p class="f-msg" data-kind="warn" data-hist>${esc(t(T.histWarn))}</p><p class="f-msg" data-msg></p>
+        <div class="f-row"><button type="button" class="primary" data-act="histResume">${esc(t(T.histResume))}</button></div></div>` : '';
+    return `${hist}<div data-card="remote"><p data-remote-now>${esc(remote.url ? (/^[\w./-]+$/.test(remote.branch || '') ? t(T.remoteNow, { u: remote.url, b: remote.branch }) : t(T.remoteNowBare, { u: remote.url })) : t(T.remoteNone))}</p>
         ${fld('remote', T.remoteUrl, remote.url || remote.default || '')}<p class="f-msg" data-msg></p>
         <div class="f-row"><button type="button" class="primary" data-act="remoteSave">${esc(t(T.save))}</button><button type="button" data-act="remoteCheck">${esc(t(T.remoteCheck))}</button></div><p class="f-muted" data-confirm-hint hidden>${esc(t(T.confirmHint))}</p></div>`;
   }
-  /** Volet « Clés d'API de la compagnie » de la carte Administration : la clé IVAO, gardée par le lanceur. */
+  /** Volet « Clés d'API de la compagnie » de la carte Administration : la clé IVAO, puis les identifiants EAD Basic,
+   *  gardés par le lanceur (secrets/) ; la page ne les relit jamais. */
   function keysHtml(env) {
     const {
       t,
       fld
     } = env;
     return `<div data-card="keys"><p>${esc(t(T.pair, { k: t(T.ivaoKey) }))} <b data-key>…</b></p>${fld('ivaoKey', T.keyNew, '', { type: 'password' })}<p class="f-msg" data-msg></p>
-      <div class="f-row"><button type="button" class="primary" data-act="keySave">${esc(t(T.save))}</button><button type="button" data-act="keyTest">${esc(t(T.test))}</button><button type="button" data-act="keyErase">${esc(t(T.erase))}</button></div></div>`;
+      <div class="f-row"><button type="button" class="primary" data-act="keySave">${esc(t(T.save))}</button><button type="button" data-act="keyTest">${esc(t(T.test))}</button><button type="button" data-act="keyErase">${esc(t(T.erase))}</button></div>
+      <div data-card="ead"><h3>${esc(t(T.eadTitle))}</h3><p class="f-msg" data-kind="warn">${esc(t(T.eadNotice))}</p><p class="f-muted">${esc(t(T.eadHint))}</p>
+        <p><b data-ead>…</b></p>${fld('eadUser', T.eadUser, '')}${fld('eadPassword', T.eadPassword, '', { type: 'password' })}<p class="f-msg" data-msg></p>
+        <div class="f-row"><button type="button" class="primary" data-act="eadSave">${esc(t(T.save))}</button><button type="button" data-act="eadErase">${esc(t(T.erase))}</button></div></div></div>`;
+  }
+  /** Ligne d'état des identifiants EAD Basic ([data-ead]) d'après { user, password } du lanceur (set, at) : « enregistrés le … »
+   *  quand les deux sont réglés (date la plus récente), « absents » sinon. */
+  function paintEad(env, ead) {
+    const {
+      view,
+      c,
+      t
+    } = env;
+    const b = view.querySelector('[data-ead]');
+    if (!b) return;
+    const both = !!ead?.user?.set && !!ead?.password?.set,
+      at = [ead?.user?.at, ead?.password?.at].filter(Boolean).sort().pop() || '';
+    b.textContent = both ? t(T.eadSet, {
+      d: at ? c.time?.fmtDateZ(at) || at : '?'
+    }) : t(T.eadMissing);
+  }
+  /** Clés du lanceur (niveau Complet) : l'état de la clé IVAO ([data-key]) et celui des identifiants EAD Basic ([data-ead]),
+   *  d'une seule lecture de GET /__setup/secrets. */
+  async function paintKeys(env) {
+    const {
+      view,
+      t
+    } = env;
+    const s = await setup('secrets'),
+      k = s?.app?.ivao?.apiKey || null,
+      b = view.querySelector('[data-key]');
+    if (b) b.textContent = !k?.set ? t(T.keyMissing) : t(k.env ? T.keyEnv : T.keySet, {
+      h: k.hint || '••••'
+    });
+    paintEad(env, s?.app?.ead);
   }
   /** Adresses privées de ce poste encore fermées au réseau local (état du lanceur : available moins celles des urls). */
   function closedIps(s) {
@@ -357,12 +453,8 @@
         };
       tick();
     }
-    if (L && view.querySelector('[data-key]')) launcherKey().then(k => { // volet des clés : niveau Complet seulement
-      const b = view.querySelector('[data-key]');
-      if (b) b.textContent = !k?.set ? t(T.keyMissing) : t(k.env ? T.keyEnv : T.keySet, {
-        h: k.hint || '••••'
-      });
-    });
+    if (L && (view.querySelector('[data-key]') || view.querySelector('[data-ead]'))) paintKeys(
+      env); // volet des clés : niveau Complet seulement
 
     // indication « fenêtre Oui / Non sur ce poste » sous le bouton, selon l'adresse saisie
     // (le lanceur répond à POST /__setup/adopt { url, dry: true } sans rien faire : needsConfirm ; sans réponse, comparaison
@@ -470,6 +562,58 @@
       c.notify(t(T.saved), 'ok');
       return again();
     }
+    if (act === 'eadSave' || act === 'eadErase') {
+      const box = card('ead'),
+        user = val('eadUser', box),
+        pass = val('eadPassword', box);
+      if (act === 'eadSave' && (!user || !pass)) return say('ead', t(T.eadBoth));
+      if (act === 'eadErase' && !await c.ask(t(T.eadEraseAsk))) return;
+      // la page ne garde aucun secret : champs vidés avant l'appel
+      box.querySelectorAll('[data-f]').forEach(x => x.value = '');
+      say('ead', '');
+      const r = await setup('secrets', {
+        scope: 'app',
+        service: 'ead',
+        values: act === 'eadErase' ? {
+          user: '',
+          password: ''
+        } : {
+          user,
+          password: pass
+        }
+      });
+      if (!r?.ok) return say('ead', r?.message || t(T.launcherOld));
+      c.notify(t(act === 'eadErase' ? T.eadErased : T.eadSaved), 'ok');
+      return paintEad(env, r.app?.ead);
+    }
+    if (act === 'histResume') {
+      // historique réécrit : le plan d'abord (rien changé), une question, puis la reprise et une synchronisation
+      const tri = c.identity().trigram || '';
+      if (!tri) return say('hist', t(T.histNoTri), 'warn');
+      say('hist', t(T.histReading), 'warn');
+      const plan = await setup('sync-rewritten');
+      if (!plan?.ok || !plan.rewritten) return say('hist', plan?.message || t(T.launcherOld), plan?.ok ? 'ok' : 'err');
+      say('hist', '');
+      const k = plan.kept?.length ? t(T.histKept, {
+        k: plan.kept.length
+      }) : '';
+      if (!await c.ask(t(T.histAsk, {
+          c: plan.commits,
+          n: plan.files.length,
+          p: plan.pending,
+          k
+        }))) return;
+      say('hist', t(T.histReading), 'warn');
+      const r = await setup('sync-rewritten', {
+        author: tri
+      });
+      if (!r?.ok) return say('hist', r?.message || t(T.launcherOld), 'err');
+      c.notify(t(T.histDone, {
+        n: r.moved || 0
+      }), r.sync?.ok ? 'ok' : 'warn');
+      if (r.sync && !r.sync.ok) say('hist', r.sync.message || '', 'warn');
+      return again();
+    }
     if (act === 'remoteCheck' || act === 'remoteSave') {
       const url = val('remote', card('remote')),
         save = act === 'remoteSave';
@@ -532,8 +676,9 @@
   }
 
   (window.SogSettingsParts ||= {}).launcher = {
-    acts: ['lanToggle', 'lanForget', 'lanCode', 'lanAll', 'keySave', 'keyErase', 'keyTest', 'remoteCheck', 'remoteSave', 'gitClone',
-      'gitAdopt'
+    acts: ['lanToggle', 'lanForget', 'lanCode', 'lanAll', 'keySave', 'keyErase', 'keyTest', 'eadSave', 'eadErase', 'remoteCheck',
+      'remoteSave', 'gitClone',
+      'gitAdopt', 'histResume'
     ],
     readRemote,
     accessHtml,

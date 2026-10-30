@@ -80,9 +80,11 @@ Little Navmap requires are listed and not written. On a phone, Fuel downloads th
 
 ## The airline's API keys
 
-On a workstation served by the launcher, at the Full level, the “Airline API keys (IVAO)” button of the “Administration”
+On a workstation served by the launcher, at the Full level, the “Airline API keys (IVAO, EAD Basic)” button of the “Administration”
 card unfolds the setting of the IVAO API key: it stays in the launcher’s `secrets/` folder, never in the browser nor in
 the data. “Test” checks that IVAO answers; “Erase” removes it.
+
+Under the IVAO key, the “EAD Basic (EUROCONTROL)” block takes the user name and password of your EAD Basic account: you give them once to this computer’s launcher (`secrets/` folder), which keeps them; the page never shows them again, it only says whether they are saved and when. They are used by “Read an aerodrome from EAD” (one aerodrome per gesture). EAD Basic is a demonstration tool with non-operational data, to be used for simulation only (the warning stays displayed). “Erase” removes them from the launcher.
 
 ## The tablet next to the simulator
 
@@ -124,6 +126,10 @@ only reported.
   this computer). Without `data/`, “Fetch the data” clones it; with a `data/` without git (example data or archive),
   “Take data/ into this repository” links it to the repository. The card follows the work and reads the state again at
   the end; a failure is explained, nothing is lost.
+- **Rewritten repository history** (for instance to purge big files from it): this computer's synchronisation then
+  refuses any merge and says so; nothing is lost. Here, « Take up the new history » first shows what will leave (your
+  commits, the data files carried over), asks, keeps the old state in a local reference, carries your data files onto
+  the new history, then synchronises. A file outside the synchronised data is never sent again.
 
 ## Configuring a pilot
 
@@ -147,8 +153,9 @@ tested; “Test” says what is wrong: invitation not accepted yet, token copied
 on the contents. A classic token opens all the repositories of the account: for a user's repository, a GitHub account
 dedicated to flying is advised. A file in another format is refused with a message. The airline is written to the
 repository only if it has none yet. On a workstation whose data/ already follows this repository, the assistant skips
-the account and the token. Without a launcher, the app only reaches a GitHub repository: for a framagit or GitLab
-repository, set the access on a workstation with the launcher.
+the account and the token. Without a launcher, the app reaches a GitHub repository or a project on a GitLab instance
+(gitlab.com, framagit…): paste the project's address (https://gitlab.com/group/project) and the project access token the
+administrator gave you; the token is sent to that instance only.
 
 ## Administration
 
@@ -156,8 +163,8 @@ repository, set the access on a workstation with the launcher.
 administration and test pages, **one button per page**, each with a sentence; at the other levels it does not appear, and
 nothing of the administrator's is on the other cards. In the app: the “Map threshold tuning” button (`#maps?tune=1`, read only on a phone; it opens the tuning page: for each map element and each mode, the zooms where it appears, saved for the airline, `airline/map_profiles.json`; a mode you never saved takes the thresholds of a tuned mode, and the page says so; the map's “Complexity” slider only shifts the zoom), back by the back arrow; the “Flight zone limit” button, which unfolds a box
 “Show the edge line of the flight zone limit” (saved at once for the airline, with the thresholds, in `airline/map_profiles.json`,
-key `edge`; the edge line is shown until you set it); the “Export a configuration for a pilot” button (see “Configuring a pilot”);
-on a workstation served by the launcher, the “Remote repository of data/” and “Airline API keys (IVAO)” buttons, which
+key `edge`; the edge line is shown until you set it); the “Runway thresholds on the map” button, which unfolds a list from 8 to 16: the zoom from which the map draws the runway thresholds (saved at once for the airline, same file, key `runwayZoom`; 11 until you set it); the “Export a configuration for a pilot” button (see “Configuring a pilot”);
+on a workstation served by the launcher, the “Remote repository of data/” and “Airline API keys (IVAO, EAD Basic)” buttons, which
 unfold their setting (see “A git repository for data/” and “The airline's API keys”); the roadmap (`#roadmap`) and the diagnostics of the “About” card.
 
 <a id="settings-sources"></a>**Data sources.** The “Data sources” button (`#sources`, Full level) lists the sources of aeronautical data the suite uses, considers or has set aside: for each, what it gives, its licence, its status and a link that opens in a new tab; for those that change with each AIRAC cycle (SIA, VAC, eAIP, CIFP), the link is the one of the cycle in force, written at the top of the screen. The screen downloads nothing. Under the button of the Administration card, the absolute address of the screen, to open or bookmark (“Copy the link”). It replaces the data laboratory, removed on 28 October 2026.
@@ -173,14 +180,29 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
 
 ## Good to know
 
-- **The token**: a fine-grained token from github.com, on the data repository only, “Contents” read and write, 90 days
-  at most. It is never shown again; never paste it in a message.
+- **IVAO account**: the « IVAO account » card links this device to your IVAO account through the airline's relay (or
+  the workstation's launcher): « Sign in to IVAO » opens IVAO's page, then comes back here. The relay keeps the airline
+  application's secret; your token stays on this device, renewed by itself, never in a backup. « Unlink » erases it and asks IVAO
+  to withdraw the access; if IVAO cannot, the suite tells you to withdraw it in your IVAO account. To try on the
+  workstation, without the relay: the return address to declare in the airline's IVAO application is
+  `http://127.0.0.1:<port>/__relay/ivao/callback` (the launcher's port).
+- **Relay devices**: when the launcher runs as the airline's relay (behind the NAS's reverse proxy, in https), a pilot
+  pairs each device once with an 8-digit code the administrator asks for in Maintenance › « Relay devices » for their
+  trigram (once, 10 minutes); their writes are signed with that trigram. A lost device, or all those of a pilot who
+  leaves, are revoked there.
+- **Pilots' tokens (GitLab)**: in the Maintenance application, on the launcher's computer, « Pilots' tokens » creates
+  one project access token per pilot (named after the trigram, Developer role, one year at most), shows it once only, and
+  revokes it. The launcher uses the administrator's token there (secrets/gitlab.json), which it never shows. Set the
+  data branch so that the Developer role may push to it.
+- **The token**: on github.com, a fine-grained token, on the data repository only, “Contents” read and write, 90 days
+  at most; on GitLab, a project access token (one per pilot, named after the trigram), created by the administrator. It
+  is never shown again; never paste it in a message.
 - **Your settings stay after the browser is closed**: the identity, the token and the weather key are kept in the same place
   on the device, never synchronised nor in a backup. If Safari made you lose them anyway (it clears the storage of a site
   that is little used), add the app to the Home Screen: it is better kept there. The diagnostics (“Copy”) say whether the
   browser promised not to clear (`storage.persisted`).
 - **Cut access**: erases the token from this device; your pending writes stay and will leave once access is set again.
-  Lost or stolen phone: also delete the token on github.com.
+  Lost or stolen phone: also delete the token at the host (github.com, gitlab.com…).
 - **V2 settings**: if this browser was already used for V2, the “V2 settings found” card offers once to take over your
   identity and your access.
 - **About**: links to this help and to the roadmap (what is delivered, in progress, planned), then the
@@ -188,4 +210,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: 47f9199a8ffd -->
+<!-- fr: c49c76673bd9 -->
