@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refactor R-C5, no behaviour change: the two take-overs of data/ share their rules** (`tools/data_sync.py`; frame
+  DECISIONS; noreg I15, I16) — one identity, one pool commit with the `.js` check, one reader of a file at a revision.
 - **Settings: the « Compte IVAO » card sits in the Identity group** (`frame/settings/groups.js`; ergonomics session, 30 Oct) — next to
   the trigram and the IVAO / VATSIM / SimBrief identifiers (it is the pilot's account), instead of standing outside every group.
 - **Map: runways, refactor without change of behaviour (R-M4, § 10.33)** (`modules/maps/procs.js`, `data.js`, `draw.js`,

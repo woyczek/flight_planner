@@ -556,6 +556,15 @@ def refused_note(res):
     return note
 
 
+def _at(data, rev, path, env=None):
+    """Les octets du fichier path à la révision rev (« HEAD », une référence) ; None s'il n'y est pas. Les deux reprises de
+    data/ (adopt, rewritten_resume) le lisent ainsi (R-C5)."""
+    if git(data, 'cat-file', '-e', f'{rev}:{path}')[0]:
+        return None
+    r = subprocess.run(git_cmd('-C', data, 'cat-file', 'blob', f'{rev}:{path}'), capture_output=True, env=env or git_env(), timeout=TIMEOUT)
+    return r.stdout if r.returncode == 0 else None
+
+
 def _identity(author, name=''):
     """Options et environnement git d'un commit au nom du trigramme."""
     who = ['-c', f'user.name={author}', '-c', f'user.email={author.lower()}@defa.local']
@@ -785,13 +794,11 @@ def rewritten_resume(data, author, name=''):
         # fichiers hors du pool commités par ce poste depuis l'état commun : recopiés tels quels (octets), jamais commités
         for p in res['kept']:
             full = data_path(data, p)
-            if not full or git(data, 'cat-file', '-e', f'{ref}:{p}')[0]:
-                continue
-            r = subprocess.run(git_cmd('-C', data, 'cat-file', 'blob', f'{ref}:{p}'), capture_output=True, env=env or git_env(), timeout=TIMEOUT)
-            if r.returncode == 0:
+            raw = _at(data, ref, p, env) if full else None
+            if raw is not None:
                 os.makedirs(os.path.dirname(full), exist_ok=True)
                 with open(full, 'wb') as f:
-                    f.write(r.stdout)
+                    f.write(raw)
                 res['copied'] += 1
     except RuntimeError as e:
         git(data, 'reset', '--keep', ref)  # remis comme avant le geste
@@ -1072,8 +1079,7 @@ def adopt(data, url, author, env=None, name='', auth=()):
         shutil.copy2(src, dst)
         saved.append(p)
 
-    who = ['-c', f'user.name={author}', '-c', f'user.email={author.lower()}@defa.local']
-    cenv = dict(git_env(), GIT_AUTHOR_NAME=f'{author}{" " + name if name else ""}', GIT_AUTHOR_EMAIL=f'{author.lower()}@defa.local')
+    who, cenv = _identity(author, name)
     try:
         os.rename(os.path.join(tmp, '.git'), dot)  # le dépôt reçu devient celui de data/
         shutil.rmtree(tmp, ignore_errors=True)
@@ -1094,8 +1100,9 @@ def adopt(data, url, author, env=None, name='', auth=()):
                     res['replaced'] += 1
                     continue
                 ours = open(full, 'rb').read()
-                theirs = subprocess.run(git_cmd('-C', data, 'show', f'HEAD:{p}'), capture_output=True, env=git_env(),
-                                        timeout=TIMEOUT, check=True).stdout
+                theirs = _at(data, 'HEAD', p)
+                if theirs is None:
+                    raise RuntimeError(f'{p} : illisible dans le dépôt reçu')
                 out, info, lose, side = merge_raw(p, {1: None, 2: ours, 3: theirs})
                 if info['how'] == 'la plus récente' and stamp(ours, p) == stamp(theirs, p):
                     # sans updated_at qui les départage : la plus récente par date (fichier du poste, dernier commit du
@@ -1111,18 +1118,9 @@ def adopt(data, url, author, env=None, name='', auth=()):
                     created.append(copy)
                 if copy or info.get('conflicts'):
                     res['conflicts'].append({'path': p, **info, **({'copy': copy} if copy else {})})
-        # fichiers du pool du poste : un commit (contrôle des .js comme run), rien d'envoyé
-        changes = pool_changes(data)
-        for p in [c for c in changes if c.lower().endswith('.js') and os.path.isfile(os.path.join(data, *c.split('/')))]:
-            ok, why = data_guard.check_file(os.path.join(data, *p.split('/')))
-            if not ok:
-                changes.remove(p)
-                res['refused'].append({'path': p, 'why': why})
-        if changes:
-            git(data, 'add', '-A', '--', *changes, env=lit(), check=True)
-            if git(data, 'diff', '--cached', '--quiet')[0]:
-                git(data, *who, 'commit', '-m', f'Reprise du poste {author} : {len(changes)} fichier(s)', env=cenv, check=True)
-                res['committed'] = len(changes)
+        # fichiers du pool du poste : un commit, rien d'envoyé — le même que celui d'une synchronisation (_commit_local :
+        # contrôle des .js, chemins littéraux), tous les fichiers du pool (un geste)
+        _commit_local(data, who, cenv, res, f'Reprise du poste {author}', gesture=True)
         untrack_indexes(data, who, cenv)
     except (OSError, RuntimeError, subprocess.SubprocessError) as e:
         # retour en arrière : fichiers du poste remis, fichiers ajoutés retirés, .git retiré — data/ comme avant
