@@ -611,7 +611,14 @@
   // Noms abrégés (option du profil) : nom seul, sans le type de zone.
   let abbrevNames = false;
   /** Titre d'un espace : type + nom, ou nom seul (option noms abrégés). */
-  const zoneTitle = a => abbrevNames ? a.name : (a.type === 'SIV' ? 'SIV ' : a.type + ' ') + a.name;
+  // un nom qui porte déjà son type (« TMA BARCELONA AREA 1 », bases étrangères) s'écrit comme un nom français (« LYON ») : le type
+  // une seule fois, des deux côtés d'une frontière (une ligne d'écart avec la bibliothèque)
+  const bareName = a => {
+    const n = String(a.name ?? ''),
+      t = String(a.type ?? '').toUpperCase();
+    return t && n.toUpperCase().startsWith(`${t} `) ? n.slice(t.length + 1) : n;
+  };
+  const zoneTitle = a => abbrevNames ? bareName(a) : (a.type === 'SIV' ? 'SIV ' : a.type + ' ') + bareName(a);
   // Installations portant une marque distinctive (survol interdit < 1000 m / 3300 ft, type SUR) :
   // contour et symbole ⊗ rouge ; parcs et réserves naturels (PRN) : contour vert tireté.
   // Les symboles ne se recouvrent pas (entre eux ni avec ce qui est déjà posé) : les plus grands

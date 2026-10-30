@@ -28,7 +28,8 @@ import {
 } from './profile_view.js';
 import {
   openData,
-  endData
+  endData,
+  dataHead
 } from './sheet_view.js';
 import {
   releaseAd
@@ -344,6 +345,7 @@ export function reprofile() {
   S.profile = effectiveProfile();
   S.data = null;
   if (S.dpanel === 'layers') fillLayers();
+  dataHead(); // le titre du volet dit « autour du vol » quand la case l'est
   schedule();
   buildProfile();
 }
@@ -379,16 +381,18 @@ export async function setPreset(v) {
 }
 
 // ---------------------------------------------------------------- le contenu « Couches » de la feuille
-/** HTML du contenu Couches (SPEC § 6.7) : Complexité d'abord, puis les cases et « Tout remettre », le choix du vol en dernier ;
+/** HTML du contenu Couches (SPEC § 6.7) : « Autour du vol seulement » en tête, Complexité, puis les cases et « Tout remettre », le
+ *  choix du vol en dernier ;
  *  sur une carte de mission, le choix seul. Construit une fois au montage, gardé (les cases gardent leur focus). */
 export function layersHtml(ctx) {
   const mission = !!ctx.query?.mission,
     name = ctx.t(mission ? TX.pick : TX.layers);
   return `<div class="mp-layers" role="group" aria-label="${esc(name)}">
 <div class="mp-layer-set"${mission ? ' hidden' : ''}>
+<label class="mp-l-main"><input type="checkbox" data-layer="corridor"> <span>${esc(ctx.t(TX.layerNames.corridor))}<small class="f-muted">${esc(ctx.t(TX.corrSub))}</small></span></label>
 <label class="mp-l-detail" title="${esc(ctx.t(TX.detailHelp))}">${esc(ctx.t(TX.detail))} <span data-detail-v></span><input type="range" min="-4" max="4" step="1" data-layer="detail" aria-describedby="mp-detail-help"></label>
 <span id="mp-detail-help" class="f-muted mp-l-help">${esc(ctx.t(TX.detailHelp))}</span>
-${LAYER_KEYS.filter(k => k !== 'cov' || covAvail()).map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><input type="checkbox" data-layer="${k}"> ${esc(ctx.t(TX.layerNames[k]))}</label>`).join('')}
+${LAYER_KEYS.filter(k => k !== 'corridor' && (k !== 'cov' || covAvail())).map(k => `<label><input type="checkbox" data-layer="${k}"> ${esc(ctx.t(TX.layerNames[k]))}</label>`).join('')}
 <button type="button" class="f-btn" data-layers-reset>${esc(ctx.t(TX.layersReset))}</button></div>
 <div class="mp-picks"><select class="mp-pick" aria-label="${esc(ctx.t(TX.pick))}"></select>
 <select class="mp-mappick" hidden aria-label="${esc(ctx.t(TX.mapOf))}"></select></div></div>`;

@@ -111,6 +111,14 @@ function onSheetSettled() {
  *  geo.drawn de la coupe et ce que la feuille ajoute ; pour la coupe, la légende qu'Atmosphère rend. [[symbole, texte]]. */
 function legendRows(view) {
   if (view === 'weather') return weatherRows();
+  // la lecture partielle se dit, jamais un blanc muet : cochée (ce que dessinent les données lues), ou imposée à une vue trop large
+  const corr = +S.data?.corridor > 0 ? [
+    [`<i class="mp-lg-sw mp-lg-dash" style="--c:${MapsRender.palette(!!S.theme?.dark).plan}"></i>`, esc(tt(S.profile?.corridorNm > 0 ? TX.lgCorr : TX.lgCorrWide))]
+  ] : [];
+  return legendOf(view).concat(corr); // la trajectoire prévue reste la première ligne
+}
+/** Les lignes de la légende hors lecture partielle. */
+function legendOf(view) {
   const sw = (k, c = '') => `<i class="mp-lg-sw mp-lg-${k}" style="--c:${c}"></i>`,
     d = S.geo?.drawn,
     // couche « Procédures » : une ligne par niveau, seulement quand elle est montrée ; « ⌛ » quand une procédure tracée est
@@ -160,7 +168,10 @@ export function dataHead() {
       .dataProfile) : '',
     own = !!S.dpanel && !wx, // contenu ouvert par openData : son titre
     lay = S.dpanel === 'layers', // « Couches · <vol> » : le contexte comme le profil
-    title = own && !lay ? S.dtitle : [lay ? S.dtitle : tt(wx ? TX.ttlWeather : TX.ttlProfile), S.sum].filter(Boolean).join(' · '),
+    // « Couches · FL260 · 333 NM · autour du vol » : la lecture autour du vol seulement se lit dans le titre du volet
+    title = own && !lay ? S.dtitle : [lay ? S.dtitle : tt(wx ? TX.ttlWeather : TX.ttlProfile), S.sum, lay && S.profile?.corridorNm > 0 ?
+      tt(TX.ttlCorr) : ''
+    ].filter(Boolean).join(' · '),
     tip = own && !lay ? S.dlabel : [lay ? S.dlabel : wx ? S.dlabel : tt(TX.dataProfile), S.sumTip].filter(Boolean).join(' · ');
   show(S.dataEl, has);
   setPressed(S.layersBtn, lay);

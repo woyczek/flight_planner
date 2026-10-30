@@ -1617,6 +1617,29 @@ the other aerodrome, `deg` the way flown (the exit's bearing; the entry's revers
 LFPO" heads them when rows within `TOWARD_DEG` = 60° are followed by others; an arrow `↑` rotated by `deg` on each row (north up,
 like the map). With points on the route the axis keeps its "exit X" marks: they say which rows leave the route. Noreg D74.
 
+## "Around the flight only" made explicit; the same density on both sides (user, 30 Oct 2026)
+
+Reported: at zoom ≈ 7.5 on a flight from LFBO, Spain's airways and TMAs near the route were drawn, nothing away from it,
+"même en augmentant la complexité : il faut zoomer". Cause: the box "Around the route only", ticked in IFR and last of
+the Layers list, read airspaces and airways along the route's corridor in every view under 300 px per degree — a
+geographic filter nobody saw. Decided with the user: the box stays, ticked by default, but heads Layers ("Around the
+flight only (faster)", "otherwise the whole view"), the pane title ends "· around the flight" while it is ticked and the
+"i" chip says nothing is read outside the corridor (never a silent blank). Unticked, the whole view is read and only
+complexity filters (by class and size, never by place) — except a view wider than `WIDE_NM` = 600 NM, where the corridor
+(10 NM) is imposed and the chip says so (`corridorFor` returns the corridor's NM, 0 for the whole view; `S.data.corridor`
+keeps it). Never on a mission map.
+
+Same style on both sides of a border: the style is already by class (`cls`) and type, never by zone (checked on the
+published fr and es bases: TMA D blue on both sides, Spain's TMA A red as France's). The difference was the name: Spain's
+base names carry their type ("TMA BARCELONA AREA 1"), drawn "TMA TMA BARCELONA AREA 1" on the map and
+"TMA BARCELONA AREA 1" against "TOULOUSE 1" on the profile; the type is now written once (`bareName` in
+`lib/aero_symbols.js`, `typed` in `render_airspace.js`, the profile's band labels).
+
+Measured (real fr + es bases, LFBO → LEBL FL260, view -1.6..5.4 / 40.9..44.6 at 1280 × 900, zoom 6.2, auto, complexity
++2; 8 full draws at rest, quiet machine): before (e315c2e0b), around the flight 3 airspaces · 76 airways, 4.8–6.3 ms; whole
+view 128 airspaces (69 fr, 59 es) · 748 airways, 12.7–15.6 ms. After: around the flight 3.3–4.7 ms; whole view 10.2–13.8
+ms. Both under 16 ms (§ 10.30): no geometry cache needed for this. Noreg D75 (and D64: `corridor` is now a number).
+
 ## Inventaire du 30/10 : à refondre
 
 Read-only inventory (BUGS SOG, 30 Oct, for the user's challenge "supprimer les faire et défaire vers un point documenté, éviter le

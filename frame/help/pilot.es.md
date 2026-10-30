@@ -299,9 +299,11 @@ altura sobre el suelo, y la altitud de su cima entre paréntesis («434 AGL (771
 CTR, D / R / P, FIR, otros), aerovías inferiores y superiores, radioayudas, puntos de aerovía, puntos de notificación
 VFR, obstáculos, altitudes mínimas, ciudades, retícula, alternativo, nombres de los espacios, nombres de las aerovías.
 Marque o desmarque: el mapa sigue, y su elección se conserva para este ajuste en este dispositivo. «Restablecer todo»
-vuelve a la elección de origen. «Solo alrededor de la ruta», marcada de origen en IFR, limita espacios y aerovías a la
-cercanía de la ruta; desmarcada, se dibuja todo el mapa visible, para mirar en otra parte. De cerca, todo se dibuja de
-todos modos. Cada elemento del mapa tiene su rango de zoom: los puntos de notificación VFR solo aparecen
+vuelve a la elección de origen. Arriba del todo, «Solo alrededor del vuelo (más rápido)», marcada de origen en IFR, limita
+espacios y aerovías a la cercanía del vuelo: el título del panel termina entonces con «alrededor del vuelo», y el chip «i»
+dice que fuera del corredor no se lee nada; desmarcada («si no, toda la vista»), se lee toda la vista, con la misma
+densidad en todas partes, filtrada solo por la complejidad — salvo una vista de más de 600 NM de ancho, leída alrededor
+del vuelo de todos modos (el chip «i» lo dice). De cerca, todo se dibuja de todos modos. Cada elemento del mapa tiene su rango de zoom: los puntos de notificación VFR solo aparecen
 muy cerca, los CTR de cerca, las TMA en vista media, las FIR de lejos. El tamaño del mapa también cuenta: en un marco
 pequeño (teléfono, panel de la vista doble) muestra menos elementos que en uno grande con el mismo zoom, como si
 estuviera más lejos (el zoom se corrige con la media del alto y del ancho del marco, 900 px sin corrección).
@@ -403,7 +405,7 @@ ciclo, una línea lo dice: los espacios aéreos pueden haber cambiado desde ento
 entonces el perfil habitual del tipo de mapa (detallado para un objetivo o un detalle, simplificado si no) y lo indica.
 Basta con abrir la misión en el estudio y guardarla para que conserve después el suyo.
 
-<!-- fr: cd1fcdb40ed6 -->
+<!-- fr: e1805ee753f9 -->
 
 <!-- chapter: report -->
 # Informe

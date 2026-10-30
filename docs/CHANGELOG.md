@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: "Around the flight only" made explicit; the same density on both sides of a border** (`modules/maps/data.js`,
+  `layers.js`, `sheet_view.js`, `texts.js`, `style.js`, `render_airspace.js`, `lib/aero_symbols.js`, `lib/vertical_profile.js`;
+  maps help ×4, SPEC, DECISIONS; noreg D75, D64). The corridor reading is the first box of Layers, "Around the flight only
+  (faster)" with "otherwise the whole view" below it, ticked by default as before and kept on the device; ticked, the pane
+  title ends "· around the flight" and the "i" chip says nothing is read outside the corridor; unticked, the whole view is
+  read, filtered by complexity alone, except a view wider than 600 NM (corridor imposed, said in the chip). A name carrying
+  its type (Spain's "TMA BARCELONA AREA 1") reads the type once, on the map and the profile, like a French one.
+
 - **Data: the panels follow the launcher's real shapes** (`modules/data/`; help ×4; noreg L16, L17): VAC points read the cycle's view (`cycles`), say « n charts not published yet » without calling it a failure, report `no-base`, `no-pypdf` (with the first-install link), `no-cache`, `invalid` and a build without a commit (no trigram), and purge all cycles' caches; Procedures offer only the States with a bulk source (France, United States), never the EAD ones (one line says they are read one aerodrome at a time); the other sets count in the launcher's unit and write « (n / m) » without a noun; `unsafe-path` is said for every purge; Procedures follow the real `proc/*` shapes (sorted States sent, `built: { State: n }`, counts of aerodromes, `no-cache` per State) and `merge-pending` (a merge waiting in data/: nothing written) is one sentence for every set.
 - **Launcher: no session identifier in the console, every zip bounded, no redirect to another host**
   (`tools/outbound.py`, `tools/regen_jobs.py`, `tools/proc_cifp.py`, `tools/launch.py`; frame INTEGRATION § 15, DECISIONS,

@@ -464,8 +464,9 @@ Opened in the sheet by the Layers button (`openData('layers', …)`, § 7.4), no
 2. **the layer boxes**, a grid of two columns on a phone: airspace families (TMA / CTR: TMA, CTR, CTA, TMZ, RMZ; D / R /
    P: R, D, P, TRA, TSA, CBA, PJE, TRVL, TRPVL, ZIT; FIR: FIR, UIR, UTA, LTA, OCA, FRA; others: every other type present),
    airspace names, lower and upper airways, airway names, beacons, airway points, VRP, obstacles, MORA, towns, graticule,
-   alternate, AAR, NAT, winds aloft, contour lines, aerodrome procedures (§ 6.11; only when aerodb can say the coverage), and
-   "Around the route only"; "Reset all";
+   alternate, AAR, NAT, winds aloft, contour lines, aerodrome procedures (§ 6.11; only when aerodb can say the coverage);
+   "Reset all"; "Around the flight only (faster)" heads the content (above Complexity, sub-label "otherwise the whole
+   view");
 3. **the flight selector**, last (rarely used): a `select` "Planned flight" with every mission of the repository, and for a
    mission with two maps or more a second `select` with its maps (description, else file name); choosing changes the
    address (`#maps?mission=<ID>&map=<file>`), the frame mounts the module again. On a mission map the content holds only
@@ -473,7 +474,10 @@ Opened in the sheet by the Layers button (`openData('layers', …)`, § 7.4), no
 - Defaults come from the mode's profile (a family is on when the profile names one of its types) and the airline's
   `profiles[mode].layers`; the device's choices are kept per mode in `cache/maps/ui.json`, only where they differ from the
   defaults; "Reset all" removes them.
-- **Around the route only**: on by default when the mode's profile has a corridor (IFR), off in VFR.
+- **Around the flight only** (30 Oct 2026): on by default when the mode's profile has a corridor (IFR), off in VFR; ticked,
+  the pane title ends "· around the flight" and the "i" chip says nothing is read outside the corridor; unticked, the whole
+  view is read (complexity filters by class and size, never by place), except a view wider than `WIDE_NM` = 600 NM where
+  the corridor is imposed (`corridorFor`, said in the chip).
 - The effective profile (`effectiveProfile()`) is the mode's with the layers applied: elements, `zones` (whole
   families), `otherZones`, `corridorNm`.
 - The content is one element the module keeps (the boxes keep their focus between two writes).
@@ -964,7 +968,7 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
 | airspaces | `.mp-lv` (content), `.mp-lv-col` (graph column), `.mp-lv-list`, `.mp-lv-n`, `.mp-lv-name`, `.mp-lv-lim`, `.mp-lv-unk` (unreadable ceiling), `details.mp-lv-also` |
 | choose mode | `.mp-box.mp-choosing` (the base map dimmed); body `.mp-dbody[data-kind=choose]` > `.mp-ch[data-family]` > `.mp-ch-chips` (`.mp-ch-chip[data-rwy]`, `aria-pressed`) and `.mp-ch-list` of `.mp-ch-row[data-id]` (`data-id=none` first; `data-hl`; `--c` the hue) |
 | tooltip | `.mp-tip.mp-hover`, its "Aussi ici" line `.mp-also` |
-| Layers | `.mp-layers` (the content, kept by the module), the complexity block `.mp-l-detail` (value `[data-detail-v]`), help `#mp-detail-help`, boxes `[data-layer=<key>]`, "Around the route only" `.mp-l-main`, the selectors `select.mp-pick` and `select.mp-mappick` (last) |
+| Layers | `.mp-layers` (the content, kept by the module), the complexity block `.mp-l-detail` (value `[data-detail-v]`), help `#mp-detail-help`, boxes `[data-layer=<key>]`, "Around the flight only" `.mp-l-main` (first), the selectors `select.mp-pick` and `select.mp-mappick` (last) |
 | VFR, point card | `.mp-vfr-pts` (points list); the chosen runway and procedures of the flight's aerodrome `.mp-ad-proc[data-proc=dep\|arr]` with its `[data-go="fuel?focus=dep\|arr"]` button; the route point's card `.mp-tip.mp-pcard` (`role="dialog"`) |
 | empty state, links | `.mp-empty` (card in the map area); buttons `[data-go=fuel\|settings]` |
 | tuning | `.mp-tune`, rows `.mp-tune-row` |

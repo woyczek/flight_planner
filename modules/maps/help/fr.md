@@ -60,9 +60,12 @@ sol, et l'altitude de son sommet entre parenthèses (« 434 AGL (771) »).
 <a id="maps-layers"></a>**Les couches.** Le bouton aux calques, à gauche de la carte, ouvre dans le bloc de données, à la place du profil, la liste de ce qu'elle dessine (la croix ✕ ramène le profil). En premier, sous le choix du vol, le curseur « Complexité » : il agit comme si le zoom était différent, d'un niveau de zoom par cran (de −4 à +4) — moins de détails vers la gauche, plus vers la droite. Ce que chaque zoom montre est réglé par l'administrateur (Réglages, carte « Administration »). Puis les familles
 d'espaces (TMA / CTR, D / R / P, FIR, autres), voies basses et hautes, balises, points des voies, points de report VFR,
 obstacles, altitudes minimales, villes, canevas, dégagement, noms des espaces, noms des voies. Cochez ou décochez : la
-carte suit, et votre choix est gardé pour ce réglage sur cet appareil. « Tout remettre » revient au choix d'origine. «
-Autour de la route seulement », cochée d'origine en IFR, limite les espaces et les voies au voisinage de la route ;
-décochée, toute la carte visible est dessinée, pour regarder ailleurs. Vue de près, tout est dessiné de toute façon.
+carte suit, et votre choix est gardé pour ce réglage sur cet appareil. « Tout remettre » revient au choix d'origine. En
+tête, « Autour du vol seulement (plus rapide) », cochée d'origine en IFR, limite les espaces et les voies au voisinage
+du vol : le titre du volet finit alors par « autour du vol », et la puce « i » dit que rien n'est lu hors du couloir ;
+décochée (« sinon toute la vue »), toute la vue est lue, à la même densité partout, filtrée par la seule complexité —
+sauf une vue de plus de 600 NM de large, lue autour du vol quand même (la puce « i » le dit). Vue de près, tout est
+dessiné de toute façon.
 Chaque élément de la carte a sa plage de zoom : les points de report VFR n'apparaissent que tout près, les CTR de
 près, les TMA en vue moyenne, les FIR de loin. La taille de la carte compte aussi : sur un petit cadre (téléphone, volet
 de la vue double) elle montre moins d'éléments qu'un grand au même zoom, comme si vous étiez plus loin (le zoom est

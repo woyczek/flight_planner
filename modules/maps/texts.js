@@ -35,6 +35,18 @@ export const TX = {
     'Hintergrundkarte nicht verfügbar: einfarbiger Hintergrund.', 'Mapa de fondo no disponible: fondo liso.'
   ],
   ttlProfile: ['Profil', 'Profile', 'Profil', 'Perfil'],
+  ttlCorr: ['autour du vol', 'around the flight', 'rund um den Flug', 'alrededor del vuelo'],
+  corrSub: ['sinon toute la vue', 'otherwise the whole view', 'sonst die ganze Ansicht', 'si no, toda la vista'],
+  lgCorr: ['Autour du vol seulement : hors du couloir du vol, rien n’est lu — zoomez ou décochez-la dans Couches',
+    'Around the flight only: outside the flight’s corridor nothing is read — zoom in or untick it in Layers',
+    'Nur rund um den Flug: außerhalb des Flugkorridors wird nichts gelesen — zoomen Sie oder entfernen Sie den Haken unter Ebenen',
+    'Solo alrededor del vuelo: fuera del corredor del vuelo no se lee nada — acérquese o desmárquela en Capas'
+  ],
+  lgCorrWide: ['Vue de plus de 600 NM : seulement autour du vol — zoomez pour tout voir',
+    'View wider than 600 NM: around the flight only — zoom in to see everything',
+    'Ansicht breiter als 600 NM: nur rund um den Flug — zoomen Sie, um alles zu sehen',
+    'Vista de más de 600 NM: solo alrededor del vuelo — acérquese para verlo todo'
+  ],
   ttlWeather: ['Météo', 'Weather', 'Wetter', 'Meteo'],
   stPlanned: ['vol prévu', 'planned flight', 'geplanter Flug', 'vuelo previsto'],
   stFlying: ['vol en cours', 'flight in progress', 'Flug läuft', 'vuelo en curso'],
@@ -176,7 +188,9 @@ export const TX = {
   windTip: ['Vent {d}° / {k} kt', 'Wind {d}° / {k} kt', 'Wind {d}° / {k} kt', 'Viento {d}° / {k} kt'],
   windSub: ['{t} · {l} · prévision {h}', '{t} · {l} · forecast {h}', '{t} · {l} · Vorhersage {h}', '{t} · {l} · previsión {h}'],
   layerNames: {
-    corridor: ['Autour de la route seulement', 'Around the route only', 'Nur entlang der Route', 'Solo alrededor de la ruta'],
+    corridor: ['Autour du vol seulement (plus rapide)', 'Around the flight only (faster)', 'Nur rund um den Flug (schneller)',
+      'Solo alrededor del vuelo (más rápido)'
+    ],
     asTma: ['Espaces TMA / CTR', 'TMA / CTR airspaces', 'Lufträume TMA / CTR', 'Espacios TMA / CTR'],
     asDrp: ['Zones D / R / P', 'D / R / P areas', 'Gebiete D / R / P', 'Zonas D / R / P'],
     asFir: ['FIR', 'FIR', 'FIR', 'FIR'],

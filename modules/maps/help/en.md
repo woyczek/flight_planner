@@ -58,9 +58,11 @@ ground, and the elevation of its top in brackets (“434 AGL (771)”).
 <a id="maps-layers"></a>**Layers.** The layers button, at the left of the map, opens in the data block, in place of the profile, the list of what the map draws (the ✕ brings the profile back). First, under the flight selector, the “Complexity” slider: it acts as if the zoom were different, one zoom level per step (−4 to +4) — fewer details to the left, more to the right. What each zoom shows is set by the administrator (Settings, “Administration” card). Then the airspace families (TMA /
 CTR, D / R / P, FIR, others), lower and upper airways, beacons, airway points, VFR reporting points, obstacles, minimum
 altitudes, towns, graticule, alternate, airspace names, airway names. Tick or untick: the map follows, and your choice
-is kept for this setting on this device. “Reset all” goes back to the original choice. “Around the route only”, ticked
-by default in IFR, keeps airspaces and airways near the route; unticked, the whole visible map is drawn, to look
-elsewhere. Close up, everything is drawn anyway. Each element of the map has its zoom range: VFR reporting points appear only
+is kept for this setting on this device. “Reset all” goes back to the original choice. At the top, “Around the flight only
+(faster)”, ticked by default in IFR, keeps airspaces and airways near the flight: the pane title then ends with “around
+the flight”, and the “i” chip says nothing is read outside the corridor; unticked (“otherwise the whole view”), the whole
+view is read, at the same density everywhere, filtered by complexity alone — except a view wider than 600 NM, read around
+the flight anyway (the “i” chip says so). Close up, everything is drawn anyway. Each element of the map has its zoom range: VFR reporting points appear only
 very close, CTRs close up, TMAs in a medium view, FIRs from afar. The size of the map counts too: in a small frame
 (phone, pane of the dual view) it shows fewer elements than a large one at the same zoom, as if you were further out
 (the zoom is corrected by the mean of the frame's height and width, 900 px meaning no correction).
@@ -160,4 +162,4 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: cd1fcdb40ed6 -->
+<!-- fr: e1805ee753f9 -->

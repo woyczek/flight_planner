@@ -23,6 +23,12 @@
   } = R.kit;
 
   // ---------------------------------------------------------------- choix des espaces le long de la route
+  // « TMA LYON », « TMA BARCELONA AREA 1 » : le type une fois, même quand le nom le porte déjà (bases étrangères)
+  const typed = a => {
+    const t = String(a.type || ''),
+      n = String(a.name || '');
+    return t && !n.toUpperCase().startsWith(`${t.toUpperCase()} `) ? [t, n].filter(Boolean).join(' ') : n || t;
+  };
   const family = (types, t) => types.has(t) || (t === 'RMZ-TMZ' && (types.has('RMZ') || types.has('TMZ')));
   // emprise des anneaux d'un espace, gardée à part : les fiches d'aerodb sont gelées (couche de données, références partagées) et une
   // propriété posée sur elles lève une TypeError qui vidait la lecture du couloir (utilisateur, 30 octobre : tout invisible en vue
@@ -480,7 +486,7 @@
   }
   const sia = a => [
     // limites omises quand l'espace n'en porte aucune (FIR, UTA de la base : rien plutôt que « SFC|SFC »)
-    [a.type, a.name].filter(Boolean).join(' ') + (a.lower == null && a.upper == null ? '' : ` ${siaLimit(a.lower)}|${siaLimit(a.upper)}`) +
+    typed(a) + (a.lower == null && a.upper == null ? '' : ` ${siaLimit(a.lower)}|${siaLimit(a.upper)}`) +
     (a.cls ? ` ${a.cls}` : ''),
     [a.act, a.info].filter(Boolean).join(' · ')
   ];
@@ -512,7 +518,7 @@
         up: u.ok && u.unl ? Infinity : known ? u.ft : lo,
         unk: known ? 0 : 1,
         lo,
-        name: [a.type, a.name].filter(Boolean).join(' ')
+        name: typed(a)
       };
     };
     const k = new Map((list || []).map(a => [a, key(a)]));
@@ -554,7 +560,7 @@
         const r = rank(a);
         return r < 0 ? 3 : r;
       },
-      name = a => [a.type, a.name].filter(Boolean).join(' ');
+      name = a => typed(a);
     skipped.sort((x, y) => key(x) - key(y) || name(x).localeCompare(name(y)));
     return {
       shown,

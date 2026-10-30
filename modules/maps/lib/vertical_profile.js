@@ -674,7 +674,9 @@
         x: zoomed ? (xa + xb) / 2 : X(data.samples[mid].s),
         y0: Y(hi(mid)),
         y1: Y(lo(mid)),
-        text: abbrev ? a.name : `${a.type} ${a.name}`,
+        // un nom qui porte déjà son type (« TMA BARCELONA AREA 1 ») s'écrit comme un nom français : le type une fois
+        text: (n => abbrev ? n : `${a.type} ${n}`)(String(a.name ?? '').toUpperCase().startsWith(`${String(a.type ?? '').toUpperCase()} `) ?
+          String(a.name).slice(String(a.type).length + 1) : a.name),
         sub: limits ? `${a.lower || 'SFC'} – ${a.upper || 'UNL'}` : '',
         xa,
         xb,

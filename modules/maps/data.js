@@ -41,7 +41,8 @@ import {
   buildProfile
 } from './profile_view.js';
 import {
-  syncView
+  syncView,
+  legendSync
 } from './sheet_view.js';
 
 // ---------------------------------------------------------------- vol
@@ -301,9 +302,20 @@ const enlarge = (b, k) => {
 /** Emprise des données à lire pour la vue montrée : vue d'ensemble (au moins 90 % de la largeur de la route) → l'emprise de
  *  la route ; vue rapprochée → la vue élargie de 15 %. */
 export const wantBox = shown => S.profile?.corridorNm > 0 && (shown.e - shown.w) >= (S.fit.e - S.fit.w) * .9 ? S.fit : enlarge(shown, .15);
-/** Lecture dans le couloir de la route : « Autour de la route seulement » cochée, hors vue rapprochée (300 px par degré et
- *  plus : toute l'emprise est lue). */
-export const corridorFor = (shown, W) => S.profile?.corridorNm > 0 && W / Math.max(1e-6, shown.e - shown.w) < 300;
+/** Largeur (NM) au-delà de laquelle la vue n'est lue qu'autour du vol, même « Autour du vol seulement » décochée (garde-fou d'une
+ *  vue continent : la puce « i » le dit) ; marge du couloir alors imposé. */
+export const WIDE_NM = 600;
+const FORCED_NM = 10;
+/** Largeur d'une emprise en NM, à sa latitude moyenne. */
+export const widthNm = b => (b.e - b.w) * 60 * Math.cos((b.s + b.n) / 2 * Math.PI / 180);
+/** Couloir de lecture (NM ; 0 : toute l'emprise) : « Autour du vol seulement » cochée, hors vue rapprochée (300 px par degré et
+ *  plus : toute l'emprise est lue) ; décochée, toute la vue filtrée par la complexité, sauf au-delà de WIDE_NM de large (couloir
+ *  imposé). Jamais sur une carte de mission. */
+export const corridorFor = (shown, W) => {
+  const nm = +S.profile?.corridorNm || 0;
+  if (nm > 0) return W / Math.max(1e-6, shown.e - shown.w) < 300 ? nm : 0;
+  return !S.mission && !S.ctx.query?.mission && S.route.points.length > 1 && widthNm(shown) > WIDE_NM ? FORCED_NM : 0;
+};
 /** Vrai si l'emprise inner est dans outer. */
 export const within = (inner, outer) => !!outer && inner.w >= outer.w && inner.e <= outer.e && inner.s >= outer.s && inner.n <= outer.n;
 /** Emprise box ramenée au même tour du monde que la route (la vue peut être sur une autre copie du monde). */
@@ -366,8 +378,8 @@ export async function many(f, boxes, extra = {}) {
   return out;
 }
 /** Éléments de l'emprise box selon le profil : { box, corridor, data, empty }. Espaces et voies lus pour le couloir de la
- *  route, tronçon par tronçon, quand le profil en a un (SPEC § 5). */
-async function loadData(box, corridor = true) {
+ *  route, tronçon par tronçon, quand corridor (NM, corridorFor) n'est pas nul (SPEC § 5). */
+async function loadData(box, corridor = 0) {
   const A = S.ctx.aerodb;
   if (!A) return {
     box: {
@@ -382,9 +394,9 @@ async function loadData(box, corridor = true) {
   const route = [...S.route.points, ...(S.route.altn ? [S.route.altn] : [])],
     bboxes = wrapBoxes(alignBox(box, route)),
     p0 = S.profile,
-    p = corridor ? p0 : {
+    p = +p0.corridorNm === corridor ? p0 : {
       ...p0,
-      corridorNm: 0
+      corridorNm: corridor
     },
     E = p.elements,
     boxes = +p.corridorNm > 0 ? corridorBoxes(route, +p.corridorNm + 2, alignBox(box, route)) : bboxes,
@@ -438,7 +450,7 @@ async function loadData(box, corridor = true) {
   };
 }
 /** Relit les éléments pour l'emprise b (une lecture à la fois ; la dernière demandée gagne). */
-export async function refresh(b, corridor = true) {
+export async function refresh(b, corridor = 0) {
   if (!S || S.loadingFor) {
     if (S) S.pending = [b, corridor];
     return;
@@ -455,6 +467,7 @@ export async function refresh(b, corridor = true) {
     if (!S) return;
     S.data = got;
     status();
+    legendSync(); // la puce « i » dit une lecture autour du vol seulement
   } finally {
     if (S) {
       S.loadingFor = null;

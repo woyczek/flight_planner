@@ -95,7 +95,7 @@ def d3(c):
     c.ok(norm(title).startswith(norm(row(c, 'layers'))), f'sheet title {title!r}', f'starts with "{row(c, "layers")}"')
     first = c.js("""() => { const b = document.querySelector('.mp-dbody'); const e = [...b.querySelectorAll('select, input, button')].find(x => window.__t.shown(x));
         return e ? e.tagName.toLowerCase() + (e.type ? ':' + e.type : '') : null }""")
-    c.eq(first, 'input:range', 'the Complexity slider is the first control of the content (SPEC § 6.7)', what='first control')
+    c.eq(first, 'input:checkbox', '"Around the flight only" is the first control of the content (SPEC § 6.7, 30 Oct)', what='first control')
     n = c.js("[...document.querySelectorAll('.mp-dbody input[type=checkbox]')].filter(e => window.__t.shown(e.parentElement)).length")
     c.ge(n, 5, 'the layer checkboxes follow the slider', what='visible layer checkboxes')
     c.eq(c.attr(layers_btn(c), 'aria-pressed'), 'true', 'the Layers button is pressed while its content is open', what='Layers aria-pressed')
@@ -928,7 +928,7 @@ def d14(c):
     c.until("window.__t.shown(document.querySelector('.mp-dbody input[data-layer=detail]'))", what='the Layers content shows the slider')
     order = c.js("""() => [...document.querySelectorAll('.mp-dbody select, .mp-dbody input, .mp-dbody button')].filter(e => window.__t.shown(e) || e.type === 'range')
         .map(e => e.tagName.toLowerCase() + (e.type ? ':' + e.type : ''))""")
-    c.eq(order[:2], ['input:range', 'input:checkbox'], 'the Complexity slider comes first, before any checkbox (SPEC § 6.7)', what='first controls of the Layers content')
+    c.eq(order[:3], ['input:checkbox', 'input:range', 'input:checkbox'], '"Around the flight only", then the Complexity slider, before the other boxes (SPEC § 6.7, 30 Oct)', what='first controls of the Layers content')
     c.eq(order[-1:], ['select:select-one'], 'the flight selector comes last (rarely used, SPEC § 6.7)', what='last control of the Layers content')
     label = norm(c.text('.mp-l-detail') or '')
     c.ok(label.startswith(norm(row(c, 'detail'))), f'slider label {label!r}', f'starts with "{row(c, "detail")}"')
@@ -1699,7 +1699,8 @@ D28_ALSO = D26_FLAT + [
     {'type': 'FIR', 'name': 'FIR TESTVILLE', 'rings': [[[43.0, 0.0], [43.0, 5.0], [47.0, 5.0], [47.0, 0.0], [43.0, 0.0]]]},   # the same FIR twice (two rings): one name
     {'type': 'TMA', 'name': 'TMA FAR', 'lower': 'SFC', 'upper': 'FL100', 'rings': [[[50.0, 8.0], [50.0, 9.0], [51.0, 9.0], [51.0, 8.0], [50.0, 8.0]]]},   # not on the point
 ]
-D28_NAMES = ['FIR FIR TESTVILLE', 'UIR UIR TESTVILLE', 'SIV SIV TESTVILLE', 'CTL LM TEST', 'D D 91 FLAT', 'R R 90 FLAT']
+# a name that carries its type ("FIR TESTVILLE") reads it once (30 Oct, the same as Spain's "TMA BARCELONA AREA 1")
+D28_NAMES = ['FIR TESTVILLE', 'UIR TESTVILLE', 'SIV TESTVILLE', 'CTL LM TEST', 'D 91 FLAT', 'R 90 FLAT']
 
 
 @case('D28', 'Airspaces sheet and hover: one folded "Aussi ici" line for the spaces left out', 'D', tags=('sheet', 'maps'), designs=('standard',), langs4=True,

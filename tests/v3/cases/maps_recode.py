@@ -1564,7 +1564,7 @@ def d64(c):
     c.until("() => !!(window.__mp.S && window.__mp.S.data && window.__mp.S.data.box)", timeout=12000, what='the first reading')
     c.wait(600)
     d = c.js(_DRAWN)
-    c.eq(d['corridor'], True, 'the general view reads along the corridor of the route', what='corridor')
+    c.ok(d['corridor'] > 0, f"{d['corridor']}", 'the general view reads along the corridor of the route')
     c.ok(d['airspaces'] > 0 and d['zones'] > 0, f'{d}', 'the airspaces along the route are read and drawn')
     c.eq(c.js("() => Object.isFrozen((window.__mp.S.data.data.airspaces || [])[0] || {})"), True, 'the records are frozen, as on the device', what='frozen')
     # zoom 9 around the departure, complexity +2: the aerodromes are drawn too
@@ -1948,3 +1948,64 @@ def d74(c):
     # SEA enters from the south-east: it flies north-west, towards the aerodrome
     deg = int(g['rows'][2][1][len(pre):len(g['rows'][2][1]) - len(post)])
     c.ok(290 <= deg <= 330, f'{deg}', 'SEA’s arrow points north-west, its way in to the aerodrome')
+
+
+# ------------------------------------------------------------------------------------------------------ D75
+# a TMA far from the route (100 NM south of LUGEN–NEPIX), named the foreign way (« TMA FARVILLE »: the type in the name)
+_FAR_TMA = {'type': 'TMA', 'cls': 'D', 'name': 'TMA FARVILLE', 'lower': 'FL200', 'upper': 'FL300',
+            'rings': [[[43.2, 0.3], [43.2, 0.9], [43.7, 0.9], [43.7, 0.3], [43.2, 0.3]]]}
+_CORR_STATE = """async () => { const S = window.__mp.S, V = await import('/modules/maps/sheet_view.js'); S.legend = true; V.legendSync();
+  return { corridor: S.data ? S.data.corridor : null, far: ((S.data && S.data.data.airspaces) || []).some(a => a.name === 'TMA FARVILLE'),
+    legend: S.legendEl.textContent.replace(/\s+/g, ' ').trim() } }"""
+_TEXT_HOOK = """() => { window.__chT = []; const o = CanvasRenderingContext2D.prototype.fillText;
+  if (!o.__ch) { CanvasRenderingContext2D.prototype.fillText = function (t, x, y, w) { window.__chT.push(String(t)); return o.call(this, t, x, y, w) };
+    CanvasRenderingContext2D.prototype.fillText.__ch = true } return true }"""
+
+
+@case('D75', 'Layers: "Around the flight only" at the top, said in the title and the "i" chip; unticked, the whole view at the same density', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False, langs4=True,
+      rule='user 30 Oct (France / Spain at zoom 7.5: nothing away from the route "même en augmentant la complexité"): the corridor reading is an explicit box at the top of Layers, "Around the flight only (faster)", "otherwise the whole view", ticked by default and kept on the device; ticked, the pane title ends "· around the flight" and the "i" chip says nothing is read outside; unticked, the whole view is read and filtered by complexity only, except a view wider than 600 NM (corridor imposed, said in the chip); a name carrying its type ("TMA FARVILLE") reads the type once')
+def d75(c):
+    ui = ['cache/maps/ui.json', {'preset': 'auto', 'layers': {'auto': {'detail': 2}}}, 'cache']
+    view = 'maps?view=-1.5,42.2,3.5,45.2'
+    c.open(view, docs=fdocs(flight()) + [ui], flight=False, airfields=True, airspaces=[_FAR_TMA], wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.data && window.__mp.S.data.box)", timeout=12000, what='the first reading')
+    c.wait(400)
+    st = c.js(_CORR_STATE)
+    c.eq([st['corridor'] > 0, st['far']], [True, False], 'ticked by default: read along the flight, the far TMA is not read', what='ticked')
+    c.ok(norm(tx(M, 'lgCorr', c.lang)) in norm(st['legend']), st['legend'], 'the "i" chip says nothing is read outside the corridor')
+    # the box heads the Layers content; the title says it
+    c.js("async () => (await import('/modules/maps/layers.js')).toggleLayers(true)")
+    c.until("() => !!document.querySelector('.mp-layer-set input[data-layer]')", what='the Layers content')
+    first = c.js("() => document.querySelector('.mp-layer-set input[data-layer]').dataset.layer")
+    c.eq(first, 'corridor', '"Around the flight only" is the first box of Layers', what='first box')
+    lab = c.js("() => document.querySelector('.mp-layer-set input[data-layer=corridor]').closest('label').textContent.replace(/\s+/g, ' ').trim()")
+    c.ok(norm(tx(M, 'corridor', c.lang, after='layerNames: {')) in norm(lab) and norm(tx(M, 'corrSub', c.lang)) in norm(lab), lab,
+         'its label and sub-label')
+    title = c.js("() => document.querySelector('.mp-dtitle').textContent")
+    c.ok(norm(title).endswith(norm(tx(M, 'ttlCorr', c.lang))), title, 'the pane title ends with "around the flight"')
+    # unticked: the whole view, the far TMA read and drawn, its type written once
+    c.js(_TEXT_HOOK)
+    c.tap('.mp-layer-set input[data-layer=corridor]')
+    c.until("() => { const S = window.__mp.S; return !!(S.data && S.data.corridor === 0) }", timeout=12000, what='the whole view is read')
+    st = c.js(_CORR_STATE)
+    c.eq([st['corridor'], st['far']], [0, True], 'unticked: the whole view, the far TMA read', what='unticked')
+    c.ok(norm(tx(M, 'lgCorr', c.lang)) not in norm(st['legend']), st['legend'], 'the chip no longer speaks of the corridor')
+    title = c.js("() => document.querySelector('.mp-dtitle').textContent")
+    c.ok(not norm(title).endswith(norm(tx(M, 'ttlCorr', c.lang))), title, 'the title no longer says "around the flight"')
+    c.until("() => (window.__chT || []).some(t => /FARVILLE/.test(t))", timeout=8000, what='the far TMA labelled')
+    names = sorted({t for t in c.js('window.__chT') if 'FARVILLE' in t})
+    c.ok(not any('TMA TMA' in t for t in names), f'{names}', 'the type is written once ("TMA FARVILLE", not "TMA TMA FARVILLE")')
+    c.eq(c.js("() => ((window.__mp.S.layers || {}).auto || {}).corridor"), False, 'the choice is kept on the device', what='kept')
+    # a continent view (wider than 600 NM): the corridor imposed, said in the chip
+    c.open('maps?view=-8,38,14,52', docs=fdocs(flight()) + [['cache/maps/ui.json', {'preset': 'auto', 'layers': {'auto': {'detail': 2, 'corridor': False}}}, 'cache']],
+           flight=False, airfields=True, airspaces=[_FAR_TMA], wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.data && window.__mp.S.data.box)", timeout=12000, what='the continent reading')
+    c.wait(400)
+    st = c.js(_CORR_STATE)
+    c.ok(st['corridor'] > 0, f"{st['corridor']}", 'wider than 600 NM: around the flight even unticked')
+    c.ok(norm(tx(M, 'lgCorrWide', c.lang)) in norm(st['legend']), st['legend'], 'the chip says the view is too wide')

@@ -60,9 +60,12 @@ seine Höhe über Grund und die Höhe seiner Spitze in Klammern („434 AGL (771
 Luftraumfamilien (TMA / CTR, D / R / P, FIR, andere), untere und obere Flugwege, Funkfeuer, Flugwegpunkte,
 VFR-Meldepunkte, Hindernisse, Mindesthöhen, Städte, Gradnetz, Ausweichflugplatz, Namen der Lufträume, Namen der
 Flugwege. Haken setzen oder entfernen: die Karte folgt, und Ihre Wahl bleibt für diese Einstellung auf diesem Gerät
-erhalten. „Alles zurücksetzen“ kehrt zur ursprünglichen Wahl zurück. „Nur entlang der Route“, in IFR vorgewählt,
-beschränkt Lufträume und Flugwege auf die Umgebung der Route; ohne Haken wird die ganze sichtbare Karte gezeichnet, um
-anderswo zu schauen. Aus der Nähe wird ohnehin alles gezeichnet. Jedes Element der Karte hat seinen Zoombereich: VFR-Meldepunkte
+erhalten. „Alles zurücksetzen“ kehrt zur ursprünglichen Wahl zurück. Ganz oben beschränkt „Nur rund um den
+Flug (schneller)“, in IFR vorgewählt, Lufträume und Flugwege auf die Umgebung des Flugs: Der Titel des Bereichs endet dann
+mit „rund um den Flug“, und der Chip „i“ sagt, dass außerhalb des Korridors nichts gelesen wird; ohne Haken („sonst die
+ganze Ansicht“) wird die ganze Ansicht gelesen, überall gleich dicht, nur nach der Komplexität gefiltert — außer bei einer
+Ansicht von mehr als 600 NM Breite, die trotzdem rund um den Flug gelesen wird (der Chip „i“ sagt es). Aus der Nähe wird
+ohnehin alles gezeichnet. Jedes Element der Karte hat seinen Zoombereich: VFR-Meldepunkte
 erscheinen erst ganz nah, CTR aus der Nähe, TMA in mittlerer Ansicht, FIR von weitem. Auch die Größe der Karte zählt: In
 einem kleinen Rahmen (Telefon, Fenster der Doppelansicht) zeigt sie bei gleichem Zoom weniger Elemente als in einem
 großen, als wären Sie weiter weg (der Zoom wird um den Mittelwert aus Höhe und Breite des Rahmens korrigiert, 900 px
@@ -172,4 +175,4 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: cd1fcdb40ed6 -->
+<!-- fr: e1805ee753f9 -->
