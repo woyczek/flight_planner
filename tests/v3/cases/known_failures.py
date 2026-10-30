@@ -6,7 +6,4 @@ remove it from cases/known_failures.py)`.  Any failure that is not in this table
 """
 
 KNOWN = {
-    # meta.files of the modules (30 Oct 2026, V3 Frame): each owner adds the lines its module lacks; this line goes with the last
-    'I26': 'meta.files gaps: Maps (metar, weather_store, wind, light.js: BUGS SOG adds them), Report (geo.js), Atmosphere (weather_store); '
-           'Fuel fixed in 6379d2b18',
 }

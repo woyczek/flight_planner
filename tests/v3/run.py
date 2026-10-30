@@ -53,6 +53,11 @@ SLOWEST = 20  # report.md: the slowest cases, to replace their fixed waits by wa
 # gone is ignored
 HEAVY = 30
 FULL_LOCK = Path(tempfile.gettempdir()) / 'sog-noreg-full.lock'
+# a heavy targeted pass (a --touched before a push) takes its own lock, one at a time, and runs BESIDE one full pass instead of
+# waiting for it, at BESIDE_JOBS runs at a time (30 Oct 2026, Simplification: the pushes waited behind other worktrees' full
+# passes; the crash came from two passes at 10); a full pass starting while a targeted one runs above that waits for it
+TARGET_LOCK = Path(tempfile.gettempdir()) / 'sog-noreg-targeted.lock'
+BESIDE_JOBS = 4
 LOCK_STALE = 2 * 3600
 
 
@@ -79,10 +84,10 @@ def pid_alive(pid):
     return True
 
 
-def lock_holder():
-    """The running full pass that holds the lock ({ pid, at, cwd }), or None (no lock, stale, or its process gone)."""
+def lock_holder(path=None):
+    """The running pass that holds the lock ({ pid, at, cwd, jobs }), or None (no lock, stale, or its process gone)."""
     try:
-        h = json.loads(FULL_LOCK.read_text(encoding='utf-8'))
+        h = json.loads((path or FULL_LOCK).read_text(encoding='utf-8'))
     except (OSError, ValueError):
         return None
     if not isinstance(h, dict) or time.time() - float(h.get('at') or 0) > LOCK_STALE or not pid_alive(h.get('pid')):
@@ -90,17 +95,19 @@ def lock_holder():
     return h
 
 
-def take_lock(wait=False):
-    """Takes the full-pass lock; True when taken.  Held by another running pass: False at once, or (wait) once it is free."""
+def take_lock(wait=False, path=None, jobs=0):
+    """Takes a lock (the full passes' by default); True when taken.  Held by another running pass: False at once, or (wait)
+    once it is free."""
+    path = path or FULL_LOCK
     said = False
     while True:
         try:
-            fd = os.open(FULL_LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
         except FileExistsError:
-            h = lock_holder()
+            h = lock_holder(path)
             if h is None:  # stale, or its process gone: removed, then taken again
                 try:
-                    FULL_LOCK.unlink()
+                    path.unlink()
                 except OSError:
                     pass
                 continue
@@ -114,18 +121,42 @@ def take_lock(wait=False):
             time.sleep(10)
             continue
         with os.fdopen(fd, 'w', encoding='utf-8') as f:
-            json.dump({'pid': os.getpid(), 'at': time.time(), 'cwd': str(ROOT)}, f)
-        atexit.register(drop_lock)
+            json.dump({'pid': os.getpid(), 'at': time.time(), 'cwd': str(ROOT), 'jobs': jobs}, f)
+        atexit.register(drop_lock, path)
         return True
 
 
-def drop_lock():
+def drop_lock(path=None):
     """Removes the lock if it is this process's."""
+    path = path or FULL_LOCK
     try:
-        if json.loads(FULL_LOCK.read_text(encoding='utf-8')).get('pid') == os.getpid():
-            FULL_LOCK.unlink()
+        if json.loads(path.read_text(encoding='utf-8')).get('pid') == os.getpid():
+            path.unlink()
     except (OSError, ValueError, AttributeError):
         pass
+
+
+def heavy_slot(full, heavy, jobs, wait=False):
+    """The place of a pass on this computer: (allowed, jobs).  A full pass takes the full lock (refused or waiting, as before),
+    then waits for a targeted pass running above BESIDE_JOBS; a heavy targeted pass takes the targeted lock (one at a time,
+    waiting) and runs beside a full pass at BESIDE_JOBS at most; a light pass is free."""
+    if full:
+        if not take_lock(wait, FULL_LOCK, jobs):
+            return False, jobs
+        said = False
+        while (h := lock_holder(TARGET_LOCK)) and int(h.get('jobs') or 0) > BESIDE_JOBS:
+            if not said:
+                print(f"waiting for the targeted pass of pid {h.get('pid')} ({h.get('cwd', '?')}, {h.get('jobs')} runs at a time) to end…")
+                said = True
+            time.sleep(10)
+        return True, jobs
+    if not heavy:
+        return True, jobs
+    beside = lock_holder(FULL_LOCK)
+    if beside and jobs > BESIDE_JOBS:
+        print(f"a full pass runs (pid {beside.get('pid')}, {beside.get('cwd', '?')}): this pass runs beside it, {BESIDE_JOBS} runs at a time")
+        jobs = BESIDE_JOBS
+    return take_lock(True, TARGET_LOCK, jobs), jobs
 
 
 def full_pass(args):
@@ -552,10 +583,11 @@ def main():
     for l in journey_lines(touched):                # PLAN.md section O: before the first case
         print(l)
 
-    # a heavy pass takes the lock: a full one refuses when another runs (unless --wait), a targeted one (--touched before a
-    # push) waits for its turn
+    # a full pass takes the full lock (refused when another runs, unless --wait); a heavy targeted one (--touched before a
+    # push) runs beside it at BESIDE_JOBS (heavy_slot)
     full = full_pass(args)
-    if (full or len(cases) > HEAVY) and not take_lock(args.wait or not full):
+    ok, args.jobs = heavy_slot(full, len(cases) > HEAVY, args.jobs, args.wait)
+    if not ok:
         return 3
     t0 = time.time()
     try:  # seconds per run of each case in the last report: the slowest jobs are given out first

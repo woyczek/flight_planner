@@ -81,11 +81,13 @@ a condition.
 `python tests/v3/run.py --touched`; the full pass after the push, in the background on the pushed head, and a fix at once
 if it is red.
 
-**One heavy pass at a time on this computer** (two at 10 workers each crashed a browser driver): a full pass, or any pass
-of more than 30 cases (an area with `--grep`, a large `--touched`), takes a lock in the computer's temp folder
-(`sog-noreg-full.lock`: pid, time, folder), shared by every worktree. While another heavy pass runs, a full pass refuses to
-start and says who runs (exit 3), or waits with `--wait`; a targeted one waits for its turn. A lock older than two hours,
-or whose process is gone, is ignored. A pass of 30 cases or fewer stays free.
+**One full pass at a time on this computer** (two at 10 workers each crashed a browser driver): a full pass takes a lock in
+the computer's temp folder (`sog-noreg-full.lock`: pid, time, folder, runs at a time), shared by every worktree; while another
+runs, it refuses to start and says who runs (exit 3), or waits with `--wait`. A heavy targeted pass (more than 30 cases: an
+area with `--grep`, a large `--touched` before a push) takes its own lock (`sog-noreg-targeted.lock`), one at a time, and runs
+**beside** a full pass at 4 runs at a time instead of waiting for it (`heavy_slot`, `BESIDE_JOBS`, 30 Oct 2026); a full pass
+that starts while a targeted pass runs above 4 waits for it. A lock older than two hours, or whose process is gone, is
+ignored. A pass of 30 cases or fewer stays free.
 
 ### Which cases run for which change (`--changed`, `--for`)
 

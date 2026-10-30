@@ -393,20 +393,35 @@
     await wait(80);
   }
 
-  // 7. le coup de pouce (plus de 0,8 px/ms) passe à la position suivante
+  // 7. le coup de pouce (plus de 0,8 px/ms) passe à la position suivante. La vitesse se mesure en temps réel : des pas espacés
+  // par des minuteurs de 8 ms en devenaient 30 sur un poste chargé et tombaient sous le seuil (C1 rouge dans une passe complète,
+  // 30 oct. 2026). Les pas sont donc tenus à 2 ms (attente active, pas un minuteur), puis la fin du glissement est attendue
+  // (onSettle) au lieu d'un délai fixe : le coup suivant ne part jamais pendant un glissement.
+  const spin = ms => {
+    const t = performance.now();
+    while (performance.now() - t < ms) {
+      /* attente active : l'écart entre deux pas reste celui demandé */
+    }
+  };
+  async function flick(dy) {
+    const n = calls.settle.length;
+    ptr(A.grip, 'pointerdown', 400);
+    for (let i = 1; i <= 4; i++) {
+      spin(2);
+      ptr(A.grip, 'pointermove', 400 + dy * i / 4);
+    }
+    ptr(A.grip, 'pointerup', 400 + dy);
+    for (const t0 = performance.now(); calls.settle.length === n && performance.now() - t0 < 3000;) await wait(20);
+  }
   a.set('default', true);
   await wait(80);
-  await drag(A.grip, head, 400, -40, 5, 8);
-  await wait(260);
+  await flick(-40);
   eq('coup de pouce vers le haut depuis normale : agrandie', a.pos, 'expanded');
-  await drag(A.grip, head, 400, +40, 5, 8);
-  await wait(260);
+  await flick(+40);
   eq('coup de pouce vers le bas depuis agrandie : normale', a.pos, 'default');
-  await drag(A.grip, head, 400, +40, 5, 8);
-  await wait(260);
+  await flick(+40);
   eq('coup de pouce vers le bas depuis normale : réduite', a.pos, 'collapsed');
-  await drag(A.grip, head, 400, +40, 5, 8);
-  await wait(260);
+  await flick(+40);
   eq('coup de pouce vers le bas depuis réduite : reste réduite', a.pos, 'collapsed');
 
   // 8. ignore : ni glisser ni toucher depuis la bascule ou le ✕

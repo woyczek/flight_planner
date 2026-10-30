@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Noreg: a targeted pass no longer waits for another worktree's full pass** (`tests/v3/run.py`; tests/v3 README, frame
+  DECISIONS; noreg I27) — it runs beside it at 4 runs at a time; two full passes stay exclusive.
 - **Fuel: F82, the weather corridor** (a « no case » debt of the SPEC): the radius, the order along the route, the aerodromes without a
   message left out, the folding beyond two.
 - **Launcher: `base/pickup` takes the file the plan showed** (`tools/regen/base_sources.py`; aerodb INTEGRATION; noreg I24) —

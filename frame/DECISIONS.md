@@ -2059,6 +2059,14 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
     credentials and tokens no longer reach a third-party script); every purge uses `regen_jobs.inside` (the rule of
     `base/purge`, now shared: `base_sources._inside` is it), `files_under` and `prune_empty`, so that a junction inside a cache
     is neither descended nor emptied (I17, I18 with a real junction).
+- **30 Oct 2026 — The noreg's targeted pass runs beside one full pass** (Simplification: a `--touched` before a push waited
+  behind another worktree's full pass): two locks in the temp folder, the full passes' and the heavy targeted passes';
+  `heavy_slot` lets one targeted pass run beside one full pass at `BESIDE_JOBS` = 4 runs at a time (the crash came from two
+  passes at 10), a full pass waits for a targeted one running above that, two full passes stay exclusive. noreg I27.
+  - With it: C1 (the sheet's bench) fell once more in a full pass, green alone — its « coup de pouce » up and down measured a
+    real speed from 8 ms timers that stretched to 30 under load, below the 0.8 px/ms threshold. The steps are now held at
+    2 ms (an active wait, not a timer), and the end of each glide is awaited (`onSettle`) instead of 260 ms. And I26 is green
+    on its own (Maps, Atmosphere and Report completed their `meta.files`): its line leaves `known_failures`.
 - **30 Oct 2026 — Refactor R-C5: the two take-overs of data/ share their rules** (§ 10.33, the inventory's item 5):
   - `adopt` (a plain `data/` becoming a clone) and `rewritten_resume` (a rewritten history taken up) wrote the same rules
     twice: the author's identity, the commit of the pool files (with the `.js` check of the data format), reading a file

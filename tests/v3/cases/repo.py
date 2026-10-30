@@ -1844,3 +1844,34 @@ def i25(c):
          'the update routes: this workstation only', what='routes')
     src = (c.root / 'tools' / 'suite_update.py').read_text(encoding='utf-8')
     c.ok('DATA' not in src and 'data/' not in src.split('"""', 2)[2], '', 'the module never names the data repository')
+
+
+@case('I27', 'The noreg runner: a targeted pass runs beside one full pass at 4 runs at a time; two full passes stay exclusive', 'I', static=True,
+      rule='Simplification 30 Oct (the pushes waited behind other worktrees\u2019 full passes; the crash came from two passes at 10): heavy_slot — a full pass takes the full lock; a heavy targeted pass its own lock, one at a time, beside a full pass at BESIDE_JOBS = 4; a full pass waits for a targeted one above that')
+def i27(c):
+    import importlib
+    import json
+    import os
+    import time as _t
+    sys.path.insert(0, str(c.root / 'tests' / 'v3'))
+    R = importlib.import_module('run')
+    tmp = Path(tempfile.mkdtemp(prefix='sog-locks-'))
+    kept = R.FULL_LOCK, R.TARGET_LOCK
+    try:
+        R.FULL_LOCK, R.TARGET_LOCK = tmp / 'full.lock', tmp / 'targeted.lock'
+        c.eq(R.heavy_slot(False, False, 10), (True, 10), 'a light pass is free, its runs untouched', what='light')
+        # a full pass of another worktree runs (a live process: this one, under another folder name)
+        R.FULL_LOCK.write_text(json.dumps({'pid': os.getpid(), 'at': _t.time(), 'cwd': 'E:/other', 'jobs': 10}), encoding='utf-8')
+        c.eq(R.heavy_slot(True, True, 10), (False, 10), 'a second full pass is refused (without --wait)', what='two full passes')
+        ok, jobs = R.heavy_slot(False, True, 10)
+        held = json.loads(R.TARGET_LOCK.read_text(encoding='utf-8'))
+        c.ok(ok and jobs == R.BESIDE_JOBS == 4 and held['jobs'] == 4, f'{ok} {jobs} {held}', 'a heavy targeted pass runs beside it, 4 runs at a time, said in its lock')
+        R.drop_lock(R.TARGET_LOCK)
+        R.FULL_LOCK.unlink()
+        ok, jobs = R.heavy_slot(False, True, 10)
+        c.eq((ok, jobs), (True, 10), 'without a full pass, a targeted pass keeps its runs', what='alone')
+        R.drop_lock(R.TARGET_LOCK)
+        c.ok(not R.TARGET_LOCK.exists() and not R.FULL_LOCK.exists(), '', 'the locks are dropped by their own process')
+    finally:
+        R.FULL_LOCK, R.TARGET_LOCK = kept
+        shutil.rmtree(tmp, ignore_errors=True)
