@@ -94,6 +94,11 @@ def m3(c):
     c.until(f"(w) => (document.querySelector('{M} [data-changes]').textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim().startsWith(w)", want,
             what='« 2 champs changés : … » before writing')
     c.tap(f'{M} [data-do="save"]')
+    # la fin de l'écriture, pas un délai : le module notifie « F-TST2 enregistré… » une fois ctx.data.put résolu, le fichier est lu
+    # ensuite (sous la charge d'une passe complète, le fichier n'avait pas l'édition au bout des 8 s de fleet_of une fois sur dix-huit ;
+    # une écriture lente attend ici, une écriture sans l'édition échoue ensuite sur fleet_of)
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", norm(row(c, 'saved').replace('{r}', 'F-TST2')),
+            timeout=20000, what='the end of the write (« F-TST2 enregistré… »)')
     d = fleet_of(c, lambda d: any(a.get('registration') == 'F-TST2' and a.get('base') == 'Autreville' for a in (d or {}).get('aircraft') or []), 'the edit is written')
     a = next(a for a in d['aircraft'] if a['registration'] == 'F-TST2')
     c.eq((a['callsigns'], a.get('location'), a.get('number')), (['TEST02', 'TEST22'], 'Testville-Nord', '2'),
