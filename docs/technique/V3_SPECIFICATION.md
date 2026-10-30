@@ -959,3 +959,51 @@ redesigned for touch at that point.
        **Then, in this order**: the runway arrow (§ 10.24), the choose mode (§ 10.23), "Source" (§ 10.25), the
        aerodrome names and completion (§ 10.27), the flown trace (`progress.actual.trail`, frame + maps), the Data
        module's State list, the backlog of § 10.28 one line at a time (specified when its lot starts).
+
+   30. **Choosing the runway and the procedure in one gesture, in the pane** (user, 30 Oct morning, first group
+       tests: "dans le même geste, sélectionner toute la procédure : SID, la piste ; pouvoir changer de piste si la SID
+       n'est pas adaptée, et réciproquement ; avoir les infos météo (vent face ou dos, vent travers), idem à
+       l'arrivée ; tout doit apparaître en choix dans le volet ; une sélection reste sur la carte jusqu'à ce qu'on la
+       ferme ; sa version « sur la carte » n'est pas convaincante non plus"): decided by the ergonomics session,
+       replaces the one-family-per-trip rule of § 10.23 (kept: markers, flat lists, pure rules, Fuel the only writer).
+       - **One pane, one side, every family at once.** "Sur la carte" opens `#maps?choose=dep|arr&icao=LFPO` as
+         today, but the Map's sheet lists the side's three families together, in the side's order: **runway**, **SID**
+         (departure) or **STAR** (arrival), **approach** (arrival only; its transition folded under it). Each family is
+         one short group (≤ 7 rows visible, then scroll inside the group), "Aucune" first, compatible rows first then ⚠,
+         eight hues as today. The sheet scrolls as one surface: **never two scrollbars** (the page under the sheet does
+         not scroll while the sheet is open; today's double scrollbar is a bug).
+       - **The selection accumulates in the pane and stays on the Map until the pane is closed.** A tap on a row or on
+         a trace sets that family's choice in the pane (local state of the mode, not yet written); the Map draws the
+         current selection (runway threshold vector, the chosen SID / STAR / approach in its hue, the rest of the family
+         being touched dimmed, the route and the airspaces in light transparency, as the user liked). Closing the pane
+         (✕, Escape, or "Terminer") returns to Fuel in one trip with every key of the side:
+         `location.replace('#fuel?focus=arr&rwy=25&star=OKRIX5A&app=I25L&apptrans=none')`, Fuel consumes them together
+         at mount (`ctx.consume`), writes `route.procedures` once and says what changed. One writer, one write, one
+         address; a key absent = that family untouched.
+       - **Runway and procedure correct each other, never silently.** Choosing a procedure that serves one runway sets
+         that runway when none is chosen; when another runway is chosen the row keeps ⚠ and the pane shows one line
+         under the group, "OPAL2E sert la 25 — Passer en 25", one tap. Choosing a runway keeps the procedure if it
+         serves it, else marks it ⚠ and shows the same kind of line, "OKRIX5A ne sert pas la 07 — Choisir OKRIX5B"
+         (the first compatible by the group's order). Rules in `frame/lib/procedures.js` (`runwayOf(proc)`,
+         `firstServing(list, rwy)`), no module state.
+       - **Wind on every runway row.** Each runway row carries the components from the aerodrome's METAR already known
+         to the suite (the one Fuel's Départ step shows): head or tail wind and crosswind, rounded to the knot,
+         "↑ 12 kt · ← 6 kt" (arrows along and across the runway, tail wind in orange above 5 kt, crosswind in orange
+         above the aircraft sheet's limit when it has one). Pure helper `frame/lib/wind.js`
+         `components(runwayTrueHeading, windDirTrue, windKt) → { head, cross, side }`, bench without a browser; no
+         METAR → no line, nothing invented. Same at arrival. Fuel's own runway select shows the same components as the
+         option's suffix, so the choice is the same wherever it is made.
+       - **The runway on the Map: a threshold vector, small, at high zoom only.** Replaces the full-length arrow of
+         § 10.24: a short vector (24 px, screen length, never geographic) from the runway threshold along the runway's
+         true bearing, with the designator at its tail; the chosen runway bold, the others thin; drawn on the general
+         Map too (outside the choose mode, when the aerodrome has runway records), **only above a zoom threshold**;
+         the threshold is an administrator setting, `maps.runwayZoom` (default 11), in Réglages › Administration
+         (level Complet), read by the Map through the settings contract (no event). Below the threshold nothing is
+         drawn.
+       - **Out of scope here**: ILS / DME aids (deferred, § 10.24), the runway in use from the METAR (§ 10.28 backlog;
+         the components above are its first step).
+       Lots: maps (BUGS SOG: the pane with three families, accumulated selection, return keys, threshold vector and
+       zoom threshold, single scroll surface), fuel (Features SOG: `frame/lib/procedures.js` and `frame/lib/wind.js`
+       helpers with benches, consumption of several keys in one trip including `rwy`, components in its runway select,
+       cases F), settings (Réglages: `maps.runwayZoom` card line, help ×4). Files reserved: `frame/lib/procedures.js`
+       and `frame/lib/wind.js` to Features SOG, `modules/maps/**` to BUGS SOG, `frame/settings/**` to Réglages.

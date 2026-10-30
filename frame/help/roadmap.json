@@ -480,6 +480,13 @@
           "en": "Warning when the flight date is in the past",
           "de": "Warnung, wenn das Flugdatum in der Vergangenheit liegt",
           "es": "Aviso cuando la fecha del vuelo está en el pasado"
+        },
+        {
+          "state": "planned",
+          "fr": "Vent sur chaque piste proposée (face ou dos, travers, d'après le METAR connu), piste et procédure qui se corrigent l'une l'autre sans rien imposer",
+          "en": "Wind on every proposed runway (head or tail, crosswind, from the known METAR), runway and procedure correcting each other without forcing anything",
+          "de": "Wind auf jeder vorgeschlagenen Piste (Gegen- oder Rückenwind, Seitenwind, aus dem bekannten METAR), Piste und Verfahren korrigieren einander ohne Zwang",
+          "es": "Viento en cada pista propuesta (de cara o de cola, cruzado, según el METAR conocido), pista y procedimiento que se corrigen mutuamente sin imponer nada"
         }
       ]
     },
@@ -695,6 +702,13 @@
           "en": "Active VATSIM and IVAO controllers on the Map, one hue per network",
           "de": "Aktive VATSIM- und IVAO-Lotsen auf der Karte, eine Farbe je Netz",
           "es": "Controladores VATSIM e IVAO activos en el Mapa, un color por red"
+        },
+        {
+          "state": "planned",
+          "fr": "Choix de la piste et de la procédure en un geste, dans le volet : les trois familles à la fois, la sélection reste sur la carte jusqu'à la fermeture, seuil de piste en petit vecteur au zoom élevé, une seule barre de défilement",
+          "en": "Runway and procedure chosen in one gesture, in the pane: the three families at once, the selection stays on the map until the pane closes, runway threshold as a small vector at high zoom, one scrollbar",
+          "de": "Piste und Verfahren in einer Geste im Fenster wählen: die drei Familien zugleich, die Auswahl bleibt bis zum Schließen auf der Karte, Pistenschwelle als kleiner Vektor bei hohem Zoom, eine Bildlaufleiste",
+          "es": "Pista y procedimiento elegidos en un gesto, en el panel: las tres familias a la vez, la selección permanece en el mapa hasta cerrarlo, umbral de pista como pequeño vector con zoom alto, una sola barra de desplazamiento"
         }
       ]
     },
@@ -930,6 +944,13 @@
           "en": "Settings: file split by concern; Discovery as seven flat cards, Current and Full as seven folded groups; administration cards behind Administration; a card reached by its address shows at any level",
           "de": "Einstellungen: Datei je Thema aufgeteilt; Entdeckung mit sieben flachen Karten, Üblich und Vollständig mit sieben eingeklappten Gruppen; Verwaltungskarten hinter Verwaltung; eine über ihre Adresse erreichte Karte erscheint auf jeder Stufe",
           "es": "Ajustes: archivo dividido por tema; Descubrimiento con siete tarjetas planas, Habitual y Completo con siete grupos plegados; tarjetas de administración tras Administración; una tarjeta alcanzada por su dirección se muestra en cualquier nivel"
+        },
+        {
+          "state": "planned",
+          "fr": "Réglages › Administration : zoom à partir duquel la carte dessine les seuils de piste (maps.runwayZoom, 11 par défaut)",
+          "en": "Settings › Administration: zoom from which the map draws the runway thresholds (maps.runwayZoom, default 11)",
+          "de": "Einstellungen › Verwaltung: Zoomstufe, ab der die Karte die Pistenschwellen zeichnet (maps.runwayZoom, Standard 11)",
+          "es": "Ajustes › Administración: zoom a partir del cual el mapa dibuja los umbrales de pista (maps.runwayZoom, 11 por defecto)"
         }
       ]
     },
