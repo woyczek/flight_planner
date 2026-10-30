@@ -39,6 +39,7 @@ them. Nothing else, and nothing is written outside `tests/v3/` (the temporary co
 | `--journey <P1,P3>` | the guard cases and the end-to-end case (`J`) of those journeys (section "Journeys" below); added to `--changed` / `--for` when both are given |
 | `--tag <tag>` | the cases carrying one of these tags (`overlay`, `sheet`, `maps`, `atmosphere`, `fuel`, `fullscreen`, `design`...) |
 | `--designs a,b`, `--widths 390,1280`, `--langs fr,en` | narrow the combinations each case runs in |
+| `--wait` | a full pass waits for the heavy pass already running on this computer instead of refusing to start |
 | `--jobs N` | worker processes (default: the physical cores less two, `os.cpu_count() // 2 - 2`, 10 on the 12-core workstation; `1` runs in this process, easiest to debug) |
 | `--failed [IDS]` | replay the failed cases of the last `report.json`, in the combinations that failed (section "Replaying a failure") |
 | `--failed-scope [BASE]` | the full scope of those failures (their areas and journeys, full grid) plus the cases chosen by the files changed since BASE |
@@ -76,6 +77,12 @@ a condition.
 **When to run what** (the coordinator's policy, 30 Oct 2026): before a push, the targeted pass
 `python tests/v3/run.py --touched`; the full pass after the push, in the background on the pushed head, and a fix at once
 if it is red.
+
+**One heavy pass at a time on this computer** (two at 10 workers each crashed a browser driver): a full pass, or any pass
+of more than 30 cases (an area with `--grep`, a large `--touched`), takes a lock in the computer's temp folder
+(`sog-noreg-full.lock`: pid, time, folder), shared by every worktree. While another heavy pass runs, a full pass refuses to
+start and says who runs (exit 3), or waits with `--wait`; a targeted one waits for its turn. A lock older than two hours,
+or whose process is gone, is ignored. A pass of 30 cases or fewer stays free.
 
 ### Which cases run for which change (`--changed`, `--for`)
 

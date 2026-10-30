@@ -26,6 +26,7 @@ import os
 import socket
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from pathlib import Path
@@ -42,6 +43,92 @@ ROOT = lib.ROOT
 # 12-core workstation (DECISIONS, 30 Oct 2026)
 DEFAULT_JOBS = max(1, (os.cpu_count() or 4) // 2 - 2)
 SLOWEST = 20  # report.md: the slowest cases, to replace their fixed waits by waits on a condition
+# one heavy pass at a time on this computer (two at 10 workers each crashed a browser driver, 30 Oct 2026): a full pass, or
+# any pass of more than HEAVY cases (an area with --grep, a large --touched); the lock lives in the computer's temp folder,
+# not in the repository, so that the sessions' worktrees see each other's; a lock older than two hours or whose process is
+# gone is ignored
+HEAVY = 30
+FULL_LOCK = Path(tempfile.gettempdir()) / 'sog-noreg-full.lock'
+LOCK_STALE = 2 * 3600
+
+
+def pid_alive(pid):
+    """True while the process runs.  On Windows os.kill(pid, 0) would end it: the process is asked through the API."""
+    if not isinstance(pid, int) or pid <= 0:
+        return False
+    if os.name == 'nt':
+        import ctypes
+        k = ctypes.windll.kernel32
+        h = k.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+        if not h:
+            return False
+        code = ctypes.c_ulong()
+        ok = k.GetExitCodeProcess(h, ctypes.byref(code))
+        k.CloseHandle(h)
+        return bool(ok) and code.value == 259  # STILL_ACTIVE
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def lock_holder():
+    """The running full pass that holds the lock ({ pid, at, cwd }), or None (no lock, stale, or its process gone)."""
+    try:
+        h = json.loads(FULL_LOCK.read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(h, dict) or time.time() - float(h.get('at') or 0) > LOCK_STALE or not pid_alive(h.get('pid')):
+        return None
+    return h
+
+
+def take_lock(wait=False):
+    """Takes the full-pass lock; True when taken.  Held by another running pass: False at once, or (wait) once it is free."""
+    said = False
+    while True:
+        try:
+            fd = os.open(FULL_LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            h = lock_holder()
+            if h is None:  # stale, or its process gone: removed, then taken again
+                try:
+                    FULL_LOCK.unlink()
+                except OSError:
+                    pass
+                continue
+            if not wait:
+                print(f"another heavy pass is running (pid {h.get('pid')}, since {time.strftime('%H:%M', time.localtime(h.get('at', 0)))}, "
+                      f"{h.get('cwd', '?')}): --wait to start after it")
+                return False
+            if not said:
+                print(f"waiting for the heavy pass of pid {h.get('pid')} ({h.get('cwd', '?')}) to end…")
+                said = True
+            time.sleep(10)
+            continue
+        with os.fdopen(fd, 'w', encoding='utf-8') as f:
+            json.dump({'pid': os.getpid(), 'at': time.time(), 'cwd': str(ROOT)}, f)
+        atexit.register(drop_lock)
+        return True
+
+
+def drop_lock():
+    """Removes the lock if it is this process's."""
+    try:
+        if json.loads(FULL_LOCK.read_text(encoding='utf-8')).get('pid') == os.getpid():
+            FULL_LOCK.unlink()
+    except (OSError, ValueError, AttributeError):
+        pass
+
+
+def full_pass(args):
+    """A full pass: no selector and no filter (the targeted passes, --touched first, stay free)."""
+    # --changed, --touched, --failed, --failed-scope without a value are '' (given), not None (absent)
+    return (all(getattr(args, k, None) is None for k in ('changed', 'touched', 'failed', 'failed_scope'))
+            and not any(getattr(args, k, None) for k in ('paths', 'grep', 'designs', 'widths', 'langs', 'tag', 'journey')))
 
 
 # ------------------------------------------------------------------------------------------------------ server
@@ -394,6 +481,7 @@ def main():
     ap.add_argument('--tag', help='run the cases carrying one of these tags')
     ap.add_argument('--journey', help='the guard cases and the end-to-end case of these journeys (P1..P6, commas), added to --changed / --for if given')
     ap.add_argument('--keep-server', action='store_true', help='leave the static server running and print its address')
+    ap.add_argument('--wait', action='store_true', help='a full pass waits for the heavy pass already running on this computer instead of refusing to start')
     ap.add_argument('--jobs', type=int, default=DEFAULT_JOBS, help=f'worker processes (default {DEFAULT_JOBS}: the physical cores less two; 1 runs in this process)')
     ap.add_argument('--list', action='store_true', help='show the areas, the journeys and the cases chosen, and exit (nothing runs)')
     args = ap.parse_args()
@@ -459,6 +547,11 @@ def main():
     for l in journey_lines(touched):                # PLAN.md section O: before the first case
         print(l)
 
+    # a heavy pass takes the lock: a full one refuses when another runs (unless --wait), a targeted one (--touched before a
+    # push) waits for its turn
+    full = full_pass(args)
+    if (full or len(cases) > HEAVY) and not take_lock(args.wait or not full):
+        return 3
     t0 = time.time()
     try:  # seconds per run of each case in the last report: the slowest jobs are given out first
         PREV_SECS.update({c['id']: c.get('secs', 0) / max(1, c.get('runs', 1)) for c in json.loads(REPORT.read_text(encoding='utf-8'))['cases']})

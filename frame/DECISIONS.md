@@ -1967,3 +1967,15 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   shared with other passes, a real build and the job's own purge of old leftovers. It now records the profile the job makes
   (`tempfile.mkdtemp` watched for the `sog-base-` prefix during the job) and checks that this one, and only one, is gone.
   Replayed 4 times under the load of area D on 10 workers: green.
+- **30 Oct 2026 — One heavy noreg pass at a time on the computer** (a browser driver crashed, « Connection closed », when two
+  full passes at 10 workers ran together; a load test of mine also ended on a Playwright `MemoryError`, and hung until
+  stopped):
+  - A full pass (no selector, no filter), or any pass of more than 30 cases (the coordinator: an area with `--grep` is
+    heavy), takes a lock, `sog-noreg-full.lock`, in the computer's temp folder rather than in
+    `tests/v3/` as first asked: each session works in its own worktree, and a lock inside the repository would not be
+    seen by the others. It holds the pid, the time and the folder; a second full pass refuses to start and names it (exit
+    3), or waits with `--wait`. A lock older than two hours, or whose process is gone, is ignored.
+  - Whether the pid lives is asked of Windows (`OpenProcess`, `GetExitCodeProcess`): there `os.kill(pid, 0)` would end
+    the process instead of probing it.
+  - A heavy targeted pass (a large `--touched` before a push) waits for its turn rather than refusing: a push is not
+    blocked, only delayed. A pass of 30 cases or fewer stays free.

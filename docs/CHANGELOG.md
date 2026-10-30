@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Tests: one heavy noreg pass at a time** (`tests/v3/run.py`; tests README, frame DECISIONS): a full pass or any pass of
+  more than 30 cases takes a lock in the computer's temp folder, shared by every worktree; a second full pass refuses with
+  the holder named, or waits with `--wait`, a heavy targeted pass waits for its turn; a stale lock is ignored.
 - **Tests: K49 checks its own profile only** (`tests/v3/cases/aerodb.py`; frame DECISIONS): the build job's temporary
   browser profile is followed by name, no longer compared with everything in the shared temp folder.
 - **Fuel: the route field completes at the cursor** (`modules/fuel/routecomplete.js`; help ×4; F75) — SID / STAR names, nearby
