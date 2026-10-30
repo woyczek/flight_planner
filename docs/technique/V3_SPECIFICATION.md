@@ -1201,6 +1201,16 @@ redesigned for touch at that point.
        the completion at the cursor `modules/fuel/routecomplete.js` (40f834eb7); the Map's "vers votre route" ranking
        (1ad1b897b). **§ 10.31 is delivered in full**; § 10.30's pane is complete up to its fourth reading (af261d3e3,
        43df712ef, 1f23b7d73, 8ba329f66, b6b2043e6, 1ad1b897b).
+       **Pan: a light drawing during the gesture (user, 30 Oct: "le freeze de refresh est efficace pour la fluidité,
+       mais gênant pour se déplacer : un intermédiaire ?"; delivered c3eed56db)**: during a gesture, at most one light
+       drawing every 120 ms (airspaces as strokes, airways, route, aerodromes as squares; no label, no collision pass,
+       no runway vector, no cartouche), from Path2D paths built at zoom 10 relative to a reference point and placed
+       by one transformation — valid through a pinch too, rebuilt per list set of the last full drawing, never
+       invalidated by the zoom (the maps session's design, retained over the per-zoom cache first asked); a light
+       drawing over 8 ms hands the rest of the gesture to the copied image; the full drawing at rest; none on a
+       mission map nor in the choose mode. The corridor is an explicit box, "Autour du vol seulement (plus rapide)",
+       first in Couches, remembered on the device, said in the sheet's title and the "i" chip; unticked, the whole
+       view is read under the complexity filter, a 10 NM corridor imposed above 600 NM of width (4f9dca4c3).
        **Noreg discipline (30 Oct, after a driver crash)**: one full pass at a time on the workstation; `--touched`
        passes may run beside it; the runner refuses a second full pass while one runs (lock, V3 Frame).
        **Fifth reading: the walkthrough on the real base (maps session, 30 Oct, LFBO → LFPO at 1280 and 390 px, read
