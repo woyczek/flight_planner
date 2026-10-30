@@ -961,6 +961,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 109 | Data module: only the sources whose zip can be checked are taken (23e56bc9f): the note of 104 closed | acceptable, one optional hardening (done in 111) |
 | 110 | Refactor R-M2 + R-M5 (c): one collision pass over a closed list of ranks (9f703190c) | acceptable |
 | 111 | `base/pickup` with `zips` takes only the sources shown (8965e8c47): the hardening of 109 done | acceptable |
+| 112 | Refactor R-S3: one function saves the launcher's secrets (77264918e); `not-shown` in the Data module | acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1980,6 +1981,15 @@ navigation added; the help texts come from the bundle.
 refused (`not-shown`) before any file is looked at, and an empty `zips` now means “nothing shown” instead of “no key”;
 without the key the behaviour is unchanged. The take therefore never picks a file the plan has not shown, whatever the
 module sends.
+
+**112. Refactor R-S3, the secrets of the launcher's cards (77264918e) — acceptable, one note.** `saveSecret` replaces
+three copied blocks (EAD Basic, the IVAO application, the IVAO key): a missing field sends nothing; erasing asks first; the
+fields are emptied before the call (now for the IVAO key too); the request is the former one, erasing sending the same keys
+empty by the same route; the values live only in the function's argument, never in the module's state or a closure that
+outlives the call; a failure shows the launcher's text and asks for the input again; the state line uses only `set` and
+`at`. The Data module shows `not-shown` like `changed`, with “Run the plan again”. Note: the IVAO key's field is emptied
+through its enclosing `<label>`; if the field ever leaves its label, nothing is emptied and nothing says so; empty the field
+itself when no label is found, or pass the fields to empty instead of a box.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
