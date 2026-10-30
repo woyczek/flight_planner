@@ -924,6 +924,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 72 | Map: « around the flight only » layer switch (4f9dca4c3), test D31 (422ed8b3f) | acceptable |
 | 73 | Refactors R-F2b (4ae61e552) and R-F3 (fd959f911) | acceptable, no change of behaviour |
 | 74 | Frame: the application switcher and per-application identity (1d11ae81c) | acceptable |
+| 75 | Map: light drawing during a gesture (c3eed56db) | acceptable |
+| 76 | Refactor R-C2: one pairing for both channels (4e83fc50a) | acceptable, no guard lost; two notes |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1690,6 +1692,23 @@ Maintenance greyed below the Complete level (a display guard; the real ones stay
 to an entry of `APPS`, the address made of the current path, the query updated through `URLSearchParams` and the
 application's first module. The favicon reads the suite's own SVG and only sets the path's `fill` to the token's computed
 colour, as an encoded `data:` URL (an SVG favicon runs no script).
+
+**75. Map, light drawing during a gesture (c3eed56db) — acceptable.** Canvas only (paths, transforms): no HTML,
+network, write or storage.
+
+**76. Refactor R-C2, one pairing for both channels (4e83fc50a) — acceptable; no guard lost; two notes.**
+`tools/device_access.py` replaces the two former modules. The relay's gate keeps every guard (fail closed on proxy headers
+outside the relay port, 503 without a public host, https seen by the proxy, pairing on the `relay` channel, GET / HEAD /
+POST only, `relay=True` routes only), and `POST /__relay/pair` still requires the same origin; the local network's gate
+keeps the private address, the exact host, pairing on the `lan` channel and `lan` routes only, and `POST /__lan/pair` the
+same origin. A token opens only its row's channel; the migration puts each former row under its own channel, so a
+local-network token never opens the relay; a relay row always has a trigram, and the console code (no trigram) is valid
+for the local network only. « Name » (`POST /__setup/devices/name`) is a workstation route, takes a trigram matching the
+rule and applies only to a row without one: it creates or widens no access. Codes: 8 random digits, `compare_digest`,
+single use, 10 minutes; a new code reopens closed pairing but no longer lifts an address's wait; only SHA-256 fingerprints
+are kept, in a hidden file. Notes: the shared counter (30 wrong codes an hour) now closes pairing on **both** channels, so
+a stranger on the Internet can close local-network pairing too (a new code reopens it; separate counters per channel if
+it bothers); expired rows are refused but never purged from the list.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
