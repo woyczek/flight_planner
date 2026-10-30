@@ -2,121 +2,165 @@
 
 What the module **Données** needs from the frame, from aerodb and from Settings. The module never reaches the network, the
 launcher, the browser storage or the data repository directly (`frame/INTEGRATION.md` § 1, § 7): everything below is a
-**request** to the agent who owns the piece, who writes the contract into its own guide in the same commit. Nothing here is
-built yet; where a shape is proposed, it is a proposal from the inventory (`docs/technique/V3_DONNEES_REGENERATION.md`
-§ 2.7, § 2.8), not an invented contract: the owner decides it.
+request to the agent who owns the piece, who writes the contract into its own guide. The frame's part is **delivered**
+(lot D0, `frame/INTEGRATION.md` § 15, 28 Oct 2026) and aerodb's is written (§ 2); this file says what the module uses of
+them and what it still needs (marked « to come »).
 
-## 1. From the frame
+## 1. From the frame (lot D0, delivered: `frame/INTEGRATION.md` § 15)
 
-### 1.1 `ctx.launcher` — the frame's service for the workstation's launcher
+### 1.1 `ctx.launcher` — declared in `meta`
 
-Already planned by the frame (`frame/INTEGRATION.md` § 7, debt of 28 Oct 2026: Settings' `setup()` and
-`frame/aerodb/lnmperf.js` move onto it). The module needs, whatever the final names:
+```js
+launcher: { routes: ['regen/'], read: ['sia/', 'proc/', 'local/', 'AircraftDB/'] }
+```
 
-| Need | Proposed shape (V3_DONNEES_REGENERATION § 2.8) |
-|---|---|
-| know whether a launcher serves the page, and which | `available()` → bool; `info()` → `{ host, data, dataGit, lan }` or null (the frame's existing detection) |
-| one JSON call to a route, never an exception | `call(route, body)` → the route's JSON, or `{ ok: false, offline \| status \| message }` |
-| a long job with progress and cancellation | `job(route, body, { onProgress, signal })`: start, poll about once a second, cancel on `signal`, resolve with the result; polling stops at `unmount` |
-| read a raw source file of `data/` as a stream (for the JavaScript builders, § 2.2) | `read(dataPath, { signal, onBytes })` → a `ReadableStream`, same origin |
+- **null** without a launcher, on a paired device of the local network and without the declaration: the module tests it
+  before drawing a launcher button (the grey reason « Il faut le lanceur du poste »).
+- Calls (nothing throws): `info()` → `{ host, data, dataGit, lan }`; `call(route, body?)`; `job(route, body, { onProgress,
+  signal })`; `resume(route, { onProgress, signal })` (a reloaded page finds the running job again; at unmount the frame
+  stops following, the job goes on); `read(path, { signal, onBytes })` → `{ ok, stream, size }` for the Worker builders.
+- Anything not declared is refused at once (`{ ok: false, status: 403, refused: true, route }`); a 404 is
+  `message: 'unknown route'`, which the module words « le lanceur de ce poste ne connaît pas encore cette opération :
+  relancez-le à jour ».
+- The job protocol is the frame's (start, poll about once a second, cancel, resume); the module only shows `step`, `done`
+  / `total` / `unit` and `log`.
 
-- Only the workstation's own page gets it (null on a paired device of the local network, on the site and in an app), like
-  `ctx.lan()` in Settings: every `/__setup/regen/*` route is refused from the local network (`lan_access.ROUTES`).
-- A refusal names the route, so that the module can show « le lanceur de ce poste ne connaît pas encore cette
-  opération : relancez-le à jour ».
+### 1.2 The launcher's routes (`tools/launch.py`, `tools/regen_jobs.py`)
 
-### 1.2 The launcher's routes (`tools/launch.py`, the frame's)
+- **Delivered (D0)**: `GET /__setup/regen/state` (local outputs and cycle folders, `local/`, source caches, commits not
+  pushed, `pypdf`, free space, EAD credentials present yes / no); `POST /__setup/regen/job { set, verb, args }` with its poll
+  and cancel, one job at a time, `set` / `verb` from `regen_jobs.REGISTRY` (400 unknown, 409 busy, 410 no such job); the
+  verbs `state/scan` and `proc/ead-fetch` (args `{ icao }`: the EAD line, installed under `proc/manual/` through aerodb's
+  `fetchProcedures`).
+- **To come, with the builders (D2 onwards)**, as verbs of `regen/job` or routes named by the frame: per data set
+  `download` (providers of `aero-fetch`, `eaip`, `cifp`, the pick-ups of SIA, NATS and CIFP files from Downloads),
+  `build` (Python pieces; the Worker pieces' outputs written through a `put` that accepts only the output roots, atomic,
+  unchanged content not rewritten), `publish` (`regen/publish`: plan, then `git add` of the explicit output paths, one
+  commit under the trigram, `data_sync`), `purge` (plan, then removal inside the output and cache roots, **never
+  `proc/manual/`**, never the cycle in force), and `manual/remove { icao }` (the owner's « Retirer », planned and asked like
+  a publication).
+- Security as the frame's § 15.1: the workstation's routes only, nothing from the page is a path, an address or a command.
 
-**Existing, reused**: `GET /__setup/status`, `GET /__setup/sia-zip`, `GET /__setup/downloads?glob=`, `POST /__setup/aero-fetch`
-(behind the job runner), `GET|POST /__setup/aircraft-db`, `POST /__setup/aircraft-publish`, `POST /__setup/vfr-import`,
-`GET /__setup/sync-status`, `POST /__setup/sync` (checked in `tools/launch.py` on 28 Oct 2026).
+### 1.3 Publishing without a launcher: `ctx.publish` — declared in `meta`
 
-**To build** (V3_DONNEES_REGENERATION § 2.7, renamed to the module's verbs; the frame names them):
+```js
+publish: ['sia/base/', 'proc/', 'sia/vfr/', 'AircraftDB/', 'sia/mora.csv']
+```
 
-| Route | Does |
-|---|---|
-| `GET /__setup/regen/state` | for every data set: the cache (files, dates, sizes by cycle), the local outputs (counts, `parserVersion`, newest `updated_at`, inputs fingerprint), commits not pushed scoped to the output paths; `pypdf` importable; free disk space; EAD credentials present (yes / no, never the values) |
-| `POST /__setup/regen/job { set, verb, args }` → `{ job }`, `GET …/job?id=`, `POST …/job/cancel` | one job at a time in a thread, `{ state, step, done, total, unit, log[-200:], result }`; `set` and `verb` from a fixed list, `args` validated (cycle, ICAO code, zone ids); the builders run as modules or as subprocesses with `sys.executable` and a fixed script list, isolated for anything that reads a downloaded file; a reloaded page finds the running job again |
-| `POST /__setup/regen/put` | writes the outputs of the JavaScript builders (`{ path, text }`), only under `sia/base/`, `sia/vfr/`, `proc/`, `sia/mora.csv`, `.json` / `.csv`, atomic replace, unchanged content not rewritten; no commit |
-| `POST /__setup/regen/publish { sets, author, apply }` | plan (new, changed, removed, bytes), then `git add` of the explicit output paths, one commit under the trigram, `data_sync`; generalises `aircraft-publish` and `vfr-import` |
-| `POST /__setup/regen/purge { sets, apply }` | plan, then removal, inside the output and cache roots only; never the cycle in force; never a published zone outside this workstation's coverage |
-| providers `eaip`, `cifp` | downloads with the address and the file name derived from the cycle |
-| `POST /__setup/regen/job { set: 'ead', args: { icao } }` | the EAD line: one aerodrome, credentials from the launcher's secrets store, AD 2 pages into `data/local/` (never committed), coding tables read with the known layouts, `proc/<cycle>/<ICAO>.json` status `check` |
-| local-only outputs | a build marked local (X-Plane / Navigraph) writes under `data/local/`, never committed, read by the workstation's devices through the launcher |
-
-Security, as the inventory's § 2.13: the workstation's routes only, no path or URL from the page, downloads from the
-declared hosts only, the GitHub token never reaches the launcher (the push is git with the workstation's credentials).
-
-### 1.3 Publishing without a launcher
-
-Without a launcher the module builds from files the user picks and publishes through the **device's GitHub access**. A
-module has no GitHub transport today (only service screens get `github()`, `frame/INTEGRATION.md` § 13). Request: a
-publication service for this module, e.g. `meta.github: true` giving `ctx.github()` (`head` / `tree` / `commit`, the token
-never leaves the transport), or a narrower `ctx.publish({ files, removed, message })` that commits generated files outside
-the data layer's batch (whose limits — 5,000 changes, text, a copy in the device's cache — make it unfit for 20–60 MB of
-outputs). The frame chooses.
+- `ctx.publish(groups, { onProgress, signal, from })`: **one commit per group, in order** — the module makes one group per
+  zone of the base and one per cycle of `proc/`, never one per file (GitHub counts the calls).
+- A **conflict** (someone published meanwhile) is returned, never overwritten: the module says « Quelqu'un a publié
+  pendant l'envoi : relancez » and calls again with `from: at` (the groups done are not redone).
+- Refusals before any call: `trigram` → « Votre trigramme n'est pas réglé », `access` → « Accès au dépôt non réglé »,
+  `tooBig` (a blob over 100 MB) → the data set's row in error, nothing sent for that group.
+- With a launcher the module publishes through the launcher's route (§ 1.2), never `ctx.publish`.
+- **« Publier » of the base is the frame's gesture sync** (29 Oct 2026, V3 Frame): `ctx.data.sync({ gesture: true })`, a
+  pass of reason `manual` under the same lock as the header's Synchroniser button, the author added by the frame; only
+  `gesture === true` counts (any other call keeps the reason `module`, which leaves `sia/base/` on the workstation). The
+  function carries `ctx.data.sync.gesture === true` when the frame supports it; without it « Publier » stays grey, never a
+  pass without the gesture. The result carries `exchange: { committed, held, received, pushed, conflicts (number), refused
+  (number), settled, message }` (data_sync's report: no path, no git output; absent for a transport without exchange).
+  The gesture is sent **only on the user's click** (after the one question); during a build of the base the launcher keeps
+  `sia/base/` even so (`sync_gesture`), and `exchange.held` says how many files stayed. The count before the question comes
+  from `GET sync-status` (`changes`, `ahead`, `merging`), declared in `meta.launcher.routes`: a workstation route, never
+  reached from a paired device (there `ctx.launcher` is null and « Publier » is grey). The module never POSTs
+  `/__setup/sync` itself. Télécharger and Purger commit nothing (raw sources are never published; ergonomics session,
+  29 Oct); whether the raw sources still tracked in the data repository leave git's tracking is the user's question.
 
 ### 1.4 The end-of-cycle line of the Status block
 
-A phone never mounts this module (level 3, and the phone has no launcher), so the warning of SPEC § 6.3 cannot come from
-it. Agreed by the ergonomics session (28 Oct), asked by it to the frame: the frame computes it from `aerodb.publication()`
-(§ 2.1: published cycle of the base and of `proc/` against the AIRAC cycle in force) and shows it in the Status block on
-every device, the phone included; amber on a phone (nothing to press); on a workstation with a
-launcher and at the Full level, the line leads to `#data`. The module's own status lines (`cache/data/status.json`,
-`frame/INTEGRATION.md` § 10.0) carry only what this workstation is doing (a job running, « n publications à envoyer »).
+Delivered by the frame (§ 15.3): computed on every device from `aerodb.publication()`, amber, « Base aéronautique : cycle
+2610 terminé, en attente de publication » or « … : le cycle 2611 se termine le 25/11, rien de publié pour 2612 »; it leads
+to `#data` only on a workstation with a launcher at the Full level once the module exists; without `publication()`, no
+line. The module's own lines (a job running, « n publications à envoyer ») go through `cache/data/status.json`
+(`frame/INTEGRATION.md` § 10.0).
 
 ### 1.5 The module's place
 
-- `APP.modules` / the Pilot application's rail: `data`, verb « Données », level 3. At the Full level the Pilot rail has five
-  verbs today (Préparer, Carte, CR, Vols, Météo; `frame/app.js`, 28 Oct 2026): « Données » is the sixth.
-- **Workers**: the base's builders run in a Worker created from the module's (or aerodb's) files; the page policy must allow
-  it (`worker-src 'self'`, to check in `tools/csp_policy.py`). No outside host is added: the module calls none.
+- **Not a place of Pilot's rail** (user, 29 Oct: the data module is the « Maintenance » application — Données,
+  administration settings, help — opened by `/frame/?app=maintenance`, without a gate: read-only wherever there is no
+  launcher). Since V3 Frame's `APPS` (e3870b354) the module is a place of the Maintenance application's rail (Données ·
+  Administration · Aide · the V2 link), no longer an entry of Pilot's `APP.modules`; `meta.level: 3`. The line
+  « Maintenance » of Pilot's Settings › Administration (`frame/settings/admin_links.js`, entry `data`, Full level, with its
+  link to copy) opens `frame/?app=maintenance#data` in the same tab, read-only on a phone (SPEC § 6.3).
+- **Workers**: allowed by the page policy (`worker-src 'self' blob:`); the module's Worker script is listed in `meta.files`.
+  No outside host: the module calls none.
 
 ## 2. From aerodb
 
-### 2.1 The published state, without loading the data
+Written with aerodb (its review of 28 Oct 2026, validated by the ergonomics session); the contract is aerodb's own,
+`frame/aerodb/SPEC.md` § 4, § 5, § 5 quinquies to septies and `frame/aerodb/INTEGRATION.md` (« The Données module »). What the
+module relies on:
 
-The module needs, for every data set, what is published, without reading the base itself: a call such as
-`aerodb.publication()` → `{ base: { zone: { cycles: [..], parserVersion, at, by } }, proc: { cycles: [..], count },
-vfr: { at, count }, aircraft: { at, types }, weather: { run }, nat: { at } }` (the manifest `sia/base/index.json`, the zones'
-`meta.json`, `proc/<cycle>/index.json`, `sia/vfr/index.json`, the `AircraftDB/` listing; the site's `weather/world/index.json`
-and the NAT tracks once they are read on the site). Plus the zone table with names in four languages and the sources of
-each zone (today `offline.zones()` gives the published ones; the zones nobody publishes yet are needed for « Ajouter un
-pays »). The cycle helpers and the sources' links are those of `frame/aerodb/sources_data.js` (`cycleOf`, `cycleDate`,
-`eaipBase`, `cifpName`, `urlOf`).
+### 2.1 Four calls, and nothing else (lot D1)
 
-### 2.2 The builders (`frame/aerodb/build/`, lot D5 of the roadmap) — for aerodb's review
+| Call | What the module uses |
+|---|---|
+| `aerodb.publication()` | what is published, **without loading the data**: `{ base: { zone: { cycles: { date: { parserVersion, at, by, format } }, inForce } }, proc: { cycles: { date: { aerodromes, byStatus } }, inForce }, vfr: { cycle, at, count } \| null, aircraft: { at, types, files } \| null }`. A zone still in the whole format is listed with `format: 'whole'`, never read (the module shows it « format ancien » and offers Construire). `by` (the trigram of the build) is null and `at` is `meta.json`'s `updated_at` until the builders write `builtAt` / `builtBy` (D5). `vfr` and `aircraft` are null when nothing is published (the row shows « absent du dépôt »). The world weather is the frame's (`ctx.weather`), the NAT tracks join after D9 |
+| `aerodb.coverageByState()` | the States of the procedures (V3 § 10.22), for the coverage's list: `{ [prefix]: { level: 'green' \| 'orange' \| 'red', reason, label: [fr, en, de, es], names?: [fr, en, de, es], held?: n } }`; `names` and `held` (green when `held > 0`) added by aerodb on 29 Oct, the screen falls back on the prefix and on orange / red without them |
+| `aerodb.zones()` | every zone the suite knows, published or not: `{ id, names: [fr, en, de, es], frames, published }`, for the coverage and « Ajouter un pays » |
+| `aerodb.sources()` | the **catalogue** (`frame/aerodb/catalogue.js`, kept by aerodb, loaded with `airac.js` at the first call): `{ SOURCES, ORDER, GROUPS, EAD_STATES, byId, urlOf, eaipBase, cifpName, cifpUrl, siaPage, siaFileInfo, cifpFileInfo, airac }` — per source its group (`base` \| `proc` \| `aircraft` \| `weather`), the zones it feeds, how it is fetched and built, whether it is published, the link of a cycle, licence and status; `EAD_STATES`, the EAD outcome per State (greys « Mise en page inconnue pour cet État »); the file-name readers; `airac` (`AeroAirac`) |
 
-The base's compilation leaves `shared/sia_base.js` for **pure builders** that run in a Worker, the same code with or
-without a launcher. Proposed contract, for aerodb to correct:
+The module never reads `sia/base/`, `proc/` or `AircraftDB/`, never loads aerodb's files: these four calls are its only
+way in. « Parseur ancien » compares with `AeroCatalogue.PARSER_VERSION` (from `sources()`; absent: no such state).
 
-- `build({ zone, cycle, sources, inputs, publish }) → { files: [{ path, text }], counts, warnings, parserVersion, fingerprint }`:
-  `inputs` are streams (`AeroZipStream.stream`, `AeroXmlStream.pump` — the bricks kept from the laboratory, K8 / K9),
-  read through `ctx.launcher.read` on a workstation, from a picked `File` without one.
-- `publish: true` drops every X-Plane / Navigraph input (SPEC invariant 1); `false` builds the local fallback.
-- One zone at a time; the French outlines (priority rule) are an input of every other zone; a zone built alone equals the
-  same zone in a whole build (G9 of the inventory: to prove by a test).
-- `parserVersion` and the `COMPAT` range stay aerodb's; the module only compares numbers.
-- Golden test: the same fixtures through `SiaBase.build` (V2, the reference until it leaves) and through the new builders
-  give byte-identical JSON.
-- **SPEC § 6 invariant 1 of aerodb** ("aerodb never builds the base") must be amended by aerodb: the builders build, in a
-  Worker, on the owner's command from this module; the reader still never writes.
+### 2.2 Cycles
 
-### 2.3 The catalogue of the sources, and the end of the Sources screen
+Stored and exchanged as effective dates `YYYY-MM-DD` in every answer; shown as `YYNN` by the module through
+`frame/aerodb/airac.js` (`cycleOf(date)` → `{ id, date, next, prev }`, `cycleDate(id)`, `next`, `prev`; anchor AIRAC 2401 =
+2024-01-25). The Python tools are aligned on it by a K case. Three cycles kept for the base and the cycle-built `proc/`.
 
-- **The Sources screen is replaced by the module at lot D1** (ergonomics session, 28 Oct 2026): `sources_data.js`
-  (`window.AeroSources`: name, link by cycle, licence, status, the cycle helpers) becomes the module's catalogue — kept by
-  aerodb or moved into `modules/data/`, to settle with aerodb at D1. In the same lot the screen `#sources` (`sources.js`,
-  `sources.css`), its entry in `APP.screens` (frame) and the « Sources des données » button of the Administration card
-  (Settings, `admin_links.js`) go. Until then both coexist.
-- aerodb's reading API is otherwise unchanged; the module never reads `sia/base/` itself.
+### 2.3 Building (lot D5): two stages, nothing written by the builders
+
+- **A piece per source** (`runtime` `worker`: SIA XML through the stream readers, openAIP / FAA ADDS GeoJSON, AIXM 5.1 of
+  ENAIRE and NATS; `python` on the launcher: UK Mil AIP, NAV CANADA, DIRCAM, VAC points, eAIP, CIFP, EAD, OCR) →
+  `{ source, zone, cycle, kinds, counts, warnings, parserVersion, inputs (SHA-256) }`. A builder never fetches: MORA's tiles
+  and peaks come from a download step of the launcher first.
+- **An assembler per zone** (a Worker) merges the pieces with the priority rule into the kind files, `aeroindex.json`,
+  `meta.json` (`builtAt`, `builtBy`, `parserVersion`, `inputs`, `sources`) and the manifest entry (several cycles). France's
+  outlines are an explicit piece given to every other zone; a zone built alone equals the same zone in a whole build.
+- Both return files `{ path, text }`; the launcher (`regen/put`, then its commit) or the frame's publication service
+  writes. `publish: true` drops X-Plane / Navigraph inputs.
+- **Where it runs** (SPEC § 5.4): on the launcher, a job `regen/job { set: 'base', verb: 'build', args: { zones } }`; the
+  launcher starts one process per zone, at most `max(1, cores − 1)` at once, each running its zone's pieces and its
+  assembler; the job state carries `zones: { <zone>: { state: 'waiting|building|built|failed', done, total, error } }`; a
+  built zone is written and committed alone at once (one commit per zone), the others go on. The Worker assembler serves
+  only the no-launcher path (one zone at a time). A zone's process is the workstation's browser without a window (Edge,
+  else Chrome) running aerodb's JavaScript builders, one instance per zone, orchestrated by `tools/regen/base.py`; the
+  build in the page is the fallback when no such browser is found (settled 29 Oct: no Python port — two implementations to
+  keep —, no engine downloaded; the detail in `frame/aerodb/`).
+- Before D5, an aerodb lot « complete readers » (the stream readers keep every field and the arcs), proved by a golden test
+  against V2's `SiaBase` on the fixtures.
+- aerodb's invariant 1 is amended: the reader never writes the base; the builders produce on the owner's order from this
+  module and do not publish.
+
+### 2.4 Procedures read by hand, EAD or OCR
+
+- EAD Basic reads one aerodrome per gesture (*Charts* documents `AD_2_<ICAO>_…`, the first page of results, 15 rows); the
+  result is installed by `tools/proc_manual.py` (sources `ead-basic`, `manual`; `how`: `ocr` or `hand`), which refuses a
+  file of another source without `--replace`: the module then asks « remplacer ou fusionner ».
+- **Never purged, never lost at a change of cycle** (user, 28 Oct 2026; aerodb 51a028f48, its SPEC § 5 quinquies): they
+  live in `proc/manual/<ICAO>.json` and `proc/manual/index.json`, **outside the cycle folders**, each procedure with its cycle of origin (`source.cycle`) and its source (`ead-basic` | `manual`, `how`: `ocr` | `hand`); the reader merges `proc/<cycle in force>/`, `proc/manual/`
+  and `proc-seen/` and serves an outdated procedure as it is with `outdated: true` (at equal status the one not outdated
+  wins); the module shows them « Périmé » with « Relire »; the Purger never has them in its scope; only the owner's explicit
+  « Retirer » removes one (this replaces the rule « previous kept cycle only, `stale: true` » of aerodb's first contract).
+- The launcher's routes (§ 1.2) need the same: `regen/purge` never lists `proc/manual/`; the removal of one aerodrome is
+  its own call (`{ set: 'manual', verb: 'remove', args: { icao } }`), planned and asked like a publication.
+- Grey reasons from aerodb's side: « pypdf manque », « OCR manque » (drawn pages: UK STARs, Belgium, Georgia), « Mise en
+  page inconnue pour cet État ».
+
+### 2.5 The Sources screen
+
+Replaced by the module at its D1: the catalogue is already `catalogue.js` (was `sources_data.js`, served by `sources()`,
+the cycle helpers in `airac.js`; aerodb d4cec61b9); the screen `#sources`, its `APP.screens` entry (frame) and the « Sources
+des données » button of the Administration card (Settings) go in the module's D1. Until then both coexist.
 
 ## 3. From Settings
 
 - The launcher's keys panel of the Administration card gains an **EAD Basic** entry (agreed 28 Oct): user name and
   password given once to the launcher (Administration, launcher only, never synchronised), kept in its secrets store, never
   read back by the page; « Tester » the login; for the EAD line (SPEC § 4.3).
-- At D1, the « Sources des données » button of the Administration card goes with the Sources screen (§ 2.3). The module is
+- At D1, the « Sources des données » button of the Administration card goes with the Sources screen (§ 2.5). The module is
   reached from the rail.
 
 ## 4. Files (planned)
