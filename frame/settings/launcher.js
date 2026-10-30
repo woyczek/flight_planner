@@ -281,6 +281,24 @@
       'EAD-Basic-Zugangsdaten aus dem Starter gelöscht.', 'Credenciales de EAD Basic borradas del lanzador.'
     ],
 
+    // fournisseur du dépôt de data/ (lu de l'adresse du dépôt distant, jamais un réglage) : ligne en tête du volet « Dépôt distant »
+    providerLine: ['Fournisseur : {p} · projet {j}', 'Provider: {p} · project {j}', 'Anbieter: {p} · Projekt {j}',
+      'Proveedor: {p} · proyecto {j}'
+    ],
+    providerOther: ['Fournisseur non reconnu', 'Provider not recognised', 'Anbieter nicht erkannt', 'Proveedor no reconocido'],
+    providerTokens: ['Jetons des pilotes', 'Pilots’ tokens', 'Token der Piloten', 'Tokens de los pilotos'],
+    providerGitlab: [
+      'Les pilotes sont accueillis par un jeton d’accès de projet GitLab (rôle Developer, écriture du dépôt), créé dans « Jetons des pilotes » et donné une seule fois au pilote.',
+      'Pilots are welcomed with a GitLab project access token (Developer role, repository write), created in “Pilots’ tokens” and given to the pilot once.',
+      'Piloten werden mit einem GitLab-Projektzugangstoken aufgenommen (Rolle Developer, Schreibzugriff auf das Repository), das unter „Token der Piloten“ erstellt und dem Piloten einmalig übergeben wird.',
+      'Los pilotos se acogen con un token de acceso de proyecto de GitLab (rol Developer, escritura del repositorio), creado en «Tokens de los pilotos» y entregado una sola vez al piloto.'
+    ],
+    providerGithub: [
+      'L’accueil des pilotes par jeton de projet demande un dépôt GitLab : saisissez l’adresse du projet GitLab dans le champ ci-dessous ; le changement se confirme dans la fenêtre du lanceur sur cet ordinateur.',
+      'Welcoming pilots with a project token needs a GitLab repository: enter the GitLab project’s address in the field below; the change is confirmed in the launcher’s window on this computer.',
+      'Die Aufnahme von Piloten per Projekt-Token setzt ein GitLab-Repository voraus: Geben Sie die Adresse des GitLab-Projekts im Feld unten ein; die Änderung wird im Fenster des Starters auf diesem Rechner bestätigt.',
+      'Acoger a los pilotos con un token de proyecto requiere un repositorio GitLab: introduzca la dirección del proyecto GitLab en el campo de abajo; el cambio se confirma en la ventana del lanzador en este equipo.'
+    ],
     // assistant « Application IVAO (connexion des pilotes) » : écrit secrets/ivao_oauth.json par le lanceur, sans éditer de fichier
     ivaoAppTitle: ['Application IVAO (connexion des pilotes)', 'IVAO application (pilots’ sign-in)',
       'IVAO-Anwendung (Anmeldung der Piloten)', 'Aplicación IVAO (conexión de los pilotos)'
@@ -453,6 +471,22 @@
     } = env;
     return `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2><p>${esc(t(T.accessLauncher))}</p>${gitState === 'repo' ? '' : gitDoor(gitState, t, fld, remote)}</div>`;
   }
+  /** Ligne « Fournisseur » en tête du volet du dépôt distant, lue de l'adresse du dépôt distant de data/ (SogConfig.providerOf :
+   *  jamais un réglage) : GitLab (le projet, en lien s'il est en https, puis « Jetons des pilotes » et une phrase sur l'accueil
+   *  par jeton de projet), GitHub (la phrase qui propose GitLab : la page ne fait que proposer, le changement passe par la fenêtre
+   *  du lanceur), autre (non reconnu) ; '' sans adresse. */
+  function providerHtml(t, url) {
+    if (!url || !window.SogConfig) return '';
+    const p = SogConfig.providerOf(url),
+      name = p.provider === 'gitlab' ? 'GitLab' : p.provider === 'github' ? 'GitHub' : '';
+    if (!name) return `<p class="f-muted" data-provider="other">${esc(t(T.providerOther))}</p>`;
+    const proj = /^https:\/\//.test(p.web) ? `<a href="${esc(p.web)}" target="_blank" rel="noopener">${esc(p.project)}</a>` : esc(p.project);
+    const line = esc(t(T.providerLine, {
+      p: name,
+      j: '{j}'
+    })).replace('{j}', () => proj);
+    return `<div data-provider="${p.provider}"><p>${line}</p>${p.provider === 'gitlab' ? `<p class="f-muted"><a href="#pilot-tokens">${esc(t(T.providerTokens))}</a> — ${esc(t(T.providerGitlab))}</p>` : `<p class="f-muted">${esc(t(T.providerGithub))}</p>`}</div>`;
+  }
   /** Volet « Dépôt distant de data/ » de la carte Administration (data/ en dépôt git seulement) ; '' sinon. */
   function remoteHtml(env) {
     const {
@@ -464,7 +498,7 @@
     if (gitState !== 'repo' || !remote) return '';
     const hist = remote.rewritten ? `<div data-card="hist"><p class="f-msg" data-kind="warn" data-hist>${esc(t(T.histWarn))}</p><p class="f-msg" data-msg></p>
         <div class="f-row"><button type="button" class="primary" data-act="histResume">${esc(t(T.histResume))}</button></div></div>` : '';
-    return `${hist}<div data-card="remote"><p data-remote-now>${esc(remote.url ? (/^[\w./-]+$/.test(remote.branch || '') ? t(T.remoteNow, { u: remote.url, b: remote.branch }) : t(T.remoteNowBare, { u: remote.url })) : t(T.remoteNone))}</p>
+    return `${hist}<div data-card="remote">${providerHtml(t, remote.url)}<p data-remote-now>${esc(remote.url ? (/^[\w./-]+$/.test(remote.branch || '') ? t(T.remoteNow, { u: remote.url, b: remote.branch }) : t(T.remoteNowBare, { u: remote.url })) : t(T.remoteNone))}</p>
         ${fld('remote', T.remoteUrl, remote.url || remote.default || '')}<p class="f-msg" data-msg></p>
         <div class="f-row"><button type="button" class="primary" data-act="remoteSave">${esc(t(T.save))}</button><button type="button" data-act="remoteCheck">${esc(t(T.remoteCheck))}</button></div><p class="f-muted" data-confirm-hint hidden>${esc(t(T.confirmHint))}</p></div>`;
   }

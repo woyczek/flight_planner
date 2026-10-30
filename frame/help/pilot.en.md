@@ -834,6 +834,7 @@ only reported.
 
 - **Access to the repository** is set on the computer: an SSH key for a `git@…` address, credentials stored in Git for
   an `https://…` address.
+- **The provider** is not a setting: it is read from the remote repository's address. At the top of the panel, “Provider: GitLab · project group/project” (the project is a link to its page); for GitLab, the “Pilots’ tokens” link leads to the creation of the welcome tokens; for GitHub, the panel suggests entering the address of a GitLab project, because welcoming by project token needs one. The page only suggests: changing the repository goes, as always, through the launcher's Yes / No window. The exported configuration carries the provider, and the pilot's side opens on it.
 - **Several users through git** need this remote repository: without it, the “Several users” box leads nowhere, and
   the “Usages” card says so.
 - **data/ missing or without git**: the “Data access” card opens a door, at every level. `data/` is a folder ignored by the code repository; it
@@ -871,7 +872,7 @@ dedicated to flying is advised. A file in another format is refused with a messa
 repository only if it has none yet. On a workstation whose data/ already follows this repository, the assistant skips
 the account and the token. Without a launcher, the app reaches a GitHub repository or a project on a GitLab instance
 (gitlab.com, framagit…): paste the project's address (https://gitlab.com/group/project) and the project access token the
-administrator gave you; the token is sent to that instance only.
+administrator gave you; the token is sent to that instance only. When the received configuration or the device's access is a GitLab project, the “Data access” card expects the project's address and describes the project token (Developer role, `write_repository`).
 
 ## Administration
 
@@ -931,4 +932,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: 67895245b728 -->
+<!-- fr: 521936bec9aa -->

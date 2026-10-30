@@ -617,6 +617,7 @@
       mods,
       fld,
       lvl,
+      jd, // dépôt de la configuration reçue (fournisseur de la carte Accès)
       diagJson: '{}'
     };
     // carte Accès toujours : sur un lanceur, le dépôt distant de data/ (launcher.js) ; sinon dépôt GitHub et jeton (access.js)

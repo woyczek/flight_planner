@@ -107,6 +107,12 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    address field (current address, else the configuration's default), "Check" (`POST { url }`: does it answer) and
    "Save" (`POST { url, save: true }`; another repository than the current one is confirmed in a window the launcher
    opens on the computer, as in V2's first start). Never blocking: the check's report stays in the card after a save.
+   The provider is not a setting: a line `[data-provider="github|gitlab|other"]` at the top of the panel reads it from the remote's address
+   (`SogConfig.providerOf(url)` → `{ provider, web, project }`, the one host classification, `SogConfig.kind`): the project as a link when
+   `web` is https; GitLab adds the "Pilots' tokens" link (`#pilot-tokens`) and a sentence; GitHub a sentence suggesting a GitLab project
+   (the page only proposes, the change still goes through the launcher's window); other: "provider not recognised". The exported
+   configuration carries `data.provider`; the pilot's Access card (no launcher) shows GitLab's field and hint when the device's access
+   (`provider`) or the received configuration says gitlab.
    When `data/` is not a git repository, a door rather than a warning (state from the launcher's `state`, `absent` |
    `plain` | `repo`, else deduced): one sentence saying that `data/` is a folder ignored by the code repository that
    becomes its own git repository (not a submodule); the address (the configuration's default), an optional username

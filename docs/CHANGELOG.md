@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Settings: the data repository's provider is read, not set** (`frame/settings/config.js` `providerOf`, `launcher.js`, `access.js`, `admin.js`; help ×4; A49) — the remote repository panel opens on « Provider: GitLab · project group/project » read from the remote's address (one classification, `SogConfig.kind`): GitLab adds the « Pilots' tokens » link, GitHub suggests a GitLab project (the change still goes through the launcher's window); the exported configuration carries `data.provider`, and the pilot's Access card shows GitLab's field and hint for a GitLab project.
 - **Map: the choose pane opens tall, "Done" always in sight** (`modules/maps/choose.js`, `style.js`; maps help ×4; noreg D78). The
   pane opens the sheet expanded (it had 240 px at 1280 px, 164 at 390), its hint is shown from the start, and "Done" sticks to
   the foot of the body however far the rows scroll. Fix of a314a352c: the Layers chip, which a `hidden` did not hide, no longer

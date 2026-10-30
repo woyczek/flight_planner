@@ -2,7 +2,7 @@
   'use strict';
   // V3 — configuration d'un pilote (frame/settings/SPEC.md § 5) : fichier sog-config-<TRI>.json et lien d'import
   // #settings?config=<…>, préparés par l'administrateur sur un poste, appliqués en quelques gestes par le pilote.
-  //   · schéma sog-config/1 : airline { name, site, pages }, data { host, repo, branch, ownerType?, api? }, identity { trigram },
+  //   · schéma sog-config/1 : airline { name, site, pages }, data { host, repo, branch, provider, ownerType?, api? }, identity { trigram },
   //     usages { devices, users }, howto { token: { fr, en, de, es } } — jamais de jeton ni de secret : l'adresse du dépôt
   //     est relue sans ses identifiants ;
   //   · howto : mode d'emploi du jeton, rempli d'un modèle par hôte (GitHub : dépôt d'un utilisateur → jeton classique
@@ -11,7 +11,7 @@
   //     GitLab / framagit : jeton de projet, rôle Developer, write_repository) avec l'adresse exacte du dépôt ;
   //   · lien : « z » + base64url du JSON compressé (deflate-raw), « j » + base64url du JSON sans compression ;
   //   · import : validate() ne garde que les champs connus, chacun vérifié ; autre schéma ou champ invalide : refus.
-  // API : window.SogConfig = { SCHEMA, parseRepo, kind, webUrl, cloneUrl, howto, build, pack, unpack, read, validate }.
+  // API : window.SogConfig = { SCHEMA, parseRepo, kind, providerOf, webUrl, cloneUrl, howto, build, pack, unpack, read, validate }.
   const SCHEMA = 'sog-config/1';
   const LANGS = ['fr', 'en', 'de', 'es'];
   const MAX = 256 * 1024; // taille d'un fichier ou d'un lien décompressé
@@ -29,12 +29,37 @@
       repo: m[2]
     };
   }
-  /** Sorte d'hôte : github (github.com, ou une API GitHub donnée), gitlab (gitlab…, framagit…), other. */
-  const kind = d => d?.api || d?.host === 'github.com' ? 'github' : /(^|\.)(gitlab|framagit)\./.test(`.${d?.host || ''}`) ? 'gitlab' : 'other';
+  const PROVIDERS = ['github', 'gitlab', 'other'];
+  /** Fournisseur du dépôt, LA classification des hôtes de tout le cadre : celui que la donnée porte (data.provider d'une
+   *  configuration, provider d'un accès de l'appareil), sinon github (github.com, ou une API GitHub donnée), gitlab (gitlab.com,
+   *  framagit.org, ou un hôte qui contient « gitlab »), other. */
+  const kind = d => PROVIDERS.includes(d?.provider) ? d.provider : d?.api || d?.host === 'github.com' ? 'github' :
+    /gitlab|(^|\.)framagit\./.test(d?.host || '') ? 'gitlab' : 'other';
   /** Page web du dépôt. */
   const webUrl = d => `${/^(127\.0\.0\.1|localhost)(:|$)/.test(d.host) ? 'http' : 'https'}://${d.host}/${d.repo}`;
   /** Adresse de clonage (https). */
   const cloneUrl = d => `${webUrl(d)}.git`;
+  /** Fournisseur d'une adresse de dépôt (https, ssh « git@hôte:chemin » ou ssh://) → { provider: github | gitlab | other, web
+   *  (page web du projet, sans identifiants ni .git), project (groupe/projet) } ; adresse illisible : other, sans web ni projet.
+   *  Le port d'une adresse ssh n'est pas celui du web : il est retiré. */
+  function providerOf(url) {
+    const r = parseRepo(url);
+    if (!r) return {
+      provider: 'other',
+      web: '',
+      project: ''
+    };
+    const u = String(url).trim(),
+      d = {
+        host: /^(?:ssh|git):\/\//.test(u) ? r.host.replace(/:\d+$/, '') : r.host,
+        repo: r.repo
+      };
+    return {
+      provider: kind(d),
+      web: webUrl(d),
+      project: r.repo
+    };
+  }
 
   // modèles du mode d'emploi du jeton, par sorte d'hôte et par langue ; {web} {repo} {owner} {host} remplacés
   const HOWTO = {
@@ -158,6 +183,7 @@ Sin lanzador (teléfono), la aplicación solo llega a un repositorio de {host} a
       host: data.host,
       repo: data.repo,
       branch: data.branch || 'main',
+      provider: kind(data), // le fournisseur voyage avec le dépôt : le côté du pilote s'ouvre dessus
       ...(data.ownerType ? {
         ownerType: data.ownerType
       } : {}),
@@ -299,6 +325,11 @@ Sin lanzador (teléfono), la aplicación solo llega a un repositorio de {host} a
         host,
         repo,
         branch,
+        provider: kind({
+          host,
+          api,
+          provider: d.provider
+        }),
         ...(d.ownerType === 'User' || d.ownerType === 'Organization' ? {
           ownerType: d.ownerType
         } : {}),
@@ -332,6 +363,7 @@ Sin lanzador (teléfono), la aplicación solo llega a un repositorio de {host} a
     SCHEMA,
     parseRepo,
     kind,
+    providerOf,
     webUrl,
     cloneUrl,
     howto,

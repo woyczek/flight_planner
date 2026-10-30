@@ -859,6 +859,7 @@ se señala.
 
 - **El acceso al repositorio** se configura en el equipo: una clave SSH para una dirección `git@…`, credenciales
   guardadas en Git para una dirección `https://…`.
+- **El proveedor** no es un ajuste: se lee de la dirección del repositorio remoto. En la parte superior del panel, «Proveedor: GitLab · proyecto grupo/proyecto» (el proyecto es un enlace a su página); para GitLab, el enlace «Tokens de los pilotos» lleva a la creación de los tokens de acogida; para GitHub, el panel propone introducir la dirección de un proyecto GitLab, porque la acogida por token de proyecto lo requiere. La página solo propone: cambiar de repositorio pasa, como siempre, por la ventana Sí / No del lanzador. La configuración exportada lleva el proveedor, y el lado del piloto se abre sobre él.
 - **Varios usuarios por git** necesitan este repositorio remoto: sin él, la casilla «Varios usuarios» no lleva a
   ninguna parte, y la tarjeta «Usos» lo recuerda.
 - **data/ ausente o sin git**: la tarjeta «Acceso a los datos» abre una vía, en todos los niveles. `data/` es una carpeta ignorada por el repositorio del código;
@@ -899,7 +900,7 @@ aconseja una cuenta de GitHub dedicada al vuelo. Un archivo de otro formato se r
 se escribe en el repositorio si aún no tiene una. En un puesto cuyo data/ ya sigue este repositorio, el asistente se
 salta la cuenta y el token. Sin lanzador, la aplicación llega a un repositorio de GitHub o a un proyecto en una
 instancia GitLab (gitlab.com, framagit…): pegue la dirección del proyecto (https://gitlab.com/grupo/proyecto) y el token
-de acceso de proyecto que le dio el administrador; el token solo se envía a esa instancia.
+de acceso de proyecto que le dio el administrador; el token solo se envía a esa instancia. Cuando la configuración recibida o el acceso del dispositivo es un proyecto GitLab, la tarjeta «Acceso a los datos» espera la dirección del proyecto y describe el token de proyecto (rol Developer, `write_repository`).
 
 ## Administración
 
@@ -962,4 +963,4 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: 67895245b728 -->
+<!-- fr: 521936bec9aa -->

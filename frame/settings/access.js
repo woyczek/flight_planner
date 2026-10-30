@@ -25,6 +25,14 @@
       'Repository (GitHub-Konto/Repository oder Adresse eines GitLab-Projekts)',
       'Repositorio (cuenta/repositorio de GitHub, o dirección de un proyecto GitLab)'
     ],
+    // fournisseur GitLab (configuration reçue ou accès de l'appareil) : champ du dépôt et aide du jeton
+    repoGl: ['Adresse du projet GitLab', 'GitLab project address', 'Adresse des GitLab-Projekts', 'Dirección del proyecto GitLab'],
+    tokenHintGl: [
+      'GitLab : collez l’adresse du projet et le jeton d’accès de projet que l’administrateur vous a donné (rôle Developer, portée write_repository) ; il n’est envoyé qu’à cette instance. Gardé sur cet appareil seulement, jamais réaffiché ; ne le collez dans aucun message.',
+      'GitLab: paste the project’s address and the project access token the administrator gave you (Developer role, write_repository scope); it is sent to that instance only. Kept on this device only, never shown again; never paste it in a message.',
+      'GitLab: Adresse des Projekts und das Projektzugangstoken einfügen, das der Administrator Ihnen gegeben hat (Rolle Developer, Umfang write_repository); es wird nur an diese Instanz gesendet. Nur auf diesem Gerät gespeichert, nie wieder angezeigt; in keine Nachricht einfügen.',
+      'GitLab: pegue la dirección del proyecto y el token de acceso de proyecto que le dio el administrador (rol Developer, alcance write_repository); solo se envía a esa instancia. Guardado solo en este dispositivo, nunca se vuelve a mostrar; no lo pegue en ningún mensaje.'
+    ],
     branch: ['Branche', 'Branch', 'Zweig', 'Rama'],
     token: ['Jeton personnel', 'Personal token', 'Persönliches Token', 'Token personal'],
     tokenSet: ['jeton enregistré — vide : inchangé', 'token saved — empty: unchanged', 'Token gespeichert — leer: unverändert',
@@ -92,17 +100,22 @@
     conflicts: ['Voir les conflits ({n})', 'See the conflicts ({n})', 'Konflikte ansehen ({n})', 'Ver los conflictos ({n})'],
   });
 
-  /** Carte Accès sans lanceur : dépôt GitHub, branche et jeton de l'appareil (sans échange coché : lecture des bases). */
+  /** Carte Accès sans lanceur : dépôt GitHub ou projet GitLab, branche et jeton de l'appareil (sans échange coché : lecture des
+   *  bases). Fournisseur GitLab (accès de l'appareil, ou configuration reçue) : le champ attend l'adresse du projet et l'aide
+   *  est celle du jeton de projet ; GitHub (ou rien) : comme avant. */
   function accessHtml(env) {
     const {
       t,
       gh,
+      jd,
       exchange,
       fld
     } = env;
+    const gl = window.SogConfig?.kind(gh?.provider ? gh : jd || {}) === 'gitlab',
+      ph = gl ? (jd && !gh ? SogConfig.webUrl(jd) : 'https://gitlab.com/group/project') : 'compte/flight_planner_data';
     return `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2>${exchange ? '' : `<p class="f-muted">${esc(t(T.accessRead))}</p>`}
-        ${fld('repo', T.repo, gh?.provider === 'gitlab' ? `${String(gh.api || '').replace(/\/api\/v4$/, '')}/${gh.repo}` : gh?.repo, { ph: 'compte/flight_planner_data' })}${fld('branch', T.branch, gh?.branch || 'main')}${fld('token', T.token, '', { type: 'password', ph: gh ? t(T.tokenSet) : '' })}
-        ${gh?.token ? `<p data-token-set>${esc(t(T.tokenSet))}</p>` : ''}<p class="f-muted">${esc(t(T.tokenHint))}</p><p class="f-msg" data-msg></p>
+        ${fld('repo', gl ? T.repoGl : T.repo, gh?.provider === 'gitlab' ? `${String(gh.api || '').replace(/\/api\/v4$/, '')}/${gh.repo}` : gh?.repo, { ph })}${fld('branch', T.branch, gh?.branch || 'main')}${fld('token', T.token, '', { type: 'password', ph: gh ? t(T.tokenSet) : '' })}
+        ${gh?.token ? `<p data-token-set>${esc(t(T.tokenSet))}</p>` : ''}<p class="f-muted">${esc(t(gl ? T.tokenHintGl : T.tokenHint))}</p><p class="f-msg" data-msg></p>
         <div class="f-row"><button type="button" class="primary" data-act="access">${esc(t(T.save))}</button><button type="button" data-act="test">${esc(t(T.test))}</button>${gh ? `<button type="button" data-act="cut">${esc(t(T.cut))}</button>` : ''}</div></div>`;
   }
   /** Carte Synchronisation : montrée si un échange est coché ou tant que des écritures attendent (suit l'état). */

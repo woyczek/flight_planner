@@ -841,6 +841,7 @@ seulement signalé.
 
 - **L'accès au dépôt** se règle sur l'ordinateur : clé SSH pour une adresse `git@…`, identifiants enregistrés dans Git
   pour une adresse `https://…`.
+- **Le fournisseur** n'est pas un réglage : il se lit de l'adresse du dépôt distant. En tête du volet, « Fournisseur : GitLab · projet groupe/projet » (le projet est un lien vers sa page) ; pour GitLab, le lien « Jetons des pilotes » mène à la création des jetons d'accueil ; pour GitHub, le volet propose de saisir l'adresse d'un projet GitLab, car l'accueil par jeton de projet le demande. La page ne fait que proposer : changer de dépôt passe, comme toujours, par la fenêtre Oui / Non du lanceur. La configuration exportée porte le fournisseur, et le côté du pilote s'ouvre dessus.
 - **À plusieurs par git**, ce dépôt distant est nécessaire : sans lui, la case « À plusieurs » ne mène nulle part, et
   la carte « Usages » le rappelle.
 - **data/ absent ou sans git** : la carte « Accès aux données » ouvre une porte, à tous les niveaux. `data/` est un dossier ignoré par le dépôt du code ; il
@@ -881,7 +882,7 @@ compte GitHub dédié au vol est conseillé. Un fichier d'un autre format est re
 écrite dans le dépôt que s'il n'en a pas encore. Sur un poste dont data/ suit déjà ce dépôt, l'assistant saute le compte
 et le jeton. Sans lanceur, l'appli joint un dépôt GitHub ou un projet sur une instance GitLab (gitlab.com, framagit…) :
 collez l'adresse du projet (https://gitlab.com/groupe/projet) et le jeton d'accès de projet que l'administrateur vous a
-donné ; le jeton n'est envoyé qu'à cette instance.
+donné ; le jeton n'est envoyé qu'à cette instance. Quand la configuration reçue ou l'accès de l'appareil est un projet GitLab, la carte « Accès aux données » attend l'adresse du projet et décrit le jeton de projet (rôle Developer, `write_repository`).
 
 ## Administration
 

@@ -129,6 +129,7 @@ Repository, das nicht antwortet, wird nur gemeldet.
 
 - **Der Zugang zum Repository** wird auf dem Computer eingestellt: ein SSH-Schlüssel für eine Adresse `git@…`, in Git
   gespeicherte Zugangsdaten für eine Adresse `https://…`.
+- **Der Anbieter** ist keine Einstellung: Er wird aus der Adresse des entfernten Repositorys gelesen. Oben im Bereich steht „Anbieter: GitLab · Projekt Gruppe/Projekt“ (das Projekt ist ein Link zu seiner Seite); bei GitLab führt der Link „Token der Piloten“ zur Erstellung der Aufnahme-Tokens; bei GitHub schlägt der Bereich vor, die Adresse eines GitLab-Projekts einzugeben, denn die Aufnahme per Projekt-Token setzt eines voraus. Die Seite schlägt nur vor: Ein Repository-Wechsel läuft wie immer über das Ja-/Nein-Fenster des Starters. Die exportierte Konfiguration trägt den Anbieter, und die Seite des Piloten öffnet sich darauf.
 - **Mehrere Nutzer über git** brauchen dieses entfernte Repository: Ohne es führt das Kästchen „Mehrere Nutzer“ nirgends
   hin, und die Karte „Nutzungen“ erinnert daran.
 - **data/ fehlt oder ohne git**: Die Karte „Datenzugang“ öffnet einen Weg, auf jeder Stufe. `data/` ist ein vom Code-Repository ignorierter Ordner;
@@ -172,7 +173,7 @@ Format wird mit einer Meldung abgelehnt. Die Fluggesellschaft wird nur ins Repos
 hat. Auf einem Rechner, dessen data/ diesem Repository bereits folgt, überspringt der Assistent Konto und Token. Ohne
 Starter erreicht die App ein GitHub-Repository oder ein Projekt auf einer GitLab-Instanz (gitlab.com, framagit…): Fügen
 Sie die Adresse des Projekts (https://gitlab.com/gruppe/projekt) und das Projektzugangstoken ein, das der Administrator
-Ihnen gegeben hat; das Token wird nur an diese Instanz gesendet.
+Ihnen gegeben hat; das Token wird nur an diese Instanz gesendet. Ist die empfangene Konfiguration oder der Zugang des Geräts ein GitLab-Projekt, erwartet die Karte „Datenzugang“ die Adresse des Projekts und beschreibt das Projekt-Token (Rolle Developer, `write_repository`).
 
 ## Verwaltung
 
@@ -236,4 +237,4 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: 67895245b728 -->
+<!-- fr: 521936bec9aa -->

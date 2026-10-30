@@ -310,6 +310,13 @@
     const xsrc = src ? {
       ...src,
       branch: L ? (/^[\w./-]+$/.test(remote?.branch || '') ? remote.branch : 'main') : gh.branch || 'main',
+      // fournisseur : celui de l'adresse du dépôt distant de data/ (même fonction que le volet du dépôt distant), ou celui de l'accès
+      // de l'appareil sans lanceur ; il part dans la configuration pour que le côté du pilote s'ouvre dessus
+      ...(L ? {
+        provider: SogConfig.providerOf(remote.url).provider
+      } : gh?.provider ? {
+        provider: gh.provider
+      } : {}),
       ...(!L && gh?.api ? {
         api: gh.api
       } : {})

@@ -29,8 +29,11 @@ Rules covered
   * the launcher's keys panel gives the EAD Basic user name and password once, and never reads them back (A32).
   * the IVAO application assistant (Settings, Administration group): the steps at IVAO, the return addresses with a Copy button each, the
     Client ID and Secret given once to the launcher and never read back, Test, Erase, the card alone by its address (A43).
+  * the data repository's provider is read from its address (`SogConfig.providerOf`), never a setting: the remote panel names it and
+    proposes what fits (GitLab: the pilots' tokens; GitHub: a GitLab project), the exported configuration carries it, the pilot's Access
+    card follows it (A49).
 
-Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A25 A26 A27 A28 A29 A30 A31 A32 A33 A34 A43.
+Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A25 A26 A27 A28 A29 A30 A31 A32 A33 A34 A43 A48 A49.
 """
 import json
 import re
@@ -1533,3 +1536,116 @@ def a48(c):
     table = None
     c.open('devices', app='maintenance', docs=LEVEL3)
     c.until("!!document.querySelector('[data-devices]')", what='no table: the screen as before')
+@case('A49', 'Provider of the data repository: read from its address, never a setting', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame/settings SPEC 3 item 6: providerOf(url) is the one classification; the remote panel names the provider; the exported configuration carries it; the pilot’s Access card follows it')
+def a49(c):
+    launcher_file = 'frame/settings/launcher.js'
+    access_file = 'frame/settings/access.js'
+    state = {'up': True, 'url': ''}
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True,
+              'relaxNav': False, 'host': 'TEST', 'lan': False}
+
+    def launcher(route):
+        if not state['up']:
+            return route.abort()
+        req = route.request
+        path = urllib.parse.urlparse(req.url).path
+        body = {}
+        if path.endswith('/__setup/status'):
+            body = status
+        elif path.endswith('/__setup/sync-remote') and req.method == 'GET':
+            body = {'repo': True, 'remote': 'origin', 'url': state['url'], 'branch': 'main', 'state': 'repo', 'default': ''}
+        elif path.endswith('/__setup/secrets'):
+            body = {'app': {'ivao': {'apiKey': {'set': False, 'hint': ''}}, 'ead': {'user': {'set': False, 'at': ''}, 'password': {'set': False, 'at': ''}}}, 'user': {}}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+
+    # the pure helper: https, ssh, scp-like, framagit, a host that contains « gitlab », github, other, credentials never kept
+    state['url'] = 'https://gitlab.com/grp/proj.git'
+    c.open('settings', docs=LEVEL3)
+    c.until("!!window.SogConfig && !!SogConfig.providerOf", what='the configuration helper is loaded')
+    fixtures = [
+        ('https://gitlab.com/grp/proj.git', 'gitlab', 'https://gitlab.com/grp/proj', 'grp/proj'),
+        ('git@gitlab.com:grp/proj.git', 'gitlab', 'https://gitlab.com/grp/proj', 'grp/proj'),
+        ('ssh://git@gitlab.mycorp.test:2222/grp/sub/proj.git', 'gitlab', 'https://gitlab.mycorp.test/grp/sub/proj', 'grp/sub/proj'),
+        ('https://framagit.org/asr/flight_planner_data.git', 'gitlab', 'https://framagit.org/asr/flight_planner_data', 'asr/flight_planner_data'),
+        ('https://github.com/acme/data', 'github', 'https://github.com/acme/data', 'acme/data'),
+        ('git@github.com:acme/data.git', 'github', 'https://github.com/acme/data', 'acme/data'),
+        ('ssh://git@git.example.org:2222/acme/data.git', 'other', 'https://git.example.org/acme/data', 'acme/data'),
+        ('https://bitbucket.org/acme/data.git', 'other', 'https://bitbucket.org/acme/data', 'acme/data'),
+        ('not an address', 'other', '', ''),
+    ]
+    for url, provider, web, project in fixtures:
+        got = c.js("(u) => SogConfig.providerOf(u)", url)
+        c.eq([got['provider'], got['web'], got['project']], [provider, web, project], 'provider, web page and project read from the address', what=url)
+    got = c.js("(u) => JSON.stringify(SogConfig.providerOf(u))", 'https://oauth2:SECRET-TOKEN@gitlab.com/grp/proj.git')
+    c.ok('SECRET' not in got and 'oauth2' not in got, got, 'credentials of an address are never kept')
+    c.eq(json.loads(got)['web'], 'https://gitlab.com/grp/proj', 'the web page of an address with credentials', what='web')
+    # the exported configuration carries the provider; one read without it falls back on the host
+    cfg = c.js("() => SogConfig.build({ data: { host: 'gitlab.mycorp.test', repo: 'grp/proj' }, trigram: 'ABC' }).data")
+    c.eq(cfg['provider'], 'gitlab', 'the configuration carries the provider', what='build')
+    ok = c.js("() => { const r = SogConfig.validate({ schema: 'sog-config/1', identity: { trigram: 'ABC' }, data: { host: 'github.com', repo: 'a/b' } }); return r.ok && r.cfg.data.provider }")
+    c.eq(ok, 'github', 'a configuration without provider gets the one of its host', what='validate')
+
+    def panel():
+        c.until("!!document.querySelector('[data-admin=\"remote\"]')", what='the Administration card lists the remote repository')
+        if c.count('[data-group="admin"]') and not c.js("document.querySelector('[data-group=\"admin\"]').open"):
+            c.tap('[data-group="admin"] > summary')
+        c.tap('[data-admin="remote"] > button')
+        c.until("!!document.querySelector('[data-adminpanel=\"remote\"]:not([hidden]) [data-provider]')", what='the provider line is drawn')
+
+    def first(sel):
+        return norm(c.js(f"document.querySelector('{sel}')?.textContent || ''"))
+
+    def txl(key):
+        return norm(tx(launcher_file, key, c.lang))
+    box = '[data-adminpanel="remote"] [data-provider]'
+    # GitLab: the project is a link, « Pilots' tokens » leads to the Maintenance screen, one sentence on the welcome
+    state['url'] = 'https://oauth2:SECRET-TOKEN@gitlab.com/grp/proj.git'
+    c.page.reload(wait_until='load')
+    panel()
+    c.eq(c.attr(box, 'data-provider'), 'gitlab', 'the provider is read from the remote address', what='gitlab provider')
+    line = txl('providerLine').replace('{p}', 'GitLab').replace('{j}', 'grp/proj')
+    c.eq(first(f'{box} > p:first-child'), line, 'the line names the provider and the project', what='provider line')
+    link = f'{box} a[href="https://gitlab.com/grp/proj"]'
+    c.eq(c.count(link), 1, 'the project is a link to its page', what='project link')
+    c.ok('noopener' in c.attr(link, 'rel'), c.attr(link, 'rel'), 'the project link has rel noopener')
+    c.eq(first(f'{box} a[href="#pilot-tokens"]'), txl('providerTokens'), 'the link to the pilots’ tokens', what='tokens link')
+    c.ok(txl('providerGitlab') in first(box), first(box), 'the sentence on the welcome by a project access token')
+    c.ok('SECRET' not in c.js(f"document.querySelector('{box}').outerHTML"), 'a secret is shown', 'the credentials of the address are shown nowhere in the line')
+    # GitHub: the sentence that proposes GitLab, no link to the tokens
+    state['url'] = 'git@github.com:acme/data.git'
+    c.page.reload(wait_until='load')
+    panel()
+    c.eq(c.attr(box, 'data-provider'), 'github', 'GitHub is read from the address', what='github provider')
+    c.ok(txl('providerGithub') in first(box), first(box), 'the sentence proposing a GitLab project')
+    c.eq(c.count(f'{box} a[href="#pilot-tokens"]'), 0, 'no pilots’ tokens link for GitHub', what='tokens link')
+    c.eq(c.count('[data-card="remote"] [data-act="remoteSave"]'), 1, 'the way to change the repository is the existing one (the launcher’s window)', what='save button')
+    # other: not recognised, nothing else
+    state['url'] = 'https://git.example.org/acme/data.git'
+    c.page.reload(wait_until='load')
+    panel()
+    c.eq(c.attr(box, 'data-provider'), 'other', 'an unknown host', what='other provider')
+    c.eq(first(box), txl('providerOther'), 'provider not recognised, nothing else', what='other text')
+    c.eq(c.count(f'{box} a'), 0, 'no link', what='links')
+
+    # the pilot’s Access card (no launcher): GitLab's field and hint for a GitLab access, GitHub's otherwise
+    state['up'] = False
+
+    def keys(github):
+        return [['device/keys.json', {'schema': 1, 'github': github, 'avwx': '', 'ivao': None, 'updated_at': '2026-10-30T10:00:00Z'}, 'cache']]
+
+    def access(github):
+        c.open('settings', docs=LEVEL3 + keys(github))
+        c.until("!!document.querySelector('[data-card=\"access\"] input[data-f=\"repo\"]')", what='the Access card')
+        return c.js("""() => { const k = document.querySelector('[data-card="access"]');
+          return { ph: k.querySelector('input[data-f="repo"]').placeholder, label: k.querySelector('input[data-f="repo"]').closest('label').textContent.trim(),
+                   hint: k.querySelector('p.f-msg[data-msg]').previousElementSibling.textContent.trim() } }""")
+    gl = access({'provider': 'gitlab', 'api': 'https://gitlab.test/api/v4', 'repo': 'grp/proj', 'branch': 'main', 'token': 'test-token'})
+    c.eq([gl['ph'], norm(gl['label']), norm(gl['hint'])],
+         ['https://gitlab.com/group/project', norm(tx(access_file, 'repoGl', c.lang)), norm(tx(access_file, 'tokenHintGl', c.lang))],
+         'GitLab: the field expects the project address and the hint describes the project token', what='GitLab access card')
+    gh = access({'repo': 'acme/data', 'branch': 'main', 'token': 'test-token'})
+    c.eq([gh['ph'], norm(gh['label']), norm(gh['hint'])],
+         ['compte/flight_planner_data', norm(tx(access_file, 'repo', c.lang)), norm(tx(access_file, 'tokenHint', c.lang))],
+         'GitHub keeps today’s field and hint', what='GitHub access card')
