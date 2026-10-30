@@ -1331,7 +1331,7 @@
       }
     }, {
       id: 'screenTraces', // l'écran peint ses tracés au niveau de la route (procédures choisies)
-      paint: c => overRoute && overRoute(c)
+      paint: c => overRoute && overRoute(c, pl) // le placeur : les numéros de piste de l'écran cèdent aux balises déjà posées
     }, {
       // cartouches des voies que suit le chemin (route et procédures) : par-dessus son trait (le mode Édition de l'écran
       // dessine ensuite ses poignées)

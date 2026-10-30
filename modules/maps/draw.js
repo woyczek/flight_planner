@@ -459,7 +459,12 @@ function draw() {
     bbox: shown,
     profile: S.profile,
     data: S.data?.data || {},
-    route: withEta(route, pxDeg),
+    // choix sur la carte : le terrain du choix porte son code par-dessus le voile (choose.js) ; la route estompée ne le répète pas
+    route: withEta(pick ? route.map(p => p.id === S.choose?.icao ? {
+      ...p,
+      id: '',
+      name: ''
+    } : p) : route, pxDeg),
     marks: S.marks,
     theme: S.theme,
     level,
@@ -470,7 +475,7 @@ function draw() {
     reserve: pick ? pl => pick.reserve(pl) : procs ? pl => procs.reserve(pl) : null,
     legs: mission || pick ? null : S.route?.path || null,
     dim: pick ? DIM : 0,
-    overRoute: pick ? c => pick.paint(c) : procs ? c => drawProcs(c, procs) : null,
+    overRoute: pick ? (c, pl) => pick.paint(c, pl) : procs ? c => drawProcs(c, procs) : null,
     // les pistes (vecteurs de seuil et numéros) dans la couche des terrains, priorité « terrains » de la passe de collision
     runways: rwys.length ? (c, pl) => drawRunways(c, rwys, pl) : null,
     adName: !mission && !pick && zReal >= (S.runwayZoom ?? 11) ? a => adTitle(a, a.icao) : null,

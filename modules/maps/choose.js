@@ -82,6 +82,10 @@ const PAD = 3,
 /** Marge des cartouches au bord de la carte, et à droite la place de la colonne des boutons (px). */
 const EDGE = 4,
   EDGE_R = 56;
+/** Le code du terrain sous son symbole (la géométrie du libellé des terrains de la Carte : 1,9 symbole plus bas, gras). */
+const AD_PX = 10,
+  AD_FONT = `700 ${AD_PX}px Arial,sans-serif`,
+  AD_DY = 6 * 1.9;
 const num = v => v !== null && v !== undefined && v !== '' && Number.isFinite(+v);
 /** Rayon du cadre autour du terrain (NM) : les points des procédures au-delà (entrées lointaines des STAR, sorties des SID) restent
  *  hors cadre, sauf ceux d'une procédure choisie. */
@@ -920,8 +924,28 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
     full: true,
     text: hit.members ? hm.label : hit.label
   } : null;
+  // le code du terrain, sous son symbole comme le pose la Carte : sa place est prise avant toute cartouche de procédure (terrains >
+  // procédures, parcours du 30/10, point 8) et il est écrit par-dessus le voile ; celui que la Carte aurait posé ne trouve plus sa place
+  const ap = C.at ? toC(C.at.lat, C.at.lon) : null;
+  L.ad = ap ? {
+    x: ap.x,
+    y: ap.y + AD_DY,
+    text: C.icao,
+    col: C.ad?.state ? '#d6173f' : '#1d4a9e'
+  } : null;
   L.reserve = pl => {
     ctx.save();
+    if (L.ad) {
+      ctx.font = AD_FONT;
+      const w = ctx.measureText(L.ad.text).width;
+      L.ad.r = {
+        x0: L.ad.x - w / 2 - 2,
+        y0: L.ad.y,
+        x1: L.ad.x + w / 2 + 2,
+        y1: L.ad.y + AD_PX + 2
+      };
+      pl.add(L.ad.r);
+    }
     // la surlignée d'abord : sa place est la meilleure, les autres l'évitent ; elle est toujours posée
     const put = (g, force) => {
       ctx.font = g.full ? '700 11px Arial,sans-serif' : '600 10px Arial,sans-serif';
@@ -952,7 +976,7 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
     for (const g of L.groups) put(g, false);
     ctx.restore();
   };
-  L.paint = c => {
+  L.paint = (c, pl = null) => {
     c.save();
     c.lineJoin = 'round';
     c.lineCap = 'round';
@@ -988,10 +1012,21 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
       c.stroke();
     }
     c.restore();
-    drawRunways(c, L.arrows);
+    drawRunways(c, L.arrows, pl); // dans la passe de collision : un numéro sans place (une balise, un cartouche) n'est pas écrit
   };
   L.top = c => {
     c.save();
+    if (L.ad?.r) {
+      c.font = AD_FONT;
+      c.textAlign = 'center';
+      c.textBaseline = 'top';
+      c.lineJoin = 'round';
+      c.lineWidth = 3;
+      c.strokeStyle = S.theme.bg;
+      c.strokeText(L.ad.text, L.ad.x, L.ad.y);
+      c.fillStyle = L.ad.col;
+      c.fillText(L.ad.text, L.ad.x, L.ad.y);
+    }
     c.textBaseline = 'middle';
     c.textAlign = 'left';
     // les cartouches des familles, petites et estompées ; la surlignée en dernier, au-dessus de tout, son nom complet

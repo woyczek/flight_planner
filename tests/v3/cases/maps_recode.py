@@ -2109,3 +2109,31 @@ def d78(c):
     c.js("() => { const d = document.querySelector('.mp-dbody'); d.scrollTop = 0 }")
     c.wait(200)
     c.ok(c.js(_CH_SHEET)['doneIn'], 'out of sight at the top', '"Done" stays in sight with the rows at the top')
+
+
+# ------------------------------------------------------------------------------------------------------ D79
+_CH_PAINT = """async ([full]) => { const C = await import('/modules/maps/choose.js'), S = window.__mp.S, cv = document.createElement('canvas');
+  cv.width = 1200; cv.height = 900; const ctx = cv.getContext('2d'), got = [], o = ctx.fillText;
+  ctx.fillText = function (t, x, y, w) { got.push(String(t)); return o.call(this, t, x, y, w) };
+  const L = C.chooseLayout(ctx, S.toC, 1200, 900), pl = SiaAero.placer();
+  if (full) pl.add({ x0: -1e5, y0: -1e5, x1: 1e5, y1: 1e5 });   // every place taken (beacon boxes everywhere)
+  L.paint(ctx, pl);
+  return { ad: L.ad ? L.ad.text : null, numbers: got.filter(t => /^\\d\\d[LRC]?$/.test(t)).sort() } }"""
+
+
+@case('D79', 'Choosing on the Map: the aerodrome’s code above the procedures, once; runway numbers give way to what is already placed', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='usage walk of 30 Oct, point 8 (LFBO hidden under the procedures, "14R" over "(D) TOU 117.7"): in the choose mode the aerodrome’s code takes its place before any procedure cartouche and is written above the veil, once (the dimmed route does not repeat it); the runway numbers are in the collision pass: a number without a free place (a beacon box, a cartouche) is not written, its vector stays')
+def d79(c):
+    _ch_open(c, {}, file=_CH_FILE)
+    c.js(_TEXT_HOOK)
+    c.js("async () => (await import('/modules/maps/draw.js')).schedule()")
+    c.until("() => (window.__chT || []).includes('LFML')", timeout=8000, what='the aerodrome’s code drawn')
+    c.wait(300)
+    c.eq(c.js("() => window.__chT.filter(t => t === 'LFML').length"), 1, 'LFML written once (no second label under the veil, none by the route)',
+         what='LFML labels')
+    free = c.js(_CH_PAINT, [False])
+    c.eq(free['ad'], 'LFML', 'the choose layout carries the aerodrome’s code', what='code')
+    c.eq(free['numbers'], ['13', '31'], 'with room, both runway numbers are written', what='numbers with room')
+    full = c.js(_CH_PAINT, [True])
+    c.eq(full['numbers'], [], 'no room (every place taken): no number written, the vectors stay', what='numbers without room')
