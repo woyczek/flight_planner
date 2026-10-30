@@ -15,7 +15,6 @@
 //     le vol dans le temps, dérivé de started.at / planned_at, quote et profile (voir plus bas ; modules/maps/SPEC.md § 13).
 //   proceduresOf(f), loadProcedures(aerodb, f) (sans doublon : dedupProcs), expandedPath(f, procs), flownPath(path) : la route et ses procédures choisies
 //     (SID, STAR, approche : V3_SPECIFICATION § 10.20), un seul chemin pour le profil, les marques, les heures et le devis.
-//   routingChain(f, procs, points) : les points du routage des voies (« Auto »), fin de SID et début d'arrivée choisies insérés.
 //   altitudeAt(f, nm, { cruiseFt, flown, total }), routeNmToFlown(f, flown, points) : l'altitude prévue le long du chemin volé
 //     (profile.path, sinon montée / croisière / descente), et les distances de la route ramenées sur ce chemin.
 

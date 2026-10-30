@@ -50,6 +50,7 @@
     transitionLabelOf,
     exitOf,
     entryOf,
+    endsOf,
     arincApp
   } from '../procedures.js?v=0';
   const rows = [],
@@ -627,6 +628,83 @@
     name: 'VOR/DME RWY 24'
   })].join());
   ck('runwayChoices : rien de rien, rien', runwayChoices([], [], null).length === 0 && runwayChoices(null, null, {}).length === 0);
+
+  // refonte § 10.33 R-F4b : la sortie et l'entrée calculées une fois pour le texte et pour « Auto » (points inventés)
+  const ef = (id, lat, lon, phase) => ({
+      id,
+      lat,
+      lon,
+      ...(phase ? {
+        phase
+      } : {})
+    }),
+    eSid = Pr('X.SID.QA1A.RW07.NONE', 'SID', 'QA1A', ['07'], {
+      points: [ef('RW07', 1, 1), ef('QMID', 1, 2), ef('QEXT', 1, 3)]
+    }),
+    eSidT = Pr('X.SID.QA1A.RW07.QFAR', 'SID', 'QA1A', ['07'], {
+      transition: 'QFAR',
+      points: [ef('QEXT', 1, 3), ef('QFAR', 1, 4)]
+    }),
+    eStar = Pr('X.STAR.QB1A.RW25.NONE', 'STAR', 'QB1A', ['25'], {
+      points: [ef('QENT', 2, 1), ef('QIAF', 2, 2)]
+    }),
+    eApp = Pr('X.APP.ILS25.RW25.NONE', 'APP', 'ILS25', ['25'], {
+      points: [ef('QIF', 3, 1), ef('RW25', 3, 2), ef('QMAP', 3, 3, 'missed')]
+    }),
+    eId = e => e ? `${e.id}:${e.origin}` : '-';
+  ck('endsOf : la sortie est la fin de la transition, sinon de la SID ; l’entrée le début de la STAR, sinon de l’approche', eId(endsOf({
+    sid: eSid,
+    sidTrans: eSidT,
+    star: eStar,
+    app: eApp
+  }).exit) === 'QFAR:sid' && eId(endsOf({
+    sid: eSid
+  }).exit) === 'QEXT:sid' && eId(endsOf({
+    star: eStar,
+    app: eApp
+  }).entry) === 'QENT:star' && eId(endsOf({
+    app: eApp
+  }).entry) === 'QIF:app' && eId(endsOf({
+    app: eApp,
+    appTrans: Pr('X.APP.ILS25.RW25.QT1', 'APP', 'ILS25', ['25'], {
+      transition: 'QT1',
+      points: [ef('QT1', 3, 0), ef('QIF', 3, 1)]
+    })
+  }).entry) === 'QT1:app' && endsOf({
+    app: eApp
+  }).entry.lat === 3 && JSON.stringify(endsOf(null)) === '{"exit":null,"entry":null}');
+  // le cas que la règle du texte corrige : un point de la SID déjà sur la route, ce n'est pas la sortie qu'on ajoute (Auto la
+  // posait juste après le départ et repartait à rebours, LFBO QEXT QMID…), la route se joint au point commun
+  ck('endsOf : un point de la procédure déjà sur la route, pas d’extrémité ajoutée (jonction au point commun)', endsOf({
+    sid: eSid
+  }, ['XDEP', 'QMID', 'QNEXT']).exit === null && endsOf({
+    star: eStar
+  }, [{
+    id: 'QIAF'
+  }]).entry === null && eId(endsOf({
+    sid: eSid
+  }, ['XDEP', 'QNEXT']).exit) === 'QEXT:sid');
+  ck('endsOf : une fiche d’un autre terrain est ignorée', endsOf({
+    sid: {
+      ...eSid,
+      icao: 'XOTH'
+    }
+  }, [], {
+    dep: 'XDEP'
+  }).exit === null && eId(endsOf({
+    sid: {
+      ...eSid,
+      icao: 'xdep'
+    }
+  }, [], {
+    dep: 'XDEP'
+  }).exit) === 'QEXT:sid');
+  ck('endsOf : l’entrée qui est la sortie n’est pas reprise', endsOf({
+    sid: eSid,
+    star: Pr('s', 'STAR', 'S', ['25'], {
+      points: [ef('QEXT', 1, 3)]
+    })
+  }).entry === null);
 
   window.__bench = {
     done: true,

@@ -2,7 +2,7 @@
 // « route + procédures » pour le profil, les marques, les heures et le devis (V3_SPECIFICATION § 10.20), l'altitude prévue le
 // long de ce chemin. Sorti de current_flight.js le 29 octobre 2026 (V3_SPECIFICATION § 10.29 b), qui le ré-exporte pendant la
 // transition ; les conflits et l'ordre des listes de procédures sont dans procedures.js. Calcul pur.
-// API : proceduresOf, loadProcedures, dedupProcs, expandedPath, flownPath, routingChain, routeNmToFlown, altitudeAt,
+// API : proceduresOf, loadProcedures, dedupProcs, expandedPath, flownPath, routeNmToFlown, altitudeAt,
 //   routeMidpoint (le point qui choisit le modèle météo).
 
 import {
@@ -346,53 +346,6 @@ export function flownPath(path) {
     ...p,
     nm: out.length ? out.at(-1).nm + gcNm(out.at(-1), p) : 0
   });
-  return out;
-}
-
-/** Points entre lesquels le routage (« Auto » de Carburant, frame/lib/routing.js) cherche les voies, procédures comprises : ceux de
- *  la route (points, par défaut route.points), avec la fin de la SID choisie (sa transition comprise) juste après le départ et le
- *  début de l'arrivée choisie (transition de STAR, sinon STAR, sinon transition d'approche, sinon approche) juste avant
- *  l'arrivée, quand la route ne les a pas déjà ; un point inséré porte inserted: true et son origin ('sid' | 'star' | 'app').
- *  Sans procédure : les points tels quels. Calcul pur ; procs : loadProcedures. Un départ FINOT de LFBO et une route qui
- *  commence à GOSAD donnent LFBO FINOT GOSAD… : le routage trouve G36 de FINOT à GOSAD, qu'il ne voyait pas depuis le terrain. */
-export function routingChain(f, procs = {}, points = f?.route?.points) {
-  const pts = (points || []).slice();
-  if (pts.length < 2) return pts;
-  const P = procs || {},
-    n = pts.length,
-    depIcao = String(f?.route?.dep || pts[0]?.id || '').toUpperCase(),
-    arrIcao = String(f?.route?.arr || pts[n - 1]?.id || '').toUpperCase(),
-    ofIcao = (rec, icao) => rec && (!rec.icao || String(rec.icao).toUpperCase() === icao) ? rec : null,
-    fixes = chain => chain.filter(p => p.origin !== 'missed' && p.lat !== null && p.lon !== null && p.id && !/^RW\d{2}[LRC]?$/i.test(p.id)),
-    sid = fixes(chainOf([
-      [ofIcao(P.sid, depIcao), 'sid', 'main'],
-      [ofIcao(P.sidTrans, depIcao), 'sid', 'trans']
-    ])),
-    arr = fixes(chainOf([
-      [ofIcao(P.starTrans, arrIcao), 'star', 'trans'],
-      [ofIcao(P.star, arrIcao), 'star', 'main'],
-      [ofIcao(P.appTrans, arrIcao), 'app', 'trans'],
-      [ofIcao(P.app, arrIcao), 'app', 'main']
-    ])),
-    inRoute = q => pts.slice(1, -1).some(p => coord(p?.lat) !== null && coord(p?.lon) !== null && samePoint({
-      id: String(p.id ?? ''),
-      lat: +p.lat,
-      lon: +p.lon
-    }, q)),
-    mk = q => ({
-      id: q.id,
-      lat: q.lat,
-      lon: q.lon,
-      origin: q.origin,
-      inserted: true
-    });
-  const out = [pts[0]],
-    end = sid.at(-1),
-    start = arr[0];
-  if (end && !inRoute(end)) out.push(mk(end));
-  out.push(...pts.slice(1, -1));
-  if (start && !inRoute(start) && !(end && samePoint(end, start))) out.push(mk(start));
-  out.push(pts[n - 1]);
   return out;
 }
 

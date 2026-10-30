@@ -1165,6 +1165,16 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   `planned_at` of the current flight").
 - **Checked**: see the report of the lot (suite `--changed`, Playwright at 390 and 360 in the five designs, smoke).
 
+- **30 Oct 2026 — R-F4b, the ends of the procedures computed once** (refactoring § 10.33, Simplification's decision (a)–(d)):
+  `PR.endsOf(procs, points, { dep, arr })` gives the SID's exit and the arrival's entry to both the route text (`procsToText`,
+  `RT.withProcedures` still decides whether to write them) and Auto, which first brings the text up to date; the exit and the
+  STAR's entry are then placed points of the text for Auto (`knownPoints` lends them their record's position when the base lacks
+  them; the field's own reading, `resolveRoute`, keeps such a word as before), so
+  Auto adds only the start of an approach chosen without a STAR (a generated word, as before: the approach is not in a flight
+  plan). `CF.routingChain` is removed (BUGS SOG: no other caller). **A wanted fix, not a regression**: with a point of the SID
+  already in the text but not its exit, Auto inserted the exit right after the departure and routed backwards (LFBO EXIT MIDPT…)
+  while the text joined at the common point — two rules for one fact; the text's wins. Bench `procedures.html` (endsOf).
+
 ## Inventaire du 30/10 : à refondre
 
 Read-only inventory (Features SOG, 30 Oct, for the user's challenge « supprimer les faire et défaire, le code mort, les

@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refonte — R-F4b, la sortie de SID entre une fois** (`frame/lib/procedures.js` `endsOf`; Fuel's `procsToText`, `autoAirways`,
+  `knownPoints`; `flight_path.js` `routingChain` removed; fuel DECISIONS) — the text and Auto take the ends of the procedures from
+  one rule, Auto brings the text up to date first. One wanted fix: with a SID point already in the text, Auto joins there instead of
+  inserting the exit after the departure and routing backwards.
 - **Map: no approach transition the chosen STAR does not lead to** (`modules/maps/choose.js`; maps help ×4; noreg D77). Under
   the chosen approach, a transition whose IAF is not on the chosen STAR is no longer offered (`PR.compatible({ star })`), and a
   STAR chosen after such a transition sets it back to "None" (LFPO: AMB 9E with ILS 02 leaves only "via ODILO 1S"; MOLBA 1E,

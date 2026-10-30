@@ -1017,14 +1017,21 @@ function procsToText(say) {
     star = rec(o.arr?.star),
     starT = rec(o.arr?.trans),
     sidName = name(o.dep?.sid, sid),
-    exit = PR.exitOf(sidT || sid),
+    // la sortie et l'entrée de la règle commune avec « Auto » (PR.endsOf, refonte § 10.33 R-F4b) ; le texte juge seul s'il les écrit
+    ends = PR.endsOf({
+      sid,
+      sidTrans: sidT,
+      star,
+      starTrans: starT
+    }, [], r),
+    exit = ends.exit?.id || null,
     res = RT.withProcedures(r.text || '', {
       dep: r.dep,
       arr: r.arr,
       sid: sidName,
       star: name(o.arr?.star, star),
       exit,
-      entry: PR.entryOf(starT || star),
+      entry: ends.entry?.id || null,
       sidPoints: [...PR.pointsOf(sid), ...PR.pointsOf(sidT)],
       starPoints: [...PR.pointsOf(starT), ...PR.pointsOf(star)],
       sidNames: [...m.sid.keys()],
@@ -3141,6 +3148,21 @@ function adoptForeignFlight() {
   }
   saveFlight();
 }
+/** Points connus du vol pour la lecture du texte (RM.routeModel, après la base) : ceux de route.points ; pour « Auto » (procs vrai),
+ *  aussi la sortie de la SID et l'entrée de l'arrivée choisies (PR.endsOf, avec leur position de la fiche) : une sortie écrite dans
+ *  le texte y est toujours un point placé, même quand la base ne la connaît pas (refonte § 10.33 R-F4b ; la relecture du champ, elle,
+ *  la laisse mot gardé, comme avant). */
+function knownPoints(r, withProcs = true) {
+  const known = new Map((r.points || []).filter(p => p?.id && Number.isFinite(+p.lat)).map(p => [p.id, p])),
+    procs = withProcs && S.procs?.key === procsKey(S.flight) ? S.procs.procs : null;
+  for (const p of procs ? Object.values(PR.endsOf(procs, [], r)) : [])
+    if (p && p.lat !== null && p.lon !== null && !known.has(p.id)) known.set(p.id, {
+      id: p.id,
+      lat: p.lat,
+      lon: p.lon
+    });
+  return known;
+}
 /** Relit les points de la route (texte, départ, arrivée) dans aerodb, les points déjà connus du vol en secours ;
  *  distance et route vraie déduites. normalize : le texte est réécrit sous sa forme normalisée (routeText) — à la sortie
  *  du champ, pas pendant la frappe. Dernière demande seule retenue. */
@@ -3150,7 +3172,7 @@ function resolveRoute(normalize = true) {
   S.routeTimer = setTimeout(async () => {
     const s = S,
       r = S.flight.route,
-      known = new Map((r.points || []).filter(p => p?.id && Number.isFinite(+p.lat)).map(p => [p.id, p])),
+      known = knownPoints(r, false),
       {
         points,
         unresolved,
@@ -3208,8 +3230,9 @@ async function autoAirways() {
   const btn = S.body?.querySelector('[data-do="rauto"]');
   if (btn) btn.disabled = true;
   try {
+    procsToText(false); // le texte d'abord (refonte § 10.33 R-F4b) : la sortie de la SID et l'entrée de la STAR y sont des points placés
     const seq = S.routeSeq,
-      known = new Map((r.points || []).filter(p => p?.id && Number.isFinite(+p.lat)).map(p => [p.id, p])),
+      known = knownPoints(r),
       {
         points,
         tokens
@@ -3255,40 +3278,38 @@ async function autoAirways() {
       points.splice(0, points.length, ...pts);
     }
     const genTok = new Set(); // jetons que cet Auto écrit (provenance gardée dans route.auto.seq)
-    // procédures choisies et lues : la fin de la SID après le départ et le début de l'arrivée avant l'arrivée entrent dans la chaîne
-    // (CF.routingChain, quand la route ne les a pas), pour que le routage parte de la sortie de la SID (LFBO FINOT G36 GOSAD) ; ces
-    // points sont écrits dans le texte, le tronçon terrain ↔ point de procédure n'est jamais routé (la procédure le couvre)
+    // procédures choisies et lues : la sortie de la SID après le départ et le début de l'arrivée avant l'arrivée (PR.endsOf, la règle
+    // du texte : rien quand un point de la procédure est déjà sur la route), pour que le routage parte de la sortie de la SID (LFBO
+    // FINOT G36 GOSAD) ; le texte (procsToText) porte déjà la sortie et l'entrée de la STAR, il reste le début d'une approche sans
+    // STAR (jamais dans le plan de vol) : Auto l'ajoute en mot généré. Le tronçon terrain ↔ point de procédure n'est jamais routé
     const procPts = new Set(),
-      procs = S.procs?.key === procsKey(f) ? S.procs.procs : null;
-    if (procs) {
-      const ext = CF.routingChain(f, procs, tokens.filter(t => t.pt).map(t => t.pt));
-      for (let k = 1; k < ext.length; k++) {
-        if (!ext[k].inserted) continue;
-        const prev = ext[k - 1],
-          p = {
-            id: ext[k].id,
-            lat: ext[k].lat,
-            lon: ext[k].lon
-          },
-          tok = {
-            pt: p
-          };
-        // après le départ, la sortie de la SID s'écrit après le nom de la SID s'il le suit (« LFBO LACOU7B LACOU LMG ») : le tronçon
-        // sortie → premier point est alors adjacent et routé (utilisateur, 30 octobre : « LACOU LMG n'est toujours pas trouvée »)
-        // le texte la nomme déjà sans que la base la connaisse comme point (mot gardé tel quel) : ce mot devient le point
-        const named = tokens.findIndex(t => t.keep && t.keep.toUpperCase() === String(p.id).toUpperCase());
-        if (named >= 0) tokens[named] = tok;
-        else {
-          let at = tokens.findIndex(t => t.pt === prev) + 1;
-          if (k === 1)
-            while (tokens[at]?.keep && !RM.AIRWAY_WORD.test(tokens[at].keep)) at++;
-          tokens.splice(at, 0, tok);
-          genTok.add(tok);
-        }
-        points.splice(points.indexOf(prev) + 1, 0, p);
-        procPts.add(p);
-        ext[k] = p;
-      }
+      procs = S.procs?.key === procsKey(f) ? S.procs.procs : null,
+      typed = () => tokens.filter(t => t.pt).map(t => t.pt),
+      pe = procs ? PR.endsOf(procs, typed(), r) : {};
+    for (const [end, first] of [
+        [pe.exit, true],
+        [pe.entry, false]
+      ]) {
+      const tp = typed();
+      if (!end || end.lat === null || end.lon === null || tp.length < 2) continue;
+      const prev = first ? tp[0] : tp.at(-2),
+        p = {
+          id: end.id,
+          lat: end.lat,
+          lon: end.lon
+        },
+        tok = {
+          pt: p
+        };
+      // après le départ, la sortie de la SID s'écrit après le nom de la SID s'il le suit (« LFBO LACOU7B LACOU LMG ») : le tronçon
+      // sortie → premier point est alors adjacent et routé (utilisateur, 30 octobre : « LACOU LMG n'est toujours pas trouvée »)
+      let at = tokens.findIndex(t => t.pt === prev) + 1;
+      if (first)
+        while (tokens[at]?.keep && !RM.AIRWAY_WORD.test(tokens[at].keep)) at++;
+      tokens.splice(at, 0, tok);
+      genTok.add(tok);
+      points.splice(points.indexOf(prev) + 1, 0, p);
+      procPts.add(p);
     }
     // points écrits, dans l'ordre ; adj[i] : le point i+1 suit le point i dans le texte sans rien entre eux (ni voie, ni
     // procédure) ; entry[i] : une voie part du point i ; exit[i] : le point i est arrivé par une voie

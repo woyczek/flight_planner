@@ -11,6 +11,7 @@
 //   familyOf(name), siblingsOf(list, proc), familiesOf(list) : les familles de SID / STAR (ABLI4L, ABLI4R → une ligne « ABLI4 »).
 //   compatible(list, { rwy, sid, star, app, route }, byId) : ce qui va avec le choix, les trois familles dans n'importe quel ordre ;
 //     route : les points de la route tapée (axe « vers votre route », § 10.31). exitOf(proc), entryOf(proc), pointsOf(proc).
+//   endsOf(procs, points) : la sortie de la SID et l'entrée de l'arrivée pour le texte et pour « Auto » (refonte R-F4b).
 //   isAppTransition(rec), labelOf(app, list), transitionLabelOf(rec) : les segments d'approche initiale (« INA RNAV RWY 06 ») en
 //     transitions communes aux finales de la piste, le libellé court d'une finale (« ILS 06 »), celui d'une transition
 //     (« via ODILO · ODILO 1A ») (§ 10.30, quatrième lecture).
@@ -340,6 +341,51 @@ export const pointsOf = proc => (proc?.points || []).filter(p => p?.phase !== 'm
 export const exitOf = proc => pointsOf(proc).at(-1) || null;
 /** L'entrée d'une STAR (ou d'une transition de STAR) : son premier point nommé ; null sans point. */
 export const entryOf = proc => pointsOf(proc)[0] || null;
+
+/** Les extrémités des procédures choisies pour la route, calculées une fois pour le texte et pour « Auto » (refonte § 10.33 R-F4b) :
+ *  { exit, entry }, chacune { id, lat, lon, origin } (lat / lon null quand la fiche n'a pas la position) ou null. exit : le dernier
+ *  point nommé de la transition de SID, sinon de la SID ; entry : le premier de la transition de STAR, sinon de la STAR, sinon de la
+ *  transition d'approche, sinon de l'approche (origin 'sid', 'star' ou 'app'). Une extrémité est null quand un point de sa procédure
+ *  est déjà dans points (identifiants ou { id } : la route se joint alors au point commun, la règle du texte), et l'entrée quand elle
+ *  est la sortie. procs : { sid, sidTrans, star, starTrans, app, appTrans } (les fiches, loadProcedures ou la carte des procédures) ;
+ *  { dep, arr } : les terrains de la route, une fiche d'un autre terrain (son icao) est ignorée. */
+export function endsOf(procs, points = [], {
+  dep = '',
+  arr = ''
+} = {}) {
+  const ofAd = (rec, icao) => rec && (!rec.icao || !icao || String(rec.icao).toUpperCase() === String(icao).toUpperCase()) ? rec : null,
+    Q = procs || {},
+    P = {
+      sid: ofAd(Q.sid, dep),
+      sidTrans: ofAd(Q.sidTrans, dep),
+      star: ofAd(Q.star, arr),
+      starTrans: ofAd(Q.starTrans, arr),
+      app: ofAd(Q.app, arr),
+      appTrans: ofAd(Q.appTrans, arr)
+    },
+    ids = new Set([...(points || [])].map(x => String(typeof x === 'string' ? x : x?.id ?? '').trim().toUpperCase()).filter(Boolean)),
+    named = rec => (rec?.points || []).filter(p => p?.phase !== 'missed' && String(p?.id ?? '').trim() && !/^RW\d/i.test(String(p.id)
+      .trim())),
+    num = v => v === null || v === undefined || v === '' || !Number.isFinite(+v) ? null : +v,
+    end = (recs, origin, last) => {
+      const rec = recs.find(r => named(r).length),
+        q = rec ? last ? named(rec).at(-1) : named(rec)[0] : null;
+      if (!q || recs.some(r => pointsOf(r).some(id => ids.has(id)))) return null;
+      return {
+        id: String(q.id).trim().toUpperCase(),
+        lat: num(q.lat),
+        lon: num(q.lon),
+        origin
+      };
+    },
+    exit = end([P.sidTrans, P.sid].filter(Boolean), 'sid', true),
+    star = [P.starTrans, P.star].filter(Boolean),
+    entry = star.some(r => named(r).length) ? end(star, 'star', false) : end([P.appTrans, P.app].filter(Boolean), 'app', false);
+  return {
+    exit,
+    entry: entry && exit && entry.id === exit.id ? null : entry
+  };
+}
 
 /** Ce qui, dans list, va avec le choix : une liste de pistes (chaînes ou { id }), de SID, de STAR ou d'approches, filtrée par les AUTRES
  *  familles du choix, dans n'importe quel ordre (§ 10.30, seconde lecture) :
