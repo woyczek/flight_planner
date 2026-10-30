@@ -27,6 +27,7 @@ import {
 import * as PR from '../../frame/lib/procedures.js';
 import {
   components,
+  runwayAxis,
   label as windLabel,
   severity as windSeverity
 } from '../../frame/lib/wind.js';
@@ -38,7 +39,6 @@ import {
   arrowOf,
   drawRunways,
   reserveRunways,
-  runwayBearing,
   LINE_H
 } from './procs.js';
 import {
@@ -196,7 +196,10 @@ function thresholdOf(C, rec) {
 function windOf(C, rec) {
   const w = C.wind;
   if (!w) return null;
-  const brg = runwayBearing(rec, C.known, num(C.ad?.magVar) ? +C.ad.magVar : null),
+  const brg = runwayAxis(rec, {
+      list: C.known,
+      magVar: num(C.ad?.magVar) ? +C.ad.magVar : null
+    }),
     k = brg === null ? null : components(brg, w.dir, w.kt);
   if (!k) return null;
   // le texte de frame/lib/wind.js (label : les flèches disent d'où vient le vent), le même que Carburant
@@ -847,7 +850,7 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
     };
   // les pistes : toutes, la choisie en gras
   for (const it of C.items.rwy || []) {
-    const a = arrowOf(toC, C.side, it.rec, C.known, C.ad?.magVar, it.chosen ? S.theme.fg : S.theme.muted);
+    const a = arrowOf(toC, it.rec, C.known, C.ad?.magVar, it.chosen ? S.theme.fg : S.theme.muted);
     if (!a) continue;
     a.lw = it.chosen ? 3.5 : it.id === hl ? 2.8 : 2;
     L.arrows.push(a);

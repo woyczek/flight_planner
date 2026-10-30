@@ -44,6 +44,9 @@ import {
   syncView,
   legendSync
 } from './sheet_view.js';
+import {
+  wantRunways
+} from './procs.js';
 
 // ---------------------------------------------------------------- vol
 /** Le vol courant lu : { flight, points, altn, levelFt, updated }. Le dégagement vient d'aerodb, sans être attendu : sa
@@ -126,35 +129,21 @@ export function loadProcs() {
     key = procKey(f);
   if (key === S.procsKey) return;
   S.procsKey = key;
-  // les pistes des deux terrains, lues avec les procédures ou seules : les vecteurs de seuil de la carte (§ 10.30) et le seuil
-  // opposé d'une piste (relèvement)
+  // les pistes des deux terrains, lues avec le vol (choisies ou non) : les vecteurs de seuil de la carte (§ 10.30), par le chemin de
+  // toutes les pistes (S.runways, wantRunways)
   const A = S.ctx.aerodb,
-    r = f?.route || {},
-    rwList = icao => icao && A?.runways ? Promise.resolve().then(() => A.runways(String(icao).toUpperCase())).catch(() => []) : [];
+    r = f?.route || {};
+  wantRunways([r.dep || r.points?.[0]?.id, r.arr || r.points?.at?.(-1)?.id]);
   if (!isChosen(f) || !A) {
     if (S.procs) {
       S.procs = null;
       afterPath();
     }
-    if (A) Promise.all([rwList(r.dep || r.points?.[0]?.id), rwList(r.arr || r.points?.at?.(-1)?.id)]).then(([rd, ra]) => {
-      if (!S || S.procsKey !== key) return;
-      S.rwys = {
-        dep: rd || [],
-        arr: ra || []
-      };
-      schedule();
-    }, () => {});
     return;
   }
-  Promise.all([loadProcedures(A, f), rwList(r.dep || r.points?.[0]?.id), rwList(r.arr || r.points?.at?.(-1)?.id)]).then(([procs, rd,
-    ra
-  ]) => {
+  loadProcedures(A, f).then(procs => {
     if (!S || S.procsKey !== key) return;
     S.procs = procs;
-    S.rwys = {
-      dep: rd || [],
-      arr: ra || []
-    };
     afterPath();
   }, () => {});
 }
@@ -267,6 +256,8 @@ export function watchFlight() {
 }
 
 // ---------------------------------------------------------------- réglages
+/** Seuil de zoom des vecteurs de piste sans réglage de la compagnie (le seul défaut, lu ici). */
+const RUNWAY_ZOOM = 11;
 /** Profils des modes de la compagnie (airline/map_profiles.json) et unité d'altitude du pilote (fuel.json, displayAlt :
  *  équidistance des courbes de niveau). */
 export async function readSettings() {
@@ -277,7 +268,7 @@ export async function readSettings() {
   S.repoProfiles = P?.profiles && typeof P.profiles === 'object' ? P.profiles : null;
   // seuil de zoom des vecteurs de piste (V3 § 10.30 ; Réglages › Administration ; frame/settings/INTEGRATION.md § 4)
   const z = P?.runwayZoom;
-  S.runwayZoom = Number.isInteger(z) && z >= 8 && z <= 16 ? z : 11;
+  S.runwayZoom = Number.isInteger(z) && z >= 8 && z <= 16 ? z : RUNWAY_ZOOM;
   S.altUnit = F?.displayAlt === 'm' ? 'm' : 'ft';
 }
 /** Réglages de l'écran gardés sur cet appareil (cache/maps/ui.json) : mode et couches par mode (seulement ce qui diffère des

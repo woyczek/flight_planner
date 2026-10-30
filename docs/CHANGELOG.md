@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: runways, refactor without change of behaviour (R-M4, § 10.33)** (`modules/maps/procs.js`, `data.js`, `draw.js`,
+  `choose.js`; SPEC, DECISIONS; noreg D58, D71, D60, D79). One store `S.runways` filled by one path (`wantRunways`) instead of
+  `S.rwys` and `S.adRwys`; the runway zoom's default written once (`readSettings`); `arrowOf` without its unused side; the
+  bearing from `wind.runwayAxis` (R-F1), the rule shared with Fuel; dead `gcNmPlain` removed.
+
 - **Refactor R-C1, no behaviour change: one identity of the relay** (`tools/launch.py`; frame SPEC § 3.11, DECISIONS; noreg
   I13) — host, port and server in one `Relay`, set together before listening; the proxy-header belt a named method.
 - **Settings: the keys panel's link to the IVAO application assistant says its own text** (`frame/settings/launcher.js`) — the key

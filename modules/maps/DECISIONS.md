@@ -1695,6 +1695,12 @@ and `S.adRwys` (the others, asked from the previous drawing's `S.adHits`, one fr
 is dead; `magVarOf` scans the aerodromes at each call.
 Target: one store `S.runways` (Map icao → records, departure and arrival included) filled by one request path, `runwayZoom`
 read once with its default in `readSettings`.
+Done (R-M4, 30 Oct): `S.runways` filled by `wantRunways(icaos)` alone (the flight's two aerodromes from `loadProcs`, the drawn
+ones from `wantDrawnRunways`); `RUNWAY_ZOOM` in `data.js` is the only default; `arrowOf(toC, rw, list, magVar, col)` (the
+departure's and arrival's vectors tagged by `runwayArrows`); `gcNmPlain`, `oppositeId` and `runwayBearing` removed for
+`runwayAxis` of `frame/lib/wind.js` (R-F1), the same rule — its one addition, the number × 10 + `magVar` for a runway with
+neither `true`, opposite threshold nor `qfu`, never reaches a vector (such a runway has no position) and gives the choose
+mode's wind line its bearing, as Fuel does; `magVarOf` indexes the aerodromes once per reading.
 
 **5. Labels of procedures** (`procs.js` `layout` / `drawLabels`, `choose.js` `L.top`, `render_airspace.js` airway boxes). Three
 drawers of boxed labels with their own fonts, paddings and line heights (`LINE_H`, `LINE_SM`); `procLabel` per procedure outside

@@ -24,6 +24,9 @@ import {
 import {
   schedule
 } from './draw.js';
+import {
+  runwayAxis
+} from '../../frame/lib/wind.js';
 
 /** Teintes des procédures, de jour puis de nuit (utilisateur, 29 octobre : « des couleurs de contraste autres que violet (vert ?
  *  orange ? bleu ?) ») : SID en vert, STAR en orange, approche (et son approche interrompue) en bleu ciel — ni le violet de la
@@ -642,47 +645,26 @@ export function cardHtml(icao) {
 }
 
 // ---------------------------------------------------------------- les pistes en vecteur de seuil (V3_SPECIFICATION § 10.30)
-/** Longueur du vecteur (px écran, jamais géographique) et seuil de zoom par défaut (maps.runwayZoom de la compagnie). */
-const VEC_PX = 24,
-  RWY_ZOOM = 11;
-/** Numéro de la piste opposée (« 24 » → « 06 », « 27L » → « 09R »). */
-const oppositeId = id => {
-  const m = /^(?:RW)?(\d{2})([LRC]?)$/i.exec(String(id || '').trim());
-  if (!m) return '';
-  const n = ((+m[1] + 17) % 36) + 1,
-    s = {
-      L: 'R',
-      R: 'L',
-      C: 'C'
-    } [m[2].toUpperCase()] || '';
-  return `${String(n).padStart(2, '0')}${s}`;
-};
+/** Longueur du vecteur (px écran, jamais géographique). */
+const VEC_PX = 24;
 const rwNo = id => String(id ?? '').trim().toUpperCase().replace(/^RW/, '');
-/** Relèvement vrai d'une piste (décision de la session ergonomie, 29 octobre) : `true` de la fiche (eAIP AD 2.12), sinon la
- *  direction seuil → seuil opposé quand les deux sont connus, sinon qfu (magnétique) + la déclinaison du terrain, sinon qfu tel
- *  quel (une piste déduite). */
-export function runwayBearing(rw, list, magVar) {
-  if (num(rw?.true)) return +rw.true;
-  const o = (list || []).find(x => rwNo(x?.id) === oppositeId(rw?.id));
-  if (o && num(o.lat) && num(o.lon) && num(rw.lat) && num(rw.lon)) {
-    const dy = +o.lat - +rw.lat,
-      dx = (((+o.lon - +rw.lon) + 540) % 360 - 180) * Math.cos(+rw.lat * RAD);
-    return ((Math.atan2(dx, dy) / RAD) + 360) % 360;
-  }
-  if (num(rw?.qfu)) return (+rw.qfu + (num(magVar) ? +magVar : 0) + 360) % 360;
-  return null;
-}
-/** Déclinaison (degrés, + à l'est) du terrain d'un côté, d'après les terrains lus pour la vue (magVar) ; null sinon. */
+/** Déclinaison (degrés, + à l'est) d'un terrain d'après sa fiche (les terrains lus pour la vue, indexés une fois par lecture) ; null
+ *  sinon. */
+const magVars = new WeakMap();
 const magVarOf = icao => {
-  const a = (S.data?.data?.aerodromes || []).find(x => String(x.icao || x.id || '').toUpperCase() === String(icao || '').toUpperCase());
-  return num(a?.magVar) ? +a.magVar : null;
+  const list = S.data?.data?.aerodromes || [];
+  let m = magVars.get(list);
+  if (!m) magVars.set(list, m = new Map(list.filter(a => num(a?.magVar)).map(a => [String(a.icao || a.id || '').toUpperCase(), +a
+    .magVar
+  ])));
+  return m.get(String(icao || '').toUpperCase()) ?? null;
 };
-/** Vecteurs de seuil des pistes du vol (V3 § 10.30) : toutes les pistes connues des terrains de départ et d'arrivée (S.rwys, lues avec
- *  le vol), celle choisie dans route.procedures en gras et dans la teinte de son côté, les autres fines ; seulement à partir du seuil
- *  de zoom de la compagnie (airline/map_profiles.json, runwayZoom, S.runwayZoom ; 11 sans réglage) ; [] en dessous. zoom : le zoom
- *  réel de la vue (MapsRender.zoomOf). */
+/** Vecteurs de seuil des pistes du vol (V3 § 10.30) : toutes les pistes connues des terrains de départ et d'arrivée (S.runways, lues
+ *  avec le vol), celle choisie dans route.procedures en gras et dans la teinte de son côté, les autres fines ; puis celles des autres
+ *  terrains dessinés, fines ; seulement à partir du seuil de zoom de la compagnie (S.runwayZoom, readSettings) ; [] en dessous. zoom :
+ *  le zoom réel de la vue (MapsRender.zoomOf). */
 export function runwayArrows(toC, zoom) {
-  if (!(zoom >= (S.runwayZoom ?? RWY_ZOOM))) return [];
+  if (!(zoom >= S.runwayZoom)) return [];
   const f = S.route?.flight,
     v = f ? proceduresOf(f) : null,
     r = f?.route || {},
@@ -692,25 +674,26 @@ export function runwayArrows(toC, zoom) {
       ['dep', r.dep || r.points?.[0]?.id],
       ['arr', r.arr || r.points?.at?.(-1)?.id]
     ]) {
-    const list = S.rwys?.[side] || [],
+    const list = S.runways?.get(String(icao || '').toUpperCase()) || [],
       chosen = rwNo(v?.[side]?.rwy),
       col = colOf(side === 'dep' ? 'sid' : P.app ? 'app' : 'star');
     for (const rw of list) {
       const on = !!chosen && rwNo(rw.id) === chosen,
-        a = arrowOf(toC, side, rw, list, magVarOf(icao), on ? col : S.theme.muted);
+        a = arrowOf(toC, rw, list, magVarOf(icao), on ? col : S.theme.muted);
       if (!a) continue;
+      a.side = side;
       a.lw = on ? 3.5 : 2;
       out.push(a);
     }
   }
-  // les autres terrains dessinés (S.adHits du dernier dessin), leurs pistes lues à la demande (S.adRwys), fines
+  // les autres terrains dessinés (S.adHits du dernier dessin), leurs pistes lues à la demande (wantDrawnRunways), fines
   const own = new Set([r.dep, r.arr].filter(Boolean).map(x => String(x).toUpperCase()));
   for (const h of S.adHits || []) {
     const icao = String(h.a?.icao || '').toUpperCase(),
-      list = S.adRwys?.get(icao);
+      list = S.runways?.get(icao);
     if (!icao || own.has(icao) || !list?.length) continue;
     for (const rw of list) {
-      const a = arrowOf(toC, 'arr', rw, list, num(h.a.magVar) ? +h.a.magVar : null, S.theme.muted);
+      const a = arrowOf(toC, rw, list, num(h.a.magVar) ? +h.a.magVar : null, S.theme.muted);
       if (!a) continue;
       a.lw = 1.6;
       out.push(a);
@@ -718,27 +701,34 @@ export function runwayArrows(toC, zoom) {
   }
   return out;
 }
-/** Les pistes des terrains dessinés au dernier dessin, de près (au-dessus de runwayZoom) : demandées à aerodb une fois par terrain,
- *  en un lot, gardées dans S.adRwys (undefined : demandée ; [] : rien) ; la carte est redessinée à l'arrivée du lot. */
-export function wantRunways(zoom) {
-  const A = S.ctx.aerodb;
-  if (!(zoom >= (S.runwayZoom ?? RWY_ZOOM)) || !A?.runways) return;
-  const M = S.adRwys ||= new Map(),
-    ask = [...new Set((S.adHits || []).map(h => String(h.a?.icao || '').toUpperCase()).filter(i => /^[A-Z0-9]{4}$/.test(i) && !M.has(i)))];
+/** Les pistes des terrains : une seule réserve, S.runways (Map OACI → fiches d'aerodb ; undefined : demandée, [] : rien), un seul
+ *  chemin (refonte R-M4) : les codes pas encore demandés partent à aerodb en un lot, la carte est redessinée à l'arrivée du lot. */
+export function wantRunways(icaos) {
+  const A = S?.ctx.aerodb;
+  if (!A?.runways) return;
+  const M = S.runways ||= new Map(),
+    ask = [...new Set((icaos || []).map(i => String(i || '').toUpperCase()).filter(i => /^[A-Z0-9]{4}$/.test(i) && !M.has(i)))];
   if (!ask.length) return;
   for (const i of ask) M.set(i, undefined);
   Promise.all(ask.map(i => Promise.resolve().then(() => A.runways(i)).then(l => [i, l || []], () => [i, []]))).then(got => {
-    if (!S || S.adRwys !== M) return;
+    if (!S || S.runways !== M) return;
     for (const [i, l] of got) M.set(i, l);
     schedule();
   });
 }
-/** Vecteur de seuil d'une piste rw (fiche d'aerodb) parmi les pistes list du terrain : { side, a (le seuil), b (VEC_PX plus loin le long
- *  du relèvement vrai, sur l'écran), name, col } ; null sans position ni relèvement. Partagé avec le mode « choisir sur la carte »
+/** Les pistes des terrains dessinés au dernier dessin, de près (au-dessus de runwayZoom). */
+export function wantDrawnRunways(zoom) {
+  if (zoom >= S.runwayZoom) wantRunways((S.adHits || []).map(h => h.a?.icao));
+}
+/** Vecteur de seuil d'une piste rw (fiche d'aerodb) parmi les pistes list du terrain : { a (le seuil), b (VEC_PX plus loin le long du
+ *  relèvement vrai, sur l'écran), name, col } ; null sans position ni relèvement. Partagé avec le mode « choisir sur la carte »
  *  (choose.js), qui les dessine toutes. */
-export function arrowOf(toC, side, rw, list, magVar, col) {
+export function arrowOf(toC, rw, list, magVar, col) {
   if (!num(rw?.lat) || !num(rw?.lon)) return null;
-  const brg = runwayBearing(rw, list, magVar);
+  const brg = runwayAxis(rw, {
+    list,
+    magVar
+  });
   if (brg === null) return null;
   // le sens sur l'écran : un point 1 NM plus loin, projeté ; le vecteur a toujours VEC_PX, quel que soit le zoom
   const end = ahead({
@@ -749,7 +739,6 @@ export function arrowOf(toC, side, rw, list, magVar, col) {
     e = toC(end.lat, nearLon(end.lon, +rw.lon)),
     len = Math.hypot(e.x - a.x, e.y - a.y) || 1;
   return {
-    side,
     a,
     b: {
       x: a.x + (e.x - a.x) / len * VEC_PX,
@@ -759,8 +748,6 @@ export function arrowOf(toC, side, rw, list, magVar, col) {
     col
   };
 }
-/** Distance (NM) entre deux points proches (plan local). */
-const gcNmPlain = (a, b) => Math.hypot((+b.lat - +a.lat) * 60, (((+b.lon - +a.lon) + 540) % 360 - 180) * 60 * Math.cos(+a.lat * RAD));
 /** Place du numéro d'un vecteur de seuil : en queue, derrière le seuil (la police du dessin). */
 function numBox(ctx, w) {
   const dx = w.b.x - w.a.x,

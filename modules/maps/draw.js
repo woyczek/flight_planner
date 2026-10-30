@@ -50,7 +50,7 @@ import {
   runwayArrows,
   drawRunways,
   reserveRunways,
-  wantRunways,
+  wantDrawnRunways,
   routeLines
 } from './procs.js';
 import {
@@ -480,7 +480,7 @@ function draw() {
     // les pistes (vecteurs de seuil et numéros) dans la couche des terrains, priorité « terrains » de la passe de collision
     runways: rwys.length ? (c, pl) => drawRunways(c, rwys, pl) : null,
     runwayLabels: rwys.length ? (c, pl) => reserveRunways(c, rwys, pl) : null,
-    adName: !mission && !pick && zReal >= (S.runwayZoom ?? 11) ? a => adTitle(a, a.icao) : null,
+    adName: !mission && !pick && zReal >= S.runwayZoom ? a => adTitle(a, a.icao) : null,
     top: pick ? c => pick.top(c) : procs ? c => drawProcLabels(c, procs) : null,
     mission: mission && S.mission ? {
       points: S.mission.points,
@@ -497,7 +497,7 @@ function draw() {
   stat(got0.zoom);
   S.zoneHits = got0.zoneLabels || [];
   S.adHits = got0.aerodromes || [];
-  if (!mission && !pick) wantRunways(zReal); // les pistes des terrains dessinés, de près
+  if (!mission && !pick) wantDrawnRunways(zReal); // les pistes des terrains dessinés, de près
   S.navHits = got0.navaids || [];
   S.vrpHits = got0.vrps || [];
   // mode choix : rien par-dessus les procédures à choisir (ni dégagement, ni TOC / TOD, ni points de report, ni vents, ni position)

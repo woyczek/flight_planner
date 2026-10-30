@@ -755,7 +755,7 @@ _PROFILES_PUT = """(v) => window.FrameData.adapter({ id: 't-rz', reads: ['airlin
       rule='V3 § 10.30 (replacing the full-length arrow of § 10.24): a 24 px screen vector from each threshold along the true bearing, the designator at its tail, the chosen runway bold in its side’s hue; only from maps.runwayZoom (airline/map_profiles.json runwayZoom, 8 to 16, 11 by default)')
 def d58(c):
     _open_proc(c, _proc_flight())
-    c.until("() => !!(window.__mp.S.procs && window.__mp.S.procs.depRwy && window.__mp.S.rwys)", timeout=8000, what='the runways read')
+    c.until("() => !!(window.__mp.S.procs && window.__mp.S.procs.depRwy && window.__mp.S.runways && (window.__mp.S.runways.get('LFRS') || []).length)", timeout=8000, what='the runways read')
     c.eq(c.js("() => window.__mp.S.runwayZoom"), 11, 'no setting: the threshold is 11', what='runwayZoom')
     near = c.js(_RWY_JS, [4000, 12])
     c.eq(sorted(w['side'] for w in near), ['arr', 'dep'], 'above the threshold, the runways of both aerodromes are vectors', what=f'vectors {near}')
@@ -780,10 +780,11 @@ def d58(c):
     c.open('maps?view=-1.8,46.95,-1.1,47.35', docs=fdocs(f) + [list(d) for d in _PROC_DOCS], flight=False, airfields=True, wait=False)
     c.ready('maps', sheet=True)
     c.js(_STATE_JS)
-    c.until("() => !!(window.__mp.S && window.__mp.S.rwys && window.__mp.S.rwys.dep.length)", timeout=10000, what='the runways read without procedures')
+    c.until("() => !!(window.__mp.S && window.__mp.S.runways && (window.__mp.S.runways.get('LFRS') || []).length)", timeout=10000, what='the runways read without procedures')
     w = c.js(_RWY_JS, [4000, 12])
     c.ok(len(w) == 2 and all(x['lw'] == 2 for x in w), f'{w}', 'every runway thin when none is chosen')
-    b = c.js("""() => { const B = window.__pr.runwayBearing;
+    # the Map's vectors read the one rule of the frame (wind.runwayAxis, refactor R-F1 / R-M4)
+    b = c.js("""async () => { const W = await import('/frame/lib/wind.js'), B = (rw, list, magVar) => W.runwayAxis(rw, { list, magVar });
       return [B({ id: '20', true: 198.35, qfu: 197 }, [], 1.8), B({ id: '20', lat: 48.738, lon: 2.387, qfu: 197 }, [{ id: '02', lat: 48.7175, lon: 2.3767 }], 1.8),
         B({ id: '20', qfu: 197 }, [], 1.8), B({ id: '20', qfu: 197 }, [], null)] }""")
     c.ok(abs(b[0] - 198.35) < .01, f'{b}', 'the true bearing of the record first')
@@ -1862,7 +1863,7 @@ def d71(c):
     c.ready('maps', sheet=True)
     c.js(_STATE_JS)
     c.until("() => !!(window.__mp.S && (window.__mp.S.adHits || []).some(h => h.a.icao === 'LFAB'))", timeout=12000, what='LFAB is drawn')
-    c.until("() => !!(window.__mp.S.adRwys && (window.__mp.S.adRwys.get('LFAB') || []).length)", timeout=8000, what='its runways are read')
+    c.until("() => !!(window.__mp.S.runways && (window.__mp.S.runways.get('LFAB') || []).length)", timeout=8000, what='its runways are read')
     c.until("() => (window.__mp.S.adHits || []).some(h => h.a.icao === 'LFAB' && h.a.label)", timeout=6000, what='the label with the name')
     st = c.js(_AD_STATE)
     c.ok(st['zoom'] >= 11, f"{st['zoom']:.1f}", 'the view is above the airline’s zoom (11)')

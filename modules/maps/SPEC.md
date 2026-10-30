@@ -278,15 +278,21 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     "· Little Navmap, local" (`lnm`), "· outdated" (a hand-read file whose cycle is past); the texts are in `texts.js`;
   - **names, fixes and constraints by zoom thresholds** of the tuning page (§ 14; user, 29 Oct: "ils disparaissent trop tôt en zoom arrière"): `procNames` (the procedures' names, [0, 24] to start: every scale) and `procCons` (their fixes and constraints, [6.25, 24]: from the regional view, about 110 px per degree); the names have a fallback anchor (the middle of the longest leg of the procedure's fixes, its threshold included when it has fewer than two) and all procedure labels are painted last, over the airway boxes (`MapsRender.draw` `top`);
   - **the runways as threshold vectors** (V3 § 10.30, replacing the full-length arrow of § 10.24, "pas convaincante", hidden by its
-    label; `procs.js` `runwayArrows`, `arrowOf`, `drawRunways`): every runway of the departure and arrival aerodromes (`S.rwys`,
-    read with the flight even without a chosen procedure) is a **24 px screen vector** (never geographic) from its threshold along
-    its **true** bearing — the record's `true`, else threshold to opposite threshold, else `qfu` + the aerodrome's `magVar`, else
-    `qfu` —, a small head at its end, the designator at its tail, behind the threshold (never on the vector); the runway of
+    label; `procs.js` `runwayArrows`, `arrowOf`, `drawRunways`): every runway of the departure and arrival aerodromes (read with
+    the flight even without a chosen procedure) is a **24 px screen vector** (never geographic) from its threshold along its
+    **true** bearing — `runwayAxis` of `frame/lib/wind.js`, the one rule shared with Fuel: the record's `true`, else threshold to
+    opposite threshold, else `qfu` + the aerodrome's `magVar`, else the number × 10 + `magVar` —, a small head at its end, the
+    designator at its tail, behind the threshold (never on the vector); the runway of
     `route.procedures` bold in its side's hue (SID; approach, else STAR), the others thin and muted. Only from the airline's
-    `runwayZoom` (`airline/map_profiles.json`, integer 8 to 16, 11 by default; read with the profiles, `readSettings`, redrawn
-    on the watch of that file), compared with the real zoom of the view (`MapsRender.zoomOf`); below it nothing is drawn. The
-    tuning page's `procRwy` threshold is gone. From the same zoom, every aerodrome drawn (`S.adHits` of the last drawing) has its
-    runways read on demand (`wantRunways`: `aerodb.runways`, one batch, kept in `S.adRwys`) and drawn thin with their numbers;
+    `runwayZoom` (`airline/map_profiles.json`, integer 8 to 16, 11 by default; read once with the profiles, `readSettings`, which
+    holds the only default; redrawn on the watch of that file), compared with the real zoom of the view (`MapsRender.zoomOf`);
+    below it nothing is drawn. The tuning page's `procRwy` threshold is gone. From the same zoom, every aerodrome drawn (`S.adHits`
+    of the last drawing) has its runways read on demand and drawn thin with their numbers. **One store** (refactor R-M4):
+    `S.runways`, a Map ICAO → records of `aerodb.runways` (`undefined` while asked, `[]` when none), filled by **one path**,
+    `wantRunways(icaos)` (one batch per call, the map redrawn when it arrives): the departure and arrival with the flight
+    (`loadProcs`), the aerodromes drawn from `runwayZoom` (`wantDrawnRunways`); the aerodrome's `magVar` comes from its record
+    (the drawn aerodromes, else the data read); `arrowOf(toC, rw, list, magVar, col)` has no side (`runwayArrows` tags the
+    departure's and arrival's own);
     the vectors and numbers are painted by the screen's `runways(ctx, pl)` callback right after the aerodromes, in the one
     collision pass with the aerodromes' priority (a number without room is not written, its vector stays); the aerodromes'
     labels read code and name (`adName`: `adTitle` of `frame/lib/adnames.js`, "LFPO Paris-Orly", the name rule of § 10.27 shared with Fuel). In the choose mode every runway of the aerodrome is a vector, the one in force
