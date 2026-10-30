@@ -890,6 +890,10 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 48 | Resumption retouches (add1e78a3), frozen test base (94515ca99) | acceptable; point and note of 44 settled |
 | 49 | Map left right after mounting (94ce646e8) | acceptable |
 | 50 | Fuel: the map's proposal in one pass, runway wind (25b887349) | acceptable; note of 47 settled |
+| 51 | Frame: local-network pairing from the same origin, literal pathspecs everywhere, GitHub without redirects (c60c52f35) | acceptable |
+| 52 | Fuel: the route batch (5a374c189, d34ad04fb, 79993b1ea, 40f834eb7, 1bade3bc8, 512902c66) | acceptable |
+| 53 | Tests: K49 and the noreg lock (6673bc93f, 13763c136, 28a914d36, 2bb9162e1) | acceptable |
+| 54 | Map: nine display commits (83c31fed9 to 43df712ef) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1511,6 +1515,24 @@ an address back to Fuel by itself.
 them as before; the choices are applied quietly, then one drawing and one write; with no admitted key nothing is written
 or said, and without keys nothing happens at mounting. The wind of each runway option comes from the known METAR (never
 the TAF), turned into numbers and arrows by `frame/lib/wind.js`, escaped in the option's text and title.
+
+**51. c60c52f35 — acceptable.** `POST /__lan/pair` requires `Sec-Fetch-Site: same-origin`, else `Origin` equal to
+`http://<Host>` (the host already checked exactly): the local network's login CSRF is closed, as for the relay.
+`data_sync.lit()` puts `GIT_LITERAL_PATHSPECS` on every git command that receives file paths (adopt, resolve,
+`_commit_local`, `untrack_indexes`, `settle`, the resumption, the frame's batch); what remains without it are wanted
+patterns (`POOL`, `EXCLUDE`, `INDEXES`, `OUTPUTS`) or fixed paths. The GitHub transport refuses redirects.
+
+**52. Fuel route batch — acceptable.** The only new write is `saveFlight` on the Auto gesture; nothing at mounting; the
+route text stays the pilot's input, its points resolved by aerodb. The completion list escapes its token and label, ids
+are indexes, the chosen token is written at the cursor and parsed again like typing, the typed text only feeds
+`aerodb.find`. The « Points (N) » groups escape their labels and fixes, the point's id goes through `esc`, positions are
+numbers. No network of its own.
+
+**53. Tests (K49, noreg lock) — acceptable.** Test infrastructure only.
+
+**54. Map display commits — acceptable.** No `data.put`, `fetch`, `location` or `localStorage` added; unescaped
+interpolations are family names, booleans, numbers, the palette's hue and already-escaped fragments; selectors use
+`CSS.escape`. Defence in depth: `data-sev` could go through `esc` too.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
