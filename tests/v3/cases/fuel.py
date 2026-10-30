@@ -702,7 +702,7 @@ def f19(c):
     c.eq(p['by'], 'fuel', 'by is fuel', what='procedures.by')
     c.eq(p['dep'].get('rwy'), '03', 'the runway of the OFP\'s SID (one runway per record)', what='departure runway')
     c.eq(p['arr'], mine['arr'], 'the arrival the pilot chose is kept as it is (the OFP proposes, it never replaces)', what='route.procedures.arr')
-    sid_line = norm(row(c, 'procChange').replace('{side}', row(c, 'dep')).replace('{parts}', f"{kinds('rwy')} — → 03 · {kinds('sid')} — → LUGE4N"))
+    sid_line = norm(row(c, 'procChange').replace('{side}', row(c, 'dep')).replace('{parts}', f"{kinds('rwy')} → 03 · {kinds('sid')} → LUGE4N"))
     lines = c.quiet("(window.__notes || []).length")
     notes = [norm(n) for n in c.note_log()]
     c.ok(sid_line in notes, f'notifications {notes}', f'one line for the side it filled: {sid_line}')
@@ -714,7 +714,7 @@ def f19(c):
     p = d['route']['procedures']
     c.eq(p['dep'], None, 'a departure set to "aucune" is a choice: the OFP leaves it', what='route.procedures.dep')
     c.eq(p['arr'].get('rwy'), '13L', 'the arrival takes the runway of the OFP\'s STAR', what='arrival runway')
-    star_line = norm(row(c, 'procChange').replace('{side}', row(c, 'arr')).replace('{parts}', f"{kinds('rwy')} — → 13L · {kinds('star')} — → LERG1R"))
+    star_line = norm(row(c, 'procChange').replace('{side}', row(c, 'arr')).replace('{parts}', f"{kinds('rwy')} → 13L · {kinds('star')} → LERG1R"))
     c.quiet("(window.__notes || []).length")
     notes = [norm(n) for n in c.note_log()]
     c.ok(star_line in notes, f'notifications {notes}', f'one line for the arrival it filled: {star_line}')
@@ -1063,7 +1063,7 @@ def f34(c):
     # the title: side, code, the name aerodb gives (the seeded base names its aerodromes "<code> TEST")
     # le texte du titre sans son bouton « Sur la carte »
     titles = [norm(t) for t in c.js("[...document.querySelectorAll('[data-module=fuel] [data-proc] .fu-proctitle')].map(e => { const x = e.cloneNode(true); x.querySelectorAll('button, .fu-procsum').forEach(b => b.remove()); return x.textContent })")]  # the summary: F65
-    c.eq(titles, [norm(f"{row(c, 'dep')} LFRS LFRS TEST"), norm(f"{row(c, 'arr')} LFML LFML TEST")], 'each side is titled with its side, its code and the aerodrome\'s name', what='titles')
+    c.eq(titles, [norm(f"{row(c, 'dep')} LFRS Lfrs Test"), norm(f"{row(c, 'arr')} LFML Lfml Test")], 'each side is titled with its side, its code and the aerodrome\'s name', what='titles')
     # ONE secondary line per side; the arrival's file was read by hand (seeded 29 Oct 16:53Z, an earlier cycle: ⌛), the departure's is published (no date)
     c.eq(c.count(f'{FUEL} [data-proc] .fu-procmeta'), 2, 'one secondary line per side, not more', what='secondary lines')
     arr = meta_parts(c, 'arr')
@@ -1357,7 +1357,7 @@ def wait_sug(c, prefix, what):
 def f44(c):
     open_names(c)
     full = ad_lines(c)
-    c.eq([t for t, _ in full], ['LFRS — LFRS TEST', 'LFML — LFML TEST', 'LFMT — LFMT TEST'], 'each field shows its aerodrome\'s name (the base names the seeded ones "<code> TEST")', what='name lines')
+    c.eq([t for t, _ in full], ['LFRS — Lfrs Test', 'LFML — Lfml Test', 'LFMT — Lfmt Test'], 'each field shows its aerodrome\'s name (the base names the seeded ones "<code> TEST")', what='name lines')
     h = {hh for _, hh in full}
     c.ok(len(h) == 1 and next(iter(h)) > 10, f'{full}', 'the three lines share one height')
     # fewer than four characters: empty, same height; four that match nothing: « inconnu »
@@ -1453,7 +1453,7 @@ def f47(c):
     wait_quote(c)
     to_step(c, 4)
     c.until(named, what='the summary names both aerodromes')
-    c.eq([norm(e) for e in c.js(dds)], [norm('LFRS LFRS TEST'), norm('LFML LFML TEST')], 'the summary: code and name for the departure and for the arrival', what='summary before the start')
+    c.eq([norm(e) for e in c.js(dds)], [norm('LFRS Lfrs Test'), norm('LFML Lfml Test')], 'the summary: code and name for the departure and for the arrival', what='summary before the start')
     c.open('fuel', docs=proc_flight(None, True), airfields=True)
     wait_quote(c)
     to_step(c, 4)
@@ -1950,4 +1950,31 @@ def f77(c):
     c.settle()
     c.wait(600)
     c.eq(c.js(rt), want, 'two returns, the same text: nothing repeated', what='route text')
+
+
+@case('F78', 'One distance with procedures, said; same-name SIDs of two runways make one row with their runways', 'F', tags=('fuel', 'aerodb'),
+      designs=('standard',), screens=False, langs4=True,
+      rule='BUGS SOG walk, 30 Oct (anomalies 13 and 11): the route line gives the extended path\'s distance « procédures comprises »; never two '
+      'identical labels in a list (« AMOLO 7A » for 14L and for 14R → « AMOLO 7A · 14L/14R »)')
+def f78(c):
+    from fixtures.procedures import pt, rec
+    docs = proc_docs()
+    lfrs = next(d for d in docs if d[0].endswith('/LFRS.json'))
+    twin = lambda rw, a: {**rec('LFRS', 'SID', 'TWIN 7A', [rw], [pt(1, f'RW{rw}', *a), pt(2, 'LUGEN', 46.5833, -1.2)]), 'id': f'LFRS.SID.TWIN7A.RW{rw}.NONE'}
+    lfrs[1] = {**lfrs[1], 'procedures': [*lfrs[1]['procedures'], twin('03', (47.138, -1.62)), twin('21', (47.17, -1.595))]}
+    c.open('fuel', docs=docs + proc_flight({'dep': {'rwy': '03', 'sid': 'LFRS.SID.NTS1A.RW03.NONE'}, 'by': 'fuel', 'at': '2026-10-28T09:00:00Z'}), airfields=True)
+    to_step(c, 1)
+    wait_rows(c, 'dep')
+    # 13: the extended path (the SID included): the route line says « procédures comprises »
+    want = norm(tx('modules/fuel/module.js', 'procs', c.lang, after='rsrc: {'))
+    c.until(f"(w) => (document.querySelector('{FUEL} [data-rinfo]') || {{}}).textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w)", want,
+            timeout=10000, what=f'the route line: « … {want} »')
+    # 11: one row for the two records named TWIN 7A
+    opts = [lab for v, lab in sel_opts(c, 'p-dep-sid') if v not in ('', '__none')]
+    c.eq(len(opts), len(set(opts)), f'no two identical labels: {opts}', what='SID labels')
+    twins = [o for o in opts if o.startswith('TWIN 7A')]
+    c.eq(len(twins), 1, f'one row for TWIN 7A, its runways said: {twins}', what='TWIN 7A rows')
+    c.ok('03/21' in twins[0], twins[0], 'the row lists the runways 03/21')
+    val = c.js("[...document.querySelector('[data-module=fuel] select[data-k=\"p-dep-sid\"]').options].find(o => o.textContent.startsWith('TWIN 7A')).value")
+    c.eq(val, 'LFRS.SID.TWIN7A.RW03.NONE', 'its value is the record that serves the chosen runway 03', what='TWIN 7A value')
 

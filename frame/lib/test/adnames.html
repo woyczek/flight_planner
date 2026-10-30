@@ -62,6 +62,19 @@
     name: 'Testville-Sud',
     city: 'Testville'
   }) === 'Testville-Sud');
+  ck('adLabel : un nom tout en capitales s’écrit comme un nom ; un nom en casse mixte est gardé', adLabel({
+    icao: 'LFVX',
+    name: 'TESTVILLE BLAGNAC'
+  }) === 'Testville Blagnac' && adLabel({
+    icao: 'LFVX',
+    name: 'PARIS-ORLY'
+  }) === 'Paris-Orly' && adLabel({
+    icao: 'LFVX',
+    name: 'Le Bourget'
+  }) === 'Le Bourget', adLabel({
+    icao: 'LFVX',
+    name: 'TESTVILLE BLAGNAC'
+  }));
   ck('adTitle : « LFVX Testville-Nord », le code seul sans nom, rien sans code', adTitle(ory) === 'LFVX Testville-Nord' && adTitle({
     name: 'X'
   }, 'lfvz') === 'LFVZ X' && adTitle({}, 'LFVZ') === 'LFVZ' && adTitle(null) === '');

@@ -3,7 +3,7 @@
 // (coords, aerodromes, find : { icao | code | id, name, city? }).
 //
 // API :
-//   adLabel(rec) → « Paris-Orly » : le nom publié, nettoyé ; la ville entre parenthèses quand l'enregistrement en porte une que le nom
+//   adLabel(rec) → « Paris-Orly » : le nom publié, nettoyé, un nom tout en capitales remis en casse de nom ; la ville entre parenthèses quand l'enregistrement en porte une que le nom
 //     ne contient pas ; '' sans nom, ou quand le nom n'est que le code.
 //   adTitle(rec, code) → « LFPO Paris-Orly » : le code puis le libellé ; le code seul sans libellé ; '' sans code.
 //   adLine(rec, code) → « LFPO — Paris-Orly » : la ligne fixe sous un champ de Carburant ; le code seul sans libellé.
@@ -13,9 +13,13 @@ const codeOf = (rec, code) => String(code || rec?.icao || rec?.code || rec?.id |
 /** Un texte sans blancs en trop. */
 const clean = s => String(s ?? '').replace(/\s+/g, ' ').trim();
 
+/** Un nom écrit tout en capitales (la base du SIA : « TOULOUSE BLAGNAC ») s'écrit comme un nom : chaque mot avec sa capitale
+ *  (« Toulouse Blagnac », « Paris-Orly ») ; un nom qui porte déjà des minuscules est gardé tel quel. */
+const nameCase = s => /[a-zà-ÿ]/.test(s) ? s : s.toLowerCase().replace(/(^|[\s\-'’(])(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
+
 /** Le libellé d'un terrain (voir l'en-tête). */
 export function adLabel(rec) {
-  const name = clean(rec?.name),
+  const name = nameCase(clean(rec?.name)),
     code = codeOf(rec),
     city = clean(rec?.city);
   if (!name || name.toUpperCase() === code) return '';

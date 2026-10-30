@@ -149,6 +149,10 @@ const TX = {
   ],
   rsrc: {
     route: ['d’après la route', 'from the route', 'aus der Route', 'según la ruta'],
+    // la distance du chemin étendu, celle du devis et de la coupe (§ 10.20) : le dire
+    procs: ['d’après la route, procédures comprises', 'from the route, procedures included', 'aus der Route, Verfahren inbegriffen',
+      'según la ruta, procedimientos incluidos'
+    ],
     ofp: ['d’après l’OFP SimBrief', 'from the SimBrief OFP', 'aus dem SimBrief-OFP', 'según el OFP de SimBrief'],
     manual: ['saisies à la main', 'typed by hand', 'von Hand eingegeben', 'introducidas a mano']
   },
@@ -339,7 +343,8 @@ const TX = {
   // barre de résultat compacte (téléphone) : libellés courts, le texte entier va dans l'infobulle
   blockS: ['Bloc', 'Block', 'Block', 'Bloque'],
   tripS: ['Étape', 'Trip', 'Reise', 'Etapa'],
-  todS: ['TOD', 'TOD', 'TOD', 'TOD'],
+  // la distance du début de descente AVANT l'arrivée : une autre grandeur que la distance de la route (le libellé le dit)
+  todS: ['TOD avant l’arrivée', 'TOD before arrival', 'TOD vor Ankunft', 'TOD antes de la llegada'],
   windRangeS: ['vent inconnu', 'unknown wind', 'Wind unbekannt', 'viento desconocido'],
   noFuel: ['Aucun débit connu : pas de devis.', 'No fuel flow known: no quote.', 'Kein Verbrauch bekannt: keine Berechnung.',
     'Ningún consumo conocido: sin cálculo.'
@@ -1319,7 +1324,10 @@ function ensureProcs() {
       key,
       procs: procs || {}
     };
-    if (S === s) renderPts(); // les groupes de procédure de la liste des points (§ 10.31)
+    if (S === s) {
+      renderPts(); // les groupes de procédure de la liste des points (§ 10.31)
+      renderRinfo(); // la distance, procédures comprises
+    }
     refresh();
     if (s.writeAfterProcs) { // une série de choix attendait cette lecture : le vol est écrit avec le devis, en une seule écriture
       s.writeAfterProcs = false;
@@ -3046,10 +3054,14 @@ function renderRinfo() {
   const r = S.flight.route || {},
     resolved = (r.points || []).length >= 2,
     open = !!r.manual || !!S.rmanualOpen;
-  box.textContent = (resolved || r.manual) && r.distanceNm > 0 ? tt(TX.rinfo, {
-    d: distTxt(r.distanceNm),
+  // une seule distance (parcours de BUGS SOG, 30 octobre) : celle du chemin « route + procédures » quand les procédures choisies sont
+  // lues — la même que le devis et la coupe —, dite comme telle ; sinon celle de la route
+  const fp = r.manual ? null : fpNow(),
+    nm = fp ? fp.at(-1).nm : r.distanceNm;
+  box.textContent = (resolved || r.manual) && nm > 0 ? tt(TX.rinfo, {
+    d: distTxt(nm),
     t: r.trackDeg != null ? String(Math.round(r.trackDeg)).padStart(3, '0') : '—',
-    s: tt(TX.rsrc[r.manual ? 'manual' : r.from === 'ofp' ? 'ofp' : 'route'])
+    s: tt(TX.rsrc[r.manual ? 'manual' : fp ? 'procs' : r.from === 'ofp' ? 'ofp' : 'route'])
   }) : tt(TX.rnone);
   S.body.querySelector('[data-rmanual]')?.classList.toggle('fu-hide', !open);
   const link = S.body.querySelector('[data-do="rmanual"]');

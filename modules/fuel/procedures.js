@@ -82,7 +82,9 @@ export const PROC_STYLE = `
 [data-module="fuel"] .fu-proc.fu-folded>.fu-procmeta,[data-module="fuel"] .fu-proc.fu-folded>.fu-pf{visibility:hidden;height:0;min-height:0;overflow:hidden;margin:0;padding:0}
 [data-module="fuel"] .fu-proctitle{cursor:pointer}
 /* le nom du terrain reste dans la ligne de résumé, coupé d'une ellipse quand la place manque (téléphone) */
-[data-module="fuel"] .fu-procname{display:inline-block;max-width:min(40vw,18em);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+[data-module="fuel"] .fu-proctitle{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:.35em}
+[data-module="fuel"] .fu-proctitle>.fu-procsum{flex-basis:100%}
+[data-module="fuel"] .fu-procname{min-width:0;max-width:min(40vw,18em);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 [data-module="fuel"] .fu-procfold{min-width:44px;min-height:44px;padding:0;margin:-12px 0 -12px -12px;border:0;background:none;color:inherit;font:inherit;cursor:pointer;vertical-align:middle}
 [data-module="fuel"] .fu-proctitle{font-size:1.05em}
 [data-module="fuel"] .fu-procsum{display:block;font-size:.92em;margin-top:2px}
@@ -277,8 +279,27 @@ export function createProcedures(host) {
       list = PR.orderProcedures([...new Map(recs.map(r => [r.id, r])).values()], k, o, recsNow()),
       html = [opt('', '—', cur === undefined), none ? opt('__none', tt(TX.procNone), cur === null) : ''],
       mark = r => conflictsOf(k, r, o).length ? PROC_CONFLICT : '';
-    for (const r of list) html.push(opt(r.id, (lab ? lab(r) : sub ? (r.transition || r.name) + (r.outdated ? PROC_OLD : '') : procLabel(r,
-      o)) + mark(r), r.id === cur, r));
+    if (!lab && !sub) {
+      // les fiches de même nom (une par piste : « AMOLO 7A » pour 14L et pour 14R) font UNE ligne avec ses pistes (« AMOLO 7A ·
+      // 14L/14R ») : jamais deux libellés identiques ; la valeur est la fiche choisie, sinon celle qui dessert la piste choisie
+      const fam = new Map();
+      for (const r of list) {
+        const n = RT.compactName(PR.nameOf(r) || r.id);
+        fam.set(n, [...(fam.get(n) || []), r]);
+      }
+      for (const g of fam.values()) {
+        if (g.length === 1) {
+          html.push(opt(g[0].id, procLabel(g[0], o) + mark(g[0]), g[0].id === cur, g[0]));
+          continue;
+        }
+        const pick = g.find(r => r.id === cur) || PR.firstServing(g, o.rwy) || g[0],
+          rw = [...new Set(g.flatMap(r => PR.servesAll(r) ? [] : r.runways.map(PR.rwNum)))].sort(PR.rwOrder).join('/');
+        html.push(opt(pick.id, `${PR.nameOf(pick) || pick.id}${rw ? ` · ${rw}` : ''}${pick.outdated ? PROC_OLD : ''}${mark(pick)}`, g.some(r =>
+          r.id === cur), pick));
+      }
+    } else
+      for (const r of list) html.push(opt(r.id, (lab ? lab(r) : (r.transition || r.name) + (r.outdated ? PROC_OLD : '')) + mark(r), r.id ===
+        cur, r));
     if (typeof cur === 'string' && cur && !list.some(r => r.id === cur)) html.push(opt(cur, nameOfId(cur, k), true));
     return html.join('');
   }
@@ -409,7 +430,7 @@ export function createProcedures(host) {
       icao: m.icao
     }), false)] : [fileHtml(m), readButton(m.icao, tt(TX.procReread), true)];
     if (m.unread > 0) parts.push(`<span class="fu-procunread" title="${esc([m.partialLabel, tt(m.unread === 1 ? TX.procUnread1 : TX.procUnread, { n: m.unread })].filter(Boolean).join(' · '))}">${esc(tt(m.unread === 1 ? TX.procNotRead1 : TX.procNotRead, { n: m.unread }))}</span>`);
-    return parts.filter(Boolean).join('<span class="fu-sep" aria-hidden="true">·</span>') + ` <span data-source-slot>${sourceHtml(m, side)}</span>`;
+    return parts.filter(Boolean).join('<span class="fu-sep" aria-hidden="true"> · </span>') + ` <span data-source-slot>${sourceHtml(m, side)}</span>`;
   }
   /** « Source » (§ 10.25) : pour chaque procédure choisie du côté (la SID ; la STAR et l'approche), un lien vers la page codée qu'aerodb
    *  donne en source.url (fiche de l'eAIP : adresse publique du SIA, https seulement), dans un nouvel onglet ; avec deux liens, la sorte
@@ -421,7 +442,7 @@ export function createProcedures(host) {
       recs = keys.map(k => [k, typeof o[k] === 'string' ? (m.all || []).find(r => r.id === o[k]) : null]).filter(([, r]) => r),
       linked = recs.filter(([, r]) => /^https:\/\//.test(String(r.source?.url || '')));
     return linked.map(([k, r]) => `<a class="fu-procsrc" href="${esc(r.source.url)}" target="_blank" rel="noopener noreferrer" title="${esc(r.source.file || r.source.url)}">${esc(tt(TX.procSource) + (linked.length > 1 ? ` ${tt(TX.procKinds[k])}` : ''))}</a>`)
-      .join('<span class="fu-sep" aria-hidden="true">·</span>');
+      .join('<span class="fu-sep" aria-hidden="true"> · </span>');
   }
   /** Les documents sans lien public des procédures choisies d'un côté (autre source que l'eAIP) : pour le title de la ligne. */
   function sourceTitle(m, side) {
@@ -853,7 +874,10 @@ export function createProcedures(host) {
       const same = side === 'dep' ? before.depIcao === r.dep : before.arrIcao === r.arr,
         a = same ? before[side] || {} : {},
         b = next[side] || {},
-        parts = PROC_FIELDS[side].filter(k => a[k] !== b[k]).map(k => `${tt(TX.procKinds[k])} ${valueText(a[k], k, a)} → ${valueText(b[k], k, b)}`);
+        // « SID → AMOLO 7A » quand rien n'était choisi, « SID AMOLO 7A → LACOU 7B » sinon (parcours de BUGS SOG, 30 octobre)
+        parts = PROC_FIELDS[side].filter(k => a[k] !== b[k]).map(k => [tt(TX.procKinds[k]), a[k] === undefined ? '' : valueText(a[k], k, a),
+          '→', valueText(b[k], k, b)
+        ].filter(Boolean).join(' '));
       if (parts.length) lines.push(tt(TX.procChange, {
         side: tt(TX[side]),
         parts: parts.join(' · ')

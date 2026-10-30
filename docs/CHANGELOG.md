@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the walk's small anomalies** (`modules/fuel`, `frame/lib/adnames.js`; F78) — one distance « procédures comprises »,
+  « TOD avant l'arrivée », « SID → AMOLO 7A », one row per same-name SID with its runways, names no longer in capitals, « · » spaced.
 - **Data: the same Download · Build · Purge panel for every group** (`modules/data/`; help ×4; noreg L16, L17): Procedures (States ticked from the green and orange ones), VFR points (the cycle in force, in the Base group), Aircraft (ICAO types typed in a field, empty = the fleet's; the run lines are the three steps) and the airline's published sheets (`aircraft/publish`: dry plan, one question with counts and size, then the real run) get the panel of the aeronautical base, on `regen/job { set, verb }`. The launcher's verbs are read once (`regen/verbs`): a verb it does not know greys its button with one sentence per panel (an older launcher: the base only). One operation at a time across all panels, found again at the opening; journal entries carry `set` and `verb`; a purge runs dry first and asks once; nothing committed by Download or Purge, nor by `aircraft/build` (AircraftDB/ is not versioned). No « Update all » yet.
 - **Fuel: the route text no longer repeats the SID at each return from the Map** (`frame/lib/route_text.js` `glueProcWords`,
   `compactName`; F69, F77) — names published with a space (« AMOLO 7A ») are one ICAO designator « AMOLO7A »; Auto routes from the SID's exit.

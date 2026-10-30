@@ -4,6 +4,14 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **30 Oct 2026 — anomalies 9 to 13 of BUGS SOG's walk.** 13: one distance — the route line gives the extended path's distance
+  when the chosen procedures are read (the quote's and the profile's), « d'après la route, procédures comprises »; the TOD tile says
+  « TOD avant l'arrivée » (another quantity). 12: « · » separators with spaces. 10: the change line « SID → AMOLO 7A » when nothing
+  was chosen (no « — → »); its placement over Fuel's bottom bar is the frame's (.f-notes, asked to V3 Frame). 11: records of the
+  same name for several runways make ONE option « AMOLO 7A · 14L/14R » whose value is the record chosen, else the one serving the
+  chosen runway: never two identical labels. 9: `adLabel` writes an all-caps base name as a name (« Toulouse Blagnac »), and the
+  side's title is a baseline-aligned flex row (the ellipsis kept). Fixtures « LFRS TEST » now read « Lfrs Test » (F34, F44, F47).
+  Case F78; F19 follows the new line.
 - **30 Oct 2026 — the route text repeated the SID at each return from the Map** (BUGS SOG's walk on the real base: « LFBO AMOLO
   7A AMOLO 7A AMOLO DCT AMB … »). The eAIP writes the names with a space (« AMOLO 7A »); the text rules compared whole words, so a
   two-word name was never recognised: inserted again at each return, never read back (the SID cleared on an edit), and « AMOLO »
