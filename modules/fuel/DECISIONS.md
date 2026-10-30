@@ -4,6 +4,11 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **30 Oct 2026 — the route field completes at the cursor** (§ 10.31 part 4). A module of its own (`routecomplete.js`) on the
+  pattern of `adnames.js` rather than a generalised component: the two share the CSS (`.fu-sug`, `.fu-sugitem`) and the gestures,
+  not the sources (aerodromes only there; procedures, airways, points here). Airways are proposed by name around the previous
+  point (the base has no airway name index; a bbox query is cheap once the zone is open). Case F75. To merge into one component
+  in the inventory if a third field needs it.
 - **30 Oct 2026 — A34 « pas de voie près de LACOU » was a wrong reason** (user's answer 1 of § 10.31). Diagnosed on the real base
   (read only): A34 is complete (AGN LACOU RUMEL BUGUS PERIG MAVAC LMG …, 91.3 NM along it for 91.4 NM direct), every segment from
   6 500 ft to FL195; the user's flight is at FL260, so A34 (and G39, T258 at LACOU) are closed for that leg. The base is not at

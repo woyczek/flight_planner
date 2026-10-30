@@ -27,6 +27,9 @@ import {
   createAdNames
 } from './adnames.js'; // le nom du terrain sous son code et la complétion des champs de l'étape Vol (§ 10.27)
 import {
+  createRouteComplete
+} from './routecomplete.js'; // la complétion au curseur du champ de route (§ 10.31)
+import {
   svg
 } from '../../frame/lib/icons.js';
 import {
@@ -58,7 +61,7 @@ export const meta = {
   }],
   // gardés hors ligne dès la première visite (service worker du cadre)
   files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js', 'winds.js', 'progress.js', 'procedures.js',
-    'procedures_texts.js', 'adnames.js',
+    'procedures_texts.js', 'adnames.js', 'routecomplete.js',
     '../../frame/lib/weather_store.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/flight_time.js',
     '../../frame/lib/flight_path.js', '../../frame/lib/procedures.js', '../../frame/lib/routing.js', '../../frame/lib/fms.js',
@@ -1745,6 +1748,7 @@ ${PROC_STYLE}
 [data-module="fuel"] .fu-ptgrp[data-kind="sid"]{border-left-color:#1b8a3a}
 [data-module="fuel"] .fu-ptgrp[data-kind="star"]{border-left-color:#d95500}
 [data-module="fuel"] .fu-ptgrp[data-kind="app"]{border-left-color:#0a86c4}
+[data-module="fuel"] .fu-rrow>label{position:relative} /* la liste de complétion du champ de route s'y pose (§ 10.31) */
 [data-module="fuel"] .fu-rrow{display:flex;gap:8px;align-items:flex-end} /* champ de la route + « Auto » : le champ prend la place restante */
 [data-module="fuel"] .fu-rrow>.f-field{flex:1 1 0;min-width:0}
 [data-module="fuel"] .fu-rrow>button{flex:none;min-width:56px;min-height:44px;margin-bottom:2px}
@@ -1819,7 +1823,7 @@ function renderPlanBody() {
       </div>
     </div>`)}
   ${sec(1, `<div class="f-card" data-block="route"><h2>${esc(tt(TX.route))}</h2>
-      <div class="fu-rrow"><label class="f-field">${esc(tt(TX.routeText))}<textarea data-k="rtext" rows="3" autocapitalize="characters" spellcheck="false">${esc(r.text || '')}</textarea></label><button type="button" data-do="rauto" title="${esc(tt(TX.rautoHint))}" aria-label="${esc(tt(TX.rautoHint))}">${esc(tt(TX.rauto))}</button></div>
+      <div class="fu-rrow"><label class="f-field">${esc(tt(TX.routeText))}<textarea data-k="rtext" rows="3" autocapitalize="characters" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-rtsug">${esc(r.text || '')}</textarea><div class="fu-sug" id="fu-rtsug" data-rtsug role="listbox" aria-label="${esc(tt(S.RC.texts.listLabel))}" hidden></div></label><button type="button" data-do="rauto" title="${esc(tt(TX.rautoHint))}" aria-label="${esc(tt(TX.rautoHint))}">${esc(tt(TX.rauto))}</button></div>
       <p class="f-warn" data-unres></p>
       <p class="f-row fu-rinfo"><span class="f-muted" data-rinfo></span><button type="button" class="fu-linkbtn" data-do="rmanual">${esc(tt(TX.rmanual))}</button></p>
       <div class="f-grid fu-g3 fu-hide" data-rmanual>${fld('dist', TX.distance, distField(r.distanceNm), 'inputmode="decimal"', { u: distLabel() })}${fld('trk', TX.track, r.trackDeg != null ? Math.round(r.trackDeg) : '', 'inputmode="numeric"')}</div>
@@ -1876,7 +1880,7 @@ function renderPlanBody() {
   }
   S.body.oninput = S.body.onchange = e => onPlanInput(e);
   S.body.onkeydown = e => {
-    if (S.AD.onKey(e)) return; // liste de terrains ouverte : ↑ ↓ Entrée Échap sont à elle
+    if (S.AD.onKey(e) || S.RC.onKey(e)) return; // liste de terrains ou de route ouverte : ↑ ↓ Entrée Échap sont à elle
     if (e.key !== 'Enter') return;
     if (e.target.dataset?.k === 'addpt') {
       e.preventDefault();
@@ -1888,7 +1892,7 @@ function renderPlanBody() {
   };
   renderPts();
   renderRinfo();
-  S.body.onclick = e => S.AD.onClick(e) || onPlanClick(e);
+  S.body.onclick = e => S.AD.onClick(e) || S.RC.onClick(e) || onPlanClick(e);
   S.AD.paint();
   S.P.reset(); // le corps est neuf : refresh dessine la carte des procédures
   refresh();
@@ -1946,6 +1950,7 @@ function onPlanInput(e) {
       if (e.type === 'input') r.from = 'route';
       resolveRoute(e.type === 'change'); // pendant la frappe : points relus ; à la sortie : texte normalisé
       if (e.type === 'change') textToProcs(); // à la sortie : les noms de SID et de STAR du texte posent ou retirent le choix (§ 10.31)
+      else S.RC.onInput(e); // pendant la frappe : la complétion au curseur (§ 10.31)
       break;
     case 'addpt':
       return; // ajouté par « Ajouter » ou Entrée
@@ -4689,6 +4694,28 @@ export async function mount(el, ctx) {
     gone: () => gone(self)
   });
   S.stops.push(S.AD.stop);
+  // la complétion au curseur du champ de route (modules/fuel/routecomplete.js, § 10.31)
+  S.RC = createRouteComplete({
+    ctx,
+    body: () => S === self ? self.body : null,
+    gone: () => gone(self),
+    names: () => {
+      const m = self.P?.textModel?.();
+      return m ? {
+        sid: [...m.sid.keys()],
+        star: [...m.star.keys()]
+      } : null;
+    },
+    // le dernier point connu du vol parmi les mots avant le curseur, sinon le départ
+    around: words => {
+      const pts = (self.flight.route?.points || []).filter(p => Number.isFinite(+p.lat));
+      for (const w of [...(words || [])].reverse()) {
+        const p = pts.find(x => String(x.id).toUpperCase() === w.split('/')[0]);
+        if (p) return p;
+      }
+      return pts[0] || null;
+    }
+  });
   // premier dessin sans attendre le réseau (audit de poids, mesure 4) : les bibliothèques et ce que l'appareil a déjà
   // (read sans wait : la copie gardée, ou null pour un fichier jamais lu) ; le registre d'aerodb, les fiches, et le
   // vol courant ou les réglages jamais lus arrivent ensuite (completeMount) — en attendant « chargement… », et rien
@@ -4757,9 +4784,13 @@ export async function mount(el, ctx) {
   S.body.addEventListener('focusout', e => {
     const hits = S?.AD?.hitsFor(e.target?.dataset?.k) || 0; // avant que la liste se ferme
     S?.AD?.onFocusOut(e);
+    S?.RC?.onFocusOut(e);
     revertAd(e.target, hits);
   });
-  for (const type of ['pointerdown', 'mousedown']) S.body.addEventListener(type, e => S?.AD?.onPointerDown(e));
+  for (const type of ['pointerdown', 'mousedown']) S.body.addEventListener(type, e => {
+    S?.AD?.onPointerDown(e);
+    S?.RC?.onPointerDown(e);
+  });
   // « ? » de l'en-tête : le chapitre au paragraphe de l'écran (Fiches ; le pas affiché sur téléphone, où la barre des pas est
   // visible ; le devis entier sur un module large, où les cinq pas sont les uns sous les autres)
   ctx.helpAnchor?.(() => S?.view === 'sheets' ? 'fuel-sheets' : S?.body?.querySelector('.fu-steps')?.offsetParent ? `fuel-step-${S.step + 1}` :

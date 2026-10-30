@@ -1875,3 +1875,37 @@ def f74(c):
     c.ok('FL195' in line and '6' in line.split('FL195')[0], line, 'the line gives the open band (6 500 ft to FL195) so that the pilot decides')
     c.eq(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value").replace(' DCT', ''), 'LFRS LACOU LMG LFML', 'the leg stays direct: never « follow it anyway »', what='route text')
 
+
+@case('F75', 'The route field completes at the cursor: procedure names, nearby airways, points; the word is written at the cursor', 'F',
+      tags=('fuel', 'aerodb', 'layout'), designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.31 part 4: from two characters at the cursor, seven proposals at most — SID / STAR names of the two aerodromes, airways '
+      'around the previous point, points and navaids — the § 10.27 component (↑ ↓ Enter Esc, tap, closed on blur); picking writes the word')
+def f75(c):
+    open_proc(c)
+    wait_rows(c, 'dep')
+    rt = f'{FUEL} [data-k="rtext"]'
+    items = f"[...document.querySelectorAll('{FUEL} [data-rtsug] [role=option]')].map(o => o.dataset.token)"
+    c.page.locator(rt).click()
+    c.page.fill(rt, 'LFRS NT')
+    c.until(f"{items}.includes('NTS1A')", timeout=6000, what='« NT » proposes the SID NTS1A of the departure')
+    c.ok(len(c.js(items)) <= 7, f'{c.js(items)}', 'seven proposals at most')
+    c.ok(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').getAttribute('aria-expanded')") == 'true', 'aria', 'the field says its list is open')
+    box = c.js(f"(() => {{ const r = document.querySelector('{FUEL} [data-rtsug]').getBoundingClientRect(); return {{ l: r.left, r: r.right, w: innerWidth }} }})()")
+    c.ok(box['l'] >= 0 and box['r'] <= box['w'] + 0.5, f'{box}', 'the list stays inside the screen')
+    k = c.js(items).index('NTS1A')
+    for _ in range(k + 1):
+        c.key('ArrowDown')
+    c.key('Enter')
+    c.until(f"document.querySelector('{FUEL} [data-k=rtext]').value === 'LFRS NTS1A '", what='Enter writes the name at the cursor, followed by a space')
+    c.ok(c.js(f"document.querySelector('{FUEL} [data-rtsug]').hidden"), 'list', 'picking closes the list')
+    # a point of the base, by a tap
+    c.page.keyboard.type('LU')
+    c.until(f"{items}.includes('LUGEN')", timeout=6000, what='« LU » proposes the point LUGEN')
+    c.tap(f'{FUEL} [data-rtsug] [data-token="LUGEN"]')
+    c.until(f"document.querySelector('{FUEL} [data-k=rtext]').value === 'LFRS NTS1A LUGEN '", what='a tap writes the point at the cursor')
+    c.ok(c.js(f"document.activeElement === document.querySelector('{FUEL} [data-k=rtext]')"), 'focus', 'the field keeps the focus after a tap')
+    # Escape closes; one character proposes nothing
+    c.page.keyboard.type('N')
+    c.quiet(f"{items}.length")
+    c.ok(c.js(f"document.querySelector('{FUEL} [data-rtsug]').hidden"), 'list', 'one character proposes nothing')
+
