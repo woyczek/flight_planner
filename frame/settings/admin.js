@@ -124,11 +124,11 @@
   const RUNWAY_MIN = 8,
     RUNWAY_MAX = 16,
     RUNWAY_DEFAULT = 11;
-  // réglages sans fichier (ou carte non montrée) : le filet affiché, le zoom par défaut
-  const PROFILE_DEFAULTS = {
+  // réglages sans fichier (ou carte non montrée) : le filet affiché, le zoom par défaut ; gelés (référence exportée, règle du cadre)
+  const PROFILE_DEFAULTS = Object.freeze({
     edge: true,
     runwayZoom: RUNWAY_DEFAULT
-  };
+  });
   /** Le zoom des seuils de piste lu dans le fichier (runwayZoom) : un entier dans les bornes, sinon la valeur par défaut. */
   const runwayZoomOf = f => Number.isInteger(f?.runwayZoom) && f.runwayZoom >= RUNWAY_MIN && f.runwayZoom <= RUNWAY_MAX ? f.runwayZoom :
     RUNWAY_DEFAULT;

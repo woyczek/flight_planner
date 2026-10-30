@@ -244,7 +244,7 @@ commits its outputs on the workstation (the launcher's `commit_outputs`); a grey
 
 | Group | Items | Télécharger | Construire | Purger | Today in V2 |
 |---|---|---|---|---|---|
-| Base aéronautique | zones | `base/fetch`, and `base/pickup` for the files to drop by hand (the SIA France zip, the NATS zip: taken from Downloads, dry run and one question first, raw sources never committed, never in « Tout mettre à jour »; the real run names the zip shown in the plan per source, `zips: { <source>: { name, size } }`, and a file changed since the plan is refused for that source, « Relancer le plan », 79aaed096) | `base/build` | `base/purge` | delivered |
+| Base aéronautique | zones | `base/fetch`, and `base/pickup` for the files to drop by hand (the SIA France zip, the NATS zip: taken from Downloads, dry run and one question first, raw sources never committed, never in « Tout mettre à jour »; the real run names the zip shown in the plan per source, `zips: { <source>: { name, size } }`, and a file changed since the plan is refused for that source, « Relancer le plan », 79aaed096; a zip whose name breaks the launcher's rule (letters, digits, `. _ -`, 150 characters) is shown but never taken, « nom de fichier à renommer ») | `base/build` | `base/purge` | delivered |
 | Procédures | the States with a bulk source only: LF (the SIA's eAIP) and K (the FAA's CIFP); an EAD Basic State is never fetched in bulk (`frame/aerodb/EAD_BASIC.md` § 1: one aerodrome at a time, « Relire » in Fuel or on the Map) | `proc/fetch` | `proc/build` | `proc/purge` | per aerodrome only (`proc/eaip-fetch`, `proc/ead-fetch`) |
 | Points VFR des cartes VAC | the cycle in force (France); Purger clears the cached charts of every cycle | `vfr/fetch` | `vfr/build` | `vfr/purge` | `/__setup/vfr-import` (a compiled file picked in the page) |
 | Appareils (types et performances) | ICAO types (the fleet's by default) | `aircraft/fetch` | `aircraft/build` | `aircraft/purge` | `/__setup/aircraft-db` |
@@ -350,6 +350,7 @@ publication by anyone updates everyone (user, 28 Oct); the gap is what the scree
 | « Aucun fichier trouvé dans Téléchargements » | SIA, NATS, CIFP picked up; « Choisir le fichier… » beside it |
 | « Une autre opération est en cours » / « hors ligne » / « disque plein » | any |
 | « Ne nourrit aucune zone de la couverture » | a base source whose zones were removed |
+| « Mise à jour de la suite en cours : réessayez après le redémarrage du lanceur » | any job start during an update of the suite (409 `updating`) |
 | « Une construction est en cours : publiez quand elle est finie » | Publier of the base during a build (the launcher would keep `sia/base/` anyway) |
 | « Le cadre ne sait pas encore publier la base : mettez l'appli à jour » | Publier when `ctx.data.sync.gesture` is not `true` (never a pass without the gesture) |
 | « Rien à publier » | Publier when the workstation has no file changed and no commit to send (`sync-status`) |

@@ -306,6 +306,11 @@ export const TX = {
     busy: ['Une autre opération est en cours', 'Another operation is running', 'Ein anderer Vorgang läuft',
       'Hay otra operación en curso'
     ],
+    updating: ['Mise à jour de la suite en cours : réessayez après le redémarrage du lanceur',
+      'Suite update under way: try again after the launcher restarts',
+      'Aktualisierung der Suite läuft: versuchen Sie es nach dem Neustart des Starters erneut',
+      'Actualización de la suite en curso: vuelva a intentarlo tras el reinicio del lanzador'
+    ],
     tooSoon: ['Réessayez dans {n} s', 'Try again in {n} s', 'Versuchen Sie es in {n} s erneut', 'Vuelva a intentarlo en {n} s'],
     'unknown-route': ['Le lanceur de ce poste ne connaît pas encore cette opération : relancez-le à jour.',
       'This workstation’s launcher does not know this operation yet: restart it up to date.',
@@ -840,6 +845,10 @@ export const TX = {
       'Übernahme unterbrochen (der Starter wurde beendet)',
       'Toma interrumpida (el lanzador se detuvo)'
     ],
+    blocked: ['Rien à prendre : un nom de fichier est à renommer', 'Nothing to take: a file name needs renaming',
+      'Nichts zu übernehmen: ein Dateiname muss umbenannt werden',
+      'Nada que tomar: un nombre de archivo debe renombrarse'
+    ],
     nothing: ['Rien à prendre dans Téléchargements', 'Nothing to take in Downloads', 'Nichts zum Übernehmen in Downloads',
       'Nada que tomar en Descargas'
     ]
@@ -848,6 +857,11 @@ export const TX = {
     '{z} ({s}): the file changed since the plan ({zip}): nothing was taken for this source',
     '{z} ({s}): die Datei hat sich seit dem Plan geändert ({zip}): für diese Quelle wurde nichts übernommen',
     '{z} ({s}): el archivo cambió desde el plan ({zip}): no se tomó nada de esta fuente'
+  ],
+  pickupRename: ['{z} ({s}) : {zip} — nom de fichier à renommer : lettres, chiffres, . _ -',
+    '{z} ({s}): {zip} — file name to rename: letters, digits, . _ -',
+    '{z} ({s}): {zip} — Dateiname umbenennen: Buchstaben, Ziffern, . _ -',
+    '{z} ({s}): {zip} — nombre de archivo por renombrar: letras, cifras, . _ -'
   ],
   pickupReplan: ['Relancer le plan', 'Run the plan again', 'Plan erneut ausführen', 'Repetir el plan'],
   pickupHint: ['Lancez maintenant Construire.', 'Now start Build.', 'Starten Sie jetzt Aufbauen.', 'Ahora lance Construir.'],

@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data: pickup with a bad zip name; refusal during a suite update** (`modules/data/`; help ×4; noreg L8, L16, L17, L18, L19): a zip whose name is outside the launcher's rule is shown in the pickup plan as « file name to rename: letters, digits, . _ - » and never run (`pickupSplit`: the real run carries only the ready sources, in `zones` and in `zips`; with none ready there is no question and nothing is called); a 409 with reason `updating` is its own refusal ×4 (« Suite update under way: try again after the launcher restarts ») for every job start (base, sets, chain, pickup, sheets).
 - **Update the suite, « suivi »: the fast-forward goes to the commit the plan read** (`tools/suite_update.py`; Settings
   SPEC 9a-bis; noreg I25) — Sécurisation's review of 513f6fb5b: never the name `origin/<branch>`, which another check's
   fetch could move between the plan and the merge.

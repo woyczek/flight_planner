@@ -789,6 +789,7 @@ def l8(c):
     c.page.reload(wait_until='load')
     _head(c)
     for start, key, want in [((429, {'reason': 'too-soon', 'wait': 12}), 'tooSoon', _trow('tooSoon', 'fr', 'refused: {').replace('{n}', '12')),
+                             ((409, {'reason': 'updating', 'message': 'no job starts now (updating)'}), 'updating', _trow('updating', 'fr', 'refused: {')),
                              ((404, {}), 'unknown-route', _trow('unknown-route', 'fr', 'refused: {')),
                              ((400, {'message': 'bad'}), 'bad-args', _trow('bad-args', 'fr', 'refused: {'))]:
         st['start'] = start
@@ -1738,6 +1739,11 @@ _L16_JS = r"""async () => {
   out.pickupEntry = M.setEntry('base', 'pickup', { at: Date.parse('2026-10-30T10:00:00Z'), ids: ['fr', 'gb'], seconds: 2.4, out: M.pickupOutcome({ state: 'done', result: { ok: false, dry: false, taken: [pkTk], missing: [], failed: [pkBg], reason: 'partial' } }), job: 'k9' });
   out.manualFlags = M.fetchOutcome({ state: 'done', result: { ok: true, fetched: [], unchanged: [], failed: [], manual: [{ zone: 'fr', source: 'sia', name: ['a'], pickup: true, expected: 'x*.zip' }, { zone: 'fr', source: 'dircam' }] } }).manual.map(m => [m.source, m.pickup, m.expected]);
   out.pickupDest = M.PICKUP_DEST;
+  const pks1 = M.pickupSplit([{ zone: 'fr', source: 'sia', zip: 'export_é.zip', size: 5 }, { zone: 'gb', source: 'nats', zip: 'ok.zip', size: 2 }, { zone: 'x', source: 'sia', zip: 'a[1].zip', size: 1 },
+    { zone: 'y', source: 'sia', zip: 'z'.repeat(151), size: 1 }, { zone: 'w', source: 'nats', zip: 'f.zip', size: null }, { zone: 'v', source: 'sia', zip: 'a,b.zip', size: 1 }, null]);
+  const pks2 = M.pickupSplit([{ zone: 'fr', source: 'sia', zip: 'a.zip', size: 1 }, { zone: 'fr', source: 'nats', zip: 'é.zip', size: 1 }]);
+  out.split = [[pks1.ready.map(t => t.zone), pks1.blocked.map(t => t.zone), pks1.zips, pks1.zones], [pks2.ready.map(t => t.source), pks2.blocked.map(t => t.source), pks2.zips, pks2.zones], M.pickupSplit(null).ready];
+  out.refusals = [{ status: 409, reason: 'updating' }, { status: 409 }, { status: 409, reason: 'other' }, { status: 429, reason: 'too-soon', wait: 3 }, { status: 404 }].map(r => M.refusal(r).key);
   const pz = (...t) => M.pickupZips(t);
   out.zips = [
     pz({ zone: 'fr', source: 'sia', zip: 'a.zip', size: 10 }, { zone: 'gb', source: 'nats', zip: 'b b (1).zip', size: 0 }, { zone: 'x', source: 'sia', zip: 'dup.zip', size: 5 }),
@@ -1848,6 +1854,9 @@ def l16(c):
     c.eq(r['approx'], [True, True, True, True, True, False, False, False, False, False, False, False],
          'an outline is approximate when it has no ring or its only ring is exactly the box rectangle (closed or not, any order); never from a name; unreadable boxes are not', what='isApproxOutline')
     c.eq(r['zmApprox'], [[True, True, False], True, False], 'the map flags the approximate shapes; a zone without ring is drawn as its frame', what='zoneMap approx')
+    c.eq(r['split'], [[['gb'], ['fr', 'x', 'y', 'w', 'v'], {'nats': {'name': 'ok.zip', 'size': 2}}, ['gb']], [['sia'], ['nats'], {'sia': {'name': 'a.zip', 'size': 1}}, []], []],
+         'a zip whose name is outside the rule (accent, [, comma, over 150 characters) or without size is NOT ready: it is not run, and neither is a zone that has such a source', what='pickupSplit')
+    c.eq(r['refusals'], ['updating', 'busy', 'busy', 'tooSoon', 'unknown-route'], 'a 409 with reason updating is its own refusal; the other 409 stays « busy »', what='refusal updating')
     c.eq(r['pickupDest'], {'sia': 'data/sia/', 'nats': 'data/sia/zones/gb/'}, 'where the raw files go, as the launcher writes them', what='PICKUP_DEST')
     c.eq(r['argsProc'], [{'states': ['K', 'LF']}, {'states': ['K']}], 'proc: the States sent are sorted and unique (the launcher takes one or two, « K » before « LF »)', what='setArgs proc')
     c.eq(r['procBuild'], [['partial', ['K'], [{'zone': 'LF', 'error': 'no-cache'}]], ['done', ['LF'], []], ['merge-pending', [], []]],
@@ -2155,6 +2164,14 @@ def l17(c):
     c.tap('.f-modal [data-ok]')
     c.until("document.querySelector('[data-set-panel=sheets] [data-build-result]')?.dataset.result === 'no-author'", timeout=10000, what='no trigram is said')
     c.eq(_line(c, '[data-set-panel=sheets] [data-build-result] b'), norm(T('sheetsNoAuthor')), 'a sentence: set your trigram', what='no-author')
+    # a suite update in progress refuses the start (409 updating): said in the panel, no question, the button stays live
+    st3['start'] = (409, {'reason': 'updating', 'message': 'no job starts now (updating)'})
+    n = len(st3['posts'])
+    c.tap('[data-set-panel=sheets] [data-verb=publish-sheets]')
+    c.until("!!document.querySelector('[data-set-panel=sheets] [data-build-result][data-refusal=updating]')", timeout=8000, what='the refusal is said')
+    c.eq([_line(c, '[data-set-panel=sheets] [data-build-result]'), c.count('.f-modal'), len(st3['posts']) - n, _pv(c, 'sheets')], [norm(T('updating', 'refused: {')), 0, 1, ['publish-sheets']],
+         'sheets: « Mise à jour de la suite en cours… », no question, the button stays live', what='sheets updating')
+    st3['start'] = (200, {'job': 's5'})
     # nothing to publish: no question
     s_none = _sview('aircraft', 'publish', None, None, state='done', jid='s5', args={'dry': True}, result={'ok': True, 'dry': True, 'remove': [], 'copy': [], 'message': ''})
     st3['views'], st3['i'], st3['start'] = [s_none], 0, (200, {'job': 's5'})
@@ -2483,6 +2500,18 @@ def l18(c):
     c.eq(norm(q['text']), norm(ask), 'the skipped sets are listed with their reason (nothing ticked, verb unknown to this launcher)', what='skipped question')
     c.tap('.f-modal [data-no]')
     c.until("!document.querySelector('.f-modal')", what='the window closes')
+    # a suite update in progress refuses the first job: the chain stops there, said, nothing is published
+    st['start'] = (409, {'reason': 'updating', 'message': 'no job starts now (updating)'})
+    posts1, syncs1 = len(st['posts']), len(c.js('window.__sync.calls'))
+    c.tap('[data-update-all] [data-verb=all]')
+    _ask_text(c)
+    c.tap('.f-modal [data-ok]')
+    c.until("document.querySelector('[data-update-all] [data-chain-result]')?.dataset.result === 'failed'", timeout=30000, what='the chain stops on the refusal')
+    c.eq([_line(c, '[data-chain-result] b'), len(st['posts']) - posts1, len(c.js('window.__sync.calls')) - syncs1, _chain_rows(c)],
+         [norm(T('chainFailed').replace('{s}', base_label).replace('{r}', T('updating', 'refused: {'))), 1, 0, [['base', 'failed'], ['proc', 'skipped'], ['vfr', 'notrun'], ['aircraft', 'skipped']]],
+         'every job start is refused during an update of the suite: the chain stops at the first, nothing is published', what='chain updating')
+    st['start'] = (200, {'job': 'j1'})
+    c.wait(300)
     # ---- H: nothing gone by: no attention mark
     c.page.evaluate("sessionStorage.setItem('__freshFr', '1')")
     c.page.reload(wait_until='load')
@@ -2555,8 +2584,8 @@ def l19(c):
     c.tap('.f-modal [data-ok]')
     c.until("!!document.querySelector('[data-build] [data-running][data-op=pickup]:not([data-dry])')", timeout=8000, what='the real run is followed')
     c.eq({k: st['posts'][-1][k] for k in ('set', 'verb', 'args')},
-         {'set': 'base', 'verb': 'pickup', 'args': {'zones': ['fr', 'gb'], 'dry': False, 'zips': {'sia': {'name': sia_zip['zip'], 'size': 3000000}}}},
-         'the real body says dry false and carries the zip the plan showed (name and size), nothing re-read', what='real body')
+         {'set': 'base', 'verb': 'pickup', 'args': {'zones': ['fr'], 'dry': False, 'zips': {'sia': {'name': sia_zip['zip'], 'size': 3000000}}}},
+         'the real body (only the zone with a zip in the plan) says dry false and carries the zip the plan showed (name and size), nothing re-read', what='real body')
     c.eq([_bv(c), c.js(f"document.querySelector('{pk}').disabled"), c.count('[data-build] [data-running] [data-zone-state]'), c.count('[data-build] [data-running] [data-count]'), c.count('[data-build] [data-running] [data-verb=stop]')],
          [['download:off', 'build:off', 'purge:off'], True, 0, 0, 1], 'one operation at a time; the bar has its step, no zone lines, no count; Arrêter', what='running')
     c.until("!!document.querySelector('[data-build-result][data-op=pickup][data-result=done]')", timeout=10000, what='the end of the pickup')
@@ -2567,7 +2596,7 @@ def l19(c):
     c.eq([len(notes), norm(T('pickupHint')) in norm(notes[0])], [1, True], 'ONE notification, with the hint', what='notification')
     doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and any(o.get('verb') == 'pickup' for o in d.get('ops', []))), what='the pickup is journaled')
     pks = [o for o in doc['ops'] if o['verb'] == 'pickup']
-    c.eq([[o['set'], o['zones'], o['result'], o['files'], o['bytes'], o['failed']] for o in pks], [['base', ['fr', 'gb'], 'done', 3, 5242880, []]], 'ONE journal entry: the real run only', what='journal')
+    c.eq([[o['set'], o['zones'], o['result'], o['files'], o['bytes'], o['failed']] for o in pks], [['base', ['fr'], 'done', 3, 5242880, []]], 'ONE journal entry: the real run only', what='journal')
     ops = c.js("[...document.querySelectorAll('[data-journal] [data-op]')].map(o => [o.dataset.opVerb, o.textContent.replace(/\\s+/g, ' ').trim()])")
     c.ok(any(o[0] == 'pickup' and norm(T('pickup', 'opVerb: {')) in norm(o[1]) for o in ops), ops, 'the journal line says the verb')
     _screen_ok(c, 'at the end')
@@ -2645,6 +2674,39 @@ def l19(c):
     c.eq({k: st['posts'][n][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'pickup', 'args': {'zones': ['gb'], 'dry': True}}, 'the button starts a new dry run (no zips), for that zone', what='replan')
     c.tap('.f-modal [data-no]')
     c.until("!document.querySelector('.f-modal')", what='the window closes')
+    # ---- I: a zip whose name is outside the rule (an accent): shown in the plan, never run; the other source is taken
+    bad_zip = {**sia_zip, 'zip': 'export_xml_bd_SIA_é.zip'}
+    plan5 = _pk_plan([bad_zip, nats_zip], [], [], jid='i1')
+    real5 = _pk_plan([nats_zip], [], [], dry=False, jid='i2', zones=('gb',))
+    st['views'], st['i'], st['start'] = [plan5, real5], 0, (200, {'job': 'i1'})
+    n = len(st['posts'])
+    c.tap(pk)
+    q = _ask_text(c)
+    rename = T('pickupRename').replace('{z}', zname('fr')).replace('{s}', s_sia).replace('{zip}', bad_zip['zip'])
+    nats_txt = T('pickupTaken').replace('{z}', zname('gb')).replace('{s}', s_nats).replace('{zip}', nats_zip['zip']).replace('{n}', f"1 {FILES[lang][0]}").replace('{b}', _size(4194304, lang))
+    c.eq(norm(q['text']), norm(T('pickupAsk').replace('{taken}', nats_txt).replace('{missing}', f' {rename}.').replace('{to}', 'data/sia/zones/gb/')),
+         'the plan shows the zip with the bad name as « nom de fichier à renommer » and lists only the ready one as to be taken', what='question rename')
+    st['start'] = (200, {'job': 'i2'})
+    c.tap('.f-modal [data-ok]')
+    c.until("document.querySelector('[data-build-result][data-op=pickup]')?.dataset.result === 'done'", timeout=10000, what='the end')
+    c.eq(st['posts'][-1]['args'], {'zones': ['gb'], 'dry': False, 'zips': {'nats': {'name': nats_zip['zip'], 'size': 2097152}}},
+         'the real run carries only the ready source: its zone and its zip', what='real body 3')
+    c.eq([norm(t) for t in c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent)")], [norm(rename)], 'and the end still says what was not taken', what='rename line')
+    # none ready: no question, nothing run, the line is shown
+    plan6 = _pk_plan([bad_zip], [], [], jid='i3', zones=('fr',))
+    st['views'], st['i'], st['start'] = [plan6], 0, (200, {'job': 'i3'})
+    n = len(st['posts'])
+    c.tap('[data-build] [data-verb=pickup]')
+    c.until("document.querySelector('[data-build-result][data-op=pickup]')?.dataset.result === 'blocked'", timeout=8000, what='nothing ready is said')
+    c.eq([norm(c.text('[data-build-result] b')), [norm(t) for t in c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent)")], c.count('.f-modal'), len(st['posts']) - n],
+         [norm(T('blocked', 'pickupSum: {')), [norm(rename)], 0, 1], 'no ready source: no question, the line to rename, only the plan was called', what='blocked')
+    # a suite update in progress refuses every start: said, the button stays live
+    st['start'] = (409, {'reason': 'updating', 'message': 'no job starts now (updating)'})
+    n = len(st['posts'])
+    c.tap('[data-build] [data-verb=pickup]')
+    c.until("!!document.querySelector('[data-build-result][data-refusal=updating]')", timeout=6000, what='the refusal is said')
+    c.eq([norm(c.text('[data-build-result]')), c.js(f"document.querySelector('{pk}').disabled"), len(st['posts']) - n], [norm(T('updating', 'refused: {')), False, 1], 'a plan refused during an update of the suite: the sentence, nothing runs', what='updating')
+    st['start'] = (200, {'job': 'k1'})
     # ---- G: a launcher that does not know base/pickup: grey, the reason written once under the panel; the others live
     st['verbs'] = BASE3
     c.page.reload(wait_until='load')

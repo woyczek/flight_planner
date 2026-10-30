@@ -1754,7 +1754,11 @@ function pickupProblems(out) {
     z: itemName('base', x.zone),
     s: sourceName(x.source)
   });
-  return [...out.missing.map(m => tt(TX.pickupMissing, {
+  return [...(out.blocked || []).map(t => tt(TX
+    .pickupRename, { // un zip dont le nom sort de la règle du lanceur n'est pas pris : à renommer
+      ...who(t),
+      zip: t.zip
+    })), ...out.missing.map(m => tt(TX.pickupMissing, {
     ...who(m),
     e: m.expected
   })), ...out.failed.map(f => f.error === 'changed' ? tt(TX
@@ -1844,14 +1848,35 @@ async function endPickupPlan(me, final, run) {
     S.ctx.notify(sm.text, sm.level);
     return;
   }
+  const split = M.pickupSplit(out.taken),
+    shown = {
+      ...out,
+      taken: split.ready,
+      blocked: split.blocked
+    }; // un zip hors de la règle des noms est dit mais jamais lancé : le lanceur prendrait « le plus récent » sans contrôle
+  if (!split.ready.length) { // rien à lancer : pas de question, la ligne dit quoi renommer
+    S.result = {
+      set: 'base',
+      verb: M.PICKUP.verb,
+      out: {
+        ...shown,
+        kind: 'blocked'
+      }
+    };
+    renderBuild();
+    const sm = pickupSummary(S.result.out);
+    S.ctx.notify(sm.text, sm.level);
+    return;
+  }
   S.result = null;
+  S.pickupBlocked = split.blocked;
   S.pickupPlan = {
-    zones: [...S.ids],
-    zips: M.pickupZips(out.taken)
+    zones: split.zones,
+    zips: split.zips
   }; // le plan montré : la prise réelle n'envoie que ces zips (nom et taille), jamais un plan relu ; le lanceur refuse la source dont le zip a changé entre-temps
   S.asking = true; // les boutons restent gris pendant la question : une opération à la fois
   renderBuild();
-  const yes = await S.ctx.ask(pickupAsk(out), {
+  const yes = await S.ctx.ask(pickupAsk(shown), {
     ok: tt(TX.pickup)
   });
   if (S !== me) return;
@@ -1870,8 +1895,12 @@ async function endPickupPlan(me, final, run) {
 }
 /** Fin d'une prise réelle : le résumé et le conseil dans le panneau, une notification, le journal. */
 async function endPickup(final, live, seconds) {
-  const out = M.setOutcome('base', M.PICKUP.verb, final).out,
+  const out = {
+      ...M.setOutcome('base', M.PICKUP.verb, final).out,
+      blocked: S.pickupBlocked || []
+    },
     sm = pickupSummary(out);
+  S.pickupBlocked = null;
   S.result = {
     set: 'base',
     verb: M.PICKUP.verb,
@@ -2275,6 +2304,7 @@ export async function mount(el, ctx) {
     groups: null, // les groupes de l'écran (buildGroups), calculés à chaque dessin
     attn: {}, // les groupes dont le cycle publié est dépassé : { base, proc } (le cycle « AANN » ou null)
     outlines: null, // les contours des zones (ctx.aerodb.zoneOutlines) : null (pas demandés), 'loading', l'objet, ou false (sans réponse : la liste seule)
+    pickupBlocked: null, // les zips du plan montré que la prise réelle n'a pas lancés (nom hors de la règle) : dits à la fin
     pickupPlan: null, // le plan d'une prise montré dans la question : { zones, zips } (la prise réelle est construite de lui seul)
     mapW: 0, // la largeur pour laquelle la carte a été calculée
     rz: 0, // l'image d'animation en attente du recalcul à la taille de la fenêtre

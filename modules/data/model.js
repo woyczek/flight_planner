@@ -491,7 +491,8 @@ export const journalResult = kind => ['done', 'partial', 'cancelled', 'interrupt
 /** Le refus d'un départ (la forme d'un refus de ctx.launcher) en { key, wait } ; key : busy | tooSoon | unknown-route | bad-args |
  *  offline | refused | failed. */
 export function refusal(r) {
-  const key = r?.status === 409 ? 'busy' : r?.status === 429 && r.reason === 'too-soon' ? 'tooSoon' : r?.status === 404 ? 'unknown-route' :
+  const key = r?.status === 409 && r.reason === 'updating' ? 'updating' : r?.status === 409 ? 'busy' : r?.status === 429 && r.reason ===
+    'too-soon' ? 'tooSoon' : r?.status === 404 ? 'unknown-route' :
     r?.status === 400 ? 'bad-args' : r?.refused ? 'refused' : r?.offline ? 'offline' : 'failed';
   return {
     key,
@@ -1035,15 +1036,31 @@ export function pickupOutcome(final) {
  *  seulement pour une source connue, un nom de fichier simple (le motif du lanceur : lettres, chiffres, espace, point, parenthèses, + et -) et une taille entière positive ou nulle.
  *  Le lanceur refuse la source dont le zip le plus récent n'est plus celui-là (« changed »). */
 export function pickupZips(taken) {
-  const out = {};
-  for (const t of Array.isArray(taken) ? taken : []) {
-    if (!t || !(t.source in PICKUP_DEST) || t.source in out) continue;
-    if (typeof t.zip === 'string' && /^[A-Za-z0-9_ .()+-]{1,150}$/.test(t.zip) && Number.isInteger(t.size) && t.size >= 0) out[t.source] = {
+  return pickupSplit(taken).zips;
+}
+/** Le zip d'une entrée du plan peut-il être envoyé au lanceur ? Source connue, nom de fichier simple (le motif du lanceur), taille entière positive ou nulle. */
+const zipSendable = t => !!t && t.source in PICKUP_DEST && typeof t.zip === 'string' && /^[A-Za-z0-9_ .()+-]{1,150}$/.test(t.zip) && Number
+  .isInteger(t.size) && t.size >= 0;
+/** Ce que la prise réelle peut faire du plan montré : { ready (les entrées dont le zip peut être envoyé), blocked (les autres : un nom hors de la règle, une taille absente… ; la prise
+ *  réelle ne les lance pas, car le lanceur prendrait « le plus récent » sans contrôle), zips (celui de chaque source prête : { name, size }, le premier par source), zones (les zones
+ *  à lancer : celles qui ont une entrée prête et aucune entrée bloquée) }. */
+export function pickupSplit(taken) {
+  const list = (Array.isArray(taken) ? taken : []).filter(t => t && typeof t === 'object'),
+    ready = list.filter(zipSendable),
+    blocked = list.filter(t => !zipSendable(t)),
+    zips = {};
+  for (const t of ready)
+    if (!(t.source in zips)) zips[t.source] = {
       name: t.zip,
       size: t.size
     };
-  }
-  return out;
+  const bad = new Set(blocked.map(t => t.zone));
+  return {
+    ready,
+    blocked,
+    zips,
+    zones: [...new Set(ready.map(t => t.zone))].filter(z => !bad.has(z))
+  };
 }
 /** Une entrée du journal pour une prise réelle (le plan n'y est jamais) : { at, set: 'base', verb: 'pickup', zones, seconds, result, files, bytes, failed, job? }. */
 export function pickupEntry({
