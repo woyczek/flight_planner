@@ -1845,6 +1845,24 @@ def i25(c):
          'the update routes: this workstation only', what='routes')
     src = (c.root / 'tools' / 'suite_update.py').read_text(encoding='utf-8')
     c.ok('DATA' not in src and 'data/' not in src.split('"""', 2)[2], '', 'the module never names the data repository')
+    # refused while a job of the Data module or a synchronisation runs (Sécurisation on 4fc473e5d): both locks held during it
+    import regen_jobs as RJ
+    kept = L.REGEN, L.suite_update.apply
+    seen = []
+    try:
+        L.REGEN = RJ.Jobs({}, {})
+        L.suite_update.apply = lambda root, ch: seen.append((L.REGEN.lock.locked(), L.SYNC_LOCK.locked())) or {'ok': True, 'done': False}
+        L.REGEN.cur = RJ.Job('base', 'build', {})
+        busy_job = L.update_suite('stable').get('reason')
+        L.REGEN.cur.data['state'] = 'done'
+        with L.SYNC_LOCK:
+            busy_sync = L.update_suite('stable').get('reason')
+        free = L.update_suite('stable')
+    finally:
+        L.REGEN, L.suite_update.apply = kept
+    c.eq((busy_job, busy_sync, free.get('ok'), seen), ('busy', 'busy', True, [(True, True)]),
+         'a running job or a synchronisation: « busy », nothing done; otherwise the update holds both locks', what='busy')
+    c.ok(not L.SYNC_LOCK.locked(), '', 'the synchronisation lock is given back')
 
 
 @case('I27', 'The noreg runner: a targeted pass runs beside one full pass at 4 runs at a time; two full passes stay exclusive', 'I', static=True,

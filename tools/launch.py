@@ -963,7 +963,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         ch = str(a.get('channel') or '') if isinstance(a, dict) else ''
         if ch not in suite_update.CHANNELS:
             return self._json({'ok': False, 'reason': 'unknown-channel', 'message': 'canal inconnu'}, 400)
-        r = suite_update.apply(ROOT, ch)
+        r = update_suite(ch)
         if r.get('done'):
             say(f'  Suite mise à jour ({ch}) : {r["current"].get("version", "")} — relancez le lanceur.')
         return self._json(r)
@@ -3731,6 +3731,27 @@ def sync_gesture(a):
         return False
     job = ((REGEN.view() or {}).get('job') or {}) if REGEN is not None else {}
     return job.get('state') != 'running' and not data_sync.building(DATA)
+
+
+UPDATE_BUSY = {'ok': False, 'done': False, 'reason': 'busy',
+               'message': 'un travail du module Données ou une synchronisation est en cours : réessayez quand il est fini'}
+
+
+def update_suite(channel):
+    """« Mettre à jour » (POST /__setup/update) : refusé (reason 'busy') pendant un travail du module Données ou une
+    synchronisation de data/, l'extraction changeant tools/ alors qu'un sous-processus peut encore en importer un module
+    (relecture Sécurisation de 4fc473e5d) ; pendant la mise à jour, les deux verrous sont tenus : aucun travail ne part,
+    aucune synchronisation ne commence."""
+    jobs = regen()
+    with jobs.lock:
+        if jobs.cur and jobs.cur.data['state'] == 'running':
+            return dict(UPDATE_BUSY)
+        if not SYNC_LOCK.acquire(blocking=False):
+            return dict(UPDATE_BUSY)
+        try:
+            return suite_update.apply(ROOT, channel)
+        finally:
+            SYNC_LOCK.release()
 
 
 def regen():

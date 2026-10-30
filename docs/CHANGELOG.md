@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Update the suite: refused while a job or a synchronisation runs** (`tools/launch.py` `update_suite`; Settings SPEC 9a-bis,
+  help ×4; noreg I25) — Sécurisation's review of 4fc473e5d. « Mettre à jour » answers `reason: 'busy'` while a job of the Data
+  module or a synchronisation of data/ runs, and holds both locks while it runs: the checkout changes `tools/` while a child
+  process may still import from it. The help now says the target is not verified (the tags are not signed): the same trust as
+  the manual `git pull` it replaces.
 - **Refactor R-C6, no behaviour change: the GitHub and GitLab transports on one base** (`frame/store/transport_git.js`;
   frame SPEC 2, DECISIONS; noreg I16 now finds the redirect refusal in the base) — the API call (no cache, no redirect
   followed, offline and refusals), the publication loop and the base64 were written twice; each transport keeps its

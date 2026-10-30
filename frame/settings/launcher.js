@@ -472,6 +472,11 @@
         'Die Version dieses Kanals ist älter als die installierte: nie ein Schritt zurück.',
         'La versión de este canal es más antigua que la instalada: nunca un paso atrás.'
       ],
+      busy: ['Un travail du module Données ou une synchronisation est en cours : réessayez quand il est fini.',
+        'A job of the Data module or a synchronisation is running: try again once it is over.',
+        'Ein Auftrag des Moduls Daten oder eine Synchronisierung läuft: erneut versuchen, wenn er beendet ist.',
+        'Hay un trabajo del módulo Datos o una sincronización en curso: inténtelo de nuevo cuando termine.'
+      ],
       'no-target': ['Aucune version sur ce canal.', 'No version on this channel.', 'Keine Version in diesem Kanal.',
         'Ninguna versión en este canal.'
       ],

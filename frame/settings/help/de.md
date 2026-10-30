@@ -216,8 +216,10 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   Kürzel. Ein verlorenes Gerät oder alle eines Piloten, der geht, werden dort widerrufen.
 - **Suite aktualisieren** (Verwaltung, mit dem Starter): einen Kanal wählen — stabil, Vorabversionen oder Entwicklungsstand —,
   „Prüfen“ sagt, was sich ändern würde, ohne etwas anzurühren, dann „Aktualisieren“ (nach einer Frage). Nie ein Schritt zurück;
-  abgelehnt, wenn Dateien der Suite auf diesem Rechner geändert wurden. Die Daten bleiben unberührt. Danach das Fenster des
-  Starters schließen und lancer.cmd erneut starten.
+  abgelehnt, wenn Dateien der Suite auf diesem Rechner geändert wurden, und während ein Auftrag des Moduls Daten oder eine
+  Synchronisierung läuft (erneut versuchen, wenn er beendet ist). Die Daten bleiben unberührt. Genommen wird die Version, die
+  das Repository der Suite angibt: Seine Tags sind nicht signiert, das Vertrauen ist dasselbe wie bei einer Aktualisierung von
+  Hand mit git. Danach das Fenster des Starters schließen und lancer.cmd erneut starten.
 - **Ordner dieses Rechners** (Verwaltung, mit dem Starter): wo die Suite, die Daten, die Downloads, die Datenbanken und
   Blätter von Little Navmap auf diesem Rechner liegen, der Pfad nur lesbar und woher er kommt; „Öffnen“ zeigt den Ordner im
   Dateiexplorer. Ein Pfad wird dort geändert, wo es angegeben ist, nie hier; X-Plane ist dem Starter unbekannt.
@@ -241,4 +243,4 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: 968ef9ef1e3a -->
+<!-- fr: 3346d25d3c8d -->

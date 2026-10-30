@@ -195,6 +195,11 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    the repository not answering) and « Mettre à jour », on only when the plan has something to do, after a question
    (`POST /__setup/update { channel }`: the tag checked out detached, or the branch fast-forwarded). The running launcher keeps
    its code: the panel says to close its window and run `lancer.cmd` again. The data repository is never touched.
+   « Mettre à jour » is refused (`reason: 'busy'`) while a job of the Data module or a synchronisation of data/ runs, and
+   holds both locks while it runs (no job starts, no synchronisation begins): the checkout changes `tools/` while a child
+   process may still import a module from it (Sécurisation's review of 4fc473e5d). The target is not verified (no
+   `git verify-tag`: the tags are not signed): the same trust as the manual `git pull` it replaces, said in the help; to be
+   tightened if the tags are signed one day.
 9b. **Little Navmap sheets (.lnmperf)** (page served by a launcher, when `aerodb.lnmperf` exists): an empty, hidden
    `[data-card="lnmperf"]` block that settings places after the launcher keys; its content and states (folder, Little
    Navmap folders found, "Save", "Synchronise now", "Stop", last pass, sheets not written) are drawn by aerodb

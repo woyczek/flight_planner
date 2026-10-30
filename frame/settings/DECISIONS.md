@@ -512,3 +512,9 @@ R-S8 module.js then model.js split by responsibility; R-S9 settings.js `render` 
   - The launcher is not restarted for itself: the result says so and the panel asks to close its window and run
     `lancer.cmd`; the launcher's own update stays the documented manual step. noreg I25 (a trial repository: plans, a
     refusal for local changes, a step back, the branch's fast-forward), A51 (×4).
+
+- **30 Oct 2026 — « Mettre à jour » waits for nothing, it refuses** (Sécurisation on 4fc473e5d). While a job of the Data module
+  or a synchronisation runs, the update is refused with `busy` rather than queued: the administrator sees why and tries again;
+  queuing would change `tools/` at a moment nobody chose. During the update the jobs' lock and the synchronisation lock are
+  held, so neither can start halfway. The target is taken as the suite's repository announces it, without `git verify-tag`:
+  the tags are not signed today; the help says so, and the check comes with signed tags.

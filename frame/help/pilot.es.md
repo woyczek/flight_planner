@@ -945,8 +945,10 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   trigrama. Un dispositivo perdido, o todos los de un piloto que se va, se revocan allí.
 - **Actualizar la suite** (Administración, con el lanzador): elegir un canal — estable, preversiones o seguimiento del
   desarrollo —, «Comprobar» dice lo que cambiaría sin tocar nada, luego «Actualizar» (tras una pregunta). Nunca un paso atrás;
-  rechazado si se modificaron archivos de la suite en este equipo. Los datos no se tocan. Después, cierre la ventana del
-  lanzador y vuelva a ejecutar lancer.cmd.
+  rechazado si se modificaron archivos de la suite en este equipo, y mientras haya un trabajo del módulo Datos o una
+  sincronización en curso (inténtelo de nuevo cuando termine). Los datos no se tocan. La versión que se toma es la que anuncia
+  el repositorio de la suite: sus etiquetas no están firmadas, la confianza es la misma que la de una actualización hecha a
+  mano con git. Después, cierre la ventana del lanzador y vuelva a ejecutar lancer.cmd.
 - **Carpetas de este equipo** (Administración, con el lanzador): dónde están la suite, los datos, las descargas, las bases
   y fichas de Little Navmap en este equipo, la ruta en solo lectura y de dónde viene; «Abrir» muestra la carpeta en el
   explorador de archivos. Una ruta se cambia donde se indica, nunca aquí; X-Plane es desconocido para el lanzador.
@@ -971,4 +973,4 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: 968ef9ef1e3a -->
+<!-- fr: 3346d25d3c8d -->
