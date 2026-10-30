@@ -929,6 +929,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 77 | Frame: « Workstation folders » card; R-C2 notes (36f571e40) | acceptable; notes of 76 settled; one note |
 | 78 | Refactor R-F4a: the route model in `frame/lib/route_model.js` (7cd47db8d) | acceptable, no change of behaviour |
 | 79 | Refactor R-C3: IVAO's return in one place (7426e127d) | acceptable; no guard lost, surface reduced; notes of 77 and 41.4 settled |
+| 80 | Map: Layers chip (a314a352c), approach transitions filtered by the STAR (c884c8b3d) | acceptable |
+| 81 | Refactor R-F4b: procedure ends computed once (ddf10e3b8) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1737,6 +1739,14 @@ through the relay, a GET of this path after the device's gate; on the workstatio
 state of the workstation. Removed: the page's `ivao.token()` (no reader), the `ivao/oauth/refresh` route (so the note
 of 41 on renewing any presented refresh token no longer applies), the former opener names. `os.startfile(path, 'explore')`
 settles the note of 77.
+
+**80. Map, Layers chip and transitions under the approach (a314a352c, c884c8b3d) — acceptable.** Layout, and a local
+selection rule (`PR.compatible({ star })`, reset to « None »); no network, write or storage; new templates insert the
+code's texts and constant attributes; the return to Fuel is still checked by `admit()`.
+
+**81. Refactor R-F4b (ddf10e3b8) — acceptable.** `PR.endsOf` is pure; `routingChain` is removed from `flight_path.js` and
+its re-export, with no caller left; Fuel's Auto adds no write (still the flight's bounded save), no network or HTML; the
+intended fix (the exit followed in the right direction) only concerns the route's computation.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
