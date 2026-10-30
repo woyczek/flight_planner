@@ -969,9 +969,12 @@ redesigned for touch at that point.
        - **One pane, one side, every family at once.** "Sur la carte" opens `#maps?choose=dep|arr&icao=LFPO` as
          today, but the Map's sheet lists the side's three families together, in the side's order: **runway**, **SID**
          (departure) or **STAR** (arrival), **approach** (arrival only; its transition folded under it). Each family is
-         one short group (≤ 7 rows visible, then scroll inside the group), "Aucune" first, compatible rows first then ⚠,
-         eight hues as today. The sheet scrolls as one surface: **never two scrollbars** (the page under the sheet does
-         not scroll while the sheet is open; today's double scrollbar is a bug).
+         one short group: "Aucune" then six rows, the rest folded under "N autres…" (×4) which unfolds in place, a
+         procedure highlighted from the Map unfolds its group; compatible rows first then ⚠, eight hues as today. The
+         sheet is the **only scroll surface** (maps session, 30 Oct: a group scrolling inside a scrolling sheet is
+         exactly the double scrollbar; the page under the sheet never scrolls while it is open).
+       - **Return keys**, lowercase and only these: `rwy`, `sid`, `star`, `app`, `apptrans` (value = id or `none`; absent =
+         family untouched); no SID / STAR transition key, the model has none.
        - **The selection accumulates in the pane and stays on the Map until the pane is closed.** A tap on a row or on
          a trace sets that family's choice in the pane (local state of the mode, not yet written); the Map draws the
          current selection (runway threshold vector, the chosen SID / STAR / approach in its hue, the rest of the family
@@ -997,13 +1000,14 @@ redesigned for touch at that point.
          § 10.24: a short vector (24 px, screen length, never geographic) from the runway threshold along the runway's
          true bearing, with the designator at its tail; the chosen runway bold, the others thin; drawn on the general
          Map too (outside the choose mode, when the aerodrome has runway records), **only above a zoom threshold**;
-         the threshold is an administrator setting, `maps.runwayZoom` (default 11), in Réglages › Administration
-         (level Complet), read by the Map through the settings contract (no event). Below the threshold nothing is
-         drawn.
+         the threshold is an airline setting of the administrator, `runwayZoom` (integer 8–16, default 11) at the top
+         level of `airline/map_profiles.json` beside the Map's other tuning, written from Réglages › Administration
+         (level Complet), read by the Map through the watch it already has on that file (no event, no frame
+         change). Below the threshold nothing is drawn.
        - **Out of scope here**: ILS / DME aids (deferred, § 10.24), the runway in use from the METAR (§ 10.28 backlog;
          the components above are its first step).
        Lots: maps (BUGS SOG: the pane with three families, accumulated selection, return keys, threshold vector and
        zoom threshold, single scroll surface), fuel (Features SOG: `frame/lib/procedures.js` and `frame/lib/wind.js`
        helpers with benches, consumption of several keys in one trip including `rwy`, components in its runway select,
-       cases F), settings (Réglages: `maps.runwayZoom` card line, help ×4). Files reserved: `frame/lib/procedures.js`
+       cases F), settings (Réglages: `runwayZoom` line of the Administration card, help ×4). Files reserved: `frame/lib/procedures.js`
        and `frame/lib/wind.js` to Features SOG, `modules/maps/**` to BUGS SOG, `frame/settings/**` to Réglages.
