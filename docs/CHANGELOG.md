@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Noreg: every module loads offline before its first opening** (`tests/v3/cases/repo.py`; frame INTEGRATION § 2; noreg I26,
+  known for now) — a static case: meta.files (with lazy) holds the whole chain of a module's imports, the service worker's
+  list the frame's; today's gaps (Fuel, Maps, Report, Atmosphere) are listed for their owners.
 - **Sheets on a phone** (user, 30 Oct: « bug d'affichage sur les fiches, sur téléphone », iPhone, cupertino;
   `modules/aircraft/sheets.js`, `modules/fuel/module.js`; aircraft SPEC § 6; cases M5, F79) — the sheet form had three columns of
   96 px (labels on three lines, lists cut, empty fields stretched to the row, checkboxes as wide as their label): two columns of

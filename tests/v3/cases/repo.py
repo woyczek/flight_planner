@@ -1702,3 +1702,60 @@ def i24(c):
     src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
     c.ok("'downloads': downloads_dirs" in src and ('base', 'pickup') in importlib.import_module('regen.base_sources').VERBS, '',
          'the launcher gives the jobs its Downloads folders; base/pickup is a verb of the base set')
+
+
+@case('I26', 'Offline from the start: every module\u2019s meta.files covers what it imports; the service worker\u2019s list covers the frame', 'I', static=True,
+      rule='Simplification 30 Oct (Features SOG: four frame/lib files imported by Fuel were missing from its meta.files, so a pilot offline before ever opening Fuel could not load it): meta.files + meta.lazy ⊇ the transitive relative imports of module.js; the sw.js SHELL ⊇ what its files import; listed but not imported is a note, never an échec')
+def i26(c):
+    import os
+    comment = re.compile(r'/\*.*?\*/|(?<![:\'"\\])//[^\n]*', re.S)
+    imp = re.compile(r"""(?:\bfrom\s+|\bimport\s*\(\s*|\bimport\s+)(['"])(\.{1,2}/[^'"]+)\1""")
+    rooted = re.compile(r"""new URL\(\s*['"`](frame/[a-z0-9_./-]+\.js)['"`]\s*,\s*ROOT""")
+    root = str(c.root)
+
+    def strip(p):
+        return p.split('?')[0].split('#')[0]
+
+    def imports(path):
+        try:
+            text = comment.sub('', open(path, encoding='utf-8').read())
+        except OSError:
+            return []
+        return ([os.path.normpath(os.path.join(os.path.dirname(path), strip(m.group(2)))) for m in imp.finditer(text)]
+                + [os.path.normpath(os.path.join(root, m.group(1))) for m in rooted.finditer(text)])
+
+    def closure(start):
+        seen, todo = set(), list(start)
+        while todo:
+            p = todo.pop()
+            if p in seen or not os.path.isfile(p):
+                continue
+            seen.add(p)
+            todo += imports(p)
+        return seen
+
+    def listed(text, key):
+        m = re.search(key + r'\s*:\s*\[(.*?)\]', comment.sub('', text), re.S)
+        return [strip(x) for x in re.findall(r"""['"]([^'"]+)['"]""", m.group(1))] if m else []
+    sw = os.path.join(root, 'frame', 'sw.js')
+    text = open(sw, encoding='utf-8').read()
+    have = {os.path.normpath(os.path.join(os.path.dirname(sw), f)) for f in listed(text, 'SHELL')}
+    lack = sorted(os.path.relpath(p, os.path.dirname(sw)).replace(os.sep, '/') for p in closure([p for p in have if p.endswith('.js')]) - have)
+    c.eq(lack, [], 'the service worker\u2019s SHELL holds every file its files import', what='files missing from the SHELL')
+    gaps, notes = {}, {}
+    for name in sorted(os.listdir(os.path.join(root, 'modules'))):
+        entry = os.path.join(root, 'modules', name, 'module.js')
+        if not os.path.isfile(entry):
+            continue
+        src = open(entry, encoding='utf-8').read()
+        meta = src[src.find('export const meta'):] if 'export const meta' in src else src
+        base = os.path.dirname(entry)
+        have = {os.path.normpath(os.path.join(base, f)) for f in listed(meta, 'files') + listed(meta, 'lazy')}
+        need = closure([entry]) - {os.path.normpath(entry)}
+        rel = lambda ps: sorted(os.path.relpath(p, base).replace(os.sep, '/') for p in ps)
+        if need - have:
+            gaps[name] = rel(need - have)
+        if have - need:
+            notes[name] = rel(have - need)
+    c.eq(gaps, {}, 'each module\u2019s meta.files (with meta.lazy) holds every file it imports, so that it loads offline before its first opening'
+         + (f' (listed, not imported, a note only: {notes})' if notes else ''), what='files missing from meta.files')

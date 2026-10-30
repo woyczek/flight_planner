@@ -58,7 +58,8 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
 - Texts are rows `[fr, en, de, es]` passed to `ctx.t`, French first, every text translated (tooltips, statuses and
   composed sentences included).
 - No global style sheet: use the frame's tokens and classes (§ 3.2 of the SPEC).
-- `files`: every other file the module imports (scripts, data, images), as paths relative to `module.js`. The frame
+- `files`: every other file the module imports (scripts, data, images), as paths relative to `module.js` — the whole chain:
+  a `frame/lib/` file imported by one of the module's own files counts too (noreg I26 checks it statically, with `lazy`). The frame
   keeps them offline from the first visit, before the module is ever opened. A file left out is kept only once it has
   been loaded, so declare them all; `[]` when there is none.
 - `lazy`: heavy files (a map library) that must not be preloaded: kept at their first use only.
