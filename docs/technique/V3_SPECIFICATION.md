@@ -992,7 +992,8 @@ redesigned for touch at that point.
        - **Wind on every runway row.** Each runway row carries the components from the aerodrome's METAR already known
          to the suite (the one Fuel's Départ step shows): head or tail wind and crosswind, rounded to the knot,
          "↑ 12 kt · ← 6 kt" (arrows along and across the runway, tail wind in orange above 5 kt, crosswind in orange
-         above the aircraft sheet's limit when it has one). Pure helper `frame/lib/wind.js`
+         above the aircraft sheet's limit when it has one — no sheet carries that limit yet: a field
+         `maxCrosswindKt` in the sheet editor and its imports is a later lot). Pure helper `frame/lib/wind.js`
          `components(runwayTrueHeading, windDirTrue, windKt) → { head, cross, side }`, bench without a browser; no
          METAR → no line, nothing invented. Same at arrival. Fuel's own runway select shows the same components as the
          option's suffix, so the choice is the same wherever it is made.
@@ -1035,10 +1036,13 @@ redesigned for touch at that point.
        - **Condensed.** One line per row, 36 px high, 44 px touch target through padding, no card, no gap: name, then
          the small facts on the same line (runway tag, transition, "↑ 12 kt · ← 6 kt" on a runway, ⚠ ⌛ at the end),
          group headers as thin labels, the sheet's only scroll. Seven rows visible per family, then "N autres".
-       - **The current selection reads as three lines at the top of the pane** ("28L · ↑ 12 kt ← 6 kt", "ABLI4L via
+       - **The current selection reads as three lines at the top of the pane** ("28L · ↑ 12 kt · ← 6 kt", "ABLI4L via
          ABLIN", "ILS 28L via PIZSA"), each with ✕ to clear that family; they are the summary Fuel also shows in its
          side's title after the return (one text rule, `summaryOf(side)` in `procedures.js`).
        Lots: maps (BUGS SOG: the pane v2 — three lists at once, narrowing, folds, family rows, transition sub-rows,
        condensed rows, summary lines; cases D), fuel (Features SOG: `familyOf`, `siblingsOf`, `compatible(list,
        { rwy, star, app })`, `summaryOf` in `frame/lib/procedures.js` with benches first, then the same summary line
        in Fuel's side title).
+       **Delivered**: Fuel's key consumption and wind suffix (25b887349, `wind.label()` is the one text rule, with
+       " · " between the two components), the helpers `familyOf`, `siblingsOf`, `familiesOf`, `compatible`,
+       `summaryOf` (451d0ce83); the pane v2 and the threshold vector follow.
