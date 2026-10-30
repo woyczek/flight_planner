@@ -1011,3 +1011,34 @@ redesigned for touch at that point.
        helpers with benches, consumption of several keys in one trip including `rwy`, components in its runway select,
        cases F), settings (Réglages: `runwayZoom` line of the Administration card, help ×4). Files reserved: `frame/lib/procedures.js`
        and `frame/lib/wind.js` to Features SOG, `modules/maps/**` to BUGS SOG, `frame/settings/**` to Réglages.
+       **Second reading (user, 30 Oct, after testing af261d3e3; Navigraph's panes shown as a yardstick, "exemples à
+       ne pas recopier, mais très ergonomiques")**: "en trois clics : choisir visuellement la piste avec les vents, la
+       STAR, l'approche. Ou la piste, l'approche, la STAR. Ou la famille de STAR, la piste, l'approche. Qu'on ne voie
+       que les procédures compatibles, mais qu'on puisse changer facilement. Les boutons du volet sont bien trop
+       espacés, il faut condenser." Rules, replacing the group layout above where they differ:
+       - **Three taps, any order.** The three families are always visible at once, each as a compact list, no
+         opening tap: one tap on a runway, one on a STAR (or SID), one on an approach, in whatever order the pilot
+         thinks. The pane never imposes an order; each choice narrows the two others.
+       - **Only the compatible rows, by default.** After a choice, the other families show only what fits it: a runway
+         chosen → STARs serving it and approaches to it; a STAR chosen → runways it serves (one tap picks the runway and
+         resolves the STAR's suffix) and approaches joining it; an approach chosen → its runway set, STARs joining it.
+         What does not fit is folded under one thin line per family, "N autres · Toutes", which unfolds them marked ⚠
+         (the marker rule of § 10.23 stays: shown, never forbidden). "Aucune" stays first in every family.
+       - **The family of a STAR or SID is a row.** Records that differ only by their runway suffix (ABLI4L, ABLI4R)
+         are one row "ABLI4" with its runways as small tags; tapping the row chooses the family, the runway list
+         narrows to those runways, tapping one resolves the record. A family with one runway is an ordinary row.
+         Pure rule `familyOf(name)` and `siblingsOf(list, proc)` in `frame/lib/procedures.js`: the suffix is the last
+         character when it differs across records sharing the same stem and digit; never a guess on a lone name.
+       - **Transitions are sub-rows.** An approach's transitions fold under its row (the first one open when the
+         approach is chosen), each a one-line sub-row; the chosen one is written as `apptrans`. STAR entries, when the
+         records carry several, follow the same shape under the family row.
+       - **Condensed.** One line per row, 36 px high, 44 px touch target through padding, no card, no gap: name, then
+         the small facts on the same line (runway tag, transition, "↑ 12 kt · ← 6 kt" on a runway, ⚠ ⌛ at the end),
+         group headers as thin labels, the sheet's only scroll. Seven rows visible per family, then "N autres".
+       - **The current selection reads as three lines at the top of the pane** ("28L · ↑ 12 kt ← 6 kt", "ABLI4L via
+         ABLIN", "ILS 28L via PIZSA"), each with ✕ to clear that family; they are the summary Fuel also shows in its
+         side's title after the return (one text rule, `summaryOf(side)` in `procedures.js`).
+       Lots: maps (BUGS SOG: the pane v2 — three lists at once, narrowing, folds, family rows, transition sub-rows,
+       condensed rows, summary lines; cases D), fuel (Features SOG: `familyOf`, `siblingsOf`, `compatible(list,
+       { rwy, star, app })`, `summaryOf` in `frame/lib/procedures.js` with benches first, then the same summary line
+       in Fuel's side title).
