@@ -2226,3 +2226,27 @@ def d83(c):
       d.style.removeProperty('--sog-map-sid'); MapsRender.tokens(); return { before, after, back: P().sid } }""")
     c.eq(t['before'][0].lower(), t['before'][1].lower(), 'the SID hue is the design token', what='default SID hue')
     c.eq([t['after'].lower(), t['back'].lower()], ['#123456', t['before'][1].lower()], 'a changed token is read at the next reading of the theme', what='changed token')
+
+
+# ------------------------------------------------------------------------------------------------------ D84
+@case('D84', 'Labels declared as requests; aerodb answers deduplicated by key, not by object', 'D', tags=('maps',), screens=False,
+      designs=('standard',), night=False,
+      rule='refactor R-M2 (b), § 10.33: every layer asks the placer through one request { layer, rank, key, anchor, boxes, paint, force } (SiaAero.ask); many() keeps one answer per key — two frozen copies of one airway segment are one, while two airspaces the SIA gives the same key (« LF600 », a SUR and a PRN) stay two')
+def d84(c):
+    c.open('maps', docs=fdocs(flight()), flight=False, airfields=True)
+    r = c.js("""async () => { const D = await import('/modules/maps/data.js'), fz = o => Object.freeze(JSON.parse(JSON.stringify(o))),
+      seg = { route: 'A34', a: { id: 'NEVER', lat: 47.4, lon: 1.5 }, b: { id: 'LEBLA', lat: 46.6, lon: 1.5 } },
+      sur = { type: 'SUR', key: 'LF600', name: '600', lower: 'SFC', upper: '1000 ft ASFC', rings: [[[48.6, 2.2], [48.7, 2.3], [48.6, 2.4]]] },
+      prn = { type: 'PRN', key: 'LF600', name: '600', lower: 'SFC', upper: '3300 ft ASFC', rings: [[[45.3, 6.9], [45.4, 7.0], [45.3, 7.1]]] },
+      answers = [[fz(seg), fz(sur)], [fz(seg), fz(prn), fz(sur)]];
+      let i = 0;
+      const got = await D.many(async () => answers[i++] || [], [[0, 0, 1, 1], [1, 1, 2, 2]]);
+      const pl = SiaAero.placer(), painted = [];
+      const a = SiaAero.ask(pl, { layer: 't', rank: 'fix', key: 'k', boxes: [{ x0: 0, y0: 0, x1: 10, y1: 10 }], paint: r => painted.push('a') }),
+        b = SiaAero.ask(pl, { layer: 't', rank: 'fix', key: 'k2', boxes: [{ x0: 5, y0: 5, x1: 15, y1: 15 }, { x0: 20, y0: 0, x1: 30, y1: 10 }], paint: r => painted.push('b@' + r.x0) }),
+        f = SiaAero.ask(pl, { layer: 't', rank: 'route', key: 'k3', force: 'paint', boxes: [{ x0: 0, y0: 0, x1: 10, y1: 10 }], paint: r => painted.push('f') }),
+        n = SiaAero.ask(pl, { layer: 't', rank: 'fix', key: 'k4', boxes: [{ x0: 2, y0: 2, x1: 8, y1: 8 }], paint: r => painted.push('n') });
+      return { kinds: got.map(x => x.type || x.route), painted, none: n === null } }""")
+    c.eq(r['kinds'], ['A34', 'SUR', 'PRN'], 'one airway segment for two frozen copies; the SUR and the PRN of key LF600 both kept', what='many()')
+    c.eq([r['painted'], r['none']], [['a', 'b@20', 'f'], True], 'a request takes its first free place, else slides; force paints without room; else it is left out',
+         what='requests')

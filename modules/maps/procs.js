@@ -140,30 +140,25 @@ export function routeLines() {
 }
 /** Une chose à écrire près de q, dans un rectangle de la taille w × h : le premier des quatre coins qui ne recouvre rien de
  *  déjà placé (pl.take), sinon null ; force : posé au premier coin quoi qu'il arrive. */
-export function place(pl, q, w, h, force) {
-  const spots = [
-    [7, -h - 3],
-    [7, 4],
-    [-w - 7, -h - 3],
-    [-w - 7, 4]
-  ];
-  for (const [dx, dy] of spots) {
-    const r = {
+export function place(pl, q, w, h, force, key = '') {
+  return MapsRender.kit.ask(pl, {
+    layer: 'screenLabels',
+    rank: 'procedure',
+    key,
+    anchor: q,
+    force: force ? 'paint' : false,
+    boxes: [
+      [7, -h - 3],
+      [7, 4],
+      [-w - 7, -h - 3],
+      [-w - 7, 4]
+    ].map(([dx, dy]) => ({
       x0: q.x + dx,
       y0: q.y + dy,
       x1: q.x + dx + w,
       y1: q.y + dy + h
-    };
-    if (!pl || pl.take(r)) return r;
-  }
-  if (!force) return null;
-  const [dx, dy] = spots[0];
-  return {
-    x0: q.x + dx,
-    y0: q.y + dy,
-    x1: q.x + dx + w,
-    y1: q.y + dy + h
-  };
+    }))
+  });
 }
 export const LINE_H = 16;
 /** Largeur d'une ligne de morceaux (la police du libellé étant posée). */
@@ -753,10 +748,13 @@ function numBox(ctx, w) {
 export function reserveRunways(ctx, arrows, pl) {
   if (!arrows?.length || !pl) return;
   ctx.save();
-  for (const w of arrows) {
-    const r = numBox(ctx, w);
-    w.num = pl.take(r) ? r : false;
-  }
+  for (const w of arrows) w.num = MapsRender.kit.ask(pl, {
+    layer: 'points',
+    rank: 'runway',
+    key: `rwy:${w.name}@${Math.round(w.a.x)},${Math.round(w.a.y)}`,
+    anchor: w.a,
+    boxes: [numBox(ctx, w)]
+  }) || false;
   ctx.restore();
 }
 /** Dessine les vecteurs de seuil : un trait court du seuil vers le sens de la piste (épaisseur lw, liseré du fond), une petite pointe
@@ -809,11 +807,17 @@ export function drawRunways(ctx, arrows, pl = null) {
     // dans la passe de collision de la carte : un numéro qui n'a pas de place n'est pas écrit (le vecteur reste) ; réservé d'avance
     // (reserveRunways), il est écrit à sa place
     if (w.num === false) continue;
-    if (!w.num && pl && !pl.take({
-        x0: nx - tw / 2 - 1,
-        y0: ny - 7,
-        x1: nx + tw / 2 + 1,
-        y1: ny + 7
+    if (!w.num && pl && !MapsRender.kit.ask(pl, {
+        layer: 'points',
+        rank: 'runway',
+        key: `rwy:${w.name}@${Math.round(w.a.x)},${Math.round(w.a.y)}`,
+        anchor: w.a,
+        boxes: [{
+          x0: nx - tw / 2 - 1,
+          y0: ny - 7,
+          x1: nx + tw / 2 + 1,
+          y1: ny + 7
+        }]
       })) continue;
     ctx.lineWidth = 3;
     ctx.strokeStyle = S.theme.bg;

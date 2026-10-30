@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: labels declared as requests, aerodb answers deduplicated by key, refactor without change of behaviour (R-M2 b, § 10.33)**
+  (`modules/maps/lib/aero_symbols.js`, `render.js`, `render_airspace.js`, `render_route.js`, `procs.js`, `choose.js`, `data.js`;
+  DECISIONS; noreg D84). Every label of the Map is a request `{ layer, rank, key, anchor, boxes, paint, force }` through one
+  `ask`, placed in today's order (the canvas of six real scenes is the same); `many()` deduplicates by a key per kind (an airspace by
+  type, key, name, limits and first point: the SIA's key alone is not unique).
+
 - **Frame: the help panel and the welcome card below a module's content** (`frame/app.js`; frame/help SPEC § 3, DECISIONS;
   help ×4; noreg A52) — they arrive after the module's first drawing and no longer push the page down under a pilot's tap.
 - **Aircraft SPEC as a state** (`modules/aircraft/SPEC.md`): each rule with its case M, what became false removed (the Registre view, the

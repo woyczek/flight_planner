@@ -640,7 +640,14 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
         x1: L.ad.x + w / 2 + 2,
         y1: L.ad.y + AD_PX + 2
       };
-      pl.add(L.ad.r);
+      MapsRender.kit.ask(pl, {
+        layer: 'screenLabels',
+        rank: 'aerodrome',
+        key: C.icao,
+        anchor: ap,
+        force: 'reserve',
+        boxes: [L.ad.r]
+      });
     }
     // les numéros de piste ensuite, avant les cartouches et les balises de la Carte
     reserveRunways(ctx, L.arrows, pl);

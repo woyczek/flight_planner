@@ -308,11 +308,12 @@
     let p = merged.get(m);
     if (!p) merged.set(m, p = {});
     const k = dark ? 'night' : 'day';
+    const ok = c => !!c && (typeof CSS === 'undefined' || CSS.supports('color', c)); // une couleur que le canvas lit, sinon le repli
     return p[k] ||= Object.freeze({
       ...base,
-      sid: m.sid || base.sid,
-      star: m.star || base.star,
-      app: m.app || base.app
+      sid: ok(m.sid) ? m.sid : base.sid,
+      star: ok(m.star) ? m.star : base.star,
+      app: ok(m.app) ? m.app : base.app
     });
   };
 
@@ -702,13 +703,19 @@
         x0 = p.x + s * .9,
         y = p.y - s * .9,
         w = text.length * f * .58;
-      if (pl && !pl.take({
+      A().ask(pl, {
+        layer: 'points',
+        rank: 'obstacle',
+        key: `${o.id ?? ''}@${(+o.lat).toFixed(4)},${(+o.lon).toFixed(4)}`,
+        anchor: p,
+        boxes: [{
           x0,
           y0: y - f * .65,
           x1: x0 + w,
           y1: y + f * .65
-        })) continue;
-      halo(ctx, text, x0, y, f, col, 'left');
+        }],
+        paint: () => halo(ctx, text, x0, y, f, col, 'left')
+      });
     }
   }
 
@@ -742,12 +749,19 @@
       ctx.lineWidth = 1.3 * scale;
       ctx.stroke();
       const w = v.id.length * f * .62;
-      if (!pl || pl.take({
+      A().ask(pl, {
+        layer: 'points',
+        rank: 'fix',
+        key: `${v.id}@${(+v.lat).toFixed(4)},${(+v.lon).toFixed(4)}`,
+        anchor: p,
+        boxes: [{
           x0: p.x - w / 2,
           y0: p.y + rr + 1,
           x1: p.x + w / 2,
           y1: p.y + rr + 1 + f * 1.2
-        })) halo(ctx, v.id, p.x, p.y + rr + 2 + f * .6, f, col, 'center');
+        }],
+        paint: () => halo(ctx, v.id, p.x, p.y + rr + 2 + f * .6, f, col, 'center')
+      });
     }
     ctx.restore();
   }
@@ -836,12 +850,19 @@
         ctx.stroke();
         if (lab && text) {
           const w = text.length * f * .62;
-          if (!pl || pl.take({
+          A().ask(pl, {
+            layer: 'vrp',
+            rank: 'vrp',
+            key: `${v.id}@${(+v.lat).toFixed(4)},${(+v.lon).toFixed(4)}`,
+            anchor: p,
+            boxes: [{
               x0: p.x + r + 2,
               y0: p.y - f * .7,
               x1: p.x + r + 4 + w,
               y1: p.y + f * .7
-            })) halo(ctx, text, p.x + r + 3, p.y, f, col, 'left');
+            }],
+            paint: () => halo(ctx, text, p.x + r + 3, p.y, f, col, 'left')
+          });
         }
         return true;
       };
@@ -885,10 +906,17 @@
           x1: q.x + g + 1,
           y1: q.y + g + 1
         };
-      if (!pl || pl.take(r)) out.push({
-        c,
-        q,
-        label
+      A().ask(pl, {
+        layer: 'cities',
+        rank: 'town',
+        key: `${c.name}@${(+c.lat).toFixed(4)},${(+c.lon).toFixed(4)}`,
+        anchor: q,
+        boxes: [r],
+        paint: () => out.push({
+          c,
+          q,
+          label
+        })
       });
     }
     return out;
@@ -974,12 +1002,19 @@
       ctx.setLineDash([]);
       const text = z.name || z.id,
         w = String(text).length * f * .6;
-      if (!pl || pl.take({
+      A().ask(pl, {
+        layer: 'missionZones',
+        rank: 'mission',
+        key: z.id || text,
+        anchor: top,
+        boxes: [{
           x0: top.x - w / 2,
           y0: top.y - f * 1.6,
           x1: top.x + w / 2,
           y1: top.y - f * .2
-        })) halo(ctx, text, top.x, top.y - f * .8, f, stroke, 'center');
+        }],
+        paint: () => halo(ctx, text, top.x, top.y - f * .8, f, stroke, 'center')
+      });
     }
     ctx.restore();
   }
@@ -1011,11 +1046,18 @@
       ms = (+el(profile, 'pointMarker') || 8) * scale;
     for (const p of points) {
       const q = toC(p.lat, p.lon);
-      pl.add({
-        x0: q.x - ms / 2,
-        y0: q.y - ms - pf * 1.4,
-        x1: q.x + ms + 6 + String(p.name || p.id).length * pf * .62,
-        y1: q.y + ms / 2
+      A().ask(pl, {
+        layer: 'missionPoints',
+        rank: 'mission',
+        key: p.id || p.name,
+        anchor: q,
+        force: 'reserve',
+        boxes: [{
+          x0: q.x - ms / 2,
+          y0: q.y - ms - pf * 1.4,
+          x1: q.x + ms + 6 + String(p.name || p.id).length * pf * .62,
+          y1: q.y + ms / 2
+        }]
       });
     }
   }
@@ -1062,12 +1104,22 @@
         gridLabel = (text, x, y, align) => {
           const w = text.length * font * .6,
             x0 = align === 'center' ? x - w / 2 : x;
-          if (!pl || pl.take({
+          A().ask(pl, {
+            layer: 'gridMora',
+            rank: 'grid',
+            key: `${text}@${Math.round(x)},${Math.round(y)}`,
+            anchor: {
+              x,
+              y
+            },
+            boxes: [{
               x0,
               y0: y - font * .6,
               x1: x0 + w,
               y1: y + font * .6
-            })) halo(ctx, text, x, y, font, gridColor, align);
+            }],
+            paint: () => halo(ctx, text, x, y, font, gridColor, align)
+          });
         };
       for (const lon of gridValues(b.w, b.e, gs)) {
         const p = toC(b.n, lon),
@@ -1123,9 +1175,14 @@
     for (const m of g.values()) {
       const q = toC(m.lat, m.lon);
       if (!(q.x > -50 && q.y > -50 && q.x < W + 50 && q.y < H + 50)) continue;
-      let at = q;
-      if (pl) {
-        at = [
+      // la MORA de la case : au centre, sinon autour ; sans place, au centre quand même (réservée)
+      A().ask(pl, {
+        layer: 'gridMora',
+        rank: 'mora',
+        key: `${m.lat},${m.lon}`,
+        anchor: q,
+        force: 'reserve',
+        boxes: (pl ? [
           [0, 0],
           [0, -d],
           [0, d],
@@ -1135,23 +1192,18 @@
           [d, -d],
           [-d, d],
           [d, d]
-        ].map(([dx, dy]) => ({
+        ] : [
+          [0, 0]
+        ]).map(([dx, dy]) => ({
+          x0: q.x + dx - hw,
+          y0: q.y + dy - hh,
+          x1: q.x + dx + hw,
+          y1: q.y + dy + hh,
           x: q.x + dx,
           y: q.y + dy
-        })).find(p => pl.free({
-          x0: p.x - hw,
-          y0: p.y - hh,
-          x1: p.x + hw,
-          y1: p.y + hh
-        })) || q;
-        pl.add({
-          x0: at.x - hw,
-          y0: at.y - hh,
-          x1: at.x + hw,
-          y1: at.y + hh
-        });
-      }
-      halo(ctx, String(m.text), at.x, at.y, font, color, 'center', Math.max(alpha, .95));
+        })),
+        paint: r => halo(ctx, String(m.text), r.x, r.y, font, color, 'center', Math.max(alpha, .95))
+      });
     }
   }
   /** Densité selon le zoom (px par degré) : loin (moins de 80) — grands terrains, voies et leurs noms ; moyen (moins de
@@ -1251,7 +1303,9 @@
     trackOf,
     withAlpha,
     wrapLon,
-    cartouche
+    cartouche,
+    // la demande d'étiquette (refonte R-M2, SPEC § 3) : SiaAero.ask, un seul code pour toutes les couches
+    ask: (pl, req) => A().ask(pl, req)
   };
   // gelé (§ 10.29 e) : les parties y lisent des aides, n'y rangent rien ; leurs dessins sont dans MapsRender.parts
   Object.freeze(K);

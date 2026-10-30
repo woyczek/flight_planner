@@ -44,12 +44,21 @@
           x1: q.x + 9 * scale + text.length * f * .6,
           y1: q.y + 4 * scale + f * 1.2
         };
-      if ((pl ? pl.take(r) : true) || end) out.push({
-        text,
-        x: r.x0,
-        y: q.y + 3 * scale + f * .6,
-        size: f,
-        align: 'left'
+      // les deux bouts toujours écrits (sans place : quand même, sans la réserver)
+      R.kit.ask(pl, {
+        layer: 'routeLabels',
+        rank: 'route',
+        key: `${p.id || p.name}@${(+p.lat).toFixed(4)},${(+p.lon).toFixed(4)}`,
+        anchor: q,
+        force: end ? 'paint' : false,
+        boxes: [r],
+        paint: () => out.push({
+          text,
+          x: r.x0,
+          y: q.y + 3 * scale + f * .6,
+          size: f,
+          align: 'left'
+        })
       });
       // heure estimée du point (vol démarré, de près : p.eta, posé par l'écran) : sous son nom, sinon au-dessus du point,
       // sinon à sa gauche ; réservée avec les libellés de la route, avant les terrains (jamais sur « LFBD »)
@@ -62,24 +71,29 @@
             [q.x - 9 * scale - we, q.y + 2 * scale, 'left'],
             [q.x - 9 * scale - we, q.y - 6 * scale - fe * 1.2, 'left']
           ];
-        for (const [x, y, align] of spots) {
-          const e = {
+        R.kit.ask(pl, {
+          layer: 'routeLabels',
+          rank: 'route',
+          key: `eta:${p.id || p.name}`,
+          anchor: q,
+          boxes: spots.map(([x, y, align]) => ({
             x0: x,
             y0: y,
             x1: x + we + 2 * scale,
-            y1: y + fe * 1.2
-          };
-          if (pl && !pl.take(e)) continue;
-          out.push({
-            text: p.eta,
+            y1: y + fe * 1.2,
             x,
-            y: y + fe * .6,
+            y,
+            align
+          })),
+          paint: e => out.push({
+            text: p.eta,
+            x: e.x,
+            y: e.y + fe * .6,
             size: fe,
-            align,
+            align: e.align,
             color: env.theme.accent
-          });
-          break;
-        }
+          })
+        });
       }
     }
     const f = f0;
@@ -93,12 +107,19 @@
           x1: q.x + w / 2 + 1,
           y1: q.y - 4 * scale
         };
-      if (!pl || pl.take(r)) out.push({
-        text,
-        x: q.x,
-        y: q.y - 4 * scale - f * .55,
-        size: f * .85,
-        align: 'center'
+      R.kit.ask(pl, {
+        layer: 'routeLabels',
+        rank: 'route',
+        key: `nm:${text}@${Math.round(q.x)},${Math.round(q.y)}`,
+        anchor: q,
+        boxes: [r],
+        paint: () => out.push({
+          text,
+          x: q.x,
+          y: q.y - 4 * scale - f * .55,
+          size: f * .85,
+          align: 'center'
+        })
       });
     }
     return out;

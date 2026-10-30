@@ -362,6 +362,28 @@
     };
   }
   let place = null; // placeur de l'image en cours (drawPoints)
+  /** Une demande d'étiquette (refonte R-M2 de la Carte, modules/maps/SPEC.md § 3) : { layer, rank, key, anchor, boxes: [rect, …],
+   *  paint(rect), force } — boxes : les places candidates dans l'ordre de glissement de la couche ; la première libre est prise et
+   *  l'étiquette peinte là ; sans place : force 'paint' la peint à la première sans la réserver, 'reserve' la réserve et la peint
+   *  quand même, sinon elle se tait. Sans placeur (pl null) : peinte à la première place. Rend la place, ou null. Lot (b) : posée
+   *  à l'appel, dans l'ordre d'aujourd'hui ; rank, key et anchor servent à la passe unique (lot c). */
+  function ask(pl, req) {
+    const boxes = (req.boxes || []).filter(Boolean);
+    if (!boxes.length) return null;
+    if (!pl) {
+      req.paint?.(boxes[0]);
+      return boxes[0];
+    }
+    for (const r of boxes)
+      if (pl.take(r)) {
+        req.paint?.(r);
+        return r;
+      }
+    if (!req.force) return null;
+    if (req.force === 'reserve') pl.add(boxes[0]);
+    req.paint?.(boxes[0]);
+    return boxes[0];
+  }
 
   // ---- dessin
   const C = {
@@ -576,18 +598,23 @@
           y: q.y + (cy(t.box) - q.y) * .22
         };
       })];
-      for (const sp of spots) {
-        const x0 = sp.align === 'left' ? sp.x - size.left : sp.x - size.w / 2 - size.left / 2,
-          r = {
+      ask(pl2, {
+        layer: 'zoneLabels',
+        rank: 'zone',
+        key: t.a.key || t.a.name,
+        anchor: spots[0],
+        boxes: spots.map(sp => {
+          const x0 = sp.align === 'left' ? sp.x - size.left : sp.x - size.w / 2 - size.left / 2;
+          return {
             x0: x0 - 3,
             y0: sp.y - size.h / 2 - 2,
             x1: x0 + size.w + size.left + 3,
-            y1: sp.y + size.h / 2 + 2
+            y1: sp.y + size.h / 2 + 2,
+            sy: sp.y
           };
-        if (r.x0 < 0 || r.y0 < 0 || r.x1 > W || r.y1 > H || !pl2.take(r)) continue;
-        zoneLabel(ctx, t.a, r.x0 + 3 + size.left, sp.y, font, 'left', limits);
-        break;
-      }
+        }).filter(r => r.x0 >= 0 && r.y0 >= 0 && r.x1 <= W && r.y1 <= H),
+        paint: r => zoneLabel(ctx, t.a, r.x0 + 3 + size.left, r.sy, font, 'left', limits)
+      });
     }
   }
 
@@ -893,7 +920,14 @@
         x1: p.x + w / 2 + 2,
         y1: p.y + s * 1.9 + +labelFont + 2
       };
-      if (!place || place.take(r)) haloText(ctx, label, p.x, p.y + s * 1.9, +labelFont, main, 'center', 'top');
+      ask(place, {
+        layer: 'points',
+        rank: 'aerodrome',
+        key: ad.icao || label,
+        anchor: p,
+        boxes: [r],
+        paint: () => haloText(ctx, label, p.x, p.y + s * 1.9, +labelFont, main, 'center', 'top')
+      });
     }
   }
   // VOR (hexagone), VOR-DME (hexagone dans un carré), VOR-TACAN / TACAN (lobes), DME (carré), NDB
@@ -988,15 +1022,25 @@
     const w = ctx.measureText(text).width,
       x = p.x + s * 1.5,
       y = p.y - s * 1.4 - labelFont;
-    if (place && !place.take({
+    ctx.restore();
+    ask(place, {
+      layer: 'points',
+      rank: 'navaid',
+      key: `${n.id}@${(+n.lat).toFixed(4)},${(+n.lon).toFixed(4)}`,
+      anchor: p,
+      boxes: [{
         x0: x - 1,
         y0: y - (n.name && n.kind !== 'NDB' ? labelFont * .8 : 0) - 3,
         x1: x + w + 2,
         y1: y + labelFont + 2
-      })) {
-      ctx.restore();
-      return;
-    }
+      }],
+      paint: () => navBox(ctx, n, text, x, y, w, labelFont)
+    });
+  }
+  /** La boîte d'une balise (« (D) TOU 117.7 », son nom en clair au-dessus), à la place que la demande a eue. */
+  function navBox(ctx, n, text, x, y, w, labelFont) {
+    ctx.save();
+    ctx.font = `700 ${labelFont}px Arial,sans-serif`;
     ctx.fillStyle = 'rgba(255,255,255,.85)';
     ctx.fillRect(x - 2, y - 2, w + 4, labelFont + 4);
     ctx.strokeStyle = C.blue;
@@ -1056,15 +1100,22 @@
         ctx.stroke();
       }
     ctx.restore();
-    if (labelFont && tall && (!place || place.take({
+    if (labelFont && tall) ask(place, {
+      layer: 'points',
+      rank: 'obstacle',
+      key: `${o.id ?? ''}@${(+o.lat).toFixed(4)},${(+o.lon).toFixed(4)}`,
+      anchor: p,
+      boxes: [{
         x0: p.x + s * .8,
         y0: p.y - h - labelFont / 2,
         x1: p.x + s * .8 + labelFont * 3,
         y1: p.y - h + labelFont * 1.6
-      }))) {
-      haloText(ctx, String(o.elev), p.x + s * .8, p.y - h, labelFont, C.blue, 'left', 'middle', 'italic 700');
-      haloText(ctx, `(${o.hgt})`, p.x + s * .8, p.y - h + labelFont * 1.05, labelFont * .85, C.blue, 'left', 'middle');
-    }
+      }],
+      paint: () => {
+        haloText(ctx, String(o.elev), p.x + s * .8, p.y - h, labelFont, C.blue, 'left', 'middle', 'italic 700');
+        haloText(ctx, `(${o.hgt})`, p.x + s * .8, p.y - h + labelFont * 1.05, labelFont * .85, C.blue, 'left', 'middle');
+      }
+    });
   }
 
   /** Texte avec halo clair (lisible sur le fond de carte). */
@@ -1244,6 +1295,7 @@
     zoneLabel,
     labelSize,
     placer,
+    ask,
     drawPoints,
     drawAerodrome,
     drawNavaid,

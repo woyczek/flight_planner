@@ -20,7 +20,8 @@
     trackOf,
     withAlpha,
     wrapLon,
-    cartouche
+    cartouche,
+    ask
   } = R.kit;
 
   // ---------------------------------------------------------------- choix des espaces le long de la route
@@ -295,7 +296,17 @@
         // le milieu, puis de part et d'autre, sans sortir du tronçon (un demi-cartouche des bouts)
         lim = Math.min(.45, Math.max(0, .5 - (r + 4) / Math.max(1, len))),
         spots = [0, .1, -.1, .2, -.2, .3, -.3, .4, -.4].filter(d => Math.abs(d) <= lim).map(d => at(.5 + d)),
-        c = pl ? spots.find(q => !seen.has(`${g.route}|${Math.round(q.x / 90)}|${Math.round(q.y / 90)}`) && pl.take(box(q))) : spots[0];
+        got = ask(pl, {
+          layer: 'airways',
+          rank: along ? 'route' : 'airway',
+          key: `${g.route}|${g.a.id}|${g.b.id}`,
+          anchor: spots[0],
+          boxes: spots.filter(q => !seen.has(`${g.route}|${Math.round(q.x / 90)}|${Math.round(q.y / 90)}`)).map(q => ({
+            ...box(q),
+            q
+          }))
+        }),
+        c = got?.q;
       if (!c || len < 2 * r) continue; // le tronçon plus court que son étiquette : pas d'étiquette (le trait reste)
       const {
         x,
@@ -370,14 +381,22 @@
             to = from === g.a ? g.b : g.a,
             tw = 4 * f * .8 * .62;
           // posées après les points des voies (leurs noms passent d'abord)
-          ends.later.push(() => {
-            if (!pl || pl.take({
-                x0: px - tw / 2,
-                y0: py - 7 * scale - f * .5,
-                x1: px + tw / 2,
-                y1: py - 7 * scale + f * .5
-              })) halo(ctx, deg3(trackOf(from, to)), px, py - 7 * scale, f * .8, col, 'center');
-          });
+          ends.later.push(() => ask(pl, {
+            layer: 'airwayNames',
+            rank: 'airway',
+            key: `${g.route}|${from.id}>${to.id}`,
+            anchor: {
+              x: px,
+              y: py
+            },
+            boxes: [{
+              x0: px - tw / 2,
+              y0: py - 7 * scale - f * .5,
+              x1: px + tw / 2,
+              y1: py - 7 * scale + f * .5
+            }],
+            paint: () => halo(ctx, deg3(trackOf(from, to)), px, py - 7 * scale, f * .8, col, 'center')
+          }));
         }
       }
     }
@@ -440,12 +459,19 @@
       const [a, c] = legs[0],
         m = toC((a.lat + c.lat) / 2, (a.lon + c.lon) / 2),
         w = tr.name.length * f * .62;
-      if (!pl || pl.take({
+      ask(pl, {
+        layer: 'aar',
+        rank: 'track',
+        key: tr.name,
+        anchor: m,
+        boxes: [{
           x0: m.x + 4 * scale,
           y0: m.y - f * .7,
           x1: m.x + 6 * scale + w,
           y1: m.y + f * .7
-        })) halo(ctx, tr.name, m.x + 5 * scale, m.y, f, col, 'left');
+        }],
+        paint: () => halo(ctx, tr.name, m.x + 5 * scale, m.y, f, col, 'left')
+      });
     }
     ctx.restore();
   }
@@ -474,12 +500,19 @@
         text = `NAT ${tr.id}${lv.length ? ` FL${Math.min(...lv)}–${Math.max(...lv)}` : ''}`,
         q = toC(pts[0].lat, pts[0].lon),
         w = text.length * f * .62;
-      if (!pl || pl.take({
+      ask(pl, {
+        layer: 'nat',
+        rank: 'track',
+        key: `NAT ${tr.id}`,
+        anchor: q,
+        boxes: [{
           x0: q.x + 4 * scale,
           y0: q.y - f * 1.6,
           x1: q.x + 6 * scale + w,
           y1: q.y - f * .2
-        })) halo(ctx, text, q.x + 5 * scale, q.y - f * .9, f, col, 'left');
+        }],
+        paint: () => halo(ctx, text, q.x + 5 * scale, q.y - f * .9, f, col, 'left')
+      });
     }
     ctx.restore();
   }

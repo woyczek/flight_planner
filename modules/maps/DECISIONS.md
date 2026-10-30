@@ -961,6 +961,20 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     line is gone from the map, so the note is the only way left to the setting.
 - **24 Oct 2026 — icons and `hidden` come from the frame** (relay cloud): `localIcon` and its three SVG copies are gone; the buttons use
   `cloud`, `undo` and `move4` of `frame/lib/icons.js`, and the `[hidden]` rule on overlay buttons is the frame's (`primitives.css`).
+Done (R-M2 b, 30 Oct): every place of a label is a request `{ layer, rank, key, anchor, boxes, paint, force }` through one
+function, `SiaAero.ask(pl, req)` (also `MapsRender.kit.ask`): the aerodromes' codes, the navaids' boxes, the obstacles'
+heights, the airspaces' names, the airway fixes, VRP, towns, mission zones and points, the graticule, MORA, the airway boxes and
+track degrees, AAR, NAT, the route's labels, ETA and NM marks, the procedures' labels (`place`), the runway numbers and the
+choose mode's aerodrome code — no `pl.take` / `pl.add` left in the Map (the studio's `drawSites` keeps its own symbol placer).
+Placed at the call, in today's order: the canvas of six real scenes hashes the same before (3e65a0465) and after — LFBO with
+AMOLO 7A, the choose mode at LFBO, the low airways at Toulouse (17 boxes) and Paris (10), VFR close in at Paris (62 VRP, 400
+towns, 40 obstacles) and Toulouse. `many()` keeps one answer per `keyOf`: the SIA's airspace `key` is not unique (74 keys in the
+French base, « LF600 » a SUR and a PRN), so an airspace is keyed by type, key, name, limits and first point (no duplicate in the
+fr, es, de and gb bases) — the first try, the key alone, dropped one airspace at Paris and the hash said so. `drawAirways` keeps
+its own deduplication for the lists that do not come from `many()` (D67 feeds one directly), with the same key. Colours: the
+`--sog-map-*` tokens go to the canvas only (an invalid string is ignored there) and pass `CSS.supports('color', …)` with the hex
+fallback; the day one of them or any theme colour enters HTML (`style="--c:…"`), it goes through `K.cssColor` with a hex fallback
+(Securisation's review of 3e65a0465). Noreg D84.
 
 - **24 Oct 2026 — ETA of a flight that is not started** (relay cloud, fuel lot "flight date"; the only change in maps, `withEta`).
   The ETA labels of the route points were drawn only for a started flight. Fuel now also writes `progress.eta` for a flight that is

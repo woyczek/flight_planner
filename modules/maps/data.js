@@ -353,7 +353,22 @@ export function corridorBoxes(route, nm, box) {
   }
   return out;
 }
-/** Réunion sans doublons des réponses d'une requête aerodb sur plusieurs emprises ; extra : les autres champs de la requête. */
+/** La clé d'une réponse d'aerodb (refonte R-M2) : deux copies gelées d'une même chose (lue par deux emprises du couloir) ont la même ;
+ *  l'espace par son type, sa clé, son nom, ses limites et son premier point, le tronçon de voie par sa route et ses bouts, le terrain par son code, un point par son identifiant et sa
+ *  place, une ville par son nom et sa place ; à défaut, l'objet lui-même. */
+const at4 = x => `${(+x.lat).toFixed(4)},${(+x.lon).toFixed(4)}`;
+export function keyOf(x) {
+  if (!x || typeof x !== 'object') return x;
+  if (x.route && x.a && x.b) return `aw:${x.route}|${x.a.id ?? at4(x.a)}|${x.b.id ?? at4(x.b)}`;
+  // la clé du SIA n'est pas unique (« LF600 » : une zone SUR et une PRN) : avec le type, les limites et le premier point
+  if (x.rings) return `as:${x.type}|${x.key ?? ''}|${x.name ?? ''}|${x.lower}|${x.upper}|${x.rings[0]?.[0]?.join(',') ?? ''}`;
+  if (x.icao && Number.isFinite(+x.lat)) return `ad:${x.icao}`;
+  if (x.id && Number.isFinite(+x.lat)) return `pt:${x.id}@${at4(x)}`;
+  if (x.name && Number.isFinite(+x.lat)) return `nm:${x.name}@${at4(x)}`;
+  return x;
+}
+/** Réunion sans doublons (par keyOf) des réponses d'une requête aerodb sur plusieurs emprises ; extra : les autres champs de la
+ *  requête. */
 export async function many(f, boxes, extra = {}) {
   const seen = new Set(),
     out = [];
@@ -361,11 +376,13 @@ export async function many(f, boxes, extra = {}) {
     for (const x of await f({
         bbox,
         ...extra
-      }))
-      if (!seen.has(x)) {
-        seen.add(x);
+      })) {
+      const k = keyOf(x);
+      if (!seen.has(k)) {
+        seen.add(k);
         out.push(x);
       }
+    }
   return out;
 }
 /** Éléments de l'emprise box selon le profil : { box, corridor, data, empty }. Espaces et voies lus pour le couloir de la
