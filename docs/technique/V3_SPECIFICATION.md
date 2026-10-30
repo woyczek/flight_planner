@@ -1230,3 +1230,31 @@ redesigned for touch at that point.
          ones), never a hard-coded list in a module.
        Lots: none before the stabilisation; then a reader of the V2 missions (survey), `missionFlight` with a bench
        (fuel), the usage "équipier" (frame), the mission list (new module), the Map's drawing (maps).
+
+   33. **Refactoring after the stabilisation: the "do and undo" since 28 Oct** (user, 30 Oct: "challenger tout ce
+       qu'on a fait évoluer depuis hier voire avant-hier, pour supprimer les faire et défaire vers un point documenté,
+       fonctionnellement logique ; éviter le code mort ou les empilages ; mais d'abord on stabilise"). Three read-only
+       inventories were written the same day, one per owner, in each DECISIONS.md under "Inventaire du 30/10 : à
+       refondre": the Map (83c31fed9, six zones), the frame and the launcher (b5a324be4, ten zones), Fuel and
+       `frame/lib` (d524d253c, eight zones). **Nothing starts before the user's go.** Plan, ready for that go:
+       - **Rules of every lot**: no behaviour change (the cases stay green before and after, a case that changes is
+         explained in the commit); one owner, one file set, one lot per session at a time; the target shape is the one
+         sentence of the inventory, written in the SPEC before the code; benches first for every pure function moved
+         to `frame/lib`; dead code deleted, never commented out; `--touched` before the push, one full pass after, one
+         at a time on the workstation; the CHANGELOG line says "refonte, sans changement de comportement".
+       - **Shared first (frame/lib, one week at most)**: `wind.runwayAxis` and one wind rule (Fuel 4, Map's
+         runwayBearing); the procedure rules written once (`compatible` absorbs `conflictsOf`, one notion of an
+         approach transition, one name renderer; Fuel 3, Map's pane reads them); the palette's hues as design tokens
+         (Fuel 5, Map 5); the frame's trail as the only trace (Map 6, frame 7 after 6 Nov).
+       - **Then each owner, in the inventories' order**: Map — runways (4), pan scheduler (3), `paneModel` pure with
+         its bench (1), labels declared per layer and one pass (2) with the cartouche primitive (5). Fuel — one
+         `routeModel(text, base)` and one renderer, the SID exit entering once (2 with 1 inside), one completion list
+         (6), the card's flags (5). Frame and launcher — the IVAO return in one place (3), one route list (4), one
+         pairing (2) and one relay identity (1), one data/ recovery (5), the two transports behind one interface (6),
+         then the freeze paths (8), the service screens (9) and the noreg selectors (10) when those files are next
+         touched.
+       - **Cases and documents last**: overlapping cases merged (F41 / F63, F8 / F67; D60's four rewrites), each SPEC
+         paragraph rewritten as the state, not as the stack of "since § x" additions; this § 10 is then condensed the
+         same way, decision by decision.
+       Estimate: two to three days of the four sessions once the go is given, the shared lots first so that nobody
+       rebuilds on the old rules.
