@@ -914,6 +914,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 62 | Fuel anomalies 9–13 (c5f771b7a), Map framing and heading order (e54c0b00e, 1367d3523) | acceptable |
 | 63 | Aircraft module: sheets editor (224d3cdbe), fleet view (86fa1c5ff) | acceptable, one note |
 | 64 | Fuel `.fms` with ARINC approach (232f85dfe), approach labels (e315c2e0b) | acceptable |
+| 65 | Fuel: the sheets editor removed (4044dc8ba) | acceptable |
+| 66 | Launcher: one User-Agent, outbound failures logged (37b043e68) | acceptable, one small point to fix |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1629,6 +1631,19 @@ writes to the repository (GitLab Developer token, relay) can change it, as for o
 invitations (R2) and for the relay's prefixes debt (38).
 
 **64. Two pure commits (232f85dfe, e315c2e0b) — acceptable.** No write, network or new HTML.
+
+**65. Fuel, the sheets editor removed (4044dc8ba) — acceptable.** No `sheets.put` or `sheets.remove` is left in Fuel;
+« Use » only picks the flight's sheet through the flight's usual path. The links to the Aircraft module are relative,
+the sheet id through `encodeURIComponent`; names and units are escaped.
+
+**66. One User-Agent and a log of outbound failures (37b043e68) — acceptable, one small point to fix.**
+`outbound.opener()` keeps the handlers given to it (no redirects for GitLab and OpenID, same host for the jobs, stay on
+host and cookies for EAD, the relay's redirect rule and TLS context for `net`); the download ceiling and the unredirected
+credentials are unchanged; the User-Agent is set only when a request has none (EAD keeps its browser prefix). The log line
+carries the host, the path (160 signs) and the code or the kind of error: never the query, a header, a body or a token;
+messages to the page carry the HTTP code only. *To fix:* `where()` keeps the path, and EAD Basic carries its session id
+in it (`…;jsessionid=…`, kept in `path` by `urlsplit`): a failed EAD request would write it to the launcher's console,
+against the rule of 4; cut each path segment at its first `;`.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
