@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: no approach transition the chosen STAR does not lead to** (`modules/maps/choose.js`; maps help ×4; noreg D77). Under
+  the chosen approach, a transition whose IAF is not on the chosen STAR is no longer offered (`PR.compatible({ star })`), and a
+  STAR chosen after such a transition sets it back to "None" (LFPO: AMB 9E with ILS 02 leaves only "via ODILO 1S"; MOLBA 1E,
+  east of Paris, is gone).
+
 - **Map: the Layers button next to the pane it opens** (`modules/maps/module.js`, `screen.js`, `sheet_view.js`, `style.js`; maps
   help ×4, SPEC; noreg D76). Layers leaves the map's top left corner for the sheet's line, a chip left of the grip, on a phone
   and a computer alike; with nothing to draw the sheet is that line alone, so Layers stays reachable.

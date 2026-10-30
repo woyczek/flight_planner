@@ -135,13 +135,18 @@ const eff = C => ({
   ...C.cur,
   ...C.sel
 });
-/** Fiches d'une famille dans l'ordre du groupe (PR.orderProcedures sur le choix en vigueur), sans doublon d'identifiant. */
+/** Fiches d'une famille dans l'ordre du groupe (PR.orderProcedures sur le choix en vigueur), sans doublon d'identifiant ; les
+ *  transitions de l'approche choisie sans celles dont l'IAF n'est pas sur la STAR choisie (PR.compatible({ star }) : jamais proposées,
+ *  parcours du 30/10, point 6). */
 function recsOf(C, fam) {
   const o = eff(C),
     of = kind => C.recs.filter(r => r.kind === kind),
     raw = fam === 'rwy' ? C.rwys : fam === 'sid' ? of('SID').filter(r => !r.transition) : fam === 'star' ? of('STAR').filter(r => !r
-      .transition) : fam === 'app' ? PR.appChoices(of('APP')).list : o.app ? PR.appChoices(of('APP')).transitionsOf(o.app) : [];
-  return PR.orderProcedures([...new Map(raw.map(r => [r.id, r])).values()], fam, o, C.byId);
+      .transition) : fam === 'app' ? PR.appChoices(of('APP')).list : o.app ? PR.appChoices(of('APP')).transitionsOf(o.app) : [],
+    list = fam === 'appTrans' && o.star ? PR.compatible(raw, {
+      star: o.star
+    }, C.byId) : raw;
+  return PR.orderProcedures([...new Map(list.map(r => [r.id, r])).values()], fam, o, C.byId);
 }
 /** Nom d'une fiche pour une ligne ou un cartouche : la piste (« Piste 25 »), sinon le nom (les fiches sans nom ne sont pas listées),
  *  la piste quand elle n'en dessert qu'une et que le nom ne la dit pas, l'état de la source ; une transition porte le nom de sa
@@ -584,7 +589,8 @@ export function choosePick(fam, id) {
   const rec = v && fam !== 'rwy' ? C.byId.get(v) : null,
     one = rec ? PR.runwayOf(rec) : null;
   if (one && !PR.rwNum(eff(C).rwy)) C.sel.rwy = one;
-  if (fam === 'app') {
+  // une autre approche, ou une STAR dont la transition choisie ne part pas : la transition revient à « Aucune »
+  if (fam === 'app' || fam === 'star') {
     const keep = eff(C).appTrans;
     if (keep && !recsOf(C, 'appTrans').some(r => r.id === keep)) C.sel.appTrans = null;
   }

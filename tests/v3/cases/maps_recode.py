@@ -1623,7 +1623,9 @@ def d65(c):
 
 # ------------------------------------------------------------------------------------------------------ D66
 # LFML with a STAR family (OKRI5L serves 31, OKRI5R serves 13), a lone STAR, and an approach with one entry transition
-_CH2_PROCS = [_proc('LFML', 'STAR', 'OKRI5L', '31', [_pp(1, 'OKR', 44.0, 4.4), _pp(2, 'MD31', 43.6, 4.9)], cycle=AERO_CYCLE),
+# OKRI5L passes IAF1, the IAF of I31's transition: a transition the STAR does not lead to is not offered (D77)
+_CH2_PROCS = [_proc('LFML', 'STAR', 'OKRI5L', '31', [_pp(1, 'OKR', 44.0, 4.4), _pp(2, 'IAF1', 43.7, 4.6), _pp(3, 'MD31', 43.6, 4.9)],
+                    cycle=AERO_CYCLE),
               _proc('LFML', 'STAR', 'OKRI5R', '13', [_pp(1, 'OKR', 44.0, 4.4), _pp(2, 'MD13', 43.6, 5.4)], cycle=AERO_CYCLE),
               _proc('LFML', 'STAR', 'SOLO1', '31', [_pp(1, 'SOL', 44.1, 5.0), _pp(2, 'MD31', 43.6, 4.9)], cycle=AERO_CYCLE),
               _proc('LFML', 'APP', 'I31', '31', [_pp(1, 'XF01', 43.52, 4.95), _pp(2, 'RW31', 43.44, 5.20)], cycle=AERO_CYCLE),
@@ -2051,3 +2053,33 @@ def d76(c):
     at = c.js(_LAYERS_AT)
     c.eq([at['sheet'], at['shown'], at['inHead']], [True, True, True], 'with nothing drawn the sheet keeps its head line with Layers', what=f'{at}')
     c.eq(c.js("() => window.__mp.S.sh.pos"), 'collapsed', 'the empty sheet is reduced to its head line', what='sheet position')
+
+
+# ------------------------------------------------------------------------------------------------------ D77
+# _CH3 plus a STAR S2A that ends on ODILO (the IAF of the transition ODILO 1A); S1A ends on MD31, on no transition
+_CH4_FILE = {**_CH_FILE, 'procedures': _CH3_PROCS + [_proc('LFML', 'STAR', 'S2A', '31', [_pp(1, 'ENT2', 44.1, 4.2), _pp(2, 'ODILO', 43.75, 4.6)],
+                                                           cycle=AERO_CYCLE)]}
+_ILS31 = 'LFML.APP.ILS RWY 31.RW31.NONE'
+_SUBS_JS = """() => [...document.querySelectorAll('.mp-ch-subs .mp-ch-row')].filter(b => b.dataset.id !== 'none').map(b => b.querySelector('.mp-ch-name').textContent.trim())"""
+_PICK_JS = "async ([f, id]) => (await import('/modules/maps/choose.js')).choosePick(f, id)"
+
+
+@case('D77', 'Choosing on the Map: no approach transition is offered that the chosen STAR does not lead to', 'D', tags=('maps',),
+      screens=False, designs=('standard',), night=False,
+      rule='usage walk of 30 Oct, point 6 (STAR AMB 9E offered with the transition MOLBA 1E, east of Paris, the STAR ending west): under the chosen approach, a transition whose IAF is not on the chosen STAR (its points, its end included) is not offered (PR.compatible({ star })); a STAR chosen after an incompatible transition sets it back to "None"')
+def d77(c):
+    _ch_open(c, {'rwy': '31'}, file=_CH4_FILE)
+    c.js(_PICK_JS, ['app', _ILS31])
+    c.until("() => !!document.querySelector('.mp-ch-subs')", timeout=10000, what='the transitions under the ILS')
+    c.eq(sorted(norm(x) for x in c.js(_SUBS_JS)), ['via ABC1 · ABC 1A', 'via ODILO 1A'], 'no STAR chosen: every transition of the final', what='transitions')
+    # a transition chosen first, then a STAR that does not lead to it: back to "None"
+    c.js(_PICK_JS, ['appTrans', 'LFML.APP.INA RNAV RWY 31.RW31.ABC 1A'])
+    c.js(_PICK_JS, ['star', 'LFML.STAR.S2A.RW31.NONE'])
+    c.wait(300)
+    c.eq([norm(x) for x in c.js(_SUBS_JS)], ['via ODILO 1A'], 'STAR S2A ends on ODILO: only ODILO 1A is offered', what='transitions with S2A')
+    c.eq(c.js("() => window.__mp.S.choose.sel.appTrans"), None, 'the transition ABC 1A, which S2A does not lead to, is set back to "None"',
+         what='chosen transition')
+    # a STAR that leads to none: "No transition" alone
+    c.js(_PICK_JS, ['star', 'LFML.STAR.S1A.RW31.NONE'])
+    c.wait(300)
+    c.eq(c.js(_SUBS_JS), [], 'STAR S1A leads to no transition: "No transition" alone', what='transitions with S1A')
