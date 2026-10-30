@@ -1352,7 +1352,7 @@ function procsToText(say) {
   if (!m || !r || (ta && document.activeElement === ta)) return;
   const o = CF.proceduresOf(S.flight),
     rec = id => typeof id === 'string' ? m.recs.get(id) || null : null,
-    name = (id, x) => typeof id === 'string' ? (PR.nameOf(x, id) || '').toUpperCase() || null : null,
+    name = (id, x) => typeof id === 'string' ? RT.compactName(PR.nameOf(x, id)) || null : null,
     sid = rec(o.dep?.sid),
     sidT = rec(o.dep?.trans),
     star = rec(o.arr?.star),
@@ -1395,7 +1395,7 @@ function textToProcs() {
       sidNames: [...m.sid.keys()],
       starNames: [...m.star.keys()]
     }),
-    nameOf = id => typeof id === 'string' ? (PR.nameOf(m.recs.get(id), id) || '').toUpperCase() : null;
+    nameOf = id => typeof id === 'string' ? RT.compactName(PR.nameOf(m.recs.get(id), id)) : null;
   let changed = false;
   const set = (side, k, byName, want) => {
     const cur = o[side]?.[k];
@@ -3624,6 +3624,11 @@ async function autoAirways() {
       adj = idx.map((t, i) => idx[i + 1] === t + 1 && !(i === 0 && procPts.has(chain[1])) && !(i === last - 1 && procPts.has(chain[i]))),
       entry = idx.map(i => !!tokens[i + 1]?.keep && AIRWAY_WORD.test(tokens[i + 1].keep)),
       free = i => !(chain[i].via || entry[i]);
+    // une SID choisie couvre le départ → premier point, une STAR le dernier point → arrivée : jamais routés (le routage part de la
+    // sortie de la SID ; parcours de BUGS SOG, 30 octobre : « pas de voie près de LFBO »)
+    const chosen = CF.proceduresOf(f);
+    if (typeof chosen.dep?.sid === 'string') adj[0] = false;
+    if (typeof chosen.arr?.star === 'string') adj[last - 1] = false;
     if (chain.length < 2 || !adj.some(Boolean)) return dropped ? writeAuto(tokens, points, []) : S.ctx.notify(tt(TX.autoNoLeg), 'warn');
     const planned = +f.level?.ft || +S.C?.q?.levelFt || 0,
       base = planned || RG.DEFAULTS.ifrMinFt,

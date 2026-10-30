@@ -25,6 +25,7 @@
 // déplacé ; la structure n'est refaite que si le terrain, le départ du vol ou la présence d'une liste de transition change.
 import * as CF from '../../frame/lib/current_flight.js';
 import * as PR from '../../frame/lib/procedures.js';
+import * as RT from '../../frame/lib/route_text.js';
 import {
   adLabel
 } from '../../frame/lib/adnames.js';
@@ -821,7 +822,7 @@ export function createProcedures(host) {
       const m = new Map();
       for (const x of recs.values())
         if (x.kind === kind && !x.transition && PR.nameOf(x)) {
-          const n = PR.nameOf(x).toUpperCase();
+          const n = RT.compactName(PR.nameOf(x)); // l'indicatif OACI, sans espace (« AMOLO 7A » → « AMOLO7A »)
           m.set(n, [...(m.get(n) || []), x]);
         }
       return m;

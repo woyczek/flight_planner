@@ -1924,3 +1924,30 @@ def f76(c):
     want = c.pick({'fr': 'Vent de travers max', 'en': 'Max crosswind', 'de': 'Max. Seitenwind', 'es': 'Viento cruzado máx.'})
     c.ok(want in v['label'], v['label'], 'its label is in the language of the run')
 
+
+@case('F77', 'The route text stays the same after two returns from the Map, with a SID whose published name has a space', 'F', tags=('fuel', 'maps'),
+      designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.31 (BUGS SOG walk, 30 Oct: « LFBO AMOLO 7A AMOLO 7A AMOLO DCT AMB … » after two returns): procsToText is idempotent, '
+      'names written as ICAO designators without a space, the exit never added twice')
+def f77(c):
+    from fixtures.procedures import pt, rec
+    docs = proc_docs()
+    lfrs = next(d for d in docs if d[0].endswith('/LFRS.json'))
+    lfrs[1] = {**lfrs[1], 'procedures': [*lfrs[1]['procedures'], {**rec('LFRS', 'SID', 'LUGEN 2B', ['21'], [pt(1, 'RW21', 47.17, -1.595), pt(2, 'NT201', 47.3, -1.4),
+                                                                                                                 pt(3, 'LUGEN', 46.5833, -1.2)]), 'id': 'LFRS.SID.LUGEN2B.RW21.NONE'}]}
+    c.open('fuel', docs=docs + proc_flight({'dep': {'rwy': '21'}, 'by': 'fuel', 'at': '2026-10-28T09:00:00Z'}), airfields=True)
+    to_step(c, 1)
+    wait_rows(c, 'dep')
+    rt = f"document.querySelector('{FUEL} [data-k=rtext]').value"
+    want = 'LFRS LUGEN2B LUGEN DCT NEPIX LFML'
+    for n in (1, 2):
+        c.js("() => { location.hash = '#maps' }")
+        c.until("location.hash === '#maps'", what='the Map is open')
+        c.settle()
+        c.js("() => location.replace('#fuel?focus=dep&sid=LFRS.SID.LUGEN2B.RW21.NONE')")
+        cf_doc(c, lambda d: (procs_of(d, 'dep') or {}).get('sid') == 'LFRS.SID.LUGEN2B.RW21.NONE', 'the SID is chosen', timeout=12000)
+        c.until(f"{rt} === '{want}'", timeout=10000, what=f'return {n}: « {want} » (one SID name, no space, its exit LUGEN already on the route)')
+    c.settle()
+    c.wait(600)
+    c.eq(c.js(rt), want, 'two returns, the same text: nothing repeated', what='route text')
+

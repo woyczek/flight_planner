@@ -11,6 +11,7 @@
 //   textFromTokens(tokens, { dct }) : texte normalisé de jetons { pt: point } | { keep: mot } (une ligne) ; avec dct, en forme OACI :
 //     « DCT » entre deux points de route qui se suivent sans voie ni procédure (jamais contre le départ ni l'arrivée) (§ 10.31).
 //   withProcedures(text, o), proceduresOfText(text, o) : les noms de SID et de STAR dans le texte, posés depuis le choix et relus
+//     (indicatifs OACI sans espace : glueProcWords, compactName ; « AMOLO 7A » s'écrit et se relit « AMOLO7A »)
 //     quand le pilote l'édite (§ 10.31 : le texte est une vue du modèle).
 //   textFromPoints(points, previousText, previousPoints) : texte refait depuis les points ; entre deux points
 //     consécutifs inchangés qui se suivaient déjà dans previousText, les mots qui les séparaient (voie, procédure) sont
@@ -60,6 +61,22 @@ export function provenance(words, prev) {
   return out;
 }
 
+/** Un nom de procédure publié avec une espace (« AMOLO 7A », « AMB 9E » : l'eAIP l'écrit ainsi) est un seul indicatif OACI : un mot
+ *  « chiffre(s) + lettre » qui suit un mot de lettres est recollé à lui (« AMOLO7A »). Jamais un point : « 7A » seul n'en est pas un
+ *  (parcours de BUGS SOG du 30 octobre : la SID répétée à chaque retour de la Carte, « pas de voie près de LFBO »). */
+export function glueProcWords(words) {
+  const out = [];
+  for (const w of words || []) {
+    const prev = out.at(-1);
+    if (prev && /^\d{1,2}[A-Z]$/.test(w) && /^[A-Z]{2,6}$/.test(prev)) out[out.length - 1] = prev + w;
+    else out.push(w);
+  }
+  return out;
+}
+
+/** Le nom d'une procédure en indicatif OACI : majuscules, sans espaces (« AMOLO 7A » → « AMOLO7A »). */
+export const compactName = name => String(name ?? '').toUpperCase().replace(/\s+/g, '');
+
 /** Jetons d'un texte de route (voir l'en-tête). */
 export function tokenize(text) {
   const entries = String(text || '').split(/[,\n]+/).map(x => x.trim()).filter(Boolean);
@@ -74,7 +91,7 @@ export function tokenize(text) {
         alt_ft: m[4] ? +m[4] * 100 : 0
       };
     });
-  const words = String(text || '').toUpperCase().split(/[\s,]+/).filter(Boolean),
+  const words = glueProcWords(String(text || '').toUpperCase().split(/[\s,]+/).filter(Boolean)),
     out = [];
   for (let i = 0; i < words.length; i++) {
     const word = words[i],
@@ -159,17 +176,17 @@ export function textFromTokens(tokens, {
 }
 
 /** Les mots d'un texte de route, en majuscules (DCT gardé : le texte est réécrit tel quel, à ses procédures près). */
-const wordsOf = text => String(text || '').toUpperCase().split(/\s+/).filter(Boolean);
+const wordsOf = text => glueProcWords(String(text || '').toUpperCase().split(/\s+/).filter(Boolean));
 /** Le nom d'un point dans un mot (« LMG/F280 » → « LMG »). */
 const bareWord = w => w.split('/')[0];
 
 /** Les procédures nommées dans un texte de route (V3 § 10.31, relecture d'un texte édité) : { sid, star }, le nom (en majuscules)
  *  de la première SID du départ et de la dernière STAR de l'arrivée que le texte nomme, null sinon. o : { sidNames, starNames }
- *  (les noms des SID de route.dep et des STAR de route.arr, n'importe quelle casse). */
+ *  (les noms des SID de route.dep et des STAR de route.arr, n'importe quelle casse, avec ou sans espace). */
 export function proceduresOfText(text, o = {}) {
   const w = wordsOf(text).map(bareWord),
-    sids = new Set([...(o.sidNames || [])].map(x => String(x).toUpperCase())),
-    stars = new Set([...(o.starNames || [])].map(x => String(x).toUpperCase()));
+    sids = new Set([...(o.sidNames || [])].map(compactName)),
+    stars = new Set([...(o.starNames || [])].map(compactName));
   return {
     sid: w.find(x => sids.has(x)) || null,
     star: [...w].reverse().find(x => stars.has(x)) || null
@@ -184,7 +201,7 @@ export function proceduresOfText(text, o = {}) {
  *  (« LACOU7B sort à LACOU : LACOU DCT LMG »). Les DCT sont ceux du texte (la normalisation les repose). */
 export function withProcedures(text, o = {}) {
   const up = x => String(x ?? '').toUpperCase(),
-    names = new Set([...(o.sidNames || []), ...(o.starNames || []), o.sid, o.star].filter(Boolean).map(up)),
+    names = new Set([...(o.sidNames || []), ...(o.starNames || []), o.sid, o.star].filter(Boolean).map(compactName)),
     w = wordsOf(text).filter(x => !names.has(bareWord(x))),
     dep = up(o.dep),
     arr = up(o.arr),
@@ -198,11 +215,11 @@ export function withProcedures(text, o = {}) {
       w.splice(at++, 0, up(o.entry));
       entryAdded = true;
     }
-    w.splice(at, 0, up(o.star));
+    w.splice(at, 0, compactName(o.star));
   }
   if (o.sid) {
     let at = dep && bareWord(w[0] || '') === dep ? 1 : 0;
-    w.splice(at++, 0, up(o.sid));
+    w.splice(at++, 0, compactName(o.sid));
     if (o.exit && !has(o.sidPoints?.length ? o.sidPoints : [o.exit], at)) {
       w.splice(at++, 0, up(o.exit));
       exitAdded = true;

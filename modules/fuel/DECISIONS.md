@@ -4,6 +4,13 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **30 Oct 2026 — the route text repeated the SID at each return from the Map** (BUGS SOG's walk on the real base: « LFBO AMOLO
+  7A AMOLO 7A AMOLO DCT AMB … »). The eAIP writes the names with a space (« AMOLO 7A »); the text rules compared whole words, so a
+  two-word name was never recognised: inserted again at each return, never read back (the SID cleared on an edit), and « AMOLO »
+  read as a point beside the departure (Auto: « pas de voie près de LFBO »). Fix: `RT.glueProcWords` (a « 7A » word after a word of
+  letters is the second half of a designator) in both readers of route_text.js, `RT.compactName` for every name Fuel compares; the
+  text carries the ICAO designator « AMOLO7A ». Auto never routes the departure → first point leg when a SID is chosen, nor the last
+  point → arrival leg with a STAR. Bench F69 (idempotence from a spaced text), case F77 (two returns, at 390 px too).
 - **30 Oct 2026 — the route field completes at the cursor** (§ 10.31 part 4). A module of its own (`routecomplete.js`) on the
   pattern of `adnames.js` rather than a generalised component: the two share the CSS (`.fu-sug`, `.fu-sugitem`) and the gestures,
   not the sources (aerodromes only there; procedures, airways, points here). Airways are proposed by name around the previous

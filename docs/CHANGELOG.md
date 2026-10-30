@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the route text no longer repeats the SID at each return from the Map** (`frame/lib/route_text.js` `glueProcWords`,
+  `compactName`; F69, F77) — names published with a space (« AMOLO 7A ») are one ICAO designator « AMOLO7A »; Auto routes from the SID's exit.
 - **Launcher: jobs of the VFR set; a reduced environment and one path rule for every job** (`tools/regen/vfr.py`,
   `tools/regen_jobs.py`, `tools/regen/aircraft.py`, `tools/regen/base_sources.py`; frame INTEGRATION § 15, DECISIONS; noreg I17,
   I18): `vfr/fetch`, `build`, `purge` for the Data module (V3 § 10.34 A1); the jobs' subprocesses never see the launcher's

@@ -25,6 +25,7 @@
 <script type="module">
   import {
     provenance,
+    tokenize,
     textFromTokens,
     withProcedures,
     proceduresOfText
@@ -45,14 +46,22 @@
   }
   const J = x => JSON.stringify(x);
   // provenance : les mots d'un Auto précédent
-  const seq = [['LFRS', false], ['TSA01', true], ['UT460', true], ['TSA05', true], ['LFML', false]].map(([w, g]) => ({
+  const seq = [
+    ['LFRS', false],
+    ['TSA01', true],
+    ['UT460', true],
+    ['TSA05', true],
+    ['LFML', false]
+  ].map(([w, g]) => ({
     w,
     g
   }));
   ck('provenance : le texte écrit par l’Auto, mot pour mot', J(provenance(['LFRS', 'TSA01', 'UT460', 'TSA05', 'LFML'], seq)) === J([false,
-    true, true, true, false]));
+    true, true, true, false
+  ]));
   ck('provenance : un mot ajouté par le pilote est posé, rien ne se décale', J(provenance(['LFRS', 'TSA01', 'UT460', 'TSA05', 'XYZ',
-    'LFML'], seq)) === J([false, true, true, true, false, false]));
+    'LFML'
+  ], seq)) === J([false, true, true, true, false, false]));
   ck('provenance : sans Auto précédent, tout est posé', J(provenance(['A', 'B'], null)) === J([false, false]) && J(provenance([], seq)) ===
     '[]');
   // textFromTokens : forme OACI
@@ -71,7 +80,8 @@
     dct: true
   }) === 'LFBO LACOU7B LACOU DCT LMG UN859 AMB OKRIX5A LFPO');
   ck('textFromTokens sans dct : rien d’ajouté', textFromTokens([P('A'), P('B'), P('C'), P('D')]) === 'A B C D' && textFromTokens([P('A'),
-    P('B'), P('C')], {
+    P('B'), P('C')
+  ], {
     dct: true
   }) === 'A B C');
   // withProcedures : rendu
@@ -111,6 +121,33 @@
   }) && J(proceduresOfText('LFBO LMG LFPO', o)) === J({
     sid: null,
     star: null
+  }));
+
+  // noms publiés avec une espace (« AMOLO 7A ») : un seul indicatif, rendu idempotent (parcours de BUGS SOG, 30 octobre)
+  ck('tokenize : « AMOLO 7A » est un seul mot de procédure, jamais le point AMOLO suivi de « 7A »', J(tokenize('LFBO AMOLO 7A AMOLO LFPO')
+    .map(
+      t => t.id)) === J(['LFBO', 'AMOLO7A', 'AMOLO', 'LFPO']));
+  const sp = {
+      dep: 'LFBO',
+      arr: 'LFPO',
+      sid: 'AMOLO 7A',
+      exit: 'AMOLO',
+      sidPoints: ['TOU01', 'AMOLO'],
+      star: 'AMB 9E',
+      entry: 'AMB',
+      starPoints: ['AMB', 'PO401'],
+      sidNames: ['AMOLO 7A', 'FINOT 5B'],
+      starNames: ['AMB 9E']
+    },
+    t1 = withProcedures('LFBO LFPO', sp).text;
+  ck('withProcedures : indicatifs sans espace, sortie et entrée', t1 === 'LFBO AMOLO7A AMOLO AMB AMB9E LFPO', t1);
+  ck('withProcedures : idempotent — deux retours de la Carte donnent le même texte, même depuis les noms avec espace', withProcedures(t1,
+      sp)
+    .text === t1 && withProcedures('LFBO AMOLO 7A AMOLO AMB AMB 9E LFPO', sp).text === t1, withProcedures(
+      'LFBO AMOLO 7A AMOLO AMB AMB 9E LFPO', sp).text);
+  ck('proceduresOfText : relit les noms écrits avec espace', J(proceduresOfText('LFBO AMOLO 7A AMOLO AMB AMB 9E LFPO', sp)) === J({
+    sid: 'AMOLO7A',
+    star: 'AMB9E'
   }));
 
   window.__bench = {
