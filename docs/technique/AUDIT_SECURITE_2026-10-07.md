@@ -939,6 +939,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 87 | Refactors R-C1 (one Relay identity, 68b2f4dbe) and R-F5 (one completion list, f7183950a); 39a28c9b0 | acceptable; no guard lost |
 | 88 | Refactor R-M4: one runway store on the Map (0422d2d2a) | acceptable |
 | 89 | `base/pickup` from Downloads (25beba925); refactor R-C5 (29db3a2fb); 64e5f2d98 | acceptable, two notes |
+| 90 | Refactor R-S1: the Data module (567cfe7ff) | acceptable, no change of behaviour |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1807,6 +1808,10 @@ device names, a trailing dot or space); NATS's filter keeps any `.xml`, so an en
 the same folder would overwrite it (start the filter with `^EG_`). R-C5: the workstation's resumption now commits through
 `_commit_local` (the `.js` check, literal paths, the pool only), the same guards it used to write by hand; each
 resumption keeps its backup reference, its plan and the pending-merge check.
+
+**90. Refactor R-S1, the Data module (567cfe7ff) — acceptable, no change of behaviour.** Dead helpers removed and
+repetitions factored; every external link still goes through `M.isHttps` (otherwise the address is shown as text), the
+only other link being an internal constant; no new argument to the launcher, no write or network added.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
