@@ -946,6 +946,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 94 | Fuel test cases (d24772b8a, bb9076aca, ad2f8330c); Map plain background from aerodb (bb9c98570) | acceptable |
 | 95 | Data module, “take the downloaded file” (c62d555e6, `base/pickup` of 89) | acceptable, one note |
 | 96 | Refactor R-M1: the Map's choose pane on one model (5e4b9433f, 7112b1b3b, e70eacb38) | acceptable, no change of behaviour |
+| 97 | Suite update by channel, `/__setup/update` (4fc473e5d); the two notes of 89 closed | acceptable, two notes |
+| 98 | Refactor R-M2 + R-M5 (a): one cartouche, procedure hues from the theme tokens (3e65a0465) | acceptable, no change of behaviour |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1852,6 +1854,26 @@ Fuel is still built by `paneReturn` from a closed table of keys with `encodeURIC
 opening, and Fuel checks it again before writing; every name from the model is shown through the Map's escaped texts; (c)
 merges the three exits into `chooseClose()` (Done, ✕, Escape), the only `location.replace`, with no caller of the removed
 functions left. The Map still writes nothing.
+
+**97. Suite update by channel (4fc473e5d) — acceptable, two notes.** `GET` and `POST /__setup/update` are for this
+workstation only (`do_POST` applies the LAN and relay gates and `_allowed()` to all of `/__setup/`, the handlers refuse
+`_lan()` again). The channel is checked against a closed list (400 otherwise); the tag comes only from `git tag --list`
+filtered by a strict version pattern, then `refs/tags/<name>^{commit}`; the development branch is a constant; git runs
+with an argument list, never through a shell, and without prompts; failure messages go through `clean_text` and are shown
+as text. Nothing is written when tracked files are modified, the checkout is not the channel's, or the target does not
+contain the current version; the branch only moves by `merge --ff-only`; `data/` is never touched. The same commit closes
+the two notes of 89: each final name of `base/pickup` goes through `data_path` (and the destination is taken from it), and
+NATS only takes `EG…` files. Notes: refuse the update while a regeneration job or a sync runs (the checkout changes
+`tools/` under a running child process); the target is not verified (no signed tags), so the suite runs what `origin`
+serves at the next start — the same trust as today's manual pull, to be stated in the documentation and tightened if tags
+are ever signed. The `GET` runs a `git fetch` (remote references only), acceptable behind `_allowed()` on this workstation.
+
+**98. Refactor R-M2 + R-M5 (a) (3e65a0465) — acceptable, no change of behaviour.** One cartouche primitive in the
+rendering core draws the procedure labels, the choose-pane cartouches and the airway boxes (identical canvas hashes on four
+scenes). The procedure hues now read `--sog-map-sid`, `-star` and `-app`: they come from `frame/design/tokens.css` (the
+suite's code; nothing sets them at run time) and reach the canvas only, where an invalid string is ignored; the hues placed
+in a `style` attribute of the choose pane are still the palette's hex constants. Rule kept: a colour read from the theme
+that ever goes into HTML passes through `cssColor` with a hex fallback.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
