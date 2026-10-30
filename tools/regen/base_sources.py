@@ -47,6 +47,7 @@ ROOT = os.path.dirname(TOOLS)
 if TOOLS not in sys.path:
     sys.path.insert(0, TOOLS)
 import aero_fetch  # noqa: E402  (le téléchargement lui-même : jamais recopié ici)
+import data_sync  # noqa: E402  (data_path : la règle des chemins de data/, pour base/pickup)
 import regen_jobs  # noqa: E402  (le socle : inside, la règle commune des purges)
 
 ZONES_GEO = 'shared/carto/aero_zones_geo.js'
@@ -617,8 +618,9 @@ def purge(job, args, ctx):
 # blanc (dry, par défaut) rend le plan.
 PICKUP = {
     'sia': {'zip': 'export_xml_bd_SIA_*.zip', 'to': 'sia', 'keep': lambda n: bool(SIA_ROOT.match(n))},
+    # NATS : les fichiers EG… seulement (jamais ukmil_aara-tracks.xml ni un autre fichier d'aero_fetch du même dossier)
     'nats': {'zip': 'EG_*_DS_*_XML.zip', 'to': 'sia/zones/gb',
-             'keep': lambda n: n.lower().endswith('.xml') and not re.search(r'DIFF|DELTA|export-filter|METADATA', n, re.I)},
+             'keep': lambda n: bool(re.match(r'EG[_-]', n)) and n.lower().endswith('.xml') and not re.search(r'DIFF|DELTA|export-filter|METADATA', n, re.I)},
 }
 PICKUP_MAX = 500 * 1024 * 1024  # un zip déposé plus gros : refusé avant d'être ouvert
 PICKUP_NAME = re.compile(r'^[\w .()+-]{1,150}\Z', re.A)  # un nom d'entrée pris (le SAFE_NAME de base.py) : ni séparateur, ni « : »
@@ -673,7 +675,8 @@ def pickup(job, args, ctx):
                 pick = {}
                 for i in infos:
                     leaf = i.filename.replace('\\', '/').rsplit('/', 1)[-1]
-                    if not i.is_dir() and PICKUP_NAME.match(leaf) and p['keep'](leaf):
+                    # le nom final passe par la règle des chemins de data/ (noms réservés de Windows, point ou espace finale)
+                    if not i.is_dir() and PICKUP_NAME.match(leaf) and p['keep'](leaf) and data_sync.data_path(data, f'{p["to"]}/{leaf}'):
                         pick.setdefault(leaf, i)  # un nom une fois : la première entrée qui le porte
                 if not pick:
                     failed.append({'zone': z, 'source': s, 'error': 'nothing-to-take', 'zip': os.path.basename(zp)})
@@ -684,7 +687,7 @@ def pickup(job, args, ctx):
                     if not regen_jobs.inside(out, base):
                         raise ValueError('unsafe-path')
                     for leaf, i in pick.items():
-                        dest = os.path.join(out, leaf)
+                        dest = data_sync.data_path(data, f'{p["to"]}/{leaf}')
                         with zf.open(i) as src, open(dest + '.tmp', 'wb') as dst:
                             shutil.copyfileobj(src, dst)
                         os.replace(dest + '.tmp', dest)

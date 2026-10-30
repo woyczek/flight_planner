@@ -1675,3 +1675,50 @@ DOT_JS = """() => { const sel = '[data-card="status"] .f-status-dot';
   const probe = document.createElement('i'); probe.style.color = 'var(' + tok + ')'; document.body.append(probe);
   const want = getComputedStyle(probe).color; probe.remove();
   return { bg: s.backgroundColor, color: s.color, want, ring: s.boxShadow, tok } }"""
+
+
+@case('A51', 'Administration › Update the suite: channel, plan, update, the launcher to restart', 'A', designs=('standard',), screens=False, night=False, langs4=True,
+      rule='V3 § 10.34 A3 « Mise à jour de la suite »: a channel, « Vérifier » (the plan, nothing changed), « Mettre à jour » only when there is something to do, after a question; a refusal said; the launcher to restart by hand')
+def a51(c):
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True,
+              'relaxNav': False, 'host': 'TEST', 'lan': False}
+    plans = {'stable': {'ok': False, 'reason': 'dirty', 'target': 'v5.4.0', 'commits': 0, 'current': {'version': 'v6.0.0-alpha.2'}},
+             'early': {'ok': True, 'target': 'v6.0.0-beta.1', 'commits': 5, 'current': {'version': 'v6.0.0-alpha.2'}}}
+    posted = []
+
+    def launcher(route):
+        u = urllib.parse.urlparse(route.request.url)
+        body = {}
+        if u.path.endswith('/__setup/status'):
+            body = status
+        elif u.path.endswith('/__setup/update') and route.request.method == 'GET':
+            ch = urllib.parse.parse_qs(u.query).get('channel', [''])[0]
+            body = {**plans.get(ch, {'ok': False, 'reason': 'no-target'}), 'channel': ch, 'channels': ['stable', 'early', 'suivi'], 'devBranch': 'v3'}
+        elif u.path.endswith('/__setup/update'):
+            posted.append(json.loads(route.request.post_data or '{}'))
+            body = {'ok': True, 'done': True, 'current': {'version': 'v6.0.0-beta.1', 'branch': ''}}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    c.open('settings?card=admin', app='maintenance', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-act=\"adminPanel\"][data-panel=\"update\"]')", what='the « Mise à jour de la suite » entry (with a launcher)')
+    c.tap('[data-act="adminPanel"][data-panel="update"]')
+    c.until("!!document.querySelector('[data-card=\"update\"] [data-up-channel]')", what='the channel')
+    c.ok(c.js("document.querySelector('[data-card=\"update\"] [data-act=\"upGo\"]').disabled"), '', '« Mettre à jour » is off before any plan')
+    # stable: refused (local changes), said, nothing to press
+    c.tap('[data-card="update"] [data-act="upCheck"]')
+    c.until("!!document.querySelector('[data-card=\"update\"] [data-msg]').textContent.trim()", what='the plan is said')
+    c.eq(norm(c.text('[data-card="update"] [data-msg]')), norm(tx('frame/settings/launcher.js', 'dirty', c.lang, after='upWhy')), 'a refusal said in words', what='refusal')
+    c.ok(c.js("document.querySelector('[data-card=\"update\"] [data-act=\"upGo\"]').disabled"), '', 'still nothing to press')
+    # early: the plan, then the update after the question
+    c.page.select_option('[data-card="update"] [data-up-channel]', 'early')
+    c.tap('[data-card="update"] [data-act="upCheck"]')
+    c.until("!document.querySelector('[data-card=\"update\"] [data-act=\"upGo\"]').disabled", what='something to do: « Mettre à jour » on')
+    c.ok('v6.0.0-beta.1' in c.text('[data-card="update"] [data-msg]') and 'v6.0.0-alpha.2' in c.text('[data-card="update"] [data-up-now]'), c.text('[data-card="update"]'),
+         'the target and the installed version said')
+    c.tap('[data-card="update"] [data-act="upGo"]')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", what='a question first')
+    c.tap('.f-modal [data-ok]')
+    c.until("(document.querySelector('[data-card=\"update\"] [data-msg]').textContent || '').includes('v6.0.0-beta.1') && !document.querySelector('.f-modal')",
+            what='done, said')
+    c.eq(posted, [{'channel': 'early'}], 'the channel only goes to the launcher', what='request')
+    c.ok('lancer.cmd' in c.text('[data-card="update"] [data-msg]'), c.text('[data-card="update"] [data-msg]'), 'the launcher to restart by hand, said')

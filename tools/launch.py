@@ -29,6 +29,7 @@ import sim_position  # position du simulateur de ce poste (X-Plane 12, Little Na
 import device_access  # appareils appairés, réseau local et relais : un code, une liste, une révocation (R-C2)
 import vfr_import  # compilation VFR des cartes VAC (tools/report-vfr) importée dans sia/vfr/ du dépôt des données
 import outbound  # requêtes sortantes : un User-Agent nommé, chaque échec dit en console (hôte, chemin, code)
+import suite_update  # mise à jour de la suite par canal (stable, early, suivi) : plan d'abord, avance rapide seulement
 import regen_jobs  # travaux longs du module Données (régénération) : un à la fois, état, annulation ; état du poste
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -939,6 +940,33 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         if not self._allowed() or self._lan():
             return self._json({'error': 'refusé'}, 403)
         return self._json({'routes': route_table()})
+
+    @route('GET', '/__setup/update', public='poste')
+    def _get_update(self, path):
+        # « Mise à jour de la suite » (A3) : le plan du canal demandé (?channel=stable|early|suivi), fetch compris, rien de
+        # changé — ce poste seulement
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        ch = (urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('channel') or [''])[0]
+        return self._json({**suite_update.plan(ROOT, ch), 'channels': list(suite_update.CHANNELS), 'devBranch': suite_update.DEV_BRANCH})
+
+    @route('POST', '/__setup/update', public='poste')
+    def _post_update(self, path, body):
+        # la mise à jour du canal { channel } : plan refait, puis extraction de l'étiquette ou avance rapide ; le lanceur en
+        # cours n'est pas relancé (dit) ; le dépôt des données jamais touché
+        if self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            a = {}
+        ch = str(a.get('channel') or '') if isinstance(a, dict) else ''
+        if ch not in suite_update.CHANNELS:
+            return self._json({'ok': False, 'reason': 'unknown-channel', 'message': 'canal inconnu'}, 400)
+        r = suite_update.apply(ROOT, ch)
+        if r.get('done'):
+            say(f'  Suite mise à jour ({ch}) : {r["current"].get("version", "")} — relancez le lanceur.')
+        return self._json(r)
 
     @route('GET', '/__setup/folders', public='poste')
     def _get_folders(self, path):

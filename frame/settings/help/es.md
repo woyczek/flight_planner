@@ -206,6 +206,10 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   trigrama (una vez, 10 minutos, en uno u otro canal); sus escrituras llevan ese trigrama. Cada línea dice el canal del
   dispositivo; la de un dispositivo vinculado con el código de la consola dice «código de consola», y «Nombrar» le pone un
   trigrama. Un dispositivo perdido, o todos los de un piloto que se va, se revocan allí.
+- **Actualizar la suite** (Administración, con el lanzador): elegir un canal — estable, preversiones o seguimiento del
+  desarrollo —, «Comprobar» dice lo que cambiaría sin tocar nada, luego «Actualizar» (tras una pregunta). Nunca un paso atrás;
+  rechazado si se modificaron archivos de la suite en este equipo. Los datos no se tocan. Después, cierre la ventana del
+  lanzador y vuelva a ejecutar lancer.cmd.
 - **Carpetas de este equipo** (Administración, con el lanzador): dónde están la suite, los datos, las descargas, las bases
   y fichas de Little Navmap en este equipo, la ruta en solo lectura y de dónde viene; «Abrir» muestra la carpeta en el
   explorador de archivos. Una ruta se cambia donde se indica, nunca aquí; X-Plane es desconocido para el lanzador.
@@ -230,4 +234,4 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: 521936bec9aa -->
+<!-- fr: 968ef9ef1e3a -->

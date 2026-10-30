@@ -502,3 +502,13 @@ ergonomics session. The launcher's LAN card still lists paired devices next to t
 `setGate`); R-S2 one profile reader / writer (A12); R-S3 one secrets helper (A32, A43); R-S4 one provider table (A12, A49);
 R-S5 one outcome reader and entry builder (L7, L13–L18); R-S6 one job ending and one summary table; R-S7 the base as a SETS entry;
 R-S8 module.js then model.js split by responsibility; R-S9 settings.js `render` split and shared texts.
+- **30 Oct 2026 — « Mise à jour de la suite » in the Administration card** (V3 § 10.34 A3, the second card; V3 Frame):
+  - A channel is a version selector, not a branch to follow blindly: `tools/suite_update.py` reads the tags and the
+    development branch after a `git fetch`, and only moves forward (`merge-base --is-ancestor`): a target that does not contain
+    the installed version is refused, never merged nor reset. `early` takes the highest version, pre-releases included,
+    rather than « the latest pre-release »: once a stable is out, an older beta is never offered.
+  - Refused before anything is written: tracked local changes (the suite's own files), a checkout that is not the channel's
+    (a version channel wants a detached tag, `suivi` the development branch), as the administrator settles them by hand.
+  - The launcher is not restarted for itself: the result says so and the panel asks to close its window and run
+    `lancer.cmd`; the launcher's own update stays the documented manual step. noreg I25 (a trial repository: plans, a
+    refusal for local changes, a step back, the branch's fast-forward), A51 (×4).

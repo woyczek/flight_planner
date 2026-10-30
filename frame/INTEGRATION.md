@@ -1064,7 +1064,10 @@ in the launcher; `resume` finds it again.
   four-character code, nothing else) reads one aerodrome in EAD Basic and installs it under `proc/manual/`; `proc/eaip-fetch` (same args, the code must
   start with `LF`) does the same from the SIA eAIP of the cycle in force, without credentials, the address being computed by the launcher (aerodb's
   `fetchProcedures` picks the verb by the aerodrome's State; the frame gives aerodb `launcher.job`, built on this client with `regen/job` declared).
-  `GET /__setup/folders` → `{ folders: [{ id, path, exists, from }] }` and `POST /__setup/folders/open { id }` (workstation only, 30 Oct
+  `GET /__setup/update?channel=stable|early|suivi` → the plan `{ ok, channel, current: { head, branch, version, dirty }, target, commits,
+  reason?, message, channels, devBranch }` (fetched, nothing changed) and `POST /__setup/update { channel }` → `{ …plan, done, current }`
+  (the tag checked out detached or the development branch fast-forwarded; workstation only, 30 Oct 2026; « Mise à jour de la suite »,
+  frame/settings SPEC 9a-bis; `tools/suite_update.py`). `GET /__setup/folders` → `{ folders: [{ id, path, exists, from }] }` and `POST /__setup/folders/open { id }` (workstation only, 30 Oct
   2026; the Administration card's « Dossiers du poste », frame/settings SPEC 9a): the folders the launcher knows, opened by id.
   `GET /__setup/regen/verbs` → `{ verbs: ['aircraft/build', 'base/fetch', …] }` (workstation only, 30 Oct 2026): the « set/verb » of every
   loaded job, so that a page greys at once what this launcher does not know. **Set `aircraft`** (`tools/regen/aircraft.py`, V3 § 10.34 A1):

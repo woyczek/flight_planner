@@ -1664,12 +1664,13 @@ def i24(c):
             z.writestr('EG_AIP_DS_FULL_20261029.xml', '<nats/>')
             z.writestr('EG_AIP_DS_DIFF_20261029.xml', '<diff/>')
             z.writestr('../../../outside.xml', '<x/>')
+            z.writestr('ukmil_aara-tracks.xml', '<not nats/>')
         ctx = {'data': str(data), 'downloads': lambda: [str(dl)]}
         r = B.pickup(RJ.Job('base', 'pickup', {}), {'zones': ['fr', 'gb', 'us'], 'dry': True}, ctx)
         c.eq(sorted((t['source'], t['zip'], tuple(t['files'])) for t in r['taken']),
-             [('nats', 'EG_AIP_DS_FULL_20261029_XML.zip', ('EG_AIP_DS_FULL_20261029.xml', 'outside.xml')),
+             [('nats', 'EG_AIP_DS_FULL_20261029_XML.zip', ('EG_AIP_DS_FULL_20261029.xml',)),
               ('sia', 'export_xml_bd_SIA_2026-10-29.zip', ('AIXM4.5_all_FR_OM_2026-10-29.xml', 'XML_SIA_2026-10-29.xml'))],
-             'the latest zip of each source, its useful entries by their names only (the readme, the DIFF, a name outside the rule set aside)', what='plan')
+             'the latest zip of each source, its useful entries by their names only (the readme, the DIFF, a non-EG name for NATS set aside: never aero_fetch\u2019s ukmil_aara-tracks.xml)', what='plan')
         c.ok(r['dry'] and not (data / 'sia').exists(), json.dumps(r)[:300], 'dry: nothing written')
         r = B.pickup(RJ.Job('base', 'pickup', {}), {'zones': ['fr', 'gb'], 'dry': False}, ctx)
         sia, gb = data / 'sia', data / 'sia' / 'zones' / 'gb'
@@ -1759,3 +1760,74 @@ def i26(c):
             notes[name] = rel(have - need)
     c.eq(gaps, {}, 'each module\u2019s meta.files (with meta.lazy) holds every file it imports, so that it loads offline before its first opening'
          + (f' (listed, not imported, a note only: {notes})' if notes else ''), what='files missing from meta.files')
+
+
+    bsrc = (c.root / 'tools' / 'regen' / 'base_sources.py').read_text(encoding='utf-8')
+    c.ok(bsrc.count("data_sync.data_path(data, f'{p[\"to\"]}/{leaf}')") == 2, '', 'each name goes through the data/ path rule (Windows reserved names, a final dot or space), security review of 25beba925')
+
+
+@case('I25', 'Updating the suite by channel: the plan first, fast-forward only, refusals', 'I', static=True,
+      rule='V3 § 10.34 A3 « Mise à jour de la suite »: stable = the latest vX.Y.Z, early = the highest version pre-releases included, suivi = the head of the development branch; fetch, then fast-forward only; refused on local changes or a checkout that is not the channel’s; the data repository never touched')
+def i25(c):
+    import importlib
+    sys.path.insert(0, str(c.root / 'tools'))
+    U = importlib.import_module('suite_update')
+    c.eq(sorted(['v1.0.0', 'v1.1.0-alpha.1', 'v1.1.0', 'v1.1.0-rc.1', 'v1.1.0-beta.2', 'x'], key=lambda t: U.version_key(t) or (-1,)),
+         ['x', 'v1.0.0', 'v1.1.0-alpha.1', 'v1.1.0-beta.2', 'v1.1.0-rc.1', 'v1.1.0'], 'a pre-release before the version it leads to', what='order')
+    tmp = Path(tempfile.mkdtemp(prefix='sog-update-'))
+
+    def g(cwd, *a):
+        r = subprocess.run(['git', '-C', str(cwd), *a], capture_output=True, text=True, encoding='utf-8', errors='replace')
+        return r.returncode, (r.stdout + r.stderr).strip()
+    try:
+        bare, dev, suite = tmp / 'suite.git', tmp / 'dev', tmp / 'suite'
+        g(tmp, 'init', '-q', '--bare', '-b', U.DEV_BRANCH, str(bare))
+        g(tmp, 'clone', '-q', str(bare), str(dev))
+        for k, v in (('user.name', 'essai'), ('user.email', 'essai@example.invalid')):
+            g(dev, 'config', k, v)
+
+        def commit(msg, tag=None):
+            (dev / 'f.txt').write_text(msg, encoding='utf-8')
+            g(dev, 'add', '-A')
+            g(dev, 'commit', '-qm', msg)
+            if tag:
+                g(dev, 'tag', tag)
+        commit('one', 'v1.0.0')
+        g(dev, 'push', '-q', 'origin', U.DEV_BRANCH, '--tags')
+        g(tmp, 'clone', '-q', str(bare), str(suite))
+        g(suite, 'checkout', '-q', '--detach', 'v1.0.0')
+        commit('two', 'v1.1.0-alpha.1')
+        commit('three', 'v1.1.0')
+        commit('four', 'v1.2.0-beta.1')
+        commit('five')
+        g(dev, 'push', '-q', 'origin', U.DEV_BRANCH, '--tags')
+        root = str(suite)
+        p = U.plan(root, 'stable')
+        c.eq((p['ok'], p['target'], p['commits']), (True, 'v1.1.0', 2), 'stable: the latest version without suffix, fetched first, 2 commits ahead', what='stable plan')
+        c.eq(U.plan(root, 'early', fetch=False)['target'], 'v1.2.0-beta.1', 'early: the highest version, pre-releases included', what='early plan')
+        c.eq(U.plan(root, 'suivi', fetch=False)['reason'], 'other-checkout', 'suivi on a detached version: refused (the branch is needed)', what='suivi refused')
+        (suite / 'f.txt').write_text('changed here', encoding='utf-8')
+        c.eq(U.apply(root, 'stable')['reason'], 'dirty', 'a local change: nothing is changed', what='dirty')
+        g(suite, 'checkout', '-q', '--', 'f.txt')
+        r = U.apply(root, 'stable')
+        c.ok(r['done'] and r['current']['version'] == 'v1.1.0' and not r['current']['branch'], str(r)[:200], 'stable applied: the tag checked out, detached')
+        c.eq(U.plan(root, 'stable', fetch=False)['reason'], 'up-to-date', 'then up to date', what='after')
+        # a step back is never taken: a stable tag on an older commit
+        g(dev, 'tag', 'v1.3.0', 'v1.0.0')
+        g(dev, 'push', '-q', 'origin', '--tags')
+        c.eq(U.plan(root, 'stable')['reason'], 'downgrade', 'a target that does not contain the installed version: refused', what='downgrade')
+        # suivi: on the development branch, fast-forward only
+        g(suite, 'checkout', '-q', U.DEV_BRANCH)
+        r = U.apply(root, 'suivi')
+        _, head = g(suite, 'rev-parse', 'HEAD')
+        _, tip = g(dev, 'rev-parse', 'HEAD')
+        c.ok(r['done'] and head == tip and r['current']['branch'] == U.DEV_BRANCH, str(r)[:200], 'suivi: the branch fast-forwarded to the remote head')
+        c.eq(U.plan(root, 'early', fetch=False)['reason'], 'other-checkout', 'a version channel on the branch: refused', what='early on branch')
+        c.eq(U.plan(root, 'nope')['reason'], 'unknown-channel', 'an unknown channel', what='unknown')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    L = importlib.import_module('launch')
+    c.eq((L.ROUTES[('GET', '/__setup/update')][1:], L.ROUTES[('POST', '/__setup/update')][1:]), (('poste', False), ('poste', False)),
+         'the update routes: this workstation only', what='routes')
+    src = (c.root / 'tools' / 'suite_update.py').read_text(encoding='utf-8')
+    c.ok('DATA' not in src and 'data/' not in src.split('"""', 2)[2], '', 'the module never names the data repository')

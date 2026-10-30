@@ -207,6 +207,10 @@ cartographique (`apps/cpco/map_parser.html`).
   trigramme (une fois, 10 minutes, sur l'un ou l'autre canal) ; ses écritures sont signées de ce trigramme. Chaque ligne
   dit le canal de l'appareil ; celle d'un appareil appairé par le code de la console dit « code de console », et
   « Nommer » lui pose un trigramme. Un appareil perdu, ou tous ceux d'un pilote qui part, s'y révoquent.
+- **Mise à jour de la suite** (Administration, avec le lanceur) : choisir un canal — stable, préversions, ou suivi du
+  développement —, « Vérifier » dit ce qui changerait sans rien toucher, puis « Mettre à jour » (après une question). Jamais de
+  retour en arrière ; refusé si des fichiers de la suite ont été modifiés sur ce poste. Les données ne sont pas touchées.
+  Ensuite, fermez la fenêtre du lanceur et relancez lancer.cmd.
 - **Dossiers du poste** (Administration, avec le lanceur) : où sont la suite, les données, les téléchargements, les
   bases et les fiches de Little Navmap sur ce poste, chemin en lecture seule et d'où il vient ; « Ouvrir » montre le
   dossier dans l'explorateur. Un chemin se change là où il est dit, jamais ici ; X-Plane est inconnu du lanceur.

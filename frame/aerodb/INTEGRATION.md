@@ -383,7 +383,8 @@ const p = await ctx.launcher.job('regen/job', { set: 'base', verb: 'purge', args
   that the launcher can take (`PICKUP`: the SIA for `fr`, NATS for `gb`) are taken from the workstation's Downloads: the latest file with the name the
   launcher expects (`export_xml_bd_SIA_*.zip`, `EG_*_DS_*_XML.zip`; never a name from the page), refused over 500 MB, checked before any read
   (`regen_jobs.zip_check`: 2 GB unpacked), its useful entries taken by their names only (SIA: the AIXM and XML_SIA files of a cycle; NATS: the XML
-  files but the DIFF, DELTA, filters and metadata; an entry's path never followed), written `.tmp` then replaced where the build reads them
+  files named EG…, but the DIFF, DELTA, filters and metadata — never aero_fetch's `ukmil_aara-tracks.xml` of the same folder; an entry's path
+  never followed; each final name through `data_sync.data_path`: no Windows reserved name, no final dot or space), written `.tmp` then replaced where the build reads them
   (the root of `data/sia/` for the SIA, `data/sia/zones/gb/` for NATS: raw sources, never committed). Args `{ zones, dry? }` (dry by default: the
   plan). Result `{ ok, dry, taken: [{ zone, source, zip, files, bytes }], missing: [{ zone, source, expected }], failed: [{ zone, source, error }],
   reason? }`. `base/fetch` marks such a source in its `manual` list with `pickup: true` and the `expected` name, for the button « Prendre le fichier

@@ -429,7 +429,63 @@
       'Nur lesbar: Ein Pfad wird dort geändert, wo es angegeben ist (beim Start, in Little Navmap, in den Einstellungen), nie hier. „Öffnen“ zeigt den Ordner im Dateiexplorer dieses Rechners.',
       'Solo lectura: una ruta se cambia donde se indica (al iniciar, en Little Navmap, en Ajustes), nunca aquí. «Abrir» muestra la carpeta en el explorador de archivos de este equipo.'
     ],
-    folderFail: ['Ouverture refusée : {m}', 'Opening refused: {m}', 'Öffnen abgelehnt: {m}', 'Apertura rechazada: {m}']
+    folderFail: ['Ouverture refusée : {m}', 'Opening refused: {m}', 'Öffnen abgelehnt: {m}', 'Apertura rechazada: {m}'],
+    // volet « Mise à jour de la suite » (A3) : canal, plan, mise à jour ; le lanceur à relancer à la main ensuite
+    upNow: ['Version installée : {v}', 'Installed version: {v}', 'Installierte Version: {v}', 'Versión instalada: {v}'],
+    upChannel: ['Canal', 'Channel', 'Kanal', 'Canal'],
+    upChannels: {
+      stable: ['Stable (dernière version)', 'Stable (latest release)', 'Stabil (letzte Version)', 'Estable (última versión)'],
+      early: ['Préversions (alpha, bêta)', 'Pre-releases (alpha, beta)', 'Vorabversionen (Alpha, Beta)', 'Preversiones (alfa, beta)'],
+      suivi: ['Suivi du développement (branche {b})', 'Development follow-up ({b} branch)', 'Entwicklungsstand (Zweig {b})',
+        'Seguimiento del desarrollo (rama {b})'
+      ]
+    },
+    upCheck: ['Vérifier', 'Check', 'Prüfen', 'Comprobar'],
+    upGo: ['Mettre à jour', 'Update', 'Aktualisieren', 'Actualizar'],
+    upPlan: ['{t} : {n} changement(s) depuis la version installée.', '{t}: {n} change(s) since the installed version.',
+      '{t}: {n} Änderung(en) seit der installierten Version.', '{t}: {n} cambio(s) desde la versión instalada.'
+    ],
+    upAsk: ['Mettre la suite à jour vers {t} ? Le lanceur sera à relancer ensuite.',
+      'Update the suite to {t}? The launcher will have to be restarted.',
+      'Die Suite auf {t} aktualisieren? Der Starter muss danach neu gestartet werden.',
+      '¿Actualizar la suite a {t}? Habrá que reiniciar el lanzador después.'
+    ],
+    upDone: ['Suite passée à {v} : fermez la fenêtre du lanceur, puis relancez lancer.cmd.',
+      'Suite moved to {v}: close the launcher’s window, then run lancer.cmd again.',
+      'Suite auf {v} gebracht: Schließen Sie das Fenster des Starters und starten Sie lancer.cmd erneut.',
+      'Suite pasada a {v}: cierre la ventana del lanzador y vuelva a ejecutar lancer.cmd.'
+    ],
+    upWhy: {
+      'up-to-date': ['Déjà à jour.', 'Already up to date.', 'Bereits aktuell.', 'Ya está actualizada.'],
+      dirty: ['Des fichiers de la suite ont été modifiés sur ce poste : rien n’est changé.',
+        'Files of the suite were changed on this computer: nothing is changed.',
+        'Dateien der Suite wurden auf diesem Rechner geändert: Es wird nichts geändert.',
+        'Se modificaron archivos de la suite en este equipo: no se cambia nada.'
+      ],
+      'other-checkout': ['L’extraction de la suite n’est pas celle de ce canal (une branche ou une version) : à régler à la main.',
+        'The suite’s checkout is not this channel’s (a branch or a version): to settle by hand.',
+        'Der Stand der Suite passt nicht zu diesem Kanal (ein Zweig oder eine Version): von Hand zu regeln.',
+        'La extracción de la suite no es la de este canal (una rama o una versión): a resolver a mano.'
+      ],
+      downgrade: ['La version de ce canal est plus ancienne que celle installée : jamais de retour en arrière.',
+        'This channel’s version is older than the installed one: never a step back.',
+        'Die Version dieses Kanals ist älter als die installierte: nie ein Schritt zurück.',
+        'La versión de este canal es más antigua que la instalada: nunca un paso atrás.'
+      ],
+      'no-target': ['Aucune version sur ce canal.', 'No version on this channel.', 'Keine Version in diesem Kanal.',
+        'Ninguna versión en este canal.'
+      ],
+      'no-git': ['La suite n’est pas un dépôt git (installée par une archive) : mise à jour à la main.',
+        'The suite is not a git repository (installed from an archive): update by hand.',
+        'Die Suite ist kein Git-Repository (aus einem Archiv installiert): von Hand aktualisieren.',
+        'La suite no es un repositorio git (instalada desde un archivo): actualizar a mano.'
+      ],
+      'fetch-failed': ['Le dépôt de la suite ne répond pas : réessayez plus tard.',
+        'The suite’s repository does not answer: try again later.',
+        'Das Repository der Suite antwortet nicht: später erneut versuchen.',
+        'El repositorio de la suite no responde: inténtelo más tarde.'
+      ]
+    }
   });
 
   /** L'opération ouvrira-t-elle la fenêtre Oui / Non du lanceur ? Réponse du lanceur pour cette adresse (POST adopt dry,
@@ -523,6 +579,46 @@
         `<span class="f-muted">${esc(t(T.folderNone))}</span>`;
       return `<li data-folder="${esc(f.id)}"><b>${esc(name)}</b> ${path}<br><span class="f-muted">${esc(from)}</span>${f.exists ? ` <button type="button" data-act="folderOpen" data-id="${esc(f.id)}">${esc(t(T.folderOpen))}</button>` : ''}</li>`;
     }).join('') || `<li class="f-msg" data-kind="err">${esc(t(T.folderFail, { m: '' }))}</li>`;
+  }
+  /** Volet « Mise à jour de la suite » de la carte Administration (A3) : le canal, « Vérifier » (le plan), « Mettre à jour ». */
+  function updateHtml(env) {
+    const {
+      t
+    } = env;
+    return `<div data-card="update"><p data-up-now class="f-muted">…</p><label class="f-field">${esc(t(T.upChannel))}<select data-up-channel>${['stable', 'early', 'suivi'].map(c => `<option value="${c}">${esc(t(T.upChannels[c], { b: 'v3' }))}</option>`).join('')}</select></label>
+      <p class="f-msg" data-msg></p><div class="f-row"><button type="button" data-act="upCheck">${esc(t(T.upCheck))}</button><button type="button" class="primary" data-act="upGo" disabled>${esc(t(T.upGo))}</button></div></div>`;
+  }
+  /** Le plan du canal choisi, dit dans le volet ; « Mettre à jour » seulement s'il y a quelque chose à faire. */
+  async function paintUpdate(env) {
+    const {
+      view,
+      t,
+      say
+    } = env;
+    const box = view.querySelector('[data-card="update"]');
+    if (!box) return null;
+    const ch = box.querySelector('[data-up-channel]').value,
+      p = await setup(`update?channel=${encodeURIComponent(ch)}`),
+      now = box.querySelector('[data-up-now]'),
+      go = box.querySelector('[data-act="upGo"]');
+    if (p?.devBranch) box.querySelectorAll('[data-up-channel] option[value="suivi"]').forEach(o => {
+      const txt = t(T.upChannels.suivi, {
+        b: p.devBranch
+      });
+      if (o.textContent !== txt) o.textContent = txt;
+    });
+    if (p?.current?.version) now.textContent = t(T.upNow, {
+      v: p.current.version
+    });
+    const why = p?.reason && p.reason !== 'up-to-date' ? T.upWhy[p.reason] : null;
+    go.disabled = !(p?.ok && p.reason !== 'up-to-date' && p.target);
+    say('update', !p ? t(T.upWhy['fetch-failed']) : p.reason === 'up-to-date' ? t(T.upWhy['up-to-date']) : why ? t(why) : p.ok ? t(T
+      .upPlan, {
+        t: p.target,
+        n: p.commits
+      }) : p.message || '', p?.ok ? 'ok' : 'warn');
+    box.dataset.target = p?.target || '';
+    return p;
   }
   /** Volet « Clés d'API de la compagnie » de la carte Administration : la clé IVAO, puis les identifiants EAD Basic,
    *  gardés par le lanceur (secrets/) ; la page ne les relit jamais. */
@@ -695,6 +791,12 @@
     if (L && (view.querySelector('[data-key]') || view.querySelector('[data-ead]') || view.querySelector('[data-ivaoapp]'))) paintKeys(
       env); // volet des clés : niveau Complet seulement
     if (L && view.querySelector('[data-folders]')) paintFolders(env); // volet des dossiers du poste
+    if (L && view.querySelector('[data-card="update"]')) { // volet de la mise à jour : un autre canal efface le plan affiché
+      view.querySelector('[data-up-channel]')?.addEventListener('change', () => {
+        view.querySelector('[data-act="upGo"]').disabled = true;
+        env.say('update', '');
+      });
+    }
 
     // indication « fenêtre Oui / Non sur ce poste » sous le bouton, selon l'adresse saisie
     // (le lanceur répond à POST /__setup/adopt { url, dry: true } sans rien faire : needsConfirm ; sans réponse, comparaison
@@ -784,6 +886,31 @@
       } catch {
         b.disabled = false;
         say('lan', t(T.lanFail));
+      }
+      return;
+    }
+    if (act === 'upCheck' || act === 'upGo') {
+      const box = view.querySelector('[data-card="update"]'),
+        ch = box.querySelector('[data-up-channel]').value;
+      b.disabled = true;
+      try {
+        if (act === 'upCheck') return void await paintUpdate(env);
+        if (!await c.ask(t(T.upAsk, {
+            t: box.dataset.target || ch
+          }))) return;
+        const r = await setup('update', {
+          channel: ch
+        });
+        if (r?.done) {
+          say('update', t(T.upDone, {
+            v: r.current?.version || ''
+          }), 'ok');
+          c.notify(t(T.upDone, {
+            v: r.current?.version || ''
+          }), 'ok');
+        } else say('update', r?.reason && T.upWhy[r.reason] ? t(T.upWhy[r.reason]) : r?.message || '', 'warn');
+      } finally {
+        if (act === 'upCheck') b.disabled = false;
       }
       return;
     }
@@ -965,13 +1092,14 @@
     acts: ['lanToggle', 'lanForget', 'lanCode', 'lanAll', 'keySave', 'keyErase', 'keyTest', 'eadSave', 'eadErase', 'ivaoCopy',
       'ivaoAppSave', 'ivaoAppTest', 'ivaoAppErase', 'remoteCheck',
       'remoteSave', 'gitClone',
-      'gitAdopt', 'histResume', 'folderOpen'
+      'gitAdopt', 'histResume', 'folderOpen', 'upCheck', 'upGo'
     ],
     readRemote,
     accessHtml,
     remoteHtml,
     keysHtml,
     foldersHtml,
+    updateHtml,
     ivaoAppHtml,
     lanHtml,
     live,

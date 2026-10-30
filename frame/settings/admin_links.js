@@ -94,6 +94,19 @@
       'La clave IVAO y las credenciales de EAD Basic, guardadas por el lanzador de este equipo (carpeta secrets/), nunca por el navegador ni en los datos.'
     ]
   }, {
+    // la mise à jour de la suite par canal (A3) : plan d'abord, avance rapide seulement (GET / POST /__setup/update)
+    id: 'update',
+    panel: 'update',
+    where: 'launcher',
+    primary: true,
+    title: ['Mise à jour de la suite', 'Update the suite', 'Suite aktualisieren', 'Actualizar la suite'],
+    text: [
+      'La version installée sur ce poste et celle du canal choisi (stable, préversions, suivi du développement) ; le plan d’abord, jamais de retour en arrière ; les données ne sont pas touchées.',
+      'The version installed on this computer and the chosen channel’s (stable, pre-releases, development follow-up); the plan first, never a step back; the data are not touched.',
+      'Die auf diesem Rechner installierte Version und die des gewählten Kanals (stabil, Vorabversionen, Entwicklungsstand); zuerst der Plan, nie ein Schritt zurück; die Daten bleiben unberührt.',
+      'La versión instalada en este equipo y la del canal elegido (estable, preversiones, seguimiento del desarrollo); primero el plan, nunca un paso atrás; los datos no se tocan.'
+    ]
+  }, {
     // les dossiers que le lanceur connaît (A3) : chemins en lecture seule, « Ouvrir » par identifiant (POST /__setup/folders/open)
     id: 'folders',
     panel: 'folders',

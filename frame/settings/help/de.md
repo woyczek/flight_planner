@@ -214,6 +214,10 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   anfordert (einmal, 10 Minuten, auf dem einen oder anderen Kanal); seine Änderungen tragen dieses Kürzel. Jede Zeile
   nennt den Kanal des Geräts; ein mit dem Konsolencode gekoppeltes Gerät zeigt „Konsolencode“, und „Benennen“ gibt ihm ein
   Kürzel. Ein verlorenes Gerät oder alle eines Piloten, der geht, werden dort widerrufen.
+- **Suite aktualisieren** (Verwaltung, mit dem Starter): einen Kanal wählen — stabil, Vorabversionen oder Entwicklungsstand —,
+  „Prüfen“ sagt, was sich ändern würde, ohne etwas anzurühren, dann „Aktualisieren“ (nach einer Frage). Nie ein Schritt zurück;
+  abgelehnt, wenn Dateien der Suite auf diesem Rechner geändert wurden. Die Daten bleiben unberührt. Danach das Fenster des
+  Starters schließen und lancer.cmd erneut starten.
 - **Ordner dieses Rechners** (Verwaltung, mit dem Starter): wo die Suite, die Daten, die Downloads, die Datenbanken und
   Blätter von Little Navmap auf diesem Rechner liegen, der Pfad nur lesbar und woher er kommt; „Öffnen“ zeigt den Ordner im
   Dateiexplorer. Ein Pfad wird dort geändert, wo es angegeben ist, nie hier; X-Plane ist dem Starter unbekannt.
@@ -237,4 +241,4 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: 521936bec9aa -->
+<!-- fr: 968ef9ef1e3a -->

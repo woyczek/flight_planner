@@ -187,6 +187,14 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    `--data` at start, the system's Downloads, Little Navmap's own, Settings › Little Navmap sheets, unknown to the launcher
    for X-Plane) and « Ouvrir » for a folder present: `POST /__setup/folders/open { id }`, the id only, the launcher takes the
    path itself and opens it in this computer's file explorer. A path is changed where it says, never here.
+9a-bis. **Update the suite** (page served by a launcher, Full level; V3 § 10.34 A3, 30 Oct 2026): a panel of the Administration
+   card, `[data-card="update"]` inside `[data-adminpanel="update"]`. A channel (`stable`: the latest version vX.Y.Z; `early`: the
+   highest version, pre-releases included; `suivi`: the head of the development branch, named once in the launcher), « Vérifier »
+   (`GET /__setup/update?channel=…`: fetched, then the plan, nothing changed: the installed version, the target, the number of
+   changes, or the refusal in words — local changes, a checkout that is not the channel's, a step back, no version, no git,
+   the repository not answering) and « Mettre à jour », on only when the plan has something to do, after a question
+   (`POST /__setup/update { channel }`: the tag checked out detached, or the branch fast-forwarded). The running launcher keeps
+   its code: the panel says to close its window and run `lancer.cmd` again. The data repository is never touched.
 9b. **Little Navmap sheets (.lnmperf)** (page served by a launcher, when `aerodb.lnmperf` exists): an empty, hidden
    `[data-card="lnmperf"]` block that settings places after the launcher keys; its content and states (folder, Little
    Navmap folders found, "Save", "Synchronise now", "Stop", last pass, sheets not written) are drawn by aerodb
