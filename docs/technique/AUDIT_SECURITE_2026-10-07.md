@@ -958,8 +958,9 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 106 | Refactor R-S2: one read and one write of the airline's map profiles (b4e76634e) | acceptable, no change of behaviour |
 | 107 | Suite update bound to the version shown (513f6fb5b): the note of 105 closed | acceptable, one note (closed in 108) |
 | 108 | Suite update, `suivi` channel: fast-forward to the plan's own commit (bad15045f): the note of 107 closed | acceptable |
-| 109 | Data module: only the sources whose zip can be checked are taken (23e56bc9f): the note of 104 closed | acceptable, one optional hardening |
+| 109 | Data module: only the sources whose zip can be checked are taken (23e56bc9f): the note of 104 closed | acceptable, one optional hardening (done in 111) |
 | 110 | Refactor R-M2 + R-M5 (c): one collision pass over a closed list of ranks (9f703190c) | acceptable |
+| 111 | `base/pickup` with `zips` takes only the sources shown (8965e8c47): the hardening of 109 done | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1974,6 +1975,11 @@ then the painted round finds each decision by layer, key and order; some winners
 and the SPEC), nothing of security. The silent object still exposes the real `canvas`; no drawing code of the Map writes
 through `ctx.canvas`, and it must stay so. Keys and boxes stay in local maps; no HTML, attribute, network, storage or
 navigation added; the help texts come from the bundle.
+
+**111. The hardening of 109 (8965e8c47) — acceptable.** When the request carries `zips`, a source it does not name is
+refused (`not-shown`) before any file is looked at, and an empty `zips` now means “nothing shown” instead of “no key”;
+without the key the behaviour is unchanged. The take therefore never picks a file the plan has not shown, whatever the
+module sends.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
