@@ -15,7 +15,8 @@
     confirmOpen,
     AIRLINE,
     airlineDoc,
-    howtoHtml
+    howtoHtml,
+    link
   } = window.SogSettingsKit;
   // textes de ce fichier, ajoutés aux textes communs des Réglages (window.SogSettingsT)
   Object.assign(T, {
@@ -544,14 +545,15 @@
   function providerHtml(t, url) {
     if (!url || !window.SogConfig) return '';
     const p = SogConfig.providerOf(url),
-      name = p.provider === 'gitlab' ? 'GitLab' : p.provider === 'github' ? 'GitHub' : '';
+      P = SogConfig.PROVIDER_TABLE[p.provider],
+      name = P.label;
     if (!name) return `<p class="f-muted" data-provider="other">${esc(t(T.providerOther))}</p>`;
-    const proj = /^https:\/\//.test(p.web) ? `<a href="${esc(p.web)}" target="_blank" rel="noopener">${esc(p.project)}</a>` : esc(p.project);
+    const proj = /^https:\/\//.test(p.web) ? link(p.web, p.project) : esc(p.project);
     const line = esc(t(T.providerLine, {
       p: name,
       j: '{j}'
     })).replace('{j}', () => proj);
-    return `<div data-provider="${p.provider}"><p>${line}</p>${p.provider === 'gitlab' ? `<p class="f-muted"><a href="#pilot-tokens">${esc(t(T.providerTokens))}</a> — ${esc(t(T.providerGitlab))}</p>` : `<p class="f-muted">${esc(t(T.providerGithub))}</p>`}</div>`;
+    return `<div data-provider="${p.provider}"><p>${line}</p>${P.capabilities.projectTokens ? `<p class="f-muted"><a href="#pilot-tokens">${esc(t(T.providerTokens))}</a> — ${esc(t(T.providerGitlab))}</p>` : `<p class="f-muted">${esc(t(T.providerGithub))}</p>`}</div>`;
   }
   /** Volet « Dépôt distant de data/ » de la carte Administration (data/ en dépôt git seulement) ; '' sinon. */
   function remoteHtml(env) {
@@ -713,8 +715,8 @@
   }
   /** Enregistre ou efface les secrets d'un service du lanceur (POST secrets { scope: 'app', service, values }), la page n'en
    *  gardant aucun. o : { service, card (nom de la carte, pour son message), values (champs saisis), erase (effacer : les
-   *  mêmes champs vides, après la question `ask`), missing (texte si un champ manque ; sans lui, silence), box (la carte dont
-   *  les champs sont vidés AVANT l'appel et le message effacé ; sans lui, rien n'est vidé), ask / saved / erased (clés de T), fail
+   *  mêmes champs vides, après la question `ask`), missing (texte si un champ manque ; sans lui, silence), fields (les éléments
+   *  [data-f] eux-mêmes, vidés AVANT l'appel, le message effacé), ask / saved / erased (clés de T), fail
    *  (texte si le lanceur refuse sans message ; « lanceur trop ancien » par défaut), paint (après l'appel, sur la réponse ; l'état
    *  du service par défaut) }. */
   async function saveSecret(env, o) {
@@ -725,10 +727,9 @@
     } = env;
     if (!o.erase && Object.values(o.values).some(v => !v)) return say(o.card, o.missing ? t(o.missing) : '');
     if (o.erase && !await c.ask(t(o.ask))) return;
-    if (o.box) {
-      o.box.querySelectorAll('[data-f]').forEach(x => x.value = '');
-      say(o.card, '');
-    }
+    // la page ne garde aucun secret : les champs eux-mêmes sont vidés avant l'appel (rien n'est retrouvé par un conteneur)
+    o.fields.forEach(x => x.value = '');
+    say(o.card, '');
     const r = await setup('secrets', {
       scope: 'app',
       service: o.service,
@@ -975,7 +976,7 @@
       return saveSecret(env, {
         service: 'ivao',
         card: 'keys',
-        box: card('keys').querySelector('[data-f="ivaoKey"]')?.closest('label'),
+        fields: [card('keys').querySelector('[data-f="ivaoKey"]')],
         values: {
           apiKey: val('ivaoKey', card('keys'))
         },
@@ -992,7 +993,7 @@
       return saveSecret(env, {
         service: 'ead',
         card: 'ead',
-        box,
+        fields: ['eadUser', 'eadPassword'].map(k => box.querySelector(`[data-f="${k}"]`)),
         values: {
           user: val('eadUser', box),
           password: val('eadPassword', box)
@@ -1016,7 +1017,7 @@
       return saveSecret(env, {
         service: 'ivao_oauth',
         card: 'ivaoapp',
-        box,
+        fields: ['ivaoClientId', 'ivaoClientSecret'].map(k => box.querySelector(`[data-f="${k}"]`)),
         values: {
           clientId: val('ivaoClientId', box),
           clientSecret: val('ivaoClientSecret', box)

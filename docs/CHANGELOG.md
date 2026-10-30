@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refactor R-S4, no behaviour change: one provider table** (`frame/settings/config.js` `PROVIDER_TABLE`, `links`, `repoField`; `kit.js` `link` / `fill`; `join.js`, `admin.js`, `access.js`, `launcher.js`; A32, A49) — what the frame shows or sends about GitHub and GitLab (label, sign-up, invitation, token pages, API suffix, field placeholder, project tokens) lived in five places; it is now one deeply frozen, closed table (github, gitlab, other), read by the join assistant, the configuration export, the Access card and the remote panel's provider line; the duplicated `link` / `fill` helpers are gone. `saveSecret` now empties the exact input elements it is given, never a container found with `closest`; A32 also checks a refused call leaves the fields empty and is not retried.
 - **Map: the sheet is the height of what it shows, at most half the view (sixth reading, gap 1)** (`modules/maps/sheet_view.js`
   `sheetFit`, `choose.js`, `style.js`; SPEC § 3, § 7.1, § 7.6; DECISIONS; noreg D86). After the choose mode the sheet no longer stays
   expanded at 70 % with a blank under the profile: a drawing fills the body and the expanded position is half the view, a content

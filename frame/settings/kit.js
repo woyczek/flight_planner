@@ -53,6 +53,11 @@
   /** Mode d'emploi reçu → HTML en texte seul : une ligne par paragraphe, adresses https en liens. */
   const howtoHtml = text => String(text).split(/\n+/).filter(Boolean).map(l => `<p>${esc(l).replace(/https:\/\/(?:[^\s<&]|&#38;)+[^\s<&.,;:)]/g, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`)}</p>`).join('');
 
+  /** Lien http(s) qui s'ouvre dans un nouvel onglet : l'adresse (ou son libellé) échappée, rel noopener. */
+  const link = (u, label = u) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(label)}</a>`;
+  /** Texte échappé dont les {nom} sont remplacés par les valeurs de v (déjà en HTML) ; un nom inconnu reste tel quel. */
+  const fill = (text, v) => esc(text).replace(/\{(\w+)\}/g, (m, k) => v[k] ?? m);
+
   window.SogSettingsKit = {
     ROOT,
     esc,
@@ -65,6 +70,8 @@
     confirmOpen,
     AIRLINE,
     airlineDoc,
-    howtoHtml
+    howtoHtml,
+    link,
+    fill
   };
 })();

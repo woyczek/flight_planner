@@ -14,7 +14,9 @@
     confirmOpen,
     AIRLINE,
     airlineDoc,
-    howtoHtml
+    howtoHtml,
+    link,
+    fill
   } = window.SogSettingsKit;
   // textes de ce fichier, ajoutés aux textes communs des Réglages (window.SogSettingsT)
   Object.assign(T, {
@@ -318,12 +320,11 @@
         api: gh.api
       } : {})
     } : null;
-    const xk = xsrc ? SogConfig.kind(xsrc) : 'other',
-      xhost = xk === 'github' && !xsrc?.api ? 'GitHub' : xsrc?.host || '',
-      xinv = !xsrc ? '' : xk === 'github' ? `https://github.com/${xsrc.repo}/settings/access` : xk === 'gitlab' ? `${SogConfig.webUrl(xsrc)}/-/project_members` : '',
-      xa = u => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a>`,
-      xfill = (row, v) => esc(t(row)).replace(/\{(\w+)\}/g, (m, k) => v[k] ?? m);
-    const cfgSteps = `<h3>${esc(t(T.cfgSteps))}</h3><ol class="f-join-steps"><li>${xinv ? xfill(xk === 'github' ? T.cfgInvite : T.cfgInviteGl, { h: esc(xhost), u: xa(xinv) }) : esc(t(T.cfgInviteOther))}</li><li>${esc(t(T.cfgStepExport))}</li><li>${esc(t(T.cfgStepSend))}</li></ol>`;
+    const xl = xsrc ? SogConfig.links(xsrc) : null,
+      xk = xl ? xl.kind : 'other',
+      xhost = xl ? xl.host : '',
+      xinv = xl ? xl.invite : '';
+    const cfgSteps = `<h3>${esc(t(T.cfgSteps))}</h3><ol class="f-join-steps"><li>${xinv ? fill(t(xk === 'github' ? T.cfgInvite : T.cfgInviteGl), { h: esc(xhost), u: link(xinv) }) : esc(t(T.cfgInviteOther))}</li><li>${esc(t(T.cfgStepExport))}</li><li>${esc(t(T.cfgStepSend))}</li></ol>`;
     const cfgOut = window.SogConfig && (L || gh) ? `<div class="f-cfgx" data-cfgx>${cfgSteps}
       ${xsrc ? '' : `<p class="f-warn">${esc(t(T.cfgNoRepo))}</p>`}${fld('cfgPilot', T.cfgPilot, '', { cap: true, ph: 'ABC' })}${fld('cfgApp', T.cfgApp, appUrl(), { ph: 'https://…/v3/frame/' })}
       <div class="f-row"><button type="button" class="primary" data-act="cfgMake">${esc(t(T.cfgMake))}</button></div><p class="f-msg" data-xmsg></p>

@@ -482,7 +482,7 @@ after, CHANGELOG « refactor, no behaviour change », `:recycle:`, one lot at a 
 - **frame/settings/admin.js**: `readEdge` / `writeEdge` / `readRunwayZoom` / `writeRunwayZoom` are one pattern on one file, and
   settings.js reads that file twice. **Target**: one profile reader / writer by key. **Done (R-S2, 30 Oct)**: `readProfiles` / `writeProfiles`, one read in settings.js.
 - **Provider and host knowledge in five places** (config.js `kind` / `providerOf` / `webUrl`, join.js links, admin.js invitation
-  link, access.js `/api/v4` trimmed by hand, launcher.js `providerHtml`). **Target**: one provider table in `SogConfig`, read by all.
+  link, access.js `/api/v4` trimmed by hand, launcher.js `providerHtml`). **Target**: one provider table in `SogConfig`, read by all. **Done (R-S4, 31 Oct)**: `SogConfig.PROVIDER_TABLE` (frozen), `links`, `repoField`; `link` / `fill` in the kit.
 - **frame/settings/launcher.js**: the secrets cards (IVAO key, EAD, IVAO application) repeat one « fields emptied, call, paint
   the state » pattern. **Target**: one secrets helper. **Done (R-S3, 31 Oct)**: `saveSecret` / `paintSecretState`.
 - **frame/settings (texts)**: the same meaning under several keys across files (trigram prompts, revoke / expires, copy link /

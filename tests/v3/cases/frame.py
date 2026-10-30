@@ -1069,6 +1069,7 @@ def a32(c):
     secrets = {'app': {'ivao': {'apiKey': {'set': False, 'hint': ''}},
                        'ead': {'user': {'set': False, 'at': ''}, 'password': {'set': False, 'at': ''}}}, 'user': {}}
     logs = _watch_console(c)
+    refuse = {'once': False, 'seen': []}               # the launcher refuses the next secrets call once (HTTP 500)
 
     def launcher(route):
         req = route.request
@@ -1077,6 +1078,10 @@ def a32(c):
         if path.endswith('/__setup/status'):
             body = status
         elif path.endswith('/__setup/secrets'):
+            if req.method == 'POST' and refuse['once']:
+                refuse['once'] = False
+                refuse['seen'].append(json.loads(req.post_data or '{}'))
+                return route.fulfill(status=500, content_type='application/json', body=json.dumps({'ok': False}))
             if req.method == 'POST':
                 posts.append(json.loads(req.post_data or '{}'))
                 body = {'ok': True, **secrets}
@@ -1104,7 +1109,22 @@ def a32(c):
     c.wait(300)
     c.eq(len(posts), 0, 'a user name without a password is refused in the card, no call', what='posts')
     c.eq(norm(c.text(f'{ead} [data-msg]')), norm(tx('frame/settings/launcher.js', 'eadBoth', c.lang)), 'the card says what is missing', what='EAD message')
-    # save: the launcher receives both values, the page keeps none
+    # a call the launcher refuses: the fields stay empty, the card says why, nothing is sent again with a kept value
+    c.page.fill(f'{ead} input[data-f="eadPassword"]', 'test-pass')
+    refuse['once'] = True
+    c.tap(f'{ead} [data-act="eadSave"]')
+    for _ in range(30):
+        if refuse['seen']:
+            break
+        c.wait(100)
+    c.eq(refuse['seen'], [{'scope': 'app', 'service': 'ead', 'values': {'user': 'test-user', 'password': 'test-pass'}}], 'the refused call was the one made', what='refused call')
+    c.until(f"document.querySelector('{ead} [data-msg]').textContent.trim() !== ''", what='the card says the call failed')
+    c.eq(c.js(f"[...document.querySelectorAll('{ead} input[data-f]')].map(i => i.value)"), ['', ''], 'after a refusal the fields stay empty: nothing is kept', what='fields after refusal')
+    c.wait(600)
+    c.eq([len(posts), len(refuse['seen'])], [0, 1], 'no second call: nothing retries with a kept value', what='calls after refusal')
+    _no_secret(c, logs, 'test-user', 'test-pass')
+    # save: the launcher receives both values, the page keeps none (the user types them again)
+    c.page.fill(f'{ead} input[data-f="eadUser"]', 'test-user')
     c.page.fill(f'{ead} input[data-f="eadPassword"]', 'test-pass')
     c.tap(f'{ead} [data-act="eadSave"]')
     for _ in range(30):                           # the call is sent once the fields are emptied
@@ -1615,6 +1635,10 @@ def a49(c):
     got = c.js("(u) => JSON.stringify(SogConfig.providerOf(u))", 'https://oauth2:SECRET-TOKEN@gitlab.com/grp/proj.git')
     c.ok('SECRET' not in got and 'oauth2' not in got, got, 'credentials of an address are never kept')
     c.eq(json.loads(got)['web'], 'https://gitlab.com/grp/proj', 'the web page of an address with credentials', what='web')
+    # the provider table: one frozen, closed reference (nested objects too); an unknown provider is brought back to « other » at the entry
+    tab = c.js("() => { const T = SogConfig.PROVIDER_TABLE; return { ids: Object.keys(T), frozen: Object.isFrozen(T) && Object.values(T).every(e => Object.isFrozen(e) && Object.isFrozen(e.capabilities)), projectTokens: Object.fromEntries(Object.entries(T).map(([k, e]) => [k, e.capabilities.projectTokens])), labels: Object.values(T).map(e => e.label), odd: SogConfig.kind({ host: 'git.example.org', provider: 'bitbucket' }), proto: SogConfig.kind({ host: 'git.example.org', provider: '__proto__' }) } }")
+    c.eq(tab, {'ids': ['github', 'gitlab', 'other'], 'frozen': True, 'projectTokens': {'github': False, 'gitlab': True, 'other': False},
+               'labels': ['GitHub', 'GitLab', ''], 'odd': 'other', 'proto': 'other'}, 'a closed, deeply frozen table; GitLab alone welcomes by project token; an unknown id is other', what='provider table')
     # the exported configuration carries the provider; one read without it falls back on the host
     cfg = c.js("() => SogConfig.build({ data: { host: 'gitlab.mycorp.test', repo: 'grp/proj' }, trigram: 'ABC' }).data")
     c.eq(cfg['provider'], 'gitlab', 'the configuration carries the provider', what='build')

@@ -111,10 +111,11 @@
       exchange,
       fld
     } = env;
-    const gl = window.SogConfig?.kind(gh?.provider ? gh : jd || {}) === 'gitlab',
-      ph = gl ? (jd && !gh ? SogConfig.webUrl(jd) : 'https://gitlab.com/group/project') : 'compte/flight_planner_data';
+    const gl = SogConfig.kind(gh?.provider ? gh : jd || {}) === 'gitlab',
+      table = SogConfig.PROVIDER_TABLE,
+      ph = gl ? (jd && !gh ? SogConfig.webUrl(jd) : table.gitlab.placeholder) : table.github.placeholder;
     return `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2>${exchange ? '' : `<p class="f-muted">${esc(t(T.accessRead))}</p>`}
-        ${fld('repo', gl ? T.repoGl : T.repo, gh?.provider === 'gitlab' ? `${String(gh.api || '').replace(/\/api\/v4$/, '')}/${gh.repo}` : gh?.repo, { ph })}${fld('branch', T.branch, gh?.branch || 'main')}${fld('token', T.token, '', { type: 'password', ph: gh ? t(T.tokenSet) : '' })}
+        ${fld('repo', gl ? T.repoGl : T.repo, SogConfig.repoField(gh), { ph })}${fld('branch', T.branch, gh?.branch || 'main')}${fld('token', T.token, '', { type: 'password', ph: gh ? t(T.tokenSet) : '' })}
         ${gh?.token ? `<p data-token-set>${esc(t(T.tokenSet))}</p>` : ''}<p class="f-muted">${esc(t(gl ? T.tokenHintGl : T.tokenHint))}</p><p class="f-msg" data-msg></p>
         <div class="f-row"><button type="button" class="primary" data-act="access">${esc(t(T.save))}</button><button type="button" data-act="test">${esc(t(T.test))}</button>${gh ? `<button type="button" data-act="cut">${esc(t(T.cut))}</button>` : ''}</div></div>`;
   }

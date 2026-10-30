@@ -29,16 +29,99 @@
       repo: m[2]
     };
   }
-  const PROVIDERS = ['github', 'gitlab', 'other'];
   /** Fournisseur du dépôt, LA classification des hôtes de tout le cadre : celui que la donnée porte (data.provider d'une
    *  configuration, provider d'un accès de l'appareil), sinon github (github.com, ou une API GitHub donnée), gitlab (gitlab.com,
    *  framagit.org, ou un hôte qui contient « gitlab »), other. */
-  const kind = d => PROVIDERS.includes(d?.provider) ? d.provider : d?.api || d?.host === 'github.com' ? 'github' :
+  const kind = d => d?.provider && PROVIDER_TABLE[d.provider]?.id === d.provider ? d.provider : d?.api || d?.host === 'github.com' ? 'github' :
     /gitlab|(^|\.)framagit\./.test(d?.host || '') ? 'gitlab' : 'other';
   /** Page web du dépôt. */
   const webUrl = d => `${/^(127\.0\.0\.1|localhost)(:|$)/.test(d.host) ? 'http' : 'https'}://${d.host}/${d.repo}`;
   /** Adresse de clonage (https). */
   const cloneUrl = d => `${webUrl(d)}.git`;
+  /** Gèle un objet et tout ce qu'il contient (objets et tableaux), pour que la table des fournisseurs reste une référence. */
+  const deepFreeze = o => {
+    Object.values(o).forEach(v => v && typeof v === 'object' && deepFreeze(v));
+    return Object.freeze(o);
+  };
+  // LA table des fournisseurs, figée : liste fermée (github, gitlab, other), la seule source de ce que le cadre montre ou envoie à
+  // leur sujet. Chaque entrée : id, label (nom montré ; vide si inconnu), apiHost (hôte de l'API, null si c'est celui de
+  // l'instance) et apiPath (suffixe de l'API de l'instance), token (forme du jeton), capabilities (projectTokens : l'accueil des
+  // pilotes par jeton de projet), puis les adresses et valeurs qui en dépendent, calculées du dépôt d : signup (créer un compte),
+  // invitations (le pilote accepte l'invitation), invite (l'administrateur invite), tokenNew (créer le jeton), placeholder (champ
+  // « dépôt »), repoValue (valeur du champ « dépôt » d'un accès de l'appareil gh). Un fournisseur inconnu n'a pas d'entrée :
+  // kind() le ramène à other à l'entrée, les lecteurs ne branchent jamais sur un identifiant qu'ils ne connaissent pas.
+  const instanceSignup = d => `https://${d.host}/users/sign_up`,
+    instanceToken = d => `https://${d.host}/-/user_settings/personal_access_tokens`;
+  const PROVIDER_TABLE = deepFreeze({
+    github: {
+      id: 'github',
+      label: 'GitHub',
+      apiHost: 'api.github.com',
+      apiPath: '',
+      token: 'ghp_… (classic, « repo ») ou github_pat_… (fine-grained, « Contents »)',
+      capabilities: {
+        projectTokens: false
+      },
+      signup: () => 'https://github.com/signup',
+      invitations: d => `https://github.com/${d.repo}/invitations`,
+      invite: d => `https://github.com/${d.repo}/settings/access`,
+      tokenNew: d => d?.ownerType !== 'Organization' ? 'https://github.com/settings/tokens/new?scopes=repo&description=SOG%20Pilote' :
+        'https://github.com/settings/personal-access-tokens/new',
+      placeholder: 'compte/flight_planner_data',
+      repoValue: gh => gh?.repo
+    },
+    gitlab: {
+      id: 'gitlab',
+      label: 'GitLab',
+      apiHost: null,
+      apiPath: '/api/v4',
+      token: 'glpat-… (jeton d\'accès de projet, rôle Developer, write_repository)',
+      capabilities: {
+        projectTokens: true
+      },
+      signup: instanceSignup,
+      invitations: () => '',
+      invite: d => `${webUrl(d)}/-/project_members`,
+      tokenNew: instanceToken,
+      placeholder: 'https://gitlab.com/group/project',
+      repoValue: gh => `${String(gh.api || '').replace(/\/api\/v4$/, '')}/${gh.repo}`
+    },
+    other: {
+      id: 'other',
+      label: '',
+      apiHost: null,
+      apiPath: '',
+      token: '',
+      capabilities: {
+        projectTokens: false
+      },
+      signup: instanceSignup,
+      invitations: () => '',
+      invite: () => '',
+      tokenNew: instanceToken,
+      placeholder: 'compte/flight_planner_data',
+      repoValue: gh => gh?.repo
+    }
+  });
+  /** Entrée de la table pour un dépôt d (jamais indéfinie : un fournisseur inconnu est other). */
+  const entryOf = d => PROVIDER_TABLE[kind(d)];
+  /** Adresses et libellé d'un dépôt d ({ host, repo, … }) pour les assistants : kind, host (« GitHub » pour github.com, sinon l'hôte),
+   *  web, signup (compte), invitations (accepter l'invitation), invite (inviter le pilote), tokenNew (créer le jeton). */
+  function links(d) {
+    const P = entryOf(d);
+    return {
+      kind: P.id,
+      host: d.host === 'github.com' ? PROVIDER_TABLE.github.label : d.host,
+      web: webUrl(d),
+      signup: P.signup(d),
+      invitations: P.invitations(d),
+      invite: P.invite(d),
+      tokenNew: P.tokenNew(d)
+    };
+  }
+  /** Valeur du champ « dépôt » d'un accès de l'appareil gh ({ repo, api, provider… }) : le projet GitLab s'écrit avec l'adresse de
+   *  l'instance (son API sans le suffixe), le reste est le compte/dépôt. */
+  const repoField = gh => entryOf(gh).repoValue(gh);
   /** Fournisseur d'une adresse de dépôt (https, ssh « git@hôte:chemin » ou ssh://) → { provider: github | gitlab | other, web
    *  (page web du projet, sans identifiants ni .git), project (groupe/projet) } ; adresse illisible : other, sans web ni projet.
    *  Le port d'une adresse ssh n'est pas celui du web : il est retiré. */
@@ -363,6 +446,9 @@ Sin lanzador (teléfono), la aplicación solo llega a un repositorio de {host} a
     SCHEMA,
     parseRepo,
     kind,
+    PROVIDER_TABLE,
+    links,
+    repoField,
     providerOf,
     webUrl,
     cloneUrl,

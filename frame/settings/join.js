@@ -303,29 +303,30 @@
       return;
     }
     const d = cfg.data,
-      kind = d ? SogConfig.kind(d) : 'other',
-      host = !d ? '' : d.host === 'github.com' ? 'GitHub' : d.host,
+      lk = d ? SogConfig.links(d) : null,
+      kind = lk ? lk.kind : 'other',
+      host = lk ? lk.host : '',
       classic = kind === 'github' && d?.ownerType !== 'Organization', // dépôt d'un utilisateur (ou propriétaire inconnu)
       steps = stepsFor(h.access),
       step = steps.includes(s.step) ? s.step : steps[0],
       idx = steps.indexOf(step),
       done = s.done || {};
-    const web = d ? SogConfig.webUrl(d) : '',
+    const web = lk ? lk.web : '',
       a = cfg.airline || {};
-    const link = u => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a>`,
-      fill = (text, v) => esc(text).replace(/\{(\w+)\}/g, (m, k) => v[k] ?? m),
-      list = (row, v) => `<ol class="f-join-steps">${(row[['fr', 'en', 'de', 'es'].indexOf(t(['fr', 'en', 'de', 'es']))] || row[0]).map(r => `<li>${fill(t([r]), v)}</li>`).join('')}</ol>`,
+    const {
+      link,
+      fill
+    } = window.SogSettingsKit;
+    const list = (row, v) => `<ol class="f-join-steps">${(row[['fr', 'en', 'de', 'es'].indexOf(t(['fr', 'en', 'de', 'es']))] || row[0]).map(r => `<li>${fill(t([r]), v)}</li>`).join('')}</ol>`,
       check = (k, row) => `<label class="f-check"><input type="checkbox" data-jdone="${k}" ${done[k] ? 'checked' : ''}>${esc(t(row))}</label>`;
-    const signup = !d ? '' : kind === 'github' ? 'https://github.com/signup' : `https://${d.host}/users/sign_up`;
     const V = {
       h: esc(host),
-      signup: link(signup),
+      signup: link(lk ? lk.signup : ''),
       repo: esc(d?.repo || ''),
       owner: esc(d?.repo.split('/')[0] || ''),
-      inv: link(`https://github.com/${d?.repo || ''}/invitations`),
+      inv: link(lk ? lk.invitations : ''),
       w: link(web),
-      new: link(classic ? 'https://github.com/settings/tokens/new?scopes=repo&description=SOG%20Pilote' : kind === 'github' ?
-        'https://github.com/settings/personal-access-tokens/new' : `https://${d?.host}/-/user_settings/personal_access_tokens`)
+      new: link(lk ? lk.tokenNew : '')
     };
     let body = '';
     if (step === 1) {
