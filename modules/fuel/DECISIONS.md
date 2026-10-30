@@ -1236,6 +1236,12 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   lets such a station through the same way. The fix would test `w.wdir != null` (and the same in the filter): a mean drawn from fewer
   aerodromes, or none, for a METAR without a wind group.
 
+- **30 Oct 2026 — the missing wind direction, fixed** (the gap of the entry below; Simplification's rule): `weather.js` `hasWind(st)`
+  — a direction and a speed read, null / absent / empty not taken for 0 — is the one test of `routeWind` and of the screen's filter. A
+  station without direction leaves the mean, which comes from the others (the source line names those kept); both without direction:
+  no mean; 00000KT stays a direction (0°, 0 kt, no weight); VRB unchanged. Three checks in the METAR bench (F80). The parser is not
+  touched.
+
 ## Inventaire du 30/10 : à refondre
 
 Read-only inventory (Features SOG, 30 Oct, for the user's challenge « supprimer les faire et défaire, le code mort, les

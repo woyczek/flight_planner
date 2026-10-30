@@ -440,7 +440,9 @@ No field, import, preview or removal here (F79).
 - **Card**: departure, arrival, alternate, then the corridor aerodromes (folded under « n aerodromes along the route » beyond two);
   each line gives its distance from departure (the alternate: from arrival) (no case).
 - **Real weather** (a box): the quote's wind becomes the forecast wind aloft (§ 11); without it, the mean of the surface wind vectors
-  of the departure, the corridor aerodromes and the arrival that have one, each segment between two of them the mean of its ends,
+  of the departure, the corridor aerodromes and the arrival that have one — a direction and a speed (`hasWind`: 00000KT is one, 0° and
+  0 kt; VRB or a missing direction is not, and that aerodrome leaves the mean, which comes from the others; the source line names the
+  aerodromes kept), each segment between two of them the mean of its ends,
   weighted by its length along the route (at least two aerodromes, else said), an approximation said as such (`weather.js`
   `routeWind`: F80, METAR bench); its source is written under the wind fields; typing a wind unticks the box (no case for the box).
 

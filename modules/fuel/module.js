@@ -2425,8 +2425,8 @@ function applyRealWind() {
     return refresh();
   }
   const failed = S.aloftState === 'failed',
-    list = wxStations().filter(x => x.role !== 'altn' && x.st && x.along != null && Number.isFinite(+x.st.wdir) && Number.isFinite(+x.st
-      .wspd)),
+    // un terrain sans vent dirigé (VRB, direction absente) n'entre pas dans la moyenne : elle vient des autres, la source les nomme
+    list = wxStations().filter(x => x.role !== 'altn' && x.st && x.along != null && WX.hasWind(x.st)),
     legs = list.slice(1).map((x, i) => Math.max(0, x.along - list[i].along)),
     w = list.length >= 2 ? WX.routeWind(list.map(x => x.st), legs) : null,
     f = S.flight;

@@ -105,11 +105,16 @@ export function station(metar, taf, t = null) {
     tempo: []
   };
 }
+/** Un nombre lu, ou faux : null, absent ou vide ne sont pas 0 (Number(null) vaudrait 0). */
+const isNum = v => v !== null && v !== undefined && v !== '' && Number.isFinite(+v);
+/** Le terrain a-t-il un vent dirigé : une direction et une vitesse lues ; 00000KT en est un (0°, 0 kt), VRB et une direction absente
+ *  non (écart du 30 octobre : une direction null était lue 0°). */
+export const hasWind = st => isNum(st?.wdir) && isNum(st?.wspd);
 /** Vent moyen le long de la route : terrains [{ wdir, wspd }] dans l'ordre (départ, intermédiaire facultatif,
  *  arrivée) et longueurs des segments entre eux (NM) ; chaque segment prend la moyenne vectorielle de ses deux terrains,
- *  pondérée par sa longueur. Sortie : { dirDeg, speedKt } ; null s'il manque un vent. */
+ *  pondérée par sa longueur. Sortie : { dirDeg, speedKt } ; null s'il manque un vent (hasWind), ou sous deux terrains. */
 export function routeWind(winds, legs) {
-  if (winds.length < 2 || winds.some(w => !Number.isFinite(+w?.wdir) || !Number.isFinite(+w?.wspd))) return null;
+  if (winds.length < 2 || !winds.every(hasWind)) return null;
   const vec = w => {
       const r = w.wdir * Math.PI / 180;
       return [w.wspd * Math.sin(r), w.wspd * Math.cos(r)];

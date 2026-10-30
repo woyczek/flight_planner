@@ -370,8 +370,50 @@
     [90, 10],
     [270, 10]
   ], [50])[1], 0);
-  // une direction absente (null) n'est pas encore refusée : +null vaut 0, lue comme 0° (écart consigné dans DECISIONS le 30 octobre,
-  // correction en attente de la décision) ; ici, le seul terrain et le vent variable
+  // une direction absente n'est pas un vent : le terrain sort de la moyenne, qui vient des autres (écart du 30 octobre, corrigé) ;
+  // 00000KT en est un (0°, 0 kt)
+  const kept = ws => ws.filter(WX.hasWind);
+  check('hasWind: a direction and a speed; 00000KT yes; null, absent or VRB no', [{
+    wdir: 0,
+    wspd: 0
+  }, {
+    wdir: null,
+    wspd: 5
+  }, {
+    wspd: 5
+  }, {
+    wdir: 'VRB',
+    wspd: 3
+  }, {
+    wdir: 270,
+    wspd: 20
+  }].map(WX.hasWind), [true, false, false, false, true]);
+  check('routeWind: a station without direction leaves the mean, the others make it', (() => {
+    const r = WX.routeWind(kept([{
+      wdir: null,
+      wspd: 5
+    }, {
+      wdir: 270,
+      wspd: 20
+    }, {
+      wdir: 270,
+      wspd: 10
+    }]), [100]);
+    return r && [r.dirDeg, r.speedKt];
+  })(), [270, 15]);
+  check('routeWind: both without direction, no mean; one given directly, no mean either', [WX.routeWind(kept([{
+    wdir: null,
+    wspd: 5
+  }, {
+    wdir: null,
+    wspd: 8
+  }]), [80]), WX.routeWind([{
+    wdir: null,
+    wspd: 5
+  }, {
+    wdir: 270,
+    wspd: 20
+  }], [80])], [null, null]);
   check('routeWind: one aerodrome or a variable wind: no mean', [rw([
     [270, 20]
   ], []), WX.routeWind([{

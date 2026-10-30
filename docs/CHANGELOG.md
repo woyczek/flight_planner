@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: a METAR without a wind direction no longer counts as a north wind** (`modules/fuel/weather.js` `hasWind`, `routeWind`, the
+  « Real weather » filter; METAR bench, F80) — that aerodrome leaves the mean, which comes from the others; 00000KT stays a calm wind.
 - **Map: one cartouche primitive, the procedures' hues from the design tokens, refactor without change of behaviour (R-M5 a,
   § 10.33)** (`modules/maps/render.js`, `procs.js`, `choose.js`, `render_airspace.js`; SPEC § 3 target form of the labels,
   DECISIONS; noreg D83). `MapsRender.cartouche` draws the procedure labels, the choose mode's labels and the airway boxes (the same
