@@ -1491,3 +1491,45 @@ def a47(c):
     c.tap('[data-act="folderOpen"][data-id="data"]')
     c.wait(300)
     c.eq(opened, [{'id': 'data'}], 'the id only goes to the launcher, never a path', what='open request')
+
+
+@case('A48', 'A service screen and an older launcher: said, never a broken screen', 'A', designs=('standard',), screens=False, night=False, langs4=True,
+      rule='R-C4 (30 Oct 2026, one list of routes): the frame reads the launcher’s published table (GET /__setup/routes, once); a service screen whose declared routes are not all published says the launcher is older; a launcher without the table: nothing checked')
+def a48(c):
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True,
+              'relaxNav': False, 'host': 'TEST', 'lan': False}
+    table = {'routes': [{'method': 'GET', 'path': '/__setup/devices', 'public': 'poste', 'relay': False},
+                        {'method': 'POST', 'path': '/__setup/devices/revoke', 'public': 'poste', 'relay': False}]}
+    asked = []
+
+    def launcher(route):
+        path = urllib.parse.urlparse(route.request.url).path
+        body = {}
+        if path.endswith('/__setup/status'):
+            body = status
+        elif path.endswith('/__setup/routes'):
+            asked.append(1)
+            if table is None:
+                return route.fulfill(status=404, content_type='application/json', body='{"error": "inconnu"}')
+            body = table
+        elif path.endswith('/__setup/devices'):
+            body = {'devices': [], 'pending': [], 'lan': {'on': False}, 'relay': {'on': False, 'host': ''}}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    # « devices/name » not published: the screen says the launcher is older, nothing drawn from it
+    c.open('devices', app='maintenance', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-screen-old=\"devices\"]')", what='an older launcher is said')
+    c.eq(norm(c.text('[data-screen-old="devices"]')), norm(tx('frame/app.js', 'screenOld', c.lang)), 'in the language of the run', what='message')
+    c.eq(c.count('[data-devices]'), 0, 'the screen is not drawn', what='screen')
+    # the whole table: the screen is drawn; the table is read once
+    table['routes'].append({'method': 'POST', 'path': '/__setup/devices/name', 'public': 'poste', 'relay': False})
+    c.open('devices', app='maintenance', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-devices]')", what='the screen is drawn when every route is published')
+    c.go('help')
+    c.go('devices')
+    c.until("!!document.querySelector('[data-devices]')", what='drawn again')
+    c.eq(len(asked), 2, 'the table read once per page load', what='table reads')
+    # a launcher without a table (older still): nothing checked, the screen as before
+    table = None
+    c.open('devices', app='maintenance', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-devices]')", what='no table: the screen as before')

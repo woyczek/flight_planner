@@ -929,6 +929,14 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                            'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url(), 'lfs': LFS,
                            'csp': True, 'relaxNav': RELAX['nav'], 'host': socket.gethostname()})
 
+    @route('GET', '/__setup/routes', public='poste')
+    def _get_routes(self, path):
+        # la table des routes du lanceur (R-C4 : une seule liste) : le cadre y vérifie celles qu'un écran déclare, la noreg
+        # (I10) ses règles — ce poste seulement
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json({'routes': route_table()})
+
     @route('GET', '/__setup/folders', public='poste')
     def _get_folders(self, path):
         # carte « Dossiers » : les dossiers que le lanceur connaît (chemins en lecture seule) — ce poste seulement
@@ -1834,6 +1842,14 @@ NB = '\u202f'  # espace fine insécable avant : ; ! ? en français
 # (jamais écrites en dur) ; le pilote reçoit son propre jeton (portée tracker) et le refresh_token, une fois, par le fragment
 # d'une page de retour du même origine ; le téléphone lit ensuite le tracker directement
 IVAO_CALLBACK = '/__relay/ivao/callback'
+
+
+def route_table():
+    """La table des routes du lanceur, publiée (GET /__setup/routes) : [{ method, path, public ('lan' | 'poste'), relay }],
+    triée ; la seule liste (le cadre et la noreg la lisent, R-C4)."""
+    return [{'method': m, 'path': p, 'public': v[1], 'relay': v[2]} for (m, p), v in sorted(ROUTES.items())]
+
+
 assert ('GET', IVAO_CALLBACK) in ROUTES  # le retour d'IVAO est une route déclarée (Setup._ivao_callback)
 
 

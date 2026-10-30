@@ -542,22 +542,20 @@ def i9(c):
 
 
 @case('I10', 'Launcher routes', 'I', static=True,
-      rule='frame/INTEGRATION 6.1: every /__setup/ route is declared once in the table ROUTES with its public; a paired device reaches the lan routes only')
+      rule='frame/INTEGRATION 6.1, R-C4 (30 Oct 2026, one list): the launcher publishes its table (route_table, GET /__setup/routes); the rule relay ⊂ local network ⊂ all; every route the frame or a module declares is in it; no route outside the table')
 def i10(c):
     import importlib
+    import json
     sys.path.insert(0, str(c.root / 'tools'))
     L = importlib.import_module('launch')
-    lan = sorted(k for k, v in L.ROUTES.items() if v[1] == 'lan')
-    c.eq(sorted(k for k, v in L.ROUTES.items() if v[2]), sorted([('GET', '/__setup/status'), ('GET', '/__setup/changes'), ('POST', '/__setup/batch'),
-                                                            ('POST', '/__setup/sync'), ('POST', '/__setup/net'),
-                                                            ('POST', '/__setup/ivao/oauth/start'), ('POST', '/__setup/ivao/oauth/revoke'),
-                                                            ('GET', '/__setup/ivao/oauth'), ('GET', '/__relay/ivao/callback')]),
-         'the routes open to the relay: status, changes, batch, sync, net, and the IVAO sign-in (R1b)', what='relay routes')
-    c.eq(lan, sorted([('GET', '/__setup/status'), ('GET', '/__setup/changes'), ('GET', '/__setup/sim/position'),
-                      ('GET', '/__setup/lnmperf'), ('GET', '/__setup/lnmperf-folder'), ('POST', '/__setup/batch'),
-                      ('POST', '/__setup/sync'), ('POST', '/__setup/net'), ('POST', '/__setup/ivao/oauth/start'),
-                      ('POST', '/__setup/ivao/oauth/revoke'), ('GET', '/__setup/ivao/oauth'), ('GET', '/__relay/ivao/callback')]),
-         'the routes open to a paired device are the Pilot app\'s (and the IVAO sign-in, R1b)', what='lan routes')
+    table = L.route_table()
+    c.eq([(r['method'], r['path']) for r in table], sorted(L.ROUTES), 'the published table is the ROUTES table, sorted', what='table')
+    relay = {(r['method'], r['path']) for r in table if r['relay']}
+    lan = {(r['method'], r['path']) for r in table if r['public'] == 'lan'}
+    c.ok(relay <= lan and lan <= set(L.ROUTES) and relay, json.dumps(sorted(relay - lan)) if relay - lan else '',
+         'the rule: a relay route is a local network route, a local network route a route of the table')
+    c.ok(all(p.startswith('/__setup/') or p == L.IVAO_CALLBACK for _, p in L.ROUTES), '', 'the table holds /__setup/ routes and IVAO\'s return only')
+    c.eq(L.ROUTES[('GET', '/__setup/routes')][1:], ('poste', False), 'the table is published to the workstation only', what='GET routes')
     missing = [f'{m} {p} -> {v[0]}' for (m, p), v in L.ROUTES.items() if not callable(getattr(L.Setup, v[0], None))]
     c.eq(missing, [], 'each route names a method of the server', what='routes without handler')
     src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
@@ -569,6 +567,18 @@ def i10(c):
     known = {p[len('/__setup/'):] for _, p in L.ROUTES} | {'lnmperf', 'lnmperf-folder', 'upload'}
     c.eq(sorted(u for u in used if u.rstrip('/') not in known and not u.endswith('/')), [], 'every route the frame calls is in the table',
          what='frame routes unknown to the launcher')
+    # the routes declared by a service screen or a module (launcher: { routes: [...] }): each in the table (a prefix « x/ »:
+    # some route under it; « …/cancel »: the job's route)
+    declared = set()
+    for f in [*glob.glob(str(c.root / 'frame' / '**' / '*.js'), recursive=True), *glob.glob(str(c.root / 'modules' / '**' / '*.js'), recursive=True)]:
+        if '/test/' in f.replace('\\', '/'):
+            continue
+        for block in re.findall(r'routes:\s*\[([^\]]*)\]', Path(f).read_text(encoding='utf-8', errors='replace')):
+            declared |= set(re.findall(r"'([a-z][a-z0-9/_-]*)'", block))
+
+    def covered(r):
+        return any(k.startswith(r) for k in known) if r.endswith('/') else r in known or (r.endswith('/cancel') and r[:-7] in known)
+    c.eq(sorted(r for r in declared if not covered(r)), [], 'every route a screen or a module declares is published', what='declared routes')
     c.ok(L.data_repo_url.__doc__ and 'jeton' in src[src.index('def data_repo_url'):src.index('def run(')], '', 'the data repository address never carries credentials')
 
 

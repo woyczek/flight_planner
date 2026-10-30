@@ -599,6 +599,12 @@
     loadErr: ['Module « {m} » impossible à charger : {e}', 'Module “{m}” could not be loaded: {e}',
       'Modul „{m}“ konnte nicht geladen werden: {e}', 'No se pudo cargar el módulo «{m}»: {e}'
     ],
+    // un écran de service qui déclare une route que le lanceur de ce poste ne publie pas (GET /__setup/routes, R-C4)
+    screenOld: ['Le lanceur de ce poste est plus ancien que cet écran : relancez-le à jour (lancer.cmd).',
+      'This computer’s launcher is older than this screen: restart it up to date (lancer.cmd).',
+      'Der Starter dieses Rechners ist älter als dieser Bildschirm: Starten Sie ihn aktuell neu (lancer.cmd).',
+      'El lanzador de este equipo es más antiguo que esta pantalla: reinícielo actualizado (lancer.cmd).'
+    ],
     screenLevel: ['Cet écran n’est pas proposé à ce niveau d’usage : voir Réglages.',
       'This screen is not offered at this usage level: see Settings.',
       'Dieser Bildschirm wird auf dieser Nutzungsstufe nicht angeboten: siehe Einstellungen.',
@@ -878,6 +884,22 @@
     }
     return lcClient;
   };
+  // la table des routes du lanceur de ce poste (GET /__setup/routes, R-C4) : lue une fois par lanceur détecté ; null sans
+  // réponse ou sans table (lanceur plus ancien)
+  let routesOf = null,
+    routesP = null;
+  const launcherRoutes = () => {
+    if (routesOf !== launcherHere) {
+      routesOf = launcherHere;
+      routesP = launcherRequest('routes').then(r => Array.isArray(r?.body?.routes) ? new Set(r.body.routes.map(x => String(x.path)
+        .replace(/^\/__setup\//, ''))) : null);
+    }
+    return routesP;
+  };
+  /** Une route déclarée (« devices », un préfixe « regen/ », l'annulation d'un travail « …/cancel ») publiée par la table have. */
+  const published = (r, have) => r.endsWith('/') ? [...have].some(x => x.startsWith(r)) : have.has(r) || (r.endsWith('/cancel') && have
+    .has(r
+      .slice(0, -7)));
   /** Appel du cadre à une route du lanceur : { status, body } ou null (ni lanceur ni réponse) ; jamais d'exception. */
   const launcherRequest = (route, opts) => launcherClient()?.request(route, opts) ?? Promise.resolve(null);
   let airlineP = Promise.resolve(); // première lecture de la compagnie, en cours au démarrage
@@ -3205,6 +3227,14 @@
     }
     if (tok !== navSeq || location.hash !== at || !view.isConnected) return; // écran quitté pendant le chargement
     if ((s.level || 1) > level) return void(view.innerHTML = `<p class="f-card f-muted" data-screen-level="${esc(s.id)}">${esc(t(T.screenLevel))}</p>`);
+    // ses routes du lanceur : toutes publiées par celui de ce poste (sa table, lue une fois), sinon un lanceur plus ancien,
+    // dit ici plutôt qu'une « route inconnue » à chaque geste ; un lanceur sans table (plus ancien encore) : rien de vérifié
+    if (s.launcher?.routes?.length && launcherHere && !launcherHere.lan) {
+      const have = await launcherRoutes();
+      if (tok !== navSeq || location.hash !== at || !view.isConnected) return;
+      if (have && s.launcher.routes.some(r => !published(r, have))) return void(view.innerHTML =
+        `<p class="f-card f-msg" data-kind="warn" data-screen-old="${esc(s.id)}">${esc(t(T.screenOld))}</p>`);
+    }
     const impl = window.SogScreens?.[s.id];
     if (typeof impl?.screen !== 'function') return notify(t(T.loadErr, {
       m: s.id,

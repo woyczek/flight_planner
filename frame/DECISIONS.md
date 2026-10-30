@@ -2059,6 +2059,17 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
     credentials and tokens no longer reach a third-party script); every purge uses `regen_jobs.inside` (the rule of
     `base/purge`, now shared: `base_sources._inside` is it), `files_under` and `prune_empty`, so that a junction inside a cache
     is neither descended nor emptied (I17, I18 with a real junction).
+- **30 Oct 2026 — Refactor R-C4: one list of routes** (§ 10.33, the inventory's item 4):
+  - A new launcher route edited three files (the table `ROUTES`, the screen's `launcher: { routes }`, I10's two fixed
+    lists) and I10 failed until all agreed (edited at R1a, R1b, b27cae045, R-C2, R-C3). The launcher now publishes its
+    table (`route_table()`, `GET /__setup/routes`, the workstation only); I10 keeps the rules (relay ⊂ local network ⊂
+    all, a handler each, nothing outside the table) and checks that every declared route is published, without a copy of
+    the table.
+  - A screen's or a module's declaration stays: it is the list of what that screen may call (`forModule` refuses the
+    rest), not a copy of the launcher's table. The frame reads the table only to say, before drawing a service screen, that
+    the launcher is older than the screen (« plus ancien que cet écran », ×4) instead of a « route inconnue » at each
+    gesture; a launcher without the table checks nothing (A48).
+  - No behaviour change otherwise; the relay and local-network sets are those of R-C3, checked by the rule.
 - **30 Oct 2026 — Refactor R-C3: IVAO's return in one place, one no-redirect opener, no `token()` without a reader**
   (§ 10.33, the inventory's item 3; Simplification's wording « ctx.ivao.token() sans lecteur retiré »):
   - The return was handled in three places (a special case of the relay's gate, the narrow exception of `_refused`, a

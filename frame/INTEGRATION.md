@@ -893,7 +893,10 @@ screens: [{ id: 'sources', scripts: ['aerodb/airac.js?v=0', 'aerodb/catalogue.js
 - `reads` / `writes` declare the screen's data adapter, as a module's `meta`.
 - `launcher: { routes: [...] }` (29 Oct 2026) gives `routes()`: the launcher client reduced to those routes, as a
   module's `ctx.launcher` (`call`, `job`…), or null without a launcher on this workstation (or from a paired device). The
-  Pilots' tokens screen declares `gitlab/tokens` and `gitlab/tokens/revoke`.
+  Pilots' tokens screen declares `gitlab/tokens` and `gitlab/tokens/revoke`. Before drawing, the frame checks them against
+  the launcher's published table (`GET /__setup/routes`, read once per detected launcher, R-C4): one missing and the screen
+  says « Le lanceur de ce poste est plus ancien que cet écran » instead of drawing; a launcher without the table, nothing
+  checked (noreg A48).
 - `github: true` gives `github()` (the device's GitHub transport: `head` / `tree` / `commit`, **the token never leaves the
   transport**, or null) and `githubInfo()` (`{ repo, branch }` or null). Without it, neither exists.
 - The context: `{ t, lang, notify, ask, data, aerodb, level(), launcher() }` and the GitHub pair above.
@@ -1123,9 +1126,12 @@ in the launcher; `resume` finds it again.
   path) → (handler, public); `do_GET` / `do_POST` dispatch by it. `public='lan'`: also open to a paired device of the local
   network (the Pilot app's routes: `status`, `changes`, `sim/position`, `lnmperf`, `lnmperf-folder`, `batch`, `sync`,
   `net`); `'poste'` (the default): this workstation only. The local network's gate reads the table — there is no second
-  list any more (the old `tools/lan_access.py` lost its `ROUTES`; the devices of both channels: `tools/device_access.py`). A new route is declared with its public, in one place (noreg
-  I10: the open set is the Pilot app's, each route has its handler, nothing is written outside the table, every route the
-  frame calls is in it).
+  list any more (the old `tools/lan_access.py` lost its `ROUTES`; the devices of both channels: `tools/device_access.py`). A new route is declared with its public, in one place.
+  **One list** (refactor R-C4, 30 Oct 2026): the launcher publishes that table (`route_table()`, `GET /__setup/routes` →
+  `{ routes: [{ method, path, public, relay }] }`, the workstation only); the frame reads it for its service screens (§ 13),
+  and noreg I10 checks its rules instead of a copy of it: a relay route is a local-network route, a local-network route a
+  route of the table; each route has its handler; nothing is written outside the table; every route the frame calls and
+  every route a screen or a module declares (`launcher: { routes }`) is published. A new route therefore edits one file.
 - The frame itself uses the same client for its own calls (Settings' `setup()`, aerodb's `.lnmperf` sheets, the
   simulator's position, the local network's access): no piece of the frame calls the launcher with `fetch` any more,
   except the network relay (`/__setup/net`, whose answer is the relayed site's, not JSON).
