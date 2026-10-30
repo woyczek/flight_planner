@@ -1336,15 +1336,16 @@ def _trail_wait(c, want, what):
 
 @case('D61', 'The flown track comes from the frame: read at mount, the whole flight, then the Map adds its newer positions', 'D',
       tags=('maps',), screens=False, designs=('standard',), night=False,
-      rule='INTEGRATION § 6 (29 Oct): progress.actual.trail = [[lat, lon, altFt, s since started.at]]; the Map starts its track from it at mount (a tab change no longer loses it), points older than 30 min kept, and only adds positions newer than its last point')
+      rule='INTEGRATION § 6 (29 Oct; local since 30 Oct): ctx.live.trail() = { from: started.at, trail: [[lat, lon, altFt, s since started.at]] }, kept on the device; the Map starts its track from it at mount (a tab change no longer loses it), points older than 30 min kept, and only adds positions newer than its last point')
 def d61(c):
     t0 = now() - datetime.timedelta(minutes=60)
     trail = [[47.1569, -1.6078, 400, 0], [46.9, -1.45, 12000, 1800], [46.6, -1.21, 20000, 3000]]
     f = flight(started={'at': iso(t0)},
                progress={'phase': 'cruise', 'at': iso(now()),
-                         'actual': {'lat': 46.3, 'lon': -0.9, 'altFt': 24000, 'at': iso(now() - datetime.timedelta(seconds=20)),
-                                    'trail': trail[:2] + [[95.0, 10.0, 1000, 2000], [46.7, 200.0, 1000, 2400]] + trail[2:]}})   # two points off the Earth
-    c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
+                         'actual': {'lat': 46.3, 'lon': -0.9, 'altFt': 24000, 'at': iso(now() - datetime.timedelta(seconds=20))}})
+    # the device's track (device/trail.json), two points off the Earth
+    dev = {'from': iso(t0), 'trail': trail[:2] + [[95.0, 10.0, 1000, 2000], [46.7, 200.0, 1000, 2400]] + trail[2:]}
+    c.open('maps', docs=fdocs(f) + [['device/trail.json', dev, 'cache']], flight=False, airfields=True, wait=False)
     c.ready('maps', sheet=True)
     c.js("async () => { window.__mp = await import('/modules/maps/state.js'); return true }")
     want = [[q[0], q[1]] for q in trail] + [[46.3, -0.9]]
@@ -1352,9 +1353,11 @@ def d61(c):
     c.eq([[round(q[0], 4), round(q[1], 4)] for q in got], want,
          'the frame\u2019s track, its first point an hour old included, the points off the Earth left out, then the current position', what='track')
     c.eq(got[1][2][:16], iso(t0 + datetime.timedelta(seconds=1800))[:16], 'a point\u2019s time is started.at + s', what='time of a point')
-    # a reread (the frame wrote a new position and the trail grew): the track is the frame's again, nothing doubled
+    # a reread (the frame wrote a new position and the track grew on the device): the track is the frame's again, nothing doubled
+    c.js("""(t) => window.FrameData.adapter({ id: 't-trail-dev', reads: ['device/'], writes: [{ prefix: 'device/', policy: 'cache' }] })
+      .put('device/trail.json', t)""", {'from': iso(t0), 'trail': trail + [[46.3, -0.9, 24000, 3580]]})
+    c.until("() => (window.__mp.S.ctx.live.trail()?.trail || []).length === 4", timeout=10000, what='the frame reads the device track')
     g = c.doc(PATH)
-    g['progress']['actual']['trail'] = trail + [[46.3, -0.9, 24000, 3580]]
     g['progress']['actual'].update({'lat': 46.1, 'lon': -0.7, 'at': iso(now())})
     # strictly newer than the record shown: the Map rereads only a newer updated_at, and on a warm browser this write can fall
     # in the same second as the flight's (whole seconds here) — it was then rightly ignored, one run in seven

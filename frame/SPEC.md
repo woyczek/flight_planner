@@ -583,8 +583,9 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
     `frame/lib/current_flight.js`, on the record re-read just before.
     - This is the form maps reads: `at` is ISO, `source` is `xplane`, `lnm`, `gps`, `ivao` or `vatsim`, and `trackDeg` / `gsKt` may be
       null.
-    - `trail` is optional and the frame does not write it: the map keeps its own 30-minute trail, and greys a position
-      older than 2 minutes.
+    - The flown track is never in it (the user's decision, 30 Oct 2026): it stays on the device (`device/trail.json`,
+      never synchronised, never in a backup) and the modules read it with `ctx.live.trail()` (INTEGRATION § 6); the
+      map draws it, and greys a position older than 2 minutes.
     - At most once every 10 s, and only when the position moved (30 m, or 50 ft of altitude). A position that comes
       too early is written at the end of the delay.
     - No synchronisation is forced: the local queue and the usual pass carry it.

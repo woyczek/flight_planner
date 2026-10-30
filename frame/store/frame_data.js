@@ -1336,7 +1336,9 @@
   // réserve météo de l'appareil (frame/lib/weather_store.js) : une réserve relisible à sa source, propre à cet appareil
   // (son décompte des appels compris), jamais dans une sauvegarde ni reprise d'une sauvegarde
   const WEATHER = 'cache/weather/';
-  const saved = path => path !== KEYS && !path.startsWith(WEATHER);
+  // trace volée de l'appareil (device/trail.json, décision du 30 oct. : la trace reste locale) : jamais dans une sauvegarde
+  const TRAIL = 'device/trail.json';
+  const saved = path => path !== KEYS && path !== TRAIL && !path.startsWith(WEATHER);
   /** Sauvegarde des données de l'appareil en un fichier JSON : { name, text, counts }. Copies (docs), écritures en attente,
    *  conflits ; les bases de référence (relisibles à leur source) seulement avec { references: true } ; ni jeton ni
    *  clé (device/keys.json laissé de côté), ni l'état du transport (meta, propre à l'appareil). */

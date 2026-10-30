@@ -1831,3 +1831,13 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     nothing else is opened. Three sign-ins in progress per device, 100 in all.
   - The relay refreshes with the airline's secret for any paired device: a device that should no longer use IVAO is
     revoked on the relay, and a pilot withdraws the application's access at IVAO (the answer at IVAO's side).
+- **30 Oct 2026 — The flown track stays on the device** (the user's decision, relayed by the coordinator; replaces
+  « The flown track in `progress.actual.trail` » of 29 Oct):
+  - The track is no longer synchronised nor published: `device/trail.json` in the frame's base (policy cache), never in
+    a backup (`frame_data.js`, like the device keys), read by the modules with `ctx.live.trail()` → `{ from, trail }`.
+  - The shared position is unchanged: `progress.actual` carries the position only; a track written there before is
+    removed at the next write, and taken over once on the device when it belongs to the same start.
+  - The Map draws the device's track when its `from` is its flight's `started.at` (`modules/maps/flight_time.js`, one
+    function; noreg D61). A track already pushed stays in the repository's history (the rewrite of the data repository,
+    30 Oct, is the user's).
+  - The status line in the group usage says it ×4: the position is shared, the track stays on this device.

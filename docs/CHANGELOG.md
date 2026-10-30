@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **The flown track stays on the device** (`frame/app.js`, `frame/store/frame_data.js`, `modules/maps/flight_time.js`; frame
+  SPEC, INTEGRATION § 6, DECISIONS; noreg A35, D61): the track is kept in the device's data (never synchronised, never in a
+  backup) and read with `ctx.live.trail()`; the shared current flight carries the position only. The group usage's
+  status line says so ×4.
 - **Map, choose mode: one scrolling surface** (`modules/maps/choose.js`, `style.js`, `texts.js`; help ×4, maps SPEC § 5.1; noreg
   D60). The list scrolled inside the sheet that scrolled too (two scrollbars, V3 § 10.30). It now shows "Aucune" and six
   procedures, the others folded under "N more…" ×4 which unfolds them in place (a procedure highlighted from the map unfolds

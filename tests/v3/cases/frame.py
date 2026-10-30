@@ -1099,7 +1099,7 @@ def a34(c):
 
 
 @case('A35', 'Flown track', 'A', designs=('standard',), screens=False, night=False,
-      rule='frame/INTEGRATION 6 (29 Oct): progress.actual.trail, one point per NM or per minute, turns kept, 500 points at most, never carried to another start')
+      rule='frame/INTEGRATION 6 (29 Oct; local since 30 Oct): the track on the device (device/trail.json, ctx.live.trail()), one point per NM or per minute, turns kept, 500 points at most, never carried to another start, never in the shared flight')
 def a35(c):
     c.open('fuel', wait=False)
     c.until("!!document.querySelector('[data-module=fuel]')", timeout=15000, what='the frame is up')
@@ -1122,8 +1122,12 @@ def a35(c):
     c.eq(r['point'], [48.017, 2, 3000, 30], 'a point is [lat, lon, altFt, s since the start], to about 100 m', what='point shape')
     c.eq((r['before'], r['junk']), (0, 1), 'a position before the start is not a point; a malformed track is dropped', what='guards')
     src = (ROOT / 'frame' / 'app.js').read_text(encoding='utf-8')
-    c.ok("TR.next(prev?.trailFrom && prev.trailFrom === cur.started.at ? prev.trail : []" in src and 'trailFrom: cur.started.at' in src, '',
-         'the frame carries on only a track of the same start (trailFrom, exactly)')
+    c.ok("base = liveTrail.from === cur.started.at ? liveTrail.trail" in src and 'trail: TR.next(base, a, cur.started.at)' in src, '',
+         'the frame carries on only a track of the same start (from = started.at, exactly)')
+    c.ok("trailFrom: cur.started.at" not in src and "actual: {\n          ...a\n        }" in src.replace('\r\n', '\n'), '',
+         'the shared flight gets the position only, never the track')
+    fd = (ROOT / 'frame' / 'store' / 'frame_data.js').read_text(encoding='utf-8')
+    c.ok("path !== TRAIL" in fd and "const TRAIL = 'device/trail.json'" in fd, '', 'the device track is never in a backup')
 
 
 @case('A37', "A module publishes on the user’s gesture", 'A', designs=('standard',), screens=False, night=False,

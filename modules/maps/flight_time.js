@@ -62,12 +62,14 @@ const posOf = p => p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon) ? {
   lat: +p.lat,
   lon: +p.lon
 } : null;
-/** Trace volée écrite par le cadre (progress.actual.trail : [[lat, lon, altFt | null, s depuis started.at], …], INTEGRATION § 6) en
- *  positions { lat, lon, altFt, at } ; [] sans trace ou sans started.at lisible. */
+/** Trace volée gardée par le cadre sur cet appareil (ctx.live.trail() : { from: started.at, trail: [[lat, lon, altFt | null, s
+ *  depuis started.at], …] }, INTEGRATION § 6 ; jamais dans le vol partagé) en positions { lat, lon, altFt, at } ; [] sans trace
+ *  de ce départ ou sans started.at lisible. */
 const trailOf = (f, t0) => {
-  const tr = f?.progress?.actual?.trail;
+  const L = S.ctx?.live?.trail?.(),
+    tr = L && L.from === f?.started?.at ? L.trail : null;
   if (!Array.isArray(tr) || !Number.isFinite(t0)) return [];
-  // le fichier vient du groupe : coupé à TRAIL_MAX avant d'être lu, et un point hors des bornes de la Terre n'est jamais tracé
+  // coupée à TRAIL_MAX avant d'être lue, et un point hors des bornes de la Terre n'est jamais tracé
   return tr.slice(-TRAIL_MAX).filter(q => Array.isArray(q) && Number.isFinite(+q[0]) && Math.abs(+q[0]) <= 90 && Number.isFinite(+q[1]) &&
     Math.abs(+q[1]) <= 180 && Number.isFinite(+q[3])).map(q => ({
     lat: +q[0],
@@ -111,7 +113,7 @@ export function progressUpdate() {
   }
   const a = actualOf(f),
     now = Date.now(),
-    // la trace écrite par le cadre (progress.actual.trail, frame/lib/trail.js) : tout le vol depuis started.at, relue à chaque
+    // la trace du cadre (ctx.live.trail(), frame/lib/trail.js) : tout le vol depuis started.at, relue à chaque
     // lecture (un changement d'onglet ne la perd plus) ; la Carte n'y ajoute que ses positions plus récentes que son dernier point
     own = trailOf(f, t0),
     last = own.length ? Date.parse(own.at(-1).at) : -Infinity,

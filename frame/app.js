@@ -401,10 +401,10 @@
       news: ['à voir', 'something to see', 'Hinweise vorhanden', 'algo que ver'],
       title: ['État', 'Status', 'Status', 'Estado'],
       trailShared: [
-        'La trace de votre vol en cours est partagée avec le groupe, comme votre position, et reste dans l’historique du dépôt.',
-        'The track of your current flight is shared with the group, like your position, and stays in the repository’s history.',
-        'Die Spur Ihres laufenden Flugs wird wie Ihre Position mit der Gruppe geteilt und bleibt in der Historie des Repositorys.',
-        'La traza de su vuelo en curso se comparte con el grupo, como su posición, y queda en el historial del repositorio.'
+        'Votre position est partagée avec le groupe et reste dans l’historique du dépôt ; la trace de votre vol reste sur cet appareil.',
+        'Your position is shared with the group and stays in the repository’s history; the track of your flight stays on this device.',
+        'Ihre Position wird mit der Gruppe geteilt und bleibt in der Historie des Repositorys; die Spur Ihres Flugs bleibt auf diesem Gerät.',
+        'Su posición se comparte con el grupo y queda en el historial del repositorio; la traza de su vuelo se queda en este dispositivo.'
       ],
       flight: ['Vol en cours › {m}', 'Flight in progress › {m}', 'Flug läuft › {m}', 'Vuelo en curso › {m}'],
       report: ['CR à écrire pour le vol du {date} {dep}→{arr}', 'Report to write for the flight of {date} {dep}→{arr}',
@@ -976,6 +976,10 @@
     level = Math.max(levelFrom((await own.get('device/level.json'))?.level), APP.level || 1);
     applyDesign(await own.get('device/design.json'));
     liveGps = (await own.get('device/live.json'))?.gps === true;
+    liveTrail = trailFrom(await own.get(TRAIL_DOC));
+    trailWatch ||= own.watch(TRAIL_DOC, async () => {
+      liveTrail = trailFrom(await own.get(TRAIL_DOC));
+    });
     liveWatch();
     layout = (await own.get('device/layout.json'))?.panes || {};
     renderMenu();
@@ -1546,7 +1550,7 @@
       }),
       go: '#maps',
       news: true,
-      // usage « à plusieurs » : la position et la trace du vol partent au dépôt du groupe ; le pilote le lit ici
+      // usage « à plusieurs » : la position part au dépôt du groupe, la trace reste sur l'appareil ; le pilote le lit ici
       ...(usages.users ? {
         sub: t(T.info.trailShared)
       } : {})
@@ -3038,10 +3042,25 @@
   //      de données, CID) par ctx.net — toutes les 15 s avec un lanceur (relais), toutes les 60 s en appel direct (0,7 à
   //      1,7 Mo par appel sur un téléphone) ;
   //   3. rien.
-  // Écrit progress.actual = { at, lat, lon, altFt, gsKt, trackDeg, source, trail } dans le vol courant (ce seul champ,
-  // by 'frame'), au plus une fois par 10 s et seulement si la position a bougé (30 m, 50 ft) ; trail : la trace volée
-  // (frame/lib/trail.js : un point par NM ou par minute, virages gardés, 500 points au plus), reprise de l'enregistrement
-  // relu si elle est du même départ ; aucune synchronisation forcée (la file locale et la synchronisation habituelle suffisent).
+  // Écrit progress.actual = { at, lat, lon, altFt, gsKt, trackDeg, source } dans le vol courant (ce seul champ, by
+  // 'frame'), au plus une fois par 10 s et seulement si la position a bougé (30 m, 50 ft) ; aucune synchronisation forcée
+  // (la file locale et la synchronisation habituelle suffisent). La trace volée (frame/lib/trail.js : un point par NM ou
+  // par minute, virages gardés, 500 points au plus) reste sur l'appareil : device/trail.json, jamais synchronisée ni dans
+  // une sauvegarde (décision de l'utilisateur du 30 oct.), lue par les modules avec ctx.live.trail().
+  const TRAIL_DOC = 'device/trail.json';
+  let trailWatch = null,
+    liveTrail = {
+      from: '',
+      trail: []
+    };
+  /** Trace de l'appareil relue (document device/trail.json) : { from: started.at, trail } ; vide si illisible. */
+  const trailFrom = doc => doc && typeof doc.from === 'string' && Array.isArray(doc.trail) ? {
+    from: doc.from,
+    trail: doc.trail
+  } : {
+    from: '',
+    trail: []
+  };
   const LIVE_WRITE = 10e3,
     LIVE_SIM = 5e3,
     LIVE_SIM_FRESH = 15e3,
@@ -3287,19 +3306,27 @@
     };
     const cur = await liveData.get(flightPath).catch(() => null);
     if (!flying(cur)) return;
-    // fusion commune du vol courant (frame/lib/current_flight.js) : relu juste avant, seul progress.actual remplacé ;
-    // la trace volée continue celle de l'enregistrement seulement si elle est de ce départ (trailFrom = started.at, à
-    // l'identique : deux écritures d'une même heure, en Z et en +02:00, ne se comparent pas comme des chaînes)
+    // fusion commune du vol courant (frame/lib/current_flight.js) : relu juste avant, seul progress.actual remplacé (la
+    // position seule : une trace d'avant le 30 oct. y est retirée) ; la trace de l'appareil continue seulement pour ce
+    // départ (from = started.at, à l'identique : deux écritures d'une même heure, en Z et en +02:00, ne se comparent pas
+    // comme des chaînes), et reprend une fois celle qu'un enregistrement d'avant portait pour ce même départ
     const [CF, TR] = await Promise.all([import(new URL('frame/lib/current_flight.js', ROOT).href), import(new URL('frame/lib/trail.js',
         ROOT).href)]),
       prev = cur.progress?.actual,
-      trail = TR.next(prev?.trailFrom && prev.trailFrom === cur.started.at ? prev.trail : [], a, cur.started.at);
+      base = liveTrail.from === cur.started.at ? liveTrail.trail : prev?.trailFrom === cur.started.at && Array.isArray(prev.trail) ?
+      prev.trail : [];
+    liveTrail = {
+      from: cur.started.at,
+      trail: TR.next(base, a, cur.started.at)
+    };
+    await own.put(TRAIL_DOC, {
+      ...liveTrail,
+      updated_at: a.at
+    });
     await liveData.put(flightPath, CF.merge(cur, {
       progress: {
         actual: {
-          ...a,
-          trail,
-          trailFrom: cur.started.at
+          ...a
         }
       }
     }, {
@@ -3309,12 +3336,18 @@
       quiet: true // toutes les 10 s : pas un commit à chaque fois, le passage de fond l'emporte
     });
   }
-  /** ctx.live : état, source, dernière position, et le GPS de l'appareil (activé par un geste, gardé sur l'appareil). */
+  /** ctx.live : état, source, dernière position, trace volée de l'appareil, et le GPS de l'appareil (activé par un geste,
+   *  gardé sur l'appareil). */
   function liveApi() {
     return {
       status: !live.active ? 'off' : live.source ? 'tracking' : 'waiting',
       source: live.source,
       last: live.last,
+      // trace du vol en cours, sur cet appareil seulement : { from: started.at, trail: [[lat, lon, altFt, s], …] } ou null
+      trail: () => liveTrail.from ? {
+        from: liveTrail.from,
+        trail: liveTrail.trail.slice()
+      } : null,
       gps: gpsState,
       enable: async () => {
         liveGps = true;

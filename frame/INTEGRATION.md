@@ -157,7 +157,8 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
 - **In a pane** (dual view, wide screen), your module gets `ctx.query.pane === '1'` and half the width. Draw for the
   width you are given. Never reach the other module: react to the shared records with `watch`.
 - `ctx.live` (read): the actual position during a started flight, from the device's GPS or the pilot's IVAO / VATSIM
-  session: `status`, `source`, `last` `{ at, lat, lon, altFt, gsKt, trackDeg, source }`. A module that wants the GPS
+  session: `status`, `source`, `last` `{ at, lat, lon, altFt, gsKt, trackDeg, source }`, `trail()` (the device's flown
+  track, below). A module that wants the GPS
   offers a button that calls `ctx.live.enable()` (the permission needs a gesture). The frame writes
   `progress.actual` in the current flight; read it there with `watch`, never write it. Its shape is fixed (28 Oct 2026):
 
@@ -169,16 +170,18 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   | `gsKt` | knots (integer) or null | ground speed |
   | `trackDeg` | degrees (integer, 0–359) or null | the source's heading or track (GPS: course over ground) |
   | `source` | `'xplane'` \| `'lnm'` \| `'gps'` \| `'ivao'` \| `'vatsim'` | where it comes from |
-  | `trail` | array of `[lat, lon, altFt \| null, s]` (29 Oct 2026) | the flown track since `started.at`: degrees with 3 decimals (about 100 m), feet, `s` whole seconds since `started.at`, oldest first |
-  | `trailFrom` | ISO text | the `started.at` the track belongs to: a track is carried on only when it equals the flight's `started.at` exactly |
 
   - **The flown track** (`trail`, `frame/lib/trail.js`, `next(trail, fix, startedAt)`): a point is added when the aircraft
     moved 1 NM since the last point, or 60 s passed, or the track turned 15° or more (over 0.2 NM: a turn keeps its
     corner); at most 500 points — beyond, the inner point whose removal changes the track least (offset from its
-    neighbours' segment) goes, never the first nor the last. It lives with `progress.actual`: a track of another
-    `started.at` is never carried on (`trailFrom`, compared exactly; new start: a new track), it goes with the position when the flight stops. It is
-    written with the position (at most once every 10 s, about 22 KB for 8 h). The Map draws it (BUGS SOG); a module reads
-    it, never writes it.
+    neighbours' segment) goes, never the first nor the last. **It stays on the device** (the user's decision, 30 Oct
+    2026): `device/trail.json` in the frame's base, never synchronised, never in a backup, never in `progress.actual`
+    (the shared flight carries the position only; a track written there before 30 Oct is removed at the next write).
+    `ctx.live.trail()` gives `{ from, trail }` or null: `trail` is an array of `[lat, lon, altFt | null, s]` (degrees
+    with 3 decimals, about 100 m; feet; `s` whole seconds since `started.at`; oldest first), `from` the `started.at` it
+    belongs to — a track of another `started.at` is never carried on (compared exactly; new start: a new track). It
+    grows with the position (at most once every 10 s, about 22 KB for 8 h). The Map draws it when `from` is its flight's
+    `started.at`; a module reads it, never writes it.
 
   - Written at most once every 10 s, and only when the aircraft moved (30 m or 50 ft), with the shared merge of
     `frame/lib/current_flight.js` (`progressKeys: ['actual']`, `by: 'frame'`).
