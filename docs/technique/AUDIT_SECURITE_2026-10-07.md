@@ -881,6 +881,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 39 | Flight plan export, X-Plane `.fms` and MSFS `.pln` (99d28acd0) | acceptable, one note |
 | 40 | R1a fix (1e573d782); `escText` (d18a739b4) | the blocking point of 38 lifted for the case described; one residual case to close before exposure |
 | 41 | Frame R1b: IVAO OpenID through the relay (a9840bd19) | acceptable, four notes |
+| 42 | Frame: a port dedicated to the relay (ee6044e8b) | acceptable; **the residual case of 40 is closed**; one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1421,7 +1422,23 @@ belt; the workstation alone on its own port), in a commit of its own after R1b.
   (cap per device, e.g. 3); `refresh` renews any refresh token a paired device presents, with the relay's secret (wanted;
   a stolen one is cut by revocation at IVAO).
 
-Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case to close before any exposure; 39 settled in 40); the sharing of the track and of the position is the user's decision.
+**41, decisions on the notes.** 1: revocation at IVAO through the relay (`revocation_endpoint`); a notification after the
+attempt also tells the pilot to remove the access in their IVAO account; 2: a narrow exception on the workstation (this
+path only, a document GET, the workstation, a pending state) so that the route can be tried without the relay; 3: three
+pending sign-ins per device; 4: written in DECISIONS. In a small commit after the dedicated port.
+
+**42. A port dedicated to the relay (ee6044e8b) — acceptable; the residual case of 40 is closed.** The relay listens on
+`127.0.0.1:<--relay-port, else the interface's + 1>` only, a server marked `relay`; `_relay()` is now that mark (with the
+public host set), never inferred from `Host`: every request on that port goes through the relay's gate (https seen by the
+proxy, pairing, `relay=True` routes), and no page or route of the workstation is served there, even with a local `Host`;
+a proxy that rewrites `Host` and adds no header is still a relay request. On the interface's port, the proxy-header
+guard stays as a second belt. Start-up refuses (exit code 2) an invalid host, a relay port equal to the interface's, out
+of range or busy (`--lan` with `--relay` was already refused); the probe expects the answer through the relay port. Note:
+the relay server starts serving before `RELAY` gets its host, so during that instant a request on it would be an ordinary
+one (still refused: `_local_host` expects the interface's port); set `RELAY` before serving, make `_relay()` true on that
+server whatever happens, and answer 503 in `_relay_gate` when the host is not set.
+
+Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
 ## Appendix A — Hosts contacted
 
