@@ -1,9 +1,11 @@
 // V3 maps — le mode « choisir sur la carte » (V3_SPECIFICATION § 10.23 et § 10.30 ; modules/maps/SPEC.md § 5.1). Carburant ouvre
 // #maps?choose=dep|arr&icao=LFXX depuis le bouton « Sur la carte » d'un côté (ou la carte du terrain, « Choisir sur la carte ») :
 // la Carte lit la demande (ctx.consume), cadre le terrain sur ses procédures, estompe le fond et ses propres couches, et le volet
-// liste TOUTES les familles du côté à la fois, dans son ordre : piste, SID (départ) ou STAR (arrivée), approche (arrivée ; sa
-// transition repliée dessous). Chaque groupe : « Aucune » d'abord, les compatibles puis les ⚠, six lignes et « N autres… » (la
-// feuille est la seule surface qui défile). Un toucher sur une ligne ou un tracé pose le choix de sa famille dans le volet (état
+// liste TOUTES les familles du côté à la fois, dans son ordre : piste, SID (départ) ou STAR (arrivée), approche (arrivée ; ses
+// transitions en sous-lignes sous l'approche choisie). Seconde lecture (§ 10.30, 30 octobre) : trois tapes dans n'importe quel ordre,
+// chaque choix réduit les deux autres familles à ce qui lui est compatible, le reste replié sous une ligne fine « N autres · Toutes »
+// qui le déplie marqué ⚠ ; « Aucune » toujours première ; des lignes condensées ; la sélection résumée en tête du volet, une
+// ligne par famille avec ✕ (la feuille est la seule surface qui défile). Un toucher sur une ligne ou un tracé pose le choix de sa famille dans le volet (état
 // local du mode, rien d'écrit) ; la Carte dessine la sélection en cours (les pistes, la procédure choisie dans sa teinte, le reste de
 // la famille touchée estompé). Piste et procédure se corrigent sans rien imposer : une ligne sous le groupe propose « Passer en 25 »
 // ou « Choisir OKRIX5B ». Chaque piste porte le vent du METAR déjà connu (face ou arrière, travers). La fermeture (✕, Échap,
@@ -24,7 +26,8 @@ import {
 } from './texts.js';
 import * as PR from '../../frame/lib/procedures.js';
 import {
-  components
+  components,
+  label as windLabel
 } from '../../frame/lib/wind.js';
 import {
   proceduresOf
@@ -104,6 +107,7 @@ function askOf(side, icao, fromCard = false) {
     fromCard,
     ready: false,
     sel: {},
+    pend: {},
     more: {},
     focus: null,
     last: null,
@@ -143,10 +147,14 @@ function labelOf(fam, rec) {
     r: rec.id
   });
   const name = (fam === 'appTrans' ? rec.transition : null) || PR.nameOf(rec, rec.id) || rec.id,
-    one = PR.runwayOf(rec),
-    tags = rec.status === 'xplane' || rec.local ? tt(TX.procX) : rec.status === 'lnm' ? tt(TX.procLnm) : '';
-  return [name, one && !name.toUpperCase().includes(one) ? one : '', tags].filter(Boolean).join(' · ');
+    src = rec.status === 'xplane' || rec.local ? tt(TX.procX) : rec.status === 'lnm' ? tt(TX.procLnm) : '';
+  return [name, src].filter(Boolean).join(' · ');
 }
+/** Les pistes d'une fiche, en petites étiquettes sur sa ligne ([] pour une fiche qui les dessert toutes, une piste, une transition). */
+const tagsOf = (fam, rec) => fam === 'rwy' || fam === 'appTrans' || PR.servesAll(rec) ? [] : [...new Set(rec.runways.map(PR.rwNum))].sort(PR
+  .rwOrder);
+/** Le nom d'une ligne sur un cartouche de la carte : le nom, puis ses pistes. */
+const mapLabel = it => [it.label, (it.tags || []).join('/')].filter(Boolean).join(' · ');
 /** Le seuil de piste où une SID commence, ajouté devant ses points : la piste choisie si la SID la dessert, sinon la seule qu'elle
  *  dessert ; null si elle n'est pas connue. */
 function thresholdOf(C, rec) {
@@ -167,11 +175,10 @@ function windOf(C, rec) {
   const brg = runwayBearing(rec, C.known, num(C.ad?.magVar) ? +C.ad.magVar : null),
     k = brg === null ? null : components(brg, w.dir, w.kt);
   if (!k) return null;
-  const head = k.head >= 0 ? `↑ ${k.head} kt` : `↓ ${-k.head} kt`,
-    // la flèche de travers va dans le sens où le vent pousse : venu de droite, « ← »
-    cross = k.cross ? `${k.side === 'R' ? '←' : '→'} ${k.cross} kt` : '';
+  // le texte de frame/lib/wind.js (label : les flèches disent d'où vient le vent), le même que Carburant
   return {
-    text: [head, cross].filter(Boolean).join(' · '),
+    k,
+    text: windLabel(k),
     tail: k.head < -TAIL_WARN,
     tip: tt(TX.chWindTip, {
       id: C.icao,
@@ -188,7 +195,7 @@ function itemsOf(C, fam) {
   const o = eff(C),
     exit = fam === 'sid';
   return recsOf(C, fam).map((rec, hi) => {
-    const why = fam === 'rwy' ? [] : PR.conflictsOf(fam, rec, o, C.byId).map(c => c.kind === 'rwy' ? tt(TX.chConflictRwy, {
+    const why = fam === 'rwy' ? rwyWhy(C, rec) : PR.conflictsOf(fam, rec, o, C.byId).map(c => c.kind === 'rwy' ? tt(TX.chConflictRwy, {
         rwy: c.rwy
       }) : tt(TX.chConflictStarApp, {
         app: c.app || PR.nameOf(C.byId.get(c.appId), c.appId) || ''
@@ -206,16 +213,83 @@ function itemsOf(C, fam) {
       why,
       pts,
       anchor: pts.length ? exit ? pts.at(-1) : pts[0] : null,
+      tags: tagsOf(fam, rec),
       chosen: fam === 'rwy' ? !!PR.rwNum(o.rwy) && PR.rwNum(rec.id) === PR.rwNum(o.rwy) : o[fam] === rec.id,
       wind: fam === 'rwy' ? windOf(C, rec) : null
     };
   });
 }
-/** Familles montrées : celles du côté, plus la transition de l'approche quand l'approche choisie en a. */
-const famsOf = C => [...FAMS[C.side], ...(C.side === 'arr' && recsOf(C, 'appTrans').length ? ['appTrans'] : [])];
-/** Refait les lignes de chaque famille (après un choix) : C.items = { famille: lignes }. */
+/** Les lignes d'une famille de SID ou de STAR : les fiches qui ne diffèrent que par la piste (ABLI4L, ABLI4R) en UNE ligne « ABLI4 »
+ *  avec ses pistes en étiquettes (PR.familiesOf, V3 § 10.30) ; members : les lignes de ses fiches ; chosen : l'une d'elles choisie, ou
+ *  la famille posée avant sa piste (C.pend). Les autres lignes telles quelles. */
+function familyRows(C, fam, items) {
+  if (fam !== 'sid' && fam !== 'star') return items;
+  const byId = new Map(items.map(i => [i.id, i])),
+    rows = [];
+  for (const row of PR.familiesOf(items.map(i => i.rec))) {
+    const members = row.recs.map(r => byId.get(r.id)).filter(Boolean);
+    if (members.length < 2) {
+      rows.push(...members);
+      continue;
+    }
+    const first = members[0];
+    rows.push({
+      ...first,
+      id: `fam:${row.name}`,
+      family: row.name,
+      members,
+      label: row.name,
+      tags: row.runways,
+      old: members.some(m => m.old),
+      why: members.every(m => m.why.length) ? first.why : [],
+      chosen: members.some(m => m.chosen) || C.pend[fam] === row.name
+    });
+  }
+  return rows;
+}
+/** Une piste qui ne convient pas au choix en vigueur : les procédures choisies (SID ou STAR, approche) qui ne la desservent pas. */
+function rwyWhy(C, rec) {
+  const o = eff(C);
+  return ['sid', 'star', 'app'].map(f => o[f] && C.byId.get(o[f])).filter(p => p && !PR.servesRwy(p, rec.id)).map(p => tt(TX
+    .chRwyNotServed, {
+      p: PR.nameOf(p, p.id) || p.id
+    }));
+}
+/** Familles du volet (la transition de l'approche n'en est pas une : ses sous-lignes suivent l'approche choisie). */
+const famsOf = C => FAMS[C.side];
+/** Familles qu'un toucher peut poser : celles du côté, et la transition de l'approche à l'arrivée. */
+const pickable = C => [...FAMS[C.side], ...(C.side === 'arr' ? ['appTrans'] : [])];
+/** Ce que montre une famille (seconde lecture) : les lignes compatibles avec le choix en vigueur (sans ⚠ ; la choisie toujours), six
+ *  au plus ; tout, marqué ⚠, quand « Toutes » est dépliée. hidden : le nombre de lignes repliées. */
+function viewOf(C, fam) {
+  const list = C.items[fam] || [],
+    o = eff(C),
+    pend = f => C.pend[f] && (C.items[f] || []).find(i => i.family === C.pend[f])?.members.map(m => m.rec),
+    choice = {
+      rwy: o.rwy,
+      sid: pend('sid') || o.sid,
+      star: pend('star') || o.star,
+      app: o.app
+    },
+    recs = fam === 'rwy' ? list.map(i => i.rec.id) : list.flatMap(i => i.members ? i.members.map(m => m.rec) : [i.rec]),
+    ok = new Set(PR.compatible(recs, choice, C.byId).map(r => typeof r === 'string' ? r : r.id)),
+    fits = list.filter(it => it.chosen || (it.members ? it.members.some(m => ok.has(m.id)) : ok.has(it.rec.id)));
+  // ce qui ne va pas avec le choix dit pourquoi (⚠) quand il est déplié, même sans conflit de piste
+  for (const it of list)
+    if (!fits.includes(it) && !it.why.length) it.why = [tt(TX.chNotFit)];
+  const shown = C.more[fam] ? list : fits.slice(0, MAX_ROWS);
+  for (const it of fits)
+    if (it.chosen && !shown.includes(it)) shown.push(it);
+  return {
+    shown,
+    hidden: list.length - shown.length
+  };
+}
+/** Refait les lignes de chaque famille (après un choix) : C.items = { famille: lignes } (la transition de l'approche avec), C.view =
+ *  { famille: ce qui est montré }. */
 function refresh(C) {
-  C.items = Object.fromEntries(famsOf(C).map(f => [f, itemsOf(C, f)]));
+  C.items = Object.fromEntries(pickable(C).map(f => [f, familyRows(C, f, itemsOf(C, f))]));
+  C.view = Object.fromEntries(famsOf(C).map(f => [f, viewOf(C, f)]));
 }
 /** Toutes les lignes, toutes familles. */
 const allItems = C => Object.values(C.items || {}).flat();
@@ -345,9 +419,36 @@ export function chooseFinish() {
  *  Rien n'est écrit : la sélection reste dans le volet et sur la carte jusqu'à la fermeture. */
 export function choosePick(fam, id) {
   const C = S?.choose;
-  if (!C?.ready || !famsOf(C).includes(fam) || !id) return;
-  const v = id === 'none' ? null : fam === 'rwy' ? PR.rwNum(id) : id;
+  if (!C?.ready || !pickable(C).includes(fam) || !id) return;
+  let v = id === 'none' ? null : fam === 'rwy' ? PR.rwNum(id) : id;
+  if (String(v).startsWith('fam:')) {
+    const row = (C.items[fam] || []).find(i => i.id === v),
+      rwy = PR.rwNum(eff(C).rwy),
+      rec = row && rwy ? PR.firstServing(row.members.map(m => m.rec), rwy) : null;
+    if (!row) return;
+    if (!rec) { // pas encore de piste (ou aucune fiche ne la dessert) : la famille réduit les pistes, taper l'une d'elles résout la fiche
+      C.pend[fam] = row.family;
+      delete C.sel[fam];
+      C.last = fam;
+      C.focus = fam;
+      refresh(C);
+      chooseRender();
+      return schedule();
+    }
+    v = rec.id;
+  }
+  if (fam !== 'rwy') delete C.pend[fam];
   C.sel[fam] = v;
+  // une piste posée résout la famille posée avant elle
+  if (fam === 'rwy' && v)
+    for (const f of ['sid', 'star']) {
+      const row = C.pend[f] && (C.items[f] || []).find(i => i.family === C.pend[f]),
+        rec = row ? PR.firstServing(row.members.map(m => m.rec), v) : null;
+      if (rec) {
+        C.sel[f] = rec.id;
+        delete C.pend[f];
+      }
+    }
   C.last = fam;
   if (fam !== 'appTrans') C.focus = fam;
   const rec = v && fam !== 'rwy' ? C.byId.get(v) : null,
@@ -401,21 +502,60 @@ function fixOf(C, fam) {
  *  ligne ; la ligne choisie pressée. */
 function rowHtml(C, it) {
   const tip = [it.old ? tt(TX.procOutdated) : '', ...it.why, it.wind?.tip || ''].filter(Boolean).join(' · ');
-  return `<button type="button" class="mp-ch-row" data-fam="${it.fam}" data-id="${esc(it.id)}" data-hl="${C.hl === it.id ? 1 : 0}" aria-pressed="${it.chosen}"${it.fam === 'rwy' ? '' : ` style="--c:${hueOf(it)}"`}${tip ? ` title="${esc(tip)}"` : ''}>${it.fam === 'rwy' ? '' : '<i class="mp-ch-sw" aria-hidden="true"></i>'}<span class="mp-ch-name">${esc(it.label)}</span>${it.wind ? `<span class="mp-ch-wind"${it.wind.tail ? ' data-tail="1"' : ''}>${esc(it.wind.text)}</span>` : ''}${it.old ? `<span class="mp-ch-old" role="img" aria-label="${esc(tt(TX.procOutdated))}">⌛</span>` : ''}${it.why.length ? `<span class="mp-ch-warn" role="img" aria-label="${esc(it.why.join(' · '))}">⚠</span>` : ''}</button>`;
+  return `<button type="button" class="mp-ch-row" data-fam="${it.fam}" data-id="${esc(it.id)}" data-hl="${C.hl === it.id ? 1 : 0}" aria-pressed="${it.chosen}"${it.fam === 'rwy' ? '' : ` style="--c:${hueOf(it)}"`}${tip ? ` title="${esc(tip)}"` : ''}>${it.fam === 'rwy' ? '' : '<i class="mp-ch-sw" aria-hidden="true"></i>'}<span class="mp-ch-name">${esc(it.label)}</span>${(it.tags || []).map(t => `<span class="mp-ch-tag">${esc(t)}</span>`).join('')}${it.wind ? `<span class="mp-ch-wind"${it.wind.tail ? ' data-tail="1"' : ''}>${esc(it.wind.text)}</span>` : ''}${it.old ? `<span class="mp-ch-old" role="img" aria-label="${esc(tt(TX.procOutdated))}">⌛</span>` : ''}${it.why.length ? `<span class="mp-ch-warn" role="img" aria-label="${esc(it.why.join(' · '))}">⚠</span>` : ''}</button>`;
 }
-/** Un groupe : son titre, « Aucune » (pressée quand elle est le choix), six lignes et « N autres… », la ligne de correction. */
+/** Sous-lignes de l'approche choisie : « Sans transition », puis ses transitions (V3 § 10.30 : la transition sous l'approche). */
+function subsHtml(C) {
+  const subs = C.items.appTrans || [];
+  if (!subs.length) return '';
+  const none = eff(C).appTrans === null;
+  return `<div class="mp-ch-subs" role="group" aria-label="${esc(tt(TX.chTrans))}"><button type="button" class="mp-ch-row mp-ch-sub mp-ch-none" data-fam="appTrans" data-id="none" data-hl="0" aria-pressed="${none}"><span class="mp-ch-name">${esc(tt(TX.chNoTrans))}</span></button>${subs.map(it => rowHtml(C, it).replace('class="mp-ch-row"', 'class="mp-ch-row mp-ch-sub"')).join('')}</div>`;
+}
+/** Un groupe : son titre (une étiquette fine), « Aucune » (pressée quand elle est le choix), les lignes compatibles (six au plus ;
+ *  sous l'approche choisie ses transitions), la ligne fine « N autres · Toutes » qui déplie le reste marqué ⚠ (et le replie), la
+ *  ligne de correction. */
 function groupHtml(C, fam) {
   const list = C.items[fam] || [],
+    v = C.view[fam] || {
+      shown: [],
+      hidden: 0
+    },
     o = eff(C),
     noneOn = fam in o && o[fam] === null,
-    fold = !C.more[fam] && list.length > MAX_ROWS + 1,
-    shown = fold ? list.slice(0, MAX_ROWS) : list,
-    fix = fam === 'rwy' ? null : fixOf(C, fam);
-  return `<section class="mp-ch-grp" data-fam="${fam}"><h4 class="mp-ch-head">${esc(tt(TX.chFam[fam]))}</h4><div class="mp-ch-list" role="group" aria-label="${esc(tt(TX.chFam[fam]))}"><button type="button" class="mp-ch-row mp-ch-none" data-fam="${fam}" data-id="none" data-hl="0" aria-pressed="${noneOn}"><span class="mp-ch-name">${esc(tt(TX.chNone))}</span></button>${shown.map(it => rowHtml(C, it)).join('')}${fold ? `<button type="button" class="mp-ch-row mp-ch-more" data-more="${fam}">${esc(tt(TX.chMore, { n: list.length - MAX_ROWS }))}</button>` : ''}</div>${fix ? `<p class="mp-ch-fix">${esc(fix.text)}${fix.val ? ` <button type="button" class="f-btn" data-fix="${fix.fam}" data-val="${esc(fix.val)}">${esc(fix.act)}</button>` : ''}</p>` : ''}${list.length ? '' : `<p class="f-muted mp-ch-empty">${esc(tt(TX.chEmpty, { icao: C.icao }))}</p>`}</section>`;
+    fold = v.hidden > 0 ? tt(TX.chFold, {
+      n: v.hidden
+    }) : C.more[fam] && list.some(it => it.why.length) ? tt(TX.chFoldLess) : '',
+    fix = fam === 'rwy' ? null : fixOf(C, fam),
+    rows = v.shown.map(it => rowHtml(C, it) + (fam === 'app' && it.chosen ? subsHtml(C) : '')).join('');
+  return `<section class="mp-ch-grp" data-fam="${fam}"><h4 class="mp-ch-head">${esc(tt(TX.chFam[fam]))}</h4><div class="mp-ch-list" role="group" aria-label="${esc(tt(TX.chFam[fam]))}"><button type="button" class="mp-ch-row mp-ch-none" data-fam="${fam}" data-id="none" data-hl="0" aria-pressed="${noneOn}"><span class="mp-ch-name">${esc(tt(TX.chNone))}</span></button>${rows}${fold ? `<button type="button" class="mp-ch-fold" data-more="${fam}" aria-expanded="${!!C.more[fam]}">${esc(fold)}</button>` : ''}</div>${fix ? `<p class="mp-ch-fix">${esc(fix.text)}${fix.val ? ` <button type="button" class="f-btn" data-fix="${fix.fam}" data-val="${esc(fix.val)}">${esc(fix.act)}</button>` : ''}</p>` : ''}${list.length ? '' : `<p class="f-muted mp-ch-empty">${esc(tt(TX.chEmpty, { icao: C.icao }))}</p>`}</section>`;
 }
-/** Le corps de la feuille : la consigne, les groupes du côté, « Terminer ». */
+/** La sélection en tête du volet : une ligne par famille choisie (« Piste 28L · ↑ 12 kt · ← 6 kt », « ABLI4L », « I28L via
+ *  PIZSA »), chacune avec ✕ qui remet la famille à « Aucune ». */
+function summaryHtml(C) {
+  const o = eff(C),
+    rw = (C.items.rwy || []).find(i => i.chosen),
+    sum = PR.summaryOf(o, {
+      byId: C.byId,
+      wind: rw?.wind?.k
+    }),
+    proc = C.side === 'dep' ? 'sid' : 'star',
+    pendRow = C.pend[proc] && (C.items[proc] || []).find(i => i.family === C.pend[proc]),
+    lines = [],
+    line = (f, text) => {
+      if (text === undefined) return;
+      const it = (C.items[f] || []).find(i => i.chosen),
+        k = tt(TX.chFam[f]);
+      lines.push(`<div class="mp-ch-sum" data-fam="${f}"${f === 'rwy' ? '' : ` style="--c:${it ? hueOf(it) : 'var(--sog-fg)'}"`}><span class="mp-ch-sum-k">${esc(k)}</span><span class="mp-ch-sum-v">${esc(text === null ? tt(TX.chNone) : text)}</span><button type="button" class="mp-ch-x" data-clear="${f}" aria-label="${esc(tt(TX.chClear, { f: k }))}" title="${esc(tt(TX.chClear, { f: k }))}">✕</button></div>`);
+    };
+  line('rwy', o.rwy === null ? null : sum.rwy);
+  // une famille posée avant sa piste : son nom et ses pistes, en attendant la piste
+  line(proc, pendRow ? [pendRow.family, pendRow.tags.join('/')].filter(Boolean).join(' · ') : sum.proc);
+  if (C.side === 'arr') line('app', sum.app);
+  return lines.length ? `<div class="mp-ch-sums">${lines.join('')}</div>` : '';
+}
+/** Le corps de la feuille : la consigne, la sélection, les groupes du côté, « Terminer ». */
 function bodyHtml(C) {
-  return `<div class="mp-ch"><p class="f-muted mp-ch-hint">${esc(tt(TX.chHint))}</p>${famsOf(C).map(f => groupHtml(C, f)).join('')}<button type="button" class="f-btn primary mp-ch-done" data-done="1">${esc(tt(TX.chDone))}</button></div>`;
+  return `<div class="mp-ch"><p class="f-muted mp-ch-hint">${esc(tt(TX.chHint))}</p>${summaryHtml(C)}${famsOf(C).map(f => groupHtml(C, f)).join('')}<button type="button" class="f-btn primary mp-ch-done" data-done="1">${esc(tt(TX.chDone))}</button></div>`;
 }
 /** (Re)dessine le contenu de la feuille ; écrit seulement si le HTML change (openData). */
 export function chooseRender() {
@@ -437,8 +577,9 @@ export function setHl(id, fromMap = false) {
   C.hl = hl;
   if (it && it.fam !== 'appTrans' && it.fam !== 'rwy' && fromMap) C.focus = it.fam;
   for (const b of S.dbodyEl.querySelectorAll('.mp-ch-row')) setData(b, 'hl', b.dataset.id === hl ? '1' : '0');
-  if (it && fromMap && !C.more[it.fam] && !S.dbodyEl.querySelector(`.mp-ch-row[data-id="${CSS.escape(hl)}"]`)) {
+  if (it && fromMap && it.fam !== 'appTrans' && !C.more[it.fam] && !S.dbodyEl.querySelector(`.mp-ch-row[data-id="${CSS.escape(hl)}"]`)) {
     C.more[it.fam] = true; // la ligne surlignée sur la carte est repliée : son groupe se déplie
+    C.view = Object.fromEntries(famsOf(C).map(x => [x, viewOf(C, x)]));
     chooseRender();
   }
   if (it && fromMap) S.dbodyEl.querySelector(`.mp-ch-row[data-id="${CSS.escape(hl)}"]`)?.scrollIntoView({
@@ -462,9 +603,13 @@ export function chooseEvents() {
         row = e.target.closest('.mp-ch-row[data-fam]');
       if (e.target.closest('[data-done]')) return chooseFinish();
       if (more) {
-        C.more[more.dataset.more] = true;
+        const f = more.dataset.more;
+        C.more[f] = !C.more[f];
+        C.view = Object.fromEntries(famsOf(C).map(x => [x, viewOf(C, x)]));
         return chooseRender();
       }
+      const clear = e.target.closest('[data-clear]');
+      if (clear) return choosePick(clear.dataset.clear, 'none');
       if (fix) return choosePick(fix.dataset.fix, fix.dataset.val);
       if (row) choosePick(row.dataset.fam, row.dataset.id);
     },
@@ -497,7 +642,8 @@ function distSeg(x, y, a, b) {
   return Math.hypot(x - a.x - t * dx, y - a.y - t * dy);
 }
 /** Largeur d'une ligne de cartouche : l'échantillon, le nom, ⌛ et ⚠ (la police étant posée). */
-const rowWidth = (ctx, it) => 14 + ctx.measureText(it.label).width + (it.old ? 4 + ctx.measureText('⌛').width : 0) + (it.why.length ? 4 +
+const rowWidth = (ctx, it) => 14 + ctx.measureText(mapLabel(it)).width + (it.old ? 4 + ctx.measureText('⌛').width : 0) + (it.why.length ?
+  4 +
   ctx.measureText('⚠').width : 0);
 /** Mise en page du mode à l'écran (projection toC) : { traces, arrows, groups, reserve(pl), paint(ctx), top(ctx) } ; null hors du
  *  mode. La sélection en cours reste dessinée : toutes les pistes (la choisie en gras), toutes les procédures de la famille touchée
@@ -549,9 +695,9 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
   const shown = [];
   for (const f of famsOf(C).filter(f => f !== 'rwy' && f !== 'appTrans')) {
     const list = C.items[f] || [];
-    for (const it of f === C.focus ? list : list.filter(i => i.chosen)) {
-      trace(it, it.pts.map(p => toC(p.lat, p.lon)), {
-        dim: f === C.focus && !!o[f] && !it.chosen && it.id !== hl
+    for (const it of f === C.focus ? C.view[f]?.shown || list : list.filter(i => i.chosen)) {
+      for (const m of it.members || [it]) trace(it, m.pts.map(p => toC(p.lat, p.lon)), {
+        dim: f === C.focus && !!(o[f] || C.pend[f]) && !it.chosen && it.id !== hl
       });
       shown.push(it);
     }
@@ -666,8 +812,8 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
         c.fillStyle = hueOf(it);
         c.fillRect(x, y - 4, 8, 8);
         x += 14;
-        c.fillText(it.label, x, y);
-        x += c.measureText(it.label).width + 4;
+        c.fillText(mapLabel(it), x, y);
+        x += c.measureText(mapLabel(it)).width + 4;
         if (it.old) {
           c.fillStyle = S.theme.muted;
           c.fillText('⌛', x, y);

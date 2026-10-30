@@ -356,7 +356,14 @@ export const TX = {
     'METAR {id}: viento {d}° {kt} kt — de cara {h} kt (negativo: de cola), cruzado {x} kt'
   ],
   chNone: ['Aucune', 'None', 'Keine', 'Ninguna'],
-  chMore: ['{n} autres…', '{n} more…', '{n} weitere…', '{n} más…'],
+  chFold: ['{n} autres · Toutes', '{n} more · All', '{n} weitere · Alle', '{n} más · Todas'],
+  chFoldLess: ['Compatibles seulement', 'Compatible only', 'Nur passende', 'Solo compatibles'],
+  chNotFit: ['Ne va pas avec le choix', 'Does not fit the choice', 'Passt nicht zur Wahl', 'No encaja con la elección'],
+  chRwyNotServed: ['Pas desservie par {p}', 'Not served by {p}', 'Nicht bedient von {p}', 'No servida por {p}'],
+  chVia: ['{p} via {t}', '{p} via {t}', '{p} über {t}', '{p} vía {t}'],
+  chClear: ['Retirer : {f}', 'Clear: {f}', 'Entfernen: {f}', 'Quitar: {f}'],
+  chTrans: ['Transitions de l’approche', 'Approach transitions', 'Anflugübergänge', 'Transiciones de la aproximación'],
+  chNoTrans: ['Sans transition', 'No transition', 'Ohne Übergang', 'Sin transición'],
   chRwy: ['Piste {r}', 'Runway {r}', 'Piste {r}', 'Pista {r}'],
   chEmpty: ['Rien de publié à choisir pour {icao}.', 'Nothing published to choose for {icao}.',
     'Für {icao} ist nichts zur Auswahl veröffentlicht.', 'No hay nada publicado para elegir en {icao}.'

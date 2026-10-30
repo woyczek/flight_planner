@@ -12,6 +12,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map, choosing on the map, second reading: compatible rows only, families as rows, condensed** (`modules/maps/choose.js`,
+  `texts.js`, `style.js`; help ×4, maps SPEC § 5.1, DECISIONS; noreg D60, D66; V3 § 10.30 second reading, the user after
+  af261d3e3: "en trois clics … qu'on ne voie que les compatibles, mais qu'on puisse changer facilement … condenser"). The three
+  families stay visible, any order; each choice narrows the two others to what fits (`compatible`), the rest folded under one
+  thin "N more · All" line ×4 that unfolds it marked ⚠. A STAR / SID family (OKRI5L, OKRI5R) is one row "OKRI5" with runway
+  tags (`familiesOf`): chosen before its runway it waits, the runway resolves the record (`firstServing`). The chosen
+  approach's transitions are sub-rows ("No transition" first, key `apptrans`). The selection reads at the top, one line per
+  family with ✕ (`summaryOf`, Fuel's text); the wind uses `wind.label` (arrows where the wind comes from, as in Fuel). Rows
+  are 36 px, no gap (the frame's 44 px minimum set to 0 in the pane).
 - **Frame: procedure families, compatibility and the choice summary** (`frame/lib/procedures.js`: `familyOf`, `siblingsOf`,
   `familiesOf`, `compatible`, `summaryOf`; bench F32) — the rules of the Map's three-tap pane and of Fuel's side title (§ 10.30).
 - **Fuel: the Map's choice comes back in one trip, and each runway shows its wind** (`modules/fuel/procedures.js`, `module.js`,

@@ -1556,5 +1556,13 @@ SPEC § 6.11, INTEGRATION § 3 ter. Choices of the session, with their reasons:
   runway ("ne sert pas la 07 — Choisir OKRIX5B", the first of the group by its order). The rules are `runwayOf` / `firstServing`
   in `frame/lib/procedures.js`, shared with Fuel.
 - **Wind from the METAR the suite already has**, read from the frame's cache (`cacheOnly`): the pane never asks the network; no
-  METAR, a variable wind or a runway without a bearing gives no line. Arrows: ↑ head, ↓ tail (orange above 5 kt), the cross
-  arrow in the direction the wind pushes, the numbers in the row's tooltip.
+  METAR, a variable wind or a runway without a bearing gives no line. Arrows: ↑ head, ↓ tail (orange above 5 kt), ← from the
+  left, → from the right (where the wind comes from: `wind.label`, the one text rule Fuel prints too), the numbers in the row's
+  tooltip.
+- **Second reading (30 Oct, after af261d3e3): compatible only, folded the rest, three taps in any order.** The user wanted to
+  see only what fits and to change easily: each group shows the rows compatible with the choice in force (`compatible` of
+  `frame/lib/procedures.js`, shared with Fuel), the rest behind one thin "N more · All" line that unfolds it marked ⚠ —
+  shown, never forbidden. A STAR / SID family (ABLI4L, ABLI4R) is one row with runway tags; chosen before its runway it waits
+  (`pend`) and the runway resolves it, so no record is guessed. The summary at the top uses `summaryOf`, the same text Fuel
+  writes in its side's title. Rows are 36 px with no gap: the frame's buttons ask 44 px, the pane's rows set `min-height: 0`
+  (the rows are contiguous, each one its own target).

@@ -199,20 +199,29 @@ export const STYLE = `
    surface qui défile, V3 § 10.30) ; la ligne
    porte la teinte de la procédure (--c), ⌛ en gris, ⚠ en orange, la ligne surlignée (data-hl) comme son tracé */
 [data-module="maps"] .mp-choosing .mp-map{opacity:.45}
-[data-module="maps"] .mp-dbody[data-kind=choose]{--mp-ch-row:38px}
+[data-module="maps"] .mp-dbody[data-kind=choose]{--mp-ch-row:36px}
 [data-module="maps"] .mp-ch-hint{margin:0 0 4px}
 [data-module="maps"].f-sheet:not([data-sheet="expanded"]) .mp-ch-hint{display:none}
 [data-module="maps"] .mp-ch-list{border-top:1px solid var(--sog-border)}
-[data-module="maps"] .mp-ch-grp{margin:0 0 10px}
-[data-module="maps"] .mp-ch-head{margin:6px 0 2px;font-size:var(--sog-size-s);color:var(--sog-muted);text-transform:uppercase;letter-spacing:.04em}
+[data-module="maps"] .mp-ch-grp{margin:0 0 4px}
+[data-module="maps"] .mp-ch-head{margin:4px 0 0;font-size:11px;line-height:16px;font-weight:600;color:var(--sog-muted);text-transform:uppercase;letter-spacing:.04em}
+[data-module="maps"] .mp-ch-fold{display:block;width:100%;min-height:28px;margin:0;padding:0 8px;border:0;border-bottom:1px solid var(--sog-border);background:none;color:var(--sog-accent);font:inherit;font-size:var(--sog-size-s);text-align:left;cursor:pointer;touch-action:manipulation}
+[data-module="maps"] .mp-ch-subs{margin:0 0 0 22px;border-left:2px solid var(--c,var(--sog-border))}
+[data-module="maps"] .mp-ch-row.mp-ch-sub{font-weight:600}
+[data-module="maps"] .mp-ch-sums{margin:0 0 4px;border:1px solid var(--sog-border);border-radius:var(--sog-radius-s,6px)}
+[data-module="maps"] .mp-ch-sum{display:flex;align-items:center;gap:8px;min-height:32px;padding:0 0 0 8px;border-bottom:1px solid var(--sog-border);box-shadow:inset 3px 0 0 var(--c,var(--sog-fg))}
+[data-module="maps"] .mp-ch-sum:last-child{border-bottom:0}
+[data-module="maps"] .mp-ch-sum-k{flex:none;min-width:5.5em;font-size:var(--sog-size-s);color:var(--sog-muted)}
+[data-module="maps"] .mp-ch-sum-v{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+[data-module="maps"] .mp-ch-x{flex:none;width:36px;height:32px;margin:0;padding:0;border:0;background:none;color:var(--sog-muted);font:inherit;cursor:pointer;touch-action:manipulation}
 [data-module="maps"] .mp-ch-row[aria-pressed=true]{background:color-mix(in srgb,var(--c,var(--sog-accent)) 20%,var(--sog-surface));box-shadow:inset 3px 0 0 var(--c,var(--sog-accent))}
+[data-module="maps"] .mp-ch-tag{flex:none;padding:0 4px;border:1px solid var(--sog-border);border-radius:3px;font-size:11px;line-height:16px;font-weight:600;color:var(--sog-muted)}
 [data-module="maps"] .mp-ch-wind{flex:none;font-weight:600;color:var(--sog-fg);font-variant-numeric:tabular-nums}
 [data-module="maps"] .mp-ch-wind[data-tail]{color:var(--sog-warn)}
 [data-module="maps"] .mp-ch-fix{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:4px 0 0;color:var(--sog-warn)}
 [data-module="maps"] .mp-ch-fix .f-btn{margin:0}
 [data-module="maps"] .mp-ch-done{display:block;width:100%;min-height:var(--sog-touch);margin:4px 0 8px}
-[data-module="maps"] .mp-ch-more{color:var(--sog-accent);font-weight:600}
-[data-module="maps"] .mp-ch-row{box-sizing:border-box;display:flex;align-items:center;gap:8px;width:100%;height:var(--mp-ch-row);margin:0;padding:0 8px;border:0;border-bottom:1px solid var(--sog-border);border-radius:0;background:none;color:var(--c,var(--sog-fg));font:inherit;font-weight:700;text-align:left;cursor:pointer;touch-action:manipulation}
+[data-module="maps"] .mp-ch-row{box-sizing:border-box;display:flex;align-items:center;gap:8px;width:100%;height:var(--mp-ch-row);min-height:0;margin:0;padding:0 8px;border:0;border-bottom:1px solid var(--sog-border);border-radius:0;background:none;color:var(--c,var(--sog-fg));font:inherit;font-weight:700;text-align:left;cursor:pointer;touch-action:manipulation}
 [data-module="maps"] .mp-ch-row[data-hl="1"]{background:color-mix(in srgb,var(--c,var(--sog-accent)) 14%,var(--sog-surface))}
 [data-module="maps"] .mp-ch-none{color:var(--sog-fg)}
 [data-module="maps"] .mp-ch-sw{flex:none;width:12px;height:12px;background:var(--c)}

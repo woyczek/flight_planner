@@ -314,11 +314,21 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
   over it. Nothing is written and the address does not change until the pane is closed. A procedure that serves one runway
   (`runwayOf`) sets it when none is in force; another approach puts its transition back to "Aucune" when the old one does not
   follow it.
+- **Second reading** (§ 10.30, 30 Oct, the user after af261d3e3: "en trois clics … qu'on ne voie que les compatibles … condenser"):
+  the three lists are always visible, any order; each group shows only the rows compatible with the choice in force
+  (`PR.compatible(list, { rwy, sid, star, app }, byId)`, the chosen row always), six at most, the rest folded under one thin
+  line "N more · All" (`.mp-ch-fold`, toggles; unfolded rows that do not fit carry ⚠, "does not fit the choice" when no
+  runway conflict says why). SID / STAR records differing only by their runway suffix are one row (`PR.familiesOf`, id
+  `fam:<name>`, its runways as `.mp-ch-tag`): a tap with a runway in force resolves the record (`PR.firstServing`), without
+  one it sets `S.choose.pend[fam]` (the runway list narrows to the family's runways; a runway tap resolves it; no key is
+  returned for an unresolved family). The chosen approach's transitions are sub-rows under it ("No transition" first; key
+  `apptrans`). Rows are 36 px, no gap; the group headers thin labels. The selection reads at the top of the pane, one line per
+  family (`PR.summaryOf`, the text Fuel shows), each with ✕ setting that family to "Aucune".
 - **Runway and procedure correct each other** (one line under the procedure's group, one tap, never silently): the procedure just
   chosen serves one other runway → "OPAL2E sert la 25 — Passer en 25"; otherwise (the runway changed, or the procedure serves
   several) → "OKRIX5A ne sert pas la 07 — Choisir OKRIX5B", the first of the group that serves it (`firstServing`); the row keeps ⚠.
 - **Wind on every runway row**: `components(true bearing, METAR wdir, wspd)` → "↑ 12 kt · ← 6 kt" (↑ head, ↓ tail, orange above
-  5 kt of tail; the cross arrow in the direction the wind pushes); the true bearing is `runwayBearing`; no METAR, a variable wind
+  5 kt of tail; the arrows say where the wind comes from, `label` of `frame/lib/wind.js`, the text Fuel prints too); the true bearing is `runwayBearing`; no METAR, a variable wind
   or no bearing → no wind, nothing invented. The crosswind limit of the aircraft sheet is not read yet.
 - **Closing** ("Terminer", ✕, Escape: `chooseFinish`) returns once: `location.replace('#fuel?focus=<side>&rwy=25&star=ID&app=ID&
   apptrans=none')` — one key per family touched (`rwy`, `sid`, `star`, `app`, `apptrans`; `none` for "Aucune"), a key absent =
