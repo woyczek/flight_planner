@@ -885,6 +885,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 43 | Frame: R1b retouches and start-up order (b27cae045) | acceptable; notes of 41 and 42 settled |
 | 44 | Data sync: resuming a rewritten history (6ba742877) | acceptable, one small point to fix, one note |
 | 45 | Frame: the flown track kept on the device (0bbe7ebbb) | acceptable |
+| 46 | Map: an airspace's bounds kept in a `WeakMap` (0f5891d4c) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1475,6 +1476,11 @@ version): they stay in the reference, no longer on disk; the plan should say so 
 flight removes the track from the shared file (the repository's history keeps the older ones); the privacy sentence now
 says « your position is shared; the track of your flight stays on this device », in the four languages. This applies
 the user's choice « local only » for the track (12).
+
+**46. Map, bounds in a `WeakMap` (0f5891d4c) — acceptable.** `ringBox` no longer writes `_mb` on a frozen aerodb record:
+the bounds live in a `WeakMap`, which accepts a frozen record and drops it with it. No other write on aerodb records was
+found in `modules/maps` (the arrow written by `choose.js` is a fresh object). The deep freeze of 24 did its work: a
+mutation that used to be silent became a visible error, then was fixed.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
