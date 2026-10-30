@@ -953,11 +953,12 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 101 | Refactor R-M2 + R-M5 (b): every Map label through one request, aerodb answers deduplicated by key (87748d47a) | acceptable, no change of behaviour |
 | 102 | Refactor R-C6: one base for the GitHub and GitLab transports (72ba695a8) | acceptable, no guard lost |
 | 103 | Suite update refused while a job or a sync runs; trust stated (2a02aedde): the notes of 97 closed | acceptable, one note (closed in 105) |
-| 104 | The take bound to the zip shown in the plan (79aaed096, 1e7a06443): the note of 95 closed; approximate outlines on the zone map | acceptable, one note |
+| 104 | The take bound to the zip shown in the plan (79aaed096, 1e7a06443): the note of 95 closed; approximate outlines on the zone map | acceptable, one note (closed in 109) |
 | 105 | Suite update: fetch outside the locks, job starts held during the write (99b4c2a25): the note of 103 closed | acceptable, one note (closed in 107) |
 | 106 | Refactor R-S2: one read and one write of the airline's map profiles (b4e76634e) | acceptable, no change of behaviour |
 | 107 | Suite update bound to the version shown (513f6fb5b): the note of 105 closed | acceptable, one note (closed in 108) |
 | 108 | Suite update, `suivi` channel: fast-forward to the plan's own commit (bad15045f): the note of 107 closed | acceptable |
+| 109 | Data module: only the sources whose zip can be checked are taken (23e56bc9f): the note of 104 closed | acceptable, one optional hardening |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1958,6 +1959,13 @@ does not move an existing tag).
 **108. The note of 107 (bad15045f) — acceptable.** On the `suivi` channel the fast-forward is given the commit the
 plan read itself with `rev-parse` (40 hexadecimal characters, never a name another fetch could move, never a value of the
 request); tags unchanged.
+
+**109. The note of 104 (23e56bc9f) — acceptable, one optional hardening.** From the plan kept in its state only, the
+module splits the zips it can send (the launcher's name rule, a whole size) from the others, which are shown with “rename
+the file” and never taken; the real take covers only the zones with a sendable zip and none blocked; with nothing
+sendable, no question is asked. The 409 `updating` of 105 is told apart; the profile defaults of 106 are frozen. Hardening,
+on the launcher's side: a zone may have several sources it can take, so a source missing from the plan whose zip arrives
+before the answer is still taken without a check; when the request carries `zips`, take only the sources it names.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
