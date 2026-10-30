@@ -1046,3 +1046,28 @@ redesigned for touch at that point.
        **Delivered**: Fuel's key consumption and wind suffix (25b887349, `wind.label()` is the one text rule, with
        " · " between the two components), the helpers `familyOf`, `siblingsOf`, `familiesOf`, `compatible`,
        `summaryOf` (451d0ce83); the pane v2 and the threshold vector follow.
+       **Third reading (user, 30 Oct, on the Map in choose mode)**: "les STAR se recouvrent mutuellement, alors que
+       la STAR en surbrillance devrait avoir un z-index supérieur ; flèche de vent : on atterrit toujours à contre-vent
+       (flèche vers le bas), code couleur vert / orange / rouge pour les vents traversier et face / arrière ; les
+       cartouches sont fouillis, ne conserver que la première partie (NIMER 9*) par exemple ; tu es l'ergonome."
+       - **Drawing order.** The highlighted procedure (hovered, tapped or chosen) is drawn last, above every other
+         trace and cartouche of the mode; its cartouche too. Order of the rest: chosen, then compatible, then ⚠,
+         then ⌛. A highlight change re-orders without redrawing the base.
+       - **Wind arrows show where the wind blows, in the runway's frame** (runway direction drawn upward, as the
+         pilot sees it on final): a head wind is "↓" (it blows towards the aircraft), a tail wind "↑", a wind from the
+         right "←", from the left "→". The figure follows the arrow: "↓ 12 kt · ← 6 kt". One text rule,
+         `wind.label()`.
+       - **Three colours, one rule in `frame/lib/wind.js`**: `severity({ head, cross }, limits) → 'ok' | 'warn' |
+         'alert'`. Head wind: ok. Tail wind: warn up to `limits.tail` (5 kt by default), alert above. Crosswind: ok up
+         to `limits.crossWarn` (10 kt), warn up to `limits.cross` (20 kt, or the sheet's `maxCrosswindKt` when it
+         exists), alert above. The worse of the two components colours the whole label (green, orange, red of the
+         design's semantic tokens, never a hard-coded colour); the reason is the `title`. Fuel's runway select and the
+         Map's rows use the same call.
+       - **Cartouches: one per family and per point, the family's name only.** At an entry or exit point, the
+         procedures that share a family (NIMER9A, NIMER9B…) make one cartouche "NIMER 9" (family stem, a space before
+         the digit); families that share the point stack in the same cartouche as today, one line each. The full
+         name (NIMER9A) appears only on the highlighted procedure's cartouche, which sits on top. The other cartouches
+         are small and muted; below the zoom where two cartouches of different points would overlap, the one of the
+         non-highlighted family is hidden (the trace stays). Never a per-procedure cartouche in a family.
+       Lots: maps (BUGS SOG: z-order, cartouches by family, colour classes), fuel (Features SOG: `wind.label()`
+       arrows, `severity()` with benches, the select's colour and title), in this order so the Map reads the rule.
