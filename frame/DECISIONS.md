@@ -1862,3 +1862,11 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     with `diff -z` (an accented name is no longer quoted with escaped bytes); a file outside the pool that this computer
     had committed since the common state is copied back into `data/` as it was (bytes from the reference), never committed
     — the pilot types no git; the plan says it ×4 (I15: a pattern-like name, an accented name outside the pool).
+- **30 Oct 2026 — The trial base frozen like a device's** (the coordinator, after a blocking bug of the tests: the Map
+  wrote on an airspace record, `a._mb ??= …`, a `TypeError` on the device since the deep freeze of 802e6856f, unseen by
+  the noreg):
+  - The frozen value was memoised per revision, and only a copy with a revision was frozen; the noreg seeds its base
+    without a tree, so its references were never frozen. Now a `reference` copy without a revision is deep-frozen at each
+    read, without the memo (`frame/store/frame_data.js`, `valueFor`); a pending write and the other policies are unchanged.
+  - Full noreg with the freeze: the Map's airspace cases (D11, D13, D14, D15, D26, D28, D29) failed on the write BUGS SOG
+    fixed in 0f5891d4c (WeakMap, D64); with that fix, no other module writes on a record.

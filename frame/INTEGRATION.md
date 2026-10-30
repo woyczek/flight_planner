@@ -99,7 +99,9 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   the files' texts: cheap, whatever the size of the cache.
 - **A `reference` file is parsed once per revision** (29 Oct 2026): `get` / `read` of the aeronautical base, procedures or
   types give **the same value to every reader** until its revision changes, **deep-frozen** (a `sort()` or an added field
-  throws a `TypeError`: copy before changing anything, `structuredClone(value)` or `[...list]`). A `reference` file the repository does not have is not asked again for 30 s (`read` gives null at once; a
+  throws a `TypeError`: copy before changing anything, `structuredClone(value)` or `[...list]`). A `reference` copy
+  without a revision (a base seeded without a tree: the noreg's trial base, a restored backup) is deep-frozen too, at
+  each read (30 Oct 2026): a module that writes on a record fails in the noreg, never only on a device. A `reference` file the repository does not have is not asked again for 30 s (`read` gives null at once; a
   change announced by `watch` lifts it). Documents and the device's cache are parsed at each read, as before.
 - `await data.cached(prefix)` tells what is on the device, with no network: `[{ path, rev, bytes, at, policy }]`.
   `await data.evict(path)` drops the local copy of a `reference` file (or of a prefix ending with `/`) without

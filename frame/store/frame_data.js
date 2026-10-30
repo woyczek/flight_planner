@@ -437,7 +437,10 @@
   };
 
   function valueFor(path, e) {
-    if (e.pending || !e.rev || e.policy !== 'reference') return valueOf(path, e.text);
+    if (e.pending || e.policy !== 'reference') return valueOf(path, e.text);
+    // référence sans révision (copie semée sans arbre : base des essais, reprise d'une sauvegarde) : gelée elle aussi, sans
+    // mémoire — un module qui écrit sur une fiche tombe en noreg, pas chez l'utilisateur (30 oct. 2026, a._mb de la Carte)
+    if (!e.rev) return deepFreeze(valueOf(path, e.text));
     const m = parsed.get(path);
     if (m && m.rev === e.rev) {
       parsed.delete(path);

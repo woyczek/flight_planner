@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data layer: the trial base frozen like a device's** (`frame/store/frame_data.js`; INTEGRATION § 4, DECISIONS): a
+  `reference` copy without a revision is deep-frozen at each read too, so that a module writing on a record fails in the
+  noreg rather than on a device.
 - **Taking up a rewritten history, security review** (`tools/data_sync.py`, `frame/settings/launcher.js`; SYNCHRONISATION
   § 10, frame DECISIONS; noreg I15): paths are file names, never patterns; accented names read as they are; a file outside
   the synchronised data that this computer had committed is copied back into `data/`, never sent, and the plan says so ×4.
