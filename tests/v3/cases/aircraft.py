@@ -365,3 +365,90 @@ def m11(c):
     c.until(f"document.querySelectorAll('{M} {SHEETS} [data-id]').length === 2", what='back on the list without it')
     c.eq(sorted(sheet_ids(c)), ['C30J', 'EC25'], 'the other sheets stay', what='rows')
     c.eq(sheet_of(c, 'C30J')['usableFuel'], 20000, 'the other files are untouched', what='C30J')
+
+
+# ---------------------------------------------------------------- the writes of the Fiches view that had no case (SPEC as a state, 30 Oct 2026)
+@case('M12', 'Sheets: a new sheet for a type the base does not know, and « Créer la fiche » for a company type; both through the review', 'M',
+      tags=('aircraft',), designs=('standard',), screens=False, langs4=True,
+      rule='modules/aircraft SPEC 4: a new sheet takes the code asked (ctx.askText) or the company type, a type unknown to the base is a sheet of '
+      'that id and nothing more; nothing is written before « Appliquer »')
+def m12(c):
+    open_sheets(c)
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-do=new]')", what='« Nouvelle fiche » is offered')
+    c.tap(f'{M} {SHEETS} [data-do="new"]')
+    c.until("!!document.querySelector('.f-modal [data-in]')", what='the code is asked')
+    c.page.fill('.f-modal [data-in]', 'zz99')
+    c.tap('.f-modal [data-ok]')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-review] [data-do=apply]')", what='the new sheet is shown for review')
+    c.eq(c.doc('aircraft/sheets/ZZ99.json'), None, 'nothing is written before « Appliquer »', what='file before apply')
+    clear_notes(c)
+    c.tap(f'{M} {SHEETS} [data-do="apply"]')
+    d = c.until_doc('aircraft/sheets/ZZ99.json', lambda d: d is not None, 'the new sheet is written')
+    c.eq((d.get('id'), d.get('icao')), ('ZZ99', 'ZZ99'), 'the code typed, in capitals, is its id and its type', what='new sheet')
+    # a company type without a sheet (the fleet has A400, no sheet): « Créer la fiche » takes its code without asking
+    open_sheets(c)
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-type=\"A400\"] [data-do=newfor]')", what='the company type A400 offers « Créer la fiche »')
+    c.tap(f'{M} {SHEETS} [data-type="A400"] [data-do="newfor"]')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-review] [data-do=apply]')", what='the sheet of A400 is shown for review')
+    c.eq(c.count('.f-modal'), 0, 'no question: the company type gives the code', what='question')
+    clear_notes(c)
+    c.tap(f'{M} {SHEETS} [data-do="apply"]')
+    c.until_doc('aircraft/sheets/A400.json', lambda d: d is not None and d.get('id') == 'A400', 'the sheet of the company type is written')
+
+
+@case('M13', 'Sheets: a file imported is previewed field by field; only the ticked fields are written, stamped as an import', 'M', tags=('aircraft',),
+      designs=('standard',), screens=False,
+      rule='modules/aircraft SPEC 4: « Importer » takes a file (.csv, .json, .lnmperf, .xml); the result is a preview; an unticked field keeps its value; '
+      'the write goes through sheets.put with the source of the import (the formats themselves: the sheets bench, F10)')
+def m13(c):
+    open_sheets(c)
+    body = json.dumps({'sheets': [{'id': 'EC25', 'usableFuel': 2311, 'cruise': {'tasKt': 152, 'fuelFlowPerHour': 650}}]})
+    c.page.set_input_files(f'{M} {SHEETS} input[data-file]', files=[{'name': 'ec25.json', 'mimeType': 'application/json', 'buffer': body.encode()}])
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-review] [data-do=apply]')", what='the review of the imported file')
+    paths = c.js(f"[...document.querySelectorAll('{M} {SHEETS} [data-review] input[data-path]')].map(i => i.dataset.path)")
+    c.ok({'usableFuel', 'cruise.tasKt'} <= set(paths), f'{paths}', 'the changed fields are proposed one by one')
+    c.eq(sheet_of(c, 'EC25')['cruise']['tasKt'], 141, 'nothing is written before « Appliquer »', what='file before apply')
+    c.page.uncheck(f'{M} {SHEETS} [data-review] input[data-path="usableFuel"]')
+    clear_notes(c)
+    c.tap(f'{M} {SHEETS} [data-do="apply"]')
+    d = c.until_doc('aircraft/sheets/EC25.json', lambda d: d and d['cruise']['tasKt'] == 152, 'the ticked field is written')
+    c.eq(d['usableFuel'], 2000, 'the unticked field keeps its value', what='usableFuel')
+    c.eq(d['_fields']['cruise.tasKt']['source'], 'import', 'the stamp names the import', what='_fields')
+
+
+@case('M14', 'Sheets: « Compléter depuis une autre fiche » fills only the empty fields, through the review', 'M', tags=('aircraft',),
+      designs=('standard',), screens=False,
+      rule='modules/aircraft SPEC 4 (aerodb lib, fillProfileGaps): only the empty fields are taken from the other sheet, fuel in the sheet\'s unit; '
+      'nothing is written before « Appliquer »; a filled field is never replaced')
+def m14(c):
+    open_sheets(c)
+    edit_sheet(c, 'C30J')
+    c.page.select_option(f'{M} {SHEETS} select[data-k="fillfrom"]', 'EC25')
+    c.tap(f'{M} {SHEETS} [data-do="fill"]')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-review] [data-do=apply]')", what='the review of the completion')
+    paths = c.js(f"[...document.querySelectorAll('{M} {SHEETS} [data-review] input[data-path]')].map(i => i.dataset.path)")
+    c.ok('maxCrosswindKt' in paths and 'usableFuel' not in paths and 'cruise.tasKt' not in paths, f'{paths}',
+         'the field C30J lacks (maxCrosswindKt) is proposed; its filled fields are not')
+    clear_notes(c)
+    c.tap(f'{M} {SHEETS} [data-do="apply"]')
+    d = c.until_doc('aircraft/sheets/C30J.json', lambda d: d and d.get('maxCrosswindKt') == 17, 'the empty field is filled')
+    c.eq((d['usableFuel'], d['cruise']['tasKt']), (20000, 330), 'the filled fields keep their values', what='C30J')
+
+
+@case('M15', 'Sheets: a ChatGPT reply is read into the review; « Appliquer » writes it stamped « chatgpt »', 'M', tags=('aircraft',), designs=('standard',),
+      screens=False,
+      rule='modules/aircraft SPEC 4: the ChatGPT reply (any shape: the aerodb reader) is a source like the others; preview, then a write through '
+      'sheets.put with the source chatgpt')
+def m15(c):
+    open_sheets(c)
+    edit_sheet(c, 'EC25')
+    reply = 'Voici la fiche :\n```json\n{"id": "EC25", "cruise": {"tasKt": 148, "ceilingFt": 19000}}\n```'
+    c.js(f"(() => {{ const d = document.querySelector('{M} {SHEETS} textarea[data-k=gptreply]').closest('details'); if (d) d.open = true }})()")
+    c.page.fill(f'{M} {SHEETS} textarea[data-k="gptreply"]', reply)
+    c.tap(f'{M} {SHEETS} [data-do="gptread"]')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-review] [data-do=apply]')", what='the review of the reply')
+    c.eq(sheet_of(c, 'EC25')['cruise']['tasKt'], 141, 'nothing is written before « Appliquer »', what='file before apply')
+    clear_notes(c)
+    c.tap(f'{M} {SHEETS} [data-do="apply"]')
+    d = c.until_doc('aircraft/sheets/EC25.json', lambda d: d and d['cruise']['tasKt'] == 148, 'the reply is written')
+    c.eq(d['_fields']['cruise.tasKt']['source'], 'chatgpt', 'the stamp names ChatGPT', what='_fields')
