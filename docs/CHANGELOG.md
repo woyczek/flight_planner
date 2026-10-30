@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: a side pane closed before its module arrived** (`frame/app.js` `closePane`; frame DECISIONS; noreg A54) —
+  BUGS SOG, found writing D86: on a wide screen, leaving Fuel while the Map beside it was still loading logged « Cannot
+  read properties of null (reading 'unmount') ». The pane's module is unmounted only if it arrived, and a late module is
+  never mounted (the likely cause of F41's hazard under load).
 - **Refactor R-S4, no behaviour change: one provider table** (`frame/settings/config.js` `PROVIDER_TABLE`, `links`, `repoField`; `kit.js` `link` / `fill`; `join.js`, `admin.js`, `access.js`, `launcher.js`; A32, A49) — what the frame shows or sends about GitHub and GitLab (label, sign-up, invitation, token pages, API suffix, field placeholder, project tokens) lived in five places; it is now one deeply frozen, closed table (github, gitlab, other), read by the join assistant, the configuration export, the Access card and the remote panel's provider line; the duplicated `link` / `fill` helpers are gone. `saveSecret` now empties the exact input elements it is given, never a container found with `closest`; A32 also checks a refused call leaves the fields empty and is not retried.
 - **Map: the sheet is the height of what it shows, at most half the view (sixth reading, gap 1)** (`modules/maps/sheet_view.js`
   `sheetFit`, `choose.js`, `style.js`; SPEC § 3, § 7.1, § 7.6; DECISIONS; noreg D86). After the choose mode the sheet no longer stays

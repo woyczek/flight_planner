@@ -2209,3 +2209,11 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   covers the whole case, so a new orphan would hide behind it. I28 compares the orphans with its own table (bench → owner)
   instead: a new orphan turns it red, and so does a listed bench once a case opens it, until its row goes. The test is static:
   the bench's path in a case, or its file name in a case whose file names its folder (the `_bench(c, 'x.html')` helpers).
+
+- **31 Oct 2026 — A side pane closed before its module arrived** (BUGS SOG, found writing D86; the likely cause of F41's
+  hazard). On a wide screen Fuel opens the Map beside it; `openPane` sets `pane.mod` only once the module's import is
+  done, and a navigation in between (Fuel left at once, as after the choose pane's « Terminer ») ran `closePane`, which
+  read `pane.mod.unmount` on `null`: a logged TypeError, a red case under load. `closePane` now unmounts only a module
+  that arrived; `openPane` already saw its pane gone after the import and mounted nothing. The main view needed nothing:
+  a navigation during a mount already cancels it, the last address wins (A16); A16 ran at phone width, where there is
+  no pane, hence A54 at 1280 with the Map's module held on its way.

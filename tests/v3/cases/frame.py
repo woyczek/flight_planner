@@ -1843,3 +1843,25 @@ def a53(c):
     codes = [x for x in out if x.startswith('v')]
     bad = [x for x in out if 'OK' not in x]
     c.ok(len(codes) == 10 and not bad, f'{len(codes)} codes; {bad[:3]}', 'each QR code of the bench is read back with its text by the independent decoder')
+
+
+@case('A54', 'The side pane closed before its module arrived: no error, never mounted afterwards', 'A', phone=False, night=False,
+      rule='BUGS SOG 31 Oct (D86, the cause of F41’s hazard): on a wide screen Fuel opens the Map beside it; a navigation while the Map’s module was still loading read pane.mod (null) in closePane; the frame closes a pane whose module has not arrived without touching it, and openPane, seeing its pane gone, mounts nothing')
+def a54(c):
+    if not c.js("matchMedia('(min-width: 980px)').matches"):
+        raise Skip('the side pane exists on a wide screen only')
+    held = []
+    c.context.route(re.compile(r'/modules/maps/module\.js'), lambda route: held.append(route))
+    c.open('fuel', flight=True)
+    if c.js("!document.querySelector('.f-pane')"):
+        c.tap('#fPane')
+    c.until("!!document.querySelector('.f-pane')", what='the side pane opened, its module loading')
+    c.ok(held, '', 'the Map’s module is held on its way')
+    c.js("() => { location.hash = '#atmosphere' }")       # the route closes the pane before its module came
+    c.until("!document.querySelector('.f-pane') && !!document.querySelector('#fView section[data-module=\"atmosphere\"]')", what='the pane closed, the next module shown')
+    c.context.unroute(re.compile(r'/modules/maps/module\.js'))
+    for r in held:
+        r.continue_()
+    c.wait(800)                                            # the module comes back after its pane is gone
+    shown = c.js("() => ({ view: [...document.querySelectorAll('#fView section[data-module]')].map(e => e.dataset.module), panes: document.querySelectorAll('.f-pane').length, maps: document.querySelectorAll('[data-module=\"maps\"]').length })")
+    c.eq(shown, {'view': ['atmosphere'], 'panes': 0, 'maps': 0}, 'the late module is never mounted: no pane, no Map anywhere', what='after the late module')

@@ -2563,11 +2563,13 @@
   let pane = null, // { id, mod, el }
     layout = {};
   /** Démonte le volet (changement de module, fermeture, écran devenu étroit). */
+  /** Ferme le volet ; son module n'est démonté que s'il est arrivé (une navigation pendant son import le trouve à null :
+   *  openPane voit alors le volet fermé et ne le monte pas). */
   function closePane() {
     if (!pane) return;
     pane.life?.abort();
     try {
-      pane.mod.unmount?.();
+      pane.mod?.unmount?.();
     } catch (e) {
       console.error(e);
     }
