@@ -229,7 +229,8 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   first of the group that serves the runway: « Choisir OKRIX5B »).
 - **The wind on a runway** (`frame/lib/wind.js`, 30 Oct 2026, § 10.30): `components(runwayTrueHeading, windDirTrue, windKt)` →
   `{ head, cross, side }` (knots rounded, `head` negative for a tail wind, `side` 'L' | 'R' or null) or null when a value is missing
-  (a VRB wind has no direction: nothing invented). Pure, shared by the Map's pane and Fuel's runway list. Bench
+  (a VRB wind has no direction: nothing invented); `label(c)` → « ↑ 12 kt · ← 6 kt » (arrows: where the wind comes from, seen from
+  the runway; a zero component left out, « 0 kt » when both are), the one text of the Map's pane and Fuel's runway list. Pure, shared by the Map's pane and Fuel's runway list. Bench
   `frame/lib/test/wind.html` (F62).
 - Offline is normal. The application starts offline once visited, and your module's files (entry point and
   `meta.files`) are kept from the first visit: draw from `ctx.data` first, and treat a 503 from `ctx.net` as "not now", not as an error.
@@ -261,7 +262,7 @@ Modules ask each other things only through the address (no event between modules
 | `#fuel?view=sheets` | the frame (popover) | fuel | a view, not a request: not consumed |
 | `#fuel?focus=route\|dep\|arr` | the map (« Modifier la route », « Changer ») | fuel | the step or the field to show; consumed |
 | `#maps?choose=arr\|dep&icao=<OACI>` | fuel (« Sur la carte ») | the map | the choice mode (§ 10.23 of the coordination); consumed |
-| `#fuel?focus=dep\|arr&rwy=…&sid=…&star=…&trans=…&app=…&appTrans=…` | the map (a tap in the choice mode comes back by `location.replace`: one key per trip, `none` = « Aucune », no « Valider »; ✕ and Échap of the sheet leave the mode too) | fuel | the proposal, checked against the flight's aerodrome and applied as a choice made in Fuel; consumed with `focus` |
+| `#fuel?focus=dep\|arr&rwy=…&sid=…&star=…&app=…&apptrans=…` | the map (the choice mode comes back by `location.replace` with every key of the side in one trip, § 10.30: lower case, id or `none` = « Aucune », a missing key = family untouched, no SID / STAR transition) | fuel | the proposal, checked against the flight's aerodrome and applied as a choice made in Fuel, one write and one change line; consumed together with `focus` |
 | `#report?from=flightlog\|fuel\|maps` | flightlog, fuel, the map, the Status block | the frame, report | with `pilot/handoff.json` (the hand-over) |
 | `#maps?mission=<id>&map=<file>` | flightlog, links | the map | a mission's map |
 | `#maps?tune=1` | Settings › Administration | the map | the tuning page |

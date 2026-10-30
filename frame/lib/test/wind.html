@@ -24,7 +24,8 @@
 <pre id="out"></pre>
 <script type="module">
   import {
-    components
+    components,
+    label
   } from '../wind.js?v=0';
   const out = document.getElementById('out'),
     rows = [];
@@ -75,6 +76,11 @@
   ck('données manquantes ou variables : null, rien d’inventé', components(70, null, 10) === null && components(70, 'VRB', 5) === null &&
     components(null, 70, 10) === null && components(70, 70, '') === null && components(70, 70, -3) === null);
   ck('chaînes numériques acceptées', components('70', '100', '20')?.head === 17);
+  // label : le texte partagé par la Carte et Carburant
+  ck('label : face et travers de droite', label(components(70, 100, 20)) === '↑ 17 kt · → 10 kt', label(components(70, 100, 20)));
+  ck('label : arrière et travers de gauche', label(components(70, 270, 10)) === '↓ 9 kt · ← 3 kt', label(components(70, 270, 10)));
+  ck('label : composante nulle omise, calme « 0 kt », rien pour null', label(components(70, 160, 10)) === '→ 10 kt' && label(components(70,
+    70, 0)) === '0 kt' && label(null) === '');
 
   window.__bench = {
     done: true,

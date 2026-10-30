@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the Map's choice comes back in one trip, and each runway shows its wind** (`modules/fuel/procedures.js`, `module.js`,
+  `frame/lib/wind.js` `label`; help ×4; cases F63, F64) — runway, procedure and approach applied together with one change line;
+  « 13R — ↑ 12 kt · ← 6 kt » from the known METAR, orange for a tail wind over 5 kt.
 - **Map: no error when it is left right after it mounts** (`modules/maps/module.js`, `data.js`, `profile_view.js`,
   `mission_view.js`; noreg D65; reported by Features SOG, F41 / F63 under load). The mount, `readFlight`, `applyFlight`,
   `readSettings`, `buildProfile` and `applyMission` resumed after an await on the state the teardown had cleared (TypeError on

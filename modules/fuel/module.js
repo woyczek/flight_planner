@@ -2167,6 +2167,7 @@ async function wxFetch(loud = false) {
   await aloftFetch(loud);
   if (gone(s) || !S.body) return;
   renderWx();
+  S.P.render(); // le vent de chaque piste de la carte des procédures suit le METAR (§ 10.30)
   isaHint();
   if (S.flight.weather?.real) applyRealWind();
   else if (S.C) renderDa(S.C);
@@ -4330,7 +4331,18 @@ export async function mount(el, ctx) {
     drop: () => {
       self.procs = null; // les procédures lues du vol sont périmées : relues au prochain refresh
     },
-    refresh: () => S === self && refresh()
+    refresh: () => S === self && refresh(),
+    // le vent du METAR connu du terrain, celui de l'étape Départ (jamais le TAF) : { dir (vrai, d'où il vient), kt, magVar } ou null
+    wind: icao => {
+      const st = WX.station(self.wx?.metar?.[icao], null);
+      return st && st.wspd != null ? {
+        dir: st.wdir,
+        kt: st.wspd,
+        magVar: self.wxAd?.[icao]?.magVar
+      } : null;
+    },
+    // la limite de vent de travers de la fiche de l'appareil (maxCrosswindKt), 0 sans fiche ou sans limite
+    crossLimit: () => +self.sheets?.find(p => p.id === self.flight.aircraft?.sheetId)?.maxCrosswindKt || 0
   });
   // les noms de terrain et la complétion des champs de l'étape Vol (modules/fuel/adnames.js)
   S.AD = createAdNames({
@@ -4375,12 +4387,19 @@ export async function mount(el, ctx) {
   S.aloft = null;
   for (const path of OLD_WEATHER) ctx.data.remove?.(path)?.catch?.(() => {});
   // pas de la préparation : celui gardé, ou Route quand la Carte envoie « Modifier la route » (#fuel?focus=route)
-  // et la proposition du mode choix de la Carte (#fuel?focus=arr&star=ID, une clé par aller, « none » = « Aucune », § 10.23) : prises
-  // une fois et retirées de l'adresse (frame/INTEGRATION.md § 6.1)
-  const PROPOSAL_KEYS = ['rwy', 'sid', 'star', 'trans', 'app', 'appTrans'],
+  // et la proposition du mode choix de la Carte (#fuel?focus=arr&rwy=13R&star=ID&app=ID, plusieurs clés d'un aller, « none » =
+  // « Aucune », une clé absente laisse sa famille ; § 10.23 puis § 10.30 : rwy sid star app apptrans, pas de transition SID / STAR) :
+  // prises une fois, ensemble, et retirées de l'adresse (frame/INTEGRATION.md § 6.1)
+  const PROPOSAL_KEYS = ['rwy', 'sid', 'star', 'app', 'apptrans'],
     q = ctx.consume ? ctx.consume('focus', ...PROPOSAL_KEYS) : ctx.query || {},
     asked = q.focus;
-  if ((asked === 'dep' || asked === 'arr') && PROPOSAL_KEYS.some(k => q[k] != null && q[k] !== '')) S.P.propose(asked, q);
+  if ((asked === 'dep' || asked === 'arr') && PROPOSAL_KEYS.some(k => q[k] != null && q[k] !== '')) S.P.propose(asked, {
+    rwy: q.rwy,
+    sid: q.sid,
+    star: q.star,
+    app: q.app,
+    appTrans: q.apptrans // la clé de l'adresse en minuscules, le champ de route.procedures en appTrans
+  });
   if (asked === 'dep') S.P.focus('dep');
   S.focusRoute = asked === 'route';
   // ou le pas qui porte la ligne Arrivée (Route avant le départ, Départ après) quand la Carte envoie « Changer » (#fuel?focus=arr)

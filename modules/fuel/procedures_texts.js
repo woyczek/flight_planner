@@ -38,6 +38,14 @@ export const TX = {
   // la page codée d'une procédure choisie (§ 10.25) : lien public du SIA pour une fiche de l'eAIP
   procSource: ['Source', 'Source', 'Quelle', 'Fuente'],
   procOnMap: ['Sur la carte', 'On the map', 'Auf der Karte', 'En el mapa'],
+  // le vent sur une piste (§ 10.30) : les raisons de l'orange, en infobulle de la piste
+  procWindTail: ['Vent arrière {kt} kt (plus de 5 kt)', 'Tail wind {kt} kt (over 5 kt)', 'Rückenwind {kt} kt (über 5 kt)',
+    'Viento de cola {kt} kt (más de 5 kt)'
+  ],
+  procWindCross: ['Travers {kt} kt, au-delà de la limite de la fiche ({max} kt)', 'Crosswind {kt} kt, over the sheet’s limit ({max} kt)',
+    'Seitenwind {kt} kt, über der Grenze des Datenblatts ({max} kt)',
+    'Viento cruzado {kt} kt, por encima del límite de la ficha ({max} kt)'
+  ],
   // une lecture peut durer plusieurs minutes : son départ est dit, sa fin le sera aussi (même hors de Carburant)
   procStarted: ['Lecture de {icao} lancée : une notification dira la fin.',
     'Reading {icao} started: a notification will say when it ends.',

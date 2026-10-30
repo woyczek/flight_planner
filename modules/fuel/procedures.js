@@ -26,6 +26,10 @@
 import * as CF from '../../frame/lib/current_flight.js';
 import * as PR from '../../frame/lib/procedures.js';
 import {
+  components as windComponents,
+  label as windLabel
+} from '../../frame/lib/wind.js';
+import {
   fmtDayZ
 } from '../../frame/lib/time.js';
 import {
@@ -76,6 +80,7 @@ export const PROC_STYLE = `
 [data-module="fuel"] .fu-proc select{width:100%;min-width:0}
 [data-module="fuel"] .fu-proc option.outdated{color:var(--sog-muted)}
 [data-module="fuel"] .fu-proc option.conflict{color:var(--sog-warn,#c2410c)}
+[data-module="fuel"] .fu-proc option.windwarn{color:var(--sog-warn,#c2410c)}
 @container (min-width: 480px){
   [data-module="fuel"] .fu-procbox:not(.fu-one){grid-template-columns:6em minmax(max-content,1fr) minmax(max-content,1fr)}
   [data-module="fuel"] .fu-procbox:not(.fu-one) .fu-pf-rwy{grid-column:1;grid-row:3}
@@ -212,6 +217,7 @@ export function createProcedures(host) {
       icao,
       name: String(place?.name || '').trim(),
       cov, // couverture du terrain : read_at (date de la dernière lecture), outdated
+      wind: host.wind?.(icao) || null, // le vent du METAR connu (étape Départ) : { dir, kt, magVar }, null sans METAR (§ 10.30)
       rwys: await runwayChoicesOf(icao, known, all),
       all,
       // procédures non lues (§ 10.26) : les fiches douteuses du terrain, jamais dans les listes. aerodb ne rend plus celles de statut
@@ -250,10 +256,37 @@ export function createProcedures(host) {
     if (typeof cur === 'string' && cur && !list.some(r => r.id === cur)) html.push(opt(cur, nameOfId(cur, k), true));
     return html.join('');
   }
-  /** Options de la liste des pistes : « — », les pistes de PR.orderProcedures, puis la piste choisie si elle n'y est plus. */
+  /** Le vent sur une piste d'après le METAR connu du terrain (m.wind, celui de l'étape Départ) : { text, why } ou null sans METAR ou
+   *  sans vent dirigé (VRB : rien d'inventé, § 10.30). Axe vrai : `true` de la fiche de piste, sinon son QFU (ou son numéro × 10)
+   *  plus la déclinaison du terrain. why : vent arrière au-delà de 5 kt, travers au-delà de la limite de la fiche de l'appareil
+   *  (lim, quand elle en a une). */
+  function runwayWind(m, r, lim) {
+    const w = m.wind;
+    if (!w) return null;
+    const mag = r.qfu != null && Number.isFinite(+r.qfu) ? +r.qfu : parseInt(PR.rwNum(r.id), 10) * 10,
+      c = windComponents(r.true != null && Number.isFinite(+r.true) ? +r.true : mag + (+w.magVar || 0), w.dir, w.kt);
+    if (!c) return null;
+    return {
+      text: windLabel(c),
+      why: [c.head < -5 ? tt(TX.procWindTail, {
+        kt: -c.head
+      }) : '', lim > 0 && c.cross > lim ? tt(TX.procWindCross, {
+        kt: c.cross,
+        max: lim
+      }) : ''].filter(Boolean)
+    };
+  }
+  /** Options de la liste des pistes : « — », les pistes de PR.orderProcedures, chacune suivie du vent du METAR connu (« 13R — ↑ 12 kt
+   *  · ← 6 kt », orange au-delà des seuils, la raison en infobulle), puis la piste choisie si elle n'y est plus. */
   function runwayOptionsHtml(m, o) {
-    const rwys = PR.orderProcedures([...new Map(m.rwys.map(r => [r.id, r])).values()], 'rwy', o, recsNow());
-    return `<option value=""${o.rwy ? '' : ' selected'}>—</option>${rwys.map(r => `<option value="${esc(r.id)}"${PR.rwNum(r.id) === PR.rwNum(o.rwy) ? ' selected' : ''}>${esc(r.id)}</option>`).join('')}${o.rwy && !rwys.some(r => PR.rwNum(r.id) === PR.rwNum(o.rwy)) ? `<option value="${esc(o.rwy)}" selected>${esc(o.rwy)}</option>` : ''}`;
+    const rwys = PR.orderProcedures([...new Map(m.rwys.map(r => [r.id, r])).values()], 'rwy', o, recsNow()),
+      lim = +host.crossLimit?.() || 0,
+      opt = r => {
+        const w = runwayWind(m, r, lim),
+          l = w ? `${r.id} — ${w.text}` : String(r.id);
+        return `<option value="${esc(r.id)}"${PR.rwNum(r.id) === PR.rwNum(o.rwy) ? ' selected' : ''}${w?.why.length ? ' class="windwarn"' : ''}${w ? ` title="${esc([l, ...w.why].join(' · '))}"` : ''}>${esc(l)}</option>`;
+      };
+    return `<option value=""${o.rwy ? '' : ' selected'}>—</option>${rwys.map(opt).join('')}${o.rwy && !rwys.some(r => PR.rwNum(r.id) === PR.rwNum(o.rwy)) ? `<option value="${esc(o.rwy)}" selected>${esc(o.rwy)}</option>` : ''}`;
   }
   /** Les listes d'un côté, dans l'ordre de la grille : [{ k (data-k), cls, label, html }]. Départ : piste · SID · transition ; Arrivée :
    *  piste · STAR · transition, puis approche · transition d'approche (quand l'approche choisie en a). Sans donnée : aucune liste. */
@@ -467,7 +500,7 @@ export function createProcedures(host) {
    *  changée retirée (rien d'autre : un choix en conflit avec un autre est gardé, marqué ⚠ dans les listes, sans notification), une
    *  procédure choisie sans piste qui n'en dessert qu'une posant cette piste. Les listes sont redessinées sur place aussitôt ; le vol
    *  est écrit et le devis refait UNE fois, SETTLE_MS après le dernier choix d'une série. */
-  function choose(k, raw) {
+  function choose(k, raw, quiet = false) {
     const [, side, field] = k.split('-'),
       f = host.flight(),
       r = host.route(),
@@ -501,7 +534,12 @@ export function createProcedures(host) {
       by: 'fuel',
       at: new Date().toISOString()
     };
+    if (quiet) return; // plusieurs choix d'un coup (la proposition de la Carte) : un dessin et une écriture à la fin
     render();
+    settleSoon();
+  }
+  /** L'écriture différée des choix : une seule après le dernier d'une rafale (SETTLE_MS). */
+  function settleSoon() {
     clearTimeout(timer);
     timer = setTimeout(() => {
       timer = null;
@@ -628,8 +666,8 @@ export function createProcedures(host) {
   }
 
   // ------------------------------------------------------------ la proposition de la Carte (mode choix, § 10.23)
-  /** Ce que la Carte a choisi (#fuel?focus=arr&star=ID : une clé par aller, consommée par module.js) : { side, fields }, appliqué dès
-   *  que le vol est lu. */
+  /** Ce que la Carte a choisi (#fuel?focus=arr&rwy=13R&star=ID&app=ID : plusieurs clés d'un aller, consommées par module.js ; une
+   *  clé absente laisse sa famille telle quelle, § 10.30) : { side, fields }, appliqué dès que le vol est lu. */
   let proposal = null;
   /** Reçoit la proposition d'un côté ; « none » vaut « Aucune » (null). */
   function propose(side, fields) {
@@ -640,9 +678,9 @@ export function createProcedures(host) {
     };
     applyProposal();
   }
-  /** Applique la proposition comme des choix faits ici (le même chemin que les listes : choose, une écriture différée), dans l'ordre
-   *  du côté (piste, procédure, transition, approche, transition d'approche), puis une ligne dit ce qui a changé ; rien tant que le vol
-   *  n'est pas lu. */
+  /** Applique la proposition comme des choix faits ici (le même chemin que les listes : choose), dans l'ordre du côté (piste,
+   *  procédure, transition, approche, transition d'approche), puis un seul dessin, une seule écriture différée et une seule ligne qui
+   *  dit ce qui a changé (§ 10.30) ; rien tant que le vol n'est pas lu. */
   function applyProposal() {
     if (!proposal || host.pending?.() || !host.flight() || !ads.get(String((proposal.side === 'dep' ? host.route()?.dep : host.route()
           ?.arr) || '')
@@ -674,10 +712,17 @@ export function createProcedures(host) {
         const rec = ad.recs.get(v);
         return rec && rec.kind === KIND[k] && !PR.isDoubt(rec) && (k !== 'trans' && k !== 'appTrans' || rec.transition) ? rec.id : null;
       };
+    let any = false;
     for (const k of PROC_FIELDS[side]) {
       const v = admit(k, fields[k]);
-      if (v) choose(`p-${side}-${k}`, v);
+      if (v) {
+        choose(`p-${side}-${k}`, v, true);
+        any = true;
+      }
     }
+    if (!any) return; // rien d'admis : rien d'écrit, rien à dire
+    render();
+    settleSoon();
     const after = CF.proceduresOf(host.flight());
     for (const line of changeLines(before, after, [side])) ctx.notify(line, 'ok');
   }

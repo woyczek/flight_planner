@@ -8,6 +8,7 @@
 //     side  : 'L' | 'R', le côté d'où vient le vent vu de la piste (null sans travers) ;
 //   null quand une donnée manque ou n'est pas un nombre (un vent variable, VRB, n'a pas de direction : rien n'est inventé).
 //   Directions vraies en degrés, celle du vent est celle d'où il vient (convention METAR, ramenée au vrai par l'appelant).
+//   label(c) → « ↑ 12 kt · ← 6 kt » : le même texte dans le volet de la Carte et la liste des pistes de Carburant ; '' pour null.
 
 /** Composantes du vent sur une piste (voir l'en-tête). */
 export function components(runwayTrueHeading, windDirTrue, windKt) {
@@ -25,6 +26,16 @@ export function components(runwayTrueHeading, windDirTrue, windKt) {
     cross,
     side: cross === 0 ? null : x > 0 ? 'R' : 'L'
   };
+}
+
+/** Le texte des composantes (voir l'en-tête) : les flèches montrent d'où vient le vent vu de la piste, ↑ de face, ↓ arrière,
+ *  ← de gauche, → de droite ; une composante nulle est omise, « 0 kt » quand les deux le sont ; '' sans composantes. */
+export function label(c) {
+  if (!c) return '';
+  const parts = [];
+  if (c.head) parts.push(`${c.head > 0 ? '↑' : '↓'} ${Math.abs(c.head)} kt`);
+  if (c.cross) parts.push(`${c.side === 'L' ? '←' : '→'} ${c.cross} kt`);
+  return parts.join(' · ') || '0 kt';
 }
 
 /** Nombre fini, ou null (chaîne vide, null, texte). */

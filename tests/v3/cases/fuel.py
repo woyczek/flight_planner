@@ -1215,7 +1215,7 @@ def f41(c):
     # the Map consumes its keys at mount: the address the button set is recorded when it changes
     c.js("() => { window.__hashes = []; window.addEventListener('hashchange', () => window.__hashes.push(location.hash)) }")
     c.tap(b)
-    c.until("location.hash.startsWith('#maps')", what='the tap opens the Map')
+    c.until("location.hash === '#maps'", what='the tap opens the Map, which takes its keys')
     c.eq(c.js("window.__hashes[0]"), '#maps?choose=arr&icao=LFML', 'in its choice mode, for the arrival aerodrome', what='address')
     # the Map's answer (location.replace): one key per trip
     c.js("() => location.replace('#fuel?focus=arr&star=LFML.STAR.MEN2B.RW31L.NONE')")
@@ -1224,15 +1224,17 @@ def f41(c):
     c.until("(w) => (window.__notes || []).some(n => n.includes('MEN2B'))", None, timeout=6000, what='a line says what changed')
     c.until("!/[?&](star|focus)=/.test(location.hash)", what='the proposal and focus keys leave the address (consumed)')
     # « none »: the departure's SID set to « Aucune » — a real trip goes through the Map (Fuel is mounted again by the frame on its way back)
-    c.js("() => { location.hash = '#maps?choose=dep&icao=LFRS' }")
-    c.until("location.hash.startsWith('#maps')", what='the Map is open again')
+    c.js("() => { location.hash = '#maps' }")
+    c.until("location.hash === '#maps'", what='the Map is open again')
+    c.settle()  # the Map settled before it is left (a Map left during its mount throws: sent to BUGS SOG, 30 Oct)
     c.js("() => location.replace('#fuel?focus=dep&sid=none')")
     d = cf_doc(c, lambda d: 'sid' in (procs_of(d, 'dep') or {}) and (procs_of(d, 'dep') or {}).get('sid') is None, '"none" writes « Aucune » (null)', timeout=12000)
     # the address can be edited by any link: only « none », a runway offered for that aerodrome, or a record of the flight's aerodrome on
     # that side (right kind, not doubtful) is admitted; anything else is ignored and nothing is written
     before = procs_of(d, 'arr')
-    c.js("() => { location.hash = '#maps?choose=arr&icao=LFML' }")
-    c.until("location.hash.startsWith('#maps')", what='the Map is open again')
+    c.js("() => { location.hash = '#maps' }")
+    c.until("location.hash === '#maps'", what='the Map is open again')
+    c.settle()  # the Map settled before it is left (a Map left during its mount throws: sent to BUGS SOG, 30 Oct)
     c.js("() => location.replace('#fuel?focus=arr&star=LFRS.SID.NTS1A.RW03.NONE&rwy=99&app=%22%3E%3Cimg')")
     c.until("!/[?&](star|focus|app|rwy)=/.test(location.hash)", what='the hostile keys are consumed')
     c.settle()
@@ -1317,6 +1319,14 @@ def sug(c):
 
 
 OPTS = "document.querySelectorAll('[data-module=fuel] [data-adsug] [role=option]').length"
+# the list drawn for the text typed, not for a shorter prefix on the way (« LF » proposes seven aerodromes too): every proposal's code
+# starts with `p` (F45 was unstable on a loaded run: it read the list of « LF » once one option was there)
+SUG_FOR = "(p) => { const o = [...document.querySelectorAll('[data-module=fuel] [data-adsug] [role=option]')]; return o.length > 0 && o.every(x => String(x.dataset.code || '').startsWith(p)) }"
+
+
+def wait_sug(c, prefix, what):
+    """Waits for the list of proposals drawn for the text typed: every code starts with `prefix`."""
+    c.until(SUG_FOR, prefix, timeout=8000, what=what)
 
 
 @case('F44', 'Step Flight: one fixed name line under each aerodrome field, "inconnu" for a code that matches nothing, same height always', 'F', tags=('fuel', 'aerodb', 'layout'),
@@ -1352,7 +1362,7 @@ def f45(c):
     c.quiet(OPTS)
     c.ok(not sug(c)['shown'], 'one character', 'one character proposes nothing')
     type_in(c, 'dep', 'LFQ')
-    c.until(OPTS + ' > 0', what='three characters propose aerodromes')
+    wait_sug(c, 'LFQ', 'three characters propose aerodromes')
     s = sug(c)
     c.ok(s['shown'] and len(s['items']) == 7, f'{s}', 'nine aerodromes match LFQ: seven are proposed, not more')
     c.eq(s['items'][0], 'LFQ1 Quarry Field 1', 'each proposal reads « code name »', what='first proposal')
@@ -1373,19 +1383,19 @@ def f45(c):
     c.until("document.querySelector('[data-module=fuel] .fu-adname').textContent.includes('Quarry Field 2')", what='the name line follows the pick')
     # by name, then Escape closes
     type_in(c, 'arr', 'zorl')
-    c.until(OPTS + ' > 0', what='a name prefix proposes the aerodrome')
+    wait_sug(c, 'LFZO', 'a name prefix proposes the aerodrome')
     c.eq(sug(c)['items'], ['LFZO Zorly-Ville'], 'a name proposes its aerodrome', what='by name')
     c.key('Escape')
     c.ok(not sug(c)['shown'], 'still open', 'Escape closes the list')
     # tap (click on a screen): the list closes on blur, but a tap on a proposal still registers
     type_in(c, 'altn', 'LFQ')
-    c.until(OPTS + ' > 0', what='the alternate field proposes too')
+    wait_sug(c, 'LFQ', 'the alternate field proposes too')
     c.tap(f'{FUEL} [data-adsug] [data-code="LFQ5"]')
     c.until("document.querySelector('[data-module=fuel] input[data-k=altn]').value === 'LFQ5'", what='a tap on a proposal picks it')
     cf_doc(c, lambda d: d['route'].get('altn') == 'LFQ5', 'the alternate is written')
     # blur closes the list
     type_in(c, 'altn', 'LFQ')
-    c.until(OPTS + ' > 0', what='the list opens again')
+    wait_sug(c, 'LFQ', 'the list opens again')
     c.page.locator(f'{FUEL} input[data-k="altn"]').blur()
     c.until("document.querySelector('[data-module=fuel] [data-adsug]').hidden", what='the list closes when the field loses the focus')
     # a full code typed by hand: no list in the way, the focus stays, the name shows
@@ -1401,6 +1411,7 @@ def f46(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     open_names(c)
     type_in(c, 'altn', 'LFQ')
+    wait_sug(c, 'LFQ', 'proposals under the third field')
     c.until(OPTS + ' === 7', what='seven proposals under the third field')
     r = c.js("""(() => { const iw = innerWidth, b = document.querySelector('[data-module=fuel] [data-adsug]').getBoundingClientRect();
         return { sw: document.documentElement.scrollWidth, iw, l: b.left, r: b.right,
@@ -1506,3 +1517,80 @@ def f62(c):
         raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'frame/lib/test/wind.html') from None
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
     c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}", 'every check of the bench passes')
+
+
+@case('F63', 'The Map\'s return with several keys of a side: applied together, one change line', 'F', tags=('fuel', 'maps'), designs=('standard',),
+      screens=False, langs4=True, rule='V3 spec 10.30: the Map comes back with every key of the side (rwy sid star app apptrans, id or none); Fuel '
+      'consumes them together at mount, one write, one line says what changed; a missing key leaves its family as it was')
+def f63(c):
+    open_proc(c, procs={'dep': {'rwy': '03', 'sid': 'LFRS.SID.NTS1A.RW03.NONE'}, 'by': 'fuel', 'at': '2026-10-28T09:00:00Z'})
+    wait_rows(c, 'arr')
+    # the Map's answer (its location.replace) is played over the plain Map, once it has settled
+    c.js("() => { location.hash = '#maps' }")
+    c.until("location.hash === '#maps'", what='the Map is open')
+    c.settle()  # the Map settled before it is left (a Map left during its mount throws: sent to BUGS SOG, 30 Oct)
+    c.js("() => { window.__notes = window.__notes || []; window.__n0 = window.__notes.length }")
+    c.js("() => location.replace('#fuel?focus=arr&rwy=13R&star=LFML.STAR.MEN1A.RW13R.NONE&app=LFML.APP.I13R.RW13R.NONE&apptrans=none')")
+    d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == 'LFML.APP.I13R.RW13R.NONE', 'the proposed approach is written', timeout=12000)
+    a = procs_of(d, 'arr') or {}
+    c.eq((a.get('rwy'), a.get('star'), a.get('app')), ('13R', 'LFML.STAR.MEN1A.RW13R.NONE', 'LFML.APP.I13R.RW13R.NONE'),
+         'the runway, the STAR and the approach of one trip are all written', what='route.procedures.arr')
+    c.ok('appTrans' in a and a['appTrans'] is None, f'{a}', 'apptrans=none (lower case in the address) writes « Aucune » in appTrans')
+    c.eq(procs_of(d, 'dep'), {'rwy': '03', 'sid': 'LFRS.SID.NTS1A.RW03.NONE'}, 'the other side is untouched', what='route.procedures.dep')
+    c.until("!/[?&](rwy|star|app|apptrans|focus)=/.test(location.hash)", what='every key leaves the address (consumed together)')
+    c.until("(w) => window.__notes.slice(window.__n0).some(n => n.includes('MEN1A'))", None, timeout=6000, what='a line says what changed')
+    c.settle()
+    c.wait(700)
+    lines = c.js("window.__notes.slice(window.__n0).filter(n => n.includes('MEN1A') || n.includes('I13R'))")
+    c.eq(len(lines), 1, f'one change line for the whole trip: {lines}', what='change lines')
+    c.ok('MEN1A' in lines[0] and 'I13R' in lines[0], lines[0], 'the line names the STAR and the approach')
+    # a missing key leaves its family: a trip with the runway only keeps the STAR and the approach
+    c.js("() => { location.hash = '#maps' }")
+    c.until("location.hash === '#maps'", what='the Map is open again')
+    c.settle()  # the Map settled before it is left (a Map left during its mount throws: sent to BUGS SOG, 30 Oct)
+    c.js("() => location.replace('#fuel?focus=arr&rwy=31L')")
+    d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('rwy') == '31L', 'the runway alone is written', timeout=12000)
+    a = procs_of(d, 'arr') or {}
+    c.eq((a.get('star'), a.get('app')), ('LFML.STAR.MEN1A.RW13R.NONE', 'LFML.APP.I13R.RW13R.NONE'), 'the STAR and the approach stay (keys absent)',
+         what='route.procedures.arr')
+
+
+def route_metar(c, items):
+    """The METAR of the weather layer, answered by the test: `items` {ICAO: (wdir, wspd)}; aviationweather's JSON (through the launcher's relay or
+    not) and metar.vatsim.net's raw text (without a launcher)."""
+    import re as _re
+    import time as _t
+    now = int(_t.time())
+
+    def raw(i, w):
+        return f'{i} {_t.strftime("%d%H%M", _t.gmtime(now))}Z {w[0]:03d}{w[1]:02d}KT CAVOK 15/10 Q1015'
+
+    def aw(route):
+        route.fulfill(status=200, content_type='application/json', body=json.dumps([
+            {'icaoId': i, 'obsTime': now, 'reportTime': now, 'wdir': w[0], 'wspd': w[1], 'visib': '6+', 'clouds': [{'cover': 'CAVOK'}],
+             'temp': 15, 'dewp': 10, 'altim': 1015, 'rawOb': raw(i, w), 'fltCat': 'VFR'} for i, w in items.items()]))
+
+    def vatsim(route):
+        route.fulfill(status=200, content_type='text/plain', body='\n'.join(raw(i, w) for i, w in items.items()))
+    c.context.route(_re.compile(r'aviationweather\.gov(/|%2F)api(/|%2F)data(/|%2F)metar', _re.I), aw)
+    c.context.route(_re.compile(r'metar\.vatsim\.net', _re.I), vatsim)
+
+
+@case('F64', 'Wind on each runway of the procedure card, from the known METAR', 'F', tags=('fuel', 'weather'), designs=('standard',),
+      screens=False, langs4=True, rule='V3 spec 10.30: each runway option ends with "↑ 12 kt · ← 6 kt" (frame/lib/wind.js label) from the '
+      'METAR of the Departure step; tail wind over 5 kt in orange with its reason; no METAR, no suffix')
+def f64(c):
+    route_metar(c, {'LFML': (310, 12)})
+    open_proc(c)
+    wait_rows(c, 'arr')
+    c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-rwy\"]'); return !!s && [...s.options].some(o => o.textContent.includes('kt')) })()",
+            timeout=20000, what='the runway list gets the wind of the METAR')
+    o = c.js("""[...document.querySelector('[data-module=fuel] select[data-k="p-arr-rwy"]').options].map(o => ({ v: o.value, t: o.textContent, w: o.classList.contains('windwarn'), title: o.title }))""")
+    by = {x['v']: x for x in o}
+    c.ok('↑ 12 kt' in by['31L']['t'] and not by['31L']['w'], f"{by['31L']}", 'runway 31L: 12 kt of head wind, not orange')
+    c.ok('↓ 12 kt' in by['13R']['t'] and by['13R']['w'], f"{by['13R']}", 'runway 13R: 12 kt of tail wind, in orange')
+    c.ok(norm(row(c, 'procWindTail').replace('{kt}', '12')) in norm(by['13R']['title']), by['13R']['title'], 'the reason in the title, in the language of the run')
+    # the departure (LFRS) has no METAR: no suffix, nothing invented
+    dep = c.js("""[...(document.querySelector('[data-module=fuel] select[data-k="p-dep-rwy"]')?.options || [])].map(o => o.textContent)""")
+    c.ok(dep and not any('kt' in t for t in dep), f'{dep}', 'no METAR for the departure: no wind on its runways')
+

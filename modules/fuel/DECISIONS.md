@@ -4,6 +4,16 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **30 Oct 2026 — § 10.30, the Map's return in one trip and the wind on each runway** (Simplification, keys confirmed with BUGS SOG):
+  the address keys are `rwy sid star app apptrans`, lower case, only those (no SID / STAR transition): `trans` and `appTrans` are
+  no longer consumed; `apptrans` is mapped to the field `appTrans`. `applyProposal` makes its choices quietly (`choose(k, v, true)`:
+  route.procedures changed, nothing drawn), then draws once and arms the single deferred write (`settleSoon`); one change line for
+  the side. Nothing admitted → nothing written, nothing said. Wind: `frame/lib/wind.js` gains `label()` so that the Map and Fuel print
+  the same text (arrows where the wind comes from: ↑ head, ↓ tail, ← / → crosswind). The METAR is the one of the Départ step
+  (`WX.station(metar, null)`: never the TAF of the flight time), taken from `S.wx` through the card's host (`wind(icao)`); the true
+  axis is the runway record's `true`, else `qfu` (or the number × 10) + the aerodrome's `magVar` (`wxAd`). Orange: tail over 5 kt;
+  crosswind over the sheet's `maxCrosswindKt` — no sheet carries this field and the editor does not offer it: the rule is ready,
+  the field is for a later lot. The card is drawn again when the weather arrives (`S.P.render()` after `renderWx()`). Cases F63, F64.
 - **30 Oct 2026 — § 10.30, the rules first** (the Map's pane depends on them): `runwayOf` and `firstServing` added to
   frame/lib/procedures.js; frame/lib/wind.js `components()` (head / tail and cross wind on a runway, true directions, rounded to the
   knot; null for a missing or variable wind). Benches procedures.html (F32) and wind.html (F62); wind.js in frame/sw.js. Fuel's
