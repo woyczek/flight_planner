@@ -181,7 +181,11 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   `plus`) and Undo (`undo`, icon `undo`, disabled with nothing to undo); the frame's full-screen button is the last one.
   **In Edit mode** only Edit (pressed), Add, Undo, Recentre and the full-screen button are visible: Edit the route, the
   mode and Follow are hidden while editing (they do not apply), so the column keeps five buttons.
-  **Left column**: Layers (`layers`, pressed while its content is open; named "Map to show" on a mission map).
+  **Layers** (`[data-mp=layers]`, pressed while its content is open; named "Map to show" on a mission map) is a chip of the
+  sheet's head, left of the grip (30 Oct 2026: a button and the pane it opens are neighbours, phone and computer alike); the
+  map's top left corner holds nothing. With nothing to show (no flight, a mission without map) the sheet is its head line
+  alone (collapsed, portrait; the landscape column has no collapsed position); a map waiting for its profile keeps the rule
+  of before (the sheet comes with the profile).
   Route, mode and edit buttons are hidden on a mission map.
 - **The modes panel** is in the overlay layer too (appended to the layer of `ctx.overlay`, which `over(el)` lays over the map
   box): six icon buttons in a row, anchored to the
@@ -567,7 +571,7 @@ to its size. A new content replaces the open one; opening the airspaces list rel
   the height hint.
 - **Expanded, collapsed, in the landscape column, and for every content that is not a drawing** the head carries its
   title (one line, ellipsed, `label` the full text for the tooltip and the reader), the chips at its right in the same
-  row for a drawing, the ✕ for a content (Layers, airspaces, aerodrome).
+  row for a drawing, the ✕ for a content (Layers, airspaces, aerodrome); the Layers chip first, left of the grip, always.
 - Title over a drawing: "Profile · FL065 · 427 NM · planned flight" (or "flight in progress"; a mission map: "Profile ·
   I-001A · title · map"), "Weather · FL065 · …"; tooltip: the whole summary ("Vertical profile · LFRS → LFML · alternate
   LFMT · FL065 · 427 NM · C30J · planned flight"). A content's own title: "n airspaces at this point", "LFMN: VFR

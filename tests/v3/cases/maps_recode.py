@@ -2018,3 +2018,36 @@ def d75(c):
     st = c.js(_CORR_STATE)
     c.ok(st['corridor'] > 0, f"{st['corridor']}", 'wider than 600 NM: around the flight even unticked')
     c.ok(norm(tx(M, 'lgCorrWide', c.lang)) in norm(st['legend']), st['legend'], 'the chip says the view is too wide')
+
+
+# ------------------------------------------------------------------------------------------------------ D76
+_LAYERS_AT = """() => { const b = document.querySelector('[data-mp=layers]'), g = document.querySelector('.mp-grip'), r = b && b.getBoundingClientRect(),
+  q = g.getBoundingClientRect(), box = document.querySelector('.mp-box').getBoundingClientRect();
+  return { inHead: !!(b && b.closest('.mp-dhead')), leftOfGrip: !!r && r.right <= q.left + 1, sameLine: !!r && Math.abs((r.top + r.bottom) / 2 - (q.top + q.bottom) / 2) < 12,
+    belowMap: !!r && r.top >= box.bottom - 1, shown: !!(b && window.__t.shown(b)), cornerButtons: document.querySelectorAll('.f-ov-left .f-ov-btn').length,
+    sheet: document.querySelector('.mp-data') && !document.querySelector('.mp-data').hidden } }"""
+
+
+@case('D76', 'The Layers button sits on the sheet’s line, left of its grip; the map’s corner keeps only the view’s commands', 'D', tags=('maps', 'sheet'),
+      screens=False, designs=('standard',), night=False,
+      rule='user 30 Oct (« l’onglet Couches en haut, alors que le volet est en bas… »): a button and the pane it opens are neighbours — Layers is a chip of the sheet’s head, left of the grip, on a phone and a computer alike; nothing stays in the map’s top left corner; without a profile (no flight) the sheet is its head line alone and Layers is still reachable')
+def d76(c):
+    c.open('maps', docs=fdocs(flight()), flight=False, airfields=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.prof)", timeout=12000, what='the profile is drawn')
+    at = c.js(_LAYERS_AT)
+    c.eq([at['inHead'], at['leftOfGrip'], at['sameLine'], at['belowMap'], at['shown']], [True] * 5,
+         'Layers on the sheet’s line, left of the grip, under the map', what=f'{at}')
+    c.eq(at['cornerButtons'], 0, 'no button left in the map’s top left corner', what='corner buttons')
+    c.tap('[data-mp=layers]')
+    c.until("() => window.__mp.S.dpanel === 'layers'", what='Layers opens in the sheet')
+    c.eq(c.attr('[data-mp=layers]', 'aria-pressed'), 'true', 'the chip says the content is open', what='pressed')
+    c.tap('[data-mp=layers]')
+    c.until("() => window.__mp.S.dpanel !== 'layers'", what='a second tap closes it')
+    # nothing to draw (a mission without map: no profile): the sheet is its head line, Layers reachable
+    c.open('maps?mission=NOSUCH1')
+    c.js(_STATE_JS)
+    c.wait(1200)
+    at = c.js(_LAYERS_AT)
+    c.eq([at['sheet'], at['shown'], at['inHead']], [True, True, True], 'with nothing drawn the sheet keeps its head line with Layers', what=f'{at}')
+    c.eq(c.js("() => window.__mp.S.sh.pos"), 'collapsed', 'the empty sheet is reduced to its head line', what='sheet position')

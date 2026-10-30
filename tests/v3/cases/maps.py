@@ -82,7 +82,7 @@ def d2(c):
 
 
 def layers_btn(c):
-    return '[data-mp="layers"]'                      # the Layers button of the left column (maps)
+    return '[data-mp="layers"]'                      # the Layers button, on the sheet's line left of the grip (30 Oct)
 
 
 @case('D3', 'Layers in the sheet', 'D', tags=('sheet', 'maps'), screens=False, langs4=True,

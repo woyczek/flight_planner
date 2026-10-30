@@ -273,7 +273,7 @@ Weather, under Prepare. The last chip, “i” (greyed out while the drawing has
 
 <a id="maps-profile-zoom"></a>**Zooming the profile.** To read the profile precisely, tighten it on part of the flight: pinch it with two fingers (the middle of the fingers stays in place) and drag with two fingers to move the window; one finger stays the reading cursor. The altitude scale refits to what the window shows (that is where the precision comes from), the distance marks (NM) tighten with it, and points outside the window are not drawn. A double tap goes back to the whole flight, as does the “Whole flight” button, which appears in the top line while the profile is zoomed. On a screen: Ctrl + wheel zooms around the pointer, a drag moves the window, a double click goes back to the whole flight. The zoom is kept while the page stays open and the route does not change; it is never stored. The weather cross-section zooms the same way (same gestures, same “Whole flight” button) and the window is the same for both: zoom on one, switch to the other with the chip, and you find the same part of the flight; the cross-section also refits its height scale to what it shows.
 
-**A fixed screen.** Nothing between the header and the map: the map and the data block fill the screen, and nothing scrolls but the block's content. The buttons sit on the map: on the right, from the top, “Edit the route” (the pencil), “Recentre”, the map mode, “Edit on the map” (the four arrows) and, last, full screen (Escape leaves it); on the left, “Layers”. The block is a sheet: drag its top line (the small bar; at its normal height the line carries no title above a profile or a cross-section, only the three chips) up to enlarge it, down to shrink it to
+**A fixed screen.** Nothing between the header and the map: the map and the data block fill the screen, and nothing scrolls but the block's content. The buttons sit on the map: on the right, from the top, “Edit the route” (the pencil), “Recentre”, the map mode, “Edit on the map” (the four arrows) and, last, full screen (Escape leaves it). “Layers” sits on the sheet’s line, left of its grip, next to what it opens; with nothing to draw, the sheet is that line alone. The block is a sheet: drag its top line (the small bar; at its normal height the line carries no title above a profile or a cross-section, only the three chips) up to enlarge it, down to shrink it to
 that line, which leaves the whole height to the map; a tap on the line collapses it or brings it back to its normal
 height.
 
@@ -397,7 +397,7 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: 7ed01fb36c21 -->
+<!-- fr: 3171095f14a9 -->
 
 <!-- chapter: report -->
 # Report

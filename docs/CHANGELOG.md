@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the Layers button next to the pane it opens** (`modules/maps/module.js`, `screen.js`, `sheet_view.js`, `style.js`; maps
+  help ×4, SPEC; noreg D76). Layers leaves the map's top left corner for the sheet's line, a chip left of the grip, on a phone
+  and a computer alike; with nothing to draw the sheet is that line alone, so Layers stays reachable.
+
 - **Refactor R-C3, no behaviour change: IVAO's return in one place** (`tools/launch.py`, `tools/outbound.py`,
   `frame/app.js`; frame SPEC § 3.11, INTEGRATION, DECISIONS; noreg I10, I14, I20) — one declared route and one guard, one
   opener that never follows a redirect; `ctx.ivao.token()` and the launcher's refresh, without a reader, removed; « Ouvrir »

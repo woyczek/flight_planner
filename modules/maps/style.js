@@ -124,12 +124,13 @@ export const STYLE = `
    paysage) : puces de 40 px. Une puce sans contenu est désactivée (atténuée), jamais retirée. Les puces sont posées au-dessus du corps
    (z-index) : la zone de toucher de la primitive mord de 8 px sur lui, que le dessin positionné recouvrirait sinon. */
 [data-module="maps"] .mp-chips{position:relative;z-index:2;flex:none;display:flex;flex-direction:row;align-items:center;gap:4px;padding-right:4px}
+[data-module="maps"] .mp-chips.mp-chips-l{padding:0 0 0 4px}
 [data-module="maps"] .mp-chips[hidden],[data-module="maps"] .mp-chips .mp-chip[hidden]{display:none}
-[data-module="maps"] .mp-chips .mp-chip{box-sizing:border-box;display:grid;place-items:center;width:40px;height:40px;min-height:0;margin:0;padding:0;border:1px solid var(--sog-border);border-radius:min(50%,calc(var(--sog-radius) * 22));background:none;color:var(--sog-muted);box-shadow:none;cursor:pointer;touch-action:manipulation}
-[data-module="maps"] .mp-dhead.f-sheet-head-bare .mp-chips .mp-chip{width:28px}
-[data-module="maps"] .mp-chips .mp-chip .f-icon{width:20px;height:20px}
-[data-module="maps"] .mp-dhead.f-sheet-head-bare .mp-chips .mp-chip .f-icon{width:18px;height:18px}
-[data-module="maps"] .mp-chips .mp-chip:disabled{opacity:.38;cursor:default}
+[data-module="maps"] .mp-chips .mp-chip,[data-module="maps"] .mp-chips-l .mp-lchip{box-sizing:border-box;display:grid;place-items:center;width:40px;height:40px;min-height:0;margin:0;padding:0;border:1px solid var(--sog-border);border-radius:min(50%,calc(var(--sog-radius) * 22));background:none;color:var(--sog-muted);box-shadow:none;cursor:pointer;touch-action:manipulation}
+[data-module="maps"] .mp-dhead.f-sheet-head-bare .mp-chips .mp-chip,[data-module="maps"] .mp-dhead.f-sheet-head-bare .mp-chips-l .mp-lchip{width:28px}
+[data-module="maps"] .mp-chips .mp-chip .f-icon,[data-module="maps"] .mp-chips-l .mp-lchip .f-icon{width:20px;height:20px}
+[data-module="maps"] .mp-dhead.f-sheet-head-bare .mp-chips .mp-chip .f-icon,[data-module="maps"] .mp-dhead.f-sheet-head-bare .mp-chips-l .mp-lchip .f-icon{width:18px;height:18px}
+[data-module="maps"] .mp-chips .mp-chip:disabled,[data-module="maps"] .mp-chips-l .mp-lchip:disabled{opacity:.38;cursor:default}
 /* « vol entier » : un texte-bouton (pas une puce de plus, règle 13), présent seulement tant que le profil est zoomé ; 44 px de haut dans
    la ligne titrée, 28 px dans la ligne nue avec la zone de toucher de 44 px de la primitive */
 [data-module="maps"] .mp-dhead .mp-chips .mp-whole{box-sizing:border-box;min-height:0;height:44px;min-width:44px;margin:0;padding:0 10px;border:0;border-radius:var(--sog-radius);background:none;color:var(--sog-accent);font-family:inherit;font-size:var(--sog-size-xs);font-weight:600;line-height:1;white-space:nowrap;cursor:pointer;touch-action:manipulation}
@@ -162,7 +163,7 @@ export const STYLE = `
 [data-module="maps"] .mp-ad-proc{margin:0 0 6px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 6px}
 @media (max-width:767px){[data-module="maps"] .mp-ad-choose{flex:1 1 100%;min-height:var(--sog-touch)}}
 [data-module="maps"] .mp-lg-tri::after{content:'';position:absolute;left:8px;top:1px;border:5px solid transparent;border-bottom:9px solid var(--c);border-top:0}
-[data-module="maps"] .mp-chips .mp-chip[aria-pressed=true]{color:var(--sog-accent);border-color:var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 16%,var(--sog-surface))}
+[data-module="maps"] .mp-chips .mp-chip[aria-pressed=true],[data-module="maps"] .mp-chips-l .mp-lchip[aria-pressed=true]{color:var(--sog-accent);border-color:var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 16%,var(--sog-surface))}
 [data-module="maps"] .mp-data[hidden],[data-module="maps"] .mp-dclose[hidden],[data-module="maps"] .mp-dprof[hidden],[data-module="maps"] .mp-dbody[hidden]{display:none}
 /* la coupe est dessinée à la hauteur exacte du corps, sans bord ni remplissage (§ 7.1.13) : l'axe des distances est toujours visible ;
    le défilement n'est qu'un filet de sécurité si drawSection relevait un jour sa hauteur */

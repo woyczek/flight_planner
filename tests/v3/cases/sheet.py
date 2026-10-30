@@ -123,7 +123,7 @@ def c6(c):
         c.open(m, flight=True)
         c.ok(not c.shown('.f-sheet-close'), f'#{m}: the close button is displayed on the profile', 'hidden on the profile')
         if m == 'maps':
-            c.tap('.f-ov-left .f-ov-btn')                 # Layers
+            c.tap('[data-mp="layers"]')                   # Layers, on the sheet's line
         else:
             c.tap(c.mark('.f-ov-right .f-ov-btn', tx('modules/atmosphere/texts.js', 'infoTitle', c.lang)))   # Details
         c.until("window.__t.shown(document.querySelector('.f-sheet-close'))", what=f'#{m} content opens with a close button')

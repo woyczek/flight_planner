@@ -163,7 +163,10 @@ export function dataHead() {
   if (!S?.dataEl) return;
   const view = drawingShown(),
     wx = view === 'weather',
-    has = !!S.dpanel || !!S.prof,
+    // rien à montrer (pas de vol, mission sans carte) : la feuille reste pour Couches, dont le bouton est sur sa ligne, réduite à
+    // cette ligne ; une carte dont le profil n'est pas encore là garde la règle d'avant (la feuille vient avec lui)
+    bareBox = !S.boxOn && !S.dpanel && !S.prof && !!S.layersBtn && !S.layersBtn.hidden,
+    has = !!S.dpanel || !!S.prof || bareBox,
     bare = view && keep.sheet === 'default' && !document.documentElement.classList.contains('f-land') ? tt(wx ? TX.wxTitle : TX
       .dataProfile) : '',
     own = !!S.dpanel && !wx, // contenu ouvert par openData : son titre
@@ -174,6 +177,13 @@ export function dataHead() {
     ].filter(Boolean).join(' · '),
     tip = own && !lay ? S.dlabel : [lay ? S.dlabel : wx ? S.dlabel : tt(TX.dataProfile), S.sumTip].filter(Boolean).join(' · ');
   show(S.dataEl, has);
+  // en paysage la feuille est une colonne sans position réduite : rien à faire
+  const empty = bareBox && !document.documentElement.classList.contains('f-land');
+  if (S.sh && empty !== !!S.shEmpty) {
+    if (empty && S.sh.pos !== 'collapsed') S.sh.set('collapsed', true);
+    else if (!empty && S.sh.pos === 'collapsed') S.sh.set('default', true); // le profil arrive : sa hauteur revient
+    S.shEmpty = empty;
+  }
   setPressed(S.layersBtn, lay);
   if (S.bare !== bare) {
     S.bare = bare;

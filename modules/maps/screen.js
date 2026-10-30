@@ -122,7 +122,7 @@ function ownOverlay() {
   };
 }
 /** Boutons de la carte (SPEC § 4) : à droite Modifier la route, Recentrer, le mode, Édition, Suivre, puis « + » et Annuler du
- *  mode Édition (le plein écran du cadre est le dernier) ; à gauche Couches. Le panneau des modes est posé dans la couche
+ *  mode Édition (le plein écran du cadre est le dernier) ; Couches est sur la ligne du volet (module.js). Le panneau des modes est posé dans la couche
  *  elle-même (rien sur la carte hors de la couche du cadre). */
 export function buildOverlay(ctx, modesHtml) {
   const ov = ctx.overlay || ownOverlay(),
@@ -185,13 +185,10 @@ export function buildOverlay(ctx, modesHtml) {
     label: ctx.t(TX.undoHelp),
     onClick: () => got('edit')?.undoEdit()
   });
-  S.layersBtn = btn('layers', {
-    icon: 'layers',
-    side: 'left',
-    label: ctx.t(ctx.query?.mission ? TX.pick : TX.layers),
-    pressed: false,
-    onClick: () => toggleLayers()
-  });
+  // Couches ouvre le volet du bas : son bouton est sur la ligne du volet, à gauche de la poignée (l'utilisateur, 30 octobre : un
+  // bouton et ce qu'il ouvre sont voisins) ; le coin de la carte ne garde que les commandes de la vue
+  S.layersBtn = S.dheadEl.querySelector('[data-mp="layers"]');
+  S.layersBtn.addEventListener('click', () => toggleLayers());
   S.undoBtn.disabled = true;
   // panneau des modes, dans la couche (elle a la taille de la carte et suit la feuille)
   const layer = ov.right.parentNode,
@@ -225,6 +222,7 @@ export function showBox(on) {
   S.boxOn = on;
   if (!(on && !onMission()) && S.edit.on) got('edit')?.setEdit(false);
   syncButtons();
+  dataHead(); // sans carte, la feuille reste réduite à sa ligne (Couches)
 }
 
 // ---------------------------------------------------------------- notes, notifications, état vide

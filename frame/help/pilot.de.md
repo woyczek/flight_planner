@@ -292,7 +292,7 @@ verschiebt ihn. Er zeigt nur die Vorhersage, die Wetter schon geladen hat: ohne 
 
 <a id="maps-profile-zoom"></a>**Profil zoomen.** Um das Profil genau zu lesen, zoomen Sie auf einen Teil des Fluges: mit zwei Fingern spreizen oder zusammenziehen (die Mitte der Finger bleibt an ihrem Platz) und mit zwei Fingern ziehen, um das Fenster zu verschieben; ein einzelner Finger bleibt der Lese-Cursor. Die Höhenskala passt sich an das an, was das Fenster zeigt (daher kommt die Genauigkeit), die Entfernungsmarken (NM) rücken mit zusammen, und Punkte außerhalb des Fensters werden nicht gezeichnet. Ein Doppeltipp führt zum ganzen Flug zurück, ebenso die Schaltfläche „Ganzer Flug“, die in der obersten Zeile erscheint, solange das Profil gezoomt ist. Am Bildschirm: Strg + Mausrad zoomt um den Zeiger, Ziehen verschiebt das Fenster, ein Doppelklick führt zum ganzen Flug zurück. Der Zoom bleibt, solange die Seite geöffnet ist und die Route sich nicht ändert; er wird nie gespeichert. Der Wetterschnitt wird genauso gezoomt (dieselben Gesten, dieselbe Schaltfläche „Ganzer Flug“), und das Fenster ist für beide dasselbe: zoomen Sie in einem, wechseln Sie mit dem Chip zum anderen, und Sie finden denselben Flugabschnitt; der Schnitt passt auch seine Höhenskala an das an, was er zeigt.
 
-**Ein feststehender Bildschirm.** Nichts zwischen Kopfzeile und Karte: die Karte und der Datenblock füllen den Bildschirm, und nichts scrollt außer dem Inhalt des Blocks. Die Schaltflächen liegen auf der Karte: rechts von oben „Route bearbeiten“ (der Stift), „Zentrieren“, der Kartenmodus, „Auf der Karte bearbeiten“ (die vier Pfeile) und zuletzt der Vollbildmodus (Esc verlässt ihn); links „Ebenen“. Der Block ist ein Blatt: Ziehen Sie seine obere Zeile (den kleinen Balken; in normaler Höhe trägt die Zeile über einem Profil oder Schnitt keinen Titel, nur die drei Chips) nach oben, um ihn zu vergrößern, nach unten, um ihn auf diese Zeile zu verkleinern, was der Karte die ganze Höhe
+**Ein feststehender Bildschirm.** Nichts zwischen Kopfzeile und Karte: die Karte und der Datenblock füllen den Bildschirm, und nichts scrollt außer dem Inhalt des Blocks. Die Schaltflächen liegen auf der Karte: rechts von oben „Route bearbeiten“ (der Stift), „Zentrieren“, der Kartenmodus, „Auf der Karte bearbeiten“ (die vier Pfeile) und zuletzt der Vollbildmodus (Esc verlässt ihn). „Ebenen“ sitzt auf der Zeile des Blatts, links von seinem Griff, neben dem, was es öffnet; ohne etwas zu zeichnen besteht das Blatt nur aus dieser Zeile. Der Block ist ein Blatt: Ziehen Sie seine obere Zeile (den kleinen Balken; in normaler Höhe trägt die Zeile über einem Profil oder Schnitt keinen Titel, nur die drei Chips) nach oben, um ihn zu vergrößern, nach unten, um ihn auf diese Zeile zu verkleinern, was der Karte die ganze Höhe
 lässt; ein Tippen auf die Zeile klappt ihn ein oder bringt ihn auf seine normale Höhe zurück.
 
 **Sechs Kartenmodi.** Die Modus-Schaltfläche rechts auf der Karte zeigt den gewählten Modus; tippen Sie darauf, um die
@@ -428,7 +428,7 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: 7ed01fb36c21 -->
+<!-- fr: 3171095f14a9 -->
 
 <!-- chapter: report -->
 # Bericht
