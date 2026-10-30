@@ -4,6 +4,11 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **30 Oct 2026 — the points list groups the procedures** (the user confirmed the objection recorded in § 10.31: « une procédure
+  pourrait être un point comme un autre » in the text, never in the point list). One folded `<details>` row per chosen procedure,
+  in the Map's hue (copied from modules/maps/render.js PALETTE: sid, star, app — a shared token would be better, noted for the
+  inventory); the exit / entry the text now carries are shown in their group. The aerodrome name in the summary line keeps an
+  ellipsis on a phone (Simplification). F26 made deterministic (set_icao waits for the field on screen). Case F73.
 - **30 Oct 2026 — the procedure card opens folded** (§ 10.31, user's answer 2): two summary lines, one side unfolded at a time.
   Folded rows are hidden with `visibility: hidden; height: 0`, not `display: none`: the grid keeps the columns of both sides (F34's
   « one grid ») and the selects stay out of reach. A side without data is never folded (the reading is its only gesture). The

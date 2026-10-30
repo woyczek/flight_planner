@@ -80,6 +80,8 @@ export const PROC_STYLE = `
 /* replié : ni vu ni atteignable au clavier, sans hauteur, mais gardé dans la grille (les colonnes restent celles des deux côtés) */
 [data-module="fuel"] .fu-proc.fu-folded>.fu-procmeta,[data-module="fuel"] .fu-proc.fu-folded>.fu-pf{visibility:hidden;height:0;min-height:0;overflow:hidden;margin:0;padding:0}
 [data-module="fuel"] .fu-proctitle{cursor:pointer}
+/* le nom du terrain reste dans la ligne de résumé, coupé d'une ellipse quand la place manque (téléphone) */
+[data-module="fuel"] .fu-procname{display:inline-block;max-width:min(40vw,18em);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
 [data-module="fuel"] .fu-procfold{min-width:44px;min-height:44px;padding:0;margin:-12px 0 -12px -12px;border:0;background:none;color:inherit;font:inherit;cursor:pointer;vertical-align:middle}
 [data-module="fuel"] .fu-proctitle{font-size:1.05em}
 [data-module="fuel"] .fu-procsum{display:block;font-size:.92em;margin-top:2px}

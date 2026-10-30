@@ -373,6 +373,12 @@ mount. Inside a mount, the two buttons switch as before.
      departure or the arrival (an OFP repeats its level at every point). "Last SimBrief OFP": through `ctx.net`, the SimBrief identifier
      of the identity (never typed here), the OFP kept on the device only, its route, level, average wind, ISA
      deviation and aircraft taken into the current flight.
+     **The points list groups the procedures** (§ 10.31, confirmed by the user): « Points (N) » of the Route step shows the pilot's
+     points and, for each chosen and read procedure (`S.procs`), ONE folded row in the Map's hue (`<details class="fu-ptgrp"
+     data-kind="sid|star|app">`: « SID NTS1A · 2 points », « STAR MEN1A via NEPIX · 4 points », « I13R · 1 point »), its fixes
+     (`PR.pointsOf`, transition included) under a tap: the SID after the departure, the STAR and the approach before the arrival; a
+     route point that is a fix of a chosen procedure (its exit, its entry) is shown in its group, never at the rank of the typed
+     points; N = the points shown + the groups. Redrawn when the procedures are read (`ensureProcs`).
      **The card opens folded** (§ 10.31, user: « l'étape procédures doit se lire sans défiler, pire sur téléphone »): each side's
      title is its summary line — ▸ / ▾ button (`data-do="procfold"`, `aria-expanded`), side, code, name, « Sur la carte », the
      summary (`summaryOf`); a tap anywhere on the line but its other buttons unfolds that side and folds the other (`P.fold`); the

@@ -192,6 +192,9 @@ const TX = {
     'Keine geplante Flugfläche: Luftstraßen auf {l} gesucht.', 'Sin nivel previsto: aerovías buscadas a {l}.'
   ],
   ptsN: ['Points ({n})', 'Points ({n})', 'Punkte ({n})', 'Puntos ({n})'],
+  // une procédure choisie dans la liste des points : une ligne de groupe, ses repères dépliés au toucher (§ 10.31)
+  ptsGroupN: ['{n} points', '{n} points', '{n} Punkte', '{n} puntos'],
+  ptsGroup1: ['1 point', '1 point', '1 Punkt', '1 punto'],
   stepNames: [
     ['Vol', 'Flight', 'Flug', 'Vuelo'],
     ['Route', 'Route', 'Route', 'Ruta'],
@@ -1294,6 +1297,7 @@ function ensureProcs() {
       key,
       procs: null
     };
+    renderPts(); // plus de groupe de procédure dans la liste des points
     return;
   }
   if (S.procsBusy === key) return;
@@ -1305,6 +1309,7 @@ function ensureProcs() {
       key,
       procs: procs || {}
     };
+    if (S === s) renderPts(); // les groupes de procédure de la liste des points (§ 10.31)
     refresh();
     if (s.writeAfterProcs) { // une série de choix attendait cette lecture : le vol est écrit avec le devis, en une seule écriture
       s.writeAfterProcs = false;
@@ -1728,6 +1733,12 @@ const STYLE = `
   [data-module="fuel"] .fu-step[hidden]{display:block}
 }
 ${PROC_STYLE}
+/* groupes de procédure de la liste des points (§ 10.31) : la teinte de la Carte (modules/maps/render.js, PALETTE sid / star / app) */
+[data-module="fuel"] .fu-ptgrp{border-left:3px solid currentColor;padding-left:8px;display:block}
+[data-module="fuel"] .fu-ptgrp>summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
+[data-module="fuel"] .fu-ptgrp[data-kind="sid"]{border-left-color:#1b8a3a}
+[data-module="fuel"] .fu-ptgrp[data-kind="star"]{border-left-color:#d95500}
+[data-module="fuel"] .fu-ptgrp[data-kind="app"]{border-left-color:#0a86c4}
 [data-module="fuel"] .fu-rrow{display:flex;gap:8px;align-items:flex-end} /* champ de la route + « Auto » : le champ prend la place restante */
 [data-module="fuel"] .fu-rrow>.f-field{flex:1 1 0;min-width:0}
 [data-module="fuel"] .fu-rrow>button{flex:none;min-width:56px;min-height:44px;margin-bottom:2px}
@@ -3034,24 +3045,61 @@ function renderRinfo() {
 }
 /** Liste des points (ordre, niveau facultatif, monter, descendre, retirer) ; le niveau ne se règle pas au départ ni à
  *  l'arrivée. L'indication d'un point sans niveau est celui qu'il continue. */
+/** Les procédures choisies et lues, en groupes de la liste des points (V3 § 10.31) : [{ kind: 'sid' | 'star' | 'app', label, fixes }]
+ *  — « SID NTS1A », « STAR MEN1A via NEPIX », « I13R via ODILO 1A » ; fixes : les identifiants de leurs repères (transition comprise),
+ *  hors seuil et approche interrompue. [] tant que les procédures du vol ne sont pas lues. */
+function procGroups() {
+  const pr = S.procs?.key === procsKey(S.flight) ? S.procs.procs : null;
+  if (!pr) return [];
+  const via = t => t?.transition ? ` via ${t.transition}` : '',
+    out = [];
+  if (pr.sid) out.push({
+    kind: 'sid',
+    label: `SID ${PR.nameOf(pr.sid, pr.sid.id)}${via(pr.sidTrans)}`,
+    fixes: [...new Set([...PR.pointsOf(pr.sid), ...PR.pointsOf(pr.sidTrans)])]
+  });
+  if (pr.star) out.push({
+    kind: 'star',
+    label: `STAR ${PR.nameOf(pr.star, pr.star.id)}${via(pr.starTrans)}`,
+    fixes: [...new Set([...PR.pointsOf(pr.starTrans), ...PR.pointsOf(pr.star)])]
+  });
+  if (pr.app) out.push({
+    kind: 'app',
+    label: `${PR.labelOf(pr.app)}${via(pr.appTrans)}`,
+    fixes: [...new Set([...PR.pointsOf(pr.appTrans), ...PR.pointsOf(pr.app)])]
+  });
+  return out;
+}
+/** Liste des points de l'étape Route : les points du pilote (niveau, monter, descendre, retirer) et, pour chaque procédure choisie,
+ *  UNE ligne de groupe repliée dans sa teinte (« SID NTS1A · 3 points »), ses repères dépliés au toucher, jamais au rang des points
+ *  tapés (§ 10.31) : la SID après le départ, la STAR et l'approche avant l'arrivée ; un point de la route qui est un repère d'une
+ *  procédure choisie (sa sortie, son entrée) est dans son groupe. Le compte « Points (N) » : les points montrés et les groupes. */
 function renderPts() {
   const box = S.body?.querySelector('[data-pts]');
   if (!box) return;
   const pts = S.flight.route?.points || [],
-    plan = +S.flight.level?.ft || 0;
-  let cur = plan;
+    plan = +S.flight.level?.ft || 0,
+    groups = procGroups(),
+    inGroup = new Set(groups.flatMap(g => g.fixes)),
+    group = g => `<details class="f-item fu-ptgrp" data-kind="${g.kind}"><summary>${esc(`${g.label} · ${tt(g.fixes.length === 1 ? TX.ptsGroup1 : TX.ptsGroupN, { n: g.fixes.length })}`)}</summary><div class="f-muted fu-ptfix">${esc(g.fixes.join(' · '))}</div></details>`;
+  let cur = plan,
+    shown = 0;
   box.innerHTML = pts.length ? pts.map((p, i) => {
     const mid = i > 0 && i < pts.length - 1,
       hint = cur > 0 ? Math.round(cur / 100) : '';
     if (mid && p.alt_ft > 0) cur = p.alt_ft;
+    const before = i === pts.length - 1 && i > 0 ? groups.filter(g => g.kind !== 'sid').map(group).join('') : '',
+      after = i === 0 ? groups.filter(g => g.kind === 'sid').map(group).join('') : '';
+    if (mid && inGroup.has(String(p.id || '').toUpperCase())) return ''; // un repère de procédure : dans son groupe
+    shown++;
     const id = esc(p.id || '?');
-    return `<div class="f-item fu-pt"><span class="fu-ptid"><b>${id}</b><small class="f-muted">${(+p.lat).toFixed(2)} ${(+p.lon).toFixed(2)}</small></span>
+    return `${before}<div class="f-item fu-pt"><span class="fu-ptid"><b>${id}</b><small class="f-muted">${(+p.lat).toFixed(2)} ${(+p.lon).toFixed(2)}</small></span>
       ${mid ? `<input data-k="ptalt" data-i="${i}" inputmode="numeric" maxlength="3" value="${p.alt_ft > 0 ? Math.round(p.alt_ft / 100) : ''}" placeholder="${hint}" aria-label="${esc(tt(TX.ptLevel, { id: p.id }))}">` : '<span class="fu-ptgap"></span>'}
-      <button type="button" data-do="ptup" data-i="${i}" ${i ? '' : 'disabled'} aria-label="${esc(tt(TX.ptUp, { id: p.id }))}">${svg('chevron-up')}</button><button type="button" data-do="ptdown" data-i="${i}" ${i < pts.length - 1 ? '' : 'disabled'} aria-label="${esc(tt(TX.ptDown, { id: p.id }))}">${svg('chevron-down')}</button><button type="button" data-do="ptdel" data-i="${i}" aria-label="${esc(tt(TX.ptDel, { id: p.id }))}">${svg('x')}</button></div>`;
+      <button type="button" data-do="ptup" data-i="${i}" ${i ? '' : 'disabled'} aria-label="${esc(tt(TX.ptUp, { id: p.id }))}">${svg('chevron-up')}</button><button type="button" data-do="ptdown" data-i="${i}" ${i < pts.length - 1 ? '' : 'disabled'} aria-label="${esc(tt(TX.ptDown, { id: p.id }))}">${svg('chevron-down')}</button><button type="button" data-do="ptdel" data-i="${i}" aria-label="${esc(tt(TX.ptDel, { id: p.id }))}">${svg('x')}</button></div>${after}`;
   }).join('') : `<p class="f-muted">${esc(tt(TX.ptsNone))}</p>`;
   const n = S.body.querySelector('[data-ptsn]');
   if (n) n.textContent = tt(TX.ptsN, {
-    n: pts.length
+    n: pts.length ? shown + groups.length : 0
   });
 }
 /** Points changés à la main : texte de la route réécrit, distance et route vraie déduites, vol courant écrit, devis

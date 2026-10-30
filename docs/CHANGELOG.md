@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: each chosen procedure is one group row of the points list** (`modules/fuel/module.js` renderPts; help ×4; F73) —
+  « SID NTS1A · 2 points », its fixes under a tap, never at the rank of the typed points; « Points (N) » counts points and groups.
 - **Fuel: the procedure card opens folded** (`modules/fuel/procedures.js`; help ×4; F72) — one summary line per side, a tap
   unfolds its lists, one side at a time; readable without scrolling on a phone.
 - **Noreg: 2.6 times faster, and a targeted pass before a push** (`tests/v3/run.py`, `tests/v3/domains.py`,

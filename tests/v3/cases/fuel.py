@@ -730,6 +730,8 @@ def f19(c):
 def set_icao(c, side, icao):
     """Types an aerodrome in the departure or arrival field (step Flight), then goes back to the step Route where the rows are."""
     to_step(c, 0)
+    # the field on screen first (F26 timed out in fill under ten workers: the step was still being drawn)
+    c.until("(k) => window.__t.shown(document.querySelector('[data-module=fuel] input[data-k=\"' + k + '\"]'))", side, timeout=10000, what=f'the {side} field is on screen')
     c.page.fill(f'{FUEL} input[data-k="{side}"]', icao)
     to_step(c, 1)
 
@@ -1816,4 +1818,26 @@ def f72(c):
     c.until("!document.querySelector('[data-module=fuel] .fu-proc.fu-folded[data-proc=dep]') && !!document.querySelector('[data-module=fuel] .fu-proc.fu-folded[data-proc=arr]')",
             what='the departure unfolds and the arrival folds: one side at a time')
     c.eq(c.attr(f'{FUEL} [data-proc="dep"] .fu-procfold', 'aria-expanded'), 'true', 'the button says the side is unfolded', what='aria-expanded')
+
+
+@case('F73', 'A chosen procedure is one group row of the points list, its fixes folded under it', 'F', tags=('fuel', 'maps'), designs=('standard',),
+      screens=False, langs4=True, rule='V3 spec 10.31 (confirmed by the user): « SID NTS1A · 3 points », « STAR MEN1A via NEPIX · 4 points », « I13R »; the '
+      'fixes under a tap, never at the rank of the typed points; « Points (N) » counts the pilot\'s points and the groups')
+def f73(c):
+    open_proc(c, procs={'dep': {'rwy': '03', 'sid': 'LFRS.SID.NTS1A.RW03.NONE'},
+                        'arr': {'rwy': '13R', 'star': 'LFML.STAR.MEN1A.RW13R.NONE', 'trans': 'LFML.STAR.MEN1A.RWALL.NEPIX', 'app': 'LFML.APP.I13R.RW13R.NONE'},
+                        'by': 'fuel', 'at': '2026-10-28T09:00:00Z'},
+              aero_extra={'points': [{'id': 'NT102', 'lat': 46.8, 'lon': -1.35, 'type': 'RNAV'}]})
+    rows = f"[...document.querySelectorAll('{FUEL} [data-pts] > *')].map(e => e.matches('.fu-ptgrp') ? 'G:' + e.dataset.kind + ':' + e.querySelector('summary').textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() : 'P:' + (e.querySelector('.fu-ptid b') || {{}}).textContent)"
+    c.until(f"{rows}.filter(x => x.startsWith('G:')).length === 3", timeout=15000, what='three group rows: the SID, the STAR, the approach')
+    r = c.js(rows)
+    n = norm(row(c, 'ptsGroupN'))
+    c.eq(r[:2], ['P:LFRS', 'G:sid:' + norm('SID NTS1A · ' + n.replace('{n}', '2'))], 'after the departure, the SID as one group (its fixes NT101 NT102)', what='first rows')
+    c.eq(r[-3:], ['G:star:' + norm('STAR MEN1A via NEPIX · ' + n.replace('{n}', '4')), 'G:app:' + norm('I13R · ' + norm(row(c, 'ptsGroup1'))), 'P:LFML'],
+         'before the arrival, the STAR via its transition and the approach as groups', what='last rows')
+    c.ok(not any(x in ('P:NT102', 'P:NEPIX') for x in r), f'{r}', 'no fix of a procedure at the rank of the typed points (the exit NT102, the entry NEPIX)')
+    pilot = [x for x in r if x.startswith('P:')]
+    c.ok(norm(c.text(f'{FUEL} [data-ptsn]') or '').startswith(norm(row(c, 'ptsN').replace('{n}', str(len(pilot) + 3)))), c.text(f'{FUEL} [data-ptsn]'),
+         '« Points (N) » counts the pilot\'s points and the three groups')
+    c.ok(c.js(f"!document.querySelector('{FUEL} .fu-ptgrp[data-kind=sid]').open"), 'open', 'a group row is folded: its fixes under a tap')
 
