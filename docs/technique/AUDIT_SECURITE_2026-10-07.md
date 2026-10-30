@@ -910,6 +910,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 58 | Launcher: the « vfr » job set, common rules for children and purges (ab0258453) | acceptable; notes of 57 settled; three notes |
 | 59 | Data module: a panel per group (2456bf289) | acceptable |
 | 60 | Fuel two-word procedure name (bae413f55), Map TOC / TOD (3ed39a3e4) | acceptable |
+| 61 | Launcher: procedures by State (622936805) | acceptable; notes of 58 settled; one note |
+| 62 | Fuel anomalies 9–13 (c5f771b7a), Map framing and heading order (e54c0b00e, 1367d3523) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1599,6 +1601,19 @@ job's author. One operation at a time. Names, identifiers, manual addresses (htt
 states, verbs and outcomes go through closed lists; selectors use `CSS.escape`; the journal keeps counts and results.
 
 **60. Two small commits (bae413f55, 3ed39a3e4) — acceptable.** No write, network or new HTML.
+
+**61. Procedures by State (622936805) — acceptable; the notes of 58 are settled; one note.** States match
+`^[A-Z]{1,2}$` (1 to 40); only LF (the SIA's eAIP) and K (the FAA's CIFP) have a source, any other State gives
+`no-source`, and an EAD State is refused without any call. `regen_jobs.download` reads in parts up to a ceiling and
+follows a redirect only to the same host (never from https to http); addresses are computed by the launcher; the CIFP
+must start with `PK`, the SIA's PDF names go through `safe_path`, files are written atomically under
+`data/local/<eaip|cifp>/<cycle>/`. Build checks for a pending merge first (now in every job set), writes under
+`data/proc/<cycle>/` and commits that folder with the trigram. Purge: `inside()` before walking and before removal,
+tracked files kept, `dry` by default. The headless browser and the base set's git run with the reduced environment.
+Note: the CIFP zip is opened without a ceiling on its uncompressed size; sum the members' sizes before reading.
+
+**62. Three small commits (c5f771b7a, e54c0b00e, 1367d3523) — acceptable.** No new write or network; Fuel's procedure
+labels go through `opt()`, which escapes; the Map pane's values come from the code.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
