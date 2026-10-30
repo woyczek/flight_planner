@@ -750,9 +750,9 @@ def i14(c):
         no = L.ivao_oauth_start('d1', 'https://relay/__relay/ivao/callback')
         c.eq((no.get('status'), no.get('redirect'), no.get('relay')), (409, 'https://relay/__relay/ivao/callback', True),
              'no IVAO application: refused, with the exact return address to declare and where (relay)', what='without secret')
-        # IVAO's own refusal is said, even when the state is not one in progress (a client unknown at IVAO, a wrong return address)
-        c.eq(L.ivao_oauth_finish('nope', '', 'invalid_client', '', 'http://127.0.0.1:8000/__relay/ivao/callback').get('error'), 'ivao:invalid_client',
-             'an error from IVAO is said as IVAO\'s, never as « state »', what='IVAO refusal')
+        # IVAO's code is shown only for a sign-in in progress of this device; a third-party link « ?error=xyz » is a stray return
+        c.eq(L.ivao_oauth_finish('nope', '', 'invalid_client', '', 'http://127.0.0.1:8000/__relay/ivao/callback').get('error'), 'state',
+             'an « error » without a sign-in in progress is not IVAO\'s: « state »', what='forged IVAO refusal')
         c.eq(L.ivao_oauth_finish('nope', 'C', '', '', 'http://127.0.0.1:8000/__relay/ivao/callback').get('error'), 'state',
              'a return without a sign-in in progress (no IVAO error): « state »', what='forged or expired return')
         no = L.ivao_oauth_start('', 'http://127.0.0.1:8000/__relay/ivao/callback')
@@ -777,6 +777,10 @@ def i14(c):
         rf = L.ivao_oauth_refresh('RT-long-enough')
         c.ok(rf['ok'] and rf['access_token'] == 'AT', str(rf)[:120], 'the refresh by the relay')
         c.eq(L.ivao_oauth_refresh('x').get('status'), 400, 'a refresh token is checked', what='short refresh token')
+        s = L.ivao_oauth_start('d4', 'https://relay/__relay/ivao/callback')
+        st = urllib.parse.parse_qs(urllib.parse.urlsplit(s['url']).query)['state'][0]
+        c.eq(L.ivao_oauth_finish(st, '', 'access_denied', 'd4', 'https://relay/__relay/ivao/callback').get('error'), 'ivao:access_denied',
+             'IVAO\'s refusal of a sign-in in progress of this device: its code', what='IVAO refusal')
         # Délier : révocation chez IVAO (RFC 7009), client authentifié ; sans point de révocation ou refusée : revoked faux
         rv = L.ivao_oauth_revoke('RT-long-enough')
         last = seen[-1]
@@ -979,3 +983,77 @@ def i16(c):
     gh = (c.root / 'frame' / 'store' / 'transport_github.js').read_text(encoding='utf-8')
     gl = (c.root / 'frame' / 'store' / 'transport_gitlab.js').read_text(encoding='utf-8')
     c.ok("redirect: 'error'" in gh and "redirect: 'error'" in gl and gh.count('await fetch(') == 1, '', 'both transports refuse a redirect (one fetch each)')
+
+
+@case('I17', 'Launcher jobs « aircraft »: fetch to the caches, build without network, purge the caches only, publish with a plan first', 'I', static=True,
+      rule='V3 § 10.34 A1 (Settings asked, base/* contract): fetch never writes the base, build is offline, purge never removes a tracked file, publish dry is a plan; GET regen/verbs lists the loaded verbs')
+def i17(c):
+    import importlib
+    import json
+    sys.path.insert(0, str(c.root / 'tools'))
+    RJ = importlib.import_module('regen_jobs')
+    A = importlib.import_module('regen.aircraft')
+    L = importlib.import_module('launch')
+    c.eq(L.ROUTES.get(('GET', '/__setup/regen/verbs'), ('', ''))[1], 'poste', 'GET regen/verbs: the workstation only', what='verbs route')
+    c.eq((A.check_codes({'codes': ['a320', 'C30J']}), A.check_codes({'codes': ['A3 20']}), A.check_codes({'codes': 'A320'})),
+         ({'codes': ['A320', 'C30J']}, None, None), 'codes are ICAO designators, nothing guessed', what='codes check')
+    tmp = Path(tempfile.mkdtemp(prefix='sog-aircraft-'))
+    kept = A.ROOT, A.ADB, A.SCRIPT
+    try:
+        root, data = tmp / 'suite', tmp / 'data'
+        adb = root / 'AircraftDB'
+        adb.mkdir(parents=True)
+        (data / 'airline').mkdir(parents=True)
+        (data / 'airline' / 'fleet.json').write_text(json.dumps({'aircraft': [{'type': 'C30J'}, {'type': 'A332'}, {'type': 'x y'}]}), encoding='utf-8')
+        c.eq(A.fleet_codes(str(data)), ['A332', 'C30J'], 'no code given: the fleet\u2019s types', what='fleet codes')
+        (adb / 'aircraft_db.js').write_text('window.AIRCRAFT_DB = {"OLD": {}};\n', encoding='utf-8')
+        (adb / 'aircraft_perf.js').write_text('window.AIRCRAFT_PERF = {};\n', encoding='utf-8')
+        # a fake updater: says its arguments, fills a cache, writes where --out / --perf-out say
+        fake = tmp / 'fake_update.py'
+        fake.write_text("""import json, os, sys
+a = sys.argv[1:]
+print('ARGS ' + json.dumps(a))
+open(os.path.join(os.getcwd(), 'aircraft_http_cache.json'), 'a').write('x')
+for flag in ('--out', '--perf-out'):
+    if flag in a:
+        open(a[a.index(flag) + 1], 'w').write('written by ' + a[0])
+""", encoding='utf-8')
+        A.ROOT, A.ADB, A.SCRIPT = str(root), str(adb), str(fake)
+        ctx = {'data': str(data), 'secrets': str(tmp / 's'), 'git_cmd': None, 'git_env': dict}
+        job = RJ.Job('aircraft', 'fetch', {'codes': []})
+        r = A.fetch(job, {'codes': []}, ctx)
+        c.ok(r['ok'] and r['codes'] == ['A332', 'C30J'] and r['steps'] == ['types', 'apd', 'simbrief'], json.dumps(r)[:300], 'fetch runs the three steps for the fleet\u2019s types')
+        c.eq((adb / 'aircraft_db.js').read_text(encoding='utf-8'), 'window.AIRCRAFT_DB = {"OLD": {}};\n', 'fetch never writes the base (copies thrown away)', what='base after fetch')
+        c.ok((adb / 'aircraft_http_cache.json').is_file(), '', 'fetch fills the cache')
+        c.ok(not any('--no-network' in ln for ln in job.data['log']), str(job.data['log'][:3]), 'fetch uses the network')
+        job = RJ.Job('aircraft', 'build', {'codes': ['C30J']})
+        r = A.build(job, {'codes': ['C30J']}, ctx)
+        args = [json.loads(ln[5:]) for ln in job.data['log'] if ln.startswith('ARGS ')]
+        c.ok(r['ok'] and (adb / 'aircraft_db.js').read_text(encoding='utf-8').startswith('written by') and '--no-network' in args[0] and '--no-network' in args[2],
+             json.dumps(args)[:300], 'build writes the base, types and SimBrief without network')
+        c.eq(args[0][args[0].index('--overrides') + 1], str(data / 'references' / 'aircraft_overrides.json'), 'the manual overrides of the served data', what='overrides')
+        # purge: the caches only, dry first; a tracked file kept
+        (adb / 'icao_doc8643_cache').mkdir()
+        (adb / 'icao_doc8643_cache' / 'part2.pdf').write_text('pdf', encoding='utf-8')
+        subprocess.run(['git', 'init', '-q', str(root)], capture_output=True)
+        subprocess.run(['git', '-C', str(root), 'add', 'AircraftDB/icao_doc8643_cache/part2.pdf'], capture_output=True)
+        ctx_git = {**ctx, 'git_cmd': lambda *a: ['git', *a]}
+        r = A.purge(RJ.Job('aircraft', 'purge', {'dry': True}), {'dry': True}, ctx_git)
+        c.ok(r['ok'] and r['dry'] and r['removed']['files'] == 1 and (adb / 'aircraft_http_cache.json').is_file() and r['warnings'][0]['code'] == 'kept-tracked',
+             json.dumps(r), 'purge dry: the plan, nothing removed, the tracked file kept')
+        r = A.purge(RJ.Job('aircraft', 'purge', {'dry': False}), {'dry': False}, ctx_git)
+        c.ok(r['ok'] and not (adb / 'aircraft_http_cache.json').exists() and (adb / 'icao_doc8643_cache' / 'part2.pdf').is_file()
+             and (adb / 'aircraft_db.js').is_file(), json.dumps(r), 'purge: the cache gone, the tracked file and the base kept')
+        # publish: dry is the plan; a real one needs a trigram
+        calls = []
+        ctx_pub = {**ctx, 'aircraft_publish': lambda author, apply: calls.append((author, apply)) or {'ok': True, 'remove': [], 'copy': [{'path': 'AircraftDB/aircraft_db.js'}]}}
+        r = A.publish(RJ.Job('aircraft', 'publish', {'dry': True}), {'dry': True}, ctx_pub)
+        c.ok(r['ok'] and r['copy'] and calls == [('', False)], str((r, calls)), 'publish dry: the plan, nothing written')
+        r = A.publish(RJ.Job('aircraft', 'publish', {'dry': False}), {'dry': False}, ctx_pub)
+        c.eq(r.get('reason'), 'no-author', 'a real publish needs a trigram', what='publish without author')
+        r = A.publish(RJ.Job('aircraft', 'publish', {'dry': False}, author='ABC'), {'dry': False}, ctx_pub)
+        c.ok(r['ok'] and calls[-1] == ('ABC', True), str(calls), 'a real publish, in the author\u2019s name')
+        c.eq(A.check_dry({}), {'dry': True}, 'purge and publish are dry unless told otherwise', what='dry default')
+    finally:
+        A.ROOT, A.ADB, A.SCRIPT = kept
+        shutil.rmtree(tmp, ignore_errors=True)

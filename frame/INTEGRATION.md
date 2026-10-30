@@ -1035,6 +1035,16 @@ in the launcher; `resume` finds it again.
   four-character code, nothing else) reads one aerodrome in EAD Basic and installs it under `proc/manual/`; `proc/eaip-fetch` (same args, the code must
   start with `LF`) does the same from the SIA eAIP of the cycle in force, without credentials, the address being computed by the launcher (aerodb's
   `fetchProcedures` picks the verb by the aerodrome's State; the frame gives aerodb `launcher.job`, built on this client with `regen/job` declared).
+  `GET /__setup/regen/verbs` → `{ verbs: ['aircraft/build', 'base/fetch', …] }` (workstation only, 30 Oct 2026): the « set/verb » of every
+  loaded job, so that a page greys at once what this launcher does not know. **Set `aircraft`** (`tools/regen/aircraft.py`, V3 § 10.34 A1):
+  `aircraft/fetch` and `aircraft/build` `{ codes }` (ICAO designators; empty: the types of `airline/fleet.json`), the steps `types`
+  (Doc 8643), `apd` (EUROCONTROL), `simbrief` in the view's `steps: { <step>: { state, error? } }`, result `{ ok, codes, steps, failed:
+  [{ item, error }], reason? }` — fetch fills the workstation's caches only (`AircraftDB/aircraft_http_cache.json`,
+  `AircraftDB/icao_doc8643_cache/`), the script writing into thrown-away copies; build rewrites `AircraftDB/aircraft_db.js` and
+  `aircraft_perf.js` of the workstation without network (types and SimBrief `--no-network`; APD reads its HTTP cache), not versioned:
+  no commit; `aircraft/purge { dry }` the caches only, never a tracked file nor the base (`kept-tracked`); `aircraft/publish { dry }` dry
+  the plan `{ remove, copy }`, then the launcher's `aircraft_publish` (written into `AircraftDB/` of the data repository, a commit in
+  the author's name, a synchronisation pass); a real publish needs a trigram (`no-author`). MIN_GAP 30 s for `aircraft/fetch`.
   `GET /__setup/status` (the detection only, the same shape everywhere; the workstation's own settings are `GET
   /__setup/workstation`, workstation only) also carries `lnm`: the sorted list of Little Navmap database kinds present on the workstation (the
   `little_navmap_<kind>.sqlite` files of its `little_navmap_db` folder; names only, `[]` when absent); `FrameData.launcher.detect()` hands it on in

@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Launcher: jobs of the aircraft set, and the list of loaded verbs** (`tools/regen/aircraft.py`, `tools/launch.py`; frame
+  INTEGRATION § 15, DECISIONS; noreg I17, I14): `aircraft/fetch`, `build`, `purge`, `publish` for the Data module (V3 § 10.34
+  A1), `GET /__setup/regen/verbs`; IVAO's refusal code shown only for a sign-in in progress of the device.
 - **Aircraft sheets: the crosswind limit is a field of the schema** (`frame/aerodb/sheets.js` PROFILE_FIELDS `maxCrosswindKt`,
   « Piste et alternat », kt, not in .lnmperf; F76) — read by Fuel's wind colours (§ 10.30), edited in the sheet form (§ 10.34 A2).
 - **Map: one value escaped, one stale comment** (`modules/maps/choose.js`, `layers.js`). The wind severity on a runway row goes

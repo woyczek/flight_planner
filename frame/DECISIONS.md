@@ -1998,10 +1998,23 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   - The return addresses are computed in one place, `ivao_redirects(port)` (`launch.py`): the start, the return, the 409
     and the Settings assistant's `ivaoRedirects` (GET `/__setup/secrets`) read it; `GET /__setup/ivao/oauth` carries no
     address, only `{ app, relay }`.
-  - IVAO's own refusal (a client unknown at IVAO, a return address not declared, an access denied) comes back with IVAO's
-    code (`ivao:<code>`), before the state is judged: « state » is kept for a return that matches no sign-in in progress
-    (expired, launcher restarted, made elsewhere), and the frame says that in a sentence ×4, never « (state) ».
+  - IVAO's own refusal (a client unknown at IVAO, a return address not declared, an access denied) of a sign-in in progress
+    of this device comes back with IVAO's code (`ivao:<code>`); without such a sign-in, an `error=…` is no proof of IVAO (a
+    third-party link to `/__relay/ivao/callback?error=xyz` would show a false refusal; security review of e13964b44): it is
+    « state », a return that matches no sign-in in progress (expired, launcher restarted, made elsewhere), said in a
+    sentence ×4, never « (state) ».
   - Found on the way, fixed by the Settings session in b98589ae4 (one condition kept, its own): on
     `#settings?card=<one card>` with a launcher, the local network card's refresh started without its card
     (`null.isConnected`, on the very address IVAO's return lands on). noreg A44 (button off, title, link, nothing leaves even forced, on with an application, a stray
     return's sentence), I14 (IVAO's refusal said as IVAO's, a stray return as « state »), I10.
+- **30 Oct 2026 — Launcher jobs for the aircraft set** (V3 § 10.34 A1, the Settings session's request, base/* contract):
+  - `tools/regen/aircraft.py` splits the V2 updater's single pass (`AircraftDB/update_aircraft_db.py`, unchanged) into the
+    four verbs: fetch runs it with the network into thrown-away copies (only its caches stay), build runs it offline on
+    the workstation's base, purge removes its caches (dry first, tracked files kept), publish wraps the launcher's
+    `aircraft_publish` (dry: the plan) — handed to the set through the jobs' context rather than moved out of `launch.py`.
+  - Not as asked, said to Settings: the view's elements are the three steps (types, apd, simbrief), not the codes (the
+    script treats the codes as one batch, its per-code lines are not a contract); build commits nothing (the workstation's
+    `AircraftDB/` is not versioned), the commit is publish's.
+  - `GET /__setup/regen/verbs`: the loaded « set/verb » list, for the page to grey what the launcher lacks.
+  - noreg I17 against a fake updater and a trial folder (no network): fleet codes, fetch leaves the base, build offline,
+    the overrides of the served data, purge dry / real with a tracked file kept, publish dry / without author / real.

@@ -889,11 +889,13 @@ class Setup(http.server.SimpleHTTPRequestHandler):
     def _get_lnmperf_folder(self, path):
         return self._lnmperf(b'')
 
-    @route('GET', '/__setup/regen/state', '/__setup/regen/job', public='poste')
+    @route('GET', '/__setup/regen/state', '/__setup/regen/job', '/__setup/regen/verbs', public='poste')
     def _get_regen_state(self, path):
-        # module Données (frame/INTEGRATION.md § 15) : état du poste, travail en cours ou id — ce poste seulement
+        # module Données (frame/INTEGRATION.md § 15) : état du poste, travail en cours ou id, verbes chargés — ce poste seulement
         if not self._allowed() or self._lan():
             return self._json({'error': 'refusé'}, 403)
+        if path.endswith('/verbs'):  # « jeu/verbe » de chaque travail chargé : la page grise d'avance ce que ce lanceur ignore
+            return self._json({'verbs': sorted(f'{a}/{b}' for a, b in regen().registry)})
         if self.path.split('?')[0].endswith('/state'):
             return self._json(regen_jobs.state(DATA, SECRETS, *regen_git()))
         jid = (urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get('id') or [''])[0][:40]
@@ -1914,10 +1916,11 @@ def ivao_oauth_finish(state, code, error, device, redirect):
     """Retour d'IVAO : l'état d'une demande en cours, du même appareil et de la même adresse de retour ; le code échangé.
     { ok, access_token, refresh_token, expires_at, scope } ou { ok: False, error }."""
     p = _ivao_oidc['pending'].pop(str(state or ''), None)
-    if error:  # IVAO a refusé (client inconnu, adresse de retour, accès refusé) : sa raison, même sans état reconnu ; aucun jeton
-        return {'ok': False, 'error': 'ivao:' + (re.sub(r'[^a-z0-9_]', '', str(error).lower())[:40] or 'denied')}
-    if not p or time.time() - p['at'] >= IVAO_STATE_TTL or p['device'] != device or p['redirect'] != redirect:
+    ours = bool(p) and time.time() - p['at'] < IVAO_STATE_TTL and p['device'] == device and p['redirect'] == redirect
+    if not ours:  # aucune connexion en cours de cet appareil : même un « error=… » n'est pas d'IVAO (un lien tiers le forgerait)
         return {'ok': False, 'error': 'state'}
+    if error:  # IVAO a refusé une connexion de cet appareil (client inconnu, adresse de retour, accès refusé) : son code
+        return {'ok': False, 'error': 'ivao:' + (re.sub(r'[^a-z0-9_]', '', str(error).lower())[:40] or 'denied')}
     if not code:
         return {'ok': False, 'error': 'code'}
     if not ivao_oauth_cfg():
@@ -3610,7 +3613,10 @@ def regen():
         g, env = regen_git()
         for name, why in regen_jobs.load_verbs():  # tools/regen/<jeu>.py : les verbes de chaque jeu
             say(f'  Données : {name} laissé de côté ({why}).')
-        REGEN = regen_jobs.Jobs(regen_jobs.REGISTRY, {'data': DATA, 'secrets': SECRETS, 'git_cmd': g, 'git_env': env},
+        # aircraft_publish : la publication de la base des types (verbe aircraft/publish, tools/regen/aircraft.py) reste ici, avec
+        # la synchronisation qu'elle déclenche ; le jeu la reçoit par son contexte
+        REGEN = regen_jobs.Jobs(regen_jobs.REGISTRY, {'data': DATA, 'secrets': SECRETS, 'git_cmd': g, 'git_env': env,
+                                                      'aircraft_publish': aircraft_publish},
                                 store=os.path.join(ROOT, 'tools', '.regen_last.json'))
     return REGEN
 _loaded = {}  # module → date du fichier au chargement
