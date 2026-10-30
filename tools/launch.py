@@ -3740,18 +3740,25 @@ UPDATE_BUSY = {'ok': False, 'done': False, 'reason': 'busy',
 def update_suite(channel):
     """« Mettre à jour » (POST /__setup/update) : refusé (reason 'busy') pendant un travail du module Données ou une
     synchronisation de data/, l'extraction changeant tools/ alors qu'un sous-processus peut encore en importer un module
-    (relecture Sécurisation de 4fc473e5d) ; pendant la mise à jour, les deux verrous sont tenus : aucun travail ne part,
-    aucune synchronisation ne commence."""
+    (relecture Sécurisation de 4fc473e5d). Le plan et son git fetch (jusqu'à 120 s) d'abord, hors de tout verrou ; puis
+    les départs de travaux suspendus (jobs.hold : l'état, « Arrêter » et la page sans fenêtre répondent toujours) et
+    SYNC_LOCK pris pour la seule écriture (plan refait sans fetch, extraction ou avance rapide) ; les deux rendus à la fin
+    (relecture Sécurisation de 2a02aedde, ligne 103)."""
+    p = suite_update.plan(ROOT, channel)
+    if not p.get('ok') or p.get('reason') == 'up-to-date':
+        return {**p, 'done': False}
     jobs = regen()
-    with jobs.lock:
-        if jobs.cur and jobs.cur.data['state'] == 'running':
-            return dict(UPDATE_BUSY)
+    if not jobs.hold('updating'):
+        return dict(UPDATE_BUSY)
+    try:
         if not SYNC_LOCK.acquire(blocking=False):
             return dict(UPDATE_BUSY)
         try:
-            return suite_update.apply(ROOT, channel)
+            return suite_update.apply(ROOT, channel, fetch=False)
         finally:
             SYNC_LOCK.release()
+    finally:
+        jobs.release()
 
 
 def regen():

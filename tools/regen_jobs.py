@@ -243,6 +243,7 @@ class Jobs:
         self.last = {}  # (jeu, verbe) → heure (time.time) du dernier départ
         self.store = store  # tools/.regen_last.json : le dernier travail et les derniers départs, gardés d'un lancement à l'autre
         self.kept = None  # dernier travail d'un lancement précédent (« interrupted » s'il courait encore)
+        self.held = ''  # raison d'une suspension des départs (la mise à jour de la suite) ; vide : les travaux partent
         self._load()
 
     def _load(self):
@@ -287,6 +288,8 @@ class Jobs:
         if a is None:
             return {'ok': False, 'status': 400, 'message': 'invalid arguments'}
         with self.lock:
+            if self.held:
+                return {'ok': False, 'status': 409, 'reason': self.held, 'message': f'no job starts now ({self.held})'}
             if self.cur and self.cur.data['state'] == 'running':
                 return {'ok': False, 'status': 409, 'message': 'a job is already running', 'job': self.cur.id}
             gap, now = self.min_gap.get(key), time.time()
@@ -318,6 +321,20 @@ class Jobs:
                 job.data['ended'] = job.data['ended'] or int(time.time())
         with self.lock:
             self._save()
+
+    def hold(self, why):
+        """Suspend les départs (start refusé avec reason why) si aucun travail ne tourne ; False sinon. view, cancel, claim et
+        put répondent pendant la suspension : le verrou n'est tenu que le temps de poser le drapeau."""
+        with self.lock:
+            if self.held or self.cur and self.cur.data['state'] == 'running':
+                return False
+            self.held = str(why or 'held')
+            return True
+
+    def release(self):
+        """Les départs reprennent."""
+        with self.lock:
+            self.held = ''
 
     def view(self, id_=None):
         """Le travail id_ ({ ok: False, status: 410 } s'il n'est plus là) ; sans id_, le courant ou le dernier."""

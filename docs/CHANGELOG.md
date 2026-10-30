@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Update the suite: the Data module keeps answering during an update** (`tools/launch.py` `update_suite`,
+  `tools/regen_jobs.py` `Jobs.hold`; Settings SPEC 9a-bis, DECISIONS; noreg I25) — Sécurisation's review of 2a02aedde.
+  The plan and its fetch run outside any lock; job starts are refused (`updating`) by a flag instead of the jobs' lock,
+  so the job state, « Arrêter » and the windowless page answer; `SYNC_LOCK` covers the writing alone.
 - **Data: the pickup takes only the zip it showed; approximate outlines on the map** (`modules/data/`; help ×4; noreg L16, L19, L20): the real `base/pickup` run sends `zips: { <source>: { name, size } }` built from the plan that was shown (kept in the module state between the question and the run, never re-read); a source refused with `changed` (another zip arrived during the question) is said with the newest name, escaped, nothing is taken for it, and a « Run the plan again » button starts a new dry run. On the zones map, a zone whose outline has no ring or only its frame rectangle (`isApproxOutline`, from the data, never from a zone name) is dashed, says « approximate outline » in its title and aria-label, and adds a legend item.
 - **Noreg: every bench is opened by a case** (noreg I28, A53; frame DECISIONS) — I28 lists the pages of `frame/*/test/` and
   `modules/*/test/` and fails on one that no case opens (pages served only by the launcher are out). The three still without a case

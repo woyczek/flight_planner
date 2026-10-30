@@ -104,10 +104,11 @@ def plan(root, channel, fetch=True):
     return res
 
 
-def apply(root, channel):
-    """La mise à jour du canal, après un plan refait (avec fetch) : extraction détachée de l'étiquette, ou avance rapide de la
-    branche ; { ok, …plan, done, message }. Le lanceur en cours n'est pas relancé : à faire à la main."""
-    p = plan(root, channel)
+def apply(root, channel, fetch=True):
+    """La mise à jour du canal, après un plan refait (avec fetch, ou sans quand l'appelant vient de le faire) : extraction
+    détachée de l'étiquette, ou avance rapide de la branche ; { ok, …plan, done, message }. Le lanceur en cours n'est pas
+    relancé : à faire à la main."""
+    p = plan(root, channel, fetch=fetch)
     if not p.get('ok') or p.get('reason') == 'up-to-date':
         return {**p, 'done': False}
     if channel == 'suivi':

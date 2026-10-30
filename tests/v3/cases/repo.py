@@ -1847,22 +1847,32 @@ def i25(c):
     c.ok('DATA' not in src and 'data/' not in src.split('"""', 2)[2], '', 'the module never names the data repository')
     # refused while a job of the Data module or a synchronisation runs (Sécurisation on 4fc473e5d): both locks held during it
     import regen_jobs as RJ
-    kept = L.REGEN, L.suite_update.apply
+    kept = L.REGEN, L.suite_update.apply, L.suite_update.plan
     seen = []
+
+    def during(root, ch, fetch=True):
+        # while the update writes: no fetch again, the jobs' state answers, a start is refused, data/ is not synchronised
+        seen.append({'fetch': fetch, 'lock free': not L.REGEN.lock.locked(), 'view': 'job' in L.REGEN.view(), 'start': L.REGEN.start('t', 'x', {}).get('reason'),
+                     'sync held': L.SYNC_LOCK.locked()})
+        return {'ok': True, 'done': False}
     try:
-        L.REGEN = RJ.Jobs({}, {})
-        L.suite_update.apply = lambda root, ch: seen.append((L.REGEN.lock.locked(), L.SYNC_LOCK.locked())) or {'ok': True, 'done': False}
+        L.REGEN = RJ.Jobs({('t', 'x'): (lambda job, a, ctx: None, lambda a: a)}, {})
+        L.suite_update.plan = lambda root, ch, fetch=True: {'ok': True, 'channel': ch, 'target': 'v9.9.9'}  # never a fetch of this checkout
+        L.suite_update.apply = during
         L.REGEN.cur = RJ.Job('base', 'build', {})
         busy_job = L.update_suite('stable').get('reason')
         L.REGEN.cur.data['state'] = 'done'
         with L.SYNC_LOCK:
             busy_sync = L.update_suite('stable').get('reason')
         free = L.update_suite('stable')
+        after = L.REGEN.held
     finally:
-        L.REGEN, L.suite_update.apply = kept
-    c.eq((busy_job, busy_sync, free.get('ok'), seen), ('busy', 'busy', True, [(True, True)]),
-         'a running job or a synchronisation: « busy », nothing done; otherwise the update holds both locks', what='busy')
-    c.ok(not L.SYNC_LOCK.locked(), '', 'the synchronisation lock is given back')
+        L.REGEN, L.suite_update.apply, L.suite_update.plan = kept
+    c.eq((busy_job, busy_sync, free.get('ok'), seen),
+         ('busy', 'busy', True, [{'fetch': False, 'lock free': True, 'view': True, 'start': 'updating', 'sync held': True}]),
+         'a running job or a synchronisation: « busy »; during the update the jobs\u2019 state answers, no job starts, data/ is not synchronised',
+         what='busy')
+    c.ok(not L.SYNC_LOCK.locked() and after == '', after, 'the synchronisation lock and the jobs\u2019 starts are given back')
 
 
 @case('I27', 'The noreg runner: a targeted pass runs beside one full pass at 4 runs at a time; two full passes stay exclusive', 'I', static=True,

@@ -518,3 +518,9 @@ R-S8 module.js then model.js split by responsibility; R-S9 settings.js `render` 
   queuing would change `tools/` at a moment nobody chose. During the update the jobs' lock and the synchronisation lock are
   held, so neither can start halfway. The target is taken as the suite's repository announces it, without `git verify-tag`:
   the tags are not signed today; the help says so, and the check comes with signed tags.
+
+- **30 Oct 2026 — The update holds job starts, not the jobs' lock** (Sécurisation on 2a02aedde, line 103). Holding
+  `jobs.lock` through `apply()` also held `view`, `cancel`, `claim` and `put`, which take the same lock: during a fetch
+  of up to 120 s the Data module's polling and « Arrêter » hung. Now the plan and its fetch run outside any lock, a flag
+  (`Jobs.hold('updating')`) refuses new starts while the lock is held only to set it, and `SYNC_LOCK` covers the writing
+  alone.
