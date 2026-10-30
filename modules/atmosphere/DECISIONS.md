@@ -5,9 +5,11 @@ The memory of the V3 atmosphere module: every choice, dated, with its reason. Ne
 ## 30 October 2026 — lots 0 and 1 rebased on `v3`, the ergonomics session's answers
 
 - **Rebase** (ergonomics session, 30 Oct: "rebase tes trois commits … sur la tête d'origin/v3 … jamais en forcé"):
-  the three commits (help anchors, lot 0, lot 1) replayed on `v3` `ddfee4bc`, whose history was rewritten on 28 October
-  (same content, other SHAs). Pushed on GitHub under a new branch, `feature/atmosphere-route-v3` (the old branch would
-  have needed a forced push); the ergonomics session fast-forwards `v3`.
+  the three commits (help anchors, lot 0, lot 1) replayed on `v3` (history rewritten on 28 October: same content, other
+  SHAs), first on `ddfee4bc`, then picked again on `36f571e4` (`v3` moved during the test pass; generated files rebuilt,
+  no other conflict), with a fourth commit for case E13. Pushed on GitHub under new branches (the old one would have
+  needed a forced push): `feature/atmosphere-route-v3` (on `ddfee4bc`), `feature/atmosphere-route-v3-tip` (on
+  `36f571e4`, the one to fast-forward).
 - **What `v3` had added since** (`c9c63968`, 30 Oct, user's requests of 29 Oct), carried into the final-state SPEC and
   into the recode: the Layers **panel over the map** (the cut stays in view and follows each box; one tap, one
   toggle); the cut on **Fuel's vertical path** (`profile.path`) and times at the **ground speed** (headwind read on the

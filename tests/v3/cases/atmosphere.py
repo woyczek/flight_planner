@@ -374,6 +374,10 @@ def e13(c):
         if setup == 'legend':
             c.tap(f'{ATM} [data-at="legendBtn"]')
             c.until(f"!!document.querySelector('{ATM} .at-legend:not([hidden])')", what='the legend is shown')
+        elif setup == 'layers':
+            # the Layers are a panel over the map (E12), not a content of the sheet: no close button in the head
+            c.tap(button_sel(c, 'layers'))
+            c.until(f"window.__t.shown(document.querySelector('{ATM} .at-layerpop'))", what='the Layers panel opens')
         elif setup:
             open_view(c, setup)
         _help_at(c, anchor)
