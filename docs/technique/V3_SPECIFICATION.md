@@ -1071,3 +1071,38 @@ redesigned for touch at that point.
          non-highlighted family is hidden (the trace stays). Never a per-procedure cartouche in a family.
        Lots: maps (BUGS SOG: z-order, cartouches by family, colour classes), fuel (Features SOG: `wind.label()`
        arrows, `severity()` with benches, the select's colour and title), in this order so the Map reads the rule.
+       **Fourth reading (user, 30 Oct, LFPO arrival: "que sont toutes ces INA 06 ? il n'y a pas une lettre
+       normalement ? ou alors une transition (ODILO, final, VEBEK…) ; si je regarde une autre carte, je trouve des RNAV
+       et ILS pour ODILO ; les vecteurs de piste ne sont pas convaincants")**. Checked on `proc/manual/LFPO.json`: the
+       SIA publishes the **initial approach segments** as records named "INA RNAV RWY 06" with `transition` = "ODILO
+       1A", "VEBEK 1E", "MOLBA 1W"… (first point = the IAF, no final), and the finals as "ILS CAT I or CAT II or CAT III
+       RWY 06", "RNP RWY 06" (from the IF to the missed-approach point). Six identical rows "INA RNAV RWY 06" were the
+       symptom. Rules, in `frame/lib/procedures.js` (one rule, one pure module):
+       - **An approach record that does not reach the runway is a transition, never a row.** Detection: name
+         starting with "INA " (SIA), or `transition` set with no final leg (the record ends before the IF / runway).
+         It belongs to **every final of the same runway** (ILS, RNP, LOC…): the SIA segments are common. Shown as a
+         sub-row under each final, "via ODILO · ODILO 1A" (IAF then the published transition name with its letter),
+         ordered by IAF; `apptrans` carries the transition record's id. Choosing a final without a transition is
+         "Sans transition" (direct to the IF), as today.
+       - **A final's label is short**: `labelOf(app)` keeps the type and the runway, drops the category alternatives
+         ("CAT I or CAT II or CAT III", "or LOC") and the words "RWY": "ILS 06", "RNP 06", "LOC 07"; the published
+         name stays in the `title` and in the record. Two finals with the same type and runway keep the SIA letter
+         ("RNP Y 06", "RNP Z 06") — never two identical labels in a list: when it would happen, the first point joins
+         the label ("RNP 06 · IPO06").
+       - **The expanded path joins a transition to its final at the first common point**, else by a direct leg to
+         the final's first point drawn dashed (the § 10.20 join rule applies to approaches too); the Map colours the
+         transition with the final's hue.
+       - **Runway vectors**: the full-length arrows of § 10.24 are withdrawn now, not when the threshold vector
+         lands: no runway drawing in the choose mode until the 24 px threshold vector of this § is delivered (BUGS
+         SOG, next commit). The chosen runway is said by the pane's summary and the row.
+         User, same test: "vecteur masqué par le label", then "des labels sur chaque piste de la carte (a minima le
+         numéro de piste au seuil) et, comme on est en gros zoom, le nom de l'AD". Rules: the mode's drawings (traces,
+         vectors, cartouches) sit **above the base map's labels** (navaid and airway labels of the tiles and of the
+         Map's own layers), which the mode dims; a designator sits at the vector's tail, offset, never over it. On
+         the general Map, from `runwayZoom` on, **every runway of every drawn aerodrome gets its designator at each
+         threshold** ("06", "24"), with the threshold vector when it lands and without it meanwhile, and the
+         aerodrome's pin shows its **name beside the code** ("LFPO Paris-Orly", the name rule of § 10.27) instead of
+         the code alone; below `runwayZoom` nothing changes.
+       Lots: fuel first (Features SOG: the transition detection in `appChoices` / `transitionsOf`, `labelOf`, the join
+       in `expandedPath`, benches on LFPO's records; Fuel's own approach select uses the same rows), then maps (BUGS
+       SOG: sub-rows and hues from the rule, the join on the trace, vectors withdrawn then the threshold vector).
