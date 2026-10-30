@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Tests: D61 is deterministic** (`tests/v3/cases/maps_recode.py`). Its reread was stamped `updated_at` in whole seconds; on a
+  warm browser the write could fall in the same second as the flight's own stamp, and the Map, which rereads only a strictly
+  newer record (a correct rule: real writers stamp milliseconds), rightly ignored it — one run in seven under load. The reread
+  is now stamped strictly later, and the case waits for the expected track itself (20 s) instead of a length.
+
 - **IVAO sign-in through the relay (R1b)** (`tools/launch.py`, `frame/app.js`, `frame/settings/settings.js`; frame
   SPEC § 3.11, INTEGRATION, DECISIONS, Settings help ×4; noreg I10, I14, A41): Settings › IVAO account links a device to
   the pilot's IVAO account (OpenID code flow with PKCE run by the launcher, which keeps the application's secret); the

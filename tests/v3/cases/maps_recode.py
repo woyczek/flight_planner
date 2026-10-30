@@ -1312,6 +1312,19 @@ def d60(c):
 
 # ------------------------------------------------------------------------------------------------------ D61
 _TRAIL_JS = """() => (window.__mp.S.trail || []).map(p => [p.lat, p.lon, p.at])"""
+# true once the Map's track is exactly `want` ([[lat, lon]], 4 decimals): the case waits for a state, never for a delay or a length
+_TRAIL_IS = """(want) => { const t = (window.__mp && window.__mp.S && window.__mp.S.trail) || [];
+  return t.length === want.length && t.every((p, i) => Math.abs(p.lat - want[i][0]) < 1e-4 && Math.abs(p.lon - want[i][1]) < 1e-4) }"""
+
+
+def _trail_wait(c, want, what):
+    """Waits until the Map's track is `want` (20 s: the full noreg loads the machine); fails with the last track seen."""
+    try:
+        c.until(_TRAIL_IS, want, timeout=20000, what=what)
+    except Fail:
+        pass
+    got = c.js(_TRAIL_JS)
+    return got
 
 
 @case('D61', 'The flown track comes from the frame: read at mount, the whole flight, then the Map adds its newer positions', 'D',
@@ -1327,20 +1340,23 @@ def d61(c):
     c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
     c.ready('maps', sheet=True)
     c.js("async () => { window.__mp = await import('/modules/maps/state.js'); return true }")
-    c.until("() => (window.__mp.S && window.__mp.S.trail || []).length >= 4", timeout=8000, what='the track is read')
-    got = c.js(_TRAIL_JS)
-    c.eq([[round(q[0], 4), round(q[1], 4)] for q in got], [[q[0], q[1]] for q in trail] + [[46.3, -0.9]],
+    want = [[q[0], q[1]] for q in trail] + [[46.3, -0.9]]
+    got = _trail_wait(c, want, 'the track is read')
+    c.eq([[round(q[0], 4), round(q[1], 4)] for q in got], want,
          'the frame\u2019s track, its first point an hour old included, the points off the Earth left out, then the current position', what='track')
     c.eq(got[1][2][:16], iso(t0 + datetime.timedelta(seconds=1800))[:16], 'a point\u2019s time is started.at + s', what='time of a point')
     # a reread (the frame wrote a new position and the trail grew): the track is the frame's again, nothing doubled
     g = c.doc(PATH)
     g['progress']['actual']['trail'] = trail + [[46.3, -0.9, 24000, 3580]]
     g['progress']['actual'].update({'lat': 46.1, 'lon': -0.7, 'at': iso(now())})
-    g['updated_at'] = iso(now())
+    # strictly newer than the record shown: the Map rereads only a newer updated_at, and on a warm browser this write can fall
+    # in the same second as the flight's (whole seconds here) — it was then rightly ignored, one run in seven
+    g['updated_at'] = iso(max(now(), datetime.datetime.strptime(g['updated_at'], '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=datetime.timezone.utc))
+                          + datetime.timedelta(seconds=1))
     c.js("""(a) => window.FrameData.adapter({ id: 't-trail', reads: ['pilot/'], writes: ['pilot/'] }).put(a[0], a[1])""", [PATH, g])
-    c.until("() => (window.__mp.S.trail || []).some(p => Math.abs(p.lat - 46.1) < 1e-6)", timeout=8000, what='the new position')
-    got = c.js(_TRAIL_JS)
-    c.eq([[round(q[0], 4), round(q[1], 4)] for q in got], [[q[0], q[1]] for q in trail] + [[46.3, -0.9], [46.1, -0.7]],
+    want = [[q[0], q[1]] for q in trail] + [[46.3, -0.9], [46.1, -0.7]]
+    got = _trail_wait(c, want, 'the new position')
+    c.eq([[round(q[0], 4), round(q[1], 4)] for q in got], want,
          'the frame\u2019s track plus the new position, nothing doubled', what='track after a reread')
 
 
