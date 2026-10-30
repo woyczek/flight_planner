@@ -920,6 +920,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 68 | Refactor R-F1: runway wind in `frame/lib/wind.js` (552e0889d) | acceptable, no change of behaviour |
 | 69 | Refactor R-F2a: one approach-transition rule (30cf56414) | acceptable, no change of behaviour |
 | 70 | Session id cut from the log, zip ceilings, same host by default (423ae3f98) | acceptable; points of 66, 61 and 30 settled |
+| 71 | Data module: VAC and Procedures panels on the launcher's verbs (3b6df2ada) | acceptable |
+| 72 | Map: « around the flight only » layer switch (4f9dca4c3), test D31 (422ed8b3f) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -1666,6 +1668,15 @@ segment at its first `;`, so a session id never reaches the console. `zip_check`
 limits the CIFP to the archive's root, and also covers the first run's data archive. `outbound.opener` adds a same-host
 redirect rule (never https to http) unless a redirect handler is given (no redirects for OpenID and GitLab, the relay's
 rule, EAD's stay-on-host); `aero_fetch`, the SIA and the jobs' downloads now benefit from it.
+
+**71. Data module, VAC and Procedures panels (3b6df2ada) — acceptable.** No write, network or new route; arguments stay
+identifiers (a cycle, States) checked again by the launcher (58, 61); `merge-pending` and `unsafe-path` join the closed
+lists; text goes through `esc` or the translations.
+
+**72. Map, « around the flight only » (4f9dca4c3, 422ed8b3f) — acceptable.** The switch is kept in the device's own
+setting (`cache/maps/ui.json`, policy cache); no network or other write; layer keys and hues come from the code; names
+composed as « type + name » are text only (drawn on the canvas, escaped in the pane). The second commit only touches a
+test.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
