@@ -280,7 +280,7 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **The common cursor** on the map: a blue ring (`--sog-accent`); a tap within 32 px of the route sets it to the nearest
   profile sample (§ 8.4).
 
-### 5.1 Choosing on the map (`choose.js`; V3_SPECIFICATION § 10.23)
+### 5.1 Choosing on the map (`choose.js`; V3_SPECIFICATION § 10.23, § 10.30)
 
 Fuel's "Sur la carte" button opens `#maps?choose=dep|arr&icao=LFXX`. The Map reads the request at mount with `ctx.consume('choose',
 'icao')` (the address becomes `#maps`) and, with a flight and an aerodrome, shows the **choose mode** (`S.choose`): nothing else
@@ -290,43 +290,53 @@ enters it.
 The **second entry** is the aerodrome card of the departure or the arrival (ergonomics, 29 Oct 2026: the user did not find the
 entry on a phone): next to "Changer" (→ `#fuel?focus=<side>`), "Choisir sur la carte" (`[data-choose]`, full width under 768 px)
 runs `chooseOpen(side, icao)`, the same code path as the address without a reload: the card is released, the mode loads, the
-view fits the procedures (`fitMap`). Leaving the mode (✕, Escape) gives back the flight and its frame (`applyFlight`, then
-`fitMap`).
+view fits the procedures (`fitMap`). Closing the pane from there with nothing chosen gives back the flight and its frame (`chooseExit`: `applyFlight`, then `fitMap`).
 
 **"Source"** (V3 § 10.25): each chosen procedure of the side (SID; STAR and APP) whose record carries an `https://` `source.url`
 (aerodb, the SIA's eAIP page) gets a link "Source" in its row (`a.mp-ad-src`, new tab, `rel="noopener noreferrer"`; "Source STAR"
 / "Source APP" when both have one); any other address is never a link. A record without a public page (EAD, OCR, manual) has
 none, its document's name (`source.file`, else `ref`, `name`) in the row's `title`.
 
-- **What is read**: `aerodb.procedures(icao)` (the published records; a record of status `doubt` is never asked for, hence never
-  listed), `aerodb.runways(icao)`, `aerodb.aerodromes({ icao })` (the axis, when nothing else names a runway), the flight's
-  `route.procedures` through `proceduresOf`. Every rule is `frame/lib/procedures.js` (`runwayChoices`, `appChoices`,
-  `transitionsOf`, `orderProcedures`, `conflictsOf`, `servesRwy`, `nameOf`): the mode only displays; a record without a name (empty name
-  or `NONAME` in its id) is not listed either, the rule of Fuel's lists (a choice made on the Map is always one Fuel shows).
-- **One family per opening**, the first the flight has not chosen yet (absent = not chosen; `null` = "Aucune" = chosen) that has
-  something to offer, in the order of the side: departure `rwy`, `sid`, `trans`; arrival `rwy`, `star`, `app`, `trans` (the STAR's),
-  `appTrans`. Everything chosen: the first family with something to offer, from the start. The keys are those of
-  `route.procedures` v2.
-- **View**: `S.fit` (`viewOf`) is the box of the family's points and the aerodrome (3 NM margin); the base map's box takes the class
-  `mp-choosing` (opacity), and `MapsRender.draw({ dim })` fades every Map layer, the route's included, by `DIM` (.6) before the
-  screen paints its own (the `dim` layer, between `route` and `screenTraces`); the flight's own procedures, runway arrows,
-  VFR points, winds, TOC / TOD and position are not drawn.
-- **Hues**: one per procedure, `MapsRender.palette(dark).procHues` (eight, cycled by the procedure's rank in the family's list,
-  stable under the runway filter), the same on the row, the label and the trace. ⌛ (grey, symbol only) = read under an earlier cycle;
-  ⚠ (orange) = `conflictsOf`, the reason in the row's `title`.
-- **Map**: a trace per procedure (a SID starts at its runway's threshold); **one label per exit point (SID) or entry point (STAR,
-  approach)** stacking the names that meet there, reserved in the placer and kept inside the map; the **transitions only for the
-  highlighted procedure** (a row, a label or a trace under the pointer or focused), dashed in its hue; in a transition family the
-  procedure whose transition is chosen is a thin grey line. In the runway family every runway is an arrow (`arrowOf`,
-  `drawRunways`), the chosen one bold.
-- **Sheet** (`openData('choose', …)`): the title ("STAR · LFPO"), the hint (expanded sheet only), the runway chips (at most 7, a
-  filter by `servesRwy`, none for the runways or the transitions, none with one runway), then the list: **"Aucune" first**, **seven
-  rows at most** ("Aucune" and six), the rest folded under "N more…" which unfolds it in place — the sheet is the only surface
-  that scrolls, the list never scrolls by itself (V3 § 10.30: never two scrollbars); ✕ and Escape leave the mode (the Map takes the whole flight back).
-- **One tap chooses**: a tap on a row, a label or a trace (the nearest within 14 px) does `location.replace('#fuel?focus=<side>&
-  <key>=<id>')` (`none` for "Aucune", the runway without "RW"); the Map writes nothing to the flight. "Cancel" is the frame's
-  "← Fuel". Fuel consumes the key (`ctx.consume`), writes and says what changed.
-- Texts `TX.ch*` (×4); help anchor `maps-choose`; cases D60.
+- **What is read**: `aerodb.procedures(icao)` (the published records; never a doubt record: `PR.isDoubt`, status `doubt`, no
+  name or `NONAME`, the rule of Fuel's lists), `aerodb.runways(icao)`, `aerodb.aerodromes({ icao })` (the axis, when nothing else
+  names a runway), the flight's `route.procedures` through `proceduresOf`, and the aerodrome's METAR already known to the suite
+  (`ctx.weather.metar([icao], { cacheOnly: true })`: nothing is asked to the network). Every rule is `frame/lib/procedures.js`
+  (`runwayChoices`, `appChoices`, `transitionsOf`, `orderProcedures`, `conflictsOf`, `servesRwy`, `nameOf`, `runwayOf`,
+  `firstServing`) and the wind `frame/lib/wind.js` (`components`): the mode only displays.
+- **One pane, the whole side at once** (§ 10.30, replacing one family per trip): the groups of the side in its order —
+  departure `rwy`, `sid`; arrival `rwy`, `star`, `app`, then `appTrans` folded under the approach when the approach in force has
+  transitions. Each group: **"Aucune" first**, the rows in `orderProcedures` order on the choice in force (compatible first, then
+  ⚠), **seven rows at most** ("Aucune" and six), the rest folded under "N more…" which unfolds it in place (a row highlighted from
+  the map unfolds its group); the sheet is the only surface that scrolls, no list scrolls by itself (never two scrollbars); then
+  "Terminer" (full width).
+- **The selection adds up**: a tap on a row, a label or a trace (the nearest within 14 px) sets that family's choice in `S.choose.sel`
+  (absent = untouched, `null` = "Aucune", else the id; the runway without "RW"); the choice in force is the flight's with the pane's
+  over it. Nothing is written and the address does not change until the pane is closed. A procedure that serves one runway
+  (`runwayOf`) sets it when none is in force; another approach puts its transition back to "Aucune" when the old one does not
+  follow it.
+- **Runway and procedure correct each other** (one line under the procedure's group, one tap, never silently): the procedure just
+  chosen serves one other runway → "OPAL2E sert la 25 — Passer en 25"; otherwise (the runway changed, or the procedure serves
+  several) → "OKRIX5A ne sert pas la 07 — Choisir OKRIX5B", the first of the group that serves it (`firstServing`); the row keeps ⚠.
+- **Wind on every runway row**: `components(true bearing, METAR wdir, wspd)` → "↑ 12 kt · ← 6 kt" (↑ head, ↓ tail, orange above
+  5 kt of tail; the cross arrow in the direction the wind pushes); the true bearing is `runwayBearing`; no METAR, a variable wind
+  or no bearing → no wind, nothing invented. The crosswind limit of the aircraft sheet is not read yet.
+- **Closing** ("Terminer", ✕, Escape: `chooseFinish`) returns once: `location.replace('#fuel?focus=<side>&rwy=25&star=ID&app=ID&
+  apptrans=none')` — one key per family touched (`rwy`, `sid`, `star`, `app`, `apptrans`; `none` for "Aucune"), a key absent =
+  that family untouched; nothing touched → `#fuel?focus=<side>`. Fuel consumes the keys together (`ctx.consume`), writes once and
+  says what changed; the Map never writes. Giving up without handing anything back is the frame's "← Fuel".
+- **View**: `S.fit` (`viewOf`) is the box of the side's runways and procedures and the aerodrome (3 NM margin); the base map's box
+  takes the class `mp-choosing` (opacity), and `MapsRender.draw({ dim })` fades every Map layer, the route's and the airspaces'
+  included, by `DIM` (.6) before the screen paints its own (the `dim` layer, between `route` and `screenTraces`); the flight's own
+  procedures, runway arrows, VFR points, winds, TOC / TOD and position are not drawn.
+- **Map, the selection in force**: every runway (`arrowOf`, `drawRunways`; the one in force bold); the **family touched last**
+  (`S.choose.focus`; at opening the first the flight lacks) drawn whole, its other procedures dimmed as soon as one is chosen; the
+  procedure chosen in each other family in its hue; the chosen approach transition dashed; the transitions of the highlighted
+  procedure dashed. **One label per exit point (SID) or entry point (STAR, approach)** stacking the names that meet there,
+  reserved in the placer and kept inside the map.
+- **Hues**: one per procedure, `MapsRender.palette(dark).procHues` (eight, cycled by the procedure's rank in its group), the same on
+  the row, the label and the trace. ⌛ (grey, symbol only) = read under an earlier cycle; ⚠ (orange) = `conflictsOf`, the reason in
+  the row's `title`.
+- Texts `TX.ch*` (×4); help anchor `maps-choose`; cases D60, D62.
 
 ## 6. Map contents
 

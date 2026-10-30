@@ -328,31 +328,38 @@ export const TX = {
   ],
   // mode « choisir sur la carte » (V3_SPECIFICATION § 10.23, choose.js) : le titre de la famille montrée (une par ouverture), la
   // consigne, « Aucune », les puces de piste, les lignes, les marques ⚠ en infobulle, les cas vides
-  chTitle: {
-    rwy: ['Piste · {icao}', 'Runway · {icao}', 'Piste · {icao}', 'Pista · {icao}'],
-    sid: ['SID · {icao}', 'SID · {icao}', 'SID · {icao}', 'SID · {icao}'],
-    star: ['STAR · {icao}', 'STAR · {icao}', 'STAR · {icao}', 'STAR · {icao}'],
-    app: ['Approche · {icao}', 'Approach · {icao}', 'Anflug · {icao}', 'Aproximación · {icao}'],
-    trans: ['Transition de {p} · {icao}', 'Transition of {p} · {icao}', 'Übergang von {p} · {icao}', 'Transición de {p} · {icao}'],
-    appTrans: ['Transition d’approche de {p} · {icao}', 'Approach transition of {p} · {icao}', 'Anflugübergang von {p} · {icao}',
-      'Transición de aproximación de {p} · {icao}'
-    ]
+  // mode choix (V3 § 10.30) : titre du volet par côté, titre de chaque groupe, « Terminer », lignes de correction, vent d'une piste
+  chSide: {
+    dep: ['Départ · {icao}', 'Departure · {icao}', 'Abflug · {icao}', 'Salida · {icao}'],
+    arr: ['Arrivée · {icao}', 'Arrival · {icao}', 'Ankunft · {icao}', 'Llegada · {icao}']
   },
-  chHint: ['Touchez un tracé, un cartouche ou une ligne pour choisir.', 'Tap a trace, a label or a row to choose.',
-    'Spur, Beschriftung oder Zeile antippen, um zu wählen.', 'Toque un trazado, una etiqueta o una línea para elegir.'
+  chFam: {
+    rwy: ['Piste', 'Runway', 'Piste', 'Pista'],
+    sid: ['SID', 'SID', 'SID', 'SID'],
+    star: ['STAR', 'STAR', 'STAR', 'STAR'],
+    app: ['Approche', 'Approach', 'Anflug', 'Aproximación'],
+    appTrans: ['Transition de l’approche', 'Approach transition', 'Anflugübergang', 'Transición de la aproximación']
+  },
+  chHint: ['Touchez une ligne ou un tracé : le choix s’ajoute et reste sur la carte ; « Terminer » le rend à Carburant.',
+    'Tap a row or a trace: the choice adds up and stays on the map; "Done" hands it to Fuel.',
+    'Zeile oder Spur antippen: die Wahl kommt hinzu und bleibt auf der Karte; „Fertig“ gibt sie an Kraftstoff.',
+    'Toque una línea o un trazado: la elección se suma y queda en el mapa; «Terminar» la entrega a Combustible.'
+  ],
+  chDone: ['Terminer', 'Done', 'Fertig', 'Terminar'],
+  chServes: ['{p} sert la {r} —', '{p} serves {r} —', '{p} bedient {r} —', '{p} sirve a la {r} —'],
+  chUseRwy: ['Passer en {r}', 'Switch to {r}', 'Auf {r} wechseln', 'Pasar a la {r}'],
+  chNotServes: ['{p} ne sert pas la {r} —', '{p} does not serve {r} —', '{p} bedient {r} nicht —', '{p} no sirve a la {r} —'],
+  chUseProc: ['Choisir {p}', 'Choose {p}', '{p} wählen', 'Elegir {p}'],
+  chWindTip: ['METAR {id} : vent {d}° {kt} kt — face {h} kt (négatif : arrière), travers {x} kt',
+    'METAR {id}: wind {d}° {kt} kt — head {h} kt (negative: tail), cross {x} kt',
+    'METAR {id}: Wind {d}° {kt} kt — Gegenwind {h} kt (negativ: Rückenwind), Seitenwind {x} kt',
+    'METAR {id}: viento {d}° {kt} kt — de cara {h} kt (negativo: de cola), cruzado {x} kt'
   ],
   chNone: ['Aucune', 'None', 'Keine', 'Ninguna'],
   chMore: ['{n} autres…', '{n} more…', '{n} weitere…', '{n} más…'],
   chRwy: ['Piste {r}', 'Runway {r}', 'Piste {r}', 'Pista {r}'],
-  chChips: ['Filtrer par piste', 'Filter by runway', 'Nach Piste filtern', 'Filtrar por pista'],
-  chChipTip: ['Seulement ce qui dessert la piste {r}', 'Only what serves runway {r}', 'Nur was Piste {r} bedient',
-    'Solo lo que sirve a la pista {r}'
-  ],
   chEmpty: ['Rien de publié à choisir pour {icao}.', 'Nothing published to choose for {icao}.',
     'Für {icao} ist nichts zur Auswahl veröffentlicht.', 'No hay nada publicado para elegir en {icao}.'
-  ],
-  chEmptyChip: ['Aucune ne dessert la piste {r}.', 'None serves runway {r}.', 'Keine bedient Piste {r}.',
-    'Ninguna sirve a la pista {r}.'
   ],
   chConflictRwy: ['Ne dessert pas la piste {rwy}', 'Does not serve runway {rwy}', 'Bedient Piste {rwy} nicht',
     'No sirve a la pista {rwy}'

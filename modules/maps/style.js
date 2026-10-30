@@ -195,17 +195,22 @@ export const STYLE = `
 [data-module="maps"] .mp-lv-lim::before{content:"·";position:absolute;right:100%;width:10px;text-align:center}
 [data-module="maps"] .mp-lv-n{font-weight:700;min-width:1.4em;text-align:right}
 /* mode « choisir sur la carte » (choose.js) : le fond MapLibre éteint (les couches de la Carte le sont dans le dessin), puis dans la feuille la
-   consigne, les puces de piste et la liste : « Aucune » d'abord, sept lignes au plus (--mp-ch-row chacune), le reste replié sous « N autres » (la feuille est la seule
+   consigne, puis un groupe par famille du côté (piste, SID ou STAR, approche) : « Aucune » d'abord, sept lignes au plus (--mp-ch-row chacune), le reste replié sous « N autres » (la feuille est la seule
    surface qui défile, V3 § 10.30) ; la ligne
    porte la teinte de la procédure (--c), ⌛ en gris, ⚠ en orange, la ligne surlignée (data-hl) comme son tracé */
 [data-module="maps"] .mp-choosing .mp-map{opacity:.45}
 [data-module="maps"] .mp-dbody[data-kind=choose]{--mp-ch-row:38px}
 [data-module="maps"] .mp-ch-hint{margin:0 0 4px}
 [data-module="maps"].f-sheet:not([data-sheet="expanded"]) .mp-ch-hint{display:none}
-[data-module="maps"] .mp-ch-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}
-[data-module="maps"] .mp-ch-chip{box-sizing:border-box;min-width:var(--sog-touch);min-height:36px;margin:0;padding:0 10px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:none;color:var(--sog-fg);font:inherit;font-weight:700;cursor:pointer;touch-action:manipulation}
-[data-module="maps"] .mp-ch-chip[aria-pressed=true]{color:var(--sog-accent);border-color:var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 16%,var(--sog-surface))}
 [data-module="maps"] .mp-ch-list{border-top:1px solid var(--sog-border)}
+[data-module="maps"] .mp-ch-grp{margin:0 0 10px}
+[data-module="maps"] .mp-ch-head{margin:6px 0 2px;font-size:var(--sog-size-s);color:var(--sog-muted);text-transform:uppercase;letter-spacing:.04em}
+[data-module="maps"] .mp-ch-row[aria-pressed=true]{background:color-mix(in srgb,var(--c,var(--sog-accent)) 20%,var(--sog-surface));box-shadow:inset 3px 0 0 var(--c,var(--sog-accent))}
+[data-module="maps"] .mp-ch-wind{flex:none;font-weight:600;color:var(--sog-fg);font-variant-numeric:tabular-nums}
+[data-module="maps"] .mp-ch-wind[data-tail]{color:var(--sog-warn)}
+[data-module="maps"] .mp-ch-fix{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:4px 0 0;color:var(--sog-warn)}
+[data-module="maps"] .mp-ch-fix .f-btn{margin:0}
+[data-module="maps"] .mp-ch-done{display:block;width:100%;min-height:var(--sog-touch);margin:4px 0 8px}
 [data-module="maps"] .mp-ch-more{color:var(--sog-accent);font-weight:600}
 [data-module="maps"] .mp-ch-row{box-sizing:border-box;display:flex;align-items:center;gap:8px;width:100%;height:var(--mp-ch-row);margin:0;padding:0 8px;border:0;border-bottom:1px solid var(--sog-border);border-radius:0;background:none;color:var(--c,var(--sog-fg));font:inherit;font-weight:700;text-align:left;cursor:pointer;touch-action:manipulation}
 [data-module="maps"] .mp-ch-row[data-hl="1"]{background:color-mix(in srgb,var(--c,var(--sog-accent)) 14%,var(--sog-surface))}

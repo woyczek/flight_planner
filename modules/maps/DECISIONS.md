@@ -1539,3 +1539,22 @@ SPEC § 6.11, INTEGRATION § 3 ter. Choices of the session, with their reasons:
 - **Not on mission maps** (their Layers content is the selector only), and not without a flight for the automatic lighting.
 - **A new file, `coverage.js`**: `render.js` is already past the 60 KB of SPEC § 1; it only takes the drawing of the colour
   (`coverPins`, `cov` in `MapsRender.draw`); the requests, the rule, the legend rows and the card line are in `coverage.js`.
+
+## Choosing on the map: one pane, the selection kept, one trip back (V3 § 10.30, 30 Oct 2026)
+
+- **The whole side in one pane, one scrolling surface.** The first group tests found the one-family-per-trip mode "not
+  convincing": the pane now lists the runway, the SID or the STAR and the approach together. § 10.30 first asked for "≤ 7 rows
+  then scroll inside the group" and "never two scrollbars": a group scrolling inside a sheet that scrolls is the double scrollbar
+  the user reported. Decided with the ergonomics session: the sheet is the only surface that scrolls; a group shows "Aucune" and
+  six rows, the rest folded under "N more…" which unfolds it in place.
+- **Selection in the pane, written by Fuel once.** A tap sets the family's choice in the mode's local state and leaves it drawn;
+  closing returns every family touched in one `location.replace`, keys `rwy`, `sid`, `star`, `app`, `apptrans` (lower case, no
+  key for SID / STAR transitions: Fuel's model has none). A key absent means "untouched", `none` means "Aucune": Fuel can tell
+  "keep" from "remove". The Map still never writes; one writer, one write, one address.
+- **Corrections offered, never imposed.** A procedure serving one runway sets it only when none is in force; otherwise one line
+  under the group and one tap. Which line depends on what changed last: the procedure ("sert la 25 — Passer en 25") or the
+  runway ("ne sert pas la 07 — Choisir OKRIX5B", the first of the group by its order). The rules are `runwayOf` / `firstServing`
+  in `frame/lib/procedures.js`, shared with Fuel.
+- **Wind from the METAR the suite already has**, read from the frame's cache (`cacheOnly`): the pane never asks the network; no
+  METAR, a variable wind or a runway without a bearing gives no line. Arrows: ↑ head, ↓ tail (orange above 5 kt), the cross
+  arrow in the direction the wind pushes, the numbers in the row's tooltip.

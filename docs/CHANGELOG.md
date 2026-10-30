@@ -12,6 +12,18 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: choosing on the map in one pane, the selection kept, one trip back to Fuel** (`modules/maps/choose.js`, `texts.js`,
+  `style.js`, `sheet_view.js`; help ×4, maps SPEC § 5.1, DECISIONS; noreg D60, D62; V3 § 10.30, after the first group tests:
+  "sa version Sur la carte n'est pas convaincante"). The pane lists the side's families at once — runway, SID or STAR,
+  approach (its transition folded under it) — each "Aucune" first, compatible rows then ⚠, six rows and "N more…". A tap on a row
+  or a trace adds that choice to the pane and leaves it drawn (every runway, the one in force bold; the family touched whole, its
+  other procedures dimmed; the other families' choice in its hue). A procedure serving one runway sets it when none is chosen;
+  otherwise a line under the group offers the correction in one tap ("OPAL2E sert la 25 — Passer en 25", "OKRIX5A ne sert pas
+  la 07 — Choisir OKRIX5B"; `runwayOf`, `firstServing`). Each runway row carries the wind of the METAR already known ("↑ 12 kt ·
+  ← 6 kt", tail in orange above 5 kt; `components`; no METAR, no line). "Terminer", ✕ or Escape return once:
+  `#fuel?focus=<side>&rwy=…&star=…&app=…&apptrans=…`, one key per family touched, `none` for "Aucune"; the Map writes nothing.
+  The runway chips go (the runway group replaces them).
+
 - **Map: every element invisible in the general view** (`modules/maps/render_airspace.js`; noreg D64; user, 30 Oct: "tous les
   éléments sont invisibles, même à complexité > 0, sauf si on zoome très fort"). Since the data layer deep-freezes the published
   base (shared references, 802e6856f), the corridor selection's cache of an airspace's box, written on the record itself

@@ -55,7 +55,7 @@ import {
   covRows
 } from './coverage.js';
 import {
-  chooseExit,
+  chooseFinish,
   chooseRender
 } from './choose.js';
 
@@ -228,7 +228,7 @@ export function endData(kind = null) {
 }
 /** Fermeture voulue (✕, Échap) : le contenu quel qu'il soit ; la coupe ferme sur le profil (et le choix suit). */
 export function closeData() {
-  if (S.dpanel === 'choose') return chooseExit(); // ✕ ou Échap : le mode choix se retire, la carte reprend le vol
+  if (S.dpanel === 'choose') return chooseFinish(); // ✕ ou Échap : comme « Terminer », la sélection part vers Carburant
   if (S.dpanel === 'ad' || S.vfrPin) return unpinAd();
   if (S.dpanel === 'weather') keep.view = 'profile';
   endData();
