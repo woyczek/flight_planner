@@ -986,6 +986,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 134 | Map base: `zonesLayer`, zones drawn and tapped on a MapLibre map (1a519954f) | acceptable |
 | 135 | Frame: one marked tab, Help and Settings in the bar, one manual per application (cc6503ee0) | acceptable |
 | 136 | aerodb: a zone's frame computed around its main ring (fed1c6f4a) | acceptable |
+| 137 | Frame: `fuel_units.js`, fuel densities and conversions (85b1300e4) | acceptable, two notes |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2155,6 +2156,12 @@ outside the bundle.
 **136. A zone's frame (fed1c6f4a) — acceptable.** `zoneFrame(rings)` is a pure computation on the numbers of the
 outlines (from the suite's code, 92); `zoneOutlines()` keeps its shape and adds `parts` and `framed`; nothing read or
 written beyond it.
+
+**137. Fuel units (85b1300e4) — acceptable, two notes.** A pure module (no state, call, DOM or text): densities from the
+sheet, then the airline, then the type, refused outside 0.5–1.0 kg/L; conversions between kg, lb, L and USG. Notes:
+`density()` ends with `FUEL_DENSITY[kind]`, which gives a function or `Object.prototype` for a kind named like
+`constructor` or `__proto__` (use `Object.hasOwn`, as in 118); `num()` accepts booleans and one-number arrays
+(`+true`, `+[5]`), so not every unreadable input becomes `null` (accept only numbers and non-empty strings).
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
