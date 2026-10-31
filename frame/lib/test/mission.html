@@ -1,0 +1,253 @@
+<!doctype html>
+<!-- Banc des missions (frame/lib/mission.js, modules/missions/SPEC.md § 2, § 4) : les trois formes réelles d'un fichier mission<ID>.yaml
+     (minimale comme M-001, complète comme A-001A, organisation …Z) et une ligne du registre, sur des missions inventées (noms, positions,
+     indicatifs : aucun contenu d'AIP ni de mission réelle). Fonctions pures ; page nue ; window.__bench = { done, pass, fail, rows }. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>mission — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">mission.js — bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    readMission,
+    readRegistry,
+    icaoOf,
+    levelFt,
+    missionFlight
+  } from '../mission.js?v=0';
+  const out = document.getElementById('out'),
+    rows = [];
+  /** Une vérification : nom, vrai ou faux, ce qu'on a mesuré. */
+  function ck(name, ok, got = '') {
+    rows.push({
+      name,
+      ok: !!ok,
+      got: String(got)
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : `  → ${got}`}`;
+    out.append(l);
+  }
+
+  // la forme minimale (comme M-001) : ni origine ni destination, une cible et des tournants, des notes
+  const minimal = {
+      schema: 'helo-xp-mission',
+      mission: {
+        id: 'X-001',
+        type: 'MEDEVAC',
+        subtype: null
+      },
+      target: {
+        id: 'TARGET',
+        name: 'Pic Inventé',
+        lat: 42.5,
+        lon: 2.4
+      },
+      turning_points: [{
+        id: 'PT1',
+        name: 'Villeneuve-Test',
+        lat: 42.7,
+        lon: 2.9
+      }, {
+        id: 'PT2',
+        name: 'Col Test',
+        lat: 42.6,
+        lon: 2.5
+      }],
+      teams: [{
+        name: 'SAMUXX',
+        type: 'H135'
+      }],
+      notes: ['Mission X-001 — le randonneur inventé']
+    },
+    // la forme complète (comme A-001A) : origine, destination, appareil, rendez-vous, zone à son centre, ordre de route, timing
+    complete = {
+      mission: {
+        id: 'X-002A',
+        type: 'COMBAT',
+        subtype: 'BFM'
+      },
+      operation: {
+        id: 'X-002',
+        name: 'EXERCICE TEST',
+        organisation: 'X-002Z'
+      },
+      title: 'EXERCICE TEST — premier round',
+      summary: 'Un résumé inventé.',
+      aircraft: [{
+        id: 'AC1',
+        type: 'RFAL Rafale',
+        callsign: 'TESTEUR31',
+        cruise_speed_kt: 430,
+        cruise_level: 'FL240'
+      }],
+      origin: {
+        name: 'BA 999 Base-Test (XTST)',
+        lat: 44,
+        lon: -0.5
+      },
+      destination: {
+        name: 'BA 998 Autre-Base (XTSU)',
+        lat: 44.5,
+        lon: -1.1
+      },
+      target: {
+        id: 'TARGET',
+        name: 'Secteur test',
+        lat: 44.05,
+        lon: -0.35
+      },
+      turning_points: [{
+        id: 'PT1',
+        name: 'Point test 1',
+        lat: 44.3,
+        lon: -1.5
+      }, {
+        id: 'PT2',
+        name: 'Point test 2',
+        lat: 44.2,
+        lon: -1.4
+      }],
+      rendezvous: [{
+        id: 'RDV-1',
+        name: 'Rendez-vous test',
+        lat: 44.33,
+        lon: -1.55
+      }],
+      zones: [{
+        id: 'ZONE-1',
+        name: 'Zone test',
+        centre: {
+          lat: 44.1,
+          lon: -0.4
+        },
+        radius_km: 35
+      }],
+      route_order: ['ORIGIN', 'PT1', 'RDV-1', 'PT2', 'ZONE-1', 'TARGET', 'DESTINATION'],
+      timing: {
+        estimated_flight_min: 82,
+        estimated_block_min: 102
+      },
+      payload: {
+        constraints: ['Une contrainte inventée']
+      },
+      risks: ['Un risque inventé']
+    },
+    // l'organisation d'un exercice (…Z) : jamais un vol
+    organisation = {
+      mission: {
+        id: 'X-002Z',
+        type: 'COMBAT',
+        subtype: 'EXERCICE',
+        role: 'organisation'
+      },
+      title: 'EXERCICE TEST — organisation'
+    };
+
+  ck('icaoOf : le code entre parenthèses à la fin, rien sinon', icaoOf('BA 999 Base-Test (XTST)') === 'XTST' && icaoOf('Col Test') === '' &&
+    icaoOf(null) === '');
+  ck('levelFt : FL240, 1500 ft, un nombre, rien', levelFt('FL240') === 24000 && levelFt('1500 ft') === 1500 && levelFt(3000) === 3000 &&
+    levelFt('haut') === null && levelFt(null) === null);
+  ck('readMission : sans id ou sans type, rien', readMission({
+    mission: {
+      id: 'X-9'
+    }
+  }) === null && readMission(null) === null);
+
+  const m1 = readMission(minimal);
+  ck('forme minimale : lue, sans origine ni destination, ses points et ses notes', m1 && m1.origin === null && m1.destination === null &&
+    Object.keys(m1.points).join() === 'PT1,PT2,TARGET' && m1.notes.length === 1 && !m1.organisation, JSON.stringify(m1 && m1.points));
+  const f1 = missionFlight(m1);
+  ck('forme minimale : le vol sans terrains (le pilote les tape), les points dans l’ordre du fichier, l’appareil de l’équipe (H135)', f1
+    .route.dep === '' && f1.route
+    .arr ===
+    '' && f1.route.points.map(p => p.id).join() === 'PT1,PT2,TARGET' && f1.mission === 'X-001' && f1.aircraft.type === 'H135', JSON
+    .stringify(f1.route));
+
+  const m2 = readMission(complete);
+  ck('forme complète : origine et destination avec leur code, appareil, niveau et vitesse du premier appareil', m2.origin.icao === 'XTST' &&
+    m2.destination.icao === 'XTSU' && m2.aircraft[0].type === 'RFAL' && m2.cruiseLevelFt === 24000 && m2.cruiseSpeedKt === 430,
+    JSON.stringify(m2.aircraft));
+  ck('forme complète : la zone par son centre, le rendez-vous, l’estimation, contraintes et risques', m2.points['ZONE-1']?.lat === 44.1 &&
+    m2.points['RDV-1']?.kind === 'rdv' && m2.estimate.blockMin === 102 && m2.constraints.length === 1 && m2.risks.length === 1);
+  const f2 = missionFlight(m2, {
+    aircraft: {
+      registration: 'f-test'
+    }
+  });
+  ck('forme complète : le vol suit route_order (ORIGIN et DESTINATION sont les terrains, pas des points)', f2.route.dep === 'XTST' && f2
+    .route
+    .arr === 'XTSU' && f2.route.points.map(p => p.id).join() === 'PT1,RDV-1,PT2,ZONE-1,TARGET', f2.route.points.map(p => p.id).join());
+  ck('forme complète : l’appareil du fichier, l’immatriculation de l’affectation, niveau, vitesse, mission', f2.aircraft.type === 'RFAL' &&
+    f2
+    .aircraft.registration === 'F-TEST' && f2.levelFt === 24000 && f2.speedKt === 430 && f2.mission === 'X-002A', JSON.stringify(f2
+      .aircraft));
+  const f2b = missionFlight({
+    ...m2,
+    destination: null
+  });
+  ck('sans destination : retour à l’origine ; sans origine : le départ de l’affectation', f2b.route.arr === 'XTST' && missionFlight({
+    ...m1
+  }, {
+    departure: 'xtsv'
+  }).route.dep === 'XTSV');
+
+  ck('organisation (…Z) : reconnue', readMission(organisation)?.organisation === true && missionFlight(null) === null);
+
+  const reg = readRegistry({
+    missions: [{
+      id: 'X-002A',
+      family: 'COMBAT',
+      title: 'EXERCICE TEST — premier round',
+      operation: {
+        name: 'EXERCICE TEST'
+      },
+      aircraftTypes: ['RFAL Rafale'],
+      origin: 'BA 999 Base-Test (XTST)',
+      destination: 'BA 999 Base-Test (XTST)',
+      estimate: {
+        block: 121
+      },
+      folder: 'A_COMBAT/X-002A',
+      files: ['missionX-002A.yaml']
+    }, {
+      id: 'X-002Z',
+      family: 'COMBAT',
+      organisation: true
+    }, {
+      title: 'sans id'
+    }]
+  });
+  ck('readRegistry : les lignes avec un id, codes OACI, estimation, fichier ; l’organisation marquée', reg.length === 2 && reg[0]
+    .originIcao === 'XTST' && reg[0].blockMin === 121 && reg[0].file === 'missionX-002A.yaml' && !reg[0].organisation && reg[1]
+    .organisation === true && reg[1].file === 'missionX-002Z.yaml', JSON.stringify(reg[0]));
+
+  window.__bench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

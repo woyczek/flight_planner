@@ -212,6 +212,11 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
 - `ctx.level` (read, 28 Oct 2026): the device's usage level, 1 Everyday, 2 Advanced, 3 Full (a getter: the value of the
   moment, after a change in Settings too). It shapes what a screen offers (the Map keeps "Save for the airline" for the
   Full level); it is not a right: what the data repository refuses stays refused whatever the level.
+- **The missions read as they are** (`frame/lib/mission.js`, 31 Oct 2026, modules/missions SPEC § 2, § 4): `readMission(doc)` (a
+  `mission<ID>.yaml` already read by js-yaml; only `mission.id` and `mission.type` required; points from turning points, rendezvous,
+  zones by their centre, target; the aircraft from `aircraft`, else from `teams`), `readRegistry(doc)` (`missions/mission_registry.yaml`),
+  `icaoOf(name)`, `levelFt(text)`, `missionFlight(mission, assignment)` → `{ route: { dep, arr, points }, aircraft, levelFt, speedKt,
+  mission }`. Pure; bench `frame/lib/test/mission.html` (N1).
 - **The flight in time** (`frame/lib/flight_time.js` since 29 Oct 2026, re-exported by `current_flight.js` during the transition; 28 Oct 2026, with the recoded Map): `etaOf(flight, now)` →
   `[{ id, at }]` and `plannedPositionAt(flight, now)` → `{ lat, lon, legIndex, nmFromDep, phase }`, derived from
   `started.at` / `planned_at`, `quote.taxiMin` and `quote.legs` (else the profile and `quote.minutes`); with

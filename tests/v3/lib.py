@@ -89,7 +89,7 @@ LANGS = ('fr', 'en', 'de', 'es')
 LANGS4 = ('en', 'de', 'es')
 PHONE = (390, 844)
 SCREEN = (1280, 800)
-CASE_FILES = ('frame', 'overlay', 'sheet', 'maps', 'maps_recode', 'atmosphere', 'fuel', 'flightlog', 'designs', 'repo', 'aerodb', 'base_sources', 'data', 'aircraft', 'journeys')
+CASE_FILES = ('frame', 'overlay', 'sheet', 'maps', 'maps_recode', 'atmosphere', 'fuel', 'flightlog', 'designs', 'repo', 'aerodb', 'base_sources', 'data', 'aircraft', 'missions', 'journeys')
 
 
 # ------------------------------------------------------------------------------------------------------ outcomes

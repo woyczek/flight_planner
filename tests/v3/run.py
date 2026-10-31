@@ -448,7 +448,8 @@ def counts(results):
 # ------------------------------------------------------------------------------------------------------ reports
 AREA_NAMES = {'A': 'Frame: layout and chrome', 'B': 'Overlay layer and full screen', 'C': 'Sheet primitive', 'D': 'Maps',
               'E': 'Atmosphere', 'F': 'Fuel', 'G': 'Flightlog and report', 'H': 'Designs', 'I': 'Repository rules (static)',
-              'J': 'Journeys (end to end)', 'M': 'Aircraft (Maintenance)'}
+              'J': 'Journeys (end to end)', 'M': 'Aircraft (Maintenance)',
+              'N': 'Missions'}
 
 
 def md_cell(s):

@@ -1,7 +1,9 @@
 # Missions — specification (V3, first cut, 30 Oct 2026)
 
 Written by the ergonomics session from § 10.32 of `docs/technique/V3_SPECIFICATION.md` and the survey of the V2
-mission files of the same day. Status: **draft for the user's review; no code**. Owner of the code: to be named.
+mission files of the same day. Status: lot 1 built (31 Oct 2026, `frame/lib/mission.js`, case N1); the user asked for the initial
+module, minimal, as urgent (31 Oct): lot 2 reduced (list, choose, draw, prepare the flight; no envelope, no reader, no assignment);
+§ 5–6 later. Owner of the code: Features SOG.
 
 ## 1. Purpose and scope
 
@@ -142,8 +144,9 @@ rule of § 10.32, no category exists yet).
 
 ## 8. Lots, in order
 
-1. `frame/lib/mission.js`: reader + `missionFlight`, benches on three real shapes copied into fixtures (no AIP
-   content involved).
+1. `frame/lib/mission.js`: reader + `missionFlight`, benched on the three real shapes rebuilt with invented names and
+   positions (no AIP content, no mission of the user's data in the repository); checked once, locally and read-only, on the
+   user's 59 missions (M-001 → its aircraft from `teams`, the minimal shape has no `aircraft` block). **Built**, case N1.
 2. The Missions module: list, filters, Choisir, Tirer au sort, "Préparer ce vol" through Fuel's door; cases of a new
    area; help ×4.
 3. The two design primitives `envelope()` / `book()` with the plain skin, then the textured skins per design.
