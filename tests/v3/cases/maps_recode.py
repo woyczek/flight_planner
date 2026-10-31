@@ -2287,11 +2287,9 @@ _MAP_PASS = """() => { const A = window.SiaAero; if (!A.__d85) { const o = A.pas
     return out } } return true }"""
 
 
-@case('D85', 'LFBO, real positions: the runway numbers at the thresholds, then the threshold beacons, then the procedure, then the route — one pass, by rank', 'D',
-      tags=('maps',), screens=False, designs=('standard',), night=False,
-      rule='refactor R-M2 + R-M5 (c), § 10.33, SPEC § 3: one collision pass over every label of the map, by the closed list (aerodrome, runway numbers, beacons, procedures, route, the rest); at LFBO (14L / 14R, the ILS DMEs TD, TBS, TBN at the thresholds, VOR TOU, SID AMOLO 7A) the four runway numbers are written, the beacons’ boxes next, the procedure’s name then slides where they are not; no two placed labels overlap')
-def d85(c):
-    c.page.add_init_script("(() => { const t = setInterval(() => { if (window.SiaAero && window.SiaAero.pass) { clearInterval(t); (" + _MAP_PASS + ")() } }, 5) })()")
+def _lfbo_docs():
+    """The documents of D85 and D89: LFBO → AMOLO → LFPO with the SID AMOLO 7A of 14R, the real positions of LFBO, its runways and
+    beacons, and LFPO."""
     f = flight()
     f['route'] = {'text': 'LFBO AMOLO', 'dep': 'LFBO', 'arr': 'LFPO', 'points': [{'id': 'LFBO', 'lat': 43.635128, 'lon': 1.367856},
                   {'id': 'AMOLO', 'lat': 43.827939, 'lon': 2.57875}, {'id': 'LFPO', 'lat': 48.723333, 'lon': 2.379444}],
@@ -2304,8 +2302,17 @@ def d85(c):
                        ['sia/base/index.json', {'zones': {'fr': {'cycle': AERO_CYCLE, 'prefixes': ['LF'], 'kb': {},
                                                                  'cells': {'43': [[1, 3]], '48': [[2, 3]]}}}}, 'reference'],
                        kind('meta', {}), kind('airspaces', []), kind('navaids', _LFBO_NAV),
-                       kind('aerodromes', [_LFBO, {'icao': 'LFPO', 'name': 'PARIS ORLY', 'lat': 48.723333, 'lon': 2.379444, 'elev': 291}]),
+                       kind('aerodromes', [_LFBO, {'icao': 'LFPO', 'name': 'PARIS ORLY', 'lat': 48.723281, 'lon': 2.379578, 'elev': 291, 'magVar': 1.82, 'public': True, 'controlled': True, 'hardLen': 3650, 'bearing': 241.85}]),
                        kind('points', [{'id': 'AMOLO', 'type': 'ICAO', 'lat': 43.827939, 'lon': 2.57875}])]
+    return docs
+
+
+@case('D85', 'LFBO, real positions: the runway numbers at the thresholds, then the threshold beacons, then the procedure, then the route — one pass, by rank', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='refactor R-M2 + R-M5 (c), § 10.33, SPEC § 3: one collision pass over every label of the map, by the closed list (aerodrome, runway numbers, beacons, procedures, route, the rest); at LFBO (14L / 14R, the ILS DMEs TD, TBS, TBN at the thresholds, VOR TOU, SID AMOLO 7A) the four runway numbers are written, the beacons’ boxes next, the procedure’s name then slides where they are not; no two placed labels overlap')
+def d85(c):
+    c.page.add_init_script("(() => { const t = setInterval(() => { if (window.SiaAero && window.SiaAero.pass) { clearInterval(t); (" + _MAP_PASS + ")() } }, 5) })()")
+    docs = _lfbo_docs()
     c.open('maps?view=1.305,43.60,1.395,43.69', docs=docs, flight=False, wait=False)   # zoom 11.6 on 390 px: above runwayZoom
     c.ready('maps', sheet=True)
     c.js(_STATE_JS)
@@ -2463,3 +2470,32 @@ def d88(c):
     c.until(r"() => /\d/.test(document.querySelector('[data-module=fuel] [data-rinfo]')?.textContent || '')", timeout=10000, what='Fuel’s distance line')
     c.until(r"""(w) => (document.querySelector('[data-module=fuel] [data-rinfo]').textContent || '').replace(/[\s\u00a0\u202f]+/g, ' ').includes(w)""",
             want, timeout=8000, what=f'Fuel says {want}')
+
+
+# ------------------------------------------------------------------------------------------------------ D89
+# the texts the map canvas writes in one full drawing, read by wrapping fillText on that canvas only
+_TEXTS_ONCE = """async () => { const S = window.__mp.S, P = CanvasRenderingContext2D.prototype, o = P.fillText, got = [];
+  P.fillText = function (t, ...a) { if (this.canvas === S.canvas) got.push(String(t)); return o.call(this, t, ...a) };
+  try { (await import('/modules/maps/draw.js')).schedule(); await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))) }
+  finally { P.fillText = o }
+  return got }"""
+
+
+@case('D89', 'An aerodrome of the route is written once: its name is the route’s label there, at rank 1, in the aerodrome’s style', 'D',
+      tags=('maps',), designs=('standard',), night=False,
+      rule='sixth reading (31 Oct 2026), gap 4, SPEC § 3: « one box per key » covers the aerodromes of the route (its ends, a stop, the alternate) — the route’s label of that point is keyed by the aerodrome’s code, the aerodrome’s name is the one box, at rank 1, always written; no « LFBO » or « LFPO » written twice')
+def d89(c):
+    c.page.add_init_script("(() => { const t = setInterval(() => { if (window.SiaAero && window.SiaAero.pass) { clearInterval(t); (" + _MAP_PASS + ")() } }, 5) })()")
+    docs = _lfbo_docs()
+    for icao, view in (('LFBO', '1.25,43.55,1.50,43.72'), ('LFPO', '2.20,48.62,2.55,48.82')):
+        c.open(f'maps?view={view}', docs=docs, flight=False, wait=False)
+        c.ready('maps', sheet=True)
+        c.js(_STATE_JS)
+        c.until("(i) => (window.__mapPass || []).some(x => x.key === i && x.rank === 'aerodrome' && x.r)", icao, timeout=12000,
+                what=f'{icao}: the aerodrome’s name placed')
+        c.wait(300)
+        boxes = [x for x in c.js('() => window.__mapPass') if x['key'] == icao and x['r']]
+        c.eq([x['rank'] for x in boxes], ['aerodrome'], f'{icao}: one box for the aerodrome at the end of the route, the aerodrome’s (rank 1)',
+             what=f'{icao} boxes')
+        texts = [t for t in c.js(_TEXTS_ONCE) if t.startswith(icao)]
+        c.eq(len(texts), 1, f'{icao} written once on the map canvas', what=f'{icao} texts {texts}')

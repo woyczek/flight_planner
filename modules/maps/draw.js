@@ -390,7 +390,7 @@ export function baseNames(off) {
 
 // ---------------------------------------------------------------- dessin
 /** Dégagement : tireté gris de l'arrivée au terrain (sous la surcouche), puis rond gris et code (par-dessus). */
-function drawAltn(ctx, toC, altn, on) {
+function drawAltn(ctx, toC, altn, on, named = true) {
   const route = S.route.points,
     a = toC(route[route.length - 1].lat, route[route.length - 1].lon),
     b = toC(altn.lat, altn.lon);
@@ -410,6 +410,8 @@ function drawAltn(ctx, toC, altn, on) {
   ctx.fillStyle = S.theme.bg;
   ctx.fill();
   ctx.stroke();
+  // le code, sauf si la carte dessine ce terrain : son nom y est déjà, la seule boîte du point (SPEC § 3)
+  if (!named) return ctx.restore();
   ctx.font = '700 12px Arial,sans-serif';
   ctx.textBaseline = 'middle';
   ctx.lineJoin = 'round';
@@ -507,6 +509,8 @@ function draw() {
     top: pick ? c => pick.top(c) : procs ? c => drawProcLabels(c, procs) : null,
     // TOC et TOD : leurs noms dans la passe (rang route), glissés le long de la trace ; pas pendant le choix sur la carte
     plan: pick ? null : planMarks(ctx, toC),
+    // les terrains de la route et le dégagement : leur nom est la seule boîte de leur point (SPEC § 3)
+    onRoute: [...route.map(p => p.id), altn?.id],
     mission: mission && S.mission ? {
       points: S.mission.points,
       zones: S.mission.zones
@@ -526,7 +530,7 @@ function draw() {
   S.navHits = got0.navaids || [];
   S.vrpHits = got0.vrps || [];
   // mode choix : rien par-dessus les procédures à choisir (ni dégagement, ni TOC / TOD, ni points de report, ni vents, ni position)
-  if (altn && !pick) drawAltn(ctx, toC, altn, true);
+  if (altn && !pick) drawAltn(ctx, toC, altn, true, !S.adHits.some(h => h.a.icao === altn.id));
   if (!pick) drawPlanOnMap(ctx, toC, got0.plan || []); // TOC / TOD : leurs noms là où la passe les a posés
   if (!mission && !pick) drawVfr(ctx, toC);
   S.windHits = !mission && !pick && L.wind && zoomOn('wind') ? drawWinds(ctx, toC) : [];

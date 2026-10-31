@@ -102,7 +102,9 @@
       R.kit.ask(pl, {
         layer: 'routeLabels',
         rank: 'route',
-        key: `${p.id || p.name}@${(+p.lat).toFixed(4)},${(+p.lon).toFixed(4)}`,
+        // un point qui est un terrain : la clé du terrain (son code), dont le nom est la seule boîte (SPEC § 3) ; un terrain que la carte
+        // ne dessine pas garde ce libellé
+        key: /^[A-Z]{4}$/.test(p.id || '') ? p.id : `${p.id || p.name}@${(+p.lat).toFixed(4)},${(+p.lon).toFixed(4)}`,
         anchor: q,
         force: end ? 'paint' : false,
         boxes: [r],

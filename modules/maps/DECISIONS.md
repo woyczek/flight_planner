@@ -1843,3 +1843,19 @@ the Map had seen in between: the same line to within the frame's own sampling.
   measures nothing; told). The Map shows no « by the points » figure; were it ever needed, it would be said as such, never instead.
 - **Noreg** D88: the Map's path, `flownPath` and the profile's axis on one flight with procedures, the title's figure, and Fuel's own
   line read on its route step: one figure; the fixture's procedures make the path longer than the route, so the case means something.
+
+## An aerodrome of the route is written once (sixth reading, 31 Oct 2026, gap 4)
+
+- **Seen**: at LFBO and LFPO the route's forced end label (purple) lay over the aerodrome's own name (blue): the code twice, one
+  over the other.
+- **Rule** (SPEC § 3, one box per key): the route's label of a point that is an aerodrome (4-letter code: its ends, a stop on the
+  way) is keyed by the aerodrome's code, the key of the aerodrome's name; the aerodrome's name is the one box, rank 1, in the
+  aerodrome's style, always written (`force: 'paint'` on the aerodromes `onRoute` marks, the alternate included); the alternate's
+  grey code (`drawAltn`) is not written again when the map draws that aerodrome. An aerodrome the map does not draw — not in the
+  data, thinned out, below its tier — keeps the route's own label, as before.
+- **The key is the code alone**, not `icao@lat,lon` as Simplification wrote it: a route's point and the base's aerodrome rarely share
+  a position to four decimals (LFBO 43.6293, 1.3638 typed in a route, 43.6351, 1.3679 in the base); a 4-letter route point is the
+  aerodrome of that code.
+- **Noreg** D89 (1280 and 390): LFBO and LFPO of the real fixture (shared with D85, `_lfbo_docs`): one box under each code, the
+  aerodrome's, and the code written once on the map's canvas. The fixture's LFPO now carries its real runway length and status (a
+  bare LFPO is thinned out of a far tier and kept the route's label, which is the rule).

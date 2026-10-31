@@ -1046,6 +1046,7 @@
         layer: 'points',
         rank: 'aerodrome',
         key: ad.icao || label,
+        force: ad.end ? 'paint' : false, // un terrain de la route : toujours écrit, la route n'en écrit pas un second
         anchor: p,
         boxes: [r],
         paint: () => haloText(ctx, label, p.x, p.y + s * 1.9, +labelFont, main, 'center', 'top')

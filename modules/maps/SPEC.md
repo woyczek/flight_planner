@@ -145,6 +145,12 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     another path, takes a place still free without moving anything). Rules of the pass:
     - **one box per key**: requests sharing a non-empty `key` get one box, the best rank's; a navaid, airway fix or VRP that is
       also a route point (`id@lat,lon`, four decimals) is written once, by its own box — the route adds none, its ETA stays;
+      **an aerodrome of the route** likewise (sixth reading, gap 4) — its ends, a stop on the way, the alternate (`onRoute`): the
+      route's label of that point is keyed by the aerodrome's code, the aerodrome's name is that one box, at rank 1, in the
+      aerodrome's style, always written (`force: 'paint'`, as the route's ends were), and the alternate's grey code is not written
+      again beside it; an aerodrome the map does not draw (not in the data, thinned out) keeps the route's own label. The key is
+      the ICAO code alone: the route's point and the base's aerodrome are rarely the same position to four decimals (LFBO
+      43.6293, 1.3638 in a route, 43.6351, 1.3679 in the base);
     - a request with a `parent` (a key) is left out when its parent is: the true tracks of an airway ("097°") go with its box;
     - `force: 'paint'` (the route's ends, the procedures' names) paints at the first candidate without reserving when nothing is
       free; `force: 'reserve'` (the choose mode's aerodrome code, a mission point, TOC / TOD in the profile) reserves it anyway;

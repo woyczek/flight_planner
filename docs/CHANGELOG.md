@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: an aerodrome of the route is written once (sixth reading, gap 4)** (`modules/maps/render.js`, `render_route.js`,
+  `lib/aero_symbols.js`, `draw.js`; SPEC § 3; DECISIONS; noreg D89). The route's label at its ends (and at a stop, and the alternate's
+  code) no longer lies over the aerodrome's name: the name, in the aerodrome's style, is the one box of that point, always written.
+
 - **GitHub transport: the token goes to api.github.com only** (`frame/store/transport_github.js`; frame SPEC 2; the
   publication bench, noreg A30) — audit line 118: a setting's `api` other than GitHub's or a bench's local address is
   ignored by `clean` and by the transport itself, so a forged « Rejoindre » link cannot collect the pilot's token

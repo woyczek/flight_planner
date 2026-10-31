@@ -1383,7 +1383,9 @@
     dim = 0,
     // plan : [{ name, q, w, along(d) }] — TOC et TOD de la coupe à leur place sur la carte ; along(d) : le point de la trace à d px
     // (signé) de q, null hors de la trace ; leur nom est une demande de la passe (rang route), l'écran peint losange et nom
-    plan = null
+    plan = null,
+    // onRoute : les codes des terrains de la route et du dégagement (SPEC § 3, un terrain écrit une fois) ; null : ceux de route
+    onRoute = null
   }) {
     if (!A()) throw new Error('maps: SiaAero missing');
     // le thème ne vit que le temps du dessin (§ 10.29 e) : posé ici, remis à null en sortie (draw) ; les parties le reçoivent
@@ -1451,7 +1453,9 @@
           // points des voies dessinées (sauf de loin) : les balises avec leur symbole (ajoutées aux balises montrées), les
           // autres en triangle
           const fixes = [],
-            endNavs = [];
+            endNavs = [],
+            // les terrains de la route (ses bouts, une étape, le dégagement : onRoute) : leur nom est la seule boîte du point
+            routeAds = new Set((onRoute || route.map(p => p?.id)).filter(id => /^[A-Z]{4}$/.test(id || '')));
           if (ends.size && el(profile, 'fixes') !== false) {
             const byId = new Map((data.navaids || []).map(n => [n.id, n]));
             for (const e of ends.values()) {
@@ -1470,9 +1474,16 @@
             });
           pts = drawPoints(c, {
             ...shown,
-            aerodromes: adName ? (shown.aerodromes || []).map(a => a.icao ? {
+            // un terrain de la route : son nom est la seule boîte de ce point (rang 1, toujours écrit, SPEC § 3)
+            aerodromes: adName || routeAds.size ? (shown.aerodromes || []).map(a => a.icao && (adName || routeAds.has(a.icao)) ?
+            {
               ...a,
-              label: adName(a) || a.icao
+              ...(adName ? {
+                label: adName(a) || a.icao
+              } : {}),
+              ...(routeAds.has(a.icao) ? {
+                end: true
+              } : {})
             } : a) : shown.aerodromes,
             navaids: navShown
           }, toC, W, H, scale, bbox, pl, navShown.length && !navAll ? {
