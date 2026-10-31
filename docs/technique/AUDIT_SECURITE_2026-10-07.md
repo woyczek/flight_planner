@@ -993,6 +993,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 141 | IVAO return: a same-origin hop page instead of a redirect, refusals logged (2812c0689) | acceptable |
 | 142 | Group of 1 November evening: transport errors told apart (fe6713570), repository address normalised (0ea44bd45) | acceptable |
 | 143 | CSP: `connect-src` opened to `gitlab.com` and `framagit.org` exactly; CSP refusals told (48fc586c2) | acceptable |
+| 144 | Service worker: the next version read whole into a separate cache, taken at once (ed34c5a1b) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2208,6 +2209,12 @@ provider, before anything is saved.
 the pages' meta tags are rebuilt from it, none committed by hand. A self-hosted GitLab stays blocked by the static site's
 policy, a second barrier behind the transport. The frame listens to `securitypolicyviolation` and says, for a blocked
 `connect-src`, only the host (from `URL().host`).
+
+**144. The service worker's staged update (ed34c5a1b) — acceptable.** The next version is read into a separate cache
+(`sog-frame-v1-next`) from the keys of the current cache, which only ever holds same-origin code paths (`ours()`); a failed
+read throws the whole stage away; only a complete stage (its `READY` mark) replaces the current cache, at once, on the next
+page load or “Reload”, and pages are never served from the stage. The page and the worker exchange only the closed
+messages `skip-waiting` and `refresh`; nothing reloads by itself.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
