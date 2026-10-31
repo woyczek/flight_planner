@@ -1822,21 +1822,32 @@
     });
     paintStatus();
   }
+  const badge = {
+    news: false,
+    attn: false
+  };
+  /** Pastille d'état (badge) sur le ⚙ et, quand la barre porte les Réglages (Maintenance : Administration), sur leur onglet,
+   *  qui remplace le ⚙ au téléphone ; nom accessible du ⚙. Écrit seulement si cela change. */
+  function paintBadge() {
+    const label = badge.news || badge.attn ? `${t(T.device)} — ${t(T.info.news)}` : t(T.device),
+      tab = tabOfScreen('settings');
+    for (const b of [$('fDevice'), tab && $('fTabs')?.querySelector(`a[data-tab="${CSS.escape(tab.id)}"]`)]) {
+      if (!b) continue;
+      if (b.hasAttribute('data-badge') !== badge.news) badge.news ? b.setAttribute('data-badge', '') : b.removeAttribute('data-badge');
+      if (b.hasAttribute('data-attn') !== badge.attn) badge.attn ? b.setAttribute('data-attn', '') : b.removeAttribute('data-attn');
+    }
+    const b = $('fDevice');
+    if (b && b.title !== label) b.title = label;
+    if (b && b.getAttribute('aria-label') !== label) b.setAttribute('aria-label', label);
+  }
   /** Pastille et nom du ⚙ de l'en-tête, et les blocs d'état affichés (écrit seulement si cela change). Pastille verte : une
    *  nouvelle (data-badge, partout) ; orange : une chose demande de l'attention (data-attn, téléphone seulement : sur un
    *  écran le bouton de synchronisation et la pastille du trigramme sont dans l'en-tête). */
   function paintStatus() {
-    const items = statusItems(),
-      b = $('fDevice');
-    if (b) {
-      const news = items.some(it => it.news),
-        attn = items.some(it => it.attn),
-        label = news || attn ? `${t(T.device)} — ${t(T.info.news)}` : t(T.device);
-      if (b.hasAttribute('data-badge') !== news) news ? b.setAttribute('data-badge', '') : b.removeAttribute('data-badge');
-      if (b.hasAttribute('data-attn') !== attn) attn ? b.setAttribute('data-attn', '') : b.removeAttribute('data-attn');
-      if (b.title !== label) b.title = label;
-      if (b.getAttribute('aria-label') !== label) b.setAttribute('aria-label', label);
-    }
+    const items = statusItems();
+    badge.news = items.some(it => it.news);
+    badge.attn = items.some(it => it.attn);
+    paintBadge();
     if (!statusViews.size) return;
     const body = statusBody(items),
       s = sig(body);
@@ -2150,7 +2161,7 @@
   async function helpFiles() {
     try {
       await need('help');
-      return (SogHelp.files?.(lang()) || []).map(p => new URL(`frame/help/${p}`, ROOT).href);
+      return (SogHelp.files?.(lang(), helpCtx()) || []).map(p => new URL(`frame/help/${p}`, ROOT).href);
     } catch {
       return [];
     }
@@ -2220,8 +2231,11 @@
       ul.innerHTML = list.map(m => `<li><a href="#${esc(m.id)}" data-id="${esc(m.id)}" data-landmark="${esc(m.id)}">${icon(m.icon)}${esc(t(m.label))}</a></li>`).join('') +
         links.map(l => `<li><a href="${esc(l.href.startsWith('#') ? l.href : new URL(l.href, location.href).href)}" data-link="${esc(l.id)}" data-landmark="settings">${icon(l.icon)}${esc(t(l.label))}</a></li>`).join('');
     }
+    // une seule entrée marquée, comme dans la barre : le lien de l'écran du cadre ouvert (Administration, Aide), ou le module
+    const scr = shownScreen(active, screen) ? screenBase(screen) : '';
     for (const a of ul.querySelectorAll('a')) {
-      const on = a.dataset.id === active;
+      const on = scr ? !!a.dataset.link && (a.getAttribute('href') || '').replace(/^#/, '').split('?')[0] === scr : a.dataset.id ===
+        active;
       if ((a.getAttribute('aria-current') === 'page') !== on) on ? a.setAttribute('aria-current', 'page') : a.removeAttribute(
         'aria-current');
     }
@@ -2237,9 +2251,21 @@
   /** Modules inscrits d'un onglet (un id inconnu est ignoré sans bruit) et, parmi eux, ceux du niveau de l'appareil. */
   const tabModules = tb => (tb.modules || []).filter(id => APP.modules.some(m => m.id === id));
   const tabVisible = tb => tabModules(tb).filter(id => (moduleLevel[id] ?? 1) <= level);
-  /** Onglet marqué : aucun quand les réglages sont affichés (leur bouton est le ⚙ de l'en-tête), sinon celui du module
-   *  affiché ('' si aucun). */
-  const tabFor = (moduleId, screenId) => ['settings', 'device'].includes(screenId) ? '' : tabOf(moduleId)?.id || '';
+  /** Écran du cadre tel que la barre le nomme : l'appareil est l'écran des Réglages, la feuille de route s'ouvre de l'aide. */
+  const screenBase = id => id === 'device' ? 'settings' : id === 'roadmap' ? 'help' : id;
+  /** Écran du cadre affiché ('' : un module) : celui qui couvre le module, ou celui routé seul (aide ouverte par son adresse,
+   *  avant tout module : renderMenu('help', 'help')). */
+  const shownScreen = (moduleId, screenId) => screenId && (screenId !== moduleId || !APP.modules.some(m => m.id === moduleId)) ?
+    screenId : '';
+  /** Onglet de la barre qui mène à cet écran du cadre (screen: 'settings?card=admin' → settings), sinon null. */
+  const tabOfScreen = id => APP.tabs.find(tb => tb.screen && tb.screen.split('?')[0] === screenBase(id)) || null;
+  /** Onglet marqué : un seul, celui de ce qui est affiché (Simplification, 31 oct. 2026) — l'onglet de l'écran du cadre
+   *  ouvert s'il en a un (Aide, Administration), aucun s'il n'en a pas (son bouton est dans l'en-tête), jamais celui du
+   *  dernier module visité ; sinon celui du module affiché ('' si aucun). */
+  const tabFor = (moduleId, screenId) => {
+    const s = shownScreen(moduleId, screenId);
+    return s ? tabOfScreen(s)?.id || '' : tabOf(moduleId)?.id || '';
+  };
   /** Rangées du popover d'un onglet : ses modules visibles à ce niveau, chacun suivi de ses vues (tb.views), dans l'ordre :
    *  { module, view (id de la vue, absent pour le module), hash, label, icon }. */
   const tabRows = tb => tabVisible(tb).flatMap(id => {
@@ -2267,6 +2293,8 @@
   }
   /** Adresse d'un onglet : son écran, ou le dernier module du groupe montré, sinon le premier à ce niveau. */
   function tabTarget(tb) {
+    // au chapitre du module affiché (celui que la barre suit : current n'est posé qu'après le montage)
+    if (tb.screen === 'help' && APP.modules.some(m => m.id === menuActive)) return `#help?m=${encodeURIComponent(menuActive)}`;
     if (tb.screen) return `#${tb.screen}`;
     const vis = tabVisible(tb);
     return `#${vis.includes(lastInTab[tb.id]) ? lastInTab[tb.id] : vis[0] || ''}`;
@@ -2285,6 +2313,7 @@
       nav.setAttribute('aria-label', t(T.tabsNav));
       // aria-label et title : le nom de la case quand le libellé est caché (le rail du paysage n'a que des icônes)
       nav.innerHTML = `<ul>${list.map(tb => `<li><a data-tab="${esc(tb.id)}" aria-label="${esc(t(tb.label))}" title="${esc(t(tb.label))}" data-landmark="${esc(tb.screen ? 'settings' : tabModules(tb)[0] || tb.modules[0])}"><span class="f-tab-ico">${icon(tb.icon)}${Icons?.svg(tb.icon, { filled: true }) || ''}</span><span class="f-tab-lbl">${esc(t(tb.label))}</span></a></li>`).join('')}</ul>`;
+      paintBadge(); // la pastille d'état passe sur l'onglet des Réglages quand il remplace le ⚙
     }
     for (const a of nav.querySelectorAll('a')) {
       const tb = APP.tabs.find(x => x.id === a.dataset.tab),
@@ -3034,7 +3063,9 @@
     t,
     lang,
     own,
-    root: ROOT
+    root: ROOT,
+    app: APP.id, // le manuel de l'application affichée (frame/help/<app>.<langue>.md)
+    tutorials: APP.welcome !== false // les tutoriels sont ceux de Pilote
   });
 
   // ---------------------------------------------------------------- écran des conflits
@@ -3726,6 +3757,10 @@
     }
     headIcon('fHelp', 'help');
     headIcon('fDevice', 'settings');
+    // une destination, une entrée par écran : quand la barre porte l'Aide et les Réglages (Maintenance), le « ? » et le ⚙ de
+    // l'en-tête ne les répètent pas là où la barre est montrée (frame.css, data-in-bar ; Simplification, 31 oct. 2026)
+    if (tabOfScreen('help')) $('fHelp').dataset.inBar = '';
+    if (tabOfScreen('settings')) $('fDevice').dataset.inBar = '';
     document.title = `${t(APP.name)} — SOG`;
     $('fName').textContent = t(APP.name);
     // identité de l'application (icône dans sa teinte, posée à la source) et sélecteur d'application

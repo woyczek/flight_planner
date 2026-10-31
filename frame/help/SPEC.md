@@ -25,9 +25,11 @@ decisions: [DECISIONS.md](DECISIONS.md); how a module gets its help: [INTEGRATIO
 
 ## 2. Build (`python frame/help/build_help.py [--check]`)
 
-- Writes `frame/help/pilot.<lang>.md`: a generated-file comment, the introduction, then each module's chapter in the
-  order of `APP.modules` in `frame/app.js`, then the frame screens' chapters, each preceded by
-  `<!-- chapter: <id> -->`.
+- Writes one manual per application, `frame/help/<app>.<lang>.md` (`pilot`, `maintenance`; 31 Oct 2026): a
+  generated-file comment, the application's introduction (`intro.<lang>.md` for Pilot, `intro-<app>.<lang>.md` for the
+  others), then the chapter of each of its modules in the order of `APPS.<app>.modules` in `frame/app.js`, then the frame
+  screens' chapters (Settings), each preceded by `<!-- chapter: <id> -->`. The help screen and the modules' panels read
+  the manual of the application shown (`c.app`); Pilot's tutorials are listed in Pilot's manual only.
 - **Refuses**, writing nothing, when a module that has a `help/` folder misses a language, when a chapter does not start
   with its single `# ` title, or has no `## ` section; when an introduction is missing.
 - **Reports** without refusing: a module with no chapter yet; a translation whose fingerprint is absent or differs from

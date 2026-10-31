@@ -108,3 +108,9 @@ page down, and on a slow phone a pilot's tap just after the opening hit the wron
 tutorials now go **after** the module's element (the welcome card first, then the panel): the help follows the content, it
 does not precede it; the header's « ? » stays the direct way in. Reserving the room above before the mount was the other
 way, not taken (an empty band on every screen while the help loads). noreg A52.
+
+- **31 Oct 2026 — One manual per application** (Simplification, the user's capture: the help opened in Maintenance showed
+  « Pilote — manuel » with Pilot's tutorials). `build_help.py` assembles each application of `APPS` from its own modules
+  (Pilot: fuel, maps, report, flightlog, website, atmosphere; Maintenance: data, aircraft) plus the Settings chapter, with
+  its own introduction (`intro-maintenance.<lang>.md`, four languages). Pilot's manual no longer carries the Data and
+  Aircraft chapters, which no Pilot screen shows.

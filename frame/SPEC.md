@@ -347,7 +347,9 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
   - **A tab is a group of modules or a frame screen** (`tabs`, `frame/INTEGRATION.md` § 9). The tab stays selected
     while any module of its group is shown (`#atmosphere`, a module id that is not registered, is skipped without a
     word). Touching a tab opens the last module of its group shown in this session, otherwise the first one at the
-    device's level. Over Settings (the ⚙) no tab is selected. A module in no tab (`website`, `hello`) selects none and stays
+    device's level. **One active entry, always** (31 Oct 2026): over a frame screen, the tab of that screen when the bar has
+    one (Maintenance: Help → Help, Settings → Administration), otherwise none (its button is in the header) — never the
+    tab of the module underneath; the rail of a wide screen marks the same (the screen's link, or the module). A module in no tab (`website`, `hello`) selects none and stays
     reachable by its address and in the rail. A tab may also list **views** of a module of its group (`views`: Préparer lists
     the fuel module's Sheets view, `#fuel?view=sheets`): they have no tab, only a popover row.
   - **Group popover, no sub-tabs row** (24 Oct 2026, 14:05: "no group sub-tabs row above a fixed module"; rule 14 kept the
@@ -436,7 +438,10 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
 - **Header on a phone** (760 px or narrower, rule 14, 24 Oct 2026; the name is the module's title for a non-fixed module, rule 16 below): **name · "?" · ⚙ and nothing else**, never wider than
   the window (no menu button; the "←" back button takes the name's place after a passage). "?" (`#fHelp`) opens the help
   chapter of the current screen (the Settings chapter when Settings are open), ⚙ (`#fDevice`) the Settings screen and carries the
-  state badge. The synchronisation dot, the trigram pastille, the position and the launcher badges are not drawn: their state
+  state badge. **One destination, one entry** (31 Oct 2026): when the application's bar carries Help and Settings
+  (Maintenance: Aide, Administration), the header shows neither "?" nor ⚙ where the bar is shown (phone, landscape rail;
+  `data-in-bar`), and the state badge is on the bar's Administration entry; Pilot keeps both, its bar carrying five
+  other entries. The Help entry opens the manual at the chapter of the module shown. The synchronisation dot, the trigram pastille, the position and the launcher badges are not drawn: their state
   is the colour of the ⚙ badge and the lines of the Settings status block (above). Above 760 px the header keeps all of them,
   as before, without an "i".
   - **One row, always**: the header is exactly `--f-head-h` (57 px = 6 + 44 + 6 + the 1 px rule) high, at every width and in

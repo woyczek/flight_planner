@@ -1,8 +1,9 @@
-"""Assemble le manuel de l'appli Pilote (frame/help/SPEC.md § 2) : frame/help/pilot.<langue>.md, pour fr, en, de, es.
+"""Assemble le manuel de chaque application (frame/help/SPEC.md § 2) : frame/help/<app>.<langue>.md, pour fr, en, de, es
+(pilot, maintenance : l'aide ouverte est celle de l'application affichée, Simplification 31 oct. 2026).
 
-Sources :
-  · frame/help/intro.<langue>.md : ce qu'est l'application, premier démarrage, synchronisation, réglages ;
-  · modules/<id>/help/<langue>.md : le chapitre de chaque module, dans l'ordre des menus (APPS.<application>.modules de frame/app.js) ;
+Sources, pour chaque application de APPS (frame/app.js) :
+  · son introduction : frame/help/intro.<langue>.md pour Pilote, frame/help/intro-<app>.<langue>.md pour les autres ;
+  · modules/<id>/help/<langue>.md : le chapitre de chacun de ses modules, dans l'ordre de son menu (APPS.<app>.modules) ;
   · puis les chapitres des écrans du cadre (FRAME_CHAPTERS : frame/settings/help/<langue>.md, Réglages).
 Règles :
   · un module qui a un dossier help/ doit avoir ses quatre langues, un titre « # … » en tête et au moins une section
@@ -44,14 +45,23 @@ def rel(path):
     return os.path.relpath(path, ROOT).replace(os.sep, '/')
 
 
-def module_order():
-    """Identifiants des modules des applications, dans l'ordre de leurs menus (blocs APPS.<application>.modules de
-    frame/app.js : Pilote, puis Maintenance ; un module de deux applications une fois) : un seul manuel pour toutes."""
+def app_modules():
+    """{ application: [modules dans l'ordre de son menu] } d'après les blocs APPS.<app> = { … modules: [ … ] } de frame/app.js,
+    dans l'ordre du fichier (Pilote d'abord)."""
     app = read(os.path.join(ROOT, 'frame', 'app.js'))
-    blocks = re.findall(r'\bmodules:\s*\[\s*\{(.*?)\n\s*\}\]', app, re.S)
-    if not blocks:
-        sys.exit('frame/app.js : APP.modules introuvable')
-    return list(dict.fromkeys(i for b in blocks for i in re.findall(r"\bid:\s*'([\w-]+)'", b)))
+    out = {}
+    for m in re.finditer(r'\bAPPS\.(\w+) = \{(.*?)\n  \};', app, re.S):
+        b = re.search(r'\bmodules:\s*\[\s*\{(.*?)\n\s*\}\]', m.group(2), re.S)
+        if b:
+            out[m.group(1)] = re.findall(r"\bid:\s*'([\w-]+)'", b.group(1))
+    if 'pilot' not in out:
+        sys.exit('frame/app.js : APPS.pilot.modules introuvable')
+    return out
+
+
+def intro_path(app, lang):
+    """Introduction du manuel d'une application."""
+    return os.path.join(HERE, f'intro.{lang}.md' if app == 'pilot' else f'intro-{app}.{lang}.md')
 
 
 def fingerprint(text):
@@ -154,17 +164,20 @@ def tutorial_check():
 def main(args):
     check = '--check' in args
     errors, notes = [], []
-    intro = {}
-    for lang in LANGS:
-        p = os.path.join(HERE, f'intro.{lang}.md')
-        if not os.path.isfile(p):
-            errors.append(f'frame/help/intro.{lang}.md manquant')
-        else:
-            intro[lang] = read(p).strip()
-    chapters = {lang: [] for lang in LANGS}
+    apps = app_modules()
+    intro = {}  # (app, langue) → texte
+    for a in apps:
+        for lang in LANGS:
+            p = intro_path(a, lang)
+            if not os.path.isfile(p):
+                errors.append(f'{rel(p)} manquant')
+            else:
+                intro[(a, lang)] = read(p).strip()
+    chapter = {}  # id → { langue: bloc du manuel }
     seen_anchors = {}
-    # chapitres des modules dans l'ordre du menu, puis ceux des écrans du cadre (Réglages)
-    for mid, d in [(m, os.path.join(ROOT, 'modules', m, 'help')) for m in module_order()] + FRAME_CHAPTERS:
+    # chapitres des modules (chacun une fois, dans l'ordre des menus), puis ceux des écrans du cadre (Réglages)
+    order = list(dict.fromkeys(m for ms in apps.values() for m in ms))
+    for mid, d in [(m, os.path.join(ROOT, 'modules', m, 'help')) for m in order] + FRAME_CHAPTERS:
         if not os.path.isdir(d):
             notes.append(f'{mid} : sans chapitre')
             continue
@@ -196,7 +209,7 @@ def main(args):
                 seen_anchors[a] = mid
         for lang, t in texts.items():
             title, _, rest = t.partition('\n')
-            chapters[lang].append(f'<!-- chapter: {mid} -->\n{title}\n\n{rest.strip()}\n')
+            chapter.setdefault(mid, {})[lang] = f'<!-- chapter: {mid} -->\n{title}\n\n{rest.strip()}\n'
     errors += roadmap_errors()
     te, tn = tutorial_check()
     errors += te
@@ -207,17 +220,19 @@ def main(args):
         for e in errors:
             print('ERREUR ' + e)
         sys.exit(f'{len(errors)} erreur(s) : rien n\'est écrit.')
-    changed = []
-    for lang in LANGS:
-        out = f'{GENERATED}\n\n{intro[lang]}\n\n' + '\n'.join(chapters[lang])
-        p = os.path.join(HERE, f'pilot.{lang}.md')
-        if not os.path.isfile(p) or read(p) != out:
-            changed.append(f'frame/help/pilot.{lang}.md')
-            if not check:
-                with open(p, 'w', encoding='utf-8', newline='\n') as f:
-                    f.write(out)
-    n = len(chapters['fr'])
-    print(f'{n} chapitre(s) ; {len(changed)} fichier(s) {"à écrire" if check else "écrit(s)"}' + (f' : {", ".join(changed)}' if changed else ''))
+    changed, counts = [], []
+    for a, ms in apps.items():
+        ids = [m for m in ms if m in chapter] + [mid for mid, _ in FRAME_CHAPTERS if mid in chapter]
+        counts.append(f'{a} {len(ids)}')
+        for lang in LANGS:
+            out = f'{GENERATED}\n\n{intro[(a, lang)]}\n\n' + '\n'.join(chapter[i][lang] for i in ids if lang in chapter[i])
+            p = os.path.join(HERE, f'{a}.{lang}.md')
+            if not os.path.isfile(p) or read(p) != out:
+                changed.append(f'frame/help/{a}.{lang}.md')
+                if not check:
+                    with open(p, 'w', encoding='utf-8', newline='\n') as f:
+                        f.write(out)
+    print(f'{", ".join(counts)} chapitre(s) ; {len(changed)} fichier(s) {"à écrire" if check else "écrit(s)"}' + (f' : {", ".join(changed)}' if changed else ''))
 
 
 if __name__ == '__main__':

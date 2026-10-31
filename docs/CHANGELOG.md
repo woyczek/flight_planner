@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: one active entry, one entry per destination, the help of the shown application** (`frame/app.js`,
+  `frame/frame.css`, `frame/help/help.js`, `frame/help/build_help.py`; frame SPEC 3.1, help SPEC 2, DECISIONS; noreg
+  A59) — the user's Maintenance captures: the bottom bar marks what is shown and only that (Help → Help, Settings →
+  Administration, never the last module); when the bar carries Help and Administration the header no longer repeats
+  « ? » and ⚙ on a phone, and the state dot is on the Administration entry; the help is the shown application's manual
+  (`frame/help/maintenance.<lang>.md`, a new introduction in four languages), at the module's chapter, without Pilot's
+  tutorials.
 - **Map base: zones one can touch, for the Data module's map of zones** (`modules/maps/lib/map_base.js` `zonesLayer`,
   `modules/maps/lib/test/zones_layer.html`; INTEGRATION § 7; noreg D94). Filled polygons by zone id on a map of the shared base,
   coloured by the caller's tokens, picked thicker, approximate dashed; a tap gives the zone, a drag never; kept across day / night;

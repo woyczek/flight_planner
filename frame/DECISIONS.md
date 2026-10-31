@@ -2244,3 +2244,13 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   load (`from`), METAR and TAF with their time, the world forecast (index, step, pressure-level file) by the layer, the
   quota in Settings › Diagnostics. Fuel's behaviour is unchanged (its bench loses the three `modelFor` checks the frame's
   bench already holds).
+
+- **31 Oct 2026 — One active entry, one entry per destination, the help of the shown application** (Simplification, the
+  user's three phone captures of Maintenance). The bar marked the last module visited over the help (Données in blue under
+  the pressed « ? »), and nothing over Settings; Maintenance's bar repeated the header's « ? » and ⚙. (a) `tabFor` takes the
+  tab of the frame screen shown, or none — never the module underneath; the rail follows. (b) An application whose bar
+  carries Help and Settings hides the header's « ? » and ⚙ where the bar is shown (`data-in-bar`, CSS), and the state badge
+  goes to the Administration entry (`paintBadge`, after each redraw of the bar). (c) One manual per application:
+  `build_help.py` writes `pilot.*` and `maintenance.*`, help.js reads the one of `c.app`, Pilot's tutorials stay in Pilot;
+  the Help entry opens the chapter of the module the bar follows (`menuActive`: `current` is set only after the mount).
+  A59 at 390 in the four languages.

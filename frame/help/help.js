@@ -2,8 +2,8 @@
   'use strict';
   // V3 — aide de l'application (frame/help/SPEC.md) : écran #help du cadre et panneau « Comment s'en servir » en tête de
   // chaque module.
-  //   · source : le manuel assemblé frame/help/pilot.<langue>.md (frame/help/build_help.py, depuis
-  //     modules/<id>/help/<langue>.md, dans l'ordre du menu) ; chaque chapitre commence par <!-- chapter: <id> --> ;
+  //   · source : le manuel de l'application affichée, assemblé frame/help/<app>.<langue>.md (pilot, maintenance ;
+  //     frame/help/build_help.py, depuis modules/<id>/help/<langue>.md, dans l'ordre de son menu) ; chaque chapitre commence par <!-- chapter: <id> --> ;
   //   · panneau d'un module : la première section (## …) de son chapitre, repliée par défaut, état gardé par module sur
   //     l'appareil (device/help.json) ; lien « Lire tout le chapitre » vers #help?m=<id> ; le module n'écrit aucun code ;
   //   · écran #help : le texte d'abord (le chapitre du module d'où l'on vient), « Sommaire ▾ » replié sur téléphone,
@@ -66,14 +66,17 @@
     id: 'write-report',
     title: ['Écrire un compte rendu', 'Write a report', 'Einen Bericht schreiben', 'Escribir un informe']
   }];
-  const docs = {}; // langue → promesse du texte du manuel (null s'il est introuvable)
+  const docs = {}; // « application.langue » → promesse du texte du manuel (null s'il est introuvable)
+  /** Application dont le manuel est lu (c.app : pilot, maintenance ; frame/help/<app>.<langue>.md), Pilote par défaut. */
+  const appOf = c => /^[a-z]+$/.test(c?.app || '') ? c.app : 'pilot';
   const tuts = {}; // « id.langue » → promesse du texte d'un tutoriel (null s'il est introuvable)
 
-  /** Texte du manuel dans la langue de l'appli (repli : français) ; null s'il est introuvable. */
+  /** Texte du manuel de l'application affichée dans la langue de l'appli (repli : français) ; null s'il est introuvable. */
   async function manual(c) {
-    const get = l => docs[l] ||= fetch(new URL(`frame/help/pilot.${l}.md`, c.root), {
-      cache: 'no-cache'
-    }).then(r => r.ok ? r.text() : null).catch(() => null);
+    const app = appOf(c),
+      get = l => docs[`${app}.${l}`] ||= fetch(new URL(`frame/help/${app}.${l}.md`, c.root), {
+        cache: 'no-cache'
+      }).then(r => r.ok ? r.text() : null).catch(() => null);
     const l = LANGS.includes(c.lang()) ? c.lang() : 'fr',
       text = (await get(l)) ?? (l === 'fr' ? null : await get('fr'));
     // typographie française, comme les textes du cadre : espace fine insécable avant : ; ! ? » et après «
@@ -99,10 +102,10 @@
   /** Fichiers de l'aide pour une langue (chemins relatifs à frame/help/) : le manuel, et chaque tutoriel dans cette
    *  langue, plus l'anglais (sa langue d'écriture) quand elle n'est ni le français ni l'anglais ; le cadre les garde dès
    *  l'installation, les autres langues l'étant à leur première lecture. */
-  function files(l) {
+  function files(l, c = {}) {
     const lg = LANGS.includes(l) ? l : 'fr',
       tl = lg === 'fr' || lg === 'en' ? [lg] : [lg, 'en'];
-    return [`pilot.${lg}.md`, ...TUTORIALS.flatMap(x => tl.map(k => `tutorial/${x.id}.${k}.md`))];
+    return [`${appOf(c)}.${lg}.md`, ...(c.tutorials === false ? [] : TUTORIALS.flatMap(x => tl.map(k => `tutorial/${x.id}.${k}.md`)))];
   }
   /** Note la carte d'accueil comme vue (device/help.json : welcomed) ; elle ne revient plus, et celle encore posée sous
    *  l'écran d'aide (le module reste dessous) est retirée. */
@@ -260,6 +263,7 @@
 
   /** Liste des tutoriels (liens #help?t=<id>), « (en anglais) » quand la langue de l'appli manque. */
   async function tutorialList(c) {
+    if (c.tutorials === false) return ''; // les tutoriels sont ceux de Pilote : pas dans le manuel d'une autre application
     const items = await Promise.all(TUTORIALS.map(async x => {
       const got = await tutorial(c, x.id);
       return got ? `<li><a href="#help?t=${encodeURIComponent(x.id)}">${esc(c.t(x.title))}</a>${got.lang !== c.lang() ? ` <span class="f-muted">${esc(c.t(T.inEnglish))}</span>` : ''}</li>` : '';

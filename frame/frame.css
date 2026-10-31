@@ -842,6 +842,39 @@ p.f-back {
     box-shadow: 0 0 0 2px var(--sog-surface)
   }
 }
+/* une destination, une entrée par écran : le « ? » et le ⚙ que la barre porte déjà (Maintenance : Aide, Administration) ne
+   sont pas répétés dans l'en-tête là où la barre est montrée (téléphone, rail du paysage) ; la pastille d'état est alors sur
+   l'onglet (data-badge, data-attn posés par app.js) */
+@media (max-width: 760px) {
+
+  #fHelp[data-in-bar],
+  #fDevice[data-in-bar] {
+    display: none
+  }
+}
+html.f-land #fHelp[data-in-bar],
+html.f-land #fDevice[data-in-bar] {
+  display: none
+}
+.f-tabbar a[data-badge] .f-tab-ico,
+.f-tabbar a[data-attn] .f-tab-ico {
+  position: relative
+}
+.f-tabbar a[data-badge] .f-tab-ico::after,
+.f-tabbar a[data-attn] .f-tab-ico::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  right: -6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sog-ok);
+  box-shadow: 0 0 0 2px var(--sog-surface)
+}
+.f-tabbar a[data-attn] .f-tab-ico::after {
+  background: var(--sog-warn)
+}
 /* bloc « État » de tête des Réglages : une ligne de 44 px au moins par information, un chevron quand elle mène quelque part,
    une pastille quand elle compte (verte : une nouvelle, orange : de l'attention) ; la carte garde son titre et ses bords, les
    lignes vont d'un bord à l'autre */
