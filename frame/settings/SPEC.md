@@ -272,7 +272,8 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
   repository (a GitHub account has no dot: a first segment with a dot is a host). The provider follows `providerOf` (github.com
   → GitHub; gitlab.com, framagit.org or a GitLab the device's configuration names → GitLab); an incomplete address or an
   unknown provider is refused with its reason, nothing written. The line under the field (`[data-repo-provider]`) says the
-  provider and the canonical address while typing; after saving, « Synchroniser maintenant ? » is asked. Case A61.
+  provider and the canonical address while typing; after saving, « Synchroniser maintenant » is the button of the « saved »
+  note (never a blocking question: a modal there broke A19's flow). Case A61.
 - **The provider is chosen, never deduced** (`data.provider`, `github` | `gitlab`, the closed list of `SogConfig.PROVIDER_TABLE`; a
   self-hosted GitLab is `gitlab` with its own `host`). `validate` refuses a configuration without it unless the host is `github.com`
   (the legacy of the configurations exported before 48079d78f, which had no field) and any value outside the list, ×4 "unknown provider:

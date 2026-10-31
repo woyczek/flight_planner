@@ -2191,7 +2191,7 @@ def a60(c):
 
 
 @case('A61', 'Access card: a repository address is normalised before anything is written, its provider said under the field', 'A', designs=('standard',),
-      screens=False, night=False, rule='frame/settings SPEC 3 (bug, 31 Oct: « framagit.org/asr/flight_planner » typed on a phone was taken for a GitHub repository): host/account/repo, https://, .git and git@host: give one canonical https://host/path.git; incomplete or unknown provider refused with its reason, nothing written; after saving, « Synchronise now » is offered')
+      screens=False, night=False, rule='frame/settings SPEC 3 (bug, 31 Oct: « framagit.org/asr/flight_planner » typed on a phone was taken for a GitHub repository): host/account/repo, https://, .git and git@host: give one canonical https://host/path.git; incomplete or unknown provider refused with its reason, nothing written; after saving, « Synchronise now » is the button of the saved note, never a blocking question')
 def a61(c):
     access_file = 'frame/settings/access.js'
     c.context.route(re.compile(r'/__setup/'), lambda r: r.abort())  # a phone: no launcher
@@ -2222,9 +2222,10 @@ def a61(c):
     c.page.fill('[data-card="access"] [data-f="repo"]', 'git@framagit.org:asr/flight_planner.git')
     c.page.fill('[data-card="access"] [data-f="token"]', 'test-token')
     c.tap('[data-card="access"] [data-act="access"]')
-    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=15000, what='the question after saving')
-    c.eq(norm(c.text('.f-modal p')), norm(tx(access_file, 'syncAsk', c.lang)), '« Synchronise now? » is offered after saving', what='sync offered')
-    c.tap('.f-modal [data-no]')
+    c.until("[...document.querySelectorAll('.f-note [data-act]')].some(b => b.textContent.trim())", timeout=15000, what='the note after saving')
+    c.eq([norm(b) for b in c.js("[...document.querySelectorAll('.f-note [data-act]')].map(b => b.textContent)")], [norm(tx(access_file, 'syncNow', c.lang))],
+         '« Synchronise now » is offered by the note\u2019s button after saving, never a blocking question', what='sync offered')
+    c.eq(c.count('.f-modal'), 0, 'no blocking question', what='no modal')
     saved = c.js("(() => { const g = FrameData.github.config(); return [g.provider, g.api, g.repo] })()")
     c.eq(saved, ['gitlab', 'https://framagit.org/api/v4', 'asr/flight_planner'], 'the device reads the GitLab project, whatever form was typed', what='saved access')
 

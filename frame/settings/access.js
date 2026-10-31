@@ -101,10 +101,6 @@
       'Dirección incompleta: host/cuenta/repositorio (por ejemplo framagit.org/grupo/proyecto o github.com/cuenta/repositorio). No se guarda nada.'
     ],
     repoProvider: ['Fournisseur : {p} — {u}', 'Provider: {p} — {u}', 'Anbieter: {p} — {u}', 'Proveedor: {p} — {u}'],
-    syncAsk: ['Accès enregistré. Synchroniser maintenant ?', 'Access saved. Synchronise now?',
-      'Zugang gespeichert. Jetzt synchronisieren?',
-      'Acceso guardado. ¿Sincronizar ahora?'
-    ],
     conflicts: ['Voir les conflits ({n})', 'See the conflicts ({n})', 'Konflikte ansehen ({n})', 'Ver los conflictos ({n})'],
   });
 
@@ -233,13 +229,14 @@
       }
       FD.github.save(cfg);
       await c.reload();
-      c.notify(t(T.saved), 'ok');
-      again();
-      // la première synchronisation sur le nouveau dépôt, proposée tout de suite
-      if (await c.ask(t(T.syncAsk), {
-          ok: t(T.syncNow)
-        })) c.syncNow();
-      return;
+      // la première synchronisation sur le nouveau dépôt, proposée par le bouton de la notification (jamais une fenêtre bloquante)
+      c.notify(t(T.saved), 'ok', {
+        action: {
+          label: t(T.syncNow),
+          run: () => c.syncNow()
+        }
+      });
+      return again();
     }
     if (act === 'cut') {
       if (!await c.ask(t(T.cutAsk))) return;
