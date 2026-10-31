@@ -31,6 +31,9 @@ import {
   summary
 } from './panels.js';
 import {
+  attachMaps
+} from './zonemap.js';
+import {
   readStatus
 } from './publish.js';
 import {
@@ -99,16 +102,11 @@ export const STYLE = `
 [data-module="data"] [data-update-all] [data-chain],[data-module="data"] [data-update-all] [data-chain-result]{margin-top:10px;display:grid;gap:6px}
 [data-module="data"] .f-status-dot[data-attn]{display:inline-block;vertical-align:middle;margin-left:6px}
 [data-module="data"] .d-map{margin:6px 0}
-[data-module="data"] .d-map svg{display:block;max-width:100%;height:auto;margin:0 auto}
-[data-module="data"] .d-map path{cursor:pointer;fill-opacity:.25;stroke-width:1;vector-effect:non-scaling-stroke;fill:var(--sog-muted);stroke:var(--sog-muted)}
-[data-module="data"] .d-map path[data-tone=ok],[data-module="data"] .d-sw[data-tone=ok]{fill:var(--sog-ok);stroke:var(--sog-ok)}
-[data-module="data"] .d-map path[data-tone=warn],[data-module="data"] .d-sw[data-tone=warn]{fill:var(--sog-warn);stroke:var(--sog-warn)}
-[data-module="data"] .d-map path[data-tone=accent],[data-module="data"] .d-sw[data-tone=accent]{fill:var(--sog-accent);stroke:var(--sog-accent)}
-[data-module="data"] .d-map path[data-tone=muted],[data-module="data"] .d-sw[data-tone=muted]{fill:var(--sog-muted);stroke:var(--sog-muted)}
-[data-module="data"] .d-map path[aria-checked=true]{fill-opacity:.65;stroke-width:3}
-[data-module="data"] .d-map path[data-approx]{stroke-dasharray:6 3}
-[data-module="data"] .d-map path[aria-disabled=true]{cursor:default}
-[data-module="data"] .d-map path:focus-visible{outline:2px solid var(--sog-accent);outline-offset:1px}
+[data-module="data"] .d-map-host{position:relative;height:45vh;min-height:260px;border:1px solid var(--sog-line,var(--sog-muted));background:var(--sog-surface)}
+[data-module="data"] .d-map-row{margin:6px 0}
+[data-module="data"] .d-map-row button{min-height:var(--sog-touch);min-width:44px}
+[data-module="data"] .d-mapgrid{display:grid;gap:8px;min-width:0}
+@media (min-width:1024px){[data-module="data"] .d-mapgrid{grid-template-columns:minmax(0,3fr) minmax(0,2fr);align-items:start}}
 [data-module="data"] .d-sw{display:inline-block;width:12px;height:12px;vertical-align:middle;margin:0 4px 0 8px;background:currentColor;border:1px solid}
 [data-module="data"] .d-sw[data-tone=ok]{background:var(--sog-ok);border-color:var(--sog-ok)}
 [data-module="data"] .d-sw[data-tone=warn]{background:var(--sog-warn);border-color:var(--sog-warn)}
@@ -167,6 +165,7 @@ export async function load() {
 function render() {
   if (!S?.body || !S.d) return;
   keepScroll(S.body, renderBody);
+  attachMaps(); // les panneaux sont neufs : les cartes MapLibre reprennent la place de leur emplacement
 }
 /** En-tête : le cycle AIRAC en vigueur avec ses dates et le prochain, puis le lanceur du poste. */
 function headHtml() {

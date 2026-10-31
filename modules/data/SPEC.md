@@ -266,10 +266,32 @@ are three steps (types, apd, simbrief), `aircraft/build` commits nothing (Aircra
 reach the data repository by `aircraft/publish` (dry by default, the trigram required). **The V2 maintenance page link leaves the Maintenance rail when every row of this table has its four
 verbs.**
 
-**The map of the zones** (Base and Procédures panels, 30 Oct): `ctx.aerodb.zoneOutlines()` drawn in SVG above the list, one
-selection written by the module and read by both; colour by state with its words on hover and keyboard; no map when a zone
-would be under 44 px or the outlines are missing. A zone whose outline is only its frame (no ring, or a ring equal to its
-box: known from the data, never from an id) is drawn dashed and said « contour approximatif ».
+**The map of the zones** (Base and Procédures panels; redone 31 Oct after the user's phone test: « je m'attendais à une carte
+scrollable avec tous les éléments fonctionnels de la carte en V2 ; c'était efficace » — the SVG of 30 Oct was a stamp, the
+United States a rectangle, the islands dots).
+- **The shared map base**, never a copy: `modules/maps/lib/map_base.js` (maps INTEGRATION § 7), as the Map and the Weather use
+  it. MapLibre loaded on demand (`loadMapLibre`, `startTiles`, `styleFor` by the design's tone, `mapSize` on every size
+  change), the same base; the zones drawn from `ctx.aerodb.zoneOutlines()`. It pans and zooms with the finger like the Map.
+- **Each zone a filled polygon** in the tint of its state (the design's tokens, never the colour alone: its name and its state
+  in words beside it, in the one-line legend and in the list), a thick outline when ticked, dashed and said « contour
+  approximatif » while aerodb has only its frame (no ring, or a ring equal to its box: known from the data, never from an id).
+  The word stays defined; on 31 Oct it applies to no zone (AeroDB checked: every zone has its real rings).
+- **A tap on a zone ticks or unticks it**: the same selection as the list, one writer, the module's state (unchanged); a drag
+  or a pinch ticks nothing. The polygons tappable by id come from the base (asked of the Map's owner when missing, never
+  rewritten here).
+- **The first view frames every zone of the panel**; « Recentrer » brings it back after the pilot moved. The frame is the base's:
+  `zonesLayer.fit()` without bounds, which reads each zone's **main ring** (the largest: metropolitan France, the 48 States) and
+  unites them, never aerodb's boxes: one rule, in one place, nothing of it rewritten here. The rings drawn are aerodb's `framed`
+  (shifted by ±360° into the zone's `box`, aerodb fed1c6f4a), else its `rings`; `unwrapRing` still reads each drawn ring in one
+  piece (a no-op on framed rings). The other rings (the islands, Alaska, overseas France) stay drawn and tappable, reached by
+  panning.
+- **Size**: about 45 % of the view's height on a phone; at 1280, the map in its own column beside the list.
+- **The one-line legend stays; the list stays under the map** and is the fallback: no map when the base does not come
+  (MapLibre or the tiles missing, offline without them in the cache) or the outlines are missing; then the list alone. The
+  map is shown as soon as the base loads: no size rule (the 44 px rule of the SVG is gone), a zone small at the first view
+  (Gibraltar) is touched after a pinch, and the list is always there.
+- **Cases**: L20 — a tap on a polygon ticks the zone (the list's box follows), a drag or a pinch ticks nothing, « Recentrer » frames the
+  zones again, no base → the list alone. Screenshots at 390 and 1280, before and after, in DECISIONS.
 
 ### 5.4 Building on the launcher: one process per zone
 
@@ -445,7 +467,8 @@ The module is split by responsibility; no rule changes place without the case th
   coverage and its States, « Ajouter un pays », the rows of the groups, the journal (drawn and written), `render`.
 - `panels.js`: draws the set panels and never starts a job. Selection, choices, verbs, the running line, results and their
   summaries (`SUM_KINDS`, the pickup's lines included), `redrawPanel`, `renderBuild`.
-- `zonemap.js`: the map of the zones to tick (outlines, tones, 44 px rule); writes nothing but the module's selection.
+- `zonemap.js`: the map of the zones to tick, on the shared map base (the frame, the persistent MapLibre host of each panel, tones,
+  « Recentrer »); writes nothing but the module's selection.
 - `follow.js`: follows the launcher's jobs and draws nothing. Start, follow, settle, refusals, the one end (`finishOp`), the
   one plan (`finishPlan`), the pickup of a downloaded file.
 - `publish.js`: the shared « Publier » panel and the state of `data/` it reads (`sync-status`).
@@ -471,7 +494,7 @@ The module is split by responsibility; no rule changes place without the case th
   - `model_results.js`: the end of a job read for every verb (outcomes, `refusal`, the pickup's split and zips, the
     sheets' plan) and the journal entries and list;
   - `model_chain.js`: « Tout mettre à jour » (its sets and verbs, a verdict, the stale groups, its entry);
-  - `model_map.js`: the zones map (tones, approximate outline, layout, 44 px);
+  - `model_map.js`: the zones map (tones, approximate outline, the rings read in one piece, the features for the base);
   - `model_publish.js`: « Publier » (state, counts, outcome, entry).
   - `model_kit.js`: the private helpers shared by several of these files; the façade does not export it, so the
     names `model.js` exports stay those of before the split (one name, one file).

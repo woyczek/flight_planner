@@ -132,3 +132,23 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   « Base aéronautique : cycle 2610 dépassé, à reconstruire pour 2611 » (and « … rien de construit pour 2612 » before the end),
   the same for Procédures; it compares the cycle published in the repository with the cycle in force. « Publier » lights only
   once something is built on the workstation (sync-status): the two no longer contradict each other.
+
+## 31 October 2026 — the map of the zones is a real map (user's phone test)
+
+- **The request** (user, from a phone screenshot of the Procédures panel): « je m'attendais à une carte scrollable avec tous les
+  éléments fonctionnels de la carte en V2 ; c'était efficace ». The SVG of 30 Oct drew the world's width in 330 px: a stamp, the
+  United States small, the islands dots. Read as a bug (a user's return), so done before 6 Nov.
+- **Cause of the world-wide frame**: six zones (us, fr, ru, nz, fj, ki) cross the antimeridian and their aerodb box went round
+  the world. AeroDB corrected it at the source (fed1c6f4a: `box` never wider than 180°, `parts`, `framed` rings); the map draws
+  `framed` when given.
+- **Done**: the shared map base of the Map and the Weather (`modules/maps/lib/map_base.js`), imported, nothing copied;
+  `zonesLayer` (filled zones tapped by id, `fit` on each zone's main ring) asked of BUGS SOG and written by them (1a519954f). A tap
+  ticks, a drag or a pinch ticks nothing, « Recentrer », 45 % of the view on a phone, beside the list from 1024 px, the list as
+  the fallback. The 44 px rule is gone (a small zone is reached by a pinch). The SVG code (`zoneMap`, `MAP_MIN_PX`) is deleted.
+- **Screenshots** (real outlines; the tile style stubbed to a plain background in the noreg, real tiles on a device):
+  before `captures/zonemap_2026-10-31_before_{base,proc}_{390,1280}.png`, after
+  `captures/zonemap_2026-10-31_after_{base,proc}_{390,1280}.png`.
+- **Known limits, not blocking**: the map host is detached for an instant at each panel redraw (every second during a run), so
+  a drag during a run can be cut once; the wheel on a desktop and one finger on a phone go to the map, not the page scroll (the
+  base has no cooperative gestures); a change of the design's tone restyles the map from `attachMaps`.
+

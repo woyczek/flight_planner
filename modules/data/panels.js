@@ -20,6 +20,7 @@ import {
   tt
 } from './state.js';
 import {
+  attachMaps,
   zoneMapHtml
 } from './zonemap.js';
 import {
@@ -582,8 +583,7 @@ function setInner(panel) {
     null; // « Prendre le fichier téléchargé » : le verbe base/pickup, grisé pour sa propre raison
   return `<h2>${esc(tt(ui.title))}</h2>
     <h3>${esc(tt(ui.items))}</h3>
-    ${spec.map ? zoneMapHtml(panel) : ''}
-    ${choiceHtml(panel, frozen())}
+    ${spec.map ? `<div class="d-mapgrid">${zoneMapHtml(panel)}${choiceHtml(panel, frozen())}</div>` : choiceHtml(panel, frozen())}
     ${verbsHtml(gate, panel, pk)}
     ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
     ${pk?.reason === 'unknown-verb' && gate.reason !== 'unknown-verb' ? `<p class="f-muted" data-pickup-reason>${esc(tt(TX.greyReason['unknown-verb']))}</p>` : ''}
@@ -606,7 +606,7 @@ export function panelsHtml(group) {
 function redrawPanel(box) {
   const a = box.contains(document.activeElement) ? document.activeElement : null,
     q = (attr, v) => `[${attr}="${CSS.escape(v)}"]`,
-    sel = a ? a.dataset.mapZone ? q('data-map-zone', a.dataset.mapZone) : a.dataset.buildZone ? q('data-build-zone', a.dataset.buildZone) :
+    sel = a ? a.dataset.buildZone ? q('data-build-zone', a.dataset.buildZone) :
     a.dataset.personal ? q('data-personal', a.dataset
       .personal) : a.dataset
     .item ? q('data-item', a.dataset.item) : a.dataset.f ? q('data-f', a.dataset.f) : a.dataset.verb ? q('data-verb', a.dataset.verb) : '' :
@@ -615,6 +615,7 @@ function redrawPanel(box) {
     to = a?.selectionEnd ?? null;
   keepScroll(S.body, () => {
     box.innerHTML = box.matches('[data-update-all]') ? updateAllInner() : setInner(panelId(box));
+    attachMaps(box); // la carte MapLibre survit au redessin : son hôte reprend la place de l'emplacement
     const el = sel && box.querySelector(sel);
     if (el && !el.disabled) {
       el.focus({

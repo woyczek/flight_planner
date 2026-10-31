@@ -796,16 +796,16 @@ export const TX = {
     accent: ['en cours', 'running', 'läuft', 'en curso'],
     muted: ['hors couverture', 'not in the coverage', 'nicht in der Abdeckung', 'fuera de la cobertura']
   },
-  mapTicked: ['cochée', 'ticked', 'angekreuzt', 'marcada'],
-  mapApprox: ['contour approximatif', 'approximate outline', 'ungefährer Umriss', 'contorno aproximado'],
+  mapRecenter: ['Recentrer', 'Recenter', 'Neu zentrieren', 'Recentrar'],
   mapLegendApprox: ['pointillé : contour approximatif', 'dashed: approximate outline', 'gestrichelt: ungefährer Umriss',
     'punteado: contorno aproximado'
   ],
   mapLegend: ['Légende', 'Legend', 'Legende', 'Leyenda'],
-  mapLegendNote: ['Trait épais et teinte pleine : zone cochée ; touchez une zone ou appuyez sur Espace pour la cocher.',
-    'Thick outline and solid tint: zone ticked; tap a zone or press Space to tick it.',
-    'Dicker Rand und volle Tönung: Zone angekreuzt; tippen Sie auf eine Zone oder drücken Sie die Leertaste.',
-    'Trazo grueso y tono lleno: zona marcada; toque una zona o pulse Espacio para marcarla.'
+  mapLegendNote: [
+    'Trait épais et teinte pleine : zone cochée ; touchez une zone pour la cocher, déplacez et pincez la carte pour la voir de plus près.',
+    'Thick outline and solid tint: zone ticked; tap a zone to tick it, drag and pinch the map to see it closer.',
+    'Dicker Rand und volle Tönung: Zone angekreuzt; tippen Sie auf eine Zone, um sie anzukreuzen, und verschieben und zoomen Sie die Karte, um näher heranzugehen.',
+    'Trazo grueso y tono lleno: zona marcada; toque una zona para marcarla, arrastre y pellizque el mapa para verlo más de cerca.'
   ],
   // prendre le fichier téléchargé à la main dans Téléchargements (base/pickup) : le bouton, la question, la fin
   pickup: ['Prendre le fichier téléchargé', 'Take the downloaded file', 'Heruntergeladene Datei übernehmen',

@@ -30,8 +30,10 @@ import {
   renderBuild
 } from './panels.js';
 import {
-  mapWidth,
-  toggleMapZone
+  attachMaps,
+  destroyMaps,
+  recenterMap,
+  resizeMaps
 } from './zonemap.js';
 import {
   follow,
@@ -61,21 +63,17 @@ export const meta = {
   },
   files: ['model.js', 'model_screen.js', 'model_sets.js', 'model_results.js', 'model_chain.js', 'model_map.js', 'model_publish.js',
     'model_kit.js', 'texts.js', 'state.js', 'screen.js', 'panels.js', 'zonemap.js', 'follow.js', 'publish.js', 'chain.js',
-    '../../frame/lib/dom.js', '../../frame/lib/time.js'
+    '../maps/lib/map_base.js?v=0', '../maps/render.js?v=0', '../../frame/lib/dom.js', '../../frame/lib/time.js'
   ],
+  // la carte des zones : MapLibre et les contours, chargés à la demande par le socle de carte (comme la Météo) ; les tuiles, appelées par MapLibre lui-même
+  lazy: ['../maps/lib/maplibre-gl.js?v=0', '../maps/lib/maplibre-gl.css?v=0', '../maps/lib/outlines.js?v=0'],
+  net: ['tiles.openfreemap.org'],
   reads: ['cache/data/'],
   writes: [{
     prefix: 'cache/data/',
     policy: 'cache'
   }]
 };
-/** Espace ou Entrée sur une zone de la carte la coche ou la décoche, comme un toucher. */
-function onKey(e) {
-  const mz = e.target.closest?.('[data-map-zone]');
-  if (!mz || (e.key !== ' ' && e.key !== 'Enter')) return;
-  e.preventDefault();
-  toggleMapZone(mz);
-}
 /** aerodb annonce un changement avec { coverage: true } (la table de couverture a bougé) : la liste des États est redemandée, et
  *  elle seule est redessinée (un changement en rafale est regroupé en un seul rappel). */
 function onAerodbChange(e) {
@@ -109,8 +107,8 @@ function opOf(v) {
 }
 /** Retient le groupe touché en dernier (le « ? » du cadre ouvre l'aide au paragraphe du groupe ouvert), puis le geste d'un bouton. */
 function onClick(e) {
-  const mz = e.target.closest?.('[data-map-zone]');
-  if (mz) return toggleMapZone(mz);
+  const rc = e.target.closest?.('[data-act="map-recenter"]');
+  if (rc) return recenterMap(rc.closest('[data-zone-map]')?.dataset.zoneMap);
   const g = e.target.closest?.('details.f-group > summary')?.parentElement;
   if (g) S.focus = g.dataset.group;
   const v = e.target.closest?.('button[data-verb]');
@@ -152,6 +150,7 @@ function onToggle(e) {
   const g = e.target;
   if (g instanceof HTMLDetailsElement && g.matches('details.f-group') && g.isConnected) S.manual[g.dataset.group] = g.open;
   else if (g instanceof HTMLDetailsElement && g.matches('details.d-journal') && g.isConnected) S.journalOpen = g.open;
+  if (g instanceof HTMLDetailsElement && g.open) attachMaps(g); // un groupe qui s'ouvre : sa carte, jusque-là sans taille, démarre
 }
 /** Identifiant du groupe dont l'aide s'ouvre : le dernier touché s'il est encore ouvert, sinon le premier ouvert ; '' sans. */
 function helpGroup() {
@@ -179,7 +178,8 @@ export async function mount(el, ctx) {
     outlines: null, // les contours des zones (ctx.aerodb.zoneOutlines) : null (pas demandés), 'loading', l'objet, ou false (sans réponse : la liste seule)
     pickupBlocked: null, // les zips du plan montré que la prise réelle n'a pas lancés (nom hors de la règle) : dits à la fin
     pickupPlan: null, // le plan d'une prise montré dans la question : { zones, zips } (la prise réelle est construite de lui seul)
-    mapW: 0, // la largeur pour laquelle la carte a été calculée
+    maps: {}, // les cartes MapLibre des panneaux, par panneau (base, proc) : { host (persistant), map, layer, starting, sig, dark }
+    mapFail: {}, // les panneaux dont le socle de carte n'a pas pu démarrer : la liste seule
     rz: 0, // l'image d'animation en attente du recalcul à la taille de la fenêtre
     picked: new Set(), // États des procédures cochés (aucun par défaut)
     codes: '', // le champ des types OACI des appareils (vide : les types de la flotte)
@@ -212,15 +212,15 @@ export async function mount(el, ctx) {
   S.body.addEventListener('click', onClick);
   S.body.addEventListener('change', onChange);
   S.body.addEventListener('input', onInput);
-  S.body.addEventListener('keydown', onKey);
-  S.onResize = () => { // la carte des zones se recalcule quand la largeur change (une seule écoute, retirée au démontage)
+  S.onResize = () => { // les cartes reprennent la taille de leur hôte quand la fenêtre change (une seule écoute, retirée au démontage)
     cancelAnimationFrame(S.rz);
-    S.rz = requestAnimationFrame(() => {
-      if (S?.body && S.outlines && S.outlines !== 'loading' && mapWidth() !== S.mapW) renderBuild();
-    });
+    S.rz = requestAnimationFrame(() => S && resizeMaps());
   };
   window.addEventListener('resize', S.onResize);
-  S.onNet = () => renderBuild(); // « hors ligne » : la raison du bouton suit le réseau
+  S.onNet = () => { // « hors ligne » : la raison du bouton suit le réseau ; une carte qui n'avait pas pu démarrer est retentée
+    S.mapFail = {};
+    renderBuild();
+  };
   window.addEventListener('online', S.onNet);
   window.addEventListener('offline', S.onNet);
   S.body.addEventListener('toggle', onToggle, true);
@@ -253,6 +253,7 @@ export function unmount() {
   window.removeEventListener('resize', S.onResize);
   cancelAnimationFrame(S.rz);
   clearTimeout(S.again);
+  destroyMaps();
   stopTimer(); // le suivi s'arrête de lui-même au démontage (le cadre) : le travail, lui, continue sur le lanceur
   for (const f of S.stops) f?.();
   S.body = null;

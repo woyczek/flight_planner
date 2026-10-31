@@ -7,9 +7,9 @@ Rules covered
   * L19 « Prendre le fichier téléchargé » (base/pickup) against the fake launcher: the fourth verb of the base panel, the plan (dry sent) then ONE question (zip found, file
     missing with its pattern, where the files go), No takes nothing, Yes sends dry false, the summary and the hint, one journal entry, nothing found says the missing files
     without a question, a partial end, the button under the manual sources of a download, grey when the launcher does not know the verb.
-  * L20 the map of the zones to tick (stubbed ctx.aerodb.zoneOutlines): one selection with the list (a click or a key, both redrawn from the module state), the frame's tokens
-    for the colours, the state in words in the title and aria-label, the 44 px rule (no map on a phone with thin zones), frozen while an operation runs, no map without outlines
-    (the list alone, no error line), the resize listener removed at unmount.
+  * L20 the map of the zones to tick, on the shared map base (stubbed ctx.aerodb.zoneOutlines, the tiles' style stubbed to a background): a tap on a polygon ticks the zone and the list follows
+    (one selection), a drag ticks nothing, « Recentrer » frames the zones again, the frame's tokens for the colours, the state in words in the legend, frozen while an operation runs, no map
+    when the base does not come or the outlines are missing (the list alone, no error line), the resize listener and the maps removed at unmount.
   * L16 / L17 (V3 § 10.34, lot A1: the same panel for every group): L16 the pure functions (the SETS table, the verbs a launcher knows and the
     old-launcher fallback, the grey reason of a panel, the States offered, the ICAO types field, the arguments, the view and the end of any set's job,
     the sheets plan, the journal entries); L17 the panels against the fake launcher (regen/verbs, proc build / purge, VAC and aircraft grey, one
@@ -1783,8 +1783,8 @@ _L16_JS = r"""async () => {
   out.approx = [{ rings: [], box: bx }, { box: bx }, { rings: [rect], box: bx }, { rings: [[[0, 0], [10, 0], [10, 5], [0, 5]]], box: bx }, { rings: [[[10, 5], [0, 5], [0, 0], [10, 0], [10, 5]]], box: bx },
     { rings: [[[0, 0], [10, 0], [5, 5], [0, 0]]], box: bx }, { rings: [rect, rect], box: bx }, { rings: [[[0, 0], [9.9, 0], [9.9, 5], [0, 5], [0, 0]]], box: bx }, { rings: [rect] }, { rings: [], box: [0, 0, 'a', 1] }, null,
     { rings: [[[0, 0], [10, 0], [10, 0], [0, 5], [0, 0]]], box: bx }].map(M.isApproxOutline);
-  const zm = M.zoneMap([{ id: 'a', rings: [], box: bx }, { id: 'b', rings: [rect], box: bx }, { id: 'c', rings: [[[0, 0], [10, 0], [5, 5], [0, 0]]], box: bx }], 400);
-  out.zmApprox = [zm.shapes.map(x => x.approx), zm.shapes[0].d === zm.shapes[1].d && zm.shapes[0].d.length > 10, zm.shapes[2].d === zm.shapes[1].d];
+  const zf = M.zoneFeatures([{ id: 'a', rings: [], box: bx }, { id: 'b', rings: [rect], box: bx }, { id: 'c', rings: [[[0, 0], [10, 0], [5, 5], [0, 0]]], box: bx }]), geo = i => JSON.stringify(zf.features[i].geometry);
+  out.zmApprox = [zf.features.map(f => f.properties.approx), geo(0) === geo(1) && geo(0).length > 10, geo(2) === geo(1)];
   out.verbOfBase = [{ set: 'base', verb: 'fetch', zones: {} }, { set: 'proc', verb: 'fetch', states: {} }].map(M.viewOp);
   return out;
 }"""
@@ -1879,7 +1879,7 @@ def l16(c):
          'the plan\'s taken entries carry the zip size; a refusal « changed » carries the newest name and size', what='pickup sizes')
     c.eq(r['approx'], [True, True, True, True, True, False, False, False, False, False, False, False],
          'an outline is approximate when it has no ring or its only ring is exactly the box rectangle (closed or not, any order); never from a name; unreadable boxes are not', what='isApproxOutline')
-    c.eq(r['zmApprox'], [[True, True, False], True, False], 'the map flags the approximate shapes; a zone without ring is drawn as its frame', what='zoneMap approx')
+    c.eq(r['zmApprox'], [[True, True, False], True, False], 'the map features flag the approximate outlines; a zone without ring is drawn as its frame', what='zoneFeatures approx')
     c.eq(r['split'], [[['gb'], ['fr', 'x', 'y', 'w', 'v'], {'nats': {'name': 'ok.zip', 'size': 2}}, ['gb']], [['sia'], ['nats'], {'sia': {'name': 'a.zip', 'size': 1}}, []], []],
          'a zip whose name is outside the rule (accent, [, comma, over 150 characters) or without size is NOT ready: it is not run, and neither is a zone that has such a source', what='pickupSplit')
     c.eq(r['refusals'], ['updating', 'busy', 'busy', 'tooSoon', 'unknown-route'], 'a 409 with reason updating is its own refusal; the other 409 stays « busy »', what='refusal updating')
@@ -2767,19 +2767,37 @@ def l19(c):
 # ------------------------------------------------------------------------------------------------------ L20
 _FAILOUT_JS = """(() => { try { if (sessionStorage.getItem('__failOutlines') && window.__stub) window.__stub.fail.push('zoneOutlines') } catch {} })()"""
 _REALUS_JS = """(() => { try { if (sessionStorage.getItem('__realUs') && window.__stub) window.__stub.outlines.us.rings = [[[12, 45], [24, 45], [24, 46], [18, 47], [12, 47], [12, 45]]] } catch {} })()"""
+# the resize listener of the module (one while it is mounted): counted by the name of its function
 _RESIZE_JS = """(() => { window.__mapResize = 0; const a = window.addEventListener, r = window.removeEventListener;
-  window.addEventListener = function (t, f, o) { if (t === 'resize' && String(f).includes('mapWidth')) window.__mapResize++; return a.call(this, t, f, o) };
-  window.removeEventListener = function (t, f, o) { if (t === 'resize' && String(f).includes('mapWidth')) window.__mapResize--; return r.call(this, t, f, o) } })()"""
+  window.addEventListener = function (t, f, o) { if (t === 'resize' && String(f).includes('resizeMaps')) window.__mapResize++; return a.call(this, t, f, o) };
+  window.removeEventListener = function (t, f, o) { if (t === 'resize' && String(f).includes('resizeMaps')) window.__mapResize--; return r.call(this, t, f, o) } })()"""
+# MapLibre is loaded on demand (window.maplibregl): its Map is wrapped the moment it appears, to keep the map of each panel (window.__zm.base / .proc, taken at
+# the frame the module gives it) and to count the maps removed (window.__zmRemoved)
+_ZHOOK_JS = """(() => { let ml; window.__zm = {}; window.__zmRemoved = 0;
+  const hook = v => { const M = v && v.Map; if (M && !M.prototype.__zm) { M.prototype.__zm = 1;
+    const fb = M.prototype.fitBounds, rm = M.prototype.remove;
+    M.prototype.fitBounds = function (...a) { const k = this.getContainer().closest('[data-zone-map]')?.dataset.zoneMap; if (k) window.__zm[k] = this; return fb.apply(this, a) };
+    M.prototype.remove = function (...a) { window.__zmRemoved++; return rm.apply(this, a) } } return v };
+  Object.defineProperty(window, 'maplibregl', { configurable: true, get() { return ml }, set(v) { ml = hook(v) } }) })()"""
+# a style with nothing but a background: the tiles are not reachable in the suite
+_ZSTYLE = json.dumps({'version': 8, 'sources': {}, 'layers': [{'id': 'bg', 'type': 'background', 'paint': {'background-color': '#eeeeee'}}]})
 _ZONE_NAMES = {'fr': ['France', 'France', 'Frankreich', 'Francia'], 'gb': ['Royaume-Uni', 'United Kingdom', 'Vereinigtes Königreich', 'Reino Unido'],
                'es': ['Espagne', 'Spain', 'Spanien', 'España'], 'us': ['États-Unis', 'United States', 'Vereinigte Staaten', 'Estados Unidos']}
-# flat rectangles, 2 degrees tall: wide enough for a finger on a desktop, too thin for one on a phone
+# flat rectangles, side by side
 _RECTS = {'fr': [0, 45, 12, 47], 'gb': [-12, 45, 0, 47], 'es': [-12, 43, 0, 45], 'us': [12, 45, 24, 47]}
+# a point well inside each zone's polygon (lon, lat)
+_ZC = {'fr': [6, 45.5], 'gb': [-6, 45.5], 'es': [-6, 43.8], 'us': [18, 46]}
 _NO_RINGS = ('us',)   # the outline of these stubbed zones is only their frame (no ring)
+_ZFILL = 'mb-zones-1-fill'   # the first zones layer of a map (map_base.js): the fill, carrying { id, tone, picked, approx }
 
 
 def _outlines():
-    """What the stubbed ctx.aerodb.zoneOutlines() answers: the shape of the real one ({ name ×4, rings, box })."""
-    return {z: {'name': _ZONE_NAMES[z], 'rings': [] if z in _NO_RINGS else [[[w, s], [e, s], [e, n - 1], [w, n], [w, s]]], 'box': [w, s, e, n]} for z, (w, s, e, n) in _RECTS.items()}
+    """What the stubbed ctx.aerodb.zoneOutlines() answers: the shape of the real one ({ name ×4, rings, box, framed }). `framed` (the rings shifted into the box, aerodb fed1c6f4a)
+    is what is drawn: for Great Britain the stub gives it apart from `rings` (a sliver far away) to pin that `framed` is preferred."""
+    out = {z: {'name': _ZONE_NAMES[z], 'rings': [] if z in _NO_RINGS else [[[w, s], [e, s], [e, n - 1], [w, n], [w, s]]], 'box': [w, s, e, n]} for z, (w, s, e, n) in _RECTS.items()}
+    out['gb']['framed'] = out['gb']['rings']
+    out['gb']['rings'] = [[[100, 0], [101, 0], [101, 1], [100, 0]]]
+    return out
 
 
 _L20_JS = r"""async () => {
@@ -2787,139 +2805,204 @@ _L20_JS = r"""async () => {
   const out = {};
   out.tone = [{ inCoverage: false }, { inCoverage: true, running: true, published: true }, { inCoverage: true, published: false }, { inCoverage: true, published: true, stale: true },
     { inCoverage: true, published: true, stale: false }, { inCoverage: false, running: true }].map(M.mapTone);
-  const sq = (id, w, s, e, n) => ({ id, rings: [[[w, s], [e, s], [e, n], [w, n], [w, s]]], box: [w, s, e, n] });
-  const one = M.zoneMap([sq('a', 0, 0, 10, 10)], 400);
-  out.one = [one.vb, one.shapes.map(s => s.id), one.shapes[0].d.startsWith('M0 0L') && one.shapes[0].d.endsWith('Z'), one.small, one.h <= 260.0001];
-  const flat = [sq('fr', 0, 45, 12, 47), sq('gb', -12, 45, 0, 47)];
-  out.flat = [M.zoneMap(flat, 1000).small, M.zoneMap(flat, 350).small, M.zoneMap([], 400), M.zoneMap(null, 400), M.zoneMap([{ id: 'x', rings: [], box: [0, 0, 'a', 1] }], 400), M.zoneMap(flat, 0).small];
-  out.zones = [M.PROC_ZONES, M.MAP_MIN_PX];
+  // an antimeridian ring is read in one piece (Fiji: 177 … -179 becomes 177 … 181); a narrow ring is the same ring; nothing is nothing
+  const fiji = [[177, -17], [-179, -17], [-179, -16], [177, -16], [177, -17]], small = [[0, 0], [10, 0], [10, 5], [0, 0]];
+  out.unwrap = [M.unwrapRing(fiji), M.unwrapRing(small) === small, M.unwrapRing(null), M.unwrapRing([])];
+  const sq = (id, w, s, e, n, over = {}) => ({ id, rings: [[[w, s], [e, s], [e, n], [w, n], [w, s]]], box: [w, s, e, n], ...over });
+  const fc = M.zoneFeatures([sq('a', 0, 0, 10, 10, { tone: 'ok', picked: true }), sq('b', 170, -20, 180, -10, { rings: [fiji, small], tone: 'warn' }), { id: 'c', rings: [], box: [0, 0, 4, 2] }, { rings: [], box: [0, 0, 1, 1] }, { id: 'd' }, null]);
+  out.features = [fc.type, fc.features.map(f => [f.properties.id, f.properties.tone, f.properties.picked, f.properties.approx, f.geometry.type, f.geometry.coordinates.length]),
+    fc.features[1].geometry.coordinates[0][0][1][0], fc.features[2].geometry.coordinates[0][0]];
+  out.nothing = [M.zoneFeatures(null).features, M.zoneFeatures([]).type];
+  // the 44 px rule, the SVG projection and our own frame are gone: the base frames the view (zonesLayer.fit)
+  out.gone = ['zoneMap', 'MAP_MIN_PX', 'zonesFrame', 'mainRing', 'ringArea'].map(k => k in M);
+  out.zones = [M.PROC_ZONES];
   return out;
 }"""
+_ZXY_JS = """([kind, lon, lat]) => { const m = window.__zm[kind], p = m.project([lon, lat]), r = m.getContainer().getBoundingClientRect(); return [r.left + p.x, r.top + p.y] }"""
+_ZFEAT_JS = """([kind, lon, lat]) => { const m = window.__zm[kind], p = m.project([lon, lat]); const f = m.queryRenderedFeatures([p.x, p.y], { layers: ['%s'] })[0];
+  return f ? { id: f.properties.id, tone: f.properties.tone, picked: f.properties.picked, approx: f.properties.approx } : null }""" % _ZFILL
+_ZVIEW_JS = """(kind) => { const m = window.__zm[kind], c = m.getCenter(); return [Math.round(c.lng * 1e4) / 1e4, Math.round(c.lat * 1e4) / 1e4, Math.round(m.getZoom() * 1e3) / 1e3] }"""
 
 
-@case('L20', 'Données: the map of the zones to tick (one selection with the list, tokens, words for the state, 44 px rule, keyboard, no map without outlines, listener removed)',
+def _zmap_ready(c, kind, hook=True):
+    """Waits for the map of the panel `kind` to be drawn by the module, then makes « Recentrer » hand it to the test (window.__zm[kind])."""
+    c.until(f"!!document.querySelector('[data-zone-map={kind}] .d-map-host .maplibregl-canvas')", timeout=20000, what=f'the {kind} map is drawn on the shared base')
+    if hook:
+        c.js(f"document.querySelector('[data-zone-map={kind}] .d-map-host').scrollIntoView({{ block: 'center' }})")
+        c.tap(f'[data-zone-map={kind}] [data-act=map-recenter]')
+        c.until(f'!!window.__zm.{kind}', timeout=6000, what=f'the {kind} map is kept by the hook')
+        c.wait(400)
+
+
+def _zpoint(c, kind, zone):
+    """Page coordinates of a point inside the zone's polygon, the map scrolled into view."""
+    c.js(f"document.querySelector('[data-zone-map={kind}] .d-map-host').scrollIntoView({{ block: 'center' }})")
+    c.wait(250)
+    return c.js(_ZXY_JS, [kind, *_ZC[zone]])
+
+
+def _ztap(c, kind, zone):
+    """A tap on the zone's polygon (mouse click, no movement)."""
+    x, y = _zpoint(c, kind, zone)
+    c.page.mouse.click(x, y)
+    c.wait(300)
+
+
+def _zfeat(c, kind, zone):
+    """What the base's fill layer says of the zone under its point: { id, tone, picked, approx } (None if nothing is drawn there)."""
+    return c.js(_ZFEAT_JS, [kind, *_ZC[zone]])
+
+
+@case('L20', 'Données: the map of the zones to tick, on the shared map base (one selection with the list, tap and drag, Recentrer, tokens, no base → the list alone, frozen, listener and maps removed)',
       'L', tags=('data',), langs4=True, designs=('standard',),
-      rule='modules/data/SPEC 3 (the screen); ergonomics: one writer, never colour alone, 44 px')
+      rule='modules/data/SPEC 5.5 (the map of the zones: the shared base, a tap ticks, a drag ticks nothing, Recentrer, no map without the base); ergonomics: one writer, never colour alone')
 def l20(c):
     lang = c.lang
     li = {'fr': 0, 'en': 1, 'de': 2, 'es': 3}[lang]
     T = lambda key, after=None, row=0: _trow(key, lang, after, row)
     tone = lambda t: T(t, 'mapTone: {')
-    # ---- A: the pure functions (projection, 5 % margin, the 44 px rule, tones)
+    # ---- A: the pure functions (tones, rings read in one piece, features for the base)
     c.page.goto(f'{c.base}/frame/manifest.webmanifest', wait_until='load')
     r = c.js(_L20_JS)
     c.eq(r['tone'], ['muted', 'accent', 'warn', 'warn', 'ok', 'muted'], 'a zone outside the coverage is muted, a running one accent, nothing published or a cycle gone by warn, else ok', what='mapTone')
-    vb, ids, path_ok, small, h_ok = r['one']
-    c.ok(abs(vb[0] + 0.498) < 0.002 and vb[1] == -10.5 and abs(vb[2] - 10.958) < 0.002 and vb[3] == 11, vb, 'equirectangular x = lon·cos φ0, y = −lat, 5 % margin all round')
-    c.eq([ids, path_ok, small, h_ok], [['a'], True, False, True], 'one path per zone, projected rings closed, a big square is not small, the height is bounded', what='zoneMap one')
-    c.eq(r['flat'], [False, True, None, None, None, True], 'two thin zones: tickable at 1000 px, too small for a finger at 350 px; no zone, no map; an unreadable box is dropped; no width: small', what='zoneMap small')
-    c.eq(r['zones'], [{'LF': ['fr'], 'K': ['us']}, 44], 'the States draw France and the United States; 44 px', what='constants')
-    # ---- B: the screen with the stubbed outlines
+    c.eq(r['unwrap'], [[[177, -17], [181, -17], [181, -16], [177, -16], [177, -17]], True, [], []], 'a ring across the antimeridian is read in one piece (its western longitudes + 360); a narrow ring is the same; nothing gives an empty ring', what='unwrapRing')
+    kinds, ids, west, frame = r['features'][0], r['features'][1], r['features'][2], r['features'][3]
+    c.eq([kinds, ids], ['FeatureCollection', [['a', 'ok', True, True, 'MultiPolygon', 1], ['b', 'warn', False, False, 'MultiPolygon', 2], ['c', 'muted', False, True, 'MultiPolygon', 1]]],
+         'one MultiPolygon per zone with { id, tone, picked, approx }: the tone defaults to muted, a zone with no ring or whose only ring is its frame is approximate; no id, no entry', what='zoneFeatures')
+    c.eq([west, frame], [181, [[0, 0], [4, 0], [4, 2], [0, 2], [0, 0]]], 'the rings of a feature are unwrapped; a zone without ring is its frame', what='zoneFeatures rings')
+    c.eq([r['nothing'], r['gone'], r['zones']], [[[], 'FeatureCollection'], [False] * 5, [{'LF': ['fr'], 'K': ['us']}]],
+         'nothing gives an empty collection; the 44 px rule, the SVG projection and our own frame are gone (the base frames the view); the States draw France and the United States', what='constants')
+    # ---- B: the screen with the stubbed outlines and a style with nothing but a background
+    mode = {'style': 'ok'}
+
+    def style_route(route):
+        if mode['style'] == 'ok':
+            route.fulfill(status=200, content_type='application/json', body=_ZSTYLE)
+        else:
+            route.fulfill(status=404, content_type='text/plain', body='not found')
+    c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/'), style_route)
     cfg, _ = _fixture()
     cfg['outlines'] = _outlines()
     c.page.add_init_script(_RESIZE_JS)
+    c.page.add_init_script(_ZHOOK_JS)
     _open(c, cfg)
     c.page.add_init_script(_FAILOUT_JS)
     c.page.add_init_script(_REALUS_JS)
     _all_open(c)
-    wide = c.js('window.innerWidth') >= 700
     names = {z: _ZONE_NAMES[z][li] for z in _ZONE_NAMES}
     list_ids = c.js("[...document.querySelectorAll('[data-build-zone]')].map(i => i.dataset.buildZone)")
     c.eq(list_ids, ['ca', 'es', 'fr', 'gb', 'us'], 'the list is what it was: every zone of the coverage', what='list')
-    if not wide:
-        c.wait(600)
-        c.eq([c.count('[data-zone-map]'), c.count('[data-map-zone]'), len(c.js("[...document.querySelectorAll('[data-build-zone]')]")), c.js('window.__stub.calls.zoneOutlines > 0')], [0, 0, 5, True],
-             'on a phone the thin zones would be smaller than 44 px: no map, nothing said, the list remains (the outlines were asked)', what='no map at 390')
-        c.eq(c.count('[data-zone-legend]'), 0, 'no legend without the map', what='legend')
-        c.check_errors()
-        return
-    c.until("!!document.querySelector('[data-zone-map=base]')", timeout=8000, what='the map of the zones is drawn')
-    c.eq(c.js("[...document.querySelectorAll('[data-zone-map=base] [data-map-zone]')].map(p => p.dataset.mapZone)"), ['es', 'fr', 'gb', 'us'],
-         'a path per zone of the panel that has an outline (the list still has Canada)', what='paths')
-    c.eq(c.js("document.querySelectorAll('[data-zone-map=base] svg').length"), 1, 'inline SVG', what='svg')
-    c.eq(c.js("(() => { const s = document.querySelector('[data-zone-map=base] svg').getBoundingClientRect(); return [s.width <= document.documentElement.clientWidth, s.height <= 261] })()"), [True, True], 'bounded: not wider than the screen, at most 260 px high', what='size')
-    legend = norm(c.text('[data-zone-legend]'))
-    c.ok(all(norm(tone(t)) in legend for t in ('ok', 'warn', 'accent', 'muted')) and norm(T('mapLegendNote')) in legend, legend, 'the one-line legend names each tone in words and says what ticked looks like')
-    # roles, state in words (title and aria-label), tabindex
-    fr = c.js("(() => { const p = document.querySelector('[data-map-zone=fr]'); return [p.getAttribute('role'), p.getAttribute('aria-checked'), p.tabIndex, p.getAttribute('aria-label'), p.querySelector('title').textContent, p.dataset.tone] })()")
-    c.eq(fr, ['checkbox', 'true', 0, f"{names['fr']} — {tone('warn')}, {T('mapTicked')}", f"{names['fr']} — {tone('warn')}, {T('mapTicked')}", 'warn'],
-         'role checkbox, keyboard reachable; the name AND the state in words (France is one cycle behind, ticked), in the title and the aria-label', what='fr attributes')
-    # a zone whose outline is only its frame (no ring) is dashed and says so; a real outline is not
-    ap = c.js("""() => [...document.querySelectorAll('[data-zone-map=base] [data-map-zone]')].map(p => [p.dataset.mapZone, getComputedStyle(p).strokeDasharray, p.hasAttribute('data-approx'), p.querySelector('title').textContent])""")
-    c.eq([[a[0], a[1] != 'none', a[2]] for a in ap], [['es', False, False], ['fr', False, False], ['gb', False, False], ['us', True, True]], 'only the zone without ring is drawn with a dashed stroke', what='dashed')
-    c.eq([a[3] for a in ap if a[0] == 'us'], [f"{names['us']} — {tone('ok')}, {T('mapTicked')}, {T('mapApprox')}"], 'and its title adds « contour approximatif » in words', what='approx words')
-    c.ok(norm(T('mapLegendApprox')) in norm(c.text('[data-zone-legend]')), c.text('[data-zone-legend]'), 'the legend gains « pointillé : contour approximatif » since such a zone is drawn')
-    # the colours are the frame's tokens
-    col = c.js("""() => { const probe = t => { const s = document.createElement('span'); s.style.color = 'var(--sog-' + t + ')'; document.body.append(s); const v = getComputedStyle(s).color; s.remove(); return v };
-      const g = z => { const cs = getComputedStyle(document.querySelector('[data-map-zone=' + z + ']')); return [cs.fill, cs.stroke] };
-      return { warn: probe('warn'), ok: probe('ok'), fr: g('fr'), gb: g('gb'), sw: [...document.querySelectorAll('[data-zone-legend] .d-sw')].map(e => getComputedStyle(e).backgroundColor), tok: ['ok', 'warn', 'accent', 'muted'].map(probe) } }""")
-    c.eq([col['fr'], col['gb']], [[col['warn'], col['warn']], [col['ok'], col['ok']]], 'colours by computed style equal the tokens: --sog-warn for the stale zone, --sog-ok for an up-to-date one (fill and stroke)', what='tokens')
-    c.eq(col['sw'], col['tok'] * 2, 'the legend swatches (one legend per map) are the same tokens', what='swatches')
-    widths = c.js("[...document.querySelectorAll('[data-map-zone]')].map(p => [p.dataset.mapZone, getComputedStyle(p).strokeWidth, getComputedStyle(p).fillOpacity])")
-    c.ok(all(w[1] == '3px' and float(w[2]) > 0.5 for w in widths if w[0] in ('fr', 'gb', 'es', 'us')), widths, 'every zone starts ticked: thick stroke and a solid tint, not colour alone')
-    # ---- C: a click toggles the selection the list reads, both redrawn from it
-    c.tap('[data-map-zone=fr]')
-    c.eq([c.js("document.querySelector('[data-build-zone=fr]').checked"), c.attr('[data-map-zone=fr]', 'aria-checked'), c.js("getComputedStyle(document.querySelector('[data-map-zone=fr]')).strokeWidth")], [False, 'false', '1px'],
-         'a click unticks the zone: the checkbox, the path and its stroke follow the same state', what='click off')
-    c.eq(c.attr('[data-map-zone=fr]', 'aria-label'), f"{names['fr']} — {tone('warn')}", 'unticked: the label drops « ticked »', what='label off')
-    c.tap('[data-map-zone=fr]')
-    c.eq([c.js("document.querySelector('[data-build-zone=fr]').checked"), c.attr('[data-map-zone=fr]', 'aria-checked')], [True, 'true'], 'and back', what='click on')
+    _zmap_ready(c, 'base')
+    c.eq([c.count('[data-zone-map=base] svg'), c.count('[data-map-zone]'), c.count('[data-zone-map=base] [data-zone-slot]'), c.count('[data-zone-map=base] .d-map-host')], [0, 0, 0, 1],
+         'no SVG any more: the slot holds the persistent host of the shared base\'s map', what='frame')
+    c.eq(norm(c.text('[data-zone-map=base] [data-act=map-recenter]')), norm(T('mapRecenter')), 'the button is « Recentrer » in the language of the run', what='recenter text')
+    host = c.js("(() => { const h = document.querySelector('[data-zone-map=base] .d-map-host').getBoundingClientRect(); return [Math.round(h.width), Math.round(h.height), innerHeight, innerWidth] })()")
+    c.ok(host[1] >= 259 and abs(host[1] - max(260, 0.45 * host[2])) <= 2, host, 'the host is about 45 % of the view\'s height, 260 px at least')
+    grid = c.js("(() => { const g = document.querySelector('[data-build] .d-mapgrid'), a = g.children[0].getBoundingClientRect(), b = g.children[1].getBoundingClientRect(); return [a.top < b.top, a.left < b.left] })()")
+    if host[3] >= 1024:
+        c.eq(grid[1], True, 'from 1024 px wide the map sits beside the list, map first', what='side by side')
+    else:
+        c.eq(grid[0], True, 'on a phone the map is above the list', what='stacked')
+    legend = norm(c.text('[data-zone-map=base] [data-zone-legend]'))
+    c.ok(all(norm(tone(t)) in legend for t in ('ok', 'warn', 'accent', 'muted')) and norm(T('mapLegendNote')) in legend and norm(T('mapLegendApprox')) in legend, legend,
+         'the one-line legend names each tone in words, says what ticked looks like, and (the zone without ring) the dashed outline')
+    # the colours handed to the base are the frame's tokens (a fill expression: ok, warn, err → accent, muted, then the accent for any other tone)
+    c.eq(c.js("""() => { const probe = t => { const s = document.createElement('span'); s.style.color = 'var(--sog-' + t + ')'; document.body.append(s); const v = getComputedStyle(s).color; s.remove(); return v };
+        const e = window.__zm.base.getPaintProperty('%s', 'fill-color'); return [e[3] === probe('ok'), e[5] === probe('warn'), e[9] === probe('muted'), e[10] === probe('accent')] }""" % _ZFILL),
+         [True, True, True, True], 'ok, warn and muted are the frame\'s tokens; the accent (a zone an operation works on) is the colour of any other tone', what='tokens')
+    # the first view frames every zone of the panel
+    b = c.js("(() => { const m = window.__zm.base, b = m.getBounds(); return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()] })()")
+    c.ok(b[0] <= -12 and b[2] >= 24 and b[1] <= 43 and b[3] >= 47, b, 'the first view holds every zone of the panel (-12 … 24 east, 43 … 47 north)')
+    # states in the base's features: France is one cycle behind (warn) and ticked, the US has no ring (approximate), Spain is up to date
+    c.eq([_zfeat(c, 'base', 'fr'), _zfeat(c, 'base', 'gb'), _zfeat(c, 'base', 'us')],
+         [{'id': 'fr', 'tone': 'warn', 'picked': True, 'approx': False}, {'id': 'gb', 'tone': 'ok', 'picked': True, 'approx': False}, {'id': 'us', 'tone': 'ok', 'picked': True, 'approx': True}],
+         'the tone of each state, ticked as the list is, the dashed outline for the zone without ring', what='features')
+    # ---- C: a tap on a polygon ticks the zone, the list follows (one selection); a drag ticks nothing; Recentrer frames the zones again
+    first = c.js(_ZVIEW_JS, 'base')
+    _ztap(c, 'base', 'fr')
+    c.eq([c.js("document.querySelector('[data-build-zone=fr]').checked"), _zfeat(c, 'base', 'fr')['picked']], [False, False],
+         'a tap on the polygon unticks the zone: the list\'s box and the map\'s feature follow the same state', what='tap off')
+    _ztap(c, 'base', 'fr')
+    c.eq([c.js("document.querySelector('[data-build-zone=fr]').checked"), _zfeat(c, 'base', 'fr')['picked']], [True, True], 'and back', what='tap on')
     c.tap('[data-build-zone=gb]')
-    c.eq(c.attr('[data-map-zone=gb]', 'aria-checked'), 'false', 'the list changes the selection: the map follows', what='list to map')
+    c.until(f"(() => {{ const m = window.__zm.base, p = m.project([{_ZC['gb'][0]}, {_ZC['gb'][1]}]); return m.queryRenderedFeatures([p.x, p.y], {{ layers: ['{_ZFILL}'] }})[0]?.properties.picked === false }})()",
+            timeout=5000, what='the list changes the selection: the map follows')
     c.tap('[data-build-zone=gb]')
-    # keyboard
-    c.page.focus('[data-map-zone=es]')
-    c.page.keyboard.press('Space')
-    c.eq([c.attr('[data-map-zone=es]', 'aria-checked'), c.js("document.querySelector('[data-build-zone=es]').checked"), c.js("document.activeElement.dataset.mapZone")], ['false', False, 'es'], 'Space toggles the focused zone, the focus stays on it', what='space')
-    c.page.keyboard.press('Enter')
-    c.eq([c.attr('[data-map-zone=es]', 'aria-checked'), c.js("document.querySelector('[data-build-zone=es]').checked")], ['true', True], 'Enter toggles it back', what='enter')
+    c.until(f"(() => {{ const m = window.__zm.base, p = m.project([{_ZC['gb'][0]}, {_ZC['gb'][1]}]); return m.queryRenderedFeatures([p.x, p.y], {{ layers: ['{_ZFILL}'] }})[0]?.properties.picked === true }})()",
+            timeout=5000, what='and the list ticks it again')
+    # a drag (mouse down, move, up) moves the map and ticks nothing
+    x, y = _zpoint(c, 'base', 'fr')
+    m = c.page.mouse
+    m.move(x, y)
+    m.down()
+    for i in range(1, 11):
+        m.move(x + 8 * i, y + 3 * i)
+        c.wait(25)
+    m.up()
+    c.wait(400)
+    moved = c.js(_ZVIEW_JS, 'base')
+    c.eq([c.js("document.querySelector('[data-build-zone=fr]').checked"), moved != first], [True, True], 'a drag pans the map and ticks nothing', what='drag')
+    c.tap('[data-zone-map=base] [data-act=map-recenter]')
+    c.wait(400)
+    c.eq(c.js(_ZVIEW_JS, 'base'), first, '« Recentrer » brings the view back to the first frame', what='recenter')
+    c.eq(c.js("document.querySelectorAll('[data-zone-map=base] .d-map-host').length"), 1, 'still one host, whatever the number of redraws', what='one host')
+    # a zone without ring (the US here) is a tappable polygon too
+    _ztap(c, 'base', 'es')
+    c.eq(c.js("document.querySelector('[data-build-zone=es]').checked"), False, 'Spain unticked by a tap', what='es off')
+    _ztap(c, 'base', 'es')
     # ---- D: the States map (France and the United States)
-    c.until("!!document.querySelector('[data-zone-map=proc]')", timeout=8000, what='the map of the States is drawn')
-    c.eq(c.js("[...document.querySelectorAll('[data-zone-map=proc] [data-map-zone]')].map(p => [p.dataset.mapZone, p.getAttribute('aria-checked')])"), [['K', 'false'], ['LF', 'false']], 'the States with a bulk source, none ticked', what='proc paths')
-    c.tap('[data-zone-map=proc] [data-map-zone=K]')
-    c.eq([c.js("document.querySelector('[data-set-panel=proc] [data-item=K]').checked"), c.js("document.querySelector('[data-set-panel=proc] [data-item=LF]').checked"),
-          c.attr('[data-zone-map=proc] [data-map-zone=K]', 'aria-label')], [True, False, f"{K_NAME[lang]} — {tone('ok')}, {T('mapTicked')}, {T('mapApprox')}"],
-         'a click on the United States ticks the State K in the panel\'s selection', what='proc click')
+    _zmap_ready(c, 'proc')
+    c.eq([_zfeat(c, 'proc', 'fr')['id'], _zfeat(c, 'proc', 'us')['id'], _zfeat(c, 'proc', 'us')['picked']], ['LF', 'K', False], 'the States with a bulk source, none ticked', what='proc features')
+    _ztap(c, 'proc', 'us')
+    c.eq([c.js("document.querySelector('[data-set-panel=proc] [data-item=K]').checked"), c.js("document.querySelector('[data-set-panel=proc] [data-item=LF]').checked"), _zfeat(c, 'proc', 'us')['picked']],
+         [True, False, True], 'a tap on the United States ticks the State K in the panel\'s selection', what='proc tap')
     # ---- E: a running operation freezes the map as it freezes the list
     st = _launcher(c, [_view(step='Zone fr', done=0, zones={'fr': _zs('building', 1, 4), 'es': _zs('waiting')})], verbs=BASE3)
     c.page.reload(wait_until='load')
     _head(c)
     _all_open(c)
-    c.until("!!document.querySelector('[data-zone-map=base]')", timeout=8000, what='the map is drawn again')
+    _zmap_ready(c, 'base')
     _untick(c, 'ca', 'gb', 'us')
     c.tap('[data-build] [data-verb=build]')
     c.until("!!document.querySelector('[data-build] [data-running]')", what='a build runs')
-    c.eq([c.attr('[data-map-zone=fr]', 'aria-disabled'), c.attr('[data-map-zone=gb]', 'aria-disabled')], ['true', 'true'], 'frozen while it runs', what='frozen')
-    c.until("document.querySelector('[data-map-zone=fr]')?.dataset.tone === 'accent'", timeout=6000, what='the running zone takes the accent tone')
-    c.eq(c.js("(() => { const s = document.createElement('span'); s.style.color = 'var(--sog-accent)'; document.body.append(s); const v = getComputedStyle(s).color; s.remove(); return getComputedStyle(document.querySelector('[data-map-zone=fr]')).fill === v })()"),
-         True, 'the accent token', what='accent')
-    before = c.attr('[data-map-zone=es]', 'aria-checked')
-    c.js("document.querySelector('[data-map-zone=es]').dispatchEvent(new MouseEvent('click', { bubbles: true }))")
-    c.eq(c.attr('[data-map-zone=es]', 'aria-checked'), before, 'a click while it runs changes nothing', what='click frozen')
-    # ---- F: the listener is there once and goes with the module
+    c.until(f"(() => {{ const m = window.__zm.base, p = m.project([{_ZC['fr'][0]}, {_ZC['fr'][1]}]); return m.queryRenderedFeatures([p.x, p.y], {{ layers: ['{_ZFILL}'] }})[0]?.properties.tone === 'accent' }})()",
+            timeout=8000, what='the running zone takes the accent tone')
+    before = c.js("document.querySelector('[data-build-zone=es]').checked")
+    _ztap(c, 'base', 'es')
+    c.eq(c.js("document.querySelector('[data-build-zone=es]').checked"), before, 'a tap while it runs changes nothing', what='tap frozen')
+    # ---- F: the listener is there once and goes with the module, and so do the maps
     c.eq(c.js('window.__mapResize'), 1, 'one resize listener while the module is mounted', what='listener')
-    ids = c.js("[...document.querySelectorAll('#fMenu a[data-id]')].map(a => a.dataset.id)")
+    removed = c.js('window.__zmRemoved')
+    ids = c.js("[...document.querySelectorAll('#fMenu a[data-id]')].map(a => a.dataset.id)")   # the rail is in the page at both widths (hidden on a phone)
     other = next((i for i in ids if i != 'data'), None)
     c.ok(other is not None, ids, 'the Maintenance rail has another entry to leave the module')
-    c.tap(f'#fMenu a[data-id="{other}"]')
+    c.js("(h) => { location.hash = '#' + h }", other)
     c.until("!document.querySelector('[data-module=data]')", timeout=8000, what='the module is unmounted')
-    c.eq(c.js('window.__mapResize'), 0, 'the listener is removed at unmount', what='listener removed')
-    # ---- G2: a real outline for the same zone: no dash, no words, no legend item
+    c.eq([c.js('window.__mapResize'), c.js('window.__zmRemoved') - removed, c.count('.maplibregl-canvas')], [0, 2, 0], 'the listener is removed at unmount, and the two maps (base and States) are removed with their canvas', what='listener removed')
+    # ---- G2: a real outline for the same zone: not approximate, no legend item
     c.page.evaluate("sessionStorage.setItem('__realUs', '1')")
     c.open('data', docs=LEVEL3, wait=False, app='maintenance')
     _head(c)
     _all_open(c)
-    c.until("!!document.querySelector('[data-zone-map=base]')", timeout=8000, what='the map is drawn again')
-    c.eq([c.count('[data-map-zone][data-approx]'), c.js("getComputedStyle(document.querySelector('[data-zone-map=base] [data-map-zone=us]')).strokeDasharray"),
-          c.attr('[data-zone-map=base] [data-map-zone=us]', 'aria-label'), norm(T('mapLegendApprox')) in norm(c.text('[data-zone-legend]'))],
-         [0, 'none', f"{names['us']} — {tone('ok')}, {T('mapTicked')}", False], 'a ring that is not the frame: solid stroke, no « contour approximatif », no legend item', what='real outline')
-    # ---- G: a failing zoneOutlines: the list alone, no error line
+    _zmap_ready(c, 'base')
+    c.eq([_zfeat(c, 'base', 'us')['approx'], norm(T('mapLegendApprox')) in norm(c.text('[data-zone-legend]'))], [False, False], 'a ring that is not the frame: solid outline, no « contour approximatif », no legend item', what='real outline')
+    # ---- G: the base does not come (the style is refused): the list alone, no error line
+    mode['style'] = 'refused'
+    c.page.evaluate("sessionStorage.removeItem('__realUs')")
+    c.open('data', docs=LEVEL3, wait=False, app='maintenance')
+    _head(c)
+    _all_open(c)
+    c.until("!document.querySelector('[data-zone-map]') && !!window.__stub && window.__stub.calls.zoneOutlines >= 1", timeout=20000, what='no map when the base does not come')
+    c.eq([c.count('[data-zone-map]'), c.count('.maplibregl-canvas'), c.count('[data-build-zone]'), c.count('[data-error]'), c.count('[data-zone-legend]')], [0, 0, 5, 0, 0],
+         'the style is refused: no map, no legend, the list is all there is, no error line', what='no base')
+    # ---- H: a failing zoneOutlines: the list alone, no error line
+    mode['style'] = 'ok'
     c.page.evaluate("sessionStorage.setItem('__failOutlines', '1')")
     c.open('data', docs=LEVEL3, wait=False, app='maintenance')   # back on the module (the init scripts stay), now with a failing zoneOutlines
     _head(c)
     _all_open(c)
     c.wait(800)
-    c.eq([c.count('[data-zone-map]'), c.count('[data-map-zone]'), c.count('[data-build-zone]'), c.count('[data-error]'), c.js('window.__stub.calls.zoneOutlines >= 1')], [0, 0, 5, 0, True],
+    c.eq([c.count('[data-zone-map]'), c.count('[data-build-zone]'), c.count('[data-error]'), c.js('window.__stub.calls.zoneOutlines >= 1')], [0, 5, 0, True],
          'zoneOutlines throws: no map, the list is all there is, no error line', what='failure')
     c.check_errors()
 
