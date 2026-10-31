@@ -73,7 +73,7 @@
     gitlab: {
       id: 'gitlab',
       label: 'GitLab',
-      hosts: ['gitlab.com', 'framagit.org'],
+      hosts: ['gitlab.com', 'framagit.org'], // appelés par la page sans lanceur : aussi dans CONNECT de tools/csp_policy.py
       apiHost: null,
       apiPath: '/api/v4',
       token: 'glpat-… (jeton d\'accès de projet, rôle Developer, write_repository)',

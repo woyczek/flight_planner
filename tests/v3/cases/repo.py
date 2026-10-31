@@ -1977,3 +1977,20 @@ def i28(c):
     c.ok(len(benches) > 40, str(len(benches)), 'the benches are found')
     c.eq({b: BENCH_ORPHANS.get(b, '?') for b in orphans}, BENCH_ORPHANS, 'each bench opened by a case, or waiting in BENCH_ORPHANS with its owner (a new orphan, or one now opened, changes the table)', what='benches no case opens')
     c.eq(sorted((set(BENCH_ORPHANS) | set(MEASURES)) - set(benches)), [], 'the tables name existing pages', what='stale rows')
+
+
+
+@case('I30', 'The page’s connect-src holds the API of each known repository provider, exactly', 'I', static=True,
+      rule='Simplification and Sécurisation 31 Oct (the user’s phone, served by github.io: the GitLab call blocked by the CSP before leaving): CONNECT of tools/csp_policy.py holds the API hosts of SogConfig.PROVIDER_TABLE (api.github.com for github.com; gitlab.com, framagit.org for GitLab), exact hosts, never a wildcard nor a bare https:')
+def i30(c):
+    import importlib
+    sys.path.insert(0, str(c.root / 'tools'))
+    P = importlib.import_module('csp_policy')
+    cfg = (c.root / 'frame' / 'settings' / 'config.js').read_text(encoding='utf-8')
+    hosts = [h for block in re.findall(r"hosts:\s*\[([^\]]*)\]", cfg) for h in re.findall(r"'([^']+)'", block)]
+    api = sorted({'https://api.github.com' if h == 'github.com' else f'https://{h}' for h in hosts})
+    c.eq(sorted(x for x in api if x not in P.CONNECT), [], 'each provider’s API is in CONNECT', what='missing hosts')
+    c.ok({'https://gitlab.com', 'https://framagit.org'} <= set(P.CONNECT), str(P.CONNECT), 'gitlab.com and framagit.org, as hosts')
+    connect = P.value(meta=True).split(';')[0]
+    c.ok('https://gitlab.com' in connect and 'https://framagit.org' in connect and '*' not in connect and ' https: ' not in f'{connect} ',
+         connect[:200], 'the built policy carries them, exact hosts, no wildcard')

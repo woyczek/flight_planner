@@ -2294,3 +2294,34 @@ def a63(c):
     c.ok(all('ghp_test' not in g[1] for g in got), '', 'never the token')
     fails = c.js("() => FrameData.diagnostic().then(d => d.failures.map(f => f.error))")
     c.eq(fails[:2], ['GitHub 401: Bad credentials', 'GitHub 404: Not Found'], 'the diagnostic keeps the last failures, the newest first', what='failures')
+
+
+
+# a self-hosted GitLab repository: a host the page does not allow (connect-src)
+GITLAB_SELF = ("try { localStorage.setItem('githubData:frame', JSON.stringify({ provider: 'gitlab', repo: 'grp/proj', api: 'https://gitlab.example/api/v4', "
+               "branch: 'main', token: 'glpat_test' })) } catch (e) {}")
+
+
+@case('A64', 'A repository host the page does not allow (CSP): said as such, naming the host only', 'A', designs=('standard',), screens=False,
+      night=False, langs4=True,
+      rule='Sécurisation 31 Oct: a self-hosted GitLab stays blocked by the static site’s CSP (wanted, a second barrier); the error says « host not allowed by the page (CSP) » naming the host only, in the run’s language')
+def a64(c):
+    def strict(route):
+        r = route.fetch()
+        route.fulfill(response=r, headers={**r.headers, 'content-security-policy': "connect-src 'self' https://api.github.com https://gitlab.com"})
+    c.context.route(re.compile(r'/frame/index\.html'), strict)
+    c.context.add_init_script(GITLAB_SELF)
+    c.open('atmosphere', wait=False, docs=[['device/usages.json', {'devices': True}, 'cache']])
+    c.until('!!window.FrameData && FrameData.status', timeout=15000, what='the data layer')
+    for _ in range(100):
+        if c.js("() => FrameData.status().then(s => s.transport)") == 'gitlab':
+            break
+        c.wait(100)
+    c.eq(c.js("() => FrameData.sync().then(r => r.error)"), 'unreachable: gitlab.example (TypeError)', 'the call never left: an exception', what='error')
+    c.page.evaluate("location.hash = '#settings'")
+    c.until("!!document.querySelector('[data-card=\"status\"] [data-k=\"data\"]')", timeout=10000, what='the Status block')
+    want = norm(tx('frame/app.js', 'csp', c.lang).replace('{h}', 'gitlab.example'))
+    got = norm(c.js("() => document.querySelector('[data-card=\"status\"] [data-k=\"data\"]').textContent"))
+    c.ok(want in got and 'glpat' not in got and '/api/v4' not in got, got, 'the CSP said, the host only, in the run’s language')
+    # the browser's own lines for the blocked calls are what this case provokes; any other error still counts
+    c.errors[:] = [e for e in c.errors if 'gitlab.example' not in e or 'Content Security Policy' not in e]

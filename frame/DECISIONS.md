@@ -2296,3 +2296,12 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   « token without write access », 400 on the branch « unknown branch » — followed by « (GitLab 404) »; an exception
   without status carries its name; the last five failures (date, error) are kept in the copiable diagnostic
   (`FrameData.diagnostic().failures`). The benches that simulate « offline » now also say it through `navigator.onLine`.
+
+- **31 Oct 2026 — The page's connect-src holds the known repository providers** (the user's phone, served by github.io:
+  « unreachable: gitlab.com (TypeError) »; Réglages and Sécurisation found it). gitlab.com and framagit.org serve CORS, but
+  the page's own policy blocked the call before it left: `CONNECT` had api.github.com only (framagit.org reached the
+  launcher's policy through its configuration, never the static site's). `CONNECT` now holds exactly the API hosts of
+  `SogConfig.PROVIDER_TABLE` — api.github.com, gitlab.com, framagit.org — exact hosts, no wildcard, cited from both files;
+  the meta tags are rebuilt from it, never copied by hand (I30). A self-hosted GitLab stays blocked on the static site
+  (wanted); the frame listens to `securitypolicyviolation` on `connect-src` and says « host not allowed by the page (CSP) »
+  naming the host only (A64). The « no CORS » sentence first written was wrong and never pushed.

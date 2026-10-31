@@ -92,6 +92,11 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
 
 ## 4. Reading
 
+- **The repository's provider and the page's policy** (31 Oct 2026): a device without launcher calls the repository's API
+  from the page, so its host must be in the page's `connect-src` (`tools/csp_policy.py` `CONNECT`, set as a meta tag by
+  `tools/build_pages.py`): api.github.com, gitlab.com and framagit.org — the hosts of `SogConfig.PROVIDER_TABLE`, one list
+  cited on both sides. A self-hosted GitLab stays blocked there (a second barrier, wanted): the call never leaves, and the
+  Status block says « this device cannot contact <host>: host not allowed by the page (CSP) ».
 - `await data.get(path)` gives the value at once, from the device: parsed JSON, text, or null.
 - `await data.read(path, { wait: true })` waits for the network only the first time a file is needed. Use it on a
   screen that cannot be shown without the file; otherwise call `get` and let `watch` bring the value.

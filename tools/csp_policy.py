@@ -18,6 +18,11 @@ CONNECT = [
     'https://www.simbrief.com', 'https://dispatch.simbrief.com', 'https://api.ivao.aero', 'https://data.vatsim.net',
     # dépôt des données par l'API GitHub (accès aux données, shared/github_data.js)
     'https://api.github.com',
+    # dépôt des données sur une instance GitLab publique, appelée par la page sans lanceur (frame/store/transport_gitlab.js,
+    # api https://<hôte>/api/v4) : les hôtes de SogConfig.PROVIDER_TABLE.gitlab.hosts (frame/settings/config.js) — une seule
+    # liste à tenir à jour, citée des deux côtés (Python ne lit pas le JS) ; ils servent CORS. 31 oct. 2026 : le téléphone de
+    # l'utilisateur, servi par github.io, voyait l'appel bloqué ici avant de partir (« unreachable: gitlab.com (TypeError) »)
+    'https://gitlab.com', 'https://framagit.org',
     'https://metar.vatsim.net', 'https://api.open-meteo.com', 'https://archive-api.open-meteo.com',
     # TAF sans lanceur (appli Pilote V3, clé personnelle de l'appareil ajoutée par le cadre)
     'https://avwx.rest',

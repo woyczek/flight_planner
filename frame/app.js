@@ -379,6 +379,13 @@
         other: ['refusé par le serveur : {e}', 'refused by the server: {e}', 'vom Server abgelehnt: {e}',
           'rechazado por el servidor: {e}'
         ],
+        // un appel bloqué par la politique de contenu de la page (connect-src, tools/csp_policy.py) avant de partir
+        csp: [
+          'cet appareil ne peut pas contacter {h} : hôte non prévu par la page (CSP) ; sur un appareil sans lanceur, seuls les fournisseurs connus sont joignables',
+          'this device cannot contact {h}: host not allowed by the page (CSP); on a device without launcher, only the known providers are reachable',
+          'dieses Gerät kann {h} nicht erreichen: Host von der Seite nicht vorgesehen (CSP); auf einem Gerät ohne Starter sind nur die bekannten Anbieter erreichbar',
+          'este dispositivo no puede contactar con {h}: host no previsto por la página (CSP); en un dispositivo sin lanzador, solo los proveedores conocidos son accesibles'
+        ],
         unreachable: ['dépôt injoignable ({h}) : réseau, filtrage ou redirection refusée',
           'repository unreachable ({h}): network, filtering or redirect refused',
           'Repository nicht erreichbar ({h}): Netz, Filter oder abgelehnte Umleitung',
@@ -2143,6 +2150,16 @@
     return r;
   }
 
+  // hôtes dont un appel a été bloqué par la politique de contenu de la page (connect-src) : l'erreur le dit au lieu de « réseau »
+  const cspBlocked = new Set();
+  document.addEventListener('securitypolicyviolation', e => {
+    if (!/^connect-src/.test(e.effectiveDirective || e.violatedDirective || '')) return;
+    try {
+      cspBlocked.add(new URL(e.blockedURI).host);
+    } catch {
+      /* adresse illisible */
+    }
+  });
   /** Erreur de la couche de données dans la langue de l'appli ; celle d'un serveur, citée telle quelle. */
   const errText = e => {
     const k = {
@@ -2152,6 +2169,10 @@
       'invalid repository address': 'invalid'
     } [e];
     const un = /^unreachable: (.*)$/.exec(String(e || ''));
+    const host = un ? un[1].split(' ')[0] : '';
+    if (un && cspBlocked.has(host)) return t(T.sync.errs.csp, {
+      h: host
+    });
     if (un) return t(T.sync.errs.unreachable, {
       h: un[1]
     });

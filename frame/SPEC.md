@@ -171,7 +171,11 @@ The transports:
   - The API is `https://api.github.com`, or a bench's local address (`http://127.0.0.1`, `http://localhost`); any other
     `api` in a setting is ignored, by `clean` and again by the transport (said once in the console), so the pilot's token
     never goes to a host a forged « Rejoindre » link would put there (audit line 118; Settings refuses it at the source).
-- **`gitlab`** (`frame/store/transport_gitlab.js`, 29 Oct 2026): the data repository on a GitLab instance (gitlab.com,
+- **`gitlab`** (`frame/store/transport_gitlab.js`, 29 Oct 2026; from a page without launcher the instance must be in the
+  page's `connect-src` — `tools/csp_policy.py` `CONNECT` lists gitlab.com and framagit.org, the hosts of
+  `SogConfig.PROVIDER_TABLE.gitlab.hosts`, which serve CORS; a self-hosted instance is reached through the launcher or the
+  relay, and a call the policy blocks is said « host not allowed by the page (CSP) », 31 Oct 2026): the data repository
+  on a GitLab instance (gitlab.com,
   framagit…) through its REST API v4, with a project access token (one per pilot, named after the trigram, created by
   the administrator, revocable, with an expiry). The device's setting is GitHub's (`device/keys.json`, `FD.github`): a
   pasted project address (`https://<host>/<group>/<project>`) gives `provider: 'gitlab'` and `api: https://<host>/api/v4`,

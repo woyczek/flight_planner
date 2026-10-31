@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Static site: GitLab repositories reachable** (`tools/csp_policy.py`, `frame/app.js`; frame SPEC 2, INTEGRATION 4,
+  DECISIONS; noreg I30, A64) — the page's `connect-src` held api.github.com only, so the browser blocked the calls to
+  gitlab.com and framagit.org before they left; it now holds exactly the API hosts of the known providers. A host the
+  policy blocks (a self-hosted GitLab) is said « host not allowed by the page (CSP) », naming the host only.
 - **Frame: synchronisation errors named** (`frame/store/transport_git.js`, `frame/app.js`; frame DECISIONS; noreg A62) —
   « offline » only when the browser says so; a failing call while online is « repository unreachable (host) »; an
   address the transport cannot use is « invalid repository address », its status line leading to the Access card; a
