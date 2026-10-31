@@ -995,6 +995,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 143 | CSP: `connect-src` opened to `gitlab.com` and `framagit.org` exactly; CSP refusals told (48fc586c2) | acceptable |
 | 144 | Service worker: the next version read whole into a separate cache, taken at once (ed34c5a1b) | acceptable |
 | 145 | Group of 1 November night: GitLab `whoami()` (cbac9face), CSP refusals in the diagnostic (3f84b21f4), texts of § 10.36 (6bd060c0f), `core.safecrlf=false` (25bc3e625) | acceptable |
+| 146 | § 10.36, GitLab by default with one project token per pilot: “Add a pilot” (804e1992f), Join and the token's check (22d126964) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2224,6 +2225,16 @@ missing or beyond a year (§ 10.36: a warning, not a refusal, for the user alone
 diagnostic's last failures gain “csp: <host>”, the host only. The texts of § 10.36 ask for a project access token
 (Developer, `api`, 90 days advised, 365 at most) created by the administrator, never sent with the configuration link.
 `core.safecrlf=false` on the hardened git only silences line-ending warnings.
+
+**146. § 10.36, one GitLab project token per pilot (6bd060c0f, 804e1992f, 22d126964) — acceptable.** The conditions
+given before the code are kept: a project access token per pilot, named by the trigram, Developer role, `api` scope (the
+transport writes through the API), an expiry (90 days advised, 365 at most), the data branch open to Developers without force
+push, revocation explained. “Add a pilot” checks the trigram (`^[A-Z0-9]{2,5}$`) before anything, builds the
+configuration link and the message without the token (sent apart, by another channel), and links to the pilots' tokens
+screen, which only pre-fills its trigram field from the address after the same check. Join calls `whoami()` on the
+configuration's instance before accepting the token: a personal token (`bot` not true) is a question whose “No” writes
+nothing (a warning in the Access card, for the user alone with their own repository), a missing or too distant expiry and
+scopes beyond the repository's are warned; the field is emptied after saving and nothing is logged.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
