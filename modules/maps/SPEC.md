@@ -148,7 +148,8 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
       **an aerodrome of the route** likewise (sixth reading, gap 4) — its ends, a stop on the way, the alternate (`onRoute`): the
       route's label of that point is keyed by the aerodrome's code, the aerodrome's name is that one box, at rank 1, in the
       aerodrome's style, always written (`force: 'paint'`, as the route's ends were), and the alternate's grey code is not written
-      again beside it; an aerodrome the map does not draw (not in the data, thinned out) keeps the route's own label. The key is
+      again beside it. The merge happens only when the map draws an aerodrome of that code; otherwise the route's label stays — a
+      4-letter route point that is not a drawn aerodrome is never swallowed. The key is
       the ICAO code alone: the route's point and the base's aerodrome are rarely the same position to four decimals (LFBO
       43.6293, 1.3638 in a route, 43.6351, 1.3679 in the base);
     - a request with a `parent` (a key) is left out when its parent is: the true tracks of an airway ("097°") go with its box;
@@ -343,8 +344,12 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     the SID's alone (the route does not draw it again: the route is drawn only between its consecutive points of the path); when
     it is not, the SID ends at its last point and a **dashed direct** goes to the first route point; the arrival is symmetric (a
     dashed direct from the last route point to the STAR's first, or the STAR's own leg when the route point is one of its fixes);
-  - **labels**: "SID NAME", "STAR NAME", "APP NAME" at the middle of each, always written (reserved in the placer after the
-    route's labels, forced when no place is free); the state of the source follows: "· X-Plane, local" (status `xplane`),
+  - **labels** (sixth reading, gap 5): the procedure's name as the choose pane and Fuel write it — `displayName` / `labelOf` of
+    `frame/lib/procedures.js`: « AMOLO 7A », « AMB 9E », a final by its short label « ILS 06 », a transition by its transition —
+    never the base's raw name (« ILS CAT I or CAT II or CAT III RWY 06 ») nor a kind before it (its hue says the family; the
+    aerodrome's card, a list, keeps « SID AMOLO 7A »); a procedure label of the collision pass (rank 4) that slides along its
+    trace — the middle of its longest leg, then along it and along the other legs, the longest first — and is forced at the first
+    place only when none is free (never lost); the state of the source follows: "· X-Plane, local" (status `xplane`),
     "· Little Navmap, local" (`lnm`), "· outdated" (a hand-read file whose cycle is past); the texts are in `texts.js`;
   - **names, fixes and constraints by zoom thresholds** of the tuning page (§ 14; user, 29 Oct: "ils disparaissent trop tôt en zoom arrière"): `procNames` (the procedures' names, [0, 24] to start: every scale) and `procCons` (their fixes and constraints, [6.25, 24]: from the regional view, about 110 px per degree); the names have a fallback anchor (the middle of the longest leg of the procedure's fixes, its threshold included when it has fewer than two) and all procedure labels are painted last, over the airway boxes (`MapsRender.draw` `top`);
   - **the runways as threshold vectors** (V3 § 10.30, replacing the full-length arrow of § 10.24, "pas convaincante", hidden by its

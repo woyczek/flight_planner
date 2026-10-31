@@ -257,7 +257,7 @@ Flugplätze, Funkfeuer, Luftstraßen, Mindesthöhen. Die Route des Flugs lässt 
 ## So geht’s
 
 **Der geplante Flug.** Die Karte zeigt den in Kraftstoff vorbereiteten Flug: Abflug, Routenpunkte, Ankunft, und den
-Ausweichflugplatz grau gestrichelt. Die in Kraftstoff gewählten Piste, SID, STAR und Anflugverfahren werden über der Route gezeichnet (SID grün, STAR orange, Anflug blau), mit Namen („SID ROYAN6P“). Seine Zusammenfassung (Flugfläche, Entfernung, geplant oder im Flug) steht nicht über der Zeichnung (die Zeichnung zeigt sie): der Tooltip des Griffs des Datenblocks unter der Karte nennt sie, mit Abflug und Ankunft, Ausweichflugplatz und Luftfahrzeugtyp. Ändert sich der Flug in Kraftstoff, folgt die Karte von selbst.
+Ausweichflugplatz grau gestrichelt. Die in Kraftstoff gewählten Piste, SID, STAR und Anflugverfahren werden über der Route gezeichnet (SID grün, STAR orange, Anflug blau), benannt wie in Kraftstoff („ROYAN6P“, „ILS 06“). Seine Zusammenfassung (Flugfläche, Entfernung, geplant oder im Flug) steht nicht über der Zeichnung (die Zeichnung zeigt sie): der Tooltip des Griffs des Datenblocks unter der Karte nennt sie, mit Abflug und Ankunft, Ausweichflugplatz und Luftfahrzeugtyp. Ändert sich der Flug in Kraftstoff, folgt die Karte von selbst.
 
 **Die Karte und was sie zeigt.** Rund um die Route: die Lufträume, die sie durchquert oder streift (Flugbeschränkungs-,
 Gefahren- und Sperrgebiete, kontrollierte Lufträume), die unteren oder oberen Luftstraßen je nach Ihrer Flugfläche, die
@@ -432,7 +432,7 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: 43d7f16e7c74 -->
+<!-- fr: 3912efad0492 -->
 
 <!-- chapter: report -->
 # Bericht

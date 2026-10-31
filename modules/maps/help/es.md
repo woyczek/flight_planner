@@ -6,7 +6,7 @@ radioayudas, aerovías, altitudes mínimas. La ruta del vuelo también se modifi
 ## Cómo usarlo
 
 **El vuelo previsto.** El mapa muestra el vuelo preparado en Combustible: salida, puntos de la ruta, llegada, y el
-aeródromo alternativo en guiones grises. La pista, la SID, la STAR y la aproximación elegidas en Combustible se trazan sobre la ruta (SID en verde, STAR en naranja, aproximación en azul), con su nombre («SID ROYAN6P»). Su resumen (nivel, distancia, previsto o en vuelo) no se escribe sobre el dibujo (el dibujo lo muestra): el texto emergente del asa del bloque de datos bajo el mapa lo da, con salida y llegada, alternativa y tipo de aeronave. Cuando el vuelo cambia en Combustible, el mapa lo sigue por sí solo.
+aeródromo alternativo en guiones grises. La pista, la SID, la STAR y la aproximación elegidas en Combustible se trazan sobre la ruta (SID en verde, STAR en naranja, aproximación en azul), con su nombre como en Combustible («ROYAN6P», «ILS 06»). Su resumen (nivel, distancia, previsto o en vuelo) no se escribe sobre el dibujo (el dibujo lo muestra): el texto emergente del asa del bloque de datos bajo el mapa lo da, con salida y llegada, alternativa y tipo de aeronave. Cuando el vuelo cambia en Combustible, el mapa lo sigue por sí solo.
 
 **El mapa y lo que muestra.** Alrededor de la ruta: los espacios aéreos que atraviesa o roza (zonas restringidas,
 peligrosas, prohibidas, espacios controlados), las aerovías bajas o altas según su nivel, los aeródromos y las
@@ -171,4 +171,4 @@ ciclo, una línea lo dice: los espacios aéreos pueden haber cambiado desde ento
 entonces el perfil habitual del tipo de mapa (detallado para un objetivo o un detalle, simplificado si no) y lo indica.
 Basta con abrir la misión en el estudio y guardarla para que conserve después el suyo.
 
-<!-- fr: 43d7f16e7c74 -->
+<!-- fr: 3912efad0492 -->

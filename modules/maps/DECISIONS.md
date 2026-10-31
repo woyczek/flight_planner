@@ -1859,3 +1859,16 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D89 (1280 and 390): LFBO and LFPO of the real fixture (shared with D85, `_lfbo_docs`): one box under each code, the
   aerodrome's, and the code written once on the map's canvas. The fixture's LFPO now carries its real runway length and status (a
   bare LFPO is thinned out of a far tier and kept the route's label, which is the rule).
+
+## Procedure names as the choose pane and Fuel write them (sixth reading, 31 Oct 2026, gap 5)
+
+- **Seen**: the flight's map wrote « APP ILS CAT I or CAT II or CAT III RWY 06 » where the choose pane and Fuel say « ILS 06 »; its
+  own `nameOf` read the base's raw name; « SID AMOLO 7A », forced at one place, was bitten by what lay there.
+- **Rule** (SPEC § 5): `procLabel` names by `displayName` of `frame/lib/procedures.js` (a final by `labelOf`, a transition by its
+  transition), no kind on the map (the hue is the family), the kind kept on the aerodrome's card (a list). The name is a procedure
+  label (rank 4) with places along its trace: five places on its longest leg (middle, then .3, .7, .15, .85), then on each other
+  leg from the longest; forced at the first only when none is free, as the rule « never lost » wants.
+- **Noreg** D90 (the real LFBO fixture with an LFPO ILS 06 of the published long name): the map's canvas writes « AMOLO7A » and
+  « ILS 06 », nothing with « CAT » nor a kind before it; the choose pane at LFPO and Fuel say the same.
+  Cases adapted: D41 (the labels were « SID XX1A ⌛ », « STAR XX2B · X-Plane, local », « APP I31 · … »; they are « XX1A ⌛ »,
+  « XX2B · … », « I31 · … »), D53 (the approach found by « APP » → by its name « I31 »); the aerodrome card keeps its kinds (D45).

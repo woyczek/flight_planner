@@ -19,6 +19,9 @@ import {
   proceduresOf
 } from '../../frame/lib/current_flight.js';
 import {
+  displayName
+} from '../../frame/lib/procedures.js';
+import {
   TX
 } from './texts.js';
 import {
@@ -99,17 +102,22 @@ function linesOf(p, near) {
 }
 
 // ---------------------------------------------------------------- libellés des procédures
-/** Nom d'une procédure : celui de l'enregistrement, sinon celui de son identifiant (« LFBD.SID.ROYAN6P.RW23.NONE »). */
-const nameOf = (rec, id) => rec?.name || String(id || '').split('.')[2] || '';
+/** Nom d'une procédure, la règle du choix et de Carburant (displayName de frame/lib/procedures.js) : « AMOLO 7A », « ILS 06 »
+ *  (une finale par son libellé court), une transition par sa transition ; jamais le nom brut de la base (« ILS CAT I or CAT II… »).
+ *  key : 'trans' / 'appTrans' pour une transition. */
+const nameOf = (rec, id, key = null) => displayName(rec, {
+  key,
+  id
+}) || String(id || '').split('.')[2] || '';
 /** Symbole d'une procédure périmée (lue sous un cycle antérieur) : jamais le mot (décision du 29 octobre). */
 export const OUTDATED = '⌛';
-/** « SID ROYAN6P », suivi de l'état de la source : « X-Plane, local », « Little Navmap, local », puis « ⌛ » quand elle est
- *  périmée (SPEC § 5). */
-export function procLabel(kind, rec, id) {
+/** « AMOLO 7A » sur la carte (sa teinte dit la famille), « SID AMOLO 7A » dans une liste (kind), suivi de l'état de la source :
+ *  « X-Plane, local », « Little Navmap, local », puis « ⌛ » quand elle est périmée (SPEC § 5). */
+export function procLabel(kind, rec, id, key = null) {
   const tags = [];
   if (rec?.status === 'xplane') tags.push(tt(TX.procX));
   else if (rec?.status === 'lnm') tags.push(tt(TX.procLnm));
-  return [`${kind} ${nameOf(rec, id)}`.trim(), ...tags].join(' · ') + (rec?.outdated ? ` ${OUTDATED}` : '');
+  return [`${kind || ''} ${nameOf(rec, id, key)}`.trim(), ...tags].join(' · ') + (rec?.outdated ? ` ${OUTDATED}` : '');
 }
 
 // ---------------------------------------------------------------- tracé sur la carte
@@ -138,26 +146,28 @@ export function routeLines() {
   if (run.length > 1) out.push(run);
   return out;
 }
-/** Une chose à écrire près de q, dans un rectangle de la taille w × h : le premier des quatre coins qui ne recouvre rien de
- *  déjà placé (pl.take), sinon null ; force : posé au premier coin quoi qu'il arrive. */
+/** Une chose à écrire près de q (ou de l'une des places qs, dans l'ordre : un nom qui glisse le long de sa trace), dans un
+ *  rectangle de la taille w × h : le premier des quatre coins qui ne recouvre rien de déjà placé, sinon null ; force : posé au
+ *  premier coin de la première place quoi qu'il arrive. */
 export function place(pl, q, w, h, force, key = '') {
+  const qs = Array.isArray(q) ? q : [q];
   return MapsRender.kit.ask(pl, {
     layer: 'screenLabels',
     rank: 'procedure',
     key,
-    anchor: q,
+    anchor: qs[0],
     force: force ? 'paint' : false,
-    boxes: [
+    boxes: qs.flatMap(p => [
       [7, -h - 3],
       [7, 4],
       [-w - 7, -h - 3],
       [-w - 7, 4]
     ].map(([dx, dy]) => ({
-      x0: q.x + dx,
-      y0: q.y + dy,
-      x1: q.x + dx + w,
-      y1: q.y + dy + h
-    }))
+      x0: p.x + dx,
+      y0: p.y + dy,
+      x1: p.x + dx + w,
+      y1: p.y + dy + h
+    })))
   });
 }
 export const LINE_H = 16;
@@ -259,10 +269,10 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
   const P = S.procs || {},
     f = proceduresOf(S.route.flight),
     names = [];
-  for (const [origin, kind, rec, id] of [
-      ['sid', 'SID', P.sid || P.sidTrans, f.dep?.sid || f.dep?.trans],
-      ['star', 'STAR', P.star || P.starTrans, f.arr?.star || f.arr?.trans],
-      ['app', 'APP', P.app || P.appTrans, f.arr?.app || f.arr?.appTrans]
+  for (const [origin, rec, id, key] of [
+      ['sid', P.sid || P.sidTrans, f.dep?.sid || f.dep?.trans, P.sid ? null : 'trans'],
+      ['star', P.star || P.starTrans, f.arr?.star || f.arr?.trans, P.star ? null : 'trans'],
+      ['app', P.app || P.appTrans, f.arr?.app || f.arr?.appTrans, P.app ? null : 'appTrans']
     ]) {
     if (!showNames) break;
     // ses points hors seuil, sinon (une approche donnée par son entrée : un ou deux points) tous ses points placés ; le nom au
@@ -270,24 +280,31 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
     let own = path.filter(p => p.origin === origin && pos(p) && !isRwy(p));
     if (own.length < 2) own = path.filter(p => (p.origin === origin || (origin === 'app' && p.origin === 'missed')) && pos(p));
     if (!own.length) continue;
-    let q = at(own[0]),
-      best = -1;
+    // les places du nom le long de la trace (SPEC § 3, rang procédure) : le milieu du plus long tronçon, puis glissé sur lui et sur
+    // les autres tronçons, du plus long au plus court ; sans place nulle part, le premier (le nom n'est jamais perdu)
+    const legs = [];
     for (let i = 1; i < own.length; i++) {
       const a = at(own[i - 1]),
-        b = at(own[i]),
-        d = Math.hypot(b.x - a.x, b.y - a.y);
-      if (d > best) {
-        best = d;
-        q = {
-          x: (a.x + b.x) / 2,
-          y: (a.y + b.y) / 2,
-          src: own[i]
-        };
-      }
+        b = at(own[i]);
+      legs.push({
+        a,
+        b,
+        d: Math.hypot(b.x - a.x, b.y - a.y)
+      });
     }
+    legs.sort((x, y) => y.d - x.d);
+    const qs = legs.flatMap(({
+      a,
+      b
+    }) => [.5, .3, .7, .15, .85].map(t => ({
+      x: a.x + (b.x - a.x) * t,
+      y: a.y + (b.y - a.y) * t
+    })));
+    if (!qs.length) qs.push(at(own[0]));
     names.push({
-      q,
-      text: procLabel(kind, rec, id),
+      q: qs[0],
+      qs,
+      text: procLabel('', rec, id, key),
       old: !!rec?.outdated,
       origin
     });
@@ -308,7 +325,7 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
       for (const n of names) {
         ctx.font = '700 12px Arial,sans-serif';
         const w = ctx.measureText(n.text).width,
-          r = place(pl, n.q, w + 2, LINE_H, true);
+          r = place(pl, n.qs, w + 2, LINE_H, true); // glissé le long de sa trace, forcé seulement sans aucune place
         // « ⌛ » en gris (jeton muted), le nom dans la couleur des procédures
         const tail = n.old ? ` ${OUTDATED}` : '';
         L.labels.push({

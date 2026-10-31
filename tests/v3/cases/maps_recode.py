@@ -642,7 +642,7 @@ def d53(c):
     _open_proc(c, _proc_flight())
     far, mid = c.js(_ZOOM_LAYOUT_JS, 20), c.js(_ZOOM_LAYOUT_JS, 150)
     c.eq(len(far['names']), 3, 'far out (20 px per degree): the SID, STAR and approach names are still written', what=f'names {far["names"]}')
-    c.ok(any(n.startswith('APP ') for n in far['names']), f'{far["names"]}', 'the approach is named (one fix off its threshold is enough)')
+    c.ok(any(n.startswith('I31') for n in far['names']), f'{far["names"]}', 'the approach is named (one fix off its threshold is enough)')
     c.ok(not far['near'], 'near', 'far out: no fixes and constraints')
     c.ok(mid['near'], 'not near', 'at 150 px per degree (the regional view, well below the former 300): fixes and constraints are written')
     c.page.goto(f'{c.base}/frame/index.html#maps?tune=1', wait_until='load')
@@ -828,12 +828,13 @@ def d41(c):
     c.ok(not ({sid, star, app} & {'#7c3aed', '#8e24aa', '#6a3fa0', '#1f6fb2'}), f'{lay["legend"]}', 'none is the violet of the route and of the high airways, nor the blue of the low ones')
     c.eq([h for k, h in zip(lay['kinds'], lay['hues']) if k == 'sid'][:1], [sid], 'a SID leg is drawn in the SID hue', what='SID leg hue')
     # une procédure périmée : le seul symbole « ⌛ », jamais le mot (29 Oct)
-    want = ['SID XX1A ⌛', f'STAR XX2B · {row(c, "procX")}', f'APP I31 · {row(c, "procX")}']
-    c.eq(lay['names'], want, 'labelled "SID NAME", "STAR NAME", "APP NAME", with the state of the source', what='procedure labels')
-    c.until("(window.__mpTexts || []).some(t => /^SID /.test(t))", timeout=6000, what='the SID label drawn')
+    # named as the choose pane and Fuel name them, no kind before (the hue is the family; sixth reading, gap 5)
+    want = ['XX1A ⌛', f'XX2B · {row(c, "procX")}', f'I31 · {row(c, "procX")}']
+    c.eq(lay['names'], want, 'labelled by their names (displayName), with the state of the source', what='procedure labels')
+    c.until("(window.__mpTexts || []).some(t => /^XX1A/.test(t))", timeout=6000, what='the SID label drawn')
     c.wait(400)
     drawn = [norm(t) for t in c.js('window.__mpTexts || []')]
-    c.ok('SID XX1A' in drawn and '⌛' in drawn and 'SID XX1A ⌛' not in drawn, f'{sorted(set(t for t in drawn if t.startswith(("SID", "STAR", "APP", "⌛"))))}',
+    c.ok('XX1A' in drawn and '⌛' in drawn and 'XX1A ⌛' not in drawn, f'{sorted(set(t for t in drawn if t.startswith(("XX", "I31", "⌛"))))}',
          'the SID label is written on the map, its ⌛ written apart (in grey)')
     # the airline's transition altitude is 5,000 ft by default: up to it an altitude in feet, as in the AIP ("5000", not "FL050")
     c.ok('≤ 220 kt' in drawn and '3000' in drawn and '5000' in drawn and 'FL050' not in drawn and '–' in drawn, f'{sorted(set(drawn))[:30]}',
@@ -2499,3 +2500,46 @@ def d89(c):
              what=f'{icao} boxes')
         texts = [t for t in c.js(_TEXTS_ONCE) if t.startswith(icao)]
         c.eq(len(texts), 1, f'{icao} written once on the map canvas', what=f'{icao} texts {texts}')
+
+
+# ------------------------------------------------------------------------------------------------------ D90
+_LFPO_APP = 'LFPO.APP.ILS06.RW06.NONE'
+_LFPO_FILE = {'schema': 1, 'icao': 'LFPO', 'cycle': AERO_CYCLE, 'updated_at': '2026-10-01T00:00:00Z',
+              'runways': [{'id': '06', 'lat': 48.7213, 'lon': 2.3256, 'elev': 291, 'qfu': 62, 'true': 63.6, 'length': 3650},
+                          {'id': '24', 'lat': 48.7340, 'lon': 2.3986, 'elev': 291, 'qfu': 242, 'true': 243.6, 'length': 3650}],
+              'procedures': [{'id': _LFPO_APP, 'icao': 'LFPO', 'kind': 'APP', 'name': 'ILS CAT I or CAT II or CAT III RWY 06', 'runways': ['06'],
+                              'transition': None, 'status': 'official', 'source': {'kind': 'eaip', 'ref': 'test', 'cycle': AERO_CYCLE, 'at': '2026-10-01'},
+                              'points': [{'seq': 1, 'id': 'IPO06', 'lat': 48.5970, 'lon': 2.0806, 'alt': {'type': 'at', 'ft': 4000}, 'phase': 'main'},
+                                         {'seq': 2, 'id': 'RW06', 'lat': 48.7213, 'lon': 2.3256, 'alt': None, 'phase': 'main'}]}]}
+
+
+@case('D90', 'The flight’s map names its procedures as the choose pane and Fuel do: « AMOLO7A », « ILS 06 », never the base’s raw name', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='sixth reading (31 Oct 2026), gap 5, SPEC § 5: the map of the flight names a procedure by displayName / labelOf of frame/lib/procedures.js (a final by its short label), as the choose pane and Fuel; the chosen SID’s name is a procedure label (rank 4) that slides along its trace before being forced')
+def d90(c):
+    docs = _lfbo_docs()
+    f = next(d[1] for d in docs if d[0] == PATH)
+    f['route']['procedures']['arr'] = {'rwy': '06', 'app': _LFPO_APP}
+    docs = docs + [['proc/manual/LFPO.json', _LFPO_FILE, 'reference']]
+    c.open('maps', docs=docs, flight=False, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S.route.path && window.__mp.S.route.path.some(p => p.origin === 'app') && window.__mp.S.route.path.some(p => p.origin === 'sid'))",
+            timeout=12000, what='the path holds the SID and the approach')
+    c.wait(500)
+    texts = c.js(_TEXTS_ONCE)
+    c.ok('AMOLO7A' in texts and 'ILS 06' in texts, f'{[t for t in texts if "AMOLO" in t or "ILS" in t]}', 'the map writes « AMOLO7A » and « ILS 06 »')
+    c.eq([t for t in texts if 'CAT' in t or t.startswith(('SID ', 'APP ', 'STAR '))], [], 'never the base’s raw name nor a kind before it',
+         what='raw names on the map')
+    # the choose pane says the same
+    c.js("() => { location.hash = '#maps?choose=arr&icao=LFPO'; return true }")
+    c.until("() => !!(window.__mp.S && window.__mp.S.choose && window.__mp.S.choose.ready) && document.querySelectorAll('.mp-ch-grp').length >= 2",
+            timeout=12000, what='the choose pane at LFPO')
+    pane = c.js("() => document.querySelector('[data-module=maps]').innerText.replace(/\s+/g, ' ')")
+    c.ok('ILS 06' in pane, pane[:300], 'the choose pane names the final « ILS 06 »')
+    # and Fuel
+    c.js("async () => { (await import('/modules/maps/choose.js')).chooseClose(); return true }")
+    c.until("() => location.hash.startsWith('#fuel')", timeout=6000, what='back to Fuel')
+    c.ready('fuel')
+    c.until("() => /ILS 06/.test(document.querySelector('[data-module=fuel]').innerText) && /AMOLO7A/.test(document.querySelector('[data-module=fuel]').innerText)",
+            timeout=10000, what='Fuel names « AMOLO7A » and « ILS 06 »')

@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: procedures named as the choose pane and Fuel name them (sixth reading, gap 5)** (`modules/maps/procs.js`; SPEC § 5;
+  DECISIONS; noreg D90). « ILS 06 » instead of « APP ILS CAT I or CAT II or CAT III RWY 06 », « AMOLO 7A » instead of « SID AMOLO 7A »
+  (the hue says the family); the name slides along its trace before it is ever forced over something.
+
 - **Refactor R-S6, no behaviour change** (`modules/data/module.js`; noreg L7, L13, L15, L17–L19): one `finishOp` for the end of an operation (result stored and drawn, ONE notification when seen live, the verb's journal entry, reload) that the endings of build, download, purge, sheets and pickup call with only what differs (summary, notification phrases, entry, reload); one `finishPlan` for the dry plan of purge, sheets and pickup (stopped says nothing, nothing to do is said without a question, else ONE question then the real run); one summary table `SUM_KINDS` keyed by outcome kind that serves the base and the other sets (`summary` and `setSummary` / `setSummaryNotes` merged). Every sentence is unchanged; the « Update all » chain keeps its quiet ends.
 - **Settings: a configuration never imports an API address** (`frame/settings/config.js`, `join.js`, `admin.js`; SPEC § 5; A56;
   security review, line 118) — BEHAVIOUR CHANGE. A forged « Join » link with `data.api` could send the pilot's token to another host

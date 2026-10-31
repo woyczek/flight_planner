@@ -6,7 +6,7 @@ terrains, balises, voies aériennes, altitudes minimales. La route du vol se mod
 ## Comment s'en servir
 
 **Le vol prévu.** La carte montre le vol préparé dans Carburant : départ, points de la route, arrivée, et le terrain
-de dégagement en tirets gris. La piste, la SID, la STAR et l'approche choisies dans Carburant sont tracées par-dessus la route (SID en vert, STAR en orange, approche en bleu), nommées (« SID ROYAN6P »). Son résumé (niveau, distance, vol prévu ou en cours) n'est pas écrit au-dessus du dessin (le dessin le montre) : l'infobulle de la poignée du bloc de données sous la carte le donne, avec départ et arrivée, dégagement et type d'appareil. Quand le vol change dans Carburant, la carte suit d'elle-même.
+de dégagement en tirets gris. La piste, la SID, la STAR et l'approche choisies dans Carburant sont tracées par-dessus la route (SID en vert, STAR en orange, approche en bleu), nommées comme dans Carburant (« ROYAN6P », « ILS 06 »). Son résumé (niveau, distance, vol prévu ou en cours) n'est pas écrit au-dessus du dessin (le dessin le montre) : l'infobulle de la poignée du bloc de données sous la carte le donne, avec départ et arrivée, dégagement et type d'appareil. Quand le vol change dans Carburant, la carte suit d'elle-même.
 
 **La carte et ce qu'elle montre.** Autour de la route : les espaces aériens qu'elle traverse ou frôle (zones
 réglementées, dangereuses, interdites, espaces contrôlés), les voies aériennes basses ou hautes selon votre niveau,
