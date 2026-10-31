@@ -1592,19 +1592,25 @@ redesigned for touch at that point.
        synchronised with gitlab.com once connect-src carried it: "GitLab + TOKEN fonctionne ; nouveau fournisseur officiel
        pour data, par défaut ; GitHub optionnel (single user) ; framagit : nouvelles inscriptions interdites ; refacto en
        roadmap ; j'ai besoin de la page d'ajout en mode newbie d'un utilisateur, pour accéder à la base privée via GitLab").
-       - **Providers**: GitLab (gitlab.com) is the default of the airline's data repository and of every export; GitHub
+       - **Providers**: GitLab (gitlab.com) is what the suite proposes (examples, texts of "Rejoindre", help, the
+         remote panel's suggestion) — an export carries the provider of the real repository, never a default; GitHub
          stays supported for a single user's own repository; framagit.org stays recognised for existing repositories and
          is never proposed (no new registrations there). The suite's code repository is a separate matter (framagit).
        - **The pilot needs no GitLab account**: the administrator creates, in the project, one **project access token per
-         pilot**, named by the trigram, role Developer, scopes `read_repository` + `write_repository`, with an expiry
-         (one year proposed); the pilot pastes it once on their device (kept there, never shown again, never in a
+         pilot**, named by the trigram, role Developer, scope `api` (the transport goes through the REST API — branches,
+         tree, blobs, commits — which `read_repository` / `write_repository` do not open; with Developer, `api` gives
+         nothing beyond that project; the launcher already creates them so, `GITLAB_SCOPES`), expiry one year at
+         most (GitLab's limit); the pilot pastes it once on their device (kept there, never shown again, never in a
          configuration nor a message); revoking a pilot is revoking their token in GitLab. Commits carry the trigram in
          `by`; the token's bot identity is a known limit, said in the SPEC.
        - **Administration › "Ajouter un pilote" (newbie mode)**, one card of Réglages (Maintenance): trigram, name; it
          gives in one screen (1) the configuration link and file of the airline for this pilot (the existing export,
-         pre-filled, provider gitlab), (2) the administrator's GitLab steps with the direct link to the project's access
-         tokens page and the values to type (name = trigram, role, scopes, expiry), (3) the message to send to the pilot,
-         copyable in the pilot's language: the app's address, "open this link, then paste the token I send you apart",
+         pre-filled; it carries the provider of the real repository, never a default), (2) "Créer son jeton": the
+         existing screen "Jetons des pilotes" (`#pilot-tokens`, V3 Frame: created through the launcher with the
+         administrator's token kept in `secrets/gitlab.json`, shown once, revocable) opened with the trigram pre-filled
+         — one path; the manual GitLab steps with the direct link to the project's access tokens page only without a
+         launcher or without the administrator's token, (3) the message to send to the pilot, copyable in the
+         pilot's language (a language choice, the screen's by default): the app's address, "open this link, then paste the token I send you apart",
          never the token. Nothing is written by this card but the export already written today.
        - **The pilot's side, "Rejoindre la compagnie"** (existing flow, GitLab wording): open the link → the airline and
          the repository are read from it → "Collez le jeton reçu de l'administrateur" (no "create a token" step for
