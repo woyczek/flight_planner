@@ -832,9 +832,24 @@ def i14(c):
         c.eq([refused(cb, **nav), refused(cb, **{**nav, 'Sec-Fetch-Mode': 'no-cors'}), refused(cb, **{**nav, 'Sec-Fetch-Dest': 'image'}),
               refused(cb, 'POST', **nav), refused(f'{L.IVAO_CALLBACK}?state=nope&code=C', **nav), refused('/frame/index.html', **nav),
               refused(cb, **{**nav, 'Host': 'evil.example'})],
-             ['', 'autre site', 'autre site', 'autre site', 'autre site', 'autre site', 'hôte'],
+             ['', 'autre site', 'autre site', 'autre site', 'ivao-state', 'autre site', 'hôte'],
              'IVAO\'s return on the workstation: exact path, GET, document navigation, a state of the workstation; nothing else opened',
              what='workstation return')
+        # 31 Oct 2026: an unknown or expired state in a top-level navigation goes to the frame's error; the reason of a refused
+        # return is said (never the state itself); the frame is reached by a page of this origin, never by a redirect (the
+        # chain from IVAO stayed cross-site and the frame's own page was refused)
+        old = dict(L._ivao_oidc['pending'][st])
+        L._ivao_oidc['pending'][st]['at'] = old['at'] - L.IVAO_STATE_TTL - 1
+        expired = refused(cb, **nav)
+        L._ivao_oidc['pending'][st] = old
+        c.eq([L.ivao_state_why('nope', '', 'http://127.0.0.1:8000/__relay/ivao/callback'), L.ivao_state_why(st, '', 'https://relay/__relay/ivao/callback'),
+              L.ivao_state_why(st, '', 'http://127.0.0.1:8000/__relay/ivao/callback'), expired],
+             ['inconnu', 'autre adresse de retour', '', 'ivao-state'], 'the reason of a refused return; an expired state goes to the frame’s error', what='refusal reasons')
+        hop = L.frame_hop_page('error=state').decode('utf-8')
+        c.ok('http-equiv="refresh" content="0;url=/frame/index.html#ivao-return?error=state"' in hop and '<script' not in hop and 'no-referrer' in hop,
+             hop[:200], 'the frame reached by a page of this origin (meta refresh, no script, no referrer)')
+        lsrc0 = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
+        c.ok("send_header('Location', loc)" not in lsrc0 and '<a href="/frame/">' in lsrc0, '', 'no redirect to the frame from the return; the refusal page leads to the V3 frame')
         c.eq(L.ROUTES[('POST', '/__setup/ivao/oauth/start')][1:], ('lan', True), 'start is a relay route', what='route public')
         # R-C3: the return is one declared route; through the relay it passes the origin check (the device's gate checked it),
         # a paired device of the local network never; the special cases of the relay gate and of do_GET are gone
@@ -854,7 +869,7 @@ def i14(c):
              and 'GITLAB_OPENER' not in lsrc and lsrc.count('outbound.opener(_NoRedirect') == 1, '',
              'one place for the return, one no-redirect opener')
         src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
-        c.ok("loc = f'/frame/index.html#ivao-return?{frag}'" in src and "'Referrer-Policy', 'no-referrer'" in src, '', 'the tokens leave by the fragment of the frame address, no referrer')
+        c.ok("url = f'/frame/index.html#ivao-return?{frag}'" in src and "'Referrer-Policy', 'no-referrer'" in src, '', 'the tokens leave by the fragment of the frame address, no referrer')
     finally:
         L.SECRETS, L.NO_REDIRECT_OPEN = kept[0], kept[1]
         L._ivao_oidc.clear()
@@ -1952,8 +1967,12 @@ def i28(c):
         if b in MEASURES or 'serve this page from the launcher' in (c.root / b).read_text(encoding='utf-8'):
             continue
         d, f = b.rsplit('/', 1)
-        q = re.compile(r"[\'\"]" + re.escape(f[:-5]) + r"(\.html)?[\'\"]")
-        if not any(b in part or (d + '/' in s and q.search(part)) for s, part in chunks):
+        # its path in a case; or its file name (« x.html ») in a case of a file that names its folder (the _bench helpers); or
+        # its bare name (« 'x' ») in a case that names the folder itself (a list of pages, as F80) — a bare word elsewhere
+        # in a file is not a bench (31 Oct 2026: a 'pending' of another case of repo.py took the place of flightlog's bench)
+        named = re.compile(r"[\'\"]" + re.escape(f) + r"[\'\"]")
+        bare = re.compile(r"[\'\"]" + re.escape(f[:-5]) + r"[\'\"]")
+        if not any(b in part or (d + '/' in s and named.search(part)) or (d + '/' in part and bare.search(part)) for s, part in chunks):
             orphans.append(b)
     c.ok(len(benches) > 40, str(len(benches)), 'the benches are found')
     c.eq({b: BENCH_ORPHANS.get(b, '?') for b in orphans}, BENCH_ORPHANS, 'each bench opened by a case, or waiting in BENCH_ORPHANS with its owner (a new orphan, or one now opened, changes the table)', what='benches no case opens')

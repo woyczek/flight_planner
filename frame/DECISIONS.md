@@ -2266,3 +2266,15 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   the user wants the help and the settings top right everywhere. So `data-in-bar` and the tab badge go, the state badge is
   on ⚙ again, and Maintenance's bar carries its modules only (Data, Aircraft); over the help or the settings no entry of
   the bar is marked (the pressed « ? » or ⚙ is the active one). One active entry and one manual per application stay.
+
+- **31 Oct 2026 — IVAO's return reaches the frame by a page of this origin** (the user: « page opened from another site:
+  refused » on the return, « it ends up passing after 2 or 3 tries »; Sécurisation: no new exception, diagnose). The
+  guard's exception for the return was there; but the return answered with a 303 to `/frame/index.html#ivao-return…`, and
+  a redirect chain started on ivao.aero keeps `Sec-Fetch-Site: cross-site` to its end, so the guard refused the frame's
+  own page (the existing case even said so: `/frame/index.html` in a cross-site navigation is refused); a reload, of this
+  origin, passed. The return now answers a small page that opens the frame by `meta refresh` (no script, no referrer, never
+  cached). A return refused on its path is said in the launcher's log with its reason (navigation headers, state unknown,
+  expired, of another device or return address; never the state itself), and a top-level navigation whose state does not
+  match goes to the frame's error (`#ivao-return?error=state`: no token, no code exchanged) instead of the generic page.
+  The refusal page links to the V3 frame (`/frame/`). The guard is not widened; the state is still consumed once, by the
+  exchange only. Not reproduced against IVAO: if the first arrival is still refused, the log line says which condition.

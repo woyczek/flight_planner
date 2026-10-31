@@ -393,15 +393,23 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         if r.get('ok'):
             frag = urllib.parse.urlencode({'access_token': r['access_token'], 'refresh_token': r.get('refresh_token', ''),
                                            'expires_at': r['expires_at'], 'scope': r.get('scope', '')})
-            loc = f'/frame/index.html#ivao-return?{frag}'
         else:
-            loc = '/frame/index.html#ivao-return?' + urllib.parse.urlencode({'error': r.get('error', 'refused')[:60]})
-        self.send_response(303)
-        self.send_header('Location', loc)
-        self.send_header('Content-Length', '0')
+            frag = urllib.parse.urlencode({'error': r.get('error', 'refused')[:60]})
+        return self._frame_hop(frag)
+
+    def _frame_hop(self, frag):
+        """Vers le cadre (/frame/index.html#ivao-return?<frag>) par une page de cette origine, et non par une redirection : la
+        chaîne de redirections venue d'IVAO garde « Sec-Fetch-Site: cross-site » jusqu'au bout, et la garde d'origine refusait
+        alors la page du cadre elle-même (31 oct. 2026 : « ça finit par passer après 2 ou 3 essais », le rechargement étant
+        de cette origine). Jamais en cache, sans référent."""
+        body = frame_hop_page(frag)
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.send_header('Content-Length', str(len(body)))
         self.send_header('Cache-Control', 'no-store')
         self.send_header('Referrer-Policy', 'no-referrer')
         self.end_headers()
+        self.wfile.write(body)
         return None
 
     def _ivao_redirect(self):
@@ -577,7 +585,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         if self._ivao_return(path):
             return ''
         if not self._same_origin() and not self._relaxed_navigation(path):
-            return 'autre site'
+            return self._ivao_refusal(path)
         if path.startswith('/__setup/'):
             return ''
         rel = posixpath.normpath(urllib.parse.unquote(path))
@@ -612,6 +620,21 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         state = (urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get('state') or [''])[0]
         return ivao_state_open(state, '', self._ivao_redirect())
 
+    def _ivao_refusal(self, path):
+        """Retour d'IVAO refusé par la garde d'origine : la raison dite au journal du lanceur (en-têtes de navigation, état
+        inconnu, expiré ou d'une autre adresse de retour ; jamais l'état lui-même) ; un retour en navigation de premier plan
+        dont l'état ne correspond pas va à l'erreur du cadre (« recommencez la connexion », aucun jeton, aucun code
+        échangé) ; sinon, et pour tout autre chemin, refusé comme venu d'un autre site."""
+        if path != IVAO_CALLBACK:
+            return 'autre site'
+        hd = {k: self.headers.get(f'Sec-Fetch-{k}') or '-' for k in ('Site', 'Mode', 'Dest')}
+        state = (urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get('state') or [''])[0]
+        why = ivao_state_why(state, '', self._ivao_redirect())
+        say(f'  Retour IVAO refusé : {self.command} Site={hd["Site"]} Mode={hd["Mode"]} Dest={hd["Dest"]} état={why or "en cours"}')
+        if self.command == 'GET' and hd['Mode'] == 'navigate' and why and not self._lan():
+            return 'ivao-state'
+        return 'autre site'
+
     def _relaxed_navigation(self, path):
         """Débrayage (RELAX, jusqu'à la fermeture du lanceur) : une page de la suite ouverte depuis un autre site ou une
         extension (navigation de premier plan) est servie ; scripts, données, images et /__setup/ restent refusés aux
@@ -625,13 +648,15 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         sinon."""
         if why == 'chemin':
             return self._json({'error': 'introuvable'}, 404)
+        if why == 'ivao-state':
+            return self._frame_hop(urllib.parse.urlencode({'error': 'state'}))
         if why == 'autre site' and self.headers.get('Sec-Fetch-Mode') == 'navigate':
             # lien suivi depuis un autre site (messagerie web, forum…) : explication et lien vers l'accueil seulement,
             # jamais vers l'adresse demandée (ses paramètres viennent de l'autre site)
             body = ('<!doctype html><meta charset="utf-8"><title>SOG</title><body style="font:16px system-ui;margin:3em">'
                     '<p>Page de la suite ouverte depuis un autre site : refusée, pour que ce site ne puisse rien lire ni '
                     'déclencher.<br><i>Suite page opened from another website: refused.</i></p>'
-                    '<p><a href="/">Ouvrir l’accueil de la suite · Open the suite home page</a></p>').encode('utf-8')
+                    '<p><a href="/frame/">Ouvrir l’appli Pilote (V3) · Open the Pilot app (V3)</a></p>').encode('utf-8')
             self.send_response(403)
             self.send_header('Content-Type', 'text/html; charset=utf-8')
             self.send_header('Content-Length', str(len(body)))
@@ -1971,10 +1996,32 @@ def _ivao_tokens(j):
             'scope': str(j.get('scope') or ''), 'expires_at': int(time.time()) + max(60, int(j.get('expires_in') or 3600))}
 
 
+def ivao_state_why(state, device, redirect):
+    """Pourquoi cet état n'ouvre pas le retour ('' : il l'ouvre) : 'inconnu' (jamais émis, déjà consommé, lanceur relancé),
+    'expiré', 'autre appareil', 'autre adresse de retour'. Ne consomme rien."""
+    p = _ivao_oidc['pending'].get(str(state or ''))
+    if not p:
+        return 'inconnu'
+    if time.time() - p['at'] >= IVAO_STATE_TTL:
+        return 'expiré'
+    if p['device'] != device:
+        return 'autre appareil'
+    return 'autre adresse de retour' if p['redirect'] != redirect else ''
+
+
 def ivao_state_open(state, device, redirect):
     """Vrai si cet état est celui d'une demande en cours de cet appareil, avec cette adresse de retour (sans le consommer)."""
-    p = _ivao_oidc['pending'].get(str(state or ''))
-    return bool(p) and time.time() - p['at'] < IVAO_STATE_TTL and p['device'] == device and p['redirect'] == redirect
+    return not ivao_state_why(state, device, redirect)
+
+
+def frame_hop_page(frag):
+    """Page qui ouvre le cadre à /frame/index.html#ivao-return?<frag> depuis cette origine (balise meta refresh, sans script :
+    la politique de contenu n'en autorise pas en ligne) ; frag déjà encodé (urlencode), échappé pour l'attribut."""
+    url = f'/frame/index.html#ivao-return?{frag}'
+    e = url.replace('&', '&amp;').replace('"', '&quot;').replace('<', '&lt;').replace('>', '&gt;')
+    return (f'<!doctype html><meta charset="utf-8"><meta name="referrer" content="no-referrer">'
+            f'<meta http-equiv="refresh" content="0;url={e}"><title>SOG</title>'
+            f'<body style="font:16px system-ui;margin:3em"><p><a href="{e}">IVAO → SOG</a></p>').encode('utf-8')
 
 
 def ivao_oauth_revoke(token):

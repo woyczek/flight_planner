@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Launcher: IVAO's return reaches the frame** (`tools/launch.py`; frame DECISIONS; noreg I14) — the return opened the
+  frame by a redirect, whose chain from ivao.aero stayed cross-site, so the origin guard refused the frame's page; it now
+  opens it by a page of this origin. A refused return is said in the launcher's log with its reason; an unknown or expired
+  state goes to the frame's « start again » error; the refusal page links to the V3 frame.
 - **Missions lot 2 (reduced): the airline's missions in the Pilot application** (`modules/missions/module.js`, help ×4; `frame/app.js`:
   the 7th module, in the phone's « Préparer » tab; Fuel's door `#fuel?mission=<id>`: `modules/fuel/module.js`, `CF.FUEL_FIELDS` gains
   `mission`; SPEC § 3–4, DECISIONS; noreg N2–N4) — the list of `missions/mission_registry.yaml` by family (organisations …Z left out),
