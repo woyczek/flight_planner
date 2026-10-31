@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: fuel units** (`frame/lib/fuel_units.js`; frame INTEGRATION 16, DECISIONS; bench `frame/lib/test/fuel_units.html`,
+  noreg A53) — typical densities (Jet 0.80, AVGAS 0.72 kg/L), the density rule (type's sheet, else airline, else typical),
+  conversions between kg, lb, L and USG, and the price brought to the kg; for Settings, Aircraft, Fuel and aerodb.
 - **Aircraft SPEC on § 10.35** (`modules/aircraft/SPEC.md`): a sheet is a type + variant, an aircraft a registration with its state,
   maintenance and hours; adding is choosing then filling; two fleets; the aircraft seen in the flights — written before lots L1–L5, each
   rule to build tagged with its lot.

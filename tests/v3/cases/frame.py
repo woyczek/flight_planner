@@ -1811,6 +1811,7 @@ def a53(c):
     import sys
     import tempfile
     _bench(c, 'frame/lib/test/geo.html', '__geoBench')
+    _bench(c, 'frame/lib/test/fuel_units.html', '__fuelUnitsBench')
     # the data layer bench runs against its own fake GitHub (frame/store/test/fake_github.py), which serves the page too
     import socket
     with socket.socket() as so:

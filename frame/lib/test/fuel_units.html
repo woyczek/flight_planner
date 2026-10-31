@@ -1,0 +1,157 @@
+<!doctype html>
+<!-- Banc des unités du carburant (frame/lib/fuel_units.js, frame/INTEGRATION.md § 16) : densités types, repli de density
+     dans ses trois cas (fiche, compagnie, valeur type) et ses refus, chaque conversion en aller-retour, le prix ramené au kg.
+     Page nue, aucun module du cadre ; window.__fuelUnitsBench = { done, pass, fail, rows } pour un pilote (Playwright).
+     Ouvrir la page suffit. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>fuel_units — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">fuel_units.js — bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  import * as U from '../fuel_units.js?v=0';
+  const rows = [],
+    out = document.getElementById('out');
+  const near = (a, b, e = 1e-9) => a !== null && Math.abs(a - b) <= e;
+  const ck = (name, ok, detail = '') => {
+    rows.push({
+      name,
+      ok: !!ok,
+      detail
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}`;
+    out.append(l);
+  };
+
+  // densités types, gelées
+  ck('FUEL_DENSITY : Jet 0,80, AVGAS 0,72 kg/L', U.FUEL_DENSITY.jet === 0.8 && U.FUEL_DENSITY.avgas === 0.72);
+  ck('FUEL_DENSITY gelée', Object.isFrozen(U.FUEL_DENSITY));
+  ck('UNITS : kg, lb, L, USG', U.UNITS.join() === 'kg,lb,L,USG');
+
+  // density : le repli dans ses trois cas
+  const sheet = {
+      fuelDensityKgPerL: 0.785
+    },
+    airline = {
+      fuel: {
+        density: {
+          jet: 0.81,
+          avgas: 0.71
+        }
+      }
+    };
+  ck('density : la fiche du type d’abord', U.density('jet', {
+    sheet,
+    airline
+  }) === 0.785);
+  ck('density : sans fiche, la compagnie', U.density('jet', {
+    airline
+  }) === 0.81 && U.density('avgas', {
+    sheet: {},
+    airline
+  }) === 0.71);
+  ck('density : sans fiche ni compagnie, la valeur type', U.density('jet') === 0.8 && U.density('avgas', {
+    airline: {
+      fuel: {}
+    }
+  }) === 0.72);
+  ck('density : une fiche ou une compagnie hors plage (0,5 à 1,0) ou illisible est ignorée', U.density('jet', {
+    sheet: {
+      fuelDensityKgPerL: 8
+    },
+    airline: {
+      fuel: {
+        density: {
+          jet: 'x'
+        }
+      }
+    }
+  }) === 0.8 && U.density('avgas', {
+    sheet: {
+      fuelDensityKgPerL: '0.705'
+    }
+  }) === 0.705);
+  ck('density : sorte inconnue sans fiche → null', U.density('diesel') === null && U.density('diesel', {
+    sheet
+  }) === 0.785);
+
+  // conversions en aller-retour
+  ck('lb ↔ kg : 1 kg = 2,20462262185 lb, aller-retour', near(U.lbFromKg(1), 2.20462262185) && near(U.kgFromLb(U.lbFromKg(1234.5)),
+    1234.5));
+  ck('L ↔ USG : 1 USG = 3,785411784 L, aller-retour', near(U.lFromUsg(1), 3.785411784) && near(U.usgFromL(U.lFromUsg(77.7)), 77.7));
+  ck('L ↔ kg à 0,8 : 1000 L = 800 kg, aller-retour', near(U.kgFromL(1000, 0.8), 800) && near(U.lFromKg(U.kgFromL(456, 0.8), 0.8), 456));
+  ck('toKg / fromKg : les quatre unités en aller-retour (densité 0,72)', U.UNITS.every(u => near(U.fromKg(U.toKg(150, u, 0.72), u, 0.72),
+    150, 1e-9)));
+  ck('toKg : 100 USG d’AVGAS ≈ 272,5 kg', near(U.toKg(100, 'USG', 0.72), 272.5496484, 1e-6));
+  ck('illisible → null (vide, texte, densité absente ou hors plage, unité inconnue)', [U.lbFromKg(''), U.kgFromL(10), U.kgFromL(10, 2),
+    U.toKg(5, 'gal', 0.8), U.fromKg(null, 'kg')
+  ].every(v => v === null));
+
+  // prix ramené au kg
+  ck('pricePerKg : au kg, inchangé', near(U.pricePerKg({
+    value: 2.5,
+    per: 'kg'
+  }), 2.5));
+  ck('pricePerKg : au litre à 0,8 → ÷ 0,8', near(U.pricePerKg({
+    value: 2,
+    per: 'L'
+  }, 0.8), 2.5));
+  ck('pricePerKg : à la livre → × 2,2046…', near(U.pricePerKg({
+    value: 1,
+    per: 'lb'
+  }), 2.20462262185));
+  ck('pricePerKg : au gallon à 0,72 → ÷ (0,72 × 3,785…)', near(U.pricePerKg({
+    value: 6.5,
+    per: 'USG'
+  }, 0.72), 6.5 / (0.72 * 3.785411784)));
+  ck('pricePerKg : le même prix au litre et au gallon donne le même prix au kg', near(U.pricePerKg({
+    value: 2,
+    per: 'L'
+  }, 0.8), U.pricePerKg({
+    value: 2 * 3.785411784,
+    per: 'USG'
+  }, 0.8), 1e-12));
+  ck('pricePerKg : illisible, négatif, unité inconnue ou volume sans densité → null', [U.pricePerKg({
+    value: 'x',
+    per: 'kg'
+  }), U.pricePerKg({
+    value: -1,
+    per: 'kg'
+  }), U.pricePerKg({
+    value: 1,
+    per: 'gal'
+  }), U.pricePerKg({
+    value: 1,
+    per: 'L'
+  })].every(v => v === null));
+
+  window.__fuelUnitsBench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__fuelUnitsBench.pass} PASS · ${window.__fuelUnitsBench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

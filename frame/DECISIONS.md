@@ -2254,3 +2254,9 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   `build_help.py` writes `pilot.*` and `maintenance.*`, help.js reads the one of `c.app`, Pilot's tutorials stay in Pilot;
   the Help entry opens the chapter of the module the bar follows (`menuActive`: `current` is set only after the mount).
   A59 at 390 in the four languages.
+
+- **31 Oct 2026 — Fuel units in one place** (Simplification, V3 § 10.35). No density existed in the code (only a comment in
+  `frame/aerodb/aircraft.js`). `frame/lib/fuel_units.js` holds the typical densities, the fallback rule (type's sheet →
+  airline → typical) and the conversions between kg, lb, L and USG, with the price brought to the kg; pure, no text, an
+  unreadable input gives `null`. Densities outside 0.5–1.0 kg/L are refused, which keeps a sheet typed in g/L or lb/USG
+  from being taken. Its bench is opened by A53 (I28).

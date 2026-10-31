@@ -1206,3 +1206,23 @@ The page's policy allows Workers from the suite's own files (`worker-src 'self' 
 the launcher's and the built pages' policy). A module's Worker script is listed in its `meta.files` (kept offline like the
 rest). No outside host is added for it.
 
+## 16. Fuel units (`frame/lib/fuel_units.js`)
+
+A pure ES module, no state, no call, no text (31 Oct 2026, V3 § 10.35 fuel cost): the one place for the density rule and
+the conversions between the report's four units. Readers: Settings (the fields' hints), Aircraft and Fuel, aerodb.
+
+```js
+import { FUEL_DENSITY, density, toKg, fromKg, pricePerKg } from '../../frame/lib/fuel_units.js';
+```
+
+| Export | Gives |
+| --- | --- |
+| `FUEL_DENSITY` | frozen `{ jet: 0.80, avgas: 0.72 }`, kg/L |
+| `density(kind, { sheet, airline })` | kg/L: the type's sheet (`fuelDensityKgPerL`), else the airline's (`airline/settings.json` `fuel.density[kind]`), else `FUEL_DENSITY[kind]`; a value outside 0.5–1.0 or unreadable is skipped; an unknown kind with neither: `null` |
+| `lbFromKg`, `kgFromLb`, `lFromUsg`, `usgFromL` | mass and volume (1 kg = 2.20462262185 lb, 1 USG = 3.785411784 L) |
+| `kgFromL(l, d)`, `lFromKg(kg, d)` | mass ↔ volume by the density `d` |
+| `toKg(value, unit, d)`, `fromKg(kg, unit, d)` | a quantity of one of `UNITS` (`kg`, `lb`, `L`, `USG`) to kg and back |
+| `pricePerKg({ value, per }, d)` | the price of one unit `per` brought to the kg (per L ÷ d, per USG ÷ (d × 3.785…), per lb × 2.2046…) |
+
+An unreadable input (missing number, negative price, density outside 0.5–1.0, unknown unit) gives `null`, never an invented
+number. Bench: `frame/lib/test/fuel_units.html` (A53).
