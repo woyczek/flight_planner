@@ -197,9 +197,6 @@
   }, {
     hourly
   }], 9000).map(p => p.levels[0].dir), [270, 270]);
-  check('model in France', W.modelFor(46, 2).id, 'meteofrance_seamless');
-  check('model in Germany', W.modelFor(52, 20).id, 'icon_seamless');
-  check('model elsewhere', W.modelFor(40, -100).id, 'gfs_seamless');
   document.getElementById('out').innerHTML = `${pass} passed, ${fail} failed\n` + lines.join('\n');
   document.title = `fuel — winds bench: ${fail ? 'FAIL' : 'OK'} (${pass}/${pass + fail})`;
 </script>

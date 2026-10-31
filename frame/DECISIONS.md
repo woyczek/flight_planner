@@ -2234,3 +2234,13 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   relief tile, so the step waited for a note that was not the base's. The step now compares with the three notes of the
   base in the run's language (loading, not published, access not set), by their own texts; nothing in the frame or a
   module changed. Ten runs before: two failures; ten after (forty with the four languages): none.
+
+- **31 Oct 2026 — The weather layer's contract with Atmosphere, settled** (Simplification). (1) `cost(request)`: what a
+  request would cost, from the cache and the run already known, asking nothing; Atmosphere says « ≈ n calls » before
+  « Charger ». `aloft` and `grid` now compute their request with the same functions `cost` reads (`aloftRequest`,
+  `gridRequest`, `missingGroups`): one computation, so the estimate counts what the load would ask. (2) The model of a
+  region and its run belong to the frame's layer: `modelFor` was already there, Fuel's `winds.js` relayed it for older
+  readers and no longer does; each answer of `aloft` and `grid` carries `run`. (3) Kept as they were: one range of days per
+  load (`from`), METAR and TAF with their time, the world forecast (index, step, pressure-level file) by the layer, the
+  quota in Settings › Diagnostics. Fuel's behaviour is unchanged (its bench loses the three `modelFor` checks the frame's
+  bench already holds).

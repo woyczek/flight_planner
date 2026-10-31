@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Weather layer: `cost(request)`, and the model of a region in the frame only** (`frame/lib/weather_store.js`, `ctx.weather.cost`;
+  frame INTEGRATION 14.1, DECISIONS; noreg A25) — what a request would cost, from the cache and the known run, asking
+  nothing (Atmosphere's « ≈ n calls »); `aloft`, `grid` and `cost` share one computation of the request. Fuel's
+  `winds.js` no longer relays `modelFor` (the frame's layer holds it); no change for Fuel.
 - **Refactor R-S10, no behaviour change: one writer per shared field of the Data module** (`modules/data/SPEC.md` § 11;
   I29). After R-S8 the writes were already in one file each: `S.run` and `S.result` in `follow.js`, `S.chain` in `chain.js`, `S`
   replaced by `setState` in `state.js`. The rule and the table of states and passages are written in the SPEC, and the static case

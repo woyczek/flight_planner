@@ -8,9 +8,6 @@ import {
   wrapLon,
   unwrapLons
 } from '../../frame/lib/geo.js';
-import {
-  modelFor as layerModelFor
-} from '../../frame/lib/weather_store.js';
 
 /** Niveaux de pression demandés (hPa), du sol vers le haut. */
 export const LEVELS = [1000, 975, 950, 925, 900, 850, 800, 700, 600, 500, 400, 300, 250, 200];
@@ -21,10 +18,6 @@ export const paFt = hPa => (1 - (hPa / 1013.25) ** 0.190263) / 6.87559e-6;
 export const hPaOf = ft => 1013.25 * (1 - 6.87559e-6 * ft) ** 5.25588;
 /** Température type (°C) à une altitude pression (ft), troposphère. */
 export const isaC = ft => 15 - 0.0019812 * ft;
-
-/** Modèle de prévision selon le lieu : celui de la couche météo du cadre (une seule règle pour la suite, frame/INTEGRATION
- *  § 14) ; gardé ici pour les lecteurs qui l'importent encore de ce fichier (Atmosphère). { id, name, short }. */
-export const modelFor = (lat, lon) => layerModelFor(lat, lon);
 
 /** Vent et température d'un profil à une altitude pression ft : interpolation en ln(p) entre les deux niveaux qui
  *  l'encadrent, le vent en vecteur ; au-delà des niveaux, le plus proche. { dirDeg, kt, tC, isaDev } ou null. */

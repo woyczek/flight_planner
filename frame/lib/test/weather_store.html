@@ -232,6 +232,15 @@
     }];
     let S = mk();
     const when = Date.parse('2026-10-28T14:00:00Z');
+    // cost : ce que coûterait la demande, sans rien demander (ni prévision, ni métadonnées du run)
+    const k0 = await S.w.cost({
+      kind: 'aloft',
+      samples: route,
+      when
+    });
+    ck('cost avant : tout manque, 5 × 42 / 10 = 21 en une demande, aucun appel', near(k0.weight, 21) && k0.requests === 1 && k0.cells ===
+      5 &&
+      !k0.cached && k0.model.id === 'meteofrance_seamless' && S.net.calls.length === 0, `${JSON.stringify(k0)} · ${S.net.calls.length}`);
     const a1 = await S.w.aloft(route, when);
     ck('aloft : un appel pour toute la route (5 cases, 42 variables)', S.net.forecasts().length === 1 && a1.requests === 1, S.net
       .forecasts().length);
@@ -264,6 +273,32 @@
         200));
     ck('décompte : écrit, onSpend avec le total du jour', (await S.w.spentToday()) === 21 && S.spend.at(-1) === 21, S.spend);
 
+    const k1 = await S.w.cost({
+        kind: 'aloft',
+        samples: route,
+        when
+      }),
+      k2 = await S.w.cost({
+        kind: 'aloft',
+        samples: [...route, {
+          lat: 42,
+          lon: 6
+        }],
+        when
+      }),
+      n0 = S.net.calls.length;
+    ck('cost après : rien ne manque (0, cached) ; un lieu de plus : sa case seule (4,2)', k1.weight === 0 && k1.cached && k1.requests ===
+      0 &&
+      near(k2.weight, 4.2) && k2.requests === 1, `${JSON.stringify(k1)} · ${JSON.stringify(k2)}`);
+    const kg = await S.w.cost({
+      kind: 'grid',
+      places: route,
+      when,
+      vars: ['temperature_2m', 'wind_speed_10m']
+    });
+    ck('cost d’une grille : 5 lieux × 2 variables = 5 (une variable par appel au moins)', near(kg.weight, 5) && kg.requests === 1,
+      JSON.stringify(kg));
+    ck('cost : aucun appel au réseau', S.net.calls.length === n0);
     const a2 = await S.w.aloft(route, when);
     ck('relecture : aucun appel, poids 0, mêmes profils', S.net.forecasts().length === 1 && a2.weight === 0 && JSON.stringify(a2
       .profiles) === JSON.stringify(a1.profiles));

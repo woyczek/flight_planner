@@ -16,7 +16,7 @@
 //     cache/weather/world/ ; l'appareil n'appelle jamais Open-Meteo hors de la grille du vol (aloft et grid seulement).
 // Ni page ni stockage propre : la couche de données (data : get, put, remove, cached) et les appels sortants (net.fetch,
 // qui ne lève jamais : 503 marqué x-sog-offline / x-sog-unreachable) sont donnés.
-// API : weatherStore({ data, net, root, now, onSpend }) → { aloft, grid, metar, taf, world, run, spent, spentToday,
+// API : weatherStore({ data, net, root, now, onSpend }) → { aloft, grid, cost, metar, taf, world, run, spent, spentToday,
 //   prune, modelFor, cellOf, QUOTA } ; fonctions pures exportées : modelFor, cellOf, cellSize, callWeight, aloftVars,
 //   profilesAt, LEVELS, paFt.
 
@@ -286,10 +286,66 @@ export function weatherStore({
       return c?.run ?? null;
     }
   }
+  /** Heure du run déjà connue (mémoire, puis réserve), sans rien demander ; null si elle ne l'est pas. */
+  async function knownRun(model) {
+    const k = MODELS[model]?.meta || model,
+      m = runs.get(k);
+    if (m) return m.run;
+    const c = await data.get(`${PREFIX}${model}/meta.json`).then(x => x?.meta === k ? x : null, () => null);
+    return c?.run ?? null;
+  }
   /** Un fichier vaut pour le run où il a été lu (6 h au plus) ; 30 min si l'un des deux runs est inconnu. */
   const fresh = (f, curRun) => !!f && (curRun && f.run ? f.run === curRun && now() - f.at < RUN_TTL : now() - f.at < BLIND_TTL);
 
   // ---------------------------------------------------------------- prévision (cœur)
+  /** Jours UTC d'une demande : days jours depuis from (un vol daté d'avant aujourd'hui, 92 jours passés au plus), sinon
+   *  depuis aujourd'hui. */
+  const dayListOf = (days, from) => {
+    const today = Date.parse(dayOf(now())),
+      first = Number.isFinite(from) ? Math.max(today - 92 * 864e5, Math.min(today, Date.parse(dayOf(from)))) : today;
+    return Array.from({
+      length: days
+    }, (_, k) => dayOf(first + k * 864e5));
+  };
+  /** Cases (à la résolution du modèle) des lieux : Map id → case. */
+  const cellsOf = (places, size) => {
+    const cells = new Map();
+    for (const p of places) {
+      const c = cellOf(p.lat, p.lon, size);
+      cells.set(c.id, c);
+    }
+    return cells;
+  };
+  /** Ce qui manque à la réserve pour ces cases, ces jours et ces variables au run curRun : par case, les jours et les
+   *  variables absents, groupés par (premier jour, dernier jour, variables) — une demande à Open-Meteo par groupe. Les
+   *  fichiers gardés (frais, sinon null) sont posés dans files. Lit la réserve seule, ne demande rien. */
+  async function missingGroups(model, cells, dayList, vars, curRun, files = new Map()) {
+    const keyOf = (cell, day) => path(model, cell, day);
+    await Promise.all([...cells.keys()].flatMap(c => dayList.map(async d => {
+      const f = await data.get(keyOf(c, d)).catch(() => null);
+      files.set(keyOf(c, d), fresh(f, curRun) ? f : null);
+    })));
+    const groups = new Map();
+    for (const c of cells.values()) {
+      const need = dayList.map(d => {
+        const f = files.get(keyOf(c.id, d)),
+          have = new Set([...Object.keys(f?.vars || {}), ...(f?.refused || [])]);
+        return [d, vars.filter(v => !have.has(v))];
+      }).filter(([, m]) => m.length);
+      if (!need.length) continue;
+      const missing = [...new Set(need.flatMap(([, m]) => m))].sort(),
+        ds = need.map(([d]) => d),
+        g = `${ds[0]}|${ds.at(-1)}|${missing.join(',')}`;
+      if (!groups.has(g)) groups.set(g, {
+        from: ds[0],
+        to: ds.at(-1),
+        vars: missing,
+        cells: []
+      });
+      groups.get(g).cells.push(c);
+    }
+    return [...groups.values()];
+  }
   /** Prévision de lieux [{ lat, lon }] pour des variables horaires, depuis la réserve, Open-Meteo pour ce qui manque.
    *  opts : model (requis), days, from (ms : premier jour quand il est passé — un vol daté d'avant aujourd'hui ; Open-Meteo
    *  sert jusqu'à 92 jours passés), cacheOnly (rien demandé : null s'il manque quelque chose), stale, onWait. Rend { locs
@@ -303,19 +359,11 @@ export function weatherStore({
     onWait
   }) {
     prune().catch(() => {});
-    const today = Date.parse(dayOf(now())),
-      curRun = await run(model),
+    const curRun = await run(model),
       size = cellSize(model),
-      first = Number.isFinite(from) ? Math.max(today - 92 * 864e5, Math.min(today, Date.parse(dayOf(from)))) : today,
-      dayList = Array.from({
-        length: days
-      }, (_, k) => dayOf(first + k * 864e5)),
-      cells = new Map(),
+      dayList = dayListOf(days, from),
+      cells = cellsOf(places, size),
       files = new Map();
-    for (const p of places) {
-      const c = cellOf(p.lat, p.lon, size);
-      cells.set(c.id, c);
-    }
     const keyOf = (cell, day) => path(model, cell, day);
     let weight = 0,
       requests = 0;
@@ -335,33 +383,9 @@ export function weatherStore({
         if (!busy.length) break;
         await Promise.allSettled(busy);
       }
-      await Promise.all([...cells.keys()].flatMap(c => dayList.map(async d => {
-        const f = await data.get(keyOf(c, d)).catch(() => null);
-        files.set(keyOf(c, d), fresh(f, curRun) ? f : null);
-      })));
-      // ce qui manque : par case, les jours et les variables absents ; groupé par (premier jour, dernier jour, variables)
-      const groups = new Map();
-      for (const c of cells.values()) {
-        const need = dayList.map(d => {
-          const f = files.get(keyOf(c.id, d)),
-            have = new Set([...Object.keys(f?.vars || {}), ...(f?.refused || [])]);
-          return [d, vars.filter(v => !have.has(v))];
-        }).filter(([, m]) => m.length);
-        if (!need.length) continue;
-        const missing = [...new Set(need.flatMap(([, m]) => m))].sort(),
-          ds = need.map(([d]) => d),
-          g = `${ds[0]}|${ds.at(-1)}|${missing.join(',')}`;
-        if (!groups.has(g)) groups.set(g, {
-          from: ds[0],
-          to: ds.at(-1),
-          vars: missing,
-          cells: []
-        });
-        groups.get(g).cells.push(c);
-      }
-      if (groups.size && cacheOnly) return null;
-      const gs = [...groups.values()],
-        started = gs.map(g => fetchGroup(g));
+      const gs = await missingGroups(model, cells, dayList, vars, curRun, files);
+      if (gs.length && cacheOnly) return null;
+      const started = gs.map(g => fetchGroup(g));
       started.forEach((j, k) => {
         j.catch(() => {});
         for (const c of gs[k].cells)
@@ -468,6 +492,44 @@ export function weatherStore({
 
   const placeOk = p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon);
   // ---------------------------------------------------------------- lecteurs
+  /** Demande d'aloft (lieux, modèle, instant, variables, jours) ; null sans lieu. */
+  function aloftRequest(samples, when, model) {
+    const pts = (samples || []).filter(placeOk).slice(0, MAX_SAMPLES);
+    if (!pts.length) return null;
+    const mid = pts[Math.floor(pts.length / 2)],
+      t = secOf(when, now());
+    return {
+      pts,
+      m: model ? infoOf(model) : modelFor(+mid.lat, +mid.lon),
+      t,
+      vars: aloftVars(),
+      days: daysFor(t, now()),
+      from: null
+    };
+  }
+  /** Demande de grid (lieux, modèle, variables, jours, premier jour) ; null sans lieu ni variable ; plus de 400 lieux :
+   *  refusé (tooMany). */
+  function gridRequest(places, when, vars, {
+    model,
+    days,
+    from = null
+  } = {}) {
+    const pts = (places || []).filter(placeOk);
+    if (!pts.length || !vars?.length) return null;
+    if (pts.length > MAX_PLACES) throw fail('too many places', {
+      tooMany: true,
+      max: MAX_PLACES
+    });
+    const lat = pts.reduce((s, p) => s + +p.lat, 0) / pts.length,
+      lon = pts[Math.floor(pts.length / 2)].lon;
+    return {
+      pts,
+      m: model ? infoOf(model) : modelFor(lat, +lon),
+      vars: [...new Set(vars)],
+      days: days || daysFor(secOf(when, now()), now()),
+      from
+    };
+  }
   /** Vents et températures en altitude aux lieux d'une route (samples, 24 au plus) à l'instant when : le modèle selon le
    *  lieu du milieu (ou opts.model) ; { model { id, name, short }, run, time, profiles (un par lieu, dans l'ordre), weight,
    *  requests, cells } ; null (cacheOnly) s'il manque quelque chose. */
@@ -477,18 +539,20 @@ export function weatherStore({
     stale,
     onWait
   } = {}) {
-    const pts = (samples || []).filter(placeOk).slice(0, MAX_SAMPLES);
-    if (!pts.length) return null;
-    const mid = pts[Math.floor(pts.length / 2)],
-      m = model ? infoOf(model) : modelFor(+mid.lat, +mid.lon),
-      t = secOf(when, now()),
-      r = await forecast(pts, aloftVars(), {
-        model: m.id,
-        days: daysFor(t, now()),
-        cacheOnly,
-        stale,
-        onWait
-      });
+    const q = aloftRequest(samples, when, model);
+    if (!q) return null;
+    const {
+      pts,
+      m,
+      t
+    } = q,
+    r = await forecast(pts, q.vars, {
+      model: m.id,
+      days: q.days,
+      cacheOnly,
+      stale,
+      onWait
+    });
     if (!r) return null;
     const profiles = profilesAt(r.locs, t);
     return {
@@ -512,26 +576,43 @@ export function weatherStore({
     stale,
     onWait
   } = {}) {
-    const pts = (places || []).filter(placeOk);
-    if (!pts.length || !vars?.length) return null;
-    if (pts.length > MAX_PLACES) throw fail('too many places', {
-      tooMany: true,
-      max: MAX_PLACES
+    const q = gridRequest(places, when, vars, {
+      model,
+      days,
+      from
     });
-    const lat = pts.reduce((s, p) => s + +p.lat, 0) / pts.length,
-      lon = pts[Math.floor(pts.length / 2)].lon,
-      m = model ? infoOf(model) : modelFor(lat, +lon),
-      r = await forecast(pts, [...new Set(vars)], {
-        model: m.id,
-        days: days || daysFor(secOf(when, now()), now()),
-        from,
-        cacheOnly,
-        stale,
-        onWait
-      });
+    if (!q) return null;
+    const r = await forecast(q.pts, q.vars, {
+      model: q.m.id,
+      days: q.days,
+      from: q.from,
+      cacheOnly,
+      stale,
+      onWait
+    });
     return r && {
       ...r,
-      model: m
+      model: q.m
+    };
+  }
+  /** Ce que coûterait une demande, sans rien demander (Atmosphère : « ≈ n appels » avant « Charger ») : la réserve seule et
+   *  le run déjà connu (jamais les métadonnées d'Open-Meteo). request : { kind: 'aloft', samples, when, model? } ou
+   *  { kind: 'grid', places, when, vars, model?, days?, from? }. Rend { model, weight (appels pondérés de ce qui manque),
+   *  requests, cells, cached (true : rien ne manque) } ; null sans lieu. Une estimation : un run plus récent, ou une
+   *  variable refusée par le modèle, change le compte au chargement. */
+  async function cost(request = {}) {
+    const q = request.kind === 'aloft' ? aloftRequest(request.samples, request.when, request.model) : gridRequest(request.places,
+      request.when, request.vars, request);
+    if (!q) return null;
+    const cells = cellsOf(q.pts, cellSize(q.m.id)),
+      gs = await missingGroups(q.m.id, cells, dayListOf(q.days, q.from), q.vars, await knownRun(q.m.id)),
+      weight = gs.reduce((s, g) => s + callWeight(g.cells.length, g.vars.length), 0);
+    return {
+      model: q.m,
+      weight: Math.round(weight * 10) / 10,
+      requests: gs.length,
+      cells: cells.size,
+      cached: !gs.length
     };
   }
 
@@ -680,6 +761,7 @@ export function weatherStore({
   return {
     aloft,
     grid,
+    cost,
     metar: (ids, opts) => obs('metar', ids, opts),
     taf: (ids, opts) => obs('taf', ids, opts),
     world,
