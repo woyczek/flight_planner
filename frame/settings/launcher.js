@@ -555,7 +555,7 @@
       p: name,
       j: '{j}'
     })).replace('{j}', () => proj);
-    return `<div data-provider="${p.provider}"><p>${line}</p>${P.capabilities.projectTokens ? `<p class="f-muted"><a href="#pilot-tokens">${esc(t(T.providerTokens))}</a> — ${esc(t(T.providerGitlab))}</p>` : `<p class="f-muted">${esc(t(T.providerGithub))}</p>`}</div>`;
+    return `<div data-provider="${p.provider}"><p>${line}</p>${P.capabilities.projectTokens ? `<p class="f-muted"><a href="?app=maintenance#pilot-tokens">${esc(t(T.providerTokens))}</a> — ${esc(t(T.providerGitlab))}</p>` : `<p class="f-muted">${esc(t(T.providerGithub))}</p>`}</div>`;
   }
   /** Volet « Dépôt distant de data/ » de la carte Administration (data/ en dépôt git seulement) ; '' sinon. */
   function remoteHtml(env) {

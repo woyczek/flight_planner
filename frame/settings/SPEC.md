@@ -241,7 +241,8 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    with its sentence under it, 44 px high: "Map threshold tuning" (`#maps?tune=1`), "Flight zone limit" (folds a panel open under
    its button: a box "Show the edge line of the flight zone limit", saved at once, for the airline, as the key `edge` of
    `airline/map_profiles.json`; shown by default; the contract is `INTEGRATION.md` § 4), "Export a configuration for a pilot"
-   (folds the export of § 5 open; absent when the device has no repository to export), on a launcher "Remote repository
+   (folds the export of § 5 open; absent when the device has no repository to export), "Add a pilot" (folds the panel of § 5 open: the
+   same export with the administrator's steps and the message to send; shown where the export is), on a launcher "Remote repository
    of data/" and "Airline API keys (IVAO, EAD Basic)" (panels, § 3 items 6 and 9), then the roadmap, the diagnostics
    and the benches and V2 pages of § 6. The export used to be a fold of the Access card; the import ("Join the airline…",
    "Import a configuration…") stays there, it is the pilot's.
@@ -328,18 +329,39 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
   `https://<host>/users/sign_up`) and, for GitHub, the invitation to accept (`https://github.com/<repo>/invitations`);
   it is shown wherever the token is asked, in the device's language, falling back to French.
 
+- **Add a pilot** (§ 10.36, the Administration card, `panel: addPilot`, `admin.js` `addPilotPanel`; shown where the export is, same
+  `env.xsrc`). For a beginner administrator whose pilot has nothing: one panel from the trigram to the message. Fields: the trigram
+  (2–5, A–Z0–9), the pilot's name (optional, only to greet), the language of the message (a select fr / en / de / es, the
+  screen's by default) and the app address (as the export). « Préparer » draws, on the same panel: (a) **the configuration link and
+  file** of the export, the same function (`makeConfig`, `SogConfig.build`; its outputs: the file, the link, « Copier le lien », the
+  QR code), the provider the real repository's, never forced; (b) **the administrator's steps**. For a GitLab repository
+  (`SogConfig.kind(xsrc) === 'gitlab'`): with a launcher, a link « Créer son jeton » to `#pilot-tokens?tri=<TRI>` (the
+  launcher creates the project access token with the administrator's own, and the screen says when that token is missing; the screen
+  fills its trigram field from the address) and, folded, « À la main, sans le lanceur »; without a launcher, the manual steps, open:
+  the direct link `<project>/-/settings/access_tokens` (`SogConfig.webUrl`), the values to type (Token name = the trigram;
+  Expiration date = today + 90 days, written as a date, 365 days at most, never without one; Role = Developer; Scopes = `api`,
+  not `write_repository`: the transport uses the REST API), « Create project access token » then copy the token at once (GitLab shows
+  it once), the data branch must let Developers push (Protected branches: « Developers + Maintainers », force push off, else 403),
+  how to revoke (Settings › Access tokens › Revoke, on the trigram's line), and the token is sent apart from the message, never
+  with the link. For a GitHub repository the steps are today's export steps (invite, create, send), unchanged; (c) **the message to
+  send**, in the chosen language (a read-only text and « Copier »): the greeting (with the name if given), the app address, the
+  configuration link, « open this link, then paste the token I send you separately ». **Never the token**, in the link or in the
+  message. The panel writes nothing more than the export (no document of its own, no token handled); the message rows are read
+  by the language chosen, not the screen's. Cases A67 (GitLab, no launcher), A68 (GitLab, a launcher: the link, the screen's
+  trigram), A69 (GitHub).
+
 ## 6. Administration links (`frame/settings/admin_links.js`, `window.SogAdminLinks`)
 
 - **A declared list**, depending on no module: `{ id, href | act | panel, primary, where, title, text }`, texts in four
   languages. **Every entry is drawn as one button** (rule 18): `href` a link styled as a button, `act` an action of the card,
-  `panel` a button that folds open the panel of its line (`edge`, `cfg`, `remote`, `keys`, written by the settings files;
+  `panel` a button that folds open the panel of its line (`edge`, `cfg`, `addPilot`, `remote`, `keys`, written by the settings files;
   a line whose panel is empty is not drawn), `primary` the accent
   colour of the administrator's own pages. `where`: `app` (everywhere), `bench` (a bench or demonstration page served by the launcher: a link only on a
   workstation with a launcher, otherwise a greyed button; its sentence ends with "workstation with launcher
   only"), `v2` (a V2 page of the workstation: shown only when a launcher serves the page), `launcher` (a setting of
   this computer's launcher: shown only when a launcher serves the page).
 - **Today**: "Map threshold tuning" `#maps?tune=1` (read only on a phone), "Flight zone limit" (`panel: edge`), "Export a
-  configuration for a pilot" (`panel: cfg`), "Remote repository of data/" (`panel: remote`, `where: launcher`), "Airline
+  configuration for a pilot" (`panel: cfg`), "Add a pilot" (`panel: addPilot`), "Remote repository of data/" (`panel: remote`, `where: launcher`), "Airline
   API keys (IVAO, EAD Basic)" (`panel: keys`, `where: launcher`), "Data sources" `#sources` (aerodb's Sources screen, links only; `copyLink`: under its link the absolute address of the screen built from `location`, and "Copy the link"; it replaced the data laboratory `#datalab` on 28 Oct 2026), roadmap `#roadmap`, diagnostics (`act:
   diagOpen`: opens the folded diagnostics of the About card and scrolls to it); benches `labs/design_primitives.html`,
   `frame/aerodb/bench.html`, `frame/aerodb/offline_bench.html`, `frame/store/test/`, `modules/maps/test/render.html`;

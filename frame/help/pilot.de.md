@@ -904,6 +904,8 @@ Starter bedienten Rechner die Schaltflächen „Entferntes Repository von data/�
 Fluggesellschaft“);
 der Fahrplan (`#roadmap`) und die Diagnose der Karte „Über“.
 
+**Piloten hinzufügen (Administrator).** Auf der Stufe „Vollständig“ bereitet die Schaltfläche „Piloten hinzufügen“ der Karte „Verwaltung“ (wo der Export möglich ist) alles für einen Piloten vor, der noch nichts hat. Tippen Sie sein Kürzel, seinen Namen, wenn Sie ihn anreden wollen, die Sprache der Nachricht und die Adresse der veröffentlichten App, dann „Vorbereiten“: Sie erhalten Link und Datei der Konfiguration (dieselben wie beim Export), Ihre Schritte und eine Nachricht zum Kopieren in der gewählten Sprache. Für ein GitLab-Repository sind Ihre Schritte: das Projekt-Token des Piloten erstellen (eines pro Pilot, Name = sein Kürzel, Rolle Developer, Bereich `api`, Ablaufdatum 90 Tage empfohlen und höchstens 365, nie ohne Datum), es sofort kopieren (GitLab zeigt es nur einmal), prüfen, dass der Datenzweig Developers pushen lässt, und wissen, wie man widerruft (Settings › Access tokens › Revoke). Mit dem Starter öffnet „Token erstellen“ den Bildschirm „Token der Piloten“ mit dem bereits eingetippten Kürzel: Der Starter erstellt das Token mit dem des Administrators; die Schritte von Hand bleiben darunter eingeklappt. Ohne Starter sind sie offen. **Senden Sie das Token getrennt von der Nachricht** (anderer Kanal, oder fügen Sie es vor dem Piloten ein): Es steht nie im Link und nie in der Nachricht. Für ein GitHub-Repository sind die Schritte die des Exports.
+
 <a id="settings-sources"></a>**Datenquellen.** Die Taste „Datenquellen“ (`#sources`, Stufe Vollständig) listet die Quellen der Luftfahrtdaten, die die Suite nutzt, erwägt oder zurückgestellt hat: für jede, was sie liefert, ihre Lizenz, ihren Status und einen Link, der sich in einem neuen Tab öffnet; für die, die sich mit jedem AIRAC-Zyklus ändern (SIA, VAC, eAIP, CIFP), ist der Link der des gültigen Zyklus, oben auf dem Bildschirm angegeben. Der Bildschirm lädt nichts herunter. Unter der Taste der Verwaltungskarte die absolute Adresse des Bildschirms, zum Öffnen oder als Lesezeichen („Link kopieren“). Er ersetzt das Daten-Labor, das am 28. Oktober 2026 entfernt wurde.
 
 **Die Prüfstände, auf einem Rechner.** Vom Starter bedient, öffnen sie sich nur auf einem Rechner mit Starter (anderswo
@@ -962,4 +964,4 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: d97bf562de44 -->
+<!-- fr: 845828ff643a -->

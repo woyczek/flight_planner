@@ -65,6 +65,18 @@
       'Un archivo y un enlace que configuran la app de un piloto: la aerolínea, el repositorio de datos, su trigrama y cómo crear el token. Nunca un token ni un secreto.'
     ]
   }, {
+    id: 'addPilot',
+    panel: 'addPilot',
+    where: 'app',
+    primary: true,
+    title: ['Ajouter un pilote', 'Add a pilot', 'Piloten hinzufügen', 'Añadir un piloto'],
+    text: [
+      'Pour un pilote qui n’a encore rien : le lien et le fichier de configuration, vos gestes (le jeton du projet, un par pilote) et le message à lui envoyer, prêts à copier. Le jeton ne part jamais dans le lien ni dans le message.',
+      'For a pilot who has nothing yet: the configuration link and file, your steps (the project token, one per pilot) and the message to send them, ready to copy. The token never goes in the link or in the message.',
+      'Für einen Piloten, der noch nichts hat: Link und Datei der Konfiguration, Ihre Schritte (das Projekt-Token, eines pro Pilot) und die Nachricht an ihn, zum Kopieren bereit. Das Token steht nie im Link und nie in der Nachricht.',
+      'Para un piloto que aún no tiene nada: el enlace y el archivo de configuración, sus pasos (el token del proyecto, uno por piloto) y el mensaje que enviarle, listos para copiar. El token nunca va en el enlace ni en el mensaje.'
+    ]
+  }, {
     id: 'remote',
     panel: 'remote',
     where: 'launcher',

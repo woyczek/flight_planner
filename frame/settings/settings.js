@@ -487,7 +487,7 @@
   }
 
   /** Pose la page : le panneau d'aide, les groupes ou la seule carte demandée par l'adresse, leur câblage. env : le contexte de l'écran ; cards : les cartes déjà construites ;
-   *  parts : { cfgOut, edgeShow, runwayZoom }, ce que la carte Administration reçoit de plus. */
+   *  parts : { cfgOut, addPilotOut, edgeShow, runwayZoom }, ce que la carte Administration reçoit de plus. */
   async function placePage(env, cards, parts) {
     const {
       view,
@@ -499,12 +499,14 @@
     } = env;
     const {
       cfgOut,
+      addPilotOut,
       edgeShow,
       runwayZoom
     } = parts;
     const help = await c.helpPanel?.().catch(() => null);
     const adminHtml = lvl === 3 || focus === 'admin' ? P.admin.adminCard(t, L, {
       cfg: cfgOut,
+      addPilot: addPilotOut,
       edge: edgeShow,
       runway: runwayZoom,
       remote: L ? P.launcher.remoteHtml(env) : '',
@@ -748,6 +750,7 @@
     // configuration d'un pilote, dans la carte Accès : importer (toujours, en tête), exporter (poste ou accès GitHub réglé)
     const cfgIn = P.cards.cfgImport(env);
     const cfgOut = P.admin.cfgPanel(env); // volet d'export de la carte Administration ; env.xsrc : le dépôt à exporter
+    const addPilotOut = P.admin.addPilotPanel(env); // volet « Ajouter un pilote » : là où l'export est possible (le même env.xsrc)
     // l'import reste dans la carte Accès (affaire du pilote) ; l'export est une page de l'administrateur : carte Administration
     const ai = cards.findIndex(x => x.startsWith('<div class="f-card" data-card="access">'));
     if (ai >= 0) cards[ai] = cards[ai].replace(/^(<div class="f-card" data-card="access"><h2>[^<]*<\/h2>)/, `$1${cfgIn}`);
@@ -769,6 +772,7 @@
     show(P.cards.lnmperf(env));
     await placePage(env, cards, {
       cfgOut,
+      addPilotOut,
       edgeShow,
       runwayZoom
     });

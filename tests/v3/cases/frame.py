@@ -1673,7 +1673,7 @@ def a49(c):
     link = f'{box} a[href="https://gitlab.com/grp/proj"]'
     c.eq(c.count(link), 1, 'the project is a link to its page', what='project link')
     c.ok('noopener' in c.attr(link, 'rel'), c.attr(link, 'rel'), 'the project link has rel noopener')
-    c.eq(first(f'{box} a[href="#pilot-tokens"]'), norm(tx('frame/settings/kit.js', 'providerTokens', c.lang)), 'the link to the pilots’ tokens', what='tokens link')
+    c.eq(first(f'{box} a[href="?app=maintenance#pilot-tokens"]'), norm(tx('frame/settings/kit.js', 'providerTokens', c.lang)), 'the link to the pilots’ tokens', what='tokens link')
     c.ok(txl('providerGitlab') in first(box), first(box), 'the sentence on the welcome by a project access token')
     c.ok('SECRET' not in c.js(f"document.querySelector('{box}').outerHTML"), 'a secret is shown', 'the credentials of the address are shown nowhere in the line')
     # GitHub: the sentence that proposes GitLab, no link to the tokens
@@ -1682,7 +1682,7 @@ def a49(c):
     panel()
     c.eq(c.attr(box, 'data-provider'), 'github', 'GitHub is read from the address', what='github provider')
     c.ok(txl('providerGithub') in first(box), first(box), 'the sentence proposing a GitLab project')
-    c.eq(c.count(f'{box} a[href="#pilot-tokens"]'), 0, 'no pilots’ tokens link for GitHub', what='tokens link')
+    c.eq(c.count(f'{box} a[href="?app=maintenance#pilot-tokens"]'), 0, 'no pilots’ tokens link for GitHub', what='tokens link')
     c.eq(c.count('[data-card="remote"] [data-act="remoteSave"]'), 1, 'the way to change the repository is the existing one (the launcher’s window)', what='save button')
     # other: not recognised, nothing else
     state['url'] = 'https://git.example.org/acme/data.git'
@@ -2399,3 +2399,139 @@ def a66(c):
             was, now = {x[0]: x[1:] for x in before}, {x[0]: x[1:] for x in after}
             moved += [f'{d or "-"} {target}: {k} {was[k]} → {now[k]}' for k in was if k in now and was[k] != now[k]]
     c.eq(moved, [], 'no entry moves nor changes size when another is selected (box and icon)', what='moved entries')
+
+
+# ------------------------------------------------------------------------------------------------------ A67 .. A69
+_AP_FILE = 'frame/settings/admin.js'
+_AP_APP = 'https://example.test/v3/frame/'
+
+
+def _ap_keys(provider, api, repo):
+    """The device's repository access (device/keys.json) for a GitLab or a GitHub repository: what « Ajouter un pilote » reads without a launcher."""
+    g = {'provider': provider, 'repo': repo, 'branch': 'main', 'token': 'test-token'}
+    if api:
+        g['api'] = api
+    return [['device/keys.json', {'schema': 1, 'github': g, 'avwx': '', 'ivao': None, 'updated_at': '2026-10-30T10:00:00Z'}, 'cache']]
+
+
+def _ap_launcher(c, url):
+    """A fake launcher whose data/ remote is `url` (as A55 and A60): status, the remote, no secret."""
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False}
+
+    def launcher(route):
+        path = urllib.parse.urlparse(route.request.url).path
+        body = {}
+        if path.endswith('/__setup/status'):
+            body = status
+        elif path.endswith('/__setup/sync-remote') and route.request.method == 'GET':
+            body = {'repo': True, 'remote': 'origin', 'url': url, 'branch': 'main', 'state': 'repo', 'default': ''}
+        elif path.endswith('/__setup/secrets'):
+            body = {'app': {'ivao': {'apiKey': {'set': False, 'hint': ''}}, 'ead': {'user': {'set': False, 'at': ''}, 'password': {'set': False, 'at': ''}}}, 'user': {}}
+        elif path.endswith('/__setup/routes'):
+            body = {'routes': [{'method': m, 'path': '/__setup/' + r, 'public': 'poste', 'relay': False} for m, r in (('GET', 'gitlab/tokens'), ('POST', 'gitlab/tokens'), ('POST', 'gitlab/tokens/revoke'))]}
+        elif path.endswith('/__setup/gitlab/tokens') and route.request.method == 'GET':
+            body = {'ok': True, 'tokens': []}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+
+
+def _ap_prepare(c, tri='abc', name='Léa', lang=None):
+    """Opens the Administration card's « Ajouter un pilote » panel, fills it and presses « Préparer »."""
+    c.until("!!document.querySelector('[data-admin=\"addPilot\"]')", timeout=15000, what='the « Ajouter un pilote » line is in the Administration card')
+    if c.count('[data-group="admin"]') and not c.js("document.querySelector('[data-group=\"admin\"]').open"):
+        c.tap('[data-group="admin"] > summary')
+    c.tap('[data-admin="addPilot"] > button')
+    c.until("!!document.querySelector('[data-adminpanel=\"addPilot\"]:not([hidden]) [data-addpilot]')", what='the panel is open')
+    box = '[data-adminpanel="addPilot"]'
+    c.page.fill(f'{box} input[data-f="apTri"]', tri)
+    if name:
+        c.page.fill(f'{box} input[data-f="apName"]', name)
+    if lang:
+        c.page.select_option(f'{box} select[data-f="apLang"]', lang)
+    c.page.fill(f'{box} input[data-f="apApp"]', _AP_APP)
+    c.tap(f'{box} [data-act="pilotMake"]')
+    c.until(f"!!document.querySelector('{box} [data-cfglink]')?.value && !!document.querySelector('{box} [data-apsteps] h3')", timeout=15000, what='the link, the steps and the message are drawn')
+
+
+def _ap_msg(code, name, link):
+    """The message the panel must write in the language `code`: the greeting (with the name), the app address, the link (rows read from the source, indexed by the chosen language)."""
+    hello = tx(_AP_FILE, 'apHello', code).replace('{n}', name) if name else tx(_AP_FILE, 'apHelloNo', code)
+    return hello + chr(10) * 2 + tx(_AP_FILE, 'apMsg', code).replace('{app}', _AP_APP).replace('{link}', link)
+
+
+@case('A67', 'Add a pilot, GitLab repository, no launcher: the link, the steps by hand, the message in the chosen language, never a token', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame/settings SPEC 3 and 5 (« Ajouter un pilote », § 10.36): the configuration link of the export, the administrator\u2019s steps (access tokens page of the project, name = trigram, expiry today + 90 d, Developer, api, the branch, revoke, the token sent apart), a message in the language chosen; nothing written, no token')
+def a67(c):
+    import datetime
+    c.open('settings', docs=LEVEL3 + _ap_keys('gitlab', 'https://gitlab.com/api/v4', 'acme/data'))
+    _ap_prepare(c)
+    box = '[data-adminpanel="addPilot"]'
+    link = c.js(f"document.querySelector('{box} [data-cfglink]').value")
+    c.ok(link.startswith(_AP_APP + '#settings?config='), link[:80], 'the link is the export\u2019s: the app address and #settings?config=…')
+    cfg = c.js("(l) => SogConfig.unpack(l.split('config=')[1])", link)
+    c.eq([cfg['data']['provider'], cfg['data']['host'], cfg['data']['repo'], cfg['identity']['trigram']], ['gitlab', 'gitlab.com', 'acme/data', 'ABC'], 'the configuration carries the real repository (gitlab) and the trigram, upper case', what='configuration')
+    steps = c.text(f'{box} [data-apsteps]')
+    day = (datetime.datetime.now(datetime.timezone.utc).date() + datetime.timedelta(days=90)).isoformat()
+    c.eq(c.attr(f'{box} [data-apsteps] ol a', 'href'), 'https://gitlab.com/acme/data/-/settings/access_tokens', 'the direct link of the project\u2019s access tokens page', what='access tokens link')
+    c.eq([c.count(f'{box} [data-apsteps] details'), c.count(f'{box} [data-aptoken]')], [0, 0], 'no launcher: the steps by hand are open and there is no link to the tokens screen', what='no launcher')
+    for key in ('apS3', 'apS4', 'apS5', 'apS6'):
+        c.ok(norm(tx(_AP_FILE, key, c.lang)) in norm(steps), steps, f'the step {key} is said')
+    values = norm(steps)
+    c.ok(all(v in values for v in ('ABC', day, 'api', 'Developer')), values, 'the values to type: the trigram, the date today + 90 days, the scope api, the role Developer')
+    c.ok('365' in values and 'Protected branches' in values and 'Allowed to push and merge' in values and 'Revoke' in values, values, 'the 365-day limit, the protected branch and the revocation are said')
+    # the message: the chosen language (the screen\u2019s by default), the greeting, the link; never a token
+    sel = c.js(f"document.querySelector('{box} select[data-f=\"apLang\"]').value")
+    c.eq(sel, c.lang, 'the message language defaults to the screen language', what='language default')
+    msg = c.js(f"document.querySelector('{box} [data-apmsg]').value")
+    c.eq(msg, _ap_msg(c.lang, 'Léa', link), 'the message greets by name, gives the app address and the link, in the language of the screen', what='message')
+    c.ok('glpat-' not in msg and 'test-token' not in msg and 'token' not in link.lower().replace('config', ''), msg[:120], 'never a token in the message or the link')
+    other = 'de' if c.lang != 'de' else 'en'
+    c.page.select_option(f'{box} select[data-f="apLang"]', other)
+    msg2 = c.js(f"document.querySelector('{box} [data-apmsg]').value")
+    c.eq(msg2, _ap_msg(other, 'Léa', link), 'changing the language changes the message, read from the chosen language\u2019s row', what='message language')
+    c.ok(msg2 != msg, msg2[:80], 'and it is another text')
+    c.page.fill(f'{box} input[data-f="apName"]', '')
+    c.eq(c.js(f"document.querySelector('{box} [data-apmsg]').value"), _ap_msg(other, '', link), 'without a name, the greeting has none', what='no name')
+    c.check_errors()
+
+
+@case('A68', 'Add a pilot, GitLab repository with a launcher: a link to the tokens screen with the trigram, the steps by hand folded, the screen takes the trigram', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame/settings SPEC 3 and 5 (« Ajouter un pilote », § 10.36): with a launcher the administrator creates the token on #pilot-tokens?tri=<TRI> (the launcher uses the administrator\u2019s token); the steps by hand stay, folded; the screen fills its trigram field from the address')
+def a68(c):
+    _ap_launcher(c, 'https://gitlab.com/acme/data.git')
+    c.open('settings', docs=LEVEL3)
+    _ap_prepare(c, name='')
+    box = '[data-adminpanel="addPilot"]'
+    c.eq(c.attr(f'{box} [data-aptoken]', 'href'), '?app=maintenance#pilot-tokens?tri=ABC', 'the link to the tokens screen carries the trigram and its application (the screen is Maintenance’s)', what='token link')
+    c.eq(norm(c.text(f'{box} [data-aptoken]')), norm(tx(_AP_FILE, 'apTokenLink', c.lang)), 'it is worded « Créer son jeton »', what='token link text')
+    c.eq([c.count(f'{box} [data-apmanual]'), c.js(f"document.querySelector('{box} [data-apmanual]').open")], [1, False], 'the steps by hand are there, folded', what='manual folded')
+    c.eq(c.attr(f'{box} [data-apmanual] ol a', 'href'), 'https://gitlab.com/acme/data/-/settings/access_tokens', 'and they carry the same access tokens link', what='manual link')
+    # touched from the Settings of the Pilot application: the link changes application and opens the screen with the trigram
+    c.tap(f'{box} [data-aptoken]')
+    c.until("!!document.querySelector('[data-tokens-body] [data-f=tri]')", timeout=15000, what='the tokens screen opens from the Settings link')
+    c.eq(c.js("document.querySelector('[data-tokens-body] [data-f=tri]').value"), 'ABC', 'the link opens the tokens screen with the trigram filled', what='link opens the screen')
+    # the screen: the trigram of the address fills its field
+    c.open('pilot-tokens?tri=abc', app='maintenance', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-tokens-body] [data-f=tri]')", timeout=15000, what='the pilot tokens screen is drawn')
+    c.eq(c.js("document.querySelector('[data-tokens-body] [data-f=tri]').value"), 'ABC', 'the trigram field is filled from #pilot-tokens?tri=…, upper case', what='prefill')
+    c.open('pilot-tokens', app='maintenance', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-tokens-body] [data-f=tri]')", timeout=15000, what='the screen without a trigram')
+    c.eq(c.js("document.querySelector('[data-tokens-body] [data-f=tri]').value"), '', 'without it the field stays empty', what='no prefill')
+    c.check_errors()
+
+
+@case('A69', 'Add a pilot, GitHub repository: the GitHub steps of the export, no GitLab step', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame/settings SPEC 3 and 5 (« Ajouter un pilote », § 10.36): for a GitHub repository the steps are the export\u2019s (invite, create the file, send); the access tokens page and the Developer role are GitLab\u2019s only; the message and the link are the same')
+def a69(c):
+    c.open('settings', docs=LEVEL3 + _ap_keys('github', None, 'acme/data'))
+    _ap_prepare(c)
+    box = '[data-adminpanel="addPilot"]'
+    steps = norm(c.text(f'{box} [data-apsteps]'))
+    c.ok(norm(tx(_AP_FILE, 'cfgStepExport', c.lang)) in steps and norm(tx(_AP_FILE, 'cfgStepSend', c.lang)) in steps, steps, 'the GitHub steps of the export are there (the file, the sending)')
+    c.eq([c.count(f'{box} [data-apsteps] li'), c.count(f'{box} [data-apmanual]'), c.count(f'{box} [data-aptoken]')], [3, 0, 0], 'three steps, as the export says them: no fold, no tokens screen', what='steps')
+    c.ok('access_tokens' not in c.js(f"document.querySelector('{box} [data-apsteps]').innerHTML") and 'Developer' not in steps, steps, 'nothing of GitLab: no access tokens page, no Developer role')
+    link = c.js(f"document.querySelector('{box} [data-cfglink]').value")
+    cfg = c.js("(l) => SogConfig.unpack(l.split('config=')[1])", link)
+    c.eq([cfg['data']['provider'], cfg['data']['repo']], ['github', 'acme/data'], 'the configuration carries the real repository (github)', what='configuration')
+    c.eq(c.js(f"document.querySelector('{box} [data-apmsg]').value"), _ap_msg(c.lang, 'Léa', link), 'the message is the same', what='message')
+    c.check_errors()

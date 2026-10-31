@@ -74,6 +74,67 @@
       'Kein Datenrepository weiterzugeben: Die Datei richtet nur die Fluggesellschaft und die Identität ein.',
       'Ningún repositorio de datos que transmitir: el archivo solo configurará la aerolínea y la identidad.'
     ],
+    // « Ajouter un pilote » (volet de la carte Administration)
+    apName: ['Nom du pilote (facultatif, pour le saluer dans le message)', 'Pilot’s name (optional, to greet them in the message)',
+      'Name des Piloten (optional, für die Anrede in der Nachricht)', 'Nombre del piloto (opcional, para saludarlo en el mensaje)'
+    ],
+    apLang: ['Langue du message', 'Language of the message', 'Sprache der Nachricht', 'Idioma del mensaje'],
+    apPrepare: ['Préparer', 'Prepare', 'Vorbereiten', 'Preparar'],
+    apNeedApp: ['Indiquez l’adresse de l’appli publiée : sans elle, ni lien ni message à envoyer.',
+      'Give the published app’s address: without it, no link and no message to send.',
+      'Geben Sie die Adresse der veröffentlichten App an: ohne sie kein Link und keine Nachricht zum Senden.',
+      'Indique la dirección de la aplicación publicada: sin ella, ni enlace ni mensaje que enviar.'
+    ],
+    apTokenLink: ['Créer son jeton', 'Create their token', 'Token erstellen', 'Crear su token'],
+    apTokenHint: ['Le lanceur crée le jeton avec celui de l’administrateur ; l’écran dit s’il manque.',
+      'The launcher creates the token with the administrator’s; the screen says if it is missing.',
+      'Der Starter erstellt das Token mit dem des Administrators; der Bildschirm sagt, wenn es fehlt.',
+      'El lanzador crea el token con el del administrador; la pantalla dice si falta.'
+    ],
+    apManual: ['À la main, sans le lanceur', 'By hand, without the launcher', 'Von Hand, ohne den Starter',
+      'A mano, sin el lanzador'
+    ],
+    apS1: ['Ouvrez {u}, la page des jetons d’accès du projet.', 'Open {u}, the project’s access tokens page.',
+      'Öffnen Sie {u}, die Seite der Zugriffstoken des Projekts.', 'Abra {u}, la página de tokens de acceso del proyecto.'
+    ],
+    apS2: [
+      'Remplissez : Token name = {tri} ; Expiration date = {d} (90 jours conseillés, 365 au plus, jamais sans date) ; Role = Developer ; Scopes = api (et rien d’autre).',
+      'Fill in: Token name = {tri}; Expiration date = {d} (90 days advised, 365 at most, never without a date); Role = Developer; Scopes = api (nothing else).',
+      'Füllen Sie aus: Token name = {tri}; Expiration date = {d} (90 Tage empfohlen, höchstens 365, nie ohne Datum); Role = Developer; Scopes = api (sonst nichts).',
+      'Rellene: Token name = {tri}; Expiration date = {d} (90 días aconsejados, 365 como máximo, nunca sin fecha); Role = Developer; Scopes = api (nada más).'
+    ],
+    apS3: ['Cliquez « Create project access token », puis copiez le jeton tout de suite : GitLab ne le montre qu’une fois.',
+      'Click “Create project access token”, then copy the token at once: GitLab shows it only once.',
+      'Klicken Sie „Create project access token“ und kopieren Sie das Token sofort: GitLab zeigt es nur einmal.',
+      'Pulse «Create project access token» y copie el token enseguida: GitLab lo muestra solo una vez.'
+    ],
+    apS4: [
+      'Vérifiez que la branche des données laisse pousser les Developers (Settings › Repository › Protected branches : « Allowed to push and merge » = « Developers + Maintainers », force push désactivé), sinon les écritures échouent avec une erreur 403.',
+      'Check that the data branch lets Developers push (Settings › Repository › Protected branches: “Allowed to push and merge” = “Developers + Maintainers”, force push off), otherwise writes fail with a 403 error.',
+      'Prüfen Sie, dass der Datenzweig Developers pushen lässt (Settings › Repository › Protected branches: „Allowed to push and merge“ = „Developers + Maintainers“, Force-Push aus), sonst schlagen Schreibvorgänge mit einem 403-Fehler fehl.',
+      'Compruebe que la rama de datos deja enviar a los Developers (Settings › Repository › Protected branches: «Allowed to push and merge» = «Developers + Maintainers», force push desactivado); si no, las escrituras fallan con un error 403.'
+    ],
+    apS5: ['Pour révoquer l’accès : Settings › Access tokens › Revoke, sur la ligne du trigramme.',
+      'To revoke access: Settings › Access tokens › Revoke, on the trigram’s line.',
+      'Zum Widerrufen des Zugriffs: Settings › Access tokens › Revoke, in der Zeile des Kürzels.',
+      'Para revocar el acceso: Settings › Access tokens › Revoke, en la línea del trigrama.'
+    ],
+    apS6: ['Envoyez le jeton à part du message ci-dessous (un autre canal, ou collez-le devant le pilote), jamais avec le lien.',
+      'Send the token apart from the message below (another channel, or paste it in front of the pilot), never with the link.',
+      'Senden Sie das Token getrennt von der Nachricht unten (anderer Kanal, oder fügen Sie es vor dem Piloten ein), nie mit dem Link.',
+      'Envíe el token aparte del mensaje de abajo (otro canal, o péguelo delante del piloto), nunca con el enlace.'
+    ],
+    apMsgTitle: ['Message à envoyer au pilote', 'Message to send to the pilot', 'Nachricht an den Piloten',
+      'Mensaje para enviar al piloto'
+    ],
+    apHello: ['Bonjour {n},', 'Hello {n},', 'Hallo {n},', 'Hola {n},'],
+    apHelloNo: ['Bonjour,', 'Hello,', 'Hallo,', 'Hola,'],
+    apMsg: [
+      'Voici l’application des pilotes : {app}\n\nOuvrez ce lien dans l’application : il la règle pour vous. Collez ensuite le jeton que je vous envoie séparément :\n{link}\n\nÀ bientôt.',
+      'Here is the pilots’ app: {app}\n\nOpen this link in the app: it sets it up for you. Then paste the token I am sending you separately:\n{link}\n\nSee you soon.',
+      'Hier ist die App der Piloten: {app}\n\nÖffnen Sie diesen Link in der App: Er richtet sie für Sie ein. Fügen Sie dann das Token ein, das ich Ihnen getrennt sende:\n{link}\n\nBis bald.',
+      'Esta es la aplicación de los pilotos: {app}\n\nAbra este enlace en la aplicación: la configura por usted. Después pegue el token que le envío aparte:\n{link}\n\nHasta pronto.'
+    ],
     // carte Administration (niveau Complet)
     admin: ['Administration', 'Administration', 'Verwaltung', 'Administración'],
     adminHint: ['Les pages d’administration et d’essai, réunies ici.', 'The administration and test pages, gathered here.',
@@ -213,18 +274,21 @@
       return '';
     }
   }
-  /** « Créer le fichier et le lien » : sog-config-<TRI>.json téléchargé, lien #settings?config=… affiché à copier. */
-  async function makeConfig(c, view, src) {
+  /** « Créer le fichier et le lien » : sog-config-<TRI>.json téléchargé, lien #settings?config=… affiché à copier. box : le volet (le volet d'export ou « Ajouter un pilote »), ids : les champs du trigramme et de l'adresse
+   *  de l'appli ; rend { tri, link (vide sans adresse de l'appli valide), name } une fois le fichier fait, ou null si rien n'a été fait. */
+  async function makeConfig(c, box, src, ids = {
+    tri: 'cfgPilot',
+    app: 'cfgApp'
+  }) {
     const t = c.t,
-      box = view.querySelector('[data-cfgx]'),
       msg = (text, kind = 'err') => {
         const m = box.querySelector('[data-xmsg]');
         m.textContent = text;
         m.dataset.kind = kind;
       };
-    const tri = box.querySelector('[data-f="cfgPilot"]').value.trim().toUpperCase(),
-      app = box.querySelector('[data-f="cfgApp"]').value.trim();
-    if (!/^[A-Z0-9]{2,5}$/.test(tri)) return msg(t(T.badTrigram));
+    const tri = box.querySelector(`[data-f="${ids.tri}"]`).value.trim().toUpperCase(),
+      app = box.querySelector(`[data-f="${ids.app}"]`).value.trim();
+    if (!/^[A-Z0-9]{2,5}$/.test(tri)) return void msg(t(T.badTrigram));
     let base = null;
     try {
       base = app ? new URL(app) : null;
@@ -233,7 +297,7 @@
     }
     if (base && !/^https?:$/.test(base.protocol)) base = null;
     // jamais un fournisseur deviné : inconnu, l'export est refusé (github ou gitlab, pas « other »)
-    if (src && !SogConfig.PROVIDER_TABLE[src.provider]) return msg(t(T.providerUnknown));
+    if (src && !SogConfig.PROVIDER_TABLE[src.provider]) return void msg(t(T.providerUnknown));
     if (src && SogConfig.kind(src) === 'github' && !src.ownerType) src = {
       ...src,
       ownerType: await SogConfig.ownerType(src) || undefined
@@ -259,6 +323,7 @@
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 1e4);
     const out = box.querySelector('[data-cfgout]');
+    let linkUrl = '';
     if (base) {
       base.hash = '';
       try {
@@ -271,12 +336,12 @@
         },
         qr = out.querySelector('[data-cfgqr]');
       delete short.howto; // refait du modèle à l'import (SogConfig.validate)
-      const link = `${base.href}#settings?config=${await SogConfig.pack(short)}`;
-      out.querySelector('[data-cfglink]').value = link;
+      linkUrl = `${base.href}#settings?config=${await SogConfig.pack(short)}`;
+      out.querySelector('[data-cfglink]').value = linkUrl;
       out.hidden = false;
       if (qr && window.SogQR) {
         try {
-          qr.querySelector('div').innerHTML = SogQR.svg(link, {
+          qr.querySelector('div').innerHTML = SogQR.svg(linkUrl, {
             ecl: 'M',
             scale: 3
           });
@@ -285,13 +350,71 @@
           qr.hidden = true; // lien trop long pour un code QR : le lien et le fichier restent
         }
       }
-    } else out.hidden = true;
+    } else {
+      out.hidden = true;
+      out.querySelector('[data-cfglink]').value = '';
+    }
     msg([t(T.cfgMade, {
         f: name
       }), base && LOCAL.test(base.hostname) ? t(T.cfgLocal) : ''].filter(Boolean).join(' '), base && LOCAL.test(base.hostname) ?
       'warn' : 'ok');
+    return {
+      tri,
+      link: linkUrl,
+      name
+    };
   }
 
+  /** Les gestes de l'administrateur d'un export (l'invitation du pilote sur le dépôt, le fichier ou le lien, l'envoi) : le volet d'export et, pour un dépôt GitHub, « Ajouter un pilote »
+   *  les montrent ; xsrc : le dépôt à exporter, ou null. */
+  function exportSteps(t, xsrc) {
+    const xl = xsrc?.provider ? SogConfig.links(xsrc) : null,
+      xk = xl?.kind,
+      xhost = xl ? xl.host : '',
+      xinv = xl ? xl.invite : '';
+    return `<h3>${esc(t(T.cfgSteps))}</h3><ol class="f-join-steps"><li>${xinv ? fill(t(xk === 'github' ? T.cfgInvite : T.cfgInviteGl), { h: esc(xhost), u: link(xinv) }) : esc(t(T.cfgInviteOther))}</li><li>${esc(t(T.cfgStepExport))}</li><li>${esc(t(T.cfgStepSend))}</li></ol>`;
+  }
+  /** Le bloc du lien d'import : le lien à copier, « Copier le lien » et le code QR ; caché jusqu'à ce que makeConfig l'ait rempli (le volet d'export et « Ajouter un pilote » le partagent). */
+  const cfgOutHtml = t => `<div data-cfgout hidden><label class="f-field">${esc(t(T.cfgLink))}<textarea data-cfglink rows="3" readonly spellcheck="false"></textarea></label><div class="f-row"><button type="button" data-act="cfgCopy">${esc(t(T.cfgCopy))}</button></div><figure class="f-qr" data-cfgqr hidden><div></div><figcaption class="f-muted">${esc(t(T.cfgQr))}</figcaption></figure></div>`;
+  /** Les langues du message à envoyer au pilote : [code, nom dans sa langue]. */
+  const PILOT_LANGS = [
+    ['fr', 'Français'],
+    ['en', 'English'],
+    ['de', 'Deutsch'],
+    ['es', 'Español']
+  ];
+  /** Les gestes d'« Ajouter un pilote » : pour un dépôt GitLab, créer le jeton du projet du pilote (avec le lanceur : le lien vers l'écran des jetons, trigramme prérempli, et les gestes à la main
+   *  repliés ; sans lanceur : les gestes à la main, ouverts) ; sinon les gestes de l'export (GitHub). tri : le trigramme du pilote. */
+  function pilotSteps(env, tri) {
+    const {
+      t,
+      L,
+      xsrc
+    } = env;
+    if (SogConfig.kind(xsrc) !== 'gitlab') return exportSteps(t, xsrc);
+    const day = new Date(Date.now() + 90 * 864e5).toISOString().slice(0, 10), // la date d'expiration conseillée : aujourd'hui + 90 jours
+      url = `${SogConfig.webUrl(xsrc)}/-/settings/access_tokens`,
+      manual = `<ol class="f-join-steps"><li>${fill(t(T.apS1), { u: link(url) })}</li><li>${fill(t(T.apS2), { tri: `<b>${esc(tri)}</b>`, d: `<b>${esc(day)}</b>` })}</li><li>${esc(t(T.apS3))}</li><li>${esc(t(T.apS4))}</li><li>${esc(t(T.apS5))}</li><li>${esc(t(T.apS6))}</li></ol>`;
+    return `<h3>${esc(t(T.cfgSteps))}</h3>${L ? `<p><a class="f-btn primary" href="?app=maintenance#pilot-tokens?tri=${esc(tri)}" data-aptoken>${esc(t(T.apTokenLink))}</a></p><p class="f-muted">${esc(t(T.apTokenHint))}</p><p class="f-muted">${esc(t(T.apS6))}</p>
+      <details data-apmanual><summary>${esc(t(T.apManual))}</summary>${manual}</details>` : manual}`;
+  }
+  /** Le message à envoyer au pilote, en texte, dans la langue choisie (une ligne de texte par langue lue directement : `t` suit l'écran, pas ce choix) : le salut (avec le nom s'il est donné),
+   *  l'adresse de l'appli et le lien de configuration ; jamais le jeton. */
+  function pilotMessage(lang, name, app, linkUrl) {
+    const i = Math.max(0, PILOT_LANGS.findIndex(l => l[0] === lang)),
+      sub = (text, v) => text.replace(/\{(\w+)\}/g, (m, k) => v[k] ?? m);
+    return `${name ? sub(T.apHello[i], { n: name }) : T.apHelloNo[i]}\n\n${sub(T.apMsg[i], { app, link: linkUrl })}`;
+  }
+  /** Redessine le message du volet « Ajouter un pilote » d'après les champs (langue, nom) et le lien de configuration déjà fait ; caché sans lien. */
+  function drawPilotMessage(box) {
+    const linkUrl = box.querySelector('[data-cfglink]').value,
+      area = box.querySelector('[data-apmsg]'),
+      wrap = box.querySelector('[data-apmessage]');
+    wrap.hidden = !linkUrl;
+    if (!linkUrl) return;
+    area.value = pilotMessage(box.querySelector('[data-f="apLang"]').value, box.querySelector('[data-f="apName"]').value.trim(), linkUrl
+      .split('#')[0], linkUrl);
+  }
   /** Volet d'export d'une configuration (poste, ou appareil réglé sur GitHub) ; env.xsrc : le dépôt à exporter, ou null. */
   function cfgPanel(env) {
     const {
@@ -313,17 +436,30 @@
       // est alors refusé) ; il part dans la configuration pour que le côté du pilote s'ouvre dessus
       provider: L ? SogConfig.providerOf(remote.url, env.known).provider : SogConfig.kind(gh) // jamais d'api : l'export n'en écrit pas
     } : null;
-    const xl = xsrc?.provider ? SogConfig.links(xsrc) : null,
-      xk = xl?.kind,
-      xhost = xl ? xl.host : '',
-      xinv = xl ? xl.invite : '';
-    const cfgSteps = `<h3>${esc(t(T.cfgSteps))}</h3><ol class="f-join-steps"><li>${xinv ? fill(t(xk === 'github' ? T.cfgInvite : T.cfgInviteGl), { h: esc(xhost), u: link(xinv) }) : esc(t(T.cfgInviteOther))}</li><li>${esc(t(T.cfgStepExport))}</li><li>${esc(t(T.cfgStepSend))}</li></ol>`;
+    const cfgSteps = exportSteps(t, xsrc);
     const cfgOut = window.SogConfig && (L || gh) ? `<div class="f-cfgx" data-cfgx>${cfgSteps}
       ${xsrc ? '' : `<p class="f-warn">${esc(t(T.cfgNoRepo))}</p>`}${xsrc && !xsrc.provider ? `<p class="f-warn">${esc(t(T.providerUnknown))}</p>` : ''}${fld('cfgPilot', T.cfgPilot, '', { cap: true, ph: 'ABC' })}${fld('cfgApp', T.cfgApp, appUrl(), { ph: 'https://…/v3/frame/' })}
       <div class="f-row"><button type="button" class="primary" data-act="cfgMake">${esc(t(T.cfgMake))}</button></div><p class="f-msg" data-xmsg></p>
-      <div data-cfgout hidden><label class="f-field">${esc(t(T.cfgLink))}<textarea data-cfglink rows="3" readonly spellcheck="false"></textarea></label><div class="f-row"><button type="button" data-act="cfgCopy">${esc(t(T.cfgCopy))}</button></div><figure class="f-qr" data-cfgqr hidden><div></div><figcaption class="f-muted">${esc(t(T.cfgQr))}</figcaption></figure></div></div>` : '';
+      ${cfgOutHtml(t)}</div>` : '';
     env.xsrc = xsrc;
     return cfgOut;
+  }
+  /** Volet « Ajouter un pilote » de la carte Administration : le trigramme, le nom (facultatif), la langue du message (celle de l'écran par défaut), l'adresse de l'appli, « Préparer » ; sous lui
+   *  le lien et le fichier de l'export (makeConfig), les gestes de l'administrateur et le message à envoyer. Vide là où l'export est impossible (env.xsrc, posé par cfgPanel : le même dépôt). */
+  function addPilotPanel(env) {
+    const {
+      t,
+      fld,
+      xsrc
+    } = env;
+    if (!window.SogConfig || !xsrc) return '';
+    const mine = t(['fr', 'en', 'de', 'es']);
+    return `<div class="f-cfgx" data-addpilot>${xsrc.provider ? '' : `<p class="f-warn">${esc(t(T.providerUnknown))}</p>`}${fld('apTri', T.cfgPilot, '', { cap: true, ph: 'ABC' })}${fld('apName', T.apName, '')}
+      <label class="f-field">${esc(t(T.apLang))}<select data-f="apLang">${PILOT_LANGS.map(([code, name]) => `<option value="${code}"${code === mine ? ' selected' : ''}>${name}</option>`).join('')}</select></label>
+      ${fld('apApp', T.cfgApp, appUrl(), { ph: 'https://…/v3/frame/' })}
+      <div class="f-row"><button type="button" class="primary" data-act="pilotMake">${esc(t(T.apPrepare))}</button></div><p class="f-msg" data-xmsg></p>
+      ${cfgOutHtml(t)}<div data-apsteps></div>
+      <div data-apmessage hidden><h3>${esc(t(T.apMsgTitle))}</h3><label class="f-field"><textarea data-apmsg rows="9" readonly spellcheck="false" aria-label="${esc(t(T.apMsgTitle))}"></textarea></label><div class="f-row"><button type="button" data-act="pilotCopyMsg">${esc(t(T.copy))}</button></div></div></div>`;
   }
   /** Le filet de la limite de la zone du vol, enregistré dès qu'on coche. */
   function live(env) {
@@ -352,6 +488,12 @@
       }
       sel.disabled = false;
     });
+    // « Ajouter un pilote » : la langue ou le nom change, le message est refait (sans rien refaire d'autre)
+    for (const [sel, ev] of [
+        ['[data-addpilot] [data-f="apLang"]', 'change'],
+        ['[data-addpilot] [data-f="apName"]', 'input']
+      ])
+      view.querySelector(sel)?.addEventListener(ev, e => drawPilotMessage(e.target.closest('[data-addpilot]')));
     view.querySelector('[data-edge]')?.addEventListener('change', async e => {
       const box = e.target;
       box.disabled = true;
@@ -391,9 +533,28 @@
       b.setAttribute('aria-expanded', String(!p.hidden));
       return;
     }
-    if (act === 'cfgMake') return makeConfig(c, view, env.xsrc);
+    if (act === 'cfgMake') return void await makeConfig(c, b.closest('[data-cfgx]'), env.xsrc);
+    if (act === 'pilotMake') {
+      // « Préparer » : le fichier et le lien (le même export), puis les gestes de l'administrateur et le message à envoyer
+      const box = b.closest('[data-addpilot]'),
+        made = await makeConfig(c, box, env.xsrc, {
+          tri: 'apTri',
+          app: 'apApp'
+        });
+      if (!made) return;
+      box.querySelector('[data-apsteps]').innerHTML = pilotSteps(env, made.tri);
+      if (!made.link) box.querySelector('[data-xmsg]').textContent = t(T.apNeedApp);
+      return drawPilotMessage(box);
+    }
+    if (act === 'pilotCopyMsg') {
+      const area = b.closest('[data-addpilot]').querySelector('[data-apmsg]'),
+        how = await copy(area.value, {
+          box: area
+        });
+      return c.notify(t(how === 'shown' ? T.copyShown : T.cfgCopied), how === 'shown' ? 'warn' : 'ok');
+    }
     if (act === 'cfgCopy') {
-      const box = view.querySelector('[data-cfglink]'),
+      const box = b.closest('[data-cfgout]').querySelector('[data-cfglink]'),
         how = await copy(box?.value || '', {
           box
         });
@@ -402,11 +563,12 @@
   }
 
   (window.SogSettingsParts ||= {}).admin = {
-    acts: ['adminCopy', 'adminPanel', 'cfgMake', 'cfgCopy'],
+    acts: ['adminCopy', 'adminPanel', 'cfgMake', 'cfgCopy', 'pilotMake', 'pilotCopyMsg'],
     readProfiles,
     PROFILE_DEFAULTS,
     adminCard,
     cfgPanel,
+    addPilotPanel,
     live,
     run
   };

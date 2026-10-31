@@ -273,6 +273,8 @@ key `edge`; the edge line is shown until you set it); the “Runway thresholds o
 on a workstation served by the launcher, the “Remote repository of data/” and “Airline API keys (IVAO, EAD Basic)” buttons, which
 unfold their setting (see “A git repository for data/” and “The airline's API keys”); the roadmap (`#roadmap`) and the diagnostics of the “About” card.
 
+**Add a pilot (administrator).** At the “Full” level, the “Add a pilot” button of the “Administration” card (where the export is possible) prepares everything for a pilot who has nothing yet. Type their trigram, their name if you want to greet them, the language of the message and the published app’s address, then “Prepare”: you get the configuration link and file (the same as the export), your steps, and a message ready to copy, in the chosen language. For a GitLab repository, your steps are: create the pilot’s project token (one per pilot, name = their trigram, role Developer, scope `api`, expiry date 90 days advised and 365 at most, never without a date), copy it at once (GitLab shows it only once), check that the data branch lets Developers push, and know how to revoke (Settings › Access tokens › Revoke). With the launcher, “Create their token” opens the “Pilots’ tokens” screen with the trigram already typed: the launcher creates the token with the administrator’s; the steps by hand stay folded below. Without a launcher, they are open. **Send the token apart from the message** (another channel, or paste it in front of the pilot): it is never in the link or in the message. For a GitHub repository, the steps are the export’s.
+
 <a id="settings-sources"></a>**Data sources.** The “Data sources” button (`#sources`, Full level) lists the sources of aeronautical data the suite uses, considers or has set aside: for each, what it gives, its licence, its status and a link that opens in a new tab; for those that change with each AIRAC cycle (SIA, VAC, eAIP, CIFP), the link is the one of the cycle in force, written at the top of the screen. The screen downloads nothing. Under the button of the Administration card, the absolute address of the screen, to open or bookmark (“Copy the link”). It replaces the data laboratory, removed on 28 October 2026.
 
 **The benches, on a workstation.** Served by the launcher, they only open on a workstation with a launcher (elsewhere
@@ -329,4 +331,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: d97bf562de44 -->
+<!-- fr: 845828ff643a -->

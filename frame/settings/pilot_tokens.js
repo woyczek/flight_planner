@@ -151,7 +151,12 @@
         }
       };
     }
-    draw();
+    // « Ajouter un pilote » (Administration) mène ici avec le trigramme : #pilot-tokens?tri=ABC remplit le champ du trigramme
+    const asked = (new URLSearchParams(location.hash.split('?')[1] || '').get('tri') || '').trim().toUpperCase();
+    draw().then(() => {
+      const f = body.querySelector('[data-f=tri]');
+      if (f && /^[A-Z0-9]{2,5}$/.test(asked)) f.value = asked;
+    });
   }
   (window.SogScreens ||= {})['pilot-tokens'] = {
     screen
