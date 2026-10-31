@@ -1,6 +1,6 @@
 {
   "schema": "sog-roadmap/1",
-  "updated": "2026-10-31",
+  "updated": "2026-11-01",
   "owner": "ergonomics session (Simplification interface et ergonomie)",
   "note": {
     "fr": "Ce qui est « livré » doit marcher : un écart est un bug à signaler. Ce qui est « en cours », « prévu » ou « plus tard » n'est pas un bug.",
@@ -979,6 +979,27 @@
           "en": "Settings › Administration: a \"Costs and maintenance\" card (currency, default overhaul thresholds, hourly cost, fuel price and density)",
           "de": "Einstellungen › Verwaltung: Karte „Kosten und Wartung“ (Währung, Standard-Wartungsschwellen, Stundensatz, Treibstoffpreis und -dichte)",
           "es": "Ajustes › Administración: tarjeta «Costes y mantenimiento» (moneda, umbrales de revisión por defecto, coste horario, precio y densidad del combustible)"
+        },
+        {
+          "state": "done",
+          "fr": "GitLab fournisseur proposé du dépôt des données (31/10) : un jeton d'accès de projet par pilote (trigramme, Developer, portée api, un an au plus), sans compte GitLab ; carte « Ajouter un pilote » (lien de configuration, « Créer son jeton », message au pilote) ; « Rejoindre » en trois étapes avec le jeton vérifié",
+          "en": "GitLab as the proposed provider of the data repository (31 Oct): one project access token per pilot (trigram, Developer, scope api, one year at most), no GitLab account; \"Add a pilot\" card (configuration link, \"Create their token\", message to the pilot); \"Join\" in three steps with the token checked",
+          "de": "GitLab als vorgeschlagener Anbieter des Daten-Repositorys (31.10.): ein Projekt-Zugriffstoken je Pilot (Kürzel, Developer, Scope api, höchstens ein Jahr), kein GitLab-Konto; Karte „Piloten hinzufügen“ (Konfigurationslink, „Token erstellen“, Nachricht an den Piloten); „Beitreten“ in drei Schritten mit geprüftem Token",
+          "es": "GitLab como proveedor propuesto del repositorio de datos (31/10): un token de acceso de proyecto por piloto (trigrama, Developer, ámbito api, un año como máximo), sin cuenta GitLab; tarjeta «Añadir un piloto» (enlace de configuración, «Crear su token», mensaje al piloto); «Unirse» en tres pasos con el token comprobado"
+        },
+        {
+          "state": "planned",
+          "fr": "Administration : la carte « Hôtes que la page peut contacter », en lecture seule, par catégorie et avec l'origine de chaque hôte (code, configuration du lanceur) ; un cas vérifie que chaque fournisseur de la table y est ; jamais une liste modifiable",
+          "en": "Administration: the read-only card \"Hosts this page may contact\", by category and with the origin of each host (code, launcher configuration); a case checks that every provider of the table is there; never an editable list",
+          "de": "Verwaltung: die schreibgeschützte Karte „Hosts, die die Seite kontaktieren darf“, nach Kategorie und mit der Herkunft jedes Hosts (Code, Starter-Konfiguration); ein Fall prüft, dass jeder Anbieter der Tabelle dort ist; nie eine bearbeitbare Liste",
+          "es": "Administración: la tarjeta de solo lectura «Hosts que la página puede contactar», por categoría y con el origen de cada host (código, configuración del lanzador); un caso comprueba que cada proveedor de la tabla está; nunca una lista editable"
+        },
+        {
+          "state": "later",
+          "fr": "Refonte des fournisseurs de dépôt : une seule table lue par l'export, Rejoindre, Accès, le transport et la politique de contenu ; tout fournisseur déclaré en administration, poussé par la configuration de la compagnie",
+          "en": "Repository providers refactoring: one table read by the export, Join, Access, the transport and the content policy; any provider declared in administration, pushed through the airline's configuration",
+          "de": "Neuordnung der Repository-Anbieter: eine Tabelle, gelesen von Export, Beitreten, Zugang, Transport und Inhaltsrichtlinie; jeder in der Verwaltung erklärte Anbieter, über die Konfiguration der Gesellschaft verteilt",
+          "es": "Refundición de los proveedores de repositorio: una sola tabla leída por la exportación, Unirse, Acceso, el transporte y la política de contenido; cualquier proveedor declarado en administración, enviado por la configuración de la compañía"
         }
       ]
     },
@@ -1211,6 +1232,13 @@
           "en": "Map, Weather, Settings chapters and legends assembled in four languages; anchors per paragraph",
           "de": "Kapitel Karte, Wetter, Einstellungen und Legenden in vier Sprachen zusammengestellt; Anker je Absatz",
           "es": "Capítulos Mapa, Meteo, Ajustes y leyendas ensamblados en cuatro idiomas; anclas por párrafo"
+        },
+        {
+          "state": "planned",
+          "fr": "Tutoriel « Rejoindre la compagnie » réécrit pour GitLab (jeton reçu de l'administrateur, pas de compte à créer), captures refaites",
+          "en": "\"Join the airline\" tutorial rewritten for GitLab (token received from the administrator, no account to create), screenshots redone",
+          "de": "Tutorial „Der Gesellschaft beitreten“ für GitLab neu geschrieben (Token vom Administrator, kein Konto anzulegen), Bildschirmfotos erneuert",
+          "es": "Tutorial «Unirse a la compañía» reescrito para GitLab (token recibido del administrador, sin cuenta que crear), capturas rehechas"
         }
       ]
     },
