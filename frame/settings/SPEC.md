@@ -110,7 +110,7 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    The provider of a *configuration* is chosen, never deduced (see § 5); the remote panel only *reads* a git address, which has no
    provider field: a line `[data-provider="github|gitlab|other"]` at the top of the panel (`SogConfig.providerOf(url, known)` →
    `{ provider (github | gitlab | null), web, project }`). Recognised: the public hosts of the table (github.com; gitlab.com and
-   framagit.org), or a host the device's configuration gives with a provider of the table (`SogConfig.knownProviders(joined config,
+   framagit.org: the only deduction admitted, a closed frozen list compared by host equality, ergonomics session 31 Oct), or a host the device's configuration gives with a provider of the table (`SogConfig.knownProviders(joined config,
    device access)`: a self-hosted GitLab is known there, same host); anything else: "provider not recognised" (a case of the panel,
    no entry in the table). The project is a link when `web` is https; GitLab adds the "Pilots' tokens" link (`#pilot-tokens`) and a
    sentence; GitHub a sentence suggesting a GitLab project (the page only proposes, the change still goes through the launcher's window).

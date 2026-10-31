@@ -530,3 +530,11 @@ R-S8 module.js then model.js split by responsibility; R-S9 settings.js `render` 
   time of the POST. The panel keeps the sha of the last « Vérifier » and sends it back; the launcher compares it twice
   (after its own fetch, and on the plan made again under `SYNC_LOCK`) and refuses `changed`. A channel changed in the
   panel forgets it.
+- **31 Oct 2026 — A configuration never imports an API address** (security review, line 118; 375803a86). A forged « Join » link
+  with `data.api` could send the pilot's token to another host, or to a service of the pilot's workstation (the transport still admits
+  a local API for its own benches). Chosen form: for GitHub, any `api` other than `https://api.github.com`, a local one included,
+  refuses the configuration (`data.api` named); for GitLab, any `api` is ignored (the API comes from `data.host`); the export never
+  writes it; Join passes none to the transport. `benchApi` was written, then removed the same day when the review asked for no local
+  exception: a bench sets its API by its own path. **Counter-test kept as a rule for security cases**: A56 was run with the old
+  `join.js` and failed (the token went to the received API) before the guard was put back; a guard's case is shown to fail
+  without the guard.
