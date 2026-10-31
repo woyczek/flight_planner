@@ -920,6 +920,11 @@
       'x-sog-unreachable': '1'
     }
   });
+  // attente au plus de la première lecture de la compagnie par un appel vers un hôte non listé (31 oct. 2026 : sans borne,
+  // les tuiles de relief pouvaient attendre avec elle toute la lecture de l'arbre ; aléa de la coupe de la Carte, non
+  // reproduit)
+  const AIRLINE_WAIT = 3000,
+    directPath = u => DIRECT_PATHS.some(([h, p]) => u.hostname === h && u.pathname.startsWith(p));
   const net = {
     online: () => navigator.onLine !== false,
     /** fetch par le cadre : hors ligne, réponse 503 tout de suite ; relais du lanceur pour les sites de RELAY et le site
@@ -934,9 +939,11 @@
         return unreachable();
       }
       // un hôte qui n'est ni de la même origine ni d'une liste connue peut être le site de la compagnie : sa première
-      // lecture est attendue (une seule fois, au démarrage) avant de décider
-      if (!airlineKnown && u.origin !== location.origin && !RELAY.includes(u.hostname) && !DIRECT.includes(u.hostname)) await
-      airlineP;
+      // lecture est attendue avant de décider, AIRLINE_WAIT au plus ; passé ce délai, la décision est celle sans site de
+      // compagnie (un hôte non listé : refusé, jamais autorisé par défaut), le site étant reconnu aux lectures suivantes ;
+      // un hôte de DIRECT_PATHS (tuiles de relief) ne l'attend pas : sa décision ne dépend pas de la compagnie
+      if (!airlineKnown && u.origin !== location.origin && !RELAY.includes(u.hostname) && !DIRECT.includes(u.hostname) && !
+        directPath(u)) await Promise.race([airlineP, new Promise(r => setTimeout(r, AIRLINE_WAIT))]);
       const site = !!siteHost() && u.protocol === 'https:' && u.hostname === siteHost();
       if (site && String(init.method || 'GET').toUpperCase() !== 'GET') return unreachable(); // jamais d'envoi vers le site
       try {
@@ -972,7 +979,7 @@
           });
         }
         if (DIRECT.includes(u.hostname) || site || u.protocol === 'https:' && String(init.method || 'GET').toUpperCase() === 'GET' &&
-          DIRECT_PATHS.some(([h, p]) => u.hostname === h && u.pathname.startsWith(p)))
+          directPath(u))
           return await fetch(u,
             init);
         return unreachable();

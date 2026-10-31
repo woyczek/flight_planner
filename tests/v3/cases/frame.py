@@ -2062,3 +2062,37 @@ def a56(c):
     finally:
         for srv in benches:
             srv.close()
+
+
+# the airline's first read held for ever (the frame's adapter « frame-airline »), and a module that hands over its ctx
+HOLD_AIRLINE = """(() => { let fd; Object.defineProperty(window, 'FrameData', { configurable: true, get: () => fd, set(v) {
+  const adapter = v.adapter; v.adapter = cfg => { const a = adapter(cfg);
+    if (cfg && cfg.id === 'frame-airline') a.get = () => new Promise(() => {}); return a };
+  fd = v } }) })()"""
+CTX_MODULE = "export const meta = { id: 'atmosphere' }; export function mount(el, ctx) { window.__ctx = ctx; el.textContent = 'ctx' }; export function unmount() {}"
+
+
+@case('A57', 'Outgoing calls while the airline is still being read: tiles leave at once, an unlisted host is refused within 3 s, never allowed', 'A',
+      designs=('standard',), screens=False, night=False,
+      rule='Simplification 31 Oct (BUGS SOG, D86 / D87: the Map’s section sometimes never built under load; not reproduced): ctx.net.fetch waits for the airline’s first read only for a host that could be its site, 3 s at most; a DIRECT_PATHS host (relief tiles) never waits; after the wait the decision is the one without an airline site: an unlisted host is refused (503), never allowed by default')
+def a57(c):
+    import time as _t
+    asked = []
+    c.context.add_init_script(HOLD_AIRLINE)
+    c.context.route(re.compile(r'/modules/atmosphere/module\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=CTX_MODULE))
+    c.context.route(re.compile(r'https://s3\.amazonaws\.com/elevation-tiles-prod/.*'), lambda r: (asked.append('tile'), r.fulfill(status=200, body=b'png'))[1])
+    c.context.route(re.compile(r'https://unlisted\.example/.*'), lambda r: (asked.append('unlisted'), r.fulfill(status=200, body='ok'))[1])
+    c.open('atmosphere', wait=False)
+    c.until('!!window.__ctx', timeout=15000, what='the module and its ctx')
+    t0 = _t.time()
+    # each call bounded here at 8 s: without a bound in the frame, it never answers (« hung »)
+    call = "(u) => Promise.race([window.__ctx.net.fetch(u).then(r => r.status), new Promise(r => setTimeout(() => r('hung'), 8000))])"
+    tile = c.js(call, 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/1/0/0.png')
+    t1 = _t.time()
+    c.eq((tile, 'tile' in asked), (200, True), 'a relief tile leaves at once while the airline is still being read', what='tile')
+    c.ok(t1 - t0 < 1.5, f'{t1 - t0:.1f} s', 'the tile did not wait for the airline')
+    first = c.js(call, 'https://unlisted.example/a')
+    t2 = _t.time()
+    again = c.js(call, 'https://unlisted.example/b')
+    c.eq((first, again, 'unlisted' in asked), (503, 503, False), 'an unlisted host: refused during and after the wait, never asked', what='unlisted host')
+    c.ok(2.5 < t2 - t1 < 4, f'{t2 - t1:.1f} s', 'the wait for the airline is bounded (3 s), then the decision is taken without it')

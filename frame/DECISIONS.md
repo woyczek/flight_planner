@@ -2217,3 +2217,11 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   that arrived; `openPane` already saw its pane gone after the import and mounted nothing. The main view needed nothing:
   a navigation during a mount already cancels it, the last address wins (A16); A16 ran at phone width, where there is
   no pane, hence A54 at 1280 with the Map's module held on its way.
+
+- **31 Oct 2026 — ctx.net.fetch waits for the airline 3 s at most, and never for the relief tiles** (Simplification, after
+  BUGS SOG's D86 / D87 hazard; **not reproduced**: this closes an endless wait, it is not a proven cause). A call to a host
+  outside the same origin, RELAY and DIRECT waited for the airline's first read (that host could be its site), with no
+  bound: that read can last the whole first reading of the tree. The relief tiles (DIRECT_PATHS) waited with it. Now a
+  DIRECT_PATHS host never waits (its decision does not depend on the airline); any other waits `AIRLINE_WAIT` = 3 s at
+  most, then the decision is the one **without** an airline site: an unlisted host is refused (503), never allowed by
+  default; the airline's site is recognised by the next calls once its read has come. A57 holds the airline's read.
