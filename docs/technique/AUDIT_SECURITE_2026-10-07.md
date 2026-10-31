@@ -969,6 +969,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 117 | Refactor R-S5: one end-of-job chain and one journal header in the Data model (89dd17934) | acceptable, one note (closed in 118) |
 | 118 | Own keys only in the Data module's tables (8acd4976e); the provider carried by the configuration (540393e28); a configuration's `api` sends the GitHub token anywhere (since ca75625f39) | acceptable; **to fix** (older, fixed in 119) |
 | 119 | The GitHub token sent to GitHub only: transport (683af2b8d) and configuration (375803a86); the point of 118 fixed | acceptable |
+| 120 | Refactor R-S6: one end of operation, one dry plan, one table of summaries in the Data module (794f6ac60) | acceptable, no change of behaviour |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2045,6 +2046,12 @@ token goes to `api.github.com`. At the source, a received configuration keeps no
 absent value or `https://api.github.com` is accepted (any other, local addresses included, refuses the configuration),
 for GitLab the address is rebuilt from `data.host`; the export never writes one; Join passes none to the transport, and the
 owner lookup asks `api.github.com` only.
+
+**120. Refactor R-S6 of the Data module (794f6ac60) — acceptable, no change of behaviour.** `finishOp`, `finishPlan`
+and the table of summaries (read through `own`, 118) replace the copied endings; the lines added hold no markup at all, so
+the texts still reach the page through the former escaped renderers; the real runs after a plan send the same arguments as
+before (the purge's, the sheets' `dry: false`, the take's zones and `zips` from the plan kept, never read again); no verb or
+route added.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
