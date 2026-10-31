@@ -1561,9 +1561,29 @@ redesigned for touch at that point.
          Fuel's aircraft picker says it under the aircraft; no blocking, no right to grant (no users). An overhaul or a
          check event clears the due state.
        - **Costs, data now, balance later**: an event may carry `cost` (currency of `airline/settings.json`); a sheet may
-         carry `hourlyCost` (type-level, with the airline's default), so that a flight's cost = block hours × hourly cost;
-         nothing is summed yet. Roadmap "later": the financial balance (per aircraft, per pilot, per airline, a period),
-         read-only, from these two sources only.
-       Lots added: L6 (Features SOG) the history and the two maintenance kinds (events, thresholds on the sheet, due and
-       derogation, Flotte and Fuel saying it; the report's box is the flight log's, same owner); L7 the costs as data
+         carry `hourlyCost` (type-level, with the airline's default); **the fuel too** (user, 31 Oct: "le coût carbu
+         également"): the airline's `fuel.price` `{ value, per: 'L' | 'kg', currency }` in its settings, the fuel of a
+         flight being the report's declared fuel (block fuel, at the sheet's unit, converted; one writer, the flight log)
+         (the report already carries the fuel: `m.fuel` with its unit kg / lb / L / USG, `stats.fuelUsed`); for the
+         current flight only, without a report yet, the plan's trip fuel from Fuel, said "estimation (plan)" (a
+         logged flight without fuel in its report has no fuel cost, nothing invented). Volume against mass needs a
+         density, which depends on the fuel: `fuelDensityKgPerL` on the sheet (next to the fuel kind), the airline's
+         defaults by kind in its settings; without a density, a flight whose unit does not match the price's gets no
+         fuel cost, said, never guessed. A flight's cost = block hours × hourly cost + fuel × price; nothing is summed
+         yet. Roadmap "later": the financial balance (per aircraft, per pilot, per airline, a period), read-only, from
+         these three sources only.
+       **Corrections on Features SOG's objections (31 Oct)**: `airline/fleet.json` keeps its two writers (Maintenance,
+       the website's paste; merge `record`, the newest file wins), so **no pilot terminal writes it**: a hard landing is
+       recorded where the pilot already writes, the report (`cr/`, the box and its note), and the aircraft's history
+       reads it from there like the hours; a derogation is **computed at read time** (a flight is derogatory when, at
+       its off-block, the hours since the last check or overhaul reach the threshold, or a hard landing came before
+       it) and shown, never written. `events[]` holds only what a person types in Maintenance: acquisition, check,
+       overhaul, state change, with their cost. Only an overhaul clears a hard landing (a check does not). A calendar
+       due date (`maintenance.due`) is shown when set; no calendar threshold is computed for now (checks are often
+       "100 h or 12 months": later). Owners: `sheet.maintenance { checkEveryH, overhaulEveryH }` and `hourlyCost` join
+       `PROFILE_FIELDS` in aerodb (L0 bis, AeroDB); the airline's `maintenance.defaults`, `hourlyCost` default,
+       `fuel.price` and `currency` live in `airline/settings.json`, written by one card of Réglages › Administration
+       ("Coûts et maintenance", Réglages session), read by Appareils, Fuel and the balance later.
+       Lots added: L6 (Features SOG) the history typed in Maintenance, the derived hard landings and derogations, due
+       and derogation shown in Flotte and Fuel, the report's box (flight log, same owner); L7 the costs as data
        (fields, nothing computed). M cases for each; the balance is not a lot.
