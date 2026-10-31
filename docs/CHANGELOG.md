@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refactor R-S7, no behaviour change** (`modules/data/module.js`, `model.js`, SPEC § 3; noreg L2, L7, L15, L17, L19, L20): the base panel is drawn by the generic set panel (`setInner`, `choiceHtml`, `verbsHtml`) like the procedures, the VAC points and the aircraft: its zones and personal sources are the base's `choiceHtml`, « Prendre le fichier téléchargé » is the one extra verb the base has, its map is a flag of its `SETS` entry; `buildInner`, `buildHtml` and `buildGate` are gone, and `redrawPanel` / `opOf` no longer branch on the two panel attributes (one `panelId`). The base keeps `data-build`, the others `data-set-panel`; every rendered text is unchanged.
 - **Map: procedures named as the choose pane and Fuel name them (sixth reading, gap 5)** (`modules/maps/procs.js`; SPEC § 5;
   DECISIONS; noreg D90). « ILS 06 » instead of « APP ILS CAT I or CAT II or CAT III RWY 06 », « AMOLO 7A » instead of « SID AMOLO 7A »
   (the hue says the family); the name slides along its trace before it is ever forced over something.

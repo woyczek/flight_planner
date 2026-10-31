@@ -97,6 +97,9 @@ A non-fixed module (it scrolls like a page), `meta.title` « Données ». From t
    is built per zone from all its sources, so one panel at the top of the group carries the zones concerned (the coverage's,
    ticked), the personal-licence sources (unticked, with their line) and **Télécharger · Construire · Purger**, then the
    panel **Publier**; the rows below keep their cycle, state and detail, without buttons.
+   **One panel for every set** (R-S7): the base is an entry of `SETS` like the others, and its panel is drawn by the same set panel as the procedures, the VAC points and the aircraft,
+   driven by that entry (its items, its verbs, the extra verb « Prendre le fichier téléchargé » that only the base has); the base panel keeps its attribute `data-build`, the others
+   `data-set-panel`.
 6. **The EAD line** in the Procédures group (§ 4.3): an ICAO code field and « Lire un terrain ».
 7. **Journal**: a fold at the foot, the last 50 operations (time UTC with Z, data set, verb, duration, result), each
    unfolding to its log; « Copier ».

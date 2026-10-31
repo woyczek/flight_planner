@@ -773,6 +773,7 @@ export function journalAdd(list, entry, max = JOURNAL_MAX) {
 export const SETS = {
   base: {
     arg: 'zones',
+    map: true,
     unit: 'zone',
     noItem: 'no-zone',
     group: 'base',
@@ -780,6 +781,7 @@ export const SETS = {
   },
   proc: {
     arg: 'states',
+    map: true,
     unit: 'state',
     noItem: 'no-state',
     group: 'proc',

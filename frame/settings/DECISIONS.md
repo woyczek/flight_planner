@@ -477,7 +477,7 @@ after, CHANGELOG « refactor, no behaviour change », `:recycle:`, one lot at a 
   reload », `endPlan` / `endSheetsPlan` are twins; two summary tables (`summary` / `setSummary`, `TX.sum*` / `TX.setSum.*`);
   same-meaning texts under several keys (`TX.build…` vs `opVerb`, group names vs `setLabel`, the waiting / failed / cancelled
   phrases per verb); small repeats (`linkHtml` re-writes `M.isHttps`, the catalogue lookup three times). **Target**: one generic
-  set panel driven by SETS with the base as one entry (keeping `data-build` for the tests), one job follower with one ending,
+  set panel driven by SETS with the base as one entry (keeping `data-build` for the tests; **done, R-S7, 31 Oct**: `setInner` / `choiceHtml` / `verbsHtml` draw the base, `PANEL_UI`, `panelId`), one job follower with one ending,
   one summary table, texts keyed by meaning, the file split by responsibility (screen, panels, follower, chain).
 - **frame/settings/admin.js**: `readEdge` / `writeEdge` / `readRunwayZoom` / `writeRunwayZoom` are one pattern on one file, and
   settings.js reads that file twice. **Target**: one profile reader / writer by key. **Done (R-S2, 30 Oct)**: `readProfiles` / `writeProfiles`, one read in settings.js.

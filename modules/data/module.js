@@ -439,11 +439,6 @@ function gateOf(set, items, verbs) {
     items
   });
 }
-/** L'état des boutons du panneau de la base (une seule raison pour les trois) : sans lanceur, travail en cours (le nôtre, la question d'une
- *  purge, un autre, une publication), hors ligne, aucune zone cochée, verbe inconnu du lanceur. */
-function buildGate(ticked) {
-  return gateOf('base', ticked.length);
-}
 /** Une source du catalogue d'aerodb par son identifiant (byId, à défaut une recherche dans SOURCES) ; undefined si elle n'y est pas. */
 function catSource(id) {
   const cat = S.d.cat;
@@ -865,43 +860,7 @@ function opAreaHtml(panel) {
   return `${S.other && !S.run ? `<p class="f-muted" data-other>${esc(tt(TX.otherRunning, { s: S.other.step || '…' }))}</p>` : ''}
     ${here ? runningHtml() : S.run ? '' : resultHtml(panel)}`;
 }
-/** L'intérieur du panneau : les zones, les sources sous licence personnelle, les boutons Télécharger · Construire · Purger et leur
- *  raison (une seule), la marche ou la fin. */
-function buildInner() {
-  const {
-    ids,
-    ticked
-  } = buildZones(),
-    gate = buildGate(ticked),
-    busy = frozen(),
-    pers = M.personalSources(ticked),
-    xplaneOn = pers.some(p => p.id === 'xplane' && S.personal.has('xplane')),
-    why = gate.reason ? tt(TX.greyReason[gate.reason]) : '',
-    off = verb => gate.verbs[verb].disabled ? ' disabled' : '',
-    pk = gateOf('base', ticked.length, [M.PICKUP.verb]).verbs[M.PICKUP
-      .verb]; // « Prendre le fichier téléchargé » : le verbe base/pickup, grisé pour sa propre raison
-  return `<h2>${esc(tt(TX.buildTitle))}</h2>
-    <h3>${esc(tt(TX.buildZones))}</h3>
-    ${zoneMapHtml('base')}
-    <div class="d-opts" data-build-zones>${ids.map(z => optHtml('data-build-zone', z, M.zoneName(S.d.zones, z, li()), S.ticked?.has(z), busy)).join('')}</div>
-    ${pers.length ? `<h3>${esc(tt(TX.personalTitle))}</h3><div data-personal-box>${pers.map(p => `<div class="d-pers" data-personal-row="${p.id}">
-      ${optHtml('data-personal', p.id, personalName(p.id), S.personal.has(p.id), busy)}
-      <p class="f-muted" data-personal-line>${esc(tt(TX.personalLine[p.kind]))}</p>
-      ${p.id === 'xplane' && xplaneOn ? `<p class="f-warn" data-xplane-hint>${esc(tt(TX.xplaneHint))}</p>` : ''}</div>`).join('')}</div>` : ''}
-    <p class="d-verbs"><button type="button" data-verb="download"${off('fetch')}>${esc(tt(TX.download))}</button>
-      <button type="button" data-verb="pickup"${pk.disabled ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button>
-      <button type="button" class="primary" data-verb="build"${off('build')}>${esc(tt(TX.build))}${attnDot(S.attn?.base)}</button>
-      <button type="button" data-verb="purge"${off('purge')}>${esc(tt(TX.purge))}</button></p>
-    ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
-    ${pk.reason === 'unknown-verb' && gate.reason !== 'unknown-verb' ? `<p class="f-muted" data-pickup-reason>${esc(tt(TX.greyReason['unknown-verb']))}</p>` : ''}
-    ${opAreaHtml('base')}`;
-}
-/** Le panneau « Télécharger, construire, purger » (en tête du groupe Base aéronautique). */
-function buildHtml() {
-  return `<section class="f-card" data-build>${buildInner()}</section>`;
-}
-
-// ---------------------------------------------------------------- les panneaux des autres groupes (V3 § 10.34, lot A1)
+// ---------------------------------------------------------------- les panneaux des jeux (V3 § 10.34, lot A1 ; la base en est un, R-S7)
 /** Les États proposés aux procédures : verts et oranges de coverageByState(), dans l'ordre de leurs noms. */
 function procList() {
   return M.procItems(S.d?.byState, li());
@@ -935,15 +894,31 @@ function selection(set) {
     bad: p.bad
   };
 }
-/** Les boutons Télécharger · Construire · Purger d'un panneau (gris pour la raison de M.setGate). */
-function verbsHtml(gate, panel) {
+/** Les boutons Télécharger · Construire · Purger d'un panneau (gris pour la raison de M.setGate) ; pour la base, entre Télécharger et Construire, « Prendre le fichier téléchargé » (`pk` : l'état de
+ *  son verbe base/pickup, grisé pour sa propre raison). */
+function verbsHtml(gate, panel, pk) {
   const off = verb => gate.verbs[verb].disabled ? ' disabled' : '';
   return `<p class="d-verbs"><button type="button" data-verb="download"${off('fetch')}>${esc(tt(TX.download))}</button>
-      <button type="button" class="primary" data-verb="build"${off('build')}>${esc(tt(TX.build))}${attnDot(S.attn?.[panel])}</button>
+      ${pk ? `<button type="button" data-verb="pickup"${pk.disabled ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button>
+      ` : ''}<button type="button" class="primary" data-verb="build"${off('build')}>${esc(tt(TX.build))}${attnDot(S.attn?.[panel])}</button>
       <button type="button" data-verb="purge"${off('purge')}>${esc(tt(TX.purge))}</button></p>`;
 }
-/** Le choix d'éléments d'un panneau : les États à cocher (procédures), le cycle en vigueur (points VFR), le champ des types OACI (appareils). */
+/** Le choix d'éléments d'un panneau : les zones de la couverture à cocher puis les sources sous licence personnelle qu'elles proposent (base), les États à cocher (procédures), le cycle en
+ *  vigueur (points VFR), le champ des types OACI (appareils). */
 function choiceHtml(set, busy) {
+  if (set === 'base') {
+    const {
+      ids,
+      ticked
+    } = buildZones(),
+      pers = M.personalSources(ticked),
+      xplaneOn = pers.some(p => p.id === 'xplane' && S.personal.has('xplane'));
+    return `<div class="d-opts" data-build-zones>${ids.map(z => optHtml('data-build-zone', z, M.zoneName(S.d.zones, z, li()), S.ticked?.has(z), busy)).join('')}</div>
+    ${pers.length ? `<h3>${esc(tt(TX.personalTitle))}</h3><div data-personal-box>${pers.map(p => `<div class="d-pers" data-personal-row="${p.id}">
+      ${optHtml('data-personal', p.id, personalName(p.id), S.personal.has(p.id), busy)}
+      <p class="f-muted" data-personal-line>${esc(tt(TX.personalLine[p.kind]))}</p>
+      ${p.id === 'xplane' && xplaneOn ? `<p class="f-warn" data-xplane-hint>${esc(tt(TX.xplaneHint))}</p>` : ''}</div>`).join('')}</div>` : ''}`;
+  }
   if (set === 'proc') {
     const list = procList();
     return list.length ? `<div class="d-opts" data-items>${list.map(i => optHtml('data-item', i.id, i.name, S.picked.has(i.id), busy)).join('')}</div>` :
@@ -954,8 +929,33 @@ function choiceHtml(set, busy) {
     <p class="f-muted">${esc(tt(TX.codesHint))}</p>
     ${S.codesBad.length ? `<p class="f-warn" data-codes-error>${esc(tt(TX.codesBad, { c: S.codesBad.join(', ') }))}</p>` : ''}</div>`;
 }
-/** L'intérieur du panneau d'un jeu autre que la base, ou des fiches publiées : le titre, le choix, les boutons et leur raison (une seule), la
- *  marche ou la fin. */
+/** Ce qui est propre à l'habillage du panneau de chaque jeu : l'attribut qui le repère (la base garde `data-build`, les autres `data-set-panel`), son titre, celui de ses éléments (la base garde ses textes
+ *  d'origine : TX.buildTitle, TX.buildZones) et la ligne d'aide sous ses boutons ([attribut, texte]). */
+const PANEL_UI = {
+  base: {
+    attr: 'data-build',
+    title: TX.buildTitle,
+    items: TX.buildZones
+  },
+  proc: {
+    title: TX.setTitle.proc,
+    items: TX.setItems.proc,
+    hint: ['data-ead-note', TX.eadNote]
+  },
+  vfr: {
+    title: TX.setTitle.vfr,
+    items: TX.setItems.vfr
+  },
+  aircraft: {
+    title: TX.setTitle.aircraft,
+    items: TX.setItems.aircraft,
+    hint: ['data-hint', TX.aircraftHint]
+  }
+};
+/** Le jeu (ou « sheets ») d'un panneau dessiné : celui de `data-set-panel`, sinon la base (son panneau porte `data-build`). */
+const panelId = box => box.dataset.setPanel || 'base';
+/** L'intérieur du panneau d'un jeu, base comprise, ou des fiches publiées : le titre, le choix (avec la carte des zones pour les jeux qui en ont une), les boutons et leur raison (une seule), la ligne d'aide,
+ *  la marche ou la fin. */
 function setInner(panel) {
   if (panel === 'sheets') {
     const gate = gateOf(M.SHEETS.set, undefined, [M.SHEETS.verb]),
@@ -965,27 +965,31 @@ function setInner(panel) {
       ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
       ${opAreaHtml('sheets')}`;
   }
-  const sel = selection(panel),
-    gate = gateOf(panel, M.SETS[panel].free ? undefined : sel.ids.length),
-    why = gate.reason ? tt(TX.greyReason[gate.reason]) : '';
-  return `<h2>${esc(tt(TX.setTitle[panel]))}</h2>
-    <h3>${esc(tt(TX.setItems[panel]))}</h3>
-    ${panel === 'proc' ? zoneMapHtml('proc') : ''}
+  const spec = M.SETS[panel],
+    ui = PANEL_UI[panel],
+    sel = selection(panel),
+    gate = gateOf(panel, spec.free ? undefined : sel.ids.length),
+    why = gate.reason ? tt(TX.greyReason[gate.reason]) : '',
+    pk = panel === M.PICKUP.set ? gateOf(panel, sel.ids.length, [M.PICKUP.verb]).verbs[M.PICKUP.verb] :
+    null; // « Prendre le fichier téléchargé » : le verbe base/pickup, grisé pour sa propre raison
+  return `<h2>${esc(tt(ui.title))}</h2>
+    <h3>${esc(tt(ui.items))}</h3>
+    ${spec.map ? zoneMapHtml(panel) : ''}
     ${choiceHtml(panel, frozen())}
-    ${verbsHtml(gate, panel)}
+    ${verbsHtml(gate, panel, pk)}
     ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
-    ${panel === 'aircraft' ? `<p class="f-muted" data-hint>${esc(tt(TX.aircraftHint))}</p>` : ''}
-    ${panel === 'proc' ? `<p class="f-muted" data-ead-note>${esc(tt(TX.eadNote))}</p>` : ''}
+    ${pk?.reason === 'unknown-verb' && gate.reason !== 'unknown-verb' ? `<p class="f-muted" data-pickup-reason>${esc(tt(TX.greyReason['unknown-verb']))}</p>` : ''}
+    ${ui.hint ? `<p class="f-muted" ${ui.hint[0]}>${esc(tt(ui.hint[1]))}</p>` : ''}
     ${opAreaHtml(panel)}`;
 }
-/** Le panneau d'un jeu autre que la base (ou celui des fiches publiées). */
+/** Le panneau d'un jeu (base comprise, repérée par `data-build`) ou celui des fiches publiées (`data-set-panel`). */
 function setPanelHtml(panel) {
-  return `<section class="f-card" data-set-panel="${panel}">${setInner(panel)}</section>`;
+  return `<section class="f-card" ${M.own(PANEL_UI, panel)?.attr || `data-set-panel="${panel}"`}>${setInner(panel)}</section>`;
 }
 /** Les panneaux d'un groupe : base (Télécharger · Construire · Purger de la base, « Publier » partagé, puis les points VFR), procédures, appareils (puis
  *  les fiches publiées) ; aucun pour la météo, publiée avec le site. */
 function panelsHtml(group) {
-  if (group === 'base') return buildHtml() + publishHtml() + setPanelHtml('vfr');
+  if (group === 'base') return setPanelHtml('base') + publishHtml() + setPanelHtml('vfr');
   if (group === 'proc') return setPanelHtml('proc');
   if (group === 'aircraft') return setPanelHtml('aircraft') + setPanelHtml('sheets');
   return '';
@@ -1002,8 +1006,7 @@ function redrawPanel(box) {
     from = a?.selectionStart ?? null,
     to = a?.selectionEnd ?? null;
   keepScroll(S.body, () => {
-    box.innerHTML = box.matches('[data-build]') ? buildInner() : box.matches('[data-update-all]') ? updateAllInner() : setInner(box
-      .dataset.setPanel);
+    box.innerHTML = box.matches('[data-update-all]') ? updateAllInner() : setInner(panelId(box));
     const el = sel && box.querySelector(sel);
     if (el && !el.disabled) {
       el.focus({
@@ -2155,18 +2158,17 @@ function onAerodbChange(e) {
     renderBuild(); // les États que le panneau des procédures propose suivent la table de couverture
   }, 150);
 }
-/** Le verbe du lanceur d'un bouton de l'écran, par son panneau : [jeu, verbe] ou null (« Arrêter », « Publier » la base : traités à part). Les
- *  boutons du panneau de la base n'ont pas de panneau nommé ; ceux des autres jeux sont sous `data-set-panel`. */
+/** Le verbe du lanceur d'un bouton de l'écran, par son panneau (celui de la base compris) : [jeu, verbe] ou null (« Arrêter », « Publier » la base : traités à part). */
 function opOf(v) {
-  const panel = v.closest('[data-set-panel]')?.dataset.setPanel,
+  const box = v.closest('[data-build], [data-set-panel]'),
+    panel = box && panelId(box),
     verb = {
       download: 'fetch',
       build: 'build',
       purge: 'purge'
     } [v.dataset.verb];
   if (panel === 'sheets') return v.dataset.verb === 'publish-sheets' ? [M.SHEETS.set, M.SHEETS.verb] : null;
-  if (panel) return verb ? [panel, verb] : null;
-  return v.closest('[data-build]') && verb ? ['base', verb] : null;
+  return panel && verb ? [panel, verb] : null;
 }
 /** Retient le groupe touché en dernier (le « ? » du cadre ouvre l'aide au paragraphe du groupe ouvert), puis le geste d'un bouton. */
 function onClick(e) {
