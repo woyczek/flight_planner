@@ -2335,6 +2335,9 @@ def a64(c):
     want = norm(tx('frame/app.js', 'csp', c.lang).replace('{h}', 'gitlab.example'))
     got = norm(c.js("() => document.querySelector('[data-card=\"status\"] [data-k=\"data\"]').textContent"))
     c.ok(want in got and 'glpat' not in got and '/api/v4' not in got, got, 'the CSP said, the host only, in the run’s language')
+    logged = c.js("() => FrameData.diagnostic().then(d => d.failures.map(f => f.error).filter(e => e.startsWith('csp: ')))")
+    c.eq(logged, ['csp: gitlab.example (connect-src)'], 'the violation is written once to the failures of the diagnostic: host and directive only',
+         what='diagnostic')
     # the browser's own lines for the blocked calls are what this case provokes; any other error still counts
     c.errors[:] = [e for e in c.errors if 'gitlab.example' not in e or 'Content Security Policy' not in e]
 

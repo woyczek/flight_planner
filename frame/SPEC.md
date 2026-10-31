@@ -745,7 +745,8 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
   into a separate cache (`sog-frame-v1-next`), never into the one open pages read; a read cut in the middle is dropped
   and tried again later; complete, the pages are told (« sog-frame-update ») and it replaces the old one at once at the
   next page load or at « Reload ». An open page never gets a file of another version than its own (bench
-  `frame/lib/test/sw_update.html`, A53).
+  `frame/lib/test/sw_update.html`, A53). Known limit: with two tabs open, the one that reloads takes the new version for
+  both, and the other may still mix until its own reload.
 - **The new version said until it is taken**: the note says the flight in progress and the pending writes are kept; set
   aside (✕), it comes back at the next calm moment — a module change, the app back to the front — at most every 5
   minutes; the Status block carries « New version available · Reload » (badge of the ⚙) meanwhile. Never an automatic

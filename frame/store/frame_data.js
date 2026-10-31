@@ -980,12 +980,7 @@
       lastError: r.error
     });
     // les cinq derniers échecs (date, erreur telle que le transport l'a dite), pour le diagnostic copiable
-    if (r.error) await setMeta('failures', {
-      list: [{
-        at: new Date().toISOString(),
-        error: String(r.error).slice(0, 200)
-      }, ...((await getMeta('failures'))?.list || [])].slice(0, 5)
-    });
+    if (r.error) await noteFailure(r.error);
     if (r.pulled.length) changed([...new Set(r.pulled)]);
     if (r.conflicts) window.dispatchEvent(new CustomEvent('frame-data-conflict', {
       detail: {
@@ -993,6 +988,16 @@
       }
     }));
     return r;
+  }
+  /** Un échec de plus aux cinq derniers gardés pour le diagnostic copiable (date, texte court) : ceux des passages, et ce que
+   *  le cadre y ajoute (une violation de la liste des sites autorisés de la page, 31 oct. 2026). */
+  async function noteFailure(error) {
+    await setMeta('failures', {
+      list: [{
+        at: new Date().toISOString(),
+        error: String(error).slice(0, 200)
+      }, ...((await getMeta('failures'))?.list || [])].slice(0, 5)
+    });
   }
   /** Message du commit d'un lot : « RBR : 3 fichier(s) — disponibilites/RBR/2026-W43.json, … ». */
   const commitMessage = pend => `${cfg.identity.trigram || '?'} : ${pend.length} fichier(s) — ${pend.slice(0, 3).map(p => p.path).join(', ')}${pend.length > 3 ? ', …' : ''}`;
@@ -1551,6 +1556,7 @@
     noteConflict,
     restore,
     diagnostic,
+    noteFailure,
     cached,
     evict,
     revalidate,

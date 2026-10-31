@@ -2161,12 +2161,17 @@
   // hôtes dont un appel a été bloqué par la politique de contenu de la page (connect-src) : l'erreur le dit au lieu de « réseau »
   const cspBlocked = new Set();
   document.addEventListener('securitypolicyviolation', e => {
-    if (!/^connect-src/.test(e.effectiveDirective || e.violatedDirective || '')) return;
+    const directive = e.effectiveDirective || e.violatedDirective || '';
+    if (!/^connect-src/.test(directive)) return;
+    let host = '';
     try {
-      cspBlocked.add(new URL(e.blockedURI).host);
+      host = new URL(e.blockedURI).host;
     } catch {
-      /* adresse illisible */
+      return; // adresse illisible
     }
+    // une violation de la liste des sites autorisés s'écrit dans le journal des échecs (l'hôte seul, la directive), une fois
+    if (!cspBlocked.has(host)) FD.noteFailure?.(`csp: ${host} (${directive.split(' ')[0]})`).catch(() => {});
+    cspBlocked.add(host);
   });
   /** Erreur de la couche de données dans la langue de l'appli ; celle d'un serveur, citée telle quelle. */
   const errText = e => {
