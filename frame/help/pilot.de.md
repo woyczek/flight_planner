@@ -638,8 +638,8 @@ der Route und um sie herum. Beim Öffnen wird nichts abgefragt: die Seite zeigt,
 Außerhalb des Fluggebiets zeigt die Karte die mit der Anwendung veröffentlichte Weltsynoptik, ohne etwas abzufragen.
 
 <a id="atmosphere-map"></a>**Die Wetterkarte.** Isobaren, Isothermen, Wolken, Wind, Jetstream und Konvektion in der mit dem Höhenchip gewählten
-Höhe („Boden", die angeforderte Höhe, die berechnete Bahn oder eine feste Höhe). Die Ebenen-Schaltfläche (oben links)
-öffnet ein Feld über der Karte: Es wählt, was auf der Karte und im Profil gezeichnet wird, und der Schnitt bleibt unten
+Höhe („Boden", die angeforderte Höhe, die berechnete Bahn oder eine feste Höhe). Der Ebenen-Chip links vom Griff des Blatts
+öffnet ein Feld über der Karte, direkt über dem Blatt: Es wählt, was auf der Karte und im Profil gezeichnet wird, und der Schnitt bleibt unten
 sichtbar und wird bei jedem Kästchen neu gezeichnet; das Kreuz oder Esc schließt es. Tippen Sie auf einen Punkt der Karte, um seinen Schnitt zu öffnen.
 
 <a id="atmosphere-zones"></a>**Das Fluggebiet und die Welt.** Eine dünne Linie umgibt das Fluggebiet: innen die für den Flug geladene feine Vorhersage
@@ -691,7 +691,7 @@ die Legende, den Chip oder Escape schließt sie.
   die Karte übernimmt seinen Wetterschnitt. Die Aufrufe des Tages bei Open-Meteo werden im Statusblock der
   Einstellungen gezählt.
 
-<!-- fr: 9e625efa8e4e -->
+<!-- fr: 46e7d4d9e7a4 -->
 
 <!-- chapter: data -->
 # Daten

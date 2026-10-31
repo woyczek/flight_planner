@@ -25,7 +25,10 @@ def row(c, key, **kw):
 
 
 def button_sel(c, title_key):
-    """Selector (marked) of the overlay button whose title is the module's text `title_key` in the run's language."""
+    """Selector of the button whose title is the module's text `title_key`: an overlay button (marked), or Layers, a chip of the
+    sheet's line left of its grip since 30 Oct (E15)."""
+    if title_key == 'layers':
+        return f'{ATM} [data-at="layersBtn"]'
     return c.mark('.f-ov-btn', row(c, title_key))
 
 
@@ -33,7 +36,8 @@ def button_sel(c, title_key):
 def e1(c):
     c.open('atmosphere', flight=True)
     left = [b for b in c.js("[...document.querySelectorAll('.f-ov-left > .f-ov-btn')].map(b => ({ title: b.title, shown: window.__t.shown(b) }))") if b['shown']]
-    c.eq([b['title'] for b in left], [row(c, 'layers')], 'left column: the Layers button', what='visible left buttons')
+    c.eq([b['title'] for b in left], [], 'left column empty: Layers is on the sheet’s line (E15)', what='visible left buttons')
+    c.eq(c.attr(f'{ATM} [data-at="layersBtn"]', 'title'), row(c, 'layers'), 'the chip of the sheet’s line is Layers', what='Layers chip title')
     right = [b for b in c.js("[...document.querySelectorAll('.f-ov-right > .f-ov-btn')].map(b => ({ title: b.title, shown: window.__t.shown(b), full: b.classList.contains('f-ov-full') }))") if b['shown']]
     want = [row(c, 'flightTitle'), row(c, 'infoTitle'), row(c, 'load'), tx('frame/app.js', 'enter', c.lang, after='full: {')]
     c.eq([norm(b['title']) for b in right], [norm(w) for w in want], 'right column: Flight, Details, Load, then the frame\'s full screen', what='visible right buttons in order')
@@ -399,3 +403,36 @@ def e14(c):
          'the full screen stays: the module consumed the key')
     c.key('Escape')
     c.until("!document.documentElement.classList.contains('f-full')", what='a second Escape leaves the full screen')
+
+
+# ------------------------------------------------------------------------------------------------------ E15
+_LAYERS_AT = f"""() => {{ const b = document.querySelector('{ATM} [data-at=layersBtn]'), g = document.querySelector('{ATM} [data-at=grip]'),
+  r = b && b.getBoundingClientRect(), q = g.getBoundingClientRect(), p = document.querySelector('{ATM} .f-sheet-panel').getBoundingClientRect(),
+  pop = document.querySelector('{ATM} .at-layerpop'), o = pop && !pop.hidden ? pop.getBoundingClientRect() : null;
+  return {{ inHead: !!(b && b.closest('.f-sheet-head')), leftOfGrip: !!r && r.right <= q.left + 1,
+    sameLine: !!r && Math.abs((r.top + r.bottom) / 2 - (q.top + q.bottom) / 2) < 12, shown: !!(b && window.__t.shown(b)),
+    cornerButtons: [...document.querySelectorAll('.f-ov-left .f-ov-btn')].filter(x => window.__t.shown(x)).length,
+    pop: o && {{ bottom: o.bottom, top: o.top, left: o.left, right: o.right }}, chipLeft: r && r.left, sheetTop: p.top }} }}"""
+
+
+@case('E15', 'The Layers chip sits on the sheet’s line, left of its grip; its panel opens just above the sheet', 'E', tags=('atmosphere', 'sheet'),
+      screens=False, designs=('standard',), night=False,
+      rule='ergonomics session, 30 Oct, after the Map (a314a352c, D76; user: « l’onglet Couches en haut, alors que le volet est en bas… »): '
+           'a button and the pane it opens are neighbours; the map’s corner keeps only the view’s commands')
+def e15(c):
+    c.open('atmosphere?donnees=demo', flight=True)
+    c.until(f"!!document.querySelector('{ATM} [data-at=dbody] svg')", timeout=12000, what='the cut is drawn (demonstration)')
+    c.settle()
+    at = c.js(_LAYERS_AT)
+    c.eq([at['inHead'], at['leftOfGrip'], at['sameLine'], at['shown']], [True] * 4, 'Layers on the sheet’s line, left of the grip', what=f'{at}')
+    c.eq(at['cornerButtons'], 0, 'no button left in the map’s top left corner', what='corner buttons')
+    c.tap(f'{ATM} [data-at=layersBtn]')
+    c.until(f"window.__t.shown(document.querySelector('{ATM} .at-layerpop'))", what='Layers opens its panel')
+    at = c.js(_LAYERS_AT)
+    c.eq(c.attr(f'{ATM} [data-at=layersBtn]', 'aria-pressed'), 'true', 'the chip says the panel is open', what='pressed')
+    c.ok(at['pop']['bottom'] <= at['sheetTop'] + 1 and at['sheetTop'] - at['pop']['bottom'] < 24, f'{at}',
+         'the panel lies just above the sheet, never over it')
+    c.ok(abs(at['pop']['left'] - at['chipLeft']) < 6, f'panel left {at["pop"]["left"]:.0f}, chip left {at["chipLeft"]:.0f}', 'the panel is aligned on its chip')
+    c.tap(f'{ATM} [data-at=layersBtn]')
+    c.until(f"!window.__t.shown(document.querySelector('{ATM} .at-layerpop'))", what='a second tap closes it')
+    c.eq(c.attr(f'{ATM} [data-at=layersBtn]', 'aria-pressed'), 'false', 'the chip is released', what='pressed')

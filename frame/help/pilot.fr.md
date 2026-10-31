@@ -599,8 +599,8 @@ de la route et autour d'elle. Rien n'est demandé à l'ouverture : la page montr
 zone du vol, la carte montre le synoptique mondial publié avec l'application, sans rien demander.
 
 <a id="atmosphere-map"></a>**La carte météo.** Isobares, isothermes, nuages, vent, courant-jet et convection, au niveau choisi par la pastille du
-niveau (« Sol », le niveau demandé, la trajectoire calculée ou une altitude fixe). Le bouton des couches (en haut à gauche)
-ouvre un volet posé sur la carte : il choisit ce qui est dessiné sur la carte et dans le profil, et la coupe reste visible en
+niveau (« Sol », le niveau demandé, la trajectoire calculée ou une altitude fixe). La puce Couches, à gauche de la poignée de la
+feuille, ouvre un volet posé sur la carte, juste au-dessus de la feuille : il choisit ce qui est dessiné sur la carte et dans le profil, et la coupe reste visible en
 bas, redessinée à chaque case ; la croix ou Échap le ferme. Touchez un point de la carte pour ouvrir sa tranche.
 
 <a id="atmosphere-zones"></a>**La zone du vol et le monde.** Un trait fin entoure la zone du vol : dedans, la prévision fine chargée pour le vol

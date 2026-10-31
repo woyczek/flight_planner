@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Weather: the Layers button next to the panel it opens** (`modules/atmosphere/module.js`, `style.js`; SPEC, DECISIONS,
+  help ×4) — it leaves the map's top left corner for the sheet's line, a chip left of the grip, as on the Map; its panel
+  opens over the map just above the sheet, aligned on the chip (landscape: the map's top left corner). Noreg E15.
 - **Weather layer: `cost(request)`, and the model of a region in the frame only** (`frame/lib/weather_store.js`, `ctx.weather.cost`;
   frame INTEGRATION 14.1, DECISIONS; noreg A25) — what a request would cost, from the cache and the known run, asking
   nothing (Atmosphere's « ≈ n calls »); `aloft`, `grid` and `cost` share one computation of the request. Fuel's

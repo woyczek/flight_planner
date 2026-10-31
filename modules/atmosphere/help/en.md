@@ -13,8 +13,8 @@ route and around it. Nothing is asked at opening: the page shows what the device
 area, the map shows the world synoptic published with the application, asking for nothing.
 
 <a id="atmosphere-map"></a>**The weather map.** Isobars, isotherms, cloud, wind, jet stream and convection, at the level chosen with the level chip
-("SFC", the requested level, the computed path or a fixed altitude). The layers button (top left) opens a panel over
-the map: it chooses what is drawn on the map and in the profile, and the cut stays in view below, redrawn by each box; the
+("SFC", the requested level, the computed path or a fixed altitude). The Layers chip, left of the sheet's grip, opens a
+panel over the map, just above the sheet: it chooses what is drawn on the map and in the profile, and the cut stays in view below, redrawn by each box; the
 cross or Escape closes it. Touch a point of the map to open its slice.
 
 <a id="atmosphere-zones"></a>**The flight area and the world.** A thin line surrounds the flight area: inside, the fine forecast loaded for the flight
@@ -64,4 +64,4 @@ the legend, the chip or Escape closes it.
 - What is loaded stays on the device and works offline, in the weather store shared by Fuel, the Map and Weather; the
   Map reuses its weather cross-section. The day's calls to Open-Meteo are counted in the status block of Settings.
 
-<!-- fr: 9e625efa8e4e -->
+<!-- fr: 46e7d4d9e7a4 -->

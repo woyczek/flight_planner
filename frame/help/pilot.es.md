@@ -612,8 +612,8 @@ la ruta y alrededor de ella. No se pide nada al abrir: la página muestra lo que
 zona del vuelo, el mapa muestra el sinóptico mundial publicado con la aplicación, sin pedir nada.
 
 <a id="atmosphere-map"></a>**El mapa meteorológico.** Isobaras, isotermas, nubes, viento, corriente en chorro y convección, al nivel elegido con la
-pastilla del nivel («Suelo», el nivel solicitado, la trayectoria calculada o una altitud fija). El botón de capas (arriba
-a la izquierda) abre un panel sobre el mapa: elige lo que se dibuja en el mapa y en el perfil, y el corte sigue visible
+pastilla del nivel («Suelo», el nivel solicitado, la trayectoria calculada o una altitud fija). La pastilla de capas, a la izquierda del asa de la
+hoja, abre un panel sobre el mapa, justo encima de la hoja: elige lo que se dibuja en el mapa y en el perfil, y el corte sigue visible
 abajo, redibujado con cada casilla; la cruz o Escape lo cierra. Toque un punto del mapa para abrir su corte.
 
 <a id="atmosphere-zones"></a>**La zona del vuelo y el mundo.** Una línea fina rodea la zona del vuelo: dentro, la previsión fina cargada para el vuelo
@@ -665,7 +665,7 @@ un toque en la leyenda, en la pastilla o Escape la cierra.
   Mapa y Meteo; el Mapa reutiliza su corte meteorológico. Las llamadas del día a Open-Meteo se cuentan en el bloque
   de estado de Ajustes.
 
-<!-- fr: 9e625efa8e4e -->
+<!-- fr: 46e7d4d9e7a4 -->
 
 <!-- chapter: data -->
 # Datos
