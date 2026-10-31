@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Weather: the Layers button next to the panel it opens** (`modules/atmosphere/module.js`, `style.js`; SPEC, DECISIONS,
+  help ×4) — it leaves the map's top left corner for the sheet's line, a chip left of the grip, as on the Map; its panel
+  opens over the map just above the sheet, aligned on the chip (landscape: the map's top left corner). Noreg E15.
+
 - **Map: the vertical path says what is missing, the profile follows the aircraft's performance, transitions on both views, height at the
   cursor** (`modules/maps/profile.js`, `profile_view.js`, `flight_time.js`, `screen.js`, `draw.js`, `render_route.js`,
   `lib/vertical_profile.js`; SPEC § 8.2; noreg D104, D105, D106; SOG-0002, 0006, 0008). Changing fuel's rates, TOC or TOD alone

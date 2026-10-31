@@ -22,7 +22,8 @@ export const STYLE = `
 [data-module="atmosphere"] canvas.at-over{position:absolute;left:0;top:0;width:var(--at-full-w,100%);height:var(--at-full-h,100%);z-index:2;pointer-events:none}
 [data-module="atmosphere"] .at-box.at-flat canvas.at-over{pointer-events:auto}
 /* volet des couches posé sur la carte, sous son bouton (jamais sur la feuille : la coupe reste visible pendant qu'on coche) */
-[data-module="atmosphere"] .at-layerpop{position:absolute;z-index:5;width:min(440px,calc(100% - 64px));max-height:calc(100% - 12px - var(--at-pop-top,0px));overflow:auto;box-sizing:border-box;padding:6px 10px 8px;background:var(--sog-surface);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s,6px);box-shadow:var(--sog-shadow);overscroll-behavior:contain}
+/* sa largeur laisse libre la colonne des boutons de droite (64 px) : sa croix n'est jamais sous eux */
+[data-module="atmosphere"] .at-layerpop{position:absolute;z-index:5;width:min(440px,calc(100% - 64px));max-height:var(--at-pop-max,calc(100% - 16px));overflow:auto;box-sizing:border-box;padding:6px 10px 8px;background:var(--sog-surface);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s,6px);box-shadow:var(--sog-shadow);overscroll-behavior:contain}
 [data-module="atmosphere"] .at-layerpop[hidden]{display:none}
 [data-module="atmosphere"] .at-layerpop-head{display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:-6px;margin:-6px -10px 2px;padding:4px 4px 4px 10px;background:var(--sog-surface);border-bottom:1px solid var(--sog-border)}
 [data-module="atmosphere"] .at-layerpop-x{flex:none;width:36px;height:36px;border:0;border-radius:var(--sog-radius-s,6px);background:none;color:var(--sog-muted);font-size:16px;cursor:pointer}
@@ -44,6 +45,13 @@ export const STYLE = `
 /* puces du dessin, ◀ ▶ des tranches et « i » (§ 7.1.13, 4e affinement, et 14) : toujours dans la ligne de la poignée, à droite,
    avant ✕ ; nue, la primitive du cadre leur donne 28 px et une zone de toucher de 44 ; leur nombre ne change pas (une puce sans
    objet est désactivée, pas retirée) */
+/* Couches, puce de la ligne de la feuille à gauche de la poignée (comme la Carte) : 40 px, 28 px dans la tête nue */
+[data-module="atmosphere"] .at-chips-l{flex:none;display:flex;align-items:center;height:100%;padding:0 0 0 4px}
+[data-module="atmosphere"] .at-chips-l .at-lchip{box-sizing:border-box;display:grid;place-items:center;width:40px;height:40px;min-height:0;margin:0;padding:0;border:1px solid var(--sog-border);border-radius:min(50%,calc(var(--sog-radius) * 22));background:none;color:var(--sog-muted);box-shadow:none;cursor:pointer;touch-action:manipulation}
+[data-module="atmosphere"] .f-sheet-head-bare .at-chips-l .at-lchip{width:28px;height:28px}
+[data-module="atmosphere"] .at-chips-l .at-lchip .f-icon{width:20px;height:20px}
+[data-module="atmosphere"] .f-sheet-head-bare .at-chips-l .at-lchip .f-icon{width:18px;height:18px}
+[data-module="atmosphere"] .at-chips-l .at-lchip[aria-pressed=true]{color:var(--sog-accent);border-color:var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 16%,var(--sog-surface))}
 [data-module="atmosphere"] .at-chips{flex:none;display:flex;align-items:center;gap:4px;height:100%}
 [data-module="atmosphere"] .at-chips[hidden]{display:none}
 [data-module="atmosphere"] .f-sheet-head:not(.f-sheet-head-bare)>.at-chips{gap:0}

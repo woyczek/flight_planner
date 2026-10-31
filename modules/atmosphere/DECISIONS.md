@@ -2,6 +2,35 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 31 October 2026 — the ergonomics session's answers to lot 0; follow-up A: Layers on the sheet's line
+
+- **Integration** (ergonomics session, 31 Oct): the four commits are on `v3` (`0e1631995`, `cf6238b10`, `baa91389f`,
+  `6c1da70c6`, rebased on `6c437745e`; one conflict, `meta.files`); targeted noreg 234/235, I28 fixed by it
+  (`61778a14d`: the former bench `test/weather_store.html` left the table). Security review: acceptable.
+- **Answers to the thirteen other points of lot 0**: 1 yes (level 1 with landscape); 2 confirmed (thin line by default,
+  world fills on both sides); 3 confirmed (three chips, "i" = legend, Details = list icon); 4 the ergonomics session fixes
+  § 8 of V3_SPECIFICATION (5° / +72 h); 5 yes, +72 h, the frame's layer reads a range of days (`from`); 8 no status line;
+  9 (a) nothing asked at opening, `cost(request)` asked of V3 Frame; (b) yes; (c) yes, one shape, Open-Meteo's; (d) the run
+  and `modelFor` belong to the frame's weather layer, not to Fuel (move asked of V3 Frame; Fuel will read it); (e) METAR /
+  TAF with their time through the layer; (f) the world through the layer; (g) the quota in Réglages › Diagnostics; 10 yes,
+  `demo.js` stays in the module, never written to the shared cache; 11 done on Atmosphere's side, the Map already reads the
+  frame's layer (`bb9c98570`); 12 confirmed; 13 confirmed; 15 confirmed (`planned_at` only); 16 confirmed (E1–E14, J1,
+  benches, screenshots 390 and 1280, five designs, day and night).
+- **Three follow-ups**, one commit each, each on a GitHub branch `v3-atmosphere-<subject>` rebased on `v3` (the
+  ergonomics session cannot receive this session's messages: the reports are written here).
+- **A — Layers on the sheet's line** (branch `v3-atmosphere-couches`): the button leaves the map's top left corner for a
+  chip of the sheet's head, left of the grip (`[data-at=layersBtn]`, 40 px, 28 px in the bare head), as the Map did
+  (`a314a352c`, D76; user, 30 Oct: "l'onglet Couches en haut, alors que le volet est en bas…"). Unlike the Map's, Atmosphere's
+  Layers stay a panel over the map (29 Oct: the cut stays in view): it now opens just above the sheet, aligned on the chip;
+  in the landscape column, in the map's top left corner (now empty; the right-hand buttons sit against the column). Its
+  width keeps the right-hand column of buttons free (100 % − 64 px): at 390 px a full-width panel put its cross under
+  them (E12 caught it). Placed again at each settle of the sheet and each resize, a property written only when it changes.
+  Noreg: E15 (new, after D76), E1 (the left column is empty), B (`overlay.py`: no left button on either fixed module).
+  Played from the cloud on `93a08d0a`: `run.py --touched origin/v3` 73/75; the two reds, C5 and D1 (the Map in German:
+  "a title is shown over the profile", "visible right buttons ['full']"), replayed alone (`--failed`) red again, and red
+  on `93a08d0a` without this commit (`--grep C5,D1 --langs de`): the Map's, not this lot's. Rebased on `9d1d34c7`
+  (CHANGELOG and the generated help only), then `--grep E1,E12,E13,E14,E15,B1,B2,B3`: 8/8.
+
 ## 30 October 2026 — lots 0 and 1 rebased on `v3`, the ergonomics session's answers
 
 - **Rebase** (ergonomics session, 30 Oct: "rebase tes trois commits … sur la tête d'origin/v3 … jamais en forcé"):

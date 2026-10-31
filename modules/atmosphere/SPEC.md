@@ -30,8 +30,11 @@ A fixed, full-height view (`meta.fixed`, `frame/INTEGRATION.md` § 9.2) on the m
 - **Map** under the whole frame; the sheet slides over it. The map and its overlay have the module's size, never the
   sheet's: a move of the sheet only uncovers map already drawn. Fitting the route pads the part the sheet hides.
 - **Buttons over the map**, in the frame's overlay layer (`frame/INTEGRATION.md` § 9.3), round, 44 px (rule 1):
-  - left: **Layers**: a **panel over the map**, under its button (scrolling when taller than the map, never over the
-    sheet), with the layers of the map and of the cross-section side by side, each with its key; the cross-section
+  - left: nothing (the corner holds only the view's commands, as on the Map). **Layers** is a chip of the sheet's head,
+    left of the grip (`[data-at=layersBtn]`, 40 px, 28 px in the bare head; user, 30 Oct 2026: a button and the pane it
+    opens are neighbours, phone and computer alike; the Map's rule, its D76). It opens a **panel over the map**, just
+    above the sheet and aligned on the chip (in the landscape column: in the map's empty top left corner),
+    scrolling when taller than the map, never over the sheet, with the layers of the map and of the cross-section side by side, each with its key; the cross-section
     stays in the sheet and is redrawn by each box (user, 29 Oct 2026: "choisir les éléments météo masque le profil
     vertical"). The panel is written only when its rows change and a box's state is set in place, so one tap is one
     toggle ("certaines coches doivent être cliquées deux fois"). Its cross, Escape, or another content of the sheet

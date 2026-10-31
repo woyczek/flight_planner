@@ -55,6 +55,9 @@ import {
 import {
   routeMidpoint
 } from '../../frame/lib/flight_path.js';
+import {
+  svg
+} from '../../frame/lib/icons.js';
 
 export const meta = {
   id: 'atmosphere',
@@ -75,7 +78,7 @@ export const meta = {
     'atmo.js?v=0', 'demo.js?v=0', 'world.js?v=0', 'lib/weather_map.js?v=0', 'section.js?v=0', 'texts.js?v=0',
     '../maps/lib/map_base.js?v=0', '../maps/lib/axis_window.js?v=0', '../maps/render.js?v=0',
     '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0', '../../frame/lib/weather_store.js?v=0',
-    '../../frame/lib/flight_path.js?v=0', '../../frame/lib/flight_time.js?v=0',
+    '../../frame/lib/flight_path.js?v=0', '../../frame/lib/flight_time.js?v=0', '../../frame/lib/icons.js?v=0',
     '../../frame/lib/route_text.js?v=0', '../../frame/lib/metar.js?v=0', '../fuel/winds.js?v=0', '../fuel/weather.js?v=0'
   ],
   // du module Carte, gardés au premier usage : MapLibre, et les contours des pays du fond uni
@@ -210,7 +213,7 @@ export async function mount(el, ctx) {
   <div class="at-layerpop" data-at="layerPop" hidden><div class="at-layerpop-head"><b>${esc(T('layers'))}</b><button type="button" class="at-layerpop-x" data-at="layersClose" aria-label="${esc(T('layersClose'))}" title="${esc(T('layersClose'))}">✕</button></div><div class="at-layers" role="group" aria-label="${esc(T('layers'))}" data-at="layersBox"></div></div>
 </div>
 <section class="f-sheet-panel" data-at="data">
-  <div class="f-sheet-head"><button type="button" class="f-sheet-grip" data-at="grip"><span class="f-badge at-hidden" data-kind="warn" data-at="srcTag"></span><b class="f-sheet-title" data-at="dtitle"></b></button>
+  <div class="f-sheet-head"><div class="at-chips-l"><button type="button" class="at-lchip" data-at="layersBtn" aria-pressed="false" title="${esc(T('layers'))}" aria-label="${esc(T('layers'))}">${svg('layers', { size: 20 })}</button></div><button type="button" class="f-sheet-grip" data-at="grip"><span class="f-badge at-hidden" data-kind="warn" data-at="srcTag"></span><b class="f-sheet-title" data-at="dtitle"></b></button>
     <button type="button" class="at-whole" data-at="whole" hidden title="${esc(T('winWholeHelp'))}" aria-label="${esc(T('winWholeHelp'))}">${esc(T('winWhole'))}</button>
     <div class="at-chips" role="group" data-at="chips" aria-label="${esc(T('sliceNav'))}" hidden><button type="button" data-at="prev" aria-label="${esc(T('slicePrev'))}" title="${esc(T('slicePrev'))}">◀</button><button type="button" data-at="next" aria-label="${esc(T('sliceNext'))}" title="${esc(T('sliceNext'))}">▶</button><button type="button" class="at-chip-i" data-at="legendBtn" aria-pressed="false" aria-label="${esc(T('legend'))}" title="${esc(T('legend'))}">i</button></div>
     <button type="button" class="f-sheet-close" data-at="dclose" aria-label="${esc(T('backProfile'))}" title="${esc(T('backProfile'))}" hidden>✕</button></div>
@@ -268,14 +271,11 @@ export async function mount(el, ctx) {
   // Couches à gauche ; Vol, Détails, Charger et la puce d'altitude à droite (le plein écran y est ajouté par le cadre)
   const ov = ctx.overlay;
   ov.over($('box'));
-  const btnLayers = ov.button({
-      icon: 'layers',
-      label: T('layers'),
-      pressed: false,
-      side: 'left',
-      onClick: () => setLayers(!S.layersOpen)
-    }),
-    btnFlight = ov.button({
+  // Couches ouvre le volet posé au-dessus de la feuille : son bouton est sur la ligne de la feuille, à gauche de la poignée,
+  // comme sur la Carte (l'utilisateur, 30 octobre : un bouton et ce qu'il ouvre sont voisins) ; le coin de la carte reste vide
+  const btnLayers = $('layersBtn');
+  btnLayers.onclick = () => setLayers(!S.layersOpen);
+  const btnFlight = ov.button({
       icon: 'plane',
       label: T('flightTitle'),
       pressed: false,
@@ -381,26 +381,45 @@ export async function mount(el, ctx) {
   function layersCard() {
     if (S.layersOpen) need('layers')?.drawLayers(app);
   }
-  /** Volet des couches ouvert ou fermé : posé sur la carte sous son bouton (mesuré à l'ouverture), jamais sur la feuille ; la
-   *  coupe reste montrée dans la feuille (un contenu qui n'est pas un dessin la lui rend). */
+  /** Volet des couches ouvert ou fermé : posé sur la carte, jamais sur la feuille ; la coupe reste montrée dans la feuille
+   *  (un contenu qui n'est pas un dessin la lui rend). */
   function setLayers(open) {
     const pop = $('layerPop');
     S.layersOpen = !!open;
     setAttr(btnLayers, 'aria-pressed', String(S.layersOpen));
     if (S.layersOpen) {
       if (S.view !== 'profile' && S.view !== 'slice') show('profile');
-      const b = btnLayers.getBoundingClientRect(),
-        box = $('box').getBoundingClientRect(),
-        top = `${Math.max(4, Math.round(b.bottom - box.top + 8))}px`,
-        left = `${Math.max(4, Math.round(b.left - box.left))}px`;
-      if (pop.style.top !== top) {
-        pop.style.top = top;
-        pop.style.setProperty('--at-pop-top', top); // la hauteur restante sous le volet
-      }
-      if (pop.style.left !== left) pop.style.left = left;
+      placeLayers();
       layersCard();
     }
     if (pop.hidden === S.layersOpen) pop.hidden = !S.layersOpen;
+  }
+  /** Place le volet ouvert au plus près de son bouton : juste au-dessus de la feuille, aligné sur la puce (portrait : la feuille
+   *  couvre le bas de la carte) ; en colonne (paysage), dans le coin haut gauche de la carte, resté vide (les boutons de droite
+   *  sont contre la colonne). Revu à chaque arrêt de la feuille et de la taille ; une propriété n'est écrite que si elle change. */
+  function placeLayers() {
+    if (!S.layersOpen) return;
+    const pop = $('layerPop'),
+      b = btnLayers.getBoundingClientRect(),
+      box = $('box').getBoundingClientRect(),
+      panel = $('data').getBoundingClientRect(),
+      column = panel.left > box.left + 1 && panel.top <= box.top + 1,
+      px = v => `${Math.max(4, Math.round(v))}px`,
+      want = column ? {
+        top: '8px',
+        bottom: '',
+        left: '8px',
+        right: '',
+        '--at-pop-max': px(box.height - 16)
+      } : {
+        top: '',
+        bottom: px(box.bottom - panel.top + 8),
+        left: px(b.left - box.left),
+        right: '',
+        '--at-pop-max': px(panel.top - box.top - 16)
+      };
+    for (const [k, v] of Object.entries(want))
+      if (pop.style.getPropertyValue(k) !== v) v ? pop.style.setProperty(k, v) : pop.style.removeProperty(k);
   }
 
   // ---------------------------------------------------------------- en-tête de la feuille
@@ -800,6 +819,7 @@ export async function mount(el, ctx) {
   function settled() {
     if (!alive || app.dragging()) return;
     applyBare();
+    placeLayers();
     map.sizeMap();
     if (S.map && !S.userMoved) map.fitMap();
     map.schedule();
@@ -876,6 +896,7 @@ export async function mount(el, ctx) {
   // tailles (un événement) : la carte suit le module, le dessin est repris à la taille du corps — jamais pendant un glisser
   const ro = new ResizeObserver(() => {
     if (app.dragging()) return;
+    placeLayers();
     map.sizeMap();
     map.schedule();
     if (`${dbody.clientWidth}x${dbody.clientHeight}` !== S.drawn) sheet?.settle();
@@ -956,7 +977,7 @@ export async function mount(el, ctx) {
     head: $('grip').parentNode,
     grip: $('grip'),
     pos: sheetKeep,
-    ignore: '[data-at="dclose"],[data-at="prev"],[data-at="next"],[data-at="legendBtn"],[data-at="whole"]',
+    ignore: '[data-at="layersBtn"],[data-at="dclose"],[data-at="prev"],[data-at="next"],[data-at="legendBtn"],[data-at="whole"]',
     labels: (pos, rank) => `${T('sheetSize')} (${T(`sheet${rank}`)})`,
     onChange: pos => sheetKeep = pos,
     onSettle: settled

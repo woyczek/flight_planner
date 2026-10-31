@@ -47,9 +47,9 @@ def _check_columns(c, m, step):
         c.eq(round(bx['h']), 44, '44x44 button', tol=1, what=f'#{m}{step} "{b["title"]}" height')
         c.eq(round(ov['r'] - bx['r'], 1), 8, 'right edge at the layer right minus 8 px', tol=1, what=f'#{m}{step} "{b["title"]}" distance to the layer right')
     left = [x for x in c.boxes('.f-ov-left > .f-ov-btn') if x['shown']]
-    if m == 'maps':   # the Map's Layers sits on the sheet's line, left of its grip (30 Oct): its corner holds nothing
-        c.eq(len(left), 0, 'the left column of the Map is empty (Layers is on the sheet’s line)', what=f'#{m}{step} left buttons')
-        return
+    # Layers sits on the sheet's line, left of its grip (30 Oct; the Map first, the Weather then): the map's corner holds nothing
+    c.eq(len(left), 0, 'the left column is empty (Layers is on the sheet’s line)', what=f'#{m}{step} left buttons')
+    return
     c.eq(len(left), 1, 'the Layers button is the one button of the left column', what=f'#{m}{step} left buttons')
     c.eq(round(left[0]['w']), 44, '44x44', tol=1, what=f'#{m}{step} Layers width')
     c.eq(round(left[0]['h']), 44, '44x44', tol=1, what=f'#{m}{step} Layers height')
