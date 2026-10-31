@@ -36,7 +36,10 @@ def e1(c):
     c.eq([b['title'] for b in left], [row(c, 'layers')], 'left column: the Layers button', what='visible left buttons')
     right = [b for b in c.js("[...document.querySelectorAll('.f-ov-right > .f-ov-btn')].map(b => ({ title: b.title, shown: window.__t.shown(b), full: b.classList.contains('f-ov-full') }))") if b['shown']]
     want = [row(c, 'flightTitle'), row(c, 'infoTitle'), row(c, 'load'), tx('frame/app.js', 'enter', c.lang, after='full: {')]
-    c.eq([norm(b['title']) for b in right], [norm(w) for w in want], 'right column: Flight, Details, Load, then the frame\'s full screen', what='visible right buttons in order')
+    # Load carries its cost once known (« Charger (≈ n appels) », E17): compared without it
+    loadw = norm(row(c, 'load'))
+    got = [loadw if norm(b['title']).startswith(loadw + ' (') else norm(b['title']) for b in right]
+    c.eq(got, [norm(w) for w in want], 'right column: Flight, Details, Load, then the frame\'s full screen', what='visible right buttons in order')
     c.ok(right[-1]['full'], 'the last right button is not the full-screen one', 'full screen last')
     c.ok(not c.shown('.at-lvl'), 'the altitude chip is displayed without any grid read', 'hidden until the map\'s grid is read')
 
@@ -399,3 +402,27 @@ def e14(c):
          'the full screen stays: the module consumed the key')
     c.key('Escape')
     c.until("!document.documentElement.classList.contains('f-full')", what='a second Escape leaves the full screen')
+
+
+# ------------------------------------------------------------------------------------------------------ E17
+@case('E17', '"Load" says what it would cost, asking nothing', 'E', tags=('atmosphere', 'overlay'), screens=False, langs4=True,
+      designs=('standard',), night=False,
+      rule='lot 0 gap § 14, closed 31 Oct (ergonomics session; ctx.weather.cost of V3 Frame d9609bd7f): "Load (≈ n calls)" before any call')
+def e17(c):
+    c.open('atmosphere', flight=True)
+    want = norm(row(c, 'loadCost')).split('(')[0].strip()   # « Charger », the words before the cost
+    c.until("(w) => { const b = [...document.querySelectorAll('.f-ov-right .f-ov-btn')].find(x => /\\d/.test(x.title || '')); return !!b }", want,
+            timeout=8000, what='the Load button says its cost')
+    title = c.js("() => [...document.querySelectorAll('.f-ov-right .f-ov-btn')].map(x => x.title).find(t => /\\d/.test(t))")
+    n = int(''.join(ch for ch in title.split('≈')[-1] if ch.isdigit()) or 0)
+    c.ok(n > 0 and norm(title).startswith(want), f'title {title!r}', '"Load (≈ n calls)" with n > 0: nothing is on the device yet')
+    c.eq(norm(c.js("() => [...document.querySelectorAll('.f-ov-right .f-ov-btn')].map(x => x.getAttribute('aria-label')).find(t => /\\d/.test(t || ''))") or ''),
+         norm(title), 'screen readers hear the same', what='aria-label')
+    open_view(c, 'flightTitle')
+    c.until("(t) => (document.querySelector('[data-module=\"atmosphere\"] form button[type=submit]') || {}).textContent === t", title,
+            timeout=5000, what='the Flight form says the same')
+    # the demonstration asks nothing: "Load" alone
+    c.open('atmosphere?donnees=demo', flight=True)
+    c.until(f"!!document.querySelector('{ATM} [data-at=dbody] svg')", timeout=12000, what='the cut is drawn (demonstration)')
+    c.ok(not c.js("() => [...document.querySelectorAll('.f-ov-right .f-ov-btn')].some(x => /≈/.test(x.title || ''))"),
+         'a cost is said in the demonstration', 'the demonstration costs nothing: "Load" alone')

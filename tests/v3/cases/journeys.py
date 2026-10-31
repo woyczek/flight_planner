@@ -148,7 +148,8 @@ def j1(c):
     c.ok('LFRS → LFML' in atitle, f'atmosphere title {atitle!r}', 'names the same flight: LFRS → LFML')
     c.ok(f'FL{quote_fl}' in atitle, f'atmosphere title {atitle!r}', f'carries the same level FL{quote_fl}')
     load = tx(AT, 'load', c.lang)
-    c.ok(c.js("(t) => [...document.querySelectorAll('.f-ov-btn')].some(b => window.__t.shown(b) && b.title.replace(/[\\s\\u00a0\\u202f]+/g, ' ') === t)", norm(load)),
+    # « Charger », or « Charger (≈ n appels) » once its cost is known (Weather, 31 Oct: the cost said before any call)
+    c.ok(c.js("(t) => [...document.querySelectorAll('.f-ov-btn')].some(b => { const x = b.title.replace(/[\\s\\u00a0\\u202f]+/g, ' '); return window.__t.shown(b) && (x === t || x.startsWith(t + ' (')) })", norm(load)),
          f'no overlay button titled {load!r}', '"Charger" exists (the user\'s one shot per flight, network blocked: not clicked)')
     c.tap(c.mark('.f-ov-btn', tx(AT, 'infoTitle', c.lang)))
     c.until("window.__t.shown(document.querySelector('.f-sheet-close'))", what='Details opens')

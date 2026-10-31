@@ -608,7 +608,8 @@ la página lo dice y lleva a Combustible; «Ver el ejemplo» muestra un vuelo de
 asa.
 
 <a id="atmosphere-load"></a>**Cargar la previsión.** El botón de carga (la flecha hacia abajo, a la derecha del mapa) lee la previsión a lo largo de
-la ruta y alrededor de ella. No se pide nada al abrir: la página muestra lo que el aparato ya ha guardado. Fuera de la
+la ruta y alrededor de ella. No se pide nada al abrir: la página muestra lo que el aparato ya ha guardado, y el botón dice de antemano lo que
+costaría la carga («Cargar (≈ 120 llamadas)», o «ya en el dispositivo»). Fuera de la
 zona del vuelo, el mapa muestra el sinóptico mundial publicado con la aplicación, sin pedir nada.
 
 <a id="atmosphere-map"></a>**El mapa meteorológico.** Isobaras, isotermas, nubes, viento, corriente en chorro y convección, al nivel elegido con la
@@ -665,7 +666,7 @@ un toque en la leyenda, en la pastilla o Escape la cierra.
   Mapa y Meteo; el Mapa reutiliza su corte meteorológico. Las llamadas del día a Open-Meteo se cuentan en el bloque
   de estado de Ajustes.
 
-<!-- fr: 9e625efa8e4e -->
+<!-- fr: 41aa49a1eeb1 -->
 
 <!-- chapter: missions -->
 # Misiones

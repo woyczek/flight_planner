@@ -589,7 +589,8 @@ route, the slice of a point, at the departure time or later.
 page says so and leads to Fuel; "See the example" shows a demonstration flight, marked as such in the grip.
 
 <a id="atmosphere-load"></a>**Loading the forecast.** The load button (the downward arrow, at the right of the map) reads the forecast along the
-route and around it. Nothing is asked at opening: the page shows what the device has already kept. Outside the flight's
+route and around it. Nothing is asked at opening: the page shows what the device has already kept, and the button says beforehand what
+loading would cost ("Load (≈ 120 calls)", or "already on the device"). Outside the flight's
 area, the map shows the world synoptic published with the application, asking for nothing.
 
 <a id="atmosphere-map"></a>**The weather map.** Isobars, isotherms, cloud, wind, jet stream and convection, at the level chosen with the level chip
@@ -644,7 +645,7 @@ the legend, the chip or Escape closes it.
 - What is loaded stays on the device and works offline, in the weather store shared by Fuel, the Map and Weather; the
   Map reuses its weather cross-section. The day's calls to Open-Meteo are counted in the status block of Settings.
 
-<!-- fr: 9e625efa8e4e -->
+<!-- fr: 41aa49a1eeb1 -->
 
 <!-- chapter: missions -->
 # Missions

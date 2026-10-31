@@ -153,7 +153,12 @@ shown, the sheet's title included.
   `taf`), the world synoptic (`world`). It never calls Open-Meteo, never builds a request URL, never writes
   `cache/weather/`, never counts the quota: the layer caches, deduplicates, counts and says what a load costs.
 - **Nothing is asked at opening**: the screen shows what the device keeps (cache-only reads); **Load** is the only
-  gesture that asks the network, for what is missing, with its cost stated before.
+  gesture that asks the network, for what is missing, with its cost stated before: **"Load (≈ n calls)"** — the weighted
+  calls of the route and of the map's grid that the device lacks, for every day the slider can reach, from
+  `ctx.weather.cost` (the cache and the run already known only: nothing is asked to estimate), on the map's button
+  (tooltip, screen readers) and on the Flight form's; "Load (already on the device)" at 0; "Load" alone in the
+  demonstration or without an answer. An estimate: a newer run or a variable the model refuses changes the count at
+  the load. Computed again at every load (opening included) and after it (gap § 14 of lot 0, closed 31 Oct 2026).
 - Load reads at once every day the slider can reach (planned departure to +72 h plus the flight), so moving the slider
   costs nothing more. **A flight dated before today** is read from the day of its departure (Open-Meteo serves up to 92
   past days), not from today (user, 29 Oct 2026: "pas de météo avant H+56" on a flight of the 26th).

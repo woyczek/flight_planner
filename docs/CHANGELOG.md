@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Weather: "Load (≈ n calls)" before any call** (`modules/atmosphere/module.js`, `wx.js`, `screen_flight.js`, `texts.js`;
+  SPEC, DECISIONS, help ×4) — the Load button (map and Flight form) says what loading would cost: the weighted calls the
+  device lacks for the route and the map's grid, every day the slider reaches, from the frame's `ctx.weather.cost`
+  (nothing asked); "already on the device" at 0; "Load" alone in the demonstration. Noreg E17.
 - **Settings: where GitHub or GitLab is read, said and linked** (`frame/settings/launcher.js`, `admin_links.js`, `settings.js`;
   help ×4; SPEC § 1 and § 3; A60) — user, 31 Oct: « je ne trouve plus le setting gitlab vs github sur un terminal avec lanceur ».
   No new setting (the provider is read from the remote's address since R-S4). On a launcher, the Access card adds « Dépôt et

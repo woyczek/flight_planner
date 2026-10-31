@@ -64,6 +64,28 @@ export function createWx(ctx, T, demo) {
     };
   }
 
+  /** Coût estimé d'une lecture (appels pondérés de ce qui manque à la réserve), sans rien demander (ctx.weather.cost : la
+   *  réserve et le run déjà connu seulement) ; mêmes lieux, variables, modèle et jours que forecast. 0 en démonstration ;
+   *  null sans réponse. Une estimation : un run plus récent ou une variable refusée change le compte au chargement. */
+  async function cost(places, vars, {
+    model,
+    until,
+    from = null
+  }) {
+    if (demo()) return 0;
+    const first = firstDay(from),
+      r = await Promise.resolve(W.cost?.({
+        kind: 'grid',
+        places,
+        when: until,
+        vars,
+        model,
+        days: daysUntil(until, first),
+        from: first < Date.parse(new Date().toISOString().slice(0, 10)) ? first : null
+      })).catch(() => null);
+    return Number.isFinite(r?.weight) ? r.weight : null;
+  }
+
   /** METAR et TAF des terrains du vol (départ, arrivée, dégagement) : { ids, metars (forme JSON d'aviationweather), tafs
    *  { OACI: TAF }, note } ; cacheOnly : seulement ce que l'appareil garde (30 min). */
   async function aerodromes(f, cacheOnly = false) {
@@ -110,6 +132,7 @@ export function createWx(ctx, T, demo) {
 
   return {
     forecast,
+    cost,
     aerodromes,
     why,
     /** Run du modèle (s) ou null ; rien en démonstration. */

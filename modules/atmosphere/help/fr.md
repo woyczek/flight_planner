@@ -9,7 +9,8 @@ la tranche d'un point, à l'heure du départ ou plus tard.
 dit et mène à Carburant ; « Voir l'exemple » montre un vol de démonstration, marqué comme tel dans la poignée.
 
 <a id="atmosphere-load"></a>**Charger la prévision.** Le bouton de chargement (la flèche vers le bas, à droite de la carte) lit la prévision le long
-de la route et autour d'elle. Rien n'est demandé à l'ouverture : la page montre ce que l'appareil a déjà gardé. Hors de la
+de la route et autour d'elle. Rien n'est demandé à l'ouverture : la page montre ce que l'appareil a déjà gardé, et le bouton dit d'avance ce que
+coûterait le chargement (« Charger (≈ 120 appels) », ou « déjà sur l'appareil »). Hors de la
 zone du vol, la carte montre le synoptique mondial publié avec l'application, sans rien demander.
 
 <a id="atmosphere-map"></a>**La carte météo.** Isobares, isothermes, nuages, vent, courant-jet et convection, au niveau choisi par la pastille du

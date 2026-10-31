@@ -42,8 +42,12 @@ export function drawFlight(app) {
 /** La ligne d'état du formulaire, à jour (écrite seulement si elle change). */
 export function refreshFlight(app) {
   const st = app.flightForm?.querySelector('[data-at="status"]'),
-    s = app.statusText();
+    s = app.statusText(),
+    go = app.flightForm?.querySelector('button[type="submit"]'),
+    l = app.loadText();
   if (st && st.textContent !== s) st.textContent = s;
+  // « Charger » avec son coût estimé (écrit seulement s'il change)
+  if (go && go.textContent !== l) go.textContent = l;
 }
 
 /** Les niveaux offerts : le niveau du vol, puis de 3 000 ft à FL410 (par 500 ft sous 10 000 ft). */

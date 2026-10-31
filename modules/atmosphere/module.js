@@ -144,6 +144,7 @@ export async function mount(el, ctx) {
     wpoint: null, // point du monde touché hors de la grille du vol
     legend: false,
     daySpent: 0,
+    cost: null, // appels pondérés que « Charger » ferait (estimation de ctx.weather.cost) ; null : inconnu
     statusText: '',
     xsLayers: {
       cloud: true,
@@ -239,6 +240,10 @@ export async function mount(el, ctx) {
     dragging: () => $('data').classList.contains('f-sheet-nt'),
     notify: (msg, err = false) => ctx.notify(msg, err ? 'err' : 'warn'),
     statusText: () => S.statusText,
+    /** Le libellé de « Charger », avec son coût estimé quand il est connu. */
+    loadText: () => S.cost == null ? T('load') : S.cost > 0 ? T('loadCost', {
+      n: S.cost
+    }) : T('loadCached'),
     /** Variables horaires d'une lecture de colonne : celles de la coupe (route, point touché). */
     routeVars: () => sectionVars(S.levelFt, S.flight.points),
     show,
@@ -589,6 +594,31 @@ export async function mount(el, ctx) {
     map.schedule();
   }
 
+  // ---------------------------------------------------------------- coût de « Charger »
+  /** La dernière demande que « Charger » ferait (route et grille), pour en dire le coût. */
+  let lastAsk = null;
+  /** Coût estimé de « Charger » (appels pondérés de ce qui manque à l'appareil, ctx.weather.cost : rien n'est demandé),
+   *  puis le libellé du bouton ; null sans réponse (le bouton dit seulement « Charger »). */
+  async function estimate(stale = () => false) {
+    const q = lastAsk;
+    if (!q) return;
+    const [a, b] = await Promise.all([wx.cost(q.smp, q.rVars, q.opt), wx.cost(q.places, q.gVars, q.opt)]);
+    if (stale() || q !== lastAsk) return;
+    S.cost = a == null || b == null ? null : S.data === 'demo' ? null : Math.round(a + b);
+    loadLabel();
+  }
+  /** Libellé de « Charger » : son coût quand il est connu (« Charger (≈ 120 appels) », « Charger (déjà sur l'appareil) »),
+   *  sur le bouton de la carte (infobulle, lecteurs d'écran) et sur celui de « Vol et réglages ». */
+  function loadLabel() {
+    const n = S.cost,
+      s = n == null ? T('load') : n > 0 ? T('loadCost', {
+        n
+      }) : T('loadCached');
+    setAttr(btnLoad, 'title', s);
+    setAttr(btnLoad, 'aria-label', s);
+    lazyMods.flight?.mod?.refreshFlight(app);
+  }
+
   // ---------------------------------------------------------------- chargement
   /** Le vol montré, selon la source choisie. */
   async function readFlight() {
@@ -672,6 +702,19 @@ export async function mount(el, ctx) {
           }))
         };
       S.gridBox = gq.g.bbox; // connue avant la prévision : hors d'elle, rien n'est jamais demandé
+      // ce que coûterait « Charger » (tous les jours que le curseur peut atteindre), dit sur le bouton avant tout appel
+      lastAsk = {
+        smp,
+        rVars,
+        places: gq.g.places,
+        gVars,
+        opt: {
+          model: S.mdl.id,
+          until: depValue() + SHIFT_MAX * 3600,
+          from: Math.min(S.depTime, depValue())
+        }
+      };
+      estimate(stale);
       setStatus(S.data === 'demo' ? T('demoComputing') : T('reading', {
         m: S.mdl.name
       }));
@@ -733,6 +776,7 @@ export async function mount(el, ctx) {
       };
       S.daySpent = await wx.spentToday();
       render();
+      estimate(stale);
     } catch (e) {
       if (stale() || e?.stale) return;
       if (e.noFlight) {

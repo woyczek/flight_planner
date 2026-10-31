@@ -2,6 +2,27 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 31 October 2026 — follow-up D: "Load (≈ n calls)" from `ctx.weather.cost`
+
+- **The request** (ergonomics session, 31 Oct, after V3 Frame's `d9609bd7f`): the gap § 14 of lot 0 (no cost before
+  "Load") is closed by `ctx.weather.cost(request)` (frame INTEGRATION § 14.1: the cache and the known run only, never a
+  call; an estimate). `modelFor` is imported from `frame/lib/weather_store.js` only — already done in `atmo.js` on `v3`.
+- **Done**: `wx.cost(places, vars, { model, until, from })` asks `cost({ kind: 'grid', … })` with the same days as the
+  load (`daysUntil`, `firstDay`: one computation of the request for both); the module estimates the route and the grid of
+  the request "Load" would make (every day the slider can reach, from the departure's day for a past flight) at every
+  load — opening included, before its forecast arrives — and after a load (then mostly "already on the device"). The label
+  "Load (≈ n calls)" goes on the map's button (`title`, `aria-label`) and on the Flight form's (its text), written only
+  when it changes; "Load (already on the device)" at 0; "Load" alone in the demonstration or without an answer. Texts ×4,
+  SPEC § 3.2, help ×4 (the load paragraph). Branch `v3-atmosphere-cout`.
+- **Noreg**: E17 (new) — the cost said at opening without any forecast kept (n > 0), the same for screen readers and in the
+  Flight form, nothing said in the demonstration; four languages. E1 and J1 (step 7) compared the Load button's title
+  exactly: they now accept « Charger » followed by its cost in brackets, and nothing else.
+- **Played from the cloud** on `4413296d`: `run.py --touched origin/v3` 71/75 — E1 and J1 this lot's (fixed as said),
+  C5 and D1 the Map's in German (see follow-up A); `--failed` 2/4 (E1, J1 green; C5, D1 red); `--failed-scope origin/v3`
+  157/165 — the eight reds all the Map's: C5, D1, D68 (the pan's timing, red on the base since 30 Oct), D87 (green
+  alone), D4, D34, D71, D89 (`--grep D4,D34,D71,D87,D89` gives the same four reds on `4413296d` without this lot). For the
+  Map's session: C5 and D1 in German, D4, D34, D71, D89 at 390.
+
 ## 30 October 2026 — lots 0 and 1 rebased on `v3`, the ergonomics session's answers
 
 - **Rebase** (ergonomics session, 30 Oct: "rebase tes trois commits … sur la tête d'origin/v3 … jamais en forcé"):

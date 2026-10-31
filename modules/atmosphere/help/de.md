@@ -9,7 +9,8 @@ Schnitt der Route, der Schnitt eines Punkts, zur Abflugzeit oder später.
 sagt die Seite es und führt zu Kraftstoff; „Beispiel ansehen" zeigt einen Vorführflug, im Griff als solcher markiert.
 
 <a id="atmosphere-load"></a>**Die Vorhersage laden.** Die Ladeschaltfläche (der Pfeil nach unten, rechts auf der Karte) liest die Vorhersage entlang
-der Route und um sie herum. Beim Öffnen wird nichts abgefragt: die Seite zeigt, was das Gerät schon gespeichert hat.
+der Route und um sie herum. Beim Öffnen wird nichts abgefragt: die Seite zeigt, was das Gerät schon gespeichert hat, und die Schaltfläche sagt
+vorher, was das Laden kosten würde („Laden (≈ 120 Abrufe)“ oder „schon auf dem Gerät“).
 Außerhalb des Fluggebiets zeigt die Karte die mit der Anwendung veröffentlichte Weltsynoptik, ohne etwas abzufragen.
 
 <a id="atmosphere-map"></a>**Die Wetterkarte.** Isobaren, Isothermen, Wolken, Wind, Jetstream und Konvektion in der mit dem Höhenchip gewählten
@@ -66,4 +67,4 @@ die Legende, den Chip oder Escape schließt sie.
   die Karte übernimmt seinen Wetterschnitt. Die Aufrufe des Tages bei Open-Meteo werden im Statusblock der
   Einstellungen gezählt.
 
-<!-- fr: 9e625efa8e4e -->
+<!-- fr: 41aa49a1eeb1 -->
