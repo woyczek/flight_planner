@@ -1254,6 +1254,21 @@ redesigned for touch at that point.
        a measure at rest when 6 or 7 touches the drawing. F41 (return from the Map to Fuel) failed once under load, green
        twice alone: recorded as a known flake; at the third time, a wait in the case's helper as Fuel's `to_step`, the
        module untouched.
+       **Delivered (31 Oct, one day)**: 1 06dcd175b (sheetFit: the sheet's height is its content's, half the view at
+       most; D86, C4 and D60 adapted), 2 3d2346411 (one writer of the framing, `frameFlight`, signature of the flight,
+       the user's framing kept to the end of a gesture only; D87), 3 5de1e2b93 (the title is rewritten when the
+       procedures arrive; the one writer of the distance is `flownPath` of `frame/lib/current_flight.js`, not
+       `route_model`, which resolves and does not measure; D88 compares five figures), 4 b700ce857 (the route's label
+       at an aerodrome takes the aerodrome's key — its code alone, positions never coincide at four decimals — and
+       fuses only when the map draws an aerodrome of that code; D89), 5 771030ddf (`displayName` / `labelOf`
+       everywhere, no genre on the map, the name slides along its trace; D90, D41 and D53 adapted), 6 6a8403466 (the
+       aerodrome centred, the first family's candidates drawn faded before any touch, a faded trace is chosen by a
+       touch like its row, the gesture of § 10.23 unchanged; D91), 7 696fb035f (the light drawing paints what the full
+       drawing drew, 138 → 28 marks at Paris VFR, 0.2 ms a frame; D92). Found on the way and fixed by the frame: a
+       pane closed before its module arrived (d6e7fa27a, A54, the probable cause of the F41 flake) and the relief
+       tiles waiting without bound behind the first reading of the airline (`net.fetch`, bounded to 3 s with refusal
+       as the fallback, V3 Frame); the Map's mirror rule follows as a lot: **the cut is built without waiting for a
+       tile** (MORA of the cells, "Relief indisponible"), the relief added when its tiles arrive.
 
    32. **Missions in V3, first framing** (user, 30 Oct: "les missions actuelles sont communes : je suis le seul à en
        créer, d'autres en profitent ; la numérotation est la mienne ; le premier acte du rôle « équipier enrôlé dans une
@@ -1384,7 +1399,10 @@ redesigned for touch at that point.
        Winners changed, written as rules: at LFBO the navaid box "(D) TBS 110.7" is written and "RW14R" slides; in VFR
        fixes and VRP beat obstacle heights; in the cut a procedure constraint beats levels and airspaces (D80 adapted,
        D85 on the real LFBO). Measure at rest on the real base, 1280 × 900: worst 13.6 ms (Paris VFR z9, 10.1 before),
-       everything else under 9 ms; **13.6 ms is the ceiling: nothing is added to the drawing without a measure**.
+       everything else under 9 ms. **Rule of the drawing at rest** (reworded on 31 Oct after three runs of the same
+       A/B: the worst of Paris VFR z9 varies from 12.8 to 15.7 ms from one run to the next, the old code included):
+       no lot raises the median (A/B side by side, 24 drawings a view) and the worst stays under 16 ms; nothing is
+       added to the drawing without that measure.
        Also: the SIA key does not identify an airspace (74 duplicates in fr, "LF600" SUR and PRN): an airspace is keyed
        by type, key, name, limits and first point (§ 3 of the Map, aerodb's DECISIONS).
        **State of the refactoring (31 Oct)**: Fuel R-F1–F6 done; Map R-M1–M6 done; frame R-C1–R-C6 done (R-C7 after
