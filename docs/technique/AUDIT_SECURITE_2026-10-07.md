@@ -977,6 +977,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 125 | Map: the profile built without waiting for the relief, then completed (f28b33257) | acceptable |
 | 126 | Refactor R-S8 (2/2): the Data model split into six pure files behind a facade (bdb072221) | acceptable, a move only |
 | 127 | Refactor R-S9 (1/2): the Settings screen's cards and actions in two files (6105be2ba) | acceptable, a move only |
+| 128 | Frame: `ctx.net.fetch` waits at most 3 s for the airline's first read, then refuses (aabaa0f3b) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2095,6 +2096,12 @@ value still through `esc`), `actions.js` holds the former click handler, field l
 import or export, attached to the Settings view only; the only logic change is the call of `window.SogSettings.render`
 after a join from a file. The configuration's checks (`validate` before anything is written, no `api` imported, 119) and
 the secrets' `saveSecret` are not touched.
+
+**128. The bounded wait for the airline (aabaa0f3b) — acceptable.** A call to an unlisted host waits for the
+airline's first read 3 s at most; after that the decision is the one without an airline site, so an unlisted host gets
+503, never a default permission, and a refused call is not reopened when the site is known later. Hosts of
+`DIRECT_PATHS` (the relief tiles) no longer wait, and still pass only as `https` `GET` on their closed list of paths;
+`RELAY`, `DIRECT` and the rule that nothing but `GET` goes to the airline's site are unchanged.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
