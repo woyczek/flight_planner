@@ -1534,3 +1534,36 @@ redesigned for touch at that point.
        L1 the aircraft's new fields and state (schema 2 of `fleet.json`, both writers); L2 "Ajouter" in two steps and the
        two gestures of a sheet; L3 the personal fleet; L4 the lazy aircraft from the flight log; L5 the hours from the
        log; Fuel reads the sheet-alone flight. Cases M for each.
+       **Maintenance and history** (user, 31 Oct, second message: "les heures ne se tapent pas implique une dumb flight
+       entry pour l'acquisition d'un appareil ayant des heures au compteur ; deux types de maintenance : révision rapide
+       tous les x heures, grande révision tous les y heures et / ou en cas d'atterrissage violent ; seuils à définir ; on
+       peut dépasser, mais c'est dérogatoire ; la révision a un coût, chaque vol a un coût, balance financière en
+       roadmap"). Data model, settled by the ergonomics session with its counter-proposals:
+       - **An aircraft has a history**, `events[]`, each `{ kind, date, hours, note, cost }` with `hours` the meter at the
+         event: `acquisition` (the hours on the meter when the airline or the pilot got the airframe — the "dumb entry",
+         **not a fake flight**: a flight would count in the pilots' hours, the reports and the statistics; counter-proposal
+         accepted unless the user forces the flight), `check` (quick check), `overhaul` (major overhaul), `hardLanding`,
+         `state` (a change of state with its reason). The typed offset of the first draft becomes the `acquisition`
+         event. The history is the only writer of the counters below.
+       - **Hours** = acquisition hours + block minutes of the log's flights after the acquisition date (one flight once,
+         as above). **Hours since the last check / overhaul** = hours − the meter of the last event of that kind (or the
+         acquisition).
+       - **Two maintenance kinds with thresholds on the sheet, not on the aircraft** (the user's own rule, no parameter on
+         an airframe): the sheet's `maintenance: { checkEveryH, overhaulEveryH }`, the airline's defaults in
+         `airline/settings.json` (`maintenance.defaults`) when the sheet says nothing; a hard landing makes a major
+         overhaul due at once.
+       - **A hard landing is declared by the pilot in the report** (one writer: the flight log; a box "atterrissage dur"
+         with a note in the report's form), which writes the `hardLanding` event on the aircraft when the registration is
+         in a fleet; a landing declared on a lazy registration waits with it.
+       - **Due and derogation**: for each kind, `due = hoursSince ≥ threshold` (or a hard landing for the overhaul); flying
+         beyond is **allowed and said**: every flight flown while a kind is due is marked "dérogatoire" in the history
+         (`{ kind: 'derogation', flight, hours }`), the Flotte row says "révision dépassée de n h" (orange) and the
+         Fuel's aircraft picker says it under the aircraft; no blocking, no right to grant (no users). An overhaul or a
+         check event clears the due state.
+       - **Costs, data now, balance later**: an event may carry `cost` (currency of `airline/settings.json`); a sheet may
+         carry `hourlyCost` (type-level, with the airline's default), so that a flight's cost = block hours × hourly cost;
+         nothing is summed yet. Roadmap "later": the financial balance (per aircraft, per pilot, per airline, a period),
+         read-only, from these two sources only.
+       Lots added: L6 (Features SOG) the history and the two maintenance kinds (events, thresholds on the sheet, due and
+       derogation, Flotte and Fuel saying it; the report's box is the flight log's, same owner); L7 the costs as data
+       (fields, nothing computed). M cases for each; the balance is not a lot.
