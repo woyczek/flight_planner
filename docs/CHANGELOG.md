@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refactor R-S5, no behaviour change** (`modules/data/model.js`; noreg L6, L11, L14, L16–L19): one `kindOf` for the end-of-job chain (interrupted, stopped, the launcher's reason, failure, default) that `outcome`, `fetchOutcome`, `purgeOutcome`, `pickupOutcome`, `vfrFetchOutcome` and `sheetsOutcome` call before adding their own fields; one `entryHead` / `jobOf` for the journal header (`at`, `set`, `verb`, `zones` or `items`, `seconds`, `result`, `reason`, `job`) that `journalEntry`, `fetchEntry`, `purgeEntry`, `pickupEntry`, `sheetsEntry`, `chainEntry` and `publishEntry` use; `setEntry` no longer renames `zones` to `items` afterwards (the base builders take the set and the key). Base entries keep `zones`, the others `items`.
 - **Map: framed return (sixth reading, gap 2)** (`modules/maps/screen.js` `frameFlight` / `flightSig`, `data.js` `fitOf`,
   `state.js` `keep.cam`, `choose.js`, `sheet_view.js`, `flight_time.js`; SPEC § 5; DECISIONS; help ×4; noreg D87, D86). Opening the
   Map from Fuel or coming back after « Terminer » frames the flight with its procedures, as the first opening; the pan and zoom the

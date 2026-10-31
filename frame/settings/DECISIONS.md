@@ -470,7 +470,7 @@ after, CHANGELOG « refactor, no behaviour change », `:recycle:`, one lot at a 
   module uses `viewOp`, `opDry`, `setGate`) and only pinned by L6, L14, L16 (done: R-S1); `countOf` and `listLen` are the same helper; the
   outcome functions (`outcome`, `fetchOutcome`, `purgeOutcome`) and the journal entries (`journalEntry`, `fetchEntry`,
   `purgeEntry`, then `setEntry` renaming `zones` to `items`) repeat one chain per verb. **Target**: one outcome reader and one
-  entry builder per verb, no pre-SETS leftover.
+  entry builder per verb, no pre-SETS leftover. **Done (R-S5, 31 Oct)**: `kindOf` (the shared end-of-job chain) in every outcome reader, `entryHead` / `jobOf` (the shared header) in every journal entry.
 - **modules/data/module.js** (≈2 070 lines, 99 KB): the base panel (`buildInner`, `buildZones`) duplicates the generic set panel
   (`setInner`, `choiceHtml`), the verbs' markup is written twice, `redrawPanel` / `opOf` branch on `[data-build]` vs
   `[data-set-panel]`; four endings (`endBuild`, `endFetch`, `endPurge`, `endSheets`) copy « result, render, notify, journal,

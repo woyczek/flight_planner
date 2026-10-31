@@ -456,6 +456,17 @@ export function clock(sec) {
   const s = Math.max(0, Math.round(sec || 0));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
+/** Le genre de la fin d'un travail, la chaîne commune à tous les lecteurs de fin : interrompu, arrêté (l'état de la vue, ou le motif « cancelled »), un motif du lanceur
+ *  renommé par `map` (motif → genre) ou repris tel quel s'il est dans `pass`, échec (l'état « error » de la vue ou `ok: false`), sinon `fallback` (le genre que les champs
+ *  propres au verbe donnent). `final` : la dernière vue ; `r` : son résultat (un objet). */
+function kindOf(final, r, pass, fallback, map = {}) {
+  if (final?.state === 'interrupted') return 'interrupted';
+  if (final?.state === 'cancelled' || r.reason === 'cancelled') return 'cancelled';
+  if (r.reason in map) return map[r.reason];
+  if (pass.includes(r.reason)) return r.reason;
+  if (final?.state === 'error' || r.ok === false) return 'failed';
+  return fallback;
+}
 /** La fin d'un travail de construction, d'après sa dernière vue : { kind, built: [zone], failed: [{ zone, error }] } ; kind :
  *  'done' | 'partial' | 'failed' | 'cancelled' | 'interrupted' | 'no-browser' | 'xplane-in-page'. Le résultat du lanceur
  *  (result.built, result.failed, result.reason) l'emporte, à défaut l'état des zones. */
@@ -470,14 +481,7 @@ export function outcome(final) {
       zone: z,
       error: zs[z].error
     }));
-  let kind;
-  if (final?.state === 'interrupted') kind = 'interrupted';
-  else if (final?.state === 'cancelled') kind = 'cancelled';
-  else if (EXTRA_KINDS.includes(r.reason)) kind = r.reason;
-  else if (r.reason === 'cancelled') kind = 'cancelled';
-  else if (r.reason === 'partial' || r.reason === 'failed') kind = r.reason;
-  else if (final?.state === 'error' || r.ok === false) kind = 'failed';
-  else kind = failed.length ? built.length ? 'partial' : 'failed' : 'done';
+  const kind = kindOf(final, r, [...EXTRA_KINDS, 'partial', 'failed'], failed.length ? built.length ? 'partial' : 'failed' : 'done');
   if (EXTRA_KINDS.includes(kind) && !Array.isArray(r.failed)) failed.length =
     0; // un motif propre (pypdf manque…) : la zone « en échec » de la vue n'est pas un échec de plus
   return {
@@ -499,32 +503,56 @@ export function refusal(r) {
     wait: key === 'tooSoon' ? Math.max(1, Math.ceil(num(r.wait) ?? 1)) : null
   };
 }
-/** Une entrée du journal : { at (UTC ISO), set, verb, zones, seconds, result, built, failed, job? }. `at` : instant en ms. */
+/** L'en-tête commun des entrées du journal : { at (UTC ISO), set, verb, <key>: ids, seconds, result, reason? }. `key` : le nom de la liste d'éléments (`zones` pour la base, `items`
+ *  pour les autres) ; `ids` et `seconds` ne sont écrits que s'ils sont donnés (une publication n'a ni l'un ni l'autre) ; `seconds` est arrondi (null sans valeur). */
+function entryHead(o) {
+  return {
+    at: new Date(o.at).toISOString(),
+    set: o.set,
+    verb: o.verb,
+    ...('ids' in o ? {
+      [o.key || 'zones']: [...o.ids]
+    } : {}),
+    ...('seconds' in o ? {
+      seconds: o.seconds === null || o.seconds === undefined ? null : Math.max(0, Math.round(o.seconds))
+    } : {}),
+    result: o.result,
+    ...(o.reason ? {
+      reason: o.reason
+    } : {})
+  };
+}
+/** Le numéro du travail d'une entrée du journal, s'il y en a un : { job } ou rien. */
+const jobOf = job => job ? {
+  job: String(job)
+} : {};
+/** Une entrée du journal : { at (UTC ISO), set, verb, zones, seconds, result, built, failed, job? }. `at` : instant en ms ; `set` et `key` : pour un autre jeu que la base. */
 export function journalEntry({
   at,
   zones,
   seconds,
   out,
-  job
+  job,
+  set = 'base',
+  key
 }) {
   return {
-    at: new Date(at).toISOString(),
-    set: 'base',
-    verb: 'build',
-    zones: [...zones],
-    seconds: seconds === null || seconds === undefined ? null : Math.max(0, Math.round(seconds)),
-    result: journalResult(out.kind),
-    ...(EXTRA_KINDS.includes(out.kind) ? {
-      reason: out.kind
-    } : {}),
+    ...entryHead({
+      at,
+      set,
+      verb: 'build',
+      ids: zones,
+      key,
+      seconds,
+      result: journalResult(out.kind),
+      reason: EXTRA_KINDS.includes(out.kind) ? out.kind : undefined
+    }),
     built: [...out.built],
     failed: out.failed.map(f => ({
       zone: f.zone,
       error: f.error ?? null
     })),
-    ...(job ? {
-      job: String(job)
-    } : {})
+    ...jobOf(job)
   };
 }
 /** Un objet, sinon {}. */
@@ -590,15 +618,10 @@ export function fetchOutcome(final) {
     })),
     warns = warningsOf(r),
     outside = num(r.outside_sync) ?? warned(warns, 'outside-sync');
-  let kind;
-  if (final?.state === 'interrupted') kind = 'interrupted';
-  else if (final?.state === 'cancelled') kind = 'cancelled';
-  else if (r.reason === 'nothing-to-fetch') kind = 'nothing';
-  else if (r.reason === 'no-codes' || r.reason === 'no-script') kind = r.reason;
-  else if (r.reason === 'cancelled') kind = 'cancelled';
-  else if (r.reason === 'partial' || r.reason === 'failed') kind = r.reason;
-  else if (final?.state === 'error' || r.ok === false) kind = 'failed';
-  else kind = failed.length ? fetched.length || unchanged.length ? 'partial' : 'failed' : 'done';
+  const kind = kindOf(final, r, ['no-codes', 'no-script', 'partial', 'failed'], failed.length ? fetched.length || unchanged.length ?
+    'partial' : 'failed' : 'done', {
+      'nothing-to-fetch': 'nothing'
+    });
   const level = kind === 'failed' || kind === 'no-codes' || kind === 'no-script' ? 'err' : kind === 'done' && outside <= 0 ? 'ok' : 'warn';
   return {
     kind,
@@ -619,15 +642,20 @@ export function fetchEntry({
   zones,
   seconds,
   out,
-  job
+  job,
+  set = 'base',
+  key
 }) {
   return {
-    at: new Date(at).toISOString(),
-    set: 'base',
-    verb: 'download',
-    zones: [...zones],
-    seconds: seconds === null || seconds === undefined ? null : Math.max(0, Math.round(seconds)),
-    result: journalResult(out.kind),
+    ...entryHead({
+      at,
+      set,
+      verb: 'download',
+      ids: zones,
+      key,
+      seconds,
+      result: journalResult(out.kind)
+    }),
     fetched: [...out.fetched],
     unchanged: [...out.unchanged],
     failed: out.failed.map(f => ({
@@ -638,9 +666,7 @@ export function fetchEntry({
         status: f.status
       } : {})
     })),
-    ...(job ? {
-      job: String(job)
-    } : {})
+    ...jobOf(job)
   };
 }
 
@@ -681,12 +707,7 @@ export function purgeOutcome(final) {
     kept = warned(warns, 'kept-tracked'),
     unsafe = warned(warns, 'unsafe-path'),
     shared = warns.some(w => w.code === 'shared-fr');
-  let kind;
-  if (final?.state === 'interrupted') kind = 'interrupted';
-  else if (final?.state === 'cancelled' || r.reason === 'cancelled') kind = 'cancelled';
-  else if (r.reason === 'partial' || r.reason === 'failed') kind = r.reason;
-  else if (final?.state === 'error' || r.ok === false) kind = 'failed';
-  else kind = 'done';
+  const kind = kindOf(final, r, ['partial', 'failed'], 'done');
   return {
     kind,
     files,
@@ -707,20 +728,23 @@ export function purgeEntry({
   zones,
   seconds,
   out,
-  job
+  job,
+  set = 'base',
+  key
 }) {
   return {
-    at: new Date(at).toISOString(),
-    set: 'base',
-    verb: 'purge',
-    zones: [...zones],
-    seconds: seconds === null || seconds === undefined ? null : Math.max(0, Math.round(seconds)),
-    result: journalResult(out.kind),
+    ...entryHead({
+      at,
+      set,
+      verb: 'purge',
+      ids: zones,
+      key,
+      seconds,
+      result: journalResult(out.kind)
+    }),
     files: out.files,
     bytes: out.bytes,
-    ...(job ? {
-      job: String(job)
-    } : {})
+    ...jobOf(job)
   };
 }
 /** Les opérations lues du fichier journal (un tableau, ou { ops }) : les entrées lisibles seulement, de la plus ancienne à la plus
@@ -1015,12 +1039,8 @@ export function pickupOutcome(final) {
         size: f.size
       } : {})
     }));
-  let kind;
-  if (final?.state === 'interrupted') kind = 'interrupted';
-  else if (final?.state === 'cancelled' || r.reason === 'cancelled') kind = 'cancelled';
-  else if (r.reason === 'partial' || r.reason === 'failed') kind = r.reason;
-  else if (final?.state === 'error' || r.ok === false) kind = 'failed';
-  else kind = taken.length ? failed.length ? 'partial' : 'done' : failed.length ? 'failed' : 'nothing';
+  const kind = kindOf(final, r, ['partial', 'failed'], taken.length ? failed.length ? 'partial' : 'done' : failed.length ? 'failed' :
+    'nothing');
   return {
     kind,
     dry: r.dry === true,
@@ -1071,15 +1091,20 @@ export function pickupEntry({
   zones,
   seconds,
   out,
-  job
+  job,
+  set = 'base',
+  key
 }) {
   return {
-    at: new Date(at).toISOString(),
-    set: 'base',
-    verb: 'pickup',
-    zones: [...zones],
-    seconds: seconds === null || seconds === undefined ? null : Math.max(0, Math.round(seconds)),
-    result: journalResult(out.kind),
+    ...entryHead({
+      at,
+      set,
+      verb: 'pickup',
+      ids: zones,
+      key,
+      seconds,
+      result: journalResult(out.kind)
+    }),
     files: out.files,
     bytes: out.bytes,
     failed: out.failed.map(f => ({
@@ -1087,9 +1112,7 @@ export function pickupEntry({
       source: f.source,
       error: f.error ?? null
     })),
-    ...(job ? {
-      job: String(job)
-    } : {})
+    ...jobOf(job)
   };
 }
 /** Un compte : le nombre d'une liste, ou le nombre lui-même ; 0 sinon. */
@@ -1109,12 +1132,8 @@ export function vfrFetchOutcome(final) {
       unchanged: countOf(r.unchanged),
       notPublished: countOf(r.notPublished)
     };
-  let kind;
-  if (final?.state === 'interrupted') kind = 'interrupted';
-  else if (final?.state === 'cancelled' || r.reason === 'cancelled') kind = 'cancelled';
-  else if (['no-base', 'not-published', 'partial', 'failed'].includes(r.reason)) kind = r.reason;
-  else if (final?.state === 'error' || r.ok === false) kind = 'failed';
-  else kind = failed.length ? counts.fetched || counts.unchanged ? 'partial' : 'failed' : 'done';
+  const kind = kindOf(final, r, ['no-base', 'not-published', 'partial', 'failed'], failed.length ? counts.fetched || counts.unchanged ?
+    'partial' : 'failed' : 'done');
   return {
     kind,
     fetched: [],
@@ -1160,29 +1179,23 @@ export function setEntry(set, verb, {
   out,
   job
 }) {
-  const make = {
+  const base = set === 'base';
+  return {
+    ...({
       build: journalEntry,
       fetch: fetchEntry,
       purge: purgeEntry,
       pickup: pickupEntry
-    } [verb],
-    e = make({
+    } [verb])({
       at,
       zones: ids,
       seconds,
       out,
-      job
-    });
-  if (set === 'base') return e;
-  const {
-    zones,
-    ...rest
-  } = e;
-  return {
-    ...rest,
-    set,
-    items: zones,
-    ...(out.counts ? {
+      job,
+      set,
+      key: base ? 'zones' : 'items'
+    }),
+    ...(!base && out.counts ? {
       counts: out.counts
     } : {}) // vfr/fetch : les cartes téléchargées, déjà là, pas encore publiées
   };
@@ -1210,12 +1223,7 @@ export function sheetsOutcome(final) {
     p = sheetsPlan(final),
     copied = num(r.copied) ?? (Array.isArray(r.copied) ? r.copied.length : p.copied),
     removed = num(r.removed) ?? (Array.isArray(r.removed) ? r.removed.length : p.removed);
-  let kind;
-  if (final?.state === 'interrupted') kind = 'interrupted';
-  else if (final?.state === 'cancelled' || r.reason === 'cancelled') kind = 'cancelled';
-  else if (r.reason === 'no-author' || r.reason === 'merge-pending') kind = r.reason;
-  else if (final?.state === 'error' || r.ok === false || r.reason === 'failed') kind = 'failed';
-  else kind = 'done';
+  const kind = kindOf(final, r, ['no-author', 'merge-pending', 'failed'], 'done');
   return {
     kind,
     copied,
@@ -1233,17 +1241,18 @@ export function sheetsEntry({
   job
 }) {
   return {
-    at: new Date(at).toISOString(),
-    set: SHEETS.set,
-    verb: SHEETS.verb,
-    items: [],
-    seconds: seconds === null || seconds === undefined ? null : Math.max(0, Math.round(seconds)),
-    result: journalResult(out.kind),
+    ...entryHead({
+      at,
+      set: SHEETS.set,
+      verb: SHEETS.verb,
+      ids: [],
+      key: 'items',
+      seconds,
+      result: journalResult(out.kind)
+    }),
     copied: out.copied,
     removed: out.removed,
-    ...(job ? {
-      job: String(job)
-    } : {})
+    ...jobOf(job)
   };
 }
 
@@ -1292,15 +1301,18 @@ export function chainEntry({
   job
 }) {
   return {
-    at: new Date(at).toISOString(),
-    set: 'all',
-    verb: 'update',
-    items: items.map(i => ({
-      set: i.set,
-      result: i.result
-    })),
-    seconds: seconds === null || seconds === undefined ? null : Math.max(0, Math.round(seconds)),
-    result,
+    ...entryHead({
+      at,
+      set: 'all',
+      verb: 'update',
+      ids: items.map(i => ({
+        set: i.set,
+        result: i.result
+      })),
+      key: 'items',
+      seconds,
+      result
+    }),
     job: String(job)
   };
 }
@@ -1450,10 +1462,12 @@ export function publishOutcome(r) {
  *  instant en ms ; result : 'failed' pour un échec, 'done' sinon. */
 export function publishEntry(at, out) {
   return {
-    at: new Date(at).toISOString(),
-    set: 'base',
-    verb: 'publish',
-    result: out.kind === 'failed' || out.kind === 'no-exchange' ? 'failed' : 'done', // rien n'est parti : jamais « done »
+    ...entryHead({
+      at,
+      set: 'base',
+      verb: 'publish',
+      result: out.kind === 'failed' || out.kind === 'no-exchange' ? 'failed' : 'done' // rien n'est parti : jamais « done »
+    }),
     committed: out.committed,
     received: out.received,
     held: out.held,
