@@ -1409,6 +1409,23 @@ redesigned for touch at that point.
        6 Nov, R-C8/9/10 when touched); Réglages R-S1, R-S2 done, R-S3 (one helper for the launcher's secrets) in
        progress. Every session's queue is then empty: the Map's sixth reading (read only, after the refactoring) and
        the user's answers (Missions, pre-release 6.0.0-alpha.3) decide what comes next.
+       **Closed (31 Oct, evening)**: Réglages R-S3 77264918e (one helper for the launcher's secrets), R-S4 e8aa8dab3
+       (one frozen provider table), R-S5 89dd17934, R-S6 794f6ac60, R-S7 317d8d46c, R-S8 435f70e44 + bdb072221 (the Data
+       module in eight screen files and six pure model files behind a façade, code moved only, exports identical by
+       script), R-S9 6105be2ba + 3fe9628ca (cards and actions of the Settings, one key per meaning checked by script:
+       two keys mean the same only when their four languages are equal), R-S10 8b46fc32a reduced to its rule — R-S8 had
+       already left one writer per shared field, so the lot is the rule in the SPEC, the table of states and their
+       transitions, and a static case (I29) that fails when another file writes `S.run`, `S.result` or `S.chain`, with
+       its counter-test. Two findings of the security review on the way, both fixed at once: a configuration's `api`
+       sent the pilot's GitHub token elsewhere (since 23 Oct; transport 683af2b8d and configuration 375803a86, A56
+       with its counter-test) and a response key read through the prototype (8acd4976e, `own()`). The provider of the
+       data repository is chosen by the configuration, never deduced from the host (540393e28; github.com, gitlab.com
+       and framagit.org are the only hosts known by themselves; the transport already knew only GitHub and "any other
+       host is a GitLab"). **Method kept from these three days**: the target form written in the SPEC before the code,
+       a lot = one commit, "moved only" checked by `git diff --color-moved`, exports and keys checked by script, the
+       HTML of the screen compared before and after, every guard shown failing without the guard (counter-test), no
+       push with a FAIL line whatever the known flakes. Remaining: R-C7 (the frame's trail) after 6 Nov; R-C8/9/10 when
+       those files are touched.
 
    34. **Administration: what is still missing to turn V2 off** (user, 30 Oct: "j'attends une carte réellement
        utilisable, et un module d'admin"; inventory V2 → V3 of the same day, scope confirmed). The Maintenance
