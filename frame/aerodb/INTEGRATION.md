@@ -298,7 +298,11 @@ session, which keeps the module's files):
   build modes, links by cycle, licences, statuses, EAD outcome per State, file-name readers). SPEC § 5. The module reads
   nothing else of aerodb and never `sia/base/`, `proc/` or `AircraftDB/` itself.
 - **The zones' outlines** (30 Oct 2026, the Data module's map of zones): `await aerodb.zoneOutlines()` → `{ <zone>: { name:
-  [fr, en, de, es], rings: [[[lon, lat], …]], box: [w, s, e, n] } }`, frozen, one load for the page (bench K21). A module
+  [fr, en, de, es], rings: [[[lon, lat], …]], box: [w, s, e, n], parts, framed } }`, frozen, one load for the page (bench K21). `box` is
+  never wider than 180° of longitude (31 Oct 2026; SPEC § 5): the whole zone when it fits, else its main group (France without the
+  overseas), its `west` or `east` possibly beyond ±180 (the United States from −187.5); `parts` the frames of its groups of rings, main
+  first; `framed` the rings moved by ±360° into that frame. A map that frames on zones (the Data module's `fit()`) draws `framed`;
+  a world map (the Map's plain background) keeps `rings`. A module
   never loads `shared/carto/aero_zones_geo.js` itself; the Map's plain background reads it here too (its own copy,
   `modules/maps/lib/outlines.js`, goes with the Map's refactor).
 - **Cycles**: dates `YYYY-MM-DD` in every answer, the AIRAC id `YYNN` only on screen, converted by `frame/aerodb/airac.js`

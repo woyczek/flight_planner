@@ -28,6 +28,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   framed on each zone's main ring (a zone across the antimeridian — the United States with the Aleutians — is no longer framed on
   the whole world), or on a box the caller gives. Asked by Settings so that the Data module's map is the real, scrollable map (user,
   31 Oct).
+- **aerodb: a zone's frame no longer goes round the world** (`frame/aerodb/aerodb.js`; SPEC, INTEGRATION, DECISIONS; test K21) — the
+  United States, France, Russia, New Zealand, Fiji and Kiribati spanned −180 to +180 because of the antimeridian or their overseas
+  lands, so the Data module's map drew them tiny. `zoneOutlines()` now gives a frame never wider than 180° (the United States from the
+  Aleutians to Maine; France: the metropolitan frame, the overseas in `parts`) and `framed`, the rings moved into that frame.
 - **Weather layer: `cost(request)`, and the model of a region in the frame only** (`frame/lib/weather_store.js`, `ctx.weather.cost`;
   frame INTEGRATION 14.1, DECISIONS; noreg A25) — what a request would cost, from the cache and the known run, asking
   nothing (Atmosphere's « ≈ n calls »); `aloft`, `grid` and `cost` share one computation of the request. Fuel's

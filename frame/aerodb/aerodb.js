@@ -14,7 +14,7 @@
   // Lecture des fichiers : par le lecteur reçu (couche de données du frame : read(chemin, { policy: 'reference', wait })
   // → { value | text, rev, cached, at } | null ; list(préfixe) → chemins | null ; watch(préfixe, fn)), ou, en attendant
   // le frame, par AeroDB.fetchReader() (lanceur : fichiers servis ; mode GitHub : GitHubData).
-  // API : window.AeroDB = { create({ reader, zones, now }) → service, fetchReader({ root }), airacCycles(n, date), literal,
+  // API : window.AeroDB = { create({ reader, zones, now }) → service, fetchReader({ root }), airacCycles(n, date), literal, zoneFrame(anneaux),
   //   declaration() → préfixes lus et écrits par aerodb (à donner à FrameData.adapter) }.
   // Service : status(), state() (loading, ready, noaccess, offline, unpublished, idle : sans lire), refresh(), ready(q),
   //   on('change' | 'state', fn), airspaces(q), aerodromes(q), navaids(q), points(q), airways(q), vrp(q),
@@ -48,8 +48,100 @@
     }
     return v;
   };
-  /** { <zone>: { name: [fr, en, de, es], rings: [[[lon, lat], …]], box: [w, s, e, n] } } : les contours du fichier, servis tels
-   *  quels (ordre GeoJSON) et gelés ; box, le cadre de la zone (ses parties de AERODB_ZONES réunies, sinon calculé). */
+  const FRAME_GAP = 10; // degrés : deux anneaux d'une zone plus proches que cela sont du même groupe (côtes, îles d'un archipel)
+  const mod360 = x => (x % 360 + 360) % 360;
+  /** Le plus petit arc de longitudes qui couvre des intervalles [w, w + len] pris sur le cercle : { w, span }. */
+  function arcOf(iv) {
+    let best = null;
+    for (const a of iv) {
+      let span = 0;
+      for (const b of iv) span = Math.max(span, mod360(b.w - a.w) + b.len);
+      if (!best || span < best.span) best = {
+        w: a.w,
+        span
+      };
+    }
+    return best;
+  }
+  /** Le cadre [ouest, sud, est, nord] d'anneaux mesurés (arcOf, latitudes), placé autour de la longitude ref : ouest ou est peut sortir
+   *  de [−180, 180] (les Aléoutiennes à l'ouest de l'Alaska), jamais plus de 360° de large. */
+  function frameBox(iv, ref) {
+    const {
+      w,
+      span
+    } = arcOf(iv),
+      k = Math.round((ref - (w + span / 2)) / 360) * 360;
+    return [w + k, Math.min(...iv.map(i => i.s)), w + k + span, Math.max(...iv.map(i => i.n))].map(v => Math.round(v * 100) /
+      100); // au centième, comme le fichier
+  }
+  /** Le cadre d'une zone d'après ses anneaux, sans faire le tour du monde (V3, 31 oct. 2026) : les longitudes sont prises sur le cercle,
+   *  autour de l'anneau principal (le plus grand) ; un anneau qui passe l'antiméridien est lu d'un seul tenant. → { box, parts, framed } :
+   *  box, le cadre de toute la zone si elle tient dans 180° de longitude, sinon celui du groupe de l'anneau principal (la France
+   *  métropolitaine, sans l'outre-mer) ; parts, les cadres des groupes d'anneaux contigus (à moins de FRAME_GAP), le principal d'abord ;
+   *  framed, les anneaux avec leurs longitudes décalées de ±360° pour tomber dans ce repère (les mêmes tableaux quand rien ne bouge). */
+  function zoneFrame(rings) {
+    const iv = (rings || []).filter(r => r?.length).map(r => {
+      let xs = r.map(p => p[0]);
+      const across = Math.max(...xs) - Math.min(...xs) > 180,
+        pts = across ? r.map(([x, y]) => [x < 0 ? x + 360 : x, y]) : r;
+      if (across) xs = pts.map(p => p[0]);
+      const ys = pts.map(p => p[1]),
+        w = Math.min(...xs),
+        e = Math.max(...xs);
+      let a = 0;
+      for (let i = 0; i < pts.length; i++) {
+        const p = pts[i],
+          q = pts[(i + 1) % pts.length];
+        a += p[0] * q[1] - q[0] * p[1];
+      }
+      return {
+        r,
+        pts,
+        w,
+        len: e - w,
+        s: Math.min(...ys),
+        n: Math.max(...ys),
+        area: Math.abs(a) / 2
+      };
+    });
+    if (!iv.length) return null;
+    const main = iv.reduce((m, i) => i.area > m.area ? i : m),
+      ref = main.w + main.len / 2;
+    // groupes : deux anneaux à moins de FRAME_GAP en longitude (sur le cercle) et en latitude sont du même groupe
+    const up = iv.map((_, i) => i),
+      root = i => up[i] === i ? i : up[i] = root(up[i]),
+      gapLon = (a, b) => mod360(b.w - a.w) <= a.len || mod360(a.w - b.w) <= b.len ? 0 : Math.min(mod360(b.w - a.w - a.len), mod360(a.w -
+        b.w - b.len));
+    for (let i = 0; i < iv.length; i++)
+      for (let j = i + 1; j < iv.length; j++)
+        if (root(i) !== root(j) && Math.max(0, iv[j].s - iv[i].n, iv[i].s - iv[j].n) <= FRAME_GAP && gapLon(iv[i], iv[j]) <= FRAME_GAP)
+          up[
+            root(j)] = root(i);
+    const groups = new Map();
+    iv.forEach((x, i) => {
+      const g = root(i);
+      groups.has(g) ? groups.get(g).push(x) : groups.set(g, [x]);
+    });
+    const mainG = groups.get(root(iv.indexOf(main))),
+      list = [mainG, ...[...groups.values()].filter(g => g !== mainG).sort((a, b) => b.reduce((s, x) => s + x.area, 0) - a.reduce((s,
+          x) =>
+        s + x.area, 0))],
+      parts = list.map(g => frameBox(g, ref)),
+      all = arcOf(iv).span <= 180 ? frameBox(iv, ref) : parts[0],
+      mid = (all[0] + all[2]) / 2,
+      framed = iv.map(x => {
+        const k = Math.round((mid - (x.w + x.len / 2)) / 360) * 360;
+        return k || x.pts !== x.r ? x.pts.map(([lon, lat]) => [Math.round((lon + k) * 100) / 100, lat]) : x.r;
+      });
+    return {
+      box: all,
+      parts,
+      framed
+    };
+  }
+  /** { <zone>: { name: [fr, en, de, es], rings: [[[lon, lat], …]], box: [w, s, e, n], parts: [[w, s, e, n], …], framed: [[[lon, lat], …]] } } :
+   *  les contours du fichier, servis tels quels (ordre GeoJSON) et gelés ; box, parts et framed : zoneFrame (box jamais plus large que 180°
+   *  de longitude ; ouest ou est peut sortir de [−180, 180]) ; sans anneau, box réunit les parties de AERODB_ZONES. */
   function zoneOutlines() {
     outlinesP ||= (window.AERO_ZONES_GEO ? Promise.resolve() : new Promise((ok, ko) => {
       const sc = document.createElement('script');
@@ -62,16 +154,17 @@
         frames = window.AERODB_ZONES || {},
         out = {};
       for (const [id, g] of Object.entries(geo)) {
-        const parts = frames[id]?.b?.length ? frames[id].b : (g.r || []).map(r => r.reduce((b, [x, y]) => [Math.min(b[0], x), Math
-          .min(b[1], y),
-          Math.max(b[2], x), Math.max(b[3], y)
-        ], [180, 90, -180, -90]));
+        const f = zoneFrame(g.r),
+          parts = f ? f.parts : (frames[id]?.b || []).map(b => [...b]);
         out[id] = {
           name: g.n || [id, id, id, id],
           rings: g.r || [],
-          box: parts.reduce((b, p) => [Math.min(b[0], p[0]), Math.min(b[1], p[1]), Math.max(b[2], p[2]), Math.max(b[3], p[3])], [
+          box: f ? f.box : parts.reduce((b, p) => [Math.min(b[0], p[0]), Math.min(b[1], p[1]), Math.max(b[2], p[2]), Math.max(b[3],
+            p[3])], [
             180, 90, -180, -90
-          ])
+          ]),
+          parts,
+          framed: f ? f.framed : []
         };
       }
       return freezeAll(out);
@@ -2214,6 +2307,7 @@
     fetchReader,
     airacCycles,
     literal,
+    zoneFrame,
     declaration
   };
 })();

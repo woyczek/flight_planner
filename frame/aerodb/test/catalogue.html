@@ -290,6 +290,52 @@
       check('zoneOutlines(): frozen, nobody changes them', Object.isFrozen(o) && Object.isFrozen(fr) && Object.isFrozen(fr.rings[0]) &&
         Object
         .isFrozen(fr.rings[0][0]), 0);
+      // le cadre d'une zone ne fait plus le tour du monde (31 oct. 2026) : longitudes prises sur le cercle autour de l'anneau principal
+      const inBox = (b, lon, lat) => [lon - 360, lon, lon + 360].some(x => b[0] <= x && x <= b[2]) && b[1] <= lat && lat <= b[3],
+        wide = Object.entries(o).filter(([, z]) => [z.box, ...z.parts].some(b => b[2] - b[0] > 180)).map(([id]) => id);
+      check('zoneOutlines(): no frame of any zone (box or part) wider than 180° of longitude', !wide.length, wide);
+      const us = o.us;
+      check(
+        'zoneOutlines(): the United States framed from the Aleutians (Attu, west of 180°) to Maine, Alaska and Hawaii inside, 120° wide not 358°',
+        us.box[0] < -180 && us.box[2] - us.box[0] < 130 && [
+          [172.9, 52.9],
+          [-149.9, 61.2],
+          [-157.86, 21.3],
+          [-80.19, 25.76],
+          [-69.0, 44.8]
+        ].every(([x,
+          y
+        ]) => inBox(us.box, x, y)), us.box);
+      check(
+        'zoneOutlines(): framed, the rings moved by 360° into the frame (the Aleutians west of 180° at −187°), the others the same arrays',
+        us.framed.length === us.rings.length && us.framed.every(r => r.every(([x]) => us.box[0] - .01 <= x && x <= us.box[2] +
+          .01)) && us.framed
+        .some(r => r[0][0] < -180) && us.framed.filter((r, i) => r === us.rings[i]).length > 70 && Object.isFrozen(us.framed[0]), us
+        .framed
+        .length);
+      check(
+        'zoneOutlines(): France framed on its main group (metropolitan France and Corsica), the overseas in its other parts (Nouméa, Réunion, Cayenne)',
+        inBox(fr.box, 2.35, 48.85) && inBox(fr.box, 9.15, 42.15) && !inBox(fr.box, 166.45, -22.27) && fr.box[2] - fr.box[0] < 20 && [
+          [166.45, -22.27],
+          [55.5, -21.1],
+          [-52.33, 4.94]
+        ].every(([x, y]) => fr.parts.slice(1).some(b => inBox(b, x, y))) && fr.parts[0].join() === fr.box.join(), fr.parts);
+      check('zoneOutlines(): Russia from Kaliningrad to Chukotka across 180°, New Zealand with the Chathams, Fiji: frames under 180°',
+        inBox(o.ru.box, 20.5, 54.7) && inBox(o.ru.box, -172, 65) && o.ru.box[2] - o.ru.box[0] <= 180 && inBox(o.nz.box, -176.5, -
+          44) && o.nz.box[
+          2] - o.nz.box[0] < 25 && o.fj.box[2] - o.fj.box[0] < 10, [o.ru.box, o.nz.box, o.fj.box]);
+      const zf = AeroDB.zoneFrame([
+        [
+          [179, -17],
+          [-179, -17],
+          [-179, -16],
+          [179, -16],
+          [179, -17]
+        ]
+      ]);
+      check('AeroDB.zoneFrame: a ring across the antimeridian read in one piece (2° wide, not 358°)', zf.box[2] - zf.box[0] === 2 && zf
+        .parts
+        .length === 1 && zf.framed[0][1][0] === 181 && AeroDB.zoneFrame([]) === null, zf);
     } catch (e) {
       check('no exception', false, String(e && e.stack || e));
     }

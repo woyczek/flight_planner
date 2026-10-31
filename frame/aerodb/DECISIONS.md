@@ -2187,3 +2187,21 @@ page is served to `Sec-Fetch-Site: none`, refused to `cross-site`, and, where th
   arriving late never replaces the newer one in the cache). No general bound inside `fetchOne` (Simplification): the reader that stops
   waiting says so. Only part reads are bounded: bounding the list of zones made a first launch held longer than the
   bound say « not published » for 30 s (A15, found by the noreg before the push).
+
+## 31 October 2026 — the frame of a zone no longer goes round the world
+
+- **What the user saw** (phone, 390 px, Maintenance › Data › Procedures): the United States and France drawn with their real outlines,
+  but tiny in a world-wide map. The outlines were right; the frames were not: a zone's `box` joined the frames of its rings in
+  [−180, 180], so a zone with land on both sides of the antimeridian (the Aleutians at +172°) spanned −178 to +180. Six zones did:
+  `us`, `fr` (its overseas, the whole world), `ru`, `nz`, `fj`, `ki`.
+- **Now** (`zoneFrame`, in `zoneOutlines()`): longitudes are taken on the circle around the main ring (the largest); a ring across the
+  antimeridian is read in one piece; the zone's frame is the smallest arc that holds all its rings when it is 180° or less (the
+  United States: 120.5°, from Attu at −187.5 to Maine), else the frame of the main ring's group, the groups being rings closer than
+  10° (France: metropolitan France and Corsica, 14°; the six overseas groups in `parts`). Bench: no frame of any zone wider than 180°.
+- **The rings are not moved** (`rings` stays the file's, for world maps); `framed` gives them moved by ±360° into the zone's frame, the
+  same arrays when nothing moves (75 of the 80 US rings), for a map framed on zones. A frame's west or east beyond ±180 is the point:
+  the Aleutians stay west of Alaska.
+- **Cost**: 8 ms for the 218 zones, once per page. `frame/aerodb/zones.js` (`AERODB_ZONES`, the frames of the parts used to place a
+  point in a zone) is unchanged.
+- **Consumers** (told by the ergonomics session): the Data module's map frames on `box` and should draw `framed` (with `rings`, the
+  Aleutians west of 180° fall outside the frame); the Map's plain background keeps `rings`; the Weather module when it reads them.
