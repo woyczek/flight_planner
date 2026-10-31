@@ -456,8 +456,9 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
   n'a pas les infos… sans cramer des crédits… users are dumb"): a device never calls Open-Meteo outside the flight
   grid, whatever the view. Outside the grid the map draws a **global synoptic file** built once per run by the
   repository workflow (standard-library Python in `tools/`, a job in `.github/workflows`) and published with the
-  pages: MSL pressure, 10 m wind, cloud cover, 2 m temperature, every 3 h to +24 h, on a **15°** mesh (≈ 288
-  points; ≈ 1 150 weighted calls a day over 4 runs, from the runner only); 10° only if the user asks. No extra
+  pages: MSL pressure, 10 m wind, cloud cover, 2 m temperature, every 3 h to **+72 h**, on a **5°** mesh (the
+  figures of the paragraph "as built" below: NOAA GFS from the runner only, no Open-Meteo credit; the first draft
+  said 15° to +24 h, amended on 31 Oct on Atmosphere's point 4). No extra
   button: the grip title says what is shown ("Synoptique monde · run 12Z · +6 h"), and the flight cut returns when
   the view comes back into the grid. Format specified by the atmosphere module and inherited by the frame/weather
   lot (§ 9.8). SIGMET and METAR (aviationweather.gov, no CORS) come only through the launcher relay, later.
@@ -1426,6 +1427,20 @@ redesigned for touch at that point.
        HTML of the screen compared before and after, every guard shown failing without the guard (counter-test), no
        push with a FAIL line whatever the known flakes. Remaining: R-C7 (the frame's trail) after 6 Nov; R-C8/9/10 when
        those files are touched.
+       **Atmosphere integrated (31 Oct, evening)**: the cloud session's branch `feature/atmosphere-route-v3-tip`
+       (GitHub, 30 Oct) rebased on `v3` by the ergonomics session — 0e1631995 (the frame's "?" opens the Weather chapter
+       at the view's paragraph), cf6238b10 (the SPEC as a final state), baa91389f (the module rewritten from a blank
+       file on the frame's weather layer, fifteen files under 60 KB, no fetch, storage nor navigation of its own),
+       6c1da70c6 (E13); one conflict (`meta.files`, already carrying `weather_store.js`), the module's old store bench
+       gone with its store (I28 table, 61778a14d). Security review: acceptable. The thirteen open points of its lot 0
+       answered: level 1 with landscape; the thin line by default; three chips always ("i" = legend); the world synoptic
+       is 5° / +72 h; no status line; `demo.js` stays in the module and never writes the shared cache; `section.js`
+       unchanged; `planned_at` only; the parity gate as written (E1–E14, J1, benches, screenshots at 390 and 1280). The
+       weather layer's contract (V3 Frame): cache-only reads at opening and `cost(request)` for "Load (≈ n calls)", the
+       model by region and the run owned by the layer (`modelFor` leaves Fuel's `winds.js`), METAR / TAF with their
+       time, the world through the layer, the quota in Réglages › Diagnostics. Next for Atmosphere, one commit each on
+       a GitHub branch: the Layers button on the sheet's grip row as the Map (a314a352c), the expanded sheet at half
+       the view (the frame's rule since 06dcd175b), the E8 flake closed in the case's helper.
 
    34. **Administration: what is still missing to turn V2 off** (user, 30 Oct: "j'attends une carte réellement
        utilisable, et un module d'admin"; inventory V2 → V3 of the same day, scope confirmed). The Maintenance
