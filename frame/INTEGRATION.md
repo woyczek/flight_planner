@@ -317,6 +317,7 @@ Modules ask each other things only through the address (no event between modules
 | `#<module>?from=<module>` | the asking module | the frame | the header's « ← <module> »; never consumed by a module |
 | `#help?m=<module>&a=<anchor>` | the frame (« ? ») | the help screen | the chapter and the paragraph |
 | `#fuel?view=sheets` | the frame (popover) | fuel | a view, not a request: not consumed |
+| `#fuel?mission=<id>` | missions (« Préparer ce vol ») | fuel | the flight of the mission (modules/missions SPEC § 4): read once the current flight is known, a started flight refused, a route replaced only after the question; consumed |
 | `#fuel?focus=route\|dep\|arr` | the map (« Modifier la route », « Changer ») | fuel | the step or the field to show; consumed |
 | `#maps?choose=arr\|dep&icao=<OACI>` | fuel (« Sur la carte ») | the map | the choice mode (§ 10.23 of the coordination); consumed |
 | `#fuel?focus=dep\|arr&rwy=…&sid=…&star=…&app=…&apptrans=…` | the map (the choice mode comes back by `location.replace` with every key of the side in one trip, § 10.30: lower case, id or `none` = « Aucune », a missing key = family untouched, no SID / STAR transition) | fuel | the proposal, checked against the flight's aerodrome and applied as a choice made in Fuel, one write and one change line; consumed together with `focus` |

@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Missions lot 2 (reduced): the airline's missions in the Pilot application** (`modules/missions/module.js`, help ×4; `frame/app.js`:
+  the 7th module, in the phone's « Préparer » tab; Fuel's door `#fuel?mission=<id>`: `modules/fuel/module.js`, `CF.FUEL_FIELDS` gains
+  `mission`; SPEC § 3–4, DECISIONS; noreg N2–N4) — the list of `missions/mission_registry.yaml` by family (organisations …Z left out),
+  a search and a family filter, « volée le … » from my reports, « Choisir » (a flat summary), « Tirer au sort » among the missions I
+  have not flown, « Préparer ce vol »: Fuel sets departure, arrival, the points as ICAO coordinates, the level and the type, after a
+  question when a route is already there, never on a started flight.
 - **Frame: « ? » and ⚙ top right in every application** (`frame/app.js`, `frame/frame.css`; frame SPEC 3.1, DECISIONS,
   Maintenance's manual ×4; noreg A59) — the user's return on the previous lot: Maintenance keeps its header buttons and
   the state dot on ⚙; its bar carries its modules only (Data, Aircraft), marked when shown, nothing marked over the help

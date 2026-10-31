@@ -179,6 +179,12 @@
       id: 'atmosphere',
       label: ['Météo', 'Weather', 'Wetter', 'Meteo'],
       icon: 'layers'
+    }, {
+      // les missions de la compagnie (modules/missions/SPEC.md, lot 2 réduit du 31 oct. 2026) : choisir ou tirer au sort, puis
+      // « Préparer ce vol » dans Carburant ; sur le téléphone, dans le groupe de l'onglet Préparer
+      id: 'missions',
+      label: ['Missions', 'Missions', 'Missionen', 'Misiones'],
+      icon: 'target'
     }],
     // barre d'onglets du téléphone (760 px et moins), cinq au plus (V3_SPECIFICATION.md § 7.1 règle 14) : un onglet = un groupe
     // de modules (modules : l'onglet reste choisi tant que l'un d'eux est affiché ; le toucher ouvre le dernier montré du groupe
@@ -191,7 +197,7 @@
       id: 'prepare',
       label: ['Préparer', 'Prepare', 'Vorbereiten', 'Preparar'],
       icon: 'fuel',
-      modules: ['fuel'],
+      modules: ['fuel', 'missions'],
       views: [{
         id: 'sheets',
         module: 'fuel',

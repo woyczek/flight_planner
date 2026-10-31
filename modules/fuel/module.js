@@ -16,6 +16,7 @@ import * as RT from '../../frame/lib/route_text.js';
 import * as RM from '../../frame/lib/route_model.js'; // la route lue depuis son texte (refonte § 10.33 R-F4)
 import * as RG from '../../frame/lib/routing.js'; // voies aériennes du bouton « Auto » (bibliothèque du cadre)
 import * as CF from '../../frame/lib/current_flight.js';
+import * as MS from '../../frame/lib/mission.js'; // le vol qu'une mission donne (modules/missions SPEC § 4)
 import * as PR from '../../frame/lib/procedures.js'; // noms, sortie et entrée des procédures pour le texte de route (§ 10.31)
 import * as FMS from '../../frame/lib/fms.js'; // plan de vol écrit pour X-Plane (.fms) et MSFS (.pln), V3 § 10.28
 import {
@@ -48,7 +49,7 @@ export const meta = {
   title: ['Carburant et niveau', 'Fuel and level', 'Kraftstoff und Flugfläche', 'Combustible y nivel'], // en-tête du téléphone (règle 16)
   apps: ['pilot'],
   level: 1,
-  reads: ['pilot/', 'cache/fuel/'],
+  reads: ['pilot/', 'cache/fuel/', 'missions/'], // missions/ : « Préparer ce vol » du module Missions (#fuel?mission=<id>)
   // fiches, flotte et référence : par aerodb (aircraft()), qui seul écrit aircraft/sheets/ et le miroir V2
   writes: [{
     prefix: 'pilot/',
@@ -66,7 +67,8 @@ export const meta = {
     '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/time.js', '../../frame/lib/geo.js',
     // importés depuis (R-F1, R-F4a, § 10.27, la météo du cadre) : gardés hors ligne eux aussi dès l’installation
-    '../../frame/lib/wind.js', '../../frame/lib/route_model.js', '../../frame/lib/adnames.js', '../../frame/lib/metar.js'
+    '../../frame/lib/wind.js', '../../frame/lib/route_model.js', '../../frame/lib/adnames.js', '../../frame/lib/metar.js',
+    '../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js'
   ]
 };
 
@@ -272,6 +274,21 @@ const TX = {
   simbrief: ['Dernier OFP SimBrief', 'Last SimBrief OFP', 'Letzter SimBrief-OFP', 'Último OFP de SimBrief'],
   noSimbrief: ['Identifiant SimBrief à régler (⚙).', 'SimBrief ID to set (⚙).', 'SimBrief-Kennung einstellen (⚙).',
     'Identificador SimBrief por ajustar (⚙).'
+  ],
+  // « Préparer ce vol » du module Missions (#fuel?mission=<id>)
+  missionLoaded: ['Mission {id} : {dep} → {arr} ({n} points), à compléter.', 'Mission {id}: {dep} → {arr} ({n} points), to complete.',
+    'Mission {id}: {dep} → {arr} ({n} Punkte), zu vervollständigen.', 'Misión {id}: {dep} → {arr} ({n} puntos), por completar.'
+  ],
+  missionReplace: ['Remplacer le vol en préparation par la mission {id} ?', 'Replace the flight being prepared with mission {id}?',
+    'Den vorbereiteten Flug durch die Mission {id} ersetzen?', '¿Sustituir el vuelo en preparación por la misión {id}?'
+  ],
+  missionStarted: ['Vol démarré : la mission {id} n’est pas reprise (annulez le départ ou terminez le vol d’abord).',
+    'Flight started: mission {id} is not loaded (cancel the start or finish the flight first).',
+    'Flug gestartet: Mission {id} wird nicht übernommen (erst den Start abbrechen oder den Flug beenden).',
+    'Vuelo iniciado: la misión {id} no se carga (anule la salida o termine el vuelo primero).'
+  ],
+  missionUnread: ['Mission {id} introuvable ou illisible dans missions/.', 'Mission {id} not found or unreadable in missions/.',
+    'Mission {id} in missions/ nicht gefunden oder unlesbar.', 'Misión {id} no encontrada o ilegible en missions/.'
   ],
   ofpLoaded: ['OFP {dep} → {arr} repris ({n} points).', 'OFP {dep} → {arr} loaded ({n} points).',
     'OFP {dep} → {arr} übernommen ({n} Punkte).',
@@ -3609,6 +3626,82 @@ function applyOfp(ofp) {
   renderPlan();
   resolveRoute();
 }
+/** « Préparer ce vol » du module Missions (modules/missions SPEC § 4) : la mission lue (registre, puis son fichier) donne
+ *  le vol par missionFlight — départ, arrivée, points dans l'ordre du fichier, appareil (sa fiche si le type en a une), niveau,
+ *  mission — ; le reste (piste, procédures, carburant, météo) est la préparation habituelle. Refusée sur un vol démarré ; une
+ *  route déjà posée n'est remplacée qu'après la question. Les points sont écrits en coordonnées OACI à la minute (un nom de la
+ *  mission, PT1 ou TARGET, serait relu dans aerodb, où un point réel du même nom l'emporterait). */
+async function applyMission(id) {
+  const s = S,
+    ctx = S.ctx,
+    yaml = async path => {
+      const text = await Promise.resolve(ctx.data.get(path)).catch(() => null);
+      if (typeof text !== 'string' || !text.trim()) return null;
+      try {
+        if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+        return globalThis.jsyaml.load(text);
+      } catch {
+        return null;
+      }
+    };
+  if (S.flight.started?.at) return ctx.notify(tt(TX.missionStarted, {
+    id
+  }), 'warn');
+  const row = MS.readRegistry(await yaml('missions/mission_registry.yaml')).find(r => r.id === id),
+    mf = row ? MS.missionFlight(MS.readMission(await yaml(`missions/${row.folder}/${row.file}`))) : null;
+  if (gone(s)) return;
+  if (!mf) return ctx.notify(tt(TX.missionUnread, {
+    id
+  }), 'warn');
+  const was = S.flight.route || {};
+  if ((was.text || was.dep || was.arr) && !(await ctx.ask(tt(TX.missionReplace, {
+      id
+    })))) return;
+  if (gone(s) || S.flight.started?.at) return;
+  const f = S.flight,
+    {
+      dep,
+      arr,
+      points
+    } = mf.route,
+    type = mf.aircraft.type,
+    sheet = type ? S.sheets.find(p => (p.icao || '').toUpperCase() === type) : null;
+  f.route = {
+    ...emptyFlight().route,
+    text: [dep, ...points.map(p => RT.icaoCoord(p.lat, p.lon)), arr].filter(Boolean).join(' '),
+    dep,
+    arr,
+    manual: false,
+    from: 'route'
+  };
+  if (mf.levelFt > 0) f.level = {
+    ft: mf.levelFt
+  };
+  // l'appareil : celui du vol s'il est déjà de ce type, sinon la fiche du type, sinon le type seul
+  if (type && String(f.aircraft?.type || '').toUpperCase() !== type) f.aircraft = sheet ? {
+    sheetId: sheet.id,
+    type: sheet.icao || type,
+    registration: '',
+    name: sheet.name || sheet.id
+  } : {
+    sheetId: '',
+    type,
+    registration: '',
+    name: type
+  };
+  f.ofp = null;
+  S.ofp = null;
+  f.mission = mf.mission;
+  ctx.notify(tt(TX.missionLoaded, {
+    id,
+    dep: dep || '?',
+    arr: arr || '?',
+    n: points.length
+  }), 'ok');
+  saveFlight();
+  renderPlan();
+  resolveRoute();
+}
 /** Redessine ce qui dépend du calcul : origine de la croisière, décision, résultat, blocs repliés ouverts. */
 /** Profil vertical du devis pour maps (pilot/<trigramme>/current_flight.json, champ profile) : vario et vitesse sol
  *  moyens de la montée et de la descente, distances du départ au sommet de montée et du sommet de descente à
@@ -4091,7 +4184,7 @@ export async function mount(el, ctx) {
   // « Aucune », une clé absente laisse sa famille ; § 10.23 puis § 10.30 : rwy sid star app apptrans, pas de transition SID / STAR) :
   // prises une fois, ensemble, et retirées de l'adresse (frame/INTEGRATION.md § 6.1)
   const PROPOSAL_KEYS = ['rwy', 'sid', 'star', 'app', 'apptrans'],
-    q = ctx.consume ? ctx.consume('focus', ...PROPOSAL_KEYS) : ctx.query || {},
+    q = ctx.consume ? ctx.consume('focus', 'mission', ...PROPOSAL_KEYS) : ctx.query || {},
     asked = q.focus;
   if ((asked === 'dep' || asked === 'arr') && PROPOSAL_KEYS.some(k => q[k] != null && q[k] !== '')) S.P.propose(asked, {
     rwy: q.rwy,
@@ -4104,6 +4197,8 @@ export async function mount(el, ctx) {
   // ce que l'adresse demande à l'ouverture (#fuel?focus=route | dep | arr), une seule valeur (refonte § 10.33 R-F6) : le pas qui porte
   // le champ de route, ou celui qui porte la ligne Arrivée (Route avant le départ, Départ après) quand la Carte envoie « Changer »
   S.focus = ['route', 'dep', 'arr'].includes(asked) ? asked : '';
+  // « Préparer ce vol » du module Missions (#fuel?mission=<id>) : reprise une fois le vol courant connu (flightReady)
+  S.missionAsked = String(q.mission || '').trim();
   if (S.focus === 'arr') S.P.focus('arr'); // la première liste de l'arrivée prend le focus dès qu'elle est dessinée
   S.step = S.focus === 'route' ? 1 : S.focus ? (kept.started?.at ? 4 : 1) : Math.max(0, Math.min(4, +S.ui.step || 0));
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(ctx.t(meta.title))}</h1>
@@ -4220,6 +4315,8 @@ function flightReady() {
   }
   S.P.applyFocus();
   if (!S.refsPending) resumeFlight();
+  if (S.missionAsked) applyMission(S.missionAsked);
+  S.missionAsked = '';
 }
 /** Vol modifié ailleurs pendant l'absence de fuel : repris (devis refait) ; sinon la route relue. */
 function resumeFlight() {

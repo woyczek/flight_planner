@@ -12,6 +12,17 @@
   address) as a light component tested first; V2's realistic gestures (turning leaf, seal, moving bookmark, images) come
   back as an optional visual layer per design, never as a second component (the user wanted two versions; the ergonomics
   session's counter-proposal was retained).
+- **31 Oct 2026 — the initial module, minimal, before the 6 Nov freeze ends** (the user: « il est urgent d'avoir le module
+  initial, même minimaliste »; the only new code allowed until 6 Nov). Lot 2 reduced: list, search, family filter, Choisir, Tirer
+  au sort, « Préparer ce vol »; the mission shown as a flat summary. Left for later: the envelope and the reader (§ 5), the
+  assignment and « affectée » (§ 6), the filter by aircraft category. Owner of the code: Features SOG.
+- **31 Oct 2026 — the mission's points go to Fuel as ICAO coordinates.** The SPEC wanted the ids kept as point names; the route
+  text of Fuel looks a name up in aerodb first and keeps the flight's own position only as a fallback, and its normalisation
+  rewrites « PT1 lat lon » as « PT1 »: an invented name of a mission (PT1, TARGET, RDV-1, the last not even a valid name) could
+  then land on a real point elsewhere. Coordinates to the minute (≈ 1 NM) are exact enough for a mission's turning points; the
+  names come back with the Map's drawing of a mission (lot 4).
+- **31 Oct 2026 — `flight.mission` is a field of Fuel's** (`CF.FUEL_FIELDS`), written by Fuel's door only; the report and the
+  flight log may read it later (no consumer yet: a debt, not a rule).
 - **30 Oct 2026 — the rendezvous belongs to the assignment.** Dated rendezvous and the crew's channels (Discord, SRS,
   JoinFS…) are assignment data written by the CPCO, shown with Ouvrir / Copier, readable by every pilot of the airline
   (the fleet's access model); a session password is a known limit, said in the help.

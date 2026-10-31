@@ -1,7 +1,10 @@
 # missions — integration
 
 What the module will read and write, and how the other modules meet it. The rules are in [SPEC.md](SPEC.md).
-**Status: specification only, no code (30 Oct 2026).**
+**Status: lot 2 reduced built (31 Oct 2026): the module reads `missions/mission_registry.yaml`, the mission files and
+`cr/reports/`; it writes nothing. The two `cache/missions/` files below are not written yet (§ 5–6).** The module's
+`meta.reads`: `missions/`, `cr/`. « Préparer ce vol » is the address `#fuel?mission=<id>` (frame INTEGRATION, the table of
+addresses).
 
 ## Files
 

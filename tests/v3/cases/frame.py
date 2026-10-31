@@ -190,16 +190,18 @@ def a7(c):
     c.tap(_tab(c, 'prepare'))                       # a second tap: the tab is already the active one
     c.until("!!document.querySelector('.f-tabpop')", what='the popover opens on a second tap on Préparer')
     rows = c.boxes('.f-tabpop-row')
-    c.eq(len(rows), 2, 'rows Carburant and Fiches', what='popover rows')
+    c.eq(len(rows), 3, 'rows Carburant, Fiches and Missions (the group of the tab, modules/missions since 31 Oct)', what='popover rows')
     bar = c.box('#fTabs')
     for r in rows:
         c.ok(r['h'] >= 43.5, f'row "{r["text"]}" is {r["h"]:.1f} px high', 'at least 44 px')
         c.ok(r['l'] >= 0 and r['r'] <= c.width and r['t'] >= 0, f'row "{r["text"]}" box {r["l"]:.0f}..{r["r"]:.0f}', 'inside the window')
         c.ok(r['b'] <= bar['t'] + 0.5, f'row bottom {r["b"]:.0f} > bar top {bar["t"]:.0f}', 'above the bar')
     keys = c.js("[...document.querySelectorAll('.f-tabpop-row')].map(r => r.dataset.id + (r.dataset.view ? ':' + r.dataset.view : ''))")
-    c.eq(keys, ['fuel', 'fuel:sheets'], 'the rows are the module and its Sheets view', what='row keys')
+    c.eq(keys, ['fuel', 'fuel:sheets', 'missions'], 'the rows are the module, its Sheets view, then the second module of the group', what='row keys')
     c.eq([norm(r['text']) for r in rows], [norm(tx('frame/app.js', 'label', c.lang, after="id: 'fuel'")),
-                                           norm(tx('frame/app.js', 'label', c.lang, after="id: 'sheets'"))], 'the rows read Carburant and Fiches in the language of the run', what='row labels')
+                                           norm(tx('frame/app.js', 'label', c.lang, after="id: 'sheets'")),
+                                           norm(tx('frame/app.js', 'label', c.lang, after="id: 'missions'"))],
+         'the rows read Carburant, Fiches and Missions in the language of the run', what='row labels')
     cur = c.js("[...document.querySelectorAll('.f-tabpop-row')].filter(r => r.hasAttribute('aria-current')).map(r => r.dataset.id + (r.dataset.view ? ':' + r.dataset.view : ''))")
     c.eq(cur, ['fuel'], 'the current row (fuel, the Quote screen) carries aria-current', what='aria-current rows')
     c.tap('.f-tabpop-row[data-view="sheets"]')

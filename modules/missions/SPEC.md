@@ -1,9 +1,9 @@
 # Missions — specification (V3, first cut, 30 Oct 2026)
 
 Written by the ergonomics session from § 10.32 of `docs/technique/V3_SPECIFICATION.md` and the survey of the V2
-mission files of the same day. Status: lot 1 built (31 Oct 2026, `frame/lib/mission.js`, case N1); the user asked for the initial
-module, minimal, as urgent (31 Oct): lot 2 reduced (list, choose, draw, prepare the flight; no envelope, no reader, no assignment);
-§ 5–6 later. Owner of the code: Features SOG.
+mission files of the same day. Status: lots 1 and 2 reduced built (31 Oct 2026: `frame/lib/mission.js`, `modules/missions/module.js`,
+Fuel's door; cases N1–N4); the user asked for the initial module, minimal, as urgent: list, choose, draw, prepare the flight; the
+summary is flat (no envelope, no reader, no assignment, no « affectée » state, no filter by aircraft category); § 5–6 later. Owner of the code: Features SOG.
 
 ## 1. Purpose and scope
 
@@ -35,11 +35,14 @@ on the same data. The CPCO (authoring) stays V2 until rebuilt as the third appli
   families of the generator prompt, their letter and their name, never hard-coded twice: read from the registry),
   seven rows then "N autres", a search (id, title, aerodrome, type), a filter by family and by aircraft category.
 - **Each row**: id, title, family, origin → destination, aircraft type, estimated block, and the pilot's own state —
-  "volée le …" from the flight log (a report whose `mission` is this id), "affectée" from `affectations.json` when a
-  line carries this pilot's trigram. Nothing else.
+  "volée le …" from the flight log (a report of `cr/reports/` whose `metadata.missionId` is this id, written by this pilot or
+  without author; case N2), "affectée" from `affectations.json` when a line carries this pilot's trigram (later, with § 6).
+  Nothing else. The list, the order, the families, the search and the family filter: case N2.
 - **"Choisir"** on a row opens the mission (§ 5) with "Préparer ce vol"; **"Tirer au sort"** at the top draws one
   mission among those **not yet flown by this pilot** and matching the current filters, shows it the same way, and
-  offers "Tirer encore" (one more draw) — never a silent auto-start. The draw is uniform; no weighting.
+  offers "Tirer encore" (one more draw) — never a silent auto-start. The draw is uniform; no weighting. Every mission of the
+  filter flown: said in a notification, nothing drawn. Case N3 (lot 2: the mission is shown as a flat summary — title,
+  operation, route, aircraft, estimated block, summary, notes — until the reader of § 5).
 - Below Complet, the list is read-only in the same way; the module needs no level to choose.
 
 ## 4. From the mission to the flight: `missionFlight(mission, assignment?)`
@@ -51,7 +54,7 @@ depuis une mission" gesture (the same door as the OFP, § 10.32 of the specifica
 |---|---|---|
 | `route.dep` | `origin.name` ICAO | else the assignment's `departure`, else none (the pilot types it) |
 | `route.arr` | `destination.name` ICAO | else `origin` (return to base), else none |
-| points | `route_order` resolved on `turning_points`, `rendezvous`, `target`, `zones` | the order of the file; a zone gives its centre; ids kept as point names (PT1, RDV-1, TARGET) |
+| points | `route_order` resolved on `turning_points`, `rendezvous`, `target`, `zones` | the order of the file; a zone gives its centre; written in the route text as ICAO coordinates to the minute (`4445N00115E`): a mission's names (PT1, TARGET) would be looked up in aerodb first, where a real point of the same name wins (DECISIONS, 31 Oct) |
 | aircraft | `aircraft[0].type` ICAO designator | the assignment's registration when it exists |
 | level, speed | `cruise_level`, `cruise_speed_kt` | as written; Fuel's sheet wins when the type has one |
 | rendezvous time | none in the file | derived: assignment `takeoff` + cumulated leg time to the RDV (`MissionEstimate` legs); shown as "estimé" until a **dated rendezvous** exists (new field of the assignment, § 6) |
@@ -60,6 +63,12 @@ depuis une mission" gesture (the same door as the OFP, § 10.32 of the specifica
 
 Fuel writes the flight; the module writes nothing. What the mission does not carry (runway, procedures, FPL, fuel,
 weather) is Fuel's as for any flight.
+
+**Fuel's door** (lot 2): « Préparer ce vol » is the address `#fuel?mission=<id>`, consumed by Fuel once its current flight is
+read. Fuel reads the registry and the mission file, then: a started flight is never replaced (said); a flight with a route or an
+aerodrome is replaced only after the frame's question; the route, its procedures and the OFP are cleared, the level and the aircraft
+type set (the aircraft of the flight is kept when it is already of that type, else the type's sheet, else the type alone), and
+`flight.mission` written (a field of Fuel's in `current_flight.json`). Case N4.
 
 ## 5. The envelope and the page-by-page reader: two primitives, simplified (user, 30 Oct: "le bookify peut
 probablement être simplifié")
@@ -148,7 +157,8 @@ rule of § 10.32, no category exists yet).
    positions (no AIP content, no mission of the user's data in the repository); checked once, locally and read-only, on the
    user's 59 missions (M-001 → its aircraft from `teams`, the minimal shape has no `aircraft` block). **Built**, case N1.
 2. The Missions module: list, filters, Choisir, Tirer au sort, "Préparer ce vol" through Fuel's door; cases of a new
-   area; help ×4.
+   area; help ×4. **Built reduced** (31 Oct 2026), cases N2–N4: a flat summary instead of the reader, no assignment, no filter by
+   aircraft category.
 3. The two design primitives `envelope()` / `book()` with the plain skin, then the textured skins per design.
 4. The usage "équipier" (frame) and the Map's drawing of a mission (points, zones, RDV).
 5. The crew's rendezvous in the assignment (after the CPCO decides its shape).

@@ -19,7 +19,7 @@
 //     (profile.path, sinon montée / croisière / descente), et les distances de la route ramenées sur ce chemin.
 
 export const FUEL_FIELDS = ['aircraft', 'route', 'level', 'wind', 'windSource', 'isaDev', 'profile', 'quote', 'weather', 'ofp',
-  'started', 'planned_at'
+  'started', 'planned_at', 'mission' // mission : l'id de la mission d'où vient le vol (modules/missions SPEC § 4)
 ];
 export const FUEL_PROGRESS = ['at', 'plannedPos', 'eta', 'fuelRemainingKg', 'remainingNm', 'phase'];
 

@@ -160,7 +160,8 @@ to `[data-module="fuel"]`, built on the frame's tokens and classes; no global sh
 - **Opening**: always on the Plan; the Sheets screen opens by its button or by `#fuel?view=sheets`; the last screen is neither kept
   nor read at mount (F1). The address may ask, once (`ctx.query.focus`, kept as `S.focus`): `route` (the Map's « Edit the route »,
   `#fuel?from=maps&focus=route`) opens step 2 with the route field focused; `arr` (the Map's « Change ») or `dep` opens the step that
-  holds that side of the procedure card — step 2 before the start, step 5 after — and focuses its first list (F17).
+  holds that side of the procedure card — step 2 before the start, step 5 after — and focuses its first list (F17). `mission=<id>`
+  (the Missions module's « Préparer ce vol ») sets the flight of that mission (modules/missions SPEC § 4, case N4).
 - **Writes**: the current flight after a quiet time (§ 4); the quote settings (`pilot/<trigram>/fuel.json`) likewise; never a sheet.
 - **Phone**: no horizontal scroll at 375 px (wide tables scroll inside their block), the frame's 44 px targets, drawings redrawn at
   the width of their block (F4).
