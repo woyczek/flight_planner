@@ -294,15 +294,12 @@
       icon: 'database',
       modules: ['data']
     }, {
-      id: 'admin',
-      label: ['Administration', 'Administration', 'Verwaltung', 'Administración'],
-      icon: 'settings',
-      screen: 'settings?card=admin'
-    }, {
-      id: 'help',
-      label: ['Aide', 'Help', 'Hilfe', 'Ayuda'],
-      icon: 'help',
-      screen: 'help'
+      // la barre d'une application ne porte que ses modules ; l'aide et les réglages sont le « ? » et le ⚙ de l'en-tête,
+      // comme dans toutes les applications (retour de l'utilisateur, 31 oct. 2026)
+      id: 'aircraft',
+      label: ['Appareils', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves'],
+      icon: 'plane',
+      modules: ['aircraft']
     }],
     // écrans de service : « Jetons des pilotes » (frame/settings/pilot_tokens.js), avec deux routes du lanceur seulement
     screens: [{
@@ -1826,19 +1823,16 @@
     news: false,
     attn: false
   };
-  /** Pastille d'état (badge) sur le ⚙ et, quand la barre porte les Réglages (Maintenance : Administration), sur leur onglet,
-   *  qui remplace le ⚙ au téléphone ; nom accessible du ⚙. Écrit seulement si cela change. */
+  /** Pastille d'état (badge) et nom accessible du ⚙ de l'en-tête, dans toutes les applications. Écrit seulement si cela
+   *  change. */
   function paintBadge() {
     const label = badge.news || badge.attn ? `${t(T.device)} — ${t(T.info.news)}` : t(T.device),
-      tab = tabOfScreen('settings');
-    for (const b of [$('fDevice'), tab && $('fTabs')?.querySelector(`a[data-tab="${CSS.escape(tab.id)}"]`)]) {
-      if (!b) continue;
-      if (b.hasAttribute('data-badge') !== badge.news) badge.news ? b.setAttribute('data-badge', '') : b.removeAttribute('data-badge');
-      if (b.hasAttribute('data-attn') !== badge.attn) badge.attn ? b.setAttribute('data-attn', '') : b.removeAttribute('data-attn');
-    }
-    const b = $('fDevice');
-    if (b && b.title !== label) b.title = label;
-    if (b && b.getAttribute('aria-label') !== label) b.setAttribute('aria-label', label);
+      b = $('fDevice');
+    if (!b) return;
+    if (b.hasAttribute('data-badge') !== badge.news) badge.news ? b.setAttribute('data-badge', '') : b.removeAttribute('data-badge');
+    if (b.hasAttribute('data-attn') !== badge.attn) badge.attn ? b.setAttribute('data-attn', '') : b.removeAttribute('data-attn');
+    if (b.title !== label) b.title = label;
+    if (b.getAttribute('aria-label') !== label) b.setAttribute('aria-label', label);
   }
   /** Pastille et nom du ⚙ de l'en-tête, et les blocs d'état affichés (écrit seulement si cela change). Pastille verte : une
    *  nouvelle (data-badge, partout) ; orange : une chose demande de l'attention (data-attn, téléphone seulement : sur un
@@ -1870,7 +1864,9 @@
   function openHelp() {
     if (over && ['help', 'roadmap'].includes(over.id)) return leaveOver();
     const shown = over ? over.id : parseHash().id,
-      at = ['settings', 'device'].includes(shown) ? 'settings' : current?.id || '',
+      // le module affiché, ou celui que la barre suit pendant son montage (current n'est posé qu'après)
+      at = ['settings', 'device'].includes(shown) ? 'settings' : current?.id || (APP.modules.some(m => m.id === menuActive) ? menuActive :
+        ''),
       a = at === current?.id && !over ? helpAnchorOf(at) : '';
     location.hash = `#help${at ? `?m=${encodeURIComponent(at)}${a ? `&a=${encodeURIComponent(a)}` : ''}` : ''}`;
   }
@@ -2259,9 +2255,9 @@
     screenId : '';
   /** Onglet de la barre qui mène à cet écran du cadre (screen: 'settings?card=admin' → settings), sinon null. */
   const tabOfScreen = id => APP.tabs.find(tb => tb.screen && tb.screen.split('?')[0] === screenBase(id)) || null;
-  /** Onglet marqué : un seul, celui de ce qui est affiché (Simplification, 31 oct. 2026) — l'onglet de l'écran du cadre
-   *  ouvert s'il en a un (Aide, Administration), aucun s'il n'en a pas (son bouton est dans l'en-tête), jamais celui du
-   *  dernier module visité ; sinon celui du module affiché ('' si aucun). */
+  /** Onglet marqué : un seul, celui de ce qui est affiché (Simplification, 31 oct. 2026) — sur un écran du cadre (aide,
+   *  réglages), l'onglet qui y mène si une barre en a un, sinon aucun (son bouton est le « ? » ou le ⚙ de l'en-tête),
+   *  jamais celui du dernier module visité ; sinon celui du module affiché ('' si aucun). */
   const tabFor = (moduleId, screenId) => {
     const s = shownScreen(moduleId, screenId);
     return s ? tabOfScreen(s)?.id || '' : tabOf(moduleId)?.id || '';
@@ -2293,8 +2289,6 @@
   }
   /** Adresse d'un onglet : son écran, ou le dernier module du groupe montré, sinon le premier à ce niveau. */
   function tabTarget(tb) {
-    // au chapitre du module affiché (celui que la barre suit : current n'est posé qu'après le montage)
-    if (tb.screen === 'help' && APP.modules.some(m => m.id === menuActive)) return `#help?m=${encodeURIComponent(menuActive)}`;
     if (tb.screen) return `#${tb.screen}`;
     const vis = tabVisible(tb);
     return `#${vis.includes(lastInTab[tb.id]) ? lastInTab[tb.id] : vis[0] || ''}`;
@@ -2313,7 +2307,6 @@
       nav.setAttribute('aria-label', t(T.tabsNav));
       // aria-label et title : le nom de la case quand le libellé est caché (le rail du paysage n'a que des icônes)
       nav.innerHTML = `<ul>${list.map(tb => `<li><a data-tab="${esc(tb.id)}" aria-label="${esc(t(tb.label))}" title="${esc(t(tb.label))}" data-landmark="${esc(tb.screen ? 'settings' : tabModules(tb)[0] || tb.modules[0])}"><span class="f-tab-ico">${icon(tb.icon)}${Icons?.svg(tb.icon, { filled: true }) || ''}</span><span class="f-tab-lbl">${esc(t(tb.label))}</span></a></li>`).join('')}</ul>`;
-      paintBadge(); // la pastille d'état passe sur l'onglet des Réglages quand il remplace le ⚙
     }
     for (const a of nav.querySelectorAll('a')) {
       const tb = APP.tabs.find(x => x.id === a.dataset.tab),
@@ -3757,10 +3750,6 @@
     }
     headIcon('fHelp', 'help');
     headIcon('fDevice', 'settings');
-    // une destination, une entrée par écran : quand la barre porte l'Aide et les Réglages (Maintenance), le « ? » et le ⚙ de
-    // l'en-tête ne les répètent pas là où la barre est montrée (frame.css, data-in-bar ; Simplification, 31 oct. 2026)
-    if (tabOfScreen('help')) $('fHelp').dataset.inBar = '';
-    if (tabOfScreen('settings')) $('fDevice').dataset.inBar = '';
     document.title = `${t(APP.name)} — SOG`;
     $('fName').textContent = t(APP.name);
     // identité de l'application (icône dans sa teinte, posée à la source) et sélecteur d'application

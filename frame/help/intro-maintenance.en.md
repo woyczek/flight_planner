@@ -6,9 +6,10 @@ Full level. With the workstation's launcher it writes; without a launcher, or fr
 
 ## First start
 
-- **The entries.** On a phone, the bottom bar gives Data, Administration and Help: the header does not repeat them. On a
-  screen they are the entries of the left column, with the workstation's service pages (pilots' tokens, devices, V2
-  maintenance page). The application's name, top left, opens the list of applications: one tap goes to Pilot.
+- **The entries.** On a phone, the bottom bar carries Maintenance's modules: Data, and Aircraft at the level that opens
+  it. Top right, as in Pilot, "?" opens this help and ⚙ the Settings, the Administration card included. On a screen they
+  are the entries of the left column, with Administration, Help and the workstation's service pages (pilots' tokens,
+  devices, V2 maintenance page). The application's name, top left, opens the list of applications: one tap goes to Pilot.
 - **The help.** It opens at the chapter of the screen shown; this manual covers Maintenance only, Pilot's stays in Pilot.
-- **The app's status.** The dot on the Administration entry (green: something new; orange: something needs your
-  attention) leads to the “Status” block at the top of Settings.
+- **The app's status.** The dot of the ⚙ (green: something new; orange: something needs your attention) leads to the
+  “Status” block at the top of Settings.

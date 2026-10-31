@@ -1235,7 +1235,7 @@ def a36(c):
     c.wait(800)
     c.eq(c.count('[data-welcome]'), 0, 'no welcome card of Pilot in Maintenance', what='welcome cards')
     c.eq(c.js(rail), ['data', 'aircraft', 'admin', 'help'], 'Maintenance without a launcher: Données, Appareils (§ 10.34 A2), Administration, Aide (no V2 page)', what='rail')
-    c.eq(c.js(tabs), ['data', 'admin', 'help'], 'the phone bar of Maintenance', what='tabs')
+    c.eq(c.js(tabs), ['data', 'aircraft'], 'the phone bar of Maintenance: its modules only (help and settings are « ? » and ⚙, 31 Oct 2026)', what='tabs')
     c.eq(c.js("[...document.querySelectorAll('[data-verb]')].filter(b => !b.disabled).length"), 0, 'read only without a launcher: every action grey', what='enabled [data-verb]')
     c.ok(c.js('document.title').split(' — ')[0] in ('Maintenance', 'Wartung', 'Mantenimiento'), c.js('document.title'), 'the page is named after the application')
     c.page.goto(f'{c.base}/frame/index.html?app=__proto__#fuel', wait_until='load')
@@ -2120,38 +2120,37 @@ def a58(c):
     c.ok(vid in c.text('[data-card="identity"] .f-msg'), c.text('[data-card="identity"] .f-msg'), 'the digits-only refusal names the VID field')
 
 
-@case('A59', 'One active entry, one entry per destination, the help of the shown application', 'A', designs=('standard',), screens=False, night=False,
-      langs4=True,
-      rule='Simplification 31 Oct (the user’s three phone captures of Maintenance): (a) the bottom bar marks what is shown and only that (Help → Help, Settings → Administration; never the last module visited); (b) when the bar carries Administration and Help, the header shows neither ⚙ nor « ? » on a phone, the state dot passes to the Administration entry; (c) the help is the shown application’s manual, at the chapter of the module shown, without Pilot’s tutorials')
+@case('A59', 'One active entry; « ? » and ⚙ top right in every application; the help of the shown application', 'A', designs=('standard',),
+      screens=False, night=False, langs4=True,
+      rule='Simplification 31 Oct, corrected after the user\u2019s return on cc6503ee0: (1) « ? » and \u2699 are top right in every application, Maintenance included, the state dot on \u2699; (2) an application\u2019s bar carries its modules only (Maintenance: Data, Aircraft at its level), a one-entry bar stays shown and marked; (3) one active entry: the module shown, none of the bar over the help or the settings; (4) the help is the shown application\u2019s manual, at the module\u2019s chapter, without Pilot\u2019s tutorials')
 def a59(c):
     current = "[...document.querySelectorAll('#fTabs a[aria-current=\"page\"]')].map(a => a.dataset.tab)"
+    tabs = "[...document.querySelectorAll('#fTabs a[data-tab]')].map(a => a.dataset.tab)"
     shown = "id => { const e = document.getElementById(id); return !!e && getComputedStyle(e).display !== 'none' }"
     c.open('data', docs=LEVEL3, wait=False, app='maintenance')
-    c.until("!!document.querySelector('#fTabs a[data-tab=\"help\"]')", timeout=15000, what='the bar of Maintenance')
-    c.eq(c.js(current), ['data'], 'on the Data module: Data, alone', what='active tabs on Data')
-    # (b) the header does not repeat what the bar carries; the state dot is on the Administration entry
-    c.eq([c.js(shown, 'fHelp'), c.js(shown, 'fDevice')], [False, False], 'no « ? » nor ⚙ in the header: Help and Administration are in the bar', what='header buttons')
-    c.eq(c.js("['data-badge', 'data-attn'].map(k => document.querySelector('#fTabs a[data-tab=\"admin\"]').hasAttribute(k))"),
-         c.js("['data-badge', 'data-attn'].map(k => document.getElementById('fDevice').hasAttribute(k))"), 'the state dot of ⚙ is on the Administration entry', what='dot')
-    # (a) + (c) Help: one active entry; the Maintenance manual at the Data chapter, no Pilot tutorial
-    c.tap('#fTabs a[data-tab="help"]')
+    c.until("!!document.querySelector('#fTabs a[data-tab=\"data\"]')", timeout=15000, what='the bar of Maintenance')
+    c.ok(set(c.js(tabs)) <= {'data', 'aircraft'} and 'data' in c.js(tabs), str(c.js(tabs)), 'the bar carries Maintenance\u2019s modules only (no Administration, no Help)')
+    c.eq(c.js(current), ['data'], 'on the Data module: Data, marked', what='active tabs on Data')
+    c.eq([c.js(shown, 'fHelp'), c.js(shown, 'fDevice')], [True, True], '« ? » and \u2699 top right, as in Pilot', what='header buttons')
+    # the help: nothing of the bar marked; Maintenance's manual at the Data chapter, without Pilot's tutorials
+    c.tap('#fHelp')
     c.until("location.hash.startsWith('#help') && !!document.querySelector('#fView [data-chapter]')", timeout=10000, what='the help screen')
-    c.eq(c.js(current), ['help'], 'on the help: Help, alone (never the last module)', what='active tabs on Help')
+    c.eq(c.js(current), [], 'on the help: no entry of the bar marked (the pressed « ? » is the active one)', what='active tabs on Help')
     title = (ROOT / 'frame' / 'help' / f'intro-maintenance.{c.lang}.md').read_text(encoding='utf-8').splitlines()[0].lstrip('# ').strip()
     got = c.js("""() => ({ title: (document.querySelector('#fView [data-doc] h1') || {}).textContent || '', chapters: [...document.querySelectorAll('#fView [data-chapter]')].map(s => s.dataset.chapter),
         start: !!document.querySelector('#fView [data-start]'), hash: location.hash })""")
-    c.eq(norm(got['title']).rstrip('#¶ ').strip(), norm(title), 'the manual of Maintenance, not Pilot’s', what='manual title')
+    c.eq(norm(got['title']).rstrip('#\u00b6 ').strip(), norm(title), 'the manual of Maintenance, not Pilot\u2019s', what='manual title')
     c.ok('data' in got['chapters'] and 'fuel' not in got['chapters'] and 'settings' in got['chapters'], str(got['chapters']), 'its chapters: Data, Aircraft, Settings; no Pilot module')
-    c.ok(not got['start'], '', 'no « Start with… » of Pilot’s tutorials')
+    c.ok(not got['start'], '', 'no « Start with… » of Pilot\u2019s tutorials')
     c.ok('m=data' in got['hash'], got['hash'], 'opened at the chapter of the module shown')
-    # (a) Administration: one active entry
-    c.tap('#fTabs a[data-tab="admin"]')
+    # the settings: nothing of the bar marked
+    c.tap('#fDevice')
     c.until("location.hash.startsWith('#settings')", timeout=10000, what='the settings screen')
-    c.eq(c.js(current), ['admin'], 'on the settings: Administration, alone', what='active tabs on Settings')
-    # Pilot keeps its header buttons; its help marks no tab (its button is the header’s « ? »)
+    c.eq(c.js(current), [], 'on the settings: no entry of the bar marked (the pressed \u2699 is the active one)', what='active tabs on Settings')
+    # Pilot: the same header, its help marks no tab
     c.open('fuel', wait=False)
     c.until("!!document.querySelector('#fTabs a[data-tab=\"prepare\"]')", timeout=15000, what='the bar of Pilot')
-    c.eq([c.js(shown, 'fHelp'), c.js(shown, 'fDevice')], [True, True], 'Pilot keeps « ? » and ⚙ in its header', what='Pilot header buttons')
+    c.eq([c.js(shown, 'fHelp'), c.js(shown, 'fDevice')], [True, True], 'Pilot: « ? » and \u2699 in its header', what='Pilot header buttons')
     c.tap('#fHelp')
-    c.until("location.hash.startsWith('#help')", timeout=10000, what='Pilot’s help')
-    c.eq(c.js(current), [], 'Pilot’s help: no tab marked (the pressed « ? » is the one active entry)', what='active tabs on Pilot help')
+    c.until("location.hash.startsWith('#help')", timeout=10000, what='Pilot\u2019s help')
+    c.eq(c.js(current), [], 'Pilot\u2019s help: no tab marked', what='active tabs on Pilot help')

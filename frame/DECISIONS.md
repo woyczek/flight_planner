@@ -2260,3 +2260,9 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   airline → typical) and the conversions between kg, lb, L and USG, with the price brought to the kg; pure, no text, an
   unreadable input gives `null`. Densities outside 0.5–1.0 kg/L are refused, which keeps a sheet typed in g/L or lb/USG
   from being taken. Its bench is opened by A53 (I28).
+
+- **31 Oct 2026 — « ? » and ⚙ top right in every application; the bar carries the modules only** (the user's return on
+  cc6503ee0, relayed by Simplification). « One destination, one entry » made Maintenance's header differ from Pilot's:
+  the user wants the help and the settings top right everywhere. So `data-in-bar` and the tab badge go, the state badge is
+  on ⚙ again, and Maintenance's bar carries its modules only (Data, Aircraft); over the help or the settings no entry of
+  the bar is marked (the pressed « ? » or ⚙ is the active one). One active entry and one manual per application stay.
