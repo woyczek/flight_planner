@@ -236,7 +236,7 @@ function headHtml() {
 /** Une ligne de la liste des États : le point de couleur (jamais la couleur seule : le libellé suit), le motif et les États. */
 function stateLineHtml(l) {
   const names = l.items.map(i => i.held ? `${i.name} (${count('aerodrome', i.held)})` : i.name).join(', ');
-  return `<li data-level="${esc(l.level)}" data-reason="${esc(l.reason)}"><i class="f-dot"${kind(LEVEL_KIND[l.level])} role="img" aria-label="${esc(tt(TX.levels[l.level]))}"></i>
+  return `<li data-level="${esc(l.level)}" data-reason="${esc(l.reason)}"><i class="f-dot"${kind(M.own(LEVEL_KIND, l.level))} role="img" aria-label="${esc(tt(TX.levels[l.level]))}"></i>
     <span>${esc(tt(TX.stateLine, { l: l.label, n: names }))}</span></li>`;
 }
 /** La liste des États : sept lignes au plus par couleur et motif, le reste sous « n autres », puis la légende ; une ligne d'erreur
@@ -368,7 +368,7 @@ function rowHtml(r) {
   const src = catSource(r.id),
     name = esc(src.n[li()]);
   if (r.status !== 'used') return `<div class="f-card" data-set="${esc(r.id)}" data-status="${esc(r.status)}"><p><b>${name}</b>
-      <span class="f-badge"${kind(STATUS_KIND[r.status])}>${esc(tt(TX.statuses[r.status]))}</span></p>
+      <span class="f-badge"${kind(M.own(STATUS_KIND, r.status))}>${esc(tt(TX.statuses[r.status]))}</span></p>
       <p>${linkHtml(src)}</p><p class="f-muted">${esc(tt(TX.licenceLine, { l: src.lic[li()] }))}</p></div>`;
   const pill = r.state ? `<span class="f-badge"${kind(r.level)} data-pill>${esc(tt(TX.state[r.state]))}</span>` : '';
   return `<details class="f-card" data-set="${esc(r.id)}" data-status="used"${r.state ? ` data-state="${esc(r.state)}"` : ''} data-cycle="${esc(r.cycle)}">
@@ -470,11 +470,11 @@ function fetchWhy(code, status) {
   if (code === 'http' && status !== null) return tt(TX.fetchError.httpN, {
     s: status
   });
-  return code && !TX.fetchError[code] ? itemWhy(code) : tt(TX.fetchError[code] || TX.fetchError
-    .unknown); // un code court d'un autre jeu : sa phrase, sinon tel quel
+  const known = M.own(TX.fetchError, code);
+  return code && !known ? itemWhy(code) : tt(known || TX.fetchError.unknown); // un code court d'un autre jeu : sa phrase, sinon tel quel
 }
 /** Le motif d'un code d'erreur d'un élément propre aux jeux autres que la base (TX.itemError : « un terrain à la fois »…), sinon le code tel quel. */
-const itemWhy = code => TX.itemError[code] ? tt(TX.itemError[code]) : code ?? '';
+const itemWhy = code => M.own(TX.itemError, code) ? tt(M.own(TX.itemError, code)) : code ?? '';
 /** La ligne d'une source dans un téléchargement : son nom et son état en peu de mots (téléchargée : n fichiers, inchangée, échec :
  *  code et statut HTTP, ignorée : licence non déclarée, manuelle). */
 function sourceLineHtml(s) {
@@ -483,20 +483,21 @@ function sourceLineHtml(s) {
       n: count('file', s.files) + (size ? ` (${size})` : '')
     }) : tt(TX.sourceState.downloadedNo) : s.state === 'failed' ? tt(TX.sourceState.failed, {
       r: fetchWhy(s.code, s.status)
-    }) : s.state === 'skipped' ? tt(s.code === 'personal' ? TX.sourceState.skippedPersonal : TX.sourceState.skipped) : tt(TX.sourceState[s
-      .state]),
-    k = {
+    }) : s.state === 'skipped' ? tt(s.code === 'personal' ? TX.sourceState.skippedPersonal : TX.sourceState.skipped) : tt(M.own(TX
+      .sourceState, s.state)),
+    k = M.own({
       downloaded: 'ok',
       unchanged: 'ok',
       failed: 'err'
-    } [s.state];
+    }, s.state);
   return `<li data-source="${esc(s.id)}" data-state="${s.state}"><i class="f-dot"${kind(k)} aria-hidden="true"></i><span><b>${esc(sourceName(s.id))}</b> : ${esc(word)}</span></li>`;
 }
 /** La phrase d'une zone dans la marche d'un verbe : en attente, en cours (n / m sources), terminée, échec (le motif écrit en toutes lettres). */
 function zoneWord(r, verb) {
   const T = verb === 'fetch' ? TX.fetchState : verb === 'purge' ? TX.purgeState : TX.zoneState;
   if (r.key === 'failed') return tt(T.failed, {
-    r: verb === 'fetch' ? fetchWhy(r.code, null) : verb !== 'purge' && TX.zoneError[r.code] ? tt(TX.zoneError[r.code]) : r.code ===
+    r: verb === 'fetch' ? fetchWhy(r.code, null) : verb !== 'purge' && M.own(TX.zoneError, r.code) ? tt(M.own(TX.zoneError, r.code)) :
+      r.code ===
       'unknown' ? tt(TX
         .zoneError.unknown) : itemWhy(r
         .code) // un code que le module ne connaît pas (un jeu autre que la base) : sa phrase, sinon tel quel
@@ -519,7 +520,7 @@ function itemName(set, id) {
   if (set === 'vfr') return S.airac && /^\d{4}-\d{2}-\d{2}$/.test(id) ? tt(TX.cycle, {
     c: M.cycleName(S.airac, id)
   }) : id;
-  return TX.stepName[id] ? tt(TX.stepName[id]) : id; // les appareils : les trois étapes
+  return M.own(TX.stepName, id) ? tt(M.own(TX.stepName, id)) : id; // les appareils : les trois étapes
 }
 /** La vue du dernier travail du jeu, ramenée à la forme de la base (M.normView) pour les lignes d'éléments. */
 const opView = set => M.normView(set, S.view);
@@ -548,7 +549,7 @@ function zoneLineHtml(r, verb = 'build', set = 'base') {
  *  jeu dont l'unité est inconnue donne le nombre seul. */
 function runUnit(set, view, n) {
   if (set === 'base') return count('zone', n);
-  const u = {
+  const u = M.own({
     steps: 'step',
     aerodromes: 'aerodrome',
     files: 'file',
@@ -558,7 +559,7 @@ function runUnit(set, view, n) {
     cycles: 'cycle',
     sheets: 'sheet',
     charts: 'chart'
-  } [view?.unit];
+  }, view?.unit);
   return u ? count(u, n) : String(n);
 }
 /** La marche : barre, « n zones sur m », étape, temps écoulé, « Arrêter », une ligne par zone (par source pour un téléchargement). */
@@ -1058,7 +1059,7 @@ function openGroup(set, verb) {
   if (g) g.open = true;
 }
 /** Le texte d'un mot du journal (verbe, résultat, jeu) dans la langue : celui de la table `map`, à défaut le mot tel que le journal le porte. */
-const wordOf = (map, key) => tt(map[key] || [key, key, key, key]);
+const wordOf = (map, key) => tt(M.own(map, key) || [key, key, key, key]);
 /** La ligne d'une opération du journal : heure UTC, jeu (hors base), verbe, éléments, résultat. */
 function opHtml(e) {
   const set = e.set || 'base',
@@ -1668,7 +1669,7 @@ const mapWidth = () => Math.max(0, (S.body?.clientWidth || 0) - 40);
 /** Le contour d'un élément de la carte : ceux des zones d'aerodb qu'il dessine (la zone elle-même pour la base, la France pour « LF », les États-Unis pour « K »), réunis ;
  *  null sans contour connu. */
 function outlineOf(kind, id) {
-  const zs = (kind === 'base' ? [id] : M.PROC_ZONES[id] || []).map(z => S.outlines[z]).filter(Boolean);
+  const zs = (kind === 'base' ? [id] : M.PROC_ZONES[id] || []).map(z => M.own(S.outlines, z)).filter(Boolean);
   if (!zs.length) return null;
   return {
     id,
@@ -1746,7 +1747,7 @@ function pickupWhy(error) {
   const big = /^zip over (\d+) MB$/.exec(String(error ?? ''));
   return big ? tt(TX.pickupTooLarge, {
     n: big[1]
-  }) : TX.pickupError[error] ? tt(TX.pickupError[error]) : String(error ?? '');
+  }) : M.own(TX.pickupError, error) ? tt(M.own(TX.pickupError, error)) : String(error ?? '');
 }
 /** Les phrases de ce que la prise n'a pas pu faire : un fichier au nom attendu introuvable dans Téléchargements (le motif est dit), un échec avec son motif. */
 function pickupProblems(out) {
@@ -1775,7 +1776,7 @@ function pickupProblems(out) {
  *  jamais commitées). */
 function pickupAsk(out) {
   const problems = pickupProblems(out),
-    dest = [...new Set(out.taken.map(t => M.PICKUP_DEST[t.source]).filter(Boolean))].join(', ');
+    dest = [...new Set(out.taken.map(t => M.own(M.PICKUP_DEST, t.source)).filter(Boolean))].join(', ');
   return tt(TX.pickupAsk, {
     taken: out.taken.map(t => tt(TX.pickupTaken, {
       z: itemName('base', t.zone),

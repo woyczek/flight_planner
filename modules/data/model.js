@@ -375,6 +375,11 @@ const SIZE_UNITS = {
 };
 /** Un nombre fini, sinon null. */
 export const num = v => Number.isFinite(v) ? v : null;
+/** La valeur d'une clé PROPRE d'une table, sinon undefined : jamais celle du prototype. Toute clé qui vient d'une réponse du lanceur (motif, erreur, état, verbe, jeu, source…) passe par
+ *  là avant d'entrer dans une table du module : « constructor », « toString » ou « __proto__ » ne rendent ni une fonction ni un objet. */
+export const own = (table, key) => table !== null && typeof table === 'object' && (typeof key === 'string' || typeof key === 'number') &&
+  Object.hasOwn(table, key) ? table[
+    key] : undefined;
 
 /** Les sources sous licence personnelle à proposer pour ces zones cochées : celles qui nourrissent au moins l'une d'elles,
  *  dans l'ordre de PERSONAL ; [{ id, kind ('licence' | 'xplane') }]. */
@@ -462,7 +467,8 @@ export function clock(sec) {
 function kindOf(final, r, pass, fallback, map = {}) {
   if (final?.state === 'interrupted') return 'interrupted';
   if (final?.state === 'cancelled' || r.reason === 'cancelled') return 'cancelled';
-  if (r.reason in map) return map[r.reason];
+  const named = own(map, r.reason);
+  if (named !== undefined) return named;
   if (pass.includes(r.reason)) return r.reason;
   if (final?.state === 'error' || r.ok === false) return 'failed';
   return fallback;
@@ -875,7 +881,7 @@ export const BULK_NAMES = {
   K: ['États-Unis', 'United States', 'Vereinigte Staaten', 'Estados Unidos']
 };
 /** Le nom d'un État en bloc dans la langue (index li) : celui de coverageByState(), sinon BULK_NAMES, sinon le préfixe. */
-export const bulkName = (byState, id, li = 0) => byState?.[id]?.names?.[li] || BULK_NAMES[id]?.[li] || id;
+export const bulkName = (byState, id, li = 0) => own(byState, id)?.names?.[li] || own(BULK_NAMES, id)?.[li] || id;
 /** Les États à proposer pour les procédures : ceux qui ont une source en bloc (BULK_STATES), [{ id (le préfixe), name, level (celui de
  *  coverageByState(), sinon null) }] dans l'ordre des noms ; aucun n'est coché d'office (le module le décide). */
 export function procItems(byState, li = 0) {
@@ -921,7 +927,7 @@ export function setArgs(set, verb, sel = {}) {
  *  `aircraft/publish` est connu aussi. */
 export function viewOp(v) {
   if (!v || typeof v !== 'object') return null;
-  if (SETS[v.set]?.verbs.includes(v.verb)) return {
+  if (own(SETS, v.set)?.verbs.includes(v.verb)) return {
     set: v.set,
     verb: v.verb
   };
@@ -1059,7 +1065,8 @@ export function pickupZips(taken) {
   return pickupSplit(taken).zips;
 }
 /** Le zip d'une entrée du plan peut-il être envoyé au lanceur ? Source connue, nom de fichier simple (le motif du lanceur), taille entière positive ou nulle. */
-const zipSendable = t => !!t && t.source in PICKUP_DEST && typeof t.zip === 'string' && /^[A-Za-z0-9_ .()+-]{1,150}$/.test(t.zip) && Number
+const zipSendable = t => !!t && Object.hasOwn(PICKUP_DEST, t.source) && typeof t.zip === 'string' && /^[A-Za-z0-9_ .()+-]{1,150}$/.test(t
+    .zip) && Number
   .isInteger(t.size) && t.size >= 0;
 /** Ce que la prise réelle peut faire du plan montré : { ready (les entrées dont le zip peut être envoyé), blocked (les autres : un nom hors de la règle, une taille absente… ; la prise
  *  réelle ne les lance pas, car le lanceur prendrait « le plus récent » sans contrôle), zips (celui de chaque source prête : { name, size }, le premier par source), zones (les zones
@@ -1073,7 +1080,7 @@ export function pickupSplit(taken) {
     blocked = list.filter(t => !zipSendable(t)),
     zips = {};
   for (const t of ready)
-    if (!(t.source in zips)) zips[t.source] = {
+    if (!Object.hasOwn(zips, t.source)) zips[t.source] = {
       name: t.zip,
       size: t.size
     };

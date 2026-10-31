@@ -780,6 +780,14 @@ def l8(c):
     c.eq([c.js("document.querySelector('[data-verb=build]').disabled"), c.attr('[data-build] [data-reason]', 'data-reason'), norm(c.text('[data-build] [data-reason]'))],
          [True, 'no-launcher', norm(_trow('no-launcher', 'fr', 'greyReason: {'))], 'no launcher: grey, « Il faut le lanceur du poste »', what='no launcher')
     c.eq(c.count('[data-running], [data-build-result]'), 0, 'nothing starts', what='running / result')
+    # and the journal writes words it does not know as they are (a set, a verb and a result named like members of Object.prototype)
+    weird = {'ops': [{'at': '2026-10-30T10:00:00.000Z', 'set': 'constructor', 'verb': 'toString', 'zones': [], 'result': '__proto__'}]}
+    c.open('data', docs=LEVEL3 + [['cache/data/journal.json', weird, 'cache']], wait=False, app='maintenance')
+    _head(c)
+    c.js("document.querySelector('[data-journal]').open = true")
+    line = norm(c.text('[data-journal] [data-op]'))
+    c.ok('constructor' in line and 'toString' in line and '__proto__' in line and c.attr('[data-journal] [data-op]', 'data-result') == '__proto__', line,
+         'unknown words of the journal are written as they are, not as a function or an object')
     # a fake launcher refuses in three ways
     busy = _view('running', step='Analyse', done=1, total=3, unit='files', zones=None)
     busy.pop('zones')
@@ -810,6 +818,13 @@ def l8(c):
     c.until("!!document.querySelector('[data-other]') && document.querySelector('[data-other]').textContent.includes('Analyse')", timeout=6000, what='the running operation is followed')
     c.until("!document.querySelector('[data-other]') && !document.querySelector('[data-verb=build]').disabled", timeout=10000, what='the button is live again when that operation ends')
     c.eq(c.count('[data-build] [data-running]'), 0, 'it was not a build of the base: no bar, no summary of it', what='running')
+    # a reason of the launcher's named like a member of Object.prototype: the generic failure sentence, a plain data-result
+    bad = _view('error', step='', done=0, zones={}, result={'ok': False, 'built': [], 'failed': [], 'reason': 'constructor'}, jid='o9')
+    st['views'], st['i'], st['start'], st['current'] = [bad], 0, (200, {'job': 'o9'}), None
+    c.tap('[data-verb=build]')
+    c.until("!!document.querySelector('[data-build-result][data-result]')", timeout=10000, what='the end is said')
+    sent = _trow('sumFailed', 'fr').replace('{failed}', '0').replace('{zones}', '')
+    c.eq([c.attr('[data-build-result]', 'data-result'), norm(c.text('[data-build-result] b'))], ['failed', norm(sent)], 'reason « constructor »: the generic failure sentence, data-result is the plain fallback string', what='constructor reason')
     c.check_errors()
 
 
@@ -1739,6 +1754,17 @@ _L16_JS = r"""async () => {
   out.pickupEntry = M.setEntry('base', 'pickup', { at: Date.parse('2026-10-30T10:00:00Z'), ids: ['fr', 'gb'], seconds: 2.4, out: M.pickupOutcome({ state: 'done', result: { ok: false, dry: false, taken: [pkTk], missing: [], failed: [pkBg], reason: 'partial' } }), job: 'k9' });
   out.manualFlags = M.fetchOutcome({ state: 'done', result: { ok: true, fetched: [], unchanged: [], failed: [], manual: [{ zone: 'fr', source: 'sia', name: ['a'], pickup: true, expected: 'x*.zip' }, { zone: 'fr', source: 'dircam' }] } }).manual.map(m => [m.source, m.pickup, m.expected]);
   out.pickupDest = M.PICKUP_DEST;
+  // a reason, a set or a source named like a member of Object.prototype is no key of a table of the module
+  const BADK = ['constructor', 'toString', '__proto__', 'hasOwnProperty', 'valueOf'];
+  const kindsOf = res => ['outcome', 'fetchOutcome', 'purgeOutcome', 'pickupOutcome', 'vfrFetchOutcome', 'sheetsOutcome'].map(fn => M[fn]({ state: 'done', zones: {}, result: res }).kind);
+  out.protoKinds = BADK.map(rs => [kindsOf({ reason: rs }), kindsOf({ ok: false, reason: rs })]);
+  out.protoStrings = BADK.every(rs => [...kindsOf({ reason: rs }), ...kindsOf({ ok: false, reason: rs })].every(k => typeof k === 'string'));
+  out.protoOps = [{ set: 'constructor', verb: 'build' }, { set: '__proto__', verb: 'fetch' }, { set: 'toString' }, { set: 'hasOwnProperty', verb: 'publish' }].map(M.viewOp);
+  const pks = M.pickupSplit([{ zone: 'a', source: 'constructor', zip: 'a.zip', size: 1 }, { zone: 'b', source: '__proto__', zip: 'a.zip', size: 1 }, { zone: 'c', source: 'toString', zip: 'a.zip', size: 1 }]);
+  out.protoSplit = [pks.ready.length, pks.blocked.length, pks.zips, pks.zones];
+  out.own = [M.own({ a: 1 }, 'a'), M.own({ a: 1 }, 'constructor'), M.own({ a: 1 }, '__proto__'), M.own(null, 'a'), M.own({}, 'toString'), M.own([5], 0), M.own({ a: 1 }, undefined),
+    M.own(Object.create({ x: 1 }), 'x'), M.own('abc', 'length')];
+  out.bulk = [M.bulkName({}, 'constructor', 0), M.bulkName(null, 'LF', 0), M.bulkName({ LF: { names: ['F', 'F', 'F', 'F'] } }, 'LF', 2), M.bulkName(null, '__proto__', 1)];
   const pks1 = M.pickupSplit([{ zone: 'fr', source: 'sia', zip: 'export_é.zip', size: 5 }, { zone: 'gb', source: 'nats', zip: 'ok.zip', size: 2 }, { zone: 'x', source: 'sia', zip: 'a[1].zip', size: 1 },
     { zone: 'y', source: 'sia', zip: 'z'.repeat(151), size: 1 }, { zone: 'w', source: 'nats', zip: 'f.zip', size: null }, { zone: 'v', source: 'sia', zip: 'a,b.zip', size: 1 }, null]);
   const pks2 = M.pickupSplit([{ zone: 'fr', source: 'sia', zip: 'a.zip', size: 1 }, { zone: 'fr', source: 'nats', zip: 'é.zip', size: 1 }]);
@@ -1857,6 +1883,14 @@ def l16(c):
     c.eq(r['split'], [[['gb'], ['fr', 'x', 'y', 'w', 'v'], {'nats': {'name': 'ok.zip', 'size': 2}}, ['gb']], [['sia'], ['nats'], {'sia': {'name': 'a.zip', 'size': 1}}, []], []],
          'a zip whose name is outside the rule (accent, [, comma, over 150 characters) or without size is NOT ready: it is not run, and neither is a zone that has such a source', what='pickupSplit')
     c.eq(r['refusals'], ['updating', 'busy', 'busy', 'tooSoon', 'unknown-route'], 'a 409 with reason updating is its own refusal; the other 409 stays « busy »', what='refusal updating')
+    c.eq(r['protoKinds'], [[['done', 'done', 'done', 'nothing', 'done', 'done'], ['failed', 'failed', 'failed', 'failed', 'failed', 'failed']]] * 5,
+         'a launcher reason that names a member of Object.prototype (constructor, toString, __proto__…) gives each verb its fallback kind: the computed one, or « failed » when the result says ok false',
+         what='kindOf prototype')
+    c.eq(r['protoStrings'], True, 'and the kind is always a plain string, never a function or an object', what='kind type')
+    c.eq(r['protoOps'], [None, None, None, None], 'a view whose set is named like a member of Object.prototype is no operation of the module (and throws nothing)', what='viewOp prototype')
+    c.eq(r['protoSplit'], [0, 3, {}, []], 'a pickup source named so is no source: its zip is blocked, never sent', what='pickupSplit prototype')
+    c.eq(r['own'], [1, None, None, None, None, 5, None, None, None], 'own(): the value of an own key only', what='own')
+    c.eq(r['bulk'], ['constructor', 'France', 'F', '__proto__'], 'a State prefix named so is written as it is', what='bulkName')
     c.eq(r['pickupDest'], {'sia': 'data/sia/', 'nats': 'data/sia/zones/gb/'}, 'where the raw files go, as the launcher writes them', what='PICKUP_DEST')
     c.eq(r['argsProc'], [{'states': ['K', 'LF']}, {'states': ['K']}], 'proc: the States sent are sorted and unique (the launcher takes one or two, « K » before « LF »)', what='setArgs proc')
     c.eq(r['procBuild'], [['partial', ['K'], [{'zone': 'LF', 'error': 'no-cache'}]], ['done', ['LF'], []], ['merge-pending', [], []]],
