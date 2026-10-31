@@ -976,6 +976,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 124 | Refactor R-S8 (1/2): the Data module split into seven files (435f70e44) | acceptable, a move only |
 | 125 | Map: the profile built without waiting for the relief, then completed (f28b33257) | acceptable |
 | 126 | Refactor R-S8 (2/2): the Data model split into six pure files behind a facade (bdb072221) | acceptable, a move only |
+| 127 | Refactor R-S9 (1/2): the Settings screen's cards and actions in two files (6105be2ba) | acceptable, a move only |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2087,6 +2088,13 @@ interception (no file written, neither in `data/` nor elsewhere).
 files (`export * from`); read with `git diff --color-moved`, only 78 lines are not moved (`meta.files`, imports, exports,
 headers). The model files import only each other and the private `model_kit.js` (not re-exported), never a screen file,
 and use no DOM, network or storage; `own` and the escaping are unchanged.
+
+**127. Refactor R-S9 (1/2), the Settings screen split (6105be2ba) — acceptable, a move only.** Read with
+`git diff --color-moved`: the card templates of `cards.js` are the former ones (`cards.push(…)` become `return …`, every
+value still through `esc`), `actions.js` holds the former click handler, field listeners, configuration file and backup
+import or export, attached to the Settings view only; the only logic change is the call of `window.SogSettings.render`
+after a join from a file. The configuration's checks (`validate` before anything is written, no `api` imported, 119) and
+the secrets' `saveSecret` are not touched.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
