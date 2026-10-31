@@ -990,6 +990,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 138 | aerodb: a sheet describes a type or variant, the fleet names it (130048967) | acceptable |
 | 139 | Fuel units: own keys only, strict numbers (78cf63f65): the notes of 137 closed | acceptable |
 | 140 | Group of 1 November: zone map on `zonesLayer` (9f637a970), mission reader (96ff67873), Missions module and `#fuel?mission=` (879816763) | acceptable |
+| 141 | IVAO return: a same-origin hop page instead of a redirect, refusals logged (2812c0689) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2184,6 +2185,14 @@ mission reader is pure. The Missions module escapes every mission text (title, o
 (`missions/mission_registry.yaml`) before reading the mission file named there, through the data layer whose reads match
 exact repository paths only (no `..` can reach outside), refuses on a started flight, asks before replacing a route, and
 writes only the current flight.
+
+**141. The IVAO return's hop page (2812c0689) — acceptable.** A redirect chain that starts on IVAO keeps
+`Sec-Fetch-Site: cross-site`, so the frame page itself was refused after the 303. The return now answers with a page of this
+origin (`frame_hop_page`, only from the return route): a meta refresh to `/frame/index.html#ivao-return?…`, no script,
+the fragment URL-encoded then escaped for the attribute, `Cache-Control: no-store`, no referrer. The tokens stay where
+they were, in the fragment that the frame stores and removes. The origin guard is not widened; a return whose state does
+not match goes to `#ivao-return?error=state` with nothing exchanged and nothing consumed; a refusal is logged with the
+`Sec-Fetch-*` headers and the reason, never the state.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
