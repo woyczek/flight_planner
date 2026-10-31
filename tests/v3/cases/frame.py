@@ -531,7 +531,11 @@ def a15(c):
     c.ok(norm(tx(MAPS_M, 'noBase', c.lang)) not in [norm(n) for n in c.note_log()], 'a notification already says "not published"', 'no notification before the read ends')
     c.step('P5', 2, 'the read ends: the note is gone')
     release()
-    c.until("![...document.querySelectorAll('.mp-notes > *')].some(e => /(non publi|not published|nicht ver|no publicada|non r.gl|not set|nicht eingerichtet|no configurado|cours de charg|loading|wird geladen|carg.ndose)/i.test(e.textContent))",
+    # the base's three notes in the run's language, by their own texts: a loose pattern (« nicht ver ») also caught the
+    # terrain note « Gelände nicht verfügbar … », which comes when the bench has no relief (A15's hazard, German only)
+    base3 = [pre('loading'), norm(tx(MAPS_M, 'noBase', c.lang)), norm(tx(MAPS_M, 'noAccess', c.lang))]
+    c.until("""base3 => ![...document.querySelectorAll('.mp-notes > *')].some(e => {
+               const t = e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim(); return base3.some(b => t.startsWith(b)) })""", base3,
             timeout=10000, what='the loading note is replaced by nothing (the base is there)')
     c.eq(info_row(c, 'base'), None, 'a line for the base is still in the Status block', what='Status row after the read')
     c.step('P5', 3, 'the access is cut and the base not kept: it says the access is not set')

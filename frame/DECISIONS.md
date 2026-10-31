@@ -2225,3 +2225,12 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   DIRECT_PATHS host never waits (its decision does not depend on the airline); any other waits `AIRLINE_WAIT` = 3 s at
   most, then the decision is the one **without** an airline site: an unlisted host is refused (503), never allowed by
   default; the airline's site is recognised by the next calls once its read has come. A57 holds the airline's read.
+
+- **31 Oct 2026 — No push with a FAIL line, and A15's hazard was in the case** (Simplification). No push while the
+  `--touched` before it, or the cases replayed after a rebase, show a single FAIL line, known hazard or not; a chained
+  command gates the push on « no `^FAIL` line », never on the summary line (80a355157 went out with A15 red that way).
+  A15's hazard (P5 step 2, 1 in 4 to 6, German only) was the case's own pattern: `nicht ver`, meant for « nicht
+  veröffentlicht », also matched the terrain note « Gelände nicht verfügbar … », which comes when the bench serves no
+  relief tile, so the step waited for a note that was not the base's. The step now compares with the three notes of the
+  base in the run's language (loading, not published, access not set), by their own texts; nothing in the frame or a
+  module changed. Ten runs before: two failures; ten after (forty with the four languages): none.
