@@ -84,6 +84,18 @@
       if ((init.headers?.['PRIVATE-TOKEN'] || '') !== 'glpat-test') return json({
         message: '401 Unauthorized'
       }, 401);
+      // qui est le jeton (whoami) : un robot de projet, ses portées et son expiration
+      if (url === `${API}/user`) return json({
+        id: 7,
+        username: 'project_1_bot',
+        bot: st.personal ? false : true
+      });
+      if (url === `${API}/personal_access_tokens/self`) return st.selfRefused ? json({
+        message: '403 Forbidden'
+      }, 403) : json({
+        scopes: ['api'],
+        expires_at: '2027-01-31'
+      });
       if (!url.startsWith(PROJECT)) return json({
         message: '404 Project Not Found'
       }, 404);
@@ -374,6 +386,24 @@
       e = await bad.head().catch(x => x);
       ck('jeton refusé : « GitLab 401 : … », le jeton jamais cité', e?.status === 401 && /^GitLab 401: /.test(e.message) && !/glpat-bad/
         .test(e.message), e?.message);
+      // whoami : robot du projet, portées, expiration ; un jeton personnel ; la route des portées refusée : null ; jeton refusé
+      const w1 = await T.whoami();
+      G.st.personal = true;
+      const w2 = await T.whoami();
+      G.st.personal = false;
+      G.st.selfRefused = true;
+      const w3 = await T.whoami();
+      G.st.selfRefused = false;
+      const w4 = await bad.whoami().catch(x => x);
+      ck('whoami : robot, portées, expiration ; jeton personnel → bot false ; portées illisibles → null ; jeton refusé → 401', w1
+        .bot === true && w1.username === 'project_1_bot' &&
+        w1.scopes.join() === 'api' && w1.expiresAt === '2027-01-31' && w2.bot === false && w3.bot === true && w3.scopes === null && w4
+        ?.status ===
+        401, JSON.stringify([w1, w2, w3, w4?.status]));
+      const wcalls = G.st.calls.filter(x => /\/user$|\/personal_access_tokens\/self$/.test(x.url));
+      ck('whoami : même hôte, même jeton', wcalls.length === 7 && wcalls.every(x => x
+        .url.startsWith(
+          G.API) && (x.token === 'glpat-test' || x.token === 'glpat-bad')));
       G.st.offline = true;
       e = await T.head().catch(x => x);
       G.st.offline = false;

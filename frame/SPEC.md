@@ -190,6 +190,10 @@ The transports:
     parent, otherwise `err.conflict`; a commit that landed on a moved branch (`parent_ids[0]` ≠ parent) says
     `err.conflict` too (the layer pulls, its merge finds its own changes there).
   - `publish` (§ 15.2 of INTEGRATION): one commit per group, base64 for binaries.
+  - `whoami` (31 Oct 2026, for Settings' « Tester », § 10.36: a personal token, or an expiry missing or beyond a year, is warned there) → `{ bot, username,
+    scopes, expiresAt }`: `bot` and `username` from `GET …/user` (true for a project or group access token, carried by a bot user); `scopes` and
+    `expiresAt` from `GET …/personal_access_tokens/self` (which carries no `bot`, only `user_id`), `null` when that route answers nothing readable (a refusal of it
+    alone is not an error; offline is). Same token, same instance, same errors as the other calls (bench A38).
 - **The remote transports' shared base** (`frame/store/transport_git.js`, `FD.git`; refactor R-C6, 30 Oct 2026): what
   `github` and `gitlab` had written side by side, loaded before both (index.html, the service worker's list, the frame's
   list of store scripts to ask again, every bench that loads them). Each transport keeps its addresses, its access header,

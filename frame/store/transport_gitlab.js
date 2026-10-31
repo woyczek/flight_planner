@@ -92,6 +92,27 @@
     const self = {
       id: 'gitlab',
       kind: 'remote',
+      /** Qui est le jeton (§ 10.36 : « Tester » de Réglages avertit d'un jeton personnel ou d'une expiration absente ou au-delà d'un an) : { bot (true : jeton de projet
+       *  ou de groupe, porté par un robot), username, scopes, expiresAt } — bot et username par GET /user ; scopes et expiresAt par
+       *  /personal_access_tokens/self (qui ne dit pas bot, seulement user_id), null s'ils ne se lisent pas ; même jeton, même hôte, mêmes erreurs que le reste. */
+      async whoami() {
+        const u = await (await call(`${api}/user`)).json();
+        let scopes = null,
+          expiresAt = null;
+        try {
+          const t = await (await call(`${api}/personal_access_tokens/self`)).json();
+          scopes = Array.isArray(t?.scopes) ? t.scopes.map(String) : null;
+          expiresAt = typeof t?.expires_at === 'string' ? t.expires_at : null;
+        } catch (e) {
+          if (e?.offline) throw e; // hors ligne : dit comme pour /user ; un refus de cette route seule laisse null
+        }
+        return {
+          bot: u?.bot === true,
+          username: typeof u?.username === 'string' ? u.username : null,
+          scopes,
+          expiresAt
+        };
+      },
       /** Tête de la branche (sha du dernier commit). */
       async head() {
         const j = await (await call(`${project}/repository/branches/${encodeURIComponent(branch)}`)).json();

@@ -20,6 +20,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Frame: a violation of the page's allowed sites is logged** (`frame/app.js`, `frame/store/frame_data.js`
   `noteFailure`; frame SPEC 3.6; noreg A64) — the blocked host and the directive join the last failures of the copiable
   diagnostic, once per host; the SPEC says the known limit of two open tabs at a new version.
+- **Frame: the GitLab transport says who the token is** (`frame/store/transport_gitlab.js`; frame SPEC; noreg A38) —
+  `FD.gitlab(cfg).whoami()` returns `{ bot, username, scopes, expiresAt }` (`GET /api/v4/user`, then
+  `/personal_access_tokens/self`, whose fields are `null` when unreadable), with the same token, instance and errors as
+  the other calls; Settings uses it to warn, at « Tester », of a personal token or of an expiry missing or beyond a year (§ 10.36).
 - **Launcher: no line-ending warning in the log** (`tools/data_sync.py`; frame DECISIONS; noreg I31) — git runs with
   `core.safecrlf=false`: the « LF will be replaced by CRLF » line per file is gone, the repository still keeps LF.
 - **Frame: the header's « ? » and ⚙ no longer jump** (`frame/frame.css`; frame DECISIONS; noreg A66) — on a phone, when
