@@ -966,7 +966,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 114 | Refactor R-S4: one frozen table of providers (e8aa8dab3); the note of 112 closed | acceptable |
 | 115 | Frame: a side pane closed before its module arrives (d6e7fa27a) | acceptable |
 | 116 | Map: one writer of the framing, the user's framing kept for the same flight (3d2346411) | acceptable |
-| 117 | Refactor R-S5: one end-of-job chain and one journal header in the Data model (89dd17934) | acceptable, one note |
+| 117 | Refactor R-S5: one end-of-job chain and one journal header in the Data model (89dd17934) | acceptable, one note (closed in 118) |
+| 118 | Own keys only in the Data module's tables (8acd4976e); the provider carried by the configuration (540393e28); a configuration's `api` sends the GitHub token anywhere (since ca75625f39) | acceptable; **to fix** (older) |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2023,6 +2024,18 @@ journal entries as before (no plan or path added); the texts are shown through t
 reason with `r.reason in map`, which also reads the prototype, so a reason named like `toString` or `__proto__` would give a
 function or `Object.prototype` as the kind instead of `failed`; the reason comes from the launcher, so nothing is reachable
 today, but the kind goes raw into attributes and serves as a key of the texts: use `Object.hasOwn(map, r.reason)`.
+
+**118. Own keys, the configuration's provider, and an older finding (8acd4976e, 540393e28; ca75625f39) — acceptable;
+one point to fix.** The note of 117 is closed: `own()` reads a table only for an own string or number key
+(`Object.hasOwn`), applied to every table read with a value of a response. The configuration now carries its provider from a
+closed list (github, gitlab), refused at `validate` before anything is written, never deduced from the host (an older
+configuration without one is accepted only on `github.com`); the known public hosts are frozen with the table and compared
+by equality; “other” is gone, matching the transport. **To fix** (found while reviewing, present since ca75625f39 of
+23 October): a `github` configuration may carry `data.api`, accepted for any `https` host; Join passes it to the transport,
+which sends the pilot's GitHub token as `Authorization: Bearer` to that host. A forged join link showing GitHub's name and
+pages, with `data.api` on another host, collects the token the pilot has just created. Accept `api` only as
+`https://api.github.com` or the local test address for `github` (GitLab's is already rebuilt from `data.host`), never
+export another, and let the transport ignore any other GitHub API.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
