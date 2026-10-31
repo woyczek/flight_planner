@@ -211,16 +211,34 @@ def _cut_state(c):
         whole: !document.querySelector('{ATM} [data-at="whole"]').hidden }} }}""")
 
 
+# the cut's window is tight (a quarter of the flight at most) and its "whole flight" button shown: the pinch has been taken
+_TIGHT = f"""(total) => {{ const b = document.querySelector('{ATM} .at-dbody'), w = (b && b.dataset.window || '').split(',').map(Number);
+  return w.length === 2 && w[1] - w[0] < total / 4 && !document.querySelector('{ATM} [data-at="whole"]').hidden }}"""
+
+
 def _zoom_cut(c):
+    """Opens the demonstration, then pinches the cut until its window holds tight.  Measured under load (E8 intermittent, seen by
+    the Settings session, 30 Oct): the cut was read 400 ms after the fingers were lifted, before the redraw of a busy page — or
+    the pinch landed while the cut was drawn again (the map's grid arriving).  As Fuel's to_step: the gesture is made again, after
+    the page has settled, until the state holds; the module is untouched."""
     c.open('atmosphere?donnees=demo', flight=True)
     c.until(f"!!document.querySelector('{ATM} .at-dbody svg')", timeout=10000, what='the cross-section is drawn')
     c.settle()
     whole = _cut_state(c)
-    # the middle of the visible part of the cut (the bottom bar or a hint may cover its foot)
-    x, y = c.js(f"""() => {{ const s = document.querySelector('{ATM} .at-dbody svg'), r = s.getBoundingClientRect(), x = r.left + r.width * .4;
-      let y1 = r.top + 20; while (y1 < r.bottom && s.contains(document.elementFromPoint(x, y1 + 4))) y1 += 4;
-      return [x, (r.top + y1) / 2] }}""")
-    _pinch(c, x, y, 24, 200)
+    for attempt in range(4):
+        c.settle()
+        # the middle of the visible part of the cut (the bottom bar or a hint may cover its foot)
+        x, y = c.js(f"""() => {{ const s = document.querySelector('{ATM} .at-dbody svg'), r = s.getBoundingClientRect(), x = r.left + r.width * .4;
+          let y1 = r.top + 20; while (y1 < r.bottom && s.contains(document.elementFromPoint(x, y1 + 4))) y1 += 4;
+          return [x, (r.top + y1) / 2] }}""")
+        _pinch(c, x, y, 24, 200)
+        try:
+            c.until(_TIGHT, whole['to'], timeout=4000, what='the pinch tightens the cut')
+            c.settle()
+            if c.js(_TIGHT, whole['to']):
+                break
+        except Fail:
+            pass
     return whole, _cut_state(c)
 
 
@@ -235,7 +253,10 @@ def e8(c):
     c.ok(st['whole'], 'the "whole flight" button is not displayed while zoomed', 'a button in the grip row while the window is tight')
     c.eq(c.text(f'{ATM} [data-at="whole"]'), row(c, 'winWhole'), 'its label is in the language of the run', what='button label')
     c.page.locator(f'{ATM} [data-at="whole"]').click()
-    c.wait(400)
+    # the whole cut back: waited for (a busy page redraws later than 400 ms), then read
+    c.until(f"""(total) => {{ const w = (document.querySelector('{ATM} .at-dbody').dataset.window || '').split(',').map(Number);
+      return w[0] === 0 && Math.abs(w[1] - total) < .1 && document.querySelector('{ATM} [data-at="whole"]').hidden }}""", whole['to'],
+            timeout=4000, what='"Vol entier" gives the whole cut back')
     back = _cut_state(c)
     c.ok(back['from'] == 0 and abs(back['to'] - whole['to']) < .1 and not back['whole'], f'window {back}', '"Vol entier" gives the whole cut back and hides itself')
 

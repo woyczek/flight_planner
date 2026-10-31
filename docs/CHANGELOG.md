@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Noreg E8 (Weather): the cut's window waited for, not assumed** (`tests/v3/cases/atmosphere.py`) — the pinch is made
+  again after the page has settled until the window holds tight, and "Vol entier" is waited for instead of a fixed 400 ms
+  pause (as Fuel's `to_step`); the module is untouched. E8 ×10 and ×5 under a concurrent pass, green.
 - **Weather layer: `cost(request)`, and the model of a region in the frame only** (`frame/lib/weather_store.js`, `ctx.weather.cost`;
   frame INTEGRATION 14.1, DECISIONS; noreg A25) — what a request would cost, from the cache and the known run, asking
   nothing (Atmosphere's « ≈ n calls »); `aloft`, `grid` and `cost` share one computation of the request. Fuel's

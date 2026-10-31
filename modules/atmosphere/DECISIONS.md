@@ -2,6 +2,18 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 31 October 2026 — follow-up C: E8 steady under load
+
+- **The request** (ergonomics session, 31 Oct): E8 is intermittent under load (seen by the Settings session); the wait in
+  the case's tool, as Fuel's `to_step`, the module untouched, E8 ×10.
+- **Cause**: `_zoom_cut` read the cut's window 400 ms after the fingers were lifted, and E8 the whole window 400 ms after
+  "Vol entier": a busy page redraws later; a pinch landing while the cut was drawn again (the map's grid arriving) was
+  lost. **Done**: `_TIGHT` (the window under a quarter of the flight and "Vol entier" shown); the pinch is made again after
+  the page has settled, up to four times, until that state is reached and still holds after settling; "Vol entier" is
+  awaited (`c.until`, the whole window back and the button hidden). E9 uses the same gesture. Branch `v3-atmosphere-e8`.
+- **Played from the cloud** on `9d1d34c7`: `run.py --grep E8,E9` ×10, 10/10 (2 cases each); `--grep E8` ×5 while a
+  `--touched` pass ran on the same computer, 5/5.
+
 ## 30 October 2026 — lots 0 and 1 rebased on `v3`, the ergonomics session's answers
 
 - **Rebase** (ergonomics session, 30 Oct: "rebase tes trois commits … sur la tête d'origin/v3 … jamais en forcé"):
