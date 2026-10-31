@@ -971,6 +971,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 119 | The GitHub token sent to GitHub only: transport (683af2b8d) and configuration (375803a86); the point of 118 fixed | acceptable |
 | 120 | Refactor R-S6: one end of operation, one dry plan, one table of summaries in the Data module (794f6ac60) | acceptable, no change of behaviour |
 | 121 | Refactor R-S7: the base drawn by the common set panel of the Data module (317d8d46c) | acceptable, no change of behaviour |
+| 122 | Map, choose pane: aerodrome centred, first family's candidates drawn faded (6a8403466) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2058,6 +2059,10 @@ route added.
 the common panel: its buttons take the same gate as before (`gateOf('base', number of ticked zones)`, the take with its own
 gate), and a click still checks the gate again before anything is launched (`startOp`); the set names in `data-*` come
 from the module's closed lists (`SETS`, `PANEL_UI` read through `own`); no verb or route added.
+
+**122. The choose pane's opening view (6a8403466) — acceptable.** The frame is made symmetric around the aerodrome and
+the first family's candidates are drawn faded on the canvas; touching one goes through the existing tracing and the same
+pane model as its row; nothing is written before Done and the return to Fuel keeps its closed keys (96).
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
