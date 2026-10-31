@@ -994,6 +994,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 142 | Group of 1 November evening: transport errors told apart (fe6713570), repository address normalised (0ea44bd45) | acceptable |
 | 143 | CSP: `connect-src` opened to `gitlab.com` and `framagit.org` exactly; CSP refusals told (48fc586c2) | acceptable |
 | 144 | Service worker: the next version read whole into a separate cache, taken at once (ed34c5a1b) | acceptable |
+| 145 | Group of 1 November night: GitLab `whoami()` (cbac9face), CSP refusals in the diagnostic (3f84b21f4), texts of § 10.36 (6bd060c0f), `core.safecrlf=false` (25bc3e625) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2215,6 +2216,14 @@ policy, a second barrier behind the transport. The frame listens to `securitypol
 read throws the whole stage away; only a complete stage (its `READY` mark) replaces the current cache, at once, on the next
 page load or “Reload”, and pages are never served from the stage. The page and the worker exchange only the closed
 messages `skip-waiting` and `refresh`; nothing reloads by itself.
+
+**145. Group of 1 November night (cbac9face, 3f84b21f4, 6bd060c0f, 25bc3e625) — acceptable.** `FD.gitlab(c).whoami()`
+reads `/user` and `/personal_access_tokens/self` through the same caller (same host, no redirect, 102), writes nothing and
+returns `{ bot, username, scopes, expiresAt }` for the Settings' “Test”, which warns on a personal token or an expiry
+missing or beyond a year (§ 10.36: a warning, not a refusal, for the user alone with their own repository). The
+diagnostic's last failures gain “csp: <host>”, the host only. The texts of § 10.36 ask for a project access token
+(Developer, `api`, 90 days advised, 365 at most) created by the administrator, never sent with the configuration link.
+`core.safecrlf=false` on the hardened git only silences line-ending warnings.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
