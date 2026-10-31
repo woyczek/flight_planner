@@ -37,6 +37,11 @@
         race: false,
         calls: []
       };
+    // « hors ligne » : le navigateur le dit aussi (le transport ne dit offline que si navigator.onLine est faux, 31 oct. 2026)
+    Object.defineProperty(navigator, 'onLine', {
+      configurable: true,
+      get: () => !st.offline
+    });
     const id = p => `${p}${(++n).toString(16).padStart(6, '0')}`;
     const mkTree = m => {
       const s = id('t');

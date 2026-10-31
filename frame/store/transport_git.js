@@ -38,9 +38,22 @@
           },
           body: body ? JSON.stringify(body) : undefined
         });
-      } catch {
-        throw Object.assign(new Error('offline'), {
+      } catch (e) {
+        // « hors ligne » seulement quand le navigateur le dit ; en ligne, une exception de fetch (réseau, CORS, DNS, redirection
+        // refusée, adresse illisible) est une erreur nommée, avec l'hôte seul, jamais l'adresse entière (31 oct. 2026 : le
+        // téléphone disait « offline » en ligne depuis la veille)
+        if (navigator.onLine === false) throw Object.assign(new Error('offline'), {
           offline: true
+        });
+        let host = '';
+        try {
+          host = new URL(url).host;
+        } catch {
+          /* adresse illisible */
+        }
+        throw Object.assign(new Error(`unreachable: ${host || '?'} (${e?.name || 'Error'})`), {
+          unreachable: true,
+          host
         });
       }
       if (ok(r)) return r;

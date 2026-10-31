@@ -2278,3 +2278,21 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   match goes to the frame's error (`#ivao-return?error=state`: no token, no code exchanged) instead of the generic page.
   The refusal page links to the V3 frame (`/frame/`). The guard is not widened; the state is still consumed once, by the
   exchange only. Not reproduced against IVAO: if the first arrival is still refused, the log line says which condition.
+
+- **31 Oct 2026 — « Offline » only when the browser says so** (the user's phone: « offline » while online since the day
+  before, after switching the data repository to GitLab by hand; two identical notes stacked). The shared call of the
+  remote transports turned every exception of `fetch` into `offline` (network, CORS, DNS, a redirect refused by
+  `redirect: 'error'`, an unreadable address). Now `offline` only when `navigator.onLine` is false; otherwise
+  `unreachable: <host>` (the host only, never the address), said « repository unreachable (host): network, filtering or
+  redirect refused ». A setting the transport cannot be built from (a GitLab api without its scheme) gave an exception
+  that kept the old transport; it is now a transport whose every call is « invalid repository address », a named
+  configuration error whose status line leads to the Access card. A change of the data access (repository, provider,
+  token) starts a pass at once, without a reload. The same note (kind and text) replaces the one shown instead of
+  stacking. Only `navigator.onLine` false suspends the background loop (it already did; other errors retry at the
+  normal interval). The phone's actual cause is not reproduced: the error now says which. The repository's real answer
+  (the user: GitLab still failing « without the log of the error »): a refusal is « GitLab <status>: <server's message, 120
+  signs> » (GitHub alike, the 401 too; never the token), said in words for the frequent cases — 404 « project not found or
+  token without access (scope api, or read_repository and write_repository) », 401 « token refused or expired », 403
+  « token without write access », 400 on the branch « unknown branch » — followed by « (GitLab 404) »; an exception
+  without status carries its name; the last five failures (date, error) are kept in the copiable diagnostic
+  (`FrameData.diagnostic().failures`). The benches that simulate « offline » now also say it through `navigator.onLine`.

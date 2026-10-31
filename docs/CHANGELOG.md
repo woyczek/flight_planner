@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: synchronisation errors named** (`frame/store/transport_git.js`, `frame/app.js`; frame DECISIONS; noreg A60) —
+  « offline » only when the browser says so; a failing call while online is « repository unreachable (host) »; an
+  address the transport cannot use is « invalid repository address », its status line leading to the Access card; a
+  change of the data access starts a pass at once; the same note no longer stacks. The repository's real answer is said:
+  provider, HTTP status and the server's message, with a phrase for 404, 401, 403 and a 400 on the branch (noreg A61);
+  the last five failures are kept in the diagnostic.
 - **Settings: a repository address typed in the Access card is normalised before it is saved** (`frame/settings/config.js`
   `normalizeRepo`, `access.js`; SPEC § 5; A61) — bug, 31 Oct: on a phone, « framagit.org/asr/flight_planner » typed without
   https:// was taken for a GitHub repository and the synchronisation failed. The four forms (host/account/repo, https://, .git,

@@ -979,6 +979,13 @@
       lastSync: r.ok ? new Date().toISOString() : prev?.lastSync || '',
       lastError: r.error
     });
+    // les cinq derniers échecs (date, erreur telle que le transport l'a dite), pour le diagnostic copiable
+    if (r.error) await setMeta('failures', {
+      list: [{
+        at: new Date().toISOString(),
+        error: String(r.error).slice(0, 200)
+      }, ...((await getMeta('failures'))?.list || [])].slice(0, 5)
+    });
     if (r.pulled.length) changed([...new Set(r.pulled)]);
     if (r.conflicts) window.dispatchEvent(new CustomEvent('frame-data-conflict', {
       detail: {
@@ -1162,7 +1169,8 @@
         aircraft: refs.filter(p => p.startsWith('AircraftDB/')).length,
         cached: docs.filter(d => d.policy === 'reference').length
       },
-      lastReadError
+      lastReadError,
+      failures: (await getMeta('failures'))?.list || [] // les cinq derniers échecs de synchronisation, du plus récent
     };
   }
 

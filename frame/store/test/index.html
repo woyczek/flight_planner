@@ -37,10 +37,16 @@
 <script>
   const FD = window.FrameData,
     $ = id => document.getElementById(id);
-  const T = (cmd, body) => fetch(`/__test/${cmd}`, {
+  // « hors ligne » simulé : le navigateur le dit aussi (le transport ne dit offline que si navigator.onLine est faux, 31 oct. 2026)
+  let simOffline = false;
+  Object.defineProperty(navigator, 'onLine', {
+    configurable: true,
+    get: () => !simOffline
+  });
+  const T = (cmd, body) => (cmd === 'offline' && (simOffline = !!body?.on), fetch(`/__test/${cmd}`, {
     method: 'POST',
     body: JSON.stringify(body || {})
-  }).then(r => r.json());
+  }).then(r => r.json()));
   const stats = () => fetch('/__test/stats').then(r => r.json());
   const results = [];
   /** Vérification : nom, condition, détail montré en cas d'échec. */

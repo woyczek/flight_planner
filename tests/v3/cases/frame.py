@@ -2227,3 +2227,69 @@ def a61(c):
     c.tap('.f-modal [data-no]')
     saved = c.js("(() => { const g = FrameData.github.config(); return [g.provider, g.api, g.repo] })()")
     c.eq(saved, ['gitlab', 'https://framagit.org/api/v4', 'asr/flight_planner'], 'the device reads the GitLab project, whatever form was typed', what='saved access')
+
+
+# a GitLab setting whose api has no scheme (typed by hand): the transport cannot be built
+GITLAB_BAD = ("try { localStorage.setItem('githubData:frame', JSON.stringify({ provider: 'gitlab', repo: 'grp/proj', api: 'gitlab.example/api/v4', "
+              "branch: 'main', token: 'glpat_test' })) } catch (e) {}")
+
+
+@case('A60', 'Synchronisation errors named: « offline » only when the browser says so, an invalid repository address, one note per key', 'A',
+      designs=('standard',), screens=False, night=False,
+      rule='Simplification 31 Oct (the user’s phone: « offline » while online since the day before, two identical notes stacked): an exception of fetch while online is « repository unreachable (host) », never offline; an address the transport cannot use is a named configuration error whose status line leads to the Access card; the same note replaces the one shown')
+def a60(c):
+    c.context.add_init_script(GITLAB_BAD)
+    c.context.route(re.compile(r'/modules/atmosphere/module\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=CTX_MODULE))
+    c.open('atmosphere', wait=False, docs=[['device/usages.json', {'devices': True}, 'cache']])
+    c.until('!!window.__ctx', timeout=15000, what='the module and its ctx')
+    # an address the transport cannot call: a named configuration error, never « offline »
+    c.eq(c.js("() => FrameData.sync().then(r => r.error)"), 'invalid repository address', 'an invalid address is a named configuration error', what='sync error')
+    c.eq(c.js("() => FrameData.status().then(s => s.lastError)"), 'invalid repository address', 'kept as the last error', what='last error')
+    # a fetch that fails while online: named, with the host only
+    call = """() => FrameData.git.caller({ headers: () => ({}), refuse: () => ({}) })('https://sog-unreachable.invalid/a/b?token=x')
+        .then(() => 'answered', e => ({ offline: !!e.offline, unreachable: !!e.unreachable, msg: e.message }))"""
+    c.eq(c.js(call), {'offline': False, 'unreachable': True, 'msg': 'unreachable: sog-unreachable.invalid (TypeError)'},
+         'online, a failing fetch is « unreachable: <host> », never offline, never the whole address', what='online failure')
+    c.context.set_offline(True)
+    try:
+        got = c.js(call)
+    finally:
+        c.context.set_offline(False)
+    c.eq(got.get('offline'), True, '« offline » when the browser says so', what='offline')
+    # one note per key
+    c.js("() => { window.__ctx.notify('SOG note x', 'warn'); window.__ctx.notify('SOG note x', 'warn'); window.__ctx.notify('SOG note y', 'warn') }")
+    c.eq(c.js("[...document.querySelectorAll('#fNotes .f-note')].map(n => n.textContent).filter(t => t.includes('SOG note')).length"), 2,
+         'the same note replaces the one shown; another note stays', what='notes')
+
+
+
+@case('A61', 'The repository’s real answer: status, a phrase for the frequent cases, the last five failures kept', 'A', designs=('standard',),
+      screens=False, night=False,
+      rule='Simplification 31 Oct (the user, GitLab still failing « without the log of the error »): the last error says the provider, the HTTP status and the server’s message cut at 120 signs, never the token; 404, 401, 403 and a 400 on the branch said in words; the diagnostic keeps the last five failures')
+def a61(c):
+    answer = {'status': 404, 'message': 'Not Found'}
+    c.context.add_init_script(GITHUB_SET)
+    c.context.route(re.compile(r'^https://api\.github\.com/'), lambda r: r.fulfill(status=answer['status'], content_type='application/json',
+                                                                                   body=json.dumps({'message': answer['message']})))
+    c.open('atmosphere', wait=False, docs=[['device/usages.json', {'devices': True}, 'cache']])
+    c.until('!!window.FrameData && FrameData.status', timeout=15000, what='the data layer')
+    for _ in range(100):  # the device's GitHub transport plugged in (loadDevice), before the first pass
+        if c.js("() => FrameData.status().then(s => s.transport)") == 'github':
+            break
+        c.wait(100)
+    row = "() => { const b = document.querySelector('[data-card=\"status\"] [data-k=\"data\"]'); return b ? b.textContent : '' }"
+    got = []
+    for status, message in ((404, 'Not Found'), (401, 'Bad credentials')):
+        answer.update(status=status, message=message)
+        err = c.js("() => FrameData.sync().then(r => r.error)")
+        c.page.evaluate("location.hash = '#settings'")
+        c.until("!!document.querySelector('[data-card=\"status\"] [data-k=\"data\"]')", timeout=10000, what='the Status block')
+        got.append((err, norm(c.js(row))))
+        c.page.evaluate("location.hash = '#atmosphere'")
+    c.eq([g[0] for g in got], ['GitHub 404: Not Found', 'GitHub 401: Bad credentials'], 'the last error: provider, status, server’s message (never « offline »)',
+         what='errors')
+    c.ok('dépôt introuvable ou jeton sans accès (GitHub 404)' in got[0][1] and 'jeton refusé ou expiré (GitHub 401)' in got[1][1], str([g[1] for g in got]),
+         'the Status block says the phrase of the status and the provider')
+    c.ok(all('ghp_test' not in g[1] for g in got), '', 'never the token')
+    fails = c.js("() => FrameData.diagnostic().then(d => d.failures.map(f => f.error))")
+    c.eq(fails[:2], ['GitHub 401: Bad credentials', 'GitHub 404: Not Found'], 'the diagnostic keeps the last failures, the newest first', what='failures')

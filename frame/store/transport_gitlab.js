@@ -42,10 +42,11 @@
       }),
       refuse(r, j) {
         const m = String((typeof j.message === 'string' ? j.message : j.message && JSON.stringify(j.message)) || j.error || r
-          .statusText).slice(0, 300);
+          .statusText).slice(0, 120);
         return {
-          message: r.status === 401 ? 'GitLab token refused (expired, revoked or wrong)' : r.status === 403 ?
-            `GitLab 403: the token may not write this project (${m})` : `GitLab ${r.status}: ${m}`,
+          // « GitLab <statut> : <message du serveur, 120 signes> » : le cadre dit la phrase du statut (404 : projet introuvable
+          // ou jeton sans accès ; 401 : refusé ou expiré ; 403 : sans droit d'écriture ; 400 sur la branche), jamais le jeton
+          message: `GitLab ${r.status}: ${m}`,
           conflict: [400, 409, 422].includes(r.status) && /exist|changed|already|conflict|does not/i.test(m)
         };
       }

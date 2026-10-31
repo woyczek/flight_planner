@@ -378,6 +378,32 @@
         ],
         other: ['refusé par le serveur : {e}', 'refused by the server: {e}', 'vom Server abgelehnt: {e}',
           'rechazado por el servidor: {e}'
+        ],
+        unreachable: ['dépôt injoignable ({h}) : réseau, filtrage ou redirection refusée',
+          'repository unreachable ({h}): network, filtering or redirect refused',
+          'Repository nicht erreichbar ({h}): Netz, Filter oder abgelehnte Umleitung',
+          'repositorio inalcanzable ({h}): red, filtrado o redirección rechazada'
+        ],
+        // la réponse du dépôt par son statut, suivie de « (GitLab 404) » ; le message du serveur reste dans le diagnostic
+        http404: ['dépôt introuvable ou jeton sans accès', 'repository not found or token without access',
+          'Repository nicht gefunden oder Token ohne Zugriff', 'repositorio no encontrado o token sin acceso'
+        ],
+        gitlab404: ['projet introuvable ou jeton sans accès (portée api, ou read_repository et write_repository)',
+          'project not found or token without access (scope api, or read_repository and write_repository)',
+          'Projekt nicht gefunden oder Token ohne Zugriff (Bereich api, oder read_repository und write_repository)',
+          'proyecto no encontrado o token sin acceso (ámbito api, o read_repository y write_repository)'
+        ],
+        http401: ['jeton refusé ou expiré', 'token refused or expired', 'Token abgelehnt oder abgelaufen',
+          'token rechazado o caducado'
+        ],
+        http403: ['jeton sans droit d’écriture', 'token without write access', 'Token ohne Schreibrecht',
+          'token sin derecho de escritura'
+        ],
+        branch: ['branche inconnue', 'unknown branch', 'unbekannter Zweig', 'rama desconocida'],
+        invalid: ['adresse du dépôt invalide : corrigez-la dans la carte Accès',
+          'invalid repository address: correct it in the Access card',
+          'ungültige Adresse des Repositorys: in der Karte Zugang korrigieren',
+          'dirección del repositorio no válida: corríjala en la tarjeta Acceso'
         ]
       },
       local: ['Sur cet appareil', 'On this device', 'Auf diesem Gerät', 'En este dispositivo'],
@@ -679,9 +705,14 @@
   /** Notification flottante : effacée seule (6 s, erreur 12 s) ou par sa croix. kind : info, ok, warn, err. o.action
    *  { label, run } : un bouton d'action, et la notification reste jusqu'au clic. */
   function notify(text, kind = 'info', o = {}) {
+    // une note par clé (par défaut : sa sorte et son texte) : la même note remplace celle qui est affichée au lieu de s'empiler
+    const key = o.key || `${kind}|${text}`;
+    for (const old of $('fNotes').querySelectorAll('.f-note'))
+      if (old.dataset.key === key) old.remove();
     const n = document.createElement('div');
     n.className = 'f-note';
     n.dataset.kind = kind;
+    n.dataset.key = key;
     n.innerHTML = `<span>${esc(text)}</span>${o.action ? `<button type="button" data-act>${esc(o.action.label)}</button>` : ''}<button type="button" data-x aria-label="${esc(t(T.close))}">✕</button>`;
     const drop = () => {
       n.remove();
@@ -1132,8 +1163,14 @@
     // l'accès aux données a changé (dépôt réglé ou coupé, lanceur trouvé) : la base publiée est relue à la prochaine question
     const key = dataAccess().key;
     if (key !== accessKey) {
+      const first = accessKey === undefined || accessKey === null || accessKey === '';
       accessKey = key;
       aerodb?.refresh();
+      // dépôt, fournisseur ou jeton changés en cours de page : passage tout de suite, sans attendre l'intervalle ni un
+      // rechargement (la première lecture au démarrage a déjà le sien)
+      if (!first && navigator.onLine !== false) FD.sync({
+        reason: 'config'
+      }).catch(() => {});
     }
     adoptAnon();
   }
@@ -1754,7 +1791,7 @@
       sub: t(T.info.transport, {
         x: t(T.info.tr[s.transport] || T.info.tr.local)
       }),
-      go: s.conflicts ? '#conflicts' : 'card:sync,usages',
+      go: s.conflicts ? '#conflicts' : s.lastError === 'invalid repository address' ? 'card:access' : 'card:sync,usages',
       attn: ATTENTION.has(syncState(s)[0])
     });
     if (s?.transport === 'launcher') items.push({
@@ -2008,10 +2045,28 @@
     });
     if (!exchange && !usages.backend) return FD.transports.local();
     // dépôt de l'appareil (GitHub, ou une instance GitLab : son transport y signe les commits du trigramme)
-    if (FD.github.config()) return FD.github({
-      ...FD.github.config(),
-      author: () => identity.trigram
-    });
+    if (FD.github.config()) try {
+      return FD.github({
+        ...FD.github.config(),
+        author: () => identity.trigram
+      });
+    } catch (e) {
+      // une adresse que le transport ne peut pas appeler (hôte sans schéma, api d'une autre forme) : erreur de configuration
+      // nommée à chaque passage, jamais « hors ligne », et jamais l'ancien transport gardé (31 oct. 2026)
+      console.warn('data repository', e.message);
+      const bad = () => Promise.reject(Object.assign(new Error('invalid repository address'), {
+        config: true
+      }));
+      return {
+        id: 'github',
+        kind: 'remote',
+        invalid: true,
+        head: bad,
+        tree: bad,
+        read: bad,
+        commit: bad
+      };
+    }
     return {
       ...FD.transports.local(),
       missing: true
@@ -2093,8 +2148,21 @@
     const k = {
       offline: 'offline',
       'no transport': 'none',
-      'repository kept moving: try again': 'moving'
+      'repository kept moving: try again': 'moving',
+      'invalid repository address': 'invalid'
     } [e];
+    const un = /^unreachable: (.*)$/.exec(String(e || ''));
+    if (un) return t(T.sync.errs.unreachable, {
+      h: un[1]
+    });
+    // réponse d'un dépôt : la phrase de son statut, puis le fournisseur et le statut ; sinon son message, cité
+    const http = /^(GitLab|GitHub) (\d{3}): (.*)$/.exec(String(e || ''));
+    if (http) {
+      const [, who, code, msg] = http,
+      phrase = code === '404' ? T.sync.errs[who === 'GitLab' ? 'gitlab404' : 'http404'] : code === '401' ? T.sync.errs.http401 :
+        code === '403' ? T.sync.errs.http403 : code === '400' && /branch/i.test(msg) ? T.sync.errs.branch : null;
+      if (phrase) return `${t(phrase)} (${who} ${code})`;
+    }
     return k ? t(T.sync.errs[k]) : t(T.sync.errs.other, {
       e
     });

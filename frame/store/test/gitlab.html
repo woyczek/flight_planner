@@ -42,6 +42,11 @@
         calls: [],
         perPage: 2
       };
+    // « hors ligne » : le navigateur le dit aussi (le transport ne dit offline que si navigator.onLine est faux, 31 oct. 2026)
+    Object.defineProperty(navigator, 'onLine', {
+      configurable: true,
+      get: () => !st.offline
+    });
     const sha = t => {
       let h = 0;
       for (const ch of String(t)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
@@ -367,7 +372,7 @@
         token: 'glpat-bad'
       });
       e = await bad.head().catch(x => x);
-      ck('jeton refusé : message lisible, le jeton jamais cité', e?.status === 401 && /token refused/.test(e.message) && !/glpat-bad/
+      ck('jeton refusé : « GitLab 401 : … », le jeton jamais cité', e?.status === 401 && /^GitLab 401: /.test(e.message) && !/glpat-bad/
         .test(e.message), e?.message);
       G.st.offline = true;
       e = await T.head().catch(x => x);

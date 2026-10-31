@@ -149,7 +149,8 @@
       refuse: (r, j, {
         ref = false
       }) => ({
-        message: r.status === 401 ? 'GitHub token refused (expired or wrong)' : `GitHub ${r.status}: ${j.message || r.statusText}`,
+        // « GitHub <statut> : <message du serveur, 120 signes> » : le cadre dit la phrase du statut (jamais le jeton)
+        message: `GitHub ${r.status}: ${String(j.message || r.statusText || '').slice(0, 120)}`,
         conflict: ref && (r.status === 409 || r.status === 422) // branche partie ailleurs (avancée refusée)
       })
     });
