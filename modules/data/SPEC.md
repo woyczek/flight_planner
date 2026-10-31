@@ -99,7 +99,10 @@ A non-fixed module (it scrolls like a page), `meta.title` « Données ». From t
    panel **Publier**; the rows below keep their cycle, state and detail, without buttons.
    **One panel for every set** (R-S7): the base is an entry of `SETS` like the others, and its panel is drawn by the same set panel as the procedures, the VAC points and the aircraft,
    driven by that entry (its items, its verbs, the extra verb « Prendre le fichier téléchargé » that only the base has); the base panel keeps its attribute `data-build`, the others
-   `data-set-panel`.
+   `data-set-panel`. **One gate for every set, the base included**: before the gesture, `setGate` (model.js) gives each verb its
+   grey reason (no launcher, another operation running, offline, no item ticked, a verb the launcher does not know); after it,
+   the launcher's refusals (409 `updating` or another operation, 429 too soon, 404, 400 refused arguments) go through `refusal`
+   and a job's end such as `merge-pending` through the one summary table, with no branch of the base's own.
 6. **The EAD line** in the Procédures group (§ 4.3): an ICAO code field and « Lire un terrain ».
 7. **Journal**: a fold at the foot, the last 50 operations (time UTC with Z, data set, verb, duration, result), each
    unfolding to its log; « Copier ».
@@ -427,3 +430,25 @@ publication by anyone updates everyone (user, 28 Oct); the gap is what the scree
 9. The data are common, the coverage personal: the module never removes a zone another workstation publishes.
 10. Compiling and using stay apart: the module orders builds, the reader uses; the builders never publish, they return
    files that the launcher or the frame's publication service writes.
+
+## 11. Files (refactor R-S8)
+
+The module is split by responsibility; no rule changes place without the case that pins it, and every file is listed in
+`meta.files` (case I26: a pilot offline before ever opening the screen can still load it).
+
+- `module.js`: the entry. `meta`, `mount` / `unmount`, the event handlers (click, change, input, toggle, key, aerodb change)
+  and the operation picked by a click (`opOf`); nothing is drawn here.
+- `state.js`: the state of the mounted screen (`S`, one writer: `setState` at mount and unmount; the other files change its
+  fields, never `S` itself), and the small kit every file uses (`esc`, `tt`, `lang`, `li`, `count`, `kind`, `ask`, `frozen`,
+  `busyNow`, `catSource`).
+- `screen.js`: the read-only screen and what it reads. `load` (what aerodb publishes) and the launcher's verbs, head,
+  coverage and its States, « Ajouter un pays », the rows of the groups, the journal (drawn and written), `render`.
+- `panels.js`: draws the set panels and never starts a job. Selection, choices, verbs, the running line, results and their
+  summaries (`SUM_KINDS`, the pickup's lines included), `redrawPanel`, `renderBuild`.
+- `zonemap.js`: the map of the zones to tick (outlines, tones, 44 px rule); writes nothing but the module's selection.
+- `follow.js`: follows the launcher's jobs and draws nothing. Start, follow, settle, refusals, the one end (`finishOp`), the
+  one plan (`finishPlan`), the pickup of a downloaded file.
+- `publish.js`: the shared « Publier » panel and the state of `data/` it reads (`sync-status`).
+- `chain.js`: « Tout mettre à jour » (plan, one question, the chain, its end); starts its operations through follow.js and
+  draws its own card only.
+- `model.js` and `texts.js`: unchanged by this lot (model.js is split by the second lot).

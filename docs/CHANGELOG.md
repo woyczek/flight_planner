@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refactor R-S8 (1/2), no behaviour change** (`modules/data/module.js` split into `state.js`, `screen.js`, `panels.js`, `zonemap.js`, `follow.js`, `publish.js`, `chain.js`; SPEC § 11; noreg L1–L20, I26): the 2325-line file is now an entry file (`meta`, mount / unmount, the event handlers, `opOf`) over one file per responsibility; `S` lives in `state.js` and is replaced only by `setState` (at mount and unmount), the other files read it and write its fields as before; `meta.files` lists the new files. Code moved, not edited: every rendered text and the HTML of the screen are unchanged (compared on the Z99 grid, 390 and 1280 px). `model.js` and `texts.js` are split in lot 2/2.
 - **Map: the light drawing of a gesture shows what the full one drew (sixth reading, gap 7)** (`modules/maps/light.js`, `render.js`,
   `lib/aero_symbols.js`, `draw.js`; SPEC § 6.8; DECISIONS; help ×4; noreg D92). While panning, the aerodromes and beacons are those the
   map had drawn at rest, as rings of their symbol's colour — no longer black squares on every aerodrome of the list (138 → 28 at

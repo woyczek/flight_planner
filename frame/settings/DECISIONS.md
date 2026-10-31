@@ -501,7 +501,9 @@ ergonomics session. The launcher's LAN card still lists paired devices next to t
 **Order of the lots** (smallest risk first): R-S1 dead helpers of model.js and small repeats (L5, L13, L15 move to `viewOp` /
 `setGate`); R-S2 one profile reader / writer (A12); R-S3 one secrets helper (A32, A43); R-S4 one provider table (A12, A49);
 R-S5 one outcome reader and entry builder (L7, L13–L18); R-S6 one job ending and one summary table; R-S7 the base as a SETS entry;
-R-S8 module.js then model.js split by responsibility; R-S9 settings.js `render` split and shared texts.
+R-S8 module.js then model.js split by responsibility (lot 1 done: module.js; lot 2: model.js); R-S9 settings.js `render` split and shared texts. Added 31 Oct: R-S10 one writer per shared field of the Data
+module's state (`run`, `result`, `chain`), after R-S9 — a change of logic, not a split (the L cases as the guard); R-S8 only
+moves code, `S` itself replaced through `setState` alone.
 - **30 Oct 2026 — « Mise à jour de la suite » in the Administration card** (V3 § 10.34 A3, the second card; V3 Frame):
   - A channel is a version selector, not a branch to follow blindly: `tools/suite_update.py` reads the tags and the
     development branch after a `git fetch`, and only moves forward (`merge-base --is-ancestor`): a target that does not contain
