@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Weather: the sheet has the height of what it shows** (`modules/atmosphere/module.js`; SPEC, DECISIONS) — the frame's
+  rule since the Map's sixth reading: in portrait, never taller than its content nor than half the view, the map takes the
+  rest, no blank under the content (expanded: half the view on the cut, the content's own height on Details, Flight…);
+  `sheetFit()` writes the frame's four height tokens in pixels, only when they change. Noreg E16, C4.
+
 - **Weather: the Layers button next to the panel it opens** (`modules/atmosphere/module.js`, `style.js`; SPEC, DECISIONS,
   help ×4) — it leaves the map's top left corner for the sheet's line, a chip left of the grip, as on the Map; its panel
   opens over the map just above the sheet, aligned on the chip (landscape: the map's top left corner). Noreg E15.
