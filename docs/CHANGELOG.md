@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refactor R-S8 (2/2), no behaviour change** (`modules/data/model.js` split into `model_screen.js`, `model_sets.js`, `model_results.js`, `model_chain.js`, `model_map.js`, `model_publish.js` and `model_kit.js`; SPEC § 11; noreg L1–L20, I26): `model.js` is now a façade made of `export * from` the six pure files, and its 98 exported names are exactly the same as before (checked by script); the three private helpers several files share (`obj`, `entryHead`, `jobOf`) live in `model_kit.js`, which the façade does not export. The pure files hold no state, no DOM and no call out, and import no screen file. Code moved, not edited: every declaration is byte-identical and every name is declared in one file only; the screen files and the cases still import `./model.js`. R-S8 is complete.
 - **Map: the vertical profile never waits to be built** (`modules/maps/profile_view.js`, `screen.js`; SPEC § 8.3; DECISIONS; noreg
   D93). The profile is drawn at once without relief or MORA, then completed when the relief tiles (or the MORA) arrive; coming back
   to the Map no longer leaves it without a profile when a tile or a reading hangs (D86 / D87 at 390).

@@ -59,7 +59,8 @@ export const meta = {
     routes: ['regen/job', 'regen/verbs', 'sync-status'],
     read: []
   },
-  files: ['model.js', 'texts.js', 'state.js', 'screen.js', 'panels.js', 'zonemap.js', 'follow.js', 'publish.js', 'chain.js',
+  files: ['model.js', 'model_screen.js', 'model_sets.js', 'model_results.js', 'model_chain.js', 'model_map.js', 'model_publish.js',
+    'model_kit.js', 'texts.js', 'state.js', 'screen.js', 'panels.js', 'zonemap.js', 'follow.js', 'publish.js', 'chain.js',
     '../../frame/lib/dom.js', '../../frame/lib/time.js'
   ],
   reads: ['cache/data/'],

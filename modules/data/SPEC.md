@@ -451,4 +451,18 @@ The module is split by responsibility; no rule changes place without the case th
 - `publish.js`: the shared « Publier » panel and the state of `data/` it reads (`sync-status`).
 - `chain.js`: « Tout mettre à jour » (plan, one question, the chain, its end); starts its operations through follow.js and
   draws its own card only.
-- `model.js` and `texts.js`: unchanged by this lot (model.js is split by the second lot).
+- `texts.js`: the texts `[fr, en, de, es]`, one table.
+- `model.js`: the façade of the pure functions, `export * from` the files below and nothing else; the screen files import
+  it as `M` and the cases import `/modules/data/model.js`, both unchanged. The files under it hold no state, no DOM and no
+  call out, and never import a screen file:
+  - `model_screen.js`: cycles and dates, the state of a row, coverage and zones, the rows and groups of the screen, the
+    State lines;
+  - `model_sets.js`: `SETS` and the verbs (known verbs, `setGate`, the arguments of a job, a job's view read and
+    normalised), the bulk States, `own` and `num`;
+  - `model_results.js`: the end of a job read for every verb (outcomes, `refusal`, the pickup's split and zips, the
+    sheets' plan) and the journal entries and list;
+  - `model_chain.js`: « Tout mettre à jour » (its sets and verbs, a verdict, the stale groups, its entry);
+  - `model_map.js`: the zones map (tones, approximate outline, layout, 44 px);
+  - `model_publish.js`: « Publier » (state, counts, outcome, entry).
+  - `model_kit.js`: the private helpers shared by several of these files; the façade does not export it, so the
+    names `model.js` exports stay those of before the split (one name, one file).
