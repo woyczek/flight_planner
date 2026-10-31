@@ -247,7 +247,7 @@ areas, controlled airspace), the low or high airways depending on your level, th
 one-degree square the minimum safe altitude (the brown figure, in thousands and hundreds of feet: “3⁵” means 3,500 ft).
 The small purple figures along the route are the distances from the departure, in nautical miles. Drag the map with one
 finger, spread two fingers to zoom (during the gesture the map keeps only its lines — airspaces, airways, route,
-aerodromes as small squares — and its names come back as soon as it stops); “Recentre” (the target, at the top right of the map) comes back to the whole route. The map stays where you put it, even when
+aerodromes and beacons as small rings, the very ones it shows at rest — and its names come back as soon as it stops); “Recentre” (the target, at the top right of the map) comes back to the whole route. The map stays where you put it, even when
 the route changes: only “Recentre” (or another flight) reframes it. Coming back to the map (from Fuel, or after “Done”), you find your framing
 again as long as the route and the chosen procedures have not changed; otherwise the flight is framed, procedures included. While “Around the flight only” is ticked (Layers),
 airspaces and airways are read only near the flight, from afar; untick it or zoom in to see everything.
@@ -400,7 +400,7 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: ab9ff462f78b -->
+<!-- fr: 97204dc50a94 -->
 
 <!-- chapter: report -->
 # Report

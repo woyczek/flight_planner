@@ -2583,3 +2583,37 @@ def d91(c):
     c.ok(got['id'] and got['chosen'], f'{got}', 'touching a faded trace chooses its procedure')
     c.eq(got['pressed'], 'true', 'its row in the pane is marked (one writer: the choice’s state)', what=f'row {got["id"]}')
     c.eq(c.doc(PATH), before, 'nothing written before « Done »', what='the flight')
+
+
+# ------------------------------------------------------------------------------------------------------ D92
+# 49 aerodromes 1 to 1.5 NM apart: from afar their symbols overlap and the full drawing thins them out
+_DENSE_ADS = [{'icao': f'LFX{chr(65 + i)}' if i < 26 else f'LFY{chr(39 + i)}', 'name': f'DENSE {i}', 'lat': 46.2 + (i // 7) * .02,
+               'lon': -.2 + (i % 7) * .025, 'elev': 100, 'public': True, 'hardLen': 900 + 50 * i} for i in range(49)]
+_LIGHT_SET = """async () => { const S = window.__mp.S, L = await import('/modules/maps/light.js'), r = S.canvas.getBoundingClientRect(),
+  inside = h => h.x >= 0 && h.y >= 0 && h.x <= r.width && h.y <= r.height,
+  // the full drawing's aerodromes: one name request per symbol drawn, in the map's pass (an independent reading of drawPoints)
+  full = [...new Set((window.__mapPass || []).filter(x => x.rank === 'aerodrome').map(x => x.key))].filter(k => /^LF[XY]/.test(k)).sort(),
+  lite = (S.lightSrc?.aerodromes || []).map(a => a.icao).filter(k => /^LF[XY]/.test(k)).sort(),
+  cv = document.createElement('canvas'); cv.width = r.width; cv.height = r.height;
+  const n = L.drawLight(cv.getContext('2d'), L.lightPaths(S.lightSrc), { project: ll => S.map.project(ll), zoom: S.map.getZoom(), W: r.width,
+    H: r.height, dpr: 1, pal: MapsRender.palette(false), paper: '#fff' });
+  return { full, lite, n, shown: (S.lightSrc?.aerodromes || []).map(a => ({ a, ...S.toC(+a.lat, +a.lon) })).filter(inside).length,
+    listed: (S.data?.data?.aerodromes || []).filter(a => /^LF[XY]/.test(a.icao)).length } }"""
+
+
+@case('D92', 'The light drawing of a gesture draws the aerodromes the full drawing drew, no more, as simple marks of their colour', 'D',
+      tags=('maps',), designs=('standard',), night=False,
+      rule='sixth reading (31 Oct 2026), gap 7, SPEC § 6.8: the light drawing takes the aerodromes (and beacons) the last full drawing drew — the zoom rule and the thinning of the symbols choose, never the drawing mode — and marks each with a ring of its symbol’s colour and size; the picture does not change at the start or the end of a gesture')
+def d92(c):
+    c.page.add_init_script("(() => { const t = setInterval(() => { if (window.SiaAero && window.SiaAero.pass) { clearInterval(t); (" + _MAP_PASS + ")() } }, 5) })()")
+    docs = fdocs(flight()) + [['cache/maps/ui.json', {'preset': 'vfr', 'layers': {}}, 'cache']]
+    c.open('maps?view=-1.6,45.6,1.6,47.4', docs=docs, flight=False, airfields=True, aero_extra={'aerodromes': _DENSE_ADS, 'cells': {'46': [[-1, 1]]}}, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.map && window.__mp.S.lightSrc && (window.__mp.S.adHits || []).some(h => /^LF[XY]/.test(h.a.icao)))",
+            timeout=15000, what='the dense aerodromes drawn and the light source kept')
+    c.wait(400)
+    r = c.js(_LIGHT_SET)
+    c.ok(r['listed'] >= 40 and 0 < len(r['full']) < r['listed'], f"{len(r['full'])} drawn of {r['listed']}", 'the full drawing thins the dense aerodromes out (the case means something)')
+    c.eq(r['lite'], r['full'], 'the light drawing’s aerodromes are the full drawing’s, at this zoom', what='aerodromes')
+    c.eq(r['n'], r['shown'], 'it paints a mark for each of them in the frame', what='marks painted')

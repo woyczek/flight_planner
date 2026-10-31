@@ -651,6 +651,7 @@
     if (ob) drawObstacles(ctx, data.obstacles || [], toC, W, H, scale, pl, profile, pxDeg);
     return {
       ads,
+      drawn: got?.aerodromes || [], // ceux dont le symbole est dessiné (le dessin léger les reprend)
       navs: got?.navaids || []
     };
   }
@@ -1606,10 +1607,13 @@
         },
         airways: ends.hits || [],
         // les listes montrées (espaces, voies, terrains) : le dessin léger d'un geste les reprend en traits seuls (light.js)
+        // le dessin léger reprend ce que ce dessin a dessiné : les terrains et les balises gardés (la règle du zoom et l'éclaircissement
+        // des symboles), jamais la liste d'avant (sixième lecture, manque 7)
         light: mission ? null : {
           airspaces: shown.airspaces || [],
           airways: shown.airways || [],
-          aerodromes: shown.aerodromes || []
+          aerodromes: pts.drawn || [],
+          navaids: (pts.navs || []).map(h => h.n)
         },
         // terrains dessinés dans le cadre, à leur place à l'écran (survol et toucher d'un terrain : points de report VFR)
         // balises dessinées et celles qui leur sont rattachées faute de place (même endroit) : infobulle

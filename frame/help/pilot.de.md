@@ -264,7 +264,7 @@ Gefahren- und Sperrgebiete, kontrollierte Lufträume), die unteren oder oberen L
 Flugplätze und die Funkfeuer, und in jedem Ein-Grad-Feld die Mindestsicherheitshöhe (die braune Zahl, in Tausenden und
 Hunderten Fuß: „3⁵“ bedeutet 3 500 ft). Die kleinen violetten Zahlen entlang der Route sind die Entfernungen ab dem
 Abflug, in nautischen Meilen. Verschieben Sie die Karte mit einem Finger, spreizen Sie zwei Finger zum Zoomen (während der Geste behält die Karte nur ihre Linien — Lufträume,
-Luftstraßen, Route, Flugplätze als kleine Quadrate — und ihre Namen kommen zurück, sobald sie stillsteht);
+Luftstraßen, Route, Flugplätze und Funkfeuer als kleine Ringe, dieselben wie im Stillstand — und ihre Namen kommen zurück, sobald sie stillsteht);
 „Zentrieren“ (das Zielsymbol oben rechts auf der Karte) kehrt zur ganzen Route zurück. Die Karte bleibt, wo Sie sie hingelegt haben, auch wenn sich die Route
 ändert: nur „Zentrieren“ (oder ein anderer Flug) richtet sie neu aus. Kehren Sie zur Karte zurück (aus Kraftstoff oder nach „Fertig“),
 finden Sie Ihren Ausschnitt wieder, solange Route und gewählte Verfahren unverändert sind; sonst wird der Flug samt Verfahren neu
@@ -432,7 +432,7 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: ab9ff462f78b -->
+<!-- fr: 97204dc50a94 -->
 
 <!-- chapter: report -->
 # Bericht

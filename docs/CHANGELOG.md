@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the light drawing of a gesture shows what the full one drew (sixth reading, gap 7)** (`modules/maps/light.js`, `render.js`,
+  `lib/aero_symbols.js`, `draw.js`; SPEC § 6.8; DECISIONS; help ×4; noreg D92). While panning, the aerodromes and beacons are those the
+  map had drawn at rest, as rings of their symbol's colour — no longer black squares on every aerodrome of the list (138 → 28 at
+  Paris in VFR); the picture no longer jumps at the start and the end of a gesture. Light drawing 0.2 ms, at rest unchanged.
 - **Map: choosing starts on the map (sixth reading, gap 6)** (`modules/maps/choose.js`; SPEC § 5.1; DECISIONS; help ×4; noreg D91,
   D90). At entry the aerodrome is at the centre and the compatible procedures of the first family are drawn, faded, before any
   touch; touching one on the map chooses it as its row would.

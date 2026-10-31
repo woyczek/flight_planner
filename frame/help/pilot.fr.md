@@ -247,7 +247,7 @@ réglementées, dangereuses, interdites, espaces contrôlés), les voies aérien
 les terrains et les balises, et dans chaque carré d'un degré l'altitude minimale de sécurité (le chiffre brun, en
 milliers et centaines de pieds : « 3⁵ » veut dire 3 500 ft). Les petits chiffres violets le long de la route sont les
 distances depuis le départ, en milles nautiques. Faites glisser la carte avec un doigt, écartez deux doigts pour
-zoomer (pendant le geste, la carte se réduit à ses traits — espaces, voies, route, terrains en petits carrés — et ses
+zoomer (pendant le geste, la carte se réduit à ses traits — espaces, voies, route, terrains et balises en petits ronds, ceux-là mêmes qu'elle montre au repos — et ses
 noms reviennent dès qu'elle s'arrête) ; « Recentrer » (la cible, en haut à droite de la carte) revient sur toute la route. La carte reste où vous l'avez mise, même quand la route change :
 seul « Recentrer » (ou un autre vol) la recadre. En revenant sur la carte (depuis Carburant, ou après « Terminer »), vous retrouvez
 votre cadrage tant que la route et les procédures choisies n'ont pas changé ; sinon le vol est recadré, procédures comprises. Tant que « Autour du vol seulement » est cochée (Couches),

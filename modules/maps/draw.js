@@ -165,7 +165,7 @@ function light() {
     H,
     dpr,
     pal: MapsRender.palette(!!S.theme.dark),
-    ink: S.theme.fg
+    paper: S.theme.bg
   });
   markFrame(W, H);
   copyFrame();

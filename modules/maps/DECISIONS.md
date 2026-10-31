@@ -1887,3 +1887,25 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D91 (1280 and 390): nothing chosen and at least one procedure traced before any touch, the aerodrome within 20 % of the
   centre, the sheet half the view at most; a touch on a faded trace inside the map chooses it and marks its row; the flight is not
   written. D90 now compares the exact strings `displayName` gives at the three places (Simplification's review).
+
+## The light drawing shows what the full one drew (sixth reading, 31 Oct 2026, gap 7)
+
+- **Seen**: during a pan the light drawing put a black square on every aerodrome of the zoom's list (about 70 between Paris and
+  Bourges) where the full drawing shows ten symbols; the picture jumped at the start and the end of each gesture.
+- **Cause**: the light source was `shown.aerodromes`, the list before `drawPoints` thins the symbols out; and its marks were 5 px
+  squares of the ink colour.
+- **Rule** (SPEC § 6.8): `SiaAero.drawPoints` gives the aerodromes it drew (`aerodromes`, after the thinning); the light source
+  takes them and the beacons drawn (`pts.drawn`, `pts.navs`); marks are rings of the symbol's colour and size. The hit lists of
+  the aerodromes (`S.adHits`, hover and touch) keep the list before thinning, as before.
+- **Measured** (real fr base, Paris, 1280 × 900, complexity +2; 6a8403466 and this served side by side):
+  - during a gesture (four pans of 25 moves each, `maps:light`, median / worst ms): VFR z9 0.2 / 0.6 → 0.2 / 0.5, z10 0.2 / 0.4 →
+    0.2 / 0.4, z11 0.2 / 0.6 → 0.3 / 0.6; Auto z9 0.3 / 0.6 → 0.3 / 0.5, z10 0.2 / 0.8 → 0.3 / 0.6, z11 0.1 / 0.3 → 0.1 / 0.2 —
+    far under 16 ms per frame; marks drawn VFR z9 138 → 28, z10 40 → 9, z11 16 → 5;
+  - at rest (A/B, 24 drawings per view, three runs for VFR z9): VFR z9 11.7 / 13.5, 11.2 / 13.2, 11.2 / 14.3 → 12.0 / 15.7,
+    11.1 / 12.8, 11.1 / 15.4; z10 8.2 / 9.1 → 8.5 / 9.3; z11 6.4 / 7.1 → 6.4 / 7.4; Auto z9 5.1 / 6.1 → 5.1 / 6.3, z10 4.6 / 5.1 →
+    4.8 / 5.6, z11 3.9 / 4.6 → 4.0 / 4.4. The full drawing does no more than give back one list it already had: the medians are
+    the same, the worst of VFR z9 moves between 12.8 and 15.7 ms with the old code at 13.2 to 14.3 in the same runs — the
+    13.6 ms ceiling of R-M2 (c) was one run's worst; the old code crosses it too. Under 16 ms everywhere.
+- **Noreg** D92 (1280 and 390): 49 aerodromes 1 to 1.5 NM apart, thinned by the full drawing; the light source's aerodromes are
+  exactly those the full drawing named (its name requests in the map's pass, an independent reading), and `drawLight` paints a
+  mark for each in the frame.

@@ -1310,12 +1310,14 @@
     const reserve = (r, rank) => {
       if (place) place.add(r, rank);
     };
+    let adDrawn = [];
     if (aerodromes) {
       const ads = (data.aerodromes || []).filter(a => detailed || a.public || a.state).map(a => ({
         a,
         p: toC(a.lat, a.lon)
       })).filter(x => inside(x.p)).sort((x, y) => AD_RANK(y.a) - AD_RANK(x.a));
       const shown = ads.filter(x => adPl.take(sym(x.p, x.a.hardLen > 2300 ? 1.7 : 1.2)));
+      adDrawn = shown.map(x => x.a);
       shown.forEach(x => {
         drawAerodrome(ctx, x.a, x.p, s, 0);
         reserve(sym(x.p), 'adSymbol');
@@ -1401,7 +1403,8 @@
     }
     place = null;
     return {
-      navaids: navHits
+      navaids: navHits,
+      aerodromes: adDrawn // les terrains dessinés, après l'éclaircissement de leurs symboles
     };
   }
 

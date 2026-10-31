@@ -1,8 +1,10 @@
 // V3 maps — le dessin léger pendant un geste (V3 § 10.30 ; l'utilisateur, 30 octobre : « le freeze de refresh est efficace pour la
-// fluidité, mais gênant pour se déplacer : un intermédiaire ? ») : des traits seuls — espaces, voies, route, terrains en symbole —
-// depuis des chemins en coordonnées Mercator faits une fois pour les listes du dernier dessin complet ; ni étiquette, ni passe de
-// collision, ni vecteur de piste, ni cartouche. Les chemins ne dépendent pas du zoom : une transformation les pose à l'écran (pan et
-// zoom). Le dessin complet revient au repos (draw.js).
+// fluidité, mais gênant pour se déplacer : un intermédiaire ? ») : des traits seuls — espaces, voies, route — et une marque simple
+// pour chaque terrain et chaque balise que le dernier dessin complet a dessinés (les mêmes, à leur couleur et à la taille de leur
+// symbole : l'image ne change pas d'aspect au début ni à la fin du geste ; sixième lecture, manque 7), depuis des chemins en
+// coordonnées Mercator faits une fois pour ses listes ; ni étiquette, ni passe de collision, ni vecteur de piste, ni cartouche. Les
+// chemins ne dépendent pas du zoom : une transformation les pose à l'écran (pan et zoom). Le dessin complet revient au repos
+// (draw.js).
 
 const Z0 = 10,
   TILE = 512,
@@ -21,11 +23,14 @@ function colorOf(a) {
   if (a.cls === 'E' || a.cls === 'G' || t === 'SIV') return '#5b86c8';
   return '#1d4a9e';
 }
+/** Couleur de la marque d'un terrain : celle de son symbole (rouge d'État, sinon bleu ; lib/aero_symbols.js). */
+const adColor = a => a.cov?.main || (a.state ? '#d6173f' : '#1d4a9e');
 /** Les listes d'un dessin complet sont-elles les mêmes (mêmes tableaux) ? */
 export const sameSrc = (a, b) => !!a && !!b && a.airspaces === b.airspaces && a.airways === b.airways && a.aerodromes === b.aerodromes &&
-  a.route === b.route;
-/** Chemins du dessin léger pour src = { airspaces, airways, aerodromes, route } (les listes que le dernier dessin complet a montrées) :
- *  { src, ref, spaces: [[couleur, Path2D]], airways, route, ads } en px Mercator au zoom Z0 relatifs au point ref (des nombres petits). */
+  a.navaids === b.navaids && a.route === b.route;
+/** Chemins du dessin léger pour src = { airspaces, airways, aerodromes, navaids, route } (ce que le dernier dessin complet a dessiné) :
+ *  { src, ref, spaces: [[couleur, Path2D]], airways, route, ads, adCol, navs } en px Mercator au zoom Z0 relatifs au point ref (des
+ *  nombres petits). */
 export function lightPaths(src) {
   const first = (src.route || [])[0] || (src.aerodromes || [])[0] || {
       lat: 0,
@@ -61,24 +66,29 @@ export function lightPaths(src) {
   }
   const route = new Path2D();
   (src.route || []).forEach((q, i) => i ? route.lineTo(...at(q.lat, q.lon)) : route.moveTo(...at(q.lat, q.lon)));
-  const list = src.aerodromes || [],
-    ads = new Float64Array(list.length * 2);
-  list.forEach((a, i) => {
-    const [x, y] = at(a.lat, a.lon);
-    ads[2 * i] = x;
-    ads[2 * i + 1] = y;
-  });
+  /** Positions d'une liste de points, à plat (x, y, x, y…). */
+  const flat = list => {
+    const out = new Float64Array(list.length * 2);
+    list.forEach((a, i) => {
+      const [x, y] = at(a.lat, a.lon);
+      out[2 * i] = x;
+      out[2 * i + 1] = y;
+    });
+    return out;
+  };
   return {
     src,
     ref,
     spaces: [...byColor],
     airways,
     route,
-    ads
+    ads: flat(src.aerodromes || []),
+    adCol: (src.aerodromes || []).map(adColor),
+    navs: flat(src.navaids || [])
   };
 }
 /** Peint les chemins L à l'écran : project(lngLat) → { x, y } (px CSS, la carte MapLibre), zoom de la carte, W × H, dpr ; pal : la
- *  palette de la Carte (route, voies), ink : l'encre des terrains. Rend le nombre de terrains peints. */
+ *  palette de la Carte (route, voies), paper : le fond des marques. Rend le nombre de terrains peints. */
 export function drawLight(ctx, L, {
   project,
   zoom,
@@ -86,7 +96,7 @@ export function drawLight(ctx, L, {
   H,
   dpr,
   pal,
-  ink
+  paper
 }) {
   const o = project([L.ref.lon, L.ref.lat]),
     k = 2 ** (zoom - Z0);
@@ -107,15 +117,28 @@ export function drawLight(ctx, L, {
   ctx.lineWidth = 3 / k;
   ctx.strokeStyle = pal.route;
   ctx.stroke(L.route);
-  // les terrains : un petit carré chacun, à taille fixe à l'écran
+  // les terrains et les balises du dernier dessin complet : un rond à la couleur et à la taille de leur symbole, fixe à l'écran
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.fillStyle = ink;
+  ctx.lineWidth = 1.5;
+  ctx.fillStyle = paper;
+  const ring = (x, y, r, col) => {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = col;
+    ctx.stroke();
+  };
+  for (let i = 0; i < L.navs.length; i += 2) {
+    const x = o.x + L.navs[i] * k,
+      y = o.y + L.navs[i + 1] * k;
+    if (x > -8 && y > -8 && x < W + 8 && y < H + 8) ring(x, y, 4, '#1d4a9e');
+  }
   let n = 0;
   for (let i = 0; i < L.ads.length; i += 2) {
     const x = o.x + L.ads[i] * k,
       y = o.y + L.ads[i + 1] * k;
-    if (x < -4 || y < -4 || x > W + 4 || y > H + 4) continue;
-    ctx.fillRect(x - 2.5, y - 2.5, 5, 5);
+    if (x < -8 || y < -8 || x > W + 8 || y > H + 8) continue;
+    ring(x, y, 6, L.adCol[i / 2]);
     n++;
   }
   ctx.restore();
