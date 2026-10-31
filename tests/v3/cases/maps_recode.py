@@ -2527,8 +2527,12 @@ def d90(c):
     c.until("() => !!(window.__mp.S.route.path && window.__mp.S.route.path.some(p => p.origin === 'app') && window.__mp.S.route.path.some(p => p.origin === 'sid'))",
             timeout=12000, what='the path holds the SID and the approach')
     c.wait(500)
+    # the exact strings of displayName (frame/lib/procedures.js), compared as they are at the three places
+    names = c.js("""async () => { const PR = await import('/frame/lib/procedures.js'), P = window.__mp.S.procs;
+      return [PR.displayName(P.sid), PR.displayName(P.app)] }""")
+    c.eq(names, ['AMOLO7A', 'ILS 06'], 'displayName gives « AMOLO7A » (the record’s name) and « ILS 06 » (labelOf)', what='displayName')
     texts = c.js(_TEXTS_ONCE)
-    c.ok('AMOLO7A' in texts and 'ILS 06' in texts, f'{[t for t in texts if "AMOLO" in t or "ILS" in t]}', 'the map writes « AMOLO7A » and « ILS 06 »')
+    c.ok(all(n in texts for n in names), f'{[t for t in texts if "AMOLO" in t or "ILS" in t]}', 'the map writes the exact strings of displayName')
     c.eq([t for t in texts if 'CAT' in t or t.startswith(('SID ', 'APP ', 'STAR '))], [], 'never the base’s raw name nor a kind before it',
          what='raw names on the map')
     # the choose pane says the same
@@ -2536,10 +2540,46 @@ def d90(c):
     c.until("() => !!(window.__mp.S && window.__mp.S.choose && window.__mp.S.choose.ready) && document.querySelectorAll('.mp-ch-grp').length >= 2",
             timeout=12000, what='the choose pane at LFPO')
     pane = c.js("() => document.querySelector('[data-module=maps]').innerText.replace(/\s+/g, ' ')")
-    c.ok('ILS 06' in pane, pane[:300], 'the choose pane names the final « ILS 06 »')
+    c.ok(names[1] in pane, pane[:300], 'the choose pane names the final by the same string')
     # and Fuel
     c.js("async () => { (await import('/modules/maps/choose.js')).chooseClose(); return true }")
     c.until("() => location.hash.startsWith('#fuel')", timeout=6000, what='back to Fuel')
     c.ready('fuel')
-    c.until("() => /ILS 06/.test(document.querySelector('[data-module=fuel]').innerText) && /AMOLO7A/.test(document.querySelector('[data-module=fuel]').innerText)",
-            timeout=10000, what='Fuel names « AMOLO7A » and « ILS 06 »')
+    c.until("(n) => n.every(x => document.querySelector('[data-module=fuel]').innerText.includes(x))", names,
+            timeout=10000, what='Fuel names them by the same strings')
+
+
+# ------------------------------------------------------------------------------------------------------ D91
+_CH_ENTRY = """async () => { const S = window.__mp.S, C = S.choose, ch = await import('/modules/maps/choose.js'), r = S.canvas.getBoundingClientRect(),
+  W = r.width, H = r.height, at = S.toC(C.input.at.lat, C.input.at.lon), procs = new Set(C.model.rows.filter(i => i.fam !== 'rwy').map(i => i.id)),
+  inside = p => p.x > 10 && p.y > 10 && p.x < W - 60 && p.y < H - 10;
+  let spot = null;
+  for (const l of C.hits.lines) if (procs.has(l.id) && !spot)
+    for (let i = 1; i < l.pts.length && !spot; i++) for (let k = 1; k < 40; k++) {
+      const t = k / 40, p = { x: l.pts[i - 1].x + (l.pts[i].x - l.pts[i - 1].x) * t, y: l.pts[i - 1].y + (l.pts[i].y - l.pts[i - 1].y) * t };
+      if (inside(p)) { spot = p; break } }
+  const sheet = S.dataEl.getBoundingClientRect().height, view = S.dataEl.parentElement.clientHeight;
+  return { W, H, at, traces: C.hits.lines.filter(l => procs.has(l.id)).length, chosen: C.model.rows.filter(i => i.chosen).map(i => i.id), spot, sheet, view } }"""
+
+
+@case('D91', 'Choosing starts on the map: at entry the aerodrome is centred and the first family’s candidates are drawn, faded; touching one chooses it', 'D',
+      tags=('maps',), designs=('standard',), night=False,
+      rule='sixth reading (31 Oct 2026), gap 6, SPEC § 5.1: at entry, before any touch, the aerodrome is framed at the centre and the candidates of the first family not chosen are drawn (the runways with their numbers, then the compatible procedures of the next family, faded, without cartouches), as « N others »; the sheet is half the view at most; a faded trace is a trace like the others — touching it chooses it as its row would (the gesture of § 10.23 and D60); nothing is written before « Done »')
+def d91(c):
+    _ch_open(c, {})
+    c.wait(500)
+    e = c.js(_CH_ENTRY)
+    c.eq(e['chosen'], [], 'nothing chosen at entry', what='entry')
+    c.ok(e['traces'] >= 1, f'{e["traces"]} procedure traces', 'at least one procedure is drawn before any touch')
+    c.ok(abs(e['at']['x'] - e['W'] / 2) < e['W'] * .2 and abs(e['at']['y'] - e['H'] / 2) < e['H'] * .2, f"{e['at']} in {e['W']:.0f}×{e['H']:.0f}",
+         'the aerodrome is near the centre of the map')
+    c.ok(e['sheet'] <= e['view'] / 2 + 1, f"{e['sheet']} / {e['view']}", 'the sheet is half the view at most')
+    c.ok(e['spot'] is not None, f'{e}', 'a faded trace lies inside the map')
+    before = c.doc(PATH)
+    got = c.js("""async (p) => { const ch = await import('/modules/maps/choose.js'), S = window.__mp.S, id = ch.chooseAt(p.x, p.y);
+      ch.chooseTap(p.x, p.y); const row = S.choose.model.rows.find(i => i.id === id);
+      const btn = document.querySelector(`.mp-ch-row[data-id="${id}"]`);
+      return { id, chosen: !!row && row.chosen, fam: row && row.fam, pressed: btn && btn.getAttribute('aria-pressed') } }""", e['spot'])
+    c.ok(got['id'] and got['chosen'], f'{got}', 'touching a faded trace chooses its procedure')
+    c.eq(got['pressed'], 'true', 'its row in the pane is marked (one writer: the choice’s state)', what=f'row {got["id"]}')
+    c.eq(c.doc(PATH), before, 'nothing written before « Done »', what='the flight')

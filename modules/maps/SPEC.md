@@ -390,6 +390,14 @@ Fuel's "Sur la carte" button opens `#maps?choose=dep|arr&icao=LFXX`. The Map rea
 of the Map is offered (the buttons but "Recentre" are hidden, the sheet's content is the list), a mission map or the tuning page never
 enters it.
 
+- **It starts on the map** (sixth reading, 31 Oct 2026, gap 6): at entry, before any touch, the aerodrome is framed at the centre
+  (the model's frame made symmetric around it: an arrival's procedures come from one side, the aerodrome does not stay at the edge)
+  and the candidates of the first family not chosen are drawn — the runways with their numbers, then, while only runways are
+  touched, the compatible procedures of the next family (SID at departure, STAR at arrival), faded and without cartouches, as
+  « N others ». A faded trace is a trace like the others: touching it chooses it as its row would, and its row is marked (one
+  writer, the choice's state); the gesture of § 10.23 is unchanged (a row or a trace chooses, the selection adds up, hovering
+  highlights); nothing is written before « Done ». The sheet is half the view at most (§ 7.1).
+
 The **second entry** is the aerodrome card of the departure or the arrival (ergonomics, 29 Oct 2026: the user did not find the
 entry on a phone): next to "Changer" (→ `#fuel?focus=<side>`), "Choisir sur la carte" (`[data-choose]`, full width under 768 px)
 runs `chooseOpen(side, icao)`, the same code path as the address without a reload: the card is released, the mode loads, the

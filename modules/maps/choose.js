@@ -235,7 +235,13 @@ export async function chooseLoad() {
     syncButtons(); // les boutons de la carte reviennent
     return;
   }
-  const box = MapsRender.bboxOf(C.model.frame, 3);
+  // le terrain au centre du cadre (sixième lecture, manque 6) : le cadre du modèle, refait symétrique autour de lui — les procédures
+  // d'une arrivée viennent d'un côté, le terrain ne reste pas au bord
+  const mid = C.input.at,
+    box = MapsRender.bboxOf(mid ? C.model.frame.flatMap(p => [p, {
+      lat: 2 * mid.lat - p.lat,
+      lon: 2 * mid.lon - p.lon
+    }]) : C.model.frame, 3);
   if (box) {
     C.fit = box;
     S.fit = box;
@@ -555,10 +561,20 @@ export function chooseLayout(ctx, toC, W = 0, H = 0) {
       pts: [a.a, a.b]
     });
   }
-  // les procédures : la famille touchée entière (le reste estompé dès qu'une est choisie), le choix des autres familles
-  const shown = [];
+  // les procédures : la famille touchée entière (le reste estompé dès qu'une est choisie), le choix des autres familles ; à l'entrée
+  // (rien de touché que les pistes), les candidats de la première famille de procédures, estompés et sans cartouche (sixième lecture,
+  // manque 6 : le choix commence sur la carte, comme « N autres »)
+  const shown = [],
+    first = C.model.focus === 'rwy' || !C.model.focus ? FAMS[C.side].find(f => f !== 'rwy' && shownOf(C, f).length) : null;
   for (const f of FAMS[C.side].filter(f => f !== 'rwy')) {
     const list = rowsOf(C, f);
+    if (f === first && !list.some(i => i.chosen)) {
+      for (const it of shownOf(C, f))
+        for (const m of it.members || [it]) trace(it, m.pts.map(p => toC(p.lat, p.lon)), {
+          dim: it.id !== hl
+        });
+      continue;
+    }
     for (const it of f === C.model.focus ? shownOf(C, f) : list.filter(i => i.chosen)) {
       for (const m of it.members || [it]) trace(it, m.pts.map(p => toC(p.lat, p.lon)), {
         dim: f === C.model.focus && !!(o[f] || C.state.pend[f]) && !it.chosen && it.id !== hl

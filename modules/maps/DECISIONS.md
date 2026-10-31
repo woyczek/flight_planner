@@ -1871,4 +1871,19 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D90 (the real LFBO fixture with an LFPO ILS 06 of the published long name): the map's canvas writes « AMOLO7A » and
   « ILS 06 », nothing with « CAT » nor a kind before it; the choose pane at LFPO and Fuel say the same.
   Cases adapted: D41 (the labels were « SID XX1A ⌛ », « STAR XX2B · X-Plane, local », « APP I31 · … »; they are « XX1A ⌛ »,
-  « XX2B · … », « I31 · … »), D53 (the approach found by « APP » → by its name « I31 »); the aerodrome card keeps its kinds (D45).
+  « XX2B · … », « I31 · … »), D53 (the approach found by « APP » → by its name « I31 »); the aerodrome card keeps its kinds (D43).
+
+## Choosing starts on the map (sixth reading, 31 Oct 2026, gap 6)
+
+- **Seen** (LFBO and LFPO, 1280 and 390): at entry nothing but the runways was drawn — the model's focus is « runway » until one is
+  touched and the layout drew only the focused family's procedures; at LFPO the aerodrome sat at the top edge, the frame being the
+  bounding box of points that all lie south of it.
+- **Rule** (Simplification, SPEC § 5.1): the first family's candidates drawn at entry, faded, without cartouches (the family after
+  the runways while only runways are touched); the frame made symmetric around the aerodrome; a faded trace chooses like any trace
+  (its hit line is the same), the pane's row marked from the choice's state. Simplification's first wording (« touching a row only
+  highlights ») was withdrawn by its author: the gesture of § 10.23 and D60 stays.
+- **Not measured**: the faded candidates are the six or so traces of one family the layout already knew (a few short polylines in
+  the choose mode only); the drawing at rest of the flight's map is untouched.
+- **Noreg** D91 (1280 and 390): nothing chosen and at least one procedure traced before any touch, the aerodrome within 20 % of the
+  centre, the sheet half the view at most; a touch on a faded trace inside the map chooses it and marks its row; the flight is not
+  written. D90 now compares the exact strings `displayName` gives at the three places (Simplification's review).
