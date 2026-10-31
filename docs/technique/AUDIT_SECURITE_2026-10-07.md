@@ -987,6 +987,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 135 | Frame: one marked tab, Help and Settings in the bar, one manual per application (cc6503ee0) | acceptable |
 | 136 | aerodb: a zone's frame computed around its main ring (fed1c6f4a) | acceptable |
 | 137 | Frame: `fuel_units.js`, fuel densities and conversions (85b1300e4) | acceptable, two notes |
+| 138 | aerodb: a sheet describes a type or variant, the fleet names it (130048967) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2162,6 +2163,13 @@ sheet, then the airline, then the type, refused outside 0.5–1.0 kg/L; conversi
 `density()` ends with `FUEL_DENSITY[kind]`, which gives a function or `Object.prototype` for a kind named like
 `constructor` or `__proto__` (use `Object.hasOwn`, as in 118); `num()` accepts booleans and one-number arrays
 (`+true`, `+[5]`), so not every unreadable input becomes `null` (accept only numbers and non-empty strings).
+
+**138. Sheets by type and variant (130048967) — acceptable.** The fleet's `sheetId` is only a key into the sheets
+already read (an unknown one gives the type's estimate; nothing read or written); the only paths are built by `fileOf`,
+which replaces every character outside `[A-Za-z0-9._-]` (no separator can remain), for writes on an identifier the module
+chose. A new sheet's identifier passes `checkId` (type, then an optional `-VARIANT` of `[A-Z0-9-]`) and `newId` builds only
+from those characters; a `.lnmperf` import keeps its own identifier only when it exists or passes `checkId`, otherwise is
+named after its type, and is refused without one. The variant label is result data, escaped by the modules that show it.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
