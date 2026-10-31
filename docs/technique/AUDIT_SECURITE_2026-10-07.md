@@ -966,6 +966,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 114 | Refactor R-S4: one frozen table of providers (e8aa8dab3); the note of 112 closed | acceptable |
 | 115 | Frame: a side pane closed before its module arrives (d6e7fa27a) | acceptable |
 | 116 | Map: one writer of the framing, the user's framing kept for the same flight (3d2346411) | acceptable |
+| 117 | Refactor R-S5: one end-of-job chain and one journal header in the Data model (89dd17934) | acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2016,6 +2017,12 @@ that has arrived, and `openPane` mounts nothing once its pane is closed; the mod
 framing (centre and zoom, kept after a gesture of the user only) is held in the module's memory (`keep.cam`, never in
 storage or the address) with a signature of the flight that is only compared, never shown; another flight drops it. No
 HTML, network, storage or write added.
+
+**117. Refactor R-S5 of the Data model (89dd17934) — acceptable, one note.** `entryHead` and `jobOf` build the same
+journal entries as before (no plan or path added); the texts are shown through the same escaping. Note: `kindOf` maps a
+reason with `r.reason in map`, which also reads the prototype, so a reason named like `toString` or `__proto__` would give a
+function or `Object.prototype` as the kind instead of `failed`; the reason comes from the launcher, so nothing is reachable
+today, but the kind goes raw into attributes and serves as a key of the texts: use `Object.hasOwn(map, r.reason)`.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
