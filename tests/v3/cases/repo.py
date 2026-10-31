@@ -1994,3 +1994,28 @@ def i30(c):
     connect = P.value(meta=True).split(';')[0]
     c.ok('https://gitlab.com' in connect and 'https://framagit.org' in connect and '*' not in connect and ' https: ' not in f'{connect} ',
          connect[:200], 'the built policy carries them, exact hosts, no wildcard')
+
+
+
+@case('I31', 'No line-ending warning in the launcher’s log: one policy for the files the suite writes', 'I', static=True,
+      rule='Simplification 31 Oct (the launcher’s log full of « LF will be replaced by CRLF the next time Git touches it »): the launcher’s git runs with core.safecrlf=false — the conversion is unchanged (the repository keeps LF), the warning is silent')
+def i31(c):
+    import importlib
+    import os
+    sys.path.insert(0, str(c.root / 'tools'))
+    D = importlib.import_module('data_sync')
+    c.ok('core.safecrlf=false' in D.HARDEN, str(D.HARDEN), 'the hardened git of the launcher silences the line-ending warning')
+    if not D.git_exe():
+        return
+    tmp = Path(tempfile.mkdtemp(prefix='sog-crlf-'))
+    try:
+        subprocess.run(D.git_cmd('init', '-q', str(tmp)), check=True, env=D.git_env())
+        subprocess.run(D.git_cmd('-C', str(tmp), 'config', 'core.autocrlf', 'true'), check=True, env=D.git_env())
+        (tmp / 'pilot').mkdir()
+        (tmp / 'pilot' / 'current_flight.json').write_bytes(b'{\n  "a": 1\n}\n')
+        r = subprocess.run(D.git_cmd('-C', str(tmp), 'add', '-A'), capture_output=True, text=True, env=D.git_env())
+        c.ok(r.returncode == 0 and 'LF will be replaced' not in r.stderr, r.stderr[:200], 'git add of an LF file under autocrlf: no warning')
+        blob = subprocess.run(D.git_cmd('-C', str(tmp), 'show', ':pilot/current_flight.json'), capture_output=True, env=D.git_env()).stdout
+        c.ok(b'\r\n' not in blob, repr(blob[:40]), 'the repository keeps LF (the conversion is unchanged)')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)

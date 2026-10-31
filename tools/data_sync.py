@@ -48,7 +48,10 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 os.environ['NoDefaultCurrentDirectoryInExePath'] = '1'
 # options de chaque appel : rien de ce que contiendrait un .git/config reçu d'ailleurs ne lance de commande
 # (core.fsmonitor), pas de transport « ext:: » (commande arbitraire), pas de sous-module suivi
-HARDEN = ['-c', 'core.fsmonitor=false', '-c', 'protocol.ext.allow=never', '-c', 'submodule.recurse=false']
+# core.safecrlf=false : la suite écrit en LF ; sur Windows (core.autocrlf=true) chaque git add disait « LF will be replaced
+# by CRLF the next time Git touches it », une ligne par fichier dans le journal du lanceur (31 oct. 2026) ; la conversion
+# ne change pas (le dépôt garde LF), seul l'avertissement se tait
+HARDEN = ['-c', 'core.fsmonitor=false', '-c', 'protocol.ext.allow=never', '-c', 'submodule.recurse=false', '-c', 'core.safecrlf=false']
 _git = []
 
 

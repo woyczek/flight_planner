@@ -2322,3 +2322,12 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   the left on the Map, Weather and Website after a selection. The back button now takes that margin in the same case.
   A66 measures every entry of the left column, the bottom bar and the header across the Pilot modules, in the five
   designs at 390 and in all six (aqua included) at 1280; the rail and the bar did not move, the header did.
+
+
+- **31 Oct 2026 — No line-ending warning in the launcher's log** (Simplification: the log full of « git add: warning: in
+  the working copy of 'pilot/RBR/current_flight.json', LF will be replaced by CRLF the next time Git touches it »). The
+  suite writes LF; Windows' git has `core.autocrlf=true` and warned once per file at each `git add`. The simplest single
+  policy: the launcher's hardened git (`data_sync.HARDEN`) runs with `core.safecrlf=false` — the conversion is unchanged
+  (the repository keeps LF, a checkout gives what the workstation's git gives), only the warning is silent. Not
+  `core.autocrlf=false` (files already checked out in CRLF would show as changed) nor a `.gitattributes` in data/ (a
+  change of the data repository for a log line). I31.

@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Launcher: no line-ending warning in the log** (`tools/data_sync.py`; frame DECISIONS; noreg I31) — git runs with
+  `core.safecrlf=false`: the « LF will be replaced by CRLF » line per file is gone, the repository still keeps LF.
 - **Frame: the header's « ? » and ⚙ no longer jump** (`frame/frame.css`; frame DECISIONS; noreg A66) — on a phone, when
   the back button took the name's place, « ? » and ⚙ moved from the right to the left; they stay right.
 - **Frame: a new version never mixed with the old one, and said until it is taken** (`frame/sw.js`, `frame/app.js`;
