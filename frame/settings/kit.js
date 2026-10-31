@@ -20,6 +20,7 @@
     saved: ['Enregistré.', 'Saved.', 'Gespeichert.', 'Guardado.'],
     pair: ['{k} :', '{k}:', '{k}:', '{k}:'],
     ivao: ['Compte IVAO', 'IVAO account', 'IVAO-Konto', 'Cuenta IVAO'],
+    ivaoVid: ['VID IVAO', 'IVAO VID', 'IVAO-VID', 'VID IVAO'], // le champ du numéro de compte (identité, Rejoindre)
     vatsim: ['CID VATSIM', 'VATSIM CID', 'VATSIM-CID', 'CID VATSIM'],
     badTrigram: ['Trigramme : 2 à 5 lettres ou chiffres.', 'Trigram: 2 to 5 letters or digits.',
       'Kürzel: 2 bis 5 Buchstaben oder Ziffern.',

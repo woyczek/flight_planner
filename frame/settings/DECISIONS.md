@@ -554,7 +554,7 @@ moves code, `S` itself replaced through `setState` alone.
   winner (the screen unchanged) and removed the losing row; to correct apart, as a `:bug:` with its case:
   - `settings.js` `ivao`: the identity field reads it, so the VID field is labelled « Compte IVAO » / « IVAO account » / « IVAO-Konto » /
     « Cuenta IVAO » (the IVAO account card's title) where « VID IVAO » / « IVAO VID » / « IVAO-VID » / « VID IVAO » was meant: give the field its
-    own key.
+    own key. **Corrected** (31 Oct, A58): `kit.js` `ivaoVid`, read by the identity field, its refusal and Join.
   - `access.js` `tokenSet`: the line under a saved token reads « Jeton enregistré sur cet appareil (jamais réaffiché) : le remplacer, le coller
     de nouveau ci-dessus. »; the lost row (« jeton enregistré — vide : inchangé ») was the field's placeholder: check which place used which
     meaning before choosing.

@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Settings: the IVAO number field says « VID IVAO »** (`frame/settings/kit.js`, `cards.js`, `actions.js`, `join.js`; A58) — the
+  identity field and its digits-only refusal read the IVAO account card's title (« Compte IVAO »), a row that R-S9 (2/2) kept because it
+  won the load order. One key per meaning: `ivaoVid` (« VID IVAO » / « IVAO VID » / « IVAO-VID » / « VID IVAO »), also read by Join, which
+  wrote the same row by hand. A58 written to fail on the old label, then green.
 - **Noreg: A15's hazard fixed in the case** (`tests/v3/cases/frame.py`; frame DECISIONS) — its German pattern `nicht ver`
   also matched the terrain note « Gelände nicht verfügbar … »; step 2 now compares with the base's three notes by their
   own texts. No push with a FAIL line, said in DECISIONS.

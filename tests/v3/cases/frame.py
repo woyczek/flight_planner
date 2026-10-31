@@ -2101,3 +2101,19 @@ def a57(c):
     again = c.js(call, 'https://unlisted.example/b')
     c.eq((first, again, 'unlisted' in asked), (503, 503, False), 'an unlisted host: refused during and after the wait, never asked', what='unlisted host')
     c.ok(2.5 < t2 - t1 < 4, f'{t2 - t1:.1f} s', 'the wait for the airline is bounded (3 s), then the decision is taken without it')
+
+
+@case('A58', 'The IVAO number field says « VID IVAO », and its digits-only refusal names it', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame/settings DECISIONS 31 Oct (debt of R-S9 2/2): the identity field of the IVAO number had the account card\u2019s title as its label; one key per meaning, kit.js ivaoVid for the field (identity and Join), ivao for the card')
+def a58(c):
+    # written here, not read from a text key: the case must fail while the field borrows another key
+    vid = {'fr': 'VID IVAO', 'en': 'IVAO VID', 'de': 'IVAO-VID', 'es': 'VID IVAO'}[c.lang]
+    c.open('settings', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-card=\"identity\"] input[data-f=\"ivao\"]')", what='the identity card is drawn')
+    c.js("document.querySelector('[data-card=identity]').closest('details')?.setAttribute('open', '')")
+    label = c.js("document.querySelector('[data-card=\"identity\"] input[data-f=\"ivao\"]').closest('label').firstChild.textContent")
+    c.eq(norm(label), norm(vid), 'the field of the IVAO number is labelled with its VID', what='identity field')
+    c.page.fill('[data-card="identity"] input[data-f="ivao"]', '12a')
+    c.tap('[data-card="identity"] [data-act="identity"]')
+    c.until("!!document.querySelector('[data-card=\"identity\"] .f-msg')?.textContent", what='the refusal is said')
+    c.ok(vid in c.text('[data-card="identity"] .f-msg'), c.text('[data-card="identity"] .f-msg'), 'the digits-only refusal names the VID field')

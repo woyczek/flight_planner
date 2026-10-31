@@ -346,7 +346,7 @@
       <div class="f-row"><button type="button" class="primary" data-jact="test">${esc(t(h.access === 'github' ? K.test : T.clone))}</button></div>`;
     if (step === 6) {
       const id = h.c.identity();
-      body = `<p class="f-muted">${esc(t(T.s6Hint))}</p>${h.fld('jIvao', ['VID IVAO', 'IVAO VID', 'IVAO-VID', 'VID IVAO'], id.ivao, { mode: 'numeric' })}${h.fld('jVatsim', ['CID VATSIM', 'VATSIM CID', 'VATSIM-CID', 'CID VATSIM'], id.vatsim, { mode: 'numeric' })}${h.fld('jSimbrief', ['Identifiant SimBrief (nom ou numéro)', 'SimBrief ID (name or number)', 'SimBrief-ID (Name oder Nummer)', 'ID de SimBrief (nombre o número)'], id.simbrief)}<p class="f-msg" data-msg></p>`;
+      body = `<p class="f-muted">${esc(t(T.s6Hint))}</p>${h.fld('jIvao', K.ivaoVid, id.ivao, { mode: 'numeric' })}${h.fld('jVatsim', ['CID VATSIM', 'VATSIM CID', 'VATSIM-CID', 'CID VATSIM'], id.vatsim, { mode: 'numeric' })}${h.fld('jSimbrief', ['Identifiant SimBrief (nom ou numéro)', 'SimBrief ID (name or number)', 'SimBrief-ID (Name oder Nummer)', 'ID de SimBrief (nombre o número)'], id.simbrief)}<p class="f-msg" data-msg></p>`;
     }
     if (step === 7) body = s.finished ? `<p><b>${esc(s.result || '')}</b></p><p>${esc(t(T.nextOffline))}</p>
       <div class="f-row"><a class="f-btn primary" href="#settings?offline=1">${esc(t(K.offlineData))}</a><a class="f-btn" href="#fuel">${esc(t(T.goFuel))}</a></div><p><a href="#help?t=prepare-flight">${esc(t(T.tutorial))}</a></p>` :

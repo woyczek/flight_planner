@@ -153,7 +153,7 @@
         vatsim = val('vatsim', r);
       if (tri && !/^[A-Z0-9]{2,5}$/.test(tri)) return say('identity', t(T.badTrigram));
       if (ivao && !/^\d+$/.test(ivao)) return say('identity', t(T.badNumber, {
-        f: t(T.ivao)
+        f: t(T.ivaoVid)
       }));
       if (vatsim && !/^\d+$/.test(vatsim)) return say('identity', t(T.badNumber, {
         f: t(T.vatsim)
