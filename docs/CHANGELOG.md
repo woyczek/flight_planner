@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: a read answers or fails, never pending** (`frame/aerodb/aerodb.js`; aerodb SPEC 3, DECISIONS; noreg K59) —
+  after BUGS SOG's D86 / D87: each read of a zone's part has a bound (`readWait`, 10 s; not the list of zones, so a slow
+  first launch still says « loading »), then gives nothing and is asked again
+  later; a part the repository's listing does not name (no `mora` in the bench) is empty at once, without a read, and
+  said as `absent` in the stats. At the bound the data layer forgets its shared pending read of that path
+  (`FrameData` adapter `abandon(path)`), so the next question really reads again.
 - **Frame: outgoing calls no longer wait without end for the airline's first read** (`frame/app.js` `net.fetch`; frame
   DECISIONS; noreg A57) — the relief tiles never wait; another unlisted host waits 3 s at most, then is refused (503),
   never allowed by default. Found after BUGS SOG's D86 / D87 hazard (the Map's section not built under load), which is

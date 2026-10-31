@@ -19,7 +19,7 @@
   //     viennent d'une source en lecture seule (configure({ references }) : le lanceur qui sert la page, ou le dépôt
   //     GitHub réglé), lus à la demande et revalidés à la synchronisation ; rien n'y est jamais écrit ;
   // API (window.FrameData) : configure({ transport, references, identity, every }), start(), adapter(déclaration) → data (get,
-  //   read, list, cached, evict, revalidate, put, remove, watch, status, sync, onStatus), sync(), status(), conflicts(),
+  //   read, list, cached, evict, abandon, revalidate, put, remove, watch, status, sync, onStatus), sync(), status(), conflicts(),
   //   conflictSeen(id), restore(id), cached(préfixe), evict(chemin), revalidate(chemins), dump() et load(sauvegarde, { mode })
   //   (sauvegarde de l’appareil),
   //   gitSha(texte), merge, transports.local().
@@ -697,10 +697,13 @@
         at: new Date().toISOString()
       };
       throw e;
-    }).finally(() => fetching.delete(path));
+    }).finally(() => fetching.get(path) === job && fetching.delete(path)); // abandonnée entre-temps : la suivante n'est pas touchée
     fetching.set(path, job);
     return job;
   }
+  /** Oublie la lecture partagée en cours de ce chemin (rien n'est annulé sur le réseau) : la demande suivante la relance
+   *  au lieu d'attendre la même promesse. Pour un lecteur qui a cessé d'attendre (borne d'aerodb, 31 oct. 2026). */
+  const abandon = path => void fetching.delete(String(path || ''));
 
   // ---------------------------------------------------------------- source des références (transport local)
   /** Source en lecture seule des fichiers « reference » : seulement sans échange (transport local), si elle est réglée. */
@@ -1495,6 +1498,7 @@
       list,
       cached,
       evict,
+      abandon,
       revalidate,
       put: (path, value, opts) => (guard(path), put(path, value, {
         ...(opts || {}),

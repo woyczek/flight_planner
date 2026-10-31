@@ -242,7 +242,10 @@
     // sans lui (bancs d'aerodb), lnmperf.js appelle le lanceur lui-même et fetchProcedures() répond 'no-launcher'
     launcher = null,
     access = () =>
-    true // l'appareil a-t-il de quoi lire la base (lanceur, dépôt réglé) ? Sans cela, « non réglé » et non « non publiée »
+    true, // l'appareil a-t-il de quoi lire la base (lanceur, dépôt réglé) ? Sans cela, « non réglé » et non « non publiée »
+    // borne d'une lecture de la base (ms) : passé ce délai, la lecture rend « rien » (illisible, redemandée ensuite), jamais
+    // une promesse sans fin (31 oct. 2026 : une part lue sous charge pouvait rester pendante, aléa D86 / D87)
+    readWait = 10e3
   } = {}) {
     const loaded = new Map(), // zone → { id, cycle, split, base | data, parts, reads, idx } ; chargée une fois
       loading = new Map(), // zone → promesse de chargement
@@ -286,15 +289,24 @@
     // chemins que CETTE instance est en train de lire : la couche de données annonce aux observateurs, pendant la lecture, l'arrivée dans son
     // cache du fichier qu'on lui demande ; ce n'est pas un changement (procWatch l'ignore)
     const reading = new Map();
-    const read = path => {
+    // bounded : lecture d'une part de zone, bornée par readWait ; la liste des zones, le manifeste et la méta d'une zone ne
+    // le sont pas (un premier lancement lent ne doit jamais faire dire « non publiée » à la base, A15)
+    const read = (path, bounded = false) => {
       reading.set(path, (reading.get(path) || 0) + 1);
-      return reader.read(path, {
+      let timer = 0;
+      const got = reader.read(path, {
         policy: 'reference',
         wait: true
-      }).then(r => {
+      });
+      return (bounded ? Promise.race([got, new Promise(res => timer = setTimeout(() => {
+        // la borne : la lecture partagée de ce chemin est oubliée, la question suivante la relance vraiment
+        reader.abandon?.(path);
+        res(null);
+      }, readWait))]) : got).then(r => {
         if (r) revs.set(path, r.rev || '');
         return r;
       }, () => null).finally(() => {
+        clearTimeout(timer);
         const n = reading.get(path) - 1;
         if (n > 0) reading.set(path, n);
         else reading.delete(path);
@@ -786,7 +798,9 @@
               idx: {},
               // index léger des terrains publié pour ce cycle (liste de l'arbre ou tailles du manifeste) : lu pour
               // trouver un terrain par son code ou le long d'une route, au lieu de aerodromes.json (dix fois plus lourd)
-              lite: !!e && ((e.kinds?.[cycle] || []).includes('aeroindex') || e.kb?.[cycle]?.aeroindex != null)
+              lite: !!e && ((e.kinds?.[cycle] || []).includes('aeroindex') || e.kb?.[cycle]?.aeroindex != null),
+              // sortes que la liste du dépôt connaît pour ce cycle (null : inconnues, chaque part est lue)
+              kinds: e?.kinds?.[cycle]?.length ? e.kinds[cycle] : null
             };
           // découpé : préféré ; méta lue d'emblée (petite : cycle, axes AAR, tracks NAT)
           if (!pub || e.split.has(cycle)) {
@@ -851,10 +865,19 @@
       if (z.parts.has(kind)) return z.parts.get(kind);
       const empty = kind === 'obstaclemax' || kind === 'meta' ? {} : [];
       let p;
-      if (z.split) {
+      if (z.split && z.kinds && !z.kinds.includes(kind)) {
+        // part que le dépôt n'a pas : vide aussitôt, sans lecture, et dit dans les relevés (stats)
+        z.reads.push({
+          kind,
+          bytes: 0,
+          ms: 0,
+          absent: true
+        });
+        p = Promise.resolve(empty);
+      } else if (z.split) {
         p = (async () => {
           const t0 = performance.now(),
-            r = await read(`${z.base}${kind}.json`);
+            r = await read(`${z.base}${kind}.json`, true);
           z.reads.push({
             kind,
             bytes: sizeOf(r),
@@ -2034,7 +2057,7 @@
         cycle: z.cycle,
         format: z.split ? 'split' : 'whole',
         mb: +(z.reads.reduce((s, r) => s + r.bytes, 0) / 1048576).toFixed(3),
-        reads: z.reads.map(r => `${r.kind} ${(r.bytes / 1024).toFixed(0)} Ko ${r.ms} ms`),
+        reads: z.reads.map(r => r.absent ? `${r.kind} absent` : `${r.kind} ${(r.bytes / 1024).toFixed(0)} Ko ${r.ms} ms`),
         indexes: Object.keys(z.idx)
       }))
     };

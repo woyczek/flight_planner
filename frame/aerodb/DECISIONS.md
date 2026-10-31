@@ -2173,3 +2173,16 @@ page is served to `Sec-Fetch-Site: none`, refused to `cross-site`, and, where th
 - **Rule**: an airspace's `key` (as the SIA publishes it) is not unique in a published base — LF600 is both a SUR and a PRN, 74 keys of the
   French base name several airspaces — so a consumer that needs an airspace's identity takes its type, key, name, limits and first ring point
   together (unique in the fr, es, de and gb bases; the Map's `keyOf`, `modules/maps/data.js`, SPEC § 3). The base keeps the key as published.
+
+- **31 Oct 2026 — A read of the base has a bound, and a part the repository lacks is not read** (Simplification, after
+  BUGS SOG's D86 / D87: `mora()` stayed pending 20 s and more under load, the bench has no `mora` part; the Map no longer
+  waits for it, f28b33257). The reader's `read(…, { wait: true })` could stay pending when a request or a cache operation
+  under it never ended, and the data layer shares one read per path for the page's life, so every later read of that
+  path waited too. aerodb now bounds each read (`readWait`, 10 s; a bench gives less) and treats the end of the bound as
+  an unreadable file (forgotten, asked again later); and it does not read a part the listing does not name for the
+  zone's cycle (empty at once, `absent` in the stats). Returns are unchanged: empty lists, `null`, never a throw.
+  « Asked again » holds only if the next read does not land on the same pending promise: at the bound aerodb calls
+  `reader.abandon(path)`, and the data layer forgets its shared read of that path (`fetchOne`'s entry; an old read that
+  ends later no longer removes a newer one). No general bound inside `fetchOne` (Simplification): the reader that stops
+  waiting says so. Only part reads are bounded: bounding the list of zones made a first launch held longer than the
+  bound say « not published » for 30 s (A15, found by the noreg before the push).

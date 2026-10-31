@@ -3815,3 +3815,47 @@ def k58(c):
     # no runway: the runway fields are absent (not zero), the declination is still carried; an empty list is the same
     c.eq((sorted(set(got['LENR']) & {'bearing', 'hardLen', 'water', 'runways'}), got['LENR'].get('magVar'), got['LENR']['public']), ([], -0.5, False), 'LENR: no runway fields, declination kept', what='LENR')
     c.eq(sorted(set(got['LEEL']) & {'bearing', 'hardLen', 'water', 'runways', 'magVar'}), [], 'LEEL: an empty list of runways and no declination give none of the fields', what='LEEL')
+
+
+@case('K59', 'A read of the base answers or fails, never pending: a part the repository lacks is empty at once, a held read ends at the bound', 'K',
+      tags=('aerodb',), phone=False,
+      rule='Simplification 31 Oct (BUGS SOG, D86 / D87: aerodb.mora stayed pending 20 s and more under load, the bench has no « mora » part): a part absent from the repository’s listing is empty at once, without a read, and said in the stats; any read has a bound (readWait, 10 s by default), then gives nothing (read again later), never an endless promise')
+def k59(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const day = Date.parse('2026-10-25T12:00:00Z'), cyc = AeroDB.airacCycles(1, day)[0], base = `sia/base/fr/${cyc}/`;
+      // like the frame's data layer: one shared read per path until it ends, or until abandon(path)
+      const reader = (files, hold) => ({
+        asked: [], shared: new Map(), held: !!hold,
+        read(p) {
+          if (this.shared.has(p)) return this.shared.get(p);
+          this.asked.push(p);
+          const job = this.held && hold && p.endsWith(hold) ? new Promise(() => {}) : Promise.resolve(p in files ? { value: files[p], rev: 'r' } : null);
+          this.shared.set(p, job);
+          job.then(() => this.shared.get(p) === job && this.shared.delete(p));
+          return job;
+        },
+        abandon(p) { this.shared.delete(p) },
+        async list(prefix) { return Object.keys(files).filter(p => p.startsWith(prefix)) },
+        watch: () => () => {}
+      });
+      const files = { [base + 'meta.json']: { data: {} }, [base + 'airspaces.json']: { data: [] } };
+      // 1. no « mora » part in the repository: empty at once, never read
+      const r1 = reader(files), db1 = AeroDB.create({ reader: r1, lnmperf: false, now: () => day });
+      let t = performance.now();
+      const m1 = await db1.mora(46.5, 2.5), ms1 = performance.now() - t;
+      // 2. a listed part whose read never ends: nothing at the bound
+      const r2 = reader({ ...files, [base + 'mora.json']: { data: [{ lat: 46, lon: 2, moraFt: 3200 }] } }, 'mora.json'), db2 = AeroDB.create({ reader: r2, lnmperf: false, now: () => day, readWait: 600 });
+      t = performance.now();
+      const m2 = await Promise.race([db2.mora(46.5, 2.5), new Promise(res => setTimeout(() => res('pending'), 8000))]), ms2 = performance.now() - t;
+      const mora2 = r2.asked.filter(p => p.endsWith('mora.json')).length;
+      // 3. the read freed: the next question really reads again (the pending read was abandoned at the bound)
+      r2.held = false;
+      const m3 = await Promise.race([db2.mora(46.5, 2.5), new Promise(res => setTimeout(() => res('pending'), 8000))]);
+      return { m1, ms1, mora1: r1.asked.filter(p => p.endsWith('mora.json')).length, m2, ms2, mora2, m3, mora3: r2.asked.filter(p => p.endsWith('mora.json')).length };
+    }""")
+    c.eq((r['m1'], r['mora1']), (None, 0), 'a part the repository lacks: nothing, and never read', what='absent part')
+    c.ok(r['ms1'] < 1000, f"{r['ms1']:.0f} ms", 'answered at once')
+    c.eq((r['m2'], r['mora2']), (None, 1), 'a read that never ends: nothing at the bound, not a pending promise', what='held read')
+    c.ok(500 <= r['ms2'] < 3000, f"{r['ms2']:.0f} ms", 'ended at the bound (600 ms in this bench)')
+    c.eq((r['m3'], r['mora3']), (3200, 2), 'the next question reads again (the pending shared read abandoned at the bound) and gets the data', what='after the bound')

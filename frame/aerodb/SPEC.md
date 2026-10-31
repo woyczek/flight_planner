@@ -103,6 +103,13 @@ aerodb reads files only through a reader with the frame's data contract:
   absent (or offline without a copy). `value` is the parsed JSON; otherwise `text` is parsed. `rev` is opaque: compare
   revisions only with each other.
 - `list(prefix)` → paths, or `null` when no listing is known (launcher without a listing, first launch offline).
+- **A read answers or fails, never pending** (31 Oct 2026, after BUGS SOG's D86 / D87): each read of a zone's part has a
+  bound, `readWait` (an option of `create`, 10 s by default), after which it gives nothing, like an unreadable file (the part is asked
+  again at the next question). At the bound aerodb calls the reader's `abandon(path)` (optional; the frame's adapter has
+  it): the reader forgets its shared pending read of that path, so the next question really reads again instead of
+  waiting on the same promise. The list of zones, the manifest and a zone's meta are not bounded: a slow first launch
+  must never make the base say « not published » (A15). A part the listing does not name for its zone and cycle is empty at once, without a read,
+  and said as `absent` in the stats (`reads`); without a listing every part is read, bounded.
 - `watch(prefix, fn)` (optional) → called with the changed paths after a synchronisation. The frame's data layer
   also calls it when a file first arrives in its cache. aerodb therefore reacts only to two cases:
   - a file it has already read whose `rev` changed: the zone, or the towns, manifest or aircraft base, is forgotten
