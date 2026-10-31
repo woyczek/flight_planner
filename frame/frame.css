@@ -321,6 +321,11 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   html:not(.f-titled) .f-head.f-has-back .f-app {
     display: none
   }
+  /* … et le retour reprend sa marge : « ? » et ⚙ restent à droite au lieu de suivre le retour à gauche (31 oct. 2026 : « la
+     ligne des icônes bouge à chaque sélection », A66) */
+  html:not(.f-titled) .f-head.f-has-back .f-back {
+    margin-right: auto
+  }
 }
 /* vue double (grand écran) : le module courant à gauche, le volet à droite, collé sous l'en-tête */
 .f-pane-btn {

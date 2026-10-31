@@ -2366,3 +2366,33 @@ def a65(c):
          '', 'the Status block says « New version available · Reload »')
     c.eq(c.js('performance.getEntriesByType("navigation")[0].type') != 'reload' and c.js('location.href').split('#')[0] == href.split('#')[0], True,
          'never a reload without a gesture', what='no reload')
+
+
+
+@case('A66', 'Selecting an entry moves no entry of the rail, the bar or the header', 'A', night=False,
+      rule='Simplification 31 Oct (the user, Pilot on a computer: « the row of icons moves at each selection »): the marked state of an entry changes its colour, never the position nor the size of any entry of the left column, the bottom bar or the header (its « ? » and ⚙ stay right when the back button takes the name’s place), in every module and design, aqua included on a computer')
+def a66(c):
+    c.open('fuel', flight=True)
+    boxes = """() => [...document.querySelectorAll('#fMenu a, #fTabs a, .f-head > button:not(.f-back):not(#fApp)')].filter(a => a.getClientRects().length).map(a => {
+        const r = a.getBoundingClientRect(), i = [...a.querySelectorAll('.f-icon')].find(x => x.getClientRects().length);
+        const q = i ? i.getBoundingClientRect() : r;
+        return [a.dataset.id || a.dataset.tab || a.dataset.link || a.id, Math.round(r.left * 2) / 2, Math.round(r.top * 2) / 2, Math.round(r.width * 2) / 2,
+                Math.round(r.height * 2) / 2, Math.round(q.left * 2) / 2, Math.round(q.top * 2) / 2] })"""
+    # on a computer the run is in standard: the designs are tried here, aqua (a computer’s design) included
+    designs = ['standard', 'metro', 'swiss', 'cupertino', 'material', 'aqua'] if c.page.viewport_size['width'] >= 1000 else [None]
+    moved = []
+    for d in designs:
+        if d:
+            c.js(f"() => {{ document.documentElement.dataset.design = '{d}'; location.hash = '#fuel' }}")
+            c.wait(400)
+        before = c.js(boxes)
+        c.ok(len(before) >= 3, str(before), 'the entries are drawn')
+        for target in ('maps', 'report', 'flightlog', 'atmosphere', 'missions', 'website', 'fuel'):
+            c.js(f"() => {{ location.hash = '#{target}' }}")
+            c.until(f"!!document.querySelector('#fMenu a[data-id=\"{target}\"][aria-current], #fTabs a[aria-current]')", timeout=10000,
+                    what=f'{target} marked')
+            c.wait(300)  # transitions of the marked state
+            after = c.js(boxes)
+            was, now = {x[0]: x[1:] for x in before}, {x[0]: x[1:] for x in after}
+            moved += [f'{d or "-"} {target}: {k} {was[k]} → {now[k]}' for k in was if k in now and was[k] != now[k]]
+    c.eq(moved, [], 'no entry moves nor changes size when another is selected (box and icon)', what='moved entries')

@@ -2315,3 +2315,10 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   page load or « Reload ». The bench loads `sw.js` with a fake `self` and network: red on the old service worker (a
   mixed cache, an open page given a v2 file), green now. The notice is a state: a Status line until the reload, the note
   offered again at calm moments (5 minutes apart at most), never an automatic reload.
+
+- **31 Oct 2026 — « ? » and ⚙ stay right when the back button takes the name's place** (the user: « the row of icons
+  moves at each selection »). On a phone, a module opened by passage of another shows « ← » in the name's place
+  (`.f-app` hidden); the name carried the `margin-right: auto` that pushed « ? » and ⚙ to the right, so they jumped to
+  the left on the Map, Weather and Website after a selection. The back button now takes that margin in the same case.
+  A66 measures every entry of the left column, the bottom bar and the header across the Pilot modules, in the five
+  designs at 390 and in all six (aqua included) at 1280; the rail and the bar did not move, the header did.

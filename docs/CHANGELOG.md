@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the header's « ? » and ⚙ no longer jump** (`frame/frame.css`; frame DECISIONS; noreg A66) — on a phone, when
+  the back button took the name's place, « ? » and ⚙ moved from the right to the left; they stay right.
 - **Frame: a new version never mixed with the old one, and said until it is taken** (`frame/sw.js`, `frame/app.js`;
   frame SPEC 3.6, DECISIONS; bench `frame/lib/test/sw_update.html`, noreg A53, A65) — the service worker reads the next
   version whole into a separate cache and swaps it in at the next page load (Settings no longer open blank after an
