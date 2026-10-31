@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Aircraft SPEC on § 10.35** (`modules/aircraft/SPEC.md`): a sheet is a type + variant, an aircraft a registration with its state,
+  maintenance and hours; adding is choosing then filling; two fleets; the aircraft seen in the flights — written before lots L1–L5, each
+  rule to build tagged with its lot.
 - **Frame: one active entry, one entry per destination, the help of the shown application** (`frame/app.js`,
   `frame/frame.css`, `frame/help/help.js`, `frame/help/build_help.py`; frame SPEC 3.1, help SPEC 2, DECISIONS; noreg
   A59) — the user's Maintenance captures: the bottom bar marks what is shown and only that (Help → Help, Settings →

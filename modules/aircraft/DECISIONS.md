@@ -1,5 +1,30 @@
 # aircraft — decisions
 
+- **31 Oct 2026 — the SPEC on § 10.35** (the user: « pas d'imat dans la fiche de base, c'est un type / variante ; l'ajout d'appareil,
+  on doit pouvoir choisir ; créer un appareil lazy depuis les vols passés ; flotte perso et flotte partagée, les deux sur le git ; pas de
+  paramètres moteur sur les appareils »; Simplification's counter-proposals and Features SOG's objections settled in § 10.35). Written
+  before L1 as the state to reach, each rule still to build tagged with its lot (L0 AeroDB, L1–L5 here), today's rules with their case.
+  Settled with Simplification for schema 2 of `fleet.json`: « Retirer » sets `state: 'retired'` and keeps the aircraft (hours, history,
+  registration kept, so never re-proposed as seen in the flights), folded under « Retirés (n) »; « Supprimer de la flotte » is a second
+  gesture for a typing error, refused for an aircraft with logged flights; schema 1 `operational: false` reads as `maintenance`, `true` or
+  missing as `service`, `retired` only from a gesture; the site's `type` / `variant` kept as given; `sheetId` the type's sheet when one
+  exists, else empty. M4 changes with L1. Objections answered (§ 10.35): the aerodb half is L0 (AeroDB's); registration-keyed sheets read as
+  variants, converted only by a gesture; ids `C30J` / `C30J-<VARIANT>`; hours counted once per (registration, date, off-block), from `cr/`
+  for the shared fleet and the pilot's own log for the personal one, never another pilot's log; the flight-plan identity of an airframe
+  later on the aircraft, never in a sheet; a sheet-alone flight is `flight.aircraft = { sheetId, type }`, no new key; the shared fleet wins
+  over a personal duplicate; both writers of `fleet.json` move to schema 2 together.
+- **31 Oct 2026 — history, two kinds of maintenance, costs (the user's second and third requests; § 10.35 L6, L7)**: `events[]` holds
+  what a person types in Maintenance (acquisition — the counter's hours when the aircraft joined, not a fake flight, which would count in a
+  pilot's hours, the reports and the statistics —, check, overhaul, state change) with their cost; the « hours before the log » field of
+  the first text became the acquisition event. Features SOG's objection, accepted: **no pilot terminal writes `airline/fleet.json`**
+  (its merge rule is `record`, the newest file wins: events appended by several terminals would erase each other and Maintenance's
+  edits); the hard landing is declared in the report (`cr/`) and read into the history, the derogation is computed at reading (at the
+  flight's off-block, hours since the last check or overhaul at or above the sheet's threshold, or a hard landing before with no
+  overhaul since), shown, never written. Thresholds, `hourlyCost` and `fuelDensityKgPerL` on the sheet (aerodb L0 bis); company defaults,
+  the fuel price and the currency in `airline/settings.json`, written by Réglages (a card « Coûts et maintenance »), read here. Only an
+  overhaul clears a hard landing; a calendar due date is shown when set, no calendar threshold computed. The fuel of a flight is the
+  report's (`fuelUsed`, no new report field), Fuel's trip fuel only for the flight under way or planned (« estimation (plan) »); without
+  a density when the units differ, no fuel cost, said. Nothing summed: the balance is a later roadmap item.
 - **30 Oct 2026 — the SPEC as a state** (Simplification, the discipline of Fuel's 3a / 3b: each rule cites its case or « no case »,
   what became false removed). Removed as false: the **Registre** view (never built: the Flotte and Fiches tabs only; a registry search
   stays a debt), the type field's **completion** from the registry (it is free text with a line under it, « type absent de la base »),
