@@ -2210,6 +2210,7 @@ def a61(c):
     line = '[data-card="access"] [data-repo-provider]'
     c.page.fill('[data-card="access"] [data-f="repo"]', 'framagit.org/asr/flight_planner')
     c.eq(norm(c.text(line)), norm(tx(access_file, 'repoProvider', c.lang).replace('{p}', 'GitLab').replace('{u}', canon[0])), 'the provider and the canonical address under the field', what='provider line')
+    c.eq(c.js("document.querySelector('[data-card=access] [data-repo-warn]').hidden"), True, 'a public GitLab host: no warning', what='no warning')
     # refused: nothing written
     c.page.fill('[data-card="access"] [data-f="repo"]', 'framagit.org/asr')
     c.eq(c.attr(line, 'data-state'), 'incomplete', 'an incomplete address is said at once', what='incomplete line')
@@ -2228,6 +2229,16 @@ def a61(c):
     c.eq(c.count('.f-modal'), 0, 'no blocking question', what='no modal')
     saved = c.js("(() => { const g = FrameData.github.config(); return [g.provider, g.api, g.repo] })()")
     c.eq(saved, ['gitlab', 'https://framagit.org/api/v4', 'asr/flight_planner'], 'the device reads the GitLab project, whatever form was typed', what='saved access')
+    # a self-hosted GitLab the device's access names (same host): accepted, warned under the field, never refused
+    keys = [['device/keys.json', {'schema': 1, 'github': {'provider': 'gitlab', 'api': 'https://git.example.test/api/v4', 'repo': 'grp/proj', 'branch': 'main',
+                                                          'token': 'test-token'}, 'avwx': '', 'ivao': None, 'updated_at': '2026-10-31T10:00:00Z'}, 'cache']]
+    c.open('settings', docs=LEVEL3 + keys)
+    c.until("!!document.querySelector('[data-card=access] [data-f=repo]')", timeout=15000, what='the Access card again')
+    c.js("document.querySelector('[data-card=access]').closest('details')?.setAttribute('open', '')")
+    c.page.fill('[data-card="access"] [data-f="repo"]', 'git.example.test/grp/proj')
+    c.eq([c.attr(line, 'data-state'), c.js("document.querySelector('[data-card=access] [data-repo-warn]').hidden"),
+          norm(c.text('[data-card="access"] [data-repo-warn]'))], ['gitlab', False, norm(tx(access_file, 'repoOtherGitlab', c.lang))],
+         'another GitLab host: accepted as GitLab, with the warning that the page reaches only the providers it allows', what='self-hosted warned')
 
 
 # a GitLab setting whose api has no scheme (typed by hand): the transport cannot be built

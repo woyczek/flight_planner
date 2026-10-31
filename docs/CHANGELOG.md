@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Settings: another GitLab than gitlab.com or framagit.org is warned in the Access card** (`frame/settings/access.js`; SPEC § 5;
+  A61) — the phone's synchronisation failed because the static site's policy (connect-src) did not list gitlab.com; V3 Frame added
+  it (48fc586c2), and CORS was verified on both public hosts. Any other GitLab host is accepted and said under the field: « this
+  device can only reach the providers the page allows; another GitLab works through the launcher or the relay ». Nothing changes
+  for gitlab.com, framagit.org or with a launcher.
 - **Static site: GitLab repositories reachable** (`tools/csp_policy.py`, `frame/app.js`; frame SPEC 2, INTEGRATION 4,
   DECISIONS; noreg I30, A64) — the page's `connect-src` held api.github.com only, so the browser blocked the calls to
   gitlab.com and framagit.org before they left; it now holds exactly the API hosts of the known providers. A host the
