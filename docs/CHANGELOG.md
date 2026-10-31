@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Noreg: F41 waits as the pilot does** (`tests/v3/cases/fuel.py` `map_return`). Each of its five trips back from the Map now leaves
+  the Map once it is mounted and settled, then reads Fuel once it is mounted again with its procedure card drawn — the wait is the
+  case's, as `to_step`'s, the module untouched. The first trip left the Map at once: F41 failed 4 in 10 alone (three times in
+  Settings' runs); 10 in 10 after.
 - **Settings: the IVAO number field says « VID IVAO »** (`frame/settings/kit.js`, `cards.js`, `actions.js`, `join.js`; A58) — the
   identity field and its digits-only refusal read the IVAO account card's title (« Compte IVAO »), a row that R-S9 (2/2) kept because it
   won the load order. One key per meaning: `ivaoVid` (« VID IVAO » / « IVAO VID » / « IVAO-VID » / « VID IVAO »), also read by Join, which

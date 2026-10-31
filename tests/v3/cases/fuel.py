@@ -480,6 +480,18 @@ def pick_proc(c, k, value):
     c.page.select_option(f'{FUEL} select[data-k="{k}"]', value)
 
 
+def map_return(c, address, side='arr'):
+    """The Map's answer to Fuel as the pilot gets it (location.replace of `address`): the Map mounted and settled before it is left (a Map
+    left during its mount throws), then Fuel mounted again and its procedure card of `side` drawn before anything is read. The wait is
+    the case's, as to_step's: F41 failed under load three times (Settings, 31 Oct), 4 in 10 alone, on its first trip, which left the
+    Map at once; the module is untouched."""
+    c.until("() => location.hash.startsWith('#maps') && !!document.querySelector('[data-module=maps]')", timeout=15000, what='the Map is mounted')
+    c.settle()
+    c.js("(a) => { location.replace(a); return true }", address)
+    c.until("() => !!document.querySelector('[data-module=fuel]')", timeout=15000, what='Fuel is mounted again')
+    wait_rows(c, side)
+
+
 def cf_doc(c, pred, what, timeout=8000):
     return c.until_doc('pilot/ABC/current_flight.json', pred, what, timeout=timeout)
 
@@ -1248,7 +1260,7 @@ def f41(c):
     c.until("location.hash === '#maps'", what='the tap opens the Map, which takes its keys')
     c.eq(c.js("window.__hashes[0]"), '#maps?choose=arr&icao=LFML', 'in its choice mode, for the arrival aerodrome', what='address')
     # the Map's answer (location.replace): one key per trip
-    c.js("() => location.replace('#fuel?focus=arr&star=LFML.STAR.MEN2B.RW31L.NONE')")
+    map_return(c, '#fuel?focus=arr&star=LFML.STAR.MEN2B.RW31L.NONE')
     d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('star') == 'LFML.STAR.MEN2B.RW31L.NONE', 'the proposed STAR is written', timeout=12000)
     c.eq((procs_of(d, 'arr') or {}).get('rwy'), '31L', 'as a choice made in Fuel: the STAR serving one runway sets it', what='runway')
     c.until("(w) => (window.__notes || []).some(n => n.includes('MEN2B'))", None, timeout=6000, what='a line says what changed')
@@ -1257,9 +1269,8 @@ def f41(c):
     dep0 = procs_of(cf_doc(c, lambda d: True, 'the flight record'), 'dep')
     c.js("() => { location.hash = '#maps' }")
     c.until("location.hash === '#maps'", what='the Map is open again')
-    c.settle()  # the Map settled before it is left (a Map left during its mount throws: sent to BUGS SOG, 30 Oct)
     c.js("() => { window.__notes = window.__notes || []; window.__n0 = window.__notes.length }")
-    c.js("() => location.replace('#fuel?focus=arr&rwy=13R&star=LFML.STAR.MEN1A.RW13R.NONE&app=LFML.APP.I13R.RW13R.NONE&apptrans=none')")
+    map_return(c, '#fuel?focus=arr&rwy=13R&star=LFML.STAR.MEN1A.RW13R.NONE&app=LFML.APP.I13R.RW13R.NONE&apptrans=none')
     d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == 'LFML.APP.I13R.RW13R.NONE', 'the proposed approach is written', timeout=12000)
     a = procs_of(d, 'arr') or {}
     c.eq((a.get('rwy'), a.get('star'), a.get('app')), ('13R', 'LFML.STAR.MEN1A.RW13R.NONE', 'LFML.APP.I13R.RW13R.NONE'),
@@ -1276,8 +1287,7 @@ def f41(c):
     # a missing key leaves its family: a trip with the runway only keeps the STAR and the approach
     c.js("() => { location.hash = '#maps' }")
     c.until("location.hash === '#maps'", what='the Map is open again')
-    c.settle()
-    c.js("() => location.replace('#fuel?focus=arr&rwy=31L')")
+    map_return(c, '#fuel?focus=arr&rwy=31L')
     d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('rwy') == '31L', 'the runway alone is written', timeout=12000)
     a = procs_of(d, 'arr') or {}
     c.eq((a.get('star'), a.get('app')), ('LFML.STAR.MEN1A.RW13R.NONE', 'LFML.APP.I13R.RW13R.NONE'), 'the STAR and the approach stay (keys absent)',
@@ -1285,16 +1295,14 @@ def f41(c):
     # « none »: the departure's SID set to « Aucune » — a real trip goes through the Map (Fuel is mounted again by the frame on its way back)
     c.js("() => { location.hash = '#maps' }")
     c.until("location.hash === '#maps'", what='the Map is open again')
-    c.settle()  # the Map settled before it is left (a Map left during its mount throws: sent to BUGS SOG, 30 Oct)
-    c.js("() => location.replace('#fuel?focus=dep&sid=none')")
+    map_return(c, '#fuel?focus=dep&sid=none', 'dep')
     d = cf_doc(c, lambda d: 'sid' in (procs_of(d, 'dep') or {}) and (procs_of(d, 'dep') or {}).get('sid') is None, '"none" writes « Aucune » (null)', timeout=12000)
     # the address can be edited by any link: only « none », a runway offered for that aerodrome, or a record of the flight's aerodrome on
     # that side (right kind, not doubtful) is admitted; anything else is ignored and nothing is written
     before = procs_of(d, 'arr')
     c.js("() => { location.hash = '#maps' }")
     c.until("location.hash === '#maps'", what='the Map is open again')
-    c.settle()  # the Map settled before it is left (a Map left during its mount throws: sent to BUGS SOG, 30 Oct)
-    c.js("() => location.replace('#fuel?focus=arr&star=LFRS.SID.NTS1A.RW03.NONE&rwy=99&app=%22%3E%3Cimg')")
+    map_return(c, '#fuel?focus=arr&star=LFRS.SID.NTS1A.RW03.NONE&rwy=99&app=%22%3E%3Cimg')
     c.until("!/[?&](star|focus|app|rwy)=/.test(location.hash)", what='the hostile keys are consumed')
     c.settle()
     c.wait(700)
