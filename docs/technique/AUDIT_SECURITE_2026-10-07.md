@@ -980,6 +980,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 128 | Frame: `ctx.net.fetch` waits at most 3 s for the airline's first read, then refuses (aabaa0f3b) | acceptable |
 | 129 | aerodb: a zone part's read bounded, the shared read abandoned at the bound (80a355157) | acceptable, one note (closed in 130) |
 | 130 | An abandoned read writes nothing to the cache (a90e431e3): the note of 129 closed | acceptable |
+| 131 | Refactor R-S9 (2/2): the Settings' shared texts in `kit.js`, `render` in parts (3fe9628ca) | acceptable, no change of behaviour |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2115,6 +2116,12 @@ the job is no longer the one registered for its path.
 **130. The note of 129 (a90e431e3) — acceptable.** After the read, a job that `abandon` replaced returns its result to
 whoever still waits for it, without writing the cache or announcing a change, so an older revision arriving late never
 replaces a newer one.
+
+**131. Refactor R-S9 (2/2), shared texts and `render` in parts (3fe9628ca) — acceptable, no change of behaviour.** Read
+with `git diff --color-moved`: the lines not moved are text rows moved into `kit.js`, the calls that now read them
+(`t(K.…)` in place of `t(T.…)`, always inside `esc`), the two screens loading `kit.js` first, and `render` cut into
+`routeJoin`, `placePage`, `paintOffline` / `paintZones` and `focusImport` in the same order. The checks of the
+configuration (`validate`, no imported `api`, 119), `saveSecret` and `own` are untouched; no route or write added.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
