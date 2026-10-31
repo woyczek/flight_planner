@@ -153,6 +153,8 @@ accept; the token, step by step (classic for a user's repository, fine-grained f
 and tested; the network IDs; and last “Finish and synchronise”, then the offline data. Ticked boxes stay on the device:
 a settings card offers to resume where you left off. The “Join the airline” tutorial follows the same steps.
 
+**Joining for a GitLab project (pilot).** When the configuration you received is a GitLab project, you create nothing: no account, no invitation, no token. The assistant has only three screens: the configuration read (airline, project), then “Paste the token” — paste the token the administrator sent you apart (never in the link); your trigram is read from the configuration, you do not type it — then “Finish and synchronise”. Your VID, CID and SimBrief identifiers are filled in later in Settings › Identity. Before accepting the token, the app asks GitLab what kind of token it is. A personal token (it works for all your projects) gives a question: prefer the project token asked from the administrator; if you answer “No”, nothing is saved. A token without an expiry date (or more than a year away), or with more rights than needed, is flagged with a warning line, without blocking you. The “Data access” card says the same of a personal token, without a question: alone with your own repository, a personal token is the right one.
+
 **Nothing more than the file.** Only what the configuration holds is set, and the access is saved only once the token is
 tested; “Test” says what is wrong: invitation not accepted yet, token copied wrongly or expired, token without the right
 on the contents. A classic token opens all the repositories of the account: for a user's repository, a GitHub account
@@ -230,4 +232,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: 845828ff643a -->
+<!-- fr: 5bb5ad1309e3 -->

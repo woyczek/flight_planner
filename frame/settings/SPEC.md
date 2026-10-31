@@ -142,6 +142,11 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    (this repository only, Contents read and write) for an organisation's; one year at most; never pasted in a message.
    "Save", "Test" (the branch head through the transport; offline said as such) and "Cut access" (asks, then
    the context's `cutAccess`; pending writes stay queued).
+   **The token of a GitLab project says what it is** (§ 10.36 part 3, without a launcher): « Test » and « Save » ask the instance who the token is
+   (`whoami`, § 7) and put what they learn in the card's message, in warning colour, never blocking: a personal token (it works for all the
+   user's projects; the user alone with their own repository needs one), an expiry missing or beyond 365 days, rights beyond the transport's;
+   after « Save » the warning is said once the card is drawn again. A failed reading changes nothing of the test or the save (the branch read
+   already says its failures). Case A72.
 7. **Synchronisation** (an exchange ticked, or writes waiting — the card follows the state): last success, pending
    writes, network, last error, kept live through `onStatus`; then the **pending writes** themselves
    (`FD.status().queue`, newest first, 20 at most then "… and n more"): path, module (its menu label), time (the date
@@ -325,6 +330,9 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
   remembered; the launcher may ask for confirmation in its window); without a launcher — the device's GitHub transport
   for a GitHub repository ("Test" first; another access already set is replaced only after a question), nothing for
   another host (said: apply it on a workstation).
+- **The token a GitLab pilot pastes** is a project access token the administrator created (§ 3 « Add a pilot »: role Developer, scope `api`,
+  90 days advised, 365 at most). Before it is accepted (Join, Access card) the page asks the instance who it is (`whoami`): a personal token,
+  an expiry missing or beyond a year, rights beyond the transport's are said (§ 7); the token never goes in a configuration, a link or a message.
 - **The how-to** of the token starts with the account sign-up (`https://github.com/signup`, or
   `https://<host>/users/sign_up`) and, for GitHub, the invitation to accept (`https://github.com/<repo>/invitations`);
   it is shown wherever the token is asked, in the device's language, falling back to French.
@@ -385,10 +393,25 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
   replaced only after a question); on a workstation, "Clone with the token" (launcher); (6) IVAO, VATSIM, SimBrief,
   optional, saved with the trigram; (7) "Finish and synchronise" — usages, first synchronisation, airline if the
   repository has none — then "Offline data", "Prepare a flight" and the tutorial.
+- **A GitLab configuration** (`SogConfig.kind(cfg.data) === 'gitlab'`, any access: the device's `github` transport, or a launcher's `clone` / `adopt`;
+  § 10.36 part 3): the steps are **1, 5, 7** (`stepsFor(access, data)`). The pilot has no GitLab account and creates nothing: the
+  administrator made a project access token (« Ajouter un pilote », § 5) and sent it apart from the link. No account, no invitation, no
+  token to create (the GitHub steps 2 to 4, their GitLab variants are gone), no IVAO / VATSIM / SimBrief step (the pilot fills them later in
+  Settings › Identity). Step 1 is unchanged. **Step 5 « paste the token received from the administrator »**: the trigram read from the
+  configuration (shown, never typed), the token field, then « Test » (the device) or « Clone with the token » (a workstation), exactly as for
+  GitHub. When it succeeds the step writes what step 6 wrote of the identity — `device/identity.json`, the configuration's trigram —
+  and nothing else (IVAO, VATSIM and SimBrief stay the device's). Step 7 finishes as before. **The token says what it is** before it is
+  accepted, on both accesses: `FD.gitlab(…).whoami()` → `{ bot, username, scopes, expiresAt }` from the page to the instance (the CSP
+  allows gitlab.com and framagit.org; on a workstation the clone itself is the launcher's). `bot !== true` (a personal token) is a QUESTION,
+  « Personal token: it works for all your projects; prefer a project token asked from the administrator. Continue anyway? » — No keeps
+  nothing, Yes goes on. An expiry missing or more than 365 days away, and scopes beyond `api`, `read_api`, `read_repository`,
+  `write_repository`, are warning lines in the step's message, not blocking. A failed reading says what a failed test says (offline,
+  401, 403, 404). The same function (`tokenWarnings`, kit.js) serves the Access card (§ 3): there a personal token is a warning, never a
+  question (the user alone with their own repository needs one). Cases A70, A71, A72; the GitHub steps are those of A56.
 - **Kept on the device** (`device/join.json`, cache policy): the configuration (no secret), the step, the boxes, the
   account answer and the username — never the token. A settings card offers to resume; "Give up" (asks) stops it
   without undoing anything.
-- **Steps skipped**: 2 to 5 when the access is not set here — the launcher's `data/` already follows this repository
+- **Steps skipped**: 2 to 5 (2 to 4 for a GitLab configuration: the token is pasted) when the access is not set here — the launcher's `data/` already follows this repository
   (or another one), or a host the device cannot reach without a launcher (GitLab / framagit on a phone, said at step 1).
 - No screenshots of the host's own pages: the steps give its direct links and exact labels.
 

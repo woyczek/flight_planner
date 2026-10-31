@@ -211,6 +211,17 @@
       say,
       again
     } = env;
+    /** Ce que le jeton GitLab dit de lui (§ 10.36, whoami du transport) en avertissements à lire dans le message de la carte, jamais un refus : un jeton personnel, une expiration absente ou à plus d'un an, des droits en trop ;
+     *  vide pour un jeton de projet en règle, pour un autre fournisseur, ou quand la lecture échoue (le test et l'enregistrement disent déjà leurs échecs). */
+    const warnings = async cfg => {
+      if (cfg.provider !== 'gitlab') return [];
+      try {
+        const who = await FD.gitlab(cfg).whoami();
+        return [...(who.bot === true ? [] : [t(T.tokenPersonal)]), ...window.SogSettingsKit.tokenWarnings(t, who)];
+      } catch {
+        return [];
+      }
+    };
     if (act === 'access' || act === 'test') {
       const r = card('access'),
         // l'adresse saisie, normalisée d'abord : illisible ou sans fournisseur connu, refusée et rien n'est écrit
@@ -234,13 +245,16 @@
         say('access', '…', 'ok');
         try {
           await FD.github(cfg).head();
-          return say('access', t(T.testOk, {
+          const warn = await warnings(cfg);
+          return say('access', [t(T.testOk, {
             b: cfg.branch
-          }), 'ok');
+          }), ...warn].join(' '), warn.length ? 'warn' : 'ok');
         } catch (err) {
           return say('access', err?.offline ? t(T.testOffline) : err?.message || String(err), err?.offline ? 'warn' : 'err');
         }
       }
+      const warn = await warnings(
+        cfg); // dit après l'enregistrement : jamais bloquant (seul avec son dépôt, un jeton personnel est le bon)
       FD.github.save(cfg);
       await c.reload();
       // la première synchronisation sur le nouveau dépôt, proposée par le bouton de la notification (jamais une fenêtre bloquante)
@@ -250,7 +264,9 @@
           run: () => c.syncNow()
         }
       });
-      return again();
+      await again();
+      if (warn.length) say('access', warn.join(' '), 'warn');
+      return;
     }
     if (act === 'cut') {
       if (!await c.ask(t(T.cutAsk))) return;

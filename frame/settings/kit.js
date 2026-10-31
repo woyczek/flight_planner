@@ -13,6 +13,23 @@
 
   // textes lus par plusieurs fichiers des Réglages, une ligne par sens (SPEC § 8) ; chaque fichier ajoute les siens
   Object.assign(T, {
+    // le jeton GitLab dit ce qu'il est (§ 10.36) : « Rejoindre la compagnie » et la carte Accès
+    tokenPersonal: ['Jeton personnel : il vaut pour tous vos projets ; préférez un jeton de projet demandé à l’administrateur.',
+      'Personal token: it works for all your projects; prefer a project token asked from the administrator.',
+      'Persönliches Token: Es gilt für alle Ihre Projekte; bevorzugen Sie ein Projekt-Token vom Administrator.',
+      'Token personal: vale para todos sus proyectos; prefiera un token de proyecto pedido al administrador.'
+    ],
+    tokenContinue: ['Continuer quand même ?', 'Continue anyway?', 'Trotzdem fortfahren?', '¿Continuar de todos modos?'],
+    tokenExpiry: ['Jeton sans expiration (ou à plus d’un an) : demandez-en un de 90 jours.',
+      'Token without an expiry (or more than a year away): ask for one of 90 days.',
+      'Token ohne Ablaufdatum (oder mit mehr als einem Jahr): Fordern Sie eines mit 90 Tagen an.',
+      'Token sin caducidad (o a más de un año): pida uno de 90 días.'
+    ],
+    tokenScopes: ['Ce jeton a plus de droits que nécessaire ({s}) : demandez-en un limité à api.',
+      'This token has more rights than needed ({s}): ask for one limited to api.',
+      'Dieses Token hat mehr Rechte als nötig ({s}): Fordern Sie eines an, das auf api beschränkt ist.',
+      'Este token tiene más derechos de los necesarios ({s}): pida uno limitado a api.'
+    ],
     // de access.js
     access: ['Accès aux données', 'Data access', 'Datenzugang', 'Acceso a los datos'],
     // de settings.js
@@ -129,6 +146,20 @@
   /** Texte échappé dont les {nom} sont remplacés par les valeurs de v (déjà en HTML) ; un nom inconnu reste tel quel. */
   const fill = (text, v) => esc(text).replace(/\{(\w+)\}/g, (m, k) => v[k] ?? m);
 
+  /** Ce que le jeton dit de lui (`whoami()` du transport GitLab : { bot, scopes, expiresAt }) en phrases d'avertissement, dans la langue de `t` : sans expiration ou à plus d'un an, des droits au-delà de ceux que le transport emploie
+   *  (api, read_api, read_repository, write_repository). Le jeton personnel n'y est pas : chaque écran le dit à sa façon (une question à « Rejoindre », un avertissement à la carte Accès). */
+  function tokenWarnings(t, who) {
+    const out = [],
+      day = Date.parse(who?.expiresAt || '');
+    if (!who?.expiresAt || !(day - Date.now() <= 365 * 864e5)) out.push(t(T.tokenExpiry));
+    const extra = Array.isArray(who?.scopes) ? who.scopes.filter(s => !['api', 'read_api', 'read_repository', 'write_repository']
+      .includes(s)) : [];
+    if (extra.length) out.push(t(T.tokenScopes, {
+      s: extra.join(', ')
+    }));
+    return out;
+  }
+
   window.SogSettingsKit = {
     ROOT,
     esc,
@@ -143,6 +174,7 @@
     airlineDoc,
     howtoHtml,
     link,
-    fill
+    fill,
+    tokenWarnings
   };
 })();

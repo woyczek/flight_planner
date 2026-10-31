@@ -882,6 +882,8 @@ Token; die Netzwerk-IDs; zuletzt „Abschließen und synchronisieren“, dann di
 auf dem Gerät: Eine Karte der Einstellungen bietet an, dort fortzusetzen, wo Sie waren. Das Tutorial „Der
 Fluggesellschaft beitreten“ folgt denselben Schritten.
 
+**Beitritt zu einem GitLab-Projekt (Pilot).** Ist die empfangene Konfiguration ein GitLab-Projekt, erstellen Sie nichts: kein Konto, keine Einladung, kein Token. Der Assistent hat nur drei Bildschirme: die gelesene Konfiguration (Fluggesellschaft, Projekt), dann „Das Token einfügen“ — fügen Sie das Token ein, das der Administrator Ihnen getrennt gesendet hat (nie im Link); Ihr Kürzel wird aus der Konfiguration gelesen, Sie tippen es nicht — dann „Beenden und synchronisieren“. Ihre VID-, CID- und SimBrief-Kennungen tragen Sie später unter Einstellungen › Identität ein. Bevor das Token angenommen wird, fragt die App GitLab, um welches Token es sich handelt. Ein persönliches Token (es gilt für alle Ihre Projekte) löst eine Frage aus: Bevorzugen Sie das Projekt-Token vom Administrator; antworten Sie „Nein“, wird nichts gespeichert. Ein Token ohne Ablaufdatum (oder mit mehr als einem Jahr) oder mit mehr Rechten als nötig wird mit einer Warnzeile gemeldet, ohne Sie zu blockieren. Die Karte „Zugang zu den Daten“ sagt dasselbe über ein persönliches Token, ohne Frage: Allein mit Ihrem eigenen Repository ist ein persönliches Token das richtige.
+
 **Nicht mehr als die Datei.** Nur was die Konfiguration enthält, wird eingerichtet, und der Zugang wird erst
 gespeichert, wenn das Token getestet ist; „Testen“ sagt, was nicht stimmt: Einladung noch nicht angenommen, Token falsch
 kopiert oder abgelaufen, Token ohne Recht auf den Inhalt. Ein klassisches Token öffnet alle Repositorys des Kontos: Für
@@ -964,4 +966,4 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: 845828ff643a -->
+<!-- fr: 5bb5ad1309e3 -->

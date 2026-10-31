@@ -94,12 +94,7 @@
       'Sie erhalten dann eine E-Mail von GitHub: Öffnen Sie sie und NEHMEN Sie die Einladung AN, oder öffnen Sie direkt {inv}. Solange sie nicht angenommen ist, sieht das Token das Repository nicht.',
       'Recibirá entonces un correo de GitHub: ábralo y ACEPTE la invitación, o abra directamente {inv}. Mientras no esté aceptada, el token no ve el repositorio.'
     ),
-    s3Gitlab: L4('L’administrateur vous ajoute au projet {w} avec le rôle Developer ; {h} vous prévient par mail.',
-      'The administrator adds you to the project {w} with the Developer role; {h} tells you by email.',
-      'Der Administrator fügt Sie dem Projekt {w} mit der Rolle Developer hinzu; {h} benachrichtigt Sie per E-Mail.',
-      'El administrador le añade al proyecto {w} con el rol Developer; {h} le avisa por correo.'),
     s3Done: L4('Invitation acceptée', 'Invitation accepted', 'Einladung angenommen', 'Invitación aceptada'),
-    s3DoneGitlab: L4('Ajouté au projet', 'Added to the project', 'Zum Projekt hinzugefügt', 'Añadido al proyecto'),
     s3Note: L4('L’accès se vérifie au pas 5, une fois le jeton créé.', 'The access is checked at step 5, once the token is created.',
       'Der Zugang wird in Schritt 5 geprüft, sobald das Token erstellt ist.',
       'El acceso se comprueba en el paso 5, una vez creado el token.'),
@@ -168,27 +163,6 @@
       '«Permissions» › «Repository permissions» › «Contents»: «Read and write».',
       '«Generate token», y copie el token enseguida: no vuelve a mostrarse.'
     ]),
-    glSteps: L4([
-      'Ouvrez {new} (votre avatar › « Edit profile » › « Access tokens »), puis « Add new token ».',
-      '« Token name » : SOG Pilote. « Expiration date » : dans un an.',
-      '« Select scopes » : api.',
-      '« Create personal access token », puis copiez le jeton tout de suite : il ne se revoit plus.'
-    ], [
-      'Open {new} (your avatar › “Edit profile” › “Access tokens”), then “Add new token”.',
-      '“Token name”: SOG Pilot. “Expiration date”: in one year.',
-      '“Select scopes”: api.',
-      '“Create personal access token”, then copy the token at once: it is never shown again.'
-    ], [
-      'Öffnen Sie {new} (Ihr Avatar › „Edit profile“ › „Access tokens“), dann „Add new token“.',
-      '„Token name“: SOG Pilot. „Expiration date“: in einem Jahr.',
-      '„Select scopes“: api.',
-      '„Create personal access token“, dann kopieren Sie das Token sofort: Es wird nie wieder angezeigt.'
-    ], [
-      'Abra {new} (su avatar › «Edit profile» › «Access tokens»), luego «Add new token».',
-      '«Token name»: SOG Pilot. «Expiration date»: dentro de un año.',
-      '«Select scopes»: api.',
-      '«Create personal access token», y copie el token enseguida: no vuelve a mostrarse.'
-    ]),
     s4Done: L4('Jeton copié', 'Token copied', 'Token kopiert', 'Token copiado'),
     howto: L4('Le mode d’emploi de votre compagnie', 'Your airline’s how-to', 'Die Anleitung Ihrer Fluggesellschaft',
       'Las instrucciones de su aerolínea'),
@@ -201,6 +175,11 @@
       'Pegue el token copiado y luego «Probar». Queda solo en este dispositivo y nunca vuelve a mostrarse; no lo envíe nunca en un mensaje.'
     ),
     token: L4('Jeton', 'Token', 'Token', 'Token'),
+    s5Gl: L4(
+      'Collez le jeton reçu de l’administrateur (envoyé à part, jamais dans le lien). Votre trigramme vient de la configuration.',
+      'Paste the token you received from the administrator (sent apart, never in the link). Your trigram comes from the configuration.',
+      'Fügen Sie das Token ein, das Sie vom Administrator erhalten haben (getrennt gesendet, nie im Link). Ihr Kürzel stammt aus der Konfiguration.',
+      'Pegue el token que recibió del administrador (enviado aparte, nunca en el enlace). Su trigrama viene de la configuración.'),
     clone: L4('Cloner avec le jeton', 'Clone with the token', 'Mit dem Token klonen', 'Clonar con el token'),
     testing: L4('Test…', 'Testing…', 'Test…', 'Probando…'),
     ok: L4('Accès vérifié : le dépôt répond, branche {b}. Enregistré sur cet appareil.',
@@ -276,8 +255,10 @@
     done: {}
   });
 
-  /** Pas utiles pour cet accès : tous, ou 1, 6, 7 quand l'accès ne se règle pas ici. */
-  const stepsFor = access => ['github', 'clone', 'adopt'].includes(access) ? [1, 2, 3, 4, 5, 6, 7] : [1, 6, 7];
+  /** Pas utiles pour cet accès et ce dépôt (d : le `data` de la configuration) : 1, 5, 7 pour un projet GitLab (ni compte, ni invitation, ni jeton à créer : l'administrateur envoie le jeton) ; tous, ou 1, 6, 7 quand l'accès ne se règle pas ici. */
+  const stepsFor = (access, d) => ['github', 'clone', 'adopt'].includes(access) ? (d && SogConfig.kind(d) === 'gitlab' ? [1, 5, 7] : [1,
+    2, 3, 4, 5, 6, 7
+  ]) : [1, 6, 7];
 
   /** Dessine l'assistant dans view. h : { t, esc, fld, own, FD, c, access, remote, L, setup, sameRepo, confirmOpen, airlineDoc,
    *  AIRLINE, howtoHtml, again, pick (choix de fichier), linkify }. */
@@ -299,7 +280,7 @@
       kind = lk?.kind,
       host = lk ? lk.host : '',
       classic = kind === 'github' && d?.ownerType !== 'Organization', // dépôt d'un utilisateur (ou propriétaire inconnu)
-      steps = stepsFor(h.access),
+      steps = stepsFor(h.access, d),
       step = steps.includes(s.step) ? s.step : steps[0],
       idx = steps.indexOf(step),
       done = s.done || {};
@@ -308,7 +289,8 @@
     const {
       link,
       fill,
-      T: K // textes communs des Réglages (kit.js) : les lignes égales dans les quatre langues y sont une fois
+      T: K, // textes communs des Réglages (kit.js) : les lignes égales dans les quatre langues y sont une fois
+      tokenWarnings
     } = window.SogSettingsKit;
     const list = (row, v) => `<ol class="f-join-steps">${(row[['fr', 'en', 'de', 'es'].indexOf(t(['fr', 'en', 'de', 'es']))] || row[0]).map(r => `<li>${fill(t([r]), v)}</li>`).join('')}</ol>`,
       check = (k, row) => `<label class="f-check"><input type="checkbox" data-jdone="${k}" ${done[k] ? 'checked' : ''}>${esc(t(row))}</label>`;
@@ -335,14 +317,14 @@
       <div class="f-row"><label class="f-check"><input type="radio" name="jAcc" data-jacc="yes" ${s.account === 'yes' ? 'checked' : ''}>${esc(t(T.yes))}</label><label class="f-check"><input type="radio" name="jAcc" data-jacc="no" ${s.account === 'no' ? 'checked' : ''}>${esc(t(T.no))}</label></div>
       ${classic ? `<p class="f-warn">${esc(t(T.dedicated))}</p>` : ''}${s.account === 'no' ? list(T.create, V) : ''}${s.account ? h.fld('jUser', [t(T.user).replace('{h}', host)], s.user || '') : ''}`;
     if (step === 3) body = `<p>${fill(t(T.s3Give), { u: esc(s.user || '?'), r: esc(d.repo) })}</p><div class="f-row"><button type="button" data-jact="copyUser">${esc(t(T.copyUser))}</button></div>
-      <p>${kind === 'github' ? fill(t(T.s3Accept), V) : fill(t(T.s3Gitlab), V)}</p>${check(3, kind === 'github' ? T.s3Done : T.s3DoneGitlab)}<p class="f-muted">${esc(t(T.s3Note))}</p>`;
+      <p>${fill(t(T.s3Accept), V)}</p>${check(3, T.s3Done)}<p class="f-muted">${esc(t(T.s3Note))}</p>`;
     if (step === 4) {
       const how = cfg.howto?.token || {},
         text = how[t(['fr', 'en', 'de', 'es'])] || how.fr || '';
-      body = `<p>${fill(t(T.s4Hint), V)}</p>${list(classic ? T.ghClassic : kind === 'github' ? T.ghSteps : T.glSteps, V)}${classic ? `<p class="f-warn">${esc(t(T.classicNote))}</p>` : ''}${check(4, T.s4Done)}
+      body = `<p>${fill(t(T.s4Hint), V)}</p>${list(classic ? T.ghClassic : T.ghSteps, V)}${classic ? `<p class="f-warn">${esc(t(T.classicNote))}</p>` : ''}${check(4, T.s4Done)}
         ${text ? `<details class="f-cfghow"><summary>${esc(t(T.howto))}</summary><div class="f-doc">${h.howtoHtml(text)}</div></details>` : ''}`;
     }
-    if (step === 5) body = `<p>${esc(t(T.s5Hint))}</p>${h.fld('jToken', T.token, '', { type: 'password' })}<p class="f-msg" data-msg>${done[5] ? esc(t(T.ok, { b: d.branch })) : ''}</p>
+    if (step === 5) body = `<p>${esc(t(kind === 'gitlab' ? T.s5Gl : T.s5Hint))}</p>${kind === 'gitlab' ? `<dl class="f-dl"><dt>${esc(t(K.cfgPilot))}</dt><dd data-jtri>${esc(cfg.identity.trigram)}</dd></dl>` : ''}${h.fld('jToken', T.token, '', { type: 'password' })}<p class="f-msg" data-msg>${done[5] ? esc(t(T.ok, { b: d.branch })) : ''}</p>
       <div class="f-row"><button type="button" class="primary" data-jact="test">${esc(t(h.access === 'github' ? K.test : T.clone))}</button></div>`;
     if (step === 6) {
       const id = h.c.identity();
@@ -455,24 +437,49 @@
           token = f?.value.trim() || '';
         if (!token) return say(t(T.needTest), 'warn');
         say(t(T.testing), 'warn');
+        /** Le message d'un échec du test (hors ligne, 404, 401, 403, sinon le texte du transport) et sa gravité : celui de « Tester » depuis toujours. */
+        const failure = err => [err?.offline ? t(T.offline) : err?.status === 404 ? t(T.e404) : err?.status === 401 ? t(T.e401) :
+          err?.status === 403 ? t(T.e403) : err?.message || String(err),
+          err?.offline ? 'warn' : 'err'
+        ];
+        // GitLab : l'API de l'instance de la configuration (le transport ne connaît que github.com et les instances GitLab ; le jeton ne part que vers cet hôte) ;
+        // GitHub : api.github.com (jamais une api reçue)
+        const g = {
+          repo: d.repo,
+          branch: d.branch,
+          token,
+          ...(kind === 'gitlab' ? {
+            provider: 'gitlab',
+            api: `https://${d.host}${SogConfig.PROVIDER_TABLE.gitlab.apiPath}`
+          } : {})
+        };
+        /** Le jeton GitLab dit ce qu'il est (§ 10.36, whoami du transport) avant d'être accepté : un jeton personnel est une question (non : rien n'est gardé), une expiration absente ou à plus d'un an et des droits
+         *  en trop sont des avertissements dits à la fin ; null s'il faut s'arrêter (échec dit, ou refus à la question), sinon la liste des avertissements. */
+        const inspect = async () => {
+          let who;
+          try {
+            who = await h.FD.gitlab(g).whoami();
+          } catch (err) {
+            say(...failure(err));
+            return null;
+          }
+          if (who.bot !== true && !await h.c.ask(`${t(K.tokenPersonal)} ${t(K.tokenContinue)}`)) {
+            say('');
+            return null;
+          }
+          return tokenWarnings(t, who);
+        };
+        let warn = [];
         if (h.access === 'github') {
-          // GitLab : l'API de l'instance de la configuration (le transport ne connaît que github.com et les instances GitLab ; le jeton ne
-          // part que vers cet hôte) ; GitHub : api.github.com (jamais une api reçue)
-          const g = {
-            repo: d.repo,
-            branch: d.branch,
-            token,
-            ...(kind === 'gitlab' ? {
-              provider: 'gitlab',
-              api: `https://${d.host}${SogConfig.PROVIDER_TABLE.gitlab.apiPath}`
-            } : {})
-          };
           try {
             await h.FD.github(g).head();
           } catch (err) {
-            return say(err?.offline ? t(T.offline) : err?.status === 404 ? t(T.e404) : err?.status === 401 ? t(T.e401) : err
-              ?.status === 403 ? t(T.e403) : err?.message || String(err),
-              err?.offline ? 'warn' : 'err');
+            return say(...failure(err));
+          }
+          if (kind === 'gitlab') {
+            const w = await inspect();
+            if (!w) return;
+            warn = w;
           }
           const old = h.FD.github.config();
           if (old && old.repo !== d.repo && !await h.c.ask(t(T.replace, {
@@ -480,6 +487,11 @@
             }))) return say('');
           h.FD.github.save(g);
         } else {
+          if (kind === 'gitlab') {
+            const w = await inspect();
+            if (!w) return;
+            warn = w;
+          }
           // poste : le lanceur clone (ou reprend) data/ avec le jeton ; il peut demander confirmation dans sa fenêtre
           b.disabled = true;
           const r = await h.setup(h.access, {
@@ -506,9 +518,18 @@
             5: true
           }
         });
-        return say(t(T.ok, {
+        if (kind === 'gitlab') {
+          // pas de pas 6 pour un projet GitLab : le trigramme de la configuration est écrit ici (même document, mêmes champs ; VID, CID et SimBrief restent ceux de l'appareil)
+          await h.own.put('device/identity.json', {
+            ...h.c.identity(),
+            trigram: cfg.identity.trigram,
+            updated_at: new Date().toISOString()
+          });
+          await h.c.reload();
+        }
+        return say([t(T.ok, {
           b: d.branch
-        }), 'ok');
+        }), ...warn].join(' '), warn.length ? 'warn' : 'ok');
       }
       if (act === 'finish') {
         b.disabled = true;

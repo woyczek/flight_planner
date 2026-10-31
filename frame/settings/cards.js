@@ -25,7 +25,7 @@
       access
     } = env;
     if (join.cfg && !join.finished && !join.quit) {
-      const steps = SogJoin.stepsFor(access);
+      const steps = SogJoin.stepsFor(access, join.cfg?.data);
       return `<div class="f-card" data-card="joinresume"><h2>${esc(t(SogJoin.T.title))}</h2><p>${esc(t(T.joinResume, { n: Math.max(1, steps.indexOf(join.step) + 1), m: steps.length }))}</p>
         <div class="f-row"><a class="f-btn primary" href="#settings?join=1">${esc(t(T.joinGo))}</a></div></div>`;
     }

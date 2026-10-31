@@ -263,6 +263,8 @@ utilisateur, à grain fin pour celui d'une organisation) ; le jeton collé et te
 Terminer et synchroniser », puis les données hors ligne. Les cases cochées restent sur l'appareil : une carte des
 réglages propose de reprendre là où vous en étiez. Le tutoriel « Rejoindre la compagnie » suit les mêmes pas.
 
+**Rejoindre pour un projet GitLab (pilote).** Quand la configuration reçue est un projet GitLab, vous n'avez rien à créer : ni compte, ni invitation, ni jeton. L'assistant n'a que trois écrans : la configuration lue (compagnie, projet), puis « Coller le jeton » — collez le jeton que l'administrateur vous a envoyé à part (jamais dans le lien) ; votre trigramme est lu de la configuration, vous ne le tapez pas — puis « Terminer et synchroniser ». Vos identifiants VID, CID et SimBrief se renseignent plus tard dans Réglages › Identité. Avant d'accepter le jeton, l'appli demande à GitLab de quel jeton il s'agit. Un jeton personnel (qui vaut pour tous vos projets) donne une question : préférez le jeton de projet demandé à l'administrateur ; si vous répondez « Non », rien n'est enregistré. Un jeton sans date d'expiration (ou à plus d'un an), ou qui a plus de droits que nécessaire, est signalé par une ligne d'avertissement, sans vous bloquer. La carte « Accès aux données » dit la même chose d'un jeton personnel, sans question : seul avec votre propre dépôt, un jeton personnel est le bon.
+
 **Rien de plus que le fichier.** Seul ce que contient la configuration est réglé, et l'accès n'est enregistré qu'une
 fois le jeton testé ; « Tester » dit ce qui ne va pas : invitation pas encore acceptée, jeton mal copié ou expiré, jeton
 sans droit sur le contenu. Un jeton classique ouvre tous les dépôts du compte : pour le dépôt d'un utilisateur, un

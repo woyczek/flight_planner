@@ -1979,8 +1979,7 @@ def a51(c):
     # the Access side without a launcher: a GitLab configuration is applied on the device, like a GitHub one
     state['up'] = False
     got = c.js("""() => SogConfig.validate({ schema: 'sog-config/1', identity: { trigram: 'ABC' }, data: { host: 'git.example.test', repo: 'grp/proj', branch: 'main', provider: 'gitlab' } }).cfg""")
-    sent = []
-    c.context.route(re.compile(r'https://git\.example\.test/api/v4/'), lambda r: (sent.append(r.request.headers.get('private-token')), r.fulfill(status=200, content_type='application/json', body=json.dumps({'commit': {'id': 'abc123'}})))[1])
+    sent = _gl_instance(c, 'git.example.test', who={'bot': True, 'scopes': ['api'], 'expires': '2099-01-01'})   # the instance answers branch, user and token alike
     c.open('settings', docs=LEVEL3 + [['device/join.json', {'cfg': got, 'step': 5, 'done': {}}, 'cache']])
     c.page.evaluate("location.hash = '#settings?join=1'")
     c.until("!!document.querySelector('[data-jact=\"test\"]')", timeout=15000, what='the token step is offered (the steps of an access set here)')
@@ -1990,7 +1989,7 @@ def a51(c):
     c.until("!!window.FrameData?.github?.config()", timeout=15000, what='the access is saved')
     saved = c.js("(() => { const g = FrameData.github.config(); return { provider: g.provider, api: g.api, repo: g.repo } })()")
     c.eq(saved, {'provider': 'gitlab', 'api': 'https://git.example.test/api/v4', 'repo': 'grp/proj'}, 'the device now reads the GitLab project of the configuration', what='saved access')
-    c.ok(sent and all(x == 'test-token' for x in sent), str(sent), 'the token was sent to the configuration’s host, and only there (the route catches that host alone)')
+    c.ok(sent and all(x[1] == 'test-token' for x in sent), str(sent), 'the token was sent to the configuration’s host, and only there (the route catches that host alone)')
 
 
 @case('A56', 'A configuration never imports an api: a forged « Join » link cannot send the pilot\u2019s token to another host', 'A', designs=('standard',), screens=False,
@@ -2534,4 +2533,155 @@ def a69(c):
     cfg = c.js("(l) => SogConfig.unpack(l.split('config=')[1])", link)
     c.eq([cfg['data']['provider'], cfg['data']['repo']], ['github', 'acme/data'], 'the configuration carries the real repository (github)', what='configuration')
     c.eq(c.js(f"document.querySelector('{box} [data-apmsg]').value"), _ap_msg(c.lang, 'Léa', link), 'the message is the same', what='message')
+    c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ A70 .. A72
+def _gl_instance(c, host, who):
+    """A stub of a GitLab instance (https://<host>/api/v4/) as the transport reads it: the branch, `/user` (bot) and `/personal_access_tokens/self` (scopes, expires_at).
+    `who` { bot, scopes, expires } is read at each call (a case changes it between steps); returns the list of [path, private-token] seen."""
+    calls = []
+
+    def handler(route):
+        path = urllib.parse.urlparse(route.request.url).path
+        calls.append([path, route.request.headers.get('private-token')])
+        if path.endswith('/user'):
+            body = {'id': 7, 'username': 'project_1_bot', 'bot': who['bot']}
+        elif path.endswith('/personal_access_tokens/self'):
+            body = {'scopes': who['scopes'], 'expires_at': who['expires']}
+        else:
+            body = {'commit': {'id': 'abc123'}}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(rf'https://{re.escape(host)}/api/v4/'), handler)
+    return calls
+
+
+def _gl_join(c, step=1):
+    """Opens « Rejoindre la compagnie » for a GitLab configuration (gitlab.com, acme/data, trigram ABC) on a device with no launcher, the device\u2019s own trigram and IDs seeded."""
+    c.open('settings', docs=LEVEL3)
+    c.until("!!window.SogConfig && !!SogConfig.validate", what='the configuration helper is loaded')
+    cfg = c.js("() => SogConfig.validate({ schema: 'sog-config/1', identity: { trigram: 'ABC' }, data: { host: 'gitlab.com', repo: 'acme/data', branch: 'main', provider: 'gitlab' } }).cfg")
+    c.open('settings', docs=LEVEL3 + [['device/join.json', {'cfg': cfg, 'step': step, 'done': {}}, 'cache']], trigram='ZZZ', identity={'ivao': '1234', 'vatsim': '5678', 'simbrief': 'sb'})
+    c.page.evaluate("location.hash = '#settings?join=1'")
+    c.until(f"!!document.querySelector('[data-card=\"join\"][data-step=\"{step}\"]')", timeout=15000, what=f'the assistant is at step {step}')
+
+
+def _gl_counter(c):
+    """The « Step n of m » line of the assistant, as [n, m]."""
+    n, m = c.js("(() => { const t = document.querySelector('[data-card=\"join\"] > p.f-muted').textContent; return t.match(/\\d+/g).map(Number) })()")
+    return [n, m]
+
+
+def _gl_test(c, token='test-token'):
+    """At step 5, types the token and presses « Tester »."""
+    c.page.fill('input[data-f="jToken"]', token)
+    c.tap('[data-jact="test"]')
+
+
+@case('A70', 'Join the airline, a GitLab configuration on a device: steps 1, 5, 7; the token the administrator sent, a project token accepted without a question, the trigram written', 'A', designs=('standard',),
+      screens=False, night=False, rule='frame/settings SPEC 7 (§ 10.36 part 3): no account, no invitation, no token to create for a GitLab project: step 1, step 5 (the trigram read from the configuration, the token pasted), step 7; a project token (bot, api, 90 days) is accepted with no question, the access and the trigram are written, IVAO / VATSIM / SimBrief stay')
+def a70(c):
+    import datetime
+    c.context.route(re.compile(r'/__setup/'), lambda r: r.abort())
+    soon = (datetime.datetime.now(datetime.timezone.utc).date() + datetime.timedelta(days=90)).isoformat()
+    calls = _gl_instance(c, 'gitlab.com', {'bot': True, 'scopes': ['api'], 'expires': soon})
+    _gl_join(c)
+    c.eq(_gl_counter(c), [1, 3], 'three steps: the configuration read, the token, the end', what='steps')
+    c.tap('[data-jact="next"]')
+    c.until("!!document.querySelector('[data-card=\"join\"][data-step=\"5\"]')", what='step 1 leads to step 5')
+    c.eq(_gl_counter(c), [2, 3], 'step 5 is the second of three', what='counter')
+    c.eq(c.text('[data-card="join"] [data-jtri]'), 'ABC', 'the trigram is read from the configuration, shown and not typed', what='trigram')
+    c.eq(c.count('[data-card="join"] input[data-f="jTri"], [data-card="join"] input[data-f="jUser"]'), 0, 'no field for it, no account name', what='no fields')
+    _gl_test(c)
+    c.until("!!document.querySelector('[data-card=\"join\"] [data-msg]')?.textContent", timeout=15000, what='the test answers')
+    c.eq([c.count('.f-modal'), c.attr('[data-card="join"] [data-msg]', 'data-kind')], [0, 'ok'], 'a project token: no question, no warning', what='project token')
+    saved = c.js("(() => { const g = FrameData.github.config(); return [g?.provider, g?.api, g?.repo] })()")
+    c.eq(saved, ['gitlab', 'https://gitlab.com/api/v4', 'acme/data'], 'the access is saved on the GitLab project', what='saved access')
+    ident = c.doc('device/identity.json')
+    c.eq([ident['trigram'], ident['ivao'], ident['vatsim'], ident['simbrief']], ['ABC', '1234', '5678', 'sb'], 'the trigram of the configuration is written; the IDs of the device stay', what='identity')
+    c.ok(any(x[0].endswith('/user') for x in calls) and any(x[0].endswith('/personal_access_tokens/self') for x in calls) and all(x[1] == 'test-token' for x in calls), str(calls),
+         'the token was asked who it is (user, token), and sent to gitlab.com only')
+    c.eq(c.js("document.querySelector('input[data-f=\"jToken\"]').value"), '', 'the token does not stay in the page', what='token wiped')
+    c.tap('[data-jact="next"]')
+    c.until("!!document.querySelector('[data-card=\"join\"][data-step=\"7\"]')", what='step 5 leads to step 7')
+    c.eq(_gl_counter(c), [3, 3], 'the last step is the third', what='last step')
+    c.check_errors()
+
+
+@case('A71', 'Join the airline, a GitLab token that says what it is: a personal token is a question (No saves nothing), no expiry or too many rights is a warning', 'A', designs=('standard',),
+      screens=False, night=False, rule='frame/settings SPEC 7 (§ 10.36 part 3, the token check): whoami before accepting; a personal token asks, No keeps nothing and Yes saves; an expiry missing or beyond a year, rights beyond api / read / write repository: said, not blocking')
+def a71(c):
+    import datetime
+    c.context.route(re.compile(r'/__setup/'), lambda r: r.abort())
+    soon = (datetime.datetime.now(datetime.timezone.utc).date() + datetime.timedelta(days=90)).isoformat()
+    who = {'bot': False, 'scopes': ['api'], 'expires': soon}
+    _gl_instance(c, 'gitlab.com', who)
+    K = 'frame/settings/kit.js'
+    # a personal token: the question, the words of the user
+    _gl_join(c, 5)
+    _gl_test(c)
+    c.until("!!document.querySelector('.f-modal [data-no]')", timeout=15000, what='a personal token is a question')
+    c.eq(norm(c.text('.f-modal p')), norm(tx(K, 'tokenPersonal', c.lang) + ' ' + tx(K, 'tokenContinue', c.lang)), 'the question says it is a personal token and asks to continue', what='question')
+    c.tap('.f-modal [data-no]')
+    c.wait(500)
+    c.eq([c.js('!FrameData.github.config()'), c.doc('device/identity.json')['trigram'], c.js("document.querySelector('[data-card=\"join\"] [data-msg]').textContent")], [True, 'ZZZ', ''],
+         'No: no access saved, the trigram not written, nothing said', what='No')
+    c.tap('[data-jact="test"]')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=10000, what='asked again (the token field is kept until it is accepted)')
+    c.tap('.f-modal [data-ok]')
+    c.until("!!window.FrameData?.github?.config()", timeout=15000, what='Yes saves the access')
+    c.eq(c.doc('device/identity.json')['trigram'], 'ABC', 'and writes the trigram', what='Yes')
+    # a project token with no expiry: a warning, saved anyway
+    who.update({'bot': True, 'expires': None})
+    _gl_join(c, 5)
+    _gl_test(c)
+    c.until("!!document.querySelector('[data-card=\"join\"] [data-msg]')?.textContent", timeout=15000, what='the test answers')
+    c.eq([c.attr('[data-card="join"] [data-msg]', 'data-kind'), norm(tx(K, 'tokenExpiry', c.lang)) in norm(c.text('[data-card="join"] [data-msg]')), c.count('.f-modal'), c.js('!!FrameData.github.config()')],
+         ['warn', True, 0, True], 'no expiry: a warning line, no question, saved', what='no expiry')
+    # an expiry beyond a year, and rights beyond what the transport uses
+    far = (datetime.datetime.now(datetime.timezone.utc).date() + datetime.timedelta(days=400)).isoformat()
+    who.update({'expires': far, 'scopes': ['api', 'sudo']})
+    _gl_join(c, 5)
+    _gl_test(c)
+    c.until("!!document.querySelector('[data-card=\"join\"] [data-msg]')?.textContent", timeout=15000, what='the test answers')
+    text = norm(c.text('[data-card="join"] [data-msg]'))
+    c.ok(norm(tx(K, 'tokenExpiry', c.lang)) in text and norm(tx(K, 'tokenScopes', c.lang).replace('{s}', 'sudo')) in text, text, 'more than a year away: the expiry warning; scopes beyond api: the rights warning naming them')
+    c.check_errors()
+
+
+@case('A72', 'Access card, a personal GitLab token: a warning in the card, saved anyway; a project token in order, nothing said', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame/settings SPEC 3 (§ 10.36 part 3): the Access card tests and saves a GitLab token whatever it is (the user alone with their repository needs a personal one); it warns, in its message, of a personal token, an expiry missing or beyond a year')
+def a72(c):
+    import datetime
+    c.context.route(re.compile(r'/__setup/'), lambda r: r.abort())
+    soon = (datetime.datetime.now(datetime.timezone.utc).date() + datetime.timedelta(days=90)).isoformat()
+    who = {'bot': False, 'scopes': ['api'], 'expires': None}
+    _gl_instance(c, 'gitlab.com', who)
+    K = 'frame/settings/kit.js'
+    c.open('settings', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-card=access] [data-f=repo]')", timeout=15000, what='the Access card')
+    c.js("document.querySelector('[data-card=access]').closest('details')?.setAttribute('open', '')")
+    c.page.fill('[data-card="access"] [data-f="repo"]', 'gitlab.com/acme/data')
+    c.page.fill('[data-card="access"] [data-f="token"]', 'test-token')
+    c.tap('[data-card="access"] [data-act="test"]')
+    c.until("!!document.querySelector('[data-card=access] [data-msg]')?.textContent.trim() && document.querySelector('[data-card=access] [data-msg]').textContent !== '…'", timeout=15000, what='the test answers')
+    text = norm(c.text('[data-card="access"] [data-msg]'))
+    c.ok(c.attr('[data-card="access"] [data-msg]', 'data-kind') == 'warn' and norm(tx(K, 'tokenPersonal', c.lang)) in text and norm(tx(K, 'tokenExpiry', c.lang)) in text, text,
+         'Test: the personal token and the missing expiry are said as a warning, not an error')
+    c.page.fill('[data-card="access"] [data-f="token"]', 'test-token')
+    c.tap('[data-card="access"] [data-act="access"]')
+    c.until("!!window.FrameData?.github?.config()", timeout=15000, what='the access is saved')
+    c.until("!!document.querySelector('[data-card=access] [data-msg]')?.textContent.trim()", timeout=15000, what='the warning is in the card after saving')
+    c.ok(norm(tx(K, 'tokenPersonal', c.lang)) in norm(c.text('[data-card="access"] [data-msg]')) and c.count('.f-modal') == 0, c.text('[data-card="access"] [data-msg]'), 'Save: saved anyway, the warning said in the card, no question')
+    # a project token in order: nothing to say
+    who.update({'bot': True, 'expires': soon})
+    c.open('settings', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-card=access] [data-f=repo]')", timeout=15000, what='the Access card again')
+    c.js("document.querySelector('[data-card=access]').closest('details')?.setAttribute('open', '')")
+    c.page.fill('[data-card="access"] [data-f="repo"]', 'gitlab.com/acme/data2')
+    c.page.fill('[data-card="access"] [data-f="token"]', 'test-token')
+    c.tap('[data-card="access"] [data-act="test"]')
+    c.until("!!document.querySelector('[data-card=access] [data-msg]')?.textContent.trim() && document.querySelector('[data-card=access] [data-msg]').textContent !== '…'", timeout=15000, what='the test answers')
+    c.eq([c.attr('[data-card="access"] [data-msg]', 'data-kind'), norm(c.text('[data-card="access"] [data-msg]'))], ['ok', norm(tx('frame/settings/access.js', 'testOk', c.lang).replace('{b}', 'main'))],
+         'a project token with an expiry: the plain « branch read » message', what='plain')
     c.check_errors()

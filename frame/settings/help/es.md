@@ -162,6 +162,8 @@ usuario, de grano fino para el de una organización); el token pegado y probado;
 «Terminar y sincronizar», y luego los datos sin conexión. Las casillas marcadas quedan en el dispositivo: una tarjeta de
 los ajustes propone retomar donde lo dejó. El tutorial «Unirse a la aerolínea» sigue los mismos pasos.
 
+**Unirse a un proyecto GitLab (piloto).** Cuando la configuración recibida es un proyecto GitLab, no crea nada: ni cuenta, ni invitación, ni token. El asistente tiene solo tres pantallas: la configuración leída (aerolínea, proyecto), luego « Pegar el token » — pegue el token que el administrador le envió aparte (nunca en el enlace); su trigrama se lee de la configuración, no lo escribe — y « Terminar y sincronizar ». Sus identificadores VID, CID y SimBrief se rellenan más tarde en Ajustes › Identidad. Antes de aceptar el token, la aplicación pregunta a GitLab de qué token se trata. Un token personal (vale para todos sus proyectos) da una pregunta: prefiera el token de proyecto pedido al administrador; si responde « No », no se guarda nada. Un token sin fecha de caducidad (o a más de un año), o con más derechos de los necesarios, se señala con una línea de aviso, sin bloquearle. La tarjeta « Acceso a los datos » dice lo mismo de un token personal, sin pregunta: solo con su propio repositorio, un token personal es el adecuado.
+
 **Nada más que el archivo.** Solo se configura lo que contiene la configuración, y el acceso solo se guarda una vez
 probado el token; «Probar» dice qué falla: invitación aún no aceptada, token mal copiado o caducado, token sin derecho
 sobre el contenido. Un token clásico abre todos los repositorios de la cuenta: para el repositorio de un usuario, se
@@ -242,4 +244,4 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: 845828ff643a -->
+<!-- fr: 5bb5ad1309e3 -->
