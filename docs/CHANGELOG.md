@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refactor R-S6, no behaviour change** (`modules/data/module.js`; noreg L7, L13, L15, L17–L19): one `finishOp` for the end of an operation (result stored and drawn, ONE notification when seen live, the verb's journal entry, reload) that the endings of build, download, purge, sheets and pickup call with only what differs (summary, notification phrases, entry, reload); one `finishPlan` for the dry plan of purge, sheets and pickup (stopped says nothing, nothing to do is said without a question, else ONE question then the real run); one summary table `SUM_KINDS` keyed by outcome kind that serves the base and the other sets (`summary` and `setSummary` / `setSummaryNotes` merged). Every sentence is unchanged; the « Update all » chain keeps its quiet ends.
 - **Settings: a configuration never imports an API address** (`frame/settings/config.js`, `join.js`, `admin.js`; SPEC § 5; A56;
   security review, line 118) — BEHAVIOUR CHANGE. A forged « Join » link with `data.api` could send the pilot's token to another host
   or to a local service of the workstation. The API now comes from the provider alone: GitHub `api.github.com`, GitLab recomputed from

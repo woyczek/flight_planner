@@ -579,128 +579,96 @@ function runningHtml() {
     ${run.verb === M.PICKUP.verb ? '' : `<ul class="d-zl">${M.zoneRows(opView(set), S.ids, run.verb, set !== 'base').map(r => zoneLineHtml(r, run.verb, set)).join('')}</ul>`}
     <p><button type="button" data-verb="stop"${stopping ? ' disabled' : ''}>${esc(tt(TX.stop))}</button></p></div>`;
 }
-/** Le résumé de fin d'une construction d'un jeu autre que la base : { text, advice, level } d'après la fin calculée par M.outcome. */
-function setSummary(out, set) {
-  const T = TX.setSum,
+/** Les fins possibles d'une construction (les genres de M.outcome), une ligne par genre : le niveau, le conseil (clé de TX.advice pour la base, de TX.setAdvice pour les autres) et la phrase
+ *  de la base [0] et des autres jeux [1] (absente : ce genre n'existe pas pour ce jeu). */
+const SUM_KINDS = {
+  done: {
+    level: 'ok',
+    text: [TX.sumDone, TX.setSum.buildDone]
+  },
+  partial: {
+    level: 'warn',
+    advice: 'partial',
+    text: [TX.sumPartial, TX.setSum.buildPartial]
+  },
+  failed: {
+    level: 'err',
+    advice: 'failed',
+    text: [TX.sumFailed, TX.setSum.buildFailed]
+  },
+  cancelled: {
+    level: 'warn',
+    advice: 'cancelled',
+    text: [TX.sumCancelled, TX.setSum.buildStopped]
+  },
+  interrupted: {
+    level: 'warn',
+    advice: 'interrupted',
+    text: [TX.sumInterrupted, TX.setSum.buildInterrupted]
+  },
+  'no-browser': {
+    level: 'err',
+    text: [TX.sumNoBrowser]
+  },
+  'xplane-in-page': {
+    level: 'err',
+    text: [TX.sumXplane]
+  },
+  'no-codes': {
+    level: 'err',
+    text: [null, TX.setSum.noCodes]
+  },
+  'no-script': {
+    level: 'err',
+    text: [null, TX.setSum.noScript]
+  },
+  'no-pypdf': {
+    level: 'err',
+    text: [null, TX.vfrSum.noPypdf]
+  },
+  'no-cache': {
+    level: 'err',
+    text: [null, TX.vfrSum.noCache]
+  },
+  invalid: {
+    level: 'err',
+    text: [null, TX.vfrSum.invalid]
+  },
+  'merge-pending': {
+    level: 'err',
+    text: [TX.mergePending, TX.mergePending]
+  }
+};
+/** Le résumé de fin d'une construction (aussi le texte de la notification) : { text, advice, level, notes? } d'après la fin calculée par M.outcome. Un seul tableau de genres (SUM_KINDS) pour
+ *  tous les jeux ; le nom des éléments et le libellé viennent du jeu (la base compte des zones, les autres leur propre unité). Un genre que ce jeu ne connaît pas est un échec. Sans trigramme le
+ *  lanceur ne commite pas (points VFR) : une note le dit. */
+function summary(out, set = 'base') {
+  const base = set === 'base',
+    i = base ? 0 : 1,
+    n = out.built.length,
+    unit = base ? 'zone' : M.SETS[set].unit,
     v = {
-      s: tt(TX.setLabel[set]),
-      built: count(M.SETS[set].unit, out.built.length),
+      s: base ? '' : tt(TX.setLabel[set]),
+      built: count(unit, n),
       failed: out.failed.length,
+      zones: out.failed.map(f => f.zone).join(', '),
       items: out.failed.map(f => itemName(set, f.zone)).join(', '),
-      n: count(M.SETS[set].unit, out.built.length)
+      n: base ? n : count(unit, n)
+    },
+    known = M.own(SUM_KINDS, out.kind),
+    row = known?.text[i] ? known : SUM_KINDS.failed,
+    sm = {
+      text: tt(row.text[i], v),
+      level: row.level,
+      ...(row.advice ? {
+        advice: (base ? TX.advice : TX.setAdvice)[row.advice]
+      } : {})
     };
-  return {
-    done: {
-      text: tt(T.buildDone, v),
-      level: 'ok'
-    },
-    partial: {
-      text: tt(T.buildPartial, v),
-      advice: TX.setAdvice.partial,
-      level: 'warn'
-    },
-    failed: {
-      text: tt(T.buildFailed, v),
-      advice: TX.setAdvice.failed,
-      level: 'err'
-    },
-    cancelled: {
-      text: tt(T.buildStopped, v),
-      advice: TX.setAdvice.cancelled,
-      level: 'warn'
-    },
-    interrupted: {
-      text: tt(T.buildInterrupted, v),
-      advice: TX.setAdvice.interrupted,
-      level: 'warn'
-    },
-    'no-codes': {
-      text: tt(T.noCodes, v),
-      level: 'err'
-    },
-    'no-script': {
-      text: tt(T.noScript, v),
-      level: 'err'
-    },
-    'merge-pending': {
-      text: tt(TX.mergePending),
-      level: 'err'
-    },
-    'no-pypdf': {
-      text: tt(TX.vfrSum.noPypdf, v),
-      level: 'err'
-    },
-    'no-cache': {
-      text: tt(TX.vfrSum.noCache, v),
-      level: 'err'
-    },
-    invalid: {
-      text: tt(TX.vfrSum.invalid, v),
-      level: 'err'
-    }
-  } [out.kind] || {
-    text: tt(T.buildFailed, v),
-    advice: TX.setAdvice.failed,
-    level: 'err'
-  };
-}
-/** Le résumé de fin d'une construction d'un jeu autre que la base, avec ses notes : sans trigramme le lanceur ne commite pas, on le dit. */
-function setSummaryNotes(out, set) {
-  const sm = setSummary(out, set);
-  return out.noCommit ? {
+  return !base && out.noCommit ? {
     ...sm,
     level: sm.level === 'ok' ? 'warn' : sm.level,
     notes: [tt(TX.vfrNoCommit)]
   } : sm;
-}
-/** Le résumé de fin (aussi le texte de la notification) : { text, advice, level } d'après la fin calculée par M.outcome. */
-function summary(out, set = 'base') {
-  if (set !== 'base') return setSummaryNotes(out, set);
-  const z = out.failed.map(f => f.zone).join(', '),
-    v = {
-      built: count('zone', out.built.length),
-      failed: out.failed.length,
-      zones: z,
-      n: out.built.length
-    };
-  return {
-    done: {
-      text: tt(TX.sumDone, v),
-      level: 'ok'
-    },
-    partial: {
-      text: tt(TX.sumPartial, v),
-      advice: TX.advice.partial,
-      level: 'warn'
-    },
-    failed: {
-      text: tt(TX.sumFailed, v),
-      advice: TX.advice.failed,
-      level: 'err'
-    },
-    cancelled: {
-      text: tt(TX.sumCancelled, v),
-      advice: TX.advice.cancelled,
-      level: 'warn'
-    },
-    interrupted: {
-      text: tt(TX.sumInterrupted),
-      advice: TX.advice.interrupted,
-      level: 'warn'
-    },
-    'no-browser': {
-      text: tt(TX.sumNoBrowser),
-      level: 'err'
-    },
-    'xplane-in-page': {
-      text: tt(TX.sumXplane),
-      level: 'err'
-    },
-    'merge-pending': {
-      text: tt(TX.mergePending),
-      level: 'err'
-    }
-  } [out.kind];
 }
 /** Une part de phrase au singulier ou au pluriel : TX[key] = [[singulier], [pluriel]]. */
 const plural = (key, n) => tt(TX[key][n === 1 ? 0 : 1], {
@@ -1341,199 +1309,206 @@ async function endRun(me, final, live) {
   S.other = null;
   S.view = final;
   if (dry && !live) return renderBuild(); // le plan terminé avant l'ouverture : il n'est plus à poser
-  if (verb === 'publish') return dry ? endSheetsPlan(me, final, run) : endSheets(final, live, seconds);
-  if (verb === 'pickup') return dry ? endPickupPlan(me, final, run) : endPickup(final, live, seconds);
+  if (verb === 'publish') return dry ? endSheetsPlan(me, final) : endSheets(final, live, seconds);
+  if (verb === 'pickup') return dry ? endPickupPlan(me, final) : endPickup(final, live, seconds);
   if (verb === 'fetch') return endFetch(final, live, seconds, set);
-  if (verb === 'purge') return dry ? endPlan(me, final, live, run) : endPurge(final, live, seconds, set);
+  if (verb === 'purge') return dry ? endPlan(me, final, run) : endPurge(final, live, seconds, set);
   return endBuild(final, live, seconds, set);
 }
-/** Fin d'une construction : le résumé dans le panneau, une notification (si on l'a suivie jusqu'au bout), le journal, puis la
- *  relecture de ce qui est publié. */
-async function endBuild(final, live, seconds, set = 'base') {
-  const out = M.setOutcome(set, 'build', final).out;
+/** La fin commune d'une opération réelle (construction, téléchargement, purge, prise du fichier, fiches) : le résultat dans le panneau du jeu et son dessin, UNE notification (seulement si la fin
+ *  s'est produite sous nos yeux, `live`), l'entrée du journal, puis la relecture de ce qui est publié. Chaque verbe donne ce qui le distingue : `sm` (son résumé : texte et niveau), `note` (les
+ *  phrases de la notification), `entry` (l'entrée de son constructeur) et `reload` (faux : la prise du fichier ne change rien de publié). Dans la chaîne « Tout mettre à jour » (S.chain) la fin se
+ *  tait : ni notification, ni entrée, ni relecture par opération ; la chaîne lit S.lastOp. */
+async function finishOp(set, verb, out, live, {
+  sm,
+  note,
+  entry,
+  reload = true
+}) {
   S.result = {
     set,
-    verb: 'build',
+    verb,
     out
   };
   renderBuild();
-  const sm = summary(out, set),
-    quiet = !!S
-    .chain; // dans la chaîne : ni notification, ni entrée, ni relecture à chaque opération (la chaîne le fait une fois à sa fin)
+  const quiet = !!S.chain;
   S.lastOp = {
     set,
-    verb: 'build',
+    verb,
     out,
     text: sm.text
   };
-  if (live && !quiet) S.ctx.notify([sm.text, ...(sm.notes || [])].join(' · '), sm.level);
-  if (!quiet) journalWrite(M.setEntry(set, 'build', {
-    at: Date.now(),
-    ids: S.ids,
-    seconds,
-    out,
-    job: final.job || final.id
-  }));
-  if (live && !quiet) await load(); // les états des lignes ont changé : même chemin de lecture que l'ouverture
+  if (live && !quiet) S.ctx.notify(note.filter(Boolean).join(' · '), sm.level);
+  if (!quiet) journalWrite(entry);
+  if (live && !quiet && reload) await load(); // les états des lignes ont changé : même chemin de lecture que l'ouverture
 }
-/** Fin d'un téléchargement : le résumé, les sources manuelles et les lignes dans le panneau, une notification (le résumé, et les fichiers
- *  hors synchronisation s'il y en a), le journal (verbe « download »), puis la relecture de ce qui est publié. */
+/** L'entrée du journal d'une opération réelle d'un jeu : celle de son verbe (M.setEntry), pour les éléments du travail (S.ids) et la durée de la marche. */
+const opEntry = (set, verb, out, final, seconds) => M.setEntry(set, verb, {
+  at: Date.now(),
+  ids: S.ids,
+  seconds,
+  out,
+  job: final.job || final.id
+});
+/** Fin d'une construction : le résumé et ses notes dans le panneau. */
+async function endBuild(final, live, seconds, set = 'base') {
+  const out = M.setOutcome(set, 'build', final).out,
+    sm = summary(out, set);
+  return finishOp(set, 'build', out, live, {
+    sm,
+    note: [sm.text, ...(sm.notes || [])],
+    entry: opEntry(set, 'build', out, final, seconds)
+  });
+}
+/** Fin d'un téléchargement : le résumé, les sources manuelles et les lignes dans le panneau ; la notification dit aussi les fichiers hors synchronisation (journal : verbe « download »). */
 async function endFetch(final, live, seconds, set = 'base') {
   const out = M.setOutcome(set, 'fetch', final).out,
     sm = fetchSummary(out, set);
-  S.result = {
-    set,
-    verb: 'fetch',
-    out
-  };
-  renderBuild();
-  const quiet = !!S.chain; // voir endBuild
-  S.lastOp = {
-    set,
-    verb: 'fetch',
-    out,
-    text: sm.text
-  };
-  if (live && !quiet) S.ctx.notify([sm.text, sm.outside].filter(Boolean).join(' · '), sm.level);
-  if (!quiet) journalWrite(M.setEntry(set, 'fetch', {
-    at: Date.now(),
-    ids: S.ids,
-    seconds,
-    out,
-    job: final.job || final.id
-  }));
-  if (live && !quiet) await load();
+  return finishOp(set, 'fetch', out, live, {
+    sm,
+    note: [sm.text, sm.outside],
+    entry: opEntry(set, 'fetch', out, final, seconds)
+  });
 }
-/** Fin d'une purge réelle : le résumé et les phrases des avertissements dans le panneau, une notification, le journal, puis la relecture. */
+/** Fin d'une purge réelle : le résumé et les phrases des avertissements dans le panneau. */
 async function endPurge(final, live, seconds, set = 'base') {
   const out = M.setOutcome(set, 'purge', final).out,
     sm = purgeSummary(out);
-  S.result = {
-    set,
-    verb: 'purge',
-    out
-  };
-  renderBuild();
-  if (live) S.ctx.notify([sm.text, ...sm.notes].join(' · '), sm.level);
-  journalWrite(M.setEntry(set, 'purge', {
-    at: Date.now(),
-    ids: S.ids,
-    seconds,
-    out,
-    job: final.job || final.id
-  }));
-  if (live) await load();
-}
-/** Fin du plan d'une purge (le travail à blanc, jamais journalisé) : rien à retirer, on le dit sans question ; sinon UNE question (les
- *  fichiers, la taille, les éléments, les phrases des avertissements) et, si oui, la purge réelle sur les mêmes éléments. Un plan arrêté,
- *  échoué ou interrompu ne pose aucune question. `run` : la marche du plan (son jeu et les arguments du travail réel). */
-async function endPlan(me, final, live, run) {
-  const set = run?.set || 'base',
-    out = M.setOutcome(set, 'purge', final).out;
-  if (out.kind === 'cancelled') { // « Arrêter » pendant le plan : rien à dire, rien n'a été retiré
-    S.result = null;
-    return renderBuild();
-  }
-  if (out.kind !== 'done' || out.nothing) {
-    S.result = out.kind === 'done' ? {
-      set,
-      verb: 'purge',
-      out,
-      nothing: true
-    } : {
-      set,
-      verb: 'purge',
-      out
-    };
-    renderBuild();
-    const sm = purgeSummary(out, out.kind === 'done');
-    S.ctx.notify([sm.text, ...sm.notes].join(' · '), sm.level);
-    return;
-  }
-  S.result = null;
-  S.asking = true; // les boutons restent gris pendant la question : une opération à la fois
-  renderBuild();
-  const yes = await S.ctx.ask(purgeAsk(out, set), {
-    ok: tt(TX.purge)
+  return finishOp(set, 'purge', out, live, {
+    sm,
+    note: [sm.text, ...sm.notes],
+    entry: opEntry(set, 'purge', out, final, seconds)
   });
-  if (S !== me) return;
-  S.asking = false;
-  if (!yes) { // non : rien n'est retiré, rien n'est dit
-    renderBuild();
-    return;
-  }
-  const real = run?.args || M.setArgs(set, 'purge', {
-    ids: S.ids
-  });
-  await settle(me, await launch(set, 'purge', set === 'base' ? real : {
-    ...real,
-    dry: false
-  }, S.ids), true);
 }
-/** Fin du plan d'une publication de fiches (aircraft/publish à blanc, jamais journalisé) : rien à copier ni à retirer, on le dit sans question ;
- *  sinon UNE question (les fiches à copier et à retirer) et, si oui, la publication réelle, sans dry. Un plan arrêté, échoué ou interrompu ne
- *  pose aucune question. */
-async function endSheetsPlan(me, final, run) {
-  const out = M.sheetsOutcome(final),
-    plan = M.sheetsPlan(final);
-  if (out.kind === 'cancelled') { // « Arrêter » pendant le plan : rien n'a été copié
-    S.result = null;
-    return renderBuild();
-  }
-  if (out.kind !== 'done' || !(plan.copied || plan.removed)) {
-    S.result = {
-      set: M.SHEETS.set,
-      verb: M.SHEETS.verb,
-      out: out.kind === 'done' ? {
-        ...out,
-        copied: 0,
-        removed: 0
-      } : out,
-      nothing: out.kind === 'done'
-    };
-    renderBuild();
-    const sm = sheetsSummary(S.result.out, S.result.nothing);
-    S.ctx.notify(sm.text, sm.level);
-    return;
-  }
-  S.result = null;
-  S.asking = true; // les boutons restent gris pendant la question : une opération à la fois
-  renderBuild();
-  const yes = await S.ctx.ask(tt(TX.sheetsAsk, {
-    c: count('sheet', plan.copied),
-    r: count('sheet', plan.removed),
-    s: M.fmtBytes(plan.bytes, lang())
-  }), {
-    ok: tt(TX.publish)
-  });
-  if (S !== me) return;
-  S.asking = false;
-  if (!yes) { // non : rien n'est copié, rien n'est dit
-    renderBuild();
-    return;
-  }
-  await settle(me, await launch(M.SHEETS.set, M.SHEETS.verb, {
-    dry: false
-  }, []), true);
-}
-/** Fin d'une publication de fiches réelle : le résumé dans le panneau, une notification, le journal, puis la relecture. */
+/** Fin d'une publication de fiches réelle : le résumé dans le panneau. */
 async function endSheets(final, live, seconds) {
   const out = M.sheetsOutcome(final),
     sm = sheetsSummary(out);
-  S.result = {
-    set: M.SHEETS.set,
-    verb: M.SHEETS.verb,
-    out
-  };
+  return finishOp(M.SHEETS.set, M.SHEETS.verb, out, live, {
+    sm,
+    note: [sm.text],
+    entry: M.sheetsEntry({
+      at: Date.now(),
+      seconds,
+      out,
+      job: final.job || final.id
+    })
+  });
+}
+/** Fin d'une prise réelle : le résumé et le conseil « Lancez maintenant Construire » dans le panneau, avec les zips du plan que la prise n'a pas lancés ; rien de publié ne change (pas de relecture). */
+async function endPickup(final, live, seconds) {
+  const out = {
+      ...M.setOutcome('base', M.PICKUP.verb, final).out,
+      blocked: S.pickupBlocked || []
+    },
+    sm = pickupSummary(out);
+  S.pickupBlocked = null;
+  return finishOp('base', M.PICKUP.verb, out, live, {
+    sm,
+    note: [sm.text, sm.hint],
+    entry: opEntry('base', M.PICKUP.verb, out, final, seconds),
+    reload: false
+  });
+}
+/** La fin commune du plan à blanc d'une opération (purge, fiches, prise du fichier ; jamais journalisé) : un plan arrêté ne dit rien ; sans rien à faire (`result` : ce qu'on montre à la place, avec
+ *  `note` et `level` pour la notification) on le dit sans question ; sinon UNE question (`question`, confirmée par `ok`) et `go(yes)` : la suite choisie (lancer l'opération réelle si oui). */
+async function finishPlan(me, {
+  cancelled,
+  result,
+  note,
+  level,
+  question,
+  ok,
+  go
+}) {
+  if (cancelled) { // « Arrêter » pendant le plan : rien n'a été fait
+    S.result = null;
+    return renderBuild();
+  }
+  if (result) {
+    S.result = result;
+    renderBuild();
+    S.ctx.notify(note, level);
+    return;
+  }
+  S.result = null;
+  S.asking = true; // les boutons restent gris pendant la question : une opération à la fois
   renderBuild();
-  if (live) S.ctx.notify(sm.text, sm.level);
-  journalWrite(M.sheetsEntry({
-    at: Date.now(),
-    seconds,
-    out,
-    job: final.job || final.id
-  }));
-  if (live) await load();
+  const yes = await S.ctx.ask(question, {
+    ok
+  });
+  if (S !== me) return;
+  S.asking = false;
+  if (!yes) renderBuild(); // non : rien n'est fait, rien n'est dit
+  return go(yes);
+}
+/** Fin du plan d'une purge : rien à retirer, on le dit sans question ; sinon UNE question (les fichiers, la taille, les éléments, les phrases des avertissements) et, si oui, la purge réelle sur les
+ *  mêmes éléments. Un plan arrêté, échoué ou interrompu ne pose aucune question. `run` : la marche du plan (son jeu et les arguments du travail réel). */
+async function endPlan(me, final, run) {
+  const set = run?.set || 'base',
+    out = M.setOutcome(set, 'purge', final).out,
+    ask = out.kind === 'done' && !out.nothing,
+    sm = ask ? null : purgeSummary(out, out.kind === 'done');
+  return finishPlan(me, {
+    cancelled: out.kind === 'cancelled',
+    result: ask ? null : {
+      set,
+      verb: 'purge',
+      out,
+      ...(out.kind === 'done' ? {
+        nothing: true
+      } : {})
+    },
+    note: sm && [sm.text, ...sm.notes].join(' · '),
+    level: sm?.level,
+    question: ask ? purgeAsk(out, set) : '',
+    ok: tt(TX.purge),
+    go: async yes => {
+      if (!yes) return;
+      const real = run?.args || M.setArgs(set, 'purge', {
+        ids: S.ids
+      });
+      await settle(me, await launch(set, 'purge', set === 'base' ? real : {
+        ...real,
+        dry: false
+      }, S.ids), true);
+    }
+  });
+}
+/** Fin du plan d'une publication de fiches (aircraft/publish à blanc) : rien à copier ni à retirer, on le dit sans question ; sinon UNE question (les fiches à copier et à retirer) et, si oui, la
+ *  publication réelle, sans dry. Un plan arrêté, échoué ou interrompu ne pose aucune question. */
+async function endSheetsPlan(me, final) {
+  const out = M.sheetsOutcome(final),
+    plan = M.sheetsPlan(final),
+    ask = out.kind === 'done' && !!(plan.copied || plan.removed),
+    shown = out.kind === 'done' ? {
+      ...out,
+      copied: 0,
+      removed: 0
+    } : out,
+    sm = ask ? null : sheetsSummary(shown, out.kind === 'done');
+  return finishPlan(me, {
+    cancelled: out.kind === 'cancelled',
+    result: ask ? null : {
+      set: M.SHEETS.set,
+      verb: M.SHEETS.verb,
+      out: shown,
+      nothing: out.kind === 'done'
+    },
+    note: sm?.text,
+    level: sm?.level,
+    question: ask ? tt(TX.sheetsAsk, {
+      c: count('sheet', plan.copied),
+      r: count('sheet', plan.removed),
+      s: M.fmtBytes(plan.bytes, lang())
+    }) : '',
+    ok: tt(TX.publish),
+    go: async yes => {
+      if (yes) await settle(me, await launch(M.SHEETS.set, M.SHEETS.verb, {
+        dry: false
+      }, []), true);
+    }
+  });
 }
 /** Un départ refusé (409 : une autre opération ; 429 : trop tôt ; 404 : lanceur ancien…) : la phrase, une notification. Après un
  *  409 on suit l'opération qui tourne, pour que le bouton redevienne actif à sa fin. */
@@ -1831,94 +1806,52 @@ async function startPickup(zonesAttr) {
     zones
   }), true);
 }
-/** Fin du plan d'une prise (jamais journalisé) : rien à prendre, on le dit sans question ; sinon UNE question (les zips trouvés, ce qui manque, où vont les fichiers) et,
- *  si oui, la prise réelle (dry false) sur les mêmes zones. Un plan arrêté ne pose aucune question. */
-async function endPickupPlan(me, final, run) {
-  const out = M.setOutcome('base', M.PICKUP.verb, final).out;
-  if (out.kind === 'cancelled') { // « Arrêter » pendant le plan : rien n'a été pris
-    S.result = null;
-    return renderBuild();
-  }
-  if (!out.taken.length) {
-    S.result = {
-      set: 'base',
-      verb: M.PICKUP.verb,
-      out
-    };
-    renderBuild();
-    const sm = pickupSummary(out);
-    S.ctx.notify(sm.text, sm.level);
-    return;
-  }
-  const split = M.pickupSplit(out.taken),
+/** Fin du plan d'une prise (jamais journalisé) : rien à prendre, ou aucun zip dont le nom soit dans la règle (un zip hors de la règle est dit mais jamais lancé : le lanceur prendrait « le plus récent » sans
+ *  contrôle), on le dit sans question ; sinon UNE question (les zips trouvés, ce qui manque, où vont les fichiers) et, si oui, la prise réelle (dry false) sur les zones et les zips du plan montré, jamais
+ *  relu. Un plan arrêté ne pose aucune question. */
+async function endPickupPlan(me, final) {
+  const out = M.setOutcome('base', M.PICKUP.verb, final).out,
+    split = M.pickupSplit(out.taken),
     shown = {
       ...out,
       taken: split.ready,
       blocked: split.blocked
-    }; // un zip hors de la règle des noms est dit mais jamais lancé : le lanceur prendrait « le plus récent » sans contrôle
-  if (!split.ready.length) { // rien à lancer : pas de question, la ligne dit quoi renommer
-    S.result = {
+    },
+    ask = out.kind !== 'cancelled' && out.taken.length > 0 && split.ready.length > 0,
+    res = out.taken.length ? {
+      ...shown,
+      kind: 'blocked'
+    } : out,
+    sm = ask ? null : pickupSummary(res);
+  if (ask) {
+    S.pickupBlocked = split.blocked;
+    S.pickupPlan = {
+      zones: split.zones,
+      zips: split.zips
+    }; // le plan montré : la prise réelle n'envoie que ces zips (nom et taille), jamais un plan relu ; le lanceur refuse la source dont le zip a changé entre-temps
+  }
+  return finishPlan(me, {
+    cancelled: out.kind === 'cancelled',
+    result: ask ? null : {
       set: 'base',
       verb: M.PICKUP.verb,
-      out: {
-        ...shown,
-        kind: 'blocked'
-      }
-    };
-    renderBuild();
-    const sm = pickupSummary(S.result.out);
-    S.ctx.notify(sm.text, sm.level);
-    return;
-  }
-  S.result = null;
-  S.pickupBlocked = split.blocked;
-  S.pickupPlan = {
-    zones: split.zones,
-    zips: split.zips
-  }; // le plan montré : la prise réelle n'envoie que ces zips (nom et taille), jamais un plan relu ; le lanceur refuse la source dont le zip a changé entre-temps
-  S.asking = true; // les boutons restent gris pendant la question : une opération à la fois
-  renderBuild();
-  const yes = await S.ctx.ask(pickupAsk(shown), {
-    ok: tt(TX.pickup)
-  });
-  if (S !== me) return;
-  S.asking = false;
-  const plan = S.pickupPlan;
-  S.pickupPlan = null;
-  if (!yes) { // non : rien n'est pris, rien n'est dit
-    renderBuild();
-    return;
-  }
-  await settle(me, await launch('base', M.PICKUP.verb, {
-    zones: plan.zones,
-    dry: false,
-    zips: plan.zips
-  }, plan.zones), true);
-}
-/** Fin d'une prise réelle : le résumé et le conseil dans le panneau, une notification, le journal. */
-async function endPickup(final, live, seconds) {
-  const out = {
-      ...M.setOutcome('base', M.PICKUP.verb, final).out,
-      blocked: S.pickupBlocked || []
+      out: res
     },
-    sm = pickupSummary(out);
-  S.pickupBlocked = null;
-  S.result = {
-    set: 'base',
-    verb: M.PICKUP.verb,
-    out
-  };
-  renderBuild();
-  if (live) S.ctx.notify([sm.text, sm.hint].filter(Boolean).join(' · '), sm.level);
-  journalWrite(M.setEntry('base', M.PICKUP.verb, {
-    at: Date.now(),
-    ids: S.ids,
-    seconds,
-    out,
-    job: final.job || final.id
-  }));
+    note: sm?.text,
+    level: sm?.level,
+    question: ask ? pickupAsk(shown) : '',
+    ok: tt(TX.pickup),
+    go: async yes => {
+      const plan = S.pickupPlan;
+      S.pickupPlan = null;
+      if (yes && plan) await settle(me, await launch('base', M.PICKUP.verb, {
+        zones: plan.zones,
+        dry: false,
+        zips: plan.zips
+      }, plan.zones), true);
+    }
+  });
 }
-
 // ---------------------------------------------------------------- « Tout mettre à jour » (SPEC § 5.3)
 /** Le nom d'un jeu dans les phrases de la chaîne : le groupe pour la base, le nom du jeu pour les autres. */
 const chainName = set => tt(set === 'base' ? TX.groups.base : TX.setLabel[set]);

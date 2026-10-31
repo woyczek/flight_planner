@@ -473,7 +473,7 @@ after, CHANGELOG « refactor, no behaviour change », `:recycle:`, one lot at a 
   entry builder per verb, no pre-SETS leftover. **Done (R-S5, 31 Oct)**: `kindOf` (the shared end-of-job chain) in every outcome reader, `entryHead` / `jobOf` (the shared header) in every journal entry.
 - **modules/data/module.js** (≈2 070 lines, 99 KB): the base panel (`buildInner`, `buildZones`) duplicates the generic set panel
   (`setInner`, `choiceHtml`), the verbs' markup is written twice, `redrawPanel` / `opOf` branch on `[data-build]` vs
-  `[data-set-panel]`; four endings (`endBuild`, `endFetch`, `endPurge`, `endSheets`) copy « result, render, notify, journal,
+  `[data-set-panel]`; (**Done, R-S6, 31 Oct**: `finishOp` / `finishPlan`, one `summary` table `SUM_KINDS`) four endings (`endBuild`, `endFetch`, `endPurge`, `endSheets`) copy « result, render, notify, journal,
   reload », `endPlan` / `endSheetsPlan` are twins; two summary tables (`summary` / `setSummary`, `TX.sum*` / `TX.setSum.*`);
   same-meaning texts under several keys (`TX.build…` vs `opVerb`, group names vs `setLabel`, the waiting / failed / cancelled
   phrases per verb); small repeats (`linkHtml` re-writes `M.isHttps`, the catalogue lookup three times). **Target**: one generic
