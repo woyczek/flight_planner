@@ -989,6 +989,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 137 | Frame: `fuel_units.js`, fuel densities and conversions (85b1300e4) | acceptable, two notes (closed in 139) |
 | 138 | aerodb: a sheet describes a type or variant, the fleet names it (130048967) | acceptable |
 | 139 | Fuel units: own keys only, strict numbers (78cf63f65): the notes of 137 closed | acceptable |
+| 140 | Group of 1 November: zone map on `zonesLayer` (9f637a970), mission reader (96ff67873), Missions module and `#fuel?mission=` (879816763) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2175,6 +2176,14 @@ named after its type, and is refused without one. The variant label is result da
 **139. The notes of 137 (78cf63f65) — acceptable.** `density()` reads only own keys of an object (`Object.hasOwn`) for
 the airline's densities and the defaults, and every fallback passes the plausibility bound; `num()` accepts only a number
 or a non-empty string that writes one.
+
+**140. Group of 1 November (9f637a970, 96ff67873, 879816763) — acceptable.** Grouped review from now on (economy
+mode until 6 November: only commits with surface). The Data module's zone map uses the shared `zonesLayer` (134). The
+mission reader is pure. The Missions module escapes every mission text (title, operation, route, types) and links to
+`#fuel?mission=` with `encodeURIComponent`; Fuel consumes the key, looks the identifier up in the registry
+(`missions/mission_registry.yaml`) before reading the mission file named there, through the data layer whose reads match
+exact repository paths only (no `..` can reach outside), refuses on a started flight, asks before replacing a route, and
+writes only the current flight.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
