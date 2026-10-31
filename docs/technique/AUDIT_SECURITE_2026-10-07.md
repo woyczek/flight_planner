@@ -974,6 +974,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 122 | Map, choose pane: aerodrome centred, first family's candidates drawn faded (6a8403466) | acceptable |
 | 123 | Map: the light drawing of a gesture paints the points of the full one (696fb035f) | acceptable |
 | 124 | Refactor R-S8 (1/2): the Data module split into seven files (435f70e44) | acceptable, a move only |
+| 125 | Map: the profile built without waiting for the relief, then completed (f28b33257) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2075,6 +2076,11 @@ had, the touch lists unchanged; no HTML, network or storage.
 definitions now prefixed with `export`; `S` lives in `state.js` and only `setState` replaces it (an imported binding cannot
 be assigned elsewhere); `esc`, `own` and the gates stay where the renderers and `startOp` used them. No verb, route, write or
 HTML added; every new file is in `meta.files`.
+
+**125. The profile without waiting (f28b33257) — acceptable.** The vertical profile is built and drawn first without
+the relief, then built again when the tiles arrive and swapped in only if the flight has not changed; `showProf` is its
+only writer; the same tile hosts as before, nothing written. The test case serves its tile from the browser's request
+interception (no file written, neither in `data/` nor elsewhere).
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
