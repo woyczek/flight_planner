@@ -741,6 +741,15 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
   (`modules/…`, tests excluded) and the icon.
 - **Not kept**: data (`data/…`, the GitHub API) go through the data layer and its own cache; the launcher's routes
   (`/__setup/…`) and the V2 pages go to the network.
+- **A new version, never mixed** (31 Oct 2026): a changed file makes the service worker read the next version **whole**
+  into a separate cache (`sog-frame-v1-next`), never into the one open pages read; a read cut in the middle is dropped
+  and tried again later; complete, the pages are told (« sog-frame-update ») and it replaces the old one at once at the
+  next page load or at « Reload ». An open page never gets a file of another version than its own (bench
+  `frame/lib/test/sw_update.html`, A53).
+- **The new version said until it is taken**: the note says the flight in progress and the pending writes are kept; set
+  aside (✕), it comes back at the next calm moment — a module change, the app back to the front — at most every 5
+  minutes; the Status block carries « New version available · Reload » (badge of the ⚙) meanwhile. Never an automatic
+  reload (A65).
 - **Serving**:
   - A file is served from its copy at once and checked again in the background.
   - A copy is keyed by its path without the `?v=` stamp, so it is one copy whatever the stamp.

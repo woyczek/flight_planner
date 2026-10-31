@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: a new version never mixed with the old one, and said until it is taken** (`frame/sw.js`, `frame/app.js`;
+  frame SPEC 3.6, DECISIONS; bench `frame/lib/test/sw_update.html`, noreg A53, A65) — the service worker reads the next
+  version whole into a separate cache and swaps it in at the next page load (Settings no longer open blank after an
+  update); the note says the flight and pending writes are kept, comes back at calm moments when set aside, and the
+  Status block carries « New version available · Reload » until the reload; never an automatic reload.
 - **Settings: another GitLab than gitlab.com or framagit.org is warned in the Access card** (`frame/settings/access.js`; SPEC § 5;
   A61) — the phone's synchronisation failed because the static site's policy (connect-src) did not list gitlab.com; V3 Frame added
   it (48fc586c2), and CORS was verified on both public hosts. Any other GitLab host is accepted and said under the field: « this

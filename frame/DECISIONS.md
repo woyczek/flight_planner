@@ -2305,3 +2305,13 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   the meta tags are rebuilt from it, never copied by hand (I30). A self-hosted GitLab stays blocked on the static site
   (wanted); the frame listens to `securitypolicyviolation` on `connect-src` and says « host not allowed by the page (CSP) »
   naming the host only (A64). The « no CORS » sentence first written was wrong and never pushed.
+
+- **31 Oct 2026 — A new version is staged whole, and said until it is taken** (the user: Settings blank after an update,
+  « why no message? »; then « I defer the reload during a critical operation, and the note is never offered again »).
+  The service worker wrote each re-read file straight into the cache the open page read: the page kept its old `app.js`
+  in memory but its next lazy loads (Settings, moved to `cards.js` / `actions.js` / `kit.js` by R-S9) got the new files
+  — a blank page; and a re-read cut in the middle left a mixed cache and no notice. Now the next version is read whole
+  into `sog-frame-v1-next`, dropped if a read fails, announced only once complete, and swapped in at once at the next
+  page load or « Reload ». The bench loads `sw.js` with a fake `self` and network: red on the old service worker (a
+  mixed cache, an open page given a v2 file), green now. The notice is a state: a Status line until the reload, the note
+  offered again at calm moments (5 minutes apart at most), never an automatic reload.

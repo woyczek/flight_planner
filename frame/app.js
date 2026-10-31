@@ -1746,6 +1746,13 @@
   function statusItems() {
     const items = [],
       maps = APP.modules.find(m => m.id === 'maps');
+    // une nouvelle version prête, tant qu'elle n'est pas prise : la retrouver à tout moment (pastille du ⚙)
+    if (update.ready) items.push({
+      k: 'update',
+      text: t(U.line),
+      news: true,
+      go: 'update'
+    });
     if (lastFlight?.started && maps) items.push({
       k: 'flight',
       text: t(T.info.flight, {
@@ -1939,6 +1946,7 @@
    *  renvoie à Mes vols. */
   async function goStatus(go) {
     if (go === 'live') return void(gpsWatch !== null ? liveApi().disable() : liveApi().enable());
+    if (go === 'update') return void reloadNewVersion();
     if (go.startsWith('card:')) {
       const card = go.slice(5).split(',').map(k => $('fView').querySelector(`[data-card="${k}"]`)).find(c => c && !c.hidden);
       card?.scrollIntoView({
@@ -2593,6 +2601,7 @@
    *  navigation à la fois : chaque appel prend un jeton, et une reprise après un await dont le jeton n'est plus le dernier
    *  abandonne sans rien écrire (la vue est déjà vidée par la navigation suivante, qui a démonté le module en cours de montage). */
   async function route() {
+    sayUpdate(); // un changement d'écran : la note d'une nouvelle version différée revient (5 min au plus souvent)
     // retour de l'OpenID d'IVAO arrivé sans recharger la page (même document) : jetons rangés, adresse remplacée, puis le routage
     if (location.hash.startsWith('#ivao-return?')) return void takeIvaoReturn().then(route);
     // ancienne adresse d'un écran gardée en renvoi (l'adresse remplacée : le retour arrière ne la rejoue pas)
@@ -3998,8 +4007,13 @@
   }
   // ---------------------------------------------------------------- appli installable et hors ligne
   const U = {
-    update: ['Nouvelle version de l’appli prête.', 'A new version of the app is ready.', 'Eine neue Version der App ist bereit.',
-      'Nueva versión de la aplicación lista.'
+    update: ['Nouvelle version de l’appli prête. Le vol en cours et les écritures en attente sont gardés au rechargement.',
+      'A new version of the app is ready. The flight in progress and the pending writes are kept when reloading.',
+      'Eine neue Version der App ist bereit. Der laufende Flug und die ausstehenden Schreibvorgänge bleiben beim Neuladen erhalten.',
+      'Nueva versión de la aplicación lista. El vuelo en curso y las escrituras pendientes se conservan al recargar.'
+    ],
+    line: ['Nouvelle version disponible · Recharger', 'New version available · Reload', 'Neue Version verfügbar · Neu laden',
+      'Nueva versión disponible · Recargar'
     ],
     reload: ['Recharger', 'Reload', 'Neu laden', 'Recargar']
   };
@@ -4008,13 +4022,14 @@
   function offlineApp() {
     if (!navigator.serviceWorker || !/^https?:$/.test(location.protocol)) return;
     navigator.serviceWorker.addEventListener('message', e => {
-      if (e.data?.type === 'sog-frame-update') notify(t(U.update), 'info', {
-        action: {
-          label: t(U.reload),
-          run: reloadNewVersion
-        }
-      });
+      if (e.data?.type !== 'sog-frame-update') return;
+      update.ready = true;
+      paintStatus(); // la ligne « Nouvelle version disponible » du bloc d'état, et la pastille du ⚙
+      sayUpdate(true);
     });
+    // différée (✕), la note revient au prochain moment calme : retour de l'appli au premier plan (ici), changement de module
+    // (route) ; jamais de rechargement sans geste
+    document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && sayUpdate());
     // orientation verrouillée en portrait en appli installée (V3_SPECIFICATION.md § 7.1, 24 oct 2026) : effective seulement
     // avec le manifeste « orientation » ou la coque Capacitor ; Safari ne l'honore pas, d'où la disposition en paysage (f-land, au
     // début de ce fichier) ; en page de navigateur l'appel échoue et c'est attendu
@@ -4029,6 +4044,24 @@
       type: 'precache',
       urls: [...await moduleFiles(), ...await helpFiles()]
     })).catch(e => console.warn('service worker', e));
+  }
+  /** Nouvelle version prête (le service worker l'a relue entière) : ready ; at : quand la note l'a dite la dernière fois. */
+  const update = {
+    ready: false,
+    at: 0
+  };
+  /** La note « Nouvelle version » (une seule : même clé) ; reproposée au plus une fois toutes les 5 minutes tant que la
+   *  nouvelle version n'est pas prise ; now : tout de suite (son arrivée). Jamais de rechargement automatique. */
+  function sayUpdate(now = false) {
+    if (!update.ready || (!now && Date.now() - update.at < 5 * 60e3)) return;
+    update.at = Date.now();
+    notify(t(U.update), 'info', {
+      key: 'frame-update',
+      action: {
+        label: t(U.reload),
+        run: reloadNewVersion
+      }
+    });
   }
   /** « Recharger » après une nouvelle version : un service worker en attente prend la main (controllerchange) ; sinon
    *  toutes les copies sont relues sans cache ; puis la page recharge (8 s au plus d'attente : recharge quand même). */

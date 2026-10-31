@@ -1814,6 +1814,7 @@ def a53(c):
     import tempfile
     _bench(c, 'frame/lib/test/geo.html', '__geoBench')
     _bench(c, 'frame/lib/test/fuel_units.html', '__fuelUnitsBench')
+    _bench(c, 'frame/lib/test/sw_update.html', '__swUpdateBench')
     # the data layer bench runs against its own fake GitHub (frame/store/test/fake_github.py), which serves the page too
     import socket
     with socket.socket() as so:
@@ -2336,3 +2337,32 @@ def a64(c):
     c.ok(want in got and 'glpat' not in got and '/api/v4' not in got, got, 'the CSP said, the host only, in the run’s language')
     # the browser's own lines for the blocked calls are what this case provokes; any other error still counts
     c.errors[:] = [e for e in c.errors if 'gitlab.example' not in e or 'Content Security Policy' not in e]
+
+
+
+@case('A65', 'A new version: the note comes back at calm moments, a Status line until the reload, never a reload without a gesture', 'A',
+      designs=('standard',), screens=False, night=False,
+      rule='Simplification 31 Oct (the user: « I defer the reload during a critical operation, and the note is never offered again »): a deferred note comes back at the next calm moment (module change, app back to the front), at most every 5 minutes, until the reload; the Status block carries « New version available · Reload » meanwhile; the note says the flight and the pending writes are kept; never an automatic reload')
+def a65(c):
+    c.open('fuel', flight=True)
+    note = "[...document.querySelectorAll('#fNotes .f-note')].filter(n => n.dataset.key === 'frame-update').length"
+    c.js("() => navigator.serviceWorker.dispatchEvent(new MessageEvent('message', { data: { type: 'sog-frame-update' } }))")
+    c.until(f"{note} === 1", timeout=5000, what='the new version said')
+    text = norm(c.js("document.querySelector('#fNotes .f-note[data-key=\"frame-update\"]').textContent"))
+    c.ok(norm(tx('frame/app.js', 'update', c.lang, after='const U = {')) in text, text, 'the note says the flight and the pending writes are kept')
+    href = c.js('location.href')
+    c.tap('#fNotes .f-note[data-key="frame-update"] [data-x]')
+    c.eq(c.js(note), 0, 'deferred: the note goes', what='after ✕')
+    # a calm moment within 5 minutes: not yet; after 5 minutes: the note comes back
+    c.js("() => { location.hash = '#maps' }")
+    c.wait(400)
+    c.eq(c.js(note), 0, 'within 5 minutes of the last one: not offered again', what='soon after')
+    c.js("() => { const real = Date.now.bind(Date); Date.now = () => real() + 6 * 60e3; location.hash = '#flightlog' }")
+    c.until(f"{note} === 1", timeout=5000, what='the note offered again at a module change, after 5 minutes')
+    # the Status block keeps a line until the reload; the page was never reloaded by itself
+    c.js("() => { location.hash = '#settings' }")
+    c.until("!!document.querySelector('[data-card=\"status\"] [data-k=\"update\"]')", timeout=10000, what='the Status line')
+    c.ok(norm(tx('frame/app.js', 'line', c.lang, after='const U = {')) in norm(c.js("document.querySelector('[data-card=\"status\"] [data-k=\"update\"]').textContent")),
+         '', 'the Status block says « New version available · Reload »')
+    c.eq(c.js('performance.getEntriesByType("navigation")[0].type') != 'reload' and c.js('location.href').split('#')[0] == href.split('#')[0], True,
+         'never a reload without a gesture', what='no reload')

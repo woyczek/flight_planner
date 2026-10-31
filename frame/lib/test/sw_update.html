@@ -1,0 +1,136 @@
+<!doctype html>
+<!-- Banc de la mise à jour du service worker du cadre (frame/sw.js, frame/SPEC.md § 3.6) : sw.js chargé dans une page nue,
+     avec un faux « self » (portée /frame/, pages ouvertes qui reçoivent ses messages) et un faux réseau qui sert la
+     version suivante d'une copie gardée ; la vraie CacheStorage de la page (noms du service worker, page sans service
+     worker : rien d'autre ne les touche). Vérifie : une version relue à moitié n'entre jamais dans le cache que les pages
+     lisent et n'est pas annoncée ; complète, elle est annoncée et attend ; un chargement de page la prend d'un coup ; une
+     page ouverte ne reçoit jamais un fichier d'une autre version que la sienne (31 oct. 2026, Réglages vides).
+     window.__swUpdateBench = { done, pass, fail, rows }. Ouvrir la page suffit. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>sw update — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">sw.js — update bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  const rows = [],
+    out = document.getElementById('out');
+  const ck = (name, ok, detail = '') => {
+    rows.push({
+      name,
+      ok: !!ok,
+      detail
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}`;
+    out.append(l);
+  };
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  try {
+    const O = location.origin,
+      F = `${O}/frame/`,
+      files = ['index.html', 'app.js', 'settings/settings.js', 'lib/qr.js'].map(p => F + p),
+      net = {
+        version: 'v2',
+        fail: '' // une adresse dont la relecture échoue (réseau perdu en route)
+      },
+      messages = [];
+    for (const k of await caches.keys())
+      if (k.startsWith('sog-frame-')) await caches.delete(k);
+    const live = await caches.open('sog-frame-v1');
+    for (const u of files) await live.put(u, new Response(`v1 ${u}`));
+    // le faux « self » du service worker, ses écouteurs, et un faux réseau
+    const listeners = {},
+      fakeSelf = {
+        location: new URL(`${F}sw.js`),
+        addEventListener: (type, fn) => listeners[type] = fn,
+        skipWaiting: async () => {},
+        clients: {
+          claim: async () => {},
+          matchAll: async () => [{
+            postMessage: m => messages.push(m.type)
+          }]
+        }
+      },
+      fakeFetch = async input => {
+        const u = String(input?.url || input).split('?')[0];
+        if (net.fail && u === net.fail) throw new TypeError('Failed to fetch');
+        return new Response(`${net.version} ${u}`);
+      };
+    const src = await (await fetch('../../sw.js', {
+      cache: 'no-store'
+    })).text();
+    new Function('self', 'fetch', src)(fakeSelf, fakeFetch);
+    /** Une requête de la page au service worker : la réponse servie, et tout ce qu'il a lancé à côté. */
+    const ask = async (url, mode = 'cors') => {
+      const waits = [];
+      let served;
+      listeners.fetch({
+        request: {
+          url,
+          method: 'GET',
+          mode
+        },
+        respondWith: p => served = p,
+        waitUntil: p => waits.push(p)
+      });
+      const text = await (await served).text();
+      await Promise.all(waits);
+      return text;
+    };
+    const liveText = async u => (await (await caches.open('sog-frame-v1')).match(u))?.text();
+    const settle = async test => {
+      for (let i = 0; i < 40 && !await test(); i++) await sleep(50);
+    };
+
+    // 1. une copie a changé, mais la relecture de la version suivante échoue en route
+    net.fail = F + 'lib/qr.js';
+    ck('la page ouverte reçoit sa propre version (copie gardée)', (await ask(F + 'app.js')).startsWith('v1'));
+    await settle(async () => !(await caches.has('sog-frame-v1-next')));
+    ck('relecture coupée : rien n’entre dans le cache que les pages lisent (aucun fichier v2 mêlé à v1)', (await Promise.all(files.map(
+      liveText))).every(t => t?.startsWith('v1')), JSON.stringify(await Promise.all(files.map(liveText))));
+    ck('relecture coupée : aucune annonce', messages.length === 0, messages.join());
+
+    // 2. la relecture passe : la version suivante est annoncée, la page ouverte garde la sienne
+    net.fail = '';
+    await ask(F + 'app.js');
+    await settle(async () => messages.length > 0);
+    ck('relecture complète : « sog-frame-update » envoyé aux pages', messages.includes('sog-frame-update'), messages.join());
+    ck('la page ouverte lit encore sa version (réglages chargés plus tard : v1)', (await ask(F + 'settings/settings.js')).startsWith('v1'));
+
+    // 3. un chargement de page prend la version suivante d'un coup
+    const page = await ask(F, 'navigate');
+    ck('chargement de la page : la nouvelle version, entière', page.startsWith('v2') && (await Promise.all(files.map(liveText))).every(t =>
+      t?.startsWith('v2')), JSON.stringify(await Promise.all(files.map(liveText))));
+    ck('la version suivante quitte son cache à part une fois prise', !(await caches.has('sog-frame-v1-next')));
+  } catch (e) {
+    ck('exception', false, e.stack || String(e));
+  }
+  window.__swUpdateBench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__swUpdateBench.pass} PASS · ${window.__swUpdateBench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>
