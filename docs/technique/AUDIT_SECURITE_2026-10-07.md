@@ -978,7 +978,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 126 | Refactor R-S8 (2/2): the Data model split into six pure files behind a facade (bdb072221) | acceptable, a move only |
 | 127 | Refactor R-S9 (1/2): the Settings screen's cards and actions in two files (6105be2ba) | acceptable, a move only |
 | 128 | Frame: `ctx.net.fetch` waits at most 3 s for the airline's first read, then refuses (aabaa0f3b) | acceptable |
-| 129 | aerodb: a zone part's read bounded, the shared read abandoned at the bound (80a355157) | acceptable, one note |
+| 129 | aerodb: a zone part's read bounded, the shared read abandoned at the bound (80a355157) | acceptable, one note (closed in 130) |
+| 130 | An abandoned read writes nothing to the cache (a90e431e3): the note of 129 closed | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2110,6 +2111,10 @@ path being one the layer builds itself; a part the repository's list does not na
 (correctness, not security): an abandoned read still runs to its end and writes the cache (`idb` put, `changed`), so if the
 repository moved in between, an older revision can replace the newer one until the next revalidation; skip the write when
 the job is no longer the one registered for its path.
+
+**130. The note of 129 (a90e431e3) — acceptable.** After the read, a job that `abandon` replaced returns its result to
+whoever still waits for it, without writing the cache or announcing a change, so an older revision arriving late never
+replaces a newer one.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
