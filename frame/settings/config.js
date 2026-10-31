@@ -124,6 +124,38 @@
    *  inconnu), web (page web du projet, sans identifiants ni .git), project (groupe/projet) } ; adresse illisible : null, sans
    *  web ni projet. Reconnu : un hôte public de la table (github.com, gitlab.com, framagit.org), ou un hôte que `known`
    *  (knownProviders) donne avec un fournisseur de la table. Le port d'une adresse ssh n'est pas celui du web : il est retiré. */
+  /** Adresse de dépôt saisie dans la carte Accès → forme canonique, avant toute écriture (bug du 31/10 : « framagit.org/groupe/projet »
+   *  tapé sans https:// était lu comme un dépôt GitHub). Acceptées : « hôte/compte/dépôt », « https://hôte/compte/dépôt »,
+   *  « …/dépôt.git », « git@hôte:compte/dépôt.git », ssh:// ; « compte/dépôt » seul est un dépôt GitHub (un compte GitHub n'a pas de
+   *  point : un premier segment avec un point est un hôte). Rend { ok: true, url (https://hôte/chemin.git), host, repo, provider
+   *  (providerOf : github.com → github ; gitlab.com, framagit.org ou un GitLab que `known` nomme → gitlab), value (ce que le transport
+   *  reçoit : compte/dépôt pour GitHub, https://hôte/chemin pour GitLab) } ; sinon { ok: false, error: 'incomplete' | 'provider',
+   *  host? }. */
+  function normalizeRepo(input, known = []) {
+    const s = String(input || '').trim().replace(/\/+$/, '');
+    const r = /^[\w.-]+@[\w.-]+:/.test(s) || /^[a-z]+:\/\//i.test(s) ? parseRepo(s) : /^[\w-]+\.[\w.-]+(:\d+)?\//.test(s) ? parseRepo(
+      `https://${s}`) : /^[\w-]+\/[\w.-]+$/.test(s) ? parseRepo(`https://github.com/${s}`) : null;
+    if (!r) return {
+      ok: false,
+      error: 'incomplete'
+    };
+    const url = cloneUrl(r),
+      provider = providerOf(url, known).provider;
+    if (!provider) return {
+      ok: false,
+      error: 'provider',
+      host: r.host
+    };
+    return {
+      ok: true,
+      url,
+      host: r.host,
+      repo: r.repo,
+      provider,
+      value: provider === 'github' ? r.repo : webUrl(r)
+    };
+  }
+
   function providerOf(url, known = []) {
     const r = parseRepo(url);
     if (!r) return {
@@ -449,6 +481,7 @@ Sin lanzador (teléfono), la aplicación solo llega a un repositorio de {host} a
     repoField,
     knownProviders,
     providerOf,
+    normalizeRepo,
     webUrl,
     cloneUrl,
     howto,

@@ -93,6 +93,18 @@
     online: ['en ligne', 'online', 'online', 'en línea'],
     offline: ['hors ligne', 'offline', 'offline', 'sin conexión'],
     syncNow: ['Synchroniser maintenant', 'Synchronise now', 'Jetzt synchronisieren', 'Sincronizar ahora'],
+    // l'adresse du dépôt saisie, lue avant toute écriture (SogConfig.normalizeRepo)
+    repoIncomplete: [
+      'Adresse incomplète : hôte/compte/dépôt (par exemple framagit.org/groupe/projet ou github.com/compte/dépôt). Rien n’est enregistré.',
+      'Incomplete address: host/account/repository (for example framagit.org/group/project or github.com/account/repository). Nothing is saved.',
+      'Unvollständige Adresse: Host/Konto/Repository (zum Beispiel framagit.org/gruppe/projekt oder github.com/konto/repository). Nichts wird gespeichert.',
+      'Dirección incompleta: host/cuenta/repositorio (por ejemplo framagit.org/grupo/proyecto o github.com/cuenta/repositorio). No se guarda nada.'
+    ],
+    repoProvider: ['Fournisseur : {p} — {u}', 'Provider: {p} — {u}', 'Anbieter: {p} — {u}', 'Proveedor: {p} — {u}'],
+    syncAsk: ['Accès enregistré. Synchroniser maintenant ?', 'Access saved. Synchronise now?',
+      'Zugang gespeichert. Jetzt synchronisieren?',
+      'Acceso guardado. ¿Sincronizar ahora?'
+    ],
     conflicts: ['Voir les conflits ({n})', 'See the conflicts ({n})', 'Konflikte ansehen ({n})', 'Ver los conflictos ({n})'],
   });
 
@@ -111,7 +123,7 @@
       table = SogConfig.PROVIDER_TABLE,
       ph = gl ? (jd && !gh ? SogConfig.webUrl(jd) : table.gitlab.placeholder) : table.github.placeholder;
     return `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2>${exchange ? '' : `<p class="f-muted">${esc(t(T.accessRead))}</p>`}
-        ${fld('repo', gl ? T.repoGl : T.repo, SogConfig.repoField(gh), { ph })}${fld('branch', T.branch, gh?.branch || 'main')}${fld('token', T.token, '', { type: 'password', ph: gh ? t(T.tokenSet) : '' })}
+        ${fld('repo', gl ? T.repoGl : T.repo, SogConfig.repoField(gh), { ph })}<p class="f-muted" data-repo-provider aria-live="polite"></p>${fld('branch', T.branch, gh?.branch || 'main')}${fld('token', T.token, '', { type: 'password', ph: gh ? t(T.tokenSet) : '' })}
         ${gh?.token ? `<p data-token-set>${esc(t(T.tokenSet))}</p>` : ''}<p class="f-muted">${esc(t(gl ? T.tokenHintGl : T.tokenHint))}</p><p class="f-msg" data-msg></p>
         <div class="f-row"><button type="button" class="primary" data-act="access">${esc(t(T.save))}</button><button type="button" data-act="test">${esc(t(T.test))}</button>${gh ? `<button type="button" data-act="cut">${esc(t(T.cut))}</button>` : ''}</div></div>`;
   }
@@ -136,6 +148,22 @@
       st,
       mods
     } = env;
+    // le fournisseur de l'adresse en cours de frappe, dit sous le champ avant l'enregistrement (ou la raison du refus)
+    const repoIn = view.querySelector('[data-card="access"] [data-f="repo"]'),
+      repoLine = view.querySelector('[data-card="access"] [data-repo-provider]');
+    /** Écrit sous le champ du dépôt le fournisseur et l'adresse canonique de la saisie, ou ce qui manque ; rien pour un champ vide. */
+    const paintRepo = () => {
+      if (!repoIn || !repoLine) return;
+      const v = repoIn.value.trim(),
+        n = v ? SogConfig.normalizeRepo(v, env.known || []) : null;
+      repoLine.textContent = !n ? '' : n.ok ? t(T.repoProvider, {
+        p: SogConfig.PROVIDER_TABLE[n.provider].label,
+        u: n.url
+      }) : t(n.error === 'provider' ? T.providerUnknown : T.repoIncomplete);
+      repoLine.dataset.state = !n ? '' : n.ok ? n.provider : n.error;
+    };
+    repoIn?.addEventListener('input', paintRepo);
+    paintRepo();
     /** Redessine la carte de synchronisation d'après l'état du transport. */
     const paintSync = s => {
       const dl = view.querySelector('[data-sync]');
@@ -175,16 +203,19 @@
     } = env;
     if (act === 'access' || act === 'test') {
       const r = card('access'),
-        // adresse d'un projet collée : l'instance et son api en viennent ; le jeton enregistré n'est repris que pour la même
-        // cible (FD.github.resolve : fournisseur, origine de l'API, projet), jamais vers un nouvel hôte
-        cfg = FD.github.resolve({
-          repo: val('repo', r),
-          branch: val('branch', r) || 'main',
-          token: val('token', r),
-          ...(gh?.api && gh.provider !== 'gitlab' ? {
-            api: gh.api
-          } : {})
-        });
+        // l'adresse saisie, normalisée d'abord : illisible ou sans fournisseur connu, refusée et rien n'est écrit
+        n = SogConfig.normalizeRepo(val('repo', r), env.known || []);
+      if (!n.ok) return say('access', t(n.error === 'provider' ? T.providerUnknown : T.repoIncomplete));
+      // adresse d'un projet : l'instance et son api en viennent ; le jeton enregistré n'est repris que pour la même
+      // cible (FD.github.resolve : fournisseur, origine de l'API, projet), jamais vers un nouvel hôte
+      const cfg = FD.github.resolve({
+        repo: n.value,
+        branch: val('branch', r) || 'main',
+        token: val('token', r),
+        ...(gh?.api && gh.provider !== 'gitlab' ? {
+          api: gh.api
+        } : {})
+      });
       if (!cfg.repo) return say('access', t(T.needRepo));
       if (!cfg.token) return say('access', gh ? t(T.newTarget, {
         h: cfg.newTarget
@@ -203,7 +234,12 @@
       FD.github.save(cfg);
       await c.reload();
       c.notify(t(T.saved), 'ok');
-      return again();
+      again();
+      // la première synchronisation sur le nouveau dépôt, proposée tout de suite
+      if (await c.ask(t(T.syncAsk), {
+          ok: t(T.syncNow)
+        })) c.syncNow();
+      return;
     }
     if (act === 'cut') {
       if (!await c.ask(t(T.cutAsk))) return;

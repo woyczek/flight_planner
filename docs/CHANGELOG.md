@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Settings: a repository address typed in the Access card is normalised before it is saved** (`frame/settings/config.js`
+  `normalizeRepo`, `access.js`; SPEC § 5; A61) — bug, 31 Oct: on a phone, « framagit.org/asr/flight_planner » typed without
+  https:// was taken for a GitHub repository and the synchronisation failed. The four forms (host/account/repo, https://, .git,
+  git@host:) give one `https://host/path.git`; its provider (GitHub, GitLab) is said under the field while typing; an
+  incomplete address or an unknown provider is refused with its reason and nothing is written; after saving, « Synchroniser
+  maintenant ? » is offered. A56 now looks for the token test among the calls (their order is not fixed under load).
 - **Settings: where GitHub or GitLab is read, said and linked** (`frame/settings/launcher.js`, `admin_links.js`, `settings.js`;
   help ×4; SPEC § 1 and § 3; A60) — user, 31 Oct: « je ne trouve plus le setting gitlab vs github sur un terminal avec lanceur ».
   No new setting (the provider is read from the remote's address since R-S4). On a launcher, the Access card adds « Dépôt et

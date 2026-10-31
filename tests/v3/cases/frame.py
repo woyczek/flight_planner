@@ -2058,7 +2058,8 @@ def a56(c):
                 c.wait(100)
             c.until("!!window.FrameData?.github?.config()", timeout=15000, what='the access is saved')
             c.eq(c.js("FrameData.github.config().api ?? '-'"), '-', 'the saved access has no api: api.github.com', what=f'saved access ({api})')
-            c.ok(sent and sent[0] == ['/repos/acme/data/git/ref/heads/main', 'Bearer test-token'], str(sent[:1]), f'the token was tested against api.github.com ({api})')
+            c.ok(['/repos/acme/data/git/ref/heads/main', 'Bearer test-token'] in sent and all(x[1] == 'Bearer test-token' for x in sent), str(sent[:3]),
+                 f'the token was tested against api.github.com, and only there ({api})')
         reached = []
         for srv in benches:
             try:
@@ -2187,3 +2188,42 @@ def a60(c):
     c.eq(c.attr('[data-act="adminPanel"][data-panel="remote"]', 'aria-expanded'), 'true', 'its button says it is open', what='expanded')
     word = {'fr': 'GitHub ou GitLab', 'en': 'GitHub or GitLab', 'de': 'GitHub oder GitLab', 'es': 'GitHub o GitLab'}[c.lang]
     c.ok(word in c.text('[data-admin="remote"]'), c.text('[data-admin="remote"]')[:200], 'the panel\u2019s line says the provider is read from the address')
+
+
+@case('A61', 'Access card: a repository address is normalised before anything is written, its provider said under the field', 'A', designs=('standard',),
+      screens=False, night=False, rule='frame/settings SPEC 3 (bug, 31 Oct: « framagit.org/asr/flight_planner » typed on a phone was taken for a GitHub repository): host/account/repo, https://, .git and git@host: give one canonical https://host/path.git; incomplete or unknown provider refused with its reason, nothing written; after saving, « Synchronise now » is offered')
+def a61(c):
+    access_file = 'frame/settings/access.js'
+    c.context.route(re.compile(r'/__setup/'), lambda r: r.abort())  # a phone: no launcher
+    c.context.route(re.compile(r'https://(framagit\.org|api\.github\.com)/'), lambda r: r.abort())  # nothing leaves in the case
+    c.open('settings', docs=LEVEL3)
+    c.until("!!window.SogConfig && !!document.querySelector('[data-card=access] [data-f=repo]')", timeout=15000, what='the Access card')
+    c.js("document.querySelector('[data-card=access]').closest('details')?.setAttribute('open', '')")
+    got = c.js("""() => ['framagit.org/asr/flight_planner', 'https://framagit.org/asr/flight_planner', 'https://framagit.org/asr/flight_planner.git',
+      'git@framagit.org:asr/flight_planner.git', 'acme/data', 'framagit.org/asr', 'bitbucket.org/acme/data']
+      .map(v => { const n = SogConfig.normalizeRepo(v, []); return n.ok ? [n.url, n.provider, n.value] : n.error })""")
+    canon = ['https://framagit.org/asr/flight_planner.git', 'gitlab', 'https://framagit.org/asr/flight_planner']
+    c.eq(got, [canon, canon, canon, canon, ['https://github.com/acme/data.git', 'github', 'acme/data'], 'incomplete', 'provider'],
+         'four forms give one canonical address and GitLab; account/repo alone is GitHub; an incomplete address and an unknown host are refused', what='normalise')
+
+    # the line under the field says the provider before saving, or why it is refused
+    line = '[data-card="access"] [data-repo-provider]'
+    c.page.fill('[data-card="access"] [data-f="repo"]', 'framagit.org/asr/flight_planner')
+    c.eq(norm(c.text(line)), norm(tx(access_file, 'repoProvider', c.lang).replace('{p}', 'GitLab').replace('{u}', canon[0])), 'the provider and the canonical address under the field', what='provider line')
+    # refused: nothing written
+    c.page.fill('[data-card="access"] [data-f="repo"]', 'framagit.org/asr')
+    c.eq(c.attr(line, 'data-state'), 'incomplete', 'an incomplete address is said at once', what='incomplete line')
+    c.page.fill('[data-card="access"] [data-f="token"]', 'test-token')
+    c.tap('[data-card="access"] [data-act="access"]')
+    c.until("!!document.querySelector('[data-card=access] [data-msg]')?.textContent", what='the refusal is said')
+    c.eq(norm(c.text('[data-card="access"] [data-msg]')), norm(tx(access_file, 'repoIncomplete', c.lang)), 'refused with its reason', what='refusal')
+    c.eq(c.js("!FrameData.github.config()"), True, 'nothing is written', what='nothing saved')
+    # saved in its canonical form, then « Synchronise now » offered
+    c.page.fill('[data-card="access"] [data-f="repo"]', 'git@framagit.org:asr/flight_planner.git')
+    c.page.fill('[data-card="access"] [data-f="token"]', 'test-token')
+    c.tap('[data-card="access"] [data-act="access"]')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=15000, what='the question after saving')
+    c.eq(norm(c.text('.f-modal p')), norm(tx(access_file, 'syncAsk', c.lang)), '« Synchronise now? » is offered after saving', what='sync offered')
+    c.tap('.f-modal [data-no]')
+    saved = c.js("(() => { const g = FrameData.github.config(); return [g.provider, g.api, g.repo] })()")
+    c.eq(saved, ['gitlab', 'https://framagit.org/api/v4', 'asr/flight_planner'], 'the device reads the GitLab project, whatever form was typed', what='saved access')
