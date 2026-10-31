@@ -2436,3 +2436,30 @@ def d87(c):
     back = _maps_again(c)
     c.ok(not back['moved'] and (abs(back['lng'] - mine['lng']) > .05 or abs(back['zoom'] - mine['zoom']) > .3), f'{mine} → {back}',
          'another route: the flight is framed again, not the framing kept for the other one')
+
+
+# ------------------------------------------------------------------------------------------------------ D88
+@case('D88', 'One distance: the sheet’s title reads the flown path with its procedures, the profile’s axis and Fuel’s distance', 'D',
+      tags=('maps', 'sheet'), screens=False, designs=('standard',), night=False,
+      rule='sixth reading (31 Oct 2026), gap 3, SPEC § 7.2: the title’s distance is the last nm of flownPath(expandedPath(flight, procedures)) (frame/lib/current_flight.js), the one Fuel shows and the profile’s axis ends on; written again when the procedures arrive after the first drawing, never left on the route alone')
+def d88(c):
+    f = _proc_flight(by='fuel')
+    _open_proc(c, f)
+    c.until("() => !!(window.__mp.S.prof && window.__mp.S.route.flown && window.__mp.S.route.flown.length > 4)", timeout=10000, what='the profile on the path')
+    c.wait(400)
+    r = c.js("""async () => { const S = window.__mp.S, CF = await import('/frame/lib/current_flight.js'),
+      nm = S.route.flown.at(-1).nm, route = MapsRender.distances(S.route.points).pop(),
+      title = [S.dtitleEl.textContent, S.dtitleEl.title, S.gripEl.title].join(' | '),
+      cf = CF.flownPath(CF.expandedPath(S.route.flight, S.procs || {})).at(-1).nm;
+      return { nm, route, cf, axis: S.prof.total / 1852, title } }""")
+    c.ok(abs(r['nm'] - r['route']) >= 1, f'{r}', 'the fixture’s procedures make the path longer than the route alone (the case means something)')
+    c.ok(abs(r['cf'] - r['nm']) < .5 and abs(r['axis'] - r['nm']) < .5, f'{r}', 'the Map’s path, current_flight’s flownPath (Fuel’s) and the profile’s axis: one distance')
+    want = f"{round(r['nm'])} NM"
+    c.ok(want in r['title'] and f"{round(r['route'])} NM" not in r['title'], f"{r['title']!r} wants {want!r}",
+         'the sheet’s title says the path’s distance, not the route alone')
+    # Fuel's own figure, read where it is written (the route step's line, « … NM · … · procedures included »)
+    c.js("() => { location.hash = '#fuel?focus=route'; return true }")
+    c.ready('fuel')
+    c.until(r"() => /\d/.test(document.querySelector('[data-module=fuel] [data-rinfo]')?.textContent || '')", timeout=10000, what='Fuel’s distance line')
+    c.until(r"""(w) => (document.querySelector('[data-module=fuel] [data-rinfo]').textContent || '').replace(/[\s\u00a0\u202f]+/g, ' ').includes(w)""",
+            want, timeout=8000, what=f'Fuel says {want}')

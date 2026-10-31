@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: one distance (sixth reading, gap 3)** (`modules/maps/data.js`; SPEC § 7.2; DECISIONS; noreg D88). The sheet's title said the
+  route's own length (373 NM) while Fuel and the profile's axis said the path's, procedures included (388 NM): the title, written before
+  the procedures were read, is now written again when they arrive. One figure on the three, from `flownPath` of
+  `frame/lib/current_flight.js`.
+
 - **Refactor R-S5, no behaviour change** (`modules/data/model.js`; noreg L6, L11, L14, L16–L19): one `kindOf` for the end-of-job chain (interrupted, stopped, the launcher's reason, failure, default) that `outcome`, `fetchOutcome`, `purgeOutcome`, `pickupOutcome`, `vfrFetchOutcome` and `sheetsOutcome` call before adding their own fields; one `entryHead` / `jobOf` for the journal header (`at`, `set`, `verb`, `zones` or `items`, `seconds`, `result`, `reason`, `job`) that `journalEntry`, `fetchEntry`, `purgeEntry`, `pickupEntry`, `sheetsEntry`, `chainEntry` and `publishEntry` use; `setEntry` no longer renames `zones` to `items` afterwards (the base builders take the set and the key). Base entries keep `zones`, the others `items`.
 - **Map: framed return (sixth reading, gap 2)** (`modules/maps/screen.js` `frameFlight` / `flightSig`, `data.js` `fitOf`,
   `state.js` `keep.cam`, `choose.js`, `sheet_view.js`, `flight_time.js`; SPEC § 5; DECISIONS; help ×4; noreg D87, D86). Opening the

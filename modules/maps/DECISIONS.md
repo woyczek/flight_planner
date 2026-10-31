@@ -1830,3 +1830,16 @@ the Map had seen in between: the same line to within the frame's own sampling.
   D86 failed once at 390 in the full pass of 06dcd175b and once of three alone with a noreg beside it (the sheet not back within
   20 s of the return from Fuel); four of four green with the run quiet — the load, not the rule; V3 Frame's d6e7fa27a (the
   router's `closePane` on a module still arriving) removes the race found with it.
+
+## One distance (sixth reading, 31 Oct 2026, gap 3)
+
+- **Seen**: Fuel and the profile's axis said 388 NM for LFBO → LFPO with AMOLO 7A, AMB 9E and ILS 06; the sheet's title 373 NM.
+- **Cause**: not two computations — the title already read the flown path (`S.route.flown`, the last `nm`), the very function Fuel
+  uses (`flownPath(expandedPath(flight, procedures))` of `frame/lib/current_flight.js`, `fpNow` in Fuel). But the title was written
+  in `applyFlight`, before the procedures were read; when they arrived `afterPath` rebuilt the path, the map and the profile, not
+  the title, which kept the route's own length.
+- **Rule** (SPEC § 7.2): the title is written again whenever the path changes. The one writer of the distance is `flownPath` of
+  `frame/lib/current_flight.js` (Simplification named `frame/lib/route_model`: that file resolves a route's text into points and
+  measures nothing; told). The Map shows no « by the points » figure; were it ever needed, it would be said as such, never instead.
+- **Noreg** D88: the Map's path, `flownPath` and the profile's axis on one flight with procedures, the title's figure, and Fuel's own
+  line read on its route step: one figure; the fixture's procedures make the path longer than the route, so the case means something.

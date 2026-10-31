@@ -155,6 +155,7 @@ function afterPath() {
   buildPath();
   S.fit = fitOf();
   if (S.map && !S.userMoved) frameFlight(false);
+  header(); // la distance du titre : celle du chemin, procédures comprises, comme Carburant et l'axe de la coupe
   schedule();
   buildProfile();
 }

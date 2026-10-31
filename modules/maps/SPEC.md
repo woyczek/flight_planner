@@ -682,6 +682,11 @@ to its size. A new content replaces the open one; opening the airspaces list rel
   I-001A · title · map"), "Weather · FL065 · …"; tooltip: the whole summary ("Vertical profile · LFRS → LFML · alternate
   LFMT · FL065 · 427 NM · C30J · planned flight"). A content's own title: "n airspaces at this point", "LFMN: VFR
   reporting points", "Layers · <summary>".
+- **One distance** (sixth reading, 31 Oct 2026, gap 3): the distance of the title (and of its tooltip) is the flown path's —
+  the route with its chosen procedures, the last `nm` of `flownPath(expandedPath(flight, procedures))` of
+  `frame/lib/current_flight.js` — the one Fuel shows (« procedures included ») and the profile's axis ends on; the title is
+  written again whenever the path changes (`afterPath`: the procedures read after the first drawing), never left on the route
+  alone. A distance typed by hand in Fuel (`route.manual`) is Fuel's own; the Map measures the path.
 - Bare or titled switches only in `onChange` / `onSettle` (a position reached, a rotation), never during a drag. Texts are
   written only when they change.
 - The head's buttons (chips, ✕, "Whole flight") are in the primitive's `ignore` list: they never start a drag.
