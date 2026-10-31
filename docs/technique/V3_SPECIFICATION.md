@@ -1587,3 +1587,38 @@ redesigned for touch at that point.
        Lots added: L6 (Features SOG) the history typed in Maintenance, the derived hard landings and derogations, due
        and derogation shown in Flotte and Fuel, the report's box (flight log, same owner); L7 the costs as data
        (fields, nothing computed). M cases for each; the balance is not a lot.
+
+   36. **GitLab is the official data provider; a pilot joins in "newbie" mode** (user, 31 Oct evening, after the phone
+       synchronised with gitlab.com once connect-src carried it: "GitLab + TOKEN fonctionne ; nouveau fournisseur officiel
+       pour data, par défaut ; GitHub optionnel (single user) ; framagit : nouvelles inscriptions interdites ; refacto en
+       roadmap ; j'ai besoin de la page d'ajout en mode newbie d'un utilisateur, pour accéder à la base privée via GitLab").
+       - **Providers**: GitLab (gitlab.com) is the default of the airline's data repository and of every export; GitHub
+         stays supported for a single user's own repository; framagit.org stays recognised for existing repositories and
+         is never proposed (no new registrations there). The suite's code repository is a separate matter (framagit).
+       - **The pilot needs no GitLab account**: the administrator creates, in the project, one **project access token per
+         pilot**, named by the trigram, role Developer, scopes `read_repository` + `write_repository`, with an expiry
+         (one year proposed); the pilot pastes it once on their device (kept there, never shown again, never in a
+         configuration nor a message); revoking a pilot is revoking their token in GitLab. Commits carry the trigram in
+         `by`; the token's bot identity is a known limit, said in the SPEC.
+       - **Administration › "Ajouter un pilote" (newbie mode)**, one card of Réglages (Maintenance): trigram, name; it
+         gives in one screen (1) the configuration link and file of the airline for this pilot (the existing export,
+         pre-filled, provider gitlab), (2) the administrator's GitLab steps with the direct link to the project's access
+         tokens page and the values to type (name = trigram, role, scopes, expiry), (3) the message to send to the pilot,
+         copyable in the pilot's language: the app's address, "open this link, then paste the token I send you apart",
+         never the token. Nothing is written by this card but the export already written today.
+       - **The pilot's side, "Rejoindre la compagnie"** (existing flow, GitLab wording): open the link → the airline and
+         the repository are read from it → "Collez le jeton reçu de l'administrateur" (no "create a token" step for
+         GitLab, no account) → trigram → test → done; three steps on one page, each said in the four languages; a
+         configuration without provider on a GitLab host is refused (540393e28).
+       - **A violation of the page's allowed hosts is written in the journal** (user's rule): the frame's
+         `securitypolicyviolation` listener (48fc586c2) adds a line to the diagnostic's failures (host, directive, date),
+         copyable, besides the notice.
+       - **Roadmap (after 6 Nov)**: the read-only card "Hosts this page may contact" by category with the origin of each
+         (code, launcher configuration), and a case that every provider of the table is there; never an editable list
+         (the static site's policy is fixed at publication; an editable list pushed by a configuration would be an
+         exfiltration door). The provider refactoring (one table read by export, join, access, transport and CSP;
+         defaults "gitlab") in the roadmap.
+       Lots: Réglages (owner of join, admin, access): the "Ajouter un pilote" card and the GitLab wording of the join flow,
+       default provider gitlab in the export, framagit not proposed; V3 Frame: the journal line (one line on the
+       existing listener). Cases A for each; help ×4 (the Maintenance manual's "Administration" chapter and the Pilot
+       manual's "Rejoindre la compagnie").
