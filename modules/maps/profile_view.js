@@ -108,16 +108,31 @@ export async function buildProfile() {
   // auteur de tout l'enregistrement (le cadre y écrit progress.actual, by 'frame'), seul 'maps' périme le profil ; un
   // profile.path qui ne couvre plus la coupe est de plus écarté par MapsProfile.build
   const stale = f?.by === 'maps',
-    prof = await MapsProfile.build(pts, {
+    opts = (elevation, withMora) => ({
       levelFt: S.route.levelFt,
       profile: stale ? null : f?.profile || null,
       path: stale ? null : f?.profile?.path || null, // la trajectoire de Carburant sous les contraintes des procédures
       airspaces,
-      // les échantillons sont sur la route déroulée : relief et MORA lus à la longitude enroulée
-      elevation: navigator.onLine === false ? null : (lat, lon) => S.terrain(lat, outLon(lon)),
-      mora: A ? (lat, lon) => A.mora(lat, outLon(lon)) : null
-    }).catch(() => null);
-  if (!S || S.route.updated !== key) return;
+      elevation,
+      mora: A && withMora ? (lat, lon) => A.mora(lat, outLon(lon)) : null
+    }),
+    // les échantillons sont sur la route déroulée : relief et MORA lus à la longitude enroulée
+    relief = navigator.onLine === false ? null : (lat, lon) => S.terrain(lat, outLon(lon)),
+    run = S.profRun = (S.profRun || 0) + 1;
+  // la coupe d'abord sans rien à attendre — ni tuile de relief ni lecture des MORA (« relief indisponible ») : aucune attente ne
+  // retient sa construction ; puis refaite avec le relief, ou à défaut les MORA des cases (les limites ASFC des espaces suivent le
+  // relief : leur traversée change avec lui), elle la remplace si rien n'a changé entre-temps (SPEC § 8.3)
+  S.terrainPending = true;
+  const prof = await MapsProfile.build(pts, opts(null, false)).catch(() => null);
+  if (!S || S.route.updated !== key || S.profRun !== run) return;
+  showProf(prof, pts);
+  const full = await MapsProfile.build(pts, opts(relief, true)).catch(() => null);
+  if (!S || S.route.updated !== key || S.profRun !== run) return;
+  S.terrainPending = false;
+  if (full) showProf(full, pts); // relief ou MORA arrivés : la coupe complète ; sans relief la note reste (status)
+}
+/** La coupe calculée posée (S.prof) et dessinée : fenêtre gardée tant que la route est la même, la feuille, la bande, l'état. */
+function showProf(prof, pts) {
   S.prof = prof;
   // fenêtre : gardée tant que la route est la même (le niveau ou les taux ont pu changer), remise dès que ses points diffèrent
   const sig = prof ? pts.map(p => `${p.id || ''}:${(+p.lat).toFixed(4)},${(+p.lon).toFixed(4)}`).join('|') : '',

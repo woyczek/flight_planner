@@ -795,6 +795,13 @@ relative to the ground are raised by the terrain of each sample.
 Offline, or the first tile refused: no terrain; the MORA of each 1° cell crossed (`aerodb.mora`) is drawn as a dashed
 brown step line, and the notes say so.
 
+**Nothing awaited holds the profile back** (Simplification, 31 Oct 2026, after D86 / D87): `buildProfile` builds the profile
+first with nothing to wait for — no relief tile, no MORA read — and draws it (`showProf`, the one writer of `S.prof`; « Relief
+unavailable » in the notes while nothing has arrived, `S.terrainPending`); then it builds it again with the relief, or failing it
+the cells' MORA, and that one replaces the first when it comes, if neither the flight nor a newer building has changed in
+between (`S.profRun`). The second building is a whole one, not the relief alone added: the airspaces' ASFC floors and ceilings
+follow the relief, so the crossings change with it.
+
 ### 8.4 Drawing and cursor
 
 - `SiaProfile.draw`: axes in ft / FL, airspace bands and labels, terrain, points with their distances, trajectory with

@@ -292,7 +292,7 @@ export async function status() {
   // pour information : fond uni, relief absent (l'état normal hors ligne)
   const soft = [];
   if (S.plain && S.route.points.length) soft.push(`<p>${esc(tt(TX.plain))}</p>`);
-  if (S.prof && !S.prof.terrainOk) soft.push(`<p>${esc(tt(TX.noTerrain))}</p>`);
+  if (S.prof && !S.prof.terrainOk) soft.push(`<p>${esc(tt(TX.noTerrain))}</p>`); // tant que rien n'est arrivé, ou faute de relief
   const html = empty.join('');
   S.warnHtml = warn.join('');
   S.softHtml = soft.join('');

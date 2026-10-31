@@ -1909,3 +1909,19 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D92 (1280 and 390): 49 aerodromes 1 to 1.5 NM apart, thinned by the full drawing; the light source's aerodromes are
   exactly those the full drawing named (its name requests in the map's pass, an independent reading), and `drawLight` paints a
   mark for each in the frame.
+
+## The profile never waits to be built (31 Oct 2026, after D86 / D87)
+
+- **Seen**: at 390, coming back to the Map from Fuel, the profile was sometimes never built — D86 once in the full pass of
+  06dcd175b, D87 in those of 5de1e2b93 and 6a8403466, and two in ten when D86 and D87 ran side by side. A first reading (state
+  dumped at the failure) showed `S.prof` null 35 s after the return, the flight not re-read, the map drawn; V3 Frame found that the
+  relief tiles wait in `net.fetch` behind the airline's first reading (its fix, a bound, is its own).
+- **First lot**: build without the relief, add it when the tiles arrive. D86 / D87 still failed two in ten. A second dump, test
+  side only (instrumenting the module hid the failure: 0 in 26), showed the *first* building, the one without relief, still
+  unfinished after 20 s: it awaited `aerodb.mora` cell by cell, and the bench's base has no `mora` part — a read the data layer can
+  keep pending under load.
+- **Rule** (SPEC § 8.3): the first building waits for nothing (no relief, no MORA); the second brings the relief, or the MORA;
+  `showProf` is the one writer of `S.prof`; a run counter (`S.profRun`) keeps a late building from replacing a newer one.
+- **Noreg** D93 (1280 and 390): relief tiles held by the bench — the profile is built and drawn, « Relief unavailable » said; the
+  tiles released (a Terrarium tile of 300 m, written by the case with the standard library) — the profile completed with the relief,
+  the note gone. D86 + D87 side by side: 10 in 10, 12 in 12 (they were 8 in 10).

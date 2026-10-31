@@ -2539,7 +2539,7 @@ def d90(c):
     c.js("() => { location.hash = '#maps?choose=arr&icao=LFPO'; return true }")
     c.until("() => !!(window.__mp.S && window.__mp.S.choose && window.__mp.S.choose.ready) && document.querySelectorAll('.mp-ch-grp').length >= 2",
             timeout=12000, what='the choose pane at LFPO')
-    pane = c.js("() => document.querySelector('[data-module=maps]').innerText.replace(/\s+/g, ' ')")
+    pane = c.js(r"() => document.querySelector('[data-module=maps]').innerText.replace(/\s+/g, ' ')")
     c.ok(names[1] in pane, pane[:300], 'the choose pane names the final by the same string')
     # and Fuel
     c.js("async () => { (await import('/modules/maps/choose.js')).chooseClose(); return true }")
@@ -2617,3 +2617,49 @@ def d92(c):
     c.ok(r['listed'] >= 40 and 0 < len(r['full']) < r['listed'], f"{len(r['full'])} drawn of {r['listed']}", 'the full drawing thins the dense aerodromes out (the case means something)')
     c.eq(r['lite'], r['full'], 'the light drawing’s aerodromes are the full drawing’s, at this zoom', what='aerodromes')
     c.eq(r['n'], r['shown'], 'it paints a mark for each of them in the frame', what='marks painted')
+
+
+# ------------------------------------------------------------------------------------------------------ D93
+def _terrarium_png(metres=300):
+    """A 256 x 256 Terrarium tile of one elevation (R * 256 + G + B / 256 - 32768 = metres), as PNG bytes (standard library)."""
+    import struct
+    import zlib
+    v = int(metres) + 32768
+    px = bytes([v // 256, v % 256, 0])
+    raw = b''.join(bytes([0]) + px * 256 for _ in range(256))
+
+    def chunk(t, data):
+        return struct.pack('>I', len(data)) + t + data + struct.pack('>I', zlib.crc32(t + data) & 0xffffffff)
+    head = bytes([0x89]) + b'PNG' + bytes([13, 10, 26, 10])
+    return head + chunk(b'IHDR', struct.pack('>IIBBBBB', 256, 256, 8, 2, 0, 0, 0)) + chunk(b'IDAT', zlib.compress(raw)) + chunk(b'IEND', b'')
+
+
+@case('D93', 'The profile is built without waiting for a relief tile, with the cells’ MORA, and completed when the tiles arrive', 'D',
+      tags=('maps', 'sheet'), designs=('standard',), night=False,
+      rule='Simplification after D86 / D87 (31 Oct 2026), SPEC § 8.3: the profile is built first without the relief (the cells’ MORA, « Relief unavailable » while nothing has arrived) and drawn; no wait for a tile holds the building back; when the tiles are read the profile is made again with the relief and replaces it; one writer of the profile (showProf)')
+def d93(c):
+    held = []
+    c.page.route(re.compile(r'.*elevation-tiles.*'), lambda r: held.append(r))   # held: the requests hang until released below
+    c.open('maps', docs=fdocs(flight()), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.prof && window.__mp.S.geo)", timeout=8000, what='the profile built and drawn though no relief tile answers')
+    c.until("() => !!(window.__mp.S.softHtml || '').length", timeout=3000, what='the notes written')
+    st = c.js("() => { const S = window.__mp.S; return { pending: !!S.terrainPending, ok: !!S.prof.terrainOk, hidden: S.dataEl.hidden, notes: S.softHtml || '' } }")
+    c.ok(st['pending'] and not st['ok'] and not st['hidden'], f'{st}', 'the sheet shows the profile, with the MORA, while the relief is awaited')
+    c.ok(norm(row(c, 'noTerrain')) in norm(st['notes']), st['notes'][:160], '« Relief unavailable » while nothing has arrived')
+    c.ok(len(held) > 0, f'{len(held)} tile requests held', 'the relief was asked')
+    # the tiles arrive: the profile is completed with the relief, the note goes
+    png = _terrarium_png(300)
+    c.page.unroute(re.compile(r'.*elevation-tiles.*'))
+    c.page.route(re.compile(r'.*elevation-tiles.*'), lambda r: r.fulfill(status=200, content_type='image/png', body=png))
+    for r in held:
+        try:
+            r.fulfill(status=200, content_type='image/png', body=png)
+        except Exception:
+            pass
+    c.until("() => !!(window.__mp.S.prof && window.__mp.S.prof.terrainOk && !window.__mp.S.terrainPending)", timeout=15000,
+            what='the profile completed with the relief')
+    c.wait(300)
+    notes = c.js("() => window.__mp.S.softHtml || ''")
+    c.ok(norm(row(c, 'noTerrain')) not in norm(notes), notes[:160], 'the note goes when the relief has arrived')
