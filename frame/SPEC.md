@@ -168,6 +168,9 @@ The transports:
   - `commit` makes one tree on the parent's tree (content for written files, `sha: null` for removed ones; a removal
     of a file absent from the tree is skipped), one commit, then a non-forced ref update.
   - A truncated tree is an error.
+  - The API is `https://api.github.com`, or a bench's local address (`http://127.0.0.1`, `http://localhost`); any other
+    `api` in a setting is ignored, by `clean` and again by the transport (said once in the console), so the pilot's token
+    never goes to a host a forged « Rejoindre » link would put there (audit line 118; Settings refuses it at the source).
 - **`gitlab`** (`frame/store/transport_gitlab.js`, 29 Oct 2026): the data repository on a GitLab instance (gitlab.com,
   framagit…) through its REST API v4, with a project access token (one per pilot, named after the trigram, created by
   the administrator, revocable, with an expiry). The device's setting is GitHub's (`device/keys.json`, `FD.github`): a

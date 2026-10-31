@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **GitHub transport: the token goes to api.github.com only** (`frame/store/transport_github.js`; frame SPEC 2; the
+  publication bench, noreg A30) — audit line 118: a setting's `api` other than GitHub's or a bench's local address is
+  ignored by `clean` and by the transport itself, so a forged « Rejoindre » link cannot collect the pilot's token
+  (Settings refuses it at the source).
 - **Data: a key from a launcher answer never reads the prototype** (`modules/data`, Sécurisation's review of 89dd17934) — `own(table,
   key)` returns a value for an own key only, else the fallback: a reason such as `constructor`, `toString` or `__proto__` no longer
   yields a function or `Object.prototype` as the result kind (written into `data-result`, used as a text key); the same rule for every

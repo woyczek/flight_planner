@@ -163,7 +163,7 @@
   const tr = () => FrameData.github({
     repo: 'o/r',
     token: 't',
-    api: 'https://api.github.test'
+    api: 'https://api.github.com'
   });
   try {
     const prog = [];
@@ -283,6 +283,32 @@
         signal: ac.signal
       });
     ck('annulé avant le premier blob : rien d\'envoyé', r7.cancelled === true && GH.calls.length === before);
+    // une api étrangère (lien forgé, audit ligne 118) : ignorée par clean et par le transport, aucun appel vers elle
+    const hosts = [],
+      stub = window.fetch;
+    window.fetch = (url, init) => (hosts.push(new URL(url).host), stub(url, init));
+    try {
+      await FrameData.github({
+        repo: 'o/r',
+        token: 't',
+        api: 'https://evil.example'
+      }).head();
+    } finally {
+      window.fetch = stub;
+    }
+    const kept = ['https://api.github.com', 'http://127.0.0.1:8790/api', 'http://localhost/api', 'https://evil.example',
+      'https://api.github.com.evil.example', 'http://127.0.0.1.evil.example', 'https://evil.example/api/v4'
+    ].map(api => FrameData.github.clean({
+      repo: 'o/r',
+      token: 't',
+      api
+    }).api || '');
+    ck('api étrangère : aucun appel vers elle, la tête lue sur api.github.com', hosts.length > 0 && hosts.every(h => h ===
+        'api.github.com'),
+      hosts.join(', '));
+    ck('clean : api de GitHub (par défaut) ou des bancs seulement', JSON.stringify(kept) === JSON.stringify(['',
+      'http://127.0.0.1:8790/api', 'http://localhost/api', '', '', '', ''
+    ]), JSON.stringify(kept));
   } catch (e) {
     ck('exception', false, e.stack || e.message);
   }

@@ -38,8 +38,10 @@
       if (provider === 'gitlab') api = `https://${u[1].toLowerCase()}/api/v4`; // l'hôte collé, jamais un api d'avant
       repo = u[2];
     }
-    // GitLab : une api de la seule forme https://hôte/api/v4 (sinon ignorée : le transport refuse un réglage sans elle)
+    // GitLab : une api de la seule forme https://hôte/api/v4 (sinon ignorée : le transport refuse un réglage sans elle) ;
+    // GitHub : celle de GitHub ou des bancs, jamais une autre (githubApi)
     if (provider === 'gitlab' && !GITLAB_API.test(api)) api = '';
+    if (provider === 'github') api = githubApi(api);
     return {
       repo,
       branch: String(c.branch || 'main').trim() || 'main',
@@ -53,9 +55,24 @@
     };
   };
   const GITLAB_API = /^https:\/\/[^/\s]+\/api\/v4$/;
+  const GITHUB_API = 'https://api.github.com',
+    LOCAL_API = /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?(\/[^\s@?#]*)?$/;
+  let warned = false;
+  /** api d'un réglage GitHub : celle de GitHub, ou l'adresse locale des bancs (http://127.0.0.1, http://localhost) ; toute
+   *  autre est ignorée (l'api de GitHub, dit une fois en console) : le jeton du pilote ne part jamais vers un hôte qu'un lien
+   *  forgé aurait mis dans le réglage (audit, ligne 118 ; Réglages refuse déjà ce réglage à la source). '' : celle par défaut. */
+  const githubApi = a => {
+    const x = String(a || '').trim().replace(/\/+$/, '');
+    if (!x || x === GITHUB_API || LOCAL_API.test(x)) return x === GITHUB_API ? '' : x;
+    if (!warned) {
+      warned = true;
+      console.warn('github transport: api ignored, only https://api.github.com is used');
+    }
+    return '';
+  };
   /** Cible d'un réglage : fournisseur, origine de l'API, projet — un jeton ne vaut que pour la sienne. */
   const target = c => `${c?.provider === 'gitlab' ? 'gitlab' : 'github'}|${c?.provider === 'gitlab' ? String(c.api || '').toLowerCase() :
-    (c?.api || 'https://api.github.com').replace(/\/$/, '').toLowerCase()}|${String(c?.repo || '').toLowerCase()}`;
+    (githubApi(c?.api) || GITHUB_API).toLowerCase()}|${String(c?.repo || '').toLowerCase()}`;
   /** Réglage de la carte d'accès (adresse collée, jeton peut-être vide) → réglage complet : le jeton enregistré n'est repris
    *  que si le fournisseur, l'origine de l'API et le projet sont ceux du réglage enregistré (jamais vers un nouvel hôte :
    *  un lien d'invitation malveillant ne fait pas partir l'ancien jeton) ; sinon token vide et newTarget (l'hôte à dire). */
@@ -107,7 +124,8 @@
       if (!FD.gitlab) throw new Error('gitlab transport not loaded');
       return FD.gitlab(c);
     }
-    const api = (c.api || 'https://api.github.com').replace(/\/$/, ''),
+    // le réglage peut arriver sans passer par clean (FD.github(cfg)) : la même règle ici, le dernier point avant l'en-tête
+    const api = githubApi(c.api) || GITHUB_API,
       branch = c.branch || 'main',
       repo = `${api}/repos/${c.repo}`;
     let refTag = '',
