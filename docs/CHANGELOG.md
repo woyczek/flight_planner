@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data layer: an abandoned read that ends late writes nothing** (`frame/store/frame_data.js` `fetchOne`; frame SPEC 2.7;
+  the store bench, noreg A53) — Sécurisation's line 129 on 80a355157: the late read is given to whoever still waits, never
+  put in the cache nor announced, so an older revision never replaces a newer one. A53 now reports the detail of a
+  failure (the store bench fails rarely under load, before this lot too).
 - **aerodb: a read answers or fails, never pending** (`frame/aerodb/aerodb.js`; aerodb SPEC 3, DECISIONS; noreg K59) —
   after BUGS SOG's D86 / D87: each read of a zone's part has a bound (`readWait`, 10 s; not the list of zones, so a slow
   first launch still says « loading »), then gives nothing and is asked again

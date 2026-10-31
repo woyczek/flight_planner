@@ -2183,6 +2183,7 @@ page is served to `Sec-Fetch-Site: none`, refused to `cross-site`, and, where th
   zone's cycle (empty at once, `absent` in the stats). Returns are unchanged: empty lists, `null`, never a throw.
   « Asked again » holds only if the next read does not land on the same pending promise: at the bound aerodb calls
   `reader.abandon(path)`, and the data layer forgets its shared read of that path (`fetchOne`'s entry; an old read that
-  ends later no longer removes a newer one). No general bound inside `fetchOne` (Simplification): the reader that stops
+  ends later no longer removes a newer one, and since line 129 of the audit it writes nothing either: an older revision
+  arriving late never replaces the newer one in the cache). No general bound inside `fetchOne` (Simplification): the reader that stops
   waiting says so. Only part reads are bounded: bounding the list of zones made a first launch held longer than the
   bound say « not published » for 30 s (A15, found by the noreg before the push).

@@ -672,6 +672,15 @@
       const rev = tree[path];
       if (!rev) return null;
       const text = await T.read(path, rev);
+      // lecture abandonnée entre-temps (abandon) : rendue à qui l'attend encore, sans rien écrire ni annoncer — une
+      // révision plus ancienne arrivée tard n'écrase jamais celle d'une lecture plus récente (Sécurisation, ligne 129)
+      if (fetching.get(path) !== job) return {
+        text,
+        rev,
+        cached: false,
+        pending: false,
+        at: Date.now()
+      };
       await idb('docs', 'put', {
         path,
         text,
@@ -702,7 +711,8 @@
     return job;
   }
   /** Oublie la lecture partagée en cours de ce chemin (rien n'est annulé sur le réseau) : la demande suivante la relance
-   *  au lieu d'attendre la même promesse. Pour un lecteur qui a cessé d'attendre (borne d'aerodb, 31 oct. 2026). */
+   *  au lieu d'attendre la même promesse ; l'ancienne, si elle finit, n'écrit rien dans le cache. Pour un lecteur qui a
+   *  cessé d'attendre (borne d'aerodb, 31 oct. 2026). */
   const abandon = path => void fetching.delete(String(path || ''));
 
   // ---------------------------------------------------------------- source des références (transport local)

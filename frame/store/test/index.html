@@ -712,6 +712,70 @@
         wait: true
       }))?.value?.zone === 'fr' && (await FD.diagnostic()).references.cached === 1, null);
     },
+    async 'an abandoned read that ends late writes nothing: the newer revision stays in the cache'() {
+      const ref = 'sia/base/fr/late.json',
+        d = await fresh({
+          [ref]: JSON.stringify({
+            v: 1
+          })
+        });
+      // the transport's first read of this file is held until release()
+      const gh = FD.github({
+          repo: 'test/data',
+          branch: 'main',
+          token: 'test-token',
+          api: `${location.origin}/api`
+        }),
+        held = {
+          n: 0
+        };
+      let release;
+      const gate = new Promise(r => release = r);
+      FD.configure({
+        transport: {
+          ...gh,
+          read: (p, rev) => p === ref && held.n++ === 0 ? gate.then(() => gh.read(p, rev)) : gh.read(p, rev)
+        },
+        identity: {
+          trigram: 'TST'
+        }
+      });
+      const old = d.read(ref, {
+        policy: 'reference',
+        wait: true
+      });
+      await new Promise(r => setTimeout(r, 50));
+      d.abandon(ref);
+      // another device changes the file; the pull learns the new revision, the next read takes it
+      await T('write', {
+        files: {
+          [ref]: JSON.stringify({
+            v: 2
+          })
+        }
+      });
+      await d.sync();
+      const seen = [];
+      d.watch('sia/base/', p => seen.push(...p));
+      const now = await d.read(ref, {
+        policy: 'reference',
+        wait: true
+      });
+      const before = seen.length;
+      release();
+      const late = await old;
+      await new Promise(r => setTimeout(r, 50));
+      const kept = await d.read(ref, {
+        policy: 'reference'
+      });
+      check('the abandoned read ends with its own (older) value for whoever still waited', JSON.parse(late?.text || '{}').v === 1,
+        late);
+      check('the newer revision stays in the cache, never replaced by the late one', now?.value?.v === 2 && kept?.value?.v === 2, {
+        now: now?.value,
+        kept: kept?.value
+      });
+      check('no change announced for the late read', seen.length === before, seen);
+    },
     async 'git blob sha matches the repository'() {
       const d = await fresh({
         'disponibilites/A/x.json': 'héllo\n'

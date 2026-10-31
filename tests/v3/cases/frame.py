@@ -1825,7 +1825,8 @@ def a53(c):
         c.page.goto(f'http://127.0.0.1:{port}/frame/store/test/index.html', wait_until='load')
         c.page.click('#run')
         c.page.wait_for_function('window.__results', timeout=90000)
-        r = c.js('({ total: window.__results.total, failed: window.__results.failed.map(x => x.name).slice(0, 3) })')
+        # the detail too (a stack for a scenario that threw): the bench's rare failures under load are read from the report
+        r = c.js("({ total: window.__results.total, failed: window.__results.failed.map(x => x.name + ' — ' + String(x.detail || '').slice(0, 300)).slice(0, 2) })")
     finally:
         fake.kill()
         fake.wait(10)
