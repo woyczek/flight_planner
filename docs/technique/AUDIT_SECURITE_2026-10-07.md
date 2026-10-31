@@ -982,6 +982,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 130 | An abandoned read writes nothing to the cache (a90e431e3): the note of 129 closed | acceptable |
 | 131 | Refactor R-S9 (2/2): the Settings' shared texts in `kit.js`, `render` in parts (3fe9628ca) | acceptable, no change of behaviour |
 | 132 | The Weather module rewritten on the frame's weather layer (0e1631995, cf6238b10, baa91389f, 6c1da70c6, 61778a14d) | acceptable |
+| 133 | Weather layer: `cost()` of a request, from the cache only (d9609bd7f) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2131,6 +2132,11 @@ whose only change bounds a past start to 92 days. Everything that comes from a f
 the tooltips and panels insert only escaped texts and formatted numbers; a pasted or loaded flight keeps only points with
 finite coordinates; the address is read only to compare the demo flag. `meta.files` lists every file. 61778a14d only drops
 the module's former store bench from the noreg table.
+
+**133. The weather layer's `cost()` (d9609bd7f) — acceptable.** `cost` builds its request with the same functions as
+`aloft` and `grid` (points filtered to finite coordinates, at most `MAX_SAMPLES` or `MAX_PLACES`), then reads only the
+layer's cache (the known run from memory or `cache/weather/<model>/meta.json`, the cell files) to count what is missing;
+it makes no outgoing call, the paths being built from the model's identifier and the layer's own keys.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
