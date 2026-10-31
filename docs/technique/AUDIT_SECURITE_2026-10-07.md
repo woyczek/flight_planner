@@ -978,6 +978,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 126 | Refactor R-S8 (2/2): the Data model split into six pure files behind a facade (bdb072221) | acceptable, a move only |
 | 127 | Refactor R-S9 (1/2): the Settings screen's cards and actions in two files (6105be2ba) | acceptable, a move only |
 | 128 | Frame: `ctx.net.fetch` waits at most 3 s for the airline's first read, then refuses (aabaa0f3b) | acceptable |
+| 129 | aerodb: a zone part's read bounded, the shared read abandoned at the bound (80a355157) | acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2102,6 +2103,13 @@ airline's first read 3 s at most; after that the decision is the one without an 
 503, never a default permission, and a refused call is not reopened when the site is known later. Hosts of
 `DIRECT_PATHS` (the relief tiles) no longer wait, and still pass only as `https` `GET` on their closed list of paths;
 `RELAY`, `DIRECT` and the rule that nothing but `GET` goes to the airline's site are unchanged.
+
+**129. Bounded reads of the aerodb parts (80a355157) — acceptable, one note.** A zone part is read with a bound (10 s),
+then returns nothing; `abandon(path)` forgets only the shared read of that path (nothing cancelled, no write involved), the
+path being one the layer builds itself; a part the repository's list does not name is empty without a read. Note
+(correctness, not security): an abandoned read still runs to its end and writes the cache (`idb` put, `changed`), so if the
+repository moved in between, an older revision can replace the newer one until the next revalidation; skip the write when
+the job is no longer the one registered for its path.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
