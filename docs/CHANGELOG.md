@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Weather: "Load (≈ n calls)" before any call** (`modules/atmosphere/module.js`, `wx.js`, `screen_flight.js`, `texts.js`;
+  SPEC, DECISIONS, help ×4) — the Load button (map and Flight form) says what loading would cost: the weighted calls the
+  device lacks for the route and the map's grid, every day the slider reaches, from the frame's `ctx.weather.cost`
+  (nothing asked); "already on the device" at 0; "Load" alone in the demonstration. Noreg E17.
+
 - **Noreg E8 (Weather): the cut's window waited for, not assumed** (`tests/v3/cases/atmosphere.py`) — the pinch is made
   again after the page has settled until the window holds tight, and "Vol entier" is waited for instead of a fixed 400 ms
   pause (as Fuel's `to_step`); the module is untouched. E8 ×10 and ×5 under a concurrent pass, green.

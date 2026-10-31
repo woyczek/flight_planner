@@ -29,6 +29,10 @@ export const TX = {
   grid48: ['8 × 6', '8 × 6', '8 × 6', '8 × 6'],
   grid96: ['12 × 8 (lourd)', '12 × 8 (heavy)', '12 × 8 (schwer)', '12 × 8 (pesada)'],
   load: ['Charger', 'Load', 'Laden', 'Cargar'],
+  loadCost: ['Charger (≈ {n} appels)', 'Load (≈ {n} calls)', 'Laden (≈ {n} Abrufe)', 'Cargar (≈ {n} llamadas)'],
+  loadCached: ['Charger (déjà sur l’appareil)', 'Load (already on the device)', 'Laden (schon auf dem Gerät)',
+    'Cargar (ya en el dispositivo)'
+  ],
 
   // vue fixe (gabarit de la Carte) : ligne d'outils, carte, bloc du bas
   srTitle: ['Atmosphère de la route', 'Route atmosphere', 'Atmosphäre entlang der Route', 'Atmósfera de la ruta'],
