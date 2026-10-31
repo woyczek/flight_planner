@@ -992,6 +992,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 140 | Group of 1 November: zone map on `zonesLayer` (9f637a970), mission reader (96ff67873), Missions module and `#fuel?mission=` (879816763) | acceptable |
 | 141 | IVAO return: a same-origin hop page instead of a redirect, refusals logged (2812c0689) | acceptable |
 | 142 | Group of 1 November evening: transport errors told apart (fe6713570), repository address normalised (0ea44bd45) | acceptable |
+| 143 | CSP: `connect-src` opened to `gitlab.com` and `framagit.org` exactly; CSP refusals told (48fc586c2) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2201,6 +2202,12 @@ repository's own refusal (the server's message, truncated, never the token); the
 diagnostic carry only those messages. `normalizeRepo` turns four input forms into one `https` address that goes through
 `parseRepo` (host of letters, digits, dots and dashes, user part dropped, checked path segments) and refuses an unknown
 provider, before anything is saved.
+
+**143. Two GitLab hosts in `connect-src` (48fc586c2) — acceptable.** `tools/csp_policy.py` gains exactly
+`https://gitlab.com` and `https://framagit.org` (the public GitLab hosts of the providers' table), no wildcard, nothing else;
+the pages' meta tags are rebuilt from it, none committed by hand. A self-hosted GitLab stays blocked by the static site's
+policy, a second barrier behind the transport. The frame listens to `securitypolicyviolation` and says, for a blocked
+`connect-src`, only the host (from `URL().host`).
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
