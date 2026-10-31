@@ -1481,3 +1481,56 @@ redesigned for touch at that point.
        Out of scope, by the user's decision: users and rights, the Centre (dispos, ODV, CR sending: the CPCO
        application later), theme colours. Each lot: SPEC of the module first, cases, help ×4, `--touched` before the
        push, one full pass after.
+
+   35. **Aircraft: a sheet is a type, an aircraft is a registration** (user, 31 Oct: "pas d'imat dans la fiche de base, c'est un
+       type / variante ; l'ajout d'appareil, on doit pouvoir choisir, pas seulement renseigner ; créer un appareil « lazy »
+       depuis les vols passés ; flotte perso et flotte partagée, les deux sur le git ; pas de paramètres moteur sur les
+       appareils"). Vocabulary, fixed here and in the glossary: a **terminal** is a phone, a tablet or a computer; an
+       **aircraft** ("appareil") is a registered airframe; a **sheet** ("fiche appareil") is a generic type + variant, which is
+       instantiated to make an aircraft. Rules:
+       - **A sheet carries no registration**: its id is the type + variant (`C30J` for the base, `C30J-<VARIANT>` in capitals
+         `[A-Z0-9-]`, unique; the variant's label is free); it holds the performance and nothing of an airframe. There is no
+         "sheet of an aircraft" any more: a registered airframe that differs from its type is another variant, that is
+         another sheet (ergonomics session's extension of the user's "no engine parameters": no performance field at all
+         on an aircraft, so that one value has one home). Existing sheets keyed by a registration (the user's data) are
+         read as variants named "TYPE · F-XXXX", nothing lost nor hidden; Maintenance offers "Convertir en variante" as an
+         explicit gesture, nothing migrated silently. `aerodb`'s registry resolves the sheet as the aircraft's `sheetId`
+         from the fleet, else its type's; "Immatriculation" and "Indicatif" leave `PROFILE_FIELDS`. The V2 mirror
+         (`planner/`, per-registration profiles) keeps being written as is until V2 is off.
+       - **An aircraft is an instance of a sheet**: registration (the key), the sheet's id, callsigns, base, operator,
+         tactical number, **state** (in service / in maintenance / retired), **maintenance** (a status text, a next due
+         date, a note), and **hours**. Hours are not typed: block minutes of the flight log's flights with this
+         registration, a flight counted once per (registration, date, off-block time), plus one typed offset "hours
+         before the log" (one writer, the log; counter-proposal to the user's "heures de vol" as a field). A shared
+         aircraft's hours come from the airline's reports (`cr/`) only; a personal aircraft's from the pilot's own log
+         (`pilot/<TRI>/`): Maintenance never reads another pilot's log. `location` / `locationAt` stay read-only from the
+         site. Later, on the aircraft and never in a sheet: the flight-plan identity of the airframe (equipment of item
+         10, transponder, PBN, SELCAL, colour and markings of item 19), today taken from the network plan's text.
+       - **Adding an aircraft is choosing, then filling**: step 1, choose the sheet in the list (search; "Nouvelle fiche" when
+         the type is missing, then back here); step 2, the aircraft's own fields; "Enregistrer". From a sheet's editor,
+         two gestures: "Créer un appareil" (step 2 with the sheet chosen) and "Utiliser pour un vol" (opens Fuel with the
+         sheet alone).
+       - **A flight carries an aircraft or a sheet alone**: `flight.aircraft` = `{ registration, … }` (its sheet read through
+         the fleet) or `{ sheetId, type }` without registration (the shape Fuel already reads as "other type"; no new key
+         in `current_flight`, shared with the Map and the Report); the report keeps a registration as typed when it is
+         in no fleet.
+       - **Lazy aircraft from the past flights** (as V2): the Flotte view shows a group "Vus dans vos vols" — the
+         registrations of the pilot's flight log that are in no fleet, with the type the report named — each with
+         "Ajouter" (step 2 pre-filled: registration, the sheet guessed from the type when one exists; on a pilot's
+         terminal the personal fleet by default, in Maintenance the shared one); until confirmed, nothing is written and
+         the flights keep their registration as text.
+       - **Two fleets, both in the shared repository** (sharing between the pilot's terminals): the **shared fleet**
+         `airline/fleet.json` (the airline's aircraft, edited in Maintenance › Appareils; its two writers, aircraft and
+         the website's paste, move to schema 2 together, schema 1 still read) and the **personal fleet**
+         `pilot/<TRI>/fleet.json` (the pilot's own aircraft, edited by the same editor on the pilot's device, the box
+         "personnel" choosing where the aircraft lives; said limit: readable by every pilot of the airline, as every file
+         of the repository — the access model of the fleet). An aircraft lives in one fleet; moving it is a retire + add,
+         said. The same registration in both: the shared one wins for reading, the personal duplicate is flagged in Flotte
+         ("déjà dans la flotte partagée — retirer de la mienne"). Fuel's aircraft list shows both, the personal ones marked.
+       - **Out**: engine or performance values on an aircraft, users and rights, the site's fleet page (pasted, website).
+       Lots, one commit each with its cases: L0 (AeroDB, owner of `frame/aerodb`): the registry resolves by `sheetId`,
+       the two identity fields leave `PROFILE_FIELDS`, per-registration sheets read as variants, aerodb bench; then
+       Features SOG (owner of `modules/aircraft`, `modules/fuel`, website), after the Appareils SPEC written as a state:
+       L1 the aircraft's new fields and state (schema 2 of `fleet.json`, both writers); L2 "Ajouter" in two steps and the
+       two gestures of a sheet; L3 the personal fleet; L4 the lazy aircraft from the flight log; L5 the hours from the
+       log; Fuel reads the sheet-alone flight. Cases M for each.
