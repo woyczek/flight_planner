@@ -224,7 +224,7 @@ def join_airline(b, lang, out, fake):
     time.sleep(3)
     link = b.js(f"""await until(() => window.SogConfig);
       const c = SogConfig.build({{ airline: {{ name: 'Test Airline', site: 'https://example.invalid', pages: {{}} }},
-        data: {{ host: 'github.com', repo: 'test-airline/data', branch: 'main', api: '{fake}/api' }}, trigram: 'TST' }});
+        data: {{ host: 'github.com', provider: 'github', repo: 'test-airline/data', branch: 'main', api: '{fake}/api' }}, trigram: 'TST' }});
       delete c.howto; return location.origin + location.pathname + '#settings?config=' + await SogConfig.pack(c);""")
     b.go(link)
     b.js("location.reload();")

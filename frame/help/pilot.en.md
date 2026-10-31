@@ -841,7 +841,7 @@ only reported.
 
 - **Access to the repository** is set on the computer: an SSH key for a `git@…` address, credentials stored in Git for
   an `https://…` address.
-- **The provider** is not a setting: it is read from the remote repository's address. At the top of the panel, “Provider: GitLab · project group/project” (the project is a link to its page); for GitLab, the “Pilots’ tokens” link leads to the creation of the welcome tokens; for GitHub, the panel suggests entering the address of a GitLab project, because welcoming by project token needs one. The page only suggests: changing the repository goes, as always, through the launcher's Yes / No window. The exported configuration carries the provider, and the pilot's side opens on it.
+- **The provider** of a configuration is chosen (github or gitlab), never guessed; the panel only reads the remote repository's address (GitHub, gitlab.com, framagit.org, or a self-hosted GitLab that the device's configuration names with the same host; otherwise “Provider not recognised”). At the top of the panel, “Provider: GitLab · project group/project” (the project is a link to its page); for GitLab, the “Pilots’ tokens” link leads to the creation of the welcome tokens; for GitHub, the panel suggests entering the address of a GitLab project, because welcoming by project token needs one. The page only suggests: changing the repository goes, as always, through the launcher's Yes / No window. The exported configuration always carries the provider (github or gitlab; an unknown repository is refused, never exported as “other”), and the pilot's side opens on it. An old configuration without a provider is accepted only for github.com. Without a launcher, a GitLab configuration is applied on the device like a GitHub one.
 - **Several users through git** need this remote repository: without it, the “Several users” box leads nowhere, and
   the “Usages” card says so.
 - **data/ missing or without git**: the “Data access” card opens a door, at every level. `data/` is a folder ignored by the code repository; it
@@ -947,4 +947,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: 811e3ccf2b42 -->
+<!-- fr: d5070361a48e -->

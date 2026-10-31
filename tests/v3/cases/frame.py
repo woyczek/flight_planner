@@ -1614,20 +1614,20 @@ def a49(c):
         route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
     c.context.route(re.compile(r'/__setup/'), launcher)
 
-    # the pure helper: https, ssh, scp-like, framagit, a host that contains « gitlab », github, other, credentials never kept
+    # the pure helper: https, ssh, scp-like, the public hosts (github.com, gitlab.com, framagit.org), no guess for any other host (a name that contains « gitlab » proves nothing), credentials never kept
     state['url'] = 'https://gitlab.com/grp/proj.git'
     c.open('settings', docs=LEVEL3)
     c.until("!!window.SogConfig && !!SogConfig.providerOf", what='the configuration helper is loaded')
     fixtures = [
         ('https://gitlab.com/grp/proj.git', 'gitlab', 'https://gitlab.com/grp/proj', 'grp/proj'),
         ('git@gitlab.com:grp/proj.git', 'gitlab', 'https://gitlab.com/grp/proj', 'grp/proj'),
-        ('ssh://git@gitlab.mycorp.test:2222/grp/sub/proj.git', 'gitlab', 'https://gitlab.mycorp.test/grp/sub/proj', 'grp/sub/proj'),
+        ('ssh://git@gitlab.mycorp.test:2222/grp/sub/proj.git', None, 'https://gitlab.mycorp.test/grp/sub/proj', 'grp/sub/proj'),
         ('https://framagit.org/asr/flight_planner_data.git', 'gitlab', 'https://framagit.org/asr/flight_planner_data', 'asr/flight_planner_data'),
         ('https://github.com/acme/data', 'github', 'https://github.com/acme/data', 'acme/data'),
         ('git@github.com:acme/data.git', 'github', 'https://github.com/acme/data', 'acme/data'),
-        ('ssh://git@git.example.org:2222/acme/data.git', 'other', 'https://git.example.org/acme/data', 'acme/data'),
-        ('https://bitbucket.org/acme/data.git', 'other', 'https://bitbucket.org/acme/data', 'acme/data'),
-        ('not an address', 'other', '', ''),
+        ('ssh://git@git.example.org:2222/acme/data.git', None, 'https://git.example.org/acme/data', 'acme/data'),
+        ('https://bitbucket.org/acme/data.git', None, 'https://bitbucket.org/acme/data', 'acme/data'),
+        ('not an address', None, '', ''),
     ]
     for url, provider, web, project in fixtures:
         got = c.js("(u) => SogConfig.providerOf(u)", url)
@@ -1635,15 +1635,13 @@ def a49(c):
     got = c.js("(u) => JSON.stringify(SogConfig.providerOf(u))", 'https://oauth2:SECRET-TOKEN@gitlab.com/grp/proj.git')
     c.ok('SECRET' not in got and 'oauth2' not in got, got, 'credentials of an address are never kept')
     c.eq(json.loads(got)['web'], 'https://gitlab.com/grp/proj', 'the web page of an address with credentials', what='web')
-    # the provider table: one frozen, closed reference (nested objects too); an unknown provider is brought back to « other » at the entry
-    tab = c.js("() => { const T = SogConfig.PROVIDER_TABLE; return { ids: Object.keys(T), frozen: Object.isFrozen(T) && Object.values(T).every(e => Object.isFrozen(e) && Object.isFrozen(e.capabilities)), projectTokens: Object.fromEntries(Object.entries(T).map(([k, e]) => [k, e.capabilities.projectTokens])), labels: Object.values(T).map(e => e.label), odd: SogConfig.kind({ host: 'git.example.org', provider: 'bitbucket' }), proto: SogConfig.kind({ host: 'git.example.org', provider: '__proto__' }) } }")
-    c.eq(tab, {'ids': ['github', 'gitlab', 'other'], 'frozen': True, 'projectTokens': {'github': False, 'gitlab': True, 'other': False},
-               'labels': ['GitHub', 'GitLab', ''], 'odd': 'other', 'proto': 'other'}, 'a closed, deeply frozen table; GitLab alone welcomes by project token; an unknown id is other', what='provider table')
-    # the exported configuration carries the provider; one read without it falls back on the host
-    cfg = c.js("() => SogConfig.build({ data: { host: 'gitlab.mycorp.test', repo: 'grp/proj' }, trigram: 'ABC' }).data")
+    # the provider table: one frozen, closed reference (nested objects too), no « other »
+    tab = c.js("() => { const T = SogConfig.PROVIDER_TABLE; return { ids: Object.keys(T), frozen: Object.isFrozen(T) && Object.values(T).every(e => Object.isFrozen(e) && Object.isFrozen(e.capabilities) && Object.isFrozen(e.hosts)), projectTokens: Object.fromEntries(Object.entries(T).map(([k, e]) => [k, e.capabilities.projectTokens])), labels: Object.values(T).map(e => e.label) } }")
+    c.eq(tab, {'ids': ['github', 'gitlab'], 'frozen': True, 'projectTokens': {'github': False, 'gitlab': True},
+               'labels': ['GitHub', 'GitLab']}, 'a closed, deeply frozen table; GitLab alone welcomes by project token', what='provider table')
+    # the exported configuration carries the provider it is given (A55 covers the rest of build and validate)
+    cfg = c.js("() => SogConfig.build({ data: { host: 'gitlab.mycorp.test', repo: 'grp/proj', provider: 'gitlab' }, trigram: 'ABC' }).data")
     c.eq(cfg['provider'], 'gitlab', 'the configuration carries the provider', what='build')
-    ok = c.js("() => { const r = SogConfig.validate({ schema: 'sog-config/1', identity: { trigram: 'ABC' }, data: { host: 'github.com', repo: 'a/b' } }); return r.ok && r.cfg.data.provider }")
-    c.eq(ok, 'github', 'a configuration without provider gets the one of its host', what='validate')
 
     def panel():
         c.until("!!document.querySelector('[data-admin=\"remote\"]')", what='the Administration card lists the remote repository')
@@ -1865,3 +1863,121 @@ def a54(c):
     c.wait(800)                                            # the module comes back after its pane is gone
     shown = c.js("() => ({ view: [...document.querySelectorAll('#fView section[data-module]')].map(e => e.dataset.module), panes: document.querySelectorAll('.f-pane').length, maps: document.querySelectorAll('[data-module=\"maps\"]').length })")
     c.eq(shown, {'view': ['atmosphere'], 'panes': 0, 'maps': 0}, 'the late module is never mounted: no pane, no Map anywhere', what='after the late module')
+
+
+@case('A55', 'The provider is chosen, never deduced: validate, export, remote panel, Access card', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame/settings SPEC 5: a configuration carries provider github | gitlab; without it only github.com is read as github (legacy, before 48079d78f); anything else is refused at validate; the export never writes « other »; a GitLab configuration is applied like a GitHub one')
+def a51(c):
+    launcher_file = 'frame/settings/launcher.js'
+    settings_file = 'frame/settings/settings.js'
+    state = {'up': True, 'url': ''}
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True,
+              'relaxNav': False, 'host': 'TEST', 'lan': False}
+
+    def launcher(route):
+        if not state['up']:
+            return route.abort()
+        req = route.request
+        path = urllib.parse.urlparse(req.url).path
+        body = {}
+        if path.endswith('/__setup/status'):
+            body = status
+        elif path.endswith('/__setup/sync-remote') and req.method == 'GET':
+            body = {'repo': True, 'remote': 'origin', 'url': state['url'], 'branch': 'main', 'state': 'repo', 'default': ''}
+        elif path.endswith('/__setup/secrets'):
+            body = {'app': {'ivao': {'apiKey': {'set': False, 'hint': ''}}, 'ead': {'user': {'set': False, 'at': ''}, 'password': {'set': False, 'at': ''}}}, 'user': {}}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    state['url'] = 'https://git.example.org/acme/data.git'
+    c.open('settings', docs=LEVEL3)
+    c.until("!!window.SogConfig && !!SogConfig.validate", what='the configuration helper is loaded')
+
+    # validate: the field is the provider; without it only github.com is read (legacy); the rest is refused at the entry
+    got = c.js("""() => { const mk = d => SogConfig.validate({ schema: 'sog-config/1', identity: { trigram: 'ABC' }, data: d });
+      const f = r => r.ok ? r.cfg.data.provider + '|' + r.cfg.data.host : r.error;
+      return { legacy: f(mk({ host: 'github.com', repo: 'a/b' })), noProvider: f(mk({ host: 'git.example.test', repo: 'a/b' })),
+        bitbucket: f(mk({ host: 'bitbucket.org', repo: 'a/b', provider: 'bitbucket' })), other: f(mk({ host: 'github.com', repo: 'a/b', provider: 'other' })),
+        selfHosted: f(mk({ host: 'git.example.test', repo: 'grp/proj', provider: 'gitlab' })), github: f(mk({ host: 'github.com', repo: 'a/b', provider: 'github' })) } }""")
+    c.eq(got, {'legacy': 'github|github.com', 'noProvider': 'provider', 'bitbucket': 'provider', 'other': 'provider',
+               'selfHosted': 'gitlab|git.example.test', 'github': 'github|github.com'},
+         'no provider + github.com: github; no provider elsewhere, bitbucket, other: refused; a self-hosted GitLab: accepted with its host', what='validate')
+    # build: always a provider, github or gitlab, never other
+    got = c.js("""() => { const err = d => { try { SogConfig.build({ data: d, trigram: 'ABC' }); return 'written' } catch (e) { return e.message } };
+      return { none: err({ host: 'x.org', repo: 'a/b' }), other: err({ host: 'x.org', repo: 'a/b', provider: 'other' }),
+        gitlab: SogConfig.build({ data: { host: 'git.example.test', repo: 'a/b', provider: 'gitlab' }, trigram: 'ABC' }).data.provider,
+        github: SogConfig.build({ data: { host: 'github.com', repo: 'a/b', provider: 'github' }, trigram: 'ABC' }).data.provider } }""")
+    c.eq(got, {'none': 'provider', 'other': 'provider', 'gitlab': 'gitlab', 'github': 'github'}, 'the export writes github or gitlab, refuses the rest', what='build')
+    # the table has no « other »; the address reader gives none when it does not know
+    got = c.js("""() => ({ ids: Object.keys(SogConfig.PROVIDER_TABLE), unknown: SogConfig.providerOf('https://git.example.test/grp/proj.git').provider,
+      known: SogConfig.providerOf('https://git.example.test/grp/proj.git', SogConfig.knownProviders({ provider: 'gitlab', host: 'git.example.test' }, null)).provider,
+      knownOther: SogConfig.providerOf('https://git.example.test/grp/proj.git', SogConfig.knownProviders({ provider: 'gitlab', host: 'git.other.test' }, null)).provider })""")
+    c.eq(got, {'ids': ['github', 'gitlab'], 'unknown': None, 'known': 'gitlab', 'knownOther': None}, 'no « other » in the table; a self-hosted remote is known by the device configuration only, for the same host', what='table')
+
+    # an imported configuration without a provider, on another host: refused with the message, nothing changed
+    link = c.js("() => SogConfig.pack({ schema: 'sog-config/1', identity: { trigram: 'ABC' }, data: { host: 'git.example.test', repo: 'grp/proj', branch: 'main' } })")
+    c.page.goto(f'{c.base}/frame/index.html#settings?config={link}', wait_until='load')
+    c.until("!!document.querySelector('[data-card=\"cfg\"] .f-msg')", timeout=15000, what='the refusal is shown')
+    c.eq(norm(c.text('[data-card="cfg"] .f-msg')), norm(tx(settings_file, 'providerUnknown', c.lang)), 'the refusal says the provider is unknown (github or gitlab)', what='refusal')
+
+    # remote panel: a self-hosted GitLab remote is recognised from the device configuration (same host), « non reconnu » otherwise
+    def panel():
+        c.until("!!document.querySelector('[data-admin=\"remote\"]')", what='the Administration card lists the remote repository')
+        if c.count('[data-group="admin"]') and not c.js("document.querySelector('[data-group=\"admin\"]').open"):
+            c.tap('[data-group="admin"] > summary')
+        c.tap('[data-admin="remote"] > button')
+        c.until("!!document.querySelector('[data-adminpanel=\"remote\"]:not([hidden]) [data-provider]')", what='the provider line is drawn')
+    box = '[data-adminpanel="remote"] [data-provider]'
+
+    def keys(api):
+        return [['device/keys.json', {'schema': 1, 'github': {'provider': 'gitlab', 'api': api, 'repo': 'grp/proj', 'branch': 'main', 'token': 'test-token'},
+                                      'avwx': '', 'ivao': None, 'updated_at': '2026-10-30T10:00:00Z'}, 'cache']]
+    state['url'] = 'https://git.example.test/grp/proj.git'
+    c.open('settings', docs=LEVEL3)
+    panel()
+    c.eq([c.attr(box, 'data-provider'), norm(c.text(box))], ['other', norm(tx(launcher_file, 'providerOther', c.lang))], 'a self-hosted remote the device does not know: not recognised', what='unknown remote')
+    c.open('settings', docs=LEVEL3 + keys('https://git.example.test/api/v4'))
+    panel()
+    c.eq(c.attr(box, 'data-provider'), 'gitlab', 'the device configuration says gitlab on the same host: recognised', what='known remote')
+    c.open('settings', docs=LEVEL3 + keys('https://git.other.test/api/v4'))
+    panel()
+    c.eq(c.attr(box, 'data-provider'), 'other', 'another host: not recognised', what='other host')
+
+    # export from the workstation: refused for an unknown remote, written with provider gitlab for a known one
+    def export(app='https://example.test/v3/frame/'):
+        c.tap('[data-admin="cfg"] > button')
+        c.page.fill('[data-adminpanel="cfg"] input[data-f="cfgPilot"]', 'ABC')
+        c.page.fill('[data-adminpanel="cfg"] input[data-f="cfgApp"]', app)
+        c.tap('[data-adminpanel="cfg"] [data-act="cfgMake"]')
+        c.wait(800)
+
+    c.open('settings', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-admin=\"cfg\"]')", what='the export line')
+    if c.count('[data-group="admin"]') and not c.js("document.querySelector('[data-group=\"admin\"]').open"):
+        c.tap('[data-group="admin"] > summary')
+    export()
+    c.eq(norm(c.js("document.querySelector('[data-adminpanel=\"cfg\"] [data-xmsg]').textContent")), norm(tx(settings_file, 'providerUnknown', c.lang)), 'an unknown source: the export is refused with the message', what='export refusal')
+    c.eq(c.js("document.querySelector('[data-adminpanel=\"cfg\"] [data-cfgout]').hidden"), True, 'nothing is written', what='export output')
+    c.open('settings', docs=LEVEL3 + keys('https://git.example.test/api/v4'))
+    c.until("!!document.querySelector('[data-admin=\"cfg\"]')", what='the export line')
+    if c.count('[data-group="admin"]') and not c.js("document.querySelector('[data-group=\"admin\"]').open"):
+        c.tap('[data-group="admin"] > summary')
+    export()
+    out = c.js("document.querySelector('[data-adminpanel=\"cfg\"] [data-cfglink]').value")
+    cfg = c.js("(l) => SogConfig.unpack(l.split('config=')[1])", out)
+    c.eq([cfg['data']['provider'], cfg['data']['host'], cfg['data']['repo']], ['gitlab', 'git.example.test', 'grp/proj'], 'the export writes the provider the device configuration gave', what='exported data')
+
+    # the Access side without a launcher: a GitLab configuration is applied on the device, like a GitHub one
+    state['up'] = False
+    got = c.js("""() => SogConfig.validate({ schema: 'sog-config/1', identity: { trigram: 'ABC' }, data: { host: 'git.example.test', repo: 'grp/proj', branch: 'main', provider: 'gitlab' } }).cfg""")
+    sent = []
+    c.context.route(re.compile(r'https://git\.example\.test/api/v4/'), lambda r: (sent.append(r.request.headers.get('private-token')), r.fulfill(status=200, content_type='application/json', body=json.dumps({'commit': {'id': 'abc123'}})))[1])
+    c.open('settings', docs=LEVEL3 + [['device/join.json', {'cfg': got, 'step': 5, 'done': {}}, 'cache']])
+    c.page.evaluate("location.hash = '#settings?join=1'")
+    c.until("!!document.querySelector('[data-jact=\"test\"]')", timeout=15000, what='the token step is offered (the steps of an access set here)')
+    c.eq(norm(c.text('[data-jact="test"]')), ('Tester', 'Test', 'Testen', 'Probar')[LANG_IX[c.lang]], 'the button tests the token (a device access), it does not clone', what='step 5 button')
+    c.page.fill('input[data-f="jToken"]', 'test-token')
+    c.tap('[data-jact="test"]')
+    c.until("!!window.FrameData?.github?.config()", timeout=15000, what='the access is saved')
+    saved = c.js("(() => { const g = FrameData.github.config(); return { provider: g.provider, api: g.api, repo: g.repo } })()")
+    c.eq(saved, {'provider': 'gitlab', 'api': 'https://git.example.test/api/v4', 'repo': 'grp/proj'}, 'the device now reads the GitLab project of the configuration', what='saved access')
+    c.ok(sent and all(x == 'test-token' for x in sent), str(sent), 'the token was sent to the configuration’s host, and only there (the route catches that host alone)')

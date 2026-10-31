@@ -258,6 +258,9 @@
       'Diese Datei ist keine SOG-Konfiguration (Schema „{s}“): Nichts wird geändert.',
       'Este archivo no es una configuración SOG (esquema «{s}»): no se cambia nada.'
     ],
+    providerUnknown: ['Fournisseur inconnu : github ou gitlab', 'Unknown provider: github or gitlab',
+      'Unbekannter Anbieter: github oder gitlab', 'Proveedor desconocido: github o gitlab'
+    ],
     cfgBadField: ['Configuration refusée : {f} invalide. Rien n’est changé.',
       'Configuration refused: {f} is invalid. Nothing is changed.',
       'Konfiguration abgelehnt: {f} ist ungültig. Nichts wird geändert.',
@@ -528,9 +531,9 @@
     const join = window.SogJoin ? await SogJoin.load(c.own) : {},
       jd = join.cfg?.data;
     // accès que la configuration réglerait sur cet appareil : same / other (data/ du lanceur déjà un dépôt), clone / adopt
-    // (par le lanceur), github (transport de l'appareil), none (hôte sans transport sans lanceur), nodata
+    // (par le lanceur), github (transport de l'appareil : GitHub ou une instance GitLab, il n'en connaît que ces deux), nodata
     const access = !jd ? 'nodata' : L ? (gitState === 'repo' ? (sameRepo(remote?.url, SogConfig.cloneUrl(jd)) ? 'same' : 'other') :
-      gitState === 'absent' ? 'clone' : 'adopt') : SogConfig.kind(jd) === 'github' ? 'github' : 'none';
+      gitState === 'absent' ? 'clone' : 'adopt') : 'github';
     if (window.SogJoin && /[?&]join=/.test(location.hash)) return SogJoin.render(view, {
       t,
       esc,
@@ -621,6 +624,8 @@
       fld,
       lvl,
       jd, // dépôt de la configuration reçue (fournisseur de la carte Accès)
+      known: window.SogConfig ? SogConfig.knownProviders(jd, gh) :
+    [], // fournisseurs que la configuration de l'appareil donne (hôte → fournisseur)
       diagJson: '{}'
     };
     // carte Accès toujours : sur un lanceur, le dépôt distant de data/ (launcher.js) ; sinon dépôt GitHub et jeton (access.js)
@@ -1020,7 +1025,7 @@
     s: r.schema
   }) : r.error === 'field' ? t(T.cfgBadField, {
     f: r.field
-  }) : t(T.cfgBadFile);
+  }) : r.error === 'provider' ? t(T.providerUnknown) : t(T.cfgBadFile);
   /** Retire config= / import= de l'adresse (la configuration n'est plus proposée au dessin suivant). */
   const dropConfigHash = () => {
     if (/[?&](config|import)=/.test(location.hash)) history.replaceState(null, '', `${location.pathname}${location.search}#settings`);

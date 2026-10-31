@@ -107,12 +107,13 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    address field (current address, else the configuration's default), "Check" (`POST { url }`: does it answer) and
    "Save" (`POST { url, save: true }`; another repository than the current one is confirmed in a window the launcher
    opens on the computer, as in V2's first start). Never blocking: the check's report stays in the card after a save.
-   The provider is not a setting: a line `[data-provider="github|gitlab|other"]` at the top of the panel reads it from the remote's address
-   (`SogConfig.providerOf(url)` → `{ provider, web, project }`, the one host classification, `SogConfig.kind`): the project as a link when
-   `web` is https; GitLab adds the "Pilots' tokens" link (`#pilot-tokens`) and a sentence; GitHub a sentence suggesting a GitLab project
-   (the page only proposes, the change still goes through the launcher's window); other: "provider not recognised". The exported
-   configuration carries `data.provider`; the pilot's Access card (no launcher) shows GitLab's field and hint when the device's access
-   (`provider`) or the received configuration says gitlab.
+   The provider of a *configuration* is chosen, never deduced (see § 5); the remote panel only *reads* a git address, which has no
+   provider field: a line `[data-provider="github|gitlab|other"]` at the top of the panel (`SogConfig.providerOf(url, known)` →
+   `{ provider (github | gitlab | null), web, project }`). Recognised: the public hosts of the table (github.com; gitlab.com and
+   framagit.org), or a host the device's configuration gives with a provider of the table (`SogConfig.knownProviders(joined config,
+   device access)`: a self-hosted GitLab is known there, same host); anything else: "provider not recognised" (a case of the panel,
+   no entry in the table). The project is a link when `web` is https; GitLab adds the "Pilots' tokens" link (`#pilot-tokens`) and a
+   sentence; GitHub a sentence suggesting a GitLab project (the page only proposes, the change still goes through the launcher's window).
    When `data/` is not a git repository, a door rather than a warning (state from the launcher's `state`, `absent` |
    `plain` | `repo`, else deduced): one sentence saying that `data/` is a folder ignored by the code repository that
    becomes its own git repository (not a submodule); the address (the configuration's default), an optional username
@@ -257,10 +258,19 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
 ## 5. Configuring a pilot (`frame/settings/config.js`, `window.SogConfig`)
 
 - **Schema `sog-config/1`** (JSON): `schema`, `created_at`, `by` (the exporter's trigram), `airline { name, site, pages
-  { recordFlight, log, fleet, aircraft } }` (from `airline/settings.json`), `data { host, repo, branch, ownerType?, api?
-  }` (`ownerType`: `User` or `Organization`, read at export from GitHub's public `users/<owner>`; the
+  { recordFlight, log, fleet, aircraft } }` (from `airline/settings.json`), `data { host, repo, branch, provider, ownerType?,
+  api? }` (`ownerType`: `User` or `Organization`, read at export from GitHub's public `users/<owner>`; the
   repository without its credentials: from the remote of `data/` on a launcher, or the device's GitHub setting, `api`
   then kept), `identity { trigram }`, `usages { devices: true }`, `howto { token { fr, en, de, es } }`.
+- **The provider is chosen, never deduced** (`data.provider`, `github` | `gitlab`, the closed list of `SogConfig.PROVIDER_TABLE`; a
+  self-hosted GitLab is `gitlab` with its own `host`). `validate` refuses a configuration without it unless the host is `github.com`
+  (the legacy of the configurations exported before 48079d78f, which had no field) and any value outside the list, ×4 "unknown provider:
+  github or gitlab", before anything else reads it. The export (`build`, the Administration card) always writes it and never writes
+  "other": an unknown source (a remote the device's configuration does not name) is refused with the same message. This aligns Settings
+  with the transport (`frame/store/transport_github.js` `clean()`), which knows two cases only: github.com is GitHub; any other
+  `https://<host>/…` is a GitLab instance with API `https://<host>/api/v4`, the token going to that host only (the address protection of
+  `parseRepo` is unchanged). Without a launcher, a GitLab configuration is therefore applied on the device like a GitHub one (join step 5
+  tests the token against the instance's API and saves the access with `provider: gitlab`).
 - **How-to of the token**, from a template per host: GitHub, an **organisation's** repository — a fine-grained token
   limited to the repository (resource owner the organisation, Contents read and write, one year), the organisation
   allowing such tokens; GitHub, a **user's** repository or an unknown owner — a **classic** token, the only kind an

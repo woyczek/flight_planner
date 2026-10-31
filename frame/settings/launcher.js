@@ -539,14 +539,15 @@
     return `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2><p>${esc(t(T.accessLauncher))}</p>${gitState === 'repo' ? '' : gitDoor(gitState, t, fld, remote)}</div>`;
   }
   /** Ligne « Fournisseur » en tête du volet du dépôt distant, lue de l'adresse du dépôt distant de data/ (SogConfig.providerOf :
-   *  jamais un réglage) : GitLab (le projet, en lien s'il est en https, puis « Jetons des pilotes » et une phrase sur l'accueil
-   *  par jeton de projet), GitHub (la phrase qui propose GitLab : la page ne fait que proposer, le changement passe par la fenêtre
-   *  du lanceur), autre (non reconnu) ; '' sans adresse. */
-  function providerHtml(t, url) {
+   *  jamais un réglage ; known : les fournisseurs que la configuration de l'appareil donne, pour un GitLab auto-hébergé) : GitLab
+   *  (le projet, en lien s'il est en https, puis « Jetons des pilotes » et une phrase sur l'accueil par jeton de projet), GitHub
+   *  (la phrase qui propose GitLab : la page ne fait que proposer, le changement passe par la fenêtre du lanceur), sinon « non
+   *  reconnu » (un cas du volet, sans entrée dans la table : une adresse git n'a pas de champ fournisseur) ; '' sans adresse. */
+  function providerHtml(t, url, known) {
     if (!url || !window.SogConfig) return '';
-    const p = SogConfig.providerOf(url),
+    const p = SogConfig.providerOf(url, known),
       P = SogConfig.PROVIDER_TABLE[p.provider],
-      name = P.label;
+      name = P?.label;
     if (!name) return `<p class="f-muted" data-provider="other">${esc(t(T.providerOther))}</p>`;
     const proj = /^https:\/\//.test(p.web) ? link(p.web, p.project) : esc(p.project);
     const line = esc(t(T.providerLine, {
@@ -566,7 +567,7 @@
     if (gitState !== 'repo' || !remote) return '';
     const hist = remote.rewritten ? `<div data-card="hist"><p class="f-msg" data-kind="warn" data-hist>${esc(t(T.histWarn))}</p><p class="f-msg" data-msg></p>
         <div class="f-row"><button type="button" class="primary" data-act="histResume">${esc(t(T.histResume))}</button></div></div>` : '';
-    return `${hist}<div data-card="remote">${providerHtml(t, remote.url)}<p data-remote-now>${esc(remote.url ? (/^[\w./-]+$/.test(remote.branch || '') ? t(T.remoteNow, { u: remote.url, b: remote.branch }) : t(T.remoteNowBare, { u: remote.url })) : t(T.remoteNone))}</p>
+    return `${hist}<div data-card="remote">${providerHtml(t, remote.url, env.known)}<p data-remote-now>${esc(remote.url ? (/^[\w./-]+$/.test(remote.branch || '') ? t(T.remoteNow, { u: remote.url, b: remote.branch }) : t(T.remoteNowBare, { u: remote.url })) : t(T.remoteNone))}</p>
         ${fld('remote', T.remoteUrl, remote.url || remote.default || '')}<p class="f-msg" data-msg></p>
         <div class="f-row"><button type="button" class="primary" data-act="remoteSave">${esc(t(T.save))}</button><button type="button" data-act="remoteCheck">${esc(t(T.remoteCheck))}</button></div><p class="f-muted" data-confirm-hint hidden>${esc(t(T.confirmHint))}</p></div>`;
   }

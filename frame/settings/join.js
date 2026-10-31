@@ -53,12 +53,6 @@
       'This workstation’s data/ folder follows another repository ({u}): access is not changed here (Settings’ Access card).',
       'Der Ordner data/ dieses Rechners folgt einem anderen Repository ({u}): Der Zugang wird hier nicht geändert (Karte Zugang der Einstellungen).',
       'La carpeta data/ de este puesto sigue otro repositorio ({u}): el acceso no se cambia aquí (tarjeta Acceso de los ajustes).'),
-    none: L4(
-      'Ce dépôt est sur {h} : sans lanceur, l’appli ne le joint pas. Faites l’accès sur un poste avec le lanceur ; ici, l’assistant règle votre identité.',
-      'This repository is on {h}: without a launcher, the app cannot reach it. Set the access on a workstation with the launcher; here, the assistant sets your identity.',
-      'Dieses Repository liegt auf {h}: Ohne Starter erreicht die App es nicht. Richten Sie den Zugang auf einem Rechner mit Starter ein; hier richtet der Assistent Ihre Identität ein.',
-      'Este repositorio está en {h}: sin lanzador, la aplicación no lo alcanza. Configure el acceso en un puesto con el lanzador; aquí, el asistente configura su identidad.'
-    ),
     // 2
     s2: L4('Votre compte {h}', 'Your {h} account', 'Ihr {h}-Konto', 'Su cuenta de {h}'),
     s2Ask: L4('Avez-vous déjà un compte {h} ?', 'Do you already have a {h} account?', 'Haben Sie bereits ein {h}-Konto?',
@@ -304,7 +298,7 @@
     }
     const d = cfg.data,
       lk = d ? SogConfig.links(d) : null,
-      kind = lk ? lk.kind : 'other',
+      kind = lk?.kind,
       host = lk ? lk.host : '',
       classic = kind === 'github' && d?.ownerType !== 'Organization', // dépôt d'un utilisateur (ou propriétaire inconnu)
       steps = stepsFor(h.access),
@@ -334,9 +328,6 @@
         same: t(T.same),
         other: t(T.other, {
           u: h.remote?.url || '?'
-        }),
-        none: t(T.none, {
-          h: d?.host || '?'
         })
       } [h.access];
       body = `<p>${esc(t(T.s1Hint))}</p><dl class="f-dl">${a.name || a.site ? `<dt>${esc(t(T.airline))}</dt><dd>${esc([a.name, a.site].filter(Boolean).join(' — '))}</dd>` : ''}${d ? `<dt>${esc(t(T.repo))}</dt><dd>${esc(`${d.host}/${d.repo}`)}</dd>` : ''}<dt>${esc(t(T.trigram))}</dt><dd>${esc(cfg.identity.trigram)}</dd></dl>${note ? `<p class="f-warn">${esc(note)}</p>` : ''}`;
@@ -466,11 +457,16 @@
         if (!token) return say(t(T.needTest), 'warn');
         say(t(T.testing), 'warn');
         if (h.access === 'github') {
+          // GitLab : l'API de l'instance de la configuration (le transport ne connaît que github.com et les instances GitLab ; le jeton ne
+          // part que vers cet hôte) ; GitHub : l'API donnée, s'il y en a une
           const g = {
             repo: d.repo,
             branch: d.branch,
             token,
-            ...(d.api ? {
+            ...(kind === 'gitlab' ? {
+              provider: 'gitlab',
+              api: `https://${d.host}${SogConfig.PROVIDER_TABLE.gitlab.apiPath}`
+            } : d.api ? {
               api: d.api
             } : {})
           };

@@ -235,6 +235,8 @@
       base = null;
     }
     if (base && !/^https?:$/.test(base.protocol)) base = null;
+    // jamais un fournisseur deviné : inconnu, l'export est refusé (github ou gitlab, pas « other »)
+    if (src && !SogConfig.PROVIDER_TABLE[src.provider]) return msg(t(T.providerUnknown));
     if (src && SogConfig.kind(src) === 'github' && !src.ownerType) src = {
       ...src,
       ownerType: await SogConfig.ownerType(src) || undefined
@@ -309,24 +311,21 @@
     const xsrc = src ? {
       ...src,
       branch: L ? (/^[\w./-]+$/.test(remote?.branch || '') ? remote.branch : 'main') : gh.branch || 'main',
-      // fournisseur : celui de l'adresse du dépôt distant de data/ (même fonction que le volet du dépôt distant), ou celui de l'accès
-      // de l'appareil sans lanceur ; il part dans la configuration pour que le côté du pilote s'ouvre dessus
-      ...(L ? {
-        provider: SogConfig.providerOf(remote.url).provider
-      } : gh?.provider ? {
-        provider: gh.provider
-      } : {}),
+      // fournisseur : celui de l'adresse du dépôt distant de data/ (même fonction que le volet du dépôt distant : hôte public, ou
+      // hôte donné par la configuration de l'appareil), ou celui de l'accès de l'appareil sans lanceur ; null s'il est inconnu (l'export
+      // est alors refusé) ; il part dans la configuration pour que le côté du pilote s'ouvre dessus
+      provider: L ? SogConfig.providerOf(remote.url, env.known).provider : SogConfig.kind(gh),
       ...(!L && gh?.api ? {
         api: gh.api
       } : {})
     } : null;
-    const xl = xsrc ? SogConfig.links(xsrc) : null,
-      xk = xl ? xl.kind : 'other',
+    const xl = xsrc?.provider ? SogConfig.links(xsrc) : null,
+      xk = xl?.kind,
       xhost = xl ? xl.host : '',
       xinv = xl ? xl.invite : '';
     const cfgSteps = `<h3>${esc(t(T.cfgSteps))}</h3><ol class="f-join-steps"><li>${xinv ? fill(t(xk === 'github' ? T.cfgInvite : T.cfgInviteGl), { h: esc(xhost), u: link(xinv) }) : esc(t(T.cfgInviteOther))}</li><li>${esc(t(T.cfgStepExport))}</li><li>${esc(t(T.cfgStepSend))}</li></ol>`;
     const cfgOut = window.SogConfig && (L || gh) ? `<div class="f-cfgx" data-cfgx>${cfgSteps}
-      ${xsrc ? '' : `<p class="f-warn">${esc(t(T.cfgNoRepo))}</p>`}${fld('cfgPilot', T.cfgPilot, '', { cap: true, ph: 'ABC' })}${fld('cfgApp', T.cfgApp, appUrl(), { ph: 'https://…/v3/frame/' })}
+      ${xsrc ? '' : `<p class="f-warn">${esc(t(T.cfgNoRepo))}</p>`}${xsrc && !xsrc.provider ? `<p class="f-warn">${esc(t(T.providerUnknown))}</p>` : ''}${fld('cfgPilot', T.cfgPilot, '', { cap: true, ph: 'ABC' })}${fld('cfgApp', T.cfgApp, appUrl(), { ph: 'https://…/v3/frame/' })}
       <div class="f-row"><button type="button" class="primary" data-act="cfgMake">${esc(t(T.cfgMake))}</button></div><p class="f-msg" data-xmsg></p>
       <div data-cfgout hidden><label class="f-field">${esc(t(T.cfgLink))}<textarea data-cfglink rows="3" readonly spellcheck="false"></textarea></label><div class="f-row"><button type="button" data-act="cfgCopy">${esc(t(T.cfgCopy))}</button></div><figure class="f-qr" data-cfgqr hidden><div></div><figcaption class="f-muted">${esc(t(T.cfgQr))}</figcaption></figure></div></div>` : '';
     env.xsrc = xsrc;

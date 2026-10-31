@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data: a key from a launcher answer never reads the prototype** (`modules/data`, Sécurisation's review of 89dd17934) — `own(table,
+  key)` returns a value for an own key only, else the fallback: a reason such as `constructor`, `toString` or `__proto__` no longer
+  yields a function or `Object.prototype` as the result kind (written into `data-result`, used as a text key); the same rule for every
+  table read with a value from an answer (errors, source states, units, pickup sources, State names, journal words); cases L8, L16.
+- **Settings: the provider is chosen, never deduced** (`frame/settings/config.js`, `admin.js`, `join.js`, `launcher.js`, `settings.js`; help ×4; A49, A55) — BEHAVIOUR CHANGE. A configuration's provider is its `provider` field, github or gitlab (a self-hosted GitLab is `gitlab` with its own host); `validate` refuses a configuration without it unless the host is github.com (legacy of the configurations exported before 48079d78f) and any other value, ×4 « fournisseur inconnu : github ou gitlab ». The export always writes it, never « other », and refuses an unknown source with the same message. « other » leaves the provider table; the remote panel keeps its « provider not recognised » case, and recognises a self-hosted GitLab remote only when the device's configuration says gitlab with the same host (github.com, gitlab.com and framagit.org are known). Without a launcher a GitLab configuration is applied on the device like a GitHub one. This aligns Settings with the transport (`transport_github.js` `clean()`: github.com is GitHub, any other https host is a GitLab instance with API `https://<host>/api/v4`, the token sent to that host only), so a configuration once classified « other » already wrote like a GitLab.
 - **Map: one distance (sixth reading, gap 3)** (`modules/maps/data.js`; SPEC § 7.2; DECISIONS; noreg D88). The sheet's title said the
   route's own length (373 NM) while Fuel and the profile's axis said the path's, procedures included (388 NM): the title, written before
   the procedures were read, is now written again when they arrive. One figure on the three, from `flownPath` of

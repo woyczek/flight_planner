@@ -129,7 +129,7 @@ Repository, das nicht antwortet, wird nur gemeldet.
 
 - **Der Zugang zum Repository** wird auf dem Computer eingestellt: ein SSH-Schlüssel für eine Adresse `git@…`, in Git
   gespeicherte Zugangsdaten für eine Adresse `https://…`.
-- **Der Anbieter** ist keine Einstellung: Er wird aus der Adresse des entfernten Repositorys gelesen. Oben im Bereich steht „Anbieter: GitLab · Projekt Gruppe/Projekt“ (das Projekt ist ein Link zu seiner Seite); bei GitLab führt der Link „Token der Piloten“ zur Erstellung der Aufnahme-Tokens; bei GitHub schlägt der Bereich vor, die Adresse eines GitLab-Projekts einzugeben, denn die Aufnahme per Projekt-Token setzt eines voraus. Die Seite schlägt nur vor: Ein Repository-Wechsel läuft wie immer über das Ja-/Nein-Fenster des Starters. Die exportierte Konfiguration trägt den Anbieter, und die Seite des Piloten öffnet sich darauf.
+- **Der Anbieter** einer Konfiguration wird gewählt (github oder gitlab), nie erraten; der Bereich liest nur die Adresse des entfernten Repositorys (GitHub, gitlab.com, framagit.org oder ein selbst gehostetes GitLab, das die Konfiguration des Geräts mit demselben Host nennt; sonst „Anbieter nicht erkannt“). Oben im Bereich steht „Anbieter: GitLab · Projekt Gruppe/Projekt“ (das Projekt ist ein Link zu seiner Seite); bei GitLab führt der Link „Token der Piloten“ zur Erstellung der Aufnahme-Tokens; bei GitHub schlägt der Bereich vor, die Adresse eines GitLab-Projekts einzugeben, denn die Aufnahme per Projekt-Token setzt eines voraus. Die Seite schlägt nur vor: Ein Repository-Wechsel läuft wie immer über das Ja-/Nein-Fenster des Starters. Die exportierte Konfiguration trägt immer den Anbieter (github oder gitlab; ein unbekanntes Repository wird abgelehnt, nie als „other“ exportiert), und die Seite des Piloten öffnet sich darauf. Eine alte Konfiguration ohne Anbieter wird nur für github.com akzeptiert. Ohne Starter wird eine GitLab-Konfiguration auf dem Gerät wie eine GitHub-Konfiguration angewendet.
 - **Mehrere Nutzer über git** brauchen dieses entfernte Repository: Ohne es führt das Kästchen „Mehrere Nutzer“ nirgends
   hin, und die Karte „Nutzungen“ erinnert daran.
 - **data/ fehlt oder ohne git**: Die Karte „Datenzugang“ öffnet einen Weg, auf jeder Stufe. `data/` ist ein vom Code-Repository ignorierter Ordner;
@@ -245,4 +245,4 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: 811e3ccf2b42 -->
+<!-- fr: d5070361a48e -->

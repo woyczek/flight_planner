@@ -11,7 +11,7 @@
   //     GitLab / framagit : jeton de projet, rôle Developer, write_repository) avec l'adresse exacte du dépôt ;
   //   · lien : « z » + base64url du JSON compressé (deflate-raw), « j » + base64url du JSON sans compression ;
   //   · import : validate() ne garde que les champs connus, chacun vérifié ; autre schéma ou champ invalide : refus.
-  // API : window.SogConfig = { SCHEMA, parseRepo, kind, providerOf, webUrl, cloneUrl, howto, build, pack, unpack, read, validate }.
+  // API : window.SogConfig = { SCHEMA, parseRepo, kind, PROVIDER_TABLE, links, repoField, knownProviders, providerOf, webUrl, cloneUrl, howto, build, pack, unpack, read, validate }.
   const SCHEMA = 'sog-config/1';
   const LANGS = ['fr', 'en', 'de', 'es'];
   const MAX = 256 * 1024; // taille d'un fichier ou d'un lien décompressé
@@ -29,11 +29,11 @@
       repo: m[2]
     };
   }
-  /** Fournisseur du dépôt, LA classification des hôtes de tout le cadre : celui que la donnée porte (data.provider d'une
-   *  configuration, provider d'un accès de l'appareil), sinon github (github.com, ou une API GitHub donnée), gitlab (gitlab.com,
-   *  framagit.org, ou un hôte qui contient « gitlab »), other. */
-  const kind = d => d?.provider && PROVIDER_TABLE[d.provider]?.id === d.provider ? d.provider : d?.api || d?.host === 'github.com' ? 'github' :
-    /gitlab|(^|\.)framagit\./.test(d?.host || '') ? 'gitlab' : 'other';
+  /** Fournisseur du dépôt d'une donnée qui le porte (data.provider d'une configuration validée, provider d'un accès de l'appareil) :
+   *  github ou gitlab, JAMAIS déduit de l'hôte. Sans fournisseur (un accès de l'appareil réglé sur GitHub n'en porte pas) : github,
+   *  comme le transport (frame/store/transport_github.js `clean()` : github.com est GitHub, tout autre hôte https est une instance
+   *  GitLab, et le jeton ne part que vers cet hôte). */
+  const kind = d => d?.provider && PROVIDER_TABLE[d.provider]?.id === d.provider ? d.provider : 'github';
   /** Page web du dépôt. */
   const webUrl = d => `${/^(127\.0\.0\.1|localhost)(:|$)/.test(d.host) ? 'http' : 'https'}://${d.host}/${d.repo}`;
   /** Adresse de clonage (https). */
@@ -43,19 +43,19 @@
     Object.values(o).forEach(v => v && typeof v === 'object' && deepFreeze(v));
     return Object.freeze(o);
   };
-  // LA table des fournisseurs, figée : liste fermée (github, gitlab, other), la seule source de ce que le cadre montre ou envoie à
-  // leur sujet. Chaque entrée : id, label (nom montré ; vide si inconnu), apiHost (hôte de l'API, null si c'est celui de
-  // l'instance) et apiPath (suffixe de l'API de l'instance), token (forme du jeton), capabilities (projectTokens : l'accueil des
+  // LA table des fournisseurs, figée : liste fermée (github, gitlab), la seule source de ce que le cadre montre ou envoie à leur
+  // sujet ; « other » n'y est pas (aucun transport). Chaque entrée : id, label (nom montré), hosts (hôtes publics connus : seuls
+  // ceux-là sont reconnus d'une adresse de dépôt), apiHost (hôte de l'API, null si c'est celui de l'instance) et apiPath
+  // (suffixe de l'API de l'instance), token (forme du jeton), capabilities (projectTokens : l'accueil des
   // pilotes par jeton de projet), puis les adresses et valeurs qui en dépendent, calculées du dépôt d : signup (créer un compte),
   // invitations (le pilote accepte l'invitation), invite (l'administrateur invite), tokenNew (créer le jeton), placeholder (champ
-  // « dépôt »), repoValue (valeur du champ « dépôt » d'un accès de l'appareil gh). Un fournisseur inconnu n'a pas d'entrée :
-  // kind() le ramène à other à l'entrée, les lecteurs ne branchent jamais sur un identifiant qu'ils ne connaissent pas.
-  const instanceSignup = d => `https://${d.host}/users/sign_up`,
-    instanceToken = d => `https://${d.host}/-/user_settings/personal_access_tokens`;
+  // « dépôt »), repoValue (valeur du champ « dépôt » d'un accès de l'appareil gh). Un fournisseur hors de la liste est refusé à
+  // l'entrée (validate, export), les lecteurs ne branchent jamais sur un identifiant qu'ils ne connaissent pas.
   const PROVIDER_TABLE = deepFreeze({
     github: {
       id: 'github',
       label: 'GitHub',
+      hosts: ['github.com'],
       apiHost: 'api.github.com',
       apiPath: '',
       token: 'ghp_… (classic, « repo ») ou github_pat_… (fine-grained, « Contents »)',
@@ -73,37 +73,22 @@
     gitlab: {
       id: 'gitlab',
       label: 'GitLab',
+      hosts: ['gitlab.com', 'framagit.org'],
       apiHost: null,
       apiPath: '/api/v4',
       token: 'glpat-… (jeton d\'accès de projet, rôle Developer, write_repository)',
       capabilities: {
         projectTokens: true
       },
-      signup: instanceSignup,
+      signup: d => `https://${d.host}/users/sign_up`,
       invitations: () => '',
       invite: d => `${webUrl(d)}/-/project_members`,
-      tokenNew: instanceToken,
+      tokenNew: d => `https://${d.host}/-/user_settings/personal_access_tokens`,
       placeholder: 'https://gitlab.com/group/project',
       repoValue: gh => `${String(gh.api || '').replace(/\/api\/v4$/, '')}/${gh.repo}`
-    },
-    other: {
-      id: 'other',
-      label: '',
-      apiHost: null,
-      apiPath: '',
-      token: '',
-      capabilities: {
-        projectTokens: false
-      },
-      signup: instanceSignup,
-      invitations: () => '',
-      invite: () => '',
-      tokenNew: instanceToken,
-      placeholder: 'compte/flight_planner_data',
-      repoValue: gh => gh?.repo
     }
   });
-  /** Entrée de la table pour un dépôt d (jamais indéfinie : un fournisseur inconnu est other). */
+  /** Entrée de la table pour un dépôt d (jamais indéfinie : kind() rend github ou gitlab). */
   const entryOf = d => PROVIDER_TABLE[kind(d)];
   /** Adresses et libellé d'un dépôt d ({ host, repo, … }) pour les assistants : kind, host (« GitHub » pour github.com, sinon l'hôte),
    *  web, signup (compte), invitations (accepter l'invitation), invite (inviter le pilote), tokenNew (créer le jeton). */
@@ -122,13 +107,27 @@
   /** Valeur du champ « dépôt » d'un accès de l'appareil gh ({ repo, api, provider… }) : le projet GitLab s'écrit avec l'adresse de
    *  l'instance (son API sans le suffixe), le reste est le compte/dépôt. */
   const repoField = gh => entryOf(gh).repoValue(gh);
-  /** Fournisseur d'une adresse de dépôt (https, ssh « git@hôte:chemin » ou ssh://) → { provider: github | gitlab | other, web
-   *  (page web du projet, sans identifiants ni .git), project (groupe/projet) } ; adresse illisible : other, sans web ni projet.
-   *  Le port d'une adresse ssh n'est pas celui du web : il est retiré. */
-  function providerOf(url) {
+  /** Fournisseurs connus par la configuration de l'appareil : [{ provider, host }] de la configuration reçue (jd = data) et de
+   *  l'accès réglé de l'appareil (gh, un GitLab : l'hôte de son API). Une adresse de dépôt n'a pas de champ « fournisseur » : un
+   *  GitLab auto-hébergé n'est reconnu que par là. */
+  const knownProviders = (jd, gh) => [
+    jd?.provider && jd?.host ? {
+      provider: jd.provider,
+      host: String(jd.host).toLowerCase()
+    } : null,
+    gh?.provider === 'gitlab' && /^https:\/\//.test(gh.api || '') ? {
+      provider: 'gitlab',
+      host: new URL(gh.api).host.toLowerCase()
+    } : null
+  ].filter(Boolean);
+  /** Fournisseur d'une adresse de dépôt (https, ssh « git@hôte:chemin » ou ssh://) → { provider (github ou gitlab, null si
+   *  inconnu), web (page web du projet, sans identifiants ni .git), project (groupe/projet) } ; adresse illisible : null, sans
+   *  web ni projet. Reconnu : un hôte public de la table (github.com, gitlab.com, framagit.org), ou un hôte que `known`
+   *  (knownProviders) donne avec un fournisseur de la table. Le port d'une adresse ssh n'est pas celui du web : il est retiré. */
+  function providerOf(url, known = []) {
     const r = parseRepo(url);
     if (!r) return {
-      provider: 'other',
+      provider: null,
       web: '',
       project: ''
     };
@@ -136,9 +135,11 @@
       d = {
         host: /^(?:ssh|git):\/\//.test(u) ? r.host.replace(/:\d+$/, '') : r.host,
         repo: r.repo
-      };
+      },
+      pub = Object.values(PROVIDER_TABLE).find(P => P.hosts.includes(d.host)),
+      own = known.find(k => PROVIDER_TABLE[k?.provider]?.id === k.provider && k.host === d.host);
     return {
-      provider: kind(d),
+      provider: pub ? pub.id : own ? own.provider : null,
       web: webUrl(d),
       project: r.repo
     };
@@ -215,16 +216,10 @@ Ohne Starter (Telefon) erreicht die App ein Repository auf {host} nur über den 
 2. «Token name»: SOG Pilot; «Expiration date»: 90 días como máximo; «Role»: Developer; «Scopes»: write_repository.
 3. Cree el token, cópielo y péguelo aquí en «Token personal». No lo envíe nunca en un mensaje.
 Sin lanzador (teléfono), la aplicación solo llega a un repositorio de {host} a través del lanzador de un puesto: aplique esta configuración en un puesto.`
-    ],
-    other: [
-      `Demandez à votre administrateur comment créer un jeton d'accès en écriture sur {web}, puis collez-le ici dans « Jeton personnel ». Ne l'envoyez jamais dans un message.`,
-      `Ask your administrator how to create an access token with write rights on {web}, then paste it here in “Personal token”. Never send it in a message.`,
-      `Fragen Sie Ihren Administrator, wie Sie ein Zugriffstoken mit Schreibrechten auf {web} erstellen, und fügen Sie es hier unter „Persönliches Token“ ein. Senden Sie es nie in einer Nachricht.`,
-      `Pregunte a su administrador cómo crear un token de acceso con escritura en {web} y péguelo aquí en «Token personal». No lo envíe nunca en un mensaje.`
     ]
   };
   /** Variante du mode d'emploi : GitHub, dépôt d'une organisation → jeton à grain fin limité au dépôt ; dépôt d'un
-   *  utilisateur (ou propriétaire inconnu) → jeton classique, seul possible pour un invité ; sinon la sorte d'hôte. */
+   *  utilisateur (ou propriétaire inconnu) → jeton classique, seul possible pour un invité ; GitLab : le sien. */
   const variant = d => kind(d) !== 'github' ? kind(d) : d.ownerType === 'Organization' ? 'githubOrg' : 'githubUser';
   /** Propriétaire d'un dépôt GitHub : 'User' ou 'Organization' (API publique users/<compte>) ; null sans réponse. */
   async function ownerType(d) {
@@ -252,21 +247,23 @@ Sin lanzador (teléfono), la aplicación solo llega a un repositorio de {host} a
     return Object.fromEntries(LANGS.map((l, i) => [l, HOWTO[variant(d)][i].replace(/\{(\w+)\}/g, (m, k) => v[k] ?? m)]));
   }
 
-  /** Configuration d'un pilote : airline (document de la compagnie), data (dépôt sans identifiants), trigramme ;
-   *  usages conseillés : plusieurs appareils. */
+  /** Configuration d'un pilote : airline (document de la compagnie), data (dépôt sans identifiants, avec son fournisseur github ou
+   *  gitlab), trigramme ; usages conseillés : plusieurs appareils. Un fournisseur hors de la liste n'est jamais écrit : erreur
+   *  (l'appelant le refuse avant, avec son message). */
   function build({
     airline,
     data,
     trigram,
     by
   }) {
+    if (data && (!data.provider || PROVIDER_TABLE[data.provider]?.id !== data.provider)) throw new Error('provider');
     const a = airline && typeof airline === 'object' ? airline : {},
       p = a.pages && typeof a.pages === 'object' ? a.pages : {};
     const d = data ? {
       host: data.host,
       repo: data.repo,
       branch: data.branch || 'main',
-      provider: kind(data), // le fournisseur voyage avec le dépôt : le côté du pilote s'ouvre dessus
+      provider: data.provider, // choisi (github ou gitlab) : il voyage avec le dépôt, le côté du pilote s'ouvre dessus
       ...(data.ownerType ? {
         ownerType: data.ownerType
       } : {}),
@@ -400,6 +397,14 @@ Sin lanzador (teléfono), la aplicación solo llega a un repositorio de {host} a
         repo = String(d?.repo || ''),
         branch = String(d?.branch || 'main');
       if (!/^[a-z0-9.-]+(:\d+)?$/.test(host)) return bad('data.host');
+      // fournisseur : le champ, github ou gitlab (un GitLab auto-hébergé est « gitlab » avec son hôte) ; jamais déduit de l'hôte.
+      // Hérité des configurations exportées avant 48079d78f, qui n'avaient pas de champ : sans fournisseur et sur github.com, c'est
+      // github ; sans fournisseur sur un autre hôte, ou avec une valeur hors de la liste, la configuration est refusée ici
+      const prov = d.provider == null || d.provider === '' ? host === 'github.com' ? 'github' : '' : String(d.provider);
+      if (PROVIDER_TABLE[prov]?.id !== prov) return {
+        ok: false,
+        error: 'provider'
+      };
       if (!/^[\w.-]+(\/[\w.-]+)+$/.test(repo) || repo.length > 200 || repo.split('/').some(x => /^\.+$/.test(x))) return bad('data.repo');
       if (!/^[\w./-]{1,100}$/.test(branch)) return bad('data.branch');
       const api = d.api == null ? '' : String(d.api);
@@ -408,11 +413,7 @@ Sin lanzador (teléfono), la aplicación solo llega a un repositorio de {host} a
         host,
         repo,
         branch,
-        provider: kind({
-          host,
-          api,
-          provider: d.provider
-        }),
+        provider: prov,
         ...(d.ownerType === 'User' || d.ownerType === 'Organization' ? {
           ownerType: d.ownerType
         } : {}),
@@ -449,6 +450,7 @@ Sin lanzador (teléfono), la aplicación solo llega a un repositorio de {host} a
     PROVIDER_TABLE,
     links,
     repoField,
+    knownProviders,
     providerOf,
     webUrl,
     cloneUrl,
