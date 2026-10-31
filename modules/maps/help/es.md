@@ -14,7 +14,8 @@ radioayudas, y en cada cuadro de un grado la altitud mínima de seguridad (la ci
 «3⁵» quiere decir 3500 ft). Las pequeñas cifras violetas a lo largo de la ruta son las distancias desde la salida, en
 millas náuticas. Deslice el mapa con un dedo, separe dos dedos para hacer zoom (durante el gesto el mapa conserva solo sus trazos — espacios, aerovías,
 ruta, aeródromos en pequeños cuadrados — y sus nombres vuelven en cuanto se detiene); «Recentrar» (la diana, arriba a la derecha del mapa) vuelve a toda la ruta. El
-mapa se queda donde usted lo puso, aunque la ruta cambie: solo «Recentrar» (u otro vuelo) lo reencuadra. Mientras «Solo alrededor
+mapa se queda donde usted lo puso, aunque la ruta cambie: solo «Recentrar» (u otro vuelo) lo reencuadra. Al volver al mapa (desde Combustible, o tras «Terminar»), recupera su encuadre
+mientras la ruta y los procedimientos elegidos no hayan cambiado; si no, el vuelo se reencuadra, procedimientos incluidos. Mientras «Solo alrededor
 del vuelo» esté marcada (Capas), los espacios y aerovías solo se leen cerca del vuelo, de lejos; desmárquela o acérquese
 para verlo todo.
 
@@ -170,4 +171,4 @@ ciclo, una línea lo dice: los espacios aéreos pueden haber cambiado desde ento
 entonces el perfil habitual del tipo de mapa (detallado para un objetivo o un detalle, simplificado si no) y lo indica.
 Basta con abrir la misión en el estudio y guardarla para que conserve después el suyo.
 
-<!-- fr: 78fe0876fa39 -->
+<!-- fr: 43d7f16e7c74 -->

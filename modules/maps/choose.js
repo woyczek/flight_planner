@@ -59,7 +59,7 @@ import {
 } from './draw.js';
 import {
   syncButtons,
-  fitMap
+  frameFlight
 } from './screen.js';
 import {
   unpinAd
@@ -263,7 +263,7 @@ function widenTo(it) {
   }, ...pts], 3);
   if (!box) return;
   S.fit = box;
-  if (S.map) fitMap(true);
+  if (S.map) frameFlight(true);
 }
 /** Le mode est-il ouvert ? (la classe de la boîte suit : le fond MapLibre s'estompe). */
 export function chooseView() {
@@ -295,7 +295,7 @@ export async function chooseOpen(side, icao) {
   if (!S) return;
   if (S.choose !== ask) return chooseView(); // rien à montrer (notifié) ou une autre demande : la classe suit
   chooseStart();
-  if (S.map) fitMap(true);
+  if (S.map) frameFlight(true);
 }
 /** La seule sortie du volet (« Terminer », ✕, Échap ; refonte R-M1) : tout ce qui a été choisi part vers Carburant en un seul retour
  *  (paneReturn : #fuel?focus=<côté>&rwy=…&star=…&app=…&apptrans=…, « none » pour « Aucune »), qui l'écrit ; la Carte n'écrit jamais.
@@ -312,7 +312,7 @@ export async function chooseClose() {
   endData('choose');
   syncButtons();
   await applyFlight(false);
-  if (S?.map && !S.choose) fitMap(true);
+  if (S?.map && !S.choose) frameFlight(true);
 }
 
 // ---------------------------------------------------------------- choisir

@@ -1810,3 +1810,23 @@ the Map had seen in between: the same line to within the frame's own sampling.
   writing D86 a related race showed: going back to `#maps` before Fuel had mounted after `chooseClose` threw « Cannot read
   properties of null (reading 'unmount') » in the frame's router (`closePane`, frame/app.js). D86 now waits for Fuel; the router
   is V3 Frame's (told). At a third failure of F41, a wait in the case's own tool, as Fuel's `to_step`, the module untouched.
+
+## Framed return (sixth reading, 31 Oct 2026, gap 2)
+
+- **Seen**: after « Terminer » and back to the Map, the view was all of Europe, the route a line. Most of it was gap 1 (a 250 px
+  map framing a north–south route); what remained: the frame was the route's points only (not its procedures), procedures arriving
+  after the first framing did not reframe, and a pilot's own framing was lost at every remount (S is new each time).
+- **Rule** (§ 10.30, Simplification): opening from Fuel or coming back after « Terminer » frames the flight with its procedures, as
+  the first opening; a framing the user gave this same flight during the page is given back, not beyond. **One writer**:
+  `frameFlight(animate)` in `screen.js` — the kept framing `keep.cam` when its signature is the flight's (`flightSig`: departure,
+  arrival, route text, the chosen procedures without their date), else `S.fit`; `fitMap` is its private step; `data.js`,
+  `sheet_view.js`, `choose.js`, Recentre and the map's load call it. `S.fit` is `fitOf()`: the deployed path (route and
+  procedures) and the alternate, 25 NM around; a path that changes (procedures read) reframes while the user has not moved.
+- **Kept only at the end of a gesture of the user's** (`S.gesture`, set at its `movestart`): a first version saved at every
+  `moveend` while `userMoved` was set, and a live reading of a changed route (`mapSize`'s resize ends a move too) saved the old
+  framing under the new signature — D87 caught it. Recentre and Follow forget the framing; the choose mode never saves one.
+- **Noreg** D87 (1280 and 390): untouched, the flight framed again on the way back; a pan and zoom given back; another route
+  framed. D86 now also counts `sheetFit`'s writes after a change of content and a resize: once, then none (Securisation's review).
+  D86 failed once at 390 in the full pass of 06dcd175b and once of three alone with a noreg beside it (the sheet not back within
+  20 s of the return from Fuel); four of four green with the run quiet — the load, not the rule; V3 Frame's d6e7fa27a (the
+  router's `closePane` on a module still arriving) removes the race found with it.

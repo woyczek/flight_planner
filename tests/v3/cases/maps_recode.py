@@ -2369,3 +2369,70 @@ def d86(c):
     want = c.js("""() => { const S = window.__mp.S, r = document.createRange(); r.selectNodeContents(S.dbodyEl); const b = getComputedStyle(S.dbodyEl);
       return Math.ceil(S.dheadEl.offsetHeight + 1 + r.getBoundingClientRect().height + parseFloat(b.paddingTop) + parseFloat(b.paddingBottom)) }""")
     c.ok(abs(ly['sheet'] - min(want, round(ly['view'] / 2))) <= 2, f'{ly}, content {want}', 'Layers: its head and its own height, capped at half the view')
+    # sheetFit writes a token only when it changes: a content change and a resize settle in one round, nothing rewritten after
+    c.js("""() => { const st = window.__mp.S.dataEl.parentElement.style, o = st.setProperty.bind(st), r = st.removeProperty.bind(st);
+      window.__fitW = 0; st.setProperty = (k, ...a) => { if (k.startsWith('--f-sheet')) window.__fitW++; return o(k, ...a) };
+      st.removeProperty = k => { if (k.startsWith('--f-sheet')) window.__fitW++; return r(k) }; return true }""")
+    c.js("() => { document.querySelector('[data-mp=layers]').click(); return true }")
+    c.until("() => !window.__mp.S.dpanel", timeout=4000, what='Layers closed: the profile comes back')
+    c.wait(900)
+    n1 = c.js('window.__fitW')
+    c.wait(900)
+    c.eq(c.js('window.__fitW'), n1, 'after a change of content the tokens settle: none rewritten afterwards', what=f'writes {n1}')
+    c.ok(n1 <= 4, f'{n1} writes', 'at most the four tokens written once')
+    vp = c.page.viewport_size
+    c.page.set_viewport_size({'width': vp['width'], 'height': vp['height'] - 60})
+    c.wait(1200)
+    n2 = c.js('window.__fitW')
+    c.wait(900)
+    c.eq(c.js('window.__fitW'), n2, 'after a resize the tokens settle: none rewritten afterwards', what=f'writes {n2 - n1}')
+    c.ok(0 < n2 - n1 <= 4, f'{n2 - n1} writes', 'the resize rewrites the tokens that change, once')
+    c.page.set_viewport_size(vp)
+
+
+# ------------------------------------------------------------------------------------------------------ D87
+_CAM_JS = """() => { const S = window.__mp.S, m = S && S.map; if (!m) return null; const c = m.getCenter();
+  return { lng: c.lng, lat: c.lat, zoom: m.getZoom(), moved: !!S.userMoved } }"""
+
+
+def _maps_again(c):
+    """Leaves the Map for Fuel and comes back, as the pilot does (« Carte » after Fuel), and waits for the map's camera."""
+    c.js("() => { location.hash = '#fuel'; return true }")
+    c.ready('fuel')
+    c.js("() => { location.hash = '#maps'; return true }")
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.map && window.__mp.S.drawn)", timeout=15000, what='the map again, its camera set')
+    c.wait(500)
+    return c.js(_CAM_JS)
+
+
+@case('D87', 'Framed return: the Map frames the flight when it comes back; the user’s framing of this same flight is given back, not of another', 'D',
+      tags=('maps',), designs=('standard',), night=False,
+      rule='sixth reading (31 Oct 2026), § 10.30, SPEC § 5: opening the Map from Fuel or coming back after « Terminer » frames the flight with its procedures, as the first opening; a framing the user gave this same flight (pan, zoom) during the page is kept, not beyond — another route or another choice of procedures is framed again; one writer of the framing, frameFlight')
+def d87(c):
+    c.open('maps', docs=fdocs(flight()), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.map && window.__mp.S.drawn)", timeout=15000, what='the map and its camera')
+    c.wait(400)
+    first = c.js(_CAM_JS)
+    back = _maps_again(c)
+    c.ok(abs(back['lng'] - first['lng']) < 1e-3 and abs(back['lat'] - first['lat']) < 1e-3 and abs(back['zoom'] - first['zoom']) < .01,
+         f'{first} → {back}', 'untouched, the flight is framed on the way back as at the first opening')
+    # the pilot pans and zooms: that framing of this flight comes back with the Map
+    c.js("() => { const m = window.__mp.S.map; m.jumpTo({ center: [m.getCenter().lng + 0.6, m.getCenter().lat - 0.4], zoom: m.getZoom() + 1 }); return true }")
+    c.wait(400)
+    mine = c.js(_CAM_JS)
+    c.ok(mine['moved'], f'{mine}', 'the move is the user’s')
+    back = _maps_again(c)
+    c.ok(abs(back['lng'] - mine['lng']) < 1e-3 and abs(back['lat'] - mine['lat']) < 1e-3 and abs(back['zoom'] - mine['zoom']) < .01 and back['moved'],
+         f'{mine} → {back}', 'the user’s framing of this same flight is given back')
+    # another route (the same aerodromes, one point fewer): framed again, the kept framing forgotten
+    c.js("""async () => { const S = window.__mp.S, p = 'pilot/ABC/current_flight.json', f = await S.ctx.data.get(p);
+      f.route = { ...f.route, text: 'LFRS NEPIX LFML', points: f.route.points.filter(q => q.id !== 'LUGEN') };
+      f.updated_at = new Date().toISOString(); await S.ctx.data.put(p, f); return true }""")
+    c.wait(800)
+    back = _maps_again(c)
+    c.ok(not back['moved'] and (abs(back['lng'] - mine['lng']) > .05 or abs(back['zoom'] - mine['zoom']) > .3), f'{mine} → {back}',
+         'another route: the flight is framed again, not the framing kept for the other one')

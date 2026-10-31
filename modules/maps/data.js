@@ -4,6 +4,7 @@
 
 import {
   S,
+  keep,
   flightPath,
   flownPts
 } from './state.js';
@@ -30,7 +31,8 @@ import {
   status,
   header,
   showBox,
-  fitMap
+  frameFlight,
+  flightSig
 } from './screen.js';
 import {
   progressUpdate,
@@ -147,11 +149,25 @@ export function loadProcs() {
     afterPath();
   }, () => {});
 }
-/** Le chemin a changé (procédures arrivées ou retirées) : refait, puis la carte et le profil redessinés. */
+/** Le chemin a changé (procédures arrivées ou retirées) : refait, l'emprise du vol avec lui (recadrée tant que l'utilisateur n'a
+ *  pas bougé la carte), puis la carte et le profil redessinés. */
 function afterPath() {
   buildPath();
+  S.fit = fitOf();
+  if (S.map && !S.userMoved) frameFlight(false);
   schedule();
   buildProfile();
+}
+/** L'emprise du vol que la carte cadre (SPEC § 5, retour cadré) : imposée (viewOf), sinon le chemin déployé — la route et ses
+ *  procédures choisies — et le dégagement, à 25 NM ; sinon l'Europe de l'Ouest. */
+function fitOf() {
+  const pts = S.route.path?.length ? S.route.path : S.route.points;
+  return viewOf() || MapsRender.bboxOf([...pts, ...(S.route.altn ? [S.route.altn] : [])], 25) || {
+    w: -5,
+    s: 41,
+    e: 10,
+    n: 51.5
+  };
 }
 /** Points du profil d'après les points volés : longitudes continues, niveaux tenus (alt_ft des points de la route, jamais le
  *  premier ni le dernier ; le premier prend level.ft dès qu'un palier existe) ; noMark pour les points de procédure, qui ne
@@ -202,12 +218,7 @@ export async function applyFlight(live = false) {
   loadProcs();
   S.profile = effectiveProfile();
   const all = [...S.route.points, ...(S.route.altn ? [S.route.altn] : [])];
-  S.fit = viewOf() || MapsRender.bboxOf(all, 25) || {
-    w: -5,
-    s: 41,
-    e: 10,
-    n: 51.5
-  };
+  S.fit = fitOf();
   S.data = null;
   if (!live) S.cursor = null;
   showBox(!!S.route.points.length);
@@ -227,7 +238,8 @@ export async function applyFlight(live = false) {
     other = key !== S.routeKey;
   S.routeKey = key;
   if (other) S.userMoved = false;
-  if (S.map && (!live || other || (!S.userMoved && !inView()))) fitMap(false);
+  if (keep.cam && keep.cam.sig !== flightSig()) keep.cam = null; // un autre vol : le cadrage gardé ne le suit pas
+  if (S.map && (!live || other || (!S.userMoved && !inView()))) frameFlight(false);
   status();
   progressUpdate();
   schedule();

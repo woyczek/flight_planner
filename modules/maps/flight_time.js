@@ -10,7 +10,8 @@ import {
   dLon,
   level,
   nmTxt,
-  flownPts
+  flownPts,
+  keep
 } from './state.js';
 import {
   nearLon
@@ -359,6 +360,7 @@ export function setFollow(on) {
   setPressed(S.followBtn, on);
   if (on) {
     S.userMoved = false;
+    keep.cam = null; // « Suivre » : le cadrage gardé est oublié
     progressUpdate();
   }
 }

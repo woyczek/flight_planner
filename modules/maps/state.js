@@ -14,13 +14,16 @@ export const setS = v => {
 };
 
 /** Ce qui vit le temps de la page, d'un montage à l'autre (jamais sur l'appareil) : position de la feuille, dessin choisi
- *  (profil ou coupe), fenêtre de la route { sig, from, to }, aide du mode Édition déjà dite, dernier toucher. */
+ *  (profil ou coupe), fenêtre de la route { sig, from, to }, aide du mode Édition déjà dite, dernier toucher, cadrage de
+ *  l'utilisateur. */
 export const keep = {
   sheet: 'default',
   view: 'profile',
   win: null,
   editHinted: false,
-  touchAt: -1e9
+  touchAt: -1e9,
+  // cadrage de l'utilisateur { sig, center, zoom } : gardé pour ce vol-là seulement (signature flightSig, SPEC § 5)
+  cam: null
 };
 
 /** Mètres dans un mille nautique (distances de la coupe en mètres, affichées en NM). */

@@ -27,7 +27,7 @@ import {
   mapSize
 } from './draw.js';
 import {
-  fitMap
+  frameFlight
 } from './screen.js';
 import {
   drawProfile,
@@ -144,7 +144,7 @@ function onSheetSettled() {
   if (key === S.settledKey) return;
   S.settledKey = key;
   mapSize();
-  if (S.map && S.fit && !S.userMoved && S.route.points.length) fitMap(false);
+  if (S.map && S.fit && !S.userMoved && S.route.points.length) frameFlight(false);
   schedule();
   dataHead();
   drawProfile();

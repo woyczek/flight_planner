@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: framed return (sixth reading, gap 2)** (`modules/maps/screen.js` `frameFlight` / `flightSig`, `data.js` `fitOf`,
+  `state.js` `keep.cam`, `choose.js`, `sheet_view.js`, `flight_time.js`; SPEC § 5; DECISIONS; help ×4; noreg D87, D86). Opening the
+  Map from Fuel or coming back after « Terminer » frames the flight with its procedures, as the first opening; the pan and zoom the
+  pilot gave this same flight during the page come back with it, and are forgotten for another route or another choice of
+  procedures, by Recentre and by Follow; one function writes the framing. D86 checks that the sheet's height tokens settle after a
+  change of content and a resize.
+
 - **Frame: a side pane closed before its module arrived** (`frame/app.js` `closePane`; frame DECISIONS; noreg A54) —
   BUGS SOG, found writing D86: on a wide screen, leaving Fuel while the Map beside it was still loading logged « Cannot
   read properties of null (reading 'unmount') ». The pane's module is unmounted only if it arrived, and a late module is

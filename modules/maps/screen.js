@@ -4,6 +4,7 @@
 
 import {
   S,
+  keep,
   esc,
   tt,
   show,
@@ -145,8 +146,9 @@ export function buildOverlay(ctx, modesHtml) {
     label: ctx.t(TX.fit),
     onClick: () => {
       closePanels();
-      S.userMoved = false; // « Recentrer » : la carte suit de nouveau le vol
-      if (S.map) fitMap(true);
+      S.userMoved = false; // « Recentrer » : la carte suit de nouveau le vol, le cadrage gardé est oublié
+      keep.cam = null;
+      if (S.map) frameFlight(true);
       else schedule();
     }
   });
@@ -346,9 +348,47 @@ export function helpAnchor() {
 }
 
 // ---------------------------------------------------------------- caméra et fond MapLibre
-/** Cadre la carte sur le vol : le seul mouvement de caméra du module avec « Suivre », marqué pour ne pas passer pour celui de
- *  l'utilisateur. */
-export function fitMap(animate) {
+/** Signature du vol que la carte cadre : départ, arrivée, texte de la route, procédures choisies (sans leur date) ; un cadrage
+ *  de l'utilisateur n'est gardé que pour elle (SPEC § 5, retour cadré). */
+export const flightSig = () => {
+  const r = S?.route?.flight?.route || {},
+    p = r.procedures || {};
+  return JSON.stringify([r.dep || '', r.arr || '', r.text || '', p.dep || null, p.arr || null]);
+};
+/** Le cadrage de la carte, son seul écrivain (SPEC § 5, retour cadré) : le cadrage que l'utilisateur a donné à ce même vol pendant
+ *  la page (keep.cam), sinon le vol avec ses procédures (S.fit) ; le mode choix et une emprise imposée (#maps?view=) cadrent la
+ *  leur. */
+export function frameFlight(animate) {
+  if (!S?.map) return;
+  const c = keep.cam;
+  if (c && !S.choose && !S.ctx.query?.view && c.sig === flightSig()) {
+    S.selfMove = true;
+    S.map.jumpTo({
+      center: c.center,
+      zoom: c.zoom
+    });
+    S.selfMove = false;
+    S.userMoved = true;
+    return;
+  }
+  fitMap(animate);
+}
+/** Le cadrage de l'utilisateur gardé à la fin de son geste (S.gesture, posé à son début), pour ce vol (hors du mode choix, qui cadre
+ *  le sien) : une fin de mouvement qui n'est pas la sienne (remise à taille, lecture du vol) ne garde rien. */
+function keepCam() {
+  if (!S?.map || !S.gesture) return;
+  S.gesture = false;
+  if (S.choose) return;
+  const c = S.map.getCenter();
+  keep.cam = {
+    sig: flightSig(),
+    center: [c.lng, c.lat],
+    zoom: S.map.getZoom()
+  };
+}
+/** Cadre la carte sur le vol (S.fit) : le seul mouvement de caméra du module avec « Suivre », marqué pour ne pas passer pour
+ *  celui de l'utilisateur ; appelé par frameFlight. */
+function fitMap(animate) {
   S.selfMove = true;
   S.map.once('moveend', () => {
     if (S) S.selfMove = false;
@@ -395,9 +435,11 @@ export async function startTiles() {
       S.mapNew = null;
       mapBase(map);
       mapSize(); // le cadre a pu changer de taille pendant le chargement des tuiles
+      if (keep.cam) frameFlight(false); // parti du vol cadré : le cadrage gardé de ce vol, s'il y en a un
       relief();
       map.on('move', moving); // pendant le geste l'image suit (draw.js), le dessin complet au repos
       map.on('moveend', settle); // repos : le dessin complet
+      map.on('moveend', keepCam);
       map.on('click', e => S && tapAt(e.point.x, e.point.y, e.lngLat.lat, e.lngLat.lng));
       // survol à la souris seulement (les événements souris qui suivent un toucher sont ignorés)
       map.on('mousemove', e => {
@@ -413,6 +455,7 @@ export async function startTiles() {
         // un mouvement qui n'est ni un cadrage du module ni la remise à taille : celui de l'utilisateur, sa caméra est gardée
         if (S && !S.selfMove && !isOwnResize(map)) {
           S.userMoved = true;
+          S.gesture = true;
           if (S.follow) setFollow(false);
         }
       });

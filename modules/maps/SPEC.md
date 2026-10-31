@@ -303,6 +303,14 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   it leaves the view; once the user has moved or zoomed (a move that is not the module's own framing nor `mapSize`'s
   resize, `isOwnResize`), every redraw keeps the user's camera — an Edit gesture, the live view, fuel's requote, a new
   `updated_at`. Only Recentre or another flight (departure or arrival changed) frames the route again.
+- **Framed return** (sixth reading, 31 Oct 2026, § 10.30): opening the Map from Fuel, or coming back after « Terminer »,
+  frames the flight with its procedures (`S.fit`), as the first opening does; the framing the user gave this same flight
+  during the page (`keep.cam` { sig, center, zoom }, kept at the end of each gesture of the user's, never in the choose mode)
+  is given back instead, and no further: the flight's signature (`flightSig`: departure, arrival, route text, the chosen
+  procedures without their date) differs — another route, another choice of procedures — and the flight is framed again;
+  Recentre and Follow forget it. **One writer of the framing**: `frameFlight(animate)` (`screen.js`), the view's own model,
+  called at mount (when the map loads), after a reading of the flight, at the sheet's settle, by Recentre and by the choose mode
+  (which frames its own `S.fit`); no other code moves the camera to frame (`fitMap` is its private step).
 - **Data area**: in overview (view at least 90 % as wide as the route's area), the route's area; closer, the view widened
   by 15 %, read again only when the view leaves it. Airspaces and airways are read for the route's corridor only
   (`corridorNm` + 2 NM), leg by leg (one rectangle around a diagonal route would touch neighbouring zones). With "Around
@@ -374,8 +382,8 @@ enters it.
 The **second entry** is the aerodrome card of the departure or the arrival (ergonomics, 29 Oct 2026: the user did not find the
 entry on a phone): next to "Changer" (→ `#fuel?focus=<side>`), "Choisir sur la carte" (`[data-choose]`, full width under 768 px)
 runs `chooseOpen(side, icao)`, the same code path as the address without a reload: the card is released, the mode loads, the
-view fits the procedures (`fitMap`). Closing the pane from there with nothing chosen gives back the flight and its frame (`chooseClose`, its branch without a key:
-`applyFlight`, then `fitMap`).
+view fits the procedures (`frameFlight`). Closing the pane from there with nothing chosen gives back the flight and its frame (`chooseClose`, its branch without a key:
+`applyFlight`, then `frameFlight`).
 
 **"Source"** (V3 § 10.25): each chosen procedure of the side (SID; STAR and APP) whose record carries an `https://` `source.url`
 (aerodb, the SIA's eAIP page) gets a link "Source" in its row (`a.mp-ad-src`, new tab, `rel="noopener noreferrer"`; "Source STAR"
