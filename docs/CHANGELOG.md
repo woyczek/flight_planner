@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Noreg E8 (Weather): the cut's window waited for, not assumed** (`tests/v3/cases/atmosphere.py`) — the pinch is made
+  again after the page has settled until the window holds tight, and "Vol entier" is waited for instead of a fixed 400 ms
+  pause (as Fuel's `to_step`); the module is untouched. E8 ×10 and ×5 under a concurrent pass, green.
+
 - **Weather: the sheet has the height of what it shows** (`modules/atmosphere/module.js`; SPEC, DECISIONS) — the frame's
   rule since the Map's sixth reading: in portrait, never taller than its content nor than half the view, the map takes the
   rest, no blank under the content (expanded: half the view on the cut, the content's own height on Details, Flight…);
