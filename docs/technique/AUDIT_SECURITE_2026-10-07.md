@@ -986,8 +986,9 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 134 | Map base: `zonesLayer`, zones drawn and tapped on a MapLibre map (1a519954f) | acceptable |
 | 135 | Frame: one marked tab, Help and Settings in the bar, one manual per application (cc6503ee0) | acceptable |
 | 136 | aerodb: a zone's frame computed around its main ring (fed1c6f4a) | acceptable |
-| 137 | Frame: `fuel_units.js`, fuel densities and conversions (85b1300e4) | acceptable, two notes |
+| 137 | Frame: `fuel_units.js`, fuel densities and conversions (85b1300e4) | acceptable, two notes (closed in 139) |
 | 138 | aerodb: a sheet describes a type or variant, the fleet names it (130048967) | acceptable |
+| 139 | Fuel units: own keys only, strict numbers (78cf63f65): the notes of 137 closed | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2170,6 +2171,10 @@ which replaces every character outside `[A-Za-z0-9._-]` (no separator can remain
 chose. A new sheet's identifier passes `checkId` (type, then an optional `-VARIANT` of `[A-Z0-9-]`) and `newId` builds only
 from those characters; a `.lnmperf` import keeps its own identifier only when it exists or passes `checkId`, otherwise is
 named after its type, and is refused without one. The variant label is result data, escaped by the modules that show it.
+
+**139. The notes of 137 (78cf63f65) — acceptable.** `density()` reads only own keys of an object (`Object.hasOwn`) for
+the airline's densities and the defaults, and every fallback passes the plausibility bound; `num()` accepts only a number
+or a non-empty string that writes one.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
