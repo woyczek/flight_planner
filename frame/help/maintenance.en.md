@@ -260,7 +260,7 @@ on the contents. A classic token opens all the repositories of the account: for 
 dedicated to flying is advised. A file in another format is refused with a message. The airline is written to the
 repository only if it has none yet. On a workstation whose data/ already follows this repository, the assistant skips
 the account and the token. Without a launcher, the app reaches a GitHub repository or a project on a GitLab instance
-(gitlab.com, framagit…): paste the project's address (https://gitlab.com/group/project) and the project access token the
+(gitlab.com): paste the project's address (https://gitlab.com/group/project) and the project access token the
 administrator gave you; the token is sent to that instance only. When the received configuration or the device's access is a GitLab project, the “Data access” card expects the project's address and describes the project token (Developer role, `write_repository`).
 
 ## Administration
@@ -329,4 +329,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: c79442483726 -->
+<!-- fr: d97bf562de44 -->

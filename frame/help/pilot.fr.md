@@ -839,7 +839,7 @@ fois le jeton testé ; « Tester » dit ce qui ne va pas : invitation pas encore
 sans droit sur le contenu. Un jeton classique ouvre tous les dépôts du compte : pour le dépôt d'un utilisateur, un
 compte GitHub dédié au vol est conseillé. Un fichier d'un autre format est refusé avec un message. La compagnie n'est
 écrite dans le dépôt que s'il n'en a pas encore. Sur un poste dont data/ suit déjà ce dépôt, l'assistant saute le compte
-et le jeton. Sans lanceur, l'appli joint un dépôt GitHub ou un projet sur une instance GitLab (gitlab.com, framagit…) :
+et le jeton. Sans lanceur, l'appli joint un dépôt GitHub ou un projet sur une instance GitLab (gitlab.com) :
 collez l'adresse du projet (https://gitlab.com/groupe/projet) et le jeton d'accès de projet que l'administrateur vous a
 donné ; le jeton n'est envoyé qu'à cette instance. Quand la configuration reçue ou l'accès de l'appareil est un projet GitLab, la carte « Accès aux données » attend l'adresse du projet et décrit le jeton de projet (rôle Developer, `write_repository`).
 

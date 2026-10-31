@@ -8,7 +8,7 @@
   //   · howto : mode d'emploi du jeton, rempli d'un modèle par hôte (GitHub : dépôt d'un utilisateur → jeton classique
   //     « repo » — un invité ne peut pas viser ce dépôt avec un jeton à grain fin —, dépôt d'une organisation → jeton à grain
   //     fin limité au dépôt ; ownerType relevé à l'export ;
-  //     GitLab / framagit : jeton de projet, rôle Developer, write_repository) avec l'adresse exacte du dépôt ;
+  //     GitLab : jeton d'accès de projet de l'administrateur, rôle Developer, portée api) avec l'adresse exacte du dépôt ;
   //   · lien : « z » + base64url du JSON compressé (deflate-raw), « j » + base64url du JSON sans compression ;
   //   · import : validate() ne garde que les champs connus, chacun vérifié ; autre schéma ou champ invalide : refus.
   // API : window.SogConfig = { SCHEMA, parseRepo, kind, PROVIDER_TABLE, links, repoField, knownProviders, providerOf, webUrl, cloneUrl, howto, build, pack, unpack, read, validate }.
@@ -76,7 +76,7 @@
       hosts: ['gitlab.com', 'framagit.org'], // appelés par la page sans lanceur : aussi dans CONNECT de tools/csp_policy.py
       apiHost: null,
       apiPath: '/api/v4',
-      token: 'glpat-… (jeton d\'accès de projet, rôle Developer, write_repository)',
+      token: 'glpat-… (jeton d\'accès de projet, rôle Developer, portée api)',
       capabilities: {
         projectTokens: true
       },
@@ -228,26 +228,14 @@ Die Organisation {owner} muss feingranulare Tokens erlauben (Einstellungen der O
 La organización {owner} debe aceptar los tokens de grano fino (ajustes de la organización › Personal access tokens).`
     ],
     gitlab: [
-      `Pas encore de compte sur {host} ? Créez-le sur https://{host}/users/sign_up (vérifiez l'adresse mail, choisissez un nom d'utilisateur simple), puis donnez ce nom à l'administrateur, qui vous ajoute au projet {web}.
-1. Connectez-vous à {host}, puis ouvrez {web}/-/settings/access_tokens (jetons du projet : il faut le rôle Maintainer sur le projet). Sans ce rôle : votre avatar › « Edit profile » › « Access tokens », pour un jeton personnel de même portée.
-2. « Token name » : SOG Pilote ; « Expiration date » : 90 jours au plus ; « Role » : Developer ; « Scopes » : write_repository.
-3. Créez le jeton, copiez-le et collez-le ici dans « Jeton personnel ». Ne l'envoyez jamais dans un message.
-Sans lanceur (téléphone), l'appli ne joint un dépôt {host} qu'à travers le lanceur d'un poste : appliquez cette configuration sur un poste.`,
-      `No account on {host} yet? Create one at https://{host}/users/sign_up (verify the email address, choose a simple username), then give that name to the administrator, who adds you to the project {web}.
-1. Sign in to {host}, then open {web}/-/settings/access_tokens (project tokens: this needs the Maintainer role on the project). Without that role: your avatar › “Edit profile” › “Access tokens”, for a personal token with the same scope.
-2. “Token name”: SOG Pilot; “Expiration date”: 90 days at most; “Role”: Developer; “Scopes”: write_repository.
-3. Create the token, copy it and paste it here in “Personal token”. Never send it in a message.
-Without a launcher (phone), the app reaches a {host} repository only through a workstation's launcher: apply this configuration on a workstation.`,
-      `Noch kein Konto auf {host}? Erstellen Sie eines auf https://{host}/users/sign_up (E-Mail-Adresse bestätigen, einfachen Benutzernamen wählen) und geben Sie diesen Namen dem Administrator, der Sie zum Projekt {web} hinzufügt.
-1. Melden Sie sich bei {host} an und öffnen Sie {web}/-/settings/access_tokens (Projekt-Tokens: dafür braucht es die Rolle Maintainer im Projekt). Ohne diese Rolle: Ihr Avatar › „Edit profile“ › „Access tokens“, für ein persönliches Token mit demselben Umfang.
-2. „Token name“: SOG Pilot; „Expiration date“: höchstens 90 Tage; „Role“: Developer; „Scopes“: write_repository.
-3. Erstellen Sie das Token, kopieren Sie es und fügen Sie es hier unter „Persönliches Token“ ein. Senden Sie es nie in einer Nachricht.
-Ohne Starter (Telefon) erreicht die App ein Repository auf {host} nur über den Starter eines Rechners: Wenden Sie diese Konfiguration auf einem Rechner an.`,
-      `¿Aún sin cuenta en {host}? Créela en https://{host}/users/sign_up (verifique la dirección de correo, elija un nombre de usuario sencillo) y dé ese nombre al administrador, que le añade al proyecto {web}.
-1. Inicie sesión en {host} y abra {web}/-/settings/access_tokens (tokens del proyecto: requiere el rol Maintainer en el proyecto). Sin ese rol: su avatar › «Edit profile» › «Access tokens», para un token personal con el mismo alcance.
-2. «Token name»: SOG Pilot; «Expiration date»: 90 días como máximo; «Role»: Developer; «Scopes»: write_repository.
-3. Cree el token, cópielo y péguelo aquí en «Token personal». No lo envíe nunca en un mensaje.
-Sin lanzador (teléfono), la aplicación solo llega a un repositorio de {host} a través del lanzador de un puesto: aplique esta configuración en un puesto.`
+      `Pas de compte à créer sur {host}. L'administrateur crée pour vous un jeton d'accès du projet {web} : à votre trigramme, rôle Developer, portée « api », 90 jours conseillés (365 au plus). Il vous l'envoie à part, jamais avec le lien de configuration.
+Collez-le ici dans « Jeton », une seule fois. Ne l'envoyez jamais dans un message.`,
+      `No account to create on {host}. The administrator creates a project access token of {web} for you: named with your trigram, Developer role, “api” scope, 90 days advised (365 at most). They send it to you separately, never with the configuration link.
+Paste it here in “Token”, once. Never send it in a message.`,
+      `Kein Konto auf {host} nötig. Der Administrator erstellt für Sie ein Projektzugangstoken von {web}: mit Ihrem Kürzel benannt, Rolle Developer, Umfang „api“, 90 Tage empfohlen (höchstens 365). Er schickt es Ihnen getrennt, nie mit dem Konfigurationslink.
+Fügen Sie es hier unter „Token“ ein, einmal. Senden Sie es nie in einer Nachricht.`,
+      `No hay que crear cuenta en {host}. El administrador crea para usted un token de acceso del proyecto {web}: con su trigrama como nombre, rol Developer, alcance «api», 90 días recomendados (365 como máximo). Se lo envía aparte, nunca con el enlace de configuración.
+Péguelo aquí en «Token», una sola vez. No lo envíe nunca en un mensaje.`
     ]
   };
   /** Variante du mode d'emploi : GitHub, dépôt d'une organisation → jeton à grain fin limité au dépôt ; dépôt d'un

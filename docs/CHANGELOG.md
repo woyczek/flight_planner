@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Settings: GitLab texts say the token's real scope, and the pilot creates nothing** (`frame/settings/config.js`, `access.js`,
+  `join.js`; help ×4; SPEC § 5; § 10.36 of 31 Oct) — scope `api` everywhere (`write_repository` is for git over HTTP only; the
+  transport uses the REST API, and the launcher's pilot tokens already use `api`); 90 days advised, 365 at most; the pilot's how-to
+  no longer asks for an account or a token of their own: the administrator creates a project access token per pilot and sends it
+  apart. framagit.org is no longer proposed anywhere (still recognised).
 - **Frame: a violation of the page's allowed sites is logged** (`frame/app.js`, `frame/store/frame_data.js`
   `noteFailure`; frame SPEC 3.6; noreg A64) — the blocked host and the directive join the last failures of the copiable
   diagnostic, once per host; the SPEC says the known limit of two open tabs at a new version.

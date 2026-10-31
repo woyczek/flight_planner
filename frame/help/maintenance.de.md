@@ -277,7 +277,7 @@ kopiert oder abgelaufen, Token ohne Recht auf den Inhalt. Ein klassisches Token 
 das Repository eines Benutzers wird ein eigenes GitHub-Konto nur für das Fliegen empfohlen. Eine Datei in einem anderen
 Format wird mit einer Meldung abgelehnt. Die Fluggesellschaft wird nur ins Repository geschrieben, wenn es noch keine
 hat. Auf einem Rechner, dessen data/ diesem Repository bereits folgt, überspringt der Assistent Konto und Token. Ohne
-Starter erreicht die App ein GitHub-Repository oder ein Projekt auf einer GitLab-Instanz (gitlab.com, framagit…): Fügen
+Starter erreicht die App ein GitHub-Repository oder ein Projekt auf einer GitLab-Instanz (gitlab.com): Fügen
 Sie die Adresse des Projekts (https://gitlab.com/gruppe/projekt) und das Projektzugangstoken ein, das der Administrator
 Ihnen gegeben hat; das Token wird nur an diese Instanz gesendet. Ist die empfangene Konfiguration oder der Zugang des Geräts ein GitLab-Projekt, erwartet die Karte „Datenzugang“ die Adresse des Projekts und beschreibt das Projekt-Token (Rolle Developer, `write_repository`).
 
@@ -351,4 +351,4 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: c79442483726 -->
+<!-- fr: d97bf562de44 -->

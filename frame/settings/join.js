@@ -171,22 +171,22 @@
     glSteps: L4([
       'Ouvrez {new} (votre avatar › « Edit profile » › « Access tokens »), puis « Add new token ».',
       '« Token name » : SOG Pilote. « Expiration date » : dans un an.',
-      '« Select scopes » : write_repository (et read_repository).',
+      '« Select scopes » : api.',
       '« Create personal access token », puis copiez le jeton tout de suite : il ne se revoit plus.'
     ], [
       'Open {new} (your avatar › “Edit profile” › “Access tokens”), then “Add new token”.',
       '“Token name”: SOG Pilot. “Expiration date”: in one year.',
-      '“Select scopes”: write_repository (and read_repository).',
+      '“Select scopes”: api.',
       '“Create personal access token”, then copy the token at once: it is never shown again.'
     ], [
       'Öffnen Sie {new} (Ihr Avatar › „Edit profile“ › „Access tokens“), dann „Add new token“.',
       '„Token name“: SOG Pilot. „Expiration date“: in einem Jahr.',
-      '„Select scopes“: write_repository (und read_repository).',
+      '„Select scopes“: api.',
       '„Create personal access token“, dann kopieren Sie das Token sofort: Es wird nie wieder angezeigt.'
     ], [
       'Abra {new} (su avatar › «Edit profile» › «Access tokens»), luego «Add new token».',
       '«Token name»: SOG Pilot. «Expiration date»: dentro de un año.',
-      '«Select scopes»: write_repository (y read_repository).',
+      '«Select scopes»: api.',
       '«Create personal access token», y copie el token enseguida: no vuelve a mostrarse.'
     ]),
     s4Done: L4('Jeton copié', 'Token copied', 'Token kopiert', 'Token copiado'),

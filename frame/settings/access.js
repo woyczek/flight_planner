@@ -27,10 +27,10 @@
     // fournisseur GitLab (configuration reçue ou accès de l'appareil) : champ du dépôt et aide du jeton
     repoGl: ['Adresse du projet GitLab', 'GitLab project address', 'Adresse des GitLab-Projekts', 'Dirección del proyecto GitLab'],
     tokenHintGl: [
-      'GitLab : collez l’adresse du projet et le jeton d’accès de projet que l’administrateur vous a donné (rôle Developer, portée write_repository) ; il n’est envoyé qu’à cette instance. Gardé sur cet appareil seulement, jamais réaffiché ; ne le collez dans aucun message.',
-      'GitLab: paste the project’s address and the project access token the administrator gave you (Developer role, write_repository scope); it is sent to that instance only. Kept on this device only, never shown again; never paste it in a message.',
-      'GitLab: Adresse des Projekts und das Projektzugangstoken einfügen, das der Administrator Ihnen gegeben hat (Rolle Developer, Umfang write_repository); es wird nur an diese Instanz gesendet. Nur auf diesem Gerät gespeichert, nie wieder angezeigt; in keine Nachricht einfügen.',
-      'GitLab: pegue la dirección del proyecto y el token de acceso de proyecto que le dio el administrador (rol Developer, alcance write_repository); solo se envía a esa instancia. Guardado solo en este dispositivo, nunca se vuelve a mostrar; no lo pegue en ningún mensaje.'
+      'GitLab : collez l’adresse du projet et le jeton d’accès de projet que l’administrateur vous a donné (rôle Developer, portée api) ; il n’est envoyé qu’à cette instance. Gardé sur cet appareil seulement, jamais réaffiché ; ne le collez dans aucun message.',
+      'GitLab: paste the project’s address and the project access token the administrator gave you (Developer role, api scope); it is sent to that instance only. Kept on this device only, never shown again; never paste it in a message.',
+      'GitLab: Adresse des Projekts und das Projektzugangstoken einfügen, das der Administrator Ihnen gegeben hat (Rolle Developer, Umfang api); es wird nur an diese Instanz gesendet. Nur auf diesem Gerät gespeichert, nie wieder angezeigt; in keine Nachricht einfügen.',
+      'GitLab: pegue la dirección del proyecto y el token de acceso de proyecto que le dio el administrador (rol Developer, alcance api); solo se envía a esa instancia. Guardado solo en este dispositivo, nunca se vuelve a mostrar; no lo pegue en ningún mensaje.'
     ],
     branch: ['Branche', 'Branch', 'Zweig', 'Rama'],
     token: ['Jeton personnel', 'Personal token', 'Persönliches Token', 'Token personal'],
@@ -95,10 +95,10 @@
     syncNow: ['Synchroniser maintenant', 'Synchronise now', 'Jetzt synchronisieren', 'Sincronizar ahora'],
     // l'adresse du dépôt saisie, lue avant toute écriture (SogConfig.normalizeRepo)
     repoIncomplete: [
-      'Adresse incomplète : hôte/compte/dépôt (par exemple framagit.org/groupe/projet ou github.com/compte/dépôt). Rien n’est enregistré.',
-      'Incomplete address: host/account/repository (for example framagit.org/group/project or github.com/account/repository). Nothing is saved.',
-      'Unvollständige Adresse: Host/Konto/Repository (zum Beispiel framagit.org/gruppe/projekt oder github.com/konto/repository). Nichts wird gespeichert.',
-      'Dirección incompleta: host/cuenta/repositorio (por ejemplo framagit.org/grupo/proyecto o github.com/cuenta/repositorio). No se guarda nada.'
+      'Adresse incomplète : hôte/compte/dépôt (par exemple gitlab.com/groupe/projet ou github.com/compte/dépôt). Rien n’est enregistré.',
+      'Incomplete address: host/account/repository (for example gitlab.com/group/project or github.com/account/repository). Nothing is saved.',
+      'Unvollständige Adresse: Host/Konto/Repository (zum Beispiel gitlab.com/gruppe/projekt oder github.com/konto/repository). Nichts wird gespeichert.',
+      'Dirección incompleta: host/cuenta/repositorio (por ejemplo gitlab.com/grupo/proyecto o github.com/cuenta/repositorio). No se guarda nada.'
     ],
     repoProvider: ['Fournisseur : {p} — {u}', 'Provider: {p} — {u}', 'Anbieter: {p} — {u}', 'Proveedor: {p} — {u}'],
     // un GitLab hors de la table (gitlab.com, framagit.org) : la page sans lanceur ne le contacte pas (CSP), le lanceur ou le relais oui

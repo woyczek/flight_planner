@@ -298,8 +298,10 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
   invited pilot can make for it: prefilled link `https://github.com/settings/tokens/new?scopes=repo&description=SOG%20Pilote`,
   one year, scope `repo` only, with the plain warning that it opens every repository of the account (hence an account
   dedicated to flying); GitLab /
-  framagit — a project access token, role Developer, scope `write_repository` (Maintainer needed, otherwise a personal
-  token with the same scope), and the note that a phone reaches it only through a workstation's launcher; other hosts —
+  a GitLab instance — the pilot creates nothing and needs no account: the administrator creates a project access token
+  named with the pilot's trigram, role Developer, scope `api` (`write_repository` is for git over HTTP only; the transport
+  uses the REST API), 90 days advised and 365 at most, and sends it apart from the configuration link (§ 10.36, 31 Oct
+  2026); the pilot pastes it once. A phone reaches gitlab.com directly since the page's policy lists it (48fc586c2); other hosts —
   ask the administrator. Each with the repository's exact address.
 - **Export**, in the Administration card (Full level) of a workstation (launcher) or of a device set up on GitHub: the
   button "Export a configuration for a pilot" opens a panel that asks the pilot's trigram and the address of the published app (this one when it is published
@@ -355,7 +357,7 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
   (4) the token, step by step — GitHub, user's repository: the prefilled classic-token link, one year, `repo` only, copy
   at once, and the warning on its account-wide reach (also said at step 2); organisation's repository: the fine-grained
   token page, the organisation as owner, only the repository, "Contents: Read and write"; GitLab: personal token with
-  `write_repository`; the airline's how-to folded below; a box "Token copied"; (5) paste and "Test" — 404: invitation not accepted or repository not chosen in the token; 401:
+  `api`; the airline's how-to folded below; a box "Token copied"; (5) paste and "Test" — 404: invitation not accepted or repository not chosen in the token; 401:
   copied wrongly or expired; 403: no right — `repo` box (classic) or Contents (fine-grained); both token forms
   accepted; offline said; checked: the access is saved (another one
   replaced only after a question); on a workstation, "Clone with the token" (launcher); (6) IVAO, VATSIM, SimBrief,
