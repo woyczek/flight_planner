@@ -458,7 +458,7 @@
         say(t(T.testing), 'warn');
         if (h.access === 'github') {
           // GitLab : l'API de l'instance de la configuration (le transport ne connaît que github.com et les instances GitLab ; le jeton ne
-          // part que vers cet hôte) ; GitHub : l'API donnée, s'il y en a une
+          // part que vers cet hôte) ; GitHub : api.github.com (jamais une api reçue)
           const g = {
             repo: d.repo,
             branch: d.branch,
@@ -466,8 +466,6 @@
             ...(kind === 'gitlab' ? {
               provider: 'gitlab',
               api: `https://${d.host}${SogConfig.PROVIDER_TABLE.gitlab.apiPath}`
-            } : d.api ? {
-              api: d.api
             } : {})
           };
           try {

@@ -225,7 +225,7 @@ Sin lanzador (teléfono), la aplicación solo llega a un repositorio de {host} a
   async function ownerType(d) {
     if (kind(d) !== 'github') return null;
     try {
-      const r = await fetch(`${(d.api || 'https://api.github.com').replace(/\/$/, '')}/users/${encodeURIComponent(d.repo.split('/')[0])}`, {
+      const r = await fetch(`https://api.github.com/users/${encodeURIComponent(d.repo.split('/')[0])}`, {
         headers: {
           Accept: 'application/vnd.github+json'
         }
@@ -266,10 +266,7 @@ Sin lanzador (teléfono), la aplicación solo llega a un repositorio de {host} a
       provider: data.provider, // choisi (github ou gitlab) : il voyage avec le dépôt, le côté du pilote s'ouvre dessus
       ...(data.ownerType ? {
         ownerType: data.ownerType
-      } : {}),
-      ...(data.api ? {
-        api: data.api
-      } : {})
+      } : {}) // jamais d'api : le côté du pilote prend api.github.com, ou l'API de l'instance GitLab recalculée de host
     } : null;
     return {
       schema: SCHEMA,
@@ -407,8 +404,11 @@ Sin lanzador (teléfono), la aplicación solo llega a un repositorio de {host} a
       };
       if (!/^[\w.-]+(\/[\w.-]+)+$/.test(repo) || repo.length > 200 || repo.split('/').some(x => /^\.+$/.test(x))) return bad('data.repo');
       if (!/^[\w./-]{1,100}$/.test(branch)) return bad('data.branch');
+      // api : jamais importée, pas même une adresse locale (Sécurisation, ligne 118 : un lien « Rejoindre » forgé enverrait sinon le
+      // jeton du pilote vers un autre hôte, ou vers un service du poste). GitHub : absente ou api.github.com, rien n'est gardé ; toute
+      // autre valeur refuse la configuration. GitLab : ignorée, quelle qu'elle soit (l'API se recalcule de host)
       const api = d.api == null ? '' : String(d.api);
-      if (api && !/^(https:\/\/[\w.-]+(:\d+)?|http:\/\/(127\.0\.0\.1|localhost)(:\d+)?)(\/[\w./-]*)?$/.test(api)) return bad('data.api');
+      if (prov === 'github' && api && !/^https:\/\/api\.github\.com\/?$/.test(api)) return bad('data.api');
       cfg.data = {
         host,
         repo,
@@ -416,9 +416,6 @@ Sin lanzador (teléfono), la aplicación solo llega a un repositorio de {host} a
         provider: prov,
         ...(d.ownerType === 'User' || d.ownerType === 'Organization' ? {
           ownerType: d.ownerType
-        } : {}),
-        ...(api ? {
-          api
         } : {})
       };
       // mode d'emploi : textes reçus (affichés en texte seul) ; absent : refait du modèle

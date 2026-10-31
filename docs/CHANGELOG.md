@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Settings: a configuration never imports an API address** (`frame/settings/config.js`, `join.js`, `admin.js`; SPEC § 5; A56;
+  security review, line 118) — BEHAVIOUR CHANGE. A forged « Join » link with `data.api` could send the pilot's token to another host
+  or to a local service of the workstation. The API now comes from the provider alone: GitHub `api.github.com`, GitLab recomputed from
+  `data.host`. `validate` refuses a GitHub configuration whose `api` is anything but `https://api.github.com` (a local address too) and
+  ignores it for GitLab; the export never writes `api`; Join passes no received `api` to the transport; `ownerType` asks
+  `api.github.com` only. A56 checks that two listening benches (another host, a local port) receive nothing and that the token goes to
+  `api.github.com` only.
 - **Map: an aerodrome of the route is written once (sixth reading, gap 4)** (`modules/maps/render.js`, `render_route.js`,
   `lib/aero_symbols.js`, `draw.js`; SPEC § 3; DECISIONS; noreg D89). The route's label at its ends (and at a stop, and the alternate's
   code) no longer lies over the aerodrome's name: the name, in the aerodrome's style, is the one box of that point, always written.

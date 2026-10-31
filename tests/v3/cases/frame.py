@@ -37,6 +37,7 @@ Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16 A17 A18 A19 A20 A2
 """
 import json
 import re
+import socket
 import urllib.parse
 
 from lib import MAP_JS, ROOT, Fail, Skip, case, forget, norm, tx
@@ -1981,3 +1982,83 @@ def a51(c):
     saved = c.js("(() => { const g = FrameData.github.config(); return { provider: g.provider, api: g.api, repo: g.repo } })()")
     c.eq(saved, {'provider': 'gitlab', 'api': 'https://git.example.test/api/v4', 'repo': 'grp/proj'}, 'the device now reads the GitLab project of the configuration', what='saved access')
     c.ok(sent and all(x == 'test-token' for x in sent), str(sent), 'the token was sent to the configuration’s host, and only there (the route catches that host alone)')
+
+
+@case('A56', 'A configuration never imports an api: a forged « Join » link cannot send the pilot\u2019s token to another host', 'A', designs=('standard',), screens=False,
+      night=False, rule='frame/settings SPEC 5 (security review, line 118): a received configuration carries no api, not even a local one; github is api.github.com and any other api refuses the configuration; gitlab recomputes its API from data.host and ignores any api; the export never writes api; Join passes no received api to the transport')
+def a56(c):
+    settings_file = 'frame/settings/settings.js'
+    c.context.route(re.compile(r'/__setup/'), lambda r: r.abort())  # no launcher: the token is tested by the device itself
+    # two benches on free ports, both must receive nothing: another host (127.0.0.2) and a service of the pilot\u2019s workstation (127.0.0.1)
+    benches = []
+    for ip in ('127.0.0.2', '127.0.0.1'):
+        srv = socket.socket()
+        srv.bind((ip, 0))
+        srv.listen(4)
+        srv.settimeout(0.5)
+        benches.append(srv)
+    foreign, local = f'https://127.0.0.2:{benches[0].getsockname()[1]}', f'http://127.0.0.1:{benches[1].getsockname()[1]}'
+    seen = []
+    ports = [str(b.getsockname()[1]) for b in benches]
+    c.context.on('request', lambda r: seen.append(r.url) if 'evil.example' in r.url or urllib.parse.urlparse(r.url).port in [int(p) for p in ports] else None)
+    try:
+        c.open('settings', docs=LEVEL3)
+        c.until("!!window.SogConfig && !!SogConfig.validate", what='the configuration helper is loaded')
+        got = c.js("""([f, l]) => { const mk = d => SogConfig.validate({ schema: 'sog-config/1', identity: { trigram: 'ABC' }, data: { repo: 'a/b', ...d } });
+          const r = x => x.ok ? 'ok:' + (x.cfg.data.api ?? '-') : x.error + ':' + (x.field || '');
+          return { evil: r(mk({ host: 'github.com', provider: 'github', api: 'https://evil.example' })),
+            foreign: r(mk({ host: 'github.com', provider: 'github', api: f })),
+            legacy: r(mk({ host: 'github.com', api: 'https://evil.example/api' })),
+            local: r(mk({ host: 'github.com', provider: 'github', api: l })),
+            localhost: r(mk({ host: 'github.com', provider: 'github', api: 'http://localhost:8811/api' })),
+            official: r(mk({ host: 'github.com', provider: 'github', api: 'https://api.github.com' })),
+            gitlab: r(mk({ host: 'git.example.test', provider: 'gitlab', api: 'https://evil.example/api/v4' })),
+            gitlabLocal: r(mk({ host: 'git.example.test', provider: 'gitlab', api: l })) } }""", [foreign, local])
+        c.eq(got, {'evil': 'field:data.api', 'foreign': 'field:data.api', 'legacy': 'field:data.api', 'local': 'field:data.api',
+                   'localhost': 'field:data.api', 'official': 'ok:-', 'gitlab': 'ok:-', 'gitlabLocal': 'ok:-'},
+             'github: only api.github.com (nothing kept), any other api refused, a local one too; gitlab: any api ignored', what='validate')
+        got = c.js("""() => ['github', 'gitlab'].map(p => SogConfig.build({ data: { host: p === 'github' ? 'github.com' : 'git.example.test', repo: 'a/b',
+          provider: p, api: 'https://evil.example' }, trigram: 'ABC' }).data.api ?? '-')""")
+        c.eq(got, ['-', '-'], 'the export never writes api', what='build')
+
+        # a forged « Join » link with an api (another host, a local service): refused with the field named, nothing saved
+        for api in (foreign, local):
+            link = c.js("""(a) => SogConfig.pack({ schema: 'sog-config/1', identity: { trigram: 'ABC' },
+              data: { host: 'github.com', repo: 'acme/data', branch: 'main', provider: 'github', api: a } })""", api)
+            c.page.goto(f'{c.base}/frame/index.html#settings?config={link}', wait_until='load')
+            c.until("!!document.querySelector('[data-card=\"cfg\"] .f-msg')", timeout=15000, what='the refusal is shown')
+            c.eq(norm(c.text('[data-card="cfg"] .f-msg')), norm(tx(settings_file, 'cfgBadField', c.lang).replace('{f}', 'data.api')),
+                 'the forged link is refused, the field is named', what=f'refusal ({api})')
+            c.eq(c.js("!window.FrameData?.github?.config()"), True, 'no access is saved', what=f'nothing saved ({api})')
+
+        # Join itself (a configuration that got past validate, as if forged in the device state): no received api reaches the
+        # transport, the token goes to api.github.com only
+        sent = []
+        c.context.route(re.compile(r'https://api\.github\.com/'), lambda r: (sent.append([urllib.parse.urlparse(r.request.url).path, r.request.headers.get('authorization')]),
+                                                                            r.fulfill(status=200, content_type='application/json', body=json.dumps({'object': {'sha': 'abc123'}})))[1])
+        for api in (foreign, local):
+            sent.clear()
+            cfg = {'schema': 'sog-config/1', 'identity': {'trigram': 'ABC'}, 'data': {'host': 'github.com', 'repo': 'acme/data', 'branch': 'main', 'provider': 'github', 'api': api}}
+            c.open('settings', docs=LEVEL3 + [['device/join.json', {'cfg': cfg, 'step': 5, 'done': {}}, 'cache']])
+            c.page.evaluate("location.hash = '#settings?join=1'")
+            c.until("!!document.querySelector('[data-jact=\"test\"]')", timeout=15000, what='the token step is offered')
+            c.page.fill('input[data-f="jToken"]', 'test-token')
+            c.tap('[data-jact="test"]')
+            for _ in range(100):
+                if sent:
+                    break
+                c.wait(100)
+            c.until("!!window.FrameData?.github?.config()", timeout=15000, what='the access is saved')
+            c.eq(c.js("FrameData.github.config().api ?? '-'"), '-', 'the saved access has no api: api.github.com', what=f'saved access ({api})')
+            c.ok(sent and sent[0] == ['/repos/acme/data/git/ref/heads/main', 'Bearer test-token'], str(sent[:1]), f'the token was tested against api.github.com ({api})')
+        reached = []
+        for srv in benches:
+            try:
+                srv.accept()[0].close()
+                reached.append(True)
+            except (socket.timeout, TimeoutError):
+                reached.append(False)
+        c.eq([reached, seen], [[False, False], []], 'nothing went out to a received api: no bench received a connection, the page made no request', what='no call out')
+    finally:
+        for srv in benches:
+            srv.close()

@@ -258,10 +258,9 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
 ## 5. Configuring a pilot (`frame/settings/config.js`, `window.SogConfig`)
 
 - **Schema `sog-config/1`** (JSON): `schema`, `created_at`, `by` (the exporter's trigram), `airline { name, site, pages
-  { recordFlight, log, fleet, aircraft } }` (from `airline/settings.json`), `data { host, repo, branch, provider, ownerType?,
-  api? }` (`ownerType`: `User` or `Organization`, read at export from GitHub's public `users/<owner>`; the
-  repository without its credentials: from the remote of `data/` on a launcher, or the device's GitHub setting, `api`
-  then kept), `identity { trigram }`, `usages { devices: true }`, `howto { token { fr, en, de, es } }`.
+  { recordFlight, log, fleet, aircraft } }` (from `airline/settings.json`), `data { host, repo, branch, provider, ownerType? }`
+  (`ownerType`: `User` or `Organization`, read at export from GitHub's public `users/<owner>`; the repository without its
+  credentials: from the remote of `data/` on a launcher, or the device's access), `identity { trigram }`, `usages { devices: true }`, `howto { token { fr, en, de, es } }`.
 - **The provider is chosen, never deduced** (`data.provider`, `github` | `gitlab`, the closed list of `SogConfig.PROVIDER_TABLE`; a
   self-hosted GitLab is `gitlab` with its own `host`). `validate` refuses a configuration without it unless the host is `github.com`
   (the legacy of the configurations exported before 48079d78f, which had no field) and any value outside the list, ×4 "unknown provider:
@@ -271,6 +270,13 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
   `https://<host>/…` is a GitLab instance with API `https://<host>/api/v4`, the token going to that host only (the address protection of
   `parseRepo` is unchanged). Without a launcher, a GitLab configuration is therefore applied on the device like a GitHub one (join step 5
   tests the token against the instance's API and saves the access with `provider: gitlab`).
+- **A configuration never carries an API address** (security review, line 118: a forged « Join » link would otherwise send the pilot's
+  token to another host, or to a service of the pilot's workstation). The API comes from the provider alone: GitHub is
+  `api.github.com`; GitLab is `https://<host>/api/v4`, recomputed from `data.host`. `validate`: for GitHub, a `data.api` other than
+  `https://api.github.com` — a local address included — refuses the configuration (`field`, `data.api`, "Configuration refused:
+  data.api is invalid"); for GitLab, any `data.api` is ignored; nothing is kept in either case. `build` (the export) never writes
+  `api`; Join (step 5, without a launcher) passes no received `api` to the transport. A bench that needs a local API sets the device's
+  access by its own path, never through a configuration. The transport keeps its own guard (`clean()`, V3 Frame). Case A56.
 - **How-to of the token**, from a template per host: GitHub, an **organisation's** repository — a fine-grained token
   limited to the repository (resource owner the organisation, Contents read and write, one year), the organisation
   allowing such tokens; GitHub, a **user's** repository or an unknown owner — a **classic** token, the only kind an

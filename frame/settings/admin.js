@@ -314,10 +314,7 @@
       // fournisseur : celui de l'adresse du dépôt distant de data/ (même fonction que le volet du dépôt distant : hôte public, ou
       // hôte donné par la configuration de l'appareil), ou celui de l'accès de l'appareil sans lanceur ; null s'il est inconnu (l'export
       // est alors refusé) ; il part dans la configuration pour que le côté du pilote s'ouvre dessus
-      provider: L ? SogConfig.providerOf(remote.url, env.known).provider : SogConfig.kind(gh),
-      ...(!L && gh?.api ? {
-        api: gh.api
-      } : {})
+      provider: L ? SogConfig.providerOf(remote.url, env.known).provider : SogConfig.kind(gh) // jamais d'api : l'export n'en écrit pas
     } : null;
     const xl = xsrc?.provider ? SogConfig.links(xsrc) : null,
       xk = xl?.kind,
