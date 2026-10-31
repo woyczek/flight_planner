@@ -2156,3 +2156,34 @@ def a59(c):
     c.tap('#fHelp')
     c.until("location.hash.startsWith('#help')", timeout=10000, what='Pilot\u2019s help')
     c.eq(c.js(current), [], 'Pilot\u2019s help: no tab marked', what='active tabs on Pilot help')
+
+
+@case('A60', 'With a launcher, the Access card says where the repository and its provider are, and its link opens that panel', 'A', designs=('standard',), screens=False,
+      night=False, rule='frame/settings SPEC 3 (user, 31 Oct: « je ne trouve plus le setting gitlab vs github sur un terminal avec lanceur »): no setting, the provider is read from the remote\u2019s address; the Access card names the place and links to Administration › Remote repository of data/, which names the provider')
+def a60(c):
+    launcher_file = 'frame/settings/launcher.js'
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True,
+              'relaxNav': False, 'host': 'TEST', 'lan': False}
+
+    def launcher(route):
+        path = urllib.parse.urlparse(route.request.url).path
+        body = {}
+        if path.endswith('/__setup/status'):
+            body = status
+        elif path.endswith('/__setup/sync-remote') and route.request.method == 'GET':
+            body = {'repo': True, 'remote': 'origin', 'url': 'https://gitlab.com/acme/data.git', 'branch': 'main', 'state': 'repo', 'default': ''}
+        elif path.endswith('/__setup/secrets'):
+            body = {'app': {'ivao': {'apiKey': {'set': False, 'hint': ''}}, 'ead': {'user': {'set': False, 'at': ''}, 'password': {'set': False, 'at': ''}}}, 'user': {}}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    c.open('settings', docs=[['device/level.json', {'level': 1}, 'cache']])
+    c.until("!!document.querySelector('[data-card=access] [data-provider-where] a')", timeout=15000, what='the Access card names the place')
+    c.eq(norm(c.text('[data-card="access"] [data-provider-where]')), norm(tx(launcher_file, 'accessProvider', c.lang)),
+         'the Access card says where the repository and its provider are', what='where')
+    c.eq(c.attr('[data-card="access"] [data-provider-where] a', 'href'), '#settings?card=admin&panel=remote', 'a direct link to the panel', what='link')
+    c.tap('[data-card="access"] [data-provider-where] a')
+    c.until("!!document.querySelector('[data-adminpanel=remote]:not([hidden]) [data-provider]')", timeout=15000, what='the remote panel is open')
+    c.eq(c.attr('[data-adminpanel="remote"] [data-provider]', 'data-provider'), 'gitlab', 'the panel names the provider read from the address', what='provider')
+    c.eq(c.attr('[data-act="adminPanel"][data-panel="remote"]', 'aria-expanded'), 'true', 'its button says it is open', what='expanded')
+    word = {'fr': 'GitHub ou GitLab', 'en': 'GitHub or GitLab', 'de': 'GitHub oder GitLab', 'es': 'GitHub o GitLab'}[c.lang]
+    c.ok(word in c.text('[data-admin="remote"]'), c.text('[data-admin="remote"]')[:200], 'the panel\u2019s line says the provider is read from the address')

@@ -73,10 +73,10 @@
       'Repositorio remoto de data/'
     ],
     text: [
-      'Où le lanceur de ce poste envoie et reçoit les données de la compagnie ; une autre adresse se confirme dans une fenêtre sur l’ordinateur.',
-      'Where this computer’s launcher sends and receives the airline’s data; another address is confirmed in a window on the computer.',
-      'Wohin der Starter dieses Rechners die Daten der Fluggesellschaft sendet und woher er sie empfängt; eine andere Adresse wird in einem Fenster auf dem Computer bestätigt.',
-      'Adónde envía y de dónde recibe el lanzador de este equipo los datos de la aerolínea; otra dirección se confirma en una ventana del ordenador.'
+      'Où le lanceur de ce poste envoie et reçoit les données de la compagnie ; une autre adresse se confirme dans une fenêtre sur l’ordinateur ; le fournisseur, GitHub ou GitLab, est lu de l’adresse.',
+      'Where this computer’s launcher sends and receives the airline’s data; another address is confirmed in a window on the computer; the provider, GitHub or GitLab, is read from the address.',
+      'Wohin der Starter dieses Rechners die Daten der Fluggesellschaft sendet und woher er sie empfängt; eine andere Adresse wird in einem Fenster auf dem Computer bestätigt; der Anbieter, GitHub oder GitLab, wird aus der Adresse gelesen.',
+      'Adónde envía y de dónde recibe el lanzador de este equipo los datos de la aerolínea; otra dirección se confirma en una ventana del ordenador; el proveedor, GitHub o GitLab, se lee de la dirección.'
     ]
   }, {
     id: 'keys',

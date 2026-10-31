@@ -118,6 +118,8 @@ Vuela en el equipo (X-Plane) y quiere el mapa en una tableta o un teléfono: en 
 
 ## Un repositorio git para data/
 
+**¿GitHub o GitLab?** No es un ajuste: el proveedor se lee de la dirección del repositorio remoto y se muestra al principio de «Administración › Repositorio remoto de data/»; la tarjeta «Acceso a los datos» lleva allí.
+
 En un puesto servido por el lanzador, en el nivel Completo, el botón «Repositorio remoto de data/» de la tarjeta
 «Administración» muestra el repositorio remoto de `data/`: su dirección y su
 rama. Para configurarlo o cambiarlo, escriba la dirección (`git@host:cuenta/repo.git` o `https://…`, sin contraseña ni
@@ -238,4 +240,4 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: d5070361a48e -->
+<!-- fr: c79442483726 -->

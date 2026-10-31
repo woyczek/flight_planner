@@ -602,6 +602,21 @@
   }
 
   /** Lien `#settings?import=1` (carte d'accueil) : le bouton d'import de la configuration est mis à portée, son groupe (Accès) ouvert d'abord. */
+  /** #settings?card=admin&panel=<volet> (le lien de la carte Accès vers « Dépôt distant de data/ ») : le volet de la carte
+   *  Administration déplié et amené à l'écran ; un volet inconnu ou absent à ce niveau : rien. */
+  function focusPanel(view, q) {
+    const id = q.get('panel'),
+      b = id ? view.querySelector(`[data-act="adminPanel"][data-panel="${CSS.escape(id)}"]`) : null,
+      p = id ? view.querySelector(`[data-adminpanel="${CSS.escape(id)}"]`) : null;
+    if (!b || !p) return;
+    b.closest('details.f-group')?.setAttribute('open', '');
+    p.hidden = false;
+    b.setAttribute('aria-expanded', 'true');
+    setTimeout(() => b.scrollIntoView({
+      block: 'start'
+    }), 0);
+  }
+
   function focusImport(view, q) {
     if (q.get('import')) {
       P.actions.dropConfigHash(); // une fois : le dessin suivant (après le choix du fichier) reste en tête
@@ -822,6 +837,7 @@
     // #settings?offline=1 (fin de l'assistant) : la carte Données hors ligne seule (focus), l'adresse reste telle quelle
     // #settings?import=1 (carte d'accueil) : le bouton d'import à portée
     focusImport(view, q);
+    focusPanel(view, q);
     P.admin.live(env); // filet de la limite de la zone du vol, enregistré aussitôt
   }
 

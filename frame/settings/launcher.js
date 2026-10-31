@@ -137,6 +137,12 @@
       'Dieser Rechner nutzt seinen Starter: hier ist kein Token einzustellen.',
       'Este puesto pasa por su lanzador: no hay token que configurar aquí.'
     ],
+    // où se lisent le dépôt et son fournisseur sur un poste avec lanceur (pas de réglage : lu de l'adresse du dépôt distant)
+    accessProvider: ['Dépôt et fournisseur (GitHub ou GitLab) : Administration › Dépôt distant de data/',
+      'Repository and provider (GitHub or GitLab): Administration › Remote repository of data/',
+      'Repository und Anbieter (GitHub oder GitLab): Verwaltung › Entferntes Repository von data/',
+      'Repositorio y proveedor (GitHub o GitLab): Administración › Repositorio remoto de data/'
+    ],
     // clés d'API de la compagnie (volet de la carte Administration ; titre et phrase dans admin_links.js)
     ivaoKey: ['Clé de l’API IVAO', 'IVAO API key', 'IVAO-API-Schlüssel', 'Clave de la API IVAO'],
     // accès des appareils du réseau local (carte écrite par la session du cadre, lot 18)
@@ -531,7 +537,7 @@
       gitState,
       fld
     } = env;
-    return `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2><p>${esc(t(T.accessLauncher))}</p>${gitState === 'repo' ? '' : gitDoor(gitState, t, fld, remote)}</div>`;
+    return `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2><p>${esc(t(T.accessLauncher))}</p><p data-provider-where><a href="#settings?card=admin&amp;panel=remote">${esc(t(T.accessProvider))}</a></p>${gitState === 'repo' ? '' : gitDoor(gitState, t, fld, remote)}</div>`;
   }
   /** Ligne « Fournisseur » en tête du volet du dépôt distant, lue de l'adresse du dépôt distant de data/ (SogConfig.providerOf :
    *  jamais un réglage ; known : les fournisseurs que la configuration de l'appareil donne, pour un GitLab auto-hébergé) : GitLab

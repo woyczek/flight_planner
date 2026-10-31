@@ -113,6 +113,8 @@ You fly on the computer (X-Plane) and want the map on a tablet or a phone: on th
 
 ## A git repository for data/
 
+**GitHub or GitLab?** It is not a setting: the provider is read from the remote repository’s address and shown at the top of “Administration › Remote repository of data/”; the “Data access” card leads there.
+
 On a workstation served by the launcher, at the Full level, the “Remote repository of data/” button of the
 “Administration” card shows the remote repository of `data/`: its address and its branch. To set or change it, type the address (`git@host:account/repo.git` or `https://…`, with no password or token
 in it): “Check” says whether the repository answers, “Save” sets it. Towards another address than the configured one, a Yes / No window opens on the computer, not in the page: the card says so before the click; answer it (it may be behind other windows), then come back. Refused, closed or already open: the card gives the reason and `data/` stays as it is. This is on purpose: a malicious page must not be able to send your data elsewhere. Nothing blocks: a repository that does not answer is
@@ -226,4 +228,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: d5070361a48e -->
+<!-- fr: c79442483726 -->

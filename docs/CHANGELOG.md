@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Settings: where GitHub or GitLab is read, said and linked** (`frame/settings/launcher.js`, `admin_links.js`, `settings.js`;
+  help ×4; SPEC § 1 and § 3; A60) — user, 31 Oct: « je ne trouve plus le setting gitlab vs github sur un terminal avec lanceur ».
+  No new setting (the provider is read from the remote's address since R-S4). On a launcher, the Access card adds « Dépôt et
+  fournisseur (GitHub ou GitLab) : Administration › Dépôt distant de data/ », a link to `#settings?card=admin&panel=remote`
+  (new: `panel=` unfolds that panel of the Administration card, at any level); the panel's sentence says the provider is read
+  from the address; the help's git section opens with the same line.
 - **Launcher: IVAO's return reaches the frame** (`tools/launch.py`; frame DECISIONS; noreg I14) — the return opened the
   frame by a redirect, whose chain from ivao.aero stayed cross-site, so the origin guard refused the frame's page; it now
   opens it by a page of this origin. A refused return is said in the launcher's log with its reason; an unknown or expired

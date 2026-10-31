@@ -48,7 +48,8 @@ diagnostic, admin); the split is a matter of size, not of behaviour, and a regen
   28 Oct 2026): `#settings?card=<name>` (a `data-card` name: `offline`, `backup`, `wx`, `lan`, `lnmperf`, `admin`…) and
   `#settings?offline=1` (the joining assistant's last button) draw that card alone, at the top, under a "← Settings" link
   to `#settings` (`[data-settings-back]`); no status block, no help panel. The address stays as it is, so a redraw (after
-  an action) keeps the card. An unknown name draws the ordinary list.
+  an action) keeps the card. An unknown name draws the ordinary list. `&panel=<name>` with `card=admin` also unfolds that
+  panel of the Administration card and brings it into view (an unknown or absent panel: nothing more).
 - The diagnostics are a folded block of the About card.
 - **Nothing of the administrator's on the ordinary cards** (rule 18 of `docs/technique/V3_SPECIFICATION.md` § 7.1): every
   administrator page is one button of the Administration card (§ 3.11), Full level only.
@@ -99,7 +100,10 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    file…" asks, saying that this device's copies, pending writes and conflicts will be erased, then loads in `replace`
    mode. A file that is not a device backup is refused with a notification; the result says added, updated, kept
    and conflicts.
-6. **Data access** (always): on a launcher, one sentence (no token here); the **remote repository of `data/`** is a panel
+6. **Data access** (always): on a launcher, one sentence (no token here) and a second that says where the repository and its
+   provider are, « Dépôt et fournisseur (GitHub ou GitLab) : Administration › Dépôt distant de data/ », a link to
+   `#settings?card=admin&panel=remote` (user, 31 Oct 2026: the provider is no setting, and was not found); the panel's own
+   sentence says the provider is read from the address. The **remote repository of `data/`** is a panel
    of the Administration card (Full level, rule of 28 Oct 2026: what is the administrator's goes behind Administration),
    `[data-card="remote"]` inside `[data-adminpanel="remote"]`, shown when `data/` is a git repository
    (`GET /__setup/sync-remote`: `repo`, `remote`, `url`, `branch`, `default`): the current address and branch (a

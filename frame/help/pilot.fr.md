@@ -791,6 +791,8 @@ lanceur, « Accès du poste » ouvre l'appli Pilote aux appareils du même rése
 
 ## Un dépôt git pour data/
 
+**GitHub ou GitLab ?** Ce n'est pas un réglage : le fournisseur est lu de l'adresse du dépôt distant et s'affiche en tête de « Administration › Dépôt distant de data/ » ; la carte « Accès aux données » y mène.
+
 Sur un poste servi par le lanceur, au niveau Complet, le bouton « Dépôt distant de data/ » de la carte
 « Administration » montre le dépôt distant de `data/` : son adresse et sa branche. Pour le régler ou en changer, tapez l'adresse (`git@hôte:compte/dépôt.git` ou `https://…`, sans mot de passe
 ni jeton dedans) : « Vérifier » dit si le dépôt répond, « Enregistrer » le règle. Vers une autre adresse que celle de la configuration, une fenêtre Oui / Non s'ouvre sur l'ordinateur, pas dans la page : la carte le dit avant le clic ; répondez-lui (elle peut être derrière les autres fenêtres), puis revenez. Refusée, fermée ou déjà ouverte : la carte en donne la raison et `data/` reste tel quel. C'est voulu : une page piégée ne doit pas pouvoir envoyer vos données ailleurs. Rien ne bloque : un dépôt qui ne répond pas est
