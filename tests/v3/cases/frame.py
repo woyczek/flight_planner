@@ -2234,10 +2234,10 @@ GITLAB_BAD = ("try { localStorage.setItem('githubData:frame', JSON.stringify({ p
               "branch: 'main', token: 'glpat_test' })) } catch (e) {}")
 
 
-@case('A60', 'Synchronisation errors named: « offline » only when the browser says so, an invalid repository address, one note per key', 'A',
+@case('A62', 'Synchronisation errors named: « offline » only when the browser says so, an invalid repository address, one note per key', 'A',
       designs=('standard',), screens=False, night=False,
       rule='Simplification 31 Oct (the user’s phone: « offline » while online since the day before, two identical notes stacked): an exception of fetch while online is « repository unreachable (host) », never offline; an address the transport cannot use is a named configuration error whose status line leads to the Access card; the same note replaces the one shown')
-def a60(c):
+def a62(c):
     c.context.add_init_script(GITLAB_BAD)
     c.context.route(re.compile(r'/modules/atmosphere/module\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=CTX_MODULE))
     c.open('atmosphere', wait=False, docs=[['device/usages.json', {'devices': True}, 'cache']])
@@ -2263,10 +2263,10 @@ def a60(c):
 
 
 
-@case('A61', 'The repository’s real answer: status, a phrase for the frequent cases, the last five failures kept', 'A', designs=('standard',),
+@case('A63', 'The repository’s real answer: status, a phrase for the frequent cases, the last five failures kept', 'A', designs=('standard',),
       screens=False, night=False,
       rule='Simplification 31 Oct (the user, GitLab still failing « without the log of the error »): the last error says the provider, the HTTP status and the server’s message cut at 120 signs, never the token; 404, 401, 403 and a 400 on the branch said in words; the diagnostic keeps the last five failures')
-def a61(c):
+def a63(c):
     answer = {'status': 404, 'message': 'Not Found'}
     c.context.add_init_script(GITHUB_SET)
     c.context.route(re.compile(r'^https://api\.github\.com/'), lambda r: r.fulfill(status=answer['status'], content_type='application/json',
