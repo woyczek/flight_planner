@@ -1936,7 +1936,6 @@ def i28(c):
     # 31 Oct evening)
     BENCH_ORPHANS = {
         'modules/atmosphere/test/weather_map.html': 'Atmosphère (cloud session, integrated by Simplification)',
-        'modules/atmosphere/test/weather_store.html': 'Atmosphère (cloud session, integrated by Simplification)',
         'modules/flightlog/test/pending.html': 'Flightlog (dormant session)',
     }
     # pages that measure (a time, a rate) and give no verdict: out of the check, said as such
