@@ -452,6 +452,15 @@ The module is split by responsibility; no rule changes place without the case th
 - `chain.js`: « Tout mettre à jour » (plan, one question, the chain, its end); starts its operations through follow.js and
   draws its own card only.
 - `texts.js`: the texts `[fr, en, de, es]`, one table.
+- **One writer per shared field** (R-S10): the other files only read them; case I29 fails when another file of the module
+  writes one (an assignment or a mutation of one of its fields).
+
+  | Field | Written by | States and passages |
+  |---|---|---|
+  | `S` | `state.js` (`setState`) | `null` → the mounted screen (mount) → `null` (unmount) |
+  | `S.run` | `follow.js` | absent → `{ phase: 'running', t0, ctrl, set, verb, dry, args }` (a start) → `phase: 'stopping'` (« Arrêter ») → absent (its end, or a refusal) |
+  | `S.result` | `follow.js` | `null` (a start, a plan stopped or asking) → `{ set, verb, out }` (an end) or `{ set, verb, refused }` (a refusal), or a plan's result |
+  | `S.chain` | `chain.js` | `null` → `{ phase: 'asking', runs, rows }` (the question) → `{ phase: 'running', runs, i, verb, stopped, rows, t0, job }` → `phase: 'stopping'` (« Arrêter ») or `'publishing'` → `null` (its end) |
 - `model.js`: the façade of the pure functions, `export * from` the files below and nothing else; the screen files import
   it as `M` and the cases import `/modules/data/model.js`, both unchanged. The files under it hold no state, no DOM and no
   call out, and never import a screen file:

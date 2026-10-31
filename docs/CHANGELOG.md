@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Refactor R-S10, no behaviour change: one writer per shared field of the Data module** (`modules/data/SPEC.md` § 11;
+  I29). After R-S8 the writes were already in one file each: `S.run` and `S.result` in `follow.js`, `S.chain` in `chain.js`, `S`
+  replaced by `setState` in `state.js`. The rule and the table of states and passages are written in the SPEC, and the static case
+  I29 keeps it: it fails when another file of the module assigns or mutates one of them (shown failing with a write planted in
+  `panels.js`). No new writer function: the only paired write (`S.run = null` with `S.result`) appears once.
 - **Noreg: F41 waits as the pilot does** (`tests/v3/cases/fuel.py` `map_return`). Each of its five trips back from the Map now leaves
   the Map once it is mounted and settled, then reads Fuel once it is mounted again with its procedure card drawn — the wait is the
   case's, as `to_step`'s, the module untouched. The first trip left the Map at once: F41 failed 4 in 10 alone (three times in

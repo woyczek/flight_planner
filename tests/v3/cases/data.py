@@ -2925,3 +2925,29 @@ def l20(c):
 
 
 K_NAME = {'fr': 'États-Unis', 'en': 'United States', 'de': 'Vereinigte Staaten', 'es': 'Estados Unidos'}
+
+
+@case('I29', 'Données: one writer per shared field of the screen state (run and result in follow.js, chain in chain.js, S in state.js)', 'I',
+      static=True, rule='modules/data SPEC 11 (R-S10): S.run and S.result are written by follow.js alone, S.chain by chain.js alone, S itself replaced by setState in state.js alone; the other files only read them')
+def i29(c):
+    import os
+    owner = {'run': 'follow.js', 'result': 'follow.js', 'chain': 'chain.js'}
+    LF = chr(10)  # a comment removed keeps its line breaks: the line said is the file's
+    comment = re.compile(r'/\*.*?\*/|(?<![:\'"\\])//[^\n]*', re.S)
+    # an assignment or a mutation: S.f = …, S.f.x = …, S.f[k] = …, S.f.x++ / += …, S.f.list.push(…) / .splice(…), delete S.f.x
+    write = re.compile(r'(?<![\w.])(?:delete\s+)?S\.(run|result|chain)\b((?:\??\.[\w$]+|\[[^\]]*\])*)\s*(?:(?:[-+*/%&|^]|\?\?|\|\||&&)?=(?!=)|\+\+|--)'
+                       r'|(?<![\w.])S\.(run|result|chain)\b(?:\??\.[\w$]+)*\.(?:push|pop|shift|unshift|splice|sort|reverse)\(')
+    replace = re.compile(r'(?<![\w.$])S\s*=(?!=)')
+    root = os.path.join(str(c.root), 'modules', 'data')
+    bad = []
+    for f in sorted(os.listdir(root)):
+        if not f.endswith('.js'):
+            continue
+        text = comment.sub(lambda m: LF * m.group(0).count(LF), open(os.path.join(root, f), encoding='utf-8').read())
+        for m in write.finditer(text):
+            field = m.group(1) or m.group(3)
+            if owner[field] != f:
+                bad.append(f'{f}:{text[:m.start()].count(chr(10)) + 1} writes S.{field}')
+        if f != 'state.js':
+            bad += [f'{f}:{text[:m.start()].count(chr(10)) + 1} replaces S' for m in replace.finditer(text)]
+    c.eq(bad, [], 'S.run and S.result written by follow.js only, S.chain by chain.js only, S replaced by state.js only', what='writers')
