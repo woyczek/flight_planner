@@ -25,8 +25,10 @@
   //   · Bloc « État » en première carte (règle 14 de V3_SPECIFICATION.md § 7.1 : les lignes de l'ancien pop-up « i »), dessiné par
   //     le cadre qui en a l'état (ctx.status.html()), posé ici, puis rendu vivant par le cadre (ctx.status.bind) ;
   // Fichiers de l'écran (INTEGRATION.md § 1, chargés avant celui-ci) : kit.js (aides et textes communs), launcher.js
-  // (cartes du lanceur), access.js (accès et transport), diagnostic.js, admin.js (carte Administration) — chacun
-  // s'inscrit dans window.SogSettingsParts ; ce fichier dessine l'écran, les cartes de l'appareil, et distribue les actions.
+  // (cartes du lanceur), access.js (accès et transport), diagnostic.js, admin.js (carte Administration), groups.js
+  // (rangement), cards.js (les cartes de l'appareil, un constructeur chacune) et actions.js (les gestes : clics, champs,
+  // sauvegarde, fichier de configuration) — chacun s'inscrit dans window.SogSettingsParts ; ce fichier est l'écran : il lit
+  // le contexte une fois (env), ordonne les cartes, pose la page, rend l'état vivant et confie les gestes à actions.js.
   // Contexte donné par frame/app.js : { t, notify, ask, FD, own (device/, politique cache), reload, identity(), usages(),
   // launcher(), transport(), aerodb(), syncNow, status { html, bind }, … }.
   const {
@@ -495,11 +497,6 @@
       gitState = !L ? '' : remote?.state || (!L.data ? 'absent' : remote?.repo ? 'repo' : 'plain');
     /** Champ libellé (data-f = k) ; o : type, ph (exemple affiché), cap (majuscules), mode (clavier). */
     const fld = (k, row, v, o = {}) => `<label class="f-field">${esc(t(row))}<input data-f="${k}" type="${o.type || 'text'}" value="${esc(v || '')}" autocomplete="off" ${o.mode ? `inputmode="${o.mode}"` : ''} ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} ${o.cap ? 'autocapitalize="characters"' : 'autocapitalize="off"'} spellcheck="false"></label>`;
-    const how = !exchange ? t(L?.data ? T.aloneLauncher : T.alone) : L?.data ? t(T.viaLauncher, {
-      g: t(!L.dataGit ? T.viaLauncherNoGit : remote && !remote.url ? T.viaLauncherNoRemote : T.viaLauncherGit)
-    }) : gh ? t(T.viaGithub, {
-      r: gh.repo
-    }) : t(T.viaNone);
     // bloc « État » en tête (les lignes de l'ancien pop-up « i » : vol démarré, CR à écrire, données, base, lanceur, position),
     // dessiné par le cadre qui en a l'état, posé ici en première carte
     const cards = [c.status?.html() || ''];
@@ -523,7 +520,7 @@
         if (r.ok) {
           await SogJoin.start(c.own, r.cfg);
           history.replaceState(null, '', `${location.pathname}${location.search}#settings?join=1`);
-        } else inErr = cfgError(r, t);
+        } else inErr = P.actions.cfgError(r, t);
       } catch {
         inErr = t(T.cfgBadFile);
       }
@@ -551,61 +548,15 @@
       howtoHtml,
       copy,
       copyShown: T.copyShown,
-      pick: () => pickConfig(c, view)
+      pick: () => P.actions.pickConfig(c, view)
     });
-    if (inErr) cards.push(`<div class="f-card" data-card="cfg"><h2>${esc(t(T.cfgTitle))}</h2><p class="f-msg" data-kind="err">${esc(inErr)}</p>
-      <div class="f-row"><button type="button" data-act="cfgCancel">${esc(t(T.close))}</button></div></div>`);
-    // assistant en cours : le reprendre là où il en était
-    if (join.cfg && !join.finished && !join.quit) {
-      const steps = SogJoin.stepsFor(access);
-      cards.push(`<div class="f-card" data-card="joinresume"><h2>${esc(t(SogJoin.T.title))}</h2><p>${esc(t(T.joinResume, { n: Math.max(1, steps.indexOf(join.step) + 1), m: steps.length }))}</p>
-        <div class="f-row"><a class="f-btn primary" href="#settings?join=1">${esc(t(T.joinGo))}</a></div></div>`);
-    }
-    // reprise V2, une fois
-    if (v2) cards.push(`<div class="f-card" data-card="v2"><h2>${esc(t(T.v2))}</h2><p class="f-muted">${esc(t(T.v2Intro))}</p>
-      <ul>${Object.entries(v2.identity).map(([k, v]) => `<li>${esc(t(T.pair, { k: t(T[k]) }))} <b>${esc(v)}</b></li>`).join('')}${v2.access ? `<li>${esc(t(T.v2Access, { r: v2.access.repo, b: v2.access.branch }))}</li>` : ''}</ul>
-      <div class="f-row"><button type="button" class="primary" data-act="v2take">${esc(t(T.v2Take))}</button><button type="button" data-act="v2no">${esc(t(T.v2No))}</button></div></div>`);
-    // identité
-    cards.push(`<div class="f-card" data-card="identity"><h2>${esc(t(T.identity))}</h2><p class="f-muted">${esc(t(T.identityHint))}</p>
-      ${fld('trigram', T.trigram, id.trigram, { cap: true, ph: 'ABC' })}${fld('ivao', T.ivao, id.ivao, { mode: 'numeric' })}${fld('vatsim', T.vatsim, id.vatsim, { mode: 'numeric' })}${fld('simbrief', T.simbrief, id.simbrief)}
-      ${us.users && !id.trigram ? `<p class="f-warn">${esc(t(T.needTrigram))}</p>` : ''}<p class="f-msg" data-msg></p>
-      <div class="f-row"><button type="button" class="primary" data-act="identity">${esc(t(T.save))}</button></div></div>`);
-    // niveau d'usage : un geste, le menu suit aussitôt
+    // niveau d'usage et modules que le menu montre (la carte Niveau, cards.js)
     const lvl = c.level?.() || 2,
-      mods = (await c.modules?.()) || [],
-      shows = n => mods.filter(m => m.level <= n).map(m => t(m.label)).join(', ') || t(T.levelNone);
-    cards.push(`<div class="f-card" data-card="level"><h2>${esc(t(T.level))}</h2><p class="f-muted">${esc(t(T.levelHint))}</p>
-      ${T.levels.map(([name, desc], i) => `<label class="f-check f-level"><input type="radio" name="sogLevel" data-level="${i + 1}" ${lvl === i + 1 ? 'checked' : ''}><span><b>${esc(t(name))}</b> — ${esc(t(desc))}<br><span class="f-muted">${esc(t(T.levelShows, { m: shows(i + 1) }))}</span></span></label>`).join('')}</div>`);
-    // design : vignettes des jeux du cadre (chaque vignette porte son design et le ton du moment), ton auto / jour / nuit ;
-    // le cadre applique et garde le choix (ctx.saveDesign), rien n'est écrit ici
-    const sets = c.designs?.() || [];
-    if (sets.length) {
-      const cur = c.design?.() || {},
-        night = cur.tone === 'night' || (cur.tone !== 'day' && matchMedia('(prefers-color-scheme: dark)').matches);
-      /** Nom d'un design (son libellé s'il est dans la liste de cet appareil, sinon son identifiant). */
-      const nameOf = id => {
-        const d = sets.find(x => x.id === id);
-        return d ? t(d.label) : String(id || '').replace(/^./, ch => ch.toUpperCase());
-      };
-      const desk = cur.applied && cur.design && cur.applied !== cur.design ? `<p class="f-muted" data-design-applied>${esc(t(T.designDesk, { d: nameOf(cur.design), a: nameOf(cur.applied) }))}</p>` : '';
-      cards.push(`<div class="f-card" data-card="design"><h2>${esc(t(T.design))}</h2><p class="f-muted">${esc(t(T.designHint))}</p>
-        <div class="f-designs">${sets.map(d => `<button type="button" class="f-design" data-design-pick="${esc(d.id)}" aria-pressed="${(cur.applied || cur.design) === d.id}">
-          <span class="f-design-thumb" data-design="${esc(d.id)}" data-tone="${night ? 'night' : 'day'}"><span class="f-design-bar"></span><span class="f-design-card">${esc(t(T.sample))}<span class="f-design-chip"></span></span></span>
-          <span class="f-design-name">${esc(t(d.label))}${d.textured ? ` <span class="f-muted">· ${esc(t(T.textured))}</span>` : ''}</span></button>`).join('')}</div>${desk}
-        <h3>${esc(t(T.tone))}</h3>${['auto', 'day', 'night'].map(k => `<label class="f-check"><input type="radio" name="sogTone" data-tone-pick="${k}" ${(cur.tone || 'auto') === k ? 'checked' : ''}>${esc(t(T.tones[k]))}</label>`).join('')}</div>`);
-    }
-    // usages
-    const chk = (k, row, dis) => `<label class="f-check"><input type="checkbox" data-u="${k}" ${us[k] ? 'checked' : ''} ${dis ? 'disabled' : ''}>${esc(t(row))}</label>`;
-    cards.push(`<div class="f-card" data-card="usages"><h2>${esc(t(T.usages))}</h2><p><b>${esc(how)}</b></p><p class="f-muted">${esc(t(T.usagesHint))}</p>
-      ${chk('devices', T.devices)}${chk('users', T.users)}${chk('backend', T.backend, true)}${us.users && L?.data && !remote?.url ? `<p class="f-warn">${esc(t(T.needRemote))}</p>` : ''}</div>`);
-    // à Découverte : sept cartes au plus (SPEC § 1) — sauvegarde, données hors ligne, clé météo, accès du poste et
-    // Little Navmap à partir du niveau Courant
-    if (!exchange && (lvl > 1 || focus === 'backup')) cards.push(`<div class="f-card" data-card="backup"><h2>${esc(t(T.backup))}</h2><p class="f-muted">${esc(t(T.backupHint))}</p>
-      <div class="f-row"><button type="button" class="primary" data-act="export">${esc(t(T.export))}</button><button type="button" data-act="import">${esc(t(T.import))}</button><button type="button" data-act="replace">${esc(t(T.replace))}</button><input type="file" accept="application/json,.json" data-file hidden></div></div>`);
+      mods = (await c.modules?.()) || [];
     // carte Accès toujours : sur un lanceur, le dépôt distant de data/ ; sinon dépôt GitHub et jeton (sans échange coché :
     // lecture des bases seulement)
     // contexte des fichiers de l'écran (cartes du lanceur, accès et transport, diagnostic, administration) : les mêmes noms
-    // que dans ce dessin ; card, val, say et again s'y ajoutent une fois la page posée
+    // que dans ce dessin ; card, val, say, again et paintIvaoApp s'y ajoutent une fois la page posée
     const env = {
       view,
       c,
@@ -626,12 +577,42 @@
       jd, // dépôt de la configuration reçue (fournisseur de la carte Accès)
       known: window.SogConfig ? SogConfig.knownProviders(jd, gh) :
     [], // fournisseurs que la configuration de l'appareil donne (hôte → fournisseur)
-      diagJson: '{}'
+      diagJson: '{}',
+      // lus par cards.js et actions.js (la page entière les voit dans le même env)
+      focus,
+      inErr,
+      join,
+      access,
+      v2,
+      v2Settings,
+      bytes
     };
+    /** Pose une carte construite dans la liste (rien quand le constructeur rend vide). */
+    const show = html => {
+      if (html) cards.push(html);
+    };
+    // refus de la configuration reçue
+    show(P.cards.refused(env));
+    // assistant en cours : le reprendre là où il en était
+    show(P.cards.joinResume(env));
+    // reprise V2, une fois
+    show(P.cards.v2(env));
+    // identité
+    show(P.cards.identity(env));
+    // niveau d'usage : un geste, le menu suit aussitôt
+    show(P.cards.level(env));
+    // design : vignettes des jeux du cadre (chaque vignette porte son design et le ton du moment), ton auto / jour / nuit ;
+    // le cadre applique et garde le choix (ctx.saveDesign), rien n'est écrit ici
+    show(P.cards.design(env));
+    // usages
+    show(P.cards.usages(env));
+    // à Découverte : sept cartes au plus (SPEC § 1) — sauvegarde, données hors ligne, clé météo, accès du poste et
+    // Little Navmap à partir du niveau Courant
+    show(P.cards.backup(env));
     // carte Accès toujours : sur un lanceur, le dépôt distant de data/ (launcher.js) ; sinon dépôt GitHub et jeton (access.js)
     cards.push(L ? P.launcher.accessHtml(env) : P.access.accessHtml(env));
     // configuration d'un pilote, dans la carte Accès : importer (toujours, en tête), exporter (poste ou accès GitHub réglé)
-    const cfgIn = window.SogConfig ? `<p class="f-muted">${esc(t(T.cfgImportHint))}</p><div class="f-row"><button type="button" data-act="cfgJoin">${esc(t(T.cfgJoin))}</button><button type="button" data-act="cfgImport">${esc(t(T.cfgImport))}</button><input type="file" accept="application/json,.json" data-cfgfile hidden></div>` : '';
+    const cfgIn = P.cards.cfgImport(env);
     const cfgOut = P.admin.cfgPanel(env); // volet d'export de la carte Administration ; env.xsrc : le dépôt à exporter
     // l'import reste dans la carte Accès (affaire du pilote) ; l'export est une page de l'administrateur : carte Administration
     const ai = cards.findIndex(x => x.startsWith('<div class="f-card" data-card="access">'));
@@ -639,32 +620,19 @@
     // synchronisation : montrée si un échange est coché ou tant que des écritures attendent (access.js)
     cards.push(P.access.syncHtml(env));
     // données hors ligne
-    if (lvl > 1 || focus === 'offline') cards.push(`<div class="f-card" data-card="offline"><h2>${esc(t(T.offlineData))}</h2><dl class="f-dl" data-offline><dt>${esc(t(T.zones))}</dt><dd>…</dd><dt>${esc(t(T.storage))}</dt><dd>…</dd></dl>
-      <div data-zones></div>${!L?.data && !gh ? `<p class="f-warn">${esc(t(T.noBases))}</p>` : ''}<p class="f-muted">${esc(t(T.zoneHint))}</p></div>`);
+    show(P.cards.offline(env));
     // compte IVAO du pilote par le relais (R1b) : avec un lanceur (le relais de la compagnie ou ce poste) ; le jeton n'est
     // jamais montré, seulement l'état
-    const iv = c.ivao;
-    if (iv && L && (lvl > 1 || focus === 'ivao')) {
-      const st = iv.status();
-      cards.push(`<div class="f-card" data-card="ivao"><h2>${esc(t(T.ivao))}</h2><p class="f-muted">${esc(t(T.ivaoHint))}</p>
-        <p><b data-ivao-state="${st.connected ? 'on' : 'off'}">${esc(st.connected ? t(T.ivaoOn, { d: new Date(st.expires_at * 1000).toISOString().slice(0, 16).replace('T', ' ') + 'Z' }) : t(T.ivaoOff))}</b></p>
-        <p class="f-msg" data-msg></p><p data-ivao-app hidden><a href="#settings?card=ivaoapp">${esc(t(T.ivaoAppLink))}</a></p><div class="f-row"><button type="button" class="primary" data-act="ivaoConnect">${esc(t(st.connected ? T.ivaoAgain : T.ivaoConnect))}</button>${st.connected ? `<button type="button" data-act="ivaoOut">${esc(t(T.ivaoOut))}</button>` : ''}</div></div>`);
-    }
+    show(P.cards.ivao(env));
     // clé météo de l'appareil, avec ou sans lanceur (le cadre la garde hors de device/ et de toute sauvegarde)
-    const wk = c.weatherKey;
-    if (wk && (lvl > 1 || focus === 'wx')) cards.push(`<div class="f-card" data-card="wx"><h2>${esc(t(T.wx))}</h2><p class="f-muted">${esc(t(T.wxHint))}</p>
-      ${L ? `<p class="f-muted">${esc(t(T.wxLauncher))}</p>` : ''}<p><b>${esc(t(wk.has() ? T.wxSet : T.wxNone))}</b></p>
-      ${fld('wxKey', T.wxKey, '', { type: 'password', ph: wk.has() ? t(T.wxKeySet) : '' })}<p class="f-msg" data-msg></p>
-      <div class="f-row"><button type="button" class="primary" data-act="wxSave">${esc(t(T.save))}</button><button type="button" data-act="wxTest" ${wk.has() ? '' : 'disabled'}>${esc(t(T.test))}</button><button type="button" data-act="wxErase" ${wk.has() ? '' : 'disabled'}>${esc(t(T.erase))}</button></div>
-      <p><a href="https://account.avwx.rest/" target="_blank" rel="noopener">${esc(t(T.wxSignup))}</a></p></div>`);
+    show(P.cards.wx(env));
     // clés d'API de la compagnie et dépôt distant de data/ (lanceur) : volets de la carte Administration (admin.js)
     // accès des appareils du réseau local : sur le poste qui sert la page seulement (c.lan() nul ailleurs, même sur un
     // appareil appairé) ; état dessiné et relu toutes les 5 s par paintLan
     const lanCard = lvl > 1 || focus === 'lan' ? P.launcher.lanHtml(env) : '';
     if (lanCard) cards.push(lanCard);
     // fiches Little Navmap (.lnmperf), si un lanceur sert la page : carte écrite par aerodb (frame/aerodb/lnmperf.js)
-    if (L && (lvl > 1 || focus === 'lnmperf') && c.aerodb()?.lnmperf) cards.push(
-      '<div class="f-card" data-card="lnmperf" hidden></div>');
+    show(P.cards.lnmperf(env));
     const help = await c.helpPanel?.().catch(() => null);
     const adminHtml = lvl === 3 || focus === 'admin' ? P.admin.adminCard(t, L, {
       cfg: cfgOut,
@@ -734,7 +702,8 @@
       card,
       val,
       say,
-      again
+      again,
+      paintIvaoApp
     });
 
     // état vivant : synchronisation, données hors ligne, clés, diagnostic
@@ -808,141 +777,11 @@
     if (card('ivao') && c.ivao?.setup) c.ivao.setup().then(s => s && paintIvaoApp(s)).catch(() => {});
 
     // actions
-    view.onclick = async e => {
-      if (await P.launcher.onClick(env, e)) return; // un appareil appairé oublié
-      const b = e.target.closest('[data-act]');
-      if (!b) return;
-      const act = b.dataset.act;
-      for (const part of [P.launcher, P.access, P.diagnostic, P.admin])
-        if (part.acts.includes(act)) return part.run(env, act, b, e);
-      if (act === 'v2take') {
-        const d = v2Settings();
-        if (d) {
-          await c.own.put('device/identity.json', {
-            ...id,
-            ...d.identity,
-            updated_at: now()
-          });
-          if (d.access && !FD.github.config()) FD.github.save(d.access);
-        }
-        await c.own.put('device/settings.json', {
-          ...prefs,
-          v2: 'taken',
-          updated_at: now()
-        });
-        await c.reload();
-        c.notify(t(T.v2Done), 'ok');
-        return again();
-      }
-      if (act === 'v2no') {
-        await c.own.put('device/settings.json', {
-          ...prefs,
-          v2: 'declined',
-          updated_at: now()
-        });
-        return again();
-      }
-      if (act === 'identity') {
-        const r = card('identity'),
-          tri = val('trigram', r).toUpperCase(),
-          ivao = val('ivao', r),
-          vatsim = val('vatsim', r);
-        if (tri && !/^[A-Z0-9]{2,5}$/.test(tri)) return say('identity', t(T.badTrigram));
-        if (ivao && !/^\d+$/.test(ivao)) return say('identity', t(T.badNumber, {
-          f: t(T.ivao)
-        }));
-        if (vatsim && !/^\d+$/.test(vatsim)) return say('identity', t(T.badNumber, {
-          f: t(T.vatsim)
-        }));
-        await c.own.put('device/identity.json', {
-          trigram: tri,
-          ivao,
-          vatsim,
-          simbrief: val('simbrief', r),
-          updated_at: now()
-        });
-        await c.reload();
-        c.notify(t(T.saved), 'ok');
-        return again();
-      }
-      if (act === 'export') return exportDevice(c);
-      if (act === 'import' || act === 'replace') {
-        const f = view.querySelector('[data-file]');
-        f.dataset.mode = act === 'replace' ? 'replace' : 'merge';
-        return f.click();
-      }
-      if (act === 'ivaoConnect') {
-        say('ivao', '…', 'warn');
-        const r = await c.ivao.connect();
-        if (r.ok) return;
-        // sans application IVAO (409) : rien n'est parti ; le lieu et le renvoi vers l'assistant, comme au dessin de la carte
-        if (r.status === 409) return paintIvaoApp({
-          app: false,
-          relay: r.relay
-        });
-        return say('ivao', t(T.ivaoErr, {
-          e: r.message || r.status || '?'
-        }), 'err');
-      }
-      if (act === 'ivaoOut') {
-        if (!await c.ask(t(T.ivaoOutAsk))) return;
-        const r = await c.ivao.disconnect();
-        if (r?.revoked) c.notify(t(T.ivaoRevoked), 'ok');
-        else c.notify(t(T.ivaoOutManual), 'warn');
-        return again();
-      }
-      if (act === 'wxSave') {
-        const f = card('wx').querySelector('[data-f="wxKey"]'),
-          k = f?.value.trim() || '';
-        if (f) f.value = '';
-        if (!k) return say('wx', '');
-        await c.weatherKey.save(k);
-        c.notify(t(T.saved), 'ok');
-        return again();
-      }
-      if (act === 'wxTest') {
-        say('wx', '…', 'warn');
-        const r = await c.weatherKey.test('LFPG').catch(e => ({
-          ok: false,
-          message: e?.message || String(e)
-        }));
-        // messages du cadre : ok, no key, key refused, offline, HTTP <n> — traduits ici
-        const m = String(r?.message || ''),
-          http = /^HTTP (\d+)/.exec(m);
-        return say('wx', r?.ok ? t(T.wxOk, {
-          s: r.status || 200
-        }) : m === 'no key' ? t(T.wxNoKey) : m === 'key refused' ? t(T.wxRefused, {
-          s: r.status || '401'
-        }) : m === 'offline' ? t(T.testOffline) : http ? t(T.wxHttp, {
-          s: http[1]
-        }) : m || '?', r?.ok ? 'ok' : m === 'offline' ? 'warn' : 'err');
-      }
-      if (act === 'wxErase') {
-        if (!await c.ask(t(T.wxEraseAsk))) return;
-        await c.weatherKey.clear();
-        c.notify(t(T.saved), 'ok');
-        return again();
-      }
-      // ---- configuration d'un pilote
-      if (act === 'cfgImport') return view.querySelector('[data-cfgfile]')?.click();
-      if (act === 'cfgCancel') {
-        dropConfigHash();
-        return again();
-      }
-      if (act === 'cfgJoin') {
-        location.hash = '#settings?join=1';
-        return;
-      }
-    };
-    view.querySelector('[data-cfgfile]')?.addEventListener('change', async e => {
-      const f = e.target.files?.[0];
-      e.target.value = '';
-      if (f) await joinFromFile(c, f, view);
-    });
+    P.actions.wire(env);
     // #settings?offline=1 (fin de l'assistant) : la carte Données hors ligne seule (focus), l'adresse reste telle quelle
     // #settings?import=1 (carte d'accueil) : le bouton d'import à portée
     if (q.get('import')) {
-      dropConfigHash(); // une fois : le dessin suivant (après le choix du fichier) reste en tête
+      P.actions.dropConfigHash(); // une fois : le dessin suivant (après le choix du fichier) reste en tête
       const b = view.querySelector('[data-act="cfgImport"]');
       b?.closest('details.f-group')?.setAttribute('open', ''); // son groupe (Accès) ouvert d'abord
       setTimeout(() => {
@@ -952,134 +791,7 @@
         b?.focus();
       }, 0);
     }
-    view.querySelectorAll('[data-design-pick]').forEach(b => b.addEventListener('click', async () => {
-      await c.saveDesign({
-        ...(c.design?.() || {}),
-        design: b.dataset.designPick
-      });
-      again();
-    }));
-    view.querySelectorAll('[data-tone-pick]').forEach(i => i.addEventListener('change', async () => {
-      await c.saveDesign({
-        ...(c.design?.() || {}),
-        tone: i.dataset.tonePick
-      });
-      again();
-    }));
-    view.querySelectorAll('[data-level]').forEach(i => i.addEventListener('change', async () => {
-      const n = +i.dataset.level;
-      await c.own.put('device/level.json', {
-        level: n,
-        updated_at: now()
-      });
-      await c.reload();
-      c.notify(t(T.levelSaved, {
-        l: t(T.levels[n - 1][0])
-      }), 'ok');
-    }));
-    view.querySelectorAll('[data-u]').forEach(i => i.addEventListener('change', async () => {
-      const u = {
-        ...us,
-        updated_at: now()
-      };
-      for (const x of view.querySelectorAll('[data-u]')) u[x.dataset.u] = x.checked;
-      u.single = !(u.devices || u.users || u.backend); // « seul sur cet appareil » : l'état sans échange
-      await c.own.put('device/usages.json', u);
-      await c.reload();
-      again();
-    }));
     P.admin.live(env); // filet de la limite de la zone du vol, enregistré aussitôt
-    view.querySelector('[data-file]')?.addEventListener('change', async e => {
-      const f = e.target.files?.[0];
-      e.target.value = '';
-      if (f) await importDevice(c, f, e.target.dataset.mode);
-      again();
-    });
-  }
-
-  // ---- configuration d'un pilote (frame/settings/config.js)
-  /** Fichier de configuration choisi → vérifié, assistant « Rejoindre la compagnie » commencé et affiché ; refus : message. */
-  async function joinFromFile(c, f, view) {
-    let r = null;
-    try {
-      r = SogConfig.validate(await SogConfig.read(f));
-    } catch {
-      r = null;
-    }
-    if (!r?.ok) return c.notify(r ? cfgError(r, c.t) : c.t(T.cfgBadFile), 'err');
-    await SogJoin.start(c.own, r.cfg);
-    if (location.hash.includes('join=')) return render(view, c);
-    location.hash = '#settings?join=1';
-  }
-  /** Choix d'un fichier de configuration depuis l'assistant (pas encore de configuration). */
-  function pickConfig(c, view) {
-    const i = Object.assign(document.createElement('input'), {
-      type: 'file',
-      accept: 'application/json,.json'
-    });
-    i.onchange = () => i.files?.[0] && joinFromFile(c, i.files[0], view);
-    i.click();
-  }
-  /** Message d'une configuration refusée (validate). */
-  const cfgError = (r, t) => r.error === 'schema' ? t(T.cfgBadSchema, {
-    s: r.schema
-  }) : r.error === 'field' ? t(T.cfgBadField, {
-    f: r.field
-  }) : r.error === 'provider' ? t(T.providerUnknown) : t(T.cfgBadFile);
-  /** Retire config= / import= de l'adresse (la configuration n'est plus proposée au dessin suivant). */
-  const dropConfigHash = () => {
-    if (/[?&](config|import)=/.test(location.hash)) history.replaceState(null, '', `${location.pathname}${location.search}#settings`);
-  };
-
-  /** Exporte la sauvegarde de cet appareil en un fichier (FrameData.dump : copies, écritures en attente, conflits ; jamais
-   *  de jeton ; bases de référence exclues). */
-  async function exportDevice(c) {
-    const d = await c.FD.dump(),
-      a = Object.assign(document.createElement('a'), {
-        href: URL.createObjectURL(new Blob([d.text], {
-          type: 'application/json'
-        })),
-        download: d.name
-      });
-    document.body.append(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1e4);
-    c.notify(c.t(T.exported, {
-      d: d.counts.docs,
-      p: d.counts.pending,
-      k: bytes(d.counts.bytes, c.t)
-    }), 'ok');
-  }
-  /** Reprend une sauvegarde (FrameData.load) : fusion par défaut (rien d'ici n'est perdu), remplacement sur demande,
-   *  chacun après une question qui dit ce qu'il fait. */
-  async function importDevice(c, file, mode = 'merge') {
-    let d = null;
-    try {
-      d = JSON.parse(await file.text());
-    } catch {
-      /* illisible */
-    }
-    if (!d || !Array.isArray(d.docs)) return c.notify(c.t(T.badFile), 'err');
-    const day = String(d.at || '?').slice(0, 10);
-    if (!await c.ask(c.t(mode === 'replace' ? T.replaceAsk : T.importAsk, {
-        d: day
-      }))) return;
-    let r;
-    try {
-      r = await c.FD.load(d, {
-        mode
-      });
-    } catch {
-      return c.notify(c.t(T.badFile), 'err');
-    }
-    await c.reload();
-    c.notify(c.t(T.imported, {
-      a: r.added,
-      u: r.updated,
-      k: r.kept,
-      c: r.conflicts
-    }), 'ok');
   }
 
   window.SogSettings = {

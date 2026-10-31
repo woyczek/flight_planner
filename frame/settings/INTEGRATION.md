@@ -8,14 +8,16 @@ in [SPEC.md](SPEC.md).
 - The settings scripts are classic scripts **loaded on demand** by the frame at the first opening of `#settings`
   (`frame/app.js`, `LAZY.settings`, one after the other, in this order): `settings/admin_links.js` (`SogAdminLinks`, the
   Administration card's list), `settings/config.js` (`SogConfig`, a pilot's configuration), `settings/join.js`
-  (`SogJoin`, the "Join the airline" assistant), `lib/qr.js` (`SogQR`, QR codes), then the screen itself in five
+  (`SogJoin`, the "Join the airline" assistant), `lib/qr.js` (`SogQR`, QR codes), then the screen itself in several
   parts: `settings/kit.js` (`SogSettingsKit`, shared helpers, and `SogSettingsT`, the texts each part adds to),
   `settings/launcher.js` (the launcher's cards: workstation access, keys, local network, data/ remote),
   `settings/access.js` (access and transport without a launcher, synchronisation), `settings/diagnostic.js` (about and
   diagnostics), `settings/admin.js` (Administration card, publication edge, pilot configuration), `settings/groups.js`
-  (the arrangement of the screen: flat at Discovery, groups above, SPEC § 1) — each fills
-  `SogSettingsParts.<name>` — and last `settings/settings.js` (`SogSettings`, the screen and the cards shared by every
-  context). `lib/clipboard.js` (fuel's module, `copyText`) is imported by `kit.js` when something is copied.
+  (the arrangement of the screen: flat at Discovery, groups above, SPEC § 1), `settings/cards.js` (the device's cards,
+  one builder each, drawing only) and `settings/actions.js` (the gestures: clicks, field listeners, backup, configuration
+  file) — each fills `SogSettingsParts.<name>` — and last `settings/settings.js` (`SogSettings`, the screen: it reads the
+  context once into `env`, orders the cards, places the page, paints the live state and hands the gestures to
+  `actions.js`; SPEC § 8). `lib/clipboard.js` (fuel's module, `copyText`) is imported by `kit.js` when something is copied.
   Start-up, the menu and the first module never wait for them. The service worker keeps them all with the frame's files
   (`frame/sw.js`, `SHELL`).
 - `frame/app.js` routes `#settings` and the old `#device` to `renderSettings(view)`, which calls

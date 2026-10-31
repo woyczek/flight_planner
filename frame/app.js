@@ -2087,7 +2087,7 @@
     roadmap: ['help/roadmap.js?v=0'],
     settings: ['settings/admin_links.js?v=0', 'settings/config.js?v=0', 'settings/join.js?v=0', 'lib/qr.js?v=0',
       'settings/kit.js?v=0', 'settings/launcher.js?v=0', 'settings/access.js?v=0', 'settings/diagnostic.js?v=0',
-      'settings/admin.js?v=0', 'settings/groups.js?v=0', 'settings/settings.js?v=0'
+      'settings/admin.js?v=0', 'settings/groups.js?v=0', 'settings/cards.js?v=0', 'settings/actions.js?v=0', 'settings/settings.js?v=0'
     ]
   };
   const injected = new Map(); // chemin → promesse du script chargé

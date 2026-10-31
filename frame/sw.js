@@ -20,7 +20,7 @@ const CACHE = 'sog-frame-v1',
     // aerodb/lnmperf.js et aerodb/aar.js : chargés par aerodb à leur première demande, gardés alors (pas à l'installation)
     'settings/admin_links.js', 'settings/config.js', 'settings/join.js', 'lib/qr.js', 'lib/clipboard.js', 'settings/kit.js',
     'settings/launcher.js',
-    'settings/access.js', 'settings/diagnostic.js', 'settings/admin.js', 'settings/groups.js', 'settings/settings.js',
+    'settings/access.js', 'settings/diagnostic.js', 'settings/admin.js', 'settings/groups.js', 'settings/cards.js', 'settings/actions.js', 'settings/settings.js',
     'lib/markdown.js',
     'lib/dom.js', 'lib/current_flight.js', 'lib/flight_time.js', 'lib/flight_path.js', 'lib/procedures.js', 'lib/wind.js', 'lib/adnames.js',
     'lib/fms.js', 'lib/time.js',

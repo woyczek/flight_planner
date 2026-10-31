@@ -352,3 +352,21 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
 - **Steps skipped**: 2 to 5 when the access is not set here — the launcher's `data/` already follows this repository
   (or another one), or a host the device cannot reach without a launcher (GitLab / framagit on a phone, said at step 1).
 - No screenshots of the host's own pages: the steps give its direct links and exact labels.
+
+## 8. Files of the screen (refactor R-S9)
+
+Card builders stay apart from their actions; no rule changes place without the case that pins it, every text stays the same
+and the order of the cards does not change. Classic scripts, loaded in order by the frame (`frame/app.js` `LAZY.settings`)
+and kept by its service worker (`frame/sw.js`), each one registered in `window.SogSettingsParts`.
+
+- `settings.js`: the screen. `render` reads the context once (`env`: identity, usages, launcher, access, preferences, the
+  remote of `data/`, level, card asked by the address), routes to « Rejoindre la compagnie » when the address asks it, puts
+  the cards in their order, places the page, paints the live state and hands every gesture to `actions.js`; it builds no card
+  of its own.
+- `cards.js`: the device's cards, one builder per card (`(env) → html`, empty when the card is not shown at that level or for
+  that address): refused configuration, join to resume, V2 import, identity, level, design, usages, backup, the import row
+  of a configuration (placed at the head of the Access card), offline data, IVAO account, weather key, Little Navmap sheets. It draws only: no listener, no write, no call to the launcher.
+- `actions.js`: the gestures of the screen. The click dispatcher and the field listeners (design, tone, level, usages,
+  files), the backup's export and import, a configuration file picked; it draws nothing but messages and asks `render` again.
+- The other parts are unchanged by this lot: `kit.js` (helpers and shared texts), `launcher.js`, `access.js`,
+  `diagnostic.js`, `admin.js`, `groups.js`, `config.js`, `join.js`, `admin_links.js`.
