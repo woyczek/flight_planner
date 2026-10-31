@@ -6,8 +6,8 @@
 // globale de module, aucune lecture de la page, aucune écriture hors du cadre qu'on lui donne. Seuls les chargements
 // (script, feuille, contours) vont chercher des fichiers du dossier lib/, et le noyau de dessin du module Carte
 // (window.MapsRender, render.js) sert au fond uni.
-//   import { loadMapLibre, styleFor, startTiles, mapSize, isOwnResize, setBottomInset, loadRender, loadOutlines, plainView,
-//     drawPlain } from '../maps/lib/map_base.js';
+//   import { loadMapLibre, styleFor, startTiles, mapSize, isOwnResize, setBottomInset, zonesLayer, loadRender, loadOutlines,
+//     plainView, drawPlain } from '../maps/lib/map_base.js';
 
 /** Fond de jour, fond de nuit, styles publiés que choisit un profil d'affichage du studio (OpenFreeMap, VersaTiles) ; le
  *  style maison du studio, OSM standard et OpenTopoMap (hôtes hors de meta.net) sont remplacés par le fond de jour. */
@@ -215,6 +215,185 @@ export function setBottomInset(map, px) {
   if (!box || box.style.getPropertyValue('--mb-inset-b') === v) return false;
   box.style.setProperty('--mb-inset-b', v);
   return true;
+}
+
+// ---------------------------------------------------------------- zones touchables (module Données, INTEGRATION.md § 7)
+/** Rang des couches de zones posées sur une carte (des identifiants de couches uniques) : rien d'autre n'est gardé. */
+const zoneLayers = new WeakMap();
+/** Rayon (px) autour du doigt quand rien n'est exactement sous lui : la tape au bord d'une petite zone la trouve. */
+const TAP_PX = 6;
+/** Un anneau lu d'un seul tenant : celui qui passe l'antiméridien (ses longitudes étalées sur plus de 180°) a ses longitudes ouest
+ *  décalées de +360 (fitBounds accepte un est au-delà de 180). */
+const unwrapRing = ring => {
+  let lo = Infinity,
+    hi = -Infinity;
+  for (const [lon] of ring) {
+    if (lon < lo) lo = lon;
+    if (lon > hi) hi = lon;
+  }
+  return hi - lo > 180 ? ring.map(([lon, lat]) => [lon < 0 ? lon + 360 : lon, lat]) : ring;
+};
+/** Aire (degrés carrés, formule du lacet) d'un anneau. */
+const ringArea = ring => Math.abs(ring.reduce((a, [x, y], i) => {
+  const [x2, y2] = ring[(i + 1) % ring.length];
+  return a + x * y2 - x2 * y;
+}, 0) / 2);
+/** Cadre [w, s, e, n] de l'union des anneaux principaux des entités (pour chacune, son anneau extérieur le plus grand, lu d'un seul
+ *  tenant) : une zone qui passe l'antiméridien ou porte des îles lointaines (les 48 États et les Aléoutiennes, la métropole et
+ *  l'outre-mer) est cadrée sur sa terre principale, jamais sur le tour du monde ; null sans entité. */
+function mainBox(fc) {
+  let w = Infinity,
+    s = Infinity,
+    e = -Infinity,
+    n = -Infinity;
+  for (const f of fc?.features || []) {
+    const g = f?.geometry,
+      polys = g?.type === 'Polygon' ? [g.coordinates] : g?.type === 'MultiPolygon' ? g.coordinates : [];
+    let best = null,
+      area = -1;
+    for (const poly of polys) {
+      const ring = poly?.[0]?.length ? unwrapRing(poly[0]) : null,
+        a = ring ? ringArea(ring) : -1;
+      if (a > area) {
+        area = a;
+        best = ring;
+      }
+    }
+    for (const [lon, lat] of best || []) {
+      if (lon < w) w = lon;
+      if (lon > e) e = lon;
+      if (lat < s) s = lat;
+      if (lat > n) n = lat;
+    }
+  }
+  return w <= e && s <= n ? [w, s, e, n] : null;
+}
+/** Polygones de zones remplis et touchables sur une carte du socle, repérés par leur identifiant ; le module Données en fait sa carte
+ *  des zones (V3, retour de l'utilisateur du 31/10 : « la vraie carte, pas un timbre-poste »). Rien n'est lu ni écrit ici : les
+ *  zones et les couleurs viennent de l'appelant.
+ *  features : FeatureCollection de Polygon / MultiPolygon en [lon, lat] (plusieurs anneaux pour une zone : l'Alaska, Hawaï), chaque
+ *  entité { id, tone: 'ok' | 'warn' | 'err' | 'muted', picked, approx } ; colors : { ok, warn, err, muted, line } déjà résolues
+ *  (MapLibre ne lit pas les variables CSS : l'appelant lit les jetons du design et les passe) ; le remplissage translucide et le
+ *  trait à la teinte du ton (line pour un ton inconnu), le trait plus épais quand picked, en pointillé quand approx. onTap(id) :
+ *  une tape ou un clic sans déplacement de la carte (l'événement « click » de MapLibre n'a jamais lieu à la fin d'un glissement ni
+ *  d'un pincement), l'entité la plus haute sous le doigt, sinon dans TAP_PX autour. Les couches reviennent à chaque changement de
+ *  style (setStyle : jour, nuit). → { update(features, colors), fit(padding, bounds), remove() } : update remplace les données
+ *  (setData) et, si colors est donné, les teintes, sans recréer les couches ; fit cadre bounds ([w, s, e, n], l'est pouvant passer
+ *  180), sinon l'union des anneaux principaux des entités (mainBox) ; remove retire couches, source et écoutes. Un anneau qui passe
+ *  l'antiméridien se dessine d'un seul tenant quand l'appelant le donne ainsi (longitudes ouest + 360). */
+export function zonesLayer(map, features, {
+  colors = {},
+  onTap = null
+} = {}) {
+  const n = (zoneLayers.get(map) || 0) + 1;
+  zoneLayers.set(map, n);
+  const src = `mb-zones-${n}`,
+    fill = `${src}-fill`,
+    line = `${src}-line`,
+    dash = `${src}-dash`,
+    empty = {
+      type: 'FeatureCollection',
+      features: []
+    };
+  let data = features || empty,
+    cols = colors || {};
+  const picked = ['boolean', ['get', 'picked'], false],
+    approx = ['boolean', ['get', 'approx'], false],
+    // la teinte du ton de l'entité (celle du trait pour un ton inconnu, transparente sans elle)
+    tone = () => ['match', ['get', 'tone'], ...['ok', 'warn', 'err', 'muted'].flatMap(k => [k, cols[k] || cols.line || 'rgba(0,0,0,0)']),
+      cols.line || 'rgba(0,0,0,0)'
+    ],
+    lineWidth = ['case', picked, 3, 1.2];
+  /** Source et couches posées si elles manquent (au départ, puis après chaque changement de style qui les a retirées) ; sans effet
+   *  quand elles sont là, ou tant que le style n'est pas chargé. */
+  const add = () => {
+    if (!map.isStyleLoaded()) return;
+    if (!map.getSource(src)) map.addSource(src, {
+      type: 'geojson',
+      data
+    });
+    if (!map.getLayer(fill)) map.addLayer({
+      id: fill,
+      type: 'fill',
+      source: src,
+      paint: {
+        'fill-color': tone(),
+        'fill-opacity': ['case', picked, .45, .25]
+      }
+    });
+    if (!map.getLayer(line)) map.addLayer({
+      id: line,
+      type: 'line',
+      source: src,
+      filter: ['!', approx],
+      paint: {
+        'line-color': tone(),
+        'line-width': lineWidth
+      }
+    });
+    // line-dasharray n'est pas piloté par les données : une seconde couche de trait, celle des contours approximatifs
+    if (!map.getLayer(dash)) map.addLayer({
+      id: dash,
+      type: 'line',
+      source: src,
+      filter: approx,
+      paint: {
+        'line-color': tone(),
+        'line-width': lineWidth,
+        'line-dasharray': [2, 2]
+      }
+    });
+  };
+  const tap = e => {
+    if (!onTap || !map.getLayer(fill)) return;
+    const {
+      x,
+      y
+    } = e.point;
+    const f = map.queryRenderedFeatures([x, y], {
+      layers: [fill]
+    })[0] || map.queryRenderedFeatures([
+      [x - TAP_PX, y - TAP_PX],
+      [x + TAP_PX, y + TAP_PX]
+    ], {
+      layers: [fill]
+    })[0];
+    if (f?.properties?.id != null) onTap(f.properties.id);
+  };
+  // setStyle d'une URL recharge le style (« style.load ») ; d'un objet, MapLibre applique un écart qui retire les couches sans
+  // « style.load » : « styledata » suit l'un et l'autre (add ne fait rien quand tout est là)
+  map.on('style.load', add);
+  map.on('styledata', add);
+  map.on('click', tap);
+  add();
+  return {
+    update(next, nextColors) {
+      data = next || empty;
+      map.getSource(src)?.setData(data);
+      if (!nextColors) return;
+      cols = nextColors;
+      for (const id of [fill, line, dash])
+        if (map.getLayer(id)) map.setPaintProperty(id, id === fill ? 'fill-color' : 'line-color', tone());
+    },
+    fit(padding = 24, bounds = null) {
+      const b = bounds || mainBox(data);
+      if (b) map.fitBounds([
+        [b[0], b[1]],
+        [b[2], b[3]]
+      ], {
+        padding,
+        animate: false
+      });
+    },
+    remove() {
+      map.off('style.load', add);
+      map.off('styledata', add);
+      map.off('click', tap);
+      for (const id of [dash, line, fill])
+        if (map.getLayer(id)) map.removeLayer(id);
+      if (map.getSource(src)) map.removeSource(src);
+    }
+  };
 }
 
 // ---------------------------------------------------------------- fond uni (sans tuiles)

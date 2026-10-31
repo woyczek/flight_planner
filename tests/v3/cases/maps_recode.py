@@ -2663,3 +2663,63 @@ def d93(c):
     c.wait(300)
     notes = c.js("() => window.__mp.S.softHtml || ''")
     c.ok(norm(row(c, 'noTerrain')) not in norm(notes), notes[:160], 'the note goes when the relief has arrived')
+
+
+# ------------------------------------------------------------------------------------------------------ D94
+@case('D94', 'The map base’s zones layer: a tap on a zone gives its id, a tap outside or a drag gives nothing, two rings are one zone', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='map base (modules/maps/INTEGRATION.md § 7), asked by Settings for the Data module’s map of zones (user, 31 Oct: « la vraie carte »): zonesLayer(map, features, { colors, onTap }) → { update, fit, remove }; filled polygons by zone id, the tone’s colour from the caller, picked thicker, approx dashed; onTap(id) on a tap alone, never at the end of a drag; the layers kept across a change of style; nothing read nor written by the base')
+def d94(c):
+    c.page.goto(f'{c.base}/modules/maps/lib/test/zones_layer.html', wait_until='load')
+    try:
+        c.page.wait_for_function('window.__zl && (window.__zl.ready || window.__zl.failed)', timeout=30000)
+    except Exception:
+        raise Fail('the bench never drew its map', 'a map with its zones', 'modules/maps/lib/test/zones_layer.html') from None
+    c.ok(not c.js('window.__zl.failed'), 'no map', 'the base’s map is created (local style, no network)')
+    c.eq(len(c.js('window.__zl.layers()')), 3, 'one fill and two line layers (solid, dashed)', what='layers')
+    m = c.page.mouse
+
+    def tap_at(lon, lat):
+        p = c.js('(q) => window.__zl.at(q[0], q[1])', [lon, lat])
+        m.click(p['x'], p['y'])
+        c.wait(250)
+    tap_at(5, 45)
+    tap_at(22.5, 42.5)
+    tap_at(32.5, 42.5)
+    tap_at(15, 47)      # between the zones: nothing
+    c.eq(c.js('window.__zl.taps'), ['A', 'B', 'B'], 'a tap gives the zone under it; the two rings of B are one zone; a tap outside gives nothing',
+         what='taps')
+    # a drag that starts and ends on a zone: the map moves, nothing is tapped
+    a = c.js('() => window.__zl.at(3, 44)')
+    m.move(a['x'], a['y'])
+    m.down()
+    for i in range(10):
+        m.move(a['x'] + 6 * (i + 1), a['y'] + 2 * (i + 1))
+        c.wait(16)
+    m.up()
+    c.wait(300)
+    c.eq(c.js('window.__zl.taps.length'), 3, 'a drag gives nothing', what='taps after a drag')
+    # update: other data and colours, the layers kept; a change of style: the layers come back
+    c.js("""() => { const Z = window.__zl; Z.layer.update(Z.fc('err'), { ...Z.colors, err: '#ff0000' }); return true }""")
+    c.wait(300)
+    c.eq(len(c.js('window.__zl.layers()')), 3, 'update keeps the layers', what='layers after update')
+    c.js("""() => { const Z = window.__zl; Z.map.setStyle(JSON.parse(JSON.stringify(Z.style))); return true }""")
+    c.until("() => window.__zl.map.isStyleLoaded() && window.__zl.layers().length === 3", timeout=8000, what='the layers back after setStyle')
+    tap_at(5, 45)
+    c.eq(c.js('window.__zl.taps.at(-1)'), 'A', 'after the change of style a tap still gives the zone', what='tap after setStyle')
+    # fit on a zone across the antimeridian with far islands (the 48 states and the Aleutians): its main ring, never the world
+    us = c.js("""() => { const Z = window.__zl, ring = c => [c.concat([c[0]])];
+      const us = { type: 'FeatureCollection', features: [{ type: 'Feature', properties: { id: 'us', tone: 'ok' }, geometry: { type: 'MultiPolygon',
+        coordinates: [ring([[-125, 25], [-67, 25], [-67, 49], [-125, 49]]), ring([[172, 51], [179.9, 51], [-170, 52], [-170, 53], [172, 53]]),
+          ring([[-160, 19], [-155, 19], [-155, 22], [-160, 22]])] } }] };
+      const L = Z.zonesLayer(Z.map, us, { colors: Z.colors }); L.fit(10);
+      const b = Z.map.getBounds(), out = { w: b.getWest(), e: b.getEast(), s: b.getSouth(), n: b.getNorth() };
+      L.fit(10, [170, -20, 190, 0]); const c = Z.map.getCenter();
+      L.remove(); return { ...out, lon: c.lng } }""")
+    c.ok(us['e'] - us['w'] < 120 and us['w'] > -140 and us['e'] < -50, f'{us}', 'fit() on a zone with the Aleutians frames the 48 states, not the world')
+    c.ok(abs(((us['lon'] - 180 + 540) % 360) - 180) < 3, f'{us}', 'fit(padding, bounds) frames the given box, its east beyond 180° (a map with worldCopies)')
+    c.js('() => { window.__zl.layer.remove(); return true }')
+    c.eq(c.js('window.__zl.layers()'), [], 'remove takes the layers away', what='layers after remove')
+    before = c.js('window.__zl.taps.length')
+    tap_at(5, 45)
+    c.eq(c.js('window.__zl.taps.length'), before, 'and its listener: a tap gives nothing more', what='taps after remove')

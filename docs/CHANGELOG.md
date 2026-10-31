@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map base: zones one can touch, for the Data module's map of zones** (`modules/maps/lib/map_base.js` `zonesLayer`,
+  `modules/maps/lib/test/zones_layer.html`; INTEGRATION § 7; noreg D94). Filled polygons by zone id on a map of the shared base,
+  coloured by the caller's tokens, picked thicker, approximate dashed; a tap gives the zone, a drag never; kept across day / night;
+  framed on each zone's main ring (a zone across the antimeridian — the United States with the Aleutians — is no longer framed on
+  the whole world), or on a box the caller gives. Asked by Settings so that the Data module's map is the real, scrollable map (user,
+  31 Oct).
 - **Weather layer: `cost(request)`, and the model of a region in the frame only** (`frame/lib/weather_store.js`, `ctx.weather.cost`;
   frame INTEGRATION 14.1, DECISIONS; noreg A25) — what a request would cost, from the cache and the known run, asking
   nothing (Atmosphere's « ≈ n calls »); `aloft`, `grid` and `cost` share one computation of the request. Fuel's

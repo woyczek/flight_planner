@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Banc zonesLayer</title>
+<!-- Banc de zonesLayer (modules/maps/lib/map_base.js, INTEGRATION.md § 7) : une carte du socle sur un style local (un fond seul,
+     aucun réseau), deux zones — A un carré, B deux anneaux (un MultiPolygon) — et ce que la couche rend dans window.__zl. Le cas D94
+     de tests/v3/cases/maps_recode.py y tape, glisse et change de style ; la page ne juge rien elle-même. -->
+<style>
+body {
+  margin: 0;
+  font: 13px system-ui, sans-serif
+}
+#map {
+  position: absolute;
+  inset: 0
+}
+</style>
+</head><body><div id="map"></div>
+<script type="module">
+import {
+  startTiles,
+  zonesLayer
+} from '../map_base.js?v=0';
+const style = {
+  version: 8,
+  sources: {},
+  layers: [{
+    id: 'bg',
+    type: 'background',
+    paint: {
+      'background-color': '#eef2f5'
+    }
+  }]
+};
+const sq = (w, s, e, n) => [
+  [
+    [w, s],
+    [e, s],
+    [e, n],
+    [w, n],
+    [w, s]
+  ]
+];
+const fc = tone => ({
+  type: 'FeatureCollection',
+  features: [{
+    type: 'Feature',
+    properties: {
+      id: 'A',
+      tone,
+      picked: false,
+      approx: false
+    },
+    geometry: {
+      type: 'Polygon',
+      coordinates: sq(0, 40, 10, 50)
+    }
+  }, {
+    type: 'Feature',
+    properties: {
+      id: 'B',
+      tone: 'warn',
+      picked: true,
+      approx: true
+    },
+    geometry: {
+      type: 'MultiPolygon',
+      coordinates: [sq(20, 40, 25, 45), sq(30, 40, 35, 45)]
+    }
+  }]
+});
+const colors = {
+  ok: '#2e7d32',
+  warn: '#b26a00',
+  err: '#c62828',
+  muted: '#8a8f98',
+  line: '#4b5563'
+};
+const Z = window.__zl = {
+  taps: [],
+  ready: false,
+  style,
+  colors,
+  fc,
+  zonesLayer
+};
+const map = await startTiles(document.getElementById('map'), {
+  style,
+  bounds: [
+    [-5, 35],
+    [40, 55]
+  ],
+  padding: 10,
+  worldCopies: true // un cadre au-delà de 180° (fit(padding, bounds)) : sans les copies du monde la caméra s'arrête à ±180
+});
+if (!map) Z.failed = true;
+else {
+  Z.map = map;
+  Z.layer = zonesLayer(map, fc('ok'), {
+    colors,
+    onTap: id => Z.taps.push(id)
+  });
+  Z.layer.fit(20, [0, 40, 35, 50]); // les deux anneaux de B en vue (sans cadre, fit prend l'anneau principal de chaque zone)
+  // la position à l'écran (px de la page) d'un point de la carte
+  Z.at = (lon, lat) => {
+    const p = map.project([lon, lat]),
+      r = map.getContainer().getBoundingClientRect();
+    return {
+      x: r.left + p.x,
+      y: r.top + p.y
+    }
+  };
+  Z.layers = () => (map.getStyle().layers || []).map(l => l.id).filter(id => id.startsWith('mb-zones-'));
+  map.once('idle', () => {
+    Z.ready = true
+  });
+}
+</script>
+</body></html>
