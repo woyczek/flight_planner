@@ -1225,4 +1225,5 @@ import { FUEL_DENSITY, density, toKg, fromKg, pricePerKg } from '../../frame/lib
 | `pricePerKg({ value, per }, d)` | the price of one unit `per` brought to the kg (per L ÷ d, per USG ÷ (d × 3.785…), per lb × 2.2046…) |
 
 An unreadable input (missing number, negative price, density outside 0.5–1.0, unknown unit) gives `null`, never an invented
-number. Bench: `frame/lib/test/fuel_units.html` (A53).
+number. A number is a number or a text that writes one, never a boolean nor an array (`+true` is 1, `+[5]` is 5); a kind
+is one of the object's own keys, never a name of the prototype (`constructor`, `toString`, `__proto__`; audit line 137). Bench: `frame/lib/test/fuel_units.html` (A53).

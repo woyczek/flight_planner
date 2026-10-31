@@ -18,7 +18,8 @@ export const L_PER_USG = 3.785411784;
 /** Unités du compte rendu. */
 export const UNITS = Object.freeze(['kg', 'lb', 'L', 'USG']);
 
-const num = v => v !== null && v !== '' && v !== undefined && Number.isFinite(+v) ? +v : null;
+/** Nombre d'une entrée : un nombre, ou un texte qui en écrit un ; jamais un booléen ni un tableau (+true = 1, +[5] = 5). */
+const num = v => (typeof v === 'number' || (typeof v === 'string' && v.trim() !== '')) && Number.isFinite(+v) ? +v : null;
 /** Densité plausible (kg/L) : un carburant d'aviation, 0,5 à 1,0 ; sinon null. */
 const plausible = v => {
   const d = num(v);
@@ -32,7 +33,9 @@ export function density(kind, {
   sheet = null,
   airline = null
 } = {}) {
-  return plausible(sheet?.fuelDensityKgPerL) ?? plausible(airline?.fuel?.density?.[kind]) ?? FUEL_DENSITY[kind] ?? null;
+  // les sortes de FUEL_DENSITY seulement (jamais 'constructor', 'toString' ou '__proto__' par le prototype)
+  const own = obj => obj && typeof obj === 'object' && Object.hasOwn(obj, kind) ? obj[kind] : null;
+  return plausible(sheet?.fuelDensityKgPerL) ?? plausible(own(airline?.fuel?.density)) ?? plausible(own(FUEL_DENSITY));
 }
 
 /** Masse et volume. d : densité (kg/L). */

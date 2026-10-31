@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel units: kinds and numbers read strictly** (`frame/lib/fuel_units.js`; frame INTEGRATION 16; its bench, noreg A53)
+  — audit line 137: a kind is an own key (`constructor` or `__proto__` give `null`), a number is a number or a text,
+  never a boolean nor an array.
 - **aerodb: a performance sheet is a type or a variant, never an aircraft** (`frame/aerodb/registry.js`, `sheets.js`,
   `lnmperf.js`, `modules/aircraft/sheets_texts.js`; SPEC § 5 bis, DECISIONS; test page `registry.html`) — an aircraft takes the sheet
   its fleet entry names (`sheetId`, fleet schema 2; empty: the type's estimate), and with the current fleet (schema 1) the same

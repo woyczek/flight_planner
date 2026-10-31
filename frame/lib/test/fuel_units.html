@@ -89,6 +89,25 @@
       fuelDensityKgPerL: '0.705'
     }
   }) === 0.705);
+  ck('density : une sorte qui est un nom du prototype → null (constructor, toString, __proto__)', ['constructor', 'toString',
+    '__proto__'
+  ].every(k => U.density(k) === null && U.density(k, {
+    airline: {
+      fuel: {
+        density: {}
+      }
+    }
+  }) === null));
+  ck('nombres : un booléen ou un tableau n’en est pas un (true, [5] → null)', [U.lbFromKg(true), U.lbFromKg([5]), U.kgFromL(10, [0.8]),
+    U.pricePerKg({
+      value: true,
+      per: 'kg'
+    }), U.density('jet', {
+      sheet: {
+        fuelDensityKgPerL: [0.79]
+      }
+    }) === 0.8 ? null : 'x'
+  ].every(v => v === null));
   ck('density : sorte inconnue sans fiche → null', U.density('diesel') === null && U.density('diesel', {
     sheet
   }) === 0.785);
