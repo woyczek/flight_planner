@@ -69,15 +69,20 @@ def c3(c):
 @case('C4', 'Three positions', 'C', tags=('sheet',), screens=False, rule='frame/INTEGRATION 11')
 def c4(c):
     for m in FIXED:
-        c.open(m, flight=True)
+        if m == 'atmosphere':
+            # a drawing in the sheet (the demonstration's cut): the height rule of a drawing, as the Map's profile
+            c.open('atmosphere?donnees=demo', flight=True)
+            c.until("!!document.querySelector('[data-module=\"atmosphere\"] [data-at=dbody] svg')", timeout=12000, what='the cut is drawn')
+        else:
+            c.open(m, flight=True)
         view = view_height(c)
         grip = f'[data-module="{m}"] .f-sheet-grip'
         default = c.box('.f-sheet-panel')['h']
         c.drag(grip, -420)
         c.settle()
         up = c.box('.f-sheet-panel')['h']
-        # the Map: the sheet is at most half the view, its profile filling it (modules/maps SPEC § 7.1, sixth reading of 31 Oct)
-        want, rule = (view / 2, f'expanded = half the view {view:.0f} px (the Map)') if m == 'maps' else (max(0.70 * view, 260), f'expanded = max(70 % of the view {view:.0f} px, 260 px)')
+        # the sheet is at most half the view, its drawing filling it (modules/maps SPEC § 7.1, sixth reading of 31 Oct; the Weather after it)
+        want, rule = view / 2, f'expanded = half the view {view:.0f} px'
         c.eq(round(up, 1), round(want, 1), rule, tol=2, what=f'#{m} height after dragging up')
         c.eq(c.attr(f'[data-module="{m}"]', 'data-sheet'), 'expanded', 'data-sheet follows the drag', what=f'#{m} data-sheet')
         c.eq(c.attr(grip, 'aria-expanded'), 'true', 'aria-expanded is true when not collapsed', what=f'#{m} grip aria-expanded (expanded)')

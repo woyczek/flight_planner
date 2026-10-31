@@ -115,7 +115,11 @@ def e4(c):
     c.settle()
     panel = c.box('.f-sheet-panel')
     dl = c.box('[data-at=dbody] dl')
-    c.le(round(dl['h'] / panel['h'], 3), 0.6, 'the summary list takes at most 60 % of the expanded sheet', what=f'summary {dl["h"]:.0f} px of a {panel["h"]:.0f} px sheet')
+    # the expanded sheet now has the height of what it shows (E16): the compactness is measured against the view, at the bound
+    # it had (60 % of a sheet of 70 % of the view = 42 % of the view)
+    view = c.js(f"() => {{ const r = document.querySelector('{ATM}'), cs = getComputedStyle(r); return r.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0) }}")
+    c.le(round(dl['h'] / view, 3), 0.42, 'the summary list takes at most 42 % of the view (60 % of the former 70 % sheet)',
+         what=f'summary {dl["h"]:.0f} px of a {view:.0f} px view (sheet {panel["h"]:.0f} px)')
 
 
 @case('E5', 'One "i" only', 'E', tags=('atmosphere',), screens=False, langs4=True,
@@ -399,3 +403,32 @@ def e14(c):
          'the full screen stays: the module consumed the key')
     c.key('Escape')
     c.until("!document.documentElement.classList.contains('f-full')", what='a second Escape leaves the full screen')
+
+
+# ------------------------------------------------------------------------------------------------------ E16
+_FIT = f"""() => {{ const root = document.querySelector('{ATM}'), p = document.querySelector('{ATM} .f-sheet-panel').getBoundingClientRect(),
+  b = document.querySelector('{ATM} [data-at=dbody]'), r = document.createRange(); r.selectNodeContents(b);
+  const own = r.getBoundingClientRect(), cs = getComputedStyle(root);
+  return {{ view: root.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0), panel: p.height,
+    blank: p.bottom - own.bottom, pos: root.dataset.sheet }} }}"""
+
+
+@case('E16', 'The sheet has the height of what it shows, at most half the view; no blank under a content', 'E', tags=('atmosphere', 'sheet'),
+      screens=True, designs=('standard',), night=False,
+      rule='frame rule since the Map\'s sixth reading (06dcd175b, 31 Oct; ergonomics session: « Atmosphère est encore à 70 % »): '
+           'a drawing fills half the view when expanded, a content is as tall as itself, capped at half')
+def e16(c):
+    c.open('atmosphere?donnees=demo', flight=True)
+    c.until(f"!!document.querySelector('{ATM} [data-at=dbody] svg')", timeout=12000, what='the cut is drawn')
+    c.settle()
+    c.drag(f'{ATM} [data-at=grip]', -600)
+    c.settle()
+    f = c.js(_FIT)
+    c.eq(f['pos'], 'expanded', 'the sheet is expanded', what='data-sheet')
+    c.eq(round(f['panel']), round(f['view'] / 2), f'the expanded cut is half the view ({f["view"]:.0f} px)', tol=2, what='expanded height (cut)')
+    open_view(c, 'infoTitle')
+    c.settle()
+    f = c.js(_FIT)
+    c.le(f['panel'], f['view'] / 2 + 2, 'Details are never taller than half the view', what='expanded height (Details)')
+    c.ok(f['blank'] < 8 or f['panel'] >= f['view'] / 2 - 2, f'{f["blank"]:.0f} px blank under Details in a {f["panel"]:.0f} px sheet',
+         'no blank under the content: the sheet stops at its content, or the content scrolls in half the view')

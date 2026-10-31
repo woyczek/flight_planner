@@ -338,6 +338,11 @@ export async function mount(el, ctx) {
   /** Dessine le contenu montré dans le corps de la feuille. */
   function drawData() {
     if (!alive) return;
+    drawContent();
+    sheetFit();
+  }
+  /** Dessine le contenu montré (drawData) ; la hauteur de la feuille suit ensuite (sheetFit). */
+  function drawContent() {
     const v = S.view;
     bareHead(null);
     if (v === 'settings') {
@@ -401,6 +406,62 @@ export async function mount(el, ctx) {
       layersCard();
     }
     if (pop.hidden === S.layersOpen) pop.hidden = !S.layersOpen;
+  }
+
+  // ---------------------------------------------------------------- hauteur de la feuille
+  /** Jetons de hauteur de la feuille du cadre que sheetFit pose sur la racine. */
+  const FIT_KEYS = ['--f-sheet-default', '--f-sheet-default-min', '--f-sheet-expanded', '--f-sheet-expanded-min'];
+  /** Longueur d'un jeton de la feuille : « 35% » une part de h, « 170px » des pixels (la lecture de frame/lib/sheet.js). */
+  const tokLen = (v, h) => String(v).includes('%') ? (parseFloat(v) || 0) * h / 100 : parseFloat(v) || 0;
+  let frameTok = null;
+  /** La hauteur de ce que la feuille montre (la règle du cadre depuis la Carte, 31 octobre ; SPEC § 2.1) : en portrait, jamais
+   *  plus haute que son contenu ni que la moitié de la vue, la carte prend le reste, aucun blanc sous le contenu. Un dessin
+   *  (coupe, tranche) remplit le corps, la position agrandie à la moitié de la vue ; un contenu (Détails, Vol, point du monde,
+   *  prévision non chargée) fait de la position agrandie sa tête, la ligne du curseur et sa propre hauteur, plafonnées à la
+   *  moitié, et de la normale la plus petite de celle du cadre et de celle-là. Jetons posés en pixels sur la racine, écrits
+   *  seulement s'ils changent (un jeton changé relance la feuille, puis ce passage) ; retirés en colonne (paysage). */
+  function sheetFit() {
+    if (!sheet) return;
+    const st = el.style,
+      put = (k, v) => {
+        if (st.getPropertyValue(k) !== v) v ? st.setProperty(k, v) : st.removeProperty(k);
+      };
+    if (document.documentElement.classList.contains('f-land')) {
+      for (const k of FIT_KEYS) put(k, '');
+      return;
+    }
+    // un vol dont la coupe n'est pas encore là (lecture, prévision non chargée) garde les hauteurs du cadre : la coupe vient
+    // avec « Charger » (la règle de la Carte pour un profil qui n'est pas encore là)
+    if (!S.traj && !S.noFlight && (S.view === 'profile' || S.view === 'slice')) {
+      for (const k of FIT_KEYS) put(k, '');
+      return;
+    }
+    const cs = getComputedStyle(el),
+      vh = el.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0),
+      drawing = !!S.traj && (S.view === 'profile' || S.view === 'slice');
+    // un contenu replié n'a pas de boîte : sa hauteur se lit quand il se voit
+    if (!(vh > 0) || (!drawing && sheet.pos === 'collapsed')) return;
+    // la normale du cadre (35 % au-delà de 760 px, 30 % sinon, 170 px au moins), lue avant que sheetFit ne pose la sienne
+    if (!st.getPropertyValue('--f-sheet-default')) frameTok = {
+      def: cs.getPropertyValue('--f-sheet-default').trim(),
+      min: cs.getPropertyValue('--f-sheet-default-min').trim()
+    };
+    const half = Math.round(vh / 2);
+    let exp = half;
+    if (!drawing) {
+      const r = document.createRange(),
+        b = getComputedStyle(dbody),
+        panel = $('data'),
+        border = parseFloat(getComputedStyle(panel).borderTopWidth) || 0;
+      r.selectNodeContents(dbody);
+      const own = r.getBoundingClientRect().height + (parseFloat(b.paddingTop) || 0) + (parseFloat(b.paddingBottom) || 0);
+      exp = Math.min(half, Math.ceil($('grip').parentNode.offsetHeight + $('when').offsetHeight + border + own));
+    }
+    const def = Math.min(Math.round(Math.max(tokLen(frameTok?.def || '30%', vh), tokLen(frameTok?.min || '170px', vh))), exp);
+    put('--f-sheet-expanded', `${exp}px`);
+    put('--f-sheet-expanded-min', '0px');
+    put('--f-sheet-default', `${def}px`);
+    put('--f-sheet-default-min', '0px');
   }
 
   // ---------------------------------------------------------------- en-tête de la feuille
@@ -800,6 +861,7 @@ export async function mount(el, ctx) {
   function settled() {
     if (!alive || app.dragging()) return;
     applyBare();
+    sheetFit(); // une vue d'une autre taille : la moitié change
     map.sizeMap();
     if (S.map && !S.userMoved) map.fitMap();
     map.schedule();

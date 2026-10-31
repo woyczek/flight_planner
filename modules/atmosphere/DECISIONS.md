@@ -2,6 +2,29 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 31 October 2026 — follow-up B: the sheet has the height of what it shows
+
+- **The request** (ergonomics session, 31 Oct): the frame's rule since `06dcd175b` — an expanded sheet on a drawing is half
+  the view, the map takes the rest, never a blank under the content (the Map took it, C4); Atmosphere was still at 70 %.
+- **Done as the Map's** `sheetFit()` (`modules/maps/sheet_view.js`): in portrait, a drawing (cut, sounding) fills the body,
+  the expanded position at half the view; a content (Details, Flight, a point of the world, the forecast not loaded) makes the
+  expanded position its head, **the slider's row** (Atmosphere's own, always shown) and its own height, capped at half, the
+  default position the smaller of the frame's default and that; the four tokens in pixels on the module's root, written
+  only when they change, after every drawing of the content (`drawData` = `drawContent` + `sheetFit`) and at every settle;
+  removed in the landscape column. A collapsed content is not measured (no box). A flight whose cut is not there yet
+  (reading, forecast not loaded) keeps the frame's sizes, as the Map for a profile not there yet: measured by C2 / C3 (the
+  first pass sized the "not loaded" message as a content: 170 px instead of 30 % of the view). Branch
+  `v3-atmosphere-feuille`.
+- **Noreg**: C4 (`sheet.py`) now expects half the view for both fixed modules, Atmosphere opened on the demonstration so a
+  drawing is shown (without a forecast its body is a content, sized by its own height); E16 (new): the expanded cut is half
+  the view, Details never taller than half and no blank under them, at 390 and 1280. E4's compactness of the summary was a
+  ratio of the expanded sheet (60 % of a 70 % sheet): the sheet now follows its content, so the same bound is said against
+  the view, 42 %.
+- **Played from the cloud** on `9d1d34c7`: `run.py --touched origin/v3` 69/74 — C2, C3 and E4 this lot's (fixed as said
+  above; `--grep C2,C3,C4,E4,E16` 5/5), C5 and D1 the Map's in German (red on `v3` without this lot, see follow-up A); the
+  same `--touched` again after the fix, 72/74, the two reds the Map's. Rebased on `af552fae` (CHANGELOG and the generated
+  help only; the frame's `cc6503ee0` touches the layout), then `--grep C2,C3,C4,E4,E16,E1,E12`: 7/7.
+
 ## 30 October 2026 — lots 0 and 1 rebased on `v3`, the ergonomics session's answers
 
 - **Rebase** (ergonomics session, 30 Oct: "rebase tes trois commits … sur la tête d'origin/v3 … jamais en forcé"):

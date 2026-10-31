@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Weather: the sheet has the height of what it shows** (`modules/atmosphere/module.js`; SPEC, DECISIONS) — the frame's
+  rule since the Map's sixth reading: in portrait, never taller than its content nor than half the view, the map takes the
+  rest, no blank under the content (expanded: half the view on the cut, the content's own height on Details, Flight…);
+  `sheetFit()` writes the frame's four height tokens in pixels, only when they change. Noreg E16, C4.
 - **Frame: fuel units** (`frame/lib/fuel_units.js`; frame INTEGRATION 16, DECISIONS; bench `frame/lib/test/fuel_units.html`,
   noreg A53) — typical densities (Jet 0.80, AVGAS 0.72 kg/L), the density rule (type's sheet, else airline, else typical),
   conversions between kg, lb, L and USG, and the price brought to the kg; for Settings, Aircraft, Fuel and aerodb.

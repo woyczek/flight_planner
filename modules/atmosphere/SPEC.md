@@ -46,6 +46,15 @@ A fixed, full-height view (`meta.fixed`, `frame/INTEGRATION.md` § 9.2) on the m
 - **Sheet**: the frame's primitive (`frame/lib/sheet.js`, rule 19), three positions — collapsed to its head, default
   (30 % of the view on a phone, 170 px at least; 35 % on a screen), expanded — moved by its grip, its content scrolling
   inside when it is a list.
+- **The height of what it shows** (the frame's rule since the Map's sixth reading, 31 Oct 2026, `06dcd175b`): in
+  portrait the sheet is never taller than what it shows nor than half the view (the module's height); the map takes the
+  rest; no blank under the content, at 1280 as at 390. A drawing (cross-section, sounding) fills the body at every
+  position, the expanded position being half the view; a content (Details, Flight, a point of the world, no flight) makes
+  the expanded position its head, the slider's row and its own height, capped at half, and the default position the
+  smaller of the frame's default and that. A flight whose cut is not there yet (reading, forecast not loaded) keeps the
+  frame's sizes: the cut comes with "Load" (the Map's rule for a profile not there yet). `sheetFit()` (`module.js`) writes `--f-sheet-default`,
+  `-default-min`, `-expanded`, `-expanded-min` on the module's root in pixels, only when they change: after every drawing
+  of the content and at every settle of the sheet; removed in the landscape column (its own sizes, § 2.2).
 
 ### 2.2 Landscape and screens
 
