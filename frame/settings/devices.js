@@ -9,6 +9,7 @@
   // devices/revoke (un appareil, un pilote), devices/name. Le code n'est montré qu'une fois, jamais gardé ici. L'ancienne
   // adresse #relay-devices mène ici (frame/app.js). Contexte (frame/app.js renderScreen) : { t, notify, ask, routes() }.
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+  const K = window.SogSettingsKit.T; // textes communs des Réglages (kit.js) : les lignes égales dans les quatre langues y sont une fois
   const T = {
     title: ['Appareils', 'Devices', 'Geräte', 'Dispositivos'],
     intro: [
@@ -34,17 +35,12 @@
       'Lokales Netz geschlossen (Einstellungen › Zugang zum Rechner öffnet es).',
       'Red local cerrada (Ajustes › Acceso al equipo la abre).'
     ],
-    list: ['Appareils appairés', 'Paired devices', 'Gekoppelte Geräte', 'Dispositivos vinculados'],
     none: ['Aucun appareil pour l’instant.', 'No device yet.', 'Noch kein Gerät.', 'Ningún dispositivo por ahora.'],
     channels: {
       lan: ['Réseau local', 'Local network', 'Lokales Netz', 'Red local'],
       relay: ['Relais', 'Relay', 'Relais', 'Relé']
     },
-    console: ['code de console', 'console code', 'Konsolencode', 'código de consola'],
     since: ['appairé le {d}', 'paired on {d}', 'gekoppelt am {d}', 'vinculado el {d}'],
-    last: ['dernier usage {d}', 'last used {d}', 'zuletzt genutzt {d}', 'último uso {d}'],
-    expires: ['expire le {d}', 'expires on {d}', 'läuft ab am {d}', 'caduca el {d}'],
-    revoke: ['Révoquer', 'Revoke', 'Widerrufen', 'Revocar'],
     revokeAll: ['Révoquer tous ses appareils', 'Revoke all their devices', 'Alle Geräte widerrufen', 'Revocar todos sus dispositivos'],
     revokeAsk: ['Révoquer cet appareil de {n} ? Il devra être appairé de nouveau.',
       'Revoke this device of {n}? It will have to pair again.',
@@ -59,11 +55,7 @@
     nameOk: ['Poser', 'Set', 'Setzen', 'Poner'],
     named: ['Trigramme {n} posé.', 'Trigram {n} set.', 'Kürzel {n} gesetzt.', 'Trigrama {n} puesto.'],
     code: ['Nouveau code d’appairage', 'New pairing code', 'Neuer Kopplungscode', 'Nuevo código de vinculación'],
-    trigram: ['Trigramme du pilote', 'Pilot’s trigram', 'Kürzel des Piloten', 'Trigrama del piloto'],
     make: ['Demander un code', 'Ask for a code', 'Code anfordern', 'Pedir un código'],
-    badTri: ['Trigramme : 2 à 5 lettres ou chiffres.', 'Trigram: 2 to 5 letters or digits.', 'Kürzel: 2 bis 5 Buchstaben oder Ziffern.',
-      'Trigrama: de 2 a 5 letras o cifras.'
-    ],
     given: [
       'Code pour {n}, valable 10 minutes et une seule fois, sur le réseau local comme par le relais — donnez-le au pilote : il le saisit sur la page d’appairage.',
       'Code for {n}, valid for 10 minutes and once only, on the local network as through the relay — give it to the pilot: they enter it on the pairing page.',
@@ -98,17 +90,17 @@
         tris = [...new Set(devs.map(d => d.trigram).filter(Boolean))],
         lan = s.lan || {},
         relay = s.relay || {};
-      const who = d => d.trigram ? `<b>${esc(d.trigram)}</b>` : `<i>${esc(t(T.console))}</i> <button type="button" data-act="name" data-id="${esc(d.id)}">${esc(t(T.name))}</button>`;
+      const who = d => d.trigram ? `<b>${esc(d.trigram)}</b>` : `<i>${esc(t(K.lanConsole))}</i> <button type="button" data-act="name" data-id="${esc(d.id)}">${esc(t(T.name))}</button>`;
       body.innerHTML = `<p class="f-msg" data-kind="${relay.on ? 'ok' : 'warn'}" data-relay-state="${relay.on ? 'on' : 'off'}">${esc(relay.on ? t(T.relayOn, { h: relay.host }) : t(T.relayOff))}</p>
         <p class="f-msg" data-kind="${lan.on ? 'ok' : 'warn'}" data-lan-state="${lan.on ? 'on' : 'off'}">${esc(lan.on ? t(T.lanOn, { u: lan.urls?.[0] || '' }) : t(T.lanOff))}</p>
         ${fresh ? `<div class="f-msg" data-kind="ok" data-devices-new><p>${esc(t(T.given, { n: fresh.trigram }))}</p><p><code data-devices-code>${esc(fresh.code)}</code></p></div>` : ''}
-        <h3>${esc(t(T.list))}</h3>${devs.length ? `<ul class="f-list" data-devices-list>${devs.map(d => `<li data-device="${esc(d.id)}" data-channel="${esc(d.channel)}">${who(d)} ${esc(d.label)}
+        <h3>${esc(t(K.lanDevices))}</h3>${devs.length ? `<ul class="f-list" data-devices-list>${devs.map(d => `<li data-device="${esc(d.id)}" data-channel="${esc(d.channel)}">${who(d)} ${esc(d.label)}
           <span class="f-tag" data-channel-name>${esc(t(T.channels[d.channel] || [d.channel, d.channel, d.channel, d.channel]))}</span>
-          <span class="f-muted">${esc([t(T.since, { d: day(d.at) }), d.last ? t(T.last, { d: day(d.last) }) : '', d.expires ? t(T.expires, { d: day(d.expires) }) : ''].filter(Boolean).join(' · '))}</span>
-          <button type="button" data-act="revoke" data-id="${esc(d.id)}" data-name="${esc(d.trigram || t(T.console))}">${esc(t(T.revoke))}</button></li>`).join('')}</ul>
+          <span class="f-muted">${esc([t(T.since, { d: day(d.at) }), d.last ? t(K.used, { d: day(d.last) }) : '', d.expires ? t(K.expires, { d: day(d.expires) }) : ''].filter(Boolean).join(' · '))}</span>
+          <button type="button" data-act="revoke" data-id="${esc(d.id)}" data-name="${esc(d.trigram || t(K.lanConsole))}">${esc(t(K.revoke))}</button></li>`).join('')}</ul>
           <div class="f-row">${tris.map(x => `<button type="button" data-act="revokeAll" data-name="${esc(x)}">${esc(t(T.revokeAll))} (${esc(x)})</button>`).join('')}</div>` : `<p class="f-muted">${esc(t(T.none))}</p>`}
         <h3>${esc(t(T.code))}</h3>
-        <label class="f-field">${esc(t(T.trigram))}<input data-f="tri" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="5"></label>
+        <label class="f-field">${esc(t(K.cfgPilot))}<input data-f="tri" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="5"></label>
         <p class="f-msg" data-msg></p><div class="f-row"><button type="button" class="primary" data-act="make">${esc(t(T.make))}</button></div>`;
       // le code ne vit que dans ce dessin : effacé en quittant l'écran ou au dessin suivant, jamais gardé
       if (fresh) {
@@ -142,13 +134,13 @@
         }
         if (act === 'name') {
           // un appareil du code de console : un champ à la place du bouton, posé par « Poser »
-          b.outerHTML = `<input data-f="name" data-id="${esc(b.dataset.id)}" aria-label="${esc(t(T.trigram))}" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="5" size="5"> <button type="button" data-act="nameOk" data-id="${esc(b.dataset.id)}">${esc(t(T.nameOk))}</button>`;
+          b.outerHTML = `<input data-f="name" data-id="${esc(b.dataset.id)}" aria-label="${esc(t(K.cfgPilot))}" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="5" size="5"> <button type="button" data-act="nameOk" data-id="${esc(b.dataset.id)}">${esc(t(T.nameOk))}</button>`;
           body.querySelector(`[data-f="name"][data-id="${CSS.escape(b.dataset.id)}"]`)?.focus();
           return;
         }
         if (act === 'nameOk') {
           const tri = (body.querySelector(`[data-f="name"][data-id="${CSS.escape(b.dataset.id)}"]`)?.value || '').trim().toUpperCase();
-          if (!TRI.test(tri)) return ctx.notify?.(t(T.badTri), 'warn');
+          if (!TRI.test(tri)) return ctx.notify?.(t(K.badTrigram), 'warn');
           const v = await R.call('devices/name', {
             id: b.dataset.id,
             trigram: tri
@@ -162,7 +154,7 @@
         if (act === 'make') {
           const tri = (body.querySelector('[data-f=tri]').value || '').trim().toUpperCase(),
             msg = body.querySelector('[data-msg]');
-          if (!TRI.test(tri)) return void(msg.textContent = t(T.badTri));
+          if (!TRI.test(tri)) return void(msg.textContent = t(K.badTrigram));
           const v = await R.call('devices', {
             trigram: tri
           });

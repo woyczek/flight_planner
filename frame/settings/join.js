@@ -201,7 +201,6 @@
       'Pegue el token copiado y luego «Probar». Queda solo en este dispositivo y nunca vuelve a mostrarse; no lo envíe nunca en un mensaje.'
     ),
     token: L4('Jeton', 'Token', 'Token', 'Token'),
-    test: L4('Tester', 'Test', 'Testen', 'Probar'),
     clone: L4('Cloner avec le jeton', 'Clone with the token', 'Mit dem Token klonen', 'Clonar con el token'),
     testing: L4('Test…', 'Testing…', 'Test…', 'Probando…'),
     ok: L4('Accès vérifié : le dépôt répond, branche {b}. Enregistré sur cet appareil.',
@@ -258,7 +257,6 @@
       'Keep the area of your flights offline: the map and the airfields will be there even without network.',
       'Halten Sie das Gebiet Ihrer Flüge offline bereit: Karte und Flugplätze sind dann auch ohne Netz da.',
       'Guarde sin conexión la zona de sus vuelos: el mapa y los aeródromos estarán ahí incluso sin red.'),
-    goOffline: L4('Données hors ligne', 'Offline data', 'Offline-Daten', 'Datos sin conexión'),
     goFuel: L4('Préparer un vol', 'Prepare a flight', 'Einen Flug vorbereiten', 'Preparar un vuelo'),
     tutorial: L4('Le tutoriel « Préparer un vol »', 'The “Prepare a flight” tutorial', 'Das Tutorial „Einen Flug vorbereiten“',
       'El tutorial «Preparar un vuelo»')
@@ -309,7 +307,8 @@
       a = cfg.airline || {};
     const {
       link,
-      fill
+      fill,
+      T: K // textes communs des Réglages (kit.js) : les lignes égales dans les quatre langues y sont une fois
     } = window.SogSettingsKit;
     const list = (row, v) => `<ol class="f-join-steps">${(row[['fr', 'en', 'de', 'es'].indexOf(t(['fr', 'en', 'de', 'es']))] || row[0]).map(r => `<li>${fill(t([r]), v)}</li>`).join('')}</ol>`,
       check = (k, row) => `<label class="f-check"><input type="checkbox" data-jdone="${k}" ${done[k] ? 'checked' : ''}>${esc(t(row))}</label>`;
@@ -344,13 +343,13 @@
         ${text ? `<details class="f-cfghow"><summary>${esc(t(T.howto))}</summary><div class="f-doc">${h.howtoHtml(text)}</div></details>` : ''}`;
     }
     if (step === 5) body = `<p>${esc(t(T.s5Hint))}</p>${h.fld('jToken', T.token, '', { type: 'password' })}<p class="f-msg" data-msg>${done[5] ? esc(t(T.ok, { b: d.branch })) : ''}</p>
-      <div class="f-row"><button type="button" class="primary" data-jact="test">${esc(t(h.access === 'github' ? T.test : T.clone))}</button></div>`;
+      <div class="f-row"><button type="button" class="primary" data-jact="test">${esc(t(h.access === 'github' ? K.test : T.clone))}</button></div>`;
     if (step === 6) {
       const id = h.c.identity();
       body = `<p class="f-muted">${esc(t(T.s6Hint))}</p>${h.fld('jIvao', ['VID IVAO', 'IVAO VID', 'IVAO-VID', 'VID IVAO'], id.ivao, { mode: 'numeric' })}${h.fld('jVatsim', ['CID VATSIM', 'VATSIM CID', 'VATSIM-CID', 'CID VATSIM'], id.vatsim, { mode: 'numeric' })}${h.fld('jSimbrief', ['Identifiant SimBrief (nom ou numéro)', 'SimBrief ID (name or number)', 'SimBrief-ID (Name oder Nummer)', 'ID de SimBrief (nombre o número)'], id.simbrief)}<p class="f-msg" data-msg></p>`;
     }
     if (step === 7) body = s.finished ? `<p><b>${esc(s.result || '')}</b></p><p>${esc(t(T.nextOffline))}</p>
-      <div class="f-row"><a class="f-btn primary" href="#settings?offline=1">${esc(t(T.goOffline))}</a><a class="f-btn" href="#fuel">${esc(t(T.goFuel))}</a></div><p><a href="#help?t=prepare-flight">${esc(t(T.tutorial))}</a></p>` :
+      <div class="f-row"><a class="f-btn primary" href="#settings?offline=1">${esc(t(K.offlineData))}</a><a class="f-btn" href="#fuel">${esc(t(T.goFuel))}</a></div><p><a href="#help?t=prepare-flight">${esc(t(T.tutorial))}</a></p>` :
       `<p class="f-msg" data-msg></p><div class="f-row"><button type="button" class="primary" data-jact="finish">${esc(t(T.finish))}</button></div>`;
     const titles = {
       1: T.s1,

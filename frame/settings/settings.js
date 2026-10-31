@@ -54,8 +54,6 @@
       'Einstellungen dieses Geräts, nur hier gespeichert: Sie bestimmen, wie Daten ausgetauscht werden.',
       'Ajustes de este dispositivo, guardados solo aquí: deciden cómo se intercambian los datos.'
     ],
-    save: ['Enregistrer', 'Save', 'Speichern', 'Guardar'],
-    saved: ['Enregistré.', 'Saved.', 'Gespeichert.', 'Guardado.'],
     // reprise V2
     v2: ['Réglages de la V2 trouvés', 'V2 settings found', 'V2-Einstellungen gefunden', 'Ajustes de la V2 encontrados'],
     v2Intro: ['Ce navigateur a déjà servi à la V2 : reprendre ces réglages ici ? La V2 garde les siens.',
@@ -66,7 +64,6 @@
     v2Access: ['dépôt {r} (branche {b}), jeton compris — jamais affiché', 'repository {r} (branch {b}), token included — never shown',
       'Repository {r} (Zweig {b}), Token inbegriffen — nie angezeigt', 'repositorio {r} (rama {b}), token incluido — nunca mostrado'
     ],
-    pair: ['{k} :', '{k}:', '{k}:', '{k}:'],
     v2Take: ['Reprendre', 'Take over', 'Übernehmen', 'Retomar'],
     v2No: ['Non merci', 'No thanks', 'Nein danke', 'No, gracias'],
     v2Done: ['Réglages V2 repris.', 'V2 settings taken over.', 'V2-Einstellungen übernommen.', 'Ajustes V2 retomados.'],
@@ -78,14 +75,8 @@
       'Su trigrama y sus identificadores de red, pasados a los módulos (prerrelleno, misiones).'
     ],
     trigram: ['Trigramme', 'Trigram', 'Kürzel', 'Trigrama'],
-    ivao: ['VID IVAO', 'IVAO VID', 'IVAO-VID', 'VID IVAO'],
-    vatsim: ['CID VATSIM', 'VATSIM CID', 'VATSIM-CID', 'CID VATSIM'],
     simbrief: ['Identifiant SimBrief (nom ou numéro)', 'SimBrief ID (name or number)', 'SimBrief-ID (Name oder Nummer)',
       'Identificador SimBrief (nombre o número)'
-    ],
-    badTrigram: ['Trigramme : 2 à 5 lettres ou chiffres.', 'Trigram: 2 to 5 letters or digits.',
-      'Kürzel: 2 bis 5 Buchstaben oder Ziffern.',
-      'Trigrama: de 2 a 5 letras o cifras.'
     ],
     badNumber: ['{f} : des chiffres seulement.', '{f}: digits only.', '{f}: nur Ziffern.', '{f}: solo cifras.'],
     needTrigram: ['À plusieurs, le trigramme est nécessaire : il signe chaque envoi et range vos fichiers.',
@@ -99,26 +90,6 @@
       'What the app shows you; a hidden module stays reachable by its address.',
       'Was die App Ihnen zeigt; ein ausgeblendetes Modul bleibt über seine Adresse erreichbar.',
       'Lo que la aplicación le muestra; un módulo oculto sigue accesible por su dirección.'
-    ],
-    levels: [
-      [
-        ['Découverte', 'Discovery', 'Einstieg', 'Descubrimiento'],
-        ['L’essentiel, pour commencer.', 'The essentials, to get started.',
-          'Das Wesentliche, für den Anfang.', 'Lo esencial, para empezar.'
-        ]
-      ],
-      [
-        ['Courant', 'Everyday', 'Alltag', 'Habitual'],
-        ['L’usage de tous les jours.', 'Day-to-day use.', 'Der tägliche Gebrauch.',
-          'El uso de todos los días.'
-        ]
-      ],
-      [
-        ['Complet', 'Full', 'Vollständig', 'Completo'],
-        ['Tout, outils avancés compris.', 'Everything, advanced tools included.',
-          'Alles, einschließlich der erweiterten Werkzeuge.', 'Todo, herramientas avanzadas incluidas.'
-        ]
-      ]
     ],
     levelShows: ['Menu : {m}', 'Menu: {m}', 'Menü: {m}', 'Menú: {m}'],
     levelNone: ['aucun module', 'no module', 'kein Modul', 'ningún módulo'],
@@ -249,28 +220,16 @@
       '¿Su aerolínea le envió una configuración (archivo sog-config o enlace)? Configura este dispositivo en pocos pasos.'
     ],
     // presse-papiers indisponible (appareil appairé en http) : le texte est montré sélectionné
-    copyShown: ['Copie impossible ici : le texte est sélectionné, copiez-le vous-même.',
-      'Cannot copy here: the text is selected, copy it yourself.',
-      'Kopieren hier nicht möglich: Der Text ist markiert, kopieren Sie ihn selbst.',
-      'No se puede copiar aquí: el texto está seleccionado, cópielo usted mismo.'
-    ],
     cfgTitle: ['Configuration reçue', 'Configuration received', 'Erhaltene Konfiguration', 'Configuración recibida'],
     cfgBadSchema: ['Ce fichier n’est pas une configuration SOG (schéma « {s} ») : rien n’est changé.',
       'This file is not a SOG configuration (schema “{s}”): nothing is changed.',
       'Diese Datei ist keine SOG-Konfiguration (Schema „{s}“): Nichts wird geändert.',
       'Este archivo no es una configuración SOG (esquema «{s}»): no se cambia nada.'
     ],
-    providerUnknown: ['Fournisseur inconnu : github ou gitlab', 'Unknown provider: github or gitlab',
-      'Unbekannter Anbieter: github oder gitlab', 'Proveedor desconocido: github o gitlab'
-    ],
     cfgBadField: ['Configuration refusée : {f} invalide. Rien n’est changé.',
       'Configuration refused: {f} is invalid. Nothing is changed.',
       'Konfiguration abgelehnt: {f} ist ungültig. Nichts wird geändert.',
       'Configuración rechazada: {f} no es válido. No se cambia nada.'
-    ],
-    cfgBadFile: ['Configuration illisible : rien n’est changé.', 'Unreadable configuration: nothing is changed.',
-      'Unlesbare Konfiguration: Nichts wird geändert.',
-      'Configuración ilegible: no se cambia nada.'
     ],
     close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
     needRemote: [
@@ -285,13 +244,7 @@
       'Keine Basis auf diesem Gerät: weder Zugang zum Datenrepository eingestellt noch Starter. Stellen Sie oben den Zugang ein oder veröffentlichen Sie die Basen von einem Rechner mit Starter (V2: Einstellungen › Wartung › Luftfahrtdaten und Luftfahrzeugtypen).',
       'Ninguna base en este dispositivo: ni acceso al repositorio de datos configurado, ni lanzador. Configure el acceso arriba, o publique las bases desde un puesto con lanzador (V2: Ajustes › Mantenimiento › Datos aeronáuticos y Tipos de aeronave).'
     ],
-    test: ['Tester', 'Test', 'Testen', 'Probar'],
-    testOffline: ['Hors ligne : impossible de tester maintenant.', 'Offline: cannot test now.', 'Offline: jetzt kein Test möglich.',
-      'Sin conexión: imposible probar ahora.'
-    ],
     // données hors ligne
-    offlineData: ['Données hors ligne', 'Offline data', 'Offline-Daten', 'Datos sin conexión'],
-    zones: ['Bases aéronautiques', 'Aeronautical bases', 'Luftfahrtdaten', 'Bases aeronáuticas'],
     zonesState: ['{p} zone(s) publiée(s), {l} ouverte(s) sur cet appareil{c}', '{p} published zone(s), {l} open on this device{c}',
       '{p} veröffentlichte Zone(n), {l} auf diesem Gerät geöffnet{c}',
       '{p} zona(s) publicada(s), {l} abierta(s) en este dispositivo{c}'
@@ -329,11 +282,9 @@
     ],
     aircraftDb: ['Base des appareils', 'Aircraft base', 'Flugzeugbasis', 'Base de aeronaves'],
     aircraftLine: ['{s} · {n} types', '{s} · {n} types', '{s} · {n} Typen', '{s} · {n} tipos'],
-    storage: ['Stockage du navigateur', 'Browser storage', 'Browser-Speicher', 'Almacenamiento del navegador'],
     storageState: ['{u} utilisé(s) sur {q}', '{u} used of {q}', '{u} von {q} belegt', '{u} usado(s) de {q}'],
     unknown: ['inconnu', 'unknown', 'unbekannt', 'desconocido'],
     // clé météo de l'appareil (TAF par avwx.rest sans lanceur ; frame lot 12 : weatherKey du contexte)
-    ivao: ['Compte IVAO', 'IVAO account', 'IVAO-Konto', 'Cuenta IVAO'],
     ivaoHint: [
       'Relie cet appareil à votre compte IVAO par le relais de la compagnie : l’appli lit alors vos vols sur le tracker d’IVAO directement. Le relais garde le secret de l’application ; votre jeton reste sur cet appareil, jamais dans une sauvegarde.',
       'Links this device to your IVAO account through the airline’s relay: the app then reads your flights on IVAO’s tracker directly. The relay keeps the application’s secret; your token stays on this device, never in a backup.',
@@ -428,7 +379,6 @@
       'Den Wetterschlüssel von diesem Gerät löschen?',
       '¿Borrar la clave meteorológica de este dispositivo?'
     ],
-    erase: ['Effacer', 'Erase', 'Löschen', 'Borrar'],
   });
 
   /** Taille lisible (Ko, Mo, Go). */
@@ -476,6 +426,196 @@
     } : null;
   }
 
+  /** Routage de la configuration d'un pilote : `?config=` (lien reçu : vérifié, assistant commencé, ou carte de refus), l'état de l'assistant (`SogJoin.load`)
+   *  et, si l'adresse porte `?join=`, l'assistant lui-même à la place des cartes ({ page } : le dessin est fini) ; sinon { inErr, join, jd, access } pour les cartes.
+   *  base : { t, FD, fld, L, remote, gitState, q }, ce que render a lu du contexte. */
+  async function routeJoin(view, c, base) {
+    const {
+      t,
+      FD,
+      fld,
+      L,
+      remote,
+      gitState,
+      q
+    } = base;
+    let inErr = '';
+    if (q.get('config') && window.SogConfig && window.SogJoin) {
+      try {
+        const r = SogConfig.validate(await SogConfig.unpack(q.get('config')));
+        if (r.ok) {
+          await SogJoin.start(c.own, r.cfg);
+          history.replaceState(null, '', `${location.pathname}${location.search}#settings?join=1`);
+        } else inErr = P.actions.cfgError(r, t);
+      } catch {
+        inErr = t(T.cfgBadFile);
+      }
+    }
+    const join = window.SogJoin ? await SogJoin.load(c.own) : {},
+      jd = join.cfg?.data;
+    // accès que la configuration réglerait sur cet appareil : same / other (data/ du lanceur déjà un dépôt), clone / adopt
+    // (par le lanceur), github (transport de l'appareil : GitHub ou une instance GitLab, il n'en connaît que ces deux), nodata
+    const access = !jd ? 'nodata' : L ? (gitState === 'repo' ? (sameRepo(remote?.url, SogConfig.cloneUrl(jd)) ? 'same' : 'other') :
+      gitState === 'absent' ? 'clone' : 'adopt') : 'github';
+    if (window.SogJoin && /[?&]join=/.test(location.hash)) return {
+      page: SogJoin.render(view, {
+        t,
+        esc,
+        fld,
+        own: c.own,
+        FD,
+        c,
+        access,
+        remote,
+        L,
+        setup,
+        confirmOpen,
+        airlineDoc,
+        AIRLINE,
+        howtoHtml,
+        copy,
+        copyShown: T.copyShown,
+        pick: () => P.actions.pickConfig(c, view)
+      })
+    };
+    return {
+      inErr,
+      join,
+      jd,
+      access
+    };
+  }
+
+  /** Pose la page : le panneau d'aide, les groupes ou la seule carte demandée par l'adresse, leur câblage. env : le contexte de l'écran ; cards : les cartes déjà construites ;
+   *  parts : { cfgOut, edgeShow, runwayZoom }, ce que la carte Administration reçoit de plus. */
+  async function placePage(env, cards, parts) {
+    const {
+      view,
+      c,
+      t,
+      L,
+      lvl,
+      focus
+    } = env;
+    const {
+      cfgOut,
+      edgeShow,
+      runwayZoom
+    } = parts;
+    const help = await c.helpPanel?.().catch(() => null);
+    const adminHtml = lvl === 3 || focus === 'admin' ? P.admin.adminCard(t, L, {
+      cfg: cfgOut,
+      edge: edgeShow,
+      runway: runwayZoom,
+      remote: L ? P.launcher.remoteHtml(env) : '',
+      keys: L ? P.launcher.keysHtml(env) : '',
+      folders: L ? P.launcher.foldersHtml(env) : '',
+      update: L ? P.launcher.updateHtml(env) : ''
+    }) : '';
+    // assistant « Application IVAO (connexion des pilotes) » : groupe Administration, avec un lanceur, au niveau Complet ou atteint
+    // par son adresse (#settings?card=ivaoapp)
+    const ivaoApp = L && (lvl === 3 || focus === 'ivaoapp') ? P.launcher.ivaoAppHtml(env) : '';
+    const all = [...cards, P.diagnostic.aboutHtml(env), adminHtml, ivaoApp],
+      one = focus ? P.groups.pick(all, focus) : '';
+    // carte demandée par l'adresse : elle seule, sous « ← Réglages » ; sinon la liste, rangée selon le niveau
+    view.innerHTML = one ? `<h1>${esc(t(T.title))}</h1><p><a class="f-btn" href="#settings" data-settings-back>${esc(t(T.backToList))}</a></p>${one}` :
+      `<h1>${esc(t(T.title))}</h1><p class="f-muted">${esc(t(T.intro))}</p>${P.groups.arrange(all, t, lvl)}`;
+    P.groups.wireGroups(view);
+    if (help && !one)(view.querySelector('[data-card="status"]') || view.querySelector('h1 + p'))?.after(help); // sous le bloc d'état
+  }
+
+  /** État vivant de la carte Données hors ligne : zones publiées ou ouvertes, stockage du navigateur, puis la liste des zones (paintZones) et le diagnostic du cadre. */
+  async function paintOffline(env) {
+    const {
+      view,
+      c,
+      t
+    } = env;
+    const dl = view.querySelector('[data-offline]'),
+      a = c.aerodb(),
+      s = a ? await a.status().catch(() => null) : null;
+    const pub = s?.published ? Object.keys(s.published).length : 0,
+      open = s ? Object.keys(s.loaded || {}).length : 0;
+    const zones = pub || open ? t(T.zonesState, {
+      p: pub,
+      l: open,
+      c: s.cycle ? t(T.cycle, {
+        c: s.cycle
+      }) : ''
+    }) : t(T.zonesNone);
+    const est = await navigator.storage?.estimate?.().catch(() => null);
+    if (dl) dl.innerHTML = `<dt>${esc(t(T.zones))}</dt><dd>${esc(zones)}</dd><dt>${esc(t(T.storage))}</dt><dd>${esc(est ? t(T.storageState, { u: bytes(est.usage, t), q: bytes(est.quota, t) }) : t(T.unknown))}</dd>`;
+    paintZones(env);
+    await P.diagnostic.live(env, est); // diagnostic du cadre, lisible et à copier
+  }
+
+  /** Zones publiées et base des appareils, avec leur état sur cet appareil (aerodb.offline) ; garder / libérer. */
+  async function paintZones(env) {
+    const {
+      view,
+      c,
+      t
+    } = env;
+    const box = view.querySelector('[data-zones]'),
+      off = c.aerodb()?.offline;
+    if (!box || !off) return;
+    const can = off.supported?.() || {},
+      zs = (await off.zones().catch(() => null)) || [],
+      ac = await off.aircraft?.().catch(() => null);
+    /** Libellé de l'état d'une zone hors ligne. */
+    const st = z => t(T.zoneState[z.state] || T.zoneState.unknown);
+    box.innerHTML = zs.map(z => `<div class="f-zone" data-zone="${esc(z.id)}"><div><b>${esc(t(z.names))}</b><br><span class="f-muted" data-zline>${esc(t(T.zoneLine, { s: st(z), c: z.cycle || '?', k: z.cachedKb ?? '?', p: z.publishedKb ?? '?' }))}</span></div>
+        <div class="f-row">${z.state !== 'complete' ? `<button type="button" data-keep="${esc(z.id)}">${esc(t(T.keep))}</button>` : ''}${can.evict && z.cachedKb ? `<button type="button" data-release="${esc(z.id)}">${esc(t(T.release))}</button>` : ''}</div></div>`).join('') +
+      (ac ? `<div class="f-zone"><div><b>${esc(t(T.aircraftDb))}</b><br><span class="f-muted">${esc(ac.types == null ? st(ac) : t(T.aircraftLine, { s: st(ac), n: ac.types }))}</span></div></div>` : '');
+    box.onclick = async e => {
+      const k = e.target.closest('[data-keep]')?.dataset.keep,
+        r = e.target.closest('[data-release]')?.dataset.release;
+      if (!k && !r) return;
+      const row = box.querySelector(`[data-zone="${CSS.escape(k || r)}"]`),
+        name = t(zs.find(z => z.id === (k || r))?.names || [k || r]);
+      row.querySelectorAll('button').forEach(b => b.disabled = true);
+      try {
+        if (k) {
+          const z = await off.keep(k, {
+            onProgress: p => {
+              row.querySelector('[data-zline]').textContent = `${p.done} / ${p.total}`;
+            }
+          });
+          c.notify(z?.failed?.length ? t(T.keptFailed, {
+            z: name,
+            n: z.failed.length
+          }) : t(T.kept, {
+            z: name,
+            k: z?.readKb ?? '?'
+          }), z?.failed?.length ? 'warn' : 'ok');
+        } else {
+          await off.release(r);
+          c.notify(t(T.released, {
+            z: name
+          }), 'ok');
+        }
+      } catch (err) {
+        c.notify(err?.message || String(err), 'err');
+      }
+      paintZones(env);
+    };
+  }
+
+  /** Lien `#settings?import=1` (carte d'accueil) : le bouton d'import de la configuration est mis à portée, son groupe (Accès) ouvert d'abord. */
+  function focusImport(view, q) {
+    if (q.get('import')) {
+      P.actions.dropConfigHash(); // une fois : le dessin suivant (après le choix du fichier) reste en tête
+      const b = view.querySelector('[data-act="cfgImport"]');
+      b?.closest('details.f-group')?.setAttribute('open', ''); // son groupe (Accès) ouvert d'abord
+      setTimeout(() => {
+        b?.scrollIntoView({
+          block: 'center'
+        });
+        b?.focus();
+      }, 0);
+    }
+  }
+
   const DESK = new WeakSet(); // vues qui écoutent déjà « frame-desk »
   /** Dessine l'écran des réglages dans view ; c : contexte du cadre (voir l'en-tête). */
   async function render(view, c) {
@@ -513,43 +653,22 @@
       edge: edgeShow,
       runwayZoom
     } = (c.level?.() || 2) === 3 || focus === 'admin' ? await P.admin.readProfiles(c) : P.admin.PROFILE_DEFAULTS;
-    let inErr = '';
-    if (q.get('config') && window.SogConfig && window.SogJoin) {
-      try {
-        const r = SogConfig.validate(await SogConfig.unpack(q.get('config')));
-        if (r.ok) {
-          await SogJoin.start(c.own, r.cfg);
-          history.replaceState(null, '', `${location.pathname}${location.search}#settings?join=1`);
-        } else inErr = P.actions.cfgError(r, t);
-      } catch {
-        inErr = t(T.cfgBadFile);
-      }
-    }
-    const join = window.SogJoin ? await SogJoin.load(c.own) : {},
-      jd = join.cfg?.data;
-    // accès que la configuration réglerait sur cet appareil : same / other (data/ du lanceur déjà un dépôt), clone / adopt
-    // (par le lanceur), github (transport de l'appareil : GitHub ou une instance GitLab, il n'en connaît que ces deux), nodata
-    const access = !jd ? 'nodata' : L ? (gitState === 'repo' ? (sameRepo(remote?.url, SogConfig.cloneUrl(jd)) ? 'same' : 'other') :
-      gitState === 'absent' ? 'clone' : 'adopt') : 'github';
-    if (window.SogJoin && /[?&]join=/.test(location.hash)) return SogJoin.render(view, {
+    const route = await routeJoin(view, c, {
       t,
-      esc,
-      fld,
-      own: c.own,
       FD,
-      c,
-      access,
-      remote,
+      fld,
       L,
-      setup,
-      confirmOpen,
-      airlineDoc,
-      AIRLINE,
-      howtoHtml,
-      copy,
-      copyShown: T.copyShown,
-      pick: () => P.actions.pickConfig(c, view)
+      remote,
+      gitState,
+      q
     });
+    if (route.page) return route.page; // l'assistant « Rejoindre la compagnie » remplace les cartes
+    const {
+      inErr,
+      join,
+      jd,
+      access
+    } = route;
     // niveau d'usage et modules que le menu montre (la carte Niveau, cards.js)
     const lvl = c.level?.() || 2,
       mods = (await c.modules?.()) || [];
@@ -596,7 +715,7 @@
     // assistant en cours : le reprendre là où il en était
     show(P.cards.joinResume(env));
     // reprise V2, une fois
-    show(P.cards.v2(env));
+    show(P.cards.v2Import(env));
     // identité
     show(P.cards.identity(env));
     // niveau d'usage : un geste, le menu suit aussitôt
@@ -633,26 +752,11 @@
     if (lanCard) cards.push(lanCard);
     // fiches Little Navmap (.lnmperf), si un lanceur sert la page : carte écrite par aerodb (frame/aerodb/lnmperf.js)
     show(P.cards.lnmperf(env));
-    const help = await c.helpPanel?.().catch(() => null);
-    const adminHtml = lvl === 3 || focus === 'admin' ? P.admin.adminCard(t, L, {
-      cfg: cfgOut,
-      edge: edgeShow,
-      runway: runwayZoom,
-      remote: L ? P.launcher.remoteHtml(env) : '',
-      keys: L ? P.launcher.keysHtml(env) : '',
-      folders: L ? P.launcher.foldersHtml(env) : '',
-      update: L ? P.launcher.updateHtml(env) : ''
-    }) : '';
-    // assistant « Application IVAO (connexion des pilotes) » : groupe Administration, avec un lanceur, au niveau Complet ou atteint
-    // par son adresse (#settings?card=ivaoapp)
-    const ivaoApp = L && (lvl === 3 || focus === 'ivaoapp') ? P.launcher.ivaoAppHtml(env) : '';
-    const all = [...cards, P.diagnostic.aboutHtml(env), adminHtml, ivaoApp],
-      one = focus ? P.groups.pick(all, focus) : '';
-    // carte demandée par l'adresse : elle seule, sous « ← Réglages » ; sinon la liste, rangée selon le niveau
-    view.innerHTML = one ? `<h1>${esc(t(T.title))}</h1><p><a class="f-btn" href="#settings" data-settings-back>${esc(t(T.backToList))}</a></p>${one}` :
-      `<h1>${esc(t(T.title))}</h1><p class="f-muted">${esc(t(T.intro))}</p>${P.groups.arrange(all, t, lvl)}`;
-    P.groups.wireGroups(view);
-    if (help && !one)(view.querySelector('[data-card="status"]') || view.querySelector('h1 + p'))?.after(help); // sous le bloc d'état
+    await placePage(env, cards, {
+      cfgOut,
+      edgeShow,
+      runwayZoom
+    });
 
     /** Carte de l'écran par son nom (data-card). */
     const card = k => view.querySelector(`[data-card="${k}"]`);
@@ -708,70 +812,7 @@
 
     // état vivant : synchronisation, données hors ligne, clés, diagnostic
     P.access.live(env); // synchronisation et écritures en attente, vivantes
-    (async () => {
-      const dl = view.querySelector('[data-offline]'),
-        a = c.aerodb(),
-        s = a ? await a.status().catch(() => null) : null;
-      const pub = s?.published ? Object.keys(s.published).length : 0,
-        open = s ? Object.keys(s.loaded || {}).length : 0;
-      const zones = pub || open ? t(T.zonesState, {
-        p: pub,
-        l: open,
-        c: s.cycle ? t(T.cycle, {
-          c: s.cycle
-        }) : ''
-      }) : t(T.zonesNone);
-      const est = await navigator.storage?.estimate?.().catch(() => null);
-      if (dl) dl.innerHTML = `<dt>${esc(t(T.zones))}</dt><dd>${esc(zones)}</dd><dt>${esc(t(T.storage))}</dt><dd>${esc(est ? t(T.storageState, { u: bytes(est.usage, t), q: bytes(est.quota, t) }) : t(T.unknown))}</dd>`;
-      paintZones();
-      await P.diagnostic.live(env, est); // diagnostic du cadre, lisible et à copier
-    })();
-    /** Zones publiées et base des appareils, avec leur état sur cet appareil (aerodb.offline) ; garder / libérer. */
-    async function paintZones() {
-      const box = view.querySelector('[data-zones]'),
-        off = c.aerodb()?.offline;
-      if (!box || !off) return;
-      const can = off.supported?.() || {},
-        zs = (await off.zones().catch(() => null)) || [],
-        ac = await off.aircraft?.().catch(() => null);
-      /** Libellé de l'état d'une zone hors ligne. */
-      const st = z => t(T.zoneState[z.state] || T.zoneState.unknown);
-      box.innerHTML = zs.map(z => `<div class="f-zone" data-zone="${esc(z.id)}"><div><b>${esc(t(z.names))}</b><br><span class="f-muted" data-zline>${esc(t(T.zoneLine, { s: st(z), c: z.cycle || '?', k: z.cachedKb ?? '?', p: z.publishedKb ?? '?' }))}</span></div>
-        <div class="f-row">${z.state !== 'complete' ? `<button type="button" data-keep="${esc(z.id)}">${esc(t(T.keep))}</button>` : ''}${can.evict && z.cachedKb ? `<button type="button" data-release="${esc(z.id)}">${esc(t(T.release))}</button>` : ''}</div></div>`).join('') +
-        (ac ? `<div class="f-zone"><div><b>${esc(t(T.aircraftDb))}</b><br><span class="f-muted">${esc(ac.types == null ? st(ac) : t(T.aircraftLine, { s: st(ac), n: ac.types }))}</span></div></div>` : '');
-      box.onclick = async e => {
-        const k = e.target.closest('[data-keep]')?.dataset.keep,
-          r = e.target.closest('[data-release]')?.dataset.release;
-        if (!k && !r) return;
-        const row = box.querySelector(`[data-zone="${CSS.escape(k || r)}"]`),
-          name = t(zs.find(z => z.id === (k || r))?.names || [k || r]);
-        row.querySelectorAll('button').forEach(b => b.disabled = true);
-        try {
-          if (k) {
-            const z = await off.keep(k, {
-              onProgress: p => {
-                row.querySelector('[data-zline]').textContent = `${p.done} / ${p.total}`;
-              }
-            });
-            c.notify(z?.failed?.length ? t(T.keptFailed, {
-              z: name,
-              n: z.failed.length
-            }) : t(T.kept, {
-              z: name,
-              k: z?.readKb ?? '?'
-            }), z?.failed?.length ? 'warn' : 'ok');
-          } else {
-            await off.release(r);
-            c.notify(t(T.released, {
-              z: name
-            }), 'ok');
-          }
-        } catch (err) {
-          c.notify(err?.message || String(err), 'err');
-        }
-        paintZones();
-      };
-    }
+    paintOffline(env);
     P.launcher.live(env); // accès du poste (relève toutes les 5 s), clé IVAO, fenêtre Oui / Non annoncée
     // compte IVAO : sans application réglée sur ce poste ou le relais, le bouton est éteint (sa raison en titre), rien ne part
     if (card('ivao') && c.ivao?.setup) c.ivao.setup().then(s => s && paintIvaoApp(s)).catch(() => {});
@@ -780,17 +821,7 @@
     P.actions.wire(env);
     // #settings?offline=1 (fin de l'assistant) : la carte Données hors ligne seule (focus), l'adresse reste telle quelle
     // #settings?import=1 (carte d'accueil) : le bouton d'import à portée
-    if (q.get('import')) {
-      P.actions.dropConfigHash(); // une fois : le dessin suivant (après le choix du fichier) reste en tête
-      const b = view.querySelector('[data-act="cfgImport"]');
-      b?.closest('details.f-group')?.setAttribute('open', ''); // son groupe (Accès) ouvert d'abord
-      setTimeout(() => {
-        b?.scrollIntoView({
-          block: 'center'
-        });
-        b?.focus();
-      }, 0);
-    }
+    focusImport(view, q);
     P.admin.live(env); // filet de la limite de la zone du vol, enregistré aussitôt
   }
 

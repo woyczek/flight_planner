@@ -32,7 +32,7 @@
     return '';
   };
   /** Carte de reprise des réglages de la V2 (une fois) ; vide sans réglages à reprendre. */
-  const v2 = env => {
+  const v2Import = env => {
     const {
       t,
       v2
@@ -192,7 +192,7 @@
   (window.SogSettingsParts ||= {}).cards = {
     refused,
     joinResume,
-    v2,
+    v2Import,
     identity,
     level,
     design,

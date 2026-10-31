@@ -19,7 +19,6 @@
   // textes de ce fichier, ajoutés aux textes communs des Réglages (window.SogSettingsT)
   Object.assign(T, {
     // accès
-    access: ['Accès aux données', 'Data access', 'Datenzugang', 'Acceso a los datos'],
     repo: ['Dépôt (compte/dépôt GitHub, ou adresse d’un projet GitLab)',
       'Repository (GitHub account/repository, or the address of a GitLab project)',
       'Repository (GitHub-Konto/Repository oder Adresse eines GitLab-Projekts)',
@@ -35,9 +34,6 @@
     ],
     branch: ['Branche', 'Branch', 'Zweig', 'Rama'],
     token: ['Jeton personnel', 'Personal token', 'Persönliches Token', 'Token personal'],
-    tokenSet: ['jeton enregistré — vide : inchangé', 'token saved — empty: unchanged', 'Token gespeichert — leer: unverändert',
-      'token guardado — vacío: sin cambios'
-    ],
     tokenSet: ['Jeton enregistré sur cet appareil (jamais réaffiché) : le remplacer, le coller de nouveau ci-dessus.',
       'Token saved on this device (never shown again): to replace it, paste it again above.',
       'Token auf diesem Gerät gespeichert (nie wieder angezeigt): zum Ersetzen oben erneut einfügen.',

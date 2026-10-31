@@ -49,7 +49,6 @@
     cfgQr: ['À scanner avec le téléphone du pilote', 'To scan with the pilot’s phone', 'Mit dem Telefon des Piloten scannen',
       'Para escanear con el teléfono del piloto'
     ],
-    cfgPilot: ['Trigramme du pilote', 'Pilot’s trigram', 'Kürzel des Piloten', 'Trigrama del piloto'],
     cfgApp: ['Adresse de l’appli publiée (pour le lien)', 'Address of the published app (for the link)',
       'Adresse der veröffentlichten App (für den Link)',
       'Dirección de la aplicación publicada (para el enlace)'
@@ -102,8 +101,6 @@
     launcherOnly: ['poste avec lanceur seulement', 'workstation with launcher only', 'nur Rechner mit Starter',
       'solo puesto con lanzador'
     ],
-    copyLink: ['Copier le lien', 'Copy the link', 'Link kopieren', 'Copiar el enlace'],
-    linkCopied: ['Lien copié.', 'Link copied.', 'Link kopiert.', 'Enlace copiado.'],
     linkOpen: ['Adresse à ouvrir ou à mettre en favori sur le téléphone :', 'Address to open or bookmark on the phone:',
       'Adresse zum Öffnen oder als Lesezeichen auf dem Telefon:', 'Dirección para abrir o guardar como favorito en el teléfono:'
     ]
@@ -197,7 +194,7 @@
       // ouvrir ou à mettre en favori sur le téléphone, copiable par un appui
       const abs = x.copyLink && x.href ? new URL(x.href, x.href.startsWith('#') ? location.href : ROOT).href : '',
         under = abs ? `<span class="f-muted f-admin-url">${esc(t(T.linkOpen))} <code data-adminurl>${esc(abs)}</code></span>
-        <span class="f-row"><button type="button" data-act="adminCopy" data-text="${esc(abs)}">${esc(t(T.copyLink))}</button></span>` : '';
+        <span class="f-row"><button type="button" data-act="adminCopy" data-text="${esc(abs)}">${esc(t(T.cfgCopy))}</button></span>` : '';
       return `<li data-admin="${esc(x.id)}">${btn}<span class="f-muted">${esc(t(x.text))}${x.where === 'bench' ? ` — ${esc(t(T.launcherOnly))}` : ''}</span>${under}${x.panel ? panel(x) : ''}</li>`;
     };
     const shown = links.filter(x => (!['v2', 'launcher'].includes(x.where) || L) && (!x.panel || x.panel === 'edge' || x.panel ===
@@ -384,7 +381,7 @@
       const how = await copy(b.dataset.text || '', {
         near: b.closest('.f-row')
       });
-      return c.notify(t(how === 'shown' ? T.copyShown : T.linkCopied), how === 'shown' ? 'warn' : 'ok');
+      return c.notify(t(how === 'shown' ? T.copyShown : T.cfgCopied), how === 'shown' ? 'warn' : 'ok');
     }
     if (act === 'adminPanel') {
       // bouton de la carte Administration : déplie (ou replie) le volet de sa ligne

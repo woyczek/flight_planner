@@ -307,14 +307,14 @@
     // écrans de service : « Jetons des pilotes » (frame/settings/pilot_tokens.js), avec deux routes du lanceur seulement
     screens: [{
       id: 'pilot-tokens',
-      scripts: ['settings/pilot_tokens.js?v=0'],
+      scripts: ['settings/kit.js?v=0', 'settings/pilot_tokens.js?v=0'],
       level: 3,
       launcher: {
         routes: ['gitlab/tokens', 'gitlab/tokens/revoke']
       }
     }, {
       id: 'devices',
-      scripts: ['settings/devices.js?v=0'],
+      scripts: ['settings/kit.js?v=0', 'settings/devices.js?v=0'],
       level: 3,
       launcher: {
         routes: ['devices', 'devices/revoke', 'devices/name']

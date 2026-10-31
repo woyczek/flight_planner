@@ -10,8 +10,8 @@
   // routes déclarées par l'écran, ou null (pas de lanceur, appareil appairé).
   const BASE = document.currentScript.src;
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+  const K = window.SogSettingsKit.T; // textes communs des Réglages (kit.js) : les lignes égales dans les quatre langues y sont une fois
   const T = {
-    title: ['Jetons des pilotes', 'Pilots’ tokens', 'Token der Piloten', 'Tokens de los pilotos'],
     intro: [
       'Un jeton d’accès de projet GitLab par pilote, à son trigramme : créé ici par le lanceur de ce poste avec le jeton de l’administrateur, donné au pilote, collé une fois dans ses Réglages › Accès aux données avec l’adresse du projet. Révoquez-le si l’appareil est perdu ou si le pilote quitte la compagnie.',
       'One GitLab project access token per pilot, named after the trigram: created here by this computer’s launcher with the administrator’s token, given to the pilot, pasted once in their Settings › Data access with the project’s address. Revoke it if the device is lost or the pilot leaves the airline.',
@@ -32,12 +32,9 @@
     ],
     list: ['Jetons du projet', 'Project tokens', 'Token des Projekts', 'Tokens del proyecto'],
     none: ['Aucun jeton pour l’instant.', 'No token yet.', 'Noch kein Token.', 'Ningún token por ahora.'],
-    expires: ['expire le {d}', 'expires on {d}', 'läuft ab am {d}', 'caduca el {d}'],
-    used: ['dernier usage {d}', 'last used {d}', 'zuletzt genutzt {d}', 'último uso {d}'],
     never: ['jamais utilisé', 'never used', 'nie genutzt', 'nunca usado'],
     revoked: ['révoqué', 'revoked', 'widerrufen', 'revocado'],
     inactive: ['inactif', 'inactive', 'inaktiv', 'inactivo'],
-    revoke: ['Révoquer', 'Revoke', 'Widerrufen', 'Revocar'],
     revokeAsk: [
       'Révoquer le jeton {n} ? L’appareil du pilote ne pourra plus lire ni écrire les données ; ses écritures en attente restent sur son appareil.',
       'Revoke the token {n}? The pilot’s device will no longer read nor write the data; their pending writes stay on their device.',
@@ -46,21 +43,16 @@
     ],
     revokedDone: ['Jeton {n} révoqué.', 'Token {n} revoked.', 'Token {n} widerrufen.', 'Token {n} revocado.'],
     create: ['Nouveau jeton', 'New token', 'Neues Token', 'Nuevo token'],
-    trigram: ['Trigramme du pilote', 'Pilot’s trigram', 'Kürzel des Piloten', 'Trigrama del piloto'],
     days: ['Durée (jours, 365 au plus)', 'Lifetime (days, 365 at most)', 'Laufzeit (Tage, höchstens 365)',
       'Duración (días, 365 como máximo)'
     ],
     make: ['Créer le jeton', 'Create the token', 'Token erstellen', 'Crear el token'],
-    badTri: ['Trigramme : 2 à 5 lettres ou chiffres.', 'Trigram: 2 to 5 letters or digits.', 'Kürzel: 2 bis 5 Buchstaben oder Ziffern.',
-      'Trigrama: de 2 a 5 letras o cifras.'
-    ],
     created: [
       'Jeton de {n}, valable jusqu’au {d} — montré cette fois seulement : copiez-le et donnez-le au pilote par un canal sûr (jamais dans un message public). Il le colle dans Réglages › Accès aux données, avec l’adresse du projet.',
       'Token for {n}, valid until {d} — shown this once only: copy it and give it to the pilot through a safe channel (never in a public message). They paste it in Settings › Data access, with the project’s address.',
       'Token für {n}, gültig bis {d} — nur dieses eine Mal angezeigt: Kopieren Sie es und geben Sie es dem Piloten über einen sicheren Weg (nie in einer öffentlichen Nachricht). Er fügt es unter Einstellungen › Datenzugang mit der Adresse des Projekts ein.',
       'Token de {n}, válido hasta el {d} — mostrado solo esta vez: cópielo y entrégueselo al piloto por un canal seguro (nunca en un mensaje público). Lo pega en Ajustes › Acceso a los datos, con la dirección del proyecto.'
     ],
-    copy: ['Copier', 'Copy', 'Kopieren', 'Copiar'],
     copied: ['Jeton copié.', 'Token copied.', 'Token kopiert.', 'Token copiado.'],
     failed: ['GitLab a refusé : {m}', 'GitLab refused: {m}', 'GitLab hat abgelehnt: {m}', 'GitLab rechazó: {m}'],
     offline: ['Lanceur ou GitLab injoignable.', 'Launcher or GitLab unreachable.', 'Starter oder GitLab nicht erreichbar.',
@@ -77,7 +69,7 @@
   function screen(view, ctx) {
     const t = (row, v) => ctx.t(row, v),
       R = ctx.routes?.() || null;
-    view.innerHTML = `<div class="f-card" data-tokens><h2>${esc(t(T.title))}</h2><p class="f-muted">${esc(t(T.intro))}</p>
+    view.innerHTML = `<div class="f-card" data-tokens><h2>${esc(t(K.providerTokens))}</h2><p class="f-muted">${esc(t(T.intro))}</p>
       <div data-tokens-body></div></div>`;
     const body = view.querySelector('[data-tokens-body]');
     if (!R) {
@@ -96,14 +88,14 @@
         return;
       }
       const rows = (r.tokens || []).map(x => `<li data-token="${esc(x.id)}"><b>${esc(x.name)}</b>
-        <span class="f-muted">${esc([x.revoked ? t(T.revoked) : !x.active ? t(T.inactive) : '', x.expires ? t(T.expires, { d: day(x.expires) }) : '',
-          x.used ? t(T.used, { d: day(x.used) }) : t(T.never)].filter(Boolean).join(' · '))}</span>
-        ${x.active && !x.revoked ? `<button type="button" data-act="revoke" data-id="${esc(x.id)}" data-name="${esc(x.name)}">${esc(t(T.revoke))}</button>` : ''}</li>`).join('');
+        <span class="f-muted">${esc([x.revoked ? t(T.revoked) : !x.active ? t(T.inactive) : '', x.expires ? t(K.expires, { d: day(x.expires) }) : '',
+          x.used ? t(K.used, { d: day(x.used) }) : t(T.never)].filter(Boolean).join(' · '))}</span>
+        ${x.active && !x.revoked ? `<button type="button" data-act="revoke" data-id="${esc(x.id)}" data-name="${esc(x.name)}">${esc(t(K.revoke))}</button>` : ''}</li>`).join('');
       body.innerHTML = `${fresh ? `<div class="f-msg" data-kind="ok" data-tokens-new><p>${esc(t(T.created, { n: fresh.name, d: day(fresh.expires) }))}</p>
-          <p><code data-token-value>${esc(fresh.token)}</code></p><p><button type="button" data-act="copy">${esc(t(T.copy))}</button></p></div>` : ''}
+          <p><code data-token-value>${esc(fresh.token)}</code></p><p><button type="button" data-act="copy">${esc(t(K.copy))}</button></p></div>` : ''}
         <h3>${esc(t(T.list))}</h3>${rows ? `<ul class="f-list" data-tokens-list>${rows}</ul>` : `<p class="f-muted">${esc(t(T.none))}</p>`}
         <h3>${esc(t(T.create))}</h3>
-        <label class="f-field">${esc(t(T.trigram))}<input data-f="tri" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="5"></label>
+        <label class="f-field">${esc(t(K.cfgPilot))}<input data-f="tri" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="5"></label>
         <label class="f-field">${esc(t(T.days))}<input data-f="days" type="number" min="1" max="365" value="365"></label>
         <p class="f-msg" data-msg></p><div class="f-row"><button type="button" class="primary" data-act="make">${esc(t(T.make))}</button></div>
         <p class="f-muted">${esc(t(T.branch))}</p>`;
@@ -147,7 +139,7 @@
           const tri = (body.querySelector('[data-f=tri]').value || '').trim().toUpperCase(),
             days = +body.querySelector('[data-f=days]').value || 365,
             msg = body.querySelector('[data-msg]');
-          if (!/^[A-Z0-9]{2,5}$/.test(tri)) return void(msg.textContent = t(T.badTri));
+          if (!/^[A-Z0-9]{2,5}$/.test(tri)) return void(msg.textContent = t(K.badTrigram));
           b.disabled = true;
           const v = await R.call('gitlab/tokens', {
             trigram: tri,

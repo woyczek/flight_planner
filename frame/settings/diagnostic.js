@@ -82,7 +82,6 @@
     ],
     viaLan: ['{h}, par le réseau local', '{h}, through the local network', '{h}, über das lokale Netz', '{h}, por la red local'],
     viaHere: ['{h}, ce poste', '{h}, this computer', '{h}, dieser Rechner', '{h}, este equipo'],
-    copy: ['Copier', 'Copy', 'Kopieren', 'Copiar'],
     copied: ['Diagnostic copié.', 'Diagnostics copied.', 'Diagnose kopiert.', 'Diagnóstico copiado.'],
   });
 

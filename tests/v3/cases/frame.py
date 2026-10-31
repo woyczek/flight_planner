@@ -1667,7 +1667,7 @@ def a49(c):
     link = f'{box} a[href="https://gitlab.com/grp/proj"]'
     c.eq(c.count(link), 1, 'the project is a link to its page', what='project link')
     c.ok('noopener' in c.attr(link, 'rel'), c.attr(link, 'rel'), 'the project link has rel noopener')
-    c.eq(first(f'{box} a[href="#pilot-tokens"]'), txl('providerTokens'), 'the link to the pilots’ tokens', what='tokens link')
+    c.eq(first(f'{box} a[href="#pilot-tokens"]'), norm(tx('frame/settings/kit.js', 'providerTokens', c.lang)), 'the link to the pilots’ tokens', what='tokens link')
     c.ok(txl('providerGitlab') in first(box), first(box), 'the sentence on the welcome by a project access token')
     c.ok('SECRET' not in c.js(f"document.querySelector('{box}').outerHTML"), 'a secret is shown', 'the credentials of the address are shown nowhere in the line')
     # GitHub: the sentence that proposes GitLab, no link to the tokens
@@ -1919,7 +1919,7 @@ def a51(c):
     link = c.js("() => SogConfig.pack({ schema: 'sog-config/1', identity: { trigram: 'ABC' }, data: { host: 'git.example.test', repo: 'grp/proj', branch: 'main' } })")
     c.page.goto(f'{c.base}/frame/index.html#settings?config={link}', wait_until='load')
     c.until("!!document.querySelector('[data-card=\"cfg\"] .f-msg')", timeout=15000, what='the refusal is shown')
-    c.eq(norm(c.text('[data-card="cfg"] .f-msg')), norm(tx(settings_file, 'providerUnknown', c.lang)), 'the refusal says the provider is unknown (github or gitlab)', what='refusal')
+    c.eq(norm(c.text('[data-card="cfg"] .f-msg')), norm(tx('frame/settings/kit.js', 'providerUnknown', c.lang)), 'the refusal says the provider is unknown (github or gitlab)', what='refusal')
 
     # remote panel: a self-hosted GitLab remote is recognised from the device configuration (same host), « non reconnu » otherwise
     def panel():
@@ -1957,7 +1957,7 @@ def a51(c):
     if c.count('[data-group="admin"]') and not c.js("document.querySelector('[data-group=\"admin\"]').open"):
         c.tap('[data-group="admin"] > summary')
     export()
-    c.eq(norm(c.js("document.querySelector('[data-adminpanel=\"cfg\"] [data-xmsg]').textContent")), norm(tx(settings_file, 'providerUnknown', c.lang)), 'an unknown source: the export is refused with the message', what='export refusal')
+    c.eq(norm(c.js("document.querySelector('[data-adminpanel=\"cfg\"] [data-xmsg]').textContent")), norm(tx('frame/settings/kit.js', 'providerUnknown', c.lang)), 'an unknown source: the export is refused with the message', what='export refusal')
     c.eq(c.js("document.querySelector('[data-adminpanel=\"cfg\"] [data-cfgout]').hidden"), True, 'nothing is written', what='export output')
     c.open('settings', docs=LEVEL3 + keys('https://git.example.test/api/v4'))
     c.until("!!document.querySelector('[data-admin=\"cfg\"]')", what='the export line')

@@ -215,13 +215,11 @@
     lanOpenAll: ['Les ouvrir aussi', 'Open them too', 'Auch öffnen', 'Abrirlas también'],
     lanForgetOne: ['Oublier', 'Forget', 'Vergessen', 'Olvidar'],
     // un appareil appairé par le code de console (sans trigramme ; Maintenance › Appareils le nomme)
-    lanConsole: ['code de console', 'console code', 'Konsolencode', 'código de consola'],
     lanForgetOneAsk: ['Oublier l’appareil « {d} » ? Il devra saisir un nouveau code.',
       'Forget the device “{d}”? It will have to enter a new code.',
       'Das Gerät „{d}“ vergessen? Es muss einen neuen Code eingeben.',
       '¿Olvidar el dispositivo «{d}»? Tendrá que introducir un código nuevo.'
     ],
-    lanDevices: ['Appareils appairés', 'Paired devices', 'Gekoppelte Geräte', 'Dispositivos vinculados'],
     lanOpened: ['Accès ouvert. Windows peut demander d’autoriser Python : acceptez pour les réseaux privés seulement.',
       'Access open. Windows may ask to allow Python: accept for private networks only.',
       'Zugang geöffnet. Windows fragt eventuell, ob Python erlaubt werden soll: nur für private Netzwerke zulassen.',
@@ -287,7 +285,6 @@
       'Proveedor: {p} · proyecto {j}'
     ],
     providerOther: ['Fournisseur non reconnu', 'Provider not recognised', 'Anbieter nicht erkannt', 'Proveedor no reconocido'],
-    providerTokens: ['Jetons des pilotes', 'Pilots’ tokens', 'Token der Piloten', 'Tokens de los pilotos'],
     providerGitlab: [
       'Les pilotes sont accueillis par un jeton d’accès de projet GitLab (rôle Developer, écriture du dépôt), créé dans « Jetons des pilotes » et donné une seule fois au pilote.',
       'Pilots are welcomed with a GitLab project access token (Developer role, repository write), created in “Pilots’ tokens” and given to the pilot once.',
@@ -341,7 +338,6 @@
     ivaoRedirOld: ['Mettez le lanceur à jour pour voir l’adresse de retour.', 'Update the launcher to see the return address.',
       'Aktualisieren Sie den Starter, um die Rücksprungadresse zu sehen.', 'Actualice el lanzador para ver la dirección de retorno.'
     ],
-    ivaoCopy: ['Copier', 'Copy', 'Kopieren', 'Copiar'],
     ivaoCopied: ['Adresse copiée.', 'Address copied.', 'Adresse kopiert.', 'Dirección copiada.'],
     ivaoAppSet: ['Application enregistrée le {d}', 'Application saved on {d}', 'Anwendung gespeichert am {d}',
       'Aplicación guardada el {d}'
@@ -441,7 +437,6 @@
         'Seguimiento del desarrollo (rama {b})'
       ]
     },
-    upCheck: ['Vérifier', 'Check', 'Prüfen', 'Comprobar'],
     upGo: ['Mettre à jour', 'Update', 'Aktualisieren', 'Actualizar'],
     upPlan: ['{t} : {n} changement(s) depuis la version installée.', '{t}: {n} change(s) since the installed version.',
       '{t}: {n} Änderung(en) seit der installierten Version.', '{t}: {n} cambio(s) desde la versión instalada.'
@@ -599,7 +594,7 @@
       t
     } = env;
     return `<div data-card="update"><p data-up-now class="f-muted">…</p><label class="f-field">${esc(t(T.upChannel))}<select data-up-channel>${['stable', 'early', 'suivi'].map(c => `<option value="${c}">${esc(t(T.upChannels[c], { b: 'v3' }))}</option>`).join('')}</select></label>
-      <p class="f-msg" data-msg></p><div class="f-row"><button type="button" data-act="upCheck">${esc(t(T.upCheck))}</button><button type="button" class="primary" data-act="upGo" disabled>${esc(t(T.upGo))}</button></div></div>`;
+      <p class="f-msg" data-msg></p><div class="f-row"><button type="button" data-act="upCheck">${esc(t(T.remoteCheck))}</button><button type="button" class="primary" data-act="upGo" disabled>${esc(t(T.upGo))}</button></div></div>`;
   }
   /** Le plan du canal choisi, dit dans le volet ; « Mettre à jour » seulement s'il y a quelque chose à faire. */
   async function paintUpdate(env) {
@@ -675,7 +670,7 @@
     const ul = view.querySelector('[data-ivao-redirects]');
     if (ul) {
       const list = Array.isArray(s?.ivaoRedirects) ? s.ivaoRedirects.filter(u => typeof u === 'string' && u) : null;
-      ul.innerHTML = list ? list.map(u => `<li><code>${esc(u)}</code> <button type="button" data-act="ivaoCopy" data-text="${esc(u)}">${esc(t(T.ivaoCopy))}</button></li>`).join('') :
+      ul.innerHTML = list ? list.map(u => `<li><code>${esc(u)}</code> <button type="button" data-act="ivaoCopy" data-text="${esc(u)}">${esc(t(T.copy))}</button></li>`).join('') :
         `<li class="f-muted" data-ivao-old>${esc(t(T.ivaoRedirOld))}</li>`;
     }
     paintSecretState(env, 'ivao_oauth', s?.app?.ivao_oauth);

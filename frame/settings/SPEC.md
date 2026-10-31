@@ -368,5 +368,15 @@ and kept by its service worker (`frame/sw.js`), each one registered in `window.S
   of a configuration (placed at the head of the Access card), offline data, IVAO account, weather key, Little Navmap sheets. It draws only: no listener, no write, no call to the launcher.
 - `actions.js`: the gestures of the screen. The click dispatcher and the field listeners (design, tone, level, usages,
   files), the backup's export and import, a configuration file picked; it draws nothing but messages and asks `render` again.
+- **`render` in pieces (lot 2)**: the configuration and Join routing (`?config=`, `?join=`, `?import=`), the placing of
+  the page and the live painting of the offline zones (`paintZones`) are functions of their own in `settings.js`, called by
+  `render` in the same order; the card builder of the V2 settings is `v2Import`, no longer the name of `env.v2`.
+- **Shared texts (lot 2)**: one key per meaning. A row used by two files or more lives once in `kit.js` (`T`, the shared
+  table `window.SogSettingsT`) and the files read it from there; `join.js`, `devices.js` and `pilot_tokens.js`, which have
+  their own table, read the shared rows from the kit too. Two keys are one meaning when their rows are equal in the four
+  languages (checked by a script); equal in French only, they stay apart (« Reprendre » the assistant is not « Reprendre »
+  the V2 settings in English). A key of the shared table is defined in one file only: today a key defined twice is decided by
+  the load order (the last file wins), so the merged row keeps the text the screen shows now. The cases that read a text
+  with `tx(file, key)` follow it to its file and key.
 - The other parts are unchanged by this lot: `kit.js` (helpers and shared texts), `launcher.js`, `access.js`,
   `diagnostic.js`, `admin.js`, `groups.js`, `config.js`, `join.js`, `admin_links.js`.

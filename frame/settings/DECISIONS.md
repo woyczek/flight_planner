@@ -501,7 +501,7 @@ ergonomics session. The launcher's LAN card still lists paired devices next to t
 **Order of the lots** (smallest risk first): R-S1 dead helpers of model.js and small repeats (L5, L13, L15 move to `viewOp` /
 `setGate`); R-S2 one profile reader / writer (A12); R-S3 one secrets helper (A32, A43); R-S4 one provider table (A12, A49);
 R-S5 one outcome reader and entry builder (L7, L13–L18); R-S6 one job ending and one summary table; R-S7 the base as a SETS entry;
-R-S8 module.js then model.js split by responsibility (done: module.js, then model.js); R-S9 settings.js `render` split and shared texts (lot 1 done: `render` split into `cards.js` and `actions.js`). Added 31 Oct: R-S10 one writer per shared field of the Data
+R-S8 module.js then model.js split by responsibility (done: module.js, then model.js); R-S9 settings.js `render` split and shared texts (done: `render` split into `cards.js` and `actions.js`, then `render` in pieces and one row per meaning). Added 31 Oct: R-S10 one writer per shared field of the Data
 module's state (`run`, `result`, `chain`), after R-S9 — a change of logic, not a split (the L cases as the guard); R-S8 only
 moves code, `S` itself replaced through `setState` alone.
 - **30 Oct 2026 — « Mise à jour de la suite » in the Administration card** (V3 § 10.34 A3, the second card; V3 Frame):
@@ -540,3 +540,24 @@ moves code, `S` itself replaced through `setState` alone.
   exception: a bench sets its API by its own path. **Counter-test kept as a rule for security cases**: A56 was run with the old
   `join.js` and failed (the token went to the received API) before the guard was put back; a guard's case is shown to fail
   without the guard.
+- **31 Oct 2026 — R-S9 (1/2), the one HTML difference left** (6105be2ba). In the before / after comparison of the screen, with
+  a launcher, the diagnostic's « dernière erreur de lecture » names another file (`device/help.json` before, `device/join.json`
+  after). It was already so before: two runs on the old tree differ the same way. A race in an error the test environment
+  produces, not a difference in what the screen draws.
+- **31 Oct 2026 — R-S9 (2/2), the service screens read the shared texts from `kit.js`** (`frame/app.js` `APP.screens`). `devices.js` and
+  `pilot_tokens.js` have a table of their own, loaded alone; seven of their rows were the same text in four languages as a row of the
+  Settings (`revoke`, `expires`, « dernier usage », « Trigramme du pilote », the trigram refusal, « Copier », « Jetons des pilotes »,
+  « Appareils appairés », « code de console »). They now read them from `window.SogSettingsKit.T`, so the two screens load `settings/kit.js`
+  first (`script()` loads a file once: opening Settings before or after changes nothing). Only the two `scripts` lists of those screens
+  changed in `frame/app.js`.
+- **31 Oct 2026 — Debt from R-S9 (2/2): two rows written twice in one table, the losing text was the better one.** The lot kept the
+  winner (the screen unchanged) and removed the losing row; to correct apart, as a `:bug:` with its case:
+  - `settings.js` `ivao`: the identity field reads it, so the VID field is labelled « Compte IVAO » / « IVAO account » / « IVAO-Konto » /
+    « Cuenta IVAO » (the IVAO account card's title) where « VID IVAO » / « IVAO VID » / « IVAO-VID » / « VID IVAO » was meant: give the field its
+    own key.
+  - `access.js` `tokenSet`: the line under a saved token reads « Jeton enregistré sur cet appareil (jamais réaffiché) : le remplacer, le coller
+    de nouveau ci-dessus. »; the lost row (« jeton enregistré — vide : inchangé ») was the field's placeholder: check which place used which
+    meaning before choosing.
+- **31 Oct 2026 — R-S9 (2/2), left apart on purpose**: four nested pairs equal in four languages (`access.queue` / `dg.pending`,
+  `access.lastError` / `dg.lastError`, `admin.admin` / `groups.admin`, `settings.identity` / `groups.identity`) are read by a dynamic lookup
+  (`T.dg[k]`, `T.groups[g]`); merging them would be a change of logic (R-S10 if wanted).

@@ -11,6 +11,76 @@
   const now = () => new Date().toISOString();
   const T = window.SogSettingsT ||= {}; // textes [fr, en, de, es] de l'écran, complétés par chaque fichier
 
+  // textes lus par plusieurs fichiers des Réglages, une ligne par sens (SPEC § 8) ; chaque fichier ajoute les siens
+  Object.assign(T, {
+    // de access.js
+    access: ['Accès aux données', 'Data access', 'Datenzugang', 'Acceso a los datos'],
+    // de settings.js
+    save: ['Enregistrer', 'Save', 'Speichern', 'Guardar'],
+    saved: ['Enregistré.', 'Saved.', 'Gespeichert.', 'Guardado.'],
+    pair: ['{k} :', '{k}:', '{k}:', '{k}:'],
+    ivao: ['Compte IVAO', 'IVAO account', 'IVAO-Konto', 'Cuenta IVAO'],
+    vatsim: ['CID VATSIM', 'VATSIM CID', 'VATSIM-CID', 'CID VATSIM'],
+    badTrigram: ['Trigramme : 2 à 5 lettres ou chiffres.', 'Trigram: 2 to 5 letters or digits.',
+      'Kürzel: 2 bis 5 Buchstaben oder Ziffern.',
+      'Trigrama: de 2 a 5 letras o cifras.'
+    ],
+    levels: [
+      [
+        ['Découverte', 'Discovery', 'Einstieg', 'Descubrimiento'],
+        ['L’essentiel, pour commencer.', 'The essentials, to get started.',
+          'Das Wesentliche, für den Anfang.', 'Lo esencial, para empezar.'
+        ]
+      ],
+      [
+        ['Courant', 'Everyday', 'Alltag', 'Habitual'],
+        ['L’usage de tous les jours.', 'Day-to-day use.', 'Der tägliche Gebrauch.',
+          'El uso de todos los días.'
+        ]
+      ],
+      [
+        ['Complet', 'Full', 'Vollständig', 'Completo'],
+        ['Tout, outils avancés compris.', 'Everything, advanced tools included.',
+          'Alles, einschließlich der erweiterten Werkzeuge.', 'Todo, herramientas avanzadas incluidas.'
+        ]
+      ]
+    ],
+    copyShown: ['Copie impossible ici : le texte est sélectionné, copiez-le vous-même.',
+      'Cannot copy here: the text is selected, copy it yourself.',
+      'Kopieren hier nicht möglich: Der Text ist markiert, kopieren Sie ihn selbst.',
+      'No se puede copiar aquí: el texto está seleccionado, cópielo usted mismo.'
+    ],
+    providerUnknown: ['Fournisseur inconnu : github ou gitlab', 'Unknown provider: github or gitlab',
+      'Unbekannter Anbieter: github oder gitlab', 'Proveedor desconocido: github o gitlab'
+    ],
+    cfgBadFile: ['Configuration illisible : rien n’est changé.', 'Unreadable configuration: nothing is changed.',
+      'Unlesbare Konfiguration: Nichts wird geändert.',
+      'Configuración ilegible: no se cambia nada.'
+    ],
+    test: ['Tester', 'Test', 'Testen', 'Probar'],
+    testOffline: ['Hors ligne : impossible de tester maintenant.', 'Offline: cannot test now.', 'Offline: jetzt kein Test möglich.',
+      'Sin conexión: imposible probar ahora.'
+    ],
+    zones: ['Bases aéronautiques', 'Aeronautical bases', 'Luftfahrtdaten', 'Bases aeronáuticas'],
+    storage: ['Stockage du navigateur', 'Browser storage', 'Browser-Speicher', 'Almacenamiento del navegador'],
+    erase: ['Effacer', 'Erase', 'Löschen', 'Borrar'],
+    // de launcher.js
+    lanConsole: ['code de console', 'console code', 'Konsolencode', 'código de consola'],
+    lanDevices: ['Appareils appairés', 'Paired devices', 'Gekoppelte Geräte', 'Dispositivos vinculados'],
+    providerTokens: ['Jetons des pilotes', 'Pilots’ tokens', 'Token der Piloten', 'Tokens de los pilotos'],
+    // de diagnostic.js
+    copy: ['Copier', 'Copy', 'Kopieren', 'Copiar'],
+    // de admin.js
+    cfgPilot: ['Trigramme du pilote', 'Pilot’s trigram', 'Kürzel des Piloten', 'Trigrama del piloto'],
+    // de settings.js
+    offlineData: ['Données hors ligne', 'Offline data', 'Offline-Daten', 'Datos sin conexión'],
+    // de pilot_tokens.js
+    used: ['dernier usage {d}', 'last used {d}', 'zuletzt genutzt {d}', 'último uso {d}'],
+    // de devices.js
+    expires: ['expire le {d}', 'expires on {d}', 'läuft ab am {d}', 'caduca el {d}'],
+    revoke: ['Révoquer', 'Revoke', 'Widerrufen', 'Revocar']
+  });
+
   // appels au lanceur : par le client du cadre (frame/lib/launcher.js, frame/INTEGRATION.md § 15), donné au premier
   // dessin de l'écran (bind) ; plus aucun fetch des Réglages vers le lanceur
   let request = null;
