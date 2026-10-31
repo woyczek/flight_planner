@@ -2205,3 +2205,29 @@ page is served to `Sec-Fetch-Site: none`, refused to `cross-site`, and, where th
   point in a zone) is unchanged.
 - **Consumers** (told by the ergonomics session): the Data module's map frames on `box` and should draw `framed` (with `rings`, the
   Aleutians west of 180° fall outside the frame); the Map's plain background keeps `rings`; the Weather module when it reads them.
+
+## 31 October 2026 — a sheet is a type or a variant, never an aircraft (§ 10.35, L0 and L0 bis)
+
+- **The user's words**: « pas d'immatriculation dans la fiche de base, c'est un type / variante ». The aircraft (registration,
+  callsigns, hours, maintenance) live in the fleet; the fleet entry names the sheet it instantiates (`sheetId`, schema 2 written
+  by the Aircraft module, L1).
+- **Schema 2 is explicit**: an entry with `sheetId` takes that sheet, and an empty one (or a sheet gone) the type's estimate —
+  never a guess, so what the fleet says is what Fuel quotes. **Schema 1 is unchanged** for Fuel: the old sheet carrying the
+  registration first (`sheetVia: 'own'`, the word Fuel shows), then the type's sheet; the only difference is that the type's
+  base (`C30J`) is preferred to another aircraft's old sheet of the same type, where it exists.
+- **Old sheets are not converted here**: 13 of the 21 sheets of the real data carry a registration (`DB_B350_F-ZBGK`, `DC3` with
+  F74SB…). They are read as variants « TYPE · F-XXXX » (`_variant`, never written) and keep everything; the conversion is a gesture
+  of the Aircraft module (L2), so nobody's file changes without them.
+- **The id rule is checked on new sheets only** (`put`): `C30J` or `C30J-<VARIANT>` of the sheet's own type. The `.lnmperf`
+  import now names a new sheet by its type (the base when free, else the variant named after the file); a file without a type
+  code is not imported (listed with the unreadable files). The Aircraft module's « Créer la fiche » already gives `C30J`, `C30J-2`;
+  its imports (ChatGPT, CSV, SimBrief) must take `sheets.newId(type)` for a new sheet (Features SOG, L1/L2).
+- **Callsign**: an aircraft's line takes its callsign from the fleet or the reference; an old sheet's only when they have none.
+- **Maintenance thresholds, hourly cost, fuel density** (L0 bis): fields of the type's sheet, optional, outside `.lnmperf`; the
+  company's defaults in `airline/settings.json`; nothing computed in aerodb (hours, costs and conversions are the modules').
+- **Labels ×4**: the five new labels in `modules/aircraft/sheets_texts.js` (`FIELD_TX`), where the form reads them.
+- **Bench** (launcher pages, run by hand: the noreg's server is not a launcher): `test/registry.html` 41 / 41 — schema, id rule,
+  `_variant`, refusal, `newId`, V2 mirror, schema 2 (named sheet, empty, missing) and a schema-1 row in the same file; the old
+  sheet of an aircraft now comes from the V2 file, as in the real data; `test/lnmperf.html` 16 / 16, its sheets renamed to the
+  rule (`C30J-TEST`, `A400-BROKEN`; imported files named `PC12`, `B350`).
+

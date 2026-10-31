@@ -107,14 +107,14 @@
         kg = lib.fuelConvertedCopy(base, 'lb', 'kg', true);
       await A.sheets.put({
         ...kg,
-        id: 'C30J_TEST',
+        id: 'C30J-TEST',
         unit: 'kg',
         lnmSource: false
       }, {
         source: 'edit'
       });
       await A.sheets.put({
-        id: 'BROKEN',
+        id: 'A400-BROKEN',
         name: 'incomplète',
         unit: 'kg'
       }, {
@@ -129,22 +129,22 @@
       // 1er passage : fichier nouveau importé, fiche écrite (lb), fiche incomplète signalée
       let s = await L.sync('test');
       check('pass 1: new file imported, sheet written, incomplete sheet listed', s.imported === 1 && s.written >= 1 && s.incomplete
-        .includes('BROKEN'), s);
-      const foreign = await A.sheets.get('Foreign');
+        .includes('A400-BROKEN'), s);
+      const foreign = await A.sheets.get('PC12');
       check('imported sheet: values and origin lnmperf', foreign?.cruise?.tasKt === 270 && foreign._fields?.['cruise.tasKt']?.source ===
         'lnmperf', foreign);
-      const f1 = await route('?name=C30J_TEST.lnmperf'),
+      const f1 = await route('?name=C30J-TEST.lnmperf'),
         v1 = lib.parseLnmperf(f1.text, 'x');
       check('kg sheet written in pounds', Math.abs(v1.cruise.fuelFlowPerHour - 6000) < .01 && Math.abs(v1.usableFuel - 40000) < .01, v1
         .cruise);
       check('files: imported and written, never the incomplete one', JSON.stringify(await files()) === JSON.stringify([
-        'C30J_TEST.lnmperf', 'Foreign.lnmperf'
+        'C30J-TEST.lnmperf', 'Foreign.lnmperf'
       ]), await files());
       // 2e passage sans changement : rien
       s = await L.sync('test');
       check('pass 2: nothing changed, nothing written', !s.written && !s.imported && !s.merged, s);
       // fiche changée → fichier réécrit
-      let c = await A.sheets.get('C30J_TEST');
+      let c = await A.sheets.get('C30J-TEST');
       await A.sheets.put({
         ...c,
         cruise: {
@@ -155,21 +155,21 @@
         source: 'edit'
       });
       s = await L.sync('test');
-      check('sheet changed → file rewritten', s.written === 1 && lib.parseLnmperf((await route('?name=C30J_TEST.lnmperf')).text, 'x')
+      check('sheet changed → file rewritten', s.written === 1 && lib.parseLnmperf((await route('?name=C30J-TEST.lnmperf')).text, 'x')
         .cruise.tasKt === 310, s);
       // fichier changé → fiche mise à jour (carburant reconverti en kg)
       await wait(1100);
-      await put('C30J_TEST.lnmperf', lnm('C-130J essai', 'C30J', {
+      await put('C30J-TEST.lnmperf', lnm('C-130J essai', 'C30J', {
         tas: 315,
         ff: 6500
       }));
       s = await L.sync('test');
-      c = await A.sheets.get('C30J_TEST');
+      c = await A.sheets.get('C30J-TEST');
       check('file changed → sheet updated, origin lnmperf, fuel back in kg', c.cruise.tasKt === 315 && Math.abs(c.cruise
         .fuelFlowPerHour - 6500 * 0.45359237) < .01 && c._fields['cruise.tasKt'].source === 'lnmperf' && s.merged === 1, c.cruise);
       // changé des deux côtés, le fichier plus récent : le fichier gagne, la valeur de la fiche est gardée, conflit compté
       const conflicts0 = (await FD.conflicts()).length;
-      c = await A.sheets.get('C30J_TEST');
+      c = await A.sheets.get('C30J-TEST');
       await A.sheets.put({
         ...c,
         climb: {
@@ -180,13 +180,13 @@
         source: 'edit'
       });
       await wait(1100);
-      await put('C30J_TEST.lnmperf', lnm('C-130J essai', 'C30J', {
+      await put('C30J-TEST.lnmperf', lnm('C-130J essai', 'C30J', {
         tas: 315,
         ff: 6500,
         roc: 1600
       }));
       s = await L.sync('test');
-      c = await A.sheets.get('C30J_TEST');
+      c = await A.sheets.get('C30J-TEST');
       const cf = await FD.conflicts();
       check('both changed, file newer: file wins, sheet value kept, conflict counted', c.climb.rateFpm === 1600 && c._kept[
           'climb.rateFpm']?.[0]?.value === 1500 && s.lastConflicts === 1 && cf.length === conflicts0 + 1 && cf.at(-1).side ===
@@ -196,13 +196,13 @@
           s
         });
       // changé des deux côtés, la fiche plus récente : la fiche gagne, la valeur du fichier est gardée, fichier réécrit
-      await put('C30J_TEST.lnmperf', lnm('C-130J essai', 'C30J', {
+      await put('C30J-TEST.lnmperf', lnm('C-130J essai', 'C30J', {
         tas: 320,
         ff: 6500,
         roc: 1600
       }));
       await wait(1100);
-      c = await A.sheets.get('C30J_TEST');
+      c = await A.sheets.get('C30J-TEST');
       await A.sheets.put({
         ...c,
         cruise: {
@@ -213,23 +213,23 @@
         source: 'edit'
       });
       s = await L.sync('test');
-      c = await A.sheets.get('C30J_TEST');
+      c = await A.sheets.get('C30J-TEST');
       check('both changed, sheet newer: sheet wins, file value kept with origin lnmperf, file rewritten', c.cruise.tasKt === 330 && c
         ._kept['cruise.tasKt']?.[0]?.value === 320 && c._kept['cruise.tasKt'][0].source === 'lnmperf' && lib.parseLnmperf((
           await route(
-            '?name=C30J_TEST.lnmperf')).text, 'x').cruise.tasKt === 330, {
+            '?name=C30J-TEST.lnmperf')).text, 'x').cruise.tasKt === 330, {
           cruise: c.cruise,
           kept: c._kept['cruise.tasKt']
         });
       // fichier supprimé (mis de côté hors du dossier) → réécrit
-      await route('?name=C30J_TEST.lnmperf&action=retire', {
+      await route('?name=C30J-TEST.lnmperf&action=retire', {
         method: 'POST',
         body: '{}'
       });
       s = await L.sync('test');
-      check('file deleted → rewritten from the sheet', (await files()).includes('C30J_TEST.lnmperf') && s.written === 1, s);
+      check('file deleted → rewritten from the sheet', (await files()).includes('C30J-TEST.lnmperf') && s.written === 1, s);
       // fiche retirée, fichier inchangé → fichier rangé dans _removed/
-      await A.sheets.remove('Foreign');
+      await A.sheets.remove('PC12');
       s = await L.sync('test');
       check('sheet removed → its unchanged file set aside in _removed/', s.retired === 1 && !(await files()).includes(
           'Foreign.lnmperf'),
@@ -242,7 +242,7 @@
       await put('Late.lnmperf', lnm('Late', 'B350'));
       await L.start();
       await wait(6000);
-      check('start(): a pass runs by itself', L.status().at !== t0 && !!(await A.sheets.get('Late')), L.status());
+      check('start(): a pass runs by itself', L.status().at !== t0 && !!(await A.sheets.get('B350')), L.status());
       L.stop();
       // nom de fichier d'une fiche
       check('file names: forbidden characters replaced', AeroDBLnmperf.fileName('A/B:C*') === 'A_B_C_.lnmperf', AeroDBLnmperf.fileName(

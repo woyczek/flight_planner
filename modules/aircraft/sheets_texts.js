@@ -132,6 +132,19 @@ export const FIELD_TX = {
   'Croisière': TX.cruise,
   'Descente': TX.descent,
   'Régime et consommation': ['Régime et consommation', 'RPM and fuel flow', 'Drehzahl und Verbrauch', 'Régimen y consumo'],
+  'Maintenance et coût': ['Maintenance et coût', 'Maintenance and cost', 'Wartung und Kosten', 'Mantenimiento y coste'],
+  'Révision rapide tous les (h)': ['Révision rapide tous les (h)', 'Check every (h)', 'Kleine Inspektion alle (h)',
+    'Revisión menor cada (h)'
+  ],
+  'Grande révision tous les (h)': ['Grande révision tous les (h)', 'Overhaul every (h)', 'Grundüberholung alle (h)',
+    'Revisión general cada (h)'
+  ],
+  'Coût horaire (par heure bloc)': ['Coût horaire (par heure bloc)', 'Hourly cost (per block hour)', 'Stundenkosten (pro Blockstunde)',
+    'Coste horario (por hora calzo)'
+  ],
+  'Densité du carburant (kg/L)': ['Densité du carburant (kg/L)', 'Fuel density (kg/L)', 'Kraftstoffdichte (kg/L)',
+    'Densidad del combustible (kg/L)'
+  ],
   'Nom': ['Nom', 'Name', 'Name', 'Nombre'],
   'Type / ICAO': ['Type / OACI', 'Type / ICAO', 'Typ / ICAO', 'Tipo / OACI'],
   'Description': ['Description', 'Description', 'Beschreibung', 'Descripción'],

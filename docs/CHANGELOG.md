@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: a performance sheet is a type or a variant, never an aircraft** (`frame/aerodb/registry.js`, `sheets.js`,
+  `lnmperf.js`, `modules/aircraft/sheets_texts.js`; SPEC § 5 bis, DECISIONS; test page `registry.html`) — an aircraft takes the sheet
+  its fleet entry names (`sheetId`, fleet schema 2; empty: the type's estimate), and with the current fleet (schema 1) the same
+  sheet as before; « Immatriculation » and « Indicatif » leave the sheet's fields; an old sheet that carries a registration is read
+  as the variant « TYPE · F-XXXX », nothing lost; a new sheet's id is `C30J` or `C30J-<VARIANT>`, checked by the registry
+  (`sheets.newId`, `checkId`); new optional fields: check and overhaul intervals, hourly cost (« Maintenance et coût ») and the fuel
+  density beside the fuel type.
 - **Frame: fuel units** (`frame/lib/fuel_units.js`; frame INTEGRATION 16, DECISIONS; bench `frame/lib/test/fuel_units.html`,
   noreg A53) — typical densities (Jet 0.80, AVGAS 0.72 kg/L), the density rule (type's sheet, else airline, else typical),
   conversions between kg, lb, L and USG, and the price brought to the kg; for Settings, Aircraft, Fuel and aerodb.

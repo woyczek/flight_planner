@@ -7,7 +7,12 @@
   //     pour les immatriculations absentes), les types OACI publiés (catalogue, aircraft.js), le code libre ;
   //   · chaque champ porte son origine et sa date ; la plus récente gagne, l'autre valeur est gardée (_kept) ;
   //   · une recherche : fiches → flotte → référence → types → code libre, chacune avec son origine ;
-  //   · un appareil prend sa fiche, sinon celle de son type (alias suivis), sinon l'estimation du type.
+  //   · une fiche décrit un type ou une variante, jamais un appareil (V3 § 10.35, L0) : identifiant C30J (la base du type) ou
+  //     C30J-<VARIANTE> ([A-Z0-9-], unique, validé ici) ; une fiche ancienne qui porte une immatriculation est lue comme la
+  //     variante « TYPE · F-XXXX » de cet appareil (_variant), rien perdu ni caché ;
+  //   · un appareil prend la fiche que nomme son entrée de flotte (sheetId, schéma 2 de airline/fleet.json), sinon (schéma 1)
+  //     la variante ancienne de son immatriculation, sinon la fiche de son type (la base d'abord, alias suivis), sinon
+  //     l'estimation du type.
   // Les fichiers V2 (.js) sont lus comme des littéraux (« let data = {…}; »), jamais exécutés. Aucun texte d'interface.
   // API : window.AeroDBRegistry = { create({ reader, catalog, now, raw }) → registre, readAll(reader) (toutes les sources
   //   lues en parallèle, à passer en raw), mergeSheets, stamp, whenOf, PATHS }.
@@ -22,6 +27,55 @@
   const KEPT = 5; // valeurs écartées gardées par champ
   const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim();
   const regOf = r => String(r ?? '').toUpperCase().replace(/\s+/g, '');
+  // identifiants de fiche (V3 § 10.35) : la base d'un type (son code OACI) ou une de ses variantes (code, tiret, majuscules,
+  // chiffres et tirets) ; les identifiants anciens (DB_…, SB_…) restent lus tels quels
+  const BASE_ID = /^[A-Z][A-Z0-9]{1,3}$/,
+    VARIANT_ID = /^([A-Z][A-Z0-9]{1,3})-([A-Z0-9]+(?:-[A-Z0-9]+)*)$/;
+  /** Immatriculation d'une fiche ancienne (champ registration, d'avant § 10.35) ; '' sinon. */
+  const legacyReg = s => regOf(s?.registration);
+  /** Type d'une fiche (son code OACI) : icao, sinon type, sinon le code de son identifiant. */
+  const typeOfSheet = s => fold(s?.icao || s?.type || (BASE_ID.test(s?.id) ? s.id : VARIANT_ID.exec(s?.id || '')?.[1]) || '');
+  /** Vérifie l'identifiant d'une fiche nouvelle : '' s'il convient ; sinon 'format' (ni C30J ni C30J-VARIANTE), 'type' (son
+   *  code n'est pas le type de la fiche) ou 'taken' (déjà pris). */
+  function checkId(id, type = '', taken = () => false) {
+    const m = BASE_ID.test(id) ? [id, id] : VARIANT_ID.exec(String(id ?? ''));
+    if (!m) return 'format';
+    if (type && fold(type) !== m[1]) return 'type';
+    return taken(id) ? 'taken' : '';
+  }
+  /** Lecture d'une fiche comme base ou variante : { of: type, base, label, registration? } ; une fiche ancienne qui porte
+   *  une immatriculation est la variante « TYPE · F-XXXX » ; une fiche C30J-X, la variante X de C30J (son nom pour libellé). */
+  function variantOf(s) {
+    const type = typeOfSheet(s),
+      reg = legacyReg(s),
+      v = VARIANT_ID.exec(s?.id || '');
+    if (reg) return {
+      of: type,
+      base: false,
+      label: `${type || '?'} · ${reg}`,
+      registration: reg
+    };
+    if (v) return {
+      of: v[1],
+      base: false,
+      label: s.name || `${v[1]} · ${v[2]}`
+    };
+    return {
+      of: type,
+      base: true,
+      label: s?.name || s?.id || type
+    };
+  }
+  /** Pose la lecture de variante (_variant, propriété non énumérable : jamais écrite ni copiée) sur une fiche lue ; la rend. */
+  const annotate = s => {
+    if (s && typeof s === 'object') Object.defineProperty(s, '_variant', {
+      value: variantOf(s),
+      configurable: true,
+      enumerable: false,
+      writable: true
+    });
+    return s;
+  };
   const clone = v => v == null ? v : JSON.parse(JSON.stringify(v));
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   /** Valeur d'une réponse du lecteur (value analysée, sinon text). */
@@ -285,6 +339,9 @@
             }
           }
           e.callsigns = [...new Set((r.callsigns || (r.callsign ? [r.callsign] : [])).map(c => String(c).toUpperCase()))];
+          // schéma 2 (modules/aircraft/SPEC) : la fiche que l'appareil instancie ; vide, l'estimation du type ; absente
+          // (schéma 1), la règle d'avant (sheetFor)
+          if (Object.hasOwn(r, 'sheetId')) e.sheetId = String(r.sheetId ?? '');
           aircraft.set(reg, e);
         }
         const ref = v2File(textOf(R.reference));
@@ -321,6 +378,7 @@
           if (!e.sources.includes('reference')) e.sources.push('reference');
           aircraft.set(reg, e);
         }
+        for (const x of sheets.values()) annotate(x.sheet);
         return {
           sheets,
           aircraft,
@@ -332,20 +390,32 @@
     // ---------------------------------------------------------------- appareils, fiches, recherche
     /** Vrai si une fiche donne un devis : un débit connu (croisière, ou une ligne de sa table RPM). */
     const quotable = s => +s?.cruise?.fuelFlowPerHour > 0 || (s?.rpmFuelCurve || []).some(r => +r?.fuelFlowPerHour > 0);
-    /** Fiche d'un appareil pour le devis : la sienne (même immatriculation) si elle donne un devis, sinon celle de son
-     *  type (alias suivis) qui en donne un, sinon null (estimation du type) ; own : sa fiche à lui, même incomplète. */
+    /** Fiche d'un appareil pour le devis (V3 § 10.35). Schéma 2 de la flotte (sheetId présent) : la fiche qu'il nomme si elle
+     *  donne un devis (via 'fleet'), sinon l'estimation du type (sheetId vide, fiche absente ou sans débit) ; jamais une autre
+     *  fiche. Schéma 1 (sans sheetId), comme avant : la variante ancienne qui porte son immatriculation si elle donne un devis
+     *  (via 'own'), sinon la fiche de son type qui en donne un (la base C30J d'abord, puis une fiche du type sans
+     *  immatriculation, puis n'importe laquelle, alias suivis ; via 'type'), sinon null (estimation). own : la fiche liée à
+     *  l'appareil, même incomplète. */
     function sheetFor(state, e) {
       const list = [...state.sheets.values()].map(x => x.sheet),
-        mine = list.find(s => regOf(s.registration) === e.registration) || null;
+        schema2 = typeof e.sheetId === 'string',
+        linked = schema2 && e.sheetId ? state.sheets.get(e.sheetId)?.sheet || null : null,
+        mine = schema2 ? linked : list.find(s => e.registration && legacyReg(s) === e.registration) || null;
       if (mine && quotable(mine)) return {
         sheet: mine,
-        via: 'own',
+        via: schema2 ? 'fleet' : 'own',
+        own: mine
+      };
+      if (schema2) return {
+        sheet: null,
+        via: 'estimate',
         own: mine
       };
       const type = e.type || catalog?.canonical?.(mine?.icao || mine?.type) || mine?.icao || mine?.type || '',
         codes = new Set(catalog?.related?.(type) || [fold(type)]),
-        byType = list.find(s => s !== mine && quotable(s) && codes.has(catalog?.canonical?.(s.icao || s.type) || fold(s.icao || s
-          .type)));
+        ofType = s => s !== mine && quotable(s) && codes.has(catalog?.canonical?.(s.icao || s.type) || fold(s.icao || s.type)),
+        byType = list.find(s => ofType(s) && BASE_ID.test(s.id) && !legacyReg(s)) || list.find(s => ofType(s) && !legacyReg(s)) || list
+        .find(ofType);
       return byType ? {
         sheet: byType,
         via: 'type',
@@ -386,7 +456,7 @@
      *  celle du type ; vide : estimation du type). */
     function aircraftRow(st, e, own) {
       const s = sheetFor(st, e || {
-          registration: regOf(own.registration),
+          registration: legacyReg(own),
           type: ''
         }),
         mine = s.own || own || null,
@@ -395,9 +465,10 @@
         [type, tSrc] = pick('type', mine && (catalog?.canonical?.(mine.icao || mine.type) || mine.icao || mine.type), e?.type, e?.origin
           ?.type
           ?.source || src),
-        [callsign, cSrc] = pick('callsign', mine?.callsign, e?.callsigns?.[0], src),
+        // l'indicatif est celui de l'appareil (flotte, référence) ; celui d'une fiche ancienne seulement à défaut (§ 10.35)
+        [callsign, cSrc] = e?.callsigns?.[0] ? [e.callsigns[0], src] : pick('callsign', mine?.callsign, '', src),
         [name, nSrc] = pick('name', mine?.name, e?.variant || e?.type, src),
-        reg = e?.registration || regOf(mine?.registration);
+        reg = e?.registration || legacyReg(mine);
       return {
         kind: 'aircraft',
         source: mine ? 'sheet' : src,
@@ -434,16 +505,16 @@
           sheet: s
         }
         of st.sheets.values()) {
-        const reg = regOf(s.registration),
+        const reg = legacyReg(s),
           e = reg ? st.aircraft.get(reg) : null;
         if (!has(s.id, s.name, s.icao, s.type, s.registration, s.callsign, e?.type, e?.variant, ...(e?.callsigns || []))) continue;
-        // fiche d'un appareil : une seule ligne avec la flotte et la référence ; fiche de type : sa ligne
+        // variante ancienne d'un appareil : une seule ligne avec la flotte et la référence ; base ou variante : sa ligne
         if (reg) withSheet.push(aircraftRow(st, e, s));
         else typeSheets.push({
           kind: 'sheet',
           source: 'sheet',
           key: `sheet:${s.id}`,
-          label: [s.name || s.id, s.icao || s.type].filter(Boolean).join(' — '),
+          label: [s._variant?.label || s.name || s.id, s.icao || s.type].filter(Boolean).join(' — '),
           sheetId: s.id,
           type: catalog?.canonical?.(s.icao || s.type) || s.icao || s.type || '',
           registration: '',
@@ -517,8 +588,16 @@
         const st = await load(),
           id = String(next.id),
           old = st.sheets.get(id)?.sheet || null,
-          at = new Date(now()).toISOString(),
-          s = stamp(old, next, source, at);
+          at = new Date(now()).toISOString();
+        // une fiche nouvelle : identifiant C30J ou C30J-VARIANTE de son type, libre ; une fiche existante garde le sien
+        const bad = old ? '' : checkId(id, typeOfSheet({
+          ...next,
+          id: ''
+        }), x => st.sheets.has(x));
+        if (bad) throw Object.assign(new Error(`aerodb: sheet id ${id} refused (${bad})`), {
+          code: `sheet-id-${bad}`
+        });
+        const s = stamp(old, next, source, at);
         // valeurs écartées venues d'ailleurs (ex. un fichier .lnmperf plus ancien) : gardées comme les autres
         for (const [k, v] of Object.entries(kept || {})) s._kept[k] = [...[].concat(v), ...(s._kept[k] || [])].slice(0, KEPT);
         await reader.put(fileOf(id), s);
@@ -531,7 +610,7 @@
         else doc.profiles.push(plain(s));
         await reader.put(PATHS.fpdb, doc);
         st.sheets.set(id, {
-          sheet: s,
+          sheet: annotate(s),
           own: true
         });
         st.fpdb = doc;
@@ -551,7 +630,27 @@
         }
         st.sheets.delete(key);
       },
-      fileOf
+      fileOf,
+      /** Identifiant d'une fiche nouvelle : '' s'il convient, sinon 'format', 'type' ou 'taken' (checkId). */
+      async checkId(id, type = '') {
+        const st = await load();
+        return checkId(String(id ?? ''), type, x => st.sheets.has(x));
+      },
+      /** Identifiant libre pour une fiche du type : C30J (la base) s'il est libre et sans variante demandée, sinon
+       *  C30J-<VARIANTE> (en majuscules [A-Z0-9-] ; -2, -3… si pris ; C30J-V2… sans variante) ; '' si le type n'est pas un code. */
+      async newId(type, variant = '') {
+        const t = fold(type).replace(/[^A-Z0-9]/g, ''),
+          st = await load(),
+          v = fold(variant).replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        if (!BASE_ID.test(t)) return '';
+        if (!v && !st.sheets.has(t)) return t;
+        const root = v ? `${t}-${v}` : `${t}-V`;
+        let out = v ? root : `${root}2`,
+          k = v ? 2 : 3;
+        while (st.sheets.has(out)) out = v ? `${root}-${k++}` : `${root}${k++}`;
+        return out;
+      },
+      variantOf
     };
     /** Flotte vue par la logique des fiches (demande ChatGPT) : [{ type, model, registrations }]. */
     async function fleetTypes() {
@@ -584,6 +683,8 @@
 
   window.AeroDBRegistry = {
     create,
+    checkId,
+    variantOf,
     readAll,
     mergeSheets,
     stamp,

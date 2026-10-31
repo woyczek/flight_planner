@@ -264,10 +264,29 @@ All the aircraft data in one place, read from every source and written in one pl
     `sheetId` is always the sheet that gives a quote (below).
   - `aircraftOf(result)` gives the current flight's `aircraft` (`{ sheetId, type, registration, callsign, name,
     source }`).
-- **An aircraft's sheet for a quote**: its own (same registration) when it gives a quote (a fuel flow: cruise, or a row
-  of its RPM table), else its type's that gives one (aliases followed by `related`), else none and `estimate(type)`.
-  An incomplete own sheet stays named (`ownSheetId`), so a choice always gives a quote. `resolve(registration)` gives
-  the aircraft, its sheet (`sheetVia`: own, type, estimate), `ownSheetId` and the estimate when there is no sheet.
+- **A sheet is a type or a variant, never an aircraft** (V3 § 10.35, L0, 31 Oct 2026):
+  - **Its id**: the type's code for the base (`C30J`), or the code, a dash and the variant in capitals `[A-Z0-9-]`
+    (`C30J-NAVY`), unique; the variant's label is free (the sheet's `name`). The registry checks the id of a **new** sheet
+    (`put` throws `sheet-id-format`, `sheet-id-type` or `sheet-id-taken`; `AeroDBRegistry.checkId(id, type, taken)`,
+    `sheets.checkId(id, type)`); `sheets.newId(type, variant?)` gives a free one (the base when free, else
+    `C30J-<VARIANT>`, `-2`… when taken, `C30J-V2`… without a variant). An existing sheet keeps its id (`DB_…`, `SB_…`).
+  - **No airframe identity in a sheet**: « Immatriculation » and « Indicatif » are not in `PROFILE_FIELDS`.
+  - **An old sheet that carries a registration** is read as the variant « TYPE · F-XXXX » of that aircraft:
+    `sheet._variant = { of, base: false, label, registration }` (a variant id gives `{ of, base: false, label: name }`,
+    a base `{ of, base: true, label }`), a non-enumerable property, never written nor copied; the sheet keeps all its
+    fields (nothing lost nor hidden). Converting it into a variant is a gesture of the Aircraft module (L2).
+  - **The V2 mirror** (`fpdb.json`) keeps being written as before, a variant like any sheet.
+- **An aircraft's sheet for a quote** (a sheet gives a quote when it has a fuel flow: cruise, or a row of its RPM table):
+  - **fleet schema 2** (the entry has `sheetId`, `modules/aircraft/SPEC`): the sheet it names when it gives a quote
+    (`sheetVia: 'fleet'`); an empty `sheetId`, a sheet that is not there or one without a fuel flow: the type's estimate,
+    never another sheet;
+  - **fleet schema 1** (no `sheetId`), as before: the old sheet carrying its registration when it gives a quote
+    (`sheetVia: 'own'`), else its type's sheet that gives one — the base (`C30J`) first, then a sheet of the type without
+    a registration, then any (aliases followed by `related`; `'type'`) — else none and `estimate(type)`.
+  The sheet linked to the aircraft (named by the fleet, or the old one), even incomplete, stays named (`ownSheetId`).
+  `resolve(registration)` gives the aircraft, its sheet (`sheetVia`: fleet, own, type, estimate), `ownSheetId` and the
+  estimate when there is no sheet. The callsign of a line is the aircraft's (fleet, reference); an old sheet's only
+  without one.
 - **Sheets API**, `aircraft().sheets`:
   - `list()`, `get(id)`, `origins(id)` (source, date and kept values per field);
   - `put(sheet, { source })`: the changed fields are stamped and the previous values kept;
@@ -280,7 +299,13 @@ All the aircraft data in one place, read from every source and written in one pl
   returned as `lost`, so the frame counts a conflict.
 - **Sheets logic** (`AeroDBSheets`, taken over from fuel): reading CSV, JSON, `.lnmperf`, OFP and ChatGPT replies;
   merge with choices; `.lnmperf` writing; EUROCONTROL and SimBrief completions. aerodb configures it with the types,
-  the sheets and the fleet (`fleetTypes()`, for the ChatGPT prompt). Registration and callsign are editable fields.
+  the sheets and the fleet (`fleetTypes()`, for the ChatGPT prompt).
+- **Fields of the type that the company uses** (31 Oct 2026, § 10.35): `maintenance.checkEveryH` and
+  `maintenance.overhaulEveryH` (hours between two checks, two overhauls) and `hourlyCost` (company currency, per block
+  hour), group « Maintenance et coût »; `fuelDensityKgPerL` (kg/L) beside `jetFuel`, its row carrying the bounds of its input
+  (`{ min: 0.5, max: 1 }`, sixth element: the bounds `frame/lib/fuel_units.js` `density()` keeps, the form says them). All optional and outside `.lnmperf`;
+  when a sheet says nothing, the company's defaults (`airline/settings.json`, Réglages) apply; aerodb computes nothing
+  with them.
 - **Airframe and propulsion** (sheet fields `airframe`, `propulsion`, which replace `engineType`; 28 Oct 2026):
   - `catalogFacts(sheet)` gives `{ airframe?, propulsion?, pressurized? }` from the ICAO base, each key only when the base
     gives it (code = `icao`, else `type`, else `id`). Airframe: airship or balloon by the type's record, else the first letter

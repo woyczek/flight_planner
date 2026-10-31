@@ -96,11 +96,16 @@
     ["Identité et format", "Propulsion (auto : base OACI)", "propulsion", "select:piston,turboprop,turboshaft,jet,electric,none,other",
       false
     ],
-    ["Identité et format", "Immatriculation", "registration", "text", false],
-    ["Identité et format", "Indicatif", "callsign", "text", false],
+    // ni immatriculation ni indicatif : une fiche décrit un type ou une variante, jamais un appareil (V3 § 10.35, L0)
     ["Identité et format", "Description", "description", "textarea"],
     ["Identité et format", "Carburant en volume", "fuelAsVolume", "bool"],
     ["Identité et format", "Carburant Jet", "jetFuel", "bool"],
+    // densité du carburant (kg/L), pour passer d'un volume à une masse ; absente : le défaut de la compagnie pour ce carburant ;
+    // lue par frame/lib/fuel_units.js density(), qui écarte une valeur hors de 0,5–1,0 : la même borne pour la saisie (6e élément)
+    ["Identité et format", "Densité du carburant (kg/L)", "fuelDensityKgPerL", "number", false, {
+      min: 0.5,
+      max: 1
+    }],
     ["Carburant et opération", "Carburant utilisable", "usableFuel", "number"],
     ["Carburant et opération", "Taxi", "taxiFuel", "number"],
     ["Carburant et opération", "Taxi · régime nominal (RPM / N1)", "taxi.rpmNominal", "number", false],
@@ -134,7 +139,11 @@
     ["Descente", "Vario (ft/min)", "descent.rateFpm", "number"],
     ["Régime et consommation", "Référence RPM / puissance", "rpmPowerReference", "textarea", false],
     ["Régime et consommation", "Données RPM / fuel flow", "rpmFuelRaw", "textarea", false],
-    ["Régime et consommation", "Base / provenance", "rpmFuelBasis", "textarea", false]
+    ["Régime et consommation", "Base / provenance", "rpmFuelBasis", "textarea", false],
+    // seuils de maintenance du type et coût horaire (V3 § 10.35) : absents, les défauts de la compagnie (airline/settings.json)
+    ["Maintenance et coût", "Révision rapide tous les (h)", "maintenance.checkEveryH", "number", false],
+    ["Maintenance et coût", "Grande révision tous les (h)", "maintenance.overhaulEveryH", "number", false],
+    ["Maintenance et coût", "Coût horaire (par heure bloc)", "hourlyCost", "number", false]
   ];
   /** Clé de comparaison d'un nom d'appareil : majuscules, sans accents ni séparateurs. */
   function aKey(s) {

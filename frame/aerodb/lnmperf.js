@@ -325,9 +325,13 @@
       /** Fiche importée d'un fichier (nouvelle, ou reprise sous l'identifiant id). */
       const importFile = async (name, f, text, id) => {
         const p = lib.parseLnmperf(text, name);
-        let key = id || name.replace(/\.lnmperf$/i, '').replace(/[^\w.-]+/g, '_');
-        if (!id)
-          for (let n = 2; sheets.has(key) || linked.has(key); n++) key = `${key.replace(/_\d+$/, '')}_${n}`;
+        // identifiant de son type (V3 § 10.35) : celui d'avant s'il vaut encore, sinon la base C30J si elle est libre, sinon la
+        // variante C30J-<NOM DU FICHIER> ; un fichier sans code de type n'est pas importé (dit parmi les fichiers illisibles)
+        const type = String(p.icao || p.type || '').toUpperCase(),
+          key = id && (sheets.has(id) || !(await A.sheets.checkId(id, type))) ? id : await A.sheets.newId(type, sheets.has(type) ?
+            name
+            .replace(/\.lnmperf$/i, '') : '');
+        if (!key) throw new Error('no ICAO type');
         p.id = key;
         const s = await A.sheets.put(p, {
           source: 'lnmperf'

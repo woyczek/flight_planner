@@ -273,18 +273,24 @@
         }]
       });
       await FD.sync();
-      await (await db.aircraft()).sheets.put({
-        id: 'MY_FTEST',
-        name: 'Mon A400',
-        icao: 'A400',
-        registration: 'F-TEST',
-        unit: 'kg',
-        cruise: {
-          tasKt: 300
-        }
-      }, {
-        source: 'edit'
+      // une fiche ancienne d'appareil (immatriculation, identifiant hors règle) : elle vient de la V2, comme dans les données réelles
+      const fp0 = await data.get('planner/flight_performance_database_merged.fpdb.json');
+      await seed.put('planner/flight_performance_database_merged.fpdb.json', {
+        ...fp0,
+        profiles: [...fp0.profiles, {
+          id: 'MY_FTEST',
+          name: 'Mon A400',
+          icao: 'A400',
+          registration: 'F-TEST',
+          callsign: 'OLDCS',
+          unit: 'kg',
+          cruise: {
+            tasKt: 300
+          },
+          updatedAt: '2026-10-23T10:00:00Z'
+        }]
       });
+      await FD.sync();
       const C = await db.aircraft(),
         ft = (await C.search('F-TEST', 50)).filter(r => r.registration === 'F-TEST');
       check('one line per registration (own sheet and fleet merged)', ft.length === 1 && ft[0].ownSheetId === 'MY_FTEST' && ft[0]
@@ -295,6 +301,118 @@
       const ftR = await C.resolve('F-TEST');
       check('resolve: own sheet kept as ownSheetId, quote sheet from the type', ftR?.ownSheetId === 'MY_FTEST' && ftR.sheetId ===
         'A400_V2', ftR);
+      // V3 § 10.35, L0 : une fiche décrit un type ou une variante, jamais un appareil
+      const PF = A.lib.PROFILE_FIELDS,
+        fieldAt = path => PF.find(f => f[2] === path);
+      check('schema: neither « Immatriculation » nor « Indicatif » in PROFILE_FIELDS (a sheet has no airframe identity)', !fieldAt(
+        'registration') && !fieldAt('callsign'), PF.map(f => f[2]));
+      check(
+        'schema: « Maintenance et coût » (check and overhaul every h, hourly cost) and the fuel density beside jetFuel, numbers, optional, not in .lnmperf',
+        ['maintenance.checkEveryH', 'maintenance.overhaulEveryH', 'hourlyCost'].every(x => fieldAt(x)?.[0] ===
+          'Maintenance et coût' &&
+          fieldAt(x)[3] === 'number' && fieldAt(x)[4] === false) && fieldAt('fuelDensityKgPerL')?.[3] === 'number' && fieldAt(
+          'fuelDensityKgPerL')[4] === false && fieldAt('fuelDensityKgPerL')[5]?.min === 0.5 && fieldAt('fuelDensityKgPerL')[5]
+        ?.max === 1 && PF.indexOf(fieldAt('fuelDensityKgPerL')) === PF.indexOf(fieldAt('jetFuel')) + 1 && !A
+        .lib
+        .sheetMissingPaths({
+          id: 'X',
+          icao: 'A400'
+        }).some(x => /maintenance|hourlyCost|fuelDensity/.test(x)), PF.slice(-4));
+      const RG = window.AeroDBRegistry;
+      check('id rule: C30J and C30J-VARIANT [A-Z0-9-]; refused: lower case, underscore, a trailing dash, another type, taken', [RG
+        .checkId('C30J', 'C30J'), RG.checkId('C30J-NAVY-2', 'C30J'), RG.checkId('c30j'), RG.checkId('C30J_X'), RG.checkId('C30J-'),
+        RG
+        .checkId('A400-X', 'C30J'), RG.checkId('C30J', '', x => x === 'C30J')
+      ].join() === ',,format,format,format,type,taken', null);
+      const old = await C.sheets.get('MY_FTEST'),
+        lv = old?._variant;
+      check('a sheet that carries a registration is read as the variant « TYPE · F-XXXX », nothing lost nor hidden (never written)',
+        lv?.label === 'A400 · F-TEST' && lv.base === false && lv.registration === 'F-TEST' && old.name === 'Mon A400' && old
+        .registration === 'F-TEST' && !('_variant' in JSON.parse(JSON.stringify(old))), lv);
+      check('search: the old sheet of an aircraft gives one line, the callsign is the aircraft\'s (fleet), the old one only without',
+        ft[0]?.callsign === 'TEST03', ft[0]);
+      let refused = '';
+      try {
+        await C.sheets.put({
+          id: 'DB_A400_F-NEW',
+          icao: 'A400',
+          name: 'x'
+        });
+      } catch (e) {
+        refused = e.code;
+      }
+      check('a new sheet whose id is outside the rule is refused (sheet-id-format), nothing written', refused === 'sheet-id-format' &&
+        !(await data.get('aircraft/sheets/DB_A400_F-NEW.json')), refused);
+      const nb = await C.sheets.newId('A400');
+      await C.sheets.put({
+        id: nb,
+        name: 'A400M',
+        icao: 'A400',
+        unit: 'kg',
+        cruise: {
+          tasKt: 320,
+          fuelFlowPerHour: 3600
+        }
+      });
+      const nv = await C.sheets.newId('A400', 'Atlas long range');
+      await C.sheets.put({
+        id: nv,
+        name: 'A400M Atlas LR',
+        icao: 'A400',
+        unit: 'kg',
+        cruise: {
+          tasKt: 325,
+          fuelFlowPerHour: 3700
+        }
+      });
+      check('newId: the base when free, then the variant in capitals, -2 when taken; nothing without a type code', nb === 'A400' &&
+        nv === 'A400-ATLAS-LONG-RANGE' && await C.sheets.newId('A400') === 'A400-V2' && await C.sheets.newId('a400',
+          'atlas long range') === 'A400-ATLAS-LONG-RANGE-2' && await C.sheets.newId('??') === '', [nb, nv]);
+      check('the V2 mirror keeps being written (fpdb.json), a variant like any sheet', (await data.get(
+        'planner/flight_performance_database_merged.fpdb.json'))?.profiles?.some(x => x.id === nv), null);
+      check('an existing sheet keeps its id outside the rule (legacy MY_FTEST updated)', !!(await C.sheets.put({
+        ...old,
+        name: 'Mon A400 (relu)'
+      })) && (await C.sheets.get('MY_FTEST')).name === 'Mon A400 (relu)', null);
+      // schéma 2 de la flotte (modules/aircraft/SPEC, L1) : la fiche que nomme l'entrée ; vide, l'estimation du type
+      await seed.put('airline/fleet.json', {
+        schema: 2,
+        updated_at: '2026-10-31T10:00:00Z',
+        by: 'website',
+        aircraft: [{
+          type: 'A400',
+          registration: 'F-RBAA',
+          sheetId: nv,
+          callsigns: ['TEST01']
+        }, {
+          type: 'A400',
+          registration: 'F-TEST',
+          sheetId: '',
+          callsigns: ['TEST03']
+        }, {
+          type: 'C30J',
+          registration: 'F-RAJA',
+          sheetId: 'C30J-GONE',
+          callsigns: ['TEST02']
+        }, {
+          type: 'A400',
+          registration: 'F-RBAC',
+          callsigns: ['TEST04']
+        }]
+      });
+      await FD.sync();
+      const D = await db.aircraft(),
+        [s1, s2, s3, s4] = await Promise.all(['F-RBAA', 'F-TEST', 'F-RAJA', 'F-RBAC'].map(r => D.resolve(r)));
+      check('schema 2: the sheet its fleet entry names (via fleet), not its old sheet', s1?.sheetId === nv && s1.sheetVia === 'fleet' &&
+        s1.ownSheetId === nv, s1);
+      check('schema 2: sheetId empty → the type estimate, never another sheet (neither its old sheet nor the base)', s2?.sheetId ===
+        '' && s2.sheetVia === 'estimate' && !!s2.estimate, s2);
+      check('schema 2: a sheet that is not there → the estimate', s3?.sheetId === '' && s3.sheetVia === 'estimate', s3);
+      check('a row without sheetId (schema 1 rule): the type sheet, the base A400 first', s4?.sheetId === 'A400' && s4.sheetVia ===
+        'type', s4);
+      const row = (await D.search('F-RBAA', 50)).filter(r => r.registration === 'F-RBAA');
+      check('search: one line, the quote from the named sheet, the callsign from the fleet', row.length === 1 && row[0].sheetId ===
+        nv && row[0].callsign === 'TEST01', row);
     } catch (e) {
       check('threw', false, e.stack || String(e));
     }
