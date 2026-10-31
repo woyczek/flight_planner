@@ -1,6 +1,6 @@
 {
   "schema": "sog-roadmap/1",
-  "updated": "2026-10-30",
+  "updated": "2026-10-31",
   "owner": "ergonomics session (Simplification interface et ergonomie)",
   "note": {
     "fr": "Ce qui est « livré » doit marcher : un écart est un bug à signaler. Ce qui est « en cours », « prévu » ou « plus tard » n'est pas un bug.",
@@ -78,7 +78,7 @@
       },
       "items": [
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Refonte du lanceur : socle des travaux et verbes par propriétaire, état des travaux conservé, revalidation des chemins de données, statut = détection seule",
           "en": "Launcher refactoring: job base and verbs per owner, job state kept, data path revalidation, status = detection only",
           "de": "Umbau des Launchers: Arbeitsbasis und Verben je Eigentümer, Arbeitszustand bewahrt, Neuvalidierung der Datenpfade, Status = nur Erkennung",
@@ -281,7 +281,7 @@
           "es": "IVAO en el teléfono: inicio de sesión del piloto por el relé (OpenID), su propio token en su dispositivo, tracker leído directamente"
         },
         {
-          "state": "planned",
+          "state": "doing",
           "fr": "Missions (après la stabilisation) : missions communes du dépôt lues par tous, une mission engendre le vol (départ, rendez-vous, arrivée) et sa carte, usage « équipier » du Pilote, CPCO troisième application quand il sera refait",
           "en": "Missions (after the stabilisation): common missions of the repository read by all, a mission generates the flight (departure, rendezvous, arrival) and its map, \"crew member\" usage of the Pilot, CPCO as the third application once rebuilt",
           "de": "Missionen (nach der Stabilisierung): gemeinsame Missionen des Depots für alle lesbar, eine Mission erzeugt den Flug (Abflug, Treffpunkt, Ankunft) und seine Karte, Nutzung „Besatzungsmitglied“ des Piloten, CPCO als dritte Anwendung nach dem Neubau",
@@ -300,7 +300,7 @@
       },
       "items": [
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Refonte du bloc procédures : règles pures partagées avec la Carte, fichier à part, un seul cache (aerodb), une écriture par série de choix",
           "en": "Procedures block refactoring: pure rules shared with the Map, own file, one cache (aerodb), one write per series of choices",
           "de": "Umbau des Verfahrensblocks: reine Regeln mit der Karte geteilt, eigene Datei, ein Cache (aerodb), ein Schreiben je Wahlserie",
@@ -765,7 +765,7 @@
           "es": "TEMSI; SIGMET y METAR del mundo por el relé del lanzador"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Module Météo recodé depuis sa spécification sur la couche météo du cadre (session cloud)",
           "en": "Weather module recoded from its specification on the frame's weather layer (cloud session)",
           "de": "Modul Wetter nach seiner Spezifikation auf der Wetterschicht des Rahmens neu geschrieben (Cloud-Sitzung)",
@@ -972,6 +972,13 @@
           "en": "Administration: the four verbs for every data set (procedures, VAC, aircraft types and sheets) and \"Update everything\"; suite update, workstation backup, folders; fleet and aircraft sheets edited in Maintenance",
           "de": "Verwaltung: die vier Verben für jeden Datensatz (Verfahren, VAC, Flugzeugtypen und -blätter) und „Alles aktualisieren“; Aktualisierung der Suite, Sicherung des Rechners, Ordner; Flotte und Flugzeugblätter in der Wartung bearbeitet",
           "es": "Administración: los cuatro verbos para cada conjunto de datos (procedimientos, VAC, tipos y fichas de aeronaves) y «Actualizar todo»; actualización de la suite, copia de seguridad del equipo, carpetas; flota y fichas de aeronaves editadas en Mantenimiento"
+        },
+        {
+          "state": "planned",
+          "fr": "Réglages › Administration : carte « Coûts et maintenance » (monnaie, seuils de révision par défaut, coût horaire, prix et densité du carburant)",
+          "en": "Settings › Administration: a \"Costs and maintenance\" card (currency, default overhaul thresholds, hourly cost, fuel price and density)",
+          "de": "Einstellungen › Verwaltung: Karte „Kosten und Wartung“ (Währung, Standard-Wartungsschwellen, Stundensatz, Treibstoffpreis und -dichte)",
+          "es": "Ajustes › Administración: tarjeta «Costes y mantenimiento» (moneda, umbrales de revisión por defecto, coste horario, precio y densidad del combustible)"
         }
       ]
     },
@@ -1103,6 +1110,27 @@
           "en": "On-demand reading by State: France through the SIA eAIP without credentials, States with tables through EAD, else Little Navmap",
           "de": "Lesen auf Abruf je Staat: Frankreich über das eAIP des SIA ohne Zugangsdaten, Staaten mit Tabellen über EAD, sonst Little Navmap",
           "es": "Lectura bajo demanda por Estado: Francia por el eAIP del SIA sin credenciales, Estados con tablas por EAD, si no Little Navmap"
+        },
+        {
+          "state": "planned",
+          "fr": "Appareils (V3 § 10.35, décidé le 31/10, code après le 6/11) : une fiche est un type + variante sans immatriculation, un appareil une immatriculation (état, maintenance, heures depuis le carnet, historique) ; ajouter = choisir la fiche puis renseigner ; appareils « vus dans vos vols » à confirmer ; flotte partagée et flotte perso dans le dépôt",
+          "en": "Aircraft (V3 § 10.35, decided 31 Oct, code after 6 Nov): a sheet is a type + variant without registration, an aircraft a registration (state, maintenance, hours from the log, history); add = choose the sheet then fill; aircraft \"seen in your flights\" to confirm; shared and personal fleets in the repository",
+          "de": "Luftfahrzeuge (V3 § 10.35, entschieden am 31.10., Code nach dem 6.11.): ein Datenblatt ist ein Typ + Variante ohne Kennzeichen, ein Luftfahrzeug ein Kennzeichen (Zustand, Wartung, Stunden aus dem Logbuch, Historie); Hinzufügen = Datenblatt wählen, dann ausfüllen; „in Ihren Flügen gesehene“ Luftfahrzeuge zum Bestätigen; gemeinsame und persönliche Flotte im Repository",
+          "es": "Aeronaves (V3 § 10.35, decidido el 31/10, código después del 6/11): una ficha es un tipo + variante sin matrícula, una aeronave una matrícula (estado, mantenimiento, horas del diario, historial); añadir = elegir la ficha y luego rellenar; aeronaves «vistas en sus vuelos» por confirmar; flota compartida y flota personal en el repositorio"
+        },
+        {
+          "state": "planned",
+          "fr": "Maintenance des appareils : révision rapide et grande révision tous les n heures (seuils sur la fiche du type, défauts de la compagnie), atterrissage dur déclaré au compte rendu, dépassement permis et dit (dérogatoire) ; coûts en données (coût horaire, prix et densité du carburant, coût d'une révision)",
+          "en": "Aircraft maintenance: quick check and major overhaul every n hours (thresholds on the type's sheet, airline defaults), hard landing declared in the report, flying beyond allowed and said (derogation); costs as data (hourly cost, fuel price and density, cost of an overhaul)",
+          "de": "Wartung der Luftfahrzeuge: kurze Kontrolle und Grundüberholung alle n Stunden (Schwellen am Typ-Datenblatt, Vorgaben der Gesellschaft), harte Landung im Bericht gemeldet, Überschreitung erlaubt und gesagt (Ausnahme); Kosten als Daten (Stundensatz, Treibstoffpreis und -dichte, Kosten einer Überholung)",
+          "es": "Mantenimiento de las aeronaves: revisión rápida y gran revisión cada n horas (umbrales en la ficha del tipo, valores por defecto de la compañía), aterrizaje duro declarado en el informe, exceder permitido y dicho (derogación); costes como datos (coste horario, precio y densidad del combustible, coste de una revisión)"
+        },
+        {
+          "state": "later",
+          "fr": "Balance financière : par appareil, par pilote, par compagnie, sur une période ; en lecture seule depuis les coûts (heures, carburant, révisions)",
+          "en": "Financial balance: per aircraft, per pilot, per airline, over a period; read-only from the costs (hours, fuel, overhauls)",
+          "de": "Finanzbilanz: je Luftfahrzeug, je Pilot, je Gesellschaft, über einen Zeitraum; nur lesend aus den Kosten (Stunden, Treibstoff, Überholungen)",
+          "es": "Balance financiero: por aeronave, por piloto, por compañía, en un periodo; solo lectura a partir de los costes (horas, combustible, revisiones)"
         }
       ]
     },
