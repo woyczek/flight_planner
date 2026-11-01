@@ -1624,6 +1624,21 @@ redesigned for touch at that point.
          (the static site's policy is fixed at publication; an editable list pushed by a configuration would be an
          exfiltration door). The provider refactoring (one table read by export, join, access, transport and CSP;
          defaults "gitlab") in the roadmap.
+       **One enrolment path** (user, 1 Nov: "double procédure d'enrôlement : deux chemins pour le QR code, le JSON et le
+       lien"): "Ajouter un pilote" absorbs the export card — trigram, name, then on the same screen the QR code, the
+       file and the link (three forms of one configuration, said so), "Créer son jeton" and the message; the card
+       "Exporter une configuration" disappears; on the pilot's side one entry, "Rejoindre la compagnie…", takes the
+       link or the file ("Importer une configuration…" is the same screen, not a second entry).
+       **The administrator's assistant** (user, 1 Nov: "il manque une page d'assistant, qui prend par la main l'admin"):
+       the Maintenance application opens, while the airline is not set up, on one page "Assistant" — a checklist of
+       at most seven steps, each read from the real state and each a link to the existing card, never a copy of it
+       (the morning's lesson): 1 the data repository (GitLab project, the administrator's token in `secrets/`, the
+       remote of data/); 2 the airline (name, administrator's trigram, site); 3 the aeronautical base (zones,
+       Télécharger · Construire · Publier); 4 the first pilot ("Ajouter un pilote"); 5 the devices (pair a phone,
+       the relay); 6 the keys of the airline (IVAO, EAD) when wanted; 7 done — the status block. A step is "fait",
+       "à faire" or "facultatif", with one sentence of what it gives; the assistant is reachable later from the
+       Administration card and the help; it writes nothing itself. Lot Réglages, after the one path; cases A at 390
+       and 1280 on a blank airline and on the user's; help ×4 (the Maintenance manual opens on it).
        Lots: Réglages (owner of join, admin, access): the "Ajouter un pilote" card and the GitLab wording of the join flow,
        default provider gitlab in the export, framagit not proposed; V3 Frame: the journal line (one line on the
        existing listener). Cases A for each; help ×4 (the Maintenance manual's "Administration" chapter and the Pilot
