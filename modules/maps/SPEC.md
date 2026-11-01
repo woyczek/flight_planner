@@ -289,6 +289,9 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   the last full drawing drew (`SiaAero.drawPoints` gives them after the thinning of the symbols: the zoom rule and the thinning
   choose, never the drawing mode), each as a ring of its symbol's colour and size (an aerodrome 6 px, red for a State one, else
   blue; a beacon 4 px, blue) on the paper colour; no label. The picture keeps its look at the start and the end of a gesture.
+  **Its route is the flown path** (user, 1 Nov 2026: « la SID ou STAR doit s'afficher en lieu et place de la route de base »):
+  `S.route.flown`, the route with the chosen SID, STAR and approach in place of the route legs they replace (the missed
+  approach left out), point to point; the plain route only when there is no path.
 - **One scheduler, three states** (`draw.js`, refactor R-M3): `rest` (a full drawing per animation frame when asked:
   `schedule()`), `move` (a gesture: the requests for a full drawing wait; one animation frame at a time draws light or copies),
   `settle` (end of the gesture: back to `rest` with one full drawing, the requests made during the gesture included). One

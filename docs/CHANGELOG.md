@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the light drawing of a gesture follows the chosen SID / STAR** (`modules/maps/draw.js`; SPEC § 5; noreg D98). While the
+  map was moved, the simplified drawing showed the plain route where the full one shows the chosen procedures; it now draws the
+  flown path (the route with the SID, STAR and approach in place of the legs they replace).
+
 - **Fuel: « Nouveau vol », and a new pair of aerodromes clears the old flight** (`modules/fuel/module.js`; SPEC, DECISIONS, help ×4;
   noreg F86) — the user's KSET → KDOV kept the route of France: an aerodrome moved more than 150 NM, or both ends changed, clears the
   route, procedures and OFP (said); a near correction keeps the route; « Nouveau vol » empties the flight after a question, the

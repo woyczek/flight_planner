@@ -268,7 +268,7 @@ airfield in grey dashes. The runway, SID, STAR and approach chosen in Fuel are d
 areas, controlled airspace), the low or high airways depending on your level, the airfields and the beacons, and in each
 one-degree square the minimum safe altitude (the brown figure, in thousands and hundreds of feet: “3⁵” means 3,500 ft).
 The small purple figures along the route are the distances from the departure, in nautical miles. Drag the map with one
-finger, spread two fingers to zoom (during the gesture the map keeps only its lines — airspaces, airways, route,
+finger, spread two fingers to zoom (during the gesture the map keeps only its lines — airspaces, airways, route with the chosen SID and STAR,
 aerodromes and beacons as small rings, the very ones it shows at rest — and its names come back as soon as it stops); “Recentre” (the target, at the top right of the map) comes back to the whole route. The map stays where you put it, even when
 the route changes: only “Recentre” (or another flight) reframes it. Coming back to the map (from Fuel, or after “Done”), you find your framing
 again as long as the route and the chosen procedures have not changed; otherwise the flight is framed, procedures included. While “Around the flight only” is ticked (Layers),
@@ -422,7 +422,7 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: 97204dc50a94 -->
+<!-- fr: e83db8896bf9 -->
 
 <!-- chapter: atmosphere -->
 # Weather

@@ -520,10 +520,11 @@ function draw() {
     } : null
   }) || {};
   covFlush(); // les terrains demandés pendant ce dessin partent ensemble ; redessin une fois à l'arrivée du lot
-  // ce que le dessin léger d'un geste reprendra (pas sur une carte de mission ni pendant le choix sur la carte)
+  // ce que le dessin léger d'un geste reprendra (pas sur une carte de mission ni pendant le choix sur la carte) ; la route est le
+  // chemin volé (SID, STAR et approche choisies à la place des tronçons de route qu'elles remplacent, SPEC § 5), sinon la route
   S.lightSrc = mission || pick || !got0.light ? null : {
     ...got0.light,
-    route
+    route: S.route.flown?.length > 1 ? S.route.flown : route
   };
   S.awHits = got0.airways || [];
   stat(got0.zoom);

@@ -2805,3 +2805,21 @@ def d96(c):
     hidden = [i for i, x in enumerate(d) if i > first and x[1] == 0 and any(y[1] > 0 for y in d[:i])]
     c.eq((jumps, hidden), (0, []), 'the sheet neither changes height nor disappears while the data and the profile are rebuilt', what=f'sheet heights {shown[:12]}')
     c.ok(r['gen'] >= 5 and r['fresh'], f"generation {r['gen']}, fresh {r['fresh']}", 'each arrival was read again, the last one is shown')
+
+
+# ------------------------------------------------------------------------------------------------------ D98
+@case('D98', 'The light drawing of a gesture follows the chosen SID, never the plain route it replaces', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='user, 1 Nov 2026 (« la SID ou STAR doit s’afficher en lieu et place de la route de base »), SPEC § 5: the light drawing’s route is the flown path (S.route.flown: the route with the chosen SID, STAR and approach in place of the legs they replace, the missed approach left out); the plain route only without a path')
+def d98(c):
+    c.open('maps?view=0.9,43.3,2.9,44.1', docs=_lfbo_docs(), flight=False, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.route && (window.__mp.S.route.flown || []).some(p => p.origin === 'sid') && window.__mp.S.lightSrc)",
+            timeout=12000, what='the flown path holds the SID AMOLO 7A and a full drawing kept the light source')
+    r = c.js("""() => { const S = window.__mp.S, k = p => `${p.id || ''}@${(+p.lat).toFixed(5)},${(+p.lon).toFixed(5)}`;
+      return { light: (S.lightSrc.route || []).map(k), flown: (S.route.flown || []).map(k), sid: (S.lightSrc.route || []).filter(p => p.origin === 'sid').length,
+        points: (S.route.points || []).length } }""")
+    c.ok(r['sid'] > 0, f"{r['sid']} SID points of {len(r['light'])}", 'the light drawing’s route holds the SID’s points')
+    c.eq(r['light'], r['flown'], 'it is the flown path, point for point (not the route’s points)', what='light route')
+    c.ok(len(r['light']) > r['points'], f"{len(r['light'])} points against {r['points']} in the route", 'more points than the plain route: the SID replaces its first leg')
