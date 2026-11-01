@@ -53,9 +53,6 @@
       'Adresse der veröffentlichten App (für den Link)',
       'Dirección de la aplicación publicada (para el enlace)'
     ],
-    cfgMake: ['Créer le fichier et le lien', 'Create the file and the link', 'Datei und Link erstellen',
-      'Crear el archivo y el enlace'
-    ],
     cfgLink: ['Lien d’import (un toucher sur le téléphone du pilote)', 'Import link (one tap on the pilot’s phone)',
       'Import-Link (ein Tippen auf dem Telefon des Piloten)', 'Enlace de importación (un toque en el teléfono del piloto)'
     ],
@@ -75,6 +72,12 @@
       'Ningún repositorio de datos que transmitir: el archivo solo configurará la aerolínea y la identidad.'
     ],
     // « Ajouter un pilote » (volet de la carte Administration)
+    apForms: [
+      'Trois formes de la même configuration, à envoyer comme vous voulez : le code QR (le pilote le scanne avec l’appareil photo de son téléphone), le fichier {f} (déjà enregistré) et le lien.',
+      'Three forms of the same configuration, send whichever you like: the QR code (the pilot scans it with their phone’s camera), the file {f} (already saved) and the link.',
+      'Drei Formen derselben Konfiguration, senden Sie, welche Sie möchten: den QR-Code (der Pilot scannt ihn mit der Kamera seines Telefons), die Datei {f} (bereits gespeichert) und den Link.',
+      'Tres formas de la misma configuración, envíe la que quiera: el código QR (el piloto lo escanea con la cámara de su teléfono), el archivo {f} (ya guardado) y el enlace.'
+    ],
     apName: ['Nom du pilote (facultatif, pour le saluer dans le message)', 'Pilot’s name (optional, to greet them in the message)',
       'Name des Piloten (optional, für die Anrede in der Nachricht)', 'Nombre del piloto (opcional, para saludarlo en el mensaje)'
     ],
@@ -231,9 +234,9 @@
   }
 
   /** Carte Administration (niveau Complet) : UN BOUTON par page d'administrateur (SogAdminLinks), sa phrase dessous ; un
-   *  bouton qui porte un volet (edge, cfg) le déplie sous sa ligne. Bancs actifs seulement sur un poste avec lanceur
+   *  bouton qui porte un volet (edge, addPilot) le déplie sous sa ligne. Bancs actifs seulement sur un poste avec lanceur
    *  (sinon un bouton grisé), pages V2 et volets du lanceur montrés seulement avec un lanceur. panels : { edge (le filet
-   *  est affiché), cfg (HTML du volet, vide sans accès à exporter), remote (dépôt distant de data/, vide si data/ n'est pas
+   *  est affiché), addPilot (HTML du volet, vide sans accès à transmettre), remote (dépôt distant de data/, vide si data/ n'est pas
    *  un dépôt git), keys (clés d'API de la compagnie) } ; une ligne dont le volet est vide n'est pas montrée. */
   function adminCard(t, L, panels) {
     const links = window.SogAdminLinks || [];
@@ -415,14 +418,12 @@
     area.value = pilotMessage(box.querySelector('[data-f="apLang"]').value, box.querySelector('[data-f="apName"]').value.trim(), linkUrl
       .split('#')[0], linkUrl);
   }
-  /** Volet d'export d'une configuration (poste, ou appareil réglé sur GitHub) ; env.xsrc : le dépôt à exporter, ou null. */
-  function cfgPanel(env) {
+  /** Le dépôt des données que l'export de « Ajouter un pilote » transmet (celui du dépôt distant de data/ d'un poste, ou de l'accès GitHub / GitLab de l'appareil), posé dans env.xsrc ; null sans dépôt. */
+  function exportSource(env) {
     const {
-      t,
       L,
       gh,
-      remote,
-      fld
+      remote
     } = env;
     const src = L ? (remote?.url ? window.SogConfig?.parseRepo(remote.url) : null) : gh ? {
       host: gh.api ? new URL(gh.api).host : 'github.com',
@@ -436,29 +437,27 @@
       // est alors refusé) ; il part dans la configuration pour que le côté du pilote s'ouvre dessus
       provider: L ? SogConfig.providerOf(remote.url, env.known).provider : SogConfig.kind(gh) // jamais d'api : l'export n'en écrit pas
     } : null;
-    const cfgSteps = exportSteps(t, xsrc);
-    const cfgOut = window.SogConfig && (L || gh) ? `<div class="f-cfgx" data-cfgx>${cfgSteps}
-      ${xsrc ? '' : `<p class="f-warn">${esc(t(T.cfgNoRepo))}</p>`}${xsrc && !xsrc.provider ? `<p class="f-warn">${esc(t(T.providerUnknown))}</p>` : ''}${fld('cfgPilot', T.cfgPilot, '', { cap: true, ph: 'ABC' })}${fld('cfgApp', T.cfgApp, appUrl(), { ph: 'https://…/v3/frame/' })}
-      <div class="f-row"><button type="button" class="primary" data-act="cfgMake">${esc(t(T.cfgMake))}</button></div><p class="f-msg" data-xmsg></p>
-      ${cfgOutHtml(t)}</div>` : '';
     env.xsrc = xsrc;
-    return cfgOut;
+    return xsrc;
   }
   /** Volet « Ajouter un pilote » de la carte Administration : le trigramme, le nom (facultatif), la langue du message (celle de l'écran par défaut), l'adresse de l'appli, « Préparer » ; sous lui
-   *  le lien et le fichier de l'export (makeConfig), les gestes de l'administrateur et le message à envoyer. Vide là où l'export est impossible (env.xsrc, posé par cfgPanel : le même dépôt). */
+   *  les trois formes de la même configuration (le code QR, le fichier, le lien : makeConfig), les gestes de l'administrateur et le message à envoyer. Seul chemin d'enrôlement : il reprend l'export d'une configuration
+   *  (poste avec lanceur, ou appareil réglé sur un dépôt) ; env.xsrc, posé par exportSource : le dépôt à transmettre, ou null (le fichier ne règle alors que la compagnie et l'identité, dit). */
   function addPilotPanel(env) {
     const {
       t,
+      L,
+      gh,
       fld,
       xsrc
     } = env;
-    if (!window.SogConfig || !xsrc) return '';
+    if (!window.SogConfig || !(L || gh)) return '';
     const mine = t(['fr', 'en', 'de', 'es']);
-    return `<div class="f-cfgx" data-addpilot>${xsrc.provider ? '' : `<p class="f-warn">${esc(t(T.providerUnknown))}</p>`}${fld('apTri', T.cfgPilot, '', { cap: true, ph: 'ABC' })}${fld('apName', T.apName, '')}
+    return `<div class="f-cfgx" data-addpilot>${xsrc ? '' : `<p class="f-warn">${esc(t(T.cfgNoRepo))}</p>`}${xsrc && !xsrc.provider ? `<p class="f-warn">${esc(t(T.providerUnknown))}</p>` : ''}${fld('apTri', T.cfgPilot, '', { cap: true, ph: 'ABC' })}${fld('apName', T.apName, '')}
       <label class="f-field">${esc(t(T.apLang))}<select data-f="apLang">${PILOT_LANGS.map(([code, name]) => `<option value="${code}"${code === mine ? ' selected' : ''}>${name}</option>`).join('')}</select></label>
       ${fld('apApp', T.cfgApp, appUrl(), { ph: 'https://…/v3/frame/' })}
       <div class="f-row"><button type="button" class="primary" data-act="pilotMake">${esc(t(T.apPrepare))}</button></div><p class="f-msg" data-xmsg></p>
-      ${cfgOutHtml(t)}<div data-apsteps></div>
+      <p class="f-muted" data-apforms hidden></p>${cfgOutHtml(t)}<div data-apsteps></div>
       <div data-apmessage hidden><h3>${esc(t(T.apMsgTitle))}</h3><label class="f-field"><textarea data-apmsg rows="9" readonly spellcheck="false" aria-label="${esc(t(T.apMsgTitle))}"></textarea></label><div class="f-row"><button type="button" data-act="pilotCopyMsg">${esc(t(T.copy))}</button></div></div></div>`;
   }
   /** Le filet de la limite de la zone du vol, enregistré dès qu'on coche. */
@@ -533,7 +532,6 @@
       b.setAttribute('aria-expanded', String(!p.hidden));
       return;
     }
-    if (act === 'cfgMake') return void await makeConfig(c, b.closest('[data-cfgx]'), env.xsrc);
     if (act === 'pilotMake') {
       // « Préparer » : le fichier et le lien (le même export), puis les gestes de l'administrateur et le message à envoyer
       const box = b.closest('[data-addpilot]'),
@@ -542,6 +540,11 @@
           app: 'apApp'
         });
       if (!made) return;
+      const forms = box.querySelector('[data-apforms]');
+      forms.textContent = made.link ? t(T.apForms, {
+        f: made.name
+      }) : '';
+      forms.hidden = !made.link;
       box.querySelector('[data-apsteps]').innerHTML = pilotSteps(env, made.tri);
       if (!made.link) box.querySelector('[data-xmsg]').textContent = t(T.apNeedApp);
       return drawPilotMessage(box);
@@ -563,11 +566,11 @@
   }
 
   (window.SogSettingsParts ||= {}).admin = {
-    acts: ['adminCopy', 'adminPanel', 'cfgMake', 'cfgCopy', 'pilotMake', 'pilotCopyMsg'],
+    acts: ['adminCopy', 'adminPanel', 'cfgCopy', 'pilotMake', 'pilotCopyMsg'],
     readProfiles,
     PROFILE_DEFAULTS,
     adminCard,
-    cfgPanel,
+    exportSource,
     addPilotPanel,
     live,
     run

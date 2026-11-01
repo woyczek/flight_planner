@@ -12,8 +12,8 @@
   //     link(id) rend l'adresse de son chapitre ;
   //   · tutoriels (frame/help/tutorial/<id>.<langue>.md, anglais d'abord) : écran #help?t=<id>, captures dans img/ ;
   //     langue absente : l'anglais ; carte d'accueil à la première ouverture (welcome), jusqu'à sa fermeture ou à
-  //     l'ouverture d'un tutoriel (device/help.json, welcomed) ; elle mène aussi à l'import d'une configuration
-  //     (#settings?import=1).
+  //     l'ouverture d'un tutoriel (device/help.json, welcomed) ; elle mène aussi à l'assistant « Rejoindre la compagnie »
+  //     (#settings?join=1).
   //   · carte « Comment s'en servir » : un ✕ (« Masquer ») la masque pour ce module sur l'appareil (device/help.json,
   //     hidden) ; l'écran d'aide propose « Revoir les premiers pas » dans le chapitre d'un module masqué ;
   //   · aide au bon paragraphe : #help?m=<module>&a=<ancre> ouvre le chapitre et défile jusqu'au paragraphe, surligné

@@ -18,10 +18,10 @@
   //     frame/settings/admin_links.js (SogAdminLinks) — seuils de la carte, limite de la zone du vol (option « edge » de
   //     airline/map_profiles.json), export d'une configuration pour un pilote, feuille de route, diagnostic, bancs (actifs
   //     sur un poste avec lanceur), pages V2 du poste (avec un lanceur seulement) ; rien de l'administrateur ailleurs ;
-  //   · configuration d'un pilote (frame/settings/config.js, SogConfig) : « Exporter une configuration pour un pilote… »
-  //     dans la carte Accès d'un poste (fichier sog-config-<TRI>.json et lien #settings?config=…) ; « Importer une
-  //     configuration… » (fichier), le lien, ou #settings?import=1 (carte d'accueil) : carte « Configuration reçue » en
-  //     tête, « Appliquer » écrit identité, usages et accès (testé avant), puis synchronise et propose Données hors ligne.
+  //   · configuration d'un pilote (frame/settings/config.js, SogConfig) : « Ajouter un pilote » (carte Administration) : le fichier
+  //     sog-config-<TRI>.json, le lien #settings?config=… et son code QR ; une seule entrée côté pilote, « Rejoindre la compagnie… » (carte
+  //     Accès) : le lien collé ou le fichier choisi sur l'écran de l'assistant, #settings?join=1 ou #settings?import=1 (carte d'accueil) : carte
+  //     « Configuration reçue » en tête, « Appliquer » écrit identité, usages et accès (testé avant), puis synchronise et propose Données hors ligne.
   //   · Bloc « État » en première carte (règle 14 de V3_SPECIFICATION.md § 7.1 : les lignes de l'ancien pop-up « i »), dessiné par
   //     le cadre qui en a l'état (ctx.status.html()), posé ici, puis rendu vivant par le cadre (ctx.status.bind) ;
   // Fichiers de l'écran (INTEGRATION.md § 1, chargés avant celui-ci) : kit.js (aides et textes communs), launcher.js
@@ -210,15 +210,6 @@
     ],
     joinGo: ['Reprendre', 'Resume', 'Fortsetzen', 'Retomar'],
     cfgJoin: ['Rejoindre la compagnie…', 'Join the airline…', 'Der Fluggesellschaft beitreten…', 'Unirse a la aerolínea…'],
-    cfgImport: ['Importer une configuration…', 'Import a configuration…', 'Konfiguration importieren…',
-      'Importar una configuración…'
-    ],
-    cfgImportHint: [
-      'Votre compagnie vous a envoyé une configuration (fichier sog-config ou lien) ? Elle règle cet appareil en quelques gestes.',
-      'Did your airline send you a configuration (sog-config file or link)? It sets up this device in a few steps.',
-      'Hat Ihnen Ihre Fluggesellschaft eine Konfiguration geschickt (sog-config-Datei oder Link)? Sie richtet dieses Gerät in wenigen Schritten ein.',
-      '¿Su aerolínea le envió una configuración (archivo sog-config o enlace)? Configura este dispositivo en pocos pasos.'
-    ],
     // presse-papiers indisponible (appareil appairé en http) : le texte est montré sélectionné
     cfgTitle: ['Configuration reçue', 'Configuration received', 'Erhaltene Konfiguration', 'Configuración recibida'],
     cfgBadSchema: ['Ce fichier n’est pas une configuration SOG (schéma « {s} ») : rien n’est changé.',
@@ -442,8 +433,9 @@
     let inErr = '';
     if (q.get('config') && window.SogConfig && window.SogJoin) {
       try {
-        const r = SogConfig.validate(await SogConfig.unpack(q.get('config')));
-        if (r.ok) {
+        const r = await P.actions.readConfigLink(q.get('config'));
+        if (!r) inErr = t(T.cfgBadFile);
+        else if (r.ok) {
           await SogJoin.start(c.own, r.cfg);
           history.replaceState(null, '', `${location.pathname}${location.search}#settings?join=1`);
         } else inErr = P.actions.cfgError(r, t);
@@ -457,7 +449,7 @@
     // (par le lanceur), github (transport de l'appareil : GitHub ou une instance GitLab, il n'en connaît que ces deux), nodata
     const access = !jd ? 'nodata' : L ? (gitState === 'repo' ? (sameRepo(remote?.url, SogConfig.cloneUrl(jd)) ? 'same' : 'other') :
       gitState === 'absent' ? 'clone' : 'adopt') : 'github';
-    if (window.SogJoin && /[?&]join=/.test(location.hash)) return {
+    if (window.SogJoin && /[?&](join|import)=/.test(location.hash)) return {
       page: SogJoin.render(view, {
         t,
         esc,
@@ -475,7 +467,8 @@
         howtoHtml,
         copy,
         copyShown: T.copyShown,
-        pick: () => P.actions.pickConfig(c, view)
+        pick: () => P.actions.pickConfig(c, view),
+        paste: text => P.actions.joinFromLink(c, text, view)
       })
     };
     return {
@@ -487,7 +480,7 @@
   }
 
   /** Pose la page : le panneau d'aide, les groupes ou la seule carte demandée par l'adresse, leur câblage. env : le contexte de l'écran ; cards : les cartes déjà construites ;
-   *  parts : { cfgOut, addPilotOut, edgeShow, runwayZoom }, ce que la carte Administration reçoit de plus. */
+   *  parts : { addPilotOut, edgeShow, runwayZoom }, ce que la carte Administration reçoit de plus. */
   async function placePage(env, cards, parts) {
     const {
       view,
@@ -498,14 +491,12 @@
       focus
     } = env;
     const {
-      cfgOut,
       addPilotOut,
       edgeShow,
       runwayZoom
     } = parts;
     const help = await c.helpPanel?.().catch(() => null);
     const adminHtml = lvl === 3 || focus === 'admin' ? P.admin.adminCard(t, L, {
-      cfg: cfgOut,
       addPilot: addPilotOut,
       edge: edgeShow,
       runway: runwayZoom,
@@ -603,7 +594,6 @@
     };
   }
 
-  /** Lien `#settings?import=1` (carte d'accueil) : le bouton d'import de la configuration est mis à portée, son groupe (Accès) ouvert d'abord. */
   /** #settings?card=admin&panel=<volet> (le lien de la carte Accès vers « Dépôt distant de data/ ») : le volet de la carte
    *  Administration déplié et amené à l'écran ; un volet inconnu ou absent à ce niveau : rien. */
   function focusPanel(view, q) {
@@ -617,20 +607,6 @@
     setTimeout(() => b.scrollIntoView({
       block: 'start'
     }), 0);
-  }
-
-  function focusImport(view, q) {
-    if (q.get('import')) {
-      P.actions.dropConfigHash(); // une fois : le dessin suivant (après le choix du fichier) reste en tête
-      const b = view.querySelector('[data-act="cfgImport"]');
-      b?.closest('details.f-group')?.setAttribute('open', ''); // son groupe (Accès) ouvert d'abord
-      setTimeout(() => {
-        b?.scrollIntoView({
-          block: 'center'
-        });
-        b?.focus();
-      }, 0);
-    }
   }
 
   const DESK = new WeakSet(); // vues qui écoutent déjà « frame-desk »
@@ -747,11 +723,10 @@
     show(P.cards.backup(env));
     // carte Accès toujours : sur un lanceur, le dépôt distant de data/ (launcher.js) ; sinon dépôt GitHub et jeton (access.js)
     cards.push(L ? P.launcher.accessHtml(env) : P.access.accessHtml(env));
-    // configuration d'un pilote, dans la carte Accès : importer (toujours, en tête), exporter (poste ou accès GitHub réglé)
-    const cfgIn = P.cards.cfgImport(env);
-    const cfgOut = P.admin.cfgPanel(env); // volet d'export de la carte Administration ; env.xsrc : le dépôt à exporter
-    const addPilotOut = P.admin.addPilotPanel(env); // volet « Ajouter un pilote » : là où l'export est possible (le même env.xsrc)
-    // l'import reste dans la carte Accès (affaire du pilote) ; l'export est une page de l'administrateur : carte Administration
+    // « Rejoindre la compagnie… » en tête de la carte Accès (affaire du pilote) ; « Ajouter un pilote » (affaire de l'administrateur) est dans la carte Administration
+    const cfgIn = P.cards.joinEntry(env);
+    P.admin.exportSource(env); // env.xsrc : le dépôt des données que « Ajouter un pilote » transmet
+    const addPilotOut = P.admin.addPilotPanel(env); // volet « Ajouter un pilote » : là où l'export est possible
     const ai = cards.findIndex(x => x.startsWith('<div class="f-card" data-card="access">'));
     if (ai >= 0) cards[ai] = cards[ai].replace(/^(<div class="f-card" data-card="access"><h2>[^<]*<\/h2>)/, `$1${cfgIn}`);
     // synchronisation : montrée si un échange est coché ou tant que des écritures attendent (access.js)
@@ -771,7 +746,6 @@
     // fiches Little Navmap (.lnmperf), si un lanceur sert la page : carte écrite par aerodb (frame/aerodb/lnmperf.js)
     show(P.cards.lnmperf(env));
     await placePage(env, cards, {
-      cfgOut,
       addPilotOut,
       edgeShow,
       runwayZoom
@@ -839,8 +813,6 @@
     // actions
     P.actions.wire(env);
     // #settings?offline=1 (fin de l'assistant) : la carte Données hors ligne seule (focus), l'adresse reste telle quelle
-    // #settings?import=1 (carte d'accueil) : le bouton d'import à portée
-    focusImport(view, q);
     focusPanel(view, q);
     P.admin.live(env); // filet de la limite de la zone du vol, enregistré aussitôt
   }

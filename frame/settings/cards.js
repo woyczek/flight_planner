@@ -121,12 +121,12 @@
       <div class="f-row"><button type="button" class="primary" data-act="export">${esc(t(T.export))}</button><button type="button" data-act="import">${esc(t(T.import))}</button><button type="button" data-act="replace">${esc(t(T.replace))}</button><input type="file" accept="application/json,.json" data-file hidden></div></div>`;
     return '';
   };
-  /** Volet d'import d'une configuration, en tête de la carte Accès (vide si le module des configurations n'est pas chargé). */
-  const cfgImport = env => {
+  /** L'unique entrée « Rejoindre la compagnie… » de la carte Accès (en tête ; vide si le module des configurations n'est pas chargé) : le lien, le code QR ou le fichier reçu s'y traitent, sur l'écran de l'assistant. */
+  const joinEntry = env => {
     const {
       t
     } = env;
-    return window.SogConfig ? `<p class="f-muted">${esc(t(T.cfgImportHint))}</p><div class="f-row"><button type="button" data-act="cfgJoin">${esc(t(T.cfgJoin))}</button><button type="button" data-act="cfgImport">${esc(t(T.cfgImport))}</button><input type="file" accept="application/json,.json" data-cfgfile hidden></div>` : '';
+    return window.SogConfig ? `<div class="f-row"><button type="button" data-act="cfgJoin">${esc(t(T.cfgJoin))}</button></div>` : '';
   };
   /** Carte Données hors ligne (squelette : l'état vivant est posé par settings.js) ; vide à Découverte. */
   const offline = env => {
@@ -198,7 +198,7 @@
     design,
     usages,
     backup,
-    cfgImport,
+    joinEntry,
     offline,
     ivao,
     wx,

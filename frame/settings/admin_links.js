@@ -5,7 +5,7 @@
   // docs/technique/V3_SPECIFICATION.md § 7.1), rien de l'administrateur n'est sur les autres cartes. Chaque entrée :
   // { id, href (adresse de l'appli « #… », ou chemin relatif à la racine de la suite ; same : ouvert dans le même onglet,
   // pour une autre application du cadre « frame/?app=… »), act (action de la carte, au lieu
-  // d'une adresse), panel (le bouton déplie un volet de la carte, écrit par settings.js : edge, cfg, remote, keys), primary
+  // d'une adresse), panel (le bouton déplie un volet de la carte, écrit par settings.js : edge, addPilot, remote, keys), primary
   // (bouton d'une page de réglage de l'administrateur), where (app : partout ; bench : un banc ou une démonstration, bouton
   // actif seulement sur un poste avec lanceur ; v2 : page V2 du poste, montrée seulement si un lanceur sert la page ;
   // launcher : réglage du lanceur de ce poste, montré seulement si un lanceur sert la page), title,
@@ -49,20 +49,6 @@
       'The zoom from which the map draws the runway thresholds (small vector and designator), for the whole airline; below it, nothing is drawn.',
       'Die Zoomstufe, ab der die Karte die Pistenschwellen zeichnet (kleiner Vektor und Bezeichnung), für die ganze Fluggesellschaft; darunter wird nichts gezeichnet.',
       'El zoom a partir del cual el mapa dibuja los umbrales de pista (pequeño vector y designador), para toda la aerolínea; por debajo, no se dibuja nada.'
-    ]
-  }, {
-    id: 'cfg',
-    panel: 'cfg',
-    where: 'app',
-    primary: true,
-    title: ['Exporter une configuration pour un pilote', 'Export a configuration for a pilot',
-      'Konfiguration für einen Piloten exportieren', 'Exportar una configuración para un piloto'
-    ],
-    text: [
-      'Un fichier et un lien qui règlent l’appli d’un pilote : la compagnie, le dépôt des données, son trigramme et le mode d’emploi du jeton. Jamais de jeton ni de secret.',
-      'A file and a link that set up a pilot’s app: the airline, the data repository, their trigram and how to create the token. Never a token or a secret.',
-      'Eine Datei und ein Link, die die App eines Piloten einrichten: die Fluggesellschaft, das Datenrepository, sein Kürzel und die Anleitung für das Token. Nie ein Token oder Geheimnis.',
-      'Un archivo y un enlace que configuran la app de un piloto: la aerolínea, el repositorio de datos, su trigrama y cómo crear el token. Nunca un token ni un secreto.'
     ]
   }, {
     id: 'addPilot',

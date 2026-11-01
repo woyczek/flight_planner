@@ -1954,25 +1954,25 @@ def a51(c):
 
     # export from the workstation: refused for an unknown remote, written with provider gitlab for a known one
     def export(app='https://example.test/v3/frame/'):
-        c.tap('[data-admin="cfg"] > button')
-        c.page.fill('[data-adminpanel="cfg"] input[data-f="cfgPilot"]', 'ABC')
-        c.page.fill('[data-adminpanel="cfg"] input[data-f="cfgApp"]', app)
-        c.tap('[data-adminpanel="cfg"] [data-act="cfgMake"]')
+        c.tap('[data-admin="addPilot"] > button')
+        c.page.fill('[data-adminpanel="addPilot"] input[data-f="apTri"]', 'ABC')
+        c.page.fill('[data-adminpanel="addPilot"] input[data-f="apApp"]', app)
+        c.tap('[data-adminpanel="addPilot"] [data-act="pilotMake"]')
         c.wait(800)
 
     c.open('settings', docs=LEVEL3)
-    c.until("!!document.querySelector('[data-admin=\"cfg\"]')", what='the export line')
+    c.until("!!document.querySelector('[data-admin=\"addPilot\"]')", what='the « Ajouter un pilote » line (the export)')
     if c.count('[data-group="admin"]') and not c.js("document.querySelector('[data-group=\"admin\"]').open"):
         c.tap('[data-group="admin"] > summary')
     export()
-    c.eq(norm(c.js("document.querySelector('[data-adminpanel=\"cfg\"] [data-xmsg]').textContent")), norm(tx('frame/settings/kit.js', 'providerUnknown', c.lang)), 'an unknown source: the export is refused with the message', what='export refusal')
-    c.eq(c.js("document.querySelector('[data-adminpanel=\"cfg\"] [data-cfgout]').hidden"), True, 'nothing is written', what='export output')
+    c.eq(norm(c.js("document.querySelector('[data-adminpanel=\"addPilot\"] [data-xmsg]').textContent")), norm(tx('frame/settings/kit.js', 'providerUnknown', c.lang)), 'an unknown source: the export is refused with the message', what='export refusal')
+    c.eq(c.js("document.querySelector('[data-adminpanel=\"addPilot\"] [data-cfgout]').hidden"), True, 'nothing is written', what='export output')
     c.open('settings', docs=LEVEL3 + keys('https://git.example.test/api/v4'))
-    c.until("!!document.querySelector('[data-admin=\"cfg\"]')", what='the export line')
+    c.until("!!document.querySelector('[data-admin=\"addPilot\"]')", what='the « Ajouter un pilote » line (the export)')
     if c.count('[data-group="admin"]') and not c.js("document.querySelector('[data-group=\"admin\"]').open"):
         c.tap('[data-group="admin"] > summary')
     export()
-    out = c.js("document.querySelector('[data-adminpanel=\"cfg\"] [data-cfglink]').value")
+    out = c.js("document.querySelector('[data-adminpanel=\"addPilot\"] [data-cfglink]').value")
     cfg = c.js("(l) => SogConfig.unpack(l.split('config=')[1])", out)
     c.eq([cfg['data']['provider'], cfg['data']['host'], cfg['data']['repo']], ['gitlab', 'git.example.test', 'grp/proj'], 'the export writes the provider the device configuration gave', what='exported data')
 
@@ -2469,6 +2469,9 @@ def a67(c):
     c.ok(link.startswith(_AP_APP + '#settings?config='), link[:80], 'the link is the export\u2019s: the app address and #settings?config=…')
     cfg = c.js("(l) => SogConfig.unpack(l.split('config=')[1])", link)
     c.eq([cfg['data']['provider'], cfg['data']['host'], cfg['data']['repo'], cfg['identity']['trigram']], ['gitlab', 'gitlab.com', 'acme/data', 'ABC'], 'the configuration carries the real repository (gitlab) and the trigram, upper case', what='configuration')
+    c.eq(norm(c.text(f'{box} [data-apforms]')), norm(tx(_AP_FILE, 'apForms', c.lang).replace('{f}', 'sog-config-ABC.json')), 'the three forms of the same configuration are said, above them', what='three forms')
+    order = c.js(f"(() => {{ const q = s => document.querySelector('{box} ' + s), after = (a, b) => !!(q(a).compareDocumentPosition(q(b)) & Node.DOCUMENT_POSITION_FOLLOWING); return [after('[data-f=apName]', '[data-apforms]'), after('[data-apforms]', '[data-cfgout]'), after('[data-cfgout]', '[data-apsteps]'), after('[data-apsteps]', '[data-apmessage]')] }})()")
+    c.eq(order, [True, True, True, True], 'the order: the fields, the three forms (QR, link, file), the steps, the message', what='order')
     steps = c.text(f'{box} [data-apsteps]')
     day = (datetime.datetime.now(datetime.timezone.utc).date() + datetime.timedelta(days=90)).isoformat()
     c.eq(c.attr(f'{box} [data-apsteps] ol a', 'href'), 'https://gitlab.com/acme/data/-/settings/access_tokens', 'the direct link of the project\u2019s access tokens page', what='access tokens link')
@@ -2684,4 +2687,42 @@ def a72(c):
     c.until("!!document.querySelector('[data-card=access] [data-msg]')?.textContent.trim() && document.querySelector('[data-card=access] [data-msg]').textContent !== '…'", timeout=15000, what='the test answers')
     c.eq([c.attr('[data-card="access"] [data-msg]', 'data-kind'), norm(c.text('[data-card="access"] [data-msg]'))], ['ok', norm(tx('frame/settings/access.js', 'testOk', c.lang).replace('{b}', 'main'))],
          'a project token with an expiry: the plain « branch read » message', what='plain')
+    c.check_errors()
+
+
+@case('A73', 'One way to enrol: « Ajouter un pilote » is the only export; the Access card has one entry « Rejoindre la compagnie… », the assistant takes a pasted link or a file', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame/settings SPEC 3, 5, 7 (the user, 1 Nov 2026: « deux chemins pour le QR code, le JSON et le lien »): one path; Administration has no « Exporter une configuration » any more; Access has one join entry and no import button; the assistant without a configuration pastes a link (the whole address is enough) or picks the file; #settings?import=1 opens it')
+def a73(c):
+    c.context.route(re.compile(r'/__setup/'), lambda r: r.abort())
+    settings_file = 'frame/settings/settings.js'
+    c.open('settings', docs=LEVEL3 + _ap_keys('gitlab', 'https://gitlab.com/api/v4', 'acme/data'))
+    c.until("!!document.querySelector('[data-admin=\"addPilot\"]') && !!document.querySelector('[data-card=access]')", timeout=15000, what='the Administration and Access cards')
+    c.eq([c.count('[data-admin="cfg"]'), c.count('[data-adminpanel="cfg"]'), c.count('[data-admin="addPilot"]')], [0, 0, 1], 'Administration: « Ajouter un pilote » only, no second export', what='administration')
+    c.js("document.querySelector('[data-card=access]').closest('details')?.setAttribute('open', '')")
+    entries = c.js("[...document.querySelectorAll('[data-card=access] [data-act]')].map(b => b.dataset.act).filter(a => /^cfg/.test(a))")
+    c.eq([entries, c.count('[data-cfgfile]')], [['cfgJoin'], 0], 'the Access card has one join entry: no import button, no hidden file input of its own', what='access')
+    c.eq(norm(c.text('[data-card=access] [data-act="cfgJoin"]')), norm(tx(settings_file, 'cfgJoin', c.lang)), 'it is « Rejoindre la compagnie… »', what='join text')
+    c.tap('[data-card=access] [data-act="cfgJoin"]')
+    c.until("!!document.querySelector('[data-jlink]')", timeout=15000, what='the assistant without a configuration')
+    c.eq([c.count('[data-jact="paste"]'), c.count('[data-jact="pick"]'), c.count('[data-card="join"][data-step]')], [1, 1, 0], 'it offers the pasted link and the file picker on one screen', what='no configuration')
+    # a link that is nothing: said, nothing started
+    c.page.fill('[data-jlink]', 'not a link')
+    c.tap('[data-jact="paste"]')
+    c.wait(600)
+    c.eq(c.count('[data-card="join"][data-step]'), 0, 'a link that is not one starts nothing', what='bad link')
+    # the whole address of the link pasted, as a pilot copies it from a message: the assistant starts
+    link = c.js("() => SogConfig.pack({ schema: 'sog-config/1', identity: { trigram: 'ABC' }, data: { host: 'gitlab.com', repo: 'acme/data', branch: 'main', provider: 'gitlab' } })")
+    c.page.fill('[data-jlink]', f'Bonjour ! https://example.test/v3/frame/#settings?config={link} a bientot')
+    c.tap('[data-jact="paste"]')
+    c.until("!!document.querySelector('[data-card=\"join\"][data-step=\"1\"]')", timeout=15000, what='the pasted link starts the assistant')
+    c.eq(c.doc('device/join.json')['cfg']['data']['repo'], 'acme/data', 'the configuration of the link is the one the assistant works on', what='started')
+    # the welcome card\u2019s address opens the same screen, and the file picker starts it too
+    c.open('settings?import=1', docs=LEVEL3 + [['device/join.json', {}, 'cache']], wait=False)   # no assistant under way
+    c.until("!!document.querySelector('[data-jlink]')", timeout=15000, what='#settings?import=1 opens the assistant without a configuration')
+    cfg = c.js("() => SogConfig.build({ data: { host: 'gitlab.com', repo: 'acme/other', branch: 'main', provider: 'gitlab' }, trigram: 'XYZ' })")
+    with c.page.expect_file_chooser() as fc:
+        c.tap('[data-jact="pick"]')
+    fc.value.set_files(files=[{'name': 'sog-config-XYZ.json', 'mimeType': 'application/json', 'buffer': json.dumps(cfg).encode('utf-8')}])
+    c.until("!!document.querySelector('[data-card=\"join\"][data-step=\"1\"]')", timeout=15000, what='the chosen file starts the assistant')
+    c.eq(c.doc('device/join.json')['cfg']['data']['repo'], 'acme/other', 'the file\u2019s configuration is the one the assistant works on', what='file started')
     c.check_errors()

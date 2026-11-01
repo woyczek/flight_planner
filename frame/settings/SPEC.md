@@ -43,7 +43,7 @@ diagnostic, admin); the split is a matter of size, not of behaviour, and a regen
     joining resume) come first, outside groups and outside the count; they go once dealt with.
   - A line of the status block that leads to a card opens that card's group first (listened to in the capture phase,
     before the frame brings the card under the header); so do "Diagnostics" of the Administration card, the
-    `#settings?offline=1` and `#settings?import=1` entries.
+    `#settings?offline=1` entry, and `#settings?import=1` (which now opens the assistant of § 7).
 - **A card reached by its address is shown whatever the level; the level only filters the list** (ergonomics session,
   28 Oct 2026): `#settings?card=<name>` (a `data-card` name: `offline`, `backup`, `wx`, `lan`, `lnmperf`, `admin`…) and
   `#settings?offline=1` (the joining assistant's last button) draw that card alone, at the top, under a "← Settings" link
@@ -245,12 +245,11 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
 11. **Administration** (level Full only; absent otherwise), after About: **one button per administrator page** (§ 6), each
    with its sentence under it, 44 px high: "Map threshold tuning" (`#maps?tune=1`), "Flight zone limit" (folds a panel open under
    its button: a box "Show the edge line of the flight zone limit", saved at once, for the airline, as the key `edge` of
-   `airline/map_profiles.json`; shown by default; the contract is `INTEGRATION.md` § 4), "Export a configuration for a pilot"
-   (folds the export of § 5 open; absent when the device has no repository to export), "Add a pilot" (folds the panel of § 5 open: the
-   same export with the administrator's steps and the message to send; shown where the export is), on a launcher "Remote repository
+   `airline/map_profiles.json`; shown by default; the contract is `INTEGRATION.md` § 4), "Add a pilot" (folds the panel of § 5 open: the one path of enrolment — the file, the link and the QR code, the administrator's steps, the
+   message to send; shown on a workstation with a launcher or a device set up on a repository), on a launcher "Remote repository
    of data/" and "Airline API keys (IVAO, EAD Basic)" (panels, § 3 items 6 and 9), then the roadmap, the diagnostics
-   and the benches and V2 pages of § 6. The export used to be a fold of the Access card; the import ("Join the airline…",
-   "Import a configuration…") stays there, it is the pilot's.
+   and the benches and V2 pages of § 6. There is no separate « Export a configuration » (1 Nov 2026, the user: « deux chemins pour le QR code, le JSON et le
+   lien »): « Add a pilot » is the only way to make a configuration; the pilot's single entry, "Join the airline…", is in the Access card.
 
 Under the screen's introduction, the folded "How to use" panel of the Settings chapter (`frame/settings/help/`,
 `frame/help/SPEC.md`).
@@ -309,19 +308,21 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
   uses the REST API), 90 days advised and 365 at most, and sends it apart from the configuration link (§ 10.36, 31 Oct
   2026); the pilot pastes it once. A phone reaches gitlab.com directly since the page's policy lists it (48fc586c2); other hosts —
   ask the administrator. Each with the repository's exact address.
-- **Export**, in the Administration card (Full level) of a workstation (launcher) or of a device set up on GitHub: the
-  button "Export a configuration for a pilot" opens a panel that asks the pilot's trigram and the address of the published app (this one when it is published
-  over https, else the last one given, kept in `localStorage` `sogFrame:appUrl`), then "Create the file and the link":
+- **Export** (the one path, 1 Nov 2026), in the Administration card (Full level) of a workstation (launcher) or of a device set up on a repository: the
+  button "Add a pilot" (below) opens a panel that asks the pilot's trigram and the address of the published app (this one when it is published
+  over https, else the last one given, kept in `localStorage` `sogFrame:appUrl`), then "Prepare" (the three forms of one configuration, said as such above them):
   `sog-config-<TRI>.json` is downloaded, and the link `<app>#settings?config=<z + base64url of the deflate-raw JSON>`
   (`j` + base64url of the JSON where the browser cannot compress) is shown with "Copy the link". A local address is
   flagged: it opens only on that workstation.
-- **Administrator's steps**, listed at the top of the export panel: invite the pilot's account on the repository
+- **Administrator's steps** (GitHub; the GitLab steps are those of « Add a pilot »), listed under the three forms: invite the pilot's account on the repository
   (GitHub: Write role, link to `https://github.com/<repo>/settings/access`; GitLab / framagit: Developer role, link to
   the project's members page), export, then send the link or the file, or show the **QR code** of the link
   (`frame/lib/qr.js`, below the link). The link carries the configuration without its how-to (rebuilt from the template
   at import), so the code stays small (about version 15).
-- **Import**: "Join the airline…" and "Import a configuration…" at the top of the Access card (always), the link
-  (`#settings?config=…`), and the welcome card of the first opening (`#settings?join=1`). The file or link is read
+- **Import** (the one entry, 1 Nov 2026): "Join the airline…" at the top of the Access card (always: there is no separate "Import a configuration…"),
+  the link (`#settings?config=…`, or the QR code, which the phone's camera reads and which opens that link), and the welcome card of the first
+  opening (`#settings?join=1`; `#settings?import=1` opens the same screen). The assistant without a configuration (§ 7) offers, on one screen, a
+  field to paste the link (the whole address, or only its `config=` value) and "Choose the file…". The file or link is read
   (256 KB at most, decompressed too) and checked: another schema, a missing trigram or an invalid field is refused with
   a message, nothing changed; only the known fields are kept. A valid one starts the assistant (§ 7).
 - **Access the configuration would set**: on a launcher, `data/` already following that repository — nothing (no token
@@ -362,14 +363,14 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
 
 - **A declared list**, depending on no module: `{ id, href | act | panel, primary, where, title, text }`, texts in four
   languages. **Every entry is drawn as one button** (rule 18): `href` a link styled as a button, `act` an action of the card,
-  `panel` a button that folds open the panel of its line (`edge`, `cfg`, `addPilot`, `remote`, `keys`, written by the settings files;
+  `panel` a button that folds open the panel of its line (`edge`, `addPilot`, `remote`, `keys`, written by the settings files;
   a line whose panel is empty is not drawn), `primary` the accent
   colour of the administrator's own pages. `where`: `app` (everywhere), `bench` (a bench or demonstration page served by the launcher: a link only on a
   workstation with a launcher, otherwise a greyed button; its sentence ends with "workstation with launcher
   only"), `v2` (a V2 page of the workstation: shown only when a launcher serves the page), `launcher` (a setting of
   this computer's launcher: shown only when a launcher serves the page).
 - **Today**: "Map threshold tuning" `#maps?tune=1` (read only on a phone), "Flight zone limit" (`panel: edge`), "Export a
-  configuration for a pilot" (`panel: cfg`), "Add a pilot" (`panel: addPilot`), "Remote repository of data/" (`panel: remote`, `where: launcher`), "Airline
+  configuration for a pilot" removed (1 Nov 2026), "Add a pilot" (`panel: addPilot`), "Remote repository of data/" (`panel: remote`, `where: launcher`), "Airline
   API keys (IVAO, EAD Basic)" (`panel: keys`, `where: launcher`), "Data sources" `#sources` (aerodb's Sources screen, links only; `copyLink`: under its link the absolute address of the screen built from `location`, and "Copy the link"; it replaced the data laboratory `#datalab` on 28 Oct 2026), roadmap `#roadmap`, diagnostics (`act:
   diagOpen`: opens the folded diagnostics of the About card and scrolls to it); benches `labs/design_primitives.html`,
   `frame/aerodb/bench.html`, `frame/aerodb/offline_bench.html`, `frame/store/test/`, `modules/maps/test/render.html`;
@@ -379,6 +380,10 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
 
 ## 7. Join the airline (`frame/settings/join.js`, `window.SogJoin`)
 
+- **Without a configuration** (the one entry of the Access card, `#settings?join=1`, `#settings?import=1`): the assistant says to paste the link received
+  or to choose the file, on one screen — a field for the link (`#settings?config=…`, the whole address, or its `config=` value: read by the same
+  reader as an address, `SogConfig.unpack` then `validate`) with "Start", and "Choose the file…". A link that is nothing starts nothing and says so. The QR
+  code needs nothing here: the phone's camera reads it and opens the link, which lands in the assistant. Case A73.
 - **One screen per step**, "Step n of m", "← Back" / "Next →": (1) the configuration received — airline, repository,
   trigram; (2) the account — "Do you already have a GitHub account?" Yes / No; No lists creating it (sign-up link, a
   simple username, verifying the email); then the username (needed to go on); (3) the invitation — give the username to

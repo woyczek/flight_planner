@@ -9,6 +9,23 @@
   const P = window.SogSettingsParts || {}; // cartes du lanceur, accès et transport, diagnostic, administration
 
   // ---- configuration d'un pilote (frame/settings/config.js)
+  /** Commence l'assistant « Rejoindre la compagnie » avec une configuration vérifiée et l'affiche (déjà dessiné : redessiné ; sinon l'adresse `#settings?join=1`). */
+  async function startJoin(c, cfg, view) {
+    await SogJoin.start(c.own, cfg);
+    if (location.hash.includes('join=')) return window.SogSettings.render(view, c);
+    location.hash = '#settings?join=1';
+  }
+  /** Une configuration reçue en lien (l'adresse entière « …#settings?config=… », « #settings?config=… », ou la seule valeur de `config`) lue et vérifiée : le résultat de SogConfig.validate ({ ok, cfg } ou la raison du refus),
+   *  ou null si le lien est illisible. Le seul lecteur de lien : le lien d'une adresse (settings.js, routeJoin) et le lien collé dans l'assistant passent par lui. */
+  async function readConfigLink(text) {
+    const raw = String(text || '').trim(),
+      m = /[?&#]config=([^&#\s]+)/.exec(raw);
+    try {
+      return SogConfig.validate(await SogConfig.unpack(m ? m[1] : raw));
+    } catch {
+      return null;
+    }
+  }
   /** Fichier de configuration choisi → vérifié, assistant « Rejoindre la compagnie » commencé et affiché ; refus : message. */
   async function joinFromFile(c, f, view) {
     let r = null;
@@ -18,9 +35,13 @@
       r = null;
     }
     if (!r?.ok) return c.notify(r ? cfgError(r, c.t) : c.t(T.cfgBadFile), 'err');
-    await SogJoin.start(c.own, r.cfg);
-    if (location.hash.includes('join=')) return window.SogSettings.render(view, c);
-    location.hash = '#settings?join=1';
+    return startJoin(c, r.cfg, view);
+  }
+  /** Lien collé dans l'assistant (pas encore de configuration) → vérifié, assistant commencé et affiché ; refus : message, comme pour le fichier. */
+  async function joinFromLink(c, text, view) {
+    const r = await readConfigLink(text);
+    if (!r?.ok) return c.notify(r ? cfgError(r, c.t) : c.t(T.cfgBadFile), 'err');
+    return startJoin(c, r.cfg, view);
   }
   /** Choix d'un fichier de configuration depuis l'assistant (pas encore de configuration). */
   function pickConfig(c, view) {
@@ -228,7 +249,6 @@
       return again();
     }
     // ---- configuration d'un pilote
-    if (act === 'cfgImport') return view.querySelector('[data-cfgfile]')?.click();
     if (act === 'cfgCancel') {
       dropConfigHash();
       return again();
@@ -248,11 +268,6 @@
       again
     } = env;
     view.onclick = e => onClick(env, e);
-    view.querySelector('[data-cfgfile]')?.addEventListener('change', async e => {
-      const f = e.target.files?.[0];
-      e.target.value = '';
-      if (f) await joinFromFile(c, f, view);
-    });
     view.querySelectorAll('[data-design-pick]').forEach(b => b.addEventListener('click', async () => {
       await c.saveDesign({
         ...(c.design?.() || {}),
@@ -300,6 +315,8 @@
   (window.SogSettingsParts ||= {}).actions = {
     wire,
     pickConfig,
+    joinFromLink,
+    readConfigLink,
     cfgError,
     dropConfigHash
   };

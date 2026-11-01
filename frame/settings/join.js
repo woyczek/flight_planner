@@ -29,10 +29,14 @@
     ),
     done: L4('C’est fait', 'Done', 'Erledigt', 'Hecho'),
     // 0 : pas de configuration encore
-    noCfg: L4('Ouvrez le lien reçu de votre compagnie, ou choisissez le fichier sog-config reçu.',
-      'Open the link received from your airline, or choose the sog-config file received.',
-      'Öffnen Sie den von Ihrer Fluggesellschaft erhaltenen Link oder wählen Sie die erhaltene sog-config-Datei.',
-      'Abra el enlace recibido de su aerolínea, o elija el archivo sog-config recibido.'),
+    noCfg: L4(
+      'Collez le lien reçu de votre compagnie, ou choisissez le fichier sog-config reçu. Un code QR se scanne avec l’appareil photo du téléphone : il ouvre ce lien.',
+      'Paste the link received from your airline, or choose the sog-config file received. A QR code is scanned with the phone’s camera: it opens this link.',
+      'Fügen Sie den von Ihrer Fluggesellschaft erhaltenen Link ein oder wählen Sie die erhaltene sog-config-Datei. Ein QR-Code wird mit der Kamera des Telefons gescannt: Er öffnet diesen Link.',
+      'Pegue el enlace recibido de su aerolínea, o elija el archivo sog-config recibido. Un código QR se escanea con la cámara del teléfono: abre este enlace.'
+    ),
+    pasteLink: L4('Lien de configuration', 'Configuration link', 'Konfigurationslink', 'Enlace de configuración'),
+    pasteGo: L4('Commencer', 'Start', 'Beginnen', 'Empezar'),
     choose: L4('Choisir le fichier…', 'Choose the file…', 'Datei wählen…', 'Elegir el archivo…'),
     // 1
     s1: L4('La configuration reçue', 'The configuration received', 'Die erhaltene Konfiguration', 'La configuración recibida'),
@@ -261,7 +265,7 @@
   ]) : [1, 6, 7];
 
   /** Dessine l'assistant dans view. h : { t, esc, fld, own, FD, c, access, remote, L, setup, sameRepo, confirmOpen, airlineDoc,
-   *  AIRLINE, howtoHtml, again, pick (choix de fichier), linkify }. */
+   *  AIRLINE, howtoHtml, again, pick (choix de fichier), paste (lien collé), linkify }. */
   async function render(view, h) {
     const {
       t,
@@ -271,7 +275,12 @@
       cfg = s.cfg;
     const head = `<p class="f-back"><a href="#settings">${esc(t(['← Réglages', '← Settings', '← Einstellungen', '← Ajustes']))}</a></p><h1>${esc(t(T.title))}</h1>`;
     if (!cfg) {
-      view.innerHTML = `${head}<div class="f-card" data-card="join"><p>${esc(t(T.noCfg))}</p><div class="f-row"><button type="button" class="primary" data-jact="pick">${esc(t(T.choose))}</button></div></div>`;
+      // deux façons d'avoir la configuration sur un seul écran : coller le lien (l'adresse entière suffit), ou choisir le fichier
+      view.innerHTML = `${head}<div class="f-card" data-card="join"><p>${esc(t(T.noCfg))}</p>
+        <label class="f-field">${esc(t(T.pasteLink))}<textarea data-jlink rows="3" spellcheck="false" placeholder="https://…/#settings?config=…"></textarea></label>
+        <div class="f-row"><button type="button" class="primary" data-jact="paste">${esc(t(T.pasteGo))}</button></div>
+        <div class="f-row"><button type="button" data-jact="pick">${esc(t(T.choose))}</button></div></div>`;
+      view.querySelector('[data-jact="paste"]').onclick = () => h.paste(view.querySelector('[data-jlink]').value);
       view.querySelector('[data-jact="pick"]').onclick = () => h.pick();
       return;
     }
