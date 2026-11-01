@@ -2123,3 +2123,37 @@ def f84(c):
     c.page.fill(f'{FUEL} [data-k="addpt"]', 'TSTA 45 1')
     c.tap(f'{FUEL} [data-do="addpt"]')
     c.until("document.querySelectorAll('[data-module=fuel] [data-pts] [data-do=\"ptdel\"]').length === 1", what='a point added after a 403')
+
+
+@case('F85', 'titleOf: the readable title of a pending document of Fuel, Aircraft and Missions (the Synchronisation card)', 'F',
+      tags=('fuel', 'aircraft', 'missions'), designs=('standard',), screens=False,
+      rule='Simplification 1 Nov: each module that owns a kind of document declares meta.titleOf(path, value) → [fr, en, de, es] or null '
+      '(value absent or unreadable, another path), pure: Fuel « Vol LFBO → LFPO du 1/11 », Aircraft « Fiche H145 » / the fleet, '
+      'Missions « A-001A Titre »')
+def f85(c):
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest')
+    got = c.js("""async () => {
+      const [F, A, M] = await Promise.all(['fuel', 'aircraft', 'missions'].map(m => import(`/modules/${m}/module.js`).then(x => x.meta.titleOf)));
+      return {
+        flight: F('pilot/ABC/current_flight.json', { route: { dep: 'XTST', arr: 'XTSU' }, planned_at: '2026-11-01T10:00:00Z' }),
+        flightNoRoute: F('pilot/ABC/current_flight.json', { route: {} }),
+        flightNull: F('pilot/ABC/current_flight.json', null),
+        settings: F('pilot/ABC/fuel.json', {}),
+        fuelOther: F('pilot/ABC/other.json', {}),
+        sheet: A('aircraft/sheets/H145.json', { id: 'H145', name: 'H145' }),
+        sheetNull: A('aircraft/sheets/H145.json', null),
+        fleet: A('airline/fleet.json', { aircraft: [{}, {}] }),
+        fleetBad: A('airline/fleet.json', { aircraft: 'x' }),
+        mission: M('missions/X_TEST/X-002A/missionX-002A.yaml', 'mission: { id: X-002A, type: T }\\ntitle: Second essai\\n'),
+        missionNoText: M('missions/X_TEST/X-002A/missionX-002A.yaml', null),
+        missionOther: M('missions/mission_registry.yaml', 'missions: []')
+      } }""")
+    c.eq(got['flight'], ['Vol XTST → XTSU du 1/11', 'Flight XTST → XTSU of 1/11', 'Flug XTST → XTSU vom 1/11', 'Vuelo XTST → XTSU del 1/11'],
+         'Fuel: the flight, its leg and day', what='flight')
+    c.eq([got['flightNoRoute'], got['flightNull'], got['fuelOther']], [None, None, None], 'no leg, no value or another path: null', what='flight null')
+    c.eq(got['settings'][0], 'Réglages du devis', 'the quote settings', what='settings')
+    c.eq(got['sheet'][0], 'Fiche H145', 'Aircraft: a sheet', what='sheet')
+    c.eq([got['sheetNull'], got['fleetBad']], [None, None], 'an absent or unreadable value: null', what='aircraft null')
+    c.eq(got['fleet'][0], 'Flotte de la compagnie (2 appareils)', 'the fleet', what='fleet')
+    c.eq(got['mission'], ['X-002A Second essai'] * 4, 'Missions: id and title', what='mission')
+    c.eq([got['missionNoText'], got['missionOther']], [None, None], 'no text, or not a mission file: null', what='mission null')

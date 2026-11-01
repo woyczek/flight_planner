@@ -32,3 +32,11 @@ addresses).
 - maps: draws a mission's points, zones and rendezvous from the same reader (SPEC § 8, lot 4); no event between modules.
 - flightlog / report: a report carrying `mission: <ID>` makes the mission "volée" for this pilot (SPEC § 3).
 - frame/design: `envelope()` and `book()` primitives (SPEC § 5), used by this module and later by the CPCO's registry.
+
+## Pending documents: `meta.titleOf` (1 Nov 2026)
+
+For the Synchronisation card of Settings (Simplification): `meta.titleOf(path, value)` gives the readable title of one of this module's
+documents waiting to be synchronised — `[fr, en, de, es]`, or `null` when the value is absent or unreadable, or the path is not one of
+the module's (Settings then shows the path). Pure, no reading. Case F85.
+
+Here: `missions/…/mission<ID>.yaml` → « <ID> <title> » (the `title:` line of the text, same in the four languages).

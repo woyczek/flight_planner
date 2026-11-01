@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel, Aircraft, Missions: `meta.titleOf(path, value)`** (the three `module.js`; their INTEGRATION; noreg F85) — the readable title
+  of a document waiting to be synchronised, for the Synchronisation card of Settings: « Vol LFBO → LFPO du 1/11 », « Fiche H145 »,
+  « A-001A Titre »; `[fr, en, de, es]` or `null`; pure.
 - **aerodb: class E airspaces stop under the class A floor** (`shared/aero_sources.js`, parser version 21; SPEC, DECISIONS; test K66) — the
   3 158 US class E spaces that openAIP gives up to FL 600 (its « unlimited ») now stop at 17 999 ft, below class A, and say their ceiling is
   deduced (`capped: 'classA'`); Canada likewise; other classes keep their source ceiling. Rebuild the US zone to apply it.

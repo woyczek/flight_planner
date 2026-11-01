@@ -49,6 +49,21 @@ export const meta = {
   title: ['Carburant et niveau', 'Fuel and level', 'Kraftstoff und Flugfläche', 'Combustible y nivel'], // en-tête du téléphone (règle 16)
   apps: ['pilot'],
   level: 1,
+  // titre lisible d'un document de Carburant en attente de synchronisation (la carte Synchronisation des Réglages, Simplification
+  // 1er nov. 2026) : [fr, en, de, es], ou null (valeur absente ou illisible : le chemin en repli) ; pur, sans lecture
+  titleOf: (path, v) => {
+    if (/^pilot\/[^/]+\/fuel\.json$/.test(path)) return ['Réglages du devis', 'Quote settings', 'Einstellungen der Berechnung',
+      'Ajustes del cálculo'
+    ];
+    if (!/^pilot\/[^/]+\/current_flight\.json$/.test(path) || !v || typeof v !== 'object') return null;
+    const leg = [v.route?.dep, v.route?.arr].filter(x => typeof x === 'string' && x).join(' → ');
+    if (!leg) return null;
+    const ms = Date.parse(v.planned_at || v.updated_at || ''),
+      d = Number.isFinite(ms) ? `${new Date(ms).getUTCDate()}/${new Date(ms).getUTCMonth() + 1}` : '';
+    return d ? [`Vol ${leg} du ${d}`, `Flight ${leg} of ${d}`, `Flug ${leg} vom ${d}`, `Vuelo ${leg} del ${d}`] : [`Vol ${leg}`, `Flight ${leg}`,
+      `Flug ${leg}`, `Vuelo ${leg}`
+    ];
+  },
   reads: ['pilot/', 'cache/fuel/', 'missions/'], // missions/ : « Préparer ce vol » du module Missions (#fuel?mission=<id>)
   // fiches, flotte et référence : par aerodb (aircraft()), qui seul écrit aircraft/sheets/ et le miroir V2
   writes: [{

@@ -25,6 +25,21 @@ export const meta = {
   files: ['fleet.js', 'sheets.js', 'sheets_texts.js', 'perf_prompt.js', '../fuel/suggest.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/dom.js'
   ],
+  // titre lisible d'un document en attente de synchronisation (la carte Synchronisation des Réglages, Simplification 1er nov. 2026) :
+  // une fiche (aircraft/sheets/<id>.json) ou la flotte ; [fr, en, de, es], ou null (valeur absente ou illisible) ; pur, sans lecture
+  titleOf: (path, v) => {
+    const m = /^aircraft\/sheets\/([^/]+)\.json$/.exec(path);
+    if (m) {
+      if (!v || typeof v !== 'object') return null;
+      const n = String(v.name || v.id || m[1]);
+      return [`Fiche ${n}`, `Sheet ${n}`, `Datenblatt ${n}`, `Ficha ${n}`];
+    }
+    if (path !== 'airline/fleet.json' || !Array.isArray(v?.aircraft)) return null;
+    const n = v.aircraft.length;
+    return [`Flotte de la compagnie (${n} appareils)`, `Airline fleet (${n} aircraft)`, `Flotte der Gesellschaft (${n} Luftfahrzeuge)`,
+      `Flota de la compañía (${n} aeronaves)`
+    ];
+  },
   reads: ['airline/', 'cache/aircraft/'],
   writes: [{
     prefix: 'airline/fleet.json',

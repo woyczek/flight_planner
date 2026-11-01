@@ -12,6 +12,15 @@ export const meta = {
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
   files: ['../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js'],
   reads: ['missions/', 'cr/'], // les missions et leur registre ; les comptes rendus (« volée le … »)
+  // titre lisible d'un fichier de mission en attente de synchronisation (la carte Synchronisation des Réglages, Simplification 1er nov.
+  // 2026) : « A-001A Titre » (le titre lu dans le texte YAML, sans le lire en entier) ; [fr, en, de, es], ou null ; pur, sans lecture
+  titleOf: (path, v) => {
+    const m = /^missions\/.+\/mission([A-Za-z0-9-]+)\.yaml$/.exec(path);
+    if (!m || typeof v !== 'string') return null;
+    const t = /^title:\s*["']?(.*?)["']?\s*$/m.exec(v)?.[1] || '',
+      s = `${m[1]}${t ? ` ${t}` : ''}`;
+    return [s, s, s, s];
+  },
   writes: []
 };
 

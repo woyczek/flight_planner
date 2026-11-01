@@ -261,3 +261,12 @@ const L = window.FuelLevels,
   decision = L.requoteSeries(L.decisionSeries(perf, { distanceNm, wc: q.wc }, goal, o), quoteAt, { h: levelFt, quote: q }),
   climb = L.climbGuide(perf, levelFt, goal, o);
 ```
+
+## Pending documents: `meta.titleOf` (1 Nov 2026)
+
+For the Synchronisation card of Settings (Simplification): `meta.titleOf(path, value)` gives the readable title of one of this module's
+documents waiting to be synchronised — `[fr, en, de, es]`, or `null` when the value is absent or unreadable, or the path is not one of
+the module's (Settings then shows the path). Pure, no reading. Case F85.
+
+Here: `pilot/<tri>/current_flight.json` → « Vol LFBO → LFPO du 1/11 » (the day of `planned_at`, else of
+`updated_at`, UTC); `pilot/<tri>/fuel.json` → « Réglages du devis ».
