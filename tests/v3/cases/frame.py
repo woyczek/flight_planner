@@ -1042,6 +1042,10 @@ def a31(c):
     want = tx('frame/app.js', 'cycleOld', c.lang).replace('{s}', tx('frame/app.js', 'cycleBase', c.lang)).replace('{c}', name).replace('{n}', name_cur)
     c.eq(norm(c.text('[data-card="status"] li[data-k="cycle-base"] .f-status-txt span')), norm(want),
          'worded in the language of the run: the published cycle out of date, to rebuild for the one in force (never « publication »)', what='base line')
+    # the line says to download the sources of the cycle in force first (rebuilding from the old ones gives the old cycle again)
+    got = norm(c.text('[data-card="status"] li[data-k="cycle-base"] .f-status-txt span'))
+    word = {'fr': 'téléchargez les sources', 'en': 'download the sources', 'de': 'Quellen', 'es': 'descargue las fuentes'}[c.lang]
+    c.ok(word in got and got.index(name_cur) > got.index(word) - 40 and got.count(name_cur) == 1, got, 'the sources of the cycle in force to download first, then rebuild')
     c.ok(c.js("document.querySelector('[data-card=\"status\"] li[data-k=\"cycle-base\"] .f-status-dot').hasAttribute('data-attn')"), 'no amber dot', 'an amber dot (attention)')
     c.eq(c.count('[data-card="status"] li[data-k="cycle-proc"]'), 0, 'no procedures index published: no procedures line', what='proc lines')
     c.eq(c.count('[data-card="status"] li[data-k="cycle-base"] [data-go]'), 0, 'no launcher here: nothing to press', what='links on the line')

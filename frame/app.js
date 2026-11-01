@@ -556,9 +556,13 @@
         'Meteorología: {n} llamadas hoy'
       ],
       // fin de cycle AIRAC de ce qui est publié (INTEGRATION § 15.3) : {s} la base ou les procédures, {c} cycle, {d} date,
-      // {n} le cycle à construire ; « construire », jamais « publier » : rien n'est à envoyer tant que rien n'est construit
-      cycleOld: ['{s} : cycle {c} dépassé, à reconstruire pour {n}', '{s}: cycle {c} out of date, to rebuild for {n}',
-        '{s}: Zyklus {c} veraltet, für {n} neu zu erstellen', '{s}: ciclo {c} caducado, por reconstruir para {n}'
+      // {n} le cycle à construire ; « construire », jamais « publier » : rien n'est à envoyer tant que rien n'est construit ;
+      // dépassé, la ligne dit d'abord de télécharger les sources du cycle {n} (reconstruire avec celles d'avant redonne le même
+      // cycle : l'utilisateur reconstruisait en boucle une base restée en 2610, 1er nov. 2026)
+      cycleOld: ['{s} : cycle {c} dépassé : téléchargez les sources du cycle {n}, puis reconstruisez',
+        '{s}: cycle {c} out of date: download the sources of cycle {n}, then rebuild',
+        '{s}: Zyklus {c} veraltet: Laden Sie die Quellen des Zyklus {n} herunter und erstellen Sie dann neu',
+        '{s}: ciclo {c} caducado: descargue las fuentes del ciclo {n} y luego reconstruya'
       ],
       cycleEnds: ['{s} : le cycle {c} se termine le {d}, rien de construit pour {n}',
         '{s}: cycle {c} ends on {d}, nothing built for {n}',
