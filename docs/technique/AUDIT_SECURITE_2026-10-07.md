@@ -1003,6 +1003,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 151 | Group of 1 November afternoon: the pilot token just created shown alone (6b90f3463) | acceptable |
 | 152 | Launcher: the data branch opened to Developers by the administrator's token, `/__setup/gitlab/admin/branch` (c6f3bc38b) | **to fix** (fixed in 153) |
 | 153 | The data branch: no force push, protected when it was not, the restore checked (d74d4431d): the points of 152 fixed | acceptable |
+| 154 | Group of 1 November evening: bounded aerodb reads extended (c78b26df4), bounded waits in Fuel (f3d4e82a9), Map base and canvas (eb9111d3f, 40532a1cc), assistant (946881d5f) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2289,6 +2290,13 @@ force push off. Opening sets `allow_force_push: false` (alone when Developers al
 protected (push Developer, merge as before or Maintainer, no force push); in the fallback, a refused new protection puts the
 former one back and checks it, and a double refusal returns `unprotected` with a clear sentence and a line in the
 launcher's log. The default unprotect level is noted in DECISIONS.
+
+**154. Group of 1 November evening (c78b26df4, f3d4e82a9, eb9111d3f, 40532a1cc, 946881d5f) — acceptable.** The bound of
+129 now covers aircraft, procedures, VFR, cities, publication and listings: at the bound the answer is “nothing”, the
+shared read is abandoned, nothing built after a fallen bound is kept and an empty answer is never remembered as true. The
+read before a write stays unbounded, rightly: a bounded read that gave up would let a write replace a file that was never
+read. Fuel bounds its waits for the registry and the current flight; the Map's commits are canvas and a map base that reads
+and writes nothing; the assistant only reads the branch state of 153.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
