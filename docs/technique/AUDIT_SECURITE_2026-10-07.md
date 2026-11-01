@@ -999,6 +999,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 147 | Group of 1 November morning: openAIP exports absent for a country remembered per cycle (822a0ffbb); texts (ccb66b466) | acceptable |
 | 148 | Launcher: the administrator's GitLab token set and tested from the screen, `/__setup/gitlab/admin` (ceda4da6c) | **to fix** (fixed in 149) |
 | 149 | A changed GitLab instance needs its own token (ca9e23445): the point of 148 fixed; pilot tokens' count (01b6f511f) | acceptable |
+| 150 | Group of 1 November noon: one enrolment path (7272b0414), the administrator's assistant card (9d0700ad3) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2258,6 +2259,12 @@ once; the rule of 4 and 102 (a token is worth only its own target) asks to refus
 from the stored one (compared in lower case, without a final slash) with no new token, the save is refused
 (`token-required`) before anything is written or called; another project of the same instance keeps the token.
 `GET /__setup/gitlab/tokens/count` (this workstation, `_allowed()`) returns only a number of active pilot tokens.
+
+**150. Group of 1 November noon (7272b0414, 9d0700ad3) — acceptable.** One enrolment path: “Add a pilot” gives the QR
+code, the link and the file of the same configuration (the export unchanged, without `api` or token), and Join is the
+pilot's only entry. The QR code is read by the phone's own camera, which opens the link: the suite asks for no camera and
+the configuration goes through the same `validate` (119) as a pasted link or a file. The administrator's assistant card
+only reads (`secrets`, which returns indicators only, and the pilot tokens' count) and links to the existing cards.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
