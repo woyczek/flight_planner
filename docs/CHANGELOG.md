@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Aircraft › Fleet: the Type field suggests types** (`modules/aircraft/module.js`, reusing `modules/fuel/suggest.js`; DECISIONS, help ×4;
+  noreg M20) — from two characters, in any case: the types of the base (« H145 · Airbus H145 · fiche H145 ») and the matching sheets;
+  a tap or ↓ Entrée writes the type code.
 - **Frame: one door named « Help » per screen** (`frame/help/help.js`, `frame/app.js`; frame SPEC, DECISIONS; help ×4;
   noreg A80) — Maintenance's « Help » entry of the column goes: the « ? » of the header opens the manual at the chapter
   shown, with « All help » (the index of the manuals and tutorials) and the contents at its head.

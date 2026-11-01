@@ -59,3 +59,8 @@
   passed without a click; « Passer cette fiche » writes nothing and goes to the next; the end notifies written / unchanged / skipped;
   « Annuler » drops the queue (before, the queue stayed and came back at the next « Appliquer » of anything); an existing `notes` is
   proposed unticked; the field « notes » is named ×4. Case M19.
+- **1 Nov 2026 — the type field completes** (Simplification relaying the user: « aucune complétion sur le type », adding an H145): the
+  list of Fuel's aerodrome fields (`modules/fuel/suggest.js`, the same component) under the Type field of the fleet editor; sources:
+  the types of the base (`searchTypes`, prefix of the code or of a word of the model, case-folded) with « fiche <id> » when a sheet has
+  that type, then the sheets whose id, name or type contains the text; seven at most. A choice writes the type code only: the fleet is
+  schema 1 (no sheet field, `sheetId` waits for L1). Case M20.

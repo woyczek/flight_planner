@@ -10,6 +10,9 @@
 // partagé). Une ligne d'état (cache/aircraft/status.json, frame/INTEGRATION.md § 10.0) dit le nombre d'appareils et de fiches.
 import * as FL from './fleet.js';
 import {
+  createSuggestList
+} from '../fuel/suggest.js'; // la liste de propositions sous un champ (celle des terrains de Carburant)
+import {
   createSheetsView,
   SHEETS_STYLE
 } from './sheets.js';
@@ -19,7 +22,9 @@ export const meta = {
   apps: ['maintenance'],
   level: 3,
   title: ['Appareils', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves'],
-  files: ['fleet.js', 'sheets.js', 'sheets_texts.js', 'perf_prompt.js', '../../frame/lib/clipboard.js', '../../frame/lib/dom.js'],
+  files: ['fleet.js', 'sheets.js', 'sheets_texts.js', 'perf_prompt.js', '../fuel/suggest.js', '../../frame/lib/clipboard.js',
+    '../../frame/lib/dom.js'
+  ],
   reads: ['airline/', 'cache/aircraft/'],
   writes: [{
     prefix: 'airline/fleet.json',
@@ -72,6 +77,9 @@ const TX = {
     'Ubicación (sitio): {l} · {d}'
   ],
   typeKnown: ['{t}', '{t}', '{t}', '{t}'],
+  // complétion du type (Simplification, 1er nov. : « aucune complétion sur le type ») : la base des types et les fiches
+  typeSheet: ['fiche {id}', 'sheet {id}', 'Datenblatt {id}', 'ficha {id}'],
+  typeList: ['Types proposés', 'Suggested types', 'Vorgeschlagene Typen', 'Tipos propuestos'],
   typeFree: ['Type absent de la base : gardé tel quel.', 'Type not in the database: kept as typed.',
     'Typ nicht in der Datenbank: so übernommen.', 'Tipo ausente de la base: se guarda tal cual.'
   ],
@@ -100,7 +108,11 @@ const TX = {
 const STYLE = `[data-module="aircraft"] .ac-head{align-items:center;gap:8px}
 [data-module="aircraft"] .ac-head>button{margin-left:auto}
 [data-module="aircraft"] .ac-row{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;width:100%;min-height:44px;text-align:left}
-[data-module="aircraft"] .ac-group{border:0;padding:0;margin:0 0 12px;display:grid;gap:4px}
+[data-module="aircraft"] .ac-group{position:relative;border:0;padding:0;margin:0 0 12px;display:grid;gap:4px}
+[data-module="aircraft"] .ac-sug{position:absolute;left:0;right:0;max-width:26em;z-index:30;display:grid;gap:0;margin:0;background:var(--sog-surface);border:1px solid var(--sog-border);border-radius:var(--sog-radius);box-shadow:var(--sog-shadow)}
+[data-module="aircraft"] .fu-sugitem{display:block;width:100%;min-height:44px;text-align:left;border-width:0 0 1px;border-radius:0;background:transparent}
+[data-module="aircraft"] .fu-sugitem:last-child{border-bottom-width:0}
+[data-module="aircraft"] .fu-sugitem[aria-selected="true"]{background:var(--sog-surface-2);box-shadow:inset 3px 0 0 var(--sog-accent)}
 [data-module="aircraft"] .ac-group>legend{font-weight:600;padding:0;margin-bottom:4px}`;
 
 let S = null;
@@ -141,6 +153,22 @@ export async function mount(el, ctx) {
   // une fiche demandée par l'adresse (prise une fois, retirée de l'adresse par le cadre) ouvre les Fiches sur son éditeur
   s.openSheet = String(ctx.consume?.('sheet')?.sheet || '').trim();
   s.view = s.openSheet || ui?.view === 'sheets' ? 'sheets' : 'fleet';
+  // complétion du champ Type de l'éditeur : un choix écrit le code du type, puis rend au champ l'évènement input d'une frappe
+  s.TS = createSuggestList({
+    body: () => S === s ? s.el : null,
+    box: '[data-typesug]',
+    attr: 'code',
+    idPrefix: 'ac-sug',
+    fields: () => [s.el.querySelector('[data-f="type"]')],
+    owns: x => x?.dataset?.f === 'type',
+    write: (input, v) => {
+      input.value = v;
+      return true;
+    }
+  });
+  el.addEventListener('keydown', e => s.view === 'fleet' && s.TS.onKey(e));
+  el.addEventListener('focusout', e => s.TS.onFocusOut(e));
+  for (const type of ['pointerdown', 'mousedown']) el.addEventListener(type, e => s.TS.onPointerDown(e));
   el.onclick = e => onClick(s, e);
   el.oninput = e => s.view === 'sheets' ? s.sv.onInput(e) : onInput(s, e);
   el.onchange = e => s.view === 'sheets' && s.sv.onChange(e);
@@ -246,7 +274,8 @@ function editorHtml(s) {
     old = s.edit.was ? listOf(s).find(a => a.registration === s.edit.was) : null;
   return `<div class="f-card" data-pane="edit"><fieldset class="ac-group"><legend>${esc(s.tt(TX.identity))}</legend>
       ${field('registration', TX.registration, ' autocapitalize="characters" spellcheck="false"')}
-      ${field('type', TX.type, ' autocapitalize="characters" spellcheck="false"')}<small class="f-muted" data-typeinfo></small>
+      ${field('type', TX.type, ' autocapitalize="characters" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ac-typesug"')}<small class="f-muted" data-typeinfo></small>
+      <div class="ac-sug" id="ac-typesug" data-typesug role="listbox" aria-label="${esc(s.tt(TX.typeList))}" hidden></div>
       ${field('variant', TX.variant)}${field('operator', TX.operator)}</fieldset>
     <fieldset class="ac-group"><legend>${esc(s.tt(TX.operation))}</legend>
       ${field('callsigns', TX.callsigns, ' autocapitalize="characters" spellcheck="false"')}${field('base', TX.base)}${field('tacticalNumber', TX.tactical)}
@@ -315,11 +344,50 @@ function onInput(s, e) {
     q?.setSelectionRange(at, at);
     return;
   }
+  if (e.target.dataset.f === 'type' && s.edit && !s.TS.picking()) typeSuggest(s, e.target);
   if (e.target.dataset.f && s.edit) refreshEditor(s);
+}
+
+/** Propositions du champ Type (deux caractères au moins, sans casse) : les types de la base (code, nom) qui commencent par le texte,
+ *  chacun avec sa fiche s'il en a une, puis les fiches dont l'identifiant, le nom ou le type le contient ; sept au plus. Le choix
+ *  écrit le code du type seul (la flotte au schéma 1 n'a pas de champ de fiche). */
+async function typeSuggest(s, input) {
+  const t = s.TS.ticket(),
+    q = input.value.trim();
+  if (q.length < 2) return s.TS.close();
+  const A = await Promise.resolve().then(() => s.ctx.aerodb?.aircraft?.()).catch(() => null),
+    [types, sheets] = await Promise.all([Promise.resolve().then(() => A?.searchTypes?.(q, ROWS)).catch(() => []),
+      Promise.resolve().then(() => A?.sheets?.list?.()).catch(() => [])
+    ]);
+  if (!s.TS.live(t) || S !== s) return;
+  const Q = q.toUpperCase(),
+    code = sh => String(sh?.icao || sh?.type || '').toUpperCase(),
+    list = Array.isArray(sheets) ? sheets : [],
+    sheetOf = c => list.find(sh => code(sh) === c),
+    hits = (Array.isArray(types) ? types : []).filter(x => x?.code).map(x => {
+      const sh = sheetOf(String(x.code).toUpperCase());
+      return {
+        value: String(x.code).toUpperCase(),
+        label: [x.label && x.label !== x.code ? x.label : '', sh ? s.tt(TX.typeSheet, {
+          id: sh.id
+        }) : ''].filter(Boolean).join(' · ')
+      };
+    });
+  for (const sh of list)
+    if (code(sh) && !hits.some(h => h.value === code(sh)) && [sh.id, sh.name, code(sh)].some(v => String(v || '').toUpperCase().includes(
+        Q)))
+      hits.push({
+        value: code(sh),
+        label: [sh.name && sh.name !== code(sh) ? sh.name : '', s.tt(TX.typeSheet, {
+          id: sh.id
+        })].filter(Boolean).join(' · ')
+      });
+  s.TS.show(input, hits.slice(0, ROWS));
 }
 
 /** Gestes : ouvrir une ligne, ajouter, « N autres », enregistrer, retirer, revenir. */
 async function onClick(s, e) {
+  if (s.view === 'fleet' && s.TS?.onClick(e)) return; // une proposition du champ Type
   const tab = e.target.closest('[data-view]');
   if (tab) return showView(s, tab.dataset.view);
   if (s.view === 'sheets') return s.sv.onClick(e);

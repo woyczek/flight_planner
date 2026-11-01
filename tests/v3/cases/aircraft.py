@@ -482,6 +482,48 @@ def m19(c):
     c.eq([sheet_of(c, 'C30J')['usableFuel'], sheet_of(c, 'A320')['usableFuel']], [21000, 18000], 'nothing of the cancelled paste is written', what='cancel')
 
 
+@case('M20', 'Fleet: the type field suggests the types of the base and the sheets; a choice writes the type code', 'M', tags=('aircraft',),
+      designs=('standard',), screens=False, langs4=True,
+      rule='Simplification 1 Nov (the user: « aucune complétion sur le type », adding an H145): typed in part and in lower case, the type '
+           'field lists the types of the base (code, name, « fiche <id> » when a sheet has that type) and the sheets whose id, name or type '
+           'contains the text, seven at most; a choice writes the code, the rest of the form unchanged; the fleet keeps the type only '
+           '(schema 1, no sheet field)')
+def m20(c):
+    c.open('aircraft', docs=LEVEL3 + [['airline/fleet.json', fleet_doc(3), 'document']] + SHEET_DOCS + [TYPES], wait=False, app='maintenance')
+    c.until(f"!!document.querySelector('{M} [data-pane=fleet]')", timeout=15000, what='the fleet list is drawn')
+    help_placed(c)
+    c.tap(f'{M} [data-do="add"]')
+    c.until(f"!!document.querySelector('{M} [data-pane=edit]')", what='the editor opens')
+    c.page.fill(f'{M} [data-f="registration"]', 'F-TST9')
+    c.page.click(f'{M} [data-f="type"]')
+    c.page.keyboard.type('ec2')
+    c.until(f"!!document.querySelector('{M} [data-typesug]:not([hidden]) [data-code=\"EC25\"]')", timeout=8000,
+            what='« ec2 » typed in lower case: EC25 is proposed')
+    item = norm(c.text(f'{M} [data-typesug] [data-code="EC25"]') or '')
+    c.ok(norm(tx(AC, 'typeSheet', c.lang).replace('{id}', 'EC25')) in item, item, 'the proposal says the sheet of that type')
+    c.tap(f'{M} [data-typesug] [data-code="EC25"]')
+    c.until(f"document.querySelector('{M} [data-f=type]').value === 'EC25'", what='the choice writes the type code')
+    c.ok(c.js(f"document.querySelector('{M} [data-typesug]').hidden"), '', 'the list is closed')
+    c.until(f"(w) => (document.querySelector('{M} [data-typeinfo]') || {{}}).textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() !== w",
+            norm(tx(AC, 'typeFree', c.lang)), what='a type of the base: not said « absent »')
+    # a sheet found by its name (« C-130J »): its type proposed
+    c.page.fill(f'{M} [data-f="type"]', '')
+    c.page.click(f'{M} [data-f="type"]')
+    c.page.keyboard.type('c-1')
+    c.until(f"!!document.querySelector('{M} [data-typesug]:not([hidden]) [data-code=\"C30J\"]')", timeout=8000,
+            what='the sheet named C-130J proposes its type C30J')
+    c.page.keyboard.press('ArrowDown')
+    c.page.keyboard.press('Enter')
+    c.until(f"document.querySelector('{M} [data-f=type]').value === 'C30J'", what='↓ then Entrée choose it')
+    c.page.fill(f'{M} [data-f="callsigns"]', 'dragon35')
+    clear_notes(c)
+    c.tap(f'{M} [data-do="save"]')
+    d = c.until_doc('airline/fleet.json', lambda d: d and any(a['registration'] == 'F-TST9' for a in d['aircraft']), 'the aircraft is added')
+    a = next(a for a in d['aircraft'] if a['registration'] == 'F-TST9')
+    c.eq([a['type'], a['callsigns'], 'sheetId' in a], ['C30J', ['DRAGON35'], False], 'the type code, the callsign; no sheet field (schema 1)',
+         what='written')
+
+
 @case('M15', 'Sheets: a ChatGPT reply is read into the review; « Appliquer » writes it stamped « chatgpt »', 'M', tags=('aircraft',), designs=('standard',),
       screens=False,
       rule='modules/aircraft SPEC 4: the ChatGPT reply (any shape: the aerodb reader) is a source like the others; preview, then a write through '
