@@ -53,7 +53,15 @@
     ],
     start: ['Commencer par…', 'Start with…', 'Beginnen Sie mit…', 'Empiece por…'],
     next: ['Tutoriel suivant : {t} →', 'Next tutorial: {t} →', 'Nächstes Tutorial: {t} →', 'Siguiente tutorial: {t} →'],
-    inEnglish: ['(en anglais)', '(in English)', '(auf Englisch)', '(en inglés)']
+    inEnglish: ['(en anglais)', '(in English)', '(auf Englisch)', '(en inglés)'],
+    // une seule porte « Aide » par écran (le « ? » de l'en-tête) ; en tête du manuel, le lien vers l'index de toute l'aide
+    all: ['Toute l’aide', 'All help', 'Gesamte Hilfe', 'Toda la ayuda'],
+    allIntro: ['Les manuels des applications et les tutoriels.', 'The manuals of the applications and the tutorials.',
+      'Die Handbücher der Anwendungen und die Tutorials.', 'Los manuales de las aplicaciones y los tutoriales.'
+    ],
+    manuals: ['Manuels', 'Manuals', 'Handbücher', 'Manuales'],
+    manualOf: ['Manuel : {a}', 'Manual: {a}', 'Handbuch: {a}', 'Manual: {a}'],
+    tutorials: ['Tutoriels', 'Tutorials', 'Tutorials', 'Tutoriales']
   };
   // tutoriels, dans l'ordre d'usage (fichiers frame/help/tutorial/<id>.<langue>.md, vérifiés par build_help.py)
   const TUTORIALS = [{
@@ -318,10 +326,27 @@
     }), 0);
   }
 
-  /** Écran d'aide : le manuel entier, texte d'abord, ouvert au chapitre q.m ou à l'ancre q.a ; sommaire replié ;
-   *  « Commencer par… » (les tutoriels) en tête ; q.t : un tutoriel. */
+  /** « Toute l'aide » (#help?all=1) : les manuels des applications que l'appareil ouvre, puis les tutoriels (ceux de Pilote,
+   *  à l'adresse de Pilote quand on est ailleurs). */
+  async function indexScreen(view, c) {
+    const apps = c.apps?.() || [],
+      pilot = apps.find(a => a.id === 'pilot');
+    const tuts = await tutorialList({
+      ...c,
+      tutorials: true
+    });
+    const list = c.tutorials === false && pilot ? tuts.replace(/href="#help\?t=/g, `href="${esc(pilot.href)}?t=`) : tuts;
+    view.innerHTML = `<div class="f-doc" data-help-index><h1>${esc(c.t(T.all))}</h1><p class="f-muted">${esc(c.t(T.allIntro))}</p>
+      <h2>${esc(c.t(T.manuals))}</h2><ul data-help-manuals>${apps.map(a => `<li><a href="${esc(a.href)}" data-app="${esc(a.id)}">${esc(c.t(T.manualOf, { a: a.name }))}</a></li>`).join('')}</ul>
+      ${list ? `<h2>${esc(c.t(T.tutorials))}</h2><ul data-help-tutorials>${list}</ul>` : ''}</div>`;
+  }
+
+  /** Écran d'aide : le manuel entier, texte d'abord, ouvert au chapitre q.m ou à l'ancre q.a ; en tête, le lien « Toute
+   *  l'aide » et le sommaire (replié sur un téléphone) ; « Commencer par… » (les tutoriels) au début du manuel ; q.t : un
+   *  tutoriel ; q.all : l'index de toute l'aide. */
   async function screen(view, c, q = {}) {
     if (q.t) return tutorialScreen(view, c, q.t, q);
+    if (q.all) return indexScreen(view, c);
     const text = await manual(c);
     if (!text) {
       view.innerHTML = `<h1>${esc(c.t(T.title))}</h1><p class="f-card">${esc(c.t(T.missing))}</p>`;
@@ -372,7 +397,8 @@
     if (list)(intro.querySelector('h1 ~ p:not(.f-rm-link)') || intro.querySelector('h1') || intro.firstChild).insertAdjacentHTML(
       'afterend',
       `<div class="f-card f-start" data-start><b>${esc(c.t(T.start))}</b><ul>${list}</ul></div>`);
-    view.insertAdjacentHTML('beforeend', toc);
+    // en tête : « Toute l'aide », puis le sommaire de ce manuel ; le chapitre demandé vient au haut de l'écran plus bas
+    intro.insertAdjacentHTML('beforebegin', `<p class="f-help-all"><a href="#help?all=1" data-help-all>${esc(c.t(T.all))}</a></p>${toc}`);
     view.append(...sections);
     labelTables(view, c.t);
     // texte d'abord : le chapitre demandé (ou l'ancre) en tête de l'écran ; « ↑ Sommaire » ouvre le sommaire

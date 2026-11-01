@@ -314,9 +314,9 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
     revoked by the launcher with the administrator's token; `frame/settings/pilot_tokens.js`; that token — a personal
     access token, scope `api`, the account Maintainer or Owner — is entered, tested and saved on the screen, and each
     refusal of GitLab is said by its reason, 1 Nov 2026), Administration
-    (the settings opened on their Administration card, `#settings?card=admin`), Aide (`#help`), « Page de maintenance
-    (V2) » (`apps/settings/maintenance.html`, until D3–D5 cover it); on the phone, three tabs: Données, Administration,
-    Aide. Level Complet. Opened without an address on the launcher's workstation, it lands on the administrator's
+    (the settings opened on their Administration card, `#settings?card=admin`), « Page de maintenance
+    (V2) » (`apps/settings/maintenance.html`, until D3–D5 cover it); on the phone, its modules (Données, Appareils); the help is the
+    « ? » of the header, one door (1 Nov 2026). Level Complet. Opened without an address on the launcher's workstation, it lands on the administrator's
     assistant (`#settings?card=assistant`) while the airline is not installed (data/ a git repository with a remote, and a
     name in `airline/settings.json`; 1 Nov 2026). It **opens everywhere**: without a launcher, or from a paired device of the local network, it is
     read only — what needs the launcher hides where it is (the Données module reads without it, Administration's launcher

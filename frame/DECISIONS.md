@@ -2414,3 +2414,9 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   CR · Vols; the left column Carburant, Missions, Carte, Météo, Compte rendu, Mes vols, Site. Missions, in the Préparer
   group of the bar, moves next to Carburant in the column too (it was last). The first module stays Carburant. Help ×4
   (« The verbs »). Noreg A79, A14.
+- **1 Nov 2026 — One door named « Aide » per screen** (Simplification, from the user: two « help » pages in Maintenance):
+  the « ? » of the header is the door (on every screen, phone included, and contextual): it opens the manual of the
+  application at the chapter of the module shown, with at its head « Toute l'aide » and the contents of this manual.
+  Maintenance's « Aide » entry of the column goes. « Toute l'aide » (`#help?all=1`) is the index: the manuals of the
+  applications the device opens (each at its address, `…#help`) and the tutorials (Pilot's, at Pilot's address from
+  Maintenance). The Settings' group « Aide », which holds only « À propos », is Réglages'. Noreg A80, A36.

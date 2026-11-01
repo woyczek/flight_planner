@@ -1240,7 +1240,7 @@ def a36(c):
     c.until("!!document.querySelector('[data-module=data]')", timeout=15000, what='Maintenance mounts Données, without a launcher too')
     c.wait(800)
     c.eq(c.count('[data-welcome]'), 0, 'no welcome card of Pilot in Maintenance', what='welcome cards')
-    c.eq(c.js(rail), ['data', 'aircraft', 'admin', 'help'], 'Maintenance without a launcher: Données, Appareils (§ 10.34 A2), Administration, Aide (no V2 page)', what='rail')
+    c.eq(c.js(rail), ['data', 'aircraft', 'admin'], 'Maintenance without a launcher: Données, Appareils (§ 10.34 A2), Administration (no V2 page; the help is the « ? »)', what='rail')
     c.eq(c.js(tabs), ['data', 'aircraft'], 'the phone bar of Maintenance: its modules only (help and settings are « ? » and ⚙, 31 Oct 2026)', what='tabs')
     c.eq(c.js("[...document.querySelectorAll('[data-verb]')].filter(b => !b.disabled).length"), 0, 'read only without a launcher: every action grey', what='enabled [data-verb]')
     c.ok(c.js('document.title').split(' — ')[0] in ('Maintenance', 'Wartung', 'Mantenimiento'), c.js('document.title'), 'the page is named after the application')
@@ -2958,3 +2958,25 @@ def a79(c):
     want = ['fuel', 'missions', 'maps', 'atmosphere', 'report', 'flightlog', 'website']
     c.eq([x for x in want if x in rail], [x for x in rail if x in want], 'the column: Carburant, Missions, Carte, Météo, Compte rendu, Mes vols, Site', what='column')
     c.ok(rail.index('atmosphere') == rail.index('maps') + 1 and rail.index('report') == rail.index('atmosphere') + 1, str(rail), 'Météo right after the Map, before the report')
+
+
+@case('A80', 'One door named « Aide » per screen: the « ? », the manual with its contents and « All help » at the head', 'A', designs=('standard',), screens=False, night=False,
+      rule='Simplification 1 Nov (the user: two « help » pages in Maintenance): one entry « Aide » — the « ? » of the header — opens the manual of the application at the chapter of the module shown, with the contents of the manual and a link « Toute l’aide » (the index of the manuals and tutorials) at the head')
+def a80(c):
+    c.open('data', app='maintenance', docs=LEVEL3)
+    rail = c.js("[...document.querySelectorAll('#fMenu a, #fTabs a')].map(a => a.dataset.id || a.dataset.link || a.dataset.tab)")
+    c.ok('help' not in rail and c.count('#fMenu a[href="#help"], #fTabs a[href="#help"]') == 0, str(rail), 'no « Aide » entry in the column nor the bar of Maintenance')
+    c.ok(c.shown('#fHelp'), 'the « ? » is not shown', 'the « ? » of the header is the door')
+    c.tap('#fHelp')
+    c.until("location.hash.startsWith('#help') && !!document.querySelector('[data-help-all]')", timeout=15000, what='the manual opens from the « ? »')
+    c.ok('m=data' in c.js('location.hash'), c.js('location.hash'), 'at the chapter of the module shown')
+    head = c.js("[...document.querySelector('.f-help-all').parentElement.children].slice(0, 2).map(k => k.matches('.f-help-all') ? 'all' : k.matches('[data-toc]') ? 'toc' : k.className)")
+    c.eq(head, ['all', 'toc'], 'at the head: « Toute l’aide », then the contents of this manual', what='head')
+    c.tap('[data-help-all]')
+    c.until("!!document.querySelector('[data-help-index]')", timeout=15000, what='the index of all the help')
+    apps = c.js("[...document.querySelectorAll('[data-help-manuals] a')].map(a => a.dataset.app)")
+    c.eq(sorted(apps), ['maintenance', 'pilot'], 'the manuals of the applications the device opens', what='manuals')
+    c.ok(c.js("[...document.querySelectorAll('[data-help-manuals] a')].every(a => a.getAttribute('href').endsWith('#help'))"), '', 'each manual at its application’s address')
+    tut = c.js("[...document.querySelectorAll('[data-help-tutorials] a')].map(a => a.getAttribute('href'))")
+    c.ok(len(tut) >= 1 and all('#help?t=' in h and 'app=maintenance' not in h for h in tut), str(tut), 'the tutorials (Pilot’s), at Pilot’s address')
+    c.check_errors()

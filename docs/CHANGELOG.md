@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: one door named « Help » per screen** (`frame/help/help.js`, `frame/app.js`; frame SPEC, DECISIONS; help ×4;
+  noreg A80) — Maintenance's « Help » entry of the column goes: the « ? » of the header opens the manual at the chapter
+  shown, with « All help » (the index of the manuals and tutorials) and the contents at its head.
 - **Missions: a mission file not yet on the device is no longer said unreadable** (`modules/missions/module.js`, Fuel's door in
   `modules/fuel/module.js`; SPEC § 2, DECISIONS, help ×4; noreg N5) — the files were read without waiting for the network: on a new
   device most missions showed « ne se lit pas ». Now read waiting (8 s at most, then « pas encore sur l'appareil », taken on arrival),

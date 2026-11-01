@@ -240,8 +240,9 @@
     links: []
   };
   // Maintenance (V3_SPECIFICATION § 2) : les données de la compagnie (module Données), l'administration (les réglages ouverts
-  // sur leur carte Administration), l'aide, et la page V2 de maintenance tant que D3–D5 ne la couvrent pas (avec un lanceur
-  // seulement) ; niveau Complet ; sans lanceur, ou depuis un appareil appairé, en lecture seule
+  // sur leur carte Administration) et la page V2 de maintenance tant que D3–D5 ne la couvrent pas (avec un lanceur seulement) ;
+  // l'aide est le « ? » de l'en-tête, une seule porte (1er nov. 2026) ; niveau Complet ; sans lanceur, ou depuis un appareil
+  // appairé, en lecture seule
   APPS.maintenance = {
     id: 'maintenance',
     name: ['Maintenance', 'Maintenance', 'Wartung', 'Mantenimiento'],
@@ -265,12 +266,6 @@
       href: '#settings?card=admin',
       label: ['Administration', 'Administration', 'Verwaltung', 'Administración'],
       icon: 'settings',
-      level: 3
-    }, {
-      id: 'help',
-      href: '#help',
-      label: ['Aide', 'Help', 'Hilfe', 'Ayuda'],
-      icon: 'help',
       level: 3
     }, {
       id: 'v2',
@@ -3183,7 +3178,13 @@
     own,
     root: ROOT,
     app: APP.id, // le manuel de l'application affichée (frame/help/<app>.<langue>.md)
-    tutorials: APP.welcome !== false // les tutoriels sont ceux de Pilote
+    tutorials: APP.welcome !== false, // les tutoriels sont ceux de Pilote
+    // « Toute l'aide » : le manuel de chaque application que l'appareil ouvre (son niveau), à son adresse
+    apps: () => Object.values(APPS).filter(p => p === APP || (p.level || 1) <= deviceLevel).map(p => ({
+      id: p.id,
+      name: t(p.name),
+      href: appHref(p).replace(/#.*$/, '#help')
+    }))
   });
 
   // ---------------------------------------------------------------- écran des conflits
