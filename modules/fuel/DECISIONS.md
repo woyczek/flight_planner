@@ -1301,3 +1301,13 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
 **Order proposed** (after the stabilisation): 4 (small), 3 with its benches (the rules the Map and Fuel share), then 2 on top of
 3 (the biggest, cases F8 F28 F67 F68 F70 F74 as the net), 1 inside 2, then 5 and 6, docs and cases last. One commit per zone,
 --touched before, the full noreg after.
+- **1 Nov 2026 — a new device never waits without end** (a pilot enrolled by link + token: « bloqué sur la page ROUTE, aucun bouton
+  ne fonctionne »; reproduced, case F84): with the GitLab API not answering, `ctx.aerodb.aircraft()` never resolved, and the second half
+  of the mount awaited it **together with** the current flight of a new device before freeing the screen — the body stayed `inert`
+  forever, and « Chargement du vol… » was written only in the Result (step 4), invisible from the step Route. Now: the current flight
+  is awaited on its own, `FLIGHT_WAIT_MS` (4 s) at most, the wait said above the step (`[data-wait]`); past it the screen is free on an
+  empty flight, said with the link to Settings, and the saved flight is taken by the follow of the current flight when it arrives (its
+  merge as for any write from elsewhere). The registry and the quote settings are awaited `REFS_WAIT_MS` (8 s) and `FLIGHT_WAIT_MS` at
+  most; a registry that never comes leaves no sheet (« Aucun appareil », « Base des aéronefs indisponible » in the search) instead of
+  an endless « Chargement… », and a change of aerodb reads it again. The late line has no case (in the suite the store answers a new
+  device's first read of the flight at once). `aircraft()` itself unbounded: reported to AeroDB.

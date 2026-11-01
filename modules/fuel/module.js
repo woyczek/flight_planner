@@ -97,6 +97,18 @@ const TX = {
     'Luftfahrzeuge und Datenblätter werden geladen…', 'Cargando aeronaves y fichas…'
   ],
   loadingFlight: ['Chargement du vol…', 'Loading the flight…', 'Flug wird geladen…', 'Cargando el vuelo…'],
+  // appareil neuf : le vol courant attend la première synchronisation (dit dans l'écran, au-dessus du pas affiché)
+  waitFlight: ['Lecture du vol courant (première synchronisation)… les commandes reviennent dans quelques secondes.',
+    'Reading the current flight (first synchronisation)… the controls come back in a few seconds.',
+    'Aktueller Flug wird gelesen (erste Synchronisierung)… die Bedienelemente sind in wenigen Sekunden wieder da.',
+    'Leyendo el vuelo actual (primera sincronización)… los controles vuelven en unos segundos.'
+  ],
+  lateFlight: ['Données pas encore synchronisées : vous préparez un vol neuf ; votre vol enregistré sera repris dès qu’il arrive.',
+    'Data not synchronised yet: you are preparing a new flight; your saved flight is taken back as soon as it arrives.',
+    'Daten noch nicht synchronisiert: Sie bereiten einen neuen Flug vor; Ihr gespeicherter Flug wird übernommen, sobald er ankommt.',
+    'Datos aún no sincronizados: prepara un vuelo nuevo; su vuelo guardado se recupera en cuanto llegue.'
+  ],
+  syncLink: ['Réglages › Synchronisation', 'Settings › Synchronisation', 'Einstellungen › Synchronisierung', 'Ajustes › Sincronización'],
   acNone: ['Aucun appareil : cherchez-le.', 'No aircraft: search for it.', 'Kein Luftfahrzeug: suchen.', 'Ninguna aeronave: búsquela.'],
   acNoRegistry: ['Base des aéronefs indisponible (aerodb).', 'Aircraft base unavailable (aerodb).',
     'Luftfahrzeugbasis nicht verfügbar (aerodb).',
@@ -3824,7 +3836,8 @@ function refresh() {
       res.innerHTML = `<span class="f-muted">${esc(text)}</span>`;
     }
     if (ac) ac.innerHTML = `<span class="f-muted">${esc(tt(TX.loadingRefs))}</span>`;
-    S.body.inert = !!S.flightPending; // le vol pas encore lu : rien à saisir
+    S.body.inert = !!S.flightPending; // le vol pas encore lu : rien à saisir (quelques secondes au plus : FLIGHT_WAIT_MS)
+    waitLine();
     // la carte des procédures ne dépend que des terrains du vol et d'aerodb : dessinée sans attendre le registre des aéronefs ni les fiches
     // (refsPending ; utilisateur, 29/10 : « très long à charger avant de faire apparaître les procédures »)
     if (!S.flightPending) S.P.sync();
@@ -4203,6 +4216,7 @@ export async function mount(el, ctx) {
   S.step = S.focus === 'route' ? 1 : S.focus ? (kept.started?.at ? 4 : 1) : Math.max(0, Math.min(4, +S.ui.step || 0));
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(ctx.t(meta.title))}</h1>
     <div class="f-tabs" role="group"><button type="button" data-view="plan">${esc(tt(TX.plan))}</button><button type="button" data-view="sheets">${esc(tt(TX.sheets))}</button></div>
+    <p class="f-muted" data-wait role="status" hidden></p>
     <div data-body></div>`;
   // titre : sur un téléphone l'en-tête du cadre porte celui du module (ctx.titled) ; le h1 reste alors pour les lecteurs
   // d'écran seulement (f-sr), et suit « frame-titled » (frame/INTEGRATION.md § 6)
@@ -4253,7 +4267,11 @@ export async function mount(el, ctx) {
       planChanged = plan(f) !== plan(S.flight);
     const oldPlanned = S.flight.planned_at ?? null;
     S.flight = flightOf(f);
-    if (S.flightPending) S.flightSeen = true; // arrivé avant la fin du montage : completeMount le garde
+    if (S.flightLate) { // le vol enregistré arrive après l'attente bornée (flightArrives) : la ligne d'attente s'efface
+      S.flightLate = false;
+      waitLine();
+    }
+    if (S.flightPending) S.flightSeen = true; // arrivé avant la fin de l'attente : flightArrives le garde
     if (S.flightPending || S.refsPending) return; // montage pas fini : completeMount dessine et reprend ce vol
     if ((S.flight.planned_at ?? null) !==
       oldPlanned) { // date du vol changée ailleurs (autre appareil) : champ, météo et vents relus
@@ -4323,18 +4341,62 @@ function resumeFlight() {
   if (S.flight.by && S.flight.by !== 'fuel') adoptForeignFlight();
   else if (S.flight.route?.text || S.flight.route?.dep) S.flight.route.manual || resolveRoute();
 }
+// attente bornée du vol courant et des réglages d'un appareil neuf (première synchronisation) : au-delà, l'écran se libère sur un vol
+// vide, dit (lateFlight), et le vol enregistré est repris par le suivi du vol courant dès qu'il arrive. Un pilote enrôlé le 1er nov.
+// 2026 restait bloqué sur l'étape Route (« aucun bouton ne fonctionne ») : le premier arbre d'un dépôt GitLab qui tarde laissait le
+// corps inerte sans fin, et « Chargement du vol… » n'était écrit que dans le Résultat, invisible à l'étape 2.
+const FLIGHT_WAIT_MS = 4000,
+  // le registre des aéronefs d'aerodb (aircraft()) attend lui aussi le réseau sans borne : au-delà, « Base des aéronefs
+  // indisponible » et la suite du montage (le devis reste en attente d'une fiche) ; un changement d'aerodb le relit ensuite
+  REFS_WAIT_MS = 8000;
+
+/** La ligne d'attente au-dessus du pas : le vol courant pas encore lu (les commandes attendent), ou lu en retard (vol vide, lien
+ *  vers la synchronisation) ; masquée sinon. */
+function waitLine() {
+  const p = S?.ctx && S.body?.parentElement?.querySelector(':scope > [data-wait]');
+  if (!p) return;
+  const kind = S.flightPending ? 'wait' : S.flightLate ? 'late' : '';
+  p.hidden = !kind;
+  p.innerHTML = kind === 'wait' ? esc(tt(TX.waitFlight)) : kind === 'late' ?
+    `${esc(tt(TX.lateFlight))} <a href="#settings">${esc(tt(TX.syncLink))}</a>` : '';
+}
+
+/** Lecture qui attend le réseau, bornée : null au-delà de ms (late() appelé), la valeur sinon. */
+function bounded(job, ms, late) {
+  return Promise.race([job, new Promise(res => setTimeout(() => {
+    late?.();
+    res(null);
+  }, ms))]);
+}
+
+/** Le vol courant d'un appareil neuf : lu dès qu'il arrive, au plus tard après FLIGHT_WAIT_MS (vol vide, dit) ; l'écran devient
+ *  utilisable à ce moment-là, sans attendre le registre d'aerodb ni les fiches. */
+async function flightArrives(self, job) {
+  let late = false;
+  const kept = await bounded(job, FLIGHT_WAIT_MS, () => late = true);
+  if (gone(self) || !S.flightPending) return;
+  if (!S.flightSeen) S.flight = flightOf(kept);
+  flightDefaults(kept || {});
+  S.flightPending = false;
+  S.flightLate = late && !S.flightSeen;
+  if (S.view === 'plan') renderPlan();
+  waitLine();
+  flightReady();
+}
+
 /** Seconde moitié du montage, après le premier dessin : registre d'aerodb et fiches, puis le vol courant et les
- *  réglages s'ils n'avaient jamais été lus sur cet appareil (attente du réseau) ; l'écran se complète sans bouger. */
+ *  réglages s'ils n'avaient jamais été lus sur cet appareil (attente du réseau, bornée : FLIGHT_WAIT_MS) ; l'écran se complète
+ *  sans bouger. */
 async function completeMount(self) {
   const ctx = self.ctx,
     // read avec wait : un fichier jamais lu attend le réseau (get rendrait null tout de suite sur un appareil neuf)
     get = path => Promise.resolve().then(() => ctx.data.read(path, {
       wait: true
-    })).then(r => r?.value ?? null).catch(() => null),
-    [A, kept1, fs1] = await Promise.all([ctx.aerodb?.aircraft ? ctx.aerodb.aircraft().catch(() => null) : null,
-      self.flightPending ? get(pilotPath('current_flight.json')) : null, self.settingsPending ? get(pilotPath('fuel.json')) :
-      null
-    ]);
+    })).then(r => r?.value ?? null).catch(() => null);
+  if (self.flightPending) flightArrives(self, get(pilotPath('current_flight.json')));
+  const [A, fs1] = await Promise.all([ctx.aerodb?.aircraft ? bounded(ctx.aerodb.aircraft().catch(() => null), REFS_WAIT_MS) : null,
+    self.settingsPending ? bounded(get(pilotPath('fuel.json')), FLIGHT_WAIT_MS) : null
+  ]);
   if (gone(self)) return;
   S.A = A;
   // logique des fiches d'aerodb : types, fiches et flotte réglés par aerodb ; ici la fiche active, la langue, les textes
@@ -4354,16 +4416,11 @@ async function completeMount(self) {
     };
     S.settingsPending = false;
   }
-  const wasPending = S.flightPending;
-  if (wasPending) { // le vol ne vient que maintenant (sauf s'il est déjà arrivé par le suivi du vol courant)
-    if (!S.flightSeen) S.flight = flightOf(kept1);
-    flightDefaults(kept1 || {});
-    S.flightPending = false;
-  }
   S.refsPending = false;
   if (S.view === 'plan') renderPlan();
   else keepScroll(S.body, renderSheets);
-  wasPending ? flightReady() : resumeFlight();
+  // le vol encore attendu (flightArrives) : il reprendra le vol à son arrivée ; sinon la reprise, devis compris
+  if (!S.flightPending) resumeFlight();
 }
 
 export function unmount() {

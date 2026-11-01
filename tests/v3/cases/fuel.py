@@ -2058,3 +2058,60 @@ def f78(c):
     val = c.js("[...document.querySelector('[data-module=fuel] select[data-k=\"p-dep-sid\"]').options].find(o => o.textContent.startsWith('TWIN 7A')).value")
     c.eq(val, 'LFRS.SID.TWIN7A.RW03.NONE', 'its value is the record that serves the chosen runway 03', what='TWIN 7A value')
 
+
+# A new device joined by link + token (GitLab), its first synchronisation slow or failing: the screen must not wait for it without end
+_GITLAB_PILOT = ("try { localStorage.setItem('githubData:frame', JSON.stringify({ provider: 'gitlab', repo: 'grp/data', api: 'https://gitlab.com/api/v4', "
+                 "branch: 'main', token: 'glpat_test' })) } catch (e) {}")
+
+
+@case('F84', 'A new device whose first synchronisation never answers or is refused: the step Route works, the wait is said in the screen',
+      'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='Simplification 1 Nov (a pilot enrolled the same day: « bloqué sur la page ROUTE, aucun bouton ne fonctionne »; measured: '
+      'aerodb.aircraft() never answers while the GitLab API hangs, and Fuel awaited it before freeing the screen): the screen never waits '
+      'for the aircraft registry; the current flight of a new device is awaited FLIGHT_WAIT_MS at most, the wait said above the step; the '
+      'registry REFS_WAIT_MS at most, then « Base des aéronefs indisponible » instead of an endless « Chargement »; a refused '
+      'synchronisation (403) frees the screen at once. The late line (lateFlight) has no case: in the suite the store answers a new '
+      'device\'s first read of the flight at once')
+def f84(c):
+    held = []
+    c.context.add_init_script(_GITLAB_PILOT)
+    # the GitLab API never answers (a first tree that does not come): every request held until the end of the case
+    c.context.route(re.compile(r'^https://gitlab\.com/'), lambda r: held.append(r))
+    c.open('fuel', wait=False)
+    c.until("!!document.querySelector('[data-module=fuel] [data-body]')", timeout=15000, what='Fuel is drawn')
+    wait = norm(tx(F, 'waitFlight', c.lang))
+    c.until("(w) => { const p = document.querySelector('[data-module=fuel] [data-wait]'); const b = document.querySelector('[data-module=fuel] [data-body]');"
+            " return !!p && !p.hidden && p.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w || (!!b && !b.inert) }", wait,
+            what='while the controls wait, the wait is said above the step')
+    c.until("() => { const b = document.querySelector('[data-module=fuel] [data-body]'); return !!b && !b.inert }", timeout=8000,
+            what='the screen is free a few seconds later, though the synchronisation never answered')
+    loading = norm(tx(F, 'loadingRefs', c.lang))
+    c.until("(w) => { const a = document.querySelector('[data-module=fuel] [data-acsel]'); return !!a && !!a.textContent.trim() && !a.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w) }",
+            loading, timeout=15000, what='the aircraft registry that never comes ends the « loading » line (REFS_WAIT_MS)')
+    to_step(c, 1)
+    if not c.js("document.querySelector('[data-module=fuel] details[data-fold=pts]')?.open"):
+        c.tap(f'{FUEL} details[data-fold="pts"] > summary')   # the fold of the points, closed on a new device
+    c.page.fill(f'{FUEL} [data-k="addpt"]', 'TSTA 45 1')
+    c.tap(f'{FUEL} [data-do="addpt"]')
+    c.until("document.querySelectorAll('[data-module=fuel] [data-pts] [data-do=\"ptdel\"]').length === 1", what='a point added on the step Route')
+    c.page.fill(f'{FUEL} [data-k="rtext"]', 'TSTA TSTB')
+    c.ok(c.js("document.querySelector('[data-module=fuel] [data-k=rtext]').value") == 'TSTA TSTB', '', 'the route field takes the text')
+    c.ok(len(held) > 0, f'{len(held)} requests held', 'the synchronisation was asked and never answered')
+    # a refused synchronisation (GitLab 403): nothing to wait for, the screen is free at once and nothing is said in it
+    c.context.unroute(re.compile(r'^https://gitlab\.com/'))
+    for r in held:
+        try:
+            r.abort()
+        except Exception:
+            pass
+    c.context.route(re.compile(r'^https://gitlab\.com/'), lambda r: r.fulfill(status=403, content_type='application/json',
+                                                                          body=json.dumps({'message': '403 Forbidden'})))
+    c.open('fuel', wait=False, docs=[['device/level.json', {'level': 1}, 'cache']])
+    c.until("() => { const b = document.querySelector('[data-module=fuel] [data-body]'); return !!b && !b.inert }", timeout=8000,
+            what='a refused synchronisation frees the screen')
+    to_step(c, 1)
+    if not c.js("document.querySelector('[data-module=fuel] details[data-fold=pts]')?.open"):
+        c.tap(f'{FUEL} details[data-fold="pts"] > summary')   # the fold of the points, closed on a new device
+    c.page.fill(f'{FUEL} [data-k="addpt"]', 'TSTA 45 1')
+    c.tap(f'{FUEL} [data-do="addpt"]')
+    c.until("document.querySelectorAll('[data-module=fuel] [data-pts] [data-do=\"ptdel\"]').length === 1", what='a point added after a 403')

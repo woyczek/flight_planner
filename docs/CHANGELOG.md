@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: a new device whose first synchronisation is slow or never answers is no longer blocked** (`modules/fuel/module.js`;
+  DECISIONS, SPEC; noreg F84) — a pilot enrolled on 1 Nov could press nothing on the step Route: the screen awaited the aircraft
+  registry of aerodb (never answering while GitLab hangs) with the current flight. Now the flight is awaited 4 s at most, the wait is
+  said above the step, the registry 8 s at most; then the screen is free, an empty flight said with the link to Settings.
 - **Map base: dots one can touch and one cover zoom, for the Data module's map of procedures** (`modules/maps/lib/map_base.js`
   `pointsLayer`, `COVER_ZOOM`; `render.js` `coverPins`, `draw.js`; INTEGRATION § 7; noreg D95). The aerodromes whose procedures are
   read can show as dots above zoom 7, a tap giving the ICAO code and never ticking the zone under it; the Map's coverage colours read
