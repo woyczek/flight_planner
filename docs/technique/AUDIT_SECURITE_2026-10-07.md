@@ -1001,6 +1001,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 149 | A changed GitLab instance needs its own token (ca9e23445): the point of 148 fixed; pilot tokens' count (01b6f511f) | acceptable |
 | 150 | Group of 1 November noon: one enrolment path (7272b0414), the administrator's assistant card (9d0700ad3) | acceptable |
 | 151 | Group of 1 November afternoon: the pilot token just created shown alone (6b90f3463) | acceptable |
+| 152 | Launcher: the data branch opened to Developers by the administrator's token, `/__setup/gitlab/admin/branch` (c6f3bc38b) | **to fix** |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2271,6 +2272,16 @@ only reads (`secrets`, which returns indicators only, and the pilot tokens' coun
 field with “Copy”, escaped into its `value` attribute (as it was escaped into a `<code>` before), never in the address,
 the journal or a `data-*` attribute, and gone at the next drawing; the list of existing tokens carries only the trigram,
 dates and state. The other commits of the group have no surface (build cycles, texts, a test case).
+
+**152. Opening the data branch to Developers (c6f3bc38b) — to fix.** The route is for this workstation only, after a
+question; the branch name is encoded; the token never goes into a body. To fix: (1) `allow_force_push` applies to everyone
+allowed to push, so adding a Developer push rule (or recreating the protection with the former `allow_force_push`) gives
+force push to the pilots' tokens when it was allowed to Maintainers; § 10.36 asks for no force push, so the opening must
+set it off and “open” must require it off; (2) an unprotected branch is counted as open although a Developer can then
+rewrite or delete it: protect it instead (push Developer, merge Maintainer, no force push); (3) in the fallback (delete, then
+create again), the restoring create is not checked, so a double refusal leaves the branch unprotected without saying so;
+check it and report it clearly. The short window without protection is unavoidable on the free tier and acceptable, as is
+the default unprotect level.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
