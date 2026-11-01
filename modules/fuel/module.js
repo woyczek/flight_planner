@@ -1456,7 +1456,8 @@ ${PROC_STYLE}
 [data-module="fuel"] .fu-rrow>.f-field{flex:1 1 0;min-width:0}
 [data-module="fuel"] .fu-rrow>button{flex:none;min-width:56px;min-height:44px;margin-bottom:2px}
 [data-module="fuel"] .fu-rinfo{flex-wrap:wrap;gap:4px 12px;margin:4px 0}
-[data-module="fuel"] .fu-linkbtn{min-height:44px;padding:0 4px;border:0;background:none;color:var(--sog-link);text-decoration:underline;font:inherit;cursor:pointer}
+[data-module="fuel"] .fu-linkbtn{min-height:44px;padding:0 4px;border:0;border-radius:0;background:none;box-shadow:none;text-shadow:none;color:var(--sog-link);text-decoration:underline;font:inherit;cursor:pointer}
+[data-module="fuel"] .fu-linkbtn:is(:hover,:focus,:active,:disabled){background:none;box-shadow:none;border:0}
 [data-module="fuel"] .fu-pt{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
 [data-module="fuel"] .fu-ptid{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 [data-module="fuel"] .fu-ptid small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

@@ -1311,3 +1311,8 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   most; a registry that never comes leaves no sheet (« Aucun appareil », « Base des aéronefs indisponible » in the search) instead of
   an endless « Chargement… », and a change of aerodb reads it again. The late line has no case (in the suite the store answers a new
   device's first read of the flight at once). `aircraft()` itself unbounded: reported to AeroDB.
+- **1 Nov 2026 — a link button paints nothing and keeps its line** (BUGS SOG, the user's capture: « Lire les procédures de LFRS »
+  covering the bottom of « Arrivée LFRS Nantes Atlantique »): `.fu-procmeta .fu-linkbtn` had `margin:-10px 0`, so its 44 px box rose
+  over the title, and `.fu-linkbtn` cleared the background but not the design's `--sog-btn-shadow` (Aqua paints it). Now no negative
+  margin (the meta line takes the height of its target) and no background, shadow nor border in any state. Case F14 (tokens painted
+  red for the check, the box below the title).

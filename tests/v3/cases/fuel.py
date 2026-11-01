@@ -588,6 +588,14 @@ def f14(c):
     c.ok(norm(row(c, 'procNoData')) in txt, f'row {txt!r}', '"aucune procédure publiée" in the language of the run')
     c.eq(norm(c.text(f'{FUEL} [data-do="procfetch"]') or ''), norm(row(c, 'procRead').replace('{icao}', 'LFQQ')), 'the button names the aerodrome', what='button')
     c.ge(round(c.box(f'{FUEL} [data-do="procfetch"]')['h']), 44, 'a 44 px target', what='button height')
+    # BUGS SOG, 1 Nov (the user's capture, Aqua): the 44 px box of the link rose 10 px over the title (margin -10px) and the design's button
+    # shadow painted it; whatever the design paints on buttons, the link paints nothing, and its line keeps the room of its target
+    c.js("document.documentElement.style.cssText += ';--sog-btn-shadow:0 2px 6px rgb(255 0 0);--sog-btn-bg:rgb(255 0 0);--sog-btn-border:2px solid rgb(255 0 0)'")
+    c.page.hover(f'{FUEL} [data-do="procfetch"]')
+    look = c.js("(() => { const s = getComputedStyle(document.querySelector('[data-module=fuel] [data-do=procfetch]')); return [s.boxShadow, s.backgroundColor, s.borderTopWidth] })()")
+    c.eq(look, ['none', 'rgba(0, 0, 0, 0)', '0px'], 'no shadow, background or border on the link, even hovered under a design that paints buttons', what='link look')
+    title, btn = c.box(f'{FUEL} [data-proc="dep"] .fu-proctitle'), c.box(f'{FUEL} [data-do="procfetch"]')
+    c.ok(btn['t'] >= title['b'] - 0.5, f'button top {btn["t"]:.1f}, title bottom {title["b"]:.1f}', 'the target does not cover the title above it')
     c.tap(f'{FUEL} [data-do="procfetch"]')
     want = norm(tx(PT, "no-launcher'", c.lang, after='procReasons'))
     c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", want, timeout=6000,
