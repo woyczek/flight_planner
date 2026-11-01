@@ -311,8 +311,14 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
   service screens, name), chosen by the address of the page — `/frame/?app=maintenance`; no `app` or an unknown one:
   `pilot`; nothing is kept on the device (later: the role in the registry). The application lists its modules (order,
   seven at most); a module never knows where it is shelved.
-  - **Pilot**: Carburant, Missions, Carte, Météo, Compte rendu, Mes vols, Site — the pilot's sequence (the weather is looked
-    at before the report, 1 Nov 2026); no Données in its rail.
+  - **Pilot**: Carburant, Carte, Météo, Compte rendu, Mes vols, Site — the pilot's sequence (the weather is looked at
+    before the report, 1 Nov 2026); no Données in its rail; `#missions` here goes to Company (`APP.elsewhere`).
+  - **Company** (`?app=company`, « Compagnie » ×4, 1 Nov 2026, the user: « the Missions module is the first, and for now
+    only, module of the airline pilot »): Missions alone, in the column and the bar (a one-entry bar stays shown and
+    marked); the level of Missions; its manual `company.<lang>.md` (`intro-company`, the Missions chapter); its icon the
+    plane tinted `--sog-ok` (the airline's logo to come). « Préparer ce vol » (`#fuel?mission=<id>`) goes to Fuel in Pilot:
+    `APP.elsewhere: { fuel: 'pilot' }` — the address of a module another application owns is replaced by the same address
+    in that application (query kept; the flight in progress is common to the applications).
   - **Maintenance**: Données (`modules/data`), then links of the rail that are not modules (`APP.links`): « Jetons des
     pilotes » (`#pilot-tokens`, with a launcher, G2: GitLab project access tokens of the pilots, created, listed and
     revoked by the launcher with the administrator's token; `frame/settings/pilot_tokens.js`; that token — a personal

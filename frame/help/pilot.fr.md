@@ -11,7 +11,8 @@ mes vols, passage au site de la compagnie. Elle marche sur un téléphone comme 
   nouveau un onglet déjà choisi quand il groupe plusieurs écrans : une petite liste s'ouvre au-dessus de lui (Préparer :
   Carburant et Fiches de performances). Sur un écran, chaque outil est un verbe de la colonne de gauche. L'adresse d'un outil
   (`#fuel`, `#report`…) suffit à y revenir. Les Réglages sont le bouton ⚙ de l'en-tête. Le nom de l'application, en haut à gauche, ouvre la liste
-  des applications : Pilote et, au niveau Complet, Maintenance (le même avion en rouge) ; un toucher y passe.
+  des applications : Pilote, Compagnie (les missions de la compagnie) et, au niveau Complet, Maintenance (le même
+  avion en rouge) ; un toucher y passe.
 - **Votre identité.** Dans ⚙ Réglages, réglez votre trigramme et vos identifiants IVAO, VATSIM et SimBrief : les
   outils s'en servent pour préremplir.
 - **Le niveau.** Toujours dans les Réglages, « Niveau » choisit ce que le menu montre : Découverte, Courant ou Complet.
@@ -232,24 +233,6 @@ altitudes et les distances à l'écran ; les niveaux restent des niveaux de vol,
   saisie une fois sur l'appareil dans Réglages, carte « Clé météo (TAF, avwx.rest) » ; sans clé, la carte le dit et le METAR répond à la place. La
   carte météo dit d'où viennent les messages. Sans réseau du tout, elle montre la dernière météo gardée, avec son
   heure.
-
-<!-- chapter: missions -->
-# Missions
-
-Les missions de la compagnie, celles du dépôt commun (écrites avec le CPCO) : en choisir une, ou en tirer une au sort, puis la préparer dans Carburant.
-
-## Comment s'en servir
-
-<a id="missions-list"></a>**La liste.** Les missions des séries les plus récentes d'abord, groupées par famille. Chaque ligne donne l'identifiant, le titre, le trajet, le type d'appareil et le bloc estimé ; « volée le … » marque une mission dont vous avez écrit le compte rendu. La recherche filtre sur l'identifiant, le titre, un terrain ou un type ; la liste déroulante garde une famille. Sept lignes sont montrées, « N autres » déplie la suite. Les missions d'organisation d'un exercice (celles qui finissent par Z) ne sont pas des vols et n'y figurent pas.
-
-<a id="missions-open"></a>**Choisir, ou tirer au sort.** Une tape sur une ligne ouvre la mission : son résumé, son trajet, l'appareil, le bloc estimé, ses notes. « Tirer au sort » en prend une au hasard parmi celles de la liste filtrée que vous n'avez pas encore volées ; « Tirer encore » en prend une autre. Rien ne démarre seul : « Préparer ce vol » ouvre Carburant avec le départ, l'arrivée, les points de la mission (en coordonnées), le niveau et le type d'appareil ; la piste, les procédures, le carburant et la météo se préparent ensuite comme pour tout vol.
-
-## Bon à savoir
-
-- Le module lit les missions, il ne les modifie jamais ; elles s'écrivent dans le CPCO.
-- Une mission dont le fichier ne vient pas le dit : « introuvable » (le dépôt ne l'a pas), « pas encore sur l'appareil » (la synchronisation l'apporte, la mission s'affiche à son arrivée) ou « illisible » (avec la raison). Le registre seul est alors montré.
-- Un vol en préparation n'est remplacé qu'après une question ; un vol démarré ne l'est jamais (annulez le départ, ou terminez le vol, d'abord).
-- L'enveloppe, le lecteur page à page et les affectations viendront plus tard.
 
 <!-- chapter: maps -->
 # Carte

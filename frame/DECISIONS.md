@@ -2438,3 +2438,12 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   at the head of the copyable diagnostic (`suite`), and gives it to the Settings as `ctx.version()` for their « About »
   card (Réglages: version, code repository, licence, roadmap, report link). No footer (height on a phone). The Status block
   is now always shown when a version is known. Noreg A81, I34.
+- **1 Nov 2026 — A third application, Company** (Simplification, from the user: « the Missions module is the first, and for
+  now only, module of the airline pilot; nothing to do in the Pilot module »): `APPS.company`, « Compagnie / Company /
+  Gesellschaft / Compañía » (one word; the airline's name, read from `airline/settings.json`, as a subtitle in the switcher),
+  Missions alone in its bar and column, the level of Missions, its manual (`intro-company` ×4 and the Missions chapter),
+  its icon the plane tinted with a design token (`--sog-ok`) until the airline's logo (next lot). Missions leaves Pilot's
+  column and the Préparer group of its bar. Navigation between applications: `APP.elsewhere` — Company hands `#fuel` to
+  Pilot (« Préparer ce vol », the query kept), Pilot hands `#missions` to Company (an old address). The flight in progress
+  is common. Features SOG sets Missions' `meta.apps` to `['company']`. Noreg A82 (switcher, bar, manual, handovers), N
+  cases opened in Company.

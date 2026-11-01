@@ -150,20 +150,14 @@
     name: ['Pilote', 'Pilot', 'Pilot', 'Piloto'],
     icon: 'plane',
     tint: 'var(--sog-accent)',
-    // un module = un verbe ; sept au plus ; l'ordre suit la séquence du pilote : préparer (Carburant, Missions), la Carte,
-    // la Météo avant le compte rendu, le CR, ses vols, puis le Site (l'utilisateur, 1er nov. 2026 : « on regarde la météo
-    // avant de produire un CR »)
+    // un module = un verbe ; sept au plus ; l'ordre suit la séquence du pilote : préparer (Carburant), la Carte, la Météo
+    // avant le compte rendu, le CR, ses vols, puis le Site (l'utilisateur, 1er nov. 2026 : « on regarde la météo avant de
+    // produire un CR ») ; les Missions sont l'application Compagnie
     modules: [{
       id: 'fuel',
       label: ['Carburant', 'Fuel', 'Kraftstoff', 'Combustible'],
       icon: 'fuel',
       pane: 'maps' // volet proposé à côté sur grand écran (vue double)
-    }, {
-      // les missions de la compagnie (modules/missions/SPEC.md, lot 2 réduit du 31 oct. 2026) : choisir ou tirer au sort, puis
-      // « Préparer ce vol » dans Carburant ; sur le téléphone, dans le groupe de l'onglet Préparer
-      id: 'missions',
-      label: ['Missions', 'Missions', 'Missionen', 'Misiones'],
-      icon: 'target'
     }, {
       id: 'maps',
       label: ['Carte', 'Map', 'Karte', 'Mapa'],
@@ -199,7 +193,7 @@
       id: 'prepare',
       label: ['Préparer', 'Prepare', 'Vorbereiten', 'Preparar'],
       icon: 'fuel',
-      modules: ['fuel', 'missions'],
+      modules: ['fuel'],
       views: [{
         id: 'sheets',
         module: 'fuel',
@@ -228,6 +222,10 @@
       icon: 'list',
       modules: ['flightlog']
     }],
+    // une ancienne adresse des Missions dans Pilote passe à l'application Compagnie
+    elsewhere: {
+      missions: 'company'
+    },
     // écrans de service : écrans du cadre ouverts par-dessus le module courant (comme les Réglages), dessinés par un service ;
     // le cadre ne connaît que cette déclaration (frame/INTEGRATION.md § 13) : scripts chargés à la première ouverture, niveau
     // d'usage requis, préfixes lus et écrits (comme meta.reads / meta.writes), transport GitHub de l'appareil si github
@@ -237,6 +235,35 @@
       scripts: ['aerodb/airac.js?v=0', 'aerodb/catalogue.js?v=0', 'aerodb/sources.js?v=0'],
       level: 3
     }],
+    links: []
+  };
+  // Compagnie (décision de l'utilisateur, 1er nov. 2026 : « le module Missions est le premier, et actuellement unique, module
+  // du pilote de compagnie ») : les missions de la compagnie (modules/missions/SPEC.md) ; « Préparer ce vol » ouvre Carburant
+  // dans Pilote (elsewhere : l'adresse d'un module d'une autre application y passe, la requête gardée ; le vol courant est
+  // commun aux applications) ; le niveau de Missions (Découverte) ; la teinte : un jeton du design, comme Maintenance
+  APPS.company = {
+    id: 'company',
+    name: ['Compagnie', 'Company', 'Gesellschaft', 'Compañía'],
+    icon: 'plane',
+    tint: 'var(--sog-ok)',
+    tintIcon: true,
+    welcome: false,
+    modules: [{
+      id: 'missions',
+      label: ['Missions', 'Missions', 'Missionen', 'Misiones'],
+      icon: 'target'
+    }],
+    // une barre d'une seule entrée reste affichée et marquée
+    tabs: [{
+      id: 'missions',
+      label: ['Missions', 'Missions', 'Missionen', 'Misiones'],
+      icon: 'target',
+      modules: ['missions']
+    }],
+    elsewhere: {
+      fuel: 'pilot'
+    },
+    screens: [],
     links: []
   };
   // Maintenance (V3_SPECIFICATION § 2) : les données de la compagnie (module Données), l'administration (les réglages ouverts
@@ -2587,7 +2614,7 @@
       const cur = p === APP,
         off = !cur && (p.level || 1) > deviceLevel,
         need = off ? `<small>${esc(t(T.appNeeds, { l: t(T.levelNames[(p.level || 1) - 1]) }))}</small>` : '';
-      return `<button type="button" class="f-tabpop-row" data-app="${esc(p.id)}"${cur ? ' aria-current="page"' : ''}${off ? ' disabled' : ''}><span class="f-app-ico" style="color:${esc(p.tint || 'currentColor')}">${icon(p.icon)}</span><span>${esc(t(p.name))}${need}</span></button>`;
+      return `<button type="button" class="f-tabpop-row" data-app="${esc(p.id)}"${cur ? ' aria-current="page"' : ''}${off ? ' disabled' : ''}><span class="f-app-ico" style="color:${esc(p.tint || 'currentColor')}">${icon(p.icon)}</span><span>${esc(t(p.name))}${p.id === 'company' && airline.name ? `<small>${esc(airline.name)}</small>` : ''}${need}</span></button>`;
     }).join('');
     el.style.visibility = 'hidden';
     document.body.append(el);
@@ -2651,6 +2678,10 @@
     // ancienne adresse d'un écran gardée en renvoi (l'adresse remplacée : le retour arrière ne la rejoue pas)
     const moved = MOVED[parseHash().id];
     if (moved) return void location.replace(`#${moved}`);
+    // l'adresse d'un module d'une autre application que celle-ci lui passe (APP.elsewhere : « Préparer ce vol » de Compagnie
+    // ouvre Carburant dans Pilote) : la même adresse dans cette application-là
+    const away = APPS[APP.elsewhere?.[parseHash().id]];
+    if (away && away !== APP) return void location.replace(appHref(away).replace(/#.*$/, location.hash));
     const h = parseHash(),
       id = h.id || visibleModules()[0]?.id || 'settings';
     // écrans du cadre (aide, feuille de route, réglages, conflits) par-dessus le module courant, qui reste monté

@@ -190,18 +190,17 @@ def a7(c):
     c.tap(_tab(c, 'prepare'))                       # a second tap: the tab is already the active one
     c.until("!!document.querySelector('.f-tabpop')", what='the popover opens on a second tap on Préparer')
     rows = c.boxes('.f-tabpop-row')
-    c.eq(len(rows), 3, 'rows Carburant, Fiches and Missions (the group of the tab, modules/missions since 31 Oct)', what='popover rows')
+    c.eq(len(rows), 2, 'rows Carburant and Fiches (Missions is the Company application since 1 Nov)', what='popover rows')
     bar = c.box('#fTabs')
     for r in rows:
         c.ok(r['h'] >= 43.5, f'row "{r["text"]}" is {r["h"]:.1f} px high', 'at least 44 px')
         c.ok(r['l'] >= 0 and r['r'] <= c.width and r['t'] >= 0, f'row "{r["text"]}" box {r["l"]:.0f}..{r["r"]:.0f}', 'inside the window')
         c.ok(r['b'] <= bar['t'] + 0.5, f'row bottom {r["b"]:.0f} > bar top {bar["t"]:.0f}', 'above the bar')
     keys = c.js("[...document.querySelectorAll('.f-tabpop-row')].map(r => r.dataset.id + (r.dataset.view ? ':' + r.dataset.view : ''))")
-    c.eq(keys, ['fuel', 'fuel:sheets', 'missions'], 'the rows are the module, its Sheets view, then the second module of the group', what='row keys')
+    c.eq(keys, ['fuel', 'fuel:sheets'], 'the rows are the module and its Sheets view', what='row keys')
     c.eq([norm(r['text']) for r in rows], [norm(tx('frame/app.js', 'label', c.lang, after="id: 'fuel'")),
-                                           norm(tx('frame/app.js', 'label', c.lang, after="id: 'sheets'")),
-                                           norm(tx('frame/app.js', 'label', c.lang, after="id: 'missions'"))],
-         'the rows read Carburant, Fiches and Missions in the language of the run', what='row labels')
+                                           norm(tx('frame/app.js', 'label', c.lang, after="id: 'sheets'"))],
+         'the rows read Carburant and Fiches in the language of the run', what='row labels')
     cur = c.js("[...document.querySelectorAll('.f-tabpop-row')].filter(r => r.hasAttribute('aria-current')).map(r => r.dataset.id + (r.dataset.view ? ':' + r.dataset.view : ''))")
     c.eq(cur, ['fuel'], 'the current row (fuel, the Quote screen) carries aria-current', what='aria-current rows')
     c.tap('.f-tabpop-row[data-view="sheets"]')
@@ -1498,11 +1497,12 @@ def a46(c):
     c.until("(document.querySelector('link[rel=icon]').getAttribute('href') || '').startsWith('data:image/svg+xml')", what='the tab icon is drawn in the tint')
     fav = urllib.parse.unquote(c.js("document.querySelector('link[rel=icon]').getAttribute('href')"))
     c.ok(err.replace(' ', '') in fav.replace(' ', '') and '<path' in fav, fav[:200], 'the suite’s plane, its path in the tint')
-    # the switcher: Pilot and Maintenance, the current one marked; a tap on Pilot replaces the page
+    # the switcher: Pilot, Company and Maintenance, the current one marked; a tap on Pilot replaces the page
     c.tap('#fApp')
     c.until("!!document.querySelector('.f-tabpop.f-down')", what='the list of applications opens under the name')
     c.eq(c.attr('#fApp', 'aria-expanded'), 'true', 'the button says it is open', what='aria-expanded')
-    c.eq([(r['id'], r['off'], r['cur']) for r in c.js(rows)], [('pilot', False, None), ('maintenance', False, 'page')], 'both applications, Maintenance marked', what='rows')
+    c.eq([(r['id'], r['off'], r['cur']) for r in c.js(rows)], [('pilot', False, None), ('company', False, None), ('maintenance', False, 'page')],
+         'the three applications, Maintenance marked', what='rows')
     c.tap('.f-tabpop.f-down [data-app="pilot"]')
     c.until("location.search === '' && location.hash === '#fuel' && !!document.querySelector('#fApp #fAppIco svg')", timeout=15000,
             what='Pilot opens on its first module, without ?app=')
@@ -1514,8 +1514,9 @@ def a46(c):
     c.until("!!document.querySelector('.f-tabpop.f-down')", what='the list opens')
     got = c.js(rows)
     need = tx('frame/app.js', 'appNeeds', c.lang).split('{l}')[0]
-    c.eq([(r['id'], r['off'], r['cur']) for r in got], [('pilot', False, 'page'), ('maintenance', True, None)], 'below the Full level, Maintenance is greyed', what='rows at level 2')
-    c.ok(norm(got[1]['need']).startswith(norm(need)), got[1]['need'], 'its level is said under it')
+    c.eq([(r['id'], r['off'], r['cur']) for r in got], [('pilot', False, 'page'), ('company', False, None), ('maintenance', True, None)],
+         'below the Full level, Maintenance is greyed (Company has Missions’ level)', what='rows at level 2')
+    c.ok(norm(got[2]['need']).startswith(norm(need)), got[2]['need'], 'its level is said under it')
     c.page.keyboard.press('Escape')
     c.until("!document.querySelector('.f-tabpop')", what='Escape closes the list')
     c.eq(c.attr('#fApp', 'aria-expanded'), None, 'the button is no longer expanded', what='aria-expanded after Escape')
@@ -2396,7 +2397,7 @@ def a66(c):
             c.wait(400)
         before = c.js(boxes)
         c.ok(len(before) >= 3, str(before), 'the entries are drawn')
-        for target in ('maps', 'report', 'flightlog', 'atmosphere', 'missions', 'website', 'fuel'):
+        for target in ('maps', 'report', 'flightlog', 'atmosphere', 'website', 'fuel'):
             c.js(f"() => {{ location.hash = '#{target}' }}")
             c.until(f"!!document.querySelector('#fMenu a[data-id=\"{target}\"][aria-current], #fTabs a[aria-current]')", timeout=10000,
                     what=f'{target} marked')
@@ -2955,8 +2956,8 @@ def a79(c):
     tabs = c.js("[...document.querySelectorAll('#fTabs a')].map(a => a.dataset.tab)")
     c.eq(tabs, ['prepare', 'maps', 'weather', 'report', 'flightlog'], 'the bar: Préparer, Carte, Météo, CR, Vols', what='bar')
     rail = [x for x in c.js("[...document.querySelectorAll('#fMenu a[data-id]')].map(a => a.dataset.id)") if x]
-    want = ['fuel', 'missions', 'maps', 'atmosphere', 'report', 'flightlog', 'website']
-    c.eq([x for x in want if x in rail], [x for x in rail if x in want], 'the column: Carburant, Missions, Carte, Météo, Compte rendu, Mes vols, Site', what='column')
+    want = ['fuel', 'maps', 'atmosphere', 'report', 'flightlog', 'website']
+    c.eq([x for x in want if x in rail], [x for x in rail if x in want], 'the column: Carburant, Carte, Météo, Compte rendu, Mes vols, Site (Missions is the Company application)', what='column')
     c.ok(rail.index('atmosphere') == rail.index('maps') + 1 and rail.index('report') == rail.index('atmosphere') + 1, str(rail), 'Météo right after the Map, before the report')
 
 
@@ -2975,7 +2976,7 @@ def a80(c):
     c.tap('[data-help-all]')
     c.until("!!document.querySelector('[data-help-index]')", timeout=15000, what='the index of all the help')
     apps = c.js("[...document.querySelectorAll('[data-help-manuals] a')].map(a => a.dataset.app)")
-    c.eq(sorted(apps), ['maintenance', 'pilot'], 'the manuals of the applications the device opens', what='manuals')
+    c.eq(sorted(apps), ['company', 'maintenance', 'pilot'], 'the manuals of the applications the device opens', what='manuals')
     c.ok(c.js("[...document.querySelectorAll('[data-help-manuals] a')].every(a => a.getAttribute('href').endsWith('#help'))"), '', 'each manual at its application’s address')
     tut = c.js("[...document.querySelectorAll('[data-help-tutorials] a')].map(a => a.getAttribute('href'))")
     c.ok(len(tut) >= 1 and all('#help?t=' in h and 'app=maintenance' not in h for h in tut), str(tut), 'the tutorials (Pilot’s), at Pilot’s address')
@@ -3005,3 +3006,94 @@ def a81(c):
     got = json.loads(c.js("window.__copied.at(-1)"))
     keys = [k for k in got if k not in ('at', 'app')]
     c.eq([keys[0], got.get('suite')], ['suite', ver], 'the head of the diagnostic: the suite’s version', what='diagnostic')
+
+
+def location_has(c):
+    return 'mission=X-1' in c.js('location.hash')
+
+
+@case('A82', 'The Company application: Missions alone, in the switcher, its manual; « Prepare this flight » goes to Fuel in Pilot', 'A', designs=('standard',), screens=False, night=False,
+      rule='Simplification 1 Nov (the user: « the Missions module is the first, and for now only, module of the airline pilot »): a third application `company` « Compagnie » ×4, Missions alone in its bar and column (a one-entry bar stays shown and marked), its manual (company.*: the Missions chapter); Missions leaves Pilot; #fuel from Company opens Fuel in Pilot, #missions in Pilot opens Company')
+def a82(c):
+    c.open('missions', app='company', docs=LEVEL3, wait=False)
+    c.until("!!document.querySelector('[data-module=missions]')", timeout=20000, what='Company mounts Missions')
+    rail = c.js("[...document.querySelectorAll('#fMenu a[data-id]')].map(a => a.dataset.id)")
+    tabs = c.js("[...document.querySelectorAll('#fTabs a')].map(a => a.dataset.tab)")
+    c.eq([[x for x in rail if x], tabs], [['missions'], ['missions']], 'Company: Missions alone in the column and the bar', what='entries')
+    c.eq(c.js("[...document.querySelectorAll('#fTabs a[aria-current], #fMenu a[aria-current]')].length >= 1"), True, 'the one entry is marked', what='marked')
+    c.ok(c.js('document.title').startswith(tx('frame/app.js', 'name', c.lang, after='APPS.company = {')), c.js('document.title'), 'the application’s name in the page title')
+    # the switcher lists the three applications
+    c.tap('#fApp')
+    c.until("!!document.querySelector('.f-tabpop [data-app]')", what='the switcher opens')
+    c.eq(c.js("[...document.querySelectorAll('.f-tabpop [data-app]')].map(b => b.dataset.app)"), ['pilot', 'company', 'maintenance'], 'Pilot, Company, Maintenance', what='switcher')
+    c.js("() => document.querySelector('.f-tabpop')?.remove()")
+    # its manual: the Missions chapter
+    c.page.goto(f'{c.base}/frame/index.html?app=company#help?m=missions', wait_until='load')
+    c.until("!!document.querySelector('[data-chapter=\"missions\"]')", timeout=20000, what='the Company manual has the Missions chapter')
+    c.eq(c.count('[data-chapter="fuel"]'), 0, 'and not Pilot’s chapters', what='chapters')
+    # Pilot has no Missions; its old address goes to Company; Fuel from Company goes to Pilot
+    c.page.goto(f'{c.base}/frame/index.html#fuel', wait_until='load')
+    c.until("!!document.querySelector('[data-module=fuel]')", timeout=20000, what='Pilot')
+    c.eq(c.count('#fMenu a[data-id="missions"], #fTabs a[data-tab="missions"]'), 0, 'Missions is not in Pilot', what='Pilot entries')
+    c.page.goto(f'{c.base}/frame/index.html#missions', wait_until='load')
+    c.until("location.search.includes('app=company') && !!document.querySelector('[data-module=missions]')", timeout=20000, what='#missions in Pilot opens Company')
+    c.page.goto(f'{c.base}/frame/index.html?app=company#fuel?mission=X-1', wait_until='load')
+    c.until("!location.search.includes('app=company') && location.hash.startsWith('#fuel') && !!document.querySelector('[data-module=fuel]')", timeout=20000,
+            what='#fuel?mission= in Company opens Fuel in Pilot')
+    # the query reaches Pilot (Fuel may consume it at once: the address the page arrived at says it)
+    arrived = c.js("(performance.getEntriesByType('navigation')[0] || {}).name || ''")
+    c.ok('#fuel?mission=X-1' in arrived or location_has(c), arrived, 'the query kept across the applications')
+
+
+
+def _logo_launcher(c, logo, name='Air Dalton', path='airline/logo.png'):
+    """A fake launcher whose data/ holds the airline's settings and its logo (bytes, or None: no file)."""
+    status = {'server': True, 'data': True, 'dataGit': True, 'host': 'TEST', 'lan': False, 'lnm': []}
+    tree = {'airline/settings.json': 'r1', **({path: 'r-%d' % len(logo)} if logo is not None and path else {})}
+
+    def launcher(route):
+        p = urllib.parse.urlparse(route.request.url).path
+        body = status if p.endswith('/__setup/status') else {'head': 'h1', 'tree': tree} if p.endswith('/__setup/changes') else {}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+
+    def data(route):
+        p = urllib.parse.urlparse(route.request.url).path
+        if p.endswith('/data/' + path) and logo is not None:
+            return route.fulfill(status=200, content_type='application/octet-stream', body=logo)
+        if p.endswith('/data/airline/settings.json'):
+            return route.fulfill(status=200, content_type='application/json', body=json.dumps({'name': name, **({'logo': path} if path else {})}))
+        route.fulfill(status=404, body='')
+    c.context.unroute(re.compile(r'/__setup/'))
+    c.context.unroute(re.compile(r'/data/airline/'))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    c.context.route(re.compile(r'/data/airline/'), data)
+    return [['airline/settings.json', {'name': name, **({'logo': path} if path else {})}, 'document']]
+
+
+@case('A83', 'The airline’s logo: the icon of the Company application, fitted, never cropped; none or unreadable, the tinted plane', 'A', designs=('standard',), screens=False, night=False,
+      rule='Simplification 1 Nov (the user: not a tinted plane but the airline’s logo): a file of the data repository named in airline/settings.json (png, svg, webp; 512 KB at most), read by the data layer, shown in the header (28 px), the switcher (48 px) and the browser tab of Company, fitted (contain) and centred; a wide logo shrinks, never cropped; none, unreadable or too big: the tinted plane, without an error')
+def a83(c):
+    fix = ROOT / 'tests' / 'v3' / 'fixtures' / 'airline'
+    ico = "(() => { const i = document.querySelector('#fAppIco img.f-logo'); if (!i) return null; const b = i.getBoundingClientRect(), s = getComputedStyle(i); return { w: Math.round(b.width), h: Math.round(b.height), fit: s.objectFit, nat: i.naturalWidth, src: i.getAttribute('src').slice(0, 5), fav: (document.querySelector('link[rel=icon]').getAttribute('href') || '').slice(0, 5) } })()"
+    for name, f in (('dalton', 'logo-dalton.png'), ('rm', 'logo-rm.png')):
+        docs = _logo_launcher(c, (fix / f).read_bytes())
+        c.open('missions', app='company', docs=LEVEL3 + docs, wait=False)
+        c.until("!!document.querySelector('#fAppIco img.f-logo') && document.querySelector('#fAppIco img.f-logo').naturalWidth > 0", timeout=20000, what=f'the {name} logo in the header')
+        got = c.js(ico)
+        c.eq([got['w'], got['h'], got['fit'], got['src'], got['fav']], [28, 28, 'contain', 'blob:', 'blob:'],
+             f'{name}: 28 px, fitted (contain: never cropped, never deformed), from the device (blob:), the browser tab too', what=f'{name} header')
+        c.tap('#fApp')
+        c.until("!!document.querySelector('.f-tabpop [data-app=\"company\"] img.f-logo')", what=f'the {name} logo in the switcher')
+        box = c.js("(() => { const b = document.querySelector('.f-tabpop [data-app=\"company\"] .f-app-ico').getBoundingClientRect(); return [Math.round(b.width), Math.round(b.height)] })()")
+        c.eq(box, [48, 48], f'{name}: 48 px in the switcher', what=f'{name} switcher')
+        c.ok('Air Dalton' in c.js("document.querySelector('.f-tabpop [data-app=\"company\"]').textContent"), '', 'the airline’s name as the subtitle')
+        c.js("() => document.querySelector('.f-tabpop')?.remove()")
+    # no file, an unreadable file, a file too big: the tinted plane, no error
+    for what, logo, path in (('absent', None, ''), ('unreadable', b'this is not an image', 'airline/bad.png'),
+                             ('too big', b'\x89PNG\r\n\x1a\n' + b'\0' * (513 * 1024), 'airline/big.png')):
+        docs = _logo_launcher(c, logo, path=path)
+        c.open('missions', app='company', docs=LEVEL3 + docs, wait=False)
+        c.until("!!document.querySelector('[data-module=missions]')", timeout=20000, what='Company is drawn')
+        c.wait(1500)
+        c.eq([c.count('#fAppIco img'), c.count('#fAppIco svg')], [0, 1], f'{what}: the tinted plane', what=f'{what} icon')
+    c.check_errors()

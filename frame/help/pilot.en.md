@@ -10,7 +10,8 @@ hand-off to the airline website. It works on a phone as on a computer, with or w
 - **The verbs.** On a phone, the bottom bar gives five entries: Prepare, Map, Weather, Report, Flights. Touch an already
   selected tab again when it groups several screens: a small list opens above it (Prepare: Fuel and Performance sheets). On a
   screen, each tool is a verb of the left column. A tool's address (`#fuel`, `#report`…) is enough to come back to it.
-  Settings are the ⚙ button of the header. The application's name, top left, opens the list of applications: Pilot and, at the Full level, Maintenance (the same plane in red); a tap switches to it.
+  Settings are the ⚙ button of the header. The application's name, top left, opens the list of applications: Pilot, Company (the airline's missions) and, at the Full level, Maintenance (the same
+  plane in red); a tap switches to it.
 - **Your identity.** In ⚙ Settings, set your trigram and your IVAO, VATSIM and SimBrief IDs: the tools use them to
   prefill.
 - **The level.** Also in Settings, "Level" chooses what the menu shows: Discovery, Everyday or Full. A hidden tool stays
@@ -232,26 +233,6 @@ flight levels, and nothing changes in the sheets.
   with its time.
 
 <!-- fr: 73cdc109c871 -->
-
-<!-- chapter: missions -->
-# Missions
-
-The airline's missions, those of the shared repository (written with the CPCO): choose one, or draw one at random, then prepare it in Fuel.
-
-## How to use
-
-<a id="missions-list"></a>**The list.** The missions of the newest series first, grouped by family. Each row gives the id, the title, the route, the aircraft type and the estimated block; "flown on …" marks a mission whose report you wrote. The search filters on the id, the title, an aerodrome or a type; the drop-down list keeps one family. Seven rows are shown, "N more" unfolds the rest. The organisation missions of an exercise (those ending in Z) are not flights and are not listed.
-
-<a id="missions-open"></a>**Choose, or draw at random.** A tap on a row opens the mission: its summary, its route, the aircraft, the estimated block, its notes. "Draw at random" picks one among the missions of the filtered list you have not flown yet; "Draw again" picks another. Nothing starts by itself: "Prepare this flight" opens Fuel with the departure, the arrival, the points of the mission (as coordinates), the level and the aircraft type; the runway, the procedures, the fuel and the weather are then prepared as for any flight.
-
-## Good to know
-
-- The module reads the missions and never changes them; they are written in the CPCO.
-- A mission whose file does not come says so: "not found" (the repository has not got it), "not on this device yet" (the synchronisation brings it, the mission appears when it arrives) or "unreadable" (with the reason). Only the registry is shown then.
-- A flight being prepared is replaced only after a question; a started flight never is (cancel the start, or finish the flight, first).
-- The envelope, the page-by-page reader and the assignments will come later.
-
-<!-- fr: 2cf76a36abfd -->
 
 <!-- chapter: maps -->
 # Map

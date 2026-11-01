@@ -109,7 +109,7 @@ def row(c, key, module=MS):
 
 def open_missions(c, flight=False, started=False):
     seed_texts(c)
-    c.open('missions', docs=docs(), flight=flight, started=started, wait=False)
+    c.open('missions', docs=docs(), flight=flight, started=started, wait=False, app='company')  # Missions: the Company application
     c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id]')", timeout=15000, what='the list of missions is drawn')
     # the « volée » badge comes after the reports are read
     c.until(f"!!document.querySelector('{M} [data-id=\"X-003B\"] [data-flown]')", timeout=10000, what='my flown mission is marked')

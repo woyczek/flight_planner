@@ -11,8 +11,8 @@ vuelos, paso al sitio de la aerolínea. Funciona en un teléfono como en un orde
   de nuevo una pestaña ya elegida cuando agrupa varias pantallas: se abre encima una pequeña lista (Preparar: Combustible y
   Fichas de rendimiento). En una pantalla, cada herramienta es un verbo de la columna izquierda. La dirección de una
   herramienta (`#fuel`, `#report`…) basta para volver a ella. Los Ajustes son el botón ⚙ de la cabecera. El nombre de la aplicación, arriba a la
-  izquierda, abre la lista de aplicaciones: Piloto y, en el nivel Completo, Mantenimiento (el mismo avión en
-  rojo); un toque pasa a ella.
+  izquierda, abre la lista de aplicaciones: Piloto, Compañía (las misiones de la aerolínea) y, en el nivel Completo,
+  Mantenimiento (el mismo avión en rojo); un toque pasa a ella.
 - **Su identidad.** En ⚙ Ajustes, configure su trigrama y sus identificadores IVAO, VATSIM y SimBrief: las herramientas
   los usan para prerrellenar.
 - **El nivel.** También en Ajustes, «Nivel» elige lo que muestra el menú: Descubrimiento, Habitual o Completo. Una
@@ -239,26 +239,6 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
   alguna, muestra la última meteorología guardada, con su hora.
 
 <!-- fr: 73cdc109c871 -->
-
-<!-- chapter: missions -->
-# Misiones
-
-Las misiones de la compañía, las del repositorio común (escritas con el CPCO): elegir una, o sortear una, y prepararla luego en Combustible.
-
-## Cómo usarlo
-
-<a id="missions-list"></a>**La lista.** Las misiones de las series más recientes primero, agrupadas por familia. Cada fila da el identificador, el título, el trayecto, el tipo de aeronave y el bloque estimado; «volada el …» marca una misión cuyo informe ha escrito usted. La búsqueda filtra por identificador, título, aeródromo o tipo; la lista desplegable conserva una familia. Se muestran siete filas, «N más» despliega el resto. Las misiones de organización de un ejercicio (las que terminan en Z) no son vuelos y no aparecen.
-
-<a id="missions-open"></a>**Elegir, o sortear.** Un toque en una fila abre la misión: su resumen, su trayecto, la aeronave, el bloque estimado, sus notas. «Sortear» toma una al azar entre las misiones de la lista filtrada que aún no ha volado; «Sortear otra» toma otra. Nada arranca solo: «Preparar este vuelo» abre Combustible con la salida, la llegada, los puntos de la misión (en coordenadas), el nivel y el tipo de aeronave; la pista, los procedimientos, el combustible y la meteorología se preparan después como para cualquier vuelo.
-
-## Bueno saber
-
-- El módulo lee las misiones y nunca las modifica; se escriben en el CPCO.
-- Una misión cuyo archivo no llega lo dice: «no encontrado» (el repositorio no lo tiene), «aún no está en el dispositivo» (la sincronización lo trae, la misión aparece al llegar) o «ilegible» (con el motivo). Entonces solo se muestra el registro.
-- Un vuelo en preparación solo se sustituye tras una pregunta; un vuelo iniciado nunca (anule la salida, o termine el vuelo, antes).
-- El sobre, el lector página a página y las asignaciones llegarán más tarde.
-
-<!-- fr: 2cf76a36abfd -->
 
 <!-- chapter: maps -->
 # Mapa

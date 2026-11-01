@@ -9,8 +9,8 @@ vuelos, paso al sitio de la aerolínea. Funciona en un teléfono como en un orde
   de nuevo una pestaña ya elegida cuando agrupa varias pantallas: se abre encima una pequeña lista (Preparar: Combustible y
   Fichas de rendimiento). En una pantalla, cada herramienta es un verbo de la columna izquierda. La dirección de una
   herramienta (`#fuel`, `#report`…) basta para volver a ella. Los Ajustes son el botón ⚙ de la cabecera. El nombre de la aplicación, arriba a la
-  izquierda, abre la lista de aplicaciones: Piloto y, en el nivel Completo, Mantenimiento (el mismo avión en
-  rojo); un toque pasa a ella.
+  izquierda, abre la lista de aplicaciones: Piloto, Compañía (las misiones de la aerolínea) y, en el nivel Completo,
+  Mantenimiento (el mismo avión en rojo); un toque pasa a ella.
 - **Su identidad.** En ⚙ Ajustes, configure su trigrama y sus identificadores IVAO, VATSIM y SimBrief: las herramientas
   los usan para prerrellenar.
 - **El nivel.** También en Ajustes, «Nivel» elige lo que muestra el menú: Descubrimiento, Habitual o Completo. Una
