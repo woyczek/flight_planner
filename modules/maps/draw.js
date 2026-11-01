@@ -30,7 +30,8 @@ import {
   refresh,
   wantBox,
   corridorFor,
-  within
+  within,
+  fresh
 } from './data.js';
 import {
   withEta,
@@ -545,7 +546,7 @@ function draw() {
   }
   const want = wantBox(shown),
     corr = corridorFor(shown, W);
-  if (!within(want, S.data?.box) || corr !== S.data?.corridor) refresh(want, corr);
+  if (!within(want, S.data?.box) || corr !== S.data?.corridor || !fresh()) refresh(want, corr);
   markFrame(W, H);
   performance.measure('maps:draw', 'maps:draw:start');
 }

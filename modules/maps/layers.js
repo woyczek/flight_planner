@@ -21,7 +21,8 @@ import {
   relief
 } from './draw.js';
 import {
-  saveUi
+  saveUi,
+  invalidate
 } from './data.js';
 import {
   buildProfile
@@ -343,7 +344,7 @@ export function effectiveProfile() {
 /** Profil refait après un changement de couche, de mode ou de réglage : données relues, carte et profil vertical redessinés. */
 export function reprofile() {
   S.profile = effectiveProfile();
-  S.data = null;
+  invalidate();
   if (S.dpanel === 'layers') fillLayers();
   dataHead(); // le titre du volet dit « autour du vol » quand la case l'est
   schedule();

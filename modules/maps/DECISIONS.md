@@ -1925,3 +1925,21 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D93 (1280 and 390): relief tiles held by the bench — the profile is built and drawn, « Relief unavailable » said; the
   tiles released (a Terrarium tile of 300 m, written by the case with the standard library) — the profile completed with the relief,
   the note gone. D86 + D87 side by side: 10 in 10, 12 in 12 (they were 8 in 10).
+
+## No flicker at the first display (user, 1 Nov 2026)
+
+- **Seen by the user**: « quand on affiche la carte, avant que tout ne soit en cache, elle clignote une bonne dizaine de fois, puis
+  s'affiche ».
+- **Causes** (Simplification confirmed both):
+  1. every `change` of aerodb — one per zone part read — set `S.data` to null and scheduled a drawing: the map was drawn without its
+     airspaces, airways, beacons until the reading came back, then with them; the same on a flight read again, a layer or a setting
+     changed;
+  2. `buildProfile` set `S.prof` to null at its start: the sheet, empty, was hidden (`dataHead`) until the profile came, so the map's
+     box grew and shrank — MapLibre clears its canvas at a resize.
+  The full drawing itself clears and paints in one task and never shows an empty image.
+- **Rule** (SPEC § 5, data area): `invalidate()` raises a generation instead of emptying; `fresh()` tells a drawing to read again;
+  `refresh` replaces `S.data` at once with its generation, and reads once more when an arrival came during it. `S.prof` stays until
+  `showProf` replaces it. Only the switch to a mission map still empties the data (a gesture of the user, another map).
+- **Noreg** D96 (1280 and 390): the base map held then released, five aerodb arrivals one after the other; every full drawing of
+  the first load noted at its end — data shown or not, the sheet's height. On the code before: 4 drawings without data out of 15
+  (one per arrival); now none, the sheet keeps its height, each arrival read again and the last one shown.

@@ -2761,3 +2761,47 @@ def d95(c):
     c.js("() => { window.__zl.points.remove(); window.__zl.hidden.remove(); return true }")
     tap_at(15, 47)
     c.eq(c.js('window.__zl.ptaps.length'), 3, 'remove silences the points', what='taps after remove')
+
+
+# ------------------------------------------------------------------------------------------------------ D96
+# every full drawing of the first load noted at its end (performance.measure 'maps:draw'): data shown or not, the sheet's height
+_FLICKER_JS = """(() => { const rec = window.__flk = { draws: [] }; import('/modules/maps/state.js').then(m => { rec.m = m });
+  const o = performance.measure.bind(performance);
+  performance.measure = function (n, ...a) {
+    const S = rec.m && rec.m.S;
+    if (n === 'maps:draw' && S) rec.draws.push([!!S.data, S.dataEl && !S.dataEl.hidden ? Math.round(S.dataEl.getBoundingClientRect().height) : 0]);
+    return o(n, ...a) } })()"""
+
+
+@case('D96', 'No flicker at the first display: arrivals never show a map without its data, the sheet never jumps', 'D',
+      tags=('maps', 'sheet'), designs=('standard',), night=False,
+      rule='user, 1 Nov 2026 (« elle clignote une bonne dizaine de fois, puis s’affiche »), SPEC § 6.8: the data shown stay until the new ones are read and are replaced at once (an aerodb arrival or another flight never resets them); the profile stays while it is rebuilt (the sheet neither disappears nor changes height); one drawing per animation frame')
+def d96(c):
+    held = []
+    c.page.add_init_script(_PROC_HOOK)
+    c.page.add_init_script(_FLICKER_JS)
+    c.page.route(re.compile(r'^https://tiles\.openfreemap\.org/styles/'), lambda r: held.append(r))   # the base map held, then released
+    f = _proc_flight(by='fuel')
+    _open_proc(c, f)
+    c.until("() => !!(window.__mp.S.data && window.__mp.S.prof)", timeout=12000, what='the first data and profile')
+    for r in held:
+        try:
+            r.fulfill(status=200, content_type='application/json', body=STUB_STYLE)
+        except Exception:
+            pass
+    # aerodb's parts arriving one by one: each a « change » of the zone
+    for i in range(5):
+        c.js("() => { (window.__pc.fns || []).forEach(f => f({ zone: 'fr', changed: true })); return true }")
+        c.wait(180)
+    c.wait(1500)
+    r = c.js("() => ({ draws: window.__flk.draws, gen: window.__mp.S.dataGen || 0, fresh: (window.__mp.S.data.gen || 0) === (window.__mp.S.dataGen || 0) })")
+    d = r['draws']
+    first = next((i for i, x in enumerate(d) if x[0]), None)
+    c.ok(first is not None, f'{len(d)} drawings', 'the data were drawn')
+    empty = [i for i, x in enumerate(d) if i > first and not x[0]]
+    c.eq(empty, [], 'no drawing without the data once they were shown', what=f'empty drawings of {len(d)}')
+    shown = [x[1] for x in d if x[1] > 0]
+    jumps = sum(1 for a, b in zip(shown, shown[1:]) if abs(a - b) > 1)
+    hidden = [i for i, x in enumerate(d) if i > first and x[1] == 0 and any(y[1] > 0 for y in d[:i])]
+    c.eq((jumps, hidden), (0, []), 'the sheet neither changes height nor disappears while the data and the profile are rebuilt', what=f'sheet heights {shown[:12]}')
+    c.ok(r['gen'] >= 5 and r['fresh'], f"generation {r['gen']}, fresh {r['fresh']}", 'each arrival was read again, the last one is shown')

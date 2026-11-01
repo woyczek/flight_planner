@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: no flicker at the first display** (`modules/maps/data.js` `invalidate` / `fresh`, `draw.js`, `module.js`, `layers.js`,
+  `profile_view.js`; SPEC § 5; DECISIONS; noreg D96). While aerodb's parts arrived the map was drawn again without its airspaces and
+  beacons at each arrival, and the sheet vanished while the profile was rebuilt (« elle clignote une bonne dizaine de fois »): the
+  data shown now stay until the new ones are read and replace them at once, and the profile stays while it is rebuilt.
+
 - **Fuel: a new device whose first synchronisation is slow or never answers is no longer blocked** (`modules/fuel/module.js`;
   DECISIONS, SPEC; noreg F84) — a pilot enrolled on 1 Nov could press nothing on the step Route: the screen awaited the aircraft
   registry of aerodb (never answering while GitLab hangs) with the current flight. Now the flight is awaited 4 s at most, the wait is

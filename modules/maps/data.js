@@ -220,7 +220,7 @@ export async function applyFlight(live = false) {
   S.profile = effectiveProfile();
   const all = [...S.route.points, ...(S.route.altn ? [S.route.altn] : [])];
   S.fit = fitOf();
-  S.data = null;
+  invalidate();
   if (!live) S.cursor = null;
   showBox(!!S.route.points.length);
   header();
@@ -321,6 +321,14 @@ export const corridorFor = (shown, W) => {
   return !S.mission && !S.ctx.query?.mission && S.route.points.length > 1 && widthNm(shown) > WIDE_NM ? FORCED_NM : 0;
 };
 /** Vrai si l'emprise inner est dans outer. */
+/** Les données de la vue sont à relire (une part d'aerodb arrivée, un autre vol, un autre profil, d'autres réglages) : la lecture
+ *  suivante les remplace d'un coup ; celles qui sont montrées restent jusque-là — jamais une image sans elles (le clignotement au
+ *  premier affichage, retour de l'utilisateur du 1/11 : une remise à zéro par arrivée). */
+export function invalidate() {
+  if (S) S.dataGen = (S.dataGen || 0) + 1;
+}
+/** Vrai si les données montrées sont de la dernière génération (invalidate). */
+export const fresh = () => !!S?.data && (S.data.gen || 0) === (S.dataGen || 0);
 export const within = (inner, outer) => !!outer && inner.w >= outer.w && inner.e <= outer.e && inner.s >= outer.s && inner.n <= outer.n;
 /** Emprise box ramenée au même tour du monde que la route (la vue peut être sur une autre copie du monde). */
 function alignBox(box, route) {
@@ -477,6 +485,7 @@ export async function refresh(b, corridor = 0) {
     return;
   }
   S.loadingFor = b;
+  const gen = S.dataGen || 0; // une arrivée pendant la lecture : relue après (fresh() faux), jamais une remise à zéro
   try {
     // lecture en échec : rien cette fois, relue quand la vue sort de b
     const got = await loadData(b, corridor).catch(() => ({
@@ -486,7 +495,10 @@ export async function refresh(b, corridor = 0) {
       empty: true
     }));
     if (!S) return;
-    S.data = got;
+    S.data = {
+      ...got,
+      gen
+    }; // remplacées d'un coup : l'image suivante a toutes les nouvelles
     status();
     legendSync(); // la puce « i » dit une lecture autour du vol seulement
   } finally {
@@ -494,7 +506,7 @@ export async function refresh(b, corridor = 0) {
       S.loadingFor = null;
       const next = S.pending;
       S.pending = null;
-      if (next && (!within(next[0], S.data?.box) || next[1] !== S.data?.corridor)) refresh(...next);
+      if (next && (!within(next[0], S.data?.box) || next[1] !== S.data?.corridor || !fresh())) refresh(...next);
       else schedule();
     }
   }

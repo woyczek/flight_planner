@@ -39,7 +39,8 @@ import {
   applyFlight,
   watchFlight,
   readSettings,
-  loadProcs
+  loadProcs,
+  invalidate
 } from './data.js';
 import {
   effectiveProfile,
@@ -291,7 +292,7 @@ export async function mount(el, ctx) {
     await readSettings();
     if (!S) return;
     if (!ctx.query?.mission) S.profile = effectiveProfile();
-    S.data = null;
+    invalidate();
     if (S.dpanel === 'layers') fillLayers();
     got('tune')?.tuneSrc();
     schedule();
@@ -336,7 +337,7 @@ export async function mount(el, ctx) {
       loadProcs();
     }
     if (e?.coverage && !e.refreshed && !e.zone && !e.changed) return schedule(); // ni zone ni fichier d'espaces : rien à relire
-    S.data = null;
+    invalidate(); // relue au prochain dessin, montrée telle quelle jusque-là
     if (e?.refreshed) { // la base a été relue (Paramètres) : les procédures du vol aussi
       S.procsKey = null;
       loadProcs();

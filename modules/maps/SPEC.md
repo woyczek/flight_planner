@@ -327,6 +327,13 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   (`corridorNm` + 2 NM), leg by leg (one rectangle around a diagonal route would touch neighbouring zones). With "Around
   the route only" off (§ 6.7), the data area follows the view and everything in it is read and drawn; in a close view
   (300 px per degree and more) everything in the view is read whatever the layer says.
+- **No flicker: the data shown stay until the new ones are read** (user, 1 Nov 2026: « elle clignote une bonne dizaine de fois,
+  puis s'affiche »). A reason to read again — a part of aerodb arrived (`change`), another flight, another profile or layer, the
+  airline's settings — never empties the data (`invalidate()` of `data.js` raises a generation, `S.dataGen`); the next drawing reads
+  them again (`fresh()` false) and the reading replaces them at once (`S.data` carries its generation); an arrival during a reading
+  makes one more reading after it. `S.data` is null only before the first reading and when the map becomes a mission map. The profile
+  likewise stays while it is rebuilt (`buildProfile` keeps `S.prof` until `showProf` replaces it), so the sheet neither disappears nor
+  changes height; the full drawings stay one per animation frame (the scheduler, § 6.8).
 - **The alternate**: a grey dashed line from the arrival, a grey dot and its code.
 - **TOC and TOD**: purple diamonds; their label goes north-east of the diamond, else south-east, north-west, south-west,
   then slides along the trace (§ 3, the collision pass, rank 5), silent without room (the diamond stays).

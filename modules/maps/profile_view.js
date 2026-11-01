@@ -79,9 +79,12 @@ export async function buildProfile() {
     flown = !S.route.profilePoints && S.route.flown?.length > 1 ? S.route.flown : null,
     pts = S.route.profilePoints || (flown ? flownProfilePoints(flown, f) : S.route.points),
     A = S.ctx.aerodb;
-  S.prof = null;
-  S.geo = null;
-  if (pts.length < 2) return drawProfile();
+  // la coupe montrée reste pendant qu'elle est refaite (showProf la remplace) : la feuille ne disparaît pas, sa hauteur ne bouge pas
+  if (pts.length < 2) {
+    S.prof = null;
+    S.geo = null;
+    return drawProfile();
+  }
   const key = S.route.updated;
   let airspaces = [];
   if (A) {
