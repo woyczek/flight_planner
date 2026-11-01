@@ -1035,7 +1035,7 @@ def d16(c):
     c.until("!!document.querySelector('[data-admin=tune] a')", what='the tuning button in the Administration card')
     if c.count('[data-group="admin"]') and not c.js("document.querySelector('[data-group=\"admin\"]').open"):
         c.tap('[data-group="admin"] > summary')     # Settings: the card sits in a folded group (SPEC 1)
-    c.eq(norm(c.text('[data-admin="tune"] a') or ''), norm(tx(link, 'title', c.lang)), 'the button is named "Map threshold tuning" in the language of the run', what='tuning button')
+    c.eq(norm(c.text('[data-admin="tune"] a') or ''), norm(tx(link, 'title', c.lang, after="id: 'tune'")), 'the button is named "Map threshold tuning" in the language of the run', what='tuning button')
     c.ok('f-btn' in (c.attr('[data-admin="tune"] a', 'class') or ''), 'the tuning link is a link', 'drawn as a button')
     c.tap('[data-admin="tune"] a')
     c.until("location.hash === '#maps?tune=1' && !!document.querySelector('.mp-tune .mp-tune-row')", timeout=9000, what='the tuning page opens')
