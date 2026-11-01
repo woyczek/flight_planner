@@ -2416,8 +2416,8 @@ def _ap_keys(provider, api, repo):
     return [['device/keys.json', {'schema': 1, 'github': g, 'avwx': '', 'ivao': None, 'updated_at': '2026-10-30T10:00:00Z'}, 'cache']]
 
 
-def _ap_launcher(c, url):
-    """A fake launcher whose data/ remote is `url` (as A55 and A60): status, the remote, no secret."""
+def _ap_launcher(c, url, secrets=None, tokens=None):
+    """A fake launcher whose data/ remote is `url` (as A55 and A60): status, the remote, no secret (or `secrets`, merged into `app` of GET secrets), and, given `tokens`, the answer of GET gitlab/tokens/count."""
     status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False}
 
     def launcher(route):
@@ -2428,9 +2428,11 @@ def _ap_launcher(c, url):
         elif path.endswith('/__setup/sync-remote') and route.request.method == 'GET':
             body = {'repo': True, 'remote': 'origin', 'url': url, 'branch': 'main', 'state': 'repo', 'default': ''}
         elif path.endswith('/__setup/secrets'):
-            body = {'app': {'ivao': {'apiKey': {'set': False, 'hint': ''}}, 'ead': {'user': {'set': False, 'at': ''}, 'password': {'set': False, 'at': ''}}}, 'user': {}}
+            body = {'app': {'ivao': {'apiKey': {'set': False, 'hint': ''}}, 'ead': {'user': {'set': False, 'at': ''}, 'password': {'set': False, 'at': ''}}, **(secrets or {})}, 'user': {}}
         elif path.endswith('/__setup/routes'):
             body = {'routes': [{'method': m, 'path': '/__setup/' + r, 'public': 'poste', 'relay': False} for m, r in (('GET', 'gitlab/tokens'), ('POST', 'gitlab/tokens'), ('POST', 'gitlab/tokens/revoke'), ('GET', 'gitlab/admin'), ('POST', 'gitlab/admin'))]}
+        elif path.endswith('/__setup/gitlab/tokens/count') and tokens is not None:
+            body = tokens
         elif path.endswith('/__setup/gitlab/tokens') and route.request.method == 'GET':
             body = {'ok': True, 'tokens': []}
         route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
@@ -2775,4 +2777,119 @@ def a74(c):
     c.open('help', app='maintenance', docs=LEVEL3)
     c.wait(500)
     c.eq(c.js(hash_), '#help', 'an address asked for is never replaced', what='asked address')
+    c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ A75 .. A77
+_AS_HREF = {'repo': '#settings?card=admin&panel=remote', 'airline': './#website', 'base': '?app=maintenance#data', 'pilot': '#settings?card=admin&panel=addPilot',
+            'devices': '#settings?card=lan', 'keys': '#settings?card=admin&panel=keys'}   # the workstation’s own Access card, where devices are paired
+
+
+def _as_steps(c):
+    """The assistant card as { step: [state, href of its button or None, button is primary] } in the order drawn."""
+    return c.js("""() => Object.fromEntries([...document.querySelectorAll('[data-card="assistant"] [data-step]')].map(li => {
+      const a = li.querySelector('a.f-btn'); return [li.dataset.step, [li.dataset.state, a ? a.getAttribute('href') : null, !!a && a.classList.contains('primary')]] }))""")
+
+
+@case('A75', 'Administrator\u2019s assistant on an empty airline: seven lines at most, each state read, the first step to do primary, every button to the card that exists', 'A', designs=('standard',),
+      screens=False, night=False, rule='frame/settings SPEC 3 item 12 (§ 10.36, « une page d\u2019assistant, qui prend par la main l\u2019admin »): #settings?card=assistant, alone, at any level; at most seven steps, each with a state read (done, to do, optional, unknown), a sentence and one button to an existing card; the highest step to do has the primary button; it writes nothing')
+def a75(c):
+    settings_file = 'frame/settings/settings.js'
+    _ap_launcher(c, '')   # a launcher whose data/ has no remote (the count of tokens is not answered: the pilot step is unknown)
+    c.open('settings?card=assistant', docs=[['device/level.json', {'level': 1}, 'cache']])
+    c.until("!!document.querySelector('[data-card=\"assistant\"] [data-step=\"done\"]')", timeout=20000, what='the assistant is drawn (at the Discovery level too)')
+    steps = _as_steps(c)
+    c.eq(list(steps), ['repo', 'airline', 'base', 'pilot', 'devices', 'keys', 'done'], 'at most seven lines, in the order of the installation', what='steps')
+    c.eq({k: v[0] for k, v in steps.items()}, {'repo': 'todo', 'airline': 'todo', 'base': 'todo', 'pilot': 'unknown', 'devices': 'optional', 'keys': 'optional', 'done': 'todo'},
+         'no remote, no airline name, no zone: three to do; the pilot count is not exposed (unknown); devices and keys optional', what='states')
+    c.eq({k: v[1] for k, v in steps.items() if k != 'done'}, _AS_HREF, 'each button leads to the card that exists', what='hrefs')
+    c.eq([k for k, v in steps.items() if v[2]], ['repo'], 'the highest step to do has the primary button, and only it', what='primary')
+    words = c.js("[...document.querySelectorAll('[data-card=\"assistant\"] [data-step] [data-st]')].map(b => b.textContent)")
+    c.eq([norm(w) for w in words], [norm(tx(settings_file, k, c.lang, after='asState: {')) for k in ('todo', 'todo', 'todo', 'unknown', 'optional', 'optional', 'todo')], 'the state words, in the language of the run', what='state words')
+    c.eq([c.count('[data-card="assistant"] p'), c.count('[data-card="assistant"] [data-card="status"]')], [1, 1], 'one introductory sentence, and the frame\u2019s status block at the end', what='nothing else')
+    # not in the list of cards: only by its address; the Administration card has a line for it
+    c.open('settings', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-card=\"admin\"]')", timeout=15000, what='the list of cards')
+    c.eq([c.count('[data-card="assistant"]'), c.attr('[data-admin="assistant"] a', 'href')], [0, '#settings?card=assistant'], 'the assistant is not in the list; the Administration card links to it', what='not in the list')
+    # no launcher: the repository step cannot be read here
+    c.context.unroute(re.compile(r'/__setup/'))
+    c.context.route(re.compile(r'/__setup/'), lambda r: r.abort())
+    c.open('settings?card=assistant', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-card=\"assistant\"] [data-step=\"done\"]')", timeout=20000, what='the assistant without a launcher')
+    steps = _as_steps(c)
+    c.eq([steps['repo'][0], steps['airline'][0], [k for k, v in steps.items() if v[2]]], ['unknown', 'todo', ['airline']], 'without a launcher the repository is unknown; the first one to do is the airline', what='no launcher')
+    c.check_errors()
+
+
+@case('A76', 'Administrator\u2019s assistant on a filled airline: the first three steps done, nothing primary while nothing is to do', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame/settings SPEC 3 item 12: done is read, never typed: a remote and (GitLab) the administrator\u2019s token for the repository, a name in airline/settings.json for the airline, a published zone for the base, the key set for the keys')
+def a76(c):
+    settings_file = 'frame/settings/settings.js'
+    _ap_launcher(c, 'https://gitlab.com/acme/data.git', tokens={'ok': True, 'active': 1}, secrets={'gitlab': {'instance': {'set': True, 'at': '2026-11-01'}, 'project': {'set': True, 'at': '2026-11-01'}, 'token': {'set': True, 'at': '2026-11-01'}},
+                                                         'ivao': {'apiKey': {'set': True, 'hint': '••••'}}})
+    c.open('settings?card=assistant', docs=LEVEL3 + [['airline/settings.json', {'schema': 1, 'name': 'ACME Air', 'site': 'https://example.test'}, 'document']], aero=True)
+    c.until("!!document.querySelector('[data-card=\"assistant\"] [data-step=\"done\"]')", timeout=20000, what='the assistant is drawn')
+    c.wait(800)
+    steps = _as_steps(c)
+    c.eq({k: v[0] for k, v in steps.items()}, {'repo': 'done', 'airline': 'done', 'base': 'done', 'pilot': 'done', 'devices': 'optional', 'keys': 'done', 'done': 'done'},
+         'a GitLab remote with the administrator\u2019s token, an airline name, a published zone, an active project token, the IVAO key: done', what='states')
+    c.eq([k for k, v in steps.items() if v[2]], [], 'nothing is to do: no primary button', what='no primary')
+    c.eq(c.count('[data-card="assistant"] [data-step]'), 7, 'seven lines', what='seven')
+    # no project token yet: the pilot step is to do, and primary (the first three are done); the launcher refusing for lack of the administrator\u2019s token: unknown, and the sentence says it
+    for answer, want in (({'ok': True, 'active': 0}, ['todo', ['pilot']]), ({'ok': False, 'status': 409, 'reason': 'secret'}, ['unknown', []])):
+        c.context.unroute(re.compile(r'/__setup/'))
+        _ap_launcher(c, 'https://gitlab.com/acme/data.git', tokens=answer, secrets={'gitlab': {'instance': {'set': True}, 'project': {'set': True}, 'token': {'set': True}}})
+        c.open('settings?card=assistant', docs=LEVEL3 + [['airline/settings.json', {'schema': 1, 'name': 'ACME Air'}, 'document']], aero=True)
+        c.until("!!document.querySelector('[data-card=\"assistant\"] [data-step=\"done\"]')", timeout=20000, what='the assistant with the count answered')
+        c.wait(800)
+        steps = _as_steps(c)
+        c.eq([steps['pilot'][0], [k for k, v in steps.items() if v[2]]], want, f'the count of tokens answered {answer}', what='token count')
+    c.eq(norm(c.text('[data-card="assistant"] [data-step="pilot"] .f-muted')), norm(tx(settings_file, 'asPilotSecret', c.lang)), 'without the administrator\u2019s token the sentence says so (the first step\u2019s matter)', what='secret sentence')
+    # the GitLab token of the administrator missing: the repository is to do again, the first step
+    c.context.unroute(re.compile(r'/__setup/'))
+    _ap_launcher(c, 'https://gitlab.com/acme/data.git', {'gitlab': {'instance': {'set': True}, 'project': {'set': True}, 'token': {'set': False}}})
+    c.open('settings?card=assistant', docs=LEVEL3 + [['airline/settings.json', {'schema': 1, 'name': 'ACME Air'}, 'document']], aero=True)
+    c.until("!!document.querySelector('[data-card=\"assistant\"] [data-step=\"done\"]')", timeout=20000, what='the assistant again')
+    c.wait(800)
+    steps = _as_steps(c)
+    c.eq([steps['repo'][0], [k for k, v in steps.items() if v[2]], steps['keys'][0]], ['todo', ['repo'], 'optional'], 'a GitLab remote without the administrator\u2019s token: the repository is to do, first and primary; keys unset: optional', what='token missing')
+    c.check_errors()
+
+
+@case('A77', 'Administrator\u2019s assistant, every state the page can read: the pilot count, devices, keys, GitLab token, unknown reads', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame/settings SPEC 3 item 12: states from what Settings reads (pure on its reads): a pilot token count when the frame gives one, a paired device, the IVAO key or both EAD fields, an unreadable read is unknown, never typed')
+def a77(c):
+    c.open('settings', docs=LEVEL3)
+    c.until("!!window.SogSettingsParts?.cards?.assistant && !!window.SogConfig", timeout=15000, what='the card builders are loaded')
+    got = c.js("""() => {
+      const t = r => r[0], known = [];
+      const draw = (L, remote, assist) => { const h = SogSettingsParts.cards.assistant({ c: { status: null }, t, focus: 'assistant', L, remote, known, assist });
+        const d = new DOMParser().parseFromString(h, 'text/html'); return [...d.querySelectorAll('[data-step]')].map(li => li.dataset.step + ':' + li.dataset.state + (li.querySelector('a.primary') ? '*' : '')).join(' ') };
+      const sec = (o = {}) => ({ app: { gitlab: { token: { set: false } }, ivao: { apiKey: { set: false } }, ead: { user: { set: false }, password: { set: false } }, ...o } });
+      const ok = { airline: { name: 'A' }, zones: 3, lan: true, devices: 0, tokens: null, secrets: sec() };
+      const gl = { url: 'https://gitlab.com/a/b.git' }, gh = { url: 'https://github.com/a/b.git' };
+      return {
+        none: draw(null, null, { ...ok, secrets: null }),
+        github: draw({}, gh, ok),
+        gitlabToken: draw({}, gl, { ...ok, secrets: sec({ gitlab: { token: { set: true } } }) }),
+        gitlabNoSecret: draw({}, gl, { ...ok, secrets: null }),
+        pilotTodo: draw({}, gh, { ...ok, tokens: { ok: true, active: 0 } }),
+        pilotDone: draw({}, gh, { ...ok, tokens: { ok: true, active: 2 } }),
+        pilotRefused: draw({}, gh, { ...ok, tokens: { ok: false, status: 409, reason: 'secret' } }),
+        pilotSentence: (() => { const h = SogSettingsParts.cards.assistant({ c: { status: null }, t, focus: 'assistant', L: {}, remote: gh, known, assist: { ...ok, tokens: { ok: false, status: 409, reason: 'secret' } } });
+          return new DOMParser().parseFromString(h, 'text/html').querySelector('[data-step=pilot] .f-muted').textContent })(),
+        device: draw({}, gh, { ...ok, devices: 2 }),
+        ead: draw({}, gh, { ...ok, secrets: sec({ ead: { user: { set: true }, password: { set: true } } }) }),
+        eadHalf: draw({}, gh, { ...ok, secrets: sec({ ead: { user: { set: true }, password: { set: false } } }) }),
+        noBase: draw({}, gh, { ...ok, zones: null }),
+        emptyBase: draw({}, gh, { ...ok, zones: 0 }),
+      } }""")
+    c.eq(got['none'], 'repo:unknown airline:done base:done pilot:unknown devices:optional keys:optional done:todo', 'no launcher: the repository is unknown and the end is not reached', what='none')
+    c.eq(got['github'], 'repo:done airline:done base:done pilot:unknown devices:optional keys:optional done:done', 'a GitHub remote is done by itself', what='github')
+    c.eq([got['gitlabToken'].split(' ')[0], got['gitlabNoSecret'].split(' ')[0]], ['repo:done', 'repo:unknown'], 'a GitLab remote needs the administrator\u2019s token; secrets that cannot be read: unknown', what='gitlab')
+    c.eq(got['pilotTodo'].split(' ')[3], 'pilot:todo*', 'a pilot token count of zero: to do, and the first one to do has the primary button', what='pilot todo')
+    c.eq(got['pilotDone'].split(' ')[3], 'pilot:done', 'a pilot token active: done', what='pilot done')
+    c.eq([got['pilotRefused'].split(' ')[3], got['pilotSentence']], ['pilot:unknown', tx('frame/settings/settings.js', 'asPilotSecret', 'fr')], 'a refusal of the count for want of the administrator\u2019s token: unknown, and the sentence says the token is missing', what='pilot refused')
+    c.eq([got['device'].split(' ')[4], got['ead'].split(' ')[5], got['eadHalf'].split(' ')[5]], ['devices:done', 'keys:done', 'keys:optional'], 'a paired device: done; both EAD fields (or the IVAO key): keys done; one only: optional', what='optional steps')
+    c.eq([got['noBase'].split(' ')[2], got['emptyBase'].split(' ')[2]], ['base:unknown', 'base:todo*'], 'an unreadable base is unknown, an empty one is to do (first, so primary)', what='base')
     c.check_errors()

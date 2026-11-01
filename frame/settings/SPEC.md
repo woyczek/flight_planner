@@ -254,6 +254,38 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
 Under the screen's introduction, the folded "How to use" panel of the Settings chapter (`frame/settings/help/`,
 `frame/help/SPEC.md`).
 
+12. **Administrator's assistant** (`#settings?card=assistant`; § 10.36, user, 1 Nov 2026: « il manque une page d'assistant, qui
+   prend par la main l'admin »). A card reached by its address, shown alone under « ← Réglages », at any level; reached
+   again from a line of the Administration card and from the help. The Maintenance application opens on it as long as the
+   airline is not installed — installed = `data/` is a git repository with a remote (the launcher's status) AND
+   `airline/settings.json` has a name; the landing is the frame's (V3 Frame), this card only draws. It writes nothing.
+   - **At most seven steps and nothing else**: one introductory sentence, then one line per step — a state, one sentence
+     saying what the step brings, one button to the existing card (never a copy of a card). The highest step « to do » has
+     the primary button.
+   - **States**, each read from the real state, never typed: « fait » (`data-state="done"`), « à faire » (`todo`),
+     « facultatif » (`optional`, a step that may stay undone), « inconnu » (`unknown`, the state cannot be read here: no
+     launcher, a reading refused).
+   - **The steps**:
+     1. *The data repository* — done when `data/` has a remote (sync-remote) and, for a GitLab repository, the
+        administrator's token is set on the workstation (`GET /__setup/secrets`, `gitlab`); button → Administration ›
+        Remote repository of data/.
+     2. *The airline* — done when `airline/settings.json` has a name; button → the Website module (Pilot application,
+        `./#website`), where the name and the site are set; the administrator's trigram is the device identity (Settings
+        › Identity), said in the sentence.
+     3. *The aeronautical base* — done when aerodb publishes at least one zone (the status block's « base » line); button
+        → `?app=maintenance#data` (zones, Download · Build · Publish).
+     4. *The first pilot* — done when at least one project token is active (the count the frame exposes; never a value
+        or a name beyond the trigram); the workstation's `GET /__setup/gitlab/tokens/count` (V3 Frame): `{ ok: true, active }` — an
+        active token is « fait », none is « à faire »; a refusal or no launcher is « inconnu » with the sentence « quand un pilote arrive »
+        (reason `secret`: the sentence says the administrator's token is missing, the first step's matter); button →
+        Administration › Add a pilot.
+     5. *The devices* — optional; done when a device is paired (the workstation's own access, `c.lan().state().devices`); the relay is
+        not readable from the page (no state), so only the paired devices count; button → the workstation's access card
+        (`#settings?card=lan`) when the page has one, else the devices screen (`?app=maintenance#devices`).
+     6. *The airline's keys* (IVAO, EAD) — optional; done when set (`secrets`); button → Administration › Keys.
+     7. *Done* — the status block (`ctx.status.html()`), nothing more.
+   - Case A on an empty airline and on a filled one, at 390 and 1280.
+
 ## 4. Invariants
 
 1. No token or key is ever shown again, synchronised, put in a backup (`dump()` leaves `device/keys.json` out, a `replace`

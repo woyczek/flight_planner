@@ -128,6 +128,64 @@
     } = env;
     return window.SogConfig ? `<div class="f-row"><button type="button" data-act="cfgJoin">${esc(t(T.cfgJoin))}</button></div>` : '';
   };
+  /** Les états de l'assistant de l'administrateur (cinq clés lues, jamais tapées) d'après ce que `readAssistant` a lu (env.assist) : { état: 'done' | 'todo' | 'optional' | 'unknown' } par étape. repo : un dépôt distant pour data/ (et, pour GitLab,
+   *  le jeton d'administrateur posé sur ce poste) ; airline : un nom dans airline/settings.json ; base : une zone publiée au moins ; pilot : un jeton de projet actif (le compte du lanceur : { ok: true, active } ; un refus ou pas de lanceur : inconnu) ; devices : un appareil appairé ;
+   *  keys : la clé IVAO ou les identifiants EAD réglés ; done : les trois premières faites. */
+  function assistantStates(env) {
+    const {
+      L,
+      remote,
+      known,
+      assist: a
+    } = env;
+    const gl = !!remote?.url && SogConfig.providerOf(remote.url, known).provider === 'gitlab',
+      sec = a.secrets?.app || null,
+      set = x => x?.set === true,
+      s = {
+        repo: !L ? 'unknown' : !remote?.url ? 'todo' : gl && !sec ? 'unknown' : gl && !set(sec.gitlab?.token) ? 'todo' : 'done',
+        airline: a.airline?.name ? 'done' : 'todo',
+        base: a.zones == null ? 'unknown' : a.zones > 0 ? 'done' : 'todo',
+        pilot: a.tokens?.ok === true && Number.isFinite(a.tokens.active) ? (a.tokens.active > 0 ? 'done' : 'todo') : 'unknown',
+        devices: a.devices > 0 ? 'done' : 'optional',
+        keys: set(sec?.ivao?.apiKey) || (set(sec?.ead?.user) && set(sec?.ead?.password)) ? 'done' : 'optional'
+      };
+    s.done = ['repo', 'airline', 'base'].every(k => s[k] === 'done') ? 'done' : 'todo';
+    return s;
+  }
+  /** Carte « Assistant de l'administrateur » (`#settings?card=assistant`, atteinte par son adresse seulement : vide ailleurs) : une phrase, puis une ligne par étape — l'état lu, une phrase et un bouton vers la carte qui existe déjà — et, à la fin,
+   *  le bloc d'état du cadre. La première étape « à faire » a le bouton principal. Elle n'écrit rien. */
+  const assistant = env => {
+    const {
+      c,
+      t,
+      focus,
+      assist: a
+    } = env;
+    if (focus !== 'assistant' || !a || !window.SogConfig) return '';
+    const st = assistantStates(env),
+      first = ['repo', 'airline', 'base', 'pilot'].find(k => st[k] === 'todo'),
+      go = {
+        repo: '#settings?card=admin&panel=remote',
+        airline: './#website',
+        base: '?app=maintenance#data',
+        pilot: '#settings?card=admin&panel=addPilot',
+        devices: a.lan ? '#settings?card=lan' : '?app=maintenance#devices',
+        keys: '#settings?card=admin&panel=keys'
+      },
+      says = {
+        repo: T.asRepo,
+        airline: T.asAirline,
+        base: T.asBase,
+        pilot: st.pilot !== 'unknown' ? T.asPilot : a.tokens?.reason === 'secret' ? T.asPilotSecret : T.asPilotLater,
+        devices: T.asDevices,
+        keys: T.asKeys
+      },
+      line = k => `<li data-step="${k}" data-state="${st[k]}"><b data-st>${esc(t(T.asState[st[k]]))}</b> <a class="f-btn${k === first ? ' primary' : ''}" href="${go[k]}">${esc(t(T.asGo[k]))}</a>
+        <span class="f-muted">${esc(t(says[k]))}</span></li>`;
+    return `<div class="f-card" data-card="assistant"><h2>${esc(t(T.asTitle))}</h2><p class="f-muted">${esc(t(T.asIntro))}</p>
+      <ul class="f-admin">${['repo', 'airline', 'base', 'pilot', 'devices', 'keys'].map(line).join('')}
+        <li data-step="done" data-state="${st.done}"><b data-st>${esc(t(T.asState[st.done]))}</b> <span class="f-muted">${esc(t(T.asFinish))}</span>${c.status?.html() || ''}</li></ul></div>`;
+  };
   /** Carte Données hors ligne (squelette : l'état vivant est posé par settings.js) ; vide à Découverte. */
   const offline = env => {
     const {
@@ -199,6 +257,7 @@
     usages,
     backup,
     joinEntry,
+    assistant,
     offline,
     ivao,
     wx,

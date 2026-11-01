@@ -202,6 +202,74 @@
     badFile: ['Ce fichier n’est pas une sauvegarde d’appareil SOG.', 'This file is not a SOG device backup.',
       'Diese Datei ist keine SOG-Gerätesicherung.', 'Este fichero no es una copia de dispositivo SOG.'
     ],
+    // assistant de l'administrateur (#settings?card=assistant)
+    asTitle: ['Assistant de l’administrateur', 'Administrator’s assistant', 'Assistent des Administrators',
+      'Asistente del administrador'
+    ],
+    asIntro: ['Pour installer la compagnie, suivez ces étapes dans l’ordre : la première à faire a le bouton coloré.',
+      'To set the airline up, follow these steps in order: the first one to do has the coloured button.',
+      'Um die Fluggesellschaft einzurichten, folgen Sie diesen Schritten der Reihe nach: der erste offene Schritt hat die farbige Schaltfläche.',
+      'Para instalar la aerolínea, siga estos pasos en orden: el primero por hacer tiene el botón de color.'
+    ],
+    asState: {
+      done: ['fait', 'done', 'erledigt', 'hecho'],
+      todo: ['à faire', 'to do', 'zu tun', 'por hacer'],
+      optional: ['facultatif', 'optional', 'optional', 'opcional'],
+      unknown: ['inconnu', 'unknown', 'unbekannt', 'desconocido']
+    },
+    asRepo: [
+      'Un dépôt git distant pour data/, où la compagnie partage ses données (pour GitLab, avec votre jeton d’administrateur sur ce poste).',
+      'A remote git repository for data/, where the airline shares its data (for GitLab, with your administrator token on this workstation).',
+      'Ein Git-Remote-Repository für data/, in dem die Fluggesellschaft ihre Daten teilt (bei GitLab mit Ihrem Administrator-Token auf diesem Rechner).',
+      'Un repositorio git remoto para data/, donde la aerolínea comparte sus datos (con GitLab, con su token de administrador en este puesto).'
+    ],
+    asAirline: [
+      'Le nom et le site de la compagnie, dans le module Site ; votre trigramme d’administrateur est dans Réglages › Identité.',
+      'The airline’s name and site, in the Website module; your administrator trigram is in Settings › Identity.',
+      'Name und Website der Fluggesellschaft im Modul Website; Ihr Administrator-Kürzel steht unter Einstellungen › Identität.',
+      'El nombre y el sitio de la aerolínea, en el módulo Sitio; su trigrama de administrador está en Ajustes › Identidad.'
+    ],
+    asBase: ['La base aéronautique : au moins une zone téléchargée, construite et publiée.',
+      'The aeronautical base: at least one zone downloaded, built and published.',
+      'Die Luftfahrtbasis: mindestens eine Zone heruntergeladen, erstellt und veröffentlicht.',
+      'La base aeronáutica: al menos una zona descargada, construida y publicada.'
+    ],
+    asPilot: ['Un pilote de la compagnie : son jeton de projet, son lien de configuration et le message à lui envoyer.',
+      'A pilot of the airline: their project token, their configuration link and the message to send them.',
+      'Ein Pilot der Fluggesellschaft: sein Projekt-Token, sein Konfigurationslink und die Nachricht an ihn.',
+      'Un piloto de la aerolínea: su token de proyecto, su enlace de configuración y el mensaje que enviarle.'
+    ],
+    asPilotLater: ['Quand un pilote arrive : son jeton, son lien de configuration et son message se préparent ici.',
+      'When a pilot arrives: their token, configuration link and message are prepared here.',
+      'Wenn ein Pilot kommt: Token, Konfigurationslink und Nachricht werden hier vorbereitet.',
+      'Cuando llega un piloto: su token, su enlace de configuración y su mensaje se preparan aquí.'
+    ],
+    asPilotSecret: ['Le jeton d’administrateur manque sur ce poste : c’est l’affaire de la première étape.',
+      'The administrator token is missing on this workstation: that is the first step’s matter.',
+      'Das Administrator-Token fehlt auf diesem Rechner: Das ist Sache des ersten Schritts.',
+      'Falta el token de administrador en este puesto: es asunto del primer paso.'
+    ],
+    asDevices: ['Les tablettes et téléphones du réseau local, ou du relais de la compagnie.',
+      'The tablets and phones of the local network, or of the airline’s relay.',
+      'Die Tablets und Telefone des lokalen Netzes oder des Relais der Fluggesellschaft.',
+      'Las tabletas y teléfonos de la red local, o del relé de la aerolínea.'
+    ],
+    asKeys: ['Les clés de la compagnie : IVAO et EAD Basic.', 'The airline’s keys: IVAO and EAD Basic.',
+      'Die Schlüssel der Fluggesellschaft: IVAO und EAD Basic.',
+      'Las claves de la aerolínea: IVAO y EAD Basic.'
+    ],
+    asFinish: ['L’état de l’installation, tel que le cadre le donne :', 'The state of the installation, as the frame gives it:',
+      'Der Zustand der Installation, wie der Rahmen ihn gibt:',
+      'El estado de la instalación, tal como lo da el marco:'
+    ],
+    asGo: {
+      repo: ['Régler le dépôt', 'Set the repository', 'Repository einrichten', 'Configurar el repositorio'],
+      airline: ['Nommer la compagnie', 'Name the airline', 'Fluggesellschaft benennen', 'Nombrar la aerolínea'],
+      base: ['Préparer la base', 'Prepare the base', 'Basis vorbereiten', 'Preparar la base'],
+      pilot: ['Ajouter un pilote', 'Add a pilot', 'Piloten hinzufügen', 'Añadir un piloto'],
+      devices: ['Voir les appareils', 'See the devices', 'Geräte ansehen', 'Ver los dispositivos'],
+      keys: ['Régler les clés', 'Set the keys', 'Schlüssel einrichten', 'Configurar las claves']
+    },
     // configuration d'un pilote (frame/settings/config.js)
     joinResume: ['Un assistant est en cours (pas {n} sur {m}) : reprenez-le là où vous en étiez.',
       'An assistant is in progress (step {n} of {m}): resume it where you left it.',
@@ -609,6 +677,35 @@
     }), 0);
   }
 
+  /** Ce que l'assistant de l'administrateur lit (seulement quand la carte est demandée, #settings?card=assistant) : les secrets du lanceur (GET /__setup/secrets : le jeton GitLab, la clé IVAO, EAD), le nom de la compagnie (airline/settings.json, comme l'export),
+   *  le nombre de zones publiées (aerodb.status, comme les données hors ligne), le nombre d'appareils appairés (l'accès du poste, c.lan) et le compte des jetons de projet (GET /__setup/gitlab/tokens/count du poste : { ok, active } ou { ok: false, status, reason }, tel quel) ;
+   *  chaque lecture qui échoue ou manque donne null (l'étape dit « inconnu » ou « à faire », jamais une erreur). Rien n'est écrit. */
+  async function readAssistant(env) {
+    const {
+      c,
+      FD,
+      L
+    } = env;
+    const lanApi = c.lan?.() || null,
+      aerodb = c.aerodb?.() || null,
+      [secrets, airline, status, lan, tokens] = await Promise.all([
+        L ? setup('secrets').catch(() => null) : null,
+        airlineDoc(FD).get(AIRLINE, {
+          wait: true
+        }).catch(() => null),
+        aerodb ? aerodb.status().catch(() => null) : null,
+        lanApi ? lanApi.state().catch(() => null) : null,
+        L ? setup('gitlab/tokens/count').catch(() => null) : null
+      ]);
+    return {
+      secrets: secrets?.app ? secrets : null,
+      airline,
+      zones: status ? Object.keys(status.published || {}).length : null,
+      lan: !!lanApi,
+      devices: lan ? lan.devices ?? 0 : null,
+      tokens: tokens && typeof tokens === 'object' ? tokens : null
+    };
+  }
   const DESK = new WeakSet(); // vues qui écoutent déjà « frame-desk »
   /** Dessine l'écran des réglages dans view ; c : contexte du cadre (voir l'en-tête). */
   async function render(view, c) {
@@ -703,6 +800,9 @@
     const show = html => {
       if (html) cards.push(html);
     };
+    // assistant de l'administrateur : une carte atteinte par son adresse seulement (ses lectures ne se font que pour elle)
+    if (focus === 'assistant') env.assist = await readAssistant(env);
+    show(P.cards.assistant(env));
     // refus de la configuration reçue
     show(P.cards.refused(env));
     // assistant en cours : le reprendre là où il en était

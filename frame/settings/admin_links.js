@@ -11,6 +11,20 @@
   // launcher : réglage du lanceur de ce poste, montré seulement si un lanceur sert la page), title,
   // text, copyLink (sous le lien : l'adresse absolue de la page et « Copier le lien ») } — textes en quatre langues [fr, en, de, es].
   window.SogAdminLinks = Object.freeze([{
+    id: 'assistant',
+    href: '#settings?card=assistant',
+    where: 'app',
+    primary: true,
+    title: ['Assistant de l’administrateur', 'Administrator’s assistant', 'Assistent des Administrators',
+      'Asistente del administrador'
+    ],
+    text: [
+      'Les étapes pour installer la compagnie, dans l’ordre, chacune avec son état lu et son bouton : le dépôt des données, la compagnie, la base, le premier pilote.',
+      'The steps to set the airline up, in order, each with its state read and its button: the data repository, the airline, the base, the first pilot.',
+      'Die Schritte zur Einrichtung der Fluggesellschaft, der Reihe nach, jeder mit gelesenem Zustand und Schaltfläche: das Datenrepository, die Fluggesellschaft, die Basis, der erste Pilot.',
+      'Los pasos para instalar la aerolínea, en orden, cada uno con su estado leído y su botón: el repositorio de datos, la aerolínea, la base, el primer piloto.'
+    ]
+  }, {
     id: 'tune',
     href: '#maps?tune=1',
     where: 'app',
