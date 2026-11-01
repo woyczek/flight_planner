@@ -2157,3 +2157,47 @@ def f85(c):
     c.eq(got['fleet'][0], 'Flotte de la compagnie (2 appareils)', 'the fleet', what='fleet')
     c.eq(got['mission'], ['X-002A Second essai'] * 4, 'Missions: id and title', what='mission')
     c.eq([got['missionNoText'], got['missionOther']], [None, None], 'no text, or not a mission file: null', what='mission null')
+
+
+# an invented aerodrome far from the seeded flight (more than 150 NM from LFML), in the LF zone of the published base
+FAR_AD = {'aerodromes': [{'icao': 'LFZZ', 'name': 'LFZZ TEST', 'lat': 50.7, 'lon': 2.2, 'elev': 60}], 'cells': {'50': [[0, 4]]}}
+
+
+def flight_doc(c):
+    return c.doc('pilot/ABC/current_flight.json') or {}
+
+
+@case('F86', 'A new pair of aerodromes clears the old route, procedures and OFP; a near one keeps it; « Nouveau vol » clears all but the aircraft',
+      'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='Simplification 1 Nov (the user: after LFST → LFBO, a KSET → KDOV kept the route of France): an aerodrome changed for one more than '
+      '150 NM away, or both ends changed since the route was written, is a new pair: route (text, points), procedures and OFP cleared, said '
+      'in one line; nearer, the aerodrome is replaced in the text; « Nouveau vol » (head of Préparer) asks, then empties the flight, the '
+      'aircraft kept')
+def f86(c):
+    open_proc(c, procs=V2_PROCS, aero_extra=FAR_AD)
+    # near (LFML → LFMT, about 70 NM): the route stays, the arrival replaced in its text
+    set_icao(c, 'arr', 'LFMT')
+    f = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and d['route']['arr'] == 'LFMT', 'the near arrival is written')
+    c.ok('NEPIX' in f['route']['text'] and f['route']['text'].split()[-1].startswith('LFMT'), f['route']['text'], 'a near aerodrome keeps the route')
+    # far (LFMT → LFZZ, more than 150 NM): a new pair
+    c.js('window.__notes = []')
+    set_icao(c, 'arr', 'LFZZ')
+    f = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and d['route']['arr'] == 'LFZZ' and 'NEPIX' not in (d['route'].get('text') or ''),
+                    'the far arrival clears the old route', timeout=10000)
+    c.eq([[p['id'] for p in f['route'].get('points') or [] if p['id'] not in ('LFRS', 'LFZZ')], f['route'].get('procedures'), f.get('ofp')],
+         [[], None, None], 'no old point, no procedure, no OFP', what='new pair')
+    want = norm(row(c, 'newPair').replace('{dep}', 'LFRS').replace('{arr}', 'LFZZ'))
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", want, what='said in one line')
+    # « Nouveau vol »: the question, then everything empty but the aircraft
+    c.tap(f'{FUEL} [data-do="newflight"]')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", what='a flight with a route: the question first')
+    c.tap('.f-modal [data-ok]')
+    f = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and not d['route'].get('dep') and not d['route'].get('arr'), 'the flight is emptied')
+    c.eq([f['route'].get('text'), f['route'].get('points'), (f.get('level') or {}).get('ft'), (f.get('aircraft') or {}).get('type')],
+         ['', [], None, 'C30J'], 'route, points and level empty; the aircraft kept', what='new flight')
+    c.until(f"!!document.querySelector('{FUEL} section.fu-step[data-s=\"0\"]') && window.__t.shown(document.querySelector('{FUEL} section.fu-step[data-s=\"0\"]'))",
+            what='back on the step Flight')
+    # an empty flight: « Nouveau vol » asks nothing
+    c.tap(f'{FUEL} [data-do="newflight"]')
+    c.settle()
+    c.eq(c.count('.f-modal'), 0, 'an empty flight: no question', what='no question')

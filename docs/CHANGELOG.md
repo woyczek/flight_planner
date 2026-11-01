@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: « Nouveau vol », and a new pair of aerodromes clears the old flight** (`modules/fuel/module.js`; SPEC, DECISIONS, help ×4;
+  noreg F86) — the user's KSET → KDOV kept the route of France: an aerodrome moved more than 150 NM, or both ends changed, clears the
+  route, procedures and OFP (said); a near correction keeps the route; « Nouveau vol » empties the flight after a question, the
+  aircraft kept.
 - **Fuel, Aircraft, Missions: `meta.titleOf(path, value)`** (the three `module.js`; their INTEGRATION; noreg F85) — the readable title
   of a document waiting to be synchronised, for the Synchronisation card of Settings: « Vol LFBO → LFPO du 1/11 », « Fiche H145 »,
   « A-001A Titre »; `[fr, en, de, es]` or `null`; pure.

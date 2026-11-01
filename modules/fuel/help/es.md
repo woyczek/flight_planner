@@ -17,6 +17,8 @@ en la pantalla en cada paso, con la procedencia del viento («viento: METAR LFRS
 con la pestaña «Fichas». Una ✓ marca un paso completado. Los niveles se escriben igual en todas partes: en FL a partir de
 5000 ft (FL060), en pies por debajo (3500 ft).
 
+**Vuelo nuevo.** El botón «Nuevo vuelo», arriba en la pantalla, borra el vuelo en preparación (salida, llegada, ruta, procedimientos, nivel, OFP), tras una pregunta si ya contiene algo o está iniciado; la aeronave se queda. Cambiar un aeródromo por otro a más de 150 NM, o cambiar la salida y la llegada, también forma un par nuevo: se borran la ruta, los procedimientos y el OFP del vuelo anterior, y la pantalla lo dice. Un aeródromo cercano (una corrección) solo sustituye al anterior en la ruta.
+
 <a id="fuel-step-1"></a>**1 Vuelo.** La salida, la llegada y la alternativa (códigos OACI), la fecha del vuelo si quiere la previsión (TAF) en
 lugar de la observación, la aeronave y el nivel de crucero (en FL). Bajo cada código, una línea fija da el nombre del aeródromo para comprobarlo (« LFPO — Paris-Orly »; « desconocido » si el código no corresponde a nada). Desde dos caracteres, un código o el comienzo de un nombre (« LFP », « orly »), el campo propone siete aeródromos como máximo: ↑ ↓ para elegir, Intro para validar, Esc para cerrar, o un toque; la lista se cierra al salir del campo, y escribir el código entero a mano funciona siempre. El nombre puede escribirse entero («toulouse»): solo un código elegido o tecleado entra en la ruta, y un campo que se deja sin elegir vuelve al aeródromo guardado. La fecha del vuelo (introducida en la hora local del dispositivo) es un único valor, guardado en el vuelo actual: la meteorología del cálculo (TAF de los aeródromos, vientos y temperaturas en altura) se lee a esa fecha, el ETA del mapa parte de ella mientras el vuelo no ha empezado, y el deslizador de Meteo parte de ella; vacío significa ahora. La aeronave cabe en una línea: la aeronave elegida,
 su matrícula, su indicativo y de dónde viene. Un vuelo nuevo toma la última aeronave elegida en este
@@ -184,4 +186,4 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
   tarjeta lo dice y responde el METAR en su lugar. La tarjeta meteorológica indica de dónde vienen los mensajes. Sin red
   alguna, muestra la última meteorología guardada, con su hora.
 
-<!-- fr: 7f87e06dbfcb -->
+<!-- fr: 73cdc109c871 -->

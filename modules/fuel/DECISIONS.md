@@ -1316,3 +1316,14 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   over the title, and `.fu-linkbtn` cleared the background but not the design's `--sog-btn-shadow` (Aqua paints it). Now no negative
   margin (the meta line takes the height of its target) and no background, shadow nor border in any state. Case F14 (tokens painted
   red for the check, the box below the title).
+- **1 Nov 2026 — « Nouveau vol », and a new pair of aerodromes clears the old flight** (the user: after LFST → LFBO, a KSET → KDOV kept
+  the route of France, and slowness; Simplification's two rules, the ergonomics session accepting my counter-proposal on the second).
+  « Nouveau vol » at the head of the screen (`#fuel?new=1` too): a question when the flight carries something or is started, then the
+  flight emptied (departure, arrival, route, procedures, level, OFP, quote, start, mission), the aircraft kept (a choice of the device,
+  not of the flight). An aerodrome changed for one more than `NEW_PAIR_NM` (150 NM) away, or both ends changed since the route was
+  written (`S.routeEnds`, set when the flight is read, taken from elsewhere, typed, or from an OFP or a mission), is a new pair: route
+  text and points, procedures, OFP cleared, said in one line; nearer (LFBO → LFBP, a correction) the old behaviour stays (replaced in
+  the text, that side's procedures removed). Objection kept: clearing at every change would break a correction. Case F86 (near, far, «
+  Nouveau vol »); the « both ends » rule has no case (the seeded base has no near pair on both sides). The slowness: the route of France
+  no longer survives in the flight; what aerodb keeps in memory per zone and what the Map keeps in its layers are reported to AeroDB and
+  BUGS SOG.

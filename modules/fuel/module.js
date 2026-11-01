@@ -317,6 +317,28 @@ const TX = {
   missionUnread: ['Mission {id} introuvable ou illisible dans missions/.', 'Mission {id} not found or unreadable in missions/.',
     'Mission {id} in missions/ nicht gefunden oder unlesbar.', 'Misión {id} no encontrada o ilegible en missions/.'
   ],
+  // « Nouveau vol » et le nouveau couple de terrains (retour de l'utilisateur du 1er nov. 2026 : un KSET → KDOV gardait la route de France)
+  newFlight: ['Nouveau vol', 'New flight', 'Neuer Flug', 'Nuevo vuelo'],
+  newFlightAsk: [
+    'Commencer un nouveau vol ? Le départ, l’arrivée, la route, les procédures et le niveau du vol en préparation sont effacés ; l’appareil reste.',
+    'Start a new flight? The departure, arrival, route, procedures and level of the flight being prepared are cleared; the aircraft stays.',
+    'Einen neuen Flug beginnen? Abflug, Ankunft, Strecke, Verfahren und Flugfläche des vorbereiteten Flugs werden gelöscht; das Luftfahrzeug bleibt.',
+    '¿Empezar un vuelo nuevo? Se borran la salida, la llegada, la ruta, los procedimientos y el nivel del vuelo en preparación; la aeronave se queda.'
+  ],
+  newFlightStarted: [
+    'Le vol est démarré. Commencer un nouveau vol l’abandonne (il n’est plus proposé au compte rendu comme démarré) ; l’appareil reste.',
+    'The flight is started. Starting a new flight abandons it (no longer offered to the report as started); the aircraft stays.',
+    'Der Flug ist gestartet. Ein neuer Flug gibt ihn auf (er wird dem Bericht nicht mehr als gestartet angeboten); das Luftfahrzeug bleibt.',
+    'El vuelo está iniciado. Empezar uno nuevo lo abandona (ya no se propone al informe como iniciado); la aeronave se queda.'
+  ],
+  newFlightDone: ['Nouveau vol : tout est à saisir, l’appareil est gardé.', 'New flight: everything to enter, the aircraft is kept.',
+    'Neuer Flug: alles einzugeben, das Luftfahrzeug bleibt.', 'Vuelo nuevo: todo por introducir, la aeronave se conserva.'
+  ],
+  newPair: ['Nouveau couple de terrains ({dep} → {arr}) : la route, les procédures et l’OFP de l’ancien vol sont effacés.',
+    'New pair of aerodromes ({dep} → {arr}): the route, procedures and OFP of the previous flight are cleared.',
+    'Neues Flugplatzpaar ({dep} → {arr}): Strecke, Verfahren und OFP des vorigen Flugs sind gelöscht.',
+    'Nuevo par de aeródromos ({dep} → {arr}): se borran la ruta, los procedimientos y el OFP del vuelo anterior.'
+  ],
   ofpLoaded: ['OFP {dep} → {arr} repris ({n} points).', 'OFP {dep} → {arr} loaded ({n} points).',
     'OFP {dep} → {arr} übernommen ({n} Punkte).',
     'OFP {dep} → {arr} cargado ({n} puntos).'
@@ -1471,6 +1493,8 @@ ${PROC_STYLE}
 [data-module="fuel"] .fu-rrow>.f-field{flex:1 1 0;min-width:0}
 [data-module="fuel"] .fu-rrow>button{flex:none;min-width:56px;min-height:44px;margin-bottom:2px}
 [data-module="fuel"] .fu-rinfo{flex-wrap:wrap;gap:4px 12px;margin:4px 0}
+[data-module="fuel"] .fu-top{justify-content:space-between;align-items:center;gap:8px}
+[data-module="fuel"] .fu-top>.f-tabs{margin:0}
 [data-module="fuel"] .fu-linkbtn{min-height:44px;padding:0 4px;border:0;border-radius:0;background:none;box-shadow:none;text-shadow:none;color:var(--sog-link);text-decoration:underline;font:inherit;cursor:pointer}
 [data-module="fuel"] .fu-linkbtn:is(:hover,:focus,:active,:disabled){background:none;box-shadow:none;border:0}
 [data-module="fuel"] .fu-pt{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
@@ -1667,6 +1691,7 @@ function onPlanInput(e) {
     case 'rtext':
       r.text = v;
       if (e.type === 'input') r.from = 'route';
+      markEnds(); // la route écrite l'est pour les terrains du moment
       resolveRoute(e.type === 'change'); // pendant la frappe : points relus ; à la sortie : texte normalisé
       if (e.type === 'change') textToProcs(); // à la sortie : les noms de SID et de STAR du texte posent ou retirent le choix (§ 10.31)
       else S.RC.onInput(e); // pendant la frappe : la complétion au curseur (§ 10.31)
@@ -1824,6 +1849,18 @@ function setAd(k, code) {
       diverted: true
     };
   }
+  if (k !== 'altn' && was && r[k] !== was && (r.text || r.points?.length)) {
+    // un nouveau couple de terrains (les deux bouts changés depuis l'écriture de la route, ou un terrain à plus de NEW_PAIR_NM de
+    // l'ancien) : rien de l'ancien vol ne survit (route, procédures, OFP) ; en deçà, le terrain remplacé dans le texte (ci-dessous)
+    const other = k === 'dep' ? 'arr' : 'dep',
+      old = (r.points || []).find(p => p.id === was && Number.isFinite(+p.lat)),
+      s = S;
+    if (S.routeEnds?.[other] && r[other] && r[other] !== S.routeEnds[other]) return newPair();
+    if (old && S.ctx.aerodb?.coords) Promise.resolve(S.ctx.aerodb.coords(code)).then(c => {
+      if (!gone(s) && S.flight.route === r && r[k] === code && c && Number.isFinite(+c.lat) && nmBetween(old, c) > NEW_PAIR_NM)
+        newPair();
+    }).catch(() => {});
+  }
   if (k !== 'altn') {
     // le terrain changé l'est aussi dans le texte de la route (sinon le nouveau s'ajoute devant ou derrière l'ancien)
     if (was && r.text && r[k] !== was) {
@@ -1834,6 +1871,89 @@ function setAd(k, code) {
     resolveRoute();
     scheduleWx();
   }
+}
+// ---------------------------------------------------------------- nouveau vol, nouveau couple de terrains
+const NEW_PAIR_NM = 150; // au-delà, un terrain changé fait un autre vol (Simplification, 1er nov. 2026)
+
+/** Distance orthodromique en NM entre deux { lat, lon }. */
+function nmBetween(a, b) {
+  const rad = Math.PI / 180,
+    dLat = (b.lat - a.lat) * rad,
+    dLon = (b.lon - a.lon) * rad,
+    h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLon / 2) ** 2;
+  return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+/** Le couple de terrains pour lequel la route est écrite (départ, arrivée) : posé quand le vol est lu, repris d'ailleurs, écrit
+ *  dans le champ de route, ou remis à neuf ; un changement de terrain proche ne le change pas. */
+function markEnds() {
+  const r = S.flight.route || {};
+  S.routeEnds = {
+    dep: r.dep || '',
+    arr: r.arr || ''
+  };
+}
+/** Un nouveau couple de terrains : la route (texte, points, distance, voies d'Auto), les procédures et l'OFP de l'ancien vol effacés,
+ *  dit en une ligne ; le reste du vol (appareil, niveau, date) gardé. */
+function newPair() {
+  const f = S.flight,
+    r = f.route;
+  Object.assign(r, {
+    text: '',
+    points: [],
+    distanceNm: null,
+    trackDeg: null,
+    manual: false,
+    from: 'route'
+  });
+  delete r.procedures;
+  delete r.auto;
+  f.ofp = null;
+  S.ofp = null;
+  S.procs = null;
+  markEnds();
+  const ta = S.body?.querySelector('[data-k="rtext"]');
+  if (ta) ta.value = '';
+  S.ctx.notify(tt(TX.newPair, {
+    dep: r.dep || '?',
+    arr: r.arr || '?'
+  }), 'ok');
+  saveFlight();
+  renderPlan();
+  resolveRoute();
+  scheduleWx();
+}
+/** « Nouveau vol » : après la question (si le vol est démarré ou porte déjà quelque chose), le vol courant remis à vide — départ,
+ *  arrivée, route, procédures, niveau, OFP, devis, départ et mission — ; l'appareil reste (un choix de l'appareil, pas du vol). */
+async function newFlight() {
+  const s = S,
+    f = S.flight,
+    r = f.route || {},
+    started = !!f.started?.at;
+  if (S.flightPending) return;
+  if ((started || r.text || r.dep || r.arr || r.points?.length || f.level?.ft || f.mission) && !(await S.ctx.ask(tt(started ? TX
+      .newFlightStarted : TX.newFlightAsk)))) return;
+  if (gone(s)) return;
+  S.flight = {
+    ...f,
+    ...emptyFlight(),
+    aircraft: f.aircraft || {},
+    isaDev: f.isaDev ?? 0,
+    started: null,
+    progress: null,
+    quote: null,
+    profile: null,
+    weather: null,
+    windSource: null,
+    mission: null
+  };
+  S.ofp = null;
+  S.procs = null;
+  S.step = 0;
+  markEnds();
+  S.ctx.notify(tt(TX.newFlightDone), 'ok');
+  saveFlight();
+  if (S.view === 'plan') renderPlan();
+  else show('plan');
 }
 /** Champ de terrain quitté sans choix (hits : terrains proposés pour son texte) : un code de quatre caractères qu'aerodb ne connaît pas
  *  et qui ne proposait rien est un terrain tapé exprès (absent de la base) : il est écrit ; un texte de recherche (« toulouse »,
@@ -3187,6 +3307,7 @@ function renderSummary(C) {
  *  Que l'écran soit Devis ou Fiches. */
 function adoptForeignFlight() {
   const r = S.flight.route ||= emptyFlight().route;
+  markEnds();
   routeDerived(r);
   if (S.aloft) aloftApply(); // vents en altitude aux nouveaux points (relus si la route a changé : scheduleWx)
   S.froze = false; // une route changée ailleurs refait le devis de la longueur qu'elle a maintenant
@@ -3645,6 +3766,7 @@ function applyOfp(ofp) {
     aircraft: `${type} ${reg}`.trim(),
     callsign: ofp.atc?.callsign || ''
   };
+  markEnds();
   S.ctx.notify(tt(TX.ofpLoaded, {
     dep,
     arr,
@@ -3723,6 +3845,7 @@ async function applyMission(id) {
   f.ofp = null;
   S.ofp = null;
   f.mission = mf.mission;
+  markEnds();
   ctx.notify(tt(TX.missionLoaded, {
     id,
     dep: dep || '?',
@@ -4216,7 +4339,7 @@ export async function mount(el, ctx) {
   // « Aucune », une clé absente laisse sa famille ; § 10.23 puis § 10.30 : rwy sid star app apptrans, pas de transition SID / STAR) :
   // prises une fois, ensemble, et retirées de l'adresse (frame/INTEGRATION.md § 6.1)
   const PROPOSAL_KEYS = ['rwy', 'sid', 'star', 'app', 'apptrans'],
-    q = ctx.consume ? ctx.consume('focus', 'mission', ...PROPOSAL_KEYS) : ctx.query || {},
+    q = ctx.consume ? ctx.consume('focus', 'mission', 'new', ...PROPOSAL_KEYS) : ctx.query || {},
     asked = q.focus;
   if ((asked === 'dep' || asked === 'arr') && PROPOSAL_KEYS.some(k => q[k] != null && q[k] !== '')) S.P.propose(asked, {
     rwy: q.rwy,
@@ -4231,10 +4354,11 @@ export async function mount(el, ctx) {
   S.focus = ['route', 'dep', 'arr'].includes(asked) ? asked : '';
   // « Préparer ce vol » du module Missions (#fuel?mission=<id>) : reprise une fois le vol courant connu (flightReady)
   S.missionAsked = String(q.mission || '').trim();
+  S.newAsked = q.new === '1'; // #fuel?new=1 : « Nouveau vol » demandé par l'adresse (sa question comprise)
   if (S.focus === 'arr') S.P.focus('arr'); // la première liste de l'arrivée prend le focus dès qu'elle est dessinée
   S.step = S.focus === 'route' ? 1 : S.focus ? (kept.started?.at ? 4 : 1) : Math.max(0, Math.min(4, +S.ui.step || 0));
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(ctx.t(meta.title))}</h1>
-    <div class="f-tabs" role="group"><button type="button" data-view="plan">${esc(tt(TX.plan))}</button><button type="button" data-view="sheets">${esc(tt(TX.sheets))}</button></div>
+    <div class="f-row fu-top"><div class="f-tabs" role="group"><button type="button" data-view="plan">${esc(tt(TX.plan))}</button><button type="button" data-view="sheets">${esc(tt(TX.sheets))}</button></div><button type="button" data-do="newflight">${esc(tt(TX.newFlight))}</button></div>
     <p class="f-muted" data-wait role="status" hidden></p>
     <div data-body></div>`;
   // titre : sur un téléphone l'en-tête du cadre porte celui du module (ctx.titled) ; le h1 reste alors pour les lecteurs
@@ -4260,6 +4384,7 @@ export async function mount(el, ctx) {
   ctx.helpAnchor?.(() => S?.view === 'sheets' ? 'fuel-sheets' : S?.body?.querySelector('.fu-steps')?.offsetParent ? `fuel-step-${S.step + 1}` :
     'fuel-quote');
   el.querySelector('.f-tabs').onclick = e => e.target.dataset.view && show(e.target.dataset.view);
+  el.querySelector('[data-do="newflight"]').onclick = () => newFlight();
   // fiches changées ailleurs (synchronisation, autre onglet) ; vol courant écrit par maps
   S.stops.push(ctx.aerodb?.on?.('change', e => self.P.onChange(e)));
   S.stops.push(ctx.aerodb?.on?.('change', async e => {
@@ -4345,6 +4470,7 @@ function flightDefaults(kept) {
  *  registre d'aerodb (elle chiffre le devis). */
 function flightReady() {
   S.body.inert = false;
+  markEnds();
   if (S.focus === 'route') {
     const ta = S.body.querySelector('[data-k="rtext"]');
     ta?.focus();
@@ -4353,7 +4479,9 @@ function flightReady() {
   S.P.applyFocus();
   if (!S.refsPending) resumeFlight();
   if (S.missionAsked) applyMission(S.missionAsked);
+  else if (S.newAsked) newFlight();
   S.missionAsked = '';
+  S.newAsked = false;
 }
 /** Vol modifié ailleurs pendant l'absence de fuel : repris (devis refait) ; sinon la route relue. */
 function resumeFlight() {
