@@ -28,6 +28,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Maintenance › Pilots' tokens: the administrator's token block says what is set** (`frame/settings/pilot_tokens.js`,
   `tools/launch.py` `gitlab_where`; frame DECISIONS; help ×4; noreg A39, I32) — « set on … · gitlab.com · group/project ·
   tested at … » or « no token set », read at every drawing and from the answer of a save or a test; never the value.
+- **Frame: the suite's version, written once** (`tools/launch.py` `suite_version`, `tools/build_pages.py` `version.json`,
+  `frame/app.js`; frame INTEGRATION, SPEC, DECISIONS; noreg A81, I34) — `git describe` and the commit date, served by the
+  launcher or written by the site's build; the last line of the Status block, the head of the copyable diagnostic, and
+  `ctx.version()` for the Settings' « About » card; no footer.
 - **Missions: a mission file not yet on the device is no longer said unreadable** (`modules/missions/module.js`, Fuel's door in
   `modules/fuel/module.js`; SPEC § 2, DECISIONS, help ×4; noreg N5) — the files were read without waiting for the network: on a new
   device most missions showed « ne se lit pas ». Now read waiting (8 s at most, then « pas encore sur l'appareil », taken on arrival),

@@ -2322,8 +2322,6 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   the left on the Map, Weather and Website after a selection. The back button now takes that margin in the same case.
   A66 measures every entry of the left column, the bottom bar and the header across the Pilot modules, in the five
   designs at 390 and in all six (aqua included) at 1280; the rail and the bar did not move, the header did.
-
-
 - **31 Oct 2026 — No line-ending warning in the launcher's log** (Simplification: the log full of « git add: warning: in
   the working copy of 'pilot/RBR/current_flight.json', LF will be replaced by CRLF the next time Git touches it »). The
   suite writes LF; Windows' git has `core.autocrlf=true` and warned once per file at each `git add`. The simplest single
@@ -2433,3 +2431,10 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   when it failed — a pass error holds the whole queue, a write refused for good goes to the conflicts); the launcher's
   `sync-status` also names the paths changed here (`changed`) and those of the commits to send (`toPush`), names only, at
   most 200 each with their totals (`data_sync.PATHS_MAX`). Noreg A53 (store bench), I35.
+- **1 Nov 2026 — The suite's version, written once, said in three places** (Simplification, from the user: no « About », no
+  footer, no version in Diagnostics): the launcher's status carries `version` (`git describe --tags --always`, the commit
+  date; `suite_version()`, cached a minute), `tools/build_pages.py` writes the same in `version.json` for the site without
+  a launcher. The frame shows it as the last line of the Status block (« SOG 6.0.0-alpha.2-25-g1a2b3c4 · <date> »), puts it
+  at the head of the copyable diagnostic (`suite`), and gives it to the Settings as `ctx.version()` for their « About »
+  card (Réglages: version, code repository, licence, roadmap, report link). No footer (height on a phone). The Status block
+  is now always shown when a version is known. Noreg A81, I34.

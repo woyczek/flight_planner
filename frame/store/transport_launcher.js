@@ -117,7 +117,12 @@
         dataGit: !!j.dataGit,
         host: String(j.host || ''),
         lan: !!j.lan,
-        lnm: Array.isArray(j.lnm) ? j.lnm.filter(k => typeof k === 'string').map(k => k.slice(0, 40)).slice(0, 20) : []
+        lnm: Array.isArray(j.lnm) ? j.lnm.filter(k => typeof k === 'string').map(k => k.slice(0, 40)).slice(0, 20) : [],
+        // la version de la suite (git describe, date du commit) que le lanceur sert
+        version: j.version && typeof j.version.version === 'string' ? {
+          version: j.version.version.slice(0, 80),
+          date: String(j.version.date || '').slice(0, 10)
+        } : null
       } : null;
     } catch {
       return null;

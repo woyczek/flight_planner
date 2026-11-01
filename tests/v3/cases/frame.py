@@ -2980,3 +2980,28 @@ def a80(c):
     tut = c.js("[...document.querySelectorAll('[data-help-tutorials] a')].map(a => a.getAttribute('href'))")
     c.ok(len(tut) >= 1 and all('#help?t=' in h and 'app=maintenance' not in h for h in tut), str(tut), 'the tutorials (Pilot’s), at Pilot’s address')
     c.check_errors()
+
+
+
+@case('A81', 'The suite’s version: the last line of the Status block and the head of the copyable diagnostic', 'A', designs=('standard',), screens=False, night=False,
+      rule='Simplification 1 Nov (the user: no « About », no footer, no version in Diagnostics): the version is written once — by the launcher (its status) or by build_pages (version.json of the site without a launcher) — and shown as the last line of the Status block « SOG <git describe> · <date> », and at the head of the copyable diagnostic')
+def a81(c):
+    ver = {'version': '6.0.0-alpha.2-25-g1a2b3c4', 'date': '2026-11-01'}
+    c.context.route(re.compile(r'/version\.json(\?|$)'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(ver)))
+    c.context.add_init_script("""window.__copied = []; try { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async s => { window.__copied.push(String(s)) } } }) } catch (e) {}""")
+    c.open('settings', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-card=\"status\"] li[data-k=\"version\"]')", timeout=15000, what='the version line')
+    keys = c.js("[...document.querySelectorAll('[data-card=\"status\"] li[data-k]')].map(l => l.dataset.k)")
+    c.eq(keys[-1], 'version', 'the version is the last line of the Status block', what='last line')
+    text = norm(c.js("document.querySelector('[data-card=\"status\"] li[data-k=\"version\"]').textContent"))
+    c.ok(text.startswith('SOG 6.0.0-alpha.2-25-g1a2b3c4 · ') and len(text) > len('SOG 6.0.0-alpha.2-25-g1a2b3c4 · '), text, 'SOG, git describe, the date of the commit')
+    c.eq(c.count('footer, .f-foot'), 0, 'no footer', what='footer')
+    # the copyable diagnostic: the suite's version at its head
+    c.js("() => { const d = document.querySelector('[data-diagbox]'); if (d) { d.open = true; d.closest('details.f-group')?.setAttribute('open', '') } }")
+    c.until("!!document.querySelector('[data-diagbox] [data-act=\"copy\"]')", timeout=10000, what='the diagnostic’s copy button')
+    c.wait(800)
+    c.js("() => document.querySelector('[data-diagbox] [data-act=\"copy\"]').click()")
+    c.until("(window.__copied || []).length > 0", timeout=10000, what='the diagnostic copied')
+    got = json.loads(c.js("window.__copied.at(-1)"))
+    keys = [k for k in got if k not in ('at', 'app')]
+    c.eq([keys[0], got.get('suite')], ['suite', ver], 'the head of the diagnostic: the suite’s version', what='diagnostic')

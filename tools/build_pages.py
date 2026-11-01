@@ -95,6 +95,10 @@ def main(out, start=''):
     sha, branch = git('rev-parse', 'HEAD'), git('rev-parse', '--abbrev-ref', 'HEAD')
     with open(os.path.join(out, 'config', 'build.js'), 'w', encoding='utf-8', newline='\n') as f:
         f.write(f'window.REPOSITORY_BUILD = {{ sha: "{sha}", branch: "{branch}", tag: "" }};\n')
+    # la version de la suite pour le cadre sans lanceur (le bloc d'état, le diagnostic, « À propos ») : git describe et la
+    # date du commit, comme le lanceur la donne dans son statut
+    with open(os.path.join(out, 'version.json'), 'w', encoding='utf-8', newline='\n') as f:
+        json.dump({'version': git('describe', '--tags', '--always')[:80], 'date': git('log', '-1', '--format=%cs')[:10]}, f)
     open(os.path.join(out, '.nojekyll'), 'w').close()
     if start:
         start_page(out, start.strip('/'), meta)

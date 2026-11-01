@@ -563,6 +563,8 @@
       // {n} le cycle à construire ; « construire », jamais « publier » : rien n'est à envoyer tant que rien n'est construit ;
       // dépassé, la ligne dit d'abord de télécharger les sources du cycle {n} (reconstruire avec celles d'avant redonne le même
       // cycle : l'utilisateur reconstruisait en boucle une base restée en 2610, 1er nov. 2026)
+      // la version de la suite, dernière ligne du bloc d'état : git describe et la date du commit
+      version: ['SOG {v} · {d}', 'SOG {v} · {d}', 'SOG {v} · {d}', 'SOG {v} · {d}'],
       cycleOld: ['{s} : cycle {c} dépassé : téléchargez les sources du cycle {n}, puis reconstruisez',
         '{s}: cycle {c} out of date: download the sources of cycle {n}, then rebuild',
         '{s}: Zyklus {c} veraltet: Laden Sie die Quellen des Zyklus {n} herunter und erstellen Sie dann neu',
@@ -917,6 +919,7 @@
     // tracker d'IVAO, et la route ivao/oauth/refresh du lanceur avec lui
   };
   let launcherHere = null; // { data, dataGit, host, lan, lnm } si la page est servie par un lanceur (relevé au démarrage)
+  let suiteVersion = null; // la version de la suite ({ version, date }), lue par readVersion
   // client du lanceur (frame/lib/launcher.js, INTEGRATION § 15) : chargé au démarrage ; le cadre s'en sert pour lui-même
   // (Réglages, fiches .lnmperf d'aerodb : toutes ses routes), un module par ctx.launcher (ce que son meta.launcher déclare)
   let LC = null,
@@ -1851,7 +1854,32 @@
       go: 'live',
       phone: true
     });
+    // la version de la suite, en dernier (ni nouvelle ni attention) : sans pied de page qui prend de la hauteur ; elle mène
+    // à la carte « À propos » des Réglages (dépôt, licence, feuille de route)
+    if (suiteVersion) items.push({
+      k: 'version',
+      text: t(T.info.version, {
+        v: suiteVersion.version,
+        d: suiteVersion.date ? infoDate(suiteVersion.date) : ''
+      }).replace(/ · $/, ''),
+      go: 'card:about'
+    });
     return items;
+  }
+  /** La version de la suite (1er nov. 2026) : écrite une fois par le lanceur (son statut) ou par tools/build_pages.py
+   *  (version.json du site sans lanceur) ; { version, date } ou null (copie servie à plat). Le bloc d'état, le diagnostic
+   *  copiable et la carte « À propos » des Réglages (ctx.version) la lisent ici. */
+  async function readVersion() {
+    const v = launcherHere?.version || await fetch(new URL('version.json', ROOT), {
+      cache: 'no-store'
+    }).then(r => r.ok ? r.json() : null).catch(() => null);
+    const next = v && typeof v.version === 'string' && v.version ? {
+      version: v.version.slice(0, 80),
+      date: /^\d{4}-\d{2}-\d{2}$/.test(v.date || '') ? v.date : ''
+    } : null;
+    if (JSON.stringify(next) === JSON.stringify(suiteVersion)) return;
+    suiteVersion = next;
+    paintStatus();
   }
 
   const statusRows = items => items.map(it => {
@@ -3326,15 +3354,19 @@
       redetect: async () => {
         launcherHere = await FD.launcher.detect();
         await loadDevice();
+        readVersion();
       },
       helpPanel: () => need('help').then(() => SogHelp.panel('settings', helpCtx())).catch(() => null),
       // carte Diagnostic : état de la couche de données et de la base aéronautique, à copier pour un rapport
+      // la version de la suite ({ version, date } ou null) : la carte « À propos »
+      version: () => suiteVersion,
       async diagnostic() {
         const d = await FD.diagnostic(),
           a = await aerodb?.status?.().catch(e => ({
             error: e?.message || String(e)
           }));
         return {
+          suite: suiteVersion, // en tête : la version de la suite
           ...d,
           // la page : contexte sûr (https ou ce poste) ou non ; hors ligne (service worker) actif, absent ou impossible
           page: {
@@ -3957,6 +3989,7 @@
     launcherHere = await FD.launcher.detect();
     await timeP; // les heures du cadre (synchronisation, pastilles) en UTC dès leur premier dessin
     await loadDevice();
+    readVersion(); // en fond : la version de la suite, dernière ligne du bloc d'état
     await takeIvaoReturn(); // retour de l'OpenID d'IVAO : avant le premier routage (l'adresse est remplacée)
     // (accès réglé ou coupé dans un autre onglet : device/keys.json change et own.watch('device/'), plus bas, rebranche ici)
     // demande au navigateur de ne pas effacer le stockage du site (Safari le fait pour un site peu visité), au premier geste de

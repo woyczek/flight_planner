@@ -656,8 +656,15 @@ screen `#fSync` and the rest stay as they were, without the "i".
   aeronautical base, see below; leads to the Access card), `data` (synchronised n min ago · pending writes, or conflicts
   `#conflicts`, error, "on this device, nothing to synchronise"; amber for pending / offline / conflicts / error; leads to
   the Synchronisation card, else Usages), `launcher` (launcher host · sync state; Access card), `offline` (amber), `live` (the
-  real position and the GPS switch, **phone only**: a screen keeps its header button). The "Help for this screen" line is gone:
+  real position and the GPS switch, **phone only**: a screen keeps its header button), and last `version` (« SOG <git describe>
+  · <commit date> », the suite's version, neither news nor attention, leading to the « About » card; 1 Nov 2026). The "Help for this screen" line is gone:
   the "?" of the header is that.
+- **The suite's version** is written once: by the launcher (`GET /__setup/status` → `version: { version, date }`, `git
+  describe --tags --always` and the commit date of the extracted suite, read again at most once a minute) or, on the site
+  without a launcher, by `tools/build_pages.py` (`version.json` at the site's root, same form). The frame reads the
+  launcher's, else `version.json`; neither (a working copy served flat), no line. It is the last line of this block, the
+  head of the copyable diagnostic (`suite`), and the Settings' « About » card reads it as `ctx.version()` (`{ version, date
+  }` or null). No footer.
 - **Badge** (`#fDevice[data-badge]` green: something new, flight started or report to write, on every width;
   `[data-attn]` amber, **phone only**: trigram, pending writes, conflicts, sync error, offline, base; amber wins). The
   button's `title` / `aria-label` add "something to see" while either shows. The data line and "offline" are a state, not a

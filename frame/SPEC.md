@@ -85,7 +85,8 @@ exchange happens in batches, explicitly or periodically, through a transport the
     - A read that does not find its file there, and `list`, use the tree of the moment (head read again, tree read if
       it moved), kept in memory only.
     - The kept tree stays the one of the last pull, which thus still knows what changed.
-- **Diagnostic** (`FrameData.diagnostic()`, no network), for a report copied from Settings:
+- **Diagnostic** (`FrameData.diagnostic()`, no network), for a report copied from Settings (the frame puts the suite's
+  version, `suite`, at its head; INTEGRATION § 10.2):
   - the state (transport, last success, last error, pending, conflicts);
   - the kept tree (head, date, number of files, compared or not in this page);
   - the reference paths known in the tree (all, `sia/base/`, `AircraftDB/`) and those cached;

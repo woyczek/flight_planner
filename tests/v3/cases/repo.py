@@ -2291,3 +2291,21 @@ def i35(c):
         c.eq(D.PATHS_MAX, 200, 'at most 200 names', what='cap')
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+@case('I34', 'The suite’s version written once: the launcher’s status and the site’s version.json', 'I', static=True,
+      rule='Simplification 1 Nov: the version (git describe --tags, the commit date) is written by the launcher (GET /__setup/status → version) or by tools/build_pages.py (version.json at the site’s root), never by hand')
+def i34(c):
+    import importlib
+    sys.path.insert(0, str(c.root / 'tools'))
+    L = importlib.import_module('launch')
+    D = importlib.import_module('data_sync')
+    if not D.git_exe() or not (c.root / '.git').exists():
+        raise Skip('no git checkout here')
+    v = L.suite_version()
+    desc = subprocess.run(D.git_cmd('-C', str(c.root), 'describe', '--tags', '--always'), capture_output=True, text=True, env=D.git_env()).stdout.strip()
+    c.ok(v and v['version'] == desc[:80] and re.fullmatch(r'\d{4}-\d{2}-\d{2}', v['date']), str(v), 'the launcher’s version: git describe and the commit date')
+    src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
+    c.ok("'version': suite_version()" in src, '', 'the status route serves it')
+    b = (c.root / 'tools' / 'build_pages.py').read_text(encoding='utf-8')
+    c.ok("os.path.join(out, 'version.json')" in b and "'describe', '--tags', '--always'" in b and "'--format=%cs'" in b, '', 'build_pages writes version.json with git describe and the commit date')

@@ -946,7 +946,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         if not self._allowed():
             return self._json({'error': 'refusé'}, 403)
         return self._json({'server': True, 'data': has_data(), 'dataGit': os.path.isdir(os.path.join(DATA, '.git')),
-                           'host': socket.gethostname(), 'lan': self._lan(), 'lnm': [] if self._lan() else lnm_db_kinds()})
+                           'host': socket.gethostname(), 'lan': self._lan(), 'lnm': [] if self._lan() else lnm_db_kinds(),
+                           'version': suite_version()})
 
     @route('GET', '/__setup/workstation', public='poste')
     def _get_workstation(self, path):
@@ -2474,6 +2475,29 @@ def secrets_view(tri=''):
             s = cur.get(service) or {}
             out['user'][service] = {k: (_hint(s.get(k)) if secret else str(s.get(k) or '')) for k, secret in fields.items()}
     return out
+
+
+_suite_version = {'at': 0.0, 'v': None}
+
+
+def suite_version():
+    """La version de la suite extraite, écrite une fois ici (la page la lit dans le statut) : { version (git describe --tags :
+    « 6.0.0-alpha.2-25-g1a2b3c4 »), date (du commit, AAAA-MM-JJ) } ; None sans git (suite installée par une archive). Relue au
+    plus une fois par minute (une mise à jour de la suite la change). Le site sans lanceur la lit dans version.json, écrit
+    par tools/build_pages.py (1er nov. 2026)."""
+    if time.monotonic() - _suite_version['at'] < 60 and _suite_version['at']:
+        return _suite_version['v']
+    v = None
+    if data_sync.git_exe() and os.path.exists(os.path.join(ROOT, '.git')):
+        desc = suite_update.current(ROOT).get('version') or ''
+        try:
+            date = subprocess.run(data_sync.git_cmd('-C', ROOT, 'log', '-1', '--format=%cs'), capture_output=True, text=True,
+                                  timeout=10, env=data_sync.git_env()).stdout.strip()
+        except (OSError, subprocess.SubprocessError):
+            date = ''
+        v = {'version': desc[:80], 'date': date[:10]} if desc else None
+    _suite_version.update(at=time.monotonic(), v=v)
+    return v
 
 
 # ---- jetons d'accès de projet GitLab des pilotes (G2, application Maintenance) : créés, listés et révoqués par le lanceur
