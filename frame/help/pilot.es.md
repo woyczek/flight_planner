@@ -915,7 +915,8 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   Maintainer u Owner del proyecto. Péguelo en «Token del administrador», bajo la lista; «Probar el token del
   administrador» indica la cuenta, su rol, sus alcances y su caducidad. Un rechazo de GitLab se indica por su causa:
   token rechazado (ausente, caducado o sin api), cuenta que no es Maintainer, proyecto no encontrado. La rama de
-  datos debe estar abierta al rol Developer (en gitlab.com la rama por defecto está reservada a los Maintainers): la
+  datos debe estar protegida, abierta al rol Developer y sin envío forzado (en gitlab.com la rama por defecto está
+  reservada a los Maintainers): la
   pantalla lo comprueba, y «Abrir la rama a los Developers» lo hace tras una pregunta, planteada también antes del primer
   token. Un piloto cuyo token se rechaza al escribir lee «la rama main del proyecto no está abierta a los Developers».
 - **El token**: en github.com, un token de grano fino, solo sobre el repositorio de datos, «Contents» lectura y

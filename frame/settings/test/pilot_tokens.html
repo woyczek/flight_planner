@@ -66,10 +66,18 @@
         call: async (route, body) => {
           calls.push([route, body]);
           if (route === 'gitlab/admin/branch') {
+            if (admin.branch?.lost) return {
+              ok: false,
+              status: 400,
+              reason: 'unprotected',
+              message: 'branch main left unprotected'
+            };
             admin = {
               ...admin,
               branch: {
                 ...admin.branch,
+                protected: true,
+                force: false,
                 open: true
               }
             };
@@ -350,9 +358,10 @@
       view.querySelector('[data-act=make]').click();
       await tick(80);
       ck('premier jeton, branche fermée : la question avant de créer ; « non » crée le jeton sans ouvrir la branche', asked.some(q =>
-        /La branche main est réservée aux Maintainers/.test(q)) && !calls.some(c => c[0] === 'gitlab/admin/branch') && calls.some(
-        c => c[
-          0] === 'gitlab/tokens' && c[1]?.trigram === 'XYZ'), JSON.stringify(asked));
+          /La branche main n’est pas prête pour les pilotes/.test(q)) && !calls.some(c => c[0] === 'gitlab/admin/branch') && calls
+        .some(
+          c => c[
+            0] === 'gitlab/tokens' && c[1]?.trigram === 'XYZ'), JSON.stringify(asked));
       // le bouton : après la question, la route ; la ligne s'en va, la notification le dit
       S.screen(view, ctx());
       await tick(80);
@@ -366,12 +375,61 @@
       ck('« Ouvrir la branche aux Developers » : après l’accord, ouverte par le lanceur, la ligne s’en va, la notification le dit',
         calls
         .some(c => c[0] === 'gitlab/admin/branch') && !view.querySelector('[data-branch=closed]') && notes.some(n =>
-          /Branche main ouverte aux Developers/
-          .test(n[0])));
+          /Branche main réglée : push aux Developers, sans poussée forcée/
+          .test(n[0])) && asked.some(q => /sans poussée forcée \?/.test(q)));
       view.querySelector('[data-act=atest]').click();
       await tick();
-      ck('Tester : la branche dite ouverte aux Developers', /Branche main : ouverte aux Developers/.test(view.querySelector(
-        '[data-admin-msg]')?.textContent || ''));
+      ck('Tester : la branche dite ouverte aux Developers, sans poussée forcée',
+        /Branche main : ouverte aux Developers, sans poussée forcée/.test(view
+          .querySelector('[data-admin-msg]')?.textContent || ''));
+      // non protégée, poussée forcée permise : chacune sa phrase, « Protéger la branche » ; la remise refusée : dite
+      const lineOf = async branch => {
+        admin = {
+          ...admin,
+          branch
+        };
+        S.screen(view, ctx());
+        await tick(80);
+        return view.querySelector('[data-tokens-body]').firstElementChild;
+      };
+      const un = await lineOf({
+        name: 'main',
+        protected: false,
+        open: false,
+        force: false
+      });
+      const fo = await lineOf({
+        name: 'main',
+        protected: true,
+        open: false,
+        force: true
+      });
+      ck('non protégée, ou poussée forcée permise : jamais « ouverte », chacune sa phrase et « Protéger la branche »', un?.dataset
+        .branch ===
+        'unprotected' && /non protégée — un jeton de pilote pourrait la réécrire ou la supprimer/.test(un.textContent) &&
+        /Protéger la branche/
+        .test(un.textContent) && fo?.dataset.branch === 'force' && /poussée forcée permise/.test(fo.textContent), [un?.textContent, fo
+          ?.textContent
+        ].join(' | '));
+      asked.length = 0;
+      view.querySelector('[data-act=bopen]').click();
+      await tick(120);
+      ck('« Protéger la branche » : sa question dit push, fusion, poussée forcée interdite', asked.some(q =>
+        /Protéger la branche main \? Push aux Developers et Maintainers, fusion aux Maintainers, poussée forcée interdite/
+        .test(q)), JSON.stringify(asked));
+      await lineOf({
+        name: 'main',
+        protected: true,
+        open: false,
+        force: false,
+        lost: true
+      });
+      notes.length = 0;
+      view.querySelector('[data-act=bopen]').click();
+      await tick(120);
+      ck('la protection perdue (remise refusée) : la notification dit de la reposer dans GitLab', notes.some(n => n[1] === 'err' &&
+        /n’est plus protégée : reposez sa protection dans GitLab/
+        .test(n[0])), JSON.stringify(notes));
     } catch (x) {
       ck('exception du banc', false, x?.stack || x);
     }

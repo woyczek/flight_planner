@@ -897,7 +897,8 @@ cartographique (`apps/cpco/map_parser.html`).
   Maintainer ou Owner du projet. Collez-le dans « Jeton de l'administrateur », sous la liste ; « Tester le jeton de
   l'administrateur » dit le compte, son rôle, ses portées et son expiration. Un refus de GitLab est dit par sa cause :
   jeton refusé (absent, expiré ou sans api), compte qui n'est pas Maintainer, projet introuvable. La branche des
-  données doit être ouverte au rôle Developer (sur gitlab.com, la branche par défaut est réservée aux Maintainers) :
+  données doit être protégée, ouverte au rôle Developer et sans poussée forcée (sur gitlab.com, la branche par défaut
+  est réservée aux Maintainers) :
   l'écran le vérifie, et « Ouvrir la branche aux Developers » le fait après une question, posée aussi avant le premier
   jeton. Un pilote dont le jeton est refusé à l'écriture lit « la branche main du projet n'est pas ouverte aux
   Developers ».

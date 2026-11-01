@@ -117,29 +117,57 @@
       'Zweig {b}: Push nur für Maintainer — die Piloten werden nicht schreiben können.',
       'Rama {b}: push reservado a los Maintainers — los pilotos no podrán escribir.'
     ],
+    bUnprot: [
+      'Branche {b} : non protégée — un jeton de pilote pourrait la réécrire ou la supprimer.',
+      'Branch {b}: not protected — a pilot’s token could rewrite or delete it.',
+      'Zweig {b}: nicht geschützt — ein Token eines Piloten könnte ihn umschreiben oder löschen.',
+      'Rama {b}: no protegida — un token de piloto podría reescribirla o borrarla.'
+    ],
+    bForce: [
+      'Branche {b} : poussée forcée permise — un jeton de pilote pourrait réécrire son historique.',
+      'Branch {b}: force push allowed — a pilot’s token could rewrite its history.',
+      'Zweig {b}: erzwungenes Pushen erlaubt — ein Token eines Piloten könnte seinen Verlauf umschreiben.',
+      'Rama {b}: envío forzado permitido — un token de piloto podría reescribir su historial.'
+    ],
     bOpen: [
-      'Branche {b} : ouverte aux Developers, les pilotes peuvent y écrire.',
-      'Branch {b}: open to Developers, the pilots can write to it.',
-      'Zweig {b}: für Developer offen, die Piloten können dorthin schreiben.',
-      'Rama {b}: abierta a los Developers, los pilotos pueden escribir en ella.'
+      'Branche {b} : ouverte aux Developers, sans poussée forcée ; les pilotes peuvent y écrire.',
+      'Branch {b}: open to Developers, without force push; the pilots can write to it.',
+      'Zweig {b}: für Developer offen, ohne erzwungenes Pushen; die Piloten können dorthin schreiben.',
+      'Rama {b}: abierta a los Developers, sin envío forzado; los pilotos pueden escribir en ella.'
+    ],
+    bSecure: ['Protéger la branche (Developers, sans poussée forcée)', 'Protect the branch (Developers, no force push)',
+      'Zweig schützen (Developer, ohne erzwungenes Pushen)', 'Proteger la rama (Developers, sin envío forzado)'
+    ],
+    bAskSecure: [
+      'Protéger la branche {b} ? Push aux Developers et Maintainers, fusion aux Maintainers, poussée forcée interdite.',
+      'Protect the branch {b}? Push for Developers and Maintainers, merge for Maintainers, force push forbidden.',
+      'Den Zweig {b} schützen? Push für Developer und Maintainer, Zusammenführen für Maintainer, erzwungenes Pushen verboten.',
+      '¿Proteger la rama {b}? Push para Developers y Maintainers, fusión para Maintainers, envío forzado prohibido.'
+    ],
+    unprotected: [
+      'La branche des données n’est plus protégée : reposez sa protection dans GitLab, Settings › Repository › Protected branches.',
+      'The data branch is no longer protected: set its protection again in GitLab, Settings › Repository › Protected branches.',
+      'Der Datenzweig ist nicht mehr geschützt: Setzen Sie seinen Schutz in GitLab erneut, Settings › Repository › Protected branches.',
+      'La rama de datos ya no está protegida: vuelva a poner su protección en GitLab, Settings › Repository › Protected branches.'
     ],
     bBtn: ['Ouvrir la branche aux Developers', 'Open the branch to Developers', 'Zweig für Developer öffnen',
       'Abrir la rama a los Developers'
     ],
     bAsk: [
-      'Ouvrir la branche {b} aux Developers ? Les jetons des pilotes (rôle Developer) pourront y pousser ; la fusion et la poussée forcée ne changent pas.',
-      'Open the branch {b} to Developers? The pilots’ tokens (Developer role) will be able to push to it; merging and force push do not change.',
-      'Den Zweig {b} für Developer öffnen? Die Token der Piloten (Rolle Developer) können dorthin pushen; Zusammenführen und erzwungenes Pushen ändern sich nicht.',
-      '¿Abrir la rama {b} a los Developers? Los tokens de los pilotos (rol Developer) podrán enviar a ella; la fusión y el envío forzado no cambian.'
+      'Ouvrir la branche {b} aux Developers, sans poussée forcée ? Les jetons des pilotes (rôle Developer) pourront y pousser ; personne ne pourra la forcer ; la fusion ne change pas.',
+      'Open the branch {b} to Developers, without force push? The pilots’ tokens (Developer role) will be able to push to it; nobody will be able to force it; merging does not change.',
+      'Den Zweig {b} für Developer öffnen, ohne erzwungenes Pushen? Die Token der Piloten (Rolle Developer) können dorthin pushen; niemand kann ihn erzwingen; das Zusammenführen ändert sich nicht.',
+      '¿Abrir la rama {b} a los Developers, sin envío forzado? Los tokens de los pilotos (rol Developer) podrán enviar a ella; nadie podrá forzarla; la fusión no cambia.'
     ],
     bAskFirst: [
-      'La branche {b} est réservée aux Maintainers : le jeton de ce pilote ne pourra pas y écrire. L’ouvrir aux Developers avant de créer le jeton ?',
-      'The branch {b} is reserved to Maintainers: this pilot’s token will not be able to write to it. Open it to Developers before creating the token?',
-      'Der Zweig {b} ist Maintainern vorbehalten: Das Token dieses Piloten kann dort nicht schreiben. Vor dem Erstellen des Tokens für Developer öffnen?',
-      'La rama {b} está reservada a los Maintainers: el token de este piloto no podrá escribir en ella. ¿Abrirla a los Developers antes de crear el token?'
+      'La branche {b} n’est pas prête pour les pilotes : leur jeton ne pourrait pas y écrire, ou pourrait la forcer. La régler avant de créer le jeton (push aux Developers, sans poussée forcée) ?',
+      'The branch {b} is not ready for the pilots: their token could not write to it, or could force it. Set it before creating the token (push for Developers, no force push)?',
+      'Der Zweig {b} ist für die Piloten nicht bereit: Ihr Token könnte dort nicht schreiben oder ihn erzwingen. Vor dem Erstellen des Tokens einstellen (Push für Developer, ohne erzwungenes Pushen)?',
+      'La rama {b} no está lista para los pilotos: su token no podría escribir en ella, o podría forzarla. ¿Ajustarla antes de crear el token (push para Developers, sin envío forzado)?'
     ],
-    bDone: ['Branche {b} ouverte aux Developers.', 'Branch {b} open to Developers.', 'Zweig {b} für Developer geöffnet.',
-      'Rama {b} abierta a los Developers.'
+    bDone: ['Branche {b} réglée : push aux Developers, sans poussée forcée.', 'Branch {b} set: push for Developers, no force push.',
+      'Zweig {b} eingestellt: Push für Developer, ohne erzwungenes Pushen.',
+      'Rama {b} ajustada: push para Developers, sin envío forzado.'
     ],
     // la liste, sous le jeton créé ou sous le formulaire : repliée, avec son nombre
     existing: ['Jetons existants ({n})', 'Existing tokens ({n})', 'Vorhandene Token ({n})', 'Tokens existentes ({n})'],
@@ -210,6 +238,7 @@
       project: T.noProject,
       form: T.badForm,
       'token-required': T.tokenRequired,
+      unprotected: T.unprotected,
       offline: T.offline
     };
     const why = r => r?.offline ? t(T.offline) : REASON[r?.reason] ? t(REASON[r.reason]) : r?.status === 409 ? t(T.noSecret) : t(T
@@ -242,9 +271,14 @@
       return `<p class="f-msg" data-kind="${v.ok ? 'ok' : 'err'}" data-admin-result="${v.ok ? 'ok' : v.problems.join(' ')}">${esc(who)}<br>${esc(v.ok ? t(T.adminGood) : lines.join(' '))}</p>${branchLine(v.branch)}`;
     };
     // la branche des données : fermée aux Developers, dite avec le bouton qui l'ouvre ; ouverte, dite en gris
-    const branchLine = b => !b ? '' : b.open ? `<p class="f-muted" data-branch="open">${esc(t(T.bOpen, { b: b.name }))}</p>` :
-      `<p class="f-msg" data-kind="warn" data-branch="closed">${esc(t(T.bClosed, { b: b.name }))}
-        <button type="button" data-act="bopen" data-name="${esc(b.name)}">${esc(t(T.bBtn))}</button></p>`;
+    // (fermée : push aux Maintainers ; non protégée ; poussée forcée permise — chacune sa phrase, le même geste qui la règle)
+    const branchLine = b => {
+      if (!b) return '';
+      if (b.open) return `<p class="f-muted" data-branch="open">${esc(t(T.bOpen, { b: b.name }))}</p>`;
+      const kind = !b.protected ? 'unprotected' : b.force ? 'force' : 'closed';
+      return `<p class="f-msg" data-kind="warn" data-branch="${kind}">${esc(t(kind === 'closed' ? T.bClosed : kind === 'force' ? T.bForce : T.bUnprot, { b: b.name }))}
+        <button type="button" data-act="bopen" data-name="${esc(b.name)}" data-kind="${kind}">${esc(t(kind === 'closed' ? T.bBtn : T.bSecure))}</button></p>`;
+    };
     let branchNow, // dernier état lu de la branche (undefined : pas encore lu)
       pilots = 0, // jetons de pilote actifs du dernier dessin (0 : le prochain est le premier)
       drawn = 0;
@@ -340,7 +374,7 @@
       }
       if (b.dataset.act === 'another') return draw();
       if (b.dataset.act === 'bopen') {
-        if (!await ctx.ask(t(T.bAsk, {
+        if (!await ctx.ask(t(b.dataset.kind === 'closed' ? T.bAsk : T.bAskSecure, {
             b: b.dataset.name
           }))) return;
         b.disabled = true;

@@ -16,6 +16,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `readAssistant`, `cards.js`; SPEC § 3 (12); A76) — `GET /__setup/gitlab/admin` (V3 Frame c6f3bc38b) gives `branch.open`;
   closed, the step is to do, says the pilots' tokens could not write, and its button leads to « Jetons des pilotes », where the
   branch opens. The assistant still writes nothing.
+- **Launcher: the data branch opened for the pilots without force push** (`tools/launch.py` `gitlab_branch_open`;
+  `frame/settings/pilot_tokens.js`; frame DECISIONS; help ×4; noreg I33, A39) — opening sets force push off (it would
+  apply to the pilots' tokens), an unprotected branch is protected instead of counted open, and a failed restoration is
+  said (« no longer protected ») and logged.
 - **Maintenance › Pilots' tokens: the data branch opened to Developers** (`tools/launch.py` `gitlab_branch`,
   `gitlab/admin/branch`; `frame/settings/pilot_tokens.js`; `frame/app.js`; frame DECISIONS, INTEGRATION; help ×4; noreg
   I33, A78, A39) — gitlab.com protects the default branch for Maintainers, so a pilot's Developer token got « token without

@@ -2628,14 +2628,16 @@ def gitlab_admin_test():
     b = gitlab_branch(p) if not problems else {}
     return {'ok': not problems, 'username': str(u.get('username') or '')[:60], 'bot': u.get('bot') is True, 'scopes': scopes,
             'expires': s['expires_at'] if isinstance(s.get('expires_at'), str) else None, 'level': level, 'problems': problems,
-            'branch': {k: b[k] for k in ('name', 'protected', 'open')} if b.get('ok') else None}
+            'branch': {k: b[k] for k in ('name', 'protected', 'open', 'force')} if b.get('ok') else None}
 
 
 def gitlab_branch(p=None):
     """La branche des données (la branche par défaut du projet ; p : le projet déjà lu) : { ok, name, protected, open, push,
-    merge, force } — open quand le rôle des jetons des pilotes (Developer) peut y pousser : branche non protégée, ou un
-    niveau de push entre 1 et Developer (0 : personne). Sur gitlab.com, la branche par défaut est protégée, push aux
-    Maintainers : un jeton de pilote y est refusé (403 « not allowed to push into this branch », 1er nov. 2026)."""
+    merge, force } — open (prête pour les jetons des pilotes) seulement protégée, un niveau de push entre 1 et Developer
+    (0 : personne) et sans poussée forcée ; non protégée, un Developer pourrait la forcer, la réécrire ou la supprimer : pas
+    open. Sur gitlab.com, la branche par défaut est protégée, push aux Maintainers : un jeton de pilote y est refusé (403
+    « not allowed to push into this branch », 1er nov. 2026 ; condition du § 10.36 : Developers + Maintainers, sans poussée
+    forcée, Sécurisation)."""
     if p is None:
         code, p = gitlab_call('GET', '')
         if code != 200 or not isinstance(p, dict):
@@ -2643,42 +2645,57 @@ def gitlab_branch(p=None):
     name = str(p.get('default_branch') or 'main')
     code, b = gitlab_call('GET', f'/protected_branches/{urllib.parse.quote(name, safe="")}')
     if code == 404:
-        return {'ok': True, 'name': name, 'protected': False, 'open': True, 'push': None, 'merge': None, 'force': False}
+        return {'ok': True, 'name': name, 'protected': False, 'open': False, 'push': None, 'merge': None, 'force': False}
     if code != 200 or not isinstance(b, dict):
         return gitlab_refusal(code, b)
     lv = lambda k: [x['access_level'] for x in (b.get(k) or []) if isinstance(x, dict) and isinstance(x.get('access_level'), int)]
-    push, merge = lv('push_access_levels'), lv('merge_access_levels')
-    return {'ok': True, 'name': name, 'protected': True, 'open': any(0 < x <= GITLAB_LEVEL for x in push), 'push': min(push) if push else None,
-            'merge': min(merge) if merge else None, 'force': b.get('allow_force_push') is True}
+    push, merge, force = lv('push_access_levels'), lv('merge_access_levels'), b.get('allow_force_push') is not False
+    return {'ok': True, 'name': name, 'protected': True, 'open': any(0 < x <= GITLAB_LEVEL for x in push) and not force,
+            'push': min(push) if push else None, 'merge': min(merge) if merge else None, 'force': force}
 
 
 def gitlab_branch_open():
-    """« Ouvrir la branche aux Developers » : le push de la branche des données permis au rôle Developer, la fusion et la
-    poussée forcée inchangées. D'abord PATCH (une règle de push de plus), relu ; une instance qui ne l'admet pas (règles
-    multiples réservées à une offre payante) : la protection refaite à l'identique avec push Developer, l'ancienne remise si
-    la nouvelle est refusée. { ok, branch, changed } ou un refus (gitlab_refusal)."""
+    """« Ouvrir la branche aux Developers » (ou « Protéger la branche ») : la branche des données protégée, push aux
+    Developers (et au-dessus), sans poussée forcée (elle vaudrait pour tous ceux qui poussent : les jetons des pilotes), la
+    fusion inchangée (Maintainers pour une branche qui n'était pas protégée). Non protégée : protégée ainsi. Protégée :
+    PATCH (la règle de push qui manque, la poussée forcée retirée), relu ; une instance qui ne l'admet pas (règles multiples
+    d'une offre payante) : la protection refaite avec push Developer, l'ancienne remise si la nouvelle est refusée — une
+    fenêtre sans protection entre les deux, inévitable sur l'offre gratuite ; la remise vérifiée : si elle échoue aussi,
+    { ok: false, reason: unprotected }, dit au journal. Le niveau de déprotection repris par défaut (Maintainers).
+    { ok, branch, changed } ou un refus (gitlab_refusal)."""
     st = gitlab_branch()
     if not st.get('ok'):
         return st
     if st['open']:
         return {'ok': True, 'branch': st, 'changed': False}
+    want = {'name': st['name'], 'push_access_level': GITLAB_LEVEL,
+            'merge_access_level': st['merge'] if st['merge'] is not None else GITLAB_ADMIN_LEVEL, 'allow_force_push': False}
+    if not st['protected']:
+        code, j = gitlab_call('POST', '/protected_branches', want)
+        return {'ok': True, 'branch': gitlab_branch(), 'changed': True} if code in (200, 201) else gitlab_refusal(code, j)
     enc = urllib.parse.quote(st['name'], safe='')
-    code, _ = gitlab_call('PATCH', f'/protected_branches/{enc}', {'allowed_to_push': [{'access_level': GITLAB_LEVEL}]})
+    patch = {'allow_force_push': False}
+    if not (st['push'] is not None and 0 < st['push'] <= GITLAB_LEVEL):
+        patch['allowed_to_push'] = [{'access_level': GITLAB_LEVEL}]
+    code, _ = gitlab_call('PATCH', f'/protected_branches/{enc}', patch)
     if code == 200:
         now = gitlab_branch()
         if now.get('ok') and now['open']:
             return {'ok': True, 'branch': now, 'changed': True}
-    keep = {'name': st['name'], 'merge_access_level': st['merge'] if st['merge'] is not None else GITLAB_ADMIN_LEVEL,
-            'allow_force_push': st['force']}
     code, j = gitlab_call('DELETE', f'/protected_branches/{enc}')
     if code not in (200, 204):
         return gitlab_refusal(code, j)
-    code, j = gitlab_call('POST', '/protected_branches', {**keep, 'push_access_level': GITLAB_LEVEL})
-    if code not in (200, 201):
-        # la branche ne reste jamais sans protection : l'ancienne est remise
-        gitlab_call('POST', '/protected_branches', {**keep, 'push_access_level': st['push'] if st['push'] is not None else GITLAB_ADMIN_LEVEL})
-        return gitlab_refusal(code, j)
-    return {'ok': True, 'branch': gitlab_branch(), 'changed': True}
+    code, j = gitlab_call('POST', '/protected_branches', want)
+    if code in (200, 201):
+        return {'ok': True, 'branch': gitlab_branch(), 'changed': True}
+    # la nouvelle protection refusée : l'ancienne remise, et vérifiée (jamais une branche laissée sans protection en silence)
+    old = {**want, 'push_access_level': st['push'] if st['push'] is not None else GITLAB_ADMIN_LEVEL, 'allow_force_push': st['force']}
+    back, _ = gitlab_call('POST', '/protected_branches', old)
+    if back not in (200, 201):
+        say(f"  GitLab : la branche {st['name']} du dépôt des données n'est plus protégée (protection refusée : {code}, remise "
+            f"refusée : {back}) — reposez-la dans GitLab, Settings › Repository › Protected branches")
+        return {'ok': False, 'status': back or 502, 'reason': 'unprotected', 'message': f"branch {st['name']} left unprotected"}
+    return gitlab_refusal(code, j)
 
 
 def _data_gitlab_project():

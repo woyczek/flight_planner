@@ -2186,7 +2186,8 @@ def i33(c):
         if url.endswith('/protected_branches/main') and m == 'PATCH':
             if st['patch'] != 200:
                 refuse(req, st['patch'], 'allowed_to_push is not allowed')
-            st['prot'] = {**st['prot'], 'push_access_levels': st['prot']['push_access_levels'] + body['allowed_to_push']}
+            st['prot'] = {**st['prot'], 'push_access_levels': st['prot']['push_access_levels'] + body.get('allowed_to_push', []),
+                          'allow_force_push': body.get('allow_force_push', st['prot']['allow_force_push'])}
             return Resp(st['prot'])
         if url.endswith('/protected_branches/main') and m == 'DELETE':
             st['prot'] = None
@@ -2194,6 +2195,8 @@ def i33(c):
         if url.endswith('/protected_branches') and m == 'POST':
             if st['post'] != 201 and body['push_access_level'] == 30:
                 refuse(req, st['post'], 'refused')
+            if st.get('restore', 201) != 201:
+                refuse(req, st['restore'], 'refused again')
             st['prot'] = {'name': body['name'], 'push_access_levels': [{'access_level': body['push_access_level']}],
                           'merge_access_levels': [{'access_level': body['merge_access_level']}], 'allow_force_push': body['allow_force_push']}
             return Resp(st['prot'], 201)
@@ -2202,27 +2205,45 @@ def i33(c):
         L.SECRETS, L.NO_REDIRECT_OPEN = str(tmp), fake
         (tmp / 'gitlab.json').write_text(json.dumps({'instance': 'https://gitlab.example', 'project': 'grp/data', 'token': 'glpat-ADMIN-SECRET'}), encoding='utf-8')
         v = L.gitlab_admin_test()
-        c.eq(v['branch'], {'name': 'main', 'protected': True, 'open': False}, 'the test says the data branch closed to Developers (push to Maintainers)', what='closed')
+        c.eq(v['branch'], {'name': 'main', 'protected': True, 'open': False, 'force': False}, 'the test says the data branch closed to Developers (push to Maintainers)', what='closed')
         # opened by PATCH: one push rule more, the merge unchanged
         r = L.gitlab_branch_open()
-        c.ok(r['ok'] and r['changed'] and r['branch']['open'] and r['branch']['merge'] == 40 and any(x[0] == 'PATCH' for x in calls)
-             and not any(x[0] == 'DELETE' for x in calls), json.dumps(r), 'PATCH: open to Developers, the merge level unchanged, never unprotected')
+        c.ok(r['ok'] and r['changed'] and r['branch']['open'] and r['branch']['merge'] == 40 and any(x[0] == 'PATCH' and x[2].get('allow_force_push') is False for x in calls)
+             and not any(x[0] == 'DELETE' for x in calls), json.dumps(r), 'PATCH: open to Developers, force push off, the merge level unchanged, never unprotected')
         c.eq(L.gitlab_branch_open()['changed'], False, 'already open: nothing done', what='open again')
         # an instance that refuses the PATCH (several rules: a paid tier): the protection made again, push 30, merge and force kept
         st.update(prot={'name': 'main', 'push_access_levels': [{'access_level': 40}], 'merge_access_levels': [{'access_level': 30}], 'allow_force_push': True}, patch=403)
         del calls[:]
         r = L.gitlab_branch_open()
         posted = [x[2] for x in calls if x[0] == 'POST']
-        c.ok(r['ok'] and r['branch']['open'] and posted == [{'name': 'main', 'merge_access_level': 30, 'allow_force_push': True, 'push_access_level': 30}],
-             json.dumps(calls), 'PATCH refused: unprotected then protected again with push 30, merge 30 and force push kept')
+        c.ok(r['ok'] and r['branch']['open'] and posted == [{'name': 'main', 'push_access_level': 30, 'merge_access_level': 30, 'allow_force_push': False}],
+             json.dumps(calls), 'PATCH refused: unprotected then protected again with push 30, merge 30 kept, force push off (it would be the pilots’ too)')
         # the new protection refused: the old one is put back, the refusal said
         st.update(prot={'name': 'main', 'push_access_levels': [{'access_level': 40}], 'merge_access_levels': [{'access_level': 40}], 'allow_force_push': False}, patch=403, post=400)
         r = L.gitlab_branch_open()
         c.ok(r['ok'] is False and st['prot'] and st['prot']['push_access_levels'] == [{'access_level': 40}], json.dumps([r, st['prot']]),
              'the new protection refused: the old one put back, the branch never left unprotected; the refusal said')
-        # not protected at all: open
+        # the restoration refused too: said « unprotected », never the first refusal alone
+        st.update(prot={'name': 'main', 'push_access_levels': [{'access_level': 40}], 'merge_access_levels': [{'access_level': 40}], 'allow_force_push': False}, patch=403, post=400, restore=400)
+        r = L.gitlab_branch_open()
+        c.ok(r['ok'] is False and r['reason'] == 'unprotected' and st['prot'] is None, json.dumps(r), 'the old protection refused again: « unprotected », said')
+        st.update(post=201, restore=201)
+        # force push allowed to whoever pushes: not open, and opening turns it off
+        st['prot'] = {'name': 'main', 'push_access_levels': [{'access_level': 30}], 'merge_access_levels': [{'access_level': 40}], 'allow_force_push': True}
+        st['patch'] = 200
+        c.eq(L.gitlab_admin_test()['branch'], {'name': 'main', 'protected': True, 'open': False, 'force': True}, 'push to Developers but force push allowed: not open', what='force')
+        del calls[:]
+        r = L.gitlab_branch_open()
+        patched = [x[2] for x in calls if x[0] == 'PATCH']
+        c.ok(r['ok'] and r['branch']['open'] and patched == [{'allow_force_push': False}], json.dumps(calls), 'force push turned off; no push rule added when Developers already push')
+        # not protected at all: not open; opening protects it (push 30, merge 40, no force push)
         st['prot'] = None
-        c.eq(L.gitlab_admin_test()['branch'], {'name': 'main', 'protected': False, 'open': True}, 'an unprotected branch is open', what='unprotected')
+        c.eq(L.gitlab_admin_test()['branch'], {'name': 'main', 'protected': False, 'open': False, 'force': False}, 'an unprotected branch is not open (a Developer could force or delete it)', what='unprotected')
+        del calls[:]
+        r = L.gitlab_branch_open()
+        posted = [x[2] for x in calls if x[0] == 'POST']
+        c.ok(r['ok'] and r['branch']['open'] and posted == [{'name': 'main', 'push_access_level': 30, 'merge_access_level': 40, 'allow_force_push': False}]
+             and not any(x[0] in ('DELETE', 'PATCH') for x in calls), json.dumps(calls), 'unprotected: protected with push 30, merge 40, no force push')
         c.ok(all('glpat' not in json.dumps(x[2] or {}) for x in calls), '', 'never the token in a body')
     finally:
         L.SECRETS, L.NO_REDIRECT_OPEN = kept

@@ -2396,3 +2396,16 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
     main du projet n'est pas ouverte aux Developers — administrateur : Jetons des pilotes › Ouvrir la branche aux
     Developers » (the device's branch); another 403 keeps the plain phrase.
   - Settings' assistant (Réglages) reads the same `branch` of `GET /__setup/gitlab/admin`. Noreg I33, A78, A39.
+- **1 Nov 2026 — The data branch for the pilots: protected, Developers, no force push** (Sécurisation's review of c6f3bc38b,
+  « à corriger »):
+  - Force push applies to whoever may push: opening the branch to Developers kept it for the pilots' tokens when
+    Maintainers had it. The opening now sets `allow_force_push: false` (in the PATCH and in the protection made again),
+    the question says it, and `open` requires it off.
+  - An unprotected branch is no longer `open` (a Developer could force, rewrite or delete it): the screen says « non
+    protégée » and « Protéger la branche (Developers, sans poussée forcée) » posts the protection — push 30, merge 40,
+    no force push. A branch with force push allowed is said too, and set the same way.
+  - The fallback (DELETE then POST, the free tier) keeps its short window without protection; the restoration after a
+    refused protection is now checked: refused too, the answer is `reason: unprotected` (« la branche des données n'est
+    plus protégée : reposez sa protection dans GitLab, Settings › Repository › Protected branches ») and the launcher's
+    log says it. The unprotect level comes back to its default (Maintainers), which the free tier does not let set
+    otherwise. Noreg I33, A39.
