@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: every read answers or fails, `aircraft()` included** (`frame/aerodb/aerodb.js`, `registry.js`; SPEC § 3, DECISIONS; test K62) —
+  when the data repository's API stopped answering, `aircraft()` never resolved and a pilot's Fuel screen stayed inert; now the registry, the
+  procedures, the VFR files, the cities and the listings have the same 10 s bound as the zone parts: an empty answer at the bound, read again
+  at the next question.
 - **Map: no flicker at the first display** (`modules/maps/data.js` `invalidate` / `fresh`, `draw.js`, `module.js`, `layers.js`,
   `profile_view.js`; SPEC § 5; DECISIONS; noreg D96). While aerodb's parts arrived the map was drawn again without its airspaces and
   beacons at each arrival, and the sheet vanished while the profile was rebuilt (« elle clignote une bonne dizaine de fois »): the

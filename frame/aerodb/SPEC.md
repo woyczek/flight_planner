@@ -110,6 +110,13 @@ aerodb reads files only through a reader with the frame's data contract:
   waiting on the same promise. The list of zones, the manifest and a zone's meta are not bounded: a slow first launch
   must never make the base say « not published » (A15). A part the listing does not name for its zone and cycle is empty at once, without a read,
   and said as `absent` in the stats (`reads`); without a listing every part is read, bounded.
+  **The same bound for every other read and listing** (1 Nov 2026, a pilot stuck on Fuel › Route: the GitLab API did not answer and
+  `aircraft()` never resolved): `aircraft()` (the types base, the registry's sheets, fleet and reference, `readAll` and `load`), the
+  procedures (cycle, an aerodrome's four files, the index), the VFR files, the cities, `publication()`; and `list(prefix)` gives `null`
+  at the bound. At the bound the call answers « nothing » — `aircraft()` an empty registry over the types base it could read — and
+  **whatever was built while a bound fell is not kept** (the registry, a procedures memo entry, the procedures index, a cycle choice, the
+  cities): the next question reads again. Still unbounded: the A15 reads above, the read before a write (`rememberOfp`) and the offline
+  download (`fetchAll`).
 - `watch(prefix, fn)` (optional) → called with the changed paths after a synchronisation. The frame's data layer
   also calls it when a file first arrives in its cache. aerodb therefore reacts only to two cases:
   - a file it has already read whose `rev` changed: the zone, or the towns, manifest or aircraft base, is forgotten

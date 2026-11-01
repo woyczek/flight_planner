@@ -382,8 +382,24 @@
     // chemins que CETTE instance est en train de lire : la couche de données annonce aux observateurs, pendant la lecture, l'arrivée dans son
     // cache du fichier qu'on lui demande ; ce n'est pas un changement (procWatch l'ignore)
     const reading = new Map();
-    // bounded : lecture d'une part de zone, bornée par readWait ; la liste des zones, le manifeste et la méta d'une zone ne
-    // le sont pas (un premier lancement lent ne doit jamais faire dire « non publiée » à la base, A15)
+    // bornes tombées (une lecture bornée qui a rendu « rien » faute de réponse) : un mémo construit pendant qu'une borne tombait n'est
+    // pas gardé, la question suivante relit (1er nov. 2026 : aircraft() pendait sans fin quand l'API GitLab ne répondait plus)
+    let lateN = 0;
+    /** Une promesse bornée par readWait : sa valeur, sinon fallback à la borne (lateN compté, onLate appelé) ; jamais pendante. */
+    const bound = (p, fallback = null, onLate = null) => {
+      let timer = 0;
+      return Promise.race([Promise.resolve(p), new Promise(res => timer = setTimeout(() => {
+        lateN++;
+        onLate?.();
+        res(fallback);
+      }, readWait))]).finally(() => clearTimeout(timer));
+    };
+    /** list(préfixe) du lecteur, bornée : null (liste inconnue) à la borne ou en échec. */
+    const listOf = prefix => reader.list ? bound(Promise.resolve().then(() => reader.list(prefix)).catch(() => null)) : Promise.resolve(
+      null);
+    // bounded : lecture bornée par readWait (parts de zone, procédures, terrains VFR, villes, base des types, registre…) ; la liste des
+    // zones, le manifeste et la méta d'une zone ne le sont pas (un premier lancement lent ne doit jamais faire dire « non publiée » à la
+    // base, A15), ni une lecture qui précède une écriture (rememberOfp) ou un téléchargement hors ligne (fetchAll)
     const read = (path, bounded = false) => {
       reading.set(path, (reading.get(path) || 0) + 1);
       let timer = 0;
@@ -393,6 +409,7 @@
       });
       return (bounded ? Promise.race([got, new Promise(res => timer = setTimeout(() => {
         // la borne : la lecture partagée de ce chemin est oubliée, la question suivante la relance vraiment
+        lateN++;
         reader.abandon?.(path);
         res(null);
       }, readWait))]) : got).then(r => {
@@ -510,14 +527,14 @@
         return found.length ? pickCycle(found) : null;
       }
       for (const c of airacCycles(6, now()))
-        if (await read(`proc/${c}/${file}`)) return c;
+        if (await read(`proc/${c}/${file}`, true)) return c;
       return null;
     };
     // Le choix du cycle est gardé (par terrain, '' pour l'index) : list('proc/') du lecteur peut charger tout le cache du cadre, il
     // ne se refait que si un fichier de proc/ change (procWatch, dropProc, dropCoverage), à un autre jour, ou tant qu'aucun cycle n'a
     // été trouvé (rien n'est gardé d'un échec). La liste de proc/ est lue une fois pour tous les terrains (procList).
     let procListP = null; // list('proc/') du lecteur, une fois pour tous les terrains (chaque list() peut relire tout le cache du cadre)
-    const procList = () => procListP ||= (reader.list ? Promise.resolve(reader.list('proc/')).catch(() => null) : Promise.resolve(null))
+    const procList = () => procListP ||= listOf('proc/')
       .then(l => {
         if (!Array.isArray(l) || !l.length) procListP = null; // sans liste (ou vide) : redemandée, jamais gardée
         return l;
@@ -532,8 +549,10 @@
         day,
         p: null
       };
+      const late0 = lateN;
       e.p = pickProcCycle(icao).then(c => {
-        if (c === null && cycleMemo.get(key) === e) cycleMemo.delete(key);
+        if ((c === null || lateN !== late0) && cycleMemo.get(key) === e) cycleMemo.delete(
+          key); // rien, ou une borne tombée : relu ensuite
         return c;
       }, err => {
         if (cycleMemo.get(key) === e) cycleMemo.delete(key);
@@ -553,9 +572,8 @@
      *  (procEntry) : une entrée est crue jusqu'à ce qu'une voie d'invalidation la jette, sans relire ses fichiers à chaque appel. */
     async function procSource(k) {
       const cycle = await procCycle(k),
-        [pub, man, seen, loc] = await Promise.all([cycle ? read(`proc/${cycle}/${k}.json`) : null, read(`proc/manual/${k}.json`),
-          read(`proc-seen/${k}.json`), read(`proc/local/${k}.json`)
-        ]);
+        [pub, man, seen, loc] = await Promise.all([cycle ? read(`proc/${cycle}/${k}.json`, true) : null, read(`proc/manual/${k}.json`,
+          true), read(`proc-seen/${k}.json`, true), read(`proc/local/${k}.json`, true)]);
       return {
         cycle,
         pub,
@@ -801,11 +819,12 @@
         until: 0,
         p: null
       };
+      const late0 = lateN;
       e.p = (async () => {
         const src = await procSource(k),
           r = await buildProc(k, src),
-          // une base qui a changé pendant la construction : l'entrée ne sert qu'aux appels en cours
-          moved = e.base !== baseEpoch,
+          // une base qui a changé pendant la construction, ou une lecture tombée à la borne : l'entrée ne sert qu'aux appels en cours
+          moved = e.base !== baseEpoch || lateN !== late0,
           final = !r.lk.missed || await baseFinal();
         Object.assign(e, {
           done: true,
@@ -1097,8 +1116,23 @@
 
     // ---- villes : par zone (format découpé) et grandes villes du monde ; ancien format : monde entier
     const byPop = (a, b) => (b.population || 0) - (a.population || 0);
-    const major = () => majorP ||= read(`${PUB}cities_major.json`).then(r => (valueOf(r)?.data || []).sort(byPop));
-    const world = () => worldP ||= read(`${PUB}cities.json`).then(r => (valueOf(r)?.cities || []).sort(byPop));
+    // une borne tombée pendant la lecture : la liste rendue (vide) n'est pas gardée, la question suivante relit
+    const major = () => {
+      if (majorP) return majorP;
+      const l0 = lateN;
+      return majorP = read(`${PUB}cities_major.json`, true).then(r => {
+        if (lateN !== l0) majorP = null;
+        return (valueOf(r)?.data || []).sort(byPop);
+      });
+    };
+    const world = () => {
+      if (worldP) return worldP;
+      const l0 = lateN;
+      return worldP = read(`${PUB}cities.json`, true).then(r => {
+        if (lateN !== l0) worldP = null;
+        return (valueOf(r)?.cities || []).sort(byPop);
+      });
+    };
     /** Villes candidates d'une recherche par nom : celles des zones ouvertes, puis les grandes villes du monde ; sans
      *  format découpé, celles du monde entier. */
     async function nameCities() {
@@ -1113,24 +1147,29 @@
     // ---- base des types (JSON en V3 ; .js de la V2 lu comme littéral tant que le lanceur l'écrit)
     let aircraftBusy = false; // registre en cours de lecture
     function aircraft() {
+      const late0 = lateN;
       return aircraftP ||= (async () => {
         aircraftBusy = true;
         // tout en parallèle (premier écran sur un réseau lent : une attente au lieu de six) : les scripts du registre, les
         // sources du registre dès que registry.js est là (readAll), et la base des types ; JSON ou .js de la V2 choisi
         // d'après l'arbre du dépôt quand le lecteur le connaît (sinon les deux demandés à la fois, le JSON préféré)
         const libsP = Promise.all([loadOwn('registry.js', 'AeroDBRegistry'), loadOwn('sheets.js', 'AeroDBSheets')]),
-          rawP = libsP.then(() => window.AeroDBRegistry.readAll(reader)),
-          listed = reader.list ? await reader.list('AircraftDB/').catch(() => null) : null;
+          rawP = libsP.then(() => window.AeroDBRegistry.readAll(reader, {
+            wait: readWait,
+            late: () => lateN++
+          })),
+          listed = await listOf('AircraftDB/');
         const one = async (base, name) => {
           const jp = `AircraftDB/${base}.json`,
             sp = `AircraftDB/${base}.js`,
             has = p => !Array.isArray(listed) || listed.includes(p),
-            [j, s] = await Promise.all([has(jp) ? read(jp) : null, has(sp) && !(Array.isArray(listed) && listed.includes(jp)) ?
-              read(sp) :
+            [j, s] = await Promise.all([has(jp) ? read(jp, true) : null, has(sp) && !(Array.isArray(listed) && listed.includes(
+                jp)) ?
+              read(sp, true) :
               null
             ]);
           if (j) return valueOf(j);
-          const t = s || (Array.isArray(listed) && listed.includes(jp) && has(sp) ? await read(sp) : null);
+          const t = s || (Array.isArray(listed) && listed.includes(jp) && has(sp) ? await read(sp, true) : null);
           return t ? literal(t.text ?? t.value, name) : null;
         };
         const [db, perf] = await Promise.all([one('aircraft_db', 'AIRCRAFT_DB'), one('aircraft_perf', 'AIRCRAFT_PERF')]),
@@ -1144,7 +1183,9 @@
             reader,
             catalog,
             now,
-            raw: rawP
+            raw: rawP,
+            readWait,
+            onLate: () => lateN++
           }),
           state = await reg.load(),
           fleet = await reg.fleetTypes();
@@ -1164,6 +1205,8 @@
         });
       })().finally(() => {
         aircraftBusy = false; // lu, ou en échec
+        // une lecture tombée à la borne : ce registre (vide ou incomplet) sert les appels en cours, le suivant relit
+        if (lateN !== late0) aircraftP = null;
       });
     }
     let registry = null;
@@ -1405,19 +1448,20 @@
      *  `updated_at`, même quand le cycle publié l'emporte pour le reste. null sans aucun index. */
     function indexParts() {
       if (idxP) return idxP;
-      const p = idxP = readIndexParts().then(r => {
-        if (!r && idxP === p) idxP = null; // aucun index lu : redemandé au prochain appel
-        return r;
-      }, err => {
-        if (idxP === p) idxP = null;
-        throw err;
-      });
+      const late0 = lateN,
+        p = idxP = readIndexParts().then(r => {
+          if ((!r || lateN !== late0) && idxP === p) idxP = null; // aucun index lu, ou une borne tombée : redemandé au prochain appel
+          return r;
+        }, err => {
+          if (idxP === p) idxP = null;
+          throw err;
+        });
       return p;
     }
     async function readIndexParts() {
       const cycle = await procCycle(),
-        [ix, mx, lx] = await Promise.all([cycle ? read(`proc/${cycle}/index.json`) : null, read('proc/manual/index.json'),
-          read('proc/local/index.json')
+        [ix, mx, lx] = await Promise.all([cycle ? read(`proc/${cycle}/index.json`, true) : null, read('proc/manual/index.json', true),
+          read('proc/local/index.json', true)
         ]),
         v = valueOf(ix),
         m = valueOf(mx),
@@ -1581,13 +1625,13 @@
       async vfrRoutes(icao) {
         const k = String(icao || '').toUpperCase();
         if (!/^[A-Z]{4}$/.test(k)) return null;
-        const v = valueOf(await read(`sia/vfr/${k}.json`));
+        const v = valueOf(await read(`sia/vfr/${k}.json`, true));
         return v?.ad === k ? v : null;
       },
       /** Index des terrains de la compilation VFR (sia/vfr/index.json) : { aerodromes [{ ad, points, routes, notes,
        *  unmatched }], generatedAt, label } ; null sans import. */
       async vfrIndex() {
-        return valueOf(await read('sia/vfr/index.json')) || null;
+        return valueOf(await read('sia/vfr/index.json', true)) || null;
       },
       /** Procédures (SID, STAR, approches) d'un terrain, au schéma commun (SPEC § 5 quinquies) : le fichier publié du cycle
        *  (proc/<cycle>/<OACI>.json) et ce qui a été vu dans les OFP de l'utilisateur (proc-seen/<OACI>.json, source
@@ -1868,7 +1912,7 @@
           const cycles = {};
           await Promise.all(z.cycles.map(async c => {
             const split = z.split.has(c),
-              v = split ? valueOf(await read(`${PUB}${id}/${c}/meta.json`)) : null; // l'ancien format entier n'est pas lu (toute la zone)
+              v = split ? valueOf(await read(`${PUB}${id}/${c}/meta.json`, true)) : null; // l'ancien format entier n'est pas lu (toute la zone)
             cycles[c] = {
               parserVersion: v?.parserVersion ?? null,
               at: v?.builtAt ?? v?.data?.builtAt ?? v?.updated_at ?? null,
@@ -1882,13 +1926,13 @@
           };
         }
         // procédures : les cycles de la liste du lecteur, sinon les cycles AIRAC récents dont l'index se lit
-        const listed = reader.list ? await reader.list('proc/').catch(() => null) : null,
+        const listed = await listOf('proc/'),
           dates = Array.isArray(listed) ? [...new Set(listed.map(x => /^proc\/(\d{4}-\d{2}-\d{2})\/index\.json$/.exec(x)).filter(
             Boolean).map(m => m[1]))] :
           airacCycles(6, now()),
           procCycles = {};
         await Promise.all(dates.map(async c => {
-          const ix = valueOf(await read(`proc/${c}/index.json`));
+          const ix = valueOf(await read(`proc/${c}/index.json`, true));
           if (!ix) return;
           const byStatus = {};
           for (const e of Object.values(ix.aerodromes || {})) byStatus[e?.status || 'official'] = (byStatus[e?.status ||
@@ -1898,10 +1942,10 @@
             byStatus
           };
         }));
-        const vi = valueOf(await read('sia/vfr/index.json')),
-          air = reader.list ? await reader.list('AircraftDB/').catch(() => null) : null,
+        const vi = valueOf(await read('sia/vfr/index.json', true)),
+          air = await listOf('AircraftDB/'),
           db = Array.isArray(air) && air.includes('AircraftDB/aircraft_db.json') ? valueOf(await read(
-            'AircraftDB/aircraft_db.json')) : null;
+            'AircraftDB/aircraft_db.json', true)) : null;
         return {
           base,
           proc: {

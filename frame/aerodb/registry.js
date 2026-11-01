@@ -232,19 +232,41 @@
   /** Nom de fichier d'une fiche (identifiant gardé dans la fiche). */
   const fileOf = id => `${PATHS.sheets}${String(id).replace(/[^A-Za-z0-9._-]/g, '_')}.json`;
 
-  /** Lecture d'une source du registre (références en « reference », le reste en « document ») ; null si absente. */
-  const readOne = (reader, path) => reader.read(path, {
-    policy: path.startsWith('references/') ? 'reference' : 'document',
-    wait: true
-  }).catch(() => null);
+  /** Lecture d'une source du registre (références en « reference », le reste en « document ») ; null si absente, et null à la borne
+   *  wait (ms) : la lecture partagée du chemin est alors oubliée (abandon), late() appelé ; jamais pendante (1er nov. 2026). */
+  function readOne(reader, path, wait = Infinity, late = null) {
+    const got = reader.read(path, {
+      policy: path.startsWith('references/') ? 'reference' : 'document',
+      wait: true
+    }).catch(() => null);
+    return bounded(got, wait, () => {
+      reader.abandon?.(path);
+      late?.();
+    });
+  }
+  /** p, ou null passé wait ms (onLate appelé) ; sans borne si wait n'est pas un nombre fini. */
+  function bounded(p, wait, onLate) {
+    if (!Number.isFinite(wait)) return p;
+    let timer = 0;
+    return Promise.race([p, new Promise(res => timer = setTimeout(() => {
+      onLate?.();
+      res(null);
+    }, wait))]).finally(() => clearTimeout(timer));
+  }
   /** Toutes les sources du registre lues en parallèle, sans rien interpréter : la liste des fiches (arbre en mémoire) puis
    *  chacune, la base partagée de la V2, la flotte, la référence, et la flotte de la V2 quand l'arbre dit que
    *  airline/fleet.json manque (sans arbre : lue à la demande). Lancées par aerodb dès que ce fichier est chargé, en même
    *  temps que la base des types : sur un réseau lent, une attente au lieu de six. */
-  async function readAll(reader) {
-    const listP = reader.list ? reader.list(PATHS.sheets).catch(() => null) : Promise.resolve(null),
-      airline = reader.list ? reader.list('airline/').catch(() => null) : Promise.resolve(null),
-      one = p => readOne(reader, p);
+  async function readAll(reader, {
+    wait = Infinity, // borne de chaque lecture et de chaque liste (ms) : null passé ce délai, jamais une attente sans fin
+    late = null // appelé à chaque borne tombée (aerodb : le registre lu ainsi n'est pas gardé)
+  } = {}) {
+    const list = p => reader.list ? bounded(Promise.resolve().then(() => reader.list(p)).catch(() => null), wait, late) : Promise
+      .resolve(
+        null),
+      listP = list(PATHS.sheets),
+      airline = list('airline/'),
+      one = p => readOne(reader, p, wait, late);
     const [paths, aPaths] = await Promise.all([listP, airline]),
       noFleet = Array.isArray(aPaths) && !aPaths.includes(PATHS.fleet),
       [own, fpdb, fleet, reference, fleetV2] = await Promise.all([
@@ -267,7 +289,9 @@
     reader,
     catalog,
     now = () => Date.now(),
-    raw = null // promesse de readAll(reader) lancée d'avance (aerodb), sinon lue au premier load()
+    raw = null, // promesse de readAll(reader) lancée d'avance (aerodb), sinon lue au premier load()
+    readWait = Infinity, // borne de chaque lecture (ms), comme readAll
+    onLate = null
   } = {}) {
     // recherche des types du catalogue, prise avant qu'aerodb ne donne sa propre search au catalogue (sinon elle
     // s'appellerait elle-même)
@@ -283,7 +307,10 @@
     function load() {
       return loadP ||= (async () => {
         // toutes les sources lues d'un coup (readAll), puis interprétées
-        const R = await (rawP || readAll(reader));
+        const R = await (rawP || readAll(reader, {
+          wait: readWait,
+          late: onLate
+        }));
         rawP = null;
         // fiches : les siennes (aircraft/sheets/), puis celles de la V2 adoptées ou fusionnées
         const own = new Map();
@@ -313,7 +340,8 @@
         }
         // appareils : flotte (airline/fleet.json, sinon la V2), puis référence pour les immatriculations absentes
         const fleetDoc = valueOf(R.fleet),
-          v2 = fleetDoc?.aircraft?.length ? null : v2File(textOf(R.fleetV2 || await readOne(reader, PATHS.fleetV2))),
+          v2 = fleetDoc?.aircraft?.length ? null : v2File(textOf(R.fleetV2 || await readOne(reader, PATHS.fleetV2, readWait,
+            onLate))),
           rows = fleetDoc?.aircraft?.length ? fleetDoc.aircraft : v2?.data?.rows || [],
           fleetAt = fleetDoc?.updated_at || v2?.meta?.updatedAt || '',
           fleetSrc = fleetDoc?.aircraft?.length ? 'fleet' : 'fleet-v2',

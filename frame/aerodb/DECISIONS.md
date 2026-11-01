@@ -2269,3 +2269,19 @@ page is served to `Sec-Fetch-Site: none`, refused to `cross-site`, and, where th
   (openAIP, ENAIRE, NATS…) carry no AIRAC date. `cycles` is per zone so that a later per-zone rule fits the same shape.
 - **Bench**: K46 (cycle, cycles of the built zones, current, stale and its journal line; the AIRAC calendar and `cycle_of`).
 
+## 1 November 2026 — every read answers or fails: aircraft() and the registry bounded too
+
+- **A real pilot, enrolled today, was stuck on Fuel › Route** (the whole screen inert): the GitLab API did not answer, `aircraft()` never
+  resolved, and Fuel waited on it. Fuel no longer waits (Features SOG, f3d4e82a9: 4 s for the flight, 8 s for the registry), but the cause was
+  here: the bound of 31 October (`readWait`) covered a zone's parts only.
+- **Now every read with `wait: true` and every listing of aerodb has the bound**, except the three reads A15 keeps unbounded (the list of
+  zones, the manifest, a zone's meta), the read before a write and the offline download. At the bound: « nothing » (an empty registry over
+  the types base, no procedures, no cities…), the shared read abandoned (`reader.abandon`), and **no memo built during a fallen bound is
+  kept** (`lateN`, a counter of fallen bounds: the registry, a procedures entry, the index, a cycle choice, the cities): the next question
+  asks again, never an empty answer remembered as true.
+- **The registry** (`registry.js`): `readAll(reader, { wait, late })` and `create({ readWait, onLate })` bound each read and listing the same
+  way; without these options (V2 tools, benches) nothing changes.
+- **Bench**: K62 (the fleet read and the `airline/` listing held: `aircraft()` answers at the bound, 600 ms here, with an empty registry and
+  the types base; freed: the next `aircraft()` reads again, gets the fleet, and is then kept; the held read abandoned) — red before the
+  correction (still pending after 8 s).
+

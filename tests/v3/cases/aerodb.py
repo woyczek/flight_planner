@@ -3868,3 +3868,49 @@ def k59(c):
     c.eq((r['m2'], r['mora2']), (None, 1), 'a read that never ends: nothing at the bound, not a pending promise', what='held read')
     c.ok(500 <= r['ms2'] < 3000, f"{r['ms2']:.0f} ms", 'ended at the bound (600 ms in this bench)')
     c.eq((r['m3'], r['mora3']), (3200, 2), 'the next question reads again (the pending shared read abandoned at the bound) and gets the data', what='after the bound')
+
+
+@case('K62', 'aircraft() answers or fails, never pending: a held registry read gives an empty registry at the bound, then is read again once freed', 'K',
+      tags=('aerodb',), phone=False,
+      rule='Simplification 1 Nov 2026 (a pilot stuck on Fuel › Route: the GitLab API did not answer and ctx.aerodb.aircraft() never resolved): every read of aerodb answers or fails, never pending; aircraft() and the registry reads have the readWait bound, give « nothing » at the bound (empty registry, the types base alone), abandon the shared read, and are asked again')
+def k62(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      if (!window.AeroDBAircraft) await new Promise((ok, ko) => { const s = document.createElement('script'); s.src = '../aircraft.js?v=0'; s.onload = ok; s.onerror = ko; document.head.append(s) });
+      const files = {
+        'AircraftDB/aircraft_db.json': { types: {} },
+        'airline/fleet.json': { schema: 1, aircraft: [{ registration: 'F-HOLD', type: 'C172', callsigns: ['HOLD1'] }] }
+      };
+      // like the frame's data layer: one shared read per path until it ends, or until abandon(path); the held paths never answer (GitLab down)
+      const reader = {
+        asked: [], shared: new Map(), held: true, abandoned: [],
+        read(p) {
+          if (this.shared.has(p)) return this.shared.get(p);
+          this.asked.push(p);
+          const job = this.held && p.startsWith('airline/') ? new Promise(() => {}) : Promise.resolve(p in files ? { value: files[p], rev: 'r' } : null);
+          this.shared.set(p, job);
+          job.then(() => this.shared.get(p) === job && this.shared.delete(p));
+          return job;
+        },
+        abandon(p) { this.abandoned.push(p); this.shared.delete(p) },
+        list(prefix) { return this.held && prefix === 'airline/' ? new Promise(() => {}) : Promise.resolve(Object.keys(files).filter(p => p.startsWith(prefix))) },
+        watch: () => () => {}
+      };
+      const db = AeroDB.create({ reader, lnmperf: false, readWait: 600 }),
+        race = p => Promise.race([p, new Promise(res => setTimeout(() => res('pending'), 8000))]);
+      let t = performance.now();
+      const A1 = await race(db.aircraft()), ms1 = performance.now() - t;
+      const hits1 = A1 === 'pending' ? 'pending' : (await A1.search('F-HOLD', 10)).filter(h => h.registration === 'F-HOLD').length;
+      const types1 = A1 === 'pending' ? null : typeof A1.estimate === 'function';
+      // the network comes back: the next question reads again and gets the fleet
+      reader.held = false;
+      const A2 = await race(db.aircraft());
+      const hits2 = A2 === 'pending' ? 'pending' : (await A2.search('F-HOLD', 10)).filter(h => h.registration === 'F-HOLD').length;
+      const A3 = await race(db.aircraft());
+      return { ms1, hits1, types1, hits2, again: A2 !== A1, kept: A3 === A2, fleetReads: reader.asked.filter(p => p === 'airline/fleet.json').length,
+               abandoned: reader.abandoned.includes('airline/fleet.json') };
+    }""")
+    c.ok(r['hits1'] != 'pending' and 500 <= r['ms1'] < 4000, f"{r['ms1']:.0f} ms, {r['hits1']}", 'aircraft() answers at the bound (600 ms in this bench), never pending')
+    c.eq((r['hits1'], r['types1']), (0, True), 'at the bound: an empty registry, the types base alone (estimate still there)', what='at the bound')
+    c.eq((r['hits2'], r['again'], r['kept']), (1, True, True), 'freed: the next aircraft() reads again and gets the fleet; once read without a bound, it is kept', what='read again')
+    c.eq((r['fleetReads'], r['abandoned']), (2, True), 'the held shared read was abandoned at the bound, so the next question really read it again', what='abandon')
