@@ -730,6 +730,13 @@
           "en": "Runway and procedure chosen in three taps, in any order: the three families visible at once, compatible rows only by default (\"N more · All\"), STAR families, transitions as sub-rows, condensed pane; runway threshold as a small vector at high zoom",
           "de": "Piste und Verfahren mit drei Tipps in beliebiger Reihenfolge: die drei Familien zugleich sichtbar, standardmäßig nur passende Zeilen („N weitere · Alle“), STAR-Familien, Übergänge als Unterzeilen, kompaktes Fenster; Pistenschwelle als kleiner Vektor bei hohem Zoom",
           "es": "Pista y procedimiento elegidos en tres toques, en cualquier orden: las tres familias visibles a la vez, solo las compatibles por defecto («N más · Todas»), familias de STAR, transiciones en sublíneas, panel condensado; umbral de pista como pequeño vector con zoom alto"
+        },
+        {
+          "state": "planned",
+          "fr": "Trace de la route : un tronçon DCT en pointillé, un tronçon de voie aérienne en trait plein avec le cartouche de la voie (demande du 1/11, après le 6/11)",
+          "en": "Route trace: a DCT leg dotted, an airway leg solid with the airway's cartouche (request of 1 Nov, after 6 Nov)",
+          "de": "Routenspur: ein DCT-Abschnitt gepunktet, ein Luftstraßen-Abschnitt durchgezogen mit der Kartusche der Luftstraße (Wunsch vom 1.11., nach dem 6.11.)",
+          "es": "Traza de la ruta: un tramo DCT punteado, un tramo de aerovía continuo con el cartucho de la aerovía (petición del 1/11, después del 6/11)"
         }
       ]
     },
