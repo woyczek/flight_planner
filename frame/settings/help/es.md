@@ -224,7 +224,8 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   debajo, el nuevo figura en ella como «creado ahora mismo». El lanzador usa allí el token del administrador, que nunca muestra: un token de acceso personal de
   su cuenta de GitLab (Preferences › Access tokens), alcance api, con caducidad (un año como máximo), siendo esta cuenta
   Maintainer u Owner del proyecto. Péguelo en «Token del administrador», bajo la lista; «Probar el token del
-  administrador» indica la cuenta, su rol, sus alcances y su caducidad. Un rechazo de GitLab se indica por su causa:
+  administrador» indica la cuenta, su rol, sus alcances y su caducidad; el título del bloque dice si hay un token puesto (su fecha, la
+  instancia, el proyecto, la hora de la última prueba), nunca su valor. Un rechazo de GitLab se indica por su causa:
   token rechazado (ausente, caducado o sin api), cuenta que no es Maintainer, proyecto no encontrado. La rama de
   datos debe estar protegida, abierta al rol Developer y sin envío forzado (en gitlab.com la rama por defecto está
   reservada a los Maintainers): la

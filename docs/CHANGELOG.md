@@ -21,6 +21,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Frame: one door named « Help » per screen** (`frame/help/help.js`, `frame/app.js`; frame SPEC, DECISIONS; help ×4;
   noreg A80) — Maintenance's « Help » entry of the column goes: the « ? » of the header opens the manual at the chapter
   shown, with « All help » (the index of the manuals and tutorials) and the contents at its head.
+- **Maintenance › Pilots' tokens: the administrator's token block says what is set** (`frame/settings/pilot_tokens.js`,
+  `tools/launch.py` `gitlab_where`; frame DECISIONS; help ×4; noreg A39, I32) — « set on … · gitlab.com · group/project ·
+  tested at … » or « no token set », read at every drawing and from the answer of a save or a test; never the value.
 - **Missions: a mission file not yet on the device is no longer said unreadable** (`modules/missions/module.js`, Fuel's door in
   `modules/fuel/module.js`; SPEC § 2, DECISIONS, help ×4; noreg N5) — the files were read without waiting for the network: on a new
   device most missions showed « ne se lit pas ». Now read waiting (8 s at most, then « pas encore sur l'appareil », taken on arrival),

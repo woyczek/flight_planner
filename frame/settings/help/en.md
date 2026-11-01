@@ -214,7 +214,8 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   the new one there « created just now ». The launcher uses the administrator's token there, which it never shows: a personal access token of your
   GitLab account (Preferences › Access tokens), scope api, with an expiry (one year at most), this account being
   Maintainer or Owner of the project. Paste it in « Administrator's token », under the list; « Test the administrator's
-  token » says the account, its role, its scopes and its expiry. A refusal of GitLab is said by its cause: token refused
+  token » says the account, its role, its scopes and its expiry; the block's title says whether a token is set (its date, the
+  instance, the project, the time of the last test), never its value. A refusal of GitLab is said by its cause: token refused
   (missing, expired or without api), account that is not Maintainer, project not found. The data branch must be protected,
   open to the Developer role and without force push (on gitlab.com the default branch is reserved to Maintainers): the screen checks it, and « Open the
   branch to Developers » does it after a question, asked too before the first token. A pilot whose token is refused

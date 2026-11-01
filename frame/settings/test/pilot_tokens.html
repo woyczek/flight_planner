@@ -427,6 +427,52 @@
       notes.length = 0;
       view.querySelector('[data-act=bopen]').click();
       await tick(120);
+      // l'état du jeton de l'administrateur, dans le titre du bloc : posé, l'hôte, le projet, testé ; ou aucun
+      admin = {
+        ok: true,
+        username: 'chef',
+        bot: false,
+        scopes: ['api'],
+        expires: '2027-06-30',
+        level: 40,
+        problems: [],
+        branch: {
+          name: 'main',
+          protected: true,
+          open: true,
+          force: false
+        },
+        where: {
+          set: true,
+          at: '2026-11-01T09:00:00Z',
+          instance: 'gitlab.com',
+          project: 'acme/data'
+        }
+      };
+      S.screen(view, ctx());
+      await tick(80);
+      const state = view.querySelector('[data-admintoken] summary [data-admin-state]')?.textContent || '';
+      ck('jeton posé : le titre du bloc le dit (posé le, hôte, projet, testé à), le champ reste vide',
+        /^posé le 2026-11-01 · gitlab\.com · acme\/data · testé à \d\d/
+        .test(state) && view.querySelector('[data-f=atok]').value === '' && /Compte chef/.test(view.querySelector('[data-admin-msg]')
+          ?.textContent || ''), state);
+      admin = {
+        ok: false,
+        status: 409,
+        reason: 'secret',
+        message: 'no GitLab secret',
+        where: {
+          set: false,
+          at: '',
+          instance: '',
+          project: ''
+        }
+      };
+      mode = 'nosecret';
+      S.screen(view, ctx());
+      await tick(80);
+      ck('rien de posé : « aucun jeton posé »', /aucun jeton posé/.test(view.querySelector('[data-admin-state]')?.textContent || ''));
+      mode = 'ok';
       ck('la protection perdue (remise refusée) : la notification dit de la reposer dans GitLab', notes.some(n => n[1] === 'err' &&
         /n’est plus protégée : reposez sa protection dans GitLab/
         .test(n[0])), JSON.stringify(notes));

@@ -87,6 +87,11 @@
     fTok: ['Jeton (vide : celui déjà enregistré)', 'Token (empty: the one already saved)', 'Token (leer: das bereits gespeicherte)',
       'Token (vacío: el ya guardado)'
     ],
+    // l'état du jeton posé, dans le titre du bloc : jamais la valeur
+    aNone: ['aucun jeton posé', 'no token set', 'kein Token gesetzt', 'ningún token puesto'],
+    aSet: ['posé', 'set', 'gesetzt', 'puesto'],
+    aSetOn: ['posé le {d}', 'set on {d}', 'gesetzt am {d}', 'puesto el {d}'],
+    aTested: ['testé à {h}', 'tested at {h}', 'getestet um {h}', 'probado a las {h}'],
     adminSave: ['Enregistrer et tester', 'Save and test', 'Speichern und testen', 'Guardar y probar'],
     adminTest: ['Tester le jeton de l’administrateur', 'Test the administrator’s token', 'Token des Administrators testen',
       'Probar el token del administrador'
@@ -295,7 +300,34 @@
       }), 'ok');
       return true;
     }
-    const adminBlock = (open, tested) => `<details data-admintoken${open ? ' open' : ''}><summary>${esc(t(T.admin))}</summary>
+    // l'état du jeton de l'administrateur, lu à chaque dessin (GET gitlab/admin) ou pris de la réponse d'un enregistrement ou
+    // d'un test : « posé le … · gitlab.com · groupe/projet · testé à … », ou « aucun jeton posé » ; le champ de saisie, lui,
+    // reste vide (le jeton n'est jamais réaffiché)
+    const stateOf = v => {
+      const w = v?.where;
+      if (!w) return '';
+      if (!w.set) return t(T.aNone);
+      const h = new Date().toLocaleTimeString(ctx.lang?.() || 'fr', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      return [w.at ? t(T.aSetOn, {
+        d: day(w.at)
+      }) : t(T.aSet), w.instance, w.project, t(T.aTested, {
+        h
+      })].filter(Boolean).join(' · ');
+    };
+    /** Le bloc du jeton de l'administrateur dit l'état et le résultat de v (une écriture seulement si le texte change). */
+    const paintAdmin = v => {
+      const st = body.querySelector('[data-admin-state]'),
+        box = body.querySelector('[data-admin-msg]'),
+        s = stateOf(v),
+        html = said(v);
+      if (st && st.textContent !== s) st.textContent = s;
+      if (box && box.innerHTML !== html) box.innerHTML = html;
+    };
+    const adminBlock = (open, tested) => `<details data-admintoken${open ? ' open' : ''}><summary>${esc(t(T.admin))}
+        <span class="f-muted" data-admin-state>${esc(stateOf(tested))}</span></summary>
         <p class="f-muted">${esc(t(T.adminNeed))}</p><p class="f-muted">${esc(t(T.branch))}</p>
         <label class="f-field">${esc(t(T.fInst))}<input data-f="ainst" autocomplete="off" spellcheck="false" placeholder="https://gitlab.com"></label>
         <label class="f-field">${esc(t(T.fProj))}<input data-f="aproj" autocomplete="off" spellcheck="false"></label>
@@ -325,6 +357,7 @@
       if (r?.ok === false) {
         body.innerHTML = `<p class="f-msg" data-kind="${r.status === 409 || r.reason === 'secret' ? 'warn' : 'err'}" data-tokens-error="${esc(r.reason || '')}">${esc(why(r))}</p>
           ${adminBlock(true, tested)}`;
+        if (!tested) R.call('gitlab/admin').then(v => view.isConnected && seq === drawn && paintAdmin(v));
         return;
       }
       const list = r.tokens || [],
@@ -354,11 +387,17 @@
       }
       // la branche des données lue en fond (le test du jeton de l'administrateur) : fermée aux Developers, la ligne et son
       // bouton en tête de l'écran ; ouverte, rien de plus à l'ouverture
-      if (!fresh) R.call('gitlab/admin').then(v => {
+      // l'état du jeton de l'administrateur et la branche des données : de la réponse qui vient de dessiner (enregistrement,
+      // test), sinon lus en fond
+      const apply = v => {
         if (!view.isConnected || seq !== drawn) return;
+        paintAdmin(v);
         branchNow = v?.branch ?? null;
         if (branchNow && !branchNow.open) body.insertAdjacentHTML('afterbegin', branchLine(branchNow));
-      });
+      };
+      if (fresh) return;
+      if (tested) apply(tested);
+      else R.call('gitlab/admin').then(apply);
     }
     body.onclick = async e => {
       const b = e.target.closest('[data-act]');
@@ -439,7 +478,7 @@
           ctx.notify?.(t(T.adminSaved), 'ok');
           return draw(null, v);
         }
-        if (box) box.innerHTML = said(v);
+        if (box) paintAdmin(v);
       }
     };
     // « Ajouter un pilote » (Administration) mène ici avec le trigramme : #pilot-tokens?tri=ABC remplit le champ du trigramme

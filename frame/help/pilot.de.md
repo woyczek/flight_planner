@@ -947,7 +947,8 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   „Vorhandene Token“ ist darunter eingeklappt, das neue steht dort als „gerade erstellt“. Der Starter verwendet dafür das Token des Administrators, das er nie zeigt: ein persönliches
   Zugangstoken Ihres GitLab-Kontos (Preferences › Access tokens), Bereich api, mit Ablaufdatum (höchstens ein Jahr),
   wobei dieses Konto Maintainer oder Owner des Projekts ist. Fügen Sie es unter „Token des Administrators“ unter der
-  Liste ein; „Token des Administrators testen“ nennt das Konto, seine Rolle, seine Bereiche und sein Ablaufdatum. Eine
+  Liste ein; „Token des Administrators testen“ nennt das Konto, seine Rolle, seine Bereiche und sein Ablaufdatum; der Titel des Blocks sagt, ob ein Token gesetzt ist
+  (sein Datum, die Instanz, das Projekt, die Uhrzeit des letzten Tests), nie seinen Wert. Eine
   Ablehnung durch GitLab wird mit ihrem Grund angegeben: Token abgelehnt (fehlt, abgelaufen oder ohne api), Konto ist
   nicht Maintainer, Projekt nicht gefunden. Der Datenzweig muss geschützt, für die Rolle Developer offen
   und ohne erzwungenes Pushen sein (auf gitlab.com ist der Standardzweig Maintainern vorbehalten): Der Bildschirm prüft es, und „Zweig für Developer öffnen“

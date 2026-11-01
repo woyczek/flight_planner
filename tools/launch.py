@@ -2608,27 +2608,41 @@ def gitlab_token_revoke(a):
     return {'ok': True} if code in (200, 204) else gitlab_refusal(code, j)
 
 
+def gitlab_where():
+    """Ce que le poste sait du jeton de l'administrateur, sans sa valeur : { set, at (date où il a été posé), instance (l'hôte
+    seul), project } — pour que l'écran « Jetons des pilotes » dise « posé le … · gitlab.com · groupe/projet » (Simplification,
+    1er nov. 2026 : le bloc paraissait vide alors que le jeton marchait). La liste des secrets (secrets_view) reste aveugle."""
+    s = _read_json(_secret_file('app', service='gitlab'))
+    saved = s.get('savedAt') if isinstance(s.get('savedAt'), dict) else {}
+    inst, proj = str(s.get('instance') or ''), str(s.get('project') or '')
+    host = urllib.parse.urlsplit(inst).netloc if re.fullmatch(r'https://[A-Za-z0-9.-]+(?::\d+)?/?', inst) else ''
+    return {'set': bool(s.get('token')), 'at': str(saved.get('token') or '')[:20] if s.get('token') else '', 'instance': host,
+            'project': proj if re.fullmatch(r'[\w.-]+(?:/[\w.-]+)+', proj) else ''}
+
+
 def gitlab_admin_test():
-    """« Tester le jeton de l'administrateur » : { ok, username, bot, scopes, expires, level, problems } — qui il est (GET
-    /user), ses portées et son expiration (/personal_access_tokens/self ; None s'ils ne se lisent pas), son rôle dans le projet
-    (GET /projects/:id, permissions : le plus haut du projet et du groupe) ; problems : scope (sans api : refusé d'office),
-    level (moins que Maintainer) ; ok sans problème. Un refus de /user ou du projet : gitlab_refusal. Jamais la valeur."""
+    """« Tester le jeton de l'administrateur » : { ok, username, bot, scopes, expires, level, problems, branch, where } — qui il
+    est (GET /user), ses portées et son expiration (/personal_access_tokens/self ; None s'ils ne se lisent pas), son rôle dans
+    le projet (GET /projects/:id, permissions : le plus haut du projet et du groupe) ; problems : scope (sans api : refusé
+    d'office), level (moins que Maintainer) ; ok sans problème ; where (gitlab_where), un refus compris. Un refus de /user ou
+    du projet : gitlab_refusal. Jamais la valeur."""
+    where = gitlab_where()
     code, u = gitlab_call('GET', '/user', root=True)
     if code != 200 or not isinstance(u, dict):
-        return gitlab_refusal(code, u)
+        return {**gitlab_refusal(code, u), 'where': where}
     code, s = gitlab_call('GET', '/personal_access_tokens/self', root=True)
     s = s if code == 200 and isinstance(s, dict) else {}
     scopes = [str(x) for x in s['scopes']] if isinstance(s.get('scopes'), list) else None
     code, p = gitlab_call('GET', '')
     if code != 200 or not isinstance(p, dict):
-        return gitlab_refusal(code, p)
+        return {**gitlab_refusal(code, p), 'where': where}
     perm = p.get('permissions') if isinstance(p.get('permissions'), dict) else {}
     level = max([int(x.get('access_level') or 0) for x in (perm.get('project_access'), perm.get('group_access')) if isinstance(x, dict)] or [0])
     problems = (['scope'] if scopes is not None and 'api' not in scopes else []) + (['level'] if level < GITLAB_ADMIN_LEVEL else [])
     b = gitlab_branch(p) if not problems else {}
     return {'ok': not problems, 'username': str(u.get('username') or '')[:60], 'bot': u.get('bot') is True, 'scopes': scopes,
             'expires': s['expires_at'] if isinstance(s.get('expires_at'), str) else None, 'level': level, 'problems': problems,
-            'branch': {k: b[k] for k in ('name', 'protected', 'open', 'force')} if b.get('ok') else None}
+            'branch': {k: b[k] for k in ('name', 'protected', 'open', 'force')} if b.get('ok') else None, 'where': where}
 
 
 def gitlab_branch(p=None):

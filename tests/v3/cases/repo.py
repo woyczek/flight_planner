@@ -2107,12 +2107,14 @@ def i32(c):
         c.eq([v['ok'], v['username'], v['scopes'], v['expires'], v['level'], v['problems']], [True, 'chef', ['api'], '2027-06-30', 40, []],
              'a Maintainer with api: who, scopes, expiry, role, no problem', what='test ok')
         c.ok('glpat-ADMIN-SECRET' not in json.dumps(v) and 'should-not-leak' not in json.dumps(v), json.dumps(v), 'the test never hands a token back')
+        c.eq(v['where'], {'set': True, 'at': '', 'instance': 'gitlab.example', 'project': 'grp/data'}, 'the test says what is set: the host, the project, never the value', what='where')
         c.ok(all(t == 'glpat-ADMIN-SECRET' and u.startswith('https://gitlab.example/api/v4/') for u, t in calls), str(calls[-3:]), 'the administrator’s token to its instance only')
         st['scopes'], st['level'] = ['read_api', 'read_user'], 30
         v = L.gitlab_admin_test()
         c.eq([v['ok'], v['problems']], [False, ['scope', 'level']], 'without api and below Maintainer: refused, both said', what='test problems')
         st['user'] = 401
         c.eq([L.gitlab_admin_test().get(k) for k in ('ok', 'status', 'reason')], [False, 401, 'refused'], 'a token GitLab refuses: 401, refused', what='test refused')
+        c.eq(L.gitlab_admin_test()['where']['set'], True, 'a refused token is still said set (the block is never « empty » while a token is there)', what='where refused')
         st['user'], st['scopes'], st['level'], st['project'] = 200, ['api'], 40, 404
         c.eq(L.gitlab_admin_test().get('reason'), 'project', 'a project out of the token’s reach: project', what='test project')
         st['project'] = 200
@@ -2126,6 +2128,8 @@ def i32(c):
              and 'glpat-NEW' not in json.dumps(v), json.dumps(v), 'the token saved with the data repository’s instance and project, then tested; never handed back')
         L.gitlab_admin_save({'token': ''})
         c.eq(json.loads((tmp / 'gitlab.json').read_text(encoding='utf-8'))['token'], 'glpat-NEW', 'an empty token field keeps the saved token', what='keep')
+        w = L.gitlab_where()
+        c.ok(w['set'] and w['at'][:2] == '20' and w['instance'] == 'gitlab.example' and 'glpat' not in json.dumps(w), json.dumps(w), 'saved: the date it was set, the host')
         # another instance without a token: refused, nothing written, no call (the saved token never goes to the new host)
         before, n0 = (tmp / 'gitlab.json').read_text(encoding='utf-8'), len(calls)
         v = L.gitlab_admin_save({'instance': 'https://other.example', 'project': 'a/b'})

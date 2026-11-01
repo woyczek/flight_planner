@@ -2420,3 +2420,11 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   Maintenance's « Aide » entry of the column goes. « Toute l'aide » (`#help?all=1`) is the index: the manuals of the
   applications the device opens (each at its address, `…#help`) and the tutorials (Pilot's, at Pilot's address from
   Maintenance). The Settings' group « Aide », which holds only « À propos », is Réglages'. Noreg A80, A36.
+- **1 Nov 2026 — The administrator's token block says what is set** (Simplification, from the user: the block looked
+  « empty » while the token worked — pilot tokens were created): `GET /__setup/gitlab/admin` returns `where: { set, at,
+  instance, project }` (`gitlab_where`: the date the token was set, the instance's host, the project path; never the value),
+  a refusal included. The block's title reads it at every drawing, or from the answer of a save or a test (drawn at once,
+  no later read): « posé le 2026-11-01 · gitlab.com · groupe/projet · testé à 14:05 », or « aucun jeton posé ». The token
+  field stays empty by design. The secrets' list (`secrets_view`) stays blind for gitlab; the instance's host and the
+  project path now reach the page through this workstation-only route (they are not secret; Sécurisation reviews it).
+  Noreg A39, I32.

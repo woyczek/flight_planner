@@ -325,7 +325,8 @@ cartographique (`apps/cpco/map_parser.html`).
   dessous, le nouveau y est « créé à l'instant ». Le lanceur s'y sert du jeton de l'administrateur, qu'il ne montre jamais : un jeton d'accès personnel
   de votre compte GitLab (Préférences › Jetons d'accès), portée api, avec une expiration (un an au plus), ce compte étant
   Maintainer ou Owner du projet. Collez-le dans « Jeton de l'administrateur », sous la liste ; « Tester le jeton de
-  l'administrateur » dit le compte, son rôle, ses portées et son expiration. Un refus de GitLab est dit par sa cause :
+  l'administrateur » dit le compte, son rôle, ses portées et son expiration ; le titre du bloc dit si un jeton est posé (sa date, l'instance, le
+  projet, l'heure du dernier test), jamais sa valeur. Un refus de GitLab est dit par sa cause :
   jeton refusé (absent, expiré ou sans api), compte qui n'est pas Maintainer, projet introuvable. La branche des
   données doit être protégée, ouverte au rôle Developer et sans poussée forcée (sur gitlab.com, la branche par défaut
   est réservée aux Maintainers) :
