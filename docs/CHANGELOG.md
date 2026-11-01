@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map base: dots one can touch and one cover zoom, for the Data module's map of procedures** (`modules/maps/lib/map_base.js`
+  `pointsLayer`, `COVER_ZOOM`; `render.js` `coverPins`, `draw.js`; INTEGRATION § 7; noreg D95). The aerodromes whose procedures are
+  read can show as dots above zoom 7, a tap giving the ICAO code and never ticking the zone under it; the Map's coverage colours read
+  the same zoom (one value). The zones layer no longer misses its return after a change of style when another layer was being added.
 - **Settings: the assistant's repository step checks the data branch is open to Developers** (`frame/settings/settings.js`
   `readAssistant`, `cards.js`; SPEC § 3 (12); A76) — `GET /__setup/gitlab/admin` (V3 Frame c6f3bc38b) gives `branch.open`;
   closed, the step is to do, says the pilots' tokens could not write, and its button leads to « Jetons des pilotes », where the

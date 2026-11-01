@@ -2723,3 +2723,41 @@ def d94(c):
     before = c.js('window.__zl.taps.length')
     tap_at(5, 45)
     c.eq(c.js('window.__zl.taps.length'), before, 'and its listener: a tap gives nothing more', what='taps after remove')
+
+
+# ------------------------------------------------------------------------------------------------------ D95
+@case('D95', 'The map base’s points layer: a tap on a point gives its id before the zone under it; nothing under its zoom; one cover zoom', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='map base (modules/maps/INTEGRATION.md § 7), asked by Settings for the Data module’s map of procedures (31 Oct / 1 Nov): pointsLayer(map, features, { colors, onTap, minzoom }) → { update, fit, remove }; a dot by ICAO code in the tone’s colour from the caller, fixed size, nothing under minzoom (COVER_ZOOM by default); a tap on a point gives its id and never ticks the zone under it; the layer kept across a change of style; COVER_ZOOM is the one value the Map’s coverPins reads too')
+def d95(c):
+    c.page.goto(f'{c.base}/modules/maps/lib/test/zones_layer.html', wait_until='load')
+    c.page.wait_for_function('window.__zl && (window.__zl.ready || window.__zl.failed)', timeout=30000)
+    c.eq(c.js('window.__zl.COVER_ZOOM'), 7, 'one cover zoom, exported by the base (the threshold the Map’s coverPins used: 180 px per degree)', what='COVER_ZOOM')
+    c.js("""() => { const Z = window.__zl, pt = (id, lon, lat, tone) => ({ type: 'Feature', properties: { id, tone }, geometry: { type: 'Point', coordinates: [lon, lat] } });
+      Z.pfc = { type: 'FeatureCollection', features: [pt('LFAA', 5, 45, 'ok'), pt('LFBB', 15, 47, 'warn')] };
+      Z.points = Z.pointsLayer(Z.map, Z.pfc, { colors: Z.colors, onTap: id => Z.ptaps.push(id), minzoom: 0 });
+      Z.hidden = Z.pointsLayer(Z.map, { type: 'FeatureCollection', features: [pt('LFCC', 17, 48, 'ok')] }, { colors: Z.colors, onTap: id => Z.ptaps.push(id) });
+      return true }""")
+    c.until("() => window.__zl.map.isStyleLoaded() && window.__zl.map.loaded()", timeout=5000, what='the points drawn')
+    c.wait(400)
+    m = c.page.mouse
+
+    def tap_at(lon, lat):
+        p = c.js('(q) => window.__zl.at(q[0], q[1])', [lon, lat])
+        m.click(p['x'], p['y'])
+        c.wait(250)
+    tap_at(5, 45)      # a point over zone A
+    tap_at(15, 47)     # a point between the zones
+    tap_at(17, 48)     # a point under its zoom (COVER_ZOOM, the bench is far below): not drawn, not tapped
+    tap_at(8, 42)      # zone A away from the point
+    c.eq(c.js('window.__zl.ptaps'), ['LFAA', 'LFBB'], 'a tap on a point gives its ICAO code; a point under its zoom is neither drawn nor tapped', what='point taps')
+    c.eq(c.js('window.__zl.taps'), ['A'], 'the zone under a tapped point is not ticked; a tap on the zone elsewhere still is', what='zone taps')
+    c.js("() => { const Z = window.__zl; Z.map.setStyle(JSON.parse(JSON.stringify(Z.style))); return true }")
+    c.until("() => window.__zl.map.isStyleLoaded() && (window.__zl.map.getStyle().layers || []).some(l => l.id.startsWith('mb-points-'))", timeout=8000,
+            what='the points back after setStyle')
+    c.wait(300)
+    tap_at(15, 47)
+    c.eq(c.js('window.__zl.ptaps.at(-1)'), 'LFBB', 'after the change of style a tap still gives the point', what='tap after setStyle')
+    c.js("() => { window.__zl.points.remove(); window.__zl.hidden.remove(); return true }")
+    tap_at(15, 47)
+    c.eq(c.js('window.__zl.ptaps.length'), 3, 'remove silences the points', what='taps after remove')

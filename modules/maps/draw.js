@@ -19,7 +19,8 @@ import {
   setBottomInset,
   loadOutlines as baseOutlines,
   plainView,
-  drawPlain
+  drawPlain,
+  COVER_ZOOM
 } from './lib/map_base.js';
 import {
   layersNow,
@@ -498,6 +499,7 @@ function draw() {
     hideVrp: mission ? null : vfrVrpIds(),
     lines: mission || pick ? null : routeLines(),
     cov,
+    coverZoom: COVER_ZOOM,
     reserve: pick ? pl => pick.reserve(pl) : procs ? pl => procs.reserve(pl) : null,
     legs: mission || pick ? null : S.route?.path || null,
     dim: pick ? DIM : 0,

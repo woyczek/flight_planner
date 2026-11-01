@@ -6,8 +6,8 @@
 // globale de module, aucune lecture de la page, aucune écriture hors du cadre qu'on lui donne. Seuls les chargements
 // (script, feuille, contours) vont chercher des fichiers du dossier lib/, et le noyau de dessin du module Carte
 // (window.MapsRender, render.js) sert au fond uni.
-//   import { loadMapLibre, styleFor, startTiles, mapSize, isOwnResize, setBottomInset, zonesLayer, loadRender, loadOutlines,
-//     plainView, drawPlain } from '../maps/lib/map_base.js';
+//   import { loadMapLibre, styleFor, startTiles, mapSize, isOwnResize, setBottomInset, zonesLayer, pointsLayer, COVER_ZOOM,
+//     loadRender, loadOutlines, plainView, drawPlain } from '../maps/lib/map_base.js';
 
 /** Fond de jour, fond de nuit, styles publiés que choisit un profil d'affichage du studio (OpenFreeMap, VersaTiles) ; le
  *  style maison du studio, OSM standard et OpenTopoMap (hôtes hors de meta.net) sont remplacés par le fond de jour. */
@@ -217,11 +217,33 @@ export function setBottomInset(map, px) {
   return true;
 }
 
-// ---------------------------------------------------------------- zones touchables (module Données, INTEGRATION.md § 7)
-/** Rang des couches de zones posées sur une carte (des identifiants de couches uniques) : rien d'autre n'est gardé. */
+// ---------------------------------------------------------------- zones et points touchables (module Données, INTEGRATION.md § 7)
+/** Zoom (MapLibre) à partir duquel les terrains se montrent un à un sur une carte de couverture : les points de pointsLayer, et la
+ *  couleur de couverture des terrains non publics de la Carte (coverPins de render.js, que draw.js lui passe) ; une seule valeur. */
+export const COVER_ZOOM = 7;
+/** Rang des couches posées sur une carte (des identifiants de couches uniques) : rien d'autre n'est gardé. */
 const zoneLayers = new WeakMap();
+/** Couches de points de chaque carte : une tape sur un point passe avant celle des zones (la zone dessous n'est pas cochée). */
+const pointFills = new WeakMap();
 /** Rayon (px) autour du doigt quand rien n'est exactement sous lui : la tape au bord d'une petite zone la trouve. */
 const TAP_PX = 6;
+/** Rayon (px) d'un point de pointsLayer. */
+const POINT_R = 5;
+/** L'entité la plus haute d'une des couches sous le point e (MapLibre), sinon dans pad px autour ; null. */
+const hitAt = (map, e, layers, pad) => {
+  const {
+    x,
+    y
+  } = e.point;
+  return map.queryRenderedFeatures([x, y], {
+    layers
+  })[0] || map.queryRenderedFeatures([
+    [x - pad, y - pad],
+    [x + pad, y + pad]
+  ], {
+    layers
+  })[0] || null;
+};
 /** Un anneau lu d'un seul tenant : celui qui passe l'antiméridien (ses longitudes étalées sur plus de 180°) a ses longitudes ouest
  *  décalées de +360 (fitBounds accepte un est au-delà de 180). */
 const unwrapRing = ring => {
@@ -305,9 +327,16 @@ export function zonesLayer(map, features, {
     ],
     lineWidth = ['case', picked, 3, 1.2];
   /** Source et couches posées si elles manquent (au départ, puis après chaque changement de style qui les a retirées) ; sans effet
-   *  quand elles sont là, ou tant que le style n'est pas chargé. */
+   *  quand elles sont là. Un style pas encore chargé refuse : la prochaine « style.load » ou « styledata » les pose (isStyleLoaded()
+   *  ne sert pas de garde : il est faux tant qu'une source charge, celle qu'une autre couche vient de poser comprise). */
   const add = () => {
-    if (!map.isStyleLoaded()) return;
+    try {
+      put();
+    } catch {
+      /* style pas encore chargé */
+    }
+  };
+  const put = () => {
     if (!map.getSource(src)) map.addSource(src, {
       type: 'geojson',
       data
@@ -346,18 +375,10 @@ export function zonesLayer(map, features, {
   };
   const tap = e => {
     if (!onTap || !map.getLayer(fill)) return;
-    const {
-      x,
-      y
-    } = e.point;
-    const f = map.queryRenderedFeatures([x, y], {
-      layers: [fill]
-    })[0] || map.queryRenderedFeatures([
-      [x - TAP_PX, y - TAP_PX],
-      [x + TAP_PX, y + TAP_PX]
-    ], {
-      layers: [fill]
-    })[0];
+    // un point touché (pointsLayer) passe avant la zone dessous
+    const pts = [...(pointFills.get(map) || [])].filter(id => map.getLayer(id));
+    if (pts.length && hitAt(map, e, pts, POINT_R + TAP_PX)) return;
+    const f = hitAt(map, e, [fill], TAP_PX);
     if (f?.properties?.id != null) onTap(f.properties.id);
   };
   // setStyle d'une URL recharge le style (« style.load ») ; d'un objet, MapLibre applique un écart qui retire les couches sans
@@ -391,6 +412,106 @@ export function zonesLayer(map, features, {
       map.off('click', tap);
       for (const id of [dash, line, fill])
         if (map.getLayer(id)) map.removeLayer(id);
+      if (map.getSource(src)) map.removeSource(src);
+    }
+  };
+}
+
+/** Points touchables sur une carte du socle, repérés par leur identifiant (le module Données : les terrains dont les procédures sont
+ *  lues, sur la carte de couverture). features : FeatureCollection de Point [lon, lat], chaque entité { id (code OACI), tone : 'ok' |
+ *  'warn' | 'err' | 'muted' } ; colors : { ok, warn, err, muted, line } déjà résolues par l'appelant (line : le contour, et la teinte
+ *  d'un ton inconnu) ; un rond de POINT_R px à la teinte du ton, contour line, à taille fixe ; rien sous minzoom (COVER_ZOOM par
+ *  défaut). Pas de texte : le style de fond n'a pas toujours de polices (glyphes) ; le code va dans onTap. onTap(id) : comme
+ *  zonesLayer (le « click » de MapLibre, jamais après un glissement ni un pincement), le point le plus haut sous le doigt, sinon à
+ *  POINT_R + TAP_PX px ; une tape sur un point ne touche pas la zone dessous (zonesLayer s'efface). Couches reposées à chaque
+ *  changement de style. → { update(features, colors), fit(padding, bounds), remove() }. */
+export function pointsLayer(map, features, {
+  colors = {},
+  onTap = null,
+  minzoom = COVER_ZOOM
+} = {}) {
+  const n = (zoneLayers.get(map) || 0) + 1;
+  zoneLayers.set(map, n);
+  const src = `mb-points-${n}`,
+    dot = `${src}-dot`,
+    empty = {
+      type: 'FeatureCollection',
+      features: []
+    };
+  let data = features || empty,
+    cols = colors || {};
+  const tone = () => ['match', ['get', 'tone'], ...['ok', 'warn', 'err', 'muted'].flatMap(k => [k, cols[k] || cols.line ||
+      'rgba(0,0,0,0)'
+    ]),
+    cols.line || 'rgba(0,0,0,0)'
+  ];
+  if (!pointFills.has(map)) pointFills.set(map, new Set());
+  pointFills.get(map).add(dot);
+  const add = () => {
+    try {
+      put();
+    } catch {
+      /* style pas encore chargé : la prochaine « style.load » ou « styledata » */
+    }
+  };
+  const put = () => {
+    if (!map.getSource(src)) map.addSource(src, {
+      type: 'geojson',
+      data
+    });
+    if (!map.getLayer(dot)) map.addLayer({
+      id: dot,
+      type: 'circle',
+      source: src,
+      minzoom,
+      paint: {
+        'circle-radius': POINT_R,
+        'circle-color': tone(),
+        'circle-stroke-color': cols.line || 'rgba(0,0,0,0)',
+        'circle-stroke-width': 1.5
+      }
+    });
+  };
+  const tap = e => {
+    if (!onTap || !map.getLayer(dot)) return;
+    const f = hitAt(map, e, [dot], POINT_R + TAP_PX);
+    if (f?.properties?.id != null) onTap(f.properties.id);
+  };
+  map.on('style.load', add);
+  map.on('styledata', add);
+  map.on('click', tap);
+  add();
+  return {
+    update(next, nextColors) {
+      data = next || empty;
+      map.getSource(src)?.setData(data);
+      if (!nextColors || !map.getLayer(dot)) return;
+      cols = nextColors;
+      map.setPaintProperty(dot, 'circle-color', tone());
+      map.setPaintProperty(dot, 'circle-stroke-color', cols.line || 'rgba(0,0,0,0)');
+    },
+    fit(padding = 24, bounds = null) {
+      let b = bounds;
+      if (!b) {
+        const ll = (data.features || []).map(f => f?.geometry?.type === 'Point' ? f.geometry.coordinates : null).filter(Boolean);
+        if (ll.length) b = [Math.min(...ll.map(p => p[0])), Math.min(...ll.map(p => p[1])), Math.max(...ll.map(p => p[0])), Math.max(
+          ...ll.map(p => p[1]))];
+      }
+      if (b) map.fitBounds([
+        [b[0], b[1]],
+        [b[2], b[3]]
+      ], {
+        padding,
+        animate: false,
+        maxZoom: 11
+      });
+    },
+    remove() {
+      map.off('style.load', add);
+      map.off('styledata', add);
+      map.off('click', tap);
+      pointFills.get(map)?.delete(dot);
+      if (map.getLayer(dot)) map.removeLayer(dot);
       if (map.getSource(src)) map.removeSource(src);
     }
   };

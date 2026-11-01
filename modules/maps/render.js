@@ -609,7 +609,7 @@
     });
   }
 
-  function drawPoints(ctx, data, toC, W, H, scale, b, pl, profile, cov) {
+  function drawPoints(ctx, data, toC, W, H, scale, b, pl, profile, cov, coverZoom = null) {
     const ad = on(profile, 'aerodromes'),
       nv = on(profile, 'navaids'),
       ob = on(profile, 'obstacles');
@@ -630,7 +630,7 @@
     const pxDeg = toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x,
       ads = ad ? (data.aerodromes || []).filter(adOk) : [];
     const got = A().drawPoints(ctx, {
-      aerodromes: cov ? coverPins(ads, toC, W, H, pxDeg >= 180, cov) : ads,
+      aerodromes: cov ? coverPins(ads, toC, W, H, coverZoom != null && zoomOf(pxDeg) >= coverZoom, cov) : ads,
       navaids: nv ? (data.navaids || []).filter(navOk) : [],
       obstacles: []
     }, toC, {
@@ -1364,6 +1364,7 @@
     hideVrp = null, // identifiants de VRP que l'écran dessine lui-même (terrain survolé ou épinglé) : pas deux fois
     lines = null, // suites de points que la route trace (null : toute la route), voir drawRoute
     cov = null, // couche « Procédures » : cov(icao) → niveau de couverture ('green' | 'orange' | 'red') ou rien, voir coverPins
+    coverZoom = null, // zoom à partir duquel les terrains non publics prennent leur couverture (COVER_ZOOM du socle, map_base.js)
     reserve = null, // reserve(placeur) : l'écran demande la place de ses libellés (procédures choisies), à leur rang dans la passe
     // chemin volé (route et procédures, points nommés dans l'ordre) : ses tronçons portent les cartouches des voies qu'ils
     // suivent par-dessus leur trait ; sans lui, la route
@@ -1493,7 +1494,7 @@
               ...profile.elements,
               navaids: true
             }
-          } : profile, cov);
+          } : profile, cov, coverZoom);
           drawFixes(c, fixes, toC, W, H, scale, pl);
           // les pistes des terrains (vecteurs de seuil et numéros), juste après eux : leurs numéros prennent leur place avant les
           // balises, les points de report et le reste

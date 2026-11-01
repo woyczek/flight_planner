@@ -1,9 +1,10 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Banc zonesLayer</title>
-<!-- Banc de zonesLayer (modules/maps/lib/map_base.js, INTEGRATION.md § 7) : une carte du socle sur un style local (un fond seul,
-     aucun réseau), deux zones — A un carré, B deux anneaux (un MultiPolygon) — et ce que la couche rend dans window.__zl. Le cas D94
-     de tests/v3/cases/maps_recode.py y tape, glisse et change de style ; la page ne juge rien elle-même. -->
+<!-- Banc de zonesLayer et pointsLayer (modules/maps/lib/map_base.js, INTEGRATION.md § 7) : une carte du socle sur un style local
+     (un fond seul, aucun réseau), deux zones — A un carré, B deux anneaux (un MultiPolygon) — et ce que la couche rend dans
+     window.__zl ; les points sont posés par le cas (window.__zl.pointsLayer). Les cas D94 (zones) et D95 (points) de
+     tests/v3/cases/maps_recode.py y tapent, glissent et changent de style ; la page ne juge rien elle-même. -->
 <style>
 body {
   margin: 0;
@@ -18,7 +19,9 @@ body {
 <script type="module">
 import {
   startTiles,
-  zonesLayer
+  zonesLayer,
+  pointsLayer,
+  COVER_ZOOM
 } from '../map_base.js?v=0';
 const style = {
   version: 8,
@@ -81,7 +84,10 @@ const Z = window.__zl = {
   style,
   colors,
   fc,
-  zonesLayer
+  zonesLayer,
+  pointsLayer,
+  COVER_ZOOM,
+  ptaps: []
 };
 const map = await startTiles(document.getElementById('map'), {
   style,
