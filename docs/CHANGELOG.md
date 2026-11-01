@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data: the base build says for which cycle it built** (`tools/regen/base.py`; INTEGRATION, DECISIONS; test K46) — the result gives the
+  cycle of the sources read per zone (`cycles`), the cycle in force (`current`) and `stale` when the sources are older, so the Data screen can say
+  « construit pour 2610 ; téléchargez d'abord le cycle 2611 » instead of rebuilding an old cycle in silence; building an old cycle is never refused.
 - **Maintenance › Pilots' tokens: the token just created alone at the top** (`frame/settings/pilot_tokens.js`; frame
   DECISIONS; help ×4; noreg A39) — a result card « Token for ABC created » with the token to copy, « copy it now: it
   will not be shown again », what to tell the pilot and a link to their message; « Existing tokens (n) » folded below,

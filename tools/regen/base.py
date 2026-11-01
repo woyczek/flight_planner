@@ -21,7 +21,9 @@ job.take(zone, timeout). L'adresse du lanceur : launcher_origin().
 
 État lisible par la page (GET regen/job?id=) : job.data['zones'] = { zone: { state ('waiting' | 'building' | 'built' | 'failed' | 'cancelled'), done, total
 (sources lues / à lire), error (code), message?, commit?, warning?, files?, seconds? } }, step « N zones sur M », done / total en zones.
-Résultat : { ok, cycle, built: [zones], failed: [{ zone, error }], commits: [{ zone, commit }], zones, instances, seconds, reason? } ; reason : 'partial', 'failed',
+Résultat : { ok, cycle, cycles: { <zone construite>: cycle }, current, stale, built: [zones], failed: [{ zone, error }], commits: [{ zone, commit }], zones, instances,
+seconds, reason? } ; cycle : le cycle des sources lues, celui qui est écrit (la date du plus récent fichier daté du SIA, sinon le cycle en vigueur) ; current : le
+cycle AIRAC en vigueur ; stale : cycle < current (sources d'un cycle passé : construit quand même, dit) ; reason : 'partial', 'failed',
 'cancelled' ; refus du travail (ok: False) : 'no-browser', 'no-input', 'xplane-in-page' ('xplane' dans personal : le dossier d'X-Plane est une poignée gardée
 par la page, ce travail reste dans la page), 'failed' (adresse du lanceur inconnue, ou lanceur sans job.offer). Codes d'une zone : 'browser-failed', 'browser-exited',
 'timeout', 'page-error', 'invalid-output', 'write-failed', 'cancelled'.
@@ -279,15 +281,18 @@ def list_inputs(data):
     return out
 
 
-def cycle_of(inputs, today=None):
-    """Cycle de la construction : la date la plus récente des fichiers du SIA datés (la règle de sia_base.js › build), sinon le cycle AIRAC en
-    vigueur (calendrier de 28 jours, AIRAC 2401 = 2024-01-25)."""
-    dates = sorted({m.group(1) for rel in inputs for m in [AIRAC_NAME.match(rel)] if m})
-    if dates:
-        return dates[-1]
+def airac_in_force(today=None):
+    """Début (AAAA-MM-JJ) du cycle AIRAC en vigueur : calendrier de 28 jours, AIRAC 2401 = 2024-01-25."""
     from datetime import date, timedelta
     ref, d = date(2024, 1, 25), today or date.today()
     return (ref + timedelta(days=28 * ((d - ref).days // 28))).isoformat()
+
+
+def cycle_of(inputs, today=None):
+    """Cycle de la construction : la date la plus récente des fichiers du SIA datés (la règle de sia_base.js › build), sinon le cycle AIRAC en
+    vigueur."""
+    dates = sorted({m.group(1) for rel in inputs for m in [AIRAC_NAME.match(rel)] if m})
+    return dates[-1] if dates else airac_in_force(today)
 
 
 def _without_date(obj):
@@ -536,7 +541,13 @@ def build(job, args, ctx):
         job.data['zones'] = {z: dict(st[z]) for z in zones}
     built = [z for z in zones if st[z]['state'] == 'built']
     failed = [{'zone': z, 'error': st[z].get('error') or st[z]['state']} for z in zones if st[z]['state'] == 'failed']
-    res = {'ok': len(built) == len(zones), 'cycle': cycle, 'built': built, 'failed': failed,
+    # le cycle des sources lues, celui qui a été écrit (une zone construite l'est sous sia/base/<zone>/<cycle>/), et le cycle en vigueur : des
+    # sources d'un cycle passé construisent ce cycle passé, sans refus (on peut vouloir le refaire), mais le résultat le dit (stale)
+    current = airac_in_force()
+    if cycle < current:
+        job.log(f'sources du cycle {cycle}, cycle en vigueur {current} : la base construite est celle du cycle précédent')
+    res = {'ok': len(built) == len(zones), 'cycle': cycle, 'cycles': {z: cycle for z in built}, 'current': current, 'stale': cycle < current,
+           'built': built, 'failed': failed,
            'commits': [{'zone': z, 'commit': st[z].get('commit')} for z in built], 'zones': {z: dict(st[z]) for z in zones},
            'instances': 1, 'seconds': round(time.time() - t0, 1)}
     if job.cancelled():

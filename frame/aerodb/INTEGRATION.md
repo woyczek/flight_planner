@@ -327,8 +327,15 @@ job answers `reason: 'no-browser'` and the screen says it. Full contract: SPEC �
 const r = await ctx.launcher.job('regen/job', { set: 'base', verb: 'build', args: { zones: ['fr', 'gb', 'es'], personal: [] } },
   { onProgress: j => draw(j.zones, j.step, j.done, j.total), signal });   // after a reload: ctx.launcher.resume('regen/job', …)
 // j.zones  = { fr: { state: 'waiting'|'building'|'built'|'failed'|'cancelled', done, total, error, commit?, warning?, files?, seconds? }, … }
-// r.result = { ok, cycle, built: ['fr', …], failed: [{ zone, error }], commits: [{ zone, commit }], instances, seconds, reason? }
+// r.result = { ok, cycle, cycles: { fr: '2026-10-01', … }, current: '2026-10-29', stale: true, built: ['fr', …], failed: [{ zone, error }],
+//              commits: [{ zone, commit }], instances, seconds, reason? }
 ```
+
+- **For which cycle** (1 Nov 2026): `cycle` is the cycle of the sources read, the one written (`sia/base/<zone>/<cycle>/`: the date of the newest
+  dated SIA file, `XML_SIA_…`, `AIXM4.5_…`, `sia-airspaces-…`, else the cycle in force); `cycles` gives it per built zone; `current` is the AIRAC
+  cycle in force; `stale` is `cycle < current`. Sources of a past cycle build that past cycle — never refused, a rebuild of the old cycle can be
+  wanted — and the journal says it; the screen says « construit pour 2610 » and, when `stale`, « sources du cycle précédent : téléchargez d'abord
+  le cycle 2611 » (the AIRAC id only on screen, `frame/aerodb/airac.js`).
 
 - **One window-less browser builds every requested zone** with the page's own functions (output identical to the page's, byte for byte), and hands
   each zone back as soon as it is ready; the job writes and **commits it alone** (the page's trigram as author, no push) while the next ones come; the

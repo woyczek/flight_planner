@@ -3345,6 +3345,15 @@ def k46(c):
         c.eq([x['zone'] for x in res['commits']], ['gb', 'nl'], 'the commits, zone by zone', what='commits list')
         c.ok(all(len(x['commit'] or '') == 40 for x in res['commits']), str(res['commits']), 'each with its SHA')
         c.eq(res['instances'], 1, 'one instance built the five zones', what='instances')
+        # le cycle des sources lues (XML_SIA_2026-10-01 de la scène), par zone construite, et le cycle en vigueur : construit quand même, dit
+        c.eq((res['cycle'], res['cycles'], res['current'], res['stale']), ('2026-10-01', {'gb': '2026-10-01', 'nl': '2026-10-01'}, B.airac_in_force(),
+                                                                         '2026-10-01' < B.airac_in_force()),
+             'the cycle of the sources read, per built zone, the cycle in force, and stale when the sources are older', what='cycles')
+        c.ok(not res['stale'] or any('cycle en vigueur' in x for x in view['log']), str(view['log'][-3:]), 'an old cycle is said in the job log')
+        import datetime as _dt
+        c.eq((B.airac_in_force(_dt.date(2026, 10, 30)), B.airac_in_force(_dt.date(2026, 10, 28)), B.cycle_of(['openaip/gb_asp.geojson'], _dt.date(2026, 11, 1)),
+              B.cycle_of(['XML_SIA_2026-10-01.xml', 'AIXM4.5_all_FR_OM_2026-10-29.xml'])), ('2026-10-29', '2026-10-01', '2026-10-29', '2026-10-29'),
+             'the AIRAC calendar (2611 from 29 Oct), no dated file: the cycle in force, else the newest dated file', what='calendar')
         base = data / 'sia' / 'base'
         c.eq(sorted(p.name for p in base.iterdir()), ['cities_major.json', 'gb', 'index.json', 'nl'], 'only the built zones left files (a failed zone publishes nothing)', what='files')
         c.eq(sorted(p.name for p in (base / 'gb' / '2026-10-01').iterdir()), kinds12, 'the 12 files of the split format, under sia/base/<zone>/<cycle>/', what='zone files')

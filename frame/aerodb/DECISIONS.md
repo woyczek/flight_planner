@@ -2258,3 +2258,14 @@ page is served to `Sec-Fetch-Site: none`, refused to `cross-site`, and, where th
 - **Bench**: K61 (a 304 keeps the copy, bytes and date, one conditional request, nothing in the console; a 304 with no copy asks again
   without condition and writes the file; a second 304 is an error said once); K54, K57 and K60 follow the new opener.
 
+## 1 November 2026 — the build says for which cycle it built
+
+- **The user rebuilt the base several times** with the SIA files of 2026-10-01 (2610) while 2611 was in force: the build wrote 2610 again, the
+  base stayed out of date, and nothing said why.
+- **Now** the result of `base/build` carries `cycles` (per built zone) beside the existing `cycle`, `current` (the cycle in force) and `stale`;
+  the journal says « sources du cycle …, cycle en vigueur … ». **No refusal**: rebuilding a past cycle stays possible. The Données module
+  (Réglages) words it; it reads the fields tolerantly.
+- **One cycle for the whole build**: the only dated sources are France's SIA files, which every zone reads (the FIR outlines); the others
+  (openAIP, ENAIRE, NATS…) carry no AIRAC date. `cycles` is per zone so that a later per-zone rule fits the same shape.
+- **Bench**: K46 (cycle, cycles of the built zones, current, stale and its journal line; the AIRAC calendar and `cycle_of`).
+
