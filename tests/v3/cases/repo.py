@@ -2252,3 +2252,42 @@ def i33(c):
     finally:
         L.SECRETS, L.NO_REDIRECT_OPEN = kept
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+
+@case('I35', 'The sync status names the paths to send: changed here and in the commits waiting, names only, 200 at most', 'I', static=True,
+      rule='Simplification 1 Nov (the Synchronisation card, Réglages): GET /__setup/sync-status (data_sync.status) also gives the paths changed here and the paths of the commits to send — names only, never the content — at most 200, with their total')
+def i35(c):
+    import importlib
+    import json
+    sys.path.insert(0, str(c.root / 'tools'))
+    D = importlib.import_module('data_sync')
+    if not D.git_exe():
+        raise Skip('no git here')
+    tmp = Path(tempfile.mkdtemp(prefix='sog-synclist-'))
+    run = lambda *a: subprocess.run(D.git_cmd(*a), check=True, capture_output=True, env=D.git_env())
+    try:
+        bare, data = tmp / 'bare.git', tmp / 'data'
+        run('init', '-q', '--bare', str(bare))
+        run('init', '-q', '-b', 'main', str(data))
+        for k, v in (('user.name', 'T'), ('user.email', 't@example.invalid')):
+            run('-C', str(data), 'config', k, v)
+        (data / 'cr').mkdir()
+        (data / 'cr' / 'a.json').write_text('{"secret-content": 1}\n', encoding='utf-8')
+        run('-C', str(data), 'add', '-A')
+        run('-C', str(data), 'commit', '-q', '-m', 'one')
+        run('-C', str(data), 'remote', 'add', 'origin', str(bare))
+        run('-C', str(data), 'push', '-q', '-u', 'origin', 'main')
+        (data / 'cr' / 'b.json').write_text('{"b": 1}\n', encoding='utf-8')
+        run('-C', str(data), 'add', '-A')
+        run('-C', str(data), 'commit', '-q', '-m', 'two')
+        (data / 'cr' / 'a.json').write_text('{"secret-content": 2}\n', encoding='utf-8')
+        (data / 'disponibilites').mkdir()
+        (data / 'disponibilites' / 'c.json').write_text('{}\n', encoding='utf-8')
+        st = D.status(str(data))
+        c.eq([st['changed'], st['changedTotal'], st['toPush'], st['toPushTotal']],
+             [['cr/a.json', 'disponibilites/c.json'], 2, ['cr/b.json'], 1], 'changed here and in the commits to send, names only, with their totals', what='paths')
+        c.ok('secret-content' not in json.dumps(st), '', 'never the content')
+        c.eq(D.PATHS_MAX, 200, 'at most 200 names', what='cap')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)

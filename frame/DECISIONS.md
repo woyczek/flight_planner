@@ -2428,3 +2428,8 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   field stays empty by design. The secrets' list (`secrets_view`) stays blind for gitlab; the instance's host and the
   project path now reach the page through this workstation-only route (they are not secret; Sécurisation reviews it).
   Noreg A39, I32.
+- **1 Nov 2026 — Two reads for the Synchronisation card** (Simplification, for Réglages' summary of the synchronisation):
+  `FrameData.pendingList()` gives the queue without the text (path, module, date, deletion, and the error of the last pass
+  when it failed — a pass error holds the whole queue, a write refused for good goes to the conflicts); the launcher's
+  `sync-status` also names the paths changed here (`changed`) and those of the commits to send (`toPush`), names only, at
+  most 200 each with their totals (`data_sync.PATHS_MAX`). Noreg A53 (store bench), I35.

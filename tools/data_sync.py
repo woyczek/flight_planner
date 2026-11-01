@@ -353,6 +353,9 @@ def divergence(data, st):
     return {'level': level, 'reasons': reasons}
 
 
+PATHS_MAX = 200  # chemins rendus par status() (changed, toPush) : le nombre total les accompagne
+
+
 def status(data, fetch=False):
     """État pour l'en-tête : dépôt, branche, modifications locales, commits à envoyer / à recevoir, écart avec la
     sauvegarde distante (divergence : niveau et raisons)."""
@@ -371,7 +374,15 @@ def status(data, fetch=False):
             ahead, behind = map(int, out.split())
     merging = os.path.exists(os.path.join(data, '.git', 'MERGE_HEAD'))
     changes = pool_changes(data)
+    # les chemins à envoyer, noms seuls (jamais le contenu), 200 au plus avec leur nombre : modifiés ici (pas encore
+    # commités) et ceux des commits qui attendent l'envoi — pour la carte Synchronisation (1er nov. 2026)
+    pushing = []
+    if up and ahead:
+        code, out = git(data, 'diff', '--name-only', '-z', f'{up}...HEAD')
+        pushing = sorted({p for p in out.split('\0') if p}) if code == 0 else []
+    names = sorted(set(changes))
     st = {'repo': True, 'branch': br, 'upstream': up, 'remote': remote, 'changes': len(changes),
+          'changed': names[:PATHS_MAX], 'changedTotal': len(names), 'toPush': pushing[:PATHS_MAX], 'toPushTotal': len(pushing),
           'oldest_h': oldest_age_h(data, changes), 'outside': outside_changes(data)[:200],
           'ahead': ahead, 'behind': behind, 'merging': merging, 'fetched': fetched, 'last': last_sync(data),
           'rewritten': bool(up) and rewritten(data, up)}

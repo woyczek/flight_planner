@@ -393,6 +393,16 @@
       conflicts: (await idb('conflicts', 'getAll').catch(() => [])).filter(c => !c.seen).length
     };
   }
+  /** La file d'attente pour la carte Synchronisation (Réglages, 1er nov. 2026) : [{ path, module, at, deletion, error }],
+   *  sans le texte, les plus récentes d'abord ; error : l'erreur du dernier passage quand il a échoué (elle retient toute la
+   *  file : une écriture refusée pour de bon, elle, va aux conflits), '' sinon. */
+  async function pendingList() {
+    const s = await status();
+    return s.queue.map(q => ({
+      ...q,
+      error: s.lastError || ''
+    }));
+  }
   const statusFns = new Set();
   /** Abonnement à l'état (bouton de synchronisation) : fn(état) à chaque changement. Retour : arrêt. */
   function onStatus(fn) {
@@ -1557,6 +1567,7 @@
     restore,
     diagnostic,
     noteFailure,
+    pendingList,
     cached,
     evict,
     revalidate,

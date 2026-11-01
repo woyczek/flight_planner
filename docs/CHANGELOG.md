@@ -18,6 +18,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Aircraft › Fleet: the Type field suggests types** (`modules/aircraft/module.js`, reusing `modules/fuel/suggest.js`; DECISIONS, help ×4;
   noreg M20) — from two characters, in any case: the types of the base (« H145 · Airbus H145 · fiche H145 ») and the matching sheets;
   a tap or ↓ Entrée writes the type code.
+- **Data: the queue and the paths to send, readable for the Synchronisation card** (`frame/store/frame_data.js`
+  `pendingList`, `tools/data_sync.py` `status`; frame SPEC, DECISIONS, INDEX_DONNEES; noreg A53, I35) — the browser's
+  queue without the text, and the launcher's changed paths and paths of the commits to send, names only, 200 at most with
+  their totals.
 - **Frame: one door named « Help » per screen** (`frame/help/help.js`, `frame/app.js`; frame SPEC, DECISIONS; help ×4;
   noreg A80) — Maintenance's « Help » entry of the column goes: the « ? » of the header opens the manual at the chapter
   shown, with « All help » (the index of the manuals and tutorials) and the contents at its head.

@@ -161,7 +161,9 @@ received, writes (§ 5) call `push` after the file. The transport is chosen in S
 - **One pass** (`tools/data_sync.py`, launcher routes `GET /__setup/sync-status`, `POST /__setup/sync`): the browser's
   outbox written to the folder, commit of the pool files (`disponibilites`, `utilisateurs`, `config`,
   `missions`, `cr`, `atc`; without the regenerated `_index.json` files or the `_conflits/` copies) **in the name of the logged-in trigram**,
-  `fetch` then **merge** (merge, not rebase: history never rewritten), `push`. Report in notifications.
+  `fetch` then **merge** (merge, not rebase: history never rewritten), `push`. Report in notifications. The status also
+  names the paths to send (1 Nov 2026): `changed` (changed on this workstation, not yet committed) and `toPush` (in the
+  commits waiting to be sent), names only, never the content, at most 200 each, with `changedTotal` and `toPushTotal`.
 - **Conflicts, card by card**: one card per file (a pilot's week, user, mission…) → the most recent
   (`updated_at`) wins, the other is kept in `<dossier>/_conflits/<nom>.<locale|distante>.<date>` (not
   synchronised) and flagged; `missions/affectations.json` merged per assignment (mission, pilot, role) with three

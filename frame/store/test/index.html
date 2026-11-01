@@ -114,6 +114,10 @@
       check('read returns the local write', v?.pilote === 'TST', v);
       const r = await d.sync();
       check('sync offline: error "offline", nothing lost', r.error === 'offline' && (await d.status()).pending === 2, r);
+      const pl = await FD.pendingList();
+      check('pendingList: each path waiting, its date, the error of the last pass, never the text', pl.length === 2 && pl.every(q => q
+        .path.startsWith('disponibilites/TST/') && q.at && q.error === 'offline' && !('text' in q)) && !JSON.stringify(pl).includes(
+        'pilote'), pl);
       const st = await stats();
       check('no commit while offline', st.commits.length === 1, st.commits);
     },
