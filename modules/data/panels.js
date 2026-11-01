@@ -88,7 +88,9 @@ function sourceLineHtml(s) {
       n: count('file', s.files) + (size ? ` (${size})` : '')
     }) : tt(TX.sourceState.downloadedNo) : s.state === 'failed' ? tt(TX.sourceState.failed, {
       r: fetchWhy(s.code, s.status)
-    }) : s.state === 'skipped' ? tt(s.code === 'personal' ? TX.sourceState.skippedPersonal : TX.sourceState.skipped) : tt(M.own(TX
+    }) : s.state === 'skipped' ? tt(s.code === 'personal' ? TX.sourceState.skippedPersonal : s.code === 'absent' ? TX.sourceState
+      .skippedAbsent :
+      TX.sourceState.skipped) : tt(M.own(TX
       .sourceState, s.state)),
     k = M.own({
       downloaded: 'ok',

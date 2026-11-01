@@ -352,6 +352,9 @@ export const TX = {
     skippedPersonal: ['ignorée : licence non déclarée', 'skipped: licence not declared', 'übersprungen: Lizenz nicht erklärt',
       'omitida: licencia no declarada'
     ],
+    skippedAbsent: ['ignorée : pas d’export openAIP pour ce pays', 'skipped: no openAIP export for this country',
+      'übersprungen: kein openAIP-Export für dieses Land', 'omitida: no hay exportación de openAIP para este país'
+    ],
     manual: ['manuelle, à déposer à la main', 'manual, to be dropped in by hand', 'manuell, von Hand abzulegen',
       'manual, para depositar a mano'
     ]

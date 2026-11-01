@@ -1250,7 +1250,7 @@ _L14_JS = r"""async () => {
   out.purgePhrase = [{ state: 'purging', done: 1, total: 3 }, { state: 'done', files: 3, bytes: 2048 }, { state: 'failed', error: 'perm-denied' }, { state: 'failed', error: 'Bad Code!' }, { state: 'failed' }].map(z => ph(z, 'purge'));
   out.buildPhrase = ph({ state: 'building', done: 2, total: 5 });
   out.rows = M.zoneRows({ zones: { fr: { state: 'done' } } }, ['gb'], 'fetch').map(r => [r.zone, r.key]);
-  out.sources = M.sourceRows({ sources: { openaip: { state: 'downloaded', files: 2, bytes: 1500 }, sia: { state: 'manual', error: 'manual' }, enaire: { state: 'skipped', error: 'personal' },
+  out.sources = M.sourceRows({ sources: { openaip: { state: 'downloaded', files: 2, bytes: 1500 }, sia: { state: 'manual', error: 'manual' }, enaire: { state: 'skipped', error: 'personal' }, kh_asp: { state: 'skipped', error: 'absent' },
     faa: { state: 'failed', error: 'http', status: 404 }, x: { state: 'failed', error: 'weird' }, nat: { state: 'unchanged' }, y: { state: 'pending' }, z: null } }).map(s => [s.id, s.state, s.files, s.bytes, s.code, s.status]);
   out.sourcesNone = [M.sourceRows(undefined).length, M.sourceRows({}).length];
   // the end of a download
@@ -1324,8 +1324,8 @@ def l14(c):
     c.eq(r['buildPhrase'], ['building', 'buildingN', 2, 5, None, None, None], 'the build phrase is unchanged', what='zonePhrase build')
     c.eq(r['rows'], [['gb', 'waiting'], ['fr', 'done']], 'the zones asked in order, then the ones the job adds', what='zoneRows fetch')
     c.eq(r['sources'], [['openaip', 'downloaded', 2, 1500, None, None], ['sia', 'manual', None, None, None, None], ['enaire', 'skipped', None, None, 'personal', None],
-                        ['faa', 'failed', None, None, 'http', 404], ['x', 'failed', None, None, 'unknown', None], ['nat', 'unchanged', None, None, None, None]],
-         'the sources of a zone, in the view\'s order: unknown or pending ones dropped, the code of a failure (HTTP status kept), « personal » for a source skipped without its licence', what='sourceRows')
+                        ['kh_asp', 'skipped', None, None, 'absent', None], ['faa', 'failed', None, None, 'http', 404], ['x', 'failed', None, None, 'unknown', None], ['nat', 'unchanged', None, None, None, None]],
+         'the sources of a zone, in the view\'s order: unknown or pending ones dropped, the code of a failure (HTTP status kept), « personal » for a source skipped without its licence, « absent » for a layer openAIP does not export for the country', what='sourceRows')
     c.eq(r['sourcesNone'], [0, 0], 'a zone without sources has no source line', what='sourceRows none')
     sia = ['fr', 'sia', 'https://sia.example/x', 4]
     nats = ['gb', 'nats', 'http://x', 4]
@@ -1424,7 +1424,7 @@ def l15(c):
               {'zone': 'gb', 'source': 'z', 'url': 'javascript:alert(1)', 'name': man_names['z']}]
     run1 = _fview({'fr': _fz('fetching', 1, 3, {'openaip': {'state': 'downloaded', 'files': 2, 'bytes': 1500000}, 'sia': {'state': 'manual', 'error': 'manual'}}), 'gb': _fz('waiting')}, step='Zone fr')
     run2 = _fview({'fr': _fz('done', 3, 3, {'openaip': {'state': 'downloaded', 'files': 2, 'bytes': 1500000}, 'sia': {'state': 'manual', 'error': 'manual'}}),
-                   'gb': _fz('fetching', 1, 2, {'nats': {'state': 'skipped', 'error': 'personal'}, 'ukmil': {'state': 'failed', 'error': 'http', 'status': 404}})}, step='Zone gb', done=1)
+                   'gb': _fz('fetching', 1, 2, {'nats': {'state': 'skipped', 'error': 'personal'}, 'ukmil': {'state': 'failed', 'error': 'http', 'status': 404}, 'gb_asp': {'state': 'skipped', 'error': 'absent'}})}, step='Zone gb', done=1)
     result = {'ok': True, 'fetched': ['fr'], 'unchanged': [], 'failed': [{'zone': 'gb', 'source': 'ukmil', 'error': 'http', 'status': 404}], 'manual': manual,
               'outside_sync': 3, 'warnings': [{'code': 'outside-sync', 'count': 3}], 'reason': 'partial'}
     end = _fview({'fr': _fz('done', 3, 3, {'openaip': {'state': 'downloaded', 'files': 2, 'bytes': 1500000}, 'sia': {'state': 'manual', 'error': 'manual'}}),
@@ -1467,6 +1467,8 @@ def l15(c):
     gb_name = c.text('[data-zone-state=gb] > div > b')
     c.eq(_zhead(c, 'gb'), norm(f"{gb_name} : {sm('fetchingN', 'fetchState').replace('{n}', '1').replace('{m}', '2')}"), 'gb: downloading (1 / 2 sources)', what='gb line')
     c.eq(norm(c.text('[data-zone-state=gb] [data-source=nats]')), norm(f"{c.text('[data-zone-state=gb] [data-source=nats] b')} : {sm('skippedPersonal', 'sourceState')}"), 'a source skipped: licence not declared', what='source skipped')
+    c.eq(norm(c.text('[data-zone-state=gb] [data-source=gb_asp]')), norm(f"{c.text('[data-zone-state=gb] [data-source=gb_asp] b')} : {sm('skippedAbsent', 'sourceState')}"),
+         'a layer openAIP does not export for the country: said in its words, not a bare « skipped »', what='absent source')
     http404 = sm('failed', 'sourceState').replace('{r}', sm('httpN', 'fetchError').replace('{s}', '404'))
     c.eq(norm(c.text('[data-zone-state=gb] [data-source=ukmil]')), norm(f"{c.text('[data-zone-state=gb] [data-source=ukmil] b')} : {http404}"), 'a source failed: its code and HTTP status', what='source failed')
     c.eq(_notes_with(c, _trow('fetchSum', lang).split('{c}')[0]), [], 'no notification at the start nor on the way', what='notifications before the end')

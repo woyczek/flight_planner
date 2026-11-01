@@ -105,7 +105,8 @@ export function sourceRows(z) {
       state: s.state,
       files: num(s.files),
       bytes: num(s.bytes),
-      code: failed ? zoneCode('fetch', s.error) : s.state === 'skipped' && s.error === 'personal' ? 'personal' : null,
+      // ignorée : licence non déclarée (personal) ou pas d'export openAIP pour ce pays (absent, aerodb 822a0ffbb) ; sinon sans motif
+      code: failed ? zoneCode('fetch', s.error) : s.state === 'skipped' && ['personal', 'absent'].includes(s.error) ? s.error : null,
       status: failed ? num(s.status) : null
     };
   });

@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data: a layer openAIP does not export for a country says so** (`modules/data/model_sets.js` `sourceRows`, `panels.js`,
+  `texts.js`; L14, L15) — after aerodb 822a0ffbb (`{ state: 'skipped', error: 'absent' }`), the source line reads « ignorée : pas
+  d'export openAIP pour ce pays » ×4 instead of a bare « ignorée »; the zone's line already lists its sources one by one.
 - **Data: an openAIP export a country does not have is absent, not a failure** (`tools/aero_fetch.py`, `tools/regen/base_sources.py`, `.gitignore`;
   `frame/aerodb/INTEGRATION.md`, DECISIONS; tests K54, K60) — the thirty « [sortant] échec … HTTP 404 » lines of the launcher's console at every
   pass are gone: a missing per-country layer is said once for the pass, the zone stays done, and the absence is remembered for the AIRAC
