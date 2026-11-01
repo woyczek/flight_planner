@@ -710,3 +710,42 @@ def k61(c):
     finally:
         AF._OPENERS.clear()
         AF._OPENERS.update(saved)
+
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------
+@case('K64', 'Raw sources: the cycle the workstation holds per dated source (SIA, NATS, ENAIRE), in the plan and the end of base/fetch', 'K', static=True,
+      rule='Simplification 1 Nov 2026: base/fetch (plan and end) and base/build give sources: { <dated source>: { cycle | null, current, stale } }, read from the dates the files carry; a source without AIRAC has none')
+def k64(c):
+    import datetime
+    RJ, BS, AF, DS = _mods()
+    import aero_cycles as C
+    d = datetime.date
+    c.eq([C.cycle_start(2026, 1), C.cycle_start(2026, 10), C.cycle_start(2026, 11), C.cycle_start(2026, 14), C.airac_start(d(2026, 10, 28)), C.airac_start(d(2026, 10, 29))],
+         ['2026-01-22', '2026-10-01', '2026-10-29', None, '2026-10-01', '2026-10-29'], 'the AIRAC calendar (2601 on 22 Jan, 2610 on 1 Oct, 2611 on 29 Oct)', what='calendar')
+    names = ['XML_SIA_2026-10-01.xml', 'AIXM4.5_all_FR_OM_2026-10-29.xml', 'sia-airspaces-2026-10-01.xml', 'zones/gb/EG_AIP_DS_FULL_20261001.xml',
+             'zones/gb/EG_OBS_DS_AREA1_FULL_20261030.xml', 'aixm5/LE_Amdt_A_2026_10_AIP_DS_FULL_EnRoute.xml', 'aixm5/LE_Amdt_2026_411_AIP_DS_FULL_Airspace.xml',
+             'openaip/de_asp.geojson', 'zones/gb/ukmil_enr52.geojson', 'XML_SIA_2026-13-40.xml', 'miam-enr-5-7-tracks.xml']
+    c.eq([C.cycled(n) for n in names], [('sia', '2026-10-01'), ('sia', '2026-10-29'), ('sia', '2026-10-01'), ('nats', '2026-10-01'), ('nats', '2026-10-29'), ('enaire', '2026-10-01'),
+                                        None, None, None, None, None],
+         'the cycle in the names: SIA dates, NATS dates (inside 2611: 2611), ENAIRE « A_2026_10 » (2610); an amendment number, openAIP, UK Mil, an impossible date: none', what='names')
+    # one rule with the source table (shared/aero_zones.js, mirrored in base_sources): the same source for each dated file, the same zone per source
+    c.eq([BS.file_source(n)['source'] for n in names if C.cycled(n)], [C.cycled(n)[0] for n in names if C.cycled(n)], 'each dated file belongs to the source the table says', what='mirror files')
+    c.ok(all(s in BS.sources_of(z) for s, z in C.CYCLED.items()), str(C.CYCLED), 'each dated source is a source of its zone in the table')
+    c.ok(not any(s in C.CYCLED for z in ('de', 'it', 'us', 'ca', 'nat') for s in BS.sources_of(z)), 'others', 'zones fed only by sources without AIRAC have no dated source')
+    rep = C.report(names, d(2026, 11, 1))
+    c.eq(rep, {'sia': {'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False}, 'nats': {'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False},
+               'enaire': {'cycle': '2026-10-01', 'current': '2026-10-29', 'stale': True}}, 'report: the newest cycle of each source, stale when older than the cycle in force', what='report')
+    c.eq(C.report([], d(2026, 11, 1))['sia'], {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'no file: no cycle, not stale', what='no file')
+    # base/fetch: the plan (in the view from the start) and the end carry it
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = _repo(DS, td)
+        (data / 'sia' / 'zones' / 'gb').mkdir(parents=True)
+        (data / 'sia' / 'XML_SIA_2026-10-01.xml').write_text('<x/>', encoding='utf-8')
+        (data / 'sia' / 'zones' / 'gb' / 'EG_AIP_DS_FULL_20261001.xml').write_text('<x/>', encoding='utf-8')
+        ctx = _ctx(DS, data)
+        with _Net(AF, {'': ('http', 404)}):
+            view, res = _run(RJ, BS, 'fetch', {'zones': ['de']}, ctx)
+        cur = C.airac_start()
+        want = {'sia': {'cycle': '2026-10-01', 'current': cur, 'stale': '2026-10-01' < cur}, 'nats': {'cycle': '2026-10-01', 'current': cur, 'stale': '2026-10-01' < cur},
+                'enaire': {'cycle': None, 'current': cur, 'stale': False}}
+        c.eq((view['sources'], res['sources']), (want, want), 'the plan and the end of base/fetch give the cycle held per dated source', what='fetch sources')

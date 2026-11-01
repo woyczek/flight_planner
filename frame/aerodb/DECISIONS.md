@@ -2285,3 +2285,20 @@ page is served to `Sec-Fetch-Site: none`, refused to `cross-site`, and, where th
   the types base; freed: the next `aircraft()` reads again, gets the fleet, and is then kept; the held read abandoned) — red before the
   correction (still pending after 8 s).
 
+## 1 November 2026 — a zone's cycle is its own dated source's, not the SIA's for all
+
+- **Features SOG on the user's workstation**: `cycle_of()` dated the whole build — every zone, cities, relief, openAIP, UK, ENAIRE — by the newest
+  French SIA file; with `data/sia` still in 2610, every « Construire » rewrote 2610 everywhere, and the status said « out of date » for sets that
+  have no AIRAC at all. 41e34a752 (one `cycle` for all, `stale` global) only said it.
+- **Now** (`tools/aero_cycles.py`, one module for `base/fetch` and `base/build`): the dated sources are those whose file names carry their cycle
+  — the SIA (France), NATS (`EG_…_AAAAMMJJ`, United Kingdom), ENAIRE (`LE_Amdt_A_AAAA_NN`, Spain: AIRAC amendment NN read as cycle AANN; an
+  amendment number without « A_ », `LE_Amdt_2026_411`, says no cycle). A zone's cycle is its own dated source's; a zone without one has no
+  cycle (never out of date) and is written under the cycle in force. The page is told each zone's cycle (`cycles` in the claim, checked like
+  the rest; `SiaBase.buildZones({ cycles })`: absent, the output is the page's, byte for byte, as before).
+- **Result**: `cycles` per zone (null without AIRAC), `folders` (where written), `blocking` (the zone, its source, its past cycle), `stale`,
+  `sources` (the cycle held per dated source; also in `base/fetch`'s plan and result), `builtOn`. The Données module words them (Réglages).
+- **Assumption to watch**: ENAIRE's « A_AAAA_NN » is read as cycle AANN (A 10/2026 ↔ 2610 on the user's files of October); if ENAIRE skips a
+  cycle one year, the numbering would drift and this reading must change.
+- **Bench**: K63 (fr from its SIA, gb from its NATS file of 2611, de without AIRAC under the cycle in force; only fr blocks; the manifest per
+  zone), K64 (calendar, names, the source table agrees, the report, base/fetch's plan and end), K44 / K46 / K49 follow the per-zone folders.
+

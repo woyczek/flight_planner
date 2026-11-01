@@ -2256,10 +2256,12 @@
    *  celle de la page, octet pour octet (updated_at mis à part). onZone(zone, textes) est appelée pour chaque zone dans l'ordre du
    *  découpage, dès que son texte est prêt (le lanceur la remet zone après zone : tools/regen/base.py, frame/aerodb/build/headless.js).
    *  La zone principale est la France même si elle n'est pas construite (priorityRings : ses contours, priorityRingsFromXmlSia).
-   *  Rend { base, report, cycle }. */
+   *  cycles : { zone: cycle } — le cycle sous lequel une zone est écrite quand ce n'est pas celui du SIA (sa propre source datée, ou le
+   *  cycle en vigueur pour une zone sans AIRAC : tools/aero_cycles.py) ; absent, toutes prennent cycle. Rend { base, report, cycle }. */
   async function buildZones(files, {
     zones,
     cycle = '',
+    cycles = {},
     at = new Date().toISOString(),
     personal = [],
     extra = {},
@@ -2286,7 +2288,7 @@
     const parts = splitZones(r.base, together, Z, r.report.zones, 'fr'),
       cities = citiesByZone(r.base.cities, together, Z);
     for (const zone of together.filter(z => zones.includes(z))) await onZone(zone, zoneTexts(zone, parts[zone], cities[zone], r.base,
-      cycle, at));
+      Object.hasOwn(cycles, zone) ? cycles[zone] : cycle, at));
     return {
       base: r.base,
       report: r.report,

@@ -63,6 +63,9 @@
       'the claimed job is not the one of the address');
     if (typeof o.token !== 'string' || !TOKEN.test(o.token)) throw new Error('bad token shape');
     if (typeof o.cycle !== 'string' || !CYCLE.test(o.cycle)) throw new Error('bad cycle');
+    // le cycle de chaque zone (celui de sa source datée, sinon le cycle en vigueur : tools/aero_cycles.py) : une date par zone demandée
+    if (o.cycles !== undefined && (!o.cycles || typeof o.cycles !== 'object' || Array.isArray(o.cycles) || Object.entries(o.cycles).some((
+        [z, c]) => !ZONE.test(z) || typeof c !== 'string' || !CYCLE.test(c)))) throw new Error('bad zone cycles');
     if (!Array.isArray(o.zones) || !o.zones.length || o.zones.length > 60 || o.zones.some(z => typeof z !== 'string' || !ZONE.test(z) || !
         known.has(z))) throw new Error('bad or unknown zone');
     if (!Array.isArray(o.personal) || o.personal.length > 10 || o.personal.some(p => typeof p !== 'string' || !SOURCE.test(p)))
@@ -109,7 +112,8 @@
         personal,
         inputs,
         token
-      } = o;
+      } = o,
+      cycles = Object.fromEntries(zones.filter(z => Object.hasOwn(o.cycles || {}, z)).map(z => [z, o.cycles[z]]));
       say({
         started: true
       }, `${L[0]} ${zones.join(' ')}`);
@@ -177,6 +181,7 @@
       await SB.buildZones(files, {
         zones,
         cycle,
+        cycles,
         personal,
         extra,
         priorityRings,

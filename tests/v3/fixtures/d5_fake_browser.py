@@ -101,7 +101,7 @@ def main(argv):
             continue
         if mode == 'slow':
             time.sleep(0.6)
-        files = outputs(zone, cycle, as_zone='xx' if mode == 'invalid' else None)
+        files = outputs(zone, (claim.get('cycles') or {}).get(zone, cycle), as_zone='xx' if mode == 'invalid' else None)  # le cycle de la zone, comme la page
         if mode == 'badshape':
             files.pop('mora.json')
         out, status = post('/__setup/regen/job/put', {'job': job, 'token': token, 'zone': zone, 'files': files})

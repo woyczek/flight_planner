@@ -3238,7 +3238,8 @@ def k44(c):
         c.eq((offer['ok'], offer['job'], offer['token'] == job.token, offer['zones'], offer['cycle'], offer['personal']), (True, job.id, True, ['be', 'ie'], '2026-10-01', ['enaire']),
              'the claim gives what the verb offered (job.offer) and the job\'s token', what='claim')
         c.eq(sorted(offer['inputs']), sorted(B.list_inputs(str(data))), 'and the inputs the page may read (the page decides which it wants)', what='inputs')
-        c.eq(sorted(set(offer) - {'ok', 'job', 'token'}), ['cycle', 'inputs', 'personal', 'zones'], 'nothing else is offered', what='keys')
+        c.eq(sorted(set(offer) - {'ok', 'job', 'token'}), ['cycle', 'cycles', 'inputs', 'personal', 'zones'], 'nothing else is offered', what='keys')
+        c.eq(offer['cycles'], {'be': B.airac_in_force(), 'ie': B.airac_in_force()}, 'the cycle of each zone: none of them has a dated source, so the cycle in force', what='zone cycles')
         c.eq(claim(job.id).get('status'), 409, 'a second claim: 409 (the page claimed once)', what='claim twice')
         c.eq(claim('other').get('status'), 409, 'a claim for another job: 409', what='claim other')
         c.eq(put('other', job.token, 'be', files).get('status'), 409, 'put, not the running job: 409', what='job')
@@ -3346,25 +3347,27 @@ def k46(c):
         c.ok(all(len(x['commit'] or '') == 40 for x in res['commits']), str(res['commits']), 'each with its SHA')
         c.eq(res['instances'], 1, 'one instance built the five zones', what='instances')
         # le cycle des sources lues (XML_SIA_2026-10-01 de la scène), par zone construite, et le cycle en vigueur : construit quand même, dit
-        c.eq((res['cycle'], res['cycles'], res['current'], res['stale']), ('2026-10-01', {'gb': '2026-10-01', 'nl': '2026-10-01'}, B.airac_in_force(),
-                                                                         '2026-10-01' < B.airac_in_force()),
-             'the cycle of the sources read, per built zone, the cycle in force, and stale when the sources are older', what='cycles')
-        c.ok(not res['stale'] or any('cycle en vigueur' in x for x in view['log']), str(view['log'][-3:]), 'an old cycle is said in the job log')
+        # gb et nl n'ont pas de source datée dans la scène (openAIP seulement) : pas de cycle, écrites sous le cycle en vigueur, jamais « dépassées »
+        cur = B.airac_in_force()
+        c.eq((res['cycle'], res['cycles'], res['folders'], res['current'], res['stale'], res['blocking']), ('2026-10-01', {'gb': None, 'nl': None}, {'gb': cur, 'nl': cur}, cur,
+                                                                                                          False, []),
+             'zones without a dated source: no cycle, written under the cycle in force, never blocking; the SIA cycle is not theirs', what='cycles')
+        c.eq(res['sources']['sia'], {'cycle': '2026-10-01', 'current': cur, 'stale': '2026-10-01' < cur}, 'the cycle the workstation holds for the SIA, said apart', what='sia source')
         import datetime as _dt
         c.eq((B.airac_in_force(_dt.date(2026, 10, 30)), B.airac_in_force(_dt.date(2026, 10, 28)), B.cycle_of(['openaip/gb_asp.geojson'], _dt.date(2026, 11, 1)),
               B.cycle_of(['XML_SIA_2026-10-01.xml', 'AIXM4.5_all_FR_OM_2026-10-29.xml'])), ('2026-10-29', '2026-10-01', '2026-10-29', '2026-10-29'),
              'the AIRAC calendar (2611 from 29 Oct), no dated file: the cycle in force, else the newest dated file', what='calendar')
         base = data / 'sia' / 'base'
         c.eq(sorted(p.name for p in base.iterdir()), ['cities_major.json', 'gb', 'index.json', 'nl'], 'only the built zones left files (a failed zone publishes nothing)', what='files')
-        c.eq(sorted(p.name for p in (base / 'gb' / '2026-10-01').iterdir()), kinds12, 'the 12 files of the split format, under sia/base/<zone>/<cycle>/', what='zone files')
+        c.eq(sorted(p.name for p in (base / 'gb' / cur).iterdir()), kinds12, 'the 12 files of the split format, under sia/base/<zone>/<cycle>/', what='zone files')
         idx = json.loads((base / 'index.json').read_text(encoding='utf-8'))
         c.eq((list(idx['zones']), idx['kind'], idx['schema']), (['gb', 'nl'], 'index', 2), 'the manifest holds the built zones only', what='index')
         log = _d5_git(data, 'log', '--format=%an|%s', '-n', '5').strip().splitlines()
         c.eq(len(log), 3, 'one commit per built zone on top of the initial one', what='commit count')
         c.ok(log[0].startswith('TST|') and ' nl ' in log[0] and ' gb ' in log[1], str(log), "each commit is a zone's, authored by the page's trigram")
-        c.eq(set(_d5_git(data, 'show', '--name-only', '--format=', 'HEAD~1').split()), {f'sia/base/gb/2026-10-01/{k}' for k in kinds12} | {'sia/base/index.json', 'sia/base/cities_major.json'},
+        c.eq(set(_d5_git(data, 'show', '--name-only', '--format=', 'HEAD~1').split()), {f'sia/base/gb/{cur}/{k}' for k in kinds12} | {'sia/base/index.json', 'sia/base/cities_major.json'},
              "the first zone's commit: its folder, the manifest and the world's large cities: nothing else", what='committed first')
-        c.eq(set(_d5_git(data, 'show', '--name-only', '--format=', 'HEAD').split()), {f'sia/base/nl/2026-10-01/{k}' for k in kinds12} | {'sia/base/index.json'},
+        c.eq(set(_d5_git(data, 'show', '--name-only', '--format=', 'HEAD').split()), {f'sia/base/nl/{cur}/{k}' for k in kinds12} | {'sia/base/index.json'},
              "the next zone's: its folder and the manifest (the large cities did not change)", what='committed next')
         c.ok('staged.txt' in _d5_git(data, 'diff', '--cached', '--name-only') and 'notes.txt' in _d5_git(data, 'diff', '--name-only'),
              _d5_git(data, 'status', '--short'), 'what the user had staged or edited is still where it was, not in the commits')
@@ -3662,14 +3665,14 @@ def k49(c):
         view = jobs.cur.view()
         res, z = view['result'], view['zones']['ie']
         c.ok(res.get('ok') and z['state'] == 'built', json.dumps(view)[:700], 'the invented zone is built by the real browser, with the page of the job')
-        folder = data / 'sia' / 'base' / 'ie' / res['cycle']
+        folder = data / 'sia' / 'base' / 'ie' / res['folders']['ie']
         read = lambda k: json.loads((folder / f'{k}.json').read_text(encoding='utf-8'))
         aero, asps = read('aerodromes'), read('airspaces')
         c.eq([(x['icao'], x['name']) for x in aero['data']], [('EITS', 'TESTFIELD')], 'the aerodrome of the invented file is in aerodromes.json', what='aerodromes')
         c.eq([(x['type'], x['name'], x['src']) for x in asps['data']], [('CTR', 'TEST CTR', 'openaip')], 'and its airspace in airspaces.json', what='airspaces')
-        c.eq((aero['schema'], aero['zone'], aero['cycle'], aero['kind'], aero['parserVersion']), (2, 'ie', res['cycle'], 'aerodromes', read('meta')['parserVersion']), 'the header of the split format', what='header')
+        c.eq((aero['schema'], aero['zone'], aero['cycle'], aero['kind'], aero['parserVersion']), (2, 'ie', res['folders']['ie'], 'aerodromes', read('meta')['parserVersion']), 'the header of the split format', what='header')
         idx = json.loads((data / 'sia' / 'base' / 'index.json').read_text(encoding='utf-8'))
-        c.eq((idx['zones']['ie']['prefixes'], idx['zones']['ie']['cycle']), (['EI'], res['cycle']), "the zone's entry of the manifest", what='manifest')
+        c.eq((idx['zones']['ie']['prefixes'], idx['zones']['ie']['cycle']), (['EI'], res['folders']['ie']), "the zone's entry of the manifest", what='manifest')
         c.ok(z['commit'] is None and 'not a git repository' in (z['warning'] or ''), str(z), 'without a repository the files are written and the reason is said (no commit)')
         c.ok(len(made) == 1 and not any(os.path.exists(p) for p in made), str(made), 'the temporary profile of the job (one) is deleted')
 
@@ -3914,3 +3917,32 @@ def k62(c):
     c.eq((r['hits1'], r['types1']), (0, True), 'at the bound: an empty registry, the types base alone (estimate still there)', what='at the bound')
     c.eq((r['hits2'], r['again'], r['kept']), (1, True, True), 'freed: the next aircraft() reads again and gets the fleet; once read without a bound, it is kept', what='read again')
     c.eq((r['fleetReads'], r['abandoned']), (2, True), 'the held shared read was abandoned at the bound, so the next question really read it again', what='abandon')
+
+
+@case('K63', 'Build job: the cycle of a zone is its own dated source\'s (fr SIA, gb NATS), a zone without one has none; the blocking zone named', 'K', static=True,
+      rule='Simplification 1 Nov 2026 (Features SOG on the user\'s workstation: every build wrote 2610 everywhere from the French SIA files): a zone\'s cycle is its own dated source\'s; a source without AIRAC has no cycle (never « out of date »); stale per zone, the blocking zone named')
+def k63(c):
+    import json
+    import tempfile
+    RJ, B, fn, check = _d5_modules()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, fake = _d5_scene(td)
+        (data / 'sia' / 'zones' / 'gb').mkdir(parents=True)
+        (data / 'sia' / 'zones' / 'gb' / 'EG_AIP_DS_FULL_20261029.xml').write_text('<x/>', encoding='utf-8')   # NATS : le cycle 2611
+        _d5_modes(fake, {'fr': 'ok', 'gb': 'ok', 'de': 'ok'})
+        run = _D5Run(RJ, data, fake, {'zones': ['de', 'gb', 'fr']})
+        view = run.wait()
+        res = view['result']
+        cur = B.airac_in_force()
+        offer = json.loads(_d5_lines(fake, 'claim.json')[0])
+        c.eq(offer['cycles'], {'fr': '2026-10-01', 'gb': '2026-10-29', 'de': cur}, 'the page is told each zone\'s cycle: fr its SIA, gb its NATS, de (no dated source) the cycle in force', what='offer')
+        c.eq((res['cycles'], res['folders']), ({'fr': '2026-10-01', 'gb': '2026-10-29', 'de': None}, {'fr': '2026-10-01', 'gb': '2026-10-29', 'de': cur}),
+             'cycles: each zone\'s own (de none); folders: where each is written', what='cycles')
+        c.ok(all((data / 'sia' / 'base' / z / f).is_dir() for z, f in res['folders'].items()), str(res['folders']), 'each zone written under its own cycle')
+        stale_fr = '2026-10-01' < cur
+        c.eq((res['stale'], res['blocking']), (stale_fr, [{'zone': 'fr', 'source': 'sia', 'cycle': '2026-10-01'}] if stale_fr else []),
+             'only fr blocks (its SIA files of 2610): gb holds its NATS cycle, de has no AIRAC', what='blocking')
+        c.eq({s: v['cycle'] for s, v in res['sources'].items()}, {'sia': '2026-10-01', 'nats': '2026-10-29', 'enaire': None}, 'the cycle the workstation holds per dated source', what='sources')
+        c.ok(not stale_fr or any(x.startswith('fr: sources sia du cycle 2026-10-01') for x in view['log']), str(view['log'][-4:]), 'the blocking zone is said in the journal')
+        idx = json.loads((data / 'sia' / 'base' / 'index.json').read_text(encoding='utf-8'))
+        c.eq({z: idx['zones'][z]['cycle'] for z in ('fr', 'gb', 'de')}, res['folders'], 'the manifest carries each zone\'s cycle', what='manifest')

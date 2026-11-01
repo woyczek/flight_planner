@@ -21,9 +21,12 @@ job.take(zone, timeout). L'adresse du lanceur : launcher_origin().
 
 État lisible par la page (GET regen/job?id=) : job.data['zones'] = { zone: { state ('waiting' | 'building' | 'built' | 'failed' | 'cancelled'), done, total
 (sources lues / à lire), error (code), message?, commit?, warning?, files?, seconds? } }, step « N zones sur M », done / total en zones.
-Résultat : { ok, cycle, cycles: { <zone construite>: cycle }, current, stale, built: [zones], failed: [{ zone, error }], commits: [{ zone, commit }], zones, instances,
-seconds, reason? } ; cycle : le cycle des sources lues, celui qui est écrit (la date du plus récent fichier daté du SIA, sinon le cycle en vigueur) ; current : le
-cycle AIRAC en vigueur ; stale : cycle < current (sources d'un cycle passé : construit quand même, dit) ; reason : 'partial', 'failed',
+Résultat : { ok, cycle, cycles: { <zone construite>: cycle | null }, folders: { <zone>: cycle écrit }, current, stale, blocking: [{ zone, source, cycle }],
+sources: { sia | nats | enaire: { cycle, current, stale } }, builtOn, built: [zones], failed: [{ zone, error }], commits: [{ zone, commit }], zones, instances,
+seconds, reason? } ; cycles : le cycle de la source datée de la zone (fr : SIA, gb : NATS, es : ENAIRE ; tools/aero_cycles.py), null pour une zone sans source
+datée (jamais « dépassée », construite le builtOn) ; folders : le cycle sous lequel elle est écrite (le sien, sinon le cycle en vigueur) ; cycle : celui des
+fichiers du SIA, que la page vérifie ; current : le cycle AIRAC en vigueur ; blocking : les zones construites d'une source d'un cycle passé (construites quand
+même, dit) ; stale : il y en a ; reason : 'partial', 'failed',
 'cancelled' ; refus du travail (ok: False) : 'no-browser', 'no-input', 'xplane-in-page' ('xplane' dans personal : le dossier d'X-Plane est une poignée gardée
 par la page, ce travail reste dans la page), 'failed' (adresse du lanceur inconnue, ou lanceur sans job.offer). Codes d'une zone : 'browser-failed', 'browser-exited',
 'timeout', 'page-error', 'invalid-output', 'write-failed', 'cancelled'.
@@ -48,6 +51,7 @@ ROOT = os.path.dirname(TOOLS)
 if TOOLS not in sys.path:
     sys.path.insert(0, TOOLS)
 import regen_jobs  # noqa: E402  (le socle : commit_outputs, Job)
+import aero_cycles  # noqa: E402  (le cycle AIRAC de chaque source datée, et d'une zone par sa source)
 
 PAGE = 'frame/aerodb/build/headless.html'
 # fichiers du code que la page lit (le même ensemble que la page V2 : constructeurs, lecteurs, contours des zones, villes) ; rien d'autre
@@ -423,14 +427,20 @@ def build(job, args, ctx):
     inputs = list_inputs(data)
     if not inputs:
         return {'ok': False, 'reason': 'no-input', 'message': 'no input file in data/sia/'}
-    cycle = cycle_of(inputs)
+    cycle = cycle_of(inputs)  # celui des fichiers du SIA (la page le vérifie contre eux), sinon le cycle en vigueur
+    # le cycle de chaque zone est celui de SA source datée (fr : SIA, gb : NATS, es : ENAIRE) ; une zone sans source datée n'a pas de
+    # cycle (None : jamais « dépassée ») et s'écrit sous le cycle en vigueur ; jamais celui du SIA pour toutes (1er nov. 2026)
+    sources = aero_cycles.report(inputs)
+    current = aero_cycles.airac_start()
+    own = {z: aero_cycles.zone_cycle(z, sources) for z in zones}
+    folder = {z: own[z] or current for z in zones}
     origin = launcher_origin(ctx)
     if not origin:
         return {'ok': False, 'reason': 'failed', 'message': 'the launcher address is unknown: the build page cannot be loaded'}
     if not hasattr(job, 'offer'):
         return {'ok': False, 'reason': 'failed', 'message': 'this launcher has no job.offer: the build page cannot be given its parameters'}
     # ce que la page doit savoir, déposé AVANT de lancer le navigateur : elle le réclame (POST regen/job/claim) ; l'adresse du navigateur n'en porte rien
-    job.offer({'zones': zones, 'cycle': cycle, 'personal': personal, 'inputs': sorted(inputs)})
+    job.offer({'zones': zones, 'cycle': cycle, 'cycles': folder, 'personal': personal, 'inputs': sorted(inputs)})
     netloc = urllib.parse.urlsplit(origin).netloc
     timeout = ctx.get('zone_timeout', ZONE_TIMEOUT)
 
@@ -450,12 +460,12 @@ def build(job, args, ctx):
     def finish(zone, got, z0):
         """La zone est là : contrôle, écriture, commit (une zone à la fois)."""
         try:
-            texts, entry = validate(zone, cycle, got)
+            texts, entry = validate(zone, folder[zone], got)
         except ValueError as e:
             return update(zone, state='failed', error='invalid-output', message=str(e)[:200], seconds=round(time.time() - z0, 1))
         try:
-            paths, written = install(data, zone, cycle, texts, entry)
-            done = regen_jobs.commit_outputs(ctx, job.author, paths, f':card_file_box: Base aéronautique {zone} {cycle} construite sur le poste')
+            paths, written = install(data, zone, folder[zone], texts, entry)
+            done = regen_jobs.commit_outputs(ctx, job.author, paths, f':card_file_box: Base aéronautique {zone} {folder[zone]} construite sur le poste')
         except (OSError, ValueError) as e:
             return update(zone, state='failed', error='write-failed', message=str(e)[:200], seconds=round(time.time() - z0, 1))
         job.log(f'{zone}: construite, {written} fichier(s) écrit(s), commit {(done.get("commit") or "aucun")[:10]}')
@@ -541,12 +551,13 @@ def build(job, args, ctx):
         job.data['zones'] = {z: dict(st[z]) for z in zones}
     built = [z for z in zones if st[z]['state'] == 'built']
     failed = [{'zone': z, 'error': st[z].get('error') or st[z]['state']} for z in zones if st[z]['state'] == 'failed']
-    # le cycle des sources lues, celui qui a été écrit (une zone construite l'est sous sia/base/<zone>/<cycle>/), et le cycle en vigueur : des
-    # sources d'un cycle passé construisent ce cycle passé, sans refus (on peut vouloir le refaire), mais le résultat le dit (stale)
-    current = airac_in_force()
-    if cycle < current:
-        job.log(f'sources du cycle {cycle}, cycle en vigueur {current} : la base construite est celle du cycle précédent')
-    res = {'ok': len(built) == len(zones), 'cycle': cycle, 'cycles': {z: cycle for z in built}, 'current': current, 'stale': cycle < current,
+    # par zone construite : le cycle de sa source datée (None : sans AIRAC, « du <date> »), le dossier écrit, et les zones bloquantes (source
+    # d'un cycle passé : construit quand même, sans refus, mais dit)
+    blocking = [{'zone': z, 'source': aero_cycles.ZONE_SOURCE[z], 'cycle': own[z]} for z in built if own[z] and own[z] < current]
+    for b in blocking:
+        job.log(f"{b['zone']}: sources {b['source']} du cycle {b['cycle']}, cycle en vigueur {current} : construite pour le cycle précédent")
+    res = {'ok': len(built) == len(zones), 'cycle': cycle, 'cycles': {z: own[z] for z in built}, 'folders': {z: folder[z] for z in built},
+           'current': current, 'stale': bool(blocking), 'blocking': blocking, 'sources': sources, 'builtOn': time.strftime('%Y-%m-%d'),
            'built': built, 'failed': failed,
            'commits': [{'zone': z, 'commit': st[z].get('commit')} for z in built], 'zones': {z: dict(st[z]) for z in zones},
            'instances': 1, 'seconds': round(time.time() - t0, 1)}

@@ -327,15 +327,18 @@ job answers `reason: 'no-browser'` and the screen says it. Full contract: SPEC �
 const r = await ctx.launcher.job('regen/job', { set: 'base', verb: 'build', args: { zones: ['fr', 'gb', 'es'], personal: [] } },
   { onProgress: j => draw(j.zones, j.step, j.done, j.total), signal });   // after a reload: ctx.launcher.resume('regen/job', …)
 // j.zones  = { fr: { state: 'waiting'|'building'|'built'|'failed'|'cancelled', done, total, error, commit?, warning?, files?, seconds? }, … }
-// r.result = { ok, cycle, cycles: { fr: '2026-10-01', … }, current: '2026-10-29', stale: true, built: ['fr', …], failed: [{ zone, error }],
-//              commits: [{ zone, commit }], instances, seconds, reason? }
+// r.result = { ok, cycle, cycles: { fr: '2026-10-01', de: null, … }, folders: { fr: '2026-10-01', de: '2026-10-29', … }, current: '2026-10-29',
+//              stale: true, blocking: [{ zone: 'fr', source: 'sia', cycle: '2026-10-01' }], sources: { sia: { cycle, current, stale }, nats: {…}, enaire: {…} },
+//              builtOn: '2026-11-01', built: ['fr', …], failed: [{ zone, error }], commits: [{ zone, commit }], instances, seconds, reason? }
 ```
 
-- **For which cycle** (1 Nov 2026): `cycle` is the cycle of the sources read, the one written (`sia/base/<zone>/<cycle>/`: the date of the newest
-  dated SIA file, `XML_SIA_…`, `AIXM4.5_…`, `sia-airspaces-…`, else the cycle in force); `cycles` gives it per built zone; `current` is the AIRAC
-  cycle in force; `stale` is `cycle < current`. Sources of a past cycle build that past cycle — never refused, a rebuild of the old cycle can be
-  wanted — and the journal says it; the screen says « construit pour 2610 » and, when `stale`, « sources du cycle précédent : téléchargez d'abord
-  le cycle 2611 » (the AIRAC id only on screen, `frame/aerodb/airac.js`).
+- **For which cycle, zone by zone** (1 Nov 2026; `tools/aero_cycles.py`): a zone's cycle is **its own dated source's** — `fr` the SIA
+  (`XML_SIA_…`, `AIXM4.5_…`, `sia-airspaces-…`), `gb` NATS (`zones/gb/EG_…_AAAAMMJJ.xml`), `es` ENAIRE (`aixm5/LE_Amdt_A_AAAA_NN_…`, the
+  AIRAC amendment NN read as cycle AANN) — never the SIA's for every zone. A zone without a dated source (openAIP, GeoNames, relief, UK Mil…)
+  has **no cycle** (`cycles[zone]: null`: never « out of date », built on `builtOn`) and is written under the cycle in force (`folders`).
+  `blocking` names each built zone whose source is of a past cycle (« fr : SIA France 2610 »), `stale` says there is one; building a past
+  cycle is never refused. `sources` gives the cycle the workstation holds per dated source (`null` without a file). `cycle` stays the SIA
+  files' cycle, which the page checks against them.
 
 - **One window-less browser builds every requested zone** with the page's own functions (output identical to the page's, byte for byte), and hands
   each zone back as soon as it is ready; the job writes and **commits it alone** (the page's trigram as author, no push) while the next ones come; the
@@ -385,6 +388,9 @@ const p = await ctx.launcher.job('regen/job', { set: 'base', verb: 'purge', args
   two-letter code (`cyn`, `kas`, `sol`), gives the source `{ state: 'skipped', error: 'absent' }` and the zone stays `done`. The absent
   layers are remembered for the AIRAC cycle in `tools/.openaip_absent.json` (the workstation's, never versioned, never in `data/`) and
   not asked again until the next cycle. A 5xx, a time-out or an unreadable answer stays a failure, said per file.
+- **The cycle held per dated source** (1 Nov 2026): the view from the start (the plan) and the result carry `sources: { sia | nats | enaire:
+  { cycle: 'AAAA-MM-JJ' | null, current, stale } }`, read from the dates the present files carry (`tools/aero_cycles.py`); a source without
+  AIRAC is not in it. The links and expected names of the manual sources are in `catalogue.js` (`fetch.how 'pick'`).
 - **A 304 Not Modified is « unchanged »** (1 Nov 2026, the user's log after 822a0ffbb: « [sortant] échec … de_asp.geojson : HTTP 304 »): the
   answer to a conditional request (`If-Modified-Since`, the date of the local copy) keeps the copy, counts as a success (`unchanged`) and is
   never written in the launcher's console (`aero_fetch` asks through `outbound.opener(quiet=(304, …))`). A 304 with no copy behind it (no

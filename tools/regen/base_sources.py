@@ -21,7 +21,8 @@ vue ni dans le résultat. AUCUN commit (décision du 30 octobre) : les sources b
   suivant ; un pays sans aucun export (ou une zone sans code de deux lettres : cyn, kas, sol) : la source 'skipped', 'absent', la zone 'done'. Un 5xx, un délai ou une
   réponse illisible restent des échecs, dits par fichier.
   Résultat : `{ ok, fetched: [zones où quelque chose a changé], unchanged: [zones sans échec où rien n'a changé], failed: [{ zone, source, error, status? }], manual: [{ zone,
-  source, url?, name: [fr, en, de, es] }], outside_sync: n, absent: ['kh_asp', …], warnings: [{ code: 'outside-sync', count: n }], reason? }` ; `outside_sync` = les fichiers SUIVIS par git dans data/ que
+  source, url?, name: [fr, en, de, es] }], outside_sync: n, absent: ['kh_asp', …], sources: { sia | nats | enaire: { cycle | null, current, stale } } (aussi dans la vue
+  dès le départ : le cycle que le poste détient par source datée, tools/aero_cycles.py), warnings: [{ code: 'outside-sync', count: n }], reason? }` ; `outside_sync` = les fichiers SUIVIS par git dans data/ que
   ce travail a modifiés (git ls-files : suivi = présent dans l'index) ; 0 : pas d'avertissement ; reason : 'partial', 'failed', 'cancelled', 'nothing-to-fetch' (aucune source à essayer :
   ok est alors faux).
 
@@ -49,6 +50,7 @@ TOOLS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT = os.path.dirname(TOOLS)
 if TOOLS not in sys.path:
     sys.path.insert(0, TOOLS)
+import aero_cycles  # noqa: E402  (le cycle AIRAC que le poste détient pour chaque source datée)
 import aero_fetch  # noqa: E402  (le téléchargement lui-même : jamais recopié ici)
 import data_sync  # noqa: E402  (data_path : la règle des chemins de data/, pour base/pickup)
 import regen_jobs  # noqa: E402  (le socle : inside, la règle commune des purges)
@@ -356,6 +358,19 @@ def absent_line(names):
     return "openAIP : pas d'export pour " + ', '.join(f"{cc} ({', '.join(ls)})" for cc, ls in by.items())
 
 
+def sia_rels(data):
+    """Les fichiers présents de data/sia/ (chemins relatifs avec « / ») où une source datée se trouve : la racine, aixm5/ et zones/<zone>/ ;
+    ni lien, ni sous-dossier plus profond."""
+    root, out = os.path.join(data, 'sia'), []
+    for sub in ('', 'aixm5') + tuple(f'zones/{z}' for z in sorted(_names(os.path.join(root, 'zones')))):
+        d = os.path.join(root, *sub.split('/')) if sub else root
+        for n in sorted(_names(d)):
+            p = os.path.join(d, n)
+            if os.path.isfile(p) and not os.path.islink(p):
+                out.append(f'{sub}/{n}' if sub else n)
+    return out
+
+
 def _fetch_source(job, data, zone, source, absent=None, known=frozenset()):
     """Télécharge UNE source d'UNE zone par les fonctions d'aero_fetch (couche par couche pour openaip et faa : l'annulation passe entre deux couches). Rend (entrée de la vue |
     None si annulé avant le moindre résultat, fichiers rendus par aero_fetch, échecs [classify], chemins modifiés relatifs à data/, annulé)."""
@@ -434,6 +449,8 @@ def fetch(job, args, ctx):
         pre.update({s: {'state': 'manual', 'error': 'manual'} for s in manual})
         init[z] = {'state': 'waiting', 'done': 0, 'total': len(dl), 'sources': pre}
     view = _View(job, init)
+    # le plan : le cycle que le poste détient pour chaque source datée (SIA, NATS, ENAIRE), avant de télécharger quoi que ce soit
+    job.data['sources'] = aero_cycles.report(sia_rels(data))
     _step(job, 0, len(zones))
     fetched, unchanged, failed, modified = [], [], [], []
     attempted = good = 0
@@ -504,7 +521,8 @@ def fetch(job, args, ctx):
                     **({'pickup': True, 'expected': PICKUP[s]['zip']} if s in PICKUP else {})} for z in zones for s in plans[z][2]]
     reason = ('cancelled' if cancelled else 'nothing-to-fetch' if not attempted else 'failed' if failed and not good else 'partial' if failed else None)
     res = {'ok': reason is None, 'fetched': fetched, 'unchanged': unchanged, 'failed': failed, 'manual': manual_list, 'outside_sync': outside,
-           'absent': sorted(set(absent)), 'warnings': [{'code': 'outside-sync', 'count': outside}] if outside else []}
+           'absent': sorted(set(absent)), 'sources': aero_cycles.report(sia_rels(data)),
+           'warnings': [{'code': 'outside-sync', 'count': outside}] if outside else []}
     if reason:
         res['reason'] = reason
     return res
