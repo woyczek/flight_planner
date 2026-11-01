@@ -20,6 +20,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `frame/aerodb/build/headless.js`, `shared/sia_base.js`; INTEGRATION, DECISIONS; tests K63, K64) — the French SIA files no longer date every
   zone: France follows the SIA, the United Kingdom NATS, Spain ENAIRE, and a zone without an AIRAC source has no cycle and is never « out of
   date »; the build names the zone that holds an old cycle, and the download job says which cycle the workstation holds per dated source.
+- **Frame: Pilot's entries follow the pilot's sequence** (`frame/app.js` `APPS.pilot`; frame SPEC, DECISIONS; help ×4;
+  noreg A79) — the phone bar is Prepare · Map · Weather · Report · Flights, the left column Fuel, Missions, Map, Weather,
+  Report, My flights, Website: the weather comes before the report.
 - **Fuel › Route: « Lire les procédures de … » no longer covers the aerodrome's title** (`modules/fuel/module.js`, `procedures.js`;
   DECISIONS; noreg F14) — the link's 44 px box rose 10 px over the line above and took the design's button shadow; now it paints nothing
   and its line keeps the room of its target.

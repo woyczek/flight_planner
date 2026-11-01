@@ -2409,3 +2409,8 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
     plus protégée : reposez sa protection dans GitLab, Settings › Repository › Protected branches ») and the launcher's
     log says it. The unprotect level comes back to its default (Maintainers), which the free tier does not let set
     otherwise. Noreg I33, A39.
+- **1 Nov 2026 — Pilot's entries follow the pilot's sequence** (Simplification, from the user: « the weather button should
+  come right after the map: we look at the weather before writing a report »): the phone bar is Préparer · Carte · Météo ·
+  CR · Vols; the left column Carburant, Missions, Carte, Météo, Compte rendu, Mes vols, Site. Missions, in the Préparer
+  group of the bar, moves next to Carburant in the column too (it was last). The first module stays Carburant. Help ×4
+  (« The verbs »). Noreg A79, A14.

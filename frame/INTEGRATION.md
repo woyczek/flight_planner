@@ -375,7 +375,7 @@ APP.tabs = [
 ```
 
 **Settings is not in the bar** (§ 7.1 rule 14, 24 Oct 2026, 22:15): it is the ⚙ of the header, which also carries the
-state badge (§ 10). The bar is Préparer · Carte · CR · Vols · Météo. The `screen` key (a tab that opens a frame screen)
+state badge (§ 10). The bar is Préparer · Carte · Météo · CR · Vols. The `screen` key (a tab that opens a frame screen)
 stays supported by the code but no tab uses it today.
 
 - **`id`**: the tab. **`label`**: one word, four languages. **`icon`**: a name of `frame/lib/icons.js` that has a filled

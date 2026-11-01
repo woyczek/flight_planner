@@ -5,7 +5,7 @@ mes vols, passage au site de la compagnie. Elle marche sur un téléphone comme 
 
 ## Premier démarrage
 
-- **Les verbes.** Sur un téléphone, la barre du bas donne cinq entrées : Préparer, Carte, CR, Vols, Météo. Touchez de
+- **Les verbes.** Sur un téléphone, la barre du bas donne cinq entrées : Préparer, Carte, Météo, CR, Vols. Touchez de
   nouveau un onglet déjà choisi quand il groupe plusieurs écrans : une petite liste s'ouvre au-dessus de lui (Préparer :
   Carburant et Fiches de performances). Sur un écran, chaque outil est un verbe de la colonne de gauche. L'adresse d'un outil
   (`#fuel`, `#report`…) suffit à y revenir. Les Réglages sont le bouton ⚙ de l'en-tête. Le nom de l'application, en haut à gauche, ouvre la liste

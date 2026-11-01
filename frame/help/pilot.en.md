@@ -7,7 +7,7 @@ hand-off to the airline website. It works on a phone as on a computer, with or w
 
 ## First start
 
-- **The verbs.** On a phone, the bottom bar gives five entries: Prepare, Map, Report, Flights, Weather. Touch an already
+- **The verbs.** On a phone, the bottom bar gives five entries: Prepare, Map, Weather, Report, Flights. Touch an already
   selected tab again when it groups several screens: a small list opens above it (Prepare: Fuel and Performance sheets). On a
   screen, each tool is a verb of the left column. A tool's address (`#fuel`, `#report`…) is enough to come back to it.
   Settings are the ⚙ button of the header. The application's name, top left, opens the list of applications: Pilot and, at the Full level, Maintenance (the same plane in red); a tap switches to it.
@@ -231,6 +231,26 @@ flight levels, and nothing changes in the sheets.
 
 <!-- fr: 7f87e06dbfcb -->
 
+<!-- chapter: missions -->
+# Missions
+
+The airline's missions, those of the shared repository (written with the CPCO): choose one, or draw one at random, then prepare it in Fuel.
+
+## How to use
+
+<a id="missions-list"></a>**The list.** The missions of the newest series first, grouped by family. Each row gives the id, the title, the route, the aircraft type and the estimated block; "flown on …" marks a mission whose report you wrote. The search filters on the id, the title, an aerodrome or a type; the drop-down list keeps one family. Seven rows are shown, "N more" unfolds the rest. The organisation missions of an exercise (those ending in Z) are not flights and are not listed.
+
+<a id="missions-open"></a>**Choose, or draw at random.** A tap on a row opens the mission: its summary, its route, the aircraft, the estimated block, its notes. "Draw at random" picks one among the missions of the filtered list you have not flown yet; "Draw again" picks another. Nothing starts by itself: "Prepare this flight" opens Fuel with the departure, the arrival, the points of the mission (as coordinates), the level and the aircraft type; the runway, the procedures, the fuel and the weather are then prepared as for any flight.
+
+## Good to know
+
+- The module reads the missions and never changes them; they are written in the CPCO.
+- A mission whose file does not come says so: "not found" (the repository has not got it), "not on this device yet" (the synchronisation brings it, the mission appears when it arrives) or "unreadable" (with the reason). Only the registry is shown then.
+- A flight being prepared is replaced only after a question; a started flight never is (cancel the start, or finish the flight, first).
+- The envelope, the page-by-page reader and the assignments will come later.
+
+<!-- fr: 2cf76a36abfd -->
+
 <!-- chapter: maps -->
 # Map
 
@@ -401,6 +421,75 @@ profile for the type of map (detailed for a target or a detail, simplified other
 in the studio and saving it is enough for it to keep its own from then on.
 
 <!-- fr: 97204dc50a94 -->
+
+<!-- chapter: atmosphere -->
+# Weather
+
+The atmosphere along the flight prepared in Fuel: a weather map at the chosen level, the vertical cross-section of the
+route, the slice of a point, at the departure time or later.
+
+## How to use it
+
+<a id="atmosphere-flight"></a>**The flight.** Weather always shows the flight prepared in Fuel (route, level, flight date). With no planned flight, the
+page says so and leads to Fuel; "See the example" shows a demonstration flight, marked as such in the grip.
+
+<a id="atmosphere-load"></a>**Loading the forecast.** The load button (the downward arrow, at the right of the map) reads the forecast along the
+route and around it. Nothing is asked at opening: the page shows what the device has already kept. Outside the flight's
+area, the map shows the world synoptic published with the application, asking for nothing.
+
+<a id="atmosphere-map"></a>**The weather map.** Isobars, isotherms, cloud, wind, jet stream and convection, at the level chosen with the level chip
+("SFC", the requested level, the computed path or a fixed altitude). The layers button (top left) opens a panel over
+the map: it chooses what is drawn on the map and in the profile, and the cut stays in view below, redrawn by each box; the
+cross or Escape closes it. Touch a point of the map to open its slice.
+
+<a id="atmosphere-zones"></a>**The flight area and the world.** A thin line surrounds the flight area: inside, the fine forecast loaded for the flight
+(Météo-France AROME 1.3 km and ARPEGE 0.1° over France, ICON in Europe); outside, the world synoptic (NOAA GFS,
+published on a 5° grid). The two models do not say quite the same thing: a jump of the lines where they cross the line
+is normal. The layers panel names both models and their grid.
+
+<a id="atmosphere-date"></a>**The flight date.** The slider under the grip moves the time from 0 to 72 hours after the planned departure: the map,
+the cross-section and the slices follow. When part of the slider is outside the forecast read (a planned departure
+already past, days not loaded yet), a band under the slider shows the hours covered; elsewhere the nearest hour is shown,
+⚠ says so on the slider line and in the grip, and a warning appears.
+
+<a id="atmosphere-cut"></a>**The cross-section and the slices.** Under the map, the cross-section shows the route from end to end, from the ground
+to above the flight level. Touch it to open the slice of the nearest point (the vertical profile of the atmosphere
+there); ◀ and ▶ move to the next slice, ✕ goes back to the cross-section. The drawing always fits the block, its distance
+axis visible; expand the block for more detail.
+
+<a id="atmosphere-zoom"></a>**Zooming the cross-section.** Pinch the cross-section with two fingers (or Ctrl + wheel) to show only part of it, and
+slide it with two fingers; distances, points, winds and the height scale follow the part shown. One finger keeps its role
+(opening a slice, moving the block). "Whole flight", in the grip row, a double tap or a double click go back to the whole
+route; a change of route goes back to it too.
+
+<a id="atmosphere-details"></a>**The details.** The list button, at the right of the map, shows in the block the flight's summary
+(distance, profile, climb, mean wind and deviation from the standard atmosphere in cruise, 0 °C isotherm), the aerodromes
+(METAR and TAF) and the table along the computed path; touch a row of the table to open the slice of that place.
+
+<a id="atmosphere-settings"></a>**Flight and settings.** The plane button, at the right of the map, opens the flight shown:
+its source (Fuel's current flight, the example, a `current_flight.json` file or a typed route), the departure (UTC), the
+requested level, the cruise speed, the data (Open-Meteo forecast or offline demonstration) and the map's grid. A second
+touch on the button goes back to the cross-section.
+
+<a id="atmosphere-legend"></a>**The legend.** The "i" chip, in the grip row at the right (after ◀ and ▶), shows the legend of what is drawn; a touch on
+the legend, the chip or Escape closes it.
+
+- Cross-section: computed path (solid: climb, cruise, descent), planned level (dashed), requested level (dotted), top of
+  climb and top of descent (TOC, TOD), cloud (grey, darker: more cover), isotherms every 5 °C (0 °C thick blue),
+  inversions and icing (hatching), wind (barbs: half 5 kt, feather 10, pennant 50), estimated cumulus base (grey
+  dotted), terrain, route points (vertical lines); on a tall block, the bottom strips: low, mid, high cloud,
+  precipitation, visibility under 8 km.
+- Slice: temperature (red), dew point (green), standard atmosphere (dashed), the flight's three levels at that point,
+  inversions, cloud (column at the right), wind, terrain.
+
+## Good to know
+
+- The forecast comes from Open-Meteo (Météo-France AROME and ARPEGE over France, ICON in Europe, GFS elsewhere); the
+  world synoptic comes from GFS (NOAA), every 3 hours up to 72 hours.
+- What is loaded stays on the device and works offline, in the weather store shared by Fuel, the Map and Weather; the
+  Map reuses its weather cross-section. The day's calls to Open-Meteo are counted in the status block of Settings.
+
+<!-- fr: 9e625efa8e4e -->
 
 <!-- chapter: report -->
 # Report
@@ -576,95 +665,6 @@ shared by the whole airline; it is what turns on “Save and record on the websi
 - **Offline**: pasting always works; what is saved goes out at the next synchronisation.
 
 <!-- fr: cfdf162727aa -->
-
-<!-- chapter: atmosphere -->
-# Weather
-
-The atmosphere along the flight prepared in Fuel: a weather map at the chosen level, the vertical cross-section of the
-route, the slice of a point, at the departure time or later.
-
-## How to use it
-
-<a id="atmosphere-flight"></a>**The flight.** Weather always shows the flight prepared in Fuel (route, level, flight date). With no planned flight, the
-page says so and leads to Fuel; "See the example" shows a demonstration flight, marked as such in the grip.
-
-<a id="atmosphere-load"></a>**Loading the forecast.** The load button (the downward arrow, at the right of the map) reads the forecast along the
-route and around it. Nothing is asked at opening: the page shows what the device has already kept. Outside the flight's
-area, the map shows the world synoptic published with the application, asking for nothing.
-
-<a id="atmosphere-map"></a>**The weather map.** Isobars, isotherms, cloud, wind, jet stream and convection, at the level chosen with the level chip
-("SFC", the requested level, the computed path or a fixed altitude). The layers button (top left) opens a panel over
-the map: it chooses what is drawn on the map and in the profile, and the cut stays in view below, redrawn by each box; the
-cross or Escape closes it. Touch a point of the map to open its slice.
-
-<a id="atmosphere-zones"></a>**The flight area and the world.** A thin line surrounds the flight area: inside, the fine forecast loaded for the flight
-(Météo-France AROME 1.3 km and ARPEGE 0.1° over France, ICON in Europe); outside, the world synoptic (NOAA GFS,
-published on a 5° grid). The two models do not say quite the same thing: a jump of the lines where they cross the line
-is normal. The layers panel names both models and their grid.
-
-<a id="atmosphere-date"></a>**The flight date.** The slider under the grip moves the time from 0 to 72 hours after the planned departure: the map,
-the cross-section and the slices follow. When part of the slider is outside the forecast read (a planned departure
-already past, days not loaded yet), a band under the slider shows the hours covered; elsewhere the nearest hour is shown,
-⚠ says so on the slider line and in the grip, and a warning appears.
-
-<a id="atmosphere-cut"></a>**The cross-section and the slices.** Under the map, the cross-section shows the route from end to end, from the ground
-to above the flight level. Touch it to open the slice of the nearest point (the vertical profile of the atmosphere
-there); ◀ and ▶ move to the next slice, ✕ goes back to the cross-section. The drawing always fits the block, its distance
-axis visible; expand the block for more detail.
-
-<a id="atmosphere-zoom"></a>**Zooming the cross-section.** Pinch the cross-section with two fingers (or Ctrl + wheel) to show only part of it, and
-slide it with two fingers; distances, points, winds and the height scale follow the part shown. One finger keeps its role
-(opening a slice, moving the block). "Whole flight", in the grip row, a double tap or a double click go back to the whole
-route; a change of route goes back to it too.
-
-<a id="atmosphere-details"></a>**The details.** The list button, at the right of the map, shows in the block the flight's summary
-(distance, profile, climb, mean wind and deviation from the standard atmosphere in cruise, 0 °C isotherm), the aerodromes
-(METAR and TAF) and the table along the computed path; touch a row of the table to open the slice of that place.
-
-<a id="atmosphere-settings"></a>**Flight and settings.** The plane button, at the right of the map, opens the flight shown:
-its source (Fuel's current flight, the example, a `current_flight.json` file or a typed route), the departure (UTC), the
-requested level, the cruise speed, the data (Open-Meteo forecast or offline demonstration) and the map's grid. A second
-touch on the button goes back to the cross-section.
-
-<a id="atmosphere-legend"></a>**The legend.** The "i" chip, in the grip row at the right (after ◀ and ▶), shows the legend of what is drawn; a touch on
-the legend, the chip or Escape closes it.
-
-- Cross-section: computed path (solid: climb, cruise, descent), planned level (dashed), requested level (dotted), top of
-  climb and top of descent (TOC, TOD), cloud (grey, darker: more cover), isotherms every 5 °C (0 °C thick blue),
-  inversions and icing (hatching), wind (barbs: half 5 kt, feather 10, pennant 50), estimated cumulus base (grey
-  dotted), terrain, route points (vertical lines); on a tall block, the bottom strips: low, mid, high cloud,
-  precipitation, visibility under 8 km.
-- Slice: temperature (red), dew point (green), standard atmosphere (dashed), the flight's three levels at that point,
-  inversions, cloud (column at the right), wind, terrain.
-
-## Good to know
-
-- The forecast comes from Open-Meteo (Météo-France AROME and ARPEGE over France, ICON in Europe, GFS elsewhere); the
-  world synoptic comes from GFS (NOAA), every 3 hours up to 72 hours.
-- What is loaded stays on the device and works offline, in the weather store shared by Fuel, the Map and Weather; the
-  Map reuses its weather cross-section. The day's calls to Open-Meteo are counted in the status block of Settings.
-
-<!-- fr: 9e625efa8e4e -->
-
-<!-- chapter: missions -->
-# Missions
-
-The airline's missions, those of the shared repository (written with the CPCO): choose one, or draw one at random, then prepare it in Fuel.
-
-## How to use
-
-<a id="missions-list"></a>**The list.** The missions of the newest series first, grouped by family. Each row gives the id, the title, the route, the aircraft type and the estimated block; "flown on …" marks a mission whose report you wrote. The search filters on the id, the title, an aerodrome or a type; the drop-down list keeps one family. Seven rows are shown, "N more" unfolds the rest. The organisation missions of an exercise (those ending in Z) are not flights and are not listed.
-
-<a id="missions-open"></a>**Choose, or draw at random.** A tap on a row opens the mission: its summary, its route, the aircraft, the estimated block, its notes. "Draw at random" picks one among the missions of the filtered list you have not flown yet; "Draw again" picks another. Nothing starts by itself: "Prepare this flight" opens Fuel with the departure, the arrival, the points of the mission (as coordinates), the level and the aircraft type; the runway, the procedures, the fuel and the weather are then prepared as for any flight.
-
-## Good to know
-
-- The module reads the missions and never changes them; they are written in the CPCO.
-- A mission whose file does not come says so: "not found" (the repository has not got it), "not on this device yet" (the synchronisation brings it, the mission appears when it arrives) or "unreadable" (with the reason). Only the registry is shown then.
-- A flight being prepared is replaced only after a question; a started flight never is (cancel the start, or finish the flight, first).
-- The envelope, the page-by-page reader and the assignments will come later.
-
-<!-- fr: 2cf76a36abfd -->
 
 <!-- chapter: settings -->
 # Settings

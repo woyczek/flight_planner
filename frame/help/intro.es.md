@@ -5,7 +5,7 @@ vuelos, paso al sitio de la aerolínea. Funciona en un teléfono como en un orde
 
 ## Primer inicio
 
-- **Los verbos.** En un teléfono, la barra inferior ofrece cinco entradas: Preparar, Mapa, Informe, Vuelos, Meteo. Toque
+- **Los verbos.** En un teléfono, la barra inferior ofrece cinco entradas: Preparar, Mapa, Meteo, Informe, Vuelos. Toque
   de nuevo una pestaña ya elegida cuando agrupa varias pantallas: se abre encima una pequeña lista (Preparar: Combustible y
   Fichas de rendimiento). En una pantalla, cada herramienta es un verbo de la columna izquierda. La dirección de una
   herramienta (`#fuel`, `#report`…) basta para volver a ella. Los Ajustes son el botón ⚙ de la cabecera. El nombre de la aplicación, arriba a la

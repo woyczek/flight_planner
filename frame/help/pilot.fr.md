@@ -7,7 +7,7 @@ mes vols, passage au site de la compagnie. Elle marche sur un téléphone comme 
 
 ## Premier démarrage
 
-- **Les verbes.** Sur un téléphone, la barre du bas donne cinq entrées : Préparer, Carte, CR, Vols, Météo. Touchez de
+- **Les verbes.** Sur un téléphone, la barre du bas donne cinq entrées : Préparer, Carte, Météo, CR, Vols. Touchez de
   nouveau un onglet déjà choisi quand il groupe plusieurs écrans : une petite liste s'ouvre au-dessus de lui (Préparer :
   Carburant et Fiches de performances). Sur un écran, chaque outil est un verbe de la colonne de gauche. L'adresse d'un outil
   (`#fuel`, `#report`…) suffit à y revenir. Les Réglages sont le bouton ⚙ de l'en-tête. Le nom de l'application, en haut à gauche, ouvre la liste
@@ -231,6 +231,24 @@ altitudes et les distances à l'écran ; les niveaux restent des niveaux de vol,
   carte météo dit d'où viennent les messages. Sans réseau du tout, elle montre la dernière météo gardée, avec son
   heure.
 
+<!-- chapter: missions -->
+# Missions
+
+Les missions de la compagnie, celles du dépôt commun (écrites avec le CPCO) : en choisir une, ou en tirer une au sort, puis la préparer dans Carburant.
+
+## Comment s'en servir
+
+<a id="missions-list"></a>**La liste.** Les missions des séries les plus récentes d'abord, groupées par famille. Chaque ligne donne l'identifiant, le titre, le trajet, le type d'appareil et le bloc estimé ; « volée le … » marque une mission dont vous avez écrit le compte rendu. La recherche filtre sur l'identifiant, le titre, un terrain ou un type ; la liste déroulante garde une famille. Sept lignes sont montrées, « N autres » déplie la suite. Les missions d'organisation d'un exercice (celles qui finissent par Z) ne sont pas des vols et n'y figurent pas.
+
+<a id="missions-open"></a>**Choisir, ou tirer au sort.** Une tape sur une ligne ouvre la mission : son résumé, son trajet, l'appareil, le bloc estimé, ses notes. « Tirer au sort » en prend une au hasard parmi celles de la liste filtrée que vous n'avez pas encore volées ; « Tirer encore » en prend une autre. Rien ne démarre seul : « Préparer ce vol » ouvre Carburant avec le départ, l'arrivée, les points de la mission (en coordonnées), le niveau et le type d'appareil ; la piste, les procédures, le carburant et la météo se préparent ensuite comme pour tout vol.
+
+## Bon à savoir
+
+- Le module lit les missions, il ne les modifie jamais ; elles s'écrivent dans le CPCO.
+- Une mission dont le fichier ne vient pas le dit : « introuvable » (le dépôt ne l'a pas), « pas encore sur l'appareil » (la synchronisation l'apporte, la mission s'affiche à son arrivée) ou « illisible » (avec la raison). Le registre seul est alors montré.
+- Un vol en préparation n'est remplacé qu'après une question ; un vol démarré ne l'est jamais (annulez le départ, ou terminez le vol, d'abord).
+- L'enveloppe, le lecteur page à page et les affectations viendront plus tard.
+
 <!-- chapter: maps -->
 # Carte
 
@@ -407,6 +425,74 @@ actuelle est d'un autre cycle, une ligne le dit : les espaces aériens ont pu ch
 alors le réglage habituel du type de carte (détaillé pour une cible ou un détail, simplifié sinon) et le signale.
 Ouvrir la mission dans le studio et l'enregistrer suffit pour qu'elle garde ensuite le sien.
 
+<!-- chapter: atmosphere -->
+# Météo
+
+L'atmosphère le long du vol préparé dans Carburant : une carte météo au niveau choisi, la coupe verticale de la route,
+la tranche d'un point, à l'heure du départ ou plus tard.
+
+## Comment s'en servir
+
+<a id="atmosphere-flight"></a>**Le vol.** Météo montre toujours le vol préparé dans Carburant (route, niveau, date du vol). Sans vol prévu, la page le
+dit et mène à Carburant ; « Voir l'exemple » montre un vol de démonstration, marqué comme tel dans la poignée.
+
+<a id="atmosphere-load"></a>**Charger la prévision.** Le bouton de chargement (la flèche vers le bas, à droite de la carte) lit la prévision le long
+de la route et autour d'elle. Rien n'est demandé à l'ouverture : la page montre ce que l'appareil a déjà gardé. Hors de la
+zone du vol, la carte montre le synoptique mondial publié avec l'application, sans rien demander.
+
+<a id="atmosphere-map"></a>**La carte météo.** Isobares, isothermes, nuages, vent, courant-jet et convection, au niveau choisi par la pastille du
+niveau (« Sol », le niveau demandé, la trajectoire calculée ou une altitude fixe). Le bouton des couches (en haut à gauche)
+ouvre un volet posé sur la carte : il choisit ce qui est dessiné sur la carte et dans le profil, et la coupe reste visible en
+bas, redessinée à chaque case ; la croix ou Échap le ferme. Touchez un point de la carte pour ouvrir sa tranche.
+
+<a id="atmosphere-zones"></a>**La zone du vol et le monde.** Un trait fin entoure la zone du vol : dedans, la prévision fine chargée pour le vol
+(Météo-France AROME 1,3 km et ARPEGE 0,1° sur la France, ICON en Europe) ; dehors, le synoptique mondial (GFS de la
+NOAA, publié avec une maille de 5°). Les deux modèles ne disent pas tout à fait la même chose : un saut des lignes au
+passage du trait est normal. Le panneau des couches nomme les deux modèles et leur maille.
+
+<a id="atmosphere-date"></a>**La date du vol.** Le curseur sous la poignée avance l'heure de 0 à 72 heures à partir du départ prévu : la carte, la
+coupe et les tranches suivent. Quand une partie du curseur sort de la prévision lue (un départ prévu déjà passé, des
+jours pas encore chargés), une bande sous le curseur montre les heures couvertes ; ailleurs, l'heure la plus proche est
+montrée, ⚠ le dit sur la ligne du curseur et dans la poignée, et une alerte s'affiche.
+
+<a id="atmosphere-cut"></a>**La coupe et les tranches.** Sous la carte, la coupe montre la route de bout en bout, du sol au-dessus du niveau du vol.
+Touchez-la pour ouvrir la tranche du point le plus proche (le profil vertical de l'atmosphère à cet endroit) ; ◀ et ▶
+passent à la tranche voisine, ✕ revient à la coupe. Le dessin tient toujours dans le bloc, son axe des distances visible ;
+agrandissez le bloc pour plus de détails.
+
+<a id="atmosphere-zoom"></a>**Zoomer la coupe.** Pincez la coupe à deux doigts (ou Ctrl + molette) pour n'en montrer qu'une partie, et faites-la
+glisser à deux doigts ; les distances, les points, les vents et l'échelle des hauteurs suivent la partie montrée. Un doigt
+seul garde son rôle (ouvrir une tranche, déplacer le bloc). « Vol entier », dans la ligne de la poignée, un double toucher
+ou un double clic reviennent à la route entière ; un changement de route y revient aussi.
+
+<a id="atmosphere-details"></a>**Les détails.** Le bouton de la liste, à droite de la carte, montre dans le bloc le résumé du vol
+(distance, profil, montée, vent moyen et écart à l'atmosphère type en croisière, isotherme 0 °C), les terrains (METAR et
+TAF) et le tableau le long de la trajectoire calculée ; touchez une ligne du tableau pour ouvrir la tranche de ce lieu.
+
+<a id="atmosphere-settings"></a>**Vol et réglages.** Le bouton de l'avion, à droite de la carte, ouvre le vol montré : sa
+source (le vol courant de Carburant, l'exemple, un fichier `current_flight.json` ou une route écrite), le départ (UTC), le
+niveau demandé, la vitesse de croisière, les données (prévision Open-Meteo ou démonstration hors ligne) et la grille de la
+carte. Un second toucher sur le bouton revient à la coupe.
+
+<a id="atmosphere-legend"></a>**La légende.** La pastille « i », dans la ligne de la poignée à droite (après ◀ et ▶), montre la légende de ce qui est
+dessiné ; un toucher sur la légende, la pastille ou Échap la ferme.
+
+- Coupe : trajectoire calculée (trait plein : montée, croisière, descente), niveau planifié (tirets), niveau demandé
+  (pointillés), fin de montée et début de descente (TOC, TOD), nuages (gris, plus sombre : plus couvert), isothermes
+  tous les 5 °C (0 °C en bleu épais), inversions et givrage (hachures), vent (barbules : demi 5 kt, plume 10, fanion
+  50), base des cumulus estimée (pointillés gris), relief, points de la route (traits verticaux) ; sur un bloc haut, les
+  bandes du bas : nébulosité basse, moyenne, haute, précipitations, visibilité inférieure à 8 km.
+- Tranche : température (rouge), point de rosée (vert), atmosphère type (tirets), les trois niveaux du vol à cet
+  endroit, inversions, nuages (colonne à droite), vent, relief.
+
+## Bon à savoir
+
+- La prévision vient d'Open-Meteo (Météo-France AROME et ARPEGE sur la France, ICON en Europe, GFS ailleurs) ; le
+  synoptique mondial vient de GFS (NOAA), toutes les 3 heures jusqu'à 72 heures.
+- Ce qui est chargé reste sur l'appareil et sert hors ligne, dans la réserve météo partagée par Carburant, la Carte et
+  Météo ; la Carte en reprend la coupe météo. Les appels du jour à Open-Meteo sont comptés dans le bloc d'état des
+  Réglages.
+
 <!-- chapter: report -->
 # Compte rendu
 
@@ -582,92 +668,6 @@ dans le compte rendu.
 - **Sans trigramme** : le journal ne peut pas choisir vos lignes ; réglez-le (⚙).
 - **Adresse non réglée** : les liens vers les pages et l'inscription du vol attendent la carte Compagnie.
 - **Hors ligne** : le collage marche toujours ; ce qui est enregistré part à la prochaine synchronisation.
-
-<!-- chapter: atmosphere -->
-# Météo
-
-L'atmosphère le long du vol préparé dans Carburant : une carte météo au niveau choisi, la coupe verticale de la route,
-la tranche d'un point, à l'heure du départ ou plus tard.
-
-## Comment s'en servir
-
-<a id="atmosphere-flight"></a>**Le vol.** Météo montre toujours le vol préparé dans Carburant (route, niveau, date du vol). Sans vol prévu, la page le
-dit et mène à Carburant ; « Voir l'exemple » montre un vol de démonstration, marqué comme tel dans la poignée.
-
-<a id="atmosphere-load"></a>**Charger la prévision.** Le bouton de chargement (la flèche vers le bas, à droite de la carte) lit la prévision le long
-de la route et autour d'elle. Rien n'est demandé à l'ouverture : la page montre ce que l'appareil a déjà gardé. Hors de la
-zone du vol, la carte montre le synoptique mondial publié avec l'application, sans rien demander.
-
-<a id="atmosphere-map"></a>**La carte météo.** Isobares, isothermes, nuages, vent, courant-jet et convection, au niveau choisi par la pastille du
-niveau (« Sol », le niveau demandé, la trajectoire calculée ou une altitude fixe). Le bouton des couches (en haut à gauche)
-ouvre un volet posé sur la carte : il choisit ce qui est dessiné sur la carte et dans le profil, et la coupe reste visible en
-bas, redessinée à chaque case ; la croix ou Échap le ferme. Touchez un point de la carte pour ouvrir sa tranche.
-
-<a id="atmosphere-zones"></a>**La zone du vol et le monde.** Un trait fin entoure la zone du vol : dedans, la prévision fine chargée pour le vol
-(Météo-France AROME 1,3 km et ARPEGE 0,1° sur la France, ICON en Europe) ; dehors, le synoptique mondial (GFS de la
-NOAA, publié avec une maille de 5°). Les deux modèles ne disent pas tout à fait la même chose : un saut des lignes au
-passage du trait est normal. Le panneau des couches nomme les deux modèles et leur maille.
-
-<a id="atmosphere-date"></a>**La date du vol.** Le curseur sous la poignée avance l'heure de 0 à 72 heures à partir du départ prévu : la carte, la
-coupe et les tranches suivent. Quand une partie du curseur sort de la prévision lue (un départ prévu déjà passé, des
-jours pas encore chargés), une bande sous le curseur montre les heures couvertes ; ailleurs, l'heure la plus proche est
-montrée, ⚠ le dit sur la ligne du curseur et dans la poignée, et une alerte s'affiche.
-
-<a id="atmosphere-cut"></a>**La coupe et les tranches.** Sous la carte, la coupe montre la route de bout en bout, du sol au-dessus du niveau du vol.
-Touchez-la pour ouvrir la tranche du point le plus proche (le profil vertical de l'atmosphère à cet endroit) ; ◀ et ▶
-passent à la tranche voisine, ✕ revient à la coupe. Le dessin tient toujours dans le bloc, son axe des distances visible ;
-agrandissez le bloc pour plus de détails.
-
-<a id="atmosphere-zoom"></a>**Zoomer la coupe.** Pincez la coupe à deux doigts (ou Ctrl + molette) pour n'en montrer qu'une partie, et faites-la
-glisser à deux doigts ; les distances, les points, les vents et l'échelle des hauteurs suivent la partie montrée. Un doigt
-seul garde son rôle (ouvrir une tranche, déplacer le bloc). « Vol entier », dans la ligne de la poignée, un double toucher
-ou un double clic reviennent à la route entière ; un changement de route y revient aussi.
-
-<a id="atmosphere-details"></a>**Les détails.** Le bouton de la liste, à droite de la carte, montre dans le bloc le résumé du vol
-(distance, profil, montée, vent moyen et écart à l'atmosphère type en croisière, isotherme 0 °C), les terrains (METAR et
-TAF) et le tableau le long de la trajectoire calculée ; touchez une ligne du tableau pour ouvrir la tranche de ce lieu.
-
-<a id="atmosphere-settings"></a>**Vol et réglages.** Le bouton de l'avion, à droite de la carte, ouvre le vol montré : sa
-source (le vol courant de Carburant, l'exemple, un fichier `current_flight.json` ou une route écrite), le départ (UTC), le
-niveau demandé, la vitesse de croisière, les données (prévision Open-Meteo ou démonstration hors ligne) et la grille de la
-carte. Un second toucher sur le bouton revient à la coupe.
-
-<a id="atmosphere-legend"></a>**La légende.** La pastille « i », dans la ligne de la poignée à droite (après ◀ et ▶), montre la légende de ce qui est
-dessiné ; un toucher sur la légende, la pastille ou Échap la ferme.
-
-- Coupe : trajectoire calculée (trait plein : montée, croisière, descente), niveau planifié (tirets), niveau demandé
-  (pointillés), fin de montée et début de descente (TOC, TOD), nuages (gris, plus sombre : plus couvert), isothermes
-  tous les 5 °C (0 °C en bleu épais), inversions et givrage (hachures), vent (barbules : demi 5 kt, plume 10, fanion
-  50), base des cumulus estimée (pointillés gris), relief, points de la route (traits verticaux) ; sur un bloc haut, les
-  bandes du bas : nébulosité basse, moyenne, haute, précipitations, visibilité inférieure à 8 km.
-- Tranche : température (rouge), point de rosée (vert), atmosphère type (tirets), les trois niveaux du vol à cet
-  endroit, inversions, nuages (colonne à droite), vent, relief.
-
-## Bon à savoir
-
-- La prévision vient d'Open-Meteo (Météo-France AROME et ARPEGE sur la France, ICON en Europe, GFS ailleurs) ; le
-  synoptique mondial vient de GFS (NOAA), toutes les 3 heures jusqu'à 72 heures.
-- Ce qui est chargé reste sur l'appareil et sert hors ligne, dans la réserve météo partagée par Carburant, la Carte et
-  Météo ; la Carte en reprend la coupe météo. Les appels du jour à Open-Meteo sont comptés dans le bloc d'état des
-  Réglages.
-
-<!-- chapter: missions -->
-# Missions
-
-Les missions de la compagnie, celles du dépôt commun (écrites avec le CPCO) : en choisir une, ou en tirer une au sort, puis la préparer dans Carburant.
-
-## Comment s'en servir
-
-<a id="missions-list"></a>**La liste.** Les missions des séries les plus récentes d'abord, groupées par famille. Chaque ligne donne l'identifiant, le titre, le trajet, le type d'appareil et le bloc estimé ; « volée le … » marque une mission dont vous avez écrit le compte rendu. La recherche filtre sur l'identifiant, le titre, un terrain ou un type ; la liste déroulante garde une famille. Sept lignes sont montrées, « N autres » déplie la suite. Les missions d'organisation d'un exercice (celles qui finissent par Z) ne sont pas des vols et n'y figurent pas.
-
-<a id="missions-open"></a>**Choisir, ou tirer au sort.** Une tape sur une ligne ouvre la mission : son résumé, son trajet, l'appareil, le bloc estimé, ses notes. « Tirer au sort » en prend une au hasard parmi celles de la liste filtrée que vous n'avez pas encore volées ; « Tirer encore » en prend une autre. Rien ne démarre seul : « Préparer ce vol » ouvre Carburant avec le départ, l'arrivée, les points de la mission (en coordonnées), le niveau et le type d'appareil ; la piste, les procédures, le carburant et la météo se préparent ensuite comme pour tout vol.
-
-## Bon à savoir
-
-- Le module lit les missions, il ne les modifie jamais ; elles s'écrivent dans le CPCO.
-- Une mission dont le fichier ne vient pas le dit : « introuvable » (le dépôt ne l'a pas), « pas encore sur l'appareil » (la synchronisation l'apporte, la mission s'affiche à son arrivée) ou « illisible » (avec la raison). Le registre seul est alors montré.
-- Un vol en préparation n'est remplacé qu'après une question ; un vol démarré ne l'est jamais (annulez le départ, ou terminez le vol, d'abord).
-- L'enveloppe, le lecteur page à page et les affectations viendront plus tard.
 
 <!-- chapter: settings -->
 # Réglages

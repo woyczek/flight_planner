@@ -8,7 +8,7 @@ Computer, mit oder ohne Netz.
 
 ## Erster Start
 
-- **Die Verben.** Auf einem Telefon bietet die untere Leiste fünf Einträge: Vorbereiten, Karte, Bericht, Flüge, Wetter.
+- **Die Verben.** Auf einem Telefon bietet die untere Leiste fünf Einträge: Vorbereiten, Karte, Wetter, Bericht, Flüge.
   Tippen Sie einen bereits gewählten Reiter, der mehrere Bildschirme bündelt, noch einmal an: Darüber öffnet sich eine kleine
   Liste (Vorbereiten: Kraftstoff und Leistungsdatenblätter). Auf einem Bildschirm ist jedes Werkzeug ein Verb der linken
   Spalte. Die Adresse eines Werkzeugs (`#fuel`, `#report`…) genügt, um zu ihm zurückzukehren. Die Einstellungen sind die
@@ -248,6 +248,26 @@ Datenblättern ändert sich nichts.
 
 <!-- fr: 7f87e06dbfcb -->
 
+<!-- chapter: missions -->
+# Missionen
+
+Die Missionen der Gesellschaft, die des gemeinsamen Repositorys (mit dem CPCO geschrieben): eine auswählen oder zufällig ziehen und dann in Kraftstoff vorbereiten.
+
+## So geht's
+
+<a id="missions-list"></a>**Die Liste.** Die Missionen der neuesten Serien zuerst, nach Familie gruppiert. Jede Zeile nennt die ID, den Titel, die Strecke, den Luftfahrzeugtyp und die geschätzte Blockzeit; „geflogen am …“ kennzeichnet eine Mission, deren Bericht Sie geschrieben haben. Die Suche filtert nach ID, Titel, Flugplatz oder Typ; die Auswahlliste behält eine Familie. Sieben Zeilen werden gezeigt, „N weitere“ klappt den Rest auf. Die Organisationsmissionen einer Übung (die auf Z enden) sind keine Flüge und erscheinen nicht.
+
+<a id="missions-open"></a>**Auswählen oder zufällig ziehen.** Ein Tippen auf eine Zeile öffnet die Mission: ihre Zusammenfassung, ihre Strecke, das Luftfahrzeug, die geschätzte Blockzeit, ihre Hinweise. „Zufällig ziehen“ nimmt eine der Missionen der gefilterten Liste, die Sie noch nicht geflogen sind; „Erneut ziehen“ nimmt eine andere. Nichts startet von selbst: „Diesen Flug vorbereiten“ öffnet Kraftstoff mit Abflug, Ankunft, den Punkten der Mission (als Koordinaten), der Flugfläche und dem Luftfahrzeugtyp; Piste, Verfahren, Kraftstoff und Wetter werden danach wie bei jedem Flug vorbereitet.
+
+## Gut zu wissen
+
+- Das Modul liest die Missionen und ändert sie nie; sie werden im CPCO geschrieben.
+- Eine Mission, deren Datei nicht kommt, sagt es: „nicht gefunden“ (das Repository hat sie nicht), „noch nicht auf dem Gerät“ (die Synchronisierung bringt sie, die Mission erscheint bei ihrer Ankunft) oder „unlesbar“ (mit dem Grund). Dann wird nur das Register gezeigt.
+- Ein Flug in Vorbereitung wird erst nach einer Frage ersetzt; ein gestarteter Flug nie (erst den Start abbrechen oder den Flug beenden).
+- Der Umschlag, der seitenweise Leser und die Zuweisungen kommen später.
+
+<!-- fr: 2cf76a36abfd -->
+
 <!-- chapter: maps -->
 # Karte
 
@@ -433,6 +453,77 @@ das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, s
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
 <!-- fr: 97204dc50a94 -->
+
+<!-- chapter: atmosphere -->
+# Wetter
+
+Die Atmosphäre entlang des in Kraftstoff vorbereiteten Flugs: eine Wetterkarte in der gewählten Höhe, der senkrechte
+Schnitt der Route, der Schnitt eines Punkts, zur Abflugzeit oder später.
+
+## So geht's
+
+<a id="atmosphere-flight"></a>**Der Flug.** Wetter zeigt immer den in Kraftstoff vorbereiteten Flug (Route, Höhe, Flugdatum). Ohne geplanten Flug
+sagt die Seite es und führt zu Kraftstoff; „Beispiel ansehen" zeigt einen Vorführflug, im Griff als solcher markiert.
+
+<a id="atmosphere-load"></a>**Die Vorhersage laden.** Die Ladeschaltfläche (der Pfeil nach unten, rechts auf der Karte) liest die Vorhersage entlang
+der Route und um sie herum. Beim Öffnen wird nichts abgefragt: die Seite zeigt, was das Gerät schon gespeichert hat.
+Außerhalb des Fluggebiets zeigt die Karte die mit der Anwendung veröffentlichte Weltsynoptik, ohne etwas abzufragen.
+
+<a id="atmosphere-map"></a>**Die Wetterkarte.** Isobaren, Isothermen, Wolken, Wind, Jetstream und Konvektion in der mit dem Höhenchip gewählten
+Höhe („Boden", die angeforderte Höhe, die berechnete Bahn oder eine feste Höhe). Die Ebenen-Schaltfläche (oben links)
+öffnet ein Feld über der Karte: Es wählt, was auf der Karte und im Profil gezeichnet wird, und der Schnitt bleibt unten
+sichtbar und wird bei jedem Kästchen neu gezeichnet; das Kreuz oder Esc schließt es. Tippen Sie auf einen Punkt der Karte, um seinen Schnitt zu öffnen.
+
+<a id="atmosphere-zones"></a>**Das Fluggebiet und die Welt.** Eine dünne Linie umgibt das Fluggebiet: innen die für den Flug geladene feine Vorhersage
+(Météo-France AROME 1,3 km und ARPEGE 0,1° über Frankreich, ICON in Europa); außen die Weltsynoptik (NOAA GFS, mit
+einem 5°-Raster veröffentlicht). Die beiden Modelle sagen nicht ganz dasselbe: ein Sprung der Linien an der Grenzlinie
+ist normal. Das Ebenen-Feld nennt beide Modelle und ihr Raster.
+
+<a id="atmosphere-date"></a>**Das Flugdatum.** Der Regler unter dem Griff verschiebt die Zeit von 0 bis 72 Stunden nach dem geplanten Abflug: Karte,
+Schnitt und Punktschnitte folgen. Liegt ein Teil des Reglers außerhalb der gelesenen Vorhersage (ein geplanter Abflug in
+der Vergangenheit, noch nicht geladene Tage), zeigt ein Band unter dem Regler die abgedeckten Stunden; sonst wird die
+nächste Stunde gezeigt, ⚠ sagt es in der Zeile des Reglers und im Griff, und eine Warnung erscheint.
+
+<a id="atmosphere-cut"></a>**Der Schnitt und die Punktschnitte.** Unter der Karte zeigt der Schnitt die Route von Anfang bis Ende, vom Boden bis
+über die Flughöhe. Tippen Sie darauf, um den Schnitt des nächsten Punkts zu öffnen (das senkrechte Profil der
+Atmosphäre dort); ◀ und ▶ wechseln zum Nachbarschnitt, ✕ kehrt zum Schnitt zurück. Die Zeichnung passt immer in den
+Block, ihre Entfernungsachse sichtbar; vergrößern Sie den Block für mehr Einzelheiten.
+
+<a id="atmosphere-zoom"></a>**Den Schnitt zoomen.** Ziehen Sie den Schnitt mit zwei Fingern auf (oder Strg + Mausrad), um nur einen Teil zu zeigen,
+und verschieben Sie ihn mit zwei Fingern; Entfernungen, Punkte, Winde und die Höhenskala folgen dem gezeigten Teil. Ein
+einzelner Finger behält seine Rolle (Punktschnitt öffnen, Block verschieben). „Ganzer Flug" in der Griffzeile, ein
+Doppeltipp oder ein Doppelklick kehren zur ganzen Route zurück; eine Routenänderung ebenfalls.
+
+<a id="atmosphere-details"></a>**Die Details.** Die Listen-Schaltfläche rechts auf der Karte zeigt im Block die Zusammenfassung
+des Flugs (Entfernung, Profil, Steigflug, mittlerer Wind und Abweichung von der Normatmosphäre im Reiseflug,
+0-°C-Isotherme), die Flugplätze (METAR und TAF) und die Tabelle entlang der berechneten Bahn; tippen Sie auf eine Zeile der
+Tabelle, um den Schnitt dieses Orts zu öffnen.
+
+<a id="atmosphere-settings"></a>**Flug und Einstellungen.** Die Flugzeug-Schaltfläche rechts auf der Karte öffnet den
+gezeigten Flug: seine Quelle (der aktuelle Flug aus Kraftstoff, das Beispiel, eine Datei `current_flight.json` oder eine
+eingegebene Route), den Abflug (UTC), die angeforderte Höhe, die Reisegeschwindigkeit, die Daten (Open-Meteo-Vorhersage
+oder Offline-Vorführung) und das Raster der Karte. Ein zweites Tippen auf die Schaltfläche kehrt zum Schnitt zurück.
+
+<a id="atmosphere-legend"></a>**Die Legende.** Der Chip „i" in der Griffzeile rechts (nach ◀ und ▶) zeigt die Legende des Gezeichneten; ein Tippen auf
+die Legende, den Chip oder Escape schließt sie.
+
+- Schnitt: berechnete Bahn (durchgezogen: Steigflug, Reiseflug, Sinkflug), geplante Höhe (gestrichelt), angeforderte
+  Höhe (gepunktet), Steigflugende und Sinkflugbeginn (TOC, TOD), Wolken (grau, dunkler: mehr Bedeckung), Isothermen
+  alle 5 °C (0 °C dick blau), Inversionen und Vereisung (Schraffur), Wind (Fiedern: halb 5 kt, voll 10, Wimpel 50),
+  geschätzte Cumulus-Basis (grau gepunktet), Gelände, Routenpunkte (senkrechte Linien); bei einem hohen Block die
+  Bänder unten: tiefe, mittlere, hohe Bewölkung, Niederschlag, Sicht unter 8 km.
+- Punktschnitt: Temperatur (rot), Taupunkt (grün), Normatmosphäre (gestrichelt), die drei Höhen des Flugs an diesem
+  Ort, Inversionen, Wolken (Spalte rechts), Wind, Gelände.
+
+## Gut zu wissen
+
+- Die Vorhersage kommt von Open-Meteo (Météo-France AROME und ARPEGE über Frankreich, ICON in Europa, GFS anderswo);
+  die Weltsynoptik kommt von GFS (NOAA), alle 3 Stunden bis 72 Stunden.
+- Das Geladene bleibt auf dem Gerät und dient offline, im Wetterspeicher, den Kraftstoff, Karte und Wetter teilen;
+  die Karte übernimmt seinen Wetterschnitt. Die Aufrufe des Tages bei Open-Meteo werden im Statusblock der
+  Einstellungen gezählt.
+
+<!-- fr: 9e625efa8e4e -->
 
 <!-- chapter: report -->
 # Bericht
@@ -621,97 +712,6 @@ Bericht „Speichern und auf der Website eintragen“ frei.
 - **Offline**: Das Einfügen funktioniert immer; was gespeichert ist, geht bei der nächsten Synchronisierung hinaus.
 
 <!-- fr: cfdf162727aa -->
-
-<!-- chapter: atmosphere -->
-# Wetter
-
-Die Atmosphäre entlang des in Kraftstoff vorbereiteten Flugs: eine Wetterkarte in der gewählten Höhe, der senkrechte
-Schnitt der Route, der Schnitt eines Punkts, zur Abflugzeit oder später.
-
-## So geht's
-
-<a id="atmosphere-flight"></a>**Der Flug.** Wetter zeigt immer den in Kraftstoff vorbereiteten Flug (Route, Höhe, Flugdatum). Ohne geplanten Flug
-sagt die Seite es und führt zu Kraftstoff; „Beispiel ansehen" zeigt einen Vorführflug, im Griff als solcher markiert.
-
-<a id="atmosphere-load"></a>**Die Vorhersage laden.** Die Ladeschaltfläche (der Pfeil nach unten, rechts auf der Karte) liest die Vorhersage entlang
-der Route und um sie herum. Beim Öffnen wird nichts abgefragt: die Seite zeigt, was das Gerät schon gespeichert hat.
-Außerhalb des Fluggebiets zeigt die Karte die mit der Anwendung veröffentlichte Weltsynoptik, ohne etwas abzufragen.
-
-<a id="atmosphere-map"></a>**Die Wetterkarte.** Isobaren, Isothermen, Wolken, Wind, Jetstream und Konvektion in der mit dem Höhenchip gewählten
-Höhe („Boden", die angeforderte Höhe, die berechnete Bahn oder eine feste Höhe). Die Ebenen-Schaltfläche (oben links)
-öffnet ein Feld über der Karte: Es wählt, was auf der Karte und im Profil gezeichnet wird, und der Schnitt bleibt unten
-sichtbar und wird bei jedem Kästchen neu gezeichnet; das Kreuz oder Esc schließt es. Tippen Sie auf einen Punkt der Karte, um seinen Schnitt zu öffnen.
-
-<a id="atmosphere-zones"></a>**Das Fluggebiet und die Welt.** Eine dünne Linie umgibt das Fluggebiet: innen die für den Flug geladene feine Vorhersage
-(Météo-France AROME 1,3 km und ARPEGE 0,1° über Frankreich, ICON in Europa); außen die Weltsynoptik (NOAA GFS, mit
-einem 5°-Raster veröffentlicht). Die beiden Modelle sagen nicht ganz dasselbe: ein Sprung der Linien an der Grenzlinie
-ist normal. Das Ebenen-Feld nennt beide Modelle und ihr Raster.
-
-<a id="atmosphere-date"></a>**Das Flugdatum.** Der Regler unter dem Griff verschiebt die Zeit von 0 bis 72 Stunden nach dem geplanten Abflug: Karte,
-Schnitt und Punktschnitte folgen. Liegt ein Teil des Reglers außerhalb der gelesenen Vorhersage (ein geplanter Abflug in
-der Vergangenheit, noch nicht geladene Tage), zeigt ein Band unter dem Regler die abgedeckten Stunden; sonst wird die
-nächste Stunde gezeigt, ⚠ sagt es in der Zeile des Reglers und im Griff, und eine Warnung erscheint.
-
-<a id="atmosphere-cut"></a>**Der Schnitt und die Punktschnitte.** Unter der Karte zeigt der Schnitt die Route von Anfang bis Ende, vom Boden bis
-über die Flughöhe. Tippen Sie darauf, um den Schnitt des nächsten Punkts zu öffnen (das senkrechte Profil der
-Atmosphäre dort); ◀ und ▶ wechseln zum Nachbarschnitt, ✕ kehrt zum Schnitt zurück. Die Zeichnung passt immer in den
-Block, ihre Entfernungsachse sichtbar; vergrößern Sie den Block für mehr Einzelheiten.
-
-<a id="atmosphere-zoom"></a>**Den Schnitt zoomen.** Ziehen Sie den Schnitt mit zwei Fingern auf (oder Strg + Mausrad), um nur einen Teil zu zeigen,
-und verschieben Sie ihn mit zwei Fingern; Entfernungen, Punkte, Winde und die Höhenskala folgen dem gezeigten Teil. Ein
-einzelner Finger behält seine Rolle (Punktschnitt öffnen, Block verschieben). „Ganzer Flug" in der Griffzeile, ein
-Doppeltipp oder ein Doppelklick kehren zur ganzen Route zurück; eine Routenänderung ebenfalls.
-
-<a id="atmosphere-details"></a>**Die Details.** Die Listen-Schaltfläche rechts auf der Karte zeigt im Block die Zusammenfassung
-des Flugs (Entfernung, Profil, Steigflug, mittlerer Wind und Abweichung von der Normatmosphäre im Reiseflug,
-0-°C-Isotherme), die Flugplätze (METAR und TAF) und die Tabelle entlang der berechneten Bahn; tippen Sie auf eine Zeile der
-Tabelle, um den Schnitt dieses Orts zu öffnen.
-
-<a id="atmosphere-settings"></a>**Flug und Einstellungen.** Die Flugzeug-Schaltfläche rechts auf der Karte öffnet den
-gezeigten Flug: seine Quelle (der aktuelle Flug aus Kraftstoff, das Beispiel, eine Datei `current_flight.json` oder eine
-eingegebene Route), den Abflug (UTC), die angeforderte Höhe, die Reisegeschwindigkeit, die Daten (Open-Meteo-Vorhersage
-oder Offline-Vorführung) und das Raster der Karte. Ein zweites Tippen auf die Schaltfläche kehrt zum Schnitt zurück.
-
-<a id="atmosphere-legend"></a>**Die Legende.** Der Chip „i" in der Griffzeile rechts (nach ◀ und ▶) zeigt die Legende des Gezeichneten; ein Tippen auf
-die Legende, den Chip oder Escape schließt sie.
-
-- Schnitt: berechnete Bahn (durchgezogen: Steigflug, Reiseflug, Sinkflug), geplante Höhe (gestrichelt), angeforderte
-  Höhe (gepunktet), Steigflugende und Sinkflugbeginn (TOC, TOD), Wolken (grau, dunkler: mehr Bedeckung), Isothermen
-  alle 5 °C (0 °C dick blau), Inversionen und Vereisung (Schraffur), Wind (Fiedern: halb 5 kt, voll 10, Wimpel 50),
-  geschätzte Cumulus-Basis (grau gepunktet), Gelände, Routenpunkte (senkrechte Linien); bei einem hohen Block die
-  Bänder unten: tiefe, mittlere, hohe Bewölkung, Niederschlag, Sicht unter 8 km.
-- Punktschnitt: Temperatur (rot), Taupunkt (grün), Normatmosphäre (gestrichelt), die drei Höhen des Flugs an diesem
-  Ort, Inversionen, Wolken (Spalte rechts), Wind, Gelände.
-
-## Gut zu wissen
-
-- Die Vorhersage kommt von Open-Meteo (Météo-France AROME und ARPEGE über Frankreich, ICON in Europa, GFS anderswo);
-  die Weltsynoptik kommt von GFS (NOAA), alle 3 Stunden bis 72 Stunden.
-- Das Geladene bleibt auf dem Gerät und dient offline, im Wetterspeicher, den Kraftstoff, Karte und Wetter teilen;
-  die Karte übernimmt seinen Wetterschnitt. Die Aufrufe des Tages bei Open-Meteo werden im Statusblock der
-  Einstellungen gezählt.
-
-<!-- fr: 9e625efa8e4e -->
-
-<!-- chapter: missions -->
-# Missionen
-
-Die Missionen der Gesellschaft, die des gemeinsamen Repositorys (mit dem CPCO geschrieben): eine auswählen oder zufällig ziehen und dann in Kraftstoff vorbereiten.
-
-## So geht's
-
-<a id="missions-list"></a>**Die Liste.** Die Missionen der neuesten Serien zuerst, nach Familie gruppiert. Jede Zeile nennt die ID, den Titel, die Strecke, den Luftfahrzeugtyp und die geschätzte Blockzeit; „geflogen am …“ kennzeichnet eine Mission, deren Bericht Sie geschrieben haben. Die Suche filtert nach ID, Titel, Flugplatz oder Typ; die Auswahlliste behält eine Familie. Sieben Zeilen werden gezeigt, „N weitere“ klappt den Rest auf. Die Organisationsmissionen einer Übung (die auf Z enden) sind keine Flüge und erscheinen nicht.
-
-<a id="missions-open"></a>**Auswählen oder zufällig ziehen.** Ein Tippen auf eine Zeile öffnet die Mission: ihre Zusammenfassung, ihre Strecke, das Luftfahrzeug, die geschätzte Blockzeit, ihre Hinweise. „Zufällig ziehen“ nimmt eine der Missionen der gefilterten Liste, die Sie noch nicht geflogen sind; „Erneut ziehen“ nimmt eine andere. Nichts startet von selbst: „Diesen Flug vorbereiten“ öffnet Kraftstoff mit Abflug, Ankunft, den Punkten der Mission (als Koordinaten), der Flugfläche und dem Luftfahrzeugtyp; Piste, Verfahren, Kraftstoff und Wetter werden danach wie bei jedem Flug vorbereitet.
-
-## Gut zu wissen
-
-- Das Modul liest die Missionen und ändert sie nie; sie werden im CPCO geschrieben.
-- Eine Mission, deren Datei nicht kommt, sagt es: „nicht gefunden“ (das Repository hat sie nicht), „noch nicht auf dem Gerät“ (die Synchronisierung bringt sie, die Mission erscheint bei ihrer Ankunft) oder „unlesbar“ (mit dem Grund). Dann wird nur das Register gezeigt.
-- Ein Flug in Vorbereitung wird erst nach einer Frage ersetzt; ein gestarteter Flug nie (erst den Start abbrechen oder den Flug beenden).
-- Der Umschlag, der seitenweise Leser und die Zuweisungen kommen später.
-
-<!-- fr: 2cf76a36abfd -->
 
 <!-- chapter: settings -->
 # Einstellungen

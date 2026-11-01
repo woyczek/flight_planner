@@ -289,7 +289,8 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
       - **Header on a phone**: name · **"?"** (contextual help: the chapter of the current screen, legend included)
         · **⚙** (Réglages, carrying the badge: green news, amber attention). The "i" pop-up goes; its lines are the
         status block at the top of Réglages (rule 10 amended: the gear and the help button stay in the header).
-      - **Bottom bar**: Préparer · Carte · CR · Vols · **Météo** (Atmosphere gets its own tab: it is the richest
+      - **Bottom bar**: Préparer · Carte · **Météo** · CR · Vols (after the Map since 1 Nov 2026: the weather is looked at
+        before the report; Atmosphere gets its own tab: it is the richest
         screen and was hidden behind a second tap, "Où est passée la carte météo ?"); Réglages leaves the bar (the
         gear). Performance sheets stay a view of Préparer (Devis / Fiches); the Préparer popover on a second tap
         lists Carburant · Fiches, the principle "second tap = more buttons" is kept for every tab with several

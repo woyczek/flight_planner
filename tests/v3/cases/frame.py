@@ -46,9 +46,9 @@ MODULES = ('fuel', 'maps', 'atmosphere', 'report', 'flightlog')
 TABS = [  # APP.tabs of frame/app.js: id, label in fr en de es, module the tab opens first
     ('prepare', ('Préparer', 'Prepare', 'Vorbereiten', 'Preparar')),
     ('maps', ('Carte', 'Map', 'Karte', 'Mapa')),
+    ('weather', ('Météo', 'Weather', 'Wetter', 'Meteo')),
     ('report', ('CR', 'Report', 'Bericht', 'Informe')),
     ('flightlog', ('Vols', 'Flights', 'Flüge', 'Vuelos')),
-    ('weather', ('Météo', 'Weather', 'Wetter', 'Meteo')),
 ]
 LANG_IX = {'fr': 0, 'en': 1, 'de': 2, 'es': 3}
 STATUS_TITLE = {'fr': 'État', 'en': 'Status', 'de': 'Status', 'es': 'Estado'}
@@ -625,8 +625,8 @@ def a14(c):
         c.ok(not c.shown('#fNav'), f'#{m}: the 210 px rail #fNav is displayed in landscape', 'hidden (the bar became the rail)')
         entries = c.boxes('#fTabs a')
         c.eq(len(entries), 5, 'five entries in the rail', what=f'#{m} rail entries')
-        c.eq(c.js("[...document.querySelectorAll('#fTabs a')].map(a => a.dataset.tab)"), ['prepare', 'maps', 'report', 'flightlog', 'weather'],
-             'the rail has the bar\'s entries, Météo last and no Settings', what=f'#{m} rail tabs')
+        c.eq(c.js("[...document.querySelectorAll('#fTabs a')].map(a => a.dataset.tab)"), ['prepare', 'maps', 'weather', 'report', 'flightlog'],
+             'the rail has the bar\'s entries, Météo after the Map and no Settings', what=f'#{m} rail tabs')
         c.eq(c.js("[...document.querySelectorAll('#fTabs a[aria-current=page]')].map(a => a.dataset.tab)"), ['maps' if m == 'maps' else 'weather'],
              'the entry of the module shown is the selected one', what=f'#{m} selected rail entry')
         for e in entries:
@@ -2945,3 +2945,16 @@ def a78(c):
     c.ok(want in got[0], got[0], 'a protected branch: the cause (the branch main not open to Developers) and the remedy (Pilots’ tokens › Open the branch)')
     c.ok(norm(tx('frame/app.js', 'http403', c.lang)) + ' (GitLab 403)' in got[1] and want not in got[1], got[1], 'another 403: the plain phrase')
     c.ok(all('glpat_test' not in g for g in got), '', 'never the token')
+
+
+
+@case('A79', 'Pilot’s entries follow the pilot’s sequence: prepare, map, weather, report, flights', 'A', designs=('standard',), screens=False, night=False,
+      rule='Simplification 1 Nov (the user: « the weather button should come right after the map: we look at the weather before writing a report »): the bar and the left column of Pilot follow Préparer · Carte · Météo · CR · Vols, then Site in the column')
+def a79(c):
+    c.open('fuel', docs=LEVEL3)
+    tabs = c.js("[...document.querySelectorAll('#fTabs a')].map(a => a.dataset.tab)")
+    c.eq(tabs, ['prepare', 'maps', 'weather', 'report', 'flightlog'], 'the bar: Préparer, Carte, Météo, CR, Vols', what='bar')
+    rail = [x for x in c.js("[...document.querySelectorAll('#fMenu a[data-id]')].map(a => a.dataset.id)") if x]
+    want = ['fuel', 'missions', 'maps', 'atmosphere', 'report', 'flightlog', 'website']
+    c.eq([x for x in want if x in rail], [x for x in rail if x in want], 'the column: Carburant, Missions, Carte, Météo, Compte rendu, Mes vols, Site', what='column')
+    c.ok(rail.index('atmosphere') == rail.index('maps') + 1 and rail.index('report') == rail.index('atmosphere') + 1, str(rail), 'Météo right after the Map, before the report')

@@ -8,7 +8,7 @@ history are in DECISIONS.md, the contracts with other modules in INTEGRATION.md.
 
 ## 1. Place in the application
 
-- Level 1 module, its own tab of the bottom bar: Préparer · Carte · CR · Vols · **Météo** (rule 14), `cloud` icon; on a
+- Level 1 module, its own tab of the bottom bar: Préparer · Carte · **Météo** · CR · Vols (rule 14; after the Map since 1 Nov 2026), `cloud` icon; on a
   screen, its entry in the rail. Address `#atmosphere`; `#atmosphere?donnees=demo` (or `?data=demo`) opens the offline
   demonstration (§ 6).
 - Help: the chapter `modules/atmosphere/help/<lang>.md` ("# Météo", built into `frame/help/pilot.*.md`), four

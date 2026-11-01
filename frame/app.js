@@ -150,16 +150,30 @@
     name: ['Pilote', 'Pilot', 'Pilot', 'Piloto'],
     icon: 'plane',
     tint: 'var(--sog-accent)',
-    // un module = un verbe ; sept au plus
+    // un module = un verbe ; sept au plus ; l'ordre suit la séquence du pilote : préparer (Carburant, Missions), la Carte,
+    // la Météo avant le compte rendu, le CR, ses vols, puis le Site (l'utilisateur, 1er nov. 2026 : « on regarde la météo
+    // avant de produire un CR »)
     modules: [{
       id: 'fuel',
       label: ['Carburant', 'Fuel', 'Kraftstoff', 'Combustible'],
       icon: 'fuel',
       pane: 'maps' // volet proposé à côté sur grand écran (vue double)
     }, {
+      // les missions de la compagnie (modules/missions/SPEC.md, lot 2 réduit du 31 oct. 2026) : choisir ou tirer au sort, puis
+      // « Préparer ce vol » dans Carburant ; sur le téléphone, dans le groupe de l'onglet Préparer
+      id: 'missions',
+      label: ['Missions', 'Missions', 'Missionen', 'Misiones'],
+      icon: 'target'
+    }, {
       id: 'maps',
       label: ['Carte', 'Map', 'Karte', 'Mapa'],
       icon: 'map'
+    }, {
+      // module dédié (vue fixe, gabarit de la Carte) : son onglet « Météo » de la barre du téléphone (APP.tabs, règle 14), dans
+      // le rail sur écran ; réinclus plus tard dans Préparer et la Carte (modules/atmosphere/DECISIONS.md, 24 oct 2026)
+      id: 'atmosphere',
+      label: ['Météo', 'Weather', 'Wetter', 'Meteo'],
+      icon: 'layers'
     }, {
       id: 'report',
       label: ['Compte rendu', 'Report', 'Bericht', 'Informe'],
@@ -173,18 +187,6 @@
       id: 'website',
       label: ['Site', 'Website', 'Website', 'Sitio'],
       icon: 'globe'
-    }, {
-      // module dédié (vue fixe, gabarit de la Carte) : son onglet « Météo » de la barre du téléphone (APP.tabs, règle 14), dans
-      // le rail sur écran ; réinclus plus tard dans Préparer et la Carte (modules/atmosphere/DECISIONS.md, 24 oct 2026)
-      id: 'atmosphere',
-      label: ['Météo', 'Weather', 'Wetter', 'Meteo'],
-      icon: 'layers'
-    }, {
-      // les missions de la compagnie (modules/missions/SPEC.md, lot 2 réduit du 31 oct. 2026) : choisir ou tirer au sort, puis
-      // « Préparer ce vol » dans Carburant ; sur le téléphone, dans le groupe de l'onglet Préparer
-      id: 'missions',
-      label: ['Missions', 'Missions', 'Missionen', 'Misiones'],
-      icon: 'target'
     }],
     // barre d'onglets du téléphone (760 px et moins), cinq au plus (V3_SPECIFICATION.md § 7.1 règle 14) : un onglet = un groupe
     // de modules (modules : l'onglet reste choisi tant que l'un d'eux est affiché ; le toucher ouvre le dernier montré du groupe
@@ -211,6 +213,11 @@
       icon: 'map',
       modules: ['maps']
     }, {
+      id: 'weather',
+      label: ['Météo', 'Weather', 'Wetter', 'Meteo'],
+      icon: 'cloud',
+      modules: ['atmosphere']
+    }, {
       id: 'report',
       label: ['CR', 'Report', 'Bericht', 'Informe'],
       icon: 'edit',
@@ -220,11 +227,6 @@
       label: ['Vols', 'Flights', 'Flüge', 'Vuelos'],
       icon: 'list',
       modules: ['flightlog']
-    }, {
-      id: 'weather',
-      label: ['Météo', 'Weather', 'Wetter', 'Meteo'],
-      icon: 'cloud',
-      modules: ['atmosphere']
     }],
     // écrans de service : écrans du cadre ouverts par-dessus le module courant (comme les Réglages), dessinés par un service ;
     // le cadre ne connaît que cette déclaration (frame/INTEGRATION.md § 13) : scripts chargés à la première ouverture, niveau

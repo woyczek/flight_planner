@@ -307,7 +307,8 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
   service screens, name), chosen by the address of the page — `/frame/?app=maintenance`; no `app` or an unknown one:
   `pilot`; nothing is kept on the device (later: the role in the registry). The application lists its modules (order,
   seven at most); a module never knows where it is shelved.
-  - **Pilot**: Carburant, Carte, Compte rendu, Mes vols, Site, Météo (as before); no Données in its rail.
+  - **Pilot**: Carburant, Missions, Carte, Météo, Compte rendu, Mes vols, Site — the pilot's sequence (the weather is looked
+    at before the report, 1 Nov 2026); no Données in its rail.
   - **Maintenance**: Données (`modules/data`), then links of the rail that are not modules (`APP.links`): « Jetons des
     pilotes » (`#pilot-tokens`, with a launcher, G2: GitLab project access tokens of the pilots, created, listed and
     revoked by the launcher with the administrator's token; `frame/settings/pilot_tokens.js`; that token — a personal
@@ -339,8 +340,8 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
 - On a screen (wider than 760 px), the verbs sit in a column on the left (the **rail**): every module that has a screen,
   the current one marked. On a phone (760 px or narrower) there is **no menu button and no drawer**: a **bottom tab
   bar** replaces them (below).
-- **Bottom tab bar** (phone only, `APP.tabs`, five tabs at most): **Préparer · Carte · CR · Vols · Météo** (Prepare · Map ·
-  Report · Flights · Weather; Vorbereiten · Karte · Bericht · Flüge · Wetter; Preparar · Mapa · Informe · Vuelos · Meteo).
+- **Bottom tab bar** (phone only, `APP.tabs`, five tabs at most): **Préparer · Carte · Météo · CR · Vols** (Prepare · Map ·
+  Weather · Report · Flights; Vorbereiten · Karte · Wetter · Bericht · Flüge; Preparar · Mapa · Meteo · Informe · Vuelos).
   It is the user's "option A" of 24 Oct 2026 (the flight's path, in the order of a day; `docs/technique/V3_SPECIFICATION.md`
   § 7.1), whose last tab, Réglages, gave way to **Météo** by rule 14 (24 Oct, 22:15: the atmosphere screen is the richest and
   was hidden behind a second touch). **Settings is the ⚙ of the header**, which carries the state badge.
