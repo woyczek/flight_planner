@@ -1000,6 +1000,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 148 | Launcher: the administrator's GitLab token set and tested from the screen, `/__setup/gitlab/admin` (ceda4da6c) | **to fix** (fixed in 149) |
 | 149 | A changed GitLab instance needs its own token (ca9e23445): the point of 148 fixed; pilot tokens' count (01b6f511f) | acceptable |
 | 150 | Group of 1 November noon: one enrolment path (7272b0414), the administrator's assistant card (9d0700ad3) | acceptable |
+| 151 | Group of 1 November afternoon: the pilot token just created shown alone (6b90f3463) | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2265,6 +2266,11 @@ code, the link and the file of the same configuration (the export unchanged, wit
 pilot's only entry. The QR code is read by the phone's own camera, which opens the link: the suite asks for no camera and
 the configuration goes through the same `validate` (119) as a pasted link or a file. The administrator's assistant card
 only reads (`secrets`, which returns indicators only, and the pilot tokens' count) and links to the existing cards.
+
+**151. Group of 1 November afternoon (6b90f3463) — acceptable.** The token just created is shown alone in a read-only
+field with “Copy”, escaped into its `value` attribute (as it was escaped into a `<code>` before), never in the address,
+the journal or a `data-*` attribute, and gone at the next drawing; the list of existing tokens carries only the trigram,
+dates and state. The other commits of the group have no surface (build cycles, texts, a test case).
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
