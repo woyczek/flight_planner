@@ -62,30 +62,51 @@ class TooLarge(OSError):
     """Réponse plus grande que MAX_BYTES : lecture arrêtée, rien n'est écrit (une erreur réseau pour l'appelant)."""
 
 
-def get(url, since=None, absent_ok=False):
-    """Corps de la réponse ; None si le serveur répond 304 (rien de plus récent que since, date du fichier local). absent_ok : un
-    404 / 410 est une absence attendue (un export facultatif), levée comme avant mais jamais écrite dans la console du lanceur."""
+_OPENERS = {}
+
+
+def _open(req, timeout, quiet):
+    """La requête par un ouvreur du lanceur (outbound : User-Agent, redirections sur le même hôte, console) qui n'écrit pas les codes
+    de quiet : un 304 n'est jamais un échec (la copie locale est bonne), un 404 / 410 d'un export facultatif une absence attendue."""
+    op = _OPENERS.get(quiet) or _OPENERS.setdefault(quiet, outbound.opener(quiet=quiet))
+    return op.open(req, timeout=timeout)
+
+
+def _body(r):
+    """Le corps d'une réponse, lu par morceaux et arrêté au plafond (un serveur qui ne dit pas la taille, ou ment) : TooLarge."""
+    size = r.headers.get('Content-Length')
+    if size and size.isdigit() and int(size) > MAX_BYTES:
+        raise TooLarge(f'réponse de {int(size) // 1048576} Mo, plus de {MAX_BYTES // 1048576} Mo : téléchargement arrêté')
+    parts, n = [], 0
+    while True:
+        part = r.read(CHUNK)
+        if not part:
+            return b''.join(parts)
+        n += len(part)
+        if n > MAX_BYTES:
+            raise TooLarge(f'réponse de plus de {MAX_BYTES // 1048576} Mo : téléchargement arrêté')
+        parts.append(part)
+
+
+def get(url, since=None, absent_ok=False, copy=None):
+    """Corps de la réponse ; None si le serveur répond 304 (rien de plus récent que since, date du fichier local copy) : la copie est
+    bonne, et un 304 n'est jamais écrit dans la console du lanceur. Un 304 sans copie derrière lui (aucune condition envoyée, ou copy
+    disparue entre-temps) redemande une fois sans condition (Cache-Control: no-cache) au lieu d'échouer ; un second 304 est alors une
+    erreur. absent_ok : un 404 / 410 est une absence attendue (un export facultatif), levée comme avant mais jamais écrite dans la console."""
     headers = dict(UA)
     if since:
         headers['If-Modified-Since'] = email.utils.formatdate(since, usegmt=True)
+    absent = (404, 410) if absent_ok else ()
     try:
-        with outbound.urlopen(urllib.request.Request(url, headers=headers), timeout=TIMEOUT, absent_ok=absent_ok) as r:
-            size = r.headers.get('Content-Length')
-            if size and size.isdigit() and int(size) > MAX_BYTES:
-                raise TooLarge(f'réponse de {int(size) // 1048576} Mo, plus de {MAX_BYTES // 1048576} Mo : téléchargement arrêté')
-            parts, n = [], 0
-            while True:  # lecture par morceaux : un serveur qui ne dit pas la taille (ou ment) est arrêté au plafond
-                part = r.read(CHUNK)
-                if not part:
-                    return b''.join(parts)
-                n += len(part)
-                if n > MAX_BYTES:
-                    raise TooLarge(f'réponse de plus de {MAX_BYTES // 1048576} Mo : téléchargement arrêté')
-                parts.append(part)
+        with _open(urllib.request.Request(url, headers=headers), TIMEOUT, (304, *absent)) as r:
+            return _body(r)
     except urllib.error.HTTPError as e:
-        if e.code == 304:
+        if e.code != 304:
+            raise
+        if since and (copy is None or os.path.exists(copy)):
             return None
-        raise
+    with _open(urllib.request.Request(url, headers={**UA, 'Cache-Control': 'no-cache'}), TIMEOUT, absent) as r:
+        return _body(r)
 
 
 def mtime(path):
@@ -139,7 +160,7 @@ def openaip(data, countries, layers=OPENAIP_LAYERS, absent=None, known=()):
                     absent.append(f'{cc}_{layer}')
                 continue
             try:
-                body = get(OPENAIP.format(cc=cc, layer=layer), since=mtime(path), absent_ok=True)
+                body = get(OPENAIP.format(cc=cc, layer=layer), since=mtime(path), absent_ok=True, copy=path)
             except urllib.error.HTTPError as e:
                 if e.code in (403, 404):  # couche absente pour ce pays
                     if absent is not None:
@@ -250,7 +271,7 @@ def ukmil(data):
     outputs = ('ukmil_enr52.geojson', 'ukmil_aara-tracks.xml')
     pdf = os.path.join(folder, 'ukmil_ENR-5-2.pdf')
     try:
-        raw = get(ukmil_aip.URL, since=mtime(pdf))
+        raw = get(ukmil_aip.URL, since=mtime(pdf), copy=pdf)
     except OSError as e:
         return [], [f'UK Mil AIP : {e}']
     # PDF inchangé (304, ou même contenu) et déjà lu : ni relecture du PDF ni réécriture
@@ -290,7 +311,7 @@ def navcan(data):
         url = navcan_dah.current_url(get(navcan_dah.PAGE).decode('utf-8', 'replace'))
         if not url:
             return [], ['NAV CANADA : aucun lien vers le DAH sur la page des guides opérationnels (page changée ?)']
-        raw = get(url, since=mtime(pdf))  # adresse datée : une nouvelle édition répond toujours 200
+        raw = get(url, since=mtime(pdf), copy=pdf)  # adresse datée : une nouvelle édition répond toujours 200
     except OSError as e:
         return [], [f'NAV CANADA : {e}']
     # édition inchangée (304, ou même contenu) et déjà lue : ni relecture du PDF ni réécriture

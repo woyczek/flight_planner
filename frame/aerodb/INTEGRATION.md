@@ -378,6 +378,10 @@ const p = await ctx.launcher.job('regen/job', { set: 'base', verb: 'purge', args
   two-letter code (`cyn`, `kas`, `sol`), gives the source `{ state: 'skipped', error: 'absent' }` and the zone stays `done`. The absent
   layers are remembered for the AIRAC cycle in `tools/.openaip_absent.json` (the workstation's, never versioned, never in `data/`) and
   not asked again until the next cycle. A 5xx, a time-out or an unreadable answer stays a failure, said per file.
+- **A 304 Not Modified is « unchanged »** (1 Nov 2026, the user's log after 822a0ffbb: « [sortant] échec … de_asp.geojson : HTTP 304 »): the
+  answer to a conditional request (`If-Modified-Since`, the date of the local copy) keeps the copy, counts as a success (`unchanged`) and is
+  never written in the launcher's console (`aero_fetch` asks through `outbound.opener(quiet=(304, …))`). A 304 with no copy behind it (no
+  condition sent, or the copy gone meanwhile) is asked again once without condition (`Cache-Control: no-cache`); a second 304 is an error.
   What `aero_fetch` takes from a server is checked before use (security review, 30 Oct 2026): an ENAIRE file name read from its page must match
   `^LE_[A-Za-z0-9._-]+_AIP_DS_FULL_(Airspace|EnRoute)\.xml$` and resolve under `sia/aixm5` (`proc_pdf.safe_path`, for the write and for the removal of the
   previous amendment); the NAV CANADA guide address is requested only in `https` on `www.navcanada.ca`; a response over **200 MB** (announced or read) is stopped,

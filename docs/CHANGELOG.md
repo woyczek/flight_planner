@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data: a 304 Not Modified is « unchanged », not a failure** (`tools/aero_fetch.py`; INTEGRATION, DECISIONS; test K61) — the launcher's
+  console no longer writes « échec … HTTP 304 » for an openAIP layer that has not changed: the local copy is kept and counted as a success;
+  a 304 with no copy behind it is asked again without condition.
 - **Data: a layer openAIP does not export for a country says so** (`modules/data/model_sets.js` `sourceRows`, `panels.js`,
   `texts.js`; L14, L15) — after aerodb 822a0ffbb (`{ state: 'skipped', error: 'absent' }`), the source line reads « ignorée : pas
   d'export openAIP pour ce pays » ×4 instead of a bare « ignorée »; the zone's line already lists its sources one by one.

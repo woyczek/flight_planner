@@ -89,7 +89,7 @@ class _Net:
     def __init__(self, AF, routes, on_call=None):
         self.AF, self.routes, self.calls, self.on_call, self.saved = AF, routes, [], on_call, None
 
-    def __call__(self, url, since=None, absent_ok=False):
+    def __call__(self, url, since=None, absent_ok=False, copy=None):
         self.calls.append((url, since))
         if self.on_call:
             self.on_call(url)
@@ -542,11 +542,11 @@ def k57(c):
     c.eq(NC.current_url('<a href="https://www.navcanada.ca/a/dah20260101.pdf"><a href="https://www.navcanada.ca/a/dah20270101.pdf">', '20261029'),
          'https://www.navcanada.ca/a/dah20260101.pdf', 'NAV CANADA: the latest edition already in force', what='navcan in force')
     # --- get(): 200 MB at most, stopped cleanly (an OSError: the source fails as network, the present file is kept)
-    saved = (AF.outbound.urlopen, AF.MAX_BYTES)
+    saved = (AF._open, AF.MAX_BYTES)
     try:
         AF.MAX_BYTES = 1000
         for body, length, ok in ((b'x' * 999, 999, True), (b'x' * 1000, None, True), (b'x' * 1001, None, False), (b'x' * 10, 5000, False), (b'x' * 3000, 10, False)):
-            AF.outbound.urlopen = lambda req, timeout=None, absent_ok=False, b=body, n=length: _Resp(b, n)
+            AF._open = lambda req, timeout, quiet, b=body, n=length: _Resp(b, n)
             try:
                 got = AF.get('https://example.invalid/x')
                 res = ('ok', len(got))
@@ -554,7 +554,7 @@ def k57(c):
                 res = ('too-large', BS.classify(e)['error'])
             c.eq(res, ('ok', len(body)) if ok else ('too-large', 'network'), f'get: {len(body)} bytes, Content-Length {length} -> {"read" if ok else "stopped (network)"}', what=f'get {len(body)}/{length}')
     finally:
-        AF.outbound.urlopen, AF.MAX_BYTES = saved
+        AF._open, AF.MAX_BYTES = saved
     c.eq(AF.MAX_BYTES, 200 * 1024 * 1024, 'the cap is 200 MB per response', what='MAX_BYTES')
 
 
@@ -603,17 +603,17 @@ def k60(c):
     # aero_fetch asks the launcher's opener not to write an expected absence in its console (outbound absent_ok), and does write the rest
     seen = []
 
-    def fake(req, timeout=None, absent_ok=False):
-        seen.append((req.full_url.rsplit('/', 1)[-1], absent_ok))
+    def fake(req, timeout, quiet):
+        seen.append((req.full_url.rsplit('/', 1)[-1], 404 in quiet))
         raise urllib.error.HTTPError(req.full_url, 404, 'not found', {}, None)
-    saved = AF.outbound.urlopen
-    AF.outbound.urlopen = fake
+    saved = AF._open
+    AF._open = fake
     try:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
             gone = []
             out, err = AF.openaip(td, ['kh'], layers=('rpp',), absent=gone)
     finally:
-        AF.outbound.urlopen = saved
+        AF._open = saved
     c.eq((seen, out, err, gone), ([('kh_rpp.geojson', True)], [], [], ['kh_rpp']), 'openaip(): asked with absent_ok, the 404 absent, no error', what='absent_ok')
     import contextlib
     import io
@@ -638,3 +638,75 @@ def k60(c):
         lines.append(buf.getvalue().count('[sortant] échec'))
     c.eq(lines, [0, 1, 1], "the launcher's console: an expected absence (404, quiet) not written; a 503, or a 404 not declared expected, written", what='console')
 
+
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------
+@case('K61', 'Raw sources: a 304 Not Modified is « unchanged » (the copy kept, nothing in the launcher\'s console); a 304 without a copy asks again without condition', 'K', static=True,
+      rule='frame/aerodb/INTEGRATION (fetch): a conditional request answered 304 keeps the local copy and is a success; only a 5xx, a time-out or an unreadable answer is a failure; a 304 with no copy behind it is asked again without condition')
+def k61(c):
+    import contextlib
+    import email.message
+    import io
+    import urllib.response
+    RJ, BS, AF, DS = _mods()
+    import outbound  # tools/ est dans le chemin une fois _mods() passé
+    lay = json.dumps({'type': 'FeatureCollection', 'features': [{'type': 'Feature'}]}).encode()
+
+    class Server(urllib.request.BaseHandler):  # le serveur d'essai, sans réseau : 304 à une requête conditionnelle (ou toujours), sinon le fichier
+        handler_order = 100
+
+        def __init__(self, always_304=False):
+            self.always, self.seen = always_304, []
+
+        def https_open(self, req):
+            cond, fresh = req.has_header('If-modified-since'), req.has_header('Cache-control')
+            self.seen.append(('cond' if cond else 'fresh' if fresh else 'plain', req.full_url.rsplit('/', 1)[-1]))
+            if cond or (self.always and not fresh):
+                raise urllib.error.HTTPError(req.full_url, 304, 'Not Modified', email.message.Message(), None)
+            h = email.message.Message()
+            h['Content-Length'] = str(len(lay))
+            r = urllib.response.addinfourl(io.BytesIO(lay), h, req.full_url, 200)
+            r.msg = 'OK'
+            return r
+
+    saved = dict(AF._OPENERS)
+    try:
+        for always, label in ((False, 'copy present'), (True, 'no copy')):
+            srv = Server(always)
+            AF._OPENERS.clear()
+            for quiet in ((304, 404, 410), (404, 410), (304, ), ()):
+                AF._OPENERS[quiet] = outbound.opener(srv, quiet=quiet)
+            with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+                path = Path(td) / 'sia' / 'openaip' / 'de_asp.geojson'
+                if not always:
+                    path.parent.mkdir(parents=True)
+                    path.write_bytes(b'{"old": 1}')
+                    m0 = path.stat().st_mtime_ns
+                buf = io.StringIO()
+                with contextlib.redirect_stdout(buf):
+                    out, err = AF.openaip(td, ['de'], layers=('asp', ))
+                if not always:
+                    c.eq((out, err, path.read_bytes(), path.stat().st_mtime_ns, srv.seen), ([{'name': 'de_asp.geojson', 'bytes': 10, 'unchanged': True}], [], b'{"old": 1}', m0,
+                                                                                         [('cond', 'de_asp.geojson')]),
+                         '304: unchanged, the copy kept as it was (bytes and date), one conditional request', what='304 copy')
+                else:
+                    c.eq((err, path.read_bytes(), srv.seen), ([], lay, [('plain', 'de_asp.geojson'), ('fresh', 'de_asp.geojson')]),
+                         '304 with no copy behind it (no condition sent): asked again without condition, the file written, no failure', what='304 no copy')
+                c.eq(buf.getvalue().count('[sortant]'), 0, f'{label}: nothing in the launcher\'s console', what=f'console {label}')
+        # a 304 again on the fresh request is an error (the server is wrong), said
+        srv = Server(True)
+        srv.https_open = lambda req: (_ for _ in ()).throw(urllib.error.HTTPError(req.full_url, 304, 'Not Modified', email.message.Message(), None))
+        AF._OPENERS.clear()
+        for quiet in ((304, ), ()):
+            AF._OPENERS[quiet] = outbound.opener(srv, quiet=quiet)
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            try:
+                AF.get('https://s3.openaip.net/x/de_asp.geojson')
+                got = 'returned'
+            except urllib.error.HTTPError as e:
+                got = e.code
+        c.eq((got, buf.getvalue().count('[sortant] échec')), (304, 1), 'a 304 to the request without condition is an error, said once', what='304 twice')
+    finally:
+        AF._OPENERS.clear()
+        AF._OPENERS.update(saved)

@@ -2247,3 +2247,14 @@ page is served to `Sec-Fetch-Site: none`, refused to `cross-site`, and, where th
 - **Bench**: K60 (absent layers, one line, the zone done, the cache per cycle and outside data/, no second request, a new cycle asks again,
   a 503 a failure, the console of `outbound` quiet for an expected 404 only); K54 updated (es and us without export: absent, not failed).
 
+## 1 November 2026 — a 304 Not Modified is « unchanged », never a failure
+
+- **The user's log after 822a0ffbb**: « [sortant] échec : s3.openaip.net/…/de_asp.geojson : HTTP 304 » (and `be_asp`, `es_asp`). urllib raises
+  a 304 as an `HTTPError`; `aero_fetch.get` already read it as « the copy is good », but the launcher's opener wrote every `HTTPError` first.
+- **Now**: `aero_fetch` opens through `outbound.opener(quiet=…)` (the launcher's own API, nothing changed in `outbound.py`) with 304 always
+  quiet, and 404 / 410 too for an optional export (`absent_ok`). Only `aero_fetch` sends conditional requests in the tools.
+- **A 304 without a copy**: `get(url, since, copy=path)` returns « unchanged » only when the copy is there; otherwise it asks again without
+  condition (`Cache-Control: no-cache`) rather than fail on a file it does not have; a 304 to that request is a real error, said.
+- **Bench**: K61 (a 304 keeps the copy, bytes and date, one conditional request, nothing in the console; a 304 with no copy asks again
+  without condition and writes the file; a second 304 is an error said once); K54, K57 and K60 follow the new opener.
+
