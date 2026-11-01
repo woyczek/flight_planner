@@ -62,13 +62,14 @@ class TooLarge(OSError):
     """Réponse plus grande que MAX_BYTES : lecture arrêtée, rien n'est écrit (une erreur réseau pour l'appelant)."""
 
 
-def get(url, since=None):
-    """Corps de la réponse ; None si le serveur répond 304 (rien de plus récent que since, date du fichier local)."""
+def get(url, since=None, absent_ok=False):
+    """Corps de la réponse ; None si le serveur répond 304 (rien de plus récent que since, date du fichier local). absent_ok : un
+    404 / 410 est une absence attendue (un export facultatif), levée comme avant mais jamais écrite dans la console du lanceur."""
     headers = dict(UA)
     if since:
         headers['If-Modified-Since'] = email.utils.formatdate(since, usegmt=True)
     try:
-        with outbound.urlopen(urllib.request.Request(url, headers=headers), timeout=TIMEOUT) as r:
+        with outbound.urlopen(urllib.request.Request(url, headers=headers), timeout=TIMEOUT, absent_ok=absent_ok) as r:
             size = r.headers.get('Content-Length')
             if size and size.isdigit() and int(size) > MAX_BYTES:
                 raise TooLarge(f'réponse de {int(size) // 1048576} Mo, plus de {MAX_BYTES // 1048576} Mo : téléchargement arrêté')
@@ -120,7 +121,10 @@ def write(path, data):
     return True
 
 
-def openaip(data, countries, layers=OPENAIP_LAYERS):
+def openaip(data, countries, layers=OPENAIP_LAYERS, absent=None, known=()):
+    """Exports d'openAIP par pays et couche. Une couche qu'openAIP n'a pas pour ce pays (403, 404) est absente, jamais un échec :
+    rien dans errors, son nom (« kh_rpp ») ajouté à absent quand la liste est donnée ; une couche de known (absente ce cycle, déjà
+    vue) n'est pas redemandée. Un 5xx, un délai ou une réponse illisible restent des échecs, dits par fichier."""
     out, errors = [], []
     for cc in countries:
         cc = cc.strip().lower()
@@ -130,10 +134,16 @@ def openaip(data, countries, layers=OPENAIP_LAYERS):
         for layer in layers:
             name = f'{cc}_{layer}.geojson'
             path = os.path.join(data, 'sia', 'openaip', name)
+            if f'{cc}_{layer}' in known:  # absente ce cycle : pas redemandée
+                if absent is not None:
+                    absent.append(f'{cc}_{layer}')
+                continue
             try:
-                body = get(OPENAIP.format(cc=cc, layer=layer), since=mtime(path))
+                body = get(OPENAIP.format(cc=cc, layer=layer), since=mtime(path), absent_ok=True)
             except urllib.error.HTTPError as e:
                 if e.code in (403, 404):  # couche absente pour ce pays
+                    if absent is not None:
+                        absent.append(f'{cc}_{layer}')
                     continue
                 errors.append(f'{cc}_{layer} : HTTP {e.code}')
                 continue

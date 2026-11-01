@@ -9,6 +9,8 @@ Rules covered
   * K55 base/purge on a temporary data tree in a temporary git repository: the zone's sources and caches removed, tracked files kept (kept-tracked), sia/base,
     proc/ and other zones never touched, dry run, shared-fr, a path that escapes refused, git failing.
   * K56 the data repository template ignores the raw sources (git check-ignore on a temporary repository).
+  * K60 an openAIP export a country does not have (404) is absent, never a failure: one line for the pass, nothing in the launcher's
+    console, the zone done, remembered for the AIRAC cycle outside data/ and not asked again; a 5xx stays a failure per file.
   * K57 what aero_fetch takes from a server page or response: ENAIRE file names (strict pattern, resolved under sia/aixm5), the NAV CANADA address (https on its
     own host only), the size of a response (200 MB at most, stopped cleanly).
 """
@@ -65,7 +67,7 @@ def _sub(td, name):
 
 
 def _ctx(DS, data):
-    return {'data': str(data), 'secrets': str(Path(data).parent / 'secrets'), 'git_cmd': DS.git_cmd, 'git_env': DS.git_env}
+    return {'data': str(data), 'secrets': str(Path(data).parent / 'secrets'), 'git_cmd': DS.git_cmd, 'git_env': DS.git_env, 'cache': str(Path(data).parent / 'cache')}
 
 
 def _run(RJ, BS, verb, args, ctx, cancel=False):
@@ -87,7 +89,7 @@ class _Net:
     def __init__(self, AF, routes, on_call=None):
         self.AF, self.routes, self.calls, self.on_call, self.saved = AF, routes, [], on_call, None
 
-    def __call__(self, url, since=None):
+    def __call__(self, url, since=None, absent_ok=False):
         self.calls.append((url, since))
         if self.on_call:
             self.on_call(url)
@@ -227,16 +229,17 @@ def k54(c):
             c.eq(z['gb']['sources']['ukmil'], {'state': 'unchanged', 'files': 1, 'bytes': 2048}, 'gb UK Mil: the provider says nothing changed', what='gb ukmil')
             c.eq(z['gb']['sources']['nats'], {'state': 'manual', 'error': 'manual'}, 'gb NATS: never downloaded, a manual source', what='gb nats')
             c.eq((z['gb']['state'], z['gb']['done'], z['gb']['total']), ('done', 2, 2), 'gb: done, 2 of 2 downloadable sources', what='gb zone')
-            c.eq(z['es']['sources']['openaip'], {'state': 'failed', 'error': 'http', 'status': 404}, 'es: no openAIP export (the four layers absent) is an http 404', what='es openaip')
+            c.eq(z['es']['sources']['openaip'], {'state': 'skipped', 'error': 'absent'}, 'es: no openAIP export (the four layers absent) is absent, not a failure', what='es openaip')
             c.eq(z['es']['sources']['enaire'], {'state': 'skipped', 'error': 'personal'}, 'es: ENAIRE is a personal licence, not declared: skipped, never fetched', what='es enaire')
-            c.eq((z['es']['state'], z['es']['done'], z['es']['total'], z['es']['error']), ('failed', 1, 1, 'http'), 'es: failed with the first code; the skipped source is not counted', what='es zone')
+            c.eq((z['es']['state'], z['es']['done'], z['es']['total'], z['es'].get('error')), ('done', 1, 1, None), 'es: done (nothing to download is not a failure); the skipped source is not counted', what='es zone')
             c.eq(z['ca']['sources']['openaip'], {'state': 'failed', 'error': 'http', 'status': 500, 'files': 1, 'bytes': len(apt)}, 'ca openAIP: one layer 500, another written: failed, the file still counted', what='ca openaip')
             c.eq(z['ca']['sources']['navcan'], {'state': 'failed', 'error': 'network'}, 'ca NAV CANADA: a time-out is a network failure', what='ca navcan')
             c.ok(not any(u for u, s in net.calls if 'enaire' in u.lower()), str(net.calls), 'ENAIRE was not asked for anything')
             c.eq(sorted(k for k in z['gb']['sources']), ['nats', 'openaip', 'ukmil'], 'the view carries downloadable, manual and skipped sources; xplane (local) and mora (computed) are left out', what='sources in the view')
             c.eq(res['fetched'], ['gb', 'ca'], 'fetched: the zones where something changed (ca wrote a layer although another failed)', what='fetched')
-            c.eq(res['unchanged'], [], 'unchanged: none', what='unchanged')
-            c.eq(res['failed'], [{'zone': 'es', 'source': 'openaip', 'error': 'http', 'status': 404}, {'zone': 'ca', 'source': 'navcan', 'error': 'network'},
+            c.eq(res['unchanged'], ['es'], 'unchanged: es (nothing there, nothing changed)', what='unchanged')
+            c.eq(res['absent'], ['ca_nav', 'ca_rpp', 'es_apt', 'es_asp', 'es_nav', 'es_rpp', 'gb_nav', 'gb_rpp'], 'absent: the layers openAIP does not have (403, 404)', what='absent')
+            c.eq(res['failed'], [{'zone': 'ca', 'source': 'navcan', 'error': 'network'},
                                  {'zone': 'ca', 'source': 'openaip', 'error': 'http', 'status': 500}], 'failed: zone, source, code (+ status), in the order they ran', what='failed')
             c.eq((res['ok'], res['reason']), (False, 'partial'), 'not ok, partial: others succeeded', what='verdict')
             nats = next(m for m in res['manual'] if m['source'] == 'nats')
@@ -249,7 +252,9 @@ def k54(c):
             c.ok((data / 'sia' / 'openaip' / 'gb_asp.geojson').read_bytes() == asp and not (data / 'sia' / 'openaip' / 'gb_nav.geojson').exists(), 'files', 'only the layers served')
             c.eq(_git(DS, data, 'rev-parse', 'HEAD').stdout, head_before, 'no commit', what='no commit')
             c.ok('gb_apt' in _git(DS, data, 'status', '--short').stdout, _git(DS, data, 'status', '--short').stdout, 'the tracked file shows as modified in the data repository (that is what outside-sync warns about)')
-            c.ok(any('échec' in x and 'es:' in x for x in view['log']), str(view['log'][:6]), 'the journal says the failures')
+            c.ok(any('échec' in x and 'ca:' in x for x in view['log']) and not any('échec' in x and 'es:' in x for x in view['log']), str(view['log'][:8]),
+                 'the journal says the failures (ca), never an absent export (es)')
+            c.eq([x for x in view['log'] if x.startswith('openAIP')], ["openAIP : pas d'export pour ca (nav, rpp), es (apt, asp, nav, rpp), gb (nav, rpp)"], 'the absent exports in one line', what='absent line')
 
             # --- 2. the same run again: a 304 for the files present (If-Modified-Since given), nothing rewritten
             m0 = {n: (data / 'sia' / 'openaip' / n).stat().st_mtime_ns for n in ('gb_asp.geojson', 'gb_apt.geojson')}
@@ -284,7 +289,7 @@ def k54(c):
             c.eq((z['es']['sources']['enaire']['state'], z['es']['sources']['enaire']['files']), ('downloaded', 2), 'ENAIRE declared: both datasets downloaded', what='enaire')
             c.ok(sorted(os.listdir(data / 'sia' / 'aixm5')) == ['LE_2026_10_AIP_DS_FULL_Airspace.xml', 'LE_2026_10_AIP_DS_FULL_EnRoute.xml'], str(os.listdir(data / 'sia' / 'aixm5')), 'the previous amendment is removed by aero_fetch')
             c.eq((z['nat']['sources']['nat']['state'], (data / 'sia' / 'zones' / 'nat' / 'nat_tracks.json').is_file()), ('downloaded', True), 'NAT: the tracks file written under zones/nat/', what='nat')
-            c.eq({k: v['state'] for k, v in z['us']['sources'].items()}, {'faa': 'downloaded', 'faaclass': 'downloaded', 'openaip': 'failed'}, 'US: the two FAA sources (sua + mtr, class) downloaded, no openAIP export', what='us')
+            c.eq({k: v['state'] for k, v in z['us']['sources'].items()}, {'faa': 'downloaded', 'faaclass': 'downloaded', 'openaip': 'skipped'}, 'US: the two FAA sources (sua + mtr, class) downloaded, no openAIP export (absent)', what='us')
             c.ok(all((data / 'sia' / 'geojson' / f'faa_{l}.geojson').is_file() for l in ('sua', 'mtr', 'class')), str(os.listdir(data / 'sia' / 'geojson')), 'faa_sua, faa_mtr and faa_class written under geojson/')
             c.eq((res['outside_sync'], res['warnings']), (1, [{'code': 'outside-sync', 'count': 1}]), 'the removed amendment was tracked: it counts as modified outside the sync', what='outside enaire')
             c.eq([m['source'] for m in res['manual'] if m['zone'] == 'es'], [], 'es has no manual source; nat none', what='manual es')
@@ -328,7 +333,8 @@ def k54(c):
             c.eq({k: v['state'] for k, v in view['zones'].items()}, {'de': 'failed', 'it': 'failed'}, 'both zones failed', what='zones failed')
             with _Net(AF, {'': ('http', 404)}) as net:
                 view, res = _run(RJ, BS, 'fetch', {'zones': ['cyn']}, ctx)
-            c.eq((view['zones']['cyn']['sources']['openaip'], len(net.calls)), ({'state': 'failed', 'error': 'http', 'status': 404}, 0), 'a zone without a two-letter code has no openAIP export: failed http 404, no request', what='cyn')
+            c.eq((view['zones']['cyn']['sources']['openaip'], view['zones']['cyn']['state'], len(net.calls)), ({'state': 'skipped', 'error': 'absent'}, 'done', 0),
+                 'a zone without a two-letter code has no openAIP export: absent, the zone done, no request', what='cyn')
     finally:
         AF.ukmil, AF.navcan = saved
 
@@ -540,7 +546,7 @@ def k57(c):
     try:
         AF.MAX_BYTES = 1000
         for body, length, ok in ((b'x' * 999, 999, True), (b'x' * 1000, None, True), (b'x' * 1001, None, False), (b'x' * 10, 5000, False), (b'x' * 3000, 10, False)):
-            AF.outbound.urlopen = lambda req, timeout=None, b=body, n=length: _Resp(b, n)
+            AF.outbound.urlopen = lambda req, timeout=None, absent_ok=False, b=body, n=length: _Resp(b, n)
             try:
                 got = AF.get('https://example.invalid/x')
                 res = ('ok', len(got))
@@ -550,3 +556,85 @@ def k57(c):
     finally:
         AF.outbound.urlopen, AF.MAX_BYTES = saved
     c.eq(AF.MAX_BYTES, 200 * 1024 * 1024, 'the cap is 200 MB per response', what='MAX_BYTES')
+
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------
+@case('K60', 'Raw sources: an openAIP export a country does not have (404) is absent, not a failure; remembered for the cycle; a 5xx stays a failure', 'K', static=True,
+      rule='frame/aerodb/INTEGRATION (fetch): a 404 on an optional per-country export is absent (one line per pass, the zone done), remembered per AIRAC cycle outside data/ and not asked again; only a 5xx, a time-out or an unreadable answer is a failure, said per file; the launcher\'s console carries only what needs an action')
+def k60(c):
+    RJ, BS, AF, DS = _mods()
+    lay = json.dumps({'type': 'FeatureCollection', 'features': [{'type': 'Feature'}]}).encode()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = _repo(DS, td)
+        ctx = _ctx(DS, data)
+        routes = {'kh_apt': lay, 'kh_asp': ('http', 404), 'kh_nav': ('http', 404), 'kh_rpp': ('http', 404), 'iq_': ('http', 404)}
+        g = BS.fetch.__globals__
+        old = g['sources_of']
+        g['sources_of'] = lambda z: ('openaip',)
+        try:
+            with _Net(AF, dict(routes)) as net:
+                view, res = _run(RJ, BS, 'fetch', {'zones': ['kh', 'iq']}, ctx)
+            z = view['zones']
+            c.eq((z['kh']['state'], z['kh']['sources']['openaip']), ('done', {'state': 'downloaded', 'files': 1, 'bytes': len(lay)}),
+                 'kh: the layer it has written, the three it has not are passed over: the zone done', what='kh')
+            c.eq((z['iq']['state'], z['iq']['sources']['openaip']), ('done', {'state': 'skipped', 'error': 'absent'}), 'iq: no export at all is absent, the zone done', what='iq')
+            c.eq((res['ok'], res['failed'], res['absent']), (True, [], ['iq_apt', 'iq_asp', 'iq_nav', 'iq_rpp', 'kh_asp', 'kh_nav', 'kh_rpp']), 'ok, nothing failed, the absent layers listed', what='result')
+            lines = [x for x in view['log'] if 'openAIP' in x or 'échec' in x]
+            c.eq(lines, ["openAIP : pas d'export pour iq (apt, asp, nav, rpp), kh (asp, nav, rpp)"], 'one line for the pass, never an « échec » line', what='log')
+            saved = json.loads((Path(td) / 'cache' / BS.ABSENT_FILE).read_text(encoding='utf-8'))
+            c.eq(saved, {'cycle': BS.airac_start(), 'absent': res['absent']}, 'remembered for the AIRAC cycle, in the cache folder outside data/', what='cache')
+            c.ok(not any(p.name == BS.ABSENT_FILE for p in Path(data).rglob('*')), 'data/', 'nothing written in data/ for it')
+            # the next pass of the same cycle asks only for what exists
+            with _Net(AF, dict(routes)) as net:
+                view, res = _run(RJ, BS, 'fetch', {'zones': ['kh', 'iq']}, ctx)
+            c.eq(sorted(u.rsplit('/', 1)[-1] for u, _ in net.calls), ['kh_apt.geojson'], 'same cycle: the absent layers are not asked again', what='second pass')
+            c.eq((res['absent'], view['zones']['iq']['sources']['openaip']), (['iq_apt', 'iq_asp', 'iq_nav', 'iq_rpp', 'kh_asp', 'kh_nav', 'kh_rpp'], {'state': 'skipped', 'error': 'absent'}),
+                 'still said absent', what='second result')
+            # another cycle: asked again; a 5xx stays a failure, said per file
+            (Path(td) / 'cache' / BS.ABSENT_FILE).write_text(json.dumps({'cycle': '2000-01-01', 'absent': ['kh_asp', 'kh_nav', 'kh_rpp']}), encoding='utf-8')
+            with _Net(AF, {**routes, 'kh_asp': ('http', 503)}) as net:
+                view, res = _run(RJ, BS, 'fetch', {'zones': ['kh']}, ctx)
+            c.eq(sorted(u.rsplit('/', 1)[-1] for u, _ in net.calls), ['kh_apt.geojson', 'kh_asp.geojson', 'kh_nav.geojson', 'kh_rpp.geojson'], 'another cycle: asked again', what='new cycle')
+            c.eq((res['failed'], view['zones']['kh']['state'], res['absent']), ([{'zone': 'kh', 'source': 'openaip', 'error': 'http', 'status': 503}], 'failed', ['kh_nav', 'kh_rpp']),
+                 'a 503 is a failure (http 503); the 404s still absent', what='5xx')
+            c.ok(any('kh: openaip échec (http 503)' in x for x in view['log']), str(view['log']), 'the failure is said in the job log, per file')
+        finally:
+            g['sources_of'] = old
+    # aero_fetch asks the launcher's opener not to write an expected absence in its console (outbound absent_ok), and does write the rest
+    seen = []
+
+    def fake(req, timeout=None, absent_ok=False):
+        seen.append((req.full_url.rsplit('/', 1)[-1], absent_ok))
+        raise urllib.error.HTTPError(req.full_url, 404, 'not found', {}, None)
+    saved = AF.outbound.urlopen
+    AF.outbound.urlopen = fake
+    try:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            gone = []
+            out, err = AF.openaip(td, ['kh'], layers=('rpp',), absent=gone)
+    finally:
+        AF.outbound.urlopen = saved
+    c.eq((seen, out, err, gone), ([('kh_rpp.geojson', True)], [], [], ['kh_rpp']), 'openaip(): asked with absent_ok, the 404 absent, no error', what='absent_ok')
+    import contextlib
+    import io
+    import outbound
+
+    class Answer(urllib.request.BaseHandler):  # le serveur d'essai : répond le code demandé, sans réseau (avant le gestionnaire https)
+        handler_order = 100
+
+        def __init__(self, code):
+            self.code = code
+
+        def https_open(self, req):
+            raise urllib.error.HTTPError(req.full_url, self.code, 'x', {}, None)
+    lines = []
+    for code, quiet in ((404, (404, 410)), (503, (404, 410)), (404, ())):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            try:
+                outbound.opener(Answer(code), quiet=quiet).open(urllib.request.Request('https://s3.openaip.net/x/kh_rpp.geojson'), timeout=5)
+            except urllib.error.HTTPError:
+                pass
+        lines.append(buf.getvalue().count('[sortant] échec'))
+    c.eq(lines, [0, 1, 1], "the launcher's console: an expected absence (404, quiet) not written; a 503, or a 404 not declared expected, written", what='console')
+

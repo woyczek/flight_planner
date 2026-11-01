@@ -370,8 +370,14 @@ const p = await ctx.launcher.job('regen/job', { set: 'base', verb: 'purge', args
   source is `skipped` with `error: 'personal'`), `ukmil` (`gb`), `navcan` (`ca`), `nat` (`nat`). A `manual` or `pdf` source (`sia`, `nats`, `dircam`) is never
   downloaded: `state: 'manual'`, and the result lists it in `manual` with its `https` address (when the catalogue has one) and its four names, for the
   screen to say what to do by hand. `local` (X-Plane) and `computed` (MORA) sources are not this job's and appear nowhere. A source that fails does not stop the others
-  (`error`: `network`, `http` with `status`, `parse`); the zone is `failed` when one of its sources failed. A country with no openAIP export is `failed`,
-  `http`, `404`. The cancel is looked at between two files.
+  (`error`: `network`, `http` with `status`, `parse`); the zone is `failed` when one of its sources failed. The cancel is looked at between two files.
+- **An openAIP export a country does not have is absent, never a failure** (1 Nov 2026, the user's log: some thirty « [sortant] échec … HTTP 404 »
+  lines for `kh_asp`, `iq_*`, `vn_*`… at every pass): a 403 / 404 on a per-country layer is asked quietly (`aero_fetch.get(…, absent_ok=True)`,
+  nothing in the launcher's console), listed in the result (`absent: ['kh_asp', …]`) and said in **one** line of the job's log for the pass
+  (« openAIP : pas d'export pour iq (apt, asp, nav, rpp), kh (asp, nav, rpp) »); a country with no export at all, or a zone without a
+  two-letter code (`cyn`, `kas`, `sol`), gives the source `{ state: 'skipped', error: 'absent' }` and the zone stays `done`. The absent
+  layers are remembered for the AIRAC cycle in `tools/.openaip_absent.json` (the workstation's, never versioned, never in `data/`) and
+  not asked again until the next cycle. A 5xx, a time-out or an unreadable answer stays a failure, said per file.
   What `aero_fetch` takes from a server is checked before use (security review, 30 Oct 2026): an ENAIRE file name read from its page must match
   `^LE_[A-Za-z0-9._-]+_AIP_DS_FULL_(Airspace|EnRoute)\.xml$` and resolve under `sia/aixm5` (`proc_pdf.safe_path`, for the write and for the removal of the
   previous amendment); the NAV CANADA guide address is requested only in `https` on `www.navcanada.ca`; a response over **200 MB** (announced or read) is stopped,

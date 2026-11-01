@@ -16,10 +16,12 @@ vue ni dans le résultat. AUCUN commit (décision du 30 octobre) : les sources b
   Par zone, done / total = sources téléchargeables essayées n / m (une source 'skipped' n'est pas comptée) ; `sources` porte aussi, dès le départ, les sources 'manual'
   et 'skipped'. 'downloaded' : au moins un fichier écrit ; 'unchanged' : rien n'a changé (304, ou contenu identique) ; 'failed' : une erreur (les fichiers obtenus quand même
   sont comptés). Une zone est 'failed' si une de ses sources a échoué (`error` = le code de la première), sinon 'done'. Codes d'une source : 'network', 'http' (+ status),
-  'parse', 'personal', 'manual'. Un pays sans export openAIP (les quatre couches répondent 403 / 404, ou l'identifiant n'est pas un code de deux lettres : cyn, kas, sol) :
-  'failed', 'http', 404.
+  'parse', 'personal', 'manual', 'absent'. Une couche qu'openAIP n'a pas pour un pays (403 / 404) est absente, jamais un échec : demandée sans ligne dans la console du
+  lanceur, dite en UNE ligne du journal pour tout le passage, mémorisée pour le cycle AIRAC hors de data/ (tools/.openaip_absent.json) et pas redemandée avant le cycle
+  suivant ; un pays sans aucun export (ou une zone sans code de deux lettres : cyn, kas, sol) : la source 'skipped', 'absent', la zone 'done'. Un 5xx, un délai ou une
+  réponse illisible restent des échecs, dits par fichier.
   Résultat : `{ ok, fetched: [zones où quelque chose a changé], unchanged: [zones sans échec où rien n'a changé], failed: [{ zone, source, error, status? }], manual: [{ zone,
-  source, url?, name: [fr, en, de, es] }], outside_sync: n, warnings: [{ code: 'outside-sync', count: n }], reason? }` ; `outside_sync` = les fichiers SUIVIS par git dans data/ que
+  source, url?, name: [fr, en, de, es] }], outside_sync: n, absent: ['kh_asp', …], warnings: [{ code: 'outside-sync', count: n }], reason? }` ; `outside_sync` = les fichiers SUIVIS par git dans data/ que
   ce travail a modifiés (git ls-files : suivi = présent dans l'index) ; 0 : pas d'avertissement ; reason : 'partial', 'failed', 'cancelled', 'nothing-to-fetch' (aucune source à essayer :
   ok est alors faux).
 
@@ -33,6 +35,7 @@ de France, lus dans XML_SIA, servent la construction de toutes les zones). `dry`
   'shared-fr', 'unsafe-path' (un chemin refusé par le contrôle de confinement, jamais retiré).
 Crochets des essais (ctx, jamais posés par le lanceur) : data, git_cmd, git_env comme partout ; le réseau d'essai passe par aero_fetch.get / aero_fetch.<fournisseur> remplacés.
 """
+import datetime
 import fnmatch
 import json
 import os
@@ -307,7 +310,53 @@ def _names(folder):
         return set()
 
 
-def _fetch_source(job, data, zone, source):
+# exports d'openAIP absents (couche qu'openAIP n'a pas pour un pays) : mémorisés par cycle AIRAC hors de data/ (fichier du poste,
+# jamais versionné) et pas redemandés au passage suivant du même cycle ; ctx['cache'] (dossier) pour un autre emplacement (essais)
+ABSENT_FILE = '.openaip_absent.json'
+
+
+def airac_start(today=None):
+    """Début (AAAA-MM-JJ) du cycle AIRAC en vigueur : calendrier de 28 jours, AIRAC 2401 = 2024-01-25."""
+    ref, d = datetime.date(2024, 1, 25), today or datetime.date.today()
+    return (ref + datetime.timedelta(days=28 * ((d - ref).days // 28))).isoformat()
+
+
+def _absent_path(ctx):
+    return os.path.join(ctx.get('cache') or os.path.join(ROOT, 'tools'), ABSENT_FILE)
+
+
+def absent_load(ctx, cycle):
+    """Les couches absentes déjà vues pendant ce cycle (« kh_rpp ») ; vide pour un autre cycle ou un fichier illisible."""
+    try:
+        with open(_absent_path(ctx), encoding='utf-8') as f:
+            doc = json.load(f)
+        return {x for x in doc.get('absent', []) if isinstance(x, str) and re.fullmatch(r'[a-z]{2,3}_[a-z]{3}', x)} if doc.get('cycle') == cycle else set()
+    except (OSError, ValueError, AttributeError):
+        return set()
+
+
+def absent_save(ctx, cycle, names):
+    """Écrit les couches absentes du cycle (remplace celles d'un autre cycle) ; une écriture impossible n'arrête rien."""
+    path = _absent_path(ctx)
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path + '.tmp', 'w', encoding='utf-8') as f:
+            json.dump({'cycle': cycle, 'absent': sorted(names)}, f)
+        os.replace(path + '.tmp', path)
+    except OSError:
+        pass
+
+
+def absent_line(names):
+    """« openAIP : pas d'export pour iq (apt, asp, nav, rpp), kh (asp, nav, rpp) » : une ligne pour tout le passage."""
+    by = {}
+    for n in sorted(names):
+        cc, layer = n.split('_', 1)
+        by.setdefault(cc, []).append(layer)
+    return "openAIP : pas d'export pour " + ', '.join(f"{cc} ({', '.join(ls)})" for cc, ls in by.items())
+
+
+def _fetch_source(job, data, zone, source, absent=None, known=frozenset()):
     """Télécharge UNE source d'UNE zone par les fonctions d'aero_fetch (couche par couche pour openaip et faa : l'annulation passe entre deux couches). Rend (entrée de la vue |
     None si annulé avant le moindre résultat, fichiers rendus par aero_fetch, échecs [classify], chemins modifiés relatifs à data/, annulé)."""
     s = SOURCES[source]
@@ -323,16 +372,19 @@ def _fetch_source(job, data, zone, source):
         errors.extend(classify(x) for x in errs)
 
     if p == 'openaip':
-        if not re.fullmatch(r'[a-z]{2}', zone):  # cyn, kas, sol… : pas de code de pays, pas d'export
-            errors.append(classify(f'openAIP : HTTP 404 (aucun export pour « {zone} »)'))
-        else:
+        # une couche qu'openAIP n'a pas pour ce pays est absente, jamais un échec (dite une fois pour tout le passage) ; un pays sans
+        # aucun export, ou une zone sans code de pays (cyn, kas, sol…), donne la source « skipped », error 'absent'
+        gone = []
+        if re.fullmatch(r'[a-z]{2}', zone):
             for layer in aero_fetch.OPENAIP_LAYERS:
                 if job.cancelled():
                     cancelled = True
                     break
-                call(aero_fetch.openaip, data, [zone], layers=(layer,))
-            if not files and not errors and not cancelled:  # openaip() passe sous silence les couches absentes (403, 404)
-                errors.append(classify(f'openAIP : HTTP 404 (aucun export pour « {zone} »)'))
+                call(aero_fetch.openaip, data, [zone], layers=(layer,), absent=gone, known=known)
+        if absent is not None:
+            absent.extend(gone)
+        if not files and not errors and not cancelled:
+            return {'state': 'skipped', 'error': 'absent'}, files, errors, [], False
     elif p == 'faa':
         for layer in s['args']:
             if job.cancelled():
@@ -367,6 +419,8 @@ def fetch(job, args, ctx):
     data = ctx['data']
     zones, personal = args['zones'], set(args['personal'])
     plans, init = {}, {}
+    cycle = airac_start()
+    known, absent = absent_load(ctx, cycle), []
     for z in zones:
         dl, skipped, manual = [], [], []
         for s in sources_of(z):
@@ -402,7 +456,7 @@ def fetch(job, args, ctx):
             if job.cancelled():
                 cancelled = True
                 break
-            entry, files, errors, mods, c = _fetch_source(job, data, z, s)
+            entry, files, errors, mods, c = _fetch_source(job, data, z, s, absent=absent, known=known)
             cancelled = cancelled or c
             if entry is None:
                 break
@@ -417,6 +471,8 @@ def fetch(job, args, ctx):
                 first_error = first_error or entry['error']
                 failed.append({'zone': z, 'source': s, 'error': entry['error'], **({'status': entry['status']} if 'status' in entry else {})})
                 job.log(f"{z}: {s} échec ({entry['error']}{' ' + str(entry['status']) if 'status' in entry else ''}) : {errors[0]['text']}")
+            elif entry['state'] == 'skipped':
+                good += 1  # rien à télécharger (export absent) : dit une fois à la fin, la zone reste faite
             else:
                 good += 1
                 job.log(f"{z}: {s} " + (f"{len(mods)} fichier(s) écrit(s) sur {entry['files']}, {entry['bytes'] // 1024} Ko" if entry['state'] == 'downloaded'
@@ -434,6 +490,9 @@ def fetch(job, args, ctx):
         elif tried and not bad and not cancelled:
             unchanged.append(z)
         _step(job, n + 1, len(zones))
+    if absent:
+        absent_save(ctx, cycle, known | set(absent))
+        job.log(absent_line(set(absent)))
     # fichiers SUIVIS par git dans data/ que ce travail a modifiés : ils sortent de la synchronisation (aucun commit ici)
     outside = 0
     try:
@@ -445,7 +504,7 @@ def fetch(job, args, ctx):
                     **({'pickup': True, 'expected': PICKUP[s]['zip']} if s in PICKUP else {})} for z in zones for s in plans[z][2]]
     reason = ('cancelled' if cancelled else 'nothing-to-fetch' if not attempted else 'failed' if failed and not good else 'partial' if failed else None)
     res = {'ok': reason is None, 'fetched': fetched, 'unchanged': unchanged, 'failed': failed, 'manual': manual_list, 'outside_sync': outside,
-           'warnings': [{'code': 'outside-sync', 'count': outside}] if outside else []}
+           'absent': sorted(set(absent)), 'warnings': [{'code': 'outside-sync', 'count': outside}] if outside else []}
     if reason:
         res['reason'] = reason
     return res

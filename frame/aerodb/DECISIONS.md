@@ -2231,3 +2231,19 @@ page is served to `Sec-Fetch-Site: none`, refused to `cross-site`, and, where th
   sheet of an aircraft now comes from the V2 file, as in the real data; `test/lnmperf.html` 16 / 16, its sheets renamed to the
   rule (`C30J-TEST`, `A400-BROKEN`; imported files named `PC12`, `B350`).
 
+## 1 November 2026 — an openAIP export a country does not have is absent, not a failure
+
+- **The user's log** (cycle 2611, a procedures build after a fetch of many zones): some thirty lines « [sortant] échec :
+  s3.openaip.net/openaip-system-exports/<cc>_<layer>.geojson : HTTP 404 » (af_rpp, kh_asp/nav/rpp, iq_*, vn_*…), repeated at every pass.
+  openAIP simply has no such export for these countries; the job already passed them over, but the launcher's console wrote each one.
+- **Now**: the request says the absence is expected (`absent_ok`, the option `tools/outbound.py` already had: a 404 / 410 not written);
+  the job lists the absent layers in its result (`absent`) and says them in one line for the pass; a country with no export at all is
+  `skipped` / `absent` and its zone `done` (it was `failed`, `http`, 404, which made the whole fetch « partial » for nothing to do).
+- **Remembered per AIRAC cycle**, outside `data/` (`tools/.openaip_absent.json`, ignored by git): the next pass of the same cycle does not
+  ask again; a new cycle asks everything once more (openAIP may have added a layer).
+- **Still failures**, said per file and in the console: a 5xx, a time-out, an unreadable answer; a 403 too in the console (S3 answers 403
+  for a key it hides; the job treats it as absent, as before).
+- **Data module**: the source state `skipped` with the new code `absent` (its generic « ignorée » until Réglages gives it its words).
+- **Bench**: K60 (absent layers, one line, the zone done, the cache per cycle and outside data/, no second request, a new cycle asks again,
+  a 503 a failure, the console of `outbound` quiet for an expected 404 only); K54 updated (es and us without export: absent, not failed).
+
