@@ -315,7 +315,9 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
     refusal of GitLab is said by its reason, 1 Nov 2026), Administration
     (the settings opened on their Administration card, `#settings?card=admin`), Aide (`#help`), « Page de maintenance
     (V2) » (`apps/settings/maintenance.html`, until D3–D5 cover it); on the phone, three tabs: Données, Administration,
-    Aide. Level Complet. It **opens everywhere**: without a launcher, or from a paired device of the local network, it is
+    Aide. Level Complet. Opened without an address on the launcher's workstation, it lands on the administrator's
+    assistant (`#settings?card=assistant`) while the airline is not installed (data/ a git repository with a remote, and a
+    name in `airline/settings.json`; 1 Nov 2026). It **opens everywhere**: without a launcher, or from a paired device of the local network, it is
     read only — what needs the launcher hides where it is (the Données module reads without it, Administration's launcher
     panels, the V2 page's link: `launcher: true` on a link).
   - From Pilot, the end-of-cycle line of the Status block opens `?app=maintenance#data` (same tab); Réglages ›

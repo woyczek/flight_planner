@@ -4008,7 +4008,25 @@
     offlineApp();
     levelsP = readLevels();
     FD.start();
+    await landing();
     route();
+  }
+  /** Maintenance s'ouvre sur l'assistant de l'administrateur (Réglages, #settings?card=assistant) tant que la compagnie
+   *  n'est pas installée (§ 10.36, Réglages, 1er nov. 2026) : installée = data/ est un dépôt git avec un distant (lanceur :
+   *  dataGit, puis l'adresse de GET sync-remote) et airline/settings.json porte un nom. Seulement à l'ouverture sans
+   *  adresse (un écran demandé est servi tel quel), avec le lanceur de ce poste ; sans lui (site, appareil appairé), ou la
+   *  compagnie pas lue à temps (3 s), Maintenance s'ouvre comme avant. L'adresse est remplacée : le retour arrière ne la
+   *  rejoue pas. */
+  async function landing() {
+    if (APP.id !== 'maintenance' || parseHash().id || !launcherHere || launcherHere.lan) return;
+    let installed = false;
+    if (launcherHere.dataGit && (await launcherRequest('sync-remote'))?.body?.url) {
+      const v = await Promise.race([airlineData.get(AIRLINE, {
+        wait: true
+      }).catch(() => null), new Promise(res => setTimeout(() => res(undefined), 3000))]);
+      installed = v === undefined || !!airlineOf(v).name;
+    }
+    if (!installed) history.replaceState(null, '', `${location.pathname}${location.search}#settings?card=assistant`);
   }
   // ---------------------------------------------------------------- appli installable et hors ligne
   const U = {

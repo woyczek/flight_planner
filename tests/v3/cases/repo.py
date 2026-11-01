@@ -2070,7 +2070,8 @@ def i32(c):
                 refuse(req, 403, 'insufficient_scope' if 'api' not in st['scopes'] else '403 Forbidden')
             if st['tokens'] != 200:
                 refuse(req, st['tokens'], f"{st['tokens']} GitLab")
-            return Resp([])
+            return Resp([{'id': 7, 'name': 'ABC', 'active': True, 'revoked': False}, {'id': 8, 'name': 'DEF', 'active': False, 'revoked': True},
+                         {'id': 9, 'name': 'owner-bot', 'active': True, 'revoked': False}, {'id': 10, 'name': 'GHI', 'active': True, 'revoked': False}])
         refuse(req, 404, '404 Not Found')
     try:
         L.SECRETS, L.NO_REDIRECT_OPEN = str(tmp), fake
@@ -2088,7 +2089,7 @@ def i32(c):
              'the data remote gives instance and project in https only, without identity nor .git', what='data remote')
         L._data_gitlab_project = lambda: ('https://gitlab.example', 'grp/data')
         # the refusals, each with its reason (the screen translates the reason)
-        c.eq(L.gitlab_tokens().get('reason'), 'secret', 'no secret on the workstation: reason secret', what='no secret')
+        c.eq([L.gitlab_tokens().get('reason'), L.gitlab_tokens_count().get('reason')], ['secret', 'secret'], 'no secret on the workstation: reason secret, for the list and the count', what='no secret')
         (tmp / 'gitlab.json').write_text(json.dumps({'instance': 'https://gitlab.example', 'project': 'grp/data', 'token': 'glpat-ADMIN-SECRET'}), encoding='utf-8')
         got = {}
         for code in (401, 403, 404):
@@ -2098,6 +2099,9 @@ def i32(c):
         got['403 scope'] = L.gitlab_tokens().get('reason')
         c.eq(got, {401: 'refused', 403: 'level', 404: 'project', '403 scope': 'scope'}, 'a refusal named by its reason: 401 refused, 403 level (or scope for insufficient_scope), 404 project', what='reasons')
         st['tokens'], st['scopes'] = 200, ['api']
+        # the count of active pilot tokens (Settings, the assistant’s « first pilot »): a number, never a name
+        n = L.gitlab_tokens_count()
+        c.eq(n, {'ok': True, 'active': 2}, 'active pilot tokens counted: neither a revoked one nor a token not named after a trigram; no name', what='count')
         # « Tester »: who, scopes, expiry, role; never the value
         v = L.gitlab_admin_test()
         c.eq([v['ok'], v['username'], v['scopes'], v['expires'], v['level'], v['problems']], [True, 'chef', ['api'], '2027-06-30', 40, []],

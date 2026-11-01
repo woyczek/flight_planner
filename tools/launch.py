@@ -1219,6 +1219,15 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         v = gitlab_tokens()
         return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
 
+    @route('GET', '/__setup/gitlab/tokens/count', public='poste')
+    def _get_gitlab_tokens_count(self, path):
+        # nombre de jetons de pilote actifs (Réglages, assistant de l'administrateur, étape « premier pilote ») : un nombre,
+        # jamais un nom ni une valeur ; la liste reste à l'écran « Jetons des pilotes »
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        v = gitlab_tokens_count()
+        return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
+
     @route('POST', '/__setup/gitlab/tokens', '/__setup/gitlab/tokens/revoke', public='poste')
     def _post_gitlab_tokens(self, path, body):
         # création (la valeur rendue une fois) ou révocation d'un jeton de pilote, avec le jeton de l'administrateur du lanceur
@@ -2543,6 +2552,15 @@ def gitlab_tokens():
                                     'level': t.get('access_level'), 'active': bool(t.get('active')), 'revoked': bool(t.get('revoked')),
                                     'created': t.get('created_at'), 'expires': t.get('expires_at'), 'used': t.get('last_used_at')}
                                    for t in j if isinstance(t, dict)]}
+
+
+def gitlab_tokens_count():
+    """{ ok, active } : les jetons de pilote (nom = un trigramme) actifs et non révoqués ; un refus : gitlab_refusal (reason
+    secret sans jeton de l'administrateur sur le poste)."""
+    v = gitlab_tokens()
+    if not v.get('ok'):
+        return v
+    return {'ok': True, 'active': sum(1 for t in v['tokens'] if t['active'] and not t['revoked'] and re.fullmatch(r'[A-Z0-9]{2,5}', t['name']))}
 
 
 def gitlab_token_create(a):

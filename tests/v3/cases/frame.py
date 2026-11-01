@@ -2725,4 +2725,51 @@ def a73(c):
     fc.value.set_files(files=[{'name': 'sog-config-XYZ.json', 'mimeType': 'application/json', 'buffer': json.dumps(cfg).encode('utf-8')}])
     c.until("!!document.querySelector('[data-card=\"join\"][data-step=\"1\"]')", timeout=15000, what='the chosen file starts the assistant')
     c.eq(c.doc('device/join.json')['cfg']['data']['repo'], 'acme/other', 'the file\u2019s configuration is the one the assistant works on', what='file started')
+
+
+def _land_launcher(c, data_git, url, name):
+    """A fake launcher for the landing of Maintenance: data/ a git repository or not, its remote, the airline's name."""
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': data_git, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False}
+    airline = {'name': name} if name else {}
+
+    def launcher(route):
+        path = urllib.parse.urlparse(route.request.url).path
+        body = {}
+        if path.endswith('/__setup/status'):
+            body = status
+        elif path.endswith('/__setup/sync-remote') and route.request.method == 'GET':
+            body = {'repo': data_git, 'remote': 'origin' if url else '', 'url': url, 'branch': 'main', 'state': 'repo' if data_git else 'absent', 'default': ''}
+        elif path.endswith('/__setup/changes'):
+            body = {'head': 'h1', 'tree': {'airline/settings.json': 'r1'} if name else {}}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+
+    def data(route):
+        if route.request.url.split('?')[0].endswith('/data/airline/settings.json') and name:
+            return route.fulfill(status=200, content_type='application/json', body=json.dumps(airline))
+        route.fulfill(status=404, body='')
+    c.context.unroute(re.compile(r'/__setup/'))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    c.context.route(re.compile(r'/data/airline/'), data)
+
+
+@case('A74', 'Maintenance opens on the administrator’s assistant until the airline is installed', 'A', designs=('standard',), screens=False, night=False,
+      rule='Réglages 1 Nov (§ 10.36, validated by Simplification): with this workstation’s launcher, Maintenance opened without an address lands on #settings?card=assistant while data/ is not a git repository with a remote or airline/settings.json has no name; installed, it opens as before; an address asked for is served as is')
+def a74(c):
+    hash_ = "location.hash"
+    for data_git, url, name, want in ((False, '', '', '#settings?card=assistant'), (True, '', '', '#settings?card=assistant'),
+                                      (True, 'https://gitlab.com/acme/data.git', '', '#settings?card=assistant')):
+        _land_launcher(c, data_git, url, name)
+        c.open('', app='maintenance', docs=LEVEL3)
+        c.until(f"location.hash === '{want}'", timeout=15000, what=f'lands on the assistant (dataGit {data_git}, remote {bool(url)}, name {bool(name)})')
+    # installed: data/ a repository with a remote, the airline named — Maintenance opens as before (its first module)
+    _land_launcher(c, True, 'https://gitlab.com/acme/data.git', 'Acme')
+    c.open('', app='maintenance', docs=LEVEL3 + [['airline/settings.json', {'name': 'Acme'}, 'document']])
+    c.until("!!document.querySelector('[data-module=\"data\"]')", timeout=20000, what='installed: Maintenance opens on Données, its first module')
+    c.wait(3500)  # the bound of the airline read: no late landing either
+    c.ok(not c.js(hash_).startswith('#settings') and c.count('[data-module="data"]') == 1, c.js(hash_), 'installed: Données stays, no landing on the assistant')
+    # an address asked for is served as is, installed or not
+    _land_launcher(c, False, '', '')
+    c.open('help', app='maintenance', docs=LEVEL3)
+    c.wait(500)
+    c.eq(c.js(hash_), '#help', 'an address asked for is never replaced', what='asked address')
     c.check_errors()

@@ -2347,3 +2347,15 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
     when a refusal asks for it): instance, project (empty: those of data/'s https remote), token (empty: unchanged);
     `POST /__setup/gitlab/admin` saves it in `secrets/gitlab.json` and tests it; the page never reads it back, the
     field is emptied by the next drawing. Workstation only (`_lan()` refused), as the other two routes. Noreg A39, I32.
+- **1 Nov 2026 — Maintenance opens on the administrator's assistant until the airline is installed** (Réglages, § 10.36,
+  validated by Simplification): opened without an address, with this workstation's launcher, Maintenance lands on
+  `#settings?card=assistant` (the address replaced: going back does not replay it) while the airline is not installed —
+  installed is data/ a git repository with a remote (the launcher's `dataGit`, then the address of `GET sync-remote`) and
+  a name in `airline/settings.json`. Installed, it opens as before. An address asked for is always served as is; without
+  a launcher (the site, a paired device) nothing is said, nothing changes; the airline not read within 3 s counts as
+  installed (never a landing on a guess). The assistant stays reachable by its line of the Administration card and by
+  the help. Noreg A74.
+- **1 Nov 2026 — The count of active pilot tokens, for the assistant's « first pilot »** (Réglages): `GET
+  /__setup/gitlab/tokens/count` → `{ ok: true, active: n }` (pilot tokens — named after a trigram — active and not
+  revoked), or a refusal with its reason (`secret`: no administrator's token on the workstation); never a name nor a
+  value. Workstation only, as the list, which stays the Pilots' tokens screen's. Noreg I32.
