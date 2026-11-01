@@ -22,6 +22,8 @@ import {
   styleFor,
   zonesLayer
 } from '../maps/lib/map_base.js?v=0';
+import *
+as MB from '../maps/lib/map_base.js?v=0'; // pointsLayer et COVER_ZOOM (BUGS SOG) : lus par le nom, une version du socle qui ne les a pas ne casse pas le chargement (pas de points)
 
 /** Les contours des zones, demandés à `ctx.aerodb.zoneOutlines()` seul (jamais par adresse) au premier dessin d'un panneau avec carte, une fois ; sans réponse ou en
  *  échec : la liste seule, sans ligne d'erreur. Redessine quand ils arrivent. */
@@ -90,7 +92,7 @@ export function zoneMapHtml(kind) {
   if (!S.outlines || S.outlines === 'loading' || !S.airac || S.mapFail[kind]) return '';
   const entries = mapEntries(kind);
   if (!entries.length) return '';
-  return `<div class="d-map" data-zone-map="${kind}" role="group" aria-label="${esc(tt(TX.zoneMap[kind]))}"><div data-zone-slot></div>
+  return `<div class="d-map" data-zone-map="${kind}" role="group" aria-label="${esc(tt(TX.zoneMap[kind]))}"><div data-zone-slot></div>${kind === 'proc' ? '<p class="f-muted" data-point-info role="status"></p>' : ''}
     <p class="d-map-row"><button type="button" data-act="map-recenter">${esc(tt(TX.mapRecenter))}</button></p>
     <p class="f-muted" data-zone-legend>${esc(tt(TX.mapLegend))} :${['ok', 'warn', 'accent', 'muted'].map(t => `<span class="d-sw" data-tone="${t}"></span>${esc(tt(TX.mapTone[t]))}`).join(' · ')}${entries.some(e => e.approx) ? ` · ${esc(tt(TX.mapLegendApprox))}` : ''}. ${esc(tt(TX.mapLegendNote))}</p></div>`;
 }
@@ -116,6 +118,73 @@ function mapColors() {
 function isDark() {
   const [r, g, b] = (token('--sog-chart-bg').match(/[\d.]+/g) || [255, 255, 255]).slice(0, 3).map(Number);
   return 0.2126 * r + 0.7152 * g + 0.0722 * b < 110;
+}
+/** Le socle sait-il dessiner des points (pointsLayer et COVER_ZOOM, ajoutés par la Carte) ? Sinon la carte des États n'a pas de points et les comptes des lignes d'État restent. */
+const havePoints = () => typeof MB.pointsLayer === 'function' && Number.isFinite(MB.COVER_ZOOM);
+/** Dit le code et le cycle d'un terrain détenu dans la ligne sous la carte des États (jamais une fenêtre) : « LFPG : à jour, cycle 2611 » pour des procédures publiées, « LFMN : cycle dépassé, relu le … » pour les autres. */
+function showInfo(kind, icao) {
+  const m = S.maps[kind],
+    p = m?.pts?.get(icao);
+  if (!p) return;
+  const word = tt(TX.mapTone[p.tone === 'ok' ? 'ok' : 'warn']),
+    inForce = S.d.pub?.proc?.inForce,
+    cycle = p.cov?.source === 'published' && inForce && S.airac ? M.cycleName(S.airac, inForce) : '';
+  m.info = cycle ? tt(TX.ptInfo, {
+    i: icao,
+    w: word,
+    c: cycle
+  }) : tt(TX.ptInfoRead, {
+    i: icao,
+    w: word,
+    d: String(p.cov?.read_at || '').slice(0, 10) || '?'
+  });
+  const line = S.body?.querySelector(`[data-zone-map="${kind}"] [data-point-info]`);
+  if (line) line.textContent = m.info;
+}
+/** Lit, pour la vue de la carte des États, les terrains détenus (lecture seule de la base locale, jamais un téléchargement ni une écriture) : au-dessus de COVER_ZOOM seulement, `aerodromes({ bbox, lite })` de la vue puis
+ *  `coverage(icao)` de chacun ; ceux dont la couverture est détenue (verte, ou orange partielle) deviennent des points, verts à jour, orange d'un cycle passé. Refait à chaque fin de mouvement ; une réponse dépassée par un
+ *  mouvement plus récent est jetée. Sous le zoom : aucun point, aucune lecture. */
+async function loadPoints(kind) {
+  const m = S.maps[kind],
+    a = S.ctx.aerodb,
+    me = S;
+  if (!m?.points || !m.map || !a) return;
+  const tok = ++m.ptTok,
+    draw = items => {
+      m.pts = new Map(items.map(x => [x.id, x]));
+      m.points.update(M.pointFeatures(items));
+    };
+  if (!(m.map.getZoom() >= MB.COVER_ZOOM)) return draw([]);
+  const b = m.map.getBounds(),
+    center = m.map.getCenter().lng,
+    seen = new Set(),
+    list = (await Promise.all(M.viewBoxes(b.getWest(), b.getSouth(), b.getEast(), b.getNorth()).map(bbox => a.aerodromes({
+      bbox,
+      lite: true
+    }).catch(() => [])))).flat().filter(x => /^[A-Z0-9]{4}$/.test(x?.icao || '') && Number.isFinite(+x.lat) && Number.isFinite(+x.lon) &&
+      !seen.has(x.icao) && seen.add(x.icao)),
+    covs = await Promise.all(list.map(x => a.coverage(x.icao).catch(() => null)));
+  if (S !== me || tok !== m.ptTok) return;
+  draw(list.map((x, i) => ({
+    id: x.icao,
+    lat: +x.lat,
+    lon: +x.lon + 360 * Math.round((center - +x.lon) / 360), // la copie du monde de la vue
+    tone: M.coverTone(covs[i]),
+    cov: covs[i]
+  })).filter(x => x.tone));
+}
+/** Pose la couche des terrains détenus sur la carte des États et la fait suivre le mouvement de la vue (`moveend`) ; sans pointsLayer au socle, rien (les comptes des lignes d'État restent). */
+function startPoints(kind, m) {
+  if (!havePoints()) return;
+  m.ptTok = 0;
+  m.pts = new Map();
+  m.points = MB.pointsLayer(m.map, M.pointFeatures([]), {
+    colors: mapColors(),
+    onTap: id => showInfo(kind, id),
+    minzoom: MB.COVER_ZOOM
+  });
+  m.map.on('moveend', () => loadPoints(kind));
+  loadPoints(kind);
 }
 /** Démarre la carte d'un panneau dans son hôte (le socle : MapLibre à la demande, tuiles, abandon) puis y pose les zones et cadre la vue ; sans carte (hors ligne, pas de
  *  WebGL, MapLibre absent, délai) : le panneau est redessiné sans carte, la liste seule. Une carte déjà en route n'est pas redémarrée. */
@@ -150,6 +219,7 @@ function startMap(kind, m) {
     });
     mapSize(map, m.host);
     m.layer.fit();
+    if (kind === 'proc') startPoints(kind, m);
   });
 }
 /** Pose, dans chaque cadre de carte du dessin (`root`), l'hôte persistant de sa carte à la place de l'emplacement : le panneau est redessiné par innerHTML, l'hôte (et la
@@ -186,6 +256,9 @@ export function attachMaps(root = S?.body) {
       }));
     }
     if (sig !== m.sig || dark !== m.dark) m.layer.update(M.zoneFeatures(entries), mapColors());
+    if (dark !== m.dark && m.points) m.points.update(M.pointFeatures([...m.pts.values()]), mapColors());
+    const line = frame.querySelector('[data-point-info]');
+    if (line && m.info) line.textContent = m.info; // le panneau est redessiné : la ligne du dernier terrain touché revient
     m.sig = sig;
     m.dark = dark;
     mapSize(m.map, m.host);
@@ -204,6 +277,7 @@ export function recenterMap(kind) {
 export function destroyMaps() {
   for (const m of Object.values(S?.maps || {})) {
     try {
+      m.points?.remove();
       m.layer?.remove();
       m.map?.remove();
     } catch {

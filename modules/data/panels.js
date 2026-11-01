@@ -62,9 +62,22 @@ function personalName(id) {
 function personalPicked(ticked) {
   return M.personalSources(ticked).filter(p => S.personal.has(p.id)).map(p => p.id);
 }
-/** Une case à cocher avec son libellé (44 px de haut) ; attr : l'attribut data- qui la repère. */
-function optHtml(attr, id, label, checked, disabled) {
-  return `<label class="d-opt"><input type="checkbox" ${attr}="${esc(id)}"${checked ? ' checked' : ''}${disabled ? ' disabled' : ''}><span>${esc(label)}</span></label>`;
+/** Une case à cocher avec son libellé (44 px de haut) ; attr : l'attribut data- qui la repère ; extra : du HTML déjà sûr après le libellé (la ligne des terrains détenus d'un État). */
+function optHtml(attr, id, label, checked, disabled, extra = '') {
+  return `<label class="d-opt"><input type="checkbox" ${attr}="${esc(id)}"${checked ? ' checked' : ''}${disabled ? ' disabled' : ''}><span>${esc(label)}${extra}</span></label>`;
+}
+/** Ce que la ligne d'un État des procédures dit des terrains détenus (coverageByState().held, la même table que coverage(), lue une fois à l'ouverture et redemandée quand aerodb annonce { coverage: true }) :
+ *  « — 3 069 terrains, cycle 2611 » pour la France (le cycle des procédures publiées en vigueur), « — n terrains relus » pour les autres États ; vide sans la valeur. */
+function heldLine(id) {
+  const n = M.own(S.d?.byState, id)?.held;
+  if (!Number.isFinite(n)) return '';
+  const num = `${n.toLocaleString(lang())} ${tt(TX.unit[id === 'LF' ? 'aerodrome' : 'aerodromeRead'][n === 1 ? 0 : 1])}`,
+    inForce = id === 'LF' && S.airac ? S.d.pub?.proc?.inForce : null,
+    cycle = inForce ? M.cycleName(S.airac, inForce) : '';
+  return ` <span class="f-muted" data-held="${esc(id)}">— ${esc(cycle ? tt(TX.heldCycle, {
+    n: num,
+    c: cycle
+  }) : num)}</span>`;
 }
 /** Le nom d'une source téléchargée : celui du catalogue d'aerodb, à défaut son identifiant. */
 function sourceName(id) {
@@ -535,7 +548,7 @@ function choiceHtml(set, busy) {
   }
   if (set === 'proc') {
     const list = procList();
-    return list.length ? `<div class="d-opts" data-items>${list.map(i => optHtml('data-item', i.id, i.name, S.picked.has(i.id), busy)).join('')}</div>` :
+    return list.length ? `<div class="d-opts" data-items>${list.map(i => optHtml('data-item', i.id, i.name, S.picked.has(i.id), busy, heldLine(i.id))).join('')}</div>` :
       `<p class="f-muted" data-no-items>${esc(tt(TX.noStates))}</p>`;
   }
   if (set === 'vfr') return S.cycleId ? `<p data-item-cycle><b>${esc(tt(TX.cycle, { c: S.cycleId }))}</b></p>` : '';

@@ -290,6 +290,17 @@ United States a rectangle, the islands dots).
   (MapLibre or the tiles missing, offline without them in the cache) or the outlines are missing; then the list alone. The
   map is shown as soon as the base loads: no size rule (the 44 px rule of the SVG is gone), a zone small at the first view
   (Gibraltar) is touched after a pinch, and the list is always there.
+- **The aerodromes held** (the Procédures panel, user, 1 Nov 2026: « on ne voit pas les terrains déjà téléchargés ? »). Each State line says its
+  aerodromes held: « France — 3 069 terrains, cycle 2611 » (the cycle of the published procedures in force, `M.cycleName` of
+  `pub.proc.inForce`), « n terrains relus » for the other States; the count is `coverageByState()[prefix].held`, the table the screen already
+  reads once per load and again after `{ coverage: true }` (no second read). On the map of the States, **above the base's `COVER_ZOOM`**, the aerodromes
+  held are points, drawn by the base's `pointsLayer` (`MB.pointsLayer`, read by name: a base without it gives no points, the counts stay): the
+  view is read from the local base with `aerodromes({ bbox, lite })` (the box split in two across the antimeridian, `M.viewBoxes`), each
+  `coverage(icao)` decides — held and up to date: green (`ok`); held of a past cycle (`outdated`) or partial: orange (`warn`); red and orange
+  readable-on-demand are not downloaded, so not drawn (`M.coverTone`) — redone on `moveend`, nothing read and nothing drawn below the zoom. **It is a
+  read, of the local base: never a download, never a write.** A tap on a point says its code, its state in words and its cycle (published
+  procedures: the cycle in force; a hand or local reading: the date read) in a line under the map (`[data-point-info]`, never a window) and does
+  not tick the State below it. Cases L21–L23.
 - **Cases**: L20 — a tap on a polygon ticks the zone (the list's box follows), a drag or a pinch ticks nothing, « Recentrer » frames the
   zones again, no base → the list alone. Screenshots at 390 and 1280, before and after, in DECISIONS.
 

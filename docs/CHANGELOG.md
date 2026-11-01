@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data: the aerodromes held on the Procédures panel** (`modules/data/` `panels.js`, `zonemap.js`, `model_map.js`, `texts.js`, help ×4; SPEC § 5.5; the user's « sur la carte « Procédures », on ne voit pas les terrains déjà téléchargés ? »; noreg L21–L23): each State line says its aerodromes held and, for France, the cycle in force (« France — 3 069 terrains, cycle 2611 »; « n terrains relus » for the others), from the `coverageByState()` table the screen already reads (once per load, again after `{ coverage: true }`). On the map of the States, above the base's `COVER_ZOOM`, the aerodromes held are points (the base's `pointsLayer`, read by name so an older base only loses the points): green up to date, orange of a past cycle or partial, read from the local base for the current view (`aerodromes` then `coverage`, on `moveend`) — a read, never a download or a write; a tap on a point says its code, state and cycle in a line under the map and ticks nothing. Pure `coverTone`, `viewBoxes` and `pointFeatures`; 3 new text rows ×4.
 - **Aircraft › Sheets: an import of several sheets says which sheet and how far** (`modules/aircraft/sheets.js`, `sheets_texts.js`, help ×4;
   DECISIONS; noreg M19) — the user's paste of thirteen sheets: each review names its sheet and its rank (« Changements proposés : EC145 ·
   8 / 13 »), unchanged sheets are passed, « Passer cette fiche », a summary at the end; « Annuler » drops the queue (it came back at the

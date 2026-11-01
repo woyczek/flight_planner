@@ -74,3 +74,43 @@ export function zoneFeatures(entries) {
     }).filter(f => f.geometry.coordinates.length)
   };
 }
+/** La teinte d'un terrain sur la carte d'après coverage(icao) d'aerodb : 'ok' (procédures détenues, à jour), 'warn' (détenues mais d'un cycle passé : `outdated`, ou en partie : `partial`), null pour tout autre
+ *  (rouge, orange lisible à la demande, code mal formé : ce n'est pas un terrain détenu, il n'est pas dessiné). */
+export function coverTone(c) {
+  if (!c || (c.reason !== 'held' && c.reason !== 'partial')) return null;
+  return c.outdated === true || c.reason === 'partial' ? 'warn' : 'ok';
+}
+/** Les emprises [ouest, sud, est, nord] à demander à aerodb pour la vue d'une carte (longitudes sur [-180, 180]) : une seule, ou deux quand la vue passe l'antiméridien (l'ouest ou l'est de la carte du monde répété sort de ±180),
+ *  une seule du monde entier quand la vue couvre 360° ou plus ; [] si l'une des limites n'est pas un nombre. */
+export function viewBoxes(w, s, e, n) {
+  if (![w, s, e, n].every(Number.isFinite)) return [];
+  if (e - w >= 360) return [
+    [-180, s, 180, n]
+  ];
+  const w0 = ((w + 180) % 360 + 360) % 360 - 180,
+    e0 = w0 + (e - w);
+  return e0 > 180 ? [
+    [w0, s, 180, n],
+    [-180, s, e0 - 360, n]
+  ] : [
+    [w0, s, e0, n]
+  ];
+}
+/** Les entités de la carte pour pointsLayer du socle : un GeoJSON FeatureCollection de Point [lon, lat] avec { id (le code OACI), tone } ; `items` : [{ id, lon, lat, tone }], ceux sans position ou sans teinte sont laissés. */
+export function pointFeatures(items) {
+  return {
+    type: 'FeatureCollection',
+    features: (items || []).filter(p => p && p.id && Number.isFinite(p.lon) && Number.isFinite(p.lat) && (p.tone === 'ok' || p.tone ===
+      'warn')).map(p => ({
+      type: 'Feature',
+      properties: {
+        id: p.id,
+        tone: p.tone
+      },
+      geometry: {
+        type: 'Point',
+        coordinates: [p.lon, p.lat]
+      }
+    }))
+  };
+}

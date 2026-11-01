@@ -85,6 +85,10 @@ export const TX = {
       ['terrain', 'aerodrome', 'Flugplatz', 'aeródromo'],
       ['terrains', 'aerodromes', 'Flugplätze', 'aeródromos']
     ],
+    aerodromeRead: [
+      ['terrain relu', 'aerodrome read', 'Flugplatz gelesen', 'aeródromo leído'],
+      ['terrains relus', 'aerodromes read', 'Flugplätze gelesen', 'aeródromos leídos']
+    ],
     file: [
       ['fichier', 'file', 'Datei', 'archivo'],
       ['fichiers', 'files', 'Dateien', 'archivos']
@@ -799,6 +803,10 @@ export const TX = {
     accent: ['en cours', 'running', 'läuft', 'en curso'],
     muted: ['hors couverture', 'not in the coverage', 'nicht in der Abdeckung', 'fuera de la cobertura']
   },
+  // la ligne d'un État des procédures : ses terrains détenus (LF : avec le cycle publié ; les autres États : relus), et un point de la carte
+  heldCycle: ['{n}, cycle {c}', '{n}, cycle {c}', '{n}, Zyklus {c}', '{n}, ciclo {c}'],
+  ptInfo: ['{i} : {w}, cycle {c}', '{i}: {w}, cycle {c}', '{i}: {w}, Zyklus {c}', '{i}: {w}, ciclo {c}'],
+  ptInfoRead: ['{i} : {w}, relu le {d}', '{i}: {w}, read on {d}', '{i}: {w}, gelesen am {d}', '{i}: {w}, leído el {d}'],
   mapRecenter: ['Recentrer', 'Recenter', 'Neu zentrieren', 'Recentrar'],
   mapLegendApprox: ['pointillé : contour approximatif', 'dashed: approximate outline', 'gestrichelt: ungefährer Umriss',
     'punteado: contorno aproximado'

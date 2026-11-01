@@ -272,6 +272,8 @@ def _stub(cfg):
     return """(() => { const cfg = %s; cfg.fns = new Set(); window.__stub = cfg; let ab;
   const patch = (A) => {
     const ok = (name, key) => async () => { const k = window.__stub.calls = window.__stub.calls || {}; k[name] = (k[name] || 0) + 1; if (window.__stub.fail.includes(name)) throw new Error('stub: ' + name); return window.__stub[key] };
+    A.aerodromes = async q => { const k = window.__stub.calls = window.__stub.calls || {}; k.aerodromes = (k.aerodromes || 0) + 1; (window.__stub.aeroQ = window.__stub.aeroQ || []).push(q); return window.__stub.aero || [] };
+    A.coverage = async icao => window.__stub.cov?.[icao] ?? null;
     A.publication = ok('publication', 'publication'); A.zones = ok('zones', 'zones'); A.coverageByState = ok('coverageByState', 'states'); A.zoneOutlines = ok('zoneOutlines', 'outlines');
     const s = A.sources; A.sources = async () => { const r = await s.call(A); if (cfg.pv) return { ...r, PARSER_VERSION: cfg.pv }; const { PARSER_VERSION, ...rest } = r; return rest };  // pv null: the catalogue without its constant (aerodb has carried one since 567b94440)
     const on = A.on; A.on = function (ev, fn) { const un = on.call(A, ev, fn); if (ev === 'change') window.__stub.fns.add(fn); return () => { window.__stub.fns.delete(fn); un() } };
@@ -2043,7 +2045,7 @@ def l17(c):
     c.eq(ids, ['K', 'LF'], 'the States offered: those with a bulk source (France: the SIA\'s eAIP, the US: the FAA\'s CIFP); the EAD States are never listed', what='proc items')
     c.eq(c.js("[...document.querySelectorAll('[data-set-panel=proc] [data-item]')].map(i => i.checked)"), [False] * 2, 'none ticked by default', what='proc ticked')
     c.eq(_line(c, '[data-set-panel=proc] [data-ead-note]'), norm(T('eadNote')), 'the line about the States read by EAD Basic, one aerodrome at a time', what='ead note')
-    c.eq(c.text('[data-set-panel=proc] label.d-opt:has([data-item=LF]) span'), name('LF'), 'named in the language', what='proc name')
+    c.eq(c.js("(() => { const s = document.querySelector('[data-set-panel=proc] label.d-opt:has([data-item=LF]) > span').cloneNode(true); s.querySelector('[data-held]')?.remove(); return s.textContent.trim() })()"), name('LF'), 'named in the language (the line of its aerodromes held is another element)', what='proc name')
     c.eq([_pv(c, 'proc'), _preasons(c, 'proc'), _line(c, '[data-set-panel=proc] [data-reason]')], [['download:off', 'build:off', 'purge:off'], ['no-state'], norm(T('no-state', 'greyReason: {'))],
          'no State ticked: grey, « Cochez au moins un État »', what='proc no state')
     _panels_ok(c, 'at the opening')
@@ -3017,6 +3019,121 @@ def l20(c):
     c.wait(800)
     c.eq([c.count('[data-zone-map]'), c.count('[data-build-zone]'), c.count('[data-error]'), c.js('window.__stub.calls.zoneOutlines >= 1')], [0, 5, 0, True],
          'zoneOutlines throws: no map, the list is all there is, no error line', what='failure')
+    c.check_errors()
+
+
+
+# ------------------------------------------------------------------------------------------------------ L21 .. L23
+@case('L21', 'Données: the State lines of the Procédures panel say the aerodromes held and the cycle (coverageByState, one read, again after a change)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), rule='modules/data/SPEC 5.5 (the Procédures panel, the user, 1 Nov 2026: « on ne voit pas les terrains déjà téléchargés »): each State line says its aerodromes held (and, for France, the cycle in force); the table is the one of coverageByState(), read once per load, again after { coverage: true }')
+def l21(c):
+    lang = c.lang
+    cfg, _ = _fixture()
+    cfg['states']['LF']['held'] = 12345
+    cfg['states']['K'] = {'level': 'green', 'reason': 'held', 'label': ['held-fr', 'held-en', 'held-de', 'held-es'], 'names': ['États-Unis', 'United States', 'Vereinigte Staaten', 'Estados Unidos'], 'held': 1}
+    _open(c, cfg)
+    _all_open(c)
+    c.until("!!document.querySelector('[data-set-panel=proc] [data-held=LF]')", timeout=15000, what='the State lines carry their held aerodromes')
+    num = lambda n: c.js("([n, l]) => n.toLocaleString(l)", [n, lang])
+    cycle = c.js("(d) => window.AeroAirac.cycleOf(d).id", cfg['publication']['proc']['inForce'])
+    lf, k = norm(c.text('[data-set-panel=proc] [data-held=LF]')), norm(c.text('[data-set-panel=proc] [data-held=K]'))
+    unit = lambda key, i: _trow(key, lang, 'unit: {', i)
+    want_lf = norm('— ' + _trow('heldCycle', lang).replace('{n}', f"{num(12345)} {unit('aerodrome', 1)}").replace('{c}', cycle))
+    want_k = norm(f"— {num(1)} {unit('aerodromeRead', 0)}")
+    c.eq([lf, k], [want_lf, want_k], 'France: the aerodromes held and the cycle of the published procedures in force; another State: the aerodromes read (singular for one)', what='lines')
+    c.eq(c.js("window.__stub.calls.coverageByState"), 1, 'one read of the table for the screen', what='one read')
+    # aerodb announces a change of the coverage: the table is read again, and only then; the line follows
+    c.js("() => { window.__stub.states.LF.held = 15; for (const f of window.__stub.fns) f({ coverage: true }) }")
+    c.until("document.querySelector('[data-set-panel=proc] [data-held=LF]')?.textContent.includes('15')", timeout=8000, what='the line follows the change')
+    c.eq(c.js("window.__stub.calls.coverageByState"), 2, 'read again after { coverage: true }, once', what='second read')
+    c.check_errors()
+
+
+_L22_JS = """async () => {
+  const M = await import('/modules/data/model.js'), out = {};
+  out.tone = [{ reason: 'held', outdated: false }, { reason: 'held', outdated: true }, { reason: 'partial' }, { reason: 'sia', level: 'orange' }, { reason: 'images', level: 'red' }, null, {}].map(M.coverTone);
+  out.boxes = [M.viewBoxes(-10, 40, 10, 50), M.viewBoxes(170, -20, 190, 0), M.viewBoxes(-200, 0, -170, 10), M.viewBoxes(-190, -10, 190, 10), M.viewBoxes(NaN, 0, 1, 1), M.viewBoxes(0, 0, 1, undefined)];
+  const fc = M.pointFeatures([{ id: 'LFPG', lon: 2.5, lat: 49, tone: 'ok' }, { id: 'LFMN', lon: 7.2, lat: 43.6, tone: 'warn' }, { id: 'LFBO', lon: 1.3, lat: 43.6, tone: 'bad' }, { id: 'XXXX', lat: 1, tone: 'ok' }, { lon: 1, lat: 1, tone: 'ok' }, null]);
+  out.features = [fc.type, fc.features.map(f => [f.properties.id, f.properties.tone, f.geometry.type, f.geometry.coordinates]), M.pointFeatures(null).features];
+  return out;
+}"""
+
+
+@case('L22', 'Données: the pure functions of the held aerodromes on the map (coverTone, viewBoxes, pointFeatures)', 'L', tags=('data',), phone=False, designs=('standard',),
+      rule='modules/data/SPEC 5.5: only held aerodromes are drawn (green up to date, orange of a past cycle or partial), the view is asked in one box or two across the antimeridian')
+def l22(c):
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest', wait_until='load')
+    r = c.js(_L22_JS)
+    c.eq(r['tone'], ['ok', 'warn', 'warn', None, None, None, None], 'held: green up to date, orange when outdated or partial; readable on demand, red, nothing: not drawn', what='coverTone')
+    c.eq(r['boxes'], [[[-10, 40, 10, 50]], [[170, -20, 180, 0], [-180, -20, -170, 0]], [[160, 0, 180, 10], [-180, 0, -170, 10]], [[-180, -10, 180, 10]], [], []],
+         'the view in one box, two across the antimeridian (east beyond 180: wrapped), the whole world when it spans 360°, none when a limit is not a number', what='viewBoxes')
+    c.eq(r['features'], ['FeatureCollection', [['LFPG', 'ok', 'Point', [2.5, 49]], ['LFMN', 'warn', 'Point', [7.2, 43.6]]], []],
+         'one Point [lon, lat] per held aerodrome with { id, tone }; no position, no code or another tone: left out; nothing: none', what='pointFeatures')
+
+
+# the points drawn by the shared base (pointsLayer: one circle layer « mb-points-<n>-dot ») as the screen shows them: [id, tone, [lon, lat]] of the rendered features, sorted;
+# [] below the layer's minimum zoom. And the layer's minimum zoom.
+_ZPTS_JS = """() => { const m = window.__zm.proc, ids = m.getStyle().layers.filter(l => /^mb-points-\\d+-dot$/.test(l.id)).map(l => l.id);
+  const seen = new Map(); for (const f of m.queryRenderedFeatures({ layers: ids })) seen.set(f.properties.id, [f.properties.id, f.properties.tone, f.geometry.coordinates.map(v => Math.round(v * 1e3) / 1e3)]);
+  return [...seen.values()].sort((a, b) => (a[0] < b[0] ? -1 : 1)) }"""
+_ZPTS_MINZOOM_JS = """() => { const m = window.__zm.proc, ls = m.getStyle().layers.filter(l => /^mb-points-\\d+-dot$/.test(l.id)); return ls.length ? ls.map(l => l.minzoom) : null }"""
+
+
+@case('L23', 'Données: the held aerodromes on the Procédures map (points above the threshold only, a read, a tap says the code and the cycle and ticks nothing)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), rule='modules/data/SPEC 5.5: the aerodromes held are points on the map of the States, above the base\u2019s COVER_ZOOM only, read from the local base for the view (aerodromes, coverage), green up to date, orange outdated; a tap says the code and the cycle in a line under the map and does not tick the zone')
+def l23(c):
+    lang = c.lang
+    li = {'fr': 0, 'en': 1, 'de': 2, 'es': 3}[lang]
+    T = lambda key, after=None, row=0: _trow(key, lang, after, row)
+    c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/'), lambda r: r.fulfill(status=200, content_type='application/json', body=_ZSTYLE))
+    cfg, _ = _fixture()
+    cfg['outlines'] = _outlines()
+    cfg['aero'] = [{'icao': 'LFAA', 'lat': 45.5, 'lon': 6.5}, {'icao': 'LFBB', 'lat': 45.5, 'lon': 5.5}, {'icao': 'LFCC', 'lat': 45.5, 'lon': 7.0}, {'icao': 'LFDD', 'lat': 45.2, 'lon': 5.0}]
+    cfg['cov'] = {'LFAA': {'level': 'green', 'reason': 'held', 'source': 'published', 'outdated': False, 'counts': {'SID': 1, 'STAR': 1, 'APP': 1}, 'read_at': None},
+                  'LFBB': {'level': 'green', 'reason': 'held', 'source': 'manual', 'outdated': True, 'counts': {'SID': 0, 'STAR': 1, 'APP': 0}, 'read_at': '2026-09-30T08:00:00Z'},
+                  'LFCC': {'level': 'red', 'reason': 'images'}, 'LFDD': {'level': 'orange', 'reason': 'sia'}}
+    c.page.add_init_script(_ZHOOK_JS)
+    _open(c, cfg)
+    _all_open(c)
+    _zmap_ready(c, 'proc')
+    c.js('window.__pts = ' + _ZPTS_JS)
+    cover = c.js("async () => (await import('/modules/maps/lib/map_base.js?v=0')).COVER_ZOOM")
+    c.ok(isinstance(cover, (int, float)), cover, 'the base gives COVER_ZOOM')
+    # under the threshold: nothing is read, nothing is drawn (the State lines carry the count)
+    c.eq([c.js("window.__zm.proc.getZoom() < %s" % cover), c.js(_ZPTS_JS), c.js("window.__stub.calls.aerodromes || 0")], [True, [], 0],
+         'the first view frames the States, under the threshold: no point, no read of the local base', what='under the threshold')
+    # above it: the aerodromes of the view are read, the held ones drawn (green up to date, orange outdated); red and readable-on-demand ones are not
+    c.js("(z) => window.__zm.proc.jumpTo({ center: [6, 45.5], zoom: z + 0.25 })", cover)
+    c.until("window.__pts().length === 2", timeout=10000, what='the held aerodromes are points')
+    pts = c.js(_ZPTS_JS)
+    c.eq(pts, [['LFAA', 'ok', [6.5, 45.5]], ['LFBB', 'warn', [5.5, 45.5]]], 'held and up to date: green; held of a past cycle: orange; red and readable-on-demand: not drawn', what='points')
+    q = c.js("window.__stub.aeroQ.at(-1)")
+    c.ok(q.get('lite') is True and q['bbox'][0] <= 5.5 and q['bbox'][2] >= 6.5 and q['bbox'][1] <= 45.5 <= q['bbox'][3], str(q), 'the read is the view: aerodromes({ bbox, lite }) of the local base, nothing else (never a download, never a write)')
+    c.eq(c.js(_ZPTS_MINZOOM_JS), [cover], 'the layer is given the threshold as its minimum zoom', what='minzoom')
+    # a tap on a point: the code and the cycle in the line under the map, and the zone below it is not ticked
+    cycle = c.js("(d) => window.AeroAirac.cycleOf(d).id", cfg['publication']['proc']['inForce'])
+    tone = lambda w: T(w, 'mapTone: {')
+    c.js("document.querySelector('[data-zone-map=proc] .d-map-host').scrollIntoView({ block: 'center' })")
+    c.wait(300)
+    x, y = c.js(_ZXY_JS, ['proc', 6.5, 45.5])
+    c.page.mouse.click(x, y)
+    c.until("!!document.querySelector('[data-zone-map=proc] [data-point-info]')?.textContent.trim()", timeout=6000, what='the line says the aerodrome')
+    c.eq(norm(c.text('[data-zone-map=proc] [data-point-info]')), norm(T('ptInfo').replace('{i}', 'LFAA').replace('{w}', tone('ok')).replace('{c}', cycle)), 'published procedures: the code, the state in words and the cycle in force', what='info published')
+    c.eq(c.js("document.querySelector('[data-set-panel=proc] [data-item=LF]').checked"), False, 'the tap on a point does not tick the State below it', what='no toggle')
+    x, y = c.js(_ZXY_JS, ['proc', 5.5, 45.5])
+    c.page.mouse.click(x, y)
+    c.until("document.querySelector('[data-zone-map=proc] [data-point-info]')?.textContent.includes('LFBB')", timeout=6000, what='the line says the other aerodrome')
+    c.eq(norm(c.text('[data-zone-map=proc] [data-point-info]')), norm(T('ptInfoRead').replace('{i}', 'LFBB').replace('{w}', tone('warn')).replace('{d}', '2026-09-30')), 'a hand reading: the code, the state, the date read', what='info read')
+    c.eq(c.js("document.querySelector('[data-set-panel=proc] [data-item=LF]').checked"), False, 'still not ticked', what='no toggle 2')
+    # a tap on the zone itself, away from the points, still ticks it
+    x, y = c.js(_ZXY_JS, ['proc', 6.0, 45.2])
+    c.page.mouse.click(x, y)
+    c.until("document.querySelector('[data-set-panel=proc] [data-item=LF]').checked", timeout=6000, what='the zone is ticked by a tap away from the points')
+    # back under the threshold: the points go, nothing more is read
+    reads = c.js("window.__stub.calls.aerodromes")
+    c.js("(z) => window.__zm.proc.jumpTo({ zoom: z - 2 })", cover)
+    c.until("window.__pts().length === 0", timeout=8000, what='the points go below the threshold')
+    c.eq(c.js("window.__stub.calls.aerodromes"), reads, 'and nothing is read below it', what='no read')
     c.check_errors()
 
 
