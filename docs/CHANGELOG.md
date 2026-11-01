@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data: the end of Construire says the cycle it built, and a stale cycle names the missing verb** (`modules/data/model_results.js`
+  `outcome`, `panels.js`, `texts.js`; L6, L7) — user, 1 Nov: « j'ai beau reconstruire les données AIRAC, elles sont toujours
+  marquées périmées ». His downloaded SIA / AIXM sources were of 2610, so every rebuild made 2610 again. The base build's end now
+  says « Construit pour le cycle 2610 » and, when that is not the cycle in force (aerodb 41e34a752: `cycle`, `current`, `stale`),
+  « Sources du cycle précédent : téléchargez d'abord le cycle 2611, puis reconstruisez »; the stale-cycle phrase reads « Cycle 2610
+  dépassé : téléchargez les sources du cycle 2611, puis reconstruisez » ×4 (it said « à reconstruire », which loops).
 - **Data: the base build says for which cycle it built** (`tools/regen/base.py`; INTEGRATION, DECISIONS; test K46) — the result gives the
   cycle of the sources read per zone (`cycles`), the cycle in force (`current`) and `stale` when the sources are older, so the Data screen can say
   « construit pour 2610 ; téléchargez d'abord le cycle 2611 » instead of rebuilding an old cycle in silence; building an old cycle is never refused.

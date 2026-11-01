@@ -459,7 +459,10 @@ function resultHtml(panel = 'base') {
       .kind) ? M.zoneRows(
       v, S.ids,
       'build', set !== 'base') : []; // rien n'a tourné : pas de lignes « en attente »
-  return `<div data-build-result data-result="${r.out.kind}"><p class="${sm.level === 'ok' ? '' : 'f-warn'}"><b>${esc(sm.text)}</b></p>
+  // le cycle construit, et l'avertissement quand les sources sont d'un cycle passé (reconstruire sans télécharger refait l'ancien)
+  const built = set === 'base' && r.out.cycle ? `<p data-built-cycle>${esc(tt(TX.builtFor, { c: M.cycleName(S.airac, r.out.cycle) }))}</p>${r.out.stale ?
+    `<p class="f-warn" data-stale-sources>${esc(tt(TX.staleSources, { n: M.cycleName(S.airac, r.out.current) }))}</p>` : ''}` : '';
+  return `<div data-build-result data-result="${r.out.kind}"><p class="${sm.level === 'ok' ? '' : 'f-warn'}"><b>${esc(sm.text)}</b></p>${built}
     ${(sm.notes || []).map(n => `<p class="f-warn" data-line>${esc(n)}</p>`).join('')}
     ${r.out.kind === 'no-pypdf' ? `<p data-line><a href="${esc(FIRST_INSTALL)}">${esc(tt(TX.firstInstall))}</a></p>` : ''}
     ${sm.advice ? `<p class="f-muted" data-advice>${esc(tt(sm.advice))}</p>` : ''}

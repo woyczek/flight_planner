@@ -56,10 +56,18 @@ export function outcome(final) {
   const kind = kindOf(final, r, [...EXTRA_KINDS, 'partial', 'failed'], failed.length ? built.length ? 'partial' : 'failed' : 'done');
   if (EXTRA_KINDS.includes(kind) && !Array.isArray(r.failed)) failed.length =
     0; // un motif propre (pypdf manque…) : la zone « en échec » de la vue n'est pas un échec de plus
+  // le cycle construit (celui des sources lues) et celui en vigueur, rendus par base/build (aerodb 41e34a752) ; stale : sources d'un
+  // cycle passé, la base construite est celle du cycle précédent. Absents ou mal formés : null, rien n'est dit
+  const day = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null,
+    cycle = day(r.cycle),
+    current = day(r.current);
   return {
     kind,
     built,
-    failed
+    failed,
+    cycle,
+    current,
+    stale: !!cycle && !!current && (r.stale === true || cycle < current)
   };
 }
 /** Le résultat d'une opération pour le journal : 'done' | 'partial' | 'failed' | 'cancelled' | 'interrupted' | 'nothing' (rien à télécharger). */

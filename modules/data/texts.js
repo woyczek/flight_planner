@@ -876,9 +876,18 @@ export const TX = {
   // « Tout mettre à jour » (SPEC § 5.3) : le bouton, la question, la chaîne, la fin
   updateAll: ['Tout mettre à jour', 'Update all', 'Alle aktualisieren', 'Actualizar todo'],
   updateAllN: ['Tout mettre à jour ({n})', 'Update all ({n})', 'Alle aktualisieren ({n})', 'Actualizar todo ({n})'],
-  staleCycle: ['Cycle {x} dépassé, à reconstruire pour {y}', 'Cycle {x} out of date, rebuild for {y}',
-    'Zyklus {x} überholt, für {y} neu aufbauen',
-    'Ciclo {x} superado, reconstruir para {y}'
+  // la fin de « Construire » de la base : le cycle construit, et des sources d'un cycle passé (aerodb 41e34a752)
+  builtFor: ['Construit pour le cycle {c}', 'Built for cycle {c}', 'Für Zyklus {c} gebaut', 'Construido para el ciclo {c}'],
+  staleSources: ['Sources du cycle précédent : téléchargez d’abord le cycle {n}, puis reconstruisez',
+    'Sources of the previous cycle: download cycle {n} first, then rebuild',
+    'Quellen des vorigen Zyklus: Laden Sie zuerst Zyklus {n} herunter und bauen Sie dann neu auf',
+    'Fuentes del ciclo anterior: descargue primero el ciclo {n} y luego reconstruya'
+  ],
+  // le verbe qui manque d'abord : reconstruire sans les sources du nouveau cycle refait l'ancien (retour du 1er nov. 2026)
+  staleCycle: ['Cycle {x} dépassé : téléchargez les sources du cycle {y}, puis reconstruisez',
+    'Cycle {x} out of date: download the sources of cycle {y}, then rebuild',
+    'Zyklus {x} überholt: Laden Sie die Quellen des Zyklus {y} herunter und bauen Sie dann neu auf',
+    'Ciclo {x} superado: descargue las fuentes del ciclo {y} y luego reconstruya'
   ],
   chainAsk: [
     'Tout mettre à jour, cycle AIRAC {c} : {sets}. Pour chaque jeu, télécharger puis construire, dans cet ordre ; la taille des téléchargements n’est pas connue d’avance ; aucune purge. Puis une seule publication, si tout a réussi.{skipped}',

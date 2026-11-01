@@ -496,6 +496,10 @@ _L6_JS = r"""async () => {
   out.isBuild = [{ zones: {} }, { set: 'base', verb: 'build' }, { state: 'done' }, null, { zones: [] }].map(v => { const o = M.viewOp(v); return !!o && o.set === 'base' && o.verb === 'build' });
   const z = s => ({ state: s }), zf = e => ({ state: 'failed', error: e });
   const o = f => { const r = M.outcome(f); return [r.kind, r.built, r.failed] };
+  // the built cycle and the one in force (aerodb 41e34a752): read, malformed values dropped, stale from the flag or the dates
+  out.cycleOut = [{ result: { cycle: '2026-10-01', current: '2026-10-29', stale: true } }, { result: { cycle: '2026-10-29', current: '2026-10-29', stale: false } },
+    { result: { cycle: '2026-10-01', current: '2026-10-29' } }, { result: { cycle: '01/10/2026', current: 'x' } }, { result: {} }]
+    .map(f => { const r = M.outcome(f); return [r.cycle, r.current, r.stale] });
   out.outcome = [
     { state: 'done', zones: { fr: z('built'), gb: z('built') }, result: { built: ['fr', 'gb'], failed: [] } },
     { state: 'done', result: { built: ['fr'], failed: [{ zone: 'gb', error: 'timeout' }], reason: 'partial' } },
@@ -538,6 +542,8 @@ def l6(c):
          'the bar: done / total of the view, else 0 over the zones asked; never above the total; no total, no percentage', what='progress')
     c.eq(r['clock'], ['0:00', '0:59', '2:05', '0:00', '60:00'], 'elapsed time as minutes:seconds', what='clock')
     c.eq(r['isBuild'], [True, True, False, False, False], 'a view is a base build when it carries its zones (or says set and verb)', what='viewOp base build')
+    c.eq(r['cycleOut'], [['2026-10-01', '2026-10-29', True], ['2026-10-29', '2026-10-29', False], ['2026-10-01', '2026-10-29', True], [None, None, False], [None, None, False]],
+         'the end of a build reads the built cycle and the one in force; stale when the sources are of a past cycle; malformed or absent: nothing said', what='built cycle')
     c.eq(r['outcome'], [['done', ['fr', 'gb'], []], ['partial', ['fr'], [{'zone': 'gb', 'error': 'timeout'}]], ['failed', [], [{'zone': 'fr', 'error': 'invalid-output'}]],
                         ['cancelled', ['fr'], []], ['interrupted', ['fr'], []], ['no-browser', [], []], ['xplane-in-page', [], []],
                         ['partial', ['fr'], [{'zone': 'gb', 'error': 'timeout'}]], ['failed', [], [{'zone': 'fr', 'error': 'x'}]], ['cancelled', ['fr'], []]],
@@ -754,8 +760,10 @@ def l7(c):
     c.eq(len(ops), 1, 'one entry in the journal fold', what='journal entries')
     c.ok(re.search(r'\d{2}:\d{2}Z', ops[0][1]) and norm(_trow('build', lang, 'opVerb: {')) in norm(ops[0][1]) and norm(_trow('partial', lang, 'opResult: {')) in norm(ops[0][1]), ops[0], 'time with Z, the verb, the result')
     _screen_ok(c, 'at the end')
-    # a second run with personal sources ticked: the ids follow, a clean end
-    st['views'] = [_view('done', step='Terminé', done=2, zones={'fr': _zs('built', 4, 4), 'gb': _zs('built', 5, 5)}, result={'built': ['fr', 'gb'], 'failed': [], 'commits': []}, jid='j2')]
+    # a second run with personal sources ticked: the ids follow, a clean end; its sources are of the previous cycle (aerodb 41e34a752)
+    _t, _c, _p, _n = _cycles()
+    _cur_day, _prev_day = _c.isoformat(), _p.isoformat()
+    st['views'] = [_view('done', step='Terminé', done=2, zones={'fr': _zs('built', 4, 4), 'gb': _zs('built', 5, 5)}, result={'built': ['fr', 'gb'], 'failed': [], 'commits': [], 'cycle': _prev_day, 'current': _cur_day, 'stale': True}, jid='j2')]
     st['i'] = 0
     st['start'] = (200, {'job': 'j2'})
     c.tap('[data-personal="nats"]')
@@ -766,6 +774,9 @@ def l7(c):
     want = _trow('sumDone', lang).replace('{built}', _zones_text(lang, 2))
     c.eq(norm(c.text('[data-build-result] b')), norm(want), 'a clean end: « Base construite : 2 zones »', what='summary')
     c.eq(len(_notes_with(c, want)), 1, 'its own notification', what='notifications')
+    c.eq([norm(c.text('[data-build-result] [data-built-cycle]')), norm(c.text('[data-build-result] [data-stale-sources]'))],
+         [norm(_trow('builtFor', lang).replace('{c}', _name(_p))), norm(_trow('staleSources', lang).replace('{n}', _name(_c)))],
+         'the end says the cycle it built and, the sources being of the previous cycle, to download the cycle in force first', what='built cycle')
     c.eq(c.count('[data-journal] [data-op]'), 2, 'two entries in the journal', what='journal entries')
     _screen_ok(c, 'after the second run')
     c.check_errors()
