@@ -81,6 +81,14 @@ export const TX = {
   rpmGone: ['retirée', 'removed', 'entfernt', 'retirada'],
   rpmTable: ['Table régime / débit', 'RPM / fuel flow table', 'Drehzahl-/Verbrauchstabelle', 'Tabla régimen / consumo'],
   review: ['Changements proposés', 'Proposed changes', 'Vorgeschlagene Änderungen', 'Cambios propuestos'],
+  // import de plusieurs fiches : la fiche de l'aperçu et son rang (« EC45 · 8 / 13 »), puis le bilan de la file
+  reviewOf: ['Changements proposés : {n}', 'Proposed changes: {n}', 'Vorgeschlagene Änderungen: {n}', 'Cambios propuestos: {n}'],
+  batchDone: ['Import terminé : {a} fiche(s) écrite(s), {s} sans changement, {k} passée(s).',
+    'Import finished: {a} sheet(s) written, {s} unchanged, {k} skipped.',
+    'Import abgeschlossen: {a} Datenblatt/-blätter geschrieben, {s} unverändert, {k} übersprungen.',
+    'Importación terminada: {a} ficha(s) escrita(s), {s} sin cambios, {k} omitida(s).'
+  ],
+  skipSheet: ['Passer cette fiche', 'Skip this sheet', 'Dieses Datenblatt überspringen', 'Omitir esta ficha'],
   reviewNew: ['Nouvelle fiche « {n} »', 'New sheet “{n}”', 'Neues Datenblatt „{n}“', 'Nueva ficha «{n}»'],
   reviewNone: ['Rien ne change.', 'Nothing changes.', 'Nichts ändert sich.', 'Nada cambia.'],
   field: ['Champ', 'Field', 'Feld', 'Campo'],
@@ -215,7 +223,8 @@ export const PATH_TX = {
   'tod.bufferNm': ['Descente · marge (NM)', 'Descent · buffer (NM)', 'Sinkflug · Puffer (NM)', 'Descenso · margen (NM)'],
   typicalWindKt: ['Vent typique (kt)', 'Typical wind (kt)', 'Typischer Wind (kt)', 'Viento típico (kt)'],
   registration: ['Immatriculation', 'Registration', 'Kennzeichen', 'Matrícula'],
-  type: ['Type', 'Type', 'Typ', 'Tipo']
+  type: ['Type', 'Type', 'Typ', 'Tipo'],
+  notes: ['Notes', 'Notes', 'Hinweise', 'Notas']
 };
 
 /** Noms des origines d'un champ (aerodb : sheets.origins) : édité, V2, .lnmperf, ChatGPT… */

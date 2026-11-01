@@ -53,3 +53,9 @@
   (a flight and an OFP are Fuel's, not Maintenance's). Cases M6–M11.
 - **30 Oct 2026 — Fuel's editor removed** (step 5). Fuel keeps its « Fiches » list read-only, with « Utiliser » and links to
   `?app=maintenance#aircraft?sheet=<id>`; `perf_prompt.js` moved here (`git mv`). Details in modules/fuel/DECISIONS.md.
+- **1 Nov 2026 — an import of several sheets, one review at a time but said** (the user pasted thirteen ChatGPT sheets: « bug », a
+  review titled « Changements proposés » with no sheet, the English note proposed for replacement by a reply that describes itself).
+  Each review of an existing sheet says « Changements proposés : <name> » and its rank i / n; an existing sheet without any change is
+  passed without a click; « Passer cette fiche » writes nothing and goes to the next; the end notifies written / unchanged / skipped;
+  « Annuler » drops the queue (before, the queue stayed and came back at the next « Appliquer » of anything); an existing `notes` is
+  proposed unticked; the field « notes » is named ×4. Case M19.

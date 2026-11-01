@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Aircraft › Sheets: an import of several sheets says which sheet and how far** (`modules/aircraft/sheets.js`, `sheets_texts.js`, help ×4;
+  DECISIONS; noreg M19) — the user's paste of thirteen sheets: each review names its sheet and its rank (« Changements proposés : EC145 ·
+  8 / 13 »), unchanged sheets are passed, « Passer cette fiche », a summary at the end; « Annuler » drops the queue (it came back at the
+  next « Appliquer »); an existing note is replaced only when ticked; « notes » translated.
 - **aerodb: every read answers or fails, `aircraft()` included** (`frame/aerodb/aerodb.js`, `registry.js`; SPEC § 3, DECISIONS; test K62) —
   when the data repository's API stopped answering, `aircraft()` never resolved and a pilot's Fuel screen stayed inert; now the registry, the
   procedures, the VFR files, the cities and the listings have the same 10 s bound as the zone parts: an empty answer at the bound, read again

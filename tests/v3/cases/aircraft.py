@@ -435,6 +435,53 @@ def m14(c):
     c.eq((d['usableFuel'], d['cruise']['tasKt']), (20000, 330), 'the filled fields keep their values', what='C30J')
 
 
+@case('M19', 'Sheets: a paste of several sheets names each review and its rank, passes the unchanged ones, can skip one, ends with a summary',
+      'M', tags=('aircraft',), designs=('standard',), screens=False, langs4=True,
+      rule='the user, 1 Nov (thirteen sheets pasted, a review without the sheet\'s name): each review of an existing sheet says « Changements '
+      'proposés : <sheet> » and its rank i / n; an existing sheet without change is passed without a click; « Passer cette fiche » goes to the '
+      'next one, writing nothing; an existing note is replaced only when ticked by hand; the end says written, unchanged, skipped; '
+      '« Annuler » drops the rest of the queue')
+def m19(c):
+    ec25 = dict(EC25, notes='Note gardée.')
+    docs = [[f'aircraft/sheets/{x["id"]}.json', x, 'document'] for x in (ec25, C30J, A320)]
+    c.open('aircraft', docs=LEVEL3 + [['airline/fleet.json', fleet_doc(3), 'document']] + docs + [TYPES, ['cache/aircraft/ui.json', {'view': 'sheets'}, 'cache']],
+           wait=False, app='maintenance')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-do=paste]')", timeout=15000, what='the Fiches list is drawn')
+    help_placed(c)
+    reply = {'sheets': [{'id': 'A320', 'usableFuel': 18000}, {'id': 'EC25', 'cruise': {'tasKt': 150}, 'notes': 'Réponse de ChatGPT.'},
+                        {'id': 'C30J', 'usableFuel': 21000}, {'id': 'XNEW', 'name': 'XNEW', 'icao': 'XNEW', 'usableFuel': 500}]}
+    c.tap(f'{M} {SHEETS} [data-do="paste"]')
+    c.page.fill(f'{M} {SHEETS} textarea[data-k="pastetext"]', json.dumps(reply))
+    c.tap(f'{M} {SHEETS} [data-do="pasteread"]')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-review] [data-do=apply]')", what='the first review')
+    head = norm(c.text(f'{M} {SHEETS} [data-review] h2') or '')
+    c.ok(norm(tx(SX, 'reviewOf', c.lang).replace('{n}', 'EC25')) in head and '2 / 4' in head, head,
+         'the unchanged A320 is passed; the review names EC25 and its rank 2 / 4')
+    boxes = dict(c.js(f"[...document.querySelectorAll('{M} {SHEETS} [data-review] input[data-path]')].map(i => [i.dataset.path, i.checked])"))
+    c.eq([boxes.get('cruise.tasKt'), boxes.get('notes')], [True, False], 'a changed value is ticked, the replaced note is not', what='ticks')
+    label = c.js(f"[...document.querySelectorAll('{M} {SHEETS} [data-review] tr')].find(r => r.querySelector('input[data-path=notes]'))?.children[1].textContent.trim()")
+    c.eq(label, tx(SX, 'notes', c.lang, after='PATH_TX'), 'the field « notes » is named in the language of the screen', what='label')
+    c.tap(f'{M} {SHEETS} [data-do="skipsheet"]')
+    c.until(f"(document.querySelector('{M} {SHEETS} [data-review] h2')?.textContent || '').includes('C-130J · ')", what='« Passer cette fiche » goes to C30J (named C-130J)')
+    c.tap(f'{M} {SHEETS} [data-do="apply"]')
+    c.until(f"(document.querySelector('{M} {SHEETS} [data-review] h2')?.textContent || '').includes('XNEW')", what='then the new sheet XNEW, 4 / 4')
+    clear_notes(c)
+    c.tap(f'{M} {SHEETS} [data-do="apply"]')
+    want = norm(tx(SX, 'batchDone', c.lang).replace('{a}', '2').replace('{s}', '1').replace('{k}', '1'))
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", want, what='the end says 2 written, 1 unchanged, 1 skipped')
+    c.eq(sheet_of(c, 'C30J')['usableFuel'], 21000, 'the applied sheet is written', what='C30J')
+    c.eq(sheet_of(c, 'EC25')['cruise']['tasKt'], 141, 'the skipped sheet is untouched', what='EC25')
+    c.ok(sheet_of(c, 'XNEW') is not None, '', 'the new sheet is created')
+    # « Annuler » drops the queue: a second paste cancelled on its first review, then nothing comes back
+    c.tap(f'{M} {SHEETS} [data-do="paste"]')
+    c.page.fill(f'{M} {SHEETS} textarea[data-k="pastetext"]', json.dumps({'sheets': [{'id': 'C30J', 'usableFuel': 22000}, {'id': 'A320', 'usableFuel': 19000}]}))
+    c.tap(f'{M} {SHEETS} [data-do="pasteread"]')
+    c.until(f"(document.querySelector('{M} {SHEETS} [data-review] h2')?.textContent || '').includes('C-130J')", what='the review of the second paste')
+    c.tap(f'{M} {SHEETS} [data-do="cancel"]')
+    c.until(f"!document.querySelector('{M} {SHEETS} [data-review]')", what='« Annuler » closes the review and the queue')
+    c.eq([sheet_of(c, 'C30J')['usableFuel'], sheet_of(c, 'A320')['usableFuel']], [21000, 18000], 'nothing of the cancelled paste is written', what='cancel')
+
+
 @case('M15', 'Sheets: a ChatGPT reply is read into the review; « Appliquer » writes it stamped « chatgpt »', 'M', tags=('aircraft',), designs=('standard',),
       screens=False,
       rule='modules/aircraft SPEC 4: the ChatGPT reply (any shape: the aerodb reader) is a source like the others; preview, then a write through '

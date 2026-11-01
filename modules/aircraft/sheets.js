@@ -374,7 +374,14 @@ export function createSheetsView(host) {
         return drawList();
       case 'apply':
         return applyReview();
-      case 'cancel':
+      case 'skipsheet': // import de plusieurs fiches : celle-ci laissée telle quelle, la suivante
+        st.pending = null;
+        st.batch.skipped++;
+        return proposeIncoming(st.queue || [], st.batch);
+      case 'cancel': // la file d'un import est abandonnée avec l'aperçu (elle ne reprend jamais au prochain « Appliquer »)
+        st.pending = null;
+        st.queue = null;
+        st.batch = null;
         return st.edit ? editor(st.edit.id) : drawList();
     }
   }
@@ -411,16 +418,53 @@ export function createSheetsView(host) {
     return F.fillProfileGaps(F.normalize(src), F.normalize(structuredClone(p)));
   }
   /** Fiches lues (fichier, texte, OFP) : une fiche de même identifiant passe par l'aperçu des changements, une nouvelle
-   *  aussi (créée à l'application) ; une à la fois. */
-  function proposeIncoming(list) {
-    st.queue = list.slice(1);
-    const np = list[0];
-    if (!np) return drawList();
-    const old = st.sheets.find(x => x.id === np.id);
-    return review(old || null, old ? mergeInto(SH().normalize(structuredClone(old)), np) : np, {
-      src: np.source?.format || np.source?.file || '',
-      source: /lnm/i.test(np.source?.format || '') ? 'lnmperf' : np.calibration ? 'ofp' : 'import'
-    });
+   *  aussi (créée à l'application) ; une à la fois. Un import de plusieurs fiches (retour de l'utilisateur du 1er nov. 2026 :
+   *  treize fiches collées, un aperçu sans nom) : chaque aperçu nomme sa fiche et son rang, une fiche existante qui ne change
+   *  pas est passée sans clic, « Passer cette fiche » va à la suivante, et la fin dit le bilan. La note d'une fiche existante
+   *  n'est remplacée que cochée à la main (une réponse de ChatGPT y décrit souvent sa propre réponse). */
+  function proposeIncoming(list, batch = null) {
+    const F = SH();
+    st.batch = batch || {
+      n: list.length,
+      i: 0,
+      applied: 0,
+      same: 0,
+      skipped: 0
+    };
+    while (list.length) {
+      const np = list.shift(),
+        old = st.sheets.find(x => x.id === np.id),
+        after = old ? mergeInto(F.normalize(structuredClone(old)), np) : np;
+      st.batch.i++;
+      if (old && !changes(old, after)) {
+        st.batch.same++;
+        continue;
+      }
+      st.queue = list;
+      return review(old || null, after, {
+        src: np.source?.format || np.source?.file || '',
+        source: /lnm/i.test(np.source?.format || '') ? 'lnmperf' : np.calibration ? 'ofp' : 'import',
+        checked: path => !(path === 'notes' && old?.notes),
+        batch: st.batch
+      });
+    }
+    st.queue = null;
+    const b = st.batch;
+    st.batch = null;
+    if (b.n > 1 || b.same) ctx.notify(tt(TX.batchDone, {
+      a: b.applied,
+      s: b.same,
+      k: b.skipped
+    }), 'ok');
+    return st.edit && st.sheets.some(x => x.id === st.edit.id) ? editor(st.edit.id) : drawList();
+  }
+  /** Ce que l'aperçu montrerait entre deux fiches : des champs changés, une ligne RPM ajoutée, changée ou retirée. */
+  function changes(before, after) {
+    const diff = SH().profileDiff(before, after, {}, '');
+    return diff.rows.some(r => r.changed && !r.path.startsWith('source') && !r.path.startsWith('calibration') && r.path !== 'description' ||
+        r.changed && r.path === 'description') || diff.curve.length > 0 ||
+      (before.rpmFuelCurve || []).some(r => r.rpm !== null && r.rpm !== '' && !(after.rpmFuelCurve || []).some(a => rpmKey(a) === rpmKey(
+        r)));
   }
   /** Lit des fichiers choisis (CSV, JSON, .lnmperf, OFP) puis propose leurs fiches. */
   async function importFiles(files) {
@@ -629,13 +673,14 @@ export function createSheetsView(host) {
       diff,
       gone: dropped
     };
-    b.innerHTML = `<div class="f-card" data-review><h2>${esc(before ? tt(TX.review) : tt(TX.reviewNew, { n: after.name || after.id }))}${o.src ? ` <span class="f-muted">· ${esc(o.src)}</span>` : ''}</h2>
+    const many = o.batch?.n > 1;
+    b.innerHTML = `<div class="f-card" data-review><h2>${esc(before ? many ? tt(TX.reviewOf, { n: before.name || before.id }) : tt(TX.review) : tt(TX.reviewNew, { n: after.name || after.id }))}${o.src ? ` <span class="f-muted">· ${esc(o.src)}</span>` : ''}${many ? ` <span class="f-muted" data-rank>· ${o.batch.i} / ${o.batch.n}</span>` : ''}</h2>
     ${rows.length || diff.curve.length || dropped.length ? `<div class="f-scroll"><table class="f-table"><thead><tr><th></th><th>${esc(tt(TX.field))}</th><th class="f-num">${esc(tt(TX.before))}</th><th class="f-num">${esc(tt(TX.after))}</th></tr></thead><tbody>
       ${rows.map(r => `<tr>${box(`data-path="${esc(r.path)}"`, !o.checked || o.checked(r.path))}<td>${esc(fieldLabel(r.path, true))}</td>${cell(r.old)}${cell(r.now)}</tr>`).join('')}
       ${diff.curve.map(c => `<tr>${box(`data-curve="${esc(c.key)}"`, true)}<td>RPM ${esc(c.label)} <span class="f-muted">(${esc(tt(c.kind === 'added' ? TX.added : TX.replaced))})</span></td><td class="f-num">${esc(c.old)}</td><td class="f-num">${esc(c.now)}</td></tr>`).join('')}
       ${dropped.map((r, i) => `<tr>${box(`data-gone="${i}"`, true)}<td>RPM ${esc(r.rpm)}${r.altFt !== null && r.altFt !== undefined && r.altFt !== '' ? ` @ ${esc(r.altFt)} ft` : ''} <span class="f-muted">(${esc(tt(TX.rpmGone))})</span></td><td class="f-num">${esc(ff(r))}</td><td class="f-num">—</td></tr>`).join('')}
     </tbody></table></div>` : `<p class="f-muted">${esc(tt(TX.reviewNone))}</p>`}
-    <div class="f-row"><button type="button" class="primary" data-do="apply">${esc(tt(TX.apply))}</button><button type="button" data-do="cancel">${esc(tt(TX.cancel))}</button></div></div>`;
+    <div class="f-row"><button type="button" class="primary" data-do="apply">${esc(tt(TX.apply))}</button>${many ? `<button type="button" data-do="skipsheet">${esc(tt(TX.skipSheet))}</button>` : ''}<button type="button" data-do="cancel">${esc(tt(TX.cancel))}</button></div></div>`;
   }
   /** Écrit la sélection de l'aperçu (champs décochés gardés tels qu'avant), puis la fiche suivante de la file. */
   async function applyReview() {
@@ -659,7 +704,10 @@ export function createSheetsView(host) {
     await storeSheet(out, st.pending.source);
     if (gone()) return;
     st.pending = null;
-    if (st.queue?.length) return proposeIncoming(st.queue);
+    if (st.batch) {
+      st.batch.applied++;
+      return proposeIncoming(st.queue || [], st.batch);
+    }
     return st.edit && st.sheets.some(x => x.id === st.edit.id) ? editor(st.edit.id) : drawList();
   }
 
