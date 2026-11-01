@@ -14,6 +14,8 @@ Combustible, con la misión preparada. El vuelo en curso es el mismo en las dos 
   bajo «Compañía»): un toque pasa a Piloto.
 - **La ayuda.** Se abre en el capítulo de la pantalla mostrada; «Toda la ayuda», al principio, lleva a los demás manuales y
   a los tutoriales.
+- **El logotipo.** El icono de la app es el logotipo de su aerolínea cuando el repositorio de datos tiene uno (un archivo png,
+  svg o webp de 512 KB como máximo, nombrado en airline/settings.json: «logo»: «airline/logo.png»); si no, el avión teñido.
 
 <!-- chapter: missions -->
 # Misiones

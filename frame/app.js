@@ -1151,6 +1151,7 @@
     return Object.freeze({
       name: str(v.name),
       site: str(v.site),
+      logo: str(v.logo), // le logo de la compagnie : un fichier du dépôt des données (airline/…), lu par readLogo
       pages: Object.freeze({
         recordFlight: str(p.recordFlight),
         log: str(p.log),
@@ -1170,11 +1171,78 @@
     if (v === undefined) return;
     airlineKnown = true;
     const next = airlineOf(v);
+    readLogo(next.logo); // le fichier a pu changer sans que le réglage change : relu par révision, sans frais
     if (JSON.stringify(next) === JSON.stringify(airline)) return;
     airline = next;
     window.dispatchEvent(new CustomEvent('frame-airline', {
       detail: airline
     }));
+  }
+  // ---------------------------------------------------------------- le logo de la compagnie (1er nov. 2026)
+  // Un fichier du dépôt des données nommé une fois dans airline/settings.json (logo : « airline/logo.png »), lu par la couche
+  // de données comme tout fichier (FrameData.readBytes, gardé par révision, jamais une adresse externe) : png, webp ou svg
+  // reconnus à leurs premiers octets, 512 Ko au plus, décodable ; montré par une adresse blob: dans l'en-tête et l'onglet du
+  // navigateur de l'application Compagnie et dans le sélecteur d'applications. Sans logo, ou illisible : l'avion teinté.
+  const LOGO_MAX = 512 * 1024;
+  const LOGO_PATH = /^airline\/[\w.-]+\.(png|svg|webp)$/i;
+  let appLogo = null, // adresse blob: du logo, ou null
+    logoKey = '';
+  /** Type d'une image d'après ses premiers octets : png, webp, ou svg (un texte qui commence par <svg) ; '' sinon. */
+  function imageType(buf) {
+    const b = new Uint8Array(buf.slice(0, 1024)),
+      ascii = (i, n) => String.fromCharCode(...b.slice(i, i + n));
+    if (b[0] === 0x89 && ascii(1, 3) === 'PNG') return 'image/png';
+    if (ascii(0, 4) === 'RIFF' && ascii(8, 4) === 'WEBP') return 'image/webp';
+    const head = new TextDecoder('utf-8', {
+      fatal: false
+    }).decode(b);
+    return /^\uFEFF?\s*(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*(<!DOCTYPE svg[^>]*>\s*)?<svg[\s>]/i.test(head) ? 'image/svg+xml' : '';
+  }
+  /** Relit le logo (path : celui du réglage de la compagnie) ; repeint seulement s'il a changé. */
+  async function readLogo(path) {
+    const p = LOGO_PATH.test(path || '') ? path : '';
+    const buf = p ? await FD.readBytes(p, {
+      max: LOGO_MAX
+    }).catch(() => null) : null;
+    const type = buf ? imageType(buf) : '';
+    const key = type ? `${p}:${buf.byteLength}:${type}` : '';
+    if (key === logoKey) return;
+    let url = null;
+    if (type) {
+      url = URL.createObjectURL(new Blob([buf], {
+        type
+      }));
+      // un fichier que le navigateur ne sait pas dessiner retombe sur l'avion, sans erreur
+      const ok = await new Promise(res => {
+        const i = new Image();
+        i.onload = () => res(i.naturalWidth > 0);
+        i.onerror = () => res(false);
+        i.src = url;
+      });
+      if (!ok) {
+        URL.revokeObjectURL(url);
+        url = null;
+      }
+    }
+    if (appLogo) URL.revokeObjectURL(appLogo);
+    appLogo = url;
+    logoKey = url ? key : '';
+    paintAppIcon();
+  }
+  /** L'icône d'une application : le logo pour Compagnie quand il est là, sinon son icône teintée. */
+  const appIconHtml = p => p.id === 'company' && appLogo ? `<img class="f-logo" alt="" src="${esc(appLogo)}">` : icon(p.icon);
+  /** L'icône de l'en-tête et l'onglet du navigateur de l'application affichée (écrits seulement s'ils changent). */
+  function paintAppIcon() {
+    const ico = $('fAppIco');
+    if (!ico) return;
+    const html = appIconHtml(APP),
+      logo = APP.id === 'company' && !!appLogo;
+    if (ico.dataset.logo !== String(logo) || logo && ico.querySelector('img')?.getAttribute('src') !== appLogo) {
+      ico.innerHTML = html;
+      ico.dataset.logo = String(logo);
+      ico.classList.toggle('f-has-logo', logo);
+    }
+    paintFavicon();
   }
   /** Relit l'identité et les usages de l'appareil, puis branche le transport qui leur correspond. */
   async function loadDevice() {
@@ -1380,13 +1448,21 @@
   async function paintFavicon() {
     const ico = $('fAppIco'),
       link = document.querySelector('link[rel="icon"]');
-    if (!APP.tintIcon || !ico || !link) return;
+    if (!ico || !link) return;
+    // Compagnie avec son logo : le logo lui-même
+    if (APP.id === 'company' && appLogo) {
+      if (link.getAttribute('href') !== appLogo) link.setAttribute('href', appLogo);
+      return;
+    }
+    if (!APP.tintIcon) return;
     try {
       faviconText ??= await fetch(new URL('assets/favicon-flight.svg', ROOT)).then(r => r.ok ? r.text() : Promise.reject(r.status));
     } catch {
       faviconText = null;
       return;
     }
+    // le logo arrivé pendant la lecture du fichier : il garde l'onglet (l'avion teinté ne repasse jamais par-dessus)
+    if (APP.id === 'company' && appLogo) return void(link.getAttribute('href') !== appLogo && link.setAttribute('href', appLogo));
     const tint = getComputedStyle(ico).color,
       svg = faviconText.replace(/(<path\b[^>]*\bfill=")[^"]*"/, `$1${tint}"`),
       href = `data:image/svg+xml,${encodeURIComponent(svg)}`;
@@ -2614,7 +2690,7 @@
       const cur = p === APP,
         off = !cur && (p.level || 1) > deviceLevel,
         need = off ? `<small>${esc(t(T.appNeeds, { l: t(T.levelNames[(p.level || 1) - 1]) }))}</small>` : '';
-      return `<button type="button" class="f-tabpop-row" data-app="${esc(p.id)}"${cur ? ' aria-current="page"' : ''}${off ? ' disabled' : ''}><span class="f-app-ico" style="color:${esc(p.tint || 'currentColor')}">${icon(p.icon)}</span><span>${esc(t(p.name))}${p.id === 'company' && airline.name ? `<small>${esc(airline.name)}</small>` : ''}${need}</span></button>`;
+      return `<button type="button" class="f-tabpop-row" data-app="${esc(p.id)}"${cur ? ' aria-current="page"' : ''}${off ? ' disabled' : ''}><span class="f-app-ico${p.id === 'company' && appLogo ? ' f-has-logo' : ''}" style="color:${esc(p.tint || 'currentColor')}">${appIconHtml(p)}</span><span>${esc(t(p.name))}${p.id === 'company' && airline.name ? `<small>${esc(airline.name)}</small>` : ''}${need}</span></button>`;
     }).join('');
     el.style.visibility = 'hidden';
     document.body.append(el);
@@ -3943,7 +4019,7 @@
     $('fName').textContent = t(APP.name);
     // identité de l'application (icône dans sa teinte, posée à la source) et sélecteur d'application
     $('fAppIco').style.color = APP.tint || '';
-    $('fAppIco').innerHTML = icon(APP.icon);
+    paintAppIcon(); // le logo de la compagnie pour Compagnie, sinon l'icône teintée
     $('fApp').title = t(T.appSwitch);
     $('fApp').onclick = toggleAppPop;
     paintFavicon();

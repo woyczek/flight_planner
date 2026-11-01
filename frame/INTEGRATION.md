@@ -917,6 +917,10 @@ screens: [{ id: 'sources', scripts: ['aerodb/airac.js?v=0', 'aerodb/catalogue.js
   `window.SogScreens[id] = { screen(view, ctx) }`.
 - `level`: below it, the frame shows "This screen is not offered at this usage level" and loads nothing more.
 - `reads` / `writes` declare the screen's data adapter, as a module's `meta`.
+- `FrameData.readBytes(path, { max })` (1 Nov 2026, the airline's logo): the bytes of a file of the data repository
+  (`ArrayBuffer`) or null — its revision in the known tree, read by the transport's `readBytes` (GitHub, GitLab: the raw
+  blob; the launcher: `data/<path>`), kept on the device by revision (meta `bytes:<path>`), the kept copy offline; larger
+  than `max` (512 KB by default), null and nothing kept. Never decoded nor trusted there: the caller checks the type.
 - An application may declare `elsewhere: { <module id>: <application id> }` (1 Nov 2026): the address of that module, opened
   in this application, is replaced by the same address in the other one (`#fuel?mission=<id>` from Company opens Fuel in
   Pilot; `#missions` in Pilot opens Company). A module writes its usual address; the frame hands it over.

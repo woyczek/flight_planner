@@ -30,6 +30,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Data: the build no longer copies its count of sources on every zone** (`tools/regen/base.py`; INTEGRATION, DECISIONS; tests K46, K65) — the
   26 zone lines all said « construction (90 / 90 sources) »: the count is the whole build's, now given once (`inputs`), and a zone shows a count
   only when it has its own.
+- **Frame: the airline's logo is the icon of the Company application** (`frame/app.js` `readLogo`,
+  `frame/store/frame_data.js` `readBytes`, the transports' `readBytes`; frame SPEC, INTEGRATION, DECISIONS; help ×4;
+  noreg A83) — a png, svg or webp file of the data repository named in `airline/settings.json`, 512 KB at most, in the
+  header, the switcher and the browser tab, fitted and never cropped; otherwise the tinted plane.
 - **Frame: a third application, Company** (`frame/app.js` `APPS.company`, `elsewhere`; `frame/help/intro-company.*`;
   frame SPEC, INTEGRATION, DECISIONS; help ×4; noreg A82) — the airline pilot's application, Missions alone for now; Missions
   leaves Pilot; « Prepare this flight » opens Fuel in Pilot, an old `#missions` in Pilot opens Company.

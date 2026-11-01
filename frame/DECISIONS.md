@@ -2447,3 +2447,12 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   Pilot (« Préparer ce vol », the query kept), Pilot hands `#missions` to Company (an old address). The flight in progress
   is common. Features SOG sets Missions' `meta.apps` to `['company']`. Noreg A82 (switcher, bar, manual, handovers), N
   cases opened in Company.
+- **1 Nov 2026 — The Company application's icon is the airline's logo** (Simplification, from the user: not a tinted plane
+  but the logo): `airline/settings.json` names it once (`logo: "airline/logo.png"`); a file of the data repository, read
+  by the data layer like any file (`FrameData.readBytes`, the transports' `readBytes`, kept by revision) — never an
+  external address. The frame accepts png, webp (magic bytes) or svg (a text starting with `<svg`), 512 KB at most, and a
+  file the browser decodes; it shows it by a `blob:` address (an svg in an `<img>` runs no script) in the header (28 px),
+  the switcher (48 px) and the browser tab of Company, `object-fit: contain`, centred, transparent: a wide logo shrinks,
+  never cropped nor deformed. None, unreadable or too big: the tinted plane, without an error. Read again with the airline
+  (by revision, so a new file is redrawn). Test logos: `tests/v3/fixtures/airline/logo-dalton.png` (its sticker's shadow
+  removed, the white kept) and `logo-rm.png`. The administrator will set it through the assistant (roadmap). Noreg A83.

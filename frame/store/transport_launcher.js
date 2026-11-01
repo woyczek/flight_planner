@@ -72,18 +72,11 @@
         return j.tree;
       },
       async read(path) {
-        let r;
-        try {
-          r = await fetch(new URL(`data/${path.split('/').map(encodeURIComponent).join('/')}`, ROOT), {
-            cache: 'no-store'
-          });
-        } catch {
-          throw Object.assign(new Error('offline'), {
-            offline: true
-          });
-        }
-        if (!r.ok) throw new Error(`launcher: ${path} ${r.status}`);
-        return r.text();
+        return (await fileOf(path)).text();
+      },
+      /** Octets d'un fichier de data/ (une image : le logo de la compagnie), sans décodage. */
+      async readBytes(path) {
+        return (await fileOf(path)).arrayBuffer();
       },
       async commit(changes, message, parent) {
         const j = await call('__setup/batch', {
@@ -104,6 +97,21 @@
         })
       } : {})
     };
+  }
+  /** Réponse du lanceur pour un fichier de data/ ; erreur réseau → err.offline, refus → erreur. */
+  async function fileOf(path) {
+    let r;
+    try {
+      r = await fetch(new URL(`data/${path.split('/').map(encodeURIComponent).join('/')}`, ROOT), {
+        cache: 'no-store'
+      });
+    } catch {
+      throw Object.assign(new Error('offline'), {
+        offline: true
+      });
+    }
+    if (!r.ok) throw new Error(`launcher: ${path} ${r.status}`);
+    return r;
   }
   /** Page servie par un lanceur ? { data, dataGit } ; null sinon (site, appli, fichier). */
   launcher.detect = async () => {

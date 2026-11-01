@@ -655,6 +655,36 @@
     };
   })().finally(() => treeNowP = null);
 
+  /** Un fichier binaire du dépôt (le logo de la compagnie, 1er nov. 2026) : ArrayBuffer ou null — sa révision dans l'arbre
+   *  connu (l'arbre du moment s'il ne le porte pas, comme une lecture), lu par le transport (readBytes), gardé sur l'appareil
+   *  par révision (meta « bytes:<chemin> ») ; hors ligne ou en échec, la copie gardée ; plus gros que max, null et rien de
+   *  gardé. Le contenu n'est ni décodé ni vérifié ici : l'appelant contrôle le type. */
+  async function readBytes(path, {
+    max = 512 * 1024
+  } = {}) {
+    const key = `bytes:${path}`,
+      kept = await getMeta(key).catch(() => null),
+      T = cfg.transport;
+    if (!T?.readBytes || T.kind === 'local') return kept?.buf || null;
+    try {
+      const remote = await getMeta('remote');
+      let tree = remote?.tree || (await treeNow(T)).tree;
+      if (!tree[path] && remote) tree = (await liveTree(T, remote)) || tree;
+      const rev = tree[path];
+      if (!rev) return null;
+      if (kept?.rev === rev) return kept.buf;
+      const buf = await T.readBytes(path, rev);
+      if (!(buf instanceof ArrayBuffer) || buf.byteLength > max) return null;
+      await setMeta(key, {
+        rev,
+        buf
+      });
+      return buf;
+    } catch {
+      return kept?.buf || null;
+    }
+  }
+
   function fetchOne(path, policy) {
     if (fetching.has(path)) return fetching.get(path);
     const job = (async () => {
@@ -1568,6 +1598,7 @@
     diagnostic,
     noteFailure,
     pendingList,
+    readBytes,
     cached,
     evict,
     revalidate,

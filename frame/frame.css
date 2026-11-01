@@ -154,6 +154,23 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   width: 100%;
   height: 100%
 }
+/* le logo de la compagnie (application Compagnie) : ajusté sans être déformé ni rogné, centré, sur fond transparent ; 28 px dans
+   l'en-tête, 48 px dans le sélecteur d'applications */
+.f-app-ico.f-has-logo {
+  width: 28px;
+  height: 28px
+}
+.f-app-ico .f-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  background: transparent
+}
+.f-tabpop .f-tabpop-row .f-app-ico.f-has-logo {
+  width: 48px;
+  height: 48px
+}
 .f-head .f-name {
   font-weight: 700;
   text-shadow: var(--sog-head-text-shadow);
