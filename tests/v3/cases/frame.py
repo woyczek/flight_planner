@@ -2335,8 +2335,11 @@ def a64(c):
     got = norm(c.js("() => document.querySelector('[data-card=\"status\"] [data-k=\"data\"]').textContent"))
     c.ok(want in got and 'glpat' not in got and '/api/v4' not in got, got, 'the CSP said, the host only, in the run’s language')
     logged = c.js("() => FrameData.diagnostic().then(d => d.failures.map(f => f.error).filter(e => e.startsWith('csp: ')))")
-    c.eq(logged, ['csp: gitlab.example (connect-src)'], 'the violation is written once to the failures of the diagnostic: host and directive only',
-         what='diagnostic')
+    # another host the run’s page also blocks (map tiles, when a map drew in the run) is written too, as it should: only the
+    # repository’s host is counted here, and every line keeps the form « csp: <host> (<directive>) »
+    c.eq([e for e in logged if 'gitlab.example' in e], ['csp: gitlab.example (connect-src)'],
+         'the violation is written once to the failures of the diagnostic: host and directive only', what='diagnostic')
+    c.ok(all(re.fullmatch(r'csp: [A-Za-z0-9.-]+(:\d+)? \([a-z-]+\)', e) for e in logged), str(logged), 'every logged violation: the host and the directive, nothing else')
     # the browser's own lines for the blocked calls are what this case provokes; any other error still counts
     c.errors[:] = [e for e in c.errors if 'gitlab.example' not in e or 'Content Security Policy' not in e]
 
