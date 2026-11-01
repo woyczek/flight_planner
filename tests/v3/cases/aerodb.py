@@ -3976,3 +3976,39 @@ def k65(c):
              'two zones with different counts, each its own; a zone without one has no count (never 0 / 0, never the global one)', what='counts')
         c.eq(view.get('inputs'), {'done': 1, 'total': 2}, 'the global count, once, in the job', what='inputs')
         c.ok(not any(s[z].get('total') == 2 for s in seen for z in s), 'global', 'the global count is never copied on a zone')
+
+
+@case('K66', 'Class E airspaces never rise above the State\'s class A floor: an openAIP E5 at FL 600 in the US is 17 999 ft, said capped', 'K', tags=('aerodb',), phone=False,
+      rule='Simplification 1 Nov 2026 (cross-section KSET-KDOV: 3 158 US class E spaces at FL 600, openAIP\'s « unlimited »): a class E space never goes above its State\'s class A floor (US, CA: FL180), capped: \'classA\'; other classes and other States keep the source\'s ceiling')
+def k66(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/vrp_sources.html', wait_until='load')
+    c.page.wait_for_function('!!window.AeroSources', timeout=30000)
+    got = c.js("""() => {
+      const sq = [[[-90, 40], [-89.9, 40], [-89.9, 40.1], [-90, 40.1], [-90, 40]]];
+      const f = (id, name, icaoClass, upper, country, extra = {}) => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates: sq },
+        properties: { _id: id, name, type: 26, icaoClass, country, upperLimit: upper, lowerLimit: { value: 700, unit: 1, referenceDatum: 0 }, ...extra } });
+      const fl = n => ({ value: n, unit: 6, referenceDatum: 2 }), ft = n => ({ value: n, unit: 1, referenceDatum: 1 });
+      const fc = { type: 'FeatureCollection', features: [
+        f('1', 'HILLSBORO CLASS E5', 4, fl(600), 'US'),
+        f('2', 'SMALL CLASS E', 4, ft(2500), 'US'),
+        f('3', 'SOME CLASS D', 3, ft(2500), 'US'),
+        f('4', 'HIGH CLASS B', 1, fl(600), 'US'),
+        f('5', 'CANADA CLASS E', 4, fl(600), 'CA'),
+        f('6', 'GERMAN CLASS E', 4, fl(600), 'DE'),
+        f('7', 'E AT FL180', 4, fl(180), 'US'),
+        f('8', 'E AT FL175', 4, fl(175), 'US')
+      ] };
+      const faa = { type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'Polygon', coordinates: sq },
+        properties: { NAME: 'DOVER CLASS E', CLASS: 'E', LOCAL_TYPE: 'CLASS_E5', UPPER_VAL: 60000, UPPER_UOM: 'FT', UPPER_CODE: 'MSL', LOWER_VAL: 700, LOWER_UOM: 'FT', LOWER_CODE: 'SFC' } }] };
+      const pick = a => ({ cls: a.cls, upper: a.upper, capped: a.capped ?? null });
+      return { oa: Object.fromEntries(AeroSources.geojson(fc, 'us_asp.geojson').airspaces.map(a => [a.name, pick(a)])),
+               faa: AeroSources.geojson(faa, 'faa_class.geojson').airspaces.map(pick) };
+    }""")
+    oa = got['oa']
+    c.eq(oa['HILLSBORO CLASS E5'], {'cls': 'E', 'upper': '17999 ft AMSL', 'capped': 'classA'}, 'a US E5 at FL 600: 17 999 ft AMSL, said capped (a field)', what='E5 FL600')
+    c.eq(oa['SMALL CLASS E'], {'cls': 'E', 'upper': '2500 ft AMSL', 'capped': None}, 'a class E at 2 500 ft: unchanged', what='E 2500')
+    c.eq((oa['SOME CLASS D'], oa['HIGH CLASS B']), ({'cls': 'D', 'upper': '2500 ft AMSL', 'capped': None}, {'cls': 'B', 'upper': 'FL 600', 'capped': None}),
+         'other classes keep the source ceiling', what='other classes')
+    c.eq((oa['CANADA CLASS E']['upper'], oa['GERMAN CLASS E']['upper']), ('17999 ft AMSL', 'FL 600'), 'Canada too (FL180); a State without a known class A floor keeps it', what='States')
+    c.eq((oa['E AT FL180']['upper'], oa['E AT FL175']['upper']), ('17999 ft AMSL', 'FL 175'), 'at the floor: capped; below it: kept', what='edges')
+    c.eq(got['faa'], [{'cls': 'E', 'upper': '17999 ft AMSL', 'capped': 'classA'}], 'the FAA Class Airspace E too', what='FAA')

@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: class E airspaces stop under the class A floor** (`shared/aero_sources.js`, parser version 21; SPEC, DECISIONS; test K66) — the
+  3 158 US class E spaces that openAIP gives up to FL 600 (its « unlimited ») now stop at 17 999 ft, below class A, and say their ceiling is
+  deduced (`capped: 'classA'`); Canada likewise; other classes keep their source ceiling. Rebuild the US zone to apply it.
 - **Data: the build no longer copies its count of sources on every zone** (`tools/regen/base.py`; INTEGRATION, DECISIONS; tests K46, K65) — the
   26 zone lines all said « construction (90 / 90 sources) »: the count is the whole build's, now given once (`inputs`), and a zone shows a count
   only when it has its own.

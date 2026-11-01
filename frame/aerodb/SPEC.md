@@ -71,7 +71,7 @@ removed (§ 5 quinquies); the raw sources never are.
 - In both formats airspace rings are `[[lat, lon], …]`; points carry `lat`, `lon`, `id` (aerodromes `icao`), airways
   carry `a` and `b` ends. Zone ids are those of `AERODB_ZONES`, plus `nat` (oceanic).
 - **Same-family overlaps (build statistics, parser version 19).** An airspace record is { `src`, `type`, `cls`, `name`, `key`,
-  `lower`, `upper`, `azba`, `admin`, `act`, `info`, `rings`, and, when flagged, `ovl` }. At publication, once a zone's
+  `lower`, `upper`, `azba`, `admin`, `act`, `info`, `rings`, and, when flagged, `ovl`, `capped` }. At publication, once a zone's
   airspaces are final (after the merge of the sources), `SiaBase.sameFamilyOverlaps` (`shared/sia_base.js`) looks for
   sectors of one **family** that **overlap with different floors**. The family is (`src`, `type`, `cls`, the name without its
   trailing sector number or letters: « DUBLIN CTA 3 » → « DUBLIN CTA », the rule of the point sheet's note in
@@ -85,6 +85,10 @@ removed (§ 5 quinquies); the raw sources never are.
     [{ `family`, `type`, `cls`, `src`, `members` (the names of the airspaces that overlap another with a different floor),
     `floors` (their floors as written, in the order of `members`) }] }, the 50 largest families at most (`count` is the total);
     absent from a zone published before version 19 or without the limit reader (`SiaAero.limitRead` not loaded);
+  - **`capped: 'classA'`** (parser version 21, 1 Nov 2026): the ceiling is deduced, not the source's — a class E space never goes above its
+    State's class A floor (`CLASS_A_FLOOR_FT` in `shared/aero_sources.js`: US and CA, 18 000 ft), so an openAIP or FAA class E at FL 600
+    (openAIP's « unlimited ») or above the floor reads `upper: '17999 ft AMSL'`; the other classes and States keep the source's ceiling.
+    The Map's cross-section says it (« plafond déduit, classe A au-dessus de FL180 »).
   - on each airspace involved, **`ovl`**: the family name (« DUBLIN CTA »), a string; absent otherwise. A reader that wants
     « sectors of one family overlap here » tests `a.ovl`; two airspaces with the same `ovl` (and the same `type`, `cls`,
     `src`) are the family. It is data of the source, not an error of the base: the Map says so, it does not cut.

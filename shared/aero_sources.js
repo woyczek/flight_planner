@@ -182,6 +182,9 @@
     admin: z.admin || '',
     act: z.act || '',
     info: z.info || '',
+    ...(z.capped ? {
+      capped: z.capped // plafond déduit, pas celui de la source : 'classA' (classe E sous la classe A de son État)
+    } : {}),
     rings: (z.rings || []).map(closed).filter(r => r.length > 3)
   });
   /** Types gardés (les autres — FIR, secteurs, parachutage, vol à voile… — n'apportent rien aux cartes de mission). */
@@ -563,6 +566,33 @@
     36: 'MCTR'
   };
   const OA_CLASS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', '', ''];
+  // plancher national de la classe A (pieds AMSL), par État (code pays d'openAIP ; FAA : US) : un espace de classe E ne monte jamais au-dessus.
+  // openAIP donne aux classes E des États-Unis le plafond « FL 600 » (sa valeur « illimité ») alors qu'elles s'arrêtent sous FL180, où commence
+  // la classe A (1er nov. 2026, coupe KSET → KDOV : 3 158 espaces E à FL 600) ; le Canada (sud) aussi à FL180
+  const CLASS_A_FLOOR_FT = {
+    US: 18000,
+    CA: 18000
+  };
+  /** Plafond en pieds AMSL d'une limite de la base (« FL 600 », « 2500 ft AMSL », « 762 m AMSL », « UNL ») ; null s'il n'est pas comparable
+   *  (sol, hauteur ASFC, texte libre). */
+  const amslFt = s => {
+    const v = String(s || '').trim().toUpperCase();
+    if (v === 'UNL') return Infinity;
+    let m = /^FL\s*(\d+)$/.exec(v);
+    if (m) return +m[1] * 100;
+    m = /^(\d+(?:\.\d+)?)\s*(FT|M)\s+AMSL$/.exec(v);
+    return m ? +m[1] * (m[2] === 'M' ? 3.28084 : 1) : null;
+  };
+  /** Plafond d'un espace de classe E plafonné au plancher de la classe A de son État : { upper: '17999 ft AMSL', capped: 'classA' } quand
+   *  la source le met au-dessus (ou illimité) ; {} sinon (les autres classes, et les États sans plancher connu, gardent le plafond de la source). */
+  const classECap = (cls, upper, country) => {
+    const floor = CLASS_A_FLOOR_FT[String(country || '').toUpperCase()],
+      ft = amslFt(upper);
+    return cls === 'E' && floor && ft !== null && ft >= floor ? {
+      upper: `${floor - 1} ft AMSL`,
+      capped: 'classA'
+    } : {};
+  };
   const OA_NAV = {
     0: 'DME',
     1: 'TACAN',
@@ -682,12 +712,15 @@
         if (p.upperLimit && ringsOf(g).length) {
           const type = OA_ASP[p.type] || 'OTHER';
           if (!KEEP.has(type)) continue;
+          const cls = OA_CLASS[p.icaoClass] || '',
+            upper = oaLimit(p.upperLimit);
           out.airspaces.push(zone('openaip', {
             type,
-            cls: OA_CLASS[p.icaoClass] || '',
+            cls,
             name: p.name,
             key: p.name,
-            upper: oaLimit(p.upperLimit),
+            upper,
+            ...classECap(cls, upper, p.country),
             lower: oaLimit(p.lowerLimit),
             act: p.byNotam ? 'NOTAM' : p.onRequest || p.onDemand ? 'sur demande' : activable(type) ? 'activable' : '',
             rings: ringsOf(g)
@@ -760,13 +793,16 @@
           'category', 'kind', 'airspace_type') || 'OTHER');
         if (/^CLASS_?[A-G]$/.test(type)) type = 'CTA';
         if (!KEEP.has(type)) continue;
+        const cls = faaClass || String(pick(p, 'class', 'icaoClass', 'airspace_class') || '').replace(/^CLASS_?/i, ''),
+          upper = p.UPPER_VAL !== undefined ? limit(p.UPPER_VAL, p.UPPER_UOM, p.UPPER_CODE) : String(pick(p, 'upper', 'upperLimit',
+            'ceiling', 'top') || '');
         out.airspaces.push(zone(src, {
           type,
-          cls: faaClass || String(pick(p, 'class', 'icaoClass', 'airspace_class') || '').replace(/^CLASS_?/i, ''),
+          cls,
           name: pick(p, 'name', 'NAME', 'designator', 'ident', 'id'),
           key: pick(p, 'designator', 'ident', 'GLOBAL_ID', 'id', 'name'),
-          upper: p.UPPER_VAL !== undefined ? limit(p.UPPER_VAL, p.UPPER_UOM, p.UPPER_CODE) : String(pick(p, 'upper', 'upperLimit',
-            'ceiling', 'top') || ''),
+          upper,
+          ...(faaClass ? classECap(cls, upper, 'US') : {}), // Class Airspace de la FAA : les États-Unis
           lower: p.LOWER_VAL !== undefined ? limit(p.LOWER_VAL, p.LOWER_UOM, p.LOWER_CODE) : String(pick(p, 'lower', 'lowerLimit',
             'floor', 'bottom') || ''),
           act: /NOTAM/i.test(p.TIMESOFUSE || '') ? 'NOTAM' : activable(type) ? 'activable' : '',

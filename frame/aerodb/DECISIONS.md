@@ -2313,3 +2313,17 @@ page is served to `Sec-Fetch-Site: none`, refused to `cross-site`, and, where th
 - **Bench**: K65 (two zones with different counts each keep their own, a zone without one has none, the global count once in `inputs` and
   never on a zone); K46 (no count on the zones, `inputs` 1 / 2).
 
+## 1 November 2026 — a class E space stops under the class A floor (parser version 21)
+
+- **The user, on the cross-section of KSET → KDOV**: « est-on sûrs du plafond des zones US ? ». In `sia/base/us/2026-10-01/airspaces.json`,
+  3 158 class E spaces (« … CLASS E5 », floor « 1200 ft ASFC ») carried `upper: 'FL 600'`, openAIP's value for « unlimited »; in the United
+  States class E stops below 18 000 ft MSL, class A runs from FL180 to FL600.
+- **Rule**: a class E space never goes above its State's class A floor. A table by State (`CLASS_A_FLOOR_FT`, openAIP's country code; the
+  FAA's Class Airspace is the US): US and CA at 18 000 ft. A class E whose ceiling is at or above the floor, or unlimited, gets `upper:
+  '17999 ft AMSL'` and **`capped: 'classA'`** (a field, not a free text, for the Map to word); a ceiling below the floor, the other classes and
+  the States not in the table keep the source's ceiling. The table lives with the reader that applies it (`shared/aero_sources.js`).
+- **Canada**: the southern domestic airspace's class A starts at FL180 (higher further north); 18 000 ft is the conservative value.
+- **Version 21** (`shared/sia_base.js` VERSION, `AeroCatalogue.PARSER_VERSION`): the zones built before show « outdated » until rebuilt.
+- **Bench**: K66 (an E5 at FL 600 → 17 999 ft capped; an E at 2 500 ft unchanged; D and B unchanged; Canada capped, Germany not; at FL180
+  capped, at FL175 kept; the FAA's class E too).
+
