@@ -2126,6 +2126,14 @@ def i32(c):
              and 'glpat-NEW' not in json.dumps(v), json.dumps(v), 'the token saved with the data repository’s instance and project, then tested; never handed back')
         L.gitlab_admin_save({'token': ''})
         c.eq(json.loads((tmp / 'gitlab.json').read_text(encoding='utf-8'))['token'], 'glpat-NEW', 'an empty token field keeps the saved token', what='keep')
+        # another instance without a token: refused, nothing written, no call (the saved token never goes to the new host)
+        before, n0 = (tmp / 'gitlab.json').read_text(encoding='utf-8'), len(calls)
+        v = L.gitlab_admin_save({'instance': 'https://other.example', 'project': 'a/b'})
+        c.ok(v['saved'] is False and v['status'] == 400 and v['reason'] == 'token-required' and (tmp / 'gitlab.json').read_text(encoding='utf-8') == before
+             and len(calls) == n0, json.dumps(v), 'another instance without its token: refused, nothing written, no network call')
+        v = L.gitlab_admin_save({'instance': 'HTTPS://GITLAB.EXAMPLE/', 'project': 'grp/other'})
+        c.ok(v['saved'] and json.loads((tmp / 'gitlab.json').read_text(encoding='utf-8'))['token'] == 'glpat-NEW', json.dumps(v)[:200],
+             'the same instance (case, final « / ») and another project: the token kept')
     finally:
         L.SECRETS, L.NO_REDIRECT_OPEN, L._data_gitlab_project = kept
         shutil.rmtree(tmp, ignore_errors=True)

@@ -23,6 +23,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `landing`; frame SPEC, DECISIONS; noreg A74) — opened without an address on the launcher's workstation, while data/ is
   not a git repository with a remote or `airline/settings.json` has no name; installed, it opens as before; an address
   asked for is served as is.
+- **Launcher: the administrator's GitLab token is only valid for its instance** (`tools/launch.py`
+  `gitlab_admin_save`; frame DECISIONS; noreg I32) — another instance saved without its token is refused, the previous
+  token never sent to the new host.
 - **Launcher: the count of active pilot tokens** (`tools/launch.py` `gitlab/tokens/count`; frame DECISIONS; noreg I32)
   — a number for the administrator's assistant, never a name nor a value.
 - **Data: a 304 Not Modified is « unchanged », not a failure** (`tools/aero_fetch.py`; INTEGRATION, DECISIONS; test K61) — the launcher's

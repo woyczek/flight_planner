@@ -57,6 +57,12 @@
       'Projekt nicht gefunden oder Token ohne Zugriff: Prüfen Sie das Projekt (Gruppe/Projekt) und dass dieses Konto Mitglied ist.',
       'Proyecto no encontrado o token sin acceso: compruebe el proyecto (grupo/proyecto) y que esta cuenta es miembro.'
     ],
+    tokenRequired: [
+      'Autre instance GitLab : collez aussi le jeton de cette instance (celui d’avant ne vaut que pour la sienne).',
+      'Another GitLab instance: paste this instance’s token too (the previous one is only valid for its own).',
+      'Andere GitLab-Instanz: Fügen Sie auch das Token dieser Instanz ein (das bisherige gilt nur für seine eigene).',
+      'Otra instancia de GitLab: pegue también el token de esta instancia (el anterior solo vale para la suya).'
+    ],
     badForm: [
       'Attendus : une instance en https, un projet « groupe/projet » et un jeton.',
       'Expected: an https instance, a “group/project” project and a token.',
@@ -157,6 +163,7 @@
       level: T.noLevel,
       project: T.noProject,
       form: T.badForm,
+      'token-required': T.tokenRequired,
       offline: T.offline
     };
     const why = r => r?.offline ? t(T.offline) : REASON[r?.reason] ? t(REASON[r.reason]) : r?.status === 409 ? t(T.noSecret) : t(T
@@ -164,7 +171,7 @@
         m: r?.message || r?.status || ''
       });
     // ce que le refus demande à l'administrateur : le jeton de l'administrateur (ouvert sous la liste) ou rien
-    const ADMIN_FIX = new Set(['secret', 'refused', 'scope', 'level', 'project', 'form']);
+    const ADMIN_FIX = new Set(['secret', 'refused', 'scope', 'level', 'project', 'form', 'token-required']);
     const day = iso => iso ? String(iso).slice(0, 10) : '';
     const ROLE = {
       10: 'Guest',

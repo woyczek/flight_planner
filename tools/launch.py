@@ -2631,13 +2631,18 @@ def _data_gitlab_project():
 def gitlab_admin_save(a):
     """{ instance?, project?, token } → secrets/gitlab.json (un champ vide ou absent : inchangé ; instance et projet absents
     du fichier : ceux du distant de data/), puis le test : { saved: true, ...gitlab_admin_test() } ; { saved: false, status: 400,
-    reason: form } si l'instance n'est pas en https ou le projet pas « groupe/projet ». La valeur n'est jamais rendue."""
+    reason: form } si l'instance n'est pas en https ou le projet pas « groupe/projet » ; reason: token-required si l'instance
+    change sans jeton donné (un jeton ne vaut que pour son instance : jamais l'ancien envoyé au nouvel hôte ; un autre
+    projet de la même instance le garde ; Sécurisation, 1er nov. 2026). La valeur n'est jamais rendue."""
     cur = _read_json(_secret_file('app', service='gitlab'))
     inst0, proj0 = _data_gitlab_project()
     vals = {k: str(a.get(k) or '').strip()[:500] for k in ('instance', 'project', 'token')}
-    vals['instance'] = vals['instance'].rstrip('/') or ('' if cur.get('instance') else inst0)
+    vals['instance'] = vals['instance'].rstrip('/').lower() or ('' if cur.get('instance') else inst0)
     vals['project'] = vals['project'].strip('/') or ('' if cur.get('project') else proj0)
     inst, proj = vals['instance'] or str(cur.get('instance') or ''), vals['project'] or str(cur.get('project') or '')
+    same = lambda x, y: str(x or '').strip().rstrip('/').lower() == str(y or '').strip().rstrip('/').lower()
+    if cur.get('token') and not vals['token'] and not same(inst, cur.get('instance')):
+        return {'saved': False, 'ok': False, 'status': 400, 'reason': 'token-required', 'message': 'a new instance needs its own token'}
     if not (re.fullmatch(r'https://[A-Za-z0-9.-]+(?::\d+)?', inst) and re.fullmatch(r'[\w.-]+(?:/[\w.-]+)+', proj)
             and (vals['token'] or cur.get('token'))):
         return {'saved': False, 'ok': False, 'status': 400, 'reason': 'form', 'message': 'https instance, group/project and token expected'}

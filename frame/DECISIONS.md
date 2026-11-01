@@ -2359,3 +2359,9 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   /__setup/gitlab/tokens/count` → `{ ok: true, active: n }` (pilot tokens — named after a trigram — active and not
   revoked), or a refusal with its reason (`secret`: no administrator's token on the workstation); never a name nor a
   value. Workstation only, as the list, which stays the Pilots' tokens screen's. Noreg I32.
+- **1 Nov 2026 — The administrator's token is only valid for its instance** (Sécurisation's review of ceda4da6c, « à
+  corriger »): an empty token field kept the saved token even when the instance changed, so the test sent it at once to
+  the new host (`PRIVATE-TOKEN` on `/user`). Now another instance (compared in lower case, without a final « / ») with
+  no token is refused (`reason: token-required`, nothing written, no call), said on the screen; another project of the
+  same instance keeps the token; the instance is saved in lower case. The transport's rule, applied to the launcher.
+  Noreg I32.
