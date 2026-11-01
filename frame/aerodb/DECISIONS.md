@@ -2302,3 +2302,14 @@ page is served to `Sec-Fetch-Site: none`, refused to `cross-site`, and, where th
 - **Bench**: K63 (fr from its SIA, gb from its NATS file of 2611, de without AIRAC under the cycle in force; only fr blocks; the manifest per
   zone), K64 (calendar, names, the source table agrees, the report, base/fetch's plan and end), K44 / K46 / K49 follow the per-zone folders.
 
+## 1 November 2026 — the build's count of sources is the build's, not each zone's
+
+- **The user saw « construction (90 / 90 sources) » on all 26 zone lines** (Réglages): the builder reads every source once for all the zones
+  (one browser, one pass) and says its progress for the whole build (zone « * »); `base/build` copied it on every zone being built, and each
+  zone started at `0 / 0`.
+- **Now** the global count goes once in the job's data, `inputs: { done, total }` (named so, not `sources`, which `base/fetch`'s view uses for
+  the cycles held per dated source); a zone gets `done` / `total` only from a count of its own (`{ zone, sources }`, `{ zone, n }`), and has no
+  such keys otherwise. The builder gives none per zone today; the Données module shows a zone's figure only when `total > 0`.
+- **Bench**: K65 (two zones with different counts each keep their own, a zone without one has none, the global count once in `inputs` and
+  never on a zone); K46 (no count on the zones, `inputs` 1 / 2).
+

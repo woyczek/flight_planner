@@ -3374,7 +3374,8 @@ def k46(c):
         # the head of the job as the Données module reads it
         c.eq((view['unit'], view['done'], view['total']), ('zones', 5, 5), 'the head counts the zones done', what='head')
         c.ok(view['step'].startswith('5 zones sur 5'), view['step'], 'the step says « 5 zones sur 5 »')
-        c.ok(all(set(zs[z]) >= {'state', 'done', 'total'} for z in zones) and zs['gb']['done'] == 1 and zs['gb']['total'] == 2, str(zs['gb']), 'zones is a dict by zone: state, done and total (sources read / to read)')
+        c.ok(all('state' in zs[z] and 'done' not in zs[z] and 'total' not in zs[z] for z in zones), str(zs['gb']), 'zones is a dict by zone: its state; no count without a count of its own')
+        c.eq(view.get('inputs'), {'done': 1, 'total': 2}, "the build's count of sources, once, in the job's data (not copied on each zone)", what='inputs')
         # the token is in no view, journal, step or result
         tokens = _d5_lines(fake, 'token.txt')
         blob = json.dumps(view)
@@ -3946,3 +3947,32 @@ def k63(c):
         c.ok(not stale_fr or any(x.startswith('fr: sources sia du cycle 2026-10-01') for x in view['log']), str(view['log'][-4:]), 'the blocking zone is said in the journal')
         idx = json.loads((data / 'sia' / 'base' / 'index.json').read_text(encoding='utf-8'))
         c.eq({z: idx['zones'][z]['cycle'] for z in ('fr', 'gb', 'de')}, res['folders'], 'the manifest carries each zone\'s cycle', what='manifest')
+
+
+@case('K65', 'Build job: a zone shows a count of sources only when the builder gives one for it; the build\'s count goes once in the job', 'K', static=True,
+      rule='Réglages 1 Nov 2026 (the user saw « construction (90 / 90 sources) » on all 26 zones): the builder\'s counts are global; a zone gets done / total only from a count of its own; job.data inputs = { done, total } once')
+def k65(c):
+    import tempfile
+    RJ, B, fn, check = _d5_modules()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, fake = _d5_scene(td)
+        _d5_modes(fake, {'gb': 'slow', 'nl': 'slow', 'de': 'slow', 'counts': {'gb': [1, 4], 'nl': [3, 3]}})
+        run = _D5Run(RJ, data, fake, {'zones': ['de', 'gb', 'nl']})
+        seen = []
+        import time
+        t = time.time()
+        while time.time() - t < 20:
+            v = run.job.view() if run.job else None
+            if v and v.get('zones'):
+                seen.append({z: {k: v['zones'][z].get(k) for k in ('state', 'done', 'total')} for z in v['zones']})
+            if v and v.get('result'):
+                break
+            time.sleep(0.05)
+        view = run.wait()
+        building = [s for s in seen if s.get('gb', {}).get('total') is not None]
+        c.ok(bool(building), str(seen[-1:]), 'a count reached the zones that have one')
+        last = building[-1] if building else {}
+        c.eq({z: (last[z]['done'], last[z]['total']) for z in ('gb', 'nl', 'de')}, {'gb': (1, 4), 'nl': (3, 3), 'de': (None, None)},
+             'two zones with different counts, each its own; a zone without one has no count (never 0 / 0, never the global one)', what='counts')
+        c.eq(view.get('inputs'), {'done': 1, 'total': 2}, 'the global count, once, in the job', what='inputs')
+        c.ok(not any(s[z].get('total') == 2 for s in seen for z in s), 'global', 'the global count is never copied on a zone')

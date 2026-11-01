@@ -19,8 +19,9 @@ ni jeton, ni paramètre, ni fichier de départ). La page fait UN seul POST /__se
 par POST /__setup/regen/job/put { job, token, zone, files } (regen_jobs.Jobs.put : 409 / 403 / 400 / 413, la route n'écrit rien) ; le verbe la reçoit par
 job.take(zone, timeout). L'adresse du lanceur : launcher_origin().
 
-État lisible par la page (GET regen/job?id=) : job.data['zones'] = { zone: { state ('waiting' | 'building' | 'built' | 'failed' | 'cancelled'), done, total
-(sources lues / à lire), error (code), message?, commit?, warning?, files?, seconds? } }, step « N zones sur M », done / total en zones.
+État lisible par la page (GET regen/job?id=) : job.data['zones'] = { zone: { state ('waiting' | 'building' | 'built' | 'failed' | 'cancelled'), done?, total?
+(sources lues / à lire de CETTE zone, seulement quand le constructeur en donne un compte propre), error (code), message?, commit?, warning?, files?, seconds? } },
+job.data['inputs'] = { done, total } (les sources de toute la construction, une fois), step « N zones sur M », done / total en zones.
 Résultat : { ok, cycle, cycles: { <zone construite>: cycle | null }, folders: { <zone>: cycle écrit }, current, stale, blocking: [{ zone, source, cycle }],
 sources: { sia | nats | enaire: { cycle, current, stale } }, builtOn, built: [zones], failed: [{ zone, error }], commits: [{ zone, commit }], zones, instances,
 seconds, reason? } ; cycles : le cycle de la source datée de la zone (fr : SIA, gb : NATS, es : ENAIRE ; tools/aero_cycles.py), null pour une zone sans source
@@ -445,7 +446,9 @@ def build(job, args, ctx):
     timeout = ctx.get('zone_timeout', ZONE_TIMEOUT)
 
     lock = threading.Lock()        # l'état partagé (le journal lit job.view() pendant que les fils écrivent)
-    st = {z: {'state': 'waiting', 'done': 0, 'total': 0} for z in zones}
+    # une zone n'a de compte de sources (done / total) que si le constructeur en donne un pour ELLE ; le compte de toute la construction
+    # (zone « * ») va une fois dans job.data['inputs'] = { done, total } (1er nov. 2026 : il était recopié sur chaque zone, « 90 / 90 » partout)
+    st = {z: {'state': 'waiting'} for z in zones}
 
     def publish_progress():
         done = sum(1 for s in st.values() if s['state'] in ('built', 'failed', 'cancelled'))
@@ -501,14 +504,14 @@ def build(job, args, ctx):
                             fatal.append(str(o['error'])[:300])
                         else:
                             errs[o['zone']] = str(o['error'])[:300]
-                    elif isinstance(o.get('sources'), int):
-                        for z in zones:
-                            if st[z]['state'] == 'building':
-                                update(z, total=o['sources'])
-                    elif isinstance(o.get('n'), int):
-                        for z in zones:
-                            if st[z]['state'] == 'building':
-                                update(z, done=o['n'])
+                    elif isinstance(o.get('sources'), int) or isinstance(o.get('n'), int):
+                        k, v = ('total', o['sources']) if isinstance(o.get('sources'), int) else ('done', o['n'])
+                        if o['zone'] == '*':
+                            with lock:
+                                job.data['inputs'] = {**(job.data.get('inputs') or {'done': 0, 'total': 0}), k: max(0, v)}
+                                publish_progress()
+                        elif st[o['zone']]['state'] == 'building':
+                            update(o['zone'], **{k: max(0, v)})
             threading.Thread(target=read, daemon=True).start()
             for z in zones:
                 update(z, state='building')

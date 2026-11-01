@@ -326,7 +326,8 @@ job answers `reason: 'no-browser'` and the screen says it. Full contract: SPEC �
 ```js
 const r = await ctx.launcher.job('regen/job', { set: 'base', verb: 'build', args: { zones: ['fr', 'gb', 'es'], personal: [] } },
   { onProgress: j => draw(j.zones, j.step, j.done, j.total), signal });   // after a reload: ctx.launcher.resume('regen/job', …)
-// j.zones  = { fr: { state: 'waiting'|'building'|'built'|'failed'|'cancelled', done, total, error, commit?, warning?, files?, seconds? }, … }
+// j.zones  = { fr: { state: 'waiting'|'building'|'built'|'failed'|'cancelled', done?, total?, error, commit?, warning?, files?, seconds? }, … }
+// j.inputs = { done, total }: the sources of the whole build, read / to read (once, for the head of the panel)
 // r.result = { ok, cycle, cycles: { fr: '2026-10-01', de: null, … }, folders: { fr: '2026-10-01', de: '2026-10-29', … }, current: '2026-10-29',
 //              stale: true, blocking: [{ zone: 'fr', source: 'sia', cycle: '2026-10-01' }], sources: { sia: { cycle, current, stale }, nats: {…}, enaire: {…} },
 //              builtOn: '2026-11-01', built: ['fr', …], failed: [{ zone, error }], commits: [{ zone, commit }], instances, seconds, reason? }
@@ -344,7 +345,8 @@ const r = await ctx.launcher.job('regen/job', { set: 'base', verb: 'build', args
   each zone back as soon as it is ready; the job writes and **commits it alone** (the page's trigram as author, no push) while the next ones come; the
   module lets `aerodb` read the new files and sends the commits with « Synchroniser ». A zone that fails publishes nothing; the others go on. The job
   goes on if the page closes (`resume`).
-- **Per-zone line**: `state` `'waiting'` (« en attente »), `'building'` with `done` / `total` (« construction (n / m sources) »), `'built'`
+- **Per-zone line**: `state` `'waiting'` (« en attente »), `'building'` (with `done` / `total` only when the builder gives a count of the zone's
+  own; never the build's global count, never `0 / 0`), `'built'`
   (« construite »), `'failed'` with `error` (a code: `browser-failed`, `browser-exited`, `timeout`, `page-error`, `invalid-output`, `write-failed`;
   `message` has the detail), `'cancelled'`. The head: `step` « N zones sur M », `done` / `total` in zones. The journal also gets `gb: construite, 13
   fichier(s) écrit(s), commit …`.

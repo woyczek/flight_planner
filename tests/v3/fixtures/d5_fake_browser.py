@@ -84,6 +84,9 @@ def main(argv):
     log('pids.txt', f'{zones[0]} {child.pid}')
     say(sources=2)
     say(n=1, m=2)
+    for zone, (n, total) in (modes.get('counts') or {}).items():  # un compte propre à une zone, quand l'essai en donne un
+        say(zone, sources=total)
+        say(zone, n=n)
     for zone in zones:
         mode = modes.get(zone, 'ok')
         if mode == 'exit':
