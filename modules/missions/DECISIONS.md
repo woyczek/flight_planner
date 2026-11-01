@@ -23,6 +23,10 @@
   names come back with the Map's drawing of a mission (lot 4).
 - **31 Oct 2026 — `flight.mission` is a field of Fuel's** (`CF.FUEL_FIELDS`), written by Fuel's door only; the report and the
   flight log may read it later (no consumer yet: a debt, not a rule).
+- **1 Nov 2026 — « sans fichier » was the device, not the data** (the user: « beaucoup de missions sans fichiers »; 57 of the 59
+  registry rows have their file, only G-001 and G-002 have none). The module read with `ctx.data.get`, which gives null at once for a
+  file not yet on the device, and said « ne se lit pas » for all of them. Now `read(path, { wait: true })`, bounded, and three causes
+  said apart (missing, late, unreadable); Fuel's door reads the same way. Case N5.
 - **30 Oct 2026 — the rendezvous belongs to the assignment.** Dated rendezvous and the crew's channels (Discord, SRS,
   JoinFS…) are assignment data written by the CPCO, shown with Ouvrir / Copier, readable by every pilot of the airline
   (the fleet's access model); a session password is a known limit, said in the help.

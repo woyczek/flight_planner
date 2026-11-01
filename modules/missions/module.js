@@ -45,10 +45,37 @@ const TX = {
   block: ['Bloc estimé', 'Estimated block', 'Geschätzte Blockzeit', 'Bloque estimado'],
   operation: ['Opération', 'Operation', 'Operation', 'Operación'],
   notes: ['Notes', 'Notes', 'Hinweise', 'Notas'],
-  unread: ['Le fichier de la mission ne se lit pas : seul le registre est montré.',
-    'The mission file cannot be read: only the registry is shown.',
-    'Die Missionsdatei ist nicht lesbar: nur das Register wird gezeigt.',
-    'El archivo de la misión no se lee: solo se muestra el registro.'
+  // le fichier d'une mission qui ne donne pas la mission, par cause (Simplification, 1er nov. : « beaucoup de missions sans fichiers ») ;
+  // seul le registre est alors montré
+  missing: ['Fichier de la mission introuvable ({p}) : seul le registre est montré.',
+    'Mission file not found ({p}): only the registry is shown.',
+    'Missionsdatei nicht gefunden ({p}): nur das Register wird gezeigt.',
+    'Archivo de la misión no encontrado ({p}): solo se muestra el registro.'
+  ],
+  late: [
+    'Fichier de la mission pas encore sur l’appareil (synchronisation) : seul le registre est montré, la mission s’affiche dès qu’il arrive.',
+    'Mission file not on this device yet (synchronisation): only the registry is shown, the mission appears as soon as it arrives.',
+    'Missionsdatei noch nicht auf dem Gerät (Synchronisierung): nur das Register wird gezeigt, die Mission erscheint, sobald sie ankommt.',
+    'Archivo de la misión aún no está en el dispositivo (sincronización): solo se muestra el registro; la misión aparece en cuanto llegue.'
+  ],
+  unreadable: ['Fichier de la mission illisible ({e}) : seul le registre est montré.',
+    'Mission file unreadable ({e}): only the registry is shown.',
+    'Missionsdatei unlesbar ({e}): nur das Register wird gezeigt.',
+    'Archivo de la misión ilegible ({e}): solo se muestra el registro.'
+  ],
+  noIdType: ['mission.id ou mission.type absent', 'mission.id or mission.type missing', 'mission.id oder mission.type fehlt',
+    'falta mission.id o mission.type'
+  ],
+  regLate: ['Registre des missions pas encore sur l’appareil (synchronisation) : la liste s’affiche dès qu’il arrive.',
+    'Mission registry not on this device yet (synchronisation): the list appears as soon as it arrives.',
+    'Missionsregister noch nicht auf dem Gerät (Synchronisierung): die Liste erscheint, sobald es ankommt.',
+    'Registro de misiones aún no está en el dispositivo (sincronización): la lista aparece en cuanto llegue.'
+  ],
+  regLoading: ['Lecture du registre des missions…', 'Reading the mission registry…', 'Missionsregister wird gelesen…',
+    'Leyendo el registro de misiones…'
+  ],
+  regUnreadable: ['Registre des missions illisible ({e}).', 'Mission registry unreadable ({e}).', 'Missionsregister unlesbar ({e}).',
+    'Registro de misiones ilegible ({e}).'
   ]
 };
 
@@ -64,14 +91,44 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
 } [c]));
 /** Des minutes en « h:mm ». */
 const hmm = m => Number.isFinite(+m) && m > 0 ? `${Math.floor(m / 60)}:${String(Math.round(m % 60)).padStart(2, '0')}` : '';
-/** Un texte YAML lu par le lecteur du cadre (js-yaml, chargé une fois) ; null s'il ne se lit pas. */
-async function yaml(text) {
-  if (typeof text !== 'string' || !text.trim()) return null;
+const WAIT_MS = 8000; // attente d'un fichier pas encore sur l'appareil, au-delà : « pas encore sur l'appareil », la lecture continue
+
+/** Un fichier YAML du dépôt, lu en attendant le réseau s'il n'est pas encore sur l'appareil (data.get rendait null tout de suite :
+ *  la plupart des missions se disaient « illisibles » sur un appareil neuf) : { doc } ; sinon { why: 'missing' } (le dépôt ne l'a
+ *  pas), { why: 'unreadable', err } (YAML invalide), ou { why: 'late', later } au-delà de WAIT_MS (later : la même réponse, à
+ *  l'arrivée du fichier). */
+async function yamlFile(ctx, path) {
+  const job = Promise.resolve().then(() => ctx.data.read(path, {
+      wait: true
+    })).then(r => r ? r.value ?? r.text ?? null : null).then(parse, e => ({
+      why: 'unreadable',
+      err: String(e?.message || e)
+    })),
+    late = Symbol('late'),
+    first = await Promise.race([job, new Promise(res => setTimeout(() => res(late), WAIT_MS))]);
+  return first === late ? {
+    why: 'late',
+    later: job
+  } : first;
+}
+/** Le document d'un texte YAML (js-yaml du cadre, chargé une fois) : { doc }, { why: 'missing' } sans texte, { why: 'unreadable', err }. */
+async function parse(text) {
+  if (text && typeof text === 'object') return {
+    doc: text
+  };
+  if (typeof text !== 'string' || !text.trim()) return {
+    why: 'missing'
+  };
   try {
     if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
-    return globalThis.jsyaml.load(text);
-  } catch {
-    return null;
+    return {
+      doc: globalThis.jsyaml.load(text)
+    };
+  } catch (e) {
+    return {
+      why: 'unreadable',
+      err: String(e?.message || e).split('\n')[0].slice(0, 120)
+    };
   }
 }
 
@@ -86,15 +143,26 @@ export async function mount(el, ctx) {
     q: '',
     family: '',
     all: false,
-    open: null // { row, mission, drawn } : la mission choisie
+    open: null, // { row, mission, drawn, why, err } : la mission choisie
+    regWhy: {
+      why: 'loading'
+    } // le registre pas encore lu, en retard ou illisible ; null une fois lu
   };
   el.onclick = e => onClick(s, e);
   el.oninput = e => onInput(s, e);
   el.onchange = e => onInput(s, e);
-  const reg = MS.readRegistry(await yaml(await Promise.resolve(ctx.data.get(REGISTRY)).catch(() => null)));
-  if (S !== s) return;
-  s.rows = reg.filter(r => !r.organisation).sort((a, b) => b.id.localeCompare(a.id)); // les séries récentes d'abord
   draw(s);
+  let got = await yamlFile(ctx, REGISTRY);
+  if (S !== s) return;
+  if (got.why === 'late') {
+    s.regWhy = got;
+    draw(s);
+    got = await got.later; // le registre arrivé : la liste
+    if (S !== s) return;
+  }
+  s.regWhy = got.why ? got : null;
+  s.rows = MS.readRegistry(got.doc).filter(r => !r.organisation).sort((a, b) => b.id.localeCompare(a.id)); // les séries récentes d'abord
+  if (!s.open) draw(s);
   s.flown = await flownOf(s);
   if (S === s && !s.open) results(s);
 }
@@ -133,7 +201,8 @@ const day = d => /^\d{4}-\d{2}-\d{2}$/.test(d) ? d.split('-').reverse().join('/'
 
 /** La liste : « Tirer au sort », recherche, famille, puis les résultats (resultsHtml). */
 function listHtml(s) {
-  if (!s.rows.length) return `<div class="f-card"><p class="f-muted">${esc(s.tt(TX.none))}</p></div>`;
+  const w = s.regWhy;
+  if (!s.rows.length) return `<div class="f-card"><p class="f-muted" data-why="${esc(w?.why || 'none')}">${esc(w?.why === 'loading' ? s.tt(TX.regLoading) : w?.why === 'late' ? s.tt(TX.regLate) : w?.why === 'unreadable' ? s.tt(TX.regUnreadable, { e: w.err }) : s.tt(TX.none))}</p></div>`;
   const families = [...new Set(s.rows.map(r => r.family).filter(Boolean))].sort();
   return `<div class="f-card" data-pane="list"><div class="f-row"><button type="button" class="primary" data-do="draw">${esc(s.tt(TX.draw))}</button></div>
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.search))}</span><input type="search" data-k="q" value="${esc(s.q)}" placeholder="${esc(s.tt(TX.search))}" autocomplete="off"></label>
@@ -181,22 +250,30 @@ function missionHtml(s) {
   return `<div class="f-card" data-pane="mission" data-id="${esc(r.id)}">${drawn ? `<p class="f-badge" data-kind="accent" data-drawn>${esc(s.tt(TX.drawn))}</p>` : ''}
     <h2><b>${esc(r.id)}</b> ${esc(m?.title || r.title)}</h2>
     <dl class="f-dl">${dl(TX.operation, r.operation)}${dl(TX.route, [dep, arr].filter(Boolean).join(' → '))}${dl(TX.aircraft, (m?.aircraft || []).map(a => a.type).filter(Boolean).join(', ') || r.types.join(', '))}${dl(TX.block, hmm(m?.estimate?.blockMin || r.blockMin))}</dl>
-    ${m === null ? `<p class="f-muted">${esc(s.tt(TX.unread))}</p>` : ''}
+    ${s.open.why ? `<p class="f-muted" data-why="${esc(s.open.why)}">${esc(s.open.why === 'late' ? s.tt(TX.late) : s.open.why === 'missing' ? s.tt(TX.missing, { p: `missions/${r.folder}/${r.file}` }) : s.tt(TX.unreadable, { e: s.open.err || s.tt(TX.noIdType) }))}</p>` : ''}
     ${m?.summary ? `<p data-summary>${esc(m.summary)}</p>` : ''}
     ${m?.notes?.length ? `<h3>${esc(s.tt(TX.notes))}</h3><ul>${m.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
     <div class="f-row"><a class="f-btn primary" data-do="prepare" href="#fuel?mission=${encodeURIComponent(r.id)}">${esc(s.tt(TX.prepare))}</a>${drawn ? `<button type="button" data-do="draw">${esc(s.tt(TX.drawAgain))}</button>` : ''}<button type="button" data-do="back">${esc(s.tt(TX.back))}</button></div></div>`;
 }
 
-/** Ouvre une mission : son fichier lu (le registre suffit s'il ne se lit pas). */
+/** Ouvre une mission : son fichier lu (le registre suffit s'il ne vient pas, la cause dite) ; un fichier en retard est repris
+ *  à son arrivée si la mission est encore ouverte. */
 async function openMission(s, row, drawn = false) {
-  const doc = await yaml(await Promise.resolve(s.ctx.data.get(`missions/${row.folder}/${row.file}`)).catch(() => null));
+  const got = await yamlFile(s.ctx, `missions/${row.folder}/${row.file}`);
   if (S !== s) return;
-  s.open = {
-    row,
-    mission: MS.readMission(doc),
-    drawn
+  const show = g => {
+    const mission = g.doc ? MS.readMission(g.doc) : null;
+    s.open = {
+      row,
+      mission,
+      drawn,
+      why: g.why || (mission ? '' : 'unreadable'), // un YAML lu sans mission.id ni mission.type : illisible, sans autre message
+      err: g.err || ''
+    };
+    draw(s);
   };
-  draw(s);
+  show(got);
+  if (got.why === 'late') got.later.then(g => S === s && s.open?.row === row && show(g));
 }
 
 /** Saisie : la recherche et la famille filtrent la liste. */

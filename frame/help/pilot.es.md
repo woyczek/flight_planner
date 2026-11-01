@@ -681,10 +681,11 @@ Las misiones de la compañía, las del repositorio común (escritas con el CPCO)
 ## Bueno saber
 
 - El módulo lee las misiones y nunca las modifica; se escriben en el CPCO.
+- Una misión cuyo archivo no llega lo dice: «no encontrado» (el repositorio no lo tiene), «aún no está en el dispositivo» (la sincronización lo trae, la misión aparece al llegar) o «ilegible» (con el motivo). Entonces solo se muestra el registro.
 - Un vuelo en preparación solo se sustituye tras una pregunta; un vuelo iniciado nunca (anule la salida, o termine el vuelo, antes).
 - El sobre, el lector página a página y las asignaciones llegarán más tarde.
 
-<!-- fr: e975c077cc8a -->
+<!-- fr: 2cf76a36abfd -->
 
 <!-- chapter: settings -->
 # Ajustes

@@ -24,6 +24,10 @@ on the same data. The CPCO (authoring) stays V2 until rebuilt as the third appli
   ("BA 118 Mont-de-Marsan (LFBM)"); units are those of the files (degrees, minutes, kt, "FL240" / "1500 ft",
   "H+1h30mn" through the existing `hOffset`). The YAML is read by the frame's YAML reader (the one of the registry),
   never a second parser.
+- **A file that does not come says why** (1 Nov 2026, case N5): the registry and the mission files are read waiting for the
+  network (8 s at most, then « pas encore sur l'appareil » and the file is taken when it arrives); « introuvable » only when the
+  repository has not the file (with its path); an invalid YAML, or one without `mission.id` / `mission.type`, is « illisible » with
+  the reason; the registry row alone is shown. The late line has no case (in the suite the store answers at once).
 - **One index, read once**: the module reads `mission_registry.yaml` for the list (id, family, title, operation,
   aircraft types, origin, destination, estimate, maps) and the mission file only when one is opened. The registry's
   IndexedDB / localStorage copies of V2 are not reused: the frame's data layer is the cache.

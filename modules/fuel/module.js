@@ -3647,8 +3647,11 @@ function applyOfp(ofp) {
 async function applyMission(id) {
   const s = S,
     ctx = S.ctx,
+    // lu en attendant le réseau (8 s au plus) : un fichier pas encore sur l'appareil n'est pas « introuvable »
     yaml = async path => {
-      const text = await Promise.resolve(ctx.data.get(path)).catch(() => null);
+      const text = await Promise.race([Promise.resolve().then(() => ctx.data.read(path, {
+        wait: true
+      })).then(r => r?.value ?? r?.text ?? null).catch(() => null), new Promise(res => setTimeout(() => res(null), 8000))]);
       if (typeof text !== 'string' || !text.trim()) return null;
       try {
         if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);

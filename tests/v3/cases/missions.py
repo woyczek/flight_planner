@@ -1,5 +1,5 @@
 """Area N — Missions (modules/missions/SPEC.md): the V2 missions read as they are (frame/lib/mission.js), the list of the airline's missions,
-choose or draw, and the flight handed to Fuel.  Cases: N1–N4.  Invented missions only (names, positions, callsigns, the aerodromes XTST
+choose or draw, and the flight handed to Fuel.  Cases: N1–N5.  Invented missions only (names, positions, callsigns, the aerodromes XTST
 and XTSU): no AIP content and no real mission of the user's data."""
 from lib import Fail, case, norm, tx
 
@@ -220,6 +220,68 @@ def n4(c):
     c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", want, what='a started flight: said')
     f = c.doc('pilot/ABC/current_flight.json')
     c.eq([(f or {}).get('route', {}).get('dep'), (f or {}).get('mission')], ['LFRS', None], 'the started flight is unchanged', what='started')
+
+
+# three registry rows whose file does not give a mission: absent from the repository, invalid YAML, a YAML without mission.id / type
+BROKEN_REGISTRY = REGISTRY + """  - id: X-006A
+    family: TESTCHARLIE
+    title: Sans fichier
+    folder: Z_TEST/X-006A
+    files: [missionX-006A.yaml]
+  - id: X-007A
+    family: TESTCHARLIE
+    title: YAML cassé
+    folder: Z_TEST/X-007A
+    files: [missionX-007A.yaml]
+  - id: X-008A
+    family: TESTCHARLIE
+    title: Sans type
+    folder: Z_TEST/X-008A
+    files: [missionX-008A.yaml]
+"""
+
+
+@case('N5', 'Missions: a mission whose file does not come says why — absent from the repository, unreadable YAML, no id or type', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=True,
+      rule='Simplification 1 Nov (the user: « beaucoup de missions sans fichiers », 57 of 59 files present): files are read waiting for the '
+      'network (data.get gave null for a file not yet on the device); « introuvable » only when the repository has not the file, with its '
+      'path; an invalid YAML or one without mission.id / mission.type says « illisible » and why; the registry alone is shown. The late '
+      'line (« pas encore sur l\'appareil ») has no case: in the suite the store answers at once')
+def n5(c):
+    texts = [t for t in TEXTS if t[0] != 'missions/mission_registry.yaml'] + [
+        ['missions/mission_registry.yaml', BROKEN_REGISTRY],
+        ['missions/Z_TEST/X-007A/missionX-007A.yaml', 'mission: { id: X-007A, type: [\n  : : :\n'],
+        ['missions/Z_TEST/X-008A/missionX-008A.yaml', 'title: Sans type\n']]
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_TEXTS_JS, texts)
+    c.open('missions', docs=docs(), wait=False)
+    c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id]')", timeout=15000, what='the list of missions is drawn')
+    c.page.select_option(f'{M} [data-k="family"]', 'TESTCHARLIE')
+    c.until(f"document.querySelectorAll('{M} [data-list] [data-id]').length === 3", what='the three rows of TESTCHARLIE')
+
+    def opened(mid):
+        c.tap(f'{M} [data-list] [data-id="{mid}"]')
+        c.until(f"!!document.querySelector('{M} [data-pane=mission][data-id=\"{mid}\"] [data-why]')", timeout=12000, what=f'{mid} opens and says why')
+        got = (c.js(f"document.querySelector('{M} [data-why]').dataset.why"), norm(c.text(f'{M} [data-why]') or ''))
+        c.tap(f'{M} [data-do="back"]')
+        c.until(f"!!document.querySelector('{M} [data-pane=list]')", what='back to the list')
+        return got
+
+    why, text = opened('X-006A')
+    c.eq(why, 'missing', 'a file the repository has not: « introuvable »', what='X-006A')
+    c.eq(text, norm(tx(MS, 'missing', c.lang).replace('{p}', 'missions/Z_TEST/X-006A/missionX-006A.yaml')), 'with its path', what='X-006A text')
+    why, text = opened('X-007A')
+    c.eq(why, 'unreadable', 'an invalid YAML: « illisible »', what='X-007A')
+    head = norm(tx(MS, 'unreadable', c.lang).split('{e}')[0])
+    c.ok(text.startswith(head) and len(text) > len(norm(tx(MS, 'unreadable', c.lang).replace('{e}', ''))), text, 'with the reason of the YAML reader')
+    why, text = opened('X-008A')
+    c.eq(why, 'unreadable', 'a YAML without mission.id / mission.type: « illisible »', what='X-008A')
+    c.eq(text, norm(tx(MS, 'unreadable', c.lang).replace('{e}', tx(MS, 'noIdType', c.lang))), 'saying what is missing', what='X-008A text')
+    # a mission whose file is there opens without any of these lines
+    c.page.select_option(f'{M} [data-k="family"]', 'TESTALPHA')
+    c.tap(f'{M} [data-list] [data-id="X-002A"]')
+    c.until(f"!!document.querySelector('{M} [data-summary]')", what='X-002A opens on its summary')
+    c.eq(c.count(f'{M} [data-why]'), 0, 'a mission read whole says nothing more', what='X-002A')
 
 
 @case('N1', 'Missions bench: the three shapes of a V2 mission file, the registry, the flight a mission gives', 'N', tags=('missions',),

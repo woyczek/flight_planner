@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Missions: a mission file not yet on the device is no longer said unreadable** (`modules/missions/module.js`, Fuel's door in
+  `modules/fuel/module.js`; SPEC § 2, DECISIONS, help ×4; noreg N5) — the files were read without waiting for the network: on a new
+  device most missions showed « ne se lit pas ». Now read waiting (8 s at most, then « pas encore sur l'appareil », taken on arrival),
+  and « introuvable » (with its path) or « illisible » (with the reason) only when that is the case.
 - **Data: each zone is built for its own source's cycle** (`tools/aero_cycles.py`, `tools/regen/base.py`, `tools/regen/base_sources.py`,
   `frame/aerodb/build/headless.js`, `shared/sia_base.js`; INTEGRATION, DECISIONS; tests K63, K64) — the French SIA files no longer date every
   zone: France follows the SIA, the United Kingdom NATS, Spain ENAIRE, and a zone without an AIRAC source has no cycle and is never « out of
