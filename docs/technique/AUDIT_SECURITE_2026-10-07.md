@@ -1001,7 +1001,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 149 | A changed GitLab instance needs its own token (ca9e23445): the point of 148 fixed; pilot tokens' count (01b6f511f) | acceptable |
 | 150 | Group of 1 November noon: one enrolment path (7272b0414), the administrator's assistant card (9d0700ad3) | acceptable |
 | 151 | Group of 1 November afternoon: the pilot token just created shown alone (6b90f3463) | acceptable |
-| 152 | Launcher: the data branch opened to Developers by the administrator's token, `/__setup/gitlab/admin/branch` (c6f3bc38b) | **to fix** |
+| 152 | Launcher: the data branch opened to Developers by the administrator's token, `/__setup/gitlab/admin/branch` (c6f3bc38b) | **to fix** (fixed in 153) |
+| 153 | The data branch: no force push, protected when it was not, the restore checked (d74d4431d): the points of 152 fixed | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2282,6 +2283,12 @@ rewrite or delete it: protect it instead (push Developer, merge Maintainer, no f
 create again), the restoring create is not checked, so a double refusal leaves the branch unprotected without saying so;
 check it and report it clearly. The short window without protection is unavoidable on the free tier and acceptable, as is
 the default unprotect level.
+
+**153. The points of 152 fixed (d74d4431d) — acceptable.** “Open” now means protected, push allowed to Developers and
+force push off. Opening sets `allow_force_push: false` (alone when Developers already push); an unprotected branch is
+protected (push Developer, merge as before or Maintainer, no force push); in the fallback, a refused new protection puts the
+former one back and checks it, and a double refusal returns `unprotected` with a clear sentence and a line in the
+launcher's log. The default unprotect level is noted in DECISIONS.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
