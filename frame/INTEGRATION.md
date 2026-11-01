@@ -912,7 +912,8 @@ screens: [{ id: 'sources', scripts: ['aerodb/airac.js?v=0', 'aerodb/catalogue.js
 - `reads` / `writes` declare the screen's data adapter, as a module's `meta`.
 - `launcher: { routes: [...] }` (29 Oct 2026) gives `routes()`: the launcher client reduced to those routes, as a
   module's `ctx.launcher` (`call`, `job`…), or null without a launcher on this workstation (or from a paired device). The
-  Pilots' tokens screen declares `gitlab/tokens` and `gitlab/tokens/revoke`. Before drawing, the frame checks them against
+  Pilots' tokens screen declares `gitlab/tokens`, `gitlab/tokens/revoke` and `gitlab/admin` (the administrator's token
+  tested and saved, 1 Nov 2026). Before drawing, the frame checks them against
   the launcher's published table (`GET /__setup/routes`, read once per detected launcher, R-C4): one missing and the screen
   says « Le lanceur de ce poste est plus ancien que cet écran » instead of drawing; a launcher without the table, nothing
   checked (noreg A48).

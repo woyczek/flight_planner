@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Maintenance › Pilots' tokens: the administrator's GitLab token said, tested and saved on the screen**
+  (`frame/settings/pilot_tokens.js`, `tools/launch.py` `gitlab/admin`; frame DECISIONS; noreg A39, I32) — the screen
+  says what the token must be (a personal access token, scope `api`, an expiry, the account Maintainer or Owner);
+  GitLab's refusals are said by their cause (401 token refused, 403 not Maintainer or without `api`, 404 project not
+  found) instead of « GitLab refused: 401 Unauthorized »; « Test the administrator's token » gives the account, role,
+  scopes and expiry and refuses a token without `api`; the token is pasted there instead of a file placed by hand.
 - **Data: a 304 Not Modified is « unchanged », not a failure** (`tools/aero_fetch.py`; INTEGRATION, DECISIONS; test K61) — the launcher's
   console no longer writes « échec … HTTP 304 » for an openAIP layer that has not changed: the local copy is kept and counted as a success;
   a 304 with no copy behind it is asked again without condition.

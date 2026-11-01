@@ -1232,6 +1232,27 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         v = gitlab_token_revoke(a) if path.endswith('/revoke') else gitlab_token_create(a)
         return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
 
+    @route('GET', '/__setup/gitlab/admin', public='poste')
+    def _get_gitlab_admin(self, path):
+        # « Tester le jeton de l'administrateur » (écran « Jetons des pilotes ») : qui il est, ses portées, son expiration, son
+        # rôle dans le projet ; jamais sa valeur
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json(gitlab_admin_test())
+
+    @route('POST', '/__setup/gitlab/admin', public='poste')
+    def _post_gitlab_admin(self, path, body):
+        # le jeton de l'administrateur (et l'instance, le projet) posé depuis l'écran « Jetons des pilotes », puis testé : plus
+        # de secrets/gitlab.json à écrire à la main
+        if self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        try:
+            a = json.loads(body or b'{}')
+        except ValueError:
+            return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+        v = gitlab_admin_save(a if isinstance(a, dict) else {})
+        return self._json(v, v.get('status', 200) if v.get('saved') is False else 200)
+
     @route('GET', '/__setup/secrets', public='poste')
     def _get_secrets(self, path):
         # clés et identifiants des services externes (Paramètres : Installation pour la suite, Mon profil pour un
@@ -2444,6 +2465,7 @@ GITLAB_TIMEOUT = 20
 GITLAB_LEVEL = 30  # Developer : écrit la branche si elle l'admet (Protected branches : « Developers + Maintainers »), jamais
 #                    les réglages du projet ; un jeton Maintainer pourrait les changer par l'API
 GITLAB_SCOPES = ['api']  # l'API REST (arbre, blobs, commits) : write_repository ne vaut que pour git en HTTP
+GITLAB_ADMIN_LEVEL = 40  # Maintainer : le rôle qu'il faut au compte de l'administrateur pour créer et révoquer ces jetons
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
     """Jamais une redirection suivie : un 30x est une erreur (le pendant, côté lanceur, du redirect: 'error' des transports
     du navigateur ; HTTPRedirectHandler recopierait un en-tête d'autorisation vers n'importe quel hôte)."""
@@ -2477,14 +2499,14 @@ def gitlab_cfg():
     return f'{inst}/api/v4', urllib.parse.quote(proj, safe=''), tok
 
 
-def gitlab_call(method, path, body=None):
-    """Appel de l'API GitLab du projet avec le jeton de l'administrateur : (statut, JSON) ; (0, message) sans réseau. Le
-    jeton n'apparaît dans aucun message rendu."""
+def gitlab_call(method, path, body=None, root=False):
+    """Appel de l'API GitLab du projet (root : de l'instance, /user…) avec le jeton de l'administrateur : (statut, JSON) ;
+    (0, message) sans réseau. Le jeton n'apparaît dans aucun message rendu."""
     cfg = gitlab_cfg()
     if not cfg:
         return 409, {'message': 'no GitLab secret on this workstation (secrets/gitlab.json: https instance, project, token)'}
     api, proj, tok = cfg
-    req = _gitlab_request(f'{api}/projects/{proj}{path}', method, body, tok)
+    req = _gitlab_request(f'{api}{path}' if root else f'{api}/projects/{proj}{path}', method, body, tok)
     try:
         with NO_REDIRECT_OPEN(req, timeout=GITLAB_TIMEOUT, what='GitLab') as r:
             raw = r.read()
@@ -2500,11 +2522,23 @@ def gitlab_call(method, path, body=None):
         return 0, {'message': data_sync.clean_text(str(e))[:200].replace(tok, '…')}
 
 
+def gitlab_refusal(code, j):
+    """Un refus de GitLab que l'écran traduit : { ok: false, status, reason, message } — reason : secret (rien sur le poste),
+    refused (401 : jeton absent, expiré ou révoqué), scope (403 insufficient_scope : sans la portée api), level (403 : le compte
+    n'a pas le rôle qu'il faut dans le projet), project (404 : projet introuvable ou hors de portée du jeton), offline (0)."""
+    msg = (j or {}).get('message', 'GitLab') if isinstance(j, dict) else 'GitLab'
+    msg = msg if isinstance(msg, str) else json.dumps(msg)
+    reason = {409: 'secret', 401: 'refused', 404: 'project', 0: 'offline'}.get(code, '')
+    if code == 403:
+        reason = 'scope' if 'insufficient_scope' in msg else 'level'
+    return {'ok': False, 'status': code or 502, 'reason': reason, 'message': msg}
+
+
 def gitlab_tokens():
     """Jetons d'accès du projet : [{ id, name, scopes, level, active, revoked, created, expires, used }] — jamais une valeur."""
     code, j = gitlab_call('GET', '/access_tokens?per_page=100')
     if code != 200 or not isinstance(j, list):
-        return {'ok': False, 'status': code or 502, 'message': (j or {}).get('message', 'GitLab') if isinstance(j, dict) else 'GitLab'}
+        return gitlab_refusal(code, j)
     return {'ok': True, 'tokens': [{'id': t.get('id'), 'name': str(t.get('name') or '')[:60], 'scopes': t.get('scopes') or [],
                                     'level': t.get('access_level'), 'active': bool(t.get('active')), 'revoked': bool(t.get('revoked')),
                                     'created': t.get('created_at'), 'expires': t.get('expires_at'), 'used': t.get('last_used_at')}
@@ -2527,7 +2561,7 @@ def gitlab_token_create(a):
     code, j = gitlab_call('POST', '/access_tokens', {'name': tri, 'scopes': GITLAB_SCOPES, 'access_level': GITLAB_LEVEL,
                                                      'expires_at': expires})
     if code not in (200, 201) or not isinstance(j, dict) or not j.get('token'):
-        return {'ok': False, 'status': code or 502, 'message': (j or {}).get('message', 'GitLab') if isinstance(j, dict) else 'GitLab'}
+        return gitlab_refusal(code, j)
     return {'ok': True, 'id': j.get('id'), 'name': j.get('name'), 'expires': j.get('expires_at'), 'token': j['token']}
 
 
@@ -2540,11 +2574,59 @@ def gitlab_token_revoke(a):
         return {'ok': False, 'status': 400, 'message': 'id expected'}
     code, j = gitlab_call('GET', f'/access_tokens/{tid}')
     if code != 200 or not isinstance(j, dict):
-        return {'ok': False, 'status': code or 502, 'message': (j or {}).get('message', 'GitLab') if isinstance(j, dict) else 'GitLab'}
+        return gitlab_refusal(code, j)
     if not re.fullmatch(r'[A-Z0-9]{2,5}', str(j.get('name') or '')):
         return {'ok': False, 'status': 403, 'message': 'only a pilot token (named after a trigram) is revoked here'}
     code, j = gitlab_call('DELETE', f'/access_tokens/{tid}')
-    return {'ok': True} if code in (200, 204) else {'ok': False, 'status': code or 502, 'message': (j or {}).get('message', 'GitLab')}
+    return {'ok': True} if code in (200, 204) else gitlab_refusal(code, j)
+
+
+def gitlab_admin_test():
+    """« Tester le jeton de l'administrateur » : { ok, username, bot, scopes, expires, level, problems } — qui il est (GET
+    /user), ses portées et son expiration (/personal_access_tokens/self ; None s'ils ne se lisent pas), son rôle dans le projet
+    (GET /projects/:id, permissions : le plus haut du projet et du groupe) ; problems : scope (sans api : refusé d'office),
+    level (moins que Maintainer) ; ok sans problème. Un refus de /user ou du projet : gitlab_refusal. Jamais la valeur."""
+    code, u = gitlab_call('GET', '/user', root=True)
+    if code != 200 or not isinstance(u, dict):
+        return gitlab_refusal(code, u)
+    code, s = gitlab_call('GET', '/personal_access_tokens/self', root=True)
+    s = s if code == 200 and isinstance(s, dict) else {}
+    scopes = [str(x) for x in s['scopes']] if isinstance(s.get('scopes'), list) else None
+    code, p = gitlab_call('GET', '')
+    if code != 200 or not isinstance(p, dict):
+        return gitlab_refusal(code, p)
+    perm = p.get('permissions') if isinstance(p.get('permissions'), dict) else {}
+    level = max([int(x.get('access_level') or 0) for x in (perm.get('project_access'), perm.get('group_access')) if isinstance(x, dict)] or [0])
+    problems = (['scope'] if scopes is not None and 'api' not in scopes else []) + (['level'] if level < GITLAB_ADMIN_LEVEL else [])
+    return {'ok': not problems, 'username': str(u.get('username') or '')[:60], 'bot': u.get('bot') is True, 'scopes': scopes,
+            'expires': s['expires_at'] if isinstance(s.get('expires_at'), str) else None, 'level': level, 'problems': problems}
+
+
+def _data_gitlab_project():
+    """(instance, projet) du distant de data/ quand c'est une adresse https d'un projet (https://hôte/groupe/projet[.git]),
+    sinon ('', '') : ce que l'écran propose quand l'administrateur ne les tape pas."""
+    url = str(data_sync.remote_info(DATA).get('url') or '')
+    m = re.fullmatch(r'(https://)(?:[^@/]*@)?([A-Za-z0-9.-]+(?::\d+)?)/([\w.-]+(?:/[\w.-]+)+)/?', url)
+    return (m.group(1) + m.group(2), re.sub(r'\.git$', '', m.group(3))) if m else ('', '')
+
+
+def gitlab_admin_save(a):
+    """{ instance?, project?, token } → secrets/gitlab.json (un champ vide ou absent : inchangé ; instance et projet absents
+    du fichier : ceux du distant de data/), puis le test : { saved: true, ...gitlab_admin_test() } ; { saved: false, status: 400,
+    reason: form } si l'instance n'est pas en https ou le projet pas « groupe/projet ». La valeur n'est jamais rendue."""
+    cur = _read_json(_secret_file('app', service='gitlab'))
+    inst0, proj0 = _data_gitlab_project()
+    vals = {k: str(a.get(k) or '').strip()[:500] for k in ('instance', 'project', 'token')}
+    vals['instance'] = vals['instance'].rstrip('/') or ('' if cur.get('instance') else inst0)
+    vals['project'] = vals['project'].strip('/') or ('' if cur.get('project') else proj0)
+    inst, proj = vals['instance'] or str(cur.get('instance') or ''), vals['project'] or str(cur.get('project') or '')
+    if not (re.fullmatch(r'https://[A-Za-z0-9.-]+(?::\d+)?', inst) and re.fullmatch(r'[\w.-]+(?:/[\w.-]+)+', proj)
+            and (vals['token'] or cur.get('token'))):
+        return {'saved': False, 'ok': False, 'status': 400, 'reason': 'form', 'message': 'https instance, group/project and token expected'}
+    r = secrets_save({'scope': 'app', 'service': 'gitlab', 'values': {k: v for k, v in vals.items() if v}})
+    if not r.get('ok'):
+        return {'saved': False, 'ok': False, 'status': 500, 'reason': '', 'message': r.get('message', '')}
+    return {'saved': True, **gitlab_admin_test()}
 
 
 def secrets_save(a):

@@ -307,13 +307,13 @@
       icon: 'plane',
       modules: ['aircraft']
     }],
-    // écrans de service : « Jetons des pilotes » (frame/settings/pilot_tokens.js), avec deux routes du lanceur seulement
+    // écrans de service : « Jetons des pilotes » (frame/settings/pilot_tokens.js), avec trois routes du lanceur seulement
     screens: [{
       id: 'pilot-tokens',
       scripts: ['settings/kit.js?v=0', 'settings/pilot_tokens.js?v=0'],
       level: 3,
       launcher: {
-        routes: ['gitlab/tokens', 'gitlab/tokens/revoke']
+        routes: ['gitlab/tokens', 'gitlab/tokens/revoke', 'gitlab/admin']
       }
     }, {
       id: 'devices',

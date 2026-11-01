@@ -4,8 +4,10 @@
   // 29 oct. 2026 ; frame/SPEC.md, frame/INTEGRATION.md § 13). Le dépôt des données est sur GitLab : chaque pilote reçoit un
   // jeton d'accès de PROJET à son trigramme, que l'administrateur crée ici et lui donne ; le pilote le colle une fois dans
   // Réglages › Accès aux données avec l'adresse du projet. Le lanceur du poste fait les appels avec le jeton de
-  // l'administrateur (secrets/gitlab.json), qu'il ne rend jamais : routes gitlab/tokens (liste, création) et
-  // gitlab/tokens/revoke (révocation). Le jeton d'un pilote n'est montré qu'une fois, à sa création, et jamais gardé ici.
+  // l'administrateur (secrets/gitlab.json), qu'il ne rend jamais : routes gitlab/tokens (liste, création),
+  // gitlab/tokens/revoke (révocation) et gitlab/admin (le jeton de l'administrateur posé ici et testé : qui, portées,
+  // expiration, rôle dans le projet ; 1er nov. 2026). Le jeton d'un pilote n'est montré qu'une fois, à sa création, et
+  // jamais gardé ici ; celui de l'administrateur n'est jamais relu par la page.
   // Contexte (frame/app.js renderScreen) : { t, lang, notify, ask, routes() } — routes() : le client du lanceur réduit aux
   // routes déclarées par l'écran, ou null (pas de lanceur, appareil appairé).
   const BASE = document.currentScript.src;
@@ -25,10 +27,81 @@
       'Esta pantalla usa el lanzador de este equipo (guarda el token del administrador): ábrala en el equipo donde se ejecuta.'
     ],
     noSecret: [
-      'Aucun accès GitLab de l’administrateur sur ce poste : secrets/gitlab.json (instance https, projet, jeton du propriétaire du projet).',
-      'No administrator GitLab access on this computer: secrets/gitlab.json (https instance, project, the project owner’s token).',
-      'Kein GitLab-Zugang des Administrators auf diesem Rechner: secrets/gitlab.json (https-Instanz, Projekt, Token des Projektinhabers).',
-      'Ningún acceso GitLab del administrador en este equipo: secrets/gitlab.json (instancia https, proyecto, token del propietario del proyecto).'
+      'Aucun jeton de l’administrateur sur ce poste : collez-le ci-dessous, dans « Jeton de l’administrateur ».',
+      'No administrator’s token on this computer: paste it below, in “Administrator’s token”.',
+      'Kein Token des Administrators auf diesem Rechner: Fügen Sie es unten unter „Token des Administrators“ ein.',
+      'Ningún token del administrador en este equipo: péguelo abajo, en «Token del administrador».'
+    ],
+    // les refus de GitLab, par raison (le lanceur la nomme : gitlab_refusal)
+    refused: [
+      'Jeton de l’administrateur refusé : absent, expiré ou sans la portée api — refaites-le et collez-le ci-dessous, dans « Jeton de l’administrateur ».',
+      'Administrator’s token refused: missing, expired or without the api scope — make it again and paste it below, in “Administrator’s token”.',
+      'Token des Administrators abgelehnt: fehlt, abgelaufen oder ohne den Bereich api — erstellen Sie es neu und fügen Sie es unten unter „Token des Administrators“ ein.',
+      'Token del administrador rechazado: ausente, caducado o sin el alcance api — vuelva a crearlo y péguelo abajo, en «Token del administrador».'
+    ],
+    noScope: [
+      'Jeton de l’administrateur sans la portée api : refaites-le avec la portée api et collez-le ci-dessous.',
+      'Administrator’s token without the api scope: make it again with the api scope and paste it below.',
+      'Token des Administrators ohne den Bereich api: Erstellen Sie es mit dem Bereich api neu und fügen Sie es unten ein.',
+      'Token del administrador sin el alcance api: vuelva a crearlo con el alcance api y péguelo abajo.'
+    ],
+    noLevel: [
+      'Ce compte n’est pas Maintainer du projet : donnez-lui le rôle Maintainer ou Owner (projet › Manage › Members).',
+      'This account is not Maintainer of the project: give it the Maintainer or Owner role (project › Manage › Members).',
+      'Dieses Konto ist nicht Maintainer des Projekts: Geben Sie ihm die Rolle Maintainer oder Owner (Projekt › Manage › Members).',
+      'Esta cuenta no es Maintainer del proyecto: dele el rol Maintainer u Owner (proyecto › Manage › Members).'
+    ],
+    noProject: [
+      'Projet introuvable ou jeton sans accès : vérifiez le projet (groupe/projet) et que ce compte en est membre.',
+      'Project not found or token without access: check the project (group/project) and that this account is a member of it.',
+      'Projekt nicht gefunden oder Token ohne Zugriff: Prüfen Sie das Projekt (Gruppe/Projekt) und dass dieses Konto Mitglied ist.',
+      'Proyecto no encontrado o token sin acceso: compruebe el proyecto (grupo/proyecto) y que esta cuenta es miembro.'
+    ],
+    badForm: [
+      'Attendus : une instance en https, un projet « groupe/projet » et un jeton.',
+      'Expected: an https instance, a “group/project” project and a token.',
+      'Erwartet: eine https-Instanz, ein Projekt „Gruppe/Projekt“ und ein Token.',
+      'Se esperan una instancia https, un proyecto «grupo/proyecto» y un token.'
+    ],
+    // le jeton de l'administrateur : ce qu'il faut, où le coller, le tester
+    admin: ['Jeton de l’administrateur', 'Administrator’s token', 'Token des Administrators', 'Token del administrador'],
+    adminNeed: [
+      'Un jeton d’accès personnel de votre compte GitLab (Préférences › Jetons d’accès), portée api, avec une expiration (un an au plus) ; ce compte doit être Maintainer ou Owner du projet. Il reste dans le lanceur de ce poste et n’est jamais réaffiché.',
+      'A personal access token of your GitLab account (Preferences › Access tokens), scope api, with an expiry (one year at most); this account must be Maintainer or Owner of the project. It stays in this computer’s launcher and is never shown again.',
+      'Ein persönliches Zugangstoken Ihres GitLab-Kontos (Preferences › Access tokens), Bereich api, mit Ablaufdatum (höchstens ein Jahr); dieses Konto muss Maintainer oder Owner des Projekts sein. Es bleibt im Starter dieses Rechners und wird nie wieder angezeigt.',
+      'Un token de acceso personal de su cuenta de GitLab (Preferences › Access tokens), alcance api, con caducidad (un año como máximo); esta cuenta debe ser Maintainer u Owner del proyecto. Se queda en el lanzador de este equipo y no se vuelve a mostrar.'
+    ],
+    fInst: ['Instance (vide : celle du dépôt des données)', 'Instance (empty: the data repository’s)',
+      'Instanz (leer: die des Datenrepositorys)',
+      'Instancia (vacía: la del repositorio de datos)'
+    ],
+    fProj: ['Projet, groupe/projet (vide : celui du dépôt des données)', 'Project, group/project (empty: the data repository’s)',
+      'Projekt, Gruppe/Projekt (leer: das des Datenrepositorys)', 'Proyecto, grupo/proyecto (vacío: el del repositorio de datos)'
+    ],
+    fTok: ['Jeton (vide : celui déjà enregistré)', 'Token (empty: the one already saved)', 'Token (leer: das bereits gespeicherte)',
+      'Token (vacío: el ya guardado)'
+    ],
+    adminSave: ['Enregistrer et tester', 'Save and test', 'Speichern und testen', 'Guardar y probar'],
+    adminTest: ['Tester le jeton de l’administrateur', 'Test the administrator’s token', 'Token des Administrators testen',
+      'Probar el token del administrador'
+    ],
+    adminSaved: ['Jeton de l’administrateur enregistré.', 'Administrator’s token saved.', 'Token des Administrators gespeichert.',
+      'Token del administrador guardado.'
+    ],
+    who: [
+      'Compte {u} : rôle {l} dans le projet, portées {s}, {e}.',
+      'Account {u}: role {l} in the project, scopes {s}, {e}.',
+      'Konto {u}: Rolle {l} im Projekt, Bereiche {s}, {e}.',
+      'Cuenta {u}: rol {l} en el proyecto, alcances {s}, {e}.'
+    ],
+    noExpiry: ['sans expiration', 'no expiry', 'ohne Ablaufdatum', 'sin caducidad'],
+    unreadable: ['illisibles', 'unreadable', 'nicht lesbar', 'ilegibles'],
+    noRole: ['aucun', 'none', 'keine', 'ninguno'],
+    adminGood: [
+      'Ce jeton peut créer et révoquer les jetons des pilotes.',
+      'This token can create and revoke the pilots’ tokens.',
+      'Dieses Token kann die Token der Piloten erstellen und widerrufen.',
+      'Este token puede crear y revocar los tokens de los pilotos.'
     ],
     list: ['Jetons du projet', 'Project tokens', 'Token des Projekts', 'Tokens del proyecto'],
     none: ['Aucun jeton pour l’instant.', 'No token yet.', 'Noch kein Token.', 'Ningún token por ahora.'],
@@ -76,15 +149,58 @@
       body.innerHTML = `<p class="f-msg" data-kind="warn" data-tokens-nolauncher>${esc(t(T.noLauncher))}</p>`;
       return;
     }
-    const why = r => r?.status === 409 ? t(T.noSecret) : r?.offline ? t(T.offline) : t(T.failed, {
-      m: r?.message || r?.status || ''
-    });
+    // un refus dit par sa raison (nommée par le lanceur), le message de GitLab tel quel sinon
+    const REASON = {
+      secret: T.noSecret,
+      refused: T.refused,
+      scope: T.noScope,
+      level: T.noLevel,
+      project: T.noProject,
+      form: T.badForm,
+      offline: T.offline
+    };
+    const why = r => r?.offline ? t(T.offline) : REASON[r?.reason] ? t(REASON[r.reason]) : r?.status === 409 ? t(T.noSecret) : t(T
+      .failed, {
+        m: r?.message || r?.status || ''
+      });
+    // ce que le refus demande à l'administrateur : le jeton de l'administrateur (ouvert sous la liste) ou rien
+    const ADMIN_FIX = new Set(['secret', 'refused', 'scope', 'level', 'project', 'form']);
     const day = iso => iso ? String(iso).slice(0, 10) : '';
-    async function draw(fresh = null) {
+    const ROLE = {
+      10: 'Guest',
+      20: 'Reporter',
+      30: 'Developer',
+      40: 'Maintainer',
+      50: 'Owner'
+    };
+    // résultat de « Tester » : qui, rôle, portées, expiration, puis ce qui manque (ou que tout va)
+    const said = v => {
+      if (!v) return '';
+      if (!Array.isArray(v.problems)) return `<p class="f-msg" data-kind="err" data-admin-result="refused">${esc(why(v))}</p>`;
+      const who = t(T.who, {
+        u: v.username || '?',
+        l: ROLE[v.level] || (v.level ? String(v.level) : t(T.noRole)),
+        s: v.scopes ? v.scopes.join(', ') || '—' : t(T.unreadable),
+        e: v.expires ? t(K.expires, {
+          d: day(v.expires)
+        }) : t(T.noExpiry)
+      });
+      const lines = v.problems.map(p => t(p === 'scope' ? T.noScope : T.noLevel));
+      return `<p class="f-msg" data-kind="${v.ok ? 'ok' : 'err'}" data-admin-result="${v.ok ? 'ok' : v.problems.join(' ')}">${esc(who)}<br>${esc(v.ok ? t(T.adminGood) : lines.join(' '))}</p>`;
+    };
+    const adminBlock = (open, tested) => `<details data-admintoken${open ? ' open' : ''}><summary>${esc(t(T.admin))}</summary>
+        <p class="f-muted">${esc(t(T.adminNeed))}</p>
+        <label class="f-field">${esc(t(T.fInst))}<input data-f="ainst" autocomplete="off" spellcheck="false" placeholder="https://gitlab.com"></label>
+        <label class="f-field">${esc(t(T.fProj))}<input data-f="aproj" autocomplete="off" spellcheck="false"></label>
+        <label class="f-field">${esc(t(T.fTok))}<input data-f="atok" type="password" autocomplete="off" spellcheck="false"></label>
+        <div class="f-row"><button type="button" class="primary" data-act="asave">${esc(t(T.adminSave))}</button>
+        <button type="button" data-act="atest">${esc(t(T.adminTest))}</button></div><div data-admin-msg>${said(tested)}</div></details>`;
+    async function draw(fresh = null, tested = null) {
       const r = await R.call('gitlab/tokens');
       if (!view.isConnected) return;
       if (r?.ok === false) {
-        body.innerHTML = `<p class="f-msg" data-kind="${r.status === 409 ? 'warn' : 'err'}" data-tokens-error>${esc(why(r))}</p>`;
+        body.innerHTML = `<p class="f-msg" data-kind="${r.status === 409 || r.reason === 'secret' ? 'warn' : 'err'}" data-tokens-error="${esc(r.reason || '')}">${esc(why(r))}</p>
+          ${adminBlock(true, tested)}`;
         return;
       }
       const rows = (r.tokens || []).map(x => `<li data-token="${esc(x.id)}"><b>${esc(x.name)}</b>
@@ -98,7 +214,7 @@
         <label class="f-field">${esc(t(K.cfgPilot))}<input data-f="tri" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="5"></label>
         <label class="f-field">${esc(t(T.days))}<input data-f="days" type="number" min="1" max="365" value="365"></label>
         <p class="f-msg" data-msg></p><div class="f-row"><button type="button" class="primary" data-act="make">${esc(t(T.make))}</button></div>
-        <p class="f-muted">${esc(t(T.branch))}</p>`;
+        <p class="f-muted">${esc(t(T.branch))}</p>${adminBlock(!!tested, tested)}`;
       // la valeur du jeton ne vit que dans ce dessin : rien n'est gardé, un nouveau dessin l'efface
       // quitter l'écran (autre adresse, page fermée) efface la valeur du nouveau jeton, pas seulement le prochain dessin
       if (fresh) {
@@ -110,47 +226,70 @@
         window.addEventListener('hashchange', wipe);
         window.addEventListener('pagehide', wipe);
       }
-      body.onclick = async e => {
-        const b = e.target.closest('[data-act]');
-        if (!b) return;
-        if (b.dataset.act === 'copy') {
-          const CB = await import(new URL('../lib/clipboard.js', BASE).href).catch(() => null);
-          const v = body.querySelector('[data-token-value]')?.textContent || '';
-          if (CB?.copyText) await CB.copyText(v, {
-            near: b
-          });
-          else await navigator.clipboard?.writeText(v);
-          return ctx.notify?.(t(T.copied), 'ok');
-        }
-        if (b.dataset.act === 'revoke') {
-          if (!await ctx.ask(t(T.revokeAsk, {
-              n: b.dataset.name
-            }))) return;
-          const v = await R.call('gitlab/tokens/revoke', {
-            id: +b.dataset.id
-          });
-          if (v?.ok === false) return ctx.notify?.(why(v), 'err');
-          ctx.notify?.(t(T.revokedDone, {
-            n: b.dataset.name
-          }), 'ok');
-          return draw();
-        }
-        if (b.dataset.act === 'make') {
-          const tri = (body.querySelector('[data-f=tri]').value || '').trim().toUpperCase(),
-            days = +body.querySelector('[data-f=days]').value || 365,
-            msg = body.querySelector('[data-msg]');
-          if (!/^[A-Z0-9]{2,5}$/.test(tri)) return void(msg.textContent = t(K.badTrigram));
-          b.disabled = true;
-          const v = await R.call('gitlab/tokens', {
-            trigram: tri,
-            days
-          });
-          b.disabled = false;
-          if (v?.ok === false) return void(msg.textContent = why(v));
-          return draw(v);
-        }
-      };
     }
+    body.onclick = async e => {
+      const b = e.target.closest('[data-act]');
+      if (!b) return;
+      if (b.dataset.act === 'copy') {
+        const CB = await import(new URL('../lib/clipboard.js', BASE).href).catch(() => null);
+        const v = body.querySelector('[data-token-value]')?.textContent || '';
+        if (CB?.copyText) await CB.copyText(v, {
+          near: b
+        });
+        else await navigator.clipboard?.writeText(v);
+        return ctx.notify?.(t(T.copied), 'ok');
+      }
+      if (b.dataset.act === 'revoke') {
+        if (!await ctx.ask(t(T.revokeAsk, {
+            n: b.dataset.name
+          }))) return;
+        const v = await R.call('gitlab/tokens/revoke', {
+          id: +b.dataset.id
+        });
+        if (v?.ok === false) return ctx.notify?.(why(v), 'err');
+        ctx.notify?.(t(T.revokedDone, {
+          n: b.dataset.name
+        }), 'ok');
+        return draw();
+      }
+      if (b.dataset.act === 'make') {
+        const tri = (body.querySelector('[data-f=tri]').value || '').trim().toUpperCase(),
+          days = +body.querySelector('[data-f=days]').value || 365,
+          msg = body.querySelector('[data-msg]');
+        if (!/^[A-Z0-9]{2,5}$/.test(tri)) return void(msg.textContent = t(K.badTrigram));
+        b.disabled = true;
+        const v = await R.call('gitlab/tokens', {
+          trigram: tri,
+          days
+        });
+        b.disabled = false;
+        if (v?.ok === false) {
+          msg.textContent = why(v);
+          if (ADMIN_FIX.has(v.reason)) body.querySelector('[data-admintoken]')?.setAttribute('open', '');
+          return;
+        }
+        return draw(v);
+      }
+      // le jeton de l'administrateur : enregistré par le lanceur puis testé (champ vide : inchangé) ; un nouveau dessin
+      // efface le champ, la valeur n'est jamais relue
+      if (b.dataset.act === 'asave' || b.dataset.act === 'atest') {
+        const box = body.querySelector('[data-admin-msg]'),
+          f = k => (body.querySelector(`[data-f=${k}]`)?.value || '').trim();
+        b.disabled = true;
+        const v = b.dataset.act === 'atest' ? await R.call('gitlab/admin') : await R.call('gitlab/admin', {
+          instance: f('ainst'),
+          project: f('aproj'),
+          token: f('atok')
+        });
+        b.disabled = false;
+        if (!view.isConnected) return;
+        if (b.dataset.act === 'asave' && v?.saved) {
+          ctx.notify?.(t(T.adminSaved), 'ok');
+          return draw(null, v);
+        }
+        if (box) box.innerHTML = said(v);
+      }
+    };
     // « Ajouter un pilote » (Administration) mène ici avec le trigramme : #pilot-tokens?tri=ABC remplit le champ du trigramme
     const asked = (new URLSearchParams(location.hash.split('?')[1] || '').get('tri') || '').trim().toUpperCase();
     draw().then(() => {

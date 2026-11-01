@@ -2427,7 +2427,7 @@ def _ap_launcher(c, url):
         elif path.endswith('/__setup/secrets'):
             body = {'app': {'ivao': {'apiKey': {'set': False, 'hint': ''}}, 'ead': {'user': {'set': False, 'at': ''}, 'password': {'set': False, 'at': ''}}}, 'user': {}}
         elif path.endswith('/__setup/routes'):
-            body = {'routes': [{'method': m, 'path': '/__setup/' + r, 'public': 'poste', 'relay': False} for m, r in (('GET', 'gitlab/tokens'), ('POST', 'gitlab/tokens'), ('POST', 'gitlab/tokens/revoke'))]}
+            body = {'routes': [{'method': m, 'path': '/__setup/' + r, 'public': 'poste', 'relay': False} for m, r in (('GET', 'gitlab/tokens'), ('POST', 'gitlab/tokens'), ('POST', 'gitlab/tokens/revoke'), ('GET', 'gitlab/admin'), ('POST', 'gitlab/admin'))]}
         elif path.endswith('/__setup/gitlab/tokens') and route.request.method == 'GET':
             body = {'ok': True, 'tokens': []}
         route.fulfill(status=200, content_type='application/json', body=json.dumps(body))

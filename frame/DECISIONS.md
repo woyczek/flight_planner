@@ -2331,3 +2331,19 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   (the repository keeps LF, a checkout gives what the workstation's git gives), only the warning is silent. Not
   `core.autocrlf=false` (files already checked out in CRLF would show as changed) nor a `.gitattributes` in data/ (a
   change of the data repository for a log line). I31.
+- **1 Nov 2026 — The administrator's GitLab token is said, tested and saved on « Jetons des pilotes »** (Simplification,
+  from the user's capture « GitLab a refusé : 401 Unauthorized » and their question: which rights for the
+  administrator's token?):
+  - The screen says what the token must be: a personal access token of the administrator's GitLab account (Preferences ›
+    Access tokens), scope `api`, with an expiry (one year at most), the account Maintainer or Owner of the project.
+  - A refusal of GitLab carries its reason, named by the launcher (`gitlab_refusal`): `secret` (nothing on the
+    workstation), `refused` (401), `scope` (403 `insufficient_scope`), `level` (other 403), `project` (404), `offline`;
+    the screen says each by its phrase, never the bare « GitLab a refusé : … » for these.
+  - « Tester le jeton de l'administrateur » (`GET /__setup/gitlab/admin`): who (`/user`), scopes and expiry
+    (`/personal_access_tokens/self`, null when unreadable), role in the project (`/projects/:id` permissions, the higher
+    of project and group); a token without `api`, or an account below Maintainer (40), is refused at once and said.
+  - Simplification's wording sent the 401 to « Clés de la compagnie »: that card does not exist in V3, the token was a
+    file placed by hand (`secrets/gitlab.json`). It is now entered on the screen itself, folded under the list (open
+    when a refusal asks for it): instance, project (empty: those of data/'s https remote), token (empty: unchanged);
+    `POST /__setup/gitlab/admin` saves it in `secrets/gitlab.json` and tests it; the page never reads it back, the
+    field is emptied by the next drawing. Workstation only (`_lan()` refused), as the other two routes. Noreg A39, I32.

@@ -2019,3 +2019,109 @@ def i31(c):
         c.ok(b'\r\n' not in blob, repr(blob[:40]), 'the repository keeps LF (the conversion is unchanged)')
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+
+@case('I32', 'The administrator’s GitLab token: its refusals named, tested, saved from the screen', 'I', static=True,
+      rule='Simplification 1 Nov (the user, « Jetons des pilotes »: « GitLab a refusé : 401 Unauthorized », which rights for the administrator’s token?): a refusal carries its reason (401 refused, 403 scope or level, 404 project); « Tester » says who, scopes, expiry, role, and refuses a token without api or an account below Maintainer; the token is saved by the launcher, never handed back')
+def i32(c):
+    import importlib
+    import io
+    import json
+    import urllib.error
+    sys.path.insert(0, str(c.root / 'tools'))
+    L = importlib.import_module('launch')
+    tmp = Path(tempfile.mkdtemp(prefix='sog-admin-'))
+    kept = L.SECRETS, L.NO_REDIRECT_OPEN, L._data_gitlab_project
+    calls = []
+    st = {'user': 200, 'scopes': ['api'], 'level': 40, 'project': 200, 'tokens': 200}
+
+    class Resp:
+        def __init__(self, body):
+            self.status, self.body = 200, json.dumps(body).encode()
+
+        def read(self):
+            return self.body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    def refuse(req, code, msg):
+        raise urllib.error.HTTPError(req.full_url, code, 'x', {}, io.BytesIO(json.dumps({'message': msg}).encode()))
+
+    def fake(req, timeout=0, what=''):
+        url, tok = req.full_url, req.get_header('Private-token')
+        calls.append((url, tok))
+        if url.endswith('/api/v4/user'):
+            if st['user'] != 200:
+                refuse(req, st['user'], '401 Unauthorized')
+            return Resp({'id': 3, 'username': 'chef', 'bot': False})
+        if url.endswith('/personal_access_tokens/self'):
+            return Resp({'scopes': st['scopes'], 'expires_at': '2027-06-30', 'token': 'should-not-leak'})
+        if url.endswith('/projects/grp%2Fdata'):
+            if st['project'] != 200:
+                refuse(req, st['project'], '404 Project Not Found')
+            return Resp({'id': 1, 'permissions': {'project_access': None, 'group_access': {'access_level': st['level']}}})
+        if '/access_tokens' in url:
+            if st['tokens'] == 403:
+                refuse(req, 403, 'insufficient_scope' if 'api' not in st['scopes'] else '403 Forbidden')
+            if st['tokens'] != 200:
+                refuse(req, st['tokens'], f"{st['tokens']} GitLab")
+            return Resp([])
+        refuse(req, 404, '404 Not Found')
+    try:
+        L.SECRETS, L.NO_REDIRECT_OPEN = str(tmp), fake
+        # the data repository’s instance and project, read from its https remote (an identity in it dropped, .git dropped)
+        D = importlib.import_module('data_sync')
+        kept_info = D.remote_info
+        seen = {}
+        try:
+            for u in ('https://gitlab.com/acme/data.git', 'https://oauth2:x@gitlab.com/acme/sub/data/', 'git@gitlab.com:acme/data.git', 'http://gitlab.com/a/b'):
+                D.remote_info = lambda d, u=u: {'url': u}
+                seen[u] = list(L._data_gitlab_project())
+        finally:
+            D.remote_info = kept_info
+        c.eq(list(seen.values()), [['https://gitlab.com', 'acme/data'], ['https://gitlab.com', 'acme/sub/data'], ['', ''], ['', '']],
+             'the data remote gives instance and project in https only, without identity nor .git', what='data remote')
+        L._data_gitlab_project = lambda: ('https://gitlab.example', 'grp/data')
+        # the refusals, each with its reason (the screen translates the reason)
+        c.eq(L.gitlab_tokens().get('reason'), 'secret', 'no secret on the workstation: reason secret', what='no secret')
+        (tmp / 'gitlab.json').write_text(json.dumps({'instance': 'https://gitlab.example', 'project': 'grp/data', 'token': 'glpat-ADMIN-SECRET'}), encoding='utf-8')
+        got = {}
+        for code in (401, 403, 404):
+            st['tokens'] = code
+            got[code] = L.gitlab_tokens().get('reason')
+        st['tokens'], st['scopes'] = 403, ['read_api']
+        got['403 scope'] = L.gitlab_tokens().get('reason')
+        c.eq(got, {401: 'refused', 403: 'level', 404: 'project', '403 scope': 'scope'}, 'a refusal named by its reason: 401 refused, 403 level (or scope for insufficient_scope), 404 project', what='reasons')
+        st['tokens'], st['scopes'] = 200, ['api']
+        # « Tester »: who, scopes, expiry, role; never the value
+        v = L.gitlab_admin_test()
+        c.eq([v['ok'], v['username'], v['scopes'], v['expires'], v['level'], v['problems']], [True, 'chef', ['api'], '2027-06-30', 40, []],
+             'a Maintainer with api: who, scopes, expiry, role, no problem', what='test ok')
+        c.ok('glpat-ADMIN-SECRET' not in json.dumps(v) and 'should-not-leak' not in json.dumps(v), json.dumps(v), 'the test never hands a token back')
+        c.ok(all(t == 'glpat-ADMIN-SECRET' and u.startswith('https://gitlab.example/api/v4/') for u, t in calls), str(calls[-3:]), 'the administrator’s token to its instance only')
+        st['scopes'], st['level'] = ['read_api', 'read_user'], 30
+        v = L.gitlab_admin_test()
+        c.eq([v['ok'], v['problems']], [False, ['scope', 'level']], 'without api and below Maintainer: refused, both said', what='test problems')
+        st['user'] = 401
+        c.eq([L.gitlab_admin_test().get(k) for k in ('ok', 'status', 'reason')], [False, 401, 'refused'], 'a token GitLab refuses: 401, refused', what='test refused')
+        st['user'], st['scopes'], st['level'], st['project'] = 200, ['api'], 40, 404
+        c.eq(L.gitlab_admin_test().get('reason'), 'project', 'a project out of the token’s reach: project', what='test project')
+        st['project'] = 200
+        # saved from the screen: instance and project of data/ when none is typed nor saved; a bad form refused, nothing written
+        (tmp / 'gitlab.json').unlink()
+        bad = L.gitlab_admin_save({'instance': 'http://gitlab.example', 'token': 'glpat-NEW'})
+        c.ok(bad['saved'] is False and bad['reason'] == 'form' and not (tmp / 'gitlab.json').exists(), json.dumps(bad), 'an instance not in https: refused, nothing written')
+        v = L.gitlab_admin_save({'token': ' glpat-NEW '})
+        saved = json.loads((tmp / 'gitlab.json').read_text(encoding='utf-8'))
+        c.ok(v['saved'] and v['ok'] and saved['instance'] == 'https://gitlab.example' and saved['project'] == 'grp/data' and saved['token'] == 'glpat-NEW'
+             and 'glpat-NEW' not in json.dumps(v), json.dumps(v), 'the token saved with the data repository’s instance and project, then tested; never handed back')
+        L.gitlab_admin_save({'token': ''})
+        c.eq(json.loads((tmp / 'gitlab.json').read_text(encoding='utf-8'))['token'], 'glpat-NEW', 'an empty token field keeps the saved token', what='keep')
+    finally:
+        L.SECRETS, L.NO_REDIRECT_OPEN, L._data_gitlab_project = kept
+        shutil.rmtree(tmp, ignore_errors=True)

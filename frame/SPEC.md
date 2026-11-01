@@ -310,7 +310,9 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
   - **Pilot**: Carburant, Carte, Compte rendu, Mes vols, Site, Météo (as before); no Données in its rail.
   - **Maintenance**: Données (`modules/data`), then links of the rail that are not modules (`APP.links`): « Jetons des
     pilotes » (`#pilot-tokens`, with a launcher, G2: GitLab project access tokens of the pilots, created, listed and
-    revoked by the launcher with the administrator's token; `frame/settings/pilot_tokens.js`), Administration
+    revoked by the launcher with the administrator's token; `frame/settings/pilot_tokens.js`; that token — a personal
+    access token, scope `api`, the account Maintainer or Owner — is entered, tested and saved on the screen, and each
+    refusal of GitLab is said by its reason, 1 Nov 2026), Administration
     (the settings opened on their Administration card, `#settings?card=admin`), Aide (`#help`), « Page de maintenance
     (V2) » (`apps/settings/maintenance.html`, until D3–D5 cover it); on the phone, three tabs: Données, Administration,
     Aide. Level Complet. It **opens everywhere**: without a launcher, or from a paired device of the local network, it is

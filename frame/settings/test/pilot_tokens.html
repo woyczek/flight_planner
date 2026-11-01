@@ -1,6 +1,7 @@
 <!doctype html>
 <!-- Banc de l'écran « Jetons des pilotes » (frame/settings/pilot_tokens.js ; G2) : sans lanceur, sans secret, liste, création
-     (le jeton montré une fois), trigramme refusé, révocation après question. Contexte du cadre simulé (t, ask, notify,
+     (le jeton montré une fois), trigramme refusé, révocation après question ; refus de GitLab dits par leur raison (401, 403,
+     404), jeton de l'administrateur testé et enregistré (1er nov. 2026). Contexte du cadre simulé (t, ask, notify,
      routes) : aucun appel réel. window.__tokensBench = { done, pass, fail, rows }. Ouvrir la page suffit. -->
 <html lang="fr">
 <head>
@@ -43,14 +44,45 @@
         calls = [];
       let tokens = [],
         mode = 'ok',
-        answer = true;
+        answer = true,
+        admin = {
+          ok: true,
+          username: 'chef',
+          bot: false,
+          scopes: ['api'],
+          expires: '2027-06-30',
+          level: 40,
+          problems: []
+        };
+      const REFUSALS = {
+        401: 'refused',
+        403: 'level',
+        404: 'project'
+      };
       const routes = {
         call: async (route, body) => {
           calls.push([route, body]);
+          if (route === 'gitlab/admin' && !body) return admin;
+          if (route === 'gitlab/admin') return body.token === 'bad' ? {
+            saved: false,
+            ok: false,
+            status: 400,
+            reason: 'form'
+          } : (mode = 'ok', {
+            saved: true,
+            ...admin
+          });
           if (mode === 'nosecret') return {
             ok: false,
             status: 409,
+            reason: 'secret',
             message: 'no GitLab secret'
+          };
+          if (REFUSALS[mode]) return {
+            ok: false,
+            status: +mode,
+            reason: REFUSALS[mode],
+            message: `${mode} GitLab`
           };
           if (route === 'gitlab/tokens' && !body) return {
             ok: true,
@@ -103,8 +135,92 @@
       mode = 'nosecret';
       S.screen(view, ctx());
       await tick();
-      ck('sans secret GitLab sur le poste : le chemin du fichier est dit', /secrets\/gitlab\.json/.test(view.querySelector(
-        '[data-tokens-error]')?.textContent || ''));
+      ck('sans jeton de l’administrateur sur le poste : la carte le dit et ouvre « Jeton de l’administrateur », ses prérequis dits',
+        /collez-le ci-dessous/.test(view.querySelector('[data-tokens-error]')?.textContent || '') && view.querySelector(
+          '[data-admintoken]')?.open && /portée api/.test(view.querySelector('[data-admintoken]').textContent) &&
+        /Maintainer ou Owner/
+        .test(view.querySelector('[data-admintoken]').textContent));
+      // les trois refus de GitLab, chacun par sa phrase, le jeton de l'administrateur ouvert dessous
+      const said = {};
+      for (const code of ['401', '403', '404']) {
+        mode = code;
+        S.screen(view, ctx());
+        await tick();
+        said[code] = [view.querySelector('[data-tokens-error]')?.dataset.tokensError, view.querySelector('[data-tokens-error]')
+          ?.textContent || '', !!view.querySelector('[data-admintoken]')?.open
+        ];
+      }
+      ck('401 : jeton refusé (absent, expiré ou sans api), à refaire ci-dessous', said[401][0] === 'refused' &&
+        /refusé : absent, expiré ou sans la portée api/
+        .test(said[401][1]) && said[401][2], JSON.stringify(said[401]));
+      ck('403 : ce compte n’est pas Maintainer du projet', said[403][0] === 'level' && /n’est pas Maintainer du projet/.test(said[403][
+          1
+        ]) &&
+        said[403][2], JSON.stringify(said[403]));
+      ck('404 : projet introuvable ou jeton sans accès', said[404][0] === 'project' && /Projet introuvable ou jeton sans accès/.test(
+        said[
+          404][1]) && said[404][2], JSON.stringify(said[404]));
+      ck('aucun refus ne montre le message brut seul (« GitLab a refusé »)', !Object.values(said).some(x => /GitLab a refusé/.test(x[
+        1])));
+      // « Tester » : qui, rôle, portées, expiration ; un jeton sans api refusé d'office ; un compte Developer dit
+      view.querySelector('[data-act=atest]').click();
+      await tick();
+      const r1 = view.querySelector('[data-admin-result]');
+      ck('Tester : compte, rôle, portées, expiration, et qu’il peut créer les jetons', r1?.dataset.adminResult === 'ok' && /chef/.test(
+          r1
+          .textContent) && /Maintainer/.test(r1.textContent) && /api/.test(r1.textContent) && /2027-06-30/.test(r1.textContent), r1
+        ?.textContent);
+      admin = {
+        ...admin,
+        ok: false,
+        scopes: ['read_api'],
+        level: 30,
+        problems: ['scope', 'level']
+      };
+      view.querySelector('[data-act=atest]').click();
+      await tick();
+      const r2 = view.querySelector('[data-admin-result]');
+      ck('Tester : un jeton sans api et un compte Developer, refusés et dits', r2?.dataset.adminResult === 'scope level' &&
+        /sans la portée api/
+        .test(r2.textContent) && /Developer/.test(r2.textContent) && /n’est pas Maintainer/.test(r2.textContent), r2?.textContent);
+      admin = {
+        ok: false,
+        status: 401,
+        reason: 'refused',
+        message: '401 Unauthorized'
+      };
+      view.querySelector('[data-act=atest]').click();
+      await tick();
+      ck('Tester : un jeton refusé par GitLab, dit par sa phrase', /refusé : absent, expiré/.test(view.querySelector(
+        '[data-admin-result]')?.textContent || ''));
+      // « Enregistrer et tester » : la saisie va au lanceur, une saisie refusée est dite, le champ du jeton est vidé ensuite
+      view.querySelector('[data-f=atok]').value = 'bad';
+      view.querySelector('[data-act=asave]').click();
+      await tick();
+      ck('Enregistrer : une saisie incomplète est dite, rien d’enregistré', /instance en https/.test(view.querySelector(
+        '[data-admin-result]')?.textContent || ''));
+      admin = {
+        ok: true,
+        username: 'chef',
+        bot: false,
+        scopes: ['api'],
+        expires: null,
+        level: 50,
+        problems: []
+      };
+      view.querySelector('[data-f=ainst]').value = ' https://gitlab.com ';
+      view.querySelector('[data-f=aproj]').value = 'acme/data';
+      view.querySelector('[data-f=atok]').value = 'glpat-ADMIN';
+      view.querySelector('[data-act=asave]').click();
+      await tick(80);
+      const sent = calls.filter(c => c[0] === 'gitlab/admin' && c[1]).pop()?.[1];
+      ck('Enregistrer : instance, projet et jeton au lanceur ; la liste revient ; le champ du jeton vidé, la valeur jamais dans la page',
+        sent?.instance === 'https://gitlab.com' && sent?.project === 'acme/data' && sent?.token === 'glpat-ADMIN' && !view
+        .querySelector(
+          '[data-tokens-error]') && view.querySelector('[data-f=atok]')?.value === '' && !view.innerHTML.includes('glpat-ADMIN') &&
+        notes.some(n => n[1] === 'ok') && /Owner/.test(view.querySelector('[data-admin-result]')?.textContent || '') &&
+        /sans expiration/
+        .test(view.querySelector('[data-admin-result]').textContent), JSON.stringify(sent));
       mode = 'ok';
       S.screen(view, ctx());
       await tick();

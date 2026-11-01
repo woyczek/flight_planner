@@ -914,8 +914,12 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   explorador de archivos. Una ruta se cambia donde se indica, nunca aquí; X-Plane es desconocido para el lanzador.
 - **Tokens de los pilotos (GitLab)**: en la aplicación Maintenance, en el equipo del lanzador, «Tokens de los pilotos»
   crea un token de acceso de proyecto por piloto (con su trigrama, rol Developer, un año como máximo), lo muestra una sola
-  vez y lo revoca. El lanzador usa allí el token del administrador (secrets/gitlab.json), que nunca muestra. Configure la
-  rama de datos para que el rol Developer pueda enviar a ella.
+  vez y lo revoca. El lanzador usa allí el token del administrador, que nunca muestra: un token de acceso personal de
+  su cuenta de GitLab (Preferences › Access tokens), alcance api, con caducidad (un año como máximo), siendo esta cuenta
+  Maintainer u Owner del proyecto. Péguelo en «Token del administrador», bajo la lista; «Probar el token del
+  administrador» indica la cuenta, su rol, sus alcances y su caducidad. Un rechazo de GitLab se indica por su causa:
+  token rechazado (ausente, caducado o sin api), cuenta que no es Maintainer, proyecto no encontrado. Configure la rama
+  de datos para que el rol Developer pueda enviar a ella.
 - **El token**: en github.com, un token de grano fino, solo sobre el repositorio de datos, «Contents» lectura y
   escritura, 90 días como máximo; en GitLab, un token de acceso de proyecto (uno por piloto, con su trigrama), creado por
   el administrador. Nunca se vuelve a mostrar; no lo pegue en ningún mensaje.
