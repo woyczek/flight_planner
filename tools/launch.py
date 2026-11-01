@@ -1249,6 +1249,15 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             return self._json({'error': 'refusé'}, 403)
         return self._json(gitlab_admin_test())
 
+    @route('POST', '/__setup/gitlab/admin/branch', public='poste')
+    def _post_gitlab_admin_branch(self, path, body):
+        # « Ouvrir la branche aux Developers » (écran « Jetons des pilotes », après une question) : le push de la branche
+        # des données permis au rôle des jetons des pilotes, par le jeton de l'administrateur
+        if self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        v = gitlab_branch_open()
+        return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
+
     @route('POST', '/__setup/gitlab/admin', public='poste')
     def _post_gitlab_admin(self, path, body):
         # le jeton de l'administrateur (et l'instance, le projet) posé depuis l'écran « Jetons des pilotes », puis testé : plus
@@ -2616,8 +2625,60 @@ def gitlab_admin_test():
     perm = p.get('permissions') if isinstance(p.get('permissions'), dict) else {}
     level = max([int(x.get('access_level') or 0) for x in (perm.get('project_access'), perm.get('group_access')) if isinstance(x, dict)] or [0])
     problems = (['scope'] if scopes is not None and 'api' not in scopes else []) + (['level'] if level < GITLAB_ADMIN_LEVEL else [])
+    b = gitlab_branch(p) if not problems else {}
     return {'ok': not problems, 'username': str(u.get('username') or '')[:60], 'bot': u.get('bot') is True, 'scopes': scopes,
-            'expires': s['expires_at'] if isinstance(s.get('expires_at'), str) else None, 'level': level, 'problems': problems}
+            'expires': s['expires_at'] if isinstance(s.get('expires_at'), str) else None, 'level': level, 'problems': problems,
+            'branch': {k: b[k] for k in ('name', 'protected', 'open')} if b.get('ok') else None}
+
+
+def gitlab_branch(p=None):
+    """La branche des données (la branche par défaut du projet ; p : le projet déjà lu) : { ok, name, protected, open, push,
+    merge, force } — open quand le rôle des jetons des pilotes (Developer) peut y pousser : branche non protégée, ou un
+    niveau de push entre 1 et Developer (0 : personne). Sur gitlab.com, la branche par défaut est protégée, push aux
+    Maintainers : un jeton de pilote y est refusé (403 « not allowed to push into this branch », 1er nov. 2026)."""
+    if p is None:
+        code, p = gitlab_call('GET', '')
+        if code != 200 or not isinstance(p, dict):
+            return gitlab_refusal(code, p)
+    name = str(p.get('default_branch') or 'main')
+    code, b = gitlab_call('GET', f'/protected_branches/{urllib.parse.quote(name, safe="")}')
+    if code == 404:
+        return {'ok': True, 'name': name, 'protected': False, 'open': True, 'push': None, 'merge': None, 'force': False}
+    if code != 200 or not isinstance(b, dict):
+        return gitlab_refusal(code, b)
+    lv = lambda k: [x['access_level'] for x in (b.get(k) or []) if isinstance(x, dict) and isinstance(x.get('access_level'), int)]
+    push, merge = lv('push_access_levels'), lv('merge_access_levels')
+    return {'ok': True, 'name': name, 'protected': True, 'open': any(0 < x <= GITLAB_LEVEL for x in push), 'push': min(push) if push else None,
+            'merge': min(merge) if merge else None, 'force': b.get('allow_force_push') is True}
+
+
+def gitlab_branch_open():
+    """« Ouvrir la branche aux Developers » : le push de la branche des données permis au rôle Developer, la fusion et la
+    poussée forcée inchangées. D'abord PATCH (une règle de push de plus), relu ; une instance qui ne l'admet pas (règles
+    multiples réservées à une offre payante) : la protection refaite à l'identique avec push Developer, l'ancienne remise si
+    la nouvelle est refusée. { ok, branch, changed } ou un refus (gitlab_refusal)."""
+    st = gitlab_branch()
+    if not st.get('ok'):
+        return st
+    if st['open']:
+        return {'ok': True, 'branch': st, 'changed': False}
+    enc = urllib.parse.quote(st['name'], safe='')
+    code, _ = gitlab_call('PATCH', f'/protected_branches/{enc}', {'allowed_to_push': [{'access_level': GITLAB_LEVEL}]})
+    if code == 200:
+        now = gitlab_branch()
+        if now.get('ok') and now['open']:
+            return {'ok': True, 'branch': now, 'changed': True}
+    keep = {'name': st['name'], 'merge_access_level': st['merge'] if st['merge'] is not None else GITLAB_ADMIN_LEVEL,
+            'allow_force_push': st['force']}
+    code, j = gitlab_call('DELETE', f'/protected_branches/{enc}')
+    if code not in (200, 204):
+        return gitlab_refusal(code, j)
+    code, j = gitlab_call('POST', '/protected_branches', {**keep, 'push_access_level': GITLAB_LEVEL})
+    if code not in (200, 201):
+        # la branche ne reste jamais sans protection : l'ancienne est remise
+        gitlab_call('POST', '/protected_branches', {**keep, 'push_access_level': st['push'] if st['push'] is not None else GITLAB_ADMIN_LEVEL})
+        return gitlab_refusal(code, j)
+    return {'ok': True, 'branch': gitlab_branch(), 'changed': True}
 
 
 def _data_gitlab_project():

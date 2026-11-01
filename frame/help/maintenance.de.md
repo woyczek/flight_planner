@@ -337,8 +337,10 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   wobei dieses Konto Maintainer oder Owner des Projekts ist. Fügen Sie es unter „Token des Administrators“ unter der
   Liste ein; „Token des Administrators testen“ nennt das Konto, seine Rolle, seine Bereiche und sein Ablaufdatum. Eine
   Ablehnung durch GitLab wird mit ihrem Grund angegeben: Token abgelehnt (fehlt, abgelaufen oder ohne api), Konto ist
-  nicht Maintainer, Projekt nicht gefunden. Stellen Sie den Datenzweig so ein, dass die Rolle Developer dorthin pushen
-  darf.
+  nicht Maintainer, Projekt nicht gefunden. Der Datenzweig muss für die Rolle Developer offen sein (auf
+  gitlab.com ist der Standardzweig Maintainern vorbehalten): Der Bildschirm prüft es, und „Zweig für Developer öffnen“
+  erledigt es nach einer Frage, die auch vor dem ersten Token gestellt wird. Ein Pilot, dessen Token beim Schreiben
+  abgelehnt wird, liest „Der Zweig main des Projekts ist nicht für Developer offen“.
 - **Das Token**: auf github.com ein feingranulares Token, nur für das Datenrepository, „Contents“ lesen und schreiben,
   höchstens 90 Tage; auf GitLab ein Projektzugangstoken (eines je Pilot, nach seinem Kürzel benannt), vom Administrator
   erstellt. Es wird nie wieder angezeigt; fügen Sie es in keine Nachricht ein.

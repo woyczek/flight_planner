@@ -313,7 +313,7 @@
       scripts: ['settings/kit.js?v=0', 'settings/pilot_tokens.js?v=0'],
       level: 3,
       launcher: {
-        routes: ['gitlab/tokens', 'gitlab/tokens/revoke', 'gitlab/admin']
+        routes: ['gitlab/tokens', 'gitlab/tokens/revoke', 'gitlab/admin', 'gitlab/admin/branch']
       }
     }, {
       id: 'devices',
@@ -405,6 +405,13 @@
         ],
         http403: ['jeton sans droit d’écriture', 'token without write access', 'Token ohne Schreibrecht',
           'token sin derecho de escritura'
+        ],
+        // GitLab, branche protégée : un jeton de pilote (Developer) refusé au push (« not allowed to push into this branch »)
+        gitlabBranch: [
+          'jeton sans droit d’écriture : la branche {b} du projet n’est pas ouverte aux Developers — administrateur : Jetons des pilotes › Ouvrir la branche aux Developers',
+          'token without write access: the project’s branch {b} is not open to Developers — administrator: Pilots’ tokens › Open the branch to Developers',
+          'Token ohne Schreibrecht: Der Zweig {b} des Projekts ist nicht für Developer offen — Administrator: Token der Piloten › Zweig für Developer öffnen',
+          'token sin derecho de escritura: la rama {b} del proyecto no está abierta a los Developers — administrador: Tokens de los pilotos › Abrir la rama a los Developers'
         ],
         branch: ['branche inconnue', 'unknown branch', 'unbekannter Zweig', 'rama desconocida'],
         invalid: ['adresse du dépôt invalide : corrigez-la dans la carte Accès',
@@ -2199,6 +2206,9 @@
       const [, who, code, msg] = http,
       phrase = code === '404' ? T.sync.errs[who === 'GitLab' ? 'gitlab404' : 'http404'] : code === '401' ? T.sync.errs.http401 :
         code === '403' ? T.sync.errs.http403 : code === '400' && /branch/i.test(msg) ? T.sync.errs.branch : null;
+      if (who === 'GitLab' && code === '403' && /not allowed to push|protected branch/i.test(msg)) return `${t(T.sync.errs.gitlabBranch, {
+        b: FD.github.config?.()?.branch || 'main'
+      })} (${who} ${code})`;
       if (phrase) return `${t(phrase)} (${who} ${code})`;
     }
     return k ? t(T.sync.errs[k]) : t(T.sync.errs.other, {

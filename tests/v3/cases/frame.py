@@ -2434,7 +2434,7 @@ def _ap_launcher(c, url, secrets=None, tokens=None):
         elif path.endswith('/__setup/secrets'):
             body = {'app': {'ivao': {'apiKey': {'set': False, 'hint': ''}}, 'ead': {'user': {'set': False, 'at': ''}, 'password': {'set': False, 'at': ''}}, **(secrets or {})}, 'user': {}}
         elif path.endswith('/__setup/routes'):
-            body = {'routes': [{'method': m, 'path': '/__setup/' + r, 'public': 'poste', 'relay': False} for m, r in (('GET', 'gitlab/tokens'), ('POST', 'gitlab/tokens'), ('POST', 'gitlab/tokens/revoke'), ('GET', 'gitlab/admin'), ('POST', 'gitlab/admin'))]}
+            body = {'routes': [{'method': m, 'path': '/__setup/' + r, 'public': 'poste', 'relay': False} for m, r in (('GET', 'gitlab/tokens'), ('POST', 'gitlab/tokens'), ('POST', 'gitlab/tokens/revoke'), ('GET', 'gitlab/admin'), ('POST', 'gitlab/admin'), ('POST', 'gitlab/admin/branch'))]}
         elif path.endswith('/__setup/gitlab/tokens/count') and tokens is not None:
             body = tokens
         elif path.endswith('/__setup/gitlab/tokens') and route.request.method == 'GET':
@@ -2897,3 +2897,37 @@ def a77(c):
     c.eq([got['device'].split(' ')[4], got['ead'].split(' ')[5], got['eadHalf'].split(' ')[5]], ['devices:done', 'keys:done', 'keys:optional'], 'a paired device: done; both EAD fields (or the IVAO key): keys done; one only: optional', what='optional steps')
     c.eq([got['noBase'].split(' ')[2], got['emptyBase'].split(' ')[2]], ['base:unknown', 'base:todo*'], 'an unreadable base is unknown, an empty one is to do (first, so primary)', what='base')
     c.check_errors()
+
+
+
+GITLAB_COM = ("try { localStorage.setItem('githubData:frame', JSON.stringify({ provider: 'gitlab', repo: 'grp/data', api: 'https://gitlab.com/api/v4', "
+              "branch: 'main', token: 'glpat_test' })) } catch (e) {}")
+
+
+@case('A78', 'A pilot’s token refused on a protected GitLab branch: the cause and the remedy said', 'A', designs=('standard',), screens=False,
+      night=False, langs4=True,
+      rule='Simplification 1 Nov (the user: « Synchronisation failed: token without write access (GitLab 403) »): a GitLab 403 « not allowed to push into this branch » says the branch is not open to Developers and where the administrator opens it; another 403 keeps the plain phrase')
+def a78(c):
+    answer = {'message': '403 Forbidden - You are not allowed to push into this branch'}
+    c.context.add_init_script(GITLAB_COM)
+    c.context.route(re.compile(r'^https://gitlab\.com/api/v4/'), lambda r: r.fulfill(status=403, content_type='application/json',
+                                                                                    body=json.dumps({'message': answer['message']})))
+    c.open('atmosphere', wait=False, docs=[['device/usages.json', {'devices': True}, 'cache']])
+    c.until('!!window.FrameData && FrameData.status', timeout=15000, what='the data layer')
+    for _ in range(100):
+        if c.js("() => FrameData.status().then(s => s.transport)") == 'gitlab':
+            break
+        c.wait(100)
+    row = "() => { const b = document.querySelector('[data-card=\"status\"] [data-k=\"data\"]'); return b ? b.textContent : '' }"
+    got = []
+    for message in ('403 Forbidden - You are not allowed to push into this branch', 'insufficient_scope'):
+        answer['message'] = message
+        c.js("() => FrameData.sync().then(r => r.error)")
+        c.page.evaluate("location.hash = '#settings'")
+        c.until("!!document.querySelector('[data-card=\"status\"] [data-k=\"data\"]')", timeout=10000, what='the Status block')
+        got.append(norm(c.js(row)))
+        c.page.evaluate("location.hash = '#atmosphere'")
+    want = norm(tx('frame/app.js', 'gitlabBranch', c.lang).replace('{b}', 'main')) + ' (GitLab 403)'
+    c.ok(want in got[0], got[0], 'a protected branch: the cause (the branch main not open to Developers) and the remedy (Pilots’ tokens › Open the branch)')
+    c.ok(norm(tx('frame/app.js', 'http403', c.lang)) + ' (GitLab 403)' in got[1] and want not in got[1], got[1], 'another 403: the plain phrase')
+    c.ok(all('glpat_test' not in g for g in got), '', 'never the token')

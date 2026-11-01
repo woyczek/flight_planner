@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Maintenance › Pilots' tokens: the data branch opened to Developers** (`tools/launch.py` `gitlab_branch`,
+  `gitlab/admin/branch`; `frame/settings/pilot_tokens.js`; `frame/app.js`; frame DECISIONS, INTEGRATION; help ×4; noreg
+  I33, A78, A39) — gitlab.com protects the default branch for Maintainers, so a pilot's Developer token got « token without
+  write access (GitLab 403) »: the screen says the branch is closed, « Open the branch to Developers » opens it after a
+  question (asked too before the first token; never left unprotected), and the pilot's error names the cause and the
+  remedy.
 - **Data: the end of Construire says the cycle it built, and a stale cycle names the missing verb** (`modules/data/model_results.js`
   `outcome`, `panels.js`, `texts.js`; L6, L7) — user, 1 Nov: « j'ai beau reconstruire les données AIRAC, elles sont toujours
   marquées périmées ». His downloaded SIA / AIXM sources were of 2610, so every rebuild made 2610 again. The base build's end now

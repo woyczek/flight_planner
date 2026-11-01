@@ -2,7 +2,8 @@
 <!-- Banc de l'écran « Jetons des pilotes » (frame/settings/pilot_tokens.js ; G2) : sans lanceur, sans secret, liste, création
      (le jeton montré une fois), trigramme refusé, révocation après question ; refus de GitLab dits par leur raison (401, 403,
      404), jeton de l'administrateur testé et enregistré (1er nov. 2026) ; le jeton créé seul en haut, la liste repliée
-     dessous, sept éléments au plus à l'ouverture, une ligne qui commence par le trigramme (1er nov. 2026). Contexte du cadre simulé (t, ask, notify,
+     dessous, sept éléments au plus à l'ouverture, une ligne qui commence par le trigramme ; la branche des données fermée
+     aux Developers dite, ouverte après une question, la question avant le premier jeton (1er nov. 2026). Contexte du cadre simulé (t, ask, notify,
      routes) : aucun appel réel. window.__tokensBench = { done, pass, fail, rows }. Ouvrir la page suffit. -->
 <html lang="fr">
 <head>
@@ -42,7 +43,8 @@
       const S = window.SogScreens['pilot-tokens'],
         view = document.getElementById('view'),
         notes = [],
-        calls = [];
+        calls = [],
+        asked = [];
       let tokens = [],
         mode = 'ok',
         answer = true,
@@ -63,6 +65,20 @@
       const routes = {
         call: async (route, body) => {
           calls.push([route, body]);
+          if (route === 'gitlab/admin/branch') {
+            admin = {
+              ...admin,
+              branch: {
+                ...admin.branch,
+                open: true
+              }
+            };
+            return {
+              ok: true,
+              branch: admin.branch,
+              changed: true
+            };
+          }
           if (route === 'gitlab/admin' && !body) return admin;
           if (route === 'gitlab/admin') return body.token === 'bad' ? {
             saved: false,
@@ -128,7 +144,7 @@
         t,
         lang: () => 'fr',
         notify: (m, k) => notes.push([m, k]),
-        ask: async () => answer,
+        ask: async q => (asked.push(q), answer),
         routes: () => withRoutes ? routes : null
       });
       S.screen(view, ctx(false));
@@ -304,6 +320,58 @@
       ck('révocation : après l’accord, le jeton est dit révoqué', calls.some(c => c[0] === 'gitlab/tokens/revoke' && c[1]?.id === 7) &&
         !view.querySelector(
           '[data-token="7"] [data-act=revoke]') && /révoqué/.test(view.querySelector('[data-token="7"]').textContent));
+      // la branche des données fermée aux Developers (gitlab.com : push aux Maintainers) : dite en tête avec son bouton
+      tokens = [];
+      admin = {
+        ok: true,
+        username: 'chef',
+        bot: false,
+        scopes: ['api'],
+        expires: '2027-06-30',
+        level: 40,
+        problems: [],
+        branch: {
+          name: 'main',
+          protected: true,
+          open: false
+        }
+      };
+      S.screen(view, ctx());
+      await tick(80);
+      const top = view.querySelector('[data-tokens-body]').firstElementChild;
+      ck('branche fermée aux Developers : la ligne et son bouton en tête de l’écran', top?.matches('[data-branch=closed]') &&
+        /Branche main : push réservé aux Maintainers — les pilotes ne pourront pas écrire/.test(top.textContent) && !!top
+        .querySelector(
+          '[data-act=bopen]'), top?.outerHTML.slice(0, 160));
+      // le premier jeton : la question avant de créer ; « non » crée le jeton sans rien ouvrir
+      answer = false;
+      asked.length = 0;
+      view.querySelector('[data-f=tri]').value = 'xyz';
+      view.querySelector('[data-act=make]').click();
+      await tick(80);
+      ck('premier jeton, branche fermée : la question avant de créer ; « non » crée le jeton sans ouvrir la branche', asked.some(q =>
+        /La branche main est réservée aux Maintainers/.test(q)) && !calls.some(c => c[0] === 'gitlab/admin/branch') && calls.some(
+        c => c[
+          0] === 'gitlab/tokens' && c[1]?.trigram === 'XYZ'), JSON.stringify(asked));
+      // le bouton : après la question, la route ; la ligne s'en va, la notification le dit
+      S.screen(view, ctx());
+      await tick(80);
+      answer = false;
+      view.querySelector('[data-act=bopen]').click();
+      await tick(40);
+      ck('« Ouvrir la branche aux Developers » : rien sans l’accord', !calls.some(c => c[0] === 'gitlab/admin/branch'));
+      answer = true;
+      view.querySelector('[data-act=bopen]').click();
+      await tick(120);
+      ck('« Ouvrir la branche aux Developers » : après l’accord, ouverte par le lanceur, la ligne s’en va, la notification le dit',
+        calls
+        .some(c => c[0] === 'gitlab/admin/branch') && !view.querySelector('[data-branch=closed]') && notes.some(n =>
+          /Branche main ouverte aux Developers/
+          .test(n[0])));
+      view.querySelector('[data-act=atest]').click();
+      await tick();
+      ck('Tester : la branche dite ouverte aux Developers', /Branche main : ouverte aux Developers/.test(view.querySelector(
+        '[data-admin-msg]')?.textContent || ''));
     } catch (x) {
       ck('exception du banc', false, x?.stack || x);
     }

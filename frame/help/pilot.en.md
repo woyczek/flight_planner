@@ -883,8 +883,10 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   GitLab account (Preferences › Access tokens), scope api, with an expiry (one year at most), this account being
   Maintainer or Owner of the project. Paste it in « Administrator's token », under the list; « Test the administrator's
   token » says the account, its role, its scopes and its expiry. A refusal of GitLab is said by its cause: token refused
-  (missing, expired or without api), account that is not Maintainer, project not found. Set the data branch so that the
-  Developer role may push to it.
+  (missing, expired or without api), account that is not Maintainer, project not found. The data branch must be open to
+  the Developer role (on gitlab.com the default branch is reserved to Maintainers): the screen checks it, and « Open the
+  branch to Developers » does it after a question, asked too before the first token. A pilot whose token is refused
+  writing reads « the project's branch main is not open to Developers ».
 - **The token**: on github.com, a fine-grained token, on the data repository only, “Contents” read and write, 90 days
   at most; on GitLab, a project access token (one per pilot, named after the trigram), created by the administrator. It
   is never shown again; never paste it in a message.

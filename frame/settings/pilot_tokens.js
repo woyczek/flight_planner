@@ -109,6 +109,38 @@
       'Dieses Token kann die Token der Piloten erstellen und widerrufen.',
       'Este token puede crear y revocar los tokens de los pilotos.'
     ],
+    // la branche des données : sur gitlab.com, la branche par défaut est protégée (push aux Maintainers) et refuse les jetons
+    // des pilotes (rôle Developer) ; l'administrateur l'ouvre d'ici, après une question (1er nov. 2026)
+    bClosed: [
+      'Branche {b} : push réservé aux Maintainers — les pilotes ne pourront pas écrire.',
+      'Branch {b}: push reserved to Maintainers — the pilots will not be able to write.',
+      'Zweig {b}: Push nur für Maintainer — die Piloten werden nicht schreiben können.',
+      'Rama {b}: push reservado a los Maintainers — los pilotos no podrán escribir.'
+    ],
+    bOpen: [
+      'Branche {b} : ouverte aux Developers, les pilotes peuvent y écrire.',
+      'Branch {b}: open to Developers, the pilots can write to it.',
+      'Zweig {b}: für Developer offen, die Piloten können dorthin schreiben.',
+      'Rama {b}: abierta a los Developers, los pilotos pueden escribir en ella.'
+    ],
+    bBtn: ['Ouvrir la branche aux Developers', 'Open the branch to Developers', 'Zweig für Developer öffnen',
+      'Abrir la rama a los Developers'
+    ],
+    bAsk: [
+      'Ouvrir la branche {b} aux Developers ? Les jetons des pilotes (rôle Developer) pourront y pousser ; la fusion et la poussée forcée ne changent pas.',
+      'Open the branch {b} to Developers? The pilots’ tokens (Developer role) will be able to push to it; merging and force push do not change.',
+      'Den Zweig {b} für Developer öffnen? Die Token der Piloten (Rolle Developer) können dorthin pushen; Zusammenführen und erzwungenes Pushen ändern sich nicht.',
+      '¿Abrir la rama {b} a los Developers? Los tokens de los pilotos (rol Developer) podrán enviar a ella; la fusión y el envío forzado no cambian.'
+    ],
+    bAskFirst: [
+      'La branche {b} est réservée aux Maintainers : le jeton de ce pilote ne pourra pas y écrire. L’ouvrir aux Developers avant de créer le jeton ?',
+      'The branch {b} is reserved to Maintainers: this pilot’s token will not be able to write to it. Open it to Developers before creating the token?',
+      'Der Zweig {b} ist Maintainern vorbehalten: Das Token dieses Piloten kann dort nicht schreiben. Vor dem Erstellen des Tokens für Developer öffnen?',
+      'La rama {b} está reservada a los Maintainers: el token de este piloto no podrá escribir en ella. ¿Abrirla a los Developers antes de crear el token?'
+    ],
+    bDone: ['Branche {b} ouverte aux Developers.', 'Branch {b} open to Developers.', 'Zweig {b} für Developer geöffnet.',
+      'Rama {b} abierta a los Developers.'
+    ],
     // la liste, sous le jeton créé ou sous le formulaire : repliée, avec son nombre
     existing: ['Jetons existants ({n})', 'Existing tokens ({n})', 'Vorhandene Token ({n})', 'Tokens existentes ({n})'],
     createdOn: ['créé le {d}', 'created on {d}', 'erstellt am {d}', 'creado el {d}'],
@@ -207,8 +239,28 @@
         }) : t(T.noExpiry)
       });
       const lines = v.problems.map(p => t(p === 'scope' ? T.noScope : T.noLevel));
-      return `<p class="f-msg" data-kind="${v.ok ? 'ok' : 'err'}" data-admin-result="${v.ok ? 'ok' : v.problems.join(' ')}">${esc(who)}<br>${esc(v.ok ? t(T.adminGood) : lines.join(' '))}</p>`;
+      return `<p class="f-msg" data-kind="${v.ok ? 'ok' : 'err'}" data-admin-result="${v.ok ? 'ok' : v.problems.join(' ')}">${esc(who)}<br>${esc(v.ok ? t(T.adminGood) : lines.join(' '))}</p>${branchLine(v.branch)}`;
     };
+    // la branche des données : fermée aux Developers, dite avec le bouton qui l'ouvre ; ouverte, dite en gris
+    const branchLine = b => !b ? '' : b.open ? `<p class="f-muted" data-branch="open">${esc(t(T.bOpen, { b: b.name }))}</p>` :
+      `<p class="f-msg" data-kind="warn" data-branch="closed">${esc(t(T.bClosed, { b: b.name }))}
+        <button type="button" data-act="bopen" data-name="${esc(b.name)}">${esc(t(T.bBtn))}</button></p>`;
+    let branchNow, // dernier état lu de la branche (undefined : pas encore lu)
+      pilots = 0, // jetons de pilote actifs du dernier dessin (0 : le prochain est le premier)
+      drawn = 0;
+    /** La branche ouverte aux Developers par le lanceur (après la question de l'appelant) ; vrai si c'est fait. */
+    async function openBranch(name) {
+      const v = await R.call('gitlab/admin/branch', {});
+      if (v?.ok === false) {
+        ctx.notify?.(why(v), 'err');
+        return false;
+      }
+      branchNow = v?.branch || branchNow;
+      ctx.notify?.(t(T.bDone, {
+        b: name
+      }), 'ok');
+      return true;
+    }
     const adminBlock = (open, tested) => `<details data-admintoken${open ? ' open' : ''}><summary>${esc(t(T.admin))}</summary>
         <p class="f-muted">${esc(t(T.adminNeed))}</p><p class="f-muted">${esc(t(T.branch))}</p>
         <label class="f-field">${esc(t(T.fInst))}<input data-f="ainst" autocomplete="off" spellcheck="false" placeholder="https://gitlab.com"></label>
@@ -233,6 +285,7 @@
     // repliée, le jeton de l'administrateur replié quand la liste se lit (il est posé et répond) ; après « Créer », la carte
     // du jeton seule en haut, la liste repliée dessous, « Créer un autre jeton » (qui redessine : la valeur s'efface)
     async function draw(fresh = null, tested = null) {
+      const seq = ++drawn;
       const r = await R.call('gitlab/tokens');
       if (!view.isConnected) return;
       if (r?.ok === false) {
@@ -242,6 +295,7 @@
       }
       const list = r.tokens || [],
         rows = list.map(x => rowOf(x, fresh)).join('');
+      pilots = list.filter(x => x.active && !x.revoked && /^[A-Z0-9]{2,5}$/.test(x.name)).length;
       const listBlock = `<details data-tokens-existing><summary>${esc(t(T.existing, { n: list.length }))}</summary>
         ${rows ? `<ul class="f-list" data-tokens-list>${rows}</ul>` : `<p class="f-muted">${esc(t(T.none))}</p>`}</details>`;
       body.innerHTML = fresh ? `<div class="f-msg" data-kind="ok" data-tokens-new><h3>${esc(t(T.madeTitle, { n: fresh.name }))}</h3>
@@ -264,6 +318,13 @@
         window.addEventListener('hashchange', wipe);
         window.addEventListener('pagehide', wipe);
       }
+      // la branche des données lue en fond (le test du jeton de l'administrateur) : fermée aux Developers, la ligne et son
+      // bouton en tête de l'écran ; ouverte, rien de plus à l'ouverture
+      if (!fresh) R.call('gitlab/admin').then(v => {
+        if (!view.isConnected || seq !== drawn) return;
+        branchNow = v?.branch ?? null;
+        if (branchNow && !branchNow.open) body.insertAdjacentHTML('afterbegin', branchLine(branchNow));
+      });
     }
     body.onclick = async e => {
       const b = e.target.closest('[data-act]');
@@ -278,6 +339,16 @@
         return ctx.notify?.(t(T.copied), 'ok');
       }
       if (b.dataset.act === 'another') return draw();
+      if (b.dataset.act === 'bopen') {
+        if (!await ctx.ask(t(T.bAsk, {
+            b: b.dataset.name
+          }))) return;
+        b.disabled = true;
+        const done = await openBranch(b.dataset.name);
+        b.disabled = false;
+        if (done && view.isConnected) return draw();
+        return;
+      }
       if (b.dataset.act === 'revoke') {
         if (!await ctx.ask(t(T.revokeAsk, {
             n: b.dataset.name
@@ -297,6 +368,14 @@
           msg = body.querySelector('[data-msg]');
         if (!/^[A-Z0-9]{2,5}$/.test(tri)) return void(msg.textContent = t(K.badTrigram));
         b.disabled = true;
+        // le premier jeton de pilote sur une branche fermée aux Developers : la question avant de créer, jamais d'ouverture
+        // silencieuse ; « non » crée le jeton quand même (il lira, sans écrire)
+        if (!pilots) {
+          const st = branchNow === undefined ? (await R.call('gitlab/admin'))?.branch : branchNow;
+          if (st && !st.open && await ctx.ask(t(T.bAskFirst, {
+              b: st.name
+            }))) await openBranch(st.name);
+        }
         const v = await R.call('gitlab/tokens', {
           trigram: tri,
           days

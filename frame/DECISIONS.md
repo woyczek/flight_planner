@@ -2379,3 +2379,20 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
     jeton », the list folded, the administrator's block folded when the list reads (the token is set and answers); the
     branch note moves into that block. The form's heading « Nouveau jeton » is dropped (the form says it).
   - The token is still never kept: leaving the screen or drawing again (« Créer un autre jeton ») removes it. Noreg A39.
+- **1 Nov 2026 — The data branch opened to Developers from Pilots' tokens** (Simplification, from the user: a pilot's token
+  created by the launcher — Developer, `api` — got « Synchronisation failed: token without write access (GitLab 403) »;
+  gitlab.com protects the default branch with push for Maintainers only, as Sécurisation had said):
+  - The test of the administrator's token (`GET /__setup/gitlab/admin`) gives `branch: { name, protected, open }` — the
+    project's default branch, `open` when a push level between 1 and Developer (30) is allowed or the branch is not
+    protected. The screen reads it in the background: closed, « Branche main : push réservé aux Maintainers — les
+    pilotes ne pourront pas écrire » with « Ouvrir la branche aux Developers » at the top; the same in « Tester ».
+  - `POST /__setup/gitlab/admin/branch` (workstation only), after the screen's question: `PATCH protected_branches/<b>`
+    with one push rule more (`access_level` 30), read again; an instance that refuses it (several rules are a paid tier
+    on gitlab.com) — the protection is made again with push 30, merge level and force push kept; if the new protection is
+    refused, the old one is put back (never left unprotected) and the refusal said. Already open: nothing done.
+  - The first pilot token on a closed branch: the question before creating (« non » creates it anyway: it reads without
+    writing); never an opening without the question.
+  - The pilot's side: a GitLab 403 « not allowed to push into this branch » says « jeton sans droit d'écriture : la branche
+    main du projet n'est pas ouverte aux Developers — administrateur : Jetons des pilotes › Ouvrir la branche aux
+    Developers » (the device's branch); another 403 keeps the plain phrase.
+  - Settings' assistant (Réglages) reads the same `branch` of `GET /__setup/gitlab/admin`. Noreg I33, A78, A39.

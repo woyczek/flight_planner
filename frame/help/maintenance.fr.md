@@ -325,8 +325,11 @@ cartographique (`apps/cpco/map_parser.html`).
   de votre compte GitLab (Préférences › Jetons d'accès), portée api, avec une expiration (un an au plus), ce compte étant
   Maintainer ou Owner du projet. Collez-le dans « Jeton de l'administrateur », sous la liste ; « Tester le jeton de
   l'administrateur » dit le compte, son rôle, ses portées et son expiration. Un refus de GitLab est dit par sa cause :
-  jeton refusé (absent, expiré ou sans api), compte qui n'est pas Maintainer, projet introuvable. Réglez la branche des
-  données pour que le rôle Developer puisse y pousser.
+  jeton refusé (absent, expiré ou sans api), compte qui n'est pas Maintainer, projet introuvable. La branche des
+  données doit être ouverte au rôle Developer (sur gitlab.com, la branche par défaut est réservée aux Maintainers) :
+  l'écran le vérifie, et « Ouvrir la branche aux Developers » le fait après une question, posée aussi avant le premier
+  jeton. Un pilote dont le jeton est refusé à l'écriture lit « la branche main du projet n'est pas ouverte aux
+  Developers ».
 - **Le jeton** : sur github.com, un jeton à grain fin, sur le seul dépôt des données, « Contents » en lecture et
   écriture, 90 jours au plus ; sur GitLab, un jeton d'accès de projet (un par pilote, à son trigramme), créé par
   l'administrateur. Il n'est jamais réaffiché ; ne le collez dans aucun message.
