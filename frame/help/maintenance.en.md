@@ -48,7 +48,7 @@ What the airline publishes for the app — the aeronautical base, the procedures
 
 <a id="data-build-run"></a>**While it builds.** A bar, "n of m zones", the step and the elapsed time; one line per zone says waiting, building (n / m sources), built, failed with its reason, or cancelled. "Stop" asks for the stop: the zone in progress finishes, the zones already built are kept. You can leave the screen: the build goes on in the launcher and is found again when you come back. If the launcher stopped on the way, the screen says "Build interrupted" with the last state of each zone: start again, unticking the zones already done if you like.
 
-<a id="data-build-end"></a>**At the end.** A notification gives the counts ("Base built: 3 zones; 1 failed (gb)") and the summary stays in the panel with what to do: a failed zone (the reason is written on its line: windowless browser, time limit, invalid output, could not write…), a stopped build, no browser found ("Neither Edge nor Chrome was found on this workstation: install one of them."). The state of the lines is read again afterwards.
+<a id="data-build-end"></a>**At the end.** A notification gives the counts ("Base built: 3 zones; 1 failed (gb)") and the summary stays in the panel with what to do: a failed zone (the reason is written on its line: windowless browser, time limit, invalid output, could not write…), a stopped build, no browser found ("Neither Edge nor Chrome was found on this workstation: install one of them."). The state of the lines is read again afterwards. When a source of the base is of a past cycle (the SIA at 2610 while 2611 is in force), one orange line names it once, with its page and the file to take: "Build" would rebuild the old cycle. A zone without a dated source (openAIP, GeoNames, relief) is never said to be out of date. When the cycle in force of a source to take by hand is missing, an orange line under the buttons says so ("SIA France 2611 missing: download export_xml_bd_SIA_<date>-v<nn>.zip from the SIA site"); "Take the downloaded file" then becomes the main button and "Build" loses it. That line comes from the last download or build (the journal keeps it): nothing is started to read it, and "Cycle X out of date" names the source at fault.
 
 <a id="data-download"></a>**Download.** The "Download" button fetches, on this workstation's launcher, the raw sources of the ticked zones (openAIP, FAA, UK Mil AIP, NAV CANADA, today's NAT tracks; ENAIRE only if it is ticked among the personal-licence sources). One line per zone says where it stands ("downloading (2 / 3 sources)") and, below it, one line per source: downloaded (n files), unchanged, failed with its reason and HTTP code ("HTTP 404"), skipped (licence not declared) or manual. What has not changed is never rewritten. At the end a notification gives the counts ("Downloaded: 2 zones changed, 1 unchanged; 1 failure"); the sources the launcher does not download (the SIA, for example) are listed by name, with a link only if their address is https, "to be dropped in by hand"; if source files tracked by git were modified, the screen says so ("n source files changed, outside the synchronised data"). "Nothing to download for these zones": none of the ticked zones has a downloadable source. Two downloads cannot follow each other within 30 s: the screen says "Try again in n s".
 
@@ -75,7 +75,7 @@ What the airline publishes for the app — the aeronautical base, the procedures
 - **Without a launcher**: the screen reads the same way; it shows what is published.
 - **A read that fails**: the section says so in one line, the rest of the screen is drawn.
 
-<!-- fr: 0a40f4ed24f5 -->
+<!-- fr: 2207783f7f65 -->
 
 <!-- chapter: aircraft -->
 # Aircraft
@@ -338,4 +338,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: 24791e0cd8c7 -->
+<!-- fr: 23d6511ff76a -->

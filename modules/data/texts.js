@@ -884,13 +884,22 @@ export const TX = {
   // « Tout mettre à jour » (SPEC § 5.3) : le bouton, la question, la chaîne, la fin
   updateAll: ['Tout mettre à jour', 'Update all', 'Alle aktualisieren', 'Actualizar todo'],
   updateAllN: ['Tout mettre à jour ({n})', 'Update all ({n})', 'Alle aktualisieren ({n})', 'Actualizar todo ({n})'],
-  // la fin de « Construire » de la base : le cycle construit, et des sources d'un cycle passé (aerodb 41e34a752)
-  builtFor: ['Construit pour le cycle {c}', 'Built for cycle {c}', 'Für Zyklus {c} gebaut', 'Construido para el ciclo {c}'],
-  staleSources: ['Sources du cycle précédent : téléchargez d’abord le cycle {n}, puis reconstruisez',
-    'Sources of the previous cycle: download cycle {n} first, then rebuild',
-    'Quellen des vorigen Zyklus: Laden Sie zuerst Zyklus {n} herunter und bauen Sie dann neu auf',
-    'Fuentes del ciclo anterior: descargue primero el ciclo {n} y luego reconstruya'
+  // la fin de « Construire » de la base et le cycle manuel qui manque (aerodb 294ffc1b8 : le cycle d'une zone est celui de sa source datée) : {a} est le HTML déjà sûr des sources (leur nom, en lien), {b} le lien du site
+  srcBlocking: ['Sources d’un cycle passé : {a} — téléchargez d’abord le cycle {n}',
+    'Sources of a past cycle: {a} — download cycle {n} first',
+    'Quellen eines vergangenen Zyklus: {a} — Laden Sie zuerst Zyklus {n} herunter',
+    'Fuentes de un ciclo pasado: {a} — descargue primero el ciclo {n}'
   ],
+  srcMissing: ['{s} {c} manquant : téléchargez {a} sur {b}',
+    '{s} {c} missing: download {a} from {b}',
+    '{s} {c} fehlt: Laden Sie {a} von {b} herunter',
+    '{s} {c} falta: descargue {a} en {b}'
+  ],
+  srcSite: {
+    sia: ['le site du SIA', 'the SIA site', 'der SIA-Website', 'el sitio del SIA']
+  },
+  srcSiteAny: ['la page de la source', 'the source page', 'der Seite der Quelle', 'la página de la fuente'],
+  staleBy: [' — à cause de {s}', ' — because of {s}', ' — wegen {s}', ' — por {s}'],
   // le verbe qui manque d'abord : reconstruire sans les sources du nouveau cycle refait l'ancien (retour du 1er nov. 2026)
   staleCycle: ['Cycle {x} dépassé : téléchargez les sources du cycle {y}, puis reconstruisez',
     'Cycle {x} out of date: download the sources of cycle {y}, then rebuild',

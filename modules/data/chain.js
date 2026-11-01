@@ -20,7 +20,8 @@ import {
   attnDot,
   itemName,
   renderBuild,
-  selection
+  selection,
+  staleBy
 } from './panels.js';
 import {
   launch,
@@ -117,9 +118,9 @@ export function updateAllInner() {
   const plan = chainPlan(),
     gate = chainGate(plan),
     n = S.chain ? S.chain.runs.length : plan.runs.length,
-    stale = ['base', 'proc'].filter(g => S.attn?.[g]).map(g => `<p class="f-warn" data-stale="${g}">${esc(tt(TX.staleCycle, { x: S.attn[g], y: S.cycleId }))}</p>`).join('');
+    stale = ['base', 'proc'].filter(g => S.attn?.[g]).map(g => `<p class="f-warn" data-stale="${g}">${esc(tt(TX.staleCycle, { x: S.attn[g], y: S.cycleId }) + (g === 'base' ? staleBy() : ''))}</p>`).join('');
   return `<h2>${esc(tt(TX.updateAll))}</h2>${stale}
-    <p class="d-verbs"><button type="button" class="primary" data-verb="all"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.updateAllN, { n: count('set', n) }))}${attnDot(S.attn?.base || S.attn?.proc)}</button></p>
+    <p class="d-verbs"><button type="button" class="primary" data-verb="all"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.updateAllN, { n: count('set', n) }))}${attnDot(S.attn?.base || S.attn?.proc, S.attn?.base ? staleBy() : '')}</button></p>
     ${gate.reason ? `<p class="f-muted" data-reason="${gate.reason}">${esc(tt(TX.greyReason[gate.reason]))}</p>` : ''}
     ${chainHtml()}`;
 }

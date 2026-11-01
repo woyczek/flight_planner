@@ -248,4 +248,4 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: 24791e0cd8c7 -->
+<!-- fr: 23d6511ff76a -->

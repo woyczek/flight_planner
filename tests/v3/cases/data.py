@@ -498,10 +498,10 @@ _L6_JS = r"""async () => {
   out.isBuild = [{ zones: {} }, { set: 'base', verb: 'build' }, { state: 'done' }, null, { zones: [] }].map(v => { const o = M.viewOp(v); return !!o && o.set === 'base' && o.verb === 'build' });
   const z = s => ({ state: s }), zf = e => ({ state: 'failed', error: e });
   const o = f => { const r = M.outcome(f); return [r.kind, r.built, r.failed] };
-  // the built cycle and the one in force (aerodb 41e34a752): read, malformed values dropped, stale from the flag or the dates
-  out.cycleOut = [{ result: { cycle: '2026-10-01', current: '2026-10-29', stale: true } }, { result: { cycle: '2026-10-29', current: '2026-10-29', stale: false } },
-    { result: { cycle: '2026-10-01', current: '2026-10-29' } }, { result: { cycle: '01/10/2026', current: 'x' } }, { result: {} }]
-    .map(f => { const r = M.outcome(f); return [r.cycle, r.current, r.stale] });
+  // the blocking sources and the cycle in force (aerodb 294ffc1b8): read, malformed values dropped; the SIA files' single `cycle` is no cycle of the zones
+  out.cycleOut = [{ result: { cycle: '2026-10-01', current: '2026-10-29', stale: true, blocking: [{ zone: 'fr', source: 'sia', cycle: '2026-10-01' }] } }, { result: { cycle: '2026-10-01', current: '2026-10-29', stale: true } },
+    { result: { current: '2026-10-29', blocking: [{ zone: 'fr' }, null, 'x', { zone: 'gb', source: 'nats', cycle: '01/10/2026' }] } }, { result: { current: 'x' } }, { result: {} }]
+    .map(f => { const r = M.outcome(f); return [r.blocking.length, r.current, r.stale, 'cycle' in r] });
   out.outcome = [
     { state: 'done', zones: { fr: z('built'), gb: z('built') }, result: { built: ['fr', 'gb'], failed: [] } },
     { state: 'done', result: { built: ['fr'], failed: [{ zone: 'gb', error: 'timeout' }], reason: 'partial' } },
@@ -544,8 +544,8 @@ def l6(c):
          'the bar: done / total of the view, else 0 over the zones asked; never above the total; no total, no percentage', what='progress')
     c.eq(r['clock'], ['0:00', '0:59', '2:05', '0:00', '60:00'], 'elapsed time as minutes:seconds', what='clock')
     c.eq(r['isBuild'], [True, True, False, False, False], 'a view is a base build when it carries its zones (or says set and verb)', what='viewOp base build')
-    c.eq(r['cycleOut'], [['2026-10-01', '2026-10-29', True], ['2026-10-29', '2026-10-29', False], ['2026-10-01', '2026-10-29', True], [None, None, False], [None, None, False]],
-         'the end of a build reads the built cycle and the one in force; stale when the sources are of a past cycle; malformed or absent: nothing said', what='built cycle')
+    c.eq(r['cycleOut'], [[1, '2026-10-29', True, False], [0, '2026-10-29', False, False], [0, '2026-10-29', False, False], [0, None, False, False], [0, None, False, False]],
+         'the end of a build reads the blocking sources and the cycle in force; stale only when a source blocks (the SIA files\' cycle alone says nothing); malformed or absent: nothing said', what='blocking')
     c.eq(r['outcome'], [['done', ['fr', 'gb'], []], ['partial', ['fr'], [{'zone': 'gb', 'error': 'timeout'}]], ['failed', [], [{'zone': 'fr', 'error': 'invalid-output'}]],
                         ['cancelled', ['fr'], []], ['interrupted', ['fr'], []], ['no-browser', [], []], ['xplane-in-page', [], []],
                         ['partial', ['fr'], [{'zone': 'gb', 'error': 'timeout'}]], ['failed', [], [{'zone': 'fr', 'error': 'x'}]], ['cancelled', ['fr'], []]],
@@ -765,7 +765,9 @@ def l7(c):
     # a second run with personal sources ticked: the ids follow, a clean end; its sources are of the previous cycle (aerodb 41e34a752)
     _t, _c, _p, _n = _cycles()
     _cur_day, _prev_day = _c.isoformat(), _p.isoformat()
-    st['views'] = [_view('done', step='Terminé', done=2, zones={'fr': _zs('built', 4, 4), 'gb': _zs('built', 5, 5)}, result={'built': ['fr', 'gb'], 'failed': [], 'commits': [], 'cycle': _prev_day, 'current': _cur_day, 'stale': True}, jid='j2')]
+    st['views'] = [_view('done', step='Terminé', done=2, zones={'fr': _zs('built', 4, 4), 'gb': _zs('built', 5, 5)}, result={'built': ['fr', 'gb'], 'failed': [], 'commits': [], 'cycle': _prev_day, 'current': _cur_day, 'stale': True, 'cycles': {'fr': _prev_day, 'gb': _prev_day},
+                     'blocking': [{'zone': 'fr', 'source': 'sia', 'cycle': _prev_day}, {'zone': 'gb', 'source': 'nats', 'cycle': _prev_day}],
+                     'sources': {s: {'cycle': _prev_day, 'current': _cur_day, 'stale': True} for s in ('sia', 'nats')}}, jid='j2')]
     st['i'] = 0
     st['start'] = (200, {'job': 'j2'})
     c.tap('[data-personal="nats"]')
@@ -776,9 +778,16 @@ def l7(c):
     want = _trow('sumDone', lang).replace('{built}', _zones_text(lang, 2))
     c.eq(norm(c.text('[data-build-result] b')), norm(want), 'a clean end: « Base construite : 2 zones »', what='summary')
     c.eq(len(_notes_with(c, want)), 1, 'its own notification', what='notifications')
-    c.eq([norm(c.text('[data-build-result] [data-built-cycle]')), norm(c.text('[data-build-result] [data-stale-sources]'))],
-         [norm(_trow('builtFor', lang).replace('{c}', _name(_p))), norm(_trow('staleSources', lang).replace('{n}', _name(_c)))],
-         'the end says the cycle it built and, the sources being of the previous cycle, to download the cycle in force first', what='built cycle')
+    # the sources being of the previous cycle: ONE warning that names each blocking source once, in a link with the expected file; nothing says « built for cycle X » for all the zones
+    nm = {'fr': ('SIA France', 'France'), 'en': ('SIA France', 'France'), 'de': ('SIA Frankreich', 'Frankreich'), 'es': ('SIA Francia', 'Francia')}[lang]
+    gb_name = {'fr': 'Royaume-Uni', 'en': 'United Kingdom', 'de': 'Vereinigtes Königreich', 'es': 'Reino Unido'}[lang]
+    items = f'{nm[0]} {_name(_p)} ({nm[1]}), NATS UK {_name(_p)} ({gb_name})'
+    got = c.js("[...document.querySelectorAll('[data-build-result] [data-blocking]')].map(p => [p.textContent.replace(/\\s+/g, ' ').trim(), [...p.querySelectorAll('a')].map(a => [a.href, a.title])])")
+    sia_url = c.js("(d) => window.AeroCatalogue.byId('sia').url(d)", _cur_day)
+    c.eq(got, [[norm(_trow('srcBlocking', lang).replace('{a}', items).replace('{n}', _name(_c))), [[sia_url, f'export_xml_bd_SIA_{_cur_day}-v<nn>.zip'],
+                 ['https://nats-uk.ead-it.com/cms-nats/opencms/en/Publications/digital-datasets/', 'EG_…_DS_…_XML.zip']]]],
+         'one line naming SIA France and NATS once each, with their pages and expected files', what='blocking line')
+    c.eq(c.count('[data-build-result] [data-built-cycle], [data-build-result] [data-stale-sources]'), 0, 'no « built for cycle X » line for all the zones', what='no built cycle')
     c.eq(c.count('[data-journal] [data-op]'), 2, 'two entries in the journal', what='journal entries')
     _screen_ok(c, 'after the second run')
     c.check_errors()
@@ -3134,6 +3143,141 @@ def l23(c):
     c.js("(z) => window.__zm.proc.jumpTo({ zoom: z - 2 })", cover)
     c.until("window.__pts().length === 0", timeout=8000, what='the points go below the threshold')
     c.eq(c.js("window.__stub.calls.aerodromes"), reads, 'and nothing is read below it', what='no read')
+    c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ L24 .. L25
+_L24_JS = """async () => {
+  const M = await import('/modules/data/model.js');
+  await import('/frame/aerodb/airac.js'); await import('/frame/aerodb/catalogue.js');
+  const byId = id => window.AeroCatalogue.byId(id), out = {};
+  const sia = { cycle: '2026-10-01', current: '2026-10-29', stale: true };
+  out.sources = [M.sourcesOf({ sia, nats: { cycle: null, current: '2026-10-29', stale: false }, enaire: { cycle: 'bad', current: 5 }, junk: 'x', list: [1], none: null, fresh: { cycle: '2026-10-29', current: '2026-10-29', stale: false }, dates: { cycle: '2026-10-01', current: '2026-10-29' } }),
+    M.sourcesOf(null), M.sourcesOf([]), M.sourcesOf('x')];
+  out.cycles = M.cyclesOf({ fr: '2026-10-01', de: null, gb: 'x', es: 5, '': '2026-10-01', us: undefined });
+  out.cyclesNone = [M.cyclesOf(null), M.cyclesOf([]), M.cyclesOf('x')];
+  out.blocking = M.blockingOf([{ zone: 'fr', source: 'sia', cycle: '2026-10-01', extra: 1 }, { zone: 'fr' }, null, 'x', { zone: 'gb', source: 'nats', cycle: '01/10/2026' }, { zone: 'es', source: 'enaire', cycle: '2026-10-29' }]);
+  const full = M.outcome({ state: 'done', result: { built: ['fr', 'us'], failed: [], cycle: '2026-10-01', current: '2026-10-29', stale: true, cycles: { fr: '2026-10-01', us: null }, folders: { fr: '2026-10-01', us: '2026-10-29' },
+    blocking: [{ zone: 'fr', source: 'sia', cycle: '2026-10-01' }], builtOn: '2026-11-01', sources: { sia, nats: { cycle: '2026-10-29', current: '2026-10-29', stale: false } } } });
+  out.outcome = [full.cycles, full.blocking, full.stale, full.sources.map(s => [s.id, s.cycle, s.stale]), 'cycle' in full];
+  out.noBlock = [M.outcome({ state: 'done', result: { built: ['us'], cycles: { us: null }, stale: true, current: '2026-10-29' } }).stale, M.outcome({ state: 'done', result: { built: ['us'], blocking: [] } }).stale];
+  const srcs = M.sourcesOf({ sia, nats: { cycle: '2026-10-01', current: '2026-10-29', stale: true }, enaire: { cycle: null, current: '2026-10-29', stale: false } });
+  out.missing = [M.missingSources(srcs, byId), M.missingSources(srcs, byId, ['gb']), M.missingSources(srcs, byId, ['fr']).map(m => m.id),
+    M.missingSources(M.sourcesOf({ sia: { cycle: null, current: '2026-10-29', stale: false } }), byId).map(m => [m.id, m.cycle]),
+    M.missingSources(M.sourcesOf({ sia: { cycle: '2026-10-29', current: '2026-10-29', stale: false } }), byId), M.missingSources(srcs, null), M.missingSources(null, byId)];
+  out.siaUrl = byId('sia').url('2026-10-29');
+  out.target = [M.sourceTarget(byId, 'nats', '2026-10-29'), M.sourceTarget(id => ({ url: 'http://x.example/', fetch: { name: 'a_<AAAA-MM-JJ>_b' } }), 'x', '2026-10-29'), M.sourceTarget(() => ({ url: () => { throw new Error('x') } }), 'x', '2026-10-29'),
+    M.sourceTarget(null, 'sia', '2026-10-29')];
+  out.groups = M.blockingSources([{ zone: 'fr', source: 'sia', cycle: 'a' }, { zone: 'es', source: 'sia', cycle: 'a' }, { zone: 'gb', source: 'nats', cycle: 'b' }, { zone: 'x', source: 'sia', cycle: 'c' }]);
+  const doc = M.sourcesDoc(srcs);
+  out.doc = [doc, M.sourcesOf(doc).length === srcs.length && JSON.stringify(M.sourcesOf(doc)) === JSON.stringify(srcs), M.sourcesDoc([]), M.sourcesDoc(null)];
+  const at = Date.parse('2026-10-29T10:00:00Z'), bo = { kind: 'done', built: ['fr'], failed: [], blocking: [{ zone: 'fr', source: 'sia', cycle: '2026-10-01' }], sources: srcs };
+  out.entries = [M.journalEntry({ at, zones: ['fr'], seconds: 1, out: bo }), M.journalEntry({ at, zones: ['fr'], seconds: 1, out: { kind: 'done', built: ['fr'], failed: [], blocking: [], sources: [] } }),
+    M.fetchEntry({ at, zones: ['fr'], seconds: 1, out: { kind: 'done', fetched: ['fr'], unchanged: [], failed: [], sources: srcs } }), M.fetchEntry({ at, zones: ['fr'], seconds: 1, out: { kind: 'done', fetched: [], unchanged: [], failed: [], sources: [] } })]
+    .map(e => [e.sources ?? null, e.blocking ?? null]);
+  const fo = M.fetchOutcome({ state: 'running', sources: { sia }, zones: {} }), fe = M.fetchOutcome({ state: 'done', sources: { sia }, result: { fetched: [], unchanged: [], failed: [], sources: { nats: { cycle: '2026-10-29', current: '2026-10-29', stale: false } } } });
+  out.fetch = [fo.sources.map(s => s.id), fe.sources.map(s => s.id), M.fetchOutcome({ state: 'done', result: { fetched: [] } }).sources];
+  return out;
+}"""
+
+
+@case('L24', 'Données: the sources dated and the cycle of each zone, the pure functions (outcome, sourcesOf, cyclesOf, blockingOf, missingSources, blockingSources, sourceTarget, journal)', 'L', tags=('data',), phone=False, designs=('standard',),
+      rule='modules/data/SPEC 5.4, 6.3: a zone\u2019s cycle is its own dated source\u2019s (null: never out of date); the sources blocking a build are named once; a manual dated source missing the cycle in force says its file and its page')
+def l24(c):
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest', wait_until='load')
+    r = c.js(_L24_JS)
+    ok = {'cycle': '2026-10-01', 'current': '2026-10-29', 'stale': True}
+    c.eq(r['sources'], [[{'id': 'sia', **ok}, {'id': 'nats', 'cycle': None, 'current': '2026-10-29', 'stale': False}, {'id': 'enaire', 'cycle': None, 'current': None, 'stale': False},
+                         {'id': 'fresh', 'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False}, {'id': 'dates', **ok}], [], [], []],
+         'sources: one per dated source (cycle null without a file), a malformed date is null, a past cycle is stale by the flag or the dates; a value that is not an object is dropped; no table: none', what='sourcesOf')
+    c.eq([r['cycles'], r['cyclesNone']], [{'fr': '2026-10-01', 'de': None}, [{}, {}, {}]], 'the cycles by zone: a date, or null for a zone without a dated source (kept); anything else dropped', what='cyclesOf')
+    c.eq(r['blocking'], [{'zone': 'fr', 'source': 'sia', 'cycle': '2026-10-01'}, {'zone': 'es', 'source': 'enaire', 'cycle': '2026-10-29'}],
+         'the blocking list: zone, source and a real cycle date; malformed entries dropped', what='blockingOf')
+    c.eq(r['outcome'], [{'fr': '2026-10-01', 'us': None}, [{'zone': 'fr', 'source': 'sia', 'cycle': '2026-10-01'}], True, [['sia', '2026-10-01', True], ['nats', '2026-10-29', False]], False],
+         'the end of a build: the cycles by zone (us: none), the blocking source, stale because one blocks, the sources; the single cycle of the SIA files is not kept', what='outcome')
+    c.eq(r['noBlock'], [False, False], 'a zone with a null cycle is never out of date: nothing blocking, not stale (even if a stale flag came without the list)', what='null cycle')
+    sia = {'id': 'sia', 'cycle': '2026-10-01', 'current': '2026-10-29', 'zones': ['fr'], 'url': r['siaUrl'], 'file': 'export_xml_bd_SIA_2026-10-29-v<nn>.zip'}
+    c.ok(r['siaUrl'].startswith('https://'), r['siaUrl'], 'the catalogue\u2019s page of the SIA for the cycle is a link')
+    c.eq(r['missing'], [[sia], [], ['sia'], [['sia', None]], [], [], []],
+         'a manual, cycled source (SIA) is missing when stale or without a dated file: its page for the cycle in force and its file name with that date; NATS (manual, not cycled) and ENAIRE (launcher) are not; zones narrow it; no catalogue, no table: none', what='missingSources')
+    c.eq(r['target'], [{'url': 'https://nats-uk.ead-it.com/cms-nats/opencms/en/Publications/digital-datasets/', 'file': 'EG_…_DS_…_XML.zip'}, {'url': '', 'file': 'a_2026-10-29_b'}, {'url': '', 'file': ''}, {'url': '', 'file': ''}],
+         'where to take a source: a fixed page as it is, a page that is not https:// is dropped, a page that throws is dropped, the date of the file name is the cycle in force, no catalogue: nothing', what='sourceTarget')
+    c.eq(r['groups'], [{'source': 'sia', 'cycle': 'a', 'zones': ['fr', 'es']}, {'source': 'nats', 'cycle': 'b', 'zones': ['gb']}, {'source': 'sia', 'cycle': 'c', 'zones': ['x']}],
+         'the blocking sources, one row per source and past cycle with its zones', what='blockingSources')
+    c.eq(r['doc'][1:], [True, None, None], 'the journal keeps the sources as { id: { cycle, current, stale } } and reads them back; none: nothing kept', what='sourcesDoc')
+    c.eq(r['entries'], [[r['doc'][0], [{'zone': 'fr', 'source': 'sia', 'cycle': '2026-10-01'}]], [None, None], [r['doc'][0], None], [None, None]],
+         'a build entry carries the sources and the blocking list, a download entry the sources, only when there are some', what='journal')
+    c.eq(r['fetch'], [['sia'], ['nats'], []], 'the download reads the sources from the plan (the view from the start), the end\u2019s own win, none: none', what='fetchOutcome')
+
+
+def _short(lang, src):
+    """The short name of a dated source as the screen writes it (the catalogue name without its formats)."""
+    return {'sia': {'fr': 'SIA France', 'en': 'SIA France', 'de': 'SIA Frankreich', 'es': 'SIA Francia'}[lang], 'nats': 'NATS UK'}[src]
+
+
+@case('L25', 'Données: a manual dated source missing the cycle in force (the missing line with its page and file, Prendre le fichier téléchargé primary, Construire not, kept at rest, named in « Cycle X dépassé »)', 'L',
+      tags=('data',), langs4=True, designs=('standard',),
+      rule='modules/data/SPEC 5.4, 6.3: wherever the sources are known (the plan, the end of a download or a build, then the last one kept), a manual dated source missing the cycle in force says so with its file and its page; the pickup is the primary gesture')
+def l25(c):
+    lang = c.lang
+    li = {'fr': 0, 'en': 1, 'de': 2, 'es': 3}[lang]
+    _t, cur, prev, _n = _cycles()
+    cur_d, prev_d = cur.isoformat(), prev.isoformat()
+    srcs = {'sia': {'cycle': prev_d, 'current': cur_d, 'stale': True}, 'nats': {'cycle': cur_d, 'current': cur_d, 'stale': False}, 'enaire': {'cycle': None, 'current': cur_d, 'stale': False}}
+    manual = [{'zone': 'fr', 'source': 'sia', 'url': 'https://www.sia.example/aip', 'name': ['SIA fr', 'SIA en', 'SIA de', 'SIA es'], 'pickup': True, 'expected': 'export_xml_bd_SIA_*.zip'}]
+    run1 = _fview({'fr': _fz('fetching', 1, 3), 'gb': _fz('waiting')}, step='Zone fr')
+    run1['sources'] = srcs   # the plan: the view carries the sources from the start
+    end = _fview({'fr': _fz('done', 3, 3), 'gb': _fz('done', 2, 2)}, state='done', step='Terminé', done=2,
+                 result={'ok': True, 'fetched': ['fr'], 'unchanged': ['gb'], 'failed': [], 'manual': manual, 'sources': srcs})
+    st = _launcher(c, [run1, run1, end], verbs=['base/build', 'base/fetch', 'base/purge', 'base/pickup'])
+    cfg, _ = _fixture()
+    names = lambda *ids: ', '.join(z['names'][li] for z in cfg['zones'] if z['id'] in ids)
+    _open(c, cfg)
+    primary = lambda: c.js("[...document.querySelectorAll('[data-build] .d-verbs [data-verb]')].filter(b => b.classList.contains('primary')).map(b => b.dataset.verb)")
+    stale_line = lambda by='': norm(_trow('staleCycle', lang).replace('{x}', _name(prev)).replace('{y}', _name(cur)) + by)
+    by = _trow('staleBy', lang).replace('{s}', f"{_short(lang, 'sia')} {_name(prev)}")
+    # ---- A: nothing is known yet: Construire is the primary gesture, no line, the out-of-date phrase without a source
+    c.eq([primary(), c.count('[data-missing-source]'), norm(c.text('[data-update-all] [data-stale=base]'))], [['build'], 0, stale_line()],
+         'sources unknown: Construire is primary, no missing line, « cycle X out of date » without a source named', what='unknown')
+    # ---- B: Télécharger: the view carries the sources from the start (the plan): the line is there while it runs
+    c.tap('[data-verb=download]')
+    c.until("!!document.querySelector('[data-build] [data-running][data-op=fetch]')", what='the download runs')
+    c.until("!!document.querySelector('[data-build] [data-missing-source=sia]')", what='the plan says the SIA file is missing')
+    site = _trow('sia', lang, 'srcSite: {')
+    want = norm(_trow('srcMissing', lang).replace('{s}', _short(lang, 'sia')).replace('{c}', _name(cur)).replace('{a}', f'export_xml_bd_SIA_{cur_d}-v<nn>.zip').replace('{b}', site))
+    sia_url = c.js("(d) => window.AeroCatalogue.byId('sia').url(d)", cur_d)
+    c.eq([c.count('[data-missing-source]'), norm(c.text('[data-missing-source=sia]')), c.js("[...document.querySelectorAll('[data-missing-source=sia] a')].map(a => a.href)")], [1, want, [sia_url]],
+         'one line for the SIA (NATS is current, ENAIRE is fetched by the launcher): its cycle in force, the file with that date, the link to the product page', what='missing line (plan)')
+    c.eq([primary(), c.count('[data-missing-source] a[href^="javascript"]')], [['pickup'], 0], 'Prendre le fichier téléchargé is primary, Construire is not', what='primary (plan)')
+    # ---- C: the end: the line stays, the manual list and its button are primary too
+    c.until("!!document.querySelector('[data-build-result][data-op=fetch]')", timeout=10000, what='the download ends')
+    c.eq([c.count('[data-missing-source=sia]'), norm(c.text('[data-missing-source=sia]')), c.count('[data-manual-list] li')], [1, want, 1], 'the end of the download keeps the line next to the manual list', what='missing line (end)')
+    c.eq([c.js("[...document.querySelectorAll('[data-build] [data-verb=pickup]')].map(b => b.classList.contains('primary'))"), c.js("document.querySelector('[data-build] [data-verb=build]').classList.contains('primary')")],
+         [[True, True], False], 'both pickup buttons are primary, Construire is not', what='primary (end)')
+    c.eq(norm(c.text('[data-update-all] [data-stale=base]')), stale_line(by), '« cycle X out of date » names the source once', what='stale by')
+    c.eq(c.count('[data-build] .d-zl [data-missing-source], [data-build] .d-zl [data-stale]'), 0, 'the source is not repeated on the zone lines', what='zone lines')
+    # ---- D: at rest, after a reload: the last known sources come from the journal (nothing is started to read them)
+    entry = {'at': '2026-10-29T10:00:00.000Z', 'set': 'base', 'verb': 'download', 'zones': ['fr', 'gb'], 'seconds': 3, 'result': 'done', 'sources': srcs, 'fetched': ['fr'], 'unchanged': ['gb'], 'failed': []}
+    posts = len(st['posts'])
+    c.open('data', docs=LEVEL3 + [['cache/data/journal.json', {'ops': [entry]}, 'cache']], wait=False, app='maintenance')
+    _head(c)
+    c.eq([c.count('[data-missing-source=sia]'), norm(c.text('[data-missing-source=sia]')) if c.count('[data-missing-source=sia]') else '', primary(), norm(c.text('[data-update-all] [data-stale=base]'))],
+         [1, want, ['pickup'], stale_line(by)], 'at rest: the journal\u2019s last base entry gives the sources: the line, the primary pickup, the source named', what='at rest')
+    c.eq(len(st['posts']), posts, 'no job was started to read them', what='no start')
+    # ---- E: a build that blocks only fr; us has no dated source (cycle null): never said out of date
+    b = _view('done', step='Terminé', done=2, zones={'fr': _zs('built', 4, 4), 'us': _zs('built', 5, 5)},
+              result={'built': ['fr', 'us'], 'failed': [], 'commits': [], 'cycle': prev_d, 'current': cur_d, 'stale': True, 'cycles': {'fr': prev_d, 'us': None},
+                      'blocking': [{'zone': 'fr', 'source': 'sia', 'cycle': prev_d}], 'sources': srcs}, jid='j2')
+    st['views'] = [b]
+    st['i'] = 0
+    st['start'] = (200, {'job': 'j2'})
+    c.tap('[data-verb=build]')
+    c.until("!!document.querySelector('[data-build-result][data-result=done]')", timeout=10000, what='the build ends')
+    items = f"{_short(lang, 'sia')} {_name(prev)} ({names('fr')})"
+    c.eq([c.count('[data-build-result] [data-blocking]'), norm(c.text('[data-build-result] [data-blocking]')), c.count('[data-build-result] [data-built-cycle]')],
+         [1, norm(_trow('srcBlocking', lang).replace('{a}', items).replace('{n}', _name(cur))), 0],
+         'one line: the SIA at its past cycle, with the zone it feeds; the zone without a dated source is not named; no « built for » line', what='blocking line')
+    c.eq([c.count('[data-missing-source=sia]'), primary()], [1, ['pickup']], 'and the line to take the file, the pickup still primary', what='after the build')
     c.check_errors()
 
 

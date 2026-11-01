@@ -39,6 +39,105 @@ function kindOf(final, r, pass, fallback, map = {}) {
   if (final?.state === 'error' || r.ok === false) return 'failed';
   return fallback;
 }
+/** Une date de cycle « AAAA-MM-JJ », sinon null. */
+const day = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+/** Les cycles par zone d'un résultat de construction : { zone: date | null } ; null (zone sans source datée : jamais « dépassée ») est gardé, une valeur qui n'est ni une date ni null est écartée. */
+export function cyclesOf(raw) {
+  const out = {};
+  for (const [zone, v] of Object.entries(obj(raw))) {
+    if (!zone || zone === '__proto__') continue;
+    if (v === null) out[zone] = null;
+    else if (day(v)) out[zone] = v;
+  }
+  return out;
+}
+/** Les zones construites d'une source d'un cycle passé : [{ zone, source, cycle }] ; une entrée sans zone, sans source ou sans date de cycle est écartée. */
+export function blockingOf(raw) {
+  return (Array.isArray(raw) ? raw : []).filter(b => b && typeof b === 'object' && typeof b.zone === 'string' && b.zone && typeof b
+    .source === 'string' && b.source && day(b.cycle)).map(b => ({
+    zone: b.zone,
+    source: b.source,
+    cycle: b.cycle
+  }));
+}
+/** Le cycle tenu par source datée, d'après `sources` d'aerodb ({ sia | nats | enaire: { cycle | null, current, stale } }) : [{ id, cycle (null : aucun fichier), current, stale }] ; une valeur qui n'est pas
+ *  un objet est écartée, une date mal formée vaut null, stale ne vaut vrai que par aerodb ou par un cycle connu plus ancien que le cycle en vigueur. */
+export function sourcesOf(raw) {
+  return Object.entries(obj(raw)).filter(([id, v]) => id && v && typeof v === 'object' && !Array.isArray(v)).map(([id, v]) => {
+    const cycle = day(v.cycle),
+      current = day(v.current);
+    return {
+      id,
+      cycle,
+      current,
+      stale: !!cycle && (v.stale === true || !!current && cycle < current)
+    };
+  });
+}
+/** Les sources comme le journal les garde : { id: { cycle, current, stale } }, ou rien (undefined) sans source. */
+export function sourcesDoc(list) {
+  return Array.isArray(list) && list.length ? Object.fromEntries(list.map(s => [s.id, {
+    cycle: s.cycle,
+    current: s.current,
+    stale: s.stale
+  }])) : undefined;
+}
+/** L'adresse d'une source pour un cycle : celle du catalogue (une chaîne, ou une fonction du cycle) si elle est en https://, sinon ''. */
+function srcUrl(src, current) {
+  let u = src?.url;
+  try {
+    if (typeof u === 'function') u = current ? u(current) : '';
+  } catch {
+    u = '';
+  }
+  return typeof u === 'string' && isHttps(u) ? u : '';
+}
+/** Le nom du fichier attendu d'une source manuelle pour le cycle en vigueur : `fetch.name` du catalogue, sa date « <AAAA-MM-JJ> » remplacée par `current`. */
+function srcFile(src, current) {
+  const name = typeof src?.fetch?.name === 'string' ? src.fetch.name : '';
+  return current ? name.replace(/<AAAA-MM-JJ>/g, current) : name;
+}
+/** Où prendre une source : { url, file } d'après le catalogue (`byId`) et le cycle en vigueur ; url '' si le catalogue n'en donne pas d'https://, file '' sans nom. */
+export function sourceTarget(byId, id, current) {
+  const src = typeof byId === 'function' ? byId(id) : null;
+  return {
+    url: srcUrl(src, current),
+    file: srcFile(src, current)
+  };
+}
+/** Les sources manuelles et datées dont le cycle en vigueur manque : celles de `sources` qui sont dépassées (stale) ou sans fichier daté (cycle null) ET que le catalogue (`byId`) dit à prendre à la
+ *  main (fetch.how 'pick') et cyclées ; `zones` (facultatif) ne garde que celles qui nourrissent une de ces zones. [{ id, cycle, current, zones, url, file }], dans l'ordre de `sources`. */
+export function missingSources(sources, byId, zones = null) {
+  const out = [];
+  for (const s of Array.isArray(sources) ? sources : []) {
+    const src = typeof byId === 'function' ? byId(s.id) : null;
+    if (!src || src.fetch?.how !== 'pick' || src.cycled !== true || !(s.stale || s.cycle === null) || !s.current) continue;
+    const feeds = strs(src.zones);
+    if (Array.isArray(zones) && !feeds.some(z => zones.includes(z))) continue;
+    out.push({
+      id: s.id,
+      cycle: s.cycle,
+      current: s.current,
+      zones: feeds,
+      ...sourceTarget(byId, s.id, s.current)
+    });
+  }
+  return out;
+}
+/** Les sources qui bloquent une construction, une ligne chacune : le résultat `blocking` regroupé par source et cycle passé, avec les zones qu'elle nourrit : [{ source, cycle, zones }], dans l'ordre. */
+export function blockingSources(blocking) {
+  const out = [];
+  for (const b of Array.isArray(blocking) ? blocking : []) {
+    const row = out.find(o => o.source === b.source && o.cycle === b.cycle);
+    if (row) row.zones.push(b.zone);
+    else out.push({
+      source: b.source,
+      cycle: b.cycle,
+      zones: [b.zone]
+    });
+  }
+  return out;
+}
 /** La fin d'un travail de construction, d'après sa dernière vue : { kind, built: [zone], failed: [{ zone, error }] } ; kind :
  *  'done' | 'partial' | 'failed' | 'cancelled' | 'interrupted' | 'no-browser' | 'xplane-in-page'. Le résultat du lanceur
  *  (result.built, result.failed, result.reason) l'emporte, à défaut l'état des zones. */
@@ -56,18 +155,18 @@ export function outcome(final) {
   const kind = kindOf(final, r, [...EXTRA_KINDS, 'partial', 'failed'], failed.length ? built.length ? 'partial' : 'failed' : 'done');
   if (EXTRA_KINDS.includes(kind) && !Array.isArray(r.failed)) failed.length =
     0; // un motif propre (pypdf manque…) : la zone « en échec » de la vue n'est pas un échec de plus
-  // le cycle construit (celui des sources lues) et celui en vigueur, rendus par base/build (aerodb 41e34a752) ; stale : sources d'un
-  // cycle passé, la base construite est celle du cycle précédent. Absents ou mal formés : null, rien n'est dit
-  const day = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null,
-    cycle = day(r.cycle),
-    current = day(r.current);
+  // aerodb 294ffc1b8 : le cycle d'une zone est celui de SA source datée (null : aucune, jamais « dépassée »), `blocking` nomme les zones construites d'une source
+  // d'un cycle passé, `sources` le cycle tenu par source datée ; `cycle` reste celui des fichiers du SIA, il ne se dit pour aucune zone. Absents ou mal formés : vides
+  const blocking = blockingOf(r.blocking);
   return {
     kind,
     built,
     failed,
-    cycle,
-    current,
-    stale: !!cycle && !!current && (r.stale === true || cycle < current)
+    current: day(r.current),
+    cycles: cyclesOf(r.cycles),
+    blocking,
+    sources: sourcesOf(r.sources),
+    stale: blocking.length > 0
   };
 }
 /** Le résultat d'une opération pour le journal : 'done' | 'partial' | 'failed' | 'cancelled' | 'interrupted' | 'nothing' (rien à télécharger). */
@@ -109,6 +208,14 @@ export function journalEntry({
       zone: f.zone,
       error: f.error ?? null
     })),
+    ...(sourcesDoc(out.sources) ? {
+      sources: sourcesDoc(out.sources)
+    } : {}),
+    ...(out.blocking?.length ? {
+      blocking: out.blocking.map(b => ({
+        ...b
+      }))
+    } : {}),
     ...jobOf(job)
   };
 }
@@ -183,6 +290,7 @@ export function fetchOutcome(final) {
     failed,
     manual,
     outside: Math.max(0, outside),
+    sources: sourcesOf(r.sources ?? final?.sources),
     level
   };
 }
@@ -209,6 +317,9 @@ export function fetchEntry({
       seconds,
       result: journalResult(out.kind)
     }),
+    ...(sourcesDoc(out.sources) ? {
+      sources: sourcesDoc(out.sources)
+    } : {}),
     fetched: [...out.fetched],
     unchanged: [...out.unchanged],
     failed: out.failed.map(f => ({

@@ -327,6 +327,36 @@ file after file). The rule:
   parallel build is added there (a Worker cannot use `DOMParser`, and its readers work file after file). The parallel
   build exists only in this module.
 
+- **The cycle of each zone, and what blocks a build** (aerodb `294ffc1b8`, 1 Nov 2026; the module words it, aerodb's `tools/aero_cycles.py` computes it):
+  - **A zone's cycle is its own dated source's**: `fr` the SIA, `gb` NATS, `es` ENAIRE. A zone without a dated source
+    (openAIP, GeoNames, relief, UK Mil…) has no cycle (`cycles[zone]: null`) and is **never said to be out of date**.
+    The result's `cycle` is the SIA files' cycle, which the page checks: the screen **never shows it as the cycle of every
+    zone** (the former « Construit pour le cycle X » line is gone).
+  - **The result of a build** (`outcome`) reads `cycles` (zone → date | null), `blocking` (`[{ zone, source, cycle }]`: the
+    built zones whose dated source is of a past cycle), `sources`, `current`; `stale` is true when `blocking` is not empty.
+    Malformed values are dropped (a blocking entry without zone, source or date; a source that is not an object).
+  - **When `blocking` is not empty**, ONE warning line (`[data-blocking]`) after the summary names each blocking source
+    once (« Sources d'un cycle passé : SIA France 2610 (France), NATS UK 2610 (Royaume-Uni) — téléchargez d'abord le cycle
+    2611 »): the name is a link to the source's page (the catalogue's `url`, https only) and the expected file is its
+    tooltip (`fetch.name`). Otherwise nothing extra is shown. Building a past cycle is never refused.
+  - **The sources held** (`sources`: `{ sia | nats | enaire: { cycle | null, current, stale } }`, only the dated ones) come
+    in `base/fetch`'s view **from the start (the plan)** and its result, and in `base/build`'s result. The journal's
+    download and build entries keep them (`sources`, and `blocking` for a build).
+  - **A manual dated source missing the cycle in force**: for each source with `stale: true` or `cycle: null` that the
+    catalogue (`ctx.aerodb.sources()`, the one table) says is `fetch.how === 'pick'` and `cycled` (today the SIA), and
+    whose zone is ticked, a warning line `[data-missing-source="<id>"]` under the base buttons says « SIA France 2611
+    manquant : téléchargez export_xml_bd_SIA_<date>-v<nn>.zip sur le site du SIA » (the catalogue's `fetch.name` with the
+    date of `current`; the link is the catalogue's `url(current)`, the product page, never a file). While one is missing,
+    **« Prendre le fichier téléchargé » is the primary button and « Construire » is not** (a build would redo the old
+    cycle); the pickup button of a download's manual list follows.
+  - **Where it shows**: wherever the sources are known: the plan and the end of a download, the end of a build, then, at
+    rest, the last known ones (`S.srcKept`, set by `follow.js` at the end of a base download or build; else the journal's
+    last base download or build entry that carries them). **A launcher job is never started to read them.** A real pickup
+    that took a source drops that source from `S.srcKept` (its cycle is to be read again by the next download or build).
+  - **« Cycle X dépassé »** (`staleCycle`, on « Tout mettre à jour » and the dot of « Construire ») adds « — à cause de
+    SIA France 2610 » when the stale sources are known (each once, never per zone line); without that knowledge, the
+    present phrase.
+
 ## 6. Cycles and states
 
 ### 6.1 Cycles
@@ -366,7 +396,7 @@ When the published base or `proc/` is older than the cycle in force, or the cycl
 published for the next: **on every device**, an amber line of the Status block, drawn by the frame (« Base aéronautique :
 cycle 2610 dépassé, à reconstruire pour 2611 », or « … : le cycle 2611 se termine le 25/11, rien de construit pour 2612 »;
 INTEGRATION § 1.4): nothing to press on a phone; **on a workstation** with a launcher at the Full level it leads to
-`#data`, whose head shows « Reconstruire pour le cycle 2611 », which is « Tout mettre à jour ». On a phone the module
+`#data`, whose head shows « Reconstruire pour le cycle 2611 », which is « Tout mettre à jour » (its line « Cycle 2610 dépassé… » adds « — à cause de SIA France 2610 » when the late source is known, § 5.4). On a phone the module
 opens **read-only** (no verb), by its address `#data` or the line « Maintenance » of Settings › Administration (ergonomics
 session, 29 Oct: useful to see the coverage on the road); it has no tab in the phone's bar.
 

@@ -21,6 +21,7 @@ import {
   buildZones,
   fetchSummary,
   gateOf,
+  knownSources,
   openGroup,
   pickupAsk,
   pickupSummary,
@@ -118,6 +119,7 @@ async function finishOp(set, verb, out, live, {
     verb,
     out
   };
+  keepSources(set, verb, out);
   renderBuild();
   const quiet = !!S.chain;
   S.lastOp = {
@@ -129,6 +131,14 @@ async function finishOp(set, verb, out, live, {
   if (live && !quiet) S.ctx.notify(note.filter(Boolean).join(' · '), sm.level);
   if (!quiet) journalWrite(entry);
   if (live && !quiet && reload) await load(); // les états des lignes ont changé : même chemin de lecture que l'ouverture
+}
+/** Retient la dernière connaissance des sources datées (S.srcKept) : celle d'une fin de la base qui en porte (téléchargement, construction) ; une prise réelle du fichier retire celles qu'elle a prises (leur cycle est
+ *  à relire par le prochain téléchargement ou la prochaine construction, il n'est plus celui qu'on avait). Rien ne part pour les lire. */
+function keepSources(set, verb, out) {
+  if (set !== 'base') return;
+  if (out.sources?.length) S.srcKept = out.sources;
+  else if (verb === M.PICKUP.verb && !out.dry && out.taken?.length) S.srcKept = knownSources().filter(s => !out.taken.some(t => t.source ===
+    s.id));
 }
 /** L'entrée du journal d'une opération réelle d'un jeu : celle de son verbe (M.setEntry), pour les éléments du travail (S.ids) et la durée de la marche. */
 const opEntry = (set, verb, out, final, seconds) => M.setEntry(set, verb, {

@@ -174,6 +174,7 @@ export async function mount(el, ctx) {
     chainNote: false, // un repère de chaîne sans fin a été trouvé à l'ouverture
     lastOp: null, // la fin de la dernière opération suivie : { set, verb, out, text } (la chaîne la lit)
     groups: null, // les groupes de l'écran (buildGroups), calculés à chaque dessin
+    srcKept: null, // le cycle tenu par source datée à la dernière fin de la base qui le disait : [{ id, cycle, current, stale }] (null : jamais lu, le journal sert)
     attn: {}, // les groupes dont le cycle publié est dépassé : { base, proc } (le cycle « AANN » ou null)
     outlines: null, // les contours des zones (ctx.aerodb.zoneOutlines) : null (pas demandés), 'loading', l'objet, ou false (sans réponse : la liste seule)
     pickupBlocked: null, // les zips du plan montré que la prise réelle n'a pas lancés (nom hors de la règle) : dits à la fin

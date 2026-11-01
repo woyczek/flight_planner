@@ -51,7 +51,7 @@ Was die Fluggesellschaft für die App veröffentlicht — die Luftfahrtdatenbank
 
 <a id="data-build-run"></a>**Während des Aufbaus.** Ein Balken, „n von m Zonen“, der Schritt und die vergangene Zeit; eine Zeile je Zone sagt: wartet, wird erstellt (n / m Quellen), erstellt, fehlgeschlagen mit Grund oder abgebrochen. „Anhalten“ fordert den Stopp an: Die laufende Zone wird beendet, bereits erstellte Zonen bleiben erhalten. Sie können den Bildschirm verlassen: Der Aufbau läuft im Starter weiter und wird bei Ihrer Rückkehr wiedergefunden. Wurde der Starter unterwegs beendet, steht „Aufbau unterbrochen“ mit dem letzten Stand jeder Zone da: Starten Sie neu und wählen Sie bei Bedarf die fertigen Zonen ab.
 
-<a id="data-build-end"></a>**Am Ende.** Eine Benachrichtigung nennt die Zahlen („Basis erstellt: 3 Zonen; 1 fehlgeschlagen (gb)“), und die Zusammenfassung bleibt im Feld stehen, mit dem, was zu tun ist: eine fehlgeschlagene Zone (der Grund steht in ihrer Zeile: Browser ohne Fenster, Zeitlimit, ungültige Ausgabe, Schreiben nicht möglich…), ein angehaltener Aufbau, kein Browser gefunden („Auf diesem Rechner wurden weder Edge noch Chrome gefunden: installieren Sie einen der beiden.“). Danach wird der Stand der Zeilen neu gelesen.
+<a id="data-build-end"></a>**Am Ende.** Eine Benachrichtigung nennt die Zahlen („Basis erstellt: 3 Zonen; 1 fehlgeschlagen (gb)“), und die Zusammenfassung bleibt im Feld stehen, mit dem, was zu tun ist: eine fehlgeschlagene Zone (der Grund steht in ihrer Zeile: Browser ohne Fenster, Zeitlimit, ungültige Ausgabe, Schreiben nicht möglich…), ein angehaltener Aufbau, kein Browser gefunden („Auf diesem Rechner wurden weder Edge noch Chrome gefunden: installieren Sie einen der beiden.“). Danach wird der Stand der Zeilen neu gelesen. Ist eine Quelle der Basis von einem vergangenen Zyklus (die SIA im Zyklus 2610, während 2611 gilt), nennt eine orangefarbene Zeile sie einmal, mit ihrer Seite und der Datei, die zu holen ist: „Aufbauen“ würde den alten Zyklus neu bauen. Eine Zone ohne datierte Quelle (openAIP, GeoNames, Gelände) gilt nie als überholt. Fehlt der geltende Zyklus einer Quelle, die von Hand zu holen ist, sagt es eine orangefarbene Zeile unter den Schaltflächen („SIA Frankreich 2611 fehlt: Laden Sie export_xml_bd_SIA_<Datum>-v<nn>.zip von der SIA-Website herunter“); „Heruntergeladene Datei übernehmen“ wird dann zur Hauptschaltfläche und „Aufbauen“ verliert sie. Diese Zeile stammt vom letzten Download oder Aufbau (das Journal behält sie): zum Lesen wird nichts gestartet, und „Zyklus X überholt“ nennt die verantwortliche Quelle.
 
 <a id="data-download"></a>**Herunterladen.** Die Schaltfläche „Herunterladen“ holt auf dem Starter dieses Rechners die Rohquellen der angekreuzten Zonen (openAIP, FAA, UK Mil AIP, NAV CANADA, NAT-Tracks des Tages; ENAIRE nur, wenn sie unter den Quellen mit persönlicher Lizenz angekreuzt ist). Eine Zeile pro Zone sagt, wo sie steht („wird heruntergeladen (2 / 3 Quellen)“), darunter eine Zeile pro Quelle: heruntergeladen (n Dateien), unverändert, fehlgeschlagen mit Grund und HTTP-Code („HTTP 404“), übersprungen (Lizenz nicht erklärt) oder manuell. Was sich nicht geändert hat, wird nie neu geschrieben. Am Ende nennt eine Benachrichtigung die Zahlen („Heruntergeladen: 2 Zonen geändert, 1 unverändert; 1 Fehler“); die Quellen, die der Starter nicht herunterlädt (zum Beispiel der SIA), werden mit Namen aufgelistet, mit einem Link nur, wenn ihre Adresse https ist, „von Hand abzulegen“; wurden von git verfolgte Quelldateien geändert, sagt der Bildschirm es („n Quelldateien geändert, außerhalb der synchronisierten Daten“). „Für diese Zonen gibt es nichts herunterzuladen“: keine der angekreuzten Zonen hat eine herunterladbare Quelle. Zwei Downloads dürfen nicht näher als 30 s aufeinander folgen: der Bildschirm sagt „Versuchen Sie es in n s erneut“.
 
@@ -78,7 +78,7 @@ Was die Fluggesellschaft für die App veröffentlicht — die Luftfahrtdatenbank
 - **Ohne Starter**: Der Bildschirm wird genauso gelesen; er zeigt, was veröffentlicht ist.
 - **Ein Lesevorgang schlägt fehl**: Der Abschnitt sagt es in einer Zeile, der Rest des Bildschirms wird gezeichnet.
 
-<!-- fr: 0a40f4ed24f5 -->
+<!-- fr: 2207783f7f65 -->
 
 <!-- chapter: aircraft -->
 # Luftfahrzeuge
@@ -359,4 +359,4 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: 24791e0cd8c7 -->
+<!-- fr: 23d6511ff76a -->

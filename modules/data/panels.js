@@ -83,6 +83,68 @@ function heldLine(id) {
 function sourceName(id) {
   return catSource(id)?.n?.[li()] || id;
 }
+/** Le nom court d'une source datée : celui du catalogue (×4) sans la parenthèse de ses formats (« SIA France »), à défaut son identifiant. */
+function srcShort(id) {
+  return String(catSource(id)?.n?.[li()] || id).replace(/\s*\(.*$/, '');
+}
+/** Les sources datées dont le cycle est connu, la dernière lecture : celle de la marche qui tourne (la vue du travail porte `sources` dès le plan), sinon celle de la dernière fin qui en portait (S.srcKept :
+ *  un téléchargement ou une construction de la base ; une prise du fichier en retire les sources prises), sinon la dernière entrée de la base au journal qui en porte. Jamais un travail lancé pour la lire. */
+export function knownSources() {
+  const live = S.run && S.view ? M.sourcesOf(S.view.sources ?? S.view.result?.sources) : [];
+  if (live.length) return live;
+  if (S.srcKept) return S.srcKept;
+  for (let i = (S.journal?.length || 0) - 1; i >= 0; i--) {
+    const e = S.journal[i];
+    if ((e.set ?? 'base') === 'base' && (e.verb === 'build' || e.verb === 'download') && e.sources) return M.sourcesOf(e.sources);
+  }
+  return [];
+}
+/** Les sources à prendre à la main dont le cycle en vigueur manque, pour les zones cochées : M.missingSources sur la dernière lecture et le catalogue. */
+export function missingList() {
+  return S.d?.cat ? M.missingSources(knownSources(), catSource, buildZones().ticked) : [];
+}
+/** Un texte (clé de TX) écrit en HTML sûr avec, à la place de {a} et {b}, du HTML déjà sûr : le texte est échappé, les deux repères remplacés ensuite. */
+function textWith(row, v, a = '', b = '') {
+  return esc(tt(row, {
+    ...v,
+    a: '\u0001',
+    b: '\u0002'
+  })).replace('\u0001', () => a).replace('\u0002', () => b);
+}
+/** Un nom en lien (https:// seulement) vers la page d'une source, `title` : le fichier attendu ; sans adresse le nom seul. */
+function srcLink(label, url, file) {
+  const title = file ? ` title="${esc(file)}"` : '';
+  return M.isHttps(url) ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer"${title}>${esc(label)}</a>` : `<span${title}>${esc(label)}</span>`;
+}
+/** Les lignes « <source> <cycle> manquant : téléchargez <fichier> sur le site » : une par source manuelle et datée dont le cycle en vigueur manque (sous les boutons de la base, tant qu'une lecture le dit). */
+function missingHtml() {
+  return missingList().map(m => `<p class="f-warn" data-missing-source="${esc(m.id)}">${textWith(TX.srcMissing, {
+    s: srcShort(m.id),
+    c: M.cycleName(S.airac, m.current),
+    f: m.file
+  }, `<b>${esc(m.file)}</b>`, srcLink(tt(M.own(TX.srcSite, m.id) || TX.srcSiteAny), m.url, ''))}</p>`).join('');
+}
+/** La ligne unique d'une construction de la base dont des sources sont d'un cycle passé : chaque source une fois (son nom, son cycle passé, sa zone), en lien vers sa page avec le fichier attendu en infobulle. */
+function blockingHtml(out) {
+  const current = out.current || (S.airac ? S.airac.cycleOf(S.now).date : null),
+    items = M.blockingSources(out.blocking).map(g => {
+      const to = M.sourceTarget(catSource, g.source, current),
+        names = g.zones.map(z => M.zoneName(S.d.zones, z, li())).join(', ');
+      return `${srcLink(`${srcShort(g.source)} ${M.cycleName(S.airac, g.cycle)}`, to.url, to.file)} (${esc(names)})`;
+    });
+  return `<p class="f-warn" data-blocking>${textWith(TX.srcBlocking, {
+    n: current ? M.cycleName(S.airac, current) : ''
+  }, items.join(', '))}</p>`;
+}
+/** « — à cause de SIA France 2610 » : les sources dépassées de la dernière lecture qui nourrissent une zone cochée, nommées une fois, pour la phrase « Cycle X dépassé » ; vide sans cette connaissance. */
+export function staleBy() {
+  if (!S.d?.cat || !S.airac) return '';
+  const ticked = buildZones().ticked,
+    late = knownSources().filter(s => s.stale && (catSource(s.id)?.zones || []).some(z => ticked.includes(z)));
+  return late.length ? tt(TX.staleBy, {
+    s: late.map(s => `${srcShort(s.id)} ${M.cycleName(S.airac, s.cycle)}`).join(', ')
+  }) : '';
+}
 /** Le motif d'un échec de source : « HTTP 404 » (code et statut), « le réseau ne répond pas »… */
 function fetchWhy(code, status) {
   if (code === 'http' && status !== null) return tt(TX.fetchError.httpN, {
@@ -394,7 +456,7 @@ function manualHtml(list, set = 'base') {
   const zones = [...new Set(list.filter(m => m.pickup).map(m => m.zone))],
     off = !zones.length || gateOf('base', zones.length, [M.PICKUP.verb]).verbs[M.PICKUP.verb].disabled ? ' disabled' : '';
   return `<p data-manual-hint>${esc(tt(TX.fetchManual))}</p><ul class="d-manual" data-manual-list>${list.map(item).join('')}</ul>
-    ${set === 'base' && zones.length ? `<p><button type="button" data-verb="pickup" data-zones="${esc(zones.join(','))}"${off}>${esc(tt(TX.pickup))}</button></p>` : ''}`;
+    ${set === 'base' && zones.length ? `<p><button type="button"${missingList().length ? ' class="primary"' : ''} data-verb="pickup" data-zones="${esc(zones.join(','))}"${off}>${esc(tt(TX.pickup))}</button></p>` : ''}`;
 }
 /** La fin d'un téléchargement : le résumé, les fichiers hors synchronisation, les sources manuelles, les lignes des zones et de leurs sources. */
 function fetchResultHtml(out, set = 'base') {
@@ -472,10 +534,9 @@ function resultHtml(panel = 'base') {
       .kind) ? M.zoneRows(
       v, S.ids,
       'build', set !== 'base') : []; // rien n'a tourné : pas de lignes « en attente »
-  // le cycle construit, et l'avertissement quand les sources sont d'un cycle passé (reconstruire sans télécharger refait l'ancien)
-  const built = set === 'base' && r.out.cycle ? `<p data-built-cycle>${esc(tt(TX.builtFor, { c: M.cycleName(S.airac, r.out.cycle) }))}</p>${r.out.stale ?
-    `<p class="f-warn" data-stale-sources>${esc(tt(TX.staleSources, { n: M.cycleName(S.airac, r.out.current) }))}</p>` : ''}` : '';
-  return `<div data-build-result data-result="${r.out.kind}"><p class="${sm.level === 'ok' ? '' : 'f-warn'}"><b>${esc(sm.text)}</b></p>${built}
+  // des sources d'un cycle passé (reconstruire sans télécharger refait l'ancien) : UNE ligne qui nomme chaque source une fois ; rien sinon (jamais « construit pour le cycle X » pour toutes les zones)
+  const blocked = set === 'base' && r.out.blocking?.length ? blockingHtml(r.out) : '';
+  return `<div data-build-result data-result="${r.out.kind}"><p class="${sm.level === 'ok' ? '' : 'f-warn'}"><b>${esc(sm.text)}</b></p>${blocked}
     ${(sm.notes || []).map(n => `<p class="f-warn" data-line>${esc(n)}</p>`).join('')}
     ${r.out.kind === 'no-pypdf' ? `<p data-line><a href="${esc(FIRST_INSTALL)}">${esc(tt(TX.firstInstall))}</a></p>` : ''}
     ${sm.advice ? `<p class="f-muted" data-advice>${esc(tt(sm.advice))}</p>` : ''}
@@ -524,10 +585,12 @@ export function selection(set) {
 /** Les boutons Télécharger · Construire · Purger d'un panneau (gris pour la raison de M.setGate) ; pour la base, entre Télécharger et Construire, « Prendre le fichier téléchargé » (`pk` : l'état de
  *  son verbe base/pickup, grisé pour sa propre raison). */
 function verbsHtml(gate, panel, pk) {
-  const off = verb => gate.verbs[verb].disabled ? ' disabled' : '';
+  const off = verb => gate.verbs[verb].disabled ? ' disabled' : '',
+    miss = !!pk && missingList().length >
+    0; // un cycle manuel manque : la prise du fichier passe avant Construire (qui referait l'ancien cycle)
   return `<p class="d-verbs"><button type="button" data-verb="download"${off('fetch')}>${esc(tt(TX.download))}</button>
-      ${pk ? `<button type="button" data-verb="pickup"${pk.disabled ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button>
-      ` : ''}<button type="button" class="primary" data-verb="build"${off('build')}>${esc(tt(TX.build))}${attnDot(S.attn?.[panel])}</button>
+      ${pk ? `<button type="button"${miss ? ' class="primary"' : ''} data-verb="pickup"${pk.disabled ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button>
+      ` : ''}<button type="button"${miss ? '' : ' class="primary"'} data-verb="build"${off('build')}>${esc(tt(TX.build))}${attnDot(S.attn?.[panel], panel === 'base' ? staleBy() : '')}</button>
       <button type="button" data-verb="purge"${off('purge')}>${esc(tt(TX.purge))}</button></p>`;
 }
 /** Le choix d'éléments d'un panneau : les zones de la couverture à cocher puis les sources sous licence personnelle qu'elles proposent (base), les États à cocher (procédures), le cycle en
@@ -605,6 +668,7 @@ function setInner(panel) {
     ${verbsHtml(gate, panel, pk)}
     ${why ? `<p class="f-muted" data-reason="${gate.reason}">${esc(why)}</p>` : ''}
     ${pk?.reason === 'unknown-verb' && gate.reason !== 'unknown-verb' ? `<p class="f-muted" data-pickup-reason>${esc(tt(TX.greyReason['unknown-verb']))}</p>` : ''}
+    ${panel === 'base' ? missingHtml() : ''}
     ${ui.hint ? `<p class="f-muted" ${ui.hint[0]}>${esc(tt(ui.hint[1]))}</p>` : ''}
     ${opAreaHtml(panel)}`;
 }
@@ -733,6 +797,6 @@ function replanHtml(out) {
   return `<p><button type="button" data-verb="pickup-replan" data-zones="${esc(zones.join(','))}"${off}>${esc(tt(TX.pickupReplan))}</button></p>`;
 }
 /** Le point d'attention du cadre (le même que celui d'un groupe) : le cycle publié est dépassé ; `title` dit pour quel cycle reconstruire. */
-export function attnDot(oldCycle) {
-  return oldCycle ? ` <i class="f-status-dot" data-attn title="${esc(tt(TX.staleCycle, { x: oldCycle, y: S.cycleId }))}"></i>` : '';
+export function attnDot(oldCycle, by = '') {
+  return oldCycle ? ` <i class="f-status-dot" data-attn title="${esc(tt(TX.staleCycle, { x: oldCycle, y: S.cycleId }) + by)}"></i>` : '';
 }
