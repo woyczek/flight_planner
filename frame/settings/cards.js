@@ -142,7 +142,9 @@
       sec = a.secrets?.app || null,
       set = x => x?.set === true,
       s = {
-        repo: !L ? 'unknown' : !remote?.url ? 'todo' : gl && !sec ? 'unknown' : gl && !set(sec.gitlab?.token) ? 'todo' : 'done',
+        repo: !L ? 'unknown' : !remote?.url ? 'todo' : gl && !sec ? 'unknown' : gl && !set(sec.gitlab?.token) ? 'todo' : gl && a.branch
+          ?.open ===
+          false ? 'todo' : 'done', // une branche fermée aux Developers : à faire (les pilotes n'écriraient pas)
         airline: a.airline?.name ? 'done' : 'todo',
         base: a.zones == null ? 'unknown' : a.zones > 0 ? 'done' : 'todo',
         pilot: a.tokens?.ok === true && Number.isFinite(a.tokens.active) ? (a.tokens.active > 0 ? 'done' : 'todo') : 'unknown',
@@ -164,8 +166,9 @@
     if (focus !== 'assistant' || !a || !window.SogConfig) return '';
     const st = assistantStates(env),
       first = ['repo', 'airline', 'base', 'pilot'].find(k => st[k] === 'todo'),
+      closed = a.branch?.open === false && st.repo === 'todo', // la branche à ouvrir : elle s'ouvre dans « Jetons des pilotes »
       go = {
-        repo: '#settings?card=admin&panel=remote',
+        repo: closed ? '?app=maintenance#pilot-tokens' : '#settings?card=admin&panel=remote',
         airline: './#website',
         base: '?app=maintenance#data',
         pilot: '#settings?card=admin&panel=addPilot',
@@ -173,7 +176,7 @@
         keys: '#settings?card=admin&panel=keys'
       },
       says = {
-        repo: T.asRepo,
+        repo: closed ? T.asRepoBranch : T.asRepo,
         airline: T.asAirline,
         base: T.asBase,
         pilot: st.pilot !== 'unknown' ? T.asPilot : a.tokens?.reason === 'secret' ? T.asPilotSecret : T.asPilotLater,
@@ -181,7 +184,7 @@
         keys: T.asKeys
       },
       line = k => `<li data-step="${k}" data-state="${st[k]}"><b data-st>${esc(t(T.asState[st[k]]))}</b> <a class="f-btn${k === first ? ' primary' : ''}" href="${go[k]}">${esc(t(T.asGo[k]))}</a>
-        <span class="f-muted">${esc(t(says[k]))}</span></li>`;
+        <span class="f-muted">${esc(t(says[k], { b: a.branch?.name || 'main' }))}</span></li>`;
     return `<div class="f-card" data-card="assistant"><h2>${esc(t(T.asTitle))}</h2><p class="f-muted">${esc(t(T.asIntro))}</p>
       <ul class="f-admin">${['repo', 'airline', 'base', 'pilot', 'devices', 'keys'].map(line).join('')}
         <li data-step="done" data-state="${st.done}"><b data-st>${esc(t(T.asState[st.done]))}</b> <span class="f-muted">${esc(t(T.asFinish))}</span>${c.status?.html() || ''}</li></ul></div>`;

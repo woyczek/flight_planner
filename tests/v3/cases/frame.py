@@ -2420,7 +2420,7 @@ def _ap_keys(provider, api, repo):
     return [['device/keys.json', {'schema': 1, 'github': g, 'avwx': '', 'ivao': None, 'updated_at': '2026-10-30T10:00:00Z'}, 'cache']]
 
 
-def _ap_launcher(c, url, secrets=None, tokens=None):
+def _ap_launcher(c, url, secrets=None, tokens=None, admin=None):
     """A fake launcher whose data/ remote is `url` (as A55 and A60): status, the remote, no secret (or `secrets`, merged into `app` of GET secrets), and, given `tokens`, the answer of GET gitlab/tokens/count."""
     status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False}
 
@@ -2437,6 +2437,8 @@ def _ap_launcher(c, url, secrets=None, tokens=None):
             body = {'routes': [{'method': m, 'path': '/__setup/' + r, 'public': 'poste', 'relay': False} for m, r in (('GET', 'gitlab/tokens'), ('POST', 'gitlab/tokens'), ('POST', 'gitlab/tokens/revoke'), ('GET', 'gitlab/admin'), ('POST', 'gitlab/admin'), ('POST', 'gitlab/admin/branch'))]}
         elif path.endswith('/__setup/gitlab/tokens/count') and tokens is not None:
             body = tokens
+        elif path.endswith('/__setup/gitlab/admin') and admin is not None:
+            body = admin
         elif path.endswith('/__setup/gitlab/tokens') and route.request.method == 'GET':
             body = {'ok': True, 'tokens': []}
         route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
@@ -2857,6 +2859,18 @@ def a76(c):
     c.wait(800)
     steps = _as_steps(c)
     c.eq([steps['repo'][0], [k for k, v in steps.items() if v[2]], steps['keys'][0]], ['todo', ['repo'], 'optional'], 'a GitLab remote without the administrator\u2019s token: the repository is to do, first and primary; keys unset: optional', what='token missing')
+    # the data branch closed to Developers (GET gitlab/admin, V3 Frame c6f3bc38b): the repository is to do, said, and the button leads to
+    # the pilots' tokens screen where it opens; the assistant writes nothing
+    c.context.unroute(re.compile(r'/__setup/'))
+    _ap_launcher(c, 'https://gitlab.com/acme/data.git', {'gitlab': {'instance': {'set': True}, 'project': {'set': True}, 'token': {'set': True}}},
+                 tokens={'ok': True, 'active': 1}, admin={'ok': True, 'branch': {'name': 'main', 'protected': True, 'open': False}})
+    c.open('settings?card=assistant', docs=LEVEL3 + [['airline/settings.json', {'schema': 1, 'name': 'ACME Air'}, 'document']], aero=True)
+    c.until("!!document.querySelector('[data-card=\"assistant\"] [data-step=\"done\"]')", timeout=20000, what='the assistant with the branch read')
+    c.wait(800)
+    steps = _as_steps(c)
+    c.eq([steps['repo'][0], c.attr('[data-card="assistant"] [data-step="repo"] a', 'href'), norm(c.text('[data-card="assistant"] [data-step="repo"] .f-muted'))],
+         ['todo', '?app=maintenance#pilot-tokens', norm(tx(settings_file, 'asRepoBranch', c.lang).replace('{b}', 'main'))],
+         'the data branch closed to Developers: the repository is to do, said, and the button opens the pilots\u2019 tokens screen', what='branch closed')
     c.check_errors()
 
 

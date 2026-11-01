@@ -268,7 +268,9 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
    - **The steps**:
      1. *The data repository* — done when `data/` has a remote (sync-remote) and, for a GitLab repository, the
         administrator's token is set on the workstation (`GET /__setup/secrets`, `gitlab`); button → Administration ›
-        Remote repository of data/.
+        Remote repository of data/. The data branch closed to Developers (`GET
+        /__setup/gitlab/admin` → `branch.open === false`, V3 Frame c6f3bc38b): to do, said (« les jetons des pilotes ne pourront pas
+        écrire »), and the button leads to the pilots' tokens screen, where it opens; the assistant writes nothing.
      2. *The airline* — done when `airline/settings.json` has a name; button → the Website module (Pilot application,
         `./#website`), where the name and the site are set; the administrator's trigram is the device identity (Settings
         › Identity), said in the sentence.

@@ -217,6 +217,13 @@
       optional: ['facultatif', 'optional', 'optional', 'opcional'],
       unknown: ['inconnu', 'unknown', 'unbekannt', 'desconocido']
     },
+    // la branche des données fermée aux Developers : les jetons des pilotes ne pourront pas écrire ; elle s'ouvre dans « Jetons des pilotes »
+    asRepoBranch: [
+      'La branche {b} est fermée aux Developers : les jetons des pilotes ne pourront pas écrire. Ouvrez-la dans « Jetons des pilotes ».',
+      'Branch {b} is closed to Developers: the pilots’ tokens will not be able to write. Open it in “Pilots’ tokens”.',
+      'Der Branch {b} ist für Developers gesperrt: Die Token der Piloten können nicht schreiben. Öffnen Sie ihn unter „Token der Piloten“.',
+      'La rama {b} está cerrada a los Developers: los tokens de los pilotos no podrán escribir. Ábrala en «Tokens de los pilotos».'
+    ],
     asRepo: [
       'Un dépôt git distant pour data/, où la compagnie partage ses données (pour GitLab, avec votre jeton d’administrateur sur ce poste).',
       'A remote git repository for data/, where the airline shares its data (for GitLab, with your administrator token on this workstation).',
@@ -688,14 +695,16 @@
     } = env;
     const lanApi = c.lan?.() || null,
       aerodb = c.aerodb?.() || null,
-      [secrets, airline, status, lan, tokens] = await Promise.all([
+      [secrets, airline, status, lan, tokens, admin] = await Promise.all([
         L ? setup('secrets').catch(() => null) : null,
         airlineDoc(FD).get(AIRLINE, {
           wait: true
         }).catch(() => null),
         aerodb ? aerodb.status().catch(() => null) : null,
         lanApi ? lanApi.state().catch(() => null) : null,
-        L ? setup('gitlab/tokens/count').catch(() => null) : null
+        L ? setup('gitlab/tokens/count').catch(() => null) : null,
+        // la branche des données ouverte ou non aux Developers (GET gitlab/admin, V3 Frame c6f3bc38b) ; refus ou absence : null
+        L ? setup('gitlab/admin').catch(() => null) : null
       ]);
     return {
       secrets: secrets?.app ? secrets : null,
@@ -703,7 +712,8 @@
       zones: status ? Object.keys(status.published || {}).length : null,
       lan: !!lanApi,
       devices: lan ? lan.devices ?? 0 : null,
-      tokens: tokens && typeof tokens === 'object' ? tokens : null
+      tokens: tokens && typeof tokens === 'object' ? tokens : null,
+      branch: admin?.branch && typeof admin.branch === 'object' ? admin.branch : null
     };
   }
   const DESK = new WeakSet(); // vues qui écoutent déjà « frame-desk »
