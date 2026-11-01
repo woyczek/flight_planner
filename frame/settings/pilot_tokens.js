@@ -109,7 +109,10 @@
       'Dieses Token kann die Token der Piloten erstellen und widerrufen.',
       'Este token puede crear y revocar los tokens de los pilotos.'
     ],
-    list: ['Jetons du projet', 'Project tokens', 'Token des Projekts', 'Tokens del proyecto'],
+    // la liste, sous le jeton créé ou sous le formulaire : repliée, avec son nombre
+    existing: ['Jetons existants ({n})', 'Existing tokens ({n})', 'Vorhandene Token ({n})', 'Tokens existentes ({n})'],
+    createdOn: ['créé le {d}', 'created on {d}', 'erstellt am {d}', 'creado el {d}'],
+    justNow: ['créé à l’instant', 'created just now', 'gerade erstellt', 'creado ahora mismo'],
     none: ['Aucun jeton pour l’instant.', 'No token yet.', 'Noch kein Token.', 'Ningún token por ahora.'],
     never: ['jamais utilisé', 'never used', 'nie genutzt', 'nunca usado'],
     revoked: ['révoqué', 'revoked', 'widerrufen', 'revocado'],
@@ -121,17 +124,28 @@
       '¿Revocar el token {n}? El dispositivo del piloto ya no podrá leer ni escribir los datos; sus escrituras pendientes se quedan en su dispositivo.'
     ],
     revokedDone: ['Jeton {n} révoqué.', 'Token {n} revoked.', 'Token {n} widerrufen.', 'Token {n} revocado.'],
-    create: ['Nouveau jeton', 'New token', 'Neues Token', 'Nuevo token'],
     days: ['Durée (jours, 365 au plus)', 'Lifetime (days, 365 at most)', 'Laufzeit (Tage, höchstens 365)',
       'Duración (días, 365 como máximo)'
     ],
     make: ['Créer le jeton', 'Create the token', 'Token erstellen', 'Crear el token'],
-    created: [
-      'Jeton de {n}, valable jusqu’au {d} — montré cette fois seulement : copiez-le et donnez-le au pilote par un canal sûr (jamais dans un message public). Il le colle dans Réglages › Accès aux données, avec l’adresse du projet.',
-      'Token for {n}, valid until {d} — shown this once only: copy it and give it to the pilot through a safe channel (never in a public message). They paste it in Settings › Data access, with the project’s address.',
-      'Token für {n}, gültig bis {d} — nur dieses eine Mal angezeigt: Kopieren Sie es und geben Sie es dem Piloten über einen sicheren Weg (nie in einer öffentlichen Nachricht). Er fügt es unter Einstellungen › Datenzugang mit der Adresse des Projekts ein.',
-      'Token de {n}, válido hasta el {d} — mostrado solo esta vez: cópielo y entrégueselo al piloto por un canal seguro (nunca en un mensaje público). Lo pega en Ajustes › Acceso a los datos, con la dirección del proyecto.'
+    // la carte du jeton qui vient d'être créé : seule en haut de l'écran
+    madeTitle: ['Jeton de {n} créé', 'Token for {n} created', 'Token für {n} erstellt', 'Token de {n} creado'],
+    copyNow: [
+      'Copiez-le maintenant : il ne sera plus affiché. Valable jusqu’au {d}.',
+      'Copy it now: it will not be shown again. Valid until {d}.',
+      'Kopieren Sie es jetzt: Es wird nicht wieder angezeigt. Gültig bis {d}.',
+      'Cópielo ahora: no se volverá a mostrar. Válido hasta el {d}.'
     ],
+    toPilot: [
+      'À dire au pilote, en lui donnant le jeton par un canal sûr (jamais dans un message public) : collez-le dans Réglages › Accès aux données, avec l’adresse du projet.',
+      'To tell the pilot, giving them the token through a safe channel (never in a public message): paste it in Settings › Data access, with the project’s address.',
+      'Dem Piloten zu sagen, wenn Sie ihm das Token über einen sicheren Weg geben (nie in einer öffentlichen Nachricht): Fügen Sie es unter Einstellungen › Datenzugang mit der Adresse des Projekts ein.',
+      'Para decir al piloto, entregándole el token por un canal seguro (nunca en un mensaje público): péguelo en Ajustes › Acceso a los datos, con la dirección del proyecto.'
+    ],
+    toMessage: ['Le message pour le pilote (« Ajouter un pilote »)', 'The message for the pilot (“Add a pilot”)',
+      'Die Nachricht für den Piloten („Pilot hinzufügen“)', 'El mensaje para el piloto («Añadir un piloto»)'
+    ],
+    another: ['Créer un autre jeton', 'Create another token', 'Weiteres Token erstellen', 'Crear otro token'],
     copied: ['Jeton copié.', 'Token copied.', 'Token kopiert.', 'Token copiado.'],
     failed: ['GitLab a refusé : {m}', 'GitLab refused: {m}', 'GitLab hat abgelehnt: {m}', 'GitLab rechazó: {m}'],
     offline: ['Lanceur ou GitLab injoignable.', 'Launcher or GitLab unreachable.', 'Starter oder GitLab nicht erreichbar.',
@@ -196,12 +210,28 @@
       return `<p class="f-msg" data-kind="${v.ok ? 'ok' : 'err'}" data-admin-result="${v.ok ? 'ok' : v.problems.join(' ')}">${esc(who)}<br>${esc(v.ok ? t(T.adminGood) : lines.join(' '))}</p>`;
     };
     const adminBlock = (open, tested) => `<details data-admintoken${open ? ' open' : ''}><summary>${esc(t(T.admin))}</summary>
-        <p class="f-muted">${esc(t(T.adminNeed))}</p>
+        <p class="f-muted">${esc(t(T.adminNeed))}</p><p class="f-muted">${esc(t(T.branch))}</p>
         <label class="f-field">${esc(t(T.fInst))}<input data-f="ainst" autocomplete="off" spellcheck="false" placeholder="https://gitlab.com"></label>
         <label class="f-field">${esc(t(T.fProj))}<input data-f="aproj" autocomplete="off" spellcheck="false"></label>
         <label class="f-field">${esc(t(T.fTok))}<input data-f="atok" type="password" autocomplete="off" spellcheck="false"></label>
         <div class="f-row"><button type="button" class="primary" data-act="asave">${esc(t(T.adminSave))}</button>
         <button type="button" data-act="atest">${esc(t(T.adminTest))}</button></div><div data-admin-msg>${said(tested)}</div></details>`;
+    // une ligne de la liste : le trigramme d'abord, puis la création, l'expiration, l'état (« jamais utilisé » en dernier) ;
+    // le jeton qui vient d'être créé dit « créé à l'instant » (Simplification, 1er nov. 2026 : « jamais utilisé » en tête
+    // d'une ligne neuve faisait peur)
+    const rowOf = (x, fresh) => {
+      const state = x.revoked ? t(T.revoked) : !x.active ? t(T.inactive) : fresh && x.id === fresh.id ? t(T.justNow) : x.used ? t(K
+        .used, {
+          d: day(x.used)
+        }) : t(T.never);
+      return `<li data-token="${esc(x.id)}"${fresh && x.id === fresh.id ? ' data-token-fresh' : ''}><b>${esc(x.name)}</b>
+        <span class="f-muted">${esc([x.created ? t(T.createdOn, { d: day(x.created) }) : '', x.expires ? t(K.expires, { d: day(x.expires) }) : '', state]
+          .filter(Boolean).join(' · '))}</span>
+        ${x.active && !x.revoked ? `<button type="button" data-act="revoke" data-id="${esc(x.id)}" data-name="${esc(x.name)}">${esc(t(K.revoke))}</button>` : ''}</li>`;
+    };
+    // à l'ouverture, sept éléments au plus : le titre, l'introduction, le formulaire (trigramme, durée, « Créer »), la liste
+    // repliée, le jeton de l'administrateur replié quand la liste se lit (il est posé et répond) ; après « Créer », la carte
+    // du jeton seule en haut, la liste repliée dessous, « Créer un autre jeton » (qui redessine : la valeur s'efface)
     async function draw(fresh = null, tested = null) {
       const r = await R.call('gitlab/tokens');
       if (!view.isConnected) return;
@@ -210,18 +240,19 @@
           ${adminBlock(true, tested)}`;
         return;
       }
-      const rows = (r.tokens || []).map(x => `<li data-token="${esc(x.id)}"><b>${esc(x.name)}</b>
-        <span class="f-muted">${esc([x.revoked ? t(T.revoked) : !x.active ? t(T.inactive) : '', x.expires ? t(K.expires, { d: day(x.expires) }) : '',
-          x.used ? t(K.used, { d: day(x.used) }) : t(T.never)].filter(Boolean).join(' · '))}</span>
-        ${x.active && !x.revoked ? `<button type="button" data-act="revoke" data-id="${esc(x.id)}" data-name="${esc(x.name)}">${esc(t(K.revoke))}</button>` : ''}</li>`).join('');
-      body.innerHTML = `${fresh ? `<div class="f-msg" data-kind="ok" data-tokens-new><p>${esc(t(T.created, { n: fresh.name, d: day(fresh.expires) }))}</p>
-          <p><code data-token-value>${esc(fresh.token)}</code></p><p><button type="button" data-act="copy">${esc(t(K.copy))}</button></p></div>` : ''}
-        <h3>${esc(t(T.list))}</h3>${rows ? `<ul class="f-list" data-tokens-list>${rows}</ul>` : `<p class="f-muted">${esc(t(T.none))}</p>`}
-        <h3>${esc(t(T.create))}</h3>
-        <label class="f-field">${esc(t(K.cfgPilot))}<input data-f="tri" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="5"></label>
+      const list = r.tokens || [],
+        rows = list.map(x => rowOf(x, fresh)).join('');
+      const listBlock = `<details data-tokens-existing><summary>${esc(t(T.existing, { n: list.length }))}</summary>
+        ${rows ? `<ul class="f-list" data-tokens-list>${rows}</ul>` : `<p class="f-muted">${esc(t(T.none))}</p>`}</details>`;
+      body.innerHTML = fresh ? `<div class="f-msg" data-kind="ok" data-tokens-new><h3>${esc(t(T.madeTitle, { n: fresh.name }))}</h3>
+          <div class="f-row"><input data-token-value readonly spellcheck="false" autocomplete="off" value="${esc(fresh.token)}">
+          <button type="button" class="primary" data-act="copy">${esc(t(K.copy))}</button></div>
+          <p><b>${esc(t(T.copyNow, { d: day(fresh.expires) }))}</b></p><p>${esc(t(T.toPilot))}</p>
+          <p><a href="#settings?card=admin&amp;panel=addPilot" data-tokens-message>${esc(t(T.toMessage))}</a></p></div>
+        ${listBlock}<div class="f-row"><button type="button" data-act="another">${esc(t(T.another))}</button></div>` : `<label class="f-field">${esc(t(K.cfgPilot))}<input data-f="tri" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="5"></label>
         <label class="f-field">${esc(t(T.days))}<input data-f="days" type="number" min="1" max="365" value="365"></label>
         <p class="f-msg" data-msg></p><div class="f-row"><button type="button" class="primary" data-act="make">${esc(t(T.make))}</button></div>
-        <p class="f-muted">${esc(t(T.branch))}</p>${adminBlock(!!tested, tested)}`;
+        ${listBlock}${adminBlock(!!tested, tested)}`;
       // la valeur du jeton ne vit que dans ce dessin : rien n'est gardé, un nouveau dessin l'efface
       // quitter l'écran (autre adresse, page fermée) efface la valeur du nouveau jeton, pas seulement le prochain dessin
       if (fresh) {
@@ -239,13 +270,14 @@
       if (!b) return;
       if (b.dataset.act === 'copy') {
         const CB = await import(new URL('../lib/clipboard.js', BASE).href).catch(() => null);
-        const v = body.querySelector('[data-token-value]')?.textContent || '';
+        const v = body.querySelector('[data-token-value]')?.value || '';
         if (CB?.copyText) await CB.copyText(v, {
           near: b
         });
         else await navigator.clipboard?.writeText(v);
         return ctx.notify?.(t(T.copied), 'ok');
       }
+      if (b.dataset.act === 'another') return draw();
       if (b.dataset.act === 'revoke') {
         if (!await ctx.ask(t(T.revokeAsk, {
             n: b.dataset.name

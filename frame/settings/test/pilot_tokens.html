@@ -1,7 +1,8 @@
 <!doctype html>
 <!-- Banc de l'écran « Jetons des pilotes » (frame/settings/pilot_tokens.js ; G2) : sans lanceur, sans secret, liste, création
      (le jeton montré une fois), trigramme refusé, révocation après question ; refus de GitLab dits par leur raison (401, 403,
-     404), jeton de l'administrateur testé et enregistré (1er nov. 2026). Contexte du cadre simulé (t, ask, notify,
+     404), jeton de l'administrateur testé et enregistré (1er nov. 2026) ; le jeton créé seul en haut, la liste repliée
+     dessous, sept éléments au plus à l'ouverture, une ligne qui commence par le trigramme (1er nov. 2026). Contexte du cadre simulé (t, ask, notify,
      routes) : aucun appel réel. window.__tokensBench = { done, pass, fail, rows }. Ouvrir la page suffit. -->
 <html lang="fr">
 <head>
@@ -94,6 +95,7 @@
               name: body.trigram,
               active: true,
               revoked: false,
+              created: '2026-11-01T09:00:00Z',
               expires: '2027-10-29',
               used: null
             };
@@ -226,6 +228,20 @@
       await tick();
       ck('aucun jeton : la liste le dit, le formulaire est là', !view.querySelector('[data-tokens-list]') && !!view.querySelector(
         '[data-act=make]'));
+      // ce qui se voit : titres, paragraphes non vides, champs, boutons, liens, résumés (rien de ce qu'un repli cache)
+      const seen = () => [...view.querySelectorAll('h2, h3, p, label, button, summary, a, input[data-token-value]')].filter(e => {
+        const fold = e.closest('details');
+        if (fold && !fold.open && !(e.tagName === 'SUMMARY' && e.parentElement === fold)) return false;
+        if (e.tagName !== 'LABEL' && e.closest('label')) return false;
+        return !!e.getClientRects().length && (e.tagName === 'INPUT' || !!e.textContent.trim());
+      });
+      const open0 = seen();
+      ck('à l’ouverture : sept éléments au plus, la liste et le jeton de l’administrateur repliés', open0.length <= 7 && !view
+        .querySelector(
+          '[data-tokens-existing]').open && !view.querySelector('[data-admintoken]').open && /Jetons existants \(0\)/.test(view
+          .querySelector('[data-tokens-existing] summary').textContent), open0.map(e => e.tagName + ':' + e.textContent.trim().slice(
+          0,
+          20)).join(' | '));
       view.querySelector('[data-f=tri]').value = 'a';
       view.querySelector('[data-act=make]').click();
       await tick();
@@ -234,9 +250,42 @@
       view.querySelector('[data-f=tri]').value = 'abc';
       view.querySelector('[data-act=make]').click();
       await tick(80);
-      ck('création : le jeton montré une fois, la liste le porte', view.querySelector('[data-token-value]')?.textContent ===
+      ck('création : le jeton montré une fois, la liste le porte', view.querySelector('[data-token-value]')?.value ===
         'glpat-ONCE' && view.querySelectorAll(
           '[data-token]').length === 1 && calls.some(c => c[0] === 'gitlab/tokens' && c[1]?.trigram === 'ABC' && c[1]?.days === 365));
+      // après « Créer » : la carte du jeton seule en haut ; ni formulaire ni jeton de l'administrateur ; la liste repliée dessous
+      const card = view.querySelector('[data-tokens-body]').firstElementChild;
+      ck('après « Créer » : la carte « Jeton de ABC créé » en premier, le jeton dans un champ, « Copier », copiez-le maintenant, ce qu’il faut dire au pilote, le lien vers son message',
+        card?.matches('[data-tokens-new]') && /Jeton de ABC créé/.test(card.querySelector('h3')?.textContent || '') && card
+        .querySelector(
+          'input[data-token-value][readonly]') && card.querySelector('[data-act=copy]') &&
+        /Copiez-le maintenant : il ne sera plus affiché/
+        .test(card.textContent) && /2027-10-29/.test(card.textContent) && /Réglages › Accès aux données, avec l’adresse du projet/
+        .test(card
+          .textContent) && card.querySelector('a[data-tokens-message]')?.getAttribute('href') ===
+        '#settings?card=admin&panel=addPilot',
+        card?.outerHTML.slice(0, 200));
+      ck('après « Créer » : ni formulaire, ni jeton de l’administrateur ; « Jetons existants (1) » replié dessous, « Créer un autre jeton »',
+        !view.querySelector('[data-act=make]') && !view.querySelector('[data-admintoken]') && !view.querySelector(
+          '[data-tokens-existing]')
+        .open && /Jetons existants \(1\)/.test(view.querySelector('[data-tokens-existing] summary').textContent) && !!view
+        .querySelector(
+          '[data-act=another]'));
+      const fresh = view.querySelector('[data-token-fresh]');
+      ck('la ligne du nouveau : le trigramme d’abord, créé le, l’expiration, « créé à l’instant » — jamais « jamais utilisé »', !!
+        fresh &&
+        /^ABC\s+créé le 2026-11-01 · expire le 2027-10-29 · créé à l’instant/.test(fresh.textContent.trim().replace(/\s+/g, ' ')) && !
+        /jamais utilisé/.test(fresh.textContent), fresh?.textContent.trim().replace(/\s+/g, ' '));
+      view.querySelector('[data-act=another]').click();
+      await tick();
+      const again = view.querySelector('[data-token="7"]');
+      ck('« Créer un autre jeton » : le formulaire revient, le jeton n’est plus dans la page ; la ligne dit alors « jamais utilisé », en dernier',
+        !!view.querySelector('[data-act=make]') && !view.innerHTML.includes('glpat-ONCE') && /· jamais utilisé$/.test(again
+          ?.textContent
+          .trim().replace(/\s+/g, ' ').replace(/ Révoquer$/, '') || ''), again?.textContent.trim().replace(/\s+/g, ' '));
+      view.querySelector('[data-f=tri]').value = 'abd';
+      view.querySelector('[data-act=make]').click();
+      await tick(80);
       window.dispatchEvent(new HashChangeEvent('hashchange'));
       await tick();
       ck('quitter l\u2019écran (autre adresse) efface la valeur du jeton', !view.querySelector('[data-token-value]') && !view.innerHTML
@@ -254,7 +303,7 @@
       await tick(80);
       ck('révocation : après l’accord, le jeton est dit révoqué', calls.some(c => c[0] === 'gitlab/tokens/revoke' && c[1]?.id === 7) &&
         !view.querySelector(
-          '[data-act=revoke]') && /révoqué/.test(view.querySelector('[data-token]').textContent));
+          '[data-token="7"] [data-act=revoke]') && /révoqué/.test(view.querySelector('[data-token="7"]').textContent));
     } catch (x) {
       ck('exception du banc', false, x?.stack || x);
     }

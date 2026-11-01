@@ -940,8 +940,10 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   Blätter von Little Navmap auf diesem Rechner liegen, der Pfad nur lesbar und woher er kommt; „Öffnen“ zeigt den Ordner im
   Dateiexplorer. Ein Pfad wird dort geändert, wo es angegeben ist, nie hier; X-Plane ist dem Starter unbekannt.
 - **Token der Piloten (GitLab)**: In der Anwendung Maintenance erstellt „Token der Piloten“ auf dem Rechner des Starters
-  ein Projektzugangstoken je Pilot (nach seinem Kürzel benannt, Rolle Developer, höchstens ein Jahr), zeigt es nur einmal
-  und widerruft es. Der Starter verwendet dafür das Token des Administrators, das er nie zeigt: ein persönliches
+  ein Projektzugangstoken je Pilot (nach seinem Kürzel benannt, Rolle Developer, höchstens ein Jahr) und widerruft es.
+  Nach „Token erstellen“ zeigt der Bildschirm nur dieses Token, oben: Kopieren Sie es sofort (es wird nicht wieder
+  angezeigt), mit dem, was dem Piloten zu sagen ist, und dem Link zu seiner Nachricht („Pilot hinzufügen“); die Liste
+  „Vorhandene Token“ ist darunter eingeklappt, das neue steht dort als „gerade erstellt“. Der Starter verwendet dafür das Token des Administrators, das er nie zeigt: ein persönliches
   Zugangstoken Ihres GitLab-Kontos (Preferences › Access tokens), Bereich api, mit Ablaufdatum (höchstens ein Jahr),
   wobei dieses Konto Maintainer oder Owner des Projekts ist. Fügen Sie es unter „Token des Administrators“ unter der
   Liste ein; „Token des Administrators testen“ nennt das Konto, seine Rolle, seine Bereiche und sein Ablaufdatum. Eine

@@ -2365,3 +2365,17 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   no token is refused (`reason: token-required`, nothing written, no call), said on the screen; another project of the
   same instance keeps the token; the instance is saved in lower case. The transport's rule, applied to the launcher.
   Noreg I32.
+- **1 Nov 2026 — Pilots' tokens: the token just created alone at the top** (Simplification, from the user: « a new token
+  shows up in the list as “never used”, which is frightening: we don't know it is the one just created, and the page
+  speaks of everything when we only want that token »):
+  - After « Créer le jeton », the screen shows one card first: « Jeton de ABC créé », the token in a read-only field with
+    « Copier », « copiez-le maintenant : il ne sera plus affiché » with its expiry, what to tell the pilot (paste it in
+    Settings › Data access with the project's address) and a link to the pilot's message (« Ajouter un pilote »,
+    `#settings?card=admin&panel=addPilot`). Below, « Jetons existants (n) » folded, then « Créer un autre jeton »; no
+    form and no administrator's block meanwhile.
+  - A row starts with the trigram, then « créé le », the expiry, the state; « jamais utilisé » is a state, last; the
+    token just created says « créé à l'instant » (« jamais utilisé » comes at the next drawing).
+  - At opening, seven visible elements at most: the title, the introduction, the trigram, the lifetime, « Créer le
+    jeton », the list folded, the administrator's block folded when the list reads (the token is set and answers); the
+    branch note moves into that block. The form's heading « Nouveau jeton » is dropped (the form says it).
+  - The token is still never kept: leaving the screen or drawing again (« Créer un autre jeton ») removes it. Noreg A39.

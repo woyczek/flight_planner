@@ -208,8 +208,10 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   Navmap's databases and sheets are on this computer, the path read only and where it comes from; “Open” shows the folder
   in the file explorer. A path is changed where it says, never here; X-Plane is unknown to the launcher.
 - **Pilots' tokens (GitLab)**: in the Maintenance application, on the launcher's computer, « Pilots' tokens » creates
-  one project access token per pilot (named after the trigram, Developer role, one year at most), shows it once only, and
-  revokes it. The launcher uses the administrator's token there, which it never shows: a personal access token of your
+  one project access token per pilot (named after the trigram, Developer role, one year at most) and revokes it. After
+  « Create the token », the screen shows only that token, at the top: copy it at once (it will not be shown again), with
+  what to tell the pilot and the link to their message (« Add a pilot »); the « Existing tokens » list is folded below,
+  the new one there « created just now ». The launcher uses the administrator's token there, which it never shows: a personal access token of your
   GitLab account (Preferences › Access tokens), scope api, with an expiry (one year at most), this account being
   Maintainer or Owner of the project. Paste it in « Administrator's token », under the list; « Test the administrator's
   token » says the account, its role, its scopes and its expiry. A refusal of GitLab is said by its cause: token refused

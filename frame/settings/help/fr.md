@@ -218,8 +218,10 @@ cartographique (`apps/cpco/map_parser.html`).
   bases et les fiches de Little Navmap sur ce poste, chemin en lecture seule et d'où il vient ; « Ouvrir » montre le
   dossier dans l'explorateur. Un chemin se change là où il est dit, jamais ici ; X-Plane est inconnu du lanceur.
 - **Jetons des pilotes (GitLab)** : dans l'application Maintenance, sur le poste du lanceur, « Jetons des pilotes »
-  crée un jeton d'accès de projet par pilote (à son trigramme, rôle Developer, un an au plus), le montre une seule fois,
-  et le révoque. Le lanceur s'y sert du jeton de l'administrateur, qu'il ne montre jamais : un jeton d'accès personnel
+  crée un jeton d'accès de projet par pilote (à son trigramme, rôle Developer, un an au plus) et le révoque. Après
+  « Créer le jeton », l'écran ne montre que lui, en haut : copiez-le aussitôt (il ne sera plus affiché), avec ce qu'il
+  faut dire au pilote et le lien vers son message (« Ajouter un pilote ») ; la liste « Jetons existants » est repliée
+  dessous, le nouveau y est « créé à l'instant ». Le lanceur s'y sert du jeton de l'administrateur, qu'il ne montre jamais : un jeton d'accès personnel
   de votre compte GitLab (Préférences › Jetons d'accès), portée api, avec une expiration (un an au plus), ce compte étant
   Maintainer ou Owner du projet. Collez-le dans « Jeton de l'administrateur », sous la liste ; « Tester le jeton de
   l'administrateur » dit le compte, son rôle, ses portées et son expiration. Un refus de GitLab est dit par sa cause :
