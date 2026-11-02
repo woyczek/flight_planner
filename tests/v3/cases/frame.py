@@ -2987,7 +2987,7 @@ def a80(c):
 @case('A81', 'The suite’s version: the last line of the Status block and the head of the copyable diagnostic', 'A', designs=('standard',), screens=False, night=False,
       rule='Simplification 1 Nov (the user: no « About », no footer, no version in Diagnostics): the version is written once — by the launcher (its status) or by build_pages (version.json of the site without a launcher) — and shown as the last line of the Status block « SOG <git describe> · <date> », and at the head of the copyable diagnostic')
 def a81(c):
-    ver = {'version': '6.0.0-alpha.2-25-g1a2b3c4', 'date': '2026-11-01'}
+    ver = {'version': '6.0.0-alpha.2-25-g1a2b3c4', 'date': '2026-11-01', 'web': 'https://framagit.org/asr/flight_planner'}
     c.context.route(re.compile(r'/version\.json(\?|$)'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(ver)))
     c.context.add_init_script("""window.__copied = []; try { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async s => { window.__copied.push(String(s)) } } }) } catch (e) {}""")
     c.open('settings', docs=LEVEL3)

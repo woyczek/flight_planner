@@ -2305,6 +2305,8 @@ def i34(c):
     v = L.suite_version()
     desc = subprocess.run(D.git_cmd('-C', str(c.root), 'describe', '--tags', '--always'), capture_output=True, text=True, env=D.git_env()).stdout.strip()
     c.ok(v and v['version'] == desc[:80] and re.fullmatch(r'\d{4}-\d{2}-\d{2}', v['date']), str(v), 'the launcher’s version: git describe and the commit date')
+    c.ok(v['web'] and v['web'].startswith('https://'), str(v), 'and the public address of the code repository (config: release.repository.web)')
+    c.eq([L.suite_web('repository:{web:"javascript:alert(1)"}'), L.suite_web('nothing')], [None, None], 'only an https address', what='web')
     src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
     c.ok("'version': suite_version()" in src, '', 'the status route serves it')
     b = (c.root / 'tools' / 'build_pages.py').read_text(encoding='utf-8')

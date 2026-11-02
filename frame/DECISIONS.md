@@ -2456,3 +2456,7 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   never cropped nor deformed. None, unreadable or too big: the tinted plane, without an error. Read again with the airline
   (by revision, so a new file is redrawn). Test logos: `tests/v3/fixtures/airline/logo-dalton.png` (its sticker's shadow
   removed, the white kept) and `logo-rm.png`. The administrator will set it through the assistant (roadmap). Noreg A83.
+- **2 Nov 2026 — The version carries the code repository's address** (Réglages, for the « About » card: the repository and
+  the report link, Simplification): `ctx.version().web` — `release.repository.web` of `config/repository_tree`, read by the
+  launcher (`suite_web`) or by `build_pages` into `version.json`; https only, else null (then the card shows neither line).
+  Noreg A81, I34.

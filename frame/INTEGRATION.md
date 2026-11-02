@@ -663,8 +663,9 @@ screen `#fSync` and the rest stay as they were, without the "i".
   describe --tags --always` and the commit date of the extracted suite, read again at most once a minute) or, on the site
   without a launcher, by `tools/build_pages.py` (`version.json` at the site's root, same form). The frame reads the
   launcher's, else `version.json`; neither (a working copy served flat), no line. It is the last line of this block, the
-  head of the copyable diagnostic (`suite`), and the Settings' « About » card reads it as `ctx.version()` (`{ version, date
-  }` or null). No footer.
+  head of the copyable diagnostic (`suite`), and the Settings' « About » card reads it as `ctx.version()` (`{ version, date,
+  web }` or null; `web`: the public address of the code repository, `config/repository_tree` › `release.repository.web`,
+  https only, or null — the card draws the repository and the report link from it). No footer.
 - **Badge** (`#fDevice[data-badge]` green: something new, flight started or report to write, on every width;
   `[data-attn]` amber, **phone only**: trigram, pending writes, conflicts, sync error, offline, base; amber wins). The
   button's `title` / `aria-label` add "something to see" while either shows. The data line and "offline" are a state, not a

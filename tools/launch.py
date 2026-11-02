@@ -2495,9 +2495,16 @@ def suite_version():
                                   timeout=10, env=data_sync.git_env()).stdout.strip()
         except (OSError, subprocess.SubprocessError):
             date = ''
-        v = {'version': desc[:80], 'date': date[:10]} if desc else None
+        v = {'version': desc[:80], 'date': date[:10], 'web': suite_web()} if desc else None
     _suite_version.update(at=time.monotonic(), v=v)
     return v
+
+
+def suite_web(text=None):
+    """L'adresse publique du dépôt du code (config/repository_tree : release.repository.web), en https, ou None : la carte
+    « À propos » des Réglages en tire le dépôt et le lien de signalement."""
+    m = re.search(r'repository:\{web:"(https://[^"\s<>]+)"', config_text() if text is None else text)
+    return m.group(1)[:200] if m else None
 
 
 # ---- jetons d'accès de projet GitLab des pilotes (G2, application Maintenance) : créés, listés et révoqués par le lanceur

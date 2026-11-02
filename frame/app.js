@@ -1978,7 +1978,9 @@
     }).then(r => r.ok ? r.json() : null).catch(() => null);
     const next = v && typeof v.version === 'string' && v.version ? {
       version: v.version.slice(0, 80),
-      date: /^\d{4}-\d{2}-\d{2}$/.test(v.date || '') ? v.date : ''
+      date: /^\d{4}-\d{2}-\d{2}$/.test(v.date || '') ? v.date : '',
+      // l'adresse publique du dépôt du code (https), ou null : la carte « À propos » en tire le dépôt et le signalement
+      web: typeof v.web === 'string' && /^https:\/\/[^\s"<>]+$/.test(v.web) ? v.web.slice(0, 200) : null
     } : null;
     if (JSON.stringify(next) === JSON.stringify(suiteVersion)) return;
     suiteVersion = next;

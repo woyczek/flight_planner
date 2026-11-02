@@ -98,7 +98,9 @@ def main(out, start=''):
     # la version de la suite pour le cadre sans lanceur (le bloc d'état, le diagnostic, « À propos ») : git describe et la
     # date du commit, comme le lanceur la donne dans son statut
     with open(os.path.join(out, 'version.json'), 'w', encoding='utf-8', newline='\n') as f:
-        json.dump({'version': git('describe', '--tags', '--always')[:80], 'date': git('log', '-1', '--format=%cs')[:10]}, f)
+        web = re.search(r'repository:\{web:"(https://[^"\s<>]+)"', open(os.path.join(ROOT, 'config', 'repository_tree'), encoding='utf-8').read())
+        json.dump({'version': git('describe', '--tags', '--always')[:80], 'date': git('log', '-1', '--format=%cs')[:10],
+                   'web': web.group(1)[:200] if web else None}, f)
     open(os.path.join(out, '.nojekyll'), 'w').close()
     if start:
         start_page(out, start.strip('/'), meta)

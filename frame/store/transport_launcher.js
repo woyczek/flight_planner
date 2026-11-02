@@ -129,7 +129,8 @@
         // la version de la suite (git describe, date du commit) que le lanceur sert
         version: j.version && typeof j.version.version === 'string' ? {
           version: j.version.version.slice(0, 80),
-          date: String(j.version.date || '').slice(0, 10)
+          date: String(j.version.date || '').slice(0, 10),
+          web: typeof j.version.web === 'string' ? j.version.web.slice(0, 200) : null
         } : null
       } : null;
     } catch {
