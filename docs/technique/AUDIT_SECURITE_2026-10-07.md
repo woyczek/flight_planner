@@ -1005,7 +1005,8 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 153 | The data branch: no force push, protected when it was not, the restore checked (d74d4431d): the points of 152 fixed | acceptable |
 | 154 | Group of 1 November evening: bounded aerodb reads extended (c78b26df4), bounded waits in Fuel (f3d4e82a9), Map base and canvas (eb9111d3f, 40532a1cc), assistant (946881d5f) | acceptable |
 | 155 | The administrator's GitLab token: where and since when, without its value (57f581209) | acceptable |
-| 156 | Frame: the airline's logo read from the data repository and shown by a `blob:` address (02538ab1a) | **to fix** |
+| 156 | Frame: the airline's logo read from the data repository and shown by a `blob:` address (02538ab1a) | **to fix** (fixed in 157) |
+| 157 | The airline's logo in PNG or WEBP only, never SVG (a9d29f446): the point of 156 fixed | acceptable |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2313,6 +2314,13 @@ tab”, a long press on a phone), the SVG runs its scripts there under the suite
 code, and can read the device's tokens in IndexedDB. Since § 10.36 every pilot's token can push to the data repository,
 so any pilot (or a stolen token) could plant such a logo for the whole airline. Rasterise the SVG to PNG on a canvas before
 showing it (and revoke the SVG address at once), or accept PNG and WEBP only.
+
+**157. The point of 156 fixed (a9d29f446) — acceptable.** The logo's path accepts only `.png` and `.webp`, and the type
+is taken from the first bytes (PNG or RIFF/WEBP), so an SVG is refused even under a `.png` name; a file over 512 KB or that
+does not decode is refused, said once to the administrator. No `blob:` address of type `image/svg+xml` is created any more;
+the tinted plane of the browser tab stays a `data:` address built from the suite's own file (an opaque origin when opened).
+Rule kept for every file of the data repository, which any pilot's token can write since § 10.36: treat it as written
+by any pilot.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
