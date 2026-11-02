@@ -2327,3 +2327,13 @@ page is served to `Sec-Fetch-Site: none`, refused to `cross-site`, and, where th
 - **Bench**: K66 (an E5 at FL 600 → 17 999 ft capped; an E at 2 500 ft unchanged; D and B unchanged; Canada capped, Germany not; at FL180
   capped, at FL175 kept; the FAA's class E too).
 
+## 2 November 2026 — what aerodb reads from data/ is written by any pilot (security audit 157, § 10.36)
+
+- **Rule** (written by the security session, to keep for every reader): since § 10.36 every file of `data/` that aerodb reads —
+  `aircraft/sheets/`, `airline/fleet.json`, the reference, the published bases under `sia/base/`, `proc/` — can be written by any pilot of the
+  group. So: numbers are bounded (`PROFILE_FIELDS` and its bounds for the sheets), keys are read through own-property lookups (`own()`,
+  `Object.hasOwn`, never `obj[key]` on a prototype), strings are never taken as a path (`fileOf` sanitises a sheet id; a fleet `sheetId` is only
+  a key in the loaded sheets), and an unreadable file is said and ignored (`null`, never an exception that stops the reader).
+- **How it is applied**: nothing to change today; each new reader of a `data/` file is checked against these four points in its review, and the
+  check is written in its entry here.
+
