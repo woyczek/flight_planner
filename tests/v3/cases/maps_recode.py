@@ -2823,3 +2823,69 @@ def d98(c):
     c.ok(r['sid'] > 0, f"{r['sid']} SID points of {len(r['light'])}", 'the light drawing’s route holds the SID’s points')
     c.eq(r['light'], r['flown'], 'it is the flown path, point for point (not the route’s points)', what='light route')
     c.ok(len(r['light']) > r['points'], f"{len(r['light'])} points against {r['points']} in the route", 'more points than the plain route: the SID replaces its first leg')
+
+
+# ------------------------------------------------------------------------------------------------------ D100
+# every camera MapLibre is told to take after creation, and every full drawing: its camera and the map box's height
+_ONE_IMAGE_SPY = """() => { const P = window.maplibregl && window.maplibregl.Map && window.maplibregl.Map.prototype; window.__one = { cams: [], draws: [] };
+  if (P && !P.__one) { P.__one = 1; for (const k of ['jumpTo', 'fitBounds', 'easeTo', 'flyTo', 'setCenter', 'setZoom'])
+    { const o = P[k]; P[k] = function (...a) { const all = new Error().stack.split(String.fromCharCode(10)).map(l => l.trim()), st = all.slice(2, 5);
+      // the constructor's own camera (center / zoom given at creation) is the creation camera, not a second one
+      if (window.__one && !all.some(l => /^at new [A-Za-z_$.]*Map /.test(l))) window.__one.cams.push(k + ' ' + st.join(' < ')); return o.apply(this, a) } } }
+  const R = window.MapsRender; if (!R.__one) { R.__one = 1; const o = R.draw; R.draw = function (...a) { const S = window.__mp && window.__mp.S, m = S && S.map;
+    if (window.__one && S) window.__one.draws.push({ map: !!m, lng: m ? m.getCenter().lng : null, lat: m ? m.getCenter().lat : null, zoom: m ? m.getZoom() : null,
+      box: S.box.clientHeight }); return o.apply(this, a) } } return true }"""
+
+
+def _one_image(c, what):
+    d = c.js("() => window.__one")
+    draws, cams = d['draws'], d['cams']
+    c.ok(len(draws) > 0, f'{len(draws)} drawings', f'{what}: the map was drawn')
+    c.eq([x for x in draws if not x['map']], [], f'{what}: no drawing before the base map (no plain image with another framing)', what='drawings without the map')
+    first = draws[0] if draws else {}
+    other = [x for x in draws if x['map'] and (abs(x['lng'] - first['lng']) > 1e-6 or abs(x['lat'] - first['lat']) > 1e-6 or abs(x['zoom'] - first['zoom']) > 1e-5)]
+    c.eq(other, [], f'{what}: every drawing has the first one’s framing', what='drawings with another camera')
+    c.eq(sorted(set(x['box'] for x in draws)), [first.get('box')], f'{what}: the map’s box never changes height (the sheet is at its height from the start)', what='box heights')
+    c.eq(cams, [], f'{what}: one camera, the one the map was created with (no fit then a return)', what='camera calls after creation')
+    return first
+
+
+@case('D100', 'One opening, one image: the framing (kept or the flight) is decided before the first drawing, on the map’s final size', 'D',
+      tags=('maps', 'sheet'), screens=False, designs=('standard',), night=False,
+      rule='user, 1 Nov 2026 (« le trajet total s’affiche, puis remonte, puis le zoom précédent s’affiche »), SPEC § 5: one framing per opening, decided before the first drawing — the user’s kept framing of this same flight, else the flight — on the map’s final height (the sheet laid out first); nothing drawn while the base map loads; no fit followed by a return')
+def d100(c):
+    c.open('maps', docs=fdocs(flight()), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.map && window.__mp.S.drawn && window.__mp.S.prof)", timeout=15000, what='the map, its camera and the profile')
+    c.wait(400)
+    # the pilot frames the flight their way, goes to Fuel and comes back: the spy set while on Fuel
+    c.js("() => { const m = window.__mp.S.map; m.jumpTo({ center: [m.getCenter().lng + 0.6, m.getCenter().lat - 0.4], zoom: m.getZoom() + 1 }); return true }")
+    c.wait(400)
+    mine = c.js(_CAM_JS)
+    c.js("() => { location.hash = '#fuel'; return true }")
+    c.ready('fuel')
+    c.js(_ONE_IMAGE_SPY)
+    c.js("() => { location.hash = '#maps'; return true }")
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.map && window.__mp.S.drawn && window.__mp.S.prof)", timeout=15000, what='the map again, with its profile')
+    c.wait(1500)
+    first = _one_image(c, 'back from Fuel with a kept framing')
+    sig = c.js("async () => { const st = await import('/modules/maps/state.js'), sc = await import('/modules/maps/screen.js'); return { kept: st.keep.cam && st.keep.cam.sig, now: sc.flightSig() } }")
+    c.ok(first and abs(first['lng'] - mine['lng']) < 1e-3 and abs(first['zoom'] - mine['zoom']) < .01, f'{mine} → {first}; {sig}', 'and it is the user’s framing')
+    # untouched framing: another flight’s signature forgets it; the flight is framed, still one image
+    c.js("""async () => { const S = window.__mp.S, p = 'pilot/ABC/current_flight.json', f = await S.ctx.data.get(p);
+      f.route = { ...f.route, text: 'LFRS NEPIX LFML', points: f.route.points.filter(q => q.id !== 'LUGEN') };
+      f.updated_at = new Date().toISOString(); await S.ctx.data.put(p, f); return true }""")
+    c.wait(800)
+    c.js("() => { location.hash = '#fuel'; return true }")
+    c.ready('fuel')
+    c.js(_ONE_IMAGE_SPY)
+    c.js("() => { location.hash = '#maps'; return true }")
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.map && window.__mp.S.drawn && window.__mp.S.prof)", timeout=15000, what='the map again, with its profile')
+    c.wait(1500)
+    _one_image(c, 'back from Fuel, the flight framed')
+

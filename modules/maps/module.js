@@ -63,7 +63,9 @@ import {
 import {
   makeSheet,
   sheetEvents,
-  escapeKey
+  escapeKey,
+  dataHead,
+  sheetFit
 } from './sheet_view.js';
 import {
   profileEvents,
@@ -312,9 +314,14 @@ export async function mount(el, ctx) {
     await chooseLoad();
     if (!S) return;
   }
-  // fond à tuiles si possible, sinon fond uni
+  // fond à tuiles si possible, sinon fond uni ; la feuille posée d'abord à sa hauteur (la carte a sa taille finale avant sa caméra),
+  // rien dessiné pendant le chargement du fond : la première image est la bonne (SPEC § 5, une ouverture, une image)
+  dataHead();
+  sheetFit();
+  S.tilesWait = true;
   const tiles = S.route.points.length || S.mission ? await startTiles() : false;
   if (!S) return;
+  S.tilesWait = false;
   if (!tiles) S.plain = true;
   if (ctx.query?.tune) {
     const T = await need('tune').catch(() => null);

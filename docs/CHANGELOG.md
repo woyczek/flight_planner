@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: one opening, one image** (`modules/maps/screen.js`, `module.js`, `draw.js`, `sheet_view.js`, `lib/map_base.js`
+  `startTiles({ center, zoom })`; SPEC § 5; noreg D100). Opening the Map showed the whole route, then the map moved up when the
+  sheet came, then the kept framing: the sheet is now laid out first, the base map is created with its one camera (the kept
+  framing of this flight, else the flight), nothing is drawn while it loads, and a framing that changes nothing sets no camera.
+
 - **Settings: the Synchronisation card says what has just left** (`frame/settings/sync_summary.js` `pushedItems`, `pushedHtml`,
   `access.js`; SPEC § 3 item 7; help ×4; A87) — SOG-0029, V3 Frame `FrameData.lastPushed()` (536ea9ec5): one line « Parti à 18:04 :
   Fiches d'appareils : 2 · Missions : 1 », the files one by one under it (readable titles, the refusals first with the transport's

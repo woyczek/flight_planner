@@ -325,6 +325,15 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   Recentre and Follow forget it. **One writer of the framing**: `frameFlight(animate)` (`screen.js`), the view's own model,
   called at mount (when the map loads), after a reading of the flight, at the sheet's settle, by Recentre and by the choose mode
   (which frames its own `S.fit`); no other code moves the camera to frame (`fitMap` is its private step).
+- **One opening, one image** (user, 1 Nov 2026: « le trajet total s'affiche, puis remonte, puis le zoom précédent
+  s'affiche »): the framing is decided once, before the first drawing, on the map's final size. The sheet is laid out first
+  (`dataHead`, `sheetFit` before the base map; a flight with two points or more has its sheet at its height from the start,
+  the profile filling it when it comes, so the map's box never changes when it arrives). The base map is created with its
+  camera: the kept framing of this flight (`center`, `zoom`), else the flight (`bounds`). Nothing is drawn while it loads
+  (`S.tilesWait`: no plain image framed on the whole flight before it). `frameFlight` writes a camera only when it differs from
+  the current one (`fitMap` compares `cameraForBounds`), so the calls at load and at the sheet's settle cost nothing when
+  nothing changed. Noreg D100: back from Fuel, with a kept framing and without, every drawing has the first one's camera and
+  the map's height, and no camera is set after the map's creation.
 - **Data area**: in overview (view at least 90 % as wide as the route's area), the route's area; closer, the view widened
   by 15 %, read again only when the view leaves it. Airspaces and airways are read for the route's corridor only
   (`corridorNm` + 2 NM), leg by leg (one rectangle around a diagonal route would touch neighbouring zones). With "Around

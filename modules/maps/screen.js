@@ -149,7 +149,7 @@ export function buildOverlay(ctx, modesHtml) {
       S.userMoved = false; // « Recentrer » : la carte suit de nouveau le vol, le cadrage gardé est oublié
       keep.cam = null;
       if (S.map) frameFlight(true);
-      else schedule();
+      schedule(); // redessinée même quand le cadrage n'a pas changé (frameFlight ne pose alors aucune caméra)
     }
   });
   S.modeBtn = btn('mode', {
@@ -360,19 +360,30 @@ export const flightSig = () => {
  *  leur. */
 export function frameFlight(animate) {
   if (!S?.map) return;
-  const c = keep.cam;
-  if (c && !S.choose && !S.ctx.query?.view && c.sig === flightSig()) {
+  const c = keptCam();
+  if (c) {
+    S.userMoved = true;
+    if (sameCam(c.center, c.zoom)) return; // déjà là : aucune caméra posée (une ouverture, une seule image)
     S.selfMove = true;
     S.map.jumpTo({
       center: c.center,
       zoom: c.zoom
     });
     S.selfMove = false;
-    S.userMoved = true;
     return;
   }
   fitMap(animate);
 }
+/** Le cadrage gardé de ce vol (keep.cam), s'il vaut pour la carte montrée (ni le mode choix ni une emprise imposée) ; null sinon. */
+const keptCam = () => {
+  const c = keep.cam;
+  return c && !S.choose && !S.ctx.query?.view && c.sig === flightSig() ? c : null;
+};
+/** Vrai si la caméra de la carte est déjà center ([lon, lat]) et zoom. */
+const sameCam = (center, zoom) => {
+  const m = S.map.getCenter();
+  return Math.abs(m.lng - center[0]) < 1e-7 && Math.abs(m.lat - center[1]) < 1e-7 && Math.abs(S.map.getZoom() - zoom) < 1e-6;
+};
 /** Le cadrage de l'utilisateur gardé à la fin de son geste (S.gesture, posé à son début), pour ce vol (hors du mode choix, qui cadre
  *  le sien) : une fin de mouvement qui n'est pas la sienne (remise à taille, lecture du vol) ne garde rien. */
 function keepCam() {
@@ -389,6 +400,13 @@ function keepCam() {
 /** Cadre la carte sur le vol (S.fit) : le seul mouvement de caméra du module avec « Suivre », marqué pour ne pas passer pour
  *  celui de l'utilisateur ; appelé par frameFlight. */
 function fitMap(animate) {
+  const want = S.map.cameraForBounds([
+    [S.fit.w, S.fit.s],
+    [S.fit.e, S.fit.n]
+  ], {
+    padding: 12
+  });
+  if (want && sameCam(want.center.toArray ? want.center.toArray() : [want.center.lng, want.center.lat], want.zoom)) return; // déjà cadrée
   S.selfMove = true;
   S.map.once('moveend', () => {
     if (S) S.selfMove = false;
@@ -405,6 +423,10 @@ function fitMap(animate) {
 /** Fond MapLibre sur l'emprise du vol (lib/map_base.js) ; false s'il ne vient pas (pas de réseau, pas de WebGL, hôte
  *  refusé, délai dépassé) : le fond uni le remplace. */
 export async function startTiles() {
+  // une ouverture, une caméra (SPEC § 5) : le cadrage gardé de ce vol, sinon le vol, décidé avant la première image, sur la taille
+  // finale du cadre (la feuille posée avant, module.js)
+  const cam = keptCam();
+  if (cam) S.userMoved = true;
   const map = await baseTiles(S.mapEl, {
     style: styleFor(),
     bounds: [
@@ -412,6 +434,10 @@ export async function startTiles() {
       [S.fit.e, S.fit.n]
     ],
     padding: 12,
+    ...(cam ? {
+      center: cam.center,
+      zoom: cam.zoom
+    } : {}),
     worldCopies: true, // une route de 177° à 195° : la vue passe la ligne de changement de date
     // la mention des sources de MapLibre, repliée (« i ») : celle du SIA s'y ajoute, un seul texte de crédit
     attributionControl: {
@@ -434,8 +460,10 @@ export async function startTiles() {
       S.map = map;
       S.mapNew = null;
       mapBase(map);
-      mapSize(); // le cadre a pu changer de taille pendant le chargement des tuiles
-      if (keep.cam) frameFlight(false); // parti du vol cadré : le cadrage gardé de ce vol, s'il y en a un
+      // le cadre a pu changer de taille pendant le chargement des tuiles : recadré alors (frameFlight ne pose une caméra que si elle
+      // change ; la même taille : rien)
+      mapSize();
+      frameFlight(false);
       relief();
       map.on('move', moving); // pendant le geste l'image suit (draw.js), le dessin complet au repos
       map.on('moveend', settle); // repos : le dessin complet

@@ -211,8 +211,11 @@ export function dataHead() {
     wx = view === 'weather',
     // rien à montrer (pas de vol, mission sans carte) : la feuille reste pour Couches, dont le bouton est sur sa ligne, réduite à
     // cette ligne ; une carte dont le profil n'est pas encore là garde la règle d'avant (la feuille vient avec lui)
-    bareBox = !S.boxOn && !S.dpanel && !S.prof && !!S.layersBtn && !S.layersBtn.hidden,
-    has = !!S.dpanel || !!S.prof || bareBox,
+    // un vol dont la coupe est en route (deux points au moins, pas une carte de mission) : la feuille a sa hauteur dès l'ouverture,
+    // la carte ne change pas de taille quand la coupe arrive (SPEC § 5, une ouverture, une image)
+    coming = !S.prof && !S.ctx?.query?.mission && (S.route?.points?.length || 0) >= 2,
+    bareBox = !S.boxOn && !S.dpanel && !S.prof && !coming && !!S.layersBtn && !S.layersBtn.hidden,
+    has = !!S.dpanel || !!S.prof || coming || bareBox,
     bare = view && keep.sheet === 'default' && !document.documentElement.classList.contains('f-land') ? tt(wx ? TX.wxTitle : TX
       .dataProfile) : '',
     own = !!S.dpanel && !wx, // contenu ouvert par openData : son titre

@@ -427,6 +427,7 @@ function drawAltn(ctx, toC, altn, on, named = true) {
 /** Redessine la surcouche (et le fond uni sans tuiles) ; données relues si la vue sort de celles chargées. */
 function draw() {
   if (!S?.canvas || !S.fit || !S.route.points.length) return;
+  if (!S.map && S.tilesWait) return; // le fond se charge : pas d'image d'un autre cadrage avant la sienne (SPEC § 5)
   performance.mark('maps:draw:start');
   clearTimeout(sched.rest); // ce dessin complet tient lieu de celui du repos (un nouveau mouvement le redemande)
   mapSize();
