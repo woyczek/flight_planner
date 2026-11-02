@@ -245,6 +245,15 @@ function runUnit(set, view, n) {
   return u ? count(u, n) : String(n);
 }
 /** La marche : barre, « n zones sur m », étape, temps écoulé, « Arrêter », une ligne par zone (par source pour un téléchargement). */
+/** Le compte global des sources lues par le travail (job.data.inputs : { done, total }, aerodb cee79213e), une seule fois en tête de la
+ *  marche ; rien sans total. */
+function inputsHtml(v) {
+  const i = v?.inputs,
+    n = M.num(i?.done),
+    m = M.num(i?.total);
+  return n !== null && m !== null && m > 0 ? ` <span class="f-muted" data-inputs>${esc(tt(TX.inputsCount, { n, m }))}</span>` : '';
+}
+
 function runningHtml() {
   const run = S.run,
     set = run.set,
@@ -255,7 +264,7 @@ function runningHtml() {
     ); // un jeu dont on ne connaît pas encore les éléments ne compte pas « 0 sur 0 » ; la prise de fichiers compte des fichiers à la fin
   return `<div class="d-run" data-running data-op="${run.verb}" data-run-set="${esc(set)}"${run.dry ? ' data-dry' : ''} data-phase="${run.phase}">
     <div class="d-runhead">${shown ? `<b data-count>${esc(tt(TX.runCount, { n: runUnit(set, S.view, p.done), m: p.total }))}</b>` : ''}
-      <span data-step>${esc(stopping ? tt(TX.stopping) : S.view?.step || '')}</span>
+      <span data-step>${esc(stopping ? tt(TX.stopping) : S.view?.step || '')}</span>${inputsHtml(S.view)}
       <span class="f-muted" data-elapsed>${esc(tt(TX.elapsed, { t: M.clock((Date.now() - run.t0) / 1e3) }))}</span></div>
     <div class="d-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${p.total}" aria-valuenow="${p.done}"${S.view && p.pct !== null ? '' : ' data-indeterminate'}><i style="width:${p.pct ?? 0}%"></i></div>
     ${run.verb === M.PICKUP.verb ? '' : `<ul class="d-zl">${M.zoneRows(opView(set), S.ids, run.verb, set !== 'base').map(r => zoneLineHtml(r, run.verb, set)).join('')}</ul>`}

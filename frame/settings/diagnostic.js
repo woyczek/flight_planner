@@ -20,9 +20,11 @@
   Object.assign(T, {
     // diagnostic
     about: ['À propos', 'About', 'Über', 'Acerca de'],
-    aboutHelp: ['Aide : le manuel de l’appli', 'Help: the app’s manual', 'Hilfe: das Handbuch der App',
-      'Ayuda: el manual de la aplicación'
-    ],
+    aboutVersion: ['Version {v} du {d}', 'Version {v} of {d}', 'Version {v} vom {d}', 'Versión {v} del {d}'],
+    aboutVersionNoDate: ['Version {v}', 'Version {v}', 'Version {v}', 'Versión {v}'],
+    aboutLicence: ['Licence : LICENSE.md', 'Licence: LICENSE.md', 'Lizenz: LICENSE.md', 'Licencia: LICENSE.md'],
+    aboutCode: ['Le code de la suite', 'The suite’s code', 'Der Code der Suite', 'El código de la suite'],
+    aboutReport: ['Signaler un problème', 'Report a problem', 'Ein Problem melden', 'Informar de un problema'],
     aboutRoadmap: ['Feuille de route : ce qui est livré, en cours, prévu', 'Roadmap: what is delivered, in progress, planned',
       'Fahrplan: was geliefert, in Arbeit, geplant ist', 'Hoja de ruta: lo entregado, en curso, previsto'
     ],
@@ -128,9 +130,17 @@
   /** Carte À propos : liens vers l'aide et la feuille de route, puis le diagnostic replié et « Copier ». */
   function aboutHtml(env) {
     const {
-      t
+      t,
+      c
     } = env;
-    return `<div class="f-card" data-card="about"><h2>${esc(t(T.about))}</h2><p><a href="#help?m=settings">${esc(t(T.aboutHelp))}</a></p><p><a href="#roadmap">${esc(t(T.aboutRoadmap))}</a></p>
+    // la version et sa date en tête (ctx.version(), le cadre : statut du lanceur ou version.json du site ; null : rien), puis la licence,
+    // la feuille de route, et le dépôt du code et le signalement quand le cadre donne son adresse (web) ; l'aide n'a qu'une porte, le « ? »
+    const v = c.version?.() || null,
+      web = /^https:\/\/[\w.-]+\/[\w./-]+$/.test(v?.web || '') ? v.web : '',
+      issues = web ? `${web}/${window.SogConfig?.providerOf?.(`${web}.git`).provider === 'github' ? 'issues/new' : '-/issues/new'}` : '',
+      ver = v?.version ? `<p data-version><b>${esc(v.date ? t(T.aboutVersion, { v: v.version, d: v.date }) : t(T.aboutVersionNoDate, { v: v.version }))}</b></p>` : '',
+      code = web ? `<p><a href="${esc(web)}" target="_blank" rel="noopener" data-code>${esc(t(T.aboutCode))}</a> · <a href="${esc(issues)}" target="_blank" rel="noopener" data-report>${esc(t(T.aboutReport))}</a></p>` : '';
+    return `<div class="f-card" data-card="about"><h2>${esc(t(T.about))}</h2>${ver}<p><a href="${esc(new URL('LICENSE.md', ROOT).href)}" target="_blank" rel="noopener" data-licence>${esc(t(T.aboutLicence))}</a></p>${code}<p><a href="#roadmap">${esc(t(T.aboutRoadmap))}</a></p>
       <details data-diagbox><summary>${esc(t(T.diag))}</summary><dl class="f-dl" data-diag></dl><p class="f-muted">${esc(t(T.diagHint))}</p><div class="f-row"><button type="button" data-act="copy">${esc(t(T.copy))}</button></div></details></div>`;
   }
   /** Diagnostic du cadre : lignes lisibles et JSON complet (env.diagJson) ; est : estimation du stockage, déjà lue. */

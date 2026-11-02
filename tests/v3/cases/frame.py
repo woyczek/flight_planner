@@ -3105,3 +3105,22 @@ def a83(c):
             c.until("[...document.querySelectorAll('.f-note')].some(n => /png/.test(n.textContent) && /webp/.test(n.textContent) && /512/.test(n.textContent))",
                     timeout=15000, what=f'{what}: the refusal said to the administrator (png or webp, 512 KB at most)')
     c.check_errors()
+
+
+@case('A84', 'The « À propos » card: the version and its date first, the licence, the roadmap; no second door to the help', 'A', designs=('standard',), screens=False, night=False,
+      rule='frame/settings SPEC 3 (one door « Aide » per screen, 9377637d6; the version by ctx.version(), e0715d83b): the group « Aide » is « À propos »; its card says the version and its date at the top, the licence and the roadmap, and links to the help no more')
+def a84(c):
+    diag = 'frame/settings/diagnostic.js'
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False,
+              'host': 'TEST', 'lan': False, 'version': {'version': '6.0.0-alpha.2-25-g1a2b3c4', 'date': '2026-11-01'}}
+    c.context.route(re.compile(r'/__setup/'), lambda r: r.fulfill(status=200, content_type='application/json',
+                                                                   body=json.dumps(status if urllib.parse.urlparse(r.request.url).path.endswith('/__setup/status') else {})))
+    c.open('settings?card=about', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-card=\"about\"] [data-version]')", timeout=15000, what='the About card with its version')
+    c.eq(norm(c.text('[data-card="about"] [data-version]')), norm(tx(diag, 'aboutVersion', c.lang).replace('{v}', '6.0.0-alpha.2-25-g1a2b3c4').replace('{d}', '2026-11-01')),
+         'the version and its date, first', what='version')
+    c.eq([c.count('[data-card="about"] [data-licence]'), c.count('[data-card="about"] a[href="#roadmap"]'), c.count('[data-card="about"] a[href^="#help"]')], [1, 1, 0],
+         'the licence and the roadmap; no link to the help (its one door is the « ? » of the header)', what='links')
+    c.open('settings', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-group=\"help\"] > summary')", timeout=15000, what='the settings groups')
+    c.eq(norm(c.text('[data-group="help"] > summary')).startswith(norm(tx('frame/settings/groups.js', 'help', c.lang))), True, 'the group is named « À propos »', what='group name')

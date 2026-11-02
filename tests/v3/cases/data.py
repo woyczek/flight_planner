@@ -490,6 +490,7 @@ _L6_JS = r"""async () => {
   out.personal = [[], ['fr'], ['es'], ['gb'], ['es', 'gb', 'fr']].map(z => M.personalSources(z).map(p => p.id + ':' + p.kind));
   out.gate = [{ launcher: false, busy: true, zones: 0, offline: true }, { launcher: true, busy: true, zones: 0 }, { launcher: true, busy: false, zones: 2, offline: true },
     { launcher: true, zones: 0 }, { launcher: true, zones: 2 }].map(s => { const g = M.setGate({ set: 'base', launcher: s.launcher, busy: s.busy, offline: s.offline, items: s.zones }); return { disabled: g.verbs.build.disabled, reason: g.verbs.build.reason } });
+  out.zeroTotal = M.zonePhrase({ state: 'building', done: 0, total: 0 }).key;
   out.phrase = [undefined, { state: 'building', done: 2, total: 5 }, { state: 'building' }, { state: 'built' }, { state: 'failed', error: 'timeout' },
     { state: 'failed', error: 'zzz' }, { state: 'cancelled' }, { state: 'weird' }].map(z => { const p = M.zonePhrase(z); return [p.state, p.key, p.n, p.m, p.code] });
   out.rows = M.zoneRows({ zones: { fr: { state: 'built' }, us: { state: 'building', done: 1, total: 3 } } }, ['fr', 'gb']).map(r => [r.zone, r.key]);
@@ -536,6 +537,7 @@ def l6(c):
          'a personal source is offered only when it feeds a ticked zone (X-Plane feeds every zone, none ticked: nothing)', what='personalSources')
     c.eq([[g['disabled'], g['reason']] for g in r['gate']],
          [[True, 'no-launcher'], [True, 'busy'], [True, 'offline'], [True, 'no-zone'], [False, None]], 'one reason, in the order: launcher, busy, offline, no zone', what='setGate base')
+    c.eq(r['zeroTotal'], 'building', 'a zone with no count of its own (0 / 0) says « construction » with no number, never a global count', what='no own total')
     c.eq(r['phrase'], [['waiting', 'waiting', None, None, None], ['building', 'buildingN', 2, 5, None], ['building', 'building', None, None, None], ['built', 'built', None, None, None],
                        ['failed', 'failed', None, None, 'timeout'], ['failed', 'failed', None, None, 'unknown'], ['cancelled', 'cancelled', None, None, None], ['waiting', 'waiting', None, None, None]],
          'the phrase of a zone: n / m sources only when both are known, the error code kept or « unknown », an unknown state waits', what='zonePhrase')
@@ -688,6 +690,7 @@ def _head(c):
 def l7(c):
     lang = c.lang
     v1 = _view(step='Zone fr', done=0, zones={'fr': _zs('building', 1, 4), 'gb': _zs('waiting')})
+    v1['inputs'] = {'done': 40, 'total': 90}  # the job's global count of sources read (aerodb cee79213e): once, at the head
     v2 = _view(step='Zone gb', done=1, zones={'fr': _zs('built', 4, 4, commit='abc1234', seconds=9), 'gb': _zs('building', 2, 5)})
     v3 = _view('done', step='Terminé', done=2, zones={'fr': _zs('built', 4, 4, commit='abc1234'), 'gb': _zs('failed', 5, 5, error='invalid-output')},
                result={'built': ['fr'], 'failed': [{'zone': 'gb', 'error': 'invalid-output'}], 'commits': [{'zone': 'fr', 'commit': 'abc1234'}], 'reason': 'partial'})
@@ -732,8 +735,13 @@ def l7(c):
     c.eq(norm(c.text('[data-zone-state=fr]')), norm(f"{fr_name} : {_trow('buildingN', lang, 'zoneState: {').replace('{n}', '1').replace('{m}', '4')}"), 'construction (1 / 4 sources)', what='fr line')
     c.eq(norm(c.text('[data-running] [data-count]')), norm(_trow('runCount', lang).replace('{n}', _zones_text(lang, 0)).replace('{m}', '2')), 'the head count « 0 zones sur 2 »', what='count')
     c.eq(c.text('[data-running] [data-step]'), 'Zone fr', 'the step text of the job', what='step')
+    c.eq([norm(c.text('[data-running] [data-inputs]')), c.count('[data-zone-state] [data-inputs]')],
+         [norm(_trow('inputsCount', lang).replace('{n}', '40').replace('{m}', '90')), 0], 'the global count of sources read: once at the head, never on a zone line', what='inputs')
     c.ok(norm(_trow('elapsed', lang).replace('{t}', '0:0')) .split('0:0')[0].strip() in norm(c.text('[data-elapsed]')), c.text('[data-elapsed]'), 'the elapsed time is written')
     c.eq(c.count('[data-running] [data-verb=stop]'), 1, 'Arrêter is there', what='stop')
+    c.until("document.querySelector('[data-zone-state=gb]').dataset.state === 'building'", timeout=8000, what='gb is building')
+    c.ok(norm(c.text('[data-zone-state=gb]')).endswith(norm(_trow('buildingN', lang, 'zoneState: {').replace('{n}', '2').replace('{m}', '5'))), c.text('[data-zone-state=gb]'),
+         'gb keeps its own count (2 / 5), not fr\u2019s (1 / 4) nor a global one')
     c.until("document.querySelector('[data-zone-state=fr]').dataset.state === 'built' && document.querySelector('[data-zone-state=gb]').dataset.state === 'building'", timeout=8000, what='fr built, gb building')
     gb_name = c.text('[data-zone-state=gb] b')
     c.eq(norm(c.text('[data-zone-state=gb]')), norm(f"{gb_name} : {_trow('buildingN', lang, 'zoneState: {').replace('{n}', '2').replace('{m}', '5')}"), 'construction (2 / 5 sources)', what='gb line')

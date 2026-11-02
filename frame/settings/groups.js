@@ -20,7 +20,7 @@
       device: ['Appareil', 'Device', 'Gerät', 'Dispositivo'],
       display: ['Affichage', 'Display', 'Anzeige', 'Visualización'],
       admin: ['Administration', 'Administration', 'Verwaltung', 'Administración'],
-      help: ['Aide', 'Help', 'Hilfe', 'Ayuda']
+      help: ['À propos', 'About', 'Über', 'Acerca de'] // une seule porte « Aide » par écran : le « ? » de l'en-tête (9377637d6)
     },
     groupAttn: ['À regarder', 'Needs attention', 'Bitte ansehen', 'Requiere atención'],
   });

@@ -74,7 +74,8 @@ export function zonePhrase(z, verb = 'build', loose = false) {
     run = ZONE_RUNNING[verb] || 'building';
   return {
     state,
-    key: state === run && verb !== 'purge' && n !== null && m !== null ? `${run}${loose ? 'P' : 'N'}` :
+    // un chiffre seulement avec un total propre à la zone (> 0) : jamais le compte global du travail recopié (aerodb cee79213e)
+    key: state === run && verb !== 'purge' && n !== null && m !== null && m > 0 ? `${run}${loose ? 'P' : 'N'}` :
     state, // P : « (n / m) » sans nom (les autres jeux comptent des terrains, des étapes…)
     n,
     m,

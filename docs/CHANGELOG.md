@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Settings: « À propos », one door to the help; Data: no global count on a zone line** (`frame/settings/groups.js`,
+  `diagnostic.js`; `modules/data/model_sets.js`, `panels.js`, `texts.js`; A84, L6, L7) — the Settings group « Aide » is « À propos »
+  (the help's one door is the header's « ? », 9377637d6); its card says the version and its date first (`ctx.version()`,
+  e0715d83b), the licence and the roadmap, and the code repository and « report a problem » when the frame gives its address; its
+  help link is gone. In the Data module a zone line shows a count only when the job gives one of its own (> 0): the user saw
+  « construction (90 / 90 sources) » on all 26 zones, the job's global count copied by the launcher (fixed by aerodb cee79213e);
+  that global count (`inputs`) shows once at the head of the run.
 - **Frame: the version carries the code repository's address** (`tools/launch.py` `suite_web`, `tools/build_pages.py`;
   frame INTEGRATION, DECISIONS; noreg A81, I34) — `ctx.version().web` (https, or null) for the Settings' « About » card.
 - **Frame: the airline's logo is png or webp, never svg** (`frame/app.js` `readLogo`, `frame/store/frame_data.js`

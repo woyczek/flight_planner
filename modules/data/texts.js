@@ -884,6 +884,8 @@ export const TX = {
   // « Tout mettre à jour » (SPEC § 5.3) : le bouton, la question, la chaîne, la fin
   updateAll: ['Tout mettre à jour', 'Update all', 'Alle aktualisieren', 'Actualizar todo'],
   updateAllN: ['Tout mettre à jour ({n})', 'Update all ({n})', 'Alle aktualisieren ({n})', 'Actualizar todo ({n})'],
+  // le compte global des sources lues par un travail de la base, une fois en tête (jamais sur une ligne de zone)
+  inputsCount: ['Sources lues : {n} / {m}', 'Sources read: {n} / {m}', 'Gelesene Quellen: {n} / {m}', 'Fuentes leídas: {n} / {m}'],
   // la fin de « Construire » de la base et le cycle manuel qui manque (aerodb 294ffc1b8 : le cycle d'une zone est celui de sa source datée) : {a} est le HTML déjà sûr des sources (leur nom, en lien), {b} le lien du site
   srcBlocking: ['Sources d’un cycle passé : {a} — téléchargez d’abord le cycle {n}',
     'Sources of a past cycle: {a} — download cycle {n} first',
