@@ -72,6 +72,9 @@ const TX = {
     'Missionsdatei unlesbar ({e}): nur das Register wird gezeigt.',
     'Archivo de la misión ilegible ({e}): solo se muestra el registro.'
   ],
+  badPath: ['chemin refusé dans le registre', 'path refused in the registry', 'Pfad im Register abgelehnt',
+    'ruta rechazada en el registro'
+  ],
   noIdType: ['mission.id ou mission.type absent', 'mission.id or mission.type missing', 'mission.id oder mission.type fehlt',
     'falta mission.id o mission.type'
   ],
@@ -268,7 +271,11 @@ function missionHtml(s) {
 /** Ouvre une mission : son fichier lu (le registre suffit s'il ne vient pas, la cause dite) ; un fichier en retard est repris
  *  à son arrivée si la mission est encore ouverte. */
 async function openMission(s, row, drawn = false) {
-  const got = await yamlFile(s.ctx, `missions/${row.folder}/${row.file}`);
+  // un chemin que le registre donnait pas sûr (readRegistry l'a vidé) : jamais lu, dit
+  const got = row.folder && row.file ? await yamlFile(s.ctx, `missions/${row.folder}/${row.file}`) : {
+    why: 'unreadable',
+    err: s.tt(TX.badPath)
+  };
   if (S !== s) return;
   const show = g => {
     const mission = g.doc ? MS.readMission(g.doc) : null;

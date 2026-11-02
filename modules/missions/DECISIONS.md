@@ -30,3 +30,9 @@
 - **30 Oct 2026 — the rendezvous belongs to the assignment.** Dated rendezvous and the crew's channels (Discord, SRS,
   JoinFS…) are assignment data written by the CPCO, shown with Ouvrir / Copier, readable by every pilot of the airline
   (the fleet's access model); a session password is a known limit, said in the help.
+
+- **2 Nov 2026 — the data read as written by any pilot** (security audit line 157, relayed by Simplification): since § 10.36 (one project token per pilot, push on main) every file of data/ — `airline/fleet.json`, `aircraft/sheets/`, `missions/`, `airline/settings.json` — is read as written by any pilot: numbers bounded, keys by own(), texts through esc, never a path or an address taken as it is, an unreadable file said and ignored. Checked at every new reader. Here:
+  the registry's `folder` / `files[0]` were joined into the path of the mission file as they were (« ../pilot/ABC »…). Now
+  `readRegistry` keeps a folder made of segments of letters, digits, `_`, `-`, `.` not starting with a dot, and a `.yaml` / `.yml`
+  file; otherwise both are empty and the module says « chemin refusé dans le registre », Fuel's door refuses the mission. Bench N1
+  (one check more), counter-test: without `safeFolder` the bench fails (12 / 13).

@@ -524,6 +524,20 @@ def m20(c):
          what='written')
 
 
+@case('M21', 'Site: a page address of airline/settings.json is used only when it reads as an http(s) URL', 'M', tags=('aircraft',),
+      designs=('standard',), screens=False,
+      rule='security audit line 157 (any pilot writes airline/settings.json since § 10.36): pageUrl gives a link or a reading only for an '
+      'http or https URL without credentials; « javascript: », « data: », credentials or an unreadable address give nothing')
+def m21(c):
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest')
+    got = c.js("""async () => { const W = await import('/modules/website/model.js');
+      const at = (site, log) => W.pageUrl(W.airlineSettings({ site, pages: { log } }), 'log');
+      return [at('https://site.test', '/log'), at('javascript:alert(1)', '/log'), at('https://site.test', 'javascript:alert(1)'),
+        at('', 'data:text/html,x'), at('https://u:p@site.test', '/log'), at('https://site.test', ''), at('http://site.test', 'https://other.test/log')] }""")
+    c.eq(got, ['https://site.test/log', '', 'https://site.test/javascript:alert(1)', '', '', '', 'https://other.test/log'],
+         'an http(s) address is kept; javascript:, data:, credentials, nothing give no address', what='pageUrl')
+
+
 @case('M15', 'Sheets: a ChatGPT reply is read into the review; « Appliquer » writes it stamped « chatgpt »', 'M', tags=('aircraft',), designs=('standard',),
       screens=False,
       rule='modules/aircraft SPEC 4: the ChatGPT reply (any shape: the aerodb reader) is a source like the others; preview, then a write through '

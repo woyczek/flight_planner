@@ -239,6 +239,29 @@
     .originIcao === 'XTST' && reg[0].blockMin === 121 && reg[0].file === 'missionX-002A.yaml' && !reg[0].organisation && reg[1]
     .organisation === true && reg[1].file === 'missionX-002Z.yaml', JSON.stringify(reg[0]));
 
+  const bad = readRegistry({
+    missions: [{
+      id: 'X-009A',
+      folder: '../pilot/ABC',
+      files: ['current_flight.json']
+    }, {
+      id: 'X-009B',
+      folder: 'X_TEST/X-009B',
+      files: ['../../airline/settings.yaml']
+    }, {
+      id: 'X-009C',
+      folder: '/abs\\X',
+      files: ['missionX-009C.yaml']
+    }, {
+      id: 'X-009D',
+      folder: 'É_TEST/X-009D'
+    }]
+  });
+  ck('readRegistry : un dossier ou un fichier pas sûr (« .. », absolu, « \\ », autre extension) vide ; un nom accentué gardé', bad[0]
+    .folder === '' &&
+    bad[1].file === '' && bad[2].folder === '' && bad[3].folder === 'É_TEST/X-009D' && bad[3].file === 'missionX-009D.yaml', JSON
+    .stringify(bad));
+
   window.__bench = {
     done: true,
     pass: rows.filter(r => r.ok).length,

@@ -9,7 +9,8 @@
 //     mission.type (seuls champs exigés). origin / destination / target : { name, icao, lat, lon } ou null ; points : { id → { id,
 //     name, lat, lon, kind } } (tournants, rendez-vous, zones par leur centre, cible).
 //   readRegistry(doc) → [ligne { id, family, title, operation, types, origin, destination, originIcao, destinationIcao, blockMin,
-//     folder, file, organisation }] : les lignes du registre, les organisations (…Z) marquées.
+//     folder, file, organisation }] : les lignes du registre, les organisations (…Z) marquées ; folder et file vides quand le
+//     registre en donne un qui n'est pas sûr (le chemin n'est jamais pris tel quel : un pilote peut écrire le registre).
 //   icaoOf(name) : le code OACI entre parenthèses à la fin d'un nom (« BA 118 Mont-de-Marsan (LFBM) » → « LFBM ») ; '' sinon.
 //   levelFt(text) : « FL240 » → 24000, « 1500 ft » → 1500, un nombre tel quel ; null sinon.
 //   missionFlight(mission, assignment) → { route: { dep, arr, points }, aircraft: { type, registration }, levelFt, speedKt, mission }
@@ -134,6 +135,15 @@ export function readMission(doc) {
   };
 }
 
+// le registre est écrit par n'importe quel pilote (§ 10.36, audit de sécurité ligne 157) : un dossier ou un fichier n'est jamais pris
+// tel quel ; des segments de lettres, chiffres, « _ », « - » et « . » qui ne commencent pas par un point (ni « .. », ni chemin absolu,
+// ni « \ »), un fichier .yaml ou .yml ; sinon vide, et le lecteur dit « chemin refusé »
+const SEGMENT = /^[\p{L}\p{N}_][\p{L}\p{N}_.-]*$/u;
+/** Un dossier sûr sous missions/ (« A_COMBAT/A-001A »), ou ''. */
+const safeFolder = f => f && f.length <= 200 && f.split('/').every(p => SEGMENT.test(p)) ? f : '';
+/** Un nom de fichier de mission sûr (« missionA-001A.yaml »), ou ''. */
+const safeFile = f => f && f.length <= 120 && SEGMENT.test(f) && /\.ya?ml$/i.test(f) ? f : '';
+
 /** Les lignes du registre (voir l'en-tête). */
 export function readRegistry(doc) {
   return (Array.isArray(doc?.missions) ? doc.missions : []).filter(x => x && clean(x.id)).map(x => {
@@ -149,8 +159,8 @@ export function readRegistry(doc) {
       originIcao: icaoOf(x.origin),
       destinationIcao: icaoOf(x.destination),
       blockMin: num(x.estimate?.block),
-      folder: clean(x.folder),
-      file: clean((x.files || [])[0]) || `mission${id}.yaml`,
+      folder: safeFolder(clean(x.folder)),
+      file: safeFile(clean((Array.isArray(x.files) ? x.files : [])[0]) || `mission${id}.yaml`),
       organisation: x.organisation === true || /Z$/.test(id)
     };
   });

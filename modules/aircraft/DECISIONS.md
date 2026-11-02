@@ -64,3 +64,8 @@
   the types of the base (`searchTypes`, prefix of the code or of a word of the model, case-folded) with « fiche <id> » when a sheet has
   that type, then the sheets whose id, name or type contains the text; seven at most. A choice writes the type code only: the fleet is
   schema 1 (no sheet field, `sheetId` waits for L1). Case M20.
+
+- **2 Nov 2026 — the data read as written by any pilot** (security audit line 157): since § 10.36 (one project token per pilot, push on main) every file of data/ — `airline/fleet.json`, `aircraft/sheets/`, `missions/`, `airline/settings.json` — is read as written by any pilot: numbers bounded, keys by own(), texts through esc, never a path or an address taken as it is, an unreadable file said and ignored. Checked at every new reader. Here: the fleet and the sheets
+  are shown through esc, written through `fleet.js` / aerodb (`sheets.put`, ids made safe by `fileOf`); the site's page addresses
+  (`modules/website/model.js` `pageUrl`, read from `airline/settings.json`) are now links or readings only when they read as an http(s)
+  URL without credentials (case M21; counter-test: without the check, `javascript:alert(1)/log` and `https://u:p@…` came through).

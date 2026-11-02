@@ -3801,7 +3801,7 @@ async function applyMission(id) {
     id
   }), 'warn');
   const row = MS.readRegistry(await yaml('missions/mission_registry.yaml')).find(r => r.id === id),
-    mf = row ? MS.missionFlight(MS.readMission(await yaml(`missions/${row.folder}/${row.file}`))) : null;
+    mf = row?.folder && row.file ? MS.missionFlight(MS.readMission(await yaml(`missions/${row.folder}/${row.file}`))) : null; // chemin sûr seulement
   if (gone(s)) return;
   if (!mf) return ctx.notify(tt(TX.missionUnread, {
     id

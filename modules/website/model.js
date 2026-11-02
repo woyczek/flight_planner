@@ -265,8 +265,16 @@ export function airlineSettings(v = {}) {
     }
   };
 }
-/** Adresse complète d'une page du réglage ('' si le site ou la page manque). */
+/** Adresse complète d'une page du réglage ('' si le site ou la page manque). airline/settings.json s'écrit par n'importe quel
+ *  pilote (§ 10.36, audit de sécurité ligne 157) : l'adresse n'est rendue que si elle se lit comme une URL http ou https, sans
+ *  identifiants (jamais « javascript: », « data: »… pour un lien ou une lecture) ; '' sinon. */
 export const pageUrl = (a, key) => {
-  const p = a?.pages?.[key] || '';
-  return /^https?:\/\//.test(p) ? p : a?.site && p ? `${a.site}${p}` : '';
+  const p = a?.pages?.[key] || '',
+    raw = /^https?:\/\//i.test(p) ? p : a?.site && p ? `${a.site}${p}` : '';
+  try {
+    const u = new URL(raw);
+    return /^https?:$/.test(u.protocol) && !u.username && !u.password ? u.href : '';
+  } catch {
+    return '';
+  }
 };

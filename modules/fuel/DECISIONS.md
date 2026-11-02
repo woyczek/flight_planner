@@ -1327,3 +1327,6 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   Nouveau vol »); the « both ends » rule has no case (the seeded base has no near pair on both sides). The slowness: the route of France
   no longer survives in the flight; what aerodb keeps in memory per zone and what the Map keeps in its layers are reported to AeroDB and
   BUGS SOG.
+
+- **2 Nov 2026 — the data read as written by any pilot** (security audit line 157): since § 10.36 (one project token per pilot, push on main) every file of data/ — `airline/fleet.json`, `aircraft/sheets/`, `missions/`, `airline/settings.json` — is read as written by any pilot: numbers bounded, keys by own(), texts through esc, never a path or an address taken as it is, an unreadable file said and ignored. Checked at every new reader. Here: the mission door reads the
+  registry through `readRegistry` (paths made safe, N1) and the mission through the tolerant reader; the sheets come through aerodb.
