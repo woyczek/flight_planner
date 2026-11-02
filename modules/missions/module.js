@@ -7,7 +7,7 @@ import * as MS from '../../frame/lib/mission.js';
 
 export const meta = {
   id: 'missions',
-  apps: ['pilot'],
+  apps: ['company'], // l'application Compagnie (?app=company), seule (décision de l'utilisateur, 1er nov. 2026)
   level: 1,
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
   files: ['../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js'],

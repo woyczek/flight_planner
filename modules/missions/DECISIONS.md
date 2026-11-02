@@ -27,6 +27,8 @@
   registry rows have their file, only G-001 and G-002 have none). The module read with `ctx.data.get`, which gives null at once for a
   file not yet on the device, and said « ne se lit pas » for all of them. Now `read(path, { wait: true })`, bounded, and three causes
   said apart (missing, late, unreadable); Fuel's door reads the same way. Case N5.
+- **2 Nov 2026 — Missions in the Company application** (the user's decision of 1 Nov, V3 Frame 18e6f2694): `meta.apps: ['company']`;
+  « Préparer ce vol » unchanged (`#fuel?mission=<id>`, the frame opens Fuel in Pilot); help ×4 says where each screen is.
 - **30 Oct 2026 — the rendezvous belongs to the assignment.** Dated rendezvous and the crew's channels (Discord, SRS,
   JoinFS…) are assignment data written by the CPCO, shown with Ouvrir / Copier, readable by every pilot of the airline
   (the fleet's access model); a session password is a known limit, said in the help.

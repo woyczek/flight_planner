@@ -9,6 +9,9 @@ summary is flat (no envelope, no reader, no assignment, no « affectée » state
 
 The suite's purpose is playing missions as a crew (the "group mode", alive). This module is its first step: a pilot
 **sees the airline's missions, chooses one or draws one at random, and hands it to Fuel as the source of the flight**.
+**Where** (the user, 1 Nov 2026): the module is the first and only module of a third application, « Pilote de compagnie »
+(`?app=company`, `meta.apps: ['company']`), no longer a module of Pilot; « Préparer ce vol » keeps its address `#fuel?mission=<id>`,
+which the frame hands to the Pilot application (V3 Frame, `APP.elsewhere`). Cases N2–N5 open it there.
 Everything else of the crew module (assignments by the CPCO, the crew's rendezvous, the exercise folds) comes after,
 on the same data. The CPCO (authoring) stays V2 until rebuilt as the third application.
 

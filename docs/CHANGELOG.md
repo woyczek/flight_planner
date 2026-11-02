@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Missions moves to the Company application** (`modules/missions/module.js` `meta.apps: ['company']`; SPEC § 1, DECISIONS, help ×4;
+  noreg N2–N5 open it with `?app=company`) — « Préparer ce vol » still opens Fuel, in Pilot.
 - **Missions, Site: a path or an address written by a pilot is never taken as it is** (`frame/lib/mission.js` `readRegistry`,
   `modules/missions/module.js`, Fuel's door, `modules/website/model.js` `pageUrl`; DECISIONS of Missions, Aircraft, Fuel; noreg N1, M21)
   — security audit line 157: the registry's folder and file are kept only as safe segments (else « chemin refusé »); the airline site's

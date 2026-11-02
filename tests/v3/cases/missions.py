@@ -213,7 +213,7 @@ def n4(c):
     c.eq(c.hash().split('?')[0], '#fuel', 'Fuel shows the flight', what='screen')
     # a started flight: refused, said, unchanged
     seed_texts(c)
-    c.open('missions', docs=docs(), flight=True, started=True, wait=False)
+    c.open('missions', docs=docs(), flight=True, started=True, wait=False, app='company')
     c.until(f"!!document.querySelector('{M} [data-list] [data-id]')", timeout=15000, what='the list of missions is drawn')
     c.go('fuel?mission=X-001A')
     want = norm(row(c, 'missionStarted', FU).replace('{id}', 'X-001A'))
@@ -254,7 +254,7 @@ def n5(c):
         ['missions/Z_TEST/X-008A/missionX-008A.yaml', 'title: Sans type\n']]
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     c.js(_TEXTS_JS, texts)
-    c.open('missions', docs=docs(), wait=False)
+    c.open('missions', docs=docs(), wait=False, app='company')
     c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id]')", timeout=15000, what='the list of missions is drawn')
     c.page.select_option(f'{M} [data-k="family"]', 'TESTCHARLIE')
     c.until(f"document.querySelectorAll('{M} [data-list] [data-id]').length === 3", what='the three rows of TESTCHARLIE')
