@@ -316,7 +316,7 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
   - **Company** (`?app=company`, « Compagnie » ×4, 1 Nov 2026, the user: « the Missions module is the first, and for now
     only, module of the airline pilot »): Missions alone, in the column and the bar (a one-entry bar stays shown and
     marked); the level of Missions; its manual `company.<lang>.md` (`intro-company`, the Missions chapter); its icon the
-    airline's logo (`airline/settings.json` › `logo`, a file of the data repository: png, svg or webp, 512 KB at most,
+    airline's logo (`airline/settings.json` › `logo`, a file of the data repository: png or webp, 512 KB at most — never svg,
     read by `FrameData.readBytes`, shown by a `blob:` address, fitted — contain, 28 px in the header, 48 px in the switcher,
     the browser tab too), else the plane tinted `--sog-ok`. « Préparer ce vol » (`#fuel?mission=<id>`) goes to Fuel in Pilot:
     `APP.elsewhere: { fuel: 'pilot' }` — the address of a module another application owns is replaced by the same address

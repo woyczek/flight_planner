@@ -12,5 +12,5 @@ l'appli Pilote, dans Carburant, avec la mission préparée. Le vol en cours est 
   sous « Compagnie ») : un toucher passe à Pilote.
 - **L'aide.** Elle s'ouvre au chapitre de l'écran affiché ; « Toute l'aide », en tête, mène aux autres manuels et aux
   tutoriels.
-- **Le logo.** L'icône de l'appli est le logo de votre compagnie quand le dépôt des données en a un (un fichier png, svg
-  ou webp de 512 Ko au plus, nommé dans airline/settings.json : « logo »: « airline/logo.png ») ; sinon, l'avion teinté.
+- **Le logo.** L'icône de l'appli est le logo de votre compagnie quand le dépôt des données en a un (un fichier png ou
+  webp de 512 Ko au plus, nommé dans airline/settings.json : « logo »: « airline/logo.png ») ; sinon, l'avion teinté.

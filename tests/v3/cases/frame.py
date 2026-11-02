@@ -3049,11 +3049,13 @@ def a82(c):
 def _logo_launcher(c, logo, name='Air Dalton', path='airline/logo.png'):
     """A fake launcher whose data/ holds the airline's settings and its logo (bytes, or None: no file)."""
     status = {'server': True, 'data': True, 'dataGit': True, 'host': 'TEST', 'lan': False, 'lnm': []}
-    tree = {'airline/settings.json': 'r1', **({path: 'r-%d' % len(logo)} if logo is not None and path else {})}
+    # each scenario its own revisions (the settings and the head): the next pass brings them, as a real repository would
+    rev = 'r-%s-%d' % (path or 'none', len(logo or b''))
+    tree = {'airline/settings.json': rev, **({path: rev} if logo is not None and path else {})}
 
     def launcher(route):
         p = urllib.parse.urlparse(route.request.url).path
-        body = status if p.endswith('/__setup/status') else {'head': 'h1', 'tree': tree} if p.endswith('/__setup/changes') else {}
+        body = status if p.endswith('/__setup/status') else {'head': 'h-' + rev, 'tree': tree} if p.endswith('/__setup/changes') else {}
         route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
 
     def data(route):
@@ -3089,11 +3091,17 @@ def a83(c):
         c.ok('Air Dalton' in c.js("document.querySelector('.f-tabpop [data-app=\"company\"]').textContent"), '', 'the airline’s name as the subtitle')
         c.js("() => document.querySelector('.f-tabpop')?.remove()")
     # no file, an unreadable file, a file too big: the tinted plane, no error
+    svg = b'<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><script>window.__svgRan = 1</script><circle cx="32" cy="32" r="30"/></svg>'
     for what, logo, path in (('absent', None, ''), ('unreadable', b'this is not an image', 'airline/bad.png'),
-                             ('too big', b'\x89PNG\r\n\x1a\n' + b'\0' * (513 * 1024), 'airline/big.png')):
+                             ('too big', b'\x89PNG\r\n\x1a\n' + b'\0' * (513 * 1024), 'airline/big.png'),
+                             ('svg (never: opened as a document it would run in the suite’s origin)', svg, 'airline/logo.svg'),
+                             ('svg named .png', svg, 'airline/svg.png')):
         docs = _logo_launcher(c, logo, path=path)
         c.open('missions', app='company', docs=LEVEL3 + docs, wait=False)
         c.until("!!document.querySelector('[data-module=missions]')", timeout=20000, what='Company is drawn')
         c.wait(1500)
-        c.eq([c.count('#fAppIco img'), c.count('#fAppIco svg')], [0, 1], f'{what}: the tinted plane', what=f'{what} icon')
+        c.eq([c.count('#fAppIco img'), c.count('#fAppIco svg'), c.js('window.__svgRan || 0')], [0, 1, 0], f'{what}: the tinted plane', what=f'{what} icon')
+        if logo is not None:
+            c.until("[...document.querySelectorAll('.f-note')].some(n => /png/.test(n.textContent) && /webp/.test(n.textContent) && /512/.test(n.textContent))",
+                    timeout=15000, what=f'{what}: the refusal said to the administrator (png or webp, 512 KB at most)')
     c.check_errors()

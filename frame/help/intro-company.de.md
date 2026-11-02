@@ -13,6 +13,6 @@ in beiden Apps derselbe.
   „Gesellschaft“): Ein Tippen wechselt zu Pilot.
 - **Die Hilfe.** Sie öffnet sich beim Kapitel des angezeigten Bildschirms; „Gesamte Hilfe“ oben führt zu den anderen
   Handbüchern und den Tutorials.
-- **Das Logo.** Das Symbol der App ist das Logo Ihrer Fluggesellschaft, wenn das Datenrepository eines hat (eine png-, svg-
-  oder webp-Datei von höchstens 512 KB, in airline/settings.json benannt: „logo“: „airline/logo.png“); sonst das eingefärbte
+- **Das Logo.** Das Symbol der App ist das Logo Ihrer Fluggesellschaft, wenn das Datenrepository eines hat (eine png- oder
+  webp-Datei von höchstens 512 KB, in airline/settings.json benannt: „logo“: „airline/logo.png“); sonst das eingefärbte
   Flugzeug.

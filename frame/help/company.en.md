@@ -14,7 +14,7 @@ the mission prepared. The flight in progress is the same in both apps.
   one tap goes to Pilot.
 - **The help.** It opens at the chapter of the screen shown; « All help », at the top, leads to the other manuals and the
   tutorials.
-- **The logo.** The app's icon is your airline's logo when the data repository has one (a png, svg or webp file of 512 KB at
+- **The logo.** The app's icon is your airline's logo when the data repository has one (a png or webp file of 512 KB at
   most, named in airline/settings.json: "logo": "airline/logo.png"); otherwise, the tinted plane.
 
 <!-- chapter: missions -->

@@ -2460,3 +2460,12 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   the report link, Simplification): `ctx.version().web` — `release.repository.web` of `config/repository_tree`, read by the
   launcher (`suite_web`) or by `build_pages` into `version.json`; https only, else null (then the card shows neither line).
   Noreg A81, I34.
+- **2 Nov 2026 — The airline's logo: png or webp only, never svg** (Sécurisation, line 156, « à corriger »; Simplification
+  chose the simplest fix): a `blob:` address is of the suite's origin; an svg opened as a document (« open the image in a
+  new tab », a long press, a drag to the address bar) would run its scripts there, where IndexedDB keeps the device's
+  tokens — and every pilot's Developer token may push `airline/settings.json` and a file. So the frame takes png and webp
+  only (the path's extension and the first bytes), never an svg, whatever its name; no rasterisation by canvas (more code
+  for one more surface). A refused logo (svg, another content, more than 512 KB — `readBytes` throws `err.tooBig`, an
+  undecodable file) is said once per path to the administrator (Full level, a floating note: « Logo de la compagnie : png
+  ou webp, 512 Ko au plus », ×4); the pilot has the tinted plane, without a note; absent or offline without a copy: no
+  note. Noreg A83 (an svg, and an svg named .png, never shown nor run).

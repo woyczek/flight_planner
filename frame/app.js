@@ -1180,32 +1180,44 @@
   }
   // ---------------------------------------------------------------- le logo de la compagnie (1er nov. 2026)
   // Un fichier du dépôt des données nommé une fois dans airline/settings.json (logo : « airline/logo.png »), lu par la couche
-  // de données comme tout fichier (FrameData.readBytes, gardé par révision, jamais une adresse externe) : png, webp ou svg
+  // de données comme tout fichier (FrameData.readBytes, gardé par révision, jamais une adresse externe) : png ou webp
   // reconnus à leurs premiers octets, 512 Ko au plus, décodable ; montré par une adresse blob: dans l'en-tête et l'onglet du
   // navigateur de l'application Compagnie et dans le sélecteur d'applications. Sans logo, ou illisible : l'avion teinté.
+  // Jamais de svg : une adresse blob: d'un svg, ouverte comme document, exécuterait ses scripts dans l'origine de la suite
+  // (Sécurisation, ligne 156 ; Simplification, 2 nov. 2026 : png et webp seulement, un svg refusé et dit).
   const LOGO_MAX = 512 * 1024;
-  const LOGO_PATH = /^airline\/[\w.-]+\.(png|svg|webp)$/i;
+  const LOGO_PATH = /^airline\/[\w.-]+\.(png|webp)$/i;
+  // le refus d'un logo, dit une fois à l'administrateur (niveau Complet) ; le pilote a l'avion, sans note
+  const LOGO_T = {
+    refused: ['Logo de la compagnie : png ou webp, 512 Ko au plus (celui du dépôt est refusé, l’avion le remplace).',
+      'Airline logo: png or webp, 512 KB at most (the repository’s one is refused, the plane replaces it).',
+      'Logo der Fluggesellschaft: png oder webp, höchstens 512 KB (das des Repositorys wird abgelehnt, das Flugzeug ersetzt es).',
+      'Logotipo de la aerolínea: png o webp, 512 KB como máximo (el del repositorio se rechaza, el avión lo sustituye).'
+    ]
+  };
   let appLogo = null, // adresse blob: du logo, ou null
-    logoKey = '';
-  /** Type d'une image d'après ses premiers octets : png, webp, ou svg (un texte qui commence par <svg) ; '' sinon. */
+    logoKey = '',
+    logoSaid = ''; // le chemin du logo refusé déjà dit
+  /** Type d'une image d'après ses premiers octets : png ou webp ; '' sinon (un svg compris, quel que soit son nom). */
   function imageType(buf) {
-    const b = new Uint8Array(buf.slice(0, 1024)),
+    const b = new Uint8Array(buf.slice(0, 16)),
       ascii = (i, n) => String.fromCharCode(...b.slice(i, i + n));
     if (b[0] === 0x89 && ascii(1, 3) === 'PNG') return 'image/png';
     if (ascii(0, 4) === 'RIFF' && ascii(8, 4) === 'WEBP') return 'image/webp';
-    const head = new TextDecoder('utf-8', {
-      fatal: false
-    }).decode(b);
-    return /^\uFEFF?\s*(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*(<!DOCTYPE svg[^>]*>\s*)?<svg[\s>]/i.test(head) ? 'image/svg+xml' : '';
+    return '';
   }
   /** Relit le logo (path : celui du réglage de la compagnie) ; repeint seulement s'il a changé. */
   async function readLogo(path) {
     const p = LOGO_PATH.test(path || '') ? path : '';
+    let big = false;
     const buf = p ? await FD.readBytes(p, {
       max: LOGO_MAX
-    }).catch(() => null) : null;
+    }).catch(e => (big = !!e?.tooBig, null)) : null;
     const type = buf ? imageType(buf) : '';
     const key = type ? `${p}:${buf.byteLength}:${type}` : '';
+    // refusé : un autre format que png ou webp (un svg), un contenu qui n'en est pas un, trop gros ; absent ou hors ligne
+    // sans copie : rien à dire (l'avion, sans note)
+    if (path && (!p || big || buf && !type)) sayLogoRefused(path);
     if (key === logoKey) return;
     let url = null;
     if (type) {
@@ -1222,12 +1234,21 @@
       if (!ok) {
         URL.revokeObjectURL(url);
         url = null;
+        sayLogoRefused(path);
       }
     }
     if (appLogo) URL.revokeObjectURL(appLogo);
     appLogo = url;
     logoKey = url ? key : '';
     paintAppIcon();
+  }
+  /** Le refus du logo, dit à l'administrateur (niveau Complet), une fois par chemin ; le pilote a l'avion, sans note. */
+  function sayLogoRefused(path) {
+    if (level < 3 || logoSaid === path) return;
+    logoSaid = path;
+    notify(t(LOGO_T.refused), 'warn', {
+      key: 'logo'
+    });
   }
   /** L'icône d'une application : le logo pour Compagnie quand il est là, sinon son icône teintée. */
   const appIconHtml = p => p.id === 'company' && appLogo ? `<img class="f-logo" alt="" src="${esc(appLogo)}">` : icon(p.icon);

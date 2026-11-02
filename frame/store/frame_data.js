@@ -657,8 +657,8 @@
 
   /** Un fichier binaire du dépôt (le logo de la compagnie, 1er nov. 2026) : ArrayBuffer ou null — sa révision dans l'arbre
    *  connu (l'arbre du moment s'il ne le porte pas, comme une lecture), lu par le transport (readBytes), gardé sur l'appareil
-   *  par révision (meta « bytes:<chemin> ») ; hors ligne ou en échec, la copie gardée ; plus gros que max, null et rien de
-   *  gardé. Le contenu n'est ni décodé ni vérifié ici : l'appelant contrôle le type. */
+   *  par révision (meta « bytes:<chemin> ») ; hors ligne ou en échec, la copie gardée ; plus gros que max : une erreur
+   *  err.tooBig, rien de gardé. Le contenu n'est ni décodé ni vérifié ici : l'appelant contrôle le type. */
   async function readBytes(path, {
     max = 512 * 1024
   } = {}) {
@@ -666,6 +666,7 @@
       kept = await getMeta(key).catch(() => null),
       T = cfg.transport;
     if (!T?.readBytes || T.kind === 'local') return kept?.buf || null;
+    let buf;
     try {
       const remote = await getMeta('remote');
       let tree = remote?.tree || (await treeNow(T)).tree;
@@ -673,16 +674,19 @@
       const rev = tree[path];
       if (!rev) return null;
       if (kept?.rev === rev) return kept.buf;
-      const buf = await T.readBytes(path, rev);
-      if (!(buf instanceof ArrayBuffer) || buf.byteLength > max) return null;
-      await setMeta(key, {
+      buf = await T.readBytes(path, rev);
+      if (!(buf instanceof ArrayBuffer)) return null;
+      if (buf.byteLength <= max) await setMeta(key, {
         rev,
         buf
       });
-      return buf;
     } catch {
       return kept?.buf || null;
     }
+    if (buf.byteLength > max) throw Object.assign(new Error(`${path}: larger than ${max} bytes`), {
+      tooBig: true
+    });
+    return buf;
   }
 
   function fetchOne(path, policy) {
