@@ -1,6 +1,6 @@
 {
   "schema": "sog-roadmap/1",
-  "updated": "2026-11-01",
+  "updated": "2026-11-02",
   "owner": "ergonomics session (Simplification interface et ergonomie)",
   "note": {
     "fr": "Ce qui est « livré » doit marcher : un écart est un bug à signaler. Ce qui est « en cours », « prévu » ou « plus tard » n'est pas un bug.",
@@ -1014,6 +1014,13 @@
           "en": "Repository providers refactoring: one table read by the export, Join, Access, the transport and the content policy; any provider declared in administration, pushed through the airline's configuration",
           "de": "Neuordnung der Repository-Anbieter: eine Tabelle, gelesen von Export, Beitreten, Zugang, Transport und Inhaltsrichtlinie; jeder in der Verwaltung erklärte Anbieter, über die Konfiguration der Gesellschaft verteilt",
           "es": "Refundición de los proveedores de repositorio: una sola tabla leída por la exportación, Unirse, Acceso, el transporte y la política de contenido; cualquier proveedor declarado en administración, enviado por la configuración de la compañía"
+        },
+        {
+          "state": "planned",
+          "fr": "Logo de la compagnie : un SVG déposé est converti d'office en PNG par l'appli (demande du 2/11)",
+          "en": "Airline logo: an SVG dropped in is converted to PNG by the app (request of 2 Nov)",
+          "de": "Logo der Gesellschaft: ein abgelegtes SVG wird von der App automatisch in PNG umgewandelt (Wunsch vom 2.11.)",
+          "es": "Logotipo de la compañía: un SVG depositado se convierte automáticamente a PNG en la aplicación (petición del 2/11)"
         }
       ]
     },
