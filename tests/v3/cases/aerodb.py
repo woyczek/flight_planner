@@ -3772,6 +3772,9 @@ def k51(c):
                'raw name': {**good, 'sources': [{'source': 'sia', 'cycle': '2026-10-01', 'name': '../x.xml'}]}, 'raw source': {**good, 'sources': [{'source': '../x', 'cycle': '2026-10-01', 'name': 'XML_SIA_2026-10-01.xml'}]},
                'raw cycle': {**good, 'sources': [{'source': 'sia', 'cycle': '2026-10-01/..', 'name': 'XML_SIA_2026-10-01.xml'}]}, 'raw key': {**good, 'sources': [{'source': 'sia', 'cycle': '2026-10-01', 'name': 'XML_SIA_2026-10-01.xml', 'path': 'x'}]},
                'raw type': {**good, 'sources': 'XML_SIA_2026-10-01.xml'}}
+    import os
+    if os.environ.get('K51_ONLY'):                      # a debugging knob: only these hostile claims (comma-separated names)
+        hostile = {k: v for k, v in hostile.items() if k in os.environ['K51_ONLY'].split(',')}
     out, race = {}, {}
     for name, answer in hostile.items():
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
@@ -3781,8 +3784,11 @@ def k51(c):
             seen = []
             srv, origin = _d5_site(RJ, data, {}, c.root, claim_override=lambda a, ans=answer: ans, log=seen)
             prof = tempfile.mkdtemp(prefix='sog-base-')
+            # started like the job starts it (base.build): the reduced environment (regen_jobs.child_env) and no console window: with the whole environment of the test process the browser can hand over and
+            # end at once (5 Nov 2026, in a Claude Code session: exit 0 and no line for every hostile claim, the first one included)
+            flags = {'creationflags': 0x08000000} if os.name == 'nt' else {'start_new_session': True}
             p = subprocess.Popen(cmd + B.browser_args(prof, origin.split('//')[1], f'{origin}/frame/aerodb/build/headless.html#job=job123'), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                                 stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace')
+                                 stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace', env=RJ.child_env(), **flags)
             lines = []
             reader = threading.Thread(target=lambda: [lines.append(B._sogb(l)) for l in p.stderr], daemon=True)
             reader.start()
