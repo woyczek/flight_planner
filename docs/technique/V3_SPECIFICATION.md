@@ -334,7 +334,10 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
       vertical"; the relay's reading, an ergonomics intent): the profile and the weather cut accept a **window on the distance
       axis**. On a phone: a pinch zooms around its centre, a two-finger drag pans, a double tap comes back to the whole flight;
       one finger stays the reading cursor (airspaces, weather point). On a screen: wheel with Ctrl zooms, drag pans, double
-      click resets. The vertical axis refits to what is visible (that is where the precision comes from), axis labels, NM
+      click resets; **since 5 Nov (SOG-0005, BUGS SOG's reading: the wheel alone was lost on a drawing that does not
+      scroll)**, over the trace the wheel alone zooms around the pointer when the drawing's container does not scroll
+      (the sheet, the map), the horizontal wheel slides the narrowed window; in a page that scrolls (Fuel page 2 side
+      by side) the wheel alone stays with the page, as before; case D24 checks both situations. The vertical axis refits to what is visible (that is where the precision comes from), axis labels, NM
       marks and point labels follow, the cursor keeps working in the window. The window is a reading convenience, kept for
       the life of the page only, never stored; a small "whole flight" affordance appears in the legend row while zoomed
       (rule 13: no new chip). The gesture is the same on both drawings: the window helper is written once (`modules/maps/lib`,
