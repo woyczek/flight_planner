@@ -121,7 +121,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   SPEC, INTEGRATION, DECISIONS; tests K70 to K75) — **Ireland**: the zone `ie` gets its 167 points and its RNAV routes from AirNav Ireland's eAIP (personal licence: none found), fetched by the launcher;
   **`chartsUrl(icao)`**: the page of an aerodrome in the official AIP of France, Spain or Ireland; **the raw SIA files** move from the root of `data/sia/` to `data/local/sources/sia/<cycle>/` (read there first, the
   old place as a fall-back, a verb that moves them with a manifest and an undo, nothing purged), and the build result says what it was built with; **Little Navmap**: the sheets and the `.lnmperf` files are no
-  longer compared in the background, only on request.
+  longer compared in the background, only on request. Integration (5 Nov evening pass): the data module's personal-licence table
+  (`modules/data/model_sets.js` PERSONAL) and its labels declare `airnav` for `ie` (L1); the path-rule guard of I26 reads `_dest()`.
 - **Data, lot C: cycles and sources** (`frame/aerodb/aerodb.js`, `tools/aero_cycles.py`, `tools/proc_sia.py`, `tools/proc_records.py`, `tools/regen/base_sources.py`;
   SPEC, INTEGRATION, DECISIONS; tests K76, K69, K68, K64) — **SOG-0026**: why every source of the base showed « dépassé » once France was rebuilt (the module takes
   the oldest folder cycle of every fed zone, and a zone without an AIRAC source has no cycle); `publication()` now says, per zone, the dated source its cycle

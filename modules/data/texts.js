@@ -172,6 +172,9 @@ export const TX = {
     'Fuentes con licencia personal'
   ],
   personalName: {
+    airnav: ['AirNav Ireland (AIP Irlande)', 'AirNav Ireland (Ireland AIP)', 'AirNav Ireland (AIP Irland)',
+      'AirNav Ireland (AIP Irlanda)'
+    ],
     enaire: ['ENAIRE (AIP Espagne)', 'ENAIRE (Spain AIP)', 'ENAIRE (AIP Spanien)', 'ENAIRE (AIP España)'],
     nats: ['NATS (AIP Royaume-Uni)', 'NATS (UK AIP)', 'NATS (AIP Vereinigtes Königreich)', 'NATS (AIP Reino Unido)'],
     xplane: ['X-Plane (données du simulateur)', 'X-Plane (simulator data)', 'X-Plane (Simulatordaten)', 'X-Plane (datos del simulador)']

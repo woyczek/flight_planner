@@ -9,6 +9,10 @@ import {
  *  cette table au fichier (aero_zones.js : `personal:`, COMMON, EXTRA) pour que les deux ne s'écartent pas. Les identifiants
  *  sont ceux que le lanceur attend dans args.personal. */
 export const PERSONAL = {
+  airnav: {
+    kind: 'licence',
+    zones: ['ie']
+  },
   enaire: {
     kind: 'licence',
     zones: ['es']

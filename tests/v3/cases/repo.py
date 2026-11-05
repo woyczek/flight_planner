@@ -1797,7 +1797,9 @@ def i26(c):
 
 
     bsrc = (c.root / 'tools' / 'regen' / 'base_sources.py').read_text(encoding='utf-8')
-    c.ok(bsrc.count("data_sync.data_path(data, f'{p[\"to\"]}/{leaf}')") == 2, '', 'each name goes through the data/ path rule (Windows reserved names, a final dot or space), security review of 25beba925')
+    # lot C2 (5 Nov): the two pickup call sites build their destination through _dest(), the one caller of data_path for them
+    c.eq((bsrc.count('_dest(data, p, leaf)') - bsrc.count('def _dest(data, p, leaf)'), bool(re.search(r"def _dest\(data, p, leaf\):.*?return data_sync\.data_path\(data, f'\{p\[\"to\"\]\}/", bsrc, re.S))),
+         (2, True), 'each name goes through the data/ path rule (Windows reserved names, a final dot or space), security review of 25beba925; since lot C2 through _dest()', what='pickup names')
 
 
 @case('I25', 'Updating the suite by channel: the plan first, fast-forward only, refusals', 'I', static=True,
