@@ -332,9 +332,25 @@
       'RunwayNumberFP') === '7' && g(wt('LFXA'), 'RunwayDesignatorFP') === 'NONE' && g(wt('EIXB'), 'ArrivalFP') === 'BRAVO2B' && g(wt(
       'EIXB'), 'ApproachTypeFP') === 'ILS' && g(
       wt('EIXB'), 'SuffixFP') === 'Z' && g(wt('EIXB'), 'RunwayNumberFP') === '25' && g(wt('EIXB'), 'RunwayDesignatorFP') === 'LEFT');
-  ck('pln : 2020 et 2024 ne diffèrent que par AppVersion', d.querySelector('AppVersionMajor').textContent === '11' && d24.querySelector(
-      'AppVersionMajor').textContent ===
-    '12' && !d24.querySelector('parsererror') && pln.replace(/<AppVersionMajor>\d+</, '<AppVersionMajor>12<') === pln24);
+  ck('pln : 2020 = AppVersion 10 / 61472 (l\'exemple du SDK 2020), 2024 = 12 / 282174 ; rien d\'autre ne diffère', d.querySelector(
+    'AppVersionMajor').textContent === '10' && d.querySelector('AppVersionBuild').textContent === '61472' && d24.querySelector(
+    'AppVersionMajor').textContent === '12' && !d24.querySelector('parsererror') && pln.replace(/<AppVersionMajor>\d+</,
+    '<AppVersionMajor>12<').replace(/<AppVersionBuild>\d+</, '<AppVersionBuild>282174<') === pln24);
+  // les éléments que le SDK de MSFS 2020 dit exigés (FlightPlan.FlightPlan et ATCWaypoint), présents et non vides, même sans nom de
+  // terrain connu (le code OACI en tient lieu)
+  const sdk20 = doc(toPln(flight, path, {
+      ...opts,
+      names: {},
+      version: 2020
+    })).querySelector('FlightPlan\\.FlightPlan'),
+    need = ['Title', 'Descr', 'FPType', 'RouteType', 'CruisingAlt', 'DepartureID', 'DepartureName', 'DepartureLLA', 'DestinationID',
+      'DestinationName', 'DestinationLLA', 'AppVersion > AppVersionMajor'
+    ];
+  ck('pln : les éléments exigés par le SDK 2020 sont là, un nom absent remplacé par le code OACI', need.every(k => sdk20.querySelector(
+    `:scope > ${k}`)?.textContent.trim()) && sdk20.querySelector(':scope > DepartureName').textContent === 'LFXA' && [...sdk20
+    .querySelectorAll(':scope > ATCWaypoint')
+  ].every(w => w.getAttribute('id') && w.querySelector(':scope > ATCWaypointType') && w
+    .querySelector(':scope > WorldPosition')), need.filter(k => !sdk20.querySelector(`:scope > ${k}`)?.textContent.trim()).join());
   const low = toPln({
     ...flight,
     level: {

@@ -308,10 +308,11 @@ function approachMsfs(name) {
     } [c[1]]
   } : {};
 }
-/** Versions de l'application écrites dans AppVersion (major, build) : 2020 → 11 / 282174 ; 2024 → 12 / 282174 (le build de 2024 est un
- *  choix, MSFS ne le vérifie pas à la lecture). */
+/** Versions de l'application écrites dans AppVersion (major, build) : 2020 → 10 / 61472, l'exemple du SDK de MSFS 2020 (page « Flight
+ *  Plan Definitions », lue le 5 nov. 2026 : « for Microsoft Flight Simulator 2020 this should be 10 or greater », demande de
+ *  l'utilisateur SOG-0017) ; 2024 → 12 / 282174, NON VÉRIFIÉ (page du SDK 2024 introuvable, aucun .pln réel de 2024 : SOG-0018). */
 const APP = {
-  2020: ['11', '282174'],
+  2020: ['10', '61472'],
   2024: ['12', '282174']
 };
 /** Type de waypoint AceXML d'après la nature du point. */
@@ -357,8 +358,9 @@ export function toPln(flight, path, opts = {}) {
   push(2, tag('DestinationID', arr));
   if (last) push(2, tag('DestinationLLA', lla(last.lat, last.lon, elev(last, P.arrRwy))));
   push(2, tag('Descr', `${dep}, ${arr}`));
-  if (names[dep]) push(2, tag('DepartureName', names[dep]));
-  if (names[arr]) push(2, tag('DestinationName', names[arr]));
+  // DepartureName et DestinationName sont exigés par le SDK de MSFS 2020 : le code OACI quand le nom n'est pas connu
+  push(2, tag('DepartureName', names[dep] || dep));
+  push(2, tag('DestinationName', names[arr] || arr));
   push(2, '<AppVersion>');
   push(3, tag('AppVersionMajor', APP[ver][0]));
   push(3, tag('AppVersionBuild', APP[ver][1]));
