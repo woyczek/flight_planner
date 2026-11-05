@@ -123,8 +123,13 @@ place of the list (one card, « Retour » goes back), one editor at a time; the 
   its own block, editable on a computer, read on a phone; under each filled field its origin and date (`<small data-origin="<path>">`,
   « source · dd/mm », the kept values in its title); the fuel fields carry the sheet's unit; airframe and propulsion that aerodb's
   types base gives show « auto · … » and stay empty in the sheet (M7).
+- **One source** (SOG-0023, 5 Nov): the JSON sheet; a `.lnmperf` is an import (through the review) or an export, never read to draw
+  a screen, never merged without the review (no case: nothing in the module reads one otherwise; the automatic follow of aerodb is D4's).
+- **Two fields explained** (SOG-0011): « Carburant en volume » and « Densité du carburant » carry a help line; a bounded field (the
+  density, 0.5–1.0) out of its range is refused at « Enregistrer », said, nothing written (M23).
 - **Sources**: an edit, stamped `edit` (M8); « Importer un fichier » (`.csv`, `.json`, `.lnmperf`, `.xml`, `.txt`) and « Coller un
-  texte », stamped `import` (M13, M9; the formats: F10); a ChatGPT reply under the request (`perf_prompt.js`), stamped `chatgpt` (M15);
+  texte », stamped `import` (M13, M9; the formats: F10); « Compléter avec ChatGPT » copies the request and opens chatgpt.com in a new tab (the request in the address when under 7000
+  characters), the reply pasted under it (`perf_prompt.js`), stamped `chatgpt` (M22, M15);
   « Compléter depuis une autre fiche », the empty fields only (M14); « Compléter (EUROCONTROL) », stamped `eurocontrol` (no case).
 - **New sheet**: « Nouvelle fiche » asks a code, written in capitals; « Créer la fiche » of a company type takes its code without asking;
   a type the registry does not know is a sheet with that id, nothing more; then the review (M12).

@@ -44,7 +44,9 @@ on the same data. The CPCO (authoring) stays V2 until rebuilt as the third appli
 - **Each row**: id, title, family, origin → destination, aircraft type, estimated block, and the pilot's own state —
   "volée le …" from the flight log (a report of `cr/reports/` whose `metadata.missionId` is this id, written by this pilot or
   without author; case N2), "affectée" from `affectations.json` when a line carries this pilot's trigram (later, with § 6).
-  Nothing else. The list, the order, the families, the search and the family filter: case N2.
+  Nothing else. The list, the order, the families, the search and the family filter: case N2. The search also reads the
+  registry's activity (`type`, `subtype`: MEDEVAC, BFM), callsigns and teams (name, service, type: SAMU66, SAMU, H135) and the ICAO codes
+  of the aerodromes; what it reads is written under the field (SOG-0009, N6).
 - **"Choisir"** on a row opens the mission (§ 5) with "Préparer ce vol"; **"Tirer au sort"** at the top draws one
   mission among those **not yet flown by this pilot** and matching the current filters, shows it the same way, and
   offers "Tirer encore" (one more draw) — never a silent auto-start. The draw is uniform; no weighting. Every mission of the

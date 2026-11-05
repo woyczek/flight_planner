@@ -1330,3 +1330,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
 
 - **2 Nov 2026 — the data read as written by any pilot** (security audit line 157): since § 10.36 (one project token per pilot, push on main) every file of data/ — `airline/fleet.json`, `aircraft/sheets/`, `missions/`, `airline/settings.json` — is read as written by any pilot: numbers bounded, keys by own(), texts through esc, never a path or an address taken as it is, an unreadable file said and ignored. Checked at every new reader. Here: the mission door reads the
   registry through `readRegistry` (paths made safe, N1) and the mission through the tolerant reader; the sheets come through aerodb.
+- **5 Nov 2026 — the MSFS PLN checked against the SDK, not against a real file** (SOG-0017, 0018): no real `.pln` on the
+  workstation; the MSFS 2020 SDK page « Flight Plan Definitions » read (5 Nov): AppVersionMajor « 10 or greater », its sample
+  10 / 61472 (what the user asked), DepartureName and DestinationName required. The 2020 export now writes 10 / 61472 and always both
+  names (the ICAO code when the name is unknown); bench F60 checks the elements the SDK says required. MSFS 2024: the SDK page could
+  not be read (404) and no 2024 file exists here: the 2024 export (12 / 282174, procedures on the aerodrome waypoints, no EFB
+  blocks) is NOT verified; the EFB blocks the user asks for wait for a real 2024 file.

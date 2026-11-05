@@ -1588,6 +1588,10 @@ redesigned for touch at that point.
        Lots added: L6 (Features SOG) the history typed in Maintenance, the derived hard landings and derogations, due
        and derogation shown in Flotte and Fuel, the report's box (flight log, same owner); L7 the costs as data
        (fields, nothing computed). M cases for each; the balance is not a lot.
+       **The JSON sheet is the only source** (user, 5 Nov, SOG-0023): `aircraft/sheets/<id>.json` is what every screen reads;
+       a `.lnmperf` is only an explicit import (« Importer un fichier », then the review) or an explicit export (« Exporter
+       .lnmperf »), never shown as the sheet, never merged without the review. The automatic two-way follow of the
+       `.lnmperf` files of a workstation (aerodb `lnmAuto`, `lnmperf.js` start) contradicts this rule: D4 to switch off.
 
    36. **GitLab is the official data provider; a pilot joins in "newbie" mode** (user, 31 Oct evening, after the phone
        synchronised with gitlab.com once connect-src carried it: "GitLab + TOKEN fonctionne ; nouveau fournisseur officiel

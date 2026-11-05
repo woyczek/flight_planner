@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Lot D — sheets, fuel and exports** (`modules/aircraft/sheets.js`, `sheets_texts.js`, `frame/lib/mission.js`, `modules/missions/module.js`,
+  `frame/lib/fms.js`; SPEC, DECISIONS, help ×4, § 10.35; noreg M22, M23, N6, F60): « Compléter avec ChatGPT » copies the request and
+  opens ChatGPT again (SOG-0014); « Carburant en volume » and « Densité » explained, a density out of 0.5–1.0 refused (SOG-0011);
+  the missions' search reads activity, callsigns and teams (SOG-0009); the MSFS 2020 PLN follows the SDK (AppVersion 10 / 61472,
+  both aerodrome names always written; SOG-0017), the 2024 one said unverified (SOG-0018); the JSON sheet is the only source, `.lnmperf`
+  an explicit import or export (SOG-0023 a).
 - **Settings: the Synchronisation card is the sync summary** (`frame/settings/sync_summary.js` new, `access.js`, `frame/app.js` (the file in LAZY.settings), `frame.css`, help ×4, INTEGRATION, SPEC § 3 item 7, DECISIONS; the user's « je ne sais pas quelles fiches appareil sont synchro et lesquelles ne le sont pas, pas plus que les missions »; noreg A85): no new screen. The head counts what waits by kind (aircraft sheets, missions, flights, fleet, « Autres » only when not zero); a folded list per kind gives the readable title (the `titleOf` of the module that owns the kind, from the device's own copy, never the network), the date, ✕ for a deletion and the reason of the error that holds the queue, seven items at most in all and « … et n de plus » for the rest; with a launcher, `sync-status`'s `changed` (« modifié ici ») and `toPush` (« à envoyer »). « Tout envoyer » is the primary button (the same `syncNow`). `SogSyncSummary.marks({ pending, status })` is the read the modules' « non synchronisé » mark can use. Titles, paths and errors are escaped, a path is text, counts bounded (DECISIONS, audit 157). Text `queue` removed; `kind`, `sendAll`, `flagChanged`, `flagPush` ×4 added.
 - **Settings: a saved sheet is two files waiting, counted as one kind** (`frame/settings/sync_summary.js`; SPEC § 3 item 7; A86) — SOG-0023 (b):
   the user thought the sheets he updated never showed in the synchronisation. aerodb writes `aircraft/sheets/<id>.json` AND its mirror

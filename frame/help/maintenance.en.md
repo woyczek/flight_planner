@@ -90,14 +90,14 @@ The company's fleet, as the other screens read it: the report (registration → 
 
 <a id="aircraft-sheets"></a>**The sheets.** The "Sheets" tab lists the performance sheets by family (helicopters, turboprops, jets, pistons, others); the search filters on the name, the type or the registration. Each row says where the sheet comes from, what it lacks and its date; a fleet type without a sheet is offered "to complete". "Import a file" reads a CSV, a JSON, a .lnmperf or a SimBrief OFP; "Paste a text" reads a pasted text, a ChatGPT answer included; "New sheet" asks for the type code. Nothing is written at once: an import first shows, field by field, what would change; untick what you keep, then "Apply the selection". Several sheets at once: each preview names its sheet and its rank ("3 / 13"), a sheet that does not change is passed by itself, "Skip this sheet" goes to the next one without writing anything, and the end gives the summary; a note already written is replaced only if you tick it. The chosen tab is kept on the device, and the link `#aircraft?sheet=<id>` opens a sheet's editor directly.
 
-<a id="aircraft-sheet-edit"></a>**Editing a sheet.** "Edit" opens the editor: the fields by group (identity, fuel, runway and alternate, climb, cruise, descent, RPM), the RPM / fuel flow table on a large screen, and the EUROCONTROL completion, "complete from another sheet" or the ChatGPT request to fill the empty fields. Under each filled field a muted line gives its origin and date ("lnmperf · 28/10", "edited · 30/10"); hovering it shows the discarded values. "Save" opens the preview of the changes, which are written only after "Apply the selection"; each changed field thus keeps its source, and the old value is kept. "Export .lnmperf" and "Export JSON" download the sheet; "Delete" asks before removing the sheet from the shared database.
+<a id="aircraft-sheet-edit"></a>**Editing a sheet.** "Edit" opens the editor: the fields by group (identity, fuel, runway and alternate, climb, cruise, descent, RPM), the RPM / fuel flow table on a large screen, and the EUROCONTROL completion, "complete from another sheet" or "Complete with ChatGPT", which copies the request and opens ChatGPT in a new tab: paste the request there if it is not, then paste its answer under the button. "Fuel as volume" and "Fuel density" are explained under the field; a density outside 0.5 to 1.0 is refused. Under each filled field a muted line gives its origin and date ("lnmperf · 28/10", "edited · 30/10"); hovering it shows the discarded values. "Save" opens the preview of the changes, which are written only after "Apply the selection"; each changed field thus keeps its source, and the old value is kept. "Export .lnmperf" and "Export JSON" download the sheet; "Delete" asks before removing the sheet from the shared database.
 
 ## Good to know
 
 - The Site module also updates the fleet from the pasted "Fleet" page of the site: both write the same file, each save reads the file just before and changes one aircraft only.
 - Nothing leaves before the next synchronisation.
 
-<!-- fr: a4c63934f621 -->
+<!-- fr: 8540508b5813 -->
 
 <!-- chapter: settings -->
 # Settings

@@ -69,3 +69,9 @@
   are shown through esc, written through `fleet.js` / aerodb (`sheets.put`, ids made safe by `fileOf`); the site's page addresses
   (`modules/website/model.js` `pageUrl`, read from `airline/settings.json`) are now links or readings only when they read as an http(s)
   URL without credentials (case M21; counter-test: without the check, `javascript:alert(1)/log` and `https://u:p@…` came through).
+- **5 Nov 2026 — lot D** (Simplification's brief, fiches SOG-0011, 0014, 0023 a): the ChatGPT gesture lost with Fuel's editor
+  (4044dc8ba) comes back as in V2: one button copies the request and opens chatgpt.com (copy first: a tab opened before takes the
+  focus away and the clipboard refuses), M22. The two fuel fields explained under the field, the density refused out of 0.5–1.0
+  (the bound of `PROFILE_FIELDS`, the same that `fuel_units.js density()` applies), M23. The JSON sheet is the only source; the
+  module reads no `.lnmperf` but through its import; aerodb's automatic `.lnmperf` follow (`lnmAuto`) is reported to D4 — it may be
+  why the user « remet sans cesse ses fiches à jour ».
