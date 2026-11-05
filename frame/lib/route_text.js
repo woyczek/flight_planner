@@ -244,7 +244,10 @@ const nm = (a, b) => {
 
 /** Texte refait depuis des points (voir l'en-tête). */
 export function textFromPoints(points, previousText = '', previousPoints = null) {
-  const pts = (points || []).filter(Boolean),
+  // les nœuds d'une voie que le texte n'écrit pas (awy, insérés par la lecture d'une voie écrite ou par « Auto ») ne sont pas des points du
+  // texte : la voie est écrite devant le point où elle arrive (SOG-0019 : « SITET A34 LGL » devenait « SITET DCT ETRAT DCT DVL … » dès qu'un
+  // niveau était posé sur un autre point) ; un nœud qui porte un niveau posé à la main reste écrit
+  const pts = (points || []).filter(p => p && !(p.awy && !(p.alt_ft > 0))),
     ids = new Set(pts.map(p => String(p.id || '').toUpperCase())),
     prevPos = previousPoints ? new Map(previousPoints.filter(Boolean).map(p => [String(p.id || '').toUpperCase(), p])) : null,
     toks = tokenize(previousText).filter(t => t.kind !== 'group'),
@@ -277,6 +280,9 @@ export function textFromPoints(points, previousText = '', previousPoints = null)
       if (between.has(key) && unchanged(a) && unchanged(p)) out.push(...between.get(key).map(keep => ({
         keep
       })));
+      else if (p.via && /^[A-Z]{1,2}\d{1,4}[A-Z]?$/.test(String(p.via).toUpperCase())) out.push({
+        keep: String(p.via).toUpperCase()
+      });
     }
     out.push({
       pt: p

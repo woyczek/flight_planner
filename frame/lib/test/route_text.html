@@ -160,7 +160,13 @@
       QLUG: [46.58, -1.2],
       QNEP: [45.9, 0.6],
       XARR: [43.44, 5.22],
-      QXRY: [46.9, -1.4]
+      QXRY: [46.9, -1.4],
+      // la géométrie de l'A34 entre SITET et BOBSA (SOG-0019), noms inventés
+      QSIT: [50.1, 0],
+      QET1: [49.683, .163],
+      QET2: [49.311, .313],
+      QLGL: [48.791, .530],
+      QBOB: [48.496, .648]
     },
     qpt = (id, alt) => ({
       id,
@@ -203,17 +209,50 @@
       lat: 46.2,
       lon: -0.9
     };
-  qeq('textFromPoints : mêmes points, même texte (forme OACI)', textFromPoints(qBefore, qTyped, qBefore), 'XDEP Q869 QLUG DCT QNEP Q3 XARR');
+  // SOG-0019 : les nœuds d'une voie (awy) ne sont pas écrits, la voie l'est devant le point où elle arrive ; un nœud avec un niveau reste
+  const awyNode = (id, via, alt) => ({
+    ...qpt(id, alt),
+    via,
+    awy: true
+  });
+  qeq('textFromPoints : les nœuds d’une voie lue ne deviennent pas des DCT', textFromPoints([qpt('XDEP'), qpt('QSIT'), awyNode('QET1',
+      'Q34'),
+    awyNode('QET2', 'Q34'), {
+      ...qpt('QLGL'),
+      via: 'Q34'
+    }, {
+      ...qpt('QBOB'),
+      via: 'Q34'
+    },
+    qpt('XARR')
+  ], 'XDEP QSIT Q34 QLGL Q34 QBOB XARR'), 'XDEP QSIT Q34 QLGL Q34 QBOB XARR');
+  qeq('textFromPoints : sans l’ancien texte, la voie vient du via du point', textFromPoints([qpt('XDEP'), qpt('QSIT'), awyNode('QET1',
+    'Q34'), {
+    ...qpt('QLGL'),
+    via: 'Q34'
+  }, qpt('XARR')], ''), 'XDEP QSIT Q34 QLGL XARR');
+  qeq('textFromPoints : un nœud de voie avec un niveau posé reste écrit', textFromPoints([qpt('XDEP'), qpt('QSIT'), awyNode('QET1', 'Q34',
+    18000), {
+    ...qpt('QLGL'),
+    via: 'Q34'
+  }, qpt('XARR')], ''), 'XDEP QSIT Q34 QET1/F180 Q34 QLGL XARR');
+  qeq('textFromPoints : mêmes points, même texte (forme OACI)', textFromPoints(qBefore, qTyped, qBefore),
+    'XDEP Q869 QLUG DCT QNEP Q3 XARR');
   qeq('textFromPoints : un point inséré dans le direct, les deux voies restent', textFromPoints([qpt('XDEP'), qpt('QLUG'), qpt('QXRY'), qpt(
     'QNEP'), qpt('XARR')], qTyped, qBefore), 'XDEP Q869 QLUG DCT QXRY DCT QNEP Q3 XARR');
-  qeq('textFromPoints : un point d’une voie déplacé, cette voie tombe, l’autre reste', textFromPoints([qpt('XDEP'), qMoved, qpt('QNEP'), qpt(
-    'XARR')], qTyped, qBefore), 'XDEP QLUG DCT QNEP Q3 XARR');
+  qeq('textFromPoints : un point d’une voie déplacé, cette voie tombe, l’autre reste', textFromPoints([qpt('XDEP'), qMoved, qpt('QNEP'),
+    qpt(
+      'XARR')
+  ], qTyped, qBefore), 'XDEP QLUG DCT QNEP Q3 XARR');
   qeq('textFromPoints : un point retiré, ses voies tombent', textFromPoints([qpt('XDEP'), qpt('QNEP'), qpt('XARR')], qTyped, qBefore),
     'XDEP QNEP Q3 XARR');
-  qeq('textFromPoints : ordre changé, la voie d’une paire rompue tombe', textFromPoints([qpt('XDEP'), qpt('QNEP'), qpt('QLUG'), qpt('XARR')],
+  qeq('textFromPoints : ordre changé, la voie d’une paire rompue tombe', textFromPoints([qpt('XDEP'), qpt('QNEP'), qpt('QLUG'), qpt(
+      'XARR')],
     qTyped), 'XDEP QNEP DCT QLUG XARR');
-  qeq('textFromPoints : un niveau sur un point, écrit, les voies gardées', textFromPoints([qpt('XDEP'), qpt('QLUG'), qpt('QNEP', 28000), qpt(
-    'XARR')], qTyped), 'XDEP Q869 QLUG DCT QNEP/F280 Q3 XARR');
+  qeq('textFromPoints : un niveau sur un point, écrit, les voies gardées', textFromPoints([qpt('XDEP'), qpt('QLUG'), qpt('QNEP', 28000),
+    qpt(
+      'XARR')
+  ], qTyped), 'XDEP Q869 QLUG DCT QNEP/F280 Q3 XARR');
   qeq('textFromPoints : sans positions d’avant, mêmes noms = inchangés', textFromPoints([qpt('XDEP'), qpt('QLUG'), qpt('QXRY'), qpt('QNEP'),
     qpt('XARR')
   ], qTyped), 'XDEP Q869 QLUG DCT QXRY DCT QNEP Q3 XARR');
@@ -222,7 +261,8 @@
     lat: 45.5,
     lon: .5
   }, qpt('XARR')], 'XDEP XARR'), 'XDEP 4530N00030E XARR');
-  qeq('textFromPoints : le groupe vitesse-niveau de l’ancien texte ignoré', textFromPoints(qBefore, 'XDEP N0300F270 Q869 QLUG QNEP Q3 XARR'),
+  qeq('textFromPoints : le groupe vitesse-niveau de l’ancien texte ignoré', textFromPoints(qBefore,
+      'XDEP N0300F270 Q869 QLUG QNEP Q3 XARR'),
     'XDEP Q869 QLUG DCT QNEP Q3 XARR');
   qeq('formatLevel : FL060 au-dessus de la transition, FL050 à la transition', [formatLevel(6000), formatLevel(5000)], ['FL060', 'FL050']);
   qeq('formatLevel : en dessous, des pieds (espace fine), arrondis à la centaine ; une autre transition ; sans valeur', [formatLevel(3500),
