@@ -84,8 +84,7 @@
     last: ['Dernière réussie', 'Last success', 'Zuletzt erfolgreich', 'Última correcta'],
     never: ['jamais', 'never', 'nie', 'nunca'],
     pending: ['En attente', 'Pending', 'Ausstehend', 'Pendiente'],
-    // écritures en attente (FD.status().queue) : chemin, module, heure, ✕ pour une suppression
-    queue: ['Écritures en attente', 'Pending writes', 'Ausstehende Änderungen', 'Escrituras pendientes'],
+    // écritures en attente (sync_summary.js) : ✕ pour une suppression, « … et n de plus »
     queueDel: ['suppression', 'deletion', 'Löschung', 'eliminación'],
     queueMore: ['… et {n} de plus', '… and {n} more', '… und {n} weitere', '… y {n} más'],
     lastError: ['Dernière erreur', 'Last error', 'Letzter Fehler', 'Último error'],
@@ -137,8 +136,8 @@
       exchange,
       st
     } = env;
-    return `<div class="f-card" data-card="sync"${exchange || st.pending ? '' : ' hidden'}><h2>${esc(t(T.sync))}</h2><dl class="f-dl" data-sync></dl><div data-queue></div><p class="f-muted">${esc(t(T.syncHint))}</p>
-        <div class="f-row"><button type="button" class="primary" data-act="sync">${esc(t(T.syncNow))}</button>${st.conflicts ? `<a href="#conflicts">${esc(t(T.conflicts, { n: st.conflicts }))}</a>` : ''}</div></div>`;
+    return `<div class="f-card" data-card="sync"${exchange || st.pending ? '' : ' hidden'}><h2>${esc(t(T.sync))}</h2><p data-sync-head></p><dl class="f-dl" data-sync></dl><div data-queue></div><p class="f-muted">${esc(t(T.syncHint))}</p>
+        <div class="f-row"><button type="button" class="primary" data-act="sync">${esc(t(T.sendAll))}</button>${st.conflicts ? `<a href="#conflicts">${esc(t(T.conflicts, { n: st.conflicts }))}</a>` : ''}</div></div>`;
   }
   /** Synchronisation vivante : chiffres et écritures en attente, redessinés à chaque changement d'état. */
   function live(env) {
@@ -148,8 +147,7 @@
       t,
       FD,
       exchange,
-      st,
-      mods
+      st
     } = env;
     // le fournisseur de l'adresse en cours de frappe, dit sous le champ avant l'enregistrement (ou la raison du refus)
     const repoIn = view.querySelector('[data-card="access"] [data-f="repo"]'),
@@ -180,21 +178,13 @@
       if (!dl) return;
       dl.innerHTML = [
         [T.last, s.lastSync ? c.time.fmtDateZ(s.lastSync) : t(T.never)],
-        [T.pending, String(s.pending || 0)],
         [T.network, t(s.online === false ? T.offline : T.online)],
         ...(s.lastError ? [
           [T.lastError, s.lastError]
         ] : [])
       ].map(([k, v]) => `<dt>${esc(t(k))}</dt><dd>${esc(v)}</dd>`).join('');
-      // les écritures en attente, les plus récentes d'abord (20 au plus) : chemin, module, heure ; ✕ : suppression ; heures
-      // de l'appli en UTC avec Z (frame/lib/time.js) : l'heure seule le jour même (UTC), sinon la date et l'heure
-      const box = view.querySelector('[data-queue]'),
-        q = s.queue || [],
-        day = new Date().toISOString().slice(0, 10),
-        when = at => String(at || '').slice(0, 10) === day ? c.time.fmtZ(at) : c.time.fmtDateZ(at),
-        modName = id => t(mods.find(m => m.id === id)?.label || [id || '?']);
-      if (box) box.closest('[data-card]').hidden = !exchange && !q.length;
-      if (box) box.innerHTML = !q.length ? '' : `<h3>${esc(t(T.queue))}</h3><ul class="f-queue">${q.slice(0, 20).map(x => `<li>${x.deletion ? `<span aria-label="${esc(t(T.queueDel))}" title="${esc(t(T.queueDel))}">✕</span> ` : ''}<code>${esc(x.path)}</code> <span class="f-muted">${esc([modName(x.module), when(x.at)].filter(Boolean).join(' · '))}</span></li>`).join('')}${q.length > 20 ? `<li class="f-muted">${esc(t(T.queueMore, { n: q.length - 20 }))}</li>` : ''}</ul>`;
+      // la tête (un compte par sorte) et les listes repliées des éléments qui attendent : la synthèse (sync_summary.js)
+      window.SogSyncSummary?.paint(env, s);
     };
     paintSync(st);
     const off = FD.onStatus(s => view.isConnected ? paintSync(s) : off?.());

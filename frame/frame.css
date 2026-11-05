@@ -555,6 +555,19 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   font-family: var(--sog-font-mono);
   font-size: .85em
 }
+/* réglages, carte Synchronisation en synthèse : la tête (un compte par sorte) et une liste repliée par sorte, à hauteur tactile */
+[data-card="sync"] [data-sync-head] {
+  margin: 0 0 8px
+}
+[data-card="sync"] details > summary {
+  min-height: var(--sog-touch, 44px);
+  display: flex;
+  align-items: center;
+  cursor: pointer
+}
+[data-card="sync"] [data-flag]::before {
+  content: "· "
+}
 /* tutoriels : captures d'écran de téléphone, au plus la largeur d'un téléphone, centrées ; carte d'accueil et
    « Commencer par… » : liens à hauteur tactile */
 .f-tut img {

@@ -147,10 +147,33 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    user's projects; the user alone with their own repository needs one), an expiry missing or beyond 365 days, rights beyond the transport's;
    after « Save » the warning is said once the card is drawn again. A failed reading changes nothing of the test or the save (the branch read
    already says its failures). Case A72.
-7. **Synchronisation** (an exchange ticked, or writes waiting — the card follows the state): last success, pending
-   writes, network, last error, kept live through `onStatus`; then the **pending writes** themselves
-   (`FD.status().queue`, newest first, 20 at most then "… and n more"): path, module (its menu label), time (the date
-   too when not today), ✕ for a deletion; "Synchronise now" (the frame's `syncNow`); a link to the conflicts screen when there are some.
+7. **Synchronisation, the sync summary** (an exchange ticked, or something waiting — the card follows the state; no new screen: the
+   card both apps' status block leads to is the summary; `settings/sync_summary.js`, `window.SogSyncSummary`; the user, 1 Nov 2026: « je ne
+   sais pas quelles fiches appareil sont synchro et lesquelles ne le sont pas, pas plus que les missions »), kept live through `onStatus`:
+   - **Head**: one line, one count per kind (« En attente : Fiches d'appareils : 3 · Missions : 0 · Vols : 1 · Flotte : 0 », « Autres »
+     only when not zero). The kind is the path's prefix: `aircraft/sheets/` sheets, `missions/` missions, `pilot/<TRI>/` flights,
+     `airline/fleet.json` fleet, anything else « Autres ». Then last success, network, last error, and the hint that says when the next
+     try is (at start, every 10 minutes online, when the network comes back).
+   - **« Tout envoyer »** (primary, the frame's `syncNow`: the gesture the card always had, with or without a launcher), and the link to the
+     conflicts screen when there are some.
+   - **A folded list per kind** (`details[data-kind-list]`) of what waits: its readable title, its date (the time when today), ✕ for a
+     deletion, and the reason when an error holds the queue (`FD.pendingList().error`: the last run's failure holds the whole queue; a write
+     refused for good goes to the conflicts instead). **Seven items visible at most in all** (one budget over the kinds, in the head's order);
+     the rest is « … et n de plus » under its kind.
+   - **The reads**, each once, here: without a launcher `FrameData.pendingList()` (`[{ path, module, at, deletion, error }]`, newest first, never
+     the text); with a launcher also `GET /__setup/sync-status?fresh=1` (`changed`: modified here, not committed, and `toPush`: the paths of the
+     commits to send, names only, 200 at most, with `changedTotal` and `toPushTotal`; read at most every 5 s, never during a synchronisation,
+     at once when one ends; paths counted but not named go to « Autres »). A path in several lists is one item (the device's wait first, then
+     « modifié ici », then « à envoyer »; a path in both of the last two says both).
+   - **The title**: `meta.titleOf(path, value)` → `[fr, en, de, es]` or null, declared by the module that owns the kind (Carburant: flights and
+     the quote settings; Appareils: sheets and the fleet; Missions). Settings imports the `module.js` of the application's modules
+     (`ctx.modules()`) and of `aircraft`, `fuel`, `missions` (the other applications' modules, which the frame does not list for Settings), and
+     asks each. The value is the device's own copy (the pending write or the cache; never the network), read only for the items shown. Null,
+     failing or absent: the path, as text.
+   - **Security** (audit 157; `DECISIONS.md`, 2 Nov 2026): data/ is written by any pilot, so every text read (a title, a path, an error) goes through
+     `esc`; a path is text, never a link; counts are bounded; the launcher's keys are read with `Object.hasOwn`.
+   - **For the modules' mark** (« non synchronisé » on a sheet or a mission line): `SogSyncSummary.marks({ pending, status })` gives a `Map path →
+     { state: 'pending' | 'changed' | 'toPush', deletion, error, flags }` from the same two reads, whoever supplies them (cases A85).
 8. **Offline data**: aeronautical bases (`aerodb.status()`: published zones, zones open on this device, cycle), the
    browser storage (`navigator.storage.estimate`), then one row per published zone through `aerodb.offline`
    (`frame/aerodb/INTEGRATION.md` § 4): its name in the application's language, its state on this device (not here,

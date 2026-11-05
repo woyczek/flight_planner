@@ -3124,3 +3124,95 @@ def a84(c):
     c.open('settings', docs=LEVEL3)
     c.until("!!document.querySelector('[data-group=\"help\"] > summary')", timeout=15000, what='the settings groups')
     c.eq(norm(c.text('[data-group="help"] > summary')).startswith(norm(tx('frame/settings/groups.js', 'help', c.lang))), True, 'the group is named « À propos »', what='group name')
+
+
+# ------------------------------------------------------------------------------------------------------ A85
+# FrameData.pendingList() answered by the test (window.FrameData is patched the moment the frame defines it): the list is read from sessionStorage '__pend' at each call
+_SYNC_STUB = """(() => { let FD; const patch = v => { if (v && typeof v.pendingList === 'function' && !v.__stub) { v.__stub = 1; v.pendingList = async () => JSON.parse(sessionStorage.getItem('__pend') || '[]') } return v };
+  Object.defineProperty(window, 'FrameData', { configurable: true, get() { return FD }, set(v) { FD = patch(v) } }) })()"""
+# a document written as it is (a YAML text), the way the cache keeps a mission: the seed helper writes JSON
+_RAW_SEED_JS = """async ([path, text]) => {
+  const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame');
+    r.onupgradeneeded = () => { const d = r.result; for (const [n, o] of [['docs', { keyPath: 'path' }], ['pending', { keyPath: 'path' }], ['meta', { keyPath: 'key' }], ['conflicts', { keyPath: 'id', autoIncrement: true }]]) if (!d.objectStoreNames.contains(n)) d.createObjectStore(n, o) };
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
+  await new Promise((res, rej) => { const tx = db.transaction('docs', 'readwrite'); tx.objectStore('docs').put({ path, text, base: text, rev: '', at: Date.now(), policy: 'cache' }); tx.oncomplete = res; tx.onerror = () => rej(tx.error) });
+  db.close() }"""
+_SHEET_TITLE = {'fr': 'Fiche A320 Navy', 'en': 'Sheet A320 Navy', 'de': 'Datenblatt A320 Navy', 'es': 'Ficha A320 Navy'}
+_FLIGHT_TITLE = {'fr': 'Vol LFPO → LFBO du 3/11', 'en': 'Flight LFPO → LFBO of 3/11', 'de': 'Flug LFPO → LFBO vom 3/11', 'es': 'Vuelo LFPO → LFBO del 3/11'}
+_SYNC_DOCS = [['aircraft/sheets/DB_A320.json', {'id': 'DB_A320', 'name': 'A320 Navy'}, 'cache'],
+              ['aircraft/sheets/DB_EVIL.json', {'id': 'DB_EVIL', 'name': '<img src=x onerror=alert(1)>'}, 'cache'],
+              ['pilot/ABC/current_flight.json', {'route': {'dep': 'LFPO', 'arr': 'LFBO'}, 'planned_at': '2026-11-03T08:00:00Z'}, 'cache']]
+_SYNC_MISSION = ('missions/2026-11/missionA-001A.yaml', 'id: A-001A\ntitle: Vol de nuit\n')
+
+
+def _sync_item(path, at='2026-10-30T08:30:00.000Z', deletion=False, error=''):
+    """One element of FrameData.pendingList(): the path, the module, the time, a deletion, the error that holds the queue."""
+    return {'path': path, 'module': '', 'at': at, 'deletion': deletion, 'error': error}
+
+
+def _sync_open(c, pend, status=None):
+    """Opens the Synchronisation card at 390 with the device's cache seeded (the titles read it), pendingList answering `pend`, and a launcher stub answering sync-status with `status` (None: no launcher)."""
+    c.page.add_init_script(_SYNC_STUB)
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest')
+    c.page.evaluate("(p) => sessionStorage.setItem('__pend', JSON.stringify(p))", pend)
+    from lib import _seed
+    _seed(c.page, c.base, [['device/level.json', {'level': 3}, 'cache'], ['device/usages.json', {'devices': True}, 'cache']] + _SYNC_DOCS)
+    c.page.evaluate(_RAW_SEED_JS, list(_SYNC_MISSION))
+    if status is not None:
+        full = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False}
+        c.context.route(re.compile(r'/__setup/'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(
+            full if urllib.parse.urlparse(r.request.url).path.endswith('/__setup/status') else
+            status if urllib.parse.urlparse(r.request.url).path.endswith('/__setup/sync-status') else {})))
+    c.page.goto(f'{c.base}/frame/index.html#settings?card=sync', wait_until='load')
+    c.until("!!document.querySelector('[data-card=\"sync\"] [data-sync-head]')", timeout=20000, what='the Synchronisation card')
+    c.until("document.querySelector('[data-card=\"sync\"] [data-sync-head]').textContent.includes(':') && !document.querySelector('[data-card=\"sync\"]').hidden", timeout=15000, what='the card is drawn')
+
+
+@case('A85', 'The Synchronisation card as the sync summary: one count per kind, a folded list per kind with readable titles, the reason of an error, seven items at most; with a launcher, changed here and to send', 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule='frame/settings SPEC 3 item 7 (the user, 1 Nov 2026: « je ne sais pas quelles fiches appareil sont synchro et lesquelles ne le sont pas »): no new screen, the card is the summary; titles by meta.titleOf of the module that owns the kind, escaped; paths are text')
+def a85(c):
+    lang = c.lang
+    sj = 'frame/settings/sync_summary.js'
+    kind = lambda k: tx(sj, k, lang, after='kind: {')
+    head = lambda n: norm(f"{tx('frame/settings/access.js', 'pending', lang)} : " + ' · '.join(f'{kind(k)} : {v}' for k, v in n if v or k != 'other'))
+    sheet, mission, flight = _sheet_path, _mission_path, _flight_path = 'aircraft/sheets/DB_A320.json', _SYNC_MISSION[0], 'pilot/ABC/current_flight.json'
+    # ---- A: three kinds waiting (a sheet, a mission, a flight held by an error), one of them a hostile title and a hostile path
+    pend = [_sync_item(flight, error='HTTP 503'), _sync_item(mission, at='2026-10-29T08:00:00.000Z'), _sync_item(sheet), _sync_item('aircraft/sheets/DB_EVIL.json'),
+            _sync_item('x"><script>window.__pwn=1</script>.json', deletion=True)]
+    _sync_open(c, pend)
+    c.eq(norm(c.text('[data-card="sync"] [data-sync-head]')), head([('sheets', 2), ('missions', 1), ('flights', 1), ('fleet', 0), ('other', 1)]),
+         'the head: one count per kind, « Autres » only when it is not zero', what='head')
+    c.eq(c.js("[...document.querySelectorAll('[data-card=\"sync\"] details[data-kind-list]')].map(d => [d.dataset.kindList, d.open])"), [['sheets', False], ['missions', False], ['flights', False], ['other', False]],
+         'one folded list per kind that has something waiting', what='folded lists')
+    c.js("document.querySelectorAll('[data-card=\"sync\"] details[data-kind-list]').forEach(d => d.open = true)")
+    titles = c.js("[...document.querySelectorAll('[data-card=\"sync\"] li[data-item]')].map(li => [li.querySelector('[data-title]')?.textContent || li.querySelector('code')?.textContent, li.querySelector('[data-reason]')?.textContent || ''])")
+    evil = {'fr': 'Fiche', 'en': 'Sheet', 'de': 'Datenblatt', 'es': 'Ficha'}[lang] + ' <img src=x onerror=alert(1)>'
+    c.eq(titles, [[_SHEET_TITLE[lang], ''], [evil, ''], ['A-001A Vol de nuit', ''], [_FLIGHT_TITLE[lang], 'HTTP 503'], ['x"><script>window.__pwn=1</script>.json', '']],
+         'readable titles from the modules (sheet, mission, flight), the path when there is none, the reason of the error on the held item', what='titles')
+    c.ok('onerror' in titles[1][0] and c.count('[data-card="sync"] img') == 0 and c.js("window.__pwn === undefined"), titles[1], 'a hostile title is text: no element, nothing runs')
+    c.eq([c.count('[data-card="sync"] script'), c.count('[data-card="sync"] a:not([href="#conflicts"])'), c.count('[data-card="sync"] li[data-item] [aria-label]')], [0, 0, 1],
+         'a path is text (no link, no element), a deletion is marked once', what='paths as text')
+    c.eq(c.js("(() => { const b = document.querySelector('[data-card=\"sync\"] [data-act=sync]'); return [b.classList.contains('primary'), b.textContent.trim(), b.getBoundingClientRect().height >= 44] })()"),
+         [True, tx(sj, 'sendAll', lang), True], '« Tout envoyer » is the primary button, at touch height', what='send all')
+    # ---- B: more than seven waiting: seven at most visible, the rest said
+    docs_n = [_sync_item(f'aircraft/sheets/DB_S{i}.json') for i in range(5)] + [_sync_item(f'missions/2026-11/missionB-00{i}.yaml') for i in range(2)] + [_sync_item(flight), _sync_item('airline/settings.json')]
+    c.page.evaluate("(p) => sessionStorage.setItem('__pend', JSON.stringify(p))", docs_n)
+    c.page.reload(wait_until='load')
+    c.until("document.querySelector('[data-card=\"sync\"] [data-sync-head]')?.textContent.includes('5')", timeout=15000, what='the card shows the second queue')
+    c.js("document.querySelectorAll('[data-card=\"sync\"] details[data-kind-list]').forEach(d => d.open = true)")
+    c.eq(norm(c.text('[data-card="sync"] [data-sync-head]')), head([('sheets', 5), ('missions', 2), ('flights', 1), ('fleet', 0), ('other', 1)]), 'the head counts everything waiting', what='head 9')
+    c.eq([c.count('[data-card="sync"] li[data-item]'), [norm(x) for x in c.js("[...document.querySelectorAll('[data-card=\"sync\"] [data-more]')].map(m => m.textContent)")]],
+         [7, [norm(tx('frame/settings/access.js', 'queueMore', lang).replace('{n}', '1'))] * 2], 'seven items visible at most in all; the others are said (« … and 1 more ») under their kind', what='seven at most')
+    # ---- C: with a launcher: what data/ holds back, changed here and to send, a path once
+    status = {'repo': True, 'changes': 2, 'changed': [sheet, mission], 'changedTotal': 2, 'toPush': [sheet, flight], 'toPushTotal': 2, 'ahead': 1, 'behind': 0, 'merging': False}
+    c.page.evaluate("() => sessionStorage.setItem('__pend', '[]')")
+    _sync_open(c, [], status)
+    c.until("document.querySelectorAll('[data-card=\"sync\"] li[data-item]').length > 0 || document.querySelector('[data-card=\"sync\"] [data-sync-head]').textContent.includes('1')", timeout=15000, what='the launcher\u2019s lists')
+    c.js("document.querySelectorAll('[data-card=\"sync\"] details[data-kind-list]').forEach(d => d.open = true)")
+    c.eq(norm(c.text('[data-card="sync"] [data-sync-head]')), head([('sheets', 1), ('missions', 1), ('flights', 1), ('fleet', 0), ('other', 0)]), 'a path in both lists counts once', what='head launcher')
+    items = c.js("[...document.querySelectorAll('[data-card=\"sync\"] li[data-item]')].map(li => [li.querySelector('[data-title]')?.textContent, [...li.querySelectorAll('[data-flag]')].map(f => f.textContent)])")
+    ch, push = tx(sj, 'flagChanged', lang), tx(sj, 'flagPush', lang)
+    c.eq(items, [[_SHEET_TITLE[lang], [ch, push]], ['A-001A Vol de nuit', [ch]], [_FLIGHT_TITLE[lang], [push]]],
+         'modified here (not committed) and to send (commits to push), the two for a path that is in both', what='launcher items')
+    c.check_errors()

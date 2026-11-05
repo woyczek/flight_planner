@@ -151,10 +151,11 @@ pour la première fois, par exemple — n'a ni base aéronautique (espaces, terr
 alors seulement à lire les bases) ; ou, sur un poste avec lanceur, publiez les bases dans le dépôt (V2 : Paramètres ›
 Maintenance › Données aéronautiques et Types d'aéronefs), puis synchronisez. Trois états distincts quand la base manque : « Base aéronautique en cours de chargement… » (la lecture n'est pas finie : patientez), « Accès aux données non réglé sur cet appareil » (réglez l'accès ci-dessus ; une appli ajoutée à l'écran d'accueil a son propre stockage, rien de ce que vous aviez réglé dans Safari n'y est) et « Base aéronautique non publiée » (l'accès marche, rien n'est publié dans le dépôt).
 
-**La synchronisation.** Avec un échange coché, la carte « Synchronisation » donne la dernière réussie, les écritures en
-attente et le réseau ; « Synchroniser maintenant » envoie et reçoit tout de suite. Sinon, elle se fait seule au
-démarrage, toutes les 10 minutes en ligne et au retour du réseau. Tant que des écritures attendent, la carte les liste, les plus récentes d'abord : chemin, module et heure, ✕
-pour une suppression, avec la dernière erreur s'il y en a une.
+**La synchronisation.** La carte « Synchronisation » est la synthèse de ce qui n'est pas encore parti : en tête, un compte par sorte (fiches d'appareils, missions, vols, flotte ; « Autres » seulement
+s'il y en a), puis la dernière réussie, le réseau et la dernière erreur. Une liste repliée par sorte donne ce qui attend : le titre lisible (par exemple « Fiche A320 Navy », « Vol LFPO → LFBO du 3/11 »),
+la date, ✕ pour une suppression et, s'il y en a une, l'erreur qui retient la file ; sept éléments visibles au plus, « … et n de plus » pour le reste. Avec le lanceur du poste, « modifié ici » (pas encore
+enregistré dans les données) et « à envoyer » (enregistré, pas encore parti) s'y ajoutent. « Tout envoyer » envoie et reçoit tout de suite ; sinon la synchronisation se fait seule au démarrage, toutes les
+10 minutes en ligne et au retour du réseau. La carte se montre dès qu'un échange est coché ou que quelque chose attend.
 
 **La sauvegarde.** Seul sur cet appareil, « Exporter (un fichier) » garde toutes vos données dans un fichier : c'est la
 seule copie. « Importer (fusion)… » la reprend sans rien perdre d'ici ; « Remplacer par un fichier… » efface d'abord ce

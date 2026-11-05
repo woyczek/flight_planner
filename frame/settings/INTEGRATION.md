@@ -11,6 +11,7 @@ in [SPEC.md](SPEC.md).
   (`SogJoin`, the "Join the airline" assistant), `lib/qr.js` (`SogQR`, QR codes), then the screen itself in several
   parts: `settings/kit.js` (`SogSettingsKit`, shared helpers, and `SogSettingsT`, the texts each part adds to),
   `settings/launcher.js` (the launcher's cards: workstation access, keys, local network, data/ remote),
+  `settings/sync_summary.js` (`SogSyncSummary`: the Synchronisation card as the sync summary, and the read the modules' « not synchronised » mark can reuse),
   `settings/access.js` (access and transport without a launcher, synchronisation), `settings/diagnostic.js` (about and
   diagnostics), `settings/admin.js` (Administration card, publication edge, pilot configuration), `settings/groups.js`
   (the arrangement of the screen: flat at Discovery, groups above, SPEC § 1), `settings/cards.js` (the device's cards,

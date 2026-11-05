@@ -701,10 +701,11 @@ base: “Offline data” says so. Two ways in: set the access to the data reposi
 then only reads the bases); or, on a workstation with the launcher, publish the bases to the repository (V2: Settings ›
 Maintenance › Aeronautical data and Aircraft types), then synchronise. Three distinct states when the base is missing: “Aeronautical database loading…” (the read is not over: wait), “Data access not set on this device” (set the access above; an app added to the home screen has its own storage, nothing you set in Safari is there) and “Aeronautical database not published” (the access works, nothing is published in the repository).
 
-**Synchronisation.** With an exchange ticked, the “Synchronisation” card gives the last success, the pending writes and
-the network; “Synchronise now” sends and receives at once. Otherwise it runs by itself at start, every 10 minutes online
-and when the network comes back. While writes are waiting, the card lists them, newest first: path, module and time, ✕
-for a deletion, with the last error if there is one.
+**Synchronisation.** The “Synchronisation” card is the summary of what has not left yet: at the top, one count per kind (aircraft sheets, missions, flights, fleet; “Other” only when there is
+something), then the last success, the network and the last error. A folded list per kind gives what is waiting: the readable title (for example “Sheet A320 Navy”, “Flight LFPO → LFBO of 3/11”), the date,
+✕ for a deletion and, if there is one, the error that holds the queue; seven items visible at most, “… and n more” for the rest. With the workstation's launcher, “changed here” (not yet saved in the
+data) and “to send” (saved, not yet sent) are added. “Send everything” sends and receives at once; otherwise synchronisation runs by itself at start, every 10 minutes online and when the network comes
+back. The card appears as soon as an exchange is ticked or something is waiting.
 
 **The backup.** Alone on this device, “Export (one file)” keeps all your data in a file: it is the only copy. “Import
 (merge)…” takes it back without losing anything here; “Replace from a file…” first erases what is on the device.
@@ -888,4 +889,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: 23d6511ff76a -->
+<!-- fr: 0c093d0e7bcb -->

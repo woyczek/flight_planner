@@ -751,10 +751,11 @@ die Flugzeugbasis: „Offline-Daten“ sagt es. Zwei Wege: Stellen Sie den Zugan
 Austausch anzukreuzen (er liest dann nur die Basen); oder veröffentlichen Sie auf einem Rechner mit Starter die Basen im
 Repository (V2: Einstellungen › Wartung › Luftfahrtdaten und Luftfahrzeugtypen), dann synchronisieren. Drei getrennte Zustände, wenn die Basis fehlt: „Luftfahrtdatenbank wird geladen…“ (das Lesen ist nicht beendet: warten), „Datenzugriff auf diesem Gerät nicht eingerichtet“ (Zugang oben einrichten; eine zum Home-Bildschirm hinzugefügte App hat ihren eigenen Speicher, nichts aus Safari ist dort) und „Luftfahrtdatenbank nicht veröffentlicht“ (der Zugang funktioniert, im Repository ist nichts veröffentlicht).
 
-**Die Synchronisation.** Mit angekreuztem Austausch zeigt die Karte „Synchronisation“ den letzten Erfolg, die
-ausstehenden Änderungen und das Netz; „Jetzt synchronisieren“ sendet und empfängt sofort. Sonst läuft sie von selbst
-beim Start, alle 10 Minuten online und bei Rückkehr des Netzes. Solange Änderungen ausstehen, listet die Karte sie auf,
-die neuesten zuerst: Pfad, Modul und Uhrzeit, ✕ für eine Löschung, mit dem letzten Fehler, falls es einen gibt.
+**Die Synchronisation.** Die Karte „Synchronisation“ ist die Übersicht dessen, was noch nicht gesendet ist: oben ein Zähler je Art (Flugzeug-Datenblätter, Missionen, Flüge, Flotte; „Weitere“ nur,
+wenn es etwas gibt), dann der letzte Erfolg, das Netz und der letzte Fehler. Eine eingeklappte Liste je Art zeigt, was wartet: den lesbaren Titel (zum Beispiel „Datenblatt A320 Navy“, „Flug LFPO → LFBO vom 3/11“),
+das Datum, ✕ für eine Löschung und, falls es einen gibt, den Fehler, der die Warteschlange hält; höchstens sieben Einträge sichtbar, „… und n weitere“ für den Rest. Mit dem Starter des Arbeitsplatzes kommen
+„hier geändert“ (noch nicht in den Daten gespeichert) und „zu senden“ (gespeichert, noch nicht gesendet) hinzu. „Alles senden“ sendet und empfängt sofort; sonst läuft die Synchronisation von selbst beim
+Start, alle 10 Minuten online und bei Rückkehr des Netzes. Die Karte erscheint, sobald ein Austausch angekreuzt ist oder etwas wartet.
 
 **Die Sicherung.** Allein auf diesem Gerät bewahrt „Exportieren (eine Datei)“ alle Ihre Daten in einer Datei auf: Sie
 ist die einzige Kopie. „Importieren (zusammenführen)…“ übernimmt sie, ohne hier etwas zu verlieren; „Durch eine Datei
@@ -953,4 +954,4 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: 23d6511ff76a -->
+<!-- fr: 0c093d0e7bcb -->

@@ -562,3 +562,9 @@ moves code, `S` itself replaced through `setState` alone.
 - **31 Oct 2026 — R-S9 (2/2), left apart on purpose**: four nested pairs equal in four languages (`access.queue` / `dg.pending`,
   `access.lastError` / `dg.lastError`, `admin.admin` / `groups.admin`, `settings.identity` / `groups.identity`) are read by a dynamic lookup
   (`T.dg[k]`, `T.groups[g]`); merging them would be a change of logic (R-S10 if wanted).
+- **2 Nov 2026 — The Synchronisation card is the sync summary; what it reads from data/ is text** (the user: « je ne sais pas quelles fiches appareil sont synchro et lesquelles ne le sont pas, pas plus que les missions »;
+  security audit, line 157: data/ files are written by any pilot). **Rule for a Settings reader**: whatever it reads from data/ (a title given by a module's `titleOf` from a document's content, a path, an error) is
+  shown through `esc` and nothing else, a path is displayed as text and never becomes a link or an attribute that runs, the counts it computes are bounded (200 paths, 1000 waiting writes, totals at 10^6),
+  and the keys of an answer are read with `Object.hasOwn` (a hostile key named like a member of Object.prototype). **Why not a link**: a path opening the file would hand a hostile name the click. **One reader**: `settings/sync_summary.js`
+  holds the two reads (`FrameData.pendingList()`, `GET sync-status`) and the titles; the cards and the modules' marks use it. **Titles**: the value is the device's own copy, read only for the seven items shown, never the network
+  (a file the device does not have is shown by its path); Settings cannot list the modules of the other applications, so it names `aircraft`, `fuel` and `missions` itself (to replace by a frame list if one is given). Case A85.
