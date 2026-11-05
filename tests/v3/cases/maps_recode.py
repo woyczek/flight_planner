@@ -2221,6 +2221,9 @@ def d83(c):
     c.eq([px['fill'], px['frame'], px['out']], [[255, 0, 0], [0, 0, 255], [0, 0, 0]], 'a fill, a frame of one pixel, nothing outside', what='primitive')
     # the choose mode's labels go through it
     c.js(_CART_SPY)
+    # zoomed out two steps so that the procedures’ lines, and the places of their labels, are in the view (the labels of a request with no
+    # place in the view are not drawn: SPEC § 5, the drawing overflows the view, the labels do not)
+    c.js("() => { const m = window.__mp.S.map; if (m) m.jumpTo({ zoom: m.getZoom() - 2 }); return true }")
     c.js("async () => (await import('/modules/maps/draw.js')).schedule()")
     c.until("() => window.__cart > 0", timeout=6000, what='the choose mode’s labels drawn by the primitive')
     # the tokens: the default is the token, a changed token changes the palette at the next reading of the theme

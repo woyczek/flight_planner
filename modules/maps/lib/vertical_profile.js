@@ -935,9 +935,9 @@
         ctx.fillText(t, lx, (r.y0 + r.y1) / 2);
         ctx.font = `${f}px Arial, sans-serif`;
       }
-      // transitions intermédiaires (fin et début des montées et descentes aux paliers) : petits losanges creux, les mêmes que sur la carte
+      // transitions intermédiaires (fin et début des montées et descentes aux paliers) : petits losanges creux, les mêmes que sur la carte ;
+      // un contour seul, jamais rempli de blanc : le trait de la trajectoire passe dedans, sans être coupé en deux
       ctx.strokeStyle = col;
-      ctx.fillStyle = '#fff';
       ctx.lineWidth = 1.6 * scale;
       for (const m of plan.steps || []) {
         if (!inWin(m.s)) continue;
@@ -949,7 +949,6 @@
         ctx.lineTo(x, y + 3.4 * scale);
         ctx.lineTo(x - 3.4 * scale, y);
         ctx.closePath();
-        ctx.fill();
         ctx.stroke();
       }
       ctx.fillStyle = col;

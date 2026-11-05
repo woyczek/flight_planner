@@ -1943,6 +1943,17 @@ the Map had seen in between: the same line to within the frame's own sampling.
   the view shows what was drawn. The wall is pushed back, not removed: a faster pan still shows an empty band until the full drawing.
   Noreg D97 (the canvas is the view plus 5 %, a pan of 4 % both ways shows no empty band, no label drawn wholly outside the view).
 
+## Three cases red in the evening pass of 5 Nov 2026, put right (D12, D38, D83)
+
+- **D38** (axis_window bench): it still said the old rule 20 (« the wheel alone: nothing »); it now checks the amended rule — the
+  wheel alone does nothing in a page that scrolls, zooms when the page does not scroll, a horizontal wheel does nothing on the whole
+  flight and moves a tight window.
+- **D12** (« no x column has two level lines »): the hollow diamonds of the intermediate transitions were filled with white, which
+  cut the thick plan line in two in their columns; they are an outline only now, the plan line runs through them.
+- **D83** (the choose mode's labels drawn by the primitive): the labels of a request that has no place in the view are not drawn
+  (the overflow takes lines and symbols, not labels); the fixture's procedures left the view, so none was drawn. The case zooms out
+  two steps first, the labels being then in the view.
+
 ## The wheel on the profile (SOG-0005; ergonomics, 5 Nov 2026)
 
 - **Seen**: « le zoom sur une portion de profil ne semble pas efficace ». The gesture worked (Ctrl + wheel, pinch, double tap), but
