@@ -353,6 +353,21 @@ const TX = {
   lvlAlign: ['Aligner les points sur le plan', 'Align the points on the plan', 'Punkte an den Plan angleichen',
     'Alinear los puntos con el plan'
   ],
+  // un niveau imposé sur un point d'une procédure choisie (SOG-0003, niveau seul : une vitesse publiée vient de la donnée)
+  pconLabel: ['Niveau imposé à {id} (FL)', 'Level forced at {id} (FL)', 'Vorgegebene Flugfläche bei {id} (FL)',
+    'Nivel impuesto en {id} (FL)'
+  ],
+  pconCeiling: ['{id} : FL{fl} au-dessus du plafond de la fiche (FL{c}) ; le niveau n’est pas posé.',
+    '{id}: FL{fl} above the sheet’s ceiling (FL{c}); the level is not set.',
+    '{id}: FL{fl} über der Dienstgipfelhöhe des Datenblatts (FL{c}); die Flugfläche wird nicht gesetzt.',
+    '{id}: FL{fl} por encima del techo de la ficha (FL{c}); el nivel no se impone.'
+  ],
+  pconSlope: [
+    '{id} : FL{fl} à {nm} NM du terrain demande {g} ft/NM, plus que la pente de la fiche ({m} ft/NM) ; le niveau n’est pas posé.',
+    '{id}: FL{fl} at {nm} NM from the aerodrome needs {g} ft/NM, more than the sheet’s gradient ({m} ft/NM); the level is not set.',
+    '{id}: FL{fl} {nm} NM vom Flugplatz verlangt {g} ft/NM, mehr als der Gradient des Datenblatts ({m} ft/NM); die Flugfläche wird nicht gesetzt.',
+    '{id}: FL{fl} a {nm} NM del aeródromo exige {g} ft/NM, más que la pendiente de la ficha ({m} ft/NM); el nivel no se impone.'
+  ],
   ofpLoaded: ['OFP {dep} → {arr} repris ({n} points).', 'OFP {dep} → {arr} loaded ({n} points).',
     'OFP {dep} → {arr} übernommen ({n} Punkte).',
     'OFP {dep} → {arr} cargado ({n} puntos).'
@@ -1035,7 +1050,15 @@ function fpNow() {
     r = f.route || {},
     v = CF.proceduresOf(f);
   if (r.manual || (r.points || []).length < 2 || !sideChosen(v.dep) && !sideChosen(v.arr) || S.procs?.key !== procsKey(f)) return null;
-  const fp = CF.flownPath(CF.expandedPath(f, S.procs.procs || {}));
+  const fp = CF.flownPath(CF.expandedPath(f, S.procs.procs || {})),
+    cons = r.constraints && typeof r.constraints === 'object' ? r.constraints : {};
+  // un niveau imposé par le pilote sur un point d'une procédure (SOG-0003) : « à » ce niveau, à la place de la contrainte publiée
+  for (const p of fp)
+    if (p.origin !== 'route' && Object.hasOwn(cons, String(p.id || '').toUpperCase()) && +cons[String(p.id).toUpperCase()] > 0) p.alt = {
+      type: 'at',
+      ft: +cons[String(p.id).toUpperCase()],
+      pilot: true
+    };
   return fp.length >= 2 ? fp : null;
 }
 /** Vrai si des procédures sont choisies mais pas encore lues : le devis attend (aucune écriture d'un devis passager). */
@@ -1730,6 +1753,10 @@ function onPlanInput(e) {
       break;
     case 'addpt':
       return; // ajouté par « Ajouter » ou Entrée
+    case 'pcon': { // un niveau imposé sur un point de procédure (SOG-0003), posé à la sortie du champ
+      if (e.type !== 'change') return;
+      return setConstraint(e.target);
+    }
     case 'ptalt': {
       const p = r.points?.[+e.target.dataset.i];
       if (!p) return;
@@ -1939,6 +1966,7 @@ function newPair() {
   });
   delete r.procedures;
   delete r.auto;
+  delete r.constraints;
   f.ofp = null;
   S.ofp = null;
   S.procs = null;
@@ -2871,6 +2899,54 @@ function setLevel(ft) {
   saveFlight();
   refresh();
 }
+/** Pose ou retire le niveau imposé d'un point de procédure (route.constraints, identifiant → pieds ; SOG-0003). Refusé, dit et le champ
+ *  vidé, au-dessus du plafond de la fiche, ou quand la pente pour le rejoindre depuis le terrain (SID) ou pour rejoindre le terrain
+ *  (STAR, approche) dépasse d'un tiers celle de la fiche (montée ou descente : vario et vitesse vraie ; 400 ft/NM sans fiche). */
+function setConstraint(input) {
+  const r = S.flight.route ||= emptyFlight().route,
+    fix = String(input.dataset.fix || '').toUpperCase(),
+    v = num(input.value),
+    cons = r.constraints && typeof r.constraints === 'object' ? {
+      ...r.constraints
+    } : {};
+  if (!fix) return;
+  if (!(v > 0)) delete cons[fix];
+  else {
+    const ft = Math.round(v) * 100,
+      sheet = S.C?.sheet,
+      ceil = +sheet?.cruise?.ceilingFt || 0,
+      say = (row, vals) => {
+        S.ctx.notify(tt(row, vals), 'warn');
+        input.value = +cons[fix] > 0 ? Math.round(cons[fix] / 100) : '';
+      };
+    if (ceil > 0 && ft > ceil) return say(TX.pconCeiling, {
+      id: fix,
+      fl: Math.round(ft / 100),
+      c: Math.round(ceil / 100)
+    });
+    const fp = fpNow(),
+      p = fp?.find(x => String(x.id || '').toUpperCase() === fix);
+    if (p && fp.length >= 2) {
+      const dep = input.dataset.kind === 'sid',
+        nm = dep ? p.nm : fp.at(-1).nm - p.nm,
+        phase = dep ? sheet?.climb : sheet?.descent,
+        grad = phase?.rateFpm > 0 && phase?.tasKt > 0 ? phase.rateFpm / (phase.tasKt / 60) : 400,
+        need = nm > 0 ? ft / nm : Infinity;
+      if (need > grad * 4 / 3) return say(TX.pconSlope, {
+        id: fix,
+        fl: Math.round(ft / 100),
+        nm: Math.round(nm),
+        g: Math.round(need),
+        m: Math.round(grad)
+      });
+    }
+    cons[fix] = ft;
+  }
+  if (Object.keys(cons).length) r.constraints = cons;
+  else delete r.constraints;
+  saveFlight();
+  refresh();
+}
 /** Les niveaux posés sur les points de la route (hors départ et arrivée) qui ne sont pas celui du plan : une ligne près du niveau, avec
  *  ce que la montée et la croisière durent alors, et un geste (SOG-0020 ; rien de modal) ; masquée sinon. */
 function lvlMix(C) {
@@ -2995,7 +3071,7 @@ function renderPts() {
     plan = +S.flight.level?.ft || 0,
     groups = procGroups(),
     inGroup = new Set(groups.flatMap(g => g.fixes)),
-    group = g => `<details class="f-item fu-ptgrp" data-kind="${g.kind}"><summary>${esc(`${g.label} · ${tt(g.fixes.length === 1 ? TX.ptsGroup1 : TX.ptsGroupN, { n: g.fixes.length })}`)}</summary><div class="f-muted fu-ptfix">${esc(g.fixes.join(' · '))}</div></details>`;
+    group = g => `<details class="f-item fu-ptgrp" data-kind="${g.kind}"><summary>${esc(`${g.label} · ${tt(g.fixes.length === 1 ? TX.ptsGroup1 : TX.ptsGroupN, { n: g.fixes.length })}`)}</summary><div class="fu-ptfix">${g.fixes.map(fx => `<label class="f-item fu-pt"><span class="fu-ptid"><b>${esc(fx)}</b></span><input data-k="pcon" data-fix="${esc(fx)}" data-kind="${g.kind}" inputmode="numeric" maxlength="3" value="${+S.flight.route?.constraints?.[fx] > 0 ? Math.round(S.flight.route.constraints[fx] / 100) : ''}" aria-label="${esc(tt(TX.pconLabel, { id: fx }))}"></label>`).join('')}</div></details>`;
   let cur = plan,
     shown = 0;
   box.innerHTML = pts.length ? pts.map((p, i) => {

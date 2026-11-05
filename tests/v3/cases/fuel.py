@@ -2351,3 +2351,32 @@ def f91(c):
     d = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and not any(p.get('alt_ft') for p in d['route']['points']),
                     'the point levels are removed', timeout=8000)
     c.until("document.querySelector('[data-module=fuel] [data-lvlmix]').hidden", what='the line goes away')
+
+
+@case('F92', 'A level forced on a point of the chosen STAR: written, the vertical path follows it; above the ceiling or too steep: said, not set',
+      'F', tags=('fuel', 'maps'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0003 (« forcer un spath » on a point of NARAK 8S; level only, a published speed comes from the data): each point of a chosen '
+      'procedure has a level field; the level is written (route.constraints) and the vertical path passes the point at it; a level the '
+      'sheet cannot reach from or to the aerodrome is said and not set')
+def f92(c):
+    open_proc(c, procs=V2_PROCS)
+    d0 = cf_doc(c, lambda d: bool((d.get('profile') or {}).get('path')), 'a vertical path along the procedures', timeout=15000)
+    if not c.js("document.querySelector('[data-module=fuel] details[data-fold=pts]')?.open"):
+        c.tap(f'{FUEL} details[data-fold="pts"] > summary')
+    c.until("!!document.querySelector('[data-module=fuel] .fu-ptgrp[data-kind=star]')", timeout=10000, what='the STAR group of the points')
+    c.js("document.querySelector('[data-module=fuel] .fu-ptgrp[data-kind=star]').open = true")
+    sel = f'{FUEL} input[data-k="pcon"][data-fix="MEN01"]'
+    c.page.fill(sel, '90')
+    c.page.press(sel, 'Tab')
+    d = cf_doc(c, lambda d: ((d.get('route') or {}).get('constraints') or {}).get('MEN01') == 9000, 'the forced level is written')
+    d = cf_doc(c, lambda d: (d.get('profile') or {}).get('path') != d0['profile']['path'], 'the vertical path follows the forced level')
+    # too steep: FL300 on the last point of the STAR, a few NM from the aerodrome
+    c.js('window.__notes = []')
+    sel3 = f'{FUEL} input[data-k="pcon"][data-fix="MEN03"]'
+    c.page.fill(sel3, '300')
+    c.page.press(sel3, 'Tab')
+    head = norm(tx(F, 'pconSlope', c.lang).split('{fl}')[0].replace('{id}', 'MEN03'))
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim().startsWith(w))", head, what='too steep: said')
+    c.wait(600)
+    c.ok('MEN03' not in (((c.doc('pilot/ABC/current_flight.json') or {}).get('route') or {}).get('constraints') or {}), '', 'and not set')
+    c.eq(c.js(f"document.querySelector('{sel3}').value"), '', 'the field is emptied', what='field')
