@@ -94,6 +94,8 @@ exchange happens in batches, explicitly or periodically, through a transport the
 - **The queue, for the Synchronisation card** (`FrameData.pendingList()`, 1 Nov 2026): `[{ path, module, at, deletion,
   error }]`, never the text, the newest first; `error` is the error of the last pass when it failed (it holds the whole
   queue; a write refused for good goes to the conflicts), '' otherwise. `status()` keeps the count and the same queue.
+- **What just left** (`FrameData.lastPushed()`, 5 Nov 2026, SOG-0029): `[{ path, at, result }]`, the last synchronisation that
+  tried a send, file by file (`result` `'ok'` or the reason given); not a journal; INTEGRATION § on `lastPushed`.
 - A module declares the prefixes it writes. Several modules may declare the same prefix: the prefix is **shared** and
   each of them writes there (for example `pilot/<trigram>/current_flight.json`, written by fuel, read and written by
   maps). The merge rule of a shared prefix is the one of the first module that declares it, so the modules sharing a

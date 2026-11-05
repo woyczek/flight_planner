@@ -918,6 +918,12 @@ screens: [{ id: 'sources', scripts: ['aerodb/airac.js?v=0', 'aerodb/catalogue.js
   `window.SogScreens[id] = { screen(view, ctx) }`.
 - `level`: below it, the frame shows "This screen is not offered at this usage level" and loads nothing more.
 - `reads` / `writes` declare the screen's data adapter, as a module's `meta`.
+- `FrameData.lastPushed()` (5 Nov 2026, SOG-0029; the Synchronisation card): `[{ path, at, result }]` — what the last
+  synchronisation **that tried a send** took, file by file: `at` the time of that pass (ISO), `result` `'ok'` or the reason the
+  transport gave (`403 …`, `refused: …`, an error text, 120 characters at most). The last send only, never a journal: a pass that
+  sends nothing (empty queue, offline before the commit, no trigram, local transport) leaves it as it was; the next send
+  replaces it. Kept on the device (meta `lastPushed`), never emptied by the layer, `[]` before the first send; 200 files at
+  most. Read without effect (no pass launched, nothing written); never the text of a file.
 - `FrameData.readBytes(path, { max })` (1 Nov 2026, the airline's logo): the bytes of a file of the data repository
   (`ArrayBuffer`) or null — its revision in the known tree, read by the transport's `readBytes` (GitHub, GitLab: the raw
   blob; the launcher: `data/<path>`), kept on the device by revision (meta `bytes:<path>`), the kept copy offline; larger

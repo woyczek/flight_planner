@@ -1811,7 +1811,7 @@ def a52(c):
 
 
 @case('A53', 'The frame\u2019s own benches: geometry, data layer, QR code', 'A', designs=('standard',), screens=False, night=False,
-      rule='I28 (every bench opened by a case): frame/lib/test/geo.html (window.__geoBench), frame/store/test/index.html (« run », window.__results) and frame/lib/test/qr.html (its grids read back by the independent decoder qr_check.py) had no case')
+      rule='I28 (every bench opened by a case): frame/lib/test/geo.html (window.__geoBench), frame/store/test/index.html (« run », window.__results; SOG-0029: FrameData.lastPushed names what the last send took, on a fake repository) and frame/lib/test/qr.html (its grids read back by the independent decoder qr_check.py) had no case')
 def a53(c):
     import os
     import subprocess

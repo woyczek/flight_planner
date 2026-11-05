@@ -2469,3 +2469,17 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   undecodable file) is said once per path to the administrator (Full level, a floating note: « Logo de la compagnie : png
   ou webp, 512 Ko au plus », ×4); the pilot has the tinted plane, without a note; absent or offline without a copy: no
   note. Noreg A83 (an svg, and an svg named .png, never shown nor run).
+- **5 Nov 2026 — `FrameData.lastPushed()`: what just left, for the Synchronisation card** (SOG-0029, lot E: the card says
+  « à pousser » with the name of the sheet but not what has just gone, the layer keeping nothing of the last pass):
+  - **Kept by the layer, in meta `lastPushed` `{ at, list: [{ path, result }] }`**, filled by `run()` for each file of a send it
+    tried: `'ok'`, or the reason the transport gave — a refused send (a 403 of the repository) names the files of the queue
+    with it; a write refused for good (`e.refused`) is named `refused: <why>` and the rest goes on. `lastPushed()` returns
+    `[{ path, at, result }]`, `at` the time of the pass.
+  - **The last send, not the last pass**: a pass that sends nothing (empty queue, offline before the commit, no trigram, the
+    local single-user transport) leaves the list, so « parti à 18 h 04 » is still true after a quiet pass; the next send
+    replaces it (the last synchronisation only, never a journal). A pass offline never reached the commit: nothing was
+    tried, nothing recorded (the queue is the « to push » side of the card). Never emptied by the layer (the device reset
+    clears all, as for every meta).
+  - Bounded: 200 files, 120 characters of reason; never the text of a file. Read without effect. Noreg A53 (store bench: two
+    files named, never the content, reading without effect, a quiet pass leaves it, a refused send named with its 403, the
+    same file then `ok`, an offline pass leaves it; the fake GitHub gains `deny`).

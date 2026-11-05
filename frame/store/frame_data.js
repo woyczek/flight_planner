@@ -403,6 +403,19 @@
       error: s.lastError || ''
     }));
   }
+  const PUSHED_MAX = 200; // fichiers gardés dans lastPushed (la file d'une longue période hors ligne en compte davantage)
+  /** Ce qui est parti à la dernière synchronisation qui a tenté un envoi (1er nov. 2026, SOG-0029 ; Réglages : « parti à
+   *  18 h 04 : fiches 2 ») : [{ path, at, result }], result 'ok' ou la raison dite par le transport ; la dernière
+   *  synchronisation seulement, pas un journal ; gardé sur l'appareil, jamais vidé par la couche ; [] avant tout envoi.
+   *  Lue sans effet (rien n'est écrit, aucun passage lancé), jamais le texte des fichiers. */
+  async function lastPushed() {
+    const m = await getMeta('lastPushed').catch(() => null);
+    return (m?.list || []).map(x => ({
+      path: x.path,
+      at: m.at,
+      result: x.result
+    }));
+  }
   const statusFns = new Set();
   /** Abonnement à l'état (bouton de synchronisation) : fn(état) à chaque changement. Retour : arrêt. */
   function onStatus(fn) {
@@ -836,7 +849,11 @@
         pushed: 0,
         conflicts: 0,
         error: ''
-      };
+      },
+      // ce que ce passage a tenté d'envoyer, fichier par fichier : [{ path, result }] (lastPushed) ; result : 'ok', ou la
+      // raison dite par le transport (refus, erreur) ; vide quand rien n'a été tenté (hors ligne avant l'envoi, file vide)
+      sent = [];
+    let tried = null; // la file de la dernière tentative d'envoi qui n'a pas encore d'issue
     try {
       if (!T) throw new Error('no transport');
       await holdLocal();
@@ -847,7 +864,7 @@
         result.pushed = pend.length;
         result.ok = true;
         await pullRefs(result);
-        return done(result);
+        return done(result, sent);
       }
       // sans trigramme, rien ne part : ni lot (ses écritures attendent sur l'appareil), ni échange au nom de personne
       const who = !!cfg.identity.trigram;
@@ -865,8 +882,9 @@
         if (!pend.length || !who) {
           result.ok = true;
           result.held = who ? 0 : pend.length;
-          return done(result);
+          return done(result, sent);
         }
+        tried = pend;
         try {
           const remote = await getMeta('remote'),
             next = await T.commit(pend.map(p => ({
@@ -874,14 +892,24 @@
               text: p.text
             })), commitMessage(pend), head, remote);
           await applyPushed(pend, next, remote);
+          for (const p of pend)
+            if (!sent.some(s => s.path === p.path)) sent.push({
+              path: p.path,
+              result: 'ok'
+            });
+          tried = null;
           result.pushed = pend.length;
           result.ok = true;
           // puis après, pour envoyer le lot (ce qu'il a reçu en plus est tiré au passage suivant)
           if (reason !== 'write' && who) await exchange(T, result, reason);
-          return done(result);
+          return done(result, sent);
         } catch (e) {
           // écriture refusée pour de bon (chemin ou type interdit) : sortie de la file vers les conflits, le reste repart
           if (e?.refused && await refuseWrite(e.refused, e.message, T.id)) {
+            sent.push({
+              path: e.refused,
+              result: `refused: ${e.message || ''}`
+            });
             i--;
             continue;
           }
@@ -891,7 +919,13 @@
       throw new Error('repository kept moving: try again');
     } catch (e) {
       result.error = e?.offline ? 'offline' : e?.message || String(e);
-      return done(result);
+      // l'envoi tenté a échoué (refus du dépôt, erreur) : les fichiers de la file sont nommés avec la raison
+      for (const p of tried || [])
+        if (!sent.some(s => s.path === p.path)) sent.push({
+          path: p.path,
+          result: result.error
+        });
+      return done(result, sent);
     }
   }
   /** Écriture refusée définitivement par le transport (chemin ou type interdit) : retirée de la file, gardée dans les
@@ -1008,9 +1042,17 @@
       result.warning = e?.offline ? 'exchange offline' : e?.message || String(e);
     }
   }
-  /** Fin d'un passage : état gardé (dernière synchro réussie, erreur), observateurs prévenus. */
-  async function done(r) {
+  /** Fin d'un passage : état gardé (dernière synchro réussie, erreur, ce qui a été envoyé), observateurs prévenus. */
+  async function done(r, sent = []) {
     lastError = r.error;
+    // ce qui vient de partir (lastPushed) : la liste du passage qui a tenté un envoi ; un passage qui n'en tente pas la laisse
+    if (sent.length) await setMeta('lastPushed', {
+      at: new Date().toISOString(),
+      list: sent.slice(0, PUSHED_MAX).map(s => ({
+        path: s.path,
+        result: String(s.result || '').slice(0, 120)
+      }))
+    });
     backoff(r);
     // genre du dernier passage réussi (local ou dépôt) : un passage avec un dépôt après des passages locaux reprend les
     // copies écrites ici (adoptLocal)
@@ -1602,6 +1644,7 @@
     diagnostic,
     noteFailure,
     pendingList,
+    lastPushed,
     readBytes,
     cached,
     evict,

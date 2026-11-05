@@ -8,7 +8,8 @@ Sert, sur un seul port :
     « blob <n>\\0<contenu> ») ; arbres et commits : empreintes stables de leur contenu ;
   · des commandes d'essai, sous /__test/ : reset (dépôt vide, ou fichiers donnés), write (commit d'un autre appareil),
     race (le prochain PATCH de la branche est précédé d'un commit d'un autre appareil : poussée refusée une fois),
-    offline (toutes les requêtes de l'API coupées), stats (commits, fichiers de chacun, appels).
+    offline (toutes les requêtes de l'API coupées), deny (la création d'un arbre, première étape d'un envoi, refusée :
+    403 « jeton sans droit d'écriture »), stats (commits, fichiers de chacun, appels).
 
 Usage : python frame/store/test/fake_github.py [port]   (8790 par défaut ; page : http://127.0.0.1:8790/frame/store/test/)
 """
@@ -27,6 +28,7 @@ class Repo:
     def __init__(self, files=None):
         self.blobs, self.trees, self.commits = {}, {}, {}
         self.head, self.race, self.offline, self.calls = None, None, False, []
+        self.deny = False  # la création d'un arbre refusée (403)
         self.commit_files = []  # [(sha, message, [chemins changés])]
         self.head = self.make_commit(self.make_tree({p: self.blob(t) for p, t in (files or {}).items()}), [], 'initial', [])
 
@@ -131,6 +133,8 @@ class H(http.server.SimpleHTTPRequestHandler):
             return self._json({'sha': rest[0], 'encoding': 'base64', 'content': base64.b64encode(b).decode()})
         if kind == 'trees' and method == 'POST':
             body = self._body()
+            if REPO.deny:
+                return self._json({'message': 'Resource not accessible by personal access token'}, 403)
             entries = dict(REPO.trees.get(body.get('base_tree'), {}))
             for e in body.get('tree', []):
                 if e.get('sha', 1) is None:
@@ -173,6 +177,9 @@ class H(http.server.SimpleHTTPRequestHandler):
         if cmd == 'offline':
             REPO.offline = bool(body.get('on'))
             return self._json({'offline': REPO.offline})
+        if cmd == 'deny':
+            REPO.deny = bool(body.get('on'))
+            return self._json({'deny': REPO.deny})
         if cmd == 'stats':
             return self._json({'head': REPO.head, 'commits': REPO.commit_files, 'files': {p: REPO.blobs[s].decode('utf-8') for p, s in REPO.files().items()}, 'calls': REPO.calls})
         return self._json({'message': 'unknown'}, 404)

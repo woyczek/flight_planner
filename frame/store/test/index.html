@@ -138,6 +138,52 @@
       check('queue empty after push', (await d.status()).pending === 0, await d.status());
       check('list sees the pushed files', (await d.list('disponibilites/TST/'))?.length === 5, await d.list('disponibilites/'));
     },
+    async 'lastPushed: what the last synchronisation sent, file by file, with its result; the last one only, never a journal'() {
+      const d = await fresh();
+      await d.sync();
+      check('before any send: nothing', (await FD.lastPushed()).length === 0, await FD.lastPushed());
+      await d.put('disponibilites/TST/2026-W44.json', rec('TST', '2026-11-02T10:00:00Z', {
+        secret: 'contenu-prive'
+      }));
+      await d.put('disponibilites/TST/2026-W45.json', rec('TST', '2026-11-02T10:01:00Z'));
+      const r = await d.sync(),
+        a = await FD.lastPushed();
+      check('two files sent: both named, ok, with the time of the pass', r.ok && a.length === 2 && a.map(x => x.path).sort().join() ===
+        'disponibilites/TST/2026-W44.json,disponibilites/TST/2026-W45.json' && a.every(x => x.result === 'ok' && !isNaN(Date.parse(x
+          .at))), a);
+      check('never the content of a file', !JSON.stringify(a).includes('contenu-prive'), a);
+      check('reading has no effect: same answer, no pass launched', JSON.stringify(await FD.lastPushed()) === JSON.stringify(a) && !(
+        await d.status()).syncing, null);
+      // a pass with nothing to send leaves the list as it was (the last send, not the last pass)
+      await d.sync();
+      check('a pass that sends nothing leaves the list', JSON.stringify(await FD.lastPushed()) === JSON.stringify(a), await FD
+        .lastPushed());
+      // a refused send is named with its reason, and replaces the list (the last synchronisation only)
+      await T('deny', {
+        on: true
+      });
+      await d.put('disponibilites/TST/2026-W46.json', rec('TST', '2026-11-02T10:02:00Z'));
+      const f = await d.sync(),
+        b = await FD.lastPushed();
+      check('a refused send: the file named with the reason (403), the old list gone', !f.ok && b.length === 1 && b[0].path ===
+        'disponibilites/TST/2026-W46.json' && /403/.test(b[0].result) && /not accessible/.test(b[0].result), [f, b]);
+      check('the refused file is still queued', (await d.status()).pending === 1, await d.status());
+      await T('deny', {
+        on: false
+      });
+      const g = await d.sync(),
+        c = await FD.lastPushed();
+      check('then sent: the same file, now ok', g.ok && c.length === 1 && c[0].path === 'disponibilites/TST/2026-W46.json' && c[0]
+        .result === 'ok', [g, c]);
+      // offline before any commit: nothing was tried, the list stays
+      await T('offline', {
+        on: true
+      });
+      await d.put('disponibilites/TST/2026-W47.json', rec('TST', '2026-11-02T10:03:00Z'));
+      await d.sync();
+      check('offline pass (nothing tried): the list stays', JSON.stringify(await FD.lastPushed()) === JSON.stringify(c), await FD
+        .lastPushed());
+    },
     async 'pull: a change made on another device arrives, watch is called'() {
       const d = await fresh({
         'disponibilites/ABC/2026-W43.json': JSON.stringify(rec('ABC', '2026-10-20T00:00:00Z'))
