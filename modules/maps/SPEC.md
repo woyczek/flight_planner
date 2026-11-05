@@ -910,8 +910,10 @@ say what was drawn; `geo.w0`, `geo.w1` (metres) and `geo.zoomed` say the window,
 
 `lib/axis_window.js`, written once for the profile and the cut: two fingers pinch to zoom around their middle and slide to
 move the window (at least 5 NM visible, never outside the flight); a double tap or double click goes back to the whole
-flight; **one finger is never taken**: it is the reading cursor. On a screen: Ctrl + wheel zooms around the pointer (the
-wheel alone stays the page's), a mouse drag moves the window when it is tight (whole, the drag is the cursor's), a click
+flight; **one finger is never taken**: it is the reading cursor. On a screen: the wheel zooms around the pointer — Ctrl + wheel
+always (a trackpad pinch too), the wheel alone when the profile's container does not scroll (the sheet, the map: the wheel would be
+lost there; amended 5 Nov 2026, SOG-0005, by the ergonomics session), and stays the page's when the profile sits in a page that
+scrolls (Fuel beside the Map, SOG-0004); a horizontal wheel moves the tight window; a mouse drag moves the window when it is tight (whole, the drag is the cursor's), a click
 places the cursor. Disarmed in Edit mode and while another content is open. A finger left after a pinch does not move the
 cursor until all fingers are up.
 - **One window per route** for the profile and the cut (two helpers, one per container, handing each other the window;

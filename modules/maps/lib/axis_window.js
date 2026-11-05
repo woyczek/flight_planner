@@ -12,7 +12,9 @@
 //   · deux pointeurs (deux doigts) : pincement = zoom autour du centre des doigts, qui suivent aussi la fenêtre (deux doigts qui glissent
 //     la déplacent) ; au moins `min` NM visibles, jamais hors [0, total] ;
 //   · double toucher (deux appuis courts proches, 350 ms) ou double clic : le vol entier ;
-//   · molette avec Ctrl (le pincement d'un pavé tactile aussi) : zoom autour du pointeur ; sans Ctrl, la molette reste à la page ;
+//   · molette : zoom autour du pointeur — avec Ctrl (le pincement d'un pavé tactile aussi) toujours ; sans Ctrl quand le profil ne défile pas
+//     avec sa page (la feuille de la Carte, la carte : la molette y serait perdue), la molette seule reste à la page quand elle défile
+//     (Carburant, profil dans la page, SOG-0004) ; la molette horizontale (deltaX) fait glisser la fenêtre resserrée ;
 //   · souris : glisser (au-delà de 4 px) déplace la fenêtre quand elle est resserrée ; entière, il n'y a rien à déplacer et le glisser reste
 //     à l'appelant ;
 //   · UN SEUL doigt (toucher, stylet) n'est jamais pris : c'est le curseur de lecture de l'appelant.
@@ -195,8 +197,29 @@ export function createAxisWindow(el, {
     } else lastTap = null;
   }
 
+  /** Vrai si le profil est dans une page qui défile (un ancêtre défilable, ou la page elle-même) : la molette seule lui revient. */
+  const pageScrolls = () => {
+    for (let n = el.parentElement; n && n !== document.documentElement; n = n.parentElement) {
+      const o = getComputedStyle(n).overflowY;
+      if ((o === 'auto' || o === 'scroll') && n.scrollHeight > n.clientHeight + 1) return true;
+    }
+    const d = document.scrollingElement;
+    return !!d && d.scrollHeight > d.clientHeight + 1;
+  };
+
   function wheel(e) {
-    if (!e.ctrlKey || !enabled() || !(tot() > 0)) return; // sans Ctrl, la molette reste à la page
+    if (!enabled() || !(tot() > 0)) return;
+    // molette horizontale : la fenêtre resserrée glisse (le trait de la molette, en pixels, devient une part de la largeur du tracé)
+    if (!e.ctrlKey && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      if (!w) return;
+      e.preventDefault();
+      const p = plotOf(),
+        span = api.to - api.from,
+        shift = e.deltaX * (e.deltaMode === 1 ? 16 : 1) / Math.max(1, p.x1 - p.x0) * span;
+      api.set(api.from + shift, api.to + shift);
+      return;
+    }
+    if (!e.ctrlKey && pageScrolls()) return; // la molette seule reste à la page qui défile
     e.preventDefault();
     const p = plotOf(),
       pw = Math.max(1, p.x1 - p.x0),

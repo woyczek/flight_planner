@@ -1926,6 +1926,19 @@ the Map had seen in between: the same line to within the frame's own sampling.
   tiles released (a Terrarium tile of 300 m, written by the case with the standard library) — the profile completed with the relief,
   the note gone. D86 + D87 side by side: 10 in 10, 12 in 12 (they were 8 in 10).
 
+## The wheel on the profile (SOG-0005; ergonomics, 5 Nov 2026)
+
+- **Seen**: « le zoom sur une portion de profil ne semble pas efficace ». The gesture worked (Ctrl + wheel, pinch, double tap), but
+  the wheel alone did nothing: rule 20 of V3 § 7.1 left it to the page, and the profile, in the sheet or on the map, sits in no page
+  that scrolls — the wheel was lost.
+- **Decision** (asked of and validated by the ergonomics session, who writes the new rule 20): above the profile's plot the wheel
+  zooms around the pointer when its container does not scroll (`pageScrolls()` in `lib/axis_window.js`: no scrollable ancestor, a
+  page that does not overflow); it stays the page's when the profile is inside a page that scrolls (Fuel beside the Map);
+  Ctrl + wheel and the pinch are unchanged; a horizontal wheel moves a tight window (nothing on the whole flight). The weather
+  cut, which shares the helper, follows.
+- **Noreg** D24 (the wheel alone tightens the window, Ctrl + wheel too, the distance under the pointer stays), D107 (a page that
+  scrolls keeps its wheel, Ctrl + wheel still zooms, the horizontal wheel pans).
+
 ## The vertical path, its transitions, the height at the cursor (user, 4–5 Nov 2026, SOG-0006 / 0008 / 0002)
 
 - **« Le vpath ne s'affiche pas »**: two causes found. (1) A write of the flight that changed only fuel's performance (rates,

@@ -425,7 +425,7 @@ The gesture of the vertical drawings, written once: the Map's profile and the we
 | `enabled()` | `false` disarms everything (the Map: Edit mode, or another content open in the sheet) |
 
 Gestures, in the capture phase of `el`: two pointers = pinch (zoom around the middle of the fingers, which also moves the window); double
-tap (two short taps within 350 ms and 40 px) or `dblclick` = `reset()`; wheel with `ctrlKey` (a trackpad pinch too) = zoom around the pointer
+tap (two short taps within 350 ms and 40 px) or `dblclick` = `reset()`; wheel = zoom around the pointer (with `ctrlKey`, a trackpad pinch too, always; without it unless the profile is inside a page that scrolls: `pageScrolls()`), a horizontal wheel (`deltaX`) moves a tight window
 (`preventDefault`); a mouse drag beyond 4 px = pan, only when the window is tight; **a single touch or pen pointer is never taken or stopped**.
 While a pinch lasts, and until every finger is up, the events of the pointers are stopped (`stopImmediatePropagation`) so the caller's own
 handlers (the cursor) do not run; `active` says so too. `set()` / `reset()` bound the window (`min`, `[0, total]`, centre kept) and return

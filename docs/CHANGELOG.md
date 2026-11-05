@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Profile: the wheel zooms** (`modules/maps/lib/axis_window.js`; SPEC § 8.6; noreg D24, D107; SOG-0005). Above the profile's plot the
+  wheel alone zooms around the pointer when the profile sits in no scrolling page (the sheet, the map), Ctrl + wheel and the pinch as
+  before, the plain wheel stays the page's in a page that scrolls; a horizontal wheel moves the tight window.
+
 - **Weather: "Load (≈ n calls)" before any call** (`modules/atmosphere/module.js`, `wx.js`, `screen_flight.js`, `texts.js`;
   SPEC, DECISIONS, help ×4) — the Load button (map and Flight form) says what loading would cost: the weighted calls the
   device lacks for the route and the map's grid, every day the slider reaches, from the frame's `ctx.weather.cost`

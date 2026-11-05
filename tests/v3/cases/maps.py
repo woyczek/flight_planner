@@ -1443,7 +1443,7 @@ def d23(c):
 
 
 @case('D24', 'Profile window on a screen: Ctrl + wheel, drag, double click', 'D', tags=('maps',), phone=False, screens=True,
-      rule='V3 spec 7.1 rule 20: on a screen the wheel with Ctrl zooms around the pointer, a drag pans, a double click comes back to the whole flight')
+      rule='V3 spec 7.1 rule 20 (as amended 5 Nov 2026, SOG-0005): above the profile’s plot the wheel zooms around the pointer when the profile’s container does not scroll (the sheet, the map), Ctrl + wheel always; a horizontal wheel pans the tight window; a drag pans, a double click comes back to the whole flight')
 def d24(c):
     c.open('maps', flight=True, forecast=True)
     hide_notes(c)
@@ -1453,10 +1453,19 @@ def d24(c):
     c.ok(c.shown('.mp-pc'), 'no profile canvas at 1280', 'the profile is shown')
     x, y = px_of(c, whole, 100), prof_y(c)
     c.page.mouse.move(x, y)
-    c.page.mouse.wheel(0, -300)                                       # no Ctrl: the page's wheel, nothing zooms
+    # the wheel alone: the sheet does not scroll, so it zooms (a page that scrolls keeps its wheel: see the second half of D24)
+    for _ in range(3):
+        c.page.mouse.wheel(0, -200)
+        c.wait(80)
     c.wait(250)
-    c.eq(win_state(c)['to'], whole['to'], 'the wheel alone leaves the window whole', what='window after a plain wheel')
+    st = win_state(c)
+    span = st['to'] - st['from']
+    c.ok(span < whole['to'] * .6, f'window {st["from"]}..{st["to"]}', 'the wheel alone tightens the window (the container does not scroll)')
+    # Ctrl + wheel back out, then in again: the same gesture
     c.page.keyboard.down('Control')
+    for _ in range(3):
+        c.page.mouse.wheel(0, 200)
+        c.wait(80)
     for _ in range(3):
         c.page.mouse.wheel(0, -200)
         c.wait(80)
@@ -1485,6 +1494,48 @@ def d24(c):
     c.wait(250)
     c.eq([win_state(c)['from'], win_state(c)['to']], [0, whole['to']], 'a double click on the profile comes back to the whole flight', what='window after the double click')
     c.ok(not c.shown('.mp-whole'), 'the button is displayed on the whole flight', 'hidden again')
+
+
+@case('D107', 'Profile window: the wheel alone stays the page’s when the page scrolls; a horizontal wheel pans the tight window', 'D', tags=('maps',), phone=False, screens=True,
+      rule='V3 spec 7.1 rule 20 (as amended 5 Nov 2026, SOG-0005): a profile inside a page that scrolls (Fuel beside the Map) leaves the plain wheel to the page; Ctrl + wheel still zooms; a horizontal wheel moves a tight window and does nothing on the whole flight')
+def d107(c):
+    c.open('maps', flight=True, forecast=True)
+    hide_notes(c)
+    c.wait(1500)
+    c.settle()
+    whole = win_state(c)
+    x, y = px_of(c, whole, 100), prof_y(c)
+    c.page.mouse.move(x, y)
+    # a horizontal wheel on the whole flight: nothing to move
+    c.page.mouse.wheel(150, 0)
+    c.wait(200)
+    c.eq(win_state(c)['to'], whole['to'], 'a horizontal wheel leaves the whole flight whole', what='window')
+    # the profile’s container scrolls (a page taller than its box): the plain wheel is the page’s
+    c.js("""() => { const n = document.querySelector('[data-module="maps"]'); n.style.position = 'relative'; n.style.overflowY = 'auto';
+      const sp = document.createElement('div'); sp.style.cssText = 'position:absolute;left:0;top:5000px;width:1px;height:1px'; n.appendChild(sp); return true }""")
+    c.wait(200)
+    c.page.mouse.move(x, y)
+    c.page.mouse.wheel(0, -200)
+    c.wait(250)
+    c.eq(win_state(c)['to'], whole['to'], 'in a page that scrolls the plain wheel leaves the window whole', what='window after a plain wheel')
+    c.js("() => { document.querySelector('[data-module=\"maps\"]').scrollTop = 0; return true }")   # the page took the wheel: back to the top
+    c.wait(150)
+    c.page.mouse.move(x, y)
+    c.page.keyboard.down('Control')
+    for _ in range(3):
+        c.page.mouse.wheel(0, -200)
+        c.wait(80)
+    c.page.keyboard.up('Control')
+    c.wait(250)
+    st = win_state(c)
+    c.ok(st['to'] - st['from'] < whole['to'] * .6, f'window {st["from"]}..{st["to"]}', 'Ctrl + wheel still zooms there')
+    # a horizontal wheel moves the tight window
+    c.page.mouse.move(x, y)
+    c.page.mouse.wheel(200, 0)
+    c.wait(250)
+    mv = win_state(c)
+    c.ok(mv['from'] > st['from'] + 1 and abs((mv['to'] - mv['from']) - (st['to'] - st['from'])) < .3, f'window {st["from"]}..{st["to"]} → {mv["from"]}..{mv["to"]}',
+         'a horizontal wheel to the right moves the window toward the arrival, its width unchanged')
 
 
 # ---------------------------------------------------------------------------------------------------------- D25: one window for the profile and the cut
