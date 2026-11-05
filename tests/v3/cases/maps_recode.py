@@ -2995,3 +2995,89 @@ def d103(c):
     c.ok(re.search(pat, txt['card'], re.I) is not None, f"{txt['card']!r}", 'the airspace card says the ceiling is deduced')
     c.ok(re.search(pat, txt['strip'], re.I) is None, f"{txt['strip']!r}", 'and the profile does not')
 
+
+# ------------------------------------------------------------------------------------------------------ D104
+@case('D104', 'The vertical path: drawn as soon as a level exists; without one the profile says what is missing; estimated rates are said', 'D',
+      tags=('maps', 'sheet'), designs=('standard',), night=False, screens=False,
+      rule='user (SOG-0006, 4–5 Nov 2026), SPEC § 8.2: the vertical path (climb, level, descent) is drawn on the profile as soon as a cruise level exists — with fuel’s path, its plan, the aircraft’s rates, else standard rates (said in a note); without a level it is not drawn and a note says so, with a way to Fuel')
+def d104(c):
+    f = _awy_flight()
+    f['level'] = {}
+    f.pop('profile', None)
+    c.open('maps', docs=fdocs(f), flight=False, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.prof)", timeout=15000, what='the profile')
+    c.wait(400)
+    st = c.js("() => ({ plan: !!window.__mp.S.prof.plan, src: window.__mp.S.prof.planSource, soft: window.__mp.S.softHtml })")
+    c.ok(not st['plan'] and st['src'] is None, f'{st}', 'without a level there is no vertical path')
+    c.ok('data-go="fuel"' in st['soft'], f"{st['soft']!r}", 'a note says what is missing, with the way to Fuel')
+    # a level and nothing else: drawn at standard rates, and said
+    g = _awy_flight()
+    g['level'] = {'ft': 8000}
+    g.pop('profile', None)
+    c.js("""async (f) => { const S = window.__mp.S, p = 'pilot/ABC/current_flight.json'; f.updated_at = new Date().toISOString(); await S.ctx.data.put(p, f); return true }""", g)
+    c.until("() => !!(window.__mp.S.prof && window.__mp.S.prof.plan)", timeout=15000, what='the vertical path once a level exists')
+    c.wait(400)
+    st = c.js("() => ({ src: window.__mp.S.prof.planSource, soft: window.__mp.S.softHtml, toc: !!window.__mp.S.prof.plan.toc })")
+    c.eq(st['src'], 'default', 'with only a level, the path is drawn at the standard rates', what=f'{st}')
+    c.ok(st['toc'] and 'data-go="fuel"' not in st['soft'] and len(st['soft']) > 0, f"{st['soft']!r}", 'and a note says the rates are estimated')
+    # fuel's rates: nothing to say
+    h = _awy_flight()
+    h['level'] = {'ft': 8000}
+    h['profile'] = {'climbFpm': 700, 'climbKt': 100, 'descentFpm': 600, 'descentKt': 110}
+    c.js("""async (f) => { const S = window.__mp.S, p = 'pilot/ABC/current_flight.json'; f.updated_at = new Date(Date.now() + 1000).toISOString(); await S.ctx.data.put(p, f); return true }""", h)
+    c.wait(1500)
+    dbg = c.js("() => ({ src: window.__mp.S.prof.planSource, prof: window.__mp.S.route.flight.profile, by: window.__mp.S.route.flight.by })")
+    c.eq(dbg['src'], 'rates', 'with the aircraft’s rates, the path is at them', what=f'{dbg}')
+    st = c.js("() => window.__mp.S.softHtml")
+    c.ok('planEstimated' not in st and 'standard' not in st.lower() and 'standard' not in st, f'{st!r}', 'the aircraft’s own rates: no estimate said')
+
+
+# ------------------------------------------------------------------------------------------------------ D105
+@case('D105', 'The profile’s reading at the cursor says its reference: altitude, relief AMSL and the height above ground, which is their difference', 'D',
+      tags=('maps', 'sheet'), designs=('standard',), night=False, screens=False,
+      rule='user (SOG-0002, 4–5 Nov 2026), SPEC § 8.4: the line under the profile reads « planned FL…, relief … ft AMSL, height above ground … ft »: the planned altitude is AMSL, the relief too (Terrarium), the height is the first minus the second, the unit written')
+def d105(c):
+    png = _terrarium_png(300)                                # a flat relief of 300 m = 984 ft
+    c.page.route(re.compile(r'.*elevation-tiles.*'), lambda r: r.fulfill(status=200, content_type='image/png', body=png))
+    f = _awy_flight()
+    c.open('maps', docs=fdocs(f), flight=False, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.prof && window.__mp.S.prof.terrainOk && !window.__mp.S.terrainPending && window.__mp.S.geo)", timeout=20000,
+            what='the profile with the relief')
+    # the cursor halfway along the route (cruise at 8 000 ft)
+    r = c.js("""async () => { const S = window.__mp.S, m = await import('/modules/maps/profile_view.js'); m.setCursor(S.prof.total / 2);
+      const i = window.MapsProfile.at(S.prof, S.cursor); return { text: S.stripEl.textContent, alt: i.alt, terrain: i.terrain } }""")
+    nums = [int(x.replace('\u202f', '').replace('\xa0', '').replace(' ', '')) for x in re.findall(r'(\d[\d\u202f\xa0 ]*\d|\d) ft', r['text'])]
+    c.ok('AMSL' in r['text'], f"{r['text']!r}", 'the relief says AMSL')
+    c.ok(abs((r['alt'] or 0) - (r['terrain'] or 0)) > 1000 and len(nums) >= 2, f"{r}", 'the planned altitude and the relief differ (the case means something)')
+    c.ok(any(abs(n - round(r['alt'] - r['terrain'])) <= 1 for n in nums), f"{r['text']!r} wants {round((r['alt'] or 0) - (r['terrain'] or 0))}",
+         'the height above ground is the planned altitude minus the relief')
+
+
+# ------------------------------------------------------------------------------------------------------ D106
+@case('D106', 'Climb and descent transitions: the profile and the map mark the same points (TOC, TOD and the intermediate levels), the same symbols, the same names', 'D',
+      tags=('maps', 'sheet'), designs=('standard',), night=False, screens=False,
+      rule='user (SOG-0008, 4–5 Nov 2026), SPEC § 8.2: the vertical path’s transitions — TOC, TOD and, between them, the end and the start of each climb or descent to an intermediate level — are one list (plan.steps), drawn on the profile and on the map with the same symbols (a small hollow diamond) and the level reached as the name')
+def d106(c):
+    c.page.add_init_script("(() => { const t = setInterval(() => { if (window.SiaAero && window.SiaAero.pass) { clearInterval(t); (" + _MAP_PASS + ")() } }, 5) })()")
+    f = _awy_flight()
+    f['level'] = {'ft': 8000}
+    f['profile'] = {'climbFpm': 700, 'climbKt': 100, 'descentFpm': 600, 'descentKt': 110, 'tocNm': 40, 'todNm': 40,
+                    'path': [{'nm': 0, 'ft': 0}, {'nm': 25, 'ft': 5000}, {'nm': 40, 'ft': 5000}, {'nm': 70, 'ft': 8000}, {'nm': 130, 'ft': 8000}, {'nm': 170, 'ft': 0}]}
+    c.open('maps', docs=fdocs(f), flight=False, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.prof && window.__mp.S.prof.plan && window.__mp.S.drawn)", timeout=15000, what='the profile with its path')
+    c.wait(500)
+    r = c.js("() => { const p = window.__mp.S.prof.plan; return { steps: (p.steps || []).map(x => ({ kind: x.kind, nm: Math.round(x.s / 1852), alt: Math.round(x.alt) })), toc: Math.round(p.toc.s / 1852), tod: Math.round(p.tod.s / 1852) } }")
+    c.eq([x['kind'] for x in r['steps']], ['reach', 'leave'], 'the level-off at 5 000 ft and the start of the next climb are the two intermediate transitions', what=f'{r}')
+    c.ok(abs(r['steps'][0]['nm'] - 25) <= 2 and abs(r['steps'][1]['nm'] - 40) <= 2 and r['steps'][0]['alt'] == 5000, f'{r}', 'at their distances and altitude')
+    c.ok(abs(r['toc'] - 70) <= 2 and abs(r['tod'] - 130) <= 2, f'{r}', 'TOC and TOD stay the ends of the cruise')
+    asks = c.js("() => (window.__mapPass || []).filter(x => /^plan:/.test(x.key)).map(x => ({ key: x.key, placed: !!x.r }))")
+    keys = sorted(x['key'] for x in asks)
+    c.ok('plan:step:0' in keys and 'plan:step:1' not in keys and 'plan:toc' in keys and 'plan:tod' in keys, f'{asks}',
+         'on the map the level reached is named, like TOC and TOD; the start of a level has its symbol only')
+

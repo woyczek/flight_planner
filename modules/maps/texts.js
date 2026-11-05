@@ -64,7 +64,9 @@ export const TX = {
     'Perfil vertical de la ruta'
   ],
   planned: ['prévu {a}', 'planned {a}', 'geplant {a}', 'previsto {a}'],
-  terrain: ['relief {h}', 'terrain {h}', 'Gelände {h}', 'relieve {h}'],
+  terrain: ['relief {h} AMSL', 'terrain {h} AMSL', 'Gelände {h} AMSL', 'relieve {h} AMSL'],
+  // la hauteur au-dessus du sol (SOG-0002) : l'altitude prévue moins le relief, au curseur
+  agl: ['hauteur sol {h}', 'height above ground {h}', 'Höhe über Grund {h}', 'altura sobre el suelo {h}'],
   mora: ['MORA {h}', 'MORA {h}', 'MORA {h}', 'MORA {h}'],
   noZoneHere: ['hors espace choisi', 'outside the airspaces shown', 'außerhalb der gezeigten Lufträume',
     'fuera de los espacios mostrados'
@@ -594,6 +596,16 @@ export const TX = {
   vfrPage: ['page {p}', 'page {p}', 'Seite {p}', 'página {p}'],
   vfrPart: ['(certaines peuvent n\'être qu\'une partie d\'un itinéraire)', '(some may be only part of a route)',
     '(manche sind möglicherweise nur ein Teil einer Route)', '(algunas pueden ser solo una parte de un itinerario)'
+  ],
+  // la trajectoire verticale (SOG-0006) : ce qui manque quand elle n'est pas tracée, ce qui est estimé quand elle l'est
+  planNoLevel: ['Trajectoire verticale non tracée : aucun niveau de croisière.', 'Vertical path not drawn: no cruise level.',
+    'Vertikalprofil nicht gezeichnet: keine Reiseflughöhe.', 'Trayectoria vertical no trazada: sin nivel de crucero.'
+  ],
+  planEstimated: [
+    'Trajectoire verticale estimée : montée et descente aux taux standard (performances de l’appareil non lues dans Carburant).',
+    'Vertical path estimated: climb and descent at standard rates (the aircraft’s performance is not read from Fuel).',
+    'Vertikalprofil geschätzt: Steig- und Sinkflug mit Standardraten (Leistungsdaten des Flugzeugs nicht aus Carburant gelesen).',
+    'Trayectoria vertical estimada: ascenso y descenso a tasas estándar (rendimiento de la aeronave no leído en Carburant).'
   ],
   // AeroDB plafonne un espace de classe E sous le plancher de la classe A (capped: 'classA') : le plafond est déduit, pas publié
   ceilingDeduced: ['plafond déduit (classe A au-dessus de FL180)', 'ceiling deduced (class A above FL180)',

@@ -378,6 +378,8 @@ function strip() {
       h: altTxt(i.terrain)
     }) : Number.isFinite(i.mora) ? tt(TX.mora, {
       h: altTxt(i.mora)
+    }) : '', i.alt != null && i.terrain != null ? tt(TX.agl, {
+      h: altTxt(i.alt - i.terrain)
     }) : '', zones.length ? zones.join(', ') : tt(TX.noZoneHere)].filter(Boolean).join(' · ');
   }
   if (S.stripEl.textContent !== text) {

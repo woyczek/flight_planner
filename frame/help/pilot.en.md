@@ -266,7 +266,7 @@ airspaces and airways are read only near the flight, from afar; untick it or zoo
 <a id="maps-weather"></a>**The profile and the cursor.** In the data block under the map, the vertical profile cuts through the route from end to end: the terrain,
 the airspaces you enter at the planned altitude, and the flight path in purple. Slide your finger along the profile: a
 blue cursor follows it, and the same cursor moves on the map. Tap the route on the map to put it there. The line below
-the profile says what is under the cursor: distance from the departure, planned altitude, terrain height, and the
+the profile says what is under the cursor: distance from the departure, planned altitude and terrain altitude (both above sea level, AMSL), height above ground (their difference), and the
 airspace you are in at that point. Under the map, this data block shows the profile; the list of airspaces at a point or
 an airfield's reporting points open in its place when you ask for them, and the profile comes back when they are closed. The cloud chip, (the three chips — profile, cloud, “i” — are always in the top line, at the right; one with nothing to show is only greyed out), replaces it (the profile chip brings it back) with the weather
 cross-section along the route (wind, temperature, cloud, icing) against the flight's level; the cross-section follows the same cursor, and a tap on
@@ -403,7 +403,7 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: e6320b47b7d4 -->
+<!-- fr: f56ebb69e678 -->
 
 <!-- chapter: atmosphere -->
 # Weather

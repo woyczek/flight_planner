@@ -572,10 +572,12 @@ function planMarks(ctx, toC) {
   ctx.save();
   ctx.font = '700 11px Arial,sans-serif';
   const out = [];
-  for (const [m, name] of [
-      [pr.plan.toc, 'TOC'],
-      [pr.plan.tod, 'TOD']
-    ]) {
+  // TOC, TOD, puis les transitions intermédiaires (le niveau atteint pour nom, rien pour le début d'un palier) : SOG-0008
+  const marks = [
+    [pr.plan.toc, 'TOC', 'toc'],
+    [pr.plan.tod, 'TOD', 'tod'], ...(pr.plan.steps || []).map((m, i) => [m, m.kind === 'reach' ? level(m.alt) : '', `step:${i}`])
+  ];
+  for (const [m, name, id] of marks) {
     if (!m || (name === 'TOD' && Math.abs(pr.plan.tod.s - pr.plan.toc.s) < pr.total * .005)) continue;
     const at = s => {
         const g = MapsProfile.posAt(pr, s);
@@ -587,6 +589,8 @@ function planMarks(ctx, toC) {
       k = Math.hypot(q1.x - q.x, q1.y - q.y) / ds; // px par mètre de trace, près du repère
     out.push({
       name,
+      id,
+      step: id.startsWith('step:'),
       s: m.s,
       q,
       w: ctx.measureText(name).width,
@@ -611,21 +615,23 @@ function drawPlanOnMap(ctx, toC, planned = []) {
   ctx.lineJoin = 'round';
   for (const m of planMarks(ctx, toC) || []) {
     const q = m.q,
-      r = planned.find(p => p.name === m.name)?.r;
+      r = planned.find(p => p.id === m.id)?.r,
+      k = m.step ? 4.5 : 7; // un losange creux, plus petit, pour une transition intermédiaire
     ctx.beginPath();
-    ctx.moveTo(q.x, q.y - 7);
-    ctx.lineTo(q.x + 7, q.y);
-    ctx.lineTo(q.x, q.y + 7);
-    ctx.lineTo(q.x - 7, q.y);
+    ctx.moveTo(q.x, q.y - k);
+    ctx.lineTo(q.x + k, q.y);
+    ctx.lineTo(q.x, q.y + k);
+    ctx.lineTo(q.x - k, q.y);
     ctx.closePath();
-    ctx.fillStyle = col;
+    ctx.fillStyle = m.step ? S.theme.bg : col;
     ctx.fill();
-    ctx.strokeStyle = S.theme.bg;
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = m.step ? col : S.theme.bg;
+    ctx.lineWidth = m.step ? 1.8 : 2;
     ctx.stroke();
     if (!r) continue;
     ctx.textAlign = r.align;
     ctx.lineWidth = 3;
+    ctx.strokeStyle = S.theme.bg;
     ctx.strokeText(m.name, r.x, r.y);
     ctx.fillText(m.name, r.x, r.y);
     ctx.textAlign = 'left';

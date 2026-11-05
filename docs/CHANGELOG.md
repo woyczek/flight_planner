@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the vertical path says what is missing, the profile follows the aircraft's performance, transitions on both views, height at the
+  cursor** (`modules/maps/profile.js`, `profile_view.js`, `flight_time.js`, `screen.js`, `draw.js`, `render_route.js`,
+  `lib/vertical_profile.js`; SPEC § 8.2; noreg D104, D105, D106; SOG-0002, 0006, 0008). Changing fuel's rates, TOC or TOD alone
+  now redraws the profile (it kept the path of the previous performance); without a cruise level a note says so with a way to
+  Fuel, on standard rates a note says the path is estimated; the intermediate climb and descent transitions are marked, hollow
+  diamonds, on the profile and on the map; the line under the profile reads « planned … · relief … ft AMSL · height above
+  ground … ft ».
+
 - **Map: airways on the profile, unregulated classes in a light fill, « ceiling deduced »** (`modules/maps/profile.js`,
   `profile_view.js`, `lib/vertical_profile.js`, `lv.js`, `texts.js`; SPEC § 8.2; noreg D102, D103; SOG-0001). The route's airway
   legs are named blocks on the cut (floor – ceiling), cut out where a space of a higher class covers them (the most restrictive

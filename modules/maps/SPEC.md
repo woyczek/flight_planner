@@ -822,6 +822,26 @@ relative to the ground are raised by the terrain of each sample.
   if given, else 1,000 ft/min at 140 kt up and 800 ft/min at 160 kt down.
 - TOC and TOD are the ends of the cruise.
 
+#### The vertical path: where it comes from, what is missing, its transitions (SOG-0006, SOG-0008, SOG-0002; user, 4–5 Nov 2026)
+
+- **Drawn as soon as a level exists.** With the cruise level (`level.ft`, or a point's altitude) the path is drawn, from the best
+  source there is, said in `prof.planSource`: `path` (fuel's `profile.path`), `fuel` (its `tocNm` / `todNm`), `rates` (the
+  aircraft's `climbFpm / climbKt / descentFpm / descentKt`), `default` (1,000 ft/min at 140 kt up, 800 ft/min at 160 kt down).
+  **What is missing is said** in the sheet's notes: without a level, « Vertical path not drawn: no cruise level » with a button to
+  Fuel; on the standard rates, « Vertical path estimated: climb and descent at standard rates (the aircraft's performance is not
+  read from Fuel) ». A write of the record that changes only fuel's rates, `tocNm` or `todNm` redraws the profile (they are part of
+  the route's signature, `sigOf`): the profile used to keep the path of the previous performance.
+- **Transitions, one list for the profile and the map.** `plan.steps` [{ s, alt, kind }], from the plan's altitude by sample: each
+  point where the regime changes — the end of a climb or descent (`reach`, the altitude reached), the start of the next (`leave`) —
+  except TOC and TOD (which keep theirs, within 1.2 % of the route). The profile draws them as small hollow diamonds on the
+  path; the map draws the same at the same distances (`planMarks`, `drawPlanOnMap`), a `reach` named by its level (« FL100 »,
+  « 5000 ft », the label asked in the pass at the route rank, key `plan:step:n`), a `leave` by its symbol only. The contract with
+  fuel is the record's `profile.path` [{ nm, ft }] (INTEGRATION § 4): the vertices of its polyline are the transitions; no other
+  publication is needed. Noreg D106.
+- **Height at the cursor** (SOG-0002): the line under the profile reads « planned FL… · relief … ft AMSL · height above ground … ft »:
+  the planned altitude is AMSL, the relief (Terrarium, in feet) is AMSL, and the height is their difference, written with its
+  unit (`TX.agl`; negative if the path went below the relief — what the data say is shown, not hidden). Noreg D105.
+
 #### Airways and unregulated classes on the cut (SOG-0001; user, 4–5 Nov 2026)
 
 - **Airways on the profile.** Each leg of the flown path whose two points are the ends of an airway segment (same identifiers,

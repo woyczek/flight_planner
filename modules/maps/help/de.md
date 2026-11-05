@@ -33,7 +33,7 @@ um alles zu sehen.
 Lufträume, in die Sie auf der geplanten Höhe einfliegen, und die Flugbahn in Violett. Fahren Sie mit dem Finger über das
 Profil: Ein blauer Cursor folgt ihm, und derselbe Cursor stellt sich auf der Karte ein. Tippen Sie auf die Route auf der
 Karte, um ihn dorthin zu setzen. Die Zeile unter dem Profil sagt, was unter dem Cursor liegt: Entfernung ab dem Abflug,
-geplante Höhe, Geländehöhe und der Luftraum, in dem Sie sich an dieser Stelle befinden. Unter der Karte zeigt dieser
+geplante Höhe und Geländehöhe (beide über dem Meeresspiegel, AMSL), Höhe über Grund (ihre Differenz) und der Luftraum, in dem Sie sich an dieser Stelle befinden. Unter der Karte zeigt dieser
 Datenblock das Profil; die Liste der Lufträume an einem Punkt oder die Meldepunkte eines Flugplatzes öffnen sich an
 seiner Stelle, wenn Sie sie verlangen, und das Profil kommt beim Schließen zurück. Der Wolkenchip, (die drei Chips — Profil, Wolke, „i“ — stehen immer in der obersten Zeile rechts; einer ohne Inhalt ist nur ausgegraut), ersetzt es (der Profilchip bringt es zurück) durch den
 Wetterschnitt entlang der Route (Wind, Temperatur, Wolken, Vereisung) auf der Flughöhe; der Schnitt folgt demselben Cursor, und ein Tippen darauf
@@ -181,4 +181,4 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: e6320b47b7d4 -->
+<!-- fr: f56ebb69e678 -->

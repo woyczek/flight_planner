@@ -293,6 +293,11 @@ export async function status() {
   const soft = [];
   if (S.plain && S.route.points.length) soft.push(`<p>${esc(tt(TX.plain))}</p>`);
   if (S.prof && !S.prof.terrainOk) soft.push(`<p>${esc(tt(TX.noTerrain))}</p>`); // tant que rien n'est arrivé, ou faute de relief
+  // la trajectoire verticale : ce qui manque quand elle n'est pas tracée (le niveau), ce qui est estimé quand elle l'est (SOG-0006)
+  if (S.prof && !onMission()) {
+    if (!S.prof.plan) soft.push(`<p>${esc(tt(TX.planNoLevel))} <button type="button" class="f-btn" data-go="fuel">${esc(tt(TX.toFuel))}</button></p>`);
+    else if (S.prof.planSource === 'default') soft.push(`<p>${esc(tt(TX.planEstimated))}</p>`);
+  }
   const html = empty.join('');
   S.warnHtml = warn.join('');
   S.softHtml = soft.join('');

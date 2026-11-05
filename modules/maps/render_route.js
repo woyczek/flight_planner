@@ -61,13 +61,15 @@
     for (const m of plan || []) {
       const o = {
         name: m.name,
+        id: m.id ?? m.name,
         r: null
       };
       out.push(o);
+      if (!m.name) continue; // le début d'un palier : le losange seul
       R.kit.ask(pl, {
         layer: 'routeLabels',
         rank: 'route',
-        key: `plan:${m.name}`,
+        key: `plan:${m.id ?? m.name}`,
         anchor: m.q,
         boxes: [m.q, ...[16, -16, 32, -32, 48, -48, 64, -64].map(d => m.along?.(d))].filter(Boolean).flatMap(q => corners(q, m.w)),
         paint: r => o.r = r

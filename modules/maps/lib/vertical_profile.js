@@ -935,6 +935,24 @@
         ctx.fillText(t, lx, (r.y0 + r.y1) / 2);
         ctx.font = `${f}px Arial, sans-serif`;
       }
+      // transitions intermédiaires (fin et début des montées et descentes aux paliers) : petits losanges creux, les mêmes que sur la carte
+      ctx.strokeStyle = col;
+      ctx.fillStyle = '#fff';
+      ctx.lineWidth = 1.6 * scale;
+      for (const m of plan.steps || []) {
+        if (!inWin(m.s)) continue;
+        const x = X(m.s),
+          y = Y(m.alt);
+        ctx.beginPath();
+        ctx.moveTo(x, y - 3.4 * scale);
+        ctx.lineTo(x + 3.4 * scale, y);
+        ctx.lineTo(x, y + 3.4 * scale);
+        ctx.lineTo(x - 3.4 * scale, y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.fillStyle = col;
       for (const l of plan.levels) {
         let ls = l.s;
         if (!inWin(ls)) { // fenêtre : le palier dont le milieu est hors cadre se nomme au milieu de la part visible

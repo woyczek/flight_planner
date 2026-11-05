@@ -149,6 +149,7 @@
     } catch {
       terrainOk = false;
     }
+    const ok2 = r => !!r;
     const rate = (fpm, kt) => +fpm > 0 && +kt > 0 ? {
       fpm: +fpm,
       kt: +kt
@@ -169,7 +170,14 @@
       +
       profile
       .tocNm, +profile.todNm);
+    if (data.plan) data.plan.steps = planSteps(data.samples, data.plan);
     const allMarks = data.marks; // un repère par point, avant le retrait de ceux des procédures : les tronçons de voie s'y lisent
+    // d'où vient la trajectoire verticale : 'path' (la trajectoire de Carburant sous les contraintes), 'fuel' (son plan à un niveau, TOC et
+    // TOD de Carburant), 'rates' (les taux de montée et de descente de la fiche de l'appareil), 'default' (des taux fixes : 1 000 ft/min
+    // à 140 kt, 800 ft/min à 160 kt) ; la Carte le dit (SPEC § 8.2) ; null sans trajectoire
+    data.planSource = !data.plan ? null : planned ? 'path' : data.plan.fuel ? 'fuel' : ok2(rate(profile?.climbFpm, profile?.climbKt)) &&
+      ok2(rate(
+        profile?.descentFpm, profile?.descentKt)) ? 'rates' : 'default';
     // les points de procédure tracent la coupe sans se nommer sous elle (les noms et distances sont ceux de la route)
     if (points.some(p => p.noMark)) data.marks = data.marks.filter((m, i) => !points[i].noMark);
     data.terrainOk = terrainOk;
@@ -209,6 +217,34 @@
     return data;
   }
 
+  /** Les transitions intermédiaires de la trajectoire verticale (SOG-0008) : chaque point où le régime change — la fin d'une montée ou
+   *  d'une descente (kind 'reach', l'altitude atteinte), le début de la suivante (kind 'leave') — hors TOC et TOD, qui ont les leurs ;
+   *  [{ s (m), alt (ft), kind }]. Une seule liste, que la coupe et la carte dessinent du même symbole. */
+  function planSteps(samples, plan) {
+    const alt = plan.alt,
+      total = samples[samples.length - 1].s,
+      near = (s, m) => m && Math.abs(s - m.s) < total * .012, // TOC et TOD se lisent à 100 ft du sommet : un peu de marge
+      out = [];
+    let prev = null; // le régime du tronçon précédent : -1 descente, 0 palier, 1 montée
+    for (let i = 1; i < alt.length; i++) {
+      if (alt[i] == null || alt[i - 1] == null) {
+        prev = null;
+        continue;
+      }
+      const d = alt[i] - alt[i - 1],
+        sg = Math.abs(d) < 1 ? 0 : Math.sign(d);
+      if (prev !== null && sg !== prev) {
+        const s = samples[i - 1].s;
+        if (!near(s, plan.toc) && !near(s, plan.tod) && s > total * .005 && s < total * .995) out.push({
+          s,
+          alt: alt[i - 1],
+          kind: sg === 0 || sg === -prev ? 'reach' : 'leave'
+        });
+      }
+      prev = sg;
+    }
+    return out;
+  }
   /** Limite d'une voie (pieds) au format des limites d'espaces : « SFC », « 4500 ft AMSL », « FL065 », « UNL ». */
   const awLimit = (ft, top) => !(ft > 0) ? top ? 'UNL' : 'SFC' : ft >= 66000 ? 'UNL' : ft >= 5000 ? `FL${String(Math.round(ft / 100)).padStart(3, '0')}` :
     `${Math.round(ft)} ft AMSL`;

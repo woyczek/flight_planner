@@ -1926,6 +1926,19 @@ the Map had seen in between: the same line to within the frame's own sampling.
   tiles released (a Terrarium tile of 300 m, written by the case with the standard library) — the profile completed with the relief,
   the note gone. D86 + D87 side by side: 10 in 10, 12 in 12 (they were 8 in 10).
 
+## The vertical path, its transitions, the height at the cursor (user, 4–5 Nov 2026, SOG-0006 / 0008 / 0002)
+
+- **« Le vpath ne s'affiche pas »**: two causes found. (1) A write of the flight that changed only fuel's performance (rates,
+  `tocNm`, `todNm`) left the profile as it was (the signature `sigOf` knew only `profile.path`): the path of the previous
+  aircraft stayed. Now part of the signature. (2) Without a cruise level there is nothing to draw and nothing was said: the sheet
+  now says what is missing, with a way to Fuel; on standard rates it says the path is estimated.
+- **Transitions**: one list (`plan.steps`) for both views, not two computations; TOC / TOD unchanged. The contract with fuel stays
+  `profile.path`: no new publication to ask for (Features SOG informed).
+- **Height**: the profile reads the planned altitude and the relief AMSL; the height above ground is their difference at the
+  cursor and the unit is written. The plan computed by the Map (rates, fuel's TOC / TOD) starts and ends at the terrain of the first and the last
+  sample (the aerodrome's ground), so a path never starts at 0 ft under a field at 1 000 ft when the relief is known (without
+  it, at 0: « relief unavailable » says so); fuel's `profile.path` carries its own ends.
+
 ## Airways, unregulated classes and the ceiling deduced on the profile (user, 4–5 Nov 2026)
 
 - **Asked**: show the airways with their names on the profile; where a TMA (class D) crosses an airway (class E), show the TMA; a

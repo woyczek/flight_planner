@@ -220,6 +220,9 @@ planned vertical path under the procedures' constraints (§ 3 bis). "Edit the ro
 `#fuel?from=maps&focus=route`: fuel shows its Route step with the text field focused (in the dual view, the frame
 keeps the module and fuel scrolls to that step).
 
+- **Transitions of the vertical path** (SOG-0008): the Map draws TOC, TOD and the intermediate transitions from fuel's `profile.path`
+  (the vertices where its slope changes: SPEC § 8.2); fuel publishes nothing more. Changing `profile.tocNm / todNm / climb* /
+  descent*` alone redraws the profile (they are in the route's signature).
 - `route.points[].alt_ft` follows fuel's INTEGRATION § 3 (fuel lot C): the level held from that point on, never on
   the first or the last point; the flight leaves at `level.ft`; a point without it keeps the previous level. The
   profile then draws the steps and computes TOC and TOD per segment.
