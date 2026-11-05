@@ -65,6 +65,22 @@ def parse_faf(rows):
     return out
 
 
+IF_ROW = re.compile(r'^IF (?:ILS/LOC|ILS|LOC)(?: RNP)? RWY (\d{2}[LRC]?)\s+(\d.*)$')
+
+
+def parse_if(rows):
+    """Les points initiaux SANS NOM d'approches ILS / LOC d'une page DATA : { piste : (lat, lon) } d'après les lignes « IF ILS/LOC RWY 07  48°40'05.1'' N 002°04'58.4'' E » (SOG-0022 : l'ILS 07 de Paris-Orly,
+    dont la table de codage ne code pas le point initial, la page DATA en donne la position). Un point initial nommé s'imprime « IF ILS/LOC RWY 06 REF IPO06 » : sans position ici, il est lu dans
+    la table de codage ; ces lignes-là ne sont pas reprises. Comme le FAF, le point n'a ni nom ni altitude dans la source : le constructeur le nomme « IF » + la piste (with_threshold, proc_records)."""
+    out = {}
+    for r in rows:
+        m = IF_ROW.match(r.strip())
+        c = m and dms(m.group(2))
+        if c:
+            out.setdefault(m.group(1), c)
+    return out
+
+
 # ---------------------------------------------------------------------------------------------------------- tables de codage
 def _cells(tokens):
     """Cellules d'une ligne : un mot de tirets vaut autant de cellules vides que de tirets (la page colle les vides)."""
@@ -655,13 +671,15 @@ def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=Non
     d'un PDF ; `resolve(id)` : (lat, lon) d'un point en route, ou None."""
     coords, warnings, procs, used, formats = {}, [], [], [], []
     merges, dropped = {}, []             # points merge (clé : entrée, fusion, arc) ; procédures retirées (un bloc sans titre qui en répète une nommée)
-    faf = {}                              # piste → position du FAF LOC (pages DATA), pour les approches ILS
+    faf, iff = {}, {}                     # piste → position du FAF LOC, du point initial sans nom (pages DATA), pour les approches ILS
     for f in sorted(files):
         if re.search(r'_DATA_0\d\.pdf$', f):
             data_rows = rows_of(f)
             coords.update(parse_data01(data_rows))
             for rw, pos in parse_faf(data_rows).items():
                 faf.setdefault(rw, pos)
+            for rw, pos in parse_if(data_rows).items():
+                iff.setdefault(rw, pos)
     ad_runways = ad2 if isinstance(ad2, list) else (ad212_runways(ad2, icao, warnings) if ad2 else [])
     for r in ad_runways:                  # AVANT la lecture des pages : les points RWnn des tables RNP (« TF RW06 ») prennent le seuil d'atterrissage de la page AD 2.12
         coords.setdefault('RW' + r['id'], landing_position(r))
@@ -684,7 +702,7 @@ def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=Non
             for leg in g['legs']:
                 if leg['id'] and leg['id'] not in coords and resolve and resolve(leg['id']):
                     coords[leg['id']] = resolve(leg['id'])
-        recs, w = records(icao, table, coords, f, cycle, {'faf': faf, 'true': {r['id']: r.get('true') for r in ad_runways}})
+        recs, w = records(icao, table, coords, f, cycle, {'faf': faf, 'if': iff, 'true': {r['id']: r.get('true') for r in ad_runways}})
         for m in table.get('point_merge', []):          # le système est le même sur toutes les pistes qui l'utilisent : une entrée, la liste des pistes
             e = merges.setdefault((m['name'], m['merge'], tuple(m['arc'])), {**m, 'runways': [], 'source': {'file': f}})
             e['runways'] = sorted(set(e['runways']) | set(table['runways']))

@@ -720,21 +720,35 @@ def k64(c):
     RJ, BS, AF, DS = _mods()
     import aero_cycles as C
     d = datetime.date
-    c.eq([C.cycle_start(2026, 1), C.cycle_start(2026, 10), C.cycle_start(2026, 11), C.cycle_start(2026, 14), C.airac_start(d(2026, 10, 28)), C.airac_start(d(2026, 10, 29))],
-         ['2026-01-22', '2026-10-01', '2026-10-29', None, '2026-10-01', '2026-10-29'], 'the AIRAC calendar (2601 on 22 Jan, 2610 on 1 Oct, 2611 on 29 Oct)', what='calendar')
+    c.eq([C.airac_start(d(2026, 1, 21)), C.airac_start(d(2026, 1, 22)), C.airac_start(d(2026, 10, 28)), C.airac_start(d(2026, 10, 29))],
+         ['2025-12-25', '2026-01-22', '2026-10-01', '2026-10-29'], 'the AIRAC calendar (2601 on 22 Jan, 2610 on 1 Oct, 2611 on 29 Oct)', what='calendar')
     names = ['XML_SIA_2026-10-01.xml', 'AIXM4.5_all_FR_OM_2026-10-29.xml', 'sia-airspaces-2026-10-01.xml', 'zones/gb/EG_AIP_DS_FULL_20261001.xml',
              'zones/gb/EG_OBS_DS_AREA1_FULL_20261030.xml', 'aixm5/LE_Amdt_A_2026_10_AIP_DS_FULL_EnRoute.xml', 'aixm5/LE_Amdt_2026_411_AIP_DS_FULL_Airspace.xml',
              'openaip/de_asp.geojson', 'zones/gb/ukmil_enr52.geojson', 'XML_SIA_2026-13-40.xml', 'miam-enr-5-7-tracks.xml']
-    c.eq([C.cycled(n) for n in names], [('sia', '2026-10-01'), ('sia', '2026-10-29'), ('sia', '2026-10-01'), ('nats', '2026-10-01'), ('nats', '2026-10-29'), ('enaire', '2026-10-01'),
+    c.eq([C.cycled(n) for n in names], [('sia', '2026-10-01'), ('sia', '2026-10-29'), ('sia', '2026-10-01'), ('nats', '2026-10-01'), ('nats', '2026-10-29'), None,
                                         None, None, None, None, None],
-         'the cycle in the names: SIA dates, NATS dates (inside 2611: 2611), ENAIRE « A_2026_10 » (2610); an amendment number, openAIP, UK Mil, an impossible date: none', what='names')
+         'the cycle in the names: SIA dates, NATS dates (inside 2611: 2611); ENAIRE\'s names say none (« A_2026_10 » is its 10th amendment, not cycle 2610), openAIP, UK Mil, an impossible date: none', what='names')
+    # ENAIRE: the cycle is read in the file, the latest validTime start up to today (the EnRoute « A_2026_10 » valid from 29 Oct 2026 is cycle 2611, SOG-0025)
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td0:
+        sia = Path(td0) / 'sia'
+        (sia / 'aixm5').mkdir(parents=True)
+        vt = lambda *ds: '<m>' + ''.join(f'<gml:validTime><gml:TimePeriod gml:id="t{i}"><gml:beginPosition>{x}T00:00:00Z</gml:beginPosition></gml:TimePeriod></gml:validTime>' for i, x in enumerate(ds)) + '</m>'
+        (sia / 'aixm5' / 'LE_Amdt_A_2026_10_AIP_DS_FULL_EnRoute.xml').write_text(vt('2013-07-01', '2026-10-29', '2026-10-01', '2026-12-17'), encoding='utf-8')   # 2026-12-17: later than today, ignored
+        (sia / 'aixm5' / 'LE_Amdt_2026_411_AIP_DS_FULL_Airspace.xml').write_text(vt('2025-10-02', '2026-10-01'), encoding='utf-8')
+        (sia / 'aixm5' / 'LE_Amdt_2026_412_AIP_DS_FULL_Obstacles_LEBL.xml').write_text(vt('2026-10-29'), encoding='utf-8')        # not an Airspace / EnRoute set: not read for the cycle
+        (sia / 'aixm5' / 'LE_bad_AIP_DS_FULL_EnRoute.xml').write_bytes(b'\xff\xfe not xml')
+        today = d(2026, 11, 5)
+        c.eq([C.cycled(f'aixm5/{n}', str(sia), today) for n in ('LE_Amdt_A_2026_10_AIP_DS_FULL_EnRoute.xml', 'LE_Amdt_2026_411_AIP_DS_FULL_Airspace.xml', 'LE_Amdt_2026_412_AIP_DS_FULL_Obstacles_LEBL.xml', 'LE_bad_AIP_DS_FULL_EnRoute.xml')],
+             [('enaire', '2026-10-29'), ('enaire', '2026-10-01'), None, None], 'ENAIRE: the cycle of the file is its latest validTime start up to today; a later date, another set, an unreadable file: not counted', what='enaire files')
+        c.eq(C.report(['aixm5/LE_Amdt_A_2026_10_AIP_DS_FULL_EnRoute.xml', 'aixm5/LE_Amdt_2026_411_AIP_DS_FULL_Airspace.xml'], today, str(sia))['enaire'],
+             {'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False}, 'the source holds the newest of its files: current, not stale (the Airspace set of AMDT 411 does not make it old)', what='enaire report')
     # one rule with the source table (shared/aero_zones.js, mirrored in base_sources): the same source for each dated file, the same zone per source
     c.eq([BS.file_source(n)['source'] for n in names if C.cycled(n)], [C.cycled(n)[0] for n in names if C.cycled(n)], 'each dated file belongs to the source the table says', what='mirror files')
     c.ok(all(s in BS.sources_of(z) for s, z in C.CYCLED.items()), str(C.CYCLED), 'each dated source is a source of its zone in the table')
     c.ok(not any(s in C.CYCLED for z in ('de', 'it', 'us', 'ca', 'nat') for s in BS.sources_of(z)), 'others', 'zones fed only by sources without AIRAC have no dated source')
     rep = C.report(names, d(2026, 11, 1))
     c.eq(rep, {'sia': {'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False}, 'nats': {'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False},
-               'enaire': {'cycle': '2026-10-01', 'current': '2026-10-29', 'stale': True}}, 'report: the newest cycle of each source, stale when older than the cycle in force', what='report')
+               'enaire': {'cycle': None, 'current': '2026-10-29', 'stale': False}}, 'report: the newest cycle of each source (ENAIRE: none without its folder), stale when older than the cycle in force', what='report')
     c.eq(C.report([], d(2026, 11, 1))['sia'], {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'no file: no cycle, not stale', what='no file')
     # base/fetch: the plan (in the view from the start) and the end carry it
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
@@ -794,3 +808,58 @@ def k67(c):
         # an absent place does not fail
         gone = {r['id']: r for r in DI.inventory(str(Path(td) / 'nope'), str(Path(td) / 'nope2'), '', None)}
         c.eq([gone['repo']['present'], gone['downloads']['present'], gone['backup']['present']], [False, False, False], 'absent places are said absent, no exception', what='absent')
+# ---------------------------------------------------------------------------------------------------------------------------------------------
+@case('K68', 'base/pickup takes the openAIP exports of Downloads: GeoJSON as it is, the JSON array converted, the XML (openAIP 1.1) said, never a wrong country or a path', 'K', static=True,
+      rule='SOG-0027 (5 Nov 2026): « Prendre le fichier téléchargé » accepts an openAIP export dropped in Downloads, at the place of the others (data/sia/openaip/), and says what it does with each file; openAIP stays the fallback behind the official sources')
+def k68(c):
+    RJ, BS, AF, DS = _mods()
+    sq = [[[1, 40], [1.1, 40], [1.1, 40.1], [1, 40.1], [1, 40]]]
+    gj = lambda cc: json.dumps({'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'geometry': {'type': 'Polygon', 'coordinates': sq},
+                                                                           'properties': {'_id': 'a1', 'name': 'X', 'country': cc, 'upperLimit': {'value': 1}}}]})
+    arr = lambda cc, n=2: json.dumps([{'_id': f'p{i}', 'name': f'P{i}', 'country': cc, 'compulsory': True, 'geometry': {'type': 'Point', 'coordinates': [-5.3, 6.8]}} for i in range(n)])
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        dl, data = Path(td) / 'Downloads', Path(td) / 'data'
+        dl.mkdir()
+        data.mkdir()
+        (dl / 'kh_asp.geojson').write_text(gj('KH'), encoding='utf-8')               # GeoJSON: as it is
+        (dl / 'kh_rpp.json').write_text(arr('KH'), encoding='utf-8')                 # JSON array: converted
+        (dl / 'kh_apt.xml').write_text('<?xml version="1.0"?><OPENAIP DATAFORMAT="1.1"/>', encoding='utf-8')   # openAIP 1.1 XML: said, not read
+        (dl / 'kh_hot.xml').write_text('<x/>', encoding='utf-8')                      # hotspots: not used
+        (dl / 'iq_nav.json').write_text(arr('FR'), encoding='utf-8')                  # objects of another country than the name: refused
+        (dl / 'iq_asp.json').write_text('not json', encoding='utf-8')                 # unreadable: refused
+        (dl / 'ie_asp.geojson').write_text(gj('IE'), encoding='utf-8')
+        (dl / 'ie_asp (1).geojson').write_text(gj('IE'), encoding='utf-8')            # a duplicate: the latest of the name only
+        os.utime(dl / 'ie_asp.geojson', (1_700_000_000, 1_700_000_000))
+        (dl / '..evil.geojson').write_text(gj('KH'), encoding='utf-8')
+        (dl / 'de_asp.geojson').write_text(gj('DE'), encoding='utf-8')                # a zone not asked for
+        ctx = {'data': str(data), 'downloads': lambda: [str(dl)]}
+        zones = ['kh', 'iq', 'ie']
+        r = BS.pickup(RJ.Job('base', 'pickup', {}), BS.check_pickup({'zones': zones, 'dry': True}), ctx)
+        by = {t['zone']: t for t in r['taken']}
+        c.eq(sorted(by), ['ie', 'kh'], 'the zones asked for that have a usable export are taken; iq (a wrong country, unreadable) is not; de was not asked for', what='zones')
+        c.eq((by['kh']['files'], by['kh']['from'], by['kh']['converted']), (['kh_asp.geojson', 'kh_rpp.geojson'], ['kh_asp.geojson', 'kh_rpp.json'], ['kh_rpp.json']),
+             'kh: the GeoJSON as it is, the JSON converted, both written as <country>_<layer>.geojson', what='kh')
+        c.eq(by['ie']['from'], ['ie_asp (1).geojson'], 'a duplicate: only one file taken per country and layer, the latest', what='ie')
+        c.eq(sorted((x['name'], x['why']) for x in r['skipped']), [('kh_apt.xml', 'format'), ('kh_hot.xml', 'layer')], 'said, not taken: the XML (openAIP 1.1, another format), the hotspots layer', what='skipped')
+        c.eq(sorted((f['zone'], f['name'], f['error']) for f in r['failed']), [('iq', 'iq_asp.json', 'unreadable'), ('iq', 'iq_nav.json', 'wrong-country')], 'refused, with the reason', what='failed')
+        c.ok(r['dry'] and not (data / 'sia').exists(), json.dumps(r)[:200], 'dry: nothing written')
+        # the plan shows the total, the real run takes the same files and writes them where aero_fetch writes
+        shown = r['shown']
+        c.eq(sorted(shown['openaip']), ['name', 'size'], 'the plan gives what to send back (zips.openaip): the total of the files it would take', what='shown')
+        r2 = BS.pickup(RJ.Job('base', 'pickup', {}), BS.check_pickup({'zones': zones, 'dry': False, 'zips': shown}), ctx)
+        got = sorted(os.listdir(data / 'sia' / 'openaip'))
+        c.eq(got, ['ie_asp.geojson', 'kh_asp.geojson', 'kh_rpp.geojson'], 'written under data/sia/openaip/, by their final names only (no « (1) », no path from the file)', what='written')
+        conv = json.loads((data / 'sia' / 'openaip' / 'kh_rpp.geojson').read_text(encoding='utf-8'))
+        c.eq((conv['type'], len(conv['features']), conv['features'][0]['geometry']['type'], conv['features'][0]['properties']['compulsory'], 'geometry' in conv['features'][0]['properties']),
+             ('FeatureCollection', 2, 'Point', True, False), 'the JSON array became a FeatureCollection: the geometry on the Feature, the rest as properties', what='converted')
+        c.eq((data / 'sia' / 'openaip' / 'kh_asp.geojson').read_bytes(), gj('KH').encode(), 'a GeoJSON export is written byte for byte', what='as is')
+        # the second pass: the same files are said unchanged
+        r3 = BS.pickup(RJ.Job('base', 'pickup', {}), BS.check_pickup({'zones': zones, 'dry': False}), ctx)
+        c.eq(sorted(f for t in r3['taken'] for f in t['unchanged']), ['ie_asp.geojson', 'kh_asp.geojson', 'kh_rpp.geojson'], 'a second pass writes nothing: unchanged', what='unchanged')
+        # another file arrives between the plan and the take: refused
+        (dl / 'kh_nav.geojson').write_text(gj('KH'), encoding='utf-8')
+        r4 = BS.pickup(RJ.Job('base', 'pickup', {}), BS.check_pickup({'zones': zones, 'dry': False, 'zips': shown}), ctx)
+        c.eq([(f['source'], f['error']) for f in r4['failed']], [('openaip', 'changed')], 'the plan showed other files: nothing taken, the plan is to be made again', what='changed')
+        # nothing in Downloads for a zone: nothing said (openAIP is a fallback), and the other sources are untouched by a pickup
+        r5 = BS.pickup(RJ.Job('base', 'pickup', {}), BS.check_pickup({'zones': ['us'], 'dry': True}), ctx)
+        c.eq((r5['skipped'], [m['source'] for m in r5['missing']], [t['source'] for t in r5['taken']]), ([], [], []), 'no openAIP export for the zone: no line, never « missing »', what='nothing')

@@ -450,7 +450,7 @@ def fetch(job, args, ctx):
         init[z] = {'state': 'waiting', 'done': 0, 'total': len(dl), 'sources': pre}
     view = _View(job, init)
     # le plan : le cycle que le poste détient pour chaque source datée (SIA, NATS, ENAIRE), avant de télécharger quoi que ce soit
-    job.data['sources'] = aero_cycles.report(sia_rels(data))
+    job.data['sources'] = aero_cycles.report(sia_rels(data), root=os.path.join(data, 'sia'))
     _step(job, 0, len(zones))
     fetched, unchanged, failed, modified = [], [], [], []
     attempted = good = 0
@@ -521,7 +521,7 @@ def fetch(job, args, ctx):
                     **({'pickup': True, 'expected': PICKUP[s]['zip']} if s in PICKUP else {})} for z in zones for s in plans[z][2]]
     reason = ('cancelled' if cancelled else 'nothing-to-fetch' if not attempted else 'failed' if failed and not good else 'partial' if failed else None)
     res = {'ok': reason is None, 'fetched': fetched, 'unchanged': unchanged, 'failed': failed, 'manual': manual_list, 'outside_sync': outside,
-           'absent': sorted(set(absent)), 'sources': aero_cycles.report(sia_rels(data)),
+           'absent': sorted(set(absent)), 'sources': aero_cycles.report(sia_rels(data), root=os.path.join(data, 'sia')),
            'warnings': [{'code': 'outside-sync', 'count': outside}] if outside else []}
     if reason:
         res['reason'] = reason
@@ -700,6 +700,13 @@ PICKUP = {
              'keep': lambda n: bool(re.match(r'EG[_-]', n)) and n.lower().endswith('.xml') and not re.search(r'DIFF|DELTA|export-filter|METADATA', n, re.I)},
 }
 PICKUP_MAX = 500 * 1024 * 1024  # un zip déposé plus gros : refusé avant d'être ouvert
+# Les exports d'openAIP (https://www.openaip.net/data/exports), téléchargés par l'utilisateur dans Téléchargements : un fichier par pays et par couche,
+# « <pays>_<asp|apt|nav|rpp>.<format> ». GeoJSON (celui que lit la suite) : posé tel quel dans data/sia/openaip/ ; JSON (le tableau d'objets d'openAIP, sa
+# géométrie dans chaque objet) : converti en GeoJSON, mêmes propriétés ; XML (openAIP 1.1, un autre format) : pas lu, dit. La couche « hot » (points chauds)
+# n'est pas utilisée par la suite. Le fichier est un fichier de l'utilisateur, donc non fiable : taille et nombre d'objets bornés, JSON contrôlé, pays du
+# nom et pays des objets d'accord, jamais un chemin pris du fichier (le nom final est construit ici).
+OPENAIP_FILE = re.compile(r'^(?P<cc>[a-z]{2})_(?P<layer>asp|apt|nav|rpp|hot)(?: \(\d+\))?\.(?P<ext>geojson|json|xml)\Z', re.A | re.I)
+OPENAIP_MAX_FEATURES = 400_000
 PICKUP_NAME = re.compile(r'^[\w .()+-]{1,150}\Z', re.A)  # un nom d'entrée pris (le SAFE_NAME de base.py) : ni séparateur, ni « : »
 
 
@@ -712,11 +719,11 @@ def check_pickup(a):
     zones = _zones_arg(a)
     dry = a.get('dry', True)
     zips = a.get('zips', {})
-    if zones is None or not isinstance(dry, bool) or not isinstance(zips, dict) or len(zips) > len(PICKUP):
+    if zones is None or not isinstance(dry, bool) or not isinstance(zips, dict) or len(zips) > len(PICKUP) + 1:
         return None
     shown = {}
     for s, z in zips.items():
-        if s not in PICKUP or not isinstance(z, dict) or set(z) != {'name', 'size'} or not isinstance(z['name'], str) or not PICKUP_NAME.match(z['name']) \
+        if (s not in PICKUP and s != 'openaip') or not isinstance(z, dict) or set(z) != {'name', 'size'} or not isinstance(z['name'], str) or not PICKUP_NAME.match(z['name']) \
                 or not isinstance(z['size'], int) or isinstance(z['size'], bool) or z['size'] < 0:
             return None
         shown[s] = {'name': z['name'], 'size': z['size']}
@@ -735,11 +742,138 @@ def _latest(dirs, pattern):
     return max(found, key=os.path.getmtime) if found else ''
 
 
+def _openaip_scan(dirs, zones):
+    """Les exports d'openAIP de ces zones dans ces dossiers : { (pays, couche): { format: chemin du plus récent } } ; ni lien ni dossier ; seuls les pays des zones
+    demandées (un code de deux lettres)."""
+    want = {z for z in zones if re.fullmatch(r'[a-z]{2}', z)}
+    found = {}
+    for d in dirs:
+        try:
+            with os.scandir(d) as it:
+                for e in it:
+                    m = OPENAIP_FILE.match(e.name)
+                    if not m or m.group('cc').lower() not in want or e.is_symlink() or not e.is_file(follow_symlinks=False):
+                        continue
+                    slot = found.setdefault((m.group('cc').lower(), m.group('layer').lower()), {})
+                    k = m.group('ext').lower()
+                    if k not in slot or os.path.getmtime(e.path) > os.path.getmtime(slot[k]):
+                        slot[k] = e.path
+        except OSError:
+            continue
+    return found
+
+
+def _openaip_read(path, ext, cc):
+    """(octets GeoJSON ou None si le fichier est déjà du GeoJSON, nombre d'objets) d'un export d'openAIP ; lève ValueError (le code) si le fichier n'est pas ce qu'il dit.
+    ext 'json' : le tableau d'objets d'openAIP, converti (la géométrie de chaque objet devient celle de sa Feature, le reste ses propriétés)."""
+    if os.path.getsize(path) > aero_fetch.MAX_BYTES:
+        raise ValueError('too-large')
+    with open(path, 'rb') as f:
+        try:
+            obj = json.loads(f.read().decode('utf-8-sig'))
+        except (ValueError, UnicodeDecodeError):
+            raise ValueError('unreadable') from None
+    if ext == 'geojson':
+        if not (isinstance(obj, dict) and obj.get('type') == 'FeatureCollection' and isinstance(obj.get('features'), list)):
+            raise ValueError('not-geojson')
+        feats, raw = obj['features'], None
+    else:
+        if not isinstance(obj, list):
+            raise ValueError('not-openaip-json')
+        feats = [{'type': 'Feature', 'geometry': e['geometry'], 'properties': {k: v for k, v in e.items() if k != 'geometry'}}
+                 for e in obj if isinstance(e, dict) and isinstance(e.get('geometry'), dict)]
+        if obj and not feats:
+            raise ValueError('no-geometry')
+        raw = json.dumps({'type': 'FeatureCollection', 'features': feats}, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+    if len(feats) > OPENAIP_MAX_FEATURES:
+        raise ValueError('too-many-features')
+    countries = [str((f.get('properties') or {}).get('country')).lower() for f in feats if isinstance(f, dict) and isinstance((f.get('properties') or {}).get('country'), str)]
+    if countries and sum(1 for x in countries if x == cc) * 2 < len(countries):
+        raise ValueError('wrong-country')  # le nom dit un pays, les objets en disent un autre
+    return raw, len(feats)
+
+
+def _openaip_pickup(job, zones, dry, args, ctx, taken, failed, skipped):
+    # rend { 'openaip': { name, size } } (le total des fichiers que cette passe prendrait : le plan le rend en `shown`, la prise le rend dans zips pour dire « ce sont ceux-là »), ou {}
+    """Les exports d'openAIP de Téléchargements pour les zones à code de pays : écrits sous data/sia/openaip/<pays>_<couche>.geojson (au même endroit que ceux d'aero_fetch),
+    jamais commités ; rien n'est dit « manquant » quand il n'y en a pas (openAIP n'est qu'un repli). taken : { zone, source: 'openaip', zip: None, from: [fichiers pris],
+    files: [fichiers écrits], converted: [fichiers convertis du JSON], unchanged: [fichiers déjà là], size (le total des fichiers pris), bytes } ; skipped : { zone, source,
+    name, why: 'format' (XML openAIP 1.1, non lu) | 'layer' (couche non utilisée) }. Avec zips, le total des fichiers que le plan a montré (zips.openaip.size) doit être celui d'aujourd'hui."""
+    data = ctx['data']
+    dirs = list((ctx.get('downloads') or (lambda: []))())
+    found = _openaip_scan(dirs, zones)
+    if not found:
+        return {}
+    plan = {}
+    for (cc, layer), slot in sorted(found.items()):
+        if 'xml' in slot:
+            skipped.append({'zone': cc, 'source': 'openaip', 'name': os.path.basename(slot['xml']), 'why': 'layer' if layer == 'hot' else 'format'})
+        if layer == 'hot':
+            for ext in ('geojson', 'json'):
+                if ext in slot:
+                    skipped.append({'zone': cc, 'source': 'openaip', 'name': os.path.basename(slot[ext]), 'why': 'layer'})
+            continue
+        ext = 'geojson' if 'geojson' in slot else 'json' if 'json' in slot else None
+        if ext:
+            plan[(cc, layer)] = (slot[ext], ext)
+    if not plan:
+        return {}
+    total = sum(os.path.getsize(p) for p, _ in plan.values())
+    shown = {'openaip': {'name': 'openaip', 'size': total}}
+    if 'zips' in args:
+        want = args['zips'].get('openaip')
+        if not want:
+            failed.append({'zone': '*', 'source': 'openaip', 'error': 'not-shown'})
+            return shown
+        if (want['name'], want['size']) != ('openaip', total):
+            failed.append({'zone': '*', 'source': 'openaip', 'error': 'changed', 'size': total})
+            return shown
+    by_zone = {}
+    for (cc, layer), (path, ext) in plan.items():
+        by_zone.setdefault(cc, []).append((layer, path, ext))
+    for cc, items in sorted(by_zone.items()):
+        if job.cancelled():
+            return shown
+        t = {'zone': cc, 'source': 'openaip', 'zip': None, 'from': [], 'files': [], 'converted': [], 'unchanged': [], 'size': 0, 'bytes': 0}
+        for layer, path, ext in sorted(items):
+            name = f'{cc}_{layer}.geojson'
+            try:
+                raw, n = _openaip_read(path, ext, cc)
+                dest = data_sync.data_path(data, f'sia/openaip/{name}')
+                if not dest:
+                    raise ValueError('unsafe-path')
+                if raw is None:
+                    with open(path, 'rb') as f:
+                        raw = f.read()
+                t['from'].append(os.path.basename(path))
+                t['size'] += os.path.getsize(path)
+                if ext == 'json':
+                    t['converted'].append(os.path.basename(path))
+                if dry:
+                    t['files'].append(name)
+                    t['bytes'] += len(raw)
+                    continue
+                os.makedirs(os.path.dirname(dest), exist_ok=True)
+                if not regen_jobs.inside(os.path.dirname(dest), os.path.realpath(data)):
+                    raise ValueError('unsafe-path')
+                if aero_fetch.write(dest, raw):
+                    t['files'].append(name)
+                    t['bytes'] += len(raw)
+                else:
+                    t['unchanged'].append(name)
+            except (ValueError, OSError) as e:
+                failed.append({'zone': cc, 'source': 'openaip', 'error': str(e)[:60] if isinstance(e, ValueError) else type(e).__name__, 'name': os.path.basename(path)})
+        if t['from']:
+            taken.append(t)
+            job.log(f"{cc}: openaip ← {len(t['from'])} fichier(s)" + (f", {len(t['converted'])} converti(s) du JSON" if t['converted'] else '') + (' (à blanc)' if dry else ''))
+    return shown
+
+
 def pickup(job, args, ctx):
-    """Verbe base/pickup : pour chaque zone, ses sources à déposer à la main que le lanceur sait prendre (PICKUP). Rend
+    """Verbe base/pickup : pour chaque zone, ses sources à déposer à la main que le lanceur sait prendre (PICKUP), puis les exports d'openAIP de Téléchargements. Rend
     { ok, dry, taken: [{ zone, source, zip, files: [noms], bytes }], missing: [{ zone, source, expected }], failed:
-    [{ zone, source, error }], reason? } ; error 'changed' (un autre zip que celui montré), 'not-shown' (avec zips, une source
-    que le plan n'a pas montrée) ; missing : aucun fichier au nom attendu dans Téléchargements (le motif dit lequel)."""
+    [{ zone, source, error }], skipped: [{ zone, source: 'openaip', name, why }], shown?: { openaip: { name, size } } (à rendre dans zips à la prise), reason? } ; error 'changed' (un autre zip que celui montré), 'not-shown' (avec zips, une
+    source que le plan n'a pas montrée) ; missing : aucun fichier au nom attendu dans Téléchargements (le motif dit lequel) ; openAIP : voir _openaip_pickup."""
     data, dry = ctx['data'], args['dry']
     dirs = list((ctx.get('downloads') or (lambda: []))())
     base = os.path.realpath(data)
@@ -793,8 +927,10 @@ def pickup(job, args, ctx):
                 job.log(f'{z}: {s} ← {os.path.basename(zp)} : {len(pick)} fichier(s)' + (' (à blanc)' if dry else ''))
         except (zipfile.BadZipFile, OSError, ValueError, regen_jobs.TooLarge) as e:
             failed.append({'zone': z, 'source': s, 'error': str(e)[:120] if isinstance(e, (ValueError, regen_jobs.TooLarge)) else type(e).__name__})
+    skipped = []
+    shown = _openaip_pickup(job, args['zones'], dry, args, ctx, taken, failed, skipped)
     reason = 'cancelled' if job.cancelled() else 'failed' if failed and not taken else 'partial' if failed else None
-    res = {'ok': reason is None, 'dry': dry, 'taken': taken, 'missing': missing, 'failed': failed}
+    res = {'ok': reason is None, 'dry': dry, 'taken': taken, 'missing': missing, 'failed': failed, 'skipped': skipped, **({'shown': shown} if shown else {})}
     if reason:
         res['reason'] = reason
     return res

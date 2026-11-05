@@ -117,6 +117,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `planner/flight_performance_database_merged.fpdb.json` with every saved sheet; the card put the mirror under « Autres », unnamed. It
   now counts with the sheets and says what it is. The reason a held item gives is the error the data layer already names (V3 Frame
   fe6713570).
+- **Data, lot C: cycles and sources** (`frame/aerodb/aerodb.js`, `tools/aero_cycles.py`, `tools/proc_sia.py`, `tools/proc_records.py`, `tools/regen/base_sources.py`;
+  SPEC, INTEGRATION, DECISIONS; tests K70, K69, K68, K64) — **SOG-0026**: why every source of the base showed « dépassé » once France was rebuilt (the module takes
+  the oldest folder cycle of every fed zone, and a zone without an AIRAC source has no cycle); `publication()` now says, per zone, the dated source its cycle
+  comes from, or none (`cycleSource`). **SOG-0022**: the ILS 07 of Orly has its initial fix and its final approach fix (read from the DATA page, named
+  `IF07` and `FAF07`: the source gives no name). **SOG-0027**: « Prendre le fichier téléchargé » takes the openAIP exports of Downloads (GeoJSON as it is,
+  JSON converted, XML said), at the place of the others. **SOG-0025**: ENAIRE's pages read; its cycle is read in the file, no longer from its name (the
+  Spanish data was wrongly shown out of date).
 - **Missions moves to the Company application** (`modules/missions/module.js` `meta.apps: ['company']`; SPEC § 1, DECISIONS, help ×4;
   noreg N2–N5 open it with `?app=company`) — « Préparer ce vol » still opens Fuel, in Pilot.
 - **Missions, Site: a path or an address written by a pilot is never taken as it is** (`frame/lib/mission.js` `readRegistry`,

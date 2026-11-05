@@ -431,7 +431,7 @@ def build(job, args, ctx):
     cycle = cycle_of(inputs)  # celui des fichiers du SIA (la page le vérifie contre eux), sinon le cycle en vigueur
     # le cycle de chaque zone est celui de SA source datée (fr : SIA, gb : NATS, es : ENAIRE) ; une zone sans source datée n'a pas de
     # cycle (None : jamais « dépassée ») et s'écrit sous le cycle en vigueur ; jamais celui du SIA pour toutes (1er nov. 2026)
-    sources = aero_cycles.report(inputs)
+    sources = aero_cycles.report(inputs, root=os.path.join(data, 'sia'))
     current = aero_cycles.airac_start()
     own = {z: aero_cycles.zone_cycle(z, sources) for z in zones}
     folder = {z: own[z] or current for z in zones}

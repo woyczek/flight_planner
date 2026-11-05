@@ -2275,8 +2275,9 @@ def k24(c):
          'LFPO ILS 25: VEKUH, the threshold, then the CA (a leg without a fix) opens the missed approach', what='ILS 25 points')
     c.eq(i25['points'][2].get('gap'), True, 'the CA keeps `gap`', what='ILS 25 gap')
     i07 = next(p for p in d25['procedures'] if p['runways'] == ['07'])
-    c.eq([(q['id'], q.get('phase')) for q in i07['points']], [('RW07', None), ('PO412', 'missed'), ('MLN', 'missed'), ('MOLBA', 'missed')], 'LFPO ILS 07: no IF row was read, the threshold comes first', what='ILS 07 points')
-    c.ok(any('IF absent' in x for x in d25['warnings']), str(d25['warnings'][-4:]), 'and the missing IF is said')
+    c.eq([(q['id'], q.get('phase')) for q in i07['points']], [('IF07', None), ('FAF07', None), ('RW07', None), ('PO412', 'missed'), ('MLN', 'missed'), ('MOLBA', 'missed')],
+         'LFPO ILS 07: no IF row in the table, but the DATA page prints « IF ILS/LOC RWY 07 » and « FAF LOC RWY 07 »: IF07, FAF07, the threshold, then the missed approach (SOG-0022, K69)', what='ILS 07 points')
+    c.ok(any('point initial sans nom lu des pages DATA' in x and 'RWY07' in x for x in d25['warnings']), str(d25['warnings'][-4:]), 'and the initial fix read from the DATA page, not from the table, is said (SOG-0022)')
     # without the AD 2 page: no threshold position, nothing inserted, said (the record is what it was before)
     dn = P.build_aerodrome('LFPO', f06, rows_pdf, 'https://example.org' + base, '2026-10-01')
     inn = next(p for p in dn['procedures'] if 'ILS' in p['name'])
@@ -4012,3 +4013,56 @@ def k66(c):
     c.eq((oa['CANADA CLASS E']['upper'], oa['GERMAN CLASS E']['upper']), ('17999 ft AMSL', 'FL 600'), 'Canada too (FL180); a State without a known class A floor keeps it', what='States')
     c.eq((oa['E AT FL180']['upper'], oa['E AT FL175']['upper']), ('17999 ft AMSL', 'FL 175'), 'at the floor: capped; below it: kept', what='edges')
     c.eq(got['faa'], [{'cls': 'E', 'upper': '17999 ft AMSL', 'capped': 'classA'}], 'the FAA Class Airspace E too', what='FAA')
+
+
+@case('K70', 'publication(): each zone says the dated source its cycle comes from, or none (no AIRAC: never « dépassée »)', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0026 (5 Nov 2026): the Data module took the oldest published folder cycle among the zones a source feeds, so GeoNames, relief, openAIP, UK Mil… showed « dépassé » as soon as one zone of the world was still at the previous cycle; the cycle is the one of a dated source (SIA, NATS, ENAIRE) only; the folder of any other zone is a build date')
+def k67(c):
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import aero_cycles
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const day = Date.parse('2026-11-05T12:00:00Z'), meta = (z, cy) => ({ schema: 2, zone: z, cycle: cy, kind: 'meta', parserVersion: 21, data: { builtAt: cy + 'T10:00:00Z' } });
+      const files = {};
+      for (const [z, cy] of [['fr', '2026-10-29'], ['de', '2026-10-01'], ['gb', '2026-10-01'], ['es', '2026-10-01'], ['us', '2026-10-01']]) files[`sia/base/${z}/${cy}/meta.json`] = meta(z, cy);
+      const reader = { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} };
+      const db = AeroDB.create({ reader, lnmperf: false, now: () => day }), pub = await db.publication();
+      return { src: Object.fromEntries(Object.entries(pub.base).map(([z, v]) => [z, v.cycleSource])), inForce: Object.fromEntries(Object.entries(pub.base).map(([z, v]) => [z, v.inForce])),
+               table: AeroDB.CYCLED_ZONES };
+    }""")
+    c.eq(r['src'], {'fr': 'sia', 'de': None, 'gb': 'nats', 'es': 'enaire', 'us': None}, 'fr, gb and es name their dated source; de and us (openAIP, FAA: no AIRAC) have none', what='cycleSource')
+    c.eq(r['table'], {z: s for s, z in aero_cycles.CYCLED.items()}, "the launcher's table (tools/aero_cycles.py CYCLED) and aerodb's are the same", what='mirror')
+    c.eq(r['inForce']['de'], '2026-10-01', 'the folder cycle stays as written (a build date for de), the module decides what it says', what='folder')
+
+
+@case('K69', 'LFPO ILS 07 (SOG-0022): the initial fix and the FAF of the DATA page are in the record, IF -> FAF -> threshold -> missed; named by the runway, never by a chart name', 'K', static=True,
+      rule='SOG-0022 (5 Nov 2026): the ILS 07 coding table of Orly has no initial fix (« See chart » first) but the DATA page prints « IF ILS/LOC RWY 07 » and « FAF LOC RWY 07 » with positions; the record carries both (synthetic), on the final, never invented names (C107 / F107 are chart names the source does not give)')
+def k69(c):
+    P, fx, rows = _eaip(c)
+    page = (fx / 'LFPO' / 'FR-AD-2.LFPO.AD-2.12.html').read_text(encoding='utf-8')
+    files = ['AD_2_LFPO_DATA_02.pdf', 'AD_2_LFPO_DATA_RWY07_FNA_ILS_CAT123_LOC_CODE.pdf', 'AD_2_LFPO_DATA_RWY06_FNA_ILS_CAT123_LOC_CODE.pdf', 'AD_2_LFPO_DATA_RWY07_FNA_RNP_CODE.pdf']
+    d = P.build_aerodrome('LFPO', files, lambda n: rows(n.replace('.pdf', '')), 'https://example.org/AIRAC-2026-10-29', '2026-10-29', None, None, page)
+    ils = next(p for p in d['procedures'] if p['runways'] == ['07'] and 'ILS' in p['name'])
+    pts = ils['points']
+    c.eq([(q['id'], q['leg'], q.get('synthetic'), q.get('phase'), q.get('gap')) for q in pts],
+         [('IF07', 'IF', 'if', None, None), ('FAF07', 'CF', 'faf', None, None), ('RW07', 'CF', 'threshold', None, None), ('PO412', 'TF', None, 'missed', True), ('MLN', 'TF', None, 'missed', None), ('MOLBA', 'TF', None, 'missed', None)],
+         'LFPO ILS 07: IF07 (the DATA page prints « IF ILS/LOC RWY 07 » with a position), FAF07, the threshold, then the missed approach', what='ILS 07 points')
+    c.eq(((pts[0]['lat'], pts[0]['lon']), (pts[1]['lat'], pts[1]['lon'])), ((48.668083, 2.082889), (48.681667, 2.1555)),
+         "the positions are the DATA page's (48°40'05.1'' N 002°04'58.4'' E and 48°40'54.0'' N 002°09'19.8'' E), no altitude printed", what='ILS 07 positions')
+    rnp = next(p for p in d['procedures'] if p['runways'] == ['07'] and p['name'].startswith('RNP'))
+    fpo = next(q for q in rnp['points'] if q['id'] == 'FPO07')
+    c.eq((fpo['lat'], fpo['lon']), (pts[1]['lat'], pts[1]['lon']), 'the FAF of the ILS is the point FPO07 of the RNP page of the same runway (same place, two names): the data agree', what='FPO07')
+    c.ok(any('point initial sans nom lu des pages DATA' in w for w in d['warnings']), str([w for w in d['warnings'] if 'ILS' in w][:3]), 'and said in a warning: the table does not code it')
+    ids = {q['id'] for p in d['procedures'] for q in p['points']}
+    c.ok('C107' not in ids and 'F107' not in ids, 'chart names', 'the chart names (C107, F107) are not in the source data: never invented')
+    # ILS 06 is unchanged: its initial fix is named in the table (IPO06), the DATA page has « REF IPO06 », no second initial fix
+    i6 = next(p for p in d['procedures'] if p['runways'] == ['06'] and 'ILS' in p['name'])
+    c.eq([q['id'] for q in i6['points']][:3], ['IPO06', 'FAF06', 'RW06'], 'ILS 06 unchanged: the initial fix of the table, then FAF06, the threshold', what='ILS 06')
+    # the initial fix is added only when it is on the final: a position 60 degrees off the runway is not added, and said
+    legs = [{'id': 'PO412', 'leg': 'TF', 'alt': None, 'over': None, 'gap': True}]
+    w = []
+    out = P.with_threshold(legs, ['07'], {'RW07': (48.719408, 2.358592)}, w, {'faf': {}, 'if': {'07': (48.9, 2.2)}, 'true': {'07': 73.0}})
+    c.ok([x['id'] for x in out] == ['RW07', 'PO412'] and any('pas sur la finale' in x for x in w), f'{out} {w}', 'an initial fix off the final axis is not added, and said')
+    # parse_if reads the unnamed initial fixes only: « REF IPO06 » (a named one) is left to the coding table
+    c.eq(P.parse_if(rows('AD_2_LFPO_DATA_02')), {'07': (48.668083, 2.082889)}, 'parse_if: only the row that prints a position', what='parse_if')

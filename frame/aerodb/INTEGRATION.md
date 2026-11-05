@@ -417,11 +417,29 @@ const p = await ctx.launcher.job('regen/job', { set: 'base', verb: 'purge', args
   (the root of `data/sia/` for the SIA, `data/sia/zones/gb/` for NATS: raw sources, never committed). Args `{ zones, dry? }` (dry by default: the
   plan). Result `{ ok, dry, taken: [{ zone, source, zip, size, files, bytes }], missing: [{ zone, source, expected }], failed: [{ zone, source, error }],
   reason? }`. **The file shown is the file taken** (Sécurisation's note on c62d555e6, audit line 95): the real pickup may carry
-  `zips: { <source>: { name, size } }` from the plan; a source whose latest zip is no longer that one (another arrived during the
+  `zips: { <source>: { name, size } }` from the plan (and `openaip`, below); a source whose latest zip is no longer that one (another arrived during the
   question) is refused, `error: 'changed'` with the zip now found, and nothing is written for it; with `zips`, a source it
   does not name (missing at the plan, its zip arrived since) is refused too, `error: 'not-shown'`, and `zips: {}` shows
   nothing (Sécurisation, line 109); without `zips`, as before. `base/fetch` marks such a source in its `manual` list with `pickup: true` and the `expected` name, for the button « Prendre le fichier
   téléchargé ». Not under `data/local/<source>/` as first asked: the build does not read there (Simplification informed).
+- **`base/pickup` and the openAIP exports** (5 Nov 2026, SOG-0027): after the sources above, the exports of openAIP that the user downloaded
+  from openaip.net into Downloads are taken for the requested zones that have a country code (`<country>_<layer>.<format>`, layer `asp`,
+  `apt`, `nav` or `rpp`). The suite reads the **GeoJSON** export (`<cc>_<layer>.geojson`, what `aero_fetch` fetches): a GeoJSON file is
+  written **as it is** under `data/sia/openaip/` (where `aero_fetch` writes, raw source, never committed); the **JSON** export (an array
+  of objects, the geometry in each object) is **converted** to the same GeoJSON (geometry on the Feature, the rest as properties; the
+  user's real `ci_rpp.json` gives its six VFR points); the **XML** export (openAIP 1.1, `OPENAIP DATAFORMAT="1.1"`) is another format
+  that the suite does not read: it is **said** (`skipped: [{ zone, source: 'openaip', name, why: 'format' }]`, as is the `hot` layer,
+  `why: 'layer'`) and the user is told to export GeoJSON or JSON. A copy named `kh_apt (1).geojson` is a duplicate: one file per country
+  and layer, the latest. Refused, each with its code in `failed`: a file that is not JSON (`unreadable`), not a FeatureCollection
+  (`not-geojson`) or not an array (`not-openaip-json`), over 200 MB, over 400 000 objects, or whose objects name another country than
+  the file (`wrong-country`). `taken` gets `{ zone, source: 'openaip', zip: null, from: [files taken], files: [files written],
+  converted: [files converted], unchanged: [already there], size, bytes }`. **No `missing` line** when there is no export: openAIP is the
+  fallback behind the official sources, never something to drop by hand. **The plan shows what the real run takes**: the dry result
+  carries `shown: { openaip: { name: 'openaip', size } }` (the total of the files it would take), to send back in `zips` (the key `openaip`
+  is allowed); the real run refuses with `error: 'changed'` (a file arrived or changed) or `'not-shown'` (the plan showed none) otherwise.
+- **The cycle of ENAIRE's sets is read in the file** (5 Nov 2026, SOG-0025): `LE_Amdt_A_2026_10_…_EnRoute.xml` is ENAIRE's 10th AIRAC
+  amendment of 2026, **not** cycle 2610 — it is valid from 29 Oct 2026, cycle 2611. `tools/aero_cycles.py` reads the latest
+  `gml:validTime › gml:beginPosition` (up to today) of the Airspace and EnRoute sets; `sources.enaire` is the newest of the two.
 - **Refusals**: 400 (unknown zone or source, extra key, `dry` not a boolean), 409 (a job is running), 429 for `base/fetch` (30 s between two starts).
 
 ### Sources screen (`#sources`)

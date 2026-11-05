@@ -2337,3 +2337,105 @@ page is served to `Sec-Fetch-Site: none`, refused to `cross-site`, and, where th
 - **How it is applied**: nothing to change today; each new reader of a `data/` file is checked against these four points in its review, and the
   check is written in its entry here.
 
+## 5 November 2026 — lot C: data, cycles and sources (SOG-0026, 0022, 0027, 0025, 0021)
+
+### SOG-0026 — « toujours dépassé » after rebuilding France: the real cause
+
+- **Reproduced on the user's workstation** (the real `sia/base` of `data/`, read only): France was rebuilt for 2611 (`fr/2026-10-29`), every other zone
+  was still published under `2026-10-01`. The module computes the state of a source of the base (`rowOf`, `modules/data/model_screen.js`) from the
+  **oldest published folder cycle among the zones the source feeds** and calls `stale-cycle` anything older than the cycle in force. The SIA row said
+  « à jour »; GeoNames, relief, openAIP, UK Mil, NATS, ENAIRE, FAA said « dépassé 2610 » because `geonames`, `mora` and `openaip` feed all zones
+  (`'*'`, 12 published here, 11 of them at 2610) and `ukmil` / `nats` / `enaire` / `adds` feed one zone still at 2610. Answer of 1 Nov (« manual sources
+  2610 ») was a different thing: those are the files, true for NATS (the user holds `EG_…20261001`), not why GeoNames or relief are « dépassés ».
+- **Two faults, both about what a folder name means.** (1) A source without an AIRAC date (GeoNames, relief, openAIP, UK Mil, FAA, DIRCAM) has no
+  cycle; the folder under which its zone is written is the date the zone was built under, not a cycle that can go out of date. (2) The oldest cycle
+  of *all* fed zones is the wrong aggregate: one zone not rebuilt yet makes every source that feeds it « dépassé ».
+- **What aerodb gives now** (`publication()`): per zone `cycleSource`: `'sia'` (fr), `'nats'` (gb), `'enaire'` (es) or `null` (no cycle). K70 (K67 renumbered: the id was taken by the inventory case of lot E2).
+  **The rule for the module** (Réglages, `modules/data/`, not touched here): for a row of the base, the stale test counts only the fed zones whose
+  `cycleSource` is not null, against the cycle of that source; when no fed zone has one, the row is never `stale-cycle`: it says « datée du
+  <`at`> » (the oldest `at` of the fed zones). A zone built before parser version 21 stays « à reconstruire » (`parser`), a different state.
+- **ENAIRE's cycle was read wrong in 294ffc1b8** (my own error, found while reading the page for SOG-0025): « A_2026_10 » is ENAIRE's 10th AIRAC
+  amendment of 2026, not cycle 2610; the EnRoute set « A_2026_10 » is valid from 2026-10-29 (cycle 2611). The user's Spanish data **is** current:
+  it was shown « 2610, dépassé » by my reading of the name. `aero_cycles.enaire_cycle` now reads the latest `validTime` start of the file (up to
+  today); the name says nothing. K64 (files with and without a date, a later date ignored, an unreadable file, another set).
+
+### SOG-0022 / SOG-0021 — LFPO ILS 07 and BOBSA 9E
+
+- **ILS 07 had no IF and no FAF in the record because the table codes none, but the source does give both.** The ILS 07 coding page (AMDT 09/23, the
+  oldest of Orly's) goes straight from the header to « See chart »; the other ILS pages (06, 24, 25, 02) code an IF. The DATA page prints, for
+  runway 07, `IF ILS/LOC RWY 07  48°40'05.1'' N 002°04'58.4'' E` (the others print `REF IPOnn`) and `FAF LOC RWY 07  48°40'54.0'' N 002°09'19.8'' E`:
+  positions, no names. The FAF was only inserted when an initial fix was positioned; with none in the table, nothing was. `parse_if` reads the
+  unnamed initial fix; `with_threshold` inserts `IF07` (leg `IF`, `synthetic: 'if'`) when the table has none, only if it is on the final (bearing
+  to the threshold within 10° of the runway), then the FAF as before: IF07 → FAF07 → RW07 → missed. K69 on the real rows of LFPO. FAF07 is the
+  same place as `FPO07` of the RNP 07 page (48.681667, 2.1555): two sources, one point.
+- **The names C107 and F107 are not in the source data.** They are on the IAC chart; the SIA coding pages and the AIXM 4.5 file have no point of that
+  name (searched: none). The points carry `IF07` / `FAF07` and a warning says they are read from the DATA page; no name is invented.
+- **A fix without a path terminator is still dropped** (`- PO410 …`, `- PO411 …`, `- PO403 …`: the first row after « See chart » of the ILS pages, whose
+  leg type, course and distance the « See chart » mark hides): said in a warning, the next leg keeps `gap`. Not changed here: keeping it needs a
+  point without a leg in the schema.
+- **SOG-0021 (BOBSA 9E → runway 07)**: the source (SIA, `STAR_RWY07_RNAV_CODE_02`) and the data both have it: `LFPO.STAR.BOBSA9E.RW07`, BOBSA → BENAR
+  → CAD → SOTIP → ODILO, status `check`, as for 02 and 06 (and `BOBSA 9W` for 20, 24, 25). What the 07 page loses is one row of CAD 9E (kept as a
+  doubt). So the association exists; if Fuel does not offer it for 07, the selection by runway is Fuel's.
+
+### SOG-0027 — openAIP: the answer, and what « Prendre le fichier téléchargé » does with it
+
+- **The answer.** openAIP is the **fallback behind the official sources**: the build reads the SIA (France), NATS (UK), ENAIRE (Spain), the FAA… first
+  and openAIP for the rest of the world (and its VFR points and runways where nothing official is read). Until now the suite fetched its own
+  openAIP files (`aero_fetch`, GeoJSON); the ~100 files in the user's Downloads were **not used**: they are XML (openAIP 1.1) for the most part, a
+  format the suite does not read, and 31 JSON.
+- **Now** `base/pickup` takes them (INTEGRATION): GeoJSON as it is, JSON converted, XML said and not read (`skipped`), the `hot` layer set aside;
+  checks on the content, never on the name alone. K68. The user's real `ci_rpp.json` converts to six VFR points that `AeroSources.geojson` reads.
+  An XML 1.1 reader was not written: the same data is available as GeoJSON or JSON from the same page.
+
+### SOG-0025 — Spain: ENAIRE's pages read (nothing imported)
+
+- **`https://aip.enaire.es/AIP/DatosDigitales-en.html`** (read 5 Nov 2026; header « 29-OCT-26 (Incorporados AIRAC 10/26 and AMDT 412/26) »): AIXM 5.1 `.xml`
+  datasets under `contenido_Datasets/`, each with a `…_Metadata.xml`, no zip, no size shown. Full sets: **Airspace** (`LE_Amdt_2026_411_AIP_DS_FULL_Airspace.xml`),
+  **En-route** (`LE_Amdt_A_2026_10_AIP_DS_FULL_EnRoute.xml`), obstacles of Area 1 (`…_Obstacles_ENR.xml`), restricted and temporary aerodromes / heliports
+  (`…_ADHP_Restricted.xml`, `…_ADHP_Temp.xml`), terrain (GeoTIFF, a separate page); per aerodrome: public aerodromes / heliports (`…_FULL_<ICAO>.xml`,
+  one file each) and obstacles of Areas 2 to 4 (`…_Obstacles_<ICAO>.xml`, about 50). File names: `LE_Amdt_<tag>_AIP_DS_FULL_<Name>.xml`, the tag
+  `A_YYYY_NN` (ENAIRE's AIRAC amendment number, not the ICAO cycle) or `YYYY_NNN` (an amendment); each set has its own tag.
+- **Licence**: none stated on either page (only « Copyright © 2021 ENAIRE » on the AIP page); no registration, no condition to accept. The limitations page
+  (`LE_AIP_DS_Limitaciones.html`) is technical: AIXM 5 validated since AIRAC 03/20, some attribute values longer than AIXM 5 allows, **the PDF / HTML AIP
+  prevails over the AIXM**, airspace geometry in AIXM is informative. ENAIRE stays a **personal-licence** source in the catalogue (published only when the
+  owner declares it), as today.
+- **What the suite reads and fetches today** (`aero_fetch.enaire`, kept): the Airspace and EnRoute sets — nothing else. The user has both (Airspace
+  2026-10-01 data, EnRoute valid from 2026-10-29). **The launcher can fetch them alone** (`base/fetch`, source `enaire`); « which files to take » is
+  answered by the code, the user has nothing to choose.
+- **Proposal, in the format of `tools/aero_cycles.py`**: `CYCLED['enaire'] = 'es'`, files `aixm5/LE_*_AIP_DS_FULL_(Airspace|EnRoute).xml`, **cycle read in
+  the file** (latest `validTime` start up to today), the source's cycle the newest of the two sets, `stale` when older than the cycle in force. Done
+  (see above). **Not proposed for now**: the aerodrome sets (the base already has aerodromes from openAIP; a per-aerodrome fetch is 50+ files), obstacles
+  (an Area 1 set exists; the suite has its own obstacle source), terrain. **Pilot charts** (`https://aip.enaire.es/AIP/AIP-en.html`): PDFs at
+  `contenido_AIP/AD/AD2/<ICAO>/LE_AD_2_<ICAO>_<TYPE>_<N>_en.pdf` (types ADC, PDC, AOC, SID, DEP, STAR, IAC, VAC, PATC, GMC…, `N` a sequence number, not a
+  runway) and the aerodrome page `LE_AD_2_<ICAO>_en.html`: the links of the Route screen to the Spanish charts would parse that aerodrome page for the
+  list rather than build names — a lot of its own, on the user's go.
+
+### Verifications asked for the route `.EIDW BEPA3F BEPAN … SITET A34 LGL A34 BOBSA BOBSA9E LFPO` (lot A)
+
+- **Zone EI**: published as `ie` (Ireland, prefix EI, cycle 2026-10-01, parser 20): 44 aerodromes including EIDW, 19 navaids, **no point** (`points.json` is
+  empty: no official source of en-route points for Ireland, openAIP's `rpp` carries VFR points only). BEPAN is not in it; it is in the SID points of
+  `proc/manual/EIDW.json` (BEPA3F runway 10R: …, ERVAD, NEPOD, **BEPAN** 52.526722), as for the ten other BEPA SIDs.
+- **A34 LGL–BOBSA**: in the FR base of the cycle in force (`fr/2026-10-29/airways.json`): the segment `BOBSA → LGL` (18.3 NM, 6500–19500 ft), next to
+  `LGL → LISEU` and `BENAR → BOBSA`. The segments are stored in one direction (a: BOBSA, b: LGL); a route read **from LGL to BOBSA** goes against
+  the stored order, which the resolver of the route must accept.
+
+### Ireland: the official source, read (nothing imported; asked by Features SOG's reading of the user's base)
+
+- **The zone `ie` today** is an openAIP export alone (cycle 2026-10-01): 44 aerodromes, 19 navaids, **0 points, 0 airways**; the SID BEPA4E of EIDW is read
+  (its points carry coordinates) but BEPAN is in no base. There is no official source of points and airways for Ireland in the suite.
+- **The official source** is AirNav Ireland's eAIP (on behalf of the Irish Aviation Authority's successor, the CAA of Ireland), read on 5 Nov 2026: current issue
+  effective 29 Oct 2026 at `https://www.airnav.ie/AIRAC/2026-10-29-AIRAC/html/index.html` (the AIM page, `…/air-traffic-management/aeronautical-information-management`,
+  lists the issues; the folder names of past issues are not uniform, so the address of an issue is read from that page, not built); next issue 26 Nov 2026. An
+  XHTML frameset, sections as `eAIP/EI-<SECTION>-en-IE.html` (`EI-ENR-4.4-…`, `EI-ENR-3.3-…`, `EI-AD-2.EIDW-…`), charts as PDFs.
+- **What it gives, parseable HTML tables with DMS coordinates**: **ENR 4.4** (name-code designators: name, coordinates `DDMMSS(.s)N DDDMMSS(.s)W`, route, remarks),
+  **ENR 3.3** (RNAV routes L18, L149, L975, M17, M145, N34, P600, P620, Q36, Q37: points, coordinates, tracks, distances, limits, « Westbound Only »…),
+  **AD 2** (runway thresholds in AD 2.12, navaids in AD 2.19). **Not in it**: ARINC 424 coding tables (no path terminator, no per-leg coordinates) — AD 2.22 is
+  narrative, the SID / STAR / approaches are charts (PDF): the reading of procedures (what `proc_sia.py` does for France) has no equivalent. **No machine-readable dataset**
+  (AIXM, ARINC 424, CSV) was found; GEN 3.1 and `airnav.ie/publications`, the likely places for a data product list, were not read.
+- **Licence**: no reuse wording in what was read (GEN 0.1 only says who publishes; the site's disclaimer is about accuracy). Unverified, to read
+  (the eAIP cover page, GEN 1.x, `airnav.ie/publications`) before any import: « no licence found » is not permission.
+- **What it would take for `ie` to have its points like France**: a reader of ENR 4.4 and ENR 3.3 (HTML tables, a layout of its own, in the manner of `proc_layouts.py`)
+  writing `points` and `airways` for the zone `ie` with the eAIP issue as its dated source (`CYCLED` + a date from the folder / page title); the SIDs and STARs of EIDW
+  stay read from the charts (`proc_ead` / OCR), as today, and BEPAN comes from ENR 4.4. Cost: one reader and its fixtures, a source entry (personal
+  licence until the terms are read), the zone's cycle. Not started: the user's go, and the licence first.
+
