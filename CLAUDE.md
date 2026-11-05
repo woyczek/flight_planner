@@ -55,9 +55,10 @@ Lues par toutes les sessions qui travaillent sur ce dépôt. Elles priment sur l
      largeur, langue) pour confirmer le correctif, puis dans son périmètre complet (`--failed-scope` : ses zones, ses
      parcours, et les fichiers du correctif) pour voir ce que le correctif a déplacé ; le compte rendu du lot cite
      les commandes et leurs lignes de résumé. Un correctif qui passe le premier et pas le second n'est pas fini.
-     Depuis le 5 novembre 2026 (`organisation/MIGRATION.md`) : `--touched` par le développeur avant de dire « prêt »,
-     la passe `--all` par la session ergonomie sur le SHA candidat du jalon de 17 h, une fois ; pas de passe complète
-     après chaque push.
+     Depuis le 5 novembre 2026 (`organisation/MIGRATION.md`, mot de l'utilisateur) : un développeur ne lance que les cas
+     ciblés de son lot (`--grep <ids>`, `--for <fichiers>`), un seul runner à la fois sur le poste ; la session ergonomie
+     lance une seule passe le soir (`--touched <base>` puis `--all`) sur le SHA candidat, somme des domaines touchés ;
+     pas de `--touched` par domaine, pas de passe complète après chaque push.
 - Commits : préfixes gitmoji, message en français ; develop reçoit des avances rapides seulement (rebase, puis push).
 - **Documentation : un commit par lot, jamais un commit par document** (traductions, manuels, tutoriels, aide) ;
   on squashe le plus possible avant de pousser. **La doc d'une fonctionnalité va dans le commit de la
