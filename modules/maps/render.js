@@ -609,7 +609,7 @@
     });
   }
 
-  function drawPoints(ctx, data, toC, W, H, scale, b, pl, profile, cov, coverZoom = null) {
+  function drawPoints(ctx, data, toC, W, H, scale, b, pl, profile, cov, coverZoom = null, look = null) {
     const ad = on(profile, 'aerodromes'),
       nv = on(profile, 'navaids'),
       ob = on(profile, 'obstacles');
@@ -629,6 +629,11 @@
         'navDme') : n.kind === 'TACAN' || n.tacan ? on(profile, 'navTacan') : on(profile, 'navVor');
     const pxDeg = toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x,
       ads = ad ? (data.aerodromes || []).filter(adOk) : [];
+    // les terrains, des plus gros aux plus petits, au plus un par 12 000 px² de la vue (≈ 60 sur un écran de bureau) ; le symbole suit le
+    // zoom : à 60 % sous COVER_ZOOM, pleine taille à partir de runwayZoom (SPEC § 3, « Density »)
+    const zNow = zoomOf(pxDeg),
+      cz = coverZoom ?? 7,
+      rz = +look?.runwayZoom || 11;
     const got = A().drawPoints(ctx, {
       aerodromes: cov ? coverPins(ads, toC, W, H, coverZoom != null && zoomOf(pxDeg) >= coverZoom, cov) : ads,
       navaids: nv ? (data.navaids || []).filter(navOk) : [],
@@ -646,7 +651,9 @@
       placer: pl,
       rose: +el(profile, 'roseSize'),
       adLabels: on(profile, 'adLabels'),
-      navLabels: on(profile, 'navLabels')
+      navLabels: on(profile, 'navLabels'),
+      adScale: !look ? 1 : zNow >= rz ? 1 : zNow <= cz ? .6 : .6 + .4 * (zNow - cz) / (rz - cz),
+      adCap: look ? Math.max(12, Math.round(W * H / 12000)) : null
     });
     if (ob) drawObstacles(ctx, data.obstacles || [], toC, W, H, scale, pl, profile, pxDeg);
     return {
@@ -1364,6 +1371,8 @@
     hideVrp = null, // identifiants de VRP que l'écran dessine lui-même (terrain survolé ou épinglé) : pas deux fois
     lines = null, // suites de points que la route trace (null : toute la route), voir drawRoute
     cov = null, // couche « Procédures » : cov(icao) → niveau de couverture ('green' | 'orange' | 'red') ou rien, voir coverPins
+    runwayZoom =
+    11, // zoom à partir duquel les symboles de terrains ont leur pleine taille (le seuil des pistes de la compagnie, S.runwayZoom)
     coverZoom = null, // zoom à partir duquel les terrains non publics prennent leur couverture (COVER_ZOOM du socle, map_base.js)
     reserve = null, // reserve(placeur) : l'écran demande la place de ses libellés (procédures choisies), à leur rang dans la passe
     // chemin volé (route et procédures, points nommés dans l'ordre) : ses tronçons portent les cartouches des voies qu'ils
@@ -1494,7 +1503,9 @@
               ...profile.elements,
               navaids: true
             }
-          } : profile, cov, coverZoom);
+          } : profile, cov, coverZoom, mission ? null : {
+            runwayZoom
+          });
           drawFixes(c, fixes, toC, W, H, scale, pl);
           // les pistes des terrains (vecteurs de seuil et numéros), juste après eux : leurs numéros prennent leur place avant les
           // balises, les points de report et le reste

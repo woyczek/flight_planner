@@ -1926,6 +1926,25 @@ the Map had seen in between: the same line to within the frame's own sampling.
   tiles released (a Terrarium tile of 300 m, written by the case with the standard library) — the profile completed with the relief,
   the note gone. D86 + D87 side by side: 10 in 10, 12 in 12 (they were 8 in 10).
 
+## Aerodromes by importance (user, 5 Nov 2026)
+
+- **Seen by the user**: the US at z5 (KSET → KDOV) covered with dozens of big crossed-circle symbols, 14 px, over the route; in
+  France at that zoom a handful.
+- **Cause**: the aerodromes were all drawn, thinned only by the collision of their symbols, at a fixed size; a dense country shows
+  hundreds, and the rank was the tower and the runway length with no cap.
+- **Rule** (SPEC § 3, « Aerodromes by importance »): a score, the first N of the view, the route's ends always, a symbol that
+  follows the zoom; the same for every zone. The ICAO code stands for « published procedures / IFR » (the aerodromes without a code
+  are the small strips); the score reads the record's fields (`hardLen`, `runways`, `controlled`, `afis`, `public`, `state`, `type`,
+  `water`) as finite, bounded numbers (any pilot may write the data files, security audit 157).
+- **Cost** (the real « us » base, 24 drawings per view, Auto): the cap alone took z5 from 60 to 46 ms, the work left was the airspaces:
+  `screenBox` and the labels' `area` walked every vertex of every ring at every drawing; the geographic box of a ring is now cached
+  (`WeakMap` on the ring: the rings of a base read do not change) and the screen box taken from its two corners when the projection
+  keeps them on one copy of the world; `ringPath` skips a vertex less than 0.6 px from the last drawn. z5 46 → 29 ms, z6 32 → 19,
+  z7 24 → 16. What remains is the canvas painting the large polygons (« program » in the profile): a view of the whole country
+  holds several thousand airspaces, which the profile's thresholds (Settings › thresholds) decide, not the code.
+- **Noreg** D101: 150 aerodromes (40 with a code and a tower, 110 small strips) in the view: at most one per 12 000 px² drawn, a
+  small strip only when every big one in view is drawn.
+
 ## No flicker at the first display (user, 1 Nov 2026)
 
 - **Seen by the user**: « quand on affiche la carte, avant que tout ne soit en cache, elle clignote une bonne dizaine de fois, puis

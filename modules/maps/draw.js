@@ -502,6 +502,7 @@ function draw() {
     lines: mission || pick ? null : routeLines(),
     cov,
     coverZoom: COVER_ZOOM,
+    runwayZoom: S.runwayZoom,
     reserve: pick ? pl => pick.reserve(pl) : procs ? pl => procs.reserve(pl) : null,
     legs: mission || pick ? null : S.route?.path || null,
     dim: pick ? DIM : 0,

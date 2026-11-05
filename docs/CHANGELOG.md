@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the aerodromes by importance, the symbol by zoom, the airspaces faster** (`modules/maps/lib/aero_symbols.js`, `render.js`,
+  `render_airspace.js`, `draw.js`; SPEC § 3; noreg D101). The US at z5 was covered with big symbols: the drawn aerodromes are now
+  the first of the view by score (an ICAO code, tower, longest hard runway, runways; one per 12 000 px², about 60 on a desktop screen),
+  the route's ends always, the small ones appearing by zooming; the symbol is 60 % of its size at COVER_ZOOM and full size from
+  runwayZoom. The airspaces' bounding boxes are cached and the outlines drop the vertices under 0.6 px: the full drawing of the US
+  view at rest goes from 46 to 29 ms (z5).
+
 - **Map: one opening, one image** (`modules/maps/screen.js`, `module.js`, `draw.js`, `sheet_view.js`, `lib/map_base.js`
   `startTiles({ center, zoom })`; SPEC § 5; noreg D100). Opening the Map showed the whole route, then the map moved up when the
   sheet came, then the kept framing: the sheet is now laid out first, the base map is created with its one camera (the kept

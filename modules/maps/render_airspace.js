@@ -146,19 +146,21 @@
       A().drawAirspaces(ctx, zones, toC, opts);
       return [];
     }
+    // surface écran englobant tous les anneaux d'un espace (la plus grande d'abord : elle est dessinée la première) ; l'emprise de
+    // chaque anneau vient du cache de SiaAero.screenBox, pas d'un parcours de tous ses sommets à chaque dessin
     const area = a => {
         let x0 = Infinity,
           y0 = Infinity,
           x1 = -Infinity,
           y1 = -Infinity;
-        for (const r of a.rings || [])
-          for (const [lat, lon] of r) {
-            const q = toC(lat, lon);
-            if (q.x < x0) x0 = q.x;
-            if (q.x > x1) x1 = q.x;
-            if (q.y < y0) y0 = q.y;
-            if (q.y > y1) y1 = q.y;
-          }
+        for (const r of a.rings || []) {
+          if (!r.length) continue;
+          const b = A().screenBox(r, toC);
+          if (b.x0 < x0) x0 = b.x0;
+          if (b.x1 > x1) x1 = b.x1;
+          if (b.y0 < y0) y0 = b.y0;
+          if (b.y1 > y1) y1 = b.y1;
+        }
         return x1 > x0 ? (x1 - x0) * (y1 - y0) : 0;
       },
       hits = [];

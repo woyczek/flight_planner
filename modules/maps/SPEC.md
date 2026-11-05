@@ -175,6 +175,19 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - **What a zoom hides is said by the zoom rule**: a label left out at a zoom because of its kind is the profile's threshold of
     that element (`map_profiles.json`, `runwayZoom`, the tuning page's thresholds § 14), never a pixel or zoom threshold hidden in
     a layer; what remains in a layer is geometry (a label longer than its segment is not written).
+- **Aerodromes by importance** (user, 5 Nov 2026: « si on a une importance relative des AD les uns par rapport aux autres, on
+  montre les plus gros avant les plus petits »; the US at z5 was covered with big symbols): one rule for every zone, K like LF.
+  Each aerodrome has a score (`AD_RANK`, `lib/aero_symbols.js`, a pure function of the record; a value out of range counts as
+  absent), in this order of weight: an ICAO code of four letters (the designator of the aerodromes with published procedures and IFR
+  flights; the small strips have none) 1000; a tower 400, else AFIS 150; the longest hard runway, up to 5000 m, 0 to 500;
+  25 per runway, 4 at most; a State aerodrome 50, a public one 20; behind: a heliport −600, a water aerodrome −100, a closed
+  military one −100. At every zoom the drawn aerodromes are **the first `adCap` of the view by score** — one per 12 000 px² of the
+  view, 12 at least (about 60 on a desktop screen, 16 on a phone) — then thinned by the collision of their symbols as before; the
+  route's ends and the alternate (`end`) are always drawn, first; the small ones appear by zooming, the view then holding fewer.
+  The name follows its symbol (it is asked only for the symbols drawn). **The symbol follows the zoom**: 60 % of its size at
+  `COVER_ZOOM` (7) and below, full size from `runwayZoom` (the company's setting, 11 by default), linear between. Mission maps
+  (drawn in full) have neither cap nor reduction. Noreg D101. Cost, at rest (A/B, 24 drawings, the real « us » base, KSET → KDOV,
+  Auto): z5 46 → 29 ms, z6 32 → 19, z7 24 → 16 — the rest is the airspaces' native painting (see DECISIONS « Aerodromes by importance »).
 - **Overview rule** (under 120 px per degree): only aerodromes and VOR / TACAN within 15 NM of the route, airways whose
   middle is within 30 NM, no obstacles. Closer views show everything the profile allows.
 - **Density** (`tierOf(px per degree)`: far under 80, mid under 300, near beyond, computed on the effective zoom § 6.6;

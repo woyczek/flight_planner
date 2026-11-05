@@ -2889,3 +2889,28 @@ def d100(c):
     c.wait(1500)
     _one_image(c, 'back from Fuel, the flight framed')
 
+
+# ------------------------------------------------------------------------------------------------------ D101
+# 150 aerodromes over the view: 40 big ones (an ICAO code, a tower, 2600 m of hard runway), 110 small strips (no code, 600 m)
+_MANY_ADS = [{'icao': f'LFB{chr(65 + i // 26)}{chr(65 + i % 26)}' if i < 40 else '', 'id': f'AD{i}', 'name': f'AD {i}', 'lat': 45.7 + (i % 10) * .16,
+              'lon': -1.4 + (i // 10) * .19, 'elev': 100, 'public': True, 'controlled': i < 40, 'hardLen': 2600 if i < 40 else 600} for i in range(150)]
+
+
+@case('D101', 'Density: the aerodromes shown are the biggest first, at most one per 12 000 px² of the view, the route’s ends always; the small ones come by zooming', 'D',
+      tags=('maps',), designs=('standard',), night=False,
+      rule='user, 1–5 Nov 2026 (the US at z5 covered with big symbols; « on montre les plus gros avant les plus petits »), SPEC § 3, Density: an importance score (an ICAO code, tower / AFIS, longest hard runway, runways, State / public; heliports, water and closed military behind), the first adCap of the view by score (one per 12 000 px², 12 at least), the route’s ends and alternate always; the symbol 60 % under COVER_ZOOM and full size from runwayZoom; the names follow their symbols')
+def d101(c):
+    docs = fdocs(flight()) + [['cache/maps/ui.json', {'preset': 'vfr', 'layers': {}}, 'cache']]
+    c.open('maps?view=-1.6,45.6,1.6,47.4', docs=docs, flight=False, airfields=True, aero_extra={'aerodromes': _MANY_ADS, 'cells': {'45': [[-2, 2]], '46': [[-2, 2]], '47': [[-2, 2]]}}, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.map && window.__mp.S.lightSrc && (window.__mp.S.data.data.aerodromes || []).length >= 150)", timeout=20000,
+            what='the 150 aerodromes read and drawn')
+    c.wait(500)
+    r = c.js("""() => { const S = window.__mp.S, W = S.canvas.clientWidth, H = S.canvas.clientHeight, cap = Math.max(12, Math.round(W * H / 12000)),
+      mine = (S.lightSrc.aerodromes || []).filter(a => /^AD|^LFB[A-Z]{2}$/.test(a.id || a.icao) && a.name !== 'Nantes');
+      return { cap, W, H, n: mine.length, big: mine.filter(a => a.controlled).length, small: mine.filter(a => !a.controlled).length,
+        inView: (S.data.data.aerodromes || []).filter(a => /^AD/.test(a.id || '') && a.controlled).map(a => S.map.project([a.lon, a.lat])).filter(p => p.x > 0 && p.y > 0 && p.x < W && p.y < H).length } }""")
+    c.ok(0 < r['n'] <= r['cap'], f"{r['n']} drawn, cap {r['cap']} ({r['W']}×{r['H']})", 'no more aerodromes than one per 12 000 px² of the view')
+    c.ok(r['small'] == 0 or r['big'] >= r['inView'], f"{r['big']} big / {r['small']} small, {r['inView']} big in view", 'a small strip is drawn only when every big one in view is')
+

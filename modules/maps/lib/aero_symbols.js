@@ -550,19 +550,65 @@
     g.stroke();
     return m[kind] = ctx.createPattern(c, 'repeat');
   }
-  /** Trace un anneau (lat, lon) dans le contexte, projection toC. */
+  /** Trace un anneau (lat, lon) dans le contexte, projection toC. Un sommet à moins de 0,6 px du dernier tracé est sauté (à petit
+   *  zoom un contour de milliers de sommets tient en quelques centaines de points : le trait est le même, le canevas en a moins à
+   *  faire) ; le dernier sommet est toujours tracé. */
   const ringPath = (ctx, ring, toC) => {
+    let lx = NaN,
+      ly = NaN;
+    const last = ring.length - 1;
     ring.forEach(([lat, lon], i) => {
       const p = toC(lat, lon);
+      if (i && i < last && Math.abs(p.x - lx) < .6 && Math.abs(p.y - ly) < .6) return;
       i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y);
+      lx = p.x;
+      ly = p.y;
     });
     ctx.closePath();
   };
   /** Anneau principal (le plus grand) d'un espace aérien. */
   const bigRing = a => a.rings.reduce((best, r) => r.length > best.length ? r : best, []);
 
-  /** Rectangle écran englobant un anneau. */
+  /** Emprise géographique d'un anneau, calculée une fois (les anneaux d'une base lue ne changent pas). */
+  const GEO = new WeakMap();
+  const geoBox = ring => {
+    let g = GEO.get(ring);
+    if (!g) {
+      g = {
+        s: Infinity,
+        w: Infinity,
+        n: -Infinity,
+        e: -Infinity
+      };
+      for (const [lat, lon] of ring) {
+        if (lat < g.s) g.s = lat;
+        if (lat > g.n) g.n = lat;
+        if (lon < g.w) g.w = lon;
+        if (lon > g.e) g.e = lon;
+      }
+      GEO.set(ring, g);
+    }
+    return g;
+  };
+  /** Rectangle écran englobant un anneau : les deux coins de son emprise géographique (Mercator : x croît avec la longitude, y décroît
+   *  avec la latitude) tant que la projection les prend à la même copie du monde (toC ramène chaque longitude vers le centre de la
+   *  vue : un anneau à cheval sur la limite des copies, ou de plus de 180°, se mesure sommet par sommet). */
   function screenBox(ring, toC) {
+    const g = geoBox(ring);
+    if (g.n >= g.s && g.e - g.w < 180) {
+      const a = toC(g.n, g.w),
+        b = toC(g.s, g.e),
+        k = toC(0, 1).x - toC(0, 0).x,
+        dx = k * (g.e - g.w);
+      if (Math.abs(b.x - a.x - dx) <= 1e-6 * Math.max(1, Math.abs(dx)) + 1e-6 && b.y >= a.y) return {
+        x0: a.x,
+        y0: a.y,
+        x1: b.x,
+        y1: b.y,
+        w: b.x - a.x,
+        h: b.y - a.y
+      };
+    }
     let x0 = Infinity,
       y0 = Infinity,
       x1 = -Infinity,
@@ -1259,8 +1305,16 @@
   const NAV_RANK = n => n.kind === 'TACAN' || n.tacan ? 6 : n.kind === 'VOR' ? 5 : n.kind === 'DME' ? (n.ils ? 1 : 4) : n.kind === 'NDB' ?
     3 : 2;
   /** Rang d'importance d'un aérodrome (contrôlé, longueur de piste en dur, public) : ordre de dessin et priorité des étiquettes. */
-  const AD_RANK = a => (a.controlled ? 10 : 0) + (a.hardLen > 2300 ? 3 : a.hardLen >= 1000 ? 2 : a.hardLen > 0 ? 1 : 0) + (a.public || a
-    .state ? 1 : 0) - (a.type === 'HP' ? 1 : 0);
+  /** Importance d'un terrain (SPEC § 3, « Density »), pour les montrer des plus gros aux plus petits : en tête, ceux qui ont un code OACI
+   *  (le désignateur des terrains aux procédures publiées et aux vols IFR ; les petits terrains n'en ont pas), puis la tour (ou l'AFIS),
+   *  la longueur de la plus longue piste en dur, le nombre de pistes, un terrain d'État ou public ; un héliport, un terrain d'eau et un
+   *  terrain militaire fermé au public derrière. Un nombre fini, sans effet de bord ; une valeur du fichier hors norme ne compte pas. */
+  const num = (v, max) => Number.isFinite(+v) ? Math.min(max, Math.max(0, +v)) : 0;
+  const AD_RANK = a => (/^[A-Z]{4}$/.test(a.icao || '') ? 1000 : 0) + (a.controlled ? 400 : a.afis ? 150 : 0) + num(a.hardLen, 5000) /
+    10 + 25 * Math.min(4,
+      Array.isArray(a.runways) ? a.runways.length : num(a.hardLen, 1) > 0 ? 1 : 0) + (a.state ? 50 : 0) + (a.public ? 20 : 0) - (a
+      .type === 'HP' ? 600 : 0) -
+    (a.water ? 100 : 0) - (a.type === 'MIL' && !a.public ? 100 : 0);
 
   /** Dessine les points de la carte (aérodromes, radionavigation, obstacles, points de report) avec placement des étiquettes sans chevauchement. */
   function drawPoints(ctx, data, toC, {
@@ -1276,13 +1330,17 @@
     placer: pl = null,
     rose = 3.2,
     adLabels = true,
-    navLabels = true
+    navLabels = true,
+    // la taille des symboles de terrains (1 : pleine) et le nombre au plus montré dans la vue (null : sans plafond), SPEC § 3
+    adScale = 1,
+    adCap = null
   } = {}) {
     place = pl;
     /** Vrai si un point est dans le cadre (marge de 30 px). */
     const inside = p => p.x > -30 && p.y > -30 && p.x < W + 30 && p.y < H + 30,
       detailed = pxPerDegree >= 180,
-      s = Math.max(4, 6 * scale);
+      s = Math.max(4, 6 * scale),
+      sa = Math.max(3, s * adScale); // le symbole d'un terrain suit le zoom
     /** Déclinaison magnétique du point de la base le plus proche. */
     const nearestMag = (lat, lon) => {
       let best = null,
@@ -1300,11 +1358,11 @@
     // balise) ; leurs symboles sont réservés pour les libellés (zones, villes…), qui les évitent.
     const adPl = placer(),
       navPl = placer(),
-      sym = (p, k = 1.2) => ({
-        x0: p.x - s * k,
-        y0: p.y - s * k,
-        x1: p.x + s * k,
-        y1: p.y + s * k
+      sym = (p, k = 1.2, u = s) => ({
+        x0: p.x - u * k,
+        y0: p.y - u * k,
+        x1: p.x + u * k,
+        y1: p.y + u * k
       });
     /** Réserve la place d'un symbole (placement sans chevauchement) ; rank : son rang dans la passe unique (adSymbol, navSymbol). */
     const reserve = (r, rank) => {
@@ -1315,14 +1373,17 @@
       const ads = (data.aerodromes || []).filter(a => detailed || a.public || a.state).map(a => ({
         a,
         p: toC(a.lat, a.lon)
-      })).filter(x => inside(x.p)).sort((x, y) => AD_RANK(y.a) - AD_RANK(x.a));
-      const shown = ads.filter(x => adPl.take(sym(x.p, x.a.hardLen > 2300 ? 1.7 : 1.2)));
+      })).filter(x => inside(x.p)).sort((x, y) => (y.a.end ? 1e6 : 0) + AD_RANK(y.a) - (x.a.end ? 1e6 : 0) - AD_RANK(x.a));
+      // les plus gros d'abord, au plus adCap dans la vue (les terrains de la route, bouts et dégagement, toujours) : les petits ne
+      // viennent qu'en zoomant, la vue en contient alors moins
+      const kept = adCap > 0 ? ads.filter((x, i) => x.a.end || i < adCap) : ads;
+      const shown = kept.filter(x => adPl.take(sym(x.p, x.a.hardLen > 2300 ? 1.7 : 1.2, sa)));
       adDrawn = shown.map(x => x.a);
       shown.forEach(x => {
-        drawAerodrome(ctx, x.a, x.p, s, 0);
-        reserve(sym(x.p), 'adSymbol');
+        drawAerodrome(ctx, x.a, x.p, sa, 0);
+        reserve(sym(x.p, 1.2, sa), 'adSymbol');
       });
-      if (adLabels) shown.forEach(x => drawAerodrome(ctx, x.a, x.p, s, Object.assign(new Number(font * .85), {
+      if (adLabels) shown.forEach(x => drawAerodrome(ctx, x.a, x.p, sa, Object.assign(new Number(font * .85), {
         full: pxPerDegree >= 900,
         labelOnly: true
       })));
@@ -1409,6 +1470,7 @@
   }
 
   window.SiaAero = {
+    screenBox,
     parseAixm,
     limitFt,
     limitRead,
