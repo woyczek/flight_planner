@@ -20,6 +20,7 @@ import http.client, http.cookies, ipaddress, posixpath, ssl, urllib.parse, urlli
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_sync  # synchronisation git du pool de données (bouton « Synchroniser ») ; git durci (data_sync.git_cmd)
 import data_guard  # .js de data/ : servis seulement s'ils suivent le format des fichiers de données
+import data_inventory  # inventaire en lecture seule de ce que « data » recouvre sur ce poste (SOG-0010, lot E2)
 import report_bridge  # pont du registre : comptes rendus V3 (cr/reports/) rejoués dans cr/missions.yaml (V2)
 import csp_policy as cspmod  # politique de sécurité du contenu, commune au site sans lanceur (tools/build_pages.py)
 import aero_fetch  # données aéronautiques d'autres pays (Paramètres › Maintenance › Données aéronautiques)
@@ -996,6 +997,15 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         if r.get('done'):
             say(f'  Suite mise à jour ({ch}) : {r["current"].get("version", "")} — relancez le lanceur.')
         return self._json(r)
+
+    @route('GET', '/__setup/data/inventory', public='poste')
+    def _get_data_inventory(self, path):
+        # carte « Inventaire des données » : les sept emplacements de « data » (taille, suivi, écrivain), en lecture seule ; des noms et
+        # des tailles, jamais un chemin de fichier ni un contenu — ce poste seulement
+        if not self._allowed() or self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        dl = next((d for d in downloads_dirs() if os.path.normcase(d) != os.path.normcase(ROOT)), '')
+        return self._json({'places': data_inventory.inventory(DATA, ROOT, dl, data_sync.git)})
 
     @route('GET', '/__setup/folders', public='poste')
     def _get_folders(self, path):

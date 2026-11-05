@@ -749,3 +749,48 @@ def k64(c):
         want = {'sia': {'cycle': '2026-10-01', 'current': cur, 'stale': '2026-10-01' < cur}, 'nats': {'cycle': '2026-10-01', 'current': cur, 'stale': '2026-10-01' < cur},
                 'enaire': {'cycle': None, 'current': cur, 'stale': False}}
         c.eq((view['sources'], res['sources']), (want, want), 'the plan and the end of base/fetch give the cycle held per dated source', what='fetch sources')
+
+
+@case('K67', 'Data inventory: the seven places of « data », their size and tracking, read only, never a file path or a content', 'K', static=True,
+      rule='SOG-0010 lot E2 (frame/settings/DATA_MAP.md § 5.1): tools/data_inventory.py gives seven rows (data/, data/local/, the raw SIA sources, the device cache, the suite\u2019s working folders, Downloads, the backups left at the root), each with its size, tracked / local / outside, and its writer; nothing is written, no path or content leaves')
+def k67(c):
+    RJ, BS, AF, DS = _mods()
+    import data_inventory as DI
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td) / 'suite'
+        (root / 'AircraftDB').mkdir(parents=True)
+        (root / 'AircraftDB' / 'aircraft_db.js').write_text('x' * 1000, encoding='utf-8')
+        (root / 'data_avant_2026-10-23_100032').mkdir()
+        (root / 'data_avant_2026-10-23_100032' / 'old.json').write_text('y' * 500, encoding='utf-8')
+        dl = Path(td) / 'Downloads'
+        dl.mkdir()
+        (dl / 'export_xml_bd_SIA_2026-10-29-v1.zip').write_bytes(b'z' * 2000)
+        data = _repo(DS, td, {'airline/settings.json': '{"name":"X"}', 'proc/2026-10-29/LFPG.json': '{}', '.gitignore': 'local/\nsia/*.xml\nsia/*.zip\n'})
+        (data / 'local' / 'cifp').mkdir(parents=True)
+        (data / 'local' / 'cifp' / 'big.txt').write_text('l' * 3000, encoding='utf-8')
+        (data / 'sia').mkdir()
+        (data / 'sia' / 'XML_SIA_2026-10-01.xml').write_text('<x/>' * 100, encoding='utf-8')
+        (data / 'sia' / 'AIXM4.5_all_FR_OM_2026-10-01.xml').write_text('<y/>' * 50, encoding='utf-8')
+        before = sorted(str(p.relative_to(td)) for p in Path(td).rglob('*') if '.git' not in p.parts)
+        rows = DI.inventory(str(data), str(root), str(dl), DS.git)
+        after = sorted(str(p.relative_to(td)) for p in Path(td).rglob('*') if '.git' not in p.parts)
+        c.eq([r['id'] for r in rows], list(DI.PLACES), 'seven rows, in the order of the table', what='ids')
+        by = {r['id']: r for r in rows}
+        c.eq([by[k]['present'] for k in DI.PLACES], [True, True, True, False, True, True, True], 'what exists on this workstation is present; the device cache is in the browser: absent here', what='present')
+        c.eq([by[k]['state'] for k in DI.PLACES], ['tracked', 'local', 'local', 'outside', 'outside', 'outside', 'outside'],
+             'tracking from git: the repository tracked, data/local/ ignored (local), the raw sources local, the rest outside the repository', what='states')
+        c.eq((by['local']['bytes'], by['raw']['bytes'], by['raw']['files'], by['suite']['bytes'], by['downloads']['bytes'], by['backup']['bytes'], by['backup']['count']),
+             (3000, 400 + 200, 2, 1000, 2000, 500, 1), 'sizes: local 3000, the two raw SIA files 600, the suite folders 1000, Downloads 2000, the backup 500 (one)', what='sizes')
+        c.eq([by[k]['writer'] for k in DI.PLACES], ['launcher+pilots', 'launcher', 'user', 'app', 'suite', 'user', 'restoration'], 'one writer per place', what='writers')
+        c.eq(before, after, 'read only: not a file created, changed or moved', what='read only')
+        # a closed list of fields: nothing else (a path, a name, a content) can leave, whatever the folders hold
+        allowed = {'id', 'present', 'bytes', 'files', 'truncated', 'state', 'writer', 'count'}
+        c.eq(sorted({k for r in rows for k in r} - allowed), [], 'only the closed list of fields leaves: no path, no name, no content', what='fields')
+        blob = json.dumps(rows)
+        c.ok('XML_SIA' not in blob and 'LFPG' not in blob and 'big.txt' not in blob and 'suite' not in blob.replace('"suite"', ''), blob[:160], 'no file name, no path, no content in the answer')
+        # without git: the repository state stays « unknown », never invented; the sizes are still read
+        rows2 = {r['id']: r for r in DI.inventory(str(data), str(root), str(dl), None)}
+        c.eq([rows2['repo']['state'], rows2['local']['state'], rows2['repo']['bytes'] > 0], ['unknown', 'unknown', True], 'without git the tracking is unknown, not guessed', what='no git')
+        # an absent place does not fail
+        gone = {r['id']: r for r in DI.inventory(str(Path(td) / 'nope'), str(Path(td) / 'nope2'), '', None)}
+        c.eq([gone['repo']['present'], gone['downloads']['present'], gone['backup']['present']], [False, False, False], 'absent places are said absent, no exception', what='absent')

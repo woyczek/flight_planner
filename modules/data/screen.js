@@ -40,6 +40,9 @@ import {
   chainName,
   updateAllHtml
 } from './chain.js';
+import {
+  inventoryHtml
+} from './inventory.js';
 
 // couleur d'un État → data-kind du point du cadre (.f-dot) ; statut d'une source du catalogue → data-kind du badge (.f-badge)
 const LEVEL_KIND = {
@@ -356,7 +359,7 @@ function renderBody() {
   }) : null;
   S.attn = M.staleGroups(S
     .groups); // les groupes dont le cycle publié est dépassé : le point d'attention de « Construire » et de « Tout mettre à jour »
-  S.body.innerHTML = `${headHtml()}${coverageHtml()}${updateAllHtml()}${groupsHtml()}${journalHtml()}`;
+  S.body.innerHTML = `${headHtml()}${coverageHtml()}${updateAllHtml()}${groupsHtml()}${inventoryHtml()}${journalHtml()}`;
 }
 /** Le texte d'un mot du journal (verbe, résultat, jeu) dans la langue : celui de la table `map`, à défaut le mot tel que le journal le porte. */
 const wordOf = (map, key) => tt(M.own(map, key) || [key, key, key, key]);

@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data: a folded « Inventaire des données » card, read only** (`tools/data_inventory.py`, `tools/launch.py` `GET data/inventory`,
+  `modules/data/inventory.js`, `model_inventory.js`; SPEC § 12; K67, I36, L26) — SOG-0010, lot E2 (`frame/settings/DATA_MAP.md`
+  § 5.1). Seven lines — the data repository, `data/local/`, the raw SIA sources, the device's copy, the suite's working folders,
+  Downloads, the backups left at the root — each with its size, « suivi / local / hors dépôt » (git's answer, never a guess) and
+  its writer. Read once when the card is opened, from the workstation's own page only (a paired device and the relay are refused);
+  names of places, numbers and closed words, never a path or a content; nothing is moved. An old launcher or a refusal says
+  « inventaire illisible ».
 - **Lot D — sheets, fuel and exports** (`modules/aircraft/sheets.js`, `sheets_texts.js`, `frame/lib/mission.js`, `modules/missions/module.js`,
   `frame/lib/fms.js`; SPEC, DECISIONS, help ×4, § 10.35; noreg M22, M23, N6, F60): « Compléter avec ChatGPT » copies the request and
   opens ChatGPT again (SOG-0014); « Carburant en volume » and « Densité » explained, a density out of 0.5–1.0 refused (SOG-0011);

@@ -48,6 +48,9 @@ import {
   stopChain,
   updateAll
 } from './chain.js';
+import {
+  openInventory
+} from './inventory.js';
 
 export const meta = {
   id: 'data',
@@ -58,11 +61,12 @@ export const meta = {
   launcher: {
     // regen/job couvre aussi son annulation regen/job/cancel (cadre, f70eba426) ; sync-status : l'état de data/ avant la
     // question de « Publier » (GET, jamais de POST /__setup/sync : la publication passe par ctx.data.sync)
-    routes: ['regen/job', 'regen/verbs', 'sync-status'],
+    routes: ['regen/job', 'regen/verbs', 'sync-status', 'data/inventory'],
     read: []
   },
   files: ['model.js', 'model_screen.js', 'model_sets.js', 'model_results.js', 'model_chain.js', 'model_map.js', 'model_publish.js',
-    'model_kit.js', 'texts.js', 'state.js', 'screen.js', 'panels.js', 'zonemap.js', 'follow.js', 'publish.js', 'chain.js',
+    'model_kit.js', 'model_inventory.js', 'texts.js', 'state.js', 'screen.js', 'panels.js', 'zonemap.js', 'follow.js', 'publish.js',
+    'chain.js', 'inventory.js',
     '../maps/lib/map_base.js?v=0', '../maps/render.js?v=0', '../../frame/lib/dom.js', '../../frame/lib/time.js'
   ],
   // la carte des zones : MapLibre et les contours, chargés à la demande par le socle de carte (comme la Météo) ; les tuiles, appelées par MapLibre lui-même
@@ -150,6 +154,10 @@ function onToggle(e) {
   const g = e.target;
   if (g instanceof HTMLDetailsElement && g.matches('details.f-group') && g.isConnected) S.manual[g.dataset.group] = g.open;
   else if (g instanceof HTMLDetailsElement && g.matches('details.d-journal') && g.isConnected) S.journalOpen = g.open;
+  if (g instanceof HTMLDetailsElement && g.matches('details.d-inventory') && g.isConnected) {
+    if (g.open) openInventory(); // l'inventaire se lit à l'ouverture, une fois
+    else S.inventory = null; // fermé : la prochaine ouverture relit (une lecture ratée peut être refaite)
+  }
   if (g instanceof HTMLDetailsElement && g.open) attachMaps(g); // un groupe qui s'ouvre : sa carte, jusque-là sans taille, démarre
 }
 /** Identifiant du groupe dont l'aide s'ouvre : le dernier touché s'il est encore ouvert, sinon le premier ouvert ; '' sans. */
@@ -199,6 +207,7 @@ export async function mount(el, ctx) {
     }, // « Publier » : sync-status lu, 'asking' | 'running' | null, la fin { out } ou { unread }
     journal: [],
     journalOpen: false,
+    inventory: null, // la carte « Inventaire des données » : lue à l'ouverture seulement, { open, state, rows }
     timer: 0
   });
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(tt(TX.title))}</h1><div data-body></div>`;

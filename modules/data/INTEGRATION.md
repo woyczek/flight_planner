@@ -63,7 +63,8 @@ publish: ['sia/base/', 'proc/', 'sia/vfr/', 'AircraftDB/', 'sia/mora.csv']
   The gesture is sent **only on the user's click** (after the one question); during a build of the base the launcher keeps
   `sia/base/` even so (`sync_gesture`), and `exchange.held` says how many files stayed. The count before the question comes
   from `GET sync-status` (`changes`, `ahead`, `merging`), declared in `meta.launcher.routes`: a workstation route, never
-  reached from a paired device (there `ctx.launcher` is null and « Publier » is grey). The module never POSTs
+  reached from a paired device (there `ctx.launcher` is null and « Publier » is grey). `GET data/inventory` (same declaration, same
+  rule) gives the data inventory card (SPEC § 12) its seven places, read once when the card is opened. The module never POSTs
   `/__setup/sync` itself. Télécharger and Purger commit nothing (raw sources are never published; ergonomics session,
   29 Oct); whether the raw sources still tracked in the data repository leave git's tracking is the user's question.
 

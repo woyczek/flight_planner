@@ -539,3 +539,25 @@ The module is split by responsibility; no rule changes place without the case th
   - `model_publish.js`: « Publier » (state, counts, outcome, entry).
   - `model_kit.js`: the private helpers shared by several of these files; the façade does not export it, so the
     names `model.js` exports stay those of before the split (one name, one file).
+  - `model_inventory.js`: the data inventory (§ 12): the launcher's answer read through closed lists, seven rows, a total; not
+    re-exported by the façade (its names are its own).
+  - `inventory.js`: the folded card of § 12: draws it and reads the launcher once when it is opened; writes nothing.
+
+## 12. The data inventory (SOG-0010, lot E2)
+
+What « data » covers on this workstation, in one folded card at the foot of the screen (before the journal), for the administrator
+(`frame/settings/DATA_MAP.md` is the reading it comes from).
+- **Seven lines, in this order**, each with its size, its tracking and its writer: the data repository (`data/`), `data/local/`,
+  the raw SIA sources (`data/sia/*.xml`, `*.zip`), the device's copy (in the browser: no size here), the suite's working folders,
+  Downloads, the backups left at the root (`data_avant_…`, counted).
+- **Tracking** is git's answer, never a guess: « suivi » (tracked), « local » (inside `data/` but ignored: never published),
+  « hors dépôt » (outside the repository), « état inconnu » (git did not answer). A size cut short says « au moins ».
+- **Read once, when opened**: `GET data/inventory`, a workstation route (declared in `meta.launcher.routes`; refused for a paired
+  device and for the relay); a card folded is never read. Opened again after a closing, it reads again. An answer that is refused,
+  absent (an old launcher, 404) or unreadable says « inventaire illisible » and invents no line.
+- **Read only, text only**: the launcher answers names of places, numbers and closed words (`tools/data_inventory.py`): never a
+  file path, a file name or a content. Every field is read through a closed list (audit 157): an unknown state reads « inconnu »,
+  an unknown id is dropped, a hostile text is never markup. No link, no action, no write, no move: moving is a later lot, one
+  group at a time, each with its manifest and its undo (`DATA_MAP.md` § 5.3).
+- **Cases**: K67 (the Python inventory on a test repository), I36 (the route: the workstation only, seven places, nothing written),
+  L26 (the card: folded, one read when opened, the seven lines, unreadable said, a hostile answer).

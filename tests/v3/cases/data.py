@@ -602,15 +602,17 @@ def _zs(state, done=0, total=0, **extra):
     return {'state': state, 'done': done, 'total': total, **extra}
 
 
-def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=None, busy_view=None, sync=None, verbs=None):
+def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=None, busy_view=None, sync=None, verbs=None, inventory=None):
     """A FAKE launcher (the technique of frame A32: c.context.route answers /__setup/*; never a real one).  `views`: what GET regen/job?id= answers one
     after the other (the last one stays); `last`: what GET regen/job (no id) answers at first (the running or the last job); `start`: (status, body) of the
     POST that starts a job; `cancel_view`: what the job becomes once POST regen/job/cancel was received; `busy_view`: the running job a refused start
     (409) leaves in place; `sync`: what GET sync-status answers (`{'changes', 'ahead', 'merging', 'last'}`, or `(status, body)`).  The dict it returns records
     `posts`, `cancels` and `syncs` (the reads of sync-status) and can be changed between steps.  `verbs`: what GET regen/verbs answers: None = an old launcher
-    (200 with no list), a list = `{ verbs: [...] }`, an int = that status (404...); `st['verbs_calls']` counts the reads."""
+    (200 with no list), a list = `{ verbs: [...] }`, an int = that status (404...); `st['verbs_calls']` counts the reads.  `inventory`: what GET data/inventory answers (a body, or `(status, body)`; None = an old
+    launcher, 404); `st['inventory_calls']` counts the reads."""
     st = {'posts': [], 'cancels': [], 'views': list(views), 'i': 0, 'current': last, 'cancelled': False, 'start': start, 'syncs': 0,
-          'sync': sync or {'changes': 0, 'ahead': 0, 'merging': False, 'last': None}, 'verbs': verbs, 'verbs_calls': 0}
+          'sync': sync or {'changes': 0, 'ahead': 0, 'merging': False, 'last': None}, 'verbs': verbs, 'verbs_calls': 0,
+          'inventory': inventory, 'inventory_calls': 0}
 
     def handler(route):
         req = route.request
@@ -625,6 +627,14 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
                 code, body = body
             else:
                 body = {'repo': True, 'branch': 'main', 'behind': 0, **body}
+        elif u.path.endswith('/__setup/data/inventory'):
+            st['inventory_calls'] += 1
+            if st['inventory'] is None:
+                code = 404
+            elif isinstance(st['inventory'], tuple):
+                code, body = st['inventory']
+            else:
+                body = st['inventory']
         elif u.path.endswith('/__setup/regen/verbs'):
             st['verbs_calls'] += 1
             if isinstance(st['verbs'], int):
@@ -3316,3 +3326,63 @@ def i29(c):
         if f != 'state.js':
             bad += [f'{f}:{text[:m.start()].count(chr(10)) + 1} replaces S' for m in replace.finditer(text)]
     c.eq(bad, [], 'S.run and S.result written by follow.js only, S.chain by chain.js only, S replaced by state.js only', what='writers')
+
+
+_INV = {'places': [
+    {'id': 'repo', 'present': True, 'bytes': 479523 * 1024, 'files': 4000, 'truncated': False, 'state': 'tracked', 'writer': 'launcher+pilots'},
+    {'id': 'local', 'present': True, 'bytes': 46121 * 1024, 'files': 120, 'truncated': False, 'state': 'local', 'writer': 'launcher'},
+    {'id': 'raw', 'present': True, 'bytes': 83 * 1024 * 1024, 'files': 4, 'truncated': False, 'state': 'local', 'writer': 'user'},
+    {'id': 'cache', 'present': False, 'bytes': 0, 'files': 0, 'truncated': False, 'state': 'outside', 'writer': 'app'},
+    {'id': 'suite', 'present': True, 'bytes': 35416 * 1024, 'files': 90, 'truncated': True, 'state': 'outside', 'writer': 'suite'},
+    {'id': 'downloads', 'present': False, 'bytes': 0, 'files': 0, 'truncated': False, 'state': 'outside', 'writer': 'user'},
+    {'id': 'backup', 'present': True, 'bytes': 565 * 1024, 'files': 3, 'truncated': False, 'state': 'outside', 'writer': 'restoration', 'count': 2}]}
+
+
+@case('L26', 'Données: the data inventory card (seven places, size, tracked / local / outside, read once when opened, unreadable said, nothing guessed)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), rule='SOG-0010 lot E2 (frame/settings/DATA_MAP.md § 5.1; modules/data/SPEC 12): a folded card, read from the launcher (GET data/inventory) only when opened; seven lines; an unreadable answer is said, never replaced by a guess; the answer is text and numbers, read through closed lists')
+def l26(c):
+    lang = c.lang
+    T = lambda key, after=None, row=0: _trow(key, lang, after, row)
+    inv = lambda k: T(k, 'inventory: {')
+    st = _launcher(c, [], inventory=_INV)
+    cfg, _ = _fixture()
+    _open(c, cfg)
+    c.until("!!document.querySelector('[data-inventory]')", timeout=20000, what='the folded inventory card')
+    c.eq([c.js("document.querySelector('[data-inventory]').open"), st['inventory_calls']], [False, 0], 'folded, and nothing read until it is opened', what='folded')
+    c.js("document.querySelector('[data-inventory]').open = true")
+    c.until("!!document.querySelector('[data-inventory-list] li')", timeout=15000, what='the seven lines')
+    c.eq(st['inventory_calls'], 1, 'one read, when opened', what='one read')
+    rows = c.js("[...document.querySelectorAll('[data-inventory-list] li')].map(li => [li.dataset.place, li.dataset.state, li.dataset.present])")
+    c.eq(rows, [['repo', 'tracked', 'true'], ['local', 'local', 'true'], ['raw', 'local', 'true'], ['cache', 'outside', 'false'], ['suite', 'outside', 'true'],
+                ['downloads', 'outside', 'false'], ['backup', 'outside', 'true']], 'seven lines in the order of the table, each with its tracking state', what='lines')
+    txt = lambda p: norm(c.text(f'[data-inventory-list] li[data-place={p}]'))
+    c.ok(norm(inv('absent')) in txt('cache') and norm(inv('absent')) in txt('downloads'), txt('cache'), 'a place that is not on this disk says it is absent')
+    c.ok(norm(T('atLeast', 'inventory: {').replace('{n}', '')).strip() in txt('suite') or 'least' in txt('suite') or 'mindestens' in txt('suite') or 'menos' in txt('suite') or 'moins' in txt('suite'),
+         txt('suite'), 'a size cut short says « at least »')
+    c.ok('(2)' in txt('backup'), txt('backup'), 'two backups left behind are counted')
+    c.eq(norm(c.text('[data-inventory] [data-inv-total]')).startswith(norm(inv('total').split('{n}')[0])), True, 'the measured total is said', what='total')
+    c.eq([c.count('[data-inventory] a'), c.count('[data-inventory] script'), c.count('[data-inventory] [data-act]')], [0, 0, 0], 'a card of text: no link, no action, nothing to run', what='read only')
+    c.eq(st['posts'], [], 'nothing is sent to the launcher', what='no post')
+    c.ge(min(c.js("[...document.querySelectorAll('[data-inventory] summary')].map(e => Math.round(e.getBoundingClientRect().height))")), 44, 'the summary is 44 px', what='touch height')
+    c.check_errors()
+    # a refused answer, and an old launcher (404): said unreadable, no line guessed
+    for answer, what in (((403, {'error': 'refusé'}), 'refused'), (None, 'old launcher')):
+        c.context.unroute(re.compile(r'/__setup/'))
+        st = _launcher(c, [], inventory=answer)
+        _open(c, cfg)
+        c.until("!!document.querySelector('[data-inventory]')", timeout=20000, what='the card again')
+        c.js("document.querySelector('[data-inventory]').open = true")
+        c.until("!!document.querySelector('[data-inv-state=unread]')", timeout=15000, what=f'the unreadable message ({what})')
+        c.eq([norm(c.text('[data-inv-state=unread]')), c.count('[data-inventory-list] li')], [norm(inv('unread')), 0], f'{what}: unreadable said, no line invented', what=what)
+    # a hostile answer: text in the fields is never taken as markup or as a place
+    c.context.unroute(re.compile(r'/__setup/'))
+    evil = {'places': [{'id': 'repo', 'present': True, 'bytes': 10, 'files': 1, 'truncated': False, 'state': '<img src=x onerror=window.__pwn=1>', 'writer': '<b>x</b>'},
+                       {'id': '<script>window.__pwn=1</script>', 'present': True, 'bytes': 9, 'files': 1, 'truncated': False, 'state': 'tracked', 'writer': 'user'}]}
+    _launcher(c, [], inventory=evil)
+    _open(c, cfg)
+    c.until("!!document.querySelector('[data-inventory]')", timeout=20000, what='the card (hostile answer)')
+    c.js("document.querySelector('[data-inventory]').open = true")
+    c.until("!!document.querySelector('[data-inventory-list] li')", timeout=15000, what='the lines (hostile answer)')
+    c.eq([c.count('[data-inventory-list] li'), c.count('[data-inventory] img'), c.count('[data-inventory] script'), c.js("window.__pwn === undefined")], [7, 0, 0, True],
+         'a hostile state, writer or id: still seven known lines, no element, nothing runs', what='hostile')
+    c.eq(c.attr('[data-inventory-list] li[data-place=repo]', 'data-state'), 'unknown', 'a state outside the closed list reads « unknown »', what='state')

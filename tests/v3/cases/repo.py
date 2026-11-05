@@ -2311,3 +2311,42 @@ def i34(c):
     c.ok("'version': suite_version()" in src, '', 'the status route serves it')
     b = (c.root / 'tools' / 'build_pages.py').read_text(encoding='utf-8')
     c.ok("os.path.join(out, 'version.json')" in b and "'describe', '--tags', '--always'" in b and "'--format=%cs'" in b, '', 'build_pages writes version.json with git describe and the commit date')
+
+
+@case('I36', 'Launcher: GET /__setup/data/inventory on the workstation only, seven places, read only, no path or content', 'I', static=True,
+      rule='SOG-0010 lot E2 (frame/settings/DATA_MAP.md § 5.1): the route is the workstation\u2019s, never a paired device\u2019s nor the relay\u2019s; it gives the seven places with their size and tracking, writes nothing, and no path or content leaves')
+def i36(c):
+    import importlib
+    import json
+    sys.path.insert(0, str(c.root / 'tools'))
+    L = importlib.import_module('launch')
+    c.eq(L.ROUTES[('GET', '/__setup/data/inventory')][1:], ('poste', False), 'the workstation only, never a paired device nor the relay', what='route')
+    tmp = Path(tempfile.mkdtemp(prefix='sog-inventory-'))
+    kept = L.DATA, L.ROOT
+    try:
+        (tmp / 'data' / 'local').mkdir(parents=True)
+        (tmp / 'data' / 'local' / 'cifp.txt').write_text('c' * 700, encoding='utf-8')
+        L.DATA, L.ROOT = str(tmp / 'data'), str(tmp)
+        before = sorted(str(p.relative_to(tmp)) for p in tmp.rglob('*'))
+
+        def get(lan, allowed):
+            h = L.Setup.__new__(L.Setup)
+            h.server = type('Srv', (), {'lan': lan, 'relay': False})()
+            h.client_address = ('127.0.0.1', 1)
+            h._allowed = lambda: allowed
+            out = []
+            h._json = lambda body, code=200: out.append((code, body))
+            h._get_data_inventory('/__setup/data/inventory')
+            return out[0]
+        c.eq([get(True, True)[0], get(False, False)[0]], [403, 403], 'refused from a paired device (the local network) and for a page that does not come from here', what='refusals')
+        code, body = get(False, True)
+        c.eq(code, 200, 'the workstation\u2019s own page is answered', what='ok')
+        c.eq([p['id'] for p in body['places']], ['repo', 'local', 'raw', 'cache', 'suite', 'downloads', 'backup'], 'seven places, in the order of the table', what='places')
+        c.eq(next(p['bytes'] for p in body['places'] if p['id'] == 'local'), 700, 'a size is read', what='size')
+        c.eq(sorted({k for p in body['places'] for k in p} - {'id', 'present', 'bytes', 'files', 'truncated', 'state', 'writer', 'count'}), [],
+             'only the closed list of fields leaves', what='fields')
+        c.ok('cifp.txt' not in json.dumps(body) and str(tmp) not in json.dumps(body).replace('\\\\', '/'), '', 'no file name and no path in the answer')
+        c.eq(sorted(str(p.relative_to(tmp)) for p in tmp.rglob('*')), before, 'read only: not a file created, changed or moved', what='read only')
+    finally:
+        L.DATA, L.ROOT = kept
+        shutil.rmtree(tmp, ignore_errors=True)

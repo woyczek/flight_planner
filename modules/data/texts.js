@@ -947,6 +947,63 @@ export const TX = {
     'Cadena interrumpida por la recarga: vuelva a lanzar «Actualizar todo».'
   ],
   // le journal des opérations
+  // la carte « Inventaire des données » (SOG-0010) : ce que « data » recouvre sur ce poste, en lecture seule
+  inventory: {
+    title: ['Inventaire des données', 'Data inventory', 'Dateninventar', 'Inventario de datos'],
+    intro: [
+      'Ce que « data » recouvre sur ce poste : sept emplacements, leur taille et s’ils sont suivis par le dépôt. Rien n’est lu dans un fichier, rien n’est déplacé.',
+      'What “data” covers on this workstation: seven places, their size and whether the repository tracks them. No file is read, nothing is moved.',
+      'Was „data“ auf diesem Rechner umfasst: sieben Orte, ihre Größe und ob das Repository sie verfolgt. Keine Datei wird gelesen, nichts wird verschoben.',
+      'Lo que abarca «data» en este puesto: siete lugares, su tamaño y si el repositorio los sigue. No se lee ningún archivo, no se mueve nada.'
+    ],
+    loading: ['Lecture de l’inventaire…', 'Reading the inventory…', 'Inventar wird gelesen…', 'Leyendo el inventario…'],
+    unread: ['Inventaire illisible : le lanceur de ce poste ne répond pas, ou refuse. Rien n’est deviné.',
+      'Inventory unreadable: this workstation’s launcher does not answer, or refuses. Nothing is guessed.',
+      'Inventar nicht lesbar: Der Starter dieses Rechners antwortet nicht oder lehnt ab. Es wird nichts geraten.',
+      'Inventario ilegible: el lanzador de este puesto no responde, o rechaza. No se adivina nada.'
+    ],
+    total: ['Total mesuré : {n}', 'Total measured: {n}', 'Gemessen insgesamt: {n}', 'Total medido: {n}'],
+    absent: ['absent', 'absent', 'nicht vorhanden', 'ausente'],
+    atLeast: ['au moins {n}', 'at least {n}', 'mindestens {n}', 'al menos {n}'],
+    place: {
+      repo: ['Dépôt des données (data/)', 'Data repository (data/)', 'Datenrepository (data/)', 'Repositorio de datos (data/)'],
+      local: ['Local au poste (data/local/)', 'Local to the workstation (data/local/)', 'Lokal am Rechner (data/local/)',
+        'Local al puesto (data/local/)'
+      ],
+      raw: ['Sources brutes du SIA (data/sia/*.xml, *.zip)', 'Raw SIA sources (data/sia/*.xml, *.zip)',
+        'SIA-Rohquellen (data/sia/*.xml, *.zip)', 'Fuentes brutas del SIA (data/sia/*.xml, *.zip)'
+      ],
+      cache: ['Copie de l’appareil (navigateur)', 'This device’s copy (browser)', 'Kopie dieses Geräts (Browser)',
+        'Copia del dispositivo (navegador)'
+      ],
+      suite: ['Dossiers de travail de la suite', 'The suite’s working folders', 'Arbeitsordner der Suite',
+        'Carpetas de trabajo de la suite'
+      ],
+      downloads: ['Téléchargements', 'Downloads', 'Downloads', 'Descargas'],
+      backup: ['Sauvegardes laissées (data_avant_…)', 'Backups left behind (data_avant_…)', 'Hinterlassene Sicherungen (data_avant_…)',
+        'Copias dejadas (data_avant_…)'
+      ]
+    },
+    state: {
+      tracked: ['suivi', 'tracked', 'verfolgt', 'seguido'],
+      local: ['local', 'local', 'lokal', 'local'],
+      outside: ['hors dépôt', 'outside the repository', 'außerhalb des Repositorys', 'fuera del repositorio'],
+      unknown: ['état inconnu', 'state unknown', 'Status unbekannt', 'estado desconocido']
+    },
+    writer: {
+      'launcher+pilots': ['écrit par le lanceur et les pilotes', 'written by the launcher and the pilots',
+        'vom Starter und den Piloten geschrieben', 'escrito por el lanzador y los pilotos'
+      ],
+      launcher: ['écrit par le lanceur', 'written by the launcher', 'vom Starter geschrieben', 'escrito por el lanzador'],
+      user: ['déposé à la main', 'dropped in by hand', 'von Hand abgelegt', 'depositado a mano'],
+      app: ['écrit par l’appli', 'written by the app', 'von der App geschrieben', 'escrito por la app'],
+      suite: ['écrit par la suite', 'written by the suite', 'von der Suite geschrieben', 'escrito por la suite'],
+      restoration: ['laissé par une restauration', 'left by a restoration', 'von einer Wiederherstellung hinterlassen',
+        'dejado por una restauración'
+      ],
+      other: ['écrivain inconnu', 'writer unknown', 'Schreiber unbekannt', 'escritor desconocido']
+    }
+  },
   journal: ['Journal', 'Journal', 'Protokoll', 'Diario'],
   journalEmpty: ['Aucune opération pour le moment.', 'No operation yet.', 'Noch kein Vorgang.', 'Ninguna operación por ahora.'],
   opVerb: {
