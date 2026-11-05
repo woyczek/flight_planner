@@ -2328,3 +2328,26 @@ def f90(c):
     pick_proc(c, 'p-arr-rwy', '07')
     d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('rwy') == '07', 'the runway 07 is written')
     c.eq(procs_of(d, 'arr').get('star'), 'LFVF.STAR.VFF9E.RW07.NONE', 'the STAR follows the runway: the record of the 07', what='star after rwy')
+
+
+@case('F91', 'Points at a level, the plan at another: said beside the level, with the climb and cruise it makes, and one gesture to align',
+      'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0020 (« 5 mn de vol » on EIDW–LFPO: points at FL180, plan higher, the climb eating the route): one line beside the level, '
+      '« Points à FL180, plan à FL320 : m:ss de montée pour m:ss de croisière », and « Aligner les points sur le plan », nothing modal')
+def f91(c):
+    docs = flight_docs()
+    f = docs[1][1]
+    f['level'] = {'ft': 32000}
+    for p in f['route']['points'][1:-1]:
+        p['alt_ft'] = 18000
+    f['route']['text'] = 'LFRS LUGEN/F180 NEPIX/F180 LFML'   # the levels written in the route, as the user's
+    c.open('fuel', docs=docs, airfields=True)
+    to_step(c, 0)
+    c.until("(() => { const p = document.querySelector('[data-module=fuel] [data-lvlmix]'); return !!p && !p.hidden })()", timeout=10000,
+            what='the line beside the level')
+    line = norm(c.text(f'{FUEL} [data-lvlmix]') or '')
+    c.ok(line.startswith(norm(row(c, 'lvlMix').replace('{p}', 'FL180').replace('{l}', 'FL320'))), line, 'points at FL180, plan at FL320')
+    c.tap(f'{FUEL} [data-do="alignlvl"]')
+    d = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and not any(p.get('alt_ft') for p in d['route']['points']),
+                    'the point levels are removed', timeout=8000)
+    c.until("document.querySelector('[data-module=fuel] [data-lvlmix]').hidden", what='the line goes away')

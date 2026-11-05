@@ -345,6 +345,14 @@ const TX = {
     'Neues Flugplatzpaar ({dep} → {arr}): Strecke, Verfahren und OFP des vorigen Flugs sind gelöscht.',
     'Nuevo par de aeródromos ({dep} → {arr}): se borran la ruta, los procedimientos y el OFP del vuelo anterior.'
   ],
+  // les niveaux des points et celui du plan différents (SOG-0020 : « 5 min de vol » — la montée vers le plan mangeait la route)
+  lvlMix: ['Points à {p}, plan à {l}', 'Points at {p}, plan at {l}', 'Punkte auf {p}, Plan auf {l}', 'Puntos a {p}, plan a {l}'],
+  lvlMixTimes: [' : {c} de montée pour {k} de croisière', ': {c} of climb for {k} of cruise', ': {c} Steigflug für {k} Reiseflug',
+    ': {c} de ascenso para {k} de crucero'
+  ],
+  lvlAlign: ['Aligner les points sur le plan', 'Align the points on the plan', 'Punkte an den Plan angleichen',
+    'Alinear los puntos con el plan'
+  ],
   ofpLoaded: ['OFP {dep} → {arr} repris ({n} points).', 'OFP {dep} → {arr} loaded ({n} points).',
     'OFP {dep} → {arr} übernommen ({n} Punkte).',
     'OFP {dep} → {arr} cargado ({n} puntos).'
@@ -1578,7 +1586,7 @@ function renderPlanBody() {
   <nav class="f-steps fu-steps" aria-label="${esc(tt(TX.stepsNav))}">${TX.stepNames.map((n, i) => `<button type="button" data-step="${i}"${step === i ? ' aria-current="step"' : ''} aria-label="${i + 1} ${esc(tt(n))}"><b>${i + 1}</b><span> ${esc(tt(n))}</span></button>`).join('')}</nav>
   ${sec(0, `<div class="f-card" data-block="flight"><h2>${esc(tt(TX.stepNames[0]))}</h2>
       <div class="f-grid fu-ads">${[['dep', TX.dep], ['arr', TX.arr], ['altn', TX.altn]].map(([k, label]) => `<label class="f-field">${esc(tt(label))}<input data-k="${k}" value="${esc(r[k] ?? '')}" class="fu-code" autocapitalize="characters" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-adsug"><small class="fu-adname" data-adline="${k}"></small></label>`).join('')}<div class="fu-sug" id="fu-adsug" data-adsug role="listbox" aria-label="${esc(tt(S.AD.texts.listLabel))}" hidden></div></div>
-      <div class="f-grid fu-flight">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}<label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(whenField(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
+      <div class="f-grid fu-flight">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}<p class="f-muted fu-lvlmix" data-lvlmix hidden></p><label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(whenField(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
       <p class="f-warn" data-pastdate hidden></p>
       <div data-block="aircraft">
       <div class="f-row" data-acsel></div>
@@ -2047,6 +2055,7 @@ function onPlanClick(e) {
     pick = e.target.closest('[data-pick]');
   if (b?.dataset.do === 'simbrief') return loadSimbrief();
   if (b?.dataset.do === 'level') return setLevel(+b.dataset.ft);
+  if (b?.dataset.do === 'alignlvl') return alignLevels();
   if (pick && S.C?.D) {
     const svg = pick.ownerSVGElement,
       pt = svg.createSVGPoint();
@@ -2861,6 +2870,33 @@ function setLevel(ft) {
   if (S.aloft) aloftApply(); // vent, ISA au niveau et leur source refaits au nouveau niveau (puis devis)
   saveFlight();
   refresh();
+}
+/** Les niveaux posés sur les points de la route (hors départ et arrivée) qui ne sont pas celui du plan : une ligne près du niveau, avec
+ *  ce que la montée et la croisière durent alors, et un geste (SOG-0020 ; rien de modal) ; masquée sinon. */
+function lvlMix(C) {
+  const el = S.body?.querySelector('[data-lvlmix]');
+  if (!el) return;
+  const plan = +S.flight.level?.ft || 0,
+    pts = (S.flight.route?.points || []).slice(1, -1),
+    lv = [...new Set(pts.map(p => +p.alt_ft || 0).filter(x => x > 0))].sort((a, b) => a - b);
+  if (!plan || !lv.length || lv.includes(plan)) {
+    el.hidden = true;
+    return;
+  }
+  const fl = ft => `FL${String(Math.round(ft / 100)).padStart(3, '0')}`,
+    q = C?.q,
+    hm = m => `${Math.floor(m / 60)}:${String(Math.round(m % 60)).padStart(2, '0')}`,
+    times = q?.climb?.min != null && q?.cruise?.min != null ? tt(TX.lvlMixTimes, {
+      c: hm(q.climb.min),
+      k: hm(q.cruise.min)
+    }) : '';
+  el.hidden = false;
+  el.innerHTML = `${esc(tt(TX.lvlMix, { p: lv.map(fl).join('–'), l: fl(plan) }) + times)} <button type="button" class="fu-linkbtn" data-do="alignlvl">${esc(tt(TX.lvlAlign))}</button>`;
+}
+/** « Aligner les points sur le plan » : les niveaux posés sur les points de la route sont retirés (ils suivent alors le plan). */
+function alignLevels() {
+  for (const p of S.flight.route?.points || []) delete p.alt_ft;
+  routeEdited();
 }
 /** Remplace le terrain was par now au début (départ) ou à la fin (arrivée) du texte de la route, s'il y est : dans un
  *  texte libre le mot (niveau collé gardé) ; dans une liste d'OFP « ID lat lon », l'entrée est retirée (la lecture de la
@@ -4046,6 +4082,7 @@ function refresh() {
     $ = s => S.body.querySelector(s),
     unit = sheet?.unit || 'kg';
   shareProfile(C);
+  lvlMix(C);
   S.P.sync(); // choix, terrains, vol démarré : la carte des procédures est redessinée (sur place quand seules les listes changent)
   openInLinks(C);
   fmsState();
