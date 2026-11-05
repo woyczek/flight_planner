@@ -104,6 +104,7 @@ _L1_JS = r"""async () => {
     vfr: { cycle: '2611', at: '2026-11-03T00:00:00Z', count: 400 },
     aircraft: { at: '2026-09-20T00:00:00Z', types: 300, files: 4 }
   };
+  pub.base.fr.cycleSource = 'sia'; pub.base.gb.cycleSource = 'nats'; pub.base.es.cycleSource = 'enaire';   // the lot C field: which source dates each zone (SOG-0026)
   const row = (src, env = {}) => { const r = M.rowOf(src, { airac: A, pub, ids: ['fr', 'gb', 'es'], now, parserVersion: undefined, ...env });
     return { state: r.state, level: r.level, cycle: r.cycle, cycleDate: r.cycleDate, at: r.at, ageDays: r.ageDays, counts: r.counts, zones: r.zones.map(z => z.zone + ':' + z.published), attention: r.attention, unknown: r.unknown, kind: r.kind } };
   out.twoZones = row(mk('openaip', 'base', '*'), { ids: ['fr', 'gb'] });                       // oldest cycle of the two, stale and red
@@ -241,13 +242,14 @@ def _fixture(pv=19, shape=True):
     """The stub's answers, relative to today's AIRAC cycle: the base of France one cycle behind, the others current."""
     today, cur, prev, nxt = _cycles()
     z = lambda n: [n, n, n, n]
-    zone = lambda d, v: {'inForce': d.isoformat(), 'cycles': {d.isoformat(): {'parserVersion': v, 'at': f'{today.isoformat()}T08:00:00Z', 'by': 'ABC', 'format': 'split'}}}
+    # cycleSource (AeroDB lot C): the source that dates the zone's cycle ('sia' France, 'nats' United Kingdom, 'enaire' Spain, null for the others)
+    zone = lambda d, v, src=None: {'inForce': d.isoformat(), 'cycleSource': src, 'cycles': {d.isoformat(): {'parserVersion': v, 'at': f'{today.isoformat()}T08:00:00Z', 'by': 'ABC', 'format': 'split'}}}
     zones = [{'id': i, 'names': n, 'frames': [], 'published': p} for i, n, p in [
         ('ca', ['Canada', 'Canada', 'Kanada', 'Canadá'], True), ('es', ['Espagne', 'Spain', 'Spanien', 'España'], True),
         ('fr', ['France', 'France', 'Frankreich', 'Francia'], True), ('gb', ['Royaume-Uni', 'United Kingdom', 'Vereinigtes Königreich', 'Reino Unido'], True),
         ('us', ['États-Unis', 'United States', 'Vereinigte Staaten', 'Estados Unidos'], True), ('de', ['Allemagne', 'Germany', 'Deutschland', 'Alemania'], False)]]
     pub = {
-        'base': {'fr': zone(prev, 19), 'gb': zone(cur, 18), 'es': zone(cur, 19), 'us': zone(cur, 19), 'ca': zone(cur, 19)},
+        'base': {'fr': zone(prev, 19, 'sia'), 'gb': zone(cur, 18, 'nats'), 'es': zone(cur, 19, 'enaire'), 'us': zone(cur, 19), 'ca': zone(cur, 19)},
         'proc': {'cycles': {cur.isoformat(): {'aerodromes': 40, 'byStatus': {'official': 30, 'check': 10}}}, 'inForce': cur.isoformat()},
         'vfr': {'cycle': cur.isoformat(), 'at': f'{today.isoformat()}T07:00:00Z', 'count': 400},
         'aircraft': {'at': (today - datetime.timedelta(days=40)).isoformat() + 'T00:00:00Z', 'types': 300, 'files': 4}}
@@ -2600,9 +2602,13 @@ def l18(c):
 
 
 # ------------------------------------------------------------------------------------------------------ L19
-def _pk_plan(taken=(), missing=(), failed=(), dry=True, state='done', jid='k1', zones=('fr', 'gb'), reason=None, step=''):
+def _pk_plan(taken=(), missing=(), failed=(), dry=True, state='done', jid='k1', zones=('fr', 'gb'), reason=None, step='', skipped=None, shown=None):
     """The view of a base/pickup job: the plan (dry true) or the real run, with the launcher's result shape (tools/regen/base_sources.py)."""
     res = {'ok': reason is None and state != 'running', 'dry': dry, 'taken': list(taken), 'missing': list(missing), 'failed': list(failed)}
+    if skipped is not None:
+        res['skipped'] = list(skipped)
+    if shown is not None:
+        res['shown'] = shown
     if reason:
         res['reason'] = reason
     v = _fview({}, state=state, step=step, verb='pickup', args={'zones': list(zones), 'dry': dry}, jid=jid, result=res if state != 'running' else None)
@@ -3386,3 +3392,106 @@ def l26(c):
     c.eq([c.count('[data-inventory-list] li'), c.count('[data-inventory] img'), c.count('[data-inventory] script'), c.js("window.__pwn === undefined")], [7, 0, 0, True],
          'a hostile state, writer or id: still seven known lines, no element, nothing runs', what='hostile')
     c.eq(c.attr('[data-inventory-list] li[data-place=repo]', 'data-state'), 'unknown', 'a state outside the closed list reads « unknown »', what='state')
+
+
+_L27_JS = r"""async () => {
+  const M = await import('/modules/data/model.js');
+  const e = (cycle, at) => ({ inForce: cycle, cycles: { [cycle]: { parserVersion: 20, at, by: 'ABC', format: 'split' } } });
+  const zone = (cycle, src) => ({ ...e(cycle, cycle + 'T08:00:00Z'), ...(src === undefined ? {} : { cycleSource: src }) });
+  // fr (SIA) and gb (NATS) are of the cycle in force; de and it have no dated source, built long ago; ie has the old rule (no field)
+  const base = { fr: zone('2026-10-29', 'sia'), gb: zone('2026-10-29', 'nats'), de: zone('2026-10-01', null), it: zone('2026-10-01', null), ie: zone('2026-10-01') };
+  const ids = ['fr', 'gb', 'de', 'it'];
+  const b = M.baseOf(base, ids);
+  const out = { dated: [b.dated, b.cycle, b.oldestSource, b.zones.map(z => z.cycleSource)] };
+  // the old reader (no cycleSource) says nothing about the age: never « dépassé »
+  const old = M.baseOf(base, ['ie']);
+  out.old = [old.dated, old.cycle, old.oldestSource];
+  // a dated zone one cycle behind: the line is stale because of that source only
+  const behind = M.baseOf({ ...base, gb: zone('2026-10-01', 'nats') }, ids);
+  out.behind = [behind.dated, behind.cycle, behind.oldestSource];
+  // none dated: no cycle, no source
+  const none = M.baseOf(base, ['de', 'it']);
+  out.none = [none.dated, none.cycle, none.oldestSource, none.published];
+  // a hostile or unknown source name is « not dated », never taken as it is
+  const evil = M.baseOf({ x: zone('2026-10-01', '<img src=x>'), y: zone('2026-10-01', 'constructor') }, ['x', 'y']);
+  out.evil = [evil.dated, evil.cycle, evil.zones.map(z => z.cycleSource)];
+  return out }"""
+
+
+@case('L27', 'Données: « dépassé » only compares the zones a dated source feeds (cycleSource), a line without dated zone is never stale', 'L', tags=('data',),
+      designs=('standard',), rule='SOG-0026 (AeroDB lot C, f089178f5): GeoNames, relief and openAIP feed every zone without an AIRAC cycle, so the oldest folder of all the fed zones said « dépassé » everywhere; only the zones with a cycleSource (sia, nats, enaire) count, against their own source')
+def l27(c):
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest', wait_until='load')
+    r = c.js(_L27_JS)
+    c.eq(r['dated'], [2, '2026-10-29', 'sia', ['sia', 'nats', None, None]], 'fr and gb are dated, de and it are not: the cycle is the oldest of the dated zones only', what='dated')
+    c.eq(r['old'], [0, None, None], 'a zone without the field (a reader older than lot C) is not dated: no cycle, never stale', what='no field')
+    c.eq(r['behind'], [2, '2026-10-01', 'nats'], 'a dated zone one cycle behind: the oldest dated cycle, and the source that says so', what='behind')
+    c.eq(r['none'], [0, None, None, 2], 'two zones published, none dated: no cycle and no source', what='none dated')
+    c.eq(r['evil'], [0, None, [None, None]], 'an unknown or hostile source name reads as « not dated »', what='hostile')
+
+
+_L28_JS = r"""async () => {
+  const M = await import('/modules/data/model.js');
+  // the two examples of AeroDB's contract (frame/aerodb/INTEGRATION.md, f089178f5), the plan (dry)
+  const a = { ok: true, dry: true, taken: [{ zone: 'kh', source: 'openaip', zip: null, from: ['kh_rpp.json'], files: ['kh_rpp.geojson'], converted: ['kh_rpp.json'], unchanged: [], size: 2489, bytes: 3011 }],
+    missing: [], failed: [], skipped: [], shown: { openaip: { name: 'openaip', size: 2489 } } };
+  const b = { ok: true, dry: true, taken: [{ zone: 'kh', source: 'openaip', zip: null, from: ['kh_asp.geojson'], files: ['kh_asp.geojson'], converted: [], unchanged: [], size: 1480, bytes: 1480 }],
+    missing: [], failed: [], skipped: [{ zone: 'kh', source: 'openaip', name: 'kh_apt.xml', why: 'format' }, { zone: 'kh', source: 'openaip', name: 'kh_hot.xml', why: 'layer' }],
+    shown: { openaip: { name: 'openaip', size: 1480 } } };
+  const only = { ok: true, dry: true, taken: [], missing: [], failed: [], skipped: [{ zone: 'kh', source: 'openaip', name: 'kh_apt.xml', why: 'format' }] };
+  const view = r => ({ state: 'done', result: r, zones: {} });
+  const o = r => { const x = M.pickupOutcome(view(r)); return [x.kind, x.taken.map(t => [t.zone, t.source, t.zip, t.from, t.files, t.converted, t.unchanged, t.size, t.bytes]), x.skipped.map(s => [s.zone, s.name, s.why]), x.files] };
+  const out = { a: o(a), b: o(b), only: o(only) };
+  out.shownA = M.openaipShown(a); out.shownOnly = M.openaipShown(only);
+  // an openAIP entry is neither sendable by zip nor blocked: it travels by shown.openaip
+  const sa = M.pickupSplit(M.pickupOutcome(view(a)).taken);
+  out.splitA = [sa.ready.length, sa.blocked.length, Object.keys(sa.zips), sa.zones, sa.openaip];
+  // a zip and an openAIP export together: the zip stays a zip, the zone of each is launched
+  const mixed = M.pickupSplit(M.pickupOutcome(view({ ...a, taken: [...a.taken, { zone: 'fr', source: 'sia', zip: 'export_xml_bd_SIA_2026-11-26.zip', size: 3000000, files: ['a.xml'], bytes: 100 }] })).taken);
+  out.mixed = [mixed.ready.map(t => t.source), mixed.blocked.length, Object.keys(mixed.zips), mixed.zones, mixed.openaip];
+  // the user's folder is hostile text: a name outside the rule, a reason outside the closed list, a malformed shown, are all dropped
+  const evil = { ok: true, dry: true, taken: [{ zone: 'kh', source: 'openaip', zip: null, from: ['<img src=x onerror=1>.geojson', 'ok_asp.geojson', '../../x.json'], files: ['x'.repeat(200)], converted: [], unchanged: [], size: 1, bytes: 1 }],
+    skipped: [{ zone: 'kh', source: 'openaip', name: '<script>.xml', why: 'format' }, { zone: 'kh', source: 'openaip', name: 'a.xml', why: 'constructor' }, { zone: 'kh', source: 'openaip', name: 'b.xml', why: 'layer' }],
+    shown: { openaip: { name: '<b>x</b>', size: -5 } } };
+  const e = M.pickupOutcome(view(evil));
+  out.evil = [e.taken[0].from, e.taken[0].files, e.skipped.map(s => s.name), M.openaipShown(evil), M.openaipShown({ shown: { openaip: { name: 'openaip', size: 1.5 } } })];
+  return out }"""
+
+
+@case('L28', 'Données: the openAIP exports of « Prendre le fichier téléchargé » (files one by one, JSON converted, XML said, the shown file sent back, hostile names dropped)', 'L', tags=('data',),
+      designs=('standard',), rule='SOG-0027 (AeroDB lot C, f089178f5; frame/aerodb/INTEGRATION.md « base/pickup and the openAIP exports »): taken has zip null with from / files / converted / unchanged; skipped says the XML (why format) and the hot layer (why layer); shown.openaip is sent back in zips; the names come from the user\u2019s Downloads and are never taken as they are (audit 157)')
+def l28(c):
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest', wait_until='load')
+    r = c.js(_L28_JS)
+    c.eq(r['a'], ['done', [['kh', 'openaip', None, ['kh_rpp.json'], ['kh_rpp.geojson'], ['kh_rpp.json'], [], 2489, 3011]], [], 1],
+         'the contract\u2019s example (a): a JSON export taken and converted, nothing skipped', what='example a')
+    c.eq(r['b'], ['done', [['kh', 'openaip', None, ['kh_asp.geojson'], ['kh_asp.geojson'], [], [], 1480, 1480]], [['kh', 'kh_apt.xml', 'format'], ['kh', 'kh_hot.xml', 'layer']], 1],
+         'the contract\u2019s example (b): the GeoJSON taken, the XML (format) and the hot layer (layer) said', what='example b')
+    c.eq(r['only'], ['nothing', [], [['kh', 'kh_apt.xml', 'format']], 0], 'only an XML: nothing taken, the XML said', what='only xml')
+    c.eq([r['shownA'], r['shownOnly']], [{'name': 'openaip', 'size': 2489}, None], 'shown.openaip as the plan gave it, none without it', what='shown')
+    c.eq(r['splitA'], [0, 0, [], [], ['kh']], 'an openAIP entry is neither sendable by zip nor blocked: its zone travels by shown.openaip', what='split')
+    c.eq(r['mixed'], [['sia'], 0, ['sia'], ['fr'], ['kh']], 'a zip and an openAIP export together: the zip stays a zip, each zone launched', what='mixed')
+    c.eq(r['evil'], [['ok_asp.geojson'], [], ['b.xml'], None, None], 'a name outside the rule, a reason outside the closed list, a malformed shown: dropped', what='hostile')
+    # the page: the question says the files and the conversion, the real run sends shown.openaip back
+    lang = c.lang
+    li = {'fr': 0, 'en': 1, 'de': 2, 'es': 3}[lang]
+    T = lambda key, after=None, row=0: _trow(key, lang, after, row)
+    cfg, _ = _fixture()
+    cfg['zones'] = cfg['zones']
+    st = _launcher(c, [], verbs=ALL_VERBS + ['base/pickup'])
+    _open(c, cfg)
+    _all_open(c)
+    pk = "[data-build] [data-verb=pickup]"
+    taken = {'zone': 'fr', 'source': 'openaip', 'zip': None, 'from': ['fr_rpp.json'], 'files': ['fr_rpp.geojson'], 'converted': ['fr_rpp.json'], 'unchanged': [], 'size': 2489, 'bytes': 3011}
+    plan = _pk_plan([taken], skipped=[{'zone': 'fr', 'source': 'openaip', 'name': 'fr_apt.xml', 'why': 'format'}], shown={'openaip': {'name': 'openaip', 'size': 2489}}, zones=('fr',))
+    st['views'], st['i'], st['start'] = [plan], 0, (200, {'job': 'k1'})
+    c.tap(pk)
+    q = _ask_text(c)
+    c.ok(norm(T('pickupConverted').replace('{n}', '1')) in norm(q['text']), q['text'], 'the question says the JSON that is converted')
+    c.ok('fr_apt.xml' in q['text'], q['text'], 'and the XML that is not read, by its name')
+    st['views'], st['i'], st['start'] = [_pk_plan([taken], dry=False, zones=('fr',), shown=None)], 0, (200, {'job': 'k2'})
+    c.tap('.f-modal [data-ok]')
+    c.until("!!document.querySelector('[data-build-result][data-op=pickup]')", timeout=10000, what='the real run ends')
+    real = [p for p in st['posts'] if p.get('args', {}).get('dry') is False]
+    c.eq(real[-1]['args'], {'zones': ['fr'], 'dry': False, 'zips': {'openaip': {'name': 'openaip', 'size': 2489}}},
+         'the real run sends back exactly what the plan showed for openAIP (no zip name, the total size)', what='zips sent')

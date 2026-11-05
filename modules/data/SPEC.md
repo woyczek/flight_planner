@@ -353,6 +353,12 @@ file after file). The rule:
     rest, the last known ones (`S.srcKept`, set by `follow.js` at the end of a base download or build; else the journal's
     last base download or build entry that carries them). **A launcher job is never started to read them.** A real pickup
     that took a source drops that source from `S.srcKept` (its cycle is to be read again by the next download or build).
+  - **The openAIP exports of a pickup** (SOG-0027, AeroDB lot C f089178f5): not a zip. A `taken` entry of source `openaip` has `zip: null` and
+    `from` / `files` / `converted` / `unchanged` (names read as plain file names, 120 characters, 40 at most: audit 157); `skipped[]` says
+    each export the suite does not read (`why`: `format` for an openAIP XML, `layer` for the « hot » layer; any other value is dropped);
+    `shown.openaip` is what the plan showed, sent back **as it is** in `zips.openaip` (`{ name: 'openaip', size }`, size a whole number ≥ 0;
+    anything else sends nothing for openAIP, the launcher would refuse it « not-shown »). An openAIP entry is neither sendable by zip nor
+    « blocked ». Case L28.
   - **« Cycle X dépassé »** (`staleCycle`, on « Tout mettre à jour » and the dot of « Construire ») adds « — à cause de
     SIA France 2610 » when the stale sources are known (each once, never per zone line); without that knowledge, the
     present phrase.
@@ -390,6 +396,13 @@ remote). One pill, by priority, the others in the detail:
 
 Ages follow V2's rules (AIRAC sources against the cycle in force, anything else after 28 days).
 
+**Which zones date a base line** (SOG-0026, AeroDB lot C f089178f5, 5 Nov 2026). GeoNames, the relief and openAIP feed every zone and
+carry no AIRAC cycle: the oldest folder of all the fed zones made the base line « dépassé » everywhere. `publication().base[zone]` now
+gives `cycleSource` (`sia` France, `nats` United Kingdom, `enaire` Spain, `null` otherwise). The stale-cycle state compares **only the fed
+zones whose `cycleSource` is not null**, each against the cycle in force; the line names the oldest dated source once (« à cause de SIA
+France »). A line none of whose fed zones is dated reads « datée du <at> », never « dépassée » (`baseOf` gives `dated`, `cycle`,
+`oldestSource`). A reader older than lot C gives no field: no zone is dated, nothing is said stale. An unknown or hostile source name
+reads as « not dated ». Case L27.
 ### 6.3 End of cycle
 
 When the published base or `proc/` is older than the cycle in force, or the cycle ends within 3 days with nothing

@@ -146,8 +146,15 @@ export function fedZones(src, ids) {
 export function matters(src, ids) {
   return src.group === 'aircraft' || src.group === 'weather' || fedZones(src, ids).length > 0;
 }
+/** Les sources qui datent une zone de la base (`cycleSource` de publication(), AeroDB lot C) : le SIA (France), NATS (Royaume-Uni), ENAIRE
+ *  (Espagne) ; toute autre valeur est lue comme « pas de source datée ». */
+export const DATED_SOURCES = Object.freeze(['sia', 'nats', 'enaire']);
 /** Agrège la base publiée des zones nourries : le cycle en vigueur le plus ancien, la date de publication la plus ancienne, la plus
- *  basse version d'analyseur, et le détail par zone { zone, published, cycle, at, by, parserVersion, format }. */
+ *  basse version d'analyseur, et le détail par zone { zone, published, cycle, at, by, parserVersion, format, cycleSource }.
+ *  `cycle` ne compte que les zones DATÉES : celles dont publication() donne un `cycleSource` ('sia', 'nats', 'enaire' : AeroDB, lot C,
+ *  SOG-0026) ; GeoNames, le relief et openAIP nourrissent toutes les zones sans porter de cycle AIRAC, ils ne rendent donc jamais
+ *  une zone « dépassée ». Sans zone datée (ou sans le champ : un lecteur plus ancien que le lot C), `cycle` vaut null et `dated` 0 ;
+ *  `oldestSource` nomme la source de la zone datée la plus ancienne, pour dire à cause de laquelle la ligne est dépassée. */
 export function baseOf(pubBase, zoneIds) {
   const zones = zoneIds.map(zone => {
     const z = pubBase?.[zone],
@@ -159,18 +166,22 @@ export function baseOf(pubBase, zoneIds) {
       at: e.at ?? null,
       by: e.by ?? null,
       parserVersion: Number.isFinite(e.parserVersion) ? e.parserVersion : null,
-      format: e.format || 'split'
+      format: e.format || 'split',
+      cycleSource: DATED_SOURCES.includes(z.cycleSource) ? z.cycleSource : null
     } : {
       zone,
       published: false
     };
   });
   const pub = zones.filter(z => z.published),
-    ats = pub.map(z => Date.parse(z.at)).filter(Number.isFinite);
+    ats = pub.map(z => Date.parse(z.at)).filter(Number.isFinite),
+    dated = pub.filter(z => z.cycleSource !== null).sort((a, b) => a.cycle < b.cycle ? -1 : a.cycle > b.cycle ? 1 : 0);
   return {
     zones,
     published: pub.length,
-    cycle: pub.length ? pub.map(z => z.cycle).sort()[0] : null,
+    dated: dated.length,
+    cycle: dated.length ? dated[0].cycle : null,
+    oldestSource: dated.length ? dated[0].cycleSource : null,
     at: ats.length ? new Date(Math.min(...ats)).toISOString() : null,
     parserVersion: lowestVersion(pub.map(z => z.parserVersion)),
     whole: pub.some(z => z.format === 'whole')
@@ -190,6 +201,8 @@ export function rowOf(src, env) {
     level: null,
     cycle: '',
     cycleDate: null,
+    dated: 0,
+    oldestSource: null,
     at: null,
     ageDays: null,
     counts: {},
@@ -212,7 +225,9 @@ export function rowOf(src, env) {
     row.zones = b.zones;
     row.counts.zones = b.published;
     flags.absent = !b.published;
-    row.cycleDate = b.cycle;
+    row.cycleDate = b.cycle; // null sans zone datée : staleLevel() ne dit alors jamais « dépassé » ; la ligne se lit « datée du <at> »
+    row.dated = b.dated;
+    row.oldestSource = b.oldestSource;
     row.at = b.at;
     flags.parser = !flags.absent && parserOld(env.parserVersion, b.whole ? null : b.parserVersion);
   } else if (part === 'proc') {

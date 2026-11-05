@@ -71,6 +71,8 @@ export const TX = {
   // une ligne : cycle ou édition, âge, taille
   cycle: ['Cycle {c}', 'Cycle {c}', 'Zyklus {c}', 'Ciclo {c}'],
   edition: ['Édition du {d}', 'Edition of {d}', 'Ausgabe vom {d}', 'Edición del {d}'],
+  // une base dont aucune zone nourrie n'a de source datée (AeroDB lot C, SOG-0026) : sa date de construction, jamais « dépassée »
+  datedOn: ['Datée du {d}', 'Dated {d}', 'Datiert vom {d}', 'Fechada el {d}'],
   ageToday: ['publié aujourd’hui', 'published today', 'heute veröffentlicht', 'publicado hoy'],
   ageOne: ['publié il y a 1 jour', 'published 1 day ago', 'vor 1 Tag veröffentlicht', 'publicado hace 1 día'],
   ageMany: ['publié il y a {n} jours', 'published {n} days ago', 'vor {n} Tagen veröffentlicht', 'publicado hace {n} días'],
@@ -831,6 +833,23 @@ export const TX = {
   pickupTaken: ['{z} ({s}) : {zip} ({n}, {b})', '{z} ({s}): {zip} ({n}, {b})', '{z} ({s}): {zip} ({n}, {b})',
     '{z} ({s}): {zip} ({n}, {b})'
   ],
+  // la prise des exports openAIP (SOG-0027) : des fichiers un à un, pas un zip ; « n fichiers (x Ko) », dont {c} convertis du JSON
+  pickupTakenFiles: ['{z} ({s}) : {n} ({b}){c}', '{z} ({s}): {n} ({b}){c}', '{z} ({s}): {n} ({b}){c}', '{z} ({s}): {n} ({b}){c}'],
+  pickupConverted: [', dont {n} convertis du JSON en GeoJSON', ', {n} converted from JSON to GeoJSON',
+    ', davon {n} von JSON nach GeoJSON umgewandelt',
+    ', {n} convertidos de JSON a GeoJSON'
+  ],
+  // un export openAIP que la suite ne lit pas : dit, jamais pris (why : 'format' = un XML openAIP 1.1, 'layer' = la couche « hot » non utilisée)
+  pickupSkipped: {
+    format: ['{z} ({s}) : {name} n’est pas lu (format XML) : exportez en GeoJSON ou en JSON sur openaip.net',
+      '{z} ({s}): {name} is not read (XML format): export it as GeoJSON or JSON on openaip.net',
+      '{z} ({s}): {name} wird nicht gelesen (XML-Format): exportieren Sie es auf openaip.net als GeoJSON oder JSON',
+      '{z} ({s}): {name} no se lee (formato XML): expórtelo en GeoJSON o JSON en openaip.net'
+    ],
+    layer: ['{z} ({s}) : {name} n’est pas utilisé (couche « hot »)', '{z} ({s}): {name} is not used (“hot” layer)',
+      '{z} ({s}): {name} wird nicht verwendet („hot“-Ebene)', '{z} ({s}): {name} no se usa (capa «hot»)'
+    ]
+  },
   pickupMissing: ['{z} ({s}) : aucun fichier {e} dans Téléchargements', '{z} ({s}): no file {e} in Downloads',
     '{z} ({s}): keine Datei {e} in Downloads',
     '{z} ({s}): ningún archivo {e} en Descargas'

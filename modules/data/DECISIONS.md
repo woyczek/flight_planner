@@ -152,3 +152,22 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   a drag during a run can be cut once; the wheel on a desktop and one finger on a phone go to the map, not the page scroll (the
   base has no cooperative gestures); a change of the design's tone restyles the map from `attachMaps`.
 
+## 5 November 2026 — which zones date a base line (SOG-0026, lot E2)
+
+- **Rule** (AeroDB lot C, f089178f5; coded against its contract, not its code, which was not on origin): `baseOf` counts a fed zone only if
+  `publication().base[zone].cycleSource` is `sia`, `nats` or `enaire`; the cycle of the line is the oldest of those zones; no dated zone
+  gives no cycle, so `staleLevel` never says stale and the line reads « Datée du <at> ».
+- **Reversible detail chosen**: a zone without the field (a reader older than lot C) counts as **not dated** rather than as dated by
+  its folder. The other choice (keep the old rule when the field is absent) would show « dépassé » again on a launcher that predates
+  lot C; the chosen one shows nothing wrong, at the price of not warning about a really old base until AeroDB publishes the field.
+  To reverse: in `baseOf`, treat `cycleSource === undefined` as dated.
+- **Not done**: the source of the oldest zone is named from the catalogue (`n` without its parenthesis), not from a table of mine.
+
+## 5 November 2026 — the openAIP exports of a pickup (SOG-0027, lot E2)
+
+- **Rule** (AeroDB contract, not its code): an openAIP entry is shown by files, taken only if the plan carried a well-formed `shown.openaip`
+  (sent back as it is); no `shown.openaip`, nothing openAIP is taken; names and reasons outside the rule are dropped.
+- **Reversible detail chosen**: a skipped export is said on the question of the plan as a problem line (« n'est pas lu ») rather than in a
+  separate block, and a pickup with only skipped exports asks nothing.
+- **Found while testing**: SOG-0026 made `baseOf().cycle` null for a zone with no dated source, so the map of the zones drew the United
+  States and Canada « nothing published »; the map now reads `published` (a cycle in force, dated or not) and `cycle` (dated) apart.

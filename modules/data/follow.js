@@ -443,12 +443,15 @@ export async function startPickup(zonesAttr) {
 async function endPickupPlan(me, final) {
   const out = M.setOutcome('base', M.PICKUP.verb, final).out,
     split = M.pickupSplit(out.taken),
+    // openAIP (SOG-0027) : le plan montre `shown.openaip`, renvoyé tel quel à la prise réelle ; sans lui, rien d'openAIP n'est pris (le lanceur refuserait « not-shown »)
+    oa = M.openaipShown(final?.result),
+    oaTaken = out.taken.filter(t => t.source === M.OPENAIP),
     shown = {
       ...out,
-      taken: split.ready,
+      taken: [...split.ready, ...(oa ? oaTaken : [])],
       blocked: split.blocked
     },
-    ask = out.kind !== 'cancelled' && out.taken.length > 0 && split.ready.length > 0,
+    ask = out.kind !== 'cancelled' && out.taken.length > 0 && (split.ready.length > 0 || !!oa && oaTaken.length > 0),
     res = out.taken.length ? {
       ...shown,
       kind: 'blocked'
@@ -457,8 +460,13 @@ async function endPickupPlan(me, final) {
   if (ask) {
     S.pickupBlocked = split.blocked;
     S.pickupPlan = {
-      zones: split.zones,
-      zips: split.zips
+      zones: [...new Set([...split.zones, ...(oa ? split.openaip : [])])],
+      zips: {
+        ...split.zips,
+        ...(oa ? {
+          [M.OPENAIP]: oa
+        } : {})
+      }
     }; // le plan montré : la prise réelle n'envoie que ces zips (nom et taille), jamais un plan relu ; le lanceur refuse la source dont le zip a changé entre-temps
   }
   return finishPlan(me, {

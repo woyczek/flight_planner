@@ -743,7 +743,11 @@ function pickupProblems(out) {
     z: itemName('base', x.zone),
     s: sourceName(x.source)
   });
-  return [...(out.blocked || []).map(t => tt(TX
+  return [...(out.skipped || []).map(x => tt(M.own(TX.pickupSkipped, x.why), { // les exports openAIP non lus : dits, jamais pris
+    z: itemName('base', x.zone),
+    s: sourceName(M.OPENAIP),
+    name: x.name
+  })), ...(out.blocked || []).map(t => tt(TX
     .pickupRename, { // un zip dont le nom sort de la règle du lanceur n'est pas pris : à renommer
       ...who(t),
       zip: t.zip
@@ -766,7 +770,15 @@ export function pickupAsk(out) {
   const problems = pickupProblems(out),
     dest = [...new Set(out.taken.map(t => M.own(M.PICKUP_DEST, t.source)).filter(Boolean))].join(', ');
   return tt(TX.pickupAsk, {
-    taken: out.taken.map(t => tt(TX.pickupTaken, {
+    taken: out.taken.map(t => t.source === M.OPENAIP ? tt(TX.pickupTakenFiles, {
+      z: itemName('base', t.zone),
+      s: sourceName(t.source),
+      n: count('file', t.files.length),
+      b: M.fmtBytes(t.bytes, lang()),
+      c: t.converted.length ? tt(TX.pickupConverted, {
+        n: t.converted.length
+      }) : ''
+    }) : tt(TX.pickupTaken, {
       z: itemName('base', t.zone),
       s: sourceName(t.source),
       zip: t.zip,

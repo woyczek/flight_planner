@@ -252,16 +252,23 @@ export function addZone(id) {
   }).catch(() => {});
   render();
 }
+/** Le nom d'une source datée (SIA France, NATS, ENAIRE) : celui du catalogue dans la langue, à défaut son identifiant. */
+const sourceLabel = id => (catSource(id)?.n?.[li()] || id).replace(/\s*\(.*\)\s*$/, '');
 /** « Cycle 2610 · publié il y a 3 jours · 12 zones » : ce que la ligne d'un jeu dit de lui-même, sans taille en octets
  *  (publication() n'en donne pas : seulement des nombres de zones, de terrains, de fichiers, de types). */
 function metaText(r) {
   const parts = [];
   if (r.cycle) parts.push(tt(TX.cycle, {
     c: r.cycle
-  }));
+  }) + (r.state === 'stale-cycle' && r.oldestSource ? tt(TX.staleBy, {
+    s: sourceLabel(r.oldestSource)
+  }) : '')); // dépassé : la source datée qui le dit, une fois (SOG-0026)
   else if (r.kind === 'aircraft' && r.at) parts.push(tt(TX.edition, {
     d: M.dateText(r.at, lang())
   }));
+  else if (r.kind === 'base' && r.at && !r.dated) parts.push(tt(TX.datedOn, {
+    d: M.dateText(r.at, lang())
+  })); // aucune zone nourrie n'a de source datée : « datée du … », jamais « dépassée » (SOG-0026)
   if (r.ageDays !== null) parts.push(tt(r.ageDays === 0 ? TX.ageToday : r.ageDays === 1 ? TX.ageOne : TX.ageMany, {
     n: r.ageDays
   }));

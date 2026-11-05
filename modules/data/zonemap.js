@@ -63,11 +63,13 @@ function mapEntries(kind) {
 function mapToneOf(kind, id) {
   const zone = kind === 'base' ? id : M.PROC_ZONES[id]?.[0],
     pub = S.d.pub,
-    cycle = kind === 'base' ? M.baseOf(pub?.base, [zone]).cycle : pub?.proc?.inForce || null;
+    // la base : publiée si la zone a un cycle en vigueur, daté ou non (SOG-0026 : les États-Unis et le Canada n'ont pas de cycle daté, ils ne sont pas « dépassés ») ; les procédures : le cycle de procédures
+    b = kind === 'base' ? M.baseOf(pub?.base, [zone]) : null,
+    cycle = b ? b.cycle : pub?.proc?.inForce || null;
   return M.mapTone({
     inCoverage: S.d.cov.ids.includes(zone),
     running: !!S.run && S.run.set === kind && S.ids.includes(id),
-    published: !!cycle,
+    published: b ? b.published > 0 : !!cycle,
     stale: !!cycle && M.staleLevel(S.airac, cycle, S.now) !== null
   });
 }

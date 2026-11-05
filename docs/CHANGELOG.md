@@ -12,6 +12,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data: « Prendre le fichier téléchargé » takes the openAIP exports** (`modules/data/model_results.js`, `follow.js`, `panels.js`,
+  `texts.js`; SPEC § 5; help ×4; L28) — SOG-0027, AeroDB lot C (f089178f5): the plan shows the openAIP files one by one (taken,
+  converted from JSON) and the real run sends back `shown.openaip` as shown; an XML or the « hot » layer is said, never taken; the
+  names from Downloads are read as plain file names only. A zone published without a dated cycle (United States, Canada) is no longer
+  drawn « nothing published » on the map of the zones.
+- **Data: « dépassé » only compares the zones a dated source feeds** (`modules/data/model_screen.js` `baseOf`, `screen.js`, `texts.js`;
+  SPEC § 6.2; L27) — SOG-0026, AeroDB lot C (f089178f5): GeoNames, the relief and openAIP feed every zone and carry no AIRAC cycle, so
+  the oldest folder of all the fed zones said « dépassé 2610 » everywhere. Only the zones with a `cycleSource` (`sia`, `nats`,
+  `enaire`) count, against the cycle in force; the line names the oldest dated source once; a line with no dated zone reads « Datée du
+  <date> », never stale; an older reader (no field) says nothing about the age.
 - **Data: a folded « Inventaire des données » card, read only** (`tools/data_inventory.py`, `tools/launch.py` `GET data/inventory`,
   `modules/data/inventory.js`, `model_inventory.js`; SPEC § 12; K67, I36, L26) — SOG-0010, lot E2 (`frame/settings/DATA_MAP.md`
   § 5.1). Seven lines — the data repository, `data/local/`, the raw SIA sources, the device's copy, the suite's working folders,

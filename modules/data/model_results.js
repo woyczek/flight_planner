@@ -420,19 +420,54 @@ export function journalAdd(list, entry, max = JOURNAL_MAX) {
   if (entry.job && list.some(e => e.job === entry.job)) return list;
   return [...list, entry].slice(-max);
 }
+/** La source des exports openAIP déposés dans Téléchargements (AeroDB, SOG-0027) : pas de zip (`zip: null`), des fichiers un à un. */
+export const OPENAIP = 'openaip';
+/** Les raisons pour lesquelles un export openAIP n'est pas lu (`skipped[].why`, AeroDB) : 'format' (un XML openAIP 1.1, format que la suite ne lit
+ *  pas : à exporter en GeoJSON ou JSON), 'layer' (la couche « hot », non utilisée). Toute autre valeur est écartée. */
+export const SKIP_WHY = Object.freeze(['format', 'layer']);
+/** Des noms de fichiers simples d'un dossier que l'utilisateur remplit (la règle 157 : jamais repris tels quels) : lettres, chiffres, point, tiret, souligné, espace,
+ *  parenthèses ; 120 caractères au plus, 40 noms au plus ; tout autre est écarté. */
+const fileNames = v => (Array.isArray(v) ? v : []).filter(x => typeof x === 'string' && /^[A-Za-z0-9_ .()+-]{1,120}$/.test(x)).slice(0, 40);
+/** Ce que le plan a montré pour openAIP, à renvoyer tel quel dans `zips.openaip` : { name: 'openaip', size } avec une taille entière positive ou nulle ; sinon null. */
+export function openaipShown(r) {
+  const s = obj(obj(r).shown).openaip;
+  return s && s.name === OPENAIP && Number.isInteger(s.size) && s.size >= 0 ? {
+    name: OPENAIP,
+    size: s.size
+  } : null;
+}
 /** La fin d'une prise de fichiers (base/pickup), plan à blanc ou réelle, d'après la dernière vue : { kind, dry, taken [{ zone, source, zip, files [noms], bytes }],
  *  missing [{ zone, source, expected }], failed [{ zone, source, error }], files (nombre de fichiers pris), bytes, level } ; kind : 'done' | 'partial' | 'failed' |
  *  'cancelled' | 'interrupted' | 'nothing' (rien de pris ni d'en échec : aucun fichier au nom attendu dans Téléchargements). */
 export function pickupOutcome(final) {
   const r = obj(final?.result),
     list = v => (Array.isArray(v) ? v : []).filter(x => x && x.zone && x.source),
-    taken = list(r.taken).map(t => ({
+    taken = list(r.taken).map(t => t.source === OPENAIP ? {
+      // openAIP : pas de zip, des fichiers un à un (from : pris dans Téléchargements, files : écrits, converted : le JSON converti, unchanged : déjà là)
+      zone: t.zone,
+      source: OPENAIP,
+      zip: null,
+      size: num(t.size),
+      from: fileNames(t.from),
+      files: fileNames(t.files),
+      converted: fileNames(t.converted),
+      unchanged: fileNames(t.unchanged),
+      bytes: num(t.bytes) ?? 0
+    } : {
       zone: t.zone,
       source: t.source,
       zip: String(t.zip ?? ''),
       size: num(t.size),
       files: strs(t.files),
       bytes: num(t.bytes) ?? 0
+    }),
+    // les fichiers openAIP non lus, dits : { zone, name, why } ; une raison hors de la liste fermée ou un nom hors de la règle est écarté
+    skipped = (Array.isArray(r.skipped) ? r.skipped : []).filter(x => x && x.source === OPENAIP && x.zone && SKIP_WHY.includes(x.why) &&
+      fileNames([x.name]).length).slice(0, 80)
+    .map(x => ({
+      zone: x.zone,
+      name: x.name,
+      why: x.why
     })),
     missing = list(r.missing).map(m => ({
       zone: m.zone,
@@ -458,6 +493,7 @@ export function pickupOutcome(final) {
     taken,
     missing,
     failed,
+    skipped,
     files: taken.reduce((a, t) => a + t.files.length, 0),
     bytes: taken.reduce((a, t) => a + t.bytes, 0),
     level: kind === 'done' ? 'ok' : kind === 'failed' ? 'err' : 'warn'
@@ -470,7 +506,8 @@ export function pickupZips(taken) {
   return pickupSplit(taken).zips;
 }
 /** Le zip d'une entrée du plan peut-il être envoyé au lanceur ? Source connue, nom de fichier simple (le motif du lanceur), taille entière positive ou nulle. */
-const zipSendable = t => !!t && Object.hasOwn(PICKUP_DEST, t.source) && typeof t.zip === 'string' && /^[A-Za-z0-9_ .()+-]{1,150}$/.test(t
+const zipSendable = t => !!t && t.source !== OPENAIP && Object.hasOwn(PICKUP_DEST, t.source) && typeof t.zip === 'string' &&
+  /^[A-Za-z0-9_ .()+-]{1,150}$/.test(t
     .zip) && Number
   .isInteger(t.size) && t.size >= 0;
 /** Refus d'une prise qui appellent un nouveau plan : le zip a changé depuis le plan (changed), ou la source n'y figurait pas
@@ -482,7 +519,8 @@ export const REPLAN_ERRORS = Object.freeze(['changed', 'not-shown']);
 export function pickupSplit(taken) {
   const list = (Array.isArray(taken) ? taken : []).filter(t => t && typeof t === 'object'),
     ready = list.filter(zipSendable),
-    blocked = list.filter(t => !zipSendable(t)),
+    // openAIP : ni envoyable par zip, ni bloqué : il se prend par `shown.openaip` (openaipShown), jamais par un nom de zip
+    blocked = list.filter(t => !zipSendable(t) && t.source !== OPENAIP),
     zips = {};
   for (const t of ready)
     if (!Object.hasOwn(zips, t.source)) zips[t.source] = {
@@ -494,7 +532,9 @@ export function pickupSplit(taken) {
     ready,
     blocked,
     zips,
-    zones: [...new Set(ready.map(t => t.zone))].filter(z => !bad.has(z))
+    zones: [...new Set(ready.map(t => t.zone))].filter(z => !bad.has(z)),
+    openaip: [...new Set(list.filter(t => t.source === OPENAIP).map(t => t.zone))].filter(z => !bad.has(
+      z)) // les zones dont des exports openAIP sont à prendre
   };
 }
 /** Une entrée du journal pour une prise réelle (le plan n'y est jamais) : { at, set: 'base', verb: 'pickup', zones, seconds, result, files, bytes, failed, job? }. */
