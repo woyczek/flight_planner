@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: labels no longer sit on the route's line when they have another place** (`modules/maps/render.js`,
+  `lib/aero_symbols.js`; SPEC § 3; noreg D99, D108). At LFSG the aerodrome's name was under the inbound leg and a beacon's box and an
+  airspace name were crossed by the route: a label whose first place the route crosses now tries its uncrossed places first;
+  an aerodrome's name may go above its symbol, a beacon's box to its other corners.
+
 - **Map: the drawing overflows the view by 5 % on each side** (`modules/maps/draw.js`, `render.js`, `procs.js`; SPEC § 5; noreg D97). A pan
   of up to a twentieth of the view no longer shows an empty band before the full drawing: lines and symbols are painted over the
   overflow, the labels stay in the view. At 10 % the drawing at rest cost 2 to 5 ms more, 5 % costs under 1.5 ms.

@@ -363,7 +363,8 @@
   }
   let place = null; // placeur de l'image en cours (drawPoints)
   /** Une demande d'étiquette (refonte R-M2 de la Carte, modules/maps/SPEC.md § 3) : { layer, rank, key, anchor, boxes: [rect, …],
-   *  paint(rect), force } — boxes : les places candidates dans l'ordre de glissement de la couche ; la première libre est prise et
+   *  paint(rect), force, around } — boxes : les places candidates dans l'ordre de glissement de la couche (around : des places de
+   *  repli que la Carte n'essaie que pour ne pas couvrir le trait de la route, render.js) ; la première libre est prise et
    *  l'étiquette peinte là ; sans place : force 'paint' la peint à la première sans la réserver, 'reserve' la réserve et la peint
    *  quand même, sinon elle se tait. Sans placeur (pl null) : peinte à la première place. Rend la place, ou null. Dans la passe
    *  unique (pass), le placeur répond lui-même (pl.ask) : au premier tour il note la demande, au second il rend sa décision. */
@@ -1082,20 +1083,21 @@
       ctx.font = `700 ${+labelFont}px Arial,sans-serif`;
       const w = ctx.measureText(label).width;
       ctx.restore();
-      const r = {
+      const at = y => ({
         x0: p.x - w / 2 - 2,
-        y0: p.y + s * 1.9,
+        y0: y,
         x1: p.x + w / 2 + 2,
-        y1: p.y + s * 1.9 + +labelFont + 2
-      };
+        y1: y + +labelFont + 2
+      });
       ask(place, {
         layer: 'points',
         rank: 'aerodrome',
         key: ad.icao || label,
         force: ad.end ? 'paint' : false, // un terrain de la route : toujours écrit, la route n'en écrit pas un second
         anchor: p,
-        boxes: [r],
-        paint: () => haloText(ctx, label, p.x, p.y + s * 1.9, +labelFont, main, 'center', 'top')
+        boxes: [at(p.y + s * 1.9)],
+        around: [at(p.y - s * 1.9 - +labelFont - 2)], // au-dessus du symbole, quand la route traverse le dessous (SPEC § 3)
+        paint: r => haloText(ctx, label, p.x, r.y0, +labelFont, main, 'center', 'top')
       });
     }
   }
@@ -1189,21 +1191,28 @@
     ctx.save();
     ctx.font = `700 ${labelFont}px Arial,sans-serif`;
     const w = ctx.measureText(text).width,
-      x = p.x + s * 1.5,
-      y = p.y - s * 1.4 - labelFont;
+      top = n.name && n.kind !== 'NDB' ? labelFont * .8 : 0, // le nom en clair au-dessus de la boîte
+      at = (x, y) => ({
+        x0: x - 1,
+        y0: y - top - 3,
+        x1: x + w + 2,
+        y1: y + labelFont + 2,
+        x,
+        y
+      }),
+      xr = p.x + s * 1.5,
+      xl = p.x - s * 1.5 - w,
+      ya = p.y - s * 1.4 - labelFont,
+      yb = p.y + s * 1.4 + top;
     ctx.restore();
     ask(place, {
       layer: 'points',
       rank: 'navaid',
       key: `${n.id}@${(+n.lat).toFixed(4)},${(+n.lon).toFixed(4)}`,
       anchor: p,
-      boxes: [{
-        x0: x - 1,
-        y0: y - (n.name && n.kind !== 'NDB' ? labelFont * .8 : 0) - 3,
-        x1: x + w + 2,
-        y1: y + labelFont + 2
-      }],
-      paint: () => navBox(ctx, n, text, x, y, w, labelFont)
+      boxes: [at(xr, ya)],
+      around: [at(xl, ya), at(xr, yb), at(xl, yb)], // les trois autres coins, quand la route traverse le premier (SPEC § 3)
+      paint: r => navBox(ctx, n, text, r.x, r.y, w, labelFont)
     });
   }
   /** La boîte d'une balise (« (D) TOU 117.7 », son nom en clair au-dessus), à la place que la demande a eue. */

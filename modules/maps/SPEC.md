@@ -172,6 +172,12 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     along the next and the previous legs; TOC and TOD try their four corners, then the same corners around a point of the trace
     16 to 64 px on either side (following the profile's path, `MapsProfile.posAt`); never off the trace, and silent when nothing
     is free (the diamond stays).
+  - **Labels leave the route's line clear** (user, 1 Nov 2026, LFSG: the aerodrome's name under the inbound leg, a beacon's box
+    and an airspace name crossed by the route): when the first place of a label is crossed by the route's line (the flown path,
+    procedures included), its places the line does not cross are tried first, then the others in their order; an aerodrome's
+    name then has a place above its symbol, a beacon's box its three other corners (`around`, tried only in that case). A
+    label whose every place is crossed keeps its order (an airway box laid on a leg the route follows stays on it); away from
+    the route nothing changes.
   - **What a zoom hides is said by the zoom rule**: a label left out at a zoom because of its kind is the profile's threshold of
     that element (`map_profiles.json`, `runwayZoom`, the tuning page's thresholds § 14), never a pixel or zoom threshold hidden in
     a layer; what remains in a layer is geometry (a label longer than its segment is not written).

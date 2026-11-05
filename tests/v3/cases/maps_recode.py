@@ -3110,3 +3110,63 @@ def d106(c):
     c.ok('plan:step:0' in keys and 'plan:step:1' not in keys and 'plan:toc' in keys and 'plan:tod' in keys, f'{asks}',
          'on the map the level reached is named, like TOC and TOD; the start of a level has its symbol only')
 
+
+# ------------------------------------------------------------------------------------------------------ D99
+def _lfsg_docs():
+    """LFSD → LFSG → LFST (the user's map of 1 Nov 2026): LFSG at its real place, the inbound leg under its name; the NDB EMT 419
+    on the outbound leg, the leg through its first box (above right)."""
+    f = flight()
+    f['route'] = {'text': 'LFSD LFSG LFST', 'dep': 'LFSD', 'arr': 'LFST', 'points': [{'id': 'LFSD', 'lat': 47.2689, 'lon': 5.09},
+                  {'id': 'LFSG', 'lat': 48.325, 'lon': 6.0699}, {'id': 'LFST', 'lat': 48.5383, 'lon': 7.6282}]}
+    f['level'] = {'ft': 3500}
+    emt = {'kind': 'NDB', 'id': 'EMT', 'name': 'EPINAL', 'freq': '419', 'lat': 48.325 + (6.25 - 6.0699) * (48.5383 - 48.325) / (7.6282 - 6.0699), 'lon': 6.25}
+
+    def kind(k, data):
+        return [f'sia/base/fr/{AERO_CYCLE}/{k}.json', {'schema': 2, 'zone': 'fr', 'cycle': AERO_CYCLE, 'kind': k, 'parserVersion': 1, 'data': data,
+                                                       'updated_at': f'{AERO_CYCLE}T00:00:00Z'}, 'reference']
+    return fdocs(f) + [['cache/maps/ui.json', {'preset': 'auto', 'layers': {}}, 'cache'],
+                       ['sia/base/index.json', {'zones': {'fr': {'cycle': AERO_CYCLE, 'prefixes': ['LF'], 'kb': {},
+                                                                 'cells': {'47': [[5, 7]], '48': [[5, 7]]}}}}, 'reference'],
+                       kind('meta', {}), kind('airspaces', []), kind('points', []), kind('navaids', [emt]),
+                       kind('aerodromes', [{'icao': 'LFSG', 'name': 'MIRECOURT', 'lat': 48.325, 'lon': 6.0699, 'elev': 1084, 'magVar': 2.4, 'public': True,
+                                            'hardLen': 1600, 'bearing': 50}])]
+
+
+@case('D99', 'Labels leave the route’s line clear: LFSG’s name goes above its symbol, the beacon’s box to a corner the route does not cross', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='user, 1 Nov 2026 (LFSG: the name under the inbound leg, « EMT 419 » crossed by the route), SPEC § 3: a label whose first place the route’s line crosses tries its uncrossed places first (an aerodrome’s name above its symbol, a beacon’s box at its other corners); away from the route nothing changes')
+def d99(c):
+    c.page.add_init_script("(() => { const t = setInterval(() => { if (window.SiaAero && window.SiaAero.pass) { clearInterval(t); (" + _MAP_PASS + ")() } }, 5) })()")
+    c.open('maps?view=5.9,48.22,6.4,48.43', docs=_lfsg_docs(), flight=False, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => (window.__mapPass || []).some(x => x.rank === 'navaid' && x.r) && (window.__mapPass || []).some(x => x.rank === 'aerodrome' && x.r)",
+            timeout=12000, what='the aerodrome’s name and the beacon’s box placed')
+    c.wait(300)
+    r = c.js("""() => { const S = window.__mp.S, P = (S.route.points || []).map(p => S.toC(+p.lat, +p.lon)), ox = S.canvas.offsetLeft, oy = S.canvas.offsetTop,
+      cut = q => P.slice(1).some((b, i) => { const a = P[i], r = { x0: q.x0 + ox, x1: q.x1 + ox, y0: q.y0 + oy, y1: q.y1 + oy }; for (let k = 0; k <= 200; k++) { const x = a.x + (b.x - a.x) * k / 200, y = a.y + (b.y - a.y) * k / 200;
+        if (x > r.x0 && x < r.x1 && y > r.y0 && y < r.y1) return true } return false }),
+      ad = S.adHits.find(h => h.a.icao === 'LFSG'), pick = k => (window.__mapPass || []).filter(x => x.rank === k && x.r).map(x => ({ key: x.key, r: x.r, cut: cut(x.r) }));
+      return { ad: pick('aerodrome'), nav: pick('navaid'), sy: ad && ad.y } }""")
+    c.eq([(x['key'], x['cut']) for x in r['ad']], [('LFSG', False)], 'LFSG’s name is not crossed by the route', what='aerodrome names')
+    c.eq([(x['key'].split('@')[0], x['cut']) for x in r['nav']], [('EMT', False)], 'the beacon’s box is not crossed by the route', what='beacon boxes')
+
+
+@case('D108', 'Labels leave the route’s line clear: at LFSG, close up, the full name (code and name) is not under the inbound leg', 'D',
+      tags=('maps',), designs=('standard',), night=False,
+      rule='user, 1 Nov 2026 (LFSG: « LFSG Mirecourt » crossed by the inbound leg), SPEC § 3: close up the aerodrome’s name is wide; when the route’s line crosses its first place (under the symbol) it goes above it, never over the line when a place of the line’s other side is free')
+def d108(c):
+    c.page.add_init_script("(() => { const t = setInterval(() => { if (window.SiaAero && window.SiaAero.pass) { clearInterval(t); (" + _MAP_PASS + ")() } }, 5) })()")
+    c.open('maps?view=6.03,48.30,6.11,48.35', docs=_lfsg_docs(), flight=False, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => (window.__mapPass || []).some(x => x.rank === 'aerodrome' && x.key === 'LFSG' && x.r)", timeout=12000, what='the aerodrome’s name placed')
+    c.wait(300)
+    r = c.js("""() => { const S = window.__mp.S, P = (S.route.points || []).map(p => S.toC(+p.lat, +p.lon)), ox = S.canvas.offsetLeft, oy = S.canvas.offsetTop,
+      cut = q => P.slice(1).some((b, i) => { const a = P[i], r = { x0: q.x0 + ox, x1: q.x1 + ox, y0: q.y0 + oy, y1: q.y1 + oy }; for (let k = 0; k <= 400; k++) { const x = a.x + (b.x - a.x) * k / 400, y = a.y + (b.y - a.y) * k / 400;
+        if (x > r.x0 && x < r.x1 && y > r.y0 && y < r.y1) return true } return false }),
+      ad = (window.__mapPass || []).filter(x => x.rank === 'aerodrome' && x.key === 'LFSG' && x.r).map(x => ({ r: x.r, cut: cut(x.r) })), h = S.adHits.find(q => q.a.icao === 'LFSG');
+      return { ad, sy: h && h.y, w: ad[0] && ad[0].r.x1 - ad[0].r.x0 } }""")
+    c.ok(r['w'] and r['w'] > 40, f'{r}', 'close up the name is wide (the case means something)')
+    c.eq([x['cut'] for x in r['ad']], [False], 'the name is not crossed by the route', what=f'{r}')
+

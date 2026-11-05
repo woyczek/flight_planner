@@ -544,6 +544,34 @@
     const l = lon >= b.w && lon <= b.e ? lon : nearLon(lon, (b.w + b.e) / 2);
     return l >= b.w && l <= b.e;
   };
+  /** Vrai si le segment a → b ({ x, y }) traverse le rectangle r ({ x0, y0, x1, y1 }) (Liang-Barsky). */
+  const cuts = (a, b, r) => {
+    if (Math.max(a.x, b.x) < r.x0 || Math.min(a.x, b.x) > r.x1 || Math.max(a.y, b.y) < r.y0 || Math.min(a.y, b.y) > r.y1) return false;
+    const dx = b.x - a.x,
+      dy = b.y - a.y;
+    let t0 = 0,
+      t1 = 1;
+    for (const [p, q] of [
+        [-dx, a.x - r.x0],
+        [dx, r.x1 - a.x],
+        [-dy, a.y - r.y0],
+        [dy, r.y1 - a.y]
+      ]) {
+      if (p === 0) {
+        if (q < 0) return false;
+        continue;
+      }
+      const t = q / p;
+      if (p < 0) {
+        if (t > t1) return false;
+        if (t > t0) t0 = t;
+      } else {
+        if (t < t0) return false;
+        if (t < t1) t1 = t;
+      }
+    }
+    return t0 <= t1;
+  };
   /** Fond uni (pas de tuiles) : mer, puis terres d'après les contours de pays [lon, lat]. */
   function drawBackground(ctx, toC, W, H, rings, {
     sea = '#dfe9f2',
@@ -1442,7 +1470,31 @@
         free: r => pl.free(r),
         take: r => pl.take(r)
       };
-    return A().pass(ctx, (c, pl, first) => layered(c, inView(pl), first), r => RANK.get(r));
+    // le trait de la route (le chemin volé, procédures comprises) n'est pas couvert par une étiquette qui a une autre place : une
+    // demande dont la première place est traversée essaie d'abord ses places libres du trait (ses places de repli « around »
+    // comprises), puis les autres dans leur ordre ; sans place libre du trait, rien ne change (SPEC § 3, retour du 1/11)
+    const rp = (legs || route || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)).map(p => toC(+p.lat, +p.lon)),
+      crossed = r => {
+        for (let i = 1; i < rp.length; i++)
+          if (cuts(rp[i - 1], rp[i], r)) return true;
+        return false;
+      },
+      offRoute = pl => rp.length < 2 ? pl : {
+        ask: req => {
+          const bx = req.boxes || [];
+          if (!bx[0] || !crossed(bx[0])) return pl.ask(req);
+          const all = [...bx, ...(req.around || [])].filter(Boolean),
+            cut = all.map(crossed);
+          return pl.ask({
+            ...req,
+            boxes: [...all.filter((r, i) => !cut[i]), ...all.filter((r, i) => cut[i])]
+          });
+        },
+        add: (r, rank) => pl.add(r, rank),
+        free: r => pl.free(r),
+        take: r => pl.take(r)
+      };
+    return A().pass(ctx, (c, pl, first) => layered(c, offRoute(inView(pl)), first), r => RANK.get(r));
 
     /** Les couches de la carte dans l'ordre de dessin de la SPEC § 3 (§ 10.29 d), sur le placeur pl de la passe : chacune { id,
      *  reserve(), paint(ctx), bare } ; les demandes des reserve() d'abord, puis les dessins (l'ordre d'appel ne décide plus des
