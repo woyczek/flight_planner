@@ -182,7 +182,7 @@
     ], // sortes publiées d'une zone (format découpé) ; aeroindex : index léger des terrains à code OACI (SPEC § 2)
     COMMON = ['sia/base/index.json', 'sia/base/cities_major.json'], // fichiers communs à toutes les zones
     POINT_KINDS = ['aerodromes', 'navaids', 'points', 'vrp', 'obstacles'],
-    // zones dont la base a un cycle AIRAC propre : celui de leur source datée (miroir de CYCLED de tools/aero_cycles.py, vérifié par le cas K70) ;
+    // zones dont la base a un cycle AIRAC propre : celui de leur source datée (miroir de CYCLED de tools/aero_cycles.py, vérifié par le cas K76) ;
     // les autres (openAIP, GeoNames, relief, UK Mil, FAA…) n'ont pas de cycle : le dossier sous lequel elles sont écrites n'est qu'une date de
     // construction, jamais un cycle « dépassé » (SOG-0026, 5 nov. 2026)
     CYCLED_ZONES = {

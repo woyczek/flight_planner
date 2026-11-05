@@ -4015,7 +4015,7 @@ def k66(c):
     c.eq(got['faa'], [{'cls': 'E', 'upper': '17999 ft AMSL', 'capped': 'classA'}], 'the FAA Class Airspace E too', what='FAA')
 
 
-@case('K70', 'publication(): each zone says the dated source its cycle comes from, or none (no AIRAC: never « dépassée »)', 'K', tags=('aerodb',), phone=False,
+@case('K76', 'publication(): each zone says the dated source its cycle comes from, or none (no AIRAC: never « dépassée »)', 'K', tags=('aerodb',), phone=False,
       rule='SOG-0026 (5 Nov 2026): the Data module took the oldest published folder cycle among the zones a source feeds, so GeoNames, relief, openAIP, UK Mil… showed « dépassé » as soon as one zone of the world was still at the previous cycle; the cycle is the one of a dated source (SIA, NATS, ENAIRE) only; the folder of any other zone is a build date')
 def k67(c):
     import sys

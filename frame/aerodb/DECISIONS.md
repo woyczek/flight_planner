@@ -2350,7 +2350,7 @@ page is served to `Sec-Fetch-Site: none`, refused to `cross-site`, and, where th
 - **Two faults, both about what a folder name means.** (1) A source without an AIRAC date (GeoNames, relief, openAIP, UK Mil, FAA, DIRCAM) has no
   cycle; the folder under which its zone is written is the date the zone was built under, not a cycle that can go out of date. (2) The oldest cycle
   of *all* fed zones is the wrong aggregate: one zone not rebuilt yet makes every source that feeds it « dépassé ».
-- **What aerodb gives now** (`publication()`): per zone `cycleSource`: `'sia'` (fr), `'nats'` (gb), `'enaire'` (es) or `null` (no cycle). K70 (K67 renumbered: the id was taken by the inventory case of lot E2).
+- **What aerodb gives now** (`publication()`): per zone `cycleSource`: `'sia'` (fr), `'nats'` (gb), `'enaire'` (es) or `null` (no cycle). K76 (K67 renumbered twice at integration: K67 taken by the inventory case of lot E2, K70 by lot C2).
   **The rule for the module** (Réglages, `modules/data/`, not touched here): for a row of the base, the stale test counts only the fed zones whose
   `cycleSource` is not null, against the cycle of that source; when no fed zone has one, the row is never `stale-cycle`: it says « datée du
   <`at`> » (the oldest `at` of the fed zones). A zone built before parser version 21 stays « à reconstruire » (`parser`), a different state.

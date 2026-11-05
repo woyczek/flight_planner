@@ -118,7 +118,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   now counts with the sheets and says what it is. The reason a held item gives is the error the data layer already names (V3 Frame
   fe6713570).
 - **Data, lot C: cycles and sources** (`frame/aerodb/aerodb.js`, `tools/aero_cycles.py`, `tools/proc_sia.py`, `tools/proc_records.py`, `tools/regen/base_sources.py`;
-  SPEC, INTEGRATION, DECISIONS; tests K70, K69, K68, K64) — **SOG-0026**: why every source of the base showed « dépassé » once France was rebuilt (the module takes
+  SPEC, INTEGRATION, DECISIONS; tests K76, K69, K68, K64) — **SOG-0026**: why every source of the base showed « dépassé » once France was rebuilt (the module takes
   the oldest folder cycle of every fed zone, and a zone without an AIRAC source has no cycle); `publication()` now says, per zone, the dated source its cycle
   comes from, or none (`cycleSource`). **SOG-0022**: the ILS 07 of Orly has its initial fix and its final approach fix (read from the DATA page, named
   `IF07` and `FAF07`: the source gives no name). **SOG-0027**: « Prendre le fichier téléchargé » takes the openAIP exports of Downloads (GeoJSON as it is,
