@@ -24,6 +24,7 @@ import {
   FIELD_TX,
   OPTION_TX,
   PATH_TX,
+  FIELD_HELP,
   SRC_TX
 } from './sheets_texts.js';
 
@@ -292,7 +293,17 @@ export function createSheetsView(host) {
         return editor(p.id, d);
       }
       case 'save': {
-        const out = readEditor(p);
+        const out = readEditor(p),
+          // un champ borné (6e élément de PROFILE_FIELDS : { min, max }, la densité) hors de sa plage : dit, rien n'est enregistré
+          bad = F.PROFILE_FIELDS.find(f => f[5] && Number.isFinite(F.pathGet(out, f[2])) && (F.pathGet(out, f[2]) < f[5].min || F.pathGet(
+            out,
+            f[2]) > f[5].max));
+        if (bad) return ctx.notify(tt(TX.outOfRange, {
+          f: fieldLabel(bad[2]),
+          v: F.pathGet(out, bad[2]),
+          min: bad[5].min,
+          max: bad[5].max
+        }), 'err');
         return review(st.sheets.find(x => x.id === p.id), out, {});
       }
       case 'apd': {
@@ -588,7 +599,8 @@ export function createSheetsView(host) {
       input = ([, , path, type]) => {
         const v = F.pathGet(p, path),
           lab = esc(fieldLabel(path) + fuelUnit(path)),
-          org = originHtml(p, path);
+          org = originHtml(p, path) + (FIELD_HELP[path] ? `<small class="f-muted" data-help="${esc(path)}">${esc(tt(FIELD_HELP[path]))}</small>` :
+            '');
         if (type === 'bool') return `<div class="f-field"><label class="f-check"><input type="checkbox" data-path="${path}" data-type="bool"${v ? ' checked' : ''}>${lab}</label>${org}</div>`;
         if (type.startsWith('select:')) {
           // cellule et propulsion : libellés traduits, case vide = « auto · valeur de la base OACI » quand elle la donne

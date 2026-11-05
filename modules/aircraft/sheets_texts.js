@@ -83,6 +83,10 @@ export const TX = {
   rpmGone: ['retirée', 'removed', 'entfernt', 'retirada'],
   rpmTable: ['Table régime / débit', 'RPM / fuel flow table', 'Drehzahl-/Verbrauchstabelle', 'Tabla régimen / consumo'],
   review: ['Changements proposés', 'Proposed changes', 'Vorgeschlagene Änderungen', 'Cambios propuestos'],
+  outOfRange: ['« {f} » : {v} hors de la plage {min} à {max} ; rien n’est enregistré.',
+    '“{f}”: {v} outside {min} to {max}; nothing is saved.',
+    '„{f}“: {v} außerhalb von {min} bis {max}; nichts wird gespeichert.', '«{f}»: {v} fuera de {min} a {max}; no se guarda nada.'
+  ],
   // import de plusieurs fiches : la fiche de l'aperçu et son rang (« EC45 · 8 / 13 »), puis le bilan de la file
   reviewOf: ['Changements proposés : {n}', 'Proposed changes: {n}', 'Vorgeschlagene Änderungen: {n}', 'Cambios propuestos: {n}'],
   batchDone: ['Import terminé : {a} fiche(s) écrite(s), {s} sans changement, {k} passée(s).',
@@ -217,6 +221,22 @@ export const OPTION_TX = {
   other: ['autre', 'other', 'andere', 'otra']
 };
 // champs de fiche hors du formulaire de la V2
+/** Une phrase d'aide sous un champ de la fiche (SOG-0011 : « fuel as volume » et « fuel density » n'étaient pas compris). */
+export const FIELD_HELP = {
+  fuelAsVolume: [
+    'Coché : les quantités de cette fiche (utilisable, taxi, réserve, débits) sont des volumes — litres ou gallons, comme le simulateur les affiche —, pas des masses ; la densité ci-dessous les convertit en kilos.',
+    'Ticked: the quantities of this sheet (usable, taxi, reserve, flows) are volumes — litres or gallons, as the simulator shows them —, not masses; the density below converts them to kilograms.',
+    'Angekreuzt: Die Mengen dieses Datenblatts (nutzbar, Rollen, Reserve, Verbrauch) sind Volumen — Liter oder Gallonen, wie der Simulator sie anzeigt —, keine Massen; die Dichte unten rechnet sie in Kilogramm um.',
+    'Marcado: las cantidades de esta ficha (utilizable, rodaje, reserva, consumos) son volúmenes — litros o galones, como los muestra el simulador —, no masas; la densidad de abajo las convierte a kilos.'
+  ],
+  fuelDensityKgPerL: [
+    'Kilos par litre du carburant : Jet A-1 environ 0,80, Avgas environ 0,72. Elle tient au carburant, pas à l’appareil : laissez vide pour la valeur de la compagnie (Réglages), sinon la valeur typique. Entre 0,5 et 1,0.',
+    'Kilograms per litre of the fuel: Jet A-1 about 0.80, Avgas about 0.72. It belongs to the fuel, not to the aircraft: leave it empty for the airline’s value (Settings), else the typical one. Between 0.5 and 1.0.',
+    'Kilogramm pro Liter des Kraftstoffs: Jet A-1 etwa 0,80, Avgas etwa 0,72. Sie hängt vom Kraftstoff ab, nicht vom Luftfahrzeug: leer lassen für den Wert der Gesellschaft (Einstellungen), sonst der typische. Zwischen 0,5 und 1,0.',
+    'Kilos por litro del combustible: Jet A-1 unos 0,80, Avgas unos 0,72. Depende del combustible, no de la aeronave: déjela vacía para el valor de la compañía (Ajustes), si no el típico. Entre 0,5 y 1,0.'
+  ]
+};
+
 export const PATH_TX = {
   reserveFuelFlowPerHour: ['Réserve · débit', 'Reserve · fuel flow', 'Reserve · Verbrauch', 'Reserva · consumo'],
   'tod.gradientFtPerNm': ['Descente · pente (ft/NM)', 'Descent · gradient (ft/NM)', 'Sinkflug · Gradient (ft/NM)',

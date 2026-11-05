@@ -558,6 +558,25 @@ def m22(c):
     c.ok(url == 'https://chatgpt.com/' if len(prompt) >= 7000 else '?q=' in url, url[:80], 'the request in the address when it is short enough')
 
 
+@case('M23', 'Sheets: « Carburant en volume » and « Densité » say what they are; a density out of 0.5–1.0 is refused, said', 'M',
+      tags=('aircraft',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0011: a help line under each of the two fields (volume = litres or gallons as the simulator shows them; density = kg per litre '
+      'of the fuel, Jet A-1 0.80, Avgas 0.72, the airline\'s value when empty); a density outside 0.5–1.0 is refused with the message, '
+      'nothing written')
+def m23(c):
+    open_sheets(c)
+    edit_sheet(c, 'EC25')
+    for path in ('fuelAsVolume', 'fuelDensityKgPerL'):
+        got = norm(c.text(f'{M} {SHEETS} [data-help="{path}"]') or '')
+        c.eq(got, norm(tx(SX, path, c.lang, after='FIELD_HELP')), f'the help line of {path}', what=path)
+    c.page.fill(f'{M} {SHEETS} input[data-path="fuelDensityKgPerL"]', '8')
+    clear_notes(c)
+    c.tap(f'{M} {SHEETS} [data-do="save"]')
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim().includes(w))",
+            norm(tx(SX, 'outOfRange', c.lang).split('{v}')[1].split('{min}')[0]), what='a density of 8 is refused, said')
+    c.eq(c.count(f'{M} {SHEETS} [data-review]'), 0, 'no review: nothing to write', what='refused')
+
+
 @case('M15', 'Sheets: a ChatGPT reply is read into the review; « Appliquer » writes it stamped « chatgpt »', 'M', tags=('aircraft',), designs=('standard',),
       screens=False,
       rule='modules/aircraft SPEC 4: the ChatGPT reply (any shape: the aerodb reader) is a source like the others; preview, then a write through '
