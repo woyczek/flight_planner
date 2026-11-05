@@ -53,6 +53,7 @@
     CYCLE = /^\d{4}-\d{2}-\d{2}$/,
     ZONE = /^[a-z0-9_-]{1,32}$/,
     SOURCE = /^[a-z0-9]{2,12}$/,
+    SIA_RAW = /^(?:AIXM4\.5_all_FR_OM_|XML_SIA_|sia-airspaces-)\d{4}-\d{2}-\d{2}\.xml$/,
     PART = /^[\p{L}\p{N}_ .()+-]{1,150}$/u; // un composant de chemin : la règle SAFE_NAME de tools/regen/base.py
   /** Un nom relatif de data/sia/ : composants non vides, ni « . » ni « .. », pas de « / » de tête, de « \ » ni de « : » (le composant n'admet ni l'un ni l'autre). */
   const safeRel = rel => typeof rel === 'string' && rel.length <= 400 && rel.split('/').every(p => p !== '.' && p !== '..' && PART.test(
@@ -71,6 +72,11 @@
     if (!Array.isArray(o.personal) || o.personal.length > 10 || o.personal.some(p => typeof p !== 'string' || !SOURCE.test(p)))
       throw new Error('bad source id');
     if (!Array.isArray(o.inputs) || o.inputs.length > 5000 || !o.inputs.every(safeRel)) throw new Error('bad input file name');
+    // les XML bruts du SIA de l'emplacement nouveau (data/local/sources/sia/<cycle>/<nom>, lot C2) : { source: 'sia', cycle, name } et rien d'autre, un nom de la règle des XML du SIA
+    if (o.sources !== undefined && (!Array.isArray(o.sources) || o.sources.length > 200 || !o.sources.every(s => s && typeof s ===
+        'object' && !Array.isArray(s) && Object.keys(s).length === 3 &&
+        s.source === 'sia' && typeof s.cycle === 'string' && CYCLE.test(s.cycle) && typeof s.name === 'string' && SIA_RAW.test(s.name))))
+      throw new Error('bad raw source');
   }
   const JSON_POST = {
     'Content-Type': 'application/json',
@@ -78,8 +84,8 @@
   };
 
   /** Fichier de data/sia/ lu sur l'adresse du lanceur (Blob → File : même objet que celui d'un sélecteur de dossier). */
-  async function fetchInput(rel) {
-      const r = await fetch('/data/sia/' + rel.split('/').map(encodeURIComponent).join('/'), {
+  async function fetchInput(rel, url = '/data/sia/' + rel.split('/').map(encodeURIComponent).join('/')) {
+      const r = await fetch(url, {
         cache: 'no-store'
       });
       if (!r.ok) throw new Error(`${rel} : HTTP ${r.status}`);
@@ -113,20 +119,22 @@
         inputs,
         token
       } = o,
-      cycles = Object.fromEntries(zones.filter(z => Object.hasOwn(o.cycles || {}, z)).map(z => [z, o.cycles[z]]));
+      // les XML bruts du SIA de l'emplacement nouveau : leur nom (racine de data/sia/ avant le déplacement) et l'adresse sous data/local/sources/sia/<cycle>/ (validés : source, cycle, nom)
+      raw = new Map((o.sources || []).map(s => [s.name, `/data/local/sources/${s.source}/${s.cycle}/${encodeURIComponent(s.name)}`])),
+        cycles = Object.fromEntries(zones.filter(z => Object.hasOwn(o.cycles || {}, z)).map(z => [z, o.cycles[z]]));
       say({
         started: true
       }, `${L[0]} ${zones.join(' ')}`);
       // 4. les fichiers que cette construction lira (zones actives, sources cochées) : la règle de la page, appliquée aux noms
       const settings = SB.zoneSettings(Z, zones, personal),
-        wanted = inputs.filter(rel => Z.fileWanted(rel, settings)),
+        wanted = [...inputs, ...raw.keys()].filter(rel => Z.fileWanted(rel, settings)),
         files = [],
         extra = {};
       say({
         sources: wanted.length
       });
       for (const rel of wanted) {
-        const f = await fetchInput(rel),
+        const f = await fetchInput(rel, raw.get(rel)),
           parts = rel.split('/');
         if (parts.length === 1) files.push(f);
         else if (parts[0] === 'zones')(extra.aixm5 ||= []).push(f); // fichiers déposés à la main : lecteur choisi par l'extension
@@ -146,9 +154,9 @@
       }
       // la France a la priorité sur les autres sources : sans le SIA dans cette construction, les contours de ses FIR sont lus à part
       let priorityRings = null;
-      const sia = inputs.find(rel => rel === `XML_SIA_${cycle}.xml`);
+      const sia = [...inputs, ...raw.keys()].find(rel => rel === `XML_SIA_${cycle}.xml`);
       if (!zones.includes('fr') && sia) {
-        const r = await fetch('/data/sia/' + sia, {
+        const r = await fetch(raw.get(sia) || '/data/sia/' + sia, {
           cache: 'no-store'
         });
         if (!r.ok) throw new Error(`${sia} : HTTP ${r.status}`);

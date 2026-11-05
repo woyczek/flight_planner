@@ -748,7 +748,8 @@ def k64(c):
     c.ok(not any(s in C.CYCLED for z in ('de', 'it', 'us', 'ca', 'nat') for s in BS.sources_of(z)), 'others', 'zones fed only by sources without AIRAC have no dated source')
     rep = C.report(names, d(2026, 11, 1))
     c.eq(rep, {'sia': {'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False}, 'nats': {'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False},
-               'enaire': {'cycle': None, 'current': '2026-10-29', 'stale': False}}, 'report: the newest cycle of each source (ENAIRE: none without its folder), stale when older than the cycle in force', what='report')
+               'enaire': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'airnav': {'cycle': None, 'current': '2026-10-29', 'stale': False}},
+         'report: the newest cycle of each source (ENAIRE: none without its folder), stale when older than the cycle in force', what='report')
     c.eq(C.report([], d(2026, 11, 1))['sia'], {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'no file: no cycle, not stale', what='no file')
     # base/fetch: the plan (in the view from the start) and the end carry it
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
@@ -761,7 +762,7 @@ def k64(c):
             view, res = _run(RJ, BS, 'fetch', {'zones': ['de']}, ctx)
         cur = C.airac_start()
         want = {'sia': {'cycle': '2026-10-01', 'current': cur, 'stale': '2026-10-01' < cur}, 'nats': {'cycle': '2026-10-01', 'current': cur, 'stale': '2026-10-01' < cur},
-                'enaire': {'cycle': None, 'current': cur, 'stale': False}}
+                'enaire': {'cycle': None, 'current': cur, 'stale': False}, 'airnav': {'cycle': None, 'current': cur, 'stale': False}}
         c.eq((view['sources'], res['sources']), (want, want), 'the plan and the end of base/fetch give the cycle held per dated source', what='fetch sources')
 
 
@@ -863,3 +864,190 @@ def k68(c):
         # nothing in Downloads for a zone: nothing said (openAIP is a fallback), and the other sources are untouched by a pickup
         r5 = BS.pickup(RJ.Job('base', 'pickup', {}), BS.check_pickup({'zones': ['us'], 'dry': True}), ctx)
         c.eq((r5['skipped'], [m['source'] for m in r5['missing']], [t['source'] for t in r5['taken']]), ([], [], []), 'no openAIP export for the zone: no line, never « missing »', what='nothing')
+
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------
+@case('K70', 'Ireland (AirNav eAIP): the current issue read from the AIM page, ENR 4.4 points and ENR 3.3 routes read from invented pages in the real markup, written by the launcher under its AIRAC date', 'K', static=True,
+      rule='Lot C2 (5 Nov 2026): the zone ie gets its points and airways from the official eAIP (HTML tables, DMS coordinates); the address of the issue is read from the page and checked; the file carries the issue date (its cycle); no licence found: personal-licence source; fixtures are INVENTED in the real markup (the code repository is public, frame/aerodb/test/fixtures/SOURCES.md)')
+def k70(c):
+    RJ, BS, AF, DS = _mods()
+    import airnav_eaip as A
+    import aero_cycles as C
+    fx = ROOT / 'frame' / 'aerodb' / 'test' / 'fixtures' / 'airnav'
+    aim, p44, p33 = [(fx / n).read_text(encoding='utf-8') for n in ('aim-extract.html', 'EI-ENR-4.4-extract.html', 'EI-ENR-3.3-Z999.html')]
+    # 1. the address of the issue is read on the page and checked
+    c.eq(A.current_issue(aim), ('https://www.airnav.ie/AIRAC/2026-10-29-AIRAC/html/index.html', '2026-10-29'), 'the current issue: its address and its date (« 29 OCT 2026 ») after « Currently Effective Issue »', what='issue')
+    bad = lambda href, label='eAIP (Electronic AIP) Ireland 29 OCT 2026': A.current_issue(f'<b>Currently Effective Issue:</b><ul><li><a href="{href}">{label}</a></li></ul>')
+    c.eq([bad('http://www.airnav.ie/AIRAC/2026-10-29-AIRAC/html/index.html'), bad('https://evil.example/AIRAC/2026-10-29-AIRAC/html/index.html'), bad('https://www.airnav.ie/../x/html/index.html'),
+          bad('https://www.airnav.ie/AIRAC/2026-10-29-AIRAC/html/index.html?x=1'), bad('https://www.airnav.ie/a/b/c/html/index.html'), bad('https://www.airnav.ie/AIRAC/2026-10-29-AIRAC/html/index.html', 'no date here'),
+          bad('https://www.airnav.ie/AIRAC/2026-10-29-AIRAC/html/index.html', 'eAIP Ireland 31 FEB 2026'), A.current_issue('<p>nothing</p>')], [None] * 8,
+         'refused: http, another host, a « .. », a query, a path off the pattern, a label without a date, an impossible date, no section', what='refusals')
+    c.eq((A.page_url('https://www.airnav.ie/AIRAC/2026-10-29-AIRAC/html/index.html', 'EI-ENR-4.4-en-IE.html'), A.out_name('2026-10-29')),
+         ('https://www.airnav.ie/AIRAC/2026-10-29-AIRAC/html/eAIP/EI-ENR-4.4-en-IE.html', 'airnav_ie_enr_20261029.geojson'), 'the page address is built from the issue address, the file name carries the date', what='names')
+    # 2. coordinates, points, route
+    c.eq([A.dms('511020N'), A.dms('0083040W'), A.dms('512345.6N'), A.dms('0071530.2W'), A.dms('1230000N'), A.dms('5260N'), A.dms('0900000N'), A.dms('x')], [51.172222, -8.511111, 51.396, -7.258389, None, None, None, None],
+         'DMS: DDMMSS[.s] N/S, DDDMMSS[.s] E/W; a degree out of range or a wrong length is none', what='dms')
+    pts = A.parse_enr44(p44)
+    c.eq([(p['id'], p['lat'], p['lon']) for p in pts], [('TSTAA', 51.172222, -8.511111), ('TSTAB', 51.333472, -9.000069)], 'ENR 4.4: the two points, names and positions', what='enr44')
+    segs = A.parse_enr33(p33)
+    c.eq(segs, [{'route': 'Z999', 'a': {'id': 'TSD', 'lat': 51.396, 'lon': -7.258389}, 'b': {'id': 'TSTAC', 'lat': 52.5, 'lon': -7.0}, 'lower': 7500, 'upper': 24500, 'nm': 33.0, 'trk': 18}],
+         'ENR 3.3: the route Z999, one segment between its two points (a navaid is named by the code in brackets), FL075 to FL 245 in feet, distance and track', what='enr33')
+    c.eq([A.level_ft(x) for x in ('FL245', 'FL 245', '3000 ft', 'GND', 'UNL', '', 'x')], [24500, 24500, 3000, 0, float('inf'), None, None], 'levels', what='levels')
+    g, n, m = A.convert(p44, p33, '2026-10-29')
+    c.eq((n, m, g['issue'], [f['properties']['sog'] for f in g['features']]), (2, 1, '2026-10-29', ['point', 'point', 'airway']), 'the GeoJSON: two points and one airway, the edition named', what='geojson')
+    json.dumps(g, allow_nan=False)  # no infinity or NaN in the file: an unlimited level is written « UNL »
+    for page, what in (('<p>nothing</p>', 'ENR 4.4'),):
+        try:
+            A.convert(page, p33, '2026-10-29')
+            got = 'read'
+        except ValueError as e:
+            got = str(e)
+        c.ok('ENR 4.4' in got, got, 'a page that gives no point is refused, said (a layout changed), never an empty file')
+    # 3. the launcher: the page AIM, the two pages, the file written under its date, the previous edition removed, the same edition not read again
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        folder = data / 'sia' / 'zones' / 'ie'
+        folder.mkdir(parents=True)
+        (folder / 'airnav_ie_enr_20260903.geojson').write_text('{}', encoding='utf-8')
+        (folder / 'airnav_notes.txt').write_text('keep', encoding='utf-8')
+        net = _Net(AF, {'aeronautical-information-management': aim.encode(), 'EI-ENR-4.4-en-IE.html': p44.encode(), 'EI-ENR-3.3-en-IE.html': p33.encode()})
+        with net:
+            out, err = AF.airnav(str(data))
+        c.eq((err, [(f['name'], f['features'], f['edition'], f['unchanged']) for f in out]), ([], [('airnav_ie_enr_20261029.geojson', 3, '2026-10-29', False)]), 'written: three features, the edition', what='airnav')
+        c.eq(sorted(os.listdir(folder)), ['airnav_ie_enr_20261029.geojson', 'airnav_notes.txt'], 'the previous edition is removed, another file kept', what='folder')
+        c.ok(all(u.startswith('https://www.airnav.ie/') for u, _ in net.calls), str(net.calls), 'only airnav.ie is asked')
+        with _Net(AF, {'aeronautical-information-management': aim.encode()}) as net2:
+            out2, err2 = AF.airnav(str(data))
+        c.eq((err2, [f['unchanged'] for f in out2], len(net2.calls)), ([], [True], 1), 'the same edition again: unchanged, only the AIM page is read', what='unchanged')
+        with _Net(AF, {'aeronautical-information-management': ('http', 503)}) as net3:
+            out3, err3 = AF.airnav(str(data / 'x'))
+        c.eq((out3, [BS.classify(e)['error'] for e in err3]), ([], ['http']), 'a 503 on the AIM page: a failure, said as http', what='503')
+    # 4. the cycle and the source table
+    c.eq((C.cycled('zones/ie/airnav_ie_enr_20261029.geojson'), C.cycled('zones/ie/airnav_ie_enr_20261028.geojson'), C.cycled('zones/ie/other_20261029.geojson'), C.CYCLED['airnav']),
+         (('airnav', '2026-10-29'), ('airnav', '2026-10-01'), None, 'ie'), 'the date of the file is the cycle of the zone ie (28 Oct belongs to cycle 2610)', what='cycle')
+    c.eq(BS.file_source('zones/ie/airnav_ie_enr_20261029.geojson'), {'zone': 'ie', 'source': 'airnav'}, 'the file belongs to the source airnav of the zone ie', what='file_source')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = _repo(DS, td)
+        ctx = _ctx(DS, data)
+        net = _Net(AF, {'aeronautical-information-management': aim.encode(), 'EI-ENR-4.4-en-IE.html': p44.encode(), 'EI-ENR-3.3-en-IE.html': p33.encode(), 'ie_': ('http', 404)})
+        with net:
+            view, res = _run(RJ, BS, 'fetch', {'zones': ['ie'], 'personal': []}, ctx)
+        c.eq(view['zones']['ie']['sources']['airnav'], {'state': 'skipped', 'error': 'personal'}, 'no licence found: the source is personal, not fetched without the owner\'s declaration', what='personal')
+        with net:
+            view, res = _run(RJ, BS, 'fetch', {'zones': ['ie'], 'personal': ['airnav']}, ctx)
+        c.eq((view['zones']['ie']['sources']['airnav']['state'], res['sources']['airnav']), ('downloaded', {'cycle': '2026-10-29', 'current': C.airac_start(), 'stale': '2026-10-29' < C.airac_start()}),
+             'declared: downloaded, and the cycle the workstation holds for airnav is the edition\'s', what='declared')
+
+
+@case('K71', 'Ireland: the build reads the points and the airways of the eAIP file (sog: point, sog: airway) like those of the other sources', 'K', tags=('aerodb',), phone=False,
+      rule='Lot C2: AeroSources.geojson reads the GeoJSON of tools/airnav_eaip.py into aero.points and aero.airways, in the shapes of the AIXM and X-Plane readers')
+def k71(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/vrp_sources.html', wait_until='load')
+    c.page.wait_for_function('!!window.AeroSources', timeout=30000)
+    got = c.js("""() => {
+      const f = (props, geometry) => ({ type: 'Feature', properties: props, geometry });
+      const fc = { type: 'FeatureCollection', features: [
+        f({ sog: 'point', id: 'TSTAA', remarks: 'x' }, { type: 'Point', coordinates: [-8.511111, 51.172222] }),
+        f({ sog: 'point' }, { type: 'Point', coordinates: [-8, 51] }),
+        f({ sog: 'airway', route: 'Z999', a: 'TSD', b: 'TSTAC', lower: 7500, upper: 24500, nm: 33.0, trk: 18 }, { type: 'LineString', coordinates: [[-7.258389, 51.396], [-7.0, 52.5]] }),
+        f({ sog: 'airway', route: 'Z998', a: 'A', b: 'B', lower: 'UNL', upper: null }, { type: 'LineString', coordinates: [[-7, 51], [-7, 52]] }),
+        f({ sog: 'airway', route: 'Z997', a: 'A', b: 'B' }, { type: 'LineString', coordinates: [[-7, 51]] })
+      ] };
+      const r = AeroSources.geojson(fc, 'airnav_ie_enr_20261029.geojson');
+      return { points: r.aero.points, airways: r.aero.airways, airspaces: r.airspaces.length };
+    }""")
+    c.eq(got['points'], [{'id': 'TSTAA', 'type': 'ICAO', 'lat': 51.172222, 'lon': -8.511111}], 'a point: id, type ICAO, lat, lon; one without an id is not read', what='points')
+    c.eq([(w['route'], w['a'], w['b'], w['lower'], w['upper'], w['nm']) for w in got['airways']],
+         [('Z999', {'id': 'TSD', 'lat': 51.396, 'lon': -7.258389}, {'id': 'TSTAC', 'lat': 52.5, 'lon': -7.0}, 7500, 24500, 33.0), ('Z998', {'id': 'A', 'lat': 51, 'lon': -7}, {'id': 'B', 'lat': 52, 'lon': -7}, float('inf'), None, 60.0)],
+         'an airway: its two ends with their positions, limits in feet (UNL is infinity, absent is none), the distance given or computed; a one-position line is not read', what='airways')
+    c.eq(got['airspaces'], 0, 'no airspace from these features', what='airspaces')
+
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------
+@case('K73', 'Raw SIA sources: read from data/local/sources/sia/<cycle>/ with a fall-back on the root of data/sia/, moved by base/move-sources with a manifest and an undo, never purged', 'K', static=True,
+      rule='DATA_MAP § 4 and § 6.2, lot C2 (5 Nov 2026): the raw SIA XML leave the root of data/sia/ (the mix of the previous cycle\'s sources and the current base is what « toujours périmé » was); the build reads the new place then the old; the move copies, checks (size and SHA-256), then removes the old one except a tracked file; a manifest old → new undoes it; nothing is purged, nothing overwritten')
+def k73(c):
+    import importlib
+    RJ, BS, AF, DS = _mods()
+    B = importlib.import_module('regen.base')
+    C = importlib.import_module('aero_cycles')
+    # 1. the build reads the new place first, then the old; a name at both places is read at the new one
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        sia, new = data / 'sia', data / 'local' / 'sources' / 'sia'
+        (new / '2026-10-29').mkdir(parents=True)
+        (new / '2026-10-01').mkdir(parents=True)
+        sia.mkdir(parents=True)
+        (sia / 'XML_SIA_2026-10-01.xml').write_text('legacy-1001', encoding='utf-8')            # only at the old place
+        (sia / 'AIXM4.5_all_FR_OM_2026-10-29.xml').write_text('legacy-1029', encoding='utf-8')  # at both: the new one wins
+        (new / '2026-10-29' / 'AIXM4.5_all_FR_OM_2026-10-29.xml').write_text('new-1029', encoding='utf-8')
+        (new / '2026-10-29' / 'XML_SIA_2026-10-29.xml').write_text('new-xml-1029', encoding='utf-8')
+        (new / '2026-10-01' / 'sia-airspaces-2026-10-01.xml').write_text('new-air', encoding='utf-8')
+        (new / '2026-10-29' / 'notes.txt').write_text('x', encoding='utf-8')                   # not a raw SIA name
+        (new / 'not-a-date').mkdir()
+        (new / 'not-a-date' / 'XML_SIA_2026-10-01.xml').write_text('x', encoding='utf-8')       # a folder that is not a cycle date
+        inputs = B.list_inputs(str(data))
+        read = lambda rel: Path(inputs[rel]).read_text(encoding='utf-8')
+        c.eq({k: read(k) for k in sorted(inputs)}, {'AIXM4.5_all_FR_OM_2026-10-29.xml': 'new-1029', 'XML_SIA_2026-10-01.xml': 'legacy-1001', 'XML_SIA_2026-10-29.xml': 'new-xml-1029', 'sia-airspaces-2026-10-01.xml': 'new-air'},
+             'the new place is read first, the old one as a fall-back; a name at both: the new; a non-SIA name and a folder that is not a cycle date: not read', what='precedence')
+        legacy, moved = B.split_inputs(str(data), inputs)
+        c.eq((legacy, [(m['source'], m['cycle'], m['name']) for m in moved]), (['XML_SIA_2026-10-01.xml'], [('sia', '2026-10-29', 'AIXM4.5_all_FR_OM_2026-10-29.xml'), ('sia', '2026-10-29', 'XML_SIA_2026-10-29.xml'),
+                                                                                  ('sia', '2026-10-01', 'sia-airspaces-2026-10-01.xml')]),
+             'what the page is offered: the entries of data/sia/ apart, and { source, cycle, name } for the new place (it reads /data/local/sources/sia/<cycle>/<name>)', what='split')
+        c.eq(B.cycle_of(inputs), '2026-10-29', 'the cycle of the build is the newest date of the SIA names, wherever the files are', what='cycle')
+        c.eq(C.report(BS.sia_rels(str(data)), root=str(sia))['sia']['cycle'], '2026-10-29', 'the cycle the workstation holds for the SIA counts the new place', what='held cycle')
+    # 2. base/move-sources: plan, move, the same again, a tracked file, a conflict, a manifest, the undo
+    for bad in (None, 'x', {'dry': 'no'}, {'undo': 1}, {'path': 'C:/x'}, {'dry': True, 'what': 'all'}):
+        c.ok(BS.check_move(bad) is None, repr(bad), f'check_move refuses {bad!r}')
+    c.eq((BS.check_move({}), BS.check_move({'dry': False, 'undo': True})), ({'dry': True, 'undo': False}, {'dry': False, 'undo': True}), 'dry by default, no undo by default', what='args')
+    c.ok(('base', 'move-sources') in RJ.REGISTRY or ('base', 'move-sources') in BS.VERBS, 'verbs', 'the verb is registered with the base set')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = _repo(DS, td, {'sia/XML_SIA_2026-10-01.xml': 'tracked-old'})
+        ctx = _ctx(DS, data)
+        sia = data / 'sia'
+        for n, t in (('XML_SIA_2026-10-29.xml', 'xml-1029'), ('AIXM4.5_all_FR_OM_2026-10-29.xml', 'aixm-1029'), ('mora.csv', 'm'), ('Lisez_moi.txt', 'r')):
+            (sia / n).write_text(t, encoding='utf-8')
+        run = lambda **a: BS.move_sources(RJ.Job('base', 'move-sources', {}), BS.check_move(a), ctx)
+        r = run()
+        c.eq((r['dry'], sorted(m['name'] for m in r['moved']), r['ok']), (True, ['AIXM4.5_all_FR_OM_2026-10-29.xml', 'XML_SIA_2026-10-01.xml', 'XML_SIA_2026-10-29.xml'], True),
+             'the plan: the three raw SIA files of the root, not mora.csv nor the readme', what='plan')
+        c.ok(not (data / 'local').exists() and (sia / 'XML_SIA_2026-10-29.xml').is_file(), str(os.listdir(data)), 'dry: nothing written, nothing moved')
+        r = run(dry=False)
+        new = data / 'local' / 'sources' / 'sia'
+        c.eq((sorted(str(p.relative_to(new)).replace('\\', '/') for p in new.rglob('*') if p.is_file()), r['ok']),
+             (['2026-10-01/XML_SIA_2026-10-01.xml', '2026-10-29/AIXM4.5_all_FR_OM_2026-10-29.xml', '2026-10-29/XML_SIA_2026-10-29.xml', '_manifest.json'], True),
+             'copied under their cycle (the date of the file), with the manifest', what='moved')
+        c.eq((sorted(os.listdir(sia)), r['kept']), (['Lisez_moi.txt', 'XML_SIA_2026-10-01.xml', 'mora.csv'], [{'name': 'XML_SIA_2026-10-01.xml', 'why': 'tracked'}]),
+             'the old copies are removed, except the one git tracks (kept, said): removing it would delete it for every workstation', what='old copies')
+        c.eq((new / '2026-10-29' / 'XML_SIA_2026-10-29.xml').read_text(), 'xml-1029', 'the content is the file\'s, checked by its SHA-256', what='content')
+        man = json.loads((new / '_manifest.json').read_text(encoding='utf-8'))
+        c.eq(sorted((m['from'], m['to']) for m in man['moves'])[0], ('sia/AIXM4.5_all_FR_OM_2026-10-29.xml', 'local/sources/sia/2026-10-29/AIXM4.5_all_FR_OM_2026-10-29.xml'), 'the manifest says old → new', what='manifest')
+        c.ok(all(len(m['sha256']) == 64 and m['size'] > 0 for m in man['moves']), str(man)[:200], 'with the size and the SHA-256 of each')
+        r = run(dry=False)
+        c.eq((r['moved'], sorted(r['already']), r['ok']), ([], ['XML_SIA_2026-10-01.xml'], True), 'the same again: nothing to move (the tracked one is at both places, identical)', what='again')
+        # a different file at the new place: neither is touched
+        (sia / 'XML_SIA_2026-11-26.xml').write_text('old-1126', encoding='utf-8')
+        (new / '2026-11-26').mkdir()
+        (new / '2026-11-26' / 'XML_SIA_2026-11-26.xml').write_text('other', encoding='utf-8')
+        r = run(dry=False)
+        c.eq((r['conflicts'], r['moved'], (sia / 'XML_SIA_2026-11-26.xml').read_text(), (new / '2026-11-26' / 'XML_SIA_2026-11-26.xml').read_text()), ([{'name': 'XML_SIA_2026-11-26.xml', 'why': 'different'}], [], 'old-1126', 'other'),
+             'a different file of the same name at the new place: a conflict, said, neither touched, never overwritten', what='conflict')
+        # the undo reads the manifest backwards, never over a file that came back
+        (sia / 'XML_SIA_2026-10-29.xml').write_text('came back by hand', encoding='utf-8')
+        r = run(undo=True)
+        c.eq(sorted((x['name'], x['why']) for x in r['conflicts']), [('XML_SIA_2026-10-01.xml', 'present'), ('XML_SIA_2026-10-29.xml', 'present')],
+             'undo, plan: the return path of two files is taken (one came back by hand, the tracked one never left): said', what='undo plan')
+        r = run(undo=True, dry=False)
+        c.eq((sorted(m['name'] for m in r['moved']), (sia / 'XML_SIA_2026-10-29.xml').read_text(), (sia / 'AIXM4.5_all_FR_OM_2026-10-29.xml').read_text()),
+             (['AIXM4.5_all_FR_OM_2026-10-29.xml'], 'came back by hand', 'aixm-1029'), 'undo: the free path gets its file back, verified; a file that came back by hand is never overwritten', what='undo')
+        left = json.loads((new / '_manifest.json').read_text(encoding='utf-8'))['moves']
+        c.eq([os.path.basename(m['to']) for m in left], ['XML_SIA_2026-10-01.xml', 'XML_SIA_2026-10-29.xml'], 'the manifest keeps what could not be undone', what='manifest left')
+    # 3. « Purger » of France reaches the new place; nothing else under local/sources
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = _repo(DS, td)
+        ctx = _ctx(DS, data)
+        for rel in ('local/sources/sia/2026-10-29/XML_SIA_2026-10-29.xml', 'local/sources/nats/2026-10-29/EG_x.xml', 'local/eaip/2026-10-29/a.pdf'):
+            (data / rel).parent.mkdir(parents=True, exist_ok=True)
+            (data / rel).write_text('x', encoding='utf-8')
+        view, res = _run(RJ, BS, 'purge', {'zones': ['fr'], 'dry': True}, ctx)
+        c.eq(res['removed']['fr']['files'], 2, 'purge of fr (dry): the raw SIA file of the new place and the eAIP cache; the other sources are not France\'s', what='purge')

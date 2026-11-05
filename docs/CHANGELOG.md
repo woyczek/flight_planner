@@ -117,6 +117,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `planner/flight_performance_database_merged.fpdb.json` with every saved sheet; the card put the mirror under « Autres », unnamed. It
   now counts with the sheets and says what it is. The reason a held item gives is the error the data layer already names (V3 Frame
   fe6713570).
+- **Data, lot C2: Ireland, Spain's charts, the raw SIA files, Little Navmap** (`tools/airnav_eaip.py`, `tools/aero_fetch.py`, `tools/regen/base.py`, `tools/regen/base_sources.py`, `frame/aerodb/`;
+  SPEC, INTEGRATION, DECISIONS; tests K70 to K75) — **Ireland**: the zone `ie` gets its 167 points and its RNAV routes from AirNav Ireland's eAIP (personal licence: none found), fetched by the launcher;
+  **`chartsUrl(icao)`**: the page of an aerodrome in the official AIP of France, Spain or Ireland; **the raw SIA files** move from the root of `data/sia/` to `data/local/sources/sia/<cycle>/` (read there first, the
+  old place as a fall-back, a verb that moves them with a manifest and an undo, nothing purged), and the build result says what it was built with; **Little Navmap**: the sheets and the `.lnmperf` files are no
+  longer compared in the background, only on request.
 - **Data, lot C: cycles and sources** (`frame/aerodb/aerodb.js`, `tools/aero_cycles.py`, `tools/proc_sia.py`, `tools/proc_records.py`, `tools/regen/base_sources.py`;
   SPEC, INTEGRATION, DECISIONS; tests K76, K69, K68, K64) — **SOG-0026**: why every source of the base showed « dépassé » once France was rebuilt (the module takes
   the oldest folder cycle of every fed zone, and a zone without an AIRAC source has no cycle); `publication()` now says, per zone, the dated source its cycle

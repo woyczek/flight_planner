@@ -3239,7 +3239,7 @@ def k44(c):
         c.eq((offer['ok'], offer['job'], offer['token'] == job.token, offer['zones'], offer['cycle'], offer['personal']), (True, job.id, True, ['be', 'ie'], '2026-10-01', ['enaire']),
              'the claim gives what the verb offered (job.offer) and the job\'s token', what='claim')
         c.eq(sorted(offer['inputs']), sorted(B.list_inputs(str(data))), 'and the inputs the page may read (the page decides which it wants)', what='inputs')
-        c.eq(sorted(set(offer) - {'ok', 'job', 'token'}), ['cycle', 'cycles', 'inputs', 'personal', 'zones'], 'nothing else is offered', what='keys')
+        c.eq(sorted(set(offer) - {'ok', 'job', 'token'}), ['cycle', 'cycles', 'inputs', 'personal', 'sources', 'zones'], 'nothing else is offered', what='keys')
         c.eq(offer['cycles'], {'be': B.airac_in_force(), 'ie': B.airac_in_force()}, 'the cycle of each zone: none of them has a dated source, so the cycle in force', what='zone cycles')
         c.eq(claim(job.id).get('status'), 409, 'a second claim: 409 (the page claimed once)', what='claim twice')
         c.eq(claim('other').get('status'), 409, 'a claim for another job: 409', what='claim other')
@@ -3767,7 +3767,11 @@ def k51(c):
     hostile = {'other job': {**good, 'job': 'other'}, 'cycle': {**good, 'cycle': '2026-10-01/../x'}, 'unknown zone': {**good, 'zones': ['zz']}, 'zone as a path': {**good, 'zones': ['../ie']},
                'source': {**good, 'personal': ['../x']}, 'dotdot': {**good, 'inputs': ['openaip/../../notes.txt']}, 'absolute': {**good, 'inputs': ['/etc/passwd']},
                'backslash': {**good, 'inputs': ['openaip\\ie_apt.geojson']}, 'drive': {**good, 'inputs': ['C:/x.xml']}, 'empty component': {**good, 'inputs': ['openaip//x.json']},
-               'token': {**good, 'token': 'short'}, 'no zone': {**good, 'zones': []}}
+               'token': {**good, 'token': 'short'}, 'no zone': {**good, 'zones': []},
+               # the raw SIA files of the new place (lot C2): { source: 'sia', cycle, name } and nothing else, a name of the SIA's rule
+               'raw name': {**good, 'sources': [{'source': 'sia', 'cycle': '2026-10-01', 'name': '../x.xml'}]}, 'raw source': {**good, 'sources': [{'source': '../x', 'cycle': '2026-10-01', 'name': 'XML_SIA_2026-10-01.xml'}]},
+               'raw cycle': {**good, 'sources': [{'source': 'sia', 'cycle': '2026-10-01/..', 'name': 'XML_SIA_2026-10-01.xml'}]}, 'raw key': {**good, 'sources': [{'source': 'sia', 'cycle': '2026-10-01', 'name': 'XML_SIA_2026-10-01.xml', 'path': 'x'}]},
+               'raw type': {**good, 'sources': 'XML_SIA_2026-10-01.xml'}}
     out, race = {}, {}
     for name, answer in hostile.items():
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
@@ -3944,7 +3948,7 @@ def k63(c):
         stale_fr = '2026-10-01' < cur
         c.eq((res['stale'], res['blocking']), (stale_fr, [{'zone': 'fr', 'source': 'sia', 'cycle': '2026-10-01'}] if stale_fr else []),
              'only fr blocks (its SIA files of 2610): gb holds its NATS cycle, de has no AIRAC', what='blocking')
-        c.eq({s: v['cycle'] for s, v in res['sources'].items()}, {'sia': '2026-10-01', 'nats': '2026-10-29', 'enaire': None}, 'the cycle the workstation holds per dated source', what='sources')
+        c.eq({s: v['cycle'] for s, v in res['sources'].items()}, {'sia': '2026-10-01', 'nats': '2026-10-29', 'enaire': None, 'airnav': None}, 'the cycle the workstation holds per dated source', what='sources')
         c.ok(not stale_fr or any(x.startswith('fr: sources sia du cycle 2026-10-01') for x in view['log']), str(view['log'][-4:]), 'the blocking zone is said in the journal')
         idx = json.loads((data / 'sia' / 'base' / 'index.json').read_text(encoding='utf-8'))
         c.eq({z: idx['zones'][z]['cycle'] for z in ('fr', 'gb', 'de')}, res['folders'], 'the manifest carries each zone\'s cycle', what='manifest')
@@ -4066,3 +4070,78 @@ def k69(c):
     c.ok([x['id'] for x in out] == ['RW07', 'PO412'] and any('pas sur la finale' in x for x in w), f'{out} {w}', 'an initial fix off the final axis is not added, and said')
     # parse_if reads the unnamed initial fixes only: « REF IPO06 » (a named one) is left to the coding table
     c.eq(P.parse_if(rows('AD_2_LFPO_DATA_02')), {'07': (48.668083, 2.082889)}, 'parse_if: only the row that prints a position', what='parse_if')
+
+
+@case('K72', 'chartsUrl(icao): the page of an aerodrome in its State\'s official AIP (France: SIA eAIP, Spain: ENAIRE, Ireland: AirNav), null elsewhere', 'K', tags=('aerodb',), phone=False,
+      rule='Lot C2 (5 Nov 2026, SOG-0024): Features SOG consumes the address; the French page is of the published cycle of the zone fr, the Irish one of the published edition of the zone ie (the folder of an edition changes each cycle: nothing without it), the Spanish one is fixed')
+def k72(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const day = Date.parse('2026-11-05T12:00:00Z'), meta = (z, cy) => ({ schema: 2, zone: z, cycle: cy, kind: 'meta', parserVersion: 21, data: { builtAt: cy + 'T10:00:00Z' } });
+      const mk = files => AeroDB.create({ reader: { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} }, lnmperf: false, now: () => day });
+      const both = mk({ 'sia/base/fr/2026-10-29/meta.json': meta('fr', '2026-10-29'), 'sia/base/ie/2026-10-29/meta.json': meta('ie', '2026-10-29') }),
+        none = mk({});
+      const ask = async (db, codes) => Object.fromEntries(await Promise.all(codes.map(async k => [k, await db.chartsUrl(k)])));
+      return { both: await ask(both, ['LFPO', 'lfpo', 'LEAM', 'GCLP', 'EIDW', 'EGLL', 'LF', 'LFPO1', '', null, 'KSET']), none: await ask(none, ['LFPO', 'EIDW', 'LEMD']) };
+    }""")
+    eaip = 'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_29_OCT_2026/FRANCE/AIRAC-2026-10-29/html/eAIP/FR-AD-2.LFPO-fr-FR.html'
+    c.eq((r['both']['LFPO'], r['both']['lfpo']), (eaip, eaip), 'France: the AD 2 page of the eAIP of the published cycle of the zone fr (lower case accepted)', what='France')
+    c.eq((r['both']['LEAM'], r['both']['GCLP']), ('https://aip.enaire.es/AIP/contenido_AIP/AD/AD2/LEAM/LE_AD_2_LEAM_en.html', 'https://aip.enaire.es/AIP/contenido_AIP/AD/AD2/GCLP/LE_AD_2_GCLP_en.html'),
+         'Spain (LE and GC): the aerodrome page of ENAIRE, which lists the charts', what='Spain')
+    c.eq(r['both']['EIDW'], 'https://www.airnav.ie/AIRAC/2026-10-29-AIRAC/html/eAIP/EI-AD-2.EIDW-en-IE.html', 'Ireland: the AD 2 page of the published edition of the zone ie', what='Ireland')
+    c.eq([r['both'][k] for k in ('EGLL', 'LF', 'LFPO1', '', 'KSET')] + [r['both'].get('null')], [None] * 6, 'any other State, a code that is not four letters: null', what='others')
+    c.eq(r['none'], {'LFPO': 'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_29_OCT_2026/FRANCE/AIRAC-2026-10-29/html/eAIP/FR-AD-2.LFPO-fr-FR.html', 'EIDW': None,
+                     'LEMD': 'https://aip.enaire.es/AIP/contenido_AIP/AD/AD2/LEMD/LE_AD_2_LEMD_en.html'},
+         'nothing published: France falls back on the cycle in force, Ireland gives nothing, Spain does not depend on the base', what='unpublished')
+
+
+@case('K74', 'Build job: the page is offered the raw SIA files of the new place apart, and the result says what the build was built with (the cycle per source, the previous kept, where the SIA files came from)', 'K', static=True,
+      rule='DATA_MAP § 4 freshness rule, lot C2 (5 Nov 2026): the newest cycle of each source wins, a source without an entry for the cycle in force keeps the previous one, said in the result (« construit avec 2610 »), never silently')
+def k74(c):
+    import json
+    import tempfile
+    RJ, B, fn, check = _d5_modules()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, fake = _d5_scene(td)                                   # the scene has sia/XML_SIA_2026-10-01.xml at the old place
+        new = data / 'local' / 'sources' / 'sia' / '2026-10-29'
+        new.mkdir(parents=True)
+        (new / 'XML_SIA_2026-10-29.xml').write_text('<x/>', encoding='utf-8')
+        (new / 'AIXM4.5_all_FR_OM_2026-10-29.xml').write_text('<x/>', encoding='utf-8')
+        _d5_modes(fake, {'fr': 'ok', 'de': 'ok'})
+        run = _D5Run(RJ, data, fake, {'zones': ['fr', 'de']})
+        view = run.wait()
+        res = view['result']
+        offer = json.loads(_d5_lines(fake, 'claim.json')[0])
+        c.eq(offer['sources'], [{'source': 'sia', 'cycle': '2026-10-29', 'name': 'AIXM4.5_all_FR_OM_2026-10-29.xml'}, {'source': 'sia', 'cycle': '2026-10-29', 'name': 'XML_SIA_2026-10-29.xml'}],
+             'the page is offered the raw SIA files of the new place as { source, cycle, name } (it reads /data/local/sources/sia/<cycle>/<name>)', what='offered sources')
+        c.ok('XML_SIA_2026-10-01.xml' in offer['inputs'] and 'XML_SIA_2026-10-29.xml' not in offer['inputs'] and 'AIXM4.5_all_FR_OM_2026-10-29.xml' not in offer['inputs'], str(offer['inputs']),
+             'the entries of data/sia/ are offered apart: the old copy stays there (fall-back), the moved ones are not offered twice')
+        cur = B.airac_in_force()
+        c.eq((res['cycle'], res['builtWith']['sia'], res['siaFrom']), ('2026-10-29', '2026-10-29', {'new': ['AIXM4.5_all_FR_OM_2026-10-29.xml', 'XML_SIA_2026-10-29.xml'], 'legacy': ['XML_SIA_2026-10-01.xml']}),
+             'built with the SIA of 2026-10-29, the files read at the new place named, the old copy that is still at the old place named too', what='built with')
+        c.eq(res['previous'], [{'source': 'sia', 'cycle': '2026-10-29', 'current': cur}] if '2026-10-29' < cur else [], 'a source whose cycle in force has no file keeps the previous one: said', what='previous')
+
+
+@case('K75', 'The Little Navmap files are no longer followed by themselves: no pass at load, none on a folder being set; the service stays for an explicit sync, import and export', 'K', tags=('aerodb',), phone=False,
+      rule='modules/aircraft § 10.35 (5 Nov 2026, SOG-0023): the sheet JSON is the only source; .lnmperf is an import through the preview or an explicit export, never a silent synchronisation')
+def k75(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const mk = opts => AeroDB.create({ reader: { read: async () => null, list: async () => [], watch: () => () => {}, put: async () => ({}) }, launcher: { info: () => ({ launcher: true }) }, ...opts });
+      const calls = [];
+      const origCreate = null;
+      const a = mk({});                                      // default: the production path
+      await new Promise(r => setTimeout(r, 2600));         // the old delay was 1.5 s
+      const afterDefault = typeof window.AeroDBLnmperf;
+      const svc = await a.lnmperf();                         // the service stays, on request
+      const hasApi = ['start', 'sync', 'status', 'folder', 'setFolder', 'download', 'card'].every(k => typeof svc[k] === 'function');
+      return { afterDefault, hasApi, state: svc.status().state };
+    }""")
+    c.eq((r['afterDefault'], r['hasApi']), ('undefined', True), 'by default nothing is loaded at start (the old code loaded lnmperf.js 1.5 s after the page and started it); the service stays available on request', what='default')
+    c.ok(r['state'] in ('idle', 'off'), r['state'], 'and the service on request has not run a pass')
+    src = (ROOT / 'frame' / 'aerodb' / 'aerodb.js').read_text(encoding='utf-8')
+    lnm = (ROOT / 'frame' / 'aerodb' / 'lnmperf.js').read_text(encoding='utf-8')
+    c.ok(re.search(r'lnmperf: lnmAuto =\s*false', src), 'lnmAuto', 'the option is off by default (true only for an explicit opt-in)')
+    c.ok(not re.search(r'if \(r\.folder && !started\) start\(\)', lnm), 'setFolder', 'setting the folder starts no follow either: « Synchroniser maintenant » makes the pass')
+    k = src.index('c.start()')
+    c.ok('if (lnmAuto &&' in src[max(0, k - 400):k] and src.count('c.start()') == 1, 'start', 'aerodb calls start() once, under the explicit option')

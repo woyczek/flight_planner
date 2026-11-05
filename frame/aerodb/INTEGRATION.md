@@ -333,6 +333,14 @@ const r = await ctx.launcher.job('regen/job', { set: 'base', verb: 'build', args
 //              builtOn: '2026-11-01', built: ['fr', …], failed: [{ zone, error }], commits: [{ zone, commit }], instances, seconds, reason? }
 ```
 
+- **The raw SIA files and where the build reads them** (5 Nov 2026, DATA_MAP § 4): `data/local/sources/sia/<cycle>/` (the cycle is the date of the file), then, as a fall-back for
+  the time of the move, the root of `data/sia/`; a name at both places is read at the new one. The claim gives the page `inputs` (the entries of `data/sia/`) and `sources: [{ source: 'sia',
+  cycle, name }]` (the new place; the page checks each: source `sia`, a date, a name of the SIA's rule, nothing else, and reads `/data/local/sources/sia/<cycle>/<name>`). The result adds
+  `builtWith: { sia, nats, enaire, airnav: cycle | null }`, `previous: [{ source, cycle, current }]` (a source with no file for the cycle in force keeps the previous one, said) and
+  `siaFrom: { new: [names], legacy: [names] }`. **`base/move-sources`** `{ dry?: true, undo?: false }`: each raw SIA file of the root of `data/sia/` is **copied** to its cycle's folder, checked (SHA-256)
+  and the old one removed — except one **git tracks** (kept, `kept: [{ name, why: 'tracked' }]`); the manifest `data/local/sources/sia/_manifest.json` (`{ from, to, size, sha256, at }`)
+  lets `undo` bring the files back, never over a file now at the old path (`conflicts: [{ name, why: 'present' | 'different' | 'missing' }]`). Result `{ ok, dry, undo, moved, already, kept, conflicts,
+  failed, manifest }`. **Nothing is purged** (no old cycle, no different duplicate); `base/pickup` now writes the SIA there; `base/purge` of `fr` reaches the new folder.
 - **For which cycle, zone by zone** (1 Nov 2026; `tools/aero_cycles.py`): a zone's cycle is **its own dated source's** — `fr` the SIA
   (`XML_SIA_…`, `AIXM4.5_…`, `sia-airspaces-…`), `gb` NATS (`zones/gb/EG_…_AAAAMMJJ.xml`), `es` ENAIRE (`aixm5/LE_Amdt_A_AAAA_NN_…`, the
   AIRAC amendment NN read as cycle AANN) — never the SIA's for every zone. A zone without a dated source (openAIP, GeoNames, relief, UK Mil…)
@@ -393,6 +401,12 @@ const p = await ctx.launcher.job('regen/job', { set: 'base', verb: 'purge', args
 - **The cycle held per dated source** (1 Nov 2026): the view from the start (the plan) and the result carry `sources: { sia | nats | enaire:
   { cycle: 'AAAA-MM-JJ' | null, current, stale } }`, read from the dates the present files carry (`tools/aero_cycles.py`); a source without
   AIRAC is not in it. The links and expected names of the manual sources are in `catalogue.js` (`fetch.how 'pick'`).
+- **Ireland, the zone `ie`** (lot C2, 5 Nov 2026): the source `airnav` (AirNav Ireland's eAIP, `aero_fetch.airnav` → `tools/airnav_eaip.py`; **personal licence**: no reuse licence
+  found, the compiled data stay in the owner's private data repository) gives the zone its **points** (ENR 4.4, 167 on the 29 Oct 2026 issue) and its **RNAV routes** (ENR 3.3, ten routes, 31
+  segments) — no procedures: the Irish eAIP gives SIDs, STARs and approaches on charts only. The address of the issue in force is read on the AIM page and checked (https, `www.airnav.ie`,
+  `/…/html/index.html`), the two section pages are read, and the file `data/sia/zones/ie/airnav_ie_enr_AAAAMMJJ.geojson` is written (the date of the edition is its cycle; the previous edition
+  is removed). `AeroSources.geojson` reads it: Features `sog: 'point'` → `aero.points`, `sog: 'airway'` (a two-position LineString) → `aero.airways` (limits in feet, `UNL` as infinity).
+- **`chartsUrl(icao)`** (SOG-0024): see SPEC § 5 (service). France, Spain, Ireland; `null` elsewhere.
 - **A 304 Not Modified is « unchanged »** (1 Nov 2026, the user's log after 822a0ffbb: « [sortant] échec … de_asp.geojson : HTTP 304 »): the
   answer to a conditional request (`If-Modified-Since`, the date of the local copy) keeps the copy, counts as a success (`unchanged`) and is
   never written in the launcher's console (`aero_fetch` asks through `outbound.opener(quiet=(304, …))`). A 304 with no copy behind it (no

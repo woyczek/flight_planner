@@ -22,7 +22,7 @@ job.take(zone, timeout). L'adresse du lanceur : launcher_origin().
 État lisible par la page (GET regen/job?id=) : job.data['zones'] = { zone: { state ('waiting' | 'building' | 'built' | 'failed' | 'cancelled'), done?, total?
 (sources lues / à lire de CETTE zone, seulement quand le constructeur en donne un compte propre), error (code), message?, commit?, warning?, files?, seconds? } },
 job.data['inputs'] = { done, total } (les sources de toute la construction, une fois), step « N zones sur M », done / total en zones.
-Résultat : { ok, cycle, cycles: { <zone construite>: cycle | null }, folders: { <zone>: cycle écrit }, current, stale, blocking: [{ zone, source, cycle }],
+Résultat : { ok, builtWith: { sia | nats | enaire | airnav: cycle | null }, previous: [{ source, cycle, current }], siaFrom: { new: [noms], legacy: [noms] }, cycle, cycles: { <zone construite>: cycle | null }, folders: { <zone>: cycle écrit }, current, stale, blocking: [{ zone, source, cycle }],
 sources: { sia | nats | enaire: { cycle, current, stale } }, builtOn, built: [zones], failed: [{ zone, error }], commits: [{ zone, commit }], zones, instances,
 seconds, reason? } ; cycles : le cycle de la source datée de la zone (fr : SIA, gb : NATS, es : ENAIRE ; tools/aero_cycles.py), null pour une zone sans source
 datée (jamais « dépassée », construite le builtOn) ; folders : le cycle sous lequel elle est écrite (le sien, sinon le cycle en vigueur) ; cycle : celui des
@@ -256,10 +256,14 @@ def check(a):
     return {'zones': zones, 'personal': sorted(set(personal))}
 
 
+SIA_RAW = aero_cycles.SIA_RAW  # les XML bruts du SIA (la racine de data/sia/ avant le déplacement ; leur nouvel emplacement : tools/aero_cycles.py)
+
+
 def list_inputs(data):
-    """Fichiers de data/sia/ que la construction peut lire : { chemin relatif (avec « / »): chemin absolu }. Racine : les XML (SIA, AIXM,
-    axes ENR 5.7) et mora.csv ; openaip/, aixm5/, geojson/ et zones/<zone>/ : les fichiers .xml .geojson .json .txt .air. Ni lien, ni nom
-    hors de SAFE_NAME, ni fichier caché. Le tri par zone et par source est fait par la page (AeroZones.fileWanted) : une seule règle."""
+    """Fichiers que la construction peut lire : { chemin relatif (avec « / »): chemin absolu }. Dans data/sia/ : à la racine les XML (SIA, AIXM, axes ENR 5.7) et mora.csv ; openaip/, aixm5/,
+    geojson/ et zones/<zone>/ : les fichiers .xml .geojson .json .txt .air. Les XML bruts du SIA se lisent d'abord dans data/local/sources/sia/<cycle>/ (l'emplacement nouveau) et, à défaut,
+    à l'ancien, la racine de data/sia/ (repli le temps du déplacement) : un même nom aux deux endroits se lit au nouveau. Ni lien, ni nom hors de SAFE_NAME, ni fichier caché. Le tri
+    par zone et par source est fait par la page (AeroZones.fileWanted) : une seule règle."""
     root = os.path.join(data, 'sia')
     out = {}
 
@@ -283,7 +287,17 @@ def list_inputs(data):
         zdirs = []
     for z in zdirs:
         scan(os.path.join(root, 'zones', z), f'zones/{z}/', lambda n: bool(INPUT_EXT.search(n)))
+    for name, (_, path) in aero_cycles.moved_sources(data).items():
+        out[name] = path
     return out
+
+
+def split_inputs(data, inputs):
+    """(entrées de data/sia/, XML du SIA de l'emplacement nouveau) d'après list_inputs : la première liste est celle de chemins relatifs de data/sia/, la seconde [{ source: 'sia', cycle, name }] que
+    la page lit sous data/local/sources/. Un nom pris au nouvel emplacement n'est pas dans la première."""
+    moved = aero_cycles.moved_sources(data)
+    legacy = sorted(rel for rel in inputs if not (rel in moved and inputs[rel] == moved[rel][1]))
+    return legacy, [{'source': 'sia', 'cycle': cy, 'name': n} for n, (cy, p) in sorted(moved.items()) if inputs.get(n) == p]
 
 
 def airac_in_force(today=None):
@@ -431,6 +445,7 @@ def build(job, args, ctx):
     cycle = cycle_of(inputs)  # celui des fichiers du SIA (la page le vérifie contre eux), sinon le cycle en vigueur
     # le cycle de chaque zone est celui de SA source datée (fr : SIA, gb : NATS, es : ENAIRE) ; une zone sans source datée n'a pas de
     # cycle (None : jamais « dépassée ») et s'écrit sous le cycle en vigueur ; jamais celui du SIA pour toutes (1er nov. 2026)
+    legacy, moved = split_inputs(data, inputs)
     sources = aero_cycles.report(inputs, root=os.path.join(data, 'sia'))
     current = aero_cycles.airac_start()
     own = {z: aero_cycles.zone_cycle(z, sources) for z in zones}
@@ -441,7 +456,7 @@ def build(job, args, ctx):
     if not hasattr(job, 'offer'):
         return {'ok': False, 'reason': 'failed', 'message': 'this launcher has no job.offer: the build page cannot be given its parameters'}
     # ce que la page doit savoir, déposé AVANT de lancer le navigateur : elle le réclame (POST regen/job/claim) ; l'adresse du navigateur n'en porte rien
-    job.offer({'zones': zones, 'cycle': cycle, 'cycles': folder, 'personal': personal, 'inputs': sorted(inputs)})
+    job.offer({'zones': zones, 'cycle': cycle, 'cycles': folder, 'personal': personal, 'inputs': legacy, 'sources': moved})
     netloc = urllib.parse.urlsplit(origin).netloc
     timeout = ctx.get('zone_timeout', ZONE_TIMEOUT)
 
@@ -561,6 +576,11 @@ def build(job, args, ctx):
         job.log(f"{b['zone']}: sources {b['source']} du cycle {b['cycle']}, cycle en vigueur {current} : construite pour le cycle précédent")
     res = {'ok': len(built) == len(zones), 'cycle': cycle, 'cycles': {z: own[z] for z in built}, 'folders': {z: folder[z] for z in built},
            'current': current, 'stale': bool(blocking), 'blocking': blocking, 'sources': sources, 'builtOn': time.strftime('%Y-%m-%d'),
+           # construit avec quoi (DATA_MAP § 4, règle « le plus récent, complété par les précédents ») : le cycle lu par source datée (null : aucun fichier), les sources dont le cycle en vigueur manque
+           # et qui gardent le précédent (dites, jamais en silence), et d'où viennent les XML du SIA (l'emplacement nouveau, ou l'ancien en repli)
+           'builtWith': {s: v['cycle'] for s, v in sources.items()},
+           'previous': [{'source': s, 'cycle': v['cycle'], 'current': v['current']} for s, v in sources.items() if v['cycle'] and v['stale']],
+           'siaFrom': {'new': [m['name'] for m in moved], 'legacy': sorted(rel for rel in legacy if SIA_RAW.match(rel))},
            'built': built, 'failed': failed,
            'commits': [{'zone': z, 'commit': st[z].get('commit')} for z in built], 'zones': {z: dict(st[z]) for z in zones},
            'instances': 1, 'seconds': round(time.time() - t0, 1)}

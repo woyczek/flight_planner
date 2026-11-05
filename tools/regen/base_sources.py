@@ -38,12 +38,14 @@ Crochets des essais (ctx, jamais posés par le lanceur) : data, git_cmd, git_env
 """
 import datetime
 import fnmatch
+import hashlib
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+import time
 import zipfile
 
 TOOLS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -90,6 +92,11 @@ SOURCES = {
             'ENAIRE — Spain AIP (AIXM 5.1)',
             'ENAIRE — AIP Spanien (AIXM 5.1)',
             'ENAIRE — AIP España (AIXM 5.1)'), personal='licence', provider='enaire'),
+    'airnav': _src('download', (
+            'AirNav Ireland — eAIP Irlande (points et routes RNAV)',
+            'AirNav Ireland — Irish eAIP (points and RNAV routes)',
+            'AirNav Ireland — eAIP Irland (Punkte und RNAV-Strecken)',
+            'AirNav Ireland — eAIP Irlanda (puntos y rutas RNAV)'), personal='licence', provider='airnav'),
     'faa': _src('download', (
             'FAA — zones à usage spécial et routes militaires',
             'FAA — special use airspace and military routes',
@@ -133,7 +140,7 @@ SOURCES = {
 }
 COMMON = ('openaip', 'mora', 'xplane')
 OWN = {'nat': ('nat', 'xplane')}  # zones hors pays : leurs seules sources
-EXTRA = {'fr': ('sia', 'dircam'), 'gb': ('nats', 'ukmil'), 'es': ('enaire',), 'us': ('faa', 'faaclass'), 'ca': ('navcan',)}
+EXTRA = {'fr': ('sia', 'dircam'), 'gb': ('nats', 'ukmil'), 'es': ('enaire',), 'ie': ('airnav',), 'us': ('faa', 'faaclass'), 'ca': ('navcan',)}
 SIA_ROOT = re.compile(r'^(AIXM4\.5_all_FR_OM_|XML_SIA_|sia-airspaces-)\d{4}-\d{2}-\d{2}\.xml\Z', re.I | re.A)
 
 
@@ -287,7 +294,7 @@ def _step(job, done, total):
 
 # ----------------------------------------------------------------------------------------------------------------------- base/fetch
 # où aero_fetch écrit, par fournisseur (data/sia/…) : la même arborescence que file_source lit (le banc K52 le vérifie)
-FOLDERS = {'openaip': 'sia/openaip', 'faa': 'sia/geojson', 'enaire': 'sia/aixm5', 'ukmil': 'sia/zones/gb', 'navcan': 'sia/zones/ca', 'nat': 'sia/zones/nat'}
+FOLDERS = {'openaip': 'sia/openaip', 'faa': 'sia/geojson', 'enaire': 'sia/aixm5', 'ukmil': 'sia/zones/gb', 'airnav': 'sia/zones/ie', 'navcan': 'sia/zones/ca', 'nat': 'sia/zones/nat'}
 # les messages de tools/aero_fetch.py (des textes, pas des codes) rangés en codes ; HTTP d'abord, puis ce qui est une forme de réponse inattendue
 HTTP_RE = re.compile(r'\bHTTP(?: Error)? (\d{3})\b')
 PARSE_RE = re.compile(r'illisible|aucun|introuvable|chang[ée]|invalide|inconnu|service FAA|Expecting|JSON|decod|Extra data|Unterminated', re.I)
@@ -359,9 +366,13 @@ def absent_line(names):
 
 
 def sia_rels(data):
-    """Les fichiers présents de data/sia/ (chemins relatifs avec « / ») où une source datée se trouve : la racine, aixm5/ et zones/<zone>/ ;
-    ni lien, ni sous-dossier plus profond."""
+    """Les fichiers présents où une source datée se trouve (chemins relatifs avec « / ») : la racine de data/sia/, aixm5/ et zones/<zone>/ (ni lien, ni sous-dossier plus profond), et les XML
+    du SIA du nouvel emplacement data/local/sources/sia/<cycle>/ (leur nom seul : le nom de la racine d'avant le déplacement)."""
     root, out = os.path.join(data, 'sia'), []
+    try:
+        out += sorted(aero_cycles.moved_sources(data))
+    except OSError:
+        pass
     for sub in ('', 'aixm5') + tuple(f'zones/{z}' for z in sorted(_names(os.path.join(root, 'zones')))):
         d = os.path.join(root, *sub.split('/')) if sub else root
         for n in sorted(_names(d)):
@@ -529,7 +540,7 @@ def fetch(job, args, ctx):
 
 
 # ----------------------------------------------------------------------------------------------------------------------- base/purge
-CACHES = {'fr': ('local/eaip',)}  # caches par zone sous data/ (lecture de l'eAIP du SIA : data/local/eaip/<cycle>/) ; les autres zones n'en ont pas aujourd'hui
+CACHES = {'fr': ('local/eaip', 'local/sources/sia')}  # caches par zone sous data/ (lecture de l'eAIP du SIA : data/local/eaip/<cycle>/) ; les autres zones n'en ont pas aujourd'hui
 SOURCE_DIRS = ('openaip', 'aixm5', 'geojson')  # sous-dossiers à plat de data/sia/ (zones/<zone>/ en plus) ; sia/base et proc/ ne sont JAMAIS parcourus
 MIAM = re.compile(r'^miam-.*\.xml\Z', re.I | re.A)  # axes de ravitaillement de France à la racine de sia/ (file_source ne connaît que miam-enr-5-7-tracks.xml)
 
@@ -694,7 +705,8 @@ def purge(job, args, ctx):
 # le SIA, data/sia/zones/gb/ pour NATS. Sources brutes du poste, jamais commitées (comme celles de base/fetch). Le passage à
 # blanc (dry, par défaut) rend le plan.
 PICKUP = {
-    'sia': {'zip': 'export_xml_bd_SIA_*.zip', 'to': 'sia', 'keep': lambda n: bool(SIA_ROOT.match(n))},
+    # le SIA : sous data/local/sources/sia/<cycle>/ (DATA_MAP § 4, lot C2 ; le cycle est celui de la date du fichier), plus la racine de data/sia/
+    'sia': {'zip': 'export_xml_bd_SIA_*.zip', 'to': 'local/sources/sia', 'sub': lambda n: (aero_cycles.cycled(n) or ('', ''))[1], 'keep': lambda n: bool(SIA_ROOT.match(n))},
     # NATS : les fichiers EG… seulement (jamais ukmil_aara-tracks.xml ni un autre fichier d'aero_fetch du même dossier)
     'nats': {'zip': 'EG_*_DS_*_XML.zip', 'to': 'sia/zones/gb',
              'keep': lambda n: bool(re.match(r'EG[_-]', n)) and n.lower().endswith('.xml') and not re.search(r'DIFF|DELTA|export-filter|METADATA', n, re.I)},
@@ -708,6 +720,14 @@ PICKUP_MAX = 500 * 1024 * 1024  # un zip déposé plus gros : refusé avant d'ê
 OPENAIP_FILE = re.compile(r'^(?P<cc>[a-z]{2})_(?P<layer>asp|apt|nav|rpp|hot)(?: \(\d+\))?\.(?P<ext>geojson|json|xml)\Z', re.A | re.I)
 OPENAIP_MAX_FEATURES = 400_000
 PICKUP_NAME = re.compile(r'^[\w .()+-]{1,150}\Z', re.A)  # un nom d'entrée pris (le SAFE_NAME de base.py) : ni séparateur, ni « : »
+
+
+def _dest(data, p, leaf):
+    """Le chemin où un fichier d'une source prise est posé (par la règle des chemins de data/) : <to>/<sous-dossier de cycle, si la source en a un>/<nom> ; '' si refusé."""
+    sub = p['sub'](leaf) if p.get('sub') else ''
+    if p.get('sub') and not sub:
+        return ''  # un fichier daté dont la date ne se lit pas n'a pas de cycle : pas posé
+    return data_sync.data_path(data, f'{p["to"]}/{sub}/{leaf}' if sub else f'{p["to"]}/{leaf}')
 
 
 def check_pickup(a):
@@ -907,7 +927,7 @@ def pickup(job, args, ctx):
                 for i in infos:
                     leaf = i.filename.replace('\\', '/').rsplit('/', 1)[-1]
                     # le nom final passe par la règle des chemins de data/ (noms réservés de Windows, point ou espace finale)
-                    if not i.is_dir() and PICKUP_NAME.match(leaf) and p['keep'](leaf) and data_sync.data_path(data, f'{p["to"]}/{leaf}'):
+                    if not i.is_dir() and PICKUP_NAME.match(leaf) and p['keep'](leaf) and _dest(data, p, leaf):
                         pick.setdefault(leaf, i)  # un nom une fois : la première entrée qui le porte
                 if not pick:
                     failed.append({'zone': z, 'source': s, 'error': 'nothing-to-take', 'zip': os.path.basename(zp)})
@@ -918,7 +938,10 @@ def pickup(job, args, ctx):
                     if not regen_jobs.inside(out, base):
                         raise ValueError('unsafe-path')
                     for leaf, i in pick.items():
-                        dest = data_sync.data_path(data, f'{p["to"]}/{leaf}')
+                        dest = _dest(data, p, leaf)
+                        os.makedirs(os.path.dirname(dest), exist_ok=True)
+                        if not regen_jobs.inside(os.path.dirname(dest), base):
+                            raise ValueError('unsafe-path')
                         with zf.open(i) as src, open(dest + '.tmp', 'wb') as dst:
                             shutil.copyfileobj(src, dst)
                         os.replace(dest + '.tmp', dest)
@@ -936,8 +959,175 @@ def pickup(job, args, ctx):
     return res
 
 
+# ----------------------------------------------------------------------------------------------------------------------- base/move-sources
+# Le déplacement des XML bruts du SIA de la racine de data/sia/ vers data/local/sources/sia/<cycle>/ (DATA_MAP § 4 et § 6.2, lot C2, 5 nov. 2026) : le mélange « sources du cycle d'avant, base du cycle en cours »
+# de ce dossier est ce que l'utilisateur voyait comme « toujours périmé ». Chaque fichier est COPIÉ, vérifié (taille et SHA-256), puis l'ancien retiré ; l'ancien d'un fichier suivi par git est gardé (le retirer
+# serait une suppression pour tous les postes). Un manifeste ancien → nouveau (data/local/sources/sia/_manifest.json) permet de défaire (`undo`) : jamais sur un fichier déjà revenu à l'ancien chemin. Rien n'est
+# purgé : ni un cycle ancien, ni un doublon différent (conflit, dit). La construction lit l'emplacement nouveau puis, à défaut, l'ancien (base.list_inputs) : le déplacement n'est pas un préalable.
+MANIFEST_SIA = 'local/sources/sia/_manifest.json'
+MOVE_MAX = 500 * 1024 * 1024  # un XML du SIA fait quelques dizaines de Mo : au-delà, pas déplacé
+
+
+def check_move(a):
+    """Contrôle des arguments de base/move-sources (→ 400 si None) : { dry?: vrai par défaut, undo?: faux par défaut } et rien d'autre."""
+    if not isinstance(a, dict) or not set(a) <= {'dry', 'undo'}:
+        return None
+    dry, undo = a.get('dry', True), a.get('undo', False)
+    return {'dry': dry, 'undo': undo} if isinstance(dry, bool) and isinstance(undo, bool) else None
+
+
+def _sha(path):
+    h = hashlib.sha256()
+    with open(path, 'rb') as f:
+        for chunk in iter(lambda: f.read(1 << 20), b''):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _manifest(data):
+    try:
+        with open(data_sync.data_path(data, MANIFEST_SIA) or '', encoding='utf-8') as f:
+            doc = json.load(f)
+        return [m for m in doc.get('moves', []) if isinstance(m, dict) and all(isinstance(m.get(k), str) for k in ('from', 'to', 'sha256'))]
+    except (OSError, ValueError, AttributeError):
+        return []
+
+
+def _write_manifest(data, moves):
+    path = data_sync.data_path(data, MANIFEST_SIA)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path + '.tmp', 'w', encoding='utf-8') as f:
+        json.dump({'schema': 1, 'moves': moves}, f, ensure_ascii=False, indent=1)
+    os.replace(path + '.tmp', path)
+
+
+def _copy_checked(src, dest, sha):
+    """Copie src en dest (.tmp puis remplacement) et vérifie le SHA-256 du résultat ; lève ValueError sinon (le .tmp est retiré)."""
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    tmp = dest + '.tmp'
+    try:
+        shutil.copyfile(src, tmp)
+        if _sha(tmp) != sha:
+            raise ValueError('sha-mismatch')
+        os.replace(tmp, dest)
+    finally:
+        if os.path.exists(tmp):
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+
+
+def move_sources(job, args, ctx):
+    """Verbe base/move-sources. Rend { ok, dry, undo, moved: [{ name, cycle, from, to, bytes }], already: [noms] (déjà au nouvel emplacement, identiques : l'ancien retiré), kept: [{ name, why }] (ancien gardé :
+    'tracked' suivi par git), conflicts: [{ name, why }] ('different' : un autre fichier de même nom à l'autre endroit ; 'present' : le chemin de retour est pris), failed: [{ name, error }], manifest, reason? }.
+    À blanc (dry) par défaut : le plan. undo : le manifeste lu à l'envers."""
+    data, dry, undo = ctx['data'], args['dry'], args['undo']
+    base = os.path.realpath(data)
+    moved, already, kept, conflicts, failed = [], [], [], [], []
+    manifest = _manifest(data)
+    if undo:
+        keep = []
+        for m in reversed(manifest):
+            name = os.path.basename(m['to'])
+            old, new = data_sync.data_path(data, m['from']), data_sync.data_path(data, m['to'])
+            if job.cancelled():
+                keep.append(m)
+                continue
+            if not old or not new or not SIA_ROOT.match(name):
+                failed.append({'name': name, 'error': 'unsafe-path'})
+                continue
+            if not os.path.isfile(new):
+                keep.append(m)  # déjà retourné ou retiré à la main : l'entrée reste dite, rien n'est inventé
+                conflicts.append({'name': name, 'why': 'missing'})
+                continue
+            if os.path.exists(old):
+                keep.append(m)
+                conflicts.append({'name': name, 'why': 'present'})  # le chemin de retour est pris : jamais écrasé
+                continue
+            try:
+                if _sha(new) != m['sha256']:
+                    keep.append(m)
+                    conflicts.append({'name': name, 'why': 'different'})
+                    continue
+                if not dry:
+                    if not regen_jobs.inside(os.path.dirname(old), base):
+                        raise ValueError('unsafe-path')
+                    _copy_checked(new, old, m['sha256'])
+                    os.remove(new)
+                moved.append({'name': name, 'cycle': os.path.basename(os.path.dirname(m['to'])), 'from': m['to'], 'to': m['from'], 'bytes': os.path.getsize(old if not dry else new)})
+            except (OSError, ValueError) as e:
+                keep.append(m)
+                failed.append({'name': name, 'error': str(e)[:60] if isinstance(e, ValueError) else type(e).__name__})
+        if not dry:
+            try:
+                _write_manifest(data, list(reversed(keep)))
+            except OSError:
+                failed.append({'name': '_manifest.json', 'error': 'write-failed'})
+    else:
+        root = os.path.join(data, 'sia')
+        try:
+            names = sorted(e.name for e in os.scandir(root) if SIA_ROOT.match(e.name) and e.is_file(follow_symlinks=False) and not e.is_symlink())
+        except OSError:
+            names = []
+        try:
+            tracked = tracked_among(ctx, [f'sia/{n}' for n in names])
+        except RuntimeError as e:
+            job.log(f'git: suivi des fichiers non vérifié ({e}) : les anciens sont gardés')
+            tracked = {f'sia/{n}'.lower() for n in names}
+        new_moves = []
+        for i, name in enumerate(names):
+            if job.cancelled():
+                break
+            _step(job, i, len(names))
+            cycle = (aero_cycles.cycled(name) or ('', ''))[1]
+            old = os.path.join(root, name)
+            rel_old, rel_new = f'sia/{name}', f'local/sources/sia/{cycle}/{name}'
+            new = data_sync.data_path(data, rel_new) if cycle else ''
+            if not new or not data_sync.data_path(data, rel_old):
+                failed.append({'name': name, 'error': 'unsafe-path'})
+                continue
+            try:
+                size = os.path.getsize(old)
+                if size > MOVE_MAX:
+                    raise ValueError('too-large')
+                sha = _sha(old)
+                if os.path.isfile(new):
+                    if _sha(new) != sha:
+                        conflicts.append({'name': name, 'why': 'different'})  # un autre fichier de même nom au nouvel endroit : ni l'un ni l'autre n'est touché
+                        continue
+                    already.append(name)
+                else:
+                    if not dry:
+                        os.makedirs(os.path.dirname(new), exist_ok=True)
+                        if not regen_jobs.inside(os.path.dirname(new), base):
+                            raise ValueError('unsafe-path')
+                        _copy_checked(old, new, sha)
+                    moved.append({'name': name, 'cycle': cycle, 'from': rel_old, 'to': rel_new, 'bytes': size})
+                    new_moves.append({'from': rel_old, 'to': rel_new, 'size': size, 'sha256': sha, 'at': time.strftime('%Y-%m-%dT%H:%M:%S')})
+                if not dry:
+                    if _is_tracked(f'sia/{name}', tracked):
+                        kept.append({'name': name, 'why': 'tracked'})  # suivi par git : le retirer serait une suppression pour tous les postes
+                    else:
+                        os.remove(old)
+            except (OSError, ValueError) as e:
+                failed.append({'name': name, 'error': str(e)[:60] if isinstance(e, ValueError) else type(e).__name__})
+        if not dry and new_moves:
+            try:
+                _write_manifest(data, manifest + new_moves)
+            except OSError:
+                failed.append({'name': '_manifest.json', 'error': 'write-failed'})
+    for m in moved:
+        job.log(f"{'retour de' if undo else 'déplacé :'} {m['name']} → {m['to']}" + (' (à blanc)' if dry else ''))
+    reason = 'cancelled' if job.cancelled() else 'failed' if failed and not moved and not already else 'partial' if failed or conflicts else None
+    res = {'ok': reason is None, 'dry': dry, 'undo': undo, 'moved': moved, 'already': already, 'kept': kept, 'conflicts': conflicts, 'failed': failed, 'manifest': MANIFEST_SIA}
+    if reason:
+        res['reason'] = reason
+    return res
+
 VERBS = {
     ('base', 'fetch'): (fetch, check_fetch),
     ('base', 'purge'): (purge, check_purge),
     ('base', 'pickup'): (pickup, check_pickup),
+    ('base', 'move-sources'): (move_sources, check_move),
 }

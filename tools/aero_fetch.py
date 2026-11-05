@@ -256,6 +256,40 @@ def enaire(data):
     return out, errors
 
 
+def airnav(data):
+    """eAIP d'Irlande (AirNav Ireland) : l'édition en vigueur (adresse lue sur la page AIM, contrôlée), ses pages ENR 4.4 et ENR 3.3 lues (tools/airnav_eaip.py) et rangées en GeoJSON dans zones/ie/
+    (airnav_ie_enr_AAAAMMJJ.geojson : la date de l'édition est son cycle). L'édition déjà présente n'est pas relue ; les éditions précédentes du même jeu sont retirées."""
+    import airnav_eaip
+    folder = os.path.join(data, 'sia', 'zones', 'ie')
+    try:
+        cur = airnav_eaip.current_issue(get(airnav_eaip.AIM).decode('utf-8', 'replace'))
+        if not cur:
+            return [], ['AirNav Ireland : édition en vigueur introuvable sur la page AIM (page changée ?)']
+        url, issue = cur
+        name = airnav_eaip.out_name(issue)
+        path = os.path.join(folder, name)
+        if os.path.exists(path):  # l'édition en vigueur est déjà là : rien à lire
+            return [{'name': name, 'bytes': os.path.getsize(path), 'edition': issue, 'unchanged': True}], []
+        e44 = get(airnav_eaip.page_url(url, airnav_eaip.PAGES[0])).decode('utf-8', 'replace')
+        e33 = get(airnav_eaip.page_url(url, airnav_eaip.PAGES[1])).decode('utf-8', 'replace')
+    except (OSError, ValueError) as e:
+        return [], [f'AirNav Ireland : {e}']
+    try:
+        g, n, m = airnav_eaip.convert(e44, e33, issue)
+    except ValueError as e:
+        return [], [f'AirNav Ireland : {e}']
+    body = json.dumps(g, ensure_ascii=False).encode('utf-8')
+    changed = write(path, body)
+    from proc_pdf import safe_path
+    for old in os.listdir(folder):  # les éditions précédentes (même contrôle de nom avant de retirer)
+        if old != name and airnav_eaip.OUT_RE.fullmatch(old):
+            try:
+                os.remove(safe_path(folder, old, airnav_eaip.OUT_RE))
+            except ValueError:
+                pass
+    return [{'name': name, 'bytes': len(body), 'features': n + m, 'edition': issue, 'unchanged': not changed}], []
+
+
 def unchanged_outputs(folder, pdf, outputs):
     """Compte rendu « rien n'a changé » d'un PDF déjà lu (le PDF et ses sorties présentes), sinon None."""
     names = [pdf] + [o for o in outputs if os.path.exists(os.path.join(folder, o))]
@@ -390,6 +424,8 @@ def fetch(data, provider, args=()):
         files, errors = ukmil(data)
     elif provider == 'navcan':
         files, errors = navcan(data)
+    elif provider == 'airnav':
+        files, errors = airnav(data)
     elif provider == 'nat':
         files, errors = nat(data)
     else:

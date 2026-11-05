@@ -287,6 +287,35 @@
       'Condiciones de ENAIRE: uso personal'
     ]
   }, {
+    id: 'airnav',
+    group: 'base',
+    zones: ['ie'],
+    fetch: {
+      how: 'launcher',
+      provider: 'airnav'
+    },
+    build: {
+      runtime: 'worker',
+      id: 'geojson'
+    },
+    publish: true,
+    no: 18,
+    status: 'used',
+    n: ['AirNav Ireland (eAIP d’Irlande)', 'AirNav Ireland (Irish eAIP)', 'AirNav Ireland (eAIP Irland)',
+      'AirNav Ireland (eAIP de Irlanda)'
+    ],
+    url: 'https://www.airnav.ie/air-traffic-management/aeronautical-information-management',
+    gives: [
+      'Les points désignés et les routes RNAV de l’Irlande (zone ie) ; pas de procédures : l’eAIP irlandais n’en donne que sur cartes.',
+      'The designated points and RNAV routes of Ireland (zone ie); no procedures: the Irish eAIP gives them on charts only.',
+      'Die benannten Punkte und RNAV-Strecken Irlands (Zone ie); keine Verfahren: der irische eAIP gibt sie nur auf Karten.',
+      'Los puntos designados y las rutas RNAV de Irlanda (zona ie); sin procedimientos: el eAIP irlandés los da solo en cartas.'
+    ],
+    lic: ['Aucune licence de réutilisation trouvée : usage personnel', 'No reuse licence found: personal use',
+      'Keine Weiterverwendungslizenz gefunden: persönliche Nutzung',
+      'Sin licencia de reutilización: uso personal'
+    ]
+  }, {
     id: 'adds',
     group: 'base',
     zones: ['us'],

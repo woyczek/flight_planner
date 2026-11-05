@@ -188,7 +188,8 @@
     CYCLED_ZONES = {
       fr: 'sia',
       gb: 'nats',
-      es: 'enaire'
+      es: 'enaire',
+      ie: 'airnav'
     },
     MARGIN = .5, // marge des cadres de zone (côtes, eaux territoriales, espaces au large), comme la V2
     WIDE = 400; // au-delà de ce nombre de cases, un espace va dans la liste « large » (FIR, UIR) plutôt que case par case
@@ -337,7 +338,8 @@
     reader = fetchReader(),
     zones = window.AERODB_ZONES || {},
     now = () => Date.now(),
-    lnmperf: lnmAuto = true, // fiches .lnmperf suivies d'elles-mêmes sur un poste au dossier réglé (les essais l'éteignent)
+    lnmperf: lnmAuto =
+      false, // fiches .lnmperf suivies d'elles-mêmes sur un poste au dossier réglé : ÉTEINT par défaut (V3 § 10.35, 5 nov. 2026 : la fiche JSON est l'unique source, .lnmperf n'est qu'un import ou un export à la demande) ; true : un essai
     // lanceur du poste, donné par le cadre (frame/INTEGRATION.md § 15) : { request(route, opts) → { status, body } | null,
     // info() → relevé | null, job(route, corps, { onProgress, signal }) → fin du travail suivi (client du cadre) | null } ;
     // sans lui (bancs d'aerodb), lnmperf.js appelle le lanceur lui-même et fetchProcedures() répond 'no-launcher'
@@ -1991,6 +1993,26 @@
       },
       /** Le catalogue des sources (catalogue.js, chargé à la première demande avec airac.js) : AeroCatalogue, et le cycle AIRAC
        *  (AeroAirac) sous `airac`. */
+      /** L'adresse de la page d'un aérodrome dans l'AIP officiel de son État, là où sont ses cartes (ADC, SID, STAR, approche, VAC…), ou null (V3, lot C2, 5 nov. 2026 ; SOG-0024) :
+       *  France (LF…) la page AD 2 de l'eAIP du SIA du cycle publié de la zone fr (à défaut, du cycle en vigueur), Espagne (LE…, GC…) la page de l'aérodrome d'ENAIRE (les cartes PDF de
+       *  contenido_AIP/AD/AD2/<OACI>/ y sont listées), Irlande (EI…) la page AD 2 de l'édition d'AirNav Ireland de la zone ie publiée (rien sans zone publiée : le dossier d'une édition change
+       *  à chaque cycle) ; tout autre État, un code qui n'a pas quatre lettres : null. Ne lit aucune donnée d'aérodrome : un code inexistant donne une adresse qui n'ouvre rien. */
+      async chartsUrl(icao) {
+        const k = String(icao || '').trim().toUpperCase();
+        if (!/^[A-Z]{4}$/.test(k)) return null;
+        if (/^LF/.test(k)) {
+          await loadOwn('airac.js', 'AeroAirac');
+          await loadOwn('catalogue.js', 'AeroCatalogue');
+          const cycle = (await api.publication()).base?.fr?.inForce || window.AeroAirac.cycleOf(now()).date;
+          return `${window.AeroCatalogue.eaipBase(cycle)}/html/eAIP/FR-AD-2.${k}-fr-FR.html`;
+        }
+        if (/^(LE|GC)/.test(k)) return `https://aip.enaire.es/AIP/contenido_AIP/AD/AD2/${k}/LE_AD_2_${k}_en.html`;
+        if (/^EI/.test(k)) {
+          const cycle = (await api.publication()).base?.ie?.inForce;
+          return /^\d{4}-\d{2}-\d{2}$/.test(cycle || '') ? `https://www.airnav.ie/AIRAC/${cycle}-AIRAC/html/eAIP/EI-AD-2.${k}-en-IE.html` : null;
+        }
+        return null;
+      },
       async sources() {
         await loadOwn('airac.js', 'AeroAirac');
         await loadOwn('catalogue.js', 'AeroCatalogue');
@@ -2299,9 +2321,8 @@
         aircraft: true
       });
     });
-    // .lnmperf : passages automatiques seulement avec une couche de données qui écrit (le lecteur provisoire lit)
-    // suivi des .lnmperf : seulement quand un lanceur sert la page (il lui faut /__setup/lnmperf) ; ailleurs (téléphone,
-    // site), lnmperf.js n'est pas chargé
+    // .lnmperf : aucun passage tout seul (lnmAuto faux par défaut) ; le service reste à la demande (api.lnmperf(), la carte des Réglages, « Synchroniser maintenant »).
+    // Avec lnmAuto vrai (un essai) : passages automatiques seulement avec une couche de données qui écrit, et quand un lanceur sert la page (il lui faut /__setup/lnmperf)
     if (lnmAuto && typeof reader.put === 'function') setTimeout(async () => {
       const here = launcher ? launcher.info() : await Promise.resolve(window.FrameData?.launcher?.detect?.()).catch(() => null);
       if (here) lnmperf().then(c => c.start()).catch(() => {});

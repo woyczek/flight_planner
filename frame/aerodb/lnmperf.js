@@ -33,10 +33,10 @@
       'Fichas de Little Navmap (.lnmperf)'
     ],
     hint: [
-      'Les fiches de performances et les fichiers .lnmperf de ce dossier restent pareils : une fiche changée réécrit son fichier, un fichier changé dans Little Navmap met la fiche à jour. Rien n\'est perdu : une valeur écartée reste gardée dans la fiche.',
-      'The performance sheets and the .lnmperf files of this folder stay the same: a changed sheet rewrites its file, a file changed in Little Navmap updates the sheet. Nothing is lost: a value set aside stays kept in the sheet.',
-      'Die Leistungsprofile und die .lnmperf-Dateien dieses Ordners bleiben gleich: ein geändertes Profil schreibt seine Datei neu, eine in Little Navmap geänderte Datei aktualisiert das Profil. Nichts geht verloren: ein verworfener Wert bleibt im Profil erhalten.',
-      'Las fichas de rendimiento y los archivos .lnmperf de esta carpeta siguen iguales: una ficha cambiada reescribe su archivo, un archivo cambiado en Little Navmap actualiza la ficha. Nada se pierde: un valor descartado queda guardado en la ficha.'
+      'La fiche JSON est la source ; ce dossier ne sert qu\'à importer ou exporter des fiches Little Navmap, à votre demande : « Synchroniser maintenant » compare une fois les fiches et les fichiers .lnmperf (une fiche changée réécrit son fichier, un fichier changé met la fiche à jour). Rien ne se fait en arrière-plan. Rien n\'est perdu : une valeur écartée reste gardée dans la fiche.',
+      'The JSON sheet is the source; this folder only serves to import or export Little Navmap sheets, when you ask: “Synchronise now” compares the sheets and the .lnmperf files once (a changed sheet rewrites its file, a changed file updates the sheet). Nothing happens in the background. Nothing is lost: a value set aside stays kept in the sheet.',
+      'Das JSON-Profil ist die Quelle; dieser Ordner dient nur dazu, Little-Navmap-Profile auf Ihren Wunsch zu importieren oder zu exportieren: „Jetzt abgleichen“ vergleicht Profile und .lnmperf-Dateien einmal (ein geändertes Profil schreibt seine Datei neu, eine geänderte Datei aktualisiert das Profil). Im Hintergrund geschieht nichts. Nichts geht verloren: ein verworfener Wert bleibt im Profil erhalten.',
+      'La ficha JSON es la fuente; esta carpeta solo sirve para importar o exportar fichas de Little Navmap, cuando usted lo pide: «Sincronizar ahora» compara una vez las fichas y los archivos .lnmperf (una ficha cambiada reescribe su archivo, un archivo cambiado actualiza la ficha). No se hace nada en segundo plano. Nada se pierde: un valor descartado queda guardado en la ficha.'
     ],
     folder: ['Dossier des fichiers .lnmperf', 'Folder of the .lnmperf files', 'Ordner der .lnmperf-Dateien',
       'Carpeta de los archivos .lnmperf'
@@ -47,8 +47,10 @@
     save: ['Enregistrer', 'Save', 'Speichern', 'Guardar'],
     off: ['Arrêter', 'Stop', 'Beenden', 'Detener'],
     now: ['Synchroniser maintenant', 'Synchronise now', 'Jetzt abgleichen', 'Sincronizar ahora'],
-    saved: ['Dossier enregistré : les fiches et les fichiers sont comparés.', 'Folder saved: sheets and files are being compared.',
-      'Ordner gespeichert: Profile und Dateien werden verglichen.', 'Carpeta guardada: se comparan las fichas y los archivos.'
+    saved: ['Dossier enregistré. « Synchroniser maintenant » compare les fiches et les fichiers.',
+      'Folder saved. “Synchronise now” compares the sheets and the files.',
+      'Ordner gespeichert. „Jetzt abgleichen“ vergleicht Profile und Dateien.',
+      'Carpeta guardada. «Sincronizar ahora» compara las fichas y los archivos.'
     ],
     stopped: ['Synchronisation .lnmperf arrêtée.', '.lnmperf synchronisation stopped.', '.lnmperf-Abgleich beendet.',
       'Sincronización .lnmperf detenida.'
@@ -484,8 +486,9 @@
       return state;
     }
 
-    /** Passages automatiques : au démarrage, après chaque synchronisation du cadre, toutes les deux minutes page visible.
-     *  Sans lanceur ni dossier réglé, rien n'est programmé. */
+    /** Passages automatiques : au démarrage, après chaque synchronisation du cadre, toutes les deux minutes page visible. Sans lanceur ni dossier réglé, rien n'est programmé.
+     *  PLUS appelée par aerodb (V3 § 10.35, 5 nov. 2026 : la fiche JSON est l'unique source, .lnmperf n'est qu'un import ou un export à la demande, jamais une synchronisation silencieuse) :
+     *  seul un appelant qui la veut vraiment (un essai, `create({ lnmperf: true })`) la lance. */
     async function start() {
       if (started) return;
       const f = await folder();
@@ -595,7 +598,7 @@ ${f.suggestions?.length ? `<p class="f-muted">${esc(t(T.found))}</p><div class="
             state: r.folder ? state.state : 'off'
           });
           notify(t(r.folder ? T.saved : T.stopped), 'info');
-          if (r.folder && !started) start();
+          // pas de suivi tout seul (V3 § 10.35, 5 nov. 2026) : le dossier réglé ne déclenche aucun passage, « Synchroniser maintenant » en fait un
           return;
         }
         const s = await sync('manual');

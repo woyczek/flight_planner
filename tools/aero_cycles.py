@@ -14,10 +14,11 @@ import os
 import re
 
 REF = datetime.date(2024, 1, 25)  # AIRAC 2401
-CYCLED = {'sia': 'fr', 'nats': 'gb', 'enaire': 'es'}  # source cyclée → sa zone (modules : shared/aero_zones.js, catalogue.js)
+CYCLED = {'sia': 'fr', 'nats': 'gb', 'enaire': 'es', 'airnav': 'ie'}  # source cyclée → sa zone (modules : shared/aero_zones.js, catalogue.js)
 ZONE_SOURCE = {z: s for s, z in CYCLED.items()}
 _SIA = re.compile(r'^(?:AIXM4\.5_all_FR_OM_|XML_SIA_|sia-airspaces-)(\d{4})-(\d{2})-(\d{2})\.xml$', re.I)
 _NATS = re.compile(r'^zones/gb/EG_[A-Za-z0-9_]*?_(\d{4})(\d{2})(\d{2})\.xml$')
+_AIRNAV = re.compile(r'^zones/ie/airnav_ie_enr_(\d{4})(\d{2})(\d{2})\.geojson$')       # la date de l'édition de l'eAIP d'Irlande (tools/airnav_eaip.py)
 _ENAIRE = re.compile(r'^aixm5/LE_[A-Za-z0-9_]*_AIP_DS_FULL_(?:Airspace|EnRoute)\.xml$')
 _VALID = re.compile(rb'<gml:validTime>\s*<gml:TimePeriod[^>]*>\s*<gml:beginPosition>(\d{4})-(\d{2})-(\d{2})')
 ENAIRE_MAX = 64 * 1024 * 1024  # un jeu ENAIRE fait une dizaine de Mo : au-delà, il n'est pas lu pour son cycle
@@ -62,6 +63,9 @@ def cycled(rel, root=None, today=None):
         m = _NATS.match(rel)
         if m:
             return 'nats', airac_start(datetime.date(*map(int, m.groups())))
+        m = _AIRNAV.match(rel)
+        if m:
+            return 'airnav', airac_start(datetime.date(*map(int, m.groups())))
         if root and _ENAIRE.match(rel):
             c = enaire_cycle(os.path.join(root, *rel.split('/')), today)
             return ('enaire', c) if c else None
@@ -86,3 +90,32 @@ def zone_cycle(zone, sources):
     """Le cycle d'une zone : celui de sa source cyclée (report), None si elle n'en a pas ou si aucun fichier ne le dit."""
     s = ZONE_SOURCE.get(zone)
     return sources.get(s, {}).get('cycle') if s else None
+
+
+# ---------------------------------------------------------------------------------------------------------- où sont les XML bruts du SIA (DATA_MAP § 4, lot C2)
+SIA_RAW = re.compile(r'^(?:AIXM4\.5_all_FR_OM_|XML_SIA_|sia-airspaces-)(\d{4}-\d{2}-\d{2})\.xml\Z', re.I | re.A)   # les XML bruts du SIA (la racine de data/sia/ avant le déplacement)
+LOCAL_SOURCES = 'local/sources'                                                                              # data/local/sources/<source>/<cycle>/ : l'emplacement des sources brutes datées (DATA_MAP § 4)
+
+
+def sia_raw_dir(data):
+    """data/local/sources/sia/ : un dossier par cycle (AAAA-MM-JJ), les XML bruts du SIA dedans."""
+    return os.path.join(data, *LOCAL_SOURCES.split('/'), 'sia')
+
+
+def moved_sources(data):
+    """Les XML bruts du SIA de l'emplacement nouveau : { nom: (cycle, chemin absolu) }, le dossier de cycle le plus récent l'emporte pour un même nom. Ni lien, ni nom hors de la règle des
+    XML du SIA, ni dossier de cycle qui n'est pas une date."""
+    out = {}
+    try:
+        cycles = sorted(e.name for e in os.scandir(sia_raw_dir(data)) if e.is_dir(follow_symlinks=False) and re.fullmatch(r'\d{4}-\d{2}-\d{2}', e.name))
+    except OSError:
+        return out
+    for cy in cycles:
+        try:
+            with os.scandir(os.path.join(sia_raw_dir(data), cy)) as it:
+                for e in it:
+                    if SIA_RAW.match(e.name) and not e.is_symlink() and e.is_file(follow_symlinks=False):
+                        out[e.name] = (cy, e.path)
+        except OSError:
+            continue
+    return out

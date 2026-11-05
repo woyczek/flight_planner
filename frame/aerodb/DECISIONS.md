@@ -2439,3 +2439,54 @@ page is served to `Sec-Fetch-Site: none`, refused to `cross-site`, and, where th
   stay read from the charts (`proc_ead` / OCR), as today, and BEPAN comes from ENR 4.4. Cost: one reader and its fixtures, a source entry (personal
   licence until the terms are read), the zone's cycle. Not started: the user's go, and the licence first.
 
+## 5 November 2026 — lot C2: Ireland, Spain's charts, the raw SIA files, the Little Navmap follow
+
+Each decision below is reversible and was taken without asking (the user is away); what to undo is written with it.
+
+### Ireland (zone `ie`): the source, its licence, its fixtures
+
+- **Source `airnav`**, kind download, **personal licence** (published only if the owner declares it, like ENAIRE and NATS): no reuse licence was found. What was read (5 Nov 2026):
+  the eAIP's GEN 0.1 says « The AIP Ireland is published by the AirNav Ireland on behalf of the Civil Aviation Authority of Ireland for EISN FIR », nothing about reuse; the site's
+  disclaimer (`https://www.airnav.ie/disclaimer`) says AirNav Ireland « give no guarantees, undertakings or warranties concerning the accuracy, completeness or up to date nature of the
+  information provided » — about accuracy, not a licence. The eAIP cover page returned no content (a redirect), GEN 1.x and `airnav.ie/publications` were not read. « No licence found » is not
+  permission: the compiled data (`sia/base/ie/…`) stay in the private data repository, never in the code repository; to undo, drop `airnav` from `EXTRA` (`shared/aero_zones.js`,
+  `tools/regen/base_sources.py`) and the zone goes back to openAIP alone.
+- **What it gives and what it does not**: ENR 4.4 points (167) and ENR 3.3 routes (L18, L149, L975, M17, M145, N34, P600, P620, Q36, Q37: 31 segments, with limits and direction remarks left
+  out) — measured on the 29 Oct 2026 issue. **No procedures** (SIDs, STARs, approaches are charts): BEPAN and the SID points of EIDW stay read from the charts; with ENR 4.4 BEPAN is also a point of the zone.
+  The `ie` base had 0 points and 0 airways.
+- **Format**: a GeoJSON of two kinds of Feature (`sog: 'point'`, `sog: 'airway'`), read by `AeroSources.geojson` (K71), written by `tools/airnav_eaip.py` under the date of the edition
+  (`airnav_ie_enr_AAAAMMJJ.geojson`: its cycle, `tools/aero_cycles.py`; `aerodb.CYCLED_ZONES.ie = 'airnav'`). The address of the edition is read on the AIM page, never built (the folders of past
+  issues do not follow one pattern) and checked before any request (K70). The parser is a regular-expression reading of the page's markup (`SP-<ID>-LAT/-LONG`, `Significant-point-description`,
+  `Route-segment-*`): a page that gives no point or no segment is refused and said (« mise en page changée ? »), never written empty.
+- **Fixtures are INVENTED, not an extract of the real pages** (the lot asked for « un extrait réel de deux points et une route »): the code repository is public and `frame/aerodb/test/fixtures/SOURCES.md`
+  forbids another State's text there (each State's copyright; no Irish licence found). They carry the real markup with invented names and coordinates (`TSTAA`, `Z999`). The real pages were read on the
+  workstation only (167 points, 31 segments, 10 routes, no limit missing).
+- **The cycle in force of the zone** is the edition date (`2026-10-29`, an AIRAC date); a NIL cycle (24 Dec 2026) keeps the previous edition's folder, which is exactly its folder name on the site.
+
+### Spain: the launcher fetches alone; the charts
+
+- **The fetch is the one already there** (`aero_fetch.enaire`, K54): the Airspace and EnRoute sets named on the page are fetched at the current amendment (the page lists the set in force; an
+  amendment already present is not fetched again, the previous one is removed); ENAIRE stays a personal-licence source. The cycle is read in the file (see above).
+- **`chartsUrl(icao)`** gives Features SOG the address of the aerodrome page: France (eAIP of the SIA, `FR-AD-2.<ICAO>-fr-FR.html`), Spain (`LE…`, `GC…`: patterns checked on 5 Nov 2026 for LEAM, LEMD, GCLP;
+  a code the AIP does not have gives a page that opens nothing), Ireland (AirNav's AD 2 page of the published edition of the zone `ie`; nothing without it), null elsewhere (K72). It points to the page that
+  lists the charts rather than to one PDF: the names (`LE_AD_2_<ICAO>_<TYPE>_<N>_en.pdf`, `N` a sequence number) are not predictable.
+
+### The raw SIA files leave the root of `data/sia/` (DATA_MAP § 6.2: yes, D4 may move them)
+
+- **Why**: that folder mixed the previous cycle's raw sources with the current base — the user's « toujours périmé ». Now `data/local/sources/sia/<cycle>/` (K73, K74), never tracked, never published.
+- **How it stays safe**: the build **reads the new place and falls back on the old** (the move is not a prerequisite, so nothing breaks before it is done); `base/move-sources` copies, checks the
+  SHA-256, removes the old except a git-tracked file, writes a manifest; `undo` reads it backwards and never overwrites; a different duplicate is a conflict, said; **nothing is purged**. The
+  « kept for 2 cycles, older ones in `_archives/` » of the DATA_MAP is **not** implemented (it would be a purge): to decide.
+- **What changes for the user**: « Prendre le fichier téléchargé » now writes the SIA zip's files under `data/local/sources/sia/<cycle>/`, not at the root of `data/sia/`; the build result says what it was built with
+  (`builtWith`, `previous`, `siaFrom`); « Purger » of France also removes the new folder's files (the user's own action). To undo: `base/move-sources { undo: true, dry: false }`, and `PICKUP['sia']['to']`
+  back to `'sia'`. A file whose date cannot be read has no cycle and is not placed.
+
+### Little Navmap files are no longer followed by themselves (SOG-0023, § 10.35)
+
+- **What it was**: `aerodb.js` loaded `lnmperf.js` and called `start()` 1.5 s after the page on a workstation served by the launcher (every 2 minutes, after every frame synchronisation) and setting the
+  folder started it too: sheets and `.lnmperf` files were compared both ways all the time — a plausible cause of the sheets « remises à jour sans cesse ».
+- **Now**: `create({ lnmperf })` is `false` by default; setting the folder starts nothing; `api.lnmperf()`, the Settings card (« Synchroniser maintenant » = one explicit pass), `download` and the Aircraft
+  module's import and export stay. The card's text says it (4 languages). K75.
+- **For a workstation that relied on it**: a sheet changed in Little Navmap no longer reaches the JSON sheet by itself, and a JSON sheet no longer rewrites its `.lnmperf`: import through the Aircraft
+  module's preview, or export, or press « Synchroniser maintenant ». To undo: `lnmperf: true` in the call to `AeroDB.create` (and the `start()` in `setFolder`).
+

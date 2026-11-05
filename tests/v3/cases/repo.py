@@ -1707,10 +1707,10 @@ def i24(c):
         c.ok([f['error'] for f in r['failed']] == ['not-shown'] and [f['error'] for f in r2['failed']] == ['not-shown'] and not r['taken'] and not r2['taken']
              and not (data / 'sia').exists(), json.dumps([r, r2])[:300], 'zips present, a source not in it: « not-shown », nothing written (zips: {} shows nothing)')
         r = B.pickup(RJ.Job('base', 'pickup', {}), {'zones': ['fr', 'gb'], 'dry': False, 'zips': shown}, ctx)
-        sia, gb = data / 'sia', data / 'sia' / 'zones' / 'gb'
+        sia, gb = data / 'local' / 'sources' / 'sia' / '2026-10-29', data / 'sia' / 'zones' / 'gb'
         c.ok(r['ok'] and (sia / 'AIXM4.5_all_FR_OM_2026-10-29.xml').read_text() == '<aixm/>' and (sia / 'XML_SIA_2026-10-29.xml').is_file()
-             and (gb / 'EG_AIP_DS_FULL_20261029.xml').read_text() == '<nats/>' and not (gb / 'EG_AIP_DS_DIFF_20261029.xml').exists(), json.dumps(r)[:300],
-             'written where the build reads them: data/sia/ for the SIA, data/sia/zones/gb/ for NATS')
+             and (gb / 'EG_AIP_DS_FULL_20261029.xml').read_text() == '<nats/>' and not (gb / 'EG_AIP_DS_DIFF_20261029.xml').exists() and not (data / 'sia' / 'XML_SIA_2026-10-29.xml').exists(), json.dumps(r)[:300],
+             'written where the build reads them: data/local/sources/sia/<cycle>/ for the SIA (lot C2: no longer the root of data/sia/), data/sia/zones/gb/ for NATS')
         c.ok(not (tmp / 'evil.xml').exists() and not (tmp / 'outside.xml').exists() and not list(sia.glob('*.tmp')) and not list(gb.glob('*.tmp')),
              '', 'nothing outside its folder, no .tmp left (an entry\u2019s path is never followed)')
         seen = set(importlib.import_module('regen.base').list_inputs(str(data)))

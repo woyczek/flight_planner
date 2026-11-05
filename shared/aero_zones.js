@@ -74,6 +74,20 @@
       personal: 'licence', // licence d'usage personnel : la case dit qu'elle ne vaut que pour un dépôt à soi
       age: 'file'
     },
+    // eAIP d'Irlande (AirNav Ireland) : ENR 4.4 (points) et ENR 3.3 (routes RNAV) lus par le lanceur (tools/aero_fetch.py airnav → tools/airnav_eaip.py) ;
+    // zones/ie/airnav_ie_enr_AAAAMMJJ.geojson. Aucune licence de réutilisation trouvée sur ses pages : usage personnel (V3, lot C2, 5 nov. 2026)
+    airnav: {
+      kind: 'download',
+      readable: true,
+      provider: 'airnav',
+      label: L4('AirNav Ireland — eAIP Irlande (points et routes RNAV)', 'AirNav Ireland — Irish eAIP (points and RNAV routes)',
+        'AirNav Ireland — eAIP Irland (Punkte und RNAV-Strecken)', 'AirNav Ireland — eAIP Irlanda (puntos y rutas RNAV)'),
+      gives: L4('points désignés (ENR 4.4), routes RNAV (ENR 3.3)', 'designated points (ENR 4.4), RNAV routes (ENR 3.3)',
+        'benannte Punkte (ENR 4.4), RNAV-Strecken (ENR 3.3)', 'puntos designados (ENR 4.4), rutas RNAV (ENR 3.3)'),
+      licence: 'AirNav Ireland (usage personnel)',
+      personal: 'licence', // aucune licence de réutilisation trouvée : la case dit qu'elle ne vaut que pour un dépôt à soi
+      age: 'file'
+    },
     faa: {
       kind: 'download',
       readable: true,
@@ -241,6 +255,7 @@
     fr: ['sia', 'dircam'],
     gb: ['nats', 'ukmil'],
     es: ['enaire'],
+    ie: ['airnav'],
     us: ['faa', 'faaclass'],
     ca: ['navcan']
   };

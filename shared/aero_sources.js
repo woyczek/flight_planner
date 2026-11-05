@@ -706,6 +706,41 @@
     for (const f of feats) {
       const p = f.properties || {},
         g = f.geometry;
+      // points désignés et tronçons de route de l'eAIP d'Irlande (tools/airnav_eaip.py) : `sog: 'point'` (Point) et `sog: 'airway'` (LineString de deux positions)
+      if (p.sog === 'point' && pointOf(g) && typeof p.id === 'string' && p.id) {
+        const [lat, lon] = pointOf(g);
+        out.aero.points.push({
+          id: p.id,
+          type: 'ICAO',
+          lat,
+          lon
+        });
+        continue;
+      }
+      if (p.sog === 'airway' && g?.type === 'LineString' && g.coordinates?.length === 2 && typeof p.route === 'string') {
+        const [
+          [x1, y1],
+          [x2, y2]
+        ] = g.coordinates,
+          lim = v => v === 'UNL' ? Infinity : Number.isFinite(+v) && v !== null ? +v : null;
+        out.aero.airways.push({
+          route: p.route,
+          a: {
+            id: String(p.a || ''),
+            lat: y1,
+            lon: x1
+          },
+          b: {
+            id: String(p.b || ''),
+            lat: y2,
+            lon: x2
+          },
+          lower: lim(p.lower),
+          upper: lim(p.upper),
+          nm: Number.isFinite(+p.nm) ? +p.nm : +(distM([y1, x1], [y2, x2]) / NM).toFixed(1)
+        });
+        continue;
+      }
       // openAIP (identifiant _id, limites en objets, codes numériques)
       if (p._id && (p.upperLimit || p.icaoCode !== undefined || p.trafficType !== undefined || p.identifier !== undefined || p
           .compulsory !== undefined || typeof p.type === 'number')) {
