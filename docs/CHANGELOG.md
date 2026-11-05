@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: airways on the profile, unregulated classes in a light fill, « ceiling deduced »** (`modules/maps/profile.js`,
+  `profile_view.js`, `lib/vertical_profile.js`, `lv.js`, `texts.js`; SPEC § 8.2; noreg D102, D103; SOG-0001). The route's airway
+  legs are named blocks on the cut (floor – ceiling), cut out where a space of a higher class covers them (the most restrictive
+  space wins at each abscissa; a class F space covers nothing). Class E, F and G spaces are a 5 % fill with a thin outline and
+  their label at the lowest rank, after the regulated spaces and the airways. The airspace card says « ceiling deduced (class A
+  above FL180) » when aerodb capped the ceiling.
+
 - **Map: the aerodromes by importance, the symbol by zoom, the airspaces faster** (`modules/maps/lib/aero_symbols.js`, `render.js`,
   `render_airspace.js`, `draw.js`; SPEC § 3; noreg D101). The US at z5 was covered with big symbols: the drawn aerodromes are now
   the first of the view by score (an ICAO code, tower, longest hard runway, runways; one per 12 000 px², about 60 on a desktop screen),

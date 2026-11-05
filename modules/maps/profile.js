@@ -121,7 +121,8 @@
     path = null,
     airspaces = [],
     elevation = null,
-    mora = null
+    mora = null,
+    airways = []
   } = {}) {
     // niveaux des points (cheminement d'une mission : lvl, alt) ; sinon le niveau de croisière au départ
     const own = points.some(p => p.lvl || Number.isFinite(p.alt)),
@@ -168,11 +169,13 @@
       +
       profile
       .tocNm, +profile.todNm);
+    const allMarks = data.marks; // un repère par point, avant le retrait de ceux des procédures : les tronçons de voie s'y lisent
     // les points de procédure tracent la coupe sans se nommer sous elle (les noms et distances sont ceux de la route)
     if (points.some(p => p.noMark)) data.marks = data.marks.filter((m, i) => !points[i].noMark);
     data.terrainOk = terrainOk;
     // règle d'affichage du 25 octobre : pas d'espace de la surface au plafond (SIV, FIR, UIR, secteurs sans limites, SFC → UNL)
     data.crossed = data.crossed.filter(c => !window.SiaAero.surfaceToCeiling(c.a));
+    const regulated = data.crossed; // tous les espaces de la route, avant le tri par la trajectoire : ils recouvrent les voies
     // espaces gardés : ceux où entre la trajectoire prévue (limites ASFC au-dessus du relief) ; sur un téléphone, les
     // autres (au-dessus ou au-dessous du vol) rendent la coupe illisible ; sans trajectoire (pas de niveau) : tous
     const alt = data.plan?.alt,
@@ -192,6 +195,8 @@
       return false;
     });
     data.crossed = families(data.crossed);
+    if (airways?.length) data.crossed = data.crossed.concat(airwayBlocks(data, points, allMarks, airways, regulated)).sort((a, b) => a
+      .i0 - b.i0);
     // MORA des cases traversées (sans relief) : une valeur par échantillon
     if (!terrainOk && mora) {
       const memo = new Map();
@@ -202,6 +207,96 @@
       }
     }
     return data;
+  }
+
+  /** Limite d'une voie (pieds) au format des limites d'espaces : « SFC », « 4500 ft AMSL », « FL065 », « UNL ». */
+  const awLimit = (ft, top) => !(ft > 0) ? top ? 'UNL' : 'SFC' : ft >= 66000 ? 'UNL' : ft >= 5000 ? `FL${String(Math.round(ft / 100)).padStart(3, '0')}` :
+    `${Math.round(ft)} ft AMSL`;
+  /** Rang de restriction d'une classe (A 5 … D 2, E 1 ; F et G 0 : un espace de classe F ne recouvre rien) ; les zones R, P, D et
+   *  assimilées valent une classe C. */
+  const classRank = a => ({
+    A: 5,
+    B: 4,
+    C: 3,
+    D: 2,
+    E: 1
+  })[String(a.cls || '').toUpperCase()] ?? (/^(R|P|D|TSA|TRA|CBA|ZIT)$/i.test(a.type || '') ? 3 : 0);
+  /** Les voies que la route suit, en blocs de coupe (SPEC § 8.2, « Airways on the profile ») : chaque tronçon de la route dont les
+   *  deux points sont les bouts d'un segment de voie (mêmes identifiants et mêmes positions, dans un sens ou l'autre) est un bloc de
+   *  la voie, plancher – plafond du segment ; les tronçons voisins de la même voie aux mêmes limites ne font qu'un. Règle, pas liste :
+   *  à chaque abscisse l'espace le plus restrictif gagne — là où un espace de classe plus haute (A à D, zones R, P, D) recouvre la
+   *  voie, verticalement, la voie n'est pas dessinée ; un espace de classe F ou G ne la recouvre pas. */
+  function airwayBlocks(data, points, marks, airways, regulated) {
+    const SA = window.SiaAero,
+      near = (p, q) => Math.abs(p.lat - q.lat) < .02 && Math.abs(p.lon - q.lon) < .02,
+      idOf = p => String(p?.id ?? p?.name ?? ''),
+      legs = [];
+    for (let k = 1; k < points.length && k < marks.length; k++) {
+      const pa = points[k - 1],
+        pb = points[k],
+        a = idOf(pa),
+        b = idOf(pb);
+      if (!a || !b) continue;
+      const segs = airways.filter(s => s?.a && s?.b && (s.a.id === a && s.b.id === b && near(s.a, pa) && near(s.b, pb) || s.a.id === b &&
+        s.b.id === a &&
+        near(s.a, pb) && near(s.b, pa)));
+      if (!segs.length) continue;
+      // des voies superposées sur le même tronçon : la plus étendue en hauteur
+      const lo = Math.min(...segs.map(s => Number.isFinite(+s.lower) ? +s.lower : 0)),
+        up = Math.max(...segs.map(s => Number.isFinite(+s.upper) ? +s.upper : Infinity)),
+        s0 = marks[k - 1].s,
+        s1 = marks[k].s,
+        i0 = data.samples.findIndex(q => q.s >= s0 - 1),
+        i1 = data.samples.length - 1 - [...data.samples].reverse().findIndex(q => q.s <= s1 + 1);
+      if (i0 < 0 || i1 < i0) continue;
+      const route = String(segs[0].route || '').slice(0, 12);
+      if (!route) continue;
+      const last = legs.at(-1);
+      if (last && last.route === route && last.lo === lo && last.up === up && i0 <= last.i1 + 1) last.i1 = Math.max(last.i1, i1);
+      else legs.push({
+        route,
+        lo,
+        up,
+        i0,
+        i1
+      });
+    }
+    const out = [],
+      limHi = (a, i) => {
+        const v = SA.limitFt(a.upper, true);
+        return Number.isFinite(v) ? (SA.limitRead(a.upper).rel ? data.samples[i].center : 0) + v : Infinity;
+      },
+      limLo = (a, i) => (SA.limitRead(a.lower).rel ? data.samples[i].center : 0) + (SA.limitFt(a.lower, false) || 0);
+    for (const g of legs) {
+      let run = null;
+      const flush = () => {
+        if (run) out.push({
+          a: {
+            type: 'AWY',
+            name: g.route,
+            cls: 'E',
+            lower: awLimit(g.lo, false),
+            upper: awLimit(g.up, true),
+            airway: true
+          },
+          i0: run.i0,
+          i1: run.i1
+        });
+        run = null;
+      };
+      for (let i = g.i0; i <= g.i1; i++) {
+        const covered = regulated.some(c => i >= c.i0 && i <= c.i1 && classRank(c.a) > 1 && limLo(c.a, i) < (g.up > 0 ? g.up :
+          Infinity) && limHi(c.a, i) > g.lo);
+        if (covered) flush();
+        else if (run) run.i1 = i;
+        else run = {
+          i0: i,
+          i1: i
+        };
+      }
+      flush();
+    }
+    return out;
   }
 
   /** Famille d'un nom d'espace : sans son numéro, sa lettre ou son code de secteur en fin (« DUBLIN CTA 3 » → « DUBLIN CTA »,

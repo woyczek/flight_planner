@@ -1926,6 +1926,21 @@ the Map had seen in between: the same line to within the frame's own sampling.
   tiles released (a Terrarium tile of 300 m, written by the case with the standard library) — the profile completed with the relief,
   the note gone. D86 + D87 side by side: 10 in 10, 12 in 12 (they were 8 in 10).
 
+## Airways, unregulated classes and the ceiling deduced on the profile (user, 4–5 Nov 2026)
+
+- **Asked**: show the airways with their names on the profile; where a TMA (class D) crosses an airway (class E), show the TMA; a
+  class F space covers nothing (SOG-0001). Then, on the cut of KSET → KDOV: the class E5 blocks from 1 200 ft to the top of the cut
+  with their labels over TOC / TOD.
+- **Decision**: one rule, « the most restrictive space wins at each abscissa », in the order of the classes (A > B > C > D > E;
+  F and G covering nothing; zones R, P, D as a class C): the airway is a block only where nothing of a higher class covers it. A
+  French route under the CTAs of the ACC (class D from FL115 to FL195) therefore shows few airway blocks: it is the rule at work,
+  not a gap (T544 from Toulouse is covered along its whole length).
+- **Why E, F, G are light and last**: they are not volumes to respect; drawn as the others they hid TOC, TOD and the plan. Their
+  label is the profile's lowest rank, after the airways'.
+- **Data**: aerodb caps the E5 spaces at 17 999 ft (`capped: 'classA'`); the card says so, the profile does not.
+- **Security (audit 157)**: the airway records and airspace limits are read as finite numbers and strings cut to 12 characters
+  (`airwayBlocks`), the card writes the record through `esc`.
+
 ## Aerodromes by importance (user, 5 Nov 2026)
 
 - **Seen by the user**: the US at z5 (KSET → KDOV) covered with dozens of big crossed-circle symbols, 14 px, over the route; in

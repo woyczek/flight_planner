@@ -822,6 +822,26 @@ relative to the ground are raised by the terrain of each sample.
   if given, else 1,000 ft/min at 140 kt up and 800 ft/min at 160 kt down.
 - TOC and TOD are the ends of the cruise.
 
+#### Airways and unregulated classes on the cut (SOG-0001; user, 4–5 Nov 2026)
+
+- **Airways on the profile.** Each leg of the flown path whose two points are the ends of an airway segment (same identifiers,
+  same positions within 0.02°, either direction; the airway read from aerodb for the corridor, `A.airways`) is a block of that
+  airway: type `AWY`, class E by convention, the segment's floor and ceiling (`FL065`, `4500 ft AMSL`, `UNL`), named by the
+  airway alone (« UN460 »); neighbouring legs of the same airway with the same limits are one block (`airwayBlocks`,
+  `profile.js`). A leg flown as a direct (`DCT`) is not an airway leg. No airway block on a mission map.
+- **The most restrictive space wins at each abscissa** (a rule, not a list): the airway is cut out of the abscissae where a space
+  of a higher class than E (A, B, C, D) or a zone R, P, D (valued as a class C) covers it vertically — the cut shows that space, not
+  the airway; a class F or G space covers nothing, a class E one neither. The covering spaces are all those of the route, before
+  the trajectory sorts them. Noreg D102.
+- **Class E, F and G in a light fill.** A space of an unregulated class is drawn at a 5 % fill with a thin 35 % outline, never as
+  a block that looks like a volume to respect; its label is asked at the lowest rank of the profile's pass (`PROFILE_RANK`: plan,
+  constraint, level, zone, **awy**, obstacle, fix, **zoneLow**), after the labels of the regulated spaces and of the airways, one
+  per space. Noreg D103.
+- **« Ceiling deduced »**: aerodb caps a class E space under the floor of class A (US, CA: 18 000 ft) and marks it `capped:
+  'classA'` (its E5 at FL600 is read `17999 ft AMSL`). The airspace card (a touch on the map) writes « plafond déduit (classe A
+  au-dessus de FL180) » (four languages) after the limits and in the row's tooltip; the profile does not. The rule holds for the
+  zones rebuilt with the parser version 21 (aerodb's own state line says so when an older zone is read).
+
 ### 8.3 Terrain unavailable
 
 Offline, or the first tile refused: no terrain; the MORA of each 1° cell crossed (`aerodb.mora`) is drawn as a dashed

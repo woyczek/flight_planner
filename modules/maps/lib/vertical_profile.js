@@ -476,6 +476,7 @@
     TMA: '#1565c0',
     CTA: '#3949ab',
     SIV: '#2e7d32',
+    AWY: '#3949ab',
     RMZ: '#555',
     TMZ: '#555'
   };
@@ -658,16 +659,20 @@
       }
       for (let i = i1; i >= i0; i--) ctx.lineTo(X(data.samples[i].s), Y(lo(i)));
       ctx.closePath();
-      ctx.globalAlpha = .13;
+      // une classe non réglementée (E, F, G) se dessine en fond léger, sans contour fort : elle ne se confond pas avec un espace qu'il
+      // faut respecter (SPEC § 8.2) ; une voie et un espace réglementé gardent leur dessin
+      const soft = !a.airway && /^[EFG]$/i.test(String(a.cls || ''));
+      ctx.globalAlpha = soft ? .05 : .13;
       ctx.fillStyle = col;
       ctx.fill();
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = soft ? .35 : 1;
       ctx.strokeStyle = col;
-      ctx.lineWidth = 1.2 * scale;
+      ctx.lineWidth = (soft ? .8 : 1.2) * scale;
       // plafond illisible : la bande monte au haut de la coupe, mais bord pointillé (elle n'est pas « UNL »)
       if (!window.SiaAero.limitRead(a.upper, true).ok) ctx.setLineDash([4 * scale, 3 * scale]);
       ctx.stroke();
       ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
       const mid = Math.round((i0 + i1) / 2);
       let entered = false;
       if (strictLabels && data.plan?.alt)
@@ -677,12 +682,14 @@
         xb = zoomed ? Math.min(W - padR, X(data.samples[i1].s)) : X(data.samples[i1].s);
       labels.push({
         entered,
+        soft,
+        rank: a.airway ? 'awy' : soft ? 'zoneLow' : 'zone',
         col,
         x: zoomed ? (xa + xb) / 2 : X(data.samples[mid].s),
         y0: Y(hi(mid)),
         y1: Y(lo(mid)),
         // un nom qui porte déjà son type (« TMA BARCELONA AREA 1 ») s'écrit comme un nom français : le type une fois
-        text: (n => abbrev ? n : `${a.type} ${n}`)(String(a.name ?? '').toUpperCase().startsWith(`${String(a.type ?? '').toUpperCase()} `) ?
+        text: a.airway ? String(a.name) : (n => abbrev ? n : `${a.type} ${n}`)(String(a.name ?? '').toUpperCase().startsWith(`${String(a.type ?? '').toUpperCase()} `) ?
           String(a.name).slice(String(a.type).length + 1) : a.name),
         sub: limits ? `${a.lower || 'SFC'} – ${a.upper || 'UNL'}` : '',
         xa,
@@ -757,7 +764,8 @@
       y1: iT + f * 1.6
     } : null;
     if (more) pl.add(more); // la case « +n » : réservée avant tout
-    for (const l of labels.sort((a, b) => strictLabels ? (b.entered - a.entered) || (b.w - a.w) : b.w - a.w)) {
+    // les classes non réglementées en dernier : leurs étiquettes passent après celles des espaces à respecter
+    for (const l of labels.sort((a, b) => (a.soft - b.soft) || (strictLabels ? (b.entered - a.entered) || (b.w - a.w) : b.w - a.w))) {
       const w = Math.max(ctx.measureText(l.text).width, ctx.measureText(l.sub).width) + 8 * scale,
         hgt = f * (l.sub ? 2.3 : 1.4);
       /** Abscisse d'étiquette ramenée dans le cadre. */
@@ -782,7 +790,7 @@
         near = r => r.x1 > l.xa && r.x0 < l.xb && r.y1 >= yT - hgt - 4 * scale && r.y0 <= l.y1 + hgt + 4 * scale;
       // sans place : en mode strict il n'est pas posé (« +n »), sinon il l'est quand même à la première place
       const r = placedZones >= maxLabels ? null : ask({
-        rank: 'zone',
+        rank: l.rank,
         key: `zone:${l.text}|${l.sub}|${Math.round(l.xa)}`,
         boxes: strictLabels ? cands.filter(c => ok(c) && near(c)) : [...cands.filter(ok), cands[0]],
         force: strictLabels ? false : 'reserve'

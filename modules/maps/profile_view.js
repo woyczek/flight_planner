@@ -106,6 +106,9 @@ export async function buildProfile() {
     // sauf quand la couche « Autres espaces » est allumée sur la carte (utilisateur, 29 octobre : « la pollution par les CTA »)
     if (!onMission() && !layersNow().asOther) airspaces = airspaces.filter(a => !profileNoise(a));
   }
+  // les voies que la route suit : leurs segments au long de la route (coupe : bloc de la voie, SPEC § 8.2) ; pas sur une carte de mission
+  const airways = A && !onMission() ? await many(A.airways, corridorBoxes(pts, 2, null)).catch(() => []) : [];
+  if (!S) return;
   S.terrain ||= SiaProfile.terrainSampler(9, tileLoader(S.ctx));
   // la route modifiée sur la carte (by 'maps') : le profil de Carburant est périmé jusqu'au devis refait ; by est le dernier
   // auteur de tout l'enregistrement (le cadre y écrit progress.actual, by 'frame'), seul 'maps' périme le profil ; un
@@ -116,6 +119,7 @@ export async function buildProfile() {
       profile: stale ? null : f?.profile || null,
       path: stale ? null : f?.profile?.path || null, // la trajectoire de Carburant sous les contraintes des procédures
       airspaces,
+      airways,
       elevation,
       mora: A && withMora ? (lat, lon) => A.mora(lat, outLon(lon)) : null
     }),
@@ -207,7 +211,7 @@ export function drawProfile() {
 }
 /** La liste fermée des priorités de la coupe (SPEC § 3) : TOC / TOD, contraintes des procédures choisies, paliers, espaces,
  *  obstacles, points des voies ; la case « +n » des espaces est réservée avant tout. */
-const PROFILE_RANK = new Map(['plan', 'constraint', 'level', 'zone', 'obstacle', 'fix'].map((k, i) => [k, i]));
+const PROFILE_RANK = new Map(['plan', 'constraint', 'level', 'zone', 'awy', 'obstacle', 'fix', 'zoneLow'].map((k, i) => [k, i]));
 /** Un tour de la passe de la coupe (ctx, placeur pl) : la coupe (SiaProfile), les contraintes, les marques NM au bas du cadre, les
  *  points des voies ; rend la géométrie, avec cons (contraintes dessinées), ticks (marques NM) et fixes (points des voies
  *  écrits). */

@@ -137,8 +137,10 @@ export function levelsHtml(list, bw = 360, bh = 200, also = [], el = null) {
     const x = r.a,
       name = [x.type, x.name].filter(Boolean).join(' '),
       lim = x.lower == null && x.upper == null ? '' : `${MapsRender.siaLimit(x.lower)}|${MapsRender.siaLimit(x.upper)}`,
-      tail = [lim, x.cls].filter(Boolean).join(' · '),
-      note = [x.act, x.info].filter(Boolean).join(' · ');
+      // « plafond déduit » : dit dans la fiche (un toucher), jamais sur la coupe (la valeur vient d'aerodb, qui plafonne la classe E sous la A)
+      deduced = x.capped === 'classA' ? tt(TX.ceilingDeduced) : '',
+      tail = [lim, x.cls, deduced].filter(Boolean).join(' · '),
+      note = [x.act, x.info, deduced].filter(Boolean).join(' · ');
     return `<li${note ? ` title="${esc(note)}"` : ''}><span class="mp-lv-n" style="color:${r.col}">${i + 1}</span><span class="mp-lv-txt"><b class="mp-lv-name">${esc(name)}</b>${tail ? `<span class="mp-lv-lim f-muted">${esc(tail)}</span>` : ''}</span></li>`;
   }).join('');
   const fam = sameFamilyOverlap(list, read) ? `<p class="f-muted mp-lv-fam">${esc(tt(TX.levelsFamily))}</p>` : '';

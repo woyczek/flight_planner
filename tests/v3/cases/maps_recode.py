@@ -2914,3 +2914,84 @@ def d101(c):
     c.ok(0 < r['n'] <= r['cap'], f"{r['n']} drawn, cap {r['cap']} ({r['W']}×{r['H']})", 'no more aerodromes than one per 12 000 px² of the view')
     c.ok(r['small'] == 0 or r['big'] >= r['inView'], f"{r['big']} big / {r['small']} small, {r['inView']} big in view", 'a small strip is drawn only when every big one in view is')
 
+
+# ------------------------------------------------------------------------------------------------------ D102
+def _awy_flight():
+    """P1 → P4 along 45°N (lon −0.5 … 3.5), level 8 000 ft; the airway AW1 follows the four legs (6 500 – 19 500 ft)."""
+    f = flight()
+    f['route'] = {'text': 'P1 P2 P3 P4', 'dep': '', 'arr': '', 'points': [{'id': f'P{i + 1}', 'lat': 45.0, 'lon': -0.5 + i * 1.333} for i in range(4)]}
+    f['level'] = {'ft': 8000}
+    return f
+
+
+def _awy_rows():
+    ring = lambda la0, la1, lo0, lo1: [[la0, lo0], [la0, lo1], [la1, lo1], [la1, lo0], [la0, lo0]]
+    zones = [{'type': 'TMA', 'cls': 'D', 'name': 'COVER TMA 1', 'lower': '2000 ft AMSL', 'upper': 'FL115', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]},
+             {'type': 'TMA', 'cls': 'F', 'name': 'FREE TMA 2', 'lower': '2000 ft AMSL', 'upper': 'FL150', 'rings': [ring(44.6, 45.4, 1.9, 2.4)]}]
+    segs = [{'route': 'AW1', 'a': {'id': f'P{i}', 'lat': 45.0, 'lon': -0.5 + (i - 1) * 1.333}, 'b': {'id': f'P{i + 1}', 'lat': 45.0, 'lon': -0.5 + i * 1.333},
+             'lower': 6500, 'upper': 19500, 'nm': 56.0} for i in range(1, 4)]
+    return zones, segs
+
+
+@case('D102', 'Airways on the profile: the route’s airway is a named block, hidden under a class D space, not under a class F one', 'D',
+      tags=('maps', 'sheet'), designs=('standard',), night=False, screens=False,
+      rule='user (SOG-0001, 4–5 Nov 2026), SPEC § 8.2: each leg of the route whose two points are the ends of an airway segment is a block of that airway (name, floor, ceiling), neighbouring legs of one airway in one block; at each abscissa the most restrictive space wins — where a space of a higher class (A to D, zones R, P, D) covers the airway vertically it is not drawn, a class F space covers nothing')
+def d102(c):
+    zones, segs = _awy_rows()
+    c.open('maps', docs=fdocs(_awy_flight()) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airspaces=zones, airways=segs, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.prof && window.__mp.S.prof.crossed.some(x => x.a.airway))", timeout=15000, what='the profile with the airway’s blocks')
+    r = c.js("""() => { const cr = window.__mp.S.prof.crossed, tma = cr.find(x => /COVER TMA/.test(x.a.name)), fr = cr.find(x => /FREE TMA/.test(x.a.name));
+      return { awy: cr.filter(x => x.a.airway).map(x => ({ n: x.a.name, i0: x.i0, i1: x.i1, lo: x.a.lower, up: x.a.upper })), tma: tma && [tma.i0, tma.i1], free: fr && [fr.i0, fr.i1] } }""")
+    c.ok(r['tma'] is not None, f'{r}', 'the class D space is drawn')
+    c.eq([a['n'] for a in r['awy']], ['AW1', 'AW1'], 'the airway is two blocks, named: before and after the class D space (the F space cuts nothing)', what=f'{r}')
+    a, b = r['awy'][0], r['awy'][1]
+    c.ok(a['i1'] < r['tma'][0] and b['i0'] > r['tma'][1], f'{r}', 'no airway block under the class D space, whose abscissae it does not use')
+    c.ok(r['free'] is not None and b['i0'] <= r['free'][0] and b['i1'] >= r['free'][1], f'{r}', 'the class F space does not interrupt the airway')
+    c.eq((a['lo'], a['up']), ('FL065', 'FL195'), 'floor and ceiling are the segment’s', what=f'{a}')
+
+
+# ------------------------------------------------------------------------------------------------------ D103
+_PROF_PASS = """() => { const A = window.SiaAero; if (!A.__d103) { const o = A.pass; A.__d103 = 1;
+  A.pass = function (ctx, run, rankOf) { const got = [];
+    const out = o.call(this, ctx, (c, pl, first) => first ? run(c, pl, first) : run(c, new Proxy(pl, { get(t, k) {
+      if (k === 'ask') return req => { const r = t.ask(req); got.push({ layer: req.layer, rank: req.rank, key: String(req.key || ''), placed: !!r }); return r };
+      const v = t[k]; return typeof v === 'function' ? v.bind(t) : v } }), first), rankOf);
+    if (got.some(x => x.layer === 'profile')) window.__profPass = got;
+    return out } } return true }"""
+
+
+@case('D103', 'Unregulated classes in the profile: class E in a light fill with one label at the lowest rank, after the spaces to respect; « ceiling deduced » in the card', 'D',
+      tags=('maps', 'sheet'), designs=('standard',), night=False, screens=False,
+      rule='user (KSET → KDOV, 5 Nov 2026), SPEC § 8.2: a class E, F or G space is drawn in a light fill, without a strong outline, with one label at the profile’s lowest rank (after TOC / TOD, the constraints, the levels, the regulated spaces and the airways); the label of a regulated space is asked first; « ceiling deduced (class A above FL180) » is written in the airspace card when aerodb says capped: classA, never on the profile')
+def d103(c):
+    c.page.add_init_script("(() => { const t = setInterval(() => { if (window.SiaAero && window.SiaAero.pass) { clearInterval(t); (" + _PROF_PASS + ")() } }, 5) })()")
+    ring = lambda la0, la1, lo0, lo1: [[la0, lo0], [la0, lo1], [la1, lo1], [la1, lo0], [la0, lo0]]
+    zones = [{'type': 'CTA', 'cls': 'E', 'name': 'WEST VIRGINIA CLASS E5', 'lower': '1200 ft ASFC', 'upper': '17999 ft AMSL', 'capped': 'classA',
+              'rings': [ring(44.6, 45.4, -0.2, 2.4)]},
+             {'type': 'TMA', 'cls': 'D', 'name': 'REGULATED TMA 1', 'lower': '2000 ft AMSL', 'upper': 'FL115', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]}]
+    c.open('maps', docs=fdocs(_awy_flight()), flight=False, airspaces=zones, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.prof && window.__mp.S.prof.crossed.some(x => /E5/.test(x.a.name)))", timeout=15000, what='the profile with the class E space')
+    c.wait(500)
+    c.js("() => { window.__mp.S.prof = Object.assign({}, window.__mp.S.prof); return true }")
+    ask = c.js("() => window.__profPass || []")
+    zs = [x for x in ask if x['rank'] in ('zone', 'zoneLow')]
+    low = [x for x in zs if x['rank'] == 'zoneLow']
+    reg = [x for x in zs if x['rank'] == 'zone']
+    c.ok(len(low) >= 1 and len(reg) >= 1, f'{zs}', 'the class E space asks at the lowest rank, the class D one at the regulated rank')
+    c.ok(all(x['key'].find('E5') >= 0 for x in low) and all(x['key'].find('E5') < 0 for x in reg), f'{zs}', 'one label per space, the E5 under zoneLow only')
+    last_reg = max(i for i, x in enumerate(zs) if x['rank'] == 'zone')
+    first_low = min(i for i, x in enumerate(zs) if x['rank'] == 'zoneLow')
+    c.ok(first_low > last_reg, f'{[x["rank"] for x in zs]}', 'the regulated labels are asked before the class E label')
+    # the card: a touch lists the spaces; « ceiling deduced » when aerodb capped the ceiling, in the card only
+    txt = c.js("""async () => { const S = window.__mp.S, lv = await import('/modules/maps/lv.js');
+      S.lvList = (S.data.data.airspaces || []).filter(a => /E5/.test(a.name)); S.lvAlso = []; if (!S.lvList.length) S.lvList = [{ type: 'CTA', name: 'WEST VIRGINIA CLASS E5', cls: 'E', lower: '1200 ft ASFC', upper: '17999 ft AMSL', capped: 'classA' }];
+      lv.showLv(); await new Promise(r => setTimeout(r, 300)); return { card: S.dbodyEl.innerText, strip: S.stripEl ? S.stripEl.textContent : '' } }""")
+    pat = r'plafond déduit|ceiling deduced|Obergrenze abgeleitet|techo deducido'
+    import re
+    c.ok(re.search(pat, txt['card'], re.I) is not None, f"{txt['card']!r}", 'the airspace card says the ceiling is deduced')
+    c.ok(re.search(pat, txt['strip'], re.I) is None, f"{txt['strip']!r}", 'and the profile does not')
+

@@ -595,6 +595,10 @@ export const TX = {
   vfrPart: ['(certaines peuvent n\'être qu\'une partie d\'un itinéraire)', '(some may be only part of a route)',
     '(manche sind möglicherweise nur ein Teil einer Route)', '(algunas pueden ser solo una parte de un itinerario)'
   ],
+  // AeroDB plafonne un espace de classe E sous le plancher de la classe A (capped: 'classA') : le plafond est déduit, pas publié
+  ceilingDeduced: ['plafond déduit (classe A au-dessus de FL180)', 'ceiling deduced (class A above FL180)',
+    'Obergrenze abgeleitet (Klasse A über FL180)', 'techo deducido (clase A por encima de FL180)'
+  ],
   levelsFamily: ['Secteurs d’une même famille qui se recouvrent : donnée de la source',
     'Overlapping sectors of one family: as given by the source',
     'Sich überlappende Sektoren einer Familie: Angabe der Quelle', 'Sectores de una misma familia que se solapan: dato de la fuente'
