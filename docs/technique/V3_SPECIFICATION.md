@@ -1648,3 +1648,51 @@ redesigned for touch at that point.
        default provider gitlab in the export, framagit not proposed; V3 Frame: the journal line (one line on the
        existing listener). Cases A for each; help ×4 (the Maintenance manual's "Administration" chapter and the Pilot
        manual's "Rejoindre la compagnie").
+
+   37. **Three designs before any code: statistics, in-flight guidance, curves per altitude** (user, 5 Nov, iCloud note
+       "BUGS": "tu peux reprendre la main [sur le FuelDashboard] et l'intégrer à la suite, dans un module de statistiques (qui
+       intègrera les statistiques de landing, et les stats de vol, éventuellement par compagnie). je ne sais pas si ces stats
+       remplacent « compagnie » ou si ce seront deux modules distincts" ; 4 Nov: "sur l'écran « en vol » (écran 5) […] cap au
+       XXX, descendez au FL120, 2000ft/min [NOW/dans 10nm/dans 5mn/il y a 3 mn]" ; 5 Nov: "plusieurs courbes rpm/conso par
+       altitude, en palier. charge à l'utilisateur de les extrapoler pour les phases taxi, climb, T/O, descent, land").
+       Ergonomics decisions of 5 Nov; lots after the candidate of 5 Nov; nothing coded tonight.
+       **A — Statistics is a module of the Compagnie application, beside Missions, not a replacement** (`modules/stats/`,
+       owner Features SOG). One door: Compagnie › Statistiques; the pilot's own figures are the same screen with the filter
+       "moi" (no second module in Pilote). Seven elements at most on the screen: flights, hours, fuel, landings, sheet gap,
+       and two filters (aircraft or type, pilot or airline, period). **Sources, one each**: flights and hours from the flight
+       log (modules/flightlog: reports and the website log); landings from the landing CSVs the V2 dashboard already reads
+       (the reader of `apps/landing` is reused as a pure function, the V2 page stays until the module covers it); fuel from the
+       **per-flight aggregates written in the report** (phase totals: taxi, take-off, climb, cruise, descent, approach,
+       landing — kg, minutes, mean flow and rpm per phase). **Raw samples never travel**: the Fuel Phase Monitor's CSV
+       (one line per second from the LUA script: time, position, altitude, speeds, n1 / rpm, throttle, fuel, flow) is
+       dropped by the pilot into the report's "Mesures" step on the workstation and read locally (`cache` policy, never
+       published, never in git); the report keeps the aggregates only. **The sheet gap** is a per-flight figure: for each
+       cruise window, the sheet's flow at the measured rpm and altitude against the measured flow, in percent; it is shown in
+       the report, in Statistiques and in Appareils › fiche ("écart mesuré sur 12 vols : +4 %"), and it is what SOG-0015
+       needed. The FuelDashboard itself is not ported as a page: its phase detection (by throttle and vertical speed) and its
+       window statistics become one pure module of Features SOG (`modules/stats/phases.js`), tested on the user's real CSV;
+       the V2 dashboard stays in its folder as a fallback until the report's step exists. Open question left to the user, not
+       to the lot: whether Compagnie › Statistiques is visible to every pilot or to the administrator only (default: every
+       pilot, their airline's figures).
+       **B — In-flight guidance is one line, not a screen of instruments** (screen 5 of the Pilot application, owner Features
+       SOG for the data, the screen in modules/fuel's "En vol" step). The vertical plan (SOG-0008: top of climb, top of
+       descent, intermediate levels, the STAR's constraints of SOG-0003) is a list of *instructions* with a place on the route:
+       heading to the next point, target level, vertical speed from the sheet. With a position (the network tracker or
+       X-Plane through the launcher), the screen shows **one instruction**, the current one, in one sentence — "Cap 245 ·
+       descendez FL120 · 2 000 ft/min · dans 10 NM" — and the next one dimmed under it; the tense is computed from the
+       distance and ground speed: NOW under 1 NM or 30 s, "dans n NM" beyond 3 NM, "dans n min" between, "il y a n min"
+       when passed and not acknowledged (a touch acknowledges). Without a position: the whole list with distances from the
+       departure, no tense. No sound, no modal, one refresh per second, the sentence changes only when its words change.
+       The same instructions are the points of SOG-0008 on the profile and the map: one source (the route model), three
+       readers. Lot after lot A (the single writer of the flight state) and lot B (the points on both profiles).
+       **C — Curves per altitude in a sheet** (owner Features SOG, model in `modules/aircraft/`, computation in
+       modules/fuel). A sheet gains `cruise.curves`: a list of `{ altitudeFt, points: [{ rpm | n1, flowKgH, tasKt }] }`,
+       level flight only; within one altitude the points are sorted by rpm and the flow is **monotone** (the editor refuses
+       otherwise, with the sentence of SOG-0015: "débit à 6 700 rpm supérieur à celui de 7 250 rpm"); between two altitudes
+       the computation interpolates on the altitude, within a curve on the rpm, and says which two points it used when the
+       user asks ("Source"). Taxi, take-off, climb, descent and landing keep their single values of today: the user
+       extrapolates them (the user's words), the application never invents them. "Proposer depuis les mesures" fills a
+       curve from the per-flight aggregates of A (cruise windows at steady rpm and altitude), shown as a proposal the user
+       accepts line by line, never written alone; the lnmperf import maps its single cruise line to one curve at the sheet's
+       cruise altitude. Density stays per fuel type (SOG-0011, `fuel_units.js`), not per sheet. Lot after A (the figures)
+       and after SOG-0015's correction of the S210 sheet.
