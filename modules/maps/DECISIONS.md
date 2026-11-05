@@ -1943,6 +1943,19 @@ the Map had seen in between: the same line to within the frame's own sampling.
   the view shows what was drawn. The wall is pushed back, not removed: a faster pan still shows an empty band until the full drawing.
   Noreg D97 (the canvas is the view plus 5 %, a pan of 4 % both ways shows no empty band, no label drawn wholly outside the view).
 
+## One writer of the route and the level (ergonomics, 5 Nov 2026; SOG-0013, SOG-0004)
+
+- **Seen**: the old plan came back between the screens, the level typed in Fuel was lost: `current_flight.json` had two writers of
+  `route` and `level`, Fuel and `edit.js` (`saveRoute`), each rewriting its whole copy.
+- **Decision** (the ergonomics session, with Features SOG): one writer in `frame/lib/current_flight.js` — `setRoute(data, path, ch,
+  { by })`, `changesOf(base, mine)`, `routeBase(record)`, `applyChanges`; a module writes only what it changed since it read (its
+  base). The Map becomes reader and emitter of changes: `edit.js` `saveRoute` keeps no copy of the field, it calls `setRoute` with
+  `changesOf(S.route.base, { route, level })`; the base is taken at every reading of the flight (`readFlight`, `progressOnly`) and
+  renewed from the record `setRoute` returns. Nothing else changes in `edit.js`.
+- **Noreg** D109 (a level and a route key written by fuel between the Map's gesture and its write are kept; the gesture is
+  written; `route.procedures` stays fuel's), D30 (the merge rules: wind, via, alt_ft, quote, profile, progress untouched), F88
+  (Features SOG: two writers).
+
 ## Three cases red in the evening pass of 5 Nov 2026, put right (D12, D38, D83)
 
 - **D38** (axis_window bench): it still said the old rule 20 (« the wheel alone: nothing »); it now checks the amended rule — the

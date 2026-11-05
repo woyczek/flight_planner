@@ -226,8 +226,11 @@ keeps the module and fuel scrolls to that step).
 - `route.points[].alt_ft` follows fuel's INTEGRATION § 3 (fuel lot C): the level held from that point on, never on
   the first or the last point; the flight leaves at `level.ft`; a point without it keeps the previous level. The
   profile then draws the steps and computes TOC and TOD per segment.
-- **Writes** of the Edit mode go through `frame/lib/current_flight.js` `merge`, on the record read just before, with
-  `by: 'maps'`; the map writes `level.ft` when the first segment's level changed and **merges into `route`**: `points`, `text`,
+- **Writes** of the Edit mode go through the one writer of `frame/lib/current_flight.js` (5 Nov 2026, SOG-0013 / SOG-0004):
+  `setRoute(ctx.data, path, changesOf(base, { route, level }), { by: 'maps' })`, `base` = `routeBase(record)` of the record as the Map
+  read it (`S.route.base`, renewed by each reading and by the record `setRoute` returns): only the route keys the Map changed and
+  the level when it changed are written, on the record read just before, so what fuel wrote between stays; formerly `merge` on
+  the whole `route` and the level, from the Map's own copy. The record carries `by: 'maps'`; the map writes `level.ft` when the first segment's level changed and **merges into `route`**: `points`, `text`,
   `distanceNm`, `trackDeg`, `from: 'points'`, `manual: false`; every other key of `route` is kept, **`procedures` as it is** (fuel's choice: the
   map never writes nor removes it; fuel sets to "none" the side whose aerodrome no longer matches `route.dep` / `route.arr` at its
   next write, and the readers check the aerodrome), `wind` removed from the points that moved, `via` / `awy` kept on the points

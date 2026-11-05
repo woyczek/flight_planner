@@ -3173,3 +3173,29 @@ def d108(c):
     c.ok(r['w'] and r['w'] > 40, f'{r}', 'close up the name is wide (the case means something)')
     c.eq([x['cut'] for x in r['ad']], [False], 'the name is not crossed by the route', what=f'{r}')
 
+
+# ------------------------------------------------------------------------------------------------------ D109
+@case('D109', 'One writer of the route: the Map writes what it changed since it read, what another module wrote meanwhile stays', 'D',
+      tags=('overlay', 'maps'), screens=False, designs=('standard',),
+      rule='ergonomics, 5 Nov 2026 (SOG-0013, SOG-0004), SPEC § 12: edit.js writes through frame/lib/current_flight.js setRoute with changesOf(base, mine), base = the route and level as the Map read them; a level typed in Fuel and a key written by Fuel between the Map’s reading and its write are kept; by is « maps »')
+def d109(c):
+    f = flight()
+    f['route']['procedures'] = {'sid': _SID, 'star': _STAR_OTHER}
+    c.open('maps', docs=fdocs(f), flight=False)
+    c.ready('maps', sheet=True)
+    hook_map(c)
+    c.js(_STATE_JS)
+    c.tap('[data-mp="edit"]')
+    c.until("document.querySelector('[data-mp=edit]').getAttribute('aria-pressed') === 'true'", what='Edit becomes pressed')
+    a = xy(c, 44.9, 2.4)                                   # NEPIX
+    mouse_drag(c, a, (a[0] + 45, a[1] + 35))
+    # Fuel writes meanwhile (before the Map’s write, 400 ms after its gesture): a new level and a key of its own in the route
+    c.js("""async (p) => { const S = window.__mp.S, r = await S.ctx.data.get(p);
+      r.level = { ...(r.level || {}), ft: 31000 }; r.route = { ...r.route, fuelNote: 'from fuel' }; r.by = 'fuel'; r.updated_at = new Date(Date.now() + 2000).toISOString();
+      await S.ctx.data.put(p, r); return true }""", PATH)
+    doc = c.until_doc(PATH, lambda d: d and d.get('by') == 'maps' and COORD.match(d['route']['points'][2]['id'] or ''), what='the moved point written', timeout=8000)
+    c.ok(COORD.match(doc['route']['points'][2]['id']), f"{doc['route']['points'][2]}", 'the Map’s gesture is written')
+    c.eq(doc['route'].get('fuelNote'), 'from fuel', 'a key of the route that fuel wrote between is kept', what='route.fuelNote')
+    c.eq((doc.get('level') or {}).get('ft'), 31000, 'the level fuel typed is kept (the Map changed none)', what='level.ft')
+    c.eq(doc['route'].get('procedures'), f['route']['procedures'], 'route.procedures stays fuel’s', what='procedures')
+

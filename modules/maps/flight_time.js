@@ -19,7 +19,8 @@ import {
 import {
   isStarted,
   etaOf,
-  plannedPositionAt
+  plannedPositionAt,
+  routeBase
 } from '../../frame/lib/current_flight.js';
 import {
   fmtZ,
@@ -94,7 +95,8 @@ export function progressOnly(f) {
   S.route = {
     ...S.route,
     flight: f,
-    updated: f?.updated_at || ''
+    updated: f?.updated_at || '',
+    base: routeBase(f)
   };
   progressUpdate();
   schedule();

@@ -17,7 +17,8 @@ import {
   expandedPath,
   flownPath,
   loadProcedures,
-  proceduresOf
+  proceduresOf,
+  routeBase
 } from '../../frame/lib/current_flight.js';
 import {
   effectiveProfile,
@@ -82,7 +83,8 @@ async function readFlight() {
     points: pts,
     altn,
     levelFt: +f?.level?.ft || 0,
-    updated: f?.updated_at || ''
+    updated: f?.updated_at || '',
+    base: routeBase(f) // la route et le niveau tels que la Carte les a lus : ce qu'elle écrit, c'est ce qu'elle en a changé (SOG-0013)
   };
 }
 /** Points de la carte et du profil d'après l'enregistrement du vol : longitudes continues (une route Sibérie → Alaska va de

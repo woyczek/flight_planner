@@ -1,7 +1,7 @@
 // V3 maps — le mode Édition (modules/maps/SPEC.md § 12), chargé au premier appui sur « Édition » (meta.lazy) : déplacer un
 // point tournant (appui à 22 px, posé sur un point à 20 px ou libre), ajouter (« + » armé, appui long), la carte d'un point
 // (niveau, « Retirer »), les paliers glissés sur le profil, « Annuler » ; chaque geste montré tout de suite, l'enregistrement
-// du vol fusionné 400 ms après le dernier (frame/lib/current_flight.js merge, by 'maps').
+// du vol écrit 400 ms après le dernier par le seul écrivain de frame/lib/current_flight.js (setRoute, ce que la Carte a changé depuis sa lecture, by 'maps').
 
 import {
   S,
@@ -23,7 +23,9 @@ import {
   icaoCoord
 } from '../../frame/lib/route_text.js';
 import {
-  merge
+  setRoute,
+  changesOf,
+  routeBase
 } from '../../frame/lib/current_flight.js';
 import {
   TX
@@ -206,36 +208,30 @@ function commit(points, levelFt = null) {
   buildProfile();
   // écriture 400 ms après le dernier geste ; le démontage l'envoie tout de suite (S.edit.flush)
   const ctx = S.ctx,
-    path = flightPath();
+    path = flightPath(),
+    base = S.route.base; // ce que la Carte a lu : seul ce qu'elle en a changé est écrit
   clearTimeout(S.edit.saveT);
   S.edit.flush = () => {
     S && (S.edit.saveT = 0, S.edit.flush = null);
-    return saveRoute(ctx, path, route, levelFt > 0 ? levelFt : null, rec.updated_at);
+    return saveRoute(ctx, path, base, {
+      route: rec.route,
+      level: rec.level ?? null
+    });
   };
   S.edit.saveT = setTimeout(S.edit.flush, 400);
 }
-/** Écrit la route (montage ctx, chemin path) sur la dernière version lue de l'enregistrement : fusion dans route (ses autres clés gardées), level.ft si
- *  le premier tronçon a changé ; rien d'autre (progress, quote, profile sont à Carburant ou au cadre). */
-async function saveRoute(ctx, path, route, levelFt, at) {
+/** Écrit ce que la Carte a changé de la route et du niveau depuis sa lecture (base : routeBase de l'enregistrement lu ; mine : sa copie),
+ *  par le seul écrivain de frame/lib (setRoute : relit l'enregistrement, applique les clés de route changées et le niveau s'il a changé,
+ *  by 'maps') : ce qu'un autre module a écrit entre-temps reste (SOG-0013, SOG-0004) ; rien d'autre (progress, quote, profile sont à
+ *  Carburant ou au cadre, route.procedures à Carburant). La base repart de l'enregistrement rendu. */
+async function saveRoute(ctx, path, base, mine) {
   try {
-    const cur = (await ctx.data.get(path).catch(() => null)) || {},
-      next = merge(cur, {
-        route: {
-          ...(cur.route || {}),
-          ...route
-        },
-        ...(levelFt ? {
-          level: {
-            ...(cur.level || {}),
-            ft: levelFt
-          }
-        } : {})
-      }, {
-        fields: levelFt ? ['route', 'level'] : ['route'],
-        by: 'maps'
-      });
-    next.updated_at = at; // la version montrée : la vue vivante ne reprend qu'une version plus récente
-    await ctx.data.put(path, next);
+    const ch = changesOf(base, mine);
+    if (!ch) return;
+    const next = await setRoute(ctx.data, path, ch, {
+      by: 'maps'
+    });
+    if (S?.ctx === ctx && S.route) S.route.base = routeBase(next);
   } catch (e) {
     ctx.notify?.(ctx.t(TX.saveFailed, {
       m: e?.message || String(e)
