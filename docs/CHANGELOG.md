@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the drawing overflows the view by 5 % on each side** (`modules/maps/draw.js`, `render.js`, `procs.js`; SPEC § 5; noreg D97). A pan
+  of up to a twentieth of the view no longer shows an empty band before the full drawing: lines and symbols are painted over the
+  overflow, the labels stay in the view. At 10 % the drawing at rest cost 2 to 5 ms more, 5 % costs under 1.5 ms.
+
 - **Profile: the wheel zooms** (`modules/maps/lib/axis_window.js`; SPEC § 8.6; noreg D24, D107; SOG-0005). Above the profile's plot the
   wheel alone zooms around the pointer when the profile sits in no scrolling page (the sheet, the map), Ctrl + wheel and the pinch as
   before, the plain wheel stays the page's in a page that scrolls; a horizontal wheel moves the tight window.

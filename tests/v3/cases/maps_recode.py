@@ -1068,7 +1068,7 @@ def d45(c):
     # the pixels: the centre of each symbol (a runway symbol filled with its colour)
     px = c.js("""() => { const S = window.__mp.S, k = S.canvas.width / S.canvas.clientWidth, g = S.canvas.getContext('2d'), out = {};
       for (const h of S.adHits) { if (!['LFAB', 'LFAC', 'LFAD'].includes(h.a.icao)) continue;
-        const d = g.getImageData(Math.round(h.x * k), Math.round(h.y * k), 1, 1).data; out[h.a.icao] = [d[0], d[1], d[2]] } return out }""")
+        const d = g.getImageData(Math.round((h.x - S.canvas.offsetLeft) * k), Math.round((h.y - S.canvas.offsetTop) * k), 1, 1).data; out[h.a.icao] = [d[0], d[1], d[2]] } return out }""")  # the overlay overflows the view (D97): its pixel of a view point is offset
     c.eq({k: _level_of(v) for k, v in px.items()}, {'LFAD': 'green', 'LFAB': 'orange', 'LFAC': 'red'},
          'the drawn symbols are green, orange and red', what=f'pixels {px}')
     c.eq(c.doc('cache/maps/ui.json')['layers'].get('vfr', {}).get('cov'), True, 'the box is kept on the device like the others', what='ui.json')
@@ -2806,6 +2806,35 @@ def d96(c):
     c.eq((jumps, hidden), (0, []), 'the sheet neither changes height nor disappears while the data and the profile are rebuilt', what=f'sheet heights {shown[:12]}')
     c.ok(r['gen'] >= 5 and r['fresh'], f"generation {r['gen']}, fresh {r['fresh']}", 'each arrival was read again, the last one is shown')
 
+
+# ------------------------------------------------------------------------------------------------------ D97
+_FRAME_COVER = """() => { const S = window.__mp.S, F = S.frame, r = S.box.getBoundingClientRect(), a = S.map.project(F.g0), b = S.map.project(F.g1);
+  return { a: [a.x, a.y], b: [b.x, b.y], W: r.width, H: r.height, cw: S.canvas.clientWidth, ch: S.canvas.clientHeight } }"""
+
+
+@case('D97', 'No invisible wall: the drawing overflows the view by 5 % on each side, a pan of 4 % shows no empty band before the redraw', 'D',
+      tags=('maps',), designs=('standard',), night=False,
+      rule='user, 1 Nov 2026 (« prévoir 10 % de débordement sur les côtés … éviter l’effet mur invisible »), SPEC § 5: the full and the light drawings paint lines and symbols over the view plus 10 % on each side, the data read included; the labels stay in the view (a request keeps only its places that touch it); the gesture copies that image, so a pan of 5 % of the width shows what was already drawn beyond the edge')
+def d97(c):
+    c.open('maps', docs=fdocs(flight()), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.map && window.__mp.S.drawn && window.__mp.S.frame && window.__mp.S.frame.ok)", timeout=15000,
+            what='the map drawn')
+    c.wait(400)
+    f = c.js(_FRAME_COVER)
+    c.ok(abs(f['cw'] - f['W'] * 1.1) <= 2 and abs(f['ch'] - f['H'] * 1.1) <= 2, f'{f}', 'the overlay is the view plus 5 % on each side')
+    c.ok(f['a'][0] <= -f['W'] * .045 and f['b'][0] >= f['W'] * 1.045 and f['a'][1] <= -f['H'] * .045 and f['b'][1] >= f['H'] * 1.045, f'{f}',
+         'the last full image reaches 5 % beyond every edge of the view')
+    z = c.js("() => { const S = window.__mp.S, r = S.box.getBoundingClientRect(); return { n: (S.zoneHits || []).length, out: (S.zoneHits || []).filter(h => !(h.x1 > 0 && h.x0 < r.width && h.y1 > 0 && h.y0 < r.height)).length } }")
+    c.eq(z['out'], 0, 'no label drawn wholly outside the view (labels do not overflow)', what=f"airspace labels outside, of {z['n']}")
+    # a pan of 4 % of the width, both ways, the redraw held off: the copied image still covers the whole view
+    for sign in (1, -1):
+        g = c.js("""(k) => { const S = window.__mp.S, r = S.box.getBoundingClientRect(); S.map.panBy([k * r.width * .04, k * r.height * .04], { animate: false });
+          const F = S.frame, a = S.map.project(F.g0), b = S.map.project(F.g1); return { a: [a.x, a.y], b: [b.x, b.y], W: r.width, H: r.height } }""", sign)
+        c.ok(g['a'][0] <= 0 and g['a'][1] <= 0 and g['b'][0] >= g['W'] and g['b'][1] >= g['H'], f'{g}',
+             f'after a pan of 4 % ({"left" if sign > 0 else "right"}), before any redraw, no empty band at an edge')
+        c.wait(600)
 
 # ------------------------------------------------------------------------------------------------------ D98
 @case('D98', 'The light drawing of a gesture follows the chosen SID, never the plain route it replaces', 'D',

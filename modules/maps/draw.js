@@ -154,22 +154,33 @@ function light() {
     {
       W,
       H,
-      dpr
+      dpr,
+      mx,
+      my,
+      CW,
+      CH
     } = sizeCanvas(),
     c = S.canvas,
     g = c.getContext('2d');
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.clearRect(0, 0, c.width, c.height);
+  // tout le canvas, débordement compris : la projection de la vue décalée de (mx, my)
   drawLight(g, S.lightPaths, {
-    project: ll => S.map.project(ll),
+    project: ll => {
+      const q = S.map.project(ll);
+      return {
+        x: q.x + mx,
+        y: q.y + my
+      };
+    },
     zoom: S.map.getZoom(),
-    W,
-    H,
+    W: CW,
+    H: CH,
     dpr,
     pal: MapsRender.palette(!!S.theme.dark),
     paper: S.theme.bg
   });
-  markFrame(W, H);
+  markFrame(W, H, mx, my);
   copyFrame();
   sched.lastLight = performance.now();
   performance.measure('maps:light', 'maps:light:start');
@@ -195,19 +206,21 @@ function follow() {
   performance.mark('maps:follow:start');
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.clearRect(0, 0, c.width, c.height);
-  g.drawImage(F.bmp, a.x * dpr, a.y * dpr, (b.x - a.x) * dpr, (b.y - a.y) * dpr);
+  g.drawImage(F.bmp, (a.x + (F.mx || 0)) * dpr, (a.y + (F.my || 0)) * dpr, (b.x - a.x) * dpr, (b.y - a.y) * dpr);
   performance.measure('maps:follow', 'maps:follow:start');
 }
 /** Note les deux coins géographiques de l'image qui vient d'être dessinée (le haut gauche et le bas droit de la carte) : deux
  *  unproject, rien n'est copié (l'image l'est au premier mouvement d'un geste, copyFrame). */
-function markFrame(W, H) {
+function markFrame(W, H, mx = 0, my = 0) {
   if (!S.map) return;
   const F = S.frame ||= {},
-    p0 = S.map.unproject([0, 0]),
-    p1 = S.map.unproject([W, H]);
+    p0 = S.map.unproject([-mx, -my]),
+    p1 = S.map.unproject([W + mx, H + my]);
   F.g0 = [p0.lng, p0.lat];
   F.g1 = [p1.lng, p1.lat];
-  F.W = W;
+  F.W = W + 2 * mx; // la largeur CSS du canvas (débordement compris)
+  F.mx = mx;
+  F.my = my;
   F.ok = true;
 }
 /** Copie l'image de la carte (celle des coins notés par markFrame) pour qu'elle suive le geste. */
@@ -234,27 +247,86 @@ const loadOutlines = () => outlinesP ||= baseOutlines(S.ctx.aerodb).then(() => S
 });
 
 // ---------------------------------------------------------------- projection et taille
-/** Taille du canvas de surcouche à celle de la carte (pixels de l'écran) : { W, H, dpr }. La surcouche a la taille de son
- *  bitmap, jamais « 100 % » du cadre : pendant qu'un doigt tient la feuille, le cadre change de taille sans redessin et un
- *  bitmap étiré déformerait la route. */
+/** Débordement du dessin de chaque côté de la vue (5 % de sa largeur, de sa hauteur : à 10 % le dessin au repos coûtait 2 à 5 ms de plus, SPEC § 5) : un déplacement montre ce qui était déjà
+ *  dessiné au-delà du bord, jamais un « mur » vide jusqu'au redessin (retour de l'utilisateur du 1/11, SPEC § 5) ; les étiquettes n'y vont pas (render.js). */
+const OVER = .05;
+/** Taille du canvas de surcouche (pixels de l'écran) : la vue W × H et son débordement mx, my de chaque côté → { W, H, dpr, mx, my, CW,
+ *  CH } ; le canvas a CW × CH (W + 2 mx, H + 2 my) et commence à (−mx, −my) de la vue (le cadre le rogne). Il a la taille de son
+ *  bitmap, jamais « 100 % » du cadre : pendant qu'un doigt tient la feuille, le cadre change de taille sans redessin et un bitmap
+ *  étiré déformerait la route. */
 function sizeCanvas() {
   const c = S.canvas,
     r = S.box.getBoundingClientRect(),
     dpr = Math.min(3, window.devicePixelRatio || 1),
     W = Math.max(1, Math.round(r.width)),
-    H = Math.max(1, Math.round(r.height));
-  if (c.width !== Math.round(W * dpr) || c.height !== Math.round(H * dpr)) {
-    c.width = Math.round(W * dpr);
-    c.height = Math.round(H * dpr);
+    H = Math.max(1, Math.round(r.height)),
+    mx = Math.round(W * OVER),
+    my = Math.round(H * OVER),
+    CW = W + 2 * mx,
+    CH = H + 2 * my;
+  if (c.width !== Math.round(CW * dpr) || c.height !== Math.round(CH * dpr)) {
+    c.width = Math.round(CW * dpr);
+    c.height = Math.round(CH * dpr);
   }
-  if (c.style.width !== `${W}px`) c.style.width = `${W}px`;
-  if (c.style.height !== `${H}px`) c.style.height = `${H}px`;
+  for (const [k, v] of [
+      ['width', `${CW}px`],
+      ['height', `${CH}px`],
+      ['left', `${-mx}px`],
+      ['top', `${-my}px`]
+    ])
+    if (c.style[k] !== v) c.style[k] = v;
   return {
     W,
     H,
-    dpr
+    dpr,
+    mx,
+    my,
+    CW,
+    CH
   };
 }
+/** Le débordement (mx, my) ajouté à une projection de la vue : la projection du canvas. */
+const shiftTo = (f, mx, my) => (lat, lon) => {
+  const p = f(lat, lon);
+  return {
+    x: p.x + mx,
+    y: p.y + my
+  };
+};
+/** Rectangle ou point du canvas ramené à la vue (−mx, −my), ou l'inverse (k = −1) : x, y, x0, x1, y0, y1 quand ils y sont. */
+const moved = (o, mx, my, k = 1) => {
+  if (!o || typeof o !== 'object') return o;
+  const out = {
+    ...o
+  };
+  for (const a of ['x', 'x0', 'x1'])
+    if (Number.isFinite(out[a])) out[a] -= k * mx;
+  for (const a of ['y', 'y0', 'y1'])
+    if (Number.isFinite(out[a])) out[a] -= k * my;
+  return out;
+};
+/** Le placeur de la passe vu en coordonnées de la vue (les dessins de l'écran : procédures, choix, pistes) : leurs demandes
+ *  décalées dans le canvas, les places rendues ramenées à la vue. */
+const viewPlacer = (pl, mx, my) => !pl || !(mx || my) ? pl : {
+  ask: req => {
+    const got = pl.ask({
+      ...req,
+      boxes: (req.boxes || []).map(r => moved(r, mx, my, -1)),
+      paint: req.paint && (r => req.paint(moved(r, mx, my)))
+    });
+    return got && moved(got, mx, my);
+  },
+  add: (r, rank) => pl.add(moved(r, mx, my, -1), rank),
+  free: r => pl.free(moved(r, mx, my, -1)),
+  take: r => pl.take(moved(r, mx, my, -1))
+};
+/** Emprise d'une vue élargie de sa part de débordement de chaque côté (le canvas). */
+const widen = (b, fx, fy) => ({
+  w: b.w - (b.e - b.w) * fx,
+  e: b.e + (b.e - b.w) * fx,
+  s: Math.max(-85, b.s - (b.n - b.s) * fy),
+  n: Math.min(85, b.n + (b.n - b.s) * fy)
+});
 /** Étendue en longitude de la route déroulée (points et dégagement) : { w, e } ; null sans route. Gardée tant que les points
  *  ne changent pas. */
 function routeSpan() {
@@ -434,20 +506,41 @@ function draw() {
   const {
     W,
     H,
-    dpr
+    dpr,
+    mx,
+    my,
+    CW,
+    CH
   } = sizeCanvas(), {
-    toC,
-    raw: toRaw,
-    shown
-  } = view(W, H), raw = S.canvas.getContext('2d'), t = S.theme, ctx = MapsRender.themed(raw, t), mission = onMission(), L = layersNow();
-  raw.setTransform(dpr, 0, 0, dpr, 0, 0);
-  raw.clearRect(0, 0, W, H);
+      toC,
+      raw: toRaw,
+      shown
+    } = view(W, H), raw = S.canvas.getContext('2d'), t = S.theme, ctx = MapsRender.themed(raw, t), mission = onMission(), L = layersNow(),
+    // le canvas déborde de la vue (OVER de chaque côté) : le noyau dessine en coordonnées du canvas (toCs, CW × CH, wide) ; ce que
+    // l'écran dessine lui-même (procédures, choix, pistes, TOC / TOD, vents, position) reste en coordonnées de la vue, le contexte
+    // décalé (inView), comme les listes de toucher
+    toCs = shiftTo(toC, mx, my),
+    wide = widen(shown, mx / W, my / H),
+    inView = () => raw.setTransform(dpr, 0, 0, dpr, dpr * mx, dpr * my),
+    onCanvas = () => raw.setTransform(dpr, 0, 0, dpr, 0, 0),
+    screen = fn => fn && ((c, pl) => {
+      c.save();
+      c.translate(mx, my);
+      try {
+        return fn(c, viewPlacer(pl, mx, my));
+      } finally {
+        c.restore();
+      }
+    });
+  onCanvas();
+  raw.clearRect(0, 0, CW, CH);
   if (S.plain && !window.MAPS_OUTLINES) loadOutlines(); // fond uni confirmé (pas de tuiles) : pas pendant leur chargement
-  if (!S.map) drawPlain(ctx, toRaw, W, H, {
+  if (!S.map) drawPlain(ctx, shiftTo(toRaw, mx, my), CW, CH, {
     sea: t.page,
     land: t.bg,
     border: t.grid
   });
+  inView();
   // la route que le chemin garde (une STAR raccordée sur un de ses points court-circuite les suivants)
   const route = mission ? S.route.points : keptRoute(S.route.points),
     altn = mission || L.altn ? S.route.altn : null;
@@ -480,12 +573,17 @@ function draw() {
     onReady: schedule,
     load: S.tileLoad ||= tileLoader(S.ctx)
   });
+  onCanvas();
   const got0 = MapsRender.draw(ctx, {
-    toC,
-    W,
-    H,
+    toC: toCs,
+    W: CW,
+    H: CH,
+    view: {
+      W,
+      H
+    },
     scale: 1,
-    bbox: shown,
+    bbox: wide,
     profile: S.profile,
     data: S.data?.data || {},
     // choix sur la carte : le terrain du choix porte son code par-dessus le voile (choose.js) ; la route estompée ne le répète pas
@@ -503,17 +601,17 @@ function draw() {
     cov,
     coverZoom: COVER_ZOOM,
     runwayZoom: S.runwayZoom,
-    reserve: pick ? pl => pick.reserve(pl) : procs ? pl => procs.reserve(pl) : null,
+    reserve: pick ? pl => pick.reserve(viewPlacer(pl, mx, my)) : procs ? pl => procs.reserve(viewPlacer(pl, mx, my)) : null,
     legs: mission || pick ? null : S.route?.path || null,
     dim: pick ? DIM : 0,
-    overRoute: pick ? (c, pl) => pick.paint(c, pl) : procs ? c => drawProcs(c, procs) : null,
+    overRoute: screen(pick ? (c, pl) => pick.paint(c, pl) : procs ? c => drawProcs(c, procs) : null),
     // les pistes (vecteurs de seuil et numéros) dans la couche des terrains, priorité « terrains » de la passe de collision
-    runways: rwys.length ? (c, pl) => drawRunways(c, rwys, pl) : null,
-    runwayLabels: rwys.length ? (c, pl) => reserveRunways(c, rwys, pl) : null,
+    runways: rwys.length ? screen((c, pl) => drawRunways(c, rwys, pl)) : null,
+    runwayLabels: rwys.length ? screen((c, pl) => reserveRunways(c, rwys, pl)) : null,
     adName: !mission && !pick && zReal >= S.runwayZoom ? a => adTitle(a, a.icao) : null,
-    top: pick ? c => pick.top(c) : procs ? c => drawProcLabels(c, procs) : null,
+    top: screen(pick ? c => pick.top(c) : procs ? c => drawProcLabels(c, procs) : null),
     // TOC et TOD : leurs noms dans la passe (rang route), glissés le long de la trace ; pas pendant le choix sur la carte
-    plan: pick ? null : planMarks(ctx, toC),
+    plan: pick ? null : planMarks(ctx, toCs),
     // les terrains de la route et le dégagement : leur nom est la seule boîte de leur point (SPEC § 3)
     onRoute: [...route.map(p => p.id), altn?.id],
     mission: mission && S.mission ? {
@@ -528,16 +626,22 @@ function draw() {
     ...got0.light,
     route: S.route.flown?.length > 1 ? S.route.flown : route
   };
-  S.awHits = got0.airways || [];
+  // les listes de toucher ramenées du canvas à la vue
+  const back = l => (l || []).map(o => moved(o, mx, my));
+  S.awHits = back(got0.airways);
   stat(got0.zoom);
-  S.zoneHits = got0.zoneLabels || [];
-  S.adHits = got0.aerodromes || [];
+  S.zoneHits = back(got0.zoneLabels);
+  S.adHits = back(got0.aerodromes);
   if (!mission && !pick) wantDrawnRunways(zReal); // les pistes des terrains dessinés, de près
-  S.navHits = got0.navaids || [];
-  S.vrpHits = got0.vrps || [];
+  S.navHits = back(got0.navaids);
+  S.vrpHits = back(got0.vrps);
+  inView();
   // mode choix : rien par-dessus les procédures à choisir (ni dégagement, ni TOC / TOD, ni points de report, ni vents, ni position)
   if (altn && !pick) drawAltn(ctx, toC, altn, true, !S.adHits.some(h => h.a.icao === altn.id));
-  if (!pick) drawPlanOnMap(ctx, toC, got0.plan || []); // TOC / TOD : leurs noms là où la passe les a posés
+  if (!pick) drawPlanOnMap(ctx, toC, (got0.plan || []).map(p => ({
+    ...p,
+    r: p.r && moved(p.r, mx, my)
+  }))); // TOC / TOD : leurs noms là où la passe les a posés
   if (!mission && !pick) drawVfr(ctx, toC);
   S.windHits = !mission && !pick && L.wind && zoomOn('wind') ? drawWinds(ctx, toC) : [];
   if (!mission && !pick && isStarted(S.route.flight)) drawProgress(ctx, toC);
@@ -547,10 +651,11 @@ function draw() {
     S.drawn = true;
     performance.mark('maps:first-draw'); // premier dessin avec les données (mesures : DECISIONS.md)
   }
-  const want = wantBox(shown),
+  // les données couvrent le débordement aussi (le couloir autour du vol dans sa limite)
+  const want = wantBox(wide),
     corr = corridorFor(shown, W);
   if (!within(want, S.data?.box) || corr !== S.data?.corridor || !fresh()) refresh(want, corr);
-  markFrame(W, H);
+  markFrame(W, H, mx, my);
   performance.measure('maps:draw', 'maps:draw:start');
 }
 /** Zoom effectif et éléments gardés par les seuils, posés sur l'élément de la carte (data-zoom-eff, data-kept : § 18) ; écrits

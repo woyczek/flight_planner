@@ -1097,7 +1097,10 @@
     return `${Math.floor(h / 10)}${SUP[h % 10]}`;
   };
 
-  function drawGridMora(ctx, cells, toC, b, W, H, scale, pl, profile) {
+  function drawGridMora(ctx, cells, toC, b, W, H, scale, pl, profile, edge = {
+    x: 0,
+    y: 0
+  }) {
     const gridColor = el(profile, 'graticuleColor'),
       span = Math.min(b.n - b.s, b.e - b.w),
       gs = on(profile, 'graticule') ? gridStep(span) : 0;
@@ -1136,7 +1139,7 @@
         ctx.moveTo(p.x, p.y);
         ctx.lineTo(q.x, q.y);
         ctx.stroke();
-        if (labels) gridLabel(geoLabel(lon), p.x, 8 * scale + font / 2, 'center');
+        if (labels) gridLabel(geoLabel(lon), p.x, edge.y + 8 * scale + font / 2, 'center'); // au bord de la vue, pas du canvas
       }
       for (const lat of gridValues(b.s, b.n, gs)) {
         const p = toC(lat, b.w),
@@ -1145,7 +1148,7 @@
         ctx.moveTo(p.x, p.y);
         ctx.lineTo(q.x, q.y);
         ctx.stroke();
-        if (labels) gridLabel(geoLabel(lat, true), 4 * scale, p.y, 'left');
+        if (labels) gridLabel(geoLabel(lat, true), edge.x + 4 * scale, p.y, 'left');
       }
       ctx.restore();
     }
@@ -1396,7 +1399,10 @@
     // (signé) de q, null hors de la trace ; leur nom est une demande de la passe (rang route), l'écran peint losange et nom
     plan = null,
     // onRoute : les codes des terrains de la route et du dégagement (SPEC § 3, un terrain écrit une fois) ; null : ceux de route
-    onRoute = null
+    onRoute = null,
+    // view : { W, H } la taille de la vue quand le canevas déborde (10 % de chaque côté) : le zoom effectif est celui de
+    // la vue ; null : W × H (SPEC § 5)
+    view = null
   }) {
     if (!A()) throw new Error('maps: SiaAero missing');
     // le thème ne vit que le temps du dessin (§ 10.29 e) : posé ici, remis à null en sortie (draw) ; les parties le reçoivent
@@ -1413,14 +1419,30 @@
       // droite ; detailZoom), puis corrigé par la taille du cadre (effectiveZoom) ; carte de mission : tout ce que son
       // profil montre (ni curseur ni taille) ; vol : les seuils de zoom de chaque élément se comparent à ce zoom effectif
       zs = zoomOf(toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x) + detailZoom(detail),
-      zv = mission ? zs : effectiveZoom(zs, W, H),
+      zv = mission ? zs : effectiveZoom(zs, view?.W ?? W, view?.H ?? H),
       tier = tierOf(pxOfZoom(zv));
     profile = migrated(profile); // l'ancien airwayLabels lu comme awLabels (§ 10.29 g)
     if (!mission) profile = atZoom(profile, zv);
     const shown = mission ? data : byZoom(data, profile, zv, tier);
     // une seule passe de collision (SiaAero.pass, SPEC § 3) : les couches sont jouées deux fois, un tour muet qui recense les
     // étiquettes, puis le dessin, chaque étiquette à la place que la liste fermée des priorités (RANK) lui a donnée
-    return A().pass(ctx, layered, r => RANK.get(r));
+    // le canvas déborde de la vue (view) : les traits et les symboles y sont dessinés (pas de « mur » au déplacement), les étiquettes
+    // non — une demande n'a que les places qui touchent la vue (elles glissent de toute façon, et le dessin d'après le geste les
+    // repose) ; la passe d'étiquettes est la part chère du dessin (SPEC § 5)
+    const vx = view ? (W - view.W) / 2 : 0,
+      vy = view ? (H - view.H) / 2 : 0,
+      seen = r => r.x1 > vx && r.x0 < W - vx && r.y1 > vy && r.y0 < H - vy,
+      inView = pl => !(vx > 0 || vy > 0) ? pl : {
+        // une demande dont toutes les places touchent la vue passe telle quelle (pas de copie : la passe est la part chère)
+        ask: req => (req.boxes || []).every(r => r && seen(r)) ? pl.ask(req) : pl.ask({
+          ...req,
+          boxes: (req.boxes || []).filter(r => r && seen(r))
+        }),
+        add: (r, rank) => pl.add(r, rank),
+        free: r => pl.free(r),
+        take: r => pl.take(r)
+      };
+    return A().pass(ctx, (c, pl, first) => layered(c, inView(pl), first), r => RANK.get(r));
 
     /** Les couches de la carte dans l'ordre de dessin de la SPEC § 3 (§ 10.29 d), sur le placeur pl de la passe : chacune { id,
      *  reserve(), paint(ctx), bare } ; les demandes des reserve() d'abord, puis les dessins (l'ordre d'appel ne décide plus des
@@ -1534,7 +1556,10 @@
         paint: c => zoneLabels = PA.drawZones(c, shown.airspaces || [], toC, W, H, scale, pl, profile, 'labels')
       }, {
         id: 'gridMora',
-        paint: c => drawGridMora(c, shown.moraCells, toC, bbox, W, H, scale, pl, profile)
+        paint: c => drawGridMora(c, shown.moraCells, toC, bbox, W, H, scale, pl, profile, view ? {
+          x: (W - view.W) / 2,
+          y: (H - view.H) / 2
+        } : undefined)
       }, {
         id: 'missionZones',
         paint: c => drawMissionZones(c, mission?.zones, toC, scale, pl, profile)

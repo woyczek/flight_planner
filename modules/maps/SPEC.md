@@ -311,6 +311,17 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   slot of `requestAnimationFrame` for every kind (a full request outranks a light one). A full drawing only notes its two
   geographic corners (`markFrame`, two `unproject`); its bitmap is copied once, at the first move of a gesture (`copyFrame`),
   and after each light drawing — no longer after every full drawing at rest.
+- **The drawing overflows the view** (user, 1 Nov 2026: « un mur » at the edge while panning, until the full drawing): the overlay
+  canvas is the view plus `OVER` = 5 % of its width and height on each side (`sizeCanvas`, 1.21 times the area), placed at
+  (−mx, −my) and clipped by the map box. The full and light drawings paint lines and symbols (airspaces, airways, route, aerodromes,
+  beacons, obstacles, grid) over the whole canvas, so a pan of up to a twentieth of the view shows what was already drawn and the edge
+  wall is gone. **Labels do not overflow**: the collision pass keeps only label requests with a place in the view (`render.js`,
+  the pass's placer filtered to the view). A label slides along its line or its point while the view moves anyway, and the full
+  drawing at the end of the gesture places them all again; labels drawn outside would cost their measurements and collisions,
+  which are the drawing's heavy part, for an image that shows them a fraction of a second, and would take places from the labels
+  in the view. What is drawn on the screen's own coordinates (procedures, choices, runways, the plan's marks, hit lists for taps
+  and tooltips) stays in view coordinates; `effectiveZoom` and the thinning read the view's size, never the canvas's. Cost, A/B
+  side by side (24 drawings per view, real base): see DECISIONS « The drawing overflows the view ».
 - **Base map**: MapLibre loaded at the first map (`lib/map_base.js`); the mode's base style (OpenFreeMap `positron` by
   default, `liberty` in VFR and Topo; VersaTiles styles when a profile names one); `dark` at night (VersaTiles
   `eclipse`). With no network, no WebGL, an error, or no style after 10 s, the plain background: sea, land and borders

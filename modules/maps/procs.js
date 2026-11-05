@@ -326,6 +326,7 @@ export function layout(ctx, toC, pxDeg, zoomOn = null) {
         ctx.font = '700 12px Arial,sans-serif';
         const w = ctx.measureText(n.text).width,
           r = place(pl, n.qs, w + 2, LINE_H, true); // glissé le long de sa trace, forcé seulement sans aucune place
+        if (!r) continue; // toutes ses places hors de la vue (le débordement du dessin n'a pas d'étiquette) : pas écrit
         // « ⌛ » en gris (jeton muted), le nom dans la couleur des procédures
         const tail = n.old ? ` ${OUTDATED}` : '';
         L.labels.push({

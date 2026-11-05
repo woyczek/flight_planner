@@ -1926,6 +1926,23 @@ the Map had seen in between: the same line to within the frame's own sampling.
   tiles released (a Terrarium tile of 300 m, written by the case with the standard library) — the profile completed with the relief,
   the note gone. D86 + D87 side by side: 10 in 10, 12 in 12 (they were 8 in 10).
 
+## The drawing overflows the view (user, 1 Nov 2026; measured 5 Nov)
+
+- **Asked**: « prévoir 10 % de débordement sur les côtés … éviter l'effet mur invisible » — a pan showed an empty band at the edge
+  until the full drawing came back.
+- **Done**: the overlay canvas is the view plus `OVER` on each side (`draw.js` `sizeCanvas`), placed at (−mx, −my) and clipped by
+  the map box; lines and symbols are painted over all of it, the labels only in the view (the pass's placer keeps the places that
+  touch the view: they slide anyway and the full drawing at the end of the gesture places them again). The hit lists and the screen's
+  own drawings (procedures, choice, runways, the plan's marks) stay in view coordinates.
+- **Cost, at rest** (A/B side by side, 24 drawings per view, the real base, VFR, the ergonomics session's rule: median unchanged
+  within 0.5 ms, worst under 16 ms except Paris z9, already above before): the overflow at **10 %** costs +2.2 ms (Paris z9), +4.7
+  (Paris z10), +4.0 (Toulouse z9) — the rule does not hold; at **5 %** +0.0 to +1.4 ms, inside the run-to-run drift of this machine
+  (the reference itself moved from 15.3 to 18.3 ms between two runs); at 3 % the same. A canvas 1.21 times the view's area instead of
+  1.44.
+- **Decision** (the ergonomics session's option (a), taken here, reversible by `OVER`): **5 %**, so a pan of up to a twentieth of
+  the view shows what was drawn. The wall is pushed back, not removed: a faster pan still shows an empty band until the full drawing.
+  Noreg D97 (the canvas is the view plus 5 %, a pan of 4 % both ways shows no empty band, no label drawn wholly outside the view).
+
 ## The wheel on the profile (SOG-0005; ergonomics, 5 Nov 2026)
 
 - **Seen**: « le zoom sur une portion de profil ne semble pas efficace ». The gesture worked (Ctrl + wheel, pinch, double tap), but
