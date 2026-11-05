@@ -2201,3 +2201,27 @@ def f86(c):
     c.tap(f'{FUEL} [data-do="newflight"]')
     c.settle()
     c.eq(c.count('.f-modal'), 0, 'an empty flight: no question', what='no question')
+
+
+@case('F87', 'A route name the base does not know but the chosen SID carries is resolved; an unknown name says when the zone has no points',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0012 (EIDW BEPA4E BEPAN: BEPAN unknown though the SID is read): the points of the chosen procedures are a fallback of the '
+      'route text after aerodb; a name still unknown near an aerodrome around which the base has no published point says so (the zone '
+      'is missing, not the point)')
+def f87(c):
+    open_proc(c, procs=V2_PROCS)
+    wait_rows(c, 'dep')
+    # NT102, the last point of the chosen SID NTS1A, is in no base: the SID gives its position
+    c.page.fill(f'{FUEL} [data-k="rtext"]', 'LFRS NTS1A NT102 NEPIX LFML')
+    c.page.press(f'{FUEL} [data-k="rtext"]', 'Tab')
+    f = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and any(p['id'] == 'NT102' for p in d['route'].get('points') or []),
+                    'NT102 is a point of the route', timeout=10000)
+    nt = next(p for p in f['route']['points'] if p['id'] == 'NT102')
+    c.eq([round(nt['lat'], 3), round(nt['lon'], 3)], [46.8, -1.35], 'at the position the SID gives', what='NT102')
+    c.until("!(document.querySelector('[data-module=fuel] [data-unres]')?.textContent || '').trim()", what='no « Points inconnus » line')
+    # a name nobody knows, around LFRS where the seeded base has no published point: the zone is said
+    c.page.fill(f'{FUEL} [data-k="rtext"]', 'LFRS QQQQQ NEPIX LFML')
+    c.page.press(f'{FUEL} [data-k="rtext"]', 'Tab')
+    tail = norm(row(c, 'noPointsNear').replace('{icao}', 'LFRS').replace('{st}', 'LF'))
+    c.until("(w) => (document.querySelector('[data-module=fuel] [data-unres]')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w)",
+            tail.strip(), timeout=10000, what='QQQQQ unknown: the line says the zone around LFRS has no point')

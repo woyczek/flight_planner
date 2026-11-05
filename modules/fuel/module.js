@@ -298,6 +298,12 @@ const TX = {
   ptUnknown: ['Point inconnu : {id}', 'Unknown point: {id}', 'Unbekannter Punkt: {id}', 'Punto desconocido: {id}'],
   steps: ['Paliers', 'Steps', 'Stufen', 'Escalones'],
   unresolved: ['Points inconnus : {l}', 'Unknown points: {l}', 'Unbekannte Punkte: {l}', 'Puntos desconocidos: {l}'],
+  // un nom inconnu près d'un terrain dont la base n'a aucun point publié : la zone manque, pas le point (SOG-0012)
+  noPointsNear: [' — la base n’a aucun point publié autour de {icao} (État {st}) : à compléter dans la base aéronautique.',
+    ' — the database has no published point around {icao} (state {st}): to complete in the aeronautical database.',
+    ' — die Datenbank hat keinen veröffentlichten Punkt um {icao} (Staat {st}): in der Luftfahrtdatenbank zu ergänzen.',
+    ' — la base no tiene ningún punto publicado alrededor de {icao} (Estado {st}): por completar en la base aeronáutica.'
+  ],
   simbrief: ['Dernier OFP SimBrief', 'Last SimBrief OFP', 'Letzter SimBrief-OFP', 'Último OFP de SimBrief'],
   noSimbrief: ['Identifiant SimBrief à régler (⚙).', 'SimBrief ID to set (⚙).', 'SimBrief-Kennung einstellen (⚙).',
     'Identificador SimBrief por ajustar (⚙).'
@@ -1046,6 +1052,7 @@ function ensureProcs() {
     if (S === s) {
       renderPts(); // les groupes de procédure de la liste des points (§ 10.31)
       renderRinfo(); // la distance, procédures comprises
+      if (S.unresolvedNames?.length) resolveRoute(false); // un nom inconnu peut être un point des procédures enfin lues (SOG-0012)
     }
     refresh();
     if (s.writeAfterProcs) { // une série de choix attendait cette lecture : le vol est écrit avec le devis, en une seule écriture
@@ -3346,7 +3353,9 @@ function resolveRoute(normalize = true) {
   S.routeTimer = setTimeout(async () => {
     const s = S,
       r = S.flight.route,
-      known = knownPoints(r, false),
+      // les points déjà connus du vol, et ceux des procédures choisies (la sortie d'une SID, l'entrée d'une STAR) : un nom qu'aerodb ne
+      // connaît pas mais qu'une procédure lue porte (BEPAN de la BEPA4E, SOG-0012) prend sa position ; aerodb passe toujours d'abord
+      known = knownPoints(r, true),
       {
         points,
         unresolved,
@@ -3375,14 +3384,37 @@ function resolveRoute(normalize = true) {
     renderPts();
     scheduleWx();
     // écran Fiches ouvert entre-temps : pas de ligne des points non reconnus à écrire
+    S.unresolvedNames = unresolved;
     const un = S.body.querySelector('[data-unres]'),
       ut = unresolved.length ? tt(TX.unresolved, {
         l: unresolved.join(', ')
       }) : '';
     if (un && un.textContent !== ut) un.textContent = ut;
+    if (unresolved.length) zoneNote(s, seq, points, ut);
     saveFlight();
     refresh();
   }, 500);
+}
+/** Des noms inconnus : quand la base n'a aucun point publié à 60 NM d'un terrain du vol, la ligne le dit (la zone manque, pas le point ;
+ *  SOG-0012 : la zone EI de la base n'a que des terrains et des navaids). */
+async function zoneNote(s, seq, points, line) {
+  const ends = [points[0], points.at(-1)].filter(p => p && /^[A-Z]{4}$/.test(p.id || '') && Number.isFinite(+p.lat));
+  for (const p of ends) {
+    const near = await Promise.resolve().then(() => s.ctx.aerodb?.points?.({
+      lat: +p.lat,
+      lon: +p.lon,
+      radiusNm: 60
+    })).catch(() => null);
+    if (gone(s) || seq !== s.routeSeq) return;
+    if (Array.isArray(near) && !near.length) {
+      const un = s.body?.querySelector('[data-unres]');
+      if (un && un.textContent === line) un.textContent = line + tt(TX.noPointsNear, {
+        icao: p.id,
+        st: p.id.slice(0, 2)
+      });
+      return;
+    }
+  }
 }
 /** Bouton « Auto » : inscrit les voies aériennes entre les points nommés consécutifs qui n'en ont pas, au niveau prévu
  *  (celui du vol, sinon celui du devis, sinon 6 500 ft comme la V2 — dit dans une notification). Idempotent (V3 § 10.31) : il
