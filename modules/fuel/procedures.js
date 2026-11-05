@@ -651,6 +651,19 @@ export function createProcedures(host) {
         only = rec && !PR.servesAll(rec) ? [...new Set(rec.runways.map(PR.rwNum))] : [];
       if (only.length === 1) o.rwy = only[0];
     }
+    // une piste choisie après une procédure publiée une fois par piste (« BOBSA 9E » pour 02, 06 et 07) : la fiche de la même famille qui
+    // dessert cette piste remplace celle d'une autre piste (SOG-0021 : la 07 choisie gardait la fiche de la 02, « associée à une autre
+    // piste ») ; sans fiche sœur pour cette piste, le choix reste et l'avertissement de conflit le dit
+    if (field === 'rwy' && typeof val === 'string') {
+      const all = [...recsNow().values()],
+        key = rec => `${rec.kind}:${RT.compactName(PR.nameOf(rec) || rec.id)}:${rec.transition || ''}`;
+      for (const f2 of ['sid', 'star', 'app']) {
+        const rec = typeof o[f2] === 'string' ? recsNow().get(o[f2]) : null;
+        if (!rec || PR.servesRwy(rec, val)) continue;
+        const sib = all.find(x => x.icao === rec.icao && key(x) === key(rec) && !PR.servesAll(x) && PR.servesRwy(x, val));
+        if (sib) o[f2] = sib.id;
+      }
+    }
     if (field === 'sid' || field === 'star') delete o.trans;
     if (field === 'app') delete o.appTrans;
     if (o.appTrans && o.appTrans === o.app) delete o.appTrans; // la transition d'une approche n'est pas l'approche elle-même

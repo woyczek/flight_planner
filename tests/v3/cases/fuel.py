@@ -2285,3 +2285,46 @@ def f89(c):
     c.until_doc('pilot/ABC/current_flight.json', lambda d: d and (d.get('level') or {}).get('ft') == 33000, 'the plan level is written', timeout=8000)
     c.until(f"performance.getEntriesByName('maps:live').length > {before}", timeout=8000, what='the Map reads the new plan level')
     c.until("[...document.querySelectorAll('.f-pane, .f-pane *')].some(e => /FL ?330/.test(e.getAttribute?.('title') || '') || /FL ?330/.test(e.textContent || ''))", timeout=8000, what='the Map shows FL330')
+
+
+def lfvf_docs():
+    """LFVF (invented, the shape of LFPO's hand-read file): one STAR « VFF9E » per runway (02, 06, 07), status check, hand-read; six runways."""
+    from fixtures.procedures import file as pfile, pt, rec
+    stars = [rec('LFVF', 'STAR', 'VFF9E', [rw], [pt(1, 'VFF01', 49.2, 1.9), pt(2, 'VFF02', 48.9, 2.2)], status='check', kind_src='manual',
+                 src_cycle='2026-10-29') for rw in ('02', '06', '07')]
+    rws = [{'id': i, 'lat': 48.72, 'lon': 2.37, 'elev': 90, 'qfu': q} for i, q in (('02', 20), ('20', 200), ('06', 60), ('24', 240), ('07', 70), ('25', 250))]
+    idx = {'schema': 1, 'aerodromes': {'LFML': {'STAR': 1, 'cycle': '2025-01-01', 'updated_at': '2026-10-29T16:53:00Z'},
+                                       'LFVF': {'STAR': 3, 'cycle': '2026-10-29', 'updated_at': '2026-10-29T16:53:00Z'}}}
+    return [['proc/manual/LFVF.json', pfile('LFVF', stars, rws, cy='2026-10-29'), 'reference'], ['proc/manual/index.json', idx, 'reference']]
+
+
+@case('F90', 'A STAR published once per runway is offered for each of its runways, 07 included, and the choice is the record of that runway',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
+      rule='SOG-0021 (BOBSA 9E for LFPO 07 not offered though LFPO.STAR.BOBSA9E.RW07 is in the base): one row « VFF9E · 02/06/07 »; with the '
+      'runway 07 chosen the row is offered and its value is the RW07 record')
+def f90(c):
+    c.open('fuel', docs=proc_docs() + proc_flight() + lfvf_docs(), airfields=True,
+           aero_extra={'aerodromes': [{'icao': 'LFVF', 'name': 'LFVF TEST', 'lat': 48.72, 'lon': 2.37, 'elev': 90}], 'cells': {'48': [[0, 4]]}})
+    set_icao(c, 'arr', 'LFVF')
+    wait_rows(c, 'arr')
+    c.until("(document.querySelector('[data-module=fuel] select[data-k=\"p-arr-rwy\"]')?.options.length || 0) > 2", timeout=15000,
+            what='the runways of LFVF are listed')
+    pick_proc(c, 'p-arr-rwy', '07')
+    c.until("[...(document.querySelector('[data-module=fuel] select[data-k=\"p-arr-star\"]')?.options || [])].some(o => o.value.includes('VFF9E'))",
+            timeout=10000, what='VFF9E is offered for the runway 07')
+    val = c.js("[...document.querySelector('[data-module=fuel] select[data-k=\"p-arr-star\"]').options].find(o => o.value.includes('VFF9E')).value")
+    c.eq(val, 'LFVF.STAR.VFF9E.RW07.NONE', 'the row is the record of the runway 07', what='value')
+    pick_proc(c, 'p-arr-star', val)
+    cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('star') == 'LFVF.STAR.VFF9E.RW07.NONE', 'the RW07 record is written')
+    # the other order (« ou l'associe à une autre piste »): the STAR first, without a runway (its first record, RW02, sets the runway 02),
+    # then the runway 07: the record of the runway 07 replaces it, no conflict left
+    pick_proc(c, 'p-arr-rwy', '')
+    pick_proc(c, 'p-arr-star', '')
+    cf_doc(c, lambda d: not (procs_of(d, 'arr') or {}).get('star'), 'the STAR is cleared')
+    c.settle()
+    pick_proc(c, 'p-arr-star', 'LFVF.STAR.VFF9E.RW02.NONE')
+    cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('rwy') == '02', 'the STAR alone sets its first runway, 02')
+    c.settle()
+    pick_proc(c, 'p-arr-rwy', '07')
+    d = cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('rwy') == '07', 'the runway 07 is written')
+    c.eq(procs_of(d, 'arr').get('star'), 'LFVF.STAR.VFF9E.RW07.NONE', 'the STAR follows the runway: the record of the 07', what='star after rwy')
