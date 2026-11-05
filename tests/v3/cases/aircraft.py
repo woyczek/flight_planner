@@ -577,6 +577,26 @@ def m23(c):
     c.eq(c.count(f'{M} {SHEETS} [data-review]'), 0, 'no review: nothing to write', what='refused')
 
 
+@case('M24', 'Sheets: an RPM curve whose flow goes down while the RPM goes up is said, its row marked, never corrected', 'M', tags=('aircraft',),
+      designs=('standard',), screens=True, phone=False, langs4=True,
+      rule='SOG-0015 (the S210: 11 500 lb/h at 6 700 rpm, above the cruise 7 300 lb/h at 7 250 rpm): « Débit à 6700 rpm supérieur à celui '
+      'de 7250 rpm : fourchette mal lue ? », the row in orange; nothing written')
+def m24(c):
+    bad = dict(EC25, id='XRPM', name='XRPM', icao='XRPM', unit='lb', cruise={'tasKt': 300, 'fuelFlowPerHour': 7300, 'rpmNominal': 7250},
+               rpmFuelCurve=[{'rpm': 6700, 'altFt': None, 'fuelFlowPerHour': 11500}, {'rpm': 4500, 'altFt': None, 'fuelFlowPerHour': 2000}])
+    docs = [[f'aircraft/sheets/{x["id"]}.json', x, 'document'] for x in (EC25, C30J, bad)]
+    c.open('aircraft', docs=LEVEL3 + [['airline/fleet.json', fleet_doc(3), 'document']] + docs + [TYPES, ['cache/aircraft/ui.json', {'view': 'sheets'}, 'cache']],
+           wait=False, app='maintenance')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-id]')", timeout=15000, what='the Fiches list')
+    help_placed(c)
+    edit_sheet(c, 'XRPM')
+    want = norm(tx(SX, 'rpmNotMonotone', c.lang).replace('{a}', '6700').replace('{b}', '7250'))
+    c.until("(w) => (document.querySelector('[data-module=aircraft] [data-rpmwarn]')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w",
+            want, what='the curve going down is said')
+    c.eq(c.count(f'{M} {SHEETS} tr[data-rpmwarn-row]'), 1, 'the row of 6700 rpm is marked', what='row')
+    c.eq(sheet_of(c, 'XRPM')['rpmFuelCurve'][0]['fuelFlowPerHour'], 11500, 'nothing is corrected', what='kept')
+
+
 @case('M15', 'Sheets: a ChatGPT reply is read into the review; « Appliquer » writes it stamped « chatgpt »', 'M', tags=('aircraft',), designs=('standard',),
       screens=False,
       rule='modules/aircraft SPEC 4: the ChatGPT reply (any shape: the aerodb reader) is a source like the others; preview, then a write through '

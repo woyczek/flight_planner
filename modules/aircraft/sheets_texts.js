@@ -83,6 +83,12 @@ export const TX = {
   rpmGone: ['retirée', 'removed', 'entfernt', 'retirada'],
   rpmTable: ['Table régime / débit', 'RPM / fuel flow table', 'Drehzahl-/Verbrauchstabelle', 'Tabla régimen / consumo'],
   review: ['Changements proposés', 'Proposed changes', 'Vorgeschlagene Änderungen', 'Cambios propuestos'],
+  // une courbe régime / débit qui redescend (SOG-0015 : la S210 portait 11 500 lb/h à 6 700 rpm, plus qu'en croisière à 7 250 rpm)
+  rpmNotMonotone: ['Débit à {a} rpm supérieur à celui de {b} rpm : fourchette mal lue ?',
+    'Fuel flow at {a} rpm above the one at {b} rpm: a range misread?',
+    'Verbrauch bei {a} U/min höher als bei {b} U/min: Spanne falsch gelesen?',
+    'Consumo a {a} rpm superior al de {b} rpm: ¿horquilla mal leída?'
+  ],
   outOfRange: ['« {f} » : {v} hors de la plage {min} à {max} ; rien n’est enregistré.',
     '“{f}”: {v} outside {min} to {max}; nothing is saved.',
     '„{f}“: {v} außerhalb von {min} bis {max}; nichts wird gespeichert.', '«{f}»: {v} fuera de {min} a {max}; no se guarda nada.'

@@ -37,6 +37,7 @@ export const SHEETS_STYLE = `[data-module="aircraft"] .ac-g3{--f-min:150px;align
 [data-module="aircraft"] .ac-g3 .f-check input{width:auto;flex:none}
 [data-module="aircraft"] .f-table .ac-txt{white-space:normal;overflow-wrap:anywhere;min-width:9em}
 [data-module="aircraft"] .ac-hide{display:none}
+[data-module="aircraft"] tr.ac-rpmwarn td{background:color-mix(in srgb, var(--sog-warn) 18%, transparent)}
 [data-module="aircraft"] .ac-cat{margin:var(--sog-gap) 0 4px;font-size:1em;color:var(--sog-muted)}
 [data-module="aircraft"] [data-sheets] .f-list .f-item>div:first-child{min-width:0}
 [data-module="aircraft"] [data-sheets] .f-list .f-item>div:first-child>:is(a,b):first-child{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
@@ -576,6 +577,22 @@ export function createSheetsView(host) {
     const kept = (o.kept || []).map(k => `${typeof k.value === 'object' ? JSON.stringify(k.value) : k.value} (${stampText(k)})`).join(' ; ');
     return `<small class="f-muted ac-origin" data-origin="${esc(path)}"${kept ? ` title="${esc(tt(TX.originKept, { l: kept }))}"` : ''}>${esc(text)}</small>`;
   }
+  /** Le premier couple de régimes où le débit redescend quand le régime monte (les lignes de la table sans altitude et la croisière,
+   *  au débit nominal) : { a, b } (a < b, débit(a) > débit(b)) ; null sinon. Un indice, pas une règle : la fiche n'est jamais corrigée. */
+  function notMonotone(p) {
+    const n = v => v === null || v === undefined || v === '' || !Number.isFinite(+v) ? null : +v,
+      rows = [...(p.rpmFuelCurve || []).filter(r => n(r.altFt) === null).map(r => [n(r.rpm), n(r.fuelFlowPerHour)]), [n(p.cruise
+          ?.rpmNominal),
+        n(p.cruise?.fuelFlowPerHour)
+      ]].filter(([r, f]) => r > 0 && f > 0).sort((x, y) => x[0] - y[0]);
+    for (let i = 0; i < rows.length; i++)
+      for (let j = i + 1; j < rows.length; j++)
+        if (rows[j][0] > rows[i][0] && rows[i][1] > rows[j][1]) return {
+          a: rows[i][0],
+          b: rows[j][0]
+        };
+    return null;
+  }
   /** Éditeur d'une fiche : champs par groupe (libellés traduits), table RPM (modifiable sur écran d'ordinateur),
    *  compléments, ChatGPT, exports ; sous chaque champ renseigné, son origine et sa date. draft : fiche en cours de saisie
    *  (ligne RPM ajoutée ou retirée), sinon celle de la base. */
@@ -592,6 +609,7 @@ export function createSheetsView(host) {
     const b = body();
     if (!b) return;
     const p = st.edit = draft || F.normalize(structuredClone(raw)),
+      nm = notMonotone(p), // la courbe régime / débit qui redescend : dite, la ligne en orange, jamais corrigée seule (SOG-0015)
       rpmCell = (i, k, v) => `<td class="f-num"><input data-rpm="${i}" data-rk="${k}" inputmode="decimal" value="${esc(v ?? '')}" style="width:7em" aria-label="${esc(k)}"></td>`,
       groups = [...new Set(F.PROFILE_FIELDS.map(f => f[0]))],
       facts = F.catalogFacts(p), // ce que la base OACI donne de la cellule et de la propulsion
@@ -624,7 +642,8 @@ export function createSheetsView(host) {
       <button type="button" data-do="gptread">${esc(tt(TX.read))}</button>
     </details>
     ${groups.map((g, i) => `<details class="f-card"${i < 2 ? ' open' : ''}><summary>${esc(FIELD_TX[g] ? tt(FIELD_TX[g]) : g)}</summary><div class="f-grid ac-g3">${F.PROFILE_FIELDS.filter(f => f[0] === g).map(input).join('')}</div></details>`).join('')}
-    ${rpmEditable() ? `<details class="f-card" open><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(p.unit)}/h min</th><th class="f-num">${esc(p.unit)}/h</th><th class="f-num">${esc(p.unit)}/h max</th><th></th></tr></thead><tbody>${p.rpmFuelCurve.map((r, i) => `<tr>${rpmCell(i, 'rpm', r.rpm)}${rpmCell(i, 'altFt', r.altFt)}${rpmCell(i, 'fuelFlowMin', r.fuelFlowMin)}${rpmCell(i, 'fuelFlowPerHour', r.fuelFlowPerHour)}${rpmCell(i, 'fuelFlowMax', r.fuelFlowMax)}<td><button type="button" data-do="rpmdel" data-i="${i}" aria-label="${esc(tt(TX.remove))}">✕</button></td></tr>`).join('')}</tbody></table></div><button type="button" data-do="rpmadd">${esc(tt(TX.rpmAdd))}</button></details>` : p.rpmFuelCurve.length ? `<details class="f-card"><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(p.unit)}/h</th></tr></thead><tbody>${p.rpmFuelCurve.map(r => `<tr><td class="f-num">${esc(r.rpm)}</td><td class="f-num">${esc(r.altFt ?? '')}</td><td class="f-num">${esc([r.fuelFlowMin, r.fuelFlowPerHour, r.fuelFlowMax].filter(x => x != null && x !== '').join(' / '))}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
+    ${nm ? `<p class="f-warn" data-rpmwarn>${esc(tt(TX.rpmNotMonotone, { a: nm.a, b: nm.b }))}</p>` : ''}
+    ${rpmEditable() ? `<details class="f-card" open><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(p.unit)}/h min</th><th class="f-num">${esc(p.unit)}/h</th><th class="f-num">${esc(p.unit)}/h max</th><th></th></tr></thead><tbody>${p.rpmFuelCurve.map((r, i) => `<tr${nm && +r.rpm === nm.a ? ' class="ac-rpmwarn" data-rpmwarn-row' : ''}>${rpmCell(i, 'rpm', r.rpm)}${rpmCell(i, 'altFt', r.altFt)}${rpmCell(i, 'fuelFlowMin', r.fuelFlowMin)}${rpmCell(i, 'fuelFlowPerHour', r.fuelFlowPerHour)}${rpmCell(i, 'fuelFlowMax', r.fuelFlowMax)}<td><button type="button" data-do="rpmdel" data-i="${i}" aria-label="${esc(tt(TX.remove))}">✕</button></td></tr>`).join('')}</tbody></table></div><button type="button" data-do="rpmadd">${esc(tt(TX.rpmAdd))}</button></details>` : p.rpmFuelCurve.length ? `<details class="f-card"><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(p.unit)}/h</th></tr></thead><tbody>${p.rpmFuelCurve.map(r => `<tr><td class="f-num">${esc(r.rpm)}</td><td class="f-num">${esc(r.altFt ?? '')}</td><td class="f-num">${esc([r.fuelFlowMin, r.fuelFlowPerHour, r.fuelFlowMax].filter(x => x != null && x !== '').join(' / '))}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
     <div class="f-row"><button type="button" class="primary" data-do="save">${esc(tt(TX.save))}</button><button type="button" data-do="lnm">${esc(tt(TX.exportLnm))}</button><button type="button" data-do="json">${esc(tt(TX.exportJson))}</button><button type="button" data-do="del">${esc(tt(TX.remove))}</button></div>`;
   }
   /** Fiche de l'éditeur avec les valeurs des champs (nombres lus, vides → null). */
