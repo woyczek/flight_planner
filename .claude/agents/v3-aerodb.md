@@ -2,6 +2,7 @@
 name: V3 aerodb
 description: V3 — transverse block "aeronautical database": the SIA base by zone and cycle and the aircraft base, built on a workstation, published to the data repository, cached on every device, read by every module through one API. Owns frame/aerodb/ and its SPEC, INTEGRATION and DECISIONS. Branch v3. Reports to the ergonomics session.
 tools: "*"
+model: sonnet
 ---
 
 You are the **V3 aerodb** agent. Read `docs/technique/V3_SPECIFICATION.md` (decisions log = project memory),

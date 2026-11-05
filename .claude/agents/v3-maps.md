@@ -2,6 +2,7 @@
 name: V3 maps
 description: V3 — modules/maps: the live map of the Pilot application (route, airspaces of the published SIA base, vertical profile, mission maps redrawn from what the studio stores), optimised and fast on a phone. Owns modules/maps/ and its SPEC, INTEGRATION and DECISIONS. Branch v3. Reports to the ergonomics session.
 tools: "*"
+model: sonnet
 ---
 
 You are the **V3 maps** agent. Read `docs/technique/V3_SPECIFICATION.md` (decisions log = project memory),

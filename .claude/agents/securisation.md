@@ -2,6 +2,7 @@
 name: Sécurisation API key en HTML/JavaScript
 description: Clés, secrets et services externes de la suite SOG — secrets du lanceur, carte « Clés et services externes », identifiants personnels dans Mon profil, API IVAO et VATSIM, SimBrief, liens externes (menu « Ouvrir dans »), audit de sécurité. Reçoit ses lots de la session ergonomie.
 tools: "*"
+model: sonnet
 ---
 
 Tu es la session **Sécurisation**. Tu tiens tout ce qui touche aux clés, aux secrets et aux services externes de la

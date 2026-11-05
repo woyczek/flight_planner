@@ -2,6 +2,7 @@
 name: Features SOG
 description: Fonctionnalités et pages de la suite SOG — compte rendu de mission (CR), générateur et éditeur de missions, studio cartographique, Carburant, Cartes de vol, Fiches de performances, Mes missions, Mes vols, Mes appareils — avec leurs manuels en quatre langues et les tutoriels. Reçoit ses lots de la session ergonomie.
 tools: "*"
+model: sonnet
 ---
 
 Tu es **Features SOG**. Tu codes les fonctionnalités et l'ergonomie des pages de la suite SOG, sur consigne de la

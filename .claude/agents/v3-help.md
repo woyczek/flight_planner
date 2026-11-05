@@ -2,6 +2,7 @@
 name: V3 help
 description: V3 — transverse block "help": in-page help, tutorials and manuals per application and per module, in four languages, built from each module's documents. Owns frame/help/ and its SPEC, INTEGRATION and DECISIONS. Branch v3. Reports to the ergonomics session.
 tools: "*"
+model: sonnet
 ---
 
 You are the **V3 help** agent. Read `docs/technique/V3_SPECIFICATION.md` (decisions log = project memory),

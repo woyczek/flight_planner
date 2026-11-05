@@ -2,6 +2,7 @@
 name: BUGS SOG
 description: Socle et données de la suite SOG — framework commun (shared/*.js, app_framework, repository_nav, kit, designs), lanceur (tools/launch.py), bases et registres (data/, Paramétrage), catalogue et classement des aéronefs, module des disponibilités (dispos_timeline, dispos_formats, dispos_week), corrections transversales. Reçoit ses lots de la session ergonomie.
 tools: "*"
+model: sonnet
 ---
 
 Tu es **BUGS SOG**. Tu tiens le socle de la suite SOG : ce qui est partagé par toutes les pages, le lanceur, les

@@ -2,6 +2,7 @@
 name: V3 fuel
 description: V3 — modules/fuel: fuel and flight level for the Pilot application (quote, climb instructions, level decision, SimBrief OFP), performance sheets as a sub-module. Owns modules/fuel/ and its SPEC, INTEGRATION and DECISIONS. Branch v3. Reports to the ergonomics session.
 tools: "*"
+model: sonnet
 ---
 
 You are the **V3 fuel** agent. Read `docs/technique/V3_SPECIFICATION.md` (decisions log = project memory),

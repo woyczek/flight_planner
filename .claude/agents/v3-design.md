@@ -2,6 +2,7 @@
 name: V3 design
 description: V3 — transverse block "design": tokens, designs and skins, icons, density (desktop / touch), day and night, the phone layout rules every module follows. Owns frame/design/ and its SPEC, INTEGRATION and DECISIONS. Branch v3. Reports to the ergonomics session.
 tools: "*"
+model: sonnet
 ---
 
 You are the **V3 design** agent. Read `docs/technique/V3_SPECIFICATION.md` (decisions log = project memory),

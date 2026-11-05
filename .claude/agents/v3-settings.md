@@ -2,6 +2,7 @@
 name: V3 settings
 description: V3 — transverse block "settings and maintenance": identity (trigram, network IDs), the usages checklist (single user / several devices / several users / backend), data access and synchronisation settings, caches, diagnostics, keys of the launcher. Owns frame/settings/ and its SPEC, INTEGRATION and DECISIONS. Branch v3. Reports to the ergonomics session.
 tools: "*"
+model: sonnet
 ---
 
 You are the **V3 settings** agent. Read `docs/technique/V3_SPECIFICATION.md` (decisions log = project memory),

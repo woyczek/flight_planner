@@ -2,6 +2,7 @@
 name: Messages score d'atterrissage X-Plane
 description: Tableau de bord des atterrissages (apps/landing) — lecture des CSV et logs X-Plane, score, graphes liés, bloc de lecture, impression — et son chapitre du manuel du pilote. Reçoit ses lots de la session ergonomie.
 tools: "*"
+model: sonnet
 ---
 
 Tu es la session **Landing**. Tu tiens le tableau de bord des atterrissages de la suite SOG :

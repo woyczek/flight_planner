@@ -63,7 +63,7 @@ référence (dernier commit de la session ergonomie), une ligne par décision, c
 4. **Avant chaque push** : marqueurs de conflit absents (`git grep -l -E "^(<<<<<<<|>>>>>>>) "` vide), `?v=0` partout,
    pages touchées rechargées sans erreur, `tools/format_sources.py` passé, CHANGELOG en anglais sous « Unreleased ».
 5. **Un lot = un commit**, la documentation dedans (manuels ×4, tutoriels, CHANGELOG, paquet de l'aide régénéré).
-6. **Compte rendu de fin de lot** : message à la session ergonomie, première ligne « poussé » + SHA, puis ce qui a été
+6. **Compte rendu de fin de lot** : message à la session ergonomie, première ligne « prêt » + SHA (le push n'a lieu que quand le lot est prêt), puis ce qui a été
    fait, ce qui a été vérifié dans le navigateur, et les écarts avec la consigne. Une consigne reçue directement de
    l'utilisateur est appliquée, puis annoncée à la session ergonomie avec ses mots.
 7. **Fichiers partagés sensibles** (`shared/mission_core/core.js`, `apps/planner/flight_planner.js`, `shared/dispos_*.js`,
@@ -83,3 +83,23 @@ référence (dernier commit de la session ergonomie), une ligne par décision, c
    `v2-maintenance` vers `master`. Les releases V3 (6.x) partent de `develop` vers `master` quand la V2 sera éteinte.
 
 Les règles de codage et de documentation sont dans `CLAUDE.md` à la racine ; ce dossier ne les répète pas.
+
+## Organisation par lots (depuis le 5 novembre 2026, `organisation/MIGRATION.md`)
+
+- **Cinq domaines, une session réutilisée par domaine, `model: sonnet`** : D1 cadre et socle (V3 frame), D2 carte, profil
+  et météo (BUGS SOG : `modules/maps/`, `modules/atmosphere/`), D3 vol, carburant, appareils, missions et exports (Features
+  SOG : `modules/fuel/`, `aircraft/`, `missions/`, `report/`, `flightlog/`), D4 données aéronautiques (V3 aerodb), D5 réglages,
+  données de la compagnie et enrôlement (V3 settings, `modules/data/`). Sécurisation relit un **candidat** quand le lot touche
+  contrats, stockage, secrets ou hôtes ; `landing`, `analyse-defa`, `v3-website`, `v3-design`, `v3-help`, `relais-cloud`
+  dorment (l'aide ×4 est livrée par le développeur du lot). **Au plus deux domaines en développement en même temps.**
+- **La session ergonomie** (`model: inherit`) ordonnance et intègre : elle lit `organisation/BACKLOG.md` aux points de
+  9 h, 13 h et 17 h (heure de Paris), qualifie et déduplique, écrit **un brief par lot** (lot et fiches, objectif
+  utilisateur, critères, lecture déjà faite, fichiers, contrats, base SHA, contrôles attendus, limites) et arbitre
+  `organisation/ROADMAP.md`. Pas une session ni un message par signalement.
+- **Un lot = commits locaux libres, un push quand le lot est prêt** (brief satisfait, `python tests/v3/run.py --touched`
+  vert, documents dedans). Le compte rendu commence par « prêt » + SHA, puis résultat, décision technique utile, preuves,
+  reste à faire. À 17 h la session ergonomie combine les lots prêts dans son arbre, fige le SHA candidat et lance **une**
+  passe `--all` ; toute retouche relance ; un échec bloque le candidat, un défaut indépendant reçoit une fiche. Plus de
+  passe complète après chaque push, plus de relecture par SHA.
+- **Snapshot** : le candidat validé est nommé (préversion) sur demande de l'utilisateur ; la revue de pertinence depuis le
+  snapshot précédent se fait par domaine, à partir des `DECISIONS.md` et du CHANGELOG, pas commit par commit.

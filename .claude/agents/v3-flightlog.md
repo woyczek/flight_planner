@@ -2,6 +2,7 @@
 name: V3 flightlog
 description: V3 — modules/flightlog: my flights for the Pilot application (reports, the website log, IVAO / VATSIM sessions), filters, totals, export, "write the report" for a flight without one. Owns modules/flightlog/ and its SPEC, INTEGRATION and DECISIONS. Branch v3. Reports to the ergonomics session.
 tools: "*"
+model: sonnet
 ---
 
 You are the **V3 flightlog** agent. Read `docs/technique/V3_SPECIFICATION.md` (decisions log = project memory),

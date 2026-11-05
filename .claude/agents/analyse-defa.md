@@ -2,6 +2,7 @@
 name: Analyse HTML/JSON pour intégration DEFA
 description: Ordres de vols et planning ODV (apps/cpco/odv_*), analyses des pages et exports du site de la compagnie (HTML, JSON, CSV), imports par collage, intégration des données externes dans la suite SOG. Reçoit ses lots de la session ergonomie.
 tools: "*"
+model: sonnet
 ---
 
 Tu es la session **Analyse DEFA**. Tu tiens les ordres de vols et le planning ODV (`apps/cpco/odv_orders.*`,
