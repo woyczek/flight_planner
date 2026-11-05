@@ -72,3 +72,6 @@ pass
 
 # dossier de travail de tools/proc_sia.py sans --cache et sans dossier data/
 .proc_cache/
+
+# Copies gardées avant une restauration (DATA_MAP § 3.5), jamais dans le dépôt
+data_avant_*/
