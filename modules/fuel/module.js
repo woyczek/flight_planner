@@ -977,18 +977,28 @@ function saveFlight() {
   if (S.flightPending) return; // vol courant pas encore lu : l'écrire effacerait le vrai
   clearTimeout(S.flightTimer);
   const s = S; // gardé : l'écriture part même si le module est démonté entre-temps
-  s.flightTimer = setTimeout(async () => {
-    const path = `pilot/${s.ctx.identity.trigram || 'ANON'}/current_flight.json`,
-      cur = (await s.ctx.data.get(path)) || {};
-    normProcedures(s.flight); // route.procedures au schéma v2 (un ancien { sid, star } migré, un côté d'un autre terrain retiré)
-    s.flight = CF.merge(cur, s.flight, {
-      fields: CF.FUEL_FIELDS,
-      progressKeys: CF.FUEL_PROGRESS,
-      by: 'fuel'
-    });
-    s.writing = s.flight.updated_at;
-    await s.ctx.data.put(path, s.flight);
-  }, 300);
+  // les écritures de Carburant à la file : une écriture relit l'enregistrement après la fin de la précédente (deux écritures qui se
+  // chevauchaient relisaient le même état d'avant, et la seconde reprenait un niveau périmé : F7 avec des lectures lentes)
+  s.flightTimer = setTimeout(() => s.saving = (s.saving || Promise.resolve()).then(() => writeFlight(s)).catch(() => {}), 300);
+}
+/** Une écriture du vol courant (saveFlight, à la file) : voir saveFlight. */
+async function writeFlight(s) {
+  const path = `pilot/${s.ctx.identity.trigram || 'ANON'}/current_flight.json`,
+    cur = (await s.ctx.data.get(path)) || {};
+  normProcedures(s.flight); // route.procedures au schéma v2 (un ancien { sid, star } migré, un côté d'un autre terrain retiré)
+  // route et niveau : seulement ce que Carburant a changé depuis sa dernière lecture (R-F4) ; un geste de la Carte écrit entre-temps
+  // reste (SOG-0013) ; le reste des champs de Carburant comme avant
+  // le cadre n'écrit que progress (R-F4) : un enregistrement qu'il a écrit en dernier n'a pas de route à faire valoir (une
+  // lecture d'avant une écriture de Carburant la ramenait) ; la route et le niveau de Carburant y sont remis
+  const ch = CF.changesOf(cur.by === 'frame' ? CF.routeBase(cur) : s.base, s.flight);
+  s.flight = CF.applyChanges(CF.merge(cur, s.flight, {
+    fields: CF.FUEL_FIELDS.filter(k => k !== 'route' && k !== 'level'),
+    progressKeys: CF.FUEL_PROGRESS,
+    by: 'fuel'
+  }), ch);
+  s.base = CF.routeBase(s.flight);
+  s.writing = s.flight.updated_at;
+  await s.ctx.data.put(path, s.flight);
 }
 /** Écrit les réglages du devis (après un temps calme). */
 function saveSettings() {
@@ -1156,10 +1166,17 @@ function textToProcs() {
   set('arr', 'star', m.star, found.star);
   if (!changed) procsToText(true);
 }
-/** Signature de la route (points, distance, saisie à la main) : ce qui, changé après le départ, refait tout le devis. */
+/** Signature de la route (points, distance saisie à la main) : ce qui, changé après le départ, refait tout le devis. Les points des
+ *  procédures choisies n'y comptent pas (depuis SOG-0012 un nom de la route que porte une procédure prend sa position : choisir ou
+ *  retirer une procédure après le départ ne doit refaire que les legs, § 10.20 ; F16), ni la distance calculée qui en suit. */
 const routeSig = () => {
-  const r = S.flight.route || {};
-  return JSON.stringify([(r.points || []).map(p => [p.id, p.lat, p.lon]), r.distanceNm, !!r.manual]);
+  const r = S.flight.route || {},
+    procs = S.procs?.procs || {},
+    inProcs = new Set(Object.values(procs).flatMap(x => Array.isArray(x) ? x : [x]).flatMap(rec => (rec?.points || []).map(q => String(q
+      ?.id || '').toUpperCase())));
+  return JSON.stringify([(r.points || []).filter(p => !inProcs.has(String(p.id || '').toUpperCase())).map(p => [p.id, p.lat, p.lon]), r
+    .manual ? r.distanceNm : null, !!r.manual
+  ]);
 };
 /** Distance (NM) sur laquelle court le devis. Avant le départ, celle du chemin (ou de la route) ; après, celle de l'ouverture du vol
  *  (quote.distanceNm) tant que la route ne change pas : un changement de procédure ne bouge ni le carburant ni le temps du
@@ -4346,6 +4363,7 @@ export async function mount(el, ctx) {
   S.settingsPending = fuelSettings == null;
   const kept = kept0 || {};
   S.flight = flightOf(kept);
+  S.base = CF.routeBase(kept); // ce que l'enregistrement dit de la route et du niveau (R-F4 : on n'écrit que ce qui en diffère)
   S.settings = {
     taxiMin: 10,
     reserveMin: 30,
@@ -4441,8 +4459,18 @@ export async function mount(el, ctx) {
       // carte) est relue sans être refaite ni réécrite
       plan = x => JSON.stringify([x?.route?.points, x?.route?.distanceNm, x?.level, x?.aircraft, x?.started?.at ?? null]),
       planChanged = plan(f) !== plan(S.flight);
-    const oldPlanned = S.flight.planned_at ?? null;
-    S.flight = flightOf(f);
+    // une écriture du cadre (progress seul, R-F4) : sa progression est reprise, jamais une route ni un niveau qu'il aurait relus avant
+    // une écriture de Carburant
+    if (f.by === 'frame') {
+      S.flight.progress = f.progress ?? null;
+      return S.flightPending || S.refsPending || S.view !== 'plan' ? undefined : refresh();
+    }
+    const oldPlanned = S.flight.planned_at ?? null,
+      // ce que Carburant a changé et pas encore écrit (un niveau tapé dans les 300 ms) : remis par-dessus le vol repris (R-F4, F88)
+      pend = CF.changesOf(S.base, S.flight);
+    S.flight = flightOf(pend ? CF.applyChanges(f, pend) : f);
+    S.base = CF.routeBase(f);
+    if (pend) saveFlight();
     if (S.flightLate) { // le vol enregistré arrive après l'attente bornée (flightArrives) : la ligne d'attente s'efface
       S.flightLate = false;
       waitLine();
@@ -4554,7 +4582,10 @@ async function flightArrives(self, job) {
   let late = false;
   const kept = await bounded(job, FLIGHT_WAIT_MS, () => late = true);
   if (gone(self) || !S.flightPending) return;
-  if (!S.flightSeen) S.flight = flightOf(kept);
+  if (!S.flightSeen) {
+    S.flight = flightOf(kept);
+    S.base = CF.routeBase(kept);
+  }
   flightDefaults(kept || {});
   S.flightPending = false;
   S.flightLate = late && !S.flightSeen;

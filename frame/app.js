@@ -3718,8 +3718,11 @@
     clearTimeout(liveLater);
     lastWrite = null;
     live.last = null;
-    const CF = await import(new URL('frame/lib/current_flight.js', ROOT).href);
-    await liveData.put(flightPath, CF.merge(cur, {
+    const CF = await import(new URL('frame/lib/current_flight.js', ROOT).href),
+      // relu après l'attente, juste avant d'écrire : l'enregistrement lu plus tôt ramènerait la route d'avant une écriture de Carburant
+      // (mise à jour perdue, R-F4 du 5 nov. 2026, F16)
+      fresh = (await liveData.get(flightPath).catch(() => null)) || cur;
+    await liveData.put(flightPath, CF.merge(fresh, {
       progress: {
         actual: null
       }
@@ -3901,7 +3904,11 @@
       ...liveTrail,
       updated_at: a.at
     });
-    await liveData.put(flightPath, CF.merge(cur, {
+    // relu juste avant d'écrire (après les attentes ci-dessus) : seul progress.actual change, la route et le niveau écrits entre-temps
+    // par Carburant ou la Carte restent (mise à jour perdue, R-F4 du 5 nov. 2026, F16)
+    const fresh = await liveData.get(flightPath).catch(() => null);
+    if (!flying(fresh)) return;
+    await liveData.put(flightPath, CF.merge(fresh, {
       progress: {
         actual: {
           ...a

@@ -1336,3 +1336,24 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   names (the ICAO code when the name is unknown); bench F60 checks the elements the SDK says required. MSFS 2024: the SDK page could
   not be read (404) and no 2024 file exists here: the 2024 export (12 / 282174, procedures on the aerodrome waypoints, no EFB
   blocks) is NOT verified; the EFB blocks the user asks for wait for a real 2024 file.
+
+- **5 Nov 2026 — R-F4: one writer of the route and the level** (lot A, SOG-0004 / 0013, the ergonomics session's go). Two modules write
+  `route` and `level` of `pilot/<tri>/current_flight.json` (Fuel, the Map) and each kept a copy it wrote back whole: a gesture of the
+  other was undone (an old plan coming back between screens, 0013). Now `frame/lib/current_flight.js` gives `routeBase(rec)`,
+  `changesOf(base, mine)`, `applyChanges(stored, ch)` and `setRoute(data, path, ch, { by })` (reads, applies, writes; no DOM): a writer
+  writes only the route keys and the level it changed since it last read the record. Fuel: `S.base` set when it reads the record,
+  `writeFlight` merges its other fields as before and route / level through `applyChanges`; its writes queued (two overlapping
+  writes re-read the same old state: F7 with slow reads); a record taken from elsewhere keeps Fuel's unwritten changes on top (F88).
+  The frame only writes `progress`: Fuel never takes a route or a level from a record `by: 'frame'`, and a record the frame wrote last
+  gets Fuel's route back. Found on the way, in `frame/app.js` (V3 Frame's file, told): the progress writer re-wrote a record read
+  before its awaits, bringing back an old route on a started flight; it now re-reads just before writing. The Map's `saveRoute`
+  (modules/maps/edit.js) is BUGS SOG's to switch to `setRoute`. Cases F88 (two writers, on the record), F89 (side by side, the Map
+  reads the point level and the plan level again: 0004 not reproduced in a plain sequence, the race was the cause); bench
+  `modules/fuel/test/current_flight.html` (F80). The route signature frozen after the start ignores the points of the chosen
+  procedures (0012 lets a route name take a procedure's position: choosing a procedure after the start rewrites the legs only; F16).
+- **5 Nov 2026 — lot A, route resolution** (SOG-0012, 0019, 0024). 0012: the points of the chosen procedures are a fallback of the
+  route text after aerodb (BEPAN of BEPA4E); a name still unknown near an aerodrome around which the base has no published point
+  says the zone is missing (F87; the Irish points wait for an eAIP reader, D4). 0019: the A34 was in the base and `along()` reads
+  both ways; the cause was `textFromPoints`, which wrote an airway's nodes as DCT points as soon as a point was edited (F69, checked
+  on the user's base read-only: « SITET A34 LGL A34 BOBSA » stays). 0024: « Cartes » opens the aerodrome's official charts (SIA eAIP
+  at AD 2.24, EAD Basic, else « source inconnue ») instead of the coded-data tables (F42).

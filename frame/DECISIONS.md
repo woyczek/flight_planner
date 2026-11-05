@@ -2469,6 +2469,11 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   undecodable file) is said once per path to the administrator (Full level, a floating note: « Logo de la compagnie : png
   ou webp, 512 Ko au plus », ×4); the pilot has the tinted plane, without a note; absent or offline without a copy: no
   note. Noreg A83 (an svg, and an svg named .png, never shown nor run).
+- **5 Nov 2026 — R-F4, one writer of the route and the level** (Features SOG, lot A; told to V3 Frame): `frame/lib/current_flight.js`
+  gains `routeBase`, `changesOf`, `applyChanges`, `setRoute`: a module writes only the route keys and the level it changed since its
+  last read (Fuel now; the Map's `saveRoute` next, BUGS SOG). The frame keeps `progress`: its writer of `progress.actual` and
+  `clearActual` (app.js) now re-read the record just before writing (they re-wrote a record read before their awaits and brought back
+  an old route on a started flight). Cases F88, F16; modules/fuel/DECISIONS.md.
 - **5 Nov 2026 — `FrameData.lastPushed()`: what just left, for the Synchronisation card** (SOG-0029, lot E: the card says
   « à pousser » with the name of the sheet but not what has just gone, the layer keeping nothing of the last pass):
   - **Kept by the layer, in meta `lastPushed` `{ at, list: [{ path, result }] }`**, filled by `run()` for each file of a send it

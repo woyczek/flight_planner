@@ -172,6 +172,86 @@
     progressKeys: CF.FUEL_PROGRESS,
     by: 'report'
   }).planned_at, '2026-10-25T09:40:00Z');
+  // R-F4 : un seul écrivain de la route et du niveau ; chacun n'écrit que ce qu'il a changé depuis sa base
+  const rec0 = {
+      route: {
+        text: 'XA XB',
+        dep: 'XA',
+        arr: 'XB',
+        points: [{
+          id: 'XA'
+        }, {
+          id: 'XB'
+        }],
+        procedures: {
+          dep: null
+        }
+      },
+      level: {
+        ft: 27000
+      }
+    },
+    base0 = CF.routeBase(rec0),
+    mineL = {
+      ...JSON.parse(JSON.stringify(rec0)),
+      level: {
+        ft: 31000
+      }
+    };
+  check('changesOf : rien de changé → null', CF.changesOf(base0, JSON.parse(JSON.stringify(rec0))), null);
+  check('changesOf : le niveau seul', CF.changesOf(base0, mineL), {
+    route: {},
+    removed: [],
+    level: {
+      ft: 31000
+    }
+  });
+  const other = { // un autre écrivain (la Carte) a posé une nouvelle route entre-temps
+    ...rec0,
+    route: {
+      ...rec0.route,
+      text: 'XA XC XB',
+      points: [{
+        id: 'XA'
+      }, {
+        id: 'XC'
+      }, {
+        id: 'XB'
+      }]
+    }
+  };
+  const after = CF.applyChanges(other, CF.changesOf(base0, mineL));
+  check('applyChanges : le niveau de l’un, la route de l’autre', [after.route.text, after.route.points.length, after.level.ft], ['XA XC XB',
+    3,
+    31000
+  ]);
+  const mineR = JSON.parse(JSON.stringify(rec0));
+  delete mineR.route.procedures;
+  mineR.route.arr = 'XD';
+  const ch = CF.changesOf(base0, mineR);
+  check('changesOf : une clé de route changée, une retirée', [ch.route, ch.removed, 'level' in ch], [{
+      arr: 'XD'
+    },
+    ['procedures'], false
+  ]);
+  const after2 = CF.applyChanges(other, ch);
+  check('applyChanges : la clé retirée ôtée, la route de l’autre gardée', [after2.route.arr, 'procedures' in after2.route, after2.route
+    .text
+  ], ['XD', false, 'XA XC XB']);
+  const store = new Map([
+      ['p', other]
+    ]),
+    data = {
+      get: async k => store.get(k),
+      put: async (k, v) => store.set(k, v)
+    };
+  const written = await CF.setRoute(data, 'p', CF.changesOf(base0, mineL), {
+    by: 'maps'
+  });
+  check('setRoute : relit, applique, écrit, by et updated_at posés', [written.route.text, written.level.ft, written.by, !!written
+    .updated_at,
+    store.get('p') === written
+  ], ['XA XC XB', 31000, 'maps', true, true]);
   document.getElementById('out').innerHTML = `${pass} passed, ${fail} failed\n` + lines.join('\n');
   document.title = `fuel — current flight bench: ${fail ? 'FAIL' : 'OK'} (${pass}/${pass + fail})`;
 </script>

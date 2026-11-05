@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Lot A — route, procedures and the flight's writers** (`frame/lib/current_flight.js`, `frame/lib/route_text.js`, `frame/app.js`,
+  `modules/fuel/module.js`, `procedures.js`; DECISIONS of Fuel and of the frame, frame INTEGRATION; noreg F16, F42, F69, F80, F87, F88,
+  F89): one writer of the route and level (R-F4: a module writes only what it changed; an old plan no longer comes back, SOG-0013 / 0004);
+  the frame's progress writer re-reads before writing; a route name carried by the chosen procedure resolves, an unknown name says when
+  the zone has no points (SOG-0012); an airway's nodes no longer turn into DCT when a point is edited (SOG-0019); « Cartes » opens the
+  official charts (SOG-0024).
 - **Map: labels no longer sit on the route's line when they have another place** (`modules/maps/render.js`,
   `lib/aero_symbols.js`; SPEC § 3; noreg D99, D108). At LFSG the aerodrome's name was under the inbound leg and a beacon's box and an
   airspace name were crossed by the route: a label whose first place the route crosses now tries its uncrossed places first;

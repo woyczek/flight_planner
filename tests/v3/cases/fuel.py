@@ -2229,3 +2229,59 @@ def f87(c):
     tail = norm(row(c, 'noPointsNear').replace('{icao}', 'LFRS').replace('{st}', 'LF'))
     c.until("(w) => (document.querySelector('[data-module=fuel] [data-unres]')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w)",
             tail.strip(), timeout=10000, what='QQQQQ unknown: the line says the zone around LFRS has no point')
+
+
+# another writer of the current flight, as the Map is one (its route gesture): the frame's data layer itself, declared like a module
+_OTHER_WRITER = """async ([path, text, pts]) => { const d = FrameData.adapter({ id: 'maps', reads: ['pilot/'], writes: [{ prefix: 'pilot/', merge: 'record' }] });
+  const cur = (await d.get(path)) || {};
+  await d.put(path, { ...cur, route: { ...(cur.route || {}), text, points: pts }, by: 'maps', updated_at: new Date().toISOString() }); return true }"""
+
+
+@case('F88', 'Two writers of the current flight: a level typed in Fuel never brings back the route another writer has just written', 'F',
+      tags=('fuel',), designs=('standard',), screens=False,
+      rule='SOG-0013 (an old plan comes back between screens) and R-F4: Fuel writes only the route and level keys it changed since it read '
+      'the record (frame/lib/current_flight.js applyChanges); a route written meanwhile by another writer (the Map) stays; on the record, '
+      'not on a copy')
+def f88(c):
+    c.open('fuel', flight=True, airfields=True)
+    to_step(c, 0)
+    path = 'pilot/ABC/current_flight.json'
+    # the level typed in Fuel (its write waits 300 ms), and in that window another writer puts a new route on the record
+    c.page.fill(f'{FUEL} [data-k="fl"]', '310')
+    c.page.press(f'{FUEL} [data-k="fl"]', 'Tab')
+    c.js(_OTHER_WRITER, [path, 'LFRS TSTZZ LFML', [{'id': 'LFRS', 'lat': 47.1569, 'lon': -1.6078}, {'id': 'TSTZZ', 'lat': 46.0, 'lon': 1.0},
+                                                    {'id': 'LFML', 'lat': 43.4367, 'lon': 5.215}]])
+    d = c.until_doc(path, lambda d: d and (d.get('level') or {}).get('ft') == 31000, 'the level typed in Fuel is written', timeout=8000)
+    c.wait(800)
+    d = c.doc(path)
+    c.eq([p['id'] for p in d['route']['points']], ['LFRS', 'TSTZZ', 'LFML'], 'the route of the other writer stays (not the old one)', what='points')
+    c.eq((d.get('level') or {}).get('ft'), 31000, 'the level of Fuel is written', what='level')
+
+
+@case('F89', 'Side by side: a point level changed in Fuel is read again by the Map at once', 'F', tags=('fuel', 'maps'), designs=('standard',),
+      screens=True, phone=False,
+      rule='SOG-0004: in Fuel beside the Map, a level typed on a point of the step Route is written to the record and the Map reads the record '
+      'again (its live view, maps:live), without a reload')
+def f89(c):
+    c.open('fuel?with=maps', flight=True, airfields=True)
+    c.until("!!document.querySelector('.f-pane [data-module=maps]') || !!document.querySelector('[data-module=maps]')", timeout=15000,
+            what='the Map beside Fuel')
+    c.wait(1500)
+    to_step(c, 1)
+    if not c.js("document.querySelector('[data-module=fuel] details[data-fold=pts]')?.open"):
+        c.tap(f'{FUEL} details[data-fold="pts"] > summary')
+    before = c.js("performance.getEntriesByName('maps:live').length")
+    sel = f'{FUEL} [data-pts] input[data-k="ptalt"][data-i="2"]'
+    c.page.fill(sel, '310')
+    c.page.press(sel, 'Tab')
+    c.until_doc('pilot/ABC/current_flight.json', lambda d: d and any(p.get('alt_ft') == 31000 for p in d['route']['points']),
+                'the point level is written', timeout=8000)
+    c.until(f"performance.getEntriesByName('maps:live').length > {before}", timeout=8000, what='the Map reads the flight again')
+    # the plan level (step Flight): written, read again by the Map, shown in its header
+    to_step(c, 0)
+    before = c.js("performance.getEntriesByName('maps:live').length")
+    c.page.fill(f'{FUEL} [data-k="fl"]', '330')
+    c.page.press(f'{FUEL} [data-k="fl"]', 'Tab')
+    c.until_doc('pilot/ABC/current_flight.json', lambda d: d and (d.get('level') or {}).get('ft') == 33000, 'the plan level is written', timeout=8000)
+    c.until(f"performance.getEntriesByName('maps:live').length > {before}", timeout=8000, what='the Map reads the new plan level')
+    c.until("[...document.querySelectorAll('.f-pane, .f-pane *')].some(e => /FL ?330/.test(e.getAttribute?.('title') || '') || /FL ?330/.test(e.textContent || ''))", timeout=8000, what='the Map shows FL330')
