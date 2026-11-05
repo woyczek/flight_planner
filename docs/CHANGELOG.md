@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Settings: the Synchronisation card says what has just left** (`frame/settings/sync_summary.js` `pushedItems`, `pushedHtml`,
+  `access.js`; SPEC § 3 item 7; help ×4; A87) — SOG-0029, V3 Frame `FrameData.lastPushed()` (536ea9ec5): one line « Parti à 18:04 :
+  Fiches d'appareils : 2 · Missions : 1 », the files one by one under it (readable titles, the refusals first with the transport's
+  reason, seven at most); the last send only; nothing before the first send.
 - **Data: « Prendre le fichier téléchargé » takes the openAIP exports** (`modules/data/model_results.js`, `follow.js`, `panels.js`,
   `texts.js`; SPEC § 5; help ×4; L28) — SOG-0027, AeroDB lot C (f089178f5): the plan shows the openAIP files one by one (taken,
   converted from JSON) and the real run sends back `shown.openaip` as shown; an XML or the « hot » layer is said, never taken; the

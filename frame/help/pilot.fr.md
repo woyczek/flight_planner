@@ -711,7 +711,7 @@ Maintenance › Données aéronautiques et Types d'aéronefs), puis synchronisez
 s'il y en a), puis la dernière réussie, le réseau et la dernière erreur. Une liste repliée par sorte donne ce qui attend : le titre lisible (par exemple « Fiche A320 Navy », « Vol LFPO → LFBO du 3/11 »),
 la date, ✕ pour une suppression et, s'il y en a une, l'erreur qui retient la file ; sept éléments visibles au plus, « … et n de plus » pour le reste. Avec le lanceur du poste, « modifié ici » (pas encore
 enregistré dans les données) et « à envoyer » (enregistré, pas encore parti) s'y ajoutent. « Tout envoyer » envoie et reçoit tout de suite ; sinon la synchronisation se fait seule au démarrage, toutes les
-10 minutes en ligne et au retour du réseau. La carte se montre dès qu'un échange est coché ou que quelque chose attend.
+10 minutes en ligne et au retour du réseau. La carte se montre dès qu'un échange est coché ou que quelque chose attend. Dessous, une ligne dit ce qui vient de partir (« Parti à 18:04 : Fiches d’appareils : 2 · Missions : 1 », avec « dont 1 refusé(s) » s’il y en a) ; dépliée, elle donne les fichiers un à un par leur titre lisible, les refus d’abord avec la raison que le transport a donnée, sept au plus. C’est la dernière synchronisation qui a envoyé quelque chose : un passage à vide la laisse telle quelle, et rien n’est dit avant le premier envoi.
 
 **La sauvegarde.** Seul sur cet appareil, « Exporter (un fichier) » garde toutes vos données dans un fichier : c'est la
 seule copie. « Importer (fusion)… » la reprend sans rien perdre d'ici ; « Remplacer par un fichier… » efface d'abord ce

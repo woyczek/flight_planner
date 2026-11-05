@@ -94,7 +94,7 @@ repositorio (V2: Ajustes › Mantenimiento › Datos aeronáuticos y Tipos de ae
 luego la última correcta, la red y el último error. Una lista plegada por tipo da lo que espera: el título legible (por ejemplo «Ficha A320 Navy», «Vuelo LFPO → LFBO del 3/11»), la fecha, ✕ para una
 eliminación y, si la hay, el error que retiene la cola; siete elementos visibles como máximo, «… y n más» para el resto. Con el lanzador del puesto se añaden «modificado aquí» (aún no guardado en los datos) y
 «para enviar» (guardado, aún no enviado). «Enviar todo» envía y recibe en el acto; si no, la sincronización se hace sola al inicio, cada 10 minutos en línea y al volver la red. La tarjeta aparece en cuanto se
-marca un intercambio o algo espera.
+marca un intercambio o algo espera. Debajo, una línea dice lo que acaba de salir («Enviado a las 18:04: Fichas de aeronaves: 2 · Misiones: 1», con «de ellos 1 rechazado(s)» si lo hay); desplegada, da los archivos uno a uno por su título legible, los rechazos primero con el motivo que dio el transporte, siete como máximo. Es la última sincronización que envió algo: un paso sin nada que enviar la deja como estaba, y antes del primer envío no se dice nada.
 
 **La copia.** Solo en este dispositivo, «Exportar (un fichero)» guarda todos sus datos en un fichero: es la única
 copia. «Importar (fusión)…» la retoma sin perder nada de aquí; «Sustituir por un fichero…» borra primero lo que hay en
@@ -289,4 +289,4 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: 0c093d0e7bcb -->
+<!-- fr: 015591a5ad78 -->

@@ -3128,7 +3128,7 @@ def a84(c):
 
 # ------------------------------------------------------------------------------------------------------ A85
 # FrameData.pendingList() answered by the test (window.FrameData is patched the moment the frame defines it): the list is read from sessionStorage '__pend' at each call
-_SYNC_STUB = """(() => { let FD; const patch = v => { if (v && typeof v.pendingList === 'function' && !v.__stub) { v.__stub = 1; v.pendingList = async () => JSON.parse(sessionStorage.getItem('__pend') || '[]') } return v };
+_SYNC_STUB = """(() => { let FD; const patch = v => { if (v && typeof v.pendingList === 'function' && !v.__stub) { v.__stub = 1; v.pendingList = async () => JSON.parse(sessionStorage.getItem('__pend') || '[]'); v.lastPushed = async () => JSON.parse(sessionStorage.getItem('__pushed') || '[]') } return v };
   Object.defineProperty(window, 'FrameData', { configurable: true, get() { return FD }, set(v) { FD = patch(v) } }) })()"""
 # a document written as it is (a YAML text), the way the cache keeps a mission: the seed helper writes JSON
 _RAW_SEED_JS = """async ([path, text]) => {
@@ -3150,11 +3150,12 @@ def _sync_item(path, at='2026-10-30T08:30:00.000Z', deletion=False, error=''):
     return {'path': path, 'module': '', 'at': at, 'deletion': deletion, 'error': error}
 
 
-def _sync_open(c, pend, status=None):
+def _sync_open(c, pend, status=None, pushed=None):
     """Opens the Synchronisation card at 390 with the device's cache seeded (the titles read it), pendingList answering `pend`, and a launcher stub answering sync-status with `status` (None: no launcher)."""
     c.page.add_init_script(_SYNC_STUB)
     c.page.goto(f'{c.base}/frame/manifest.webmanifest')
     c.page.evaluate("(p) => sessionStorage.setItem('__pend', JSON.stringify(p))", pend)
+    c.page.evaluate("(p) => sessionStorage.setItem('__pushed', JSON.stringify(p))", pushed or [])
     from lib import _seed
     _seed(c.page, c.base, [['device/level.json', {'level': 3}, 'cache'], ['device/usages.json', {'devices': True}, 'cache']] + _SYNC_DOCS)
     c.page.evaluate(_RAW_SEED_JS, list(_SYNC_MISSION))
@@ -3235,4 +3236,52 @@ def a86(c):
     c.eq(got[1], {'fr': 'Base des fiches (copie des fiches enregistrées)', 'en': 'Sheets database (copy of the saved sheets)',
                   'de': 'Datenblatt-Datenbank (Kopie der gespeicherten Datenblätter)', 'es': 'Base de fichas (copia de las fichas guardadas)'}[lang],
          'the mirror is named as the copy of the saved sheets, not left as a bare path', what='mirror title')
+    c.check_errors()
+
+
+@case('A87', 'The Synchronisation card says what has just left (FrameData.lastPushed): one line with a count per kind, the refusals first with their reason, seven items at most, nothing when nothing left', 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule='frame/settings SPEC 3 item 7 (SOG-0029, V3 Frame 536ea9ec5: lastPushed() = [{ path, at, result }], the last send): « parti à 18 h 04 : fiches 2, missions 1 », titles by meta.titleOf, the reason of a refusal, folded beyond seven; a reason is text (audit 157)')
+def a87(c):
+    import datetime
+    lang = c.lang
+    sj = 'frame/settings/sync_summary.js'
+    kind = lambda k: tx(sj, k, lang, after='kind: {')
+    sheet, mission, flight = 'aircraft/sheets/DB_A320.json', _SYNC_MISSION[0], 'pilot/ABC/current_flight.json'
+    now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+    pushed = lambda paths_results: [{'path': p, 'at': now, 'result': r} for p, r in paths_results]
+    line = lambda: norm(c.text('[data-card="sync"] details[data-pushed] > summary'))
+    # ---- A: nothing waiting, four files left (one refused with a hostile reason): the card is shown for them, one line, refusals first
+    evil = '403 <img src=x onerror=window.__pwn=1>'
+    _sync_open(c, [], pushed=pushed([(sheet, 'ok'), (mission, 'ok'), (flight, evil), ('airline/settings.json', 'ok')]))
+    c.until("!!document.querySelector('[data-card=\"sync\"] details[data-pushed]')", timeout=15000, what='the line of what has just left')
+    prefix = norm(tx(sj, 'pushedAt', lang).split('{t}')[0])
+    tail = ' · '.join(f'{kind(k)} : {v}' for k, v in [('sheets', 1), ('missions', 1), ('flights', 1), ('other', 1)]) + f" ({norm(tx(sj, 'pushedRefused', lang).replace('{n}', '1'))})"
+    got = line()
+    c.ok(got.startswith(prefix) and got.endswith(tail), got, 'one line: the time, a count per kind, how many were refused')
+    c.eq(c.js("[...document.querySelectorAll('[data-card=\"sync\"] details[data-pushed]')].map(d => [d.open, d.dataset.count, d.dataset.refused])"), [[False, '4', '1']], 'folded, four files, one refused', what='folded')
+    c.js("document.querySelector('[data-card=\"sync\"] details[data-pushed]').open = true")
+    items = c.js("[...document.querySelectorAll('[data-card=\"sync\"] li[data-pushed-item]')].map(li => [li.dataset.pushedItem, li.querySelector('[data-title]')?.textContent || li.querySelector('code')?.textContent, li.querySelector('[data-reason]')?.textContent || ''])")
+    c.eq(items, [['refused', _FLIGHT_TITLE[lang], evil], ['ok', _SHEET_TITLE[lang], ''], ['ok', 'A-001A Vol de nuit', ''], ['ok', 'airline/settings.json', '']],
+         'the refusal first with its reason, then the others by their readable title (the path when there is none)', what='items')
+    c.ok(c.count('[data-card="sync"] details[data-pushed] img') == 0 and c.js("window.__pwn === undefined"), items[0], 'a reason is text: no element, nothing runs')
+    # ---- B: nine files left: seven at most, the rest said
+    nine = [(f'aircraft/sheets/DB_S{i}.json', 'ok') for i in range(9)]
+    c.page.evaluate("(p) => sessionStorage.setItem('__pushed', JSON.stringify(p))", pushed(nine))
+    c.page.reload(wait_until='load')
+    c.until("document.querySelector('[data-card=\"sync\"] details[data-pushed]')?.dataset.count === '9'", timeout=15000, what='the nine files')
+    c.js("document.querySelector('[data-card=\"sync\"] details[data-pushed]').open = true")
+    c.eq([c.count('[data-card="sync"] li[data-pushed-item]'), [norm(x) for x in c.js("[...document.querySelectorAll('[data-card=\"sync\"] details[data-pushed] [data-more]')].map(m => m.textContent)")]],
+         [7, [norm(tx('frame/settings/access.js', 'queueMore', lang).replace('{n}', '2'))]], 'seven at most, the others said', what='seven')
+    # ---- C: nothing left (before the first send): no line
+    c.page.evaluate("() => sessionStorage.setItem('__pushed', '[]')")
+    c.page.reload(wait_until='load')
+    c.settle()
+    c.eq(c.count('[data-card="sync"] details[data-pushed]'), 0, 'nothing left, nothing said', what='none')
+    # ---- D: the pure reading, a hostile or malformed list says nothing wrong
+    r = c.js("""() => { const S = window.SogSyncSummary; return [S.pushedItems(null).items.length, S.pushedItems([{ path: '', result: 'ok' }, 5, null, { path: 'a.json', result: 'ok', at: 'nope' }, { path: 'a.json', result: 'ok' }]).items.map(i => [i.path, i.ok, i.kind]),
+      S.pushedItems([{ path: 'x', result: 'y'.repeat(900), at: '2026-11-05T10:00:00Z' }]).items[0].result.length, S.pushedItems([{ path: 'x', result: 'ok', at: '2026-11-05T10:00:00Z' }]).at,
+      S.pushedItems([{ path: 'x', result: 'ok' }, { path: 'z', result: '' }]).items.map(i => [i.path, i.ok])] }""")
+    c.eq(r, [0, [['a.json', True, 'other']], 200, '2026-11-05T10:00:00Z', [['z', False], ['x', True]]],
+         'no list, no path, a repeated path, a long reason (200 at most), no result is not a success, the refusals first', what='pushedItems')
     c.check_errors()

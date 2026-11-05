@@ -157,7 +157,7 @@ Maintenance › Aeronautical data and Aircraft types), then synchronise. Three d
 something), then the last success, the network and the last error. A folded list per kind gives what is waiting: the readable title (for example “Sheet A320 Navy”, “Flight LFPO → LFBO of 3/11”), the date,
 ✕ for a deletion and, if there is one, the error that holds the queue; seven items visible at most, “… and n more” for the rest. With the workstation's launcher, “changed here” (not yet saved in the
 data) and “to send” (saved, not yet sent) are added. “Send everything” sends and receives at once; otherwise synchronisation runs by itself at start, every 10 minutes online and when the network comes
-back. The card appears as soon as an exchange is ticked or something is waiting.
+back. The card appears as soon as an exchange is ticked or something is waiting. Below it, one line says what has just left (“Sent at 18:04: Aircraft sheets: 2 · Missions: 1”, with “of which 1 refused” if any); unfolded, it gives the files one by one by their readable title, the refusals first with the reason the transport gave, seven at most. It is the last synchronisation that sent something: a pass with nothing to send leaves it as it was, and nothing is said before the first send.
 
 **The backup.** Alone on this device, “Export (one file)” keeps all your data in a file: it is the only copy. “Import
 (merge)…” takes it back without losing anything here; “Replace from a file…” first erases what is on the device.
@@ -341,4 +341,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: 0c093d0e7bcb -->
+<!-- fr: 015591a5ad78 -->

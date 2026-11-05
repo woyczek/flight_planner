@@ -167,6 +167,13 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
      commits to send, names only, 200 at most, with `changedTotal` and `toPushTotal`; read at most every 5 s, never during a synchronisation,
      at once when one ends; paths counted but not named go to « Autres »). A path in several lists is one item (the device's wait first, then
      « modifié ici », then « à envoyer »; a path in both of the last two says both).
+   - **What has just left** (SOG-0029, `FrameData.lastPushed()`, V3 Frame 536ea9ec5; `div[data-pushed-box]` under the lists): one line
+     « Parti à 18:04 : Fiches d'appareils : 2 · Missions : 1 (dont 1 refusé(s))» (« Parti le <date> » when it is not today) in the
+     `summary` of a folded `details[data-pushed]`; unfolded, the files one by one (title by the same `titleOf`, the path otherwise), the
+     refusals first with the reason the transport gave (text, 200 characters at most), seven at most, « … et n de plus ». It is the last
+     send, not a journal: a pass that sent nothing leaves it, nothing is shown before the first send, and a layer without `lastPushed` says
+     nothing. The card is shown when something has just left. `SogSyncSummary.pushedItems` reads the list bounded (a path once, a result
+     that is not `'ok'` is a refusal, `'?'` when no result). Case A87.
    - **The title**: `meta.titleOf(path, value)` → `[fr, en, de, es]` or null, declared by the module that owns the kind (Carburant: flights and
      the quote settings; Appareils: sheets and the fleet; Missions). Settings imports the `module.js` of the application's modules
      (`ctx.modules()`) and of `aircraft`, `fuel`, `missions` (the other applications' modules, which the frame does not list for Settings), and

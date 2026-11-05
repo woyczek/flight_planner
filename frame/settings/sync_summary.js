@@ -31,6 +31,10 @@
     },
     sendAll: ['Tout envoyer', 'Send everything', 'Alles senden', 'Enviar todo'],
     // avec un lanceur : ce que le dépôt de data/ attend
+    // ce qui vient de partir (FrameData.lastPushed, SOG-0029) : une ligne, la liste repliée dessous
+    pushedAt: ['Parti à {t}', 'Sent at {t}', 'Gesendet um {t}', 'Enviado a las {t}'],
+    pushedOn: ['Parti le {d}', 'Sent on {d}', 'Gesendet am {d}', 'Enviado el {d}'],
+    pushedRefused: ['dont {n} refusé(s)', 'of which {n} refused', 'davon {n} abgelehnt', 'de ellos {n} rechazado(s)'],
     flagChanged: ['modifié ici', 'changed here', 'hier geändert', 'modificado aquí'],
     flagPush: ['à envoyer', 'to send', 'zu senden', 'para enviar']
   });
@@ -52,7 +56,8 @@
   const SHEETS_MIRROR = 'planner/flight_performance_database_merged.fpdb.json';
   /** Son titre dans les quatre langues : le chemin seul ne dirait pas que c'est la copie de la fiche qui vient d'être enregistrée. */
   const MIRROR_TITLE = ['Base des fiches (copie des fiches enregistrées)', 'Sheets database (copy of the saved sheets)',
-    'Datenblatt-Datenbank (Kopie der gespeicherten Datenblätter)', 'Base de fichas (copia de las fichas guardadas)'];
+    'Datenblatt-Datenbank (Kopie der gespeicherten Datenblätter)', 'Base de fichas (copia de las fichas guardadas)'
+  ];
 
   /** La sorte d'un chemin du dépôt : fiches d'appareils (aircraft/sheets/), missions (missions/), vols (pilot/<TRI>/), flotte (airline/fleet.json), sinon « other ». */
   function kindOf(path) {
@@ -62,6 +67,32 @@
     if (p.startsWith('missions/')) return 'missions';
     if (/^pilot\/[^/]+\//.test(p)) return 'flights';
     return p === 'airline/fleet.json' ? 'fleet' : 'other';
+  }
+  /** Fichiers de lastPushed lus au plus (la couche en garde 200 au plus). */
+  const PUSHED_MAX = 200;
+  /** Ce que FrameData.lastPushed() rend, borné : { at (ISO ou ''), items: [{ path, ok, result, kind }] }, les refus d'abord (leur raison doit se voir parmi les sept), un chemin une fois ;
+   *  une entrée sans chemin est écartée ; une couche sans lastPushed ou en échec : rien. */
+  function pushedItems(list) {
+    const items = [],
+      seen = new Set();
+    let at = '';
+    for (const p of (Array.isArray(list) ? list : []).slice(0, PUSHED_MAX)) {
+      const path = str(p?.path, PATH_LEN);
+      if (!path || seen.has(path)) continue;
+      seen.add(path);
+      const result = str(p?.result, ERR_LEN) || '?';
+      if (!at && Number.isFinite(Date.parse(str(p?.at, 40)))) at = str(p.at, 40);
+      items.push({
+        path,
+        ok: result === 'ok',
+        result,
+        kind: kindOf(path)
+      });
+    }
+    return {
+      at,
+      items: [...items.filter(i => !i.ok), ...items.filter(i => i.ok)]
+    };
   }
   /** Un texte borné, sinon ''. */
   const str = (v, n) => typeof v === 'string' ? v.slice(0, n) : '';
@@ -200,7 +231,8 @@
   }
   /** Le titre lisible d'un élément dans la langue (`t`) : le premier titleOf qui en donne un ; null (le chemin s'affiche) si aucun ne répond, répond mal ou échoue. */
   async function titleOf(metas, FD, it, t) {
-    if (it.path === SHEETS_MIRROR) return str(t(MIRROR_TITLE), TITLE_LEN).trim() || null; // le miroir : son titre à lui, jamais lu du réseau
+    if (it.path === SHEETS_MIRROR) return str(t(MIRROR_TITLE), TITLE_LEN).trim() ||
+      null; // le miroir : son titre à lui, jamais lu du réseau
     let value;
     try {
       value = await valueOf(FD, it);
@@ -251,6 +283,27 @@
       flags = [...new Set(states)].map(s => t(s === 'changed' ? T.flagChanged : T.flagPush));
     return `<li data-item="${esc(it.state)}" title="${esc(it.path)}">${it.deletion ? `<span aria-label="${esc(t(T.queueDel))}" title="${esc(t(T.queueDel))}">✕</span> ` : ''}${title ? `<span data-title>${esc(title)}</span>` : `<code>${esc(it.path)}</code>`}${when(it.at) ? ` <span class="f-muted" data-at>${esc(when(it.at))}</span>` : ''}${flags.map(f => ` <span class="f-muted" data-flag>${esc(f)}</span>`).join('')}${it.error ? ` <span class="f-warn" data-reason>${esc(it.error)}</span>` : ''}</li>`;
   }
+  /** Le HTML de « ce qui vient de partir » : la ligne « Parti à 18:04 : Fiches d'appareils : 2 · Missions : 1 (dont 1 refusé) » et, repliée dessous, la liste (sept au plus, les refus
+   *  d'abord avec leur raison, « … et n de plus »). `titles` : chemin → titre. Rien à dire : ''. Tout texte passe par esc. */
+  function pushedHtml(env, pushed, titles, wasOpen) {
+    const {
+      t,
+      c
+    } = env;
+    if (!pushed.items.length) return '';
+    const n = Object.fromEntries(KINDS.map(k => [k, pushed.items.filter(i => i.kind === k).length])),
+      refused = pushed.items.filter(i => !i.ok).length,
+      day = new Date().toISOString().slice(0, 10),
+      when = !pushed.at ? '' : pushed.at.slice(0, 10) === day ? t(T.pushedAt, {
+        t: c.time.fmtZ(pushed.at)
+      }) : t(T.pushedOn, {
+        d: c.time.fmtDateZ(pushed.at)
+      }),
+      line = `${when ? `${when} : ` : ''}${KINDS.filter(k => n[k]).map(k => `${t(T.kind[k])} : ${n[k]}`).join(' · ')}${refused ? ` (${t(T.pushedRefused, { n: refused })})` : ''}`,
+      shown = pushed.items.slice(0, MAX_VISIBLE),
+      more = pushed.items.length - shown.length;
+    return `<details data-pushed data-count="${pushed.items.length}" data-refused="${refused}"${wasOpen ? ' open' : ''}><summary>${esc(line)}</summary><ul class="f-queue">${shown.map(i => `<li data-pushed-item="${i.ok ? 'ok' : 'refused'}" title="${esc(i.path)}">${titles.get(i.path) ? `<span data-title>${esc(titles.get(i.path))}</span>` : `<code>${esc(i.path)}</code>`}${i.ok ? '' : ` <span class="f-warn" data-reason>${esc(i.result)}</span>`}</li>`).join('')}${more ? `<li class="f-muted" data-more>${esc(t(T.queueMore, { n: more }))}</li>` : ''}</ul></details>`;
+  }
   /** Dessine la tête (un compte par sorte) et les listes repliées de la carte Synchronisation d'après l'état du transport `s` (FD.status) ; la carte se montre si un échange est coché ou si quelque chose attend. */
   async function paint(env, s) {
     const {
@@ -267,23 +320,33 @@
     const token = (tokens.get(view) || 0) + 1;
     tokens.set(view, token);
     const status = await launcherStatus(env, s),
-      {
+      [{
         items,
         unlisted
-      } = await read({
+      }, pushed] = await Promise.all([read({
         pending: () => FD.pendingList(),
         status: () => status
-      });
+      }), Promise.resolve().then(() => typeof FD.lastPushed === 'function' ? FD.lastPushed() : []).then(pushedItems).catch(() =>
+        pushedItems([]))]); // sans lastPushed (couche plus ancienne) : rien à dire
     if (tokens.get(view) !== token || !view.isConnected) return;
     const n = counts(items, unlisted),
       groups = plan(items),
-      metas = groups.some(g => g.shown.length) ? await titlers(mods) : [],
-      titled = new Map();
-    await Promise.all(groups.flatMap(g => g.shown).map(async it => titled.set(it, await titleOf(metas, FD, it, t))));
+      pushedShown = pushed.items.slice(0, MAX_VISIBLE),
+      metas = groups.some(g => g.shown.length) || pushedShown.length ? await titlers(mods) : [],
+      titled = new Map(),
+      pushedTitles = new Map();
+    await Promise.all([...groups.flatMap(g => g.shown).map(async it => titled.set(it, await titleOf(metas, FD, it, t))),
+      ...pushedShown.map(async it => pushedTitles.set(it.path, await titleOf(metas, FD, it, t)))
+    ]);
     if (tokens.get(view) !== token || !view.isConnected) return;
     const open = new Set([...box.querySelectorAll('details[open][data-kind-list]')].map(d => d.dataset.kindList));
     const card = box.closest('[data-card]');
-    if (card) card.hidden = !exchange && !items.length && !unlisted;
+    if (card) card.hidden = !exchange && !items.length && !unlisted && !pushed.items.length;
+    const out = view.querySelector('[data-pushed-box]');
+    if (out) {
+      const wasOpen = !!out.querySelector('details[data-pushed][open]');
+      out.innerHTML = pushedHtml(env, pushed, pushedTitles, wasOpen);
+    }
     head.innerHTML = `<b>${esc(t(T.pending))}</b> : ${KINDS.filter(k => k !== 'other' || n.other).map(k => `<span data-kind="${k}" data-count="${n[k]}">${esc(t(T.kind[k]))} : ${n[k]}</span>`).join(' · ')}`;
     box.innerHTML = groups.map(g => `<details data-kind-list="${g.kind}"${open.has(g.kind) ? ' open' : ''}><summary>${esc(t(T.kind[g.kind]))} (${g.total})</summary><ul class="f-queue">${g.shown.map(it => itemHtml(it, titled.get(it), env)).join('')}${g.more ? `<li class="f-muted" data-more>${esc(t(T.queueMore, { n: g.more }))}</li>` : ''}</ul></details>`).join('');
   }
@@ -292,6 +355,7 @@
     KINDS,
     MAX_VISIBLE,
     kindOf,
+    pushedItems,
     merge,
     counts,
     plan,

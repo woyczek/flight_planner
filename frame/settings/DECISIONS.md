@@ -568,3 +568,13 @@ moves code, `S` itself replaced through `setState` alone.
   and the keys of an answer are read with `Object.hasOwn` (a hostile key named like a member of Object.prototype). **Why not a link**: a path opening the file would hand a hostile name the click. **One reader**: `settings/sync_summary.js`
   holds the two reads (`FrameData.pendingList()`, `GET sync-status`) and the titles; the cards and the modules' marks use it. **Titles**: the value is the device's own copy, read only for the seven items shown, never the network
   (a file the device does not have is shown by its path); Settings cannot list the modules of the other applications, so it names `aircraft`, `fuel` and `missions` itself (to replace by a frame list if one is given). Case A85.
+
+## 5 November 2026 — what has just left, on the Synchronisation card (SOG-0029, lot E3)
+
+- **Rule**: the card reads `FrameData.lastPushed()` once per drawing (with the other reads) and says one line; nothing is read from the
+  network, no pass is launched. A refusal is a result that is not `'ok'`; its reason is shown as text, bounded.
+- **Reversible details chosen** (the user is away): the list is **folded under the line** (one line by default, even for few files; « repliée
+  au-delà de sept » read as: the list is folded, seven shown at most, the rest said); the refusals come first so that a reason is never in the
+  « … et n de plus »; the line counts per kind like the head (« Fiches d'appareils : 2 · Missions : 1 ») rather than naming files; the card
+  is shown when something has just left even if nothing waits. To unfold by default under seven files: set `open` in `pushedHtml` when
+  `items.length <= MAX_VISIBLE`.

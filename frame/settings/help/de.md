@@ -56,7 +56,7 @@ Repository (V2: Einstellungen › Wartung › Luftfahrtdaten und Luftfahrzeugtyp
 wenn es etwas gibt), dann der letzte Erfolg, das Netz und der letzte Fehler. Eine eingeklappte Liste je Art zeigt, was wartet: den lesbaren Titel (zum Beispiel „Datenblatt A320 Navy“, „Flug LFPO → LFBO vom 3/11“),
 das Datum, ✕ für eine Löschung und, falls es einen gibt, den Fehler, der die Warteschlange hält; höchstens sieben Einträge sichtbar, „… und n weitere“ für den Rest. Mit dem Starter des Arbeitsplatzes kommen
 „hier geändert“ (noch nicht in den Daten gespeichert) und „zu senden“ (gespeichert, noch nicht gesendet) hinzu. „Alles senden“ sendet und empfängt sofort; sonst läuft die Synchronisation von selbst beim
-Start, alle 10 Minuten online und bei Rückkehr des Netzes. Die Karte erscheint, sobald ein Austausch angekreuzt ist oder etwas wartet.
+Start, alle 10 Minuten online und bei Rückkehr des Netzes. Die Karte erscheint, sobald ein Austausch angekreuzt ist oder etwas wartet. Darunter sagt eine Zeile, was gerade gesendet wurde („Gesendet um 18:04: Flugzeug-Datenblätter: 2 · Missionen: 1“, mit „davon 1 abgelehnt“, falls es welche gibt); aufgeklappt nennt sie die Dateien einzeln mit ihrem lesbaren Titel, die abgelehnten zuerst mit dem vom Transport genannten Grund, höchstens sieben. Es ist die letzte Synchronisation, die etwas gesendet hat: Ein Durchlauf ohne Sendung lässt sie unverändert, und vor dem ersten Senden wird nichts gesagt.
 
 **Die Sicherung.** Allein auf diesem Gerät bewahrt „Exportieren (eine Datei)“ alle Ihre Daten in einer Datei auf: Sie
 ist die einzige Kopie. „Importieren (zusammenführen)…“ übernimmt sie, ohne hier etwas zu verlieren; „Durch eine Datei
@@ -255,4 +255,4 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: 0c093d0e7bcb -->
+<!-- fr: 015591a5ad78 -->
