@@ -443,19 +443,29 @@ export function createProcedures(host) {
       icao: m.icao
     }), false)] : [fileHtml(m), readButton(m.icao, tt(TX.procReread), true)];
     if (m.unread > 0) parts.push(`<span class="fu-procunread" title="${esc([m.partialLabel, tt(m.unread === 1 ? TX.procUnread1 : TX.procUnread, { n: m.unread })].filter(Boolean).join(' · '))}">${esc(tt(m.unread === 1 ? TX.procNotRead1 : TX.procNotRead, { n: m.unread }))}</span>`);
-    return parts.filter(Boolean).join('<span class="fu-sep" aria-hidden="true"> · </span>') + ` <span data-source-slot>${sourceHtml(m, side)}</span>`;
+    return parts.filter(Boolean).join('<span class="fu-sep" aria-hidden="true"> · </span>') + ` <span data-source-slot>${chartsHtml(m.icao)}</span>`;
   }
-  /** « Source » (§ 10.25) : pour chaque procédure choisie du côté (la SID ; la STAR et l'approche), un lien vers la page codée qu'aerodb
-   *  donne en source.url (fiche de l'eAIP : adresse publique du SIA, https seulement), dans un nouvel onglet ; avec deux liens, la sorte
-   *  suit (« Source STAR · Source APP »). Une fiche d'une autre source (EAD, OCR, à la main) n'a pas de lien : le nom de son document
-   *  (source.file) va dans le title de la ligne. */
-  function sourceHtml(m, side) {
-    const o = CF.proceduresOf(host.flight())[side] || {},
-      keys = side === 'dep' ? ['sid'] : ['star', 'app'],
-      recs = keys.map(k => [k, typeof o[k] === 'string' ? (m.all || []).find(r => r.id === o[k]) : null]).filter(([, r]) => r),
-      linked = recs.filter(([, r]) => /^https:\/\//.test(String(r.source?.url || '')));
-    return linked.map(([k, r]) => `<a class="fu-procsrc" href="${esc(r.source.url)}" target="_blank" rel="noopener noreferrer" title="${esc(r.source.file || r.source.url)}">${esc(tt(TX.procSource) + (linked.length > 1 ? ` ${tt(TX.procKinds[k])}` : ''))}</a>`)
-      .join('<span class="fu-sep" aria-hidden="true"> · </span>');
+  // le catalogue des sources d'aerodb (dossier AIRAC de l'eAIP, États d'EAD), lu une fois ; les emplacements des cartes se remplissent ensuite
+  let catalog = null;
+  Promise.resolve().then(() => ctx.aerodb?.sources?.()).then(c => {
+    catalog = c || null;
+    for (const el of host.body?.()?.querySelectorAll?.('[data-proc]') || []) {
+      const slot = el.querySelector('[data-source-slot]');
+      if (slot) slot.innerHTML = chartsHtml(el.dataset.icao);
+    }
+  }).catch(() => {});
+  /** « Cartes » d'un terrain (SOG-0024 ; remplace le lien « Source » vers la page codée, des tableaux : elle reste à Maintenance ›
+   *  Données) : en France la page de l'aérodrome de l'eAIP du SIA du cycle en vigueur, à sa section AD 2.24 (les cartes : VAC, IAC,
+   *  SID, STAR) ; dans un État qu'EAD publie, la page d'EAD Basic (compte gratuit) ; sinon une phrase, jamais un lien deviné. */
+  function chartsHtml(icao) {
+    const k = String(icao || '').toUpperCase();
+    if (!catalog || !/^[A-Z]{4}$/.test(k)) return '';
+    const link = (href, text) => `<a class="fu-procsrc" data-charts href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(text)}</a>`;
+    if (k.startsWith('LF') && catalog.eaipBase) return link(`${catalog.eaipBase()}/html/eAIP/FR-AD-2.${k}-fr-FR.html#${k}-AD-2.24`, tt(TX
+      .procCharts));
+    const ead = (catalog.SOURCES || []).find(s => /^https:\/\/www\.ead\.eurocontrol\.int\//.test(s?.url || ''))?.url;
+    if (ead && Object.hasOwn(catalog.EAD_STATES || {}, k.slice(0, 2))) return link(ead, tt(TX.procChartsEad));
+    return `<span class="f-muted" data-charts>${esc(tt(TX.procChartsNone))}</span>`;
   }
   /** Les documents sans lien public des procédures choisies d'un côté (autre source que l'eAIP) : pour le title de la ligne. */
   function sourceTitle(m, side) {

@@ -1319,25 +1319,29 @@ def f41(c):
 
 
 
-@case('F42', '"Source" on the secondary line: the chosen eAIP procedure\'s public page, in a new tab', 'F', tags=('fuel', 'aerodb'), designs=('standard',),
-      screens=False, langs4=True, rule='V3 spec 10.25: a link "Source" to source.url (https only, given by aerodb), new tab; another source has no link, its document in the title')
+@case('F42', '« Cartes » on the secondary line: the aerodrome official charts, never the coded data tables', 'F', tags=('fuel', 'aerodb'),
+      designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0024 (replaces the « Source » link of V3 spec 10.25, a coded-data page of tables): in France the aerodrome page of the SIA '
+      'eAIP of the cycle in force at its AD 2.24 (charts), a new tab; a state EAD publishes: EAD Basic; otherwise « source inconnue », no link')
 def f42(c):
     open_proc(c)
     wait_rows(c, 'arr')
-    slot = f'{FUEL} [data-proc="arr"] [data-source-slot]'
-    c.eq(c.count(f'{slot} a'), 0, 'no procedure chosen: no link', what='links before')
+    sel = "[data-module=fuel] [data-proc=arr] [data-source-slot] [data-charts]"
+    c.until(f"!!document.querySelector('{sel}')", what='the charts link of the arrival')
+    a = c.js(f"(() => {{ const a = document.querySelector('{sel}'); return {{ href: a.getAttribute('href'), t: a.target, rel: a.rel, text: a.textContent.trim() }} }})()")
+    c.ok(re.match(r'^https://www\.sia\.aviation-civile\.gouv\.fr/media/dvd/eAIP_\d{2}_[A-Z]{3}_\d{4}/FRANCE/AIRAC-\d{4}-\d{2}-\d{2}/html/eAIP/FR-AD-2\.LFML-fr-FR\.html#LFML-AD-2\.24$',
+                  a['href'] or ''), a['href'], 'the eAIP page of LFML, at its charts (AD 2.24)')
+    c.eq((a['t'], a['rel'], norm(a['text'])), ('_blank', 'noopener noreferrer', norm(tx(PT, 'procCharts', c.lang))), 'a new tab, no opener, « Cartes »', what='link')
     pick_proc(c, 'p-arr-star', 'LFML.STAR.MEN1A.RW13R.NONE')
-    c.until("!!document.querySelector('[data-module=fuel] [data-proc=arr] [data-source-slot] a')", what='the link appears once the STAR is chosen')
-    a = c.js("(() => { const a = document.querySelector('[data-module=fuel] [data-proc=arr] [data-source-slot] a'); return { href: a.getAttribute('href'), t: a.target, rel: a.rel, text: a.textContent.trim(), title: a.title } })()")
-    c.eq(a['href'], 'https://www.sia.aviation-civile.gouv.fr/test/eAIP/Cartes/LFML/AD_2_LFML_STAR_TEST.pdf', 'the address aerodb gives, as is', what='href')
-    c.eq((a['t'], a['rel']), ('_blank', 'noopener noreferrer'), 'in a new tab, without opener', what='target')
-    c.eq(norm(a['text']), norm(row(c, 'procSource')), '"Source" in the language of the run', what='text')
-    c.eq(a['title'], 'AD_2_LFML_STAR_TEST.pdf', 'the page\'s name in the title', what='title')
-    # the approach of another source (no page address): no second link, its document in the line\'s title
-    pick_proc(c, 'p-arr-app', 'LFML.APP.I13R.RW13R.NONE')
-    cf_doc(c, lambda d: (procs_of(d, 'arr') or {}).get('app') == 'LFML.APP.I13R.RW13R.NONE', 'the approach is written')
     c.settle()
-    c.eq(c.count(f'{slot} a'), 1, 'a record without source.url gets no link', what='links after the approach')
+    c.eq(c.count("[data-module=fuel] [data-proc=arr] [data-source-slot] a"), 1, 'a chosen procedure adds no link to the coded data', what='links')
+    # an aerodrome of a state EAD publishes, then one of a state with no known source
+    set_icao(c, 'dep', 'EIXX')
+    c.until("(document.querySelector('[data-module=fuel] [data-proc=dep] [data-charts]')?.getAttribute('href') || '').startsWith('https://www.ead.eurocontrol.int/')",
+            what='EIXX: EAD Basic')
+    set_icao(c, 'dep', 'KXXX')
+    c.until("(w) => (document.querySelector('[data-module=fuel] [data-proc=dep] [data-charts]')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w",
+            norm(tx(PT, 'procChartsNone', c.lang)), what='KXXX: « source inconnue », no link')
 
 
 @case('F43', 'A flight dated in the past says so, without blocking', 'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
