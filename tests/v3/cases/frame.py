@@ -3216,3 +3216,23 @@ def a85(c):
     c.eq(items, [[_SHEET_TITLE[lang], [ch, push]], ['A-001A Vol de nuit', [ch]], [_FLIGHT_TITLE[lang], [push]]],
          'modified here (not committed) and to send (commits to push), the two for a path that is in both', what='launcher items')
     c.check_errors()
+
+
+@case('A86', 'A saved sheet is two files waiting (the sheet and its mirror): counted together under the sheets, the mirror named', 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule='frame/settings SPEC 3 item 7 (SOG-0023 b, 5 Nov 2026): aerodb writes aircraft/sheets/<id>.json AND the mirror planner/flight_performance_database_merged.fpdb.json with every saved sheet; the Synchronisation card counts both under the sheets, no « Autres » line nothing explains, and names the mirror as the copy of the saved sheets')
+def a86(c):
+    lang = c.lang
+    sj = 'frame/settings/sync_summary.js'
+    kind = lambda k: tx(sj, k, lang, after='kind: {')
+    head = lambda n: norm(f"{tx('frame/settings/access.js', 'pending', lang)} : " + ' · '.join(f'{kind(k)} : {v}' for k, v in n if v or k != 'other'))
+    mirror = 'planner/flight_performance_database_merged.fpdb.json'
+    _sync_open(c, [_sync_item('aircraft/sheets/DB_A320.json'), _sync_item(mirror)])
+    c.eq(norm(c.text('[data-card="sync"] [data-sync-head]')), head([('sheets', 2), ('missions', 0), ('flights', 0), ('fleet', 0), ('other', 0)]),
+         'a saved sheet is two files waiting, counted under the sheets and no « Autres » line', what='mirror head')
+    c.js("document.querySelectorAll('[data-card=\"sync\"] details[data-kind-list]').forEach(d => d.open = true)")
+    got = c.js("[...document.querySelectorAll('[data-card=\"sync\"] li[data-item]')].map(li => li.querySelector('[data-title]')?.textContent || li.querySelector('code')?.textContent)")
+    c.eq(got[1], {'fr': 'Base des fiches (copie des fiches enregistrées)', 'en': 'Sheets database (copy of the saved sheets)',
+                  'de': 'Datenblatt-Datenbank (Kopie der gespeicherten Datenblätter)', 'es': 'Base de fichas (copia de las fichas guardadas)'}[lang],
+         'the mirror is named as the copy of the saved sheets, not left as a bare path', what='mirror title')
+    c.check_errors()

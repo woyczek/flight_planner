@@ -151,7 +151,9 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    card both apps' status block leads to is the summary; `settings/sync_summary.js`, `window.SogSyncSummary`; the user, 1 Nov 2026: « je ne
    sais pas quelles fiches appareil sont synchro et lesquelles ne le sont pas, pas plus que les missions »), kept live through `onStatus`:
    - **Head**: one line, one count per kind (« En attente : Fiches d'appareils : 3 · Missions : 0 · Vols : 1 · Flotte : 0 », « Autres »
-     only when not zero). The kind is the path's prefix: `aircraft/sheets/` sheets, `missions/` missions, `pilot/<TRI>/` flights,
+     only when not zero). The kind is the path's prefix: `aircraft/sheets/` sheets (and their mirror `planner/flight_performance_database_merged.fpdb.json`,
+     which aerodb writes with every saved sheet: counted with the sheets and named « Base des fiches (copie des fiches enregistrées) »,
+     never an « Autres » line nothing explains; case A86), `missions/` missions, `pilot/<TRI>/` flights,
      `airline/fleet.json` fleet, anything else « Autres ». Then last success, network, last error, and the hint that says when the next
      try is (at start, every 10 minutes online, when the network comes back).
    - **« Tout envoyer »** (primary, the frame's `syncNow`: the gesture the card always had, with or without a launcher), and the link to the

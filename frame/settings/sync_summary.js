@@ -48,11 +48,17 @@
   const KINDS = ['sheets', 'missions', 'flights', 'fleet', 'other'];
   /** Les modules dont meta.titleOf peut titrer un chemin : ceux de l'application montrée (ctx.modules) et ceux des autres applications, que le cadre ne donne pas aux Réglages. */
   const TITLE_MODULES = ['aircraft', 'fuel', 'missions'];
+  /** Le fichier miroir des fiches : écrit par aerodb avec chaque fiche (registry.js put), jamais titré par le module Appareils. */
+  const SHEETS_MIRROR = 'planner/flight_performance_database_merged.fpdb.json';
+  /** Son titre dans les quatre langues : le chemin seul ne dirait pas que c'est la copie de la fiche qui vient d'être enregistrée. */
+  const MIRROR_TITLE = ['Base des fiches (copie des fiches enregistrées)', 'Sheets database (copy of the saved sheets)',
+    'Datenblatt-Datenbank (Kopie der gespeicherten Datenblätter)', 'Base de fichas (copia de las fichas guardadas)'];
 
   /** La sorte d'un chemin du dépôt : fiches d'appareils (aircraft/sheets/), missions (missions/), vols (pilot/<TRI>/), flotte (airline/fleet.json), sinon « other ». */
   function kindOf(path) {
     const p = String(path ?? '');
-    if (p.startsWith('aircraft/sheets/')) return 'sheets';
+    // le miroir des fiches (aerodb l'écrit à chaque fiche enregistrée) compte avec elles, nommé par MIRROR_TITLE
+    if (p.startsWith('aircraft/sheets/') || p === SHEETS_MIRROR) return 'sheets';
     if (p.startsWith('missions/')) return 'missions';
     if (/^pilot\/[^/]+\//.test(p)) return 'flights';
     return p === 'airline/fleet.json' ? 'fleet' : 'other';
@@ -194,6 +200,7 @@
   }
   /** Le titre lisible d'un élément dans la langue (`t`) : le premier titleOf qui en donne un ; null (le chemin s'affiche) si aucun ne répond, répond mal ou échoue. */
   async function titleOf(metas, FD, it, t) {
+    if (it.path === SHEETS_MIRROR) return str(t(MIRROR_TITLE), TITLE_LEN).trim() || null; // le miroir : son titre à lui, jamais lu du réseau
     let value;
     try {
       value = await valueOf(FD, it);

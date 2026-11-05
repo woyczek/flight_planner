@@ -13,6 +13,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ### V3
 
 - **Settings: the Synchronisation card is the sync summary** (`frame/settings/sync_summary.js` new, `access.js`, `frame/app.js` (the file in LAZY.settings), `frame.css`, help ×4, INTEGRATION, SPEC § 3 item 7, DECISIONS; the user's « je ne sais pas quelles fiches appareil sont synchro et lesquelles ne le sont pas, pas plus que les missions »; noreg A85): no new screen. The head counts what waits by kind (aircraft sheets, missions, flights, fleet, « Autres » only when not zero); a folded list per kind gives the readable title (the `titleOf` of the module that owns the kind, from the device's own copy, never the network), the date, ✕ for a deletion and the reason of the error that holds the queue, seven items at most in all and « … et n de plus » for the rest; with a launcher, `sync-status`'s `changed` (« modifié ici ») and `toPush` (« à envoyer »). « Tout envoyer » is the primary button (the same `syncNow`). `SogSyncSummary.marks({ pending, status })` is the read the modules' « non synchronisé » mark can use. Titles, paths and errors are escaped, a path is text, counts bounded (DECISIONS, audit 157). Text `queue` removed; `kind`, `sendAll`, `flagChanged`, `flagPush` ×4 added.
+- **Settings: a saved sheet is two files waiting, counted as one kind** (`frame/settings/sync_summary.js`; SPEC § 3 item 7; A86) — SOG-0023 (b):
+  the user thought the sheets he updated never showed in the synchronisation. aerodb writes `aircraft/sheets/<id>.json` AND its mirror
+  `planner/flight_performance_database_merged.fpdb.json` with every saved sheet; the card put the mirror under « Autres », unnamed. It
+  now counts with the sheets and says what it is. The reason a held item gives is the error the data layer already names (V3 Frame
+  fe6713570).
 - **Missions moves to the Company application** (`modules/missions/module.js` `meta.apps: ['company']`; SPEC § 1, DECISIONS, help ×4;
   noreg N2–N5 open it with `?app=company`) — « Préparer ce vol » still opens Fuel, in Pilot.
 - **Missions, Site: a path or an address written by a pilot is never taken as it is** (`frame/lib/mission.js` `readRegistry`,
