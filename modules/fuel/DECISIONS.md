@@ -1357,3 +1357,12 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   both ways; the cause was `textFromPoints`, which wrote an airway's nodes as DCT points as soon as a point was edited (F69, checked
   on the user's base read-only: « SITET A34 LGL A34 BOBSA » stays). 0024: « Cartes » opens the aerodrome's official charts (SIA eAIP
   at AD 2.24, EAD Basic, else « source inconnue ») instead of the coded-data tables (F42).
+- **5 Nov 2026 — lot A, the rest** (the ergonomics session's decisions): 0020 — the « 5 min of flight » was the plan above the points'
+  levels (36 min of climb for 9 of cruise on 370 NM with the S210): one line beside the level and « Aligner les points sur le plan »
+  (removes the points' levels), nothing modal (F91). 0003 — a level forced on a point of a chosen procedure (level only: a published
+  speed comes from the data) is kept in `route.constraints` (fix → ft, a key of its own: `route.procedures` is normalised by
+  `flight_path.js`), applied by Fuel to the flown path (`fpNow`, an « at » constraint in place of the published one), so the vertical
+  path and the Map follow it; refused and said above the sheet's ceiling or when the gradient to reach it exceeds the sheet's by a
+  third (400 ft/NM without a sheet) (F92). 0021 — the selection by runway was right (the user's LFPO file, read-only, offers BOBSA 9E
+  RW07 for the 07); the defect was the other order: a STAR chosen first takes its first record (RW02) and its runway, and a runway
+  chosen next kept that record; now the sibling record of the runway replaces it (F90, counter-test: without, RW02 stays).

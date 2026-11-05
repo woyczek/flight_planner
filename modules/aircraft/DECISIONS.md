@@ -75,3 +75,6 @@
   (the bound of `PROFILE_FIELDS`, the same that `fuel_units.js density()` applies), M23. The JSON sheet is the only source; the
   module reads no `.lnmperf` but through its import; aerodb's automatic `.lnmperf` follow (`lnmAuto`) is reported to D4 — it may be
   why the user « remet sans cesse ses fiches à jour ».
+- **5 Nov 2026 — an RPM curve that goes down is said** (SOG-0015, the ergonomics session): the first pair of RPMs where the flow goes
+  down while the RPM goes up (the table's rows without altitude, and the cruise) is said above the table and its row is orange; the
+  sheet is never corrected (the S210's 6 700 rpm row stays the user's). M24.
