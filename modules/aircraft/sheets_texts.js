@@ -54,18 +54,20 @@ export const TX = {
   pasted: ['texte collé', 'pasted text', 'eingefügter Text', 'texto pegado'],
   typeCode: ['Code OACI du type', 'ICAO type code', 'ICAO-Typcode', 'Código OACI del tipo'],
   gpt: ['ChatGPT', 'ChatGPT', 'ChatGPT', 'ChatGPT'],
-  gptPrompt: ['Copier la demande ChatGPT', 'Copy the ChatGPT request', 'ChatGPT-Anfrage kopieren', 'Copiar la petición a ChatGPT'],
-  gptMissing: ['Demande pour les champs vides', 'Request for the empty fields', 'Anfrage für die leeren Felder',
-    'Petición para los campos vacíos'
+  // un geste comme en V2 (SOG-0014) : la demande copiée ET ChatGPT ouvert dans un nouvel onglet ; retour par collage de la réponse
+  gptPrompt: ['Compléter avec ChatGPT', 'Complete with ChatGPT', 'Mit ChatGPT vervollständigen', 'Completar con ChatGPT'],
+  gptMissing: ['ChatGPT : les champs vides seulement', 'ChatGPT: the empty fields only', 'ChatGPT: nur die leeren Felder',
+    'ChatGPT: solo los campos vacíos'
   ],
   copyManual: ['Copie impossible ici : le texte est sélectionné, copiez-le (Ctrl+C ou appui long).',
     'Copying is not possible here: the text is selected, copy it (Ctrl+C or long press).',
     'Kopieren ist hier nicht möglich: Der Text ist markiert, kopieren Sie ihn (Strg+C oder lange drücken).',
     'Aquí no se puede copiar: el texto está seleccionado, cópielo (Ctrl+C o pulsación larga).'
   ],
-  copied: ['Demande copiée : collez-la dans ChatGPT, puis sa réponse ci-dessous.',
-    'Request copied: paste it into ChatGPT, then its answer below.',
-    'Anfrage kopiert: in ChatGPT einfügen, dann die Antwort unten.', 'Petición copiada: péguela en ChatGPT y luego su respuesta abajo.'
+  copied: ['Demande copiée et ChatGPT ouvert : collez-la si elle n’y est pas, puis collez sa réponse ci-dessous.',
+    'Request copied and ChatGPT opened: paste it there if it is not, then paste its answer below.',
+    'Anfrage kopiert und ChatGPT geöffnet: dort einfügen, falls sie fehlt, dann die Antwort unten einfügen.',
+    'Petición copiada y ChatGPT abierto: péguela si no está, luego pegue su respuesta abajo.'
   ],
   gptReply: ['Réponse de ChatGPT (telle quelle)', 'ChatGPT’s answer (as is)', 'Antwort von ChatGPT (unverändert)',
     'Respuesta de ChatGPT (tal cual)'

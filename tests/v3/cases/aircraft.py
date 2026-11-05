@@ -538,6 +538,26 @@ def m21(c):
          'an http(s) address is kept; javascript:, data:, credentials, nothing give no address', what='pageUrl')
 
 
+@case('M22', 'Sheets: « Compléter avec ChatGPT » copies the request and opens ChatGPT in one gesture', 'M', tags=('aircraft',),
+      designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0014 (regression of 4044dc8ba: the V2 gesture copied the prompt and opened ChatGPT): in the sheet editor, the button '
+      'puts the request in its box (copied) and opens chatgpt.com in a new tab; the answer comes back by paste (M15)')
+def m22(c):
+    open_sheets(c)
+    edit_sheet(c, 'EC25')
+    c.js("(() => { window.__opened = []; window.open = (u, t, f) => { window.__opened.push([u, t, f]); return null } })()")
+    c.js(f"(() => {{ const d = document.querySelector('{M} {SHEETS} [data-do=gpt]').closest('details'); if (d) d.open = true }})()")
+    c.eq(norm(c.text(f'{M} {SHEETS} [data-do="gpt"]') or ''), norm(tx(SX, 'gptPrompt', c.lang)), 'the button says « Compléter avec ChatGPT »',
+         what='label')
+    c.tap(f'{M} {SHEETS} [data-do="gpt"]')
+    c.until("(window.__opened || []).length === 1", what='ChatGPT is opened')
+    url, target, feat = c.js('window.__opened[0]')
+    prompt = c.js(f"document.querySelector('{M} {SHEETS} textarea[data-k=gptprompt]').value")
+    c.ok(url.startswith('https://chatgpt.com/') and target == '_blank' and 'noopener' in (feat or ''), url[:80], 'chatgpt.com, a new tab, no opener')
+    c.ok(len(prompt) > 200 and 'EC25' in prompt, prompt[:80], 'the request is in its box, naming the sheet')
+    c.ok(url == 'https://chatgpt.com/' if len(prompt) >= 7000 else '?q=' in url, url[:80], 'the request in the address when it is short enough')
+
+
 @case('M15', 'Sheets: a ChatGPT reply is read into the review; « Appliquer » writes it stamped « chatgpt »', 'M', tags=('aircraft',), designs=('standard',),
       screens=False,
       rule='modules/aircraft SPEC 4: the ChatGPT reply (any shape: the aerodb reader) is a source like the others; preview, then a write through '

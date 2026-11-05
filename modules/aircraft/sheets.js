@@ -332,10 +332,15 @@ export function createSheetsView(host) {
         const box = body().querySelector('[data-k="gptprompt"]');
         box.value = txt;
         box.closest('label').classList.remove('ac-hide');
-        // presse-papiers, sinon copie à l'ancienne, sinon la demande reste sélectionnée dans sa zone : « copiez-la »
+        // presse-papiers, sinon copie à l'ancienne, sinon la demande reste sélectionnée dans sa zone : « copiez-la » ; puis ChatGPT
+        // ouvert dans un nouvel onglet, dans le même geste (SOG-0014, comme la V2 et l'ordre de mission) : la demande passe dans
+        // l'adresse quand elle est assez courte, sinon elle est collée par le pilote. Copie d'abord : un onglet ouvert avant
+        // retirerait le focus à la page, et le presse-papiers le refuse alors
         const how = await copyText(txt, {
           box
         });
+        window.open(txt.length < 7000 ? `https://chatgpt.com/?q=${encodeURIComponent(txt)}` : 'https://chatgpt.com/', '_blank',
+          'noopener');
         ctx.notify(tt(how === 'shown' ? TX.copyManual : TX.copied), how === 'shown' ? 'warn' : 'ok');
         return;
       }
