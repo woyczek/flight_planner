@@ -43,6 +43,9 @@ REGISTRY = """missions:
   - id: X-003C
     family: TESTBRAVO
     title: Quatrième essai
+    type: MEDEVAC
+    callsigns: [SAMU99]
+    teams: [{ name: SAMU99, type: H135, service: SAMU }]
     aircraftTypes: [H135]
     origin: Base Test (XTST)
     destination: Base Test (XTST)
@@ -239,6 +242,19 @@ BROKEN_REGISTRY = REGISTRY + """  - id: X-006A
     folder: Z_TEST/X-008A
     files: [missionX-008A.yaml]
 """
+
+
+@case('N6', 'Missions: the search reads the activity, the callsigns and the teams, not only the title', 'N', tags=('missions',),
+      designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0009: in Company › Missions the search finds a mission by its activity (type MEDEVAC, a team service SAMU), its callsign '
+      '(SAMU99) and its aerodromes\' ICAO codes, words absent from its title; what is searched is written under the field')
+def n6(c):
+    open_missions(c)
+    c.eq(norm(c.text(f'{M} [data-searchhint]') or ''), norm(tx(MS, 'searchHint', c.lang)), 'what the search reads, under the field', what='hint')
+    for q in ('medevac', 'samu', 'samu99'):
+        c.page.fill(f'{M} [data-k="q"]', q)
+        c.until(f"document.querySelectorAll('{M} [data-list] [data-id]').length === 1", what=f'« {q} » keeps one row')
+        c.eq(ids(c), ['X-003C'], f'« {q} » finds X-003C (not in its title)', what=q)
 
 
 @case('N5', 'Missions: a mission whose file does not come says why — absent from the repository, unreadable YAML, no id or type', 'N',

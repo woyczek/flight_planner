@@ -9,7 +9,7 @@
 //     mission.type (seuls champs exigés). origin / destination / target : { name, icao, lat, lon } ou null ; points : { id → { id,
 //     name, lat, lon, kind } } (tournants, rendez-vous, zones par leur centre, cible).
 //   readRegistry(doc) → [ligne { id, family, title, operation, types, origin, destination, originIcao, destinationIcao, blockMin,
-//     folder, file, organisation }] : les lignes du registre, les organisations (…Z) marquées ; folder et file vides quand le
+//     folder, file, organisation, kind, subtype, callsigns, words }] : les lignes du registre, les organisations (…Z) marquées ; folder et file vides quand le
 //     registre en donne un qui n'est pas sûr (le chemin n'est jamais pris tel quel : un pilote peut écrire le registre).
 //   icaoOf(name) : le code OACI entre parenthèses à la fin d'un nom (« BA 118 Mont-de-Marsan (LFBM) » → « LFBM ») ; '' sinon.
 //   levelFt(text) : « FL240 » → 24000, « 1500 ft » → 1500, un nombre tel quel ; null sinon.
@@ -161,7 +161,16 @@ export function readRegistry(doc) {
       blockMin: num(x.estimate?.block),
       folder: safeFolder(clean(x.folder)),
       file: safeFile(clean((Array.isArray(x.files) ? x.files : [])[0]) || `mission${id}.yaml`),
-      organisation: x.organisation === true || /Z$/.test(id)
+      organisation: x.organisation === true || /Z$/.test(id),
+      // ce que la recherche lit en plus (SOG-0009) : l'activité (type, sous-type : MEDEVAC, BFM…), les indicatifs, les équipes
+      // (nom, service, type : SAMU66, SAMU, H135) ; des textes, bornés (le registre s'écrit par n'importe quel pilote)
+      kind: clean(x.type),
+      subtype: clean(x.subtype),
+      callsigns: (Array.isArray(x.callsigns) ? x.callsigns : []).slice(0, 20).map(clean).filter(Boolean),
+      words: (Array.isArray(x.teams) ? x.teams : []).slice(0, 20).flatMap(t => t && typeof t === 'object' ? [t.name, t.service, t
+          .type
+        ] : [])
+        .map(clean).filter(Boolean).map(w => w.slice(0, 80))
     };
   });
 }

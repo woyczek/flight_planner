@@ -28,8 +28,12 @@ const REGISTRY = 'missions/mission_registry.yaml',
   ROWS = 7; // lignes montrées avant « N autres » (sept éléments au plus par écran)
 
 const TX = {
-  search: ['Rechercher (id, titre, terrain, type)', 'Search (id, title, aerodrome, type)', 'Suchen (ID, Titel, Flugplatz, Typ)',
-    'Buscar (id, título, aeródromo, tipo)'
+  search: ['Rechercher une mission', 'Search a mission', 'Mission suchen', 'Buscar una misión'],
+  // ce que la recherche lit, écrit sous le champ (SOG-0009)
+  searchHint: ['Identifiant, titre, terrain (code OACI), type d’appareil, indicatif (SAMU66), activité (MEDEVAC, HEMS, SAMU…).',
+    'Id, title, aerodrome (ICAO code), aircraft type, callsign (SAMU66), activity (MEDEVAC, HEMS, SAMU…).',
+    'ID, Titel, Flugplatz (ICAO-Code), Luftfahrzeugtyp, Rufzeichen (SAMU66), Tätigkeit (MEDEVAC, HEMS, SAMU…).',
+    'Id, título, aeródromo (código OACI), tipo de aeronave, indicativo (SAMU66), actividad (MEDEVAC, HEMS, SAMU…).'
   ],
   allFamilies: ['Toutes les familles', 'All families', 'Alle Familien', 'Todas las familias'],
   draw: ['Tirer au sort', 'Draw at random', 'Zufällig ziehen', 'Sortear'],
@@ -198,7 +202,8 @@ async function flownOf(s) {
 }
 
 /** Les lignes retenues par la recherche et le filtre de famille. */
-const filtered = s => s.rows.filter(r => (!s.family || r.family === s.family) && (!s.q || [r.id, r.title, r.operation, r.origin, r
+const filtered = s => s.rows.filter(r => (!s.family || r.family === s.family) && (!s.q || [r.id, r.title, r.operation, r.family, r.kind,
+  r.subtype, ...r.callsigns, ...r.words, r.originIcao, r.destinationIcao, r.origin, r
   .destination, ...r.types
 ].some(v => String(v).toUpperCase().includes(s.q.toUpperCase()))));
 
@@ -217,7 +222,7 @@ function listHtml(s) {
   if (!s.rows.length) return `<div class="f-card"><p class="f-muted" data-why="${esc(w?.why || 'none')}">${esc(w?.why === 'loading' ? s.tt(TX.regLoading) : w?.why === 'late' ? s.tt(TX.regLate) : w?.why === 'unreadable' ? s.tt(TX.regUnreadable, { e: w.err }) : s.tt(TX.none))}</p></div>`;
   const families = [...new Set(s.rows.map(r => r.family).filter(Boolean))].sort();
   return `<div class="f-card" data-pane="list"><div class="f-row"><button type="button" class="primary" data-do="draw">${esc(s.tt(TX.draw))}</button></div>
-    <label class="f-field"><span class="f-sr">${esc(s.tt(TX.search))}</span><input type="search" data-k="q" value="${esc(s.q)}" placeholder="${esc(s.tt(TX.search))}" autocomplete="off"></label>
+    <label class="f-field"><span class="f-sr">${esc(s.tt(TX.search))}</span><input type="search" data-k="q" value="${esc(s.q)}" placeholder="${esc(s.tt(TX.search))}" autocomplete="off"><small class="f-muted" data-searchhint>${esc(s.tt(TX.searchHint))}</small></label>
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.allFamilies))}</span><select data-k="family"><option value="">${esc(s.tt(TX.allFamilies))}</option>${families.map(f => `<option value="${esc(f)}"${s.family === f ? ' selected' : ''}>${esc(f)}</option>`).join('')}</select></label>
     <div data-results>${resultsHtml(s)}</div></div>`;
 }
