@@ -1905,3 +1905,42 @@ def d29(c):
                 if sh:
                     c.page.screenshot(path=f'{sh}_{c.design}_{label[:2].strip()}_{w}x{h}_{pos}.png')
                 d29_check(c, f'{label}, {w} x {h}, {pos}', also)
+
+
+@case('D110', 'Profile window: in Fuel the profile sits in a sticky pane beside a page that scrolls: the plain wheel zooms it, a drag moves the tight window, a double click restores', 'D', tags=('maps', 'fuel'), phone=False, screens=True,
+      rule='V3 spec 7.1 rule 20 (as amended 6 Nov 2026, SOG-0005 reopened): a profile in a sticky or fixed pane does not scroll with the page: the plain wheel zooms it, whatever the page does beside it; only a profile inside the scrolling flow leaves the plain wheel to the page (D107)')
+def d110(c):
+    c.open('fuel', flight=True, forecast=True)
+    hide_notes(c)
+    c.wait(1500)
+    c.settle()
+    # the page of Fuel scrolls (more than one screen) and the profile sits in a sticky pane: the real situation of the user
+    info = c.js("""() => { document.body.style.minHeight = '4000px'; const d = document.scrollingElement, el = document.querySelector('.mp-pc'); let sticky = false;
+        for (let n = el.parentElement; n && n !== document.documentElement; n = n.parentElement) { const p = getComputedStyle(n).position; if (p === 'sticky' || p === 'fixed') sticky = true }
+        return { scrolls: d.scrollHeight > d.clientHeight + 1, sticky } }""")
+    c.ok(info['scrolls'] and info['sticky'], str(info), 'the page scrolls and the profile is in a sticky pane')
+    c.wait(150)
+    whole = win_state(c)
+    x, y = px_of(c, whole, 150), prof_y(c)
+    c.page.mouse.move(x, y)
+    for _ in range(3):
+        c.page.mouse.wheel(0, -200)
+        c.wait(80)
+    c.wait(250)
+    st = win_state(c)
+    c.ok(st['to'] - st['from'] < whole['to'] * .7, f'window {whole["from"]}..{whole["to"]} → {st["from"]}..{st["to"]}', 'the plain wheel zooms the profile of Fuel')
+    c.eq(c.js("() => document.scrollingElement.scrollTop"), 0, 'the page did not take the wheel', what='scrollTop')
+    # a drag moves the tight window
+    c.page.mouse.move(x, y)
+    c.page.mouse.down()
+    c.page.mouse.move(x - 120, y, steps=8)
+    c.page.mouse.up()
+    c.wait(250)
+    mv = win_state(c)
+    c.ok(mv['from'] > st['from'] + 1 and abs((mv['to'] - mv['from']) - (st['to'] - st['from'])) < .3, f'window {st["from"]}..{st["to"]} → {mv["from"]}..{mv["to"]}', 'a drag to the left moves the window toward the arrival, its width unchanged')
+    # a double click restores the whole flight
+    c.page.mouse.dblclick(x, y)
+    c.wait(300)
+    back = win_state(c)
+    c.ok(abs(back['from'] - whole['from']) < .5 and abs(back['to'] - whole['to']) < .5, f'window {back["from"]}..{back["to"]}', 'a double click restores the whole flight')
+

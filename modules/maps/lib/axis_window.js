@@ -197,11 +197,15 @@ export function createAxisWindow(el, {
     } else lastTap = null;
   }
 
-  /** Vrai si le profil est dans une page qui défile (un ancêtre défilable, ou la page elle-même) : la molette seule lui revient. */
+  /** Vrai si le profil est dans une page qui défile (un ancêtre défilable, ou la page elle-même) : la molette seule lui revient.
+   *  Un panneau collant ou fixe (Carburant : la carte et son profil à côté du formulaire) reste en place quand la page défile : la
+   *  page ne défile pas sous le profil, la molette seule le zoome (retour de l'utilisateur, 5 novembre 2026, SOG-0005 rouverte). */
   const pageScrolls = () => {
     for (let n = el.parentElement; n && n !== document.documentElement; n = n.parentElement) {
-      const o = getComputedStyle(n).overflowY;
+      const cs = getComputedStyle(n),
+        o = cs.overflowY;
       if ((o === 'auto' || o === 'scroll') && n.scrollHeight > n.clientHeight + 1) return true;
+      if (cs.position === 'sticky' || cs.position === 'fixed') return false;
     }
     const d = document.scrollingElement;
     return !!d && d.scrollHeight > d.clientHeight + 1;

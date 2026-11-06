@@ -1980,6 +1980,21 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D24 (the wheel alone tightens the window, Ctrl + wheel too, the distance under the pointer stays), D107 (a page that
   scrolls keeps its wheel, Ctrl + wheel still zooms, the horizontal wheel pans).
 
+## The wheel on Fuel's profile (SOG-0005 reopened; user, 5 Nov 2026 at 21:59, checked 6 Nov)
+
+- **Seen**: « toujours pas de zoom sur le profil vertical ; je veux pouvoir cliquer / glisser, ou utiliser la molette et déplacer en
+  cliquant-glissant ; peut-être que ça fonctionne sur un téléphone, pas sur ordinateur ». Checked by hand on a computer (built-in
+  Chromium, real mouse events): in the Map sheet the wheel, the drag of a tight window and the double click all worked; **in Fuel
+  the wheel alone did nothing** — the document scrolls (1304 px for 900) and `pageScrolls()` answered « the page's » for a profile
+  that is in `aside.f-pane` (`position: sticky`), which stays in place while the page scrolls beside it. On a phone the gestures are
+  fingers, not the wheel: hence « it works on a phone ».
+- **Decision**: `pageScrolls()` stops at the first sticky or fixed ancestor (after the check of a scrollable one): the profile is then
+  not under the page's scrolling, and the plain wheel zooms it. A profile inside the scrolling flow keeps the wheel for the page
+  (D107). The same five designs share this pane (checked: sticky `f-pane`, page that scrolls, in each). A rectangle drag on the whole
+  flight is **not** added: on a whole flight the drag is the reading cursor (SPEC § 8.6); proposed to the ergonomics session apart.
+- **Noreg** D110 (Fuel's pane: page that scrolls + sticky pane; the plain wheel zooms, the page does not move, a drag moves the tight
+  window, a double click restores; fails on 94849e74b with the window unchanged).
+
 ## The vertical path, its transitions, the height at the cursor (user, 4–5 Nov 2026, SOG-0006 / 0008 / 0002)
 
 - **« Le vpath ne s'affiche pas »**: two causes found. (1) A write of the flight that changed only fuel's performance (rates,

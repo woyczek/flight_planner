@@ -929,8 +929,9 @@ say what was drawn; `geo.w0`, `geo.w1` (metres) and `geo.zoomed` say the window,
 move the window (at least 5 NM visible, never outside the flight); a double tap or double click goes back to the whole
 flight; **one finger is never taken**: it is the reading cursor. On a screen: the wheel zooms around the pointer — Ctrl + wheel
 always (a trackpad pinch too), the wheel alone when the profile's container does not scroll (the sheet, the map: the wheel would be
-lost there; amended 5 Nov 2026, SOG-0005, by the ergonomics session), and stays the page's when the profile sits in a page that
-scrolls (Fuel beside the Map, SOG-0004); a horizontal wheel moves the tight window; a mouse drag moves the window when it is tight (whole, the drag is the cursor's), a click
+lost there; amended 5 Nov 2026, SOG-0005, by the ergonomics session), and stays the page's when the profile moves with a page that
+scrolls — not when it sits in a sticky or fixed pane (Fuel's side pane beside its form: the page scrolls beside it, not under it, so the
+wheel zooms there too; reopened 6 Nov 2026 by the user's report, SOG-0005); a horizontal wheel moves the tight window; a mouse drag moves the window when it is tight (whole, the drag is the cursor's), a click
 places the cursor. Disarmed in Edit mode and while another content is open. A finger left after a pinch does not move the
 cursor until all fingers are up.
 - **One window per route** for the profile and the cut (two helpers, one per container, handing each other the window;
