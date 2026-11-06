@@ -1665,7 +1665,8 @@ redesigned for touch at that point.
        altitude, en palier. charge à l'utilisateur de les extrapoler pour les phases taxi, climb, T/O, descent, land").
        Ergonomics decisions of 5 Nov; lots after the candidate of 5 Nov; nothing coded tonight.
        **A — Statistics is a module of the Compagnie application, beside Missions, not a replacement** (`modules/stats/`,
-       owner Features SOG). One door: Compagnie › Statistiques; the pilot's own figures are the same screen with the filter
+       owner Features SOG). One door, **amended on 6 Nov (roadmap point, decision 1.3, the user's yes): Maintenance › Statistiques**, a module
+       distinct from Compagnie (the user's word of 5 Nov, "dans « maintenance »"; Compagnie keeps missions, site and fleet); the pilot's own figures are the same screen with the filter
        "moi" (no second module in Pilote). Seven elements at most on the screen: flights, hours, fuel, landings, sheet gap,
        and two filters (aircraft or type, pilot or airline, period). **Sources, one each**: flights and hours from the flight
        log (modules/flightlog: reports and the website log); landings from the landing CSVs the V2 dashboard already reads
@@ -1681,7 +1682,11 @@ redesigned for touch at that point.
        window statistics become one pure module of Features SOG (`modules/stats/phases.js`), tested on the user's real CSV;
        the V2 dashboard stays in its folder as a fallback until the report's step exists. Open question left to the user, not
        to the lot: whether Compagnie › Statistiques is visible to every pilot or to the administrator only (default: every
-       pilot, their airline's figures).
+       pilot, their airline's figures). **Amended on 6 Nov (SOG-0041, SOG-0042):** the three standalone tools the user named
+       ("landing report, fuel report, missions report") are the sources above — the landing CSVs, the per-flight fuel
+       aggregates, the missions register — not pages to port; the user's FuelDashboard is in the repository as it is
+       (`FuelDashboard/`, ebed6a6bc) until `phases.js` covers it, and the "module lua « fuel »" of the user's note is
+       the LUA script that writes the Fuel Phase Monitor's CSV, still outside the repository (to be named by the user).
        **B — In-flight guidance is one line, not a screen of instruments** (screen 5 of the Pilot application, owner Features
        SOG for the data, the screen in modules/fuel's "En vol" step). The vertical plan (SOG-0008: top of climb, top of
        descent, intermediate levels, the STAR's constraints of SOG-0003) is a list of *instructions* with a place on the route:
@@ -1693,6 +1698,14 @@ redesigned for touch at that point.
        departure, no tense. No sound, no modal, one refresh per second, the sentence changes only when its words change.
        The same instructions are the points of SOG-0008 on the profile and the map: one source (the route model), three
        readers. Lot after lot A (the single writer of the flight state) and lot B (the points on both profiles).
+       **Amended on 6 Nov (SOG-0047, SOG-0048; the user: "une vitesse sol, vitesse air, cap, dans la page « en vol ».
+       toujours dans le regard du pilote : de quoi a-t-il besoin")**: one instrument line above the instruction — ground
+       speed, indicated airspeed, heading, altitude — from the same position source, those four and no more, each dimmed
+       when the source has no value (the network tracker gives ground speed and heading only; X-Plane through the
+       launcher gives the four); and the capture cadence follows the phase: one sample per second on the ground (before
+       take-off or below 40 kt, "pour anticiper les erreurs de trajectoire au sol"), one every five seconds in flight; the
+       trace keeps one point in five on the ground so the file does not grow fivefold; the screen still refreshes once a
+       second. Seven elements at most on the screen: the four instruments, the instruction, the next one, the acknowledge.
        **C — Curves per altitude in a sheet** (owner Features SOG, model in `modules/aircraft/`, computation in
        modules/fuel). A sheet gains `cruise.curves`: a list of `{ altitudeFt, points: [{ rpm | n1, flowKgH, tasKt }] }`,
        level flight only; within one altitude the points are sorted by rpm and the flow is **monotone** (the editor refuses
@@ -1704,3 +1717,55 @@ redesigned for touch at that point.
        accepts line by line, never written alone; the lnmperf import maps its single cruise line to one curve at the sheet's
        cruise altitude. Density stays per fuel type (SOG-0011, `fuel_units.js`), not per sheet. Lot after A (the figures)
        and after SOG-0015's correction of the S210 sheet.
+
+   38. **Several airlines in one data repository; the personal fleet is the airline "personnel"** (user, 6 Nov, iCloud
+       note "BUGS": "la flotte personnelle est vue comme une compagnie « personnel ». ça implique d'avoir plusieurs
+       compagnies. actuellement, j'en ai 3 : air inter va (ivao / vatsim / déco), defa virtual (ivao), personnel (des dc3,
+       bn2t, etc.)"; roadmap point of 6 Nov: "le souci du multigit est complexe. pour le moment on garde 1 seul git, mais
+       oui, il en faudra plusieurs. […] j'ai besoin de 2 compagnies avec 2 flottes assez rapidement, plus la flotte perso").
+       Ergonomics design of 6 Nov (SOG-0039, SOG-0041): step 1 in alpha.5, step 2 after the beta.
+       **Step 1 — the airline is a context chosen in the frame; every airline lives in the same repository.** `data/airline/`
+       gains one folder per airline, `data/airline/<code>/` (`code`: the short name used on the networks, lower case, letters
+       and digits only — `aiv`, `dfa`): `settings.json` (what today's `data/airline/settings.json` holds: name, callsign,
+       networks IVAO / VATSIM / off-line, site, logo, colours), `fleet.json` (the airline's registrations, each naming a sheet
+       of `data/aircraft/` by type: a fleet is a list of registrations, the sheets stay common and single-source, § 10.35,
+       SOG-0023), `categories.json` (below) and the airline's map profiles. Today's single airline moves to its folder by a
+       one-shot migration in the launcher (`data_sync` says it, keeps `data/airline/settings.json` as a copy until the next
+       cycle, deletes nothing). **The current airline** is a frame setting per device (`frame_data`, local, like the design),
+       chosen in Réglages › Compagnie among the folders found plus "personnel"; the frame exposes it (`FrameData.airline()` →
+       `{ code, name, settings, fleet }`) and tells the modules when it changes, the same way as the trigramme. Compagnie,
+       Missions, the report, Fuel's aircraft choice and Statistiques read the current airline; what is per pilot stays under
+       `pilot/<trigramme>/` (current flight, trace, preferences). **The personal airline** has the same shape, under
+       `pilot/<trigramme>/airline/perso/` (code `perso`, name "Personnel", networks as the pilot sets them), synchronised like
+       the rest of `pilot/`: never a remote repository of its own, visible to that pilot only; its fleet is today's "personal"
+       box of the sheets (`aircraft_personal.js`), migrated once. **Mission categories (SOG-0041):** `categories.json` of an
+       airline lists its categories; a common base ships with the suite and is the default of every airline and of
+       "personnel": `commercial` with `fret`, `passagers`, `vip`, `training`, `transit`, `essais en vol`, `positionnement`;
+       `virtuel` with the airline's own (today's V2 categories, read as they are). A mission says its category; the report
+       of a `commercial` flight carries the load (freight in kg, passengers) and the measured fuel (§ 10.37 A, the
+       aggregates); nothing is invented. Seven elements at most on the airline chooser: name, logo, networks, fleet count,
+       missions count, the "personnel" row, done. Two airlines with two fleets plus the personal fleet exist from this step.
+       **Owners: Réglages for the frame setting, the chooser and the migration; Features SOG for the fleet, missions and
+       report readers; two lots, the frame's first.** Every file of `data/airline/<code>/` is untrusted input (§ 10.36).
+       **Step 2 — one repository per airline (after the beta).** The user's questions are the design's: the aeronautical
+       base belongs to no airline (compiled on the workstation, published either to one common data repository or to each
+       airline's, to settle on cost — today `proc/`, `sia/` and `atc/` live in the airline's repository); rights are per
+       repository (one project access token per pilot and per airline, § 10.36: administrator of one and pilot of another
+       is natural on GitLab and GitHub); `pilot/` follows the pilot, not the airline; "personnel" never gets a remote.
+       Nothing is engaged before the beta; step 1 is written so that `data/airline/<code>/` becomes the root of a repository
+       without renaming anything.
+   39. **The official chart of a procedure, from Procédures and from the in-flight screen** (user, 6 Nov: "accès directe à
+       la carte de la procédure (VAC, SID, STAR, omni), de la piste via l'onglet « procédures », ou « en vol »"; SOG-0045,
+       after SOG-0024 / SOG-0031 which open the aerodrome's official page). Ergonomics design of 6 Nov, alpha.5. A
+       procedure record already names its source page (`source.file`, the SIA DATA pdf of its coding table) and the
+       aerodrome file lists its charts (`charts.base`, the eAIP's address for the cycle, and `charts.items[]`, path and
+       kind of the ADC, IAC, SID, STAR and VAC pdfs). **One function, owned by AeroDB:
+       `AeroDb.chartUrl(proc)`** → the address of that procedure's chart pdf for the cycle (SIA: the eAIP pdf under the
+       cycle's base address that `catalogue.js` and `proc_sia.py` already compose; the chart whose runways and name match,
+       else the DATA page; ENAIRE and AirNav: null until their addresses are known), never composed elsewhere, the contract
+       of `chartsUrl`. **Fuel's Procédures tab and the in-flight step show one "Carte" link per chosen procedure** (runway,
+       SID, STAR, approach) when `chartUrl` returns one, else the aerodrome page of SOG-0031 as today; the link opens the pdf
+       in a new tab, nothing embedded, nothing downloaded by the suite; the aerodrome's VAC is a chart like the others
+       (`charts.items[]`, kind `VAC`). Feature-detected like `chartsUrl` (no function, no link), so the two lots are independent:
+       **Features SOG the screen, AeroDB the function; the screen may ship first and shows nothing new until the function
+       exists.** Seven elements at most on the tab (rule 13), no new chip; one case per side, red before.
