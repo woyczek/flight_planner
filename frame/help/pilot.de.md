@@ -84,7 +84,7 @@ Leistungsdatenblätter, die Luftfahrzeuge der Fluggesellschaft (ihre Flotte, dan
 veröffentlichten Typen und zuletzt der Code so, wie er getippt wurde. Ein Luftfahrzeug der Fluggesellschaft nimmt sein
 eigenes Datenblatt, wenn es eines hat, sonst das seines Typs, sonst eine Schätzung des Typs — die Berechnung markiert es
 dann „ungefähr“. Das gewählte Kennzeichen und Rufzeichen begleiten den Flug bis zum Bericht. Die Zeile „Reiseflug“ sagt,
-woher der Verbrauch stammt; aus der Drehzahl-/Verbrauchstabelle des Datenblatts gelesen, nennt sie die zwei Drehzahlzeilen und, wenn die Tabelle mehrere Höhen hat, die zwei Kurven, zwischen denen die Flughöhe interpoliert wird („2400 U/min zwischen 2300 und 2500 U/min, zwischen den Kurven 4000 und 8000 ft“).
+woher der Verbrauch stammt; aus der Drehzahl-/Verbrauchstabelle des Datenblatts gelesen, nennt sie die zwei Drehzahlzeilen und, wenn die Tabelle mehrere Höhen hat, die zwei Kurven, zwischen denen die Flughöhe interpoliert wird („2400 U/min zwischen 2300 und 2500 U/min, zwischen den Kurven 4000 und 8000 ft“). Die Tabelle zählt nur, wenn zwei ihrer Zeilen mit Verbrauch die Reiseflugdrehzahl einrahmen (oder eine Zeile bei dieser Drehzahl liegt): sonst zählt der im Datenblatt eingegebene Reiseverbrauch, nie die nächste Zeile verlängert.
 
 Neben dem Datum legt die Uhr „+30“ den Flug 30 Min. in die Zukunft (auf 5 Min. gerundet; jedes Tippen fügt 30 Min.
 hinzu), und „Jetzt“ kehrt zur aktuellen Uhrzeit zurück: Flugplatzwetter (die TAF, wenn sie diese Uhrzeit abdeckt) und
@@ -254,7 +254,7 @@ Datenblättern ändert sich nichts.
   Schlüssel sagt es die Karte, und das METAR antwortet stattdessen. Die Wetterkarte sagt, woher die Meldungen stammen.
   Ganz ohne Netz zeigt sie das zuletzt gespeicherte Wetter mit seiner Uhrzeit.
 
-<!-- fr: e423ed8b5c93 -->
+<!-- fr: 3888c334f97e -->
 
 <!-- chapter: maps -->
 # Karte

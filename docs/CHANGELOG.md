@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the typed flow is used when the RPM table does not frame the rpm** (`modules/fuel/model.js` `tableAt`; Fuel SPEC § 3,
+  DECISIONS; noreg F97; SOG-0053). A table with a single row with a flow (the S210: 6700 rpm → 11 500 lb/h against 7300 lb/h typed at
+  7250 rpm), an rpm beyond its rows or another power reference was stretched and replaced the sheet's flow in every quote; it is now
+  read only when two rows frame the rpm or one is at it.
+
 - **Map: the ground layer — taxiways, stands and holds of the departure and the arrival, with a list that highlights** (`modules/maps/ground.js`,
   `draw.js`, `procs.js`, `tips.js`, `render.js`; SPEC § 5.2; V3 § 10.40; noreg D112–D114; SOG-0046). Needs AeroDB's `ground(icao)` (the
   file of the aerodrome, OpenStreetMap, ODbL; without it nothing appears). From zoom 14 the taxiway lines, from 15 their names, from 16 the

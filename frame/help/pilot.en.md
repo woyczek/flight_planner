@@ -78,7 +78,7 @@ sheet, a registration, a callsign or a type. The results come in this order: you
 aircraft (its fleet, then those known from its logbook), the published types, and last the code as typed. An airline
 aircraft takes its own sheet if it has one, otherwise its type's, otherwise an estimate of the type — the quote then
 marks it “approximate”. The chosen registration and callsign follow the flight through to the report. The “Cruise” line
-says where the fuel flow comes from; read from the sheet's RPM / fuel flow table, it says the two RPM rows and, when the table has several altitudes, the two curves the level is interpolated between ("2400 rpm between 2300 and 2500 rpm, between the curves of 4000 and 8000 ft").
+says where the fuel flow comes from; read from the sheet's RPM / fuel flow table, it says the two RPM rows and, when the table has several altitudes, the two curves the level is interpolated between ("2400 rpm between 2300 and 2500 rpm, between the curves of 4000 and 8000 ft"). The table is used only when two of its rows with a flow frame the cruise RPM (or one row is at that RPM): otherwise the cruise flow typed in the sheet counts, never the nearest row stretched.
 
 Next to the date, the “+30” clock sets the flight 30 min from now (rounded to 5 min; each press adds 30 min) and “Now”
 goes back to the current time: the aerodrome weather (the TAF if it covers that time) and the winds aloft are read again
@@ -237,7 +237,7 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: e423ed8b5c93 -->
+<!-- fr: 3888c334f97e -->
 
 <!-- chapter: maps -->
 # Map

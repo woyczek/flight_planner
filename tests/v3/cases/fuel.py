@@ -2533,3 +2533,25 @@ def f96(c):
     c.ok(got.endswith(f'({rpm2}, {alt2})'), got, 'the level 6000 ft between the curves of 4000 and 8000 ft, 2400 rpm between 2300 and 2500 rpm')
     got = _curve_open(c, False)
     c.ok(got.endswith(f'({rpm2})'), got, 'a table without altitude: the rpm rows alone, no curve said')
+
+
+@case('F97', 'The sheet\'s cruise flow is used when its RPM table does not frame the cruise rpm: a single row, or another power reference, is never stretched',
+      'F', tags=('fuel', 'aircraft'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0053 (user, 6 Nov: « le carbu et les courbes que je mets à jour sont toujours mauvais, les calculs de vol toujours mauvais »; '
+      'the S210 sheet: cruise 7300 lb/h at 7250 rpm typed, one table row 6700 rpm → 11500 lb/h, the quote took 11500): the table is read '
+      'only when two rows frame the rpm or one is at it; else the cruise flow of the sheet')
+def f97(c):
+    sheet = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'lb', 'usableFuel': 40000,
+             'cruise': {'tasKt': 330, 'fuelFlowPerHour': 7300, 'rpmNominal': 7250},
+             'rpmFuelCurve': [{'rpm': 3500, 'altFt': None, 'fuelFlowPerHour': None}, {'rpm': 6700, 'altFt': None, 'fuelFlowPerHour': 11500},
+                              {'rpm': 8000, 'altFt': None, 'fuelFlowPerHour': None}]}
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft']['sheetId'] = 'C30J'
+    c.open('fuel', docs=docs + [['aircraft/sheets/C30J.json', sheet, 'document']])
+    wait_quote(c)
+    c.settle()
+    got = norm(c.js("document.querySelector('[data-module=fuel] [data-src]').textContent"))
+    want = norm(tx(F, 'source', c.lang).replace('{s}', tx(F, 'profile', c.lang, after='kinds: {')))
+    c.eq(got, want, 'the typed cruise flow of the sheet, not the single table row stretched to 7250 rpm', what='cruise source')

@@ -1388,3 +1388,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   altitudes and within a curve already existed (`FlightPerfModel.mapAt`, `interpRange`); `mapUsed` only reads which rows framed the
   cruise rpm and the level, by the same rule, so no figure moves for any sheet (with or without altitudes). F96; counter-test on
   b6c95e829 (model.js of the base): the line ends at « table régime / débit de la fiche ».
+- **6 Nov 2026 — an RPM table that does not frame the rpm is not read** (SOG-0053, the user: « le carbu et les courbes que je mets à
+  jour sont toujours mauvais, les calculs de vol toujours mauvais »). Traced read-only on the user's data (6 Nov): every sheet and its
+  fpdb mirror are equal (no write lost, no V2 overwrite); the S210 sheet types 7300 lb/h at 7250 rpm, but its table has one row with a
+  flow (6700 rpm → 11 500 lb/h, the others empty) and `interpRange` clamped to it: the quote flew 11 500 lb/h whatever the cruise flow
+  typed. The TBM9 sheet, a row « 100 » (N1 %) against 2000 rpm, flew 429.9 instead of 400 lb/h. `tableAt` reads the table only when
+  two rows frame the rpm or one is at it; else the flow typed. Sheets whose table frames the rpm compute as before. F97; counter-test
+  on b7e6986ca (model.js of the base): « table … (7250 U/min, Zeile 6700 U/min) ».

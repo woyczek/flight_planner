@@ -138,6 +138,16 @@
     };
   }
 
+  /** Le débit de la table RPM au régime rpm, seulement quand la table le lit vraiment (SOG-0053) : deux lignes chiffrées qui
+   *  encadrent le régime, ou une ligne à ce régime même (mapUsed). Une table qui ne l'encadre pas (une seule ligne chiffrée, un régime
+   *  au-delà de ses lignes, une autre référence de puissance : N1 % contre rpm) ne prolonge jamais sa ligne extrême à la place du débit
+   *  saisi de la fiche : null, et le débit de la phase s'applique. */
+  function tableAt(curve, rpm, h) {
+    const m = interpRange(curve, rpm, h),
+      u = m ? mapUsed(curve, rpm, h) : null;
+    return m && u && (u.rpms.length === 2 || u.rpms[0] === rpm) ? m : null;
+  }
+
   /** Consommation et TAS de croisière retenues pour une fiche, avec leur origine (cruiseSource de la V2). Entrées :
    *  sheet (fiche normalisée) ; altFt (niveau du plan) ; entryKg (saisie du vol, kg/h, qui remplace la fiche) ; apd
    *  (fiche EUROCONTROL du type, aerodb) ; simbrief (apd.simbrief) ; estimate (aerodb.aircraft().estimate(codes)) ;
@@ -168,7 +178,7 @@
       cr = pr.cruise || {},
       alt = Math.max(0, +altFt || 0),
       rpm = finite(cr.rpmNominal) ? Number(cr.rpmNominal) : null,
-      map = rpm !== null ? interpRange(pr.rpmFuelCurve || [], rpm, alt) : null,
+      map = rpm !== null ? tableAt(pr.rpmFuelCurve || [], rpm, alt) : null,
       own = +cr.fuelFlowPerHour > 0 ? +cr.fuelFlowPerHour : null,
       profileFF = map?.nominal > 0 ? map.nominal : own,
       isaA = h => window.FlightPerfModel.isa(h).a;
@@ -327,7 +337,7 @@
     const mappedPhase = name => {
       const phase = sheet[name] || {},
         rpm = finite(phase.rpmNominal) ? Number(phase.rpmNominal) : null,
-        map = rpm !== null ? interpRange(sheet.rpmFuelCurve || [], rpm, name === 'cruise' ? alt : alt / 2) : null;
+        map = rpm !== null ? tableAt(sheet.rpmFuelCurve || [], rpm, name === 'cruise' ? alt : alt / 2) : null;
       return {
         rpm,
         map,
@@ -511,6 +521,7 @@
     normalizeSheet,
     interpRange,
     mapUsed,
+    tableAt,
     cruiseSource,
     modelSheet,
     perfModel,
