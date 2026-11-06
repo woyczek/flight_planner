@@ -168,6 +168,12 @@ def first_page_rows(path):
     return pages[0] if pages else []
 
 
+def all_pages_rows(path):
+    """Lignes de CHAQUE page d'un PDF (une liste par page, dans l'ordre), lues sous délai : une table de codage qui se poursuit à la page 2 d'un même PDF n'est plus coupée (SOG-0049) ; une page
+    illisible donne []. Un PDF sans page donne []."""
+    return list(pdf_some_pages(path, None)[1])
+
+
 def pdf_kind(path, timeout=None):
     """classify_pdf sous délai (limited)."""
     return limited('classify_pdf', path, timeout=timeout)

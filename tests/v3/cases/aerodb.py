@@ -132,7 +132,7 @@ def k7(c):
 # frame/aerodb/test/fixtures/eaip/: no pypdf, no network.
 def _proc():
     """Les lecteurs de procédures de tools/ (proc_geometry, proc_layouts, proc_pdf, proc_records, proc_sia) en UN espace de noms, pour les cas qui lisent des pages inventées : les noms sont ceux
-    des modules (V3 § 10.29 (b) a coupé l'ancien proc_eaip.py). Un cas qui REMPLACE un nom (fetch, first_page_rows…) le fait sur le module qui l'appelle (proc_sia), pas ici."""
+    des modules (V3 § 10.29 (b) a coupé l'ancien proc_eaip.py). Un cas qui REMPLACE un nom (fetch, all_pages_rows…) le fait sur le module qui l'appelle (proc_sia), pas ici."""
     import importlib
     import sys
     import types
@@ -1891,13 +1891,13 @@ def k23(c):
         return b'%PDF fake ' + url.rsplit('/', 1)[-1].encode()
 
     def fake_rows(path):
-        return _eaip_rows(fx, Path(path).stem)
+        return [_eaip_rows(fx, Path(path).stem)]                 # one page per PDF (the seam is proc_pdf.all_pages_rows: one list of rows per page)
 
     def run(ctx, icao='LFBD', job=None):
         return RJ.REGISTRY[('proc', 'eaip-fetch')][0](job or RJ.Job('proc', 'eaip-fetch', {'icao': icao}, author='TST'), {'icao': icao}, ctx)
 
-    saved = (P.fetch, P.first_page_rows, P.url_exists)
-    P.fetch, P.first_page_rows, P.url_exists = fake_fetch, fake_rows, lambda url, timeout=30: False
+    saved = (P.fetch, P.all_pages_rows, P.url_exists)
+    P.fetch, P.all_pages_rows, P.url_exists = fake_fetch, fake_rows, lambda url, timeout=30: False
     try:
         cycle = EAD.lib_cycle('.')
         folder = P.eaip_url(cycle) + '/html/eAIP/'
@@ -2043,7 +2043,7 @@ def k23(c):
             c.ok('LFXX: aucune table de codage' in err.getvalue() and not (Path(td) / 'proc2' / '2026-10-01' / 'LFXX.json').exists(), err.getvalue()[:200],
                  'proc_sia.main() still skips an aerodrome with no coding table')
     finally:
-        P.fetch, P.first_page_rows, P.url_exists = saved
+        P.fetch, P.all_pages_rows, P.url_exists = saved
 
     # the launcher's status tells which Little Navmap databases the workstation has (names only), never raising
     import os
@@ -2822,16 +2822,16 @@ def k32(c):
         skipped = []
         c.eq((P.pdf_names('LFXX', page, skipped), sorted(skipped)), (['AD_2_LFXX_DATA_RWY09_RNAV_CODE.pdf'], sorted(evil)), 'pdf_names keeps the plain name and lists the refused ones', what='pdf_names')
         asked, said = [], []
-        saved = (S.fetch, S.first_page_rows, S.url_exists)
+        saved = (S.fetch, S.all_pages_rows, S.url_exists)
 
         def fake_fetch(url, timeout=60):
             asked.append(url)
             return page.encode() if url.endswith('FR-AD-2.LFXX-fr-FR.html') else b'%PDF-1.4'
-        S.fetch, S.first_page_rows, S.url_exists = fake_fetch, lambda p: [], lambda *a, **k: False
+        S.fetch, S.all_pages_rows, S.url_exists = fake_fetch, lambda p: [[]], lambda *a, **k: False
         try:
             S.read_aerodrome(S.eaip_url('2026-10-01'), 'LFXX', cache, None, lambda *t: said.append(' '.join(map(str, t))))
         finally:
-            S.fetch, S.first_page_rows, S.url_exists = saved
+            S.fetch, S.all_pages_rows, S.url_exists = saved
         names = sorted(p.name for p in Path(td).rglob('*'))
         c.ok(len([u for u in asked if u.endswith('.pdf')]) == 1 and sum('nom de PDF refusé' in s for s in said) == 3 and 'x.pdf' not in names
              and sorted(p.name for p in cache.iterdir()) == ['AD_2_LFXX_DATA_RWY09_RNAV_CODE.pdf'], f'{asked} {said} {names}',
@@ -4016,6 +4016,88 @@ def k80(c):
     c.eq(([q['id'] for q in ok20['points']], ok20['status']), ([None, 'PO202', 'PO300', 'ODEBU', 'OKASI'], 'check'), 'OKASI 2Y: CA, PO202, PO300, ODEBU, OKASI, « check » (visible, not « doubt »)', what='OKASI 2Y')
     c.eq([f['file'] for f in d['formats'] if not f['ok']], [], 'every SID page of the runway 20 is read (the file on the workstation of 6 Nov 2026 had them « NON lue » from an older reading and kept the records of an older one)', what='pages')
     c.eq(len([p for p in sids if p['runways'] == ['20'] and p['status'] == 'check']), 36, 'runway 20: 17 names x 2 letters (2Y, 2S) and the two POGO departures of the shared page, all « check »', what='SID 20 count')
+
+
+def _pdf_of_pages(pages):
+    """Un PDF minimal (texte seul, police Helvetica) dont chaque page est une liste de lignes : une ligne = un seul fragment de texte, à son ordonnée, donc relue telle quelle par le lecteur (proc_pdf.rows_from_pdf)."""
+    def esc(r):
+        return r.replace('\\', '\\\\').replace('(', '\\(').replace(')', '\\)')
+    objs = [b'<< /Type /Catalog /Pages 2 0 R >>', None, b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>']
+    kids = []
+    for rows in pages:
+        body = '\n'.join(f'BT /F1 8 Tf 20 {1980 - 12 * i} Td ({esc(r)}) Tj ET' for i, r in enumerate(rows)).encode('cp1252', 'replace')
+        objs.append(b'<< /Length %d >>\nstream\n' % len(body) + body + b'\nendstream')
+        stream = len(objs)
+        objs.append(b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 2000 2000] /Contents %d 0 R /Resources << /Font << /F1 3 0 R >> >> >>' % stream)
+        kids.append(len(objs))
+    objs[1] = b'<< /Type /Pages /Kids [' + b' '.join(b'%d 0 R' % k for k in kids) + b'] /Count %d >>' % len(kids)
+    out, offs = b'%PDF-1.4\n', []
+    for i, o in enumerate(objs, 1):
+        offs.append(len(out))
+        out += b'%d 0 obj\n' % i + o + b'\nendobj\n'
+    xref = len(out)
+    out += b'xref\n0 %d\n0000000000 65535 f \n' % (len(objs) + 1) + b''.join(b'%010d 00000 n \n' % o for o in offs)
+    return out + b'trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n' % (len(objs) + 1, xref)
+
+
+@case('K81', 'A PDF of two pages is read whole (SOG-0049): the table that runs over the second page of a coding-table PDF is not dropped', 'K', static=True,
+      rule='SOG-0049 (6 Nov 2026): « OKASI et PILUL sont sur la seconde page de SID RNAV pour la RWY 20 … il peut y avoir plusieurs pages » -- a coding table may run over several pages of one PDF; the reader read the first page only, now it reads them all, each counted on its own')
+def k81(c):
+    import tempfile
+    from pathlib import Path
+    P, fx, rows = _eaip(c)
+    import proc_sia as S                              # the real module: read_aerodrome calls ITS fetch and all_pages_rows (P is a copy of the names)
+    fam = 'AD_2_LFPO_DATA_SID_RWY20_RNAV_CODE'
+    # a PDF of several pages, through the real reader: page 2 holds OKASI and PILUL (the user's words), page 1 is the previous table
+    one, two = '_01', '_02'
+    pages = [rows(fam + '_02'), rows(fam + '_03')]
+    html = '<a href="Cartes/LFPO/%s">a</a><a href="Cartes/LFPO/%s">b</a>' % (fam + one + '.pdf', fam + two + '.pdf')
+    blobs = {fam + one + '.pdf': _pdf_of_pages([rows(fam + '_01')]), fam + two + '.pdf': _pdf_of_pages(pages)}
+    said = []
+    saved = S.fetch
+    with tempfile.TemporaryDirectory() as td:
+        def fake_fetch(url, timeout=60):
+            return html.encode() if url.endswith('FR-AD-2.LFPO-fr-FR.html') else blobs[url.rsplit('/', 1)[-1]]
+        S.fetch = fake_fetch
+        try:
+            doc = S.read_aerodrome(S.eaip_url('2026-10-29'), 'LFPO', Path(td), None, lambda *t: said.append(' '.join(map(str, t))), vac_exists=lambda *a, **k: False)
+        finally:
+            S.fetch = saved
+    c.ok(doc is not None, 'no document', 'the reader reads the two PDFs')
+    names20 = sorted(p['name'] for p in doc['procedures'] if p['name'] and p['name'].split()[0] in ('OKASI', 'PILUL'))
+    c.eq(names20, ['OKASI 2S', 'OKASI 2Y', 'PILUL 2S', 'PILUL 2Y'], 'the second page of the PDF is read: OKASI 2Y/2S and PILUL 2Y/2S (they are on it, none on the first)', what='page 2')
+    two_pages = [f for f in doc['formats'] if f['file'] == fam + two + '.pdf']
+    c.eq([(f.get('page'), f.get('of'), f['ok']) for f in two_pages], [(1, 2, True), (2, 2, True)], 'each page of a PDF is counted on its own in `formats` (page 1/2, 2/2), both read', what='formats')
+    f = (doc.get('families') or [{}])[0]
+    c.eq((f.get('listed'), f.get('pdf_pages'), f.get('read'), f.get('unread'), f.get('missing')), (2, 3, 3, 0, []), 'the family says: two files cited, three pages, three read', what='family')
+    c.ok(any('3 page(s) lue(s) sur 3' in s for s in said), str(said), 'and the job says it: « 3 page(s) lue(s) sur 3 »')
+
+
+@case('K82', 'Families of pages (SOG-0049): the reading says, per family of pages, how many pages the AIP cites and how many it read; a gap in the numbering and an unread page are said', 'K', static=True,
+      rule='SOG-0049 (6 Nov 2026): a coding table runs over a family of pages (SID RWY20 RNAV CODE_01 … CODE_05); the reader gives per family the pages cited, the pages read, the unread ones and the numbers missing between 01 and the last, and the job says the total in one line')
+def k82(c):
+    P, fx, rows = _eaip(c)
+    fam = 'AD_2_LFPO_DATA_SID_RWY20_RNAV_CODE'
+    # 1. the whole real set: the family of runway 20 holds 5 pages of 5, none missing, none unread; every family says what it read
+    names = _eaip_names(c, 'LFPO', 'AD_2_LFPO_DATA_*')
+    d = P.build_aerodrome('LFPO', [n + '.pdf' for n in names], lambda n: rows(n.replace('.pdf', '')), 'https://example.org/AIRAC-2026-10-29', '2026-10-29', None, None, None)
+    byname = {f['family']: f for f in d['families']}
+    f20 = byname['DATA_SID_RWY20_RNAV_CODE']
+    c.eq((f20['kind'], f20['numbers'], f20['listed'], f20['pdf_pages'], f20['read'], f20['unread'], f20['missing']), ('code', ['01', '02', '03', '04', '05'], 5, 5, 5, 0, []), 'LFPO SID RWY 20 RNAV: five pages cited, five read, none missing', what='family 20')
+    c.eq((sum(f['read'] for f in d['families'] if f['kind'] == 'code'), len(d['formats']), byname['DATA']['read'], byname['DATA']['pdf_pages']), (56, 56, 4, 4), 'the coding pages read, summed over the families, are the pages of `formats` (nothing counted twice or left out); the four DATA pages are a family too', what='sum')
+    line = P.families_line('LFPO', d['families'])
+    c.ok('page(s) lue(s) sur' in line and 'À VÉRIFIER' not in line, line, 'the one line the job says: the total read, and nothing to check')
+    # 2. a gap in the numbering (the AIP cites pages 01 and 03 of a family, not 02): said, per family, and in the warnings
+    gap = [n + '.pdf' for n in names if n.startswith(fam) and not n.endswith('_02')]
+    dg = P.build_aerodrome('LFPO', gap, lambda n: rows(n.replace('.pdf', '')), 'https://example.org/AIRAC-2026-10-29', '2026-10-29', None, None, None)
+    fg = dg['families'][0]
+    c.eq((fg['numbers'], fg['missing'], fg['read']), (['01', '03', '04', '05'], ['02'], 4), 'a family cited as 01, 03, 04, 05: page 02 is missing, said', what='gap')
+    c.ok(any('numérotation discontinue' in w and '02' in w for w in dg['warnings']) and 'À VÉRIFIER' in P.families_line('LFPO', dg['families']), str(dg['warnings'][:2]), 'and the warning and the job line say it')
+    # 3. the second page of a PDF is unreadable: counted unread, with the page number, never silently dropped
+    pages_of = {fam + '_01.pdf': [rows(fam + '_01')], fam + '_02.pdf': [rows(fam + '_02'), []]}
+    du = P.build_aerodrome('LFPO', sorted(pages_of), lambda n: pages_of[n][0], 'https://example.org/AIRAC-2026-10-29', '2026-10-29', None, None, None, pages_of=lambda n: pages_of[n])
+    c.eq([(f['file'][-11:], f['page'], f['ok']) for f in du['formats'] if f.get('of')], [('CODE_02.pdf', 1, True), ('CODE_02.pdf', 2, False)], 'a second page with no text is an unread page 2/2', what='unread')
+    c.ok(any('CODE_02.pdf (p. 2/2): page NON lue' in w for w in du['warnings']) and du['families'][0]['unread'] == 1 and 'À VÉRIFIER' in P.families_line('LFPO', du['families']), str(du['warnings'][:3]), 'said in the warnings (« p. 2/2 : page NON lue ») and by the job line')
 
 
 @case('K58', 'openAIP aerodromes: runways, bearing, hardLen and magVar derived like the SIA gives them to France', 'K', tags=('aerodb',), phone=False,

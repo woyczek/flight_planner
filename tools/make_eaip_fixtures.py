@@ -5,8 +5,8 @@
   python tools/make_eaip_fixtures.py LFPO --cache <dossier des PDF> --fetch                              télécharge d'abord les PDF absents du cache (jamais fait par un test)
   python tools/make_eaip_fixtures.py LFBD --adopt --cycle 2026-10-01                                      manifeste d'un jeu dont les PDF ne sont plus dans un cache (« non régénérable »)
 
-Un jeu = frame/aerodb/test/fixtures/eaip/<OACI>/ : une paire `<PDF>.rows.txt` par page de codage ou de données (`AD_2_<OACI>_DATA_*`, lignes de la PREMIÈRE page, comme le lit
-proc_sia.read_aerodrome), l'extrait de la section AD 2.12 de la page de l'aérodrome (`FR-AD-2.<OACI>.AD-2.12.html`, avec --ad2 : le titre et le premier tableau) et `manifest.json`
+Un jeu = frame/aerodb/test/fixtures/eaip/<OACI>/ : une paire `<PDF>.rows.txt` par page de codage ou de données (`AD_2_<OACI>_DATA_*`, lignes de la PREMIÈRE page ; un PDF de plusieurs pages est refusé, proc_sia.read_aerodrome en lit toutes les pages et le jeu n'en garderait qu'une),
+l'extrait de la section AD 2.12 de la page de l'aérodrome (`FR-AD-2.<OACI>.AD-2.12.html`, avec --ad2 : le titre et le premier tableau) et `manifest.json`
 { icao, cycle, source: 'SIA eAIP', generated_at, pages: [{ file, pages, rows, sha256 du PDF }] }. Seuls les terrains français : la licence ouverte du SIA permet de republier ses pages
 (frame/aerodb/test/fixtures/SOURCES.md) ; les autres dispositions restent sur des pages inventées. Bibliothèque standard, plus proc_pdf / proc_sia (pypdf pour lire un PDF).
 """
@@ -73,6 +73,8 @@ def build(icao, cache, out, cycle, ad2=None, pattern=None, say=print):
     for n in names:
         pdf = Path(cache) / n
         count, rows = read_page(pdf)
+        if count > 1:                                   # le jeu ne garde que la première page : un PDF de plusieurs pages que le lecteur lit en entier (SOG-0049) serait coupé sans un mot
+            raise SystemExit(f'{n}: document de {count} pages, le jeu de test ne garde que la première (proc_sia lit toutes les pages) : ajouter la prise en charge des pages suivantes avant de le mettre dans un jeu')
         (out / (n[:-4] + '.rows.txt')).write_text(rows_text(rows), encoding='utf-8')
         pages.append({'file': n, 'pages': count, 'rows': len(rows), 'sha256': sha256(pdf)})
         say(f'  {n}: {len(rows)} ligne(s) (document de {count} page(s))')

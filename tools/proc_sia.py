@@ -27,7 +27,7 @@ from pathlib import Path
 import outbound  # le User-Agent du lanceur, chaque échec dit en console
 import proc_geometry as G
 from proc_layouts import BY_NAME, alt_constraint, alt_ft, DASHES, detect_layout, dms, fingerprint, FIXLESS, _is_leg_row, KNOWN_FINGERPRINTS, MONTHS, page_date, PATH_TERMINATORS
-from proc_pdf import PDF_NAME, first_page_rows, safe_path, pdf_pages, PdfTimeout, scan_pdf, show_page
+from proc_pdf import PDF_NAME, all_pages_rows, first_page_rows, safe_path, pdf_pages, PdfTimeout, scan_pdf, show_page
 from proc_records import build_pdf_dir, final_only_record, page_reason, records
 
 
@@ -753,15 +753,21 @@ def vac_url(base_url, icao):
     return f'{m.group(1)}/Atlas-VAC/PDF_AIPparSSection/VAC/AD/AD-2.{icao}.pdf' if m else None
 
 
-def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=None, ad2=None):
-    """Fichier d'un terrain : { procedures, charts, warnings }. `files` : noms des PDF de Cartes/<OACI>/ ; `rows_of(nom)` : lignes
-    d'un PDF ; `resolve(id)` : (lat, lon) d'un point en route, ou None."""
+def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=None, ad2=None, pages_of=None):
+    """Fichier d'un terrain : { procedures, charts, warnings, formats, families }. `files` : noms des PDF de Cartes/<OACI>/ ; `rows_of(nom)` : lignes
+    de la première page d'un PDF ; `pages_of(nom)` (facultatif, celui de read_aerodrome) : les lignes de CHAQUE page d'un PDF, une liste par page : un PDF de plusieurs pages est lu en entier,
+    chaque page comptée à part dans `formats` (clés `page` et `of`) ; sans lui, chaque PDF n'a que la page que donne `rows_of`. `families` : par famille de pages (une suite « …_01, …_02 »),
+    combien de pages l'AIP cite, combien ont été lues (page_families, SOG-0049) ; `resolve(id)` : (lat, lon) d'un point en route, ou None."""
+    pages_of = pages_of or (lambda n: [rows_of(n)])
     coords, warnings, procs, used, formats = {}, [], [], [], []
     merges, dropped = {}, []             # points merge (clé : entrée, fusion, arc) ; procédures retirées (un bloc sans titre qui en répète une nommée)
+    data_read = {}                        # page DATA → (pages du PDF, pages où l'on a lu du texte) : pour les familles
     faf, iff, faf_page = {}, {}, {}       # piste → position du FAF LOC, du point initial sans nom (pages DATA), pour les approches ILS ; la page DATA qui donne le FAF
     for f in sorted(files):
         if re.search(r'_DATA_0\d\.pdf$', f):
-            data_rows = rows_of(f)
+            data_pages = pages_of(f)
+            data_rows = [r for pg in data_pages for r in pg]             # toutes les pages du PDF : les points et le FAF d'une page 2 comptent comme ceux de la première
+            data_read[f] = (len(data_pages), sum(1 for pg in data_pages if pg))
             coords.update(parse_data01(data_rows))
             for rw, pos in parse_faf(data_rows).items():
                 if rw not in faf:
@@ -775,35 +781,38 @@ def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=Non
     for f in sorted(files):
         if not CODE_PAGE.match(f) or 'FASDB' in f:
             continue
-        rows = rows_of(f)
-        table = parse_code_table(rows) if detect_layout(rows) else None
-        ok, problems, fp, layout = verify_page(rows, table)
-        formats.append({'file': f, 'layout': layout, 'fingerprint': fp, 'ok': ok, 'problems': problems, **({} if ok else {'reason': page_reason(problems)})})
-        if not ok:
-            warnings.append(f'{f}: page NON lue, format à vérifier: ' + '; '.join(p for p in problems if not p.startswith('info:')))
-            continue
-        if any(p.startswith('info:') for p in problems):
-            warnings.append(f'{f}: ' + next(p for p in problems if p.startswith('info:')))
-        if not table['kind']:
-            warnings.append(f'{f}: titre non reconnu')
-            continue
-        for g in table['groups']:
-            for leg in g['legs']:
-                if leg['id'] and leg['id'] not in coords and resolve and resolve(leg['id']):
-                    coords[leg['id']] = resolve(leg['id'])
-        recs, w = records(icao, table, coords, f, cycle, ils_ctx)
-        for m in table.get('point_merge', []):          # le système est le même sur toutes les pistes qui l'utilisent : une entrée, la liste des pistes
-            e = merges.setdefault((m['name'], m['merge'], tuple(m['arc'])), {**m, 'runways': [], 'source': {'file': f}})
-            e['runways'] = sorted(set(e['runways']) | set(table['runways']))
-        have = {p['id'] for p in procs}
-        for r in recs:
-            if r['id'] in have:               # deux pages donnent le même identifiant (même nom, même piste) : la première est gardée
-                warnings.append(f'{f}: {r["id"]} déjà lu à une page précédente, ignoré')
-            else:
-                have.add(r['id'])
-                procs.append(r)
-        warnings += [f'{f}: {x}' for x in w]
-        used.append(f)
+        pages = pages_of(f) or [[]]                      # CHAQUE page du PDF (SOG-0049) : un PDF sans page lisible compte pour une page non lue
+        for k, rows in enumerate(pages, 1):
+            tag = f if len(pages) == 1 else f'{f} (p. {k}/{len(pages)})'
+            table = parse_code_table(rows) if detect_layout(rows) else None
+            ok, problems, fp, layout = verify_page(rows, table)
+            formats.append({'file': f, 'layout': layout, 'fingerprint': fp, 'ok': ok, 'problems': problems, **({} if ok else {'reason': page_reason(problems)}), **({'page': k, 'of': len(pages)} if len(pages) > 1 else {})})
+            if not ok:
+                warnings.append(f'{tag}: page NON lue, format à vérifier: ' + '; '.join(p for p in problems if not p.startswith('info:')))
+                continue
+            if any(p.startswith('info:') for p in problems):
+                warnings.append(f'{tag}: ' + next(p for p in problems if p.startswith('info:')))
+            if not table['kind']:
+                warnings.append(f'{tag}: titre non reconnu')
+                continue
+            for g in table['groups']:
+                for leg in g['legs']:
+                    if leg['id'] and leg['id'] not in coords and resolve and resolve(leg['id']):
+                        coords[leg['id']] = resolve(leg['id'])
+            recs, w = records(icao, table, coords, f, cycle, ils_ctx)
+            for m in table.get('point_merge', []):          # le système est le même sur toutes les pistes qui l'utilisent : une entrée, la liste des pistes
+                e = merges.setdefault((m['name'], m['merge'], tuple(m['arc'])), {**m, 'runways': [], 'source': {'file': f}})
+                e['runways'] = sorted(set(e['runways']) | set(table['runways']))
+            have = {p['id'] for p in procs}
+            for r in recs:
+                if r['id'] in have:               # deux pages donnent le même identifiant (même nom, même piste) : la première est gardée
+                    warnings.append(f'{tag}: {r["id"]} déjà lu à une page précédente, ignoré')
+                else:
+                    have.add(r['id'])
+                    procs.append(r)
+            warnings += [f'{tag}: {x}' for x in w]
+            if f not in used:
+                used.append(f)
     # une piste dont le SIA donne le FAF ILS/LOC (pages DATA) mais AUCUNE table de codage ILS (LFLL : ILS 17L, 35L, 35R) : la finale seule, FAF → seuil (SOG-0044)
     for rw in sorted(faf):
         if any(CODE_PAGE.match(f) and re.search(rf'_RWY{rw}_.*ILS', f) for f in files) or any(p['kind'] == 'APP' and p['runways'] == [rw] and 'ILS' in (p['name'] or '').upper() for p in procs):
@@ -828,9 +837,13 @@ def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=Non
     for p in procs:
         warnings += [f'{p["source"].get("ref")}: {x}' for x in G.review(p, basis=BY_NAME['sia-code'].tolerances)]
     charts = [{'path': f'Cartes/{icao}/{f}', 'kind': chart_kind(f)} for f in sorted(files)]
+    families = page_families(icao, files, formats, data_read)
+    for fam in families:
+        if fam['missing']:
+            warnings.append(f'{fam["family"]}: numérotation discontinue, page(s) {", ".join(fam["missing"])} absente(s) de la liste de l\'AIP ({fam["listed"]} page(s) citée(s) : {", ".join(fam["numbers"])}) : une procédure peut manquer')
     doc = {'schema': 1, 'icao': icao, 'cycle': cycle, 'updated_at': datetime.now(timezone.utc).isoformat(timespec='seconds'),
            'procedures': procs, 'charts': {'base': base_url.rstrip('/') + '/html/eAIP/', 'items': charts, 'vac': vac},
-           'pages': used, 'formats': formats, 'warnings': warnings}
+           'pages': used, 'formats': formats, 'families': families, 'warnings': warnings}
     if merges:
         doc['point_merge'] = list(merges.values())
     if dropped:
@@ -839,6 +852,47 @@ def build_aerodrome(icao, files, rows_of, base_url, cycle, resolve=None, vac=Non
     if runways:
         doc['runways'] = runways
     return doc
+
+
+FAMILY_PAGE = re.compile(r'^(?P<family>.+?)_(?P<n>\d{2})\.pdf$')
+
+
+def page_families(icao, files, formats=(), data_read=None):
+    """Les FAMILLES de pages du terrain, d'après les noms de fichier que l'AIP cite : une suite « <famille>_01.pdf, <famille>_02.pdf … » (SID RNAV RWY 20 : …_CODE_01 à …_CODE_05). Pour chaque famille :
+    { family (sans le préfixe AD_2_<OACI>_), kind ('code' : table de codage, lue ; 'data' : page DATA, lue ; 'chart' : carte, citée mais jamais lue ici), listed (fichiers cités), numbers (leurs
+    numéros), missing (numéros absents entre « 01 » et le plus grand : une page que l'AIP ne cite pas, donc non lue), pdf_pages (pages des PDF cités, d'après la lecture ; None pour une carte),
+    read / unread (pages lues et non lues ; None pour une carte) }. `formats` : la liste `formats` du terrain (une entrée par page lue) ; `data_read` : page DATA → (pages du PDF, pages avec du texte).
+    Un PDF cité qui n'a jamais été lu (hors lecture) n'est ni lu ni non lu : `read` + `unread` peut être inférieur à `listed`."""
+    by_file = {}
+    for fm in formats:
+        by_file.setdefault(fm['file'], []).append(fm)
+    out = {}
+    for f in sorted(files):
+        m = FAMILY_PAGE.match(f)
+        kind = 'code' if CODE_PAGE.match(f) and 'FASDB' not in f else 'data' if re.search(r'_DATA_0\d\.pdf$', f) else 'chart' if re.search(r'_INSTR_\d\d\.pdf$', f) else None
+        if kind is None:
+            continue
+        fam = re.sub(rf'^AD_2_{icao}_', '', m.group('family') if m else f[:-4])      # une page sans numéro (« …_ILS_Z_LOC_Z_CODE.pdf ») est une famille d'une page
+        e = out.setdefault((kind, fam), {'family': fam, 'kind': kind, 'listed': 0, 'numbers': [], 'pdf_pages': 0 if kind != 'chart' else None, 'read': 0 if kind != 'chart' else None, 'unread': 0 if kind != 'chart' else None})
+        e['listed'] += 1
+        if m:
+            e['numbers'].append(m.group('n'))
+        if kind == 'code':
+            pg = by_file.get(f, [])
+            e['pdf_pages'] += len(pg)
+            e['read'] += sum(1 for x in pg if x['ok'])
+            e['unread'] += sum(1 for x in pg if not x['ok'])
+        elif kind == 'data' and data_read and f in data_read:
+            n, text = data_read[f]
+            e['pdf_pages'] += n
+            e['read'] += text
+            e['unread'] += n - text
+    res = []
+    for e in out.values():
+        nums = sorted(int(n) for n in e['numbers'])
+        e['missing'] = [f'{n:02d}' for n in range(1, nums[-1] + 1) if n not in nums] if nums and (len(nums) > 1 or nums[0] > 1) else []
+        res.append(e)
+    return sorted(res, key=lambda e: (e['kind'], e['family']))
 
 
 def runways_of(coords):
@@ -1130,7 +1184,8 @@ def read_aerodrome(eaip, icao, cache, resolve=None, say=print, rows_dir=None, st
     wanted = [f for f in files if re.search(r'_DATA_0\d\.pdf$', f) or (CODE_PAGE.match(f) and 'FASDB' not in f)]
     seen = set()
 
-    def rows_of(name):
+    def pages_of(name):
+        """Les lignes de CHAQUE page du PDF (SOG-0049 : la page 2 d'un même PDF n'est plus ignorée)."""
         p = safe_path(cache, name)                    # le nom vient d'une page du serveur : un nom sûr, sous le dossier du cache
         if step:
             step(f'{icao}: {name}', len(seen), len(wanted))
@@ -1138,18 +1193,32 @@ def read_aerodrome(eaip, icao, cache, resolve=None, say=print, rows_dir=None, st
         if not p.exists():
             p.write_bytes(get(f'{eaip}/html/eAIP/Cartes/{icao}/{name}'))
         try:
-            rows = first_page_rows(p)
+            pages = all_pages_rows(p)
         except PdfTimeout as e:                       # document non lu : signalé, la page est vide pour le constructeur
             say(f'{icao}: {e}')
-            rows = []
+            pages = []
         if rows_dir:
             Path(rows_dir).mkdir(parents=True, exist_ok=True)
-            (Path(rows_dir) / (p.stem + '.rows.txt')).write_text('\n'.join(rows) + '\n', encoding='utf-8')
-        return rows
+            for k, rows in enumerate(pages or [[]], 1):          # la première page : <nom>.rows.txt (comme les jeux de pages) ; les suivantes : <nom>.p2.rows.txt…
+                (Path(rows_dir) / (p.stem + ('.rows.txt' if k == 1 else f'.p{k}.rows.txt'))).write_text('\n'.join(rows) + '\n', encoding='utf-8')
+        return pages
     vac = vac_url(eaip, icao)
     if vac and not vac_exists(vac):                      # carte VAC : seulement si l'atlas VFR la publie
         vac = None
-    return build_aerodrome(icao, files, rows_of, eaip, cycle.group(1), resolve, vac, page)       # la page AD 2 déjà lue donne aussi les pistes (section AD 2.12)
+    doc = build_aerodrome(icao, files, lambda n: (pages_of(n) or [[]])[0], eaip, cycle.group(1), resolve, vac, page, pages_of)       # la page AD 2 déjà lue donne aussi les pistes (section AD 2.12)
+    say(families_line(icao, doc.get('families') or []))
+    return doc
+
+
+def families_line(icao, families):
+    """UNE ligne qui dit combien de pages ont été lues, famille de pages par famille de pages (« LFPO : 31 familles, 118 page(s) de codage et de données lues sur 118 ; SID_RWY20_RNAV_CODE 5/5, … ») : toutes
+    les familles ne sont pas listées quand tout va bien (la première ligne dit le total) ; une famille dont une page n'est pas lue, ou dont la numérotation a un trou, l'est toujours."""
+    read_f = [f for f in families if f['kind'] != 'chart']
+    pages, read = sum(f['pdf_pages'] for f in read_f), sum(f['read'] for f in read_f)
+    odd = [f'{f["family"]} {f["read"]}/{f["pdf_pages"]}' + (f' (n° {", ".join(f["missing"])} absent(s))' if f['missing'] else '') for f in read_f if f['unread'] or f['missing']]
+    charts = sum(f['listed'] for f in families if f['kind'] == 'chart')
+    return (f'{icao}: {len(read_f)} famille(s) de pages de codage et de données, {read} page(s) lue(s) sur {pages}' + (f' ; {charts} carte(s) citée(s) (non lues ici)' if charts else '')
+            + (' ; À VÉRIFIER : ' + ', '.join(odd) if odd else ''))
 
 
 def default_cache():
@@ -1226,7 +1295,10 @@ def main(argv=None):
         docs[icao] = d
         print(f'{icao}: {len(d["procedures"])} procédure(s), {len(d["warnings"])} avertissement(s)', file=sys.stderr)
         for fm in d['formats']:
-            print(f'  {"OK " if fm["ok"] else "NON"} {fm["file"]} | {fm["layout"]} | {fm["fingerprint"]}' + ''.join(f' | {x}' for x in fm['problems']), file=sys.stderr)
+            print(f'  {"OK " if fm["ok"] else "NON"} {fm["file"]}{" p." + str(fm["page"]) + "/" + str(fm["of"]) if fm.get("of") else ""} | {fm["layout"]} | {fm["fingerprint"]}' + ''.join(f' | {x}' for x in fm['problems']), file=sys.stderr)
+        for fam in d.get('families') or []:
+            if fam['kind'] != 'chart':
+                print(f'  famille {fam["family"]} : {fam["read"]} page(s) lue(s) sur {fam["pdf_pages"]} ({fam["listed"]} fichier(s))' + (f', n° {", ".join(fam["missing"])} absent(s)' if fam['missing'] else ''), file=sys.stderr)
         bad_pages += [f'{icao}/{fm["file"]}' for fm in d['formats'] if not fm['ok']]
     if a.check:                                           # vérification seulement : rien n'est écrit ; sortie 1 si une page n'est pas lisible
         print(f'{len(bad_pages)} page(s) à format non reconnu ou mal lu' + (': ' + ', '.join(bad_pages) if bad_pages else ''), file=sys.stderr)
