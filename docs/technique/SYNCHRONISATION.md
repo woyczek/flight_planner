@@ -137,6 +137,7 @@ sequenceDiagram
 | `missions/affectations.json` | three-way merge (common ancestor, my version, theirs) per assignment (mission, pilot, role); modified on both sides: the most recent |
 | `missions/affectations_log.json` | append-only log: both sides combined, sorted by date |
 | Deleted on one side, modified on the other | the modified version is kept |
+| Two versions that say the same thing (SOG-0043) | not a conflict: once parsed, without `updated_at` / `updatedAt`, they are equal (stamp only, indentation, key order) → the newer one is kept, **no copy in `_conflits/`, nothing reported**; any difference of content stays a conflict |
 | `cr/missions.yaml` (all reports) | like a record: the most recent wins, the other goes to `_conflits/` — **to be merged by hand** (known limitation until the split by year, see the technical debt) |
 
 ## 8. Identity and security

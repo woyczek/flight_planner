@@ -2394,3 +2394,66 @@ def i37(c):
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
+
+@case('I38', 'Launcher: two clients rewriting a working document with the same content are not a conflict; a real difference still keeps the loser', 'I', static=True,
+      rule='SOG-0043 (« beaucoup de conflits de synchro », 6 Nov 2026): tools/data_sync.py merge_raw — two versions that say the same thing once parsed and without updated_at / updatedAt (stamp only, indentation) give the newer one, no copy in _conflits/, no conflict reported; a difference of content is still a conflict with the loser kept')
+def i38(c):
+    import json
+    sys.path.insert(0, str(c.root / 'tools'))
+    import data_sync as DS
+    tmp = Path(tempfile.mkdtemp(prefix='sog-conf-'))
+    path = 'pilot/AAA/current_flight.json'                                  # a file outside the pool: git merges it, the launcher resolves it
+    doc = lambda stamp, level=100, indent=1: json.dumps({'updated_at': stamp, 'level': level, 'route': {'dep': 'LFPO', 'arr': 'LFLL'}}, indent=indent) + '\n'
+    try:
+        def pair(name, a_text, b_text):
+            """Two clones of one remote, both starting from the same document; A writes a_text and sends; B committed b_text and receives."""
+            root = tmp / name
+            root.mkdir()
+            remote, a, b = str(root / 'remote.git'), str(root / 'A'), str(root / 'B')
+            sh = lambda *args, cwd=str(root): subprocess.run(['git', *args], cwd=cwd, check=True, capture_output=True)
+            sh('init', '--bare', '-b', 'main', remote)
+            sh('clone', '-q', remote, a)
+            for k, v in (('user.name', 'essai'), ('user.email', 'essai@example.invalid')):
+                sh('config', k, v, cwd=a)
+            Path(a, *path.split('/')).parent.mkdir(parents=True)
+            Path(a, *path.split('/')).write_text(doc('2026-11-06T10:00:00Z'), encoding='utf-8', newline='\n')
+            sh('add', '-A', cwd=a)
+            sh('commit', '-q', '-m', 'base', cwd=a)
+            sh('push', '-q', 'origin', 'HEAD:main', cwd=a)
+            sh('clone', '-q', remote, b)
+            for k, v in (('user.name', 'essai'), ('user.email', 'essai@example.invalid')):
+                sh('config', k, v, cwd=b)
+            for d, text in ((a, a_text), (b, b_text)):
+                Path(d, *path.split('/')).write_text(text, encoding='utf-8', newline='\n')
+                sh('add', '-A', cwd=d)
+                sh('commit', '-q', '-m', 'edit', cwd=d)
+            sh('push', '-q', 'origin', 'HEAD:main', cwd=a)
+            r = DS.run(b, 'BBB')
+            return r, b, Path(b, *path.split('/')).read_text(encoding='utf-8'), list(Path(b, 'pilot', 'AAA').glob('_conflits/*'))
+        # A: only the stamp changed (10:05), B: only the stamp changed (10:09): git conflicts on the line, nothing is lost
+        r, b, text, copies = pair('stamp', doc('2026-11-06T10:05:00Z'), doc('2026-11-06T10:09:00Z'))
+        c.ok(r.get('ok') and r.get('pushed'), json.dumps(r, ensure_ascii=False)[:300], 'the pass goes through and sends')
+        c.eq([r['conflicts'], [p.name for p in copies], json.loads(text)['updated_at']], [[], [], '2026-11-06T10:09:00Z'],
+             'stamp only: no conflict reported, no copy kept, the newer stamp stays', what='stamp only')
+        # A rewrote the document indented by two (same content), B moved the stamp: formatting only
+        r, b, text, copies = pair('format', doc('2026-11-06T10:05:00Z', indent=2), doc('2026-11-06T10:09:00Z'))
+        c.eq([r.get('ok'), r['conflicts'], [p.name for p in copies], json.loads(text)['updated_at']], [True, [], [], '2026-11-06T10:09:00Z'],
+             'formatting and stamp: no conflict, no copy', what='formatting')
+        # a real difference of content stays a conflict, the loser kept (A: level 200 at 10:05, B: level 300 at 10:09)
+        r, b, text, copies = pair('content', doc('2026-11-06T10:05:00Z', 200), doc('2026-11-06T10:09:00Z', 300))
+        c.eq([len(r['conflicts']), [p.name.split('.')[1] for p in copies], json.loads(text)['level']], [1, ['distante'], 300],
+             'a different level: one conflict, the older version kept in _conflits/, the newer one wins', what='content')
+        # counter-test: without the guard the first case does keep a copy and report a conflict
+        kept = DS.same_content
+        DS.same_content = lambda *a, **k: False
+        try:
+            r, b, text, copies = pair('stamp-without-guard', doc('2026-11-06T10:05:00Z'), doc('2026-11-06T10:09:00Z'))
+        finally:
+            DS.same_content = kept
+        c.ok(len(r['conflicts']) == 1 and len(copies) == 1, json.dumps(r['conflicts'], ensure_ascii=False)[:200], 'counter-test: without the guard the stamp-only case is a conflict with a copy')
+        # an unreadable file is never taken for identical
+        c.eq([DS.same_content(b'not json', b'not json', 'x.json'), DS.same_content(b'{"a": 1}', b'{ "a" : 1 }', 'x.json'), DS.same_content(b'{"a": 1}', b'{"a": 2}', 'x.json'),
+              DS.same_content(b'{"updated_at": "1", "a": 1}', b'{"updatedAt": "2", "a": 1}', 'x.json'), DS.same_content(b'[1]', b'[2]', 'x.json')],
+             [False, True, False, True, False], 'unreadable: not identical; spacing: identical; other value: different; stamps ignored; lists compared as they are', what='same_content')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)

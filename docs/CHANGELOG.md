@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Synchronisation: two versions that say the same thing are no longer a conflict** (`tools/data_sync.py` `same_content`,
+  `merge_raw`; docs/technique/SYNCHRONISATION.md; noreg I38) — SOG-0043 (« beaucoup de conflits de synchro sur data »). Measured
+  on the data repository over 14 days: 2 file-level overlaps in git and 3 copies in `_conflits/`, all `pilot/<tri>/current_flight.json`
+  (927 commits, two clients rewriting it whole); a divergence that bears only on `updated_at` / `updatedAt` or on the formatting
+  now keeps the newer version with no copy and no conflict reported. A real difference of content is unchanged.
 - **Launcher: a data/ with thousands of changed files is received again** (`tools/data_sync.py` `git_paths`; noreg I37). At the start,
   « 0 fichier(s) du poste commités ; réception impossible pour l'instant ([WinError 206] The filename or extension is too long) »:
   `git add -A`, `reset` and `rm --cached` were given every changed path on one command line, which Windows caps at 32 767

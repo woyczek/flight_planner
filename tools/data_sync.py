@@ -469,6 +469,22 @@ def keep_copy(data, path, raw, side):
     return rel
 
 
+# horodatages d'une fiche : ils changent à chaque écriture, jamais le contenu (SOG-0043)
+STAMP_KEYS = ('updated_at', 'updatedAt')
+
+
+def same_content(a, b, path):
+    """Vrai si deux versions d'un fichier (octets) disent la même chose : une fois analysées (indentation, ordre des clés, fins de
+    ligne sans effet) et, pour une fiche, sans ses horodatages (STAMP_KEYS). Fichier illisible (ni JSON ni YAML) : faux, jamais
+    présumé identique."""
+    pa, pb = parse(a, path), parse(b, path)
+    if pa is None or pb is None:
+        return False
+    if isinstance(pa, dict) and isinstance(pb, dict):
+        pa, pb = ({k: v for k, v in d.items() if k not in STAMP_KEYS} for d in (pa, pb))
+    return pa == pb
+
+
 def merge_records(base, ours, theirs, key):
     """Fusion à trois de listes de fiches (dict) identifiées par key ; conflit (modifiée des deux côtés) : la plus
     récente (updated_at). Rend (liste, conflits)."""
@@ -529,6 +545,9 @@ def merge_raw(path, raw):
         return raw[2] if raw[2] is not None else raw[3], {'how': 'gardée (supprimée d’un côté seulement)'}, None, ''
     mine_wins = stamp(raw[2], path) >= stamp(raw[3], path)
     win, lose, side = (raw[2], raw[3], 'distante') if mine_wins else (raw[3], raw[2], 'locale')
+    # les deux versions disent la même chose (horodatage seul, mise en forme) : rien n'est perdu, donc ni copie ni conflit
+    if same_content(raw[2], raw[3], path):
+        return win, {'how': 'identique (horodatage ou mise en forme seuls)'}, None, ''
     return win, {'how': 'la plus récente'}, lose, side
 
 

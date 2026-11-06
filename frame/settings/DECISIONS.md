@@ -578,3 +578,18 @@ moves code, `S` itself replaced through `setState` alone.
   « … et n de plus »; the line counts per kind like the head (« Fiches d'appareils : 2 · Missions : 1 ») rather than naming files; the card
   is shown when something has just left even if nothing waits. To unfold by default under seven files: set `open` in `pushedHtml` when
   `items.length <= MAX_VISIBLE`.
+
+## 6 November 2026 — conflicts on data/ (SOG-0043)
+
+- **Measure** (data repository, 14 days, read only): 7 merges, 2 with a file changed on both sides, both `pilot/RBR/current_flight.json`
+  (28–29 Oct); 3 copies in `_conflits/`, all that file; none since 30 Oct; the last pass reports no conflict. The file has 927 commits
+  (two clients, « RBR » 809 and « Gaétan RYCKEBOER (asr) » 117) and its sections `quote`, `profile`, `wind`, `windSource`, `isaDev`, `route`
+  are recomputed by the fuel module on both sides (`by: fuel`). The mass arrival of missions (SOG-0036) and the YAML registries are not
+  involved (no conflict, not written since 28 Oct).
+- **Done in data_sync** (the smallest): a divergence that is only the stamp or the formatting is not a conflict (`same_content`).
+- **Not done, on purpose**: a merge by key of `current_flight.json` in `data_sync`. Its sections are derived from `route`; taking `route`
+  from one side and `profile` from the other would give an inconsistent state (git already does it silently when the blocks do not
+  overlap, not observed). The levers are in the frame and the modules: an instance should not rewrite the document when nothing changed
+  for the user, and `frame_data` `merge.record` (≈ l. 126, `mergeText` ≈ l. 238) counts a conflict for any file changed on both sides
+  although `doc.base` is known. Reported to the coordinator, not touched.
+- **Not measurable from here**: the browser's `conflicts` store (IndexedDB) and the launcher's console.

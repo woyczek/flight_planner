@@ -169,6 +169,9 @@ received, writes (§ 5) call `push` after the file. The transport is chosen in S
   synchronised) and flagged; `missions/affectations.json` merged per assignment (mission, pilot, role) with three
   versions; `missions/affectations_log.json` (append-only log) combined. Failure in the middle of a merge: merge
   aborted, repository never left half-merged.
+- **Not a conflict** (6 Nov 2026, SOG-0043): two versions of a file that are equal once parsed and without their stamps
+  (`updated_at`, `updatedAt`) — a working document rewritten by two clients with the same content, or only another indentation —
+  give the newer one, with no copy in `_conflits/` and nothing reported (`same_content`).
 - **Known limitation**: `cr/missions.yaml` groups all the reports — in a conflict, the most recent wins and the other is
   kept in `_conflits/` (to be merged by hand); splitting by year (step 7) will reduce these conflicts.
 - **Tests**: `python tools/data_sync.py --essai` (remote repository and two temporary copies: crossed changes,
