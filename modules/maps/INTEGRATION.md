@@ -161,6 +161,10 @@ does not give it:
 
 ## 3. What it asks of aerodb
 
+- **`ground(icao)`** (SOG-0046, SPEC § 5.2; AeroDB's, optional: absent, the layer and its button do not exist): `{ icao, cycle, source,
+  attribution, items: [{ id, kind: 'twy' | 'park' | 'hold', name, line | point }] }`, `null` when the aerodrome has no file. Read once
+  per aerodrome, never from the page's drawing path; validated by the Map (`sanitize`).
+
 - By `bbox` (the route's corridor or the data area, SPEC § 5): `airspaces`, `aerodromes`, `navaids`, `airways`, `moraCells`,
   `obstacles`, `vrp`, `points`, `cities`; boxes cut in two at 180°.
 - `coords(id)` (the alternate, a mission's names), `mora(lat, lon)` (the profile without terrain).

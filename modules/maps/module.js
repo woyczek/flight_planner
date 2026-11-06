@@ -94,6 +94,9 @@ import {
   chooseStart,
   chooseEvents
 } from './choose.js';
+import {
+  groundEvents
+} from './ground.js';
 
 export const meta = {
   id: 'maps',
@@ -121,7 +124,8 @@ export const meta = {
   }],
   // gardés à l'installation (hors ligne dès la première visite)
   files: ['state.js?v=0', 'texts.js?v=0', 'style.js?v=0', 'screen.js?v=0', 'draw.js?v=0', 'data.js?v=0', 'layers.js?v=0',
-    'sheet_view.js?v=0', 'profile_view.js?v=0', 'procs.js?v=0', 'choose.js?v=0', 'coverage.js?v=0', 'tips.js?v=0', 'lv.js?v=0',
+    'sheet_view.js?v=0', 'profile_view.js?v=0', 'procs.js?v=0', 'choose.js?v=0', 'ground.js?v=0', 'coverage.js?v=0', 'tips.js?v=0',
+    'lv.js?v=0',
     'vfr.js?v=0', 'light.js?v=0',
     'flight_time.js?v=0',
     'mission_view.js?v=0',
@@ -240,7 +244,7 @@ export async function mount(el, ctx) {
     toggleModes(false);
     if (m !== S.preset) setPreset(m);
   });
-  S.stops.push(missionEvents(), ...profileEvents(), ...weatherEvents(), chooseEvents());
+  S.stops.push(missionEvents(), ...profileEvents(), ...weatherEvents(), chooseEvents(), groundEvents());
   layersEvents();
   sheetEvents();
   // fond uni (sans MapLibre) : la boîte reçoit le survol et le toucher

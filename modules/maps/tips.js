@@ -40,6 +40,9 @@ import {
   chooseHover
 } from './choose.js';
 import {
+  groundTap
+} from './ground.js';
+import {
   adAt,
   adHover,
   pinAd,
@@ -215,6 +218,7 @@ export function tapAt(x, y, lat, lon) {
   closeLv();
   if (S.edit.on) return got('edit')?.editTap(x, y);
   if (!onMission() && vrpTap(x, y)) return;
+  if (!onMission() && groundTap(x, y)) return; // un trait ou un point du sol touché : sa ligne dans le panneau (§ 10.40)
   const ad = onMission() ? null : adAt(x, y);
   if (ad) return pinAd(ad);
   if (!S.cardEl.hidden) return hideTips();

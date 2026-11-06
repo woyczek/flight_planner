@@ -231,6 +231,18 @@ export const STYLE = `
 [data-module="maps"] .mp-ch-row{box-sizing:border-box;display:flex;align-items:center;gap:8px;width:100%;height:var(--mp-ch-row);min-height:0;margin:0;padding:0 8px;border:0;border-bottom:1px solid var(--sog-border);border-radius:0;background:none;color:var(--c,var(--sog-fg));font:inherit;font-weight:700;text-align:left;cursor:pointer;touch-action:manipulation}
 [data-module="maps"] .mp-ch-row[data-hl="1"]{background:color-mix(in srgb,var(--c,var(--sog-accent)) 14%,var(--sog-surface))}
 [data-module="maps"] .mp-ch-none{color:var(--sog-fg)}
+[data-module="maps"] .mp-gd{display:flex;flex-direction:column;gap:6px;padding:6px 8px}
+[data-module="maps"] .mp-gd-q{box-sizing:border-box;width:100%;min-height:36px;padding:0 8px;border:1px solid var(--sog-border);border-radius:6px;background:var(--sog-surface);color:var(--sog-fg);font:inherit}
+[data-module="maps"] .mp-gd-chips{display:flex;gap:6px;flex-wrap:wrap}
+[data-module="maps"] .mp-gd-chip{min-height:32px;padding:0 10px;border:1px solid var(--sog-border);border-radius:999px;background:var(--sog-surface);color:var(--sog-fg);font:inherit;cursor:pointer}
+[data-module="maps"] .mp-gd-chip[aria-pressed="true"]{border-color:var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 14%,var(--sog-surface))}
+[data-module="maps"] .mp-gd-list{display:flex;flex-direction:column}
+[data-module="maps"] .mp-gd-row{box-sizing:border-box;display:flex;align-items:center;gap:8px;width:100%;min-height:34px;margin:0;padding:0 8px;border:0;border-bottom:1px solid var(--sog-border);background:none;color:var(--sog-fg);font:inherit;text-align:left;cursor:pointer}
+[data-module="maps"] .mp-gd-row[data-hl="1"]{background:color-mix(in srgb,var(--sog-accent) 14%,var(--sog-surface))}
+[data-module="maps"] .mp-gd-k{color:var(--sog-muted);min-width:5.5em}
+[data-module="maps"] .mp-gd-no{display:none;margin-left:auto;color:var(--sog-muted);font-size:11px}
+[data-module="maps"] .mp-gd-row[data-drawn="0"] .mp-gd-no{display:inline}
+[data-module="maps"] .mp-gd-msg{margin:6px 0;color:var(--sog-muted)}
 [data-module="maps"] .mp-ch-sw{flex:none;width:12px;height:12px;background:var(--c)}
 [data-module="maps"] .mp-ch-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 [data-module="maps"] .mp-ch-old{flex:none;color:var(--sog-muted)}

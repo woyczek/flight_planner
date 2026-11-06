@@ -641,11 +641,13 @@ export function cardHtml(icao) {
   const change = tt(TX.adProcChange),
     tip = tt(TX.adProcChangeTip),
     pick = tt(TX.adProcChoose),
-    pickTip = tt(TX.adProcChooseTip);
+    pickTip = tt(TX.adProcChooseTip),
+    // « Sol » (§ 10.40) : la liste des voies et des postes du terrain, seulement quand AeroDB sait les donner
+    ground = typeof S.ctx?.aerodb?.ground === 'function' ? `<button type="button" class="f-btn mp-ad-ground" data-ground="${esc(k)}" title="${esc(tt(TX.gBtnTip))}">${esc(tt(TX.gBtn))}</button>` : '';
   // « Choisir sur la carte » : le mode choix de ce côté, sur la famille qui manque (choose.js, sans rechargement) ; pleine largeur
   // sur un téléphone (style.js) ; « Changer » ouvre Carburant sur la ligne du côté
   return rows.map(([side, label, text]) =>
-    `<p class="mp-ad-proc" data-proc="${side}"${docTitle(side)}><b>${esc(tt(label))}</b> : ${esc(text ?? tt(TX.adProcUnset))}${sourceLinks(side)} <button type="button" class="f-btn" data-go="fuel?focus=${side}" title="${esc(tip)}" aria-label="${esc(tip)}">${esc(change)}</button><button type="button" class="f-btn primary mp-ad-choose" data-choose="${side}" data-icao="${esc(k)}" title="${esc(pickTip)}">${esc(pick)}</button></p>`
+    `<p class="mp-ad-proc" data-proc="${side}"${docTitle(side)}><b>${esc(tt(label))}</b> : ${esc(text ?? tt(TX.adProcUnset))}${sourceLinks(side)} <button type="button" class="f-btn" data-go="fuel?focus=${side}" title="${esc(tip)}" aria-label="${esc(tip)}">${esc(change)}</button><button type="button" class="f-btn primary mp-ad-choose" data-choose="${side}" data-icao="${esc(k)}" title="${esc(pickTip)}">${esc(pick)}</button>${ground}</p>`
   ).join('');
 }
 

@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the ground layer — taxiways, stands and holds of the departure and the arrival, with a list that highlights** (`modules/maps/ground.js`,
+  `draw.js`, `procs.js`, `tips.js`, `render.js`; SPEC § 5.2; V3 § 10.40; noreg D112–D114; SOG-0046). Needs AeroDB's `ground(icao)` (the
+  file of the aerodrome, OpenStreetMap, ODbL; without it nothing appears). From zoom 14 the taxiway lines, from 15 their names, from 16 the
+  stands and holds; the light drawing of a gesture keeps the lines only. A « Ground » button on the aerodrome card opens a list (filter,
+  kinds, « not drawn »); a row highlights its element on the map, a touch frames it; a touch on the map opens the row. The attribution
+  « © OpenStreetMap contributors, ODbL » is shown while the layer is drawn.
+
 - **Aircraft and Fuel: curves per altitude** (`modules/aircraft/sheets.js`, `sheets_texts.js`, `modules/fuel/model.js`, `module.js`;
   Aircraft SPEC § 6, Fuel SPEC § 3; noreg M26, F96; SOG-0028, first part). The curve of an altitude is the rows of the RPM table
   sharing `altFt` (no new field): the monotony hint of SOG-0015 is checked per altitude and names it; « Croisière » says the two rpm

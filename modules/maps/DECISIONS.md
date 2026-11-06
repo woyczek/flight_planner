@@ -1980,6 +1980,21 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D24 (the wheel alone tightens the window, Ctrl + wheel too, the distance under the pointer stays), D107 (a page that
   scrolls keeps its wheel, Ctrl + wheel still zooms, the horizontal wheel pans).
 
+## The ground layer, the Map's side (V3 § 10.40, SOG-0046; 6 Nov 2026)
+
+- **Asked** (the user, 6 Nov): the list of the points and taxiways on the map for the departure and the arrival, ideally a search with
+  the point, taxiway and runway highlighted. Designed by the ergonomics session on this session's measurements (LFPO, LFLL).
+- **Decisions**: a list with a filter, not an engine (238 stands filter by sub-string); the layer at zoom 14 / 15 / 16 as the spec says,
+  **in the Map's zoom scale** (MapLibre, like `runwayZoom`): the measurements were taken in 256-tile numbering, one level above, so the
+  budget is met with room (D114); the order of the rows is runways, taxiways, stands, holds, then by name (« A1 » before « A10 »)
+  because the 40-row cap would otherwise hide a whole kind; `groundLayout` returns nothing and builds no state without AeroDB's
+  `ground()`; the hit list is in view coordinates and replaced at the end of each drawing.
+- **Not done**: runway rows depend on the threshold vectors being drawn (zoom at or above `runwayZoom`): a view without them lists
+  none; on a phone there is no hover, the touch highlights and frames at once; « Done » closes the panel only (the layer stays drawn).
+- **Noreg** D112 (by zoom, by AeroDB, by the flight's aerodromes), D113 (filter, chips, highlight from the list, touch on the map,
+  « not drawn »), D114 (cost under 16 ms, the light drawing's lines). The fixture `tests/v3/fixtures/ground_LFPO.json` is made from
+  OSM data (595 items); the noreg never reads the public instance.
+
 ## Shift + drag: a rectangle on the profile (decision 1.7 of the roadmap point, 6 Nov 2026; SOG-0005)
 
 - **Asked** (the user, 5 Nov, 21:59: « je veux pouvoir cliquer / glisser »): select a portion of the profile by dragging. On the whole

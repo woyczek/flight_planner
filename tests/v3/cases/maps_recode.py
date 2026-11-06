@@ -3192,3 +3192,125 @@ def d109(c):
     c.eq((doc.get('level') or {}).get('ft'), 31000, 'the level fuel typed is kept (the Map changed none)', what='level.ft')
     c.eq(doc['route'].get('procedures'), f['route']['procedures'], 'route.procedures stays fuel’s', what='procedures')
 
+
+# ------------------------------------------------------------------------------------------------------ D112-D114 (the ground layer)
+_GROUND_JS = """async () => { const S = window.__mp.S, fx = await (await fetch('/tests/v3/fixtures/ground_LFPO.json')).json();
+  S.ctx.aerodb.ground = async icao => icao === 'LFPO' ? fx : null; return fx.items.length }"""
+
+
+def _ground_flight():
+    f = flight()
+    f['route']['dep'] = 'LFPO'
+    f['route']['points'][0] = {'id': 'LFPO', 'lat': 48.7233, 'lon': 2.3794}
+    return f
+
+
+def _ground_open(c, aerodb=True):
+    c.open('maps', docs=fdocs(_ground_flight()), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    if aerodb:
+        c.eq(c.js(_GROUND_JS), 595, 'the fixture of LFPO (OSM) is the file AeroDB would give', what='items')
+
+
+_PARK_AT = [2.36396, 48.726838]   # a stand of the fixture (lon, lat): the view of zoom 16 is a kilometre wide
+
+
+def _ground_at(c, zoom, wait=900, where=(2.3794, 48.7233)):
+    c.js("([z, w]) => { const m = window.__mpMap; m.jumpTo({ center: w, zoom: z }); return true }", [zoom, list(where)])
+    c.wait(wait)
+    c.until("() => !!window.__mp.S.drawn", timeout=8000, what='drawn')
+
+
+_GSTAT = """() => { const g = window.__mp.S.ground; if (!g) return null; const r = [...g.cache.values()].find(x => x.items);
+  return { items: r ? r.items.length : 0, hits: g.hits.length, twy: g.hits.filter(h => h.pts).length, pts: g.hits.filter(h => !h.pts).length,
+           names: [...g.drawn.values()].filter(Boolean).length, asked: g.drawn.size } }"""
+
+
+@case('D112', 'Ground layer: only with a flight aerodrome and zoom 14 or more; lines at 14, names at 15, stands at 16; absent without AeroDB’s ground()', 'D',
+      tags=('maps',), designs=('standard',), night=False, phone=False,
+      rule='V3 spec 10.40 (SOG-0046), cost rule D68: the layer needs a departure or an arrival of the flight and zoom 14 or more; the taxiway lines from 14, their names from 15, the stands and holds (points and names) from 16; never without AeroDb.ground')
+def d112(c):
+    _ground_open(c, aerodb=False)
+    _ground_at(c, 15)
+    c.eq(c.js(_GSTAT), None, 'without AeroDB’s ground() there is no layer and no state', what='ground')
+    c.eq(c.js("() => !!document.querySelector('.mp-ad-ground')"), False, 'no « Ground » button either', what='button')
+    c.js(_GROUND_JS)
+    _ground_at(c, 13, 1200)
+    st = c.js(_GSTAT)
+    c.ok(st and st['hits'] == 0, f'{st}', 'under zoom 14 nothing is drawn')
+    _ground_at(c, 14, 1500)
+    st = c.js(_GSTAT)
+    c.ok(st and st['twy'] > 50 and st['pts'] == 0 and st['asked'] == 0, f'{st}', 'at 14: the taxiway lines, no stand, no name')
+    _ground_at(c, 15, 1200)
+    st = c.js(_GSTAT)
+    c.ok(st['twy'] > 20 and st['pts'] == 0 and 8 < st['names'] <= st['asked'], f'{st}', 'at 15: the lines and the names of the taxiways, no stand')
+    _ground_at(c, 16, 1200, _PARK_AT)
+    st = c.js(_GSTAT)
+    c.ok(st['twy'] > 8 and st['pts'] > 8 and st['names'] > 8, f'{st}', 'at 16: stands and holds as points, with their names')
+
+
+@case('D113', 'Ground panel: a list with a filter, kind chips; a row highlights on the map; a touch on the map opens its row; « not drawn » is said', 'D',
+      tags=('maps',), designs=('standard',), night=False, phone=False,
+      rule='V3 spec 10.40: a sheet panel copied from choose (openData ground), one filter field (sub-string, no case, no accent), chips twy / park / hold, hover or focus of a row highlights the element (setGroundHl), a touch within 6 px of a line or a point opens its row (groundAt), the names that found no place are marked « not drawn »')
+def d113(c):
+    _ground_open(c)
+    _ground_at(c, 16, 1500, _PARK_AT)
+    c.js("async () => { const V = await import('/modules/maps/vfr.js'); V.pinAd({ icao: 'LFPO', name: 'LFPO TEST', lat: 48.7233, lon: 2.3794 }) }")
+    c.until("() => !!document.querySelector('.mp-ad-ground')", timeout=8000, what='the aerodrome card offers the ground list')
+    c.tap('.mp-ad-ground')
+    c.until("() => window.__mp.S.dpanel === 'ground'", timeout=6000, what='the ground panel opens')
+    c.until("() => document.querySelectorAll('.mp-gd-row').length > 10", timeout=6000, what='rows listed')
+    rows = c.js("() => [...document.querySelectorAll('.mp-gd-row')].length")
+    c.ok(rows <= 40, str(rows), 'at most 40 rows, the rest said « narrow the filter »')
+    c.page.fill('.mp-gd-q', 'l4')
+    c.wait(300)
+    names = c.js("() => [...document.querySelectorAll('.mp-gd-row b')].map(b => b.textContent)")
+    c.ok(names and all('l4' in n.lower() for n in names), str(names), 'the filter keeps the names that contain « l4 », whatever the case')
+    c.page.fill('.mp-gd-q', '')
+    c.wait(200)
+    c.tap('.mp-gd-chip[data-kind="twy"]')
+    c.tap('.mp-gd-chip[data-kind="hold"]')
+    c.wait(200)
+    kinds = c.js("() => [...new Set([...document.querySelectorAll('.mp-gd-row')].map(b => b.dataset.kind))]")
+    c.eq(kinds, ['park'], 'with the taxiways and the holds off only stands are listed', what='kinds')
+    c.tap('.mp-gd-chip[data-kind="twy"]')
+    c.wait(300)
+    c.ok(c.js("() => document.querySelectorAll('.mp-gd-row[data-kind=twy]').length") > 0, str(c.js("() => ({ k: window.__mp.S.ground.kinds, n: document.querySelectorAll('.mp-gd-row').length, q: window.__mp.S.ground.q, h: document.querySelector('.mp-gd-list').innerHTML.slice(0, 200) })")), 'the taxiways are listed again')
+    c.js("() => { document.querySelector('.mp-gd-row[data-kind=twy]').dispatchEvent(new PointerEvent('pointerover', { bubbles: true })); return true }")   # the sheet's own hover: the row's pointerover
+    c.wait(500)
+    row = c.js("() => document.querySelector('.mp-gd-row[data-kind=twy]').dataset.id")
+    c.eq(c.js("() => window.__mp.S.ground.hl"), row, 'hovering a row highlights its element', what='hl')
+    c.eq(c.js("() => document.querySelector('.mp-gd-row[data-kind=twy]').dataset.hl"), '1', 'the row shows it', what='data-hl')
+    c.js("() => { document.querySelector('.mp-gd-row[data-kind=twy]').dispatchEvent(new PointerEvent('pointerout', { bubbles: true, relatedTarget: document.body })); return true }")
+    c.wait(300)
+    c.eq(c.js("() => window.__mp.S.ground.hl"), None, 'leaving the row clears it', what='hl after')
+    p = c.js("""() => { const S = window.__mp.S, h = S.ground.hits.find(x => !x.pts), r = S.box.getBoundingClientRect(); return h ? { id: h.id, x: r.left + h.x, y: r.top + h.y } : null }""")
+    c.ok(p, str(p), 'a stand is drawn at zoom 16')
+    c.page.mouse.click(p['x'], p['y'])
+    c.wait(500)
+    c.eq(c.js("() => window.__mp.S.ground.hl"), p['id'], 'a touch on the map highlights the element and opens its row', what='hl from the map')
+    miss = c.js("() => { const g = window.__mp.S.ground, id = [...g.drawn].find(([k, v]) => v === false && !k.startsWith('rwy'))?.[0]; const it = [...g.cache.values()].flatMap(r => r.items || []).find(x => x.id === id); return it ? { id, name: it.name } : null }")
+    c.ok(miss, str(miss), 'some names found no place at this zoom (short names collide)')
+    c.page.fill('.mp-gd-q', miss['name'])
+    c.wait(400)
+    c.eq(c.js(f"() => document.querySelector('.mp-gd-row[data-id=\\\"{miss['id']}\\\"]').dataset.drawn"), '0', 'its row says « not drawn »', what='data-drawn')
+    c.tap('[data-gdone]')
+    c.until("() => window.__mp.S.dpanel !== 'ground'", timeout=4000, what='Done closes the panel')
+
+
+@case('D114', 'Ground layer cost: the full drawing at zoom 15 over LFPO stays under 16 ms, the light drawing keeps the lines only', 'D',
+      tags=('maps',), designs=('standard',), night=False, phone=False,
+      rule='V3 spec 10.40, D68: the layer must not take the drawing over 16 ms; during a gesture only the lines are drawn (the light drawing)')
+def d114(c):
+    _ground_open(c)
+    _ground_at(c, 15, 1500)
+    ms = c.js("""async () => { const t = [];
+      for (let i = 0; i < 9; i++) { window.__mpMap.jumpTo({ center: [2.3794 + i * 1e-4, 48.7233], zoom: 15 });
+        await new Promise(r => setTimeout(r, 700)); const m = performance.getEntriesByName('maps:draw').slice(-1)[0]; if (m) t.push(m.duration) }
+      t.sort((a, b) => a - b); return { n: t.length, med: t[t.length >> 1] || 0, max: t[t.length - 1] || 0 } }""")
+    c.ok(ms['n'] >= 5 and ms['med'] < 16, f'{ms}', 'the full drawing with the ground layer is under 16 ms (median of the draws at rest)')
+    light = c.js("""() => { const g = document.createElement('canvas').getContext('2d'); let n = 0; const o = g.stroke.bind(g); g.stroke = () => { n++; return o() };
+      return import('/modules/maps/ground.js').then(G => { G.groundLight(g, ll => ({ x: 400 + (ll.lng - 2.3794) * 20000, y: 300 - (ll.lat - 48.7233) * 30000 }), 15); return n }) }""")
+    c.ok(light > 100, f'{light} strokes', 'the light drawing strokes the taxiway lines (nothing else, no names)')

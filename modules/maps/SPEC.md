@@ -561,6 +561,28 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
     `none` for "None") through `location.replace`; nothing touched: back to Fuel on that side, or, opened from the aerodrome
     card, back to the flight's map without a reload (its branch without a key; `chooseExit` and `chooseFinish` are gone).
 
+### 5.2 The ground layer (`ground.js`; V3_SPECIFICATION § 10.40, SOG-0046)
+
+- **Data**: `ctx.aerodb.ground(icao)` (AeroDB's job `ground/fetch`, one small published file per aerodrome, OpenStreetMap, ODbL) gives
+  `{ icao, cycle, source, attribution, items: [{ id, kind: 'twy' | 'park' | 'hold', name, line: [[lon, lat]…] | point: [lon, lat] }] }`.
+  Without the function: no layer, no button, no state. The file is untrusted input (§ 10.36): `sanitize()` keeps finite bounded
+  coordinates, names cut to 24 characters and stripped of control characters and `<`, `>`, at most 4 000 items and 600 points a line.
+- **When**: only for the flight's departure and arrival (`groundIcaos()`, four letters) and from zoom 14 (the Map's own MapLibre zoom,
+  `zoomOf`, the scale of `COVER_ZOOM` and `runwayZoom`; a tolerance of .02 absorbs the view's rounding): the taxiway **lines** from 14,
+  their **names** from 15 (rank `ground` in `RANK`, after `procedure`, three places along the line, collision pass), the **stands and
+  holds** (points and names) from 16; the aprons are never filled (3 to 5 ms for nothing). During a gesture the light drawing keeps the
+  lines only (`groundLight`, D68). The element highlighted from the list is drawn last, thicker, in the accent hue; the attribution
+  « © OpenStreetMap contributors, ODbL » is shown while the layer is drawn. Cost (LFPO, desktop, measured 6 Nov before the code: about 2.3 ms the
+  lines, about 1 ms the names, under 0.5 ms the stands; the pre-study's zooms were in 256-tile numbering, one more than MapLibre's, so these
+  figures are the conservative ones): noreg D114 asserts a median under 16 ms.
+- **The panel** (`openData('ground', 'ground:<ICAO>')`, copied from `choose`): a button « Ground » on the aerodrome card of the departure and
+  the arrival (only when `ground()` exists); a filter field (sub-string, no case, no accent), chips Taxiways / Stands / Holds, one row per
+  element (runways first when drawn, then by kind and name, 40 rows at most then « n more: narrow the filter »), the mark « not drawn »
+  on the rows whose name found no place, « Done ». Hover or focus of a row calls `setGroundHl(id)` (the map redraws with it highlighted);
+  a touch on a row highlights it and frames it (`fitBounds` of the line, `easeTo` zoom 17 of the point); from the map, a touch within 6 px
+  of a line or a point (`groundAt` / `groundTap`, the hit list `S.ground.hits`) highlights the element and opens its row. A runway row
+  highlights the threshold vector already drawn (no new drawing). Noreg D112 (layer by zoom and by AeroDB), D113 (panel), D114 (cost).
+
 ## 6. Map contents
 
 ### 6.1 Map modes

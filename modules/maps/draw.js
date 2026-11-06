@@ -46,6 +46,10 @@ import {
   drawWinds
 } from './tips.js';
 import {
+  groundLayout,
+  groundLight
+} from './ground.js';
+import {
   layout as procLayout,
   draw as drawProcs,
   drawLabels as drawProcLabels,
@@ -180,6 +184,13 @@ function light() {
     pal: MapsRender.palette(!!S.theme.dark),
     paper: S.theme.bg
   });
+  groundLight(g, ll => { // les traits du sol seuls (§ 10.40, D68)
+    const q = S.map.project(ll);
+    return {
+      x: q.x + mx,
+      y: q.y + my
+    };
+  }, S.map.getZoom(), dpr);
   markFrame(W, H, mx, my);
   copyFrame();
   sched.lastLight = performance.now();
@@ -559,7 +570,9 @@ function draw() {
     procs = mission || pick ? null : procLayout(ctx, toC, pxDeg, zoomOn),
     rwys = mission || pick ? [] : runwayArrows(toC, zReal), // vecteurs de seuil au-dessus du réglage de la compagnie (runwayZoom)
     // couche « Procédures » : le niveau de couverture des terrains visibles (null : couche cachée ou absente)
-    cov = mission || pick ? null : covSync();
+    cov = mission || pick ? null : covSync(),
+    // couche « sol » (§ 10.40) : voies, postes et attentes du départ et de l'arrivée, de près ; les pistes surlignées sont celles déjà tracées
+    gnd = mission || pick ? null : groundLayout(toC, zReal, W, H, rwys);
   if (S.tuneEl) got('tune')?.markTune(zReal, zv, (shown.n + shown.s) / 2, W, H);
   // nos villes dessinées à ce zoom : les noms de lieux du fond s'effacent (sinon « Mérignac » en double)
   baseNames(!!S.profile?.cities && !!S.data?.data?.cities?.length && ['citiesBig', 'citiesMid', 'citiesSmall'].some(zoomOn));
@@ -605,7 +618,10 @@ function draw() {
     reserve: pick ? pl => pick.reserve(viewPlacer(pl, mx, my)) : procs ? pl => procs.reserve(viewPlacer(pl, mx, my)) : null,
     legs: mission || pick ? null : S.route?.path || null,
     dim: pick ? DIM : 0,
-    overRoute: screen(pick ? (c, pl) => pick.paint(c, pl) : procs ? c => drawProcs(c, procs) : null),
+    overRoute: screen(pick ? (c, pl) => pick.paint(c, pl) : procs || gnd ? (c, pl) => {
+      gnd?.paint(c, pl); // la couche sol (§ 10.40) sous les procédures
+      if (procs) drawProcs(c, procs);
+    } : null),
     // les pistes (vecteurs de seuil et numéros) dans la couche des terrains, priorité « terrains » de la passe de collision
     runways: rwys.length ? screen((c, pl) => drawRunways(c, rwys, pl)) : null,
     runwayLabels: rwys.length ? screen((c, pl) => reserveRunways(c, rwys, pl)) : null,

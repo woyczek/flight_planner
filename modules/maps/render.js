@@ -1365,6 +1365,7 @@
     ['navSymbol'],
     ['navaid'],
     ['procedure'],
+    ['ground'],
     ['route', 'missionPoint'],
     ['airway', 'track'],
     ['fix'],

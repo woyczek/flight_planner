@@ -360,6 +360,29 @@ export const TX = {
     'Zeile oder Spur antippen: die Wahl kommt hinzu und bleibt auf der Karte; „Fertig“ gibt sie an Kraftstoff.',
     'Toque una línea o un trazado: la elección se suma y queda en el mapa; «Terminar» la entrega a Combustible.'
   ],
+  // couche « sol » (§ 10.40, ground.js) : voies, postes et points d'attente du départ et de l'arrivée
+  gTitle: ['Sol · {icao}', 'Ground · {icao}', 'Boden · {icao}', 'Suelo · {icao}'],
+  gBtn: ['Sol', 'Ground', 'Boden', 'Suelo'],
+  gBtnTip: ['Voies de circulation, postes et points d’attente de ce terrain : une liste qui surligne sur la carte',
+    'Taxiways, stands and holding points of this aerodrome: a list that highlights on the map',
+    'Rollwege, Standplätze und Wartepunkte dieses Flugplatzes: eine Liste, die auf der Karte hervorhebt',
+    'Calles de rodaje, puestos y puntos de espera de este aeródromo: una lista que resalta en el mapa'
+  ],
+  gKinds: {
+    twy: ['Voies', 'Taxiways', 'Rollwege', 'Calles'],
+    park: ['Postes', 'Stands', 'Standplätze', 'Puestos'],
+    hold: ['Attentes', 'Holds', 'Wartepunkte', 'Esperas']
+  },
+  gRunway: ['Piste', 'Runway', 'Piste', 'Pista'],
+  gFilter: ['Filtrer par nom', 'Filter by name', 'Nach Namen filtern', 'Filtrar por nombre'],
+  gNotDrawn: ['non dessiné', 'not drawn', 'nicht gezeichnet', 'no dibujado'],
+  gLoading: ['Lecture des données du sol…', 'Reading the ground data…', 'Bodendaten werden gelesen…', 'Leyendo los datos del suelo…'],
+  gNone: ['Pas de données du sol pour ce terrain', 'No ground data for this aerodrome', 'Keine Bodendaten für diesen Flugplatz',
+    'Sin datos del suelo para este aeródromo'
+  ],
+  gNoMatch: ['Aucun nom ne correspond', 'No name matches', 'Kein Name passt', 'Ningún nombre coincide'],
+  gMore: ['{n} autres : affinez le filtre', '{n} more: narrow the filter', '{n} weitere: Filter eingrenzen', '{n} más: afine el filtro'],
+  gDone: ['Terminer', 'Done', 'Fertig', 'Terminar'],
   chDone: ['Terminer', 'Done', 'Fertig', 'Terminar'],
   chServes: ['{p} sert la {r} —', '{p} serves {r} —', '{p} bedient {r} —', '{p} sirve a la {r} —'],
   chUseRwy: ['Passer en {r}', 'Switch to {r}', 'Auf {r} wechseln', 'Pasar a la {r}'],
