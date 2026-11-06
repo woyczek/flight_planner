@@ -3721,7 +3721,10 @@
     const CF = await import(new URL('frame/lib/current_flight.js', ROOT).href),
       // relu après l'attente, juste avant d'écrire : l'enregistrement lu plus tôt ramènerait la route d'avant une écriture de Carburant
       // (mise à jour perdue, R-F4 du 5 nov. 2026, F16)
-      fresh = (await liveData.get(flightPath).catch(() => null)) || cur;
+      fresh = await liveData.get(flightPath).catch(() => null);
+    // plus de position à retirer (déjà effacée ailleurs, enregistrement illisible) : rien à écrire, jamais l'ancienne lecture réécrite ;
+    // le prochain changement du vol relance liveCheck
+    if (!fresh?.progress?.actual) return;
     await liveData.put(flightPath, CF.merge(fresh, {
       progress: {
         actual: null

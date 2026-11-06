@@ -2488,3 +2488,13 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   - Bounded: 200 files, 120 characters of reason; never the text of a file. Read without effect. Noreg A53 (store bench: two
     files named, never the content, reading without effect, a quiet pass leaves it, a refused send named with its 403, the
     same file then `ok`, an offline pass leaves it; the fake GitHub gains `deny`).
+- **6 Nov 2026 — The frame's half of SOG-0013: the position writer's reading, proved** (Simplification, after the review of
+  `6c18b6112`; V3 Frame): `onFix` reads the flight again after its waits and writes `progress.actual` alone on that reading
+  (done in `6c18b6112`); `clearActual` did too but fell back on its earlier reading (`|| cur`) when the second reading gave
+  nothing (record unreadable), writing back what it had read before the wait. It now returns: no position left to remove, nothing
+  to write; the next change of the flight starts `liveCheck` again. Noreg A88 (the other writer plays in the frame's wait, the
+  route and the level it wrote stay after the position; a flight ended in the wait keeps its end) and A89 (the left-over position
+  goes, `progress.phase` stays; the layer answering nothing, the earlier reading is not written back); both fail on the code before
+  `6c18b6112` (A89 also on the `|| cur` fallback). Left as debt: `get` then `put` are two operations (a window of one turn of the
+  event loop); only an atomic `update(path, fn)` of the data layer would close it (roadmap point of 7 Nov). Not isolated by a case:
+  the `flying(fresh)` guard alone (a position left on an ended flight is taken off again by the next `liveCheck`).

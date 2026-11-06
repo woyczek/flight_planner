@@ -40,7 +40,7 @@ import re
 import socket
 import urllib.parse
 
-from lib import MAP_JS, ROOT, Fail, Skip, case, forget, norm, tx
+from lib import MAP_JS, ROOT, Fail, Skip, case, flight_docs, forget, norm, tx
 
 MODULES = ('fuel', 'maps', 'atmosphere', 'report', 'flightlog')
 TABS = [  # APP.tabs of frame/app.js: id, label in fr en de es, module the tab opens first
@@ -3284,4 +3284,100 @@ def a87(c):
       S.pushedItems([{ path: 'x', result: 'ok' }, { path: 'z', result: '' }]).items.map(i => [i.path, i.ok])] }""")
     c.eq(r, [0, [['a.json', True, 'other']], 200, '2026-11-05T10:00:00Z', [['z', False], ['x', True]]],
          'no list, no path, a repeated path, a long reason (200 at most), no result is not a success, the refusals first', what='pushedItems')
+    c.check_errors()
+
+
+# ---- SOG-0013, the frame's half (V3 Frame): the writer of the real position reads the flight again just before it writes.
+# The data layer is wrapped before the frame starts (FrameData is assigned once, `adapter` is a plain property): the frame's own put of the
+# device track (the wait between its first reading of the flight and its write) runs a hook first; the frame-live adapter's get can be
+# made to answer « nothing ». Nothing of the application is replaced: the hook only plays the other writer (Fuel, the Map) at the worst moment.
+_LIVE_HOOK = """(() => { let fd;
+  Object.defineProperty(window, 'FrameData', { configurable: true, get: () => fd, set(v) {
+    fd = v;
+    if (!v || typeof v.adapter !== 'function' || v.__wrapped) return;
+    const adapter = v.adapter; v.__wrapped = true;
+    v.adapter = function (decl) {
+      const a = adapter.apply(this, arguments);
+      if (decl && decl.id === 'frame') { const put = a.put; a.put = async function (path) { if (path === 'device/trail.json') await window.__between?.(); return put.apply(this, arguments) } }
+      if (decl && decl.id === 'frame-live') { const get = a.get; a.get = async function () { const r = await get.apply(this, arguments); return window.__getAs ? window.__getAs(r) : r } }
+      return a } } }) })();"""
+_FLIGHT_PATH = 'pilot/ABC/current_flight.json'
+
+
+def _started_flight():
+    """The seeded flight under way, its start written as Fuel writes it (toISOString, with milliseconds, 10 s ago): a start to the second
+    would sort after a position of the same second (« …50Z » after « …50.149Z »), and the frame would take the position for a left-over."""
+    import datetime
+    d = [x for x in flight_docs(False) if x[0] == _FLIGHT_PATH][0]
+    d[1]['started'] = {'at': (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=10)).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z', 'by': 'fuel'}
+    return d
+
+
+@case('A88', 'The real position is written on the flight read again: a route and a level written meanwhile stay', 'A', tags=('data',), designs=('standard',),
+      screens=False, night=False,
+      rule='SOG-0013, the frame’s half (frame/app.js onFix, V3 Frame): the position writer reads the flight again after its waits (the device track) and writes progress.actual alone on that reading; what another writer (Fuel, the Map) wrote in the meantime stays, and the departure of a flight that ended meanwhile is not brought back')
+def a88(c):
+    c.page.add_init_script(_LIVE_HOOK + """
+      window.__between = async () => {            // the other writer, in the frame's wait: the route and the level of the flight change
+        if (window.__betweenDone) return;
+        window.__betweenDone = 1;
+        const w = FrameData.adapter({ id: 'between', reads: ['pilot/'], writes: [{ prefix: 'pilot/', merge: 'record' }] });
+        const f = await w.get('pilot/ABC/current_flight.json');
+        // second part: the flight ends in the wait (« Cancel the start »: started and progress null), otherwise the route and the level change
+        const ends = sessionStorage.getItem('__ender') === '1';
+        await w.put('pilot/ABC/current_flight.json', ends ? { ...f, by: 'fuel', started: null, progress: null, updated_at: new Date().toISOString() }
+          : { ...f, by: 'fuel', route: { ...f.route, text: 'LFRS DCT LFML', between: true }, level: { ft: 31000 }, updated_at: new Date().toISOString() });
+      };""")
+    c.page.context.grant_permissions(['geolocation'])
+    c.page.context.set_geolocation({'latitude': 47.0, 'longitude': -1.0})
+    c.open('flightlog', flight=False, docs=[['device/live.json', {'gps': True}, 'cache'], _started_flight()])
+    got = c.until_doc(_FLIGHT_PATH, lambda d: bool(d and (d.get('progress') or {}).get('actual')), what='the frame wrote the position', timeout=20000)
+    c.ok(c.js('window.__betweenDone === 1'), 'the other writer never ran', 'the other writer wrote inside the frame’s wait (otherwise nothing is proved)')
+    c.eq(got['progress']['actual']['source'], 'gps', 'the position is the device’s', what='source')
+    c.eq((got['route'].get('between'), got['route'].get('text'), got['level']), (True, 'LFRS DCT LFML', {'ft': 31000}),
+         'the route and the level written during the wait are still there after the position', what='route and level')
+    c.eq(got['route']['points'][0]['id'], 'LFRS', 'the rest of the route is the record’s', what='points')
+    # a flight that ends in the wait keeps its end: the writer works on the flight read again (no start: it returns), never on the earlier
+    # reading, which would bring the departure back (the `flying` guard alone is not isolated here: the next reading of the frame would take
+    # a position left on an ended flight off again)
+    c.page.evaluate("() => sessionStorage.setItem('__ender', '1')")
+    c.open('flightlog', flight=False, docs=[['device/live.json', {'gps': True}, 'cache'], _started_flight()])
+    c.until('window.__betweenDone === 1', timeout=20000, what='the flight ended inside the frame’s wait')
+    c.wait(1500)
+    ended = c.doc(_FLIGHT_PATH)
+    c.eq((ended.get('started'), (ended.get('progress') or {}).get('actual')), (None, None),
+         'the flight that ended in the wait keeps its end and carries no position', what='flight ended in the wait')
+    c.page.evaluate("() => sessionStorage.removeItem('__ender')")
+    c.check_errors()
+
+
+@case('A89', 'The position removed from a flight is removed from the flight read again; nothing to remove, nothing written', 'A', tags=('data',), designs=('standard',),
+      screens=False, night=False,
+      rule='SOG-0013, the frame’s half (frame/app.js clearActual, V3 Frame): the removal of a left-over position reads the flight again; when it has no position any more (removed elsewhere, record unreadable) the earlier reading is never written back')
+def a89(c):
+    import datetime
+    old = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=30)).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    def flight(with_actual):
+        d = [x for x in flight_docs(False) if x[0] == _FLIGHT_PATH][0]
+        d[1]['route']['text'] = 'LFRS LUGEN NEPIX LFML'
+        if with_actual:
+            d[1]['progress'] = {'actual': {'at': old, 'lat': 46.0, 'lon': 1.0, 'source': 'gps'}, 'phase': 'cruise'}
+        return d
+    # A: a flight not under way that still carries a position: the position goes, the rest stays (progress.phase, the route)
+    c.open('flightlog', flight=False, docs=[flight(True)])
+    got = c.until_doc(_FLIGHT_PATH, lambda d: bool(d and not (d.get('progress') or {}).get('actual')), what='the left-over position is removed', timeout=15000)
+    c.eq(((got.get('progress') or {}).get('phase'), got['route']['text'], got.get('by')), ('cruise', 'LFRS LUGEN NEPIX LFML', 'frame'),
+         'only progress.actual is removed; the rest of the record stays', what='the record after the removal')
+    # B: the flight read again has no position (the layer answers « nothing » to the second reading): nothing is written back
+    c.page.add_init_script(_LIVE_HOOK + """
+      window.__nulls = 0;      // from the first reading that carries the position on: the layer answers « nothing » (record unreadable)
+      window.__getAs = r => { if (window.__armed) { window.__nulls++; return null }
+        if (r && r.progress && r.progress.actual) window.__armed = 1;
+        return r };""")
+    c.open('flightlog', flight=False, docs=[flight(True)])
+    c.until('window.__nulls >= 1', timeout=15000, what='the flight read again answered nothing')
+    c.wait(1200)
+    kept = c.doc(_FLIGHT_PATH)
+    c.ok(bool((kept.get('progress') or {}).get('actual')), str(kept.get('progress')), 'the earlier reading is not written back over a flight the layer could not read again')
     c.check_errors()

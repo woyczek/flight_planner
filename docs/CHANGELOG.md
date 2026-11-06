@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the real position is written on the flight read again, and proved** (`frame/app.js` `clearActual`; frame DECISIONS; noreg
+  A88, A89; SOG-0013, frame's half). `clearActual` no longer writes back its earlier reading when the flight cannot be read again; the
+  new cases make the other writer (Fuel, the Map) play inside the frame's wait: its route and level stay after the position, and a
+  flight ended meanwhile keeps its end.
+
 - **Map: Edit mode writes the route through the one writer of the frame** (`modules/maps/edit.js`, `data.js`, `flight_time.js`;
   INTEGRATION § 4; noreg D109; SOG-0013, SOG-0004). `saveRoute` no longer rewrites its whole copy of `route` and `level`: it calls
   `setRoute` of `frame/lib/current_flight.js` with `changesOf(base, mine)`, the base being the record as the Map read it, so a level
