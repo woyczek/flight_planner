@@ -75,3 +75,4 @@ pass
 
 # Copies gardées avant une restauration (DATA_MAP § 3.5), jamais dans le dépôt
 data_avant_*/
+*.fpm-backup-*.bak
