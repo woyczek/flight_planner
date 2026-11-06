@@ -4100,6 +4100,68 @@ def k82(c):
     c.ok(any('CODE_02.pdf (p. 2/2): page NON lue' in w for w in du['warnings']) and du['families'][0]['unread'] == 1 and 'À VÉRIFIER' in P.families_line('LFPO', du['families']), str(du['warnings'][:3]), 'said in the warnings (« p. 2/2 : page NON lue ») and by the job line')
 
 
+@case('K83', 'chartUrl(proc) (SOG-0045): the official chart of a procedure from the aerodrome file (approach: its IAC chart; SID / STAR: the chart that names it), else the DATA page; the runway: ADC, else VAC; never guessed', 'K', tags=('aerodb',), phone=False,
+      rule='V3 § 10.39 (6 Nov 2026): AeroDb.chartUrl(proc) answers an https address from charts.base + a path the file itself lists (SIA host only), the chart only when ONE matches (the SOUTH_INSTR charts of a runway do not say which SID they carry: DATA page), ENAIRE / AirNav / other sources null')
+def k83(c):
+    import json
+    import types
+    shim = types.SimpleNamespace(root=ROOT)                  # the page test has no `root`: the page sets are read from the repository
+    P, fx, rows = _eaip(shim)
+    names = _eaip_names(shim, 'LFPO', 'AD_2_LFPO_DATA_*')
+    charts = ['ADC_01', 'ADC_02', 'IAC_RWY07_FNA_ILS_CAT123_LOC', 'IAC_RWY20_FNA_RNP', 'IAC_RWY_EAST_INA_RNAV_MOLBA', 'IAC_RWY_WEST_INA_RNAV_MOLBA', 'SID_RWY06-07_RNAV_OLZOM_MONOT_DORDI', 'SID_RWY20-24-25_RNAV_OLZOM_MONOT_DORDI',
+              'SID_RWY20_RNAV_SOUTH_INSTR_01', 'SID_RWY20_RNAV_SOUTH_INSTR_02', 'SID_RWY06-07_RNAV_SOUTH', 'STAR_RWY20-24-25_RNAV_MATIX_MOPIL_RENSA', 'STAR_RWY02-06-07_RNAV_MATIX_MOPIL_RENSA']
+    files = [n + '.pdf' for n in names] + [f'AD_2_LFPO_{n}.pdf' for n in charts]
+    vac = 'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_29_OCT_2026/Atlas-VAC/PDF_AIPparSSection/VAC/AD/AD-2.LFPO.pdf'
+    doc = P.build_aerodrome('LFPO', files, lambda n: rows(n.replace('.pdf', '')), P.eaip_url('2026-10-29'), '2026-10-29', None, vac, None)
+    # a second file with two charts that both name the same SID on the same runway: ambiguous, so the DATA page, never the first
+    twin = json.loads(json.dumps(doc))
+    twin['charts']['items'] += [{'path': 'Cartes/LFPO/AD_2_LFPO_SID_RWY20_RNAV_OKASI_A.pdf', 'kind': 'SID'}, {'path': 'Cartes/LFPO/AD_2_LFPO_SID_RWY20-24_RNAV_OKASI_B.pdf', 'kind': 'SID'}]
+    noadc = json.loads(json.dumps(doc))
+    noadc['charts']['items'] = [i for i in noadc['charts']['items'] if i['kind'] != 'ADC']
+    hostile = json.loads(json.dumps(doc))
+    hostile['charts']['base'] = 'https://evil.example.org/x/'
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async ([docs, ofp]) => {
+      const day = Date.parse('2026-11-06T12:00:00Z');
+      const mk = files => AeroDB.create({ reader: { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} }, lnmperf: false, now: () => day });
+      const out = {};
+      for (const [tag, doc] of Object.entries(docs)) {
+        const db = mk({ 'proc/manual/LFPO.json': doc }), all = await db.procedures('LFPO', { doubt: true });
+        const find = (kind, name, rw, tr) => all.find(p => p.kind === kind && p.name === name && p.runways.includes(rw) && (tr === undefined || p.transition === tr));
+        const ask = async (kind, name, rw, tr) => { const p = find(kind, name, rw, tr); return p ? await db.chartUrl(p) : 'NO PROCEDURE ' + [kind, name, rw]; };
+        out[tag] = {
+          rnp20: await ask('APP', 'RNP RWY 20', '20'), ils07: await ask('APP', 'ILS CAT I or CAT II and CAT III or LOC RWY 07', '07'), ina02: await ask('APP', 'INA RNAV RWY 02', '02', 'VEBEK 1E'),
+          olzom6: await ask('SID', 'OLZOM 2F', '06'), olzom20: await ask('SID', 'OLZOM 2Y', '20'), okasi20: await ask('SID', 'OKASI 2Y', '20'), okasi2s: await ask('SID', 'OKASI 2S', '20'),
+          star20: await ask('STAR', 'MATIX 9W', '20'),
+          rwy: await db.chartUrl({ icao: 'LFPO', kind: 'RWY', id: 'LFPO.RWY.20', name: 'RWY 20', runways: ['20'] }),
+          lower: await db.chartUrl({ icao: 'lfpo', kind: 'RWY', id: 'LFPO.RWY.20', name: 'RWY 20', runways: ['20'] }),
+          other: await db.chartUrl({ icao: 'EIDW', kind: 'SID', id: 'EIDW.SID.X', name: 'X 1A', runways: ['10'] }),
+          spain: await db.chartUrl({ icao: 'LEMD', kind: 'SID', id: 'LEMD.SID.X', name: 'X 1A', runways: ['10'] }),
+          junk: [await db.chartUrl(null), await db.chartUrl({}), await db.chartUrl('LFPO'), await db.chartUrl({ icao: 'LF', kind: 'RWY' })],
+          unknown: await db.chartUrl({ icao: 'LFPO', kind: 'SID', id: 'LFPO.SID.NOPE.RW20', name: 'NOPE 1A', runways: ['20'] }),
+          ofp: await db.chartUrl({ ...(find('SID', 'OKASI 2Y', '20')), id: 'LFPO.SID.OFP', source: { kind: 'ofp' } })
+        };
+      }
+      out.words = [AeroDBProcedures.chartWords('AD_2_LFLL_IAC_RWY17L_17R_INA_RNAV.pdf'), AeroDBProcedures.chartWords('AD_2_LFPO_IAC_RWY_EAST_INA_RNAV_MOLBA.pdf')];
+      return out;
+    }""", [{'good': doc, 'twin': twin, 'noadc': noadc, 'hostile': hostile}, None])
+    base = P.eaip_url('2026-10-29') + '/html/eAIP/Cartes/LFPO/'
+    g = r['good']
+    c.eq((g['rnp20'], g['ils07']), (base + 'AD_2_LFPO_IAC_RWY20_FNA_RNP.pdf', base + 'AD_2_LFPO_IAC_RWY07_FNA_ILS_CAT123_LOC.pdf'), 'approach: the IAC chart of the runway whose name carries the words of its DATA page (RNP, ILS CAT123 LOC)', what='approach')
+    c.eq(g['ina02'], base + 'AD_2_LFPO_DATA_RWY02_INA_RNAV_CODE_GNSS.pdf', 'INA RNAV: the charts are « EAST / WEST » (a direction, no runway number): none is guessed, the DATA page of the table', what='INA')
+    c.eq((g['olzom6'], g['olzom20']), (base + 'AD_2_LFPO_SID_RWY06-07_RNAV_OLZOM_MONOT_DORDI.pdf', base + 'AD_2_LFPO_SID_RWY20-24-25_RNAV_OLZOM_MONOT_DORDI.pdf'), 'SID: the chart of its runway whose name carries the SID (OLZOM 2F on 06, OLZOM 2Y on 20)', what='SID')
+    c.eq((g['okasi20'], g['okasi2s']), (base + 'AD_2_LFPO_DATA_SID_RWY20_RNAV_CODE_03.pdf', base + 'AD_2_LFPO_DATA_SID_RWY20_RNAV_CODE_03.pdf'), 'OKASI 2Y / 2S: the SOUTH_INSTR charts do not say which SID they carry (the name is in the drawing): the DATA page, CODE_03', what='OKASI')
+    c.eq(g['star20'], base + 'AD_2_LFPO_STAR_RWY20-24-25_RNAV_MATIX_MOPIL_RENSA.pdf', 'STAR: the chart whose name carries it (MATIX)', what='STAR')
+    c.eq((g['rwy'], g['lower']), (base + 'AD_2_LFPO_ADC_01.pdf',) * 2, 'the runway (no record): the aerodrome chart, the first one', what='RWY')
+    c.eq((g['other'], g['spain'], g['junk'], g['unknown'], g['ofp']), (None, None, [None] * 4, None, None), 'another State, junk, an unknown procedure, a procedure from an OFP: null (nothing is composed)', what='null')
+    t = r['twin']
+    c.eq((t['okasi20'], t['olzom20']), (base + 'AD_2_LFPO_DATA_SID_RWY20_RNAV_CODE_03.pdf', base + 'AD_2_LFPO_SID_RWY20-24-25_RNAV_OLZOM_MONOT_DORDI.pdf'), 'two charts name OKASI on runway 20: ambiguous, so the DATA page, never the first (the unambiguous OLZOM stays)', what='twin')
+    c.eq(r['noadc']['rwy'], vac, 'the runway of a file with no aerodrome chart: the VAC of the VFR atlas', what='VAC')
+    h = r['hostile']
+    c.eq((h['rnp20'], h['okasi20'], h['rwy']), (None, None, None), 'a file whose base is not under the SIA host gives no address, whatever it lists', what='hostile')
+    c.eq(r['words'], [{'runways': ['17L', '17R'], 'words': ['INA', 'RNAV']}, {'runways': [], 'words': ['EAST', 'INA', 'RNAV', 'MOLBA']}], 'the runways of a chart name (« 17L_17R » too); a direction is not a runway', what='chartWords')
+
+
 @case('K58', 'openAIP aerodromes: runways, bearing, hardLen and magVar derived like the SIA gives them to France', 'K', tags=('aerodb',), phone=False,
       rule='aerodb SPEC 2 (aerodrome fields, parser version 20): bearing, hardLen, water, runways and magVar come from the openAIP runways and magneticDeclination; a terrain without runways carries none of the runway fields')
 def k58(c):

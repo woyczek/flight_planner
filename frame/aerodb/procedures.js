@@ -228,7 +228,76 @@
     };
   }
 
+  // ---- la carte officielle d'une procédure (SOG-0045, V3 § 10.39) : le choix du PDF dans la liste des cartes du fichier du terrain (`charts.items`), sans rien composer.
+  /** Mots qui ne désignent pas une procédure dans le nom d'une carte (« SID_RWY20_RNAV_SOUTH_INSTR_01 ») : jamais pris pour le nom d'un départ ou d'une arrivée. */
+  const CHART_WORDS = new Set(['RNAV', 'RNP', 'SID', 'STAR', 'INI', 'INSTR', 'EAST', 'WEST', 'NORTH', 'SOUTH', 'CONV', 'DEP', 'VPE',
+    'VPT', 'ALL', 'ILS', 'LOC', 'VOR', 'GNSS', 'HLDGCONV', 'POGO'
+  ]);
+  /** Les pistes et les autres mots du nom d'une carte ou d'une page DATA du SIA : « AD_2_LFPO_SID_RWY06-07_RNAV_EAST.pdf » → { runways ['06','07'], words ['RNAV','EAST'] } ;
+   *  « …_IAC_RWY17L_17R_INA_RNAV.pdf » → { ['17L','17R'], ['INA','RNAV'] } ; « …_RWY_EAST_INA_RNAV_MOLBA.pdf » → aucune piste (le sens, pas un numéro) ; le type (SID, IAC, DATA…), CODE et le numéro de page en sont retirés. */
+  function chartWords(path) {
+    const parts = String(path || '').split('/').pop().replace(/\.pdf$/i, '').replace(/^AD_2_[A-Z0-9]{4}_/, '').split('_'),
+      runways = [],
+      words = [];
+    let inRunways = false;
+    parts.forEach((t, i) => {
+      if (i === 0 && /^(SID|STAR|IAC|DATA|ADC|VAC|APDC|AOC|PATC|GMC|MIA|MVA)$/.test(t)) return;
+      const m = /^RWY((?:\d{2}[LRC]?(?:-\d{2}[LRC]?)*)?)$/.exec(t);
+      if (m) {
+        inRunways = true;
+        runways.push(...m[1].split('-').filter(Boolean));
+      } else if (inRunways && /^\d{2}[LRC]?(?:-\d{2}[LRC]?)*$/.test(t)) runways.push(...t.split('-'));
+      else {
+        inRunways = false;
+        if (t !== 'CODE' && !/^\d{2}$/.test(t) && t !== 'GNSS') words.push(t);
+      }
+    });
+    return {
+      runways,
+      words
+    };
+  }
+
+  /** Le PDF de la carte d'une procédure parmi les cartes d'un terrain (`items` : charts.items du fichier, { path, kind }), ou null : la carte n'est choisie que si UNE SEULE convient,
+   *  jamais devinée. Une approche : la carte IAC de ses pistes dont le nom porte les mots de sa page DATA (« …DATA_RWY14L_FNA_ILS_Z_LOC_Z_CODE » → « …IAC_RWY14L_FNA_ILS_Z_LOC_Z »), départagée au
+   *  besoin par le premier mot de sa transition ; un départ ou une arrivée : la carte SID / STAR de ses pistes dont le nom porte le sien (« …SID_RWY06-07_RNAV_OLZOM_MONOT_DORDI » pour
+   *  OLZOM 2F) : les autres cartes d'une piste (« …_SOUTH_INSTR_01 ») ne disent pas quels départs elles portent, le nom n'est que dans le dessin. La piste (`kind` 'RWY', sans fiche) :
+   *  la carte d'aérodrome (ADC), la première. */
+  function chartFor(proc, items) {
+    const list = arr(items).filter(i => i && typeof i.path === 'string' && /^Cartes\/[A-Z0-9]{4}\/[A-Za-z0-9._ -]+\.pdf$/.test(i.path)),
+      icao = str(proc?.icao).toUpperCase(),
+      own = list.filter(i => i.path.startsWith(`Cartes/${icao}/`)),
+      kind = str(proc?.kind).toUpperCase(),
+      runways = arr(proc?.runways).map(runwayOf).filter(Boolean),
+      one = c => (c.length === 1 ? c[0].path : null);
+    if (!icao) return null;
+    if (kind === 'RWY') return one(own.filter(i => i.kind === 'ADC').sort((a, b) => (a.path < b.path ? -1 : 1)).slice(0, 1));
+    if (!runways.length) return null;
+    const onRunway = i => {
+      const w = chartWords(i.path);
+      return runways.every(r => w.runways.includes(r));
+    };
+    if (kind === 'APP') {
+      const src = str(proc.source?.file || proc.source?.ref);
+      if (!/\.pdf$/i.test(src)) return null;
+      const want = chartWords(src).words;
+      if (!want.length) return null;
+      const cand = own.filter(i => i.kind === 'IAC' && onRunway(i) && want.every(w => chartWords(i.path).words.includes(w)));
+      if (cand.length === 1) return cand[0].path;
+      const tr = str(proc.transition).toUpperCase().split(/\s+/)[0];
+      return tr ? one(cand.filter(i => chartWords(i.path).words.includes(tr))) : null;
+    }
+    if (kind === 'SID' || kind === 'STAR') {
+      const name = str(proc.name).toUpperCase().split(/\s+/)[0];
+      if (name.length < 3 || CHART_WORDS.has(name)) return null;
+      return one(own.filter(i => i.kind === kind && onRunway(i) && chartWords(i.path).words.includes(name)));
+    }
+    return null;
+  }
+
   window.AeroDBProcedures = {
+    chartFor,
+    chartWords,
     RANK,
     KINDS,
     idOf,

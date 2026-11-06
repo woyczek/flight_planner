@@ -799,7 +799,11 @@
         list,
         table,
         lk,
-        adOf
+        adOf,
+        files: {
+          pub: valueOf(src.pub),
+          manual: valueOf(src.man)
+        }
       };
     }
     /** La base entière a-t-elle été ouverte ? Vrai quand les zones publiées sont connues et toutes ouvertes (ou sans fichier) : un point
@@ -2012,6 +2016,43 @@
           return /^\d{4}-\d{2}-\d{2}$/.test(cycle || '') ? `https://www.airnav.ie/AIRAC/${cycle}-AIRAC/html/eAIP/EI-AD-2.${k}-en-IE.html` : null;
         }
         return null;
+      },
+      /** L'adresse du PDF de la carte officielle d'une procédure, ou null (V3 § 10.39, SOG-0045) : `proc` est la fiche telle que procedures() la donne (SID, STAR, approche), ou, pour la piste,
+       *  `{ icao, kind: 'RWY', id, name, runways: [piste] }` (la réponse est alors la carte d'aérodrome ADC, sinon la carte VAC de l'atlas VFR). SIA seulement (LF…) : la carte IAC / SID / STAR choisie
+       *  dans `charts.items` du fichier du terrain qui porte la fiche (procedures.js chartFor : une seule carte qui convienne, jamais devinée), sinon la page DATA de sa table de codage
+       *  (`source.url`, § 10.25) ; ENAIRE et AirNav : null tant que leurs adresses ne sont pas connues. Jamais composée ailleurs (même contrat que chartsUrl) : l'adresse est `charts.base` du
+       *  fichier, sous l'hôte du SIA, + le chemin d'une carte listée par ce même fichier. Rien n'est lu ni téléchargé de la carte. */
+      async chartUrl(proc) {
+        const k = String(proc?.icao || '').trim().toUpperCase();
+        if (!/^LF[A-Z]{2}$/.test(k) || !proc || typeof proc !== 'object') return null;
+        let e;
+        try {
+          e = await procEntry(k);
+        } catch {
+          return null;
+        }
+        const {
+          pub,
+          manual
+        } = e.files || {}, mine = (f, lists) => f && lists.some(p => p && p.id === proc.id), cycle = proc.source?.cycle;
+        const file = proc.kind === 'RWY' ? [pub, manual].find(f => f?.charts?.items?.length) :
+          mine(pub, e.lists.pub) ? pub : mine(manual, e.lists.manual) ? manual : [pub, manual].find(f => f && cycle && f.cycle ===
+            cycle);
+        const base = file?.charts?.base;
+        if (!file || typeof base !== 'string' || !SIA_EAIP_BASE.test(base) || base.includes('..')) return null;
+        const P = await procLib(),
+          path = P.chartFor({
+            ...proc,
+            icao: k
+          }, file.charts.items),
+          at = p => `${base}Cartes/${k}/${encodeURIComponent(p.split('/').pop())}`;
+        if (path) return at(path);
+        if (proc.kind === 'RWY') {
+          const vac = file.charts.vac;
+          return typeof vac === 'string' && /^https:\/\/www\.sia\.aviation-civile\.gouv\.fr\/[A-Za-z0-9._~%/-]+\.pdf$/.test(vac) && !
+            vac.includes('..') ? vac : null;
+        }
+        return withSourceUrl(k, file, proc)?.source?.url || null;
       },
       async sources() {
         await loadOwn('airac.js', 'AeroAirac');
