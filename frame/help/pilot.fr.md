@@ -78,7 +78,7 @@ appareil choisi sur cet appareil ; sans choix, le devis attend. La loupe ouvre l
 cet ordre : vos fiches de performances, les appareils de la compagnie (sa flotte, puis ceux connus par son journal),
 les types publiés, et en dernier le code tapé tel quel. Un appareil de la compagnie prend sa propre fiche s'il en a une,
 sinon celle de son type, sinon une estimation du type — le devis le dit alors « approché ». L'immatriculation et
-l'indicatif choisis suivent le vol jusqu'au compte rendu. La ligne « Croisière » dit d'où vient la consommation.
+l'indicatif choisis suivent le vol jusqu'au compte rendu. La ligne « Croisière » dit d'où vient la consommation ; lue dans la table régime / débit de la fiche, elle dit les deux régimes et, quand la table a plusieurs altitudes, les deux courbes entre lesquelles le niveau est interpolé (« 2400 rpm entre 2300 et 2500 rpm, entre les courbes de 4000 et 8000 ft »).
 
 À côté de la date, l'horloge « +30 » pose le vol dans 30 min (arrondi aux 5 min ; chaque appui ajoute 30 min) et « Maint. » revient à l'heure courante : la météo des terrains (le TAF s'il couvre cette heure) et les vents en altitude sont relus aussitôt.
 

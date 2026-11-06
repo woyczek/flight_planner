@@ -150,6 +150,15 @@ const TX = {
   ],
   source: ['Croisière : {s}', 'Cruise: {s}', 'Reiseflug: {s}', 'Crucero: {s}'],
   approx: ['approché', 'approximate', 'ungefähr', 'aproximado'],
+  // ce que la table régime / débit a servi à lire (SOG-0028) : le régime de croisière entre deux lignes, le niveau entre deux courbes
+  usedRpm: ['{r} rpm entre {a} et {b} rpm', '{r} rpm between {a} and {b} rpm', '{r} U/min zwischen {a} und {b} U/min',
+    '{r} rpm entre {a} y {b} rpm'
+  ],
+  usedRpm1: ['{r} rpm, ligne {a} rpm', '{r} rpm, row {a} rpm', '{r} U/min, Zeile {a} U/min', '{r} rpm, fila {a} rpm'],
+  usedAlt: ['entre les courbes de {a} et {b} ft', 'between the curves of {a} and {b} ft', 'zwischen den Kurven {a} und {b} ft',
+    'entre las curvas de {a} y {b} ft'
+  ],
+  usedAlt1: ['courbe de {a} ft', 'curve of {a} ft', 'Kurve {a} ft', 'curva de {a} ft'],
   kinds: {
     entry: ['débit de ce vol', 'this flight’s fuel flow', 'Verbrauch dieses Flugs', 'consumo de este vuelo'],
     map: ['table régime / débit de la fiche', 'sheet’s RPM / fuel flow table', 'Drehzahl-/Verbrauchstabelle des Datenblatts',
@@ -3192,6 +3201,29 @@ function stepsDone(C) {
     !!f.started?.at
   ];
 }
+/** Ce que la table régime / débit a servi à lire, à la suite de « Croisière : table régime / débit de la fiche » (SOG-0028) :
+ *  « (2400 rpm entre 2300 et 2500 rpm, entre les courbes de 4000 et 8000 ft) » ; '' quand la croisière ne vient pas de la table. */
+function usedText(u) {
+  if (!u?.rpms?.length) return '';
+  const r = Math.round(u.rpm),
+    parts = [u.rpms.length === 2 ? tt(TX.usedRpm, {
+      r,
+      a: u.rpms[0],
+      b: u.rpms[1]
+    }) : tt(TX.usedRpm1, {
+      r,
+      a: u.rpms[0]
+    })];
+  if (u.alts?.length === 2) parts.push(tt(TX.usedAlt, {
+    a: u.alts[0],
+    b: u.alts[1]
+  }));
+  else if (u.alts?.length === 1) parts.push(tt(TX.usedAlt1, {
+    a: u.alts[0]
+  }));
+  return ` (${parts.join(', ')})`;
+}
+
 /** « Afficher la carte » : sur un écran large, la carte s'ouvre en volet à côté (vue double, #fuel?with=maps) ; sur
  *  téléphone, la Carte (retour vers le Carburant par l'en-tête). */
 function showMap() {
@@ -4209,7 +4241,7 @@ function refresh() {
   renderDa(C);
   // appareil : origine de la croisière
   $('[data-src]').textContent = C.source ? tt(TX.source, {
-    s: `${TX.kinds[C.source.kind] ? tt(TX.kinds[C.source.kind]) : C.source.kind || '—'}${C.source.approx ? ` (${tt(TX.approx)})` : ''}`
+    s: `${TX.kinds[C.source.kind] ? tt(TX.kinds[C.source.kind]) : C.source.kind || '—'}${C.source.approx ? ` (${tt(TX.approx)})` : ''}${usedText(C.source.used)}`
   }) : '';
   // décision du niveau
   const dec = $('[data-dec]');

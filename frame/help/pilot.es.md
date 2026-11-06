@@ -80,7 +80,7 @@ o un tipo. Los resultados llegan en este orden: sus fichas de rendimiento, las a
 luego las conocidas por su diario), los tipos publicados y, en último lugar, el código tal como se escribió. Una
 aeronave de la aerolínea toma su propia ficha si la tiene, si no la de su tipo, si no una estimación del tipo — el
 cálculo la marca entonces «aproximado». La matrícula y el indicativo elegidos siguen al vuelo hasta el informe. La línea
-«Crucero» indica de dónde viene el consumo.
+«Crucero» indica de dónde viene el consumo; leído en la tabla régimen / consumo de la ficha, dice las dos filas de régimen y, cuando la tabla tiene varias altitudes, las dos curvas entre las que se interpola el nivel («2400 rpm entre 2300 y 2500 rpm, entre las curvas de 4000 y 8000 ft»).
 
 Junto a la fecha, el reloj «+30» pone el vuelo dentro de 30 min (redondeado a 5 min; cada pulsación añade 30 min) y
 «Ahora» vuelve a la hora actual: la meteorología de los aeródromos (el TAF si cubre esa hora) y los vientos en altura se
@@ -243,7 +243,7 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
   tarjeta lo dice y responde el METAR en su lugar. La tarjeta meteorológica indica de dónde vienen los mensajes. Sin red
   alguna, muestra la última meteorología guardada, con su hora.
 
-<!-- fr: 3628727817ab -->
+<!-- fr: e423ed8b5c93 -->
 
 <!-- chapter: maps -->
 # Mapa

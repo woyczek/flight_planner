@@ -1384,3 +1384,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   the « Carte » links alone. The runway is asked as `{ icao, kind: 'RWY', id, runways }` (no record exists for it); labels « Carte
   13R », « Carte SID »… keep the line short in four languages. F95; counter-test on 5fde0b1cc (procedures.js of the base, texts kept):
   no « Carte » link, the case fails on « the two charts of the departure ».
+- **6 Nov 2026 — « Source » says the rows of the RPM table it read** (SOG-0028, V3 spec § 10.37 C): the interpolation between two
+  altitudes and within a curve already existed (`FlightPerfModel.mapAt`, `interpRange`); `mapUsed` only reads which rows framed the
+  cruise rpm and the level, by the same rule, so no figure moves for any sheet (with or without altitudes). F96; counter-test on
+  b6c95e829 (model.js of the base): the line ends at « table régime / débit de la fiche ».

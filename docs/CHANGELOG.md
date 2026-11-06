@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Aircraft and Fuel: curves per altitude** (`modules/aircraft/sheets.js`, `sheets_texts.js`, `modules/fuel/model.js`, `module.js`;
+  Aircraft SPEC § 6, Fuel SPEC § 3; noreg M26, F96; SOG-0028, first part). The curve of an altitude is the rows of the RPM table
+  sharing `altFt` (no new field): the monotony hint of SOG-0015 is checked per altitude and names it; « Croisière » says the two rpm
+  rows and the two altitude curves it read. The interpolation is unchanged.
+
 - **Frame: the current airline** (`frame/store/frame_data.js`; frame INTEGRATION, DECISIONS; noreg A53, A93; V3_SPECIFICATION § 10.38 step 1).
   `FrameData.airline()` → `{ code, name, settings, fleet }`, `airlines()`, `setAirline(code)` and the event `frame-data-airline`; the
   choice is a setting of the device; « personnel » (`perso`, under `pilot/<trigram>/airline/perso/`) is created empty at the first

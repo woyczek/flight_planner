@@ -634,22 +634,34 @@ export function createSheetsView(host) {
   /** La valeur d'un champ de carburant de l'éditeur : inchangée (le texte affiché tel quel), celle de la fiche sans arrondi ; sinon le
    *  nombre saisi ramené à l'unité de la fiche. */
   const fuelRead = (p, input, was) => input.value.trim() === (input.dataset.shown ?? '') ? was ?? null : fuelStored(p, num(input.value));
-  /** Le premier couple de régimes où le débit redescend quand le régime monte (les lignes de la table sans altitude et la croisière,
-   *  au débit nominal) : { a, b } (a < b, débit(a) > débit(b)) ; null sinon. Un indice, pas une règle : la fiche n'est jamais corrigée. */
+  /** Le premier couple de régimes où le débit redescend quand le régime monte, courbe par courbe (SOG-0015, SOG-0028) : d'abord les
+   *  lignes de la table sans altitude avec la croisière (au débit nominal), puis chaque altitude de la table à part (les lignes de même
+   *  altFt sont la courbe de cette altitude ; les altitudes ne se mélangent jamais). { a, b, h } (a < b, débit(a) > débit(b) ; h :
+   *  l'altitude de la courbe, null pour la courbe sans altitude) ; null sinon. Un indice, pas une règle : la fiche n'est jamais corrigée. */
   function notMonotone(p) {
     const n = v => v === null || v === undefined || v === '' || !Number.isFinite(+v) ? null : +v,
-      rows = [...(p.rpmFuelCurve || []).filter(r => n(r.altFt) === null).map(r => [n(r.rpm), n(r.fuelFlowPerHour)]), [n(p.cruise
-          ?.rpmNominal),
-        n(p.cruise?.fuelFlowPerHour)
-      ]].filter(([r, f]) => r > 0 && f > 0).sort((x, y) => x[0] - y[0]);
-    for (let i = 0; i < rows.length; i++)
-      for (let j = i + 1; j < rows.length; j++)
-        if (rows[j][0] > rows[i][0] && rows[i][1] > rows[j][1]) return {
-          a: rows[i][0],
-          b: rows[j][0]
-        };
+      table = p.rpmFuelCurve || [],
+      curves = [
+        [null, [...table.filter(r => n(r.altFt) === null).map(r => [n(r.rpm), n(r.fuelFlowPerHour)]), [n(p.cruise?.rpmNominal), n(p.cruise
+          ?.fuelFlowPerHour)]]],
+        ...[...new Set(table.map(r => n(r.altFt)).filter(h => h !== null))].sort((x, y) => x - y)
+        .map(h => [h, table.filter(r => n(r.altFt) === h).map(r => [n(r.rpm), n(r.fuelFlowPerHour)])])
+      ];
+    for (const [h, raw] of curves) {
+      const rows = raw.filter(([r, f]) => r > 0 && f > 0).sort((x, y) => x[0] - y[0]);
+      for (let i = 0; i < rows.length; i++)
+        for (let j = i + 1; j < rows.length; j++)
+          if (rows[j][0] > rows[i][0] && rows[i][1] > rows[j][1]) return {
+            a: rows[i][0],
+            b: rows[j][0],
+            h
+          };
+    }
     return null;
   }
+  /** Vrai si la ligne r de la table est celle que l'indice de monotonie désigne (son régime, dans la courbe de son altitude). */
+  const warnRow = (nm, r) => !!nm && +r.rpm === nm.a && (nm.h === null ? r.altFt === null || r.altFt === undefined || r.altFt === '' ||
+    !Number.isFinite(+r.altFt) : +r.altFt === nm.h);
   /** Éditeur d'une fiche : champs par groupe (libellés traduits), table RPM (modifiable sur écran d'ordinateur),
    *  compléments, ChatGPT, exports ; sous chaque champ renseigné, son origine et sa date. draft : fiche en cours de saisie
    *  (ligne RPM ajoutée ou retirée), sinon celle de la base. */
@@ -706,8 +718,8 @@ export function createSheetsView(host) {
     </details>
     <div class="f-card" data-vunitbox><label class="f-field">${esc(tt(TX.viewUnit))}<select data-k="vunit">${Object.keys(MASS).map(u => `<option value="${u}"${u === vu ? ' selected' : ''}>${esc(`${MASS[u]} · ${FLOW[u]}`)}</option>`).join('')}</select></label>${vu !== su ? `<small class="f-muted" data-vunitnote>${esc(tt(TX.viewUnitNote, { s: `${MASS[su]} · ${FLOW[su]}`, d: densityOf(p)?.toLocaleString(document.documentElement.lang || undefined) ?? '?' }))}</small>` : ''}</div>
     ${groups.map((g, i) => `<details class="f-card"${i < 2 ? ' open' : ''}><summary>${esc(FIELD_TX[g] ? tt(FIELD_TX[g]) : g)}</summary><div class="f-grid ac-g3">${F.PROFILE_FIELDS.filter(f => f[0] === g).map(input).join('')}</div></details>`).join('')}
-    ${nm ? `<p class="f-warn" data-rpmwarn>${esc(tt(TX.rpmNotMonotone, { a: nm.a, b: nm.b }))}</p>` : ''}
-    ${rpmEditable() ? `<details class="f-card" open><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(FLOW[vu])} min</th><th class="f-num">${esc(FLOW[vu])}</th><th class="f-num">${esc(FLOW[vu])} max</th><th></th></tr></thead><tbody>${p.rpmFuelCurve.map((r, i) => `<tr${nm && +r.rpm === nm.a ? ' class="ac-rpmwarn" data-rpmwarn-row' : ''}>${rpmCell(i, 'rpm', r.rpm)}${rpmCell(i, 'altFt', r.altFt)}${rpmCell(i, 'fuelFlowMin', r.fuelFlowMin)}${rpmCell(i, 'fuelFlowPerHour', r.fuelFlowPerHour)}${rpmCell(i, 'fuelFlowMax', r.fuelFlowMax)}<td><button type="button" data-do="rpmdel" data-i="${i}" aria-label="${esc(tt(TX.remove))}">✕</button></td></tr>`).join('')}</tbody></table></div><button type="button" data-do="rpmadd">${esc(tt(TX.rpmAdd))}</button></details>` : p.rpmFuelCurve.length ? `<details class="f-card"><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(FLOW[vu])}</th></tr></thead><tbody>${p.rpmFuelCurve.map(r => `<tr><td class="f-num">${esc(r.rpm)}</td><td class="f-num">${esc(r.altFt ?? '')}</td><td class="f-num">${esc([r.fuelFlowMin, r.fuelFlowPerHour, r.fuelFlowMax].filter(x => x != null && x !== '').map(x => fuelShown(p, x)).join(' / '))}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
+    ${nm ? `<p class="f-warn" data-rpmwarn>${esc(nm.h === null ? tt(TX.rpmNotMonotone, { a: nm.a, b: nm.b }) : tt(TX.rpmNotMonotoneAt, { a: nm.a, b: nm.b, h: nm.h }))}</p>` : ''}
+    ${rpmEditable() ? `<details class="f-card" open><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(FLOW[vu])} min</th><th class="f-num">${esc(FLOW[vu])}</th><th class="f-num">${esc(FLOW[vu])} max</th><th></th></tr></thead><tbody>${p.rpmFuelCurve.map((r, i) => `<tr${warnRow(nm, r) ? ' class="ac-rpmwarn" data-rpmwarn-row' : ''}>${rpmCell(i, 'rpm', r.rpm)}${rpmCell(i, 'altFt', r.altFt)}${rpmCell(i, 'fuelFlowMin', r.fuelFlowMin)}${rpmCell(i, 'fuelFlowPerHour', r.fuelFlowPerHour)}${rpmCell(i, 'fuelFlowMax', r.fuelFlowMax)}<td><button type="button" data-do="rpmdel" data-i="${i}" aria-label="${esc(tt(TX.remove))}">✕</button></td></tr>`).join('')}</tbody></table></div><button type="button" data-do="rpmadd">${esc(tt(TX.rpmAdd))}</button></details>` : p.rpmFuelCurve.length ? `<details class="f-card"><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(FLOW[vu])}</th></tr></thead><tbody>${p.rpmFuelCurve.map(r => `<tr><td class="f-num">${esc(r.rpm)}</td><td class="f-num">${esc(r.altFt ?? '')}</td><td class="f-num">${esc([r.fuelFlowMin, r.fuelFlowPerHour, r.fuelFlowMax].filter(x => x != null && x !== '').map(x => fuelShown(p, x)).join(' / '))}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
     <div class="f-row"><button type="button" class="primary" data-do="save">${esc(tt(TX.save))}</button><button type="button" data-do="lnm">${esc(tt(TX.exportLnm))}</button><button type="button" data-do="json">${esc(tt(TX.exportJson))}</button><button type="button" data-do="del">${esc(tt(TX.remove))}</button></div>`;
   }
   /** Fiche de l'éditeur avec les valeurs des champs (nombres lus, vides → null). */

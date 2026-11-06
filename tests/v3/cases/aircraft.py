@@ -597,6 +597,27 @@ def m24(c):
     c.eq(sheet_of(c, 'XRPM')['rpmFuelCurve'][0]['fuelFlowPerHour'], 11500, 'nothing is corrected', what='kept')
 
 
+@case('M26', 'Sheets: each altitude of the RPM table is its own curve; one going down is said with its altitude, its row marked; altitudes never mixed',
+      'M', tags=('aircraft',), designs=('standard',), screens=True, phone=False, langs4=True,
+      rule='SOG-0028, V3 spec 10.37 C (curves per altitude: the rows of rpmFuelCurve sharing altFt, the reading of FlightPerfModel.mapAt): the '
+      'rule of SOG-0015 applies to each altitude apart: « Débit à 2300 rpm supérieur à celui de 2500 rpm à 8000 ft »; a lower flow at a '
+      'higher altitude is no fault; nothing written')
+def m26(c):
+    alt = dict(EC25, id='XALT', name='XALT', icao='XALT', unit='kg', cruise={'tasKt': 140, 'fuelFlowPerHour': 40, 'rpmNominal': 2400},
+               rpmFuelCurve=[{'rpm': 2300, 'altFt': 4000, 'fuelFlowPerHour': 38}, {'rpm': 2500, 'altFt': 4000, 'fuelFlowPerHour': 46},
+                             {'rpm': 2300, 'altFt': 8000, 'fuelFlowPerHour': 36}, {'rpm': 2500, 'altFt': 8000, 'fuelFlowPerHour': 33}])
+    docs = [[f'aircraft/sheets/{x["id"]}.json', x, 'document'] for x in (EC25, C30J, alt)]
+    c.open('aircraft', docs=LEVEL3 + [['airline/fleet.json', fleet_doc(3), 'document']] + docs + [TYPES, ['cache/aircraft/ui.json', {'view': 'sheets'}, 'cache']],
+           wait=False, app='maintenance')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-id]')", timeout=15000, what='the Fiches list')
+    edit_sheet(c, 'XALT')
+    want = norm(tx(SX, 'rpmNotMonotoneAt', c.lang).replace('{a}', '2300').replace('{b}', '2500').replace('{h}', '8000'))
+    c.until("(w) => (document.querySelector('[data-module=aircraft] [data-rpmwarn]')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w",
+            want, what='the 8000 ft curve going down is said with its altitude')
+    c.eq(c.count(f'{M} {SHEETS} tr[data-rpmwarn-row]'), 1, 'one row marked: 2300 rpm of the 8000 ft curve, not the one of 4000 ft', what='rows')
+    c.eq(sheet_of(c, 'XALT')['rpmFuelCurve'][3]['fuelFlowPerHour'], 33, 'nothing is corrected', what='kept')
+
+
 @case('M25', 'Sheets: the fuel is read and typed in the unit chosen (kg, lb, l, US gal); the sheet keeps its stored unit, an untouched value unchanged',
       'M', tags=('aircraft',), designs=('standard',), screens=False, langs4=True,
       rule='SOG-0032 (« toujours pas de possibilité de lire / écrire en kg ou lb/h ? »): the editor reads and writes in the unit chosen, by '

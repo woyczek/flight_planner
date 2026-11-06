@@ -83,3 +83,11 @@
   `frame/lib/fuel_units.js`; the stored unit never changes, an untouched field is compared with the text it was shown with and keeps
   its stored value (otherwise an lb sheet read in kg and saved would drift by rounding). The review still shows the stored values.
   M25; counter-test on 94849e74b: no unit choice (the case errors on the missing control).
+- **6 Nov 2026 — curves per altitude are the rows sharing `altFt`** (SOG-0028, V3 spec § 10.37 C, challenged): the design asked for
+  `cruise.curves = [{ altitudeFt, points }]`; the sheet already carries per-altitude rows (`rpmFuelCurve[].altFt`, the « ft » column,
+  the ChatGPT template asks for it) and Fuel already interpolates on the rpm within an altitude, then between the two altitudes around
+  the level (`FlightPerfModel.mapAt`). A second field would be two sources of one datum, so the curve of an altitude is its rows. Done
+  today: the monotony hint of SOG-0015 per altitude (before, only the rows without altitude were checked), kept a hint, not a refusal
+  (a sheet read from a file stays readable; SOG-0015's decision). Proposed for later, not done: the editor grouped by altitude, a
+  `tasKt` per row, the lnmperf import / export of per-altitude rows (frame/aerodb/sheets.js, AeroDB's). M26; counter-test on b6c95e829
+  (sheets.js of the base, texts kept): the 8000 ft curve going down is not said.

@@ -123,6 +123,11 @@ place of the list (one card, « Retour » goes back), one editor at a time; the 
   its own block, editable on a computer, read on a phone; under each filled field its origin and date (`<small data-origin="<path>">`,
   « source · dd/mm », the kept values in its title); the fuel fields carry the unit they are read and typed in; airframe and propulsion that aerodb's
   types base gives show « auto · … » and stay empty in the sheet (M7).
+- **Curves per altitude** (SOG-0028, V3 spec § 10.37 C): the curve of one altitude is the rows of `rpmFuelCurve` sharing `altFt`
+  (the column « ft »), the rows without altitude one more curve with the cruise point; no second field (`cruise.curves` was not
+  added: one source, SOG-0023). The rule of SOG-0015 (a flow that goes down while the rpm goes up is said, its row in orange, never
+  corrected) applies to each curve apart, the altitude said: « Débit à 2300 rpm supérieur à celui de 2500 rpm à 8000 ft : fourchette
+  mal lue ? »; a lower flow at a higher altitude is no fault (M26; M24 for the curve without altitude).
 - **Fuel read and typed in the unit chosen** (SOG-0032): « Carburant lu et saisi en » offers kg · kg/h, lb · lb/h, l · l/h, US gal ·
   gal/h (the sheet's own unit first); the quantities, the flows and the RPM table are shown converted, the unit written beside each
   field and in the table's head, by the frame's rules (`frame/lib/fuel_units.js` `toKg` / `fromKg`, the density of the sheet, else the

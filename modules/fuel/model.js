@@ -110,6 +110,34 @@
     return null;
   }
 
+  /** Ce que la table RPM a servi à lire au régime rpm et au niveau h (SOG-0028, « Source ») : les deux courbes d'altitude qui encadrent
+   *  h (les lignes de même altFt ; une seule quand h est hors des altitudes de la table ; aucune quand la table n'a pas deux altitudes :
+   *  la même règle que FlightPerfModel.mapAt), puis les deux régimes de la table qui encadrent rpm (un seul hors de la table ou sur une
+   *  ligne). { alts: [a0, a1] | [a] | [], rpms: [r0, r1] | [r] } ; null sans ligne valide. Lecture seule : le calcul ne change pas. */
+  function mapUsed(curve, rpm, h) {
+    const num = v => v === null || v === undefined || v === '' ? NaN : +v,
+      rows = (Array.isArray(curve) ? curve : []).filter(r => r && Number.isFinite(num(r.rpm)) && [r.fuelFlowMin, r.fuelFlowPerHour, r
+        .fuelFlowMax
+      ].some(v => Number.isFinite(num(v)))),
+      alts = [...new Set(rows.map(r => num(r.altFt)).filter(Number.isFinite))].sort((a, b) => a - b);
+    if (!rows.length || !Number.isFinite(rpm)) return null;
+    let used = [];
+    if (alts.length >= 2 && Number.isFinite(h)) {
+      const hh = Math.min(alts.at(-1), Math.max(alts[0], h));
+      let k = 1;
+      while (k < alts.length - 1 && alts[k] < hh) k++;
+      used = hh === alts[k - 1] ? [alts[k - 1]] : hh === alts[k] ? [alts[k]] : [alts[k - 1], alts[k]];
+    }
+    const rpms = [...new Set((used.length ? rows.filter(r => !Number.isFinite(num(r.altFt)) || used.includes(num(r.altFt))) : rows)
+        .map(r => num(r.rpm)))].sort((a, b) => a - b),
+      lo = rpms.filter(r => r <= rpm).at(-1),
+      hi = rpms.find(r => r >= rpm);
+    return {
+      alts: used,
+      rpms: lo === undefined ? [hi] : hi === undefined || lo === hi ? [lo] : [lo, hi]
+    };
+  }
+
   /** Consommation et TAS de croisière retenues pour une fiche, avec leur origine (cruiseSource de la V2). Entrées :
    *  sheet (fiche normalisée) ; altFt (niveau du plan) ; entryKg (saisie du vol, kg/h, qui remplace la fiche) ; apd
    *  (fiche EUROCONTROL du type, aerodb) ; simbrief (apd.simbrief) ; estimate (aerodb.aircraft().estimate(codes)) ;
@@ -185,7 +213,12 @@
       auto,
       est,
       tas,
-      tasKind
+      tasKind,
+      // la table RPM lue (SOG-0028) : le régime de croisière et ce qui l'encadre, dit par « Source »
+      used: kind === 'map' ? {
+        rpm,
+        ...mapUsed(pr.rpmFuelCurve || [], rpm, alt)
+      } : null
     };
   }
 
@@ -477,6 +510,7 @@
     finite,
     normalizeSheet,
     interpRange,
+    mapUsed,
     cruiseSource,
     modelSheet,
     perfModel,

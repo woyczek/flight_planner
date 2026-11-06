@@ -2495,3 +2495,41 @@ def f95(c):
     c.until("document.querySelectorAll('[data-module=fuel] [data-procbox=start] [data-proc=dep] [data-source-slot] [data-chart]').length === 2",
             what='the two charts of the departure in flight')
     c.eq(c.js(_SLOT_JS, 'dep'), {'charts': False, 'chart': want}, 'in flight: the same « Carte » links', what='in-flight departure')
+
+
+def _curve_sheet(alts):
+    """An invented C30J sheet whose cruise comes from its RPM table at 2400 rpm: with alts, two curves (4000 ft: 38 / 46 kg/h at 2300 /
+    2500 rpm; 8000 ft: 34 / 40), else the 4000 ft rows without altitude."""
+    rows = [{'rpm': 2300, 'altFt': 4000, 'fuelFlowPerHour': 38}, {'rpm': 2500, 'altFt': 4000, 'fuelFlowPerHour': 46}]
+    if alts:
+        rows += [{'rpm': 2300, 'altFt': 8000, 'fuelFlowPerHour': 34}, {'rpm': 2500, 'altFt': 8000, 'fuelFlowPerHour': 40}]
+    else:
+        rows = [dict(r, altFt=None) for r in rows]
+    return {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'kg', 'usableFuel': 20000,
+            'cruise': {'tasKt': 330, 'fuelFlowPerHour': 2000, 'rpmNominal': 2400}, 'rpmFuelCurve': rows}
+
+
+def _curve_open(c, alts):
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['level'] = {'ft': 6000}
+            d[1]['aircraft']['sheetId'] = 'C30J'
+    c.open('fuel', docs=docs + [['aircraft/sheets/C30J.json', _curve_sheet(alts), 'document']])
+    wait_quote(c)
+    c.settle()
+    return norm(c.js("document.querySelector('[data-module=fuel] [data-src]').textContent"))
+
+
+@case('F96', '« Source » of the cruise says which rows of the RPM table it read: the two rpm around the cruise rpm, the two altitude curves around the level',
+      'F', tags=('fuel', 'aircraft'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0028, V3 spec 10.37 C: between two altitudes the computation interpolates on the altitude, within a curve on the rpm (FlightPerfModel.mapAt, '
+      'unchanged), and « Source » says the two points used; a sheet whose table has no altitude reads as before, the rpm rows alone said')
+def f96(c):
+    kind = tx(F, 'kinds', c.lang) if False else None  # (the texts are read from module.js below)
+    got = _curve_open(c, True)
+    rpm2 = norm(tx(F, 'usedRpm', c.lang).replace('{r}', '2400').replace('{a}', '2300').replace('{b}', '2500'))
+    alt2 = norm(tx(F, 'usedAlt', c.lang).replace('{a}', '4000').replace('{b}', '8000'))
+    c.ok(got.endswith(f'({rpm2}, {alt2})'), got, 'the level 6000 ft between the curves of 4000 and 8000 ft, 2400 rpm between 2300 and 2500 rpm')
+    got = _curve_open(c, False)
+    c.ok(got.endswith(f'({rpm2})'), got, 'a table without altitude: the rpm rows alone, no curve said')

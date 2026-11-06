@@ -47,7 +47,10 @@ All checked by the quote and levels benches (F80) unless said.
 - **Cruise fuel flow and TAS** (`cruiseSource`): the entry for this flight; else the sheet (its RPM table at the cruise RPM and the
   plan's level, else its cruise flow); else, in this order, Poll-Schumann, SimBrief (approximate unless its accuracy is « high »),
   the estimate (approximate). TAS: sheet, EUROCONTROL, SimBrief (speed, else Mach at the level), estimate, 300 kt. The source and
-  whether it is approximate are part of the answer.
+  whether it is approximate are part of the answer. When the flow comes from the RPM table, `used` says what it read (SOG-0028):
+  the two rpm rows around the cruise rpm (one beyond the table or on a row) and, when the table has two altitudes or more, the two
+  curves around the level (one beyond them), by the rule of `FlightPerfModel.mapAt`, which is unchanged; the line « Croisière » ends
+  with it: « table régime / débit de la fiche (2400 rpm entre 2300 et 2500 rpm, entre les courbes de 4000 et 8000 ft) » (F96).
 - **Model sheet** (`modelSheet`): the sheet with its cruise completed by the retained flow and TAS when it lacks them or an entry
   replaces them, its climb (IAS, rate) and descent (rate, IAS) completed by the EUROCONTROL record when it lacks them. Never written.
 - **Performance model**: `FlightPerfModel.create(modelSheet, { db, dIsa, apd })`; none when the cruise TAS or flow is missing (the

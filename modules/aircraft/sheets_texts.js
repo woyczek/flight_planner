@@ -93,6 +93,12 @@ export const TX = {
     'Ficha guardada en {s}: los valores se convierten al leer y al guardar (densidad {d} kg/l).'
   ],
   // une courbe régime / débit qui redescend (SOG-0015 : la S210 portait 11 500 lb/h à 6 700 rpm, plus qu'en croisière à 7 250 rpm)
+  // la courbe d'une altitude de la table (les lignes de même altitude, SOG-0028) qui redescend
+  rpmNotMonotoneAt: ['Débit à {a} rpm supérieur à celui de {b} rpm à {h} ft : fourchette mal lue ?',
+    'Fuel flow at {a} rpm above the one at {b} rpm at {h} ft: a range misread?',
+    'Verbrauch bei {a} U/min höher als bei {b} U/min in {h} ft: Spanne falsch gelesen?',
+    'Consumo a {a} rpm superior al de {b} rpm a {h} ft: ¿horquilla mal leída?'
+  ],
   rpmNotMonotone: ['Débit à {a} rpm supérieur à celui de {b} rpm : fourchette mal lue ?',
     'Fuel flow at {a} rpm above the one at {b} rpm: a range misread?',
     'Verbrauch bei {a} U/min höher als bei {b} U/min: Spanne falsch gelesen?',
