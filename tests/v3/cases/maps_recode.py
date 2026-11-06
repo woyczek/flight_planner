@@ -3212,6 +3212,8 @@ def _ground_open(c, aerodb=True):
     hook_map(c)
     if aerodb:
         c.eq(c.js(_GROUND_JS), 595, 'the fixture of LFPO (OSM) is the file AeroDB would give', what='items')
+    else:   # AeroDB may now provide ground() itself (its lot): this case is the one where it does not
+        c.js("() => { window.__mp.S.ctx.aerodb.ground = undefined; return true }")
 
 
 _PARK_AT = [2.36396, 48.726838]   # a stand of the fixture (lon, lat): the view of zoom 16 is a kilometre wide
@@ -3234,7 +3236,8 @@ _GSTAT = """() => { const g = window.__mp.S.ground; if (!g) return null; const r
 def d112(c):
     _ground_open(c, aerodb=False)
     _ground_at(c, 15)
-    c.eq(c.js(_GSTAT), None, 'without AeroDB’s ground() there is no layer and no state', what='ground')
+    st0 = c.js(_GSTAT)
+    c.ok(st0 is None or (st0['items'] == 0 and st0['hits'] == 0), f'{st0}', 'without a file from AeroDB’s ground() there is no layer (nothing lent, nothing drawn)')
     c.eq(c.js("() => !!document.querySelector('.mp-ad-ground')"), False, 'no « Ground » button either', what='button')
     c.js(_GROUND_JS)
     _ground_at(c, 13, 1200)
