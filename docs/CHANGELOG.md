@@ -1733,6 +1733,11 @@ change.
   outcome of the 47 States and the file-name readers; `publication()` (what is published, without loading the data), `zones()` (every
   known zone) and `sources()` (the catalogue) for the module.
 
+### Livraison
+
+- Archive de livraison : `xplane-web-suite-6.0.0-alpha.3.zip` — SHA-256 `4db7acd70770a690089d4f9a3d9f97c5bc15221de2ae680eaecc8ab8aaea9612` (code seul, hors dépôt : dossier `dist/`).
+- Module package: `dispos-module-6.0.0-alpha.3.zip` — SHA-256 `e22e3208ae6ba8e53431d29806a4f5517071a108c6063d8004a2eba5a1c94c9a` (outside the repository: `dist/` folder).
+
 ## [6.0.0-alpha.2] — 2026-10-28
 
 Second alpha of the V3 **Pilot application**, five days after the first. The phone screen follows the iVAC target

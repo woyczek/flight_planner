@@ -79,6 +79,11 @@ missions and fleet, GitLab as a data host, a test suite run once per evening.
 - The backlog of the airline's requests (SOG-0001 … SOG-0031) is kept with the organisation files; most fiches of this
   alpha wait for the pilot's validation on the workstation.
 
+### Delivery
+
+- Delivery archive: `xplane-web-suite-6.0.0-alpha.3.zip` — SHA-256 `4db7acd70770a690089d4f9a3d9f97c5bc15221de2ae680eaecc8ab8aaea9612` (code only, outside the repository: `dist/` folder).
+- Module package: `dispos-module-6.0.0-alpha.3.zip` — SHA-256 `e22e3208ae6ba8e53431d29806a4f5517071a108c6063d8004a2eba5a1c94c9a` (outside the repository: `dist/` folder).
+
 ## 6.0.0-alpha.2 — 28 October 2026
 
 Second alpha of the **Pilot application** (V3), five days after the first: the phone screen, the recoded Map, one
