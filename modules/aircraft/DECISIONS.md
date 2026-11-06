@@ -91,3 +91,10 @@
   (a sheet read from a file stays readable; SOG-0015's decision). Proposed for later, not done: the editor grouped by altitude, a
   `tasKt` per row, the lnmperf import / export of per-altitude rows (frame/aerodb/sheets.js, AeroDB's). M26; counter-test on b6c95e829
   (sheets.js of the base, texts kept): the 8000 ft curve going down is not said.
+- **6 Nov 2026 — « Proposer depuis les mesures », step 1 without the launcher** (SOG-0052, the user: « intégrer l'appli
+  fuelperformance en v3 … calculer les paliers, produire les courbes rpm / niveau / consommation, comparer avec la BDD, mettre à
+  jour la fiche »). The phases come from the simulator module's CSV (never guessed); the FuelDashboard's reading, eligibility and
+  weighted median are ported to `modules/stats/phases.js`, pure; the screen is a button and a ticked list inside the RPM table's card
+  (no new card, rule 13), and the ticked points go to the draft only, so the ordinary review stays the one gate (JSON one source,
+  SOG-0023). Not ported today: the dashboard's merging of neighbouring rpm groups, climb and descent proposals, the launcher reading
+  the Output folder (step 2, AeroDB). M27; counter-test on ae008ef42 (sheets.js of the base): no picker (the case errors on it).

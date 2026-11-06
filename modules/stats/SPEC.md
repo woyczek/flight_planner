@@ -22,8 +22,7 @@ Pure computations on the measurements of the simulator, for the statistics of V3
 
 ## 2. To come
 
-- Step 1, screen (Maintenance › Appareils, « Proposer depuis les mesures »): one or more CSV chosen with the file picker (never
-  published, never in git), the points compared with the sheet, each proposed row accepted one by one into the draft, then the
-  ordinary review and « Appliquer » (one source: the JSON sheet, SOG-0023).
+- Step 1, screen: done in Maintenance › Appareils, « Proposer depuis les mesures » (modules/aircraft SPEC § 6, M27). Still to port:
+  the dashboard's merging of neighbouring rpm groups, climb and descent proposals.
 - Step 2 (AeroDB): the launcher reads the simulator's Output folder itself. Step 3: flight log, mission reporting, flights per
   period and per fleet (§ 10.37 A).

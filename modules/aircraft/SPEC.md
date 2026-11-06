@@ -128,6 +128,12 @@ place of the list (one card, « Retour » goes back), one editor at a time; the 
   added: one source, SOG-0023). The rule of SOG-0015 (a flow that goes down while the rpm goes up is said, its row in orange, never
   corrected) applies to each curve apart, the altitude said: « Débit à 2300 rpm supérieur à celui de 2500 rpm à 8000 ft : fourchette
   mal lue ? »; a lower flow at a higher altitude is no fault (M26; M24 for the curve without altitude).
+- **« Proposer depuis les mesures »** (SOG-0052, step 1; V3 spec § 10.37 C): in the RPM table's card (computer screen), one or more
+  Fuel Phase Monitor journals (`.csv`, `.csv.gz` decompressed in the page) chosen with the file picker, read on the device, never
+  kept, published or sent; only the windows of the sheet's type (`aircraft_icao`); the level points of `modules/stats/phases.js`
+  listed with their deviation from the sheet's curve of the same altitude (« fiche 40, écart -5 % ») or « ligne nouvelle », their
+  seconds and flights; each ticked point goes into the draft (the row of the same altitude and rpm replaced, else added, in the
+  sheet's unit); nothing is written before « Enregistrer » and « Appliquer » (M27).
 - **Fuel read and typed in the unit chosen** (SOG-0032): « Carburant lu et saisi en » offers kg · kg/h, lb · lb/h, l · l/h, US gal ·
   gal/h (the sheet's own unit first); the quantities, the flows and the RPM table are shown converted, the unit written beside each
   field and in the table's head, by the frame's rules (`frame/lib/fuel_units.js` `toKg` / `fromKg`, the density of the sheet, else the

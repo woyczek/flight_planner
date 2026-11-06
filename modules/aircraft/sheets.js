@@ -20,6 +20,7 @@ import {
   keepScroll
 } from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
 import * as FU from '../../frame/lib/fuel_units.js'; // les unités du carburant du cadre (SOG-0032 : jamais recodées ici)
+import * as PH from '../stats/phases.js'; // les fenêtres de palier des journaux Fuel Phase Monitor (SOG-0052), en calcul pur
 import {
   TX,
   FIELD_TX,
@@ -294,6 +295,30 @@ export function createSheetsView(host) {
         d.rpmFuelCurve.splice(+b.dataset.i, 1);
         return editor(p.id, d);
       }
+      case 'measure': // « Proposer depuis les mesures » (SOG-0052) : les journaux choisis sur cet appareil, jamais publiés
+        return body().querySelector('[data-measfile]')?.click();
+      case 'measadd': { // les points cochés vont dans le brouillon ; rien n'est écrit avant « Enregistrer » puis « Appliquer »
+        const d = readEditor(p, true),
+          ticked = [...body().querySelectorAll('[data-meas]:checked')].map(i => st.measured?.points?.[+i.dataset.meas]).filter(Boolean);
+        if (!ticked.length) return;
+        for (const q of ticked) {
+          const v = FU.fromKg(q.flowKgH, storeUnit(d), densityOf(d)),
+            row = {
+              rpm: q.rpm,
+              altFt: q.altFt,
+              fuelFlowPerHour: v === null ? null : Math.round(v * 10) / 10
+            },
+            i = d.rpmFuelCurve.findIndex(r => +r.rpm === q.rpm && r.altFt !== null && r.altFt !== '' && +r.altFt === q.altFt);
+          if (i >= 0) d.rpmFuelCurve[i] = {
+            ...d.rpmFuelCurve[i],
+            ...row
+          };
+          else d.rpmFuelCurve.push(row);
+        }
+        d.rpmFuelCurve.sort((a, b) => (+a.altFt || 0) - (+b.altFt || 0) || (+a.rpm || 0) - (+b.rpm || 0));
+        st.measured = null;
+        return editor(p.id, SH().normalize(d));
+      }
       case 'save': {
         const out = readEditor(p),
           // un champ borné (6e élément de PROFILE_FIELDS : { min, max }, la densité) hors de sa plage : dit, rien n'est enregistré
@@ -413,12 +438,65 @@ export function createSheetsView(host) {
   /** Changement : le fichier choisi par « Importer ». */
   function onChange(e) {
     if (e.target.matches?.('[data-file]')) importFiles([...e.target.files]);
+    if (e.target.matches?.('[data-measfile]') && st.edit) measureFiles([...e.target.files]);
     // l'unité de lecture et de saisie (SOG-0032) : ce qui est saisi est lu dans l'ancienne, puis l'éditeur redessiné dans la nouvelle
     if (e.target.dataset?.k === 'vunit' && st.edit) {
       const d = readEditor(st.edit, true);
       st.viewUnit = e.target.value;
       return editor(st.edit.id, d);
     }
+  }
+
+  // ---------------------------------------------------------------- mesures (SOG-0052)
+  /** Le texte d'un journal choisi : .gz décompressé dans la page (DecompressionStream), sinon tel quel ; 64 Mo au plus. */
+  async function journalText(f) {
+    if (f.size > 64 * 1024 * 1024) throw Error('too large');
+    if (!/\.gz$/i.test(f.name)) return f.text();
+    if (typeof DecompressionStream !== 'function') throw Error('gzip unsupported');
+    return new Response(f.stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  }
+  /** Lit les journaux Fuel Phase Monitor choisis, garde les fenêtres du type de la fiche ouverte, calcule les points de palier
+   *  (PH.levelCurves) et leur écart à la courbe de même altitude de la fiche (PH.compare), puis redessine l'éditeur avec la liste à
+   *  cocher. Un fichier illisible est dit, les autres restent ; aucun fichier n'est gardé ni envoyé. */
+  async function measureFiles(files) {
+    const p = st.edit,
+      d = readEditor(p, true),
+      code = String(d.icao || d.id || '').toUpperCase(),
+      rows = [];
+    for (const f of files.slice(0, 20)) {
+      try {
+        rows.push(...PH.parseWindows(await journalText(f)).rows.filter(r => String(r.aircraft_icao || '').toUpperCase() === code));
+      } catch (err) {
+        ctx.notify(tt(TX.measBad, {
+          f: f.name,
+          e: err.message
+        }), 'warn');
+      }
+    }
+    if (gone() || st.edit?.id !== p.id) return;
+    const points = PH.compare(PH.levelCurves(rows), d, {
+      toKg: (v, s) => FU.toKg(v, storeUnit(s), densityOf(s))
+    });
+    st.measured = {
+      id: p.id,
+      points
+    };
+    if (!points.length) ctx.notify(tt(TX.measNone, {
+      icao: code
+    }), 'warn');
+    return editor(p.id, d);
+  }
+  /** La liste des points mesurés à cocher (dans la carte de la table RPM) : altitude, régime, débit mesuré dans l'unité de lecture,
+   *  la fiche et l'écart, ou « ligne nouvelle » ; secondes et vols. Rien quand aucun point n'est là. */
+  function measuredHtml(p) {
+    const m = st.measured?.id === p.id ? st.measured.points : [];
+    if (!m.length) return '';
+    const vu = viewUnit(p),
+      shown = kg => {
+        const x = FU.fromKg(kg, vu, densityOf(p));
+        return x === null ? '—' : String(Math.round(x * 10) / 10);
+      };
+    return `<div class="f-list" data-measlist>${m.map((q, i) => `<label class="f-check" data-measrow="${q.altFt}|${q.rpm}"><input type="checkbox" data-meas="${i}"> ${esc(`${q.altFt} ft · ${q.rpm} rpm · ${shown(q.flowKgH)} ${FLOW[vu]} · `)}${esc(q.sheetKgH === null ? tt(TX.measNew) : tt(TX.measDelta, { v: shown(q.sheetKgH), d: q.deltaPct }))} <small class="f-muted">${esc(tt(TX.measSupport, { s: q.seconds, n: q.flights }))}</small></label>`).join('')}</div><button type="button" data-do="measadd">${esc(tt(TX.measAdd))}</button>`;
   }
 
   // ---------------------------------------------------------------- imports
@@ -719,7 +797,7 @@ export function createSheetsView(host) {
     <div class="f-card" data-vunitbox><label class="f-field">${esc(tt(TX.viewUnit))}<select data-k="vunit">${Object.keys(MASS).map(u => `<option value="${u}"${u === vu ? ' selected' : ''}>${esc(`${MASS[u]} · ${FLOW[u]}`)}</option>`).join('')}</select></label>${vu !== su ? `<small class="f-muted" data-vunitnote>${esc(tt(TX.viewUnitNote, { s: `${MASS[su]} · ${FLOW[su]}`, d: densityOf(p)?.toLocaleString(document.documentElement.lang || undefined) ?? '?' }))}</small>` : ''}</div>
     ${groups.map((g, i) => `<details class="f-card"${i < 2 ? ' open' : ''}><summary>${esc(FIELD_TX[g] ? tt(FIELD_TX[g]) : g)}</summary><div class="f-grid ac-g3">${F.PROFILE_FIELDS.filter(f => f[0] === g).map(input).join('')}</div></details>`).join('')}
     ${nm ? `<p class="f-warn" data-rpmwarn>${esc(nm.h === null ? tt(TX.rpmNotMonotone, { a: nm.a, b: nm.b }) : tt(TX.rpmNotMonotoneAt, { a: nm.a, b: nm.b, h: nm.h }))}</p>` : ''}
-    ${rpmEditable() ? `<details class="f-card" open><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(FLOW[vu])} min</th><th class="f-num">${esc(FLOW[vu])}</th><th class="f-num">${esc(FLOW[vu])} max</th><th></th></tr></thead><tbody>${p.rpmFuelCurve.map((r, i) => `<tr${warnRow(nm, r) ? ' class="ac-rpmwarn" data-rpmwarn-row' : ''}>${rpmCell(i, 'rpm', r.rpm)}${rpmCell(i, 'altFt', r.altFt)}${rpmCell(i, 'fuelFlowMin', r.fuelFlowMin)}${rpmCell(i, 'fuelFlowPerHour', r.fuelFlowPerHour)}${rpmCell(i, 'fuelFlowMax', r.fuelFlowMax)}<td><button type="button" data-do="rpmdel" data-i="${i}" aria-label="${esc(tt(TX.remove))}">✕</button></td></tr>`).join('')}</tbody></table></div><button type="button" data-do="rpmadd">${esc(tt(TX.rpmAdd))}</button></details>` : p.rpmFuelCurve.length ? `<details class="f-card"><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(FLOW[vu])}</th></tr></thead><tbody>${p.rpmFuelCurve.map(r => `<tr><td class="f-num">${esc(r.rpm)}</td><td class="f-num">${esc(r.altFt ?? '')}</td><td class="f-num">${esc([r.fuelFlowMin, r.fuelFlowPerHour, r.fuelFlowMax].filter(x => x != null && x !== '').map(x => fuelShown(p, x)).join(' / '))}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
+    ${rpmEditable() ? `<details class="f-card" open><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(FLOW[vu])} min</th><th class="f-num">${esc(FLOW[vu])}</th><th class="f-num">${esc(FLOW[vu])} max</th><th></th></tr></thead><tbody>${p.rpmFuelCurve.map((r, i) => `<tr${warnRow(nm, r) ? ' class="ac-rpmwarn" data-rpmwarn-row' : ''}>${rpmCell(i, 'rpm', r.rpm)}${rpmCell(i, 'altFt', r.altFt)}${rpmCell(i, 'fuelFlowMin', r.fuelFlowMin)}${rpmCell(i, 'fuelFlowPerHour', r.fuelFlowPerHour)}${rpmCell(i, 'fuelFlowMax', r.fuelFlowMax)}<td><button type="button" data-do="rpmdel" data-i="${i}" aria-label="${esc(tt(TX.remove))}">✕</button></td></tr>`).join('')}</tbody></table></div><button type="button" data-do="rpmadd">${esc(tt(TX.rpmAdd))}</button> <button type="button" data-do="measure">${esc(tt(TX.measure))}</button><input type="file" data-measfile accept=".csv,.gz,.txt" multiple hidden>${measuredHtml(p)}</details>` : p.rpmFuelCurve.length ? `<details class="f-card"><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(FLOW[vu])}</th></tr></thead><tbody>${p.rpmFuelCurve.map(r => `<tr><td class="f-num">${esc(r.rpm)}</td><td class="f-num">${esc(r.altFt ?? '')}</td><td class="f-num">${esc([r.fuelFlowMin, r.fuelFlowPerHour, r.fuelFlowMax].filter(x => x != null && x !== '').map(x => fuelShown(p, x)).join(' / '))}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
     <div class="f-row"><button type="button" class="primary" data-do="save">${esc(tt(TX.save))}</button><button type="button" data-do="lnm">${esc(tt(TX.exportLnm))}</button><button type="button" data-do="json">${esc(tt(TX.exportJson))}</button><button type="button" data-do="del">${esc(tt(TX.remove))}</button></div>`;
   }
   /** Fiche de l'éditeur avec les valeurs des champs (nombres lus, vides → null). */

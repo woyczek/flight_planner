@@ -3,6 +3,7 @@
 The fleet (airline/fleet.json): list and search, add, edit (the changed fields said before writing), retire (a question), every write
 reading the file just before. Invented aircraft only."""
 import json
+from pathlib import Path
 
 from lib import case, norm, tx, tx_row
 
@@ -616,6 +617,52 @@ def m26(c):
             want, what='the 8000 ft curve going down is said with its altitude')
     c.eq(c.count(f'{M} {SHEETS} tr[data-rpmwarn-row]'), 1, 'one row marked: 2300 rpm of the 8000 ft curve, not the one of 4000 ft', what='rows')
     c.eq(sheet_of(c, 'XALT')['rpmFuelCurve'][3]['fuelFlowPerHour'], 33, 'nothing is corrected', what='kept')
+
+
+def _journal(path):
+    """An invented Fuel Phase Monitor journal (never a measurement of the user): XMES at 4000 ft / 2300 rpm (38 kg/h, 120 s) and
+    8000 ft / 2500 rpm (40 kg/h, 120 s), plus a window of another type."""
+    head = ['schema_version', 'aircraft_icao', 'aircraft_file', 'registration', 'flight_id', 'phase', 'duration_sec', 'mean_fuel_flow_kg_h',
+            'fuel_coverage_pct', 'engine_count', 'engine_fuel_flow_kg_h', 'mean_pressure_altitude_ft', 'mean_ias_kt', 'mean_tas_kt',
+            'mean_vertical_speed_fpm', 'mean_engine_rpm', 'quality_flags']
+    rows = []
+    for alt, rpm, ff in [(4000, 2300, 38)] * 8 + [(8000, 2500, 40)] * 8:
+        rows.append(['0.4.1', 'XMES', 'x.acf', 'F-TEST', 'A', 'CRUISE', 15, ff, 100, 1, ff, alt, 150, 170, 0, rpm, ''])
+    rows.append(['0.4.1', 'ZZZZ', 'z.acf', 'F-ZZZZ', 'B', 'CRUISE', 15, 90, 100, 1, 90, 6000, 150, 170, 0, 2400, ''])
+    Path(path).write_text('\n'.join(','.join(str(x) for x in r) for r in [head] + rows), encoding='utf-8')
+
+
+@case('M27', 'Sheets: « Proposer depuis les mesures » reads Fuel Phase Monitor journals, lists the level points with their deviation from the curve of the same altitude; the ticked ones go to the draft, nothing written',
+      'M', tags=('aircraft',), designs=('standard',), screens=True, phone=False, langs4=True,
+      rule='SOG-0052, V3 spec 10.37 C (« Proposer depuis les mesures », step 1): journals chosen with the file picker, read in the page '
+      '(modules/stats/phases.js), only the type of the sheet; each point accepted one by one into the draft; never written alone (JSON one source)')
+def m27(c):
+    import tempfile
+    sheet = dict(EC25, id='XMES', name='XMES', icao='XMES', unit='kg', cruise={'tasKt': 140, 'fuelFlowPerHour': 40, 'rpmNominal': 2400},
+                 rpmFuelCurve=[{'rpm': 2200, 'altFt': 4000, 'fuelFlowPerHour': 35}, {'rpm': 2400, 'altFt': 4000, 'fuelFlowPerHour': 45}])
+    sheet.pop('_fields', None)
+    docs = [[f'aircraft/sheets/{x["id"]}.json', x, 'document'] for x in (EC25, C30J, sheet)]
+    c.open('aircraft', docs=LEVEL3 + [['airline/fleet.json', fleet_doc(3), 'document']] + docs + [TYPES, ['cache/aircraft/ui.json', {'view': 'sheets'}, 'cache']],
+           wait=False, app='maintenance')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-id]')", timeout=15000, what='the Fiches list')
+    edit_sheet(c, 'XMES')
+    with tempfile.TemporaryDirectory() as tmp:
+        f = Path(tmp) / 'FuelPhaseMonitor_test.csv'
+        _journal(f)
+        c.page.set_input_files(f'{M} {SHEETS} input[data-measfile]', str(f))
+        c.until(f"document.querySelectorAll('{M} {SHEETS} [data-measrow]').length === 2", what='two level points of XMES (the other type left out)')
+    rows = c.js(f"[...document.querySelectorAll('{M} {SHEETS} [data-measrow]')].map(l => [l.dataset.measrow, l.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()])")
+    c.eq([r[0] for r in rows], ['4000|2300', '8000|2500'], 'per altitude and rpm', what='points')
+    delta = norm(tx(SX, 'measDelta', c.lang).replace('{v}', '40').replace('{d}', '-5'))
+    c.ok(delta in rows[0][1], rows[0][1], 'the 4000 ft point against the 4000 ft curve of the sheet (40 kg/h at 2300 rpm): -5 %')
+    c.ok(norm(tx(SX, 'measNew', c.lang)) in rows[1][1], rows[1][1], 'no 8000 ft curve in the sheet: a new row')
+    c.page.check(f'{M} {SHEETS} [data-measrow="8000|2500"] input')
+    c.tap(f'{M} {SHEETS} [data-do="measadd"]')
+    c.until(f"""[...document.querySelectorAll('{M} {SHEETS} input[data-rpm][data-rk=rpm]')].map(i => i.value).join(',') === '2200,2400,2500'""",
+            what='the ticked point is a row of the draft')
+    c.eq(c.js(f"[...document.querySelectorAll('{M} {SHEETS} input[data-rpm][data-rk=altFt]')].map(i => i.value)"), ['4000', '4000', '8000'],
+         'the new row at 8000 ft', what='altitudes')
+    c.eq(len(sheet_of(c, 'XMES')['rpmFuelCurve']), 2, 'nothing written before « Enregistrer » and « Appliquer »', what='stored rows')
 
 
 @case('M25', 'Sheets: the fuel is read and typed in the unit chosen (kg, lb, l, US gal); the sheet keeps its stored unit, an untouched value unchanged',

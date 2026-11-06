@@ -80,6 +80,21 @@ export const TX = {
     'Datenblatt „{n}“ aus der gemeinsamen Datenbank löschen?', '¿Eliminar la ficha «{n}» de la base compartida?'
   ],
   rpmAdd: ['+ Ligne', '+ Row', '+ Zeile', '+ Fila'],
+  // « Proposer depuis les mesures » (SOG-0052) : les journaux Fuel Phase Monitor choisis, les points de palier à cocher
+  measure: ['Proposer depuis les mesures', 'Propose from the measurements', 'Aus den Messungen vorschlagen',
+    'Proponer desde las mediciones'
+  ],
+  measNone: ['Aucune fenêtre de palier exploitable de {icao} dans ces fichiers.', 'No usable level window of {icao} in these files.',
+    'Kein verwertbares Reiseflugfenster von {icao} in diesen Dateien.',
+    'Ninguna ventana de crucero utilizable de {icao} en estos archivos.'
+  ],
+  measBad: ['{f} : {e}', '{f}: {e}', '{f}: {e}', '{f}: {e}'],
+  measNew: ['ligne nouvelle', 'new row', 'neue Zeile', 'fila nueva'],
+  measDelta: ['fiche {v}, écart {d} %', 'sheet {v}, deviation {d} %', 'Datenblatt {v}, Abweichung {d} %', 'ficha {v}, desviación {d} %'],
+  measSupport: ['{s} s, {n} vol(s)', '{s} s, {n} flight(s)', '{s} s, {n} Flug/Flüge', '{s} s, {n} vuelo(s)'],
+  measAdd: ['Ajouter les lignes cochées au brouillon', 'Add the ticked rows to the draft', 'Angekreuzte Zeilen in den Entwurf übernehmen',
+    'Añadir las filas marcadas al borrador'
+  ],
   rpmGone: ['retirée', 'removed', 'entfernt', 'retirada'],
   rpmTable: ['Table régime / débit', 'RPM / fuel flow table', 'Drehzahl-/Verbrauchstabelle', 'Tabla régimen / consumo'],
   review: ['Changements proposés', 'Proposed changes', 'Vorgeschlagene Änderungen', 'Cambios propuestos'],
