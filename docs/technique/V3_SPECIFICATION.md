@@ -337,7 +337,12 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
       click resets; **since 5 Nov (SOG-0005, BUGS SOG's reading: the wheel alone was lost on a drawing that does not
       scroll)**, over the trace the wheel alone zooms around the pointer when the drawing's container does not scroll
       (the sheet, the map), the horizontal wheel slides the narrowed window; in a page that scrolls (Fuel page 2 side
-      by side) the wheel alone stays with the page, as before; case D24 checks both situations. The vertical axis refits to what is visible (that is where the precision comes from), axis labels, NM
+      by side) the wheel alone stays with the page, as before; case D24 checks both situations. **Amended on 6 Nov
+      (roadmap point, decision 1.7, BUGS SOG's proposal, the user's yes)**, on a screen: (1) Shift + drag on the profile,
+      whole flight or narrowed window, draws a rectangle of distances, shown while dragging and zoomed on release (5 NM
+      at least); (2) the bare drag and the double click keep their meaning: reading cursor (whole flight) or pan of the
+      window (narrowed); back to the whole flight; (3) a Shift + click without a drag does nothing; the weather cut shares
+      the helper and zooms on release without the band; no touch equivalent (two fingers already pinch); case D111. The vertical axis refits to what is visible (that is where the precision comes from), axis labels, NM
       marks and point labels follow, the cursor keeps working in the window. The window is a reading convenience, kept for
       the life of the page only, never stored; a small "whole flight" affordance appears in the legend row while zoomed
       (rule 13: no new chip). The gesture is the same on both drawings: the window helper is written once (`modules/maps/lib`,
