@@ -1,0 +1,210 @@
+{
+ "version": 0.6,
+ "generator": "synthetic test response in the format of Overpass out geom (SOG-0046): not a recording of the public instance",
+ "elements": [
+  {
+   "type": "way",
+   "id": 101,
+   "tags": {
+    "aeroway": "taxiway",
+    "ref": "A"
+   },
+   "geometry": [
+    {
+     "lat": 48.7300004,
+     "lon": 2.3600001
+    },
+    {
+     "lat": 48.7300004,
+     "lon": 2.3600001
+    },
+    {
+     "lat": 48.731,
+     "lon": 2.361
+    },
+    {
+     "lat": 48.7315,
+     "lon": 2.362
+    }
+   ]
+  },
+  {
+   "type": "way",
+   "id": 102,
+   "tags": {
+    "aeroway": "taxiway",
+    "name": "Voie très longue de contournement nord"
+   },
+   "geometry": [
+    {
+     "lat": 48.73,
+     "lon": 2.37
+    },
+    {
+     "lat": 48.731,
+     "lon": 2.371
+    },
+    {
+     "lat": 48.732,
+     "lon": 2.372
+    }
+   ]
+  },
+  {
+   "type": "way",
+   "id": 103,
+   "tags": {
+    "aeroway": "taxiway",
+    "ref": "<b>X</b>&"
+   },
+   "geometry": [
+    {
+     "lat": 48.73,
+     "lon": 2.38
+    },
+    {
+     "lat": 48.731,
+     "lon": 2.381
+    }
+   ]
+  },
+  {
+   "type": "way",
+   "id": 104,
+   "tags": {
+    "aeroway": "taxiway",
+    "ref": "Z"
+   },
+   "geometry": [
+    {
+     "lat": 48.73,
+     "lon": 2.39
+    }
+   ]
+  },
+  {
+   "type": "relation",
+   "id": 105,
+   "tags": {
+    "aeroway": "taxiway",
+    "ref": "R"
+   }
+  },
+  {
+   "type": "way",
+   "id": 106,
+   "tags": {
+    "aeroway": "taxiway",
+    "ref": "B\u0007\u001b"
+   },
+   "geometry": [
+    {
+     "lat": 48.73,
+     "lon": 2.4
+    },
+    {
+     "lat": 48.731,
+     "lon": 2.401
+    }
+   ]
+  },
+  {
+   "type": "node",
+   "id": 201,
+   "lat": 48.7201,
+   "lon": 2.3501,
+   "tags": {
+    "aeroway": "parking_position",
+    "ref": "12"
+   }
+  },
+  {
+   "type": "way",
+   "id": 202,
+   "tags": {
+    "aeroway": "parking_position",
+    "ref": "13"
+   },
+   "geometry": [
+    {
+     "lat": 48.7,
+     "lon": 2.3
+    },
+    {
+     "lat": 48.7,
+     "lon": 2.302
+    },
+    {
+     "lat": 48.702,
+     "lon": 2.302
+    },
+    {
+     "lat": 48.702,
+     "lon": 2.3
+    },
+    {
+     "lat": 48.7,
+     "lon": 2.3
+    }
+   ]
+  },
+  {
+   "type": "node",
+   "id": 203,
+   "lat": 48.7211,
+   "lon": 2.3511,
+   "tags": {
+    "aeroway": "gate",
+    "name": "G1"
+   }
+  },
+  {
+   "type": "node",
+   "id": 204,
+   "lat": 48.7221,
+   "lon": 2.3521,
+   "tags": {
+    "aeroway": "holding_position",
+    "ref": "A1"
+   }
+  },
+  {
+   "type": "node",
+   "id": 205,
+   "lat": 95.0,
+   "lon": 2.3521,
+   "tags": {
+    "aeroway": "holding_position",
+    "ref": "A2"
+   }
+  },
+  {
+   "type": "node",
+   "id": 201,
+   "lat": 48.7201,
+   "lon": 2.3501,
+   "tags": {
+    "aeroway": "parking_position",
+    "ref": "12"
+   }
+  },
+  {
+   "type": "way",
+   "id": "x",
+   "tags": {
+    "aeroway": "taxiway",
+    "ref": "Y"
+   },
+   "geometry": [
+    {
+     "lat": 48.7,
+     "lon": 2.5
+    },
+    {
+     "lat": 48.71,
+     "lon": 2.51
+    }
+   ]
+  }
+ ]
+}

@@ -2017,6 +2017,110 @@
         }
         return null;
       },
+      /** La couche sol d'un terrain (V3 § 10.40, SOG-0046) : { icao, cycle, source: 'osm', attribution, items [{ id, kind: 'twy' | 'park' | 'hold', name, line: [[lon, lat]…] | point: [lon, lat] }] } lue dans
+       *  proc/ground/<OACI>.json (écrit par le travail ground/fetch du lanceur : OpenStreetMap, ODbL), ou null sans fichier, pour un code mal formé ou un fichier qui n'est pas celui du terrain. Le fichier
+       *  est une entrée non fiable : copie bornée (5 000 éléments, 2 000 points par ligne, noms de 16 signes sans < > & " '), les éléments invalides retirés. L'attribution est à montrer tant que la couche est dessinée. */
+      async ground(icao) {
+        const k = String(icao || '').trim().toUpperCase();
+        if (!/^[A-Z0-9]{4}$/.test(k)) return null;
+        return cleanGround(k, valueOf(await read(`proc/ground/${k}.json`, true)));
+      },
+      /** Lit la couche sol d'un terrain dans OpenStreetMap par le lanceur (travail ground/fetch : UNE requête Overpass, ~30 s, jamais depuis la page) et l'installe dans proc/ground/ (un commit, sans envoi) :
+       *  le geste du pilote depuis Données. Rend { ok: true, icao, items: { twy, park, hold }, bytes, truncated, warnings, commit, ground } ou { ok: false, reason, message?, wait? } — reason : 'bad-icao', 'no-launcher',
+       *  'paired' (le geste se fait sur le poste), 'busy', 'too-soon' (30 s entre deux lectures ; `wait`), 'no-data' (rien d'OpenStreetMap dans l'aérodrome), 'cancelled', 'failed'. `onProgress({ step, done, total })`,
+       *  `signal` (AbortSignal). `{ dry: true }` : à blanc, le plan seulement, rien d'appelé ni d'écrit. */
+      async fetchGround(icao, {
+        onProgress,
+        signal,
+        dry
+      } = {}) {
+        const k = String(icao || '').trim().toUpperCase(),
+          no = (reason, more = {}) => ({
+            ok: false,
+            reason,
+            ...more
+          });
+        if (!/^[A-Z0-9]{4}$/.test(k)) return no('bad-icao');
+        if (signal?.aborted) return no('cancelled');
+        if (typeof launcher?.job !== 'function' || !launcher.info?.()) return no('no-launcher');
+        if (launcher.info().lan) return no('paired');
+        if (groundBusy.has(k)) return no('busy');
+        const run = (async () => {
+          const r = await launcher.job('regen/job', {
+            set: 'ground',
+            verb: 'fetch',
+            args: dry === true ? {
+              icao: k,
+              dry: true
+            } : {
+              icao: k
+            }
+          }, {
+            onProgress: st => {
+              try {
+                onProgress?.({
+                  step: st.step,
+                  done: st.done,
+                  total: st.total
+                });
+              } catch {
+                /* écouteur du module en échec : la lecture continue */
+              }
+            },
+            signal
+          });
+          if (!r) return no('no-launcher');
+          const res = r.result;
+          if (r.cancelled) return no('cancelled');
+          if (res?.ok !== true) {
+            if (r.status === 409) return no('busy');
+            if (r.status === 429 || r.reason === 'too-soon') return no('too-soon', {
+              wait: Number.isFinite(r.wait) ? r.wait : null
+            });
+            if (r.status === 403) return no('paired');
+            if (r.state === 'cancelled') return no('cancelled');
+            const why = res?.ok === false && typeof res.reason === 'string' ? res.reason : 'failed';
+            return no(['no-data', 'cancelled', 'failed'].includes(why) ? why : 'failed', {
+              message: String(res?.message || r.message || (r.offline ? 'launcher unreachable' : '')),
+              ...(Array.isArray(res?.warnings) ? {
+                warnings: res.warnings
+              } : {})
+            });
+          }
+          if (res.dry === true) return {
+            ok: true,
+            dry: true,
+            icao: k,
+            plan: res.plan && typeof res.plan === 'object' ? res.plan : null
+          };
+          const path = `proc/ground/${k}.json`;
+          revs.delete(
+            path); // écrit par le lanceur hors de la couche de données : sa copie locale est périmée (comme fetchProcedures)
+          if (typeof reader.revalidate === 'function') await Promise.resolve(reader.revalidate([path,
+            'proc/ground/index.json'
+          ])).catch(() => null);
+          else await Promise.resolve(reader.evict?.(path)).catch(() => 0);
+          emit({
+            ground: k
+          });
+          return {
+            ok: true,
+            icao: k,
+            items: res.items && typeof res.items === 'object' ? res.items : null,
+            bytes: Number.isFinite(res.bytes) ? res.bytes : null,
+            truncated: res.truncated === true,
+            warnings: Array.isArray(res.warnings) ? res.warnings : [],
+            commit: res.commit ?? null,
+            ground: await api.ground(k)
+          };
+        })();
+        groundBusy.set(k, run);
+        try {
+          return await run;
+        } finally {
+          groundBusy.delete(k);
+        }
+      },
       /** L'adresse du PDF de la carte officielle d'une procédure, ou null (V3 § 10.39, SOG-0045) : `proc` est la fiche telle que procedures() la donne (SID, STAR, approche), ou, pour la piste,
        *  `{ icao, kind: 'RWY', id, name, runways: [piste] }` (la réponse est alors la carte d'aérodrome ADC, sinon la carte VAC de l'atlas VFR). SIA seulement (LF…) : la carte IAC / SID / STAR choisie
        *  dans `charts.items` du fichier du terrain qui porte la fiche (procedures.js chartFor : une seule carte qui convienne, jamais devinée), sinon la page DATA de sa table de codage
@@ -2311,6 +2415,45 @@
     // d'un terrain { procedures: OACI, coverage: true } (Carburant et la Carte relisent ce terrain). Comme pour la base, seul compte un
     // fichier dont la révision a changé ou que rien n'avait lu (l'écho d'une lecture d'aerodb lui-même ne compte pas).
     const PROC_FILE = /^proc(?:\/(?:manual|local|\d{4}-\d{2}-\d{2})|-seen)\/([A-Z0-9]{3,4}|index)\.json$/;
+    /** La couche sol d'un terrain (proc/ground/<OACI>.json, § 10.40) : le fichier du dépôt des données est une entrée NON FIABLE (chaque pilote peut y pousser) : copie bornée et nettoyée, jamais l'objet lu.
+     *  Rend null si ce n'est pas un fichier « osm » de ce terrain ; sinon { icao, cycle, source, attribution, items } dont les éléments valides seuls restent (au plus 5 000 ; id « w123 » / « n45 », kind twy
+     *  (ligne de 2 à 2 000 points) | park | hold (un point), nom de 16 signes au plus, sans signe de commande ni < > & " ', coordonnées finies dans le globe). */
+    const GROUND_MAX = 5000,
+      cleanGround = (k, v) => {
+        if (!v || typeof v !== 'object' || v.icao !== k || v.source !== 'osm' || !Array.isArray(v.items)) return null;
+        const pt = p => Array.isArray(p) && p.length >= 2 && Number.isFinite(p[0]) && Number.isFinite(p[1]) && Math.abs(p[0]) <= 180 &&
+          Math.abs(p[1]) <= 90 ? [p[0], p[1]] : null,
+          text = (s, n) => typeof s === 'string' ? s.replace(/[\u0000-\u001f\u007f-\u009f<>&"']/g, ' ').replace(/\s+/g, ' ').trim().slice(
+            0, n) : '',
+          items = [];
+        for (const it of v.items.slice(0, GROUND_MAX)) {
+          if (!it || typeof it !== 'object' || !['twy', 'park', 'hold'].includes(it.kind) || typeof it.id !== 'string' || !
+            /^[wn]\d{1,12}$/.test(it.id)) continue;
+          const out = {
+            id: it.id,
+            kind: it.kind,
+            name: text(it.name, 16)
+          };
+          if (it.kind === 'twy') {
+            const line = Array.isArray(it.line) ? it.line.slice(0, 2000).map(pt) : [];
+            if (line.length < 2 || line.includes(null)) continue;
+            out.line = line;
+          } else {
+            const p = pt(it.point);
+            if (!p) continue;
+            out.point = p;
+          }
+          items.push(out);
+        }
+        return {
+          icao: k,
+          cycle: typeof v.cycle === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v.cycle) ? v.cycle : null,
+          source: 'osm',
+          attribution: text(v.attribution, 120) || '© OpenStreetMap contributors, ODbL',
+          items
+        };
+      },
+      groundBusy = new Map(); // OACI → lecture de la couche sol en cours
     const procWatch = async paths => {
       let index = false;
       const icaos = new Set();

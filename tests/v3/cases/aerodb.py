@@ -4162,6 +4162,149 @@ def k83(c):
     c.eq(r['words'], [{'runways': ['17L', '17R'], 'words': ['INA', 'RNAV']}, {'runways': [], 'words': ['EAST', 'INA', 'RNAV', 'MOLBA']}], 'the runways of a chart name (« 17L_17R » too); a direction is not a runway', what='chartWords')
 
 
+def _ground_job():
+    """Le jeu « ground » du lanceur (tools/regen/ground.py), chargé à part pour que l'essai remplace son GET (aucun appel réel à Overpass dans la noreg) ; le socle avec les verbes chargés."""
+    import importlib.util
+    RJ = _regen()
+    spec = importlib.util.spec_from_file_location('ground_test', ROOT / 'tools/regen/ground.py')
+    G = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(G)
+    return RJ, G
+
+
+@case('K84', 'Launcher job ground/fetch (SOG-0046): one Overpass request per aerodrome (a recorded answer in the test), a small bounded file in proc/ground/, a dry run that calls nothing', 'K', static=True,
+      rule='V3 § 10.40 (6 Nov 2026): the ground layer is read once through the launcher, never from the page: taxiways, stands and holding points of OpenStreetMap, names of 16 signs at most, 5 000 items at most, coordinates to 1e-6, the ODbL attribution in the file; nothing is written without an item; the noreg never calls the public instance')
+def k84(c):
+    import json
+    import os
+    import tempfile
+    import urllib.parse
+    RJ, G = _ground_job()
+    answer = (ROOT / 'frame/aerodb/test/fixtures/ground/LFPO.overpass.json').read_bytes()
+    c.ok(('ground', 'fetch') in RJ.REGISTRY and RJ.MIN_GAP.get(('ground', 'fetch'), 0) >= 30, str(sorted(k for k in RJ.REGISTRY if k[0] == 'ground')), 'the verb ground/fetch is loaded by the launcher, 30 s between two starts')
+    check = RJ.REGISTRY[('ground', 'fetch')][1]
+    c.eq([check(a) for a in ({'icao': 'lfpo'}, {'icao': 'LFPO', 'dry': True}, {'icao': 'LFPO', 'dry': 'yes'}, {'icao': 'LFPO,LFPG'}, {'icao': 'LFP'}, {'icao': 'LFPO', 'x': 1}, {}, 'LFPO')],
+         [{'icao': 'LFPO', 'dry': False}, {'icao': 'LFPO', 'dry': True}, None, None, None, None, None, None], 'arguments: one aerodrome of four signs, an optional boolean dry, nothing else', what='check')
+    calls = []
+
+    def get(url, timeout=120):
+        calls.append(url)
+        return state['reply']
+    state = {'reply': (200, answer)}
+    G.GET = get
+    with tempfile.TemporaryDirectory() as td:
+        ctx = {'data': td, 'secrets': td}
+        run = lambda a: G.fetch(RJ.Job('ground', 'fetch', a, author='TST'), a, ctx)
+        out = os.path.join(td, 'proc', 'ground', 'LFPO.json')
+        # dry run: the plan, no call, nothing written
+        r = run({'icao': 'LFPO', 'dry': True})
+        c.eq((r['ok'], r['dry'], r['plan']['host'], r['plan']['calls'], len(calls), os.path.exists(out)), (True, True, 'overpass-api.de', 1, 0, False), 'dry run: the plan (host, one call), no call made, nothing written', what='dry')
+        # the real run
+        r = run({'icao': 'LFPO'})
+        c.eq((r['ok'], r['items'], len(calls), r['file']), (True, {'twy': 4, 'park': 3, 'hold': 1}, 1, 'proc/ground/LFPO.json'), 'one request, four taxiways, three stands (a polygon gives its centre), one holding point', what='run')
+        u = urllib.parse.urlparse(calls[0])
+        q = urllib.parse.parse_qs(u.query)['data'][0]
+        c.eq((u.scheme, u.netloc, u.path), ('https', 'overpass-api.de', '/api/interpreter'), 'the address is computed by the job: https, the one Overpass host', what='host')
+        c.ok('"icao"="LFPO"' in q and 'taxiway' in q and 'holding_position' in q and 'out geom' in q, q, 'the request names the aerodrome by its ICAO tag and asks taxiways, stands, gates and holding points')
+        doc = json.loads(open(out, encoding='utf-8').read())
+        c.eq([k for k in doc], ['icao', 'cycle', 'source', 'attribution', 'items'], 'the file: icao, cycle, source, attribution, items', what='keys')
+        c.eq((doc['icao'], doc['source'], doc['attribution'], bool(re.fullmatch(r'\d{4}-\d{2}-\d{2}', doc['cycle']))), ('LFPO', 'osm', '© OpenStreetMap contributors, ODbL', True), 'source osm, the ODbL attribution, the day as the cycle', what='head')
+        by = {i['id']: i for i in doc['items']}
+        c.eq(by['w101']['line'], [[2.36, 48.73], [2.361, 48.731], [2.362, 48.7315]], 'a taxiway line: rounded to 1e-6, the repeated point dropped', what='line')
+        c.eq((by['w102']['name'], by['w106']['name'], by['w103']['name']), ('Voie très longue', 'B', '<b>X</b>&'), 'names: 16 signs at most, control characters removed (the frame escapes the rest: it is an untrusted file)', what='names')
+        c.eq((by['w202']['point'], by['n201']['name'], by['n203']['name'], by['n204']['kind']), ([2.301, 48.701], '12', 'G1', 'hold'), 'a stand drawn as a polygon is its centre; ref first, then name', what='points')
+        c.eq(sorted(set(by) & {'w104', 'r105', 'n205', 'wx', 'w105'}), [], 'dropped: the one-point taxiway, the relation, the invalid latitude, the non-numeric id (the duplicate is kept once)', what='dropped')
+        c.ok(any('laissé(s) de côté' in w for w in r['warnings']), str(r['warnings']), 'and said')
+        idx = json.loads(open(os.path.join(td, 'proc', 'ground', 'index.json'), encoding='utf-8').read())
+        c.eq(idx['aerodromes']['LFPO'], {'cycle': doc['cycle'], 'twy': 4, 'park': 3, 'hold': 1, 'bytes': os.path.getsize(out)}, 'the manifest proc/ground/index.json: the cycle, the counts and the size per aerodrome', what='manifest')
+        c.eq([i['kind'] for i in doc['items']], ['twy'] * 4 + ['park'] * 3 + ['hold'], 'taxiways first, then stands, then holding points (so a cap drops the least useful)', what='order')
+        # an aerodrome OpenStreetMap does not know: nothing is written
+        state['reply'] = (200, b'{"elements": []}')
+        r = run({'icao': 'LFZZ'})
+        c.eq((r['ok'], r['reason'], os.path.exists(os.path.join(td, 'proc', 'ground', 'LFZZ.json'))), (False, 'no-data', False), 'no element: « no-data », no file', what='no-data')
+        # a busy public server, a bad answer, a cancelled job
+        state['reply'] = (429, b'')
+        r = run({'icao': 'LFPG'})
+        c.ok(r['ok'] is False and r['reason'] == 'failed' and '429' in r['message'] and 'try again' in r['message'], str(r), 'HTTP 429: failed, said as busy')
+        state['reply'] = (200, b'<html>rate limited</html>')
+        r = run({'icao': 'LFPG'})
+        c.eq((r['ok'], r['reason'], os.path.exists(os.path.join(td, 'proc', 'ground', 'LFPG.json'))), (False, 'failed', False), 'an answer that is not JSON: failed, nothing written', what='not json')
+        # the bounds, on the builder
+        many = {'elements': [{'type': 'node', 'id': n, 'lat': 48.0, 'lon': 2.0, 'tags': {'aeroway': 'parking_position', 'ref': str(n)}} for n in range(1, 5002)]}
+        w = []
+        d5 = G.build('LFPO', many, '2026-11-06', w)
+        c.eq((len(d5['items']), any('5000' in x for x in w)), (5000, True), 'at most 5 000 items, said', what='cap')
+        c.eq(len(json.dumps(G.build('LFPO', json.loads(answer), '2026-11-06'))) < 4000, True, 'the file stays small (a few hundred bytes per element)', what='size')
+
+
+@case('K85', 'AeroDb.ground(icao) and fetchGround (SOG-0046): the ground file read as an untrusted input (bounded copy, escaped names, invalid items dropped), null without a file, the launcher job through its reasons', 'K', tags=('aerodb',), phone=False,
+      rule='V3 § 10.40 (6 Nov 2026): proc/ground/<ICAO>.json may be pushed by any pilot of the group; the frame hands the Map a bounded copy: 5 000 items, 2 000 points a line, names of 16 signs without < > & " or control signs, finite coordinates inside the globe, the file of another aerodrome refused')
+def k85(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const day = Date.parse('2026-11-06T12:00:00Z');
+      const mk = (files, launcher) => AeroDB.create({ reader: { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} }, lnmperf: false, launcher, now: () => day });
+      const good = { icao: 'LFPO', cycle: '2026-11-06', source: 'osm', attribution: '© OpenStreetMap contributors, ODbL', items: [
+        { id: 'w1', kind: 'twy', name: 'A', line: [[2.36, 48.73], [2.37, 48.74]] },
+        { id: 'w2', kind: 'twy', name: '<img src=x onerror=alert(1)>' + 'Z'.repeat(40), line: [[2.36, 48.73], [2.37, 48.74]] },
+        { id: 'w3', kind: 'twy', name: 'one point', line: [[2.36, 48.73]] },
+        { id: 'w4', kind: 'twy', name: 'nan', line: [[2.36, 48.73], [null, 48.74]] },
+        { id: 'w5', kind: 'twy', name: 'far', line: [[2.36, 48.73], [200, 48.74]] },
+        { id: 'n6', kind: 'park', name: 'B\\u0007\\u001b12', point: [2.3, 48.7] },
+        { id: 'n7', kind: 'hold', name: 'A1', point: [2.3, 95] },
+        { id: 'n8', kind: 'hold', name: 'A2', point: [2.31, 48.71], extra: { evil: 1 } },
+        { id: 'javascript:1', kind: 'park', name: 'bad id', point: [2.3, 48.7] },
+        { id: 'n9', kind: 'stand', name: 'bad kind', point: [2.3, 48.7] },
+        { id: 'n10', kind: 'park', name: { toString: 'x' }, point: [2.3, 48.7] },
+        null, 'junk', 3
+      ] };
+      const many = { ...good, icao: 'LFPG', items: Array.from({ length: 6000 }, (_, i) => ({ id: 'n' + (i + 1), kind: 'park', name: String(i), point: [2.5, 49] })) };
+      const longLine = { ...good, icao: 'LFBO', items: [{ id: 'w1', kind: 'twy', name: 'L', line: Array.from({ length: 2500 }, (_, i) => [1 + i / 1e5, 43]) }] };
+      const db = mk({ 'proc/ground/LFPO.json': good, 'proc/ground/LFPG.json': many, 'proc/ground/LFBO.json': longLine,
+        'proc/ground/LFRS.json': { ...good, icao: 'LFPO' }, 'proc/ground/LFLL.json': { ...good, icao: 'LFLL', source: 'apt.dat' }, 'proc/ground/LFMN.json': 'not an object' });
+      const out = { po: await db.ground('lfpo'), pg: await db.ground('LFPG'), bo: await db.ground('LFBO'), rs: await db.ground('LFRS'), ll: await db.ground('LFLL'), mn: await db.ground('LFMN'),
+        none: await db.ground('LFZZ'), bad: [await db.ground(''), await db.ground(null), await db.ground('LF'), await db.ground('../x')] };
+      const calls = [];
+      let answer = null;
+      const fake = (over = {}) => ({ info: () => ({ data: true, lan: false }), request: async () => null, job: async (route, body, opts) => { calls.push({ route, body }); opts.onProgress?.({ step: 'LFPO: Overpass', done: 0, total: 1 }); return typeof answer === 'function' ? answer() : answer; }, ...over });
+      const f = async (launcher, icao = 'LFPO', o) => { try { return await mk({ 'proc/ground/LFPO.json': good }, launcher).fetchGround(icao, o); } catch (e) { return { reason: 'THROWS ' + e }; } };
+      const ac = new AbortController(); ac.abort();
+      answer = { status: 200, result: { ok: true, icao: 'LFPO', items: { twy: 1, park: 1, hold: 1 }, bytes: 900, truncated: false, warnings: [], commit: 'abc', file: 'proc/ground/LFPO.json' } };
+      const progress = [];
+      out.fetch = {
+        bad: (await f(fake(), 'XX')).reason, aborted: (await f(fake(), 'LFPO', { signal: ac.signal })).reason, none: (await f(undefined)).reason, paired: (await f(fake({ info: () => ({ data: true, lan: true }) }))).reason,
+        ok: await f(fake(), 'LFPO', { onProgress: s => progress.push(s) }), calls: calls.map(x => [x.route, x.body]), progress
+      };
+      answer = { status: 200, result: { ok: true, dry: true, icao: 'LFPO', plan: { host: 'overpass-api.de', calls: 1, file: 'proc/ground/LFPO.json' } } };
+      out.fetch.dry = await f(fake(), 'LFPO', { dry: true });
+      out.fetch.dryCall = calls[calls.length - 1][1] || calls[calls.length - 1].body;
+      answer = { status: 200, result: { ok: false, reason: 'no-data', message: 'nothing in OSM' } };
+      out.fetch.nodata = await f(fake());
+      answer = { status: 429, result: null, message: 'wait' };
+      out.fetch.soon = await f(fake());
+      answer = { status: 200, result: { ok: false, reason: 'weird' } };
+      out.fetch.weird = (await f(fake())).reason;
+      answer = { status: 409, result: null };
+      out.fetch.busy = (await f(fake())).reason;
+      const slow = fake({ job: async () => { await new Promise(r => setTimeout(r, 60)); return { status: 200, result: { ok: true, icao: 'LFPO', items: {}, bytes: 1, warnings: [], commit: null } }; } });
+      const dbs = mk({}, slow), first = dbs.fetchGround('LFPO'), second = await dbs.fetchGround('LFPO');
+      out.fetch.twice = [second.reason, (await first).ok];
+      return out;
+    }""")
+    po = r['po']
+    c.eq([i['id'] for i in po['items']], ['w1', 'w2', 'n6', 'n8', 'n10'], 'the valid items stay (a one-point line, a NaN or out-of-globe coordinate, a bad id, a bad kind, junk are dropped; a name that is not a string leaves the stand unnamed)', what='items')
+    c.eq((po['items'][1]['name'], po['items'][2]['name'], po['items'][3].get('extra'), po['items'][4]['name']), ('img src=x onerro', 'B 12', None, ''), 'names: markup characters and control signs become spaces, 16 signs at most; unknown fields are not copied', what='names')
+    c.eq((po['icao'], po['cycle'], po['source'], po['attribution']), ('LFPO', '2026-11-06', 'osm', '© OpenStreetMap contributors, ODbL'), 'the head: icao, cycle, source, attribution', what='head')
+    c.eq((len(r['pg']['items']), len(r['bo']['items'][0]['line'])), (5000, 2000), 'bounded: 5 000 items, 2 000 points a line', what='bounds')
+    c.eq((r['rs'], r['ll'], r['mn'], r['none'], r['bad']), (None, None, None, None, [None] * 4), 'the file of another aerodrome, a source that is not osm, a file that is not an object, no file, a bad code: null', what='null')
+    f = r['fetch']
+    c.eq((f['bad'], f['aborted'], f['none'], f['paired'], f['nodata']['reason'], f['soon']['reason'], f['weird'], f['busy'], f['twice']), ('bad-icao', 'cancelled', 'no-launcher', 'paired', 'no-data', 'too-soon', 'failed', 'busy', ['busy', True]),
+         'fetchGround: one reason per refusal, never silent, never twice for the same aerodrome at once', what='reasons')
+    c.eq((f['ok']['ok'], f['ok']['items'], f['ok']['commit'], len(f['ok']['ground']['items']), f['calls'][0], len(f['progress'])), (True, {'twy': 1, 'park': 1, 'hold': 1}, 'abc', 5, ['regen/job', {'set': 'ground', 'verb': 'fetch', 'args': {'icao': 'LFPO'}}], 1),
+         'success: the counts, the commit, the cleaned file read back, the job ground/fetch asked with the one aerodrome, the progress passed on', what='ok')
+    c.eq((f['dry']['dry'], f['dryCall']['args']), (True, {'icao': 'LFPO', 'dry': True}), 'dry: the plan only, the job asked with dry', what='dry')
+
+
 @case('K58', 'openAIP aerodromes: runways, bearing, hardLen and magVar derived like the SIA gives them to France', 'K', tags=('aerodb',), phone=False,
       rule='aerodb SPEC 2 (aerodrome fields, parser version 20): bearing, hardLen, water, runways and magVar come from the openAIP runways and magneticDeclination; a terrain without runways carries none of the runway fields')
 def k58(c):
