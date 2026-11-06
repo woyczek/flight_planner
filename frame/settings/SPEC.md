@@ -319,6 +319,16 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
      6. *The airline's keys* (IVAO, EAD) — optional; done when set (`secrets`); button → Administration › Keys.
      7. *Done* — the status block (`ctx.status.html()`), nothing more.
    - Case A on an empty airline and on a filled one, at 390 and 1280.
+8. **Company** (SOG-0039, V3_SPECIFICATION § 10.38 step 1; `access.js` part `SogSettingsParts.airline`, case A95): shown at the Full level or by
+   `#settings?card=company`. The airlines of `data/airline/index.json` (`{ airlines: [{ code, name }] }`) then « Personnel » (`perso`), each
+   line: name, code, networks (the booleans `networks.ivao / vatsim / offline` of its `settings.json`, closed list), fleet count (`fleet.json`
+   `aircraft.length`, bounded); four elements, under the seven permitted (the logo and the missions count wait for the readers of the
+   other lots). « Choisir » calls `FrameData.setAirline(code)`; the current one (`FrameData.airline().code`) is marked and has no button;
+   **feature-detected**: without `setAirline` every button is grey and the card says why. « Ajouter une compagnie » (name ≤ 60 characters, code
+   `^[a-z0-9]{2,8}$`, not `perso`, not taken, twenty airlines at most, networks) writes `airline/<code>/settings.json`, an empty `fleet.json`
+   and the index (merged by code); a taken code writes nothing. Every file of `data/airline/` is untrusted (§ 10.36): codes by the rule, names
+   by `esc`, at most twenty lines. The one-shot migration of today's single airline is the launcher verb `airline/migrate` (`tools/regen/airline.py`,
+   case K95), not yet called from a screen.
 
 ## 4. Invariants
 

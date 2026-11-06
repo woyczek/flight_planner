@@ -841,6 +841,8 @@
     if (ai >= 0) cards[ai] = cards[ai].replace(/^(<div class="f-card" data-card="access"><h2>[^<]*<\/h2>)/, `$1${cfgIn}`);
     // synchronisation : montrée si un échange est coché ou tant que des écritures attendent (access.js)
     cards.push(P.access.syncHtml(env));
+    // compagnie courante et « Ajouter une compagnie » (access.js, SOG-0039) : niveau Complet ou #settings?card=company
+    show(P.airline.html(env));
     // données hors ligne
     show(P.cards.offline(env));
     // compte IVAO du pilote par le relais (R1b) : avec un lanceur (le relais de la compagnie ou ce poste) ; le jeton n'est
@@ -915,6 +917,7 @@
 
     // état vivant : synchronisation, données hors ligne, clés, diagnostic
     P.access.live(env); // synchronisation et écritures en attente, vivantes
+    P.airline.live(env); // la liste des compagnies (lue de data/airline/)
     paintOffline(env);
     P.launcher.live(env); // accès du poste (relève toutes les 5 s), clé IVAO, fenêtre Oui / Non annoncée
     // compte IVAO : sans application réglée sur ce poste ou le relais, le bouton est éteint (sa raison en titre), rien ne part

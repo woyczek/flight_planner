@@ -927,4 +927,6 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: 015591a5ad78 -->
+<!-- fr: ac18fe66366f -->
+
+**La compañía.** En el nivel Completo (o con #settings?card=company), la tarjeta «Compañía» lista las compañías de data/airline/index.json y «Personal»: el nombre, el código, las redes (IVAO, VATSIM, sin conexión) y el número de aeronaves de la flota. «Elegir» convierte una en la compañía actual de este dispositivo (la elección es por dispositivo); la actual no tiene botón. Mientras el marco no sepa aún guardar esta elección, los botones están en gris y la tarjeta lo dice. «Añadir una compañía» pide un nombre, un código (2 a 8 letras minúsculas o cifras, nunca uno ya en uso) y las redes, y luego escribe la carpeta data/airline/<code>/ (ajustes y flota vacía) y la añade al índice; un código en uso no sobrescribe nada. Veinte compañías como máximo; todo lo que se lee de data/airline/ se trata como texto no fiable.

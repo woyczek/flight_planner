@@ -267,6 +267,227 @@
     if (act === 'sync') return c.syncNow();
   }
 
+  // ---- Compagnie (V3_SPECIFICATION § 10.38 étape 1, SOG-0039) : le choix de la compagnie courante parmi celles de data/airline/index.json et « Personnel », et « Ajouter une compagnie ».
+  // Chaque fichier lu de data/airline/ est une entrée non fiable (§ 10.36) : codes ^[a-z0-9]{2,8}$, noms par esc(), au plus AIRLINE_MAX compagnies, réseaux par liste fermée, flotte en nombre borné.
+  const AIRLINE_CODE = /^[a-z0-9]{2,8}$/,
+    AIRLINE_MAX = 20,
+    AIRLINE_NETWORKS = ['ivao', 'vatsim', 'offline'],
+    PERSO = 'perso',
+    INDEX = 'airline/index.json';
+  const TA = {
+    title: ['Compagnie', 'Airline', 'Fluggesellschaft', 'Compañía'],
+    hint: [
+      'La compagnie courante de cet appareil : les missions, le compte rendu et la flotte lisent celle-ci. Le choix est propre à l’appareil.',
+      'This device’s current airline: the missions, the report and the fleet read this one. The choice is per device.',
+      'Die aktuelle Fluggesellschaft dieses Geräts: Missionen, Bericht und Flotte lesen diese. Die Wahl gilt pro Gerät.',
+      'La compañía actual de este dispositivo: las misiones, el informe y la flota leen esta. La elección es por dispositivo.'
+    ],
+    perso: ['Personnel', 'Personal', 'Persönlich', 'Personal'],
+    fleet: ['{n} appareil(s)', '{n} aircraft', '{n} Luftfahrzeug(e)', '{n} aeronave(s)'],
+    choose: ['Choisir', 'Choose', 'Wählen', 'Elegir'],
+    current: ['courante', 'current', 'aktuell', 'actual'],
+    unavailable: ['Le choix n’est pas encore disponible dans ce cadre.', 'Choosing is not yet available in this frame.',
+      'Die Auswahl ist in diesem Rahmen noch nicht verfügbar.', 'La elección aún no está disponible en este marco.'
+    ],
+    none: ['Aucune compagnie dans data/airline/index.json : ajoutez-en une.', 'No airline in data/airline/index.json: add one.',
+      'Keine Fluggesellschaft in data/airline/index.json: Fügen Sie eine hinzu.',
+      'Ninguna compañía en data/airline/index.json: añada una.'
+    ],
+    add: ['Ajouter une compagnie', 'Add an airline', 'Fluggesellschaft hinzufügen', 'Añadir una compañía'],
+    name: ['Nom', 'Name', 'Name', 'Nombre'],
+    code: ['Code (2 à 8 lettres ou chiffres)', 'Code (2 to 8 letters or digits)', 'Code (2 bis 8 Buchstaben oder Ziffern)',
+      'Código (2 a 8 letras o cifras)'
+    ],
+    networks: ['Réseaux', 'Networks', 'Netzwerke', 'Redes'],
+    net: {
+      ivao: ['IVAO', 'IVAO', 'IVAO', 'IVAO'],
+      vatsim: ['VATSIM', 'VATSIM', 'VATSIM', 'VATSIM'],
+      offline: ['hors ligne', 'off-line', 'offline', 'sin conexión']
+    },
+    save: ['Ajouter', 'Add', 'Hinzufügen', 'Añadir'],
+    badName: ['Donnez un nom (60 caractères au plus).', 'Give a name (60 characters at most).',
+      'Geben Sie einen Namen an (höchstens 60 Zeichen).', 'Indique un nombre (60 caracteres como máximo).'
+    ],
+    badCode: ['Code refusé : 2 à 8 lettres minuscules ou chiffres.', 'Code refused: 2 to 8 lower-case letters or digits.',
+      'Code abgelehnt: 2 bis 8 Kleinbuchstaben oder Ziffern.', 'Código rechazado: 2 a 8 letras minúsculas o cifras.'
+    ],
+    taken: ['Ce code est déjà pris.', 'This code is already taken.', 'Dieser Code ist schon vergeben.', 'Este código ya está en uso.'],
+    full: ['Vingt compagnies au plus.', 'Twenty airlines at most.', 'Höchstens zwanzig Fluggesellschaften.',
+      'Veinte compañías como máximo.'
+    ],
+    added: ['Compagnie ajoutée : {n}.', 'Airline added: {n}.', 'Fluggesellschaft hinzugefügt: {n}.', 'Compañía añadida: {n}.'],
+    failed: ['Écriture impossible.', 'Could not write.', 'Schreiben nicht möglich.', 'No se pudo escribir.']
+  };
+  let airlineA = null;
+  /** L'adaptateur (créé une fois) qui lit data/airline/ et écrit l'index et les dossiers des compagnies ; l'index est fusionné par code. */
+  const airlineData = FD => airlineA ||= FD.adapter({
+    id: 'settings-company',
+    reads: ['airline/'],
+    writes: [{
+      prefix: INDEX,
+      merge: 'keyed:airlines:code'
+    }, {
+      prefix: 'airline/',
+      merge: 'record'
+    }]
+  });
+  /** Les compagnies de l'index, bornées : [{ code, name }] (code selon la règle, nom en texte de 60 caractères, un code une fois, vingt au plus). */
+  function airlineList(index) {
+    const out = [],
+      seen = new Set();
+    for (const x of Array.isArray(index?.airlines) ? index.airlines.slice(0, AIRLINE_MAX * 2) : []) {
+      const code = typeof x?.code === 'string' && AIRLINE_CODE.test(x.code) ? x.code : '';
+      if (!code || seen.has(code) || code === PERSO) continue;
+      seen.add(code);
+      out.push({
+        code,
+        name: typeof x.name === 'string' ? x.name.slice(0, 60) : code
+      });
+      if (out.length >= AIRLINE_MAX) break;
+    }
+    return out;
+  }
+  /** Les réseaux d'une compagnie (settings.networks : { ivao, vatsim, offline } en booléens) : la liste fermée, dans l'ordre ; sans réglage, rien. */
+  const airlineNets = s => AIRLINE_NETWORKS.filter(k => s?.networks?.[k] === true);
+  /** Le nombre d'appareils de la flotte (fleet.aircraft) : un entier borné, 0 sans fichier. */
+  const airlineFleet = f => Array.isArray(f?.aircraft) ? Math.min(f.aircraft.length, 9999) : 0;
+  /** Lit l'index et, pour chaque compagnie, ses réglages et sa flotte ; rend les lignes [{ code, name, nets, fleet }] puis « Personnel ». Un fichier illisible : la ligne sans ses détails. */
+  async function readAirlines(FD, t) {
+    const ad = airlineData(FD),
+      // la liste du cadre quand il la donne (FrameData.airlines() : celles de l'index, ou « default » avant la migration), sinon l'index lu ici ; « personnel » vient en dernier
+      known = typeof FD.airlines === 'function' ? await Promise.resolve(FD.airlines()).catch(() => null) : null,
+      list = known ? airlineList({
+        airlines: known
+      }) : airlineList(await ad.get(INDEX, {
+        wait: true
+      }).catch(() => null)),
+      rows = await Promise.all(list.map(async a => {
+        // avant la migration, la compagnie d'aujourd'hui (« default ») est à la racine de data/airline/
+        const base = known && a.code === 'default' ? 'airline/' : `airline/${a.code}/`,
+          [s, f] = await Promise.all([ad.get(`${base}settings.json`, {
+            wait: true
+          }).catch(() => null), ad.get(`${base}fleet.json`, {
+            wait: true
+          }).catch(() => null)]);
+        return {
+          ...a,
+          name: typeof s?.name === 'string' && s.name ? s.name.slice(0, 60) : a.name,
+          nets: airlineNets(s),
+          fleet: airlineFleet(f)
+        };
+      }));
+    return [...rows, {
+      code: PERSO,
+      name: t(TA.perso),
+      nets: [],
+      fleet: null
+    }];
+  }
+  /** La carte Compagnie : le bloc des lignes (rempli par airlineLive) et le formulaire « Ajouter une compagnie » ; le niveau Complet, ou l'adresse #settings?card=company. */
+  function airlineHtml(env) {
+    const {
+      t,
+      lvl,
+      focus,
+      fld
+    } = env;
+    if (lvl !== 3 && focus !== 'company') return '';
+    return `<div class="f-card" data-card="company"><h2>${esc(t(TA.title))}</h2><p class="f-muted">${esc(t(TA.hint))}</p><ul class="f-queue" data-airlines></ul><p class="f-warn" data-airline-note hidden></p>
+      <details data-airline-add><summary>${esc(t(TA.add))}</summary>${fld('co-name', TA.name, '')}${fld('co-code', TA.code, '')}
+      <fieldset><legend>${esc(t(TA.networks))}</legend>${AIRLINE_NETWORKS.map(k => `<label class="f-check"><input type="checkbox" data-co-net="${k}"> ${esc(t(TA.net[k]))}</label>`).join('')}</fieldset>
+      <p class="f-msg" data-msg></p><div class="f-row"><button type="button" class="primary" data-act="companyAdd">${esc(t(TA.save))}</button></div></details></div>`;
+  }
+  /** Dessine les lignes : nom, code, réseaux, taille de flotte (quatre éléments, sous les sept permis) et « Choisir » (« courante » sur celle qui l'est) ; le choix passe par FrameData.setAirline, absent : bouton gris et dit. */
+  async function airlineLive(env) {
+    const {
+      view,
+      t,
+      FD
+    } = env,
+    box = view.querySelector('[data-airlines]');
+    if (!box) return;
+    const rows = await readAirlines(FD, t);
+    if (!view.isConnected) return;
+    const can = typeof FD.setAirline === 'function',
+      now = String((typeof FD.airline === 'function' ? await Promise.resolve(FD.airline()).catch(() => null) : null)?.code || ''),
+      body = rows.map(r => `<li data-airline="${esc(r.code)}"${r.code === now ? ' data-current' : ''}><b>${esc(r.name)}</b> <code>${esc(r.code)}</code>${r.nets.length ? ` <span class="f-muted">${esc(r.nets.map(k => t(TA.net[k])).join(' · '))}</span>` : ''}${r.fleet === null ? '' : ` <span class="f-muted">${esc(t(TA.fleet, { n: r.fleet }))}</span>`}
+        ${r.code === now ? `<span class="f-muted">${esc(t(TA.current))}</span>` : `<button type="button" data-act="companyChoose" data-code="${esc(r.code)}"${can ? '' : ' disabled'}>${esc(t(TA.choose))}</button>`}</li>`).join('');
+    box.innerHTML = body;
+    const note = view.querySelector('[data-airline-note]');
+    if (note) {
+      note.hidden = can && rows.length > 1;
+      note.textContent = !can ? t(TA.unavailable) : rows.length > 1 ? '' : t(TA.none);
+    }
+  }
+  /** Les gestes de la carte : « Choisir » (FrameData.setAirline(code), le code revérifié) et « Ajouter » (nom, code, réseaux : les dossiers et l'index écrits, jamais un fichier existant écrasé). */
+  async function airlineRun(env, act, b) {
+    const {
+      t,
+      FD,
+      c,
+      card,
+      val,
+      say,
+      again
+    } = env;
+    if (act === 'companyChoose') {
+      const code = b.dataset.code || '';
+      if (!(AIRLINE_CODE.test(code) || code === PERSO) || typeof FD.setAirline !== 'function') return;
+      await FD.setAirline(code);
+      return again();
+    }
+    const r = card('company'),
+      name = val('co-name', r).slice(0, 61),
+      code = val('co-code', r);
+    if (!name || name.length > 60) return say('company', t(TA.badName));
+    if (!AIRLINE_CODE.test(code) || code === PERSO) return say('company', t(TA.badCode));
+    const ad = airlineData(FD),
+      list = airlineList(await ad.get(INDEX, {
+        wait: true
+      }).catch(() => null));
+    if (list.some(a => a.code === code)) return say('company', t(TA.taken));
+    if (list.length >= AIRLINE_MAX) return say('company', t(TA.full));
+    const nets = Object.fromEntries(AIRLINE_NETWORKS.map(k => [k, !!r.querySelector(`[data-co-net="${k}"]`)?.checked])),
+      stamp = {
+        updated_at: now(),
+        by: env.id?.trigram || ''
+      };
+    try {
+      await ad.put(`airline/${code}/settings.json`, {
+        schema: 1,
+        name,
+        networks: nets,
+        ...stamp
+      });
+      await ad.put(`airline/${code}/fleet.json`, {
+        schema: 1,
+        aircraft: [],
+        ...stamp
+      });
+      await ad.put(INDEX, {
+        schema: 1,
+        airlines: [...list, {
+          code,
+          name
+        }],
+        ...stamp
+      });
+    } catch {
+      return say('company', t(TA.failed));
+    }
+    c.notify(t(TA.added, {
+      n: name
+    }), 'ok');
+    return again();
+  }
+
+  (window.SogSettingsParts ||= {}).airline = {
+    acts: ['companyChoose', 'companyAdd'],
+    html: airlineHtml,
+    live: airlineLive,
+    list: airlineList,
+    run: airlineRun
+  };
   (window.SogSettingsParts ||= {}).access = {
     acts: ['access', 'test', 'cut', 'sync'],
     accessHtml,

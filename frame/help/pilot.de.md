@@ -960,4 +960,6 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: 015591a5ad78 -->
+<!-- fr: ac18fe66366f -->
+
+**Die Fluggesellschaft.** Auf der Stufe „Vollständig“ (oder über #settings?card=company) listet die Karte „Fluggesellschaft“ die Gesellschaften aus data/airline/index.json und „Persönlich“: Name, Code, Netzwerke (IVAO, VATSIM, offline) und Zahl der Luftfahrzeuge der Flotte. „Wählen“ macht eine zur aktuellen Gesellschaft dieses Geräts (die Wahl gilt pro Gerät); die aktuelle hat keine Schaltfläche. Solange der Rahmen diese Wahl noch nicht speichern kann, sind die Schaltflächen grau, und die Karte sagt es. „Fluggesellschaft hinzufügen“ fragt nach Name, Code (2 bis 8 Kleinbuchstaben oder Ziffern, nie schon vergeben) und Netzwerken und schreibt dann den Ordner data/airline/<code>/ (Einstellungen und leere Flotte) und trägt ihn in den Index ein; ein vergebener Code überschreibt nichts. Höchstens zwanzig Gesellschaften; alles, was aus data/airline/ gelesen wird, gilt als nicht vertrauenswürdiger Text.

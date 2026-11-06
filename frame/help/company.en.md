@@ -278,4 +278,6 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: 015591a5ad78 -->
+<!-- fr: ac18fe66366f -->
+
+**The airline.** At the “Full” level (or through #settings?card=company), the “Airline” card lists the airlines of data/airline/index.json and “Personal”: the name, the code, the networks (IVAO, VATSIM, off-line) and the number of aircraft in the fleet. “Choose” makes one the current airline of this device (the choice is per device); the current airline has no button. While the frame cannot yet save this choice, the buttons are grey and the card says so. “Add an airline” asks for a name, a code (2 to 8 lower-case letters or digits, never one already taken) and the networks, then writes the folder data/airline/<code>/ (settings and an empty fleet) and adds it to the index; a taken code overwrites nothing. Twenty airlines at most; everything read from data/airline/ is treated as untrusted text.

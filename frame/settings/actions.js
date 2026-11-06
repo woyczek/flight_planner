@@ -138,7 +138,7 @@
     const b = e.target.closest('[data-act]');
     if (!b) return;
     const act = b.dataset.act;
-    for (const part of [P.launcher, P.access, P.diagnostic, P.admin])
+    for (const part of [P.launcher, P.access, P.airline, P.diagnostic, P.admin])
       if (part.acts.includes(act)) return part.run(env, act, b, e);
     if (act === 'v2take') {
       const d = v2Settings();

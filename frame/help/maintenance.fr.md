@@ -354,3 +354,5 @@ cartographique (`apps/cpco/map_parser.html`).
   ligne par ligne ; « Copier » met le tout dans le presse-papiers, à coller dans votre message pour signaler un
   problème. Le
   jeton n'y figure jamais.
+
+**La compagnie.** Au niveau Complet (ou par #settings?card=company), la carte « Compagnie » liste les compagnies de data/airline/index.json et « Personnel » : le nom, le code, les réseaux (IVAO, VATSIM, hors ligne) et le nombre d’appareils de la flotte. « Choisir » fait de l’une la compagnie courante de cet appareil (le choix est propre à l’appareil) ; la compagnie courante n’a pas de bouton. Tant que le cadre ne sait pas encore enregistrer ce choix, les boutons sont gris et la carte le dit. « Ajouter une compagnie » demande un nom, un code (2 à 8 lettres minuscules ou chiffres, jamais déjà pris) et les réseaux, puis écrit le dossier data/airline/<code>/ (réglages et flotte vide) et l’ajoute à l’index ; un code déjà pris n’écrase rien. Vingt compagnies au plus ; tout ce qui est lu de data/airline/ est traité comme du texte non fiable.

@@ -1051,3 +1051,59 @@ def k73(c):
             (data / rel).write_text('x', encoding='utf-8')
         view, res = _run(RJ, BS, 'purge', {'zones': ['fr'], 'dry': True}, ctx)
         c.eq(res['removed']['fr']['files'], 2, 'purge of fr (dry): the raw SIA file of the new place and the eAIP cache; the other sources are not France\'s', what='purge')
+
+
+@case('K95', 'airline/migrate: today\'s single airline copied into data/airline/<code>/ (the plan first, an empty fleet said, the index, nothing deleted or overwritten, hostile arguments refused)', 'K',
+      static=True, rule='V3_SPECIFICATION 10.38 step 1 (SOG-0039): a one-shot migration in the launcher, dry by default, data/airline/settings.json kept as a copy, a code ^[a-z0-9]{2,8}$ proposed from the name and confirmed, every file of data/airline/ untrusted (10.36)')
+def k95(c):
+    import json
+    RJ, BS, AF, DS = _mods()
+    fn, check = RJ.REGISTRY[('airline', 'migrate')]
+    for bad in (None, 'x', {'dry': 'no'}, {'code': '../x'}, {'code': 'A'}, {'code': 'ABC'}, {'code': 'abcdefghi'}, {'code': 5}, {'dry': True, 'path': 'C:/x'}):
+        c.ok(check(bad) is None, repr(bad), f'airline/migrate refuses {bad!r}')
+    c.eq((check({}), check({'dry': False, 'code': 'dfa'})), ({'dry': True, 'code': None}, {'dry': False, 'code': 'dfa'}), 'dry by default, no code by default', what='args')
+    mod = types.SimpleNamespace(**fn.__globals__)
+    c.eq([mod.propose(x) for x in ('DEFA Virtual', 'Air Inter VA', 'Éole-Air', '!!', '', 'A', 'Supercalifragilistic Air')], ['defa', 'air', 'eole', '', '', '', 'supercal'],
+         'the proposed code: the first word, without accents, lower case, letters and digits, two to eight characters', what='propose')
+    settings = {'name': 'DEFA Virtual', 'site': 'https://flotte.defa-virtual.fr', 'schema': 1, 'updated_at': '2026-11-01T12:15:54.619Z', 'by': 'ALF'}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        (data / 'airline').mkdir(parents=True)
+        ctx = {'data': str(data)}
+        run = lambda **a: fn(RJ.Job('airline', 'migrate', {}), check(a), ctx)
+        r = run()
+        c.eq((r['ok'], r['reason'] if 'reason' in r else None), (False, 'no-source'), 'no settings.json: nothing to migrate, said', what='no source')
+        (data / 'airline' / 'settings.json').write_text(json.dumps(settings), encoding='utf-8')
+        (data / 'airline' / 'map_profiles.json').write_text('{"schema": 1, "profiles": []}', encoding='utf-8')
+        # the plan: names and sizes, nothing written
+        r = run()
+        c.eq((r['ok'], r['dry'], r['proposed'], r['code'], r['name'], sorted(f['name'] for f in r['files']), r['fleet'], r['index']),
+             (True, True, 'defa', 'defa', 'DEFA Virtual', ['fleet.json', 'map_profiles.json', 'settings.json'], 'empty', 'created'), 'the plan: code proposed from the name, three files, the fleet empty (said), an index to create', what='plan')
+        c.ok(not (data / 'airline' / 'defa').exists() and not (data / 'airline' / 'index.json').exists() and all(set(f) == {'name', 'bytes'} for f in r['files']), str(os.listdir(data / 'airline')),
+             'dry: nothing written; the plan gives names and sizes, no path')
+        # the run with the code the user confirmed
+        r = run(dry=False, code='dfa')
+        folder = data / 'airline' / 'dfa'
+        c.eq((r['ok'], r['code'], sorted(os.listdir(folder)), json.loads((folder / 'fleet.json').read_text(encoding='utf-8')), json.loads((folder / 'settings.json').read_text(encoding='utf-8')) == settings),
+             (True, 'dfa', ['fleet.json', 'map_profiles.json', 'settings.json'], {'schema': 1, 'aircraft': []}, True), 'the run: the settings and the map profiles copied, an empty fleet', what='run')
+        c.eq(json.loads((data / 'airline' / 'index.json').read_text(encoding='utf-8')), {'schema': 1, 'airlines': [{'code': 'dfa', 'name': 'DEFA Virtual'}]}, 'the index lists the airline', what='index')
+        c.eq(json.loads((data / 'airline' / 'settings.json').read_text(encoding='utf-8')), settings, 'nothing deleted: the old settings.json stays as a copy', what='old copy')
+        c.ok(not list(folder.glob('*.tmp')), str(os.listdir(folder)), 'no temporary file left')
+        # again: refused, nothing changed (never overwritten)
+        before = {p.name: p.read_bytes() for p in folder.iterdir()}
+        r = run(dry=False, code='dfa')
+        c.eq((r['ok'], r.get('reason'), r['conflicts'], {p.name: p.read_bytes() for p in folder.iterdir()} == before), (False, 'exists', [{'name': 'settings.json', 'why': 'exists'}], True),
+             'a second run: refused (the folder has its settings), nothing overwritten', what='again')
+        # a second airline: the index grows; an existing fleet.json of the destination is kept and said
+        (data / 'airline' / 'aiv').mkdir()
+        (data / 'airline' / 'aiv' / 'fleet.json').write_text('{"schema": 1, "aircraft": [{"registration": "F-ABCD", "sheet": "A320"}]}', encoding='utf-8')
+        (data / 'airline' / 'settings.json').write_text(json.dumps({'name': 'Air Inter VA'}), encoding='utf-8')
+        r = run(dry=False, code='aiv')
+        c.eq((r['conflicts'], json.loads((data / 'airline' / 'aiv' / 'fleet.json').read_text(encoding='utf-8'))['aircraft'][0]['registration'], [a['code'] for a in json.loads((data / 'airline' / 'index.json').read_text(encoding='utf-8'))['airlines']]),
+             ([{'name': 'fleet.json', 'why': 'exists'}], 'F-ABCD', ['dfa', 'aiv']), 'an existing fleet is kept and said; the index lists both', what='kept fleet')
+        # hostile: a name that is no code proposes nothing; the code is always checked
+        (data / 'airline' / 'settings.json').write_text(json.dumps({'name': '../../x <img src=x>'}), encoding='utf-8')
+        r = run()
+        c.eq((r['ok'], r.get('reason'), r['code']), (False, 'bad-code', ''), 'a name with no usable word: no code proposed, said', what='bad name')
+        (data / 'airline' / 'settings.json').write_text('{not json', encoding='utf-8')
+        c.eq(run().get('reason'), 'no-source', 'an unreadable settings.json is « no source », never half read', what='unreadable')

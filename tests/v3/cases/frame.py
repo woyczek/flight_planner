@@ -3485,4 +3485,72 @@ def a93(c):
     c.js("() => FrameData.reset()")   # the cache and the device's choices of the first part gone
     c.open('flightlog', flight=False, docs=[['airline/settings.json', {'name': 'DEFA Virtual'}, 'document']])
     c.eq(c.js("() => FrameData.airline().then(a => [a.code, a.name])"), ['default', 'DEFA Virtual'], 'without index.json: the airline of today (default)', what='default')
+
+
+@case('A95', 'Settings › Company (SOG-0039): the airlines of data/airline/index.json and « Personnel », the choice (FrameData.setAirline, greyed without it), « Add an airline » writes the folder and the index; every file read is untrusted', 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule='V3_SPECIFICATION 10.38 step 1: Réglages › Compagnie lists the folders found plus « personnel », seven elements at most, the choice calls FrameData.setAirline (detected: absent, the button is grey and said), « Ajouter une compagnie » writes data/airline/<code>/ and index.json; codes ^[a-z0-9]{2,8}$, names escaped, twenty airlines at most (10.36)')
+def a95(c):
+    lang = c.lang
+    sj = 'frame/settings/access.js'
+    T = lambda k: tx(sj, k, lang, after='const TA = {')
+    evil = '<img src=x onerror=window.__pwn=1>'
+    index = {'schema': 1, 'airlines': [{'code': 'dfa', 'name': 'DEFA Virtual'}, {'code': 'aiv', 'name': 'Air Inter VA'}, {'code': evil, 'name': 'x'}, {'code': 'AB', 'name': 'upper'}, {'code': 'dfa', 'name': 'twice'}, {'code': 'perso', 'name': 'no'}]}
+    docs = [['device/level.json', {'level': 3}, 'cache'], ['airline/index.json', index, 'document'],
+            ['airline/dfa/settings.json', {'schema': 1, 'name': 'DEFA Virtual', 'networks': {'ivao': True, 'vatsim': False, 'offline': False}}, 'document'],
+            ['airline/dfa/fleet.json', {'schema': 1, 'aircraft': [{'registration': 'F-AAAA'}, {'registration': 'F-BBBB'}, {'registration': 'F-CCCC'}]}, 'document'],
+            ['airline/aiv/settings.json', {'schema': 1, 'name': evil, 'networks': {'ivao': True, 'vatsim': True, 'offline': 'yes'}}, 'document']]
+    rows = lambda: c.js("[...document.querySelectorAll('[data-card=\"company\"] li[data-airline]')].map(li => [li.dataset.airline, li.hasAttribute('data-current'), li.querySelector('b').textContent, !!li.querySelector('button') && li.querySelector('button').disabled])")
+    # ---- 0: the real frame (FrameData.airlines / setAirline, V3 Frame 837f2d2fa): the list is the frame's, the choice is kept by the frame
+    c.open('settings?card=company', docs=docs)
+    c.until("document.querySelectorAll('[data-card=\"company\"] li[data-airline]').length === 3", timeout=15000, what='the three lines of the real frame')
+    c.eq([r[0] for r in rows()], ['dfa', 'aiv', 'perso'], 'the list of the frame itself: the airlines of the index, then personal', what='real list')
+    c.tap('[data-card="company"] li[data-airline="perso"] button')
+    code = ''
+    for _ in range(30):
+        code = c.js("FrameData.airline().then(a => a && a.code)")
+        if code == 'perso':
+            break
+        c.wait(150)
+    c.eq(code, 'perso', 'the choice is kept by the frame: FrameData.airline() answers the chosen code', what='real choice')
+    # ---- A: a frame that has not the contract yet (an old one): the list is read from the index, « Choose » is grey and said
+    c.page.add_init_script("""(() => { let fd; Object.defineProperty(window, 'FrameData', { configurable: true, get: () => fd, set: v => { fd = v; delete v.setAirline; delete v.airline; delete v.airlines } }) })()""")
+    c.open('settings?card=company', docs=docs)
+    c.until("document.querySelectorAll('[data-card=\"company\"] li[data-airline]').length === 3", timeout=15000, what='the three lines: dfa, aiv, personal')
+    got = rows()
+    c.eq([[r[0], r[2]] for r in got], [['dfa', 'DEFA Virtual'], ['aiv', evil], ['perso', T('perso')]], 'the folders found, in order, then « personnel »; a hostile code, an upper-case code, a repeated one and « perso » itself are dropped; a name is text', what='lines')
+    c.ok(c.count('[data-card="company"] img') == 0 and c.js("window.__pwn === undefined"), got, 'a hostile name is text: no element, nothing runs')
+    line = lambda code: norm(c.text(f'[data-card="company"] li[data-airline="{code}"]'))
+    c.ok(norm(T('fleet').replace('{n}', '3')) in line('dfa') and 'IVAO' in line('dfa') and 'VATSIM' not in line('dfa'), line('dfa'), 'a line: the name, the code, the networks read as booleans, the fleet count')
+    c.ok('IVAO' in line('aiv') and 'VATSIM' in line('aiv') and norm(T('fleet').replace('{n}', '0')) in line('aiv'), line('aiv'), 'no fleet file: 0; a network that is not exactly true is not shown')
+    c.eq([r[3] for r in got], [True, True, True], 'without FrameData.setAirline every choose button is grey', what='grey')
+    c.eq(norm(c.text('[data-card="company"] [data-airline-note]')), norm(T('unavailable')), 'and it says why', what='note')
+    # ---- B: with the contract (FrameData.airline / setAirline): the current one marked, the choice sent
+    c.page.add_init_script("""(() => { let fd; Object.defineProperty(window, 'FrameData', { configurable: true, get: () => fd, set: v => { fd = v; v.airline = () => ({ code: 'aiv' }); v.setAirline = async code => { window.__chosen = code } } }) })()""")
+    c.open('settings?card=company', docs=docs)
+    c.until("document.querySelectorAll('[data-card=\"company\"] li[data-airline]').length === 3", timeout=15000, what='the lines again')
+    got = rows()
+    c.eq([[r[0], r[1], r[3]] for r in got], [['dfa', False, False], ['aiv', True, False], ['perso', False, False]], 'the current airline is marked and has no button; the others can be chosen', what='current')
+    c.tap('[data-card="company"] li[data-airline="perso"] button')
+    c.until("window.__chosen === 'perso'", what='setAirline is called with the code')
+    # ---- C: add an airline: the folder and the index; a taken or bad code writes nothing
+    c.js("document.querySelector('[data-airline-add]').open = true")
+    seeded = c.doc('airline/dfa/settings.json')
+    fill = lambda name, code: (c.page.fill('[data-card="company"] [data-f="co-name"]', name), c.page.fill('[data-card="company"] [data-f="co-code"]', code))
+    fill('Taken', 'dfa')
+    c.tap('[data-act="companyAdd"]')
+    c.until(f"document.querySelector('[data-card=\"company\"] [data-msg]').textContent.trim() !== ''", what='a message')
+    c.eq([norm(c.text('[data-card="company"] [data-msg]')), c.doc('airline/dfa/settings.json') == seeded], [norm(T('taken')), True], 'a taken code: said, the existing folder is not overwritten', what='taken')
+    fill('Bad', 'BAD!')
+    c.tap('[data-act="companyAdd"]')
+    c.wait(400)
+    c.eq(norm(c.text('[data-card="company"] [data-msg]')), norm(T('badCode')), 'a bad code: said', what='bad msg')
+    c.eq(c.doc('airline/bad/settings.json'), None, 'a bad code writes nothing', what='bad')
+    fill('Air Test', 'atx')
+    c.page.check('[data-card="company"] [data-co-net="ivao"]')
+    c.tap('[data-act="companyAdd"]')
+    d = c.until_doc('airline/atx/settings.json', lambda d: bool(d), what='the settings of the new airline')
+    c.eq([d.get('name'), d.get('networks'), (c.until_doc('airline/atx/fleet.json', lambda f: bool(f), what='its empty fleet') or {}).get('aircraft')], ['Air Test', {'ivao': True, 'vatsim': False, 'offline': False}, []], 'the folder: settings (name, networks as booleans) and an empty fleet', what='new folder')
+    idx = c.until_doc('airline/index.json', lambda i: i and any(a.get('code') == 'atx' for a in i.get('airlines', [])), what='the index lists it')
+    c.eq([a['code'] for a in idx['airlines'] if a['code'] in ('dfa', 'aiv', 'atx')], ['dfa', 'aiv', 'atx'], 'the index keeps the others and lists the new one', what='index')
     c.check_errors()

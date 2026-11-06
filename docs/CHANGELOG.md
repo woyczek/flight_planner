@@ -45,6 +45,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Map: the drawing no longer overflows the view** (`modules/maps/draw.js` `OVER` = 0; SPEC § 5; noreg D97). The 5 % overflow added on
   1 Nov against the « invisible wall » at the edge cost about 1 ms more at rest; the cost rule prevails (decision of 6 Nov): the
   overlay is the view again, a pan shows the edge until the full drawing. One constant (`OVER` = .05) brings the overflow back.
+- **Settings › Company: the airline chooser and « Add an airline »** (`frame/settings/access.js` part `airline`, `settings.js`, `actions.js`; SPEC § 3 item 8; help ×4; A95)
+  — SOG-0039, V3_SPECIFICATION § 10.38 step 1: the airlines of `data/airline/index.json` and « Personnel » (name, code, networks, fleet count), the choice through
+  `FrameData.setAirline` (detected: grey and said until the frame has it), « Ajouter une compagnie » writes `data/airline/<code>/` and the index; every file read is untrusted.
+- **Launcher: `airline/migrate`, today's single airline into `data/airline/<code>/`** (`tools/regen/airline.py`; K95) — SOG-0039: the plan first (names and sizes), the code proposed
+  from the name and confirmed by the caller (`^[a-z0-9]{2,8}$`), `settings.json` and `map_profiles.json` copied, an empty `fleet.json` (said), `index.json` created or completed; nothing
+  deleted (the old `settings.json` stays as a copy), nothing overwritten (said).
 - **Data: « Ranger les sources brutes » in the inventory card** (`modules/data/inventory.js`, `model_inventory.js`, `texts.js`; SPEC § 12.1; help ×4; L29) —
   SOG-0030, the launcher's `base/move-sources`: the plan first (files by name and size, never a path), the run on confirmation, then moved / already in place /
   kept (git tracks the old one) / refused with a bounded reason, and « Remettre à leur place » (the manifest backwards); refused while an operation runs or a

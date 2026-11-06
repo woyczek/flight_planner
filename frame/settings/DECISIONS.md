@@ -593,3 +593,16 @@ moves code, `S` itself replaced through `setState` alone.
   for the user, and `frame_data` `merge.record` (≈ l. 126, `mergeText` ≈ l. 238) counts a conflict for any file changed on both sides
   although `doc.base` is known. Reported to the coordinator, not touched.
 - **Not measurable from here**: the browser's `conflicts` store (IndexedDB) and the launcher's console.
+
+## 6 November 2026 — the company card and the migration (SOG-0039, § 10.38 step 1)
+
+- **Which side the migration lives on**: a regen verb `airline/migrate` (`tools/regen/airline.py`), not `data_sync`: it is a one-shot with a plan, like `base/move-sources`, and `data_sync` stays the
+  one writer of git. It writes files in the pool (`data/airline/`); the next synchronisation sends them.
+- **Reversible details chosen** (the user is away): the code is **proposed** from the first word of the name (`DEFA Virtual` → `defa`) and must be passed back by the caller to be used for another;
+  `fleet.json` is **empty and said** (`fleet: 'empty'`): today's fleet lives in the « personal » box of the sheets (`aircraft_personal.js`) and the V2 Centre, out of this lot's reach; the
+  index is **completed** (not replaced) and capped at twenty; the destination is never overwritten (a second run says `exists`).
+- **The card**: in `access.js` (the part `airline`), not in a new file: a new file would be one more line in `frame/app.js`'s list (the frame's file). Shown at the Full level or by
+  `#settings?card=company`. Four elements per line (name, code, networks, fleet count); the logo (an address read from an untrusted file, to be drawn only by a reader that checks it) and the missions
+  count (no per-airline missions yet) wait. The list is the frame's own (`FrameData.airlines()`, V3 Frame 837f2d2fa: the index, or `default` — today's airline at the root of `data/airline/` — before the migration, then `perso`), read from the index here only for a frame without it; the choice is feature-detected (`FrameData.setAirline`, `FrameData.airline`): an old frame greys the buttons and says so (A95 checks the real frame, an old one and a stub).
+- **Not done**: a button that calls `airline/migrate` (the verb and its case exist; the gesture, plan then confirmation like `Ranger les sources brutes`, is the next lot), the airline's map
+  profiles beyond the copy, `categories.json` (SOG-0041), the personal airline under `pilot/<tri>/airline/perso/`.
