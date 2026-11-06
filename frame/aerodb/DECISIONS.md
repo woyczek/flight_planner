@@ -2490,3 +2490,20 @@ Each decision below is reversible and was taken without asking (the user is away
 - **For a workstation that relied on it**: a sheet changed in Little Navmap no longer reaches the JSON sheet by itself, and a JSON sheet no longer rewrites its `.lnmperf`: import through the Aircraft
   module's preview, or export, or press « Synchroniser maintenant ». To undo: `lnmperf: true` in the call to `AeroDB.create` (and the `start()` in `setFolder`).
 
+## 6 November 2026 — SOG-0038: the headless browsers of the builds are never left running
+
+- **What was seen**: on the morning of 6 Nov, 108 headless browser processes (profiles `%TEMP%\sog-base-<id>`) and 54 profile folders, the leftovers of 54 builds started on 5 Nov
+  between 18:00 and 19:56, during the noreg passes. They were killed by hand.
+- **Cause (reproduced)**: not the job's end-of-task code — `build()` kills the browser tree and removes the profile in a `finally`. The browser survives when the **launcher process
+  itself is stopped by force while a job runs**: on Windows `Popen.terminate()` is `TerminateProcess`, no `finally` runs, and the browser (a plain child, nothing ties it to its
+  parent) goes on for ever — its page never exits by itself. The real-launcher cases (K50, with its 150 s wait; K51 through its own browsers) did it every time a run timed out, failed
+  an assertion before the job ended, or was stopped by the runner's own timeout under load — and a runner that is itself killed leaves its K51 browsers too. K77 reproduces it on
+  `eef653ffb` (ten browser processes left after the launcher is terminated in the middle of a build). The ordinary paths (end, failure, Stop, timeout) were already clean.
+- **Now**: (1) the browser is bound to its launcher by the system: on Windows a job object with `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`, the process created suspended, assigned, then resumed, so
+  that no child escapes before the assignment; the OS closes the handle when the launcher dies, however it dies; `kill_tree` also closes it. Elsewhere the process group is still
+  killed by `kill_tree` (a launcher killed there leaves the browser: the sweep below covers it). If the binding fails the process is resumed anyway and works as before. K51 starts its
+  browsers the same way, so a stopped runner leaves none. (2) At load, `purge_stale` removes the `sog-base-*` folders older than an hour **and stops the headless browsers whose command line
+  holds one of them** (found with PowerShell / `ps`, only when a stale folder exists; `--headless` and the exact folder name are required), and says it on the launcher's output. A profile younger
+  than an hour is a job that may be running: untouched. (3) `build()` says in the job log when a profile could not be removed.
+- **To undo**: `launch_browser(…)` back to `subprocess.Popen(…)` in `build()`; the sweep is independent.
+

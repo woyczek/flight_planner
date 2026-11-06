@@ -3679,6 +3679,30 @@ def k49(c):
         c.ok(len(made) == 1 and not any(os.path.exists(p) for p in made), str(made), 'the temporary profile of the job (one) is deleted')
 
 
+def _sog_browsers(root):
+    """Process ids of the browsers whose command line names a profile folder under `root` (a private temporary folder of the case): the case's own, never another session's.
+    Written here on its own (PowerShell / ps), not with the launcher's helper, so that the check does not rest on the code it checks."""
+    import subprocess
+    import sys
+    root = str(root).replace('/', '\\').lower()
+    if sys.platform.startswith('win'):
+        out = subprocess.run(['powershell', '-NoProfile', '-NonInteractive', '-Command', "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*sog-base-*' } | ForEach-Object { '{0} {1}' -f $_.ProcessId, $_.CommandLine }"],
+                             capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=60, stdin=subprocess.DEVNULL).stdout
+    else:
+        out = subprocess.run(['ps', '-eo', 'pid=,args='], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=30, stdin=subprocess.DEVNULL).stdout
+    return [int(l.split(None, 1)[0]) for l in out.splitlines() if l.strip() and l.split(None, 1)[0].isdigit() and root in l.replace('/', '\\').lower() and 'sog-base-' in l]
+
+
+def _wait_none(fn, secs=20):
+    """The list `fn()` gives, once it is empty or after `secs` seconds."""
+    import time
+    end, got = time.time() + secs, fn()
+    while got and time.time() < end:
+        time.sleep(0.5)
+        got = fn()
+    return got
+
+
 @case('K50', 'The real launcher serves the build page to the browser the job starts, and the claim works', 'K', static=True,
       rule="D5 route B: the browser navigates to the launcher's page itself (Sec-Fetch-Site: none, already accepted); a navigation from another site stays refused; the page claims its offer once")
 def k50(c):
@@ -3702,8 +3726,11 @@ def k50(c):
         port = s.getsockname()[1]
         s.close()
         log = open(Path(td) / 'launcher.log', 'w')
+        import os
+        tmp = Path(td) / 'tmp'                     # the temporary folder of THIS launcher: the profile of its browser lands here (SOG-0038: nothing may stay after the case)
+        tmp.mkdir()
         p = subprocess.Popen([sys.executable, str(c.root / 'tools' / 'launch.py'), '--port', str(port), '--no-browser', '--data', str(data)], stdout=log, stderr=subprocess.STDOUT,
-                             stdin=subprocess.DEVNULL, cwd=td)
+                             stdin=subprocess.DEVNULL, cwd=td, env={**os.environ, 'TEMP': str(tmp), 'TMP': str(tmp), 'TMPDIR': str(tmp)})
         try:
             def call(method, path, body=None, **headers):
                 h = http.client.HTTPConnection('127.0.0.1', port, timeout=30)
@@ -3741,6 +3768,8 @@ def k50(c):
             c.eq((v.get('state'), (v.get('result') or {}).get('built')), ('done', ['ie']), 'the real launcher, the real browser and the real claim build the invented zone', what='end to end')
             c.ok((data / 'sia' / 'base' / 'ie').is_dir(), 'no output', 'the zone was written under data/sia/base/ie/')
             c.ok(json.loads(call('POST', '/__setup/regen/job/claim', {'job': job}, **hdr)[1]).get('ok') is not True, 'a claim after the end succeeded', 'a claim after the job is refused')
+            # SOG-0038: the job is over, the launcher still runs: its browser is gone and so is its profile
+            c.eq(([x.name for x in tmp.glob('sog-base-*')], _wait_none(lambda: _sog_browsers(tmp))), ([], []), 'after the job: no profile folder and no headless browser left', what='nothing left')
         finally:
             p.terminate()
             try:
@@ -3748,6 +3777,7 @@ def k50(c):
             except subprocess.TimeoutExpired:
                 p.kill()
             log.close()
+        c.eq(_wait_none(lambda: _sog_browsers(tmp)), [], 'and none after the launcher is stopped', what='after stop')
 
 
 @case('K51', 'The build page checks the claim answer before it reads anything', 'K', static=True,
@@ -3786,9 +3816,9 @@ def k51(c):
             prof = tempfile.mkdtemp(prefix='sog-base-')
             # started like the job starts it (base.build): the reduced environment (regen_jobs.child_env) and no console window: with the whole environment of the test process the browser can hand over and
             # end at once (5 Nov 2026, in a Claude Code session: exit 0 and no line for every hostile claim, the first one included)
-            flags = {'creationflags': 0x08000000} if os.name == 'nt' else {'start_new_session': True}
-            p = subprocess.Popen(cmd + B.browser_args(prof, origin.split('//')[1], f'{origin}/frame/aerodb/build/headless.html#job=job123'), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                                 stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace', env=RJ.child_env(), **flags)
+            # (B.launch_browser: also bound to this process, so that a runner stopped by force leaves no browser behind: SOG-0038)
+            p = B.launch_browser(cmd + B.browser_args(prof, origin.split('//')[1], f'{origin}/frame/aerodb/build/headless.html#job=job123'), stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+                                 text=True, encoding='utf-8', errors='replace')
             lines = []
             reader = threading.Thread(target=lambda: [lines.append(B._sogb(l)) for l in p.stderr], daemon=True)
             reader.start()
@@ -3801,6 +3831,7 @@ def k51(c):
             race[name] = {'secs': round(time.time() - t0, 1), 'exit': p.poll(), 'lines': [o for o in lines if o][:3]}
             B.kill_tree(p)
             B.remove_tree(prof)
+            c.ok(not os.path.exists(prof) and not _sog_browsers(prof), prof, f'{name}: the profile folder is removed and its browser is gone')
             srv.shutdown()
             srv.server_close()
             out[name] = ([o['error'] for o in lines if o and 'error' in o][:1], [x for x in seen if x.startswith('data/')], any(o and o.get('started') for o in lines))
@@ -3808,6 +3839,115 @@ def k51(c):
     # an answer without its error: the race named (seconds waited, the browser's exit code, the lines it wrote)
     c.eq(got, {k: (True, [], False) for k in hostile}, 'every hostile claim answer: an error said, no data file read, never « started »',
          what='hostile' + ''.join(f' — {k}: {race.get(k)}' for k, v in got.items() if not v[0]))
+
+
+@case('K77', 'A build browser never outlives its launcher: stopped by force in the middle of a build, the launcher leaves no headless browser (SOG-0038)', 'K', static=True,
+      rule='SOG-0038 (6 Nov 2026: 108 headless browsers and 54 profile folders left by the builds of a noreg pass): the browser of a job is bound to the launcher (a job object on Windows), '
+           'so a launcher stopped by force (no `finally` runs) takes it with it')
+def k77(c):
+    import http.client
+    import json
+    import os
+    import socket
+    import subprocess
+    import sys
+    import tempfile
+    import time
+    from pathlib import Path
+    RJ, B, fn, check = _d5_modules()
+    cmd = B.find_browser({})
+    if not cmd:
+        c.skip('no Edge or Chrome at a known location on this workstation')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        tmp = Path(td) / 'tmp'
+        tmp.mkdir()
+        # the real launcher stopped by force in the middle of a build: its browser goes with it
+        data = Path(td) / 'data'
+        (data / 'sia' / 'openaip').mkdir(parents=True)
+        (data / 'data_tree.js').write_text('window.DATA_TREE = {};\n', encoding='utf-8')
+        (data / 'sia' / 'openaip' / 'ie_apt.geojson').write_text(json.dumps({'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [-8.0, 53.0]},
+                                                                  'properties': {'_id': 'k77a', 'name': 'TESTFIELD', 'icaoCode': 'EITS', 'type': 2, 'trafficType': [0], 'country': 'IE'}}]}), encoding='utf-8')
+        s = socket.socket()
+        s.bind(('127.0.0.1', 0))
+        port = s.getsockname()[1]
+        s.close()
+        log = open(Path(td) / 'launcher.log', 'w')
+        p = subprocess.Popen([sys.executable, str(c.root / 'tools' / 'launch.py'), '--port', str(port), '--no-browser', '--data', str(data)], stdout=log, stderr=subprocess.STDOUT,
+                             stdin=subprocess.DEVNULL, cwd=td, env={**os.environ, 'TEMP': str(tmp), 'TMP': str(tmp), 'TMPDIR': str(tmp)})
+        try:
+            def call(method, path, body=None, **headers):
+                h = http.client.HTTPConnection('127.0.0.1', port, timeout=30)
+                h.request(method, path, body=json.dumps(body) if body is not None else None, headers=headers)
+                r = h.getresponse()
+                return r.status, r.read()
+            for _ in range(60):
+                try:
+                    if call('GET', '/', **{'Sec-Fetch-Site': 'same-origin'})[0] in (200, 302, 404):
+                        break
+                except OSError:
+                    time.sleep(0.5)
+            hdr = {'X-SOG-Setup': '1', 'Content-Type': 'application/json', 'Sec-Fetch-Site': 'same-origin'}
+            st, raw = call('POST', '/__setup/regen/job', {'set': 'base', 'verb': 'build', 'args': {'zones': ['ie']}, 'author': 'TST'}, **hdr)
+            c.eq(st, 200, 'the build job starts', what='job')
+            # the browser has started once its profile holds its first files (read from the disk: listing the processes takes seconds, and the job ends by itself in about ten)
+            end = time.time() + 60
+            while time.time() < end and not any((d / 'Local State').exists() for d in tmp.glob('sog-base-*')):
+                time.sleep(0.05)
+            c.ok(any((d / 'Local State').exists() for d in tmp.glob('sog-base-*')), 'no browser profile in 60 s', 'the job started its headless browser (profile under the launcher\'s temporary folder)')
+            p.terminate()                       # TerminateProcess on Windows: no `finally` of the launcher runs
+            p.wait(10)
+            left = _wait_none(lambda: _sog_browsers(tmp), 20)
+            c.eq(left, [], 'the launcher was stopped by force in the middle of the build: no browser of its job is left (the profile folder stays, the next start sweeps it)', what='no orphan')
+        finally:
+            if p.poll() is None:
+                p.kill()
+            log.close()
+            for pid in _sog_browsers(tmp):                   # whatever happens, the case leaves nothing running
+                try:
+                    subprocess.run(['taskkill', '/PID', str(pid), '/T', '/F'], capture_output=True, timeout=30) if os.name == 'nt' else os.kill(pid, 9)
+                except (OSError, subprocess.SubprocessError):
+                    pass
+
+
+@case('K78', 'The launcher sweeps the leftovers of a stopped one at start: sog-base-* profiles older than an hour and the browsers that hold them, never a recent one (SOG-0038)', 'K', static=True,
+      rule='SOG-0038: at start the launcher says and removes the sog-base-* profiles older than an hour and stops the headless browsers that still hold them; a profile of a running job (recent) and its browser are never touched')
+def k78(c):
+    import os
+    import subprocess
+    import tempfile
+    import time
+    from pathlib import Path
+    RJ, B, fn, check = _d5_modules()
+    cmd = B.find_browser({})
+    if not cmd:
+        c.skip('no Edge or Chrome at a known location on this workstation')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        tmp = Path(td) / 'tmp'
+        tmp.mkdir()
+        # a stale profile held by a live browser, and a recent one held by another
+        stale, young = tmp / 'sog-base-stale001', tmp / 'sog-base-young002'
+        procs = {}
+        for d in (stale, young):
+            d.mkdir()
+            procs[d.name] = subprocess.Popen(cmd + B.browser_args(str(d), '127.0.0.1:1', 'about:blank'), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=RJ.child_env())
+        try:
+            end = time.time() + 30
+            while time.time() < end and not (len(_sog_browsers(stale)) and len(_sog_browsers(young))):
+                time.sleep(0.5)
+            c.ok(_sog_browsers(stale) and _sog_browsers(young), 'browsers did not start', 'two headless browsers hold two profiles')
+            long_ago = time.time() - 7200
+            os.utime(stale, (long_ago, long_ago))
+            said = []
+            gone = B.purge_stale(str(tmp), say=said.append)
+            c.eq((gone, [x.name for x in tmp.glob('sog-base-*')]), (['sog-base-stale001'], ['sog-base-young002']), 'the profile older than an hour is removed, the recent one stays', what='sweep dirs')
+            c.eq((_wait_none(lambda: _sog_browsers(stale), 10), bool(_sog_browsers(young))), ([], True), 'the browser holding the stale profile is stopped, the one holding the recent profile runs on', what='sweep processes')
+            c.ok(len(said) == 1 and '1 profil' in said[0] and 'processus' in said[0], str(said), 'and the sweep says what it did (one line)')
+            c.eq(B.purge_stale(str(tmp), say=said.append), [], 'a second sweep finds nothing and says nothing', what='second sweep')
+            c.eq(len(said), 1, 'no second line', what='quiet')
+        finally:
+            for pr in procs.values():
+                B.kill_tree(pr)
+            B.remove_tree(str(young))
 
 
 @case('K58', 'openAIP aerodromes: runways, bearing, hardLen and magVar derived like the SIA gives them to France', 'K', tags=('aerodb',), phone=False,

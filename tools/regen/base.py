@@ -148,6 +148,74 @@ def system_directory():
     return buf.value
 
 
+# ----------------------------------------------------------------------------------------------------------------------- le navigateur lié au lanceur (SOG-0038)
+# Le navigateur d'une construction ne doit JAMAIS survivre à ce qui l'a lancé. Le `finally` de build() le termine à la fin, en échec, à l'arrêt demandé ; mais si le lanceur lui-même est
+# tué (TerminateProcess : un essai qui l'arrête en plein travail, l'arrêt brutal d'un poste, le gestionnaire des tâches), aucun `finally` ne tourne et le navigateur reste, avec son profil
+# (06/11/2026 : 108 processus et 54 profils trouvés le matin, les restes de 54 constructions des passes de noreg de la veille). Sous Windows le navigateur est donc mis dans un objet de
+# travail (Job) « KILL_ON_JOB_CLOSE » : le système ferme la poignée à la mort du lanceur, quelle qu'elle soit, et tue tout le groupe. Ailleurs, le groupe de processus (start_new_session)
+# reste tué par kill_tree ; les restes d'un lanceur tué sont balayés au chargement suivant (purge_stale).
+def _job_api():
+    """Les fonctions Windows de l'objet de travail, typées (poignées sur 64 bits) ; None hors Windows."""
+    if not sys.platform.startswith('win'):
+        return None
+    from ctypes import wintypes
+    k = ctypes.WinDLL('kernel32', use_last_error=True)
+    k.CreateJobObjectW.restype, k.CreateJobObjectW.argtypes = wintypes.HANDLE, [ctypes.c_void_p, wintypes.LPCWSTR]
+    k.SetInformationJobObject.restype, k.SetInformationJobObject.argtypes = wintypes.BOOL, [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
+    k.AssignProcessToJobObject.restype, k.AssignProcessToJobObject.argtypes = wintypes.BOOL, [wintypes.HANDLE, wintypes.HANDLE]
+    k.CloseHandle.restype, k.CloseHandle.argtypes = wintypes.BOOL, [wintypes.HANDLE]
+    nt = ctypes.WinDLL('ntdll')
+    nt.NtResumeProcess.restype, nt.NtResumeProcess.argtypes = ctypes.c_long, [wintypes.HANDLE]
+    return k, nt
+
+
+def _bind_to_launcher(proc):
+    """Met le processus (créé SUSPENDU) dans un objet de travail qui le tue, lui et ses enfants, quand sa dernière poignée se ferme, c'est-à-dire à la mort du lanceur ; puis le reprend. Toujours
+    repris, même si la liaison échoue (le lanceur fonctionne alors comme avant). Rend la poignée de l'objet (0 si aucune), que kill_tree ferme."""
+    from ctypes import wintypes
+    k, nt = _job_api()
+    job = 0
+    try:
+        class Basic(ctypes.Structure):
+            _fields_ = [('PerProcessUserTimeLimit', ctypes.c_int64), ('PerJobUserTimeLimit', ctypes.c_int64), ('LimitFlags', wintypes.DWORD), ('MinimumWorkingSetSize', ctypes.c_size_t),
+                        ('MaximumWorkingSetSize', ctypes.c_size_t), ('ActiveProcessLimit', wintypes.DWORD), ('Affinity', ctypes.c_size_t), ('PriorityClass', wintypes.DWORD),
+                        ('SchedulingClass', wintypes.DWORD)]
+
+        class Counters(ctypes.Structure):
+            _fields_ = [(n, ctypes.c_uint64) for n in ('ReadOps', 'WriteOps', 'OtherOps', 'ReadBytes', 'WriteBytes', 'OtherBytes')]
+
+        class Extended(ctypes.Structure):
+            _fields_ = [('Basic', Basic), ('Io', Counters), ('ProcessMemoryLimit', ctypes.c_size_t), ('JobMemoryLimit', ctypes.c_size_t), ('PeakProcessMemoryUsed', ctypes.c_size_t),
+                        ('PeakJobMemoryUsed', ctypes.c_size_t)]
+        h = k.CreateJobObjectW(None, None)
+        if h:
+            info = Extended()
+            info.Basic.LimitFlags = 0x2000                    # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+            if k.SetInformationJobObject(h, 9, ctypes.byref(info), ctypes.sizeof(info)) and k.AssignProcessToJobObject(h, int(proc._handle)):
+                job = h
+            else:
+                k.CloseHandle(h)
+    except (OSError, AttributeError, ValueError, TypeError):
+        job = 0
+    finally:
+        nt.NtResumeProcess(int(proc._handle))
+    return job
+
+
+def launch_browser(cmd, **kw):
+    """Lance le navigateur sans tête de la façon unique de la tâche (et des essais) : sans fenêtre de console, l'environnement réduit, et lié au lanceur (voir plus haut) pour qu'il ne lui survive
+    pas. Rend le Popen ; `proc.job` est la poignée de l'objet de travail (Windows, 0 sinon)."""
+    kw.setdefault('stdin', subprocess.DEVNULL)
+    kw.setdefault('env', regen_jobs.child_env())
+    if sys.platform.startswith('win'):
+        proc = subprocess.Popen(cmd, creationflags=0x08000000 | 0x00000004, **kw)       # CREATE_NO_WINDOW | CREATE_SUSPENDED
+        proc.job = _bind_to_launcher(proc)
+    else:
+        proc = subprocess.Popen(cmd, start_new_session=True, **kw)
+        proc.job = 0
+    return proc
+
+
 def kill_tree(proc):
     """Arrête le processus et tous ses enfants (Windows : taskkill /T /F par numéro, liste d'arguments, jamais d'interpréteur de commandes ;
     ailleurs : le groupe de processus) puis attend sa fin. Ne lève jamais."""
@@ -170,6 +238,12 @@ def kill_tree(proc):
         proc.wait(timeout=15)
     except (OSError, subprocess.SubprocessError):
         pass
+    job, proc.job = getattr(proc, 'job', 0), 0
+    if job:                                  # fermer l'objet de travail tue ce qui resterait du groupe (un enfant qui s'est détaché de l'arbre)
+        try:
+            _job_api()[0].CloseHandle(job)
+        except (OSError, AttributeError):
+            pass
 
 
 def remove_tree(path):
@@ -191,11 +265,48 @@ def remove_tree(path):
 
 
 # ----------------------------------------------------------------------------------------------------------------------- mémoire et cœurs
-def purge_stale(folder=None, older=STALE, now=None):
+def _orphan_pids(leaves):
+    """Les numéros des processus de navigateur sans tête dont la ligne de commande porte `--user-data-dir=…<un des dossiers>` (leaves : noms `sog-base-*`) ; [] si la liste des processus
+    ne se lit pas. Windows : Get-CimInstance par PowerShell (chemin absolu du dossier système) ; ailleurs : ps."""
+    try:
+        if sys.platform.startswith('win'):
+            ps = os.path.join(system_directory(), 'WindowsPowerShell', 'v1.0', 'powershell.exe')
+            out = subprocess.run([ps, '-NoProfile', '-NonInteractive', '-Command', "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*sog-base-*' } | "
+                                  "ForEach-Object { '{0} {1}' -f $_.ProcessId, $_.CommandLine }"], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=60,
+                                 stdin=subprocess.DEVNULL).stdout
+        else:
+            out = subprocess.run(['ps', '-eo', 'pid=,args='], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=30, stdin=subprocess.DEVNULL).stdout
+    except (OSError, subprocess.SubprocessError):
+        return []
+    pids = []
+    for line in out.splitlines():
+        m = re.match(r'\s*(\d+)\s+(.*)$', line)
+        d = re.search(r'--user-data-dir=("?)(?:[^"]*[\\/])?(sog-base-[\w-]+)\1(?:\s|$)', m.group(2)) if m else None
+        if d and d.group(2) in leaves and '--headless' in m.group(2) and int(m.group(1)) != os.getpid():
+            pids.append(int(m.group(1)))
+    return pids
+
+
+def _kill_pids(pids):
+    for pid in pids:
+        try:
+            if sys.platform.startswith('win'):
+                subprocess.run([os.path.join(system_directory(), 'taskkill.exe'), '/PID', str(pid), '/T', '/F'], capture_output=True, timeout=30, stdin=subprocess.DEVNULL)
+            else:
+                os.kill(pid, signal.SIGKILL)
+        except (OSError, subprocess.SubprocessError):
+            pass
+
+
+def purge_stale(folder=None, older=STALE, now=None, say=None):
     """Supprime les restes d'un lanceur arrêté en pleine construction : les dossiers `sog-base-*` du dossier temporaire, plus vieux que `older` secondes
-    (donc jamais le profil d'un travail en cours). Seulement ce préfixe, seulement des dossiers : un lien (ou une jonction) n'est jamais suivi ni supprimé.
+    (donc jamais le profil d'un travail en cours), ET les navigateurs sans tête qui les tiennent encore (SOG-0038 : sans eux le dossier ne part pas, et ils tournent des heures).
+    Seulement ce préfixe, seulement des dossiers : un lien (ou une jonction) n'est jamais suivi ni supprimé ; seulement des processus dont la ligne de commande porte `--headless`
+    et le profil d'un dossier périmé. Dit ce qu'il fait (`say`, par défaut une ligne du journal du lanceur quand le dossier est le dossier temporaire du poste).
     Rend la liste des noms supprimés. Ne lève jamais."""
-    folder, now, gone = folder or tempfile.gettempdir(), now or time.time(), []
+    if say is None and folder is None:
+        say = lambda msg: print(msg, flush=True)
+    folder, now, gone, stale = folder or tempfile.gettempdir(), now or time.time(), [], []
     try:
         with os.scandir(folder) as it:
             for e in it:
@@ -203,12 +314,21 @@ def purge_stale(folder=None, older=STALE, now=None):
                     link = e.is_symlink() or (hasattr(os.path, 'isjunction') and os.path.isjunction(e.path))
                     if not e.name.startswith('sog-base-') or link or not e.is_dir(follow_symlinks=False) or now - e.stat(follow_symlinks=False).st_mtime < older:
                         continue
-                    if remove_tree(e.path):
-                        gone.append(e.name)
+                    stale.append(e)
                 except OSError:
                     continue
     except OSError:
         pass
+    killed = _orphan_pids({e.name for e in stale}) if stale else []
+    _kill_pids(killed)
+    for e in stale:
+        try:
+            if remove_tree(e.path):
+                gone.append(e.name)
+        except OSError:
+            continue
+    if say and (gone or killed):
+        say(f'[base] restes de constructions interrompues : {len(gone)} profil(s) sog-base-* retiré(s), {len(killed)} processus de navigateur arrêté(s)')
     return gone
 
 
@@ -496,10 +616,8 @@ def build(job, args, ctx):
         publish_progress()    # la liste, toutes les zones « en attente »
     try:
         try:
-            flags = {'creationflags': 0x08000000} if sys.platform.startswith('win') else {'start_new_session': True}
-            # environnement réduit (regen_jobs.child_env) : le navigateur ne reçoit pas les identifiants du lanceur
-            proc = subprocess.Popen(cmd + browser_args(profile, netloc, f'{origin}/{PAGE}#job={job.id}'), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                                    stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace', env=regen_jobs.child_env(), **flags)
+            # environnement réduit (regen_jobs.child_env) : le navigateur ne reçoit pas les identifiants du lanceur ; lié au lanceur : il ne lui survit pas (launch_browser, SOG-0038)
+            proc = launch_browser(cmd + browser_args(profile, netloc, f'{origin}/{PAGE}#job={job.id}'), stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace')
         except (OSError, ValueError) as e:
             for z in zones:
                 update(z, state='failed', error='browser-failed', message=str(e)[:200])
@@ -565,7 +683,8 @@ def build(job, args, ctx):
                 finish(zone, got, z0)
     finally:
         kill_tree(proc)
-        remove_tree(profile)
+        if not remove_tree(profile):
+            job.log(f'profil temporaire non retiré ({os.path.basename(profile)}) : retiré au prochain démarrage du lanceur')
         job.data['zones'] = {z: dict(st[z]) for z in zones}
     built = [z for z in zones if st[z]['state'] == 'built']
     failed = [{'zone': z, 'error': st[z].get('error') or st[z]['state']} for z in zones if st[z]['state'] == 'failed']

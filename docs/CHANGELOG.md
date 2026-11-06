@@ -18,6 +18,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   characters (a base rebuilt or a folder received changes thousands of files at once). The paths now go in several commands, none
   over 20 000 characters of paths; the result does not depend on the cut.
 
+- **Launcher: the headless browsers of the base builds no longer outlive the launcher** (`tools/regen/base.py`; aerodb INTEGRATION and DECISIONS; noreg K77, K78, K50, K51; SOG-0038).
+  A launcher stopped by force in the middle of a build left its browser running for ever (108 processes and 54 profile folders found on 6 Nov after the noreg passes): the browser is now
+  bound to the launcher by the system (a Windows job object), and at start the launcher says and removes the `sog-base-*` profiles older than an hour and stops the browsers that
+  still hold them.
+
 - **Fuel: an aerodrome is never a point of the route** (`frame/lib/route_model.js`; Fuel SPEC § 9.3, frame INTEGRATION; noreg F93,
   route_model bench; SOG-0033). An aerodrome at the head of the route text that is not the departure, at its end that is not the arrival,
   or the departure / arrival repeated inside, is dropped from the points and the normalised text: after a new pair the list starts with

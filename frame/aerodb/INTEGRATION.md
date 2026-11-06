@@ -365,6 +365,11 @@ const r = await ctx.launcher.job('regen/job', { set: 'base', verb: 'build', args
 - **How the page is started (route B)**: the verb offers `{ zones, cycle, personal, inputs }` to the job (`job.offer`), starts the browser on
   `<launcher>/frame/aerodb/build/headless.html#job=<id>` and nothing else (no token, no parameter on the command line); the page makes one
   `POST regen/job/claim` and gets the offer and the token, checks them, and reads. The module has nothing to do with it.
+- **The browser never outlives the launcher (SOG-0038, 6 Nov 2026)**: the verb starts it through `base.launch_browser` — on Windows suspended, put in a job object
+  with `KILL_ON_JOB_CLOSE`, then resumed — so that a launcher stopped by force (no `finally` runs) takes the browser and its children with it; `build()`'s `finally`
+  still ends it and removes its profile in every ordinary case (end, failure, timeout, Stop) and says in the job log when a profile could not be removed. At load,
+  the launcher says and removes the `sog-base-*` profiles older than an hour **and stops the headless browsers still holding them** (`purge_stale`; a recent
+  profile, and its browser, is a running job and is never touched). Tests: K77 (launcher killed in the middle of a build), K78 (the sweep), K50 and K51 (nothing left).
 - **Cost, measured on 30 Oct 2026** (24 cores, ten zones `fr gb es de it be ch ie nl nat`): 10 to 12 s through the launcher (the first zone out after 6 to
   8 s, then 0.45 s per zone for the write and the git commit), 1.3 GB private at most; the page's own build of the same zones in one page: 6 s, without the
   commits (DECISIONS 30 Oct 2026).

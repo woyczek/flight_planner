@@ -779,8 +779,8 @@ entry) are the same.
   `cities_major.json` when it changed; author = the page's trigram); a zone that fails (the page says so, the output is invalid) writes and commits nothing
   and **stops no other**; if the browser itself goes, the zones not yet received fail with `browser-exited`.
 - **The browser** (security): found by absolute path only; options `--headless=new`, a `mkdtemp` profile deleted after (even on failure or cancel; the
-  leftovers of an interrupted launcher, `sog-base-*` folders of the temp folder older than an hour, are purged when the verbs are loaded, never following a
-  link), a dead proxy with `<-loopback>;<launcher address>` bypassed, hosts not resolved, WebRTC limited to the proxy
+  leftovers of an interrupted launcher, `sog-base-*` folders of the temp folder older than an hour **and the headless browsers still holding them**, are purged and said when the verbs are loaded, never following a
+  link; the browser is bound to the launcher, on Windows by a job object `KILL_ON_JOB_CLOSE`, so a launcher stopped by force takes it along: SOG-0038, DECISIONS 6 Nov 2026), a dead proxy with `<-loopback>;<launcher address>` bypassed, hosts not resolved, WebRTC limited to the proxy
   (`--force-webrtc-ip-handling-policy=disable_non_proxied_udp`); a time limit; the process tree killed with `taskkill` found by `GetSystemDirectoryW`.
 
 ### The jobs `base/fetch` and `base/purge` — raw sources of a zone (30 Oct 2026)
