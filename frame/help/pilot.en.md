@@ -47,7 +47,8 @@ hand-off to the airline website. It works on a phone as on a computer, with or w
   token, or a workstation's launcher). Your writes leave together at synchronisation: at start, every 10 minutes
   online, or with the status button at the top of the screen.
 - **Conflicts.** A file changed here and elsewhere at the same time keeps its newest version; the other one stays
-  available (status button, then "Conflicts") and can be taken back.
+  available (status button, then "Conflicts") and can be taken back; "Seen" takes a conflict off the list and the count, "Mark
+  all as seen" does it for all of them at once.
 
 <!-- chapter: fuel -->
 # Fuel and level

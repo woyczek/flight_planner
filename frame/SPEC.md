@@ -715,6 +715,9 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
 - Each unseen conflict shows the file and its date, the version set aside (this device's or another device's) and the
   version kept.
 - Two actions: "Take this version back" (`FrameData.restore`) and "Seen".
+- **"Mark all as seen (n)"** (6 Nov 2026, SOG-0043): above the list, `n` = the unseen conflicts (the count of the sync button and of
+  the Synchronisation card); one click calls `FrameData.conflictSeen` on each of them and the count falls to zero at once; absent
+  when `n` = 0 (even with the seen ones shown). For the old conflicts a device keeps; the two actions of each conflict are unchanged.
 - **A write refused for good** (`side: 'refused'`): the transport refused that file itself, not the batch's timing
   (the launcher: a path or file type it never accepts, answered 400 with that `path`).
   - The data layer takes the write out of the queue, so the next writes leave and the button no longer shows a

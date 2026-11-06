@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Conflicts screen: « Mark all as seen (n) »** (`frame/app.js` `renderConflicts`; frame SPEC § 3.4, DECISIONS; help ×4; noreg A92;
+  SOG-0043). One click marks every unseen conflict as seen (the old ones a device keeps), the count of the Synchronisation card falls to
+  zero at once; absent when none is unseen; « Seen » and « Take this version back » of each conflict are unchanged.
+
 - **Frame: the synchronisation counts a conflict only when one is** (`frame/store/frame_data.js`, `frame/app.js`; frame INTEGRATION, SPEC,
   DECISIONS; noreg A53, A91; SOG-0043). Two versions of a file that say the same thing (`updated_at` aside, key order, layout) are no
   conflict; for a `record` file with a known base the merge is by top-level key (a key changed on one side is taken, a conflict is

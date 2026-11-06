@@ -3377,6 +3377,9 @@
     refusedDel: ['(une suppression)', '(a deletion)', '(eine Löschung)', '(una eliminación)'],
     restore: ['Reprendre cette version', 'Take this version back', 'Diese Version zurücknehmen', 'Recuperar esta versión'],
     seen: ['Vu', 'Seen', 'Gesehen', 'Visto'],
+    allSeen: ['Tout marquer comme vu ({n})', 'Mark all as seen ({n})', 'Alle als gesehen markieren ({n})',
+      'Marcar todo como visto ({n})'
+    ],
     restored: ['Version reprise : elle partira à la prochaine synchronisation.',
       'Version taken back: it will leave at the next synchronisation.',
       'Version zurückgenommen: sie geht bei der nächsten Synchronisation hinaus.',
@@ -3384,10 +3387,17 @@
     ]
   };
   async function renderConflicts(view, all = false) {
-    const list = (await FD.conflicts()).filter(c => all || !c.seen).sort((a, b) => String(b.at).localeCompare(String(a.at)));
-    view.innerHTML = `<h1>${esc(t(C.title))}</h1><p class="f-muted">${esc(t(C.intro))}</p><label class="f-check"><input type="checkbox" data-all ${all ? 'checked' : ''}>${esc(t(C.all))}</label>${list.length ? list.map(c => `<div class="f-card" data-id="${c.id}">${c.side === 'refused' ? `<b>${esc(t(C.refused, { p: c.path }))}</b> <span class="f-muted">${esc(tz('fmtDateZ', c.at))}</span><p class="f-muted">${esc(t(C.refusedWhy, { s: c.by || '?', w: c.why || '?' }))}</p><details><summary>${esc(c.path)}</summary><pre>${esc(c.lost || t(C.refusedDel))}</pre></details>` : `<b>${esc(c.path)}</b> <span class="f-muted">${esc(tz('fmtDateZ', c.at))}</span><details><summary>${esc(t(c.side === 'local' ? C.lostLocal : C.lostRemote))}</summary><pre>${esc(c.lost)}</pre></details><details><summary>${esc(t(C.kept))}</summary><pre>${esc(c.kept)}</pre></details>`}<div class="f-row">${c.restored ? '' : `<button type="button" class="primary" data-restore>${esc(t(C.restore))}</button>`}${c.seen ? '' : `<button type="button" data-seen>${esc(t(C.seen))}</button>`}</div></div>`).join('') : `<p class="f-card">${esc(t(C.none))}</p>`}`;
+    const every = await FD.conflicts(),
+      unseen = every.filter(c => !c.seen).length, // le compte de la carte Synchronisation : les non vus, tous
+      list = every.filter(c => all || !c.seen).sort((a, b) => String(b.at).localeCompare(String(a.at)));
+    view.innerHTML = `<h1>${esc(t(C.title))}</h1><p class="f-muted">${esc(t(C.intro))}</p><label class="f-check"><input type="checkbox" data-all ${all ? 'checked' : ''}>${esc(t(C.all))}</label>${unseen ? `<div class="f-row"><button type="button" data-allseen>${esc(t(C.allSeen, { n: unseen }))}</button></div>` : ''}${list.length ? list.map(c => `<div class="f-card" data-id="${c.id}">${c.side === 'refused' ? `<b>${esc(t(C.refused, { p: c.path }))}</b> <span class="f-muted">${esc(tz('fmtDateZ', c.at))}</span><p class="f-muted">${esc(t(C.refusedWhy, { s: c.by || '?', w: c.why || '?' }))}</p><details><summary>${esc(c.path)}</summary><pre>${esc(c.lost || t(C.refusedDel))}</pre></details>` : `<b>${esc(c.path)}</b> <span class="f-muted">${esc(tz('fmtDateZ', c.at))}</span><details><summary>${esc(t(c.side === 'local' ? C.lostLocal : C.lostRemote))}</summary><pre>${esc(c.lost)}</pre></details><details><summary>${esc(t(C.kept))}</summary><pre>${esc(c.kept)}</pre></details>`}<div class="f-row">${c.restored ? '' : `<button type="button" class="primary" data-restore>${esc(t(C.restore))}</button>`}${c.seen ? '' : `<button type="button" data-seen>${esc(t(C.seen))}</button>`}</div></div>`).join('') : `<p class="f-card">${esc(t(C.none))}</p>`}`;
     view.querySelector('[data-all]').onchange = e => renderConflicts(view, e.target.checked);
     view.onclick = async e => {
+      if (e.target.closest(
+          '[data-allseen]')) { // tous les non vus d'un coup (les anciens conflits d'un appareil) : « Vu » sur chacun
+        for (const c of (await FD.conflicts()).filter(x => !x.seen)) await FD.conflictSeen(c.id);
+        return renderConflicts(view, all);
+      }
       const card = e.target.closest('[data-id]');
       if (!card) return;
       const id = +card.dataset.id;

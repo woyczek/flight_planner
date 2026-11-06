@@ -2525,3 +2525,9 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   copies) and `newer` of the anonymous-to-trigram migration (`app.js`, now `FrameData.isNewer`); `liveCheck` already compared instants
   (a8132a34d). An unreadable stamp no longer orders as text: it counts as the oldest. Noreg A53 (the store bench: five merge scenarios
   and the instants) and A91 (the migration), red on e902fe003. No atomic `update(path, fn)`: no case showed the need.
+- **6 Nov 2026 — « Mark all as seen (n) » on the conflicts screen** (SOG-0043; Simplification, on the user's word: eight old conflicts on
+  the workstation, only the single « Seen » existed; V3 Frame): a button above the list of `renderConflicts` (`app.js`), `n` = every
+  unseen conflict (not only the listed ones: the same count as the status), that calls `conflictSeen` on each (no new data-layer call:
+  nothing is deleted, the conflicts stay behind « Also show conflicts already seen », « Take this version back » still works on them).
+  Absent when none is unseen. Help ×4 (the `intro` sources, `pilot.*` regenerated). Noreg A92 (eight conflicts → one click → 0, the
+  per-conflict buttons unchanged, none left unseen: no button), red without the button.

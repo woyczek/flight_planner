@@ -3434,3 +3434,28 @@ def a91(c):
     lost = c.js("() => FrameData.conflicts().then(cs => cs.filter(x => x.path.startsWith('pilot/ABC/reports/')).map(x => [x.path, JSON.parse(x.lost).v]).sort())")
     c.eq(lost, [['pilot/ABC/reports/r1.json', 'anon'], ['pilot/ABC/reports/r2.json', 'abc']], 'the loser of each is kept in the conflicts', what='conflicts')
     c.check_errors()
+
+
+@case('A92', 'Conflicts: « Mark all as seen (n) » clears the old ones in one click; the Synchronisation card’s count falls to zero', 'A', tags=('data',),
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule='SOG-0043 (frame/app.js renderConflicts, V3 Frame): a button with the count of the unseen conflicts marks them all seen (conflictSeen on each); absent when there is none; the count of the Synchronisation card falls to zero at once; « Seen » of each conflict and « Take this version back » unchanged')
+def a92(c):
+    c.open('settings')
+    c.js("""async () => { for (let i = 0; i < 8; i++) await FrameData.noteConflict({ path: `pilot/ABC/old/${i}.json`, kept: '{"v":"kept"}', lost: '{"v":"lost"}', side: 'remote' }) }""")
+    # the count of the Synchronisation card (access.js: « See the conflicts (n) ») and of the status button is FrameData.status().conflicts
+    c.eq(c.js("() => FrameData.status().then(s => s.conflicts)"), 8, 'eight old conflicts kept on the device', what='status before')
+    c.page.evaluate("() => { location.hash = '#conflicts' }")
+    c.until("!!document.querySelector('[data-allseen]')", timeout=10000, what='the button of the unseen conflicts')
+    btn = c.text('[data-allseen]')
+    n = lambda: c.count('#fView .f-card[data-id]')
+    c.eq(n(), 8, 'eight cards, each with « Seen » and « Take this version back »', what='cards')
+    c.eq((c.count('#fView .f-card[data-id] [data-seen]'), c.count('#fView .f-card[data-id] [data-restore]')), (8, 8), 'the buttons of each conflict stay', what='per-conflict buttons')
+    c.ok('8' in btn, btn, 'the button carries the count of the unseen conflicts (8)')
+    c.page.click('[data-allseen]')
+    c.until("!document.querySelector('[data-allseen]')", timeout=10000, what='the button is gone once none is left')
+    c.eq(c.js("() => FrameData.status().then(s => s.conflicts)"), 0, 'the count falls to zero at once', what='status after')
+    c.eq(n(), 0, 'the list is empty (the seen ones are behind the checkbox)', what='cards after')
+    c.page.check('[data-all]')
+    c.until("document.querySelectorAll('#fView .f-card[data-id]').length === 8", timeout=10000, what='the seen ones are still kept')
+    c.eq(c.count('[data-allseen]'), 0, 'no button while none is unseen, even with the seen ones shown', what='button absent')
+    c.check_errors()

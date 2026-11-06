@@ -47,7 +47,8 @@ vuelos, paso al sitio de la aerolínea. Funciona en un teléfono como en un orde
   personal, o el lanzador de un puesto). Sus escrituras salen juntas en la sincronización: al inicio, cada 10 minutos en
   línea, o con el botón de estado arriba en la pantalla.
 - **Conflictos.** Un fichero cambiado aquí y en otro lugar a la vez conserva su versión más reciente; la otra sigue
-  disponible (botón de estado, luego «Conflictos») y puede recuperarse.
+  disponible (botón de estado, luego «Conflictos») y puede recuperarse; «Visto» quita un conflicto de la lista y del recuento, «Marcar
+  todo como visto» lo hace con todos a la vez.
 
 <!-- chapter: fuel -->
 # Combustible y nivel

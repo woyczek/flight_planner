@@ -48,4 +48,5 @@ Computer, mit oder ohne Netz.
   (GitHub-Repository und persönliches Token oder der Starter eines Rechners). Ihre Änderungen gehen gemeinsam bei der
   Synchronisation hinaus: beim Start, alle 10 Minuten online oder über die Statusschaltfläche oben am Bildschirm.
 - **Konflikte.** Eine hier und anderswo gleichzeitig geänderte Datei behält ihre neueste Version; die andere bleibt
-  einsehbar (Statusschaltfläche, dann „Konflikte“) und kann zurückgenommen werden.
+  einsehbar (Statusschaltfläche, dann „Konflikte“) und kann zurückgenommen werden; „Gesehen“ nimmt einen Konflikt aus der Liste und
+  der Zählung, „Alle als gesehen markieren“ tut das für alle auf einmal.

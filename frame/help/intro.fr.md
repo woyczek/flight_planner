@@ -46,4 +46,5 @@ mes vols, passage au site de la compagnie. Elle marche sur un téléphone comme 
   personnel, ou le lanceur d'un poste). Vos écritures partent ensemble à la synchronisation : au démarrage, toutes les
   10 minutes en ligne, ou par le bouton d'état en haut de l'écran.
 - **Conflits.** Un fichier changé ici et ailleurs en même temps garde sa version la plus récente ; l'autre reste
-  consultable (bouton d'état, puis « Conflits ») et peut être reprise.
+  consultable (bouton d'état, puis « Conflits ») et peut être reprise ; « Vu » écarte un conflit de la liste et du compte, « Tout
+  marquer comme vu » le fait pour tous d'un coup.
