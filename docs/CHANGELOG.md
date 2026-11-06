@@ -23,6 +23,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   characters (a base rebuilt or a folder received changes thousands of files at once). The paths now go in several commands, none
   over 20 000 characters of paths; the result does not depend on the cut.
 
+- **Procedures: LFLL approaches no longer vanish, and OKASI 2A of Orly is answered** (`tools/proc_sia.py`, `tools/proc_records.py`; aerodb SPEC § 5 quinquies and DECISIONS 6 Nov; noreg K79, K80, K25, K33; SOG-0044). The reader of the SIA coding tables drops fewer rows: rows of six cells are counted (they
+  vanished silently), a lost « TF », « y es », « RW17 R y es », « -1 .0 », « RNAV 1-- » and the vertical-angle column are repaired, a lone altitude whose column the page does not say is left unread (said), the LFLL SID page with the fly-over before the terminator is read, and the `FL17L` FAF has its position. Lyon: 4 RNP and 8 INA RNAV approaches, all « check »
+  (4 were « doubt », 4 missing), plus the ILS 17L, 35L and 35R as a final (FAF → threshold; the SIA publishes no table for them, and their transitions are on the chart only). Orly has no OKASI 2A in the AIP in force (OKASI 2Y and 2S on runway 20, both read). To read the new data, read LFLL again from the Données module.
+
 - **Launcher: the headless browsers of the base builds no longer outlive the launcher** (`tools/regen/base.py`; aerodb INTEGRATION and DECISIONS; noreg K77, K78, K50, K51; SOG-0038).
   A launcher stopped by force in the middle of a build left its browser running for ever (108 processes and 54 profile folders found on 6 Nov after the noreg passes): the browser is now
   bound to the launcher by the system (a Windows job object), and at start the launcher says and removes the `sog-base-*` profiles older than an hour and stops the browsers that

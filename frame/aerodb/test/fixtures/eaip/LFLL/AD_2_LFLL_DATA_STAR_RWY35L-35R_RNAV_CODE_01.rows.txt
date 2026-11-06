@@ -1,0 +1,47 @@
+AD 2 LFLL DATA STAR RWY35L-35R RNAV CODE 01AIP
+19 MAR 2026FRANCE
+LYON SAINT EXUPERY
+STAR RNAV LFLL RWY 35L-35R - LFLY RWY 34
+(Protégées pour / Protected for CAT A, B, C, D)
+AMDT 03/26© Service de l'Information Aéronautique, France
+STAR RNAV LFLL RWY 35L-35R - LFLY RWY34
+RMK MAG VAR 2025 2.6 °E GNSS ou /or DME/DME (IRU requis/required) REF NAVAID : LSE
+Procedure Path Waypoint
+Identifcation Terminator Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+HLDG
+ARBON -- - --- - - - - -
+GOMET -- - --- - - - - -
+TALAR -- - --- - - - - -
+RIPTU -- - --- - - - - -
+MEZIN 9N
+- IF MEZIN - - - - - - - - 1.0
+- TF ROLIR - 069 071.1 29.1 - FL070 - - 1.0
+- TF ARBON - 014 016.8 6.8 - FL070 - - 1.0
+PINED 9N
+- IF PINED - - - - - - - - 1.0
+- TF LL103 - 357 359.7 8.3 - - FL130 - 1.0
+- TF OSMAS - 357 359.6 8.5 - FL100 - - 1.0
+- TF GOMET - 342 345.1 5.0 - FL100 - - 1.0
+AMVAR 9N
+- IF AMVAR - - - - - - FL150 - 1.0
+- TF LL101 - 258 260.4 9.5 - - - - 1.0
+- TF LL102 - 258 260.2 3.0 - - - - 1.0
+- TF OSMAS - 258 260.2 5.5 - FL100 - - 1.0
+- TF GOMET - 342 345.1 5.0 - FL100 - - 1.0
+MILPA 9N
+- IF MILPA - - - - - - FL180 - 1.0
+- TF KUDUP - 249 251.1 13.4 - - - - 1.0
+- TF AMKEN - 248 250.9 8.7 - - - - 1.0
+- TF RIPTU - 202 204.9 5.0 - FL070 - - 1.0
+MTL 9N
+- IF MTL - - - - - - - - 1.0
+- TF ROLIR - 002 004.2 37.3 - FL070 - - 1.0
+- TF ARBON - 014 016.8 6.8 - FL070 - - 1.0
+FEDZI 9N
+- IF FEDZI - - - - - - FL190 - 1.0
+- TF DIRBA - 125 127.3 35.8 - - 1.0
+- TF TALAR - 119 121.6 5.0 - FL070 - - 1.0
+LESPI 9N
+- IF LESPI - - - - - - - - 1.0
+- TF DIRBA - 104 106.5 23.8 - - 1.0
+- TF TALAR - 119 121.6 5.0 - FL070 - - 1.0

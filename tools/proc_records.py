@@ -254,6 +254,29 @@ def _faf_leg(before, runway, threshold, coords, ils, warnings):
     return {'id': f'FAF{runway}', 'leg': 'CF', 'alt': None, 'over': None, 'synthetic': 'faf', 'pos': pos}
 
 
+def final_only_record(icao, runway, ils, coords, source, cycle):
+    """L'approche ILS/LOC d'une piste dont le SIA donne le FAF (pages DATA : « FAP/FAF ILS/LOC 17L … ») mais AUCUNE table de codage (LFLL : ILS 17L, 35L, 35R) : la finale seule, FAF → seuil, tracée droit.
+    Rend (fiche, avertissements) ; fiche None (avertissement) si le seuil ou le cap de la piste manquent (page AD 2.12) ou si le FAF n'est pas sur la finale (relèvement FAF → seuil à plus de
+    FAF_AXIS° du cap vrai de la piste). Statut « check » ; les deux points sont synthétiques (`faf`, `threshold`) : pas de point initial, de transition ni d'approche interrompue, la source ne les donne pas
+    (ils figurent sur la carte seulement) : rien n'est inventé. Nommée par la piste, jamais par un nom de carte (SOG-0044, 6 nov. 2026)."""
+    warnings = []
+    pos, thr, true = (ils.get('faf') or {}).get(runway), coords.get('RW' + runway), (ils.get('true') or {}).get(runway)
+    if not pos or not thr or thr[0] is None or true is None:
+        warnings.append(f'ILS/LOC {runway}: FAF des pages DATA sans seuil ou sans cap de piste (page AD 2.12 absente ou piste non lue), approche finale non construite')
+        return None, warnings
+    brg, d = G.bearing_nm(pos, thr)
+    off = abs((brg - true + 180) % 360 - 180)
+    if off > FAF_AXIS:
+        warnings.append(f'ILS/LOC {runway}: FAF à {d:.1f} NM du seuil, relèvement {brg:.0f}° pour une piste à {true:.0f}° : pas sur la finale, approche non construite')
+        return None, warnings
+    name = f'ILS RWY {runway}'
+    legs = [{'id': f'FAF{runway}', 'leg': 'IF', 'alt': None, 'over': None, 'synthetic': 'faf', 'pos': pos}, {'id': 'RW' + runway, 'leg': 'CF', 'alt': None, 'over': None, 'synthetic': 'threshold'}]
+    rec = {'id': _id_of(icao, 'APP', name, [runway], None), 'icao': icao, 'kind': 'APP', 'name': name, 'runways': [runway], 'transition': None,
+           'points': _points(icao, legs, coords, warnings), 'source': {'kind': 'eaip', 'ref': source, 'file': source, 'cycle': cycle, 'at': None}, 'status': 'check'}
+    warnings.append(f'{rec["id"]}: finale seule construite des pages DATA (FAF à {d:.1f} NM du seuil) : le SIA ne publie aucune table de codage de cette approche, donc ni point initial, ni transitions, ni approche interrompue')
+    return rec, warnings
+
+
 def records(icao, table, coords, source, cycle, ils=None):
     """Procédures du schéma commun d'une table lue (parse_code_table), statut « check »."""
     out, warnings = [], list(table['warnings'])

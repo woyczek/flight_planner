@@ -2341,7 +2341,7 @@ def k25(c):
     c.eq(bad, [], 'every LFPG page is read with a known header (the SID 08 / 09 pages with the « Nav Spec » column and the empty procedure column, the INA pages, the FNA pages)', what='verify_page')
     # 2. the rejected SID page: runway headers « RWY09L - 087 088.4 », a « Nav Spec » column that the extractor moved, a first leg scrambled
     sid = T('SID_RWY09L-09R_RNAV_CODE_01')
-    c.eq((sid['rows'], sid['read']), (35, 35), 'SID 09L-09R: every leg row of the whole page read (it read 0 of 35 before)', what='SID 09 rows')
+    c.eq((sid['rows'], sid['read']), (36, 36), 'SID 09L-09R: every leg row of the whole page read (it read 0 of 35 before; the 36th, the first leg of LANVI 6G on 09L with only six cells left, was not even counted before SOG-0044)', what='SID 09 rows')
     by = {(g['label'], g['runway']): g for g in sid['groups']}
     c.eq(sorted(by), sorted((n, r) for n in ('OPALE 6G', 'ATREX 6G', 'NURMO 6G', 'OPALE 6K', 'ATREX 6K', 'NURMO 6K', 'DIKOL 6G', 'LANVI 6G', 'RANUX 6G') for r in ('09L', '09R')),
          'the nine departures of the whole page x two runways', what='SID 09 groups')
@@ -2349,6 +2349,7 @@ def k25(c):
          '09L starts at its CF, 09R at the common route', what='OPALE 6G')
     leg = by[('OPALE 6G', '09L')]['legs']
     c.eq((leg[1]['crs'], leg[1]['nm'], leg[1]['over'], leg[2]['turn'], leg[3]['crs'], leg[3]['nm'], leg[3]['rnp']), (84, 2.1, True, 'L', 323, 50.0, 1.0), 'values, fly-over, turn; « RNAV 1 » read as 1 NM', what='OPALE 6G cells')
+    c.eq(ids(by[('LANVI 6G', '09L')])[:2], ['PG091', 'PG092'], 'LANVI 6G on 09L starts at its CF PG091 too (its row kept six cells, it was dropped without a word)', what='LANVI 6G')
     c.eq(ids(by[('NURMO 6G', '09L')]), ['PG091', 'PG092', 'NURMO'], 'the rows whose « RNAV 1 » was scattered by the extractor (CF - RNAV 1 PG091, DF NURMO … 1 RNAV) are read', what='NURMO 6G')
     c.eq(P.norm_tokens('RNAV 1CF PG081 - - - - -'), ['CF', 'PG081', '-', '-', '-', '-', '-', 'RNAV', '1'], 'the Nav Spec word glued to the next terminator goes to the end of the row', what='norm_tokens')
     c.eq(P.norm_tokens('- DF OSTIP - ---- - - - 1 RNAV')[-2:], ['RNAV', '1'], 'a Nav Spec split as « 1 RNAV » too', what='norm_tokens')
@@ -2407,7 +2408,8 @@ def k25(c):
     true = next(r['true'] for r in ds['runways'] if r['id'] == '26L')
     c.eq((pts[:3], faf['leg'], faf['alt'], il['points'][0]['lat'] is not None), ([('IG26L', None), ('FAF26L', 'faf'), ('RW26L', 'threshold')], 'CF', None, True),
          'LFPG ILS 26L: IG26L (its position read from « IG26L ( IF ILS/LOC RWY 26L ) … » on the DATA page), FAF26L, RW26L', what='LFPG ILS 26L')
-    c.ok(10 < brg[1] < 13 and abs((brg[0] - true + 180) % 360 - 180) < 1 and not any('FAF' in x for x in ds['warnings']), f'{brg} {true}', 'the FAF is 11.4 NM from the threshold, on the runway bearing, and nothing is said')
+    c.ok(10 < brg[1] < 13 and abs((brg[0] - true + 180) % 360 - 180) < 1 and not any('FAF' in x and 'finale seule' not in x for x in ds['warnings']), f'{brg} {true}',
+         'the FAF is 11.4 NM from the threshold, on the runway bearing, and nothing is said (but for the final-only ILS of the other runways of this partial list: DATA 05 prints their FAF, the list holds no ILS page for them, SOG-0044)')
     # 6. the guardrails on records: a doubt, never a purge
     mk = lambda i, pts, kind='STAR': {'id': i, 'kind': kind, 'name': None, 'runways': ['27L'], 'points': [{'id': a, 'lat': b, 'lon': d, 'leg': l} for a, b, d, l in pts]}
     nameless = mk('LFPG.STAR.NONAME.RW27L', [('A', 49.0, 1.0, 'IF'), ('B', 49.0, 0.5, 'TF'), ('C', 49.0, 0.0, 'TF')])
@@ -2894,7 +2896,7 @@ def k33(c):
     import re
     fx = c.root / 'frame/aerodb/test/fixtures/eaip'
     sets = sorted(d.name for d in fx.iterdir() if d.is_dir())
-    c.eq(sets, ['LFAV', 'LFBD', 'LFBO', 'LFPG', 'LFPO'], 'five sets, French aerodromes only (the foreign layouts stay on invented pages)', what='sets')
+    c.eq(sets, ['LFAV', 'LFBD', 'LFBO', 'LFLL', 'LFPG', 'LFPO'], 'six sets, French aerodromes only (the foreign layouts stay on invented pages)', what='sets')
     stray = [f.name for f in fx.iterdir() if f.is_file()]
     c.eq(stray, [], 'no loose rows file beside the sets', what='loose files')
     sizes = {}
@@ -2909,7 +2911,7 @@ def k33(c):
             c.ok(m.get('note') == 'not regenerable: source PDF not cached' and not any('sha256' in e for e in m['pages']), str(m)[:200], f'{icao}: a set whose PDF are not cached says so and carries no hash')
         else:
             c.ok(all(re.fullmatch(r'[0-9a-f]{64}', e['sha256']) and e['pages'] >= 1 for e in m['pages']) and m.get('generated_at'), str(m['pages'][:1]), f'{icao}: every page has the hash of its PDF, its page count, and the set its date')
-        if icao in ('LFBO', 'LFPO', 'LFPG'):
+        if icao in ('LFBO', 'LFLL', 'LFPO', 'LFPG'):
             c.ok((d / f'FR-AD-2.{icao}.AD-2.12.html').is_file() and m.get('ad2_12', {}).get('file') == f'FR-AD-2.{icao}.AD-2.12.html', icao, f'{icao}: the AD 2.12 extract is in the set and in the manifest')
         sizes[icao] = sum(f.stat().st_size for f in d.iterdir())
     c.le(sum(sizes.values()), 1_500_000, 'the whole sets stay small (rows text, no PDF)', what=str(sizes))
@@ -3948,6 +3950,72 @@ def k78(c):
             for pr in procs.values():
                 B.kill_tree(pr)
             B.remove_tree(str(young))
+
+
+@case('K79', 'LFLL approaches (SOG-0044): every RNP and INA RNAV table of the AIP is read, the ILS has its final from the DATA page, nothing is dropped without a word', 'K', static=True,
+      rule='SOG-0044 (6 Nov 2026): Lyon-Saint Exupery. The SIA publishes coding tables for the RNP and INA RNAV approaches only (no table for the ILS and VOR); the extractor loses cells of the pages (« y es », « RW17 R y es », « -1 .0 », lines of six cells, dashes); a line that is not '
+           'a leg line vanished without being counted. All 4 RNP and 8 INA RNAV approaches are read as « check » with their final point; the ILS 17L, 35L and 35R get FAF -> threshold from the DATA page (no initial fix, no transition: the source has none), said; a lone altitude whose column the page does not tell is not read, said')
+def k79(c):
+    P, fx, rows = _eaip(c)
+    names = _eaip_names(c, 'LFLL')
+    page = (fx / 'LFLL' / 'FR-AD-2.LFLL.AD-2.12.html').read_text(encoding='utf-8')
+    d = P.build_aerodrome('LFLL', [n + '.pdf' for n in names], lambda n: rows(n.replace('.pdf', '')), 'https://example.org/AIRAC-2026-10-29', '2026-10-29', None, None, page)
+    app = {p['id']: p for p in d['procedures'] if p['kind'] == 'APP'}
+    c.eq(sorted(app), sorted(['LFLL.APP.RNPRWY17L.RW17L', 'LFLL.APP.RNPRWY17R.RW17R', 'LFLL.APP.RNPRWY35L.RW35L', 'LFLL.APP.RNPRWY35R.RW35R']
+                             + [f'LFLL.APP.INARNAVRWY{rw}.RW{rw}.{t}' for rw in ('17L', '17R') for t in ('RIPTU', 'TALAR', 'ARBON', 'GOMET')]
+                             + [f'LFLL.APP.INARNAVRWY{rw}.RW{rw}.{t}3N' for rw in ('35L', '35R') for t in ('RIPTU', 'TALAR', 'ARBON', 'GOMET')]
+                             + [f'LFLL.APP.ILSRWY{rw}.RW{rw}' for rw in ('17L', '35L', '35R')]),
+         '4 RNP + 8 INA RNAV (17L, 17R: 4 transitions each; 35L, 35R: the same 4, named by the STAR designator) + the ILS 17L, 35L, 35R; no ILS 17R (the SIA publishes a VOR there)', what='approaches')
+    c.eq(sorted({p['status'] for p in app.values()}), ['check'], 'every approach is « check »: none is « doubt » (hidden by default), TALAR and GOMET of 17L / 17R included', what='statuses')
+    c.eq([f['file'] for f in d['formats'] if not f['ok']], [], 'no page is refused: the RNP 17L / 17R / 35R pages (4 lines of 5), the INA RNAV 35L / 35R pages (8 of 17) and the SID 35L page 02 (26 of 46) read < 85 % before', what='pages')
+    # the final point of the RNP pages: « APCH TF RW17L y es … », « TF RW17 R y es … »
+    for rw in ('17L', '17R', '35L', '35R'):
+        ids = [q['id'] for q in app[f'LFLL.APP.RNPRWY{rw}.RW{rw}']['points']]
+        placed = {q['id'] for q in app[f'LFLL.APP.RNPRWY{rw}.RW{rw}']['points'] if q['lat'] is not None}
+        c.ok({f'RW{rw}', f'FL{rw}'} <= placed, f'{ids} {sorted(placed)}', f'RNP {rw}: the runway point and the FAF FL{rw} are there and placed (the DATA page prints « FAP/FAF FL{rw} »; the en-route points are those of the base, resolved by aerodb)')
+    c.eq([(q['id'], q['leg']) for q in app['LFLL.APP.INARNAVRWY17L.RW17L.TALAR']['points']][:5], [('TALAR', 'IF'), ('LL714', 'TF'), ('LL712', 'TF'), ('LL710', 'TF'), ('EKMEP', 'TF')],
+         'INA RNAV 17L TALAR: its line « TF LL712 - 092 094.7 4.0 - - - - 1.0 » (a dash lost, « 1.0 » read as an accuracy, not as a vertical angle) is read', what='17L TALAR')
+    c.eq([(q['id'], q.get('crs'), q.get('nm')) for q in app['LFLL.APP.INARNAVRWY17L.RW17L.GOMET']['points']][:7],
+         [('GOMET', None, None), ('LL719', 326, 10.3), ('LL709', 355, 8.6), ('LL707', 355, 6.8), ('LL705', 330, 4.9), ('LL703', 315, 4.0), ('LL701', 315, 4.0)],
+         'INA RNAV 17L GOMET: LL703, whose line lost its « TF », is read from its heading and distance and said (it left a hole: LL705 -> LL701 at 7.97 NM for 4.0 printed)', what='17L GOMET')
+    # the INA RNAV 35L page: lines of six to eight cells; a lone altitude is not read (mini or maxi ?), the rest is
+    t35 = app['LFLL.APP.INARNAVRWY35L.RW35L.ARBON3N']['points']
+    c.eq([(q['id'], q.get('crs'), q.get('nm')) for q in t35], [('ARBON', None, None), ('LL514', 40, 6.6), ('LL512', 40, 4.0), ('LL510', 40, 4.0), ('NEGPU', 351, 4.1)],
+         'INA RNAV 35L ARBON: the four legs, LL512 and LL514 (six cells left, they were not even counted) included', what='35L ARBON')
+    c.eq([(q['id'], q['alt']) for q in t35 if q['id'] in ('LL514', 'LL510', 'NEGPU')], [('LL514', None), ('LL510', None), ('NEGPU', {'type': 'between', 'ft': 3000, 'ft2': 4500})],
+         'a lone 5000 / 4000 (mini or maxi: the text layer keeps no empty cell) is NOT read; 3000-4500 (two altitudes) is', what='35L altitudes')
+    c.ok(any('contrainte d\'altitude non lue (5000' in w for w in d['warnings']) and any('type de tronçon absent' in w for w in d['warnings']), str(len(d['warnings'])), 'and both said in the warnings')
+    # the ILS: the final only, from the DATA page
+    ils = app['LFLL.APP.ILSRWY17L.RW17L']
+    c.eq(([(q['id'], q['leg'], q.get('synthetic')) for q in ils['points']], ils['name'], ils['runways'], ils['transition']),
+         ([('FAF17L', 'IF', 'faf'), ('RW17L', 'CF', 'threshold')], 'ILS RWY 17L', ['17L'], None), 'ILS 17L: FAF -> threshold, named by the runway, no transition (the source has none)', what='ILS 17L')
+    c.eq((ils['points'][0]['lat'], ils['points'][0]['lon']), (45.847861, 5.078111), "the FAF is the DATA page's (45°50'52.3'' N 005°04'41.2'' E)", what='ILS 17L FAF')
+    c.ok(any('ILSRWY17L' in w and 'aucune table de codage' in w for w in d['warnings']), str([w for w in d['warnings'] if 'ILSRWY17L' in w]), 'and said: no coding table, so no initial fix, no transition, no missed approach')
+    # the SID 35L page 02: the fly-over and the turn come BEFORE the terminator
+    sid = {p['id']: p for p in d['procedures'] if p['kind'] == 'SID' and p['runways'] == ['35L']}
+    asleg = sid['LFLL.SID.ASLEG8N.RW35L']['points']
+    c.eq([(q['id'], q['leg'], q.get('over'), q.get('turn')) for q in asleg][:3], [('LL592', 'CF', True, None), (None, 'CA', None, None), ('LL597', 'DF', None, 'R')], 'SID 35L page 02: « - YES - CF LL592 … » and « -- R DF LL597 … » (fly-over and turn before the terminator) are read', what='ASLEG8N')
+    # the parts: each repair on its own
+    c.eq(P.norm_tokens('APCH TF RW17 R y es 173 175.1 6.9 - - - - -3.0° / 49 0.3')[:5], ['APCH', 'TF', 'RW17R', 'Yes', '173'], 'the runway point and the fly-over cut by the extractor (« RW17 R y es ») are one point and « Yes »', what='y es')
+    c.eq(P.norm_tokens('TF ARBON - 203 205.7 20.9 - - 5000 220 -1 .0')[-2:], ['-', '1.0'], 'the empty cell and the accuracy cut as « -1 .0 »', what='-1 .0')
+    c.eq(P.norm_tokens('CF PG081 - - - RNAV 1--')[-3:], ['--', 'RNAV', '1'], 'the Nav Spec precision glued to the dashes (« RNAV 1-- ») goes back to the word RNAV', what='RNAV 1--')
+    c.eq(P._fit(P._cells(['LL712', '-', '092', '094.7', '4.0', '-', '-', '-', '-', '1.0']), 11, True, 'TF') is not None, True, 'a positive number is never the vertical angle: one arrangement is left', what='vpa column')
+
+
+@case('K80', 'LFPO SID RWY 20 (SOG-0044): OKASI 2Y and OKASI 2S are in the AIP and in the reading; there is no OKASI 2A, on any runway', 'K', static=True,
+      rule='SOG-0044 (6 Nov 2026): the user looked for OKASI2A on runway 20. The AIP in force (eAIP 29 OCT 2026, DATA SID RWY20 CODE_03 and the charts SID RWY20 SOUTH INSTR 01 / 02) names OKASI 2Y and OKASI 2S for runway 20; the reading holds both, all pages read; no SID named OKASI 2A exists in the AIP')
+def k80(c):
+    P, fx, rows = _eaip(c)
+    names = _eaip_names(c, 'LFPO', 'AD_2_LFPO_DATA_SID_RWY*') + _eaip_names(c, 'LFPO', 'AD_2_LFPO_DATA_0*')
+    d = P.build_aerodrome('LFPO', [n + '.pdf' for n in names], lambda n: rows(n.replace('.pdf', '')), 'https://example.org/AIRAC-2026-10-29', '2026-10-29', None, None, None)
+    sids = [p for p in d['procedures'] if p['kind'] == 'SID']
+    okasi = sorted((p['name'], tuple(p['runways'])) for p in sids if p['name'] and p['name'].startswith('OKASI'))
+    c.eq([x for x in okasi if x[1] == ('20',)], [('OKASI 2S', ('20',)), ('OKASI 2Y', ('20',))], 'runway 20: OKASI 2S and OKASI 2Y, as the AIP names them (CODE_03 and the charts SOUTH INSTR 01 / 02)', what='OKASI 20')
+    c.eq(sorted({n for n, _ in okasi}), ['OKASI 2E', 'OKASI 2F', 'OKASI 2G', 'OKASI 2H', 'OKASI 2Q', 'OKASI 2R', 'OKASI 2S', 'OKASI 2W', 'OKASI 2X', 'OKASI 2Y'], 'the ten OKASI departures of the AIP (runways 06, 07, 20, 24, 25 x two letters); none is OKASI 2A', what='OKASI names')
+    ok20 = next(p for p in sids if p['name'] == 'OKASI 2Y' and p['runways'] == ['20'])
+    c.eq(([q['id'] for q in ok20['points']], ok20['status']), ([None, 'PO202', 'PO300', 'ODEBU', 'OKASI'], 'check'), 'OKASI 2Y: CA, PO202, PO300, ODEBU, OKASI, « check » (visible, not « doubt »)', what='OKASI 2Y')
+    c.eq([f['file'] for f in d['formats'] if not f['ok']], [], 'every SID page of the runway 20 is read (the file on the workstation of 6 Nov 2026 had them « NON lue » from an older reading and kept the records of an older one)', what='pages')
+    c.eq(len([p for p in sids if p['runways'] == ['20'] and p['status'] == 'check']), 36, 'runway 20: 17 names x 2 letters (2Y, 2S) and the two POGO departures of the shared page, all « check »', what='SID 20 count')
 
 
 @case('K58', 'openAIP aerodromes: runways, bearing, hardLen and magVar derived like the SIA gives them to France', 'K', tags=('aerodb',), phone=False,

@@ -1,0 +1,65 @@
+AIP AD 2 LFLL DATA SID RWY35L RNAV CODE
+02
+10 JUL 2025FRANCE
+LYON SAINT EXUPERY SID RNAV RWY 35L
+RMK GNSS ou/o r DME/DME (IRU requis/require d ) MAG VAR 2020 1.9°E REF NAVAID : LSE SID RNAV RWY 35L
+(Protégés pour / Protected for CAT A, B, C, D)
+Procedure
+Path Terminator Waypoint Identification Direction MAG (°) Direction True (°) Distance (NM) MNM Altitude (FL or AMSL ft) MAX Altitude (FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+Identification Fly Over Turn direction
+ASLEG8N
+- YES - CF LL592 353 355.1 - - - - 1.0
+-- - CA - 353 355.1 - 1200 - - 1.0
+-- R DF LL597 - - - - - 230 1.0
+-- - TF LL599 123 125.0 9.0 - - - 1.0
+-- - TF PENAR 123 125.1 12.9 - - - 1.0
+-- - TF RISOR 080 082.3 14.3 FL130 - - 1.0
+-- - TF ASLEG 030 031.8 15.1 - - - 1.0
+GEMLA8N
+- YES - CF LL592 353 355.1 - - - - 1.0
+-- - CA - 353 355.1 - 1200 - - 1.0
+-- R DF LL597 - - - - - 230 1.0
+-- - TF LL599 123 125.0 9.0 - - - 1.0
+-- - TF PENAR 123 125.1 12.9 - - - 1.0
+-- - TF RISOR 080 082.3 14.3 FL130 - - 1.0
+-- - TF GEMLA 081 082.5 16.0 - - - 1.0
+BELUS8N
+- YES - CF LL594 353 355.1 - - - 1.0
+-- R DF LL597 - - - - - 230 1.0
+-- - TF LL599 123 125.0 9.0 - - - 1.0
+-- - TF BELUS 072 073.5 9.5 - FL120 - 1.0
+ROMAM8N
+- YES - CF LL594 353 355.1 - - - 1.0
+-- R DF LL597 - - - - - 230 1.0
+-- - TF ROMAM 181 182.6 36.9 - - - 1.0
+PIMAK8N
+- YES - CF LL592 353 355.1 - - - - 1.0
+-- - CA - 353 355.1 - 1200 - - 1.0
+-- - CF LL596 280 282.0 - - - - 1.0
+-- - TF RONIS 237 239.3 5.5 - - - 1.0
+-- - TF PIMAK 230 231.8 37.6 - - - 1.0
+MADOT8N
+- YES - CF LL592 353 355.1 - - - - 1.0
+-- - CA - 353 355.1 - 1200 - - 1.0
+-- - CF LL596 280 282.0 - - - - 1.0
+-- - TF RONIS 237 239.3 5.5 - - - 1.0
+-- - TF MADOT 248 250.0 8.9 - - - 1.0
+BELEP8N
+- YES - CF LL594 353 355.1 - - - 230 1.0
+-- - TF LL595 353 355.1 6.9 - - - 1.0
+-- L TF LL596 237 239.1 11.6 - - - 1.0
+-- - TF RONIS 237 239.3 5.5 - - - 1.0
+-- - TF BELEP 270 271.7 24.4 - - - 1.0
+REPSI8N
+- YES - CF LL594 353 355.1 - - - 230 1.0
+-- - TF LL595 353 355.1 6.9 - - - 1.0
+-- L TF LL596 237 239.1 11.6 - - - 1.0
+-- - TF RONIS 237 239.3 5.5 - - - 1.0
+-- - TF REPSI 228 230.1 24.1 - - - 1.0
+MURRO8N
+- YES - CF LL594 353 355.1 - - - 230 1.0
+-- - TF LL595 353 355.1 6.9 - - - 1.0
+-- L TF LL596 237 239.1 11.6 - - - 1.0
+-- - TF RONIS 237 239.3 5.5 - - - 1.0
+-- - TF MURRO 206 208.0 30.4 - - - 1.0
+AMDT 07/25© Service de l'Information Aéronautique, France

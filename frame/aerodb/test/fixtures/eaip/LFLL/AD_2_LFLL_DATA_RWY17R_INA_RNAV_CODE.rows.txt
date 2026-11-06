@@ -1,0 +1,41 @@
+AD 2 LFLL DATA RWY17R INA RNAV CODEAIP
+19 MAR 2026FRANCE
+LYON SAINT EXUPERY
+PRECODING INA RNAV RWY 17R
+AMDT 03/26© Service de l'Information Aéronautique, France
+INA RNAV RWY 17R
+GNSS ou/or DME-DME
+RMK MAG VAR 2025 2.6 ° E REF NAVAID :
+Associé à / linked to FNA RWY 17L et/and FNA ILS RWY 17L
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) Navigation Accuracy (NM)
+ARBON - - - - - - - - - -
+GOMET - - - - - - - - - -
+HLDG
+RIPTU - - - - - - - - - -
+TALAR - - - - - - - - - -
+IF RIPTU - - - - - FL70 - - - -
+TF LL713 - 237 239.2 5.1 - 5000 - - - 1.0
+INA RIPTU 3S TF LL711 - 237 239.1 4.0 - - - - - 1.0
+TF LL710 - 236 239.0 4.0 - 4000 - 220 - 1.0
+TF ARPOB - 175 177.6 3.9 - 3000 4500 215 -1 . 0
+IF TALAR - - - - - FL70 - - - -
+TF LL714 - 072 075.0 11.5 - 5000 - - - 1.0
+INA TALAR 3S TF LL712 - 092 094.7 4.0 - - - - 1.0
+TF LL710 - 092 094.8 4.0 - 4000 - 220 - 1.0
+TF ARPOB - 175 177.6 3.9 - 3000 4500 215 -1 . 0
+IF ARBON - - - - - FL100 - - - -
+TF LL706 - 011 013.8 16.5 - FL080 - - - 1.0
+TF LL704 - 352 354.3 14.8 - - - - - 1.0
+INA ARBON 3S
+TF LL702 - 352 354.3 4.0 - 5000 - - - 1.0
+TF LL700 - 017 019.6 4.0 - 4000 - 220 - 1.0
+TF ARPOB - 083 085.2 3.9 - 3000 4500 215 -1 . 0
+IF GOMET - - - - - - - - - -
+TF LL719 - 326 328.4 10.3 - - - - - 1.0
+TF LL709 - 355 357.6 8.6 - FL100 - - - 1.0
+TF LL707 - 355 357.6 6.8 - FL070 - - - 1.0
+INA GOMET 3S
+TF LL705 - 330 332.3 4.9 - - - - - 1.0
+LL703 - 315 317.9 4.0 - 5000 - - - 1.0
+TF LL701 - 315 317.9 4.0 - 4000 - 220 - 1.0
+TF ARPOB - 263 265.3 4.2 - 3000 4500 215 -1 . 0

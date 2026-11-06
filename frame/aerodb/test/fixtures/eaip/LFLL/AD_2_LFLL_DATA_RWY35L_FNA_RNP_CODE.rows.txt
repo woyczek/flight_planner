@@ -1,0 +1,14 @@
+AD 2 LFLL DATA RWY35L FNA RNP CODEAIP
+19 MAR 2026FRANCE
+LYON SAINT EXUPERY
+PRECODING FNA RNP RWY 35L
+AMDT 03/26© Service de l'Information Aéronautique, France
+RNAV(GNSS) 35L
+RMK MAG VAR 2025 2.6 °E xxx REF NAVAID :
+Leg sequence Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance (NM) Turn direction MNM Altitude (FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Vertical angle (°) / TCH (ft) Navigation Accuracy (NM)
+HLDG - RIPTU - - - - - - - - - -
+IF NEGPU - - - - - 3000 - 220 - -
+TF FL35L - 353 355.1 4.2 - 3000 3000 - - 1.0
+APCH TF RW35L yes 353 355.1 6.7 - - - - -3.0° / 59 0.3
+TF LL406 - 353 355.1 4.0 - - - - - 1.0
+TF RIPTU - 025 27.1 22.3 - 5000 - 220 - 1.0

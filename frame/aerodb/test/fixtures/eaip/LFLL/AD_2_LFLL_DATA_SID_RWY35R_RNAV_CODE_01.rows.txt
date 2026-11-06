@@ -1,0 +1,66 @@
+AD 2 LFLL DATA SID RWY35R RNAV CODE 01AIP
+19 MAR 2026FRANCE
+LYON SAINT EXUPERY SID RNAV RWY 35R
+RMK GNSS ou/or DME/DME (IRU requis/required) REF NAVAID : LSEMAG VAR 2025 2.6°E SID RNAV RWY 35R
+Procedure (Protégés pour / Protected for CAT A, B, C, D)
+Identification Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+←
+←
+←
+←
+←
+←
+RISOR8N
+- CF LL593 YES 353 355.1 - - - - 1.0
+- DF LL597 - - - - R - - 230 1.0
+- TF LL599 - 122 125.0 9.0 - - - - 1.0
+- TF PENAR - 123 125.1 12.9 - - - - 1.0
+- TF RISOR - 080 082.3 14.3 - FL130 - - 1.0
+←
+←
+←
+←
+←
+←
+MOKIP8N
+- CF LL593 YES 353 355.1 - - - - 230 1.0
+- TF LL595 - 351 353.5 6.9 - - - - 1.0
+- TF BOBSI - 350 352.2 24.0 - FL160 - - 1.0
+- TF MOKIP - 028 031.0 8.7 - FL200 - - 1.0
+ALURA8N
+- CF LL593 YES 353 355.1 - - - - 230 1.0
+- TF LL595 - 351 353.5 6.9 - - - - 1.0
+- TF BOBSI - 350 352.2 24.0 - - - 1.0
+- TF ALURA - 350 352.7 10.6 - - - - 1.0
+MABES8N
+- CF LL593 YES 353 355.1 - - - - 230 1.0
+- TF LL595 - 351 353.5 6.9 - - - - 1.0
+- TF BOBSI - 350 352.2 24.0 - FL160 - - 1.0
+- TF MABES - 083 085.1 11.7 R - - - 1.0
+BUSIL8N
+- CF LL593 YES 353 355.1 - - - - 230 1.0
+- TF LL595 - 351 353.5 6.9 - - - - 1.0
+- TF BUSIL - 325 327.1 26.2 - - - - 1.0
+←
+←
+←
+←
+←
+←
+←
+←
+←
+←
+←
+←
+←
+←
+←
+←
+←
+←
+←
+←
+←
+←
+AMDT 03/26© Service de l'Information Aéronautique, France

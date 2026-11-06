@@ -1,0 +1,138 @@
+{
+ "icao": "LFLL",
+ "cycle": "2026-10-29",
+ "source": "SIA eAIP",
+ "generated_at": "2026-11-06T12:06:09+00:00",
+ "pages": [
+  {
+   "file": "AD_2_LFLL_DATA_01.pdf",
+   "pages": 1,
+   "rows": 45,
+   "sha256": "d2a303a612cd4b7b48b6411290c97b544efa346b172579297f94850b615f2ce2"
+  },
+  {
+   "file": "AD_2_LFLL_DATA_02.pdf",
+   "pages": 1,
+   "rows": 43,
+   "sha256": "29966d2367d4747cb56ddc5389ec51043f353f4666c123f3cd79a52db2f0ae83"
+  },
+  {
+   "file": "AD_2_LFLL_DATA_03.pdf",
+   "pages": 1,
+   "rows": 39,
+   "sha256": "b0c6acfa5b8ca93777742d677d588b86b840c128a2c39682c9d42ab27e5a8bd9"
+  },
+  {
+   "file": "AD_2_LFLL_DATA_RWY17L_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 15,
+   "sha256": "a08f613fb9634e23dfd2bbcc9caca0765b209d4eba1a653732d3fcc1b93d14e0"
+  },
+  {
+   "file": "AD_2_LFLL_DATA_RWY17L_INA_RNAV_CODE.pdf",
+   "pages": 1,
+   "rows": 41,
+   "sha256": "a807df607ba48d9cd93f5983a7082cd3910cb6d38a1ef19f817319b072e6737e"
+  },
+  {
+   "file": "AD_2_LFLL_DATA_RWY17R_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 15,
+   "sha256": "8d34b17e09a89dac7177d95e331f3b3e54c325d22b02b419e5879e9fc4caae78"
+  },
+  {
+   "file": "AD_2_LFLL_DATA_RWY17R_INA_RNAV_CODE.pdf",
+   "pages": 1,
+   "rows": 41,
+   "sha256": "a5a51f0d8fb77c7057cc97302d015961f43cf147387ed4c8e5bda8ad16253250"
+  },
+  {
+   "file": "AD_2_LFLL_DATA_RWY35L_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 14,
+   "sha256": "f8d9fd6b99bea1391b8b041e5b2dade827c18196873b54fbf76a20c43b362b98"
+  },
+  {
+   "file": "AD_2_LFLL_DATA_RWY35L_INA_RNAV_CODE.pdf",
+   "pages": 1,
+   "rows": 33,
+   "sha256": "3fbbf4c314675798683d960698e092f3a70618a83ceb08e929988466998f9ac7"
+  },
+  {
+   "file": "AD_2_LFLL_DATA_RWY35R_FNA_RNP_CODE.pdf",
+   "pages": 1,
+   "rows": 14,
+   "sha256": "ad47a8d77ff71f1fca67fe80776c8e650c5c5f5e56c1894ab2534b7fb4a5adc9"
+  },
+  {
+   "file": "AD_2_LFLL_DATA_RWY35R_INA_RNAV_CODE.pdf",
+   "pages": 1,
+   "rows": 33,
+   "sha256": "c2eeff93554daa0eb84625d4e0781094e9c40b29a5595cf1dd5e212ff56aa305"
+  },
+  {
+   "file": "AD_2_LFLL_DATA_SID_RWY17L_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 53,
+   "sha256": "94d174b46f58aaeb494f111b27115e25789d81c5d9267c73c83051f4b83f29c8"
+  },
+  {
+   "file": "AD_2_LFLL_DATA_SID_RWY17L_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 45,
+   "sha256": "ccd754196136843df30b8b4b0810bd8fc9ad3bebb2947cd4c0cfb2b9ecff1592"
+  },
+  {
+   "file": "AD_2_LFLL_DATA_SID_RWY17R_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 53,
+   "sha256": "3dfff125ef48d8357804f846f3e8c412b9b9d414bd3da75cab57b572e7442902"
+  },
+  {
+   "file": "AD_2_LFLL_DATA_SID_RWY17R_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 43,
+   "sha256": "6b1ae842a03cc02e1eed9b5a07f8623023a78a059f29ccc6e2c7142de17fe0d5"
+  },
+  {
+   "file": "AD_2_LFLL_DATA_SID_RWY35L_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 69,
+   "sha256": "9eaf520fba11926328997b811249699529ad685073d1bfd7d96826354e33eae0"
+  },
+  {
+   "file": "AD_2_LFLL_DATA_SID_RWY35L_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 65,
+   "sha256": "2c969cfd188b02aa008b4e4bc53c86c96c3a99a78495544a0cd4554d363732c2"
+  },
+  {
+   "file": "AD_2_LFLL_DATA_SID_RWY35R_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 66,
+   "sha256": "8be315fa14f1b3c488f088636ae60c565a98d7f29c7b17c7854b16945459709c"
+  },
+  {
+   "file": "AD_2_LFLL_DATA_SID_RWY35R_RNAV_CODE_02.pdf",
+   "pages": 1,
+   "rows": 48,
+   "sha256": "e4db325ca9c81f38a5c56fd4574201e480ac68fb3a8726c26a98774467b8e210"
+  },
+  {
+   "file": "AD_2_LFLL_DATA_STAR_RWY17L-17R_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 47,
+   "sha256": "40358277d1168084747e08868f8050d59b3e97822118e890f30ad4f8693f0694"
+  },
+  {
+   "file": "AD_2_LFLL_DATA_STAR_RWY35L-35R_RNAV_CODE_01.pdf",
+   "pages": 1,
+   "rows": 47,
+   "sha256": "6c1fbb272bb8262bef03ac6de7fedfdb7c9b8c6692b81bcb6ff8d904ea384293"
+  }
+ ],
+ "ad2_12": {
+  "file": "FR-AD-2.LFLL.AD-2.12.html",
+  "sha256": "e79ff6d24889c6a1f54eac7a53b51c14cb32f8c4c633b909d42aebe5d201e770"
+ }
+}

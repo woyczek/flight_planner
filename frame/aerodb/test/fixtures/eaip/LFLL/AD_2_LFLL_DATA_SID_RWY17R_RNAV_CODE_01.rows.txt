@@ -1,0 +1,53 @@
+AD 2 LFLL DATA SID RWY17R RNAV CODE 01AIP
+19 MAR 2026FRANCE
+LYON SAINT EXUPERY SID RNAV RWY 17R
+RMK GNSS ou/or DME/DME (IRU requis/required) REF NAVAID : LSEMAG VAR 2025 2.6°E SID RNAV RWY 17R
+Procedure (Protégés pour / Protected for CAT A, B, C, D)
+Identification Path Terminator Waypoint Identification Fly Over Direction MAG (°) Direction True (°) Distance(NM) Turn direction MNM Altitude(FL or AMSL ft) MAX Altitude(FL or AMSL ft) MAX IAS (kt) Navigation Accuracy (NM)
+←
+←
+←
+←
+←
+MABES8S
+- CF LL792 YES 173 175.1 - - - - - 1.0
+- CA - - 173 175.1 - - 1300 - - 1.0
+- DF LL795 - - - - L - 210 1.0
+- TF DANBO - 327 329.7 11.7 - - - - 1.0
+- TF BOBSI - 350 352.8 24.3 - FL160 - - 1.0
+- TF MABES - 083 085.1 11.7 R - - - 1.0
+RISOR8S
+- CF LL794 YES 173 175.1 - - - - 230 1.0
+- CF PENAR - 101 104.0 - - FL100 - - 1.0
+- TF RISOR - 080 082.3 14.3 - FL130 - - 1.0
+MOKIP8S
+- CF LL792 YES 173 175.1 - - - - - 1.0
+- CA - - 173 175.1 - - 1300 - - 1.0
+- DF LL795 - - - - L - - 210 1.0
+- TF DANBO - 327 329.7 11.7 - - - - 1.0
+- TF BOBSI - 350 352.8 24.3 - FL160 - - 1.0
+- TF MOKIP - 028 031.0 8.7 - FL200 - - 1.0
+ALURA8S
+- CF LL792 YES 173 175.1 - - - - - 1.0
+- CA - - 173 175.1 - - 1300 - - 1.0
+- DF LL795 - - - - L - - 210 1.0
+- TF DANBO - 327 329.7 11.7 - - - - 1.0
+- TF BOBSI - 350 352.8 24.3 - - - 1.0
+- TF ALURA - 350 352.7 10.6 - - - - 1.0
+BUSIL8S
+- CF LL792 YES 173 175.1 - - - - - 1.0
+- CA - - 173 175.1 - - 1300 - - 1.0
+- DF LL795 - - - - L - - 210 1.0
+- TF DANBO - 327 329.7 11.7 - - - 1.0
+- TF BUSIL - 325 327.9 26.4 - - - 1.0
+←
+←
+←
+←
+←
+←
+←
+←
+←
+←
+AMDT 03/26© Service de l'Information Aéronautique, France
