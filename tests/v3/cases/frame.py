@@ -3381,3 +3381,34 @@ def a89(c):
     kept = c.doc(_FLIGHT_PATH)
     c.ok(bool((kept.get('progress') or {}).get('actual')), str(kept.get('progress')), 'the earlier reading is not written back over a flight the layer could not read again')
     c.check_errors()
+
+
+@case('A90', 'A position is compared with the start by instants, not as text: a start to the second or in +02:00 never takes a later position for a left-over', 'A',
+      tags=('data',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0037 (frame/app.js liveCheck, V3 Frame): « position older than the start » is decided on the instants (Date.parse, as `flying` does), not on the text of two ISO dates written in different forms (seconds or milliseconds, Z or +02:00)')
+def a90(c):
+    import datetime
+    t0 = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=60)).replace(microsecond=0)
+    z = lambda d, ms=False: d.strftime('%Y-%m-%dT%H:%M:%S') + (f'.{d.microsecond // 1000:03d}' if ms else '') + 'Z'
+    plus2 = lambda d: (d + datetime.timedelta(hours=2)).strftime('%Y-%m-%dT%H:%M:%S') + '+02:00'
+    ms = lambda n: datetime.timedelta(milliseconds=n)
+    # (what is said, the start, the position, is the position removed?)
+    scenes = [
+        ('a start to the second, a position 400 ms later in milliseconds (« …50Z » sorts after « …50.400Z »): kept', z(t0), z(t0 + ms(400), True), False),
+        ('a start in +02:00, a position 5 s later in Z: kept (« 09:… » sorts after « 07:… »)', plus2(t0), z(t0 + ms(5000), True), False),
+        ('a start in milliseconds, a position 500 ms before it, to the second (« …50Z » sorts after « …50.500Z »): removed', z(t0 + ms(500), True), z(t0), True),
+        ('a start in +02:00, a position 10 min before it, in Z: removed', plus2(t0), z(t0 - ms(600000), True), True),
+    ]
+    for what, started, at, removed in scenes:
+        d = [x for x in flight_docs(False) if x[0] == _FLIGHT_PATH][0]
+        d[1]['started'] = {'at': started, 'by': 'fuel'}
+        d[1]['progress'] = {'actual': {'at': at, 'lat': 46.0, 'lon': 1.0, 'source': 'gps'}, 'phase': 'cruise'}
+        c.open('flightlog', flight=False, docs=[d])
+        if removed:
+            got = c.until_doc(_FLIGHT_PATH, lambda x: bool(x and not (x.get('progress') or {}).get('actual')), what=what, timeout=15000)
+        else:
+            c.wait(1800)
+            got = c.doc(_FLIGHT_PATH)
+            c.ok(bool((got.get('progress') or {}).get('actual')), str(got.get('progress')), what)
+        c.eq((got['started']['at'], (got.get('progress') or {}).get('phase')), (started, 'cruise'), 'the start and the rest of the progress are untouched', what=what[:40])
+    c.check_errors()

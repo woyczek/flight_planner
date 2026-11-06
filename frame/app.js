@@ -3691,7 +3691,8 @@
     paintStatus(); // la pastille du ⚙ et le bloc d'état suivent le vol courant
     // une position plus ancienne que le départ (vol précédent, laissée par un appareil qui n'a pas pu l'effacer) : remise
     // à null, la carte ne la montre jamais au nouveau départ
-    const stale = on && cur?.progress?.actual?.at && String(cur.progress.actual.at) < String(cur.started.at);
+    // comparée en instants (comme flying), jamais en texte : « …50Z » se range après « …50.400Z » et « 09:…+02:00 » après « 07:…Z » (SOG-0037)
+    const stale = on && cur?.progress?.actual?.at && Date.parse(cur.progress.actual.at) < Date.parse(cur.started.at);
     if ((stale || !on) && cur?.progress?.actual) await clearActual(cur); // vol arrêté (ici ou ailleurs) : plus de position
     if (on && !live.active) {
       live = {

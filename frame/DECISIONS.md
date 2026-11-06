@@ -2498,3 +2498,13 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   `6c18b6112` (A89 also on the `|| cur` fallback). Left as debt: `get` then `put` are two operations (a window of one turn of the
   event loop); only an atomic `update(path, fn)` of the data layer would close it (roadmap point of 7 Nov). Not isolated by a case:
   the `flying(fresh)` guard alone (a position left on an ended flight is taken off again by the next `liveCheck`).
+- **6 Nov 2026 — A position is compared with the start by instants, not as text** (SOG-0037, found while proving SOG-0013's frame
+  half; Simplification; V3 Frame): `liveCheck` decided « a position older than the start is a left-over » by comparing the two
+  ISO dates as strings, which only holds while both are written the same way: a start to the second (`…50Z`) sorts after a position
+  of that second in milliseconds (`…50.400Z`), and `09:…+02:00` after `07:…Z`, so a good position was removed (and a stale one kept
+  the other way round). It now compares `Date.parse` of both, as `flying` already does for the start (one rule for the instants of
+  the flight, no helper added: `on` guarantees the start parses, an unreadable position is not a left-over). Noreg A90 (four
+  scenes: the start to the second, in +02:00, a position before the start in both forms), red on 6.0.0-alpha.3. Left as debt, same
+  kind and not touched: the anonymous-to-trigram migration (`newer`, app.js) and the data layer's `stampOf` (three-way merge,
+  `updated_at` compared as text, « the most recent wins ») compare dates as text; it holds while the writers all use `toISOString()`;
+  a change of the merge rule is a decision for Simplification.

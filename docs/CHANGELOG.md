@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: a position is compared with the start by instants, not as text** (`frame/app.js` `liveCheck`; frame DECISIONS; noreg A90;
+  SOG-0037). A start written to the second or in +02:00 no longer makes the frame remove a good position as a left-over (and a stale one
+  is removed whatever the form of the two dates).
+
 ## [6.0.0-alpha.3] — 2026-11-06
 
 Third alpha of the V3 **Pilot application**, nine days after the second, with the first **Company application**. The
