@@ -173,7 +173,7 @@ regímenes, velocidades, crucero, rodaje, pista»); «completa» cuando no falta
 ## Ajustes y unidades
 
 En «Ajustes del cálculo»: minutos de rodaje y de reserva, porcentaje de contingencia, y un flujo de crucero propio de
-este vuelo (sustituye al de la ficha). «Unidades mostradas» cambia el combustible (kg o lb), la velocidad, las
+este vuelo (sustituye al de la ficha), escrito en la unidad del cálculo que dice su etiqueta («lb/h»). «Unidades mostradas» cambia el combustible (kg o lb), la velocidad, las
 altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vuelo, y nada cambia en las fichas.
 
 ## Casos particulares
@@ -190,4 +190,4 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
   tarjeta lo dice y responde el METAR en su lugar. La tarjeta meteorológica indica de dónde vienen los mensajes. Sin red
   alguna, muestra la última meteorología guardada, con su hora.
 
-<!-- fr: 3888c334f97e -->
+<!-- fr: 235abbdd7a55 -->

@@ -44,7 +44,9 @@ with a sticky result (§ 9; F1, F2, F4).
 
 All checked by the quote and levels benches (F80) unless said.
 
-- **Cruise fuel flow and TAS** (`cruiseSource`): the entry for this flight; else the sheet (its RPM table at the cruise RPM and the
+- **Cruise fuel flow and TAS** (`cruiseSource`): the entry for this flight (« Débit de croisière de ce vol », typed in the unit of
+  the quote and labelled with it, « lb/h »; kept in kg/h in `pilot/<trigram>/fuel.json` `entries`, converted by
+  `frame/lib/fuel_units.js`; SOG-0059, F99); else the sheet (its RPM table at the cruise RPM and the
   plan's level, else its cruise flow); else, in this order, Poll-Schumann, SimBrief (approximate unless its accuracy is « high »),
   the estimate (approximate). TAS: sheet, EUROCONTROL, SimBrief (speed, else Mach at the level), estimate, 300 kt. The source and
   whether it is approximate are part of the answer. When the flow comes from the RPM table, `used` says what it read (SOG-0028):

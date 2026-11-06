@@ -2569,3 +2569,28 @@ def f98(c):
         raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'modules/stats/test/phases.html') from None
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
     c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}", 'every check of the bench passes')
+
+
+@case('F99', '« Débit de ce vol » is typed in the unit of the quote and says it; kept in kg/h, converted by the frame rules',
+      'F', tags=('fuel', 'aircraft'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0059 (user, 6 Nov: « la case débit de ce vol prend sa valeur en kg/h, ou en unité sélectionnée ? »; his settings: unit lb, '
+      'an entry 6000 read as kg/h): the field is in the unit chosen (lb/h here), its label says it; 7300 lb/h typed = 3311.2 kg/h kept')
+def f99(c):
+    sheet = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'lb', 'usableFuel': 40000, 'cruise': {'tasKt': 330, 'fuelFlowPerHour': 5000}}
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft']['sheetId'] = 'C30J'
+    docs.append(['pilot/ABC/fuel.json', {'schema': 1, 'displayUnit': 'lb', 'entries': {}}, 'document'])
+    c.open('fuel', docs=docs + [['aircraft/sheets/C30J.json', sheet, 'document']])
+    wait_quote(c)
+    to_step(c, 3)
+    c.js("document.querySelector('[data-module=fuel] details[data-fold=settings]').open = true")
+    sel = '[data-module=fuel] [data-entrybox] input[data-k=entry]'
+    c.until(f"!!document.querySelector('{sel}')", what='the field « débit de ce vol »')
+    lab = norm(c.js(f"document.querySelector('{sel}').closest('label').textContent"))
+    c.ok('(lb/h' in lab, lab, 'the label says lb/h, the unit of the quote')
+    c.page.fill(sel, '7300')
+    c.page.locator(sel).blur()
+    d = c.until_doc('pilot/ABC/fuel.json', lambda d: d and (d.get('entries') or {}).get('C30J'), 'the entry is kept')
+    c.eq(round(d['entries']['C30J'], 1), 3311.2, '7300 lb/h kept as 3311.2 kg/h (frame/lib/fuel_units.js)', what='kept')

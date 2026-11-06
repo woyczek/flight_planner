@@ -1395,3 +1395,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   typed. The TBM9 sheet, a row « 100 » (N1 %) against 2000 rpm, flew 429.9 instead of 400 lb/h. `tableAt` reads the table only when
   two rows frame the rpm or one is at it; else the flow typed. Sheets whose table frames the rpm compute as before. F97; counter-test
   on b7e6986ca (model.js of the base): « table … (7250 U/min, Zeile 6700 U/min) ».
+- **6 Nov 2026 — « débit de ce vol » in the unit of the quote** (SOG-0059, the user: « la case débit de ce vol prend sa valeur en
+  kg/h, ou en unité sélectionnée ? »). The field said and read kg/h whatever the unit chosen; the user's settings (read-only, 6 Nov)
+  hold the unit lb and an entry 6000 for the FA50 estimate, flown as 6000 kg/h. The field is now typed in the unit of the quote, its
+  label says it, the value is kept in kg/h (the key of always: no migration) through `fuel_units.js`. The « 585 kg for 45 min »
+  was not reproduced with the S210 sheet itself (a 370 NM, 59 min probe flew 7427 lb, the table's 25000 ft curve); the flight on
+  the user's device at 16:59 was the FA50 estimate. F99; counter-test on 8e89affe7: the label reads « (kg/h, … ».

@@ -235,7 +235,7 @@ das Blatt des Fluges trägt „für diesen Flug verwendet“.
 ## Einstellungen und Einheiten
 
 Unter „Einstellungen“ der Berechnung: Minuten für Rollen und Reserve, Prozentsatz der Zusatzmenge und ein
-Reiseflugverbrauch nur für diesen Flug (er ersetzt den des Datenblatts). „Angezeigte Einheiten“ ändert Kraftstoff (kg
+Reiseflugverbrauch nur für diesen Flug (er ersetzt den des Datenblatts), in der Einheit der Berechnung eingegeben, die seine Beschriftung nennt („lb/h“). „Angezeigte Einheiten“ ändert Kraftstoff (kg
 oder lb), Geschwindigkeit, Höhen und Entfernungen am Bildschirm; Flugflächen bleiben Flugflächen, und in den
 Datenblättern ändert sich nichts.
 
@@ -254,7 +254,7 @@ Datenblättern ändert sich nichts.
   Schlüssel sagt es die Karte, und das METAR antwortet stattdessen. Die Wetterkarte sagt, woher die Meldungen stammen.
   Ganz ohne Netz zeigt sie das zuletzt gespeicherte Wetter mit seiner Uhrzeit.
 
-<!-- fr: 3888c334f97e -->
+<!-- fr: 235abbdd7a55 -->
 
 <!-- chapter: maps -->
 # Karte

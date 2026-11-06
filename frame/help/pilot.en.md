@@ -220,7 +220,7 @@ every type used by the company (fleet, reference) that has no sheet yet is liste
 ## Settings and units
 
 In “Quote settings”: taxi and reserve minutes, contingency percentage, and a cruise fuel flow for this flight only (it
-replaces the sheet's). “Displayed units” changes fuel (kg or lb), speed, altitudes and distances on screen; levels stay
+replaces the sheet's), typed in the unit of the quote that its label says ("lb/h"). “Displayed units” changes fuel (kg or lb), speed, altitudes and distances on screen; levels stay
 flight levels, and nothing changes in the sheets.
 
 ## Special cases
@@ -237,7 +237,7 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: 3888c334f97e -->
+<!-- fr: 235abbdd7a55 -->
 
 <!-- chapter: maps -->
 # Map

@@ -17,6 +17,7 @@ import * as RM from '../../frame/lib/route_model.js'; // la route lue depuis son
 import * as RG from '../../frame/lib/routing.js'; // voies aériennes du bouton « Auto » (bibliothèque du cadre)
 import * as CF from '../../frame/lib/current_flight.js';
 import * as MS from '../../frame/lib/mission.js'; // le vol qu'une mission donne (modules/missions SPEC § 4)
+import * as FU from '../../frame/lib/fuel_units.js'; // les unités du carburant du cadre (SOG-0059 : « débit de ce vol »)
 import * as PR from '../../frame/lib/procedures.js'; // noms, sortie et entrée des procédures pour le texte de route (§ 10.31)
 import * as FMS from '../../frame/lib/fms.js'; // plan de vol écrit pour X-Plane (.fms) et MSFS (.pln), V3 § 10.28
 import {
@@ -76,7 +77,7 @@ export const meta = {
   // gardés hors ligne dès la première visite (service worker du cadre)
   files: ['performance_model.js', 'model.js', 'levels.js', 'weather.js', 'winds.js', 'progress.js', 'procedures.js',
     'procedures_texts.js', 'adnames.js', 'routecomplete.js', 'suggest.js',
-    '../../frame/lib/weather_store.js',
+    '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/flight_time.js',
     '../../frame/lib/flight_path.js', '../../frame/lib/procedures.js', '../../frame/lib/routing.js', '../../frame/lib/fms.js',
     '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js', '../../frame/lib/clipboard.js',
@@ -722,8 +723,8 @@ const TX = {
   unitSpeed: ['Vitesse', 'Speed', 'Geschwindigkeit', 'Velocidad'],
   unitAlt: ['Altitude', 'Altitude', 'Höhe', 'Altitud'],
   unitDist: ['Distance', 'Distance', 'Entfernung', 'Distancia'],
-  entry: ['Débit de croisière de ce vol (kg/h, vide : la fiche)', 'Cruise fuel flow for this flight (kg/h, empty: the sheet)',
-    'Reiseverbrauch für diesen Flug (kg/h, leer: Datenblatt)', 'Consumo de crucero de este vuelo (kg/h, vacío: la ficha)'
+  entry: ['Débit de croisière de ce vol ({u}, vide : la fiche)', 'Cruise fuel flow for this flight ({u}, empty: the sheet)',
+    'Reiseverbrauch für diesen Flug ({u}, leer: Datenblatt)', 'Consumo de crucero de este vuelo ({u}, vacío: la ficha)'
   ],
   // écran des fiches
   sheetCats: {
@@ -1899,7 +1900,9 @@ function onPlanInput(e) {
       S.settings.entries = {
         ...S.settings.entries
       };
-      num(v) ? S.settings.entries[id] = num(v) : delete S.settings.entries[id];
+      // saisi dans l'unité du devis (SOG-0059), gardé en kg/h (la clé de toujours) : la conversion est celle du cadre
+      const kg = num(v) ? FU.toKg(num(v), fuelUnitOf(S.C?.sheet?.unit)) : null;
+      kg > 0 ? S.settings.entries[id] = Math.round(kg * 1000) / 1000 : delete S.settings.entries[id];
       saveSettings();
       return refresh();
     }
@@ -4293,9 +4296,14 @@ function refresh() {
     </tbody></table></div>${G.reached ? '' : `<p class="f-warn">${esc(tt(TX.notReached, { r: vsTxt(20) }))}</p>`}` : `<p class="f-muted">${esc(tt(C.perf ? TX.noDistance : TX.noModel))}</p>`;
   // débit de ce vol (dans les réglages)
   const eb = $('[data-entrybox]');
-  if (sheet && eb.dataset.for !== sheet.id) {
-    eb.dataset.for = sheet.id;
-    eb.innerHTML = `<label class="f-field">${esc(tt(TX.entry))}<input data-k="entry" inputmode="decimal" value="${esc(S.settings.entries?.[sheet.id] ?? '')}"></label>`;
+  // dans l'unité du devis (SOG-0059 : la case disait kg/h et lisait des kg/h quelle que soit l'unité choisie), le libellé la dit
+  const eu = fuelUnitOf(sheet?.unit),
+    ek = sheet ? `${sheet.id}|${eu}` : '';
+  if (sheet && eb.dataset.for !== ek) {
+    eb.dataset.for = ek;
+    const kg = S.settings.entries?.[sheet.id],
+      shown = Number.isFinite(+kg) && kg !== '' && kg !== null ? Math.round(FU.fromKg(+kg, eu) * 10) / 10 : '';
+    eb.innerHTML = `<label class="f-field">${esc(tt(TX.entry, { u: `${eu}/h` }))}<input data-k="entry" inputmode="decimal" value="${esc(shown)}"></label>`;
   }
 }
 
