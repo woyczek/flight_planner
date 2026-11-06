@@ -1007,6 +1007,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 155 | The administrator's GitLab token: where and since when, without its value (57f581209) | acceptable |
 | 156 | Frame: the airline's logo read from the data repository and shown by a `blob:` address (02538ab1a) | **to fix** (fixed in 157) |
 | 157 | The airline's logo in PNG or WEBP only, never SVG (a9d29f446): the point of 156 fixed | acceptable |
+| 158 | Data-repository files as untrusted input: mission registry paths (4ac930efa), the site's page links, Missions apps (a15c17d0a) | acceptable, one note |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2321,6 +2322,16 @@ does not decode is refused, said once to the administrator. No `blob:` address o
 the tinted plane of the browser tab stays a `data:` address built from the suite's own file (an opaque origin when opened).
 Rule kept for every file of the data repository, which any pilot's token can write since § 10.36: treat it as written
 by any pilot.
+
+**158. Rule 157 applied (4ac930efa, a15c17d0a) — acceptable, one note.** The mission registry's `folder` and `files[0]`
+were joined into a read path as they stood (`../pilot/…` was possible): they now pass `SEGMENT`
+(`^[\p{L}\p{N}_][\p{L}\p{N}_.-]*$`, so no `.`, `..`, separator or empty segment), 200 and 120 characters at most, a `.yaml`
+or `.yml` name; the default `mission<id>.yaml` goes through the same test, so an id with a separator is refused too, and
+Fuel and the Missions module say “path refused” instead of reading. The Site module's page link was built from
+`airline/settings.json`; it now goes through `new URL`, accepts `http(s)` only without a user part, and is escaped in `href`
+with `target=_blank rel=noopener` (a `javascript:` link is gone). The second commit has no surface. Note: the `site` host of
+`airline/settings.json`, which any pilot's token can now write, is allowed by the frame as an `https` `GET` target and is the
+source of the log and fleet imports; show the host in the import's preview so a change of site is visible.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
