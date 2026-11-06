@@ -1333,8 +1333,9 @@ def i19(c):
         srv.shutdown()
         srv.server_close()
     src = (c.root / 'tools' / 'regen' / 'base.py').read_text(encoding='utf-8') + (c.root / 'tools' / 'regen' / 'base_sources.py').read_text(encoding='utf-8')
-    c.ok('env=regen_jobs.child_env()' in src and 'env=regen_jobs.git_child_env()' in src and 'git_env() if git_env else os.environ' not in src, '',
-         'the headless browser and git of the base set run with the reduced environment')
+    # the browser is started by base.launch_browser (SOG-0038: bound to the launcher), which gives the reduced environment unless the caller passes its own
+    c.ok("kw.setdefault('env', regen_jobs.child_env())" in src and 'env=regen_jobs.git_child_env()' in src and 'git_env() if git_env else os.environ' not in src, '',
+         'the headless browser (launch_browser) and git of the base set run with the reduced environment')
 
 
 @case('I20', 'Outgoing requests of the launcher: one named User-Agent, every failure said in the console without a secret', 'I', static=True,
