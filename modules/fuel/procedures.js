@@ -443,7 +443,7 @@ export function createProcedures(host) {
       icao: m.icao
     }), false)] : [fileHtml(m), readButton(m.icao, tt(TX.procReread), true)];
     if (m.unread > 0) parts.push(`<span class="fu-procunread" title="${esc([m.partialLabel, tt(m.unread === 1 ? TX.procUnread1 : TX.procUnread, { n: m.unread })].filter(Boolean).join(' · '))}">${esc(tt(m.unread === 1 ? TX.procNotRead1 : TX.procNotRead, { n: m.unread }))}</span>`);
-    return parts.filter(Boolean).join('<span class="fu-sep" aria-hidden="true"> · </span>') + ` <span data-source-slot>${chartsHtml(m.icao)}</span>`;
+    return parts.filter(Boolean).join('<span class="fu-sep" aria-hidden="true"> · </span>') + ` <span data-source-slot>${slotHtml(m.icao, side)}</span>`;
   }
   // l'adresse des cartes officielles de chaque terrain, demandée une fois à aerodb (chartsUrl, lot C2) : une adresse, null (État inconnu
   // d'aerodb) ; absente tant que la réponse n'est pas venue. Les emplacements de ce terrain se remplissent à la réponse
@@ -458,14 +458,77 @@ export function createProcedures(host) {
       charts.set(k, undefined);
       Promise.resolve().then(() => ctx.aerodb.chartsUrl(k)).catch(() => null).then(url => {
         charts.set(k, typeof url === 'string' && /^https:\/\/[^\s"'<>]+$/.test(url) ? url : null);
-        for (const el of host.body?.()?.querySelectorAll?.('[data-proc]') || []) {
-          const slot = el.dataset.icao === k ? el.querySelector('[data-source-slot]') : null;
-          if (slot) slot.innerHTML = chartsHtml(k);
-        }
+        refillSlots(k);
       });
     }
     const url = charts.get(k);
     return url ? `<a class="fu-procsrc" data-charts href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(tt(TX.procCharts))}</a>` : '';
+  }
+  /** Remplit à nouveau l'emplacement « Cartes » / « Carte » des côtés d'un terrain (une réponse d'aerodb est venue). */
+  function refillSlots(k) {
+    for (const el of host.body?.()?.querySelectorAll?.('[data-proc]') || []) {
+      const slot = el.dataset.icao === k ? el.querySelector('[data-source-slot]') : null;
+      if (slot) slot.innerHTML = slotHtml(k, el.dataset.proc);
+    }
+  }
+  // l'adresse de la carte de chaque procédure choisie, demandée une fois à aerodb (chartUrl, SOG-0045) : une adresse, null (aucune
+  // carte connue) ; absente tant que la réponse n'est pas venue. Clé : terrain, sorte, identifiant
+  const chartOfProc = new Map();
+  /** Les choix d'un côté qui ont une carte (SOG-0045) : la piste ({ icao, kind: 'RWY', id, name, runways } : aerodb y met l'ADC ou
+   *  la VAC), puis la fiche de la SID (départ), de la STAR et de l'approche (arrivée) telles qu'aerodb les a données ; « aucune » et
+   *  une fiche absente des lignes ne comptent pas. label : ce que dit le lien (« 13R », « SID », « STAR », « APP »). */
+  function chosenOf(icao, side) {
+    const o = CF.proceduresOf(host.flight())[side] || {},
+      recs = adOf(icao).recs,
+      out = [];
+    if (typeof o.rwy === 'string' && o.rwy) out.push({
+      label: o.rwy,
+      proc: Object.freeze({
+        icao,
+        kind: 'RWY',
+        id: `${icao}.RWY.${o.rwy}`,
+        name: o.rwy,
+        runways: [o.rwy]
+      })
+    });
+    for (const f of side === 'dep' ? ['sid'] : ['star', 'app']) {
+      const r = typeof o[f] === 'string' ? recs.get(o[f]) : null;
+      if (r) out.push({
+        label: f.toUpperCase(),
+        proc: r
+      });
+    }
+    return out;
+  }
+  /** L'adresse de la carte d'un choix (chartUrl d'aerodb, jamais composée ici) : une adresse https://, null, ou undefined tant que la
+   *  réponse n'est pas venue (demandée à la première vue ; la réponse remplit les emplacements du terrain). */
+  function chartOf(icao, it) {
+    const key = `${icao}|${it.proc.kind}|${it.proc.id}`;
+    if (!chartOfProc.has(key)) {
+      chartOfProc.set(key, undefined);
+      Promise.resolve().then(() => ctx.aerodb.chartUrl(it.proc)).catch(() => null).then(url => {
+        chartOfProc.set(key, typeof url === 'string' && /^https:\/\/[^\s"'<>]+$/.test(url) ? url : null);
+        refillSlots(icao);
+      });
+    }
+    return chartOfProc.get(key);
+  }
+  /** La fin de la ligne discrète d'un côté (SOG-0045) : un lien « Carte SID », « Carte 13R »… par choix dont aerodb connaît la carte
+   *  (chartUrl), dans un nouvel onglet ; la page du terrain (« Cartes », SOG-0031) tant qu'un choix n'a pas de carte connue, ou
+   *  qu'aucun n'est fait ; sans fonction chartUrl, la page du terrain seule, comme avant. */
+  function slotHtml(icao, side) {
+    const k = String(icao || '').toUpperCase();
+    if (!/^[A-Z]{4}$/.test(k)) return '';
+    const items = typeof ctx.aerodb?.chartUrl === 'function' ? chosenOf(k, side) : [],
+      links = [];
+    let rest = !items.length;
+    for (const it of items) {
+      const url = chartOf(k, it);
+      if (url) links.push(`<a class="fu-procsrc" data-chart="${esc(it.proc.kind)}" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(String(it.proc.name || it.label))}">${esc(tt(TX.procChart, { k: it.label }))}</a>`);
+      else rest = true;
+    }
+    if (rest) links.push(chartsHtml(k));
+    return links.filter(Boolean).join('<span class="fu-sep" aria-hidden="true"> · </span>');
   }
   /** Les documents sans lien public des procédures choisies d'un côté (autre source que l'eAIP) : pour le title de la ligne. */
   function sourceTitle(m, side) {

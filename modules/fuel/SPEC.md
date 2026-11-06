@@ -343,6 +343,13 @@ before the start, in step 5 after (F11).
   as `ctx.aerodb.chartsUrl(icao)` gives it (the SIA eAIP AD 2 page, ENAIRE, AirNav Ireland when an ie zone is published), asked once per
   aerodrome; an `https://` address only, `target="_blank"`, `rel="noopener noreferrer"`; nothing at all when aerodb gives null (a state
   it does not know: no empty link, no guessed search). Fuel composes no address (F42: LFML, LEMD, EIDW, and KJFK without a link).
+- **« Carte 13R » · « Carte SID » · « Carte STAR » · « Carte APP »** (SOG-0045, V3 spec § 10.39): when aerodb has
+  `chartUrl(proc)`, each choice of the side (the runway, the SID; the runway, the STAR, the approach) is asked once for its official
+  chart and every `https://` address it returns is a link at the end of the secondary line, in a new tab, the record's name in its
+  title (nothing embedded, nothing downloaded). The aerodrome page « Cartes » stays as long as one choice has no known chart (null,
+  or no answer yet) or none is made, so the line never loses the way to the charts. Without the function, the line is the one above
+  (feature detection, as `chartsUrl`). The same line, so the same links, on the in-flight step (F95). The secondary line stays one
+  element: no new chip, the tab keeps its seven elements at most.
 - **« Sur la carte »**, a text button in each side's title when the aerodrome has data, sets `#maps?choose=dep|arr&icao=…`; the Map
   comes back with `location.replace('#fuel?focus=arr&rwy=25&star=ID&app=ID&apptrans=none')`, every key of the side in one trip among
   `rwy sid star app apptrans` (lower case; `none` = « Aucune »; a missing key leaves its family as it was; no SID / STAR transition).

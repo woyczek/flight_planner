@@ -39,6 +39,8 @@ export const TX = {
   procSource: ['Source', 'Source', 'Quelle', 'Fuente'],
   // les cartes officielles du terrain (SOG-0024, SOG-0031) : la page de l'aérodrome dans l'AIP de son État, l'adresse d'aerodb (chartsUrl)
   procCharts: ['Cartes', 'Charts', 'Karten', 'Cartas'],
+  // la carte officielle d'une procédure choisie (SOG-0045) : l'adresse d'aerodb (chartUrl) ; {k} : la piste, SID, STAR ou APP
+  procChart: ['Carte {k}', 'Chart {k}', 'Karte {k}', 'Carta {k}'],
   procOnMap: ['Sur la carte', 'On the map', 'Auf der Karte', 'En el mapa'],
   // le vent sur une piste (§ 10.30) : les raisons de l'orange et du rouge, en infobulle de la piste
   procWindTailSome: ['Vent arrière {kt} kt', 'Tail wind {kt} kt', 'Rückenwind {kt} kt', 'Viento de cola {kt} kt'],

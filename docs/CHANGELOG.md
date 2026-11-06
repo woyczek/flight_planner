@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: « Carte » per chosen procedure** (`modules/fuel/procedures.js`, `procedures_texts.js`; Fuel SPEC § 9.4, INTEGRATION; noreg
+  F95; SOG-0045). The procedures card (step Route, and step Departure in flight) links the official chart of the chosen runway, SID,
+  STAR and approach (« Carte 13R », « Carte SID »…, a new tab) when `ctx.aerodb.chartUrl(proc)` gives one; the aerodrome page
+  « Cartes » stays while a choice has no known chart; without the function (aerodb's, to come), nothing changes.
+
 - **Conflicts screen: « Mark all as seen (n) »** (`frame/app.js` `renderConflicts`; frame SPEC § 3.4, DECISIONS; help ×4; noreg A92;
   SOG-0043). One click marks every unseen conflict as seen (the old ones a device keeps), the count of the Synchronisation card falls to
   zero at once; absent when none is unseen; « Seen » and « Take this version back » of each conflict are unchanged.

@@ -67,6 +67,13 @@ picker is `(await ctx.aerodb.aircraft()).search(text, 30)`, the choice `aircraft
 `aircraft().lib` (AeroDBSheets), configured by aerodb (types, sheets, fleet) and by fuel for the active sheet and the
 texts. A change of the registry (`aerodb.on('change')` with `aircraft`) reloads the list.
 
+**Charts through aerodb** (SOG-0031, SOG-0045). The procedures card asks aerodb for addresses and never composes one:
+`ctx.aerodb.chartsUrl(icao)` (the aerodrome's page in its state's AIP) and, when the function exists,
+`ctx.aerodb.chartUrl(proc)` for each choice of a side. `proc` is the procedure record as aerodb gave it (SID, STAR, APP), or for
+the runway a frozen `{ icao, kind: 'RWY', id: '<ICAO>.RWY.<rwy>', name, runways: [rwy] }` (aerodb answers the ADC or the VAC).
+Each is asked once per key (aerodrome, kind, id) and per mount; only an `https://` string is a link, anything else (null, a
+failure) is « no chart known ».
+
 ## 3. The current flight — `pilot/<trigram>/current_flight.json`
 
 One record per pilot, read and written by fuel and maps (the same flight in both). Merge rule `record`: the newest

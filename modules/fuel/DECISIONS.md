@@ -1377,3 +1377,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   text kept it; now it is a row at its place with its reason (F94; counter-test: no row). SOG-0031 — « Cartes » takes aerodb's
   `chartsUrl(icao)` alone; the module's composition (eAIP AD 2.24, EAD Basic, « source inconnue ») is removed (F42; counter-test:
   the old link carried `#LFML-AD-2.24`).
+- **6 Nov 2026 — « Carte » per chosen procedure** (SOG-0045, V3 spec § 10.39, the ergonomics session's design): the screen ships
+  before aerodb's `chartUrl(proc)` and feature-detects it, so nothing changes until the function exists. Challenged on « else the
+  aerodrome page »: a side with a runway whose chart aerodb does not know and a SID it does know would otherwise lose the aerodrome
+  page (its ADC, its VAC), so « Cartes » stays as long as one choice has no known chart; a side whose every choice has its chart shows
+  the « Carte » links alone. The runway is asked as `{ icao, kind: 'RWY', id, runways }` (no record exists for it); labels « Carte
+  13R », « Carte SID »… keep the line short in four languages. F95; counter-test on 5fde0b1cc (procedures.js of the base, texts kept):
+  no « Carte » link, the case fails on « the two charts of the departure ».

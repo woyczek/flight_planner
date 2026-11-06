@@ -2443,3 +2443,55 @@ def f94(c):
     why = norm(c.text(f'{FUEL} [data-unres-pt="QQQQQ"] small') or '')
     c.ok(why == norm(row(c, 'ptUnres')) or why.startswith(norm(row(c, 'ptUnresZone').split('{icao}')[0])), why, 'with its reason')
     c.eq(norm(c.text(f'{FUEL} [data-ptsn]') or ''), norm(row(c, 'ptsN').replace('{n}', '5')), 'counted', what='count')
+
+
+# a stand-in for aerodb's chartUrl (SOG-0045, owned by AeroDB): an invented address (.invalid, never fetched) for the departure's choices
+# (LFRS: its runway, its SID), null for the arrival's (LFML); every call kept in window.__chartCalls
+_CHART_STUB = """(() => { let ab; window.__chartCalls = [];
+  const patch = (A) => { A.chartUrl = async (p) => { window.__chartCalls.push({ icao: p.icao, kind: p.kind, id: p.id, runways: p.runways || null });
+    return p.icao === 'LFRS' ? 'https://charts.invalid/' + p.id + '.pdf' : null }; return A };
+  Object.defineProperty(window, 'AeroDB', { configurable: true, get() { return ab },
+    set(v) { ab = v; if (v && v.create && !v.__chart) { const o = v.create; v.__chart = 1; v.create = function (...a) { return patch(o.apply(this, a)) } } } }) })()"""
+_SLOT_JS = """(s) => { const e = document.querySelector('[data-module=fuel] [data-proc=' + s + '] [data-source-slot]'); return e ? {
+    charts: !!e.querySelector('[data-charts]'),
+    chart: [...e.querySelectorAll('[data-chart]')].map(a => [a.dataset.chart, a.getAttribute('href'), a.target, a.rel, a.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()]) } : null }"""
+
+
+@case('F95', '« Carte » per chosen procedure: the chart aerodb gives for the runway, SID, STAR or approach; else the aerodrome page; nothing new without the function',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0045, V3 spec 10.39 (user, 6 Nov: « accès direct à la carte de la procédure … via l\'onglet procédures ou en vol »): the address is '
+      'aerodb.chartUrl(proc) alone, feature-detected; one link per chosen runway / procedure it answers, a new tab without opener; the aerodrome '
+      'page of SOG-0031 for a choice it does not know (null); no function: the line as before; the same links on the in-flight step')
+def f95(c):
+    # 1. aerodb without chartUrl (today): the aerodrome page alone, no « Carte »
+    open_proc(c, procs=V2_PROCS)
+    wait_rows(c, 'dep')
+    c.until("(s) => !!document.querySelector('[data-module=fuel] [data-proc=' + s + '] [data-source-slot] [data-charts]')", 'dep', what='the aerodrome page of LFRS')
+    c.eq(c.js(_SLOT_JS, 'dep'), {'charts': True, 'chart': []}, 'no function: the aerodrome page alone', what='departure without chartUrl')
+    # 2. a chartUrl that knows the departure's charts and none of the arrival's
+    c.page.add_init_script(_CHART_STUB)
+    open_proc(c, procs=V2_PROCS)
+    wait_rows(c, 'dep')
+    want = [['RWY', 'https://charts.invalid/LFRS.RWY.03.pdf', '_blank', 'noopener noreferrer', norm(tx(PT, 'procChart', c.lang).replace('{k}', '03'))],
+            ['SID', 'https://charts.invalid/LFRS.SID.NTS1A.RW03.NONE.pdf', '_blank', 'noopener noreferrer', norm(tx(PT, 'procChart', c.lang).replace('{k}', 'SID'))]]
+    c.until("(s) => document.querySelectorAll('[data-module=fuel] [data-proc=' + s + '] [data-source-slot] [data-chart]').length === 2", 'dep',
+            what='the two charts of the departure')
+    c.eq(c.js(_SLOT_JS, 'dep'), {'charts': False, 'chart': want}, 'one « Carte » per choice, its address as aerodb gives it; every choice has its chart: no aerodrome page',
+         what='departure with chartUrl')
+    calls = c.js('window.__chartCalls')
+    c.ok({'icao': 'LFRS', 'kind': 'RWY', 'id': 'LFRS.RWY.03', 'runways': ['03']} in calls, calls, 'the runway asked as { icao, kind RWY, id, runways }')
+    c.ok(any(x['id'] == 'LFRS.SID.NTS1A.RW03.NONE' and x['kind'] == 'SID' and x['icao'] == 'LFRS' for x in calls), calls, 'the SID asked with its record')
+    unfold(c, 'arr')
+    c.until("(s) => { const e = document.querySelector('[data-module=fuel] [data-proc=' + s + '] [data-source-slot]'); return !!e && !!e.querySelector('[data-charts]') }",
+            'arr', what='the aerodrome page of LFML')
+    c.until("() => window.__chartCalls.filter(x => x.icao === 'LFML').length >= 3", what='the arrival runway, STAR and approach were asked')
+    c.settle()
+    c.eq(c.js(_SLOT_JS, 'arr'), {'charts': True, 'chart': []}, 'chartUrl answers null: the aerodrome page, no « Carte »', what='arrival, chartUrl null')
+    # 3. in flight: the same links on the Departure step
+    open_proc(c, procs=V2_PROCS, started=True)
+    c.tap(f'{FUEL} .fu-steps button[data-step="4"]')
+    c.until("!!document.querySelector('[data-module=fuel] [data-block=procs]:not(.fu-hide) [data-proc=dep]')", timeout=10000, what='the procedures on the in-flight step')
+    unfold(c, 'dep')
+    c.until("document.querySelectorAll('[data-module=fuel] [data-procbox=start] [data-proc=dep] [data-source-slot] [data-chart]').length === 2",
+            what='the two charts of the departure in flight')
+    c.eq(c.js(_SLOT_JS, 'dep'), {'charts': False, 'chart': want}, 'in flight: the same « Carte » links', what='in-flight departure')
