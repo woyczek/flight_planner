@@ -1989,6 +1989,9 @@ the Map had seen in between: the same line to within the frame's own sampling.
   budget is met with room (D114); the order of the rows is runways, taxiways, stands, holds, then by name (« A1 » before « A10 »)
   because the 40-row cap would otherwise hide a whole kind; `groundLayout` returns nothing and builds no state without AeroDB's
   `ground()`; the hit list is in view coordinates and replaced at the end of each drawing.
+- **Seen on the real drawing** (LFPO, 6 Nov, the Map at zoom 15 and 16): the first list showed « L1 » three times (one taxiway, several OSM
+  ways): one row per kind and name now, the row's id is `g:<kind>:<name>`, highlighting and « see » take every piece; the layer's
+  attribution sits above the base map's own (same corner, they overlapped).
 - **Not done**: runway rows depend on the threshold vectors being drawn (zoom at or above `runwayZoom`): a view without them lists
   none; on a phone there is no hover, the touch highlights and frames at once; « Done » closes the panel only (the layer stays drawn).
 - **Noreg** D112 (by zoom, by AeroDB, by the flight's aerodromes), D113 (filter, chips, highlight from the list, touch on the map,

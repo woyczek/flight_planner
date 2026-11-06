@@ -577,7 +577,8 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
   figures are the conservative ones): noreg D114 asserts a median under 16 ms.
 - **The panel** (`openData('ground', 'ground:<ICAO>')`, copied from `choose`): a button « Ground » on the aerodrome card of the departure and
   the arrival (only when `ground()` exists); a filter field (sub-string, no case, no accent), chips Taxiways / Stands / Holds, one row per
-  element (runways first when drawn, then by kind and name, 40 rows at most then « n more: narrow the filter »), the mark « not drawn »
+  kind and name (OpenStreetMap cuts a taxiway into several ways: the row stands for all of them and highlights them together; runways first
+  when drawn, then by kind and name, 40 rows at most then « n more: narrow the filter »), the mark « not drawn »
   on the rows whose name found no place, « Done ». Hover or focus of a row calls `setGroundHl(id)` (the map redraws with it highlighted);
   a touch on a row highlights it and frames it (`fitBounds` of the line, `easeTo` zoom 17 of the point); from the map, a touch within 6 px
   of a line or a point (`groundAt` / `groundTap`, the hit list `S.ground.hits`) highlights the element and opens its row. A runway row

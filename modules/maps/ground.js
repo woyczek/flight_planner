@@ -53,6 +53,8 @@ const G = () => S.ground ||= {
   drawn: new Map(), // id → vrai si son nom a trouvé une place au dernier dessin
   hits: [] // { id, x, y | segs } en coordonnées de la vue
 };
+/** Le groupe d'un élément : sa nature et son nom (OpenStreetMap découpe une voie en plusieurs tronçons : une ligne de la liste, tous les tronçons surlignés). */
+export const grpOf = it => `g:${it.kind}:${it.name}`;
 const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const finite = (v, lo, hi) => Number.isFinite(+v) && +v >= lo && +v <= hi;
 const ll = p => Array.isArray(p) && finite(p[0], -180, 180) && finite(p[1], -90, 90) ? [+p[0], +p[1]] : null;
@@ -173,7 +175,7 @@ export function groundLayout(toC, zReal, W, H, rwys = []) {
     halo = dark ? 'rgba(0,0,0,.55)' : 'rgba(255,255,255,.7)',
     shown = [];
   for (const it of items) {
-    if (!g.kinds[it.kind] && g.hl !== it.id) continue;
+    if (!g.kinds[it.kind] && g.hl !== grpOf(it)) continue;
     if (it.kind === 'twy') {
       const pts = it.line.map(p => toC(p[1], p[0]));
       if (inside(pts, W, H)) shown.push({
@@ -196,12 +198,12 @@ export function groundLayout(toC, zReal, W, H, rwys = []) {
       c.lineCap = 'round';
       c.lineJoin = 'round';
       for (const s of shown)
-        if (s.it.kind === 'twy' && s.it.id !== hl) stroke(c, s.pts, 2, col);
+        if (s.it.kind === 'twy' && grpOf(s.it) !== hl) stroke(c, s.pts, 2, col);
       for (const s of shown)
         if (s.it.kind !== 'twy') {
           const p = s.pts[0];
           c.fillStyle = s.it.kind === 'hold' ? '#d6173f' : S.theme.accent;
-          c.globalAlpha = s.it.id === hl ? 1 : .85;
+          c.globalAlpha = grpOf(s.it) === hl ? 1 : .85;
           c.fillRect(p.x - 2, p.y - 2, 4, 4);
           c.globalAlpha = 1;
         }
@@ -244,8 +246,7 @@ export function groundLayout(toC, zReal, W, H, rwys = []) {
           }
         }
       // l'élément surligné, par-dessus tout : plus épais, teinte d'accent
-      const h = shown.find(s => s.it.id === hl);
-      if (h) {
+      for (const h of shown.filter(s => grpOf(s.it) === hl)) {
         if (h.it.kind === 'twy') {
           stroke(c, h.pts, 6, halo);
           stroke(c, h.pts, 3.5, S.theme.accent);
@@ -270,17 +271,19 @@ export function groundLayout(toC, zReal, W, H, rwys = []) {
         const t = ATTRIBUTION,
           w = c.measureText(t).width;
         c.fillStyle = halo;
-        c.fillRect(4, H - 16, w + 8, 14);
+        c.fillRect(4, H - 34, w + 8, 14); // au-dessus de l'attribution du fond de carte (même coin)
         c.fillStyle = dark ? '#ddd' : '#333';
-        c.fillText(t, 8, H - 5);
+        c.fillText(t, 8, H - 23);
       }
       c.restore();
       g.drawn = drawn;
       g.hits = shown.map(s => s.it.kind === 'twy' ? {
         id: s.it.id,
+        grp: grpOf(s.it),
         pts: s.pts
       } : {
         id: s.it.id,
+        grp: grpOf(s.it),
         x: s.pts[0].x,
         y: s.pts[0].y
       });
@@ -325,7 +328,7 @@ export function groundAt(x, y) {
     const e = h.pts ? Math.min(...h.pts.slice(1).map((p, i) => distSeg(x, y, h.pts[i], p))) : Math.hypot(x - h.x, y - h.y);
     if (e < d) {
       d = e;
-      best = h.id;
+      best = h.grp;
     }
   }
   return best;
@@ -355,10 +358,26 @@ const rowsOf = icao => {
   const nat = (a, b) => KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind) || a.name.localeCompare(b.name, 'en', {
     numeric: true
   });
-  rows.push(...(rec?.items || []).filter(it => g.kinds[it.kind] && it.name && (!q || fold(it.name).includes(q))).sort(nat));
+  const groups = new Map();
+  for (const it of (rec?.items || []).filter(it => g.kinds[it.kind] && it.name && (!q || fold(it.name).includes(q)))) {
+    const k = grpOf(it);
+    if (!groups.has(k)) groups.set(k, {
+      id: k,
+      kind: it.kind,
+      name: it.name,
+      ids: []
+    });
+    groups.get(k).ids.push(it.id);
+  }
+  rows.push(...[...groups.values()].sort(nat));
   return rows.filter(r => r.kind === 'rwy' ? !q || fold(r.name).includes(q) : true);
 };
-const rowHtml = r => `<button type="button" class="mp-gd-row" data-id="${esc(r.id)}" data-kind="${r.kind}" data-hl="${G().hl === r.id ? 1 : 0}" data-drawn="${G().drawn.get(r.id) === false ? 0 : 1}"><span class="mp-gd-k">${esc(r.kind === 'rwy' ? tt(TX.gRunway) : kindText(r.kind))}</span><b>${esc(r.name)}</b><span class="mp-gd-no">${esc(tt(TX.gNotDrawn))}</span></button>`;
+/** Vrai si le nom de la ligne a été demandé au dernier dessin et qu'aucun de ses tronçons n'a trouvé de place. */
+const notDrawn = r => {
+  const d = (r.ids || [r.id]).filter(i => G().drawn.has(i));
+  return d.length > 0 && d.every(i => G().drawn.get(i) === false);
+};
+const rowHtml = r => `<button type="button" class="mp-gd-row" data-id="${esc(r.id)}" data-kind="${r.kind}" data-hl="${G().hl === r.id ? 1 : 0}" data-drawn="${notDrawn(r) ? 0 : 1}"><span class="mp-gd-k">${esc(r.kind === 'rwy' ? tt(TX.gRunway) : kindText(r.kind))}</span><b>${esc(r.name)}</b><span class="mp-gd-no">${esc(tt(TX.gNotDrawn))}</span></button>`;
 const listHtml = icao => {
   const rec = recOf(icao);
   if (!rec || rec.status === 'loading') return `<p class="mp-gd-msg">${esc(tt(TX.gLoading))}</p>`;
@@ -382,7 +401,11 @@ function render() {
 /** Met à jour la marque « non dessiné » des lignes ouvertes (sans refaire la liste). */
 function marks() {
   const g = G();
-  for (const b of S.dbodyEl?.querySelectorAll('.mp-gd-row') || []) setData(b, 'drawn', g.drawn.get(b.dataset.id) === false ? '0' : '1');
+  const rows = new Map(rowsOf(g.icao).map(r => [r.id, r]));
+  for (const b of S.dbodyEl?.querySelectorAll('.mp-gd-row') || []) {
+    const r = rows.get(b.dataset.id);
+    setData(b, 'drawn', r && notDrawn(r) ? '0' : '1');
+  }
 }
 /** Ouvre le panneau du sol d'un terrain (départ ou arrivée du vol). */
 export function openFor(icao) {
@@ -411,11 +434,14 @@ export function setGroundHl(id, fromMap = false) {
 }
 /** « Voir » : cadre l'élément (la boîte d'un trait, le point au zoom 17). */
 function see(id) {
-  const it = [...G().cache.values()].flatMap(r => r.items || []).find(x => x.id === id);
+  const its = [...G().cache.values()].flatMap(r => r.items || []).filter(x => grpOf(x) === id),
+    it = its[0];
   if (!it || !S.map) return;
+  const box = its.reduce((b, x) => [Math.min(b[0], x.box[0]), Math.min(b[1], x.box[1]), Math.max(b[2], x.box[2]), Math.max(b[3], x.box[3])],
+    its[0].box);
   if (it.line) S.map.fitBounds([
-    [it.box[0], it.box[1]],
-    [it.box[2], it.box[3]]
+    [box[0], box[1]],
+    [box[2], box[3]]
   ], {
     padding: 60,
     maxZoom: 17,
