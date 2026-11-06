@@ -88,7 +88,15 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
 - **`policy: 'cache'`**: files of this device only, never synchronised (last OFP, device settings). Use it instead of
   any IndexedDB or localStorage of your own.
 - **Dates**: a record carries `updated_at` (ISO date), which decides a conflict; `updatedAt` is read when `updated_at`
-  is missing (V2 files).
+  is missing (V2 files). Dates are compared **as instants** (`Date.parse`), never as text (`…50Z`, `…50.400Z` and
+  `…+02:00` are all valid and sort wrongly as strings); `FrameData.isNewer(a, b)` is the one rule (a is strictly later than
+  b; equal instants: not newer, the local record wins). A record without a readable date counts as the oldest.
+- **What counts as a conflict** (6 Nov 2026, SOG-0043): two versions that say the same thing once parsed, `updated_at` /
+  `updatedAt` aside (key order, layout), are **no conflict**: nothing counted, nothing kept. For a `record` file with a known base
+  (the version of the last pass), the merge is **by top-level key**: a key changed on one side only is taken from that side; a
+  conflict is counted (once per file) only when the same key changed on both sides to two values; the newest wins that key, the
+  loser is kept whole in the conflicts with `keys` naming the keys in dispute. `pilot/<tri>/current_flight.json` is the exception:
+  its plan and derived sections depend on the route, so it stays a whole file (the newest wins, the loser kept).
 
 ## 4. Reading
 

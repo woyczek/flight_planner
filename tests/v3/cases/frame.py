@@ -3412,3 +3412,25 @@ def a90(c):
             c.ok(bool((got.get('progress') or {}).get('actual')), str(got.get('progress')), what)
         c.eq((got['started']['at'], (got.get('progress') or {}).get('phase')), (started, 'cruise'), 'the start and the rest of the progress are untouched', what=what[:40])
     c.check_errors()
+
+
+@case('A91', 'The documents kept before the trigram are taken up by instants: the later one wins, whatever the form of its date', 'A', tags=('data',),
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0043 (frame/app.js adoptAnon, V3 Frame): a document present under pilot/ANON/ and under the trigram keeps the later one (instant of updated_at, FrameData.isNewer), the other goes to the conflicts; never compared as text (+02:00 against Z, a second against milliseconds)')
+def a91(c):
+    docs = [
+        # the anonymous one is 09:00+02:00 = 07:00Z, the trigram's is 07:30Z: the trigram's is later (as text, « 09 » sorts after « 07 »)
+        ['pilot/ANON/reports/r1.json', {'schema': 1, 'v': 'anon', 'updated_at': '2026-11-06T09:00:00+02:00'}, 'document'],
+        ['pilot/ABC/reports/r1.json', {'schema': 1, 'v': 'abc', 'updated_at': '2026-11-06T07:30:00.000Z'}, 'document'],
+        # the anonymous one is 400 ms after the trigram's: the anonymous one is later (as text, « …50Z » sorts after « …50.400Z »)
+        ['pilot/ANON/reports/r2.json', {'schema': 1, 'v': 'anon', 'updated_at': '2026-11-06T07:00:50.400Z'}, 'document'],
+        ['pilot/ABC/reports/r2.json', {'schema': 1, 'v': 'abc', 'updated_at': '2026-11-06T07:00:50Z'}, 'document'],
+    ]
+    c.open('flightlog', flight=False, docs=docs)
+    c.until_doc('pilot/ANON/reports/r1.json', lambda d: d is None, what='the anonymous documents are taken up', timeout=15000)
+    c.until_doc('pilot/ANON/reports/r2.json', lambda d: d is None, what='the second anonymous document is taken up', timeout=15000)
+    c.eq(c.doc('pilot/ABC/reports/r1.json')['v'], 'abc', 'the trigram’s document is the later instant (07:30Z against 07:00Z): kept', what='r1')
+    c.eq(c.doc('pilot/ABC/reports/r2.json')['v'], 'anon', 'the anonymous document is 400 ms later: it replaces the trigram’s', what='r2')
+    lost = c.js("() => FrameData.conflicts().then(cs => cs.filter(x => x.path.startsWith('pilot/ABC/reports/')).map(x => [x.path, JSON.parse(x.lost).v]).sort())")
+    c.eq(lost, [['pilot/ABC/reports/r1.json', 'anon'], ['pilot/ABC/reports/r2.json', 'abc']], 'the loser of each is kept in the conflicts', what='conflicts')
+    c.check_errors()

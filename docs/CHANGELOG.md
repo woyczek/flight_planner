@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the synchronisation counts a conflict only when one is** (`frame/store/frame_data.js`, `frame/app.js`; frame INTEGRATION, SPEC,
+  DECISIONS; noreg A53, A91; SOG-0043). Two versions of a file that say the same thing (`updated_at` aside, key order, layout) are no
+  conflict; for a `record` file with a known base the merge is by top-level key (a key changed on one side is taken, a conflict is
+  counted only when the same key changed on both sides; the loser is kept whole, with the keys in dispute); the current flight stays a
+  whole file. Dates are compared as instants everywhere in the frame (`FrameData.isNewer`), not as text: the merge, the import of a
+  backup, the taking up of local copies and the anonymous-to-trigram migration.
+
 - **Profile: Shift + drag draws a rectangle and zooms it** (`modules/maps/lib/axis_window.js`, `profile_view.js`; SPEC § 8.6; noreg D111; SOG-0005,
   decision 1.7). On the whole flight or a tight window, a mouse drag with Shift held traces a band over the distances, zoomed at the
   release; the plain drag stays the reading cursor (whole) or moves the window (tight), the double click goes back; the manual (×4) says so.

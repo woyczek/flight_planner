@@ -2508,3 +2508,20 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   kind and not touched: the anonymous-to-trigram migration (`newer`, app.js) and the data layer's `stampOf` (three-way merge,
   `updated_at` compared as text, « the most recent wins ») compare dates as text; it holds while the writers all use `toISOString()`;
   a change of the merge rule is a decision for Simplification.
+- **6 Nov 2026 — What counts as a conflict, and one rule for the instants** (SOG-0043, Réglages: the Synchronisation card said « 8 »
+  while git had no conflict in `data/` since 30 Oct; Simplification, decision 1.8 of the roadmap point; V3 Frame): the `record` merge
+  counted a conflict for every file changed on both sides and kept the whole newest file, even when the two sides touched other keys or
+  only `updated_at`. Now, as `tools/data_sync.py` since Réglages' e43cdcf7c: (1) **identical once parsed, `updated_at` / `updatedAt`
+  aside** (key order, layout): no conflict, nothing kept (`sameData`, the text of the later one); (2) **by top-level key with the base**
+  (`doc.base`, the text of the last pass): a key changed on one side only is taken from that side, a conflict is counted only when the
+  same key changed on both sides to two values (the newest wins that key, the loser kept **whole**, because `restore` takes the kept text
+  back as a file, with `keys` naming the keys in dispute); no deeper than the first level; the stamp is the newest one's. **Not for
+  `current_flight.json`**, which stays a whole file: its plan and the sections derived from the route (`profile`, `quote`, `ofp`,
+  `weather`, `progress.plannedPos`, `eta`, `fuelRemainingKg`) would come from two devices and contradict each other (Réglages' own reason
+  for not merging by key in data_sync); the test is on the path (`WHOLE`), reversible in one line. Without a base (the first pass that
+  takes up local copies, `adoptLocal`) the file rule stays, after rule 1. `journal` and `keyed` rules are unchanged apart from (1) and (3).
+  (3) **One rule for the instants**: `instantOf` / `isNewer` / `notOlder` (`Date.parse`, 0 for a missing or unreadable date; equal
+  instants: the local one wins) replace the four text comparisons of `stampOf` (record, keyed, import of a backup, taking up local
+  copies) and `newer` of the anonymous-to-trigram migration (`app.js`, now `FrameData.isNewer`); `liveCheck` already compared instants
+  (a8132a34d). An unreadable stamp no longer orders as text: it counts as the oldest. Noreg A53 (the store bench: five merge scenarios
+  and the instants) and A91 (the migration), red on e902fe003. No atomic `update(path, fn)`: no case showed the need.

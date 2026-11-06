@@ -161,11 +161,70 @@
   // ---------------------------------------------------------------- fusion à trois voies
   /** Date d'une fiche (updated_at, updatedAt) ; '' sans date. */
   const stampOf = v => v && typeof v === 'object' ? String(v.updated_at || v.updatedAt || '') : '';
-  /** Règles de fusion (base, local, distant : valeurs analysées) → { value, lost } ; lost : version perdante gardée. */
+  /** L'instant d'une date ISO en millisecondes ; 0 sans date ou illisible. Les dates se comparent par l'instant, jamais comme
+   *  du texte (« …50Z » se range après « …50.400Z », « 09:…+02:00 » après « 07:…Z ») : la seule règle du cadre (SOG-0037, 6 nov. 2026 ;
+   *  liveCheck de app.js compare de même). */
+  const instantOf = d => Date.parse(d) || 0;
+  /** La fiche a est strictement plus récente que b (par l'instant de son updated_at / updatedAt). */
+  const isNewer = (a, b) => instantOf(stampOf(a)) > instantOf(stampOf(b));
+  /** La fiche a est au moins aussi récente que b : à égalité d'instant, a (la locale) gagne. */
+  const notOlder = (a, b) => !isNewer(b, a);
+  const STAMPS = ['updated_at', 'updatedAt'];
+  const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
+  /** JSON canonique : clés triées à tous les niveaux, pour comparer deux valeurs sans regarder l'ordre des clés ni la mise en forme. */
+  const canon = v => JSON.stringify(v, (k, x) => isObj(x) ? Object.fromEntries(Object.keys(x).sort().map(y => [y, x[y]])) : x);
+  /** Deux valeurs analysées disent la même chose : mêmes données hors updated_at / updatedAt de premier niveau. */
+  const sameData = (a, b) => {
+    const bare = v => {
+      if (!isObj(v)) return v;
+      const o = {
+        ...v
+      };
+      for (const k of STAMPS) delete o[k];
+      return o;
+    };
+    return canon(bare(a)) === canon(bare(b));
+  };
+  /** Documents gardés entiers (jamais fusionnés par clé) : le vol courant — son plan et ses sections dérivées (profile, quote, ofp,
+   *  weather, progress.plannedPos…) dépendent de la route et du niveau ; des clés prises de deux appareils feraient un état
+   *  incohérent (décision du 6 nov. 2026, après la raison de Réglages pour data_sync). */
+  const WHOLE = /(^|\/)current_flight\.json$/;
+  /** Fusion par clé de premier niveau, avec la base : une clé changée d'un seul côté (depuis la base) est prise de ce côté ; changée
+   *  des deux côtés en deux valeurs, la version la plus récente (instant) gagne la clé ; la perdante est gardée entière (restore la
+   *  reprend comme un fichier), avec la liste des clés en conflit ; l'horodatage est celui de la plus récente. Pas plus profond que le
+   *  premier niveau. */
+  function fieldwise(base, local, remote) {
+    const localWins = notOlder(local, remote),
+      win = localWins ? local : remote,
+      lose = localWins ? remote : local,
+      value = {},
+      lost = {};
+    for (const k of new Set([...Object.keys(remote), ...Object.keys(local)])) {
+      if (STAMPS.includes(k)) {
+        if (k in win) value[k] = win[k];
+        else if (k in lose) value[k] = lose[k];
+        continue;
+      }
+      const cl = canon(local[k]) !== canon(base[k]),
+        cr = canon(remote[k]) !== canon(base[k]),
+        from = cl && !cr ? local : cr && !cl ? remote : win; // pas changée ou changée des deux côtés : la plus récente
+      if (cl && cr && canon(local[k]) !== canon(remote[k])) lost[k] = k in lose ? lose[k] : null;
+      if (k in from) value[k] = from[k];
+    }
+    return {
+      value,
+      lost: Object.keys(lost).length ? lose : null,
+      keys: Object.keys(lost),
+      side: localWins ? 'remote' : 'local'
+    };
+  }
+  /** Règles de fusion (base, local, distant, chemin : valeurs analysées) → { value, lost } ; lost : version perdante gardée. */
   const merge = {
-    /** Une fiche par fichier : la plus récente (updated_at) gagne, la locale à égalité. */
-    record(base, local, remote) {
-      const localWins = stampOf(local) >= stampOf(remote);
+    /** Une fiche par fichier : avec une base, fusion par clé de premier niveau (fieldwise) ; sans base, ou pour un document gardé
+     *  entier (WHOLE), la plus récente (instant de updated_at) gagne le fichier, la locale à égalité. */
+    record(base, local, remote, path = '') {
+      if (isObj(base) && isObj(local) && isObj(remote) && !WHOLE.test(path)) return fieldwise(base, local, remote);
+      const localWins = notOlder(local, remote);
       return {
         value: localWins ? local : remote,
         lost: localWins ? remote : local,
@@ -215,7 +274,7 @@
           } else if (same(y, z) || same(z, x)) out.push(y);
           else if (same(y, x)) out.push(z);
           else {
-            const yWins = stampOf(y) >= stampOf(z);
+            const yWins = notOlder(y, z);
             out.push(yWins ? y : z);
             lost.push(yWins ? z : y);
           }
@@ -255,14 +314,23 @@
         side: 'remote'
       }
     };
-    const m = rule(b, l, r),
+    // deux versions qui disent la même chose (hors updated_at / updatedAt, ordre des clés, mise en forme) : ni conflit ni perdante
+    // gardée ; le texte de la plus récente (la locale à égalité), comme data_sync (Réglages, e43cdcf7c)
+    if (sameData(l, r)) return {
+      text: notOlder(l, r) ? local : remote,
+      conflict: null
+    };
+    const m = rule(b, l, r, path),
       text = textOf(path, m.value);
     return {
       text,
       conflict: m.lost ? {
         kept: text,
         lost: textOf(path, m.lost),
-        side: m.side
+        side: m.side,
+        ...(m.keys?.length ? {
+          keys: m.keys // clés de premier niveau changées des deux côtés (fusion par clé) ; absent : le fichier entier
+        } : {})
       } : null
     };
   }
@@ -1552,7 +1620,7 @@
           r.kept++;
           continue;
         }
-        if (mine && !(stampOf(valueOf(d.path, d.text)) > stampOf(valueOf(d.path, mine.text)))) {
+        if (mine && !isNewer(valueOf(d.path, d.text), valueOf(d.path, mine.text))) {
           r.kept++;
           continue;
         }
@@ -1569,9 +1637,9 @@
       // ni la même ni plus récente ; une suppression en attente n'est jamais reprise (rien d'ici n'est perdu)
       for (const p of pend) {
         const mine = await idb('docs', 'get', p.path);
-        if (p.text === null || await idb('pending', 'get', p.path) || (mine && (mine.text === p.text || !(stampOf(valueOf(p.path, p
-              .text)) >
-            stampOf(valueOf(p.path, mine.text)))))) r.kept++;
+        if (p.text === null || await idb('pending', 'get', p.path) || (mine && (mine.text === p.text || !isNewer(valueOf(p.path, p
+              .text),
+            valueOf(p.path, mine.text))))) r.kept++;
         else await queue(p.path, p.text);
       }
       const seen = new Set((await idb('conflicts', 'getAll')).map(c => `${c.path}|${c.at}|${c.lost}`));
@@ -1634,6 +1702,7 @@
     start,
     adapter,
     declare,
+    isNewer, // la fiche a est plus récente que b, par l'instant de updated_at / updatedAt (la seule règle de comparaison des dates)
     sync,
     status,
     onStatus,

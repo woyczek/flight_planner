@@ -237,6 +237,259 @@
       check('conflict signalled (event), no question asked', alerted === 1, alerted);
       check('status counts the unseen conflict', (await d.status()).conflicts === 1, await d.status());
     },
+    // ---- fusion d'une fiche modifiée des deux côtés (6 nov. 2026, SOG-0043 : « 8 conflits » alors que git n'en avait aucun) : la même règle que
+    // tools/data_sync.py (identiques hors updated_at : rien), un conflit par clé de premier niveau changée des deux côtés (avec la base),
+    // les dates comparées en instants ; le vol courant reste un fichier entier
+    async 'record merge: identical but for updated_at, key order and layout is no conflict'() {
+      const p = 'disponibilites/TST/2026-W46.json',
+        base = rec('TST', '2026-11-02T10:00:00Z', {
+          a: 1,
+          b: {
+            x: 1,
+            y: 2
+          }
+        }),
+        d = await fresh({
+          [p]: JSON.stringify(base)
+        });
+      await d.sync();
+      await d.put(p, {
+        b: {
+          y: 2,
+          x: 1
+        },
+        a: 1,
+        updated_at: '2026-11-02T10:05:00Z',
+        pilote: 'TST'
+      });
+      await T('write', {
+        files: {
+          [p]: JSON.stringify({
+            ...base,
+            updated_at: '2026-11-02T10:07:00.250Z'
+          }, null, 4)
+        }
+      });
+      const r = await d.sync();
+      check('no conflict counted', r.ok && r.conflicts === 0, r);
+      check('none kept, none to see', (await FD.conflicts()).length === 0 && (await d.status()).conflicts === 0, await FD.conflicts());
+      check('the document says the same thing', JSON.stringify((await d.get(p)).b) === JSON.stringify({
+        x: 1,
+        y: 2
+      }), await d.get(p));
+    },
+    async 'record merge: different top-level keys changed on each side are both kept, no conflict'() {
+      const p = 'disponibilites/TST/2026-W47.json',
+        base = rec('TST', '2026-11-02T10:00:00Z', {
+          a: 1,
+          b: 2,
+          c: 3
+        }),
+        d = await fresh({
+          [p]: JSON.stringify(base)
+        });
+      await d.sync();
+      const {
+        c,
+        ...noC
+      } = base;
+      await d.put(p, {
+        ...noC,
+        a: 10,
+        updated_at: '2026-11-02T10:05:00Z'
+      }); // a changed, c removed
+      await T('write', {
+        files: {
+          [p]: JSON.stringify({
+            ...base,
+            b: 20,
+            updated_at: '2026-11-02T10:03:00Z'
+          })
+        }
+      });
+      const r = await d.sync(),
+        st = await stats(),
+        got = JSON.parse(st.files[p]);
+      check('no conflict counted, none kept', r.ok && r.conflicts === 0 && (await FD.conflicts()).length === 0, r);
+      check('a from this side, b from the other, c removed here and untouched there', got.a === 10 && got.b === 20 && !('c' in got),
+        got);
+      check('the stamp is the newest one', got.updated_at === '2026-11-02T10:05:00Z', got);
+    },
+    async 'record merge: the same key changed on both sides is one conflict, the newest wins that key, the loser is kept whole with the key named'
+      () {
+        const p = 'disponibilites/TST/2026-W48.json',
+          base = rec('TST', '2026-11-02T10:00:00Z', {
+            a: 1,
+            b: 2,
+            c: 3
+          }),
+          d = await fresh({
+            [p]: JSON.stringify(base)
+          });
+        await d.sync();
+        await d.put(p, {
+          ...base,
+          a: 'local',
+          c: 30,
+          updated_at: '2026-11-02T10:05:00Z'
+        });
+        await T('write', {
+          files: {
+            [p]: JSON.stringify({
+              ...base,
+              a: 'remote',
+              b: 20,
+              updated_at: '2026-11-02T10:03:00Z'
+            })
+          }
+        });
+        const r = await d.sync(),
+          got = JSON.parse((await stats()).files[p]),
+          cs = await FD.conflicts();
+        check('one conflict counted', r.ok && r.conflicts === 1 && cs.length === 1, [r, cs]);
+        check('a: the newest (local); b: only the remote changed it; c: only the local one did', got.a === 'local' && got.b === 20 && got
+          .c === 30, got);
+        check('the loser kept whole (restore takes it back as a file), with the key in conflict named', cs.length === 1 && JSON.parse(cs[
+            0].lost).a ===
+          'remote' && JSON.parse(cs[0].lost).b === 20 && JSON.stringify(cs[0].keys) === '["a"]', cs);
+      },
+    async 'record merge: the current flight stays a whole file (its derived sections depend on the route)'() {
+      const p = 'pilot/TST/current_flight.json',
+        base = {
+          updated_at: '2026-11-02T10:00:00Z',
+          route: {
+            text: 'LFRS LFML'
+          },
+          profile: {
+            tocNm: 60
+          }
+        };
+      await fresh({
+        [p]: JSON.stringify(base)
+      });
+      const v = FD.adapter({
+        id: 'vol',
+        reads: ['pilot/'],
+        writes: [{
+          prefix: 'pilot/',
+          merge: 'record'
+        }]
+      });
+      await v.sync();
+      await v.put(p, {
+        ...base,
+        route: {
+          text: 'LFRS LFLL'
+        },
+        updated_at: '2026-11-02T10:05:00Z'
+      });
+      await T('write', {
+        files: {
+          [p]: JSON.stringify({
+            ...base,
+            profile: {
+              tocNm: 99
+            },
+            updated_at: '2026-11-02T10:03:00Z'
+          })
+        }
+      });
+      const r = await v.sync(),
+        got = JSON.parse((await stats()).files[p]),
+        cs = await FD.conflicts();
+      check('one conflict, the newest file kept whole: the route of the newest and the profile it came with', r.conflicts === 1 && got
+        .route.text ===
+        'LFRS LFLL' && got.profile.tocNm === 60, [r, got]);
+      check('the loser kept whole', cs.length === 1 && JSON.parse(cs[0].lost).profile.tocNm === 99, cs);
+    },
+    async 'instants: the most recent is the one that is later, whatever the form of the date'() {
+      check('FrameData.isNewer compares instants: +02:00 and Z, to the second and in milliseconds, equal instants, no date', FD
+        .isNewer({
+          updated_at: '2026-11-06T07:30:00.000Z'
+        }, {
+          updated_at: '2026-11-06T09:00:00+02:00'
+        }) && FD.isNewer({
+          updated_at: '2026-11-06T07:00:50.400Z'
+        }, {
+          updated_at: '2026-11-06T07:00:50Z'
+        }) && !FD.isNewer({
+          updated_at: '2026-11-06T07:00:50.000Z'
+        }, {
+          updated_at: '2026-11-06T07:00:50Z'
+        }) && FD.isNewer({
+          updatedAt: '2026-11-06T07:00:00Z'
+        }, {}) && !FD.isNewer({}, {
+          updated_at: '2026-11-06T07:00:00Z'
+        }) && !FD.isNewer(null, undefined), null);
+      // a record, the same key on both sides: the later instant wins, in both written forms
+      for (const [local, remote, win] of [
+          ['2026-11-06T09:00:00+02:00', '2026-11-06T07:30:00.000Z', 'remote'],
+          ['2026-11-06T07:00:50.400Z', '2026-11-06T07:00:50Z', 'local']
+        ]) {
+        const p = 'disponibilites/TST/2026-W49.json',
+          base = rec('TST', '2026-11-02T10:00:00Z', {
+            a: 1
+          }),
+          d = await fresh({
+            [p]: JSON.stringify(base)
+          });
+        await d.sync();
+        await d.put(p, {
+          ...base,
+          a: 'local',
+          updated_at: local
+        });
+        await T('write', {
+          files: {
+            [p]: JSON.stringify({
+              ...base,
+              a: 'remote',
+              updated_at: remote
+            })
+          }
+        });
+        const r = await d.sync(),
+          got = JSON.parse((await stats()).files[p]);
+        check(`record, local ${local} against remote ${remote}: the ${win} wins`, r.conflicts === 1 && got.a === win, [r, got]);
+      }
+      // a keyed list: the same assignment changed on both sides, the later instant wins
+      const aff = 'cr/affectations.json',
+        d = await fresh({
+          [aff]: JSON.stringify({
+            assignments: [{
+              mission: 'M1',
+              pilot: 'AAA',
+              v: 0
+            }]
+          })
+        });
+      d.watch('cr/', () => {});
+      await d.sync();
+      await d.put(aff, {
+        assignments: [{
+          mission: 'M1',
+          pilot: 'AAA',
+          v: 'local',
+          updated_at: '2026-11-06T09:00:00+02:00'
+        }]
+      });
+      await T('write', {
+        files: {
+          [aff]: JSON.stringify({
+            assignments: [{
+              mission: 'M1',
+              pilot: 'AAA',
+              v: 'remote',
+              updated_at: '2026-11-06T07:30:00.000Z'
+            }]
+          })
+        }
+      });
+      await d.sync();
+      check('keyed: the later instant (remote, 07:30Z, not the local 09:00+02:00 = 07:00Z) wins the assignment', JSON.parse((
+          await stats()).files[aff])
+        .assignments[0].v === 'remote', (await stats()).files[aff]);
+    },
     async 'journal and keyed lists merge without loss'() {
       const log = 'cr/log.json',
         aff = 'cr/affectations.json',

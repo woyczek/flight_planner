@@ -1357,7 +1357,7 @@
         if (v != null) {
           const to = `pilot/${tri}/${p.slice(P.length)}`,
             cur = await anonData.get(to).catch(() => null),
-            newer = String(v?.updated_at || '') > String(cur?.updated_at || ''),
+            newer = FD.isNewer(v, cur), // par l'instant, la règle de la couche de données (jamais comme du texte)
             same = cur != null && JSON.stringify(v) === JSON.stringify(cur);
           if (!same && (cur == null || newer)) await anonData.put(to, v);
           if (cur != null && !same) await FD.noteConflict({

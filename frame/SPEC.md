@@ -122,13 +122,18 @@ exchange happens in batches, explicitly or periodically, through a transport the
   - the remote equals the base: keep the local text;
   - the local text equals the base: take the remote.
 - **Otherwise, the rule declared for the prefix** (the longest declared write prefix):
-  - `record` (default), one record per file: the newest `updated_at` wins, the local one on a tie. A record without
-    `updated_at` is dated by `updatedAt` (V2 files not yet rewritten). The loser is stored in `conflicts` and an event
-    `frame-data-conflict` is fired. Never a blocking question.
+  - `record` (default), one record per file. Two versions that say the same thing once parsed (`updated_at` / `updatedAt`
+    aside) are no conflict. With a known base the merge is by top-level key: a key changed on one side is taken from it; a key
+    changed on both sides to two values is the conflict (counted once per file): the newest wins that key. Without a base (the
+    first pass that takes up local copies) or for the current flight (`current_flight.json`, kept whole: its derived sections
+    depend on the route): the newest `updated_at` wins the file, the local one on a tie. Dates compare as instants, not as text
+    (`FrameData.isNewer`). A record without `updated_at` is dated by `updatedAt` (V2 files not yet rewritten). The loser is
+    stored whole in `conflicts` (with `keys`, the keys in dispute, for a merge by key) and an event `frame-data-conflict` is
+    fired. Never a blocking question.
   - `journal`, an append-only `{ entries }`: union, sorted by `at`. No loss.
   - `keyed:<field>:<key>[+<key>]`, a list of records in `<field>` identified by those keys: merged record by record
     (added on one side: kept; removed on one side and unchanged on the other: removed; changed on both sides: the
-    newest by `updated_at`, else `updatedAt`, the loser kept). Example: `keyed:profiles:id` for the performance
+    later instant of `updated_at`, else `updatedAt`, the loser kept). Example: `keyed:profiles:id` for the performance
     sheets.
   - A function `(base, local, remote) → { value, lost }`.
 - **Non-JSON text, or JSON that does not parse**: the local text wins and the remote one is kept.
