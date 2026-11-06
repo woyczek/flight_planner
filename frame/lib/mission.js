@@ -11,6 +11,10 @@
 //   readRegistry(doc) → [ligne { id, family, title, operation, types, origin, destination, originIcao, destinationIcao, blockMin,
 //     folder, file, organisation, kind, subtype, callsigns, words }] : les lignes du registre, les organisations (…Z) marquées ; folder et file vides quand le
 //     registre en donne un qui n'est pas sûr (le chemin n'est jamais pris tel quel : un pilote peut écrire le registre).
+//   missionPath(path) → { folder, file, id } : le fichier de mission d'un dossier de mission du dépôt (« missions/A_COMBAT/A-001A/
+//     missionA-001A.yaml ») ; null pour tout autre fichier (versions/, recu/, résumé) ou un chemin pas sûr.
+//   rowOfMission(doc, path) → une ligne comme celles de readRegistry, tirée du fichier d'une mission absente du registre (SOG-0036) ;
+//     null si le fichier n'est pas une mission de ce dossier (id différent du dossier, mission.id ou mission.type absents).
 //   icaoOf(name) : le code OACI entre parenthèses à la fin d'un nom (« BA 118 Mont-de-Marsan (LFBM) » → « LFBM ») ; '' sinon.
 //   levelFt(text) : « FL240 » → 24000, « 1500 ft » → 1500, un nombre tel quel ; null sinon.
 //   missionFlight(mission, assignment) → { route: { dep, arr, points }, aircraft: { type, registration }, levelFt, speedKt, mission }
@@ -173,6 +177,49 @@ export function readRegistry(doc) {
         .map(clean).filter(Boolean).map(w => w.slice(0, 80))
     };
   });
+}
+
+/** Le fichier de mission d'un dossier de mission (voir l'en-tête) : « missions/<famille>/<ID>/mission<ID>.yaml », deux segments sûrs. */
+export function missionPath(path) {
+  const p = String(path ?? '');
+  if (p.length > 320) return null;
+  const m = /^missions\/([^/]+)\/([^/]+)\/mission([^/]+)\.ya?ml$/i.exec(p);
+  if (!m || m[2] !== m[3]) return null;
+  const folder = safeFolder(`${m[1]}/${m[2]}`),
+    file = safeFile(p.slice(p.lastIndexOf('/') + 1));
+  return folder && file ? {
+    folder,
+    file,
+    id: m[2]
+  } : null;
+}
+/** Une ligne de la liste tirée du fichier d'une mission absente du registre (voir l'en-tête) : les mêmes champs que readRegistry, des
+ *  textes bornés (le fichier est écrit par n'importe quel pilote, audit 157), derived: true. */
+export function rowOfMission(doc, path) {
+  const where = missionPath(path),
+    m = readMission(doc),
+    cut = (v, n = 120) => clean(v).slice(0, n);
+  if (!where || !m || m.id !== where.id) return null;
+  return {
+    id: cut(m.id, 40),
+    family: cut(m.type, 40),
+    title: cut(m.title, 200),
+    operation: cut(m.operation?.name),
+    types: m.aircraft.map(a => cut(a.type, 12)).filter(Boolean).slice(0, 10),
+    origin: cut(m.origin?.name),
+    destination: cut(m.destination?.name),
+    originIcao: /^[A-Z]{4}$/.test(m.origin?.icao || '') ? m.origin.icao : icaoOf(m.origin?.name),
+    destinationIcao: /^[A-Z]{4}$/.test(m.destination?.icao || '') ? m.destination.icao : icaoOf(m.destination?.name),
+    blockMin: m.estimate.blockMin !== null && m.estimate.blockMin >= 0 && m.estimate.blockMin < 10000 ? m.estimate.blockMin : null,
+    folder: where.folder,
+    file: where.file,
+    organisation: m.organisation,
+    kind: cut(m.type, 40),
+    subtype: cut(m.subtype, 40),
+    callsigns: m.aircraft.map(a => cut(a.callsign, 40)).filter(Boolean).slice(0, 20),
+    words: [],
+    derived: true
+  };
 }
 
 /** Le vol qu'une mission donne à Carburant (voir l'en-tête). */

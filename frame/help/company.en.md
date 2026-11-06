@@ -32,10 +32,11 @@ The airline's missions, in the Company application: those of the shared reposito
 
 - The module reads the missions and never changes them; they are written in the CPCO.
 - A mission whose file does not come says so: "not found" (the repository has not got it), "not on this device yet" (the synchronisation brings it, the mission appears when it arrives) or "unreadable" (with the reason). Only the registry is shown then.
+- A mission that came with the synchronisation without the registry naming it is listed all the same, read from its file, at the next display; no button to press.
 - A flight being prepared is replaced only after a question; a started flight never is (cancel the start, or finish the flight, first).
 - The envelope, the page-by-page reader and the assignments will come later.
 
-<!-- fr: 5ebf3ec8cd61 -->
+<!-- fr: 8c5f022f9611 -->
 
 <!-- chapter: settings -->
 # Settings

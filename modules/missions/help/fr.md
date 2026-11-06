@@ -12,5 +12,6 @@ Les missions de la compagnie, dans l'application Compagnie : celles du dépôt c
 
 - Le module lit les missions, il ne les modifie jamais ; elles s'écrivent dans le CPCO.
 - Une mission dont le fichier ne vient pas le dit : « introuvable » (le dépôt ne l'a pas), « pas encore sur l'appareil » (la synchronisation l'apporte, la mission s'affiche à son arrivée) ou « illisible » (avec la raison). Le registre seul est alors montré.
+- Une mission arrivée par la synchronisation sans le registre qui la nomme est quand même listée, lue dans son fichier, au prochain affichage ; aucun bouton à toucher.
 - Un vol en préparation n'est remplacé qu'après une question ; un vol démarré ne l'est jamais (annulez le départ, ou terminez le vol, d'abord).
 - L'enveloppe, le lecteur page à page et les affectations viendront plus tard.

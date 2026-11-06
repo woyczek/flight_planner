@@ -34,6 +34,12 @@ on the same data. The CPCO (authoring) stays V2 until rebuilt as the third appli
 - **One index, read once**: the module reads `mission_registry.yaml` for the list (id, family, title, operation,
   aircraft types, origin, destination, estimate, maps) and the mission file only when one is opened. The registry's
   IndexedDB / localStorage copies of V2 are not reused: the frame's data layer is the cache.
+- **The registry is a view derived from the files** (SOG-0036): at each display, after the registry, the mission files of the
+  repository (`missions/<family>/<ID>/mission<ID>.yaml`, `MS.missionPath`) that no registry row names are read and listed
+  (`MS.rowOfMission`: the registry's fields from the file, bounded texts), without a button; a copy in `versions/` or `recu/`, a file
+  whose `mission.id` is not its folder, an organisation are not; 500 files at most per display. Only those files are read (on the
+  user's computer, 6 Nov: 0 of 102 folders), so no « Réindexer ». A registry row whose file is newer is not re-read for the list (the
+  repository tree carries no date); the mission opens from its file (N7).
 - An organisation mission (`…Z`) is never listed as a flight: it is the exercise's envelope of its A, B, C…
 
 ## 3. The list: choose, or draw

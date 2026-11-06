@@ -12,7 +12,8 @@ Die Missionen der Gesellschaft, in der Anwendung Gesellschaft: die des gemeinsam
 
 - Das Modul liest die Missionen und ändert sie nie; sie werden im CPCO geschrieben.
 - Eine Mission, deren Datei nicht kommt, sagt es: „nicht gefunden“ (das Repository hat sie nicht), „noch nicht auf dem Gerät“ (die Synchronisierung bringt sie, die Mission erscheint bei ihrer Ankunft) oder „unlesbar“ (mit dem Grund). Dann wird nur das Register gezeigt.
+- Eine Mission, die mit der Synchronisation ohne das Register kam, das sie nennt, wird trotzdem aufgeführt, aus ihrer Datei gelesen, bei der nächsten Anzeige; kein Knopf zu drücken.
 - Ein Flug in Vorbereitung wird erst nach einer Frage ersetzt; ein gestarteter Flug nie (erst den Start abbrechen oder den Flug beenden).
 - Der Umschlag, der seitenweise Leser und die Zuweisungen kommen später.
 
-<!-- fr: 5ebf3ec8cd61 -->
+<!-- fr: 8c5f022f9611 -->

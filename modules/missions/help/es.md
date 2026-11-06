@@ -12,7 +12,8 @@ Las misiones de la compañía, en la aplicación Compañía: las del repositorio
 
 - El módulo lee las misiones y nunca las modifica; se escriben en el CPCO.
 - Una misión cuyo archivo no llega lo dice: «no encontrado» (el repositorio no lo tiene), «aún no está en el dispositivo» (la sincronización lo trae, la misión aparece al llegar) o «ilegible» (con el motivo). Entonces solo se muestra el registro.
+- Una misión llegada con la sincronización sin el registro que la nombra se lista igualmente, leída de su archivo, en la siguiente visualización; ningún botón que pulsar.
 - Un vuelo en preparación solo se sustituye tras una pregunta; un vuelo iniciado nunca (anule la salida, o termine el vuelo, antes).
 - El sobre, el lector página a página y las asignaciones llegarán más tarde.
 
-<!-- fr: 5ebf3ec8cd61 -->
+<!-- fr: 8c5f022f9611 -->

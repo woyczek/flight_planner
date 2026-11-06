@@ -41,3 +41,10 @@
   `readRegistry` keeps a folder made of segments of letters, digits, `_`, `-`, `.` not starting with a dot, and a `.yaml` / `.yml`
   file; otherwise both are empty and the module says « chemin refusé dans le registre », Fuel's door refuses the mission. Bench N1
   (one check more), counter-test: without `safeFolder` the bench fails (12 / 13).
+- **6 Nov 2026 — the registry follows the files** (SOG-0036, the ergonomics session's criteria): measured read-only on the user's
+  `data/missions/` (6 Nov): the registry has 104 rows for 102 mission folders (2 rows without folder, G_SURVEY), none missing and no
+  mission file newer than it; the 11 extra files are copies under `versions/`. So the « massive arrival » is the device's synchronisation,
+  not a registry left behind. The module still lists a mission file no row names, read at the display (only those files: no button,
+  no cost when the registry is complete); paths through `missionPath` (two safe segments, the file named after its folder), texts
+  bounded (audit 157). « Plus récent que le registre » is not judged: `ctx.data.list` gives no date. N7; counter-test on 94849e74b:
+  the 50 files are not listed.

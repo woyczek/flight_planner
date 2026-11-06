@@ -179,8 +179,40 @@ export async function mount(el, ctx) {
   s.regWhy = got.why ? got : null;
   s.rows = MS.readRegistry(got.doc).filter(r => !r.organisation).sort((a, b) => b.id.localeCompare(a.id)); // les séries récentes d'abord
   if (!s.open) draw(s);
+  await unlisted(s, got.doc);
+  if (S !== s) return;
   s.flown = await flownOf(s);
   if (S === s && !s.open) results(s);
+}
+
+const UNLISTED_MAX = 500; // fichiers de mission hors registre lus à un affichage, au plus (un dépôt hors norme ne bloque pas l'écran)
+
+/** Le registre est une vue dérivée des fichiers (SOG-0036) : les fichiers de mission du dépôt (missions/<famille>/<ID>/mission<ID>.yaml)
+ *  qu'aucune ligne du registre ne nomme — arrivés par la synchronisation sans le registre qui va avec — sont lus et ajoutés à la liste,
+ *  à chaque affichage, sans bouton (seuls ceux-là sont lus : sur le poste du 06/11, 0 sur 102 dossiers). Un fichier illisible, ou qui
+ *  n'est pas une mission de son dossier, est laissé de côté ; une organisation (…Z) n'est jamais listée. */
+async function unlisted(s, reg) {
+  const paths = await Promise.resolve().then(() => s.ctx.data.list('missions/')).catch(() => null);
+  if (S !== s || !Array.isArray(paths)) return;
+  const named = new Set(s.rows.map(r => `missions/${r.folder}/${r.file}`)),
+    ids = new Set(MS.readRegistry(reg).map(r => r.id)),
+    todo = paths.map(p => [p, MS.missionPath(p)]).filter(([p, w]) => w && !named.has(p) && !ids.has(w.id)).slice(0, UNLISTED_MAX),
+    found = [];
+  for (let i = 0; i < todo.length; i += 8) {
+    await Promise.all(todo.slice(i, i + 8).map(async ([p]) => {
+      let got = await yamlFile(s.ctx, p);
+      if (got.why === 'late') got = await got.later;
+      const row = got.doc ? MS.rowOfMission(got.doc, p) : null;
+      if (row && !row.organisation && !ids.has(row.id)) {
+        ids.add(row.id);
+        found.push(row);
+      }
+    }));
+    if (S !== s) return;
+  }
+  if (!found.length) return;
+  s.rows = [...s.rows, ...found].sort((a, b) => b.id.localeCompare(a.id));
+  if (!s.open) s.rows.length === found.length ? draw(s) : results(s);
 }
 
 /** Démonte : rien n'est suivi. */

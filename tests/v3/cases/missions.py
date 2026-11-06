@@ -257,6 +257,34 @@ def n6(c):
         c.eq(ids(c), ['X-003C'], f'« {q} » finds X-003C (not in its title)', what=q)
 
 
+@case('N7', 'Missions: 50 mission files arrived without the registry are listed at the next display, without a button; other files ignored',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0036 (« une arrivée de missions massive dans DEFA/data ; le registre n’est probablement pas à jour ») : the registry is a '
+      'view derived from the files: a missions/<family>/<ID>/mission<ID>.yaml no row names is read and listed; a copy in versions/, a file '
+      'whose id is not its folder, an organisation (…Z) are not; names and paths bounded (audit 157)')
+def n7(c):
+    extra = [[f'missions/W_TEST/X-1{i:02d}A/missionX-1{i:02d}A.yaml', mission_doc(f'X-1{i:02d}A')] for i in range(50)]
+    extra += [['missions/W_TEST/X-100A/versions/missionX-100A_2026-11-05T20-49-42.yaml', mission_doc('X-100A')],   # a copy: never a row
+              ['missions/W_TEST/X-201A/missionX-201A.yaml', mission_doc('X-999A')],   # not the mission of its folder
+              ['missions/W_TEST/X-200Z/missionX-200Z.yaml', mission_doc('X-200Z')]]   # an organisation
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_TEXTS_JS, TEXTS + extra)
+    c.open('missions', docs=docs(), wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id]')", timeout=15000, what='the list of missions is drawn')
+    c.page.fill(f'{M} [data-k="q"]', 'X-1')
+    want = norm(row(c, 'count').replace('{n}', '50'))
+    c.until("(w) => (document.querySelector('[data-module=missions] [data-count]')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w",
+            want, timeout=20000, what='the 50 files absent from the registry are listed')
+    c.eq(ids(c)[:2], ['X-149A', 'X-148A'], 'newest first, with the registry rows', what='first rows')
+    for q in ('X-999', 'X-201', 'X-200Z'):
+        c.page.fill(f'{M} [data-k="q"]', q)
+        c.until(f"document.querySelectorAll('{M} [data-list] [data-id]').length === 0", what=f'« {q} »: not listed')
+    c.page.fill(f'{M} [data-k="q"]', 'X-100A')
+    c.until(f"document.querySelectorAll('{M} [data-list] [data-id]').length === 1", what='X-100A once (its copy in versions/ is not a row)')
+    c.tap(f'{M} [data-list] [data-id="X-100A"]')
+    c.until(f"(document.querySelector('{M}')?.textContent || '').includes('Mission X-100A')", what='the mission opens from its file')
+
+
 @case('N5', 'Missions: a mission whose file does not come says why — absent from the repository, unreadable YAML, no id or type', 'N',
       tags=('missions',), designs=('standard',), screens=False, langs4=True,
       rule='Simplification 1 Nov (the user: « beaucoup de missions sans fichiers », 57 of 59 files present): files are read waiting for the '

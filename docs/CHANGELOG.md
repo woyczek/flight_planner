@@ -32,6 +32,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   SOG-0032). « Carburant lu et saisi en » converts the quantities, flows and RPM table by `frame/lib/fuel_units.js`; the sheet keeps its
   stored unit, an untouched value unchanged.
 
+- **Missions: a mission file absent from the registry is listed** (`frame/lib/mission.js` `missionPath`, `rowOfMission`,
+  `modules/missions/module.js`; SPEC § 2; noreg N7; SOG-0036). The registry is a view derived from the files: the files no row names are
+  read at the display, without a button; copies, a file that is not its folder's mission and organisations are not listed.
+
 - **Frame: a position is compared with the start by instants, not as text** (`frame/app.js` `liveCheck`; frame DECISIONS; noreg A90;
   SOG-0037). A start written to the second or in +02:00 no longer makes the frame remove a good position as a left-over (and a stale one
   is removed whatever the form of the two dates).
