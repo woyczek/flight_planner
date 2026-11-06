@@ -2815,9 +2815,9 @@ _FRAME_COVER = """() => { const S = window.__mp.S, F = S.frame, r = S.box.getBou
   return { a: [a.x, a.y], b: [b.x, b.y], W: r.width, H: r.height, cw: S.canvas.clientWidth, ch: S.canvas.clientHeight } }"""
 
 
-@case('D97', 'No invisible wall: the drawing overflows the view by 5 % on each side, a pan of 4 % shows no empty band before the redraw', 'D',
+@case('D97', 'The drawing is the view: no overflow (OVER = 0, 6 Nov 2026), the canvas is the box, the last image covers it, no label outside', 'D',
       tags=('maps',), designs=('standard',), night=False,
-      rule='user, 1 Nov 2026 (« prévoir 10 % de débordement sur les côtés … éviter l’effet mur invisible »), SPEC § 5: the full and the light drawings paint lines and symbols over the view plus 10 % on each side, the data read included; the labels stay in the view (a request keeps only its places that touch it); the gesture copies that image, so a pan of 5 % of the width shows what was already drawn beyond the edge')
+      rule='decision 1.1 of 6 Nov 2026 (cost rule over a comfort not asked for), SPEC § 5: the overlay canvas is the view (OVER = 0); the full drawing covers the view exactly; the labels stay in the view; the 5 % overflow of 1 Nov is one constant away')
 def d97(c):
     c.open('maps', docs=fdocs(flight()), flight=False, airfields=True, wait=False)
     c.ready('maps', sheet=True)
@@ -2826,18 +2826,11 @@ def d97(c):
             what='the map drawn')
     c.wait(400)
     f = c.js(_FRAME_COVER)
-    c.ok(abs(f['cw'] - f['W'] * 1.1) <= 2 and abs(f['ch'] - f['H'] * 1.1) <= 2, f'{f}', 'the overlay is the view plus 5 % on each side')
-    c.ok(f['a'][0] <= -f['W'] * .045 and f['b'][0] >= f['W'] * 1.045 and f['a'][1] <= -f['H'] * .045 and f['b'][1] >= f['H'] * 1.045, f'{f}',
-         'the last full image reaches 5 % beyond every edge of the view')
+    c.ok(abs(f['cw'] - f['W']) <= 1 and abs(f['ch'] - f['H']) <= 1, f'{f}', 'the overlay is the view, no overflow')
+    c.ok(f['a'][0] <= 1 and f['a'][1] <= 1 and f['b'][0] >= f['W'] - 1 and f['b'][1] >= f['H'] - 1, f'{f}', 'the last full image covers the view')
     z = c.js("() => { const S = window.__mp.S, r = S.box.getBoundingClientRect(); return { n: (S.zoneHits || []).length, out: (S.zoneHits || []).filter(h => !(h.x1 > 0 && h.x0 < r.width && h.y1 > 0 && h.y0 < r.height)).length } }")
-    c.eq(z['out'], 0, 'no label drawn wholly outside the view (labels do not overflow)', what=f"airspace labels outside, of {z['n']}")
-    # a pan of 4 % of the width, both ways, the redraw held off: the copied image still covers the whole view
-    for sign in (1, -1):
-        g = c.js("""(k) => { const S = window.__mp.S, r = S.box.getBoundingClientRect(); S.map.panBy([k * r.width * .04, k * r.height * .04], { animate: false });
-          const F = S.frame, a = S.map.project(F.g0), b = S.map.project(F.g1); return { a: [a.x, a.y], b: [b.x, b.y], W: r.width, H: r.height } }""", sign)
-        c.ok(g['a'][0] <= 0 and g['a'][1] <= 0 and g['b'][0] >= g['W'] and g['b'][1] >= g['H'], f'{g}',
-             f'after a pan of 4 % ({"left" if sign > 0 else "right"}), before any redraw, no empty band at an edge')
-        c.wait(600)
+    c.eq(z['out'], 0, 'no label drawn wholly outside the view', what=f"airspace labels outside, of {z['n']}")
+
 
 # ------------------------------------------------------------------------------------------------------ D98
 @case('D98', 'The light drawing of a gesture follows the chosen SID, never the plain route it replaces', 'D',

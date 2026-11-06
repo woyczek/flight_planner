@@ -247,9 +247,10 @@ const loadOutlines = () => outlinesP ||= baseOutlines(S.ctx.aerodb).then(() => S
 });
 
 // ---------------------------------------------------------------- projection et taille
-/** Débordement du dessin de chaque côté de la vue (5 % de sa largeur, de sa hauteur : à 10 % le dessin au repos coûtait 2 à 5 ms de plus, SPEC § 5) : un déplacement montre ce qui était déjà
- *  dessiné au-delà du bord, jamais un « mur » vide jusqu'au redessin (retour de l'utilisateur du 1/11, SPEC § 5) ; les étiquettes n'y vont pas (render.js). */
-const OVER = .05;
+/** Débordement du dessin de chaque côté de la vue, en part de sa largeur et de sa hauteur : 0 depuis le 6 novembre 2026 (la règle de coût prime sur
+ *  un confort non demandé : à 5 % le dessin au repos coûtait environ 1 ms de plus, à 10 % 2 à 5 ms, SPEC § 5). Le mécanisme reste (le canvas de la vue plus OVER de
+ *  chaque côté, les étiquettes dans la vue seulement) : une valeur de .05 rend le déplacement sans « mur » vide (retour de l'utilisateur du 1/11). */
+const OVER = 0;
 /** Taille du canvas de surcouche (pixels de l'écran) : la vue W × H et son débordement mx, my de chaque côté → { W, H, dpr, mx, my, CW,
  *  CH } ; le canvas a CW × CH (W + 2 mx, H + 2 my) et commence à (−mx, −my) de la vue (le cadre le rogne). Il a la taille de son
  *  bitmap, jamais « 100 % » du cadre : pendant qu'un doigt tient la feuille, le cadre change de taille sans redessin et un bitmap

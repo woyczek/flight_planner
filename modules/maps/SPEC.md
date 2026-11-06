@@ -317,8 +317,10 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   slot of `requestAnimationFrame` for every kind (a full request outranks a light one). A full drawing only notes its two
   geographic corners (`markFrame`, two `unproject`); its bitmap is copied once, at the first move of a gesture (`copyFrame`),
   and after each light drawing — no longer after every full drawing at rest.
-- **The drawing overflows the view** (user, 1 Nov 2026: « un mur » at the edge while panning, until the full drawing): the overlay
-  canvas is the view plus `OVER` = 5 % of its width and height on each side (`sizeCanvas`, 1.21 times the area), placed at
+- **The drawing overflows the view — `OVER` = 0 since 6 Nov 2026** (user, 1 Nov 2026: « un mur » at the edge while panning, until
+  the full drawing; then the cost rule prevailed over a comfort nobody asked for, decision 1.1 of 6 Nov: at 5 % the drawing at rest
+  cost about 1 ms more, over the ±0.5 ms rule; the mechanism below stays, one constant, `OVER` = .05 brings it back): the overlay
+  canvas is the view plus `OVER` of its width and height on each side (`sizeCanvas`, 1.21 times the area), placed at
   (−mx, −my) and clipped by the map box. The full and light drawings paint lines and symbols (airspaces, airways, route, aerodromes,
   beacons, obstacles, grid) over the whole canvas, so a pan of up to a twentieth of the view shows what was already drawn and the edge
   wall is gone. **Labels do not overflow**: the collision pass keeps only label requests with a place in the view (`render.js`,
@@ -932,7 +934,9 @@ always (a trackpad pinch too), the wheel alone when the profile's container does
 lost there; amended 5 Nov 2026, SOG-0005, by the ergonomics session), and stays the page's when the profile moves with a page that
 scrolls — not when it sits in a sticky or fixed pane (Fuel's side pane beside its form: the page scrolls beside it, not under it, so the
 wheel zooms there too; reopened 6 Nov 2026 by the user's report, SOG-0005); a horizontal wheel moves the tight window; a mouse drag moves the window when it is tight (whole, the drag is the cursor's), a click
-places the cursor. Disarmed in Edit mode and while another content is open. A finger left after a pinch does not move the
+places the cursor; **Shift + drag** (whole or tight window; rule 20 amended 6 Nov 2026, decision 1.7) traces a rectangle of distances, shown
+as a band over the plot while dragging and zoomed at the release (at least 5 NM), the plain drag keeping its meaning and the double
+click being the way back; a Shift + click without a drag does nothing (the weather cut zooms at the release, without the band). Disarmed in Edit mode and while another content is open. A finger left after a pinch does not move the
 cursor until all fingers are up.
 - **One window per route** for the profile and the cut (two helpers, one per container, handing each other the window;
   the profile's is the source); kept for the life of the page with the route's signature (the points' ids and

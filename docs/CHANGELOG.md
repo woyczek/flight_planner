@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Profile: Shift + drag draws a rectangle and zooms it** (`modules/maps/lib/axis_window.js`, `profile_view.js`; SPEC § 8.6; noreg D111; SOG-0005,
+  decision 1.7). On the whole flight or a tight window, a mouse drag with Shift held traces a band over the distances, zoomed at the
+  release; the plain drag stays the reading cursor (whole) or moves the window (tight), the double click goes back; the manual (×4) says so.
+- **Map: the drawing no longer overflows the view** (`modules/maps/draw.js` `OVER` = 0; SPEC § 5; noreg D97). The 5 % overflow added on
+  1 Nov against the « invisible wall » at the edge cost about 1 ms more at rest; the cost rule prevails (decision of 6 Nov): the
+  overlay is the view again, a pan shows the edge until the full drawing. One constant (`OVER` = .05) brings the overflow back.
 - **Synchronisation: two versions that say the same thing are no longer a conflict** (`tools/data_sync.py` `same_content`,
   `merge_raw`; docs/technique/SYNCHRONISATION.md; noreg I38) — SOG-0043 (« beaucoup de conflits de synchro sur data »). Measured
   on the data repository over 14 days: 2 file-level overlaps in git and 3 copies in `_conflits/`, all `pilot/<tri>/current_flight.json`

@@ -17,6 +17,9 @@
 //     (Carburant, profil dans la page, SOG-0004) ; la molette horizontale (deltaX) fait glisser la fenêtre resserrée ;
 //   · souris : glisser (au-delà de 4 px) déplace la fenêtre quand elle est resserrée ; entière, il n'y a rien à déplacer et le glisser reste
 //     à l'appelant ;
+//   · souris, Maj + glisser (fenêtre entière ou resserrée ; règle 20 amendée le 6 novembre 2026) : un rectangle sur l'axe des distances,
+//     zoomé à la levée du bouton (au moins `min` NM) ; `onSelect({ from, to })` à chaque changement du rectangle (l'appelant le montre),
+//     puis `onSelect(null)` à la levée ou à l'annulation ; un Maj + clic sans glisser ne fait rien (le glisser nu reste le curseur de lecture) ;
 //   · UN SEUL doigt (toucher, stylet) n'est jamais pris : c'est le curseur de lecture de l'appelant.
 // Un doigt resté posé après un pincement ne rend pas la main à l'appelant avant que tous les doigts soient levés (pas de saut du curseur).
 // `plot` rend { x0, x1 } : les abscisses (pixels, par rapport au bord gauche de `el`) du cadre de tracé, qui porte la fenêtre ; sans lui, la
@@ -33,6 +36,7 @@ export function createAxisWindow(el, {
   onChange = () => {},
   min = 5,
   plot,
+  onSelect = () => {},
   enabled = () => true
 } = {}) {
   const tot = () => Math.max(0, +(typeof total === 'function' ? total() : total) || 0);
@@ -40,6 +44,7 @@ export function createAxisWindow(el, {
   const pointers = new Map(); // pointerId → { x, y, type, x0, y0, t0, moved }
   let pinch = null, // { f, t, nm, d, mx } au moment où le second doigt se pose
     drag = null, // { x, f, t } glisser à la souris
+    sel = null, // { id, x, a, b, on } Maj + glisser : le rectangle (a, b en NM) ; on une fois au-delà de DRAG_PX
     latched = false, // un pincement a eu lieu : la main n'est rendue qu'à la levée de tous les doigts
     lastTap = null;
 
@@ -70,7 +75,7 @@ export function createAxisWindow(el, {
       return !!w;
     },
     get active() {
-      return !!pinch || !!drag?.on || latched;
+      return !!pinch || !!drag?.on || !!sel?.on || latched;
     },
     /** Pose la fenêtre ; vrai si elle a changé. quiet : sans appeler onChange (l'appelant redessine lui-même). */
     set(from, to, {
@@ -88,7 +93,7 @@ export function createAxisWindow(el, {
     stop() {
       for (const [ev, fn, o] of listeners) el.removeEventListener(ev, fn, o);
       pointers.clear();
-      pinch = drag = lastTap = null;
+      pinch = drag = sel = lastTap = null;
       latched = false;
     }
   };
@@ -101,6 +106,12 @@ export function createAxisWindow(el, {
       x0: p ? p.x0 : 0,
       x1: p ? p.x1 : r.width
     };
+  };
+  /** La distance (NM) sous l'abscisse x de la page, bornée au cadre de tracé. */
+  const nmAt = x => {
+    const p = plotOf(),
+      frac = Math.min(1, Math.max(0, (x - p.left - p.x0) / Math.max(1, p.x1 - p.x0)));
+    return api.from + frac * (api.to - api.from);
   };
   /** Zoom d'un facteur autour de la distance nm, qui reste sous l'abscisse x (pixels du cadre de tracé : frac = fraction de sa largeur). */
   const zoomAround = (nm, frac, span) => {
@@ -120,6 +131,22 @@ export function createAxisWindow(el, {
       t0: e.timeStamp,
       moved: false
     });
+    if (e.pointerType === 'mouse' && e.shiftKey && pointers.size ===
+      1) { // le rectangle : l'appelant ne voit pas cet appui (pas de curseur, pas de glisser)
+      const a = nmAt(e.clientX);
+      sel = {
+        id: e.pointerId,
+        x: e.clientX,
+        a,
+        b: a,
+        on: false
+      };
+      try {
+        el.setPointerCapture(e.pointerId); // le rectangle suit la souris hors du dessin
+      } catch {}
+      e.stopImmediatePropagation();
+      return;
+    }
     if (pointers.size === 2) {
       const [a, b] = [...pointers.values()],
       p = plotOf(),
@@ -151,6 +178,21 @@ export function createAxisWindow(el, {
     q.x = e.clientX;
     q.y = e.clientY;
     if (Math.abs(q.x - q.x0) > TAP_PX || Math.abs(q.y - q.y0) > TAP_PX) q.moved = true;
+    if (sel && e.pointerId === sel.id) {
+      if (!sel.on && Math.abs(e.clientX - sel.x) > DRAG_PX) sel.on = true;
+      if (sel.on) {
+        const b = nmAt(e.clientX);
+        if (b !== sel.b) {
+          sel.b = b;
+          onSelect({
+            from: Math.min(sel.a, b),
+            to: Math.max(sel.a, b)
+          });
+        }
+      }
+      e.stopImmediatePropagation();
+      return;
+    }
     if (pinch && pointers.size >= 2) {
       const [a, b] = [...pointers.values()],
       p = plotOf(),
@@ -178,6 +220,15 @@ export function createAxisWindow(el, {
     const q = pointers.get(e.pointerId);
     if (!q) return;
     pointers.delete(e.pointerId);
+    if (sel && e.pointerId === sel.id) { // fin du rectangle : zoomé (levée), jamais annulé par un simple clic
+      const r = sel;
+      sel = null;
+      if (r.on) {
+        onSelect(null);
+        if (e.type === 'pointerup') api.set(Math.min(r.a, r.b), Math.max(r.a, r.b));
+      }
+      return e.stopImmediatePropagation();
+    }
     const was = !!pinch || latched || drag?.on;
     if (pointers.size < 2) pinch = null;
     if (!pointers.size) latched = false;

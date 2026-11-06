@@ -1944,3 +1944,60 @@ def d110(c):
     back = win_state(c)
     c.ok(abs(back['from'] - whole['from']) < .5 and abs(back['to'] - whole['to']) < .5, f'window {back["from"]}..{back["to"]}', 'a double click restores the whole flight')
 
+
+@case('D111', 'Profile window: Shift + drag draws a rectangle on the distance axis and zooms it; the plain drag stays the reading cursor; a double click goes back', 'D', tags=('maps',), phone=False, screens=True,
+      rule='V3 spec 7.1 rule 20 (as amended 6 Nov 2026, decision 1.7): with the mouse, Shift + drag on the profile (whole or tight window) traces a rectangle of distances, shown while dragging and zoomed at the release (at least 5 NM); the plain drag keeps the reading cursor on the whole flight and moves a tight window; the double click is the way back to the whole flight')
+def d111(c):
+    c.open('maps', flight=True, forecast=True)
+    hide_notes(c)
+    c.wait(1500)
+    c.settle()
+    c.js("async () => { window.__mp = await import('/modules/maps/state.js'); return true }")
+    whole = win_state(c)
+    y = prof_y(c)
+    # the plain drag on the whole flight is the reading cursor: the window stays whole, the cursor is placed
+    c.page.mouse.move(px_of(c, whole, 100), y)
+    c.page.mouse.down()
+    c.page.mouse.move(px_of(c, whole, 160), y, steps=6)
+    c.page.mouse.up()
+    c.wait(250)
+    c.eq(win_state(c)['to'], whole['to'], 'the plain drag leaves the whole flight whole', what='window')
+    c.ok(c.js("() => document.querySelector('[data-module=\"maps\"]').dataset.cursorNm || document.querySelector('[data-cursor-nm]')?.dataset.cursorNm || ''") != '', '',
+         'the plain drag placed the reading cursor')
+    # Shift + drag: the rectangle is shown while dragging …
+    c.page.keyboard.down('Shift')
+    c.page.mouse.move(px_of(c, whole, 100), y)
+    c.page.mouse.down()
+    c.page.mouse.move(px_of(c, whole, 190), y, steps=8)
+    c.wait(150)
+    sel = c.js("() => window.__mp.S.axSel || null")
+    c.ok(sel and abs(sel['from'] - 100) < 6 and abs(sel['to'] - 190) < 6, f'{sel}', 'the rectangle is shown while dragging (100..190 NM)')
+    c.page.mouse.up()
+    c.page.keyboard.up('Shift')
+    c.wait(300)
+    st = win_state(c)
+    c.ok(abs(st['from'] - 100) < 6 and abs(st['to'] - 190) < 6, f'window {st["from"]}..{st["to"]}', 'released: the window is the rectangle')
+    c.eq(c.js("() => window.__mp.S.axSel || null"), None, 'the rectangle is gone at the release', what='axSel')
+    # again, inside the tight window: narrower
+    c.page.keyboard.down('Shift')
+    c.page.mouse.move(px_of(c, st, st['from'] + (st['to'] - st['from']) * .25), y)
+    c.page.mouse.down()
+    c.page.mouse.move(px_of(c, st, st['from'] + (st['to'] - st['from']) * .75), y, steps=8)
+    c.page.mouse.up()
+    c.page.keyboard.up('Shift')
+    c.wait(300)
+    st2 = win_state(c)
+    c.ok(st2['from'] > st['from'] + 5 and st2['to'] < st['to'] - 5 and st2['to'] - st2['from'] >= 5, f'window {st["from"]}..{st["to"]} → {st2["from"]}..{st2["to"]}',
+         'Shift + drag in a tight window narrows it further')
+    # a Shift + click without a drag does nothing
+    c.page.keyboard.down('Shift')
+    c.page.mouse.click(px_of(c, st2, (st2['from'] + st2['to']) / 2), y)
+    c.page.keyboard.up('Shift')
+    c.wait(250)
+    c.eq((win_state(c)['from'], win_state(c)['to']), (st2['from'], st2['to']), 'a Shift + click without a drag leaves the window', what='window')
+    # the double click is the way back
+    c.page.mouse.dblclick(px_of(c, st2, (st2['from'] + st2['to']) / 2), y)
+    c.wait(300)
+    back = win_state(c)
+    c.ok(abs(back['from'] - whole['from']) < .5 and abs(back['to'] - whole['to']) < .5, f'window {back["from"]}..{back["to"]}', 'a double click goes back to the whole flight')
+

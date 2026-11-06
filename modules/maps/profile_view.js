@@ -339,6 +339,21 @@ export function drawCursor() {
   if (!onMission() && isStarted(S.route.flight)) drawProgressProfile(ctx);
   ctx.restore();
   if (S.edit.ldrag) got('edit')?.drawLevelDrag(ctx);
+  if (S.axSel) { // le rectangle de Maj + glisser (lib/axis_window.js) : une bande sur la hauteur du tracé
+    const x0 = Math.max(g.padL, MapsProfile.xOf(g, S.axSel.from * FT_NM)),
+      x1 = Math.min(g.W - g.padR, MapsProfile.xOf(g, S.axSel.to * FT_NM));
+    if (x1 > x0) {
+      ctx.save();
+      ctx.globalAlpha = .18;
+      ctx.fillStyle = S.theme.accent;
+      ctx.fillRect(x0, g.padT, x1 - x0, g.H - g.padT - g.padB);
+      ctx.globalAlpha = .9;
+      ctx.strokeStyle = S.theme.accent;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x0 + .5, g.padT + .5, x1 - x0 - 1, g.H - g.padT - g.padB - 1);
+      ctx.restore();
+    }
+  }
   if (S.cursor == null) return;
   const x = MapsProfile.xOf(g, S.cursor),
     info = MapsProfile.at(S.prof, S.cursor);
@@ -409,6 +424,10 @@ export function profileEvents() {
       x1: S.geo.W - S.geo.padR
     } : null,
     enabled: () => !S.edit.on && !S.dpanel,
+    onSelect: sel => { // Maj + glisser : le rectangle se montre sur la couche du curseur, jusqu'à la levée
+      S.axSel = sel;
+      drawCursor();
+    },
     onChange: (f, t) => {
       S.axx?.set(f, t, {
         quiet: true

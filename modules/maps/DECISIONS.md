@@ -1980,6 +1980,31 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D24 (the wheel alone tightens the window, Ctrl + wheel too, the distance under the pointer stays), D107 (a page that
   scrolls keeps its wheel, Ctrl + wheel still zooms, the horizontal wheel pans).
 
+## Shift + drag: a rectangle on the profile (decision 1.7 of the roadmap point, 6 Nov 2026; SOG-0005)
+
+- **Asked** (the user, 5 Nov, 21:59: « je veux pouvoir cliquer / glisser »): select a portion of the profile by dragging. On the whole
+  flight the plain drag is the reading cursor (SPEC § 8.6), so the selection cannot be the plain drag.
+- **Decision** (the ergonomics session, the user deciding): rule 20 of V3 § 7.1 amended — **Shift + drag** traces a rectangle and zooms
+  it, on the whole flight or a tight window; the plain drag stays the cursor (whole) or moves the window (tight); the double click stays
+  the way back. Three lines for § 7.1: (1) Shift + drag = rectangle of distances, zoomed at the release, at least 5 NM; (2) the plain
+  drag and the double click keep their meaning; (3) a Shift + click without a drag does nothing.
+- **Code**: `lib/axis_window.js` (`sel`, `onSelect`, pointer captured so the rectangle follows the mouse outside the drawing; the press
+  is not seen by the caller: no cursor, no drag); `profile_view.js` draws the band on the cursor layer (`S.axSel`, `drawCursor`). The
+  weather cut and the cut of the sheet share the helper and zoom at the release without a band. The rectangle is on the distance axis
+  only (the altitude scale refits to the window anyway).
+- **Noreg** D111 (whole: plain drag = cursor; Shift + drag shown then zoomed to the rectangle and gone at the release; again in the
+  tight window; a Shift + click does nothing; the double click comes back; fails on origin/v3).
+
+## The drawing overflow back to 0 (decision 1.1 of the roadmap point, 6 Nov 2026)
+
+- **Seen**: the 5 % overflow of the drawing (1 Nov, « mur invisible ») cost about +1 ms at rest (VFR, z9, A/B against origin/v3), over
+  the rule of ±0.5 ms; reported to the ergonomics session, who put it to the user.
+- **Decision** (the user: « oui » to the cost rule over a comfort not asked for): `OVER` = 0 in `draw.js`. Nothing else changes: the
+  mechanism (canvas = view + `OVER` per side, labels kept to the view, screen drawings and hit lists in view coordinates) stays,
+  one constant brings it back; the wall at the edge during a pan is back, until the full drawing at the end of the gesture.
+- **Noreg** D97 re-aimed: the drawing is exactly the view (canvas = view, the last image covers the view, no label outside); the pan
+  of 4 % no longer asserts a covered band. D68 (cost of a dense pan, under 16 ms an image) unchanged.
+
 ## The wheel on Fuel's profile (SOG-0005 reopened; user, 5 Nov 2026 at 21:59, checked 6 Nov)
 
 - **Seen**: « toujours pas de zoom sur le profil vertical ; je veux pouvoir cliquer / glisser, ou utiliser la molette et déplacer en
