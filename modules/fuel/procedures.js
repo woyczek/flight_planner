@@ -445,27 +445,27 @@ export function createProcedures(host) {
     if (m.unread > 0) parts.push(`<span class="fu-procunread" title="${esc([m.partialLabel, tt(m.unread === 1 ? TX.procUnread1 : TX.procUnread, { n: m.unread })].filter(Boolean).join(' · '))}">${esc(tt(m.unread === 1 ? TX.procNotRead1 : TX.procNotRead, { n: m.unread }))}</span>`);
     return parts.filter(Boolean).join('<span class="fu-sep" aria-hidden="true"> · </span>') + ` <span data-source-slot>${chartsHtml(m.icao)}</span>`;
   }
-  // le catalogue des sources d'aerodb (dossier AIRAC de l'eAIP, États d'EAD), lu une fois ; les emplacements des cartes se remplissent ensuite
-  let catalog = null;
-  Promise.resolve().then(() => ctx.aerodb?.sources?.()).then(c => {
-    catalog = c || null;
-    for (const el of host.body?.()?.querySelectorAll?.('[data-proc]') || []) {
-      const slot = el.querySelector('[data-source-slot]');
-      if (slot) slot.innerHTML = chartsHtml(el.dataset.icao);
-    }
-  }).catch(() => {});
-  /** « Cartes » d'un terrain (SOG-0024 ; remplace le lien « Source » vers la page codée, des tableaux : elle reste à Maintenance ›
-   *  Données) : en France la page de l'aérodrome de l'eAIP du SIA du cycle en vigueur, à sa section AD 2.24 (les cartes : VAC, IAC,
-   *  SID, STAR) ; dans un État qu'EAD publie, la page d'EAD Basic (compte gratuit) ; sinon une phrase, jamais un lien deviné. */
+  // l'adresse des cartes officielles de chaque terrain, demandée une fois à aerodb (chartsUrl, lot C2) : une adresse, null (État inconnu
+  // d'aerodb) ; absente tant que la réponse n'est pas venue. Les emplacements de ce terrain se remplissent à la réponse
+  const charts = new Map();
+  /** « Cartes » d'un terrain (SOG-0024, SOG-0031) : la page de l'aérodrome dans l'AIP officiel de son État, telle qu'aerodb la donne
+   *  (chartsUrl : eAIP du SIA, ENAIRE, AirNav Ireland), jamais composée ici ; rien quand aerodb n'en connaît pas (pas de lien vide, pas
+   *  de recherche inventée). Seule une adresse https:// est un lien. */
   function chartsHtml(icao) {
     const k = String(icao || '').toUpperCase();
-    if (!catalog || !/^[A-Z]{4}$/.test(k)) return '';
-    const link = (href, text) => `<a class="fu-procsrc" data-charts href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(text)}</a>`;
-    if (k.startsWith('LF') && catalog.eaipBase) return link(`${catalog.eaipBase()}/html/eAIP/FR-AD-2.${k}-fr-FR.html#${k}-AD-2.24`, tt(TX
-      .procCharts));
-    const ead = (catalog.SOURCES || []).find(s => /^https:\/\/www\.ead\.eurocontrol\.int\//.test(s?.url || ''))?.url;
-    if (ead && Object.hasOwn(catalog.EAD_STATES || {}, k.slice(0, 2))) return link(ead, tt(TX.procChartsEad));
-    return `<span class="f-muted" data-charts>${esc(tt(TX.procChartsNone))}</span>`;
+    if (!/^[A-Z]{4}$/.test(k) || typeof ctx.aerodb?.chartsUrl !== 'function') return '';
+    if (!charts.has(k)) {
+      charts.set(k, undefined);
+      Promise.resolve().then(() => ctx.aerodb.chartsUrl(k)).catch(() => null).then(url => {
+        charts.set(k, typeof url === 'string' && /^https:\/\/[^\s"'<>]+$/.test(url) ? url : null);
+        for (const el of host.body?.()?.querySelectorAll?.('[data-proc]') || []) {
+          const slot = el.dataset.icao === k ? el.querySelector('[data-source-slot]') : null;
+          if (slot) slot.innerHTML = chartsHtml(k);
+        }
+      });
+    }
+    const url = charts.get(k);
+    return url ? `<a class="fu-procsrc" data-charts href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(tt(TX.procCharts))}</a>` : '';
   }
   /** Les documents sans lien public des procédures choisies d'un côté (autre source que l'eAIP) : pour le title de la ligne. */
   function sourceTitle(m, side) {

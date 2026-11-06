@@ -136,6 +136,40 @@
     });
   ck('routeModel : sans base, les nœuds déjà gardés du vol (chain) repris entre les deux points de la voie', ids(m6) ===
     'XDEP QAA QBB QCC XARR' && m6.points[2].awy === true, ids(m6));
+  // un terrain n'est jamais un point de route (SOG-0033, SOG-0034) : l'ancien départ resté en tête du texte, l'ancienne arrivée en fin, le
+  // départ répété au milieu sont retirés ; un autre terrain au milieu reste ; un code de trois lettres qu'une base range parmi les
+  // terrains n'est jamais pris pour un terrain
+  const AD = {
+      AOLD: [53, -6],
+      AMID: [48, 2],
+      ANEW: [45, 5],
+      AVIA: [46, 3],
+      QAD: [47, 2.5]
+    },
+    adBase = {
+      coords: async id => AD[id] ? {
+        lat: AD[id][0],
+        lon: AD[id][1],
+        kind: 'aerodrome'
+      } : P[id] ? {
+        ...pt(id),
+        kind: 'point'
+      } : null
+    },
+    m7 = await routeModel('AOLD QAA AMID QCC AMID', {
+      dep: 'AMID',
+      arr: 'ANEW',
+      base: adBase
+    });
+  ck('routeModel : l’ancien départ en tête, l’ancienne arrivée en fin et le départ répété au milieu ne sont jamais des points', ids(m7) ===
+    'AMID QAA QCC ANEW' && !m7.tokens.some(t => t.pt && ['AOLD'].includes(t.pt.id)), ids(m7));
+  const m8 = await routeModel('QAD QAA AVIA QCC', {
+    dep: 'AMID',
+    arr: 'ANEW',
+    base: adBase
+  });
+  ck('routeModel : un autre terrain au milieu reste ; un code de trois lettres rangé parmi les terrains reste un point', ids(m8) ===
+    'AMID QAD QAA AVIA QCC ANEW', ids(m8));
   ck('AIRWAY_WORD : UN460, G54-R66 ; pas un terrain', AIRWAY_WORD.test('UN460') && AIRWAY_WORD.test('G54-R66') && !AIRWAY_WORD.test(
     'XDEP'));
 

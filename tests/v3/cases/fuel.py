@@ -39,7 +39,7 @@ import json
 import re
 from pathlib import Path
 
-from lib import ROOT, Fail, Skip, case, flight_docs, norm, synthetic_airways, tx
+from lib import AERO_CYCLE, ROOT, Fail, Skip, aero_docs, case, flight_docs, norm, synthetic_airways, tx
 from fixtures.procedures import proc_docs      # the invented procedures the cases seed (V3 spec 10.29 i)
 
 F = 'modules/fuel/module.js'
@@ -1319,29 +1319,37 @@ def f41(c):
 
 
 
-@case('F42', '« Cartes » on the secondary line: the aerodrome official charts, never the coded data tables', 'F', tags=('fuel', 'aerodb'),
-      designs=('standard',), screens=False, langs4=True,
-      rule='SOG-0024 (replaces the « Source » link of V3 spec 10.25, a coded-data page of tables): in France the aerodrome page of the SIA '
-      'eAIP of the cycle in force at its AD 2.24 (charts), a new tab; a state EAD publishes: EAD Basic; otherwise « source inconnue », no link')
+@case('F42', '« Cartes » on the secondary line: the aerodrome page of its state official AIP, the address aerodb gives; nothing for a state it does not know',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0024, SOG-0031 (lot C2: aerodb.chartsUrl): the address comes from aerodb alone, never composed in the module: LFML the SIA '
+      'eAIP AD 2 page, LEMD ENAIRE, EIDW AirNav Ireland (a published ie zone), a new tab without opener; KJFK: no link, no text')
 def f42(c):
-    open_proc(c)
+    docs = aero_docs(airfields=True)
+    for d in docs:
+        if d[0] == 'sia/base/index.json':   # a published ie zone (no row of it is read: the address needs its cycle only)
+            d[1]['zones']['ie'] = {'cycle': AERO_CYCLE, 'prefixes': ['EI'], 'kb': {}, 'cells': {}}
+    docs.append([f'sia/base/ie/{AERO_CYCLE}/meta.json', {'schema': 2, 'zone': 'ie', 'cycle': AERO_CYCLE, 'kind': 'meta', 'parserVersion': 1,
+                                                         'data': {}, 'updated_at': f'{AERO_CYCLE}T00:00:00Z'}, 'reference'])
+    c.open('fuel', docs=proc_docs() + proc_flight(None, False, None) + docs)
+    to_step(c, 1)
     wait_rows(c, 'arr')
-    sel = "[data-module=fuel] [data-proc=arr] [data-source-slot] [data-charts]"
-    c.until(f"!!document.querySelector('{sel}')", what='the charts link of the arrival')
-    a = c.js(f"(() => {{ const a = document.querySelector('{sel}'); return {{ href: a.getAttribute('href'), t: a.target, rel: a.rel, text: a.textContent.trim() }} }})()")
-    c.ok(re.match(r'^https://www\.sia\.aviation-civile\.gouv\.fr/media/dvd/eAIP_\d{2}_[A-Z]{3}_\d{4}/FRANCE/AIRAC-\d{4}-\d{2}-\d{2}/html/eAIP/FR-AD-2\.LFML-fr-FR\.html#LFML-AD-2\.24$',
-                  a['href'] or ''), a['href'], 'the eAIP page of LFML, at its charts (AD 2.24)')
+    link = "(s) => { const a = document.querySelector('[data-module=fuel] [data-proc=' + s + '] [data-source-slot] [data-charts]'); return a ? { href: a.getAttribute('href'), t: a.target, rel: a.rel, text: a.textContent.trim() } : null }"
+    c.until("!!document.querySelector('[data-module=fuel] [data-proc=arr] [data-source-slot] [data-charts]')", what='the charts link of the arrival')
+    a = c.js(link, 'arr')
+    c.ok(re.match(r'^https://www\.sia\.aviation-civile\.gouv\.fr/media/dvd/eAIP_\d{2}_[A-Z]{3}_\d{4}/FRANCE/AIRAC-\d{4}-\d{2}-\d{2}/html/eAIP/FR-AD-2\.LFML-fr-FR\.html$',
+                  a['href'] or ''), a['href'], 'LFML: the eAIP page of the aerodrome, as aerodb gives it')
     c.eq((a['t'], a['rel'], norm(a['text'])), ('_blank', 'noopener noreferrer', norm(tx(PT, 'procCharts', c.lang))), 'a new tab, no opener, « Cartes »', what='link')
-    pick_proc(c, 'p-arr-star', 'LFML.STAR.MEN1A.RW13R.NONE')
+    want = {'LEMD': 'https://aip.enaire.es/AIP/contenido_AIP/AD/AD2/LEMD/LE_AD_2_LEMD_en.html',
+            'EIDW': f'https://www.airnav.ie/AIRAC/{AERO_CYCLE}-AIRAC/html/eAIP/EI-AD-2.EIDW-en-IE.html'}
+    for icao, href in want.items():
+        set_icao(c, 'dep', icao)
+        c.until("([s, h]) => document.querySelector('[data-module=fuel] [data-proc=' + s + '] [data-charts]')?.getAttribute('href') === h",
+                ['dep', href], what=f'{icao}: {href}')
+    set_icao(c, 'dep', 'KJFK')
+    c.until("!!document.querySelector('[data-module=fuel] [data-proc=dep][data-icao=KJFK]')", what='the departure row of KJFK')
     c.settle()
-    c.eq(c.count("[data-module=fuel] [data-proc=arr] [data-source-slot] a"), 1, 'a chosen procedure adds no link to the coded data', what='links')
-    # an aerodrome of a state EAD publishes, then one of a state with no known source
-    set_icao(c, 'dep', 'EIXX')
-    c.until("(document.querySelector('[data-module=fuel] [data-proc=dep] [data-charts]')?.getAttribute('href') || '').startsWith('https://www.ead.eurocontrol.int/')",
-            what='EIXX: EAD Basic')
-    set_icao(c, 'dep', 'KXXX')
-    c.until("(w) => (document.querySelector('[data-module=fuel] [data-proc=dep] [data-charts]')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w",
-            norm(tx(PT, 'procChartsNone', c.lang)), what='KXXX: « source inconnue », no link')
+    c.eq(c.js("(document.querySelector('[data-module=fuel] [data-proc=dep] [data-source-slot]')?.textContent || '').trim()"), '',
+         'KJFK: no link and no text', what='KJFK')
 
 
 @case('F43', 'A flight dated in the past says so, without blocking', 'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
@@ -2380,3 +2388,58 @@ def f92(c):
     c.wait(600)
     c.ok('MEN03' not in (((c.doc('pilot/ABC/current_flight.json') or {}).get('route') or {}).get('constraints') or {}), '', 'and not set')
     c.eq(c.js(f"document.querySelector('{sel3}').value"), '', 'the field is emptied', what='field')
+
+
+def pts_listed(c):
+    """The identifiers of the list of points (step Route), in order, the unresolved names included."""
+    return c.js("[...document.querySelectorAll('[data-module=fuel] [data-pts] > .fu-pt .fu-ptid b')].map(b => b.textContent)")
+
+
+@case('F93', 'An aerodrome is never a point of the route: the old departure left at the head of the text is not listed, not routed, not written back',
+      'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0033 (« l’ADEP reste dans la liste des points ») and SOG-0034 (« EIDW revient » ; Auto: « aucune route entre EIDW et LFLL » '
+      'with LFPO as ADEP): the text of the route, as another writer can leave it, still starts with the old departure LFRS while the flight '
+      'goes from LFZZ: the list starts with LFZZ then the first point of the route; a STAR choice, Auto and the text never bring LFRS back')
+def f93(c):
+    docs = proc_docs() + proc_flight(V2_PROCS)
+    f = next(d for d in docs if d[0] == 'pilot/ABC/current_flight.json')[1]
+    f['route'].update({'dep': 'LFZZ', 'procedures': None})   # the departure changed, the text and the points still those of LFRS
+    c.open('fuel', docs=docs, airfields=True, aero_extra=FAR_AD)
+    to_step(c, 1)
+    c.until("(() => { const b = document.querySelector('[data-module=fuel] [data-pts] .fu-ptid b'); return !!b && b.textContent === 'LFZZ' })()",
+            timeout=10000, what='the list starts with the departure of the flight')
+    c.settle()
+    c.eq(pts_listed(c)[:2], ['LFZZ', 'LUGEN'], 'then the first point of the route: the old departure is not a point', what='list')
+    d = cf_doc(c, lambda d: 'LFRS' not in [p['id'] for p in d['route'].get('points') or []], 'LFRS is not a point of the record', timeout=10000)
+    # a STAR chosen: the text written with it never brings LFRS back
+    wait_rows(c, 'arr')
+    pick_proc(c, 'p-arr-star', 'LFML.STAR.MEN1A.RW13R.NONE')
+    d = cf_doc(c, lambda d: ((d['route'].get('procedures') or {}).get('arr') or {}).get('star'), 'the STAR is written')
+    c.wait(800)
+    d = c.doc('pilot/ABC/current_flight.json')
+    c.ok('LFRS' not in (d['route'].get('text') or '').split(), d['route'].get('text'), 'the text does not bring LFRS back')
+    # Auto: no leg from LFRS
+    c.js('window.__notes = []')
+    c.tap(f'{FUEL} [data-do="rauto"]')
+    c.wait(2500)
+    notes = c.js('window.__notes || []')
+    c.ok(not any('LFRS' in n for n in notes), notes, 'Auto routes from the departure of the flight, never from LFRS')
+    c.eq(pts_listed(c)[0], 'LFZZ', 'the list still starts with LFZZ', what='first')
+
+
+@case('F94', 'The list of points is a view of the route: a name without a position is listed at its place, with its reason, never left out',
+      'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0035 (« bien que la route comporte des points, ils n’apparaissent pas dans la liste ») : every word of the route that is a '
+      'point is a row, in the order of the text; one the base does not know says « inconnu de la base » (or that the zone around the '
+      'aerodrome has no published point)')
+def f94(c):
+    c.open('fuel', flight=True, airfields=True)
+    to_step(c, 1)
+    rt = f'{FUEL} [data-k="rtext"]'
+    c.page.fill(rt, 'LFRS LUGEN QQQQQ NEPIX LFML')
+    c.page.locator(rt).blur()
+    c.until("!!document.querySelector('[data-module=fuel] [data-pts] [data-unres-pt=QQQQQ]')", timeout=10000, what='QQQQQ is a row of the list')
+    c.eq(pts_listed(c), ['LFRS', 'LUGEN', 'QQQQQ', 'NEPIX', 'LFML'], 'every point at its place, the unknown one included', what='list')
+    why = norm(c.text(f'{FUEL} [data-unres-pt="QQQQQ"] small') or '')
+    c.ok(why == norm(row(c, 'ptUnres')) or why.startswith(norm(row(c, 'ptUnresZone').split('{icao}')[0])), why, 'with its reason')
+    c.eq(norm(c.text(f'{FUEL} [data-ptsn]') or ''), norm(row(c, 'ptsN').replace('{n}', '5')), 'counted', what='count')

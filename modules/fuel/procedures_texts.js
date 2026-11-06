@@ -37,15 +37,8 @@ export const TX = {
   // le mode choix de la Carte (§ 10.23) : le bouton du titre d'un côté
   // la page codée d'une procédure choisie (§ 10.25) : lien public du SIA pour une fiche de l'eAIP
   procSource: ['Source', 'Source', 'Quelle', 'Fuente'],
-  // les cartes officielles du terrain (SOG-0024) : la page de l'aérodrome de l'eAIP du SIA, EAD Basic pour un État qu'EAD publie
+  // les cartes officielles du terrain (SOG-0024, SOG-0031) : la page de l'aérodrome dans l'AIP de son État, l'adresse d'aerodb (chartsUrl)
   procCharts: ['Cartes', 'Charts', 'Karten', 'Cartas'],
-  procChartsEad: ['Cartes (EAD Basic, compte gratuit)', 'Charts (EAD Basic, free account)', 'Karten (EAD Basic, kostenloses Konto)',
-    'Cartas (EAD Basic, cuenta gratuita)'
-  ],
-  procChartsNone: ['cartes : source inconnue pour cet État', 'charts: source unknown for this state',
-    'Karten: Quelle für diesen Staat unbekannt',
-    'cartas: fuente desconocida para este Estado'
-  ],
   procOnMap: ['Sur la carte', 'On the map', 'Auf der Karte', 'En el mapa'],
   // le vent sur une piste (§ 10.30) : les raisons de l'orange et du rouge, en infobulle de la piste
   procWindTailSome: ['Vent arrière {kt} kt', 'Tail wind {kt} kt', 'Rückenwind {kt} kt', 'Viento de cola {kt} kt'],

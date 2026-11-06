@@ -12,6 +12,22 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: an aerodrome is never a point of the route** (`frame/lib/route_model.js`; Fuel SPEC § 9.3, frame INTEGRATION; noreg F93,
+  route_model bench; SOG-0033). An aerodrome at the head of the route text that is not the departure, at its end that is not the arrival,
+  or the departure / arrival repeated inside, is dropped from the points and the normalised text: after a new pair the list starts with
+  the first point after the departure.
+
+- **Fuel: the old departure no longer comes back** (`frame/lib/route_model.js`; Fuel DECISIONS; noreg F93; SOG-0034). Not reproduced on
+  94849e74b by Fuel's gestures; the state the user saw (a text still starting with EIDW, Auto « aucune route entre EIDW et LFLL ») is
+  guarded at the one reader of the text: no list row, no Auto leg and no procedure text from the old departure.
+
+- **Fuel: every point of the route is in the list of points** (`modules/fuel/module.js`; Fuel SPEC § 9.3; noreg F94; SOG-0035). A name
+  without a position is a row at its place with its reason (« inconnu de la base », or the zone without published points), counted.
+
+- **Fuel: « Cartes » is aerodb's address** (`modules/fuel/procedures.js`, `procedures_texts.js`; Fuel SPEC § 9.4; noreg F42; SOG-0031).
+  The link takes `ctx.aerodb.chartsUrl(icao)` alone (SIA eAIP, ENAIRE, AirNav Ireland); nothing when aerodb knows no address (KJFK); the
+  module's own composition and its « source inconnue » line are removed.
+
 - **Frame: a position is compared with the start by instants, not as text** (`frame/app.js` `liveCheck`; frame DECISIONS; noreg A90;
   SOG-0037). A start written to the second or in +02:00 no longer makes the frame remove a good position as a left-over (and a stale one
   is removed whatever the form of the two dates).

@@ -231,7 +231,16 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
   editing). Each chosen and read procedure is ONE folded row in its hue (`<details class="fu-ptgrp" data-kind="sid|star|app">`, the
   design tokens `--sog-map-sid|star|app`: « SID NTS1A · 2 points », « STAR MEN1A via NEPIX · 4 points », « I13R · 1 point »), its fixes
   (transition included) under a tap: the SID after the departure, the STAR and the approach before the arrival; a route point that is
-  a fix of a chosen procedure is shown in its group, never among the typed points; N = the points shown + the groups (F73).
+  a fix of a chosen procedure is shown in its group, never among the typed points; N = the points shown + the groups (F73). The list
+  is a view of the route as `routeModel` reads it (SOG-0035): a word of the text that names a point aerodb does not know is a row at
+  its place, without position or controls, with its reason (« inconnu de la base », or « inconnu : aucun point publié autour de EIDW
+  (État EI) » when the zone around an aerodrome of the flight has none), and counts in N; never left out (F94).
+- **An aerodrome is never a point of the route** (SOG-0033, SOG-0034; `routeModel`): an aerodrome (a four-letter code aerodb knows as
+  an aerodrome) at the head of the text that is not `route.dep` — the old departure left in the text by any writer after a change of
+  aerodrome —, at its end that is not `route.arr`, or `route.dep` / `route.arr` repeated inside, is dropped from the points and from
+  the normalised text; the flight's departure and arrival are then put at the ends. So the list starts with the departure then the
+  first point of the route, Auto never routes from the old departure, a procedure choice never writes it back. Another aerodrome
+  inside the route stays (a VFR route may pass one) (F93; route_model bench).
 - **« Last SimBrief OFP »**: through `ctx.net`, with the identity's SimBrief identifier (never typed here); the OFP is kept on the
   device only; its route, level, average wind, ISA deviation and aircraft go into the current flight; its SID and STAR fill the sides
   the pilot has not chosen, one line per side (F19).
@@ -276,9 +285,9 @@ before the start, in step 5 after (F11).
   aucune »; nothing when nothing is chosen). A tap on the line (but its other buttons) unfolds that side and folds the other; folded
   lists and secondary line are `visibility: hidden; height: 0` (kept in the shared grid so both sides keep the same columns); a side
   without data never folds; the address's focus (§ 9) unfolds its side (F72, F65, F34).
-- **Secondary line**, small and muted, one line, the pieces present only: « lu le 29/10 16:53Z ⌛ · Relire · 3 non lues · Source »:
+- **Secondary line**, small and muted, one line, the pieces present only: « lu le 29/10 16:53Z ⌛ · Relire · 3 non lues · Cartes »:
   the date of the aerodrome's last reading (`coverage(icao).read_at`, UTC, `fmtDayZ`: F39; ⌛ when `coverage().outdated`), « Relire », the
-  records left out (« N non lues » ×4; the old sentence in its `title`; nothing at 0), and « Source » (F34, F37, F27, F42). Without data:
+  records left out (« N non lues » ×4; the old sentence in its `title`; nothing at 0), and « Cartes » (F34, F37, F27, F42). Without data:
   « aucune procédure publiée · Lire les procédures de LFXX » (F14).
 - **A fixed grid**, the same columns on both sides (the box is the grid, each side a subgrid): Runway (6 em) · Procedure (wide) ·
   Transition; the Arrival's second line: · Approach · Approach transition. No select is narrower than its longest option (`minmax(
@@ -330,10 +339,10 @@ before the start, in step 5 after (F11).
   is said and the end always (success with its counts — « LFXX : 78 procédures lues sur 18 pages », the pages not read with the most
   frequent reason, the records dropped by the geometry check, never a bare « 0 procédures » —, refusal, failure with the launcher's
   message and the number of warnings), even when the pilot has left Fuel meanwhile; leaving does not cancel the job (F14, F38).
-- **« Source »** ends the secondary line: for the side's chosen SID (departure), STAR and approach (arrival), a link to the record's
-  `source.url` as aerodb gives it (`https://` only), `target="_blank"`, `rel="noopener noreferrer"`, the page's name in its title; with
-  two links the kind follows (« Source STAR · Source APP »); a record of another source has no link, its `source.file` in the line's
-  title; Fuel builds no address (F42).
+- **« Cartes »** ends the secondary line (SOG-0024, SOG-0031): the aerodrome's page in its state's official AIP, where its charts are,
+  as `ctx.aerodb.chartsUrl(icao)` gives it (the SIA eAIP AD 2 page, ENAIRE, AirNav Ireland when an ie zone is published), asked once per
+  aerodrome; an `https://` address only, `target="_blank"`, `rel="noopener noreferrer"`; nothing at all when aerodb gives null (a state
+  it does not know: no empty link, no guessed search). Fuel composes no address (F42: LFML, LEMD, EIDW, and KJFK without a link).
 - **« Sur la carte »**, a text button in each side's title when the aerodrome has data, sets `#maps?choose=dep|arr&icao=…`; the Map
   comes back with `location.replace('#fuel?focus=arr&rwy=25&star=ID&app=ID&apptrans=none')`, every key of the side in one trip among
   `rwy sid star app apptrans` (lower case; `none` = « Aucune »; a missing key leaves its family as it was; no SID / STAR transition).

@@ -1366,3 +1366,14 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   third (400 ft/NM without a sheet) (F92). 0021 — the selection by runway was right (the user's LFPO file, read-only, offers BOBSA 9E
   RW07 for the 07); the defect was the other order: a STAR chosen first takes its first record (RW02) and its runway, and a runway
   chosen next kept that record; now the sibling record of the runway replaces it (F90, counter-test: without, RW02 stays).
+- **6 Nov 2026 — lot of the 6th (bugs only), the ergonomics session's decisions**: SOG-0034 — not reproduced on 94849e74b by Fuel's
+  own gestures (field filled or typed key by key then Enter, « Nouveau vol », STAR chosen and cleared, route typed, Auto, reload: the
+  old departure never came back); what the user saw (« aucune route entre EIDW et LFLL » with LFPO as ADEP) is a text still starting
+  with the old departure, which any writer could leave (before lot A the Map and the frame wrote their whole copy of the route).
+  The fix is at the one reader of the text, `routeModel`: an aerodrome at the head that is not the departure, at the end that is not
+  the arrival, or the departure / arrival repeated inside, is never a point (SOG-0033 with it); four-letter codes only, so a navaid or
+  fix a base files among aerodromes is never dropped; another aerodrome inside stays (VFR). Counter-test F93 on 94849e74b: the list
+  read ['LFZZ', 'LFRS']. SOG-0035 — the list showed the resolved points only: a name without position vanished from it while the
+  text kept it; now it is a row at its place with its reason (F94; counter-test: no row). SOG-0031 — « Cartes » takes aerodb's
+  `chartsUrl(icao)` alone; the module's composition (eAIP AD 2.24, EAD Basic, « source inconnue ») is removed (F42; counter-test:
+  the old link carried `#LFML-AD-2.24`).

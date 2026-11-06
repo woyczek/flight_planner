@@ -251,7 +251,9 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   is (the Map's « vers votre route » axis; an empty route filters nothing). Refactoring R-F4a (30 Oct 2026): `route_model.js`
   (owner: fuel), `routeModel(text, { dep, arr, known, chain, base })` → `{ points, unresolved, tokens, badAirways }`, the route
   read from its text on the base the caller passes (`ctx.aerodb`'s `coords`, `airways`, `state`), and `AIRWAY_WORD`; Fuel's
-  `routePoints` moved there unchanged; bench `frame/lib/test/route_model.html` (F69). R-F4b: `procedures.js`
+  `routePoints` moved there unchanged; bench `frame/lib/test/route_model.html` (F69). Since 6 Nov 2026 (SOG-0033, SOG-0034) an
+  aerodrome (a four-letter code `coords` gives as `kind: 'aerodrome'`) at the head of the text that is not `dep`, at its end that is not
+  `arr`, or `dep` / `arr` repeated inside, is dropped from `points` and `tokens`: a terrain is never a point of the route. R-F4b: `procedures.js`
   `endsOf(procs, points, { dep, arr })` → `{ exit, entry }` (`{ id, lat, lon, origin }` or null), the ends of the chosen procedures
   for the route text and Auto, null when a point of the procedure is already on the route; `flight_path.js` `routingChain` removed.
   R-F4c: `textFromPoints` writes through `textFromTokens({ dct: true })`, one ICAO form for the Map's edit and Fuel's field. In `route_text.js`: `textFromTokens(tokens, { dct })`

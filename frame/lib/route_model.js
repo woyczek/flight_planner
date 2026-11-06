@@ -38,6 +38,7 @@ export async function routeModel(text, {
     unresolved = [],
     tokens = [];
   let via = ''; // voie aérienne lue depuis le dernier point : le point suivant y arrive par elle
+  const ads = new Set(); // les points du texte qu'aerodb connaît comme aérodromes
   /** Position d'un identifiant : un point arrivé par une voie garde la position de son segment (aerodb ne connaît pas
    *  toujours les extrémités des voies, ni le bon point si le nom existe ailleurs) ; sinon aerodb, puis un point déjà
    *  connu du vol ; null sinon. */
@@ -50,7 +51,9 @@ export async function routeModel(text, {
     const c = base ? await base.coords(id).catch(() => null) : null;
     if (c && Number.isFinite(+c.lat)) return {
       lat: +c.lat,
-      lon: +c.lon
+      lon: +c.lon,
+      ad: c.kind === 'aerodrome' && /^[A-Z]{4}$/.test(
+        id) // un code OACI : jamais un repère ou une balise qu'une base nomme comme un terrain
     };
     const k = known.get(id);
     return k ? {
@@ -82,6 +85,7 @@ export async function routeModel(text, {
     }
     via = '';
     points.push(p);
+    if (c.ad) ads.add(p);
     tokens.push({
       pt: p
     });
@@ -129,6 +133,18 @@ export async function routeModel(text, {
         keep: t.id
       });
     }
+  }
+  // un terrain n'est jamais un point de route (SOG-0033, SOG-0034) : un aérodrome en tête du texte qui n'est pas le départ du vol (l'ancien
+  // départ resté dans le texte après un changement de terrain), en fin qui n'est pas l'arrivée, ou le départ ou l'arrivée du vol répété
+  // au milieu, est retiré des points et du texte normalisé ; le départ et l'arrivée du vol sont posés ensuite. Un autre aérodrome au
+  // milieu reste (une route VFR peut passer par un terrain)
+  const drop = new Set(points.filter((p, i) => ads.has(p) && (i === 0 ? dep && p.id !== dep : i === points.length - 1 ? arr && p.id !==
+    arr : p.id === dep || p.id === arr)));
+  if (drop.size) {
+    for (let i = 1; i < points.length; i++)
+      if (drop.has(points[i - 1]) && !drop.has(points[i])) delete points[i].via; // sa voie partait du terrain retiré
+    points.splice(0, points.length, ...points.filter(p => !drop.has(p)));
+    tokens.splice(0, tokens.length, ...tokens.filter(t => !(t.pt && drop.has(t.pt))));
   }
   if (dep && points[0]?.id !== dep) {
     const c = await find(dep);

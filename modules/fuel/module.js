@@ -298,6 +298,12 @@ const TX = {
   ptUnknown: ['Point inconnu : {id}', 'Unknown point: {id}', 'Unbekannter Punkt: {id}', 'Punto desconocido: {id}'],
   steps: ['Paliers', 'Steps', 'Stufen', 'Escalones'],
   unresolved: ['Points inconnus : {l}', 'Unknown points: {l}', 'Unbekannte Punkte: {l}', 'Puntos desconocidos: {l}'],
+  // un nom de la route sans position, à sa place dans la liste des points, avec sa raison (SOG-0035 : jamais omis)
+  ptUnres: ['inconnu de la base', 'unknown to the database', 'der Datenbank unbekannt', 'desconocido en la base'],
+  ptUnresZone: ['inconnu : aucun point publié autour de {icao} (État {st})', 'unknown: no published point around {icao} (state {st})',
+    'unbekannt: kein veröffentlichter Punkt um {icao} (Staat {st})',
+    'desconocido: ningún punto publicado alrededor de {icao} (Estado {st})'
+  ],
   // un nom inconnu près d'un terrain dont la base n'a aucun point publié : la zone manque, pas le point (SOG-0012)
   noPointsNear: [' — la base n’a aucun point publié autour de {icao} (État {st}) : à compléter dans la base aéronautique.',
     ' — the database has no published point around {icao} (state {st}): to complete in the aeronautical database.',
@@ -3072,20 +3078,24 @@ function renderPts() {
     groups = procGroups(),
     inGroup = new Set(groups.flatMap(g => g.fixes)),
     group = g => `<details class="f-item fu-ptgrp" data-kind="${g.kind}"><summary>${esc(`${g.label} · ${tt(g.fixes.length === 1 ? TX.ptsGroup1 : TX.ptsGroupN, { n: g.fixes.length })}`)}</summary><div class="fu-ptfix">${g.fixes.map(fx => `<label class="f-item fu-pt"><span class="fu-ptid"><b>${esc(fx)}</b></span><input data-k="pcon" data-fix="${esc(fx)}" data-kind="${g.kind}" inputmode="numeric" maxlength="3" value="${+S.flight.route?.constraints?.[fx] > 0 ? Math.round(S.flight.route.constraints[fx] / 100) : ''}" aria-label="${esc(tt(TX.pconLabel, { id: fx }))}"></label>`).join('')}</div></details>`;
+  // les noms de la route sans position (SOG-0035) : une ligne chacun, à sa place, avec sa raison ; pour le texte qui les a lus seulement
+  const un = S.unres && S.unres.text === S.flight.route?.text ? S.unres.rows : [],
+    why = S.unres?.zone ? tt(TX.ptUnresZone, S.unres.zone) : tt(TX.ptUnres),
+    unRows = i => un.filter(x => x.i === i).map(x => `<div class="f-item fu-pt fu-ptunres" data-unres-pt="${esc(x.id)}"><span class="fu-ptid"><b>${esc(x.id)}</b><small class="f-warn">${esc(why)}</small></span><span class="fu-ptgap"></span></div>`).join('');
   let cur = plan,
-    shown = 0;
-  box.innerHTML = pts.length ? pts.map((p, i) => {
+    shown = un.length;
+  box.innerHTML = pts.length ? unRows(-1) + pts.map((p, i) => {
     const mid = i > 0 && i < pts.length - 1,
       hint = cur > 0 ? Math.round(cur / 100) : '';
     if (mid && p.alt_ft > 0) cur = p.alt_ft;
     const before = i === pts.length - 1 && i > 0 ? groups.filter(g => g.kind !== 'sid').map(group).join('') : '',
       after = i === 0 ? groups.filter(g => g.kind === 'sid').map(group).join('') : '';
-    if (mid && inGroup.has(String(p.id || '').toUpperCase())) return ''; // un repère de procédure : dans son groupe
+    if (mid && inGroup.has(String(p.id || '').toUpperCase())) return unRows(i); // un repère de procédure : dans son groupe
     shown++;
     const id = esc(p.id || '?');
     return `${before}<div class="f-item fu-pt"><span class="fu-ptid"><b>${id}</b><small class="f-muted">${(+p.lat).toFixed(2)} ${(+p.lon).toFixed(2)}</small></span>
       ${mid ? `<input data-k="ptalt" data-i="${i}" inputmode="numeric" maxlength="3" value="${p.alt_ft > 0 ? Math.round(p.alt_ft / 100) : ''}" placeholder="${hint}" aria-label="${esc(tt(TX.ptLevel, { id: p.id }))}">` : '<span class="fu-ptgap"></span>'}
-      <button type="button" data-do="ptup" data-i="${i}" ${i ? '' : 'disabled'} aria-label="${esc(tt(TX.ptUp, { id: p.id }))}">${svg('chevron-up')}</button><button type="button" data-do="ptdown" data-i="${i}" ${i < pts.length - 1 ? '' : 'disabled'} aria-label="${esc(tt(TX.ptDown, { id: p.id }))}">${svg('chevron-down')}</button><button type="button" data-do="ptdel" data-i="${i}" aria-label="${esc(tt(TX.ptDel, { id: p.id }))}">${svg('x')}</button></div>${after}`;
+      <button type="button" data-do="ptup" data-i="${i}" ${i ? '' : 'disabled'} aria-label="${esc(tt(TX.ptUp, { id: p.id }))}">${svg('chevron-up')}</button><button type="button" data-do="ptdown" data-i="${i}" ${i < pts.length - 1 ? '' : 'disabled'} aria-label="${esc(tt(TX.ptDown, { id: p.id }))}">${svg('chevron-down')}</button><button type="button" data-do="ptdel" data-i="${i}" aria-label="${esc(tt(TX.ptDel, { id: p.id }))}">${svg('x')}</button></div>${after}${unRows(i)}`;
   }).join('') : `<p class="f-muted">${esc(tt(TX.ptsNone))}</p>`;
   const n = S.body.querySelector('[data-ptsn]');
   if (n) n.textContent = tt(TX.ptsN, {
@@ -3509,6 +3519,27 @@ function resolveRoute(normalize = true) {
       r.text = routeText(tokens);
       if (ta) ta.value = r.text;
     }
+    // la place de chaque nom sans position dans la liste des points (après le point qui le précède dans le texte ; un départ inconnu en
+    // tête, une arrivée inconnue en fin) : valable pour ce texte seulement (SOG-0035)
+    const rows = [];
+    let last = null;
+    for (const t of tokens) {
+      if (t.pt) last = t.pt;
+      else if (unresolved.includes(t.keep) && !rows.some(x => x.id === t.keep)) rows.push({
+        id: t.keep,
+        i: last ? points.indexOf(last) : -1
+      });
+    }
+    for (const id of unresolved)
+      if (!rows.some(x => x.id === id)) rows.push({
+        id,
+        i: id === r.dep ? -1 : points.length - 1
+      });
+    S.unres = {
+      text: r.text,
+      rows,
+      zone: null
+    };
     routeDerived(r);
     renderPts();
     scheduleWx();
@@ -3536,6 +3567,13 @@ async function zoneNote(s, seq, points, line) {
     })).catch(() => null);
     if (gone(s) || seq !== s.routeSeq) return;
     if (Array.isArray(near) && !near.length) {
+      if (s.unres) {
+        s.unres.zone = {
+          icao: p.id,
+          st: p.id.slice(0, 2)
+        };
+        renderPts();
+      }
       const un = s.body?.querySelector('[data-unres]');
       if (un && un.textContent === line) un.textContent = line + tt(TX.noPointsNear, {
         icao: p.id,
