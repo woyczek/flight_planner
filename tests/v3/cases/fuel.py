@@ -2555,3 +2555,17 @@ def f97(c):
     got = norm(c.js("document.querySelector('[data-module=fuel] [data-src]').textContent"))
     want = norm(tx(F, 'source', c.lang).replace('{s}', tx(F, 'profile', c.lang, after='kinds: {')))
     c.eq(got, want, 'the typed cruise flow of the sheet, not the single table row stretched to 7250 rpm', what='cruise source')
+
+
+@case('F98', 'Level windows bench: a Fuel Phase Monitor journal read, its steady cruise windows grouped per altitude and rpm, compared with the curve of the same altitude',
+      'F', tags=('fuel', 'aircraft'), designs=('standard',), screens=False,
+      rule='SOG-0052, V3 spec 10.37 A and C (« Proposer depuis les mesures », step 1): modules/stats/phases.js, pure, ported from the FuelDashboard '
+      '(parseCSV, eligible, the weighted median); an invented journal, never a file of the user; the bench passes')
+def f98(c):
+    c.page.goto(f'{c.base}/modules/stats/test/phases.html', wait_until='load')
+    try:
+        c.page.wait_for_function('window.__bench && window.__bench.done', timeout=30000)
+    except Exception:
+        raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'modules/stats/test/phases.html') from None
+    r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
+    c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}", 'every check of the bench passes')

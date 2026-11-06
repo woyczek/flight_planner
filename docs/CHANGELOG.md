@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Stats: level windows of the Fuel Phase Monitor journals** (`modules/stats/phases.js`, `modules/stats/SPEC.md`; noreg F98;
+  SOG-0052, step 1, pure part). The journal CSV read as untrusted input, the steady cruise windows grouped per altitude and rpm
+  (weighted median flow, TAS), compared with the sheet's curve of the same altitude; ported from the FuelDashboard. No screen yet.
+
 - **Fuel: the typed flow is used when the RPM table does not frame the rpm** (`modules/fuel/model.js` `tableAt`; Fuel SPEC § 3,
   DECISIONS; noreg F97; SOG-0053). A table with a single row with a flow (the S210: 6700 rpm → 11 500 lb/h against 7300 lb/h typed at
   7250 rpm), an rpm beyond its rows or another power reference was stretched and replaced the sheet's flow in every quote; it is now

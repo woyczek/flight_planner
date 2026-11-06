@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>stats — level windows bench</title>
+<!-- Banc des fenêtres de palier (modules/stats/phases.js, SOG-0052) : un journal Fuel Phase Monitor inventé (aucune mesure de
+     l'utilisateur) ; lecture, fenêtres retenues, points par altitude et régime, comparaison à la fiche. Page d'outil. -->
+<style>
+  :root {
+    color-scheme: light
+  }
+  body {
+    margin: 0;
+    padding: 12px;
+    background: #f4f6f8;
+    color: #17202a;
+    font: 13px/1.4 system-ui, sans-serif
+  }
+  pre {
+    white-space: pre-wrap;
+    background: #fff;
+    border: 1px solid #0002;
+    padding: 8px;
+    font-size: 12px
+  }
+  .ok {
+    color: #1b7a3a
+  }
+  .ko {
+    color: #b3261e;
+    font-weight: 600
+  }
+</style></head>
+<body>
+<h1 style="font-size:16px;margin:0 0 8px">stats — level windows bench</h1>
+<pre id="out">running…</pre>
+<script type="module">
+  import * as PH from '../phases.js';
+  const lines = [];
+  let pass = 0,
+    fail = 0;
+  /** Compare une valeur (JSON) à l'attendue. */
+  const check = (label, got, want) => {
+    const g = JSON.stringify(got),
+      w = JSON.stringify(want),
+      ok = g === w;
+    ok ? pass++ : fail++;
+    lines.push(`<span class="${ok ? 'ok' : 'ko'}">${ok ? '✓' : '✗'}</span> ${label}: ${g}${ok ? '' : ` (expected ${w})`}`);
+  };
+  const H = ['schema_version', 'aircraft_icao', 'aircraft_file', 'registration', 'flight_id', 'phase', 'duration_sec',
+    'mean_fuel_flow_kg_h',
+    'fuel_coverage_pct', 'engine_count', 'engine_fuel_flow_kg_h', 'mean_pressure_altitude_ft', 'mean_ias_kt', 'mean_tas_kt',
+    'mean_vertical_speed_fpm', 'mean_engine_rpm', 'quality_flags'
+  ];
+  /** Une fenêtre de 15 s inventée. */
+  const w = (flight, phase, alt, rpm, ff, o = {}) => ({
+    schema_version: '0.4.1',
+    aircraft_icao: 'XTST',
+    aircraft_file: 'xtst.acf',
+    registration: 'F-TEST',
+    flight_id: flight,
+    phase,
+    duration_sec: 15,
+    mean_fuel_flow_kg_h: ff,
+    fuel_coverage_pct: 100,
+    engine_count: 2,
+    engine_fuel_flow_kg_h: `${ff / 2};${ff / 2}`,
+    mean_pressure_altitude_ft: alt,
+    mean_ias_kt: 150,
+    mean_tas_kt: 170,
+    mean_vertical_speed_fpm: 20,
+    mean_engine_rpm: rpm,
+    quality_flags: '',
+    ...o
+  });
+  const rows = [];
+  for (let i = 0; i < 8; i++) rows.push(w('A', 'CRUISE', 4020, 2302, 38 + (i % 2))); // 4000 ft, 2300 rpm : 120 s
+  for (let i = 0; i < 8; i++) rows.push(w('B', 'CRUISE', 7990, 2498, 40)); // 8000 ft, 2500 rpm : 120 s
+  rows.push(w('A', 'CRUISE', 4000, 2300, 99, {
+    mean_vertical_speed_fpm: 600
+  })); // en montée : écartée
+  rows.push(w('A', 'CLIMB', 3000, 2500, 60)); // une autre phase : écartée
+  rows.push(w('A', 'CRUISE', 4000, 2300, 99, {
+    quality_flags: 'fuel_missing'
+  })); // drapeau : écartée
+  rows.push(w('A', 'CRUISE', 6000, 2400, 50)); // 15 s seulement : sous le seuil
+  const csv = [H.join(','), ...rows.map(r => H.map(h => String(r[h] ?? '')).join(',')), 'bad,line'].join('\n');
+  const P = PH.parseWindows(csv);
+  check('read: every window, the short line skipped', [P.rows.length, P.skipped], [rows.length, 1]);
+  check('eligible: cruise, steady, flagged out', [PH.eligible(P.rows[0]), PH.eligible(P.rows[16]), PH.eligible(P.rows[17]), PH.eligible(P
+      .rows[18])],
+    [true, false, false, false]);
+  const C = PH.levelCurves(P.rows);
+  check('points: per altitude and rpm, the short group left out', C.map(p => [p.altFt, p.rpm, p.flowKgH, p.tasKt, p.seconds, p.windows, p
+      .flights
+    ]),
+    [
+      [4000, 2300, 38.5, 170, 120, 8, 1],
+      [8000, 2500, 40, 170, 120, 8, 1]
+    ]);
+  const sheet = {
+    unit: 'lb',
+    rpmFuelCurve: [{
+      rpm: 2200,
+      altFt: 4000,
+      fuelFlowPerHour: 77
+    }, {
+      rpm: 2400,
+      altFt: 4000,
+      fuelFlowPerHour: 99
+    }, {
+      rpm: 2500,
+      altFt: 6000,
+      fuelFlowPerHour: 90
+    }]
+  };
+  const K = PH.compare(C, sheet, {
+    toKg: v => v * 0.45359237
+  });
+  check('compare: the curve of the same altitude, interpolated on the rpm; nothing at an altitude the sheet lacks',
+    K.map(p => [p.altFt, p.rpm, p.sheetKgH, p.deltaPct]), [
+      [4000, 2300, 39.9, -3.5],
+      [8000, 2500, null, null]
+    ]);
+  let refused = '';
+  try {
+    PH.parseWindows('a,b\n1,2');
+  } catch (e) {
+    refused = e.message;
+  }
+  check('a file that is not a journal is refused', refused, 'not a Fuel Phase Monitor journal');
+  document.getElementById('out').innerHTML = lines.join('\n') + `\n\n${pass} passed, ${fail} failed`;
+  window.__bench = {
+    done: true,
+    pass,
+    fail,
+    rows: lines.filter(l => l.includes('ko'))
+  };
+</script>
+</body></html>
