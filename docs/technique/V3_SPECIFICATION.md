@@ -1764,8 +1764,46 @@ redesigned for touch at that point.
        cycle's base address that `catalogue.js` and `proc_sia.py` already compose; the chart whose runways and name match,
        else the DATA page; ENAIRE and AirNav: null until their addresses are known), never composed elsewhere, the contract
        of `chartsUrl`. **Fuel's Procédures tab and the in-flight step show one "Carte" link per chosen procedure** (runway,
-       SID, STAR, approach) when `chartUrl` returns one, else the aerodrome page of SOG-0031 as today; the link opens the pdf
+       SID, STAR, approach) when `chartUrl` returns one, else the aerodrome page of SOG-0031 as today (**the aerodrome page stays as long as one chosen procedure has no
+       known chart or nothing is chosen yet**, so a side never loses its ADC and VAC — Features SOG's reading, accepted on
+       6 Nov, f09f97369; the runway is asked as a fixed `{ icao, kind: 'RWY', id, name, runways }` object, answered by the
+       ADC or the VAC); the link opens the pdf
        in a new tab, nothing embedded, nothing downloaded by the suite; the aerodrome's VAC is a chart like the others
        (`charts.items[]`, kind `VAC`). Feature-detected like `chartsUrl` (no function, no link), so the two lots are independent:
        **Features SOG the screen, AeroDB the function; the screen may ship first and shows nothing new until the function
        exists.** Seven elements at most on the tab (rule 13), no new chip; one case per side, red before.
+   40. **The ground layer of the Map: taxiways and stands of the departure and the arrival, a list that highlights**
+       (user, 6 Nov: "la liste des points et taxiway sur la carte, pour l'adep / adest. idéalement, pour certains gros AD, un
+       moteur de recherche… avec surlignement du point, du TWY, de la RWY. soit un moteur, soit une liste avec surlignement
+       au survol"; SOG-0046). Ergonomics design of 6 Nov on BUGS SOG's measurements of the same day (LFPO and LFLL, real
+       data, desktop): after alpha.5, one lot of BUGS SOG for the map and the panel, one of AeroDB for the file.
+       **Source: OpenStreetMap through a launcher job, one small published file per aerodrome.** OSM gives both the
+       taxiways (LFPO: 167 ways, 122 named, 2 309 segments) and the stands (404 elements, 238 names) with the finest
+       geometry; X-Plane's `apt.dat` has the same names but coarser lines, lives in the simulator's folder (380 MB, local
+       by rule: X-Plane data never leaves the workstation unless the "personal" box), and its licence is not established;
+       the SIA has only pdf charts (ADC, APDC, GMC, listed in `charts.items[]`); openAIP has none. Overpass takes about
+       30 s per aerodrome and is a public instance: **never from the page at the opening of a map** (sia_base.js stops at
+       25 s); the launcher job `ground/fetch` (AeroDB, same family as the base jobs: dry run, manifest, one aerodrome per
+       call, the pilot's gesture from Données) writes `data/proc/ground/<ICAO>.json` (≈ 40 kB compacted for LFPO: `{ icao,
+       cycle: <date>, source: 'osm', attribution: '© OpenStreetMap contributors, ODbL', items: [{ id, kind: 'twy' | 'park' |
+       'hold', name, line | point }] }`), read like `proc/manual`, untrusted input like every file of `data/` (§ 10.36:
+       names escaped, numbers bounded, counts capped). The attribution is shown on the map while the layer is drawn.
+       **Licence, the user's decision before the first publication:** the file is a derived database under the ODbL; the
+       data repository is the airline's private repository, which is not a public distribution, but the user says so in
+       one line before the job exists. `apt.dat` is not a source of the suite (no path setting, nothing read from the
+       simulator for this).
+       **Drawing, under the cost rule (D68, < 16 ms per image):** the layer exists only with a chosen departure or arrival
+       and at zoom 14 or more, never on the general view; lines of the taxiways at z ≥ 14 (≈ 2.3 ms at LFPO), their names
+       at z ≥ 15 (≈ 1 ms through `SiaAero.pass`, one more rank in `RANK`), the stands as points with names at z ≥ 16 (55
+       in view at LFPO), the aprons never filled (3 to 5 ms for nothing); while panning, the light drawing keeps the
+       lines only (D68). Short names collide (43 of 122 placed at z14): the list below is the answer, and the list says
+       which names are not drawn ("non dessiné").
+       **The list, not an engine:** a sheet panel copied from `choose` (`openData('ground:ADEP' | 'ground:ADES')`), one row
+       per element with its kind and name, one filter field (sub-string, no case, no accent: 238 stands filter without an
+       engine), hover or focus of a row highlights the element on the map (`setGroundHl(id, fromMap)` on the model of
+       `setHl`, drawn last, thicker, accent hue; D69's mechanics), a "voir" action frames it (`fitBounds` of the line,
+       `easeTo` z17 of the point); from the map, a touch within 6 px of a line or a point opens the row (`groundHits` in
+       the format of `zoneHits`). Seven elements at most in the panel: the filter, the kind chips twy / park / hold, the
+       rows, the "non dessiné" mark, done. Runways stay where they are (threshold vectors, § 10.20): the panel lists them
+       first, highlight included, no new drawing.
+       **Phone first** (the panel is a sheet, the map already pans and zooms); the workstation gets the same.
