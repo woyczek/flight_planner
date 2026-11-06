@@ -5,6 +5,80 @@ Une section par version publiée, la plus récente en tête, écrite à chaque r
 effectuer** (ce que chacun doit faire après la mise à jour), **notes** (limites connues, points d'attention, à venir).
 Entre deux versions, le pied de page affiche le commit en cours (`v4.6.0+abc1234`).
 
+## 6.0.0-alpha.3 — 6 November 2026
+
+Third alpha of the **Pilot application** (V3), nine days after the second, and the first **Company application**: the
+Data module, one writer of the flight, the route as a view of the procedures, choosing on the map, the airline's
+missions and fleet, GitLab as a data host, a test suite run once per evening.
+
+### Summary
+
+- **Data module** (Settings › Maintenance › Données): the zones to tick on a real map; one Download · Build · Purge
+  panel per group; each zone says its cycle, its sources and which one blocks a build; « dépassé » only compares the
+  zones a dated source feeds; « Prendre le fichier téléchargé » takes the SIA, NATS and openAIP files from Downloads;
+  the raw SIA files live in `data/local/sources/` and leave the data repository; the base is built on the launcher in
+  one headless browser (parser 21) and published by the pilot's gesture; « Update all »; a read-only inventory card.
+- **Ireland and Spain**: AirNav Ireland's eAIP (points, RNAV routes) as a dated source of the `ie` zone; the official
+  charts of France, Spain and Ireland from « Cartes »; Little Navmap's performance files imported or exported, never
+  shown: the JSON sheet is the source.
+- **One writer of the flight**: a module writes only what it changed; an old flight plan no longer comes back between
+  tabs; a level typed in Fuel stays when the Map edits the route; « Nouveau vol » and a new pair of aerodromes clear
+  the old flight.
+- **Fuel**: the route text is a view of the chosen procedures; an airway is followed along its nodes; « Auto » is
+  idempotent and starts from the chosen SID's exit; completion at the cursor; runway, SID, STAR and approach filter one
+  another, each runway shows its wind; a level constraint on a point of a chosen procedure; the aerodrome fields search
+  by name; flight plans for X-Plane (.fms) and MSFS (.pln); the walk's dates checked.
+- **Map**: choosing on the map in one pane (three families, compatible rows first, the choice kept until closed);
+  approaches the SIA way; runways as threshold vectors with their numbers from the airline's zoom; one collision pass
+  over every label by priority; a light drawing while panning, one image at opening; aerodromes by importance; the
+  drawing overflows the view by 5 %.
+- **Profile**: the airways followed as named blocks, the classes E, F, G in a light fill, the transitions on both
+  views, the height at the cursor, the wheel zooms, a note says what the vertical path lacks; the profile follows the
+  aircraft's performance.
+- **Weather**: « Load (≈ n calls) » before any call; the layers button next to the panel it opens; the sheet the height
+  of what it shows.
+- **Company application**: the airline's missions (V2 missions read as they are), the site, the fleet in Maintenance ›
+  Appareils with the sheets editor (moved from Fuel), the airline's logo (png or webp) as its icon.
+- **Pilots' tokens and GitLab**: the data repository on GitHub or GitLab (framagit, gitlab.com); pilots' project tokens
+  created, tested and saved on the Jetons des pilotes screen; the administrator's assistant until the airline is
+  installed; one enrolment path (« Rejoindre la compagnie », « Ajouter un pilote »); the data branch opened to
+  Developers without force push.
+- **Update the suite** from Administration (channel, check, fast-forward to the commit the check showed, refused while
+  a job or a synchronisation runs); « Dossiers du poste ».
+- **Relay**: IVAO sign-in through the airline's relay; pairing per channel, expired devices purged.
+- **Non-regression suite**: 472 cases, 2.6 times faster, every bench opened by a case; a developer runs only the cases
+  of their lot, one full pass per evening on the frozen candidate gates the push.
+- **Refactorings without change of behaviour**: the frame's rules (R-F1–R-F6: wind on a runway, procedures, hues,
+  route model, completion, map sides), Settings and Data (R-S1–R-S10), the Map (R-M1–R-M6), the transports and the
+  launcher (R-C1–R-C6).
+- **Security reviews**: the launcher's outgoing calls (one User-Agent, bounded zips, no redirect to another host), a
+  token never to a new host, a configuration never imports an API address, every file of `data/` read as untrusted
+  input, the help bundle checked fresh.
+
+### Actions to take
+
+1. **Workstation**: pull `v3`, restart the launcher (new routes: `base/pickup`, `base/move-sources`, `data/inventory`,
+   `sync-remote`, the relay), reload `/frame/`. Settings › Maintenance › Données: Download, then Build once (parser 21),
+   then Publish. The raw SIA files of `data/sia/` move to `data/local/sources/sia/<cycle>/` with `base/move-sources`
+   (dry run by default; a button follows).
+2. **Data repository**: protect the data branch (no force push, Developers may push); create each pilot's project
+   access token (Developer, scope `api`, one year at most) on Jetons des pilotes; never paste a token in a link, a
+   message or a configuration.
+3. **Phone and tablet**: Settings › Données: tick your zones; the sources under a personal licence (ENAIRE, AirNav
+   Ireland) need the « personal » box; add `/v3/frame/` to the home screen again if the icon changed.
+4. **Aircraft**: the JSON sheet is the source; import or export Little Navmap files from Maintenance › Appareils; a
+   sheet whose rpm / flow curve goes down is said in orange and left to you.
+5. **Tests**: `python tests/v3/run.py --grep <ids>` for a lot; `--all --wait` once in the evening, one runner at a time.
+
+### Notes
+
+- Alpha: `current_flight.json` (`route.constraints`, `quote.legs`), `data/local/`, `proc/manual/` may still change.
+- Open: the map's 5 % overflow costs 1 ms at Paris VFR z9 (rule of cost not held; may be set to 0); AirNav Ireland's
+  licence is declared personal until confirmed; the MSFS 2024 EFB plan waits for a real file; the Atmosphere module
+  was recoded on the weather layer in the cloud and its last four commits are in.
+- The backlog of the airline's requests (SOG-0001 … SOG-0031) is kept with the organisation files; most fiches of this
+  alpha wait for the pilot's validation on the workstation.
+
 ## 6.0.0-alpha.2 — 28 October 2026
 
 Second alpha of the **Pilot application** (V3), five days after the first: the phone screen, the recoded Map, one

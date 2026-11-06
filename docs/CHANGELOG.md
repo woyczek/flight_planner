@@ -12,6 +12,30 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+## [6.0.0-alpha.3] — 2026-11-06
+
+Third alpha of the V3 **Pilot application**, nine days after the second, with the first **Company application**. The
+**Data module** is delivered: the zones on a real map, one Download · Build · Purge panel per group, the cycle and the
+sources of every zone, « dépassé » said per source, the raw files taken from Downloads (SIA, NATS, openAIP exports),
+the raw SIA files kept out of the data repository, the base built on the launcher in one headless browser and
+published by the pilot's gesture; Ireland (AirNav eAIP), Spain's charts, Little Navmap. The **flight has one writer**:
+each module writes only what it changed, an old plan no longer comes back between tabs. **Fuel** writes the route as
+a view of the chosen procedures (airways followed along their nodes, « Auto » idempotent, completion at the cursor,
+runway · SID · STAR · approach with the wind on each runway, a level constraint on a procedure point, « Nouveau vol »,
+flight plans for the simulators). The **Map** chooses on the map in one pane, draws approaches the SIA way, runways as
+threshold vectors, one collision pass by priority, a light drawing while panning and one image at opening, the
+aerodromes by importance; the **profile** shows the airways followed, the airspace classes, the transitions, the
+height at the cursor, zooms with the wheel and says what the vertical path lacks. **Weather** says what a load costs
+before any call. The **Company application** carries the airline's missions, the site and the fleet (Maintenance ›
+Appareils with the sheets editor), the pilots' tokens (GitLab project tokens, the administrator's assistant, one
+enrolment path), « Mise à jour de la suite » and the workstation's folders; the data repository may live on GitLab
+(framagit, gitlab.com) as well as GitHub; IVAO sign-in goes through the airline's relay. Four series of refactorings
+without change of behaviour (R-F, R-S, R-M, R-C), five security reviews, and the **non-regression suite** at 472
+cases, 2.6 times faster, run once per evening on the frozen candidate. Alpha: data formats and screens may still
+change.
+
+### V3
+
 - **Frame: the real position is written on the flight read again, and proved** (`frame/app.js` `clearActual`; frame DECISIONS; noreg
   A88, A89; SOG-0013, frame's half). `clearActual` no longer writes back its earlier reading when the flight cannot be read again; the
   new cases make the other writer (Fuel, the Map) play inside the frame's wait: its route and level stay after the position, and a
