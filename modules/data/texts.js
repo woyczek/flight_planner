@@ -973,11 +973,109 @@ export const TX = {
   inventory: {
     title: ['Inventaire des données', 'Data inventory', 'Dateninventar', 'Inventario de datos'],
     intro: [
-      'Ce que « data » recouvre sur ce poste : sept emplacements, leur taille et s’ils sont suivis par le dépôt. Rien n’est lu dans un fichier, rien n’est déplacé.',
-      'What “data” covers on this workstation: seven places, their size and whether the repository tracks them. No file is read, nothing is moved.',
-      'Was „data“ auf diesem Rechner umfasst: sieben Orte, ihre Größe und ob das Repository sie verfolgt. Keine Datei wird gelesen, nichts wird verschoben.',
-      'Lo que abarca «data» en este puesto: siete lugares, su tamaño y si el repositorio los sigue. No se lee ningún archivo, no se mueve nada.'
+      'Ce que « data » recouvre sur ce poste : sept emplacements, leur taille et s’ils sont suivis par le dépôt. Rien n’est lu dans un fichier ; rien n’est déplacé sans votre confirmation.',
+      'What “data” covers on this workstation: seven places, their size and whether the repository tracks them. No file is read; nothing is moved without your confirmation.',
+      'Was „data“ auf diesem Rechner umfasst: sieben Orte, ihre Größe und ob das Repository sie verfolgt. Keine Datei wird gelesen; ohne Ihre Bestätigung wird nichts verschoben.',
+      'Lo que abarca «data» en este puesto: siete lugares, su tamaño y si el repositorio los sigue. No se lee ningún archivo; no se mueve nada sin su confirmación.'
     ],
+    // « Ranger les sources brutes » (SOG-0030) : le verbe base/move-sources du lanceur, d'abord à blanc, puis sur confirmation
+    move: {
+      hint: [
+        'Ranger les fichiers XML bruts du SIA de data/sia/ dans data/local/sources/sia/<cycle>/ : chaque fichier est copié, vérifié, puis l’ancien retiré (gardé s’il est suivi par git). Rien n’est supprimé.',
+        'Put the raw SIA XML files of data/sia/ into data/local/sources/sia/<cycle>/: each file is copied, checked, then the old one removed (kept if git tracks it). Nothing is deleted.',
+        'Die rohen SIA-XML-Dateien aus data/sia/ in data/local/sources/sia/<cycle>/ ablegen: Jede Datei wird kopiert, geprüft, dann die alte entfernt (behalten, wenn git sie verfolgt). Nichts wird gelöscht.',
+        'Guardar los archivos XML brutos del SIA de data/sia/ en data/local/sources/sia/<cycle>/: cada archivo se copia, se verifica y se retira el antiguo (se conserva si git lo sigue). No se borra nada.'
+      ],
+      plan: ['Ranger les sources brutes', 'Put the raw sources away', 'Rohquellen ablegen', 'Guardar las fuentes brutas'],
+      planUndo: ['Remettre à leur place', 'Put them back', 'Zurücklegen', 'Devolverlas a su sitio'],
+      planning: ['Plan en cours…', 'Planning…', 'Plan wird erstellt…', 'Preparando el plan…'],
+      running: ['Rangement en cours…', 'Working…', 'Wird abgelegt…', 'Guardando…'],
+      confirm: ['Ranger', 'Put away', 'Ablegen', 'Guardar'],
+      confirmUndo: ['Remettre', 'Put back', 'Zurücklegen', 'Devolver'],
+      cancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
+      ask: ['Ranger {n} fichier(s) ({b}) ? Chacun est copié dans data/local/sources/sia/<cycle>/, vérifié, puis l’ancien retiré.',
+        'Put {n} file(s) ({b}) away? Each is copied into data/local/sources/sia/<cycle>/, checked, then the old one removed.',
+        '{n} Datei(en) ({b}) ablegen? Jede wird nach data/local/sources/sia/<cycle>/ kopiert, geprüft, dann die alte entfernt.',
+        '¿Guardar {n} archivo(s) ({b})? Cada uno se copia en data/local/sources/sia/<cycle>/, se verifica y se retira el antiguo.'
+      ],
+      askUndo: ['Remettre {n} fichier(s) ({b}) à leur place d’origine ? Chacun est copié, vérifié, puis celui du rangement retiré.',
+        'Put {n} file(s) ({b}) back where they came from? Each is copied, checked, then the one that was put away is removed.',
+        '{n} Datei(en) ({b}) an ihren ursprünglichen Ort zurücklegen? Jede wird kopiert, geprüft, dann die abgelegte entfernt.',
+        '¿Devolver {n} archivo(s) ({b}) a su sitio de origen? Cada uno se copia, se verifica y se retira el guardado.'
+      ],
+      nothing: ['Rien à ranger : aucun fichier XML brut du SIA à la racine de data/sia/.',
+        'Nothing to put away: no raw SIA XML file at the root of data/sia/.',
+        'Nichts abzulegen: keine rohe SIA-XML-Datei im Stamm von data/sia/.',
+        'Nada que guardar: ningún archivo XML bruto del SIA en la raíz de data/sia/.'
+      ],
+      nothingUndo: ['Rien à remettre : aucun rangement noté, ou déjà remis.',
+        'Nothing to put back: no move noted, or already put back.',
+        'Nichts zurückzulegen: keine Ablage vermerkt oder bereits zurückgelegt.',
+        'Nada que devolver: ningún guardado anotado, o ya devuelto.'
+      ],
+      done: ['{n} fichier(s) rangé(s) ({b}).', '{n} file(s) put away ({b}).', '{n} Datei(en) abgelegt ({b}).',
+        '{n} archivo(s) guardado(s) ({b}).'
+      ],
+      doneUndo: ['{n} fichier(s) remis à leur place ({b}).', '{n} file(s) put back ({b}).', '{n} Datei(en) zurückgelegt ({b}).',
+        '{n} archivo(s) devuelto(s) ({b}).'
+      ],
+      already: ['{n} déjà au bon endroit.', '{n} already in the right place.', '{n} bereits am richtigen Ort.', '{n} ya en su sitio.'],
+      kept: ['{n} ancien(s) gardé(s) : suivi(s) par git.', '{n} old one(s) kept: tracked by git.', '{n} alte behalten: von git verfolgt.',
+        '{n} antiguo(s) conservado(s): seguido(s) por git.'
+      ],
+      refused: ['{n} refusé(s) :', '{n} refused:', '{n} abgelehnt:', '{n} rechazado(s):'],
+      more: ['… et {n} autre(s)', '… and {n} more', '… und {n} weitere', '… y {n} más'],
+      why: {
+        present: ['le chemin d’origine est pris', 'the original path is taken', 'der ursprüngliche Pfad ist belegt',
+          'la ruta de origen está ocupada'
+        ],
+        different: ['un autre fichier de même nom est déjà là', 'another file of the same name is already there',
+          'eine andere Datei gleichen Namens ist schon da', 'ya hay otro archivo con el mismo nombre'
+        ],
+        missing: ['le fichier n’est plus là', 'the file is no longer there', 'die Datei ist nicht mehr da', 'el archivo ya no está'],
+        'unsafe-path': ['chemin refusé', 'path refused', 'Pfad abgelehnt', 'ruta rechazada'],
+        'too-large': ['trop gros', 'too large', 'zu groß', 'demasiado grande'],
+        'sha-mismatch': ['la copie diffère de l’original', 'the copy differs from the original', 'die Kopie weicht vom Original ab',
+          'la copia difiere del original'
+        ],
+        'write-failed': ['écriture impossible', 'could not write', 'Schreiben nicht möglich', 'no se pudo escribir'],
+        other: ['raison inconnue', 'unknown reason', 'unbekannter Grund', 'motivo desconocido']
+      },
+      reason: {
+        cancelled: ['Arrêté avant la fin.', 'Stopped before the end.', 'Vor dem Ende abgebrochen.', 'Detenido antes del final.'],
+        failed: ['Rien n’a pu être déplacé.', 'Nothing could be moved.', 'Nichts konnte verschoben werden.', 'No se pudo mover nada.'],
+        partial: ['Fait en partie : voir les refusés.', 'Partly done: see the refused ones.',
+          'Teilweise erledigt: siehe die abgelehnten.', 'Hecho en parte: vea los rechazados.'
+        ]
+      },
+      refusal: {
+        forbidden: ['Le lanceur refuse : ce geste se fait depuis le poste, pas depuis un appareil apparié.',
+          'The launcher refuses: this is done from the workstation, not from a paired device.',
+          'Der Starter lehnt ab: Das geht vom Rechner aus, nicht von einem gekoppelten Gerät.',
+          'El lanzador rechaza: esto se hace desde el puesto, no desde un dispositivo emparejado.'
+        ],
+        busy: ['Un autre travail du lanceur tourne : réessayez à sa fin.', 'Another launcher job is running: try again when it ends.',
+          'Ein anderer Starter-Auftrag läuft: Versuchen Sie es nach seinem Ende erneut.',
+          'Otro trabajo del lanzador está en curso: inténtelo cuando termine.'
+        ],
+        unknown: ['Ce lanceur ne connaît pas ce rangement : relancez-le à jour.',
+          'This launcher does not know this move: restart it up to date.',
+          'Dieser Starter kennt diese Ablage nicht: Starten Sie ihn aktuell neu.',
+          'Este lanzador no conoce este guardado: reinícielo actualizado.'
+        ],
+        failed: ['Le lanceur n’a pas pu faire ce rangement.', 'The launcher could not do this move.',
+          'Der Starter konnte diese Ablage nicht ausführen.', 'El lanzador no pudo hacer este guardado.'
+        ],
+        sync: ['Une fusion est en attente dans data/ : rien n’est déplacé, synchronisez d’abord.',
+          'A merge is pending in data/: nothing is moved, synchronise first.',
+          'In data/ steht eine Zusammenführung aus: Nichts wird verschoben, zuerst synchronisieren.',
+          'Hay una fusión pendiente en data/: no se mueve nada, sincronice primero.'
+        ],
+        gateBusy: ['Une opération est en cours : attendez sa fin.', 'An operation is running: wait for it to end.',
+          'Ein Vorgang läuft: Warten Sie sein Ende ab.', 'Hay una operación en curso: espere a que termine.'
+        ]
+      }
+    },
     loading: ['Lecture de l’inventaire…', 'Reading the inventory…', 'Inventar wird gelesen…', 'Leyendo el inventario…'],
     unread: ['Inventaire illisible : le lanceur de ce poste ne répond pas, ou refuse. Rien n’est deviné.',
       'Inventory unreadable: this workstation’s launcher does not answer, or refuses. Nothing is guessed.',

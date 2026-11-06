@@ -171,3 +171,16 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   separate block, and a pickup with only skipped exports asks nothing.
 - **Found while testing**: SOG-0026 made `baseOf().cycle` null for a zone with no dated source, so the map of the zones drew the United
   States and Canada « nothing published »; the map now reads `published` (a cycle in force, dated or not) and `cycle` (dated) apart.
+
+## 6 November 2026 — « Ranger les sources brutes » in the inventory card (SOG-0030)
+
+- **Rule** (the coordinator's decision of 5 Nov): in the card, plan first, run on confirmation, result, undo; refused while a job or a synchronisation runs.
+- **Reversible details chosen** (the user is away): the undo is a second button **always visible** (not only while the manifest exists: the launcher has no verb that reads the
+  manifest, and a plan of the undo is the way to know; « rien à remettre » when there is none); the same plan-then-question flow for the undo; the plan list shows eight
+  files; the card draws its own states (`S.move`) instead of the build panel's (`S.run`), but counts in `busyNow()` so that nothing else starts during it.
+- **« During a synchronisation »** is read from what the page can see: a publication of its own (`S.pub.phase`), and a **merge pending** in `data/` (`sync-status.merging`).
+  A background pass of the frame that is running at that instant is not visible from here; the verb moves files outside the synchronised pool (`data/sia/*.xml` to
+  `data/local/…`) and never removes a tracked file, so the risk is nil for git. To be strict, the launcher would have to refuse the verb under its own sync lock (a
+  launcher change, not done here).
+- **Found while testing**: `knownVerbs` kept only `^[a-z]+/[a-z]+$`, so a launcher that listed `base/move-sources` was read as not knowing it; the hyphen is allowed.
+- **Manual**: the Données screen is not described in the manuals (docs/MANUEL_*); the help of the module (×4) says it.

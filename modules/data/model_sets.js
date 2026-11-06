@@ -204,7 +204,7 @@ export const groupOf = (set, verb) => set === SHEETS.set && verb === SHEETS.verb
 /** Les verbes que le lanceur dit connaître, d'après la réponse de `regen/verbs` ({ verbs: ['base/build', …] }) : la liste des « jeu/verbe »
  *  lisibles ; sans réponse, sur un 404 ou un refus, ou sans liste : un lanceur ancien, qui ne connaît que base/fetch, base/build et base/purge. */
 export function knownVerbs(r) {
-  const list = r && r.ok !== false && Array.isArray(r.verbs) ? r.verbs.filter(v => typeof v === 'string' && /^[a-z]+\/[a-z]+$/.test(v)) :
+  const list = r && r.ok !== false && Array.isArray(r.verbs) ? r.verbs.filter(v => typeof v === 'string' && /^[a-z]+\/[a-z-]+$/.test(v)) :
     null;
   return list || [...OLD_VERBS];
 }

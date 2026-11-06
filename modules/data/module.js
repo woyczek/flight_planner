@@ -49,6 +49,7 @@ import {
   updateAll
 } from './chain.js';
 import {
+  moveClick,
   openInventory
 } from './inventory.js';
 
@@ -111,6 +112,8 @@ function opOf(v) {
 }
 /** Retient le groupe touché en dernier (le « ? » du cadre ouvre l'aide au paragraphe du groupe ouvert), puis le geste d'un bouton. */
 function onClick(e) {
+  const mv = e.target.closest?.('button[data-move]');
+  if (mv) return mv.disabled ? undefined : moveClick(mv); // « Ranger les sources brutes » (carte Inventaire)
   const rc = e.target.closest?.('[data-act="map-recenter"]');
   if (rc) return recenterMap(rc.closest('[data-zone-map]')?.dataset.zoneMap);
   const g = e.target.closest?.('details.f-group > summary')?.parentElement;
@@ -208,6 +211,7 @@ export async function mount(el, ctx) {
     journal: [],
     journalOpen: false,
     inventory: null, // la carte « Inventaire des données » : lue à l'ouverture seulement, { open, state, rows }
+    move: null, // « Ranger les sources brutes » (SOG-0030) : { undo, phase: 'planning' | 'asking' | 'running' | null, kind: 'asking' | 'nothing' | 'done' | 'refused', view, why }
     timer: 0
   });
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(tt(TX.title))}</h1><div data-body></div>`;

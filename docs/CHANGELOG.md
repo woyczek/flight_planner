@@ -29,6 +29,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Map: the drawing no longer overflows the view** (`modules/maps/draw.js` `OVER` = 0; SPEC § 5; noreg D97). The 5 % overflow added on
   1 Nov against the « invisible wall » at the edge cost about 1 ms more at rest; the cost rule prevails (decision of 6 Nov): the
   overlay is the view again, a pan shows the edge until the full drawing. One constant (`OVER` = .05) brings the overflow back.
+- **Data: « Ranger les sources brutes » in the inventory card** (`modules/data/inventory.js`, `model_inventory.js`, `texts.js`; SPEC § 12.1; help ×4; L29) —
+  SOG-0030, the launcher's `base/move-sources`: the plan first (files by name and size, never a path), the run on confirmation, then moved / already in place /
+  kept (git tracks the old one) / refused with a bounded reason, and « Remettre à leur place » (the manifest backwards); refused while an operation runs or a
+  merge is pending; the card stays read only for a launcher that does not know the verb. The reading of `regen/verbs` now lets a hyphen through (a verb with a hyphen
+  was silently dropped).
 - **Synchronisation: two versions that say the same thing are no longer a conflict** (`tools/data_sync.py` `same_content`,
   `merge_raw`; docs/technique/SYNCHRONISATION.md; noreg I38) — SOG-0043 (« beaucoup de conflits de synchro sur data »). Measured
   on the data repository over 14 days: 2 file-level overlaps in git and 3 copies in `_conflits/`, all `pilot/<tri>/current_flight.json`

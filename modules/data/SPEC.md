@@ -554,7 +554,7 @@ The module is split by responsibility; no rule changes place without the case th
     names `model.js` exports stay those of before the split (one name, one file).
   - `model_inventory.js`: the data inventory (§ 12): the launcher's answer read through closed lists, seven rows, a total; not
     re-exported by the façade (its names are its own).
-  - `inventory.js`: the folded card of § 12: draws it and reads the launcher once when it is opened; writes nothing.
+  - `inventory.js`: the folded card of § 12: draws it, reads the launcher once when it is opened, and carries « Ranger les sources brutes » (§ 12.1); it writes nothing itself.
 
 ## 12. The data inventory (SOG-0010, lot E2)
 
@@ -570,7 +570,22 @@ What « data » covers on this workstation, in one folded card at the foot of th
   absent (an old launcher, 404) or unreadable says « inventaire illisible » and invents no line.
 - **Read only, text only**: the launcher answers names of places, numbers and closed words (`tools/data_inventory.py`): never a
   file path, a file name or a content. Every field is read through a closed list (audit 157): an unknown state reads « inconnu »,
-  an unknown id is dropped, a hostile text is never markup. No link, no action, no write, no move: moving is a later lot, one
-  group at a time, each with its manifest and its undo (`DATA_MAP.md` § 5.3).
+  an unknown id is dropped, a hostile text is never markup. The reading has no link and no write; the only action is § 12.1.
+### 12.1 « Ranger les sources brutes » (SOG-0030)
+
+The launcher's verb `base/move-sources` (`{ dry?: true, undo?: false }`, `tools/regen/base_sources.py`, DATA_MAP § 4 and § 6.2) from the card.
+- **Shown only if the launcher knows the verb** (`regen/verbs` lists `base/move-sources`: the reading of the verb list lets a hyphen through, `^[a-z]+/[a-z-]+$`);
+  otherwise the card stays read only. Two buttons: « Ranger les sources brutes » and « Remettre à leur place » (undo: the launcher's manifest is read backwards;
+  with no manifest the plan says « rien à remettre »). Workstation only: a paired device or the relay is refused by the launcher (403), said.
+- **Always the plan first** (`dry: true`, sent explicitly): ONE question with the number of files, the total size and the files by **name**, size and cycle
+  (eight at most, « … et n autre(s) »), never a path. Nothing to move: said, no question. No: nothing runs. Yes: the same verb with `dry: false`, then the
+  result: moved (count, size), already in place, kept (git tracks the old one: kept, never deleted for every workstation), refused (conflicts and failures,
+  each with its reason from a closed list: `present`, `different`, `missing`, `unsafe-path`, `too-large`, `sha-mismatch`, `write-failed`, else « raison inconnue »),
+  and the reason of a partial / cancelled run. The inventory is then read again: the line of the raw sources changes place.
+- **Refused**: while an operation runs (`busyNow()`, which counts the plan and the question: one operation at a time, the buttons go grey and say why), while a
+  merge is pending in `data/` (`GET sync-status`, `merging`; checked before the plan and again before the run: no job starts), and by the launcher (403 paired
+  device, 409 another job, 400 / 404 / 501 verb unknown, else failed). The launcher's own text is never shown.
+- **Read through closed lists** (audit 157): `moveView(final)` keeps names by a character rule (`^[A-Za-z0-9_ .()+-]{1,120}$`, else « ? »), a cycle by a short rule, bytes
+  as bounded whole numbers, forty files at most; no path, no free text. Cases: L29 (every state, with its counter-test).
 - **Cases**: K67 (the Python inventory on a test repository), I36 (the route: the workstation only, seven places, nothing written),
   L26 (the card: folded, one read when opened, the seven lines, unreadable said, a hostile answer).

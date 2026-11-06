@@ -3495,3 +3495,115 @@ def l28(c):
     real = [p for p in st['posts'] if p.get('args', {}).get('dry') is False]
     c.eq(real[-1]['args'], {'zones': ['fr'], 'dry': False, 'zips': {'openaip': {'name': 'openaip', 'size': 2489}}},
          'the real run sends back exactly what the plan showed for openAIP (no zip name, the total size)', what='zips sent')
+
+
+def _mv_view(result, state='done', jid='m1', undo=False, dry=True):
+    """The view of a base/move-sources job with the launcher's result shape (tools/regen/base_sources.py move_sources)."""
+    return _fview({}, state=state, verb='move-sources', args={'dry': dry, 'undo': undo}, jid=jid, result=result)
+
+
+def _mv_res(moved=(), dry=True, undo=False, already=(), kept=(), conflicts=(), failed=(), reason=None):
+    """The result of base/move-sources: the plan (dry true) or the real run."""
+    r = {'ok': reason is None, 'dry': dry, 'undo': undo, 'moved': list(moved), 'already': list(already), 'kept': list(kept), 'conflicts': list(conflicts), 'failed': list(failed),
+         'manifest': 'local/sources/sia/_manifest.json'}
+    if reason:
+        r['reason'] = reason
+    return r
+
+
+@case('L29', 'Données: « Ranger les sources brutes » in the inventory card (the plan first, one question, the run, the result with its reasons, a refusal, nothing to do, never a path or a hostile text)',
+      'L', tags=('data',), langs4=True, designs=('standard',),
+      rule='SOG-0030 (SOG-0010 § 6; modules/data/SPEC 12): base/move-sources from the inventory card — dry first (names and sizes, never a path), the run on confirmation, moved / kept / refused with bounded reasons, the undo; refused while a merge is pending or an operation runs; the card stays read only for a launcher that does not know the verb')
+def l29(c):
+    lang = c.lang
+    T = lambda key, after='move: {': _trow(key, lang, after)
+    why = lambda k: _trow(k, lang, 'why: {')
+    cfg, _ = _fixture()
+    xml = lambda n, cyc, b: {'name': n, 'cycle': cyc, 'from': 'sia/' + n, 'to': f'local/sources/sia/{cyc}/' + n, 'bytes': b}
+    f1, f2 = xml('XML_SIA_2026-10-01.xml', '2026-10-01', 41943040), xml('AIXM4.5_all_2026-10-01.xml', '2026-10-01', 5242880)
+    total = 41943040 + 5242880
+    ask = lambda undo=False: T('askUndo' if undo else 'ask').replace('{n}', '2').replace('{b}', _size(total, lang))
+    go = lambda: c.js("document.querySelector('[data-inventory]').open = true")
+    vcode = ALL_VERBS + ['base/move-sources']
+    posts = lambda st: [p for p in st['posts'] if p.get('verb') == 'move-sources']
+    # ---- A: a launcher that does not know the verb: the card stays read only
+    st = _launcher(c, [], inventory=_INV, verbs=ALL_VERBS)
+    _open(c, cfg)
+    c.until("!!document.querySelector('[data-inventory]')", timeout=20000, what='the card')
+    go()
+    c.until("!!document.querySelector('[data-inventory-list] li')", timeout=15000, what='the lines')
+    c.eq([c.count('[data-move-box]'), c.count('[data-move]')], [0, 0], 'a launcher without base/move-sources: no action, the card stays read only', what='unknown verb')
+    # ---- B: the plan (dry sent), ONE question with names and sizes, then the run
+    c.context.unroute(re.compile(r'/__setup/'))
+    st = _launcher(c, [_mv_view(_mv_res([f1, f2]))], inventory=_INV, verbs=vcode)
+    _open(c, cfg)
+    c.until("!!document.querySelector('[data-inventory]')", timeout=20000, what='the card')
+    go()
+    c.until("!!document.querySelector('[data-move=plan]')", timeout=15000, what='the two buttons')
+    c.eq([norm(c.text('[data-move=plan]')), norm(c.text('[data-move=plan-undo]')), c.js("document.querySelector('[data-move=plan]').disabled")], [norm(T('plan')), norm(T('planUndo')), False],
+         'two buttons, ranger and remettre, live', what='buttons')
+    c.eq(posts(st), [], 'nothing is sent before the gesture', what='no post')
+    c.tap('[data-move=plan]')
+    c.until("!!document.querySelector('[data-move-state=asking]')", timeout=20000, what='the question')
+    q = norm(c.text('[data-move-state=asking] > p'))
+    names = c.js("[...document.querySelectorAll('[data-move-files] li')].map(li => li.dataset.name || '')")
+    ftxt = norm(c.text('[data-move-files]'))
+    c.eq([posts(st)[0].get('set'), posts(st)[0].get('args')], ['base', {'dry': True, 'undo': False}], 'the plan is asked with dry true, undo false', what='plan body')
+    c.eq([q, names], [norm(ask()), [f1['name'], f2['name']]], 'one question: how many files, how big; the files by name', what='question')
+    c.ok(_size(41943040, lang) in ftxt and '2026-10-01' in ftxt and 'sia/' not in ftxt and 'local/' not in ftxt, ftxt, 'names, sizes and cycle, never a path')
+    c.eq(c.js("document.querySelector('[data-move=plan]').disabled"), True, 'grey during the question: one operation at a time', what='grey')
+    c.tap('[data-move=cancel]')
+    c.until("!document.querySelector('[data-move-state=asking]')", timeout=5000, what='the question closed')
+    c.eq(len(posts(st)), 1, 'No: nothing was run (the plan only)', what='no run')
+    c.tap('[data-move=plan]')
+    c.until("!!document.querySelector('[data-move-state=asking]')", timeout=20000, what='the question again')
+    real = _mv_res([f1, f2], dry=False, already=['a.xml'], kept=[{'name': 'XML_SIA_2026-10-01.xml', 'why': 'tracked'}],
+                   conflicts=[{'name': 'b.xml', 'why': 'different'}], failed=[{'name': 'c.xml', 'error': 'sha-mismatch'}], reason='partial')
+    st['views'], st['i'] = [_mv_view(real, dry=False)], 0
+    reads = st['inventory_calls']
+    c.tap('[data-move=confirm]')
+    c.until("!!document.querySelector('[data-move-state=done]')", timeout=20000, what='the result')
+    lines = [norm(x) for x in c.js("[...document.querySelectorAll('[data-move-state=done] [data-move-line]')].map(p => p.textContent)")]
+    refused = [(x[0], norm(x[1])) for x in c.js("[...document.querySelectorAll('[data-move-refused] li')].map(li => [li.dataset.why, li.textContent])")]
+    c.eq(posts(st)[-1].get('args'), {'dry': False, 'undo': False}, 'the run is the same verb with dry false', what='run body')
+    c.eq(lines, [norm(T('done').replace('{n}', '2').replace('{b}', _size(total, lang))), norm(T('already').replace('{n}', '1')), norm(T('kept').replace('{n}', '1')),
+                 norm(T('refused').replace('{n}', '2')), norm(_trow('partial', lang, 'reason: {'))],
+         'the result: moved, already in place, kept (tracked), refused, the reason of a partial run', what='result lines')
+    c.eq([r[0] for r in refused], ['different', 'sha-mismatch'], 'the refused ones, each with its reason from the closed list', what='refused whys')
+    c.ok(norm(why('different')) in refused[0][1] and norm(why('sha-mismatch')) in refused[1][1], refused, 'the reasons are said in words')
+    c.ge(st['inventory_calls'], reads + 1, 'the inventory is read again: the row of the raw sources changes place', what='re-read')
+    # ---- C: the undo asks its own question; hostile names and reasons stay text, nothing runs
+    evil = {'name': '<img src=x onerror=window.__pwn=1>', 'cycle': '<b>', 'bytes': 9}
+    st['views'], st['i'] = [_mv_view(_mv_res([f1, f2, evil], undo=True), undo=True)], 0
+    c.tap('[data-move=plan-undo]')
+    c.until("!!document.querySelector('[data-move-state=asking]')", timeout=20000, what='the question of the undo')
+    c.eq(posts(st)[-1].get('args'), {'dry': True, 'undo': True}, 'the undo is asked as a plan too', what='undo body')
+    c.eq(norm(c.text('[data-move-state=asking] > p')), norm(T('askUndo').replace('{n}', '3').replace('{b}', _size(total + 9, lang))), 'the question of the undo', what='undo question')
+    c.eq([c.count('[data-move-box] img'), c.count('[data-move-box] script'), c.js("window.__pwn === undefined"), c.js("[...document.querySelectorAll('[data-move-files] li')].map(li => li.dataset.name || '')")[2:]],
+         [0, 0, True, ['?']], 'a hostile name reads « ? »: no element, nothing runs', what='hostile')
+    c.tap('[data-move=cancel]')
+    # ---- D: nothing to put away: said, no question
+    st['views'], st['i'] = [_mv_view(_mv_res([], already=['a.xml']))], 0
+    n0 = len(posts(st))
+    c.tap('[data-move=plan]')
+    c.until("!!document.querySelector('[data-move-state=nothing]')", timeout=20000, what='nothing to do')
+    c.eq([norm(c.text('[data-move-state=nothing] > p')), c.count('[data-move=confirm]'), len(posts(st)) - n0], [norm(T('nothing')), 0, 1], 'nothing to move: said, no question, no run', what='nothing')
+    # ---- E: the launcher refuses (an unknown reason text is never shown)
+    for code, key in ((403, 'forbidden'), (409, 'busy')):
+        st['start'] = (code, {'error': '<img src=x onerror=window.__pwn=1> /secret/path'})
+        c.tap('[data-move=plan]')
+        c.until(f"document.querySelector('[data-move-state=refused]')?.dataset.why === '{key}'", timeout=20000, what=f'the refusal {key}')
+        c.eq([norm(c.text('[data-move-state=refused]')), c.js("window.__pwn === undefined")], [norm(_trow(key, lang, 'refusal: {')), True], f'{code}: the card says why in its own words, the launcher text is never shown', what=key)
+    # ---- F: a merge pending in data/: refused before any job; counter-test: without it the job goes out
+    st['sync'] = {'changes': 0, 'ahead': 0, 'merging': True, 'last': None}
+    st['start'] = (200, {'job': 'm1'})
+    n0 = len(posts(st))
+    c.tap('[data-move=plan]')
+    c.until("document.querySelector('[data-move-state=refused]')?.dataset.why === 'sync'", timeout=20000, what='the refusal for a pending merge')
+    c.eq([len(posts(st)) - n0, norm(c.text('[data-move-state=refused]'))], [0, norm(_trow('sync', lang, 'refusal: {'))], 'a merge pending: refused, no job started', what='merge')
+    st['sync'] = {'changes': 0, 'ahead': 0, 'merging': False, 'last': None}
+    st['views'], st['i'] = [_mv_view(_mv_res([f1]))], 0
+    c.tap('[data-move=plan]')
+    c.until("!!document.querySelector('[data-move-state=asking]')", timeout=20000, what='the question once the merge is over')
+    c.eq(len(posts(st)) - n0, 1, 'counter-test: without the pending merge the same gesture starts the job', what='counter-test')
+    c.check_errors()
