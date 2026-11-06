@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the current airline** (`frame/store/frame_data.js`; frame INTEGRATION, DECISIONS; noreg A53, A93; V3_SPECIFICATION § 10.38 step 1).
+  `FrameData.airline()` → `{ code, name, settings, fleet }`, `airlines()`, `setAirline(code)` and the event `frame-data-airline`; the
+  choice is a setting of the device; « personnel » (`perso`, under `pilot/<trigram>/airline/perso/`) is created empty at the first
+  request; without `data/airline/index.json` the airline of today (code `default`); the index is untrusted input (codes, names, list
+  bounded). No screen yet (Réglages).
+
 - **Fuel: « Carte » per chosen procedure** (`modules/fuel/procedures.js`, `procedures_texts.js`; Fuel SPEC § 9.4, INTEGRATION; noreg
   F95; SOG-0045). The procedures card (step Route, and step Departure in flight) links the official chart of the chosen runway, SID,
   STAR and approach (« Carte 13R », « Carte SID »…, a new tab) when `ctx.aerodb.chartUrl(proc)` gives one; the aerodrome page

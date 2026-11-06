@@ -932,6 +932,25 @@ screens: [{ id: 'sources', scripts: ['aerodb/airac.js?v=0', 'aerodb/catalogue.js
   `window.SogScreens[id] = { screen(view, ctx) }`.
 - `level`: below it, the frame shows "This screen is not offered at this usage level" and loads nothing more.
 - `reads` / `writes` declare the screen's data adapter, as a module's `meta`.
+- **The current airline** (6 Nov 2026, V3_SPECIFICATION § 10.38 step 1; the frame's lot, the chooser and the migration are Réglages',
+  the readers Features SOG's):
+  - `await FrameData.airline()` → `{ code, name, settings, fleet }`: the current airline of the device. `settings` and `fleet` are
+    the parsed files as read (`settings` an object, `{}` when absent; `fleet` an object or `null`): **untrusted input** (§ 10.36),
+    to escape by whoever displays them; `name` is cleaned (80 characters at most, no control character).
+  - `await FrameData.airlines()` → `[{ code, name }]`: the known airlines for a chooser — those of `data/airline/index.json`
+    (`{ airlines: [{ code, name }] }`, written by the migration), then **« personnel »** (`perso`) always last. Codes are
+    `^[a-z0-9]{2,8}$` (others, repeated ones, `perso` and `default` dropped), twenty airlines at most; an index with no valid entry
+    is no index.
+  - `await FrameData.setAirline(code)` → `true`, or `false` (unknown code, nothing changed). A change of airline fires the window
+    event **`frame-data-airline`** (`detail: { code, name }`), once; the same choice again fires nothing. The choice is a setting
+    of the device (meta `airline`, like the design): never synchronised, never in the repository.
+  - Where it reads: `data/airline/<code>/settings.json` and `fleet.json`; « personnel » reads
+    `pilot/<trigram>/airline/perso/settings.json` and `fleet.json` (synchronised with the rest of `pilot/`), **created empty at the
+    first request** (`{ schema, code: 'perso', name: 'Personnel' }` and `{ schema, aircraft: [] }`). **Without `index.json`**
+    (before the migration) the airline of today: `data/airline/settings.json` and `fleet.json`, code **`default`**, so nothing
+    changes on screen. No choice made yet (or a choice no longer known): the first airline of the index.
+  - Not in this lot: the chooser and the migration (Réglages), the readers (Compagnie, Missions, report, Fuel, Statistiques).
+    `ctx.airline` and the `frame-airline` event (the settings of today's airline for the frame's own use) are unchanged.
 - `FrameData.lastPushed()` (5 Nov 2026, SOG-0029; the Synchronisation card): `[{ path, at, result }]` — what the last
   synchronisation **that tried a send** took, file by file: `at` the time of that pass (ISO), `result` `'ok'` or the reason the
   transport gave (`403 …`, `refused: …`, an error text, 120 characters at most). The last send only, never a journal: a pass that

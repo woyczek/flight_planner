@@ -490,6 +490,162 @@
           await stats()).files[aff])
         .assignments[0].v === 'remote', (await stats()).files[aff]);
     },
+    // ---- la compagnie courante (§ 10.38 étape 1) : FrameData.airline(), airlines(), setAirline(code), l'événement, le réglage de l'appareil
+    async 'airline: without index.json, the airline of today (code default), and « personnel » offered'() {
+      await fresh({
+        'airline/settings.json': JSON.stringify({
+          name: 'DEFA Virtual',
+          site: 'https://example.org'
+        }),
+        'airline/fleet.json': JSON.stringify({
+          schema: 1,
+          aircraft: [{
+            reg: 'F-AAAA'
+          }]
+        })
+      });
+      await FD.sync();
+      const a = await FD.airline();
+      check('the airline of today: code default, its name, its settings and fleet', a.code === 'default' && a.name === 'DEFA Virtual' &&
+        a
+        .settings.site === 'https://example.org' && a.fleet.aircraft[0].reg === 'F-AAAA', a);
+      check('known airlines: default, then « personnel » last', JSON.stringify((await FD.airlines()).map(x => x.code)) ===
+        '["default","perso"]', await FD
+        .airlines());
+    },
+    async 'airline: two airlines and « personnel »: the choice, the event, the device setting'() {
+      const aiv = {
+        name: 'Air Inter Va',
+        networks: ['ivao']
+      };
+      await fresh({
+        'airline/index.json': JSON.stringify({
+          airlines: [{
+            code: 'aiv',
+            name: 'Air Inter Va'
+          }, {
+            code: 'dfa',
+            name: 'DEFA Virtual'
+          }]
+        }),
+        'airline/aiv/settings.json': JSON.stringify(aiv),
+        'airline/aiv/fleet.json': JSON.stringify({
+          schema: 1,
+          aircraft: [{
+            reg: 'F-AIVA'
+          }, {
+            reg: 'F-AIVB'
+          }]
+        }),
+        'airline/dfa/settings.json': JSON.stringify({
+          name: 'DEFA Virtual (settings)'
+        })
+      });
+      await FD.sync();
+      const events = [],
+        on = e => events.push(e.detail);
+      window.addEventListener('frame-data-airline', on);
+      let a = await FD.airline();
+      check('no choice yet: the first of the index', a.code === 'aiv' && a.settings.networks[0] === 'ivao' && a.fleet.aircraft
+        .length === 2, a);
+      check('known airlines: the index then « personnel »', JSON.stringify((await FD.airlines()).map(x => x.code)) ===
+        '["aiv","dfa","perso"]', await FD
+        .airlines());
+      check('choosing another: accepted, announced once, with the code', await FD.setAirline('dfa') === true && events.length === 1 &&
+        events[0].code === 'dfa', events);
+      a = await FD.airline();
+      check('the airline is now dfa: its settings name, no fleet file → null', a.code === 'dfa' && a.name ===
+        'DEFA Virtual (settings)' && a.fleet === null, a);
+      await FD.setAirline('dfa');
+      check('the same choice again: no new event', events.length === 1, events);
+      check('an unknown code: refused, nothing changes, no event', await FD.setAirline('nope') === false && await FD.setAirline(
+        '../x') === false && (await FD
+        .airline()).code === 'dfa' && events.length === 1, events);
+      check('« personnel »: accepted, announced', await FD.setAirline('perso') === true && events.length === 2 && events[1].code ===
+        'perso', events);
+      a = await FD.airline();
+      check('« personnel » is created empty at the first request, under the pilot’s folder', a.code === 'perso' && a.name ===
+        'Personnel' && a.settings.code ===
+        'perso' && Array.isArray(a.fleet.aircraft) && a.fleet.aircraft.length === 0 && (await FD.adapter({
+          id: 'lecteur',
+          reads: ['pilot/']
+        }).get('pilot/TST/airline/perso/settings.json')).name === 'Personnel', a);
+      window.removeEventListener('frame-data-airline', on);
+      // the choice is the device’s: kept in the device store, never in the repository
+      const meta = await new Promise((res, rej) => {
+        const r = indexedDB.open('sogFrame');
+        r.onsuccess = () => {
+          const q = r.result.transaction('meta').objectStore('meta').get('airline');
+          q.onsuccess = () => res(q.result);
+          q.onerror = () => rej(q.error);
+        };
+        r.onerror = () => rej(r.error);
+      });
+      check('the choice is kept on the device (meta)', meta?.code === 'perso', meta);
+      check('and never sent: only the personal airline’s own files may be queued, nothing names the choice', !Object.keys((
+        await stats()).files).some(f => /airline\/(current|choice)/.test(f)), (await stats()).files);
+    },
+    async 'airline: index.json is untrusted input: codes, names and the list are bounded'() {
+      const many = Array.from({
+        length: 30
+      }, (_, i) => ({
+        code: `c${i + 10}`,
+        name: `Name ${i}`
+      }));
+      await fresh({
+        'airline/index.json': JSON.stringify({
+          airlines: [{
+            code: 'perso',
+            name: 'Hijack'
+          }, {
+            code: 'default',
+            name: 'Hijack'
+          }, {
+            code: 'A B',
+            name: 'space'
+          }, {
+            code: 'x',
+            name: 'short'
+          }, {
+            code: 'waytoolongcode',
+            name: 'long'
+          }, {
+            code: '../etc',
+            name: 'path'
+          }, {
+            code: 'ok1',
+            name: '  <b>A\u0007B</b>'.padEnd(200, 'z')
+          }, {
+            code: 'ok1',
+            name: 'duplicate'
+          }, {
+            code: 5,
+            name: 'number'
+          }, null, 'text', ...many]
+        })
+      });
+      await FD.sync();
+      const list = await FD.airlines(),
+        codes = list.map(x => x.code);
+      check('invalid, reserved and repeated codes are dropped', !codes.some(c => ['A B', 'x', 'waytoolongcode', '../etc', 'default']
+          .includes(c)) && codes.filter(c => c ===
+          'perso').length === 1 && list.find(x => x.code === 'perso').name === 'Personnel' && codes.filter(c => c === 'ok1')
+        .length === 1, codes);
+      check('at most twenty airlines (and « personnel »)', list.length === 21, list.length);
+      const ok1 = list.find(x => x.code === 'ok1');
+      check('a name is bounded to 80 characters and has no control character', ok1.name.length <= 80 && !/[\u0000-\u001f]/.test(ok1
+        .name), ok1);
+      check('a malformed index is no index: default', await (async () => {
+        await fresh({
+          'airline/index.json': '{"airlines": "nope"}',
+          'airline/settings.json': JSON.stringify({
+            name: 'Today'
+          })
+        });
+        await FD.sync();
+        return (await FD.airline()).code === 'default';
+      })(), await FD.airline());
+    },
     async 'journal and keyed lists merge without loss'() {
       const log = 'cr/log.json',
         aff = 'cr/affectations.json',

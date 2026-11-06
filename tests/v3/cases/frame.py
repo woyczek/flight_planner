@@ -3459,3 +3459,30 @@ def a92(c):
     c.until("document.querySelectorAll('#fView .f-card[data-id]').length === 8", timeout=10000, what='the seen ones are still kept')
     c.eq(c.count('[data-allseen]'), 0, 'no button while none is unseen, even with the seen ones shown', what='button absent')
     c.check_errors()
+
+
+@case('A93', 'The current airline: FrameData.airline() / setAirline, the event, the choice that survives a reload, the « default » fallback without an index', 'A',
+      tags=('data',), designs=('standard',), screens=False, night=False,
+      rule='V3_SPECIFICATION 10.38 step 1 (V3 Frame): FrameData.airline() = { code, name, settings, fleet } of the current airline, setAirline(code), the event frame-data-airline when it changes, the choice a setting of the device kept through a reload; no data/airline/index.json yet: the airline of today (code default)')
+def a93(c):
+    docs = [
+        ['airline/index.json', {'airlines': [{'code': 'aiv', 'name': 'Air Inter Va'}, {'code': 'dfa', 'name': 'DEFA Virtual'}]}, 'document'],
+        ['airline/aiv/settings.json', {'name': 'Air Inter Va'}, 'document'],
+        ['airline/aiv/fleet.json', {'schema': 1, 'aircraft': [{'reg': 'F-AIVA'}]}, 'document'],
+        ['airline/dfa/settings.json', {'name': 'DEFA Virtual'}, 'document'],
+    ]
+    c.open('flightlog', flight=False, docs=docs)
+    c.js("() => { window.__ev = []; window.addEventListener('frame-data-airline', e => window.__ev.push(e.detail.code)) }")
+    got = c.js("() => FrameData.airline().then(a => [a.code, a.name, a.fleet && a.fleet.aircraft.length])")
+    c.eq(got, ['aiv', 'Air Inter Va', 1], 'no choice yet: the first airline of the index, with its settings and fleet', what='airline()')
+    c.eq(c.js("() => FrameData.setAirline('dfa')"), True, 'a known code is accepted', what='setAirline')
+    c.eq(c.js("() => window.__ev"), ['dfa'], 'the change is announced once', what='event')
+    c.eq(c.js("() => FrameData.setAirline('nope')"), False, 'an unknown code is refused', what='unknown')
+    c.page.reload(wait_until='load')
+    c.until("!!window.FrameData", timeout=15000, what='the frame after the reload')
+    c.eq(c.js("() => FrameData.airline().then(a => [a.code, a.name])"), ['dfa', 'DEFA Virtual'], 'the choice survives a reload (a setting of the device)', what='after reload')
+    # without an index (before the migration): the airline of today, code default
+    c.js("() => FrameData.reset()")   # the cache and the device's choices of the first part gone
+    c.open('flightlog', flight=False, docs=[['airline/settings.json', {'name': 'DEFA Virtual'}, 'document']])
+    c.eq(c.js("() => FrameData.airline().then(a => [a.code, a.name])"), ['default', 'DEFA Virtual'], 'without index.json: the airline of today (default)', what='default')
+    c.check_errors()

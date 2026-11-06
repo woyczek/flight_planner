@@ -1697,11 +1697,141 @@
     };
   }
 
+  // ---------------------------------------------------------------- la compagnie courante (V3_SPECIFICATION § 10.38, étape 1)
+  // Plusieurs compagnies dans un même dépôt : data/airline/index.json = { airlines: [{ code, name }] } (écrit par la migration du
+  // lanceur / Réglages), data/airline/<code>/settings.json et fleet.json ; la compagnie « personnel » (code perso) est implicite, sous
+  // pilot/<trigramme>/airline/perso/ ; sans index.json (avant la migration), la compagnie d'aujourd'hui (data/airline/settings.json et
+  // fleet.json, code default). La compagnie courante est un réglage de l'appareil (meta « airline »), jamais synchronisé.
+  // Tout fichier de data/ est une entrée non fiable (§ 10.36) : codes ^[a-z0-9]{2,8}$, noms bornés et sans caractère de commande,
+  // vingt compagnies au plus ; les contenus (settings, fleet) sont rendus tels que lus, à échapper par qui les affiche.
+  const AIRLINE_CODE = /^[a-z0-9]{2,8}$/,
+    AIRLINE_PERSO = 'perso',
+    AIRLINE_DEFAULT = 'default',
+    AIRLINES_MAX = 20,
+    AIRLINE_NAME_MAX = 80;
+  const airlineName = v => typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, AIRLINE_NAME_MAX) : '';
+  /** Les compagnies de data/airline/index.json : [{ code, name }] bornées et nettoyées ; null sans index (ou sans une seule entrée
+   *  valide) : on est avant la migration. perso et default ne s'y déclarent pas (réservés). */
+  async function airlineIndex() {
+    declare({
+      reads: ['airline/']
+    }); // tiré même si aucun module ne l'a déclaré
+    const v = await get('airline/index.json', {
+      wait: true
+    }).catch(() => null);
+    if (!v || typeof v !== 'object' || !Array.isArray(v.airlines)) return null;
+    const seen = new Set(),
+      list = [];
+    for (const a of v.airlines) {
+      const code = typeof a?.code === 'string' ? a.code : '';
+      if (!AIRLINE_CODE.test(code) || code === AIRLINE_PERSO || code === AIRLINE_DEFAULT || seen.has(code)) continue;
+      seen.add(code);
+      list.push({
+        code,
+        name: airlineName(a.name) || code
+      });
+      if (list.length >= AIRLINES_MAX) break;
+    }
+    return list.length ? list : null;
+  }
+  const persoRoot = () => `pilot/${cfg.identity?.trigram || 'ANON'}/airline/perso/`;
+  /** Les compagnies connues de l'appareil : [{ code, name }] — celles de l'index (ou « default », la compagnie d'aujourd'hui, sans
+   *  index), puis « personnel » toujours en dernier. */
+  async function airlines() {
+    const idx = await airlineIndex();
+    let list = idx;
+    if (!list) {
+      const st = await get('airline/settings.json', {
+        wait: true
+      }).catch(() => null);
+      list = [{
+        code: AIRLINE_DEFAULT,
+        name: airlineName(st?.name) || AIRLINE_DEFAULT
+      }];
+    }
+    return [...list, {
+      code: AIRLINE_PERSO,
+      name: 'Personnel'
+    }];
+  }
+  /** Le code de la compagnie courante : le choix de l'appareil s'il est connu, sinon la première de l'index, sinon default. */
+  async function currentCode() {
+    const chosen = (await getMeta('airline'))?.code,
+      known = (await airlines()).map(a => a.code);
+    return known.includes(chosen) ? chosen : known[0];
+  }
+  /** La compagnie courante : { code, name, settings, fleet } — settings et fleet tels que lus (objet / null, non fiables : à
+   *  échapper), name nettoyé et borné. « personnel » est créée vide à la première demande (settings.json et fleet.json sous
+   *  pilot/<trigramme>/airline/perso/). */
+  async function airline() {
+    const code = await currentCode(),
+      list = await airlines(),
+      known = list.find(a => a.code === code) || {
+        code,
+        name: code
+      },
+      base = code === AIRLINE_PERSO ? persoRoot() : code === AIRLINE_DEFAULT ? 'airline/' : `airline/${code}/`;
+    declare({
+      reads: [base]
+    });
+    let [settings, fleet] = await Promise.all(['settings.json', 'fleet.json'].map(f => get(base + f, {
+      wait: true
+    }).catch(() => null)));
+    if (code === AIRLINE_PERSO && settings === null && fleet === null) {
+      const at = new Date().toISOString();
+      settings = {
+        schema: 1,
+        code: AIRLINE_PERSO,
+        name: 'Personnel',
+        updated_at: at
+      };
+      fleet = {
+        schema: 1,
+        aircraft: [],
+        updated_at: at
+      };
+      await put(base + 'settings.json', settings, {
+        module: 'frame-data'
+      });
+      await put(base + 'fleet.json', fleet, {
+        module: 'frame-data'
+      });
+    }
+    const plain = v => v && typeof v === 'object' ? v : null;
+    return {
+      code,
+      name: code === AIRLINE_PERSO ? known.name : airlineName(plain(settings)?.name) || known.name,
+      settings: plain(settings) && !Array.isArray(settings) ? settings : {},
+      fleet: plain(fleet)
+    };
+  }
+  /** Choisit la compagnie courante de l'appareil : un code connu (airlines()) ; faux sans effet si le code est inconnu. Un
+   *  changement de compagnie est annoncé (événement « frame-data-airline » sur window, detail { code, name }), pas un choix
+   *  répété. */
+  async function setAirline(code) {
+    const list = await airlines();
+    if (typeof code !== 'string' || !list.some(a => a.code === code)) return false;
+    const before = await currentCode();
+    await setMeta('airline', {
+      code
+    });
+    if (before !== code) window.dispatchEvent(new CustomEvent('frame-data-airline', {
+      detail: {
+        code,
+        name: list.find(a => a.code === code).name
+      }
+    }));
+    return true;
+  }
+
   window.FrameData = {
     configure,
     start,
     adapter,
     declare,
+    airline, // la compagnie courante { code, name, settings, fleet } (§ 10.38) ; airlines() : les compagnies connues ; setAirline(code)
+    airlines,
+    setAirline,
     isNewer, // la fiche a est plus récente que b, par l'instant de updated_at / updatedAt (la seule règle de comparaison des dates)
     sync,
     status,

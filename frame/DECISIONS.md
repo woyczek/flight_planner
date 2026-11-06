@@ -2531,3 +2531,15 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   nothing is deleted, the conflicts stay behind « Also show conflicts already seen », « Take this version back » still works on them).
   Absent when none is unseen. Help ×4 (the `intro` sources, `pilot.*` regenerated). Noreg A92 (eight conflicts → one click → 0, the
   per-conflict buttons unchanged, none left unseen: no button), red without the button.
+- **6 Nov 2026 — The current airline in the data layer** (V3_SPECIFICATION § 10.38 step 1; Simplification's contract; V3 Frame):
+  `FrameData.airline()`, `airlines()`, `setAirline(code)` and the event `frame-data-airline` (frame INTEGRATION). Decisions: (1) the
+  choice is the device's, in the layer's meta store (`airline`), like the other local settings of the layer, never in `data/`;
+  (2) `airlines()` is added to the contract because the chooser needs the list, with « personnel » last; (3) every file of
+  `data/airline/` is untrusted (§ 10.36): codes `^[a-z0-9]{2,8}$`, `perso` and `default` reserved, names bounded and cleaned, twenty
+  airlines at most; (4) no valid index = no index = the airline of today (`default`), also for a malformed file, so a bad
+  `index.json` never empties the screen; (5) « personnel » is created empty at the first request, under
+  `pilot/<trigram>/airline/perso/` (`pilot/ANON/…` without a trigram, taken up by the usual migration); (6) the event name follows the
+  layer's (`frame-data-status`, `frame-data-conflict`), not `frame-airline`, which stays the frame's own event for the settings of
+  today's airline; the event fires on `setAirline` only (a chooser or a reader re-reads `airline()` after a pass: the migration
+  writing `index.json` is seen at the next read). No screen, no reader moved. Noreg A53 (the store bench: default without index,
+  two airlines + perso, the event, the device setting, the untrusted index) and A93 (the real frame: the choice survives a reload).
