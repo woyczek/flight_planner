@@ -1717,6 +1717,17 @@ redesigned for touch at that point.
        accepts line by line, never written alone; the lnmperf import maps its single cruise line to one curve at the sheet's
        cruise altitude. Density stays per fuel type (SOG-0011, `fuel_units.js`), not per sheet. Lot after A (the figures)
        and after SOG-0015's correction of the S210 sheet.
+       **Amended on 6 Nov (Features SOG's objection, accepted): no `cruise.curves`.** The sheet already carries the
+       altitude on each line of `rpmFuelCurve` (`altFt`, the editor's "ft" column) and the computation already groups the
+       lines by altitude and interpolates between the two altitudes that bracket the level (`FlightPerfModel.mapAt`,
+       `interpRange`); a second representation of the same data would break the single source (SOG-0023). The curve of
+       an altitude is therefore the lines of `rpmFuelCurve` with the same `altFt`: the monotony rule applies per altitude
+       and names it ("débit à 6 700 rpm supérieur à celui de 7 250 rpm à 8 000 ft"), as a signal, never a refusal (SOG-0015:
+       the sheet stays the user's); "Source" of the cruise names the two altitudes and the two rpm used; the editor shows
+       one collapsible group per altitude ("8 000 ft · 4 régimes"), same lines, same JSON; `tasKt` becomes an optional
+       field per line, read when present, else `cruise.tasKt`; the lnmperf import sets `altFt` to the sheet's cruise
+       altitude on its single cruise line and the export takes the lines of the nearest altitude (frame/aerodb/sheets.js,
+       AeroDB's file: Features SOG writes the patch, AeroDB reviews and commits it).
 
    38. **Several airlines in one data repository; the personal fleet is the airline "personnel"** (user, 6 Nov, iCloud
        note "BUGS": "la flotte personnelle est vue comme une compagnie « personnel ». ça implique d'avoir plusieurs
