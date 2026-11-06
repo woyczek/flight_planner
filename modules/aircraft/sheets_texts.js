@@ -83,6 +83,15 @@ export const TX = {
   rpmGone: ['retirée', 'removed', 'entfernt', 'retirada'],
   rpmTable: ['Table régime / débit', 'RPM / fuel flow table', 'Drehzahl-/Verbrauchstabelle', 'Tabla régimen / consumo'],
   review: ['Changements proposés', 'Proposed changes', 'Vorgeschlagene Änderungen', 'Cambios propuestos'],
+  // l'unité de lecture et de saisie du carburant de l'éditeur (SOG-0032) ; la fiche garde son unité d'enregistrement
+  viewUnit: ['Carburant lu et saisi en', 'Fuel read and typed in', 'Kraftstoff gelesen und eingegeben in',
+    'Combustible leído y escrito en'
+  ],
+  viewUnitNote: ['Fiche enregistrée en {s} : les valeurs sont converties à la lecture et à l’enregistrement (densité {d} kg/l).',
+    'Sheet stored in {s}: the values are converted when read and when saved (density {d} kg/l).',
+    'Datenblatt gespeichert in {s}: die Werte werden beim Lesen und beim Speichern umgerechnet (Dichte {d} kg/l).',
+    'Ficha guardada en {s}: los valores se convierten al leer y al guardar (densidad {d} kg/l).'
+  ],
   // une courbe régime / débit qui redescend (SOG-0015 : la S210 portait 11 500 lb/h à 6 700 rpm, plus qu'en croisière à 7 250 rpm)
   rpmNotMonotone: ['Débit à {a} rpm supérieur à celui de {b} rpm : fourchette mal lue ?',
     'Fuel flow at {a} rpm above the one at {b} rpm: a range misread?',

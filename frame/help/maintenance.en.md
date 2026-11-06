@@ -94,12 +94,14 @@ The company's fleet, as the other screens read it: the report (registration → 
 
 <a id="aircraft-sheet-edit"></a>**Editing a sheet.** "Edit" opens the editor: the fields by group (identity, fuel, runway and alternate, climb, cruise, descent, RPM), the RPM / fuel flow table on a large screen, and the EUROCONTROL completion, "complete from another sheet" or "Complete with ChatGPT", which copies the request and opens ChatGPT in a new tab: paste the request there if it is not, then paste its answer under the button. "Fuel as volume" and "Fuel density" are explained under the field; a density outside 0.5 to 1.0 is refused. An RPM / fuel-flow table whose flow goes down while the RPM goes up is flagged (the row in orange, "a range misread?"); nothing is corrected without you. Under each filled field a muted line gives its origin and date ("lnmperf · 28/10", "edited · 30/10"); hovering it shows the discarded values. "Save" opens the preview of the changes, which are written only after "Apply the selection"; each changed field thus keeps its source, and the old value is kept. "Export .lnmperf" and "Export JSON" download the sheet; "Delete" asks before removing the sheet from the shared database.
 
+**Fuel units.** At the top of the editor, "Fuel read and typed in" offers kg, lb, l or US gal (and kg/h, lb/h, l/h, gal/h for the flows); each field and the RPM / fuel-flow table carry the unit chosen. The sheet keeps its stored unit: a line says it with the density used; a typed value is converted when saved, an untouched value does not change.
+
 ## Good to know
 
 - The Site module also updates the fleet from the pasted "Fleet" page of the site: both write the same file, each save reads the file just before and changes one aircraft only.
 - Nothing leaves before the next synchronisation.
 
-<!-- fr: 663b59cb3ad9 -->
+<!-- fr: df6226556798 -->
 
 <!-- chapter: settings -->
 # Settings

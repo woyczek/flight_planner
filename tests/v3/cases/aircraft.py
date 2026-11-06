@@ -597,6 +597,44 @@ def m24(c):
     c.eq(sheet_of(c, 'XRPM')['rpmFuelCurve'][0]['fuelFlowPerHour'], 11500, 'nothing is corrected', what='kept')
 
 
+@case('M25', 'Sheets: the fuel is read and typed in the unit chosen (kg, lb, l, US gal); the sheet keeps its stored unit, an untouched value unchanged',
+      'M', tags=('aircraft',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0032 (« toujours pas de possibilité de lire / écrire en kg ou lb/h ? »): the editor reads and writes in the unit chosen, by '
+      'the frame rules (frame/lib/fuel_units.js), the unit beside each field; the JSON keeps its unit; a sheet typed in lb/h read in kg/h '
+      'gives the same curve')
+def m25(c):
+    lb = dict(EC25, id='XLBS', name='XLBS', icao='XLBS', unit='lb', usableFuel=4000, cruise={'tasKt': 141, 'fuelFlowPerHour': 1000},
+              rpmFuelCurve=[{'rpm': 2000, 'altFt': None, 'fuelFlowPerHour': 800}, {'rpm': 2400, 'altFt': None, 'fuelFlowPerHour': 1000}])
+    lb.pop('_fields', None)
+    docs = [[f'aircraft/sheets/{x["id"]}.json', x, 'document'] for x in (EC25, lb)]
+    c.open('aircraft', docs=LEVEL3 + [['airline/fleet.json', fleet_doc(3), 'document']] + docs + [TYPES, ['cache/aircraft/ui.json', {'view': 'sheets'}, 'cache']],
+           wait=False, app='maintenance')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-id]')", timeout=15000, what='the Fiches list')
+    edit_sheet(c, 'XLBS')
+    ff = f'{M} {SHEETS} input[data-path="cruise.fuelFlowPerHour"]'
+    c.eq(c.js(f"document.querySelector('{ff}').value"), '1000', 'read in its own unit first (lb/h)', what='lb/h')
+    c.page.select_option(f'{M} {SHEETS} select[data-k="vunit"]', 'kg')
+    c.until(f"document.querySelector('{ff}')?.value === '453.6'", what='read in kg/h: 1000 lb/h = 453.6 kg/h')
+    lab = c.js(f"document.querySelector('{ff}').closest('label').textContent")
+    c.ok('(kg/h)' in lab, lab, 'the unit is written beside the field')
+    # the RPM table: inputs on a computer screen, its rows read only otherwise
+    curve = c.js(f"""(() => {{ const i = [...document.querySelectorAll('{M} {SHEETS} input[data-rpm][data-rk=fuelFlowPerHour]')].map(i => i.value);
+        return i.length ? i : [...document.querySelectorAll('{M} {SHEETS} details.f-card table tbody tr td:nth-child(3)')].map(td => td.textContent.trim()) }})()""")
+    c.eq(curve, ['362.9', '453.6'], 'the curve read in kg/h', what='curve kg/h')
+    c.ok(c.count(f'{M} {SHEETS} [data-vunitnote]') == 1, 'no note', 'the conversion is said')
+    # a value typed in kg/h is stored in lb/h; the untouched ones stay exactly as they were
+    open_group(c, 'cruise.fuelFlowPerHour')
+    c.page.fill(ff, '500')
+    c.tap(f'{M} {SHEETS} [data-do="save"]')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-review] [data-do=apply]')", what='the review is shown')
+    paths = c.js(f"[...document.querySelectorAll('{M} {SHEETS} [data-review] input[data-path]')].map(i => i.dataset.path)")
+    c.eq(paths, ['cruise.fuelFlowPerHour'], 'only the typed field changes (no rounding of the others)', what='review rows')
+    c.tap(f'{M} {SHEETS} [data-do="apply"]')
+    d = c.until_doc('aircraft/sheets/XLBS.json', lambda d: d and d['cruise']['fuelFlowPerHour'] != 1000, 'the typed value is written')
+    c.eq([d['unit'], round(d['cruise']['fuelFlowPerHour'], 1), d['usableFuel'], [r['fuelFlowPerHour'] for r in d['rpmFuelCurve']]],
+         ['lb', 1102.3, 4000, [800, 1000]], 'stored in lb: 500 kg/h = 1102.3 lb/h; the rest unchanged', what='stored')
+
+
 @case('M15', 'Sheets: a ChatGPT reply is read into the review; « Appliquer » writes it stamped « chatgpt »', 'M', tags=('aircraft',), designs=('standard',),
       screens=False,
       rule='modules/aircraft SPEC 4: the ChatGPT reply (any shape: the aerodb reader) is a source like the others; preview, then a write through '

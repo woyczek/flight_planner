@@ -12,9 +12,11 @@ Die Flotte der Gesellschaft, so wie die anderen Bildschirme sie lesen: der Beric
 
 <a id="aircraft-sheet-edit"></a>**Ein Datenblatt ändern.** „Bearbeiten“ öffnet den Editor: die Felder nach Gruppen (Identität, Kraftstoff, Piste und Ausweichflughafen, Steigflug, Reiseflug, Sinkflug, Drehzahl), die Tabelle Drehzahl / Verbrauch auf einem großen Bildschirm und die Ergänzung durch EUROCONTROL, „aus anderem Datenblatt ergänzen“ oder „Mit ChatGPT vervollständigen“, das die Anfrage kopiert und ChatGPT in einem neuen Tab öffnet: dort die Anfrage einfügen, falls sie fehlt, dann die Antwort unter der Schaltfläche einfügen. „Kraftstoff als Volumen“ und „Kraftstoffdichte“ sind unter dem Feld erklärt; eine Dichte außerhalb von 0,5 bis 1,0 wird abgelehnt. Eine Tabelle Drehzahl / Verbrauch, deren Verbrauch sinkt, während die Drehzahl steigt, wird gemeldet (die Zeile orange, „Spanne falsch gelesen?“); nichts wird ohne Sie korrigiert. Unter jedem ausgefüllten Feld nennt eine graue Zeile Herkunft und Datum („lnmperf · 28.10.“, „bearbeitet · 30.10.“); darüberfahren zeigt die verworfenen Werte. „Speichern“ öffnet die Vorschau der Änderungen, die erst nach „Auswahl übernehmen“ geschrieben werden; jedes geänderte Feld behält so seine Quelle, und der alte Wert bleibt erhalten. „.lnmperf exportieren“ und „JSON exportieren“ laden das Datenblatt herunter; „Löschen“ fragt, bevor das Datenblatt aus der gemeinsamen Datenbank entfernt wird.
 
+**Kraftstoffeinheiten.** Oben im Editor bietet „Kraftstoff gelesen und eingegeben in“ kg, lb, l oder US gal (und kg/h, lb/h, l/h, gal/h für den Verbrauch); jedes Feld und die Tabelle Drehzahl / Verbrauch tragen die gewählte Einheit. Das Datenblatt behält seine Speichereinheit: eine Zeile nennt sie mit der verwendeten Dichte; ein eingegebener Wert wird beim Speichern umgerechnet, ein unberührter Wert ändert sich nicht.
+
 ## Gut zu wissen
 
 - Das Modul Website aktualisiert die Flotte auch aus der eingefügten Seite „Flotte“ der Website: beide schreiben dieselbe Datei, jedes Speichern liest die Datei kurz vorher und ändert nur ein Luftfahrzeug.
 - Nichts geht vor der nächsten Synchronisation hinaus.
 
-<!-- fr: 663b59cb3ad9 -->
+<!-- fr: df6226556798 -->

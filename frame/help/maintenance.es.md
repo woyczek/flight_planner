@@ -97,12 +97,14 @@ La flota de la compañía, tal como la leen las demás pantallas: el informe (ma
 
 <a id="aircraft-sheet-edit"></a>**Modificar una ficha.** «Editar» abre el editor: los campos por grupo (identidad, combustible, pista y alternativo, ascenso, crucero, descenso, régimen), la tabla régimen / consumo en pantalla grande, y el complemento EUROCONTROL, «completar desde otra ficha» o «Completar con ChatGPT», que copia la petición y abre ChatGPT en una pestaña nueva: pegue allí la petición si no está y luego pegue su respuesta bajo el botón. «Combustible en volumen» y «Densidad del combustible» se explican bajo el campo; una densidad fuera de 0,5 a 1,0 se rechaza. Una tabla régimen / consumo cuyo consumo baja cuando sube el régimen se señala (la fila en naranja, «¿horquilla mal leída?»); no se corrige nada sin usted. Bajo cada campo rellenado, una línea gris indica su origen y su fecha («lnmperf · 28/10», «editado · 30/10»); al pasar el cursor se ven los valores descartados. «Guardar» abre la vista previa de los cambios, que solo se escriben tras «Aplicar la selección»; así cada campo cambiado conserva su fuente y se guarda el valor anterior. «Exportar .lnmperf» y «Exportar JSON» descargan la ficha; «Eliminar» pregunta antes de retirar la ficha de la base compartida.
 
+**Unidades del combustible.** Arriba del editor, «Combustible leído y escrito en» ofrece kg, lb, l o US gal (y kg/h, lb/h, l/h, gal/h para los consumos); cada campo y la tabla régimen / consumo llevan la unidad elegida. La ficha guarda su unidad de almacenamiento: una línea la dice con la densidad usada; un valor escrito se convierte al guardar, un valor sin tocar no cambia.
+
 ## Bueno saber
 
 - El módulo Sitio también actualiza la flota a partir de la página «Flota» del sitio pegada: los dos escriben el mismo archivo, cada guardado relee el archivo justo antes y cambia una sola aeronave.
 - Nada sale antes de la próxima sincronización.
 
-<!-- fr: 663b59cb3ad9 -->
+<!-- fr: df6226556798 -->
 
 <!-- chapter: settings -->
 # Ajustes

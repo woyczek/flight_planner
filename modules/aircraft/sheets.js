@@ -19,6 +19,7 @@ import {
 import {
   keepScroll
 } from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
+import * as FU from '../../frame/lib/fuel_units.js'; // les unités du carburant du cadre (SOG-0032 : jamais recodées ici)
 import {
   TX,
   FIELD_TX,
@@ -412,6 +413,12 @@ export function createSheetsView(host) {
   /** Changement : le fichier choisi par « Importer ». */
   function onChange(e) {
     if (e.target.matches?.('[data-file]')) importFiles([...e.target.files]);
+    // l'unité de lecture et de saisie (SOG-0032) : ce qui est saisi est lu dans l'ancienne, puis l'éditeur redessiné dans la nouvelle
+    if (e.target.dataset?.k === 'vunit' && st.edit) {
+      const d = readEditor(st.edit, true);
+      st.viewUnit = e.target.value;
+      return editor(st.edit.id, d);
+    }
   }
 
   // ---------------------------------------------------------------- imports
@@ -577,6 +584,56 @@ export function createSheetsView(host) {
     const kept = (o.kept || []).map(k => `${typeof k.value === 'object' ? JSON.stringify(k.value) : k.value} (${stampText(k)})`).join(' ; ');
     return `<small class="f-muted ac-origin" data-origin="${esc(path)}"${kept ? ` title="${esc(tt(TX.originKept, { l: kept }))}"` : ''}>${esc(text)}</small>`;
   }
+  // ---------------------------------------------------------------- unités de lecture et de saisie (SOG-0032)
+  /** Les noms des unités à l'écran : quantité et débit. */
+  const MASS = {
+      kg: 'kg',
+      lb: 'lb',
+      L: 'l',
+      USG: 'US gal'
+    },
+    FLOW = {
+      kg: 'kg/h',
+      lb: 'lb/h',
+      L: 'l/h',
+      USG: 'gal/h'
+    },
+    FLOW_KEYS = new Set(['fuelFlowMin', 'fuelFlowPerHour', 'fuelFlowMax']);
+  /** L'unité où la fiche est enregistrée (son champ unit : kg, lb ; gal d'une fiche Little Navmap en volume = USG), au nom des unités du
+   *  cadre ; kg sans unité lisible. */
+  const storeUnit = p => ({
+    kg: 'kg',
+    lb: 'lb',
+    l: 'L',
+    gal: 'USG',
+    usg: 'USG'
+  })[String(p?.unit || 'kg').toLowerCase()] || 'kg';
+  /** L'unité de lecture et de saisie : celle choisie dans l'éditeur, sinon celle de la fiche. */
+  const viewUnit = p => Object.hasOwn(MASS, st.viewUnit || '') ? st.viewUnit : storeUnit(p);
+  /** Densité (kg/l) pour passer de la masse au volume : celle de la fiche, sinon la valeur type de sa sorte (frame/lib/fuel_units.js). */
+  const densityOf = p => FU.density(p?.jetFuel === false ? 'avgas' : 'jet', {
+    sheet: p
+  });
+  /** Une valeur de carburant de la fiche dans l'unité de lecture (au dixième) ; '' pour rien ; telle quelle dans l'unité de la fiche. */
+  function fuelShown(p, v) {
+    if (v === null || v === undefined || v === '') return '';
+    const su = storeUnit(p),
+      vu = viewUnit(p);
+    if (vu === su) return String(v);
+    const x = FU.fromKg(FU.toKg(v, su, densityOf(p)), vu, densityOf(p));
+    return x === null ? '' : String(Math.round(x * 10) / 10);
+  }
+  /** Un nombre saisi dans l'unité de lecture, ramené à l'unité de la fiche (au millième) ; null si illisible. */
+  function fuelStored(p, n) {
+    const su = storeUnit(p),
+      vu = viewUnit(p);
+    if (n === null || vu === su) return n;
+    const x = FU.fromKg(FU.toKg(n, vu, densityOf(p)), su, densityOf(p));
+    return x === null ? null : Math.round(x * 1000) / 1000;
+  }
+  /** La valeur d'un champ de carburant de l'éditeur : inchangée (le texte affiché tel quel), celle de la fiche sans arrondi ; sinon le
+   *  nombre saisi ramené à l'unité de la fiche. */
+  const fuelRead = (p, input, was) => input.value.trim() === (input.dataset.shown ?? '') ? was ?? null : fuelStored(p, num(input.value));
   /** Le premier couple de régimes où le débit redescend quand le régime monte (les lignes de la table sans altitude et la croisière,
    *  au débit nominal) : { a, b } (a < b, débit(a) > débit(b)) ; null sinon. Un indice, pas une règle : la fiche n'est jamais corrigée. */
   function notMonotone(p) {
@@ -610,10 +667,15 @@ export function createSheetsView(host) {
     if (!b) return;
     const p = st.edit = draft || F.normalize(structuredClone(raw)),
       nm = notMonotone(p), // la courbe régime / débit qui redescend : dite, la ligne en orange, jamais corrigée seule (SOG-0015)
-      rpmCell = (i, k, v) => `<td class="f-num"><input data-rpm="${i}" data-rk="${k}" inputmode="decimal" value="${esc(v ?? '')}" style="width:7em" aria-label="${esc(k)}"></td>`,
+      vu = viewUnit(p),
+      su = storeUnit(p),
+      rpmCell = (i, k, v) => {
+        const shown = FLOW_KEYS.has(k) ? fuelShown(p, v) : String(v ?? '');
+        return `<td class="f-num"><input data-rpm="${i}" data-rk="${k}"${FLOW_KEYS.has(k) ? ` data-fu data-shown="${esc(shown)}"` : ''} inputmode="decimal" value="${esc(shown)}" style="width:7em" aria-label="${esc(k)}"></td>`;
+      },
       groups = [...new Set(F.PROFILE_FIELDS.map(f => f[0]))],
       facts = F.catalogFacts(p), // ce que la base OACI donne de la cellule et de la propulsion
-      fuelUnit = path => F.FUEL_PATHS.has(path) ? ` (${p.unit}${path.endsWith('fuelFlowPerHour') ? '/h' : ''})` : '',
+      fuelUnit = path => F.FUEL_PATHS.has(path) ? ` (${path.endsWith('fuelFlowPerHour') ? FLOW[vu] : MASS[vu]})` : '',
       input = ([, , path, type]) => {
         const v = F.pathGet(p, path),
           lab = esc(fieldLabel(path) + fuelUnit(path)),
@@ -627,6 +689,7 @@ export function createSheetsView(host) {
           return `<label class="f-field">${lab}<select data-path="${path}" data-type="text"><option value="">${esc(none)}</option>${type.slice(7).split(',').map(o => `<option value="${esc(o)}"${String(v ?? '') === o ? ' selected' : ''}>${esc(OPTION_TX[o] ? tt(OPTION_TX[o]) : o)}</option>`).join('')}</select>${org}</label>`;
         }
         if (type === 'textarea') return `<label class="f-field">${lab}<textarea rows="2" data-path="${path}" data-type="text">${esc(v ?? '')}</textarea>${org}</label>`;
+        if (F.FUEL_PATHS.has(path)) return `<label class="f-field">${lab}<input data-path="${path}" data-type="${type}" data-fu data-shown="${esc(fuelShown(p, v))}" value="${esc(fuelShown(p, v))}" inputmode="decimal">${org}</label>`;
         return `<label class="f-field">${lab}<input data-path="${path}" data-type="${type}" value="${esc(v ?? '')}"${type === 'number' ? ' inputmode="decimal"' : ''}>${org}</label>`;
       },
       others = st.sheets.filter(x => x.id !== p.id);
@@ -641,9 +704,10 @@ export function createSheetsView(host) {
       <label class="f-field">${esc(tt(TX.gptReply))}<textarea data-k="gptreply" rows="4"></textarea></label>
       <button type="button" data-do="gptread">${esc(tt(TX.read))}</button>
     </details>
+    <div class="f-card" data-vunitbox><label class="f-field">${esc(tt(TX.viewUnit))}<select data-k="vunit">${Object.keys(MASS).map(u => `<option value="${u}"${u === vu ? ' selected' : ''}>${esc(`${MASS[u]} · ${FLOW[u]}`)}</option>`).join('')}</select></label>${vu !== su ? `<small class="f-muted" data-vunitnote>${esc(tt(TX.viewUnitNote, { s: `${MASS[su]} · ${FLOW[su]}`, d: densityOf(p)?.toLocaleString(document.documentElement.lang || undefined) ?? '?' }))}</small>` : ''}</div>
     ${groups.map((g, i) => `<details class="f-card"${i < 2 ? ' open' : ''}><summary>${esc(FIELD_TX[g] ? tt(FIELD_TX[g]) : g)}</summary><div class="f-grid ac-g3">${F.PROFILE_FIELDS.filter(f => f[0] === g).map(input).join('')}</div></details>`).join('')}
     ${nm ? `<p class="f-warn" data-rpmwarn>${esc(tt(TX.rpmNotMonotone, { a: nm.a, b: nm.b }))}</p>` : ''}
-    ${rpmEditable() ? `<details class="f-card" open><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(p.unit)}/h min</th><th class="f-num">${esc(p.unit)}/h</th><th class="f-num">${esc(p.unit)}/h max</th><th></th></tr></thead><tbody>${p.rpmFuelCurve.map((r, i) => `<tr${nm && +r.rpm === nm.a ? ' class="ac-rpmwarn" data-rpmwarn-row' : ''}>${rpmCell(i, 'rpm', r.rpm)}${rpmCell(i, 'altFt', r.altFt)}${rpmCell(i, 'fuelFlowMin', r.fuelFlowMin)}${rpmCell(i, 'fuelFlowPerHour', r.fuelFlowPerHour)}${rpmCell(i, 'fuelFlowMax', r.fuelFlowMax)}<td><button type="button" data-do="rpmdel" data-i="${i}" aria-label="${esc(tt(TX.remove))}">✕</button></td></tr>`).join('')}</tbody></table></div><button type="button" data-do="rpmadd">${esc(tt(TX.rpmAdd))}</button></details>` : p.rpmFuelCurve.length ? `<details class="f-card"><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(p.unit)}/h</th></tr></thead><tbody>${p.rpmFuelCurve.map(r => `<tr><td class="f-num">${esc(r.rpm)}</td><td class="f-num">${esc(r.altFt ?? '')}</td><td class="f-num">${esc([r.fuelFlowMin, r.fuelFlowPerHour, r.fuelFlowMax].filter(x => x != null && x !== '').join(' / '))}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
+    ${rpmEditable() ? `<details class="f-card" open><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(FLOW[vu])} min</th><th class="f-num">${esc(FLOW[vu])}</th><th class="f-num">${esc(FLOW[vu])} max</th><th></th></tr></thead><tbody>${p.rpmFuelCurve.map((r, i) => `<tr${nm && +r.rpm === nm.a ? ' class="ac-rpmwarn" data-rpmwarn-row' : ''}>${rpmCell(i, 'rpm', r.rpm)}${rpmCell(i, 'altFt', r.altFt)}${rpmCell(i, 'fuelFlowMin', r.fuelFlowMin)}${rpmCell(i, 'fuelFlowPerHour', r.fuelFlowPerHour)}${rpmCell(i, 'fuelFlowMax', r.fuelFlowMax)}<td><button type="button" data-do="rpmdel" data-i="${i}" aria-label="${esc(tt(TX.remove))}">✕</button></td></tr>`).join('')}</tbody></table></div><button type="button" data-do="rpmadd">${esc(tt(TX.rpmAdd))}</button></details>` : p.rpmFuelCurve.length ? `<details class="f-card"><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(FLOW[vu])}</th></tr></thead><tbody>${p.rpmFuelCurve.map(r => `<tr><td class="f-num">${esc(r.rpm)}</td><td class="f-num">${esc(r.altFt ?? '')}</td><td class="f-num">${esc([r.fuelFlowMin, r.fuelFlowPerHour, r.fuelFlowMax].filter(x => x != null && x !== '').map(x => fuelShown(p, x)).join(' / '))}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
     <div class="f-row"><button type="button" class="primary" data-do="save">${esc(tt(TX.save))}</button><button type="button" data-do="lnm">${esc(tt(TX.exportLnm))}</button><button type="button" data-do="json">${esc(tt(TX.exportJson))}</button><button type="button" data-do="del">${esc(tt(TX.remove))}</button></div>`;
   }
   /** Fiche de l'éditeur avec les valeurs des champs (nombres lus, vides → null). */
@@ -660,14 +724,15 @@ export function createSheetsView(host) {
       for (const i of b.querySelectorAll('[data-rpm]')) {
         const row = out.rpmFuelCurve[+i.dataset.rpm],
           k = i.dataset.rk,
-          v = num(i.value);
+          v = i.hasAttribute('data-fu') ? fuelRead(p, i, row[k]) : num(i.value);
         if (v !== null || (row[k] !== undefined && row[k] !== null && row[k] !== '')) row[k] = v;
       }
       if (!keepEmpty) out.rpmFuelCurve = out.rpmFuelCurve.filter(r => r.rpm !== null);
     }
     for (const i of b.querySelectorAll('[data-path]')) {
       const t = i.dataset.type,
-        v = t === 'bool' ? i.checked : t === 'number' ? num(i.value) : i.value.trim() || null;
+        v = t === 'bool' ? i.checked : i.hasAttribute('data-fu') ? fuelRead(p, i, F.pathGet(p, i.dataset.path)) : t === 'number' ? num(i
+          .value) : i.value.trim() || null;
       // case décochée d'un champ jamais renseigné : laissé vide (pas de « false » inventé)
       if (t === 'bool' && !v && F.pathGet(p, i.dataset.path) == null) continue;
       F.pathSet(out, i.dataset.path, v);

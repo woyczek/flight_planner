@@ -121,8 +121,14 @@ place of the list (one card, « Retour » goes back), one editor at a time; the 
   time (M8, M9, M13).
 - **The form follows the schema**: `PROFILE_FIELDS` gives the groups and fields, `maxCrosswindKt` included; the RPM / fuel-flow table is
   its own block, editable on a computer, read on a phone; under each filled field its origin and date (`<small data-origin="<path>">`,
-  « source · dd/mm », the kept values in its title); the fuel fields carry the sheet's unit; airframe and propulsion that aerodb's
+  « source · dd/mm », the kept values in its title); the fuel fields carry the unit they are read and typed in; airframe and propulsion that aerodb's
   types base gives show « auto · … » and stay empty in the sheet (M7).
+- **Fuel read and typed in the unit chosen** (SOG-0032): « Carburant lu et saisi en » offers kg · kg/h, lb · lb/h, l · l/h, US gal ·
+  gal/h (the sheet's own unit first); the quantities, the flows and the RPM table are shown converted, the unit written beside each
+  field and in the table's head, by the frame's rules (`frame/lib/fuel_units.js` `toKg` / `fromKg`, the density of the sheet, else the
+  type value of its fuel), never recoded in the module; a line says the stored unit and the density when they differ. The sheet keeps
+  its stored unit: a typed value is converted back to it (to the thousandth), an untouched field keeps its stored value exactly (no
+  rounding drift); a sheet typed in lb/h read in kg/h gives the same curve (M25). The choice lasts for the session (no case).
 - **One source** (SOG-0023, 5 Nov): the JSON sheet; a `.lnmperf` is an import (through the review) or an export, never read to draw
   a screen, never merged without the review (no case: nothing in the module reads one otherwise; the automatic follow of aerodb is D4's).
 - **Two fields explained** (SOG-0011): « Carburant en volume » and « Densité du carburant » carry a help line; a bounded field (the

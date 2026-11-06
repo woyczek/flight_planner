@@ -78,3 +78,8 @@
 - **5 Nov 2026 — an RPM curve that goes down is said** (SOG-0015, the ergonomics session): the first pair of RPMs where the flow goes
   down while the RPM goes up (the table's rows without altitude, and the cruise) is said above the table and its row is orange; the
   sheet is never corrected (the S210's 6 700 rpm row stays the user's). M24.
+- **6 Nov 2026 — fuel read and typed in kg, lb, l or US gal** (SOG-0032, the ergonomics session's criteria): the editor showed the
+  sheet's stored unit only. A choice of four units (mass / volume and their flows) converts at display and at reading through
+  `frame/lib/fuel_units.js`; the stored unit never changes, an untouched field is compared with the text it was shown with and keeps
+  its stored value (otherwise an lb sheet read in kg and saved would drift by rounding). The review still shows the stored values.
+  M25; counter-test on 94849e74b: no unit choice (the case errors on the missing control).
