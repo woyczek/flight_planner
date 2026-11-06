@@ -2352,3 +2352,45 @@ def i36(c):
     finally:
         L.DATA, L.ROOT = kept
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+@case('I37', 'Launcher: a data/ with thousands of changed files is committed whole, not refused for a command line too long', 'I', static=True,
+      rule='SOG user report 6 Nov 2026 ([WinError 206], « réception impossible » at the launcher start): tools/data_sync.py git_paths gives the paths of add -A / reset / rm --cached to git in several commands, none over PATHS_CHUNK characters; the result does not depend on the cut')
+def i37(c):
+    import json
+    sys.path.insert(0, str(c.root / 'tools'))
+    import data_sync as DS
+    tmp = Path(tempfile.mkdtemp(prefix='sog-paths-'))
+    try:
+        remote, a = str(tmp / 'remote.git'), str(tmp / 'A')
+        sh = lambda *args, cwd=str(tmp): subprocess.run(['git', *args], cwd=cwd, check=True, capture_output=True)
+        sh('init', '--bare', '-b', 'main', remote)
+        sh('clone', '-q', remote, a)
+        for k, v in (('user.name', 'essai'), ('user.email', 'essai@example.invalid')):
+            sh('config', k, v, cwd=a)
+        d = Path(a, 'disponibilites', 'AAA')
+        d.mkdir(parents=True)
+        n = 1400                                     # 1400 paths of ~60 characters: about 84 000 characters, a Windows command line takes 32 767
+        names = [f'disponibilites/AAA/2026-W{i:04d}-{"x" * 30}.json' for i in range(n)]
+        for nm in names:
+            Path(a, *nm.split('/')).write_text(json.dumps({'updated_at': '2026-11-06T10:00:00Z', 'dispos': {}}), encoding='utf-8')
+        c.ge(sum(len(x) + 1 for x in names), 40000, 'more than a command line holds', what='characters of paths')
+        r = DS.update(a, 'AAA')
+        c.ok('impossible' not in r.get('message', '') and r.get('committed') == n, json.dumps(r, ensure_ascii=False)[:300], 'update commits the 1400 files, no refusal')
+        code, out = DS.git(a, 'ls-files')
+        c.eq(len(out.splitlines()), n, 'every file is in the commit', what='tracked files')
+        c.eq(DS.pool_changes(a), [], 'nothing left to commit', what='pool changes')
+        # the cut: every chunk within the limit, every path once, in order
+        seen = []
+        kept = DS.git
+        DS.git = lambda data, *args, **kw: (seen.append(args[args.index('--') + 1:]) or (0, ''))
+        try:
+            DS.git_paths(a, 'add', '-A', paths=names, env=None, check=True)
+        finally:
+            DS.git = kept
+        c.ok(len(seen) > 1 and all(sum(len(x) + 3 for x in ch) <= DS.PATHS_CHUNK for ch in seen), str([len(ch) for ch in seen]), 'several commands, each within the limit')
+        c.eq([x for ch in seen for x in ch], names, 'every path once, in order', what='paths')
+        c.eq(DS.git_paths(a, 'add', '-A', paths=[], env=None), (0, ''), 'no path: nothing run', what='empty')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+

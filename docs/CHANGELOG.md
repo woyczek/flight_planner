@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Launcher: a data/ with thousands of changed files is received again** (`tools/data_sync.py` `git_paths`; noreg I37). At the start,
+  « 0 fichier(s) du poste commités ; réception impossible pour l'instant ([WinError 206] The filename or extension is too long) »:
+  `git add -A`, `reset` and `rm --cached` were given every changed path on one command line, which Windows caps at 32 767
+  characters (a base rebuilt or a folder received changes thousands of files at once). The paths now go in several commands, none
+  over 20 000 characters of paths; the result does not depend on the cut.
+
 - **Fuel: an aerodrome is never a point of the route** (`frame/lib/route_model.js`; Fuel SPEC § 9.3, frame INTEGRATION; noreg F93,
   route_model bench; SOG-0033). An aerodrome at the head of the route text that is not the departure, at its end that is not the arrival,
   or the departure / arrival repeated inside, is dropped from the points and the normalised text: after a new pair the list starts with

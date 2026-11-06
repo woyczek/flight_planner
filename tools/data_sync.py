@@ -193,6 +193,30 @@ def git(data, *args, env=None, check=False):
     return r.returncode, out
 
 
+# longueur des chemins confiés à une seule commande git : Windows refuse une ligne de commande de plus de 32 767 caractères
+# ([WinError 206] « The filename or extension is too long ») ; une reconstruction de base ou un dossier reçu change des
+# milliers de fichiers d'un coup
+PATHS_CHUNK = 20000
+
+
+def git_paths(data, *head, paths, env=None, check=False):
+    """`git -C data <head> -- <paths>` en autant de commandes que la ligne de commande de Windows l'exige (PATHS_CHUNK
+    caractères de chemins au plus par commande) ; rend (code, texte) de la dernière, ou de la première en échec (hors check).
+    Pour toute commande qui prend une liste de fichiers (add -A, reset, rm --cached) : un résultat ne dépend pas de la découpe."""
+    res, chunk, size = (0, ''), [], 0
+    for p in [*paths, None]:
+        if p is None or (chunk and size + len(p) + 3 > PATHS_CHUNK):
+            if chunk:
+                res = git(data, *head, '--', *chunk, env=env, check=check)
+                if res[0]:
+                    return res
+            chunk, size = [], 0
+        if p is not None:
+            chunk.append(p)
+            size += len(p) + 3
+    return res
+
+
 def _journal(args, err, data=''):
     """Avertissements d'une commande git réussie (lignes « warning: ») : au journal du lanceur (sa console), pas dans ce
     que lit le code ; le reste de sa sortie d'erreur (avancement d'un push, …) est laissé."""
@@ -555,7 +579,7 @@ def untrack_indexes(data, who, env):
     _, out = git(data, 'ls-files', '--', *INDEXES)
     tracked = [x for x in out.splitlines() if x.strip()]
     if tracked:
-        git(data, 'rm', '--cached', '-q', '--', *tracked, env=lit(), check=True)
+        git_paths(data, 'rm', '--cached', '-q', paths=tracked, env=lit(), check=True)
         git(data, *who, 'commit', '-m', 'Index des dossiers retirés du dépôt (régénérés)', env=env, check=True)
     return tracked
 
@@ -625,7 +649,7 @@ def settle(data):
     # merge --abort (git reset --merge) les ramènerait à la branche — un fichier nouveau serait effacé
     own = _own_staged(data)
     if own:
-        git(data, 'reset', '-q', '--', *own, env=lit(), check=True)
+        git_paths(data, 'reset', '-q', paths=own, env=lit(), check=True)
     code, out = git(data, 'merge', '--abort')
     if code:
         # git refuse : un fichier apporté par la fusion a été modifié depuis dans le dossier ; la page dit lequel mettre de côté
@@ -688,7 +712,7 @@ def _commit_local(data, who, env, res, label, gesture=False):
             changes.remove(p)
             res['refused'].append({'path': p, 'why': why})
     if changes:
-        git(data, 'add', '-A', '--', *changes, env=lit(env), check=True)  # fichiers modifiés seuls (dossier du pool absent : pas d'erreur)
+        git_paths(data, 'add', '-A', paths=changes, env=lit(env), check=True)  # fichiers modifiés seuls (dossier du pool absent : pas d'erreur)
         code, _ = git(data, 'diff', '--cached', '--quiet')
         if code:
             git(data, *who, 'commit', '-m', f'{label} : {len(changes)} fichier(s)', env=env, check=True)
