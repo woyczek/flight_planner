@@ -3963,3 +3963,30 @@ def d128(c):
     # one point per pixel
     n = c.js("""async () => { const S = await import('/modules/maps/state.js'), q = Array.from({ length: 400 }, (_, i) => ({ x: i * 0.2, y: 3 + Math.sin(i / 40) })); return [q.length, S.thinPx(q).length] }""")
     c.ok(n[1] <= 90 and n[1] >= 2, str(n), '400 points over 80 px keep at most one per pixel (and the last)')
+
+
+@case('D129', 'Live flight: ten writes of the flight in one second rebuild the profile once; writes that leave the route as it is rebuild nothing', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='V3 spec (SOG-0156, ergonomics decision 9 Nov): the Map reads the flight again 300 ms after the last write (one rebuild of the profile per burst of keystrokes in the double view) and does nothing for a write that leaves the route, the level and the chosen procedures as they are')
+def d129(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    c.wait(1500)
+    c.js("""() => { const S = window.__mp.S; window.__w = { S, n: 0 }; const f = S.route.flight; window.__base = JSON.parse(JSON.stringify(f)); return true }""")
+    write = """async ([moves]) => { const S = window.__mp.S, f = JSON.parse(JSON.stringify(window.__base)), path = 'pilot/ABC/current_flight.json';
+      for (let i = 0; i < 10; i++) {
+        if (moves) f.route.points[1].lat = +(46.5833 + i * 0.01).toFixed(4); else f.progress = { phase: 'x' + i };
+        f.updated_at = new Date(Date.now() + 1000 + i).toISOString(); f.by = 'fuel';
+        await S.ctx.data.put(path, JSON.parse(JSON.stringify(f))); await new Promise(r => setTimeout(r, 90)) }
+      return true }"""
+    r0 = c.js("() => window.__mp.S.profRun || 0")
+    c.js(write, [True])
+    c.wait(1800)
+    r1 = c.js("() => window.__mp.S.profRun || 0")
+    c.eq(r1 - r0, 1, 'ten writes of a changed route in one second: the profile is rebuilt once', what='rebuilds')
+    # a write that leaves the route as it is (only the progress changes): nothing is rebuilt
+    c.js("""() => { const S = window.__mp.S; window.__base = JSON.parse(JSON.stringify(S.route.flight)); return true }""")
+    c.js(write, [False])
+    c.wait(1500)
+    r2 = c.js("() => window.__mp.S.profRun || 0")
+    c.eq(r2 - r1, 0, 'writes that leave the route, the level and the procedures as they are rebuild nothing', what='rebuilds')

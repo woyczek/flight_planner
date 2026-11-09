@@ -2082,6 +2082,13 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done / to learn**: the real « ramer » is probably on the page that writes the flight (Fuel's keystrokes in the double view rebuild
   the profile — the corridor boxes of a 4 000 NM route — each time); a measurement on the user's real base and a long-task trace are
   needed before touching that; the route's own points are not thinned (a route has tens of points, not thousands).
+- **The bound on the rebuilds (ergonomics decision, same evening)**: « an anti-bounce of 300 ms after the last write of the flight, and no
+  rebuild when the route has not changed ». **Already in the code**: `watchFlight` (`data.js`) reads the flight again 300 ms after the last
+  write (each write restarts the timer: one reading per burst) and `sameRoute` (`flight_time.js`, `sigOf`: points, level, departure,
+  route and aerodromes, chosen procedures, the planned profile of Fuel) turns a write that leaves them as they are into a progress-only
+  update with no rebuild. Noreg D129 states it (ten writes of a changed route in a second → one rebuild of the profile; ten writes that
+  change only the progress → none): it was **green before any change**, so there is nothing to fix there. A burst slower than 300 ms between
+  writes still rebuilds each time, as it should.
 - **Noreg** D128 (world view: no barbs, the note, a drawing under 16 ms, back to barbs when zoomed in, `thinPx`; red without the code).
 
 ## The proposed routes of Fuel on the Map (9 Nov 2026, SOG-0134 a)
