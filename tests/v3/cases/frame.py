@@ -4112,3 +4112,9 @@ def a103(c):
     c.eq(folded(), [['fuel', False], ['data', True], ['stat', False]], 'after a reload the lane folded by hand is still folded', what='remembered')
     c.eq(c.js("document.documentElement.scrollWidth <= window.innerWidth + 1"), True, 'no horizontal scroll', what='scroll')
     c.check_errors()
+
+
+@case('A104', 'Mission categories of an airline (SOG-0041): the common base, the groups active for the airline’s kind, categories.json read as untrusted input', 'A', tags=('airline',), designs=('standard',), screens=False, night=False,
+      rule='V3_SPECIFICATION § 10.38 (mission categories): frame/lib/mission_categories.js — without a file the base (commercial: cargo, passengers, VIP, training, transit, test flights, positioning; virtual: the airline’s own); commercial only for a « va » or the personal airline; every id, name, load and bound of the file filtered (§ 10.36)')
+def a104(c):
+    _bench(c, 'frame/lib/test/mission_categories.html', '__catBench')

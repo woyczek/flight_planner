@@ -1,0 +1,239 @@
+<!doctype html>
+<!-- Banc des catégories de missions (frame/lib/mission_categories.js, V3_SPECIFICATION § 10.38, SOG-0041) : la base commune, les groupes actifs selon le genre de la compagnie,
+     le fichier d'une compagnie lu comme une entrée non fiable (identifiants, bornes, doublons, noms, prototype), le nom d'une catégorie. Page nue, aucun module du cadre ;
+     window.__catBench = { done, pass, fail, rows } pour un pilote (Playwright). Ouvrir la page suffit. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>mission_categories — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">mission_categories.js — bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    BASE,
+    CATEGORIES_MAX,
+    GROUPS_MAX,
+    clean,
+    forAirline,
+    kindOf,
+    nameOf
+  } from '../mission_categories.js?v=0';
+  const rows = [],
+    out = document.getElementById('out');
+  const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const ck = (name, ok, detail = '') => {
+    rows.push({
+      name,
+      ok: !!ok,
+      detail
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}`;
+    out.append(l);
+  };
+  const ids = l => l.all.map(c => c.id);
+
+  // la base commune
+  ck('la base : commercial (sept catégories dans l\'ordre) puis virtuel (vide)',
+    eq(BASE.groups.map(g => [g.id, g.categories.length]), [
+      ['commercial', 7],
+      ['virtuel', 0]
+    ]) && eq(BASE.groups[0].categories.map(c => c.id), ['fret', 'passagers', 'vip', 'training', 'transit', 'essais-en-vol',
+      'positionnement'
+    ]));
+  ck('la base : le fret porte du fret, les passagers et le VIP des passagers, le reste rien',
+    eq(BASE.groups[0].categories.map(c => c.load || null), ['freight', 'passengers', 'passengers', null, null, null, null]));
+  ck('la base : quatre langues partout', BASE.groups.concat(BASE.groups.flatMap(g => g.categories)).every(x => ['fr', 'en', 'de', 'es']
+    .every(l => x.names[l])));
+  ck('la base est gelée', Object.isFrozen(BASE));
+
+  // sans fichier : la base, selon le genre
+  ck('sans fichier, une compagnie « va » : le commercial et le virtuel (sans catégorie)', eq(ids(forAirline(null, {
+    code: 'bbb',
+    settings: {
+      kind: 'va'
+    }
+  })), ['fret', 'passagers', 'vip', 'training', 'transit', 'essais-en-vol', 'positionnement']) && eq(forAirline(null, {
+    code: 'bbb',
+    settings: {
+      kind: 'va'
+    }
+  }).groups.map(g => g.id), ['commercial', 'virtuel']));
+  ck('sans fichier, une escadrille « sog » : seul le virtuel (le commercial lui est inactif)', eq(forAirline(null, {
+    code: 'aaa',
+    settings: {
+      kind: 'sog'
+    }
+  }).groups.map(g => g.id), ['virtuel']));
+  ck('sans fichier ni genre : seul le virtuel (rien n\'est supposé commercial)', eq(forAirline(undefined, {
+    code: 'default',
+    settings: {}
+  }).groups.map(g => g.id), ['virtuel']));
+  ck('« personnel » est de genre perso : le commercial est actif', eq(forAirline(null, {
+    code: 'perso',
+    settings: {
+      kind: 'sog'
+    }
+  }).groups.map(g => g.id), ['commercial', 'virtuel']) && kindOf({
+    code: 'perso'
+  }) === 'perso');
+  ck('un genre inconnu vaut aucun genre', kindOf({
+    code: 'x',
+    settings: {
+      kind: 'pirate'
+    }
+  }) === '' && kindOf(null) === '' && kindOf({
+    code: 'x',
+    settings: {
+      kind: {}
+    }
+  }) === '');
+
+  // le fichier d'une compagnie (entrée non fiable)
+  const mine = {
+    schema: 1,
+    groups: [{
+      id: 'virtuel',
+      names: {
+        fr: 'Nos missions',
+        en: 'Our missions'
+      },
+      categories: [{
+        id: 'cap',
+        names: {
+          fr: 'Patrouille'
+        }
+      }, {
+        id: 'cap',
+        names: {
+          fr: 'Doublon'
+        }
+      }, {
+        id: 'Bad Id',
+        names: {
+          fr: 'Refusée'
+        }
+      }, {
+        id: 'evac',
+        names: {
+          fr: 'Évacuation'
+        },
+        load: 'passengers'
+      }, {
+        id: 'x',
+        names: {
+          fr: 'Chargement'
+        },
+        load: 'nuclear'
+      }]
+    }]
+  };
+  const l = forAirline(mine, {
+    code: 'aaa',
+    settings: {
+      kind: 'sog'
+    }
+  });
+  ck('le fichier de la compagnie remplace la base : ses catégories, sans doublon ni identifiant refusé', eq(ids(l), ['cap', 'evac', 'x']));
+  ck('une langue manquante prend le nom français', eq(l.groups[0].names, {
+    fr: 'Nos missions',
+    en: 'Our missions',
+    de: 'Nos missions',
+    es: 'Nos missions'
+  }) && l.all[0].names.de === 'Patrouille');
+  ck('une charge inconnue est retirée, une charge connue gardée', l.all[1].load === 'passengers' && !('load' in l.all[2]));
+  ck('un nom sans caractère de commande ni excès', (() => {
+    const c = clean({
+      groups: [{
+        id: 'g',
+        names: {
+          fr: 'A\u0000B\n' + 'x'.repeat(200)
+        },
+        categories: []
+      }]
+    }).groups[0].names.fr;
+    return c.length <= 40 && !/[\u0000-\u001f]/.test(c);
+  })());
+  ck('le groupe d\'un autre genre que ceux connus est écarté', clean({
+    groups: [{
+      id: 'g',
+      kinds: ['pirate'],
+      categories: []
+    }, {
+      id: 'h',
+      kinds: ['va', 'pirate'],
+      categories: []
+    }]
+  }).groups.map(g => [g.id, g.kinds.join()]).join() === 'h,va');
+  ck('les groupes et les catégories sont bornés', (() => {
+    const c = clean({
+      groups: Array.from({
+        length: 30
+      }, (_, i) => ({
+        id: 'g' + i,
+        categories: Array.from({
+          length: 30
+        }, (_, j) => ({
+          id: 'c' + j
+        }))
+      }))
+    });
+    return c.groups.length === GROUPS_MAX && c.groups.reduce((n, g) => n + g.categories.length, 0) === CATEGORIES_MAX;
+  })());
+  ck('une forme inattendue donne null, et forAirline retombe sur la base', [null, undefined, 3, 'x', [], {}, {
+      groups: 'x'
+    }].every(v => clean(v) === null) &&
+    ids(forAirline({
+      groups: 'x'
+    }, {
+      code: 'perso'
+    })).length === 7);
+  ck('un fichier valide mais sans groupe : aucune catégorie (la compagnie en a retiré)', eq(ids(forAirline({
+    groups: []
+  }, {
+    code: 'perso'
+  })), []));
+  ck('« __proto__ », « constructor » ne passent ni comme identifiant ni comme langue', (() => {
+    const c = clean(JSON.parse(
+      '{"groups":[{"id":"__proto__","categories":[]},{"id":"g","names":{"__proto__":{"fr":"x"}},"categories":[{"id":"constructor","names":{"constructor":"y"}}]}]}'
+    ));
+    return c.groups.length === 1 && c.groups[0].names.fr === 'g' && ({}).fr === undefined && c.groups[0].categories[0].names.fr ===
+      'constructor';
+  })());
+
+  // le nom d'une catégorie
+  ck('nameOf : la langue demandée, le français par défaut, l\'identifiant pour une catégorie retirée', nameOf(l, 'cap', 'en') ===
+    'Patrouille' && nameOf(forAirline(null, {
+      code: 'perso'
+    }), 'fret', 'en') === 'Cargo' && nameOf(forAirline(null, {
+      code: 'perso'
+    }), 'fret', 'xx') === 'Fret' && nameOf(l, 'disparue', 'fr') === 'disparue' && nameOf(null, null, 'fr') === '');
+
+  window.__catBench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__catBench.pass} PASS · ${window.__catBench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

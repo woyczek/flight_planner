@@ -613,3 +613,17 @@ moves code, `S` itself replaced through `setState` alone.
 - **Where it shows**: only on the launcher's computer (the verb is local to the workstation) and only while the frame's list still has `default`; once `index.json` is there the block is gone by itself.
 - **Calls**: by the frame's own client (`ctx.launcherRequest('regen/job', …)`, then `regen/job?id=` every 400 ms, at most 16 s), no new route declared; the answer is read as a closed list (audit 157).
 - **Not done**: filling the fleet (still the « personal » box of the sheets), `categories.json` (SOG-0041), the personal airline folder.
+
+## 10 November 2026 — mission categories: the file and its reader (SOG-0041, user rank 2 of alpha.5)
+
+- **What is delivered** (this lot, the frame's side of the two lots of § 10.38): `frame/lib/mission_categories.js`, pure, with the **common base** of the suite (`BASE`: `commercial` = cargo, passengers, VIP, training, transit, test
+  flights, positioning; `virtuel` = the airline's own, empty), the **filter** of `data/airline/<code>/categories.json` (`clean`: ids `^[a-z0-9][a-z0-9-]{0,23}$`, six groups and forty categories at most,
+  names in four languages of 40 characters without control characters, a missing language takes the French name, `load` in `freight | passengers` or dropped, own keys only), `kindOf(airline)` and
+  `forAirline(doc, airline)` → `{ groups, all }`, and `nameOf(list, id, lang)`. Bench `frame/lib/test/mission_categories.html`, case A104.
+- **No file = the base** (§ 10.38: « a common base ships with the suite and is the default of every airline and of "personnel" »): nothing is written for an airline that does not customise; the migration and « Ajouter une
+  compagnie » therefore do not write `categories.json`. A file that is present **replaces** the base (a group list of zero entries means « this airline has no category »).
+- **Kinds**: `commercial` carries `kinds: ['va', 'perso']`, so it is **inactive for a squadron** (`settings.kind: 'sog'`) and for an airline that does not say its kind (nothing is assumed commercial: today's airline has no `kind`);
+  the personal airline is `perso`. `virtuel` has no `kinds`: active for all.
+- **Readers**: a module reads the airline's `categories.json` with its own adapter (`FrameData.airline().root` + `categories.json`, reads `airline/`), passes the content to `forAirline` and escapes the names it draws; **Missions** (a
+  mission says its `category`, the filter) and the **report** (the `load` kind says what a commercial flight carries: freight in kg, passengers; nothing is invented) are Features SOG's lots — no reader here, no change to `frame_data.js`.
+- **Not done here** (needs a decision or belongs to the readers): a place in Réglages › Compagnie to set the airline's `kind` and to edit its categories (without a `kind` the commercial group is inactive for a non-personal airline).
