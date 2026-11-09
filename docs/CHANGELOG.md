@@ -12,6 +12,32 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+## [6.0.0-alpha.4] — 2026-11-09
+
+Fourth alpha of the V3 **Pilot** and **Company** applications, three days after the third: a day of bug fixes on the
+pilot's own notes, then the first lots of alpha.5. **Bugs of 6 November**: the departure is never a point of the route,
+the old departure no longer comes back, every point of the route is in its list, sheets read and typed in kg, lb, l or
+US gal, a mission file absent from the register is listed, a position is compared with the start by instants, the
+headless browsers of the base builds no longer outlive the launcher, a `data/` with thousands of changed files is
+received again. **Synchronisation**: a conflict is counted only when one is (two versions that say the same thing are
+none; the frame merges by top-level key with the base, the current flight stays whole), « Mark all as seen ». **Fuel
+coherence**: the typed flow counts when the RPM table does not frame the rpm, « débit de ce vol » in the unit of the
+quote, the quote settings as the first fold of the result, curves per altitude as the rows of the same altitude with
+the monotony signal naming it, and **« Proposer depuis les mesures »**: the Fuel Phase Monitor journals read in the
+browser or from X-Plane's Output folder by the launcher, level windows compared with the sheet, rows accepted one by
+one. **Procedures**: every page of a coding-table family is read (the reader read only the first), LFLL's approaches
+no longer vanish (58 → 81), OKASI 2A answered (2Y / 2S exist), one « Carte » link per chosen procedure to the official
+pdf. **Map**: the ground layer of the departure and the arrival (taxiways, stands, holds from OpenStreetMap through a
+launcher job, ODbL attribution, a list that highlights), the drawing no longer overflows the view, Shift + drag zooms
+a rectangle of the profile. **Several airlines in one repository, step 1**: the current airline in the frame, Settings
+› Company (choose, add), the launcher's `airline/migrate` verb, the frame's header following the choice. **Roadmap**:
+the user's roadmap is generated from the organisation's backlog and milestones (apps pilote, compagnie, maintenance,
+stats; milestones; kind feature / bug), the screen with its filters follows in alpha.5. Also: « Ranger les sources
+brutes », the FuelDashboard in the repository as it is, the SIA's overseas eAIP surveyed, China and Cyprus buildable.
+Alpha: data formats and screens may still change.
+
+### V3
+
 - **Frame: A57 holds the airline read where the frame now makes it, and `loadAirline` tolerates a `FrameData` without `airline()`**
   (`frame/app.js`, `tests/v3/cases/frame.py`; frame DECISIONS; noreg A57, A95, A94). No change of behaviour of the frame on the real data layer.
 

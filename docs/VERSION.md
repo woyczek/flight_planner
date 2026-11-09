@@ -5,6 +5,64 @@ Une section par version publiée, la plus récente en tête, écrite à chaque r
 effectuer** (ce que chacun doit faire après la mise à jour), **notes** (limites connues, points d'attention, à venir).
 Entre deux versions, le pied de page affiche le commit en cours (`v4.6.0+abc1234`).
 
+## 6.0.0-alpha.4 — 9 November 2026
+
+Fourth alpha of the **Pilot** and **Company** applications (V3), three days after the third: the pilot's bug notes of
+6 November fixed, synchronisation conflicts counted only when real, fuel figures coherent with the sheet, the Fuel Phase
+Monitor's measurements proposed to the sheet, procedures complete, the ground layer of the map, several airlines in one
+repository (step 1), the roadmap generated from the backlog.
+
+### Summary
+
+- **Bugs of 6 November**: the departure is never a point of the route and the old one no longer comes back; every point of
+  the route is listed; sheets read and typed in kg, lb, l or US gal; a mission file absent from the register is listed;
+  instants compared as instants; the headless browsers of the builds die with the launcher (108 orphans found); a data
+  folder with thousands of changed files is received again (WinError 206).
+- **Synchronisation**: two versions that say the same thing are no conflict (data_sync and the frame); the frame merges
+  by top-level key with the base, the current flight stays whole; « Mark all as seen (n) » on the conflicts screen.
+- **Fuel coherence**: the typed cruise flow counts when the RPM table does not frame the rpm (the S210 flew at the only
+  numbered row); « débit de ce vol » is in the unit of the quote and says it; « Réglages du devis · lb/h » is the first
+  fold of the result; the monotony signal names the altitude; « Source » names the altitudes and rpm used.
+- **« Proposer depuis les mesures »** (Maintenance › Appareils): the Fuel Phase Monitor journals (`FuelPhaseMonitor*.csv`)
+  chosen in the browser, or read by the launcher from X-Plane's Output folder; level windows grouped by altitude and rpm,
+  compared with the sheet (deviation in %), rows ticked into the draft, nothing written before « Enregistrer » then
+  « Appliquer »; the samples never leave the workstation.
+- **Procedures**: every page of a coding-table family is read and counted; LFLL 58 → 81 procedures, the ILS/LOC finals
+  from the FAF said synthetic; OKASI 2A does not exist (2Y and 2S do); a « Carte » link per chosen runway, SID, STAR and
+  approach to the official pdf (`AeroDb.chartUrl`).
+- **Map**: the ground layer — taxiways, stands and holding points of the departure and the arrival from OpenStreetMap
+  (launcher job `ground/fetch`, one call per aerodrome, ODbL attribution shown), lines from zoom 14, names from 15, stands
+  from 16, a « Sol » panel with a filter that highlights; the drawing no longer overflows the view (OVER = 0);
+  Shift + drag on the profile zooms a rectangle.
+- **Several airlines, step 1**: the current airline is a setting of the device (`FrameData.airline()`), Settings › Company
+  lists, chooses and adds airlines, the launcher's `airline/migrate` moves today's airline into `data/airline/<code>/`
+  (dry run first), the frame's header, site, logo and networks follow the choice; « Personnel » is the pilot's own.
+- **Roadmap**: `frame/help/roadmap.json` is generated from the organisation's backlog and milestones
+  (`tools/roadmap_build.py`): one card per fiche with its kind, state, application and milestone, titles in four
+  languages; the screen's filters (application, hide delivered, milestones) land in alpha.5.
+- Also: « Ranger les sources brutes » in the data inventory; the FuelDashboard kept in the repository as it is; the SIA's
+  overseas eAIP surveyed (Polynesia, New Caledonia, Réunion, Antilles-Guyane: same tables); China and Cyprus buildable
+  zones; the help texts and the non-regression suite (now 530 cases) follow every lot.
+
+### Actions to take
+
+1. **Workstation**: pull `v3`, restart the launcher (new jobs: `airline/migrate`, `ground/fetch`, `stats/output`),
+   reload `/frame/`.
+2. **Sheets**: Appareils › S210 › RPM table › « Proposer depuis les mesures » → your `FuelPhaseMonitor_*.csv` → tick the
+   levels → draft → save → apply; the FA50's « débit de ce vol » now reads 13 227.7 lb/h (it was 6 000 read as kg/h):
+   clear or correct it.
+3. **Data**: « Relire » LFLL then LFPO in Données › Procédures; build and publish China and Cyprus if you want them;
+   run `ground/fetch` for LFPO and look at the map at zoom 14 and the « Sol » panel.
+4. **Synchronisation**: « Tout marquer comme vu » on the conflicts screen, then watch the counter for a day.
+5. **Airlines**: Settings › Company: add your airlines, choose, reload; the « Migrer » button comes in alpha.5.
+
+### Notes
+
+- Alpha: `current_flight.json`, `data/local/`, `proc/manual/`, `data/airline/<code>/` may still change.
+- Open: the roadmap screen's filters and milestone strip (alpha.5); the airline migration button; the ILS 17L transitions
+  of LFLL are on the chart only (a chart reader would be another work); the 585 kg quote of 6 November was not
+  reproduced (the flight was an FA50 without a sheet).
+
 ## 6.0.0-alpha.3 — 6 November 2026
 
 Third alpha of the **Pilot application** (V3), nine days after the second, and the first **Company application**: the

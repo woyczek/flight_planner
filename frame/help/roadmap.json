@@ -4,9 +4,9 @@
  "updated": "2026-11-09",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7fdbd26",
-  "fiches": 65,
-  "untranslated": 0
+  "organisation": "724c5c6",
+  "fiches": 66,
+  "untranslated": 1
  },
  "owner": "ergonomics session (Simplification interface et ergonomie)",
  "note": {
@@ -133,7 +133,7 @@
     "es": "6.0.0-alpha.4"
    },
    "date": "2026-11-09",
-   "state": "planned",
+   "state": "done",
    "items": [
     "SOG-0031",
     "SOG-0032",
@@ -816,12 +816,21 @@
     {
      "id": "SOG-0062",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Roadmap utilisateur (#roadmap) : organiser les cartes de features et de bugs par application, masquer les livrées, frise des jalons, synchro avec organisation/",
      "en": "User roadmap (#roadmap): organise feature and bug cards by application, hide delivered ones, milestone timeline, sync with organisation/",
      "de": "Anwender-Fahrplan (#roadmap): Feature- und Bug-Karten nach Anwendung ordnen, gelieferte ausblenden, Meilenstein-Zeitleiste, Synchronisation mit organisation/",
      "es": "Hoja de ruta de usuario (#roadmap): organizar las tarjetas de funciones y errores por aplicación, ocultar las entregadas, cronología de hitos, sincronización con organisation/",
      "milestone": "6.0.0-alpha.5"
+    },
+    {
+     "id": "SOG-0066",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Roadmap : reprioriser depuis l'écran (identifiant lisible et copiable, glisser-déposer du rang et du jalon, écrit par le lanceur dans organisation/PRIORITES.json)",
+     "en": "Roadmap : reprioriser depuis l'écran (identifiant lisible et copiable, glisser-déposer du rang et du jalon, écrit par le lanceur dans organisation/PRIORITES.json)",
+     "de": "Roadmap : reprioriser depuis l'écran (identifiant lisible et copiable, glisser-déposer du rang et du jalon, écrit par le lanceur dans organisation/PRIORITES.json)",
+     "es": "Roadmap : reprioriser depuis l'écran (identifiant lisible et copiable, glisser-déposer du rang et du jalon, écrit par le lanceur dans organisation/PRIORITES.json)"
     }
    ]
   },
@@ -838,7 +847,7 @@
     {
      "id": "SOG-0054",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Outre-mer du SIA : NTAA (Polynésie française), NWWM (Nouvelle-Calédonie) et les autres eAIP du SIA",
      "en": "SIA overseas: NTAA (French Polynesia), NWWM (New Caledonia) and the other SIA eAIPs",
      "de": "SIA Übersee: NTAA (Französisch-Polynesien), NWWM (Neukaledonien) und die übrigen eAIP des SIA",
@@ -848,7 +857,7 @@
     {
      "id": "SOG-0064",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Base aéro : la Chine et Nicosie absentes de la liste des paquets téléchargeables",
      "en": "Aero database: China and Nicosia missing from the list of downloadable packs",
      "de": "Aero-Datenbank: China und Nikosia fehlen in der Liste der herunterladbaren Pakete",
