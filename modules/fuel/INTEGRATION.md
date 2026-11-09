@@ -245,6 +245,56 @@ report and maps never write nor erase it.
   device cache).
 - Maps reads it as is; a field a module does not know is kept when it writes the record back.
 
+## 3 bis. The proposed routes for the Map — `cache/fuel/route_alts.json` and the event `fuel-route-alts` (SOG-0134 a, 9 Nov 2026)
+
+The routes of the Route step (« Calculer A → B », « Contrôler », § 9.3 of the SPEC) are drawn **by the Map**, never by Fuel (ergonomics
+decision of 9 Nov: one map, the real one). Fuel resolves them into positions and publishes them; the Map (BUGS SOG, layer
+« alternatives ») draws them and can hand a choice back. Contract written before the code, for both sides.
+
+**What Fuel publishes** — the same object, in two ways:
+- the window event **`fuel-route-alts`** (`CustomEvent`, `detail` = the object), for a Map mounted beside Fuel (double view, one
+  document); sent at every change below, hover included;
+- the document **`cache/fuel/route_alts.json`** (cache policy, this device only, written by Fuel alone), for a Map opened afterwards
+  (« Sur la carte », a phone); written on arrival, choice and clearing — never on hover (its `hovered` is always `null`).
+
+```json
+{
+  "schema": 1,
+  "updated_at": "2026-11-09T16:40:00Z",
+  "dep": "LFRS",
+  "arr": "LFML",
+  "mode": "compute",
+  "alternatives": [
+    { "index": 0, "name": "Via UN10", "route": "LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML",
+      "sid": "LFRS.SID.NTS1A.RW03.NONE", "star": "LFML.STAR.MEN1A.RW13R.NONE",
+      "ids": ["LFRS", "LUGEN", "NEPIX", "LFML"],
+      "points": [[47.1569, -1.6078], [46.5833, -1.2], [44.9, 2.4], [43.4367, 5.215]],
+      "faulty": [] }
+  ],
+  "chosen": 0,
+  "hovered": null
+}
+```
+
+- `mode`: `compute` (up to three routes, the engine's order) or `check` (one: the route typed, `chosen` 0).
+- `points` (≤ 400) and `ids` (same length): the route resolved by Fuel's route reader (`RM.routeModel`, aerodb's positions, as the
+  quote reads its route); a name without position is left out of both. `faulty`: the indices `k` of the segments `points[k] →
+  points[k + 1]` that belong to a faulty segment of the engine (a faulty `from → to` marks every `k` from `from` to `to` − 1).
+- `chosen`: the index of the route taken (« Prendre »), else the computed one (0); `null` when there is no route. `hovered`: the
+  index of the row under the pointer, the finger or the keyboard focus, else `null`.
+- **Clearing**: a new request, a new pair of aerodromes (`newPair`) or a refusal publishes `alternatives: []`.
+- `dep` / `arr` are the flight's at publication: a Map that shows another flight's pair does not draw them.
+
+**What the Map draws** (BUGS SOG): the chosen route solid, the others faded, the hovered one thick, the `faulty` segments red; the
+`check` route the same way. Fuel draws nothing (the sketch of a8d158da8 is withdrawn).
+
+**What the Map hands back** — a tap on a route chooses it, as « Prendre »:
+- double view: the window event **`maps-route-alt`** (`CustomEvent`, `detail: { index }`), which Fuel listens to;
+- a Map alone (phone): the address **`#fuel?ralt=<index>`**; Fuel consumes `ralt` at mount (`ctx.consume`), reads
+  `cache/fuel/route_alts.json` and takes `alternatives[index]` only when its `dep` / `arr` are the flight's and `mode` is `compute`
+  (route text through the route field, SID and STAR through `P.propose`, as « Prendre »).
+- Values are bounded on both sides (an index is an integer within the list; nothing else is read from the event).
+
 ## 4. Quote settings — `pilot/<trigram>/fuel.json`
 
 `{ "schema": 1, "updated_at", "taxiMin": 10, "reserveMin": 30, "contingencyPct": 5, "displayUnit": "kg",
