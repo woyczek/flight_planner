@@ -4573,6 +4573,67 @@ def k91(c):
     c.eq(r['importRows'], 0, 'the import creates no table row: a .lnmperf has neither rpm nor altitude, a second source would appear', what='import')
 
 
+@case('K92', 'The aircraft registry follows the current airline (§ 10.38 step 1, rest): the fleet is read in the airline\'s own folder, re-read when the airline changes, bounded as an untrusted input, airline/fleet.json as before without the frame', 'K', tags=('aerodb',), phone=False,
+      rule='Features SOG (503068b37): after the migration (airline/<code>/fleet.json) the registry, which read airline/fleet.json only, no longer saw the fleet: search, fleetTypes and aircraftOf must follow FrameData.airline().root (airline/, airline/<code>/, the personal folder), re-read on frame-data-airline, from a path that no entry can invent, the file bounded (registration 2 to 10, type 2 to 4, 200 aircraft)')
+def k92(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    c.page.add_script_tag(url=f'{c.base}/frame/aerodb/aircraft.js')                 # the type catalogue the registry takes (the page has not loaded it)
+    r = c.js("""async () => {
+      const fleet = (tag, regs, type = 'C30J') => ({ schema: 1, updated_at: '2026-11-09T08:00:00Z', aircraft: regs.map(registration => ({ registration, type, callsign: tag })) });
+      const files = {
+        'airline/fleet.json': fleet('DEF', ['F-AAAA', 'F-AAAB']),
+        'airline/co2/fleet.json': fleet('CO2', ['F-BBBB'], 'TBM9'),
+        'pilot/ABC/airline/perso/fleet.json': fleet('PER', ['F-PERS'], 'C172'),
+        'x/fleet.json': fleet('EVIL', ['F-EVIL'], 'A320'),
+        'airline/co3/fleet.json': { schema: 1, aircraft: [
+          ...Array.from({ length: 300 }, (_, i) => ({ registration: 'F-' + String(1000 + i), type: 'C30J' })),
+          { registration: '<b>', type: 'C30J' }, { registration: 'X', type: 'C30J' }, { registration: 'F-LONGTYPE', type: 'TOOLONGTYPE' }, { registration: 'F-AAAA', type: 'C30J' }, { registration: 'F-CTRL\\u0007', type: 'TBM9', operator: 'A\\u0007B' + 'z'.repeat(80), evil: { x: 1 } }, null, 'junk'] }
+      };
+      const day = Date.parse('2026-11-09T12:00:00Z');
+      const db = AeroDB.create({ reader: { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} }, lnmperf: false, now: () => day });
+      const snap = async () => {
+        const A = await db.aircraft();
+        const types = (await A.fleetTypes()).map(t => [t.type, t.registrations.slice().sort()]);
+        const found = async reg => (await A.search(reg, 5)).filter(x => x.source === 'fleet').map(x => x.registration);
+        return { types, aaaa: await found('F-AAAA'), bbbb: await found('F-BBBB'), pers: await found('F-PERS'), evil: await found('F-EVIL') };
+      };
+      const out = {};
+      out.noFrame = await snap();                                                  // no FrameData.airline: airline/fleet.json as before
+      let root = 'airline/';
+      window.FrameData = { airline: async () => ({ code: 'x', root, name: 'X', fleet: null }) };
+      const switchTo = async r => { root = r; window.dispatchEvent(new CustomEvent('frame-data-airline', { detail: { code: 'x', name: 'X' } })); return snap(); };
+      out.def = await switchTo('airline/');
+      out.co2 = await switchTo('airline/co2/');
+      out.perso = await switchTo('pilot/ABC/airline/perso/');
+      out.back = await switchTo('airline/');
+      out.hostile = [];
+      for (const bad of ['airline/../x/', 'x/', '/etc/', 'airline/CO2/', 'airline/co2', 'pilot/../../x/airline/perso/', 'airline/' + 'a'.repeat(20) + '/', '', null, 5]) out.hostile.push((await switchTo(bad)).evil.length + (await snap()).types.map(t => t[0]).join());
+      const co3 = await switchTo('airline/co3/'), A = await db.aircraft();
+      const t3 = await A.fleetTypes();
+      out.co3 = { n: t3.reduce((n, t) => n + t.registrations.length, 0), regs: t3.flatMap(t => t.registrations).filter(x => !/^F-1\\d{3}$/.test(x)).sort(), types: t3.map(t => t.type).sort() };
+      out.cleaned = window.AeroDBRegistry.cleanFleet(files['airline/co3/fleet.json']).aircraft.find(a => a.registration === 'F-CTRL' + '');
+      out.paths = ['airline/', 'airline/co2/', 'pilot/ABC/airline/perso/', 'airline/../x/', '', null].map(x => window.AeroDBRegistry.fleetPathOf(x));
+      // the change is announced
+      let heard = 0;
+      db.on('change', e => { if (e?.aircraft) heard++; });
+      await switchTo('airline/co2/');
+      out.heard = heard;
+      return out;
+    }""")
+    t = lambda x: x['types']
+    c.eq((t(r['noFrame']), r['noFrame']['aaaa']), ([['C30J', ['F-AAAA', 'F-AAAB']]], ['F-AAAA']), 'no FrameData.airline (an older frame, a test): airline/fleet.json as before', what='no frame')
+    c.eq((t(r['def']), r['def']['bbbb']), ([['C30J', ['F-AAAA', 'F-AAAB']]], []), 'the default airline (« airline/ »): its fleet', what='default')
+    c.eq((t(r['co2']), r['co2']['bbbb'], r['co2']['aaaa']), ([['TBM9', ['F-BBBB']]], ['F-BBBB'], []), 'after the switch to airline/co2/: fleetTypes and the search see ITS fleet, not the default one', what='co2')
+    c.eq((t(r['perso']), r['perso']['pers']), ([['C172', ['F-PERS']]], ['F-PERS']), 'the personal airline: the fleet under pilot/<trigram>/airline/perso/', what='perso')
+    c.eq(t(r['back']), [['C30J', ['F-AAAA', 'F-AAAB']]], 'and back to the first airline', what='back')
+    c.eq(r['hostile'], ['0C30J'] * 10, 'a folder no airline can have (a parent, another folder, an upper-case code, no folder, junk) reads airline/fleet.json: no path is invented, the file x/fleet.json is never read', what='hostile')
+    c.eq(r['paths'], ['airline/fleet.json', 'airline/co2/fleet.json', 'pilot/ABC/airline/perso/fleet.json', 'airline/fleet.json', 'airline/fleet.json', 'airline/fleet.json'], 'fleetPathOf: the three shapes of folder, anything else the default', what='paths')
+    c.eq(r['co3']['n'], 200, 'a fleet file of 300 and more aircraft: at most 200 are kept', what='bound')
+    c.ok('<B>' not in r['co3']['regs'] and 'X' not in r['co3']['regs'] and 'F-LONGTYPE' not in r['co3']['types'], str(r['co3']), 'a registration of one sign or with markup is left; a type of more than four signs is emptied (the aircraft stays)')
+    c.eq((r['cleaned'] or {}).get('registration'), None, 'a registration with a control sign is not kept as written (it is not a registration)', what='ctrl')
+    c.ok(r['heard'] >= 1, str(r['heard']), 'the change of airline is announced (aircraft: true), the registry is read again at the next question')
+
+
 @case('K58', 'openAIP aerodromes: runways, bearing, hardLen and magVar derived like the SIA gives them to France', 'K', tags=('aerodb',), phone=False,
       rule='aerodb SPEC 2 (aerodrome fields, parser version 20): bearing, hardLen, water, runways and magVar come from the openAIP runways and magneticDeclination; a terrain without runways carries none of the runway fields')
 def k58(c):

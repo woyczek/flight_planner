@@ -186,6 +186,8 @@ session); they follow on `v3` and belong to alpha.5.
   characters (a base rebuilt or a folder received changes thousands of files at once). The paths now go in several commands, none
   over 20 000 characters of paths; the result does not depend on the cut.
 
+- **Aerodb: the aircraft registry follows the current airline** (`frame/aerodb/registry.js`, `aerodb.js`; aerodb DECISIONS 9 Nov; noreg K92; § 10.38 step 1, rest signalled by Features SOG). Search, `fleetTypes` (« to complete » types) and `aircraftOf` read `airline/<code>/fleet.json` (or the personal folder) as `FrameData.airline().root` says, read again when the airline changes, and `airline/fleet.json` as before without the frame; the fleet file is read as an untrusted input (200 aircraft, registration 2 to 10 signs, type 2 to 4).
+
 - **Little Navmap export: the cruise written in the `.lnmperf` comes from the sheet's rpm table** (`frame/aerodb/sheets.js` `lnmCruiseFromCurve`; aerodb DECISIONS 9 Nov; noreg K91; SOG-0028 (5), patch by Features SOG). The cruise flow (and TAS) is read in the sheet's `rpmFuelCurve` at the cruise rpm on the curve of the altitude closest to the cruise reference altitude — the row, or an interpolation between the two rows that frame the rpm — else the sheet's cruise as before; the import creates no table row.
 
 - **Launcher: `base/move-sources` is refused under the synchronisation of `data/`** (`tools/regen/base_sources.py`, `tools/launch.py`; aerodb DECISIONS 9 Nov; noreg K90; SOG-0030, last item). A real move (or its undo) takes the launcher's synchronisation lock without waiting, answers `syncing` and touches nothing when a synchronisation holds it, and keeps the lock during the move; the plan still answers.

@@ -14,8 +14,8 @@
   //     la variante ancienne de son immatriculation, sinon la fiche de son type (la base d'abord, alias suivis), sinon
   //     l'estimation du type.
   // Les fichiers V2 (.js) sont lus comme des littéraux (« let data = {…}; »), jamais exécutés. Aucun texte d'interface.
-  // API : window.AeroDBRegistry = { create({ reader, catalog, now, raw }) → registre, readAll(reader) (toutes les sources
-  //   lues en parallèle, à passer en raw), mergeSheets, stamp, whenOf, PATHS }.
+  // API : window.AeroDBRegistry = { create({ reader, catalog, now, raw, fleetPath }) → registre, readAll(reader, { fleetPath }) (toutes les sources
+  //   lues en parallèle, à passer en raw), fleetPathOf(dossier de la compagnie), cleanFleet(flotte lue), mergeSheets, stamp, whenOf, PATHS }.
   if (window.AeroDBRegistry) return;
   const PATHS = {
     sheets: 'aircraft/sheets/',
@@ -24,6 +24,44 @@
     fleetV2: 'references/aircraft_fleet.js',
     reference: 'references/defa_reference.js'
   };
+  /** Le fichier de flotte de la compagnie courante (§ 10.38 étape 1) : `root` est le dossier que FrameData.airline() donne (« airline/ », « airline/<code>/ » ou celui de « personnel » :
+   *  pilot/<trigramme>/airline/perso/) ; airline/fleet.json pour tout autre dossier ou sans dossier (une entrée non fiable n'invente jamais un chemin). */
+  const FLEET_ROOT = /^(airline\/([a-z0-9]{2,8}\/)?|pilot\/[A-Za-z0-9_-]{1,32}\/airline\/perso\/)$/;
+  const fleetPathOf = root => FLEET_ROOT.test(String(root || '')) ? `${root}fleet.json` : PATHS.fleet;
+  /** La flotte lue, comme une entrée non fiable (un fichier de data/ : tout pilote du groupe peut y écrire, § 10.36) : au plus 200 appareils, immatriculation de 2 à 10 signes [A-Z0-9-] (sinon l'appareil est laissé), type de
+   *  2 à 4 signes [A-Z0-9] (sinon vide), indicatifs de 12 signes [A-Z0-9 -], les autres textes bornés à 40 signes, sans signe de commande ; un champ inconnu n'est pas copié. */
+  function cleanFleet(doc) {
+    if (!doc || typeof doc !== 'object' || !Array.isArray(doc.aircraft)) return doc ?? null;
+    const up = (v, re) => {
+        const x = String(v ?? '').trim().toUpperCase();
+        return re.test(x) ? x : '';
+      },
+      txt = v => typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ').trim().slice(0, 40) : undefined,
+      seen = new Set(),
+      aircraft = [];
+    for (const r of doc.aircraft.slice(0, 200)) {
+      const registration = up(r?.registration, /^[A-Z0-9-]{2,10}$/);
+      if (!registration || seen.has(registration)) continue;
+      seen.add(registration);
+      const o = {
+        registration,
+        type: up(r.type, /^[A-Z0-9]{2,4}$/)
+      };
+      for (const k of ['variant', 'operator', 'base', 'tacticalNumber', 'number', 'location', 'locationAt', 'sheetId', 'fleetId'])
+        if (txt(r[k]) !== undefined) o[k] = txt(r[k]);
+      if (typeof r.operational === 'boolean') o.operational = r.operational;
+      const cs = [].concat(r.callsigns || (r.callsign ? [r.callsign] : [])).map(c => up(c, /^[A-Z0-9 -]{1,12}$/)).filter(Boolean).slice(0,
+        5);
+      if (cs.length) o.callsigns = cs;
+      aircraft.push(o);
+    }
+    return {
+      ...(typeof doc.updated_at === 'string' ? {
+        updated_at: doc.updated_at.slice(0, 40)
+      } : {}),
+      aircraft
+    };
+  }
   const KEPT = 5; // valeurs écartées gardées par champ
   const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim();
   const regOf = r => String(r ?? '').toUpperCase().replace(/\s+/g, '');
@@ -259,20 +297,21 @@
    *  temps que la base des types : sur un réseau lent, une attente au lieu de six. */
   async function readAll(reader, {
     wait = Infinity, // borne de chaque lecture et de chaque liste (ms) : null passé ce délai, jamais une attente sans fin
-    late = null // appelé à chaque borne tombée (aerodb : le registre lu ainsi n'est pas gardé)
+    late = null, // appelé à chaque borne tombée (aerodb : le registre lu ainsi n'est pas gardé)
+    fleetPath = PATHS.fleet // le fichier de flotte de la compagnie courante (fleetPathOf)
   } = {}) {
     const list = p => reader.list ? bounded(Promise.resolve().then(() => reader.list(p)).catch(() => null), wait, late) : Promise
       .resolve(
         null),
       listP = list(PATHS.sheets),
-      airline = list('airline/'),
+      airline = list(fleetPath.replace(/[^/]*$/, '')),
       one = p => readOne(reader, p, wait, late);
     const [paths, aPaths] = await Promise.all([listP, airline]),
-      noFleet = Array.isArray(aPaths) && !aPaths.includes(PATHS.fleet),
+      noFleet = Array.isArray(aPaths) && !aPaths.includes(fleetPath),
       [own, fpdb, fleet, reference, fleetV2] = await Promise.all([
         Promise.all((paths || []).filter(x => /\.json$/i.test(x)).map(p => one(p).then(r => [p, valueOf(r)]))),
         one(PATHS.fpdb),
-        noFleet ? null : one(PATHS.fleet),
+        noFleet ? null : one(fleetPath),
         one(PATHS.reference),
         noFleet ? one(PATHS.fleetV2) : null
       ]);
@@ -290,6 +329,7 @@
     catalog,
     now = () => Date.now(),
     raw = null, // promesse de readAll(reader) lancée d'avance (aerodb), sinon lue au premier load()
+    fleetPath = PATHS.fleet, // le fichier de flotte de la compagnie courante (fleetPathOf) ; le même que celui de `raw`
     readWait = Infinity, // borne de chaque lecture (ms), comme readAll
     onLate = null
   } = {}) {
@@ -309,7 +349,8 @@
         // toutes les sources lues d'un coup (readAll), puis interprétées
         const R = await (rawP || readAll(reader, {
           wait: readWait,
-          late: onLate
+          late: onLate,
+          fleetPath
         }));
         rawP = null;
         // fiches : les siennes (aircraft/sheets/), puis celles de la V2 adoptées ou fusionnées
@@ -339,7 +380,7 @@
           });
         }
         // appareils : flotte (airline/fleet.json, sinon la V2), puis référence pour les immatriculations absentes
-        const fleetDoc = valueOf(R.fleet),
+        const fleetDoc = cleanFleet(valueOf(R.fleet)),
           v2 = fleetDoc?.aircraft?.length ? null : v2File(textOf(R.fleetV2 || await readOne(reader, PATHS.fleetV2, readWait,
             onLate))),
           rows = fleetDoc?.aircraft?.length ? fleetDoc.aircraft : v2?.data?.rows || [],
@@ -714,6 +755,8 @@
     checkId,
     variantOf,
     readAll,
+    fleetPathOf,
+    cleanFleet,
     mergeSheets,
     stamp,
     whenOf,

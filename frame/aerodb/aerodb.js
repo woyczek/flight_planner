@@ -1160,6 +1160,7 @@
 
     // ---- base des types (JSON en V3 ; .js de la V2 lu comme littéral tant que le lanceur l'écrit)
     let aircraftBusy = false; // registre en cours de lecture
+    let fleetMoved = false; // la compagnie a changé pendant cette lecture : le registre lu l'est de l'ancienne flotte, le suivant relit
     function aircraft() {
       const late0 = lateN;
       return aircraftP ||= (async () => {
@@ -1168,9 +1169,19 @@
         // sources du registre dès que registry.js est là (readAll), et la base des types ; JSON ou .js de la V2 choisi
         // d'après l'arbre du dépôt quand le lecteur le connaît (sinon les deux demandés à la fois, le JSON préféré)
         const libsP = Promise.all([loadOwn('registry.js', 'AeroDBRegistry'), loadOwn('sheets.js', 'AeroDBSheets')]),
-          rawP = libsP.then(() => window.AeroDBRegistry.readAll(reader, {
+          // la flotte de la compagnie courante (§ 10.38) : le dossier que FrameData.airline() donne, sinon airline/fleet.json comme avant
+          fleetPathP = libsP.then(async () => {
+            try {
+              const a = typeof window.FrameData?.airline === 'function' ? await window.FrameData.airline() : null;
+              return window.AeroDBRegistry.fleetPathOf(a?.root);
+            } catch {
+              return window.AeroDBRegistry.PATHS.fleet;
+            }
+          }),
+          rawP = fleetPathP.then(fleetPath => window.AeroDBRegistry.readAll(reader, {
             wait: readWait,
-            late: () => lateN++
+            late: () => lateN++,
+            fleetPath
           })),
           listed = await listOf('AircraftDB/');
         const one = async (base, name) => {
@@ -1193,11 +1204,13 @@
           });
         // registre : fiches, flotte, référence, recherche unique (registry.js) ; logique des fiches (sheets.js)
         await libsP;
-        const reg = registry = window.AeroDBRegistry.create({
+        const fleetPath = await fleetPathP,
+          reg = registry = window.AeroDBRegistry.create({
             reader,
             catalog,
             now,
             raw: rawP,
+            fleetPath,
             readWait,
             onLate: () => lateN++
           }),
@@ -1220,7 +1233,8 @@
       })().finally(() => {
         aircraftBusy = false; // lu, ou en échec
         // une lecture tombée à la borne : ce registre (vide ou incomplet) sert les appels en cours, le suivant relit
-        if (lateN !== late0) aircraftP = null;
+        if (lateN !== late0 || fleetMoved) aircraftP = null;
+        fleetMoved = false;
       });
     }
     let registry = null;
@@ -2505,6 +2519,24 @@
           aircraft: true
         });
       });
+    // le dossier de « personnel » est sous pilot/<trigramme>/ : sa flotte changée ; et un changement de compagnie (événement du cadre) : le registre est relu à la prochaine demande
+    reader.watch?.('pilot/', paths => {
+      if (!aircraftP || aircraftBusy || !(paths || []).some(p => /^pilot\/[^/]+\/airline\/perso\/fleet\.json$/.test(p))) return;
+      aircraftP = null;
+      registry = null;
+      emit({
+        aircraft: true
+      });
+    });
+    if (typeof window.addEventListener === 'function') window.addEventListener('frame-data-airline', () => {
+      if (aircraftBusy) fleetMoved = true;
+      if (!aircraftP || aircraftBusy) return;
+      aircraftP = null;
+      registry = null;
+      emit({
+        aircraft: true
+      });
+    });
     reader.watch?.('AircraftDB/', async paths => {
       let hit = false;
       for (const p of paths || [])
