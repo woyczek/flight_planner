@@ -1909,3 +1909,32 @@ redesigned for touch at that point.
        sheets. Rule 13 holds: seven elements per card at most, the « Sources » line counted. Owner Features SOG, alpha.5;
        one case (no provenance text under a field, the mark's title says the source, the card's « Sources » line lists the
        distinct ones, the two explanations gone from the card and present in the help with their anchors), red before.
+   44. **Données: three verbs on the pilot's journeys, and the launcher says per zone what needs doing** (user, 9 Nov: "un
+       « télécharger » ou « construire » télécharge ou construit tout, pas uniquement les différences. c'est coûteux pour
+       une base lourde, déjà installée, pour un simple ajout de pays. regarder l'ergonomie globale de cet écran (comment
+       choisir un pays ou package, updater, màj les différences, purger, recalculer uniquement les hors d'âge, tout
+       recalculer… en fonction des chemins utilisateurs) […] quand il y a beaucoup de pays, comment tout désélectionner ? par
+       package ? uniquement ceux « pas à jour » ? Par carré de sélection sur la carte ?"; SOG-0071). Ergonomics design of
+       9 Nov on AeroDB's measurement: `base/fetch` already downloads only what changed (If-Modified-Since, identical
+       content not rewritten) but **`base/build` rebuilds every ticked zone whole**, whatever its state; only what the page
+       ticks spares work. Alpha.5 for the launcher's state and the verbs, the selection gestures after.
+       **The journeys** (the user's words): add a country; update at a new cycle; repair after a doubt; purge; and, with
+       many countries, choose a set. **Three verbs instead of two**, on the selection: **« Mettre à jour »** = fetch, then
+       build only the zones the launcher says are not up to date (never built, a dated source newer than the build, the
+       cycle changed, a build that failed), then publish — the common gesture, idempotent, cheap when nothing moved;
+       **« Tout recalculer »** = build the whole selection whatever the state — after a purge, or when the pilot doubts
+       (the app is not always told); **« Purger »** unchanged (compiled data are never purged by the app itself).
+       **The launcher's state per zone** (`base/status`, one call): `up-to-date | stale(reason) | never-built | failed |
+       building`, with the reason named (« source SIA 29 OCT newer than the build of 1 OCT », « cycle changed », « 3 files
+       missing »); the page draws it (green, orange with the reason on touch, grey, red) and « Mettre à jour » reads it,
+       so the orange country of SOG-0072 turns green from the launcher's answer, not from a reload. A zone the pilot
+       just ticked is « never built » until built: orange with « à construire », not « nouveau ».
+       **Choosing a set**: tick or untick a country on the map (SOG-0070); a pack (§ 10.42) ticks its zones; **« Seulement
+       les périmés »** ticks what the state says; **« Tout désélectionner »**; **a rectangle on the map** (Shift + drag on a
+       screen, a two-finger hold on a phone) ticks the zones whose frame touches it, with the count said before the
+       release (« 14 pays »). The selection is a list of zone ids in the page's state, never written in `data/` before a
+       verb; the verb's confirmation names the count and the size (sum of `publishedKb`) before anything starts.
+       **Rule 13**: one row of three verbs, one row of selection gestures (country on the map, pack, stale only, rectangle,
+       deselect all), the zones list; seven elements per row at most. **Owners**: AeroDB (`base/status` with reasons, the
+       incremental decision of « Mettre à jour » in the launcher, one case per state), Réglages (the three verbs, the
+       states drawn, the selection gestures and the rectangle, one case per gesture); the pack rows come with § 10.42.
