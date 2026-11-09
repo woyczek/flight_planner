@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data: « Ranger les sources brutes » is visible read only, with its reason** (`modules/data/inventory.js`, `texts.js`; L54, L55) — SOG-0144: the block was empty without a paired launcher; it is shown with its two buttons grey and « Lanceur non appairé » / « Verbe inconnu de ce lanceur » written.
 - **Fuel: « zone manquante » says what is missing, the gesture and the fallbacks** (`modules/fuel/zone_gap.js`, `module.js`,
   `procedures.js`; Fuel SPEC, INTEGRATION, DECISIONS, help; noreg F116, F115; SOG-0143). Under the route for unknown points, and on an
   aerodrome without procedures: the zone's state (not installed, to rebuild, without points or airways), « Ajouter » or « Mettre à jour » in

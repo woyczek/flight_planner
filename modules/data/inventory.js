@@ -68,15 +68,14 @@ function movePlanList(v) {
 
 /** Pourquoi les boutons du rangement sont gris : '' (actifs), ou la raison dite. Le verbe doit être connu du lanceur (regen/verbs) ; une opération en cours, la nôtre ou une autre, le grise. */
 function moveGate() {
-  if (!S?.ctx?.launcher) return 'none';
-  if (!S.known?.includes(`${I.MOVE.set}/${I.MOVE.verb}`)) return 'none';
+  if (!S?.ctx?.launcher) return 'noLauncher';
+  if (!S.known?.includes(`${I.MOVE.set}/${I.MOVE.verb}`)) return 'unknownVerb';
   return busyNow() ? 'gateBusy' : '';
 }
 
 /** Le bloc du rangement des sources brutes : les deux boutons (ranger, remettre), puis ce que dit l'état (plan en cours, question, rien à faire, résultat, refus).
  *  Absent (vide) quand le lanceur ne connaît pas le verbe : la carte reste alors en lecture seule. */
 function moveHtml() {
-  if (moveGate() === 'none') return '';
   const m = TX.inventory.move,
     mv = S.move,
     gate = moveGate(),
@@ -93,20 +92,19 @@ function moveHtml() {
   else if (mv?.kind === 'refused') state = `<p class="f-warn" data-move-state="refused" data-why="${esc(mv.why)}">${esc(tt(M.own(m.refusal, mv.why) || m.refusal.failed))}</p>`;
   return `<div class="d-move" data-move-box><p class="f-muted">${esc(tt(m.hint))}</p>
     <div class="f-row"><button type="button" data-move="plan"${off}>${esc(tt(m.plan))}</button><button type="button" data-move="plan-undo"${off}>${esc(tt(m.planUndo))}</button></div>
-    ${gate === 'gateBusy' ? `<p class="f-muted" data-move-reason>${esc(tt(m.refusal.gateBusy))}</p>` : ''}${state}</div>`;
+    ${gate ? `<p class="f-muted" data-move-reason="${gate}">${esc(tt(m.refusal[gate]))}</p>` : ''}${state}</div>`;
 }
 
 /** Le bloc replié « Inventaire des données » : fermé au départ (aucune lecture tant qu'on ne l'ouvre pas), la liste des sept lignes dedans.
  *  Sans lanceur la carte n'existe pas : l'inventaire est celui de ce poste. */
 export function inventoryHtml() {
-  if (!S?.ctx?.launcher) return '';
   const inv = S.inventory;
   return `<details class="d-inventory" data-inventory${inv?.open ? ' open' : ''}><summary>${esc(tt(TX.inventory.title))}</summary>
     <p class="f-muted">${esc(tt(TX.inventory.intro))}</p>
     ${inv?.state === 'loading' ? `<p class="f-muted" data-inv-state="loading">${esc(tt(TX.inventory.loading))}</p>` : ''}
     ${inv?.state === 'unread' ? `<p class="f-warn" data-inv-state="unread">${esc(tt(TX.inventory.unread))}</p>` : ''}
     ${inv?.rows ? `<ul class="d-inv" data-inventory-list>${rowsHtml(inv.rows)}</ul>
-      <p class="f-muted" data-inv-total>${esc(tt(TX.inventory.total, { n: M.fmtBytes(I.inventoryTotal(inv.rows), lang()) }))}</p>` : ''}${inv && inv.state !== 'unread' ? moveHtml() : ''}</details>`;
+      <p class="f-muted" data-inv-total>${esc(tt(TX.inventory.total, { n: M.fmtBytes(I.inventoryTotal(inv.rows), lang()) }))}</p>` : ''}${!S?.ctx?.launcher || moveGate() === 'unknownVerb' || (inv && inv.state !== 'unread') ? moveHtml() : ''}</details>`;
 }
 
 /** Redessine le seul bloc d'inventaire (comme le journal), sans toucher aux autres ni au défilement. */
@@ -145,7 +143,7 @@ const moveJob = (undo, dry) => S.ctx.launcher.job(ROUTE, {
 /** Le plan à blanc (base/move-sources { dry: true }) : rien n'est déplacé ; la fin pose UNE question (les fichiers, leur taille), ou dit qu'il n'y a rien, ou le refus du lanceur. */
 async function planMove(undo) {
   const me = S;
-  if (moveGate() || S.move?.phase) return; // grise : une opération tourne, ou le verbe n'est pas connu
+  if (moveGate() || S.move?.phase) return; // grise : pas de lanceur, verbe inconnu ou opération en cours
   S.move = {
     undo,
     phase: 'planning'

@@ -3539,7 +3539,7 @@ def l29(c):
     c.until("!!document.querySelector('[data-inventory]')", timeout=20000, what='the card')
     go()
     c.until("!!document.querySelector('[data-inventory-list] li')", timeout=15000, what='the lines')
-    c.eq([c.count('[data-move-box]'), c.count('[data-move]')], [0, 0], 'a launcher without base/move-sources: no action, the card stays read only', what='unknown verb')
+    c.eq([c.count('[data-move-box]'), c.js("[...document.querySelectorAll('[data-move]')].every(b => b.disabled)")], [1, True], 'a launcher without base/move-sources: the block is shown, every action grey (SOG-0144: it was empty), the card stays read only', what='unknown verb')
     # ---- B: the plan (dry sent), ONE question with names and sizes, then the run
     c.context.unroute(re.compile(r'/__setup/'))
     st = _launcher(c, [_mv_view(_mv_res([f1, f2]))], inventory=_INV, verbs=vcode)
@@ -4457,6 +4457,42 @@ def l53(c):
     c.eq(c.js("document.querySelector('[data-pack-switch=ouest]').checked"), False, 'the switch is off', what='off')
     if c.width == 390:
         c.shot(f'L53_packs_{c.width}_{lang}.png')
+    c.check_errors()
+
+
+@case('L54', 'Données: « Ranger les sources brutes » is visible read only without a launcher or with one that does not know the verb: the buttons grey, the reason written', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0144 (rest): the block of the inventory card was EMPTY without a paired launcher and the user did not find it; it is shown read only with its reason (« lanceur non appairé », « verbe inconnu de ce lanceur »), the two buttons grey, nothing sent')
+def l54(c):
+    lang = c.lang
+    RT = lambda key: _trow(key, lang, after='      refusal: {')
+    cfg, _ = _fixture()
+    _open(c, _sized(cfg))
+    c.until("!!document.querySelector('[data-inventory]')", timeout=8000, what='the inventory card, without a launcher')
+    c.js("document.querySelector('[data-inventory]').open = true")
+    c.until("!!document.querySelector('[data-move-box]')", timeout=4000, what='the move block')
+    c.eq([c.js("[...document.querySelectorAll('[data-move-box] [data-move]')].map(b => [b.dataset.move, b.disabled])"), c.attr('[data-move-box] [data-move-reason]', 'data-move-reason'), norm(c.text('[data-move-box] [data-move-reason]'))],
+         [[['plan', True], ['plan-undo', True]], 'noLauncher', norm(RT('noLauncher'))], 'no launcher: the two buttons grey, the reason written', what='no launcher')
+    c.page.click('[data-move=plan]', force=True)
+    c.wait(300)
+    c.eq(c.count('[data-move-state]'), 0, 'a grey button does nothing', what='nothing')
+    c.check_errors()
+
+
+@case('L55', 'Données: with a launcher that does not know base/move-sources the block is shown grey with « verbe inconnu de ce lanceur »', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0144 (rest): the verb is read from regen/verbs; an older launcher shows the block read only with its reason')
+def l55(c):
+    lang = c.lang
+    RT = lambda key: _trow(key, lang, after='      refusal: {')
+    st = _launcher(c, [], verbs=['base/fetch', 'base/build', 'base/purge'], inventory={'ok': True, 'rows': []})
+    cfg, _ = _fixture()
+    _open(c, _sized(cfg))
+    c.until("!!document.querySelector('[data-inventory]')", timeout=8000, what='the inventory card')
+    c.js("document.querySelector('[data-inventory]').open = true")
+    c.until("!!document.querySelector('[data-move-box]')", timeout=6000, what='the move block')
+    c.eq([c.js("[...document.querySelectorAll('[data-move-box] [data-move]')].map(b => b.disabled)"), c.attr('[data-move-box] [data-move-reason]', 'data-move-reason'), norm(c.text('[data-move-box] [data-move-reason]'))],
+         [[True, True], 'unknownVerb', norm(RT('unknownVerb'))], 'unknown verb: grey, the reason written', what='unknown verb')
     c.check_errors()
 
 

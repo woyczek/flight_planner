@@ -1376,6 +1376,17 @@ export const TX = {
           'In data/ steht eine Zusammenführung aus: Nichts wird verschoben, zuerst synchronisieren.',
           'Hay una fusión pendiente en data/: no se mueve nada, sincronice primero.'
         ],
+        noLauncher: [
+          'Lanceur non appairé : le rangement se fait depuis le poste qui porte le lanceur, cette carte est en lecture seule ici.',
+          'Launcher not paired: the move is done from the workstation that carries the launcher, this card is read only here.',
+          'Starter nicht gekoppelt: Die Ablage erfolgt am Rechner mit dem Starter, diese Karte ist hier nur lesbar.',
+          'Lanzador no emparejado: el guardado se hace desde el puesto que lleva el lanzador, esta tarjeta es de solo lectura aquí.'
+        ],
+        unknownVerb: ['Verbe inconnu de ce lanceur : relancez-le à jour pour ranger les sources brutes.',
+          'Verb unknown to this launcher: restart it up to date to put the raw sources away.',
+          'Verb diesem Starter unbekannt: Starten Sie ihn aktuell neu, um die Rohquellen abzulegen.',
+          'Verbo desconocido para este lanzador: reinícielo actualizado para guardar las fuentes brutas.'
+        ],
         gateBusy: ['Une opération est en cours : attendez sa fin.', 'An operation is running: wait for it to end.',
           'Ein Vorgang läuft: Warten Sie sein Ende ab.', 'Hay una operación en curso: espere a que termine.'
         ]

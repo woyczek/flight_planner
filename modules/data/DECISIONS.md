@@ -282,3 +282,8 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
 - **Highlight**: the zones of a hovered (mouse) or pressed (touch) row take the `accent` tone on the map — the map is redrawn on its own (`highlightZones`), the panel is not. On a phone the press **keeps** the zones lit until the next press elsewhere (a finger cannot hover).
 - **Placement**: the packs moved from the Couverture card into the choice of the base panel (beside the map, above the list): the user chooses countries in one place.
 - Counter-test: removing the question (`yes = true`) turns L53 red (« the question is asked » never true).
+
+## 10 November 2026 — « Ranger les sources brutes » visible read only (SOG-0144, rest)
+
+- The block was **empty** without a paired launcher (and the whole inventory card absent), so the user did not find it. The card now exists without a launcher (title, intro) and the move block is shown **read only with its reason**, the two buttons grey and nothing sent: « Lanceur non appairé : le rangement se fait depuis le poste qui porte le lanceur » (no launcher), « Verbe inconnu de ce lanceur : relancez-le à jour » (`regen/verbs` lacks `base/move-sources`), « Une opération est en cours » (busy, as before). The inventory rows themselves still need the launcher and are not read without one.
+- Cases L54 (no launcher), L55 (unknown verb); L29 adapted (the block is now present, every action grey).
