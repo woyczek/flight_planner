@@ -108,6 +108,8 @@ export const TX = {
   ],
   measBad: ['{f} : {e}', '{f}: {e}', '{f}: {e}', '{f}: {e}'],
   measNew: ['ligne nouvelle', 'new row', 'neue Zeile', 'fila nueva'],
+  // SOG-0075 : un niveau de l'échelle sans mesure, interpolé en pression entre deux niveaux mesurés au même régime
+  measExtrap: ['extrapolé', 'extrapolated', 'extrapoliert', 'extrapolado'],
   // la montée et la descente mesurées (SOG-0052 suite, SOG-0061)
   measClimb: ['Montée', 'Climb', 'Steigflug', 'Ascenso'],
   measDescent: ['Descente', 'Descent', 'Sinkflug', 'Descenso'],

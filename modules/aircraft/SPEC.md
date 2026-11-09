@@ -159,7 +159,9 @@ closed). The module declares the writes `airline/` and `pilot/` (merge `record`,
   launcher or no job: nothing shown (M29, a fake launcher). The measured **climb and descent** (`phaseSummary`) are one line each
   under the points: rpm, flow, rate, IAS, the throttle when the journal has it, and the sheet's current rpm and flow; ticked, they
   fill `climb` / `descent` (`rpmNominal`, `fuelFlowPerHour` in the sheet's unit, `rateFpm`, `iasKt`, `tasKt`) of the draft; the
-  throttle is said, never written (M31).
+  throttle is said, never written (M31). The points are on the ladder of significant levels (SOG-0075: FL181 → FL200); an
+  interpolated level is greyed and says « extrapolé »; the raw windows of the accepted points are kept on the device
+  (`cache/aircraft/raw/<sheet>.json`, never published, never in git), the sheet staying the source of the charts (M36).
 - **Fuel read and typed in the unit chosen** (SOG-0032): « Carburant lu et saisi en » offers kg · kg/h, lb · lb/h, l · l/h, US gal ·
   gal/h (the sheet's own unit first); the quantities, the flows and the RPM table are shown converted, the unit written beside each
   field and in the table's head, by the frame's rules (`frame/lib/fuel_units.js` `toKg` / `fromKg`, the density of the sheet, else the

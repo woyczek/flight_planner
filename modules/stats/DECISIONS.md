@@ -40,3 +40,14 @@ One entry per decision, newest last. The rules are in [SPEC.md](SPEC.md).
   `timeline.tz`, the device's time zone) is read as UTC too: its match may miss by the zone's offset (said, not corrected).
 - **The journal readers are one module** (`journals.js`): Maintenance › Appareils took them out of its own code (no copy).
 - **A fold of the Result step, not a fourth step**: three steps and their bar stay (G3); the fold opens when there is something in it.
+
+## 9 November 2026 — the ladder of significant levels, raw windows kept on the device (SOG-0075, Features SOG)
+
+- **A simple rule first** (the ergonomics session's decision on the user's note): the nearest level of the ladder takes the median of
+  its windows; the target is the charts (abaques), the sheet stays their source.
+- **Interpolated, said**: a level between two measured ones at the same rpm, in pressure; greyed and « extrapolé » (the user's word),
+  never ticked in advance.
+- **Raw windows kept on the device, not in `data/local/`**: the page cannot write the workstation's `data/local/` (only the launcher
+  does, `stats/output` writes `xp_output.json` there); the accepted windows go to `cache/aircraft/raw/<sheet>.json` (policy cache:
+  IndexedDB of the device, never synchronised, never published, never in git), 5000 at most per sheet, the useful fields only. An
+  action `keep` of the launcher's job would put them in `data/local/`: proposed to AeroDB.

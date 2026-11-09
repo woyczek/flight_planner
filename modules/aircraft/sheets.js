@@ -399,6 +399,7 @@ export function createSheetsView(host) {
           else d.rpmFuelCurve.push(row);
         }
         d.rpmFuelCurve.sort((a, b) => (+a.altFt || 0) - (+b.altFt || 0) || (+a.rpm || 0) - (+b.rpm || 0));
+        keepRaw(p.id, ticked.flatMap(q => q.records || [])); // SOG-0075 : les fenêtres brutes acceptées, gardées sur l'appareil
         st.measured = null;
         return editor(p.id, SH().normalize(d));
       }
@@ -645,6 +646,27 @@ export function createSheetsView(host) {
       });
     return ` <button type="button" data-do="outopen" aria-expanded="${o.open}">${esc(tt(TX.measOutput))}</button>${o.open ? `<div class="f-list" data-outlist><p class="f-muted">${esc(o.label)}</p>${o.files.length ? o.files.map((f, i) => `<label class="f-check"><input type="checkbox" data-outfile="${i}"> ${esc(f.name)} <small class="f-muted">${esc([kb(f.size), day(f.mtime)].filter(Boolean).join(' · '))}</small></label>`).join('') + `<button type="button" data-do="outread">${esc(tt(TX.measOutputRead))}</button>` : `<p class="f-muted">${esc(tt(TX.measOutputEmpty, { l: o.label }))}</p>`}</div>` : ''}`;
   }
+  /** Les fenêtres brutes des points acceptés (SOG-0075 : « conserver les données brutes » pour changer de modèle plus tard) : sur
+   *  l'appareil seulement (cache/aircraft/raw/<fiche>.json, politique cache : jamais synchronisé, jamais publié, jamais dans git), les
+   *  champs utiles d'une fenêtre, 5 000 au plus par fiche (les plus anciennes retirées) ; la fiche reste la source des abaques. */
+  async function keepRaw(id, rows) {
+    if (!rows.length || !/^[\w.-]{1,80}$/.test(String(id))) return;
+    const path = `cache/aircraft/raw/${id}.json`,
+      keys = ['flight_id', 'start_utc', 'phase', 'duration_sec', 'mean_pressure_altitude_ft', 'mean_engine_rpm', 'mean_fuel_flow_kg_h',
+        'mean_tas_kt', 'mean_ias_kt', 'mean_vertical_speed_fpm', 'mean_throttle_pct', 'registration', 'aircraft_icao'
+      ],
+      slim = rows.map(r => Object.fromEntries(keys.filter(k => r[k] !== undefined && r[k] !== '').map(k => [k, String(r[k]).slice(0,
+        40)]))),
+      old = await Promise.resolve(ctx.data.get(path)).catch(() => null),
+      seen = new Set((old?.windows || []).map(w => `${w.flight_id}|${w.start_utc}`)),
+      windows = [...(Array.isArray(old?.windows) ? old.windows : []), ...slim.filter(w => !seen.has(`${w.flight_id}|${w.start_utc}`))].slice(-5000);
+    await Promise.resolve(ctx.data.put(path, {
+      schema: 1,
+      sheet: id,
+      windows,
+      updated_at: new Date().toISOString()
+    })).catch(() => {});
+  }
   /** La liste des points mesurés à cocher (dans la carte de la table RPM) : altitude, régime, débit mesuré dans l'unité de lecture,
    *  la fiche et l'écart, ou « ligne nouvelle » ; secondes et vols. Rien quand aucun point n'est là. */
   function measuredHtml(p) {
@@ -656,7 +678,7 @@ export function createSheetsView(host) {
         const x = FU.fromKg(kg, vu, densityOf(p));
         return x === null ? '—' : String(Math.round(x * 10) / 10);
       };
-    return `<div class="f-list" data-measlist>${m.map((q, i) => `<label class="f-check" data-measrow="${q.altFt}|${q.rpm}"><input type="checkbox" data-meas="${i}"> ${esc(`${q.altFt} ft · ${q.rpm} rpm · ${shown(q.flowKgH)} ${FLOW[vu]} · `)}${esc(q.sheetKgH === null ? tt(TX.measNew) : tt(TX.measDelta, { v: shown(q.sheetKgH), d: q.deltaPct }))} <small class="f-muted">${esc(tt(TX.measSupport, { s: q.seconds, n: q.flights }))}</small></label>`).join('')}${ph.map(q => {
+    return `<div class="f-list" data-measlist>${m.map((q, i) => `<label class="f-check${q.extrapolated ? ' f-muted' : ''}" data-measrow="${q.altFt}|${q.rpm}"${q.extrapolated ? ' data-extrapolated' : ''}><input type="checkbox" data-meas="${i}"> ${esc(`${q.altFt} ft · ${q.rpm} rpm · ${shown(q.flowKgH)} ${FLOW[vu]} · `)}${q.extrapolated ? `${esc(tt(TX.measExtrap))} · ` : ''}${esc(q.sheetKgH === null ? tt(TX.measNew) : tt(TX.measDelta, { v: shown(q.sheetKgH), d: q.deltaPct }))} <small class="f-muted">${esc(tt(TX.measSupport, { s: q.seconds, n: q.flights }))}</small></label>`).join('')}${ph.map(q => {
       const k = q.phase === 'CLIMB' ? 'climb' : 'descent',
         cur = p[k] || {},
         was = [cur.rpmNominal ? `${cur.rpmNominal} rpm` : '', cur.fuelFlowPerHour ? `${fuelShown(p, cur.fuelFlowPerHour)} ${FLOW[vu]}` : ''].filter(Boolean).join(' · ');

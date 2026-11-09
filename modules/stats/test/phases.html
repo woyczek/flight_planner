@@ -82,6 +82,8 @@
     quality_flags: 'fuel_missing'
   })); // drapeau : écartée
   rows.push(w('A', 'CRUISE', 6000, 2400, 50)); // 15 s seulement : sous le seuil
+  for (let i = 0; i < 8; i++) rows.push(w('E', 'CRUISE', 5000, 2600, 50)); // 5000 ft et …
+  for (let i = 0; i < 8; i++) rows.push(w('E', 'CRUISE', 15000, 2600, 40)); // … FL150 au même régime : FL100 interpolé en pression
   for (let i = 0; i < 8; i++) rows.push(w('C', 'CRUISE', 12000, 2400, 50)); // 12000 ft, 2400 rpm : 120 s …
   for (let i = 0; i < 2; i++) rows.push(w('C', 'CRUISE', 12000, 2452, 52)); // … et un petit voisin (2450, 30 s) qui le rejoint
   const csv = [H.join(','), ...rows.map(r => H.map(h => String(r[h] ?? '')).join(',')), 'bad,line'].join('\n');
@@ -96,8 +98,16 @@
     ]),
     [
       [4000, 2300, 38.5, 170, 120, 8, 1],
-      [8000, 2500, 40, 170, 120, 8, 1],
-      [12000, 2400, 50, 170, 150, 10, 1]
+      [5000, 2600, 50, 170, 120, 8, 1],
+      [10000, 2400, 50, 170, 150, 10, 1],
+      [10000, 2500, 40, 170, 120, 8, 1],
+      [10000, 2600, 44.6, 170, 0, 0, 0],
+      [15000, 2600, 40, 170, 120, 8, 1]
+    ]);
+  check(
+    'ladder (SOG-0075): 7990 ft and 12000 ft go to FL100, the 15 s group at 6000 ft to 5000 ft (dropped); FL100 at 2600 rpm interpolated in pressure, said',
+    C.filter(p => p.extrapolated).map(p => [p.altFt, p.rpm, p.flowKgH]), [
+      [10000, 2600, 44.6]
     ]);
   check('consolidateGroups: a small neighbour joins the well-supported peak, the label stays the peak',
     PH.consolidateGroups([{
@@ -155,8 +165,11 @@
   check('compare: the curve of the same altitude, interpolated on the rpm; nothing at an altitude the sheet lacks',
     K.map(p => [p.altFt, p.rpm, p.sheetKgH, p.deltaPct]), [
       [4000, 2300, 39.9, -3.5],
-      [8000, 2500, null, null],
-      [12000, 2400, null, null]
+      [5000, 2600, null, null],
+      [10000, 2400, null, null],
+      [10000, 2500, null, null],
+      [10000, 2600, null, null],
+      [15000, 2600, null, null]
     ]);
   // § 10.37 A étape 3 : un agrégat par vol
   const fl = [];

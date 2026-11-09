@@ -13,7 +13,10 @@ Pure computations on the measurements of the simulator, for the statistics of V3
   of neighbouring rpm groups is not ported (step 2, with the screen).
 - **Eligible window**: CRUISE, schema 0.4, flow covered at 99.9 %, every engine's flow known, pressure altitude known, IAS ≥ 40 kt,
   |vertical speed| ≤ 100 ft/min, no quality flag.
-- **Points** (`levelCurves`): eligible windows grouped by pressure altitude (rounded to 1000 ft) and rpm (rounded to 50); within an
+- **Points** (`levelCurves`): eligible windows grouped by the nearest level of the **ladder of significant levels** (SOG-0075, `LADDER`:
+  1000 to 5000 ft by 1000, then FL100, 150, 200, 250, 300, 350, 400, 450; « FL181 » is no level a pilot keeps) and rpm (rounded to 50);
+  a ladder level without windows between two measured ones at the same rpm gets its flow and TAS interpolated linearly in pressure
+  (standard atmosphere), `extrapolated: true`, proposed greyed and never ticked in advance; within an
   altitude, a small neighbouring rpm group (≤ 150 rpm, three times fewer windows) joins the well-supported one and at most ten groups
   stay (`consolidateGroups`, the dashboard's `consolidateRegimeGroups` as it is: the label stays the rpm most seen); every value is
   then computed again on the original windows: the flow is the duration-weighted median, the TAS the weighted mean; a group under

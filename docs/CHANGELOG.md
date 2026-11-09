@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Stats and Aircraft: measured levels on a ladder of significant levels** (`modules/stats/phases.js` `LADDER`, `levelCurves`,
+  `modules/aircraft/sheets.js`; stats SPEC / DECISIONS, Aircraft SPEC § 6; noreg F98, M36; SOG-0075). 1000 to 5000 ft by 1000, then
+  FL100 to FL450 by 50 (FL181 → FL200); a level between two measured ones interpolated in pressure, greyed « extrapolé »; the accepted
+  raw windows kept on the device (`cache/aircraft/raw/`), never published.
+
 - **Aircraft: « Compléter depuis une autre fiche… » chooses nothing in advance** (`modules/aircraft/sheets.js`; Aircraft SPEC § 6;
   noreg M34, M14; SOG-0073). A button that opens the aircraft search; before, a select showed another sheet as if it were the open one.
 

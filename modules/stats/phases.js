@@ -235,10 +235,17 @@ function weightedMean(records, key) {
 }
 
 /** Les points de palier mesurés (voir l'en-tête). */
+/** L'échelle des niveaux significatifs (SOG-0075, l'utilisateur : « FL181, c'est très étrange comme niveau ») : du sol à 5 000 ft par
+ *  1 000, puis FL100, 150, 200, 250, 300, 350, 400, 450 — un palier mesuré prend le niveau de l'échelle le plus proche. */
+export const LADDER = [1000, 2000, 3000, 4000, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000];
+/** Le niveau de l'échelle le plus proche d'une altitude pression (ft). */
+export const ladderOf = h => LADDER.reduce((a, b) => Math.abs(b - h) < Math.abs(a - h) ? b : a);
+/** Pression de l'atmosphère type (hPa) à une altitude pression (ft) : l'interpolation des niveaux se fait en pression. */
+const pressureOf = h => 1013.25 * Math.pow(1 - 6.8756e-6 * h, 5.2559);
 export function levelCurves(rows, {
   step = 50,
-  altStep = 1000,
-  minSeconds = 60
+  minSeconds = 60,
+  ladder = true
 } = {}) {
   // par altitude, des groupes par régime arrondi, puis les voisins peu fournis fusionnés (consolidateGroups, comme buildCurve du
   // FuelDashboard) ; toutes les valeurs recalculées sur les fenêtres d'origine (jamais une médiane de médianes)
@@ -247,7 +254,8 @@ export function levelCurves(rows, {
     if (!eligible(r)) continue;
     const rpm = num(r.mean_engine_rpm);
     if (!(rpm > 0)) continue;
-    const altFt = Math.round(num(r.mean_pressure_altitude_ft) / altStep) * altStep,
+    const h = num(r.mean_pressure_altitude_ft),
+      altFt = ladder ? ladderOf(h) : Math.round(h / 1000) * 1000,
       k = Math.round(rpm / step) * step;
     if (!byAlt.has(altFt)) byAlt.set(altFt, new Map());
     const bins = byAlt.get(altFt);
@@ -280,8 +288,37 @@ export function levelCurves(rows, {
       tasKt: tas === null ? null : Math.round(tas),
       seconds: Math.round(seconds),
       windows: g.records.length,
-      flights: new Set(g.records.map(flightKey)).size
+      flights: new Set(g.records.map(flightKey)).size,
+      records: g.records // les fenêtres du point (gardées sur l'appareil quand le point est accepté ; jamais écrites dans la fiche)
     });
+  }
+  // un niveau de l'échelle sans mesure, entre deux niveaux mesurés au même régime : son débit (et sa TAS) interpolés linéairement en
+  // pression, le point dit « extrapolé » (proposé grisé, jamais coché d'avance)
+  if (ladder) {
+    const byRpm = new Map();
+    for (const p of out)(byRpm.get(p.rpm) || byRpm.set(p.rpm, []).get(p.rpm)).push(p);
+    for (const [rpm, list] of byRpm) {
+      list.sort((a, b) => a.altFt - b.altFt);
+      for (let i = 1; i < list.length; i++) {
+        const a = list[i - 1],
+          b = list[i];
+        for (const h of LADDER.filter(x => x > a.altFt && x < b.altFt)) {
+          const t = (pressureOf(h) - pressureOf(a.altFt)) / (pressureOf(b.altFt) - pressureOf(a.altFt)),
+            mix = (x, y) => x === null || y === null ? null : x + t * (y - x);
+          out.push({
+            altFt: h,
+            rpm,
+            flowKgH: (v => v === null ? null : Math.round(v * 10) / 10)(mix(a.flowKgH, b.flowKgH)),
+            tasKt: (v => v === null ? null : Math.round(v))(mix(a.tasKt, b.tasKt)),
+            seconds: 0,
+            windows: 0,
+            flights: 0,
+            extrapolated: true,
+            records: []
+          });
+        }
+      }
+    }
   }
   return out.sort((a, b) => a.altFt - b.altFt || a.rpm - b.rpm);
 }

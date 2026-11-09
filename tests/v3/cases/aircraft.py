@@ -655,16 +655,16 @@ def m27(c):
         c.page.set_input_files(f'{M} {SHEETS} input[data-measfile]', str(f))
         c.until(f"document.querySelectorAll('{M} {SHEETS} [data-measrow]').length === 2", what='two level points of XMES (the other type left out)')
     rows = c.js(f"[...document.querySelectorAll('{M} {SHEETS} [data-measrow]')].map(l => [l.dataset.measrow, l.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()])")
-    c.eq([r[0] for r in rows], ['4000|2300', '8000|2500'], 'per altitude and rpm', what='points')
+    c.eq([r[0] for r in rows], ['4000|2300', '10000|2500'], 'per level of the ladder (8000 ft → FL100, SOG-0075) and rpm', what='points')
     delta = norm(tx(SX, 'measDelta', c.lang).replace('{v}', '40').replace('{d}', '-5'))
     c.ok(delta in rows[0][1], rows[0][1], 'the 4000 ft point against the 4000 ft curve of the sheet (40 kg/h at 2300 rpm): -5 %')
-    c.ok(norm(tx(SX, 'measNew', c.lang)) in rows[1][1], rows[1][1], 'no 8000 ft curve in the sheet: a new row')
-    c.page.check(f'{M} {SHEETS} [data-measrow="8000|2500"] input')
+    c.ok(norm(tx(SX, 'measNew', c.lang)) in rows[1][1], rows[1][1], 'no FL100 curve in the sheet: a new row')
+    c.page.check(f'{M} {SHEETS} [data-measrow="10000|2500"] input')
     c.tap(f'{M} {SHEETS} [data-do="measadd"]')
     c.until(f"""[...document.querySelectorAll('{M} {SHEETS} input[data-rpm][data-rk=rpm]')].map(i => i.value).join(',') === '2200,2400,2500'""",
             what='the ticked point is a row of the draft')
-    c.eq(c.js(f"[...document.querySelectorAll('{M} {SHEETS} input[data-rpm][data-rk=altFt]')].map(i => i.value)"), ['4000', '4000', '8000'],
-         'the new row at 8000 ft', what='altitudes')
+    c.eq(c.js(f"[...document.querySelectorAll('{M} {SHEETS} input[data-rpm][data-rk=altFt]')].map(i => i.value)"), ['4000', '4000', '10000'],
+         'the new row at FL100', what='altitudes')
     c.eq(len(sheet_of(c, 'XMES')['rpmFuelCurve']), 2, 'nothing written before « Enregistrer » and « Appliquer »', what='stored rows')
 
 
@@ -801,7 +801,7 @@ def m30(c):
         c.page.set_input_files(f'{M} {SHEETS} input[data-measfile]', str(f))
         c.until(f"document.querySelectorAll('{M} {SHEETS} [data-curves] [data-measmark]').length === 2", what='the two measured points over the curves')
     strokes = c.js(f"[...document.querySelectorAll('{M} {SHEETS} [data-curves] [data-measmark]')].map(m => m.getAttribute('stroke'))")
-    c.eq(strokes, ['var(--sog-chart-1)', 'var(--sog-muted)'], 'the 4000 ft point in the 4000 ft colour; 8000 ft, no curve there: muted', what='marks')
+    c.eq(strokes, ['var(--sog-chart-1)', 'var(--sog-muted)'], 'the 4000 ft point in the 4000 ft colour; FL100, no curve there: muted', what='marks')
 
 
 @case('M31', 'Sheets: « Proposer depuis les mesures » also proposes the measured climb (rpm, flow, rate, IAS, throttle said); ticked, it fills the climb of the draft',
@@ -938,6 +938,41 @@ def m35(c):
     c.eq(h, {'pos': 'sticky', 'name': 'XLBS', 'unit': 'lb · lb/h'}, 'a sticky head: the name and the unit', what='head')
     c.tap(f'{M} {SHEETS} [data-do="unitgo"]')
     c.until(f"document.activeElement === document.querySelector('{M} {SHEETS} select[data-k=vunit]')", what='the unit choice has the focus')
+
+
+@case('M36', 'Sheets: measured levels on the ladder of significant levels (FL181 → FL200), an interpolated level greyed « extrapolé », accepted windows kept on the device',
+      'M', tags=('aircraft',), designs=('standard',), screens=True, phone=False, langs4=True,
+      rule='SOG-0075 (user, 9 Nov: « FL181, c\'est très étrange comme niveau. « < 5000, FL100 FL150 FL200 FL300 FL450 » […] conserver les données brutes »): '
+      'ground to 5000 by 1000 then FL100 … FL450 by 50; a level between two measured ones at the same rpm interpolated in pressure, said; the accepted '
+      'raw windows in cache/aircraft/raw/<sheet>.json (device, never published); the sheet stays the source')
+def m36(c):
+    import tempfile
+    sheet = dict(EC25, id='XMES', name='XMES', icao='XMES', unit='kg', cruise={'tasKt': 140, 'fuelFlowPerHour': 40, 'rpmNominal': 2400},
+                 rpmFuelCurve=[{'rpm': 2200, 'altFt': 4000, 'fuelFlowPerHour': 35}, {'rpm': 2400, 'altFt': 4000, 'fuelFlowPerHour': 45}])
+    sheet.pop('_fields', None)
+    docs = [[f'aircraft/sheets/{x["id"]}.json', x, 'document'] for x in (EC25, C30J, sheet)]
+    c.open('aircraft', docs=LEVEL3 + [['airline/fleet.json', fleet_doc(3), 'document']] + docs + [TYPES, ['cache/aircraft/ui.json', {'view': 'sheets'}, 'cache']],
+           wait=False, app='maintenance')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-id]')", timeout=15000, what='the Fiches list')
+    edit_sheet(c, 'XMES')
+    head = ['schema_version', 'aircraft_icao', 'aircraft_file', 'registration', 'flight_id', 'phase', 'duration_sec', 'mean_fuel_flow_kg_h',
+            'fuel_coverage_pct', 'engine_count', 'engine_fuel_flow_kg_h', 'mean_pressure_altitude_ft', 'mean_ias_kt', 'mean_tas_kt',
+            'mean_vertical_speed_fpm', 'mean_engine_rpm', 'quality_flags', 'start_utc']
+    rows = [['0.4.1', 'XMES', 'x.acf', 'F-TEST', 'A', 'CRUISE', 15, 50, 100, 1, 50, 18100, 150, 200, 0, 2500, '', f'2026-11-09T08:{i:02d}:00Z'] for i in range(8)]
+    rows += [['0.4.1', 'XMES', 'x.acf', 'F-TEST', 'B', 'CRUISE', 15, 60, 100, 1, 60, 5000, 150, 170, 0, 2500, '', f'2026-11-09T09:{i:02d}:00Z'] for i in range(8)]
+    with tempfile.TemporaryDirectory() as tmp:
+        f = Path(tmp) / 'FuelPhaseMonitor_ladder.csv'
+        f.write_text('\n'.join(','.join(str(x) for x in r) for r in [head] + rows), encoding='utf-8')
+        c.page.set_input_files(f'{M} {SHEETS} input[data-measfile]', str(f))
+        c.until(f"document.querySelectorAll('{M} {SHEETS} [data-measrow]').length === 4", what='FL050, FL100 and FL150 interpolated, FL200 measured')
+    got = c.js(f"[...document.querySelectorAll('{M} {SHEETS} [data-measrow]')].map(l => [l.dataset.measrow, l.hasAttribute('data-extrapolated'), l.classList.contains('f-muted')])")
+    c.eq(got, [['5000|2500', False, False], ['10000|2500', True, True], ['15000|2500', True, True], ['20000|2500', False, False]],
+         'FL181 → FL200 (the ladder); FL100 and FL150 between, interpolated in pressure, greyed', what='ladder')
+    c.ok(norm(tx(SX, 'measExtrap', c.lang)) in norm(c.text(f'{M} {SHEETS} [data-measrow="10000|2500"]') or ''), 'no word', 'an interpolated level is said « extrapolé »')
+    c.page.check(f'{M} {SHEETS} [data-measrow="20000|2500"] input')
+    c.tap(f'{M} {SHEETS} [data-do="measadd"]')
+    d = c.until_doc('cache/aircraft/raw/XMES.json', lambda d: d and len(d.get('windows') or []) == 8, 'the eight accepted windows kept on the device')
+    c.eq(sorted({w['flight_id'] for w in d['windows']}), ['A'], 'the windows of the accepted point only (flight A, FL200)', what='raw')
 
 
 @case('M25', 'Sheets: the fuel is read and typed in the unit chosen (kg, lb, l, US gal); the sheet keeps its stored unit, an untouched value unchanged',
