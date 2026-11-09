@@ -5,6 +5,7 @@ from pathlib import Path
 from . import flight_profile                                  # SOG-0081 : imports relatifs (le moteur est le paquet tools/route_engine), seul changement avec les chemins ci-dessous
 from . import fra as fra_module
 from . import procedures as procedure_module
+from . import planning
 
 HERE = Path(__file__).resolve().parent
 DATA_DIR = None   # SOG-0081 : dossier des données (sia/base, proc) posé par le travail du lanceur ; None : <root>/data, comme RouteSim 2
@@ -35,14 +36,17 @@ def via_points(request):
     value=request.get('via',[])
     if isinstance(value,str): value=re.split(r'[\s,;]+',value.strip().upper())
     points=[str(x).strip().upper() for x in value if str(x).strip()]
-    if len(points)>8 or any(not re.fullmatch('[A-Z0-9]{2,7}',p) for p in points): raise ValueError('Via : jusqu’à 8 identifiants de points, séparés par des espaces.')
+    if len(points)>8 or any(not re.fullmatch('[A-Z0-9][A-Z0-9_-]{1,20}',p) for p in points): raise ValueError('Via : jusqu’à 8 identifiants de points, séparés par des espaces.')
     return points
+
+class RoutingGraph(dict):
+    flight=None
 
 class Nav:
     def __init__(self,root,date):
         self.root=Path(root); self.date=date; self.nodes={}; self.ids=collections.defaultdict(list)
         self.data_dir=Path(DATA_DIR) if DATA_DIR else self.root/'data'   # SOG-0081 : DATA_DIR
-        self.ads={}; self.edges=[]; self.cycles={}; self.coverage=[]
+        self.ads={}; self.edges=[]; self.cycles={}; self.coverage=[];self.vrp_keys=set();self.navaid_keys=set()
         base=self.data_dir/'sia/base'   # SOG-0081 : data_dir
         if not base.is_dir(): raise ValueError('Base introuvable : '+str(base))
         for zone in sorted(base.iterdir()):
@@ -59,9 +63,12 @@ class Nav:
                     a=dict(zip(index['fields'],row))
                     if self.valid(a):
                         self.ads[a['icao']]=a; self.add(dict(a,id=a['icao']))
-            for kind in ['points','navaids']:
+            for kind in ['points','navaids','vrp']:
                 for p in data(kind):
-                    if self.valid(p) and p.get('id'): self.add(p)
+                    if self.valid(p) and p.get('id'):
+                        key=self.add(p)
+                        if kind=='vrp':self.vrp_keys.add(key)
+                        if kind=='navaids':self.navaid_keys.add(key)
             ways=data('airways')
             self.coverage.append(dict(zone=zone.name,cycle=folder.name,segments=len(ways)))
             for w in ways:
@@ -72,6 +79,7 @@ class Nav:
         if not self.edges: raise ValueError('Aucun segment airway dans les cycles disponibles à cette date.')
         self.fra=fra_module.Fra(self,date,nm)
         self._fra_graph_cache={}
+        self._routing_cache=collections.OrderedDict()
         self.procedures=procedure_module.Catalog(self)
 
     @staticmethod
@@ -119,43 +127,114 @@ class Nav:
     def level(e,fl):
         return isinstance(e.get('lower'),(int,float)) and isinstance(e.get('upper'),(int,float)) and e['lower']<=fl*100<=e['upper']
 
-    def path(self,g,start,end):
-        q=[(0,start)]; costs={start:0}; prev={}
+    @staticmethod
+    def edge_band(e,side):
+        c=e.get('node_constraints') or {};low=e.get('lower');high=e.get('upper')
+        low=low if isinstance(low,(int,float)) else -1e9;high=high if isinstance(high,(int,float)) else 1e9
+        if c.get(side+'_min') is not None:low=max(low,c[side+'_min'])
+        if c.get(side+'_max') is not None:high=min(high,c[side+'_max'])
+        return low,high
+
+    def search(self,g,start,end,waypoints=(),require_fra=False,fra_already=False,initial_band=None):
+        """A* with ordered milestones and nondominated reachable-altitude labels.
+        Heuristic is geodesic distance through remaining milestones, scaled by
+        the cheapest cost/NM in this graph. It stays admissible with FRA bonus.
+        """
+        import time
+        begun=time.perf_counter();expanded=0
+        names=[self.nodes[k]['id'] for k in waypoints]
+        flight=getattr(g,'flight',None)
+        low,high=initial_band or ((flight['departure'],flight['departure']) if flight else (-1e9,1e9))
+        origin=(start,0,bool(fra_already),low,high)
+        ratios=[e.get('_cost',e['nm'])/e['nm'] for es in g.values() for _,e in es if e['nm']>.00001]
+        ratio=min(ratios,default=0)
+        targets=[self.nodes[k] for k in waypoints]+[self.nodes[end]]
+        suffix=[0.]*len(targets)
+        for i in range(len(targets)-2,-1,-1):suffix[i]=suffix[i+1]+nm(targets[i],targets[i+1])
+        heuristics={}
+        def heuristic(u,index):
+            key=(u,index)
+            if key not in heuristics:heuristics[key]=ratio*(nm(self.nodes[u],targets[index])+suffix[index])
+            return heuristics[key]
+        q=[(heuristic(start,0),0,origin)];costs={origin:0};prev={};labels=collections.defaultdict(list)
+        labels[origin[:3]].append((0,low,high,origin))
         while q:
-            cost,u=heapq.heappop(q)
-            if cost!=costs[u]: continue
-            if u==end:
+            if expanded%128==0 and (expanded>=100000 or time.perf_counter()-begun>6):
+                self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,seconds=round(time.perf_counter()-begun,4),found=False,truncated=True)
+                raise ValueError('Budget de recherche atteint (6 s / 100 000 états). Ce résultat ne prouve pas l’absence de route ; réduire les contraintes ou examiner la couverture des bases.')
+            _,cost,state=heapq.heappop(q)
+            if cost!=costs.get(state):continue
+            expanded+=1;u,index,seen_fra,low,high=state
+            if u==end and index==len(names) and (seen_fra or not require_fra):
+                if flight and not low-.01<=flight['arrival']<=high+.01:continue
                 path=[]
-                while u!=start:
-                    p,e=prev[u]; path.append((p,u,e)); u=p
+                while state!=origin:
+                    previous,e=prev[state];path.append((previous[0],state[0],e));state=previous
+                self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,seconds=round(time.perf_counter()-begun,4),found=True)
                 return list(reversed(path))
             for v,e in g.get(u,[]):
-                new=cost+e['nm']
-                if new<costs.get(v,math.inf):
-                    costs[v]=new; prev[v]=(u,e); heapq.heappush(q,(new,v))
+                a,b=self.edge_band(e,'start');a=max(a,low);b=min(b,high)
+                if a>b+.001:continue
+                c,d=self.edge_band(e,'end')
+                if flight:
+                    ceiling=flight['ceiling'];b=min(b,ceiling);d=min(d,ceiling)
+                    if a>b+.001:continue
+                    seconds=e['nm']/(e.get('planned_speed_kt') or flight['speed_kt'])*3600
+                    up=0 if e.get('kind') in ['STAR','APPROACH_LINK'] else flight['climb_fps']*seconds
+                    down=0 if e.get('kind')=='SID' else flight['descent_fps']*seconds
+                    c=max(c,a-down,0);d=min(d,b+up)
+                    if v==end:c=max(c,flight['arrival']);d=min(d,flight['arrival'])
+                elif e['nm']<.00001:c,d=max(c,a),min(d,b)
+                if c>d+.001:continue
+                c,d=round(c,6),round(d,6)
+                next_index=index+1 if index<len(names) and self.nodes[v]['id']==names[index] else index
+                next_state=(v,next_index,seen_fra or e.get('kind')=='FRA',c,d);new=cost+e.get('_cost',e['nm'])
+                bucket=labels[next_state[:3]]
+                if any(old<=new+1e-10 and lo<=c+.001 and hi>=d-.001 for old,lo,hi,_ in bucket):continue
+                kept=[]
+                for old,lo,hi,key in bucket:
+                    if new<=old+1e-10 and c<=lo+.001 and d>=hi-.001:costs.pop(key,None)
+                    else:kept.append((old,lo,hi,key))
+                kept.append((new,c,d,next_state));labels[next_state[:3]]=kept
+                costs[next_state]=new;prev[next_state]=(state,e)
+                heapq.heappush(q,(new+heuristic(v,next_index),new,next_state))
+        self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,seconds=round(time.perf_counter()-begun,4),found=False)
         return None
 
+    def path(self,g,start,end):return self.search(g,start,end)
+
     def routing_graph(self,dep,arr,fl,radius,blocks=(),profile_options=None,allow_steps=False,via=(),when=None,enable_fra=True,terminal=None):
+        terminal=terminal or {}
+        cost_fields={k:terminal.get(k) for k in ['objective','fra_preference','unable_rnav','use_procedures','dep_runway','arr_runway','terminal_speed_kt','speed_kt','_fuel_model','search_density']}
+        cache_key=json.dumps([dep,arr,fl,radius,blocks,profile_options,allow_steps,via,str(when),enable_fra,cost_fields],sort_keys=True)
+        if not hasattr(self,'_routing_cache'):self._routing_cache=collections.OrderedDict()
+        if cache_key in self._routing_cache:
+            return self._routing_cache[cache_key]
         if dep==arr: raise ValueError('Choisir deux aérodromes différents.')
         if dep not in self.ads or arr not in self.ads: raise ValueError('Aérodrome absent d’AeroDB : '+(dep if dep not in self.ads else arr))
         a,b=self.resolve(dep),self.resolve(arr); g=self.graph(None if allow_steps else fl)
+        terminal=terminal or {}
         when=when or dt.datetime.combine(self.date,dt.time(12))
         if enable_fra and getattr(self,'fra',None) and self.fra.book:
-            key=(dep,arr,fl,allow_steps,tuple(via),when.isoformat(timespec='minutes'))
+            key=(dep,arr,fl,allow_steps,tuple(via),when.isoformat(timespec='minutes'),terminal.get('search_density','normal'))
             if key not in self._fra_graph_cache:
-                self._fra_graph_cache[key]=self.fra.graph(g,dep,arr,fl,when,via,allow_steps)
-                if len(self._fra_graph_cache)>6: self._fra_graph_cache.pop(next(iter(self._fra_graph_cache)))
+                self._fra_graph_cache[key]=self.fra.graph(g,dep,arr,fl,when,via,allow_steps,terminal.get('search_density','normal'))
+                if len(self._fra_graph_cache)>2: self._fra_graph_cache.pop(next(iter(self._fra_graph_cache)))
             g={u:list(es) for u,es in self._fra_graph_cache[key].items()}
+        if terminal.get('unable_rnav'):
+            rejected=0;unknown=0
+            for u in list(g):
+                permitted=[]
+                for v,e in g[u]:
+                    if e.get('kind') in ['FRA','FRA_GATE']:continue
+                    info=planning.rnav_edge(self,u,v,e)
+                    if info['required'] is False:permitted.append((v,e))
+                    elif info['required'] is True:rejected+=1
+                    else:unknown+=1
+                g[u]=permitted
+            if not any(g.values()):raise ValueError(f'Unable RNAV : aucun segment IFR conventionnel confirmé dans ce réseau. {rejected} sens de segments exigent RNAV ; {unknown} ont une exigence inconnue. Aucun DCT de substitution n’a été inventé.')
         for key in list(g):
             g[key]=[(other,e) for other,e in g[key] if isinstance(e.get('lower'),(int,float)) and isinstance(e.get('upper'),(int,float)) and e['lower']<=fl*100 and e['upper']>=e['lower'] and not any(block_hit(x,self.nodes[key]['id'],self.nodes[other]['id'],e['route']) for x in blocks)]
-            if profile_options:
-                # Conservative reachability: the direct distance is a lower bound on flown distance.
-                # This avoids selecting high-floor edges before climb / after descent can reach them.
-                def reachable(node):
-                    return min(fl*100,(self.ads[dep].get('elev') or 0)+nm(self.ads[dep],self.nodes[node])*profile_options['climb_fps']*3600/profile_options['speed_kt'],
-                        (self.ads[arr].get('elev') or 0)+nm(self.ads[arr],self.nodes[node])*profile_options['descent_fps']*3600/profile_options['speed_kt'])
-                here=reachable(key)
-                g[key]=[(v,e) for v,e in g[key] if e['lower']<=min(here,reachable(v))+.1]
             if not g[key]: del g[key]
         incoming=collections.defaultdict(list)
         for u,edges in g.items():
@@ -163,7 +242,7 @@ class Nav:
         terminal=terminal or {}; used_procs={}
         if terminal.get('use_procedures',False) and getattr(self,'procedures',None):
             for ad,kind,rwy in [(dep,'SID',terminal.get('dep_runway','')),(arr,'STAR',terminal.get('arr_runway',''))]:
-                used_procs[ad]=self.procedures.add_graph(g,ad,kind,rwy,float(terminal.get('terminal_speed_kt',220)))
+                used_procs[ad]=self.procedures.add_graph(g,ad,kind,rwy,float(terminal.get('terminal_speed_kt',220)),terminal.get('unable_rnav',False))
         # DCT fallback is explicit when no complete, connected procedure is available.
         for airport,isdep in [(a,True),(b,False)]:
             if used_procs.get(dep if isdep else arr):continue
@@ -171,48 +250,55 @@ class Nav:
             near=[(d,k) for d,k in near if d<=radius]
             if not near: raise ValueError(f'Aucun point du réseau au FL{fl:03d} à moins de {radius:g} NM de {self.nodes[airport]["id"]}. Couverture ou niveau insuffisant.')
             for d,k in near:
-                if profile_options:
-                    rate=profile_options['climb_fps'] if isdep else profile_options['descent_fps']
-                    elevation=self.ads[dep if isdep else arr].get('elev') or 0
-                    reachable=elevation+d/profile_options['speed_kt']*3600*rate
-                    neighbors=g.get(k,[]) if isdep else incoming.get(k,[])
-                    if not any(e.get('lower',0)<=reachable+.1 for _,e in neighbors if not e.get('connector')): continue
                 ids=(self.nodes[airport]['id'],self.nodes[k]['id']) if isdep else (self.nodes[k]['id'],self.nodes[airport]['id'])
                 if any(block_hit(x,*ids,'DCT') for x in blocks): continue
                 e=dict(route='DCT',nm=d,connector=True)
                 if isdep: g.setdefault(airport,[]).append((k,e))
                 else: g.setdefault(k,[]).append((airport,e))
-        return g,a,b
+        # An imposed AD is an overflight waypoint, never a landing. Only this
+        # explicit simulation connector is added; its altitude stays airborne.
+        for ident in via:
+            if ident not in self.ads or ident in [dep,arr]:continue
+            if terminal.get('unable_rnav'):continue
+            waypoint=self.resolve(ident)
+            for key in set(g)|{v for es in g.values() for v,_ in es}:
+                if key==waypoint or '|PROC|' in key or '|FRA|' in key or key in [a,b]:continue
+                distance=nm(self.nodes[waypoint],self.nodes[key])
+                if not .1<distance<=radius:continue
+                edge=dict(route='DCT',kind='VIA_AD',nm=distance,connector=True,overflight=ident,lower=0,upper=fl*100)
+                if any(block_hit(x,ident,self.nodes[key]['id'],'DCT') for x in blocks):continue
+                g.setdefault(waypoint,[]).append((key,edge))
+                g.setdefault(key,[]).append((waypoint,edge))
+        g={u:[(v,dict(e,_cost=planning.edge_cost(e,terminal))) for v,e in es] for u,es in g.items()}
+        graph=RoutingGraph(g)
+        if profile_options:
+            graph.flight=dict(profile_options,departure=self.ads[dep].get('elev') or 0,arrival=self.ads[arr].get('elev') or 0,ceiling=fl*100)
+        self._routing_cache[cache_key]=(graph,a,b)
+        if len(self._routing_cache)>2:self._routing_cache.popitem(last=False)
+        return graph,a,b
 
     def resolve_vias(self,g,start,end,via):
-        found=[]
+        # Resolve geography once. A* consumes names in order across all physical,
+        # FRA and procedure states; repeated reachability searches are unnecessary.
+        result=[]
         for ident in via:
-            keys=list(self.ids.get(ident,[])); keys.extend(k for k in g if ('|FRA|' in k or '|PROC|' in k) and self.nodes[k]['id']==ident)
-            candidates=[key for key in keys if key in g and self.path(g,start,key) is not None and self.path(g,key,end) is not None]
-            if not candidates:
-                known=bool(self.ids.get(ident))
-                detail='point inconnu des bases chargées' if not known else 'aucun chemin continu départ → point → arrivée dans le réseau filtré par niveaux, profil, FRA et RAD'
-                raise ValueError(f'Point imposé {ident} : {detail}. Le passage n’a pas été supprimé.')
-            positions={(round(self.nodes[k]['lat'],3),round(self.nodes[k]['lon'],3)) for k in candidates}
-            if len(positions)>1: raise ValueError('Point imposé géographiquement ambigu : '+ident)
-            # A single geographical point may have physical and FRA states. Pick the best complete passage.
-            choice=min(candidates,key=lambda k:sum(e['nm'] for a,b,e in self.path(g,start,k))+sum(e['nm'] for a,b,e in self.path(g,k,end)))
-            found.append(choice)
-        return found
-
-    def constrained_path(self,g,start,end,waypoints=()):
-        result=[]; previous=start
-        for target in [*waypoints,end]:
-            part=self.path(g,previous,target)
-            if part is None: return None
-            result.extend(part); previous=target
+            keys=list(self.ids.get(ident,[]))
+            if not keys:raise ValueError('Point imposé inconnu des bases chargées : '+ident)
+            positions={(round(self.nodes[k]['lat'],3),round(self.nodes[k]['lon'],3)) for k in keys}
+            if len(positions)>1:raise ValueError('Point imposé géographiquement ambigu : '+ident)
+            result.append(keys[0])
         return result
+
+    def constrained_path(self,g,start,end,waypoints=(),require_fra=False,fra_already=False,initial_band=None):
+        return self.search(g,start,end,waypoints,require_fra,fra_already,initial_band)
 
     def generate(self,dep,arr,fl,radius,blocks=(),profile_options=None,allow_steps=False,via=(),when=None,enable_fra=True,terminal=None):
         g,a,b=self.routing_graph(dep,arr,fl,radius,blocks,profile_options,allow_steps,via,when,enable_fra,terminal)
         mandatory=self.resolve_vias(g,a,b,via)
-        path=self.constrained_path(g,a,b,mandatory)
-        if path is None: raise ValueError('Aucune route trouvée sur le réseau disponible à ce niveau. Essayer un autre FL ou une autre paire d’AD. Aucun DCT intermédiaire n’a été inventé.')
+        path=self.constrained_path(g,a,b,mandatory,bool((terminal or {}).get('require_fra')))
+        if path is None and enable_fra and (terminal or {}).get('search_density','normal')=='normal':
+            return self.generate(dep,arr,fl,radius,blocks,profile_options,allow_steps,via,when,enable_fra,dict(terminal or {},search_density='wide'))
+        if path is None: raise ValueError('Aucun chemin avec un tronçon FRA accessible aux conditions demandées.' if (terminal or {}).get('require_fra') else 'Aucune route trouvée sur le réseau disponible à ce niveau. Essayer un autre FL ou une autre paire d’AD. Aucun DCT intermédiaire n’a été inventé.')
         return self.format_path(dep,path,via),path
 
     def format_path(self,dep,path,via=()):
@@ -224,41 +310,32 @@ class Nav:
             last=e['route']
         return ' '.join(words)
 
-    def alternate_routes(self,dep,arr,fl,radius,blocks=(),count=3,profile_options=None,allow_steps=False,via=(),when=None,enable_fra=True,terminal=None):
-        """Yen's loopless k-shortest paths, keeping geographically distinct airway options."""
+    def alternate_routes(self,dep,arr,fl,radius,blocks=(),count=3,profile_options=None,allow_steps=False,via=(),when=None,enable_fra=True,terminal=None,return_paths=False):
+        """Diverse A* candidates by increasing cost on previously used links.
+        This is not an exact k-shortest enumeration; every retained path is
+        subsequently checked with its original source edges and flight profile.
+        """
         g,start,end=self.routing_graph(dep,arr,fl,radius,blocks,profile_options,allow_steps,via,when,enable_fra,terminal)
-        mandatory=self.resolve_vias(g,start,end,via)
-        first=self.constrained_path(g,start,end,mandatory)
-        if first is None: return []
-        def sig(path): return tuple((a,b,e['route']) for a,b,e in path)
-        def internal(path): return {(a,b) for a,b,e in path if e['route']!='DCT'}
-        accepted=[first]; selected=[first]; waiting=[]; seen={sig(first)}; serial=0
-        # Examine at most 45 shortest simple paths. No invented intermediate DCT.
-        for _ in range(5 if len(g)>6000 else 18):
-            previous=accepted[-1]
-            for i in range(len(previous)):
-                root=previous[:i]; spur=previous[i][0]
-                banned_nodes={a for a,b,e in root}
-                banned_edges={sig(p)[i] for p in accepted if len(p)>i and sig(p)[:i]==sig(root)}
-                sub={u:[(v,e) for v,e in es if v not in banned_nodes and (u,v,e['route']) not in banned_edges]
-                     for u,es in g.items() if u not in banned_nodes}
-                visited=[a for a,b,e in root]+[spur]; consumed=0
-                for key in visited:
-                    if consumed<len(mandatory) and key==mandatory[consumed]: consumed+=1
-                tail=self.constrained_path(sub,spur,end,mandatory[consumed:])
-                if tail is None: continue
-                path=root+tail; signature=sig(path)
-                if signature in seen: continue
-                seen.add(signature); serial+=1
-                heapq.heappush(waiting,(sum(e['nm'] for a,b,e in path),serial,path))
-            if not waiting: break
-            _,_,path=heapq.heappop(waiting); accepted.append(path)
-            edges=internal(path)
-            # Tiny airport connector changes alone do not count as another route.
-            distinct=all(len(edges & internal(p))/max(1,len(edges | internal(p)))<0.88 for p in selected)
-            if distinct: selected.append(path)
-            if len(selected)>=count: break
-        return [self.format_path(dep,p,via) for p in selected[:count]]
+        mandatory=self.resolve_vias(g,start,end,via);selected=[];seen=set();usage=collections.Counter()
+        def signature(path):return tuple((self.nodes[a]['id'],self.nodes[b]['id'],e['route'],e.get('fra_area')) for a,b,e in path if e.get('kind')!='FRA_GATE')
+        def links(path):return {(self.nodes[a]['id'],self.nodes[b]['id'],e['route'],e.get('fra_area')) for a,b,e in path if e.get('kind')!='FRA_GATE' and not e.get('connector')}
+        for attempt in range(max(8,count*3)):
+            if terminal and terminal.get('_deadline'):
+                import time
+                if time.perf_counter()>terminal['_deadline']:break
+            modified=RoutingGraph({u:[(v,dict(e,_cost=e['_cost']*(1+.4*usage[(u,v,e['route'],e.get('fra_area'))]))) for v,e in es] for u,es in g.items()})
+            modified.flight=g.flight
+            path=self.constrained_path(modified,start,end,mandatory,bool((terminal or {}).get('require_fra')))
+            if path is None:break
+            sig=signature(path);edges=links(path)
+            for a,b,e in path:
+                if e.get('kind')!='FRA_GATE':usage[(a,b,e['route'],e.get('fra_area'))]+=1
+            if sig in seen:continue
+            seen.add(sig)
+            if not selected or all(len(edges & links(p))/max(1,len(edges | links(p)))<.93 for p in selected):selected.append(path)
+            if len(selected)>=count:break
+        return [(self.format_path(dep,p,via),p) if return_paths else self.format_path(dep,p,via) for p in selected]
+
 
 class Rad:
     def __init__(self,date):
@@ -349,7 +426,7 @@ def block_hit(block,a,b,via):
     if block['kind']=='point': return block['point'] in [a,b]
     return block['via']==via and block['start']==a and block['end']==b
 
-def assess(request,_nav=None,_rad=None):
+def assess(request,_nav=None,_rad=None,_path=None):
     dep=str(request.get('dep','')).strip().upper(); arr=str(request.get('arr','')).strip().upper()
     for ad in [dep,arr]:
         if not re.fullmatch('[A-Z0-9]{3,4}',ad): raise ValueError('Code aérodrome invalide : '+ad)
@@ -375,7 +452,7 @@ def assess(request,_nav=None,_rad=None):
         route,path=nav.generate(dep,arr,fl,radius,blocks,options,strategy=='adapt',mandatory,when,request.get('enable_fra',True),request)
     else:
         if not route: raise ValueError('Coller une route à contrôler.')
-        path=[]
+        path=_path or []
     words=route.split()
     if words and re.fullmatch(r'[NK]\d{4}F\d{3}',words[0]):
         issue('REVUE','Vitesse initiale ignorée. Le niveau de la route doit correspondre au FL saisi.')
@@ -388,14 +465,14 @@ def assess(request,_nav=None,_rad=None):
     if dep not in nav.ads: issue('ERREUR','AD de départ inconnu : '+dep)
     if arr not in nav.ads: issue('ERREUR','AD d’arrivée inconnu : '+arr)
     airways={e['route'] for e in nav.edges}; procedure_names={p['token'] for p in nav.procedures.items}; connectors=airways|procedure_names; parsed=[]; active_fra=set()
-    preferred={e.get('procedure_id') for a,b,e in path if e.get('procedure_id')} if generated else set()
+    preferred={e.get('procedure_id') for a,b,e in path if e.get('procedure_id')}
     # An airway name must sit between two points. Adjacent points mean implicit DCT.
     i=0
     try:
         current=nav.resolve(words[0]); i=1
     except ValueError as e:
         issue('ERREUR',str(e)); current=None; i=1
-    while i<len(words):
+    while not path and i<len(words):
         via='DCT'
         if words[i]=='DCT' or words[i] in connectors:
             via=words[i]; i+=1
@@ -419,7 +496,8 @@ def assess(request,_nav=None,_rad=None):
             e=dict(route=via,nm=nm(nav.nodes[current],nav.nodes[target]))
             matches=nav.fra.match(current,target,fl,when,dep,arr,active_fra,strategy=='adapt') if request.get('enable_fra',True) and getattr(nav,'fra',None) else []
             if matches:
-                m=matches[0]; e.update(kind='FRA',fra_area=m['area'],lower=m['lower'],upper=m['upper'],from_role=m['from_role'],to_role=m['to_role'],fra_rows=m['rows'],source_cycle=m['cycle'])
+                hints=[x for u,v,x in path if x.get('kind')=='FRA' and nav.nodes[u]['id']==nav.nodes[current]['id'] and nav.nodes[v]['id']==nav.nodes[target]['id']]
+                m=next((m for m in matches if any(h.get('fra_area')==m['area'] and h.get('fra_rows')==m['rows'] for h in hints)),matches[0]); e.update(kind='FRA',fra_area=m['area'],lower=m['lower'],upper=m['upper'],from_role=m['from_role'],to_role=m['to_role'],fra_rows=m['rows'],source_cycle=m['cycle'])
                 active_fra={m['area']} if not m['exits'] else set()
             else: active_fra=set()
             parsed.append((current,target,e))
@@ -432,13 +510,16 @@ def assess(request,_nav=None,_rad=None):
                 issue('ERREUR',f'Continuité absente dans AeroDB : {nav.nodes[current]["id"]} {via} {word}.')
             else: parsed.extend(p)
         current=target
+    if path:parsed=[(a,b,e) for a,b,e in path if e.get('kind')!='FRA_GATE']
+    for ident in mandatory:
+        if ident in nav.ads and ident not in [dep,arr]:issue('REVUE',f'{ident} est survolé à l’altitude du profil, sans atterrissage. Raccords DCT AD–réseau de simulation, autorisation non vérifiée.')
     known_ids={dep,arr}; used_routes=set()
     for a,b,e in parsed:
         known_ids.update([nav.nodes[a]['id'],nav.nodes[b]['id']]); used_routes.add(e['route'])
         legs.append(dict(start=nav.nodes[a],end=nav.nodes[b],via=e['route'],kind=e.get('kind','AIRWAY' if e['route']!='DCT' else 'DCT'),
             fra_area=e.get('fra_area'),from_role=e.get('from_role'),to_role=e.get('to_role'),fra_rows=e.get('fra_rows'),nm=round(e['nm'],2),
             lower=e.get('lower'),upper=e.get('upper'),node_constraints=e.get('node_constraints'),planned_speed_kt=e.get('planned_speed_kt'),speed_limit_ias=e.get('speed_limit_ias'),
-            procedure_id=e.get('procedure_id'),procedure_name=e.get('procedure_name'),runways=e.get('runways'),source_zone=e.get('zone'),source_cycle=e.get('source_cycle') or nav.cycles.get(e.get('zone')),
+            procedure_id=e.get('procedure_id'),procedure_name=e.get('procedure_name'),procedure_airport=e.get('airport'),runways=e.get('runways'),source_zone=e.get('zone'),source_cycle=e.get('source_cycle') or nav.cycles.get(e.get('zone')),
             direction=({'F':'sens unique','B':'sens unique','FB':'double sens'}.get(e.get('dir'),'inconnue') if e['route']!='DCT' else 'non vérifiée')))   # SOG-0078
     dep_elev=nav.ads.get(dep,{}).get('elev'); arr_elev=nav.ads.get(arr,{}).get('elev')
     if dep_elev is None or arr_elev is None: issue('REVUE','Élévation AD absente : 0 ft utilisé pour le modèle vertical de simulation.')
@@ -449,6 +530,16 @@ def assess(request,_nav=None,_rad=None):
     if legs and not profile['feasible'] and not any(l['vertical_errors'] for l in legs):
         issue('ERREUR','Profil vertical impossible avec les altitudes AD et les taux de montée/descente saisis.')
     candidates=rad.candidates(dep,arr,known_ids,used_routes)
+    if request.get('unable_rnav'):
+        for a,b,e in parsed:
+            if e.get('kind') in ['SID','STAR','APPROACH_LINK']:
+                p=next((p for p in nav.procedures.items if p['id']==e.get('procedure_id')),None);required=planning.procedure_rnav(p) if p else None
+            elif e.get('kind')=='FRA':required=True
+            elif e['route']=='DCT':required=None
+            else:required=planning.rnav_edge(nav,a,b,e)['required']
+            if required is not False:
+                issue('ERREUR',f'Unable RNAV : {e["route"]} {nav.nodes[a]["id"]}–{nav.nodes[b]["id"]} : '+('RNAV requise.' if required else 'compatibilité conventionnelle non documentée.'))
+    if request.get('require_fra') and not any(l.get('kind')=='FRA' for l in legs):issue('ERREUR','FRA imposé : aucun tronçon FRA reconnu dans la route contrôlée.')
     ordered=[nav.nodes[parsed[0][0]]['id']] if parsed else []
     ordered.extend(nav.nodes[b]['id'] for a,b,e in parsed)
     cursor=0; via_checks=[]
@@ -491,18 +582,24 @@ def assess(request,_nav=None,_rad=None):
         rad_source={k:rad.book[k] for k in ['file','title','start','end_exclusive','sha256']} if rad.book else None,
         coverage=nav.coverage,rad_atomic_rules=len(blocks),profile=profile,gaps=gaps,via=mandatory,via_checks=via_checks,
         fra_source=dict(file=nav.fra.book['file'],start=nav.fra.book['start'],sha256=nav.fra.book['sha256'],points=len(nav.fra.records)) if fra_loaded else None,
-        procedures_used=list({l['procedure_id']:dict(id=l['procedure_id'],name=l['procedure_name'],runways=l['runways'],cycle=l['source_cycle']) for l in legs if l.get('procedure_id')}.values()),
+        procedures_used=list({l['procedure_id']:dict(id=l['procedure_id'],name=l['procedure_name'],airport=l['procedure_airport'],runways=l['runways'],cycle=l['source_cycle']) for l in legs if l.get('procedure_id')}.values()),
         procedure_coverage={ad:nav.procedures.stats.get(ad,{}) for ad in [dep,arr]},
         checked=['Identifiants et continuité des airways','Profil vertical contre plancher/plafond de chaque segment','Interdictions RAD simples prises en charge'],
         counts=dict(aerodromes=len(nav.ads),segments=len(nav.edges),points=len(nav.nodes)),
         limitation='Précontrôle de simulation, jamais une validation IFPS. Les mentions RAD sont des pistes à examiner, pas des infractions établies.')
+    planning.metrics(result,request)
     result['report']=report(result)
     return result
 
 def report(r):
-    lines=['ROUTESIM — SIMULATION',r['status'],'',r['route'],f'FL{r["fl"]:03d} · {r["date"]} · Distance des segments résolus : {r["distance_nm"]} NM',
+    altitude=f'Altitude VFR {r.get("target_altitude_ft",r["fl"]*100):g} ft' if r.get('planning',{}).get('traffic')=='VFR' else f'FL{r["fl"]:03.0f}'
+    lines=['ROUTESIM — SIMULATION',r['status'],'',r['route'],f'{altitude} · {r["date"]} · Distance des segments résolus : {r["distance_nm"]} NM',
         '',r['limitation'],'', 'CONTRÔLES']
     lines += [f'[{i["level"]}] {i["text"]}' for i in r['issues']]
+    if r.get('estimate'):
+        estimate=r['estimate'];lines+=['','OBJECTIF ET ESTIMATIONS',str(r.get('planning')),f'Durée : {estimate["duration_min"]:g} min ; carburant estimé : '+(str(estimate['fuel_kg'])+' kg' if estimate['fuel_kg'] is not None else 'non renseigné'),str(estimate.get('fuel_model'))]
+    if r.get('fra_stats'):lines+=['','FRA : '+str(r['fra_stats'])]
+    if r.get('vfr_environment'):lines+=['','CONTRÔLES VFR : '+str(r['vfr_environment'])]
     lines += ['','COUVERTURE DU CONTRÔLE']+[g['name']+' : '+g['reason'] for g in r.get('gaps',[])]
     if r.get('profile'):
         p=r['profile']; lines += ['','PROFIL VERTICAL',f'Vitesse sol {p["speed_kt"]:g} kt ; montée {p["climb_fpm"]:g} ft/min ; descente {p["descent_fpm"]:g} ft/min.',

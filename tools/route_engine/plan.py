@@ -9,12 +9,13 @@ primary et chaque alternative sont les résultats de engine.assess : { ok, statu
 import datetime as dt
 import re
 
-from . import engine, fra
+from . import engine, fra, planning
 
 FIELDS = {
     'dep': str, 'arr': str, 'route': str, 'via': (list, str), 'fl': int, 'date': str, 'mode': str, 'radius': (int, float), 'dep_runway': str, 'arr_runway': str,
     'speed_kt': (int, float), 'terminal_speed_kt': (int, float), 'climb_fpm': (int, float), 'descent_fpm': (int, float),
     'allow_levels': bool, 'use_procedures': bool, 'alternatives': bool, 'alternative_levels': (list, str), 'enable_fra': bool, 'level_strategy': str,
+    'objective': str, 'traffic': str, 'require_fra': bool, 'unable_rnav': bool, 'fra_preference': (int, float), 'aircraft': str, 'fuel_climb': (int, float), 'fuel_cruise': (int, float), 'fuel_descent': (int, float),     # RouteSim 4 (planning.py)
 }
 MAX_ROUTE = 600
 MAX_ALTERNATIVES = 3
@@ -47,6 +48,12 @@ def check_request(request):
         raise ValueError('route : trop longue')
     if out.get('mode', 'calculate') not in ('calculate', 'validate'):
         raise ValueError('mode : calculate ou validate')
+    if out.get('objective', 'distance') not in ('distance', 'fastest', 'economical'):
+        raise ValueError('objective : distance, fastest ou economical')
+    if str(out.get('traffic', 'IFR')).upper() != 'IFR':
+        raise ValueError('traffic : IFR seulement (le calcul VFR de RouteSim 4, vfr.py, n’est pas porté)')
+    if len(out.get('aircraft', '')) > 20:
+        raise ValueError('aircraft : 20 signes au plus')
     if out.get('level_strategy', 'natural') not in ('natural', 'adapt'):
         raise ValueError('level_strategy : natural ou adapt')
     if isinstance(out.get('via'), list) and (len(out['via']) > 8 or any(not isinstance(x, str) for x in out['via'])):
@@ -76,8 +83,18 @@ def context(request, root):
     return engine.Nav(root, date), engine.Rad(date)
 
 
+class SearchBudget(Exception):
+    pass
+
+
 def plan(request, root):
-    """Le plan, tel que server.plan() de RouteSim 2 le fait (voir l'en-tête du module)."""
+    """Le plan, tel que server.plan() de RouteSim 4 le fait (voir l'en-tête du module). Le mode VFR (vfr.py) n'est pas porté : la demande IFR seule est acceptée (check_request)."""
+    import time
+    started = time.perf_counter()
+
+    def check_budget():
+        if time.perf_counter() - started > 25:
+            raise SearchBudget('Budget global de recherche atteint (25 s). Les propositions déjà contrôlées sont conservées ; la recherche n’est pas exhaustive.')
     request = dict(request, root=root)
     request.setdefault('date', '2026-11-09T12:00')
     nav, rad = context(request, root)
@@ -104,6 +121,10 @@ def plan(request, root):
             request['via'] = []        # SOG-0081 : le contrôle d'une route saisie n'impose aucun passage (ses points sont les extrémités de ses airways ; plus de 8 d'entre eux refusaient toute route longue)
     if request.get('mode', 'calculate') == 'calculate' and request.get('allow_levels', True):
         request.setdefault('level_strategy', 'adapt')
+    request = planning.normalize(request, root)
+    request['_deadline'] = started + 25
+    if request.get('objective') == 'economical':
+        request['alternatives'] = True
     try:
         primary = engine.assess(request, nav, rad)
     except ValueError as e:
@@ -136,8 +157,9 @@ def plan(request, root):
                 return (r.get('route'), tuple((round(l.get('altitude_start_ft', 0) / 100), round(l.get('altitude_end_ft', 0) / 100), round(l.get('altitude_min_ft', 0) / 100), round(l.get('altitude_max_ft', 0) / 100)) for l in r.get('legs', [])))
             seen = {signature(primary)} if primary.get('ok') else set()
 
-            def consider(route, level, strategy):
-                r = engine.assess(dict(request, mode='validate', route=route, fl=level, level_strategy=strategy), nav, rad)
+            def consider(route, level, strategy, path=None, conditions=None):
+                check_budget()
+                r = engine.assess(dict(conditions or request, mode='validate', route=route, fl=level, level_strategy=strategy), nav, rad, _path=path)
                 errs = [i['text'] for i in r['issues'] if i['level'] == 'ERREUR']
                 tested.append(dict(fl=level, strategy=strategy, route=route, errors=errs))
                 if errs:
@@ -147,32 +169,43 @@ def plan(request, root):
                     return
                 seen.add(sig)
                 r['generated'] = True
-                r['alternative_kind'] = 'Profil avec paliers adaptés' if strategy == 'adapt' else 'Palier de croisière FL' + str(level)
+                r['alternative_kind'] = ('FRA · ' + ', '.join(r['fra_stats']['areas'])) if r['fra_stats']['segments'] else 'Profil avec paliers adaptés' if strategy == 'adapt' else 'Palier de croisière FL' + str(level)
                 r['report'] = engine.report(r)
                 alternatives.append(r)
+            # Reserve a genuinely FRA-constrained candidate before filling the list with level variants.
+            if request.get('enable_fra', True) and not request.get('unable_rnav') and (rejected or not primary.get('fra_stats', {}).get('segments')):
+                forced = dict(request, require_fra=True, enable_fra=True)
+                try:
+                    check_budget()
+                    route, path = nav.generate(dep, arr, fl, radius, blocks, options, True, mandatory, nav_time(request), True, forced)
+                    consider(route, fl, 'adapt', path, forced)
+                except ValueError as e:
+                    failures.append('Recherche FRA imposée : ' + str(e))
             if allow_levels and explicit_levels:
                 for level in levels:
                     if len(alternatives) >= 3:
                         break
                     try:
-                        route, _ = nav.generate(dep, arr, level, radius, rad.blocks(dep, arr, level), options, allow_steps=True, via=mandatory, when=nav_time(request), enable_fra=request.get('enable_fra', True), terminal=request)
-                        consider(route, level, 'adapt')
+                        check_budget()
+                        route, path = nav.generate(dep, arr, level, radius, rad.blocks(dep, arr, level), options, allow_steps=True, via=mandatory, when=nav_time(request), enable_fra=request.get('enable_fra', True), terminal=request)
+                        consider(route, level, 'adapt', path)
                     except ValueError as e:
                         failures.append(f'FL{level}: ' + str(e))
-            if len(alternatives) < 3 and allow_levels and primary.get('ok'):
+            if len(alternatives) < 3 and allow_levels and primary.get('ok') and (rejected or request.get('mode') == 'validate'):
                 consider(primary['route'], fl, 'adapt')
             # A stepped route can connect airway bands even when the target-FL graph is disconnected.
-            if allow_levels and len(alternatives) < 3:
+            if allow_levels and len(alternatives) < 3 and (rejected or request.get('mode') == 'validate'):
                 try:
-                    route, _ = nav.generate(dep, arr, fl, radius, blocks, options, True, mandatory, nav_time(request), request.get('enable_fra', True), request)
-                    consider(route, fl, 'adapt')
+                    check_budget()
+                    route, path = nav.generate(dep, arr, fl, radius, blocks, options, True, mandatory, nav_time(request), request.get('enable_fra', True), request)
+                    consider(route, fl, 'adapt', path)
                 except ValueError as e:
                     failures.append(str(e))
             if len(alternatives) < 3:
                 try:
-                    routes = nav.alternate_routes(dep, arr, fl, radius, blocks, count=4, profile_options=options, via=mandatory, when=nav_time(request), enable_fra=request.get('enable_fra', True), terminal=request)
-                    for route in routes:
-                        consider(route, fl, 'natural')
+                    routes = nav.alternate_routes(dep, arr, fl, radius, blocks, count=4, profile_options=options, allow_steps=bool(allow_levels), via=mandatory, when=nav_time(request), enable_fra=request.get('enable_fra', True), terminal=request, return_paths=True)
+                    for route, path in routes:
+                        consider(route, fl, 'adapt' if allow_levels else 'natural', path)
                         if len(alternatives) == 3:
                             break
                 except ValueError as e:
@@ -182,18 +215,26 @@ def plan(request, root):
                     if len(alternatives) >= 3:
                         break
                     try:
-                        route, _ = nav.generate(dep, arr, level, radius, rad.blocks(dep, arr, level), options, allow_steps=True, via=mandatory, when=nav_time(request), enable_fra=request.get('enable_fra', True), terminal=request)
-                        consider(route, level, 'adapt')
+                        check_budget()
+                        route, path = nav.generate(dep, arr, level, radius, rad.blocks(dep, arr, level), options, allow_steps=True, via=mandatory, when=nav_time(request), enable_fra=request.get('enable_fra', True), terminal=request)
+                        consider(route, level, 'adapt', path)
                     except ValueError as e:
                         failures.append(f'FL{level}: ' + str(e))
-        except ValueError as e:
+        except (ValueError, SearchBudget) as e:
             failures.append(str(e))
     wanted = rejected or bool(request.get('alternatives'))
     if not alternatives:
         failures.extend(e for t in tested for e in t['errors'])
+    alternatives.sort(key=lambda r: r.get('objective_score', r['distance_nm']))
+    if request.get('mode', 'calculate') == 'calculate' and primary.get('ok') and not any(i['level'] == 'ERREUR' for i in primary['issues']) and request.get('objective') in ['fastest', 'economical']:
+        pool = [primary, *alternatives]
+        pool.sort(key=lambda r: r.get('objective_score', r['distance_nm']))
+        primary = pool[0]
+        alternatives = pool[1:4]
     message = (f'{len(alternatives)} alternative(s) sans incompatibilité détectée. Le niveau et les paliers de chaque proposition sont affichés.'
                if alternatives else 'Aucune alternative trouvée. Consulter les niveaux essayés et leurs motifs d’échec.') if wanted else ''
     return dict(primary=primary, alternatives=alternatives, alternative_message=message, alternative_failures=list(dict.fromkeys(failures)),
+                search=dict(algorithm='A* avec labels altitude ; variantes par pénalisation des liens', last=nav.last_search if hasattr(nav, 'last_search') else None, total_seconds=round(time.perf_counter() - started, 3)),
                 automatic_alternatives=rejected, alternative_attempts=tested, input_route=request.get('route', ''), via=request.get('via', []), dep=request.get('dep'), arr=request.get('arr'))
 
 

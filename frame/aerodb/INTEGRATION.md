@@ -504,7 +504,7 @@ removed the same day: nothing more is written there. A `lab/<trigram>` branch le
 
 The route calculator of RouteSim 2 (E:/DEFA/rad: engine, FRA graph, procedures, vertical profile) runs on the workstation behind two launcher jobs; **the page never computes a route**. The engine is `tools/route_engine/` (copied from RouteSim 2 without change of substance, see its README: the lines that differ carry `SOG-0081`, so that the user's diffs apply as they are). Called like every job: `launcher.job('regen/job', { set: 'route', verb: 'compute', args })`, the result is `job.result`.
 
-**`route/compute`** (≈ 2–10 s on the workstation: the base and the RAD are read at each call, nothing is cached between two calls). The request is **closed**: any other field, a wrong type, a bad code or a date that is not ISO 8601 is refused (400).
+**`route/compute`** (≈ 2–10 s on the workstation: the base and the RAD are read at each call, nothing is cached between two calls). The request is **closed**: any other field, a wrong type, a bad code or a date that is not ISO 8601 is refused (400). Measured on the workstation (Windows, one process, base of 10 zones + the SIA procedures read at each call): LFPO → EIDW FL350, **3.5–5 s** for the proposed route alone, **≈ 7 s** with the alternatives; LFPG → LFMN with alternatives **8–9 s** (10 Nov 2026, noreg-independent measure, scratch script).
 
 | field | type | meaning |
 |---|---|---|
@@ -524,6 +524,12 @@ The route calculator of RouteSim 2 (E:/DEFA/rad: engine, FRA graph, procedures, 
 | `alternatives` | boolean | ask for alternatives even when the first plan is accepted (they are always searched when it is rejected) |
 | `alternative_levels` | integer[] (≤ 12) or `'190, 210'` | levels to try first (default: FL−020 by steps down to −200) |
 | `enable_fra` | boolean | FRA links (default true) |
+| `objective` | `'distance'` (default) \| `'fastest'` \| `'economical'` | what the calculation minimises (RouteSim 4: `planning.py`); `economical` needs `aircraft` with a fuel flow or the three `fuel_*` |
+| `traffic` | `'IFR'` (default) | VFR (`vfr.py` of RouteSim 4) is **not ported**: refused (400) |
+| `require_fra`, `unable_rnav` | boolean | force a route through an FRA / forbid the RNAV-only structures (incompatible together) |
+| `fra_preference` | number 0–0.5 | weight of the FRA links in the cost (default 0.10) |
+| `aircraft` | string (≤ 20) | an aircraft code of `AircraftDB/aircraft_perf.js` in the data folder (its fuel flow and ceiling) |
+| `fuel_climb`, `fuel_cruise`, `fuel_descent` | number (kg/h) | fuel flows when no aircraft is given |
 
 Result: `{ ok: true, plan, rad: { title, start } | null, fra: { start } | null }` or `{ ok: false, reason, message }` with `reason` `'invalid'` (the engine refuses the request: unknown point, level, speed…; `message` is the sentence to show), `'no-rad'` (no RAD imported: offer `route/import-rad`), `'failed'`.
 
@@ -563,6 +569,8 @@ Answer: `{ ok, alternatives, segments, issues, rad, fra, report, message, gaps, 
 **Procedure ids**: `sid.id` / `star.id` are the `id` of the procedure record of `data/proc` **verbatim** (never shortened: the transition suffix, if the record's id has one, is kept), the same string as the procedure sheets of AeroDB. **Reasons**: `vertical_errors` and `alerts` of a leg are the same list at the start (a ceiling or floor error is in both), the RAD and direction texts are added to `alerts`: reading `alerts` loses nothing.
 
 **Deviation from the screen's spec** (to settle with Features SOG, nothing blocks): `check` makes the engine run **without** limiting the entered route (`via` is empty in validate mode: the engine's previous behaviour refused a typed route of more than 8 non-airway points, which a route typed by a pilot often is); the controlled route is the typed text.
+
+**RouteSim 4 port (10 Nov 2026, 15 h)**: the engine, `fra.py`, `procedures.py` and the new `planning.py` are RouteSim's of 14 h 45, copied as they are (only the lines marked `SOG-0081` / `SOG-0078` differ: relative imports, the data paths, the airway direction); `plan.py` follows the new `server.plan()` (forced FRA candidate, search budget 25 s, objective sort, `search`). What changed for the screen: **nothing in the shape of `alternatives`, `segments`, `issues`** (the view reads `legs`, `issues`, `profile`, `procedures_used`, which keep their form). What was added to `assess()` and the plan, **ignored by the screen's view** unless it asks (`raw: true`): `fra_stats { segments, distance_nm, areas, bands[] }`, `planning { objective, traffic, require_fra, unable_rnav, fra_preference… }`, `estimate { duration_min, fuel_kg (null without flows), phase_minutes, fuel_model }`, `objective_score`, the leg's `procedure_airport`, an alternative of kind `FRA · <area>` (a forced-FRA candidate is searched first), the plan's `search { algorithm, last { expanded, seconds, found, truncated }, total_seconds }`. The search is an A* with non-dominated altitude labels: **6 s or 100 000 states per search, 25 s per plan**, then the plan says that the search is not exhaustive. When no route exists the message is « Aucune route trouvée sur le réseau disponible à ce niveau… Aucun DCT intermédiaire n'a été inventé » (the imposed passages are still never removed). Not ported, out of the engine: `vfr.py` (VFR planning), `web/modes.js`, `server.py` routes.
 
 **What the engine reads**: `data/sia/base/*/<cycle>/{aeroindex, points, navaids, airways}.json` (every zone whose cycle is at most `date`: the airways of the zones that have none are absent from the network, said in `coverage`), `data/proc/manual/<ICAO>.json` and `data/proc/<cycle>/` (SID / STAR, `status: 'doubt'` excluded), `data/route/rad.json.gz` and `fra.json.gz`. Nothing is written by `route/compute`.
 

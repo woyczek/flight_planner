@@ -60,7 +60,7 @@ class Fra:
     @staticmethod
     def airport_match(value,airport):return airport in re.findall(r'[A-Z0-9]{4}',value)
 
-    def graph(self,g,dep,arr,fl,when,via=(),steps=False):
+    def graph(self,g,dep,arr,fl,when,via=(),steps=False,density="normal"):
         nav=self.nav
         anchor=[nav.ads[dep],nav.ads[arr]]+[nav.nodes[k] for name in via for k in nav.ids.get(name,[])]
         latlo=min(p['lat'] for p in anchor)-4; lathi=max(p['lat'] for p in anchor)+4
@@ -84,17 +84,29 @@ class Fra:
                 can_depart='E' in r['enroute'] or r['enroute']=='I' or 'D' in r['terminal'] and self.airport_match(r['dep'],dep)
                 if not can_depart:continue
                 p=nav.nodes[r['key']]; la,lo=math.floor(p['lat']),math.floor(p['lon']);neighbors=[]
-                for x in range(la-4,la+5):
-                    for y in range(lo-7,lo+8):
-                        for other in cells.get((x,y),[]):
-                            if other['key']==r['key']:continue
-                            if not ('X' in other['enroute'] or other['enroute']=='I' or 'A' in other['terminal'] and self.airport_match(other['arr'],arr)):continue
-                            if not steps and max(r['lower'],other['lower'])>min(r['upper'],other['upper']):continue
-                            d=self.nm(p,nav.nodes[other['key']])
-                            if .1<d<=220:neighbors.append((d,other))
+                # Distances here are graph search settings, not FRA legal limits.
+                # Wider search retries are automatic if the first topology fails.
+                max_nm=900 if density=='wide' else 500
+                candidates=records if density=='wide' else [o for x in range(la-9,la+10) for y in range(lo-16,lo+17) for o in cells.get((x,y),[])]
+                for other in candidates:
+                    if other['key']==r['key']:continue
+                    if not ('X' in other['enroute'] or other['enroute']=='I' or 'A' in other['terminal'] and self.airport_match(other['arr'],arr)):continue
+                    if max(r['lower'],other['lower'])>min(r['upper'],other['upper']):continue
+                    d=self.nm(p,nav.nodes[other['key']])
+                    if .1<d<=max_nm:neighbors.append((d,other))
                 neighbors.sort(key=lambda pair:pair[0])
-                # Bounded candidate graph; nearest intermediates plus exits and mandatory points.
-                chosen=neighbors[:14]+[(d,o) for d,o in neighbors if 'X' in o['enroute']][:4]+[(d,o) for d,o in neighbors if o['id'] in via]
+                goals=[nav.nodes[k] for name in via for k in nav.ids.get(name,[])]+[nav.ads[arr]]
+                chosen=neighbors[:(100 if density=='wide' else 24)]
+                chosen += [(d,o) for d,o in neighbors if 'X' in o['enroute']][:(40 if density=='wide' else 12)]
+                for goal in goals:chosen += sorted(neighbors,key=lambda pair:self.nm(nav.nodes[pair[1]['key']],goal))[:8]
+                # Retain candidates in each compass sector, including directions
+                # away from the arrival when a mandatory waypoint requires it.
+                sectors=collections.defaultdict(list)
+                for d,o in neighbors:
+                    target=nav.nodes[o['key']];angle=math.atan2(target['lat']-p['lat'],(target['lon']-p['lon'])*math.cos(math.radians(p['lat'])))
+                    sectors[int((angle+math.pi)/(math.pi/4))%8].append((d,o))
+                for values in sectors.values():chosen+=values[:4]
+                chosen += [(d,o) for d,o in neighbors if o['id'] in via]
                 used=set()
                 for d,o in chosen:
                     if o['state'] in used:continue

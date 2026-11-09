@@ -67,10 +67,13 @@ class Catalog:
             result.append((a['key'],b['key'],e))
         return result
 
-    def add_graph(self,g,ad,kind,runway='',speed=220):
+    def add_graph(self,g,ad,kind,runway='',speed=220,unable_rnav=False):
         available=self.options(ad,kind,runway);used=0
         connected=set(g)|{v for es in g.values() for v,e in es}
         for p in available:
+            if unable_rnav:
+                from . import planning   # SOG-0081 : import relatif
+                if planning.procedure_rnav(p) is not False:continue
             edges=self.edges(p,speed);endpoint=edges[-1][1] if kind=='SID' else edges[0][0]
             if endpoint not in connected:continue
             used+=1

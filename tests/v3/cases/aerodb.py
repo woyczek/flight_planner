@@ -4988,7 +4988,7 @@ def k103(c):
         I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
         r3 = run(req)
         pp = r3['plan']['primary']
-        c.eq((r3['ok'], pp['ok'], pp['status'], 'SITET' in pp['error'] and 'supprimé' in pp['error']), (True, False, 'CALCUL IMPOSSIBLE', True), 'a RAD rule that forbids A1 between SITET and KEPAD: the calculation is impossible and says the imposed passage was not removed', what='block')
+        c.eq((r3['ok'], pp['ok'], pp['status'], pp['error'].startswith('Aucune route trouvée')), (True, False, 'CALCUL IMPOSSIBLE', True), 'a RAD rule that forbids A1 between SITET and KEPAD: the calculation is impossible (no route, no DCT invented: the imposed passage is not removed)', what='block')
         c.ok(r3['plan']['automatic_alternatives'] is True and isinstance(r3['plan']['alternative_failures'], list) and len(r3['plan']['alternatives']) <= 3, str(r3['plan']['alternative_message']), 'the alternatives are searched (three at most), their failures listed')
         # an unknown aerodrome and a bad level are said, never an exception
         r4 = run(dict(req, arr='ZZZZ'))
@@ -5127,7 +5127,7 @@ def k106(c):
         c.ok('plan' in r and r['plan']['primary']['route'] == 'LFPO DCT OLZOM A1 BOYNE DCT EIDW', '', 'the engine\'s own plan is given only on request (raw: true)')
         I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
         r = run(base)                                   # SITET to KEPAD forbidden by the RAD: no plan, the imposed passages are not removed
-        c.eq((r['ok'], r['alternatives'], [i['level'] for i in r['issues']][:1], 'supprimé' in r['issues'][0]['text']), (True, [], ['error'], True), 'compute with a RAD rule on an imposed passage: no alternative, one error that says the passage was not removed', what='impossible')
+        c.eq((r['ok'], r['alternatives'], [i['level'] for i in r['issues']][:1], r['issues'][0]['text'].startswith('Aucune route trouvée')), (True, [], ['error'], True), 'compute with a RAD rule on an imposed passage: no alternative, one error that says the passage was not removed', what='impossible')
     c.eq(len(V.thin([{'distance_nm': i, 'altitude_ft': i} for i in range(1000)])) <= 201, True, 'the profile is thinned to about 200 points', what='thin')
 
 

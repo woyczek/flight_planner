@@ -10,7 +10,7 @@ Réponse : { ok, alternatives: [alt], segments: [seg], issues: [{ level: 'error'
 import re
 
 ACTIONS = ('compute', 'check')
-EXTRA = ('radius', 'speed_kt', 'terminal_speed_kt', 'climb_fpm', 'descent_fpm', 'allow_levels', 'use_procedures', 'enable_fra', 'level_strategy', 'alternative_levels', 'alternatives')
+EXTRA = ('radius', 'speed_kt', 'terminal_speed_kt', 'climb_fpm', 'descent_fpm', 'allow_levels', 'use_procedures', 'enable_fra', 'level_strategy', 'alternative_levels', 'alternatives', 'objective', 'traffic', 'require_fra', 'unable_rnav', 'fra_preference', 'aircraft', 'fuel_climb', 'fuel_cruise', 'fuel_descent')
 MAX_PROFILE = 200
 DEFAULT_FL = 180                                                         # le défaut du moteur (engine.plan : request.get('fl', 180))
 
