@@ -2543,3 +2543,15 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   today's airline; the event fires on `setAirline` only (a chooser or a reader re-reads `airline()` after a pass: the migration
   writing `index.json` is seen at the next read). No screen, no reader moved. Noreg A53 (the store bench: default without index,
   two airlines + perso, the event, the device setting, the untrusted index) and A93 (the real frame: the choice survives a reload).
+- **9 Nov 2026 — The frame follows the current airline** (V3_SPECIFICATION § 10.38 step 1, second part of the frame's lot; Simplification;
+  V3 Frame): `ctx.airline` is built from `FrameData.airline()` instead of `airline/settings.json` alone (`loadAirline`, `app.js`) and is
+  re-read on `frame-data-airline` as well as on a change of the files; name, site, logo, relay and networks follow the choice, no reload.
+  (1) `airline()` gains `root` (the airline's folder) so that the logo path is judged in one place: **the logo is taken only in the
+  airline's own folder** (`logoPathOf`; a bare `logo.png` or the full path), because `settings.json` is untrusted (§ 10.36) and a settings
+  file must not point the frame at another airline's file or elsewhere in the repository; png / webp by magic bytes, 512 KB, decodable,
+  as before (audit 157). (2) `ctx.airline.networks`: the simple fields (text, number, boolean) of `settings.networks`, eight at most, text
+  cut at 80 — the shape of the networks is Réglages' to fix; nothing richer crosses the frame. (3) `transitionFt` and the other settings
+  are still not in `ctx.airline` (the maps read it and get `undefined`, as before): a reader that needs a setting reads `FrameData.airline().settings`.
+  (4) The personal airline's own edits are not watched (only `airline/` is): they are seen at the next choice or reload; to settle when its
+  editor exists. Noreg A94 (three airlines through a fake launcher: the first of the index, the choice of another with its name, site and
+  logo, a logo in another airline's folder refused), red on 8baeb0b2d; A83 (the airline of today) unchanged and green.

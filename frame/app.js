@@ -1145,10 +1145,21 @@
   });
   const str = v => typeof v === 'string' ? v.trim() : '';
   /** { name, site, pages: { recordFlight, log, fleet } } d'après le fichier (champs texte seulement), gelé. */
-  function airlineOf(v) {
-    if (!v || typeof v !== 'object') return Object.freeze({});
+  function airlineOf(v, code = '') {
+    if (!v || typeof v !== 'object') return Object.freeze(code ? {
+      code
+    } : {});
     const p = v.pages && typeof v.pages === 'object' ? v.pages : {};
+    // réseaux (IVAO, VATSIM, hors ligne) : les champs simples seulement (texte, nombre, booléen), huit au plus
+    const nets = v.networks && typeof v.networks === 'object' && !Array.isArray(v.networks) ? Object.fromEntries(Object.entries(v
+      .networks).filter(([, x]) => ['string', 'number', 'boolean'].includes(typeof x)).slice(0, 8).map(([k, x]) => [k, typeof x ===
+      'string' ? x.slice(0, 80) : x
+    ])) : {};
     return Object.freeze({
+      ...(code ? {
+        code
+      } : {}),
+      networks: Object.freeze(nets),
       name: str(v.name),
       site: str(v.site),
       logo: str(v.logo), // le logo de la compagnie : un fichier du dépôt des données (airline/…), lu par readLogo
@@ -1164,14 +1175,14 @@
    *  (événement « frame-airline » sur window ; ctx.airline donne toujours la dernière). Le premier module n'attend
    *  jamais cette lecture : au premier passage d'un dépôt, elle coûte toute la chaîne de lecture de l'arbre. */
   async function loadAirline(ms = 0) {
-    const read = airlineData.get(AIRLINE, {
-        wait: true
-      }).catch(() => null),
-      v = await (ms ? Promise.race([read, new Promise(res => setTimeout(() => res(undefined), ms))]) : read);
-    if (v === undefined) return;
+    // la compagnie courante de l'appareil (FrameData.airline, § 10.38) : ses réglages, son dossier ; sans index.json, celle d'aujourd'hui
+    // (airline/settings.json, code default)
+    const read = FD.airline().catch(() => null),
+      a = await (ms ? Promise.race([read, new Promise(res => setTimeout(() => res(undefined), ms))]) : read);
+    if (a === undefined) return;
     airlineKnown = true;
-    const next = airlineOf(v);
-    readLogo(next.logo); // le fichier a pu changer sans que le réglage change : relu par révision, sans frais
+    const next = airlineOf(a?.settings ?? null, a?.code || '');
+    readLogo(next.logo, a?.root); // le fichier a pu changer sans que le réglage change : relu par révision, sans frais
     if (JSON.stringify(next) === JSON.stringify(airline)) return;
     airline = next;
     window.dispatchEvent(new CustomEvent('frame-airline', {
@@ -1186,7 +1197,15 @@
   // Jamais de svg : une adresse blob: d'un svg, ouverte comme document, exécuterait ses scripts dans l'origine de la suite
   // (Sécurisation, ligne 156 ; Simplification, 2 nov. 2026 : png et webp seulement, un svg refusé et dit).
   const LOGO_MAX = 512 * 1024;
-  const LOGO_PATH = /^airline\/[\w.-]+\.(png|webp)$/i;
+  /** Le chemin du logo, dans le dossier de la compagnie courante seulement (root : « airline/ », « airline/<code>/ » ou celui de « personnel ») :
+   *  le nom du réglage, seul (« logo.png ») ou en chemin complet ; '' pour tout autre dossier ou nom. Une entrée non fiable : jamais un
+   *  fichier d'une autre compagnie ni d'ailleurs. */
+  const logoPathOf = (path, root) => {
+    const p = String(path || ''),
+      r = root || 'airline/',
+      full = p.startsWith(r) ? p : /^[\w.-]+$/.test(p) ? r + p : '';
+    return full.length > r.length && /^[\w.-]+\.(png|webp)$/i.test(full.slice(r.length)) ? full : '';
+  };
   // le refus d'un logo, dit une fois à l'administrateur (niveau Complet) ; le pilote a l'avion, sans note
   const LOGO_T = {
     refused: ['Logo de la compagnie : png ou webp, 512 Ko au plus (celui du dépôt est refusé, l’avion le remplace).',
@@ -1207,8 +1226,8 @@
     return '';
   }
   /** Relit le logo (path : celui du réglage de la compagnie) ; repeint seulement s'il a changé. */
-  async function readLogo(path) {
-    const p = LOGO_PATH.test(path || '') ? path : '';
+  async function readLogo(path, root) {
+    const p = logoPathOf(path, root);
     let big = false;
     const buf = p ? await FD.readBytes(p, {
       max: LOGO_MAX
@@ -4186,6 +4205,8 @@
     own.watch('device/', () => loadDevice());
     airlineP = loadAirline(); // en fond : le premier module ne l'attend pas
     airlineData.watch('airline/', () => loadAirline(1e4));
+    window.addEventListener('frame-data-airline', () =>
+      loadAirline()); // un autre choix de compagnie (Réglages) : nom, site, logo suivent
     setInterval(() => FD.status().then(paintSync), 30e3); // « il y a 4 min » vieillit
     window.addEventListener('hashchange', route);
     infoData.watch('cache/', paths => {

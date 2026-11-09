@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: `ctx.airline` follows the current airline** (`frame/app.js` `loadAirline`, `frame/store/frame_data.js`; frame INTEGRATION, DECISIONS;
+  noreg A94, A53; V3_SPECIFICATION § 10.38 step 1). The name, site, relay, networks and logo are read from `FrameData.airline()` and follow
+  `frame-data-airline` with no reload; the logo stays a checked png / webp and is taken only in the airline's own folder; without an index
+  the airline of today as before.
+
 - **Fuel: « débit de ce vol » in the unit of the quote** (`modules/fuel/module.js`; Fuel SPEC § 3, DECISIONS; noreg F99; SOG-0059).
   The field said and read kg/h whatever the unit chosen (an entry typed in lb/h flew as kg/h); it is typed in the unit of the quote,
   its label says it, kept in kg/h through `frame/lib/fuel_units.js`.

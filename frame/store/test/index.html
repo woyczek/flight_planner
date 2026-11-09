@@ -506,7 +506,8 @@
       });
       await FD.sync();
       const a = await FD.airline();
-      check('the airline of today: code default, its name, its settings and fleet', a.code === 'default' && a.name === 'DEFA Virtual' &&
+      check('the airline of today: code default, its folder, its name, its settings and fleet', a.code === 'default' && a.root ===
+        'airline/' && a.name === 'DEFA Virtual' &&
         a
         .settings.site === 'https://example.org' && a.fleet.aircraft[0].reg === 'F-AAAA', a);
       check('known airlines: default, then « personnel » last', JSON.stringify((await FD.airlines()).map(x => x.code)) ===
@@ -546,7 +547,8 @@
         on = e => events.push(e.detail);
       window.addEventListener('frame-data-airline', on);
       let a = await FD.airline();
-      check('no choice yet: the first of the index', a.code === 'aiv' && a.settings.networks[0] === 'ivao' && a.fleet.aircraft
+      check('no choice yet: the first of the index, with its folder', a.code === 'aiv' && a.root === 'airline/aiv/' && a.settings
+        .networks[0] === 'ivao' && a.fleet.aircraft
         .length === 2, a);
       check('known airlines: the index then « personnel »', JSON.stringify((await FD.airlines()).map(x => x.code)) ===
         '["aiv","dfa","perso"]', await FD

@@ -3554,3 +3554,76 @@ def a95(c):
     idx = c.until_doc('airline/index.json', lambda i: i and any(a.get('code') == 'atx' for a in i.get('airlines', [])), what='the index lists it')
     c.eq([a['code'] for a in idx['airlines'] if a['code'] in ('dfa', 'aiv', 'atx')], ['dfa', 'aiv', 'atx'], 'the index keeps the others and lists the new one', what='index')
     c.check_errors()
+
+
+def _airlines_launcher(c, files):
+    """A fake launcher whose data/ holds `files` ({path: dict (JSON) or bytes}): the tree of the pass, every file served, the JSON ones also seeded
+    in the cache; returns the seed documents."""
+    status = {'server': True, 'data': True, 'dataGit': True, 'host': 'TEST', 'lan': False, 'lnm': []}
+    raw = {k: (v if isinstance(v, bytes) else json.dumps(v).encode()) for k, v in files.items()}
+    rev = 'r-airlines-%d' % sum(len(v) for v in raw.values())
+    tree = {k: 'r-%s-%d' % (k, len(v)) for k, v in raw.items()}
+
+    def launcher(route):
+        p = urllib.parse.urlparse(route.request.url).path
+        body = status if p.endswith('/__setup/status') else {'head': 'h-' + rev, 'tree': tree} if p.endswith('/__setup/changes') else {}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+
+    def data(route):
+        p = urllib.parse.urlparse(route.request.url).path
+        for k, v in raw.items():
+            if p.endswith('/data/' + k):
+                return route.fulfill(status=200, content_type='application/octet-stream', body=v)
+        route.fulfill(status=404, body='')
+    c.context.unroute(re.compile(r'/__setup/'))
+    c.context.unroute(re.compile(r'/data/airline/'))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    c.context.route(re.compile(r'/data/airline/'), data)
+    return [[k, v, 'document'] for k, v in files.items() if not isinstance(v, bytes)]
+
+
+@case('A94', 'The frame follows the current airline: the name, the site, the networks and the logo change with the choice; a logo outside the airline’s folder is refused', 'A',
+      designs=('standard',), screens=False, night=False,
+      rule='V3_SPECIFICATION 10.38 step 1 (V3 Frame): ctx.airline reads FrameData.airline() (name, site, logo, networks, relay) instead of airline/settings.json alone and follows frame-data-airline; the logo stays png / webp checked (audit 157), taken in the airline’s own folder only; without an index, the airline of today (A83)')
+def a94(c):
+    fix = ROOT / 'tests' / 'v3' / 'fixtures' / 'airline'
+    files = {
+        'airline/index.json': {'airlines': [{'code': 'aiv', 'name': 'Air Inter Va'}, {'code': 'dfa', 'name': 'DEFA Virtual'}, {'code': 'zzz', 'name': 'Zed'}]},
+        'airline/aiv/settings.json': {'name': 'Air Inter Va', 'site': 'https://aiv.example/', 'logo': 'logo.png', 'networks': {'ivao': 'AIV', 'vatsim': True, 'x': {'no': 1}}},
+        'airline/aiv/logo.png': (fix / 'logo-dalton.png').read_bytes(),
+        'airline/dfa/settings.json': {'name': 'DEFA Virtual', 'site': 'https://dfa.example/', 'logo': 'airline/dfa/logo.png'},
+        'airline/dfa/logo.png': (fix / 'logo-rm.png').read_bytes(),
+        'airline/zzz/settings.json': {'name': 'Zed', 'logo': 'airline/aiv/logo.png'},   # a logo of another airline: refused
+    }
+    docs = _airlines_launcher(c, files)
+    c.page.add_init_script("window.__airs = []; window.addEventListener('frame-airline', e => window.__airs.push(e.detail))")
+    c.open('missions', app='company', docs=LEVEL3 + docs, wait=False)
+    logo = "(() => { const i = document.querySelector('#fAppIco img.f-logo'); return i && i.naturalWidth > 0 ? i.src : null })()"
+    c.until(f"!!{logo}", timeout=20000, what='the first airline of the index: its logo')
+    last = lambda: c.js("() => window.__airs[window.__airs.length - 1] || null")
+    a = last()
+    c.eq((a['code'], a['name'], a['site'], a['networks']), ('aiv', 'Air Inter Va', 'https://aiv.example/', {'ivao': 'AIV', 'vatsim': True}),
+         'no choice yet: the first airline of the index, its site and its networks (simple fields only)', what='aiv')
+    first = c.js(logo)
+    c.tap('#fApp')
+    c.until("!!document.querySelector('.f-tabpop [data-app=\"company\"] img.f-logo')", what='the logo in the switcher')
+    c.ok('Air Inter Va' in c.js("document.querySelector('.f-tabpop [data-app=\"company\"]').textContent"), '', 'the switcher’s subtitle: the airline’s name')
+    c.tap('#fApp')
+    c.until("!document.querySelector('.f-tabpop')", what='the switcher closed')
+    # the choice of another airline: name, site and logo follow, at once
+    c.eq(c.js("() => FrameData.setAirline('dfa')"), True, 'dfa is chosen', what='setAirline dfa')
+    c.until("window.__airs[window.__airs.length - 1]?.code === 'dfa'", timeout=15000, what='the frame follows the choice')
+    a = last()
+    c.eq((a['name'], a['site']), ('DEFA Virtual', 'https://dfa.example/'), 'the name and the site of the chosen airline', what='dfa')
+    c.until(f"!!{logo} && {logo} !== {json.dumps(first)}", timeout=15000, what='its own logo (a full path in its own folder is taken)')
+    c.tap('#fApp')
+    c.until("!!document.querySelector('.f-tabpop [data-app=\"company\"] img.f-logo')", what='the logo in the switcher')
+    c.ok('DEFA Virtual' in c.js("document.querySelector('.f-tabpop [data-app=\"company\"]').textContent"), '', 'the switcher’s subtitle follows')
+    c.tap('#fApp')
+    c.until("!document.querySelector('.f-tabpop')", what='the switcher closed')
+    # a logo named in the folder of another airline: refused, the tinted plane
+    c.eq(c.js("() => FrameData.setAirline('zzz')"), True, 'zzz is chosen', what='setAirline zzz')
+    c.until("window.__airs[window.__airs.length - 1]?.code === 'zzz'", timeout=15000, what='the frame follows the third choice')
+    c.until("document.querySelectorAll('#fAppIco img').length === 0 && document.querySelectorAll('#fAppIco svg').length === 1", timeout=15000,
+            what='a logo of another airline’s folder is refused: the tinted plane')
+    c.check_errors()

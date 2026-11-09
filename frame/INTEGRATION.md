@@ -949,8 +949,16 @@ screens: [{ id: 'sources', scripts: ['aerodb/airac.js?v=0', 'aerodb/catalogue.js
     first request** (`{ schema, code: 'perso', name: 'Personnel' }` and `{ schema, aircraft: [] }`). **Without `index.json`**
     (before the migration) the airline of today: `data/airline/settings.json` and `fleet.json`, code **`default`**, so nothing
     changes on screen. No choice made yet (or a choice no longer known): the first airline of the index.
+  - `airline()` also returns **`root`**, the airline's folder (`airline/` for `default`, `airline/<code>/`, or the personal folder):
+    a file an airline names (its logo) is taken from there and nowhere else.
+  - **`ctx.airline` follows the current airline** (since the frame's second lot, 9 Nov 2026): it is built from `FrameData.airline()` —
+    `{ code, name, site, logo, pages, networks }` (`networks`: the simple fields of `settings.networks`, text / number / boolean, eight at
+    most) — and the `frame-airline` event fires when it changes, including when the choice changes (`frame-data-airline`): the
+    header, the switcher's subtitle, the site relay and the logo follow, with no reload. The logo stays a png / webp checked by its first
+    bytes, 512 KB at most (audit 157), and is **taken in the airline's own folder only** (`logo.png` or the full path `airline/<code>/logo.png`;
+    another folder is refused like any bad logo: the tinted plane, said once to the administrator). Without an index, the airline of
+    today as before.
   - Not in this lot: the chooser and the migration (Réglages), the readers (Compagnie, Missions, report, Fuel, Statistiques).
-    `ctx.airline` and the `frame-airline` event (the settings of today's airline for the frame's own use) are unchanged.
 - `FrameData.lastPushed()` (5 Nov 2026, SOG-0029; the Synchronisation card): `[{ path, at, result }]` — what the last
   synchronisation **that tried a send** took, file by file: `at` the time of that pass (ISO), `result` `'ok'` or the reason the
   transport gave (`403 …`, `refused: …`, an error text, 120 characters at most). The last send only, never a journal: a pass that

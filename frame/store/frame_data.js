@@ -1760,7 +1760,7 @@
       known = (await airlines()).map(a => a.code);
     return known.includes(chosen) ? chosen : known[0];
   }
-  /** La compagnie courante : { code, name, settings, fleet } — settings et fleet tels que lus (objet / null, non fiables : à
+  /** La compagnie courante : { code, root, name, settings, fleet } — settings et fleet tels que lus (objet / null, non fiables : à
    *  échapper), name nettoyé et borné. « personnel » est créée vide à la première demande (settings.json et fleet.json sous
    *  pilot/<trigramme>/airline/perso/). */
   async function airline() {
@@ -1800,6 +1800,7 @@
     const plain = v => v && typeof v === 'object' ? v : null;
     return {
       code,
+      root: base, // le dossier de la compagnie (« airline/<code>/ ») : un fichier qu'elle nomme (le logo) s'y trouve, nulle part ailleurs
       name: code === AIRLINE_PERSO ? known.name : airlineName(plain(settings)?.name) || known.name,
       settings: plain(settings) && !Array.isArray(settings) ? settings : {},
       fleet: plain(fleet)
