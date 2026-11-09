@@ -152,7 +152,7 @@ function alsoTip(a, ll) {
 }
 /** Ce qu'il y a sous (x, y) pour l'infobulle, dans l'ordre : barbule, point de report surligné, cartouche de voie, balise,
  *  libellé d'espace ; avec (lat, lon), les espaces du point en dernier. Deux lignes (plus « Aussi ici »), ou null. */
-export function tipAt(x, y, lat = null, lon = null) {
+export function tipAt(x, y, lat = null, lon = null, tap = false) {
   const w = windAt(x, y);
   if (w) return windLines(w);
   const vp = (S.vfrHits || []).find(h => Math.hypot(h.x - x, h.y - y) <= 9)?.p;
@@ -167,8 +167,10 @@ export function tipAt(x, y, lat = null, lon = null) {
   if (nv) return [navName(nv.n), nv.merged.length ? tt(TX.navAlso, {
     l: nv.merged.map(navName).join(', ')
   }) : nv.n.name || ''];
-  // la route orthodromique, à 7 px : son nom et sa longueur (SOG-0145) ; la route, les voies et les balises passent avant
-  if (S.gc?.q?.length > 1 && S.gc.q.slice(1).some((p, i) => segDist(x, y, S.gc.q[i], p) <= 7)) return [tt(TX.gcTip, {
+  // la route orthodromique, à 7 px : son nom et sa longueur (SOG-0145) ; la route, les voies et les balises passent avant ; un TOUCHER
+  // sur la route y place le curseur (une route directe est son propre grand cercle : l'infobulle du pointillé ne le prend pas)
+  if (S.gc?.q?.length > 1 && S.gc.q.slice(1).some((p, i) => segDist(x, y, S.gc.q[i], p) <= 7) &&
+    !(tap && S.prof && MapsProfile.nearest(S.prof, projNow(), x, y) != null)) return [tt(TX.gcTip, {
     a: S.gc.dep,
     b: S.gc.arr
   }), tt(TX.gcLen, {
@@ -255,7 +257,7 @@ export function tapAt(x, y, lat, lon) {
   const ad = onMission() ? null : adAt(x, y);
   if (ad) return pinAd(ad);
   if (!S.cardEl.hidden) return hideTips();
-  if (tipAt(x, y)) return mapTip(lat, lon, x, y);
+  if (tipAt(x, y, null, null, true)) return mapTip(lat, lon, x, y);
   const s = S.prof ? MapsProfile.nearest(S.prof, projNow(), x, y) : null;
   if (s != null) {
     hideTips();

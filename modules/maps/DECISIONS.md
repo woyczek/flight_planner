@@ -2133,6 +2133,10 @@ the Map had seen in between: the same line to within the frame's own sampling.
   round dots (0.1 px dash, 6 px gap) so it reads as « dotted » at any zoom; (3) its hover comes after the winds, reporting points,
   airways and beacons, before the airspaces (it crosses them all); (4) nothing during a gesture's light drawing is guaranteed: it is part of
   the full drawing only.
+- **An escaped defect, found by the evening run (D32, 9 Nov)**: the hover of the dotted line was also what `tapAt` asked first (`tipAt`),
+  so a **tap on a route that is its own great circle** (a direct route, as in D32 across the date line) showed the bubble of the dotted line
+  instead of placing the cursor on the route. `tipAt(…, tap)`: for a tap, the dotted line's bubble is skipped when the tap is on the route
+  (`MapsProfile.nearest`); the hover keeps it everywhere. D125 now taps a direct route; D32 is green again. My gates did not include D32.
 - **Not done**: no toggle in Layers (it is on whenever it can be, like the route); the length is not in the profile sheet.
 - **Noreg** D125 (the length = the great-circle distance, the ends, the hover, the layer order, nothing without an arrival; red without the code).
 
