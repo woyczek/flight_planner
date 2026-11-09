@@ -4,8 +4,8 @@
  "updated": "2026-11-09",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "da33628",
-  "fiches": 140,
+  "organisation": "91bb9a0",
+  "fiches": 143,
   "untranslated": 0,
   "priorities": 4
  },
@@ -313,7 +313,7 @@
     {
      "id": "SOG-0060",
      "kind": "bug",
-     "state": "doing",
+     "state": "later",
      "fr": "Carburant : l'appareil du vol dit en clair ; le choix de l'appareil a le même moteur de recherche que les réglages",
      "en": "Fuel: the flight's aircraft stated in plain words; the aircraft choice has the same search engine as the settings",
      "de": "Kraftstoff: Das Flugzeug des Flugs im Klartext; die Flugzeugauswahl hat dieselbe Suchmaschine wie die Einstellungen",
@@ -342,7 +342,7 @@
     {
      "id": "SOG-0081",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Calcul de route automatique et contrôle IFPS / RAD / FRA : intégrer le moteur de RouteSim dans le chemin du pilote (alpha.5)",
      "en": "Automatic route calculation and IFPS / RAD / FRA check: integrate the RouteSim engine into the pilot’s path (alpha.5)",
      "de": "Automatische Routenberechnung und IFPS-/RAD-/FRA-Prüfung: die RouteSim-Engine in den Pilotenweg integrieren (alpha.5)",
@@ -405,7 +405,7 @@
     {
      "id": "SOG-0134",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Route (RAD) : montrer les tracés des itinéraires proposés avant de choisir, et dire quels sont les écarts aux règles",
      "en": "Route (RAD): draw the proposed routes before choosing, and say which rule deviations",
      "de": "Route (RAD): vorgeschlagene Routen vor der Wahl zeichnen und die Regelabweichungen benennen",
@@ -414,7 +414,7 @@
     {
      "id": "SOG-0140",
      "kind": "bug",
-     "state": "planned",
+     "state": "later",
      "fr": "Le bouton ⇄ de Carburant est beaucoup trop gros",
      "en": "The ⇄ button of Fuel is far too big",
      "de": "Der ⇄-Knopf in Kraftstoff ist viel zu groß",
@@ -435,7 +435,7 @@
     {
      "id": "SOG-0011",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Expliquer fuel as volume et fuel density",
      "en": "Explain fuel as volume and fuel density",
      "de": "Fuel as volume und Fuel density erklären",
@@ -567,6 +567,15 @@
      "en": "Weather on the Map: a “download AROME” link rather than a “show weather” button",
      "de": "Wetter auf der Karte: ein Link „AROME laden“ statt eines Knopfs „Wetter anzeigen“",
      "es": "Meteo en el Mapa: un enlace «descargar AROME» en vez de un botón «mostrar meteo»"
+    },
+    {
+     "id": "SOG-0141",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Météo sur la Carte : les flèches de vent sont toutes les mêmes sur une route qui sort de la couverture du modèle",
+     "en": "Weather on the Map: the wind arrows are all the same on a route that leaves the model's coverage",
+     "de": "Wetter auf der Karte: alle Windpfeile gleich auf einer Route außerhalb der Modellabdeckung",
+     "es": "Meteo en el Mapa: las flechas de viento son todas iguales en una ruta que sale de la cobertura del modelo"
     }
    ]
   },
@@ -761,7 +770,7 @@
     {
      "id": "SOG-0138",
      "kind": "bug",
-     "state": "planned",
+     "state": "later",
      "fr": "GFS : toujours pas de carte synoptique ; et une réponse visible, pas entre deux portes",
      "en": "GFS: still no synoptic map; and a visible answer, not between two doors",
      "de": "GFS: noch immer keine synoptische Karte; und eine sichtbare Antwort, nicht zwischen Tür und Angel",
@@ -1274,7 +1283,7 @@
     {
      "id": "SOG-0065",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Base aéro : regrouper les pays en paquets (continents, régions) et un méta-classement (îles, Himalaya, déserts, forêts, lacs et fleuves, mégalopoles…)",
      "en": "Aero database: group countries into packs (continents, regions) and a meta-classification (islands, Himalayas, deserts, forests, lakes and rivers, megacities…)",
      "de": "Aero-Datenbank: Länder zu Paketen (Kontinente, Regionen) zusammenfassen und eine Meta-Klassifizierung (Inseln, Himalaya, Wüsten, Wälder, Seen und Flüsse, Megastädte …)",
@@ -1314,7 +1323,7 @@
     {
      "id": "SOG-0077",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "AWY : couverture hors France ? Notation des points d'entrée / sortie du FRA",
      "en": "AWY: coverage outside France? Notation of FRA entry / exit points",
      "de": "Luftstraßen: Abdeckung außerhalb Frankreichs? Notation der FRA-Ein- und Ausflugpunkte",
@@ -1488,7 +1497,7 @@
     {
      "id": "SOG-0132",
      "kind": "bug",
-     "state": "planned",
+     "state": "later",
      "fr": "Écrans qui bougent : réserver la place d'un bloc qui recevra son contenu plus tard",
      "en": "Moving screens: reserve the place of a block whose content arrives later",
      "de": "Springende Bildschirme: Platz für Blöcke reservieren, deren Inhalt später kommt",
@@ -1523,6 +1532,15 @@
      "en": "ADEP / ADEST completion as in RouteSim: airport list, name under the field, swap button",
      "de": "ADEP/ADEST-Vervollständigung wie in RouteSim: Flugplatzliste, Name unter dem Feld, Tauschknopf",
      "es": "Autocompletado ADEP / ADEST como en RouteSim: lista de aeródromos, nombre bajo el campo, botón de intercambio"
+    },
+    {
+     "id": "SOG-0142",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Lecteur de route : les homonymes (PAM aux États-Unis, ALS au Maroc) et les points inconnus dits avec leur zone",
+     "en": "Route reader: homonyms (PAM in the USA, ALS in Morocco) and unknown points said with their zone",
+     "de": "Routenleser: Homonyme (PAM in den USA, ALS in Marokko) und unbekannte Punkte mit ihrer Zone benannt",
+     "es": "Lector de ruta: homónimos (PAM en EE. UU., ALS en Marruecos) y puntos desconocidos dichos con su zona"
     }
    ]
   },
@@ -1539,7 +1557,7 @@
     {
      "id": "SOG-0135",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Lire le sol (taxiways) avec les procédures du terrain, pas par un bouton de plus",
      "en": "Read the ground (taxiways) with the airport's procedures, not through one more button",
      "de": "Boden (Rollwege) zusammen mit den Verfahren des Flugplatzes lesen, nicht über einen weiteren Knopf",
@@ -1865,7 +1883,7 @@
     {
      "id": "SOG-0133",
      "kind": "bug",
-     "state": "planned",
+     "state": "later",
      "fr": "Réglages : plusieurs secondes d'attente avant l'écran, pour une version du dépôt qui n'est qu'accessoire",
      "en": "Settings: several seconds of waiting before the screen, for a repository version that is only accessory",
      "de": "Einstellungen: mehrere Sekunden Wartezeit vor dem Bildschirm wegen einer nur nebensächlichen Repository-Version",
@@ -1947,11 +1965,32 @@
     {
      "id": "SOG-0136",
      "kind": "bug",
-     "state": "planned",
+     "state": "later",
      "fr": "Nouvelle brouette de conflits de synchronisation alors que l'utilisateur est seul",
      "en": "A new barrowful of sync conflicts while the user is alone",
      "de": "Eine neue Schubkarre voller Sync-Konflikte, obwohl der Benutzer allein ist",
      "es": "Una nueva carretilla de conflictos de sincronización estando el usuario solo"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-transverse-donnees",
+   "app": "maintenance",
+   "label": {
+    "fr": "Transverse ; Données",
+    "en": "Transverse ; Données",
+    "de": "Transverse ; Données",
+    "es": "Transverse ; Données"
+   },
+   "items": [
+    {
+     "id": "SOG-0143",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Zone manquante : partout, dire ce qui manque, offrir le geste (Données) et les replis externes (LittleNavMap, Navigraph, ChartFox)",
+     "en": "Missing zone: everywhere, say what is missing, offer the gesture (Données) and the external fallbacks (LittleNavMap, Navigraph, ChartFox)",
+     "de": "Fehlende Zone: überall sagen, was fehlt, die Geste anbieten (Daten) und die externen Ausweichwege (LittleNavMap, Navigraph, ChartFox)",
+     "es": "Zona ausente: en todas partes, decir qué falta, ofrecer el gesto (Datos) y los recursos externos (LittleNavMap, Navigraph, ChartFox)"
     }
    ]
   },
