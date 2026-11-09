@@ -1728,6 +1728,21 @@ redesigned for touch at that point.
        field per line, read when present, else `cruise.tasKt`; the lnmperf import sets `altFt` to the sheet's cruise
        altitude on its single cruise line and the export takes the lines of the nearest altitude (frame/aerodb/sheets.js,
        AeroDB's file: Features SOG writes the patch, AeroDB reviews and commits it).
+       **D — The « Auto » level** (user, 6 Nov: "écran 1 du pilote. on doit saisir un niveau, mais on ne le connaîtra que plus
+       tard. mettre un bouton « auto » qui calcule en fonction du calcul carbu et temps"; SOG-0056). Ergonomics design of
+       9 Nov, owner Features SOG, alpha.5. Next to the level field of the first step, one button « Auto ». It chooses,
+       among the levels allowed by the semicircular rule for the route's mean track (odd or even thousands, FL 030 to
+       the sheet's ceiling, or 20 000 ft without a ceiling), the one whose quote burns the least fuel on the current
+       route; the quote already computes climb, cruise and descent per level (`FuelLevels`), so the choice is a loop over
+       at most forty levels, under 50 ms, never a new model. Ties within 2 % of fuel go to the lower level (less time).
+       The field then reads « FL180 (auto) » and the trip time is said beside it (« 1 h 02 »); the level is recomputed when
+       the route, the aircraft or the wind source changes, as long as the pilot has not typed a level himself: a typed
+       level turns « (auto) » off, « Auto » turns it on again. Without a route or a sheet, the button is disabled and says
+       why in its title. A level constraint of a chosen procedure (SOG-0003) bounds the search. One criterion, fuel; the
+       time is shown, not optimised (the user's words: « en fonction du calcul carbu et temps » — the time is the
+       information, the fuel the choice). Seven elements at most on the step (rule 13): the button sits in the level's
+       row. One case: a route where FL 100 burns more than FL 180 → « FL180 (auto) », a typed FL 120 keeps FL 120, a route
+       change recomputes; red before.
 
    38. **Several airlines in one data repository; the personal fleet is the airline "personnel"** (user, 6 Nov, iCloud
        note "BUGS": "la flotte personnelle est vue comme une compagnie « personnel ». ça implique d'avoir plusieurs
