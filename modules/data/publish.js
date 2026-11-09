@@ -166,7 +166,7 @@ async function endPublish(me, out) {
   renderBuild();
   if (!S.chain) S.ctx.notify(lines.map(l => l.text).join(' · '), level); // dans la chaîne : la notification de la fin de la chaîne
   journalWrite(M.publishEntry(Date.now(), out));
-  await load();
+  await load(true);
 }
 /** « Publier » : l'état de data/ est relu, une seule question (les fichiers et les commits), puis le passage du cadre avec le geste
  *  (ctx.data.sync({ gesture: true })) — jamais sans la question, jamais pendant une construction. Rien ne part si le bouton est gris. */

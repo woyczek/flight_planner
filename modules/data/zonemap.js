@@ -56,8 +56,24 @@ function outlineOf(kind, id) {
 }
 /** Les éléments que la carte dessine : ceux que la liste du panneau propose (zones de la couverture, États en bloc), avec leur contour. */
 function mapEntries(kind) {
-  const ids = kind === 'base' ? buildZones().ids : procList().map(i => i.id);
+  const ids = kind === 'base' ? baseZoneIds() : procList().map(i => i.id);
   return ids.map(id => outlineOf(kind, id)).filter(Boolean);
+}
+/** Les zones que la carte de la base dessine : celles de la couverture, et aussi toutes celles que la suite connaît (zones d'aerodb), dans l'ordre de leur nom : une zone hors de la
+ *  couverture est grise (« hors couverture ») et un toucher l'ajoute (SOG-0070). Sans la liste des zones : la couverture seule. */
+function baseZoneIds() {
+  const cov = buildZones().ids,
+    zones = S.d.zones;
+  return zones ? M.orderZones([...new Set([...cov, ...zones.map(z => z.id)])], zones) : cov;
+}
+/** Le cadre ([ouest, sud, est, nord]) des zones de la couverture (la carte de la base cadre ce que le poste tient, pas le monde que ses zones connues dessinent) ; null pour l'autre carte
+ *  ou sans zone de la couverture. */
+function activeBounds(kind) {
+  if (kind !== 'base') return null;
+  const cov = new Set(buildZones().ids),
+    boxes = mapEntries(kind).filter(e => cov.has(e.id)).map(e => e.box);
+  return boxes.length ? boxes.reduce((b, x) => [Math.min(b[0], x[0]), Math.min(b[1], x[1]), Math.max(b[2], x[2]), Math.max(b[3], x[3])]) :
+    null;
 }
 /** La teinte d'un élément : hors couverture, en cours (une opération du panneau le traite), à reconstruire (rien de publié ou cycle dépassé), à jour. */
 function mapToneOf(kind, id) {
@@ -220,7 +236,7 @@ function startMap(kind, m) {
       onTap: id => toggleZone(kind, id)
     });
     mapSize(map, m.host);
-    m.layer.fit();
+    m.layer.fit(24, activeBounds(kind));
     if (kind === 'proc') startPoints(kind, m);
   });
 }
@@ -273,7 +289,7 @@ export function resizeMaps() {
 }
 /** « Recentrer » : la vue revient au premier cadre, celui de toutes les zones du panneau (zonesLayer.fit, sans cadre donné). */
 export function recenterMap(kind) {
-  S.maps[kind]?.layer?.fit();
+  S.maps[kind]?.layer?.fit(24, activeBounds(kind));
 }
 /** Retire les cartes MapLibre du module (au démontage) : couches du socle, puis la carte et son contexte WebGL. */
 export function destroyMaps() {
@@ -292,6 +308,8 @@ export function destroyMaps() {
  *  et la liste se lisent toutes deux de cette sélection, jamais l'une de l'autre. Sans effet pendant une marche, ou pour un élément que la liste ne propose pas. */
 function toggleZone(kind, id) {
   if (frozen() || !S.d) return;
+  // une zone connue hors de la couverture : un toucher l'ajoute (cochée), comme « Ajouter un pays » (SOG-0070) ; une zone de la couverture se coche ou se décoche seulement, jamais une purge
+  if (kind === 'base' && !buildZones().ids.includes(id)) return S.addZone?.(id);
   const set = kind === 'base' && buildZones().ids.includes(id) ? S.ticked : kind === 'proc' && procList().some(i => i.id === id) ? S
     .picked : null;
   if (!set) return;

@@ -238,6 +238,8 @@ Rules (V3 § 10.34, 30 Oct 2026):
   « chaîne interrompue par le rechargement » (the chain itself does not survive a reload, its running job does). The sets'
   own entries are not written during the chain.
 
+> **Reading again after an operation** (SOG-0072): the real end of a build, download, purge, sheets publication, publication and of the chain calls `load(true)`: `ctx.aerodb.refresh()` (aerodb keeps its list of published zones until told), then the openings' reads. Case L31.
+
 ### 5.5 The same four verbs for every set (V3 § 10.34, lot A1)
 
 Every group has the panel the Base aéronautique has (§ 3, rule « In the Base aéronautique group… »): **one choice of
@@ -277,7 +279,10 @@ United States a rectangle, the islands dots).
   approximatif » while aerodb has only its frame (no ring, or a ring equal to its box: known from the data, never from an id).
   The word stays defined; on 31 Oct it applies to no zone (AeroDB checked: every zone has its real rings).
 - **A tap on a zone ticks or unticks it**: the same selection as the list, one writer, the module's state (unchanged); a drag
-  or a pinch ticks nothing. The polygons tappable by id come from the base (asked of the Map's owner when missing, never
+  or a pinch ticks nothing. **A country outside the coverage is drawn too** (SOG-0070: every zone `zones()` knows and whose outline is known, grey
+  « not in the coverage ») and a tap on it **adds it** to the coverage, ticked, exactly like « Ajouter un pays » (`addZone`, handed to the map by
+  `S.addZone`: the map file cannot import the screen's); a tap on a country of the coverage only ticks or unticks it, never a purge. The first view and
+  « Recentrer » frame the countries of the coverage, not the world the known ones draw. Case L30. The polygons tappable by id come from the base (asked of the Map's owner when missing, never
   rewritten here).
 - **The first view frames every zone of the panel**; « Recentrer » brings it back after the pilot moved. The frame is the base's:
   `zonesLayer.fit()` without bounds, which reads each zone's **main ring** (the largest: metropolitan France, the 48 States) and

@@ -184,3 +184,19 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   launcher change, not done here).
 - **Found while testing**: `knownVerbs` kept only `^[a-z]+/[a-z]+$`, so a launcher that listed `base/move-sources` was read as not knowing it; the hyphen is allowed.
 - **Manual**: the Données screen is not described in the manuals (docs/MANUEL_*); the help of the module (×4) says it.
+
+## 10 November 2026 — a tap on any country (SOG-0070)
+
+- The base map now draws **every zone the suite knows** that has an outline (grey when outside the coverage); a tap on an inactive one is `addZone` (written, ticked), a tap on an active one only toggles its box:
+  never a purge (purging stays a verb of the launcher behind its own question). One gesture for all, the result at once (the screen redraws from the same selection).
+- **Framing**: the first view and « Recentrer » fit the coverage's boxes (`activeBounds`), so that the grey countries do not turn the view into a world map.
+- **Wiring**: `addZone` lives in `screen.js`, which already imports the map file; the map reaches it through `S.addZone` (set at mount) to avoid a circular import.
+- The States map (procedures) is unchanged: every State it can draw is already in its list.
+
+## 10 November 2026 — the screen reads the published state again after a build or a publication (SOG-0072)
+
+- User report: after recomputing, a country stays orange even after publishing, until a hard reload. **Cause found in the module's wiring**: `load()` asks `aerodb.publication()`, and aerodb keeps its list of
+  published zones in memory (`published()`) until `refresh()` or its reader's watcher says it changed; files written under it by the launcher are not announced until the data layer's next pass. The end of a real
+  build, download, purge, publication of sheets, publication and of the chain now call `load(true)`: `aerodb.refresh()` first, then the same reads as at the opening.
+- **If it is still orange after this**, the stale part is below the module (the data layer's tree of the launcher, or the service worker's cache of a data file): a report for V3 Frame, with the file that stays old.
+- Case L31 (an aerodb stub that memorises like the real one until `refresh()`; the SIA row leaves « cycle gone by » at the end of a build, no reload), red without the call.

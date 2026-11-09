@@ -276,7 +276,11 @@ def _stub(cfg):
     const ok = (name, key) => async () => { const k = window.__stub.calls = window.__stub.calls || {}; k[name] = (k[name] || 0) + 1; if (window.__stub.fail.includes(name)) throw new Error('stub: ' + name); return window.__stub[key] };
     A.aerodromes = async q => { const k = window.__stub.calls = window.__stub.calls || {}; k.aerodromes = (k.aerodromes || 0) + 1; (window.__stub.aeroQ = window.__stub.aeroQ || []).push(q); return window.__stub.aero || [] };
     A.coverage = async icao => window.__stub.cov?.[icao] ?? null;
-    A.publication = ok('publication', 'publication'); A.zones = ok('zones', 'zones'); A.coverageByState = ok('coverageByState', 'states'); A.zoneOutlines = ok('zoneOutlines', 'outlines');
+    // memo: what aerodb really does (published() keeps the list of zones until refresh() or its reader's watcher says it changed): publication() answers the first state until refresh()
+    A.publication = async () => { const k = window.__stub.calls = window.__stub.calls || {}; k.publication = (k.publication || 0) + 1; if (window.__stub.fail.includes('publication')) throw new Error('stub: publication');
+      return window.__stub.memo ? (window.__stub.memoPub ||= JSON.parse(JSON.stringify(window.__stub.publication))) : window.__stub.publication };
+    A.refresh = () => { const k = window.__stub.calls = window.__stub.calls || {}; k.refresh = (k.refresh || 0) + 1; window.__stub.memoPub = null };
+    A.zones = ok('zones', 'zones'); A.coverageByState = ok('coverageByState', 'states'); A.zoneOutlines = ok('zoneOutlines', 'outlines');
     const s = A.sources; A.sources = async () => { const r = await s.call(A); if (cfg.pv) return { ...r, PARSER_VERSION: cfg.pv }; const { PARSER_VERSION, ...rest } = r; return rest };  // pv null: the catalogue without its constant (aerodb has carried one since 567b94440)
     const on = A.on; A.on = function (ev, fn) { const un = on.call(A, ev, fn); if (ev === 'change') window.__stub.fns.add(fn); return () => { window.__stub.fns.delete(fn); un() } };
     return A };
@@ -3606,4 +3610,64 @@ def l29(c):
     c.tap('[data-move=plan]')
     c.until("!!document.querySelector('[data-move-state=asking]')", timeout=20000, what='the question once the merge is over')
     c.eq(len(posts(st)) - n0, 1, 'counter-test: without the pending merge the same gesture starts the job', what='counter-test')
+    c.check_errors()
+
+
+@case('L30', 'Données: a tap on a country of the map toggles it, an inactive one too (added to the coverage and ticked; an active one is only unticked, never purged)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0070: the map of the base draws every zone the suite knows (grey when outside the coverage); a tap on an inactive one adds it like « Ajouter un pays » (written, ticked), a tap on an active one unticks it (the coverage keeps it), the same gesture everywhere on the map, at once')
+def l30(c):
+    c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/'), lambda r: r.fulfill(status=200, content_type='application/json', body=_ZSTYLE))
+    cfg, _ = _fixture()
+    cfg['outlines'] = _outlines()
+    cfg['outlines']['de'] = {'name': ['Allemagne', 'Germany', 'Deutschland', 'Alemania'], 'rings': [[[24, 45], [36, 45], [36, 46], [24, 47], [24, 45]]], 'box': [24, 45, 36, 47]}
+    _ZC['de'] = [30, 45.6]
+    c.page.add_init_script(_ZHOOK_JS)
+    _open(c, cfg)
+    _all_open(c)
+    _zmap_ready(c, 'base')
+    c.js("window.__zm.base.fitBounds([-14, 42, 38, 48], { animate: false, padding: 10 })")  # the first view frames the coverage; Germany is just beyond its edge
+    c.wait(500)
+    c.eq(c.count('[data-build-zone="de"]'), 0, 'Germany is known to the suite but not in the coverage: no line in the list', what='not in list')
+    f = _zfeat(c, 'base', 'de')
+    c.eq((f or {}).get('id'), 'de', 'the map draws it all the same', what='drawn')
+    c.eq((f or {}).get('tone'), 'muted', 'grey: outside the coverage', what='muted')
+    # ---- a tap on the inactive country adds it, ticked, written, at once
+    _ztap(c, 'base', 'de')
+    c.until("!!document.querySelector('[data-build-zone=\"de\"]')", timeout=6000, what='the list has Germany')
+    c.eq((c.js("document.querySelector('[data-build-zone=\"de\"]').checked"), _zfeat(c, 'base', 'de')['picked']), (True, True), 'added and ticked: the list and the map agree', what='added')
+    doc = c.until_doc('cache/data/coverage.json', lambda d: bool(d and 'de' in (d.get('zones') or [])), what='the coverage written with Germany')
+    c.ok('fr' in doc['zones'] and 'de' in doc['zones'], doc['zones'], 'the coverage keeps the others and now has Germany')
+    # ---- a tap on an active country unticks it; the coverage keeps it (no purge)
+    _ztap(c, 'base', 'de')
+    c.eq((c.js("document.querySelector('[data-build-zone=\"de\"]').checked"), _zfeat(c, 'base', 'de')['picked']), (False, False), 'a second tap unticks it: the same gesture on every country', what='unticked')
+    _ztap(c, 'base', 'fr')
+    c.eq((c.js("document.querySelector('[data-build-zone=fr]').checked"), c.count('[data-build-zone=fr]')), (False, 1), 'an active country is unticked, never removed from the list', what='fr')
+    c.ok('fr' in c.doc('cache/data/coverage.json')['zones'] and 'de' in c.doc('cache/data/coverage.json')['zones'], c.doc('cache/data/coverage.json'), 'the coverage still holds both: a tap never purges')
+    c.check_errors()
+
+
+@case('L31', 'Données: after Construire the screen reads the published state again without a reload (aerodb keeps its list of published zones: refresh() first), so the orange zone turns green', 'L', tags=('data',),
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0072: « après avoir recalculé, toujours un pays orange, il faut ctrl-maj-F5 » — the end of a real build (and of a publication, and of the chain) asks aerodb to forget its memorised list of zones (refresh()) before the screen reads publication() again')
+def l31(c):
+    _t, cur, prev, _n = _cycles()
+    v_done = _view('done', step='Terminé', done=1, total=1, zones={'fr': _zs('built', 4, 4, commit='abc1234')},
+                   result={'built': ['fr'], 'failed': [], 'commits': [{'zone': 'fr', 'commit': 'abc1234'}], 'cycle': cur.isoformat(), 'current': cur.isoformat(), 'stale': False, 'blocking': [],
+                           'sources': {'sia': {'cycle': cur.isoformat(), 'current': cur.isoformat(), 'stale': False}}})
+    st = _launcher(c, [v_done])
+    cfg, _ = _fixture()
+    cfg['memo'] = True   # what aerodb really does: publication() keeps answering the first state until refresh()
+    _open(c, cfg)
+    base_state = lambda: c.js("(() => { const r = [...document.querySelectorAll('[data-set]')].find(x => x.dataset.set === 'sia'); return r ? r.dataset.state || '' : null })()")
+    first = base_state()
+    c.eq(first, 'stale-cycle', 'France is one cycle behind: the SIA row is orange at first', what='first')
+    _untick(c, 'ca', 'es', 'gb', 'us')
+    # the build ends: what is published has changed (France is now of the current cycle) — the page is not reloaded
+    c.js("window.__stub.publication.base.fr = { ...window.__stub.publication.base.gb, cycleSource: 'sia' }")
+    c.tap('[data-verb=build]')
+    c.until("!!document.querySelector('[data-build-result]')", timeout=15000, what='the end of the build')
+    c.until("window.__stub.calls.refresh >= 1", timeout=6000, what='aerodb is asked to forget its list of zones')
+    c.until(f"(() => {{ const r = [...document.querySelectorAll('[data-set]')].find(x => x.dataset.set === 'sia'); return !!r && r.dataset.state !== {json.dumps(first)} }})()", timeout=10000, what='the SIA row has left its orange state without a reload')
+    c.ok(base_state() not in ('stale-cycle', None), base_state(), 'the SIA row is no longer « cycle gone by »: read again after the refresh, no reload')
     c.check_errors()

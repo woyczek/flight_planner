@@ -133,6 +133,10 @@ session); they follow on `v3` and belong to alpha.5.
   § 9.6, DECISIONS; noreg F99, F100; SOG-0059). The field said and read kg/h whatever the unit chosen (an entry typed in lb/h flew
   as kg/h); it is typed in the unit of the quote, its label says it, kept in kg/h through `frame/lib/fuel_units.js`. « Réglages du
   devis · lb/h » is the first fold of the Result step, folded, instead of the last.
+- **Data: the screen reads the published state again after a build or a publication, without a reload** (`modules/data/screen.js` `load(true)`, `follow.js`, `publish.js`, `chain.js`; Data SPEC; L31) — SOG-0072:
+  the end of a real operation asks aerodb to forget its memorised list of published zones before reading, so an orange country turns green.
+- **Data: a tap on any country of the map toggles it, an inactive one too** (`modules/data/zonemap.js`, `module.js`, `texts.js`; Data SPEC § 5.5; help ×4; L30) — SOG-0070: the base map draws every known
+  zone (grey outside the coverage); tapping an inactive one adds it to the coverage, ticked (like « Ajouter un pays »), tapping an active one only unticks it, never a purge.
 - **Roadmap: lanes fold with a touch on their title** (`frame/help/roadmap.js`, `frame.css`; frame/help SPEC § 5; A103) — SOG-0069: folded by default when no card is left undelivered in the
   current view, the count kept in the title, the choice remembered per device.
 - **Settings › Company: « Migrate » the airline into its own folder** (`frame/settings/access.js`; settings SPEC § 3 item 8; help ×4; A102) — the plan first (code proposed from the name, files and

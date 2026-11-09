@@ -173,6 +173,7 @@ export async function mount(el, ctx) {
   setState({
     el,
     ctx,
+    addZone, // la carte de la base ajoute une zone connue hors couverture d'un toucher (zonemap.js ne peut pas importer screen.js)
     d: null,
     manual: {},
     focus: null,

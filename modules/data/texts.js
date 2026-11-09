@@ -818,10 +818,10 @@ export const TX = {
   ],
   mapLegend: ['Légende', 'Legend', 'Legende', 'Leyenda'],
   mapLegendNote: [
-    'Trait épais et teinte pleine : zone cochée ; touchez une zone pour la cocher, déplacez et pincez la carte pour la voir de plus près.',
-    'Thick outline and solid tint: zone ticked; tap a zone to tick it, drag and pinch the map to see it closer.',
-    'Dicker Rand und volle Tönung: Zone angekreuzt; tippen Sie auf eine Zone, um sie anzukreuzen, und verschieben und zoomen Sie die Karte, um näher heranzugehen.',
-    'Trazo grueso y tono lleno: zona marcada; toque una zona para marcarla, arrastre y pellizque el mapa para verlo más de cerca.'
+    'Trait épais et teinte pleine : zone cochée ; touchez une zone pour la cocher ou la décocher (une zone grise s’ajoute d’un toucher), déplacez et pincez la carte pour la voir de plus près.',
+    'Thick outline and solid tint: zone ticked; tap a zone to tick or untick it (a grey zone is added by a tap), drag and pinch the map to see it closer.',
+    'Dicker Rand und volle Tönung: Zone angekreuzt; tippen Sie auf eine Zone, um sie an- oder abzukreuzen (eine graue Zone wird durch Tippen hinzugefügt), und verschieben und zoomen Sie die Karte, um näher heranzugehen.',
+    'Trazo grueso y tono lleno: zona marcada; toque una zona para marcarla o desmarcarla (una zona gris se añade con un toque), arrastre y pellizque el mapa para verlo más de cerca.'
   ],
   // prendre le fichier téléchargé à la main dans Téléchargements (base/pickup) : le bouton, la question, la fin
   pickup: ['Prendre le fichier téléchargé', 'Take the downloaded file', 'Heruntergeladene Datei übernehmen',

@@ -190,7 +190,7 @@ async function endChain(me, ch, result, text, level) {
     result,
     job: ch.job
   }), true);
-  await load();
+  await load(true);
 }
 /** La chaîne : pour chaque jeu, Télécharger puis Construire par le suiveur ; au premier échec, arrêt (ce qui est construit reste commité sur le poste, rien n'est
  *  publié) ; si tout a réussi, UNE publication sans autre question que celle du plan. */

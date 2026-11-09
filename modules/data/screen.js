@@ -137,7 +137,10 @@ export async function readVerbs() {
 }
 /** Lit ce que l'écran montre : le catalogue, ce qui est publié, les zones, la couverture par État, la couverture du poste ; puis
  *  dessine, et à la première ouverture écrit la couverture. */
-export async function load() {
+export async function load(fresh = false) {
+  // après une construction ou une publication : la liste des zones publiées qu'aerodb garde en mémoire est périmée (les fichiers ont changé sous lui, le
+  // lecteur ne le dit qu'à sa prochaine passe) : refresh() la fait relire à la question qui suit (SOG-0072 : « il faut ctrl-maj-F5 pour voir le pays vert »)
+  if (fresh) S.ctx.aerodb?.refresh?.();
   const me = S,
     [cat, pub, zones, byState, stored, status] = await Promise.all([ask('sources'), ask('publication'), ask('zones'), ask(
         'coverageByState'),

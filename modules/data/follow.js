@@ -130,7 +130,7 @@ async function finishOp(set, verb, out, live, {
   };
   if (live && !quiet) S.ctx.notify(note.filter(Boolean).join(' · '), sm.level);
   if (!quiet) journalWrite(entry);
-  if (live && !quiet && reload) await load(); // les états des lignes ont changé : même chemin de lecture que l'ouverture
+  if (live && !quiet && reload) await load(true); // les états des lignes ont changé : même chemin de lecture que l'ouverture
 }
 /** Retient la dernière connaissance des sources datées (S.srcKept) : celle d'une fin de la base qui en porte (téléchargement, construction) ; une prise réelle du fichier retire celles qu'elle a prises (leur cycle est
  *  à relire par le prochain téléchargement ou la prochaine construction, il n'est plus celui qu'on avait). Rien ne part pour les lire. */
