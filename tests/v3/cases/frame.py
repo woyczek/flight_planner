@@ -4355,3 +4355,15 @@ def a112(c):
     c.eq([c.count('[data-card="sync"] [data-sync-timings] [data-tm=last]'), c.count('[data-card="sync"] [data-sync-timings] [data-tm=longest]')], [0, 1],
          'a launcher without timings: no « last » line, nothing invented; the longest of today, kept on the device, stays', what='old launcher')
     c.check_errors()
+
+
+@case('A113', 'The launcher transport commits the queue without a ReferenceError: a synchronisation that goes through POST /__setup/batch ends with the new head (« last is not defined » on 10 Nov 2026)', 'A', tags=('data',),
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0063 moved the transport’s last read into `shared.last`; commit() still wrote the old closure variable `last = null`: every sync that sent something failed with « refused by the server: last is not defined » (frame/app.js errs.other)')
+def a113(c):
+    c.context.route(re.compile(r'/__setup/batch'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps({'head': 'h2'})))
+    c.open('settings')
+    c.until("!!(window.FrameData && FrameData.launcher)", timeout=15000, what='the launcher transport')
+    r = c.js("""async () => { try { const t = FrameData.launcher({}); return { head: await t.commit([{ path: 'x.json', text: '{}' }], 'm', 'h1') } } catch (e) { return { error: String(e && e.message || e), name: e && e.name } } }""")
+    c.eq(r, {'head': 'h2'}, 'commit() answers the head the launcher gave, with no ReferenceError', what='commit')
+    c.check_errors()

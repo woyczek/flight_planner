@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fix: a synchronisation that sent something no longer fails with « last is not defined »** (`frame/store/transport_launcher.js` `commit`; A113) — the tree cache moved into `shared.last` (SOG-0063) but `commit()` still reset the old variable: a ReferenceError turned into « refused by the server ».
 - **Data: « Prendre le fichier téléchargé » sends the « personnel » box and says what is already taken and what is there but not read** (`modules/data/follow.js`, `panels.js`, `model_results.js`, `texts.js`; Data SPEC § 5.8; help ×4; L58) — SOG-0150: « Rien à prendre » hid three NATS sets already in place that the build ignored; the end now says « déjà pris » and « la case « personnel » ne déclare pas NATS ».
 - **A question never exceeds the screen: the frame's window is at most 70 vh high with its text scrolling, and « Prendre le fichier téléchargé » lists seven files then « … et n autres »** (`frame/frame.css` `.f-modal`, `modules/data/panels.js` `pickupAsk`; frame SPEC, Data SPEC § 5.8; L57) — SOG-0151: sixty files made the question taller than the phone, its button out of reach.
 - **Map: « Route weather » fills the holes of the wind barbs with the covering model** (`modules/maps/weather.js`, `tips.js`; noreg D127; SOG-0141). A place outside the

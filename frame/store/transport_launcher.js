@@ -97,7 +97,7 @@
           author: o.author?.() || '',
           changes
         });
-        last = null;
+        shared.last = null; // l'arbre lu n'est plus celui de data/ : la prochaine lecture le relit (SOG-0063 l'a rangé dans `shared`)
         return j.head;
       },
       ...(o.exchange ? {
