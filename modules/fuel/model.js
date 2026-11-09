@@ -183,9 +183,18 @@
       profileFF = map?.nominal > 0 ? map.nominal : own,
       isaA = h => window.FlightPerfModel.isa(h).a;
     const sbTas = +sb?.speedKt > 0 ? +sb.speedKt : +sb?.mach > 0 ? +sb.mach * isaA(alt) : 0;
-    const [tas, tasKind] = +cr.tasKt > 0 ? [+cr.tasKt, 'profile'] : +apd?.cruise?.tasKt > 0 ? [+apd.cruise.tasKt, 'apd'] : sbTas > 0 ? [
-      sbTas, 'simbrief'
-    ] : est?.tasKt > 0 ? [est.tasKt, 'estimate'] : [300, 'default'];
+    // la TAS des lignes de la table (tasKt, SOG-0028 (4)), lue par la même règle que le débit (tableAt : deux lignes qui encadrent le
+    // régime, ou une ligne à ce régime, à la courbe du niveau) ; sinon la TAS de croisière de la fiche
+    const tasRows = (pr.rpmFuelCurve || []).filter(r => +r?.tasKt > 0).map(r => ({
+        rpm: r.rpm,
+        altFt: r.altFt,
+        fuelFlowPerHour: +r.tasKt
+      })),
+      tasMap = rpm !== null && tasRows.length ? tableAt(tasRows, rpm, alt) : null;
+    const [tas, tasKind] = tasMap?.nominal > 0 ? [tasMap.nominal, 'map'] : +cr.tasKt > 0 ? [+cr.tasKt, 'profile'] : +apd?.cruise?.tasKt >
+      0 ? [+apd.cruise.tasKt, 'apd'] : sbTas > 0 ? [
+        sbTas, 'simbrief'
+      ] : est?.tasKt > 0 ? [est.tasKt, 'estimate'] : [300, 'default'];
     let auto = null;
     if (pollSchumann && alt > 0) {
       // Mach tiré de la TAS connue (fiche, EUROCONTROL, SimBrief), sinon Mach de conception du modèle
@@ -246,12 +255,12 @@
       ownTas = +cr.tasKt > 0,
       fillCl = !!aCl && (!(+cl.iasKt > 0) || !(Math.abs(+cl.rateFpm) > 0)),
       fillDe = !!aDe && !(Math.abs(+de.rateFpm) > 0);
-    if (s?.kind !== 'entry' && ownFF && ownTas && !fillCl && !fillDe) return sheet;
+    if (s?.kind !== 'entry' && s?.tasKind !== 'map' && ownFF && ownTas && !fillCl && !fillDe) return sheet;
     return {
       ...sheet,
       cruise: {
         ...cr,
-        tasKt: ownTas ? +cr.tasKt : s?.tas,
+        tasKt: s?.tasKind === 'map' ? s.tas : ownTas ? +cr.tasKt : s?.tas, // la TAS de la table, quand elle la donne (SOG-0028 (4))
         fuelFlowPerHour: s?.kind === 'entry' || !ownFF ? s?.ff : +cr.fuelFlowPerHour
       },
       climb: fillCl ? {

@@ -98,3 +98,9 @@
   (no new card, rule 13), and the ticked points go to the draft only, so the ordinary review stays the one gate (JSON one source,
   SOG-0023). Not ported today: the dashboard's merging of neighbouring rpm groups, climb and descent proposals, the launcher reading
   the Output folder (step 2, AeroDB). M27; counter-test on ae008ef42 (sheets.js of the base): no picker (the case errors on it).
+- **9 Nov 2026 — folding groups per altitude and a TAS per row** (SOG-0028 (3) and (4), the ergonomics session's decisions): the
+  groups are a view of the same rows (no second field, the inputs keep their row index, so reading the editor is unchanged); one
+  curve keeps the flat table, so a sheet without altitudes looks as before. `tasKt` is an optional key of a row, kept by
+  `normalize`; Fuel reads it by the flow's rule (F102). The ChatGPT template does not ask for it (its schema unchanged). The lnmperf
+  part (5) is a proposal to AeroDB: an .lnmperf has neither rpm nor altitude, so its import creates no row (it fills the cruise
+  values, as today); its export takes the curve nearest `cruise.refAltFt` at the cruise rpm when two rows frame it. M28.

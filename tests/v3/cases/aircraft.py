@@ -665,6 +665,34 @@ def m27(c):
     c.eq(len(sheet_of(c, 'XMES')['rpmFuelCurve']), 2, 'nothing written before « Enregistrer » and « Appliquer »', what='stored rows')
 
 
+@case('M28', 'Sheets: the RPM table is one folding group per altitude (« 8000 ft · 2 régimes »), a TAS column per row; a group keeps its state when the editor is drawn again',
+      'M', tags=('aircraft',), designs=('standard',), screens=True, phone=False, langs4=True,
+      rule='SOG-0028 (3) and (4), V3 spec 10.37 C as amended (the curve of an altitude = the rows sharing altFt): more than two curves → '
+      'folded groups, the rows without altitude first; one curve → the flat table as before; tasKt optional per row')
+def m28(c):
+    sheet = dict(EC25, id='XGRP', name='XGRP', icao='XGRP', unit='kg', cruise={'tasKt': 140, 'fuelFlowPerHour': 40, 'rpmNominal': 2400},
+                 rpmFuelCurve=[{'rpm': 2300, 'altFt': 4000, 'fuelFlowPerHour': 38, 'tasKt': 150}, {'rpm': 2500, 'altFt': 4000, 'fuelFlowPerHour': 46},
+                               {'rpm': 2300, 'altFt': 8000, 'fuelFlowPerHour': 34}, {'rpm': 2500, 'altFt': 8000, 'fuelFlowPerHour': 40},
+                               {'rpm': 2000, 'altFt': None, 'fuelFlowPerHour': 30}])
+    sheet.pop('_fields', None)
+    docs = [[f'aircraft/sheets/{x["id"]}.json', x, 'document'] for x in (EC25, C30J, sheet)]
+    c.open('aircraft', docs=LEVEL3 + [['airline/fleet.json', fleet_doc(3), 'document']] + docs + [TYPES, ['cache/aircraft/ui.json', {'view': 'sheets'}, 'cache']],
+           wait=False, app='maintenance')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-id]')", timeout=15000, what='the Fiches list')
+    edit_sheet(c, 'XGRP')
+    groups = "[...document.querySelectorAll('[data-module=aircraft] details[data-rpmgroup]')].map(d => [d.dataset.rpmgroup, d.open, d.querySelector('summary').textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()])"
+    g = c.js(groups)
+    n2 = tx(SX, 'rpmN', c.lang).replace('{n}', '2')
+    c.eq(g, [['', False, norm(f"{tx(SX, 'rpmNoAlt', c.lang)} · {tx(SX, 'rpmN1', c.lang)}")], ['4000', False, norm(f'4000 ft · {n2}')], ['8000', False, norm(f'8000 ft · {n2}')]],
+         'three curves: three folded groups, the rows without altitude first', what='groups')
+    c.eq(c.js(f"document.querySelector('{M} {SHEETS} input[data-rpm=\"0\"][data-rk=tasKt]')?.value"), '150', 'the TAS of a row, in its column', what='tasKt')
+    c.js("document.querySelector('[data-module=aircraft] details[data-rpmgroup=\"8000\"]').open = true")
+    c.tap(f'{M} {SHEETS} [data-do="rpmadd"]')
+    c.until(f"document.querySelectorAll('{M} {SHEETS} input[data-rpm][data-rk=rpm]').length === 6", what='a row is added')
+    g = c.js(groups)
+    c.eq([x[:2] for x in g], [['', True], ['4000', False], ['8000', True]], 'the 8000 ft group stays open; the group of the new empty row opens', what='after redraw')
+
+
 @case('M25', 'Sheets: the fuel is read and typed in the unit chosen (kg, lb, l, US gal); the sheet keeps its stored unit, an untouched value unchanged',
       'M', tags=('aircraft',), designs=('standard',), screens=False, langs4=True,
       rule='SOG-0032 (« toujours pas de possibilité de lire / écrire en kg ou lb/h ? »): the editor reads and writes in the unit chosen, by '

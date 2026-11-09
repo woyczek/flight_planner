@@ -2632,3 +2632,17 @@ def f101(c):
     c.until(f"window.__t.shown(document.querySelector('{FUEL} section.fu-step[data-s=\"0\"]')) && !document.querySelector('{FUEL} [data-acpanel]').classList.contains('fu-hide')",
             what='the step Flight with the aircraft search open')
     c.until(f"document.activeElement === document.querySelector('{FUEL} [data-k=acsearch]')", what='the search field has the focus')
+
+
+@case('F102', 'The TAS of the RPM table rows is read like their flow: two rows framing the cruise rpm at the level\'s curve; else the sheet\'s cruise TAS',
+      'F', tags=('fuel', 'aircraft'), designs=('standard',), screens=False,
+      rule='SOG-0028 (4): tasKt optional per row of rpmFuelCurve, read when present (tableAt), else cruise.tasKt; the performance model takes it (modelSheet)')
+def f102(c):
+    c.open('fuel', flight=True)
+    wait_quote(c)
+    r = c.js("""() => { const M = window.FuelModel, mk = rows => M.normalizeSheet({ id: 'X', unit: 'kg', cruise: { tasKt: 140, fuelFlowPerHour: 40, rpmNominal: 2400 }, rpmFuelCurve: rows });
+        const two = mk([{ rpm: 2300, altFt: 4000, fuelFlowPerHour: 38, tasKt: 150 }, { rpm: 2500, altFt: 4000, fuelFlowPerHour: 46, tasKt: 170 }]),
+          one = mk([{ rpm: 2300, altFt: 4000, fuelFlowPerHour: 38, tasKt: 150 }, { rpm: 2500, altFt: 4000, fuelFlowPerHour: 46 }]),
+          a = M.cruiseSource({ sheet: two, altFt: 4000 }), b = M.cruiseSource({ sheet: one, altFt: 4000 });
+        return [Math.round(a.tas), a.tasKind, Math.round(M.modelSheet(two, a).cruise.tasKt), Math.round(b.tas), b.tasKind] }""")
+    c.eq(r, [160, 'map', 160, 140, 'profile'], 'framed: 160 kt from the rows, taken by the model; a single row with a TAS: the sheet\'s 140 kt', what='TAS')

@@ -55,7 +55,9 @@ All checked by the quote and levels benches (F80) unless said.
   with it: « table régime / débit de la fiche (2400 rpm entre 2300 et 2500 rpm, entre les courbes de 4000 et 8000 ft) » (F96).
   The table is read only when it frames the phase's rpm (`tableAt`, SOG-0053): two rows with a flow around it, or one row at it;
   a table with a single row with a flow, an rpm beyond its rows or another power reference (N1 % rows against an rpm) is never
-  stretched, and the flow typed for the phase (`cruise.fuelFlowPerHour`, the climb's…) applies (F97).
+  stretched, and the flow typed for the phase (`cruise.fuelFlowPerHour`, the climb's…) applies (F97). The TAS of the rows
+  (`tasKt`, SOG-0028 (4)) is read by the same rule and wins over `cruise.tasKt` (source « map »), and the performance model takes it
+  (`modelSheet`); without framing rows with a TAS, `cruise.tasKt` as before (F102).
 - **Model sheet** (`modelSheet`): the sheet with its cruise completed by the retained flow and TAS when it lacks them or an entry
   replaces them, its climb (IAS, rate) and descent (rate, IAS) completed by the EUROCONTROL record when it lacks them. Never written.
 - **Performance model**: `FlightPerfModel.create(modelSheet, { db, dIsa, apd })`; none when the cruise TAS or flow is missing (the

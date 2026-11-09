@@ -39,6 +39,7 @@ export const SHEETS_STYLE = `[data-module="aircraft"] .ac-g3{--f-min:150px;align
 [data-module="aircraft"] .ac-g3 .f-check input{width:auto;flex:none}
 [data-module="aircraft"] .f-table .ac-txt{white-space:normal;overflow-wrap:anywhere;min-width:9em}
 [data-module="aircraft"] .ac-hide{display:none}
+[data-module="aircraft"] details.ac-rpmgroup>summary{cursor:pointer;margin:6px 0 2px;font-weight:600}
 [data-module="aircraft"] tr.ac-rpmwarn td{background:color-mix(in srgb, var(--sog-warn) 18%, transparent)}
 [data-module="aircraft"] .ac-cat{margin:var(--sog-gap) 0 4px;font-size:1em;color:var(--sog-muted)}
 [data-module="aircraft"] [data-sheets] .f-list .f-item>div:first-child{min-width:0}
@@ -755,6 +756,10 @@ export function createSheetsView(host) {
     }
     const b = body();
     if (!b) return;
+    // les groupes d'altitude ouverts ou fermés à la main restent tels quels d'un dessin à l'autre de la même fiche (SOG-0028 (3))
+    if (st.edit?.id === id)
+      for (const d of b.querySelectorAll('details[data-rpmgroup]'))(st.rpmOpen ||= new Map()).set(d.dataset.rpmgroup, d.open);
+    else st.rpmOpen = new Map();
     const p = st.edit = draft || F.normalize(structuredClone(raw)),
       nm = notMonotone(p), // la courbe régime / débit qui redescend : dite, la ligne en orange, jamais corrigée seule (SOG-0015)
       vu = viewUnit(p),
@@ -762,6 +767,37 @@ export function createSheetsView(host) {
       rpmCell = (i, k, v) => {
         const shown = FLOW_KEYS.has(k) ? fuelShown(p, v) : String(v ?? '');
         return `<td class="f-num"><input data-rpm="${i}" data-rk="${k}"${FLOW_KEYS.has(k) ? ` data-fu data-shown="${esc(shown)}"` : ''} inputmode="decimal" value="${esc(shown)}" style="width:7em" aria-label="${esc(k)}"></td>`;
+      },
+      // SOG-0028 (3) et (4) : la table groupée par altitude (une courbe par altitude, repliable ; une seule courbe : la table à plat,
+      // comme avant) et une colonne TAS facultative par ligne ; l'état ouvert / fermé de chaque groupe est gardé d'un dessin à l'autre
+      rpmTablesHtml = () => {
+        const rows = p.rpmFuelCurve.map((r, i) => ({
+            r,
+            i,
+            h: r.altFt === null || r.altFt === undefined || r.altFt === '' || !Number.isFinite(+r.altFt) ? null : +r.altFt
+          })),
+          keys = [...new Set(rows.map(x => x.h))].sort((a, b) => a === null ? -1 : b === null ? 1 : a - b),
+          edit = rpmEditable(),
+          head = edit ? `<tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(FLOW[vu])} min</th><th class="f-num">${esc(FLOW[vu])}</th><th class="f-num">${esc(FLOW[vu])} max</th><th class="f-num">TAS kt</th><th></th></tr>` :
+          `<tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(FLOW[vu])}</th><th class="f-num">TAS kt</th></tr>`,
+          line = ({
+            r,
+            i
+          }) => edit ?
+          `<tr${warnRow(nm, r) ? ' class="ac-rpmwarn" data-rpmwarn-row' : ''}>${rpmCell(i, 'rpm', r.rpm)}${rpmCell(i, 'altFt', r.altFt)}${rpmCell(i, 'fuelFlowMin', r.fuelFlowMin)}${rpmCell(i, 'fuelFlowPerHour', r.fuelFlowPerHour)}${rpmCell(i, 'fuelFlowMax', r.fuelFlowMax)}${rpmCell(i, 'tasKt', r.tasKt)}<td><button type="button" data-do="rpmdel" data-i="${i}" aria-label="${esc(tt(TX.remove))}">✕</button></td></tr>` :
+          `<tr><td class="f-num">${esc(r.rpm)}</td><td class="f-num">${esc(r.altFt ?? '')}</td><td class="f-num">${esc([r.fuelFlowMin, r.fuelFlowPerHour, r.fuelFlowMax].filter(x => x != null && x !== '').map(x => fuelShown(p, x)).join(' / '))}</td><td class="f-num">${esc(r.tasKt ?? '')}</td></tr>`,
+          table = list => `<div class="f-scroll"><table class="f-table"><thead>${head}</thead><tbody>${list.map(line).join('')}</tbody></table></div>`,
+          group = h => {
+            const list = rows.filter(x => x.h === h),
+              key = h === null ? '' : String(h),
+              fresh = list.some(x => x.r.rpm === null || x.r.rpm === ''), // une ligne neuve, encore vide : son groupe s'ouvre toujours
+              open = fresh || (st.rpmOpen?.has(key) ? st.rpmOpen.get(key) : keys.length <= 2 || list.some(x => warnRow(nm, x.r))),
+              n = list.length;
+            return `<details class="ac-rpmgroup" data-rpmgroup="${esc(key)}"${open ? ' open' : ''}><summary>${esc(`${h === null ? tt(TX.rpmNoAlt) : `${h} ft`} · ${tt(n === 1 ? TX.rpmN1 : TX.rpmN, { n })}`)}</summary>${table(list)}</details>`;
+          },
+          body = keys.length > 1 ? keys.map(group).join('') : table(rows);
+        if (edit) return `<details class="f-card" open><summary>${esc(tt(TX.rpmTable))}</summary>${body}<button type="button" data-do="rpmadd">${esc(tt(TX.rpmAdd))}</button> <button type="button" data-do="measure">${esc(tt(TX.measure))}</button><input type="file" data-measfile accept=".csv,.gz,.txt" multiple hidden>${measuredHtml(p)}</details>`;
+        return rows.length ? `<details class="f-card"><summary>${esc(tt(TX.rpmTable))}</summary>${body}</details>` : '';
       },
       groups = [...new Set(F.PROFILE_FIELDS.map(f => f[0]))],
       facts = F.catalogFacts(p), // ce que la base OACI donne de la cellule et de la propulsion
@@ -797,7 +833,7 @@ export function createSheetsView(host) {
     <div class="f-card" data-vunitbox><label class="f-field">${esc(tt(TX.viewUnit))}<select data-k="vunit">${Object.keys(MASS).map(u => `<option value="${u}"${u === vu ? ' selected' : ''}>${esc(`${MASS[u]} · ${FLOW[u]}`)}</option>`).join('')}</select></label>${vu !== su ? `<small class="f-muted" data-vunitnote>${esc(tt(TX.viewUnitNote, { s: `${MASS[su]} · ${FLOW[su]}`, d: densityOf(p)?.toLocaleString(document.documentElement.lang || undefined) ?? '?' }))}</small>` : ''}</div>
     ${groups.map((g, i) => `<details class="f-card"${i < 2 ? ' open' : ''}><summary>${esc(FIELD_TX[g] ? tt(FIELD_TX[g]) : g)}</summary><div class="f-grid ac-g3">${F.PROFILE_FIELDS.filter(f => f[0] === g).map(input).join('')}</div></details>`).join('')}
     ${nm ? `<p class="f-warn" data-rpmwarn>${esc(nm.h === null ? tt(TX.rpmNotMonotone, { a: nm.a, b: nm.b }) : tt(TX.rpmNotMonotoneAt, { a: nm.a, b: nm.b, h: nm.h }))}</p>` : ''}
-    ${rpmEditable() ? `<details class="f-card" open><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(FLOW[vu])} min</th><th class="f-num">${esc(FLOW[vu])}</th><th class="f-num">${esc(FLOW[vu])} max</th><th></th></tr></thead><tbody>${p.rpmFuelCurve.map((r, i) => `<tr${warnRow(nm, r) ? ' class="ac-rpmwarn" data-rpmwarn-row' : ''}>${rpmCell(i, 'rpm', r.rpm)}${rpmCell(i, 'altFt', r.altFt)}${rpmCell(i, 'fuelFlowMin', r.fuelFlowMin)}${rpmCell(i, 'fuelFlowPerHour', r.fuelFlowPerHour)}${rpmCell(i, 'fuelFlowMax', r.fuelFlowMax)}<td><button type="button" data-do="rpmdel" data-i="${i}" aria-label="${esc(tt(TX.remove))}">✕</button></td></tr>`).join('')}</tbody></table></div><button type="button" data-do="rpmadd">${esc(tt(TX.rpmAdd))}</button> <button type="button" data-do="measure">${esc(tt(TX.measure))}</button><input type="file" data-measfile accept=".csv,.gz,.txt" multiple hidden>${measuredHtml(p)}</details>` : p.rpmFuelCurve.length ? `<details class="f-card"><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(FLOW[vu])}</th></tr></thead><tbody>${p.rpmFuelCurve.map(r => `<tr><td class="f-num">${esc(r.rpm)}</td><td class="f-num">${esc(r.altFt ?? '')}</td><td class="f-num">${esc([r.fuelFlowMin, r.fuelFlowPerHour, r.fuelFlowMax].filter(x => x != null && x !== '').map(x => fuelShown(p, x)).join(' / '))}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
+    ${rpmTablesHtml()}
     <div class="f-row"><button type="button" class="primary" data-do="save">${esc(tt(TX.save))}</button><button type="button" data-do="lnm">${esc(tt(TX.exportLnm))}</button><button type="button" data-do="json">${esc(tt(TX.exportJson))}</button><button type="button" data-do="del">${esc(tt(TX.remove))}</button></div>`;
   }
   /** Fiche de l'éditeur avec les valeurs des champs (nombres lus, vides → null). */

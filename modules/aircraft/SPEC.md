@@ -127,7 +127,10 @@ place of the list (one card, « Retour » goes back), one editor at a time; the 
   (the column « ft »), the rows without altitude one more curve with the cruise point; no second field (`cruise.curves` was not
   added: one source, SOG-0023). The rule of SOG-0015 (a flow that goes down while the rpm goes up is said, its row in orange, never
   corrected) applies to each curve apart, the altitude said: « Débit à 2300 rpm supérieur à celui de 2500 rpm à 8000 ft : fourchette
-  mal lue ? »; a lower flow at a higher altitude is no fault (M26; M24 for the curve without altitude).
+  mal lue ? »; a lower flow at a higher altitude is no fault (M26; M24 for the curve without altitude). With more than one curve
+  the table is one folding group per altitude, the rows without altitude first (« 8000 ft · 4 régimes »; folded when there are more
+  than two, a group holding the warned row or a new empty row open; the state kept from one drawing to the next of the same sheet);
+  one curve, the flat table as before. Each row has an optional TAS (`tasKt`, kt), read by Fuel when present (M28).
 - **« Proposer depuis les mesures »** (SOG-0052, step 1; V3 spec § 10.37 C): in the RPM table's card (computer screen), one or more
   Fuel Phase Monitor journals (`.csv`, `.csv.gz` decompressed in the page) chosen with the file picker, read on the device, never
   kept, published or sent; only the windows of the sheet's type (`aircraft_icao`); the level points of `modules/stats/phases.js`
