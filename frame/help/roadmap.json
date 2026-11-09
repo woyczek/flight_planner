@@ -4,9 +4,10 @@
  "updated": "2026-11-09",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "d1b4a5d",
+  "organisation": "1fa0dc2",
   "fiches": 66,
-  "untranslated": 0
+  "untranslated": 0,
+  "priorities": 0
  },
  "owner": "ergonomics session (Simplification interface et ergonomie)",
  "note": {
@@ -280,7 +281,7 @@
     {
      "id": "SOG-0061",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Consignes de montée : le régime cible (Caravelle : les gaz font les rpm, « full » = 8 000+), la manette lue dans les CSV",
      "en": "Climb instructions: the target rpm (Caravelle: the throttle sets the rpm, “full” = 8,000+), the throttle read from the CSVs",
      "de": "Steigflugvorgaben: die Soll-Drehzahl (Caravelle: der Schubhebel bestimmt die rpm, „full“ = 8 000+), der Schubhebel aus den CSVs gelesen",
@@ -826,7 +827,7 @@
     {
      "id": "SOG-0066",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Roadmap : reprioriser depuis l'écran (identifiant lisible et copiable, glisser-déposer du rang et du jalon, écrit par le lanceur dans organisation/PRIORITES.json)",
      "en": "Roadmap: reprioritise from the screen (readable, copyable id; drag and drop of rank and milestone, written by the launcher to organisation/PRIORITES.json)",
      "de": "Fahrplan: Prioritäten direkt im Bildschirm ändern (lesbare, kopierbare Kennung; Rang und Meilenstein per Ziehen und Ablegen, vom Launcher in organisation/PRIORITES.json geschrieben)",
@@ -867,7 +868,7 @@
     {
      "id": "SOG-0065",
      "kind": "feature",
-     "state": "later",
+     "state": "planned",
      "fr": "Base aéro : regrouper les pays en paquets (continents, régions) et un méta-classement (îles, Himalaya, déserts, forêts, lacs et fleuves, mégalopoles…)",
      "en": "Aero database: group countries into packs (continents, regions) and a meta-classification (islands, Himalayas, deserts, forests, lakes and rivers, megacities…)",
      "de": "Aero-Datenbank: Länder zu Paketen (Kontinente, Regionen) zusammenfassen und eine Meta-Klassifizierung (Inseln, Himalaya, Wüsten, Wälder, Seen und Flüsse, Megastädte …)",
@@ -991,7 +992,7 @@
     {
      "id": "SOG-0055",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Abaques rpm / niveau / consommation : une page de lecture des courbes par appareil, couleurs par niveau",
      "en": "rpm / level / consumption charts: a page to read the curves per aircraft, colours by level",
      "de": "rpm-/Flugflächen-/Verbrauchsdiagramme: eine Seite zum Lesen der Kurven je Flugzeug, Farben nach Flugfläche",

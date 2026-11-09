@@ -168,6 +168,29 @@ def parse_milestones(roadmap):
     return out
 
 
+def read_priorities(org):
+    """<org>/PRIORITES.json → {id: {milestone?, rank?}}, bounded and filtered (an untrusted file like the screen reads it)."""
+    p = os.path.join(org, 'PRIORITES.json')
+    if not os.path.isfile(p):
+        return {}
+    try:
+        d = json.loads(read(p))
+    except ValueError:
+        return {}
+    out = {}
+    for fid, v in list((d.get('items') or {}).items())[:500]:
+        if not re.match(r'^SOG-\d{4}$', str(fid)) or not isinstance(v, dict):
+            continue
+        e = {}
+        if isinstance(v.get('milestone'), str) and len(v['milestone']) <= 40:
+            e['milestone'] = v['milestone']
+        if isinstance(v.get('rank'), int) and 1 <= v['rank'] <= 99999:
+            e['rank'] = v['rank']
+        if e:
+            out[fid] = e
+    return out
+
+
 def git_short(path):
     try:
         return subprocess.check_output(['git', '-C', path, 'rev-parse', '--short', 'HEAD'], text=True).strip()
@@ -180,12 +203,20 @@ def build(org, previous):
     roadmap = read(os.path.join(org, 'ROADMAP.md'))
     i18n_p = os.path.join(org, 'roadmap_i18n.json')
     i18n = json.loads(read(i18n_p)) if os.path.isfile(i18n_p) else {}
+    prio = read_priorities(org)
     fiches = parse_fiches(backlog)
     milestones = parse_milestones(roadmap)
     by_id = {}
     for m in milestones:
         for fid in m['items']:
             by_id.setdefault(fid, m['id'])
+    known_ms = {m['id'] for m in milestones}
+    for fid, pr in prio.items():
+        if pr.get('milestone') in known_ms:
+            by_id[fid] = pr['milestone']
+    for m in milestones:
+        m['items'] = [fid for fid in m['items'] if by_id.get(fid) == m['id']] + \
+            [fid for fid, ms in by_id.items() if ms == m['id'] and fid not in m['items']]
     lanes = {}
     missing = []
     for f in fiches:
@@ -200,7 +231,11 @@ def build(org, previous):
             missing.append(f['id'])
         if by_id.get(f['id']):
             item['milestone'] = by_id[f['id']]
+        if isinstance(prio.get(f['id'], {}).get('rank'), int):
+            item['rank'] = prio[f['id']]['rank']
         lane['items'].append(item)
+    for lane in lanes.values():
+        lane['items'].sort(key=lambda it: (it.get('rank', 10 ** 6), it['id']))
     # historical lanes, kept with their translations
     legacy = []
     for lane in (previous or {}).get('lanes') or []:
@@ -215,7 +250,7 @@ def build(org, previous):
         'schema': 'sog-roadmap/1', 'version': 2,
         'updated': dt.date.today().isoformat(),
         'generated': {'tool': 'tools/roadmap_build.py', 'organisation': git_short(org), 'fiches': len(fiches),
-                      'untranslated': len(missing)},
+                      'untranslated': len(missing), 'priorities': len(prio)},
         'owner': (previous or {}).get('owner') or 'ergonomics session (Simplification interface et ergonomie)',
         'note': (previous or {}).get('note'),
         'states': (previous or {}).get('states') or {
