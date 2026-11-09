@@ -165,6 +165,13 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   `import { keepScroll } from '../../frame/lib/dom.js'`. Give fields a `data-k` (and `data-i` in a list) so that the
   focused field is found again. Only a change of screen that the user asked for (the next step of a form) goes back to
   the top, outside `keepScroll`.
+- **`ctx.placeholder(el, height)`** (9 Nov 2026, § 7.1 rule 22, SOG-0132; screens that do not move): reserves the place of a block whose
+  content arrives after the first render (data repository, launcher, file). `el` keeps at least `height` (a number of pixels, or
+  `'8rem'`, `'120px'`, `'30vh'`) from now on, shows a discreet « … » and `aria-busy="true"`; it returns `done(keep)`, to call when the
+  content is in place: the « … » and the reserved height go (`keep`: the height stays). Give the final height, or close to it: a block
+  shorter than its reserve moves what is under it, once. The class `f-hold` and the variable `--f-hold` do the same from a stylesheet or
+  a template (`<div class="f-hold" style="--f-hold:6rem" aria-busy="true">`), without the call. Rule: no block is empty then filled; the
+  cumulative layout shift of a screen at load stays under 0.1.
 - `ctx.identity` (read only): `trigram`, `ivao`, `vatsim`, `simbrief` of this device; an empty object when not set.
   Never fail on its absence.
 - `ctx.airline` (read only): `{ name, site, pages: { recordFlight, log, fleet } }` from the data repository

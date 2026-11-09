@@ -2571,3 +2571,13 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   held and the wait never started (0.0 s measured). The case now holds `FrameData.airline` (and the adapter's `get`, for the files it still
   reads). And `loadAirline` reads the setting alone, as before § 10.38, when the `FrameData` it is given has no `airline()` (a simulated frame
   that predates it), tolerating a `get` that answers a plain value: the real data layer always has `airline()`.
+- **9 Nov 2026 — Screens that do not move: `ctx.placeholder`** (SOG-0132; the user's fifth pull; Simplification; V3 Frame): the primitive is a CSS
+  class (`.f-hold`, `min-height: var(--f-hold, 4rem)`, a « … » in `::before` while `aria-busy`) and `ctx.placeholder(el, height)` that sets
+  them and returns `done(keep)`. Decisions: (1) the « … » is a punctuation mark, not a word, so it needs no translation in the four
+  languages; (2) `done()` removes the reserved height by default (the content now defines it; the caller reserved the final height, so
+  nothing moves), `keep` leaves it; (3) the rule is **22** of § 7.1 (rule 21 is the airspace filter of the vertical views); (4) the
+  adoption is the modules': Réglages first (SOG-0133), the others at the ergonomics pass of 11 Nov; the frame's own blocks that fill
+  late are not changed in this lot. Noreg A110: a block held at 120 px has its height, the « … » and `aria-busy` at the first render and moves
+  nothing under it when its content arrives, while the same block without the reservation moves what is under it by its whole height;
+  Settings at load has a cumulative layout shift under 0.1 (measured without a launcher: the slow case, a launcher waiting for the
+  repository's version, is Réglages' SOG-0133). Red on 824427537 (`ctx.placeholder` absent).

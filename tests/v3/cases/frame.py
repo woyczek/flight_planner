@@ -4189,3 +4189,47 @@ def a105(c):
     opened('bbb')
     c.eq(c.js("[...document.querySelectorAll('[data-cats=bbb] li[data-cat]')].map(l => l.dataset.cat)"), ['bad'], 'the id that is not of the permitted form is dropped', what='ids')
     c.check_errors()
+
+
+# the layout shifts of a page (Layout Instability API), from the first byte: the sum of the shifts without a recent input, and what moved
+CLS_PROBE = """(() => { window.__cls = { value: 0, items: [] };
+  try { new PerformanceObserver(l => { for (const e of l.getEntries()) { if (e.hadRecentInput) continue; window.__cls.value += e.value;
+    window.__cls.items.push([+e.value.toFixed(4), (e.sources || []).map(s => (s.node && (s.node.nodeType === 1 ? s.node : s.node.parentElement) || {}).className || (s.node || {}).nodeName || '?').slice(0, 3)]) } })
+    .observe({ type: 'layout-shift', buffered: true }) } catch (e) {} })()"""
+
+
+_HOLD_MODULE = """export const meta = { id: 'atmosphere' };
+export function mount(el, ctx) {
+  el.innerHTML = '<div id="a"></div><p id="a2">below A</p><div id="b"></div><p id="b2">below B</p>';
+  const A = el.querySelector('#a'), B = el.querySelector('#b'), top = id => Math.round(el.querySelector(id).getBoundingClientRect().top);
+  const done = typeof ctx.placeholder === 'function' ? ctx.placeholder(A, 120) : () => {};
+  window.__first = { a2: top('#a2'), b2: top('#b2'), wait: getComputedStyle(A, '::before').content, busy: A.getAttribute('aria-busy'), h: Math.round(A.getBoundingClientRect().height) };
+  setTimeout(() => {   // the content arrives: A (held at 120) and B (not held) both take 120 px
+    A.innerHTML = '<div style="height:120px">A</div>'; done(); B.innerHTML = '<div style="height:120px">B</div>';
+    window.__after = { a2: top('#a2'), b2: top('#b2'), busy: A.getAttribute('aria-busy'), cls: A.className };
+  }, 700);
+}
+export function unmount() {}"""
+
+
+@case('A110', 'Screens that do not move: ctx.placeholder reserves the place of a block whose content arrives later; Settings at load shifts nothing', 'A', designs=('standard',),
+      screens=False, night=False,
+      rule='V3_SPECIFICATION 7.1 rule 22 (SOG-0132): a block whose content arrives after the first render is laid out at its final or minimum height from the first render (ctx.placeholder(el, height): the height, a discreet « … », aria-busy), never empty then filled; the cumulative layout shift of a screen at load is under 0.1')
+def a110(c):
+    c.page.add_init_script(CLS_PROBE)
+    c.context.route(re.compile(r'/modules/atmosphere/module\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=_HOLD_MODULE))
+    c.open('atmosphere', wait=False)
+    c.until('!!window.__after', timeout=20000, what='the content of the blocks has arrived')
+    first, after = c.js('() => window.__first'), c.js('() => window.__after')
+    c.eq((first['h'], first['busy'], first['wait']), (120, 'true', '"…"'), 'at the first render the block already has its height, a discreet « … » and aria-busy', what='first render')
+    c.eq(after['a2'] - first['a2'], 0, 'the held block did not move what is under it when its content arrived', what='shift under the held block')
+    c.ok(after['b2'] - first['b2'] >= 120, f"{after['b2'] - first['b2']} px", 'the same block without the reservation moves what is under it by its whole height (at least)')
+    c.eq((after['busy'], after['cls']), (None, ''), 'done(): the « … » and the reserved height are gone', what='after done')
+    # a real screen: Settings at load (CLS of the page, from the first byte)
+    c.context.unroute(re.compile(r'/modules/atmosphere/module\.js'))
+    c.open('settings', docs=LEVEL3, wait=False)
+    c.until("!!document.querySelector('#fView > *')", timeout=20000, what='the settings screen')
+    c.wait(3000)
+    got = c.js("() => window.__cls")
+    c.ok(got['value'] < 0.1, f"CLS {got['value']:.3f}: {got['items']}", 'the cumulative layout shift of Settings at load is under 0.1')
+    c.check_errors()

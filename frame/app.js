@@ -983,6 +983,28 @@
   /** Appel du cadre à une route du lanceur : { status, body } ou null (ni lanceur ni réponse) ; jamais d'exception. */
   const launcherRequest = (route, opts) => launcherClient()?.request(route, opts) ?? Promise.resolve(null);
   let airlineP = Promise.resolve(); // première lecture de la compagnie, en cours au démarrage
+  /** ctx.placeholder(el, height) : réserve la place d'un bloc dont le contenu arrive après le premier rendu (V3_SPECIFICATION § 7.1
+   *  règle 22, SOG-0132) : el garde au moins height (nombre de pixels, ou « 8rem », « 120px », « 30vh ») dès maintenant et montre un « … »
+   *  discret (aria-busy) ; rend done(keep) à appeler quand le contenu est posé : le « … » part et la hauteur réservée aussi (keep : elle
+   *  reste). Poser la hauteur finale, ou proche : un bloc plus court que sa réserve déplace ce qui est dessous, une seule fois. */
+  function placeholder(el, height) {
+    if (!(el instanceof Element)) return () => {};
+    const h = typeof height === 'number' && height > 0 ? `${Math.round(height)}px` : /^\d+(\.\d+)?(px|rem|em|vh)$/.test(String(height)) ? String(height) :
+      '';
+    if (h) el.style.setProperty('--f-hold', h);
+    el.classList.add('f-hold');
+    el.setAttribute('aria-busy', 'true');
+    let ended = false;
+    return keep => {
+      if (ended) return;
+      ended = true;
+      el.removeAttribute('aria-busy');
+      if (!keep) {
+        el.classList.remove('f-hold');
+        el.style.removeProperty('--f-hold');
+      }
+    };
+  }
   /** Hôte du site de la compagnie (ctx.airline.site, en https) : relayé ou appelé en lecture seule (GET) ; '' sinon. */
   const siteHost = () => {
     try {
@@ -3317,6 +3339,7 @@
       get airline() {
         return airline;
       },
+      placeholder, // la place d'un bloc dont le contenu arrive plus tard (§ 7.1 règle 22)
       get live() {
         return liveApi();
       },

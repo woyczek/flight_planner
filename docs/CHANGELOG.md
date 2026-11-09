@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: `ctx.placeholder(el, height)`, the place of a block that fills later is reserved** (`frame/app.js`, `frame/design/primitives.css`;
+  V3_SPECIFICATION § 7.1 rule 22; frame SPEC § 3.2, INTEGRATION, DECISIONS; noreg A110; SOG-0132). The block keeps its height and shows a
+  discreet « … » from the first render, then `done()`; the class `f-hold` does the same from a stylesheet; the cumulative layout shift of
+  a screen at load is to stay under 0.1. Réglages adopts it first.
+
 - **Fuel: « ⇄ » drawn at the size of the text** (`modules/fuel/module.js`; Fuel SPEC § 9.2; noreg F112; SOG-0140). An icon button
   of 24 px, without border or fill, in a muted tint; its target stays 44 px; nothing else moves in the row.
 - **Map: `#maps?mission=<ID>&zone=<id>` centres the view on that zone of the mission** (`modules/maps/mission.js`, `mission_view.js`; SPEC § 15;

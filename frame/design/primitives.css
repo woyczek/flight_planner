@@ -142,6 +142,17 @@ input[type="radio"] {
   color: var(--sog-muted);
   font-size: var(--sog-size-s)
 }
+/* un bloc dont le contenu arrive après le premier rendu (dépôt, lanceur, fichier) : sa place est réservée dès le premier rendu, un
+   « … » discret tant que le contenu manque, jamais vide puis rempli (ctx.placeholder ; V3_SPECIFICATION § 7.1 règle 22) */
+.f-hold {
+  min-height: var(--f-hold, 4rem)
+}
+.f-hold[aria-busy=true]::before {
+  content: '…';
+  display: block;
+  color: var(--sog-muted);
+  opacity: .6
+}
 .f-row {
   display: flex;
   flex-wrap: wrap;

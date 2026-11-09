@@ -394,6 +394,14 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
   `render.js`; the three-position sheet becomes a frame primitive (`frame/lib/sheet.js`, rules in
   `frame/design/primitives.css`) since every fixed module needs it. Two lots (maps, frame); until then the copies stay,
   isolated and marked.
+  22. **Screens that do not move: the place of a block is reserved** (user, 9 Nov, fifth pull: "éviter les écrans qui bougent : fixer
+      une taille de bloc mini quand un div va recevoir du contenu par la suite"; SOG-0132. The ticket called it rule 21; § 7.1 already
+      has a rule 21, this is 22). A block whose content arrives after the first render (data repository, launcher, file) is laid out at
+      its final height, or its minimum, **from the first render**, with a discreet « … » while the content is missing: never empty then
+      filled. The cumulative layout shift of a screen at load stays **under 0.1**, measured by the layout-shift entries from the first
+      byte (noreg A110). The frame provides the primitive: `ctx.placeholder(el, height)` (the class `.f-hold` and the variable `--f-hold`
+      in `frame/design/primitives.css`), documented in `frame/SPEC.md` § 3.2 and `frame/INTEGRATION.md`. Réglages adopts it first
+      (SOG-0133, the wait for the repository's version); the other modules screen by screen at the ergonomics pass of 11 Nov.
 
 ## 8. Decisions log
 
