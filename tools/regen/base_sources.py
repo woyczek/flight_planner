@@ -117,6 +117,11 @@ SOURCES = {
             'UK Mil AIP — ENR 5.2: low flying, VATA, air-to-air refuelling (AARA)',
             'UK Mil AIP — ENR 5.2: Tiefflug, VATA, Luftbetankung (AARA)',
             'UK Mil AIP — ENR 5.2: baja altura, VATA, reabastecimiento (AARA)'), link='https://www.aidu.mod.uk/aip/aipVolumes.html', provider='ukmil'),
+    'dfs': _src('download', (
+            'DFS — routes ATS de l’Allemagne (AIXM 5.1, jeu « ED Routes »)',
+            'DFS — Germany ATS routes (AIXM 5.1, dataset “ED Routes”)',
+            'DFS — ATS-Strecken Deutschlands (AIXM 5.1, Datensatz „ED Routes“)',
+            'DFS — rutas ATS de Alemania (AIXM 5.1, conjunto «ED Routes»)'), link='https://aip.dfs.de/datasets/', provider='dfs'),
     'navcan': _src('download', (
             'NAV CANADA — manuel des espaces aériens désignés (DAH)',
             'NAV CANADA — Designated Airspace Handbook (DAH)',
@@ -140,7 +145,7 @@ SOURCES = {
 }
 COMMON = ('openaip', 'mora', 'xplane')
 OWN = {'nat': ('nat', 'xplane')}  # zones hors pays : leurs seules sources
-EXTRA = {'fr': ('sia', 'dircam'), 'gb': ('nats', 'ukmil'), 'es': ('enaire',), 'ie': ('airnav',), 'us': ('faa', 'faaclass'), 'ca': ('navcan',)}
+EXTRA = {'fr': ('sia', 'dircam'), 'de': ('dfs',), 'gb': ('nats', 'ukmil'), 'es': ('enaire',), 'ie': ('airnav',), 'us': ('faa', 'faaclass'), 'ca': ('navcan',)}
 SIA_ROOT = re.compile(r'^(AIXM4\.5_all_FR_OM_|XML_SIA_|sia-airspaces-)\d{4}-\d{2}-\d{2}\.xml\Z', re.I | re.A)
 
 
@@ -294,7 +299,7 @@ def _step(job, done, total):
 
 # ----------------------------------------------------------------------------------------------------------------------- base/fetch
 # où aero_fetch écrit, par fournisseur (data/sia/…) : la même arborescence que file_source lit (le banc K52 le vérifie)
-FOLDERS = {'openaip': 'sia/openaip', 'faa': 'sia/geojson', 'enaire': 'sia/aixm5', 'ukmil': 'sia/zones/gb', 'airnav': 'sia/zones/ie', 'navcan': 'sia/zones/ca', 'nat': 'sia/zones/nat'}
+FOLDERS = {'openaip': 'sia/openaip', 'faa': 'sia/geojson', 'enaire': 'sia/aixm5', 'ukmil': 'sia/zones/gb', 'dfs': 'sia/zones/de', 'airnav': 'sia/zones/ie', 'navcan': 'sia/zones/ca', 'nat': 'sia/zones/nat'}
 # les messages de tools/aero_fetch.py (des textes, pas des codes) rangés en codes ; HTTP d'abord, puis ce qui est une forme de réponse inattendue
 HTTP_RE = re.compile(r'\bHTTP(?: Error)? (\d{3})\b')
 PARSE_RE = re.compile(r'illisible|aucun|introuvable|chang[ée]|invalide|inconnu|service FAA|Expecting|JSON|decod|Extra data|Unterminated', re.I)

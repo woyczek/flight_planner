@@ -5380,6 +5380,91 @@ def k112(c):
          'AeroDb.packs(): read once, frozen, the regions and themes as in the file, Turkey in two packs (the Middle East, the Mediterranean), Antarctica empty with its reason, the partial zones of the arctic', what='packs()')
 
 
+@case('K113', 'DFS « ED Routes » (Germany, AIXM 5.1, CC BY 4.0): the launcher fetches the amendment in force checked by its SHA-512, the AIXM reader gives the airways although the file carries no points (names from the segments, positions from the curves), the catalogue and the mirror know the source', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0077 (10 Nov 2026, decision of the ergonomics session): DFS « AIP Datasets » (aip.dfs.de/datasets, REST API v1.2: metadata, then <amendment>/<file name>) is the first new source of airways after France, the UK and Spain; the file has Route, RouteSegment and StandardLevelColumn only, no DesignatedPoint: each end is named by the reference (xlink:title) and placed by the end of the segment curve; files are checked by the SHA-512 of the metadata, nothing is written when it does not match, nothing is downloaded when the file in place is the one the metadata names')
+def k113(c):
+    import hashlib
+    import importlib
+    import json
+    import os
+    import tempfile
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    AF = importlib.import_module('aero_fetch')
+    seg = lambda i, route, a, b, pa, pb, avail: (
+        f'<message:hasMember><aixm:RouteSegment gml:id="id.s{i}"><aixm:timeSlice><aixm:RouteSegmentTimeSlice gml:id="id.ts.s{i}"><aixm:upperLimit uom="FL">660</aixm:upperLimit><aixm:lowerLimit uom="FT">4000</aixm:lowerLimit>'
+        f'<aixm:start><aixm:EnRouteSegmentPoint><aixm:pointChoice_fixDesignatedPoint xlink:href="urn:uuid:p-{a}" xlink:title="{a}"/></aixm:EnRouteSegmentPoint></aixm:start>'
+        f'<aixm:routeFormed xlink:href="urn:uuid:{route}"/>'
+        f'<aixm:curveExtent><aixm:Curve gml:id="id.c{i}" srsName="urn:ogc:def:crs:EPSG::4326"><gml:segments><gml:LineStringSegment><gml:posList>{pa[0]} {pa[1]} 53.1 13.4 {pb[0]} {pb[1]}</gml:posList></gml:LineStringSegment></gml:segments></aixm:Curve></aixm:curveExtent>'
+        f'<aixm:end><aixm:EnRouteSegmentPoint><aixm:pointChoice_navaidSystem xlink:href="urn:uuid:n-{b}" xlink:title="{b}"/></aixm:EnRouteSegmentPoint></aixm:end>'
+        + ''.join(f'<aixm:availability><aixm:RouteAvailability><aixm:direction>{d}</aixm:direction><aixm:status>OPEN</aixm:status></aixm:RouteAvailability></aixm:availability>' for d in avail)
+        + '</aixm:RouteSegmentTimeSlice></aixm:timeSlice></aixm:RouteSegment></message:hasMember>')
+    route = lambda uid, letter, num: (f'<message:hasMember><aixm:Route gml:id="id.{uid}"><gml:identifier codeSpace="urn:uuid:">{uid}</gml:identifier><aixm:timeSlice><aixm:RouteTimeSlice><aixm:designatorSecondLetter>{letter}</aixm:designatorSecondLetter><aixm:designatorNumber>{num}</aixm:designatorNumber></aixm:RouteTimeSlice></aixm:timeSlice></aixm:Route></message:hasMember>')
+    xml = ('<?xml version="1.0"?><message:AIXMBasicMessage xmlns:message="http://www.aixm.aero/schema/5.1.1/message" xmlns:aixm="http://www.aixm.aero/schema/5.1.1" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink">'
+           + route('r1', 'Z', '717') + route('r2', 'N', '850')
+           + seg(1, 'r1', 'GUDOP', 'BEKBA', (53.0, 13.1), (53.2, 13.7), ['FORWARD', 'BACKWARD']) + seg(2, 'r1', 'BEKBA', 'ABC', (53.2, 13.7), (53.5, 14.0), ['FORWARD']) + seg(3, 'r2', 'ABC', 'IRBUP', (51.0, 7.0), (51.4, 7.4), ['BACKWARD'])
+           + '</message:AIXMBasicMessage>')
+    c.page.goto(f'{c.base}/frame/aerodb/test/vrp_sources.html', wait_until='load')
+    c.page.wait_for_function('!!window.AeroSources', timeout=30000)
+    r = c.js("""(xml) => { const w = window.AeroSources.aixm5(xml).aero.airways; return w.map(x => [x.route, x.dir, x.a.id, x.a.lat, x.a.lon, x.b.id, x.b.lat, x.b.lon, x.lower, x.upper]); }""", xml)
+    c.eq(r, [['Z717', 'FB', 'GUDOP', 53.0, 13.1, 'BEKBA', 53.2, 13.7, 4000, 66000], ['Z717', 'F', 'BEKBA', 53.2, 13.7, 'ABC', 53.5, 14.0, 4000, 66000], ['N850', 'B', 'ABC', 51.0, 7.0, 'IRBUP', 51.4, 7.4, 4000, 66000]],
+         'the reader gives the airways of a file without points: the designator from the segment, the ends from the curve (lat lon), the direction from the availabilities, the levels', what='reader')
+    name = 'ED_Routes_2026-10-01_2026-10-29_revision.xml'
+    body = xml.encode('utf-8')
+    sha = hashlib.sha512(body).hexdigest()
+    meta = lambda **kw: json.dumps({'Amdts': [{'Amdt': 1, 'Metadata': {'datasets': []}}, {'Amdt': 0, 'Metadata': {'datasets': [{'type': 'group', 'name': 'x', 'items': [
+        {'type': 'leaf', 'name': 'ED Navaids', 'releases': [{'type': 'AIXM 5.1', 'filename': 'ED_Navaids_a.xml', 'checksum': {'value': '0' * 128}}]},
+        {'type': 'leaf', 'name': 'ED Routes', 'releases': [{'type': 'Excel', 'filename': 'x.xlsx'}, {'type': 'AIXM 5.1', 'filename': kw.get('name', name), 'checksum': {'value': kw.get('sha', sha)}}]}]}]}}]}).encode('utf-8')
+
+    class _Net:
+        """Le réseau d'essai : remplace aero_fetch.get ; routes : { morceau d'adresse: octets | ('os', texte) }, le premier qui correspond ; garde les appels."""
+
+        def __init__(self, AF, routes):
+            self.AF, self.routes, self.calls = AF, routes, []
+
+        def __call__(self, url, since=None, absent_ok=False, copy=None):
+            self.calls.append((url, since))
+            for part, v in self.routes.items():
+                if part in url:
+                    if isinstance(v, tuple):
+                        raise OSError(v[1])
+                    return v
+            raise OSError('404')
+
+        def __enter__(self):
+            self.saved, self.AF.get = self.AF.get, self
+            return self
+
+        def __exit__(self, *a):
+            self.AF.get = self.saved
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        path = os.path.join(td, 'sia', 'zones', 'de', 'dfs_ED_Routes.xml')
+        net = {'/rest/0/': body, '/rest/': meta()}
+        with _Net(AF, net) as n:
+            res = AF.fetch(td, 'dfs')
+            c.eq((res['ok'], [(f['name'], f['unchanged']) for f in res['files']], open(path, 'rb').read() == body, [u.split('/rest')[1] for u, _ in n.calls]), (True, [('dfs_ED_Routes.xml', False)], True, ['/', '/0/' + name]),
+                 'the amendment in force (n° 0): the metadata, then <amendment>/<file name>; written under a stable name in zones/de/', what='fetch')
+        with _Net(AF, net) as n:
+            res = AF.fetch(td, 'dfs')
+            c.eq((res['ok'], [(f['name'], f['unchanged']) for f in res['files']], len(n.calls)), (True, [('dfs_ED_Routes.xml', True)], 1), 'the file in place is the one the metadata names (same SHA-512): nothing downloaded, said unchanged', what='unchanged')
+        os.remove(path)
+        with _Net(AF, {'/rest/0/': b'<other/>', '/rest/': meta()}):
+            res = AF.fetch(td, 'dfs')
+            c.eq((res['ok'], os.path.exists(path), 'SHA-512' in res['errors'][0]), (False, False, True), 'a download whose SHA-512 is not the metadata\'s: refused, nothing written', what='checksum')
+        for label, m in (('hostile name', meta(name='../../x.xml')), ('bad sum', meta(sha='abc')), ('not json', b'<html/>'), ('no amendment', json.dumps({'Amdts': [{'Amdt': 2}]}).encode())):
+            with _Net(AF, {'/rest/': m}):
+                res = AF.fetch(td, 'dfs')
+                c.eq((res['ok'], os.path.exists(path)), (False, False), f'{label}: refused with a reason, nothing written', what=label)
+        with _Net(AF, {'/rest/': ('os', 'unreachable')}):
+            res = AF.fetch(td, 'dfs')
+            c.eq((res['ok'], res['errors'][0].startswith('DFS :')), (False, True), 'the service unreachable: said, nothing written', what='offline')
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    k = c.js("""async () => { await AeroDB.create({ reader: { read: async () => null, list: async () => [], watch: () => () => {} }, lnmperf: false }).sources().catch(() => null);
+      const s = (window.AeroCatalogue.SOURCES || []).find(x => x.id === 'dfs'); return { found: !!s, zones: s && s.zones, provider: s && s.fetch && s.fetch.provider, names: s && s.n.length, lic: s && s.lic[0] }; }""")
+    c.eq((k['found'], k['zones'], k['provider'], k['names'], k['lic']), (True, ['de'], 'dfs', 4, 'CC BY 4.0, crédit DFS'),
+         'the catalogue knows the source: zone de, provider dfs, names in four languages, the licence (the zone table of the page and the file rule are checked against the mirror of the launcher by K52)', what='catalogue')
+
+
 @case('K65', 'Build job: a zone shows a count of sources only when the builder gives one for it; the build\'s count goes once in the job', 'K', static=True,
       rule='Réglages 1 Nov 2026 (the user saw « construction (90 / 90 sources) » on all 26 zones): the builder\'s counts are global; a zone gets done / total only from a count of its own; job.data inputs = { done, total } once')
 def k65(c):
@@ -5577,3 +5662,4 @@ def k75(c):
     c.ok(not re.search(r'if \(r\.folder && !started\) start\(\)', lnm), 'setFolder', 'setting the folder starts no follow either: « Synchroniser maintenant » makes the pass')
     k = src.index('c.start()')
     c.ok('if (lnmAuto &&' in src[max(0, k - 400):k] and src.count('c.start()') == 1, 'start', 'aerodb calls start() once, under the explicit option')
+

@@ -462,16 +462,23 @@
       if (s) routes.set(idOf(f), [text(s, 'designatorPrefix'), text(s, 'designatorSecondLetter'), text(s, 'designatorNumber')].join('') ||
         text(s, 'name'));
     }
-    /** Extrémité d'un tronçon { id, lat, lon } : point ou balise référencé (déjà lu), sinon position propre (id vide) ; null. */
-    const endOf = el => {
+    /** Extrémité d'un tronçon { id, lat, lon } : point ou balise référencé (déjà lu), sinon (DFS : un fichier de routes sans les points) le nom donné à la référence (xlink:title) à la position de l'extrémité de la courbe du tronçon (`at`, [lat, lon]), sinon position propre (id vide) ; null. */
+    const endOf = (el, at) => {
       if (!el) return null;
       for (const c of el.getElementsByTagNameNS(NSX, '*'))
         if (/^(pointChoice_|theDesignatedPoint|theNavaid)/.test(c.localName) || /fixDesignatedPoint|navaidSystem/.test(c.localName)) {
-          const w = where.get(href(c));
+          const w = where.get(href(c)),
+            title = (c.getAttributeNS('http://www.w3.org/1999/xlink', 'title') || c.getAttribute('xlink:title') || '').trim().slice(0,
+              12);
           if (w) return {
             id: w.id,
             lat: w.lat,
             lon: w.lon
+          };
+          if (title && at && Number.isFinite(at[0]) && Number.isFinite(at[1])) return {
+            id: title,
+            lat: at[0],
+            lon: at[1]
           };
         }
       const p = posOf(el);
@@ -484,8 +491,11 @@
     for (const f of doc.getElementsByTagNameNS(NSX, 'RouteSegment')) {
       const s = slice(f, 'RouteSegmentTimeSlice');
       if (!s) continue;
-      const a = endOf(kid(s, 'start')),
-        b = endOf(kid(s, 'end'));
+      const cv = kid(s, 'curveExtent'),
+        cp = cv && kid(cv, 'posList'),
+        cpts = cp ? posList(cp, lonFirst(cp)) : [],
+        a = endOf(kid(s, 'start'), cpts[0]),
+        b = endOf(kid(s, 'end'), cpts[cpts.length - 1]);
       if (!a || !b) continue;
       const up = kid(s, 'upperLimit'),
         lo = kid(s, 'lowerLimit'),

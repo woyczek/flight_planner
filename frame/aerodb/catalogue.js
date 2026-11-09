@@ -322,6 +322,32 @@
       'Condiciones de ENAIRE: uso personal'
     ]
   }, {
+    id: 'dfs',
+    group: 'base',
+    zones: ['de'],
+    fetch: {
+      how: 'launcher',
+      provider: 'dfs'
+    },
+    build: {
+      runtime: 'worker',
+      id: 'aixm5'
+    },
+    publish: true,
+    no: 19,
+    status: 'used',
+    n: ['DFS (Allemagne, routes ATS, AIXM 5.1)', 'DFS (Germany, ATS routes, AIXM 5.1)', 'DFS (Deutschland, ATS-Strecken, AIXM 5.1)',
+      'DFS (Alemania, rutas ATS, AIXM 5.1)'
+    ],
+    url: 'https://aip.dfs.de/datasets/',
+    gives: [
+      'Les routes ATS (airways) de l’Allemagne (zone de), avec leurs niveaux et leur sens ; pas encore les espaces ni les points.',
+      'The ATS routes (airways) of Germany (zone de), with their levels and direction; not the airspaces or the points yet.',
+      'Die ATS-Strecken (Airways) Deutschlands (Zone de) mit Flugflächen und Richtung; noch keine Lufträume oder Punkte.',
+      'Las rutas ATS (aerovías) de Alemania (zona de), con sus niveles y sentido; aún sin espacios ni puntos.'
+    ],
+    lic: ['CC BY 4.0, crédit DFS', 'CC BY 4.0, credit DFS', 'CC BY 4.0, Quellenangabe DFS', 'CC BY 4.0, crédito DFS']
+  }, {
     id: 'airnav',
     group: 'base',
     zones: ['ie'],
@@ -978,7 +1004,7 @@
   /** Version du format de la base publiée que les constructeurs écrivent (`parserVersion` des meta.json) : la valeur de `VERSION` de
    *  shared/sia_base.js, DOIT la suivre (le cas K21 lit les deux fichiers et compare). Le module Données la montre à côté de celle d'une zone
    *  publiée pour dire « à reconstruire ». */
-  const PARSER_VERSION = 22;
+  const PARSER_VERSION = 23;
   const GROUPS = ['base', 'proc', 'aircraft', 'weather'];
   const ORDER = ['used', 'candidate', 'abandoned'];
   const byId = id => SOURCES.find(s => s.id === id) || null;

@@ -11,6 +11,7 @@ Fournisseurs :
            E) ;
   enaire   ENAIRE, Espagne (AIP en AIXM 5.1) : data/sia/aixm5/LE_…_Airspace.xml et …_EnRoute.xml (dernier amendement
            publié sur la page des données numériques ; les versions précédentes sont retirées) ;
+  dfs      DFS Allemagne, « AIP Datasets », jeu « ED Routes » (routes ATS, AIXM 5.1, CC BY 4.0, crédit DFS) → data/sia/zones/de/dfs_ED_Routes.xml
   ukmil    UK Military AIP (AIDU, OGL v3.0) : ENR-5-2.pdf (adresse fixe) lu par tools/ukmil_aip.py →
            data/sia/zones/gb/ukmil_enr52.geojson (zones de vol à basse altitude, VATA, TVAA) et ukmil_aara-tracks.xml
            (zones de ravitaillement en vol en axes IP → CP) ; le PDF est gardé à côté (ukmil_ENR-5-2.pdf) ;
@@ -54,6 +55,8 @@ FAA_SIMPLIFY = {'maxAllowableOffset': 0.0005, 'geometryPrecision': 5}
 ENAIRE = 'https://aip.enaire.es/AIP/'
 ENAIRE_KINDS = ('Airspace', 'EnRoute')
 NAT_URL = 'https://nms.aim.faa.gov/datanat/nat.json'
+DFS = 'https://aip.dfs.de/datasets/rest/'     # DFS « AIP Datasets » (API REST v1.2) : les métadonnées à cette adresse, un jeu à <adresse><amendement>/<nom du fichier>
+DFS_FILE = re.compile(r'^ED_Routes_\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}_[a-z]+\.xml\Z')
 MAX_BYTES = 200 * 1024 * 1024  # 200 Mo au plus par réponse : au-delà, le téléchargement s'arrête (le fichier présent est gardé)
 CHUNK = 1024 * 1024
 
@@ -256,6 +259,48 @@ def enaire(data):
     return out, errors
 
 
+def dfs(data):
+    """Les routes ATS de l'Allemagne (DFS, jeu « ED Routes », AIXM 5.1, licence CC BY 4.0, crédit DFS) : l'amendement en vigueur (n° 0 des métadonnées), vérifié par sa somme SHA-512, rangé sous un nom stable
+    (zones/de/dfs_ED_Routes.xml : un seul fichier, l'amendement suivant le remplace). La somme du fichier présent est comparée à celle des métadonnées : identique, rien n'est téléchargé (15 Mo)."""
+    import hashlib
+    try:
+        meta = json.loads(get(DFS).decode('utf-8'))
+    except (OSError, ValueError) as e:
+        return [], [f'DFS : {e}']
+
+    def leaves(items):
+        for it in items if isinstance(items, list) else []:
+            if isinstance(it, dict) and it.get('type') == 'group':
+                yield from leaves(it.get('items'))
+            elif isinstance(it, dict):
+                yield it
+    release = None
+    for amdt in meta.get('Amdts', []) if isinstance(meta, dict) else []:
+        if isinstance(amdt, dict) and amdt.get('Amdt') == 0:
+            for leaf in leaves((amdt.get('Metadata') or {}).get('datasets')):
+                if leaf.get('name') == 'ED Routes':
+                    release = next((r for r in leaf.get('releases') or [] if isinstance(r, dict) and r.get('type') == 'AIXM 5.1'), None)
+    name = release.get('filename') if release else None
+    check = ((release or {}).get('checksum') or {}).get('value')
+    if not (isinstance(name, str) and DFS_FILE.match(name) and isinstance(check, str) and re.fullmatch(r'[0-9a-f]{128}', check)):
+        return [], ['DFS : le jeu « ED Routes » (AIXM 5.1) n’est pas dans les métadonnées (format changé ?)']
+    path = os.path.join(data, 'sia', 'zones', 'de', 'dfs_ED_Routes.xml')
+    try:
+        with open(path, 'rb') as f:
+            if hashlib.sha512(f.read()).hexdigest() == check:
+                return [{'name': 'dfs_ED_Routes.xml', 'bytes': os.path.getsize(path), 'unchanged': True}], []
+    except OSError:
+        pass
+    try:
+        body = get(DFS + '0/' + name)
+    except OSError as e:
+        return [], [f'{name} : {e}']
+    if hashlib.sha512(body).hexdigest() != check:
+        return [], [f'{name} : la somme SHA-512 ne correspond pas aux métadonnées : rien n’est écrit']
+    changed = write(path, body)
+    return [{'name': 'dfs_ED_Routes.xml', 'bytes': len(body), 'unchanged': not changed}], []
+
+
 def airnav(data):
     """eAIP d'Irlande (AirNav Ireland) : l'édition en vigueur (adresse lue sur la page AIM, contrôlée), ses pages ENR 4.4 et ENR 3.3 lues (tools/airnav_eaip.py) et rangées en GeoJSON dans zones/ie/
     (airnav_ie_enr_AAAAMMJJ.geojson : la date de l'édition est son cycle). L'édition déjà présente n'est pas relue ; les éditions précédentes du même jeu sont retirées."""
@@ -426,6 +471,8 @@ def fetch(data, provider, args=()):
         files, errors = navcan(data)
     elif provider == 'airnav':
         files, errors = airnav(data)
+    elif provider == 'dfs':
+        files, errors = dfs(data)
     elif provider == 'nat':
         files, errors = nat(data)
     else:

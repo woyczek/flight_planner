@@ -160,6 +160,32 @@
       licence: 'OGL v3.0',
       age: 'file'
     },
+    // Routes ATS de l’Allemagne (DFS « AIP Datasets », jeu « ED Routes », AIXM 5.1, CC BY 4.0, crédit DFS) : téléchargé par le lanceur (tools/aero_fetch.py dfs),
+    // somme SHA-512 vérifiée ; zones/de/dfs_ED_Routes.xml (lu par AeroSources.aixm5 : les extrémités des tronçons sont nommées par la référence et placées par la courbe)
+    dfs: {
+      kind: 'download',
+      provider: 'dfs',
+      args: [],
+      readable: true,
+      label: L4('DFS — routes ATS de l’Allemagne (AIXM 5.1, jeu « ED Routes »)',
+        'DFS — Germany ATS routes (AIXM 5.1, dataset “ED Routes”)',
+        'DFS — ATS-Strecken Deutschlands (AIXM 5.1, Datensatz „ED Routes“)',
+        'DFS — rutas ATS de Alemania (AIXM 5.1, conjunto «ED Routes»)'),
+      gives: L4('routes ATS (airways) avec leurs niveaux et leur sens, sans les points : leurs noms viennent des tronçons',
+        'ATS routes (airways) with their levels and direction, without the points: their names come from the segments',
+        'ATS-Strecken (Airways) mit Flugflächen und Richtung, ohne die Punkte: ihre Namen stammen aus den Segmenten',
+        'rutas ATS (aerovías) con sus niveles y sentido, sin los puntos: sus nombres vienen de los tramos'),
+      src: 'dfsRoutes',
+      link: 'https://aip.dfs.de/datasets/',
+      howto: L4(
+        'Données DFS en libre accès (CC BY 4.0, crédit DFS), téléchargées par le lanceur ; l’amendement en vigueur, vérifié par sa somme SHA-512.',
+        'DFS data freely available (CC BY 4.0, credit DFS), downloaded by the launcher; the amendment in force, checked by its SHA-512 sum.',
+        'DFS-Daten frei zugänglich (CC BY 4.0, Quellenangabe DFS), vom Starter heruntergeladen; die gültige Änderung, durch ihre SHA-512-Summe geprüft.',
+        'Datos de DFS de libre acceso (CC BY 4.0, crédito DFS), descargados por el lanzador; la enmienda vigente, verificada por su suma SHA-512.'
+      ),
+      licence: 'CC BY 4.0 (DFS)',
+      age: 'file'
+    },
     // Designated Airspace Handbook (TP 1820, tous les 56 jours, nom daté lu sur la page des guides) : téléchargé et lu par
     // le lanceur (tools/aero_fetch.py navcan → tools/navcan_dah.py) ; zones/ca/navcan_dah.geojson (CYD, CYR, CYA)
     navcan: {
@@ -253,6 +279,7 @@
   const sourcesOf = id => OWN[id] || [...(EXTRA[id] || []), ...COMMON];
   const EXTRA = {
     fr: ['sia', 'dircam'],
+    de: ['dfs'],
     gb: ['nats', 'ukmil'],
     es: ['enaire'],
     ie: ['airnav'],
