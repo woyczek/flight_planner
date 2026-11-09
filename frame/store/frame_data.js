@@ -709,7 +709,7 @@
     if (peek) return peek.tree;
     peekP ||= (async () => {
       try {
-        const head = await T.head();
+        const head = await T.head(remote?.head);
         peek = {
           head,
           tree: head === remote?.head && remote?.tree ? remote.tree : await T.tree(head)
@@ -729,10 +729,12 @@
    *  seule chaîne ref → commit → arbre au lieu d'une chacune. Rien n'est gardé après : ni un échec (hors ligne), ni un
    *  arbre qui vieillirait. */
   const treeNow = T => treeNowP ||= (async () => {
-    const head = await T.head();
+    const remote = await getMeta(
+        'remote'), // la tête et l'arbre du dernier passage : le lanceur répond « same », l'arbre n'est pas relu
+      head = await T.head(remote?.head);
     return {
       head,
-      tree: await T.tree(head)
+      tree: head === remote?.head && remote?.tree ? remote.tree : await T.tree(head)
     };
   })().finally(() => treeNowP = null);
 
@@ -942,7 +944,7 @@
       const mode = await getMeta('mode');
       if (mode?.kind === 'local' || (!mode && !(await getMeta('remote')))) await adoptLocal(T, (await treeNow(T)).tree, result);
       for (let i = 0; i < TRIES; i++) {
-        const head = await T.head();
+        const head = await T.head((await getMeta('remote'))?.head);
         const pulled = await pull(T, head);
         result.pulled.push(...pulled.paths);
         result.conflicts += pulled.conflicts;

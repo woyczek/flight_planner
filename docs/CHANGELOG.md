@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the launcher's tree of `data/` is read once per load and not again when it has not changed** (`frame/store/transport_launcher.js`,
+  `frame/store/frame_data.js`; frame SPEC § launcher, DECISIONS; noreg A100; SOG-0063). Two parallel downloads of 946 KB per load (half of
+  a screen's bytes) become one on the first load and a `same` answer of a few bytes on the next; a change at the other end still arrives.
+
 - **Map, ground layer: the runways are listed from the aerodrome's sheets** (`modules/maps/ground.js`, `procs.js`, `style.js`; SPEC § 5.2;
   noreg D115; SOG-0046 leftovers). The « Ground » panel listed a runway only when its threshold vector was drawn (zoom at or above
   `runwayZoom`); it now lists the sheets' runways at any zoom, a row highlights its runway and frames its threshold. Seen on a phone: a

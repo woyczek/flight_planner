@@ -2555,3 +2555,13 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   (4) The personal airline's own edits are not watched (only `airline/` is): they are seen at the next choice or reload; to settle when its
   editor exists. Noreg A94 (three airlines through a fake launcher: the first of the index, the choice of another with its name, site and
   logo, a logo in another airline's folder refused), red on 8baeb0b2d; A83 (the airline of today) unchanged and green.
+- **9 Nov 2026 — The launcher's tree of `data/` read once per load, and not again when unchanged** (SOG-0063, item 1 of the survey: two
+  parallel `GET /__setup/changes?since=` of 946 KB each per load, about half of the bytes of a screen, 1.0 to 2.4 s each; Simplification;
+  V3 Frame): (1) `transport_launcher.js` keeps one `{ head, tree }` and one request in flight **for the whole page** (module state,
+  not per transport: the data layer and the references source each had their own `last`, empty at load, and each downloaded the tree);
+  (2) `head(hint)`: the layer passes the head it kept with its tree (meta `remote`) and the transport sends it as `since` when it has
+  none of its own, so the launcher answers `same` without the tree; (3) `treeNow` and `pull` take the kept tree when the head is the
+  kept one (`liveTree` already did). The result of a synchronisation is unchanged: a changed `data/` has another head and is read in full
+  (proved by the third load of the case). The other transports (GitHub, GitLab, git) ignore the hint. Noreg A100 (a fake launcher with a
+  600-file tree counts the answers: one full read on the first load; every answer `same` on the next, a few bytes against the tree's 15 KB;
+  a remote change still arrives), red on d8c1029b6 (two full reads of the unchanged tree).

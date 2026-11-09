@@ -223,6 +223,11 @@ The transports:
   repository, served by `tools/launch.py`. Every route requires the `X-SOG-Setup` header.
   - `GET /__setup/changes?since=<head>`: the head (a hash of the tree), and the tree `{ path: git blob sha }` when the
     head differs from `since`.
+    - **Read once per load, not again when unchanged** (SOG-0063, 9 Nov 2026): the tree is some 950 KB on the real `data/`. All the
+      transports of a page share one reading (`shared.last`) and one request in flight; `head(hint)` sends as `since` the head the data
+      layer kept with its tree at the last pass (meta `remote`), so an unchanged `data/` answers `same` and the layer keeps its tree
+      (`pull`, `treeNow`, `liveTree` use it): two 946 KB downloads per load fall to one answer of a few bytes. A changed `data/` is
+      still read in full.
     - The tree leaves out `.git`, `local/`, conflict and pre-restore copies, regenerated indexes (`_index.json`), and
       the launcher's marker.
     - Under `sia/`, only two folders are exposed: `sia/base/` (the published aeronautical base) and `sia/vfr/` (the

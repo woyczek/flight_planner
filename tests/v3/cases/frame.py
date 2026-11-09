@@ -3766,4 +3766,65 @@ def a99(c):
     c.eq(c.count('.f-rm-time [data-ms]'), len(doc['milestones']), 'one point per milestone on the strip', what='strip')
     c.ok(c.count('[data-kanban] .f-rm-item[data-state="done"]') == 0, c.count('[data-kanban] .f-rm-item[data-state="done"]'), 'delivered cards hidden by default')
     c.eq(c.js("document.documentElement.scrollWidth <= window.innerWidth + 1"), True, 'no horizontal scroll of the page', what='scroll')
+
+@case('A100', 'The launcher’s tree of data/ is read once per load, and not again when it has not changed (the head of the last pass is kept between two loads)', 'A',
+      tags=('data',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0063 (V3 Frame, 9 Nov 2026): GET /__setup/changes?since= was asked twice per load, 946 KB each; now one request in flight for every transport of the page, and the head kept by the data layer (meta remote) is sent as since: an unchanged data/ answers « same » with no tree; a changed one still arrives')
+def a100(c):
+    state = {'head': 'h1', 'name': 'Air One', 'calls': []}
+    big = {f'fake/f{i}.json': f'r{i}' for i in range(600)}     # a tree of some 30 KB: the weight of the real one (946 KB) in small
+
+    def tree():
+        return {**big, 'airline/settings.json': 'rs-' + state['name']}
+
+    def launcher(route):
+        u = urllib.parse.urlparse(route.request.url)
+        if u.path.endswith('/__setup/changes'):
+            since = urllib.parse.parse_qs(u.query).get('since', [''])[0]
+            body = {'same': True, 'head': state['head']} if since == state['head'] else {'head': state['head'], 'tree': tree()}
+            state['calls'].append(('same' if since == state['head'] else 'full', len(json.dumps(body))))
+        elif u.path.endswith('/__setup/status'):
+            body = {'server': True, 'data': True, 'dataGit': True, 'host': 'TEST', 'lan': False, 'lnm': []}
+        else:
+            body = {}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+
+    def data(route):
+        if route.request.url.endswith('/data/airline/settings.json'):
+            return route.fulfill(status=200, content_type='application/json', body=json.dumps({'name': state['name']}))
+        route.fulfill(status=404, body='')
+    c.context.unroute(re.compile(r'/__setup/'))
+    c.context.unroute(re.compile(r'/data/airline/'))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    c.context.route(re.compile(r'/data/airline/'), data)
+    done = "() => FrameData.status().then(s => !!s.lastSync)"
+    name = "() => FrameData.airline().then(a => a.name)"
+    def settle():
+        for _ in range(60):          # the new page asks the launcher for the head: wait for it, then let the pass end
+            if state['calls']:
+                break
+            c.wait(250)
+        c.wait(2500)
+    # load 1: the whole tree, once
+    c.open('flightlog', flight=False, wait=False)
+    c.page.wait_for_function("() => window.FrameData && window.FrameData.status", timeout=20000)
+    settle()
+    c.page.wait_for_function("() => FrameData.airline().then(a => a.name === 'Air One')", timeout=20000)
+    full1 = [n for k, n in state['calls'] if k == 'full']
+    c.ok(len(full1) == 1, f'{state["calls"]}', 'the tree is read once per load (one request in flight for the whole page)')
+    # load 2: nothing changed: « same », no tree
+    state['calls'].clear()
+    c.page.reload(wait_until='load')
+    settle()
+    c.page.wait_for_function("() => FrameData.airline().then(a => a.name === 'Air One')", timeout=20000)
+    kinds = [k for k, _ in state['calls']]
+    c.ok(kinds and 'full' not in kinds, str(state['calls']), 'unchanged: every answer is « same », the tree is not downloaded again')
+    c.ok(sum(n for _, n in state['calls']) < 0.05 * full1[0], str(state['calls']), 'and the bytes of the loads fall to about nothing (against the ' + str(full1[0]) + ' B of the tree)')
+    # load 3: a change at the other end still arrives
+    state['head'], state['name'] = 'h2', 'Air Two'
+    state['calls'].clear()
+    c.page.reload(wait_until='load')
+    settle()
+    c.page.wait_for_function("() => FrameData.airline().then(a => a.name === 'Air Two')", timeout=20000)
+    c.ok(any(k == 'full' for k, _ in state['calls']), str(state['calls']), 'a changed data/ is read in full, and the change arrives')
     c.check_errors()

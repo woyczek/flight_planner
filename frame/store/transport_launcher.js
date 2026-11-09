@@ -48,24 +48,36 @@
     return j;
   }
 
+  // Une seule lecture de l'arbre de data/ à la fois, pour tous les transports de cette page (SOG-0063, 9 nov. 2026 : deux lectures de
+  // 946 Ko, en parallèle, à chaque chargement) : la dernière réponse { head, tree } et la requête en vol sont partagées.
+  const shared = {
+    last: null,
+    flying: new Map()
+  };
+  const changes = path => {
+    if (!shared.flying.has(path)) shared.flying.set(path, call(path).finally(() => shared.flying.delete(path)));
+    return shared.flying.get(path);
+  };
+
   function launcher(o = {}) {
-    let last = null; // { head, tree } de la dernière réponse
     return {
       id: 'launcher',
       kind: 'remote',
       quick: true, // data/ du poste : un passage est local et rapide, la couche envoie une écriture aussitôt (2 s)
-      async head() {
-        const j = await call(`__setup/changes?since=${encodeURIComponent(last?.head || '')}`);
-        if (!j.same) last = {
+      /** hint : la tête que l'appelant connaît déjà avec son arbre (la couche : meta « remote ») ; le lanceur répond « same » sans
+       *  l'arbre, qui n'est alors pas relu. */
+      async head(hint = '') {
+        const j = await changes(`__setup/changes?since=${encodeURIComponent(shared.last?.head || hint || '')}`);
+        if (!j.same) shared.last = {
           head: j.head,
           tree: j.tree
         };
         return j.head;
       },
       async tree(head) {
-        if (last?.head === head) return last.tree;
-        const j = await call('__setup/changes');
-        last = {
+        if (shared.last?.head === head) return shared.last.tree;
+        const j = await changes('__setup/changes');
+        shared.last = {
           head: j.head,
           tree: j.tree
         };
