@@ -12,6 +12,7 @@ Le moteur est RouteSim 2 (tools/route_engine : engine, fra, procedures, flight_p
 Licence des classeurs : EUROCONTROL NM (RAD et points FRA), usage de la compagnie, publiés dans son dépôt privé seulement ; la page le dit avant la prise (SOURCES, frame/aerodb/DECISIONS.md).
 Python : bibliothèque standard (le lecteur de classeurs route_engine/xlsx.py ; pas d'openpyxl).
 """
+import json
 import os
 import re
 import sys
@@ -104,6 +105,20 @@ def _scan(ctx):
     return dict(sorted(found.items())[:MAX_BOOKS])
 
 
+def write_index(data, now=None):
+    """data/route/index.json : { rad: [cycles], fra: [cycles], at } — les cycles des classeurs compilés (une date AAAA-MM-JJ par classeur, triées), relus des fichiers eux-mêmes ; `at` : l'heure de cet import (UTC). Rend son chemin relatif à data/."""
+    import datetime
+    from route_engine import import_books as I
+    rad_file, fra_file = _paths(data)
+    index = {'rad': sorted({b['start'] for b in I.load(rad_file)}), 'fra': sorted({b['start'] for b in I.load(fra_file)}),
+             'at': (now or datetime.datetime.now(datetime.timezone.utc)).strftime('%Y-%m-%dT%H:%M:%SZ')}
+    path = os.path.join(os.path.dirname(rad_file), 'index.json')
+    with open(path + '.tmp', 'w', encoding='utf-8', newline='\n') as f:
+        f.write(json.dumps(index, indent=1) + '\n')
+    os.replace(path + '.tmp', path)
+    return 'route/index.json'
+
+
 def import_rad(job, args, ctx):
     from route_engine import import_books as I
     data, dry = ctx['data'], args['dry']
@@ -148,6 +163,7 @@ def import_rad(job, args, ctx):
             if fra_new:
                 I.write(fra_file, I.merge(I.load(fra_file), fra_new))
             paths = [f'route/{n}' for n, new in (('rad.json.gz', rad_new), ('fra.json.gz', fra_new)) if new]
+            paths.append(write_index(data))            # le petit index des cycles présents, que la page lit (publication().route) sans ouvrir les .gz
             done = regen_jobs.commit_outputs(ctx, getattr(job, 'author', ''), paths, f":card_file_box: RAD et points FRA d'EUROCONTROL compilés ({', '.join(sorted({e['start'] for e in rad_new + fra_new}))})")
             commit = done.get('commit')
             if done.get('warning'):

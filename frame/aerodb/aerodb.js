@@ -1977,7 +1977,11 @@
             byStatus
           };
         }));
-        const vi = valueOf(await read('sia/vfr/index.json', true)),
+        // le RAD et les points FRA compilés (SOG-0083 : data/route/index.json, écrit par route/import-rad) : les cycles présents, sans ouvrir les .gz
+        const ri = valueOf(await read('route/index.json', true)),
+          routeDays = a => Array.isArray(a) ? [...new Set(a.filter(x => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x)))]
+          .sort().slice(-60) : [],
+          vi = valueOf(await read('sia/vfr/index.json', true)),
           air = await listOf('AircraftDB/'),
           db = Array.isArray(air) && air.includes('AircraftDB/aircraft_db.json') ? valueOf(await read(
             'AircraftDB/aircraft_db.json', true)) : null;
@@ -1987,6 +1991,11 @@
             cycles: Object.fromEntries(Object.keys(procCycles).sort().map(k => [k, procCycles[k]])),
             inForce: pickCycle(Object.keys(procCycles).sort())
           },
+          route: ri && typeof ri === 'object' ? {
+            rad: routeDays(ri.rad),
+            fra: routeDays(ri.fra),
+            at: typeof ri.at === 'string' && !Number.isNaN(Date.parse(ri.at)) ? ri.at : null
+          } : null,
           vfr: vi ? {
             cycle: vi.cycle || vi.source?.cycle || null,
             at: vi.generatedAt || vi.updated_at || null,

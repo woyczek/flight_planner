@@ -4895,6 +4895,7 @@ def k101(c):
 @case('K102', 'Job route/import-rad (SOG-0081): the plan shows what Downloads holds, the pilot picks, the books are compiled into data/route/, committed once, a changed file is refused', 'K', static=True,
       rule='SOG-0081: like base/pickup the plan (dry, the default) lists the EUROCONTROL workbooks of Downloads (name, size, kind, cycle) and writes nothing; the run takes ONLY the books the plan showed and refuses a file that is no longer the one shown; the compiled rad.json.gz and fra.json.gz keep the other cycles; one commit; nothing outside data/route/')
 def k102(c):
+    import json
     import os
     import importlib
     import tempfile
@@ -4931,12 +4932,15 @@ def k102(c):
         rad, fra = I.load(os.path.join(data, 'route', 'rad.json.gz')), I.load(os.path.join(data, 'route', 'fra.json.gz'))
         c.eq(([(b['start'], b['title']) for b in rad], [(b['start'], len(b['rows'])) for b in fra]), ([('2026-10-29', 'RAD 2611 V1.0 (Rolling RAD Document)')], [('2026-10-29', 2)]), 'compiled in data/route/rad.json.gz and fra.json.gz', what='compiled')
         c.eq(sorted(os.listdir(data)), ['route'], 'nothing else is written in data/ (the workbooks are not copied: licence)', what='only route')
+        ix = json.load(open(os.path.join(data, 'route', 'index.json'), encoding='utf-8'))
+        c.eq((ix['rad'], ix['fra'], bool(re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z', ix['at']))), (['2026-10-29'], ['2026-10-29'], True), 'data/route/index.json lists the cycles present (the page reads it, not the .gz) and the time of the import', what='index')
         # a second cycle arrives: the first stays
         RF.write_xlsx(os.path.join(dl, 'RAD_2612_v1_0.xlsx'), [(n, rows if n != 'Cover' else [['RAD 2612 V1.0 (Rolling RAD Document)'], ['Valid From 26/11/2026']]) for n, rows in RF.rad_sheets()])
         plan = run()
         pick = [{'name': f['name'], 'size': f['size']} for f in plan['files'] if f['name'] == 'RAD_2612_v1_0.xlsx']
         res = run(dry=False, books=pick)
         c.eq(([b['start'] for b in I.load(os.path.join(data, 'route', 'rad.json.gz'))], res['rad']), (['2026-10-29', '2026-11-26'], ['2026-11-26']), 'a later cycle is added, the first stays (never purged)', what='second cycle')
+        c.eq(json.load(open(os.path.join(data, 'route', 'index.json'), encoding='utf-8'))['rad'], ['2026-10-29', '2026-11-26'], 'the index follows: both cycles', what='index 2')
         c.ok(res['commit'] is None, str(res), 'without a data repository there is no commit (and no error)')
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         DS = importlib.import_module('data_sync')
@@ -4947,7 +4951,7 @@ def k102(c):
         size = os.path.getsize(os.path.join(td, 'dl', 'RAD_2611_v1_0.xlsx'))
         r = RJ.REGISTRY[('route', 'import-rad')][0](RJ.Job('route', 'import-rad', {}, author='TST'), {'dry': False, 'books': [{'name': 'RAD_2611_v1_0.xlsx', 'size': size}]}, ctx)
         c.eq((r['ok'], bool(re.fullmatch(r'[0-9a-f]{40}', r.get('commit') or ''))), (True, True), 'with a data repository: the books are committed (one commit)', what='commit')
-        c.ok('route/rad.json.gz' in _d5_git(data, 'show', '--name-only', '--format=', '-1') and _d5_git(data, 'show', '-s', '--format=%an', '-1').strip() == 'TST', _d5_git(data, 'show', '--name-only', '--format=%an', '-1'), 'it holds route/rad.json.gz and is the page\'s author\'s')
+        c.ok('route/rad.json.gz' in _d5_git(data, 'show', '--name-only', '--format=', '-1') and _d5_git(data, 'show', '-s', '--format=%an', '-1').strip() == 'TST', _d5_git(data, 'show', '--name-only', '--format=%an', '-1'), 'it holds route/index.json too, and route/rad.json.gz and is the page\'s author\'s')
 
 
 @case('K103', 'Job route/compute (SOG-0081): the route of the README example (LFPO SITET KEPAD EIDW) on a small base, the mandatory passages kept, a RAD segment rule that makes the plan impossible, a closed request, a bounded answer', 'K', static=True,
@@ -5281,11 +5285,17 @@ def k67(c):
       const files = {};
       for (const [z, cy] of [['fr', '2026-10-29'], ['de', '2026-10-01'], ['gb', '2026-10-01'], ['es', '2026-10-01'], ['us', '2026-10-01']]) files[`sia/base/${z}/${cy}/meta.json`] = meta(z, cy);
       const reader = { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} };
-      const db = AeroDB.create({ reader, lnmperf: false, now: () => day }), pub = await db.publication();
-      return { src: Object.fromEntries(Object.entries(pub.base).map(([z, v]) => [z, v.cycleSource])), inForce: Object.fromEntries(Object.entries(pub.base).map(([z, v]) => [z, v.inForce])),
+      const db = AeroDB.create({ reader, lnmperf: false, now: () => day }), pub = await db.publication(), none = pub.route;
+      files['route/index.json'] = { rad: ['2026-11-26', '2026-10-29', 'x', 5, '2026-10-29'], fra: ['2026-10-29'], at: '2026-11-09T14:00:00Z' };
+      const withRoute = (await AeroDB.create({ reader, lnmperf: false, now: () => day }).publication()).route;
+      files['route/index.json'] = { rad: 'x', at: 'no' };
+      const bad = (await AeroDB.create({ reader, lnmperf: false, now: () => day }).publication()).route;
+      return { none, withRoute, bad, src: Object.fromEntries(Object.entries(pub.base).map(([z, v]) => [z, v.cycleSource])), inForce: Object.fromEntries(Object.entries(pub.base).map(([z, v]) => [z, v.inForce])),
                table: AeroDB.CYCLED_ZONES };
     }""")
     c.eq(r['src'], {'fr': 'sia', 'de': None, 'gb': 'nats', 'es': 'enaire', 'us': None}, 'fr, gb and es name their dated source; de and us (openAIP, FAA: no AIRAC) have none', what='cycleSource')
+    c.eq((r['none'], r['withRoute'], r['bad']), (None, {'rad': ['2026-10-29', '2026-11-26'], 'fra': ['2026-10-29'], 'at': '2026-11-09T14:00:00Z'}, {'rad': [], 'fra': [], 'at': None}),
+         'publication().route (SOG-0125): the cycles of the RAD and of the FRA points present in data/route/index.json (dates only, sorted, no duplicate), the time of the import; null without the file; a damaged file gives empty lists', what='route')
     c.eq(r['table'], {z: s for s, z in aero_cycles.CYCLED.items()}, "the launcher's table (tools/aero_cycles.py CYCLED) and aerodb's are the same", what='mirror')
     c.eq(r['inForce']['de'], '2026-10-01', 'the folder cycle stays as written (a build date for de), the module decides what it says', what='folder')
 
