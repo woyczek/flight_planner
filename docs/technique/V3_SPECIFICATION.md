@@ -1818,3 +1818,63 @@ redesigned for touch at that point.
        rows, the "non dessiné" mark, done. Runways stay where they are (threshold vectors, § 10.20): the panel lists them
        first, highlight included, no new drawing.
        **Phone first** (the panel is a sheet, the map already pans and zooms); the workstation gets the same.
+   41. **The user's roadmap is generated from the backlog, and reprioritised from the screen** (user, 9 Nov: "la roadmap
+       user est maintenance#roadmap, c'est celle qu'il peut consulter. donnes-moi le moyen d'organiser, en roadmap, les
+       cartes de features, et de masquer les cartes livrées. S'assurer que la maintenance#roadmap soit bien synchro avec
+       organisation/ROADMAP.md […] Tri par appli : pilote, compagnie(s), maintenance, stats. Idem pour les bugs. le format
+       kanban me va bien, mais une frise pourrait être bien aussi" ; then: "comment je repriorise ? Je n'ai ni les id, ni de
+       drag'n'drop sur les tâches pour définir les priorités"; SOG-0062, SOG-0066). Ergonomics design of 9 Nov, done the
+       same day for the generation and the screen, the reprioritising in alpha.5.
+       **One source.** `frame/help/roadmap.json` is written by `tools/roadmap_build.py` from the organisation folder (not in
+       this repository): one card per fiche of `BACKLOG.md` (its `Nature` → kind bug | feature, its `État` → done | doing |
+       planned | later, its `Thème` → application pilote | compagnie | maintenance | stats and lane), the milestones from the
+       « Jalons » table of `ROADMAP.md`, the titles translated through `roadmap_i18n.json` (a helper translates the
+       missing ones, `--check` lists them), the historical lanes kept with their translations. Nobody edits the file by
+       hand; the integrator regenerates and commits it with every pushed lot and at the evening pass. The schema string
+       stays `sog-roadmap/1` with `version: 2`, so the help build's check keeps working; the screen and the build read
+       version 2 (apps, milestones, kind, id, milestone per item).
+       **The screen** (`#roadmap`, Maintenance › About › Roadmap, frame/help): the milestone strip first (the current one
+       marked, a touch filters the kanban, one scrolling line on a phone), the tabs Features | Bugs with their counts, the
+       filter All + the applications in the file's order, « Hide delivered » ticked by default and remembered per device
+       (a chosen milestone wins over it, otherwise a delivered milestone shows an empty page), the four-column kanban,
+       each card with its id and milestone, « n delivered » per lane. Rule 13: seven elements at most per level.
+       **Reprioritising from the screen (SOG-0066, alpha.5):** the id is written first on the card and a long press copies
+       it with the title; dragging a card within a column sets its rank, dropping it on a milestone of the strip sets its
+       milestone; the launcher's `roadmap/priorities` job writes `organisation/PRIORITES.json` at the suite's root
+       (`sog-priorities/1`: `{ items: { "SOG-0046": { milestone, rank } } }`, 500 entries at most, ids `^SOG-\d{4}$`,
+       milestones of the file, integer ranks; no `organisation/` folder → `no-organisation`); the screen applies the order
+       at once and reads the file back at load; without a launcher (GitHub Pages) the choice stays on the device and the
+       card says « non envoyé ». The generator reads `PRIORITES.json` (milestone override, rank) and **the scheduler orders
+       the lots on it**: it is the user's priority input, in place of messages. Until the screen exists, the user says the
+       order in the session and the integrator writes the file.
+   42. **Country packs and thematic filters of the aero base** (user, 9 Nov: "On pourrait regrouper les pays en « packages »
+       : amérique du nord, amérique du sud, amérique centrale, cercle arctique, antarctique, australie et indonésie, europe
+       du nord, méditerranée, moyen orient, asie, afrique, et un meta package avec un classement différent : « îles » qui ne
+       contient que les îles, « hymalaya », Deserts et steppes, grandes forêts et jungles, grands lacs et fleuves,
+       megalopoles… tu peux proposer"; SOG-0065). Ergonomics design of 9 Nov on AeroDB's measurement of the same day; after
+       alpha.5, one AeroDB lot for the data and the job, one Réglages lot for the Données screen.
+       **What exists:** 218 zones = 218 Natural Earth countries (ISO2; `fr` carries its overseas territories), names in
+       four languages, no grouping; « Ajouter un pays » is a flat list of 218 names; a zone costs its build, not its
+       listing (26 zones published here = 78 MB, median 0.6 MB, us 21, fr 20, gb 10, es 9).
+       **Two levels, never mixed.** (1) **A pack is a list of zone ids**, static, many-to-many (Turkey in the Mediterranean
+       and in the Middle East). Packs generated from Natural Earth's CONTINENT and SUBREGION by a script of the build
+       family (`tools/build_aero_packs.py` → `frame/aerodb/packs.json`, ≈ 3 kB, names ×4): Amérique du Nord, Amérique
+       centrale et Caraïbes, Amérique du Sud, Europe du Nord, Europe de l'Ouest, Europe du Sud, Europe de l'Est, Afrique
+       du Nord, Afrique de l'Ouest, Afrique centrale, Afrique de l'Est, Afrique australe, Moyen-Orient (Western Asia),
+       Asie centrale, Asie du Sud, Asie de l'Est, Asie du Sud-Est, Océanie; plus four hand-written lists kept in the same
+       file: Méditerranée (the riparian states), Australie et Indonésie, Cercle arctique (gl, is, sj, fo, plus no, se, fi,
+       ru, ca, us whose zones are whole countries: said « en partie »), Antarctique: **no zone and no source today, listed
+       as empty with the reason**. In Données, a pack is one row with its name, its size (the sum of the zones' published
+       sizes, already known) and « Ajouter tout » = `addZone()` on each id, then the ordinary Télécharger (one call carries
+       up to 60 zones) and Construire; a zone already added is said, never duplicated. Seven elements per row at most.
+       (2) **A thematic classification is a filter, computed offline, never a zone**: « les zones qui touchent l'objet ».
+       Objects from public sources — Natural Earth `geography_regions_polys` (deserts, mountain ranges, plateaus,
+       archipelagos), `lakes` and `rivers_lake_centerlines`, and the base's `cities_major.json` for the megacities —
+       intersected with the 1° cells of `zones.js` (`cellsOf`); islands = the insular states (a hand list of about 45) or
+       « a single ring of contours without a land border »; forests and jungles have no Natural Earth layer: defined by
+       hand as sets of countries (Amazon basin, Congo basin, Borneo and Sumatra, boreal belt). The filter shows which
+       zones to add; it adds nothing by itself. The hard point is the definition (what belongs to « désert »), not the
+       technique: each list is in the generated file with its source and date, reviewed by the user once.
+       **Owners:** AeroDB (script, `packs.json`, `AeroDb.packs()`, the job that adds a pack), Réglages (the rows and the
+       filter in Données); one case per level, red before; the help texts ×4; nothing is built or published by a pack
+       without the pilot's gesture (compiled data never purged).
