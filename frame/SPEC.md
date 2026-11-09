@@ -721,6 +721,8 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
 - Each unseen conflict shows the file and its date, the version set aside (this device's or another device's) and the
   version kept.
 - Two actions: "Take this version back" (`FrameData.restore`) and "Seen".
+- **Each entry shows what differs** (10 Nov 2026, SOG-0136): under the two blocks, « What differs (− set aside, + kept) » lists the lines that differ (longest common subsequence, 400 lines a side, 80 said), « (both versions say the same thing) » when only the line endings differ, and a blank version is written
+  « (empty) » — never a blank block. **An entry exists only if a version differs** (`mergeText`): a text that comes back with other line endings, other layout or key order, or equal to this device's last write (the base) is no conflict; an empty remote text is not a version (a file being written, a partial read): the local text stays, nothing is recorded.
 - **"Mark all as seen (n)"** (6 Nov 2026, SOG-0043): above the list, `n` = the unseen conflicts (the count of the sync button and of
   the Synchronisation card); one click calls `FrameData.conflictSeen` on each of them and the count falls to zero at once; absent
   when `n` = 0 (even with the seen ones shown). For the old conflicts a device keeps; the two actions of each conflict are unchanged.

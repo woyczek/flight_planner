@@ -4277,3 +4277,24 @@ def a106(c):
     cls = c.js('window.__cls')
     c.ok(cls['value'] < 0.1, cls, 'the cumulative layout shift of the screen at load, repository included, stays under 0.1 (rule 22)')
     c.check_errors()
+
+
+@case('A111', 'Conflicts screen: an entry shows what differs between the two versions (the real diff); a blank version says « (empty) », never a blank block', 'A', tags=('data',),
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule='SOG-0136 (frame/app.js renderConflicts): « What differs (− set aside, + kept) » lists the lines that differ; two versions that say the same thing say so; an empty version is written « (empty) »')
+def a111(c):
+    lang = c.lang
+    C = lambda k: tx('frame/app.js', k, lang, after='const C = {')
+    kept = '{\n "route": "LFLL BUSIL LFPO",\n "level": 180\n}\n'
+    lost = '{\n "route": "LFLL LFPO",\n "level": 180\n}\n'
+    c.open('settings')
+    c.js("async ([k, l]) => { await FrameData.noteConflict({ path: 'pilot/ABC/current_flight.json', kept: k, lost: l, side: 'remote' }); await FrameData.noteConflict({ path: 'pilot/ABC/empty.json', kept: '', lost: ' ', side: 'remote' }); await FrameData.noteConflict({ path: 'pilot/ABC/same.json', kept: k, lost: k.replace(/\\n/g, '\\r\\n'), side: 'remote' }) }", [kept, lost])
+    c.page.evaluate("() => { location.hash = '#conflicts' }")
+    c.until("document.querySelectorAll('#fView .f-card[data-id]').length === 3", timeout=10000, what='the three entries')
+    pick = "(n) => [...document.querySelectorAll('#fView .f-card[data-id]')].find(x => x.querySelector('b').textContent === n)"
+    diff = lambda name: norm(c.js(f"(n) => ({pick})(n).querySelector('[data-diff]').textContent", name))
+    c.eq(diff('pilot/ABC/current_flight.json'), norm('− "route": "LFLL LFPO", + "route": "LFLL BUSIL LFPO",'), 'the diff names the line set aside (−) and the line kept (+), nothing else', what='diff')
+    c.eq(diff('pilot/ABC/same.json'), norm(C('sameText')), 'two versions that differ by their line endings only say the same thing', what='same')
+    empty = c.js(f"(n) => [...({pick})(n).querySelectorAll('pre:not([data-diff])')].map(p => p.textContent.trim())", 'pilot/ABC/empty.json')
+    c.eq(empty, [norm(C('emptyText'))] * 2, 'a blank version is written « (empty) » in both blocks: never a blank block', what='empty blocks')
+    c.check_errors()

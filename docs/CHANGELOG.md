@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Synchronisation: a conflict entry only when a version differs, and the diff on the conflicts screen** (`frame/store/frame_data.js` `mergeText`, `frame/app.js` `renderConflicts`; frame SPEC § 3.4, DECISIONS; noreg A53, A111; SOG-0136, SOG-0043) — « nouvelle brouette de conflits alors que je suis tout seul »:
+  line endings, layout, key order and a copy equal to this device's last write are no conflict; an empty remote text is not a version (it left entries with two empty blocks); each entry shows the lines that differ and a blank version says « (vide) ».
 - **Fuel: the proposed routes drawn on a sketch** (`modules/fuel/module.js`; Fuel SPEC § 9.3, DECISIONS, help; noreg F114; SOG-0134 a).
   Under the list of the Route step: the chosen route solid, the others faded, the row hovered or pressed highlighted, faulty segments
   red; the checked route drawn the same way. No base map: the whole Map stays one gesture away.

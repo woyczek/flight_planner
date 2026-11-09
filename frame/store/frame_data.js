@@ -296,16 +296,29 @@
   /** Fusion d'un fichier modifié des deux côtés (textes) : cas triviaux d'abord, puis la règle du préfixe ; texte non
    *  JSON : la version locale gagne, la distante gardée. Retour : { text, conflict: { kept, lost, side } | null }. */
   function mergeText(path, base, local, remote) {
-    if (local === remote || remote === base) return {
+    // les fins de ligne ne font pas une version : un texte revenu avec des CRLF (Windows, git) est le meme texte
+    const eol = t => typeof t === 'string' ? t.replace(/\r\n?/g, '\n') : t,
+      [B, L, R] = [base, local, remote].map(eol);
+    if (L === R || R === B) return {
       text: local,
       conflict: null
     };
-    if (local === base) return {
+    // un texte distant vide (fichier en cours d'ecriture, lecture partielle) n'est pas une version : rien a perdre ni a garder, jamais une entree aux deux blocs vides
+    if (typeof remote !== 'string' || !remote.trim()) return {
+      text: local,
+      conflict: null
+    };
+    if (L === B) return {
       text: remote,
       conflict: null
     };
     const rule = ruleOf(path),
       [b, l, r] = [base, local, remote].map(t => valueOf(path, t));
+    // la version distante est la derniere ecriture de cet appareil (la base), mise en forme ou ordre des cles pres, horodatage compris : inchangee, la locale gagne
+    if (b !== null && r !== null && canon(b) === canon(r)) return {
+      text: local,
+      conflict: null
+    };
     if (!/\.json$/i.test(path) || l === null || r === null) return {
       text: local,
       conflict: {
@@ -321,10 +334,12 @@
       conflict: null
     };
     const m = rule(b, l, r, path),
-      text = textOf(path, m.value);
+      text = textOf(path, m.value),
+      lostText = m.lost ? textOf(path, m.lost) : '';
+    // une entrée de conflit n'existe que si la version perdante dit quelque chose et diffère de la gardée (jamais deux blocs vides ni deux blocs égaux)
     return {
       text,
-      conflict: m.lost ? {
+      conflict: m.lost && lostText.trim() && eol(lostText) !== eol(text) ? {
         kept: text,
         lost: textOf(path, m.lost),
         side: m.side,

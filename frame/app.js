@@ -3436,17 +3436,51 @@
     allSeen: ['Tout marquer comme vu ({n})', 'Mark all as seen ({n})', 'Alle als gesehen markieren ({n})',
       'Marcar todo como visto ({n})'
     ],
+    diff: ['Ce qui diffère (− écartée, + gardée)', 'What differs (− set aside, + kept)',
+      'Was sich unterscheidet (− verworfen, + behalten)', 'Lo que difiere (− descartada, + conservada)'
+    ],
+    emptyText: ['(vide)', '(empty)', '(leer)', '(vacío)'],
+    sameText: ['(les deux versions disent la même chose)', '(both versions say the same thing)', '(beide Versionen sagen dasselbe)',
+      '(las dos versiones dicen lo mismo)'
+    ],
     restored: ['Version reprise : elle partira à la prochaine synchronisation.',
       'Version taken back: it will leave at the next synchronisation.',
       'Version zurückgenommen: sie geht bei der nächsten Synchronisation hinaus.',
       'Versión recuperada: saldrá en la próxima sincronización.'
     ]
   };
+  /** Le texte d'une version dans l'écran des conflits : « (vide) » quand il n'y a rien (jamais un bloc blanc sans un mot). */
+  const shownText = v => v == null || !String(v).trim() ? t(C.emptyText) : String(v);
+  /** Les lignes qui diffèrent entre la version gardée et l'écartée (plus longue sous-suite commune, 400 lignes au plus de chaque côté, 80 lignes dites) :
+   *  « − » la ligne de l'écartée, « + » celle de la gardée ; les fins de ligne ne comptent pas. « (les deux versions disent la même chose) » quand rien ne diffère. */
+  function diffText(kept, lost) {
+    const split = v => (v == null ? '' : String(v)).replace(/\r\n?/g, '\n').split('\n').slice(0, 400),
+      A = split(lost),
+      B = split(kept),
+      n = A.length,
+      m = B.length,
+      L = Array.from({
+        length: n + 1
+      }, () => new Array(m + 1).fill(0));
+    for (let i = n - 1; i >= 0; i--)
+      for (let j = m - 1; j >= 0; j--) L[i][j] = A[i] === B[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+    const out = [];
+    let i = 0,
+      j = 0;
+    while (i < n || j < m) {
+      if (i < n && j < m && A[i] === B[j]) {
+        i++;
+        j++;
+      } else if (j < m && (i >= n || L[i][j + 1] > L[i + 1][j])) out.push(`+ ${B[j++]}`);
+      else out.push(`− ${A[i++]}`);
+    }
+    return out.length ? out.slice(0, 80).join('\n') + (out.length > 80 ? '\n…' : '') : t(C.sameText);
+  }
   async function renderConflicts(view, all = false) {
     const every = await FD.conflicts(),
       unseen = every.filter(c => !c.seen).length, // le compte de la carte Synchronisation : les non vus, tous
       list = every.filter(c => all || !c.seen).sort((a, b) => String(b.at).localeCompare(String(a.at)));
-    view.innerHTML = `<h1>${esc(t(C.title))}</h1><p class="f-muted">${esc(t(C.intro))}</p><label class="f-check"><input type="checkbox" data-all ${all ? 'checked' : ''}>${esc(t(C.all))}</label>${unseen ? `<div class="f-row"><button type="button" data-allseen>${esc(t(C.allSeen, { n: unseen }))}</button></div>` : ''}${list.length ? list.map(c => `<div class="f-card" data-id="${c.id}">${c.side === 'refused' ? `<b>${esc(t(C.refused, { p: c.path }))}</b> <span class="f-muted">${esc(tz('fmtDateZ', c.at))}</span><p class="f-muted">${esc(t(C.refusedWhy, { s: c.by || '?', w: c.why || '?' }))}</p><details><summary>${esc(c.path)}</summary><pre>${esc(c.lost || t(C.refusedDel))}</pre></details>` : `<b>${esc(c.path)}</b> <span class="f-muted">${esc(tz('fmtDateZ', c.at))}</span><details><summary>${esc(t(c.side === 'local' ? C.lostLocal : C.lostRemote))}</summary><pre>${esc(c.lost)}</pre></details><details><summary>${esc(t(C.kept))}</summary><pre>${esc(c.kept)}</pre></details>`}<div class="f-row">${c.restored ? '' : `<button type="button" class="primary" data-restore>${esc(t(C.restore))}</button>`}${c.seen ? '' : `<button type="button" data-seen>${esc(t(C.seen))}</button>`}</div></div>`).join('') : `<p class="f-card">${esc(t(C.none))}</p>`}`;
+    view.innerHTML = `<h1>${esc(t(C.title))}</h1><p class="f-muted">${esc(t(C.intro))}</p><label class="f-check"><input type="checkbox" data-all ${all ? 'checked' : ''}>${esc(t(C.all))}</label>${unseen ? `<div class="f-row"><button type="button" data-allseen>${esc(t(C.allSeen, { n: unseen }))}</button></div>` : ''}${list.length ? list.map(c => `<div class="f-card" data-id="${c.id}">${c.side === 'refused' ? `<b>${esc(t(C.refused, { p: c.path }))}</b> <span class="f-muted">${esc(tz('fmtDateZ', c.at))}</span><p class="f-muted">${esc(t(C.refusedWhy, { s: c.by || '?', w: c.why || '?' }))}</p><details><summary>${esc(c.path)}</summary><pre>${esc(c.lost || t(C.refusedDel))}</pre></details>` : `<b>${esc(c.path)}</b> <span class="f-muted">${esc(tz('fmtDateZ', c.at))}</span><details><summary>${esc(t(c.side === 'local' ? C.lostLocal : C.lostRemote))}</summary><pre>${esc(shownText(c.lost))}</pre></details><details><summary>${esc(t(C.kept))}</summary><pre>${esc(shownText(c.kept))}</pre></details><details><summary>${esc(t(C.diff))}</summary><pre data-diff>${esc(diffText(c.kept, c.lost))}</pre></details>`}<div class="f-row">${c.restored ? '' : `<button type="button" class="primary" data-restore>${esc(t(C.restore))}</button>`}${c.seen ? '' : `<button type="button" data-seen>${esc(t(C.seen))}</button>`}</div></div>`).join('') : `<p class="f-card">${esc(t(C.none))}</p>`}`;
     view.querySelector('[data-all]').onchange = e => renderConflicts(view, e.target.checked);
     view.onclick = async e => {
       if (e.target.closest(

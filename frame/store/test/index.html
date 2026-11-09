@@ -402,6 +402,74 @@
         'LFRS LFLL' && got.profile.tocNm === 60, [r, got]);
       check('the loser kept whole', cs.length === 1 && JSON.parse(cs[0].lost).profile.tocNm === 99, cs);
     },
+    // ---- SOG-0136 (« nouvelle brouette de conflits alors que je suis tout seul ») : une entrée de conflit n'existe que si une version DIFFÈRE ; la copie qui revient est la dernière
+    // écriture de cet appareil (fins de ligne, mise en forme, ordre des clés), un texte distant vide n'est pas une version : jamais d'entrée, la locale gagne
+    async 'merge text: the copy that comes back is this device\u2019s last write (line endings, layout, key order): no conflict, the new edit wins'() {
+      const p = 'pilot/TST/current_flight.json',
+        A = {
+          updated_at: '2026-11-09T15:02:14.779Z',
+          route: {
+            text: 'LFLL LFPO'
+          },
+          level: 180
+        },
+        B = {
+          ...A,
+          updated_at: '2026-11-09T15:02:34.593Z',
+          route: {
+            text: 'LFLL BUSIL LFPO'
+          }
+        },
+        base = JSON.stringify(A, null, 1) + '\n',
+        local = JSON.stringify(B, null, 1) + '\n',
+        crlf = base.replace(/\n/g, '\r\n'),
+        shuffled = JSON.stringify({
+          level: 180,
+          route: {
+            text: 'LFLL LFPO'
+          },
+          updated_at: A.updated_at
+        }, null, 4);
+      const r1 = FD.mergeText(p, base, local, crlf),
+        r2 = FD.mergeText(p, base, local, shuffled);
+      check('CRLF copy of the last write: the new edit is kept, no entry', r1.text === local && r1.conflict === null, r1);
+      check('same data, other layout and key order: the new edit is kept, no entry', r2.text === local && r2.conflict === null, r2);
+    },
+    async 'merge text: an empty or blank remote text is not a version: nothing to lose, no entry with two empty blocks'() {
+      const p = 'pilot/TST/current_flight.json',
+        base = JSON.stringify({
+          updated_at: '2026-11-09T15:00:00Z',
+          route: {
+            text: 'A'
+          }
+        }, null, 1) + '\n',
+        local = JSON.stringify({
+          updated_at: '2026-11-09T15:01:00Z',
+          route: {
+            text: 'B'
+          }
+        }, null, 1) + '\n';
+      for (const remote of ['', ' \n', null]) {
+        const r = FD.mergeText(p, base, local, remote);
+        check(`remote ${JSON.stringify(remote)}: the local text stays, no entry`, r.text === local && r.conflict === null, r);
+      }
+      const u = FD.mergeText(p, base, base, '');
+      check('an unchanged local with an empty remote does not take the empty text', u.text === base && u.conflict === null, u);
+    },
+    async 'merge text: a different content is one entry, with both versions in it and different'() {
+      const p = 'pilot/TST/current_flight.json',
+        mk = (route, at) => JSON.stringify({
+          updated_at: at,
+          route: {
+            text: route
+          }
+        }, null, 1) + '\n',
+        base = mk('A', '2026-11-09T15:00:00Z'),
+        local = mk('B', '2026-11-09T15:02:00Z'),
+        remote = mk('C', '2026-11-09T15:01:00Z'),
+        r = FD.mergeText(p, base, local, remote);
+      check('one entry: the newer (local) kept whole, the other kept as the lost version, both non-empty and different', r.conflict && r.conflict.kept === local && r.conflict.lost === remote && r.conflict.kept.trim() && r.conflict.lost.trim() && r.conflict.kept !== r.conflict.lost, r);
+    },
     async 'instants: the most recent is the one that is later, whatever the form of the date'() {
       check('FrameData.isNewer compares instants: +02:00 and Z, to the second and in milliseconds, equal instants, no date', FD
         .isNewer({
