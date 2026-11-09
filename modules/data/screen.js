@@ -28,7 +28,9 @@ import {
   VERBS_ROUTE
 } from './state.js';
 import {
-  routeRowHtml
+  routeRowHtml,
+  showRoute,
+  wantRoute
 } from './route.js';
 import {
   itemName,
@@ -176,7 +178,9 @@ export async function load(fresh = false) {
   };
   // les zones à construire : toutes celles de la couverture à la première lecture (choix de l'utilisateur gardés ensuite)
   S.ticked ||= new Set(cov.ids);
+  wantRoute(); // le lien « ?source=eurocontrol_rad » : le groupe des procédures et la ligne Route s'ouvrent
   render();
+  showRoute();
   // première ouverture : toutes les zones publiées sont cochées et la couverture est écrite une fois (SPEC § 3.2) ; rien n'est
   // écrit d'une lecture dégradée (zones() en panne) ni d'un dépôt qui ne publie encore aucune zone
   if (!cov.stored && list && cov.ids.length) {

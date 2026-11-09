@@ -320,6 +320,7 @@ The launcher's job `route/import-rad` (`tools/regen/route.py`, `frame/aerodb/INT
 - **The gesture** (like « Prendre le fichier téléchargé », base/pickup): « Importer de Téléchargements » → the **dry plan** (`dry: true` sent explicitly; nothing written) → **a question that names the workbooks** (kind, cycle, size; the unreadable ones of Downloads
   said apart, never taken) and says the licence (EUROCONTROL Network Manager documents, use by the company, private repository only) → « Importer » sends `dry: false` with **only the books the plan showed** (`books: [{ name, size }]`, never a plan
   read again: the launcher refuses a file that is no longer the one shown, `changed`) → the end says what was taken (cycles), the cycles present and the commit. « Annuler » sends nothing. No workbook in Downloads: said, no question.
+- **The address** `?app=maintenance#data?source=eurocontrol_rad` (the link of Fuel's Route step, Features SOG; `ctx.query.source`, `route` accepted too) opens the procedures group and the row and brings it on screen, once per opening. Case L35.
 - **Grey button**: no launcher, another operation running (the route's own phase counts: `busyNow`), the launcher does not know `route/import-rad` (`regen/verbs`).
 - **Everything the launcher or the file says is read as untrusted** (`model_route.js`: workbook names in a closed pattern, sizes and dates checked, kinds in a closed list, a name shown only if the plan showed it). Cases L33, L34.
 

@@ -3806,3 +3806,22 @@ def l34(c):
     c.eq([c.js("document.querySelector('[data-verb=route-import]').disabled"), c.attr('[data-set=route] [data-reason]', 'data-reason')], [True, 'unknown-verb'], 'grey, the launcher does not know the verb', what='grey')
     c.eq(len(st['posts']), 0, 'nothing is sent', what='posts')
     c.check_errors()
+
+
+@case('L35', 'Données: the address #data?source=eurocontrol_rad (the link of Fuel\u2019s Route step) opens the procedures group and the route row, and brings it on screen', 'L', tags=('data',),
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0125: Fuel\u2019s Route step links to the RAD\u2019s line in Maintenance (?app=maintenance#data?source=eurocontrol_rad); without the query the group and the row stay as they were')
+def l35(c):
+    cfg, _ = _fixture()
+    c.page.add_init_script(_stub(cfg))
+    c.open('data?source=eurocontrol_rad', docs=LEVEL3, wait=False, app='maintenance')
+    c.until("!!document.querySelector('[data-module=data] [data-set=route]')", timeout=20000, what='the route row')
+    c.settle()
+    c.eq(c.js("(() => { const r = document.querySelector('[data-set=route]'); const b = r.getBoundingClientRect(); return [r.open, r.closest('details.f-group').open, b.top >= 0 && b.top < innerHeight] })()"), [True, True, True],
+         'the row is open, in an open group, on screen', what='link target')
+    # without the query: the row stays folded, the group as it was
+    c.open('data', docs=LEVEL3, wait=False, app='maintenance')
+    c.until("!!document.querySelector('[data-module=data] [data-set=route]')", timeout=20000, what='the route row, no query')
+    c.settle()
+    c.eq(c.js("document.querySelector('[data-set=route]').open"), False, 'no query: the row stays folded', what='no query')
+    c.check_errors()

@@ -35,7 +35,8 @@ export const routeInit = () => ({
   step: '',
   plan: null, // le plan montré dans la question : { files, failed } (l'import réel n'envoie que ces classeurs, nom et taille)
   result: null, // la dernière fin : { kind: 'none' | 'failed' | 'cancelled' | 'refused' | 'done' | 'partial' | 'not-shown', ... }
-  mem: null // cache/data/route.json : { rad: [dates], fra: [dates], at, commit }
+  mem: null, // cache/data/route.json : { rad: [dates], fra: [dates], at, commit }
+  focus: false // l'adresse demandait cette ligne (?source=eurocontrol_rad) : groupe et ligne ouverts, la ligne amenée à l'écran une fois
 });
 /** L'état du bouton : { disabled, reason } — le lanceur du poste, une opération déjà en cours (la nôtre comprise), le lanceur qui connaît le verbe. */
 export function routeGate() {
@@ -148,9 +149,25 @@ export function routeRowHtml() {
   if (!S.route) return '';
   const st = M.routeState(known(), S.airac, S.now ?? Date.now()),
     pill = `<span class="f-badge"${kind(st.level)} data-pill>${esc(tt(TX.state[st.state]))}</span>`,
-    open = !!S.route.phase || !!S.route.result;
+    open = !!S.route.phase || !!S.route.result || S.route.focus;
   return `<details class="f-card" data-set="route" data-status="used" data-state="${esc(st.state)}" data-cycle="${esc(st.cycleDate || '')}"${open ? ' open' : ''}>
     <summary><span class="d-sum"><b>${esc(tt(TX.route.name))}</b><span class="f-muted" data-route-meta>${esc(metaText())}</span></span>${pill}</summary>${bodyHtml()}</details>`;
+}
+/** L'adresse `#data?source=eurocontrol_rad` (le lien du pas Route de Carburant, Features SOG) : à demander avant le premier dessin, elle ouvre le groupe des procédures et la ligne. Une seule fois par montage. */
+export function wantRoute() {
+  const q = S.ctx.query?.source;
+  if (S.route.asked || (q !== 'eurocontrol_rad' && q !== 'route')) return;
+  S.route.asked = true;
+  S.route.focus = true;
+  S.manual.proc = true;
+}
+/** Après ce dessin : amène la ligne demandée à l'écran, une fois. */
+export function showRoute() {
+  if (!S.route.focus) return;
+  S.route.focus = false;
+  S.body?.querySelector('[data-set="route"]')?.scrollIntoView({
+    block: 'center'
+  });
 }
 /** Redessine la ligne seule (sans toucher le reste de l'écran) ; l'état ouvert ou replié que la main a laissé est gardé hors des phases. */
 export function renderRoute() {
