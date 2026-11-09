@@ -2565,3 +2565,9 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   (proved by the third load of the case). The other transports (GitHub, GitLab, git) ignore the hint. Noreg A100 (a fake launcher with a
   600-file tree counts the answers: one full read on the first load; every answer `same` on the next, a few bytes against the tree's 15 KB;
   a remote change still arrives), red on d8c1029b6 (two full reads of the unchanged tree).
+- **9 Nov 2026 — A57 and a frame without `airline()`** (alpha.4 full pass: A57 red since the frame reads the airline with `FrameData.airline()`;
+  A95 red in Réglages' simulated frame; V3 Frame): not a defect of the 3 s bound on outgoing calls (`AIRLINE_WAIT`, still on the first
+  read of the airline): A57 held the first read through the adapter `frame-airline`, which the frame no longer uses for it, so nothing was
+  held and the wait never started (0.0 s measured). The case now holds `FrameData.airline` (and the adapter's `get`, for the files it still
+  reads). And `loadAirline` reads the setting alone, as before § 10.38, when the `FrameData` it is given has no `airline()` (a simulated frame
+  that predates it), tolerating a `get` that answers a plain value: the real data layer always has `airline()`.

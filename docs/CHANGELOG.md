@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: A57 holds the airline read where the frame now makes it, and `loadAirline` tolerates a `FrameData` without `airline()`**
+  (`frame/app.js`, `tests/v3/cases/frame.py`; frame DECISIONS; noreg A57, A95, A94). No change of behaviour of the frame on the real data layer.
+
 - **Frame: the launcher's tree of `data/` is read once per load and not again when it has not changed** (`frame/store/transport_launcher.js`,
   `frame/store/frame_data.js`; frame SPEC § launcher, DECISIONS; noreg A100; SOG-0063). Two parallel downloads of 946 KB per load (half of
   a screen's bytes) become one on the first load and a `same` answer of a few bytes on the next; a change at the other end still arrives.

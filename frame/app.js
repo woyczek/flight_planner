@@ -1177,7 +1177,14 @@
   async function loadAirline(ms = 0) {
     // la compagnie courante de l'appareil (FrameData.airline, § 10.38) : ses réglages, son dossier ; sans index.json, celle d'aujourd'hui
     // (airline/settings.json, code default)
-    const read = FD.airline().catch(() => null),
+    // (un FrameData sans airline(), celui d'un cadre simulé d'avant § 10.38 : le réglage seul, comme avant)
+    const read = Promise.resolve(typeof FD.airline === 'function' ? FD.airline() : Promise.resolve(airlineData.get(AIRLINE, {
+        wait: true
+      })).then(v => ({
+        settings: v,
+        code: '',
+        root: 'airline/'
+      }))).catch(() => null),
       a = await (ms ? Promise.race([read, new Promise(res => setTimeout(() => res(undefined), ms))]) : read);
     if (a === undefined) return;
     airlineKnown = true;

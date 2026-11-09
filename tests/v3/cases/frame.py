@@ -2078,10 +2078,12 @@ def a56(c):
             srv.close()
 
 
-# the airline's first read held for ever (the frame's adapter « frame-airline »), and a module that hands over its ctx
+# the airline's first read held for ever, and a module that hands over its ctx. Since 9 Nov 2026 (§ 10.38) the frame reads the current airline
+# with FrameData.airline() (it was the adapter « frame-airline »): that is the call held; the adapter's get too, for the files it still reads
 HOLD_AIRLINE = """(() => { let fd; Object.defineProperty(window, 'FrameData', { configurable: true, get: () => fd, set(v) {
   const adapter = v.adapter; v.adapter = cfg => { const a = adapter(cfg);
     if (cfg && cfg.id === 'frame-airline') a.get = () => new Promise(() => {}); return a };
+  v.airline = () => new Promise(() => {});
   fd = v } }) })()"""
 CTX_MODULE = "export const meta = { id: 'atmosphere' }; export function mount(el, ctx) { window.__ctx = ctx; el.textContent = 'ctx' }; export function unmount() {}"
 
