@@ -6,6 +6,8 @@ import {
 
 export const COVERAGE = 'cache/data/coverage.json'; // { zones: [id], updated_at } : la couverture de ce poste (SPEC § 3.2)
 export const PERSONAL = 'cache/data/personal.json'; // { sources: [id], updated_at } : sources personnelles cochées, mémorisées (SOG-0079)
+export const ROUTE_MEM =
+  'cache/data/route.json'; // { rad: [dates], fra: [dates], at, commit } : les cycles RAD et points FRA importés sur ce poste (SOG-0125)
 export const JOURNAL = 'cache/data/journal.json'; // { ops: [opération], updated_at } : les 50 dernières opérations de ce poste (SPEC § 7)
 export const ROUTE = 'regen/job'; // le travail du lanceur : construction de la base (verbe D5 d'aerodb)
 export const VERBS_ROUTE = 'regen/verbs'; // { verbs: ['base/build', …] } : les opérations que ce lanceur connaît (lue une fois au montage)
@@ -36,7 +38,7 @@ export async function ask(name) {
 /** Une opération tourne-t-elle sur ce poste, de n'importe quel jeu ? Le nôtre, un autre travail du lanceur, la question d'une purge ou d'une
  *  publication de fiches, une publication : une opération à la fois, tous panneaux confondus. */
 export function busyNow() {
-  return !!S.run || !!S.other || !!S.asking || !!S.pub.phase || !!S.chain || !!S.move
+  return !!S.run || !!S.other || !!S.asking || !!S.pub.phase || !!S.chain || !!S.route?.phase || !!S.move
     ?.phase; // S.move.phase : le rangement des sources brutes (SOG-0030), plan ou exécution ou question
 }
 /** Les choix des panneaux sont-ils figés ? Pendant une marche et pendant toute la chaîne (y compris entre deux de ses opérations). */

@@ -83,6 +83,10 @@ export const TX = {
       ['zone', 'zone', 'Zone', 'zona'],
       ['zones', 'zones', 'Zonen', 'zonas']
     ],
+    book: [
+      ['classeur', 'workbook', 'Arbeitsmappe', 'libro'],
+      ['classeurs', 'workbooks', 'Arbeitsmappen', 'libros']
+    ],
     aerodrome: [
       ['terrain', 'aerodrome', 'Flugplatz', 'aeródromo'],
       ['terrains', 'aerodromes', 'Flugplätze', 'aeródromos']
@@ -178,6 +182,74 @@ export const TX = {
     enaire: ['ENAIRE (AIP Espagne)', 'ENAIRE (Spain AIP)', 'ENAIRE (AIP Spanien)', 'ENAIRE (AIP España)'],
     nats: ['NATS (AIP Royaume-Uni)', 'NATS (UK AIP)', 'NATS (AIP Vereinigtes Königreich)', 'NATS (AIP Reino Unido)'],
     xplane: ['X-Plane (données du simulateur)', 'X-Plane (simulator data)', 'X-Plane (Simulatordaten)', 'X-Plane (datos del simulador)']
+  },
+  // la ligne « Route (RAD, points FRA) » (route.js, SOG-0125)
+  route: {
+    name: ['Route (RAD, points FRA)', 'Route (RAD, FRA points)', 'Route (RAD, FRA-Punkte)', 'Ruta (RAD, puntos FRA)'],
+    noImport: ['Aucun import sur ce poste', 'Nothing imported on this workstation', 'Auf diesem Rechner nichts importiert',
+      'Nada importado en este puesto'
+    ],
+    radCycle: ['RAD du {d}', 'RAD of {d}', 'RAD vom {d}', 'RAD del {d}'],
+    fraCycle: ['points FRA du {d}', 'FRA points of {d}', 'FRA-Punkte vom {d}', 'puntos FRA del {d}'],
+    importedToday: ['importé aujourd’hui', 'imported today', 'heute importiert', 'importado hoy'],
+    importedOne: ['importé il y a 1 jour', 'imported 1 day ago', 'vor 1 Tag importiert', 'importado hace 1 día'],
+    importedMany: ['importé il y a {n} jours', 'imported {n} days ago', 'vor {n} Tagen importiert', 'importado hace {n} días'],
+    hint: [
+      'Les classeurs EUROCONTROL de votre dossier Téléchargements (RAD_<cycle>_v….xlsx et eurocontrol-airac-<cycle>-fra-points-….xlsx) sont compilés dans data/route/ pour le calcul de route. Un cycle remplace le même cycle ; les autres restent.',
+      'The EUROCONTROL workbooks in your Downloads folder (RAD_<cycle>_v….xlsx and eurocontrol-airac-<cycle>-fra-points-….xlsx) are compiled into data/route/ for route calculation. A cycle replaces the same cycle; the others stay.',
+      'Die EUROCONTROL-Arbeitsmappen in Ihrem Download-Ordner (RAD_<cycle>_v….xlsx und eurocontrol-airac-<cycle>-fra-points-….xlsx) werden für die Streckenberechnung in data/route/ kompiliert. Ein Zyklus ersetzt denselben Zyklus; die anderen bleiben.',
+      'Los libros de EUROCONTROL de su carpeta de Descargas (RAD_<cycle>_v….xlsx y eurocontrol-airac-<cycle>-fra-points-….xlsx) se compilan en data/route/ para el cálculo de ruta. Un ciclo sustituye al mismo ciclo; los demás se conservan.'
+    ],
+    import: ['Importer de Téléchargements', 'Import from Downloads', 'Aus Downloads importieren', 'Importar de Descargas'],
+    planning: ['Recherche des classeurs dans Téléchargements…', 'Looking for workbooks in Downloads…',
+      'Arbeitsmappen im Download-Ordner werden gesucht …', 'Buscando libros en Descargas…'
+    ],
+    running: ['Import en cours…', 'Importing…', 'Import läuft …', 'Importando…'],
+    ask: ['Importer {n} de Téléchargements dans data/route/ ?', 'Import {n} from Downloads into data/route/?',
+      '{n} aus Downloads nach data/route/ importieren?', '¿Importar {n} de Descargas en data/route/?'
+    ],
+    go: ['Importer', 'Import', 'Importieren', 'Importar'],
+    cancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
+    kind: {
+      rad: ['RAD', 'RAD', 'RAD', 'RAD'],
+      fra: ['Points FRA', 'FRA points', 'FRA-Punkte', 'Puntos FRA']
+    },
+    cycleOf: ['cycle du {d}', 'cycle of {d}', 'Zyklus vom {d}', 'ciclo del {d}'],
+    none: [
+      'Aucun classeur RAD ni points FRA dans Téléchargements : déposez-les (RAD_<cycle>_v….xlsx, eurocontrol-airac-<cycle>-fra-points-….xlsx) puis recommencez.',
+      'No RAD or FRA points workbook in Downloads: drop them there (RAD_<cycle>_v….xlsx, eurocontrol-airac-<cycle>-fra-points-….xlsx) and start again.',
+      'Keine RAD- oder FRA-Punkte-Arbeitsmappe im Download-Ordner: dort ablegen (RAD_<cycle>_v….xlsx, eurocontrol-airac-<cycle>-fra-points-….xlsx) und neu starten.',
+      'Ningún libro de RAD ni de puntos FRA en Descargas: déjelos allí (RAD_<cycle>_v….xlsx, eurocontrol-airac-<cycle>-fra-points-….xlsx) y vuelva a empezar.'
+    ],
+    failed: ['Rien n’a été importé', 'Nothing was imported', 'Es wurde nichts importiert', 'No se importó nada'],
+    cancelled: ['Import arrêté', 'Import stopped', 'Import angehalten', 'Importación detenida'],
+    notShown: ['Aucun classeur choisi : refaites la recherche', 'No workbook chosen: search again',
+      'Keine Arbeitsmappe gewählt: erneut suchen', 'Ningún libro elegido: busque de nuevo'
+    ],
+    done: ['Importé : {w}', 'Imported: {w}', 'Importiert: {w}', 'Importado: {w}'],
+    partial: ['Importé en partie : {w} ; {n} refusé(s)', 'Partly imported: {w}; {n} refused', 'Teilweise importiert: {w}; {n} abgelehnt',
+      'Importado en parte: {w}; {n} rechazado(s)'
+    ],
+    takenRad: ['RAD du {d}', 'RAD of {d}', 'RAD vom {d}', 'RAD del {d}'],
+    takenFra: ['points FRA du {d}', 'FRA points of {d}', 'FRA-Punkte vom {d}', 'puntos FRA del {d}'],
+    present: ['Présents sur ce poste : {w}', 'Present on this workstation: {w}', 'Auf diesem Rechner vorhanden: {w}',
+      'Presentes en este puesto: {w}'
+    ],
+    presentRad: ['RAD : {d}', 'RAD: {d}', 'RAD: {d}', 'RAD: {d}'],
+    presentFra: ['points FRA : {d}', 'FRA points: {d}', 'FRA-Punkte: {d}', 'puntos FRA: {d}'],
+    commit: ['commit {c}', 'commit {c}', 'Commit {c}', 'commit {c}'],
+    launcherSays: ['Le lanceur dit : {m}', 'The launcher says: {m}', 'Der Starter meldet: {m}', 'El lanzador dice: {m}'],
+    failedBook: ['{n} : {w}', '{n}: {w}', '{n}: {w}', '{n}: {w}'],
+    why: {
+      changed: ['le fichier a changé depuis la recherche', 'the file changed since the search',
+        'die Datei hat sich seit der Suche geändert', 'el archivo cambió desde la búsqueda'
+      ],
+      'not-found': ['le fichier n’est plus dans Téléchargements', 'the file is no longer in Downloads',
+        'die Datei ist nicht mehr im Download-Ordner', 'el archivo ya no está en Descargas'
+      ],
+      'too-large': ['fichier trop gros', 'file too large', 'Datei zu groß', 'archivo demasiado grande'],
+      unknown: ['classeur illisible', 'unreadable workbook', 'Arbeitsmappe nicht lesbar', 'libro ilegible']
+    }
   },
   // la ligne sous chaque source ; texte de shared/maintenance_page.js (data-personal), à garder identique
   personalLine: {

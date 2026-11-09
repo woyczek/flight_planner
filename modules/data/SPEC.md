@@ -309,6 +309,20 @@ United States a rectangle, the islands dots).
 - **Cases**: L20 — a tap on a polygon ticks the zone (the list's box follows), a drag or a pinch ticks nothing, « Recentrer » frames the
   zones again, no base → the list alone. Screenshots at 390 and 1280, before and after, in DECISIONS.
 
+### 5.7 The route row: « Route (RAD, points FRA) » (SOG-0125)
+
+The launcher's job `route/import-rad` (`tools/regen/route.py`, `frame/aerodb/INTEGRATION.md` « Route computation ») reads the EUROCONTROL workbooks `RAD_<cycle>_v….xlsx` and `eurocontrol-airac-<cycle>-fra-points-….xlsx` of Downloads and compiles them into
+`data/route/rad.json.gz` and `fra.json.gz`. The RAD and the FRA points are **a source of data like NATS**: one more row, in the **procedures** group after its rows (`route.js`, `routeRowHtml`), with the same template
+(summary: name, text, state pill; fold: link, licence, button).
+
+- **State**: the same pills as the other sets (`routeState` over `pickState`): `absent` without any imported RAD, `stale-cycle` (amber, then red) when the latest RAD precedes the cycle in force, `ok` otherwise. The cycles present come from
+  `cache/data/route.json` (`{ rad: [dates], fra: [dates], at, commit }`, written by this module after a real import, read once per opening) **and**, when the reader gives it, `publication().route` (`{ rad, fra, at }`): the two add up.
+- **The gesture** (like « Prendre le fichier téléchargé », base/pickup): « Importer de Téléchargements » → the **dry plan** (`dry: true` sent explicitly; nothing written) → **a question that names the workbooks** (kind, cycle, size; the unreadable ones of Downloads
+  said apart, never taken) and says the licence (EUROCONTROL Network Manager documents, use by the company, private repository only) → « Importer » sends `dry: false` with **only the books the plan showed** (`books: [{ name, size }]`, never a plan
+  read again: the launcher refuses a file that is no longer the one shown, `changed`) → the end says what was taken (cycles), the cycles present and the commit. « Annuler » sends nothing. No workbook in Downloads: said, no question.
+- **Grey button**: no launcher, another operation running (the route's own phase counts: `busyNow`), the launcher does not know `route/import-rad` (`regen/verbs`).
+- **Everything the launcher or the file says is read as untrusted** (`model_route.js`: workbook names in a closed pattern, sizes and dates checked, kinds in a closed list, a name shown only if the plan showed it). Cases L33, L34.
+
 ### 5.4 Building on the launcher: one process per zone
 
 The user's request of 29 Oct (V2's « Tout récupérer et recalculer » is slow: built in the browser, on the main thread,

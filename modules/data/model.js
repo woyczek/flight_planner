@@ -7,3 +7,4 @@ export * from './model_results.js';
 export * from './model_chain.js';
 export * from './model_map.js';
 export * from './model_publish.js';
+export * from './model_route.js';

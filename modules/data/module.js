@@ -31,6 +31,11 @@ import {
   renderBuild
 } from './panels.js';
 import {
+  answerRoute,
+  routeInit,
+  startRoute
+} from './route.js';
+import {
   attachMaps,
   destroyMaps,
   recenterMap,
@@ -125,6 +130,8 @@ function onClick(e) {
   if (v.dataset.verb === 'all') return updateAll();
   if (v.dataset.verb === 'pickup' || v.dataset.verb === 'pickup-replan') return startPickup(v.dataset.zones);
   if (v.dataset.verb === 'stop-chain') return stopChain();
+  if (v.dataset.verb === 'route-import') return startRoute();
+  if (v.dataset.verb === 'route-yes' || v.dataset.verb === 'route-no') return answerRoute(v.dataset.verb === 'route-yes');
   const op = opOf(v);
   if (op) startOp(...op);
   else if (v.dataset.verb === 'publish') startPublish();
@@ -183,6 +190,7 @@ export async function mount(el, ctx) {
     again: 0,
     ticked: null, // zones cochées pour la construction (toutes à la première lecture)
     personal: new Set(), // sources sous licence personnelle cochées : celles mémorisées sur ce poste (cache/data/personal.json), aucune la première fois
+    route: routeInit(), // la ligne « Route (RAD, points FRA) » : phase, plan montré, dernière fin, cycles présents (route.js)
     personalRead: false, // la mémoire des sources personnelles a été lue (une fois par montage)
     chain: null, // « Tout mettre à jour » en cours : { phase: 'asking' | 'running' | 'stopping' | 'publishing', runs, i, verb, stopped, rows, t0, job }
     chainEnd: null, // la fin de la dernière chaîne : { result, text, rows }

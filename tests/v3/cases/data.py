@@ -354,7 +354,7 @@ def l2(c):
     c.eq(len(g['base']['visible']), 7, 'the base has eleven used sets: seven visible', what='base rows visible')
     c.eq(g['base']['more']['text'], norm(tx(TX, 'moreSets', lang).replace('{n}', '4')), 'four more sets under the fold', what='base fold')
     c.ok(all(r.endswith(':used') for r in g['base']['more']['rows']), g['base']['more']['rows'], 'the surplus of the base is made of used sets')
-    c.eq(g['proc']['visible'], ['eaip', 'cifp'], 'procedures: eAIP and CIFP visible', what='proc rows')
+    c.eq(g['proc']['visible'], ['eaip', 'cifp', 'route'], 'procedures: eAIP and CIFP visible, then the route row (SOG-0125: one row more)', what='proc rows')
     c.eq(g['proc']['more']['rows'], ['ead:candidate', 'xpcifp:candidate', 'dfs:abandoned', 'eurocontrol:abandoned'], 'candidates, then set-aside sources: only in the fold, no state', what='proc fold')
     # the states of the rows (stale base for France, the parser constant 3 against UK zone at 2)
     allst = {}
@@ -457,7 +457,7 @@ def l4(c):
     c.eq([c.count('[data-error="publication"]'), c.count('[data-error="zones"]'), c.count('[data-error="states"]')], [1, 1, 1], 'one line per failed call', what='error lines')
     c.eq(norm(c.text('[data-error="publication"]')), norm(tx(TX, 'pubError', c.lang)), 'worded in the language of the run', what='publication error')
     c.eq(c.count('details.f-group'), 4, 'the four groups are still drawn (names and links)', what='groups')
-    c.eq(c.count('[data-set][data-state]'), 0, 'no state is invented without a publication', what='states')
+    c.eq(c.count('[data-set]:not([data-set=route])[data-state]'), 0, 'no state is invented without a publication (the route row takes its own from the workstation memory, SOG-0125)', what='states')
     c.eq(c.doc('cache/data/coverage.json'), None, 'a degraded read writes no coverage', what='coverage.json')
     c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb]:not([data-verb=pickup]), [data-publish] [data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"), ['download:off', 'build:off', 'purge:off', 'publish:off'], 'Télécharger, Construire, Purger and Publier, grey', what='[data-verb]')
     c.check_errors()
@@ -473,7 +473,7 @@ def l5(c):
     lines = c.js("[...document.querySelectorAll('[data-coverage] ul[data-states] > li')].map(li => [li.dataset.reason, li.textContent.replace(/\\s+/g, ' ').trim()])")
     c.ok(lines and 'EG, LF' in lines[0][1], lines[:1], 'without names the line shows the prefixes (EG, LF), without (n aerodromes)')
     c.eq(c.count('[data-set][data-state="parser"]'), 0, 'without the parser constant no row is ever "old parser" (the UK zone is at version 18)', what='parser pills')
-    c.eq(c.count('[data-set][data-state]'), c.count('[data-set][data-state="ok"], [data-set][data-state="stale-cycle"], [data-set][data-state="stale-age"]'),
+    c.eq(c.count('[data-set]:not([data-set=route])[data-state]'), c.count('[data-set][data-state="ok"], [data-set][data-state="stale-cycle"], [data-set][data-state="stale-age"]'),
          'the other states are the cycle ones', what='states without the constant')
     # aerodb announces { coverage: true }: only the States list is asked for again and redrawn
     c.js("() => { document.querySelector('[data-coverage] [data-more] summary').click(); document.querySelector('[data-set=sia]').dataset.keep = '1' }")
@@ -3720,4 +3720,89 @@ def l32(c):
     _untick(c, 'gb')
     c.eq(boxes(), [['xplane', False]], 'NATS feeds only the UK: not offered any more with it unticked (so not sent)', what='offered')
     c.eq(c.doc('cache/data/personal.json').get('sources'), ['nats'], 'unticking a zone forgets nothing: the memory belongs to the box', what='memory kept')
+    c.check_errors()
+
+
+_RT = lambda key, lang: _trow(key, lang, after='  route: {')
+
+
+@case('L33', 'Données: the « Route (RAD, points FRA) » row — Importer de Téléchargements: the plan names the workbooks and their cycles, the question, the import writes the cycles, the row turns green', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0125: route/import-rad is a source of data like NATS — one more row in the procedures group, the dry plan (workbooks found by pattern, cycles, size), a question that names them, the real import of the shown books only, then the cycles present; the state is that of the other sources')
+def l33(c):
+    lang = c.lang
+    _t, cur, prev, _n = _cycles()
+    rad, fra = 'RAD_2611_v1.0.xlsx', 'eurocontrol-airac-2611-fra-points-20261105.xlsx'
+    files = [{'name': rad, 'size': 1500000, 'kind': 'rad', 'cycle': cur.isoformat(), 'title': 'Rolling RAD'}, {'name': fra, 'size': 90000, 'kind': 'fra', 'cycle': cur.isoformat()}]
+    plan = _view('done', step='Terminé', result={'ok': True, 'dry': True, 'files': files, 'taken': [], 'failed': [{'name': 'RAD_vieux.xlsx', 'error': 'parse'}], 'rad': [], 'fra': [], 'commit': None})
+    st = _launcher(c, [plan], verbs=['base/fetch', 'base/build', 'base/purge', 'route/import-rad'])
+    cfg, _ = _fixture()
+    _open(c, cfg)
+    _all_open(c)
+    row = lambda: c.js("(() => { const r = document.querySelector('[data-set=route]'); return r ? [r.dataset.state, r.dataset.cycle, r.closest('details.f-group').dataset.group] : null })()")
+    c.eq(row(), ['absent', '', 'proc'], 'one more row in the procedures group, nothing imported yet: the state of a source absent from the repository', what='row at first')
+    c.eq(norm(c.text('[data-set=route] summary b')), norm(_RT('name', lang)), 'its name', what='name')
+    c.eq(norm(c.text('[data-route-meta]')), norm(_RT('noImport', lang)), 'nothing imported on this workstation', what='meta')
+    c.js("document.querySelector('[data-set=route]').open = true")
+    c.eq(c.js("document.querySelector('[data-verb=route-import]').disabled"), False, 'the button is live with a launcher that knows the verb', what='button')
+    # ---- the plan (dry): nothing is written, the question names the workbooks, their cycles and the licence
+    c.tap('[data-verb=route-import]')
+    c.until('!!document.querySelector("[data-route-ask]")', timeout=10000, what='the question')
+    c.eq({k: st['posts'][0][k] for k in ('set', 'verb', 'args')}, {'set': 'route', 'verb': 'import-rad', 'args': {'dry': True}}, 'the plan is asked with dry sent explicitly', what='plan body')
+    c.eq(c.js("[...document.querySelectorAll('[data-route-book]')].map(li => [li.dataset.routeBook, li.dataset.kind])"), [[rad, 'rad'], [fra, 'fra']], 'the workbooks found, by name and kind, in the question', what='books')
+    c.ok('Rolling RAD' in c.text('[data-route-books]') and rad in c.text('[data-route-books]') and fra in c.text('[data-route-books]'), c.text('[data-route-books]'), 'the question names both workbooks and the title of the RAD')
+    c.eq(c.count('[data-route-failed] li'), 1, 'the unreadable workbook of Downloads is said, not taken', what='failed')
+    c.eq(c.count('[data-route-licence]'), 1, 'the licence is said before the import', what='licence')
+    c.eq(c.count('[data-set=route] [data-verb=route-import]'), 0, 'no second button while the question is asked', what='no button')
+    c.eq(c.doc('cache/data/route.json'), None, 'nothing is written by the plan', what='no memory')
+    # ---- no: nothing goes
+    c.tap('[data-verb=route-no]')
+    c.until('!document.querySelector("[data-route-ask]")', timeout=4000, what='the question closes')
+    c.eq(len(st['posts']), 1, 'No sends nothing', what='posts')
+    # ---- yes: the real import, only the books shown (name and size)
+    st['views'] = [plan]
+    st['i'] = 0
+    c.tap('[data-verb=route-import]')
+    c.until('!!document.querySelector("[data-route-ask]")', timeout=10000, what='the question again')
+    done = _view('done', step='Terminé', jid='j2', result={'ok': True, 'dry': False, 'files': files, 'taken': [rad, fra], 'failed': [], 'rad': [cur.isoformat()], 'fra': [cur.isoformat()], 'commit': 'abc1234'})
+    st['views'] = [done]
+    st['i'] = 0
+    st['start'] = (200, {'job': 'j2'})
+    c.tap('[data-verb=route-yes]')
+    c.until('!!document.querySelector("[data-route-result][data-result=done]")', timeout=12000, what='the end of the import')
+    c.eq({k: st['posts'][-1][k] for k in ('set', 'verb', 'args')}, {'set': 'route', 'verb': 'import-rad', 'args': {'dry': False, 'books': [{'name': rad, 'size': 1500000}, {'name': fra, 'size': 90000}]}},
+         'the real import: the books the plan showed, name and size, nothing else', what='import body')
+    c.ok(c.count('[data-route-cycles]') == 1 and 'abc1234' in c.text('[data-route-cycles]'), c.text('[data-route-result]'), 'the cycles present and the commit are said')
+    doc = c.until_doc('cache/data/route.json', lambda d: bool(d and d.get('rad') == [cur.isoformat()]), what='the memory of the cycles')
+    c.eq([doc['rad'], doc['fra'], doc['commit']], [[cur.isoformat()], [cur.isoformat()], 'abc1234'], 'the cycles present are kept on the workstation', what='memory')
+    c.eq(row()[:2], ['ok', cur.isoformat()], 'the row turned green: the RAD of the cycle in force is there', what='row after')
+    # ---- a new opening: the row remembers, no gesture
+    c.page.reload()
+    c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the screen again')
+    c.settle()
+    _all_open(c)
+    c.until("!!document.querySelector('[data-set=route]')", timeout=8000, what='the row')
+    c.eq(row()[:2], ['ok', cur.isoformat()], 'found again at the next opening', what='row after reload')
+    # ---- nothing in Downloads: said, no question
+    st['views'] = [_view('done', step='Terminé', jid='j3', result={'ok': True, 'dry': True, 'files': [], 'taken': [], 'failed': [], 'rad': [], 'fra': [], 'commit': None})]
+    st['i'] = 0
+    st['start'] = (200, {'job': 'j3'})
+    c.js("document.querySelector('[data-set=route]').open = true")
+    c.tap('[data-verb=route-import]')
+    c.until('!!document.querySelector("[data-route-result][data-result=none]")', timeout=10000, what='the empty answer')
+    c.eq(c.count('[data-route-ask]'), 0, 'nothing found: no question', what='no question')
+    c.check_errors()
+
+
+@case('L34', 'Données: the route row is grey without a launcher that knows route/import-rad (an old launcher), with its reason', 'L', tags=('data',),
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0125: the verb is read from regen/verbs like the others; an old launcher greys the button with « ne connaît pas encore cette opération »')
+def l34(c):
+    st = _launcher(c, [], verbs=['base/fetch', 'base/build', 'base/purge'])
+    cfg, _ = _fixture()
+    _open(c, cfg)
+    _all_open(c)
+    c.js("document.querySelector('[data-set=route]').open = true")
+    c.eq([c.js("document.querySelector('[data-verb=route-import]').disabled"), c.attr('[data-set=route] [data-reason]', 'data-reason')], [True, 'unknown-verb'], 'grey, the launcher does not know the verb', what='grey')
+    c.eq(len(st['posts']), 0, 'nothing is sent', what='posts')
     c.check_errors()

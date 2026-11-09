@@ -22,10 +22,14 @@ import {
   lang,
   li,
   PERSONAL,
+  ROUTE_MEM,
   S,
   tt,
   VERBS_ROUTE
 } from './state.js';
+import {
+  routeRowHtml
+} from './route.js';
 import {
   itemName,
   panelsHtml,
@@ -143,12 +147,18 @@ export async function load(fresh = false) {
   // lecteur ne le dit qu'à sa prochaine passe) : refresh() la fait relire à la question qui suit (SOG-0072 : « il faut ctrl-maj-F5 pour voir le pays vert »)
   if (fresh) S.ctx.aerodb?.refresh?.();
   const me = S,
-    [cat, pub, zones, byState, stored, status, kept] = await Promise.all([ask('sources'), ask('publication'), ask('zones'), ask(
+    [cat, pub, zones, byState, stored, status, kept, routeMem] = await Promise.all([ask('sources'), ask('publication'), ask('zones'), ask(
         'coverageByState'),
-      S.ctx.data.get(COVERAGE).catch(() => null), readStatus(), S.personalRead ? null : S.ctx.data.get(PERSONAL).catch(() => null)
+      S.ctx.data.get(COVERAGE).catch(() => null), readStatus(), S.personalRead ? null : S.ctx.data.get(PERSONAL).catch(() => null), S
+      .route.read ? null : S.ctx.data.get(ROUTE_MEM).catch(() => null)
     ]);
   if (S !== me) return; // démonté, ou remplacé, pendant la lecture
   S.pub.status = status;
+  // les cycles RAD et points FRA importés sur ce poste (SOG-0125) : lus une fois par montage, puis la fin d'un import les tient à jour
+  if (!S.route.read) {
+    S.route.read = true;
+    S.route.mem = routeMem !== null && typeof routeMem === 'object' && !Array.isArray(routeMem) ? routeMem : null;
+  }
   // les sources sous licence personnelle cochées lors d'un passage d'avant (SOG-0079 : « garder cochées les cases cochées ») : lues une fois par montage, puis la case seule les change
   if (!S.personalRead) {
     S.personalRead = true;
@@ -308,7 +318,7 @@ function urlOf(src) {
 }
 /** Le lien « Ouvrir » (nouvel onglet, sans référent) avec son adresse écrite à côté ; une adresse qui n'est pas en https:
  *  (javascript:, data:, http:…) n'est jamais un lien, seulement écrite. */
-function linkHtml(src) {
+export function linkHtml(src) {
   const url = String(urlOf(src) ?? '');
   if (!M.isHttps(url)) return url ? `<span class="d-url f-muted">${esc(url)}</span>` : '';
   return `<a class="f-btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(tt(TX.openTitle, { s: src.n[li()] }))}">${esc(tt(TX.open))}</a>
@@ -367,7 +377,7 @@ function groupsHtml() {
     const open = g.id in S.manual ? S.manual[g.id] : g.attention;
     return `<details class="f-group" data-group="${g.id}"${open ? ' open' : ''}><summary><span>${esc(tt(TX.groups[g.id]))}</span><i class="f-status-dot" data-attn${g.attention ? '' : ' hidden'} title="${esc(tt(TX.attention))}"></i></summary>
       ${panelsHtml(g.id)}
-      ${g.rows.map(rowHtml).join('') || (g.more.length ? '' : `<p class="f-muted">${esc(tt(TX.groupEmpty))}</p>`)}
+      ${g.rows.map(rowHtml).join('') || (g.more.length || g.id === 'proc' ? '' : `<p class="f-muted">${esc(tt(TX.groupEmpty))}</p>`)}${g.id === 'proc' ? routeRowHtml() : ''}
       ${g.more.length ? `<details class="d-more" data-more><summary>${esc(tt(TX.moreSets, { n: g.more.length }))}</summary>${g.more.map(rowHtml).join('')}</details>` : ''}</details>`;
   }).join('')}`;
 }

@@ -211,3 +211,14 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
 - The memory belongs to the **box**, not to the zones: unticking a zone does not forget a source (it is not offered nor sent meanwhile), only its own box does. A stored id the table of
   `PERSONAL` does not know is ignored (`keptPersonal`).
 - Counter-test: L32 is red when the memory is not read at the opening (the boxes come back unticked).
+
+## 10 November 2026 — the route row: RAD and FRA points as a source (SOG-0125)
+
+- **Decision (the user, via the ergonomics session)**: the RAD and the FRA points are a source of data like NATS, not a feature of Fuel. One row in the procedures group — « Route (RAD, points FRA) » — with « Importer de Téléchargements »;
+  Fuel's Route step links to it (Features SOG). The row is **added to the group's rows, not to the catalogue's counted list** (`eurocontrol_rad` has no zone fed, so `matters()` never showed it): rule 13 holds (three rows in the group).
+- **Why a module-own flow and not the set machinery** (`SETS`, `follow.js`): that machinery is built around per-zone and per-item runs, a journal and the chain; the import is one short job with a plan and a question. `route.js` follows the
+  launcher's job (`ctx.launcher.job`) by itself and takes part in `busyNow()` so that no other operation starts meanwhile; it is **not in the chain** and **not in the journal** (the commit of `route/import-rad` is its trace).
+- **The cycles present**: no read of `data/route/*.gz` from the page (gzip, 2 MB, not served as a tree), and `publication()` does not carry them yet. Hence `cache/data/route.json`, written after an import by this workstation — it says what
+  **this workstation** imported, not what another workstation published. When AeroDB gives `publication().route` the row uses it too (nothing to change here). **Open point for AeroDB**: expose `{ rad: [cycles], fra: [cycles], at }`.
+- **Cases**: L33 (the row, the plan names the workbooks and their cycles, the question, « Non » sends nothing, the import sends the shown books only and writes the memory, the row turns green and is found again at the next opening,
+  nothing in Downloads), L34 (an old launcher: grey with its reason). L2, L4 and L5 now count the route row. Counter-test: without the memory read at the opening, L33 is red (« absent » after the reload).
