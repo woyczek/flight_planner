@@ -16,6 +16,12 @@ def terminal_gaps(request,nav):
         distance=min((engine.nm(airport,nav.nodes[r['key']]) for r in gateways),default=None)
         if distance is None or distance>radius:
             gaps.append(f'{ad} : aucune airway ni porte FRA {role}/{terminal} raccordable dans le rayon {radius:g} NM, et aucune {kind} complète disponible pour la sélection. '+(f'Porte FRA candidate la plus proche : {distance:.1f} NM.' if distance is not None else 'Aucune porte FRA applicable trouvée.'))
+        else:
+            speed=float(request.get('speed_kt',450));rate=float(request.get('climb_fpm' if kind=='SID' else 'descent_fpm',2000))
+            nearby=[(r,engine.nm(airport,nav.nodes[r['key']])) for r in gateways if engine.nm(airport,nav.nodes[r['key']])<=radius]
+            if nearby and all(isinstance(r['lower'],(int,float)) and r['lower']>(airport.get('elev') or 0)+d/speed*60*rate+.1 for r,d in nearby):
+                floor=min(r['lower'] for r,d in nearby)
+                gaps.append(f'{ad} : portes FRA proches au plancher minimal FL{floor/100:g}, non atteignable par les raccords directs disponibles à {rate:g} ft/min et {speed:g} kt sol. Aucune {kind} complète ne fournit le temps de montée/descente supplémentaire dans les données chargées. Les replis restent proposés séparément.')
     return gaps
 
 def interpolate(a,b,f):
@@ -31,7 +37,7 @@ def interpolate(a,b,f):
 def propose(request,nav,rad):
     begun=time.perf_counter();dep,arr=request['dep'],request['arr'];fl=int(request['fl'])
     mandatory=engine.via_points(request)
-    try:anchors=[nav.resolve(name) for name in [dep,*mandatory,arr]]
+    try:anchors=nav.resolve_sequence([dep,*mandatory,arr])
     except ValueError as e:return dict(proposals=[],pieces=[],note='Repli impossible sans position non ambiguë : '+str(e))
     if dep not in nav.ads or arr not in nav.ads:return dict(proposals=[],pieces=[],note='Les coordonnées des AD doivent exister dans la base.')
     if any(a==b for a,b in zip(anchors,anchors[1:])):return dict(proposals=[],pieces=[],note='Deux passages successifs ont la même position ; préciser la demande.')
@@ -83,20 +89,29 @@ def propose(request,nav,rad):
     if assembled and len(pieces)>len(anchors)-1:
         try:proposals.append(assess(assembled,'Repli par tronçons — portions de base et raccords proposés','pieces',pieces))
         except ValueError as e:notes.append('Tronçons : '+str(e))
-    piece_proposal_type='pieces'
+    piece_proposal_type='pieces';regional=None
     try:
-        regional=fra_recovery.build(request,nav,rad,anchors,expanded)
-        if regional:
-            title='Repli FRA — portions publiées et raccords proposés'
-            existing={e.get('fra_area') for u,v,e in regional[0] if e.get('kind')=='FRA'}
+        if len(anchors)>8:
+            fra_recovery.build(request,nav,rad,anchors,expanded,prepare_only=True)
+            regional=fra_recovery.windowed(request,nav,rad,anchors,assembled)
+        else:regional=fra_recovery.build(request,nav,rad,anchors,expanded)
+    except ValueError as e:notes.append('Recherche FRA globale : '+str(e))
+    if not regional:
+        try:regional=fra_recovery.windowed(request,nav,rad,anchors,assembled)
+        except ValueError as e:notes.append('Recherche FRA par portions : '+str(e))
+    if regional:
+        title='Repli FRA — portions régionales et raccords proposés'
+        existing={e.get('fra_area') for u,v,e in regional[0] if e.get('kind')=='FRA'}
+        if len(anchors)<=8:
             for area in fra_recovery.upper_regions(request,nav,anchors,existing)[:1]:
                 try:
                     targeted=fra_recovery.build(request,nav,rad,anchors,expanded,required_area=area)
                     if targeted:regional=targeted;title='Repli FRA supérieur · '+area+' — raccords proposés'
                 except ValueError as e:notes.append('Variante FRA '+area+' : '+str(e))
+        try:
             fra_path,fra_pieces=regional
             proposal=assess(fra_path,title,'fra',fra_pieces)
             proposals.append(proposal);pieces=fra_pieces;piece_proposal_type='fra'
-    except ValueError as e:notes.append('Recherche de portions FRA : '+str(e))
+        except ValueError as e:notes.append('Contrôle du repli FRA : '+str(e))
     return dict(proposals=proposals,pieces=pieces,piece_proposal_type=piece_proposal_type,fra_pieces=sum(p['status']=='fra' for p in pieces),base_pieces=sum(p['status']=='base' for p in pieces),candidate_pieces=sum(p['status']=='candidate' for p in pieces),
         note='Les passages imposés sont conservés dans l’ordre. Le repli AWY suit des jalons proches de l’axe ; le repli FRA recherche aussi des portes d’entrée/sortie publiées dans un corridor géodésique régional. Les raccords DCT restent proposés. '+ ' '.join(notes))

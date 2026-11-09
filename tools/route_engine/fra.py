@@ -62,7 +62,8 @@ class Fra:
 
     def graph(self,g,dep,arr,fl,when,via=(),steps=False,density="normal"):
         nav=self.nav
-        anchor=[nav.ads[dep],nav.ads[arr]]+[nav.nodes[k] for name in via for k in nav.ids.get(name,[])]
+        resolved=nav.resolve_sequence(via,nav.resolve(dep),nav.resolve(arr))
+        anchor=[nav.ads[dep],nav.ads[arr]]+[nav.nodes[k] for k in resolved]
         latlo=min(p['lat'] for p in anchor)-4; lathi=max(p['lat'] for p in anchor)+4
         lonlo=min(p['lon'] for p in anchor)-6; lonhi=max(p['lon'] for p in anchor)+6
         groups=collections.defaultdict(list)
@@ -95,7 +96,8 @@ class Fra:
                     d=self.nm(p,nav.nodes[other['key']])
                     if .1<d<=max_nm:neighbors.append((d,other))
                 neighbors.sort(key=lambda pair:pair[0])
-                goals=[nav.nodes[k] for name in via for k in nav.ids.get(name,[])]+[nav.ads[arr]]
+                goals=[nav.nodes[k] for k in resolved]+[nav.ads[arr]]
+                goals=sorted(goals,key=lambda goal:self.nm(p,goal))[:2]+[nav.ads[arr]]
                 chosen=neighbors[:(100 if density=='wide' else 24)]
                 chosen += [(d,o) for d,o in neighbors if 'X' in o['enroute']][:(40 if density=='wide' else 12)]
                 for goal in goals:chosen += sorted(neighbors,key=lambda pair:self.nm(nav.nodes[pair[1]['key']],goal))[:8]

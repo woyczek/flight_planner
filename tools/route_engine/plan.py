@@ -10,6 +10,7 @@ import datetime as dt
 import re
 
 import json
+import threading
 
 from . import engine, fra, planning, recovery
 
@@ -99,7 +100,7 @@ def plan(request, root):
             raise SearchBudget('Budget global de recherche atteint (25 s). Les propositions déjà contrôlées sont conservées ; la recherche n’est pas exhaustive.')
     request = dict(request, root=root)
     request.setdefault('date', '2026-11-09T12:00')
-    nav, rad = context(request, root)
+    nav, rad = context(request, root)      # RouteSim libère les caches du graphe à la fin de chaque plan (release_graph_caches) : ici le contexte est refait à chaque demande et disparaît avec elle
     entered = str(request.get('route', '')).strip().upper()
     words = entered.split()
     airways = {e['route'] for e in nav.edges}
@@ -118,7 +119,7 @@ def plan(request, root):
             if ad in nav.ads:
                 nav.procedures.prepare(ad)
         procedure_names = {p['token'] for p in nav.procedures.items}
-        request['via'] = [w for w in words if w != 'DCT' and w not in airways and w not in procedure_names]
+        request['via'] = [w for w in words if not engine.route_connector(w, nav, airways, procedure_names)]
         if request.get('mode', 'calculate') == 'validate':
             request['via'] = []        # SOG-0081 : le contrôle d'une route saisie n'impose aucun passage (ses points sont les extrémités de ses airways ; plus de 8 d'entre eux refusaient toute route longue)
     if request.get('mode', 'calculate') == 'calculate' and request.get('allow_levels', True):
@@ -150,8 +151,8 @@ def plan(request, root):
             except (ValueError, SearchBudget) as e:
                 rad_retries.append(dict(excluded=avoids, error=str(e)))
                 break
-    rejected = not primary['ok'] or any(i['level'] == 'ERREUR' for i in primary['issues'])
-    coverage_gaps = recovery.terminal_gaps(request, nav) if not primary.get('ok') and 'Aucun point du réseau' in primary.get('error', '') else []
+    rejected = not primary['ok'] or bool(primary.get('data_gaps')) or any(i['level'] == 'ERREUR' for i in primary['issues'])
+    coverage_gaps = recovery.terminal_gaps(request, nav) if rejected else []
     alternatives = []
     failures = list(coverage_gaps)
     tested = []
@@ -184,7 +185,7 @@ def plan(request, root):
                 r = engine.assess(dict(conditions or request, mode='validate', route=route, fl=level, level_strategy=strategy), nav, rad, _path=path)
                 errs = [i['text'] for i in r['issues'] if i['level'] == 'ERREUR']
                 tested.append(dict(fl=level, strategy=strategy, route=route, errors=errs))
-                if errs:
+                if errs or r.get('data_gaps'):
                     return
                 sig = signature(r)
                 if sig in seen:
@@ -248,7 +249,7 @@ def plan(request, root):
     if not alternatives:
         failures.extend(e for t in tested for e in t['errors'])
     alternatives.sort(key=lambda r: r.get('objective_score', r['distance_nm']))
-    if request.get('mode', 'calculate') == 'calculate' and primary.get('ok') and not any(i['level'] == 'ERREUR' for i in primary['issues']) and request.get('objective') in ['fastest', 'economical']:
+    if request.get('mode', 'calculate') == 'calculate' and primary.get('ok') and not primary.get('data_gaps') and not any(i['level'] == 'ERREUR' for i in primary['issues']) and request.get('objective') in ['fastest', 'economical']:
         pool = [primary, *alternatives]
         pool.sort(key=lambda r: r.get('objective_score', r['distance_nm']))
         primary = pool[0]
@@ -257,6 +258,7 @@ def plan(request, root):
                if alternatives else 'Aucune alternative trouvée. Consulter les niveaux essayés et leurs motifs d’échec.') if wanted else ''
     repli = None
     if rejected and not alternatives:
+        nav._routing_cache.clear()
         try:
             repli = recovery.propose(request, nav, rad)
         except (ValueError, KeyError) as e:
@@ -315,11 +317,15 @@ def bound_result(res):
     return out
 
 
+SOLVER_LOCK = threading.RLock()        # un seul calcul à la fois (RouteSim 4 : SOLVER_LOCK)
+
+
 def compute(request, data, rad_file, fra_file):
     """Le plan d'une demande fermée sur le dossier des données `data` (sia/base, proc) et les fichiers compilés RAD et FRA. ValueError : demande refusée ou calcul impossible (le message est dit)."""
     request = check_request(request)
     engine.DATA_DIR, engine.RAD_FILE, fra.FRA_FILE = data, rad_file, fra_file
     try:
-        return bound_result(plan(request, data))
+        with SOLVER_LOCK:
+            return bound_result(plan(request, data))
     finally:
         engine.DATA_DIR = engine.RAD_FILE = fra.FRA_FILE = None

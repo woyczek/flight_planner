@@ -18,7 +18,7 @@ def project(p,a,b):
     cross=abs(math.asin(max(-1,min(1,math.sin(delta)*math.sin(angle)))))*3440.065
     return t,cross if 0<=t<=1 else engine.nm(p,a if t<0 else b)
 
-def build(request,nav,rad,anchors,samples,required_area=None):
+def build(request,nav,rad,anchors,samples,required_area=None,prepare_only=False):
     if not request.get('enable_fra',True) or request.get('unable_rnav') or not nav.fra.book:return None
     when=dt.datetime.fromisoformat(request['date'].replace('Z','+00:00'))
     if when.tzinfo:when=when.astimezone(dt.timezone.utc).replace(tzinfo=None)
@@ -30,12 +30,21 @@ def build(request,nav,rad,anchors,samples,required_area=None):
         if cached is None:
             cached=nav.fra.graph(nav.graph(None),dep,arr,fl,when,via,True)
             nav._fra_graph_cache[(dep,arr,fl,True,tuple(via),when.isoformat(timespec='minutes'),'normal')]=cached
-            if len(nav._fra_graph_cache)>2:nav._fra_graph_cache.pop(next(iter(nav._fra_graph_cache)))
+            if len(nav._fra_graph_cache)>1:nav._fra_graph_cache.pop(next(iter(nav._fra_graph_cache)))
         source=cached
         # Limit the regional graph to a corridor around every imposed portion.
+        near_cache={};projection_cache={}
+        latlo=min(nav.nodes[k]['lat'] for k in anchors)-3;lathi=max(nav.nodes[k]['lat'] for k in anchors)+3
+        lonlo=min(nav.nodes[k]['lon'] for k in anchors)-5;lonhi=max(nav.nodes[k]['lon'] for k in anchors)+5
+        def projected(key,a,b):
+            p=nav.nodes[key];cache_key=(p['lat'],p['lon'],a,b)
+            if cache_key not in projection_cache:projection_cache[cache_key]=project(p,nav.nodes[a],nav.nodes[b])
+            return projection_cache[cache_key]
         def near(key,width=130):
-            p=nav.nodes[key]
-            return any(-.03<=t<=1.03 and distance<=width for a,b in zip(anchors,anchors[1:]) for t,distance in [project(p,nav.nodes[a],nav.nodes[b])])
+            p=nav.nodes[key];cache_key=(p['lat'],p['lon'])
+            if cache_key not in near_cache:
+                near_cache[cache_key]=latlo<=p['lat']<=lathi and lonlo<=p['lon']<=lonhi and any(-.03<=t<=1.03 and distance<=width for a,b in zip(anchors,anchors[1:]) for t,distance in [projected(key,a,b)])
+            return near_cache[cache_key]
         vertices={u for u in source if near(u)}|{v for es in source.values() for v,e in es if near(v)}
         g=engine.RoutingGraph({u:[(v,e) for v,e in es if v in vertices and isinstance(e.get('lower'),(int,float)) and isinstance(e.get('upper'),(int,float)) and e['lower']<=fl*100] for u,es in source.items() if u in vertices})
         # Source physical E/X gateways (and airway nodes) can receive proposed
@@ -56,7 +65,7 @@ def build(request,nav,rad,anchors,samples,required_area=None):
         for a,b in zip(anchors,anchors[1:]):
             distance=engine.nm(nav.nodes[a],nav.nodes[b]);layers=max(1,math.ceil(distance/120));buckets=collections.defaultdict(list)
             for key in physical:
-                t,off=project(nav.nodes[key],nav.nodes[a],nav.nodes[b])
+                t,off=projected(key,a,b)
                 if 0<t<1 and off<=100:buckets[min(layers-1,int(t*layers))].append((t,key))
             buckets[-1].append((0,a));buckets[layers].append((1,b))
             present=sorted(buckets)
@@ -73,7 +82,7 @@ def build(request,nav,rad,anchors,samples,required_area=None):
                     for values in regional.values():chosen+=sorted(values)[:2]
                     for _,v in chosen:bridge(u,v)
             # Always retain a proposal along the explicit sample chain as a backbone.
-            between=sorted((project(nav.nodes[k],nav.nodes[a],nav.nodes[b])[0],k) for k in samples if k not in [a,b] and 0<project(nav.nodes[k],nav.nodes[a],nav.nodes[b])[0]<1 and project(nav.nodes[k],nav.nodes[a],nav.nodes[b])[1]<100)
+            between=sorted((projected(k,a,b)[0],k) for k in samples if k not in [a,b] and 0<projected(k,a,b)[0]<1 and projected(k,a,b)[1]<100)
             chain=[a,*[k for t,k in between],b]
             for u,v in zip(chain,chain[1:]):bridge(u,v)
         blocks=rad.blocks(dep,arr,None);points={b['point'] for b in blocks if b['kind']=='point'}
@@ -83,8 +92,11 @@ def build(request,nav,rad,anchors,samples,required_area=None):
         options=engine.profile_options(request)
         g.flight=dict(options,departure=nav.ads[dep].get('elev') or 0,arrival=nav.ads[arr].get('elev') or 0,ceiling=fl*100)
         nav._fra_recovery_graph_cache={cache_key:g}
+        nav._fra_graph_cache.clear()
+        del source,cached
     prepared=nav._fra_recovery_graph_cache[cache_key]
     g=engine.RoutingGraph(prepared);g.flight=prepared.flight;g.required_fra_area=required_area
+    if prepare_only:return g
     path=nav.constrained_path(g,anchors[0],anchors[-1],anchors[1:-1],require_fra=True)
     if not path:return None
     # Group actual consecutive FRA edges; zero-distance E/X gates are not
@@ -108,6 +120,73 @@ def build(request,nav,rad,anchors,samples,required_area=None):
         else:piece['note']='Airways présentes en base.' if status=='base' else 'Raccord DCT géométrique proposé, hors validation.'
         pieces.append(piece)
     return path,pieces
+
+
+def windowed(request,nav,rad,anchors,base_path):
+    """Retain regional FRA solutions even if a many-via global search times out.
+    Private FRA states are kept throughout each window, so imposed I points do
+    not become invented exits. The assembled flight is rechecked by the caller.
+    """
+    import time
+    if not request.get('enable_fra',True) or request.get('unable_rnav') or not base_path:return None
+    cache=getattr(nav,'_fra_recovery_graph_cache',{})
+    if not cache:return None
+    prepared=next(iter(cache.values()));entries=collections.defaultdict(set);exits=collections.defaultdict(set);membership=collections.defaultdict(set)
+    for u,es in prepared.items():
+        if '|FRA|' in u:membership[u.split('|FRA|')[0]].add(u.split('|FRA|')[1].rsplit('|',1)[0])
+        for v,e in es:
+            if e.get('kind')!='FRA_GATE':continue
+            if '|FRA|' in v:entries[u].add(e['fra_area'])
+            else:exits[v].add(e['fra_area'])
+    candidates=[]
+    for i,a in enumerate(anchors[:-1]):
+        for j in range(i+1,len(anchors)):
+            for area in entries[a]&exits[anchors[j]]:
+                if all(area in membership[k] for k in anchors[i+1:j]):candidates.append((i,j,area))
+    vertices=[base_path[0][0],*[b for a,b,e in base_path]];locations=[];cursor=0
+    for anchor in anchors:
+        try:cursor=vertices.index(anchor,cursor);locations.append(cursor)
+        except ValueError:return None
+    selected=[];begun=time.perf_counter();fl=int(request['fl'])
+    def compose(windows):
+        result=[];cursor=0
+        for i,j,path in sorted(windows):
+            result.extend(base_path[cursor:locations[i]]);result.extend(path);cursor=locations[j]
+        result.extend(base_path[cursor:]);return result
+    def feasible(path):
+        legs=[dict(start=nav.nodes[u],end=nav.nodes[v],via=e['route'],kind=e.get('kind','AIRWAY'),nm=e['nm'],lower=e.get('lower'),upper=e.get('upper'),node_constraints=e.get('node_constraints'),planned_speed_kt=e.get('planned_speed_kt')) for u,v,e in path if e.get('kind')!='FRA_GATE']
+        p=engine.flight_profile.build(legs,nav.ads[request['dep']].get('elev') or 0,nav.ads[request['arr']].get('elev') or 0,fl,**engine.profile_options(request),strategy='adapt')
+        return p['feasible']
+    for i,j,area in sorted(candidates,key=lambda c:c[1]-c[0],reverse=True):
+        if time.perf_counter()-begun>3 or len(selected)>=3:break
+        if any(i<oldj and j>oldi for oldi,oldj,path in selected):continue
+        g=engine.RoutingGraph({u:[(v,e) for v,e in es if e.get('kind') in ['FRA','FRA_GATE'] and e.get('fra_area')==area] for u,es in prepared.items()})
+        exit_caps=[min(e['upper'],fl*100) for u,es in g.items() for v,e in es if v==anchors[j] and e.get('kind')=='FRA_GATE']
+        if not exit_caps:continue
+        g.flight=dict(prepared.flight,arrival=max(exit_caps));g.required_fra_area=area
+        initial=(prepared.flight['departure'],)*2 if i==0 else (0,fl*100)
+        try:path=nav.constrained_path(g,anchors[i],anchors[j],anchors[i+1:j],require_fra=True,initial_band=initial)
+        except ValueError:continue
+        if path and feasible(compose([*selected,(i,j,path)])):selected.append((i,j,path))
+    if not selected:return None
+    result=compose(selected)
+    # Use the same presentation grouping as a global solution, without rerunning
+    # the expensive full-route search.
+    clean=[(u,v,e) for u,v,e in result if e.get('kind')!='FRA_GATE'];pieces=[]
+    records={(r['area'],r['row']):r for r in nav.fra.records}
+    def roles(e):
+        a=records[(e['fra_area'],e['fra_rows'][0])];b=records[(e['fra_area'],e['fra_rows'][-1])]
+        return ('E' if 'E' in a['enroute'] else 'D' if 'D' in a['terminal'] and nav.fra.airport_match(a['dep'],request['dep']) else 'I',
+            'X' if 'X' in b['enroute'] else 'A' if 'A' in b['terminal'] and nav.fra.airport_match(b['arr'],request['arr']) else 'I')
+    for u,v,e in clean:
+        status='fra' if e.get('kind')=='FRA' else 'candidate' if e.get('kind')=='DCT_PROPOSAL' else 'base'
+        if pieces and status!='candidate' and pieces[-1]['status']==status and pieces[-1].get('fra_area')==e.get('fra_area'):
+            piece=pieces[-1];piece['end']=nav.nodes[v];piece['distance_nm']=round(piece['distance_nm']+e['nm'],1);piece['route']+=' '+e['route']+' '+nav.nodes[v]['id']
+            if status=='fra':piece['to_role']=roles(e)[1]
+        else:pieces.append(dict(start=nav.nodes[u],end=nav.nodes[v],status=status,fra_area=e.get('fra_area'),route=nav.format_path(nav.nodes[u]['id'],[(u,v,e)]),distance_nm=round(e['nm'],1),
+            from_role=e.get('from_role'),to_role=e.get('to_role'),note='Portion FRA régionale conservée ; le vol complet reste à contrôler.' if status=='fra' else 'Airway de base.' if status=='base' else 'Raccord DCT proposé.'))
+        if status=='fra':pieces[-1]['from_role']=pieces[-1]['from_role'] if pieces[-1]['from_role'] in ['E','D'] else roles(e)[0];pieces[-1]['to_role']=roles(e)[1]
+    return result,pieces
 
 
 def upper_regions(request,nav,anchors,exclude=()):

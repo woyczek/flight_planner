@@ -104,7 +104,7 @@ def alternative(i, r, requested_fl):
     segs = [segment(l) for l in r.get('legs') or []]
     errors = [x for x in r.get('issues') or [] if x['level'] == 'ERREUR']
     return {'id': f'alt{i}', 'name': name_of(r, requested_fl), 'route': r.get('route', ''), 'distanceNm': r.get('distance_nm'), 'fl': r.get('fl'), 'profile': thin((r.get('profile') or {}).get('points')),
-            'sid': procedure(r, 'SID'), 'star': procedure(r, 'STAR'), 'faults': max(sum(1 for s in segs if s['state'] == 'error'), len(errors)), 'segments': segs}
+            'sid': procedure(r, 'SID'), 'star': procedure(r, 'STAR'), 'faults': max(sum(1 for s in segs if s['state'] == 'error'), len(errors)), 'incomplete': bool(r.get('data_gaps')), 'segments': segs}
 
 
 def to_view(plan_result, request, include_raw=False):
