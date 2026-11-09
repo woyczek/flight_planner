@@ -6,7 +6,7 @@ import json
 import re
 from pathlib import Path
 
-from lib import case, norm, tx, tx_row
+from lib import ROOT, case, norm, tx, tx_row
 
 M = '[data-module="aircraft"]'
 AC = 'modules/aircraft/module.js'
@@ -267,7 +267,7 @@ def m6(c):
     c.eq(pressed(c), ['fleet'], 'the Flotte tab is pressed', what='pressed tab')
 
 
-@case('M7', 'Sheets: the editor shows every field of the schema with its value and, under a filled field, its origin and date', 'M', tags=('aircraft',),
+@case('M7', 'Sheets: the editor shows every field of the schema with its value and, on a filled field, a mark that gives its origin and date', 'M', tags=('aircraft',),
       designs=('standard',), screens=False, langs4=True,
       rule='modules/aircraft SPEC 4: the form follows PROFILE_FIELDS (maxCrosswindKt included); origin and date per field from sheets.origins')
 def m7(c):
@@ -280,12 +280,12 @@ def m7(c):
     vals = c.js(f"""(() => {{ const v = p => (document.querySelector('{M} {SHEETS} [data-path="' + p + '"]') || {{}}).value;
         return [v('maxCrosswindKt'), v('usableFuel'), v('cruise.tasKt'), v('cruise.fuelFlowPerHour')] }})()""")
     c.eq(vals, ['17', '2000', '141', '650'], 'the fields show the sheet\'s values', what='values')
-    o = c.js(f"""(() => {{ const t = p => ((document.querySelector('{M} {SHEETS} [data-origin="' + p + '"]') || {{}}).textContent || '').trim();
-        return {{ lnm: t('cruise.tasKt'), edit: t('usableFuel'), none: t('descent.tasKt'), count: document.querySelectorAll('{M} {SHEETS} small[data-origin]').length }} }})()""")
+    o = c.js(f"""(() => {{ const t = p => ((document.querySelector('{M} {SHEETS} [data-origin="' + p + '"]') || {{ getAttribute: () => '' }}).getAttribute('title') || '').trim();
+        return {{ lnm: t('cruise.tasKt'), edit: t('usableFuel'), none: t('descent.tasKt'), count: document.querySelectorAll('{M} {SHEETS} .ac-mark[data-origin]').length }} }})()""")
     c.ok(o['lnm'].startswith('lnmperf') and '28' in o['lnm'], o['lnm'], 'cruise.tasKt: « lnmperf · 28/10 »')
     c.ok(norm(o['edit']).startswith(src_name(c, 'edit')) and '28' in o['edit'], o['edit'], 'usableFuel: « édité · 28/10 » in the language of the run')
     c.eq(o['none'], '', 'a field without a value has no origin line', what='empty field')
-    c.ok(o['count'] >= 4, f"{o['count']}", 'one origin line under each filled field')
+    c.ok(o['count'] >= 4, f"{o['count']}", 'one origin mark on each filled field')
     lab = c.js(f"((document.querySelector('{M} {SHEETS} input[data-path=\"maxCrosswindKt\"]') || {{}}).closest('label') || {{}}).textContent || ''")
     want = c.pick({'fr': 'Vent de travers max', 'en': 'Max crosswind', 'de': 'Max. Seitenwind', 'es': 'Viento cruzado máx.'})
     c.ok(want in lab, lab, 'the crosswind field is labelled in the language of the run')
@@ -308,7 +308,7 @@ def m8(c):
     d = c.until_doc('aircraft/sheets/EC25.json', lambda d: d and d['cruise']['tasKt'] == 150, 'the new value is written')
     c.eq(d['_fields']['cruise.tasKt']['source'], 'edit', 'the changed field carries the stamp of an edit', what='_fields')
     c.eq([k['value'] for k in d['_kept']['cruise.tasKt']][:1], [141], 'the old value is kept', what='_kept')
-    c.until(f"((document.querySelector('{M} {SHEETS} [data-origin=\"cruise.tasKt\"]') || {{}}).textContent || '').trim().startsWith('{src_name(c, 'edit')}')",
+    c.until(f"((document.querySelector('{M} {SHEETS} [data-origin=\"cruise.tasKt\"]')?.getAttribute('title')) || '').trim().startsWith('{src_name(c, 'edit')}')",
             what='the editor is drawn again and the origin of the field now says it was edited')
 
 
@@ -570,7 +570,7 @@ def m23(c):
     edit_sheet(c, 'EC25')
     for path in ('fuelAsVolume', 'fuelDensityKgPerL'):
         got = norm(c.text(f'{M} {SHEETS} [data-help="{path}"]') or '')
-        c.eq(got, norm(tx(SX, path, c.lang, after='FIELD_HELP')), f'the help line of {path}', what=path)
+        c.eq(got, norm(tx(SX, 'text', c.lang, after=f'{path}: {{') + ' ?'), f'the short line of {path} and its « ? »', what=path)
     c.page.fill(f'{M} {SHEETS} input[data-path="fuelDensityKgPerL"]', '8')
     clear_notes(c)
     c.tap(f'{M} {SHEETS} [data-do="save"]')
@@ -873,6 +873,32 @@ def m32(c):
                     timeout=8000)
     c.eq(sorted(a['registration'] for a in d['aircraft']), ['F-BBBB', 'F-BNEW'], 'Bravo Air\'s fleet, nothing else', what='bbb fleet')
     c.eq(sorted(a['registration'] for a in c.doc('airline/aaa/fleet.json')['aircraft']), ['F-AAAA'], 'Alpha Air\'s fleet untouched', what='aaa fleet')
+
+
+@case('M33', 'Sheets: the provenance is a mark at the end of a label (its title says it), each card says its distinct sources once; the long explanations are in the help',
+      'M', tags=('aircraft',), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0057, V3 spec 10.43: no provenance line under a field; a mark whose title says the source and the date; a « Sources » line per card '
+      '(distinct sources); « Carburant en volume » and « Densité » keep a line of sixty signs at most and a « ? » to their anchor of the help ×4')
+def m33(c):
+    open_sheets(c)
+    edit_sheet(c, 'EC25')
+    r = c.js(f"""(() => {{ const root = document.querySelector('{M} {SHEETS}');
+        const marks = [...root.querySelectorAll('[data-origin]')];
+        const card = root.querySelector('[data-origin="cruise.tasKt"]').closest('details');
+        const src = (card.querySelector('[data-sources]')?.textContent || '').trim();
+        return {{ small: root.querySelectorAll('small.ac-origin').length, kinds: [...new Set(marks.map(m => m.tagName + '.' + m.className + ':' + m.textContent))],
+                  title: root.querySelector('[data-origin="cruise.tasKt"]').getAttribute('title'), src,
+                  hints: ['fuelAsVolume', 'fuelDensityKgPerL'].map(p => {{ const h = root.querySelector('[data-help="' + p + '"]');
+                    return [h.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim().length, h.querySelector('a[data-helplink]')?.getAttribute('href')] }}) }} }})()""")
+    c.eq([r['small'], r['kinds']], [0, ['SPAN.ac-mark:•']], 'no provenance line under a field: a mark « • » at the end of the label', what='marks')
+    c.ok(r['title'].startswith('lnmperf') and '28' in r['title'], r['title'], 'the mark\'s title says the source and the date')
+    parts = [x.strip() for x in r['src'].split(':', 1)[-1].split(',')]
+    c.ok(parts and len(parts) == len(set(parts)) and any(x.startswith('lnmperf') for x in parts), r['src'], 'the card\'s « Sources » line: its distinct sources, once each')
+    c.eq([h[1] for h in r['hints']], ['#help?m=aircraft&a=aircraft-fuel-volume', '#help?m=aircraft&a=aircraft-fuel-density'], 'a « ? » to the anchor of each notion', what='links')
+    c.ok(all(h[0] <= 62 for h in r['hints']), r['hints'], 'a line of sixty signs at most (and the « ? »)')
+    for lang in ('fr', 'en', 'de', 'es'):
+        text = (ROOT / 'modules' / 'aircraft' / 'help' / f'{lang}.md').read_text(encoding='utf-8')
+        c.ok('<a id="aircraft-fuel-volume"></a>' in text and '<a id="aircraft-fuel-density"></a>' in text, lang, f'the two explanations in the help ({lang}) with their anchors')
 
 
 @case('M25', 'Sheets: the fuel is read and typed in the unit chosen (kg, lb, l, US gal); the sheet keeps its stored unit, an untouched value unchanged',

@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Aircraft: the sheet editor without its twenty provenance lines** (`modules/aircraft/sheets.js`, `sheets_texts.js`, help ×4; Aircraft SPEC
+  § 6, DECISIONS; noreg M33, M7, M8, M23; SOG-0057, V3 spec § 10.43). The provenance of a field is a mark « • » at the end of its label
+  (source and date in its title, said by a tap); each card says its distinct sources once; « Carburant en volume » and « Densité »
+  keep one short line and a « ? » to their new paragraphs of the help.
+
 - **Report: « Mesures », the measured flight in the report** (`modules/stats/phases.js` `flights`, `modules/stats/journals.js`,
   `modules/report/module.js`; stats SPEC / INTEGRATION / DECISIONS, report SPEC § 3; noreg F98, G6; V3 spec § 10.37 A step 3). The
   Fuel Phase Monitor journals (chosen, or from the Output folder) made flights; the one whose registration and UTC times overlap the

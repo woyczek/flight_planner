@@ -116,3 +116,8 @@
   checked by shape (never a path taken as is from data, audit 157); « Personnel » writes under `pilot/<trigram>/airline/perso/`, so
   the module declares `pilot/` like Fuel. The Fleet view of Maintenance is the « Compagnie › Flotte » of the lot (no company module).
   M32.
+- **9 Nov 2026 — provenance as a mark, sources per card, explanations in the help** (SOG-0057, V3 spec § 10.43, the ergonomics
+  session's decision after looking at the TBM 900 at 1280): twenty « base V2 · 11/01 » lines under the fields were the noise. The
+  mark keeps the information one tap away; the card's « Sources » line says what the card is made of; the five-line explanations
+  of SOG-0011 moved to the help with an anchor each. The warnings (monotony, measured deviation, « À compléter ») stay where they
+  are. M33; counter-test on a18ffd53f: six provenance lines under the fields.

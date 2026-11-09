@@ -27,7 +27,7 @@ import {
   FIELD_TX,
   OPTION_TX,
   PATH_TX,
-  FIELD_HELP,
+  FIELD_HINT,
   SRC_TX
 } from './sheets_texts.js';
 
@@ -47,6 +47,9 @@ export const SHEETS_STYLE = `[data-module="aircraft"] .ac-g3{--f-min:150px;align
 [data-module="aircraft"] .ac-legend{display:flex;flex-wrap:wrap;gap:4px 12px;margin:4px 0 8px;font-size:var(--sog-size-s)}
 [data-module="aircraft"] .ac-legend i{display:inline-block;width:12px;height:12px;margin-right:4px;vertical-align:-1px;border-radius:2px}
 [data-module="aircraft"] .ac-legend i.ac-meas{background:none;border:2px solid var(--sog-muted);border-radius:0}
+[data-module="aircraft"] .ac-mark{color:var(--sog-muted);margin-left:4px;cursor:help;font-size:var(--sog-size-s)}
+[data-module="aircraft"] .ac-sources{font-weight:400;margin-left:6px}
+@media (max-width: 760px){[data-module="aircraft"] .ac-sources{display:block;margin:2px 0 0}}
 [data-module="aircraft"] tr.ac-rpmwarn td{background:color-mix(in srgb, var(--sog-warn) 18%, transparent)}
 [data-module="aircraft"] .ac-cat{margin:var(--sog-gap) 0 4px;font-size:1em;color:var(--sog-muted)}
 [data-module="aircraft"] [data-sheets] .f-list .f-item>div:first-child{min-width:0}
@@ -249,6 +252,12 @@ export function createSheetsView(host) {
   // ---------------------------------------------------------------- gestes
   /** Gestes de l'écran Fiches (liste, éditeur, aperçu des changements). */
   async function onClick(e) {
+    const mk = e.target.closest?.('[data-origin]');
+    if (mk && body()?.contains(
+        mk)) { // la marque de provenance d'un champ (SOG-0057) : sa source dite d'une tape, le champ n'est pas pris
+      e.preventDefault();
+      return ctx.notify(mk.getAttribute('title') || '', 'info');
+    }
     const b = e.target.closest('[data-do]');
     if (!b || !body() || !st.loaded) return;
     const F = SH(),
@@ -773,7 +782,8 @@ export function createSheetsView(host) {
       when = whenText(o?.at);
     return [src, when].filter(Boolean).join(' · ');
   }
-  /** Ligne d'origine d'un champ renseigné (`<small>` grisé sous le champ), ses valeurs écartées en infobulle ; rien sans valeur. */
+  /** La marque de provenance d'un champ renseigné (SOG-0057, § 10.43) : un point en fin de libellé, sa source et sa date (et ses
+   *  valeurs écartées) dans son title, dites aussi d'une tape ; rien pour un champ vide ou sans provenance. */
   function originHtml(p, path) {
     const F = SH(),
       v = F.pathGet(p, path),
@@ -782,7 +792,22 @@ export function createSheetsView(host) {
     const text = stampText(o);
     if (!text) return '';
     const kept = (o.kept || []).map(k => `${typeof k.value === 'object' ? JSON.stringify(k.value) : k.value} (${stampText(k)})`).join(' ; ');
-    return `<small class="f-muted ac-origin" data-origin="${esc(path)}"${kept ? ` title="${esc(tt(TX.originKept, { l: kept }))}"` : ''}>${esc(text)}</small>`;
+    const title = kept ? `${text} — ${tt(TX.originKept, { l: kept })}` : text;
+    return `<span class="ac-mark" data-origin="${esc(path)}" title="${esc(title)}" aria-label="${esc(title)}" role="img">•</span>`;
+  }
+  /** La ligne « Sources » d'une carte (SOG-0057) : les provenances distinctes de ses champs renseignés, dans l'ordre des champs ;
+   *  '' si aucun n'en a. */
+  function sourcesOf(p, paths) {
+    const F = SH(),
+      seen = [];
+    for (const path of paths) {
+      const v = F.pathGet(p, path),
+        t = v === null || v === undefined || v === '' ? '' : stampText(st.origins[path]);
+      if (t && !seen.includes(t)) seen.push(t);
+    }
+    return seen.length ? tt(TX.sourcesLine, {
+      l: seen.slice(0, 6).join(', ') + (seen.length > 6 ? '…' : '')
+    }) : '';
   }
   // ---------------------------------------------------------------- unités de lecture et de saisie (SOG-0032)
   /** Les noms des unités à l'écran : quantité et débit. */
@@ -979,18 +1004,20 @@ export function createSheetsView(host) {
       input = ([, , path, type]) => {
         const v = F.pathGet(p, path),
           lab = esc(fieldLabel(path) + fuelUnit(path)),
-          org = originHtml(p, path) + (FIELD_HELP[path] ? `<small class="f-muted" data-help="${esc(path)}">${esc(tt(FIELD_HELP[path]))}</small>` :
-            '');
-        if (type === 'bool') return `<div class="f-field"><label class="f-check"><input type="checkbox" data-path="${path}" data-type="bool"${v ? ' checked' : ''}>${lab}</label>${org}</div>`;
+          // la provenance en marque au bout du libellé (SOG-0057) ; sous deux champs, une ligne courte et « ? » vers l'aide
+          mark = originHtml(p, path),
+          hint = FIELD_HINT[path],
+          org = hint ? `<small class="f-muted" data-help="${esc(path)}">${esc(tt(hint.text))} <a href="#help?m=aircraft&amp;a=${esc(hint.anchor)}" data-helplink="${esc(hint.anchor)}" aria-label="${esc(tt(TX.hintHelp))}">?</a></small>` : '';
+        if (type === 'bool') return `<div class="f-field"><label class="f-check"><input type="checkbox" data-path="${path}" data-type="bool"${v ? ' checked' : ''}>${lab}${mark}</label>${org}</div>`;
         if (type.startsWith('select:')) {
           // cellule et propulsion : libellés traduits, case vide = « auto · valeur de la base OACI » quand elle la donne
           const deduced = facts[path],
             none = deduced ? `${tt(TX.auto)} · ${tt(OPTION_TX[deduced])}` : '';
-          return `<label class="f-field">${lab}<select data-path="${path}" data-type="text"><option value="">${esc(none)}</option>${type.slice(7).split(',').map(o => `<option value="${esc(o)}"${String(v ?? '') === o ? ' selected' : ''}>${esc(OPTION_TX[o] ? tt(OPTION_TX[o]) : o)}</option>`).join('')}</select>${org}</label>`;
+          return `<label class="f-field"><span>${lab}${mark}</span><select data-path="${path}" data-type="text"><option value="">${esc(none)}</option>${type.slice(7).split(',').map(o => `<option value="${esc(o)}"${String(v ?? '') === o ? ' selected' : ''}>${esc(OPTION_TX[o] ? tt(OPTION_TX[o]) : o)}</option>`).join('')}</select>${org}</label>`;
         }
-        if (type === 'textarea') return `<label class="f-field">${lab}<textarea rows="2" data-path="${path}" data-type="text">${esc(v ?? '')}</textarea>${org}</label>`;
-        if (F.FUEL_PATHS.has(path)) return `<label class="f-field">${lab}<input data-path="${path}" data-type="${type}" data-fu data-shown="${esc(fuelShown(p, v))}" value="${esc(fuelShown(p, v))}" inputmode="decimal">${org}</label>`;
-        return `<label class="f-field">${lab}<input data-path="${path}" data-type="${type}" value="${esc(v ?? '')}"${type === 'number' ? ' inputmode="decimal"' : ''}>${org}</label>`;
+        if (type === 'textarea') return `<label class="f-field"><span>${lab}${mark}</span><textarea rows="2" data-path="${path}" data-type="text">${esc(v ?? '')}</textarea>${org}</label>`;
+        if (F.FUEL_PATHS.has(path)) return `<label class="f-field"><span>${lab}${mark}</span><input data-path="${path}" data-type="${type}" data-fu data-shown="${esc(fuelShown(p, v))}" value="${esc(fuelShown(p, v))}" inputmode="decimal">${org}</label>`;
+        return `<label class="f-field"><span>${lab}${mark}</span><input data-path="${path}" data-type="${type}" value="${esc(v ?? '')}"${type === 'number' ? ' inputmode="decimal"' : ''}>${org}</label>`;
       },
       others = st.sheets.filter(x => x.id !== p.id);
     b.innerHTML = `<div class="f-row" style="margin-bottom:var(--sog-gap)"><button type="button" data-do="back">${esc(tt(TX.back))}</button><b>${esc(p.name || p.id)}</b><span class="f-muted">${esc(F.profileSourceText(p))}</span></div>
@@ -1005,7 +1032,7 @@ export function createSheetsView(host) {
       <button type="button" data-do="gptread">${esc(tt(TX.read))}</button>
     </details>
     <div class="f-card" data-vunitbox><label class="f-field">${esc(tt(TX.viewUnit))}<select data-k="vunit">${Object.keys(MASS).map(u => `<option value="${u}"${u === vu ? ' selected' : ''}>${esc(`${MASS[u]} · ${FLOW[u]}`)}</option>`).join('')}</select></label>${vu !== su ? `<small class="f-muted" data-vunitnote>${esc(tt(TX.viewUnitNote, { s: `${MASS[su]} · ${FLOW[su]}`, d: densityOf(p)?.toLocaleString(document.documentElement.lang || undefined) ?? '?' }))}</small>` : ''}</div>
-    ${groups.map((g, i) => `<details class="f-card"${i < 2 ? ' open' : ''}><summary>${esc(FIELD_TX[g] ? tt(FIELD_TX[g]) : g)}</summary><div class="f-grid ac-g3">${F.PROFILE_FIELDS.filter(f => f[0] === g).map(input).join('')}</div></details>`).join('')}
+    ${groups.map((g, i) => `<details class="f-card"${i < 2 ? ' open' : ''}><summary>${esc(FIELD_TX[g] ? tt(FIELD_TX[g]) : g)}${(src => src ? ` <small class="f-muted ac-sources" data-sources="${esc(g)}">${esc(src)}</small>` : '')(sourcesOf(p, F.PROFILE_FIELDS.filter(f => f[0] === g).map(f => f[2])))}</summary><div class="f-grid ac-g3">${F.PROFILE_FIELDS.filter(f => f[0] === g).map(input).join('')}</div></details>`).join('')}
     ${nm ? `<p class="f-warn" data-rpmwarn>${esc(nm.h === null ? tt(TX.rpmNotMonotone, { a: nm.a, b: nm.b }) : tt(TX.rpmNotMonotoneAt, { a: nm.a, b: nm.b, h: nm.h }))}</p>` : ''}
     ${rpmTablesHtml()}
     <div class="f-row"><button type="button" class="primary" data-do="save">${esc(tt(TX.save))}</button><button type="button" data-do="lnm">${esc(tt(TX.exportLnm))}</button><button type="button" data-do="json">${esc(tt(TX.exportJson))}</button><button type="button" data-do="del">${esc(tt(TX.remove))}</button></div>`;

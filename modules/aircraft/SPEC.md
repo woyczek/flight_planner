@@ -125,8 +125,12 @@ closed). The module declares the writes `airline/` and `pilot/` (merge `record`,
   a completion would replace is unticked); nothing is written before « Appliquer »; an unticked field keeps its value; one sheet at a
   time (M8, M9, M13).
 - **The form follows the schema**: `PROFILE_FIELDS` gives the groups and fields, `maxCrosswindKt` included; the RPM / fuel-flow table is
-  its own block, editable on a computer, read on a phone; under each filled field its origin and date (`<small data-origin="<path>">`,
-  « source · dd/mm », the kept values in its title); the fuel fields carry the unit they are read and typed in; airframe and propulsion that aerodb's
+  its own block, editable on a computer, read on a phone; the provenance of a filled field is a mark « • » at the end of its label
+  (`<span class="ac-mark" data-origin="<path>">`, « source · dd/mm » and the kept values in its title, said by a tap), never a line
+  under the field, and each card says the distinct sources of its fields once in its title (`data-sources`, « Sources : base V2 ·
+  11/01, import · 11/01 »; under the title on a phone) (SOG-0057, V3 spec § 10.43; M33); « Carburant en volume » and « Densité »
+  keep a line of sixty signs at most and a « ? » to their paragraph of the help (`#help?m=aircraft&a=aircraft-fuel-volume`,
+  `aircraft-fuel-density`), the explanations themselves being in the help (M23, M33); the fuel fields carry the unit they are read and typed in; airframe and propulsion that aerodb's
   types base gives show « auto · … » and stay empty in the sheet (M7).
 - **Curves per altitude** (SOG-0028, V3 spec § 10.37 C): the curve of one altitude is the rows of `rpmFuelCurve` sharing `altFt`
   (the column « ft »), the rows without altitude one more curve with the cruise point; no second field (`cruise.curves` was not
