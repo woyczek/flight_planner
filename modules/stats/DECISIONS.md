@@ -29,3 +29,14 @@ One entry per decision, newest last. The rules are in [SPEC.md](SPEC.md).
   curves, § 10.37 C): a 2450 rpm group of 30 s next to a 2400 rpm one of 120 s is the same setting read twice, not a row to propose.
 - **Climb and descent as one line each**, never a curve: the sheet keeps single values for them (the user extrapolates, § 10.37 C);
   the throttle is said but has no field in the sheet, so it is never written (SOG-0061: the rpm is what the pilot watches).
+
+## 9 November 2026 — one aggregate per flight, in the report (§ 10.37 A step 3, Features SOG)
+
+- **The report keeps the aggregate, never the windows**: `measured = { source: 'fpm', flightId, registration, startUtc, endUtc,
+  fuelKg, minutes, phases, cruise }`, written only after « Garder ce vol » and with the report's ordinary save.
+- **Matching by registration and UTC times**: the report's times are UTC (`timeline.tz = "Z"` since 23 Oct, checked in its SPEC
+  § 6); a flight overlaps when its first window starts before the report's last time and its last window ends after its first;
+  with no registration or no time in the report, that criterion is not applied. A report written before 23 Oct (no
+  `timeline.tz`, the device's time zone) is read as UTC too: its match may miss by the zone's offset (said, not corrected).
+- **The journal readers are one module** (`journals.js`): Maintenance › Appareils took them out of its own code (no copy).
+- **A fold of the Result step, not a fourth step**: three steps and their bar stay (G3); the fold opens when there is something in it.

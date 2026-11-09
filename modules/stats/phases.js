@@ -20,6 +20,10 @@
 //     la montée (CLIMB, vario ≥ 400 ft/min) ou la descente (DESCENT, vario ≤ −400 ft/min) des fenêtres exploitables ; régime et débit
 //     en médiane pondérée, vitesses et vario en moyenne pondérée, manette (mean_throttle_pct) quand la colonne existe ; null sous
 //     300 s ou 20 fenêtres (le seuil du FuelDashboard : « mesures insuffisantes »).
+//   flights(rows) → [{ flightId, registration, icao, startUtc, endUtc, minutes, fuelKg, phases: { PHASE: { minutes, fuelKg } },
+//     cruise: { rpm, altFt, flowKgH } | null, start: { lat, lon } | null, end: { lat, lon } | null }] : un agrégat par vol
+//     (flight_id ; § 10.37 A étape 3, le CR), les plus récents d'abord ; carburant = somme des fuel_kg des fenêtres, temps = somme
+//     des durées ; la croisière en médianes pondérées de ses fenêtres exploitables ; textes et nombres bornés, 200 vols au plus.
 //   compare(curves, sheet, { toKg }) → [{ ...point, sheetKgH, deltaPct }] : chaque point face à la fiche, la courbe de même
 //     altitude seulement (les lignes de rpmFuelCurve de même altFt), interpolée sur le régime quand deux lignes l'encadrent ;
 //     sheetKgH null sinon (rien à comparer : la ligne est une proposition neuve). toKg(valeur, fiche) ramène l'unité de la fiche.
@@ -280,6 +284,91 @@ export function levelCurves(rows, {
     });
   }
   return out.sort((a, b) => a.altFt - b.altFt || a.rpm - b.rpm);
+}
+
+/** Un agrégat par vol (voir l'en-tête). Les heures sont celles des fenêtres (start_utc / end_utc, ISO), gardées seulement lisibles. */
+export function flights(rows) {
+  const by = new Map(),
+    text = (v, n) => String(v ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, n),
+    iso = v => {
+      const t = Date.parse(String(v ?? ''));
+      return Number.isFinite(t) ? t : null;
+    },
+    pos = (lat, lon) => {
+      const a = num(lat),
+        o = num(lon);
+      return a !== null && o !== null && Math.abs(a) <= 90 && Math.abs(o) <= 180 ? {
+        lat: a,
+        lon: o
+      } : null;
+    },
+    r1 = v => v === null ? null : Math.round(v * 10) / 10;
+  for (const r of rows || []) {
+    const id = text(r?.flight_id, 80);
+    if (!id) continue;
+    if (!by.has(id)) {
+      if (by.size >= 200) continue;
+      by.set(id, []);
+    }
+    by.get(id).push(r);
+  }
+  const out = [];
+  for (const [flightId, list] of by) {
+    const timed = list.map(r => ({
+        r,
+        s: iso(r.start_utc),
+        e: iso(r.end_utc)
+      })).sort((a, b) => (a.s ?? Infinity) - (b.s ?? Infinity)),
+      starts = timed.map(x => x.s).filter(v => v !== null),
+      ends = timed.map(x => x.e).filter(v => v !== null),
+      phases = {};
+    let fuel = 0,
+      fuelSeen = false,
+      seconds = 0;
+    for (const {
+        r
+      }
+      of timed) {
+      const d = Math.max(0, duration(r)),
+        f = num(r.fuel_kg),
+        ph = text(r.phase, 16).toUpperCase() || '?';
+      seconds += d;
+      if (f !== null && f >= 0) {
+        fuel += f;
+        fuelSeen = true;
+      }
+      const p = phases[ph] ||= {
+        seconds: 0,
+        fuelKg: 0
+      };
+      p.seconds += d;
+      if (f !== null && f >= 0) p.fuelKg += f;
+    }
+    const cruise = list.filter(eligible),
+      first = timed[0]?.r,
+      last = timed.at(-1)?.r;
+    out.push({
+      flightId,
+      registration: text(list.find(r => r.registration)?.registration, 12).toUpperCase(),
+      icao: text(list.find(r => r.aircraft_icao)?.aircraft_icao, 8).toUpperCase(),
+      startUtc: starts.length ? new Date(Math.min(...starts)).toISOString() : null,
+      endUtc: ends.length ? new Date(Math.max(...ends)).toISOString() : null,
+      minutes: Math.round(seconds / 60),
+      fuelKg: fuelSeen ? r1(fuel) : null,
+      phases: Object.fromEntries(Object.entries(phases).map(([k, v]) => [k, {
+        minutes: Math.round(v.seconds / 60),
+        fuelKg: r1(v.fuelKg)
+      }])),
+      cruise: cruise.length ? {
+        rpm: (v => v === null ? null : Math.round(v / 10) * 10)(weightedMedian(cruise, 'mean_engine_rpm')),
+        altFt: (v => v === null ? null : Math.round(v / 100) * 100)(weightedMedian(cruise, 'mean_pressure_altitude_ft')),
+        flowKgH: r1(weightedMedian(cruise, 'mean_fuel_flow_kg_h'))
+      } : null,
+      start: first ? pos(first.start_lat, first.start_lon) : null,
+      end: last ? pos(last.end_lat, last.end_lon) : null
+    });
+  }
+  return out.sort((a, b) => String(b.startUtc || '').localeCompare(String(a.startUtc || '')));
 }
 
 /** Chaque point face à la courbe de même altitude de la fiche (voir l'en-tête). */

@@ -26,6 +26,13 @@ Pure computations on the measurements of the simulator, for the statistics of V3
   then a new row to propose). Deviation in %.
 - Bench `modules/stats/test/phases.html` on an invented journal (F98); never a file of the user in the repository.
 
+- **Per flight** (`flights`, § 10.37 A step 3): one aggregate per `flight_id`: registration, type, first and last UTC times of its
+  windows, total fuel (sum of `fuel_kg`), time (sum of the durations), per phase the time and the fuel, the cruise's rpm, pressure
+  altitude and flow (weighted medians of its eligible windows), the first and last positions; bounded (200 flights, texts cut,
+  positions checked); newest first (F98).
+- **Reading the journals** (`journals.js`): a chosen file (`.csv`, `.csv.gz` decompressed in the page, 64 MB at most) and the
+  launcher's job `stats/output` (`status`, `read`), shared by Maintenance › Appareils and the report; nothing kept.
+
 ## 2. To come
 
 - Step 1, screen: done in Maintenance › Appareils, « Proposer depuis les mesures » (modules/aircraft SPEC § 6, M27). Still to port:

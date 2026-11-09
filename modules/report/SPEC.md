@@ -71,6 +71,12 @@ what is missing is said in the Result step, never blocking.
 
 ## 3. Saving
 
+- **Measurements** (V3 spec § 10.37 A step 3): a fold « Mesures » at the end of the Result step reads Fuel Phase Monitor journals
+  (chosen on the device, or the three newest of the workstation's Output folder through the launcher's job `stats/output`), makes
+  them flights (`modules/stats/phases.js` `flights`), and proposes those whose registration and UTC times overlap the report's (the
+  report's times are UTC, § 6); « Garder ce vol » puts the flight's aggregate in the record (`measured`: `source`, `flightId`,
+  `registration`, `startUtc`, `endUtc`, `fuelKg`, `minutes`, `phases`, `cruise`), saved with « Enregistrer »; « Retirer » takes it
+  out; nothing raw of the journal is kept (G6).
 - **Airline** (V3 spec § 10.38 step 1): the record carries `airline`, the code of the current airline (`ctx.airline.code`,
   `default` without an index); a record already saved keeps its own (G5).
 - **Number** at the first save (V2 `crId`): with a mission identifier, `CR<mission>-<next attempt>` (`CRM-016-2`);

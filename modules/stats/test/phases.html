@@ -158,6 +158,59 @@
       [8000, 2500, null, null],
       [12000, 2400, null, null]
     ]);
+  // § 10.37 A étape 3 : un agrégat par vol
+  const fl = [];
+  for (let i = 0; i < 4; i++) fl.push(w('V1', 'CLIMB', 2000 + i * 500, 2500, 60, {
+    fuel_kg: 0.25,
+    start_utc: `2026-11-09T08:0${i}:00Z`,
+    end_utc: `2026-11-09T08:0${i}:15Z`,
+    start_lat: 45,
+    start_lon: 1,
+    end_lat: 45.1,
+    end_lon: 1.1,
+    mean_vertical_speed_fpm: 1200
+  }));
+  for (let i = 0; i < 4; i++) fl.push(w('V1', 'CRUISE', 8000, 2300, 40, {
+    fuel_kg: 0.2,
+    start_utc: `2026-11-09T08:1${i}:00Z`,
+    end_utc: `2026-11-09T08:1${i}:15Z`,
+    start_lat: 45.5,
+    start_lon: 1.5,
+    end_lat: 46,
+    end_lon: 2
+  }));
+  fl.push(w('V0', 'CRUISE', 6000, 2200, 30, {
+    fuel_kg: 0.1,
+    start_utc: '2026-11-08T10:00:00Z',
+    end_utc: '2026-11-08T10:00:15Z'
+  }));
+  const FL = PH.flights(fl);
+  check('flights: one aggregate per flight, the newest first', FL.map(f => [f.flightId, f.registration, f.icao, f.startUtc, f.endUtc, f
+      .fuelKg, f.minutes
+    ]),
+    [
+      ['V1', 'F-TEST', 'XTST', '2026-11-09T08:00:00.000Z', '2026-11-09T08:13:15.000Z', 1.8, 2],
+      ['V0', 'F-TEST', 'XTST', '2026-11-08T10:00:00.000Z', '2026-11-08T10:00:15.000Z', 0.1, 0]
+    ]);
+  check('flights: per phase, the cruise medians, the first and last positions', [FL[0].phases.CLIMB, FL[0].phases.CRUISE, FL[0].cruise, FL[
+      0].start, FL[0].end],
+    [{
+      minutes: 1,
+      fuelKg: 1
+    }, {
+      minutes: 1,
+      fuelKg: 0.8
+    }, {
+      rpm: 2300,
+      altFt: 8000,
+      flowKgH: 40
+    }, {
+      lat: 45,
+      lon: 1
+    }, {
+      lat: 46,
+      lon: 2
+    }]);
   let refused = '';
   try {
     PH.parseWindows('a,b\n1,2');

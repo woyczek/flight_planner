@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Report: « Mesures », the measured flight in the report** (`modules/stats/phases.js` `flights`, `modules/stats/journals.js`,
+  `modules/report/module.js`; stats SPEC / INTEGRATION / DECISIONS, report SPEC § 3; noreg F98, G6; V3 spec § 10.37 A step 3). The
+  Fuel Phase Monitor journals (chosen, or from the Output folder) made flights; the one whose registration and UTC times overlap the
+  report is proposed; its aggregate (fuel, time, phases, cruise) is kept in the record once kept, nothing raw.
+
 - **Fuel: the « Auto » level** (`modules/fuel/module.js`, `levels.js` `autoLevel`; Fuel SPEC § 9.2, DECISIONS; noreg F107; SOG-0056).
   Next to the level of the step Flight: the semicircular level that burns the least on the route (FL030 to the sheet's ceiling, ties
   within 2 % to the lower), « FL180 (auto) » and the flight time said, followed when the route, the aircraft or the wind change until

@@ -15,6 +15,8 @@ import {
   formatLevel
 } from '../../frame/lib/route_text.js';
 import * as Site from '../../frame/lib/website.js';
+import * as PH from '../stats/phases.js'; // l'agrégat par vol des journaux Fuel Phase Monitor (§ 10.37 A étape 3)
+import * as J from '../stats/journals.js'; // la lecture des journaux : fichier choisi, ou dossier Output par le lanceur
 import {
   copyText
 } from '../../frame/lib/clipboard.js'; // marche aussi en http (tablette servie par le poste)
@@ -49,6 +51,11 @@ export const meta = {
   apps: ['pilot'],
   level: 1,
   reads: ['cr/', 'pilot/', 'cache/report/'],
+  // « Mesures » (§ 10.37 A étape 3) : les journaux du dossier Output du poste par le travail stats/output d'AeroDB
+  launcher: {
+    routes: ['regen/job', 'regen/job/cancel'],
+    read: []
+  },
   writes: [{
     prefix: 'cr/reports/',
     merge: 'record'
@@ -62,7 +69,8 @@ export const meta = {
     prefix: 'pilot/handoff.json',
     policy: 'cache'
   }],
-  files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', '../../frame/lib/last_flight.js', '../../frame/lib/current_flight.js',
+  files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', '../stats/phases.js', '../stats/journals.js',
+    '../../frame/lib/last_flight.js', '../../frame/lib/current_flight.js',
     '../../frame/lib/flight_time.js',
     '../../frame/lib/flight_path.js',
     '../../frame/lib/geo.js', // importé par current_flight.js et flight_path.js (cas I26)
@@ -208,6 +216,25 @@ const TX = {
     'Guardar y registrar en el sitio'),
   siteUnset: L('adresse du site non réglée', 'website address not set', 'Website-Adresse nicht eingestellt',
     'dirección del sitio no ajustada'),
+  // « Mesures » (§ 10.37 A étape 3) : le vol mesuré par le Fuel Phase Monitor, gardé dans le CR après accord
+  measures: L('Mesures', 'Measurements', 'Messungen', 'Mediciones'),
+  measIntro: L(
+    'Le vol mesuré par le Fuel Phase Monitor : celui dont l’immatriculation et les heures UTC recouvrent ce compte rendu. Rien du journal n’est gardé, sauf l’agrégat que vous gardez.',
+    'The flight measured by the Fuel Phase Monitor: the one whose registration and UTC times overlap this report. Nothing of the journal is kept, except the aggregate you keep.',
+    'Der vom Fuel Phase Monitor gemessene Flug: der, dessen Kennzeichen und UTC-Zeiten diesen Bericht überdecken. Nichts aus dem Protokoll wird behalten, außer dem Ergebnis, das Sie behalten.',
+    'El vuelo medido por el Fuel Phase Monitor: aquel cuya matrícula y horas UTC coinciden con este informe. Nada del registro se guarda, salvo el agregado que usted guarde.'
+  ),
+  measFiles: L('Choisir des journaux', 'Choose journals', 'Protokolle wählen', 'Elegir registros'),
+  measOutput: L('Depuis le dossier Output', 'From the Output folder', 'Aus dem Output-Ordner', 'Desde la carpeta Output'),
+  measNone: L('Aucun vol des journaux ne correspond (immatriculation, heures UTC) : {n} vol(s) lu(s).',
+    'No flight of the journals matches (registration, UTC times): {n} flight(s) read.',
+    'Kein Flug der Protokolle passt (Kennzeichen, UTC-Zeiten): {n} Flug/Flüge gelesen.',
+    'Ningún vuelo de los registros coincide (matrícula, horas UTC): {n} vuelo(s) leído(s).'),
+  measKeep: L('Garder ce vol', 'Keep this flight', 'Diesen Flug behalten', 'Guardar este vuelo'),
+  measDrop: L('Retirer', 'Remove', 'Entfernen', 'Quitar'),
+  measKept: L('Mesuré : {f} kg · {t} (vol {id})', 'Measured: {f} kg · {t} (flight {id})', 'Gemessen: {f} kg · {t} (Flug {id})',
+    'Medido: {f} kg · {t} (vuelo {id})'),
+  measBad: L('{f} : {e}', '{f}: {e}', '{f}: {e}', '{f}: {e}'),
   onSite: L('Sur le site de la compagnie', 'On the airline website', 'Auf der Website der Fluggesellschaft',
     'En el sitio de la aerolínea'),
   siteHelp: L(
@@ -562,6 +589,118 @@ const STYLE = `
 function render() {
   return keepScroll(S.body, renderBody);
 }
+// ---------------------------------------------------------------- « Mesures » (§ 10.37 A étape 3)
+/** Les bornes UTC du vol du CR (ms) : la date (metadata.date) et la plus tôt / la plus tard de ses heures (mise en route, départ du
+ *  bloc, décollage ; atterrissage, arrivée au bloc, arrêt), écrites en UTC (timeline.tz « Z », INTEGRATION § 3 bis) ; une heure de fin
+ *  plus tôt que le début passe au lendemain. null sans date ou sans heure. */
+function crWindow(m) {
+  const day = String(m?.metadata?.date || ''),
+    t = m?.timeline || {},
+    at = k => /^\d{2}:\d{2}$/.test(String(t[k] || '')) && /^\d{4}-\d{2}-\d{2}$/.test(day) ? Date.parse(`${day}T${t[k]}:00Z`) : null,
+    a = ['engineStart', 'offBlock', 'takeoff'].map(at).filter(v => Number.isFinite(v)),
+    b = ['landing', 'onBlock', 'shutdown'].map(at).filter(v => Number.isFinite(v));
+  if (!a.length && !b.length) return null;
+  const t0 = a.length ? Math.min(...a) : Math.min(...b),
+    t1raw = b.length ? Math.max(...b) : Math.max(...a);
+  return [t0, t1raw < t0 ? t1raw + 864e5 : t1raw];
+}
+/** Les vols des journaux qui vont avec ce CR : même immatriculation (sans tiret ni espace) quand le CR en a une, heures qui
+ *  recouvrent les siennes quand il en a ; sept au plus, les plus récents d'abord. */
+function matching(list) {
+  const fold = v => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, ''),
+    reg = fold(S.m.aircraft?.[0]?.registration),
+    w = crWindow(S.m);
+  return list.filter(f => (!reg || fold(f.registration) === reg) && (!w || (Date.parse(f.startUtc) <= w[1] && Date.parse(f.endUtc) >= w[
+      0])))
+    .slice(0, 7);
+}
+/** Le pli « Mesures » : le vol gardé (son agrégat) et « Retirer », ou les gestes (journaux choisis, dossier Output du poste) et les
+ *  vols lus qui vont avec le CR, chacun avec « Garder ce vol ». */
+function measuresHtml() {
+  const m = S.m.measured,
+    hm = n => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`,
+    when = f => {
+      const a = f.startUtc ? new Date(f.startUtc) : null,
+        b = f.endUtc ? new Date(f.endUtc) : null,
+        z = d => d ? d.toISOString().slice(11, 16) : '—';
+      return `${a ? a.toISOString().slice(8, 10) + '/' + a.toISOString().slice(5, 7) : ''} ${z(a)}–${z(b)}Z`;
+    },
+    got = S.meas ? matching(S.meas) : null,
+    out = S.output?.exists ? ` <button type="button" data-do="measoutput">${esc(tt(TX.measOutput))}</button>` : '';
+  return `<details class="f-card" data-measures${m || S.meas ? ' open' : ''}><summary>${esc(tt(TX.measures))}</summary>
+    ${m ? `<p data-measured>${esc(tt(TX.measKept, { f: m.fuelKg ?? '—', t: hm(+m.minutes || 0), id: m.flightId }))} <button type="button" data-do="measdrop">${esc(tt(TX.measDrop))}</button></p>` : `<p class="f-muted">${esc(tt(TX.measIntro))}</p>
+    <div class="f-row"><button type="button" data-do="measfile">${esc(tt(TX.measFiles))}</button>${out}<input type="file" data-measfile accept=".csv,.gz,.txt" multiple hidden></div>
+    ${got ? got.length ? `<div class="f-list" data-measflights>${got.map(f => `<div class="f-item" data-measflight="${esc(f.flightId)}"><span>${esc([f.registration, when(f), f.fuelKg !== null ? `${f.fuelKg} kg` : '', hm(f.minutes)].filter(Boolean).join(' · '))}</span><button type="button" data-do="measkeep" data-id="${esc(f.flightId)}">${esc(tt(TX.measKeep))}</button></div>`).join('')}</div>` : `<p class="f-muted" data-measnone>${esc(tt(TX.measNone, { n: S.meas.length }))}</p>` : ''}`}
+  </details>`;
+}
+/** Lit des journaux (chacun { name, text() }), en fait les vols (PH.flights) et redessine le pli ; un fichier illisible est dit. */
+async function measureTexts(list) {
+  const rows = [];
+  for (const f of list.slice(0, 20)) {
+    try {
+      rows.push(...PH.parseWindows(await f.text()).rows);
+    } catch (err) {
+      S.ctx.notify(tt(TX.measBad, {
+        f: f.name,
+        e: String(err?.message || err).slice(0, 200)
+      }), 'warn');
+    }
+  }
+  if (!S) return;
+  S.meas = PH.flights(rows);
+  render();
+}
+/** Les journaux choisis sur l'appareil. */
+const measureFiles = files => measureTexts(files.map(f => ({
+  name: f.name,
+  text: () => J.journalText(f)
+})));
+/** Les trois journaux les plus récents du dossier Output du poste, lus par le lanceur. */
+async function measureOutput() {
+  const names = [...(S.output?.files || [])].sort((a, b) => (b.mtime || 0) - (a.mtime || 0)).slice(0, 3).map(f => f.name);
+  return measureTexts(names.map(name => ({
+    name,
+    text: async () => {
+      const r = await J.outputJob(S.ctx.launcher, {
+        action: 'read',
+        name
+      });
+      if (!r?.ok || typeof r._text !== 'string') throw Error(String(r?.message || r?.reason || 'unreadable').slice(0, 200));
+      return r._text;
+    }
+  })));
+}
+/** « Garder ce vol » : l'agrégat du vol entre dans le CR (measured), écrit avec lui à « Enregistrer » ; rien du journal. */
+function keepMeasured(id) {
+  const f = (S.meas || []).find(x => x.flightId === id);
+  if (!f) return;
+  S.m.measured = {
+    source: 'fpm',
+    flightId: f.flightId,
+    registration: f.registration,
+    startUtc: f.startUtc,
+    endUtc: f.endUtc,
+    fuelKg: f.fuelKg,
+    minutes: f.minutes,
+    phases: f.phases,
+    cruise: f.cruise
+  };
+  S.meas = null;
+  saveDraft();
+  render();
+}
+/** L'état du dossier Output du poste, demandé une fois au montage (le bouton n'apparaît que s'il existe). */
+async function measureStatus(s) {
+  const r = await J.outputJob(s.ctx.launcher, {
+    action: 'status'
+  });
+  if (S !== s || !r?.ok) return;
+  s.output = {
+    exists: r.exists === true,
+    files: J.outputFiles(r)
+  };
+  if (s.output.exists) render();
+}
 /** Dessine tout l'écran (étapes, champs, barre d'enregistrement). */
 function renderBody() {
   const m = S.m,
@@ -602,6 +741,7 @@ function renderBody() {
         <div class="f-card">${collection(crewCol(), tt(TX.crew))}</div>
         <div class="f-card"><h2>${esc(tt(TX.fuel))}</h2>${grid([FIELDS.fuelUnit, FIELDS.fuelStart, FIELDS.fuelLanding])}</div>
         <div class="f-card" data-check></div>
+        ${measuresHtml()}
         <details class="f-card"><summary>${esc(tt(TX.onSite))}</summary><p class="f-muted">${esc(tt(TX.siteHelp))}</p>
           <p>${esc(tt(TX.bookmark))} <a class="f-btn" href="${esc(Site.BOOKMARKLET)}" data-mark>→ Vol</a></p>
           <button type="button" data-do="copyfields">${esc(tt(TX.copyFields))}</button></details>
@@ -935,6 +1075,7 @@ function readControl(el) {
 /** Saisie : la mission suit le champ, la source d'un champ retouché s'efface, brouillon et repères mis à jour. */
 function onInput(e) {
   const el = e.target;
+  if (el.matches?.('[data-measfile]')) return e.type === 'change' ? measureFiles([...el.files]) : undefined;
   if (!S.missionSeen && (el.dataset.family !== undefined || el.closest('.rp-step[data-s="1"]'))) {
     S.missionSeen = true;
     S.body.querySelector('.f-steps [data-todo]')?.removeAttribute('data-todo');
@@ -985,6 +1126,16 @@ async function onClick(e) {
       window.open(url, '_blank', 'noopener');
       return save();
     }
+    case 'measfile':
+      return S.body.querySelector('[data-measfile]')?.click();
+    case 'measoutput':
+      return measureOutput();
+    case 'measkeep':
+      return keepMeasured(b.dataset.id);
+    case 'measdrop':
+      delete S.m.measured;
+      saveDraft();
+      return render();
     case 'copyfields': {
       const line = Site.copyLine(Site.flightFields(S.m));
       // presse-papiers, sinon copie à l'ancienne, sinon la ligne montrée sélectionnée sous le bouton : « copiez-la »
@@ -1108,6 +1259,7 @@ export async function mount(el, ctx) {
   // d'enregistrement (« Enregistrer et inscrire sur le site ») est redessinée
   S.onAirline = () => S?.body && render();
   window.addEventListener('frame-airline', S.onAirline);
+  measureStatus(S); // « Mesures » : le dossier Output du poste, s'il est réglé (§ 10.37 A étape 3)
   // plan de vol : appels par ctx.net ; types d'appareil par aerodb (modèle, voilure tournante)
   const ac = ctx.aerodb?.aircraft ? await ctx.aerodb.aircraft().catch(() => null) : null;
   Fpl.configure({

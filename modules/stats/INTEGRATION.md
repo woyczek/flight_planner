@@ -8,6 +8,7 @@ How the other modules use the stats computations and what they must never do wit
 | File | Role |
 |---|---|
 | `modules/stats/phases.js` | ES module, pure: `parseWindows(text)`, `eligible(row)`, `levelCurves(rows, options)`, `compare(curves, sheet, options)` — no DOM, no storage, no network |
+| `modules/stats/journals.js` | ES module: `journalText(file)`, `outputJob(launcher, args)`, `outputFiles(status)` — the reading of the journals, shared by the screens |
 | `modules/stats/test/phases.html` | the bench of case F98 (an invented journal, never a user's file) |
 
 No `module.js`, no screen, no mount by the frame: the module is a library for the screens that show measured data.
@@ -33,6 +34,10 @@ No `module.js`, no screen, no mount by the frame: the module is a library for th
   to the sheet's draft; nothing is saved before « Enregistrer » then « Appliquer ». Since 9 Nov (SOG-0052 step 2, M29) the same
   screen reads the journals of the workstation's Output folder through the launcher's job `stats/output` (`read` → `_text`), the
   same functions.
+
+- `modules/report/module.js`, « Mesures » (§ 10.37 A step 3, G6): the journals chosen or the three newest of the Output folder,
+  `parseWindows` → `flights`; the flights whose registration (without dash) and UTC times overlap the report (its date and times
+  are UTC, `timeline.tz = "Z"`) are proposed; « Garder ce vol » puts the aggregate in the record (`measured`), saved with it.
 
 ## 4. To come
 

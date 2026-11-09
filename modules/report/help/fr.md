@@ -33,6 +33,8 @@ marqué « à voir » au lieu du ✓ : la famille et la série d'un compte rendu
 le carburant au départ et à l'atterrissage. Les incohérences — heures dans le désordre, date future, carburant qui
 augmente — sont signalées.
 
+<a id="report-measures"></a>**Mesures.** À la fin du dernier pas, « Mesures » lit les journaux du Fuel Phase Monitor (« Choisir des journaux », ou « Depuis le dossier Output » sur le poste) et propose le vol dont l'immatriculation et les heures UTC recouvrent ce compte rendu ; « Garder ce vol » met son carburant consommé, sa durée et ses phases dans le compte rendu, enregistrés avec lui. Rien d'autre du journal n'est gardé.
+
 <a id="report-save"></a>**Enregistrer.** Le bouton en bas enregistre le compte rendu et lui donne son numéro au premier enregistrement. Tant
 que vous n'avez pas enregistré, votre saisie est gardée sur l'appareil et reprise à la prochaine ouverture.
 

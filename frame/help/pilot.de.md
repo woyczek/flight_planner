@@ -552,6 +552,8 @@ Beispiel VIP oder Überführung bei den Sondereinsätzen). Solange Sie diesen Sc
 der Kraftstoff beim Start und bei der Landung. Unstimmigkeiten — Zeiten in falscher Reihenfolge, Datum in der Zukunft,
 Kraftstoff, der zunimmt — werden gemeldet.
 
+<a id="report-measures"></a>**Messungen.** Am Ende des letzten Schritts liest „Messungen“ die Protokolle des Fuel Phase Monitor („Protokolle wählen“ oder „Aus dem Output-Ordner“ am Arbeitsplatz) und schlägt den Flug vor, dessen Kennzeichen und UTC-Zeiten diesen Bericht überdecken; „Diesen Flug behalten“ übernimmt seinen Verbrauch, seine Dauer und seine Phasen in den Bericht, mit ihm gespeichert. Sonst wird nichts aus dem Protokoll behalten.
+
 <a id="report-save"></a>**Speichern.** Die Schaltfläche unten speichert den Bericht und gibt ihm beim ersten Speichern seine Nummer. Solange Sie
 nicht gespeichert haben, bleibt Ihre Eingabe auf dem Gerät und wird beim nächsten Öffnen wiederhergestellt.
 
@@ -598,7 +600,7 @@ Telefon, wo Lesezeichen umständlich sind, legt „Felder kopieren“ die Zeile 
 - **Ohne Trigramm**: Der Bericht wird trotzdem geschrieben; stellen Sie Ihr Trigramm ein (⚙), damit er auf Ihren Namen
   lautet.
 
-<!-- fr: 7c1d42bd47bd -->
+<!-- fr: 1e1efcfaaefc -->
 
 <!-- chapter: flightlog -->
 # Meine Flüge

@@ -21,6 +21,7 @@ import {
 } from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
 import * as FU from '../../frame/lib/fuel_units.js'; // les unités du carburant du cadre (SOG-0032 : jamais recodées ici)
 import * as PH from '../stats/phases.js'; // les fenêtres de palier des journaux Fuel Phase Monitor (SOG-0052), en calcul pur
+import * as J from '../stats/journals.js'; // la lecture des journaux (fichier choisi, dossier Output par le lanceur), partagée
 import {
   TX,
   FIELD_TX,
@@ -519,20 +520,13 @@ export function createSheetsView(host) {
   }
 
   // ---------------------------------------------------------------- mesures (SOG-0052)
-  /** Le texte d'un journal choisi : .gz décompressé dans la page (DecompressionStream), sinon tel quel ; 64 Mo au plus. */
-  async function journalText(f) {
-    if (f.size > 64 * 1024 * 1024) throw Error('too large');
-    if (!/\.gz$/i.test(f.name)) return f.text();
-    if (typeof DecompressionStream !== 'function') throw Error('gzip unsupported');
-    return new Response(f.stream().pipeThrough(new DecompressionStream('gzip'))).text();
-  }
   /** Lit les journaux Fuel Phase Monitor choisis, garde les fenêtres du type de la fiche ouverte, calcule les points de palier
    *  (PH.levelCurves) et leur écart à la courbe de même altitude de la fiche (PH.compare), puis redessine l'éditeur avec la liste à
    *  cocher. Un fichier illisible est dit, les autres restent ; aucun fichier n'est gardé ni envoyé. */
   async function measureFiles(files) {
     return measureTexts(files.slice(0, 20).map(f => ({
       name: f.name,
-      text: () => journalText(f)
+      text: () => J.journalText(f)
     })));
   }
   /** Le calcul commun aux journaux choisis et à ceux du dossier Output : chaque { name, text() } lu, ses fenêtres du type de la fiche
@@ -569,21 +563,8 @@ export function createSheetsView(host) {
     return editor(p.id, d);
   }
   // ---------------------------------------------------------------- le dossier Output du poste (SOG-0052 étape 2)
-  /** Un appel du travail stats/output du lanceur (AeroDB, tools/regen/stats.py) : le résultat ({ ok, … }), ou null sans lanceur ou
-   *  sans réponse. */
-  async function outputJob(args) {
-    if (typeof ctx.launcher?.job !== 'function') return null;
-    try {
-      const r = await ctx.launcher.job('regen/job', {
-        set: 'stats',
-        verb: 'output',
-        args
-      });
-      return r?.result && typeof r.result === 'object' ? r.result : null;
-    } catch {
-      return null;
-    }
-  }
+  /** Un appel du travail stats/output du lanceur (modules/stats/journals.js, partagé avec le compte rendu). */
+  const outputJob = args => J.outputJob(ctx.launcher, args);
   /** L'état du dossier Output (une fois par éditeur ouvert) : { exists, label, files } bornés (le chemin n'est jamais rendu entier :
    *  label, les deux derniers noms) ; null sans lanceur ou sans travail stats/output (le bouton n'est pas montré). Redessine l'éditeur. */
   async function outputStatus(id) {
@@ -596,13 +577,7 @@ export function createSheetsView(host) {
       id,
       exists: r.exists === true,
       label: String(r.label || '').slice(0, 120),
-      files: (Array.isArray(r.files) ? r.files : []).slice(0, 200).filter(f => f && typeof f.name === 'string' && /^[\w .()-]{1,160}$/
-        .test(f
-          .name)).map(f => ({
-        name: f.name,
-        size: Number.isFinite(+f.size) ? +f.size : null,
-        mtime: Number.isFinite(+f.mtime) ? +f.mtime : null
-      })),
+      files: J.outputFiles(r),
       open: st.output?.id === id ? st.output.open : false,
       setting: st.output?.id === id ? st.output.setting : false
     } : {

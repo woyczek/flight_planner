@@ -95,6 +95,50 @@ def g5(c):
         c.eq(c.doc(path).get('airline'), want, f'the record names its airline ({want})', what='airline')
 
 
+@case('G6', 'Report: « Mesures » reads Fuel Phase Monitor journals, proposes the flight whose registration and UTC times overlap the report, keeps its aggregate once kept',
+      'G', tags=('report',), screens=False, designs=('standard',), langs4=True,
+      rule='V3 spec 10.37 A step 3: modules/stats/phases.js flights(); the report\'s times are UTC (timeline.tz Z); one aggregate written in the record '
+      '(measured: flightId, fuelKg, minutes, phases, cruise) after « Garder ce vol », nothing raw kept; an invented journal, never a file of the user')
+def g6(c):
+    import tempfile
+    from pathlib import Path
+    head = ['schema_version', 'flight_id', 'phase', 'aircraft_icao', 'registration', 'start_utc', 'end_utc', 'duration_sec', 'fuel_kg', 'fuel_coverage_pct',
+            'mean_fuel_flow_kg_h', 'engine_count', 'engine_fuel_flow_kg_h', 'mean_pressure_altitude_ft', 'mean_ias_kt', 'mean_tas_kt', 'mean_vertical_speed_fpm',
+            'mean_engine_rpm', 'quality_flags', 'start_lat', 'start_lon', 'end_lat', 'end_lon']
+    rows = [['0.4.1', 'FPM-1', 'CRUISE', 'XTST', 'F-TEST', f'2026-11-09T08:{i:02d}:00Z', f'2026-11-09T08:{i:02d}:15Z', 15, 0.5, 100, 120, 1, 120, 8000, 150, 170, 0, 2300, '',
+             45, 1, 45.2, 1.2] for i in range(4)]
+    rows += [['0.4.1', 'FPM-0', 'CRUISE', 'XTST', 'F-TEST', '2026-11-08T10:00:00Z', '2026-11-08T10:00:15Z', 15, 0.5, 100, 120, 1, 120, 8000, 150, 170, 0, 2300, '',
+              45, 1, 45.2, 1.2]]
+    c.open('report')
+    c.until("document.querySelectorAll('[data-module=report] .f-steps button').length === 3", what='the report is drawn')
+    for path, v in (('aircraft.0.registration', 'F-TEST'), ('metadata.date', '2026-11-09'), ('timeline.takeoff', '08:00'), ('timeline.landing', '08:20')):
+        c.page.fill(f'[data-module="report"] [data-path="{path}"]', v)
+        c.page.locator(f'[data-module="report"] [data-path="{path}"]').blur()
+    c.tap('[data-module="report"] .f-steps button[data-step="2"]')
+    with tempfile.TemporaryDirectory() as tmp:
+        f = Path(tmp) / 'FuelPhaseMonitor_test.csv'
+        f.write_text('\n'.join(','.join(str(x) for x in r) for r in [head] + rows), encoding='utf-8')
+        c.page.set_input_files('[data-module="report"] input[data-measfile]', str(f))
+        c.until("!!document.querySelector('[data-module=report] [data-measflight]')", what='the matching flight proposed')
+    c.eq(c.js("[...document.querySelectorAll('[data-module=report] [data-measflight]')].map(e => e.dataset.measflight)"), ['FPM-1'],
+         'only the flight of F-TEST whose UTC times overlap 08:00–08:20Z (not the one of the day before)', what='proposed')
+    c.tap('[data-module="report"] [data-do="measkeep"][data-id="FPM-1"]')
+    c.until("!!document.querySelector('[data-module=report] [data-measured]')", what='the kept aggregate said')
+    before = set(c.doc_paths('cr/reports/'))
+    c.tap('[data-module="report"] [data-do="save"]')
+    path = None
+    for _ in range(40):
+        got = [p for p in c.doc_paths('cr/reports/') if p not in before]
+        if got:
+            path = got[0]
+            break
+        c.wait(200)
+    c.ok(path, 'no record', 'the report is saved')
+    m = c.doc(path).get('measured') or {}
+    c.eq([m.get('flightId'), m.get('fuelKg'), m.get('minutes'), (m.get('cruise') or {}).get('rpm'), 'rows' in m],
+         ['FPM-1', 2.0, 1, 2300, False], 'the aggregate in the record (2 kg, 1 min, 2300 rpm), no raw window', what='measured')
+
+
 # G4: what the screen of a prefilled report measures (one round trip).  Fields are the inputs and selects of the grids of the
 # visible step; a "card" is the `.f-card` that holds them; the grid's font sizes are those of its labels and its controls.
 _G4_JS = r"""() => {

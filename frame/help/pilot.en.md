@@ -517,6 +517,8 @@ the series of a new report are taken by default.
 fuel at departure and at landing. Inconsistencies — times out of order, a future date, fuel that goes up — are
 flagged.
 
+<a id="report-measures"></a>**Measurements.** At the end of the last step, "Measurements" reads the Fuel Phase Monitor journals ("Choose journals", or "From the Output folder" on the workstation) and proposes the flight whose registration and UTC times overlap this report; "Keep this flight" puts its fuel used, its duration and its phases in the report, saved with it. Nothing else of the journal is kept.
+
 <a id="report-save"></a>**Saving.** The button at the bottom saves the report and gives it its number at the first save. As long as you have
 not saved, what you entered is kept on the device and restored the next time you open it.
 
@@ -561,7 +563,7 @@ flight's line on the clipboard.
   flight's page (IVAO tracker, StatSim) into “Other sources”.
 - **Without a trigram**: the report is written all the same; set your trigram (⚙) so that it is in your name.
 
-<!-- fr: 7c1d42bd47bd -->
+<!-- fr: 1e1efcfaaefc -->
 
 <!-- chapter: flightlog -->
 # My flights
