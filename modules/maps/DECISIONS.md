@@ -2082,6 +2082,20 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done / to learn**: the real « ramer » is probably on the page that writes the flight (Fuel's keystrokes in the double view rebuild
   the profile — the corridor boxes of a 4 000 NM route — each time); a measurement on the user's real base and a long-task trace are
   needed before touching that; the route's own points are not thinned (a route has tens of points, not thousands).
+- **The trace on the user's real base (read-only, 18 h 55, the Map alone on his launcher: a fresh headless profile, nothing written; CDP
+  profiler 1 ms)**: his flight ESSB → … → a point in Canada → … → LEMO (17 points, 4 000 NM and back). **Load, 12 s**: a single **long task of
+  2 773 ms** at 3.2 s; the time is in `render_airspace.js` `nearRoute` — `inside` 1 362 ms + `seg` 1 054 ms + the rest ≈ 2.6 s — then
+  `vertical_profile.js:1241` 434 ms, the IndexedDB reads (`frame_data.js` 663 ms), GC 428 ms. **A pan or a wheel zoom, 7 s each**: the
+  drawings are 12–17 ms each (« very fluid » during the gesture, as the user says) and **no long task above 92 ms**; the data are already in.
+  So the « 1/2 s fluid, then a 3 s freeze » is the **same 2.6 s**: `selectAirspaces` with a corridor tests every sample of the route (one
+  per 2 NM: ~2 000 for 4 000 NM) against every vertex of every airspace that touches the route's box, whenever the view's data are read
+  again (a pan that leaves the loaded box, a change of the flight). It does not depend on the gesture but on the route's length times the
+  number of airspaces along it.
+- **Fix (`nearRoute`)**: only the samples inside the space's box widened by the corridor (the longitude margin taken at the highest latitude
+  of the box, so the result is exactly that of the complete test) are tried against its rings. Noreg D130 (3 000 spaces along a 2 800 NM
+  route: the same 1 477 spaces kept as the complete test, also at 66 N; **1 286 ms → 45 ms**, red before). Not measured again on his real
+  base (the page of his launcher refused my patched file); the harness number is the evidence. Left: `vertical_profile.js:1241` (434 ms at
+  load), GC, the reading of the cache.
 - **The bound on the rebuilds (ergonomics decision, same evening)**: « an anti-bounce of 300 ms after the last write of the flight, and no
   rebuild when the route has not changed ». **Already in the code**: `watchFlight` (`data.js`) reads the flight again 300 ms after the last
   write (each write restarts the timer: one reading per burst) and `sameRoute` (`flight_time.js`, `sigOf`: points, level, departure,

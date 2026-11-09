@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: a long route no longer freezes the map for seconds after the view's data are read** (`modules/maps/render_airspace.js`; noreg D130; SOG-0156). Traced on the
+  user's real base (read-only): a single 2.8 s task, in the selection of the airspaces along the route (every route sample tested against
+  every vertex of every airspace). Only the samples that can touch a space are tested now, with the same result: 1 286 ms → 45 ms for
+  3 000 spaces along a 2 800 NM route.
+
 - **Fuel: an aerodrome without procedures says what its State publishes** (`modules/fuel/zone_gap.js` `procHtml`, `module.js`,
   `procedures.js`, `procedures_texts.js`; Fuel SPEC, DECISIONS, help; noreg F120; SOG-0157). As Données' « Procédures par État » says it: readable
   on demand → « Lire à la demande »; not readable (images, labels only, text…) → the reason and the Navigraph and ChartFox fallbacks, no read

@@ -3990,3 +3990,40 @@ def d129(c):
     c.wait(1500)
     r2 = c.js("() => window.__mp.S.profRun || 0")
     c.eq(r2 - r1, 0, 'writes that leave the route, the level and the procedures as they are rebuild nothing', what='rebuilds')
+
+
+_NEAR_JS = """() => {
+  const R = window.MapsRender, rad = x => x * Math.PI / 180, rnd = (() => { let s = 11; return () => (s = (s * 16807) % 2147483647) / 2147483647 })();
+  const ring = (la, lo, r) => Array.from({ length: 40 }, (_, k) => [la + r * Math.sin(2 * Math.PI * k / 40), lo + r * 1.4 * Math.cos(2 * Math.PI * k / 40)]);
+  const mk = (n, laMin, laMax, loMin, loMax) => Array.from({ length: n }, (_, i) => ({ type: 'TMA', cls: 'D', name: 'Z' + i, lower: 'SFC', upper: 'FL195',
+    rings: [ring(laMin + rnd() * (laMax - laMin), loMin + rnd() * (loMax - loMin), .03 + rnd() * .2)] }));
+  // the reference: the complete test of the samples against every ring (the algorithm before SOG-0156), written here
+  const gc = (a, b) => { const h = Math.sin(rad(b.lat - a.lat) / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lon - a.lon) / 2) ** 2; return 2 * 3440.065 * Math.asin(Math.sqrt(h)) };
+  const samples = pts => { const out = []; for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i], n = Math.max(1, Math.ceil(gc(a, b) / 2));
+    for (let k = 0; k < n; k++) out.push([a.lat + (b.lat - a.lat) * k / n, a.lon + (b.lon - a.lon) * k / n]) } out.push([pts.at(-1).lat, pts.at(-1).lon]); return out };
+  const ref = (a, smp, nm) => { const seg = (la, lo, p, q) => { const k = Math.cos(rad(la)), ax = (p[1] - lo) * 60 * k, ay = (p[0] - la) * 60, bx = (q[1] - lo) * 60 * k, by = (q[0] - la) * 60, dx = bx - ax, dy = by - ay,
+      t = dx || dy ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / (dx * dx + dy * dy))) : 0; return Math.hypot(ax + t * dx, ay + t * dy) };
+    const inside = (la, lo, r) => { let c = false; for (let i = 0, j = r.length - 1; i < r.length; j = i++) { const [yi, xi] = r[i], [yj, xj] = r[j]; if ((yi > la) !== (yj > la) && lo < (xj - xi) * (la - yi) / (yj - yi) + xi) c = !c } return c };
+    return smp.some(([la, lo]) => a.rings.some(r => inside(la, lo, r) || r.some((p, i) => i && seg(la, lo, r[i - 1], p) <= nm))) };
+  const prof = { zones: ['TMA'], corridorNm: 10, elements: {} };
+  const run = (list, route) => { const t0 = performance.now(), got = R.selectAirspaces(list, prof, route).map(a => a.name), ms = performance.now() - t0; return { got, ms } };
+  // a 2 800 NM route at 48 N with 3 000 spaces along it
+  const route = [{ lat: 48, lon: -30 }, { lat: 48.4, lon: 40 }], list = mk(3000, 47.6, 48.8, -30, 40);
+  const a = run(list, route), want = list.filter(x => ref(x, samples(route), 10)).map(x => x.name);
+  // high latitude (the longitude margin): a route at 66 N with spaces near it
+  const route2 = [{ lat: 66, lon: -20 }, { lat: 66.3, lon: 30 }], list2 = mk(600, 65.6, 66.7, -20, 30);
+  const b2 = run(list2, route2), want2 = list2.filter(x => ref(x, samples(route2), 10)).map(x => x.name);
+  return { ms: a.ms, n: a.got.length, same: JSON.stringify(a.got) === JSON.stringify(want), n2: b2.got.length, same2: JSON.stringify(b2.got) === JSON.stringify(want2) } }"""
+
+
+@case('D130', 'Airspaces near a long route: only the samples that can touch a space are tested against its rings — same result as the complete test, a long route no longer takes seconds', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='V3 spec (SOG-0156): selectAirspaces with a corridor (nearRoute) tests only the route samples inside the space’s box widened by the corridor; the answer is that of the complete test (also at high latitude, where a degree of longitude is short); a 2 800 NM route among 3 000 spaces takes well under a second')
+def d130(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    r = c.js(_NEAR_JS)
+    c.ok(r['n'] > 100, str(r), 'many of the spaces are along the route (the test has something to find)')
+    c.ok(r['same'], str(r), 'the spaces kept are those of the complete test')
+    c.ok(r['n2'] > 20 and r['same2'], str(r), 'the same at 66 N, where the longitude margin matters')
+    c.ok(r['ms'] < 400, f"{r['ms']:.0f} ms", 'a long route among 3 000 spaces: under 400 ms (the complete test took seconds on the user’s base)')

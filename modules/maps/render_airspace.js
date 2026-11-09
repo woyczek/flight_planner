@@ -98,7 +98,14 @@
       }
       return c;
     };
-    return smp.some(([la, lo]) => a.rings.some(r => inside(la, lo, r) || r.some((p, i) => i && seg(la, lo, r[i - 1], p) <= nm)));
+    // seuls les échantillons qui peuvent toucher l'espace sont éprouvés (SOG-0156 : 2,4 s au chargement d'une route de 4 000 NM, tous les
+    // échantillons étant éprouvés contre tous les sommets de chaque espace) : ceux hors de sa boîte élargie de nm (marge de longitude à la
+    // latitude la plus haute de la boîte) ne sont ni dedans ni à moins de nm d'un bord, le résultat est celui de l'essai complet
+    const cosMin = Math.max(.02, Math.cos(rad(Math.min(89.5, Math.max(Math.abs(b.s), Math.abs(b.n)) + m)))),
+      mLo = m / cosMin * 1.05,
+      mLa = m * 1.05,
+      near = smp.filter(([la, lo]) => la >= b.s - mLa && la <= b.n + mLa && lo >= b.w - mLo && lo <= b.e + mLo);
+    return near.some(([la, lo]) => a.rings.some(r => inside(la, lo, r) || r.some((p, i) => i && seg(la, lo, r[i - 1], p) <= nm)));
   }
   /** Espaces à dessiner selon le profil : familles cochées, plancher / plafond, liste blanche ou noire (nom ou clé),
    *  couloir autour de la route (corridorNm). */
