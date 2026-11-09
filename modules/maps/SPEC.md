@@ -845,7 +845,9 @@ open; the aerodrome's content stays until ✕, Escape or another aerodrome. Noth
 ### 8.1 Cut
 
 `SiaProfile.build` (copy of the studio's code): 100 to 800 samples along the route; terrain is the highest point on the
-line and 1 km either side; airspaces crossed are the sample intervals inside their rings. **Airspaces**: those of the route
+line and 1 km either side; airspaces crossed are the sample intervals inside their rings (cost, SOG-0063: a sample is tested against a
+ring only inside the ring's bounding box, computed once; the intervals are kept from one build to the next — the cut is built twice, without
+then with the relief, and they do not depend on it —; the loop yields to the event loop every 12 ms; noreg D116). **Airspaces**: those of the route
 profile's types along the route (2 NM boxes, leg by leg), without the floor and ceiling filter, without
 `surfaceToCeiling` spaces; only those the planned trajectory enters are kept (all of them without a trajectory); limits
 relative to the ground are raised by the terrain of each sample.

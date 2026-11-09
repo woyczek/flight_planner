@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the vertical profile no longer freezes the page** (`modules/maps/lib/vertical_profile.js`; SPEC § 8.1; noreg D116; SOG-0063). On
+  EIDW–LFPO with the real base the airspaces crossed took about 3 s of calculation (every sample against every vertex, twice), the profile
+  appeared at 2.8 s and the Map's first draw at 4 s, with a 2 s freeze. A ring is now tested only inside its bounding box, the second build reuses the
+  intervals of the first and the loop yields: profile at 0.5–0.7 s, first draw 0.6–0.85 s, longest task 54 ms; same airspaces, same intervals.
+
 - **Aircraft: « Depuis le dossier Output »** (`modules/aircraft/sheets.js`, `module.js`; Aircraft SPEC § 6, stats INTEGRATION;
   noreg M29; SOG-0052 step 2). The journals of the workstation's X-Plane Output folder listed and read through the launcher (AeroDB's
   job `stats/output`), into the same proposals as a chosen file; « Régler le dossier Output » when none is set.

@@ -312,6 +312,78 @@
     };
   }
 
+  // V3 maps (SOG-0063) : boîte englobante d'un anneau, calculée une fois ; un point hors de la boîte n'est jamais dans l'anneau
+  // (règle pair-impair : un anneau fermé est coupé un nombre pair de fois par toute demi-droite qui en part)
+  const ringBoxes = new WeakMap();
+  const ringBox = ring => {
+    let b = ringBoxes.get(ring);
+    if (!b) {
+      b = {
+        s: Infinity,
+        n: -Infinity,
+        w: Infinity,
+        e: -Infinity
+      };
+      for (const [la, lo] of ring) {
+        if (la < b.s) b.s = la;
+        if (la > b.n) b.n = la;
+        if (lo < b.w) b.w = lo;
+        if (lo > b.e) b.e = lo;
+      }
+      ringBoxes.set(ring, b);
+    }
+    return b;
+  };
+  /** Vrai si le point est dans l'anneau (règle pair-impair). */
+  const inRing = (lat, lon, ring) => {
+    let c = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [yi, xi] = ring[i], [yj, xj] = ring[j];
+      if ((yi > lat) !== (yj > lat) && lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) c = !c;
+    }
+    return c;
+  };
+  // la dernière réponse : mêmes espaces (le même tableau), même cheminement → mêmes intervalles
+  let crossMemo = null;
+  /** Espaces traversés : [[espace, premier échantillon, dernier échantillon]…] (intervalles d'échantillons à l'intérieur d'un anneau). */
+  async function crossings(airspaces, samples, n, box, points) {
+    const sig = `${n}|${points.map(p => `${p.lat},${p.lon}`).join(';')}`;
+    if (crossMemo && crossMemo.airspaces === airspaces && crossMemo.sig === sig) return crossMemo.list;
+    const list = [];
+    let t0 = performance.now();
+    for (const a of airspaces) {
+      const rings = (a.rings || []).filter(r => r.length >= 3 && r.some(([la, lo]) => la > box.s && la < box.n && lo > box.w && lo < box
+        .e));
+      if (!rings.length) continue;
+      const bx = rings.map(ringBox);
+      let start = -1;
+      for (let i = 0; i <= n + 1; i++) {
+        let inside = false;
+        if (i <= n) {
+          const q = samples[i];
+          for (let k = 0; k < rings.length && !inside; k++) {
+            const b = bx[k];
+            inside = q.lat >= b.s && q.lat <= b.n && q.lon >= b.w && q.lon <= b.e && inRing(q.lat, q.lon, rings[k]);
+          }
+        }
+        if (inside && start < 0) start = i;
+        if (!inside && start >= 0) {
+          list.push([a, start, i - 1]);
+          start = -1;
+        }
+      }
+      if (performance.now() - t0 > 12) { // un long calcul rend la main : l'écran et les gestes restent vivants
+        await new Promise(r => setTimeout(r, 0));
+        t0 = performance.now();
+      }
+    }
+    crossMemo = {
+      airspaces,
+      sig,
+      list
+    };
+    return list;
+  }
   // Échantillonnage : ~4 points par NM (100 à 800), relief = maximum sur la ligne et ± corridorM de part
   // et d'autre ; elevation(lat, lon) → mètres (promesse). Obstacles à moins de corridorNm du trajet.
   async function build({
@@ -382,34 +454,14 @@
       w: Math.min(...points.map(p => p.lon)) - .7,
       e: Math.max(...points.map(p => p.lon)) + .7
     };
-    /** Vrai si le point est dans l'anneau (règle pair-impair). */
-    const inRing = (lat, lon, ring) => {
-      let c = false;
-      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-        const [yi, xi] = ring[i], [yj, xj] = ring[j];
-        if ((yi > lat) !== (yj > lat) && lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) c = !c;
-      }
-      return c;
-    };
-    const crossed = [];
-    for (const a of airspaces) {
-      const rings = (a.rings || []).filter(r => r.length >= 3 && r.some(([la, lo]) => la > box.s && la < box.n && lo > box.w && lo < box
-        .e));
-      if (!rings.length) continue;
-      let start = -1;
-      for (let i = 0; i <= n + 1; i++) {
-        const inside = i <= n && rings.some(r => inRing(samples[i].lat, samples[i].lon, r));
-        if (inside && start < 0) start = i;
-        if (!inside && start >= 0) {
-          crossed.push({
-            a,
-            i0: start,
-            i1: i - 1
-          });
-          start = -1;
-        }
-      }
-    }
+    // V3 maps (SOG-0063) : le calcul des espaces traversés est gardé d'une construction à l'autre (la coupe se construit deux fois,
+    // sans puis avec le relief : les intervalles d'échantillons ne dépendent pas du relief) et ne teste un échantillon que dans la
+    // boîte de l'anneau ; il rend la main à la boucle d'événements quand il dure (la page ne se fige plus)
+    const crossed = (await crossings(airspaces, samples, n, box, points)).map(([a, i0, i1]) => ({
+      a,
+      i0,
+      i1
+    }));
     // obstacles proches : distance au segment le plus proche (approximation plane locale)
     const near = [];
     for (const o of obstacles) {

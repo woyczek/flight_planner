@@ -3360,3 +3360,68 @@ def d115(c):
     c.wait(300)
     names = c.js("() => [...document.querySelectorAll('.mp-gd-row')].map(b => b.dataset.id)")
     c.ok(names and names[0] == 'rwy:20', str(names), 'the filter finds the runway by its number')
+
+
+_VP_JS = r"""async (cfg) => {
+  const P = window.SiaProfile;
+  let seed = cfg.seed >>> 0;
+  const rnd = () => { seed = (seed + 0x6D2B79F5) >>> 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 };
+  const b = cfg.box, airspaces = [];
+  for (let k = 0; k < cfg.count; k++) {         // dense synthetic airspaces: rings of 40 irregular vertices, a few hundred NM wide in all
+    const la = b[0] + rnd() * (b[1] - b[0]), lo = b[2] + rnd() * (b[3] - b[2]), r = .04 + rnd() * (k % 40 === 0 ? 1.2 : .35), ring = [];
+    for (let i = 0; i < 40; i++) { const a = i / 40 * 2 * Math.PI, rr = r * (.7 + rnd() * .6); ring.push([la + Math.sin(a) * rr, lo + Math.cos(a) * rr / Math.cos(la * Math.PI / 180)]) }
+    ring.push(ring[0]);
+    airspaces.push({ type: 'CTA', name: 'S' + k, lower: 'FL195', upper: 'FL460', rings: [ring], rings2: [] });
+  }
+  const points = cfg.points.map(p => ({ ...p })), el = async () => 0;
+  // the reference: the algorithm as it was before SOG-0063 (every sample against every vertex of every ring of the airspaces with a vertex in the box)
+  const ref = (data) => {
+    const box = { s: Math.min(...points.map(p => p.lat)) - .5, n: Math.max(...points.map(p => p.lat)) + .5, w: Math.min(...points.map(p => p.lon)) - .7, e: Math.max(...points.map(p => p.lon)) + .7 };
+    const inRing = (lat, lon, ring) => { let c = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const [yi, xi] = ring[i], [yj, xj] = ring[j]; if ((yi > lat) !== (yj > lat) && lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) c = !c } return c };
+    const out = [], n = data.samples.length - 1;
+    for (const a of airspaces) {
+      const rings = (a.rings || []).filter(r => r.length >= 3 && r.some(([la, lo]) => la > box.s && la < box.n && lo > box.w && lo < box.e));
+      if (!rings.length) continue;
+      let start = -1;
+      for (let i = 0; i <= n + 1; i++) {
+        const inside = i <= n && rings.some(r => inRing(data.samples[i].lat, data.samples[i].lon, r));
+        if (inside && start < 0) start = i;
+        if (!inside && start >= 0) { out.push([a.name, start, i - 1]); start = -1 }
+      }
+    }
+    return out;
+  };
+  // the page must stay alive: the longest gap between two ticks of a 5 ms timer while the profile is built
+  let last = performance.now(), gap = 0; const timer = setInterval(() => { const t = performance.now(); gap = Math.max(gap, t - last); last = t }, 5);
+  const t0 = performance.now(), d1 = await P.build({ points, elevation: el, airspaces, obstacles: [] }), ms1 = performance.now() - t0;
+  clearInterval(timer);
+  const t1 = performance.now(), d2 = await P.build({ points, elevation: async () => 5, airspaces, obstacles: [] }), ms2 = performance.now() - t1;
+  const key = d => d.crossed.map(c => [c.a.name, c.i0, c.i1]);
+  const r = ref(d1), k1 = key(d1), k2 = key(d2);
+  const same = (a, b) => a.length === b.length && a.every((x, i) => x[0] === b[i][0] && x[1] === b[i][1] && x[2] === b[i][2]);
+  return { n: airspaces.length, verts: airspaces.reduce((s, a) => s + a.rings[0].length, 0), samples: d1.samples.length, crossed: k1.length,
+           ms1: Math.round(ms1), ms2: Math.round(ms2), gap: Math.round(gap), sameAsRef: same(k1, r), secondSame: same(k2, k1),
+           distinct: d1.crossed[0] !== d2.crossed[0] };
+}"""
+
+
+@case('D116', 'Vertical profile cost: the airspaces crossed are found from the ring boxes, once for the two builds, without freezing the page; same result as before', 'D',
+      tags=('maps',), designs=('standard',), night=False, screens=False,
+      rule='SOG-0063 (the cost rule): building the profile of EIDW-LFPO took 2.8 s (every sample against every vertex, twice); now a sample is tested only inside the ring’s box, the second build (with relief) reuses the intervals, the loop yields when it runs long; the intervals crossed are the same as the plain algorithm gives')
+def d116(c):
+    c.open('maps', docs=fdocs(flight()), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.until("() => !!window.SiaProfile && !!window.SiaProfile.build", timeout=10000, what='the profile code')
+    # EIDW -> LFPO, 1 500 synthetic airspaces (60 000 vertices) in the box of the route as the real base gives (ie + gb + fr)
+    big = c.js(_VP_JS, {'seed': 7, 'count': 1500, 'box': [48.0, 54.0, -7.5, 3.5],
+                        'points': [{'lat': 53.4213, 'lon': -6.2701, 'name': 'EIDW'}, {'lat': 48.7233, 'lon': 2.3794, 'name': 'LFPO'}]})
+    c.ok(big['crossed'] > 20 and big['samples'] > 700, f'{big}', 'the synthetic route crosses a good number of airspaces over some 800 samples')
+    c.ok(big['sameAsRef'], f'{big}', 'the airspaces crossed and their sample intervals are the plain algorithm’s, one by one')
+    c.ok(big['secondSame'] and big['distinct'], f'{big}', 'the second build (with relief) gives the same intervals, in objects of its own')
+    c.ok(big['ms1'] < 400, f'{big["ms1"]} ms', 'the first build of EIDW-LFPO is under 400 ms (2 800 ms before)')
+    c.ok(big['ms2'] < 150, f'{big["ms2"]} ms', 'the second build reuses the intervals (no second pass over the rings)')
+    c.ok(big['gap'] < 150, f'{big["gap"]} ms', 'the page stays alive while the profile is built (a 5 ms timer is never kept waiting 150 ms)')
+    # LFPO -> LFPB, a short flight: the same checks on a hundred samples
+    small = c.js(_VP_JS, {'seed': 11, 'count': 600, 'box': [48.3, 49.4, 1.8, 3.0],
+                          'points': [{'lat': 48.7233, 'lon': 2.3794, 'name': 'LFPO'}, {'lat': 48.9694, 'lon': 2.4414, 'name': 'LFPB'}]})
+    c.ok(small['sameAsRef'] and small['secondSame'], f'{small}', 'a short flight gives the same intervals as the plain algorithm, in both builds')

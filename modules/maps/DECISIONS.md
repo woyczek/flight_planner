@@ -3,6 +3,20 @@
 Memory of the V3 maps module: every choice, dated, with its reason. Chat history is never needed. Separate from
 aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds both roles.
 
+- **9 Nov 2026 — the profile's airspaces crossed, 2.8 s → 36 ms** (SOG-0063, the ergonomics session's go after the measurements of the day).
+  - **Measured** (real base ie + gb + fr, EIDW–LFPO, 1280 and 390): `inRing` of `lib/vertical_profile.js` took about 3.0 s of the 3.5 s of
+    main-thread time at opening, a single task of 2.1–2.3 s; the Map's first draw came at 4.0–4.3 s (0.6 s for LFPO–LFPB). Cause: every one of
+    the 801 samples against every vertex of every ring of the 1 572 airspaces with a vertex in the route's box (57 222 vertices: some 46 million
+    edge tests), and the profile is built twice (without, then with the relief), so twice that.
+  - **Done**, in the copy (`lib/vertical_profile.js` already diverges from the studio's `shared/carto`, which is **not** touched): the ring's
+    bounding box, computed once (`WeakMap`), tested before `inRing` — a point outside the box is never inside the ring (a closed ring is cut an even
+    number of times), so the intervals are the same; the intervals kept for the next build with the same airspaces array and the same points (the
+    second build's relief changes the limits, not where the route enters a ring), in objects of its own; the loop yields (`setTimeout 0`) when it has
+    run 12 ms. The route box of ± 0.5° / 0.7° that selects the rings **is kept**: narrowing it would change which airspaces are found, and the
+    boxes make it cheap.
+  - **After** (same runs, real base): profile at 0.49–0.74 s (from 2.8–3.0), first draw of the Map at 0.56–0.85 s (from 4.0–4.3), longest task
+    54 ms (from 2.1–2.3 s). Noreg D116 (synthetic base of 1 500 airspaces and 61 500 vertices on EIDW–LFPO: first build 36 ms against 2 095 ms before,
+    second 1 ms, longest gap of a 5 ms timer 28 ms; the intervals compared one by one with the plain algorithm, on this route and on LFPO–LFPB).
 - **22 Oct 2026 — role taken** by the aerodb session, at the ergonomics session's request.
   - Worktree `E:\DEFA-v3-maps`, local branch `v3-maps` from `origin/v3` (c83590c6a).
   - Port 8794, the role's port, was found taken by another process; 8798 is used instead.
