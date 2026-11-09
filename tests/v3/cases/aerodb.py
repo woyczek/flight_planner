@@ -5208,6 +5208,127 @@ def k108(c):
         c.eq((r7['ok'], r7['reason']), (False, 'invalid'), 'not UTF-8: refused', what='binary')
 
 
+@case('K110', 'fetchProcedures reads the ground layer after the procedures (SOG-0135): one gesture, in the background, only when the file is missing or older than the cycle in force, a failure changes nothing', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0135 (10 Nov 2026): « on ne va pas créer un bouton en plus : si on décolle ou qu\'on se pose, on va devoir rouler » -- when the launcher reads or updates the procedures of an aerodrome (AeroDb.fetchProcedures) the ground is read after them (same OpenStreetMap reading, ~30 s) if its file is missing or older than the cycle in force; without blocking the procedures\' answer, and never changing it')
+def k110(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const day = Date.parse('2026-11-10T12:00:00Z'), calls = [];
+      const mk = (files, launcher) => AeroDB.create({ reader: { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} }, lnmperf: false, launcher, now: () => day });
+      const ground = cycle => ({ icao: 'LFPO', cycle, source: 'osm', attribution: 'x', items: [{ id: 'w1', kind: 'twy', name: 'A', line: [[2.36, 48.73], [2.37, 48.74]] }] });
+      let release = null, procAnswer = { status: 200, result: { ok: true, warnings: [], commit: 'p1', stats: {} } }, groundAnswer = { status: 200, result: { ok: true, icao: 'LFPO', items: { twy: 1, park: 0, hold: 0 }, bytes: 9, warnings: [], commit: 'g1' } };
+      const fake = () => ({ info: () => ({ data: true, lan: false }), request: async () => null, job: async (route, body) => {
+        calls.push(body.set + '/' + body.verb);
+        if (body.set === 'ground') { await new Promise(r => { release = r; }); return groundAnswer; }
+        return procAnswer;
+      } });
+      const settle = () => new Promise(r => setTimeout(r, 30));
+      const out = {};
+      // missing file: the procedures answer comes back while the ground read is still going on
+      calls.length = 0;
+      let db = mk({}, fake()), changes = [];
+      db.on('change', e => { if (e.ground) changes.push(e.ground); });
+      let res = await db.fetchProcedures('LFPO');
+      await settle();
+      out.missing = { ok: res.ok, calls: calls.slice(), groundPending: typeof release === 'function' };
+      release(); release = null; await settle();
+      out.missing.changes = changes.slice();
+      // a file of the cycle in force (read on 5 Nov, the cycle starts on 29 Oct): not read again
+      calls.length = 0;
+      db = mk({ 'proc/ground/LFPO.json': ground('2026-11-05') }, fake());
+      await db.fetchProcedures('LFPO'); await settle();
+      out.fresh = calls.slice();
+      // a file of the cycle before: read again
+      calls.length = 0;
+      db = mk({ 'proc/ground/LFPO.json': ground('2026-10-01') }, fake());
+      await db.fetchProcedures('LFPO'); await settle();
+      out.old = calls.slice(); release?.(); release = null; await settle();
+      // the procedures failed: no ground; the option ground:false: no ground
+      calls.length = 0;
+      procAnswer = { status: 200, result: { ok: false, reason: 'failed', message: 'x' } };
+      db = mk({}, fake());
+      const failed = await db.fetchProcedures('LFPO'); await settle();
+      procAnswer = { status: 200, result: { ok: true, warnings: [], commit: 'p2', stats: {} } };
+      const off = await mk({}, fake()).fetchProcedures('LFPO', { ground: false }); await settle();
+      out.none = { calls: calls.slice(), failed: failed.ok, off: off.ok };
+      // the ground read fails (nothing in OpenStreetMap): the procedures answer is the same, no error thrown
+      calls.length = 0; groundAnswer = { status: 200, result: { ok: false, reason: 'no-data' } };
+      db = mk({}, fake());
+      res = await db.fetchProcedures('LFPO'); await settle(); release?.(); release = null; await settle();
+      out.nodata = { ok: res.ok, source: res.source, commit: res.commit, calls: calls.slice() };
+      return out;
+    }""")
+    c.eq((r['missing']['ok'], r['missing']['calls'], r['missing']['groundPending'], r['missing']['changes']), (True, ['proc/eaip-fetch', 'ground/fetch'], True, ['LFPO']),
+         'no ground file: the ground is read right after the procedures, while its job still runs the procedures answer is already there; the change is announced when it ends', what='missing')
+    c.eq((r['fresh'], r['old']), (['proc/eaip-fetch'], ['proc/eaip-fetch', 'ground/fetch']), 'a ground file of the cycle in force is not read again; one of the cycle before is', what='fresh old')
+    c.eq((r['none']['calls'], r['none']['failed'], r['none']['off']), (['proc/eaip-fetch', 'proc/eaip-fetch'], False, True), 'the procedures failed: no ground read; the option ground: false: none either', what='none')
+    c.eq((r['nodata']['ok'], r['nodata']['source'], r['nodata']['commit'], r['nodata']['calls']), (True, 'eaip', 'p2', ['proc/eaip-fetch', 'ground/fetch']), 'a ground read that finds nothing changes nothing to the procedures answer', what='nodata')
+
+
+@case('K111', 'Job weather/world (SOG-0138): the world forecast tool is run by the launcher, its output checked, put in place at once in data/local/weather/world/, the old one kept when it fails; status without network', 'K', static=True,
+      rule='SOG-0138 (10 Nov 2026): the Atmosphere world map reads pages published by tools/build_world_weather.py but no launcher job ran it, nothing was published on the workstation; the job runs it, checks what it wrote (schema 1 index, known file names, bounded size and count), replaces the publication in one move, never commits it (data/local/), reuses the previous publication (--keep) and says its run, its steps and its size')
+def k111(c):
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    fn, check = RJ.REGISTRY[('weather', 'world')]
+    c.eq((check({}), check({'action': 'status'}), check({'action': 'x'}), check({'url': 'http://x'}), check(None)), ({'action': 'build'}, {'action': 'status'}, None, None, None), 'the closed request: build (default) or status, nothing else (no address, no path)', what='check')
+    fake = (
+        'import json, os, sys\n'
+        'out = sys.argv[1]\n'
+        'here = os.path.dirname(os.path.abspath(__file__))\n'
+        'mode = open(os.path.join(here, "mode.txt")).read().strip()\n'
+        'keep = sys.argv[sys.argv.index("--keep") + 1] if "--keep" in sys.argv else ""\n'
+        'open(os.path.join(here, "args.txt"), "w").write(keep)\n'
+        'if mode == "none":\n'
+        '    print("aucun synoptique monde \\u00e9crit", file=sys.stderr); sys.exit(0)\n'
+        'if mode == "crash":\n'
+        '    sys.exit(3)\n'
+        'os.makedirs(out)\n'
+        't = [1_800_000_000 + 10800 * k for k in range(3)]\n'
+        'names = ["2027-01-15T%02d.json" % (8 + 3 * k) for k in range(3)]\n'
+        'for n in names + [x.replace(".json", "-alt.json") for x in names]:\n'
+        '    open(os.path.join(out, n), "w").write("{}")\n'
+        'idx = {"schema": 1, "model": "gfs", "run": 1_799_990_000, "built": 1_700_000_000, "step": 5, "times": t, "files": names, "altFiles": [x.replace(".json", "-alt.json") for x in names]}\n'
+        'if mode == "badindex": idx["schema"] = 2\n'
+        'json.dump(idx, open(os.path.join(out, "index.json"), "w"))\n'
+        'if mode == "stray": open(os.path.join(out, "evil.html"), "w").write("<script>")\n'
+        'if mode == "missing": os.remove(os.path.join(out, names[0]))\n'
+        'print("synoptique monde : 2376 lieux, 3 \\u00e9ch\\u00e9ances")\n')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        script = os.path.join(td, 'fake_world.py')
+        open(script, 'w', encoding='utf-8').write(fake)
+        ctx = {'data': data, 'script': script}
+        dest = os.path.join(data, 'local', 'weather', 'world')
+        run = lambda mode='ok', **a: (open(os.path.join(td, 'mode.txt'), 'w').write(mode), fn(RJ.Job('weather', 'world', {}), check(a), ctx))[1]
+        r = run(action='status')
+        c.eq((r['ok'], r['exists']), (True, False), 'status without a publication: it does not exist, no network call', what='status none')
+        r = run('none')
+        c.eq((r['ok'], r['reason'], os.path.exists(dest)), (False, 'no-run', False), 'the tool wrote nothing (NOAA unreachable, no run): no-run, nothing in place', what='no run')
+        r = run('crash')
+        c.eq((r['ok'], r['reason']), (False, 'failed'), 'the tool exits with an error: failed', what='crash')
+        for mode in ('badindex', 'stray', 'missing'):
+            r = run(mode)
+            c.eq((r['ok'], r['reason'], os.path.exists(dest)), (False, 'invalid', False), f'{mode}: a folder that is not a valid world forecast is never put in place', what=mode)
+        r = run('ok')
+        c.eq((r['ok'], r['exists'], r['steps'], r['files'], r['step'], r['run'], r['times'], os.path.exists(os.path.join(dest, 'index.json'))), (True, True, 3, 7, 5, '2027-01-15T05:13:20Z', ['2027-01-15T08:00:00Z', '2027-01-15T14:00:00Z'], True),
+             'a valid output is put in place in data/local/weather/world/: the run, the steps, the files and their size said', what='ok')
+        c.eq(open(os.path.join(td, 'args.txt')).read(), '', 'the first build has no previous publication: no --keep', what='no keep')
+        c.eq(sorted(os.listdir(os.path.join(data, 'local', 'weather'))), ['world'], 'nothing else is left next to the publication (no work folder, no old one)', what='clean')
+        r = run('ok')
+        keep = open(os.path.join(td, 'args.txt')).read()
+        c.eq((r['ok'], keep.startswith('file:///'), keep.endswith('/local/weather/world/')), (True, True, True), 'a second build replaces it and gives the previous publication to the tool (--keep, a file address: the same GFS run is not asked of the NOAA again)', what='keep')
+        r = run('none')
+        c.eq((r['ok'], r['reason'], os.path.isfile(os.path.join(dest, 'index.json'))), (False, 'no-run', True), 'when the tool finds nothing the previous publication stays', what='old stays')
+        r = run('stray')
+        c.eq((r['reason'], os.path.isfile(os.path.join(dest, 'index.json'))), ('invalid', True), 'an invalid output does not replace the previous publication either', what='old stays 2')
+        r = run(action='status')
+        c.eq((r['exists'], r['steps'], r['age'] is not None and r['age'] > 0), (True, 3, True), 'status reads the publication in place: steps and age', what='status')
+
+
 @case('K65', 'Build job: a zone shows a count of sources only when the builder gives one for it; the build\'s count goes once in the job', 'K', static=True,
       rule='Réglages 1 Nov 2026 (the user saw « construction (90 / 90 sources) » on all 26 zones): the builder\'s counts are global; a zone gets done / total only from a count of its own; job.data inputs = { done, total } once')
 def k65(c):

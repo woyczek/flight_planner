@@ -1753,7 +1753,8 @@
        *  jamais deux fois pour le même terrain en même temps. */
       async fetchProcedures(icao, {
         onProgress,
-        signal
+        signal,
+        ground
       } = {}) {
         const k = String(icao || '').trim().toUpperCase(),
           no = (reason, more = {}) => ({
@@ -1848,7 +1849,10 @@
         })();
         eadBusy.set(k, run);
         try {
-          return await run;
+          const out = await run;
+          // SOG-0135 : si l'on décolle ou se pose, on doit rouler : le sol est lu à la suite des procédures (un seul geste), sans attendre pour rendre la réponse et sans qu'un échec la change
+          if (out?.ok === true && ground !== false) readGroundAfter(k);
+          return out;
         } finally {
           eadBusy.delete(k);
         }
@@ -2489,7 +2493,16 @@
           items
         };
       },
-      groundBusy = new Map(); // OACI → lecture de la couche sol en cours
+      groundBusy = new Map(), // OACI → lecture de la couche sol en cours
+      /** La couche sol d'un terrain, lue à la suite de ses procédures (SOG-0135) si son fichier manque ou date d'avant le cycle en vigueur ; en arrière-plan : la réponse des procédures ne l'attend pas, un échec (lanceur occupé, rien dans OpenStreetMap, trop tôt) est sans suite. fetchGround dit le changement (on('change', { ground })). */
+      readGroundAfter = k => {
+        (async () => {
+          const had = await api.ground(k).catch(() => null),
+            current = window.AeroAirac?.cycleOf?.(now())?.date || '';
+          if (had?.cycle && had.cycle >= current) return; // le fichier du cycle en vigueur : rien à relire
+          await api.fetchGround(k);
+        })().catch(() => {});
+      };
     const procWatch = async paths => {
       let index = false;
       const icaos = new Set();
