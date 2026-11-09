@@ -83,6 +83,10 @@ export const TX = {
       ['zone', 'zone', 'Zone', 'zona'],
       ['zones', 'zones', 'Zonen', 'zonas']
     ],
+    country: [
+      ['pays', 'country', 'Land', 'país'],
+      ['pays', 'countries', 'Länder', 'países']
+    ],
     book: [
       ['classeur', 'workbook', 'Arbeitsmappe', 'libro'],
       ['classeurs', 'workbooks', 'Arbeitsmappen', 'libros']
@@ -182,6 +186,38 @@ export const TX = {
     enaire: ['ENAIRE (AIP Espagne)', 'ENAIRE (Spain AIP)', 'ENAIRE (AIP Spanien)', 'ENAIRE (AIP España)'],
     nats: ['NATS (AIP Royaume-Uni)', 'NATS (UK AIP)', 'NATS (AIP Vereinigtes Königreich)', 'NATS (AIP Reino Unido)'],
     xplane: ['X-Plane (données du simulateur)', 'X-Plane (simulator data)', 'X-Plane (Simulatordaten)', 'X-Plane (datos del simulador)']
+  },
+  // « Mettre à jour » et les gestes de sélection de la base (update.js, SOG-0071)
+  upd: {
+    update: ['Mettre à jour', 'Update', 'Aktualisieren', 'Actualizar'],
+    recompute: ['Tout recalculer', 'Rebuild all', 'Alles neu berechnen', 'Recalcular todo'],
+    selStale: ['Seulement les périmés', 'Only the stale ones', 'Nur die veralteten', 'Solo las caducadas'],
+    selNone: ['Tout désélectionner', 'Deselect all', 'Alles abwählen', 'Deseleccionar todo'],
+    selLine: ['Sélection : {z}', 'Selection: {z}', 'Auswahl: {z}', 'Selección: {z}'],
+    selNothing: ['Aucune zone cochée', 'No zone ticked', 'Keine Zone angekreuzt', 'Ninguna zona marcada'],
+    noStale: ['Aucune zone périmée : la sélection reste telle quelle.', 'No stale zone: the selection stays as it is.',
+      'Keine veraltete Zone: die Auswahl bleibt unverändert.', 'Ninguna zona caducada: la selección se queda como está.'
+    ],
+    none: ['Rien à reconstruire : les {n} cochées sont à jour (téléchargement fait).',
+      'Nothing to rebuild: the {n} ticked are up to date (download done).',
+      'Nichts neu zu bauen: die {n} angekreuzten sind aktuell (Download erledigt).',
+      'Nada que reconstruir: las {n} marcadas están al día (descarga hecha).'
+    ],
+    ask: ['Mettre à jour : reconstruire {n} des {t} zones cochées ({s}). {l}', 'Update: rebuild {n} of the {t} ticked zones ({s}). {l}',
+      'Aktualisieren: {n} der {t} angekreuzten Zonen neu bauen ({s}). {l}',
+      'Actualizar: reconstruir {n} de las {t} zonas marcadas ({s}). {l}'
+    ],
+    sizeUnknown: ['taille inconnue', 'size unknown', 'Größe unbekannt', 'tamaño desconocido'],
+    whyNever: ['jamais construite', 'never built', 'nie gebaut', 'nunca construida'],
+    whyCycle: ['cycle publié {p}, source {t}', 'published cycle {p}, source {t}', 'veröffentlichter Zyklus {p}, Quelle {t}',
+      'ciclo publicado {p}, fuente {t}'
+    ],
+    rectHint: [
+      'Maj + glisser (ordinateur), ou deux doigts posés une demi-seconde (téléphone) : un rectangle coche les zones qu’il touche.',
+      'Shift + drag (computer), or two fingers held for half a second (phone): a rectangle ticks the zones it touches.',
+      'Umschalt + Ziehen (Computer) oder zwei Finger eine halbe Sekunde halten (Telefon): Ein Rechteck kreuzt die Zonen an, die es berührt.',
+      'Mayús + arrastrar (ordenador), o dos dedos apoyados medio segundo (teléfono): un rectángulo marca las zonas que toca.'
+    ]
   },
   // la ligne « Route (RAD, points FRA) » (route.js, SOG-0125)
   route: {

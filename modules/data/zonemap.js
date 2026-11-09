@@ -6,6 +6,7 @@ import {
 } from './texts.js';
 import {
   ask,
+  count,
   esc,
   frozen,
   S,
@@ -111,6 +112,7 @@ export function zoneMapHtml(kind) {
   const entries = mapEntries(kind);
   if (!entries.length) return '';
   return `<div class="d-map" data-zone-map="${kind}" role="group" aria-label="${esc(tt(TX.zoneMap[kind]))}"><div data-zone-slot></div>${kind === 'proc' ? '<p class="f-muted" data-point-info role="status"></p>' : ''}
+    ${kind === 'base' ? `<p class="f-muted" data-rect-hint>${esc(tt(TX.upd.rectHint))}</p>` : ''}
     <p class="d-map-row"><button type="button" data-act="map-recenter">${esc(tt(TX.mapRecenter))}</button></p>
     <p class="f-muted" data-zone-legend>${esc(tt(TX.mapLegend))} :${['ok', 'warn', 'accent', 'muted'].map(t => `<span class="d-sw" data-tone="${t}"></span>${esc(tt(TX.mapTone[t]))}`).join(' · ')}${entries.some(e => e.approx) ? ` · ${esc(tt(TX.mapLegendApprox))}` : ''}. ${esc(tt(TX.mapLegendNote))}</p></div>`;
 }
@@ -204,6 +206,155 @@ function startPoints(kind, m) {
   m.map.on('moveend', () => loadPoints(kind));
   loadPoints(kind);
 }
+/** Le rectangle de sélection de la carte de la base (SOG-0071) : Maj + glisser à la souris, ou deux doigts posés une demi-seconde sur un écran tactile (le rectangle va d'un doigt à l'autre). Il coche les zones
+ *  de la COUVERTURE dont le cadre le touche ; le nombre se dit pendant le geste, avant le relâchement (« 14 pays »). Une zone hors couverture n'est jamais ajoutée par un rectangle. */
+const HOLD_MS = 400;
+const SLOP_PX = 14;
+/** Les zones de la couverture que le rectangle d'écran (en pixels de l'hôte) touche. */
+function rectZones(m, r) {
+  const sw = m.map.unproject([Math.min(r.x0, r.x1), Math.max(r.y0, r.y1)]),
+    ne = m.map.unproject([Math.max(r.x0, r.x1), Math.min(r.y0, r.y1)]),
+    boxes = Object.fromEntries(mapEntries('base').map(e => [e.id, e.box]));
+  return M.zonesTouching(boxes, [sw.lng, sw.lat, ne.lng, ne.lat], buildZones().ids);
+}
+/** Pose les écouteurs du rectangle sur l'hôte de la carte de la base (une fois par carte) : la boîte et son nombre, le geste souris, le geste à deux doigts. */
+function installRect(m) {
+  if (m.rect) return;
+  const map = m.map,
+    host = m.host,
+    box = Object.assign(document.createElement('div'), {
+      className: 'd-rect',
+      hidden: true
+    }),
+    label = Object.assign(document.createElement('span'), {
+      className: 'd-rect-count'
+    }),
+    r = {
+      on: false,
+      mode: '',
+      x0: 0,
+      y0: 0,
+      x1: 0,
+      y1: 0,
+      ids: [],
+      touches: new Map(),
+      timer: 0,
+      was: null
+    };
+  box.dataset.rect = '';
+  label.dataset.rectCount = '';
+  box.append(label);
+  host.append(box);
+  m.rect = r;
+  map.boxZoom?.disable(); // Maj + glisser est le rectangle de la page, pas le zoom sur un cadre
+  const rel = e => {
+    const b = host.getBoundingClientRect();
+    return [e.clientX - b.left, e.clientY - b.top];
+  };
+  const draw = () => {
+    r.ids = rectZones(m, r);
+    box.style.left = `${Math.min(r.x0, r.x1)}px`;
+    box.style.top = `${Math.min(r.y0, r.y1)}px`;
+    box.style.width = `${Math.abs(r.x1 - r.x0)}px`;
+    box.style.height = `${Math.abs(r.y1 - r.y0)}px`;
+    label.textContent = count('country', r.ids.length);
+    box.hidden = false;
+  };
+  const start = (mode, x, y) => {
+    r.on = true;
+    r.mode = mode;
+    r.x0 = r.x1 = x;
+    r.y0 = r.y1 = y;
+    draw();
+  };
+  const end = commit => {
+    clearTimeout(r.timer);
+    if (r.was) { // les gestes de la carte rendus tels qu'ils étaient
+      if (r.was.pan) map.dragPan.enable();
+      if (r.was.zoom) map.touchZoomRotate.enable();
+      r.was = null;
+    }
+    const ids = r.on && commit && !frozen() ? r.ids : [];
+    r.on = false;
+    r.mode = '';
+    r.touches.clear();
+    box.hidden = true;
+    if (ids.length) {
+      for (const id of ids) S.ticked?.add(id);
+      renderBuild();
+    }
+  };
+  host.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse') {
+      if (e.button !== 0 || !e.shiftKey || frozen()) return;
+      e.preventDefault(); // pas d'évènement souris pour la carte : elle ne déplace rien
+      e.stopPropagation();
+      const [x, y] = rel(e);
+      start('mouse', x, y);
+      return;
+    }
+    if (e.pointerType !== 'touch' || frozen()) return;
+    const [x, y] = rel(e);
+    r.touches.set(e.pointerId, {
+      x,
+      y,
+      x0: x,
+      y0: y
+    });
+    if (r.touches.size === 2 && !r.on) {
+      clearTimeout(r.timer);
+      r.timer = setTimeout(() => {
+        const [a, b] = [...r.touches.values()];
+        if (r.on || r.touches.size !== 2 || !a || !b || [a, b].some(t => Math.hypot(t.x - t.x0, t.y - t.y0) > SLOP_PX)) return;
+        r.was = {
+          pan: map.dragPan.isEnabled(),
+          zoom: map.touchZoomRotate.isEnabled()
+        };
+        map.dragPan.disable(); // les deux doigts dessinent le rectangle : ni déplacement ni pincement de la carte
+        map.touchZoomRotate.disable();
+        start('touch', a.x, a.y);
+        r.x1 = b.x;
+        r.y1 = b.y;
+        draw();
+      }, HOLD_MS);
+    }
+  }, true);
+  const move = e => {
+    if (e.pointerType === 'touch') {
+      const t = r.touches.get(e.pointerId);
+      if (!t) return;
+      [t.x, t.y] = rel(e);
+      if (r.on && r.mode === 'touch') {
+        const [a, b] = [...r.touches.values()];
+        if (a && b) {
+          r.x0 = a.x;
+          r.y0 = a.y;
+          r.x1 = b.x;
+          r.y1 = b.y;
+          draw();
+        }
+      } else if (Math.hypot(t.x - t.x0, t.y - t.y0) > SLOP_PX) clearTimeout(r.timer); // un pincement ordinaire : pas de rectangle
+    } else if (r.on && r.mode === 'mouse') {
+      [r.x1, r.y1] = rel(e);
+      draw();
+    }
+  };
+  window.addEventListener('pointermove', move);
+  const up = e => {
+    if (e.pointerType === 'touch') {
+      r.touches.delete(e.pointerId);
+      if (r.on && r.mode === 'touch') end(e.type === 'pointerup');
+      else if (r.touches.size < 2) clearTimeout(r.timer);
+    } else if (r.on && r.mode === 'mouse') end(e.type === 'pointerup');
+  };
+  window.addEventListener('pointerup', up);
+  window.addEventListener('pointercancel', up);
+  m.rectOff = () => { // au retrait de la carte
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', up);
+    window.removeEventListener('pointercancel', up);
+  };
+}
 /** Démarre la carte d'un panneau dans son hôte (le socle : MapLibre à la demande, tuiles, abandon) puis y pose les zones et cadre la vue ; sans carte (hors ligne, pas de
  *  WebGL, MapLibre absent, délai) : le panneau est redessiné sans carte, la liste seule. Une carte déjà en route n'est pas redémarrée. */
 function startMap(kind, m) {
@@ -237,6 +388,7 @@ function startMap(kind, m) {
     });
     mapSize(map, m.host);
     m.layer.fit(24, activeBounds(kind));
+    if (kind === 'base') installRect(m); // le rectangle de sélection (SOG-0071)
     if (kind === 'proc') startPoints(kind, m);
   });
 }
@@ -295,6 +447,7 @@ export function recenterMap(kind) {
 export function destroyMaps() {
   for (const m of Object.values(S?.maps || {})) {
     try {
+      m.rectOff?.();
       m.points?.remove();
       m.layer?.remove();
       m.map?.remove();

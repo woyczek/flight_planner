@@ -324,6 +324,21 @@ The launcher's job `route/import-rad` (`tools/regen/route.py`, `frame/aerodb/INT
 - **Grey button**: no launcher, another operation running (the route's own phase counts: `busyNow`), the launcher does not know `route/import-rad` (`regen/verbs`).
 - **Everything the launcher or the file says is read as untrusted** (`model_route.js`: workbook names in a closed pattern, sizes and dates checked, kinds in a closed list, a name shown only if the plan showed it). Cases L33, L34.
 
+### 5.8 Three verbs and the selection gestures of the base (SOG-0071, time 1; V3_SPECIFICATION § 10.44)
+
+The base panel's row is **Mettre à jour · Télécharger · (Prendre le fichier) · Tout recalculer · Purger**; above the zones list, a row **Seulement les périmés · Tout désélectionner** and the line **Sélection : n zones · taille**.
+
+- **Mettre à jour** (`update.js`, `startUpdate`): the download of the whole selection (the ordinary `base/fetch`, its own result and notification), then `model_update.staleZones` over the selection, then — if some zone is stale — **one question** that
+  names the count (« 1 des 5 zones cochées »), the size (sum of `publishedKb` of those zones, « + » when a size is unknown) and, per zone, why (`jamais construite`, or `cycle publié 2610, source 2611`), then `base/build` on those zones only (the personal
+  sources ticked go with them). Nothing stale: one sentence, no question, no build. A download that fails or is stopped stops the verb. **Provisional criterion** (until the launcher's `base/status` exists): a zone is stale when `publication().base` has no
+  cycle in force for it, or when its published cycle (`inForce`) is older than the cycle its dated source (`cycleSource`) holds — the last known `sources` (the download's result, else the journal), else the AIRAC cycle in force; a zone with no dated source
+  and published is never stale. Time 2 replaces the criterion by the launcher's state.
+- **Tout recalculer** is the build as it was (`data-verb="build"`, no new question: its cost shows in the *Sélection* line before the tap), on the whole selection whatever its state. **Purger** is unchanged (its plan and its question).
+- **Seulement les périmés**: the selection becomes the stale zones of the coverage (same criterion, no download); none: said, the selection stays. **Tout désélectionner**: nothing ticked (the verbs grey). The selection is `S.ticked`, in the page's state: never written to `data/`.
+- **The rectangle** (`zonemap.js`, `installRect`): **Shift + drag** on the base map (the map's own Shift-zoom is off), or **two fingers held 400 ms** within 14 px of where they landed (the rectangle runs from one finger to the other; the map's pan and pinch are
+  suspended for the gesture and given back after); fingers that move earlier are an ordinary pinch (nothing drawn). The zones of the **coverage** whose frame (`box`) touches the rectangle (longitudes tried at ±360°) are counted live (« 14 pays », in the rectangle's corner)
+  and ticked **at the release** (added to the selection, never replacing it); a zone outside the coverage is never added by a rectangle. Cases L36 (verbs), L37 (selection gestures), L38 (rectangle, mouse), L39 (rectangle, two fingers, 390 px capture).
+
 ### 5.4 Building on the launcher: one process per zone
 
 The user's request of 29 Oct (V2's « Tout récupérer et recalculer » is slow: built in the browser, on the main thread,

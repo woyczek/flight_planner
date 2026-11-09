@@ -305,7 +305,7 @@ _ROWS_JS = r"""() => {
     more: (m => m ? { text: m.querySelector(':scope > summary').textContent.trim(), rows: [...m.querySelectorAll('[data-set]')].map(r => r.dataset.set + ':' + r.dataset.status), open: m.open } : null)(g.querySelector(':scope > [data-more]')),
     pills: [...g.querySelectorAll('details[data-set] > summary')].filter(s => s.offsetParent).map(s => s.getBoundingClientRect().height)
   }));
-  return { groups, verbs: [...document.querySelectorAll('[data-build] [data-verb]:not([data-verb=pickup]), [data-publish] [data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : '')), buttons: root.querySelectorAll('[data-build] button:not([data-verb=pickup]), [data-publish] button').length,
+  return { groups, verbs: [...document.querySelectorAll('[data-build] [data-verb]:not([data-verb=pickup]):not([data-verb=update]):not([data-verb^=select]), [data-publish] [data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : '')), buttons: root.querySelectorAll('[data-build] button:not([data-verb=pickup]), [data-publish] button').length,
     sw: document.documentElement.scrollWidth, iw: window.innerWidth,
     over: [...root.querySelectorAll('*')].filter(e => e.getBoundingClientRect().width && (e.getBoundingClientRect().right > window.innerWidth + 1) && !e.closest('[hidden]')).slice(0, 3).map(e => e.tagName + '.' + e.className) };
 }"""
@@ -367,8 +367,8 @@ def l2(c):
     c.eq(g['weather']['states'], {}, 'the weather rows have no state', what='weather states')
     c.eq(c.text('[data-set="ukmil"] .f-badge[data-pill]'), tx(TX, 'parser', lang, after='state: {'), 'the pill is worded in the language of the run', what='ukmil pill')
     # no action button anywhere, no horizontal scroll, 44 px on the summaries
-    c.eq([m['verbs'], m['buttons']], [['download:off', 'build:off', 'purge:off', 'publish:off'], 4],
-         'the verbs are Télécharger · Construire · Purger (one panel) then Publier, all grey (no launcher in the suite): no Mettre à jour', what='verbs / buttons')
+    c.eq([m['verbs'], m['buttons']], [['download:off', 'build:off', 'purge:off', 'publish:off'], 7],
+         'the verbs are Télécharger · Tout recalculer · Purger (one panel) then Publier, all grey (no launcher in the suite); the 7 buttons count Mettre à jour (the old « no Mettre à jour » is SOG-0071) and the two selection gestures', what='verbs / buttons')
     c.eq([c.attr('[data-publish] [data-reason]', 'data-reason'), norm(c.text('[data-publish] [data-reason]'))], ['no-launcher', norm(_trow('no-launcher', lang, 'greyReason: {'))],
          'Publier is grey for the same reason, written once', what='publish reason')
     c.eq(c.count('[data-group=base] > [data-build] + [data-publish]'), 1, 'the Publier panel follows the Construire panel', what='panel order')
@@ -442,7 +442,7 @@ def l3(c):
     c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the module is mounted by the link (at 390 as at 1280)')
     c.eq((c.js('location.search'), c.hash()), ('?app=maintenance', '#data'), 'the address: the Maintenance application, on Données', what='address')
     c.eq(c.count('#fMenu a[data-id="data"]'), 1, 'in the rail of Maintenance', what='rail entries')
-    c.eq(c.count('[data-build] [data-verb]:not([data-verb=pickup]), [data-publish] [data-verb]'), 4, 'Télécharger, Construire, Purger and Publier, grey without a launcher', what='[data-verb]')
+    c.eq(c.count('[data-build] [data-verb]:not([data-verb=pickup]):not([data-verb=update]):not([data-verb^=select]), [data-publish] [data-verb]'), 4, 'Télécharger, Construire, Purger and Publier, grey without a launcher', what='[data-verb]')
     c.ok(c.text('[data-cycle-now]'), 'no cycle', 'the head shows the cycle in force')
     c.check_errors()
 
@@ -459,7 +459,7 @@ def l4(c):
     c.eq(c.count('details.f-group'), 4, 'the four groups are still drawn (names and links)', what='groups')
     c.eq(c.count('[data-set]:not([data-set=route])[data-state]'), 0, 'no state is invented without a publication (the route row takes its own from the workstation memory, SOG-0125)', what='states')
     c.eq(c.doc('cache/data/coverage.json'), None, 'a degraded read writes no coverage', what='coverage.json')
-    c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb]:not([data-verb=pickup]), [data-publish] [data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"), ['download:off', 'build:off', 'purge:off', 'publish:off'], 'Télécharger, Construire, Purger and Publier, grey', what='[data-verb]')
+    c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb]:not([data-verb=pickup]):not([data-verb=update]):not([data-verb^=select]), [data-publish] [data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"), ['download:off', 'build:off', 'purge:off', 'publish:off'], 'Télécharger, Construire, Purger and Publier, grey', what='[data-verb]')
     c.check_errors()
 
 
@@ -717,7 +717,7 @@ def l7(c):
     c.eq(c.attr('[data-runner]', 'data-runner'), 'launcher', 'the fake launcher is detected', what='runner')
     c.eq(c.js("document.querySelector('[data-verb=build]').disabled"), False, 'Construire is enabled with a launcher, zones ticked, nothing running', what='build disabled')
     c.eq(c.count('[data-build] [data-reason]'), 0, 'no reason when the button is live', what='reason')
-    c.eq(norm(c.text('[data-verb=build]')), norm(_trow('build', lang)), 'worded in the language of the run', what='build label')
+    c.eq(norm(c.text('[data-verb=build]')), norm(_trow('recompute', lang, after='  upd: {')), 'worded in the language of the run (Tout recalculer)', what='build label')
     # no zone: grey with its reason; ca, es, us unticked: fr and gb remain, ENAIRE is not offered any more
     _untick(c, 'ca', 'es', 'us', 'fr', 'gb')
     c.eq([c.js("document.querySelector('[data-verb=build]').disabled"), c.attr('[data-build] [data-reason]', 'data-reason'), norm(c.text('[data-build] [data-reason]'))],
@@ -744,7 +744,7 @@ def l7(c):
     c.eq(post.get('author'), 'ABC', 'the frame adds the trigram itself', what='author')
     c.eq([c.js("document.querySelector('[data-verb=build]').disabled"), c.attr('[data-build] [data-reason]', 'data-reason')], [True, 'busy'], 'while it runs: grey, « Une autre opération est en cours »', what='running reason')
     c.eq(c.js("[...document.querySelectorAll('[data-build] input[type=checkbox]')].every(i => i.disabled)"), True, 'the choices are frozen while it runs', what='frozen checkboxes')
-    c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb]:not([data-verb=pickup]), [data-publish] [data-verb]')].map(b => b.dataset.verb).sort()"), ['build', 'download', 'publish', 'purge', 'stop'], 'the four verbs (grey, a build is running) and stop only', what='verbs')
+    c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb]:not([data-verb=pickup]):not([data-verb=update]):not([data-verb^=select]), [data-publish] [data-verb]')].map(b => b.dataset.verb).sort()"), ['build', 'download', 'publish', 'purge', 'stop'], 'the four verbs (grey, a build is running) and stop only', what='verbs')
     c.eq(c.js("[...document.querySelectorAll('[data-zone-state]')].map(l => [l.dataset.zoneState, l.dataset.state])"), [['fr', 'waiting'], ['gb', 'waiting']], 'a line per zone, waiting before the first view', what='zone lines')
     c.until("document.querySelector('[data-zone-state=fr]').dataset.state === 'building'", timeout=8000, what='fr is building')
     fr_name = c.text('[data-zone-state=fr] b')
@@ -1446,12 +1446,12 @@ def _zhead(c, z):
 
 def _verbs(c):
     """The verb buttons of the panel, in order, each with ':off' when grey."""
-    return c.js("[...document.querySelectorAll('[data-build] [data-verb]')].filter(b => !b.dataset.verb.startsWith('pickup')).map(b => b.dataset.verb + (b.disabled ? ':off' : ''))")
+    return c.js("[...document.querySelectorAll('[data-build] [data-verb]')].filter(b => !b.dataset.verb.startsWith('pickup') && b.dataset.verb !== 'update' && !b.dataset.verb.startsWith('select')).map(b => b.dataset.verb + (b.disabled ? ':off' : ''))")
 
 
 def _grey(c, what):
     """Télécharger, Construire, Purger and Publier are grey, for ONE reason written once under the panel: its key."""
-    c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb]:not([data-verb=pickup]), [data-publish] [data-verb]')].filter(b => b.dataset.verb !== 'stop').map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"),
+    c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb]:not([data-verb=pickup]):not([data-verb=update]):not([data-verb^=select]), [data-publish] [data-verb]')].filter(b => b.dataset.verb !== 'stop').map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"),
          ['download:off', 'build:off', 'purge:off', 'publish:off'], f'{what}: the four verbs are grey', what='verbs')
     c.eq(c.js("[...document.querySelectorAll('[data-build] [data-reason]')].map(p => p.dataset.reason)"), ['busy'], f'{what}: one reason, written once', what='reason')
 
@@ -1483,7 +1483,7 @@ def l15(c):
     before = c.js('window.__stub.calls.publication')
     # ---- A: the panel holds the three verbs, in this order, under one choice of zones; no zone: all grey, one reason
     c.eq(_verbs(c), ['download', 'build', 'purge'], 'Télécharger · Construire · Purger, in this order, in the one panel', what='verbs')
-    c.eq([norm(c.text(f'[data-build] [data-verb={v}]')) for v in ('download', 'build', 'purge')], [norm(_trow(v, lang)) for v in ('download', 'build', 'purge')], 'worded in the language of the run', what='labels')
+    c.eq([norm(c.text(f'[data-build] [data-verb={v}]')) for v in ('download', 'build', 'purge')], [norm(_trow(v, lang)) if v != 'build' else norm(_trow('recompute', lang, after='  upd: {')) for v in ('download', 'build', 'purge')], 'worded in the language of the run (Tout recalculer for the base build)', what='labels')
     c.eq(norm(c.text('[data-build] h2')), norm(_trow('buildTitle', lang)), 'the panel title covers the three verbs', what='title')
     _untick(c, 'ca', 'es', 'us', 'fr', 'gb')
     c.eq([_verbs(c), c.attr('[data-build] [data-reason]', 'data-reason'), norm(c.text('[data-build] [data-reason]')), c.count('[data-build] [data-reason]')],
@@ -1578,7 +1578,7 @@ def l15(c):
          'ONE question from the plan: files, size, zones, the SIA sentence (shared-fr), the files tracked by git kept; one-word confirmation and a way out', what='question')
     c.eq(len(st['posts']), posts + 1, 'only the plan was started', what='posts')
     c.eq({k: st['posts'][-1][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'purge', 'args': {'zones': ['es', 'fr'], 'dry': True}}, 'the plan: dry true, the ticked zones', what='dry body')
-    c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb]:not([data-verb=pickup]), [data-publish] [data-verb]')].filter(b => b.dataset.verb !== 'stop').map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"), ['download:off', 'build:off', 'purge:off', 'publish:off'],
+    c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb]:not([data-verb=pickup]):not([data-verb=update]):not([data-verb^=select]), [data-publish] [data-verb]')].filter(b => b.dataset.verb !== 'stop').map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"), ['download:off', 'build:off', 'purge:off', 'publish:off'],
          'all four are grey while the question is open', what='verbs during the question')
     c.tap('.f-modal [data-no]')
     c.until("!document.querySelector('.f-modal')", what='the window closes')
@@ -2420,7 +2420,7 @@ def _card_ok(c, what):
 
 def _bv(c):
     """The base panel's three verb buttons (not Arrêter), each with ':off' when grey."""
-    return c.js("[...document.querySelectorAll('[data-build] [data-verb]')].filter(b => b.dataset.verb !== 'stop' && !b.dataset.verb.startsWith('pickup')).map(b => b.dataset.verb + (b.disabled ? ':off' : ''))")
+    return c.js("[...document.querySelectorAll('[data-build] [data-verb]')].filter(b => b.dataset.verb !== 'stop' && !b.dataset.verb.startsWith('pickup') && b.dataset.verb !== 'update' && !b.dataset.verb.startsWith('select')).map(b => b.dataset.verb + (b.disabled ? ':off' : ''))")
 
 
 def _chain_rows(c):
@@ -3824,4 +3824,229 @@ def l35(c):
     c.until("!!document.querySelector('[data-module=data] [data-set=route]')", timeout=20000, what='the route row, no query')
     c.settle()
     c.eq(c.js("document.querySelector('[data-set=route]').open"), False, 'no query: the row stays folded', what='no query')
+    c.check_errors()
+
+
+_UT = lambda key, lang: _trow(key, lang, after='  upd: {')
+_KB = {'ca': 1000, 'es': 9000, 'fr': 20000, 'gb': 10000, 'us': 21000}
+
+
+def _sized(cfg):
+    """The zones of the fixture with a published size (publishedKb of aerodb's zones())."""
+    for z in cfg['zones']:
+        if z['id'] in _KB:
+            z['publishedKb'] = _KB[z['id']]
+    return cfg
+
+
+def _bytes(c, kb):
+    """The size as the page writes it (model.fmtBytes), in the language of the run."""
+    return c.js("async ([kb, lang]) => (await import('/modules/data/model.js')).fmtBytes(kb * 1024, lang)", [kb, c.lang])
+
+
+@case('L36', 'Données: « Mettre à jour » downloads, then rebuilds only the stale zones after ONE question that names them, why and the size; « Tout recalculer » is today\u2019s build; nothing stale: said, no question', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0071 time 1 (V3_SPECIFICATION § 10.44): three verbs on the selection — Mettre à jour (fetch, then build the zones the page knows are stale: never built, or a published cycle older than the one the source holds), Tout recalculer (the whole selection), Purger; the confirmation names the count and the size')
+def l36(c):
+    lang = c.lang
+    _t, cur, prev, _n = _cycles()
+    fetched = _view('done', step='Terminé', result={'fetched': ['fr'], 'unchanged': ['ca', 'es', 'gb', 'us'], 'failed': [], 'manual': []})
+    built = _view('done', step='Terminé', jid='j2', zones={'fr': _zs('built', 4, 4, commit='abc1234')}, result={'built': ['fr'], 'failed': [], 'commits': [{'zone': 'fr', 'commit': 'abc1234'}], 'cycle': cur.isoformat(), 'current': cur.isoformat(), 'stale': False, 'blocking': []})
+    st = _launcher(c, [fetched], verbs=['base/fetch', 'base/build', 'base/purge'])
+    cfg, _ = _fixture()
+    _open(c, _sized(cfg))
+    _all_open(c)
+    labels = c.js("[...document.querySelectorAll('[data-build] .d-verbs:not([data-select-row]) button')].map(b => [b.dataset.verb, b.textContent.trim()])")
+    c.eq([[v for v, _l in labels if v != 'pickup'], dict(labels)['update'], dict(labels)['build']], [['update', 'download', 'build', 'purge'], norm(_UT('update', lang)), norm(_UT('recompute', lang))],
+         'the verbs row: Mettre à jour, Télécharger, Tout recalculer (today\u2019s build), Purger', what='verbs')
+    total = sum(_KB.values())
+    c.eq(norm(c.text('[data-selection-line]')), norm(_UT('selLine', lang).replace('{z}', _zones_text(lang, 5)) + ' · ' + _bytes(c, total)), 'the selection says its count and its size before any verb', what='selection line')
+    # ---- Mettre à jour: the fetch first, then ONE question that names the stale zone (France: its published cycle is one behind), the reason, the size
+    c.tap('[data-build] [data-verb=update]')
+    q = _ask_text(c)
+    c.eq({k: st['posts'][0][k] for k in ('set', 'verb')} | {'zones': sorted(st['posts'][0]['args']['zones'])}, {'set': 'base', 'verb': 'fetch', 'zones': ['ca', 'es', 'fr', 'gb', 'us']}, 'the first call is the download of the whole selection', what='fetch body')
+    fr = {'fr': 'France', 'en': 'France', 'de': 'Frankreich', 'es': 'Francia'}[lang]
+    c.ok(fr in q['text'] and _bytes(c, _KB['fr']) in q['text'] and norm(_UT('whyCycle', lang).split('{p}')[0]) in norm(q['text']) and 'Espagne' not in q['text'] and 'Spain' not in q['text'],
+         q['text'], 'the question names France, why (published cycle behind) and the size of France alone; not the zones that are up to date')
+    c.eq(norm(q['ok']), norm(_UT('update', lang)), 'one-word confirmation', what='ok')
+    st['views'] = [built]
+    st['i'] = 0
+    st['start'] = (200, {'job': 'j2'})
+    c.tap('.f-modal [data-ok]')
+    c.until('document.querySelector("[data-build-result]")', timeout=12000, what='the build ends')
+    c.eq({k: st['posts'][1][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'build', 'args': {'zones': ['fr'], 'personal': []}}, 'only the stale zone is built', what='build body')
+    # ---- nothing stale any more: the download, a sentence, no question, no build
+    c.js("window.__stub.publication.base.fr = { ...window.__stub.publication.base.gb, cycleSource: 'sia' }")
+    st['views'] = [fetched]
+    st['i'] = 0
+    st['start'] = (200, {'job': 'j3'})
+    n = len(st['posts'])
+    c.tap('[data-build] [data-verb=update]')
+    said = norm(_UT('none', lang).split('{n}')[0])
+    for _ in range(48):
+        if _notes_with(c, said):
+            break
+        c.wait(250)
+    c.ok(bool(_notes_with(c, said)), None, 'the sentence: nothing to rebuild')
+    c.eq([len(st['posts']) - n, c.count('.f-modal')], [1, 0], 'only the download left, no question, no build', what='nothing stale')
+    # ---- Tout recalculer: today\u2019s build on the whole selection, as it was
+    st['views'] = [built]
+    st['i'] = 0
+    st['start'] = (200, {'job': 'j4'})
+    c.tap('[data-build] [data-verb=build]')
+    c.until('document.querySelector("[data-build-result]")', timeout=12000, what='the build ends')
+    c.eq(sorted(st['posts'][-1]['args']['zones']), ['ca', 'es', 'fr', 'gb', 'us'], 'Tout recalculer builds the whole selection', what='recompute body')
+    c.check_errors()
+
+
+_ticked = lambda c: c.js("[...document.querySelectorAll('[data-build-zone]')].filter(i => i.checked).map(i => i.dataset.buildZone)")
+
+
+@case('L37', 'Données: « Seulement les périmés » (the stale zones only, the page\u2019s provisional criterion), « Tout désélectionner », the selection line; nothing is written in data/', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0071 time 1: the selection gestures — only the stale ones, deselect all; the selection stays in the page\u2019s state and is written nowhere before a verb')
+def l37(c):
+    lang = c.lang
+    st = _launcher(c, [], verbs=['base/fetch', 'base/build', 'base/purge'])
+    cfg, _ = _fixture()
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.eq(_ticked(c), ['ca', 'es', 'fr', 'gb', 'us'], 'every zone of the coverage is ticked at the first opening', what='first selection')
+    # ---- only the stale ones: France is one cycle behind its source (published cycle older), the others are up to date
+    c.tap('[data-select-row] [data-verb=select-stale]')
+    c.until("[...document.querySelectorAll('[data-build-zone]')].filter(i => i.checked).length === 1", timeout=6000, what='the selection became the stale zones')
+    c.eq(_ticked(c), ['fr'], 'only France, the stale zone, stays ticked', what='stale only')
+    c.eq(norm(c.text('[data-selection-line]')), norm(_UT('selLine', lang).replace('{z}', _zones_text(lang, 1)) + ' · ' + _bytes(c, _KB['fr'])), 'the line follows: one zone and its size', what='line')
+    # ---- deselect all
+    c.tap('[data-select-row] [data-verb=select-none]')
+    c.until("![...document.querySelectorAll('[data-build-zone]')].some(i => i.checked)", timeout=6000, what='nothing ticked')
+    c.eq(norm(c.text('[data-selection-line]')), norm(_UT('selNothing', lang)), 'the line says so', what='nothing line')
+    c.eq([c.js("document.querySelector('[data-build] [data-verb=update]').disabled"), c.js("document.querySelector('[data-build] [data-verb=build]').disabled")], [True, True], 'no zone: the verbs are grey', what='verbs grey')
+    # ---- nothing is stale: said, the selection is left as it is
+    c.js("window.__stub.publication.base.fr = { ...window.__stub.publication.base.gb, cycleSource: 'sia' }")
+    c.tap('[data-select-row] [data-verb=select-none]')
+    st['views'] = [_view('done', step='Terminé', result={'fetched': [], 'unchanged': ['gb'], 'failed': [], 'manual': []})]
+    st['i'] = 0
+    c.tap('[data-build-zone="gb"]')
+    c.tap('[data-build] [data-verb=download]')
+    c.until('document.querySelector("[data-build-result]")', timeout=12000, what='the download ends: the page reads the publication again')
+    c.tap('[data-select-row] [data-verb=select-stale]')
+    said = norm(_UT('noStale', lang))
+    for _ in range(40):
+        if _notes_with(c, said):
+            break
+        c.wait(250)
+    c.ok(bool(_notes_with(c, said)), None, 'no stale zone: said')
+    c.eq(_ticked(c), ['gb'], 'and the selection stays as it was', what='kept')
+    c.eq([p['verb'] for p in st['posts']], ['fetch'], 'the gestures started no job: the only call is the download', what='posts')
+    c.check_errors()
+
+
+def _rect_open(c):
+    """The Données screen with the base map drawn (flat zones side by side: gb, es west of 0°, fr, us east), everything deselected."""
+    c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/'), lambda r: r.fulfill(status=200, content_type='application/json', body=_ZSTYLE))
+    cfg, _ = _fixture()
+    cfg['outlines'] = _outlines()
+    c.page.add_init_script(_ZHOOK_JS)
+    _open(c, _sized(cfg))
+    _all_open(c)
+    _zmap_ready(c, 'base')
+    c.tap('[data-select-row] [data-verb=select-none]')
+    c.until("![...document.querySelectorAll('[data-build-zone]')].some(i => i.checked)", timeout=6000, what='nothing ticked')
+
+
+def _rect_xy(c, lon, lat):
+    """Page coordinates of a geographic point on the base map."""
+    return c.js(_ZXY_JS, ['base', lon, lat])
+
+
+@case('L38', 'Données: Shift + drag on the map ticks the zones whose frame touches the rectangle; the count is said before the release; a plain drag ticks nothing', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0071 time 1 (V3_SPECIFICATION § 10.44): a rectangle on the map (Shift + drag on a screen) ticks the zones of the coverage whose frame touches it, with the count said before the release (« 14 pays »)')
+def l38(c):
+    lang = c.lang
+    _rect_open(c)
+    c.js("document.querySelector('[data-zone-map=base] .d-map-host').scrollIntoView({ block: 'center' })")
+    c.wait(250)
+    c.eq(c.count('[data-rect-hint]'), 1, 'the gesture is explained under the map', what='hint')
+    # a plain drag pans the map and ticks nothing
+    x0, y0 = _rect_xy(c, -10, 44)
+    x1, y1 = _rect_xy(c, 4, 46)
+    c.page.mouse.move(x0, y0)
+    c.page.mouse.down()
+    c.page.mouse.move((x0 + x1) / 2, (y0 + y1) / 2, steps=4)
+    c.page.mouse.up()
+    c.wait(200)
+    c.eq([_ticked(c), c.count('[data-rect]:not([hidden])')], [[], 0], 'a plain drag ticks nothing and draws no rectangle', what='plain drag')
+    # Shift + drag: gb, es and fr are touched (not us), the count is there while the button is still down
+    x0, y0 = _rect_xy(c, -10, 44)
+    x1, y1 = _rect_xy(c, 4, 46)
+    c.page.keyboard.down('Shift')
+    c.page.mouse.move(x0, y0)
+    c.page.mouse.down()
+    c.page.mouse.move(x1, y1, steps=6)
+    c.until("!!document.querySelector('[data-rect]:not([hidden])')", timeout=4000, what='the rectangle is drawn')
+    want = {'fr': '3 pays', 'en': '3 countries', 'de': '3 Länder', 'es': '3 países'}[lang]
+    for _ in range(20):   # the drag is made of several moves: the count settles on the last one
+        if norm(c.text('[data-rect-count]')) == want:
+            break
+        c.wait(150)
+    c.eq(norm(c.text('[data-rect-count]')), want, 'the count is said before the release', what='live count')
+    c.eq(_ticked(c), [], 'nothing is ticked before the release', what='before release')
+    if c.width == 390:
+        c.shot(f'L38_rect_{c.width}_{lang}.png')
+    c.page.mouse.up()
+    c.page.keyboard.up('Shift')
+    c.until("[...document.querySelectorAll('[data-build-zone]')].filter(i => i.checked).length === 3", timeout=6000, what='the zones are ticked at the release')
+    c.eq([_ticked(c), c.count('[data-rect]:not([hidden])')], [['es', 'fr', 'gb'], 0], 'the three zones the rectangle touches are ticked, the rectangle is gone', what='after release')
+    c.eq(norm(c.text('[data-selection-line]')), norm(_UT('selLine', lang).replace('{z}', _zones_text(lang, 3)) + ' · ' + _bytes(c, _KB['es'] + _KB['fr'] + _KB['gb'])), 'the selection line follows', what='line')
+    # a second rectangle adds to the selection (it does not replace it)
+    c.tap('[data-zone-map=base] [data-act=map-recenter]')   # the plain drag above panned the map
+    c.wait(500)
+    x0, y0 = _rect_xy(c, 14, 45.5)
+    x1, y1 = _rect_xy(c, 22, 46.5)
+    c.page.keyboard.down('Shift')
+    c.page.mouse.move(x0, y0)
+    c.page.mouse.down()
+    c.page.mouse.move(x1, y1, steps=5)
+    c.page.mouse.up()
+    c.page.keyboard.up('Shift')
+    c.until("[...document.querySelectorAll('[data-build-zone]')].filter(i => i.checked).length === 4", timeout=6000, what='us is added')
+    c.eq(_ticked(c), ['es', 'fr', 'gb', 'us'], 'a second rectangle adds to the selection', what='added')
+    c.check_errors()
+
+
+@case('L39', 'Données: two fingers held half a second on the map draw the rectangle between them (phone), the count is said before the lift; an ordinary pinch draws nothing', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0071 time 1: the rectangle on a phone is a two-finger hold; fingers that move at once are a pinch of the map (nothing drawn)')
+def l39(c):
+    lang = c.lang
+    _rect_open(c)
+    c.js("document.querySelector('[data-zone-map=base] .d-map-host').scrollIntoView({ block: 'center' })")
+    c.wait(250)
+    host = "document.querySelector('[data-zone-map=base] .d-map-host')"
+    ev = lambda kind, pid, x, y: c.js(f"([k, id, x, y]) => {host}.dispatchEvent(new PointerEvent('pointer' + k, {{ bubbles: true, cancelable: true, pointerType: 'touch', pointerId: id, isPrimary: id === 1, clientX: x, clientY: y }}))", [kind, pid, x, y])
+    x0, y0 = _rect_xy(c, -10, 44)
+    x1, y1 = _rect_xy(c, 4, 46)
+    # a pinch: the fingers move before the half second: nothing is drawn
+    ev('down', 1, x0, y0)
+    ev('down', 2, x1, y1)
+    c.js("([id, x, y]) => window.dispatchEvent(new PointerEvent('pointermove', { pointerType: 'touch', pointerId: id, clientX: x, clientY: y }))", [1, x0 - 40, y0])
+    c.wait(700)
+    c.eq(c.count('[data-rect]:not([hidden])'), 0, 'fingers that move at once are a pinch: no rectangle', what='pinch')
+    for pid in (1, 2):
+        c.js("([id]) => window.dispatchEvent(new PointerEvent('pointerup', { pointerType: 'touch', pointerId: id }))", [pid])
+    # the hold: two fingers still for half a second
+    ev('down', 1, x0, y0)
+    ev('down', 2, x1, y1)
+    c.until("!!document.querySelector('[data-rect]:not([hidden])')", timeout=3000, what='the rectangle after the hold')
+    want = {'fr': '3 pays', 'en': '3 countries', 'de': '3 Länder', 'es': '3 países'}[lang]
+    c.eq(norm(c.text('[data-rect-count]')), want, 'the count is said while the fingers are down', what='live count')
+    c.eq(_ticked(c), [], 'nothing ticked before the lift', what='before lift')
+    if c.width == 390:
+        c.shot(f'L39_rect_{c.width}_{lang}.png')
+    c.js("([id]) => window.dispatchEvent(new PointerEvent('pointerup', { pointerType: 'touch', pointerId: id }))", [2])
+    c.until("[...document.querySelectorAll('[data-build-zone]')].filter(i => i.checked).length === 3", timeout=6000, what='ticked at the lift')
+    c.eq([_ticked(c), c.count('[data-rect]:not([hidden])')], [['es', 'fr', 'gb'], 0], 'the zones touched are ticked at the lift', what='after lift')
+    c.js("([id]) => window.dispatchEvent(new PointerEvent('pointerup', { pointerType: 'touch', pointerId: id }))", [1])
     c.check_errors()

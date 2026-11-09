@@ -17,6 +17,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   Fuel INTEGRATION, DECISIONS, help; noreg N11, G7; SOG-0041, the readers' lot of § 10.38). A mission says its category; Missions filters
   by the airline's known categories; a flight of a freight or passenger mission asks its load in the report (freight in kg, passengers),
   nothing else; an unknown category is ignored.
+- **Data: « Mettre à jour », « Tout recalculer », and the selection gestures of the base** (`modules/data/update.js`, `model_update.js`, `zonemap.js`, `panels.js`; Data SPEC § 5.8; help ×4; L36–L39) — SOG-0071, time 1:
+  « Mettre à jour » downloads, then rebuilds only the stale zones after one question that names them, why and the size (provisional criterion: no publication, or a published cycle older than the one the source holds); « Tout recalculer » is the former build;
+  « Seulement les périmés », « Tout désélectionner », a « Sélection : n zones · taille » line, and a rectangle on the map (Shift + drag, or two fingers held) that ticks the zones of the coverage it touches, the count said before the release.
 - **Settings › Company: the airline's kind and its mission categories** (`frame/settings/access.js`; Settings SPEC § 3 item 8; help ×4; A105) — SOG-0041: two more elements per line (not « Personnel »): the kind
   (« Commerciale » / « Escadrille (SOG) », `settings.json`) and a fold of the categories (the common base, the airline's own group « Virtuel » added to or removed from, written in `categories.json`); without a kind the Commercial group is inactive and the fold says so.
 - **Fuel: « ⇄ » swaps departure and arrival** (`modules/fuel/module.js`; Fuel SPEC § 9.2, DECISIONS, help; noreg F111; SOG-0127).

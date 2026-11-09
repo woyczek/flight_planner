@@ -30,6 +30,10 @@ import {
 import {
   updateAllInner
 } from './chain.js';
+import {
+  selectionLine,
+  updateGate
+} from './update.js';
 
 /** L'assistant de première installation (page V2 servie par le lanceur : SPEC § 6.5), adresse fixe du dépôt, jamais prise d'une réponse. */
 const FIRST_INSTALL = new URL('../../apps/settings/premier_lancement.html', import.meta.url).pathname;
@@ -597,9 +601,12 @@ function verbsHtml(gate, panel, pk) {
   const off = verb => gate.verbs[verb].disabled ? ' disabled' : '',
     miss = !!pk && missingList().length >
     0; // un cycle manuel manque : la prise du fichier passe avant Construire (qui referait l'ancien cycle)
-  return `<p class="d-verbs"><button type="button" data-verb="download"${off('fetch')}>${esc(tt(TX.download))}</button>
+  const base = panel === 'base',
+    upd = base ? updateGate() : null; // « Mettre à jour » (SOG-0071) : le téléchargement puis la construction des seules zones périmées
+  return `<p class="d-verbs">${base ? `<button type="button"${miss ? '' : ' class="primary"'} data-verb="update"${upd.disabled ? ' disabled' : ''}>${esc(tt(TX.upd.update))}</button>
+      ` : ''}<button type="button" data-verb="download"${off('fetch')}>${esc(tt(TX.download))}</button>
       ${pk ? `<button type="button"${miss ? ' class="primary"' : ''} data-verb="pickup"${pk.disabled ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button>
-      ` : ''}<button type="button"${miss ? '' : ' class="primary"'} data-verb="build"${off('build')}>${esc(tt(TX.build))}${attnDot(S.attn?.[panel], panel === 'base' ? staleBy() : '')}</button>
+      ` : ''}<button type="button"${miss || base ? '' : ' class="primary"'} data-verb="build"${off('build')}>${esc(tt(base ? TX.upd.recompute : TX.build))}${attnDot(S.attn?.[panel], panel === 'base' ? staleBy() : '')}</button>
       <button type="button" data-verb="purge"${off('purge')}>${esc(tt(TX.purge))}</button></p>`;
 }
 /** Le choix d'éléments d'un panneau : les zones de la couverture à cocher puis les sources sous licence personnelle qu'elles proposent (base), les États à cocher (procédures), le cycle en
@@ -612,7 +619,9 @@ function choiceHtml(set, busy) {
     } = buildZones(),
       pers = M.personalSources(ticked),
       xplaneOn = pers.some(p => p.id === 'xplane' && S.personal.has('xplane'));
-    return `<div class="d-opts" data-build-zones>${ids.map(z => optHtml('data-build-zone', z, M.zoneName(S.d.zones, z, li()), S.ticked?.has(z), busy)).join('')}</div>
+    return `<p class="d-verbs" data-select-row><button type="button" data-verb="select-stale"${busy ? ' disabled' : ''}>${esc(tt(TX.upd.selStale))}</button> <button type="button" data-verb="select-none"${busy ? ' disabled' : ''}>${esc(tt(TX.upd.selNone))}</button></p>
+    <p class="f-muted" data-selection-line>${esc(selectionLine())}</p>
+    <div class="d-opts" data-build-zones>${ids.map(z => optHtml('data-build-zone', z, M.zoneName(S.d.zones, z, li()), S.ticked?.has(z), busy)).join('')}</div>
     ${pers.length ? `<h3>${esc(tt(TX.personalTitle))}</h3><div data-personal-box>${pers.map(p => `<div class="d-pers" data-personal-row="${p.id}">
       ${optHtml('data-personal', p.id, personalName(p.id), S.personal.has(p.id), busy)}
       <p class="f-muted" data-personal-line>${esc(tt(TX.personalLine[p.kind]))}</p>

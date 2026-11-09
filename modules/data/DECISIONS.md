@@ -222,3 +222,15 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   **this workstation** imported, not what another workstation published. When AeroDB gives `publication().route` the row uses it too (nothing to change here). **Open point for AeroDB**: expose `{ rad: [cycles], fra: [cycles], at }`.
 - **Cases**: L33 (the row, the plan names the workbooks and their cycles, the question, « Non » sends nothing, the import sends the shown books only and writes the memory, the row turns green and is found again at the next opening,
   nothing in Downloads), L34 (an old launcher: grey with its reason). L2, L4 and L5 now count the route row. Counter-test: without the memory read at the opening, L33 is red (« absent » after the reload).
+
+## 10 November 2026 — three verbs and the selection gestures, time 1 (SOG-0071)
+
+- **Kept the download button and the pickup**: the base row is Mettre à jour · Télécharger · (Prendre le fichier) · Tout recalculer · Purger (five, under the seven of rule 13). Télécharger stays because the manual sources (SIA, NATS) are taken one by one
+  between a download and a build; « Tout recalculer » keeps `data-verb="build"` (and its place in the chain, `CHAIN_SETS`, which still says « Construire » for the other sets) so that nothing that drives the build changed.
+- **« Tout recalculer » asks nothing new**: § 10.44 says a verb's confirmation names the count and the size. Today's build had no confirmation and thirteen cases drive it by one tap; instead of a question the **Sélection line** (count and size) is always on screen
+  above the verbs. If the coordinator wants a question on « Tout recalculer » it is one `ask` in `startOp` and thirteen cases to adapt: said, not done.
+- **The provisional « stale » criterion lives in one pure function** (`staleZones`), used by « Mettre à jour » (after its download) and « Seulement les périmés » (without one). It looks at the **held** cycle of the dated source, not at the AIRAC cycle in force: a source whose newer
+  file the pilot has not been able to get (SIA is taken by hand) must not make « Mettre à jour » rebuild the same cycle in a loop. Without any held cycle it falls back to the AIRAC cycle in force (the orange country of SOG-0072 is what it flags).
+- **The rectangle ticks, it does not add zones**: a grey country (outside the coverage, SOG-0070) is not added by a rectangle (one gesture could add two hundred zones); only the coverage's zones are ticked, and a rectangle **adds** to the selection. The count is shown while the gesture is
+  under way and nothing is ticked before the release. Two fingers: a hold of 400 ms within 14 px; the pointer events of the touch are read on the map's host, the map's pan and pinch are disabled for the gesture and restored after (a real phone has not been tried: the case dispatches the pointer events).
+- **Time 2** (the launcher's `base/status`): `staleZones` is replaced by its answer; the states are drawn on the zones (green, orange with the reason on touch, grey, red), « Mettre à jour » and « Seulement les périmés » read it. Nothing else here changes.
