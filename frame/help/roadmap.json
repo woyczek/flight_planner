@@ -4,10 +4,10 @@
  "updated": "2026-11-09",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "34c91e7",
-  "fiches": 124,
+  "organisation": "929b67e",
+  "fiches": 130,
   "untranslated": 0,
-  "priorities": 0
+  "priorities": 3
  },
  "owner": "ergonomics session (Simplification interface et ergonomie)",
  "note": {
@@ -250,6 +250,27 @@
    ]
   },
   {
+   "id": "pilote-architecture",
+   "app": "pilote",
+   "label": {
+    "fr": "Architecture",
+    "en": "Architecture",
+    "de": "Architecture",
+    "es": "Architecture"
+   },
+   "items": [
+    {
+     "id": "SOG-0128",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Où calculer, la page ou le lanceur ? Billes, tâche avec avant / après, contraintes d'un lanceur — et l'appli Apple / Android à venir",
+     "en": "Where to compute, the page or the launcher? Figures, a task with before / after, launcher constraints, and the coming Apple / Android app",
+     "de": "Wo rechnen, Seite oder Launcher? Zahlen, Aufgabe mit Vorher/Nachher, Launcher-Zwänge und die kommende Apple/Android-App",
+     "es": "¿Dónde calcular, la página o el lanzador? Cifras, tarea con antes / después, restricciones del lanzador y la futura app Apple / Android"
+    }
+   ]
+  },
+  {
    "id": "pilote-carburant",
    "app": "pilote",
    "label": {
@@ -312,7 +333,7 @@
     {
      "id": "SOG-0080",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "RouteSim (E:\\DEFA\\rad) : s'inspirer de sa disposition (bande de gauche = alternatives d'itinéraires en vue large) ?",
      "en": "RouteSim (E:\\DEFA\\rad): take inspiration from its layout (left band = route alternatives in wide view)?",
      "de": "RouteSim (E:\\DEFA\\rad): sich an seinem Layout orientieren (linke Leiste = Routenalternativen in der Weitansicht)?",
@@ -321,7 +342,7 @@
     {
      "id": "SOG-0081",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Calcul de route automatique et contrôle IFPS / RAD / FRA : intégrer le moteur de RouteSim dans le chemin du pilote (alpha.5)",
      "en": "Automatic route calculation and IFPS / RAD / FRA check: integrate the RouteSim engine into the pilot’s path (alpha.5)",
      "de": "Automatische Routenberechnung und IFPS-/RAD-/FRA-Prüfung: die RouteSim-Engine in den Pilotenweg integrieren (alpha.5)",
@@ -371,6 +392,15 @@
      "en": "Runway in use or probable from the departure and arrival METAR",
      "de": "Betriebspiste oder wahrscheinliche Piste nach dem METAR von Start und Ziel",
      "es": "Pista en uso o probable según el METAR de salida y llegada"
+    },
+    {
+     "id": "SOG-0129",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Moteur de route dans la page (téléphone) : porter le moteur en JS, données RAD / FRA publiées",
+     "en": "Route engine in the page (phone): port the engine to JS, RAD / FRA data published",
+     "de": "Routen-Engine in der Seite (Telefon): Engine nach JS portieren, RAD/FRA-Daten veröffentlicht",
+     "es": "Motor de rutas en la página (teléfono): portar el motor a JS, datos RAD / FRA publicados"
     }
    ]
   },
@@ -449,12 +479,13 @@
     {
      "id": "SOG-0046",
      "kind": "feature",
-     "state": "done",
+     "state": "planned",
      "fr": "Carte : liste des points et des taxiways de l'ADEP / ADEST, recherche et surlignement (gros terrains)",
      "en": "Map: list of points and taxiways of the ADEP / ADEST, search and highlighting (large airfields)",
      "de": "Karte: Liste der Punkte und Rollwege von ADEP / ADEST, Suche und Hervorhebung (große Flugplätze)",
      "es": "Mapa: lista de puntos y calles de rodaje del ADEP / ADEST, búsqueda y resaltado (grandes aeródromos)",
-     "milestone": "6.0.0-alpha.5"
+     "milestone": "6.0.0-alpha.5",
+     "rank": 1
     },
     {
      "id": "SOG-0067",
@@ -1040,6 +1071,28 @@
    },
    "items": [
     {
+     "id": "SOG-0041",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Missions : catégories « commercial » (fret, passagers, VIP, training, transit, essais en vol) et compte rendu d'un vol commercial",
+     "en": "Missions: “commercial” categories (cargo, passengers, VIP, training, transit, test flights) and the report of a commercial flight",
+     "de": "Missionen: Kategorien „kommerziell“ (Fracht, Passagiere, VIP, Training, Transit, Testflüge) und der Bericht eines kommerziellen Flugs",
+     "es": "Misiones: categorías « comercial » (carga, pasajeros, VIP, entrenamiento, tránsito, vuelos de prueba) e informe de un vuelo comercial",
+     "milestone": "6.0.0-alpha.5",
+     "rank": 2
+    },
+    {
+     "id": "SOG-0051",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Missions en V3 dans l'application Compagnie : risques en première page, description détaillée, équipes engagées, zones à activer, aperçu des cartes",
+     "en": "Missions in V3 in the Airline app: risks on the first page, detailed description, teams involved, zones to activate, chart preview",
+     "de": "Missionen in V3 in der Gesellschafts-App: Risiken auf der ersten Seite, ausführliche Beschreibung, beteiligte Teams, zu aktivierende Zonen, Kartenvorschau",
+     "es": "Misiones en V3 en la aplicación Compañía: riesgos en la primera página, descripción detallada, equipos comprometidos, zonas por activar, vista previa de las cartas",
+     "milestone": "6.0.0-beta.1",
+     "rank": 3
+    },
+    {
      "id": "SOG-0036",
      "kind": "bug",
      "state": "done",
@@ -1050,26 +1103,6 @@
      "milestone": "6.0.0-alpha.4"
     },
     {
-     "id": "SOG-0041",
-     "kind": "feature",
-     "state": "planned",
-     "fr": "Missions : catégories « commercial » (fret, passagers, VIP, training, transit, essais en vol) et compte rendu d'un vol commercial",
-     "en": "Missions: “commercial” categories (cargo, passengers, VIP, training, transit, test flights) and the report of a commercial flight",
-     "de": "Missionen: Kategorien „kommerziell“ (Fracht, Passagiere, VIP, Training, Transit, Testflüge) und der Bericht eines kommerziellen Flugs",
-     "es": "Misiones: categorías « comercial » (carga, pasajeros, VIP, entrenamiento, tránsito, vuelos de prueba) e informe de un vuelo comercial",
-     "milestone": "6.0.0-alpha.5"
-    },
-    {
-     "id": "SOG-0051",
-     "kind": "feature",
-     "state": "later",
-     "fr": "Missions en V3 dans l'application Compagnie : risques en première page, description détaillée, équipes engagées, zones à activer, aperçu des cartes",
-     "en": "Missions in V3 in the Airline app: risks on the first page, detailed description, teams involved, zones to activate, chart preview",
-     "de": "Missionen in V3 in der Gesellschafts-App: Risiken auf der ersten Seite, ausführliche Beschreibung, beteiligte Teams, zu aktivierende Zonen, Kartenvorschau",
-     "es": "Misiones en V3 en la aplicación Compañía: riesgos en la primera página, descripción detallada, equipos comprometidos, zonas por activar, vista previa de las cartas",
-     "milestone": "6.0.0-beta.1"
-    },
-    {
      "id": "SOG-0084",
      "kind": "feature",
      "state": "later",
@@ -1077,6 +1110,15 @@
      "en": "Missions: a button to the general documentation (phraseology, interactions, procedures) with a management interface, not a wiki",
      "de": "Missionen: eine Schaltfläche zur allgemeinen Dokumentation (Phraseologie, Interaktionen, Verfahren) mit Verwaltungsoberfläche, kein Wiki",
      "es": "Misiones: un botón hacia la documentación general (fraseología, interacciones, procedimientos) con una interfaz de gestión, no un wiki"
+    },
+    {
+     "id": "SOG-0130",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Pélicandromes → installation de remplissage pour X-Plane (plugin FIRE_FIGHTING_FSX3D, scénerie ou plugin dédié) : à étudier",
+     "en": "Pelicandromes → refill installation for X-Plane (FIRE_FIGHTING_FSX3D plugin, scenery or dedicated plugin): to study",
+     "de": "Pelikandrome → Befüllanlage für X-Plane (Plugin FIRE_FIGHTING_FSX3D, Szenerie oder eigenes Plugin): zu untersuchen",
+     "es": "Pelicandromos → instalación de recarga para X-Plane (plugin FIRE_FIGHTING_FSX3D, escenario o plugin dedicado): por estudiar"
     }
    ]
   },
@@ -1202,7 +1244,7 @@
     {
      "id": "SOG-0078",
      "kind": "bug",
-     "state": "doing",
+     "state": "later",
      "fr": "AWY à sens unique : le sens n'est pas porté ou pas dessiné",
      "en": "One-way AWYs: the direction is not carried or not drawn",
      "de": "Einbahn-Luftstraßen: die Richtung wird nicht geführt oder nicht gezeichnet",
@@ -1211,7 +1253,7 @@
     {
      "id": "SOG-0083",
      "kind": "feature",
-     "state": "later",
+     "state": "planned",
      "fr": "Pélicandromes de France : un fichier précis dans Téléchargements, à intégrer comme couche",
      "en": "Pelicandromes of France: a specific file in Downloads, to integrate as a layer",
      "de": "Pelicandromes in Frankreich: eine bestimmte Datei in Downloads, als Ebene zu integrieren",
@@ -1279,6 +1321,15 @@
      "en": "Financial balance: per aircraft, per pilot, per airline, over a period; read-only from the costs (hours, fuel, overhauls)",
      "de": "Finanzbilanz: je Luftfahrzeug, je Pilot, je Gesellschaft, über einen Zeitraum; nur lesend aus den Kosten (Stunden, Treibstoff, Überholungen)",
      "es": "Balance financiero: por aeronave, por piloto, por compañía, en un periodo; solo lectura a partir de los costes (horas, combustible, revisiones)"
+    },
+    {
+     "id": "SOG-0126",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Zone gb (NATS) toujours « ko » après le dépôt des fichiers dans Téléchargements",
+     "en": "Zone gb (NATS) still “ko” after dropping the files into Downloads",
+     "de": "Zone gb (NATS) weiterhin „ko“ nach Ablage der Dateien in Downloads",
+     "es": "Zona gb (NATS) sigue «ko» tras dejar los archivos en Descargas"
     }
    ]
   },
@@ -1354,6 +1405,36 @@
      "en": "Several airlines on one terminal: several administrators, several pilot profiles, one data repository per airline, switching airline without mixing (request of 1 Nov)",
      "de": "Mehrere Gesellschaften auf einem Gerät: mehrere Administratoren, mehrere Pilotenprofile, ein Daten-Repository je Gesellschaft, Wechsel der Gesellschaft ohne Vermischung (Wunsch vom 1.11.)",
      "es": "Varias compañías en un mismo terminal: varios administradores, varios perfiles de piloto, un repositorio de datos por compañía, cambio de compañía sin mezcla (petición del 1/11)"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-carburant",
+   "app": "maintenance",
+   "label": {
+    "fr": "Carburant",
+    "en": "Fuel",
+    "de": "Kraftstoff",
+    "es": "Combustible"
+   },
+   "items": [
+    {
+     "id": "SOG-0125",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Importer le RAD et les points FRA depuis un écran (le travail `route/import-rad` n'est joignable d'aucune page)",
+     "en": "Import the RAD and the FRA points from a screen (the route/import-rad job is reachable from no page)",
+     "de": "RAD und FRA-Punkte von einem Bildschirm importieren (der Job route/import-rad ist von keiner Seite erreichbar)",
+     "es": "Importar el RAD y los puntos FRA desde una pantalla (el trabajo route/import-rad no es accesible desde ninguna página)"
+    },
+    {
+     "id": "SOG-0127",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Complétion ADEP / ADEST comme dans RouteSim : liste des terrains, nom sous le champ, bouton d'inversion",
+     "en": "ADEP / ADEST completion as in RouteSim: airport list, name under the field, swap button",
+     "de": "ADEP/ADEST-Vervollständigung wie in RouteSim: Flugplatzliste, Name unter dem Feld, Tauschknopf",
+     "es": "Autocompletado ADEP / ADEST como en RouteSim: lista de aeródromos, nombre bajo el campo, botón de intercambio"
     }
    ]
   },
@@ -1457,7 +1538,7 @@
     {
      "id": "SOG-0079",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Données : garder cochées les cases « personnel » des sources",
      "en": "Data: keep the sources’ “personal” boxes ticked",
      "de": "Daten: die Kontrollkästchen „persönlich“ der Quellen angehakt lassen",
