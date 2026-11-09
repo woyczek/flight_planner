@@ -4,7 +4,7 @@
  "updated": "2026-11-09",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "929b67e",
+  "organisation": "0350e7f",
   "fiches": 130,
   "untranslated": 0,
   "priorities": 3
@@ -479,7 +479,7 @@
     {
      "id": "SOG-0046",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Carte : liste des points et des taxiways de l'ADEP / ADEST, recherche et surlignement (gros terrains)",
      "en": "Map: list of points and taxiways of the ADEP / ADEST, search and highlighting (large airfields)",
      "de": "Karte: Liste der Punkte und Rollwege von ADEP / ADEST, Suche und Hervorhebung (große Flugplätze)",
@@ -1073,7 +1073,7 @@
     {
      "id": "SOG-0041",
      "kind": "feature",
-     "state": "doing",
+     "state": "later",
      "fr": "Missions : catégories « commercial » (fret, passagers, VIP, training, transit, essais en vol) et compte rendu d'un vol commercial",
      "en": "Missions: “commercial” categories (cargo, passengers, VIP, training, transit, test flights) and the report of a commercial flight",
      "de": "Missionen: Kategorien „kommerziell“ (Fracht, Passagiere, VIP, Training, Transit, Testflüge) und der Bericht eines kommerziellen Flugs",
