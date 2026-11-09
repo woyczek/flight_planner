@@ -381,3 +381,37 @@ def n8(c):
     c.until(f"!!document.querySelector('{M} [data-why=perso]')", what='« personnel »: no airline missions, said')
     c.eq(norm(c.text(f'{M} [data-why=perso]')), norm(row(c, 'persoNone')), 'the sentence', what='perso')
     # without an index every mission is listed, as before: N2 and N7, which seed no index
+
+
+_CAT_REGISTRY = """missions:
+  - { id: X-201A, family: TESTCO, title: Mission fret, category: fret, folder: X_CO/X-201A, files: [missionX-201A.yaml] }
+  - { id: X-202A, family: TESTCO, title: Mission passagers, category: passagers, folder: X_CO/X-202A, files: [missionX-202A.yaml] }
+  - { id: X-203A, family: TESTCO, title: Mission inconnue, category: zzz-inconnue, folder: X_CO/X-203A, files: [missionX-203A.yaml] }
+  - { id: X-204A, family: TESTCO, title: Mission sans catégorie, folder: X_CO/X-204A, files: [missionX-204A.yaml] }
+"""
+
+
+@case('N11', 'Missions: the filter by category lists the categories of the airline its missions carry; an unknown category is ignored; the mission says its category',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.38 / SOG-0041: a mission says its category; the airline\'s categories.json (absent: the common base) through forAirline; '
+      'commercial active for an airline of kind « va »; a category the airline does not know is not offered')
+def n11(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _CAT_REGISTRY]] + [[f'missions/X_CO/{i}/mission{i}.yaml', mission_doc(i)] for i in ('X-201A', 'X-202A', 'X-203A', 'X-204A')])
+    docs = [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}]}, 'document'],
+            ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'kind': 'va'}, 'document']]
+    c.open('missions', docs=docs, wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id]')", timeout=15000, what='the list of missions')
+    c.until(f"!!document.querySelector('{M} select[data-k=category]')", timeout=8000, what='the filter by category')
+    opts = c.js(f"[...document.querySelectorAll('{M} select[data-k=category] option')].map(o => o.value)")
+    c.eq(opts, ['', 'fret', 'passagers'], 'all, then the known categories the missions carry (the unknown one is not offered)', what='options')
+    c.page.select_option(f'{M} select[data-k=category]', 'fret')
+    c.until(f"[...document.querySelectorAll('{M} [data-list] [data-id]')].map(b => b.dataset.id).join() === 'X-201A'", what='the filter keeps the freight mission')
+    c.tap(f'{M} [data-list] [data-id="X-201A"]')
+    c.until(f"!!document.querySelector('{M} [data-pane=mission]')", what='the mission opens')
+    names = {'fr': 'Fret', 'en': 'Cargo', 'de': 'Fracht', 'es': 'Carga'}
+    c.ok(names[c.lang] in c.text(f'{M} [data-pane=mission] .f-dl'), c.text(f'{M} [data-pane=mission] .f-dl'), 'the mission says its category')
+    # « Préparer ce vol »: Fuel writes the mission's category with the flight (the report reads it there)
+    c.tap(f'{M} [data-do="prepare"]')
+    c.until_doc('pilot/ABC/current_flight.json', lambda d: d and d.get('mission') == 'X-201A' and d.get('missionCategory') == 'fret',
+                'the flight of the mission carries its category', timeout=10000)

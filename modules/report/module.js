@@ -10,6 +10,8 @@ import * as M from './model.js';
 import * as T from './text_import.js';
 import * as Fpl from './fpl.js';
 import * as LF from '../../frame/lib/last_flight.js';
+import * as MC from '../../frame/lib/mission_categories.js'; // les catégories de la compagnie (SOG-0041)
+import * as MS from '../../frame/lib/mission.js'; // categoryOf
 import * as CF from '../../frame/lib/current_flight.js';
 import {
   formatLevel
@@ -50,7 +52,7 @@ export const meta = {
   title: ['Compte rendu', 'Mission report', 'Einsatzbericht', 'Informe de misión'], // en-tête du téléphone (règle 16)
   apps: ['pilot'],
   level: 1,
-  reads: ['cr/', 'pilot/', 'cache/report/'],
+  reads: ['cr/', 'pilot/', 'cache/report/', 'airline/'], // airline/ : les catégories de la compagnie (SOG-0041)
   // « Mesures » (§ 10.37 A étape 3) : les journaux du dossier Output du poste par le travail stats/output d'AeroDB
   launcher: {
     routes: ['regen/job', 'regen/job/cancel'],
@@ -70,7 +72,8 @@ export const meta = {
     policy: 'cache'
   }],
   files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', '../stats/phases.js', '../stats/journals.js',
-    '../../frame/lib/last_flight.js', '../../frame/lib/current_flight.js',
+    '../../frame/lib/last_flight.js', '../../frame/lib/current_flight.js', '../../frame/lib/mission_categories.js',
+    '../../frame/lib/mission.js',
     '../../frame/lib/flight_time.js',
     '../../frame/lib/flight_path.js',
     '../../frame/lib/geo.js', // importé par current_flight.js et flight_path.js (cas I26)
@@ -218,6 +221,10 @@ const TX = {
     'dirección del sitio no ajustada'),
   // « Mesures » (§ 10.37 A étape 3) : le vol mesuré par le Fuel Phase Monitor, gardé dans le CR après accord
   measures: L('Mesures', 'Measurements', 'Messungen', 'Mediciones'),
+  // la charge d'un vol commercial (SOG-0041, § 10.38) : ce que la catégorie de sa mission dit qu'il transporte, rien d'autre
+  load: L('Charge', 'Load', 'Zuladung', 'Carga'),
+  loadFreight: L('Fret embarqué (kg)', 'Freight carried (kg)', 'Beförderte Fracht (kg)', 'Carga embarcada (kg)'),
+  loadPax: L('Passagers', 'Passengers', 'Passagiere', 'Pasajeros'),
   measIntro: L(
     'Le vol mesuré par le Fuel Phase Monitor : celui dont l’immatriculation et les heures UTC recouvrent ce compte rendu. Rien du journal n’est gardé, sauf l’agrégat que vous gardez.',
     'The flight measured by the Fuel Phase Monitor: the one whose registration and UTC times overlap this report. Nothing of the journal is kept, except the aggregate you keep.',
@@ -589,6 +596,41 @@ const STYLE = `
 function render() {
   return keepScroll(S.body, renderBody);
 }
+// ---------------------------------------------------------------- la charge d'un vol commercial (SOG-0041, § 10.38)
+/** Les catégories de la compagnie courante : son categories.json (FrameData.airline().root, entrée non fiable filtrée par forAirline),
+ *  à défaut la base commune ; relues quand la compagnie change. */
+async function loadCategories() {
+  let a = null,
+    doc = null;
+  try {
+    a = await window.FrameData?.airline?.();
+    doc = a?.root ? await S.ctx.data.get(`${a.root}categories.json`) : null;
+  } catch {
+    doc = null;
+  }
+  if (S) S.cats = MC.forAirline(doc, a);
+}
+/** La catégorie connue de la compagnie, avec sa charge ({ id, names, load }) ; null pour une catégorie inconnue ou sans charge. */
+const loadCat = id => (S.cats?.all || []).find(c => c.id === id && c.load) || null;
+/** La carte « Charge » du pas Vol : un seul champ, celui que la charge de la catégorie demande (fret en kg, ou passagers) ; rien
+ *  sans catégorie connue qui transporte. */
+function loadHtml() {
+  const c = loadCat(S.m.load?.category);
+  if (!c) return '';
+  const k = c.load === 'freight' ? 'freightKg' : 'passengers',
+    v = S.m.load[k];
+  return `<div class="f-card" data-loadcard="${esc(c.load)}"><h2>${esc(tt(TX.load))}</h2><p class="f-muted" data-loadcat>${esc(MC.nameOf(S.cats, c.id, S.ctx.lang()))}</p>
+    <div class="f-grid"><label class="f-field"><span>${esc(tt(k === 'freightKg' ? TX.loadFreight : TX.loadPax))}</span><input data-load="${k}" inputmode="numeric" value="${esc(Number.isFinite(v) ? String(v) : '')}"></label></div></div>`;
+}
+/** La catégorie du vol repris (current_flight.missionCategory) : connue et transportant, elle pose la charge du CR (les valeurs déjà
+ *  saisies gardées si c'est la même) ; inconnue, ignorée. */
+function takeCategory(id) {
+  const c = loadCat(MS.categoryOf(id));
+  if (!c) return;
+  if (S.m.load?.category !== c.id) S.m.load = {
+    category: c.id
+  };
+}
 // ---------------------------------------------------------------- « Mesures » (§ 10.37 A étape 3)
 /** Les bornes UTC du vol du CR (ms) : la date (metadata.date) et la plus tôt / la plus tard de ses heures (mise en route, départ du
  *  bloc, décollage ; atterrissage, arrivée au bloc, arrêt), écrites en UTC (timeline.tz « Z », INTEGRATION § 3 bis) ; une heure de fin
@@ -740,6 +782,7 @@ function renderBody() {
         <div class="f-card"><h2>${esc(tt(TX.steps[2]))}</h2>${grid([FIELDS.outcome, FIELDS.observations])}</div>
         <div class="f-card">${collection(crewCol(), tt(TX.crew))}</div>
         <div class="f-card"><h2>${esc(tt(TX.fuel))}</h2>${grid([FIELDS.fuelUnit, FIELDS.fuelStart, FIELDS.fuelLanding])}</div>
+        ${loadHtml()}
         <div class="f-card" data-check></div>
         ${measuresHtml()}
         <details class="f-card"><summary>${esc(tt(TX.onSite))}</summary><p class="f-muted">${esc(tt(TX.siteHelp))}</p>
@@ -1090,6 +1133,13 @@ function onInput(e) {
     }
     return;
   }
+  if (el.dataset.load && S.m.load) {
+    // la charge : un entier de 0 à 999 999, vide sinon (rien d'inventé)
+    const t = el.value.trim();
+    if (/^\d{1,6}$/.test(t)) S.m.load[el.dataset.load] = +t;
+    else delete S.m.load[el.dataset.load];
+    return saveDraft();
+  }
   if (!el.dataset.path) return;
   const [path, v] = readControl(el);
   M.set(S.m, path, v);
@@ -1185,6 +1235,7 @@ async function onClick(e) {
         a = cf.aircraft || {},
         r = cf.route || {};
       S.usedStarted = cf.started?.at || ''; // ce compte rendu est celui du vol démarré
+      takeCategory(cf.missionCategory); // SOG-0041 : la charge que demande la catégorie de sa mission
       return fill({
         'aircraft.0.registration': a.registration,
         'aircraft.0.type': a.type,
@@ -1257,9 +1308,10 @@ export async function mount(el, ctx) {
   S.body.addEventListener('click', onClick);
   // compagnie lue en fond par le cadre (frame INTEGRATION § 6) : arrivée ou changée après le montage, la barre
   // d'enregistrement (« Enregistrer et inscrire sur le site ») est redessinée
-  S.onAirline = () => S?.body && render();
+  S.onAirline = () => S?.body && loadCategories().then(() => S?.body && render());
   window.addEventListener('frame-airline', S.onAirline);
   measureStatus(S); // « Mesures » : le dossier Output du poste, s'il est réglé (§ 10.37 A étape 3)
+  await loadCategories(); // les catégories de la compagnie (la charge, SOG-0041)
   // plan de vol : appels par ctx.net ; types d'appareil par aerodb (modèle, voilure tournante)
   const ac = ctx.aerodb?.aircraft ? await ctx.aerodb.aircraft().catch(() => null) : null;
   Fpl.configure({

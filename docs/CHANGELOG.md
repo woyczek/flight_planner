@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Mission categories: Missions and the report read them** (`frame/lib/mission.js` `categoryOf`, `frame/lib/current_flight.js`
+  `missionCategory`, `modules/missions/module.js`, `modules/report/module.js`, `modules/fuel/module.js`; Missions SPEC § 3, report SPEC § 3,
+  Fuel INTEGRATION, DECISIONS, help; noreg N11, G7; SOG-0041, the readers' lot of § 10.38). A mission says its category; Missions filters
+  by the airline's known categories; a flight of a freight or passenger mission asks its load in the report (freight in kg, passengers),
+  nothing else; an unknown category is ignored.
 - **Settings › Company: the airline's kind and its mission categories** (`frame/settings/access.js`; Settings SPEC § 3 item 8; help ×4; A105) — SOG-0041: two more elements per line (not « Personnel »): the kind
   (« Commerciale » / « Escadrille (SOG) », `settings.json`) and a fold of the categories (the common base, the airline's own group « Virtuel » added to or removed from, written in `categories.json`); without a kind the Commercial group is inactive and the fold says so.
 - **Fuel: « ⇄ » swaps departure and arrival** (`modules/fuel/module.js`; Fuel SPEC § 9.2, DECISIONS, help; noreg F111; SOG-0127).

@@ -2114,7 +2114,8 @@ async function newFlight() {
     profile: null,
     weather: null,
     windSource: null,
-    mission: null
+    mission: null,
+    missionCategory: ''
   };
   S.ofp = null;
   S.procs = null;
@@ -4375,6 +4376,7 @@ async function applyMission(id) {
   f.ofp = null;
   S.ofp = null;
   f.mission = mf.mission;
+  f.missionCategory = mf.category || row?.category || ''; // SOG-0041 : celle du fichier, sinon celle du registre
   markEnds();
   ctx.notify(tt(TX.missionLoaded, {
     id,

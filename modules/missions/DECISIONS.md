@@ -51,3 +51,8 @@
 - **9 Nov 2026 — the list follows the current airline** (V3 spec § 10.38 step 1): no filter before the migration (code `default`),
   so nothing changes for a repository without index; a mission without `airline` goes to the first airline of the index (the
   airline of today becomes it at the migration). N8.
+- **10 Nov 2026 — categories read by the mission, carried by the flight** (SOG-0041, the readers' lot of § 10.38): the category is an id
+  in the mission; its name and its load come from the airline's list (`forAirline`), never from the mission, so a mission cannot invent
+  a category or a load. The report does not read the missions: Fuel writes `missionCategory` next to `mission` in the current flight
+  (one more field of `CF.FUEL_FIELDS`), and the report reads it when the pilot takes that flight. N11, G7; counter-test on 4d96bf2f4:
+  no filter, no load card.

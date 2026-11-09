@@ -24,7 +24,7 @@ The airline's missions, in the Company application: those of the shared reposito
 
 ## How to use
 
-<a id="missions-list"></a>**The list.** The missions of the newest series first, grouped by family. Each row gives the id, the title, the route, the aircraft type and the estimated block; "flown on …" marks a mission whose report you wrote. The search filters on the id, the title, an aerodrome (ICAO code), an aircraft type, a callsign (SAMU66) or the activity (MEDEVAC, HEMS, SAMU…); the drop-down list keeps one family. Seven rows are shown, "N more" unfolds the rest. The organisation missions of an exercise (those ending in Z) are not flights and are not listed. Only the missions of the airline chosen in Settings › Airline are listed (a mission without an airline belongs to the first one); « Personnel » has none.
+<a id="missions-list"></a>**The list.** The missions of the newest series first, grouped by family. Each row gives the id, the title, the route, the aircraft type and the estimated block; "flown on …" marks a mission whose report you wrote. The search filters on the id, the title, an aerodrome (ICAO code), an aircraft type, a callsign (SAMU66) or the activity (MEDEVAC, HEMS, SAMU…); the drop-down list keeps one family. Seven rows are shown, "N more" unfolds the rest. The organisation missions of an exercise (those ending in Z) are not flights and are not listed. Only the missions of the airline chosen in Settings › Airline are listed (a mission without an airline belongs to the first one); « Personnel » has none. When the airline has categories (cargo, passengers…), a second drop-down keeps one category, and the open mission says its own.
 
 <a id="missions-open"></a>**Choose, or draw at random.** A tap on a row opens the mission: its summary, its route, the aircraft, the estimated block, its notes. "Draw at random" picks one among the missions of the filtered list you have not flown yet; "Draw again" picks another. Nothing starts by itself: "Prepare this flight" opens Fuel, in the Pilot application, with the departure, the arrival, the points of the mission (as coordinates), the level and the aircraft type; the runway, the procedures, the fuel and the weather are then prepared as for any flight.
 
@@ -36,7 +36,7 @@ The airline's missions, in the Company application: those of the shared reposito
 - A flight being prepared is replaced only after a question; a started flight never is (cancel the start, or finish the flight, first).
 - The envelope, the page-by-page reader and the assignments will come later.
 
-<!-- fr: 3f67529ee715 -->
+<!-- fr: 2b27242924db -->
 
 <!-- chapter: settings -->
 # Settings

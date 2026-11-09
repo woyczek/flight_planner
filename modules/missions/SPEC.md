@@ -48,6 +48,12 @@ on the same data. The CPCO (authoring) stays V2 until rebuilt as the third appli
   `MS.airlineCode`, `^[a-z0-9]{2,8}$`); without it, it belongs to the first airline of the index. The list shows the current airline's
   missions and is drawn again on `frame-data-airline`; « Personnel » has no airline missions (an empty list, said); without an index
   (code `default`), every mission as before (N8; N2, N7 without index).
+- **Categories** (V3 spec § 10.38, SOG-0041): a mission says its `category` (registry row or file, `MS.categoryOf`, an id of the form
+  of `frame/lib/mission_categories.js`); the airline's categories are its `categories.json` (`FrameData.airline().root`, untrusted,
+  filtered by `forAirline`; absent: the common base), the groups active for its kind (`commercial` for `va` and « personnel »). A filter
+  « Toutes les catégories » offers the known categories its missions carry, in the airline's order; a category the airline does not know
+  is ignored (not offered, not named); the open mission names its category. « Préparer ce vol » hands it to Fuel with the flight
+  (`current_flight.missionCategory`), where the report reads it (N11).
 - One screen, the module's main: the missions of the airline, newest series first, grouped by family (the sixteen
   families of the generator prompt, their letter and their name, never hard-coded twice: read from the registry),
   seven rows then "N autres", a search (id, title, aerodrome, type), a filter by family and by aircraft category.

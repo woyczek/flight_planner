@@ -87,7 +87,7 @@ report and maps never write nor erase it.
 
 | Writer | Fields | Keys of `progress` |
 |---|---|---|
-| fuel | `FUEL_FIELDS`: `aircraft`, `route`, `level`, `wind`, `windSource`, `isaDev`, `profile`, `quote`, `weather`, `ofp`, `started`, `planned_at` | `FUEL_PROGRESS`: `at`, `plannedPos`, `eta`, `fuelRemainingKg`, `remainingNm`, `phase` |
+| fuel | `FUEL_FIELDS`: `aircraft`, `route`, `level`, `wind`, `windSource`, `isaDev`, `profile`, `quote`, `weather`, `ofp`, `started`, `planned_at`, `mission`, `missionCategory` | `FUEL_PROGRESS`: `at`, `plannedPos`, `eta`, `fuelRemainingKg`, `remainingNm`, `phase` |
 | maps (Edit mode of the Map) | `route` (merged into it: `procedures` kept while `dep` / `arr` are unchanged, `wind` removed from the points it moved), `level` | — |
 | report (report saved) | `started` (null) | `FUEL_PROGRESS` cleared |
 | frame | — | `actual` |
@@ -176,6 +176,9 @@ report and maps never write nor erase it.
   draws the arrows from it. Absent without a forecast for this route; rewritten whenever the route, the level or
   the flight hour changes.
 - `windSource` may also be `{ kind: 'aloft', model, levelFt, at }` when the quote's wind is the mean aloft.
+- **`missionCategory`** (fuel's, 10 Nov 2026, SOG-0041; optional, schema unchanged): the category id of the mission the flight comes
+  from (`mission`), from its file, else its registry row (`MS.categoryOf`), '' otherwise. The report reads it when the pilot takes the
+  flight, to ask the load its category says (modules/report SPEC § 3).
 - **`planned_at`** (fuel's, 24 Oct 2026, relay cloud; optional, schema number unchanged, merge rule unchanged): the
   flight date, the planned departure date-time, **ISO 8601 UTC** (`2026-10-25T09:40:00Z`); absent or `null` = now. It is
   the **one value** of the flight date: the "Flight date" field of fuel's step 1 writes it at every change (typed, "+30",

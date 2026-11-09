@@ -212,3 +212,53 @@ def g4(c):
     own = re.findall(r'font-size\s*:\s*(?!var\(--sog-size)[^;}"]+', (ROOT / 'modules/report/module.js').read_text(encoding='utf-8'))
     c.ok(not own, f'font-size of the module: {own[:3]}', 'no font-size of its own, only --sog-size-* tokens')
     c.check_errors()
+
+
+def _cat_docs(category):
+    """An invented airline of kind « va » (its commercial group is active: frame/lib/mission_categories.js) and the planned flight of a
+    mission of that category (current_flight.missionCategory, written by Fuel from the mission)."""
+    from lib import flight_docs
+    docs = flight_docs()
+    docs[1][1]['mission'] = 'X-201A'
+    docs[1][1]['missionCategory'] = category
+    return docs + [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}]}, 'document'],
+                   ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'kind': 'va'}, 'document'],
+                   # an empty draft: each scenario starts a new report (the browser's store outlives c.open, and a draft is the report in progress)
+                   ['cache/report/draft.json', {}, 'cache']]
+
+
+@case('G7', 'Report: a flight of a mission of category « fret » asks the freight carried, « passagers » the passengers; an unknown category is ignored',
+      'G', tags=('report', 'missions'), designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.38 / SOG-0041: the report of a commercial flight carries the load its category says (freight in kg, passengers), '
+      'nothing else; categories.json absent = the common base; a category the airline does not know is ignored, nothing invented')
+def g7(c):
+    for cat, want in (('fret', 'freight'), ('passagers', 'passengers'), ('zzz-inconnue', None)):
+        c.open('report', docs=_cat_docs(cat))
+        c.until("!!document.querySelector('[data-module=report] [data-do=current]')", timeout=10000, what='the current-flight card is offered')
+        c.wait(400)   # the airline's categories are read at mount
+        c.tap('[data-module="report"] [data-do="current"]')
+        c.until("[...document.querySelectorAll('[data-module=report] input')].some(i => i.value === 'F-RAJA')", what='the flight prefills the form')
+        c.settle()
+        got = c.js("[...document.querySelectorAll('[data-module=report] [data-loadcard]')].map(e => [e.dataset.loadcard, [...e.querySelectorAll('input[data-load]')].map(i => i.dataset.load)])")
+        if want is None:
+            c.eq(got, [], f'an unknown category ({cat}) is ignored: no load asked', what='unknown category')
+            continue
+        c.eq(got, [[want, ['freightKg' if want == 'freight' else 'passengers']]], f'the category {cat} asks one field: its load', what=cat)
+        if want == 'freight':
+            if c.js("!!document.querySelector('[data-module=report] .f-steps button[data-step=\"2\"]')?.offsetParent"):
+                c.tap('[data-module="report"] .f-steps button[data-step="2"]')   # a phone: one step at a time, the load is on the third
+                c.settle()
+            sel = '[data-module="report"] input[data-load="freightKg"]'
+            c.page.fill(sel, '1200')
+            c.page.locator(sel).dispatch_event('input')
+            before = set(c.doc_paths('cr/reports/'))
+            c.tap('[data-module="report"] [data-do="save"]')
+            path = None
+            for _ in range(40):
+                new = [p for p in c.doc_paths('cr/reports/') if p not in before]
+                if new:
+                    path = new[0]
+                    break
+                c.wait(200)
+            c.ok(path, 'no record', 'the report is saved')
+            c.eq(c.doc(path).get('load'), {'category': 'fret', 'freightKg': 1200}, 'the record carries the category and the freight, nothing else', what='load')

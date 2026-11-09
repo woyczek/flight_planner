@@ -4,14 +4,17 @@
 // n'écrit rien : les missions ont un seul auteur (le CPCO de la V2), le vol est écrit par Carburant. Pas encore : l'enveloppe, le lecteur
 // page à page, l'affectation (§ 5–6).
 import * as MS from '../../frame/lib/mission.js';
+import * as MC from '../../frame/lib/mission_categories.js'; // les catégories de la compagnie (SOG-0041, § 10.38)
 
 export const meta = {
   id: 'missions',
   apps: ['company'], // l'application Compagnie (?app=company), seule (décision de l'utilisateur, 1er nov. 2026)
   level: 1,
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
-  files: ['../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js'],
-  reads: ['missions/', 'cr/'], // les missions et leur registre ; les comptes rendus (« volée le … »)
+  files: ['../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/mission_categories.js'],
+  reads: ['missions/', 'cr/',
+    'airline/'
+  ], // les missions et leur registre ; les comptes rendus (« volée le … ») ; les catégories de la compagnie
   // titre lisible d'un fichier de mission en attente de synchronisation (la carte Synchronisation des Réglages, Simplification 1er nov.
   // 2026) : « A-001A Titre » (le titre lu dans le texte YAML, sans le lire en entier) ; [fr, en, de, es], ou null ; pur, sans lecture
   titleOf: (path, v) => {
@@ -28,6 +31,8 @@ const REGISTRY = 'missions/mission_registry.yaml',
   ROWS = 7; // lignes montrées avant « N autres » (sept éléments au plus par écran)
 
 const TX = {
+  allCategories: ['Toutes les catégories', 'All categories', 'Alle Kategorien', 'Todas las categorías'],
+  category: ['Catégorie', 'Category', 'Kategorie', 'Categoría'],
   search: ['Rechercher une mission', 'Search a mission', 'Mission suchen', 'Buscar una misión'],
   // ce que la recherche lit, écrit sous le champ (SOG-0009)
   searchHint: ['Identifiant, titre, terrain (code OACI), type d’appareil, indicatif (SAMU66), activité (MEDEVAC, HEMS, SAMU…).',
@@ -164,6 +169,8 @@ export async function mount(el, ctx) {
     flown: new Map(), // id de mission → date du compte rendu (le mien, ou sans auteur)
     q: '',
     family: '',
+    category: '', // SOG-0041 : le filtre de catégorie ('' : toutes)
+    cats: MC.forAirline(null, null), // les catégories de la compagnie courante (relues avec elle)
     all: false,
     open: null, // { row, mission, drawn, why, err } : la mission choisie
     regWhy: {
@@ -175,11 +182,15 @@ export async function mount(el, ctx) {
   el.onchange = e => onInput(s, e);
   // § 10.38 : la liste suit la compagnie courante, et la relit quand elle change (Réglages › Compagnie)
   s.co = await airlineOf();
+  s.cats = await categoriesOf(ctx, s.co.a);
   if (S !== s) return;
   s.onAirline = async () => {
-    const co = await airlineOf();
+    const co = await airlineOf(),
+      cats = await categoriesOf(ctx, co.a);
     if (S !== s) return;
     s.co = co;
+    s.cats = cats;
+    s.category = '';
     s.all = false;
     if (!s.open) draw(s);
   };
@@ -255,7 +266,8 @@ async function airlineOf() {
     return {
       code,
       first,
-      filter: !!code && code !== 'default'
+      filter: !!code && code !== 'default',
+      a
     };
   } catch {
     return {
@@ -265,6 +277,14 @@ async function airlineOf() {
     };
   }
 }
+/** Les catégories de la compagnie (SOG-0041, § 10.38) : son categories.json (airline().root, une entrée non fiable filtrée par
+ *  forAirline), à défaut la base commune ; les groupes actifs pour son genre. */
+async function categoriesOf(ctx, a) {
+  const doc = a?.root ? await Promise.resolve().then(() => ctx.data.get(`${a.root}categories.json`)).catch(() => null) : null;
+  return MC.forAirline(doc, a || null);
+}
+/** La catégorie d'une ligne, si la compagnie la connaît ({ id, names, load? }) ; null sinon (une catégorie inconnue est ignorée). */
+const catOf = (s, r) => r.category ? s.cats.all.find(c => c.id === r.category) || null : null;
 /** Une mission de la compagnie courante : son champ airline, sinon la première compagnie de l'index ; toutes sans index. */
 const ofAirline = (s, r) => !s.co?.filter || (r.airline || s.co.first) === s.co.code;
 
@@ -282,7 +302,8 @@ async function flownOf(s) {
 }
 
 /** Les lignes retenues par la recherche et le filtre de famille. */
-const filtered = s => s.rows.filter(r => ofAirline(s, r) && (!s.family || r.family === s.family) && (!s.q || [r.id, r.title, r.operation, r
+const filtered = s => s.rows.filter(r => ofAirline(s, r) && (!s.family || r.family === s.family) && (!s.category || catOf(s, r)?.id === s
+  .category) && (!s.q || [r.id, r.title, r.operation, r
   .family, r.kind,
   r.subtype, ...r.callsigns, ...r.words, r.originIcao, r.destinationIcao, r.origin, r
   .destination, ...r.types
@@ -303,10 +324,15 @@ function listHtml(s) {
   // « personnel » n'a pas de missions de compagnie : la liste vide, dite
   if (s.co?.filter && s.co.code === 'perso') return `<div class="f-card"><p class="f-muted" data-why="perso">${esc(s.tt(TX.persoNone))}</p></div>`;
   if (!s.rows.length) return `<div class="f-card"><p class="f-muted" data-why="${esc(w?.why || 'none')}">${esc(w?.why === 'loading' ? s.tt(TX.regLoading) : w?.why === 'late' ? s.tt(TX.regLate) : w?.why === 'unreadable' ? s.tt(TX.regUnreadable, { e: w.err }) : s.tt(TX.none))}</p></div>`;
-  const families = [...new Set(s.rows.filter(r => ofAirline(s, r)).map(r => r.family).filter(Boolean))].sort();
+  const families = [...new Set(s.rows.filter(r => ofAirline(s, r)).map(r => r.family).filter(Boolean))].sort(),
+    // les catégories connues de la compagnie que ses missions portent, dans l'ordre de sa liste ; sans elles, pas de filtre
+    held = new Set(s.rows.filter(r => ofAirline(s, r)).map(r => catOf(s, r)?.id).filter(Boolean)),
+    cats = s.cats.all.filter(c => held.has(c.id)),
+    lang = s.ctx.lang?.() || 'fr';
   return `<div class="f-card" data-pane="list"><div class="f-row"><button type="button" class="primary" data-do="draw">${esc(s.tt(TX.draw))}</button></div>
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.search))}</span><input type="search" data-k="q" value="${esc(s.q)}" placeholder="${esc(s.tt(TX.search))}" autocomplete="off"><small class="f-muted" data-searchhint>${esc(s.tt(TX.searchHint))}</small></label>
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.allFamilies))}</span><select data-k="family"><option value="">${esc(s.tt(TX.allFamilies))}</option>${families.map(f => `<option value="${esc(f)}"${s.family === f ? ' selected' : ''}>${esc(f)}</option>`).join('')}</select></label>
+    ${cats.length ? `<label class="f-field"><span class="f-sr">${esc(s.tt(TX.allCategories))}</span><select data-k="category"><option value="">${esc(s.tt(TX.allCategories))}</option>${cats.map(c => `<option value="${esc(c.id)}"${s.category === c.id ? ' selected' : ''}>${esc(MC.nameOf(s.cats, c.id, lang))}</option>`).join('')}</select></label>` : ''}
     <div data-results>${resultsHtml(s)}</div></div>`;
 }
 
@@ -349,7 +375,7 @@ function missionHtml(s) {
     arr = m?.destination?.name || r.destination;
   return `<div class="f-card" data-pane="mission" data-id="${esc(r.id)}">${drawn ? `<p class="f-badge" data-kind="accent" data-drawn>${esc(s.tt(TX.drawn))}</p>` : ''}
     <h2><b>${esc(r.id)}</b> ${esc(m?.title || r.title)}</h2>
-    <dl class="f-dl">${dl(TX.operation, r.operation)}${dl(TX.route, [dep, arr].filter(Boolean).join(' → '))}${dl(TX.aircraft, (m?.aircraft || []).map(a => a.type).filter(Boolean).join(', ') || r.types.join(', '))}${dl(TX.block, hmm(m?.estimate?.blockMin || r.blockMin))}</dl>
+    <dl class="f-dl">${dl(TX.category, catOf(s, { category: m?.category || r.category }) ? MC.nameOf(s.cats, m?.category || r.category, s.ctx.lang?.() || 'fr') : '')}${dl(TX.operation, r.operation)}${dl(TX.route, [dep, arr].filter(Boolean).join(' → '))}${dl(TX.aircraft, (m?.aircraft || []).map(a => a.type).filter(Boolean).join(', ') || r.types.join(', '))}${dl(TX.block, hmm(m?.estimate?.blockMin || r.blockMin))}</dl>
     ${s.open.why ? `<p class="f-muted" data-why="${esc(s.open.why)}">${esc(s.open.why === 'late' ? s.tt(TX.late) : s.open.why === 'missing' ? s.tt(TX.missing, { p: `missions/${r.folder}/${r.file}` }) : s.tt(TX.unreadable, { e: s.open.err || s.tt(TX.noIdType) }))}</p>` : ''}
     ${m?.summary ? `<p data-summary>${esc(m.summary)}</p>` : ''}
     ${m?.notes?.length ? `<h3>${esc(s.tt(TX.notes))}</h3><ul>${m.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
@@ -383,8 +409,8 @@ async function openMission(s, row, drawn = false) {
 /** Saisie : la recherche et la famille filtrent la liste. */
 function onInput(s, e) {
   const k = e.target?.dataset?.k;
-  if (k !== 'q' && k !== 'family') return;
-  s[k === 'q' ? 'q' : 'family'] = e.target.value;
+  if (k !== 'q' && k !== 'family' && k !== 'category') return;
+  s[k] = e.target.value;
   s.all = false;
   results(s);
 }

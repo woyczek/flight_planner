@@ -5,11 +5,11 @@
 //
 // API :
 //   readMission(doc) → mission { id, type, subtype, title, summary, organisation, operation, origin, destination, target, points,
-//     routeOrder, aircraft, cruiseLevelFt, cruiseSpeedKt, estimate, notes, constraints, risks } ; null sans mission.id ou
+//     routeOrder, aircraft, cruiseLevelFt, cruiseSpeedKt, estimate, notes, constraints, risks, category } ; null sans mission.id ou
 //     mission.type (seuls champs exigés). origin / destination / target : { name, icao, lat, lon } ou null ; points : { id → { id,
 //     name, lat, lon, kind } } (tournants, rendez-vous, zones par leur centre, cible).
 //   readRegistry(doc) → [ligne { id, family, title, operation, types, origin, destination, originIcao, destinationIcao, blockMin,
-//     folder, file, organisation, kind, subtype, callsigns, words }] : les lignes du registre, les organisations (…Z) marquées ; folder et file vides quand le
+//     folder, file, organisation, kind, subtype, callsigns, words, category }] : les lignes du registre, les organisations (…Z) marquées ; folder et file vides quand le
 //     registre en donne un qui n'est pas sûr (le chemin n'est jamais pris tel quel : un pilote peut écrire le registre).
 //   missionPath(path) → { folder, file, id } : le fichier de mission d'un dossier de mission du dépôt (« missions/A_COMBAT/A-001A/
 //     missionA-001A.yaml ») ; null pour tout autre fichier (versions/, recu/, résumé) ou un chemin pas sûr.
@@ -17,7 +17,10 @@
 //     null si le fichier n'est pas une mission de ce dossier (id différent du dossier, mission.id ou mission.type absents).
 //   icaoOf(name) : le code OACI entre parenthèses à la fin d'un nom (« BA 118 Mont-de-Marsan (LFBM) » → « LFBM ») ; '' sinon.
 //   levelFt(text) : « FL240 » → 24000, « 1500 ft » → 1500, un nombre tel quel ; null sinon.
-//   missionFlight(mission, assignment) → { route: { dep, arr, points }, aircraft: { type, registration }, levelFt, speedKt, mission }
+//   missionFlight(mission, assignment) → { route: { dep, arr, points }, aircraft: { type, registration }, levelFt, speedKt, mission,
+//     category }
+//   categoryOf(v) : l'identifiant de catégorie d'une mission (SOG-0041, § 10.38 ; la forme des identifiants de
+//     frame/lib/mission_categories.js), '' sinon ; le nom et la charge se lisent dans la liste de la compagnie (forAirline).
 //     (le vol que Carburant pose ; § 4 de la SPEC) ; null sans mission.
 
 /** Un texte nettoyé (blancs repliés), '' pour rien. */
@@ -135,7 +138,8 @@ export function readMission(doc) {
     },
     notes: texts(d.notes),
     constraints: texts(d.payload?.constraints),
-    risks: texts(d.risks)
+    risks: texts(d.risks),
+    category: categoryOf(m.category ?? d.category)
   };
 }
 
@@ -151,6 +155,9 @@ const safeFile = f => f && f.length <= 120 && SEGMENT.test(f) && /\.ya?ml$/i.tes
 /** Les lignes du registre (voir l'en-tête). */
 /** La compagnie d'une mission (§ 10.38 étape 1) : le code de son champ airline (^[a-z0-9]{2,8}$, la règle des codes du cadre), ''
  *  sans champ ou pour un code d'une autre forme (une entrée non fiable : la mission va alors à la première compagnie de l'index). */
+/** L'identifiant de catégorie d'une mission (voir l'en-tête) : un texte de la forme des identifiants de catégorie, '' sinon (le fichier
+ *  est écrit par n'importe quel pilote, audit 157 ; une catégorie inconnue de la compagnie est ignorée par le lecteur qui la cherche). */
+export const categoryOf = v => typeof v === 'string' && /^[a-z0-9][a-z0-9-]{0,23}$/.test(v.trim()) ? v.trim() : '';
 export const airlineCode = v => typeof v === 'string' && /^[a-z0-9]{2,8}$/.test(v.trim()) ? v.trim() : '';
 export function readRegistry(doc) {
   return (Array.isArray(doc?.missions) ? doc.missions : []).filter(x => x && clean(x.id)).map(x => {
@@ -170,6 +177,7 @@ export function readRegistry(doc) {
       file: safeFile(clean((Array.isArray(x.files) ? x.files : [])[0]) || `mission${id}.yaml`),
       organisation: x.organisation === true || /Z$/.test(id),
       airline: airlineCode(x.airline),
+      category: categoryOf(x.category),
       // ce que la recherche lit en plus (SOG-0009) : l'activité (type, sous-type : MEDEVAC, BFM…), les indicatifs, les équipes
       // (nom, service, type : SAMU66, SAMU, H135) ; des textes, bornés (le registre s'écrit par n'importe quel pilote)
       kind: clean(x.type),
@@ -219,6 +227,7 @@ export function rowOfMission(doc, path) {
     file: where.file,
     organisation: m.organisation,
     airline: airlineCode(doc?.mission?.airline ?? doc?.airline),
+    category: m.category,
     kind: cut(m.type, 40),
     subtype: cut(m.subtype, 40),
     callsigns: m.aircraft.map(a => cut(a.callsign, 40)).filter(Boolean).slice(0, 20),
@@ -252,6 +261,7 @@ export function missionFlight(mission, assignment = null) {
     },
     levelFt: mission.cruiseLevelFt,
     speedKt: mission.cruiseSpeedKt,
-    mission: mission.id
+    mission: mission.id,
+    category: mission.category || ''
   };
 }
