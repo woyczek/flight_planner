@@ -177,9 +177,12 @@ export function refusal(r) {
   const key = r?.status === 409 && r.reason === 'updating' ? 'updating' : r?.status === 409 ? 'busy' : r?.status === 429 && r.reason ===
     'too-soon' ? 'tooSoon' : r?.status === 404 ? 'unknown-route' :
     r?.status === 400 ? 'bad-args' : r?.refused ? 'refused' : r?.offline ? 'offline' : 'failed';
+  // la raison que le lanceur donne (son `message`, au plus 160 signes, sans caractère de commande) : relayée, jamais « arguments invalides » tout court ; les textes sont les siens, pas des phrases de la page
+  const why = typeof r?.message === 'string' ? r.message.replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, ' ').trim().slice(0, 160) : '';
   return {
     key,
-    wait: key === 'tooSoon' ? Math.max(1, Math.ceil(num(r.wait) ?? 1)) : null
+    wait: key === 'tooSoon' ? Math.max(1, Math.ceil(num(r.wait) ?? 1)) : null,
+    why: ['bad-args', 'failed', 'refused'].includes(key) ? why : ''
   };
 }
 /** Une entrée du journal : { at (UTC ISO), set, verb, zones, seconds, result, built, failed, job? }. `at` : instant en ms ; `set` et `key` : pour un autre jeu que la base. */

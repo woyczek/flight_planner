@@ -504,6 +504,15 @@ export const TX = {
     ]
   },
   // un départ refusé par le lanceur
+  refusedWhy: ['Le lanceur dit : {m}', 'The launcher says: {m}', 'Der Starter meldet: {m}', 'El lanzador dice: {m}'],
+  // une sélection de plus de 60 zones : des constructions de 60 au plus, l'une après l'autre (SOG-0144)
+  chunk: ['Tranche {i} sur {n} ({z} au plus par construction)', 'Part {i} of {n} (at most {z} per run)',
+    'Teil {i} von {n} (höchstens {z} je Lauf)', 'Parte {i} de {n} (como máximo {z} por ejecución)'
+  ],
+  chunksAsk: ['{n} zones en {k} constructions de {z} au plus, l’une après l’autre.',
+    '{n} zones in {k} runs of at most {z}, one after the other.', '{n} Zonen in {k} Läufen zu höchstens {z}, nacheinander.',
+    '{n} zonas en {k} ejecuciones de {z} como máximo, una tras otra.'
+  ],
   refused: {
     busy: ['Une autre opération est en cours', 'Another operation is running', 'Ein anderer Vorgang läuft',
       'Hay otra operación en curso'

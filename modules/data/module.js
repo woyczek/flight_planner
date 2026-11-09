@@ -218,6 +218,7 @@ export async function mount(el, ctx) {
     statusAsked: false, // l'état a été demandé à l'ouverture
     whyOpen: new Set(),
     packOpen: new Set(), // les filtres thématiques dont le pli est ouvert (SOG-0065) // les zones dont la pastille montre ses raisons
+    chunk: null, // une sélection de plus de 60 zones : { i, n } la tranche en cours (follow.js runChunks)
     updating: false, // « Mettre à jour » est entre son téléchargement et sa construction (update.js)
     route: routeInit(), // la ligne « Route (RAD, points FRA) » : phase, plan montré, dernière fin, cycles présents (route.js)
     personalRead: false, // la mémoire des sources personnelles a été lue (une fois par montage)

@@ -26,6 +26,14 @@ export const PERSONAL = {
     zones: '*'
   }
 };
+/** Le nombre de zones qu'un travail du lanceur accepte (base/fetch, base/build, base/purge : 1 à 60). */
+export const MAX_ZONES = 60;
+/** La liste découpée en tranches de `n` éléments au plus, dans l'ordre (la dernière peut être plus courte) ; [] pour une liste vide. */
+export function chunksOf(list, n = MAX_ZONES) {
+  const out = [];
+  for (let i = 0; i < list.length; i += n) out.push(list.slice(i, i + n));
+  return out;
+}
 /** États d'une zone dans la vue d'un travail, par verbe. */
 const ZONE_STATES = {
   build: ['waiting', 'building', 'built', 'failed', 'cancelled'],

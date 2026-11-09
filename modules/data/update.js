@@ -20,6 +20,7 @@ import {
 } from './panels.js';
 import {
   launch,
+  runChunks,
   settle
 } from './follow.js';
 import {
@@ -97,9 +98,9 @@ export async function startUpdate() {
   S.updating = true;
   renderBuild();
   S.lastOp = null;
-  await settle(me, await launch('base', 'fetch', M.setArgs('base', 'fetch', sel), sel.ids), true);
+  const verdict = sel.ids.length > M.MAX_ZONES ? await runChunks(me, 'base', 'fetch', sel) : (await settle(me, await launch('base',
+    'fetch', M.setArgs('base', 'fetch', sel), sel.ids), true), S.lastOp ? M.chainVerdict('fetch', S.lastOp.out) : 'stop');
   if (S !== me) return;
-  const verdict = S.lastOp ? M.chainVerdict('fetch', S.lastOp.out) : 'stop';
   if (verdict === 'stop') {
     S.updating = false;
     return renderBuild();
@@ -122,13 +123,17 @@ export async function startUpdate() {
     t: sel.ids.length,
     s: sizeText(ids) || tt(TX.upd.sizeUnknown),
     l: whyText(plan.build)
-  }) + (ids.length >= 10 ? ` ${tt(TX.upd.long)}` : '') + (plan.waiting.length ? ` ${waitingText(plan.waiting)}` : ''), {
+  }) + (ids.length > M.MAX_ZONES ? ` ${tt(TX.chunksAsk, { n: ids.length, k: M.chunksOf(ids).length, z: M.MAX_ZONES })}` : '') + (ids.length >= 10 ? ` ${tt(TX.upd.long)}` : '') + (plan.waiting.length ? ` ${waitingText(plan.waiting)}` : ''), {
     ok: tt(TX.upd.update)
   });
   if (S !== me) return;
   S.asking = false;
   S.updating = false;
   if (!yes) return renderBuild();
+  if (ids.length > M.MAX_ZONES) return void await runChunks(me, 'base', 'build', {
+    ...sel,
+    ids
+  });
   await settle(me, await launch('base', 'build', M.setArgs('base', 'build', {
     ...sel,
     ids

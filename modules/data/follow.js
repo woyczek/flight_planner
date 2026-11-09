@@ -9,6 +9,7 @@ import {
   count,
   kind,
   lang,
+  refusedText,
   ROUTE,
   S,
   tt
@@ -323,9 +324,7 @@ function refused(me, r) {
   };
   if (f.key === 'busy') S.other = S.other || {}; // une opération tourne : le bouton reste gris pendant qu'on la rejoint
   renderBuild();
-  S.ctx.notify(tt(TX.refused[f.key], {
-    n: f.wait
-  }), 'err');
+  S.ctx.notify(refusedText(f), 'err');
   if (f.key === 'busy') follow();
 }
 /** Termine d'après ce que rend ctx.launcher.job ou .resume : une fin (état connu), un arrêt demandé (on attend la vraie fin du
@@ -418,10 +417,37 @@ export async function startOp(set, verb) {
     dry = verb === 'purge' || sheets,
     // les appareils : les lignes d'une construction ou d'un téléchargement sont les trois étapes ; la purge ne compte rien par élément
     ids = set === 'aircraft' ? verb === 'purge' || sheets ? [] : M.SETS.aircraft.steps : sel.ids;
+  if (set === 'base' && (verb === 'fetch' || verb === 'build') && ids.length > M.MAX_ZONES) return void await runChunks(me, set, verb,
+    sel);
   await settle(me, await launch(set, verb, dry ? {
     ...args,
     dry: true
   } : args, ids, dry, args), true);
+}
+/** Un verbe de la base sur plus de 60 zones : des tranches de 60 au plus, construites ou téléchargées l'une après l'autre (le lanceur tient UN travail à la fois : la suivante part à la fin de la précédente), arrêt à la première qui ne finit pas bien.
+ *  `sel` : la sélection (ids, personal) ; rend 'ok' | 'stop' (la fin de la dernière tranche, ou de la première qui a échoué, reste dans S.lastOp). */
+export async function runChunks(me, set, verb, sel) {
+  const parts = M.chunksOf(sel.ids);
+  let verdict = 'ok',
+    worst = null;
+  for (let i = 0; i < parts.length && verdict === 'ok'; i++) {
+    S.chunk = parts.length > 1 ? {
+      i: i + 1,
+      n: parts.length
+    } : null;
+    S.lastOp = null;
+    await settle(me, await launch(set, verb, M.setArgs(set, verb, {
+      ...sel,
+      ids: parts[i]
+    }), parts[i]), true);
+    if (S !== me) return 'stop';
+    verdict = S.lastOp ? M.chainVerdict(verb, S.lastOp.out) : 'stop';
+    if (verdict === 'stop') worst = S.lastOp;
+  }
+  S.chunk = null;
+  if (worst) S.lastOp = worst;
+  renderBuild();
+  return verdict;
 }
 /** « Prendre le fichier téléchargé » : le plan d'abord (base/pickup à blanc, dry envoyé explicitement), dont la fin pose la question puis la prise réelle. `zonesAttr` :
  *  les zones des sources du résultat d'un téléchargement (séparées par des virgules), sinon les zones cochées. Rien ne part si le bouton est gris. */

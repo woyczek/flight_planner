@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data: a selection of more than 60 zones is built in runs of 60 at most, and a refusal says the launcher's reason** (`modules/data/follow.js` `runChunks`, `update.js`, `chain.js`, `model_sets.js` `chunksOf`, `model_results.js` `refusal`; L49) — SOG-0144: `base/fetch`, `base/build` and `base/purge` take 1 to 60 zones; with 78 ticked « Tout recalculer »
+  was refused (« arguments invalides »). « Tout recalculer », « Télécharger », « Mettre à jour » and the chain now cut the selection into runs of 60, one after the other (the next starts when the previous one ends), the progress says « Tranche i sur n », the update's question says it; a refusal relays the launcher's message (« Le lanceur dit : … »).
+## [Unreleased]
+
+### V3
+
 - **Fuel: the route reader takes the nearest homonym and says what it cannot place** (`frame/lib/route_model.js`, `modules/fuel/module.js`;
   Fuel SPEC § 9.3, DECISIONS, help; noreg F115; SOG-0142). A name several places carry resolves to the one nearest the previous point;
   homonyms and legs over 1 000 NM are said under the route; an unknown point names its zone and the zone's state (not installed: « Ajouter »;

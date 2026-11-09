@@ -14,6 +14,7 @@ import {
   esc,
   frozen,
   kind,
+  refusedText,
   lang,
   li,
   S,
@@ -272,7 +273,7 @@ function runningHtml() {
     ); // un jeu dont on ne connaît pas encore les éléments ne compte pas « 0 sur 0 » ; la prise de fichiers compte des fichiers à la fin
   return `<div class="d-run" data-running data-op="${run.verb}" data-run-set="${esc(set)}"${run.dry ? ' data-dry' : ''} data-phase="${run.phase}">
     <div class="d-runhead">${shown ? `<b data-count>${esc(tt(TX.runCount, { n: runUnit(set, S.view, p.done), m: p.total }))}</b>` : ''}
-      <span data-step>${esc(stopping ? tt(TX.stopping) : S.view?.step || '')}</span>${inputsHtml(S.view)}
+      ${S.chunk ? `<span class="f-muted" data-chunk>${esc(tt(TX.chunk, { i: S.chunk.i, n: S.chunk.n, z: M.MAX_ZONES }))}</span>` : ''}<span data-step>${esc(stopping ? tt(TX.stopping) : S.view?.step || '')}</span>${inputsHtml(S.view)}
       <span class="f-muted" data-elapsed>${esc(tt(TX.elapsed, { t: M.clock((Date.now() - run.t0) / 1e3) }))}</span></div>
     <div class="d-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${p.total}" aria-valuenow="${p.done}"${S.view && p.pct !== null ? '' : ' data-indeterminate'}><i style="width:${p.pct ?? 0}%"></i></div>
     ${run.verb === M.PICKUP.verb ? '' : `<ul class="d-zl">${M.zoneRows(opView(set), S.ids, run.verb, set !== 'base').map(r => zoneLineHtml(r, run.verb, set)).join('')}</ul>`}
@@ -540,7 +541,7 @@ function resultHtml(panel = 'base') {
   const r = S.result;
   if (!r || M.panelOf(r.set || 'base', r.verb) !== panel) return '';
   if (r.verb === M.PICKUP.verb && !r.refused) return pickupResultHtml(r);
-  if (r.refused) return `<div data-build-result data-result="refused" data-refusal="${r.refused.key}"><p class="f-warn">${esc(tt(TX.refused[r.refused.key], { n: r.refused.wait }))}</p></div>`;
+  if (r.refused) return `<div data-build-result data-result="refused" data-refusal="${r.refused.key}"><p class="f-warn">${esc(refusedText(r.refused))}</p></div>`;
   const set = r.set || 'base';
   if (panel === 'sheets') return sheetsResultHtml(r);
   if (r.verb === 'fetch') return fetchResultHtml(r.out, set);

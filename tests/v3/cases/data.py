@@ -848,7 +848,7 @@ def l8(c):
     for start, key, want in [((429, {'reason': 'too-soon', 'wait': 12}), 'tooSoon', _trow('tooSoon', 'fr', 'refused: {').replace('{n}', '12')),
                              ((409, {'reason': 'updating', 'message': 'no job starts now (updating)'}), 'updating', _trow('updating', 'fr', 'refused: {')),
                              ((404, {}), 'unknown-route', _trow('unknown-route', 'fr', 'refused: {')),
-                             ((400, {'message': 'bad'}), 'bad-args', _trow('bad-args', 'fr', 'refused: {'))]:
+                             ((400, {'message': 'bad'}), 'bad-args', _trow('bad-args', 'fr', 'refused: {') + ' ' + _trow('refusedWhy', 'fr').replace('{m}', 'bad'))]:   # SOG-0144: the launcher’s reason is relayed
         st['start'] = start
         c.tap('[data-verb=build]')
         c.until(f"!!document.querySelector('[data-build-result][data-refusal={key}]')", timeout=6000, what=f'the refusal {key} is said')
@@ -4209,6 +4209,41 @@ def l47(c):
     c.until("!!document.querySelector('[data-set=dfs]') || !!document.querySelector('[data-more] [data-set=dfs]')", timeout=8000, what='the DFS row')
     lic = c.js("(() => { const r = document.querySelector('[data-set=dfs]'); const dt = [...r.querySelectorAll('dt')].find(d => d.nextElementSibling && /DFS/.test(d.nextElementSibling.textContent)); return r.textContent.replace(/\s+/g, ' ') })()")
     c.ok('DFS' in lic and 'CC BY 4.0' in lic, lic[:300], 'the row of the DFS source carries its licence and its credit: CC BY 4.0, DFS')
+    c.check_errors()
+
+
+@case('L49', 'Données: a selection of more than 60 zones is built in runs of 60 at most, one after the other (the launcher takes 1 to 60); the progress says the part; a refusal says the launcher\u2019s reason, never « invalid arguments » alone', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0144: base/build, base/fetch and base/purge accept 1 to 60 zones; the user selected 78 and « Tout recalculer » was refused (arguments invalides). The verbs cut the selection into runs of 60, in order, the next one starting when the previous one ends; a 400 of the launcher is relayed with its message')
+def l49(c):
+    lang = c.lang
+    ok = _view('done', step='Terminé', result={'built': ['ca'], 'failed': [], 'commits': [], 'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False, 'blocking': []})
+    st = _launcher(c, [ok], verbs=_VERBS)
+    cfg, _ = _fixture()
+    extra = [f'q{i:02d}' for i in range(73)]
+    for z in extra:
+        cfg['zones'].append({'id': z, 'names': [z.upper()] * 4, 'frames': [], 'published': True})
+        cfg['publication']['base'][z] = cfg['publication']['base']['ca']
+    _open(c, cfg)
+    _all_open(c)
+    c.eq(len(_ticked(c)), 78, 'the user\u2019s case: seventy-eight zones ticked', what='78 ticked')
+    c.tap('[data-build] [data-verb=build]')
+    for _ in range(60):
+        if len(_posts(st, 'build')) >= 2:
+            break
+        c.wait(250)
+    posts = _posts(st, 'build')
+    c.eq([len(p['args']['zones']) for p in posts], [60, 18], 'two runs, 60 then 18, in the order of the list; the second starts after the first', what='runs')
+    c.eq(sorted(posts[0]['args']['zones'] + posts[1]['args']['zones']), sorted(['ca', 'es', 'fr', 'gb', 'us'] + extra), 'together they are the whole selection, none twice', what='whole selection')
+    c.until('document.querySelector("[data-build-result]")', timeout=15000, what='the end')
+    # ---- a 400 of the launcher: its reason is relayed
+    c.tap('[data-select-row] [data-verb=select-none]')
+    c.tap('[data-build-zone="fr"]')
+    st['start'] = (400, {'message': 'zones: 1 to 60, no duplicate'})
+    c.tap('[data-build] [data-verb=build]')
+    c.until('document.querySelector("[data-build-result][data-refusal=bad-args]")', timeout=10000, what='the refusal')
+    said = norm(c.text('[data-build-result][data-refusal=bad-args]'))
+    c.ok('zones: 1 to 60' in said and norm(_trow('refusedWhy', lang).split('{m}')[0]) in said, said, 'the refusal gives the launcher\u2019s own reason after the usual sentence')
     c.check_errors()
 
 

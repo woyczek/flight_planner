@@ -9,6 +9,7 @@ import {
   esc,
   kind,
   li,
+  refusedText,
   S,
   tt
 } from './state.js';
@@ -25,6 +26,7 @@ import {
 } from './panels.js';
 import {
   launch,
+  runChunks,
   settle
 } from './follow.js';
 import {
@@ -156,7 +158,8 @@ function chainStartRows(plan) {
 async function chainOp(me, run, verb) {
   S.lastOp = null;
   const ids = run.set === 'aircraft' ? M.SETS.aircraft.steps : run.sel.ids;
-  await settle(me, await launch(run.set, verb, M.setArgs(run.set, verb, run.sel), ids), true);
+  if (run.set === 'base' && ids.length > M.MAX_ZONES) await runChunks(me, run.set, verb, run.sel);
+  else await settle(me, await launch(run.set, verb, M.setArgs(run.set, verb, run.sel), ids), true);
   if (S !== me) return null;
   const op = S.lastOp;
   if (op) return {
@@ -168,9 +171,7 @@ async function chainOp(me, run, verb) {
   return {
     verdict: 'stop',
     kind: f ? 'refused' : 'failed',
-    text: tt(TX.refused[f?.key || 'failed'], {
-      n: f?.wait
-    })
+    text: refusedText(f)
   };
 }
 /** Fin de la chaîne : le résumé dans la carte, une notification, l'entrée du journal (qui remplace le repère de départ), puis la relecture de ce qui est publié. */

@@ -252,3 +252,11 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
 - **A zone the suite does not know** (a pack listing an id `zones()` lacks) is said (« 1 inconnue(s) de la suite ») and ignored, never added; a **hostile pack** (bad id, unknown kind) is dropped by `packsOf`.
 - **Themes never add by themselves**: a fold with the zones and one « Ajouter » each (§ 10.42: « the filter shows which zones to add; it adds nothing by itself »).
 - **Counter-test**: counting the covered zones among those to add (`toAdd: known`) turns L44 red (« Ajouter tout (4) » instead of 2); `addZones` also refuses a zone already covered (a second guard, not alone testable through the button).
+
+## 10 November 2026 — more than 60 zones: runs of 60, and the launcher's reason (SOG-0144)
+
+- The launcher takes **1 to 60 zones** per job (`base/fetch`, `base/build`, `base/purge`, `tools/regen/base.py` and `base_sources.py`); the user's selection reached **78** and « Tout recalculer » answered « arguments invalides » (also the 16:53 failure). The page now cuts the **selection** (not the verb) into runs of 60 at most (`chunksOf`, `runChunks`): the launcher holds one job at a time, so the next run starts when the previous one ends; the first that does not finish well stops the others (its end stays in `S.lastOp`, as for the chain).
+  « Tout recalculer », « Télécharger », « Mettre à jour » (its download and its build) and « Tout mettre à jour » use it; each run has its own end and notification and journal line. « Purger » is **not** cut: its plan and its question are one gesture over a selection, and a purge of more than 60 zones is refused by the launcher with its reason (relayed) — to cut it needs a plan per run.
+- The progress says « Tranche i sur n (60 au plus par construction) »; the update's question says « 78 zones en 2 constructions de 60 au plus, l'une après l'autre ».
+- **A refusal is never « arguments invalides » alone**: `M.refusal` keeps the launcher's `message` (160 characters, no control sign) and `refusedText` writes it after the usual sentence (« Le lanceur dit : … »), in the panel, the notification and the chain. The message is the launcher's own words, not translated.
+- Counter-test: with the threshold removed L49 measures one run of 78.

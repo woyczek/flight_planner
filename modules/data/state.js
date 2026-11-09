@@ -41,6 +41,10 @@ export function busyNow() {
   return !!S.run || !!S.other || !!S.asking || !!S.pub.phase || !!S.chain || !!S.route?.phase || !!S.updating || !!S.move
     ?.phase; // S.move.phase : le rangement des sources brutes (SOG-0030), plan ou exécution ou question
 }
+/** La phrase d'un refus de départ (M.refusal) : celle de sa clé, puis la raison que le lanceur a donnée (« Le lanceur dit : … »). */
+export const refusedText = f => tt(TX.refused[f?.key] || TX.refused.failed, {
+  n: f?.wait
+}) + (f?.why ? ` ${tt(TX.refusedWhy, { m: f.why })}` : '');
 /** Les choix des panneaux sont-ils figés ? Pendant une marche et pendant toute la chaîne (y compris entre deux de ses opérations). */
 export const frozen = () => !!S.run || !!S.chain;
 /** Une source du catalogue d'aerodb par son identifiant (byId, à défaut une recherche dans SOURCES) ; undefined si elle n'y est pas. */
