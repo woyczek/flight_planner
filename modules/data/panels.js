@@ -277,7 +277,7 @@ function runningHtml() {
     ); // un jeu dont on ne connaît pas encore les éléments ne compte pas « 0 sur 0 » ; la prise de fichiers compte des fichiers à la fin
   return `<div class="d-run" data-running data-op="${run.verb}" data-run-set="${esc(set)}"${run.dry ? ' data-dry' : ''} data-phase="${run.phase}">
     <div class="d-runhead">${shown ? `<b data-count>${esc(tt(TX.runCount, { n: runUnit(set, S.view, p.done), m: p.total }))}</b>` : ''}
-      ${S.chunk ? `<span class="f-muted" data-chunk>${esc(tt(TX.chunk, { i: S.chunk.i, n: S.chunk.n, z: M.MAX_ZONES }))}</span>` : ''}<span data-step>${esc(stopping ? tt(TX.stopping) : S.view?.step || '')}</span>${inputsHtml(S.view)}
+      ${S.chunk ? `<span class="f-muted" data-chunk>${esc(tt(S.chunk.purge ? TX.chunkPurge : TX.chunk, { i: S.chunk.i, n: S.chunk.n, z: M.MAX_ZONES }))}</span>` : ''}<span data-step>${esc(stopping ? tt(TX.stopping) : S.view?.step || '')}</span>${inputsHtml(S.view)}
       <span class="f-muted" data-elapsed>${esc(tt(TX.elapsed, { t: M.clock((Date.now() - run.t0) / 1e3) }))}</span></div>
     <div class="d-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${p.total}" aria-valuenow="${p.done}"${S.view && p.pct !== null ? '' : ' data-indeterminate'}><i style="width:${p.pct ?? 0}%"></i></div>
     ${run.verb === M.PICKUP.verb ? '' : `<ul class="d-zl">${M.zoneRows(opView(set), S.ids, run.verb, set !== 'base').map(r => zoneLineHtml(r, run.verb, set)).join('')}</ul>`}
@@ -612,11 +612,15 @@ function verbsHtml(gate, panel, pk) {
     0; // un cycle manuel manque : la prise du fichier passe avant Construire (qui referait l'ancien cycle)
   const base = panel === 'base',
     upd = base ? updateGate() : null; // « Mettre à jour » (SOG-0071) : le téléchargement puis la construction des seules zones périmées
-  return `<p class="d-verbs">${base ? `<button type="button"${miss ? '' : ' class="primary"'} data-verb="update"${upd.disabled ? ' disabled' : ''}>${esc(tt(TX.upd.update))}</button>
-      ` : ''}<button type="button" data-verb="download"${off('fetch')}>${esc(tt(TX.download))}</button>
-      ${pk ? `<button type="button"${miss ? ' class="primary"' : ''} data-verb="pickup"${pk.disabled ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button>
-      ` : ''}<button type="button"${miss || base ? '' : ' class="primary"'} data-verb="build"${off('build')}>${esc(tt(base ? TX.upd.recompute : TX.build))}${attnDot(S.attn?.[panel], panel === 'base' ? staleBy() : '')}</button>
-      <button type="button" data-verb="purge"${off('purge')}>${esc(tt(TX.purge))}</button></p>`;
+  const dl = `<button type="button" data-verb="download"${off('fetch')}>${esc(tt(TX.download))}</button>`,
+    pick = pk ? `<button type="button"${miss ? ' class="primary"' : ''} data-verb="pickup"${pk.disabled ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button>` : '',
+    rebuild = `<button type="button"${miss || base ? '' : ' class="primary"'} data-verb="build"${off('build')}>${esc(tt(base ? TX.upd.recompute : TX.build))}${attnDot(S.attn?.[panel], panel === 'base' ? staleBy() : '')}</button>`,
+    purge = `<button type="button" data-verb="purge"${off('purge')}>${esc(tt(TX.purge))}</button>`;
+  if (!base) return `<p class="d-verbs">${dl}\n      ${pick}${rebuild}\n      ${purge}</p>`;
+  // la base : « Mettre à jour » seule en vue et primaire (règle 13 : un seul primaire par écran) ; le reste sous « Plus », replié. Quand un cycle manuel manque, la prise du fichier, qui passe avant
+  // tout, reste en vue et devient le primaire
+  return `<div class="d-verbs" data-verbs-row><button type="button"${miss ? '' : ' class="primary"'} data-verb="update"${upd.disabled ? ' disabled' : ''}>${esc(tt(TX.upd.update))}</button>${miss ? pick : ''}
+    <details class="d-moreverbs" data-verbs-more${S.verbsOpen ? ' open' : ''}><summary>${esc(tt(TX.upd.more))}</summary><div class="d-verbs">${dl}${miss ? '' : pick}${rebuild}${purge}</div></details></div>`;
 }
 /** Le choix d'éléments d'un panneau : les zones de la couverture à cocher puis les sources sous licence personnelle qu'elles proposent (base), les États à cocher (procédures), le cycle en
  *  vigueur (points VFR), le champ des types OACI (appareils). */

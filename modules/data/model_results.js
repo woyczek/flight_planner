@@ -386,6 +386,40 @@ export function purgeOutcome(final) {
     level: kind === 'failed' ? 'err' : kind === 'done' && unsafe <= 0 ? 'ok' : 'warn'
   };
 }
+/** Les plans de purge de plusieurs tranches (purgeOutcome de chacun) sommés en UN seul : les fichiers et les octets s'additionnent, les zones se réunissent (une fois chacune), l'avertissement
+ *  « partagé » vaut dès qu'une tranche le porte, les fichiers gardés et les chemins refusés s'additionnent ; le genre est celui de la pire tranche, « rien à retirer » seulement si aucune tranche n'a de fichier. */
+export function mergePurge(outs) {
+  const list = (outs || []).filter(Boolean),
+    removed = {};
+  for (const o of list)
+    for (const [z, e] of Object.entries(o.removed || {})) {
+      const had = removed[z] || {
+        files: 0,
+        bytes: 0
+      };
+      removed[z] = {
+        files: had.files + e.files,
+        bytes: had.bytes + e.bytes
+      };
+    }
+  const files = list.reduce((a, o) => a + o.files, 0),
+    unsafe = list.reduce((a, o) => a + Math.max(0, o.unsafe || 0), 0),
+    kind = list.every(o => o.kind === 'done') ? 'done' : (list.find(o => o.kind !== 'done') || {
+      kind: 'failed'
+    }).kind;
+  return {
+    kind,
+    files,
+    bytes: list.reduce((a, o) => a + o.bytes, 0),
+    zones: Object.keys(removed).filter(z => removed[z].files > 0),
+    removed,
+    shared: list.some(o => o.shared),
+    kept: list.reduce((a, o) => a + Math.max(0, o.kept || 0), 0),
+    unsafe,
+    nothing: kind === 'done' && files === 0,
+    level: kind === 'failed' ? 'err' : kind === 'done' && unsafe <= 0 ? 'ok' : 'warn'
+  };
+}
 /** Une entrée du journal pour une purge réelle (le plan n'y est jamais) : { at, set, verb: 'purge', zones, seconds, result, files, bytes,
  *  job? }. */
 export function purgeEntry({

@@ -99,6 +99,14 @@ async function endRun(me, final, live) {
   S.other = null;
   S.view = final;
   if (dry && !live) return renderBuild(); // le plan terminé avant l'ouverture : il n'est plus à poser
+  if (dry && verb === 'purge' && set === 'base' && S
+    .planSink) { // la purge de plus de 60 zones : le plan de cette tranche est gardé, la question vient une fois tous les plans lus
+    const out = M.setOutcome(set, 'purge', final).out;
+    if (out.kind === 'done') {
+      S.planSink.push(out);
+      return renderBuild();
+    }
+  }
   if (verb === 'publish') return dry ? endSheetsPlan(me, final) : endSheets(final, live, seconds);
   if (verb === 'pickup') return dry ? endPickupPlan(me, final) : endPickup(final, live, seconds);
   if (verb === 'fetch') return endFetch(final, live, seconds, set);
@@ -419,6 +427,7 @@ export async function startOp(set, verb) {
     ids = set === 'aircraft' ? verb === 'purge' || sheets ? [] : M.SETS.aircraft.steps : sel.ids;
   if (set === 'base' && (verb === 'fetch' || verb === 'build') && ids.length > M.MAX_ZONES) return void await runChunks(me, set, verb,
     sel);
+  if (set === 'base' && verb === 'purge' && ids.length > M.MAX_ZONES) return void await purgeChunks(me, sel);
   await settle(me, await launch(set, verb, dry ? {
     ...args,
     dry: true
@@ -448,6 +457,55 @@ export async function runChunks(me, set, verb, sel) {
   if (worst) S.lastOp = worst;
   renderBuild();
   return verdict;
+}
+/** La purge de la base sur plus de 60 zones (SOG-0071 temps 3) : le plan à blanc de chaque tranche de 60 au plus, l'un après l'autre (le lanceur tient UN travail à la fois), puis UNE question qui somme les
+ *  plans (les fichiers, la taille, les zones, les avertissements) et, si oui, les purges réelles tranche par tranche (runChunks). Un plan qui ne finit pas bien (échec, arrêt) s'arrête là et se dit comme
+ *  celui d'une purge simple ; rien n'est retiré sans la réponse. `sel` : la sélection (ids). */
+async function purgeChunks(me, sel) {
+  const parts = M.chunksOf(sel.ids);
+  S.planSink = [];
+  try {
+    for (let i = 0; i < parts.length && S.planSink.length === i; i++) {
+      S.chunk = {
+        i: i + 1,
+        n: parts.length,
+        purge: true
+      };
+      const args = M.setArgs('base', 'purge', {
+        ...sel,
+        ids: parts[i]
+      });
+      await settle(me, await launch('base', 'purge', {
+        ...args,
+        dry: true
+      }, parts[i], true, args), true);
+      if (S !== me) return;
+    }
+  } finally {
+    if (S === me) S.chunk = null;
+  }
+  const plans = S.planSink;
+  S.planSink = null;
+  if (S !== me || plans.length < parts.length) return renderBuild(); // un plan arrêté ou échoué a déjà été dit
+  const out = M.mergePurge(plans),
+    ask = !out.nothing,
+    sm = ask ? null : purgeSummary(out, true);
+  return finishPlan(me, {
+    cancelled: false,
+    result: ask ? null : {
+      set: 'base',
+      verb: 'purge',
+      out,
+      nothing: true
+    },
+    note: sm && [sm.text, ...sm.notes].join(' · '),
+    level: sm?.level,
+    question: ask ? `${purgeAsk(out, 'base')} ${tt(TX.purgeChunksAsk, { n: sel.ids.length, k: parts.length, z: M.MAX_ZONES })}` : '',
+    ok: tt(TX.purge),
+    go: async yes => {
+      if (yes) await runChunks(me, 'base', 'purge', sel);
+    }
+  });
 }
 /** « Prendre le fichier téléchargé » : le plan d'abord (base/pickup à blanc, dry envoyé explicitement), dont la fin pose la question puis la prise réelle. `zonesAttr` :
  *  les zones des sources du résultat d'un téléchargement (séparées par des virgules), sinon les zones cochées. Rien ne part si le bouton est gris. */

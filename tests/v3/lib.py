@@ -655,6 +655,10 @@ class Ctx(Asserts):
         """Touch on a phone, click on a screen, with Playwright's actionability checks: an element covered by
         another one makes the case fail (the tap would not reach it)."""
         loc = self.page.locator(target).first if isinstance(target, str) else target
+        try:   # a verb under the folded « Plus » of the base panel: the fold is opened first, as a finger would
+            loc.evaluate("el => { const d = el.closest('details[data-verbs-more]'); if (d) d.open = true }", timeout=800)
+        except Exception:
+            pass
         try:
             loc.tap(timeout=timeout) if self.phone else loc.click(timeout=timeout)
         except Exception as e:                     # Playwright TimeoutError: not visible, covered, unstable

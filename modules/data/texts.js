@@ -250,6 +250,7 @@ export const TX = {
   // « Mettre à jour » et les gestes de sélection de la base (update.js, SOG-0071)
   upd: {
     update: ['Mettre à jour', 'Update', 'Aktualisieren', 'Actualizar'],
+    more: ['Plus', 'More', 'Mehr', 'Más'],
     recompute: ['Tout recalculer', 'Rebuild all', 'Alles neu berechnen', 'Recalcular todo'],
     selStale: ['Seulement les périmés', 'Only the stale ones', 'Nur die veralteten', 'Solo las caducadas'],
     selNone: ['Tout désélectionner', 'Deselect all', 'Alles abwählen', 'Deseleccionar todo'],
@@ -612,6 +613,15 @@ export const TX = {
   chunksAsk: ['{n} zones en {k} constructions de {z} au plus, l’une après l’autre.',
     '{n} zones in {k} runs of at most {z}, one after the other.', '{n} Zonen in {k} Läufen zu höchstens {z}, nacheinander.',
     '{n} zonas en {k} ejecuciones de {z} como máximo, una tras otra.'
+  ],
+  // la purge de plus de 60 zones : une tranche à la fois (le plan de chacune), une seule question qui les somme (SOG-0071 temps 3)
+  chunkPurge: ['Tranche {i} sur {n} ({z} au plus par purge)', 'Part {i} of {n} (at most {z} per purge)',
+    'Teil {i} von {n} (höchstens {z} je Bereinigung)',
+    'Parte {i} de {n} (como máximo {z} por purga)'
+  ],
+  purgeChunksAsk: ['{n} zones en {k} purges de {z} au plus, l’une après l’autre.',
+    '{n} zones in {k} purges of at most {z}, one after the other.',
+    '{n} Zonen in {k} Bereinigungen zu höchstens {z}, nacheinander.', '{n} zonas en {k} purgas de {z} como máximo, una tras otra.'
   ],
   refused: {
     busy: ['Une autre opération est en cours', 'Another operation is running', 'Ein anderer Vorgang läuft',

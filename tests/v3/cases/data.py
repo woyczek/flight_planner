@@ -2642,7 +2642,7 @@ def l19(c):
     # ---- A: the fourth verb of the base panel, live with a launcher that knows base/pickup
     c.eq([norm(c.text(pk)), c.js(f"document.querySelector('{pk}').disabled"), c.count('[data-build] [data-pickup-reason]'), _verbs(c)], [norm(T('pickup')), False, 0, ['download', 'build', 'purge']],
          'a fourth button « Prendre le fichier téléchargé », live; the three others unchanged', what='button')
-    c.eq(c.js("[...document.querySelectorAll('[data-build] .d-verbs button')].map(b => b.dataset.verb)"), ['download', 'pickup', 'build', 'purge'], 'after Télécharger', what='order')
+    c.eq(c.js("[...document.querySelectorAll('[data-build] .d-verbs:not([data-select-row]) button:not([data-verb=update])')].map(b => b.dataset.verb)"), ['download', 'pickup', 'build', 'purge'], 'after Télécharger', what='order')
     _screen_ok(c, 'before')
     # ---- B: the plan (dry sent explicitly), ONE question; No takes nothing
     taken_txt = T('pickupTaken').replace('{z}', zname('fr')).replace('{s}', s_sia).replace('{zip}', sia_zip['zip']).replace('{n}', f"3 {FILES[lang][1]}").replace('{b}', _size(5242880, lang))
@@ -3268,8 +3268,8 @@ def l25(c):
     stale_line = lambda by='': norm(_trow('staleCycle', lang).replace('{x}', _name(prev)).replace('{y}', _name(cur)) + by)
     by = _trow('staleBy', lang).replace('{s}', f"{_short(lang, 'sia')} {_name(prev)}")
     # ---- A: nothing is known yet: Construire is the primary gesture, no line, the out-of-date phrase without a source
-    c.eq([primary(), c.count('[data-missing-source]'), norm(c.text('[data-update-all] [data-stale=base]'))], [['build'], 0, stale_line()],
-         'sources unknown: Construire is primary, no missing line, « cycle X out of date » without a source named', what='unknown')
+    c.eq([primary(), c.count('[data-missing-source]'), norm(c.text('[data-update-all] [data-stale=base]'))], [['update'], 0, stale_line()],
+         'sources unknown: « Mettre à jour » is the one primary (SOG-0071 time 3), no missing line, « cycle X out of date » without a source named', what='unknown')
     # ---- B: Télécharger: the view carries the sources from the start (the plan): the line is there while it runs
     c.tap('[data-verb=download]')
     c.until("!!document.querySelector('[data-build] [data-running][data-op=fetch]')", what='the download runs')
@@ -4603,4 +4603,58 @@ def l39(c):
     c.until("[...document.querySelectorAll('[data-build-zone]')].filter(i => i.checked).length === 3", timeout=6000, what='ticked at the lift')
     c.eq([_ticked(c), c.count('[data-rect]:not([hidden])')], [['es', 'fr', 'gb'], 0], 'the zones touched are ticked at the lift', what='after lift')
     c.js("([id]) => window.dispatchEvent(new PointerEvent('pointerup', { pointerType: 'touch', pointerId: id }))", [1])
+    c.check_errors()
+
+
+@case('L56', 'Données: in the base panel only « Mettre à jour » is in view and primary, the other verbs are under a folded « Plus »; « Purger » on more than 60 zones is cut into runs of 60, one plan per run, ONE question that sums them', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0071 time 3 (rule 13: one primary per screen): the verbs row of the base panel shows « Mettre à jour » alone (primary); « Télécharger », « Prendre le fichier », « Tout recalculer » and « Purger » go under « Plus »; base/purge takes 1 to 60 zones like the others: one plan (dry) per run, then ONE question with the sum, then the real purges run by run')
+def l56(c):
+    lang = c.lang
+    plan = _view('done', step='Terminé', result={'removed': {'ca': {'files': 3, 'bytes': 3072}}, 'warnings': []})
+    st = _launcher(c, [plan], verbs=_VERBS)
+    cfg, _ = _fixture()
+    extra = [f'q{i:02d}' for i in range(73)]
+    for z in extra:
+        cfg['zones'].append({'id': z, 'names': [z.upper()] * 4, 'frames': [], 'published': True})
+        cfg['publication']['base'][z] = cfg['publication']['base']['ca']
+    _open(c, cfg)
+    _all_open(c)
+    # ---- the verbs row: « Mettre à jour » alone in view and primary; the rest folded under « Plus »
+    row = c.js("""() => { const r = document.querySelector('[data-build] [data-verbs-row]'), f = r?.querySelector('details[data-verbs-more]');
+      return { shown: r ? [...r.children].filter(e => e.tagName === 'BUTTON').map(b => b.dataset.verb) : null, open: f ? f.open : null, summary: f?.querySelector('summary').textContent.trim() || '',
+        folded: f ? [...f.querySelectorAll('button')].map(b => [b.dataset.verb, b.classList.contains('primary')]) : null,
+        primaries: [...document.querySelectorAll('[data-build] button.primary')].map(b => b.dataset.verb),
+        hidden: f ? [...f.querySelectorAll('button')].every(b => !b.checkVisibility()) : null } }""")
+    c.eq([row['shown'], row['open'], norm(row['summary'])], [['update'], False, norm(_trow('more', lang, after='  upd: {'))], 'only « Mettre à jour » is in view; « Plus » is folded', what='row')
+    c.eq([[v for v, p in row['folded']], row['hidden']], [['download', 'pickup', 'build', 'purge'], True], 'under « Plus »: Télécharger, Prendre le fichier, Tout recalculer, Purger; none is visible while folded', what='folded verbs')
+    c.eq(row['primaries'], ['update'], 'one primary button in the panel: « Mettre à jour »', what='one primary')
+    c.js("document.querySelector('[data-build] [data-verbs-row]').scrollIntoView({ block: 'center' })")
+    if c.width == 390:
+        c.shot(f'L56_verbs_{c.width}_{lang}.png')
+    # ---- the user's case: 78 zones ticked, « Purger » (under « Plus ») plans the runs one after the other
+    c.eq(len(_ticked(c)), 78, 'seventy-eight zones ticked', what='78 ticked')
+    c.tap('[data-build] [data-verb=purge]')
+    q = _ask_text(c)
+    posts = _posts(st, 'purge')
+    c.eq([len(p['args']['zones']) for p in posts], [60, 18], 'two plans, 60 then 18, one after the other; nothing is purged before the answer', what='plans')
+    c.eq([bool(p['args'].get('dry')) for p in posts], [True, True], 'both are plans (dry)', what='dry')
+    sentence = norm(_trow('purgeChunksAsk', lang).replace('{n}', '78').replace('{k}', '2').replace('{z}', '60'))
+    c.ok(sentence in norm(q['text']) and '6' in q['text'], q['text'], 'ONE question: the sum of the two plans (6 files) and the sentence that says the runs')
+    # ---- No: nothing is purged
+    c.page.click('.f-modal [data-no]')
+    c.wait(600)
+    c.eq(len(_posts(st, 'purge')), 2, 'No: no real purge is sent', what='no purge')
+    # ---- Yes: the real purges, run by run, with no second question
+    c.tap('[data-build] [data-verb=purge]')
+    _ask_text(c)
+    c.page.click('.f-modal [data-ok]')
+    for _ in range(60):
+        if len(_posts(st, 'purge')) >= 6:
+            break
+        c.wait(250)
+    posts = _posts(st, 'purge')
+    c.eq([[len(p['args']['zones']), bool(p['args'].get('dry'))] for p in posts], [[60, True], [18, True], [60, True], [18, True], [60, False], [18, False]],
+         'after Yes: the real purges, 60 then 18, each on its own zones; the plans of the second asking come first', what='real runs')
+    c.eq(c.count('.f-modal'), 0, 'no second question', what='one question')
     c.check_errors()

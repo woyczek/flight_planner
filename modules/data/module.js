@@ -218,6 +218,7 @@ function onToggle(e) {
   const g = e.target;
   if (g instanceof HTMLDetailsElement && g.matches('details.f-group') && g.isConnected) S.manual[g.dataset.group] = g.open;
   else if (g instanceof HTMLDetailsElement && g.matches('details.d-journal') && g.isConnected) S.journalOpen = g.open;
+  else if (g instanceof HTMLDetailsElement && g.matches('details.d-moreverbs') && g.isConnected) S.verbsOpen = g.open;
   else if (g instanceof HTMLDetailsElement && g.matches('details.d-pack') && g.isConnected) g.open ? S.packOpen.add(g.dataset.packTheme) : S
     .packOpen.delete(g.dataset.packTheme);
   if (g instanceof HTMLDetailsElement && g.matches('details.d-inventory') && g.isConnected) {
@@ -252,6 +253,8 @@ export async function mount(el, ctx) {
     zoneAsked: false, // le lien #data?zone=<id> a été lu (update.js)
     zoneLink: null,
     packOpen: new Set(), // les filtres thématiques dont le pli est ouvert (SOG-0065) // les zones dont la pastille montre ses raisons
+    verbsOpen: false, // le pli « Plus » des verbes de la base (SOG-0071 temps 3)
+    planSink: null, // les plans de purge des tranches d'une purge de plus de 60 zones (follow.js purgeChunks)
     chunk: null, // une sélection de plus de 60 zones : { i, n } la tranche en cours (follow.js runChunks)
     updating: false, // « Mettre à jour » est entre son téléchargement et sa construction (update.js)
     route: routeInit(), // la ligne « Route (RAD, points FRA) » : phase, plan montré, dernière fin, cycles présents (route.js)

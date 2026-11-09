@@ -16,6 +16,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   chosen model had no arrow and was never read in silence; the « Route weather » gesture now reads the covering model (GFS through
   Open-Meteo) for those places, fills them, and each barb says its model in the hover.
 
+- **Data: « Mettre à jour » alone is primary in the base panel, the other verbs are under a folded « Plus »; « Purger » over 60 zones is cut into runs, one plan per run, one question that sums them** (`modules/data/panels.js`, `follow.js`, `model_results.js` `mergePurge`; Data SPEC § 5.8; help ×4; L56) — SOG-0071 time 3: one primary per screen (the file to take stays in view and primary when a manual cycle is missing); `base/purge` takes 1 to 60 zones.
 - **Map: the routes Fuel proposes are drawn on the map** (`modules/maps/alts.js`, `module.js`, `draw.js`, `tips.js`, `texts.js`, `style.js`; SPEC § 5.3; noreg D126;
   SOG-0134 a; contract fuel INTEGRATION § 3 bis). The routes of « Calculate A → B » and « Check », published by Fuel (event `fuel-route-alts`,
   document `cache/fuel/route_alts.json`), are drawn by the Map: the chosen one solid, the others faded, the hovered one thick, the faulty
