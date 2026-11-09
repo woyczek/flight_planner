@@ -131,6 +131,10 @@ place of the list (one card, « Retour » goes back), one editor at a time; the 
   the table is one folding group per altitude, the rows without altitude first (« 8000 ft · 4 régimes »; folded when there are more
   than two, a group holding the warned row or a new empty row open; the state kept from one drawing to the next of the same sheet);
   one curve, the flat table as before. Each row has an optional TAS (`tasKt`, kt), read by Fuel when present (M28).
+- **« Courbes »** (SOG-0055): a fold at the head of the RPM table's card (no new card, rule 13), drawn when two rows have a flow: the
+  flow against the rpm in the unit of reading, one line per altitude in the frame's chart colours (`--sog-chart-1…6`), a legend naming
+  each altitude; the level points of « Proposer depuis les mesures » over it as squares, in their curve's colour when at its altitude,
+  muted otherwise (the fold opens when they are there). The drawing lives in Appareils: Fuel adjusts the flight, not the data (M30).
 - **« Proposer depuis les mesures »** (SOG-0052, step 1; V3 spec § 10.37 C): in the RPM table's card (computer screen), one or more
   Fuel Phase Monitor journals (`.csv`, `.csv.gz` decompressed in the page) chosen with the file picker, read on the device, never
   kept, published or sent; only the windows of the sheet's type (`aircraft_icao`); the level points of `modules/stats/phases.js`

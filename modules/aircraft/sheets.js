@@ -40,6 +40,12 @@ export const SHEETS_STYLE = `[data-module="aircraft"] .ac-g3{--f-min:150px;align
 [data-module="aircraft"] .f-table .ac-txt{white-space:normal;overflow-wrap:anywhere;min-width:9em}
 [data-module="aircraft"] .ac-hide{display:none}
 [data-module="aircraft"] details.ac-rpmgroup>summary{cursor:pointer;margin:6px 0 2px;font-weight:600}
+[data-module="aircraft"] details.ac-curves>summary{cursor:pointer;margin:4px 0;font-weight:600}
+[data-module="aircraft"] .ac-svg{display:block;max-width:640px;background:var(--sog-chart-bg);border-radius:var(--sog-radius-s)}
+[data-module="aircraft"] .ac-svg text{fill:var(--sog-muted);font-size:11px}
+[data-module="aircraft"] .ac-legend{display:flex;flex-wrap:wrap;gap:4px 12px;margin:4px 0 8px;font-size:var(--sog-size-s)}
+[data-module="aircraft"] .ac-legend i{display:inline-block;width:12px;height:12px;margin-right:4px;vertical-align:-1px;border-radius:2px}
+[data-module="aircraft"] .ac-legend i.ac-meas{background:none;border:2px solid var(--sog-muted);border-radius:0}
 [data-module="aircraft"] tr.ac-rpmwarn td{background:color-mix(in srgb, var(--sog-warn) 18%, transparent)}
 [data-module="aircraft"] .ac-cat{margin:var(--sog-gap) 0 4px;font-size:1em;color:var(--sog-muted)}
 [data-module="aircraft"] [data-sheets] .f-list .f-item>div:first-child{min-width:0}
@@ -909,8 +915,54 @@ export function createSheetsView(host) {
             return `<details class="ac-rpmgroup" data-rpmgroup="${esc(key)}"${open ? ' open' : ''}><summary>${esc(`${h === null ? tt(TX.rpmNoAlt) : `${h} ft`} · ${tt(n === 1 ? TX.rpmN1 : TX.rpmN, { n })}`)}</summary>${table(list)}</details>`;
           },
           body = keys.length > 1 ? keys.map(group).join('') : table(rows);
-        if (edit) return `<details class="f-card" open><summary>${esc(tt(TX.rpmTable))}</summary>${body}<button type="button" data-do="rpmadd">${esc(tt(TX.rpmAdd))}</button> <button type="button" data-do="measure">${esc(tt(TX.measure))}</button><input type="file" data-measfile accept=".csv,.gz,.txt" multiple hidden>${outputHtml(p)}${measuredHtml(p)}</details>`;
-        return rows.length ? `<details class="f-card"><summary>${esc(tt(TX.rpmTable))}</summary>${body}</details>` : '';
+        if (edit) return `<details class="f-card" open><summary>${esc(tt(TX.rpmTable))}</summary>${curvesHtml()}${body}<button type="button" data-do="rpmadd">${esc(tt(TX.rpmAdd))}</button> <button type="button" data-do="measure">${esc(tt(TX.measure))}</button><input type="file" data-measfile accept=".csv,.gz,.txt" multiple hidden>${outputHtml(p)}${measuredHtml(p)}</details>`;
+        return rows.length ? `<details class="f-card"><summary>${esc(tt(TX.rpmTable))}</summary>${curvesHtml()}${body}</details>` : '';
+      },
+      // SOG-0055 : « Courbes », le débit selon le régime, une couleur par altitude (les lignes de même altFt), la légende, et les points
+      // mesurés de « Proposer depuis les mesures » en surimpression (carrés) ; dans l'unité de lecture ; rien sous deux lignes chiffrées
+      curvesHtml = () => {
+        const n = v => v === null || v === undefined || v === '' || !Number.isFinite(+v) ? null : +v,
+          view = v => {
+            const x = vu === su ? v : FU.fromKg(FU.toKg(v, su, densityOf(p)), vu, densityOf(p));
+            return x === null ? null : x;
+          },
+          rows = p.rpmFuelCurve.map(r => ({
+            h: n(r.altFt),
+            rpm: n(r.rpm),
+            f: n(r.fuelFlowPerHour) === null ? null : view(n(r.fuelFlowPerHour))
+          })).filter(r => r.rpm > 0 && r.f > 0),
+          meas = (st.measured?.id === p.id ? st.measured.points : []).map(q => ({
+            h: q.altFt,
+            rpm: q.rpm,
+            f: FU.fromKg(q.flowKgH, vu, densityOf(p))
+          })).filter(q => q.rpm > 0 && q.f > 0);
+        if (rows.length < 2) return '';
+        const keys = [...new Set(rows.map(r => r.h))].sort((a, b) => a === null ? -1 : b === null ? 1 : a - b),
+          color = h => `var(--sog-chart-${keys.indexOf(h) % 6 + 1})`,
+          all = [...rows, ...meas],
+          r0 = Math.min(...all.map(r => r.rpm)),
+          r1 = Math.max(...all.map(r => r.rpm)),
+          f1 = Math.max(...all.map(r => r.f)) * 1.1,
+          W = 600,
+          H = 240,
+          pl = 52,
+          pr = 12,
+          pt = 10,
+          pb = 30,
+          x = v => pl + (r1 > r0 ? (v - r0) / (r1 - r0) : .5) * (W - pl - pr),
+          y = v => pt + (1 - v / f1) * (H - pt - pb),
+          tick = (a, b, k) => Array.from({
+            length: k + 1
+          }, (_, i) => a + (b - a) * i / k),
+          lab = h => h === null ? tt(TX.rpmNoAlt) : `${h} ft`,
+          path = h => rows.filter(r => r.h === h).sort((a, b) => a.rpm - b.rpm).map((r, i) => `${i ? 'L' : 'M'}${x(r.rpm).toFixed(1)},${y(r.f).toFixed(1)}`).join('');
+        return `<details class="ac-curves" data-curves${meas.length ? ' open' : ''}><summary>${esc(tt(TX.curves))}</summary><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(tt(TX.curves))}" class="ac-svg">
+          ${tick(0, f1 / 1.1, 4).map(v => `<line x1="${pl}" x2="${W - pr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--sog-chart-grid)"/><text x="${pl - 6}" y="${y(v) + 4}" text-anchor="end">${Math.round(v)}</text>`).join('')}
+          ${tick(r0, r1, 4).map(v => `<text x="${x(v)}" y="${H - pb + 18}" text-anchor="middle">${Math.round(v)}</text>`).join('')}
+          <text x="${pl}" y="${pt + 2}" dy="-2" font-size="10">${esc(FLOW[vu])}</text><text x="${W - pr}" y="${H - 2}" text-anchor="end" font-size="10">rpm</text>
+          ${keys.map(h => `<g data-curve="${h === null ? '' : h}"><path d="${path(h)}" fill="none" stroke="${color(h)}" stroke-width="2"/>${rows.filter(r => r.h === h).map(r => `<circle cx="${x(r.rpm).toFixed(1)}" cy="${y(r.f).toFixed(1)}" r="3" fill="${color(h)}"><title>${esc(`${lab(h)} · ${r.rpm} rpm · ${Math.round(r.f * 10) / 10} ${FLOW[vu]}`)}</title></circle>`).join('')}</g>`).join('')}
+          ${meas.map(q => `<rect data-measmark x="${(x(q.rpm) - 4).toFixed(1)}" y="${(y(q.f) - 4).toFixed(1)}" width="8" height="8" fill="none" stroke="${keys.includes(q.h) ? color(q.h) : 'var(--sog-muted)'}" stroke-width="2"><title>${esc(`${tt(TX.curvesMeasured)} · ${q.h} ft · ${q.rpm} rpm · ${Math.round(q.f * 10) / 10} ${FLOW[vu]}`)}</title></rect>`).join('')}
+        </svg><div class="ac-legend" data-legend>${keys.map(h => `<span><i style="background:${color(h)}"></i>${esc(lab(h))}</span>`).join('')}${meas.length ? `<span><i class="ac-meas"></i>${esc(tt(TX.curvesMeasured))}</span>` : ''}</div></details>`;
       },
       groups = [...new Set(F.PROFILE_FIELDS.map(f => f[0]))],
       facts = F.catalogFacts(p), // ce que la base OACI donne de la cellule et de la propulsion

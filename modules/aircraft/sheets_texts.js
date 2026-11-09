@@ -82,6 +82,9 @@ export const TX = {
   rpmAdd: ['+ Ligne', '+ Row', '+ Zeile', '+ Fila'],
   // un groupe de la table par altitude (SOG-0028 (3)) : « 8000 ft · 4 régimes », « sans altitude · 2 régimes »
   rpmNoAlt: ['sans altitude', 'no altitude', 'ohne Höhe', 'sin altitud'],
+  // la carte des courbes (SOG-0055) : débit selon le régime, une couleur par altitude, les points mesurés en carrés
+  curves: ['Courbes', 'Curves', 'Kurven', 'Curvas'],
+  curvesMeasured: ['mesuré', 'measured', 'gemessen', 'medido'],
   rpmN: ['{n} régimes', '{n} settings', '{n} Drehzahlen', '{n} regímenes'],
   rpmN1: ['1 régime', '1 setting', '1 Drehzahl', '1 régimen'],
   // « Proposer depuis les mesures » (SOG-0052) : les journaux Fuel Phase Monitor choisis, les points de palier à cocher

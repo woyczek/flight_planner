@@ -772,6 +772,36 @@ def m29(c):
     c.eq(sets, [{'action': 'set', 'folder': 'D:/X-Plane 12/Output'}], 'the folder sent to the launcher, set on the workstation', what='set')
 
 
+@case('M30', 'Sheets: « Courbes » draws the flow against the rpm, one colour per altitude, a legend, and the measured points of « Proposer depuis les mesures » over it',
+      'M', tags=('aircraft',), designs=('standard',), screens=True, phone=False, langs4=True,
+      rule='SOG-0055 (decision: the drawing lives in Appareils, the flight tool adjusts the flight, not the data): one curve per altFt of rpmFuelCurve, '
+      'the frame chart colours, the legend naming each altitude; the measured level points as squares, a curve\'s colour when at its altitude')
+def m30(c):
+    import tempfile
+    sheet = dict(EC25, id='XMES', name='XMES', icao='XMES', unit='kg', cruise={'tasKt': 140, 'fuelFlowPerHour': 40, 'rpmNominal': 2400},
+                 rpmFuelCurve=[{'rpm': 2200, 'altFt': 4000, 'fuelFlowPerHour': 35}, {'rpm': 2400, 'altFt': 4000, 'fuelFlowPerHour': 45},
+                               {'rpm': 2200, 'altFt': 9000, 'fuelFlowPerHour': 30}, {'rpm': 2600, 'altFt': 9000, 'fuelFlowPerHour': 41}])
+    sheet.pop('_fields', None)
+    docs = [[f'aircraft/sheets/{x["id"]}.json', x, 'document'] for x in (EC25, C30J, sheet)]
+    c.open('aircraft', docs=LEVEL3 + [['airline/fleet.json', fleet_doc(3), 'document']] + docs + [TYPES, ['cache/aircraft/ui.json', {'view': 'sheets'}, 'cache']],
+           wait=False, app='maintenance')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-id]')", timeout=15000, what='the Fiches list')
+    edit_sheet(c, 'XMES')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-curves]')", what='the « Courbes » fold')
+    r = c.js(f"""() => {{ const d = document.querySelector('{M} {SHEETS} [data-curves]');
+        return {{ curves: [...d.querySelectorAll('[data-curve]')].map(g => [g.dataset.curve, g.querySelectorAll('circle').length, g.querySelector('path').getAttribute('stroke')]),
+                  legend: [...d.querySelectorAll('[data-legend] span')].map(s => s.textContent.trim()), title: d.querySelector('summary').textContent.trim() }} }}""")
+    c.eq([r['title'], r['curves'], r['legend']], [norm(tx(SX, 'curves', c.lang)), [['4000', 2, 'var(--sog-chart-1)'], ['9000', 2, 'var(--sog-chart-2)']], ['4000 ft', '9000 ft']],
+         'one curve per altitude, its colour, the legend', what='curves')
+    with tempfile.TemporaryDirectory() as tmp:
+        f = Path(tmp) / 'FuelPhaseMonitor_test.csv'
+        _journal(f)
+        c.page.set_input_files(f'{M} {SHEETS} input[data-measfile]', str(f))
+        c.until(f"document.querySelectorAll('{M} {SHEETS} [data-curves] [data-measmark]').length === 2", what='the two measured points over the curves')
+    strokes = c.js(f"[...document.querySelectorAll('{M} {SHEETS} [data-curves] [data-measmark]')].map(m => m.getAttribute('stroke'))")
+    c.eq(strokes, ['var(--sog-chart-1)', 'var(--sog-muted)'], 'the 4000 ft point in the 4000 ft colour; 8000 ft, no curve there: muted', what='marks')
+
+
 @case('M25', 'Sheets: the fuel is read and typed in the unit chosen (kg, lb, l, US gal); the sheet keeps its stored unit, an untouched value unchanged',
       'M', tags=('aircraft',), designs=('standard',), screens=False, langs4=True,
       rule='SOG-0032 (« toujours pas de possibilité de lire / écrire en kg ou lb/h ? »): the editor reads and writes in the unit chosen, by '

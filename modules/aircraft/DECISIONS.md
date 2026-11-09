@@ -108,3 +108,7 @@
   `fetchProcedures` (`ctx.launcher.job('regen/job', { set: 'stats', verb: 'output', args })`), the module declaring the route; the
   status is asked once per editor opened on a computer screen; the texts read go through `measureTexts`, the computation the file
   picker uses too (no second path). File names from the launcher are bounded and checked before they are shown. M29.
+- **9 Nov 2026 — « Courbes » in the RPM table's card** (SOG-0055, the ergonomics session's decision: the drawing lives in Appareils,
+  the flight tool adjusts the flight, not the data). A fold of the existing card rather than a new card (the editor is already over
+  seven elements; rule 13); inline SVG, colours from the frame's chart tokens so the design and the night follow; the measured points
+  are the ones on screen (never kept). M30.

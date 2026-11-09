@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Aircraft: « Courbes » on the sheet** (`modules/aircraft/sheets.js`, `sheets_texts.js`; Aircraft SPEC § 6, DECISIONS; noreg M30;
+  SOG-0055). The flow against the rpm, one colour per altitude with a legend, the measured level points over it, in a fold of the
+  RPM table's card.
+
 - **Map: the vertical profile no longer freezes the page** (`modules/maps/lib/vertical_profile.js`; SPEC § 8.1; noreg D116; SOG-0063). On
   EIDW–LFPO with the real base the airspaces crossed took about 3 s of calculation (every sample against every vertex, twice), the profile
   appeared at 2.8 s and the Map's first draw at 4 s, with a 2 s freeze. A ring is now tested only inside its bounding box, the second build reuses the
