@@ -93,6 +93,8 @@ session); they follow on `v3` and belong to alpha.5.
   § 9.6, DECISIONS; noreg F99, F100; SOG-0059). The field said and read kg/h whatever the unit chosen (an entry typed in lb/h flew
   as kg/h); it is typed in the unit of the quote, its label says it, kept in kg/h through `frame/lib/fuel_units.js`. « Réglages du
   devis · lb/h » is the first fold of the Result step, folded, instead of the last.
+- **Settings › Company: « Migrate » the airline into its own folder** (`frame/settings/access.js`; settings SPEC § 3 item 8; help ×4; A102) — the plan first (code proposed from the name, files and
+  sizes, an empty fleet said), then the migration, through the launcher verb `airline/migrate`; shown on the launcher's computer while the airline is still at the root of `data/airline/`.
 - **Roadmap: identifier copied, cards dragged to prioritise, written by the launcher** (`frame/help/roadmap.js`, `frame.css`, `frame/app.js` `helpCtx`,
   `tools/regen/roadmap.py`; frame/help SPEC § 5; A101, K96) — SOG-0066: a card starts with its `SOG-nnnn` and a right click or long touch copies it with the title; dragging a card in
   its column sets its rank, onto the strip its milestone, written by the launcher verb `roadmap/priorities` into `organisation/PRIORITES.json` (read by `tools/roadmap_build.py`);

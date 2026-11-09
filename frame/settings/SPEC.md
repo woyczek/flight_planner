@@ -328,7 +328,12 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
    `^[a-z0-9]{2,8}$`, not `perso`, not taken, twenty airlines at most, networks) writes `airline/<code>/settings.json`, an empty `fleet.json`
    and the index (merged by code); a taken code writes nothing. Every file of `data/airline/` is untrusted (§ 10.36): codes by the rule, names
    by `esc`, at most twenty lines. The one-shot migration of today's single airline is the launcher verb `airline/migrate` (`tools/regen/airline.py`,
-   case K95), not yet called from a screen.
+   case K95), called from this card (below).
+   **Migrate** (follow-up of SOG-0039; case A102): on the launcher's computer (not a paired device), while the frame's list has `default` (the airline is still at
+   the root of `data/airline/`), the card adds a block: an optional code field (`^[a-z0-9]{2,8}$`, empty = proposed from the name), « See what would be done »
+   (`regen/job { set: 'airline', verb: 'migrate', args: { dry: true, code? } }`: the name, the code, the files and their size, the fleet said empty, the
+   old files kept as a copy), then « Migrate to <code> » (`dry: false`, the code the plan gave). The answer is read as a closed list (code by the rule, file
+   names among settings/map_profiles/fleet, sizes as integers, reason among the verb's); a plan without a valid code offers no button; no block without launcher.
 
 ## 4. Invariants
 

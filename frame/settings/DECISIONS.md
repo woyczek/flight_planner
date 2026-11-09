@@ -606,3 +606,10 @@ moves code, `S` itself replaced through `setState` alone.
   count (no per-airline missions yet) wait. The list is the frame's own (`FrameData.airlines()`, V3 Frame 837f2d2fa: the index, or `default` — today's airline at the root of `data/airline/` — before the migration, then `perso`), read from the index here only for a frame without it; the choice is feature-detected (`FrameData.setAirline`, `FrameData.airline`): an old frame greys the buttons and says so (A95 checks the real frame, an old one and a stub).
 - **Not done**: a button that calls `airline/migrate` (the verb and its case exist; the gesture, plan then confirmation like `Ranger les sources brutes`, is the next lot), the airline's map
   profiles beyond the copy, `categories.json` (SOG-0041), the personal airline under `pilot/<tri>/airline/perso/`.
+
+## 10 November 2026 — the « Migrate » gesture (follow-up of SOG-0039)
+
+- **Two steps, like « Ranger les sources brutes »**: the plan (dry, nothing written) then the migration with the code the plan gave; the user may type a code first (empty = proposed).
+- **Where it shows**: only on the launcher's computer (the verb is local to the workstation) and only while the frame's list still has `default`; once `index.json` is there the block is gone by itself.
+- **Calls**: by the frame's own client (`ctx.launcherRequest('regen/job', …)`, then `regen/job?id=` every 400 ms, at most 16 s), no new route declared; the answer is read as a closed list (audit 157).
+- **Not done**: filling the fleet (still the « personal » box of the sheets), `categories.json` (SOG-0041), the personal airline folder.

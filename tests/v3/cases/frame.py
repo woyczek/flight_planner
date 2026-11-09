@@ -3833,7 +3833,7 @@ def a100(c):
 
 
 # ------------------------------------------------------------------------------------------------------ A101
-def _prio_launcher(c, root):
+def _prio_launcher(c, root, verb=('roadmap', 'priorities'), ctx=None):
     """A FAKE launcher for the roadmap's priorities: /__setup/status says there is one, and regen/job runs the REAL verb roadmap/priorities (tools/regen/roadmap.py) on `root`
     (a temporary suite root with organisation/ and frame/help/roadmap.json).  The dict it returns: `posts` (what the page asked), `up` (False: the job start fails), `detect`
     (False: no launcher answers /__setup/status), `raw` (a result given for every `get`, to test a hostile answer)."""
@@ -3843,9 +3843,9 @@ def _prio_launcher(c, root):
     if tools not in sys.path:
         sys.path.insert(0, tools)
     RJ = importlib.import_module('regen_jobs')
-    if ('roadmap', 'priorities') not in RJ.REGISTRY:
+    if verb not in RJ.REGISTRY:
         RJ.load_verbs()
-    fn, check = RJ.REGISTRY[('roadmap', 'priorities')]
+    fn, check = RJ.REGISTRY[verb]
     st = {'posts': [], 'up': True, 'detect': True, 'raw': None, 'views': {}, 'n': 0}
     status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False}
 
@@ -3864,10 +3864,10 @@ def _prio_launcher(c, root):
                 else:
                     st['n'] += 1
                     args = check(post.get('args'))
-                    res = fn(RJ.Job('roadmap', 'priorities', {}), args, {'root': str(root)}) if args else {'ok': False, 'reason': 'bad-args'}
-                    if st['raw'] is not None and args and args['action'] == 'get':
+                    res = fn(RJ.Job(verb[0], verb[1], {}), args, ctx or {'root': str(root)}) if args else {'ok': False, 'reason': 'bad-args'}
+                    if st['raw'] is not None and args and (verb != ('roadmap', 'priorities') or args['action'] == 'get'):
                         res = st['raw']
-                    st['views'][f"j{st['n']}"] = {'id': f"j{st['n']}", 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': '', 'log': [], 'result': res, 'zones': {}, 'set': 'roadmap', 'verb': 'priorities', 'args': post.get('args')}
+                    st['views'][f"j{st['n']}"] = {'id': f"j{st['n']}", 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': '', 'log': [], 'result': res, 'zones': {}, 'set': verb[0], 'verb': verb[1], 'args': post.get('args')}
                     body = {'job': f"j{st['n']}"}
             elif 'id=' in u.query:
                 body = st['views'].get(urllib.parse.parse_qs(u.query)['id'][0], {})
@@ -4018,4 +4018,65 @@ def a101(c):
             c.wait(250)
         keys = list(st['posts'][-1]['args'].get('items', {}))
         c.ok(len(st['posts']) > n and keys and all(re.fullmatch(r'SOG-\d{4}', k) for k in keys), keys, 'the set written back holds only SOG-nnnn identifiers (the hostile one was filtered out)')
+    c.check_errors()
+
+
+@case('A102', 'Settings › Company: « Migrate » (airline/migrate): the plan first, then the migration, from the launcher; hidden without launcher; a hostile answer is never drawn', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0039 follow-up: the Company card shows, on the launcher computer and while the airline is still at the root of data/airline/, a code field, « See what would be done » (the plan: the code, the files and their size, the fleet said empty) then « Migrate to <code> »; the result is read as a closed list')
+def a102(c):
+    import os
+    import tempfile
+    from pathlib import Path
+    lang = c.lang
+    T = lambda k: tx('frame/settings/access.js', k, lang, after='const TA = {')
+    NOTE = "(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w))"
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        (data / 'airline').mkdir(parents=True)
+        (data / 'airline' / 'settings.json').write_text(json.dumps({'name': 'DEFA Virtual', 'networks': {'ivao': True}}), encoding='utf-8')
+        (data / 'airline' / 'map_profiles.json').write_text('{"schema": 1, "profiles": []}', encoding='utf-8')
+        st = _prio_launcher(c, Path(td), verb=('airline', 'migrate'), ctx={'data': str(data)})
+        docs = LEVEL3 + [['airline/settings.json', {'name': 'DEFA Virtual', 'networks': {'ivao': True}}, 'document']]
+        box = '[data-card="company"] [data-mig]'
+        plan_btn, go_btn = f'{box} [data-act="companyPlan"]', f'{box} [data-act="companyMigrate"]'
+        c.open('settings?card=company', docs=docs)
+        c.until("(() => { const b = document.querySelector('" + plan_btn + "'); return !!b && !b.closest('[data-mig]').hidden })()", timeout=15000, what='the migration block (airline still at the root, launcher here)')
+        c.eq(c.count(f'{box} [data-f="mig-code"]'), 1, 'a code field, empty (the code is proposed)', what='field')
+        # ---- the plan: nothing written
+        c.tap(plan_btn)
+        c.until("!!document.querySelector('" + go_btn + "')", timeout=15000, what='the plan and its « Migrate » button')
+        plan = norm(c.text(f'{box} [data-mig-plan]'))
+        c.ok(all(x in plan for x in ('DEFA Virtual', 'defa', 'settings.json', 'map_profiles.json', 'fleet.json')) and norm(T('migFleet')) in plan, plan, 'the plan: the name, the code proposed, the three files, the fleet said empty')
+        c.eq(c.js("document.querySelector('[data-card=\"company\"] [data-f=\"mig-code\"]').value"), 'defa', 'the proposed code fills the field', what='proposed')
+        c.ok(not (data / 'airline' / 'defa').exists() and not (data / 'airline' / 'index.json').exists(), sorted(os.listdir(data / 'airline')), 'the plan wrote nothing')
+        c.eq(norm(c.text(go_btn)), norm(T('migGo').replace('{c}', 'defa')), 'the button names the folder', what='button')
+        # ---- the migration
+        c.tap(go_btn)
+        for _ in range(40):
+            if (data / 'airline' / 'defa' / 'settings.json').exists() and (data / 'airline' / 'index.json').exists():
+                break
+            c.wait(250)
+        idx = json.loads((data / 'airline' / 'index.json').read_text(encoding='utf-8'))
+        c.eq((sorted(os.listdir(data / 'airline' / 'defa')), idx['airlines'], (data / 'airline' / 'settings.json').exists()), (['fleet.json', 'map_profiles.json', 'settings.json'], [{'code': 'defa', 'name': 'DEFA Virtual'}], True),
+             'the folder, an empty fleet, the index; the old settings.json stays as a copy', what='migrated')
+        c.until(NOTE, norm(T('migDone').replace('{c}', 'defa')), what='the notification « migrated »')
+        # ---- a second plan on the same code: refused, said (nothing overwritten)
+        before = (data / 'airline' / 'defa' / 'settings.json').read_bytes()
+        c.tap(plan_btn)
+        c.until("document.querySelector('[data-card=\"company\"] [data-msg]').textContent.trim() !== ''", timeout=15000, what='a message')
+        c.eq((norm(c.text('[data-card="company"] [data-msg]')) != '', (data / 'airline' / 'defa' / 'settings.json').read_bytes() == before), (True, True), 'a second plan: the airline already has its folder, said; nothing overwritten', what='exists')
+        # ---- a hostile answer: only the closed list is read, nothing runs
+        st['raw'] = {'ok': True, 'dry': True, 'code': '<img src=x onerror=window.__pwn=1>', 'name': '<img src=x onerror=window.__pwn=1>', 'files': [{'name': '../../x', 'bytes': 5}, {'name': 'settings.json', 'bytes': 'a'}], 'reason': '<b>x</b>'}
+        c.page.fill('[data-card="company"] [data-f="mig-code"]', '')
+        c.tap(plan_btn)
+        c.wait(2000)
+        c.ok(c.js("window.__pwn === undefined") and c.count('[data-card="company"] img') == 0, 'img', 'a hostile code or name is never drawn: no element, nothing runs')
+        c.eq(c.count(go_btn), 0, 'an answer without a valid code offers no « Migrate »', what='no button')
+        # ---- no launcher: the block is not there
+        st['detect'], st['raw'] = False, None
+        c.page.reload()
+        c.until("!!document.querySelector('[data-card=\"company\"] [data-airlines] li')", timeout=15000, what='the card without launcher')
+        c.wait(500)
+        c.eq(c.js("(() => { const m = document.querySelector('" + box + "'); return !m || m.hidden })()"), True, 'without launcher the migration block is hidden', what='no launcher')
     c.check_errors()

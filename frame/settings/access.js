@@ -316,8 +316,59 @@
       'Veinte compañías como máximo.'
     ],
     added: ['Compagnie ajoutée : {n}.', 'Airline added: {n}.', 'Fluggesellschaft hinzugefügt: {n}.', 'Compañía añadida: {n}.'],
-    failed: ['Écriture impossible.', 'Could not write.', 'Schreiben nicht möglich.', 'No se pudo escribir.']
+    failed: ['Écriture impossible.', 'Could not write.', 'Schreiben nicht möglich.', 'No se pudo escribir.'],
+    // la migration de la compagnie unique d'aujourd'hui vers son dossier (verbe airline/migrate du lanceur)
+    migHint: [
+      'Votre compagnie est encore à la racine de data/airline/ : le lanceur peut la ranger dans son propre dossier. Il montre d’abord ce qu’il ferait ; rien n’est supprimé ni écrasé.',
+      'Your airline is still at the root of data/airline/: the launcher can move it into its own folder. It first shows what it would do; nothing is deleted or overwritten.',
+      'Ihre Fluggesellschaft liegt noch im Stammordner von data/airline/: Der Launcher kann sie in einen eigenen Ordner legen. Er zeigt zuerst, was er täte; nichts wird gelöscht oder überschrieben.',
+      'Su compañía sigue en la raíz de data/airline/: el lanzador puede pasarla a su propia carpeta. Primero muestra lo que haría; nada se borra ni se sobrescribe.'
+    ],
+    migCode: ['Code de la compagnie (laissez vide : proposé d’après le nom)', 'Airline code (leave empty: proposed from the name)',
+      'Code der Gesellschaft (leer lassen: nach dem Namen vorgeschlagen)',
+      'Código de la compañía (vacío: propuesto según el nombre)'
+    ],
+    migPlan: ['Voir ce qui serait fait', 'See what would be done', 'Anzeigen, was geschähe', 'Ver lo que se haría'],
+    migGo: ['Migrer vers « {c} »', 'Migrate to “{c}”', 'Nach „{c}“ migrieren', 'Migrar a «{c}»'],
+    migPlanned: ['« {n} » ira dans data/airline/{c}/ :', '“{n}” will go to data/airline/{c}/:', '„{n}“ kommt nach data/airline/{c}/:',
+      '«{n}» irá a data/airline/{c}/:'
+    ],
+    migFile: ['{f} ({b} o)', '{f} ({b} B)', '{f} ({b} B)', '{f} ({b} B)'],
+    migFleet: ['La flotte y sera vide : celle d’aujourd’hui reste dans les fiches. Les fichiers actuels restent en place comme copie.',
+      'The fleet will be empty there: today’s fleet stays in the sheets. The current files stay in place as a copy.',
+      'Die Flotte ist dort leer: die heutige bleibt in den Fiches. Die jetzigen Dateien bleiben als Kopie liegen.',
+      'La flota estará vacía allí: la de hoy sigue en las fichas. Los archivos actuales quedan como copia.'
+    ],
+    migDone: ['Compagnie migrée vers {c}.', 'Airline migrated to {c}.', 'Gesellschaft nach {c} migriert.', 'Compañía migrada a {c}.'],
+    migWhy: {
+      'no-source': ['Pas de data/airline/settings.json lisible : rien à migrer.',
+        'No readable data/airline/settings.json: nothing to migrate.',
+        'Keine lesbare data/airline/settings.json: nichts zu migrieren.',
+        'No hay data/airline/settings.json legible: nada que migrar.'
+      ],
+      'bad-code': ['Code refusé ou impossible à proposer : donnez 2 à 8 lettres minuscules ou chiffres.',
+        'Code refused or impossible to propose: give 2 to 8 lower-case letters or digits.',
+        'Code abgelehnt oder nicht vorschlagbar: 2 bis 8 Kleinbuchstaben oder Ziffern angeben.',
+        'Código rechazado o imposible de proponer: indique 2 a 8 letras minúsculas o cifras.'
+      ],
+      exists: ['Cette compagnie a déjà son dossier : rien n’est écrit.', 'This airline already has its folder: nothing is written.',
+        'Diese Gesellschaft hat schon ihren Ordner: nichts wird geschrieben.',
+        'Esta compañía ya tiene su carpeta: no se escribe nada.'
+      ],
+      partial: ['Fait en partie : un fichier existait déjà et n’a pas été écrasé.',
+        'Partly done: a file already existed and was not overwritten.',
+        'Teilweise erledigt: eine Datei gab es schon, sie wurde nicht überschrieben.',
+        'Hecho en parte: ya existía un archivo y no se sobrescribió.'
+      ],
+      failed: ['Écriture impossible.', 'Could not write.', 'Schreiben nicht möglich.', 'No se pudo escribir.'],
+      none: ['Le lanceur n’a pas répondu (ou ne connaît pas encore cette opération).',
+        'The launcher did not answer (or does not know this operation yet).',
+        'Der Launcher hat nicht geantwortet (oder kennt diese Operation noch nicht).',
+        'El lanzador no respondió (o aún no conoce esta operación).'
+      ]
+    }
   };
+  const MIG_FILES = ['settings.json', 'map_profiles.json', 'fleet.json'];
   let airlineA = null;
   /** L'adaptateur (créé une fois) qui lit data/airline/ et écrit l'index et les dossiers des compagnies ; l'index est fusionné par code. */
   const airlineData = FD => airlineA ||= FD.adapter({
@@ -392,7 +443,7 @@
       fld
     } = env;
     if (lvl !== 3 && focus !== 'company') return '';
-    return `<div class="f-card" data-card="company"><h2>${esc(t(TA.title))}</h2><p class="f-muted">${esc(t(TA.hint))}</p><ul class="f-queue" data-airlines></ul><p class="f-warn" data-airline-note hidden></p>
+    return `<div class="f-card" data-card="company"><h2>${esc(t(TA.title))}</h2><p class="f-muted">${esc(t(TA.hint))}</p><ul class="f-queue" data-airlines></ul><p class="f-warn" data-airline-note hidden></p><div data-mig hidden></div>
       <details data-airline-add><summary>${esc(t(TA.add))}</summary>${fld('co-name', TA.name, '')}${fld('co-code', TA.code, '')}
       <fieldset><legend>${esc(t(TA.networks))}</legend>${AIRLINE_NETWORKS.map(k => `<label class="f-check"><input type="checkbox" data-co-net="${k}"> ${esc(t(TA.net[k]))}</label>`).join('')}</fieldset>
       <p class="f-msg" data-msg></p><div class="f-row"><button type="button" class="primary" data-act="companyAdd">${esc(t(TA.save))}</button></div></details></div>`;
@@ -413,11 +464,57 @@
       body = rows.map(r => `<li data-airline="${esc(r.code)}"${r.code === now ? ' data-current' : ''}><b>${esc(r.name)}</b> <code>${esc(r.code)}</code>${r.nets.length ? ` <span class="f-muted">${esc(r.nets.map(k => t(TA.net[k])).join(' · '))}</span>` : ''}${r.fleet === null ? '' : ` <span class="f-muted">${esc(t(TA.fleet, { n: r.fleet }))}</span>`}
         ${r.code === now ? `<span class="f-muted">${esc(t(TA.current))}</span>` : `<button type="button" data-act="companyChoose" data-code="${esc(r.code)}"${can ? '' : ' disabled'}>${esc(t(TA.choose))}</button>`}</li>`).join('');
     box.innerHTML = body;
+    // la migration : seulement sur le poste du lanceur et tant que la compagnie d'aujourd'hui est encore à la racine
+    const mig = view.querySelector('[data-mig]');
+    if (mig) {
+      const L = env.L && !env.L.lan,
+        pending = L && rows.some(r => r.code === 'default');
+      mig.hidden = !pending;
+      if (pending && !mig.firstChild) mig.innerHTML = migHtml(env);
+    }
     const note = view.querySelector('[data-airline-note]');
     if (note) {
       note.hidden = can && rows.length > 1;
       note.textContent = !can ? t(TA.unavailable) : rows.length > 1 ? '' : t(TA.none);
     }
+  }
+  /** Lance airline/migrate sur le lanceur du poste et attend sa fin (quelques secondes) : le résultat (objet) ou null (pas de lanceur, pas de réponse, travail en échec). */
+  async function runMigrate(c, args) {
+    const r = await c.launcherRequest('regen/job', {
+      json: {
+        set: 'airline',
+        verb: 'migrate',
+        args
+      }
+    }).catch(() => null);
+    const id = r?.body?.job;
+    if (!id || r.status >= 400) return null;
+    for (let i = 0; i < 40; i++) {
+      await new Promise(ok => setTimeout(ok, 400));
+      const st = (await c.launcherRequest(`regen/job?id=${encodeURIComponent(id)}`).catch(() => null))?.body;
+      if (st?.state && st.state !== 'running') return st.state === 'done' && st.result && typeof st.result === 'object' ? st.result :
+        null;
+    }
+    return null;
+  }
+  /** Le résultat du lanceur lu en liste fermée (audit 157) : { ok, code, name, files: [{ name, bytes }], reason }. */
+  const migResult = r => ({
+    ok: r?.ok === true,
+    code: typeof r?.code === 'string' && AIRLINE_CODE.test(r.code) ? r.code : '',
+    name: typeof r?.name === 'string' ? r.name.slice(0, 80) : '',
+    files: (Array.isArray(r?.files) ? r.files : []).filter(f => MIG_FILES.includes(f?.name)).slice(0, 3).map(f => ({
+      name: f.name,
+      bytes: Number.isInteger(f.bytes) && f.bytes >= 0 ? Math.min(f.bytes, 1e9) : 0
+    })),
+    reason: typeof r?.reason === 'string' && Object.hasOwn(TA.migWhy, r.reason) ? r.reason : r ? '' : 'none'
+  });
+  /** Le bloc de migration (compagnie encore à la racine de data/airline/ : « default » dans la liste du cadre) : un code facultatif, « Voir ce qui serait fait », puis « Migrer ». */
+  function migHtml(env) {
+    const {
+      t,
+      fld
+    } = env;
+    return `<p class="f-muted">${esc(t(TA.migHint))}</p>${fld('mig-code', TA.migCode, '')}<div class="f-row"><button type="button" data-act="companyPlan">${esc(t(TA.migPlan))}</button></div><div data-mig-plan></div>`;
   }
   /** Les gestes de la carte : « Choisir » (FrameData.setAirline(code), le code revérifié) et « Ajouter » (nom, code, réseaux : les dossiers et l'index écrits, jamais un fichier existant écrasé). */
   async function airlineRun(env, act, b) {
@@ -435,6 +532,34 @@
       if (!(AIRLINE_CODE.test(code) || code === PERSO) || typeof FD.setAirline !== 'function') return;
       await FD.setAirline(code);
       return again();
+    }
+    if (act === 'companyPlan' || act === 'companyMigrate') {
+      const root = card('company'),
+        out = root.querySelector('[data-mig-plan]'),
+        typed = val('mig-code', root);
+      if (typed && !AIRLINE_CODE.test(typed)) return say('company', t(TA.badCode));
+      const dry = act === 'companyPlan',
+        res = migResult(await runMigrate(c, {
+          dry,
+          ...(typed ? {
+            code: typed
+          } : {})
+        }));
+      if (dry && res.ok && res.code) {
+        out.innerHTML = `<p>${esc(t(TA.migPlanned, { n: res.name, c: res.code }))}</p><ul>${res.files.map(f => `<li>${esc(t(TA.migFile, { f: f.name, b: f.bytes }))}</li>`).join('')}</ul><p class="f-muted">${esc(t(TA.migFleet))}</p>
+          <div class="f-row"><button type="button" class="primary" data-act="companyMigrate">${esc(t(TA.migGo, { c: res.code }))}</button></div>`;
+        const field = root.querySelector('[data-f="mig-code"]');
+        if (field) field.value = res.code;
+        return say('company', '');
+      }
+      if (!dry && res.ok) {
+        c.notify(t(TA.migDone, {
+          c: res.code
+        }), 'ok');
+        return again();
+      }
+      if (out) out.innerHTML = '';
+      return say('company', t(TA.migWhy[res.reason || 'failed']));
     }
     const r = card('company'),
       name = val('co-name', r).slice(0, 61),
@@ -482,7 +607,7 @@
   }
 
   (window.SogSettingsParts ||= {}).airline = {
-    acts: ['companyChoose', 'companyAdd'],
+    acts: ['companyChoose', 'companyAdd', 'companyPlan', 'companyMigrate'],
     html: airlineHtml,
     live: airlineLive,
     list: airlineList,
