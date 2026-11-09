@@ -529,7 +529,7 @@
   const remoteLast = () => remoteNow;
   /** Le texte de la ligne « Dépôt des données » : « … » tant que le lanceur n'a pas répondu, puis l'adresse et la branche (ou « aucun dépôt distant »). */
   function gitLineText(t, remote, pending) {
-    if (pending || !remote) return '…';
+    if (pending || !remote) return ''; // « … » : la réserve du cadre (f-hold, aria-busy) le montre
     const v = remote.url ? `${remote.url}${/^[\w./-]+$/.test(remote.branch || '') ? ` (${remote.branch})` : ''}` : t(T.gitLineNone);
     return t(T.gitLine, {
       v
@@ -541,6 +541,7 @@
     if (!el) return;
     el.textContent = gitLineText(t, remote, false);
     el.title = remote?.url || '';
+    el.removeAttribute('aria-busy'); // la valeur est là : le « … » de la réserve part, la hauteur reste
   }
   /** Dépôt distant de data/ (GET /__setup/sync-remote), relu à chaque dessin ; les réponses « dry » mémorisées sont oubliées. */
   async function readRemote() {
@@ -556,7 +557,7 @@
       gitState,
       fld
     } = env;
-    return `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2><p>${esc(t(T.accessLauncher))}</p><p data-provider-where><a href="#settings?card=admin&amp;panel=remote">${esc(t(T.accessProvider))}</a></p><p class="f-muted" data-git-line style="height:1.6em;line-height:1.6em;margin:0 0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"${remote?.url ? ` title="${esc(remote.url)}"` : ''}>${esc(gitLineText(t, remote, gitState === 'pending'))}</p>${gitState === 'repo' || gitState === 'pending' ? '' : gitDoor(gitState, t, fld, remote)}</div>`;
+    return `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2><p>${esc(t(T.accessLauncher))}</p><p data-provider-where><a href="#settings?card=admin&amp;panel=remote">${esc(t(T.accessProvider))}</a></p><p class="f-muted${gitState === 'pending' ? ' f-hold' : ''}"${gitState === 'pending' ? ' aria-busy="true" ' : ' '}data-git-line style="${gitState === 'pending' ? '--f-hold:1.6em;' : ''}height:1.6em;line-height:1.6em;margin:0 0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"${remote?.url ? ` title="${esc(remote.url)}"` : ''}>${esc(gitLineText(t, remote, gitState === 'pending'))}</p>${gitState === 'repo' || gitState === 'pending' ? '' : gitDoor(gitState, t, fld, remote)}</div>`;
   }
   /** Ligne « Fournisseur » en tête du volet du dépôt distant, lue de l'adresse du dépôt distant de data/ (SogConfig.providerOf :
    *  jamais un réglage ; known : les fournisseurs que la configuration de l'appareil donne, pour un GitLab auto-hébergé) : GitLab
