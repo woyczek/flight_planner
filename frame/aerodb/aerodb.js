@@ -40,6 +40,7 @@
   // contours des zones (zoneOutlines) : shared/carto/aero_zones_geo.js (Natural Earth 1:50 M, domaine public), chargé à la
   // première demande, une fois pour toute la page (une promesse partagée par tous les services)
   let outlinesP = null;
+  let packsP = null; // les paquets de pays (packs()), lus une fois ; null si le fichier ne s'est pas lu : le prochain appel réessaie
   /** Gel en profondeur (les contours servis tels quels, sans copie : personne ne les change). */
   const freezeAll = v => {
     if (v && typeof v === 'object' && !Object.isFrozen(v)) {
@@ -2016,6 +2017,49 @@
        *  [fr, en, de, es], rings: [[[lon, lat], …]], box: [w, s, e, n] } }, gelés ; la carte des zones du module Données,
        *  bientôt le fond uni de la Carte (frame/aerodb/INTEGRATION.md). */
       zoneOutlines,
+      /** Les paquets de pays et les thèmes (V3 § 10.42, SOG-0065) : frame/aerodb/packs.json, fait par tools/build_aero_packs.py (Natural Earth, listes à la main dites par `basis`). { generated, source, regions: [{ id, names: [fr, en, de, es], zones: [identifiants], partial?: [identifiants de zones seulement en partie dans le paquet], empty?: 'no-zone-no-source', basis }], themes: [{ id, names, zones, basis }] }.
+       *  Un paquet est une liste de zones, plusieurs-à-plusieurs (la Turquie est dans la Méditerranée et au Moyen-Orient) ; un thème est un FILTRE : les zones qui touchent l'objet, il n'en ajoute aucune. Les zones inconnues de la liste des zones sont écartées, les noms nettoyés : le fichier est une entrée bornée (60 paquets, 250 zones chacun). Rien n'est construit ni publié par un paquet : « Ajouter tout » est le geste du pilote (addZone sur chaque identifiant). null si le fichier ne se lit pas. */
+      async packs() {
+        packsP ||= (async () => {
+          const [raw, outlines] = await Promise.all([fetch(new URL('packs.json', HERE).href, {
+            cache: 'no-cache'
+          }).then(r => r.ok ? r.json() : null).catch(() => null), zoneOutlines().catch(() => null)]);
+          if (!raw || raw.schema !== 1 || !outlines) return null;
+          const known = new Set(Object.keys(outlines)),
+            text = (v, n) => typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f-\u009f<>]/g, ' ').replace(/\s+/g, ' ')
+            .trim().slice(0, n) : '',
+            ids = (list, only) => Array.isArray(list) ? [...new Set(list.filter(z => typeof z === 'string' && known.has(z) && (!
+              only || only.has(z))))].slice(0, 250) : [],
+            pack = p => {
+              if (!p || typeof p !== 'object' || !/^[a-z0-9-]{2,30}$/.test(p.id || '') || !Array.isArray(p.names) || p.names
+                .length !== 4) return null;
+              const zones = ids(p.zones);
+              return Object.freeze({
+                id: p.id,
+                names: Object.freeze(p.names.map(n => text(n, 60))),
+                zones: Object.freeze(zones),
+                ...(Array.isArray(p.partial) ? {
+                  partial: Object.freeze(ids(p.partial, new Set(zones)))
+                } : {}),
+                ...(typeof p.empty === 'string' ? {
+                  empty: text(p.empty, 40)
+                } : {}),
+                basis: text(p.basis, 300)
+              });
+            },
+            list = l => Object.freeze((Array.isArray(l) ? l : []).slice(0, 60).map(pack).filter(Boolean));
+          return Object.freeze({
+            generated: text(raw.generated, 10),
+            source: text(raw.source, 300),
+            regions: list(raw.regions),
+            themes: list(raw.themes)
+          });
+        })();
+        packsP.then(v => {
+          if (!v) packsP = null;
+        });
+        return packsP;
+      },
       /** Toutes les zones connues de la suite (AERODB_ZONES), publiées ou non : [{ id, names: [fr, en, de, es], frames, published }],
        *  dans l'ordre de leur nom français (« Ajouter un pays » du module Données). */
       async zones() {

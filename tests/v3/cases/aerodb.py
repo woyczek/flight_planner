@@ -5329,6 +5329,56 @@ def k111(c):
         c.eq((r['exists'], r['steps'], r['age'] is not None and r['age'] > 0), (True, 3, True), 'status reads the publication in place: steps and age', what='status')
 
 
+@case('K112', 'Country packs and thematic filters (SOG-0065, § 10.42): packs.json from Natural Earth and hand lists, a pack is a list of zones (many-to-many), a theme is a filter that adds nothing; AeroDb.packs() gives them cleaned', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0065 (V3 § 10.42, 9 Nov 2026): « regrouper les pays en packages » -- regions from Natural Earth SUBREGION (+ hand lists: Mediterranean, Australia and Indonesia, Arctic, Antarctica empty with its reason), and themes (islands, Himalaya, deserts and steppes, forests and jungles, lakes and rivers, megacities) computed offline by crossing public objects with the zone outlines; a pack is not a zone, a theme shows which zones to add and adds none')
+def k112(c):
+    import importlib
+    import json
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    B = importlib.import_module('build_aero_packs')
+    sq = lambda x, y, w: [[x, y], [x + w, y], [x + w, y + w], [x, y + w], [x, y]]
+    zones = {'aa': {'r': [sq(0, 0, 10)]}, 'bb': {'r': [sq(10, 0, 10)]}, 'cc': {'r': [sq(40, 40, 5)]}, 'dd': {'r': [sq(5, 5, 20)]}}
+    c.eq((B.inside([5, 5], sq(0, 0, 10)), B.inside([15, 5], sq(0, 0, 10)), B.touches([[8, 5], [12, 5]], sq(0, 0, 10), False), B.touches([[-5, 5], [30, 5]], sq(10, 0, 10), False), B.touches(sq(20, 20, 2), sq(0, 0, 10)), B.touches(sq(-2, -2, 20), sq(4, 4, 2))),
+         (True, False, True, True, False, True), 'the geometry: a point in a ring, a line that enters or crosses a zone, a polygon far away, a polygon that contains a zone', what='geometry')
+    obj = lambda pts, closed=False: {'type': 'Polygon' if closed else 'LineString', 'coordinates': [pts] if closed else pts}
+    c.eq((sorted(B.zones_touching([{'geometry': obj([[9, 5], [11, 5]])}], zones)), sorted(B.zones_touching([{'geometry': obj(sq(41, 41, 1), True)}], zones)), B.zone_of_point([42, 42], zones), B.zone_of_point([30, 30], zones), B.zone_of_point([10.4, 5], zones, 1.0)),
+         (['aa', 'bb', 'dd'], ['cc'], 'cc', None, 'bb'), 'the zones a line or a polygon touches; the zone of a point, the smaller one where outlines overlap, none far from every zone', what='touching')
+    ne = {'ne_50m_admin_0_countries': {'features': [{'properties': {'ADM0_A3': 'AAA', 'ISO_A2_EH': 'AA', 'CONTINENT': 'Europe', 'SUBREGION': 'Western Europe'}}, {'properties': {'ADM0_A3': 'BBB', 'ISO_A2_EH': 'BB', 'CONTINENT': 'Europe', 'SUBREGION': 'Western Europe'}},
+                                                   {'properties': {'ADM0_A3': 'CCC', 'ISO_A2_EH': 'CC', 'CONTINENT': 'Asia', 'SUBREGION': 'Western Asia'}}, {'properties': {'ADM0_A3': 'DDD', 'ISO_A2_EH': 'DD', 'CONTINENT': 'Seven seas (open ocean)', 'SUBREGION': 'Western Asia'}}]},
+          'ne_50m_geography_regions_polys': {'features': [{'properties': {'NAME': 'HIMALAYAS', 'FEATURECLA': 'Range/mtn', 'SCALERANK': 1}, 'geometry': obj(sq(8, 1, 4), True)}]},
+          'ne_110m_lakes': {'features': []}, 'ne_110m_rivers_lake_centerlines': {'features': []}}
+    out = B.build(zones, ne, [{'name': 'Bigville', 'lat': 42, 'lon': 42, 'population': 6_000_000}, {'name': 'Small', 'lat': 2, 'lon': 2, 'population': 100_000}], '2026-11-09')
+    reg = {r['id']: r for r in out['regions']}
+    th = {t['id']: t for t in out['themes']}
+    c.eq((reg['europe-west']['zones'], reg['middle-east']['zones'], reg['antarctica']['zones'], reg['antarctica'].get('empty'), th['himalaya']['zones'], th['megacities']['zones']),
+         (['aa', 'bb'], ['cc'], [], 'no-zone-no-source', ['aa', 'bb', 'dd'], ['cc']), 'build: a pack from SUBREGION (open-ocean entries left out), Antarctica empty with its reason, a theme from the objects touching the zones, the megacities from the cities of the base', what='build')
+    c.eq(set(out), {'schema', 'generated', 'source', 'regions', 'themes'}, 'the head of the file', what='head')
+    real = json.load(open(ROOT / 'frame' / 'aerodb' / 'packs.json', encoding='utf-8'))
+    geo = (ROOT / 'shared' / 'carto' / 'aero_zones_geo.js').read_text(encoding='utf-8')
+    known = set(json.loads(geo[geo.index('{', geo.index('AERO_ZONES_GEO')):geo.rindex('}') + 1]))
+    allr = real['regions'] + real['themes']
+    c.eq((real['schema'], len(real['regions']), [t['id'] for t in real['themes']], all(len(p['names']) == 4 and all(p['names']) for p in allr), all(set(p['zones']) <= known and p['zones'] == sorted(set(p['zones'])) for p in allr), all(p.get('basis') for p in allr)),
+         (1, 22, ['islands', 'himalaya', 'deserts-steppes', 'forests-jungles', 'lakes-rivers', 'megacities'], True, True, True), 'the committed file: 22 packs (18 regions from Natural Earth + 3 hand lists + Antarctica), 6 themes, names in four languages, only known zones, each list says its basis', what='file')
+    r = {p['id']: p for p in real['regions']}
+    covered = set().union(*(set(p['zones']) for p in real['regions']))
+    c.eq(('tr' in r['mediterranean']['zones'] and 'tr' in r['middle-east']['zones'], r['antarctica']['zones'], r['antarctica'].get('empty'), r['arctic']['partial'], sorted(set(known) - covered - {'nat'})),
+         (True, [], 'no-zone-no-source', ['ca', 'fi', 'no', 'ru', 'se', 'us'], ['aq'] if 'aq' in known else sorted(set(known) - covered - {'nat'})), 'a pack is many-to-many (Turkey in two), Antarctica is empty with its reason, the arctic says which zones are only partly in it; every zone is in a region (except the oceanic one)', what='real')
+    t = {p['id']: p for p in real['themes']}
+    c.ok({'np', 'bt', 'in', 'cn'} <= set(t['himalaya']['zones']) and {'jp', 'us', 'cd'} <= set(t['megacities']['zones']) and {'br', 'cd'} <= set(t['forests-jungles']['zones']), str({k: v['zones'][:6] for k, v in t.items()}), 'the themes hold what they should: the Himalaya zones, the megacities (Tokyo, New York, Kinshasa in cd), the forests')
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r2 = c.js("""async () => {
+      const db = AeroDB.create({ reader: { read: async () => null, list: async () => [], watch: () => () => {} }, lnmperf: false });
+      const p = await db.packs();
+      const again = await db.packs();
+      return { same: p === again, frozen: Object.isFrozen(p) && Object.isFrozen(p.regions[0]) && Object.isFrozen(p.regions[0].zones), regions: p.regions.length, themes: p.themes.map(t => t.id), generated: p.generated,
+        tr: p.regions.filter(r => r.zones.includes('tr')).map(r => r.id), antarctica: p.regions.find(r => r.id === 'antarctica'), arctic: p.regions.find(r => r.id === 'arctic').partial, names: p.regions[0].names };
+    }""")
+    c.eq((r2['same'], r2['frozen'], r2['regions'], r2['themes'], r2['tr'], r2['antarctica']['zones'], r2['antarctica']['empty'], r2['arctic'], len(r2['names'])),
+         (True, True, 22, ['islands', 'himalaya', 'deserts-steppes', 'forests-jungles', 'lakes-rivers', 'megacities'], ['middle-east', 'mediterranean'], [], 'no-zone-no-source', ['ca', 'fi', 'no', 'ru', 'se', 'us'], 4),
+         'AeroDb.packs(): read once, frozen, the regions and themes as in the file, Turkey in two packs (the Middle East, the Mediterranean), Antarctica empty with its reason, the partial zones of the arctic', what='packs()')
+
+
 @case('K65', 'Build job: a zone shows a count of sources only when the builder gives one for it; the build\'s count goes once in the job', 'K', static=True,
       rule='Réglages 1 Nov 2026 (the user saw « construction (90 / 90 sources) » on all 26 zones): the builder\'s counts are global; a zone gets done / total only from a count of its own; job.data inputs = { done, total } once')
 def k65(c):

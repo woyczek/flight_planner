@@ -1,0 +1,784 @@
+{
+ "schema": 1,
+ "generated": "2026-11-09",
+ "source": "Natural Earth 1:50 000 000, v5.1.2 (public domain); hand lists as said by each `basis`; to be reviewed by the user once",
+ "regions": [
+  {
+   "id": "north-america",
+   "names": [
+    "Amérique du Nord",
+    "North America",
+    "Nordamerika",
+    "América del Norte"
+   ],
+   "zones": [
+    "bm",
+    "ca",
+    "fr",
+    "gl",
+    "us"
+   ],
+   "basis": "natural-earth: SUBREGION Northern America"
+  },
+  {
+   "id": "central-america",
+   "names": [
+    "Amérique centrale et Caraïbes",
+    "Central America and the Caribbean",
+    "Mittelamerika und Karibik",
+    "América Central y el Caribe"
+   ],
+   "zones": [
+    "ag",
+    "ai",
+    "bb",
+    "bs",
+    "bz",
+    "cr",
+    "cu",
+    "cw",
+    "dm",
+    "do",
+    "fr",
+    "gd",
+    "gt",
+    "hn",
+    "ht",
+    "jm",
+    "lc",
+    "mx",
+    "ni",
+    "pa",
+    "pr",
+    "sv",
+    "tc",
+    "tt",
+    "vc",
+    "vi"
+   ],
+   "basis": "natural-earth: SUBREGION Central America, Caribbean"
+  },
+  {
+   "id": "south-america",
+   "names": [
+    "Amérique du Sud",
+    "South America",
+    "Südamerika",
+    "América del Sur"
+   ],
+   "zones": [
+    "ar",
+    "bo",
+    "br",
+    "cl",
+    "co",
+    "ec",
+    "fk",
+    "gy",
+    "pe",
+    "py",
+    "sr",
+    "uy",
+    "ve"
+   ],
+   "basis": "natural-earth: SUBREGION South America"
+  },
+  {
+   "id": "europe-north",
+   "names": [
+    "Europe du Nord",
+    "Northern Europe",
+    "Nordeuropa",
+    "Europa del Norte"
+   ],
+   "zones": [
+    "ax",
+    "dk",
+    "ee",
+    "fi",
+    "fo",
+    "gb",
+    "ie",
+    "im",
+    "is",
+    "je",
+    "lt",
+    "lv",
+    "no",
+    "se"
+   ],
+   "basis": "natural-earth: SUBREGION Northern Europe"
+  },
+  {
+   "id": "europe-west",
+   "names": [
+    "Europe de l’Ouest",
+    "Western Europe",
+    "Westeuropa",
+    "Europa Occidental"
+   ],
+   "zones": [
+    "at",
+    "be",
+    "ch",
+    "de",
+    "fr",
+    "li",
+    "lu",
+    "nl"
+   ],
+   "basis": "natural-earth: SUBREGION Western Europe"
+  },
+  {
+   "id": "europe-south",
+   "names": [
+    "Europe du Sud",
+    "Southern Europe",
+    "Südeuropa",
+    "Europa del Sur"
+   ],
+   "zones": [
+    "ad",
+    "al",
+    "ba",
+    "es",
+    "gr",
+    "hr",
+    "it",
+    "me",
+    "mk",
+    "mt",
+    "pt",
+    "rs",
+    "si",
+    "va",
+    "xk"
+   ],
+   "basis": "natural-earth: SUBREGION Southern Europe"
+  },
+  {
+   "id": "europe-east",
+   "names": [
+    "Europe de l’Est",
+    "Eastern Europe",
+    "Osteuropa",
+    "Europa del Este"
+   ],
+   "zones": [
+    "bg",
+    "by",
+    "cz",
+    "hu",
+    "md",
+    "pl",
+    "ro",
+    "ru",
+    "sk",
+    "ua"
+   ],
+   "basis": "natural-earth: SUBREGION Eastern Europe"
+  },
+  {
+   "id": "africa-north",
+   "names": [
+    "Afrique du Nord",
+    "Northern Africa",
+    "Nordafrika",
+    "África del Norte"
+   ],
+   "zones": [
+    "dz",
+    "eg",
+    "eh",
+    "ly",
+    "ma",
+    "sd",
+    "tn"
+   ],
+   "basis": "natural-earth: SUBREGION Northern Africa"
+  },
+  {
+   "id": "africa-west",
+   "names": [
+    "Afrique de l’Ouest",
+    "Western Africa",
+    "Westafrika",
+    "África Occidental"
+   ],
+   "zones": [
+    "bf",
+    "bj",
+    "ci",
+    "cv",
+    "gh",
+    "gm",
+    "gn",
+    "gw",
+    "lr",
+    "ml",
+    "mr",
+    "ne",
+    "ng",
+    "sl",
+    "sn",
+    "tg"
+   ],
+   "basis": "natural-earth: SUBREGION Western Africa"
+  },
+  {
+   "id": "africa-central",
+   "names": [
+    "Afrique centrale",
+    "Central Africa",
+    "Zentralafrika",
+    "África Central"
+   ],
+   "zones": [
+    "ao",
+    "cd",
+    "cf",
+    "cg",
+    "cm",
+    "ga",
+    "gq",
+    "st",
+    "td"
+   ],
+   "basis": "natural-earth: SUBREGION Middle Africa"
+  },
+  {
+   "id": "africa-east",
+   "names": [
+    "Afrique de l’Est",
+    "Eastern Africa",
+    "Ostafrika",
+    "África Oriental"
+   ],
+   "zones": [
+    "bi",
+    "dj",
+    "er",
+    "et",
+    "ke",
+    "km",
+    "mg",
+    "mw",
+    "mz",
+    "rw",
+    "so",
+    "sol",
+    "ss",
+    "tz",
+    "ug",
+    "zm",
+    "zw"
+   ],
+   "basis": "natural-earth: SUBREGION Eastern Africa"
+  },
+  {
+   "id": "africa-south",
+   "names": [
+    "Afrique australe",
+    "Southern Africa",
+    "Südliches Afrika",
+    "África Austral"
+   ],
+   "zones": [
+    "bw",
+    "ls",
+    "na",
+    "sz",
+    "za"
+   ],
+   "basis": "natural-earth: SUBREGION Southern Africa"
+  },
+  {
+   "id": "middle-east",
+   "names": [
+    "Moyen-Orient",
+    "Middle East",
+    "Naher Osten",
+    "Oriente Medio"
+   ],
+   "zones": [
+    "ae",
+    "am",
+    "az",
+    "bh",
+    "cy",
+    "cyn",
+    "ge",
+    "il",
+    "iq",
+    "jo",
+    "kw",
+    "lb",
+    "om",
+    "ps",
+    "qa",
+    "sa",
+    "sy",
+    "tr",
+    "ye"
+   ],
+   "basis": "natural-earth: SUBREGION Western Asia"
+  },
+  {
+   "id": "asia-central",
+   "names": [
+    "Asie centrale",
+    "Central Asia",
+    "Zentralasien",
+    "Asia Central"
+   ],
+   "zones": [
+    "kg",
+    "kz",
+    "tj",
+    "tm",
+    "uz"
+   ],
+   "basis": "natural-earth: SUBREGION Central Asia"
+  },
+  {
+   "id": "asia-south",
+   "names": [
+    "Asie du Sud",
+    "Southern Asia",
+    "Südasien",
+    "Asia Meridional"
+   ],
+   "zones": [
+    "af",
+    "bd",
+    "bt",
+    "in",
+    "ir",
+    "kas",
+    "lk",
+    "np",
+    "pk"
+   ],
+   "basis": "natural-earth: SUBREGION Southern Asia"
+  },
+  {
+   "id": "asia-east",
+   "names": [
+    "Asie de l’Est",
+    "Eastern Asia",
+    "Ostasien",
+    "Asia Oriental"
+   ],
+   "zones": [
+    "cn",
+    "hk",
+    "jp",
+    "kp",
+    "kr",
+    "mn",
+    "tw"
+   ],
+   "basis": "natural-earth: SUBREGION Eastern Asia"
+  },
+  {
+   "id": "asia-southeast",
+   "names": [
+    "Asie du Sud-Est",
+    "South-Eastern Asia",
+    "Südostasien",
+    "Sudeste Asiático"
+   ],
+   "zones": [
+    "bn",
+    "id",
+    "kh",
+    "la",
+    "mm",
+    "my",
+    "ph",
+    "sg",
+    "th",
+    "tl",
+    "vn"
+   ],
+   "basis": "natural-earth: SUBREGION South-Eastern Asia"
+  },
+  {
+   "id": "oceania",
+   "names": [
+    "Océanie",
+    "Oceania",
+    "Ozeanien",
+    "Oceanía"
+   ],
+   "zones": [
+    "as",
+    "au",
+    "fj",
+    "fm",
+    "fr",
+    "gu",
+    "ki",
+    "mh",
+    "mp",
+    "nu",
+    "nz",
+    "pg",
+    "pw",
+    "sb",
+    "to",
+    "vu",
+    "ws"
+   ],
+   "basis": "natural-earth: SUBREGION Australia and New Zealand, Melanesia, Micronesia, Polynesia"
+  },
+  {
+   "id": "mediterranean",
+   "names": [
+    "Méditerranée",
+    "Mediterranean",
+    "Mittelmeer",
+    "Mediterráneo"
+   ],
+   "zones": [
+    "al",
+    "ba",
+    "cy",
+    "dz",
+    "eg",
+    "es",
+    "fr",
+    "gr",
+    "hr",
+    "il",
+    "it",
+    "lb",
+    "ly",
+    "ma",
+    "me",
+    "mt",
+    "ps",
+    "si",
+    "sy",
+    "tn",
+    "tr"
+   ],
+   "basis": "hand list: the riparian states"
+  },
+  {
+   "id": "australia-indonesia",
+   "names": [
+    "Australie et Indonésie",
+    "Australia and Indonesia",
+    "Australien und Indonesien",
+    "Australia e Indonesia"
+   ],
+   "zones": [
+    "au",
+    "id",
+    "nz",
+    "pg",
+    "tl"
+   ],
+   "basis": "hand list"
+  },
+  {
+   "id": "arctic",
+   "names": [
+    "Cercle arctique",
+    "Arctic",
+    "Arktis",
+    "Ártico"
+   ],
+   "zones": [
+    "ca",
+    "fi",
+    "fo",
+    "gl",
+    "is",
+    "no",
+    "ru",
+    "se",
+    "us"
+   ],
+   "partial": [
+    "ca",
+    "fi",
+    "no",
+    "ru",
+    "se",
+    "us"
+   ],
+   "basis": "hand list; the zones in `partial` are whole countries only partly inside the circle"
+  },
+  {
+   "id": "antarctica",
+   "names": [
+    "Antarctique",
+    "Antarctica",
+    "Antarktis",
+    "Antártida"
+   ],
+   "zones": [],
+   "empty": "no-zone-no-source",
+   "basis": "no zone and no data source today"
+  }
+ ],
+ "themes": [
+  {
+   "id": "islands",
+   "names": [
+    "Îles",
+    "Islands",
+    "Inseln",
+    "Islas"
+   ],
+   "zones": [
+    "ag",
+    "bb",
+    "bh",
+    "bs",
+    "cu",
+    "cv",
+    "cy",
+    "dm",
+    "do",
+    "fj",
+    "fm",
+    "gd",
+    "ht",
+    "id",
+    "is",
+    "jm",
+    "jp",
+    "ki",
+    "km",
+    "lc",
+    "lk",
+    "mg",
+    "mh",
+    "mt",
+    "mu",
+    "nz",
+    "ph",
+    "pw",
+    "sb",
+    "sc",
+    "sg",
+    "st",
+    "to",
+    "tt",
+    "vc",
+    "vu",
+    "ws"
+   ],
+   "basis": "hand list: the island states"
+  },
+  {
+   "id": "himalaya",
+   "names": [
+    "Himalaya",
+    "Himalaya",
+    "Himalaya",
+    "Himalaya"
+   ],
+   "zones": [
+    "bt",
+    "cn",
+    "in",
+    "np"
+   ],
+   "basis": "natural-earth geography_regions_polys: HIMALAYAS"
+  },
+  {
+   "id": "deserts-steppes",
+   "names": [
+    "Déserts et steppes",
+    "Deserts and steppes",
+    "Wüsten und Steppen",
+    "Desiertos y estepas"
+   ],
+   "zones": [
+    "ae",
+    "ao",
+    "au",
+    "bf",
+    "bg",
+    "bw",
+    "cf",
+    "cl",
+    "cm",
+    "cn",
+    "dz",
+    "eg",
+    "eh",
+    "er",
+    "et",
+    "in",
+    "iq",
+    "ir",
+    "jo",
+    "kz",
+    "ly",
+    "ma",
+    "md",
+    "ml",
+    "mn",
+    "mr",
+    "na",
+    "ne",
+    "ng",
+    "om",
+    "pe",
+    "pk",
+    "ro",
+    "ru",
+    "sa",
+    "sd",
+    "sn",
+    "ss",
+    "sy",
+    "td",
+    "tm",
+    "tn",
+    "ua",
+    "uz",
+    "ye",
+    "za"
+   ],
+   "basis": "natural-earth geography_regions_polys: class Desert (scale rank 3 and above, without PUNJAB, CAATINGAS) and KAZAKH STEPPE, PONTIC STEPPE"
+  },
+  {
+   "id": "forests-jungles",
+   "names": [
+    "Forêts et jungles",
+    "Forests and jungles",
+    "Wälder und Dschungel",
+    "Bosques y selvas"
+   ],
+   "zones": [
+    "bn",
+    "bo",
+    "br",
+    "ca",
+    "cd",
+    "cf",
+    "cg",
+    "cm",
+    "co",
+    "ec",
+    "fi",
+    "ga",
+    "gq",
+    "gy",
+    "id",
+    "my",
+    "no",
+    "pe",
+    "ru",
+    "se",
+    "sr",
+    "us",
+    "ve"
+   ],
+   "basis": "hand list: Amazon basin (br pe co ve ec bo gy sr); Congo basin (cd cg ga cm cf gq); Borneo and Sumatra (id my bn); Boreal belt (ca ru fi se no us)"
+  },
+  {
+   "id": "lakes-rivers",
+   "names": [
+    "Lacs et fleuves",
+    "Lakes and rivers",
+    "Seen und Flüsse",
+    "Lagos y ríos"
+   ],
+   "zones": [
+    "ao",
+    "ar",
+    "at",
+    "bd",
+    "bg",
+    "bi",
+    "bo",
+    "br",
+    "ca",
+    "cd",
+    "cg",
+    "cn",
+    "co",
+    "de",
+    "eg",
+    "et",
+    "hr",
+    "hu",
+    "in",
+    "ke",
+    "kh",
+    "kz",
+    "la",
+    "md",
+    "mm",
+    "mw",
+    "mz",
+    "ni",
+    "pe",
+    "py",
+    "ro",
+    "rs",
+    "ru",
+    "sd",
+    "se",
+    "sk",
+    "ss",
+    "th",
+    "tz",
+    "ua",
+    "ug",
+    "us",
+    "vn",
+    "zm"
+   ],
+   "basis": "natural-earth: lakes of scale rank 1 and above (110 m), rivers of scale rank 2 and above"
+  },
+  {
+   "id": "megacities",
+   "names": [
+    "Mégalopoles",
+    "Megacities",
+    "Megastädte",
+    "Megaciudades"
+   ],
+   "zones": [
+    "au",
+    "bd",
+    "br",
+    "cd",
+    "ci",
+    "cn",
+    "co",
+    "eg",
+    "gb",
+    "hk",
+    "id",
+    "in",
+    "iq",
+    "ir",
+    "jp",
+    "kr",
+    "mx",
+    "ng",
+    "pe",
+    "pk",
+    "ru",
+    "sg",
+    "th",
+    "tr",
+    "tw",
+    "tz",
+    "us",
+    "vn",
+    "za"
+   ],
+   "basis": "the base cities_major.json: 5 million inhabitants and more, the city without its agglomeration"
+  }
+ ]
+}
