@@ -26,6 +26,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   § 9.6, DECISIONS; noreg F99, F100; SOG-0059). The field said and read kg/h whatever the unit chosen (an entry typed in lb/h flew
   as kg/h); it is typed in the unit of the quote, its label says it, kept in kg/h through `frame/lib/fuel_units.js`. « Réglages du
   devis · lb/h » is the first fold of the Result step, folded, instead of the last.
+- **Roadmap screen: tabs Features | Bugs, application filter, « Hide delivered », milestone strip** (`frame/help/roadmap.js`, `frame.css`,
+  `build_help.py`; frame/help SPEC § 5; A96, A97) — SOG-0062: reads `sog-roadmap/2` (kind, identifier, milestone per item; `milestones`);
+  the delivered cards are hidden by default (remembered per device, their count in the lane header), a milestone filters the kanban;
+  a `sog-roadmap/1` file is drawn exactly as before.
+- **Fuel: « débit de ce vol » in the unit of the quote** (`modules/fuel/module.js`; Fuel SPEC § 3, DECISIONS; noreg F99; SOG-0059).
+  The field said and read kg/h whatever the unit chosen (an entry typed in lb/h flew as kg/h); it is typed in the unit of the quote,
+  its label says it, kept in kg/h through `frame/lib/fuel_units.js`.
 
 - **Aircraft: « Proposer depuis les mesures » from the Fuel Phase Monitor journals** (`modules/stats/phases.js`,
   `modules/aircraft/sheets.js`, `sheets_texts.js`; stats SPEC, Aircraft SPEC § 6; noreg F98, M27; SOG-0052, step 1). Journals chosen

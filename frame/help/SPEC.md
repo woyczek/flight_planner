@@ -97,6 +97,22 @@ decisions: [DECISIONS.md](DECISIONS.md); how a module gets its help: [INTEGRATIO
     left out.
   - Colour per state with the frame's tokens only: delivered `--sog-ok`, in progress `--sog-accent`, planned
     `--sog-warn`, later `--sog-muted` (a coloured left border).
+- **Schema 2** (`sog-roadmap/2`, SOG-0062; the data is built by the ergonomics session's `tools/roadmap_build.py`, this screen reads it):
+  the schema 1 plus, per item, `kind` (`feature` by default, or `bug`), an optional `id` (SOG-0045), `milestone`, `since`, `delivered`; at
+  the top `generated` and `milestones` (`id`, `label`, `date`, `state` among the four states, `items`). Backward compatible: **a schema 1 file
+  is drawn exactly as before** (case A97); an item without `kind` is a feature; a file without `milestones` has no strip. Five elements
+  from top to bottom, all state in the screen except the one remembered choice:
+  1. the **strip** of milestones (name, date, state colour; the current one, the first « doing » else the first « planned », is
+     marked); a touch filters the kanban on its items (`milestone` of the item, or the milestone's `items`), touched again it goes; on a
+     phone it is one line that scrolls by itself;
+  2. two **tabs** Features | Bugs, the count in brackets = what the tab shows with the other choices;
+  3. the **application filter**: All, then the file's `apps` in their order (a lane shows only for the chosen application);
+  4. the **« Hide delivered »** box, checked by default, remembered per device in `device/roadmap.json` (`{ hideDone }`); the
+     delivered cards leave the kanban and the lane header says « 24 delivered » (a chosen milestone beats the hiding);
+  5. the **kanban**: the four state columns as before; a card carries its identifier in small and its milestone.
+  Texts: the language, else English, else French; every text escaped. `build_help.py` checks `kind`, the milestones (state, texts, items
+  cited that exist) and the lanes' applications for a schema 2 file. Cases A96 (schema 2 at 390 and 1280, four languages), A98 (the build's check), A97 and A99 (the shipped file)
+  (schema 1 unchanged).
 - **Reached** from the top of the manual ("Roadmap: what is delivered, in progress, planned") and from Settings ›
   About. Offline: the script and the JSON are in the frame's service worker list.
 

@@ -3627,3 +3627,143 @@ def a94(c):
     c.until("document.querySelectorAll('#fAppIco img').length === 0 && document.querySelectorAll('#fAppIco svg').length === 1", timeout=15000,
             what='a logo of another airline’s folder is refused: the tinted plane')
     c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ A96
+def _rm_fixture():
+    """A sog-roadmap/2 file of the test: four applications, two milestones, features and bugs, delivered or not, one hostile text, one item without de/es."""
+    lab = lambda fr, en: {'fr': fr, 'en': en, 'de': en + ' (de)', 'es': en + ' (es)'}
+    item = lambda state, fr, en, **kw: {'state': state, 'fr': fr, 'en': en, 'de': en + ' (de)', 'es': en + ' (es)', **kw}
+    evil = '<img src=x onerror=window.__pwn=1>'
+    return {'schema': 'sog-roadmap/1', 'version': 2, 'updated': '2026-11-09', 'generated': {'organisation': 'abc1234', 'fiches': 7}, 'note': lab('Note FR', 'Note EN'),
+            'states': {'done': lab('Livré', 'Delivered'), 'doing': lab('En cours', 'In progress'), 'planned': lab('Prévu', 'Planned'), 'later': lab('Plus tard', 'Later')},
+            'apps': [{'id': 'pilote', 'label': lab('Pilote', 'Pilot'), 'state': 'doing'}, {'id': 'compagnie', 'label': lab('Compagnie', 'Company'), 'state': 'doing'},
+                     {'id': 'maintenance', 'label': lab('Maintenance', 'Maintenance'), 'state': 'doing'}, {'id': 'stats', 'label': lab('Stats', 'Stats'), 'state': 'planned'}],
+            'milestones': [{'id': 'alpha.4', 'label': lab('alpha 4', 'alpha 4'), 'date': '2026-11-02', 'state': 'done', 'items': ['SOG-0001', 'SOG-0005', 'SOG-0003']},
+                           {'id': 'alpha.5', 'label': lab('alpha 5', 'alpha 5'), 'date': '2026-11-09', 'state': 'doing', 'items': ['SOG-0002', 'SOG-0004']}],
+            'lanes': [{'id': 'fuel', 'app': 'pilote', 'label': lab('Carburant', 'Fuel'), 'items': [
+                          item('done', 'F1 livrée', 'F1 delivered', id='SOG-0001', milestone='alpha.4', delivered='2026-11-01'),
+                          {'state': 'doing', 'fr': evil, 'en': evil, 'id': 'SOG-0002', 'milestone': 'alpha.5', 'since': '2026-11-05'},
+                          {'state': 'planned', 'fr': 'F3 sans traduction', 'en': 'F3 english only'},
+                          item('done', 'B1 livré', 'B1 delivered', id='SOG-0003', kind='bug', milestone='alpha.4'),
+                          item('doing', 'B2 en cours', 'B2 in progress', id='SOG-0004', kind='bug', milestone='alpha.5')]},
+                      {'id': 'data', 'app': 'maintenance', 'label': lab('Données', 'Data'), 'items': [
+                          item('done', 'F4 livrée', 'F4 delivered', id='SOG-0005', milestone='alpha.4'),
+                          item('later', 'F5 plus tard', 'F5 later', id='SOG-0006')]},
+                      {'id': 'stat', 'app': 'stats', 'label': lab('Statistiques', 'Statistics'), 'items': [item('planned', 'F6 prévue', 'F6 planned')]}]}
+
+
+@case('A96', 'The roadmap, schema 2: Features | Bugs tabs with counts, the application filter, « Hide delivered » (checked, remembered by device), the milestone strip that filters', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='frame/help SPEC 5 (sog-roadmap/2, SOG-0062): two tabs by `kind`, the filter by application (the file\'s `apps`, in order), a delivered item hidden by default with its count told in the lane header, a strip of milestones (current one marked, a touch filters the kanban), a text in the language or English or French, every text escaped')
+def a96(c):
+    lang = c.lang
+    T = lambda k: tx('frame/help/roadmap.js', k, lang, after='const T = {')
+    fixture = _rm_fixture()
+    c.context.route(re.compile(r'/frame/help/roadmap\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fixture)))
+    c.open('roadmap', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-kanban]')", timeout=15000, what='the schema 2 screen')
+    tabs = lambda: [norm(t) for t in c.js("[...document.querySelectorAll('[role=tab]')].map(b => b.textContent)")]
+    lanes = lambda: c.js("[...document.querySelectorAll('[data-lane]')].map(l => l.dataset.lane)")
+    cards = lambda: c.js("[...document.querySelectorAll('[data-kanban] .f-rm-item')].map(i => i.querySelector('.f-rm-id') ? i.querySelector('.f-rm-id').textContent : i.textContent.trim().slice(0, 14))")
+    # ---- defaults: Features, every application, delivered hidden; the counts say what the tab shows
+    c.eq(tabs(), [norm(f"{T('feature')} (4)"), norm(f"{T('bug')} (1)")], 'two tabs, the count of what each shows (delivered hidden)', what='tabs')
+    c.eq(c.js("[...document.querySelectorAll('[data-apps] [data-app]')].map(b => b.dataset.app)"), ['', 'pilote', 'compagnie', 'maintenance', 'stats'], 'the filter: all, then the file\'s applications in order', what='apps')
+    c.eq(c.js("document.querySelector('input[data-hide]').checked"), True, '« Hide delivered » is checked by default', what='hide default')
+    c.eq(lanes(), ['fuel', 'data', 'stat'], 'the three lanes of features still showing something', what='lanes')
+    c.eq(norm(c.text('[data-lane="fuel"] [data-done-count]')), norm(T('doneOne').replace('{n}', '1')), 'the lane header tells how many delivered are hidden', what='done count')
+    c.ok(c.count('[data-kanban] .f-rm-item[data-state="done"]') == 0, c.count('[data-kanban] .f-rm-item[data-state="done"]'), 'no delivered card while they are hidden')
+    c.ok(c.count('[data-kanban] .f-rm-col') == 12 and c.count('[data-kanban] .f-rm-head span[data-state]') == 4, c.count('[data-kanban] .f-rm-col'), 'the four state columns are kept (three lanes)')
+    # ---- text: hostile is text, a missing language falls back to English then French; id and milestone on the card
+    c.ok(c.count('[data-kanban] img') == 0 and c.js("window.__pwn === undefined"), 'img', 'a hostile text is text: no element, nothing runs')
+    c.eq(norm(c.js("[...document.querySelectorAll('[data-lane=\"fuel\"] .f-rm-item')].find(i => i.textContent.includes('F3')).textContent")),
+         norm({'fr': 'F3 sans traduction'}.get(lang, 'F3 english only')), 'a text without this language is the English one (French for French)', what='fallback')
+    c.eq(norm(c.js("document.querySelector('[data-lane=\"fuel\"] .f-rm-item .f-rm-id').parentElement.textContent")).startswith('SOG-0002'), True, 'a card carries its identifier first', what='id')
+    c.ok(norm(c.js("document.querySelector('[data-lane=\"fuel\"] .f-rm-item .f-rm-ms').textContent")) == 'alpha 5' + ('' if lang in ('fr', 'en') else f' ({lang})'), 'ms', 'and its milestone')
+    # ---- tabs
+    c.tap('[data-kind="bug"]')
+    c.eq((cards(), tabs()[1]), (['SOG-0004'], norm(f"{T('bug')} (1)")), 'the Bugs tab: its one open bug', what='bugs')
+    c.tap('[data-kind="feature"]')
+    # ---- application filter
+    c.tap('[data-app="maintenance"]')
+    c.eq((lanes(), tabs()), (['data'], [norm(f"{T('feature')} (1)"), norm(f"{T('bug')} (0)")]), 'one application: only its lanes, the counts follow', what='filter')
+    c.tap('[data-app=""]')
+    # ---- the milestone strip: current marked, a touch filters, the delivered ones show (a chosen milestone beats the hiding)
+    c.eq(c.js("[...document.querySelectorAll('[data-ms][data-current]')].map(b => b.dataset.ms)"), ['alpha.5'], 'the strip marks the current milestone (the one in progress)', what='current')
+    c.tap('[data-ms="alpha.4"]')
+    c.eq(sorted(cards()), ['SOG-0001', 'SOG-0005'], 'a touched milestone filters the kanban on its items, delivered ones included', what='milestone')
+    c.ok(c.count('[data-done-count]') == 0, c.count('[data-done-count]'), 'no hidden count while a milestone is chosen')
+    c.tap('[data-ms="alpha.4"]')
+    c.eq(len(cards()), 4, 'touched again: the filter goes', what='cleared')
+    # ---- hide delivered: unchecked, remembered on the device; no horizontal scroll, the strip is one line on a phone
+    c.page.uncheck('input[data-hide]')
+    c.eq(c.until_doc('device/roadmap.json', lambda d: d and d.get('hideDone') is False, what='the choice stored'), {'hideDone': False}, 'the choice is stored in device/roadmap.json', what='stored')
+    c.eq((tabs()[0], c.count('[data-done-count]')), (norm(f"{T('feature')} (6)"), 0), 'delivered shown: the count counts them, no « delivered » line', what='shown')
+    c.page.reload()  # a new visit: nothing seeded again, the choice comes from the device store
+    c.until("!!document.querySelector('[data-kanban]')", timeout=15000, what='the screen again')
+    c.eq(c.js("document.querySelector('input[data-hide]').checked"), False, 'a new visit finds the choice again', what='remembered')
+    c.eq(c.js("document.documentElement.scrollWidth <= window.innerWidth + 1"), True, 'no horizontal scroll of the page', what='scroll')
+    if c.phone:
+        c.eq(c.js("(() => { const s = getComputedStyle(document.querySelector('.f-rm-time')); return [s.flexWrap, s.overflowX] })()"), ['nowrap', 'auto'], 'on a phone the strip is one line that scrolls by itself', what='strip')
+    c.check_errors()
+
+
+@case('A97', 'The roadmap, schema 1 (no `version`): drawn as before — no tab, no filter, no strip, no checkbox; the applications list and every item, delivered ones included', 'A',
+      designs=('standard',), screens=True, night=False,
+      rule='frame/help SPEC 5: sog-roadmap/2 is backward compatible, an item without `kind` is a feature and a file without `milestones` has no strip; a schema 1 file keeps its screen (counter-test of A96)')
+def a97(c):
+    fixture = _rm_fixture()
+    old = {'schema': 'sog-roadmap/1', 'updated': '2026-11-02', 'note': fixture['note'], 'states': fixture['states'], 'apps': fixture['apps'][:1],
+           'lanes': [{'id': 'frame', 'app': 'pilote', 'label': fixture['lanes'][0]['label'], 'items': [{'state': 'done', 'fr': 'Ancien livré', 'en': 'Old delivered'}, {'state': 'planned', 'fr': 'Ancien prévu', 'en': 'Old planned'}]}]}
+    c.context.route(re.compile(r'/frame/help/roadmap\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(old)))
+    c.open('roadmap', docs=LEVEL3)
+    c.until("!!document.querySelector('.f-rm-lane')", timeout=15000, what='the schema 1 screen')
+    c.eq([c.count('[role=tab]'), c.count('[data-app]'), c.count('.f-rm-time'), c.count('input[data-hide]'), c.count('.f-rm-apps .f-rm-item'), c.count('.f-rm-lane .f-rm-item')], [0, 0, 0, 0, 1, 2],
+         'a schema 1 file: no tab, no filter, no strip, no checkbox; the apps list and both items, delivered included, as before', what='schema 1')
+    c.eq(c.js("document.documentElement.scrollWidth <= window.innerWidth + 1"), True, 'no horizontal scroll of the page', what='scroll')
+    c.check_errors()
+
+
+@case('A98', 'build_help.py checks a sog-roadmap/2 file: a good one passes; an unknown kind, milestone, state or application, or a milestone citing a missing item, is refused', 'A',
+      static=True, rule='frame/help SPEC 5: the build refuses a roadmap file the screen would draw wrongly (kind feature|bug, milestones with a known state and four texts, items cited that exist, lanes of a known application); a schema 1 file keeps passing')
+def a98(c):
+    import copy
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('build_help_t', ROOT / 'frame' / 'help' / 'build_help.py')
+    bh = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(bh)
+    good = _rm_fixture()
+    for lane in good['lanes']:  # the screen's fixture leaves a language out on purpose (its fallback is tested there); the build wants all four
+        for it in lane['items']:
+            it.setdefault('de', it['en'])
+            it.setdefault('es', it['en'])
+    c.eq((bh.roadmap_errors(copy.deepcopy(good)), bh.roadmap_errors({**copy.deepcopy(good), 'schema': 'sog-roadmap/2'})), ([], []), 'a good schema 2 file passes, written as schema 1 with version 2 (what roadmap_build.py writes) or as sog-roadmap/2', what='good')
+    def bad(f):
+        d = copy.deepcopy(good)
+        f(d)
+        return bh.roadmap_errors(d)
+    cases = [('kind', lambda d: d['lanes'][0]['items'][0].update(kind='wish'), 'genre inconnu'), ('milestone of an item', lambda d: d['lanes'][0]['items'][0].update(milestone='nope'), 'jalon inconnu'),
+             ('milestone state', lambda d: d['milestones'][0].update(state='soon'), 'état inconnu'), ('milestone text', lambda d: d['milestones'][0]['label'].pop('de'), 'sans texte'),
+             ('cited item', lambda d: d['milestones'][0]['items'].append('SOG-9999'), 'absent des voies'), ('application of a lane', lambda d: d['lanes'][0].update(app='nope'), 'application inconnue')]
+    for what, f, word in cases:
+        c.ok(any(word in e for e in bad(f)), bad(f), f'a bad {what} is refused ({word})')
+    old = {k: v for k, v in copy.deepcopy(good).items() if k != 'milestones'}
+    old.pop('version')
+    c.eq(bh.roadmap_errors(old), [], 'a schema 1 file keeps passing (the lanes of a schema 1 file are not checked against the applications)', what='schema 1')
+    c.ok(any('jalons' in e for e in bh.roadmap_errors({k: v for k, v in copy.deepcopy(good).items() if k != 'version'})), 'milestones in schema 1', 'milestones demand schema 2')
+
+
+@case('A99', 'The roadmap as shipped (frame/help/roadmap.json, built by roadmap_build.py): the strip, both tabs with counts, every application, delivered hidden, no horizontal scroll', 'A',
+      designs=('standard',), screens=True, night=False,
+      rule='frame/help SPEC 5: the real file is read as schema 2 (sog-roadmap/1 with version 2); a lane of the file shows for its application; the delivered ones are hidden by default')
+def a99(c):
+    doc = json.loads((ROOT / 'frame' / 'help' / 'roadmap.json').read_text(encoding='utf-8'))
+    c.open('roadmap', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-kanban]')", timeout=15000, what='the screen')
+    n = lambda kind, hide=True: sum(1 for l in doc['lanes'] for i in l['items'] if (i.get('kind') or 'feature') == kind and (not hide or i['state'] != 'done'))
+    c.eq([int(re.search(r'\((\d+)\)', t).group(1)) for t in c.js("[...document.querySelectorAll('[role=tab]')].map(b => b.textContent)")], [n('feature'), n('bug')], 'the tabs count the open features and bugs of the file', what='counts')
+    c.eq(c.js("[...document.querySelectorAll('[data-apps] [data-app]')].map(b => b.dataset.app)"), [''] + [a['id'] for a in doc['apps']], 'the filter: all, then the applications of the file', what='apps')
+    c.eq(c.count('.f-rm-time [data-ms]'), len(doc['milestones']), 'one point per milestone on the strip', what='strip')
+    c.ok(c.count('[data-kanban] .f-rm-item[data-state="done"]') == 0, c.count('[data-kanban] .f-rm-item[data-state="done"]'), 'delivered cards hidden by default')
+    c.eq(c.js("document.documentElement.scrollWidth <= window.innerWidth + 1"), True, 'no horizontal scroll of the page', what='scroll')
+    c.check_errors()

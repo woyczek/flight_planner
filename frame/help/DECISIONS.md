@@ -114,3 +114,12 @@ way, not taken (an empty band on every screen while the help loads). noreg A52.
   (Pilot: fuel, maps, report, flightlog, website, atmosphere; Maintenance: data, aircraft) plus the Settings chapter, with
   its own introduction (`intro-maintenance.<lang>.md`, four languages). Pilot's manual no longer carries the Data and
   Aircraft chapters, which no Pilot screen shows.
+- **10 Nov 2026 — Roadmap screen at `sog-roadmap/2`** (SOG-0062, ergonomics session's brief; SPEC § 5). Reversible details decided
+  while the user was away: the **schema 1 keeps its exact screen** (no tab, filter or strip: its items have no `kind`, so a Bugs tab would
+  be an empty promise); in schema 2 the application **filter replaces the applications list** (same data, one place; the chip carries the
+  application, the state is no longer drawn); the **tab counts follow every other choice** (application, hiding, milestone) so a count never
+  disagrees with the cards under it; **a chosen milestone beats « Hide delivered »** (touching « alpha 4 » to see what it delivered must not
+  give an empty page; the box stays as it was and applies again when the milestone is released); only the box is remembered (the tab, the
+  application and the milestone start fresh); the lane header's « n delivered » counts the delivered items of the current tab; the strip
+  is one scrolling line on a phone rather than a collapsed block (nothing to open, nothing hidden). The CSS is in `frame/frame.css` beside
+  the existing roadmap block (additive). The manual does not describe the screen (it only links to it), so no help text changed.

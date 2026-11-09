@@ -68,18 +68,22 @@ def fingerprint(text):
     return hashlib.sha1(text.encode('utf-8')).hexdigest()[:12]
 
 
-def roadmap_errors():
-    """Feuille de route (frame/help/roadmap.json, sog-roadmap/1) : chaque texte en quatre langues, états connus."""
-    p = os.path.join(HERE, 'roadmap.json')
-    if not os.path.isfile(p):
-        return []
-    try:
-        d = json.loads(read(p))
-    except ValueError as e:
-        return [f'frame/help/roadmap.json : JSON illisible ({e})']
+def roadmap_errors(d=None):
+    """Feuille de route (frame/help/roadmap.json, sog-roadmap/1 ou /2) : chaque texte en quatre langues, états connus ; au schéma 2 aussi
+    `kind` feature|bug, les jalons (état connu, textes, éléments cités qui existent) et le jalon d'un élément qui existe. `d` : le document
+    déjà lu (les essais) ; sans lui, le fichier du dépôt."""
+    if d is None:
+        p = os.path.join(HERE, 'roadmap.json')
+        if not os.path.isfile(p):
+            return []
+        try:
+            d = json.loads(read(p))
+        except ValueError as e:
+            return [f'frame/help/roadmap.json : JSON illisible ({e})']
     out = []
-    if d.get('schema') != 'sog-roadmap/1':
-        out.append('frame/help/roadmap.json : schéma attendu sog-roadmap/1')
+    v2 = d.get('schema') == 'sog-roadmap/2' or (isinstance(d.get('version'), int) and d['version'] >= 2)
+    if d.get('schema') not in ('sog-roadmap/1', 'sog-roadmap/2'):
+        out.append('frame/help/roadmap.json : schéma attendu sog-roadmap/1 ou sog-roadmap/2')
     states = d.get('states') or {}
 
     def texts(o, where):
@@ -94,13 +98,38 @@ def roadmap_errors():
         texts(a.get('label'), f"application {a.get('id')}")
         if a.get('state') not in states:
             out.append(f"frame/help/roadmap.json : application {a.get('id')} à l'état inconnu « {a.get('state')} »")
+    app_ids = {a.get('id') for a in d.get('apps') or []}
+    stones = {m.get('id'): m for m in d.get('milestones') or [] if isinstance(m, dict)}
+    if v2:
+        for mid, m in stones.items():
+            texts(m.get('label'), f'jalon {mid}')
+            if m.get('state') not in states:
+                out.append(f"frame/help/roadmap.json : jalon {mid} à l'état inconnu « {m.get('state')} »")
+    elif d.get('milestones'):
+        out.append('frame/help/roadmap.json : des jalons demandent le schéma sog-roadmap/2')
+    ids = set()
     for lane in d.get('lanes') or []:
         lid = lane.get('id')
         texts(lane.get('label'), f'voie {lid}')
+        if v2 and lane.get('app') not in app_ids:
+            out.append(f"frame/help/roadmap.json : voie {lid} d'une application inconnue « {lane.get('app')} »")
         for i, it in enumerate(lane.get('items') or []):
-            texts(it, f'voie {lid}, élément {i + 1}')
+            where = f'voie {lid}, élément {i + 1}'
+            texts(it, where)
             if it.get('state') not in states:
-                out.append(f"frame/help/roadmap.json : voie {lid}, élément {i + 1} à l'état inconnu « {it.get('state')} »")
+                out.append(f"frame/help/roadmap.json : {where} à l'état inconnu « {it.get('state')} »")
+            if v2:
+                if it.get('kind', 'feature') not in ('feature', 'bug'):
+                    out.append(f"frame/help/roadmap.json : {where} de genre inconnu « {it.get('kind')} »")
+                if it.get('milestone') is not None and it.get('milestone') not in stones:
+                    out.append(f"frame/help/roadmap.json : {where} d'un jalon inconnu « {it.get('milestone')} »")
+                if it.get('id'):
+                    ids.add(it['id'])
+    if v2:
+        for mid, m in stones.items():
+            for ref in m.get('items') or []:
+                if ref not in ids:
+                    out.append(f'frame/help/roadmap.json : jalon {mid} cite {ref}, absent des voies')
     return out
 
 

@@ -755,6 +755,75 @@ p.f-back {
 .f-rm-note {
   border-left: 4px solid var(--sog-warn)
 }
+/* feuille de route, schéma 2 : frise des jalons, onglets, filtre par application, case « Masquer les livrées » */
+.f-rm-time [data-state="done"] {
+  --rm: var(--sog-ok)
+}
+.f-rm-time [data-state="doing"] {
+  --rm: var(--sog-accent)
+}
+.f-rm-time [data-state="planned"] {
+  --rm: var(--sog-warn)
+}
+.f-rm-time [data-state="later"] {
+  --rm: var(--sog-muted)
+}
+.f-rm-time,
+.f-rm-bar {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 var(--sog-gap);
+  padding: 0
+}
+.f-rm-btn {
+  font: inherit;
+  color: inherit;
+  min-height: 36px;
+  padding: 4px 10px;
+  background: var(--sog-surface);
+  border: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius);
+  cursor: pointer
+}
+.f-rm-time .f-rm-btn {
+  border-bottom: 3px solid var(--rm, var(--sog-border));
+  text-align: left
+}
+.f-rm-btn[aria-pressed="true"],
+.f-rm-btn[aria-selected="true"] {
+  border-color: var(--sog-accent);
+  box-shadow: inset 0 0 0 1px var(--sog-accent);
+  font-weight: 600
+}
+.f-rm-btn[data-current] b::before {
+  content: "\25CF\00a0";
+  color: var(--sog-accent)
+}
+.f-rm-hide {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  min-height: 36px
+}
+.f-rm-id,
+.f-rm-ms {
+  color: var(--sog-muted)
+}
+.f-rm-ms {
+  display: block
+}
+@container (max-width: 760px) {
+  .f-rm-time {
+    flex-wrap: nowrap;
+    overflow-x: auto
+  }
+  .f-rm-time .f-rm-btn {
+    white-space: nowrap
+  }
+}
 @container (max-width: 760px) {
   .f-rm {
     display: block
