@@ -1893,3 +1893,19 @@ redesigned for touch at that point.
        **Owners:** AeroDB (script, `packs.json`, `AeroDb.packs()`, the job that adds a pack), Réglages (the rows and the
        filter in Données); one case per level, red before; the help texts ×4; nothing is built or published by a pack
        without the pilot's gesture (compiled data never purged).
+   43. **The sheet editor's comments: provenance out of the way, explanations in the help** (user, 6 Nov: "modification des
+       fiches : les commentaires dégradent l'interface. ils sont nécessaires, mais mal placés"; SOG-0057). Ergonomics
+       decision of 9 Nov after a look at Maintenance › Appareils › TBM 900 (1280 px): two kinds of comments sit under the
+       fields. **(1) The provenance line under every field** (« V2 database · 11/01 », « import · 11/01 »), repeated
+       twenty times on one sheet: it is the noise. It leaves the fields: each field keeps a small mark at the end of its
+       label (a dot in the muted token) whose title and long press say the source and the date, and **each card gets one
+       « Sources » line in its header** (« Base V2 · 11/01, import · 11/01, saisie · 09/11 »: the distinct sources of its
+       fields, dates included, one line, folded under the card's title on a phone). A field without provenance has no
+       mark. **(2) The explanations** (« Fuel as volume » and « Fuel density », SOG-0011: five lines each under the field):
+       they move to the Appareils chapter of the help, one anchor per notion (`aircraft-fuel-volume`,
+       `aircraft-fuel-density`), and the field keeps one short line of at most sixty characters ending with a « ? » link
+       to its anchor (`ctx.helpAnchor`), the frame's usual way. **(3) The warnings stay where they are**: the monotony
+       signal and the measured deviation belong to their row (§ 10.37 C), and « To complete: … » belongs to the list of
+       sheets. Rule 13 holds: seven elements per card at most, the « Sources » line counted. Owner Features SOG, alpha.5;
+       one case (no provenance text under a field, the mark's title says the source, the card's « Sources » line lists the
+       distinct ones, the two explanations gone from the card and present in the help with their anchors), red before.
