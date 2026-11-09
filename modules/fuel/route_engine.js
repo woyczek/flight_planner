@@ -11,6 +11,8 @@
 //   normalize(result, action) → { ok, reason, message, errors: [texte], plans: [plan], limitation, gaps: [{ name, reason }] } :
 //     plan = { role ('primary' | 'alternative'), name, route, distanceNm, fl, accepted, errors: [texte], faults, sid, star,
 //     segments: [{ from, to, via, state, reasons: [{ kind, text, ruleId }] }] } ; trois itinéraires au plus, un seul en check.
+//   Un itinéraire au contrôle incomplet faute de données (RouteSim du 9 nov. 17 h 05 : incomplete: true, ses raisons dans les issues
+//     « revue ») porte incomplete et reviews (les raisons, en check seulement : celles de la route contrôlée) ; il n'est jamais accepted.
 //   faultLines(plan) → [{ seg: 'FROM–TO' | '', kind, ruleId, text }] : un écart par ligne (SOG-0134) — chaque motif d'un segment fautif,
 //     un segment fautif sans motif, puis les erreurs du moteur qu'aucun motif ne dit déjà (seg vide).
 
@@ -136,7 +138,7 @@ function procOf(p, kind) {
   } : null;
 }
 /** Un itinéraire de la réponse, borné. */
-function altOf(a, role, errors) {
+function altOf(a, role, errors, reviews = []) {
   const segments = (Array.isArray(a?.segments) ? a.segments : []).slice(0, 800).map(segOf).filter(s => s.from && s.to),
     faults = Math.max(segments.filter(s => s.state === 'error').length, Math.round(num(a?.faults, 0, 999) || 0));
   return {
@@ -145,8 +147,10 @@ function altOf(a, role, errors) {
     route: text(a?.route, 800).toUpperCase().split(/\s+/).filter(t => /^[A-Z0-9/]{1,16}$/.test(t)).join(' '),
     distanceNm: num(a?.distanceNm, 0, 19999),
     fl: num(a?.fl, 0, 700) !== null ? Math.round(+a.fl) : null,
-    accepted: !faults && !errors.length,
+    incomplete: a?.incomplete === true,
+    accepted: !faults && !errors.length && a?.incomplete !== true, // un contrôle incomplet n'est jamais présenté comme contrôlé
     errors,
+    reviews: a?.incomplete === true ? reviews : [],
     faults,
     sid: procOf(a?.sid, 'SID'),
     star: procOf(a?.star, 'STAR'),
@@ -169,8 +173,10 @@ export function normalize(res, action = 'compute') {
   const check = action === 'check',
     errors = (Array.isArray(res.issues) ? res.issues : []).slice(0, 300).filter(x => x?.level === 'error').map(x => text(x?.text, 300))
     .filter(Boolean).slice(0, 5),
+    reviews = (Array.isArray(res.issues) ? res.issues : []).slice(0, 300).filter(x => x?.level === 'review').map(x => text(x?.text, 300))
+    .filter(Boolean).slice(0, 5),
     plans = (Array.isArray(res.alternatives) ? res.alternatives : []).slice(0, check ? 1 : 3)
-    .map((a, i) => altOf(a, i ? 'alternative' : 'primary', check ? errors : []))
+    .map((a, i) => altOf(a, i ? 'alternative' : 'primary', check ? errors : [], check ? reviews : []))
     .filter(p => p.route);
   return {
     ok: true,

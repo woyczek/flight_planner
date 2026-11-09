@@ -240,7 +240,10 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
   (`invalid`); « N écarts aux règles » is never a number alone (SOG-0134 b, F113): a fold whose title says the count lists one line
   per deviation — the segment, the rule (the RAD or FRA `ruleId`, else its kind), the engine's sentence (`RE.faultLines`: each reason of
   a faulty segment, a faulty segment without reason, then the engine's errors no reason already says, on a « — » line) — seven then
-  « N autres », under each proposed route and as the result of « Contrôler »; **the routes are drawn by the Map** (SOG-0134 a, F114;
+  « N autres », under each proposed route and as the result of « Contrôler »; **an incomplete check** (`incomplete: true`, RouteSim of
+  9 Nov 17 h 05: data missing, its reasons as « revue » issues) is never shown as checked (F117): its row muted with « contrôle
+  incomplet » in its line, a first line in its fold with the reasons (in « Contrôler ») or the sentence of what it means, never
+  « aucun écart détecté », and « Prendre » says it in its notification; **the routes are drawn by the Map** (SOG-0134 a, F114;
   INTEGRATION § 3 bis): Fuel resolves them into positions with the route reader and publishes them (the event `fuel-route-alts` in
   the double view, hover included; `cache/fuel/route_alts.json` for a Map opened afterwards), the chosen one and the hovered row with
   them; a route touched on the Map comes back as « Prendre » (`maps-route-alt`, or `#fuel?ralt=<index>` from a Map alone); Fuel draws

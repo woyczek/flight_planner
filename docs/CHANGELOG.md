@@ -149,7 +149,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `route/compute`): routes proposed with their length, FL and deviations, « Prendre » writing route, SID and STAR; the typed route checked,
   its faulty segments red with their reason and counted on the result bar. Without the job, nothing changes. On AeroDB's contract, in
   the form of the Fuel screen (closed request, routes named by the launcher, reasons' kinds from the engine, refusals said, what is not
-  checked shown).
+  checked shown). A route whose check is incomplete for missing data is said « contrôle incomplet »,
+  never shown as checked (F117).
 
 - **Data: the ticked personal-licence sources are remembered on the workstation** (`modules/data/screen.js`, `module.js`, `panels.js`, `model_sets.js`, `texts.js`; Data SPEC § 5 and 7; help ×4; L32) — SOG-0079:
   a source ticked among NATS, ENAIRE, AirNav, X-Plane is written in `cache/data/personal.json`, found ticked at each opening and sent to « Construire » / « Télécharger » without being ticked again;

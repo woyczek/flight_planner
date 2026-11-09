@@ -2866,7 +2866,7 @@ def _route_launcher(c, verbs):
         elif u.path.endswith('/__setup/regen/job'):
             a = (st['posts'][-1].get('args') or {}) if st['posts'] else {}
             res = {'ok': False, 'reason': 'no-rad', 'message': 'no RAD imported on this workstation: import the EUROCONTROL RAD workbooks first (job route/import-rad)'} \
-                if st['norad'] else dict(common, ok=True, alternatives=alts, segments=alts[0]['segments'], issues=[], message='2 alternative(s).') if a.get('action') == 'compute' else \
+                if st['norad'] else dict(common, ok=True, alternatives=st.get('alts') or alts, segments=alts[0]['segments'], issues=[], message='2 alternative(s).') if a.get('action') == 'compute' else \
                 dict(common, ok=True, alternatives=[st.get('check') or checked], segments=(st.get('check') or checked)['segments'],
                      issues=st.get('issues') or [{'level': 'error', 'text': 'RAD LF9999', 'kind': 'RAD'}], message='')
             body = {'id': 'j' + str(len(st['posts'])), 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': '', 'log': [], 'result': res}
@@ -3151,3 +3151,32 @@ def f116(c):
     c.eq([g['ext'][1][1], g['ext'][2][1]], ['https://charts.navigraph.com/airport/ESZZ', 'https://chartfox.org/ESZZ'], 'links on the aerodrome', what='links')
     c.ok(all('noreferrer' in x[2] for x in g['ext'][1:]), g['ext'], 'external links without referrer (nothing sent, nothing copied)')
     c.eq(c.count(f'{FUEL} [data-proc][data-icao="LFRS"] [data-zonegap]'), 0, 'an aerodrome whose zone is there: no line', what='zone present')
+
+
+
+@case('F117', 'Route step: a route whose check is incomplete for missing data is marked « contrôle incomplet » (muted, in its line and its fold), never shown as checked; « Prendre » says it',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0081 (RouteSim of 9 Nov 17 h 05: incomplete: true per alternative, its reasons as « revue » issues): what could not be checked is '
+      'neither a deviation nor a validated route; a fake launcher')
+def f117(c):
+    st = _route_launcher(c, ['route/compute'])
+    st['alts'] = [_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 270, [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]),
+                  dict(_alt(2, 'Direct · FL250', 'LFRS NTS1A NEPIX MEN1A LFML', 365, 250, [_seg('LFRS', 'NEPIX'), _seg('NEPIX', 'LFML')]), incomplete=True)]
+    open_proc(c)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 2", what='two routes')
+    r = c.js(f"""[...document.querySelectorAll('{FUEL} [data-altlist] [data-alt]')].map(e => [e.hasAttribute('data-incomplete'), e.classList.contains('fu-raltinc'),
+        !!e.querySelector('[data-faults] [data-incomplete]'), (e.querySelector('.f-muted')?.textContent || '')])""")
+    c.eq([x[:3] for x in r], [[False, False, False], [True, True, True]], 'the incomplete route marked: attribute, muted tint, a line in its fold', what='rows')
+    c.ok(tx(F, 'rIncomplete', c.lang) in r[1][3] and tx(F, 'rIncomplete', c.lang) not in r[0][3], r, 'the word in its line, not in the checked one')
+    c.tap(f'{FUEL} [data-alt="1"] [data-do="rtake"]')
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w))", norm(tx(F, 'rTakenIncomplete', c.lang))[:30],
+            what='« Prendre » says the check is incomplete')
+    # « Contrôler » an incomplete check: never « aucun écart détecté »
+    st['check'] = dict(_alt(1, 'Direct', 'LFRS LUGEN NEPIX LFML', 370, 270, [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')], sid=False), incomplete=True)
+    st['issues'] = [{'level': 'review', 'text': 'Voie UN10 absente des segments chargés'}]
+    c.tap(f'{FUEL} [data-do="rcheck"]')
+    c.until(f"!!document.querySelector('{FUEL} [data-routealts] [data-faults] [data-incomplete]')", what='the incomplete check said')
+    c.ok('UN10' in c.text(f'{FUEL} [data-routealts] [data-incomplete]'), c.text(f'{FUEL} [data-routealts] [data-incomplete]'), 'with its « revue » reason')
+    c.eq(c.count(f'{FUEL} [data-routealts] p[data-rcheck]'), 0, 'never « aucun écart détecté » for an incomplete check', what='not checked')
