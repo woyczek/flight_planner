@@ -199,12 +199,29 @@ export async function showWeather(force = false) {
     open = () => openData('weather', key, wxName(), weatherBuild(key), tt(TX.wxLabel));
   if (force && S.wx?.key === key && S.wx.state !== 'ok') S.wx = null; // un geste : la lecture est refaite, et dite
   open();
-  if (S.wx?.key === key && !(force && S.wx.state !== 'ok')) return;
+  if (S.wx?.key === key && !(force && S.wx.state !== 'ok')) {
+    if (force) fillGaps();
+    return;
+  }
   const seq = S.wxSeq = (S.wxSeq || 0) + 1,
     st = await loadWeather(key, force);
   if (!S || S.wxSeq !== seq) return;
   S.wx = st;
   if (S.dpanel === 'weather' && S.dkey === key) open();
+  if (force) {
+    if (st.state === 'ok' && !gridWinds()) { // la lecture vient d'arriver : les barbules d'abord, puis leurs trous
+      try {
+        S.wxWinds = {
+          key,
+          list: await windsOf(st)
+        };
+        schedule();
+      } catch {
+        /* les barbules de Carburant restent */
+      }
+    }
+    fillGaps();
+  }
 }
 /** Distance entre deux barbules de la carte (NM), comme pour les vents de Carburant. */
 const WIND_STEP_NM = 50;
@@ -213,7 +230,7 @@ const WIND_STEP_NM = 50;
  *  case de la même grille n'est pas lue : un lieu sans vent (`gap`, pas de flèche, dit « pas de vent ici (hors ARPEGE) » dans
  *  l'infobulle) ; le modèle qui couvre le lieu n'est pris que s'il a déjà ses cases en réserve (cacheOnly), segment par segment, et il est
  *  dit. Jamais une même flèche répétée (SOG-0141). Rend [{ lat, lon, dirDeg, kt, tempC, levelFt, at, model, between? | gap, model }]. */
-async function windsOf(st) {
+async function windsOf(st, fetchNow = false) {
   const [Sx, A] = await Promise.all([import('../atmosphere/section.js'), import('../atmosphere/atmo.js')]),
     M = st.o.model,
     levelFt = st.o.levelFt,
@@ -235,7 +252,7 @@ async function windsOf(st) {
           lon: e.lon
         }], t, Sx.sectionVars(levelFt, st.o.route), {
           model: own.id,
-          cacheOnly: true
+          cacheOnly: !fetchNow // le geste « Météo de la route » lit le modèle qui couvre ; sinon seulement ce qui est déjà en réserve
         }).catch(() => null);
         const loc = r?.locs?.length ? A.locations(r.locs)[0] : null,
           col = loc ? A.column(loc, A.hourIndex(loc.times, t)) : null,
@@ -253,7 +270,8 @@ async function windsOf(st) {
       tempC: Number.isFinite(+x.tC) ? +x.tC : null,
       levelFt,
       at,
-      model
+      model,
+      other: model !== st.modelName // lu d'un autre modèle que celui de la coupe : dit par segment dans l'infobulle
     } : {
       lat: e.lat,
       lon: e.lon,
@@ -262,6 +280,25 @@ async function windsOf(st) {
     });
   }
   return out;
+}
+/** Le geste « Météo de la route » comble les trous des barbules (SOG-0141) : le modèle qui couvre est lu (GFS par Open-Meteo), jamais en
+ *  silence ailleurs ; chaque barbule dit son modèle. Sans trou nommé par un modèle, rien n'est demandé. */
+async function fillGaps() {
+  const key = wxKey(),
+    now = gridWinds();
+  if (!S || !S.wx || S.wx.state !== 'ok' || S.wx.key !== key || !now?.some(w => w.gap && w.model)) return;
+  let list = null;
+  try {
+    list = await windsOf(S.wx, true);
+  } catch {
+    return;
+  }
+  if (!S || wxKey() !== key) return;
+  S.wxWinds = {
+    key,
+    list
+  };
+  schedule();
 }
 /** Les barbules lues dans la grille, pour ce vol (null : pas encore lues, ou rien en réserve). */
 export const gridWinds = () => S?.wxWinds?.key === wxKey() ? S.wxWinds.list : null;

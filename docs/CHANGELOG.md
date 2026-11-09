@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: « Route weather » fills the holes of the wind barbs with the covering model** (`modules/maps/weather.js`, `tips.js`; noreg D127; SOG-0141). A place outside the
+  chosen model had no arrow and was never read in silence; the « Route weather » gesture now reads the covering model (GFS through
+  Open-Meteo) for those places, fills them, and each barb says its model in the hover.
+
 - **Map: the routes Fuel proposes are drawn on the map** (`modules/maps/alts.js`, `module.js`, `draw.js`, `tips.js`, `texts.js`, `style.js`; SPEC § 5.3; noreg D126;
   SOG-0134 a; contract fuel INTEGRATION § 3 bis). The routes of « Calculate A → B » and « Check », published by Fuel (event `fuel-route-alts`,
   document `cache/fuel/route_alts.json`), are drawn by the Map: the chosen one solid, the others faded, the hovered one thick, the faulty

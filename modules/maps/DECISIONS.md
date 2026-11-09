@@ -2110,8 +2110,11 @@ the Map had seen in between: the same line to within the frame's own sampling.
   user's rule is « no new reading ».
 - **Never a repeated arrow** (the fallback path too): a Fuel wind identical (direction, force, temperature) to the previous one, 100 NM or
   more away, is turned into a place without wind (`noRepeat`): a repeated cell has that signature.
-- **Not done**: the covering model is not *fetched* when it is not kept (the ergonomics text allows GFS through Open-Meteo or the world
-  synoptic of SOG-0138; reading it needs a request the user ruled out here: to decide); the model is named per hover, not in the legend.
+- **The covering model, on the gesture only** (ergonomics, 9 Nov, evening): the holes are never read in silence; the « Route weather »
+  gesture (`showWeather(true)`) reads the covering model for them (`fillGaps`: `grid` without `cacheOnly`, GFS through Open-Meteo; the
+  world synoptic of SOG-0138 when it is published is the other source, not wired yet), fills them and each barb says its model in the
+  hover (`other`, « … · GFS »). Noreg D127.
+- **Not done**: the world synoptic of SOG-0138 as a source for the holes; the model is named per hover, not in the legend.
 - **Noreg** D124 (the arrows are the cut's wind at the departure, nothing asked from the network; places outside the model: gaps with the
   model's name; one wind repeated at every point: gaps; red without the code).
 

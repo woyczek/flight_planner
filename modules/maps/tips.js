@@ -433,9 +433,9 @@ function windLines(w) {
   return [tt(TX.windTip, {
     d: String(Math.round(+w.dirDeg) % 360 || 360).padStart(3, '0'),
     k: Math.round(+w.kt)
-  }), t || l || h ? tt(TX.windSub, {
+  }), (t || l || h ? tt(TX.windSub, {
     t: t || '—',
     l: l || '—',
     h: h || '—'
-  }) : ''];
+  }) : '') + (w.other && w.model ? ` · ${w.model}` : '')]; // un vent lu d'un autre modèle que la coupe le dit
 }

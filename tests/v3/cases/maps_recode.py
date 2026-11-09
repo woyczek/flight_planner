@@ -3888,3 +3888,34 @@ def d126(c):
     c.ready('maps', sheet=True)
     c.js(_STATE_JS)
     c.until("() => (window.__mp.S.altHits || []).length === 2", timeout=10000, what='the document is read at mount')
+
+
+@case('D127', 'Route weather fills the holes of the wind barbs: the covering model is read on the gesture only, never in silence, and each barb says its model', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='V3 spec (SOG-0141, ergonomics 9 Nov): a place outside the chosen model has no arrow and is not read in silence; the « Route weather » gesture reads the covering model (GFS) for those places, fills the holes and the hover says the model of each barb')
+def d127(c):
+    c.open('maps', flight=True, forecast=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    # the store: a real answer of the kept forecast for the cut; for a place of the other model (GFS) nothing kept, but the reading answers
+    c.js("""() => { const S = window.__mp.S, w = S.ctx.weather, mid = 44.5; window.__gfsNet = 0; window.__full = null;
+      S.ctx = { ...S.ctx, weather: { ...w, modelFor: async (la, lo) => la < mid ? { id: 'gfs_seamless', name: 'NOAA GFS', short: 'GFS' } : w.modelFor(la, lo),
+        grid: async (pl, d, v, o) => {
+          if (o?.model === 'gfs_seamless' && pl.length === 1) {
+            if (o.cacheOnly) return null;
+            window.__gfsNet++;
+            const r = window.__full; return r ? { ...r, locs: [r.locs[0]] } : null }
+          const r = await w.grid(pl, d, v, o); if (r?.locs?.length && pl.length > 1) window.__full = r; return r } } }; return true }""")
+    c.js(_REDO_JS)
+    c.until("() => (window.__mp.S.windHits || []).some(h => h.w.gap)", timeout=12000, what='the places outside the model have no wind, nothing read for them')
+    c.eq(c.js("() => window.__gfsNet"), 0, 'the covering model is not read in silence', what='GFS reads before the gesture')
+    gaps0 = len([h for h in c.js(_WINDS_JS) if h['gap']])
+    c.ok(gaps0 > 0, str(gaps0), 'there are holes')
+    # the gesture
+    c.tap('.mp-chip[data-view="weather"]')
+    c.until("() => window.__gfsNet >= 1", timeout=12000, what='the gesture reads the covering model for the holes')
+    c.until("() => (window.__mp.S.windHits || []).some(h => h.w.other)", timeout=8000, what='a hole is filled with the other model’s wind')
+    hs = c.js("() => (window.__mp.S.windHits || []).map(h => ({ gap: !!h.w.gap, other: !!h.w.other, model: h.w.model || '' }))")
+    c.ok(len([h for h in hs if h['gap']]) < gaps0 and all(h['model'] == 'GFS' for h in hs if h['other']), str(hs), 'fewer holes, and each filled barb says GFS')
+    tip = c.js("""async () => { const T = await import('/modules/maps/tips.js'), h = window.__mp.S.windHits.find(x => x.w.other); return T.tipAt(h.x, h.y) }""")
+    c.ok(tip and 'GFS' in tip[1], str(tip), 'the hover says the model of the barb')

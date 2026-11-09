@@ -389,7 +389,7 @@ Route: an jedem Punkt und alle 50 NM zwischen zwei Punkten. Der Schaft zeigt, wo
 50 kt, eine Fieder für 10 kt, eine halbe Fieder für 5 kt. Tippen Sie eine Fieder an (oder fahren Sie mit der Maus
 darüber): die Blase nennt Richtung, Stärke, Temperatur, Flughöhe und die Stunde der Vorhersage. Die Ebene „Höhenwinde“
 blendet sie aus.
-Die Windfiedern werden aus derselben Vorhersage wie der Wetterschnitt gelesen (nichts weiter wird abgefragt): hat der Schnitt Wind, hat ihn die Karte. Wo das gewählte Modell die Route nicht abdeckt (die Streckenmitte wählt es), gibt es keinen Pfeil: die Blase sagt „Hier kein Wind (außerhalb ARPEGE)“; nie derselbe Pfeil wiederholt.
+Die Windfiedern werden aus derselben Vorhersage wie der Wetterschnitt gelesen (nichts weiter wird abgefragt): hat der Schnitt Wind, hat ihn die Karte. Wo das gewählte Modell die Route nicht abdeckt (die Streckenmitte wählt es), gibt es keinen Pfeil: die Blase sagt „Hier kein Wind (außerhalb ARPEGE)“; nie derselbe Pfeil wiederholt. Die Aktion „Streckenwetter“ liest dann das abdeckende Modell (GFS) für diese Lücken, und jede Windfieder nennt ihr Modell in der Blase.
 
 **Stufen.** Legt die Route in Kraftstoff an einigen Punkten eine Flugfläche fest, zeichnet das Profil die Stufen:
 Steigflug, Reiseflug, neuer Steig- oder Sinkflug, mit neu berechnetem Ende des Steigflugs und Beginn des Sinkflugs.
@@ -452,7 +452,7 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: 604f63b1e05b -->
+<!-- fr: f755de60416e -->
 
 <!-- chapter: atmosphere -->
 # Wetter
