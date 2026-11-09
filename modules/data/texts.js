@@ -220,6 +220,31 @@ export const TX = {
       'Quelle {source} vom {cycle}, gültiger Zyklus {current}: neuere Datei ablegen',
       'Fuente {source} del {cycle}, ciclo vigente {current}: falta un archivo más reciente'
     ],
+    'index-orphan': ['Fichier du cycle {cycle} déclaré mais absent ({count}) : reconstruire',
+      'File of cycle {cycle} declared but absent ({count}): rebuild',
+      'Datei des Zyklus {cycle} angegeben, aber nicht vorhanden ({count}): neu erstellen',
+      'Archivo del ciclo {cycle} declarado pero ausente ({count}): reconstruir'
+    ],
+    'source-unbuilt': ['Construite sans points ni voies, le fichier {source} est là : reconstruire',
+      'Built without points or airways, the {source} file is there: rebuild',
+      'Ohne Punkte und Strecken erstellt, die {source}-Datei ist da: neu erstellen',
+      'Construida sin puntos ni aerovías, el archivo {source} está: reconstruir'
+    ],
+    'source-unread': [
+      'Construite sans points ni voies : le fichier {source} est là mais la case « personnel » ne le déclare pas : reconstruire avec la case',
+      'Built without points or airways: the {source} file is there but the “personal” box does not declare it: rebuild with the box ticked',
+      'Ohne Punkte und Strecken erstellt: die {source}-Datei ist da, das Feld „persönlich“ nennt sie nicht: mit angekreuztem Feld neu erstellen',
+      'Construida sin puntos ni aerovías: el archivo {source} está pero la casilla «personal» no lo declara: reconstruir con la casilla marcada'
+    ],
+    'source-missing': ['Construite sans points ni voies : le fichier {source} manque',
+      'Built without points or airways: the {source} file is missing', 'Ohne Punkte und Strecken erstellt: die {source}-Datei fehlt',
+      'Construida sin puntos ni aerovías: falta el archivo {source}'
+    ],
+    'no-points': ['Zone sans points ni voies : la source ne les porte pas (openAIP)',
+      'Zone without points or airways: the source does not carry them (openAIP)',
+      'Zone ohne Punkte und Strecken: die Quelle enthält sie nicht (openAIP)',
+      'Zona sin puntos ni aerovías: la fuente no los incluye (openAIP)'
+    ],
     unknown: ['Raison non reconnue', 'Unrecognised reason', 'Unbekannter Grund', 'Motivo no reconocido']
   },
   // « Mettre à jour » et les gestes de sélection de la base (update.js, SOG-0071)
@@ -248,10 +273,16 @@ export const TX = {
       'No se pudo leer el estado de las zonas en el lanzador: no se reconstruye nada.'
     ],
     whyMany: ['{n} : {r}', '{n}: {r}', '{n}: {r}', '{n}: {r}'],
-    waiting: ['{n} attendent un fichier de Téléchargements ({z}) : « Prendre le fichier téléchargé » d’abord.',
-      '{n} wait for a file from Downloads ({z}): « Take the downloaded file » first.',
-      '{n} warten auf eine Datei aus Downloads ({z}): zuerst „Heruntergeladene Datei übernehmen“.',
-      '{n} esperan un archivo de Descargas ({z}): primero «Tomar el archivo descargado».'
+    waiting: ['{n} ne se construisent pas encore : {z}', '{n} cannot be built yet: {z}', '{n} lassen sich noch nicht bauen: {z}',
+      '{n} aún no se pueden construir: {z}'
+    ],
+    zoneLink: ['{z} : prête à être mise à jour — touchez « Mettre à jour ».', '{z}: ready to update — touch “Update”.',
+      '{z}: bereit zur Aktualisierung — „Aktualisieren“ antippen.', '{z}: lista para actualizar — toque «Actualizar».'
+    ],
+    zoneLinkOut: ['{z} n’est pas dans la couverture : ajoutez-la d’abord (« Ajouter un pays »).',
+      '{z} is not in the coverage: add it first (“Add a country”).',
+      '{z} ist nicht in der Abdeckung: zuerst hinzufügen („Land hinzufügen“).',
+      '{z} no está en la cobertura: añádala primero («Añadir un país»).'
     ],
     long: ['Cela peut être long.', 'This may take a while.', 'Das kann dauern.', 'Esto puede tardar.'],
     sizeUnknown: ['taille inconnue', 'size unknown', 'Größe unbekannt', 'tamaño desconocido'],

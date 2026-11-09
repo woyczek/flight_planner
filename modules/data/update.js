@@ -85,7 +85,7 @@ function waitingText(waiting) {
   if (!waiting.length) return '';
   return tt(TX.upd.waiting, {
     n: count('zone', waiting.length),
-    z: waiting.map(w => M.zoneName(S.d.zones, w.zone, li())).join(', ')
+    z: waiting.map(w => `${M.zoneName(S.d.zones, w.zone, li())} : ${w.reasons[0] ? reasonText(w.reasons[0]) : ''}`).join(' ; ')
   });
 }
 /** « Mettre à jour » : télécharger la sélection (comme « Télécharger »), lire l'état au lanceur (base/status), puis, parmi les zones cochées, UNE question qui nomme celles qu'on va reconstruire, pourquoi (par raison commune quand elles sont nombreuses), leur poids, et la construction de celles-là
@@ -138,4 +138,28 @@ export async function startUpdate() {
     ...sel,
     ids
   }), ids), true);
+}
+/** Le lien `#data?zone=<id>` (SOG-0143 : « cette zone est à reconstruire ») : à demander avant le premier dessin ; il ouvre le groupe de la base et, si la zone est dans la couverture, la sélection devient cette zone seule. Une seule fois par montage. */
+export function wantZone() {
+  const z = S.ctx.query?.zone;
+  if (S.zoneAsked || typeof z !== 'string' || !/^[a-z0-9]{2,8}$/.test(z)) return;
+  S.zoneAsked = true;
+  S.zoneLink = z;
+  S.manual.base = true;
+  if (S.d.cov.ids.includes(z)) S.ticked = new Set([z]);
+}
+/** Après ce dessin : amène à « Mettre à jour » (la zone cochée), ou dit que la zone n'est pas dans la couverture et amène à « Ajouter un pays ». Une seule fois. */
+export function showZone() {
+  const z = S.zoneLink;
+  if (!z) return;
+  S.zoneLink = null;
+  const name = M.zoneName(S.d.zones, z, li()),
+    inCov = S.d.cov.ids.includes(z),
+    el = inCov ? S.body?.querySelector('[data-build] [data-verb="update"]') : S.body?.querySelector('[data-coverage]');
+  el?.scrollIntoView({
+    block: 'center'
+  });
+  S.ctx.notify(tt(inCov ? TX.upd.zoneLink : TX.upd.zoneLinkOut, {
+    z: name
+  }), inCov ? 'info' : 'warn');
 }

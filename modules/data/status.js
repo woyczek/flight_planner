@@ -83,6 +83,8 @@ export function zoneState(id) {
 }
 /** Les raisons d'une zone, une phrase chacune. */
 export const zoneReasons = id => (S.status?.zones && Object.hasOwn(S.status.zones, id) ? S.status.zones[id].reasons : []).map(reasonText);
+/** Les avis d'une zone (jamais une raison d'être périmée) : « Zone sans points ni voies : la source ne les porte pas (openAIP) » ; une phrase chacun. */
+export const zoneNotices = id => (S.status?.zones && Object.hasOwn(S.status.zones, id) ? S.status.zones[id].notices || [] : []).map(reasonText);
 /** La pastille d'état d'une zone et, ouverte, ses raisons : la pastille d'une zone à reconstruire, jamais construite ou en échec est un bouton (le toucher dit pourquoi) ; vide sans état connu. */
 export function zoneStateHtml(id) {
   const st = zoneState(id);
@@ -97,7 +99,7 @@ export function zoneStateHtml(id) {
     label = tt(TX.zst[st]);
   return `${reasons.length ? `<button type="button" class="f-badge" data-act="zone-why" data-zone="${esc(id)}" data-zstate="${esc(st)}" aria-expanded="${open ? 'true' : 'false'}"${kind(level)}>${esc(label)}</button>` :
     `<span class="f-badge" data-zstate="${esc(st)}"${kind(level)}>${esc(label)}</span>`}
-    ${open ? `<p class="f-muted d-zwhy" data-zone-why="${esc(id)}">${esc(reasons.join(' ; '))}</p>` : ''}`;
+    ${open ? `<p class="f-muted d-zwhy" data-zone-why="${esc(id)}">${esc(reasons.join(' ; '))}</p>` : ''}${zoneNotices(id).map(n => `<p class="f-muted d-zwhy" data-zone-notice="${esc(id)}">${esc(n)}</p>`).join('')}`;
 }
 /** Le toucher d'une pastille : ouvre ou ferme les raisons de la zone. */
 export function toggleWhy(id) {

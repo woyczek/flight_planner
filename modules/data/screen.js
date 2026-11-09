@@ -31,6 +31,10 @@ import {
   refreshStatus
 } from './status.js';
 import {
+  showZone,
+  wantZone
+} from './update.js';
+import {
   packsHtml
 } from './packs.js';
 import {
@@ -202,9 +206,11 @@ export async function load(fresh = false) {
     S.statusAsked = true;
     refreshStatus(S.d.cov.ids);
   }
+  wantZone(); // le lien « #data?zone=<id> » : la base s'ouvre, la zone est cochée
   wantRoute(); // le lien « ?source=eurocontrol_rad » : le groupe des procédures et la ligne Route s'ouvrent
   render();
   showRoute();
+  showZone();
   // première ouverture : toutes les zones publiées sont cochées et la couverture est écrite une fois (SPEC § 3.2) ; rien n'est
   // écrit d'une lecture dégradée (zones() en panne) ni d'un dépôt qui ne publie encore aucune zone
   if (!cov.stored && list && cov.ids.length) {

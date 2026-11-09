@@ -217,6 +217,8 @@ export async function mount(el, ctx) {
     statusP: null, // la lecture en cours (une seule à la fois)
     statusAsked: false, // l'état a été demandé à l'ouverture
     whyOpen: new Set(),
+    zoneAsked: false, // le lien #data?zone=<id> a été lu (update.js)
+    zoneLink: null,
     packOpen: new Set(), // les filtres thématiques dont le pli est ouvert (SOG-0065) // les zones dont la pastille montre ses raisons
     chunk: null, // une sélection de plus de 60 zones : { i, n } la tranche en cours (follow.js runChunks)
     updating: false, // « Mettre à jour » est entre son téléchargement et sa construction (update.js)

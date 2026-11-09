@@ -4,8 +4,10 @@
 /** Les états d'une zone que le lanceur donne ; « en cours » (building) est celui de la page, jamais celui du lanceur. */
 export const ZONE_STATES = Object.freeze(['up-to-date', 'stale', 'never-built', 'failed']);
 /** Les codes de raison que la page sait dire (frame/aerodb/INTEGRATION.md) ; un code inconnu est gardé sous `unknown` (la zone reste signalée, sa raison est dite sans détail). */
+/** Les avis (information qui ne rend pas la zone périmée) que la page sait dire. */
+export const NOTICE_CODES = Object.freeze(['no-points']);
 export const REASON_CODES = Object.freeze(['never-built', 'failed', 'pickup-waiting', 'source-newer', 'inputs-changed', 'parser-old',
-  'files-missing', 'source-old'
+  'files-missing', 'source-old', 'index-orphan', 'source-unbuilt', 'source-unread', 'source-missing'
 ]);
 const ID = /^[a-z0-9]{2,8}$/;
 const DAY = /^\d{4}-\d{2}-\d{2}/;
@@ -17,7 +19,7 @@ const day = v => typeof v === 'string' && DAY.test(v) ? v.slice(0, 10) : '';
 const int = v => Number.isFinite(v) ? Math.max(0, Math.min(Math.trunc(v), 1e9)) : null;
 /** Une raison lue : { code, source, set, cycle, built, current, count, names, zip, error } — seulement les paramètres lus de la forme permise (les dates en « AAAA-MM-JJ », les versions et les comptes en entiers). */
 function reasonOf(r) {
-  const code = typeof r?.code === 'string' && REASON_CODES.includes(r.code) ? r.code : 'unknown',
+  const code = typeof r?.code === 'string' && (REASON_CODES.includes(r.code) || NOTICE_CODES.includes(r.code)) ? r.code : 'unknown',
     isParser = code === 'parser-old',
     num = v => int(v);
   return {
@@ -43,6 +45,7 @@ export function statusOf(final) {
     zones[id] = {
       state: z.state,
       reasons: (Array.isArray(z.reasons) ? z.reasons : []).slice(0, 8).map(reasonOf),
+      notices: (Array.isArray(z.notices) ? z.notices : []).filter(n => NOTICE_CODES.includes(n?.code)).slice(0, 4).map(reasonOf),
       buildable: z.buildable === true,
       builtCycle: day(z.builtCycle),
       expectedCycle: day(z.expectedCycle)

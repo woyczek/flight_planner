@@ -4054,7 +4054,7 @@ def l41(c):
     c.ok(nine in norm(q['text']) and norm(_trow('parser-old', lang, after='  zr: {').split('{built}')[0]) in norm(q['text']), q['text'], 'ONE line for the fifteen zones: « 15 zones : built with an older parser (v22, current v23) »')
     c.ok(q['text'].count('v22') == 1, q['text'], 'said once, not fifteen times')
     c.ok(norm(_UT('long', lang)) in norm(q['text']), q['text'], 'it says it may take a while')
-    c.ok(norm(_UT('waiting', lang).split('{n}')[1].split('{z}')[0]) in norm(q['text']), q['text'], 'and that one zone waits for a file of Downloads (named)')
+    c.ok(norm(_UT('waiting', lang).split('{n}')[1].split('{z}')[0]) in norm(q['text']), q['text'], 'the sentence « n cannot be built yet: zone: reason » names the zone that waits')
     st['views'] = [_view('done', step='Terminé', jid='j2', result={'built': [], 'failed': [], 'commits': [], 'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False, 'blocking': []})]
     st['i'] = 0
     st['start'] = (200, {'job': 'j2'})
@@ -4244,6 +4244,49 @@ def l49(c):
     c.until('document.querySelector("[data-build-result][data-refusal=bad-args]")', timeout=10000, what='the refusal')
     said = norm(c.text('[data-build-result][data-refusal=bad-args]'))
     c.ok('zones: 1 to 60' in said and norm(_trow('refusedWhy', lang).split('{m}')[0]) in said, said, 'the refusal gives the launcher\u2019s own reason after the usual sentence')
+
+@case('L48', 'Données: the new reasons of base/status (index-orphan, source-unbuilt, source-unread, source-missing) are written in four languages, the notice « no-points » does not make a zone stale; #data?zone=<id> ticks that zone and leads to « Mettre à jour »', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0143 (AeroDB c849f397c): four more reasons with their sentences, a notice per zone that is not a reason (no-points: the zone is up to date and says why a point is unknown); the link #data?zone=<id> opens the base, ticks only that zone and brings « Mettre à jour » on screen (a zone outside the coverage is said)')
+def l48(c):
+    lang = c.lang
+    ZR = lambda key: _trow(key, lang, after='  zr: {')
+    st = _launcher(c, [], verbs=_VERBS)
+    st['status'] = _status({
+        'fr': _zst('stale', {'code': 'source-unbuilt', 'source': 'sia'}),
+        'es': _zst('stale', {'code': 'source-unread', 'source': 'enaire', 'why': 'personal'}, buildable=False),
+        'gb': _zst('stale', {'code': 'source-missing', 'source': 'nats'}, buildable=False),
+        'ca': _zst('stale', {'code': 'index-orphan', 'cycle': '2026-10-29', 'count': 3}),
+        'us': {**_zst('up-to-date'), 'notices': [{'code': 'no-points', 'source': 'openaip'}]}})
+    cfg, _ = _fixture()
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the five pills')
+    for z in ('fr', 'es', 'gb', 'ca'):
+        c.tap(f'[data-zone-row={z}] [data-act=zone-why]')
+    c.until("document.querySelectorAll('[data-zone-why]').length === 4", timeout=4000, what='the four reasons')
+    why = lambda z: norm(c.text(f'[data-zone-why={z}]'))
+    c.ok(norm(ZR('source-unbuilt').split('{source}')[0]) in why('fr') and norm(ZR('source-unbuilt').split('{source}')[1]) in why('fr'), why('fr'), 'source-unbuilt: « built without points or airways, the SIA file is there »')
+    c.ok(norm(ZR('source-unread').split('{source}')[1]) in why('es'), why('es'), 'source-unread: the file is there but the « personal » box does not declare it: rebuild with the box ticked')
+    c.ok(norm(ZR('source-missing').split('{source}')[1]) in why('gb'), why('gb'), 'source-missing: the file is missing')
+    c.ok('3' in why('ca') and norm(ZR('index-orphan').split('{cycle}')[0]) in why('ca'), why('ca'), 'index-orphan: the cycle and the number of absent files')
+    c.eq(c.js("document.querySelector('[data-zone-row=us] [data-zstate]').dataset.zstate"), 'up-to-date', 'a zone with a notice is up to date: the notice is not a reason', what='notice zone')
+    c.eq(norm(c.text('[data-zone-notice=us]')), norm(ZR('no-points')), 'the notice says why a point may be unknown (openAIP carries none)', what='notice')
+    # ---- the link #data?zone=fr: only France ticked, « Mettre à jour » on screen, a sentence
+    c.open('data?zone=fr', docs=LEVEL3, wait=False, app='maintenance')
+    c.until("!!document.querySelector('[data-module=data] [data-build-zone=fr]')", timeout=20000, what='the base panel')
+    c.settle()
+    c.eq([_ticked(c), c.js("(() => { const b = document.querySelector('[data-build] [data-verb=update]').getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight })()")], [['fr'], True], 'the selection is that zone alone and « Mettre à jour » is on screen', what='zone link')
+    said = norm(_UT('zoneLink', lang).split('{z}')[1])
+    for _ in range(30):
+        if _notes_with(c, said):
+            break
+        c.wait(200)
+    c.ok(bool(_notes_with(c, said)), None, 'a sentence says the zone is ready to update')
+    c.open('data?zone=zz', docs=LEVEL3, wait=False, app='maintenance')
+    c.until("!!document.querySelector('[data-module=data] [data-build-zone=fr]')", timeout=20000, what='the base panel again')
+    c.settle()
+    c.eq(len(_ticked(c)), 5, 'an unknown zone changes nothing: the selection is the coverage', what='unknown')
     c.check_errors()
 
 
