@@ -934,6 +934,92 @@ def k107(c):
         c.eq((r['zones']['gb']['cycle'], x['cycle'], x['zip'], x.get('later')), ('2026-10-29', '2026-10-29', 'EG_AIP_DS_20261029_XML.zip', '2026-11-26'), 'both there: the cycle in force (29 Oct) is taken, the one published in advance is said (later: 26 Nov), not taken', what='future later')
 
 
+@case('K109', 'base/status says per zone up-to-date / stale (with the reasons) / never-built / failed, and base/update builds only what the state says, nothing when nothing moved (SOG-0071)', 'K', static=True,
+      rule='SOG-0071 / V3 § 10.44 (9-10 Nov 2026): « un télécharger ou construire télécharge ou construit tout » -- the launcher gives the state of each zone in ONE call with the reason (never built; failed; a dated source newer than the build; the inputs changed; an old parser; files missing; the dated source older than the cycle in force; a file waiting in Downloads), and « Mettre à jour » builds only the zones that are not up to date and for which a build changes something, idempotent')
+def k109(c):
+    RJ, BS, AF, DS = _mods()
+    import zipfile
+    BA = types.SimpleNamespace(**RJ.REGISTRY[('base', 'build')][0].__globals__)
+    ST = types.SimpleNamespace(**RJ.REGISTRY[('base', 'status')][0].__globals__)
+    status, check_s = RJ.REGISTRY[('base', 'status')]
+    update, check_u = RJ.REGISTRY[('base', 'update')]
+    c.eq((check_s({}), check_s({'zones': ['de', 'it']}), check_s({'zones': ['xx']}), check_s({'zones': []}), check_s({'path': 1}), check_u({'zones': ['de']}), check_u({}), check_u({'zones': ['de'], 'fetch': 'x'})),
+         ({'personal': []}, {'zones': ['de', 'it'], 'personal': []}, None, None, None, {'zones': ['de'], 'personal': [], 'fetch': True}, None, None), 'the closed arguments: zones (known ids), personal; update needs its zones, fetch is a boolean', what='check')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, dl = Path(td) / 'data', Path(td) / 'Downloads'
+        data.mkdir()
+        dl.mkdir()
+        parser = ST.parser_version()
+
+        def built(zone, cycle='2026-10-29', version=None, missing=()):
+            d = data / 'sia' / 'base' / zone / cycle
+            d.mkdir(parents=True, exist_ok=True)
+            (d / 'meta.json').write_text(json.dumps({'schema': 2, 'zone': zone, 'cycle': cycle, 'kind': 'meta', 'parserVersion': version or parser, 'data': {}}), encoding='utf-8')
+            for k in BA.KINDS:
+                if k != 'meta' and k not in missing:
+                    (d / f'{k}.json').write_text('{}', encoding='utf-8')
+
+        def feed(zone, name='x', text='a'):
+            (data / 'sia' / 'openaip').mkdir(parents=True, exist_ok=True)
+            (data / 'sia' / 'openaip' / f'{zone}_asp.geojson').write_text(text, encoding='utf-8')
+
+        def record(zone, personal=()):
+            ST.write_record(data, zone, cycle='2026-10-29', builtAt='2026-10-30T10:00:00Z', parserVersion=parser, personal=list(personal), inputs=ST.signature(ST.inputs_of(str(data), zone, set(personal))))
+        for z in ('de', 'dk', 'no', 'nl'):
+            feed(z)
+            built(z, cycle='2026-10-01')
+            record(z)
+        feed('se')
+        built('dk', cycle='2026-10-01', version=parser - 1)                      # an old parser
+        record('dk')
+        feed('no', text='changed after the build')                                # the inputs changed
+        built('se', cycle='2026-10-01', missing=('airways', 'vrp'))              # two files missing
+        record('se')
+        ST.mark_failed(str(data), 'nl', 'page-error', '2026-10-31T10:00:00Z')   # the last build failed
+        (data / 'sia' / 'XML_SIA_2026-10-29.xml').write_text('<x/>', encoding='utf-8')                  # fr: the SIA of 29 Oct, built at 1 Oct
+        built('fr', cycle='2026-10-01')
+        (data / 'sia' / 'zones' / 'gb').mkdir(parents=True)
+        (data / 'sia' / 'zones' / 'gb' / 'EG_AIP_DS_FULL_20261001.xml').write_text('<x/>', encoding='utf-8')   # gb: NATS of 1 Oct only (read: « personnel »), built at 1 Oct
+        built('gb', cycle='2026-10-01')
+        ctx = {'data': str(data), 'downloads': lambda: [str(dl)], 'today': datetime.date(2026, 11, 9)}
+        run = lambda **a: status(RJ.Job('base', 'status', {}), check_s(a), ctx)
+        r = run(zones=['de', 'it', 'dk', 'no', 'se', 'nl', 'fr', 'gb'], personal=['nats'])
+        z = r['zones']
+        c.eq({k: (v['state'], v['reason']['code'] if v['reason'] else None, v['buildable']) for k, v in z.items()},
+             {'de': ('up-to-date', None, False), 'it': ('never-built', 'never-built', True), 'dk': ('stale', 'parser-old', True), 'no': ('stale', 'inputs-changed', True), 'se': ('stale', 'files-missing', True),
+              'nl': ('failed', 'failed', True), 'fr': ('stale', 'source-newer', True), 'gb': ('stale', 'source-old', False)},
+             'one state per zone: de (not dated: a cycle changing makes it nothing) up to date; it never built; dk old parser; no inputs changed; se files missing; nl failed; fr source newer than the build; gb dated source older than the cycle in force (nothing to build)', what='states')
+        c.eq((z['dk']['reason'], z['no']['reason'], z['se']['reason'], z['fr']['reason'], z['gb']['reason'], z['nl']['reason']),
+             ({'code': 'parser-old', 'built': parser - 1, 'current': parser}, {'code': 'inputs-changed', 'count': 1, 'names': ['openaip/no_asp.geojson']}, {'code': 'files-missing', 'count': 2},
+              {'code': 'source-newer', 'source': 'sia', 'cycle': '2026-10-29', 'built': '2026-10-01'}, {'code': 'source-old', 'source': 'nats', 'cycle': '2026-10-01', 'current': '2026-10-29'}, {'code': 'failed', 'error': 'page-error'}),
+             'the reasons are codes with their parameters (the page says them in four languages)', what='reasons')
+        c.eq((r['counts'], r['current'], r['parserVersion']), ({'up-to-date': 1, 'never-built': 1, 'stale': 5, 'failed': 1}, '2026-10-29', parser), 'the counts, the cycle in force and the parser version', what='counts')
+        # a file waiting in Downloads and not taken: the first reason of gb, not buildable until it is taken
+        with zipfile.ZipFile(dl / 'EG_AIP_DS_20261029_XML.zip', 'w') as zf:
+            zf.writestr('EG_AIP_DS_FULL_20261029.xml', '<x/>')
+        z = run(zones=['gb'], personal=['nats'])['zones']['gb']
+        c.eq(([r['code'] for r in z['reasons']], z['reason'], z['buildable'], z['state']), (['pickup-waiting', 'source-old'], {'code': 'pickup-waiting', 'source': 'nats', 'set': 'AIP', 'cycle': '2026-10-29', 'zip': 'EG_AIP_DS_20261029_XML.zip'}, False, 'stale'),
+             'gb: « AIP 29 OCT in Downloads, not taken » comes first, and nothing is buildable before it is taken', what='waiting')
+        # base/update: builds the zones the state says (buildable), not the others; nothing the second time
+        said = []
+
+        def fake_build(job, a, cx):
+            for zn in a['zones']:
+                built(zn, cycle='2026-10-29')
+                record(zn)
+                said.append(zn)
+            return {'ok': True, 'built': list(a['zones']), 'failed': [], 'cycle': '2026-10-29', 'seconds': 0}
+        ctx['build'] = fake_build
+        up = lambda **a: update(RJ.Job('base', 'update', {}), check_u(a), ctx)
+        res = up(zones=['de', 'it', 'dk', 'no', 'se', 'nl', 'fr', 'gb'], personal=['nats'], fetch=False)
+        c.eq((sorted(said), sorted(res['built']), res['upToDate'], res['notBuildable'], [w['zone'] for w in res['waiting']], res['nothing']),
+             (['dk', 'fr', 'it', 'nl', 'no', 'se'], ['dk', 'fr', 'it', 'nl', 'no', 'se'], ['de'], ['gb'], ['gb'], False), 'update builds the six zones the state says (never built, failed, source newer, inputs changed, old parser, files missing), not de (up to date) nor gb (waits for a file)', what='update')
+        said.clear()
+        res = up(zones=['de', 'it', 'dk', 'no', 'se', 'nl', 'fr', 'gb'], personal=['nats'], fetch=False)
+        c.eq((said, res['nothing'], sorted(res['upToDate']), res['after']['gb']['state']), ([], True, ['de', 'dk', 'fr', 'it', 'nl', 'no', 'se'], 'stale'), 'the second time nothing is built (idempotent): seven zones up to date, gb still waits for its file', what='idempotent')
+        c.eq(sorted(os.listdir(data / 'local' / 'build')), ['de.json', 'dk.json', 'fr.json', 'it.json', 'nl.json', 'no.json', 'se.json'], 'what each build read is kept apart, under data/local/ (never published)', what='records')
+
+
 # ---------------------------------------------------------------------------------------------------------------------------------------------
 @case('K70', 'Ireland (AirNav eAIP): the current issue read from the AIM page, ENR 4.4 points and ENR 3.3 routes read from invented pages in the real markup, written by the launcher under its AIRAC date', 'K', static=True,
       rule='Lot C2 (5 Nov 2026): the zone ie gets its points and airways from the official eAIP (HTML tables, DMS coordinates); the address of the issue is read from the page and checked; the file carries the issue date (its cycle); no licence found: personal-licence source; fixtures are INVENTED in the real markup (the code repository is public, frame/aerodb/test/fixtures/SOURCES.md)')

@@ -604,3 +604,43 @@ Result: `{ ok, dry, file: { name, size, sha256 } | null, sites, categories: { <c
 **The file is the user's, so untrusted like everything in `data/`**: at most 256 kB (before it is read), UTF-8 text, at most 500 sites; a reduced YAML grammar of the standard library (one document, scalars, **one list of flat records**: anchors, tags, `{ }` / `[ ]`, `|` / `>` blocks, tabs, nesting and duplicate keys are refused with the line); numbers finite and bounded (latitude ±90, longitude ±180, 7 decimals), booleans and `NaN` are not numbers; texts without control characters, **without `<` or `>`**, blanks collapsed, 200 signs at most. **The consumer sets the texts with `textContent`, never as HTML.** The positions are loading positions checked by hand: the note travels with the file, to be shown wherever they are.
 
 The Map layer (beta.1) is BUGS SOG's: it reads `data/pelicandromes/fr.json` through the data repository like the other published data; no AeroDB API reads it yet.
+
+### The state per zone and « Mettre à jour »: the verbs `base/status` and `base/update` (SOG-0071, V3 § 10.44, alpha.5)
+
+Both are launcher jobs like the others (`launcher.job('regen/job', { set: 'base', verb, args })`, `job.result`). The launcher holds ONE job at a time: **`base/status` is refused (409) while a build runs**; the state `building` is the page's (it reads `job.data.zones` of the running job), never in this answer.
+
+**`base/status`** `{ zones?: [ids] (1–60; default: the zones the base publishes), personal?: [sources] }` — one call, nothing written, under a second:
+`{ ok, current (the cycle in force), parserVersion (what the build page builds with), counts: { <state>: n }, zones: { <zone>: { state, reason, reasons, buildable, builtCycle, expectedCycle, parserVersion } } }`.
+
+- `state`: `up-to-date` | `stale` | `never-built` | `failed`. A zone with no folder in `data/sia/base/<zone>/` is `never-built` (a zone the pilot ticked and never built).
+- `reasons`: `[{ code, … }]` in this order, `reason` = the first (`null` when up to date); `buildable`: a build would change something. The codes and their parameters:
+
+| code | parameters | buildable | meaning (the page's words, four languages below) |
+|---|---|---|---|
+| `never-built` | — | yes | no built folder |
+| `failed` | `error` | yes | the last build of this zone failed (kept until the next one succeeds) |
+| `pickup-waiting` | `source`, `set?`, `cycle?`, `zip` | **no** | a file of Downloads is not taken yet (`base/pickup` takes it, the plan first): NATS one set at a time (AIP, OBS, UAS), the SIA zip whose cycle is newer than the one held |
+| `source-newer` | `source`, `cycle`, `built` | yes | the dated source (SIA, NATS, ENAIRE) is of a cycle newer than the build |
+| `inputs-changed` | `count`, `names` (3 first) | yes | a source file of the zone changed (by hash) since the build read it |
+| `parser-old` | `built`, `current` | yes | built by an older parser (`parserVersion` of its `meta.json` under the build page's) |
+| `files-missing` | `count` | yes | files missing in the built folder |
+| `source-old` | `source`, `cycle`, `current` | **no** | the dated source is older than the cycle in force: a newer file is to be fetched or dropped |
+
+A zone **without a dated source is never stale by the cycle** (openAIP-only countries: an AIRAC change is nothing for them). `up-to-date` has no reason at all. On this workstation (10 Nov): 45 zones built, all `parser-old` (built at parser 21, current 22: the direction of the airways); gb `pickup-waiting` (AIP and OBS of 29 Oct) then `source-old`.
+
+**What the build read** is kept apart: **`data/local/build/<zone>.json`** (local to the workstation, never published, written by `base/build` after each zone): `{ zone, cycle, builtAt, parserVersion, personal, inputs: { <name>: { size, mtime, sha256 } }, failed?: { error, at } }`. `inputs-changed` compares hashes (a file is hashed again only when its size or date moved), so a file rewritten with the same content is not a change. A zone built **before** this record exists is judged on its cycles, parser and files only (no `inputs-changed` until its next build).
+
+**`base/update`** `{ zones, personal?, fetch?: true }` — « Mettre à jour »: (1) `base/fetch` of the zones (only what changed), (2) the state, (3) `base/build` of **the zones that are not up to date and buildable**, (4) the state again. Result: `{ ok, fetched: { ok, fetched, unchanged, failed, manual } | null, before, upToDate: [zones], waiting: [{ zone, reasons }], notBuildable: [zones], built, failed, build: { ok, reason?, cycle, cycles, folders, commits, seconds }, after, nothing, reason? }`. **Idempotent**: when nothing moved `nothing` is `true` and no browser starts. **The pickup is not done by the update**: a file in Downloads is shown (`base/pickup` plan) then taken by the pilot's answer, so the file shown is the file taken (Sécurisation's rule); a zone that waits for it is in `waiting`. The job's `phase` (`fetch`, `status`, `build`, `done`) is in `job.data.phase`; the build's per-zone progress is in `job.data.zones` as for `base/build`. **« Tout recalculer »** stays `base/build` on the whole selection.
+
+**The reasons in the pilot's words** (the page writes them with `K.t`; `{…}` are the parameters, dates written as « 29 OCT »):
+
+| code | fr | en | de | es |
+|---|---|---|---|---|
+| `never-built` | Jamais construite | Never built | Noch nie erstellt | Nunca construida |
+| `failed` | Dernière construction en échec | Last build failed | Letzter Build fehlgeschlagen | La última construcción falló |
+| `pickup-waiting` | {set} {cycle} dans Téléchargements, non repris | {set} {cycle} in Downloads, not taken yet | {set} {cycle} in Downloads, noch nicht übernommen | {set} {cycle} en Descargas, sin tomar |
+| `source-newer` | Source {source} du {cycle} plus récente que la construction du {built} | {source} source of {cycle} newer than the build of {built} | Quelle {source} vom {cycle} neuer als der Build vom {built} | Fuente {source} del {cycle} más reciente que la construcción del {built} |
+| `inputs-changed` | {count} fichier(s) source modifié(s) depuis la construction | {count} source file(s) changed since the build | {count} Quelldatei(en) seit dem Build geändert | {count} archivo(s) fuente modificado(s) desde la construcción |
+| `parser-old` | Construite avec un ancien analyseur (v{built}, actuel v{current}) | Built with an older parser (v{built}, current v{current}) | Mit einem älteren Parser erstellt (v{built}, aktuell v{current}) | Construida con un analizador antiguo (v{built}, actual v{current}) |
+| `files-missing` | {count} fichier(s) manquant(s) | {count} file(s) missing | {count} Datei(en) fehlen | faltan {count} archivo(s) |
+| `source-old` | Source {source} du {cycle}, cycle en vigueur {current} : un fichier plus récent est à déposer | {source} source of {cycle}, cycle in force {current}: a newer file is to be dropped | Quelle {source} vom {cycle}, gültiger Zyklus {current}: neuere Datei ablegen | Fuente {source} del {cycle}, ciclo vigente {current}: falta un archivo más reciente |

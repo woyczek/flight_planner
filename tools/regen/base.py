@@ -547,6 +547,13 @@ def _sogb(line):
     return obj if isinstance(obj, dict) else None
 
 
+def _state():
+    """Les noms du jeu base_state (l'état par zone), chargé par le lanceur avec les autres jeux ; None s'il n'est pas chargé (un banc qui ne charge que ce fichier)."""
+    import types
+    entry = regen_jobs.REGISTRY.get(('base', 'status'))
+    return types.SimpleNamespace(**entry[0].__globals__) if entry else None
+
+
 def build(job, args, ctx):
     t0 = time.time()
     if regen_jobs.merge_pending(ctx):  # rien n'est écrit dans data/ tant qu'une fusion y attend
@@ -573,6 +580,12 @@ def build(job, args, ctx):
     unread = [{'zone': z, 'source': aero_cycles.ZONE_SOURCE[z], 'cycle': sources[aero_cycles.ZONE_SOURCE[z]]['cycle'], 'why': 'personal'} for z in zones
               if z in aero_cycles.ZONE_SOURCE and aero_cycles.ZONE_SOURCE[z] not in used and sources[aero_cycles.ZONE_SOURCE[z]]['cycle']]    # des fichiers sont là, la licence n'est pas déclarée : non lus, dits
     folder = {z: own[z] or current for z in zones}
+    state = _state()        # l'état par zone (base/status) : ce que cette construction lit est gardé à part, pour dire plus tard « entrées changées » (data/local/build/<zone>.json)
+    sigs = {}
+    for z in zones:
+        if state:
+            before = (state.read_record(data, z) or {}).get('inputs')
+            sigs[z] = state.signature(state.inputs_of(data, z, personal), before)
     origin = launcher_origin(ctx)
     if not origin:
         return {'ok': False, 'reason': 'failed', 'message': 'the launcher address is unknown: the build page cannot be loaded'}
@@ -610,6 +623,12 @@ def build(job, args, ctx):
         except (OSError, ValueError) as e:
             return update(zone, state='failed', error='write-failed', message=str(e)[:200], seconds=round(time.time() - z0, 1))
         job.log(f'{zone}: construite, {written} fichier(s) écrit(s), commit {(done.get("commit") or "aucun")[:10]}')
+        if state:
+            try:
+                version = json.loads(texts['meta.json']).get('parserVersion')
+            except (KeyError, ValueError, AttributeError):
+                version = None
+            state.write_record(data, zone, cycle=folder[zone], builtAt=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), parserVersion=version, personal=personal, inputs=sigs.get(zone, {}))
         update(zone, state='built', commit=done.get('commit'), warning=done.get('warning'), files=written, seconds=round(time.time() - z0, 1))
 
     z0 = time.time()
@@ -691,6 +710,9 @@ def build(job, args, ctx):
         job.data['zones'] = {z: dict(st[z]) for z in zones}
     built = [z for z in zones if st[z]['state'] == 'built']
     failed = [{'zone': z, 'error': st[z].get('error') or st[z]['state']} for z in zones if st[z]['state'] == 'failed']
+    if state:
+        for f in failed:     # un échec est gardé avec la dernière construction réussie (ses entrées) : la zone est dite « en échec » jusqu'à la prochaine réussie
+            state.mark_failed(data, f['zone'], f['error'])
     # par zone construite : le cycle de sa source datée (None : sans AIRAC, « du <date> »), le dossier écrit, et les zones bloquantes (source
     # d'un cycle passé : construit quand même, sans refus, mais dit)
     blocking = [{'zone': z, 'source': aero_cycles.ZONE_SOURCE[z], 'cycle': own[z]} for z in built if own[z] and own[z] < current]

@@ -1044,7 +1044,7 @@ def pickup(job, args, ctx):
         zones[z] = {'before': before[z], 'cycle': after, 'sets': sorted((x for x in sets if x['zone'] == z), key=lambda x: x['set'])}
     skipped = []
     if args.get('_sets_only'):
-        return {'taken': taken}
+        return {'taken': taken, 'zones': zones}
     shown = _openaip_pickup(job, args['zones'], dry, args, ctx, taken, failed, skipped)
     reason = 'cancelled' if job.cancelled() else 'failed' if failed and not taken else 'partial' if failed else None
     res = {'ok': reason is None, 'dry': dry, 'taken': taken, 'missing': missing, 'failed': failed, 'skipped': skipped, **({'zones': zones} if zones else {}), **({'shown': shown} if shown else {})}
