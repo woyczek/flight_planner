@@ -209,6 +209,16 @@ const TX = {
   rCheck: ['Contrôler', 'Check', 'Prüfen', 'Comprobar'],
   rBusy: ['Calcul en cours…', 'Computing…', 'Berechnung läuft…', 'Calculando…'],
   rNone: ['Aucun itinéraire proposé.', 'No route proposed.', 'Keine Route vorgeschlagen.', 'Ningún itinerario propuesto.'],
+  rPrimary: ['Route calculée', 'Computed route', 'Berechnete Route', 'Ruta calculada'],
+  rVariant: ['Variante {n}', 'Alternative {n}', 'Variante {n}', 'Variante {n}'],
+  rLimits: ['Ce que le contrôle ne couvre pas', 'What the check does not cover', 'Was die Prüfung nicht abdeckt',
+    'Lo que la comprobación no cubre'
+  ],
+  rNoRad: ['Aucun RAD importé sur ce poste : importez-le dans Maintenance › Données.',
+    'No RAD imported on this workstation: import it in Maintenance › Data.',
+    'Kein RAD auf diesem Arbeitsplatz importiert: in Wartung › Daten importieren.',
+    'Ningún RAD importado en este puesto: impórtelo en Mantenimiento › Datos.'
+  ],
   rFail: ['Le calcul de route n’a pas répondu.', 'The route computation did not answer.', 'Die Routenberechnung hat nicht geantwortet.',
     'El cálculo de ruta no ha respondido.'
   ],
@@ -3008,67 +3018,84 @@ function renderDa(C) {
 
 /** Niveau du plan fixé (ft) : champ, vol courant, résultats. */
 // ---------------------------------------------------------------- calcul et contrôle de route (SOG-0080, SOG-0081)
-/** « Calculer A → B » (compute : les points saisis sont des passages imposés) ou « Contrôler » (check : la route saisie telle quelle),
- *  par le travail route/compute du lanceur ; la réponse, nettoyée (RE.normalize), donne la liste des itinéraires (compute) ou les segments
- *  fautifs marqués dans la liste des points (check). La saisie n'est jamais touchée ici. */
+/** « Calculer A → B » (calculate : les points saisis sont des passages imposés) ou « Contrôler » (validate : la route saisie telle
+ *  quelle), par le travail route/compute du lanceur (contrat d'AeroDB, frame/aerodb/INTEGRATION.md) ; la réponse, nettoyée
+ *  (RE.normalize), donne la liste des itinéraires (calculate) ou les segments fautifs marqués dans la liste des points (validate). Un
+ *  refus du moteur est dit avec sa phrase. La saisie n'est jamais touchée ici. */
 async function routeAsk(action) {
   const s = S,
     r = S.flight.route || {},
     o = CF.proceduresOf(S.flight),
-    box = S.body?.querySelector('[data-routealts]');
+    box = S.body?.querySelector('[data-routealts]'),
+    mode = action === 'compute' ? 'calculate' : 'validate';
   if (!S.routeEngine || !r.dep || !r.arr) return;
   if (box) box.innerHTML = `<p class="f-muted" data-rbusy>${esc(tt(TX.rBusy))}</p>`;
-  const args = {
-      action,
-      adep: r.dep,
-      adest: r.arr,
+  const when = Date.parse(S.flight.planned_at || ''),
+    args = RE.request({
+      mode,
+      dep: r.dep,
+      arr: r.arr,
+      points: r.points,
+      text: r.text,
       fl: +S.flight.level?.ft > 0 ? Math.round(+S.flight.level.ft / 100) : null,
-      rwyDep: o.dep?.rwy || null,
-      rwyArr: o.arr?.rwy || null,
-      ...(action === 'compute' ? {
-        via: RE.via(r.points)
-      } : {
-        route: String(r.text || '').slice(0, 800)
-      })
-    },
+      date: new Date(Number.isFinite(when) ? when : Date.now()).toISOString().slice(0, 16),
+      depRunway: o.dep?.rwy,
+      arrRunway: o.arr?.rwy
+    }),
     res = await RE.run(S.ctx.launcher, args);
   if (gone(s) || !S.body) return;
   if (!res) {
     if (box) box.innerHTML = '';
     return S.ctx.notify(tt(TX.rFail), 'warn');
   }
-  const n = RE.normalize(res);
-  if (action === 'check') {
-    const a = n.alternatives[0];
+  const n = RE.normalize(res, mode);
+  if (!n.ok) {
+    if (box) box.innerHTML = `<p class="f-warn" data-rrefused="${esc(n.reason)}">${esc(n.message || tt(n.reason === 'no-rad' ? TX.rNoRad : TX.rFail))}${n.reason === 'no-rad' ? ` ${esc(tt(TX.rNoRad))}` : ''}</p>`;
+    return;
+  }
+  if (mode === 'validate') {
+    const a = n.plans[0];
     S.rcheck = {
       text: String(r.text || ''),
       segments: a?.segments || [],
-      faults: a?.faults || 0
+      faults: a?.faults || 0,
+      errors: a?.errors || []
     };
-    if (box) box.innerHTML = `<p class="${S.rcheck.faults ? 'f-warn' : 'f-muted'}" data-rcheck>${esc(S.rcheck.faults ? tt(TX.rCheckN, { n: S.rcheck.faults }) : tt(TX.rCheckOk))}</p>`;
+    if (box) box.innerHTML = `<p class="${S.rcheck.faults || S.rcheck.errors.length ? 'f-warn' : 'f-muted'}" data-rcheck>${esc(S.rcheck.faults ? tt(TX.rCheckN, { n: S.rcheck.faults }) : S.rcheck.errors[0] || tt(TX.rCheckOk))}</p>${limitsHtml(n)}`;
     renderPts();
     return refresh();
   }
   S.ralts = {
-    list: n.alternatives,
-    chosen: -1
+    list: n.plans,
+    chosen: -1,
+    n
   };
   routeAltsDraw();
 }
-/** La liste des itinéraires proposés (sept au plus) : nom court, longueur, FL tenu, écarts ; « Prendre » ; le choisi marqué. */
+/** Ce que le contrôle ne couvre pas (le contrat le demande : « aucune incompatibilité » ne vaut que pour ce qui est contrôlé) : la phrase
+ *  du moteur et ses domaines hors contrôle, repliés. */
+const limitsHtml = n => n.limitation || n.gaps.length ? `<details class="fu-rlimits" data-rlimits><summary class="f-muted">${esc(tt(TX.rLimits))}</summary>${n.limitation ? `<p class="f-muted">${esc(n.limitation)}</p>` : ''}${n.gaps.map(g => `<p class="f-muted"><b>${esc(g.name)}</b> ${esc(g.reason)}</p>`).join('')}</details>` : '';
+/** La liste des itinéraires (le calculé, puis trois variantes au plus) : nom, longueur, FL tenu, écarts, la première erreur ; « Prendre »
+ *  pour un itinéraire qui a une route ; le choisi marqué ; puis ce qui n'est pas contrôlé. */
 function routeAltsDraw() {
   const box = S.body?.querySelector('[data-routealts]'),
     A = S.ralts;
   if (!box || !A) return;
-  box.innerHTML = A.list.length ? `<div class="f-list fu-ralts" data-altlist>${A.list.map((a, i) => `<div class="f-item${a.faults ? ' fu-raltbad' : ''}" data-alt="${i}"${i === A.chosen ? ' aria-current="true"' : ''}><span><b>${esc(a.name)}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(Math.round(a.fl)).padStart(3, '0')}` : '', tt(TX.rFaults, { n: a.faults })].filter(Boolean).join(' · '))}</span><small class="f-muted fu-raltroute">${esc(a.route)}</small></span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(TX.rTake))}</button>`}</div>`).join('')}</div>` :
-    `<p class="f-muted">${esc(tt(TX.rNone))}</p>`;
+  const name = (a, i) => a.role === 'primary' ? tt(TX.rPrimary) : tt(TX.rVariant, {
+    n: i
+  });
+  box.innerHTML = (A.list.length ? `<div class="f-list fu-ralts" data-altlist>${A.list.map((a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}" data-alt="${i}"${i === A.chosen ? ' aria-current="true"' : ''}><span><b>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(a.fl).padStart(3, '0')}` : '', tt(TX.rFaults, { n: a.faults + (a.faults ? 0 : a.errors.length) })].filter(Boolean).join(' · '))}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.calcError || a.errors[0] ? `<small class="f-warn">${esc(a.calcError || a.errors[0])}</small>` : ''}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(TX.rTake))}</button>` : ''}</div>`).join('')}</div>` :
+    `<p class="f-muted">${esc(A.n?.message || tt(TX.rNone))}</p>`) + limitsHtml(A.n || {
+    limitation: '',
+    gaps: []
+  });
 }
 /** « Prendre » : la route de l'itinéraire écrite comme une saisie (le champ de route et son événement : le seul chemin d'écriture,
  *  SOG-0013), puis sa SID et sa STAR proposées aux procédures (P.propose : vérifiées contre les fiches du terrain, rien d'inconnu écrit). */
 function routeTake(i) {
   const a = S.ralts?.list?.[i],
     ta = S.body?.querySelector('[data-k="rtext"]');
-  if (!a || !ta) return;
+  if (!a?.route || !ta) return;
   ta.value = a.route;
   ta.dispatchEvent(new Event('input', {
     bubbles: true
