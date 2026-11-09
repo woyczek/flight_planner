@@ -1460,3 +1460,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   countermanded: a small SVG under the list, the routes resolved by the route reader, highlighted by the row under the pointer or the
   finger — it works on a phone and needs no contract with the Map; the Map's layer (way (i)) can follow if the base map is wanted.
   F114; counter-test on 7ccea997d: no sketch.
+- **9 Nov 2026 — homonyms, jumps, and the state of the zone of an unknown point** (SOG-0142): the route reader resolves a name to the
+  homonym nearest the previous point and says it; the true search across zones is AeroDB's (`coords(id, { near })`, asked), and the
+  reader already passes `near` and picks the nearest of what `coordsAll` gives. The three states of a missing zone (user's correction:
+  Spain and Sweden ARE in the countries) are read from the publication until `base/status` carries them; the link to Données names the
+  zone (`zone=<id>`), which the Data screen reads (Réglages). Invented names and positions in F115 (no AIP content); the pilot's real
+  route was not copied. Counter-test on 95b2405b0: the unknown point never says its zone.

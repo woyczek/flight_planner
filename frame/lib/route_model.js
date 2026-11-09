@@ -3,7 +3,8 @@
 // par leurs nœuds (routing.js along) ou dites fermées, les niveaux gardés là où ils changent. Ni page, ni stockage : la base est
 // celle que l'appelant passe (ctx.aerodb dans Carburant), un objet inventé dans le banc frame/lib/test/route_model.html.
 // API :
-//   routeModel(text, { dep, arr, known, chain, base }) → { points, unresolved, tokens, badAirways } (voir la fonction).
+//   routeModel(text, { dep, arr, known, chain, base }) → { points, unresolved, tokens, badAirways, homonyms, jumps } (voir la fonction).
+//   JUMP_NM : au-delà, un tronçon entre deux points consécutifs est dit (jumps) : un homonyme lointain, un point mal tapé (SOG-0142).
 //   AIRWAY_WORD : la forme d'un désignateur de voie, composé compris (UN460, G54-R66).
 
 import {
@@ -25,8 +26,11 @@ import {
  *  voie entre les deux, que le texte n'écrit pas, sont repris de chain (les points déjà gardés du vol : awy: true, via:
  *  la voie) quand ils y reliaient les mêmes deux points — c'est ce que le bouton « Auto » laisse dans route.points.
  *  base : la face d'aerodb lue (coords(id), airways({ bbox }), state()), null
- *  sans base. Sortie : { points, unresolved, tokens, badAirways } — tokens : la suite lue ({ pt: point } | { keep: mot }) pour réécrire le texte
- *  normalisé (routeText). */
+ *  sans base. Un nom porté par plusieurs lieux (homonymes : PAM aux Pays-Bas et aux États-Unis) se résout au plus proche du point
+ *  précédent résolu (le premier : du milieu départ → arrivée), jamais au premier trouvé (SOG-0142) : base.coordsAll(id, { near }) quand la
+ *  base l'a, base.coords(id, { near }) sinon. Sortie : { points, unresolved, tokens, badAirways, homonyms: [{ id, n }], jumps: [{ a, b, nm }] }
+ *  — tokens : la suite lue ({ pt: point } | { keep: mot }) pour réécrire le texte normalisé (routeText) ; homonyms : les noms qui en avaient
+ *  plusieurs (le plus proche gardé) ; jumps : les tronçons de plus de JUMP_NM. */
 export async function routeModel(text, {
   dep = '',
   arr = '',
@@ -39,16 +43,48 @@ export async function routeModel(text, {
     tokens = [];
   let via = ''; // voie aérienne lue depuis le dernier point : le point suivant y arrive par elle
   const ads = new Set(); // les points du texte qu'aerodb connaît comme aérodromes
+  const homonyms = [];
+  /** Le lieu d'un nom le plus proche de `near` parmi ceux que la base rend (coordsAll), sinon sa réponse unique (coords) ; les deux
+   *  reçoivent { near } (la recherche de l'homonyme proche toutes zones confondues est celle d'aerodb). */
+  const nearest = async (id, near) => {
+    if (!base) return null;
+    // la forme du contrat d'aerodb : near = [lat, lon] (frame/aerodb/INTEGRATION.md « Homonyms »)
+    const at = near ? [+near.lat, +near.lon] : null,
+      all = at && typeof base.coordsAll === 'function' ? await Promise.resolve(base.coordsAll(id, {
+        near: at
+      })).catch(() => []) : [],
+      ok = all.filter(x => Number.isFinite(+x?.item?.lat) && Number.isFinite(+x?.item?.lon));
+    if (ok.length > 1) {
+      homonyms.push({
+        id,
+        n: ok.length
+      });
+      const best = ok.sort((x, y) => nmOf(near, x.item) - nmOf(near, y.item))[0];
+      return {
+        lat: +best.item.lat,
+        lon: +best.item.lon,
+        kind: best.kind
+      };
+    }
+    if (ok.length === 1) return {
+      lat: +ok[0].item.lat,
+      lon: +ok[0].item.lon,
+      kind: ok[0].kind
+    };
+    return Promise.resolve(base.coords(id, at ? {
+      near: at
+    } : undefined)).catch(() => null);
+  };
   /** Position d'un identifiant : un point arrivé par une voie garde la position de son segment (aerodb ne connaît pas
-   *  toujours les extrémités des voies, ni le bon point si le nom existe ailleurs) ; sinon aerodb, puis un point déjà
-   *  connu du vol ; null sinon. */
-  const find = async id => {
+   *  toujours les extrémités des voies, ni le bon point si le nom existe ailleurs) ; sinon aerodb (l'homonyme le plus proche de
+   *  `near`), puis un point déjà connu du vol ; null sinon. */
+  const find = async (id, near = null) => {
     const kv = known.get(id);
     if (kv?.via && Number.isFinite(+kv.lat) && Number.isFinite(+kv.lon)) return {
       lat: +kv.lat,
       lon: +kv.lon
     };
-    const c = base ? await base.coords(id).catch(() => null) : null;
+    const c = await nearest(id, near);
     if (c && Number.isFinite(+c.lat)) return {
       lat: +c.lat,
       lon: +c.lon,
@@ -101,7 +137,14 @@ export async function routeModel(text, {
         })).then(s => (s || []).some(x => String(x?.route || '').toUpperCase() === name), () => false));
         return near.get(k);
       },
-      words = tokenize(text);
+      words = tokenize(text),
+      // le repère du premier nom : le milieu du départ et de l'arrivée (le grand cercle du vol), le départ seul, ou rien
+      [depC, arrC] = await Promise.all([dep, arr].map(x => x && base ? Promise.resolve(base.coords(x)).catch(() => null) : null)),
+      okC = c => c && Number.isFinite(+c.lat) && Number.isFinite(+c.lon),
+      mid = okC(depC) && okC(arrC) ? {
+        lat: (+depC.lat + +arrC.lat) / 2,
+        lon: (+depC.lon + +arrC.lon) / 2
+      } : okC(depC) ? depC : okC(arrC) ? arrC : null;
   // jetons du texte (frame/lib/route_text.js) ; un nom est cherché dans aerodb, puis parmi les points connus
   for (const [ti, t] of words.entries()) {
     const nx = words[ti + 1];
@@ -118,7 +161,7 @@ export async function routeModel(text, {
       if (t.alt_ft && points.length) points.at(-1).alt_ft = t.alt_ft;
     } else if (t.kind === 'coord') add(t.id, t, t.alt_ft);
     else if (t.kind === 'name') {
-      const c = await find(t.id);
+      const c = await find(t.id, points.at(-1) || mid);
       if (c) add(t.id, c, t.alt_ft);
       else {
         if (!t.airway) unresolved.push(t.id); // voie aérienne ou procédure : gardée dans le texte, sans alerte
@@ -200,12 +243,32 @@ export async function routeModel(text, {
     if (!i || i === points.length - 1 || a === prev) delete p.alt_ft;
     if (a) prev = a;
   });
+  // les tronçons de plus de JUMP_NM entre deux points consécutifs (un homonyme lointain, un nom mal tapé) : dits, jamais corrigés en silence
+  const jumps = [];
+  for (let i = 1; i < points.length; i++) {
+    const nm = nmOf(points[i - 1], points[i]);
+    if (nm > JUMP_NM) jumps.push({
+      a: points[i - 1].id,
+      b: points[i].id,
+      nm: Math.round(nm)
+    });
+  }
   return {
     points,
     unresolved,
     tokens,
-    badAirways
+    badAirways,
+    homonyms,
+    jumps
   };
+}
+/** Au-delà de cette distance entre deux points consécutifs, le tronçon est dit (SOG-0142). */
+export const JUMP_NM = 1000;
+/** Distance orthodromique en NM entre deux { lat, lon }. */
+function nmOf(a, b) {
+  const r = Math.PI / 180,
+    h = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2;
+  return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 /** Désignateur de voie aérienne, composé compris (UN460, G54-R66) : le mot qui précède un point y arrivant par cette voie. */
 export const AIRWAY_WORD = /^[A-Z]{1,2}\d{1,4}[A-Z]?(-[A-Z]{1,2}\d{1,4}[A-Z]?)*$/;

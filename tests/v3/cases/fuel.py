@@ -36,6 +36,7 @@ Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11 F12 F13 F14 F15 F16 F17 F18 F19 F20 F2
 computes an estimated quote with no sheet and no network.
 """
 import json
+import datetime
 import re
 from pathlib import Path
 
@@ -3057,3 +3058,53 @@ def f114(c):
     c.tap(f'{FUEL} [data-do="rcheck"]')
     c.until(f"document.querySelectorAll('{FUEL} [data-rsketch] svg [data-bad]').length >= 1", timeout=8000, what='the checked route drawn with its faulty segments')
     c.eq(len(c.js(_SKETCH_JS)['traces']), 1, 'one trace: the route checked', what='check')
+
+
+# SOG-0142: invented names and positions only (no AIP content) — two homonyms PAX (one on the route's side, one across the ocean), a resolved
+# point in Sweden's frame (SWEPT, a zone not published), an invented aerodrome in Corsica (LFZZ) with no published point around it
+_HOMONYM_EXTRA = {'points': [{'id': 'PAX', 'lat': 45.8, 'lon': 1.9, 'type': 'RNAV'}, {'id': 'PAX', 'lat': 39.0, 'lon': -76.0, 'type': 'RNAV'},
+                             {'id': 'SWEPT', 'lat': 59.3, 'lon': 18.0, 'type': 'RNAV'}],
+                  'aerodromes': [{'icao': 'LFZZ', 'name': 'LFZZ TEST', 'lat': 42.3, 'lon': 9.2, 'elev': 50}]}
+_HOMONYM_ROUTE = 'LFRS PAX NEPIX SWEPT UNKSE LFZZ UNKCO LFML'
+
+
+def _route_typed(c, text):
+    to_step(c, 1)
+    rt = f'{FUEL} [data-k="rtext"]'
+    c.page.fill(rt, text)
+    c.page.locator(rt).blur()
+
+
+_UNRES_JS = f"""(() => [...document.querySelectorAll('{FUEL} [data-unres-pt]')].map(e => [e.dataset.unresPt, e.dataset.zone || '', e.dataset.zstate || '',
+  (e.querySelector('small')?.textContent || '').trim(), e.querySelector('a[data-zonelink]')?.getAttribute('href') || '']))()"""
+
+
+@case('F115', 'Route reader: a name with homonyms resolves to the nearest of the previous point, long jumps are said; an unknown point says its zone and the zone\'s state, with the gesture that fits',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0142 (user: a route through PAM in the United States and ALS in Morocco): the nearest homonym, never the first found; a jump of more '
+      'than 1 000 NM said; an unknown point never a silent DCT — its probable zone and its state (not installed / installed without points or '
+      'airways / cycle file missing: to rebuild), a link to Données on that zone; invented names and positions only')
+def f115(c):
+    # first (the browser's store outlives c.open): a base whose files are all of an older cycle — « à reconstruire », the link to update it
+    old = (datetime.date.fromisoformat(AERO_CYCLE) - datetime.timedelta(days=56)).isoformat()
+    c.open('fuel', docs=flight_docs() + aero_docs(cycle=old, airfields=True, extra=_HOMONYM_EXTRA))
+    wait_quote(c)
+    _route_typed(c, 'LFRS LUGEN UNKFR NEPIX LFML')
+    c.until(f"[...document.querySelectorAll('{FUEL} [data-unres-pt][data-zstate]')].length === 1", timeout=10000, what='the unknown point with its zone')
+    u = {x[0]: x for x in c.js(_UNRES_JS)}
+    c.eq([u['UNKFR'][1], u['UNKFR'][2], u['UNKFR'][4]], ['fr', 'stale', '?app=maintenance#data?zone=fr'], 'UNKFR: France installed, its cycle file missing: to rebuild', what='stale')
+    # then the base of the cycle in force
+    c.open('fuel', docs=flight_docs(), airfields=True, aero_extra=_HOMONYM_EXTRA)
+    wait_quote(c)
+    _route_typed(c, _HOMONYM_ROUTE)
+    d = cf_doc(c, lambda d: 'PAX' in [q.get('id') for q in (d.get('route') or {}).get('points') or []], 'the route read', timeout=10000)
+    pax = [q for q in d['route']['points'] if q.get('id') == 'PAX'][0]
+    c.ok(abs(pax['lat'] - 45.8) < 0.01 and abs(pax['lon'] - 1.9) < 0.01, pax, 'PAX resolved to the homonym near the route, not the one across the ocean')
+    c.until(f"[...document.querySelectorAll('{FUEL} [data-rwarn] [data-rw]')].some(e => e.textContent.includes('PAX') && e.textContent.includes('2'))",
+            what='« PAX : 2 homonymes, le plus proche gardé »')
+    c.ok(c.js(f"[...document.querySelectorAll('{FUEL} [data-rwarn] [data-rw]')].some(e => e.textContent.includes('NEPIX') && e.textContent.includes('SWEPT'))"),
+         c.text(f'{FUEL} [data-rwarn]'), 'the jump NEPIX → SWEPT (more than 1 000 NM) said')
+    c.until(f"[...document.querySelectorAll('{FUEL} [data-unres-pt][data-zstate]')].length === 2", timeout=10000, what='the two unknown points with their zone')
+    u = {x[0]: x for x in c.js(_UNRES_JS)}
+    c.eq([u['UNKSE'][1], u['UNKSE'][2], u['UNKSE'][4]], ['se', 'absent', '?app=maintenance#data?zone=se'], 'UNKSE: Sweden, not installed, a link to add it', what='absent')
+    c.eq([u['UNKCO'][1], u['UNKCO'][2], u['UNKCO'][4]], ['fr', 'empty', ''], 'UNKCO: France installed but no point around: no gesture in Données', what='empty')

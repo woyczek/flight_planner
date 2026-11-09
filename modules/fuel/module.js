@@ -350,6 +350,27 @@ const TX = {
   unresolved: ['Points inconnus : {l}', 'Unknown points: {l}', 'Unbekannte Punkte: {l}', 'Puntos desconocidos: {l}'],
   // un nom de la route sans position, à sa place dans la liste des points, avec sa raison (SOG-0035 : jamais omis)
   ptUnres: ['inconnu de la base', 'unknown to the database', 'der Datenbank unbekannt', 'desconocido en la base'],
+  // SOG-0142 : les homonymes (le plus proche gardé), les sauts, et la zone d'un point inconnu dite selon son état (§ « zone manquante »)
+  homonyms: ['{id} : {n} homonymes, le plus proche gardé', '{id}: {n} homonyms, the nearest kept',
+    '{id}: {n} Namensgleiche, der nächste behalten',
+    '{id}: {n} homónimos, se conserva el más cercano'
+  ],
+  jump: ['{a} → {b} : {nm} NM d’un point au suivant, à vérifier', '{a} → {b}: {nm} NM from one point to the next, to check',
+    '{a} → {b}: {nm} NM von einem Punkt zum nächsten, zu prüfen', '{a} → {b}: {nm} NM de un punto al siguiente, a comprobar'
+  ],
+  zoneAbsent: ['{z} : base non installée', '{z}: database not installed', '{z}: Datenbank nicht installiert', '{z}: base no instalada'],
+  zoneStale: ['{z} : base installée, fichier du cycle absent — à reconstruire',
+    '{z}: database installed, the cycle\'s file missing — to rebuild',
+    '{z}: Datenbank installiert, Datei des Zyklus fehlt — neu aufzubauen',
+    '{z}: base instalada, falta el archivo del ciclo — por reconstruir'
+  ],
+  zoneEmpty: ['{z} : base installée, mais sa source ne porte ni points ni voies',
+    '{z}: database installed, but its source carries no points or airways',
+    '{z}: Datenbank installiert, aber ihre Quelle enthält weder Punkte noch Luftstraßen',
+    '{z}: base instalada, pero su fuente no tiene puntos ni aerovías'
+  ],
+  zoneAdd: ['Ajouter {z}', 'Add {z}', '{z} hinzufügen', 'Añadir {z}'],
+  zoneUpdate: ['Mettre à jour {z}', 'Update {z}', '{z} aktualisieren', 'Actualizar {z}'],
   ptUnresZone: ['inconnu : aucun point publié autour de {icao} (État {st})', 'unknown: no published point around {icao} (state {st})',
     'unbekannt: kein veröffentlichter Punkt um {icao} (Staat {st})',
     'desconocido: ningún punto publicado alrededor de {icao} (Estado {st})'
@@ -1737,6 +1758,7 @@ function renderPlanBody() {
       <div class="f-row fu-reng" data-reng${S.routeEngine ? '' : ' hidden'}><button type="button" data-do="rcompute">${esc(tt(TX.rCompute))}</button><button type="button" data-do="rcheck">${esc(tt(TX.rCheck))}</button></div>
       <div data-routealts></div>
       <p class="f-warn" data-unres></p>
+      <p class="f-warn" data-rwarn></p>
       <p class="f-row fu-rinfo"><span class="f-muted" data-rinfo></span><button type="button" class="fu-linkbtn" data-do="rmanual">${esc(tt(TX.rmanual))}</button></p>
       <div class="f-grid fu-g3 fu-hide" data-rmanual>${fld('dist', TX.distance, distField(r.distanceNm), 'inputmode="decimal"', { u: distLabel() })}${fld('trk', TX.track, r.trackDeg != null ? Math.round(r.trackDeg) : '', 'inputmode="numeric"')}</div>
       <details data-fold="pts"><summary data-ptsn>${esc(tt(TX.ptsN, { n: (r.points || []).length }))}</summary>
@@ -3499,7 +3521,7 @@ function renderPts() {
   // les noms de la route sans position (SOG-0035) : une ligne chacun, à sa place, avec sa raison ; pour le texte qui les a lus seulement
   const un = S.unres && S.unres.text === S.flight.route?.text ? S.unres.rows : [],
     why = S.unres?.zone ? tt(TX.ptUnresZone, S.unres.zone) : tt(TX.ptUnres),
-    unRows = i => un.filter(x => x.i === i).map(x => `<div class="f-item fu-pt fu-ptunres" data-unres-pt="${esc(x.id)}"><span class="fu-ptid"><b>${esc(x.id)}</b><small class="f-warn">${esc(why)}</small></span><span class="fu-ptgap"></span></div>`).join('');
+    unRows = i => un.filter(x => x.i === i).map(x => `<div class="f-item fu-pt fu-ptunres" data-unres-pt="${esc(x.id)}"${x.gap ? ` data-zone="${esc(x.gap.id)}" data-zstate="${esc(x.gap.state)}"` : ''}><span class="fu-ptid"><b>${esc(x.id)}</b><small class="f-warn">${esc(x.gap ? gapText(x.gap) : why)}</small>${x.gap && (x.gap.state === 'absent' || x.gap.state === 'stale') ? `<a class="fu-linkbtn" data-zonelink href="${esc(zoneHref(x.gap.id))}">${esc(tt(x.gap.state === 'absent' ? TX.zoneAdd : TX.zoneUpdate, { z: x.gap.name }))}</a>` : ''}</span><span class="fu-ptgap"></span></div>`).join('');
   let cur = plan,
     shown = un.length;
   // SOG-0081 : les segments fautifs du dernier contrôle, s'il porte sur le texte d'aujourd'hui
@@ -3943,7 +3965,9 @@ function resolveRoute(normalize = true) {
         points,
         unresolved,
         tokens,
-        badAirways
+        badAirways,
+        homonyms = [],
+        jumps = []
       } = await RM.routeModel(r.text, {
         dep: r.dep,
         arr: r.arr,
@@ -3994,10 +4018,82 @@ function resolveRoute(normalize = true) {
         l: unresolved.join(', ')
       }) : '';
     if (un && un.textContent !== ut) un.textContent = ut;
-    if (unresolved.length) zoneNote(s, seq, points, ut);
+    // SOG-0142 : les homonymes et les sauts, dits sous la route (jamais corrigés en silence)
+    const rw = S.body.querySelector('[data-rwarn]');
+    if (rw) rw.innerHTML = [...homonyms.map(h => tt(TX.homonyms, h)), ...jumps.map(j => tt(TX.jump, {
+      ...j,
+      nm: j.nm.toLocaleString(S.ctx.lang())
+    }))].map(x => `<span data-rw>${esc(x)}</span>`).join('<br>');
+    if (unresolved.length) {
+      zoneNote(s, seq, points, ut);
+      unresolvedZones(s, seq, points);
+    }
     saveFlight();
     refresh();
   }, 500);
+}
+// ---------------------------------------------------------------- la zone d'un point inconnu (SOG-0142, SOG-0143)
+/** L'adresse de Données sur une zone (application Maintenance ; la clé zone est lue par l'écran Données). */
+const zoneHref = id => `?app=maintenance#data?zone=${encodeURIComponent(id)}`;
+/** La phrase de l'état d'une zone (voir zoneState). */
+const gapText = g => tt(g.state === 'absent' ? TX.zoneAbsent : g.state === 'stale' ? TX.zoneStale : g.state === 'empty' ? TX.zoneEmpty : TX
+  .ptUnres, {
+    z: g.name
+  });
+/** La zone d'une position : celle dont un cadre la contient (le plus petit), sinon la plus proche ; null sans zones. */
+function zoneAt(zones, p) {
+  if (!p || !Number.isFinite(+p.lat)) return null;
+  let best = null;
+  for (const z of zones)
+    for (const [w, s, e, n] of z.frames || []) {
+      const inside = +p.lon >= w && +p.lon <= e && +p.lat >= s && +p.lat <= n,
+        d = inside ? (e - w) * (n - s) : 1e6 + Math.hypot(Math.max(w - p.lon, 0, p.lon - e), Math.max(s - p.lat, 0, p.lat - n));
+      if (!best || d < best.d) best = {
+        z,
+        d
+      };
+    }
+  return best?.z || null;
+}
+/** L'état d'une zone pour un point qu'elle devrait porter — en attendant les codes de base/status d'AeroDB, lu dans la publication :
+ *  absent (pas publiée) ; stale (publiée, pas de fichier du cycle en vigueur : à reconstruire) ; empty (publiée, aucun point à 60 NM :
+ *  sa source ne porte ni points ni voies) ; ok (la zone est là : le point manque seulement). */
+async function zoneState(z, p) {
+  const A = S.ctx.aerodb;
+  if (!z.published) return 'absent';
+  const pub = await Promise.resolve().then(() => A.publication()).catch(() => null),
+    cur = window.AeroDB?.airacCycles?.(1)?.[0],
+    cycles = Object.keys(pub?.base?.[z.id]?.cycles || {});
+  if (cur && cycles.length && !cycles.some(c => c >= cur)) return 'stale'; // tous ses cycles plus anciens que celui en vigueur
+  const near = await Promise.resolve().then(() => A.points({
+    lat: +p.lat,
+    lon: +p.lon,
+    radiusNm: 60
+  })).catch(() => null);
+  return Array.isArray(near) && !near.length ? 'empty' : 'ok';
+}
+/** La zone probable de chaque point inconnu (celle du point résolu qui le précède, sinon du départ) et son état, sur sa ligne. */
+async function unresolvedZones(s, seq, points) {
+  const A = s.ctx.aerodb;
+  if (!A?.zones || !s.unres?.rows?.length) return;
+  const zones = await Promise.resolve().then(() => A.zones()).catch(() => null);
+  if (!Array.isArray(zones) || gone(s) || seq !== s.routeSeq) return;
+  const lang = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(s.ctx.lang?.() || 'fr')),
+    memo = new Map();
+  for (const row of s.unres.rows) {
+    const p = points[row.i] || points[0],
+      z = zoneAt(zones, p);
+    if (!z) continue;
+    if (!memo.has(z.id)) memo.set(z.id, zoneState(z, p));
+    const state = await memo.get(z.id);
+    if (gone(s) || seq !== s.routeSeq) return;
+    row.gap = {
+      id: z.id,
+      name: z.names?.[lang] || z.id,
+      state
+    };
+  }
+  renderPts();
 }
 /** Des noms inconnus : quand la base n'a aucun point publié à 60 NM d'un terrain du vol, la ligne le dit (la zone manque, pas le point ;
  *  SOG-0012 : la zone EI de la base n'a que des terrains et des navaids). */

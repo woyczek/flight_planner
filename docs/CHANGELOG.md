@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the route reader takes the nearest homonym and says what it cannot place** (`frame/lib/route_model.js`, `modules/fuel/module.js`;
+  Fuel SPEC § 9.3, DECISIONS, help; noreg F115; SOG-0142). A name several places carry resolves to the one nearest the previous point;
+  homonyms and legs over 1 000 NM are said under the route; an unknown point names its zone and the zone's state (not installed: « Ajouter »;
+  cycle file missing: « Mettre à jour »; a source without points or airways), with a link to Données on that zone.
+
 - **Synchronisation: a conflict entry only when a version differs, and the diff on the conflicts screen** (`frame/store/frame_data.js` `mergeText`, `frame/app.js` `renderConflicts`; frame SPEC § 3.4, DECISIONS; noreg A53, A111; SOG-0136, SOG-0043) — « nouvelle brouette de conflits alors que je suis tout seul »:
   line endings, layout, key order and a copy equal to this device's last write are no conflict; an empty remote text is not a version (it left entries with two empty blocks); each entry shows the lines that differ and a blank version says « (vide) ».
 - **Fuel: the proposed routes drawn on a sketch** (`modules/fuel/module.js`; Fuel SPEC § 9.3, DECISIONS, help; noreg F114; SOG-0134 a).

@@ -285,6 +285,16 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
   is a view of the route as `routeModel` reads it (SOG-0035): a word of the text that names a point aerodb does not know is a row at
   its place, without position or controls, with its reason (« inconnu de la base », or « inconnu : aucun point publié autour de EIDW
   (État EI) » when the zone around an aerodrome of the flight has none), and counts in N; never left out (F94).
+- **Homonyms, jumps and the zone of an unknown point** (SOG-0142, F115): a name several places carry resolves to the one **nearest the
+  previous resolved point** (the first name: nearest the middle of departure and arrival), never the first found (`routeModel`:
+  `coordsAll(id, { near })`, else `coords(id, { near })`); « PAX : 2 homonymes, le plus proche gardé » and every leg longer than
+  1 000 NM (`JUMP_NM`, « NEPIX → SWEPT : 1 043 NM d'un point au suivant, à vérifier ») are said under the route field
+  (`[data-rwarn]`), never corrected silently. An unknown point's row names its **probable zone** (the zone of the resolved point before
+  it, by the zones' frames) and the zone's **state**, with the gesture that fits: « base non installée » + « Ajouter <zone> », « base
+  installée, fichier du cycle absent — à reconstruire » + « Mettre à jour <zone> » (both to `?app=maintenance#data?zone=<id>`), « base
+  installée, mais sa source ne porte ni points ni voies » (no gesture in Données; the external fallbacks of SOG-0143). Until AeroDB's
+  `base/status` gives these states, they are read from the publication: not published; every cycle older than the one in force; no
+  point published within 60 NM.
 - **An aerodrome is never a point of the route** (SOG-0033, SOG-0034; `routeModel`): an aerodrome (a four-letter code aerodb knows as
   an aerodrome) at the head of the text that is not `route.dep` — the old departure left in the text by any writer after a change of
   aerodrome —, at its end that is not `route.arr`, or `route.dep` / `route.arr` repeated inside, is dropped from the points and from
