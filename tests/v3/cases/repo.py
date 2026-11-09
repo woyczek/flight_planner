@@ -1721,7 +1721,7 @@ def i24(c):
         for f in dl.iterdir():
             f.unlink()
         r = B.pickup(RJ.Job('base', 'pickup', {}), {'zones': ['gb'], 'dry': True}, ctx)
-        c.eq(r['missing'], [{'zone': 'gb', 'source': 'nats', 'expected': 'EG_*_DS_*_XML.zip'}], 'no file: the name expected is said', what='missing')
+        c.eq(r['missing'], [{'zone': 'gb', 'source': 'nats', 'set': 'AIP', 'expected': 'EG_AIP_DS_*_XML.zip', 'have': '2026-10-29'}, {'zone': 'gb', 'source': 'nats', 'set': 'OBS', 'expected': 'EG_OBS_DS_*_XML.zip', 'have': None}, {'zone': 'gb', 'source': 'nats', 'set': 'UAS', 'expected': 'EG_UAS_*_XML.zip', 'have': None}], 'no file: the name expected is said, per set (AIP, OBS, UAS), with the cycle already in place (SOG-0126)', what='missing')
         # over the cap once unpacked: refused before any read
         with zipfile.ZipFile(dl / 'EG_AIP_DS_FULL_20261126_XML.zip', 'w', zipfile.ZIP_DEFLATED) as z:
             z.writestr('EG_AIP_DS_FULL_20261126.xml', 'x' * 5000)

@@ -213,7 +213,7 @@ SOURCE_PART = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,120}$')     # un nom de 
 # la raison d'un refus d'arguments (400), dans ses mots : chaque jeu exporte EXPLAIN = { (jeu, verbe): fonction(args) → { reason, message, ...paramètres } | None } ; load_verbs les réunit ici (SOG-0144)
 EXPLAIN = {}
 # les verbes qui ne font que lire : leur travail ne remplace pas le dernier travail qui a écrit (Jobs.work, tools/.regen_last.json › work)
-READ_ONLY = {('base', 'status'), ('route', 'compute')}
+READ_ONLY = {('base', 'status'), ('route', 'compute'), ('stats', 'output')}
 
 
 def clean_error(text, ctx=None):
@@ -278,11 +278,13 @@ class Jobs:
         """Écrit le dernier travail (sans secret : son journal est déjà nettoyé) et les derniers départs ; jamais d'erreur."""
         if not self.store:
             return
+        def kept(v):      # une clé du résultat qui commence par « _ » est pour la page seule (le texte d'un journal de vol, stats/output) : jamais écrite ici, ni dans « job » ni dans « work »
+            if isinstance(v, dict) and isinstance(v.get('result'), dict):
+                return {**v, 'result': {k: x for k, x in v['result'].items() if not str(k).startswith('_')}}
+            return v
         if self.cur and (self.cur.data.get('set'), self.cur.data.get('verb')) not in READ_ONLY:
-            self.work = self.cur.view()
-        j = self.cur.view() if self.cur else self.kept
-        if isinstance(j, dict) and isinstance(j.get('result'), dict):     # une clé du résultat qui commence par « _ » est pour la page seule (le texte d'un journal de vol, stats/output) : jamais écrite ici
-            j = {**j, 'result': {k: v for k, v in j['result'].items() if not str(k).startswith('_')}}
+            self.work = kept(self.cur.view())
+        j = kept(self.cur.view() if self.cur else self.kept)
         try:
             tmp = self.store + '.tmp'
             with open(tmp, 'w', encoding='utf-8') as f:

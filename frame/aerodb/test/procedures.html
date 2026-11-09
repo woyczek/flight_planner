@@ -733,7 +733,8 @@
         revalidated.length === 2 && revalidated.includes('proc/manual/EGLL.json') && revalidated.includes('proc/manual/index.json'),
         revalidated);
       check('fetchProcedures(): the aerodrome can be read again once the first reading is over',
-        (await okDb.fetchProcedures('EGLL')).ok === true && calls.length === 2, calls.length);
+        (await okDb.fetchProcedures('EGLL')).ok === true && calls.filter(x => x.body?.set === 'proc').length === 2, calls.length
+      ); // the ground layer is read after a good reading, in the background (SOG-0135): not counted
       // les raisons rendues par le poste, et celles du lanceur lui-même
       const answers = {
           'no-credentials': {
@@ -868,7 +869,8 @@
       };
       const lfNone = await okDb.fetchProcedures('LFXX');
       check('fetchProcedures(): a French aerodrome whose page lists no coding table is « no-tables » (never « unknown-layout »)',
-        lfNone.ok === false && lfNone.reason === 'no-tables' && calls.length === 1, lfNone);
+        lfNone.ok === false && lfNone.reason === 'no-tables' && calls.filter(x => x.body?.set === 'proc').length === 1, lfNone
+      ); // a ground reading of the previous aerodrome may land after the reset (SOG-0135)
       calls.length = 0;
       jobAnswer.r = () => ({
         ok: true,

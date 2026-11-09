@@ -330,7 +330,7 @@ def k54(c):
             c.eq([(m['zone'], m['source'], 'url' in m) for m in res['manual']], [('fr', 'sia', False)], 'the manual source is still reported (SIA has no address)', what='manual sia')
             with _Net(AF, {'': ('os', 'unreachable')}) as net:
                 view, res = _run(RJ, BS, 'fetch', {'zones': ['de', 'it']}, ctx)
-            c.eq((res['ok'], res['reason'], [f['error'] for f in res['failed']]), (False, 'failed', ['network'] * 2), 'every source failed: reason failed', what='all failed')
+            c.eq((res['ok'], res['reason'], [f['error'] for f in res['failed']]), (False, 'failed', ['network'] * 3), 'every source failed (NATS, ENAIRE, DFS): reason failed', what='all failed')
             c.eq({k: v['state'] for k, v in view['zones'].items()}, {'de': 'failed', 'it': 'failed'}, 'both zones failed', what='zones failed')
             with _Net(AF, {'': ('http', 404)}) as net:
                 view, res = _run(RJ, BS, 'fetch', {'zones': ['cyn']}, ctx)
