@@ -3830,3 +3830,192 @@ def a100(c):
     c.page.wait_for_function("() => FrameData.airline().then(a => a.name === 'Air Two')", timeout=20000)
     c.ok(any(k == 'full' for k, _ in state['calls']), str(state['calls']), 'a changed data/ is read in full, and the change arrives')
     c.check_errors()
+
+
+# ------------------------------------------------------------------------------------------------------ A101
+def _prio_launcher(c, root):
+    """A FAKE launcher for the roadmap's priorities: /__setup/status says there is one, and regen/job runs the REAL verb roadmap/priorities (tools/regen/roadmap.py) on `root`
+    (a temporary suite root with organisation/ and frame/help/roadmap.json).  The dict it returns: `posts` (what the page asked), `up` (False: the job start fails), `detect`
+    (False: no launcher answers /__setup/status), `raw` (a result given for every `get`, to test a hostile answer)."""
+    import importlib
+    import sys
+    tools = str(ROOT / 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    RJ = importlib.import_module('regen_jobs')
+    if ('roadmap', 'priorities') not in RJ.REGISTRY:
+        RJ.load_verbs()
+    fn, check = RJ.REGISTRY[('roadmap', 'priorities')]
+    st = {'posts': [], 'up': True, 'detect': True, 'raw': None, 'views': {}, 'n': 0}
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False}
+
+    def handler(route):
+        req = route.request
+        u = urllib.parse.urlparse(req.url)
+        code, body = 200, {}
+        if u.path.endswith('/__setup/status'):
+            code, body = (200, status) if st['detect'] else (404, {})
+        elif u.path.endswith('/__setup/regen/job'):
+            if req.method == 'POST':
+                post = json.loads(req.post_data or '{}')
+                st['posts'].append(post)
+                if not st['up']:
+                    code, body = 500, {'ok': False, 'message': 'down'}
+                else:
+                    st['n'] += 1
+                    args = check(post.get('args'))
+                    res = fn(RJ.Job('roadmap', 'priorities', {}), args, {'root': str(root)}) if args else {'ok': False, 'reason': 'bad-args'}
+                    if st['raw'] is not None and args and args['action'] == 'get':
+                        res = st['raw']
+                    st['views'][f"j{st['n']}"] = {'id': f"j{st['n']}", 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': '', 'log': [], 'result': res, 'zones': {}, 'set': 'roadmap', 'verb': 'priorities', 'args': post.get('args')}
+                    body = {'job': f"j{st['n']}"}
+            elif 'id=' in u.query:
+                body = st['views'].get(urllib.parse.parse_qs(u.query)['id'][0], {})
+        route.fulfill(status=code, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), handler)
+    return st
+
+
+@case('A101', 'The roadmap priorities (SOG-0066): the identifier first and copied (right click, long touch), a card dragged in its column = its rank, dragged onto the strip = its milestone, both written by the launcher; without a launcher kept on the device « not sent » and sent later; a hostile answer ignored', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0066: a card starts with its SOG-nnnn identifier (the text size), copied with its title by a right click or a long touch; dragging (mouse after 6 px, touch after a long press) in a column writes the ranks, dragging onto a milestone writes the milestone, in organisation/PRIORITES.json through the launcher verb roadmap/priorities; no launcher or a failed write: kept in device/roadmap.json and told on the card; what is read from the launcher is filtered')
+def a101(c):
+    import tempfile
+    from pathlib import Path
+    lang = c.lang
+    T = lambda k: tx('frame/help/roadmap.js', k, lang, after='const T = {')
+    fx = _rm_fixture()
+    lab = lambda fr, en: {'fr': fr, 'en': en, 'de': en + ' (de)', 'es': en + ' (es)'}
+    data_lane = next(l for l in fx['lanes'] if l['id'] == 'data')
+    for n, nm in ((7, 'F7'), (8, 'F8')):
+        data_lane['items'].append({'state': 'later', 'id': f'SOG-000{n}', **lab(f'{nm} plus tard', f'{nm} later')})
+    title = lambda en, fr: fr if lang == 'fr' else en if lang == 'en' else f'{en} ({lang})'
+    c.context.route(re.compile(r'/frame/help/roadmap\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    c.page.add_init_script("""(() => { window.__clip = []; const w = async t => { window.__clip.push(t) };
+      try { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: w } }) } catch (e) {} })()""")
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        (root / 'frame' / 'help').mkdir(parents=True)
+        (root / 'frame' / 'help' / 'roadmap.json').write_text(json.dumps(fx), encoding='utf-8')
+        (root / 'organisation').mkdir()
+        prio = root / 'organisation' / 'PRIORITES.json'
+        written = lambda: json.loads(prio.read_text(encoding='utf-8'))['items'] if prio.exists() else None
+        st = _prio_launcher(c, root)
+        NOTE = "(w) => (window.__notes || []).some(n => n.replace(/[\s  ]+/g, ' ').includes(w))"
+        col = '[data-lane="data"] [data-state="later"] li'
+        ids = lambda: c.js("[...document.querySelectorAll('[data-lane=\"data\"] .f-rm-col[data-state=\"later\"] li')].map(l => l.dataset.id)")
+        open_ = lambda: (c.open('roadmap', docs=LEVEL3), c.until("!!document.querySelector('[data-kanban] li[data-id]')", timeout=15000, what='the cards with an identifier'))
+        open_()
+        c.eq(ids(), ['SOG-0006', 'SOG-0007', 'SOG-0008'], 'the file\'s order at first', what='first order')
+        # ---- the identifier, in clear, the text\'s size; copied with the title by a right click
+        sz = c.js("(() => { const li = document.querySelector('" + col + "'); return [getComputedStyle(li.querySelector('.f-rm-id')).fontSize, getComputedStyle(li).fontSize, li.textContent.trim().startsWith('SOG-0006')] })()")
+        c.eq((sz[0] == sz[1], sz[2]), (True, True), 'a card starts with its identifier, at the size of the text', what='identifier')
+        c.page.click(col + ':nth-child(1)', button='right')
+        c.until("window.__clip.length === 1", what='the clipboard written')
+        c.eq(norm(c.js("window.__clip[0]")), norm('SOG-0006 — ' + title('F5 later', 'F5 plus tard')), 'a right click copies « identifier — title »', what='copied')
+        c.until(NOTE, norm(T('copied')), what='the notification « copied »')
+        c.eq(written(), None, 'copying writes nothing', what='nothing written')
+
+        def drag(src, dst=None, where='before', steps=10, hold=None):
+            """Mouse drag of the card `src` onto the card or button `dst` (the upper or the lower half of a card), pressing at its middle."""
+            c.js("document.querySelectorAll('.f-note').forEach(n => n.remove())")  # a toast must not cover the card
+            c.page.locator(src).evaluate("el => el.scrollIntoView({ block: 'center' })")
+            c.wait(150)
+            a = c.page.locator(src).bounding_box()
+            c.page.mouse.move(a['x'] + a['width'] / 2, a['y'] + a['height'] / 2)
+            c.page.mouse.down()
+            c.page.mouse.move(a['x'] + a['width'] / 2 + 10, a['y'] + a['height'] / 2 + 10, steps=2)
+            if hold:
+                hold()
+            b = c.page.locator(dst).bounding_box()
+            y = b['y'] + (4 if where == 'before' else b['height'] - 4) if where in ('before', 'after') else b['y'] + b['height'] / 2
+            c.page.mouse.move(b['x'] + b['width'] / 2, y, steps=steps)
+            c.page.mouse.up()
+
+        # ---- a card dragged above another one of its column: the ranks, written by the launcher
+        drag(col + ':nth-child(3)', col + ':nth-child(1)', 'before')
+        c.until("[...document.querySelectorAll('[data-lane=\"data\"] .f-rm-col[data-state=\"later\"] li')].map(l => l.dataset.id)[0] === 'SOG-0008'", what='SOG-0008 on top')
+        c.eq(ids(), ['SOG-0008', 'SOG-0006', 'SOG-0007'], 'dropped above the first: the column follows at once', what='new order')
+        pri = None
+        for _ in range(40):
+            pri = written()
+            if pri:
+                break
+            c.wait(250)
+        c.ok(bool(pri) and pri['SOG-0008']['rank'] < pri['SOG-0006']['rank'] < pri['SOG-0007']['rank'], pri, 'the launcher wrote organisation/PRIORITES.json: the ranks follow the new order')
+        c.eq([p['args']['action'] for p in st['posts']], ['get', 'set'], 'one read at the opening, one write for the gesture', what='posts')
+        c.until("document.querySelectorAll('[data-unsent]').length === 0", what='written: no « not sent » left on any card')
+        # ---- onto a point of the strip: the milestone (the strip is far above: the page scrolls by itself near the top edge)
+        def up_to_strip():
+            for _ in range(60):
+                c.page.mouse.move(60, 20)
+        drag(col + ':nth-child(3)', '[data-ms="alpha.5"]', 'on', hold=up_to_strip)
+        for _ in range(40):
+            pri = written()
+            if pri and pri.get('SOG-0007', {}).get('milestone'):
+                break
+            c.wait(250)
+        c.eq(pri['SOG-0007'].get('milestone'), 'alpha.5', 'dropped on a milestone: its milestone is written', what='milestone')
+        c.eq(norm(c.js("document.querySelector('[data-id=\"SOG-0007\"] .f-rm-ms').textContent")), 'alpha 5' + ('' if lang in ('fr', 'en') else f' ({lang})'), 'and the card says it', what='card milestone')
+        # ---- a reload: the order and the milestone come back from the file (the launcher is read at the opening)
+        c.page.reload()
+        c.until("!!document.querySelector('[data-kanban] li[data-id]')", timeout=15000, what='the screen again')
+        c.until("[...document.querySelectorAll('[data-lane=\"data\"] .f-rm-col[data-state=\"later\"] li')].map(l => l.dataset.id)[0] === 'SOG-0008'", timeout=15000, what='the order read back')
+        c.eq(ids(), ['SOG-0008', 'SOG-0006', 'SOG-0007'], 'after a reload the order holds', what='reload')
+
+        # ---- a long touch (synthetic pointer events, the touch way): a release without moving copies; a drag after the hold moves; a move before the hold is a scroll
+        touch = lambda kind, sel, dx=0, dy=0, to=None: c.js("""([k, sel, dx, dy, to]) => { const el = document.querySelector(sel); const r = el.getBoundingClientRect(); const t = to ? document.querySelector(to).getBoundingClientRect() : null;
+          const x = t ? t.left + t.width / 2 : r.left + r.width / 2 + dx, y = t ? t.top + 4 : r.top + r.height / 2 + dy;
+          const o = { pointerId: 7, pointerType: 'touch', isPrimary: true, bubbles: true, cancelable: true, clientX: x, clientY: y };
+          (k === 'down' ? el : document).dispatchEvent(new PointerEvent('pointer' + k, o)); return true }""", [kind, sel, dx, dy, to])
+        card7 = '[data-id="SOG-0007"]'
+        touch('down', card7); c.wait(120); touch('move', card7, dy=40)
+        c.eq(c.js("document.querySelector('" + card7 + "').hasAttribute('data-drag')"), False, 'a move before the long hold does not start a drag (the page scrolls instead)', what='no drag')
+        touch('up', card7)
+        c.eq(len(c.js("window.__clip")), 0, 'a move before the long hold is a scroll: nothing copied, nothing dragged', what='scroll')
+        touch('down', card7); c.wait(600)
+        c.ok(c.js("document.querySelector('" + card7 + "').hasAttribute('data-armed')"), 'armed', 'after the hold the card is armed')
+        touch('up', card7)
+        c.eq(c.js("window.__clip.length"), 1, 'released without moving after the hold: copied', what='touch copy')
+        touch('down', card7); c.wait(600); touch('move', card7, dy=-10); touch('move', card7, to='[data-id="SOG-0008"]'); touch('up', card7)
+        c.until("[...document.querySelectorAll('[data-lane=\"data\"] .f-rm-col[data-state=\"later\"] li')].map(l => l.dataset.id)[0] === 'SOG-0007'", what='SOG-0007 on top by a touch drag')
+        c.eq(ids(), ['SOG-0007', 'SOG-0008', 'SOG-0006'], 'a drag after the long hold moves the card (above the first)', what='touch drag')
+        c.wait(3000)  # the sends of the opening and of this move are over (the launcher client polls a job once a second)
+
+        # ---- the write fails: the order stays on the device, « not sent » on the card, said
+        st['up'] = False
+        drag(col + ':nth-child(3)', col + ':nth-child(1)', 'before')
+        c.until("document.querySelectorAll('[data-unsent]').length === 1", what='« not sent » on the moved card')
+        c.eq(norm(c.text('[data-unsent]')), norm(T('unsent')), 'the moved card says « not sent »', what='unsent')
+        c.until(NOTE, norm(T('noWrite')), what='the failure said')
+        local = c.until_doc('device/roadmap.json', lambda d: d and d.get('pri') and d.get('unsent'), what='the order kept on the device')
+        c.eq((local['unsent'], 'rank' in local['pri'][local['unsent'][0]]), (['SOG-0006'], True), 'kept in device/roadmap.json with the moved id', what='local')
+        # ---- no launcher at all: the same, nothing said about a launcher; back with a launcher at the next opening: sent
+        st['up'], st['detect'] = True, False
+        c.page.reload()
+        c.until("!!document.querySelector('[data-kanban] li[data-id]')", timeout=15000, what='the screen without launcher')
+        c.eq((ids()[0], c.count('[data-unsent]')), ('SOG-0006', 1), 'without launcher the device\'s order shows, the moved card « not sent »', what='offline')
+        st['detect'] = True
+        before = len(st['posts'])
+        c.page.reload()
+        c.until("!!document.querySelector('[data-kanban] li[data-id]')", timeout=15000, what='the screen with the launcher back')
+        c.until("document.querySelectorAll('[data-unsent]').length === 0", timeout=15000, what='the pending order sent')
+        c.eq(written()['SOG-0006']['rank'] < written()['SOG-0007']['rank'], True, 'at the next opening with a launcher what the device kept is sent', what='sent later')
+        c.eq(c.until_doc('device/roadmap.json', lambda d: d is not None and not d.get('unsent'), what='the device store emptied').get('pri'), {}, 'and the device forgets it', what='forgot')
+        # ---- a hostile answer of the launcher: filtered (ids, ranks, milestones)
+        st['raw'] = {'ok': True, 'action': 'get', 'exists': True, 'items': {'SOG-0008': {'rank': 1}, '<img src=x onerror=window.__pwn=1>': {'rank': 2}, 'SOG-0007': {'milestone': 'nope', 'rank': 'a'}, 'SOG-0006': {'milestone': 'beta.1<x>', 'rank': 2.5}}}
+        c.page.reload()
+        c.until("!!document.querySelector('[data-kanban] li[data-id]')", timeout=15000, what='the screen with a hostile answer')
+        c.wait(1500)
+        c.ok(c.js("window.__pwn === undefined") and c.count('[data-kanban] img') == 0, 'img', 'a hostile identifier is ignored: nothing in the page, nothing runs')
+        c.eq(ids()[0], 'SOG-0008', 'only the valid entry counts (SOG-0008 first); an unknown milestone or a non-integer rank is dropped', what='hostile')
+        # and what the page writes back carries none of it: the next gesture is accepted by the launcher (a hostile key would refuse the whole set)
+        n = len(st['posts'])
+        drag(col + ':nth-child(3)', col + ':nth-child(1)', 'before')
+        for _ in range(40):
+            if len(st['posts']) > n:
+                break
+            c.wait(250)
+        keys = list(st['posts'][-1]['args'].get('items', {}))
+        c.ok(len(st['posts']) > n and keys and all(re.fullmatch(r'SOG-\d{4}', k) for k in keys), keys, 'the set written back holds only SOG-nnnn identifiers (the hostile one was filtered out)')
+    c.check_errors()

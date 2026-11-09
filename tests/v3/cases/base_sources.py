@@ -1143,3 +1143,54 @@ def k95(c):
         c.eq((r['ok'], r.get('reason'), r['code']), (False, 'bad-code', ''), 'a name with no usable word: no code proposed, said', what='bad name')
         (data / 'airline' / 'settings.json').write_text('{not json', encoding='utf-8')
         c.eq(run().get('reason'), 'no-source', 'an unreadable settings.json is « no source », never half read', what='unreadable')
+
+
+@case('K96', 'roadmap/priorities: organisation/PRIORITES.json read and replaced by the launcher (no organisation folder said, bad entries refused in a block, a hostile file filtered, atomic write)', 'K',
+      static=True, rule='SOG-0066: the user priorities are written by the launcher, 500 entries at most, ids SOG-nnnn, milestones of frame/help/roadmap.json, integer ranks; a file read is untrusted (10.36)')
+def k96(c):
+    RJ, BS, AF, DS = _mods()
+    fn, check = RJ.REGISTRY[('roadmap', 'priorities')]
+    mod = types.SimpleNamespace(**fn.__globals__)
+    ok_set = {'action': 'set', 'items': {'SOG-0001': {'rank': 1}}}
+    for bad in (None, 'x', {}, {'action': 'x'}, {'action': 'get', 'items': {}}, {'action': 'set'}, {'action': 'set', 'items': []}, {'action': 'set', 'items': {'SOG-0001': 5}},
+                {'action': 'set', 'items': {'x' * 30: {'rank': 1}}}, {'action': 'set', 'items': {f'SOG-{n:04d}': {'rank': 1} for n in range(501)}}, {'action': 'get', 'path': 'C:/x'}):
+        c.ok(check(bad) is None, repr(bad)[:60], f'roadmap/priorities refuses {repr(bad)[:50]}')
+    c.eq((check({'action': 'get'}), check(ok_set)), ({'action': 'get'}, ok_set), 'the two good shapes pass', what='check')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        (root / 'frame' / 'help').mkdir(parents=True)
+        (root / 'frame' / 'help' / 'roadmap.json').write_text(json.dumps({'milestones': [{'id': 'alpha.5'}, {'id': 'beta.1'}]}), encoding='utf-8')
+        ctx = {'root': str(root), 'data': str(root / 'data')}
+        run = lambda **a: fn(RJ.Job('roadmap', 'priorities', {}), check(a), ctx)
+        c.eq((run(action='get').get('reason'), run(action='set', items={}).get('reason'), (root / 'organisation').exists()), ('no-organisation', 'no-organisation', False),
+             'no organisation folder: said, nothing created', what='no organisation')
+        org = root / 'organisation'
+        org.mkdir()
+        f = org / 'PRIORITES.json'
+        r = run(action='get')
+        c.eq((r['ok'], r['items'], r['exists']), (True, {}, False), 'no file yet: nothing, said', what='absent')
+        good = {'SOG-0002': {'milestone': 'beta.1', 'rank': 2}, 'SOG-0001': {'milestone': 'alpha.5', 'rank': 1}, 'SOG-0003': {'rank': 3}}
+        r = run(action='set', items=good)
+        doc = json.loads(f.read_text(encoding='utf-8'))
+        c.eq((r['ok'], r['count'], doc['schema'], list(doc['items']), doc['items']['SOG-0001'], bool(re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ', doc['updated'])), list(org.glob('*.tmp'))),
+             (True, 3, 'sog-priorities/1', ['SOG-0001', 'SOG-0002', 'SOG-0003'], {'milestone': 'alpha.5', 'rank': 1}, True, []), 'a set replaces the file: the schema, the date, the entries by rank, no temporary file', what='set')
+        r = run(action='get')
+        c.eq((r['items'], r['dropped'], r['exists'], r['updated'] == doc['updated']), (good, 0, True, True), 'a get gives back what was set', what='get')
+        before = f.read_bytes()
+        for bad in ({'SOG-12': {'rank': 1}}, {'SOG-0001': {'milestone': 'nope'}}, {'SOG-0001': {'rank': 0}}, {'SOG-0001': {'rank': True}}, {'SOG-0001': {'rank': 1.5}}, {'SOG-0001': {}},
+                    {'SOG-0001': {'rank': 100000}}, {'SOG-0001': {'rank': 1, 'x': 1}}, {'SOG-0001': {'milestone': 3}}):
+            r = run(action='set', items={**good, **bad})
+            c.ok(r.get('reason') == 'bad-items' and f.read_bytes() == before, (r.get('reason'), r.get('bad')), f'a bad entry {repr(bad)[:50]} refuses the whole set, nothing written')
+        # a hostile file: wrong schema, junk, unknown milestone, too many entries
+        f.write_text('{not json', encoding='utf-8')
+        c.eq((run(action='get')['items'], run(action='get')['exists']), ({}, True), 'an unreadable file reads as nothing', what='unreadable')
+        f.write_text(json.dumps({'schema': 'other/1', 'items': good}), encoding='utf-8')
+        c.eq(run(action='get')['items'], {}, 'a file of another schema reads as nothing', what='foreign')
+        hostile = {'schema': 'sog-priorities/1', 'updated': 'x' * 100, 'items': {'SOG-0001': {'rank': 1}, 'SOG-0002': {'milestone': 'nope', 'rank': 2}, 'SOG-0003': {'milestone': 'nope'}, '../x': {'rank': 1},
+                   'SOG-0004': 'a', 'SOG-0005': {'rank': -1}, 'SOG-0006': {'rank': 3, 'extra': '<img>'}, '__proto__': {'rank': 1}}}
+        f.write_text(json.dumps(hostile), encoding='utf-8')
+        r = run(action='get')
+        c.eq((r['items'], r['dropped'], r['updated']), ({'SOG-0001': {'rank': 1}, 'SOG-0002': {'rank': 2}, 'SOG-0006': {'rank': 3}}, 5, ''),
+             'a hostile file is filtered: bad ids, ranks and shapes dropped, an unknown milestone removed (the rank stays), extra keys ignored, a long date ignored', what='hostile')
+        f.write_text(json.dumps({'schema': 'sog-priorities/1', 'items': {f'SOG-{n:04d}': {'rank': n + 1} for n in range(900)}}), encoding='utf-8')
+        c.eq(len(run(action='get')['items']), 500, 'at most 500 entries are read', what='cap')

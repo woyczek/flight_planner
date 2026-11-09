@@ -123,3 +123,15 @@ way, not taken (an empty band on every screen while the help loads). noreg A52.
   application and the milestone start fresh); the lane header's « n delivered » counts the delivered items of the current tab; the strip
   is one scrolling line on a phone rather than a collapsed block (nothing to open, nothing hidden). The CSS is in `frame/frame.css` beside
   the existing roadmap block (additive). The manual does not describe the screen (it only links to it), so no help text changed.
+- **10 Nov 2026 — Priorities on the roadmap** (SOG-0066, from the user's « how do I reprioritise? »; SPEC § 5). Reversible details decided
+  while the user was away: **one verb, two actions** (`roadmap/priorities`, `get` / `set`, like `stats/output`) rather than two verbs; `set`
+  **replaces** the whole file (the page sends what it read plus the gesture: no merge on the launcher, one user, one writer); a drop writes
+  **every identified card's rank** (1…n) rather than one number, so the order is explicit and survives a regeneration that adds cards; a rank
+  is global (the roadmap's single priority list), a drop is allowed only inside the card's own column; a milestone drop leaves the rank alone;
+  the **desktop gesture is a right click** and the **touch gesture is the long press** (released without moving = copy, moved = drag), the two
+  never competing; a card without an identifier is not draggable; the device keeps the unsent order and sends it **by itself** at the next
+  opening with a launcher (the user's own earlier gesture, nothing to confirm). Not done: a keyboard way to reorder, and a sticky strip (the
+  page scrolls by itself near the edges instead). `frame/app.js`'s `helpCtx` gained `notify` and `launcher` (additive; V3 Frame told).
+  Races closed (found by A101 at 390): the opening's read of `PRIORITES.json` never redraws the screen under a drag in progress (it waits for the
+  drop), and a write waits for that first read, so a gesture made within the first second cannot overwrite what the file already held; the sends
+  are queued one after the other, and a send clears only what it sent (a gesture made during it stays pending).

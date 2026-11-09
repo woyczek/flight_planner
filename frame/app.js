@@ -3362,6 +3362,13 @@
     lang,
     own,
     root: ROOT,
+    notify,
+    // le lanceur du poste pour la feuille de route (roadmap/priorities, regen/job) ; null sans lanceur ou sur un appareil appairé
+    launcher: () => (launcherHere && !launcherHere.lan ? launcherClient()?.forModule({
+      routes: ['regen/job']
+    }, {
+      author: () => identity.trigram || ''
+    }) : null) || null,
     app: APP.id, // le manuel de l'application affichée (frame/help/<app>.<langue>.md)
     tutorials: APP.welcome !== false, // les tutoriels sont ceux de Pilote
     // « Toute l'aide » : le manuel de chaque application que l'appareil ouvre (son niveau), à son adresse

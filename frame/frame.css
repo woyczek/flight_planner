@@ -808,12 +808,43 @@ p.f-back {
   margin-left: auto;
   min-height: 36px
 }
-.f-rm-id,
-.f-rm-ms {
+.f-rm-id {
+  font-weight: 600
+}
+.f-rm-ms,
+.f-rm-unsent {
   color: var(--sog-muted)
 }
-.f-rm-ms {
+.f-rm-ms,
+.f-rm-unsent {
   display: block
+}
+/* priorités : une carte à identifiant se glisse (souris, ou appui long au doigt) ; le trait dit où elle tombe */
+.f-rm-item[data-id] {
+  cursor: grab;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none
+}
+.f-rm-item[data-armed] {
+  outline: 2px solid var(--sog-accent)
+}
+.f-rm-item[data-drag] {
+  position: relative;
+  z-index: 5;
+  opacity: .9;
+  pointer-events: none;
+  cursor: grabbing;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .25)
+}
+.f-rm-item[data-drop="before"] {
+  box-shadow: 0 -3px 0 var(--sog-accent)
+}
+.f-rm-item[data-drop="after"] {
+  box-shadow: 0 3px 0 var(--sog-accent)
+}
+.f-rm-btn[data-drop] {
+  outline: 2px dashed var(--sog-accent)
 }
 @container (max-width: 760px) {
   .f-rm-time {

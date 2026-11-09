@@ -113,7 +113,24 @@ decisions: [DECISIONS.md](DECISIONS.md); how a module gets its help: [INTEGRATIO
   Texts: the language, else English, else French; every text escaped. `build_help.py` checks `kind`, the milestones (state, texts, items
   cited that exist) and the lanes' applications for a schema 2 file. Cases A96 (schema 2 at 390 and 1280, four languages), A98 (the build's check), A97 and A99 (the shipped file)
   (schema 1 unchanged).
-- **Reached** from the top of the manual ("Roadmap: what is delivered, in progress, planned") and from Settings ›
+- **Priorities** (SOG-0066, the user's way to reprioritise; case A101, launcher verb case K96):
+  - the card starts with its **identifier** in clear (`SOG-0046`, the text's size, bold); a **right click**, or a **long touch** released
+    without moving, copies `SOG-0046 — <title>` and says « Copied » (a notification);
+  - **dragging** (mouse after 6 px; touch after a 450 ms hold, the card then outlined, the page no longer scrolls): in a column, a card
+    dropped above or below another card of that column takes its place in the **global priority order** (every identified card gets its rank
+    1…n, 500 at most); dropped onto a point of the strip it takes that **milestone**. A card without a `SOG-nnnn` identifier cannot be moved;
+    near the top or bottom edge the page scrolls by itself. The result shows at once, before anything is written;
+  - **written by the launcher**: `regen/job { set: 'roadmap', verb: 'priorities', args: { action: 'get' | 'set', items } }`
+    (`tools/regen/roadmap.py`) reads and replaces `organisation/PRIORITES.json` at the suite's root: `{ schema: 'sog-priorities/1', updated,
+    items: { 'SOG-0046': { milestone?, rank? } } }`; ids `SOG-nnnn`, milestones of this file, integer ranks 1…99999, 500 entries at most;
+    `set` refuses a bad entry for the whole set (`bad-items`), a missing `organisation/` folder is `no-organisation`; `tools/roadmap_build.py`
+    reads it at each regeneration (milestone forced, rank). The screen reads it at the opening (`get`) and lays it over the generated
+    file; everything read is filtered again (identifier, known milestone, integer rank);
+  - **without a launcher** (a device on GitHub Pages, a paired device, an old launcher, a failed write): the order is kept in
+    `device/roadmap.json` (`pri`, `unsent`), the moved card says « not sent », and a failed write is told once; at the next opening with a
+    launcher what the device kept is sent and forgotten. The frame gives the screen `ctx.notify` and `ctx.launcher()` (the client limited to
+    `regen/job`; `null` without launcher).
+- **Reached** from the top of the manual (\"Roadmap: what is delivered, in progress, planned\") and from Settings ›
   About. Offline: the script and the JSON are in the frame's service worker list.
 
 ## 6. Tutorials (`#help?t=<id>`)
