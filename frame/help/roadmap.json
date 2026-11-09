@@ -4,7 +4,7 @@
  "updated": "2026-11-09",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "724c5c6",
+  "organisation": "d1b4a5d",
   "fiches": 66,
   "untranslated": 0
  },
@@ -496,9 +496,9 @@
    "app": "pilote",
    "label": {
     "fr": "Procédures et route",
-    "en": "Procédures et route",
-    "de": "Procédures et route",
-    "es": "Procédures et route"
+    "en": "Procedures and route",
+    "de": "Verfahren und Route",
+    "es": "Procedimientos y ruta"
    },
    "items": [
     {
@@ -650,9 +650,9 @@
    "app": "pilote",
    "label": {
     "fr": "État du vol",
-    "en": "État du vol",
-    "de": "État du vol",
-    "es": "État du vol"
+    "en": "Flight state",
+    "de": "Flugzustand",
+    "es": "Estado del vuelo"
    },
    "items": [
     {
@@ -881,9 +881,9 @@
    "app": "maintenance",
    "label": {
     "fr": "Données",
-    "en": "Données",
-    "de": "Données",
-    "es": "Données"
+    "en": "Data",
+    "de": "Daten",
+    "es": "Datos"
    },
    "items": [
     {
@@ -1037,9 +1037,9 @@
    "app": "maintenance",
    "label": {
     "fr": "Procédures",
-    "en": "Procédures",
-    "de": "Procédures",
-    "es": "Procédures"
+    "en": "Procedures",
+    "de": "Verfahren",
+    "es": "Procedimientos"
    },
    "items": [
     {

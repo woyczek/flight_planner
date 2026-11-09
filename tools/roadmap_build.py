@@ -126,7 +126,8 @@ def app_of(theme):
 def lane_of(app, theme):
     first = theme.split('/')[0].strip()
     key = fold(first)
-    lab = LANE_LABELS.get(key) or LANE_LABELS.get(key.rstrip('s'))
+    folded = {fold(k): v for k, v in LANE_LABELS.items()}
+    lab = folded.get(key) or folded.get(key.rstrip('s'))
     if not lab:
         lab = (first, first, first, first)
     return app + '-' + slug(first), dict(zip(LANGS, lab))
