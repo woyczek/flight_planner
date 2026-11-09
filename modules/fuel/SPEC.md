@@ -213,7 +213,9 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
 - **The name where the code is**: under each field, one read-only line (`.fu-adname`, its height reserved even empty, one line with an
   ellipsis, the full text in its `title`): « LFPO — Paris-Orly » from `aerodb.coords` (`adLine` of `frame/lib/adnames.js`, names
   recased), « inconnu » ×4 when four characters resolve to nothing, nothing under four (F44, F71).
-- **« ⇄ »** between departure and arrival (SOG-0127, after RouteSim; a 44 px target): swaps them. Both ends change, so it is a new pair
+- **« ⇄ »** between departure and arrival (SOG-0127, after RouteSim): swaps them. Drawn as an icon at the size of the text (24 px, no
+  border, no fill, muted tint; SOG-0140: « tellement trop gros »), its target still 44 px through a pseudo-element inside its 44 px
+  column, so the fields keep their edges (F112). Both ends change, so it is a new pair
   (the rule of 1 Nov, `newPair`: the route, procedures and OFP of the old flight are cleared, with its notice; a route is never read
   backwards, its airways, SID and STAR do not read the other way); a started flight becomes another flight; the alternate stays (F111).
 - **Flight date**: one value, `current_flight.planned_at`, with « +30 » and « Now »; the quote's weather and the Map read this date

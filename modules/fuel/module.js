@@ -1557,8 +1557,12 @@ const STYLE = `
 [data-module="fuel"] .fu-pairs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,20em),1fr));gap:6px 16px}
 [data-module="fuel"] .fu-pairs>label.f-field{display:grid;grid-template-columns:minmax(0,11em) minmax(0,1fr);align-items:center;column-gap:8px;margin:0}
 [data-module="fuel"] .fu-pairs>label.f-field>:is(input,select){min-width:0;width:100%}
-[data-module="fuel"] .fu-ads{grid-template-columns:minmax(0,12em) auto minmax(0,12em) minmax(0,12em);position:relative} /* départ, ⇄, arrivée, dégagement ; position:relative : la liste de propositions s'y pose */
-[data-module="fuel"] .fu-adswap{align-self:center;min-width:44px;min-height:44px;padding:0 .4em;font-size:1.1em} /* ⇄ (SOG-0127) : une cible de 44 px entre départ et arrivée */
+[data-module="fuel"] .fu-ads{grid-template-columns:minmax(0,12em) 44px minmax(0,12em) minmax(0,12em);position:relative} /* départ, ⇄, arrivée, dégagement ; position:relative : la liste de propositions s'y pose */
+/* ⇄ (SOG-0127, allégé SOG-0140 : « tellement trop gros ») : un bouton icône de la taille du texte, 24 px dessinés, sans bordure ni fond,
+   teinte atténuée ; la cible reste de 44 px par un pseudo-élément, dans sa colonne de 44 px (rien d'autre ne bouge dans la rangée) */
+[data-module="fuel"] .fu-ads button.fu-adswap{position:relative;align-self:center;justify-self:center;width:24px;height:24px;min-width:0;min-height:0;padding:0;margin:0;border:0;border-radius:0;background:none;box-shadow:none;color:var(--sog-muted);font-size:1.05em;line-height:1}
+[data-module="fuel"] .fu-ads button.fu-adswap::before{content:'';position:absolute;inset:-10px}
+[data-module="fuel"] .fu-ads button.fu-adswap:hover,[data-module="fuel"] .fu-ads button.fu-adswap:focus-visible{color:var(--sog-fg)}
 [data-module="fuel"] .fu-adname{display:block;height:1.4em;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--sog-size-s);color:var(--sog-muted)} /* hauteur réservée, même vide : rien ne bouge */
 [data-module="fuel"] .fu-adname[data-state="unknown"]{font-style:italic}
 [data-module="fuel"] .fu-sug{position:absolute;left:0;right:0;max-width:26em;z-index:30;display:grid;gap:0;margin:0;background:var(--sog-surface);border:1px solid var(--sog-border);border-radius:var(--sog-radius);box-shadow:var(--sog-shadow)} /* par-dessus la page, jamais dans la mise en page */

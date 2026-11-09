@@ -2943,7 +2943,7 @@ def f111(c):
     sel = f'{FUEL} [data-do="adswap"]'
     c.eq(c.count(sel), 1, 'one ⇄ button on the step Flight', what='the button')
     box = c.js(f"(() => {{ const b = document.querySelector('{sel}').getBoundingClientRect(), d = document.querySelector('{FUEL} input[data-k=dep]').getBoundingClientRect(), a = document.querySelector('{FUEL} input[data-k=arr]').getBoundingClientRect(); return {{ w: b.width, h: b.height, between: b.left >= d.right - 0.5 && b.right <= a.left + 0.5, r: b.right, iw: innerWidth }} }})()")
-    c.ok(box['w'] >= 43.5 and box['h'] >= 43.5 and box['between'] and box['r'] <= box['iw'], box, '⇄ is a 44 px target between departure and arrival, inside the screen')
+    c.ok(box['between'] and box['r'] <= box['iw'], box, '⇄ between departure and arrival, inside the screen (its 44 px target: F112, SOG-0140)')
     c.eq(c.js("document.documentElement.scrollWidth <= innerWidth"), True, 'nothing over the edge at 390 px', what='overflow')
     c.tap(sel)
     d = cf_doc(c, lambda d: d['route'].get('dep') == 'LFML' and d['route'].get('arr') == 'LFRS', 'departure and arrival swapped in the flight', timeout=8000)
@@ -2952,3 +2952,28 @@ def f111(c):
     c.eq([c.js(f"document.querySelector('{FUEL} input[data-k=dep]').value"), c.js(f"document.querySelector('{FUEL} input[data-k=arr]').value")], ['LFML', 'LFRS'], 'the fields show the swap', what='fields')
     c.until("document.querySelector('[data-module=fuel] .fu-adname[data-adline=dep]').textContent.includes('Lfml')", what='the name under the departure follows')
     c.eq(d['route'].get('altn'), 'LFMT', 'the alternate stays', what='alternate')
+
+
+@case('F112', 'Step Flight: « ⇄ » drawn at the size of the text (≤ 28 px), its target still 44 px, the row unchanged',
+      'F', tags=('fuel', 'layout'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0140 (user: « le bouton ⇄ est tellement trop gros ! »): an icon button of the text\'s size, no solid border, a muted tint; '
+      'the tap target stays 44 px through a pseudo-element; nothing else moves in the row')
+def f112(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    open_names(c)
+    m = c.js(f"""(() => {{ const b = document.querySelector('{FUEL} [data-do="adswap"]'), r = b.getBoundingClientRect(), cs = getComputedStyle(b),
+        bf = getComputedStyle(b, '::before'), cx = r.left + r.width / 2, cy = r.top + r.height / 2,
+        hit = (x, y) => document.elementFromPoint(x, y) === b,
+        d = document.querySelector('{FUEL} input[data-k=dep]').getBoundingClientRect(), a = document.querySelector('{FUEL} input[data-k=arr]').getBoundingClientRect();
+      return {{ h: r.height, w: r.width, border: parseFloat(cs.borderTopWidth) || 0, bg: cs.backgroundColor,
+        target: [hit(cx - 21, cy), hit(cx + 21, cy), hit(cx, cy - 21), hit(cx, cy + 21)], pseudo: bf.content !== 'none' && bf.position === 'absolute',
+        depFree: document.elementFromPoint(d.right - 2, d.top + d.height / 2)?.dataset?.k === 'dep', arrFree: document.elementFromPoint(a.left + 2, a.top + a.height / 2)?.dataset?.k === 'arr',
+        between: r.left >= d.right && r.right <= a.left, sw: document.documentElement.scrollWidth, iw: innerWidth }} }})()""")
+    c.le(round(m['h']), 28, 'the button is drawn at the size of the text', what='drawn height (px)')
+    c.ok(m['border'] == 0 and m['bg'] in ('rgba(0, 0, 0, 0)', 'transparent'), m, 'no solid border, no fill')
+    c.ok(all(m['target']) and m['pseudo'], m, 'the target reaches 44 px around it (a pseudo-element)')
+    c.ok(m['depFree'] and m['arrFree'] and m['between'], m, 'the fields keep their edges: the target stays in its column')
+    c.le(m['sw'], m['iw'], 'no horizontal scroll at 390 px', what='scrollWidth')
+    c.shot(f'F112_{c.design}_{c.width}_{c.lang}.png')
+    c.tap(f'{FUEL} [data-do="adswap"]')
+    cf_doc(c, lambda d: d['route'].get('dep') == 'LFML' and d['route'].get('arr') == 'LFRS', 'the swap still works', timeout=8000)
