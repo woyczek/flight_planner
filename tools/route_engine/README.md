@@ -11,6 +11,7 @@ Copied from `E:/DEFA/rad` (RouteSim 2, not versioned) so that the launcher can c
 
 **New, not RouteSim's**:
 
+- `rad_flight.py` (the engine's RAD evaluation by flight), `recovery.py` and `fra_recovery.py` (the plan's fallback and coverage gaps; the engine does not import them, `plan.py` does) — RouteSim of 9 Nov 16 h, copied as they are but for the relative imports (`SOG-0081`).
 - `planning.py` — RouteSim 4's objectives and fuel model (copied as it is; `SOG-0081`: the RNAV metadata file is read from the data folder).
 - `view.py` — the answer in the shape of the Fuel screen (`action` compute / check → `alternatives`, `segments`, `issues`); the job uses it when `action` is present (SOG-0081, 10 Nov).
 - `plan.py` — `plan()` is the port of `server.plan()` (the calculation, the control and the alternatives; if the user changes `plan()` in `server.py`, the diff applies to it); `check_request` (the closed request), `bound_result` (the bounded answer), `compute` (what the job calls).

@@ -9,7 +9,9 @@ primary et chaque alternative sont les résultats de engine.assess : { ok, statu
 import datetime as dt
 import re
 
-from . import engine, fra, planning
+import json
+
+from . import engine, fra, planning, recovery
 
 FIELDS = {
     'dep': str, 'arr': str, 'route': str, 'via': (list, str), 'fl': int, 'date': str, 'mode': str, 'radius': (int, float), 'dep_runway': str, 'arr_runway': str,
@@ -129,17 +131,37 @@ def plan(request, root):
         primary = engine.assess(request, nav, rad)
     except ValueError as e:
         primary = dict(ok=False, status='CALCUL IMPOSSIBLE', error=str(e), route=request.get('route', ''), legs=[], issues=[])
+    rad_retries = []
+    # A route-dependent RAD condition can only be decided after its SID, route and STAR are known. Retry with the implicated procedure / links excluded.
+    if request.get('mode', 'calculate') == 'calculate':
+        avoids = []
+        for attempt in range(3):
+            findings = primary.get('rad_summary', {}).get('findings', [])
+            extra = primary.get('rad_summary', {}).get('search_exclusions', [])
+            if not findings or not extra:
+                break
+            avoids = list({json.dumps(x, sort_keys=True): x for x in [*avoids, *extra]}.values())
+            try:
+                check_budget()
+                candidate = engine.assess(dict(request, _rad_avoid=avoids), nav, rad)
+                rad_retries.append(dict(excluded=avoids, route=candidate['route'], errors=[i['text'] for i in candidate['issues'] if i['level'] == 'ERREUR']))
+                primary = candidate
+                request['_rad_avoid'] = avoids
+            except (ValueError, SearchBudget) as e:
+                rad_retries.append(dict(excluded=avoids, error=str(e)))
+                break
     rejected = not primary['ok'] or any(i['level'] == 'ERREUR' for i in primary['issues'])
+    coverage_gaps = recovery.terminal_gaps(request, nav) if not primary.get('ok') and 'Aucun point du réseau' in primary.get('error', '') else []
     alternatives = []
-    failures = []
+    failures = list(coverage_gaps)
     tested = []
-    if rejected or request.get('alternatives'):
+    if (rejected or request.get('alternatives')) and not coverage_gaps:
         try:
             dep = str(request['dep']).strip().upper()
             arr = str(request['arr']).strip().upper()
             fl = int(request['fl'])
             radius = float(request.get('radius', 40))
-            blocks = rad.blocks(dep, arr, fl)
+            blocks = rad.blocks(dep, arr, None)
             if not 1 <= radius <= 100 or not 10 <= fl <= 660:
                 raise ValueError('Niveau ou rayon hors limites.')
             options = engine.profile_options(request)
@@ -187,7 +209,7 @@ def plan(request, root):
                         break
                     try:
                         check_budget()
-                        route, path = nav.generate(dep, arr, level, radius, rad.blocks(dep, arr, level), options, allow_steps=True, via=mandatory, when=nav_time(request), enable_fra=request.get('enable_fra', True), terminal=request)
+                        route, path = nav.generate(dep, arr, level, radius, rad.blocks(dep, arr, None), options, allow_steps=True, via=mandatory, when=nav_time(request), enable_fra=request.get('enable_fra', True), terminal=request)
                         consider(route, level, 'adapt', path)
                     except ValueError as e:
                         failures.append(f'FL{level}: ' + str(e))
@@ -216,7 +238,7 @@ def plan(request, root):
                         break
                     try:
                         check_budget()
-                        route, path = nav.generate(dep, arr, level, radius, rad.blocks(dep, arr, level), options, allow_steps=True, via=mandatory, when=nav_time(request), enable_fra=request.get('enable_fra', True), terminal=request)
+                        route, path = nav.generate(dep, arr, level, radius, rad.blocks(dep, arr, None), options, allow_steps=True, via=mandatory, when=nav_time(request), enable_fra=request.get('enable_fra', True), terminal=request)
                         consider(route, level, 'adapt', path)
                     except ValueError as e:
                         failures.append(f'FL{level}: ' + str(e))
@@ -233,7 +255,15 @@ def plan(request, root):
         alternatives = pool[1:4]
     message = (f'{len(alternatives)} alternative(s) sans incompatibilité détectée. Le niveau et les paliers de chaque proposition sont affichés.'
                if alternatives else 'Aucune alternative trouvée. Consulter les niveaux essayés et leurs motifs d’échec.') if wanted else ''
-    return dict(primary=primary, alternatives=alternatives, alternative_message=message, alternative_failures=list(dict.fromkeys(failures)),
+    repli = None
+    if rejected and not alternatives:
+        try:
+            repli = recovery.propose(request, nav, rad)
+        except (ValueError, KeyError) as e:
+            repli = dict(proposals=[], pieces=[], note='Repli : ' + str(e))
+        if repli.get('proposals'):
+            message = 'Calcul réseau incomplet : ' + str(len(repli['proposals'])) + ' propositions de repli, dont ' + str(repli.get('fra_pieces', 0)) + ' portion(s) FRA. Les raccords DCT restent non validés.'
+    return dict(primary=primary, alternatives=alternatives, recovery=repli, coverage_gaps=coverage_gaps, rad_search_attempts=rad_retries, alternative_message=message, alternative_failures=list(dict.fromkeys(failures)),
                 search=dict(algorithm='A* avec labels altitude ; variantes par pénalisation des liens', last=nav.last_search if hasattr(nav, 'last_search') else None, total_seconds=round(time.perf_counter() - started, 3)),
                 automatic_alternatives=rejected, alternative_attempts=tested, input_route=request.get('route', ''), via=request.get('via', []), dep=request.get('dep'), arr=request.get('arr'))
 
@@ -274,6 +304,14 @@ def bound_result(res):
     out['alternatives'] = [_bound_one(a) for a in res['alternatives'][:MAX_ALTERNATIVES]]
     out['alternative_failures'] = [_cut(x) for x in res['alternative_failures'][:40]]
     out['alternative_attempts'] = [dict(a, errors=[_cut(e) for e in a['errors'][:10]]) for a in res['alternative_attempts'][:40]]
+    out['coverage_gaps'] = [_cut(x) for x in (res.get('coverage_gaps') or [])[:20]]
+    out['rad_search_attempts'] = [{k: (v[:20] if isinstance(v, list) else _cut(v)) for k, v in x.items()} for x in (res.get('rad_search_attempts') or [])[:3]]
+    if isinstance(res.get('recovery'), dict):          # le repli (recovery.py) : trois propositions au plus, chacune bornée comme un résultat
+        rec = dict(res['recovery'])
+        rec['proposals'] = [_bound_one(x) for x in (rec.get('proposals') or [])[:MAX_ALTERNATIVES]]
+        rec['pieces'] = (rec.get('pieces') or [])[:60]
+        rec['note'] = _cut(rec.get('note'))
+        out['recovery'] = rec
     return out
 
 

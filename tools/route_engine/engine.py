@@ -6,6 +6,7 @@ from . import flight_profile                                  # SOG-0081 : impor
 from . import fra as fra_module
 from . import procedures as procedure_module
 from . import planning
+from . import rad_flight
 
 HERE = Path(__file__).resolve().parent
 DATA_DIR = None   # SOG-0081 : dossier des données (sia/base, proc) posé par le travail du lanceur ; None : <root>/data, comme RouteSim 2
@@ -188,7 +189,8 @@ class Nav:
                 if c>d+.001:continue
                 c,d=round(c,6),round(d,6)
                 next_index=index+1 if index<len(names) and self.nodes[v]['id']==names[index] else index
-                next_state=(v,next_index,seen_fra or e.get('kind')=='FRA',c,d);new=cost+e.get('_cost',e['nm'])
+                qualifies=e.get('kind')=='FRA' and (not getattr(g,'required_fra_area',None) or e.get('fra_area')==g.required_fra_area)
+                next_state=(v,next_index,seen_fra or qualifies,c,d);new=cost+e.get('_cost',e['nm'])
                 bucket=labels[next_state[:3]]
                 if any(old<=new+1e-10 and lo<=c+.001 and hi>=d-.001 for old,lo,hi,_ in bucket):continue
                 kept=[]
@@ -205,11 +207,31 @@ class Nav:
 
     def routing_graph(self,dep,arr,fl,radius,blocks=(),profile_options=None,allow_steps=False,via=(),when=None,enable_fra=True,terminal=None):
         terminal=terminal or {}
-        cost_fields={k:terminal.get(k) for k in ['objective','fra_preference','unable_rnav','use_procedures','dep_runway','arr_runway','terminal_speed_kt','speed_kt','_fuel_model','search_density']}
+        cost_fields={k:terminal.get(k) for k in ['objective','fra_preference','unable_rnav','use_procedures','dep_runway','arr_runway','terminal_speed_kt','speed_kt','_fuel_model','search_density','_rad_avoid']}
         cache_key=json.dumps([dep,arr,fl,radius,blocks,profile_options,allow_steps,via,str(when),enable_fra,cost_fields],sort_keys=True)
         if not hasattr(self,'_routing_cache'):self._routing_cache=collections.OrderedDict()
         if cache_key in self._routing_cache:
             return self._routing_cache[cache_key]
+        point_rules=collections.defaultdict(list);segment_rules=collections.defaultdict(list);procedure_rules=collections.defaultdict(list)
+        chain_blocks=[]
+        for rule in blocks:
+            if rule['kind']!='segment' or rule['via']=='DCT':continue
+            if not hasattr(self,'_rad_chain_cache'):self._rad_chain_cache={}
+            chain_key=(rule['via'],rule['start'],rule['end'])
+            if chain_key not in self._rad_chain_cache:
+                route_graph=self.graph(None,rule['via']);paths=[]
+                for a in self.ids.get(rule['start'],[]):
+                    for b in self.ids.get(rule['end'],[]):
+                        path=self.path(route_graph,a,b)
+                        if path:paths.append(path)
+                self._rad_chain_cache[chain_key]=min(paths,key=lambda path:sum(e['nm'] for a,b,e in path)) if paths else []
+            for a,b,e in self._rad_chain_cache[chain_key]:chain_blocks.append(dict(rule,start=self.nodes[a]['id'],end=self.nodes[b]['id']))
+        for rule in [*blocks,*chain_blocks,*terminal.get('_rad_avoid',[])]:
+            if rule['kind']=='point':point_rules[rule['point']].append(rule)
+            elif rule['kind']=='procedure':procedure_rules[rule['procedure_id']].append(rule)
+            else:segment_rules[(rule['via'],rule['start'],rule['end'])].append(rule)
+        def relevant_rules(a,b,e):
+            return point_rules.get(a,[])+point_rules.get(b,[])+segment_rules.get((e['route'],a,b),[])+procedure_rules.get(e.get('procedure_id'),[])
         if dep==arr: raise ValueError('Choisir deux aérodromes différents.')
         if dep not in self.ads or arr not in self.ads: raise ValueError('Aérodrome absent d’AeroDB : '+(dep if dep not in self.ads else arr))
         a,b=self.resolve(dep),self.resolve(arr); g=self.graph(None if allow_steps else fl)
@@ -234,7 +256,7 @@ class Nav:
                 g[u]=permitted
             if not any(g.values()):raise ValueError(f'Unable RNAV : aucun segment IFR conventionnel confirmé dans ce réseau. {rejected} sens de segments exigent RNAV ; {unknown} ont une exigence inconnue. Aucun DCT de substitution n’a été inventé.')
         for key in list(g):
-            g[key]=[(other,e) for other,e in g[key] if isinstance(e.get('lower'),(int,float)) and isinstance(e.get('upper'),(int,float)) and e['lower']<=fl*100 and e['upper']>=e['lower'] and not any(block_hit(x,self.nodes[key]['id'],self.nodes[other]['id'],e['route']) for x in blocks)]
+            g[key]=[(other,e) for other,e in g[key] if isinstance(e.get('lower'),(int,float)) and isinstance(e.get('upper'),(int,float)) and e['lower']<=fl*100 and e['upper']>=e['lower']]
             if not g[key]: del g[key]
         incoming=collections.defaultdict(list)
         for u,edges in g.items():
@@ -251,7 +273,6 @@ class Nav:
             if not near: raise ValueError(f'Aucun point du réseau au FL{fl:03d} à moins de {radius:g} NM de {self.nodes[airport]["id"]}. Couverture ou niveau insuffisant.')
             for d,k in near:
                 ids=(self.nodes[airport]['id'],self.nodes[k]['id']) if isdep else (self.nodes[k]['id'],self.nodes[airport]['id'])
-                if any(block_hit(x,*ids,'DCT') for x in blocks): continue
                 e=dict(route='DCT',nm=d,connector=True)
                 if isdep: g.setdefault(airport,[]).append((k,e))
                 else: g.setdefault(k,[]).append((airport,e))
@@ -266,9 +287,25 @@ class Nav:
                 distance=nm(self.nodes[waypoint],self.nodes[key])
                 if not .1<distance<=radius:continue
                 edge=dict(route='DCT',kind='VIA_AD',nm=distance,connector=True,overflight=ident,lower=0,upper=fl*100)
-                if any(block_hit(x,ident,self.nodes[key]['id'],'DCT') for x in blocks):continue
                 g.setdefault(waypoint,[]).append((key,edge))
                 g.setdefault(key,[]).append((waypoint,edge))
+        # Apply RAD after SID/STAR and all connectors have been inserted. A rule
+        # on a procedure point must affect path finding, not only final checking.
+        for u,edges in list(g.items()):
+            allowed=[]
+            for v,e in edges:
+                relevant=relevant_rules(self.nodes[u]['id'],self.nodes[v]['id'],e)
+                if any(rule.get('lower_ft') is None for rule in relevant):continue
+                bands=[(e.get('lower') if isinstance(e.get('lower'),(int,float)) else 0,e.get('upper') if isinstance(e.get('upper'),(int,float)) else fl*100)]
+                for rule in relevant:
+                    lo,hi=rule['lower_ft'],rule['upper_ft'];next_bands=[]
+                    for lower,upper in bands:
+                        if hi<lower or lo>upper:next_bands.append((lower,upper));continue
+                        if lower<lo:next_bands.append((lower,lo-.01))
+                        if hi<upper:next_bands.append((hi+.01,upper))
+                    bands=next_bands
+                allowed.extend((v,dict(e,lower=lower,upper=upper)) if relevant else (v,e) for lower,upper in bands)
+            g[u]=allowed
         g={u:[(v,dict(e,_cost=planning.edge_cost(e,terminal))) for v,e in es] for u,es in g.items()}
         graph=RoutingGraph(g)
         if profile_options:
@@ -389,7 +426,8 @@ class Rad:
                     lo=re.fullmatch(r'(?:FL)?(\d{1,3})',v[6]); hi=re.fullmatch(r'(?:FL)?(\d{1,3})',v[7])
                     if lo and hi and (fl is None or int(lo[1])<=fl<=int(hi[1])) and all(re.fullmatch('[A-Z0-9]{2,7}',v[i]) for i in [4,5]):
                         blocks.append(dict(base,kind='segment',via='DCT',start=v[4],end=v[5],lower_ft=int(lo[1])*100,upper_ft=int(hi[1])*100))
-        return blocks
+        blocks.extend(rad_flight.static_blocks(self,dep,arr))
+        return list({json.dumps(b,sort_keys=True):b for b in blocks}.values())
 
     def candidates(self,dep,arr,ids,routes):
         if not self.book: return []
@@ -443,7 +481,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
     if getattr(nav,'procedures',None):
         for ad in [dep,arr]:
             if ad in nav.ads:nav.procedures.prepare(ad)
-    generated=request.get('mode','calculate')=='calculate'; blocks=rad.blocks(dep,arr,fl)
+    generated=request.get('mode','calculate')=='calculate'; blocks=rad.blocks(dep,arr,None)
     route=str(request.get('route','')).strip().upper(); issues=[]; legs=[]
     def issue(level,text): issues.append(dict(level=level,text=text))
     if generated:
@@ -529,7 +567,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
             issue('ERREUR',f'{l["via"]} {l["start"]["id"]}–{l["end"]["id"]} : {text}')
     if legs and not profile['feasible'] and not any(l['vertical_errors'] for l in legs):
         issue('ERREUR','Profil vertical impossible avec les altitudes AD et les taux de montée/descente saisis.')
-    candidates=rad.candidates(dep,arr,known_ids,used_routes)
+    candidates=rad.candidates(dep,arr,known_ids,used_routes | {alias for route_name in used_routes for alias in rad_flight.aliases(route_name)})
     if request.get('unable_rnav'):
         for a,b,e in parsed:
             if e.get('kind') in ['SID','STAR','APPROACH_LINK']:
@@ -557,6 +595,16 @@ def assess(request,_nav=None,_rad=None,_path=None):
             violations.append(block)
             issue('ERREUR',f'Interdiction RAD explicite {block["id"]} ({block["sheet"]}, ligne {block["row"]}).')
             for l in affected: l['alerts'].append('Interdiction RAD '+block['id'])
+    # Full-flight conditions see the expanded SID/STAR, not only filed endpoints.
+    elapsed=0.
+    for leg in legs:
+        leg['time_start_min']=elapsed;elapsed+=leg['nm']/(leg.get('planned_speed_kt') or options['speed_kt'])*60;leg['time_end_min']=elapsed
+    rad_summary=rad_flight.evaluate(rad,legs,dep,arr,when,candidates,set(nav.ids)|used_routes)
+    atomic_ids={(b['sheet'],b['row']) for b in violations}
+    for finding in rad_summary['findings']:
+        if (finding['sheet'],finding['row']) not in atomic_ids:issue('ERREUR',finding['text'])
+        for index in finding['segments']:
+            leg=legs[index];leg['alerts'].append('RAD '+finding['id']+' : '+', '.join(finding['phases']));leg['compatible']=False
     for c in candidates:
         if any(x['sheet']==c['sheet'] and x['row']==c['row'] for x in violations): c['assessment']='INFRACTION : interdiction simple H24 applicable'
     fra_loaded=bool(getattr(nav,'fra',None) and nav.fra.book)
@@ -568,7 +616,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
                 issue('REVUE',f'{ad} : aucune {kind} complète connectée utilisée ; raccord DCT de simulation. Catalogue : {stats.get(kind+"_total",0)} procédures, {stats.get(kind+"_usable",0)} résolues, {stats.get(kind+"_incomplete",0)} incomplètes, {stats.get(kind+"_doubt",0)} douteuses.')
     gaps=[dict(name='FRA : géométrie et NPZ',reason='Points FRA, rôles E/X/I/A/D, niveaux numériques et horaires simples utilisés. Volumes des FRA, NPZ et règles complexes non fournis par la liste de points : les liaisons sont des candidates à contrôler.' if fra_loaded else 'Aucune liste FRA ne couvre cette date. Les DCT ne sont pas des autorisations FRA.'),
           dict(name='Sens et vitesses limites',reason='Sens autorisés et limites de vitesse absents des fichiers airways ; vitesse sol saisie utilisée pour le profil.'),
-          dict(name='RAD complet',reason='Seules les interdictions simples H24 prises en charge sont évaluées. Exceptions, plafonnements conditionnels, horaires et espaces traversés non évalués.'),
+          dict(name='RAD complet',reason='Le vol entier, SID/STAR développées comprises, est le périmètre du contrôle. Seules les formes de conditions explicitement prises en charge sont décidées. Conditions complexes, doublons ambigus, plafonnements conditionnels et géométrie des espaces restent à interpréter.'),
           dict(name='Procédures et environnement',reason='SID/STAR complètes sélectionnées depuis AeroDB, selon la piste. Tracé entre points codés, sans modèle de virage ni certification ARINC. Approche finale, IAS, parité, QNH, vent, performances, relief, NOTAM et activations EAUP/EUUP non évalués.')]
     if not rad.book: issue('REVUE','Aucun RAD fourni ne couvre cette date : contrôle RAD indisponible.')
     usedzones={e.get('zone') for _,_,e in parsed if e.get('zone')}
@@ -580,11 +628,11 @@ def assess(request,_nav=None,_rad=None,_path=None):
     result=dict(ok=True,status=status,generated=generated,route=route,fl=fl,date=when.isoformat(timespec='minutes')+'Z',
         dep=dep,arr=arr,distance_nm=round(sum(l['nm'] for l in legs),1),legs=legs,issues=issues,rad=candidates,
         rad_source={k:rad.book[k] for k in ['file','title','start','end_exclusive','sha256']} if rad.book else None,
-        coverage=nav.coverage,rad_atomic_rules=len(blocks),profile=profile,gaps=gaps,via=mandatory,via_checks=via_checks,
+        coverage=nav.coverage,rad_summary=rad_summary,rad_atomic_rules=len(blocks),profile=profile,gaps=gaps,via=mandatory,via_checks=via_checks,
         fra_source=dict(file=nav.fra.book['file'],start=nav.fra.book['start'],sha256=nav.fra.book['sha256'],points=len(nav.fra.records)) if fra_loaded else None,
         procedures_used=list({l['procedure_id']:dict(id=l['procedure_id'],name=l['procedure_name'],airport=l['procedure_airport'],runways=l['runways'],cycle=l['source_cycle']) for l in legs if l.get('procedure_id')}.values()),
         procedure_coverage={ad:nav.procedures.stats.get(ad,{}) for ad in [dep,arr]},
-        checked=['Identifiants et continuité des airways','Profil vertical contre plancher/plafond de chaque segment','Interdictions RAD simples prises en charge'],
+        checked=['Identifiants et continuité des airways','Profil vertical contre plancher/plafond de chaque segment','RAD sur tout le vol : tous les points et segments SID / route / STAR, conditions simples prises en charge'],
         counts=dict(aerodromes=len(nav.ads),segments=len(nav.edges),points=len(nav.nodes)),
         limitation='Précontrôle de simulation, jamais une validation IFPS. Les mentions RAD sont des pistes à examiner, pas des infractions établies.')
     planning.metrics(result,request)
@@ -598,6 +646,8 @@ def report(r):
     lines += [f'[{i["level"]}] {i["text"]}' for i in r['issues']]
     if r.get('estimate'):
         estimate=r['estimate'];lines+=['','OBJECTIF ET ESTIMATIONS',str(r.get('planning')),f'Durée : {estimate["duration_min"]:g} min ; carburant estimé : '+(str(estimate['fuel_kg'])+' kg' if estimate['fuel_kg'] is not None else 'non renseigné'),str(estimate.get('fuel_model'))]
+    if r.get('rad_summary'):lines+=['','RAD — PÉRIMÈTRE VOL ENTIER',str(r['rad_summary'])]
+    if r.get('proposal'):lines+=['','PROPOSITION DE REPLI NON VALIDÉE',r.get('proposal_note','')]
     if r.get('fra_stats'):lines+=['','FRA : '+str(r['fra_stats'])]
     if r.get('vfr_environment'):lines+=['','CONTRÔLES VFR : '+str(r['vfr_environment'])]
     lines += ['','COUVERTURE DU CONTRÔLE']+[g['name']+' : '+g['reason'] for g in r.get('gaps',[])]

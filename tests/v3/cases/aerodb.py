@@ -4992,6 +4992,8 @@ def k103(c):
         I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
         r3 = run(req)
         pp = r3['plan']['primary']
+        c.eq((r3['plan']['coverage_gaps'], r3['plan']['rad_search_attempts'], sorted(k for k in r3['plan'] if k in ('recovery', 'coverage_gaps', 'rad_search_attempts'))), ([], [], ['coverage_gaps', 'rad_search_attempts', 'recovery']),
+             'RouteSim of 9 Nov 16 h: the plan carries the gaps of coverage, the RAD retries and the fallback (recovery, null when not needed), bounded', what='plan keys')
         c.eq((r3['ok'], pp['ok'], pp['status'], pp['error'].startswith('Aucune route trouvée')), (True, False, 'CALCUL IMPOSSIBLE', True), 'a RAD rule that forbids A1 between SITET and KEPAD: the calculation is impossible (no route, no DCT invented: the imposed passage is not removed)', what='block')
         c.ok(r3['plan']['automatic_alternatives'] is True and isinstance(r3['plan']['alternative_failures'], list) and len(r3['plan']['alternatives']) <= 3, str(r3['plan']['alternative_message']), 'the alternatives are searched (three at most), their failures listed')
         # an unknown aerodrome and a bad level are said, never an exception
