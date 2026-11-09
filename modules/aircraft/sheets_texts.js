@@ -94,6 +94,17 @@ export const TX = {
   ],
   measBad: ['{f} : {e}', '{f}: {e}', '{f}: {e}', '{f}: {e}'],
   measNew: ['ligne nouvelle', 'new row', 'neue Zeile', 'fila nueva'],
+  // le dossier Output de X-Plane sur le poste (SOG-0052 étape 2, travail stats/output du lanceur)
+  measOutput: ['Depuis le dossier Output', 'From the Output folder', 'Aus dem Output-Ordner', 'Desde la carpeta Output'],
+  measOutputRead: ['Lire les journaux cochés', 'Read the ticked journals', 'Angekreuzte Protokolle lesen', 'Leer los registros marcados'],
+  measOutputSet: ['Régler le dossier Output', 'Set the Output folder', 'Output-Ordner festlegen', 'Ajustar la carpeta Output'],
+  measOutputPath: ['Chemin du dossier Output de X-Plane sur ce poste', 'Path of the X-Plane Output folder on this workstation',
+    'Pfad des X-Plane-Output-Ordners auf diesem Arbeitsplatz', 'Ruta de la carpeta Output de X-Plane en este puesto'
+  ],
+  measOutputEmpty: ['Aucun journal FuelPhaseMonitor dans {l}.', 'No FuelPhaseMonitor journal in {l}.',
+    'Kein FuelPhaseMonitor-Protokoll in {l}.',
+    'Ningún registro FuelPhaseMonitor en {l}.'
+  ],
   measDelta: ['fiche {v}, écart {d} %', 'sheet {v}, deviation {d} %', 'Datenblatt {v}, Abweichung {d} %', 'ficha {v}, desviación {d} %'],
   measSupport: ['{s} s, {n} vol(s)', '{s} s, {n} flight(s)', '{s} s, {n} Flug/Flüge', '{s} s, {n} vuelo(s)'],
   measAdd: ['Ajouter les lignes cochées au brouillon', 'Add the ticked rows to the draft', 'Angekreuzte Zeilen in den Entwurf übernehmen',

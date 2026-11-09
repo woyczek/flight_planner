@@ -30,10 +30,11 @@ No `module.js`, no screen, no mount by the frame: the module is a library for th
 
 - `modules/aircraft/sheets.js`, « Proposer depuis les mesures » (SOG-0052 step 1, case M27): reads the chosen CSV files,
   calls `parseWindows` → `eligible` → `levelCurves` → `compare`, shows one row to tick per point and adds the ticked rows
-  to the sheet's draft; nothing is saved before « Enregistrer » then « Appliquer ».
+  to the sheet's draft; nothing is saved before « Enregistrer » then « Appliquer ». Since 9 Nov (SOG-0052 step 2, M29) the same
+  screen reads the journals of the workstation's Output folder through the launcher's job `stats/output` (`read` → `_text`), the
+  same functions.
 
 ## 4. To come
 
-- The launcher reads `X-Plane 12\Output\FuelPhaseMonitor_*.csv` itself (AeroDB, step 2) and hands the text to the same
-  functions; the per-flight aggregates of § 10.37 A (Statistiques module in Maintenance) and the report's « Mesures » step
+- The per-flight aggregates of § 10.37 A (Statistiques module in Maintenance) and the report's « Mesures » step
   are the next readers.

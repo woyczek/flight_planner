@@ -298,6 +298,45 @@ export function createSheetsView(host) {
       }
       case 'measure': // « Proposer depuis les mesures » (SOG-0052) : les journaux choisis sur cet appareil, jamais publiés
         return body().querySelector('[data-measfile]')?.click();
+      case 'outopen': // le dossier Output du poste (SOG-0052 étape 2) : la liste de ses journaux
+        st.output.open = !st.output.open;
+        return editor(p.id, readEditor(p, true));
+      case 'outsetopen':
+        st.output.setting = true;
+        await editor(p.id, readEditor(p, true));
+        return body()?.querySelector('[data-k="outfolder"]')?.focus();
+      case 'outsave': { // le réglage du poste : le chemin part au lanceur, qui le garde dans data/local/ (jamais versionné)
+        const folder = body().querySelector('[data-k="outfolder"]')?.value.trim() || '';
+        if (!folder) return;
+        const r = await outputJob({
+          action: 'set',
+          folder
+        });
+        if (!r?.ok) ctx.notify(tt(TX.measBad, {
+          f: tt(TX.measOutput),
+          e: String(r?.message || r?.reason || '?').slice(0, 200)
+        }), 'warn');
+        else st.output.setting = false;
+        return outputStatus(p.id);
+      }
+      case 'outread': { // les journaux cochés, lus par le lanceur ; le même calcul que les fichiers choisis
+        const names = [...body().querySelectorAll('[data-outfile]:checked')].map(i => st.output?.files?.[+i.dataset.outfile]?.name)
+          .filter(Boolean)
+          .slice(0, 20);
+        if (!names.length) return;
+        return measureTexts(names.map(name => ({
+          name,
+          text: async () => {
+            const r = await outputJob({
+              action: 'read',
+              name
+            });
+            if (!r?.ok || typeof r._text !== 'string') throw Error(String(r?.message || r?.reason || 'unreadable').slice(0,
+              200));
+            return r._text;
+          }
+        })));
+      }
       case 'measadd': { // les points cochés vont dans le brouillon ; rien n'est écrit avant « Enregistrer » puis « Appliquer »
         const d = readEditor(p, true),
           ticked = [...body().querySelectorAll('[data-meas]:checked')].map(i => st.measured?.points?.[+i.dataset.meas]).filter(Boolean);
@@ -460,13 +499,21 @@ export function createSheetsView(host) {
    *  (PH.levelCurves) et leur écart à la courbe de même altitude de la fiche (PH.compare), puis redessine l'éditeur avec la liste à
    *  cocher. Un fichier illisible est dit, les autres restent ; aucun fichier n'est gardé ni envoyé. */
   async function measureFiles(files) {
+    return measureTexts(files.slice(0, 20).map(f => ({
+      name: f.name,
+      text: () => journalText(f)
+    })));
+  }
+  /** Le calcul commun aux journaux choisis et à ceux du dossier Output : chaque { name, text() } lu, ses fenêtres du type de la fiche
+   *  gardées, puis les points comparés à la fiche et l'éditeur redessiné avec la liste à cocher (voir measureFiles). */
+  async function measureTexts(list) {
     const p = st.edit,
       d = readEditor(p, true),
       code = String(d.icao || d.id || '').toUpperCase(),
       rows = [];
-    for (const f of files.slice(0, 20)) {
+    for (const f of list) {
       try {
-        rows.push(...PH.parseWindows(await journalText(f)).rows.filter(r => String(r.aircraft_icao || '').toUpperCase() === code));
+        rows.push(...PH.parseWindows(await f.text()).rows.filter(r => String(r.aircraft_icao || '').toUpperCase() === code));
       } catch (err) {
         ctx.notify(tt(TX.measBad, {
           f: f.name,
@@ -486,6 +533,65 @@ export function createSheetsView(host) {
       icao: code
     }), 'warn');
     return editor(p.id, d);
+  }
+  // ---------------------------------------------------------------- le dossier Output du poste (SOG-0052 étape 2)
+  /** Un appel du travail stats/output du lanceur (AeroDB, tools/regen/stats.py) : le résultat ({ ok, … }), ou null sans lanceur ou
+   *  sans réponse. */
+  async function outputJob(args) {
+    if (typeof ctx.launcher?.job !== 'function') return null;
+    try {
+      const r = await ctx.launcher.job('regen/job', {
+        set: 'stats',
+        verb: 'output',
+        args
+      });
+      return r?.result && typeof r.result === 'object' ? r.result : null;
+    } catch {
+      return null;
+    }
+  }
+  /** L'état du dossier Output (une fois par éditeur ouvert) : { exists, label, files } bornés (le chemin n'est jamais rendu entier :
+   *  label, les deux derniers noms) ; null sans lanceur ou sans travail stats/output (le bouton n'est pas montré). Redessine l'éditeur. */
+  async function outputStatus(id) {
+    const r = await outputJob({
+      action: 'status'
+    });
+    if (gone() || st.edit?.id !== id) return;
+    if (!r) return; // sans lanceur ou sans travail : rien à montrer, pas de nouveau dessin
+    st.output = r.ok ? {
+      id,
+      exists: r.exists === true,
+      label: String(r.label || '').slice(0, 120),
+      files: (Array.isArray(r.files) ? r.files : []).slice(0, 200).filter(f => f && typeof f.name === 'string' && /^[\w .()-]{1,160}$/
+        .test(f
+          .name)).map(f => ({
+        name: f.name,
+        size: Number.isFinite(+f.size) ? +f.size : null,
+        mtime: Number.isFinite(+f.mtime) ? +f.mtime : null
+      })),
+      open: st.output?.id === id ? st.output.open : false,
+      setting: st.output?.id === id ? st.output.setting : false
+    } : {
+      id,
+      none: true
+    };
+    return editor(id, readEditor(st.edit, true));
+  }
+  /** « Depuis le dossier Output » : le bouton (seulement quand le lanceur a le travail et le dossier existe), la liste des journaux à
+   *  cocher (nom, taille, date) et « Lire les journaux cochés » ; sans dossier réglé, « Régler le dossier Output » et son champ. */
+  function outputHtml(p) {
+    const o = st.output?.id === p.id ? st.output : null;
+    if (!o || o.none) return '';
+    if (!o.exists) return o.setting ? `<div class="f-row" data-outset><label class="f-field">${esc(tt(TX.measOutputPath))}<input data-k="outfolder" autocomplete="off" spellcheck="false"></label><button type="button" data-do="outsave">${esc(tt(TX.save))}</button></div>` :
+      ` <button type="button" data-do="outsetopen">${esc(tt(TX.measOutputSet))}</button>`;
+    const kb = n => n === null ? '' : n >= 1048576 ? `${Math.round(n / 104857.6) / 10} Mo` : `${Math.max(1, Math.round(n / 1024))} ko`,
+      day = t => t === null ? '' : new Date(t * (t < 1e12 ? 1000 : 1)).toLocaleString(ctx.lang?.() || undefined, {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    return ` <button type="button" data-do="outopen" aria-expanded="${o.open}">${esc(tt(TX.measOutput))}</button>${o.open ? `<div class="f-list" data-outlist><p class="f-muted">${esc(o.label)}</p>${o.files.length ? o.files.map((f, i) => `<label class="f-check"><input type="checkbox" data-outfile="${i}"> ${esc(f.name)} <small class="f-muted">${esc([kb(f.size), day(f.mtime)].filter(Boolean).join(' · '))}</small></label>`).join('') + `<button type="button" data-do="outread">${esc(tt(TX.measOutputRead))}</button>` : `<p class="f-muted">${esc(tt(TX.measOutputEmpty, { l: o.label }))}</p>`}</div>` : ''}`;
   }
   /** La liste des points mesurés à cocher (dans la carte de la table RPM) : altitude, régime, débit mesuré dans l'unité de lecture,
    *  la fiche et l'écart, ou « ligne nouvelle » ; secondes et vols. Rien quand aucun point n'est là. */
@@ -760,6 +866,13 @@ export function createSheetsView(host) {
     if (st.edit?.id === id)
       for (const d of b.querySelectorAll('details[data-rpmgroup]'))(st.rpmOpen ||= new Map()).set(d.dataset.rpmgroup, d.open);
     else st.rpmOpen = new Map();
+    if (st.output?.id !== id && rpmEditable()) {
+      st.output = {
+        id,
+        none: true
+      };
+      outputStatus(id);
+    }
     const p = st.edit = draft || F.normalize(structuredClone(raw)),
       nm = notMonotone(p), // la courbe régime / débit qui redescend : dite, la ligne en orange, jamais corrigée seule (SOG-0015)
       vu = viewUnit(p),
@@ -796,7 +909,7 @@ export function createSheetsView(host) {
             return `<details class="ac-rpmgroup" data-rpmgroup="${esc(key)}"${open ? ' open' : ''}><summary>${esc(`${h === null ? tt(TX.rpmNoAlt) : `${h} ft`} · ${tt(n === 1 ? TX.rpmN1 : TX.rpmN, { n })}`)}</summary>${table(list)}</details>`;
           },
           body = keys.length > 1 ? keys.map(group).join('') : table(rows);
-        if (edit) return `<details class="f-card" open><summary>${esc(tt(TX.rpmTable))}</summary>${body}<button type="button" data-do="rpmadd">${esc(tt(TX.rpmAdd))}</button> <button type="button" data-do="measure">${esc(tt(TX.measure))}</button><input type="file" data-measfile accept=".csv,.gz,.txt" multiple hidden>${measuredHtml(p)}</details>`;
+        if (edit) return `<details class="f-card" open><summary>${esc(tt(TX.rpmTable))}</summary>${body}<button type="button" data-do="rpmadd">${esc(tt(TX.rpmAdd))}</button> <button type="button" data-do="measure">${esc(tt(TX.measure))}</button><input type="file" data-measfile accept=".csv,.gz,.txt" multiple hidden>${outputHtml(p)}${measuredHtml(p)}</details>`;
         return rows.length ? `<details class="f-card"><summary>${esc(tt(TX.rpmTable))}</summary>${body}</details>` : '';
       },
       groups = [...new Set(F.PROFILE_FIELDS.map(f => f[0]))],

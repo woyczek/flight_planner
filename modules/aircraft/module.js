@@ -41,6 +41,11 @@ export const meta = {
     ];
   },
   reads: ['airline/', 'cache/aircraft/'],
+  // « Depuis le dossier Output » (SOG-0052 étape 2) : le travail stats/output d'AeroDB (status, set, clear, read), comme fetchProcedures
+  launcher: {
+    routes: ['regen/job', 'regen/job/cancel'],
+    read: []
+  },
   writes: [{
     prefix: 'airline/fleet.json',
     merge: 'record'

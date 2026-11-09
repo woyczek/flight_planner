@@ -104,3 +104,7 @@
   `normalize`; Fuel reads it by the flow's rule (F102). The ChatGPT template does not ask for it (its schema unchanged). The lnmperf
   part (5) is a proposal to AeroDB: an .lnmperf has neither rpm nor altitude, so its import creates no row (it fills the cruise
   values, as today); its export takes the curve nearest `cruise.refAltFt` at the cruise rpm when two rows frame it. M28.
+- **9 Nov 2026 — the Output folder through the launcher** (SOG-0052 step 2, AeroDB's job `stats/output`, 5f03149b8): called like
+  `fetchProcedures` (`ctx.launcher.job('regen/job', { set: 'stats', verb: 'output', args })`), the module declaring the route; the
+  status is asked once per editor opened on a computer screen; the texts read go through `measureTexts`, the computation the file
+  picker uses too (no second path). File names from the launcher are bounded and checked before they are shown. M29.

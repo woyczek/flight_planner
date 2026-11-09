@@ -3,6 +3,7 @@
 The fleet (airline/fleet.json): list and search, add, edit (the changed fields said before writing), retire (a question), every write
 reading the file just before. Invented aircraft only."""
 import json
+import re
 from pathlib import Path
 
 from lib import case, norm, tx, tx_row
@@ -691,6 +692,84 @@ def m28(c):
     c.until(f"document.querySelectorAll('{M} {SHEETS} input[data-rpm][data-rk=rpm]').length === 6", what='a row is added')
     g = c.js(groups)
     c.eq([x[:2] for x in g], [['', True], ['4000', False], ['8000', True]], 'the 8000 ft group stays open; the group of the new empty row opens', what='after redraw')
+
+
+_LAUNCHER_STATUS = {'server': True, 'root': '', 'git': True, 'data': False, 'dataGit': False, 'dataRepo': '', 'lfs': False, 'csp': True,
+                    'relaxNav': False, 'host': 'TEST', 'lan': False}
+
+
+def _output_launcher(c, status, text):
+    """A FAKE launcher (c.context.route on /__setup/, never a real one) that knows the job stats/output: `status` is what action
+    status answers, `text` the journal action read gives; the posted bodies are recorded in st['posts']."""
+    import urllib.parse
+    st = {'posts': []}
+
+    def handler(route):
+        req = route.request
+        u = urllib.parse.urlparse(req.url)
+        code, body = 200, {}
+        if u.path.endswith('/__setup/status'):
+            body = _LAUNCHER_STATUS
+        elif u.path.endswith('/__setup/regen/job') and req.method == 'POST':
+            st['posts'].append(json.loads(req.post_data or '{}'))
+            body = {'job': f"j{len(st['posts'])}"}
+        elif u.path.endswith('/__setup/regen/job'):
+            a = (st['posts'][-1].get('args') or {}) if st['posts'] else {}
+            res = (status if a.get('action') == 'status' else {'ok': True, 'name': a.get('name'), 'size': len(text), '_text': text} if a.get('action') == 'read'
+                   else {'ok': True, 'set': True} if a.get('action') == 'set' else {'ok': False, 'reason': 'unknown'})
+            body = {'id': f"j{len(st['posts'])}", 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': '', 'log': [], 'result': res}
+        route.fulfill(status=code, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), handler)
+    return st
+
+
+@case('M29', 'Sheets: « Depuis le dossier Output » lists the journals of the workstation\'s X-Plane Output folder through the launcher, reads the ticked ones into the same proposals; without a folder, « Régler le dossier Output »',
+      'M', tags=('aircraft',), designs=('standard',), screens=True, phone=False, langs4=True,
+      rule='SOG-0052 step 2 (AeroDB 5f03149b8: the launcher job stats/output, status / set / read; the path never given whole, label = two last names): '
+      'the button only when the job answers and the folder exists; a fake launcher, never a real one')
+def m29(c):
+    import tempfile
+    sheet = dict(EC25, id='XMES', name='XMES', icao='XMES', unit='kg', cruise={'tasKt': 140, 'fuelFlowPerHour': 40, 'rpmNominal': 2400},
+                 rpmFuelCurve=[{'rpm': 2200, 'altFt': 4000, 'fuelFlowPerHour': 35}, {'rpm': 2400, 'altFt': 4000, 'fuelFlowPerHour': 45}])
+    sheet.pop('_fields', None)
+    docs = [[f'aircraft/sheets/{x["id"]}.json', x, 'document'] for x in (EC25, C30J, sheet)]
+    with tempfile.TemporaryDirectory() as tmp:
+        f = Path(tmp) / 'j.csv'
+        _journal(f)
+        text = f.read_text(encoding='utf-8')
+    status = {'ok': True, 'set': True, 'exists': True, 'label': 'X-Plane 12/Output', 'files': [{'name': 'FuelPhaseMonitor_1.csv', 'size': 2048, 'mtime': 1762600000}]}
+    st = _output_launcher(c, status, text)
+    open_at = lambda: c.open('aircraft', docs=LEVEL3 + [['airline/fleet.json', fleet_doc(3), 'document']] + docs + [TYPES, ['cache/aircraft/ui.json', {'view': 'sheets'}, 'cache']],
+                             wait=False, app='maintenance')
+    open_at()
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-id]')", timeout=15000, what='the Fiches list')
+    edit_sheet(c, 'XMES')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-do=outopen]')", what='« Depuis le dossier Output » (the job answers, the folder exists)')
+    c.tap(f'{M} {SHEETS} [data-do="outopen"]')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-outfile]')", what='the journals of the folder')
+    c.ok('X-Plane 12/Output' in (c.text(f'{M} {SHEETS} [data-outlist]') or ''), c.text(f'{M} {SHEETS} [data-outlist]'), 'the folder said by its two last names')
+    c.page.check(f'{M} {SHEETS} [data-outfile="0"]')
+    c.tap(f'{M} {SHEETS} [data-do="outread"]')
+    c.until(f"document.querySelectorAll('{M} {SHEETS} [data-measrow]').length === 2", what='the same proposals as a chosen file')
+    reads = [x['args'] for x in st['posts'] if (x.get('args') or {}).get('action') == 'read']
+    c.eq([st['posts'][0].get('set'), st['posts'][0].get('verb'), reads], ['stats', 'output', [{'action': 'read', 'name': 'FuelPhaseMonitor_1.csv'}]],
+         'the job stats/output asked, the ticked journal read', what='posts')
+    # no folder set on the workstation: « Régler le dossier Output », a text field, the setting sent to the launcher
+    status.update({'set': False, 'exists': False, 'label': '', 'files': []})
+    open_at()
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-id]')", timeout=15000, what='the Fiches list again')
+    edit_sheet(c, 'XMES')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-do=outsetopen]')", what='« Régler le dossier Output »')
+    c.eq(c.count(f'{M} {SHEETS} [data-do=outopen]'), 0, 'no folder: no list button', what='outopen')
+    c.tap(f'{M} {SHEETS} [data-do="outsetopen"]')
+    c.page.fill(f'{M} {SHEETS} input[data-k=outfolder]', 'D:/X-Plane 12/Output')
+    c.tap(f'{M} {SHEETS} [data-do="outsave"]')
+    for _ in range(60):   # the POST leaves on the tap: wait for the fake launcher to receive it
+        if any((x.get('args') or {}).get('action') == 'set' for x in st['posts']):
+            break
+        c.wait(100)
+    sets = [x['args'] for x in st['posts'] if (x.get('args') or {}).get('action') == 'set']
+    c.eq(sets, [{'action': 'set', 'folder': 'D:/X-Plane 12/Output'}], 'the folder sent to the launcher, set on the workstation', what='set')
 
 
 @case('M25', 'Sheets: the fuel is read and typed in the unit chosen (kg, lb, l, US gal); the sheet keeps its stored unit, an untouched value unchanged',

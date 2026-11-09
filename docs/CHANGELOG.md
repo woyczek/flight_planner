@@ -76,7 +76,8 @@ Alpha: data formats and screens may still change.
   `modules/aircraft/sheets.js`, `sheets_texts.js`; stats SPEC, Aircraft SPEC § 6; noreg F98, M27; SOG-0052, step 1). Journals chosen
   on the device (.csv, .csv.gz), read as untrusted input, never kept; the steady cruise windows of the sheet's type grouped per
   altitude and rpm (weighted median flow, TAS), compared with the sheet's curve of the same altitude; each ticked point goes to the
-  draft, written only through the ordinary review. Ported from the FuelDashboard.
+  draft, written only through the ordinary review. Ported from the FuelDashboard. Since 9 Nov (step 2, M29): « Depuis le dossier
+  Output » lists and reads the journals of the workstation's X-Plane Output folder through the launcher (AeroDB's `stats/output`).
 
 - **Fuel: the typed flow is used when the RPM table does not frame the rpm** (`modules/fuel/model.js` `tableAt`; Fuel SPEC § 3,
   DECISIONS; noreg F97; SOG-0053). A table with a single row with a flow (the S210: 6700 rpm → 11 500 lb/h against 7300 lb/h typed at
