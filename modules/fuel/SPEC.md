@@ -226,6 +226,16 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
 
 ### 9.3 Step 2 — Route
 
+- **The launcher's route engine** (SOG-0080, SOG-0081; RouteSim carried by the launcher, AeroDB's job `route/compute`, detected by
+  `regen/verbs`; without it nothing is shown): « Calculer A → B » asks routes from the departure to the arrival, the points typed
+  between them being imposed passages (`RE.via`); « Contrôler » checks the typed route as it is. The answer is untrusted input
+  (`route_engine.js` `normalize`: seven routes at most, texts and numbers bounded, procedure ids by shape). The routes are a list
+  under the route field — name, length, FL kept, deviations (count) — each with « Prendre », the taken one marked: « Prendre » writes
+  the route text through the field's own input (the one path of a typing, SOG-0013) and proposes its SID and STAR to the procedures
+  (`propose`: checked against the aerodrome's records, nothing unknown written). The pilot's typing is never replaced without that
+  gesture. « Contrôler » marks red, in the list of points, the point that ends a faulty segment with the segment and its reasons
+  (RAD, FRA, direction, floor / ceiling, altitude), and says their count on the context line of the result bar, for the text checked
+  only (F109).
 - **The route text is the first input**, always visible: free text read as item 15 or as an OFP list (`frame/lib/route_model.js`
   `routeModel`). On leaving the field it is normalised in ICAO form — one line, upper case, « DCT » between two en-route points with
   nothing between them (never against the departure or the arrival), speed-level groups dropped, departure and arrival at the ends,

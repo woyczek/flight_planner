@@ -1433,3 +1433,8 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   F107; counter-test on d8defe46b: no button.
 - **9 Nov 2026 — the fuel unit on the result bar** (SOG-0074, the user: « afficher [l'unité] globalement sur le header ? »; the frame's
   header carries no module data): right after the aircraft on the context line, so the ellipsis of a phone never hides it. F108.
+- **9 Nov 2026 — the route engine of the launcher on the Route step** (SOG-0080 / SOG-0081, the ergonomics session's design inspired by
+  RouteSim's layout): two buttons, a list of routes, « Prendre », red segments. Deviation from the design, said: in a wide module Fuel has
+  no rail of steps to give way (from 900 px every step is shown, without the step bar), so the routes are a list under the route field at
+  every width rather than a left band or a sheet; to reconsider with a layout lot. The engine's answer is normalised in one function so
+  that AeroDB's contract, posted after this lot, costs one change. F109 (a fake launcher); counter-test on bc39efbb3: no buttons.

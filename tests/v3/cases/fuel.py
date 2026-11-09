@@ -2804,3 +2804,83 @@ def f108(c):
     c.js("document.querySelector('[data-module=fuel] details[data-fold=settings]').open = true")
     c.page.select_option(f'{FUEL} select[data-k="unit"]', 'kg')
     c.until("(document.querySelector('[data-module=fuel] .fu-result [data-ctxunit]')?.textContent || '') === 'kg · kg/h'", what='kg · kg/h once kg is chosen')
+
+
+_LAUNCHER_STATUS = {'server': True, 'root': '', 'git': True, 'data': False, 'dataGit': False, 'dataRepo': '', 'lfs': False, 'csp': True,
+                    'relaxNav': False, 'host': 'TEST', 'lan': False}
+_SID = {'id': 'LFRS.SID.NTS1A.RW03.NONE', 'name': 'NTS1A'}
+_STAR = {'id': 'LFML.STAR.MEN1A.RW13R.NONE', 'name': 'MEN1A'}
+
+
+def _route_launcher(c, verbs):
+    """A FAKE launcher (c.context.route on /__setup/, never a real one, never RouteSim): regen/verbs lists `verbs`; the job route/compute
+    answers three routes to `compute` and two faulty segments to `check`; the posted bodies are kept in st['posts']."""
+    import urllib.parse
+    st = {'posts': [], 'verbs': verbs}
+
+    def seg(a, b, bad=None):
+        return {'from': a, 'to': b, 'via': 'DCT', 'state': 'error' if bad else 'ok', 'reasons': [bad] if bad else []}
+    alts = [{'id': 'a1', 'name': 'Direct', 'route': 'LFRS LUGEN NEPIX LFML', 'distanceNm': 370, 'fl': 270, 'sid': _SID, 'star': _STAR,
+             'segments': [seg('LFRS', 'LUGEN'), seg('LUGEN', 'NEPIX'), seg('NEPIX', 'LFML')]},
+            {'id': 'a2', 'name': 'Via NEPIX', 'route': 'LFRS NEPIX LFML', 'distanceNm': 365, 'fl': 250, 'sid': _SID, 'star': _STAR,
+             'segments': [seg('LFRS', 'NEPIX'), seg('NEPIX', 'LFML')]},
+            {'id': 'a3', 'name': 'Plus bas', 'route': 'LFRS LUGEN LFML', 'distanceNm': 380, 'fl': 190, 'sid': None, 'star': None,
+             'segments': [seg('LFRS', 'LUGEN'), seg('LUGEN', 'LFML', {'kind': 'ceiling', 'text': 'plafond 19500 ft'})]}]
+    check = {'ok': True, 'alternatives': [{'id': 'c', 'name': 'Saisie', 'route': 'LFRS LUGEN NEPIX LFML', 'distanceNm': 370, 'fl': 270,
+                                           'segments': [seg('LFRS', 'LUGEN'), seg('LUGEN', 'NEPIX', {'kind': 'RAD', 'text': 'Interdiction RAD LF9999'}),
+                                                        seg('NEPIX', 'LFML', {'kind': 'ceiling', 'text': 'plafond 19500 ft, prévu 27000 ft'})]}]}
+
+    def handler(route):
+        req = route.request
+        u = urllib.parse.urlparse(req.url)
+        code, body = 200, {}
+        if u.path.endswith('/__setup/status'):
+            body = _LAUNCHER_STATUS
+        elif u.path.endswith('/__setup/regen/verbs'):
+            body = {'verbs': st['verbs']}
+        elif u.path.endswith('/__setup/regen/job') and req.method == 'POST':
+            st['posts'].append(json.loads(req.post_data or '{}'))
+            body = {'job': 'j' + str(len(st['posts']))}
+        elif u.path.endswith('/__setup/regen/job'):
+            a = (st['posts'][-1].get('args') or {}) if st['posts'] else {}
+            res = {'ok': True, 'alternatives': alts} if a.get('action') == 'compute' else check
+            body = {'id': 'j' + str(len(st['posts'])), 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': '', 'log': [], 'result': res}
+        route.fulfill(status=code, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), handler)
+    return st
+
+
+@case('F109', 'Route step: « Calculer A → B » lists the launcher\'s routes, « Prendre » writes route, SID and STAR; « Contrôler » marks the faulty segments red with their reason',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0080 / SOG-0081 (user: the route choice, « frein majeur de la première tâche du pilotage »): the job route/compute of the launcher '
+      '(AeroDB, RouteSim), detected by regen/verbs; the pilot\'s typing is never replaced without « Prendre »; a fake launcher, never the real engine')
+def f109(c):
+    st = _route_launcher(c, ['route/compute'])
+    open_proc(c)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons (the launcher has the job)')
+    # Contrôler: the typed route as it is
+    c.tap(f'{FUEL} [data-do="rcheck"]')
+    c.until(f"document.querySelectorAll('{FUEL} [data-segerr]').length === 2", what='two faulty segments red in the list of points')
+    why = c.js(f"[...document.querySelectorAll('{FUEL} [data-segerr]')].map(e => [e.dataset.segerr, (e.querySelector('[data-segwhy]')?.textContent || '').trim()])")
+    c.eq([w[0] for w in why], ['LUGEN-NEPIX', 'NEPIX-LFML'], 'the two segments', what='segments')
+    c.ok('RAD' in why[0][1] and 'LF9999' in why[0][1] and 'ceiling' in why[1][1], why, 'each with its reason (RAD rule, ceiling)')
+    c.until(f"(document.querySelector('{FUEL} .fu-result [data-ctxfaults]')?.textContent || '').includes('2')", what='the count on the context line')
+    chk = [p['args'] for p in st['posts'] if (p.get('args') or {}).get('action') == 'check'][0]
+    typed = cf_doc(c, lambda d: True, 'the flight')['route']['text']
+    c.eq([chk['adep'], chk['adest'], chk['route']], ['LFRS', 'LFML', typed], 'the typed route sent as it is', what='check args')
+    # Calculer A → B: the typed points are imposed; three routes; « Prendre » the second
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3", what='three routes proposed')
+    comp = [p['args'] for p in st['posts'] if (p.get('args') or {}).get('action') == 'compute'][0]
+    c.eq(comp['via'], ['LUGEN', 'NEPIX'], 'the typed points are the imposed passages', what='via')
+    before = cf_doc(c, lambda d: True, 'the flight')['route']['text']
+    c.tap(f'{FUEL} [data-alt="1"] [data-do="rtake"]')
+    d = cf_doc(c, lambda d: 'LUGEN' not in [p.get('id') for p in (d.get('route') or {}).get('points') or []] and procs_of(d, 'dep').get('sid') == _SID['id']
+               and procs_of(d, 'arr').get('star') == _STAR['id'], 'route, SID and STAR of the taken route written', timeout=10000)
+    c.ok(before != d['route']['text'], d['route']['text'], 'the route text changed only after « Prendre »')
+    c.ok(c.js(f"!!document.querySelector('{FUEL} [data-alt=\"1\"][aria-current]')"), 'not marked', 'the taken route is marked')
+    # without the job: no buttons
+    st['verbs'] = []
+    open_proc(c)
+    c.settle()
+    c.eq(c.count(f'{FUEL} [data-reng]:not([hidden])'), 0, 'no job route/compute: no buttons', what='no launcher job')

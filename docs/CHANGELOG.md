@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: « Calculer A → B » and « Contrôler » on the Route step** (`modules/fuel/route_engine.js`, `modules/fuel/module.js`; Fuel SPEC
+  § 9.3, INTEGRATION, DECISIONS; noreg F109; SOG-0080, SOG-0081, screen side). With the launcher's route engine (RouteSim, AeroDB's job
+  `route/compute`): routes proposed with their length, FL and deviations, « Prendre » writing route, SID and STAR; the typed route checked,
+  its faulty segments red with their reason and counted on the result bar. Without the job, nothing changes.
+
 - **Data: the ticked personal-licence sources are remembered on the workstation** (`modules/data/screen.js`, `module.js`, `panels.js`, `model_sets.js`, `texts.js`; Data SPEC § 5 and 7; help ×4; L32) — SOG-0079:
   a source ticked among NATS, ENAIRE, AirNav, X-Plane is written in `cache/data/personal.json`, found ticked at each opening and sent to « Construire » / « Télécharger » without being ticked again;
   the line under it says « Personnel · mémorisé ». Only its own box undoes it.

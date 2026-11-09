@@ -93,6 +93,8 @@ viennent (la route, l'OFP SimBrief). Si la route ne se résout pas, « Saisir à
 votre identifiant SimBrief réglé (⚙), « Dernier OFP SimBrief » reprend d'un coup la route, le niveau, le vent moyen et
 l'appareil de votre dernier plan.
 
+**Calculer et contrôler la route.** Sur un poste dont le lanceur porte le calcul de route, deux boutons s'ajoutent sous le champ : « Calculer A → B » propose des itinéraires d'un terrain à l'autre (les points que vous avez tapés sont des passages imposés), avec leur longueur, le FL tenu et le nombre d'écarts aux règles ; « Prendre » écrit la route, la SID et la STAR de l'itinéraire choisi. « Contrôler » analyse la route tapée telle quelle : les segments fautifs passent en rouge dans la liste des points avec leur raison (RAD, FRA, plancher, plafond…), et leur nombre s'affiche dans la barre de résultat. Votre saisie n'est jamais remplacée sans « Prendre ». C'est un précontrôle de simulation, pas une validation IFPS.
+
 Le bouton « Auto » à côté du champ « Route » inscrit les voies aériennes entre les points : pour chaque paire de points
 nommés qui se suivent sans voie entre eux, il cherche le plus court chemin sur les voies de la base publiée, ouvertes au
 niveau prévu (plancher et plafond de chaque tronçon, à 100 ft près ; sans niveau prévu, 6 500 ft, et une notification le

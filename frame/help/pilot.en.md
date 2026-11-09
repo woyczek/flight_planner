@@ -93,6 +93,8 @@ written the ICAO way (“4530N00030E”). The next line gives the distance and t
 route, the SimBrief OFP). If the route does not resolve, “Type them by hand” opens the two fields. With your SimBrief ID
 set (⚙), “Last SimBrief OFP” takes the route, the level, the mean wind and the aircraft of your last plan in one go.
 
+**Compute and check the route.** On a workstation whose launcher carries the route computation, two buttons appear under the field: "Compute A → B" proposes routes from one aerodrome to the other (the points you typed are imposed passages), with their length, the FL kept and the number of rule deviations; "Take" writes the route, the SID and the STAR of the route chosen. "Check" analyses the typed route as it is: the faulty segments turn red in the list of points with their reason (RAD, FRA, floor, ceiling…), and their number shows on the result bar. Your typing is never replaced without "Take". It is a simulation pre-check, not an IFPS validation.
+
 The “Auto” button next to the “Route” field writes the airways between the points: for each pair of named points that
 follow each other with no airway between them, it looks for the shortest path over the published base's airways, open at the
 planned level (each leg's floor and ceiling, within 100 ft; with no planned level, 6,500 ft, and a notification says so),
@@ -237,7 +239,7 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: 308c6407775d -->
+<!-- fr: 3ec34b121ffc -->
 
 <!-- chapter: maps -->
 # Map

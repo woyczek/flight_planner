@@ -17,6 +17,7 @@ import * as RM from '../../frame/lib/route_model.js'; // la route lue depuis son
 import * as RG from '../../frame/lib/routing.js'; // voies aériennes du bouton « Auto » (bibliothèque du cadre)
 import * as CF from '../../frame/lib/current_flight.js';
 import * as MS from '../../frame/lib/mission.js'; // le vol qu'une mission donne (modules/missions SPEC § 4)
+import * as RE from './route_engine.js'; // le calcul et le contrôle de route du lanceur (RouteSim, SOG-0080, SOG-0081)
 import * as FU from '../../frame/lib/fuel_units.js'; // les unités du carburant du cadre (SOG-0059 : « débit de ce vol »)
 import * as PR from '../../frame/lib/procedures.js'; // noms, sortie et entrée des procédures pour le texte de route (§ 10.31)
 import * as FMS from '../../frame/lib/fms.js'; // plan de vol écrit pour X-Plane (.fms) et MSFS (.pln), V3 § 10.28
@@ -66,6 +67,11 @@ export const meta = {
     ];
   },
   reads: ['pilot/', 'cache/fuel/', 'missions/'], // missions/ : « Préparer ce vol » du module Missions (#fuel?mission=<id>)
+  // « Calculer A → B » et « Contrôler » (SOG-0080) : le travail route/compute du lanceur (AeroDB, RouteSim), détecté par regen/verbs
+  launcher: {
+    routes: ['regen/job', 'regen/job/cancel', 'regen/verbs'],
+    read: []
+  },
   // fiches, flotte et référence : par aerodb (aircraft()), qui seul écrit aircraft/sheets/ et le miroir V2
   writes: [{
     prefix: 'pilot/',
@@ -77,7 +83,7 @@ export const meta = {
   // gardés hors ligne dès la première visite (service worker du cadre)
   files: ['performance_model.js', 'model.js', 'levels.js', 'weather.js', 'winds.js', 'progress.js', 'procedures.js',
     'procedures_texts.js', 'adnames.js', 'routecomplete.js', 'suggest.js',
-    '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js',
+    '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/flight_time.js',
     '../../frame/lib/flight_path.js', '../../frame/lib/procedures.js', '../../frame/lib/routing.js', '../../frame/lib/fms.js',
     '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js', '../../frame/lib/clipboard.js',
@@ -198,6 +204,21 @@ const TX = {
   ],
   rmanual: ['Saisir à la main', 'Type them by hand', 'Von Hand eingeben', 'Introducir a mano'],
   rauto: ['Auto', 'Auto', 'Auto', 'Auto'],
+  // le moteur de route du lanceur (SOG-0080) : calculer la route d'un terrain à l'autre (les points saisis imposés), contrôler la saisie
+  rCompute: ['Calculer A → B', 'Compute A → B', 'A → B berechnen', 'Calcular A → B'],
+  rCheck: ['Contrôler', 'Check', 'Prüfen', 'Comprobar'],
+  rBusy: ['Calcul en cours…', 'Computing…', 'Berechnung läuft…', 'Calculando…'],
+  rNone: ['Aucun itinéraire proposé.', 'No route proposed.', 'Keine Route vorgeschlagen.', 'Ningún itinerario propuesto.'],
+  rFail: ['Le calcul de route n’a pas répondu.', 'The route computation did not answer.', 'Die Routenberechnung hat nicht geantwortet.',
+    'El cálculo de ruta no ha respondido.'
+  ],
+  rTake: ['Prendre', 'Take', 'Übernehmen', 'Tomar'],
+  rTaken: ['pris', 'taken', 'übernommen', 'tomado'],
+  rFaults: ['{n} écart(s)', '{n} deviation(s)', '{n} Abweichung(en)', '{n} desviación(es)'],
+  rCheckOk: ['Contrôle : aucun écart détecté (précontrôle de simulation)', 'Check: no deviation found (simulation pre-check)',
+    'Prüfung: keine Abweichung gefunden (Simulations-Vorprüfung)', 'Comprobación: ninguna desviación (precontrol de simulación)'
+  ],
+  rCheckN: ['{n} écart(s) aux règles', '{n} rule deviation(s)', '{n} Regelabweichung(en)', '{n} desviación(es) de las reglas'],
   rautoHint: ['Inscrire les voies aériennes entre les points au niveau prévu',
     'Write the airways between the points at the planned level',
     'Luftstraßen zwischen den Punkten auf der geplanten Flugfläche eintragen',
@@ -1517,6 +1538,11 @@ function climbSvg(G, box) {
 // couleurs dans --sog-chart-* (suivent le design et la nuit sans redessin)
 const STYLE = `
 [data-module="fuel"] .fu-g3{--f-min:96px}
+/* SOG-0080 / 0081 : les itinéraires proposés, un segment fautif dans la liste des points */
+[data-module="fuel"] .fu-ralts .f-item[aria-current]{border-color:var(--sog-accent)}
+[data-module="fuel"] .fu-ralts .fu-raltroute{display:block;word-break:break-word}
+[data-module="fuel"] .fu-pt.fu-pterr{border-color:var(--sog-err);flex-wrap:wrap}
+[data-module="fuel"] .fu-pt .fu-segwhy{flex-basis:100%;order:9;color:var(--sog-err)}
 [data-module="fuel"] details.fu-others>summary{cursor:pointer;margin:10px 0 4px;font-weight:600}
 /* SOG-0058 : libellé à gauche dans une colonne fixe, valeur à droite (l'unité dans le libellé) ; la même grille sur la carte Météo et
    les réglages du devis : un libellé long passe à la ligne sans décaler les champs ; plusieurs couples par ligne sur un grand écran */
@@ -1668,6 +1694,8 @@ function renderPlanBody() {
     </div>`)}
   ${sec(1, `<div class="f-card" data-block="route"><h2>${esc(tt(TX.route))}</h2>
       <div class="fu-rrow"><label class="f-field">${esc(tt(TX.routeText))}<textarea data-k="rtext" rows="3" autocapitalize="characters" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-rtsug">${esc(r.text || '')}</textarea><div class="fu-sug" id="fu-rtsug" data-rtsug role="listbox" aria-label="${esc(tt(S.RC.texts.listLabel))}" hidden></div></label><button type="button" data-do="rauto" title="${esc(tt(TX.rautoHint))}" aria-label="${esc(tt(TX.rautoHint))}">${esc(tt(TX.rauto))}</button></div>
+      <div class="f-row fu-reng" data-reng${S.routeEngine ? '' : ' hidden'}><button type="button" data-do="rcompute">${esc(tt(TX.rCompute))}</button><button type="button" data-do="rcheck">${esc(tt(TX.rCheck))}</button></div>
+      <div data-routealts></div>
       <p class="f-warn" data-unres></p>
       <p class="f-row fu-rinfo"><span class="f-muted" data-rinfo></span><button type="button" class="fu-linkbtn" data-do="rmanual">${esc(tt(TX.rmanual))}</button></p>
       <div class="f-grid fu-g3 fu-hide" data-rmanual>${fld('dist', TX.distance, distField(r.distanceNm), 'inputmode="decimal"', { u: distLabel() })}${fld('trk', TX.track, r.trackDeg != null ? Math.round(r.trackDeg) : '', 'inputmode="numeric"')}</div>
@@ -2125,6 +2153,8 @@ function onPlanClick(e) {
   if (pk) return pickAircraft(pk.dataset.pick);
   if (e.target.closest('[data-do="acopen"]')) return acOpen();
   if (e.target.closest('[data-do="acgo"]')) return acGo();
+  const rb = e.target.closest('[data-do="rcompute"],[data-do="rcheck"],[data-do="rtake"]');
+  if (rb) return rb.dataset.do === 'rtake' ? routeTake(+rb.dataset.i) : routeAsk(rb.dataset.do === 'rcompute' ? 'compute' : 'check');
   if (e.target.closest('[data-do="when30"]')) return setWhen(30);
   if (e.target.closest('[data-do="whennow"]')) return setWhen(0);
   const wb = e.target.closest('[data-do="wx"]');
@@ -2977,6 +3007,85 @@ function renderDa(C) {
 }
 
 /** Niveau du plan fixé (ft) : champ, vol courant, résultats. */
+// ---------------------------------------------------------------- calcul et contrôle de route (SOG-0080, SOG-0081)
+/** « Calculer A → B » (compute : les points saisis sont des passages imposés) ou « Contrôler » (check : la route saisie telle quelle),
+ *  par le travail route/compute du lanceur ; la réponse, nettoyée (RE.normalize), donne la liste des itinéraires (compute) ou les segments
+ *  fautifs marqués dans la liste des points (check). La saisie n'est jamais touchée ici. */
+async function routeAsk(action) {
+  const s = S,
+    r = S.flight.route || {},
+    o = CF.proceduresOf(S.flight),
+    box = S.body?.querySelector('[data-routealts]');
+  if (!S.routeEngine || !r.dep || !r.arr) return;
+  if (box) box.innerHTML = `<p class="f-muted" data-rbusy>${esc(tt(TX.rBusy))}</p>`;
+  const args = {
+      action,
+      adep: r.dep,
+      adest: r.arr,
+      fl: +S.flight.level?.ft > 0 ? Math.round(+S.flight.level.ft / 100) : null,
+      rwyDep: o.dep?.rwy || null,
+      rwyArr: o.arr?.rwy || null,
+      ...(action === 'compute' ? {
+        via: RE.via(r.points)
+      } : {
+        route: String(r.text || '').slice(0, 800)
+      })
+    },
+    res = await RE.run(S.ctx.launcher, args);
+  if (gone(s) || !S.body) return;
+  if (!res) {
+    if (box) box.innerHTML = '';
+    return S.ctx.notify(tt(TX.rFail), 'warn');
+  }
+  const n = RE.normalize(res);
+  if (action === 'check') {
+    const a = n.alternatives[0];
+    S.rcheck = {
+      text: String(r.text || ''),
+      segments: a?.segments || [],
+      faults: a?.faults || 0
+    };
+    if (box) box.innerHTML = `<p class="${S.rcheck.faults ? 'f-warn' : 'f-muted'}" data-rcheck>${esc(S.rcheck.faults ? tt(TX.rCheckN, { n: S.rcheck.faults }) : tt(TX.rCheckOk))}</p>`;
+    renderPts();
+    return refresh();
+  }
+  S.ralts = {
+    list: n.alternatives,
+    chosen: -1
+  };
+  routeAltsDraw();
+}
+/** La liste des itinéraires proposés (sept au plus) : nom court, longueur, FL tenu, écarts ; « Prendre » ; le choisi marqué. */
+function routeAltsDraw() {
+  const box = S.body?.querySelector('[data-routealts]'),
+    A = S.ralts;
+  if (!box || !A) return;
+  box.innerHTML = A.list.length ? `<div class="f-list fu-ralts" data-altlist>${A.list.map((a, i) => `<div class="f-item${a.faults ? ' fu-raltbad' : ''}" data-alt="${i}"${i === A.chosen ? ' aria-current="true"' : ''}><span><b>${esc(a.name)}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(Math.round(a.fl)).padStart(3, '0')}` : '', tt(TX.rFaults, { n: a.faults })].filter(Boolean).join(' · '))}</span><small class="f-muted fu-raltroute">${esc(a.route)}</small></span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(TX.rTake))}</button>`}</div>`).join('')}</div>` :
+    `<p class="f-muted">${esc(tt(TX.rNone))}</p>`;
+}
+/** « Prendre » : la route de l'itinéraire écrite comme une saisie (le champ de route et son événement : le seul chemin d'écriture,
+ *  SOG-0013), puis sa SID et sa STAR proposées aux procédures (P.propose : vérifiées contre les fiches du terrain, rien d'inconnu écrit). */
+function routeTake(i) {
+  const a = S.ralts?.list?.[i],
+    ta = S.body?.querySelector('[data-k="rtext"]');
+  if (!a || !ta) return;
+  ta.value = a.route;
+  ta.dispatchEvent(new Event('input', {
+    bubbles: true
+  }));
+  ta.dispatchEvent(new Event('change', {
+    bubbles: true
+  }));
+  if (a.sid?.id) S.P.propose('dep', {
+    sid: a.sid.id
+  });
+  if (a.star?.id) S.P.propose('arr', {
+    star: a.star.id
+  });
+  S.ralts.chosen = i;
+  S.rcheck = null;
+  routeAltsDraw();
+}
 /** « Auto » (SOG-0056) : le niveau suit le devis (level.auto) ; le prochain dessin choisit le niveau (refresh → levelAuto). */
 function levelAutoOn() {
   const b = S.body?.querySelector('[data-do="levelauto"]');
@@ -3224,6 +3333,8 @@ function renderPts() {
     unRows = i => un.filter(x => x.i === i).map(x => `<div class="f-item fu-pt fu-ptunres" data-unres-pt="${esc(x.id)}"><span class="fu-ptid"><b>${esc(x.id)}</b><small class="f-warn">${esc(why)}</small></span><span class="fu-ptgap"></span></div>`).join('');
   let cur = plan,
     shown = un.length;
+  // SOG-0081 : les segments fautifs du dernier contrôle, s'il porte sur le texte d'aujourd'hui
+  const rc = S.rcheck && S.rcheck.text === String(S.flight.route?.text || '') ? S.rcheck.segments : null;
   box.innerHTML = pts.length ? unRows(-1) + pts.map((p, i) => {
     const mid = i > 0 && i < pts.length - 1,
       hint = cur > 0 ? Math.round(cur / 100) : '';
@@ -3232,8 +3343,9 @@ function renderPts() {
       after = i === 0 ? groups.filter(g => g.kind === 'sid').map(group).join('') : '';
     if (mid && inGroup.has(String(p.id || '').toUpperCase())) return unRows(i); // un repère de procédure : dans son groupe
     shown++;
-    const id = esc(p.id || '?');
-    return `${before}<div class="f-item fu-pt"><span class="fu-ptid"><b>${id}</b><small class="f-muted">${(+p.lat).toFixed(2)} ${(+p.lon).toFixed(2)}</small></span>
+    const id = esc(p.id || '?'),
+      bad = rc ? rc.find(g => g.state === 'error' && g.to === String(p.id || '').toUpperCase()) : null;
+    return `${before}<div class="f-item fu-pt${bad ? ' fu-pterr' : ''}"${bad ? ` data-segerr="${esc(`${bad.from}-${bad.to}`)}"` : ''}>${bad ? `<small class="fu-segwhy" data-segwhy>${esc(`${bad.from} → ${bad.to}${bad.via ? ` (${bad.via})` : ''} : ${bad.reasons.map(x => `${x.kind} — ${x.text}`).join(' ; ')}`)}</small>` : ''}<span class="fu-ptid"><b>${id}</b><small class="f-muted">${(+p.lat).toFixed(2)} ${(+p.lon).toFixed(2)}</small></span>
       ${mid ? `<input data-k="ptalt" data-i="${i}" inputmode="numeric" maxlength="3" value="${p.alt_ft > 0 ? Math.round(p.alt_ft / 100) : ''}" placeholder="${hint}" aria-label="${esc(tt(TX.ptLevel, { id: p.id }))}">` : '<span class="fu-ptgap"></span>'}
       <button type="button" data-do="ptup" data-i="${i}" ${i ? '' : 'disabled'} aria-label="${esc(tt(TX.ptUp, { id: p.id }))}">${svg('chevron-up')}</button><button type="button" data-do="ptdown" data-i="${i}" ${i < pts.length - 1 ? '' : 'disabled'} aria-label="${esc(tt(TX.ptDown, { id: p.id }))}">${svg('chevron-down')}</button><button type="button" data-do="ptdel" data-i="${i}" aria-label="${esc(tt(TX.ptDel, { id: p.id }))}">${svg('x')}</button></div>${after}${unRows(i)}`;
   }).join('') : `<p class="f-muted">${esc(tt(TX.ptsNone))}</p>`;
@@ -4402,7 +4514,7 @@ function refresh() {
   else {
     const range = !q.windKnown && Number.isFinite(q.blockLow) && Number.isFinite(q.blockHigh) && Math.round(q.blockLow) !== Math.round(q
       .blockHigh);
-    res.innerHTML = `${flightState() ? `<div class="fu-flightstate">${esc(flightState())}</div>` : ''}<div class="f-muted fu-ctx" title="${esc(resultContext(q, range, false))}">${acLineHtml()}<span data-ctxunit>${esc(`${fuelUnitOf(unit)} · ${fuelUnitOf(unit)}/h`)}</span><span aria-hidden="true"> · </span>${esc(resultContext(q, range, true))}</div>
+    res.innerHTML = `${flightState() ? `<div class="fu-flightstate">${esc(flightState())}</div>` : ''}<div class="f-muted fu-ctx" title="${esc(resultContext(q, range, false))}">${acLineHtml()}<span data-ctxunit>${esc(`${fuelUnitOf(unit)} · ${fuelUnitOf(unit)}/h`)}</span><span aria-hidden="true"> · </span>${esc(resultContext(q, range, true))}${S.rcheck?.faults && S.rcheck.text === String(S.flight.route?.text || '') ? ` · <span class="f-warn" data-ctxfaults>${esc(tt(TX.rCheckN, { n: S.rcheck.faults }))}</span>` : ''}</div>
       <div class="fu-big">${range ? `${esc(fuelTxt(q.blockLow, unit))} – ${esc(fuelTxt(q.blockHigh, unit))}` : esc(fuelTxt(q.block, unit))}</div>
       <div class="f-tiles"><span class="f-muted" title="${esc(tt(TX.trip))}">${esc(tt(TX.tripS))}<b>${esc(fuelTxt(q.trip, unit))}</b></span><span class="f-muted" title="${esc(tt(TX.time))}">${esc(tt(TX.time))}<b>${hmm(q.minutes)}</b></span><span class="f-muted" title="${esc(`${tt(TX.tod)} : ${tt(TX.todVal, { d: distTxt(q.todNm) })}`)}">${esc(tt(TX.todS))}<b>${esc(distTxt(q.todNm))}</b></span></div>
       ${q.overMtow ? `<div class="f-warn">${esc(tt(TX.overMtow))}</div>` : ''}${past ? `<div class="f-warn fu-pastdate">${esc(past)}</div>` : ''}`;
@@ -4888,6 +5000,12 @@ export async function mount(el, ctx) {
   };
   window.addEventListener('frame-data-airline', onAirline);
   S.stops.push(() => window.removeEventListener('frame-data-airline', onAirline));
+  // SOG-0080 : le moteur de route du lanceur, s'il le porte (sans lui, pas de boutons)
+  RE.available(ctx.launcher).then(on => {
+    if (gone(self)) return;
+    S.routeEngine = on;
+    S.body?.querySelector('[data-reng]')?.toggleAttribute('hidden', !on);
+  });
   // dessins à la largeur de l'écran
   const ro = new ResizeObserver(() => {
     clearTimeout(S.roTimer);
