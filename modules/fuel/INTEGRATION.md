@@ -248,7 +248,7 @@ report and maps never write nor erase it.
 ## 3 bis. The proposed routes for the Map — `cache/fuel/route_alts.json` and the event `fuel-route-alts` (SOG-0134 a, 9 Nov 2026)
 
 > **Status: in force** (9 Nov 2026, 17 h 30: the user chose the Map — « pourquoi la carte side by side n'affiche pas les trajets
-> calculés ? … sans avoir besoin de faire une autre carte »). The sketch of a8d158da8 is withdrawn (e8b665932).
+> calculés ? … sans avoir besoin de faire une autre carte »). The sketch of a8d158da8 is withdrawn (515f5e7b8).
 
 The routes of the Route step (« Calculer A → B », « Contrôler », § 9.3 of the SPEC) are drawn **by the Map**, not by Fuel (way (i)
 of SOG-0134 a). Fuel resolves them into positions and publishes them; the Map (BUGS SOG, layer « alternatives ») draws them and can

@@ -1462,6 +1462,6 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   route was not copied. Counter-test on 95b2405b0: the unknown point never says its zone.
 - **9 Nov 2026 — the routes drawn by the Map, the sketch withdrawn** (SOG-0134 a): the user chose the Map (« pourquoi la carte side by
   side n'affiche pas les trajets calculés ? … sans avoir besoin de faire une autre carte »). The sketch of a8d158da8 is reverted by a
-  forward commit (e8b665932, no history rewritten); Fuel publishes the resolved routes on the contract of INTEGRATION § 3 bis (now in
+  forward commit (515f5e7b8, no history rewritten); Fuel publishes the resolved routes on the contract of INTEGRATION § 3 bis (now in
   force) and takes back a route touched on the Map; BUGS SOG draws the layer and, on a phone, the list of routes as a sheet over the Map
-  opened by « Sur la carte » (the Map's own UI). F114; counter-test on e8b665932: nothing published.
+  opened by « Sur la carte » (the Map's own UI). F114; counter-test on 515f5e7b8: nothing published.
