@@ -596,10 +596,12 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
   highlights its threshold vector computed from its sheet (`runwayVector`, not the vectors drawn: it does not depend on `runwayZoom`) and « see »
   frames its threshold at zoom 16 or more. On a touch screen the rows are 44 px high; a highlighted taxiway is drawn under its names.
   Noreg D112 (layer by zoom and by AeroDB), D113 (panel), D114 (cost), D115 (runway rows).
-- **The reading from OpenStreetMap** (the pilot's gesture, 9 Nov): an aerodrome without a file (`status: 'none'`) shows in its panel the
-  button « Read from OpenStreetMap (~30 s) » (only when `ctx.aerodb.fetchGround` exists), which asks the launcher for one reading (the page
-  contacts nothing); the button is off while it runs, a refusal is said in the panel's words (paired, no launcher, too soon with the
-  seconds to wait, no data, busy, cancelled, failed) and the file, when it arrives, is read again and the layer redrawn. Noreg D120.
+- **Where the ground comes from** (SOG-0135, 9 Nov): the file is read **with the procedures** of the aerodrome (AeroDB, after `fetchProcedures`;
+  « Read the procedures » in Fuel), never by a button of the Map. The panel of an aerodrome without a file says « Read the aerodrome's
+  procedures to get the ground » with a « Procedures » link (`data-go="fuel?focus=dep|arr"`, the side of the flight the aerodrome is);
+  with a file it says « Ground read with the procedures of <date> » (the file's `cycle`, the day it was read) above the rows. The
+  refusals of the reading belong to the procedures' reading (Fuel's notification). AeroDB says `on('change', { ground: ICAO })` when
+  it has read the ground after the procedures: the Map reads the file again (`groundChanged`), so an open panel shows it at once. Noreg D120.
 
 ## 6. Map contents
 

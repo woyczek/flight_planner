@@ -244,8 +244,7 @@ export const STYLE = `
 [data-module="maps"] .mp-gd-no{display:none;margin-left:auto;color:var(--sog-muted);font-size:11px}
 [data-module="maps"] .mp-gd-row[data-drawn="0"] .mp-gd-no{display:inline}
 [data-module="maps"] .mp-gd-msg{margin:6px 0;color:var(--sog-muted)}
-[data-module="maps"] .mp-gd-err{color:var(--sog-warn)}
-[data-module="maps"] .mp-gd-fetch{margin:6px 0}
+[data-module="maps"] .mp-gd-procs{margin-left:6px}
 [data-module="maps"] .mp-ch-sw{flex:none;width:12px;height:12px;background:var(--c)}
 [data-module="maps"] .mp-ch-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 [data-module="maps"] .mp-ch-old{flex:none;color:var(--sog-muted)}

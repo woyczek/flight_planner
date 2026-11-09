@@ -95,7 +95,8 @@ import {
   chooseEvents
 } from './choose.js';
 import {
-  groundEvents
+  groundEvents,
+  groundChanged
 } from './ground.js';
 
 export const meta = {
@@ -339,6 +340,7 @@ export async function mount(el, ctx) {
   if (!ctx.query?.mission) S.stops.push(...watchFlight());
   if (ctx.aerodb?.on) S.stops.push(ctx.aerodb.on('change', e => {
     if (!S || (e?.aircraft && !e.zone && !e.changed)) return; // la base appareils ne touche pas la carte
+    if (e?.ground) groundChanged(e.ground); // le sol d'un terrain lu à la suite de ses procédures : le panneau Sol le relit
     if (e?.coverage || e?.refreshed) covClear(); // couverture des procédures : redemandée au prochain dessin
     // procédures d'un terrain relues (« Lire » / « Relire » de Carburant : { procedures: OACI }) : celles du vol aussi, quand
     // c'est son départ ou son arrivée

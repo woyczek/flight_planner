@@ -56,8 +56,6 @@ const G = () => S.ground ||= {
     hold: true
   },
   icao: '', // terrain du panneau
-  fetching: new Set(), // terrains dont la lecture OpenStreetMap (le geste du pilote) est en cours
-  fetchErr: new Map(), // ICAO → { reason, wait, message } du dernier refus
   drawn: new Map(), // id → vrai si son nom a trouvé une place au dernier dessin
   hits: [] // { id, x, y | segs } en coordonnées de la vue
 };
@@ -104,6 +102,7 @@ export function sanitize(raw) {
   }
   return items.length ? {
     items,
+    cycle: /^\d{4}-\d{2}-\d{2}$/.test(raw.cycle) ? raw.cycle : '',
     source: String(raw.source ?? '').slice(0, 20),
     attribution: String(raw.attribution ?? '').slice(0, 80)
   } : null;
@@ -140,6 +139,14 @@ function load(icao) {
   });
 }
 const recOf = icao => G().cache.get(icao);
+/** Le sol d'un terrain vient d'être lu avec les procédures (AeroDB : on('change', { ground: OACI })) : le fichier est relu, la liste du
+ *  panneau (ouverte ou non) et le dessin le montrent aussitôt. Rien à faire si la Carte n'avait pas demandé ce terrain. */
+export function groundChanged(icao) {
+  const k = String(icao || '').toUpperCase();
+  if (!S?.ground?.cache.has(k)) return;
+  S.ground.cache.delete(k);
+  load(k);
+}
 
 // ---------------------------------------------------------------- dessin
 const stroke = (c, pts, w, col) => {
@@ -385,67 +392,22 @@ const notDrawn = r => {
   return d.length > 0 && d.every(i => G().drawn.get(i) === false);
 };
 const rowHtml = r => `<button type="button" class="mp-gd-row" data-id="${esc(r.id)}" data-kind="${r.kind}" data-hl="${G().hl === r.id ? 1 : 0}" data-drawn="${notDrawn(r) ? 0 : 1}"><span class="mp-gd-k">${esc(r.kind === 'rwy' ? tt(TX.gRunway) : kindText(r.kind))}</span><b>${esc(r.name)}</b><span class="mp-gd-no">${esc(tt(TX.gNotDrawn))}</span></button>`;
-/** Pas de fichier du sol pour ce terrain : le geste du pilote, « Lire depuis OpenStreetMap » (AeroDb.fetchGround, par le lanceur, une requête, ~30 s). */
+/** Pas de fichier du sol : il se lit avec les procédures du terrain (SOG-0135), un seul geste, dans Carburant : la phrase et le lien. */
 const noneHtml = icao => {
-  const g = G(),
-    can = typeof S.ctx?.aerodb?.fetchGround === 'function',
-    err = g.fetchErr.get(icao),
-    busy = g.fetching.has(icao);
-  return `<p class="mp-gd-msg">${esc(tt(busy ? TX.gFetching : TX.gNone))}</p>` + (err ? `<p class="mp-gd-msg mp-gd-err" role="alert">${esc(fetchWhy(err))}</p>` : '') +
-    (can ? `<button type="button" class="f-btn mp-gd-fetch" data-gfetch="${esc(icao)}" title="${esc(tt(TX.gFetchTip))}"${busy ? ' disabled' : ''}>${esc(tt(TX.gFetch))}</button>` : '');
+  const side = String(S.route?.flight?.route?.dep || S.route?.points?.[0]?.id || '').toUpperCase() === icao ? 'dep' : 'arr';
+  return `<p class="mp-gd-msg mp-gd-none">${esc(tt(TX.gNone))} <button type="button" class="f-btn mp-gd-procs" data-go="fuel?focus=${side}">${esc(tt(TX.gToProcs))}</button></p>`;
 };
-const fetchWhy = e => {
-  const k = {
-      paired: TX.gEPaired,
-      'no-launcher': TX.gENoLauncher,
-      busy: TX.gEBusy,
-      'too-soon': TX.gETooSoon,
-      'no-data': TX.gENoData,
-      cancelled: TX.gECancelled
-    } [e.reason] || TX.gEFailed,
-    msg = e.reason === 'failed' && e.message ? ` (${String(e.message).replace(/[\u0000-\u001f<>]/g, '').slice(0, 120)})` : '';
-  return tt(k, {
-    n: e.wait ?? '…'
-  }) + msg;
-};
-/** Le geste du pilote : lit le sol du terrain dans OpenStreetMap (le lanceur fait la requête), puis relit le fichier et redessine. */
-async function fetchFor(icao) {
-  const g = G(),
-    api = S.ctx?.aerodb,
-    ctx = S.ctx;
-  if (typeof api?.fetchGround !== 'function' || g.fetching.has(icao)) return;
-  g.fetching.add(icao);
-  g.fetchErr.delete(icao);
-  render();
-  let r;
-  try {
-    r = await api.fetchGround(icao);
-  } catch {
-    r = {
-      ok: false,
-      reason: 'failed'
-    };
-  }
-  if (S?.ctx !== ctx) return;
-  g.fetching.delete(icao);
-  if (r?.ok) {
-    g.cache.delete(icao);
-    load(icao);
-  } else g.fetchErr.set(icao, {
-    reason: r?.reason || 'failed',
-    wait: r?.wait,
-    message: r?.message
-  });
-  render();
-  schedule();
-}
+/** La date du fichier du sol (« cycle » : le jour de sa lecture, avec les procédures) : « Sol lu avec les procédures du … ». */
+const srcHtml = rec => rec.cycle ? `<p class="mp-gd-msg mp-gd-src">${esc(tt(TX.gSrc, {
+  d: rec.cycle
+}))}</p>` : '';
 const listHtml = icao => {
   const rec = recOf(icao);
   if (!rec || rec.status === 'loading') return `<p class="mp-gd-msg">${esc(tt(TX.gLoading))}</p>`;
   if (rec.status === 'none') return noneHtml(icao);
   const rows = rowsOf(icao);
   if (!rows.length) return `<p class="mp-gd-msg">${esc(tt(TX.gNoMatch))}</p>`;
-  return rows.slice(0, ROWS_MAX).map(rowHtml).join('') + (rows.length > ROWS_MAX ? `<p class="mp-gd-msg">${esc(tt(TX.gMore, {
+  return srcHtml(rec) + rows.slice(0, ROWS_MAX).map(rowHtml).join('') + (rows.length > ROWS_MAX ? `<p class="mp-gd-msg">${esc(tt(TX.gMore, {
     n: rows.length - ROWS_MAX
   }))}</p>` : '');
 };
@@ -537,8 +499,6 @@ export function groundEvents() {
     click = e => {
       if (!on()) return;
       if (e.target.closest('[data-gdone]')) return endData('ground');
-      const fb = e.target.closest('[data-gfetch]');
-      if (fb) return fetchFor(fb.dataset.gfetch);
       const chip = e.target.closest('.mp-gd-chip');
       if (chip) {
         const k = chip.dataset.kind;

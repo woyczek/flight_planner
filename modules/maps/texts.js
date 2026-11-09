@@ -377,43 +377,13 @@ export const TX = {
   gFilter: ['Filtrer par nom', 'Filter by name', 'Nach Namen filtern', 'Filtrar por nombre'],
   gNotDrawn: ['non dessiné', 'not drawn', 'nicht gezeichnet', 'no dibujado'],
   gLoading: ['Lecture des données du sol…', 'Reading the ground data…', 'Bodendaten werden gelesen…', 'Leyendo los datos del suelo…'],
-  gNone: ['Pas de données du sol pour ce terrain', 'No ground data for this aerodrome', 'Keine Bodendaten für diesen Flugplatz',
-    'Sin datos del suelo para este aeródromo'
+  gNone: ['Lisez les procédures du terrain pour avoir le sol', 'Read the aerodrome’s procedures to get the ground',
+    'Lesen Sie die Verfahren des Flugplatzes, um den Boden zu erhalten', 'Lea los procedimientos del aeródromo para tener el suelo'
   ],
-  gFetch: ['Lire depuis OpenStreetMap (~30 s)', 'Read from OpenStreetMap (~30 s)', 'Aus OpenStreetMap lesen (~30 s)',
-    'Leer desde OpenStreetMap (~30 s)'
+  gToProcs: ['Procédures', 'Procedures', 'Verfahren', 'Procedimientos'],
+  gSrc: ['Sol lu avec les procédures du {d}', 'Ground read with the procedures of {d}', 'Boden mit den Verfahren vom {d} gelesen',
+    'Suelo leído con los procedimientos del {d}'
   ],
-  gFetchTip: [
-    'Le lanceur interroge OpenStreetMap une fois pour ce terrain et garde le résultat dans les données ; la page ne contacte rien elle-même',
-    'The launcher asks OpenStreetMap once for this aerodrome and keeps the result in the data; the page contacts nothing itself',
-    'Der Launcher fragt OpenStreetMap einmal für diesen Flugplatz ab und speichert das Ergebnis in den Daten; die Seite selbst kontaktiert nichts',
-    'El lanzador consulta OpenStreetMap una vez para este aeródromo y guarda el resultado en los datos; la página no contacta nada por sí misma'
-  ],
-  gFetching: ['Lecture en cours dans OpenStreetMap…', 'Reading from OpenStreetMap…', 'Lesen aus OpenStreetMap läuft…',
-    'Leyendo de OpenStreetMap…'
-  ],
-  gEPaired: ['La lecture se fait sur le poste, pas depuis un appareil jumelé',
-    'The reading is done on the workstation, not from a paired device',
-    'Das Lesen erfolgt am Arbeitsplatz, nicht von einem gekoppelten Gerät',
-    'La lectura se hace en el puesto, no desde un dispositivo emparejado'
-  ],
-  gENoLauncher: ['Le lanceur est injoignable : la lecture passe par lui', 'The launcher is unreachable: the reading goes through it',
-    'Der Launcher ist nicht erreichbar: das Lesen läuft über ihn', 'El lanzador no responde: la lectura pasa por él'
-  ],
-  gEBusy: ['Une lecture de ce terrain est déjà en cours', 'A reading of this aerodrome is already running',
-    'Für diesen Flugplatz läuft bereits ein Lesevorgang',
-    'Ya hay una lectura de este aeródromo en curso'
-  ],
-  gETooSoon: ['Trop tôt : attendez {n} s avant une nouvelle lecture', 'Too soon: wait {n} s before another reading',
-    'Zu früh: {n} s bis zum nächsten Lesen warten', 'Demasiado pronto: espere {n} s antes de otra lectura'
-  ],
-  gENoData: ['OpenStreetMap ne décrit ni voie, ni poste, ni point d’attente sur ce terrain',
-    'OpenStreetMap describes no taxiway, stand or holding point on this aerodrome',
-    'OpenStreetMap beschreibt auf diesem Flugplatz weder Rollwege noch Positionen noch Wartepunkte',
-    'OpenStreetMap no describe calles de rodaje, puestos ni puntos de espera en este aeródromo'
-  ],
-  gECancelled: ['Lecture annulée', 'Reading cancelled', 'Lesen abgebrochen', 'Lectura cancelada'],
-  gEFailed: ['La lecture a échoué', 'The reading failed', 'Das Lesen ist fehlgeschlagen', 'La lectura ha fallado'],
   gNoMatch: ['Aucun nom ne correspond', 'No name matches', 'Kein Name passt', 'Ningún nombre coincide'],
   gMore: ['{n} autres : affinez le filtre', '{n} more: narrow the filter', '{n} weitere: Filter eingrenzen', '{n} más: afine el filtro'],
   gDone: ['Terminer', 'Done', 'Fertig', 'Terminar'],

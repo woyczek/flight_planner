@@ -3343,6 +3343,9 @@ def d115(c):
     # the highlight of a runway row is drawn from its sheet: a 3.5 px accent line, the spy counts it
     c.js("""() => { const S = window.__mp.S, t = document.createElement('canvas').getContext('2d'); t.strokeStyle = S.theme.accent; window.__acc = t.strokeStyle; window.__n = 0;
       const o = CanvasRenderingContext2D.prototype.stroke; CanvasRenderingContext2D.prototype.stroke = function () { if (this.lineWidth === 3.5 && this.strokeStyle === window.__acc) window.__n++; return o.apply(this, arguments) }; window.__oStroke = o; return true }""")
+    c.page.mouse.move(2, 2)   # the real pointer may rest over the row (the panel’s text above the rows moves them): leave it, so the hover below is a change
+    c.js("() => { document.querySelectorAll('.mp-gd-row').forEach(b => b.dispatchEvent(new PointerEvent('pointerout', { bubbles: true, relatedTarget: document.body }))); return true }")
+    c.wait(400)
     c.js("() => { window.__n = 0; return true }")
     c.js("() => { const b = document.querySelector('.mp-gd-row[data-id=\"rwy:02\"]'); b.dispatchEvent(new PointerEvent('pointerover', { bubbles: true })); return true }")
     c.wait(700)
@@ -3572,38 +3575,63 @@ def d119(c):
     c.ok(line('AW4') and 'sens' not in line('AW4'), f'{got.get("AW4")}', 'no dir: the hover is as before, no word about the sense')
 
 
-@case('D120', 'Ground panel: without a file the pilot reads the aerodrome from OpenStreetMap (a button), refusals are said, the layer appears when the file arrives', 'D',
+@case('D120', 'Ground panel: no button to read OpenStreetMap; without a file it says to read the aerodrome’s procedures (with the link), with a file it says when it was read', 'D',
       tags=('maps',), designs=('standard',), night=False, phone=False,
-      rule='V3 spec 10.40 (SOG-0046): nothing on the screen called AeroDb.fetchGround, so a pilot without proc/ground/<ICAO>.json saw no taxiway and no way to get it; the panel of an aerodrome without a file offers « Read from OpenStreetMap », says why a reading is refused (too soon, no launcher, paired, no data, busy, failed) and redraws when the file arrives')
+      rule='V3 spec 10.40 (SOG-0135): the ground is read with the procedures (AeroDB’s lot), not by a button of the Map; the panel of an aerodrome without a file says « Read the procedures to get the ground » with a link to Fuel’s procedures (dep / arr), the panel of one with a file says « Ground read with the procedures of <date> »')
 def d120(c):
     c.open('maps', docs=fdocs(_ground_flight()), flight=False, airfields=True, wait=False)
     c.ready('maps', sheet=True)
     c.js(_STATE_JS)
     hook_map(c)
     c.js("""async () => { const S = window.__mp.S, fx = await (await fetch('/tests/v3/fixtures/ground_LFPO.json')).json(), a = S.ctx.aerodb;
-      window.__calls = []; window.__have = false; const answers = [{ ok: false, reason: 'too-soon', wait: 12 }, { ok: false, reason: 'no-launcher' }, { ok: true }];
+      window.__have = false; fx.cycle = '2026-11-09';
       a.ground = async icao => icao === 'LFPO' && window.__have ? fx : null;
-      a.fetchGround = async icao => { window.__calls.push(icao); await new Promise(r => setTimeout(r, 400)); const r = answers.shift() || { ok: true }; if (r.ok) window.__have = true; return r };
+      a.fetchGround = async () => ({ ok: true });   // AeroDB may still offer it: the Map no longer calls it
       return true }""")
     _ground_at(c, 15, 1200)
     c.js("async () => { const V = await import('/modules/maps/vfr.js'); V.pinAd({ icao: 'LFPO', name: 'LFPO TEST', lat: 48.7233, lon: 2.3794 }) }")
     c.until("() => !!document.querySelector('.mp-ad-ground')", timeout=8000, what='the aerodrome card offers the ground list')
     c.tap('.mp-ad-ground')
     c.until("() => window.__mp.S.dpanel === 'ground'", timeout=6000, what='the ground panel opens')
-    c.until("() => !!document.querySelector('.mp-gd-fetch')", timeout=6000, what='an aerodrome without a file offers the reading from OpenStreetMap')
-    c.eq(c.js("() => window.__mp.S.ground.hits.length"), 0, 'nothing is drawn without the file', what='hits')
-    c.tap('.mp-gd-fetch')
-    c.until("() => document.querySelector('.mp-gd-fetch')?.disabled === true", timeout=3000, what='the button is off while the reading runs')
-    c.ok('OpenStreetMap' in c.js("() => document.querySelector('.mp-gd-msg').textContent") , c.js("() => document.querySelector('.mp-gd-msg').textContent"), 'the panel says the reading is running')
-    c.until("() => !!document.querySelector('.mp-gd-err')", timeout=4000, what='a refusal is said')
-    c.ok('12' in c.js("() => document.querySelector('.mp-gd-err').textContent"), c.js("() => document.querySelector('.mp-gd-err').textContent"), '« too soon » says how long to wait')
-    c.tap('.mp-gd-fetch')
-    c.until("() => /injoignable|unreachable/.test(document.querySelector('.mp-gd-err')?.textContent || '')", timeout=4000, what='« no launcher » is said (the previous refusal is replaced)')
-    c.tap('.mp-gd-fetch')
-    c.until("() => document.querySelectorAll('.mp-gd-row').length > 10", timeout=8000, what='the file arrives: the rows are listed')
-    c.eq(c.js("() => window.__calls"), ['LFPO', 'LFPO', 'LFPO'], 'the reading was asked for the panel’s aerodrome each time', what='calls')
-    c.eq(c.js("() => !!document.querySelector('.mp-gd-fetch')"), False, 'the button is gone once there is a file', what='button')
-    c.until("() => window.__mp.S.ground.hits.length > 20", timeout=6000, what='the taxiways are drawn at zoom 15 once the file is there')
+    c.until("() => !!document.querySelector('.mp-gd-none')", timeout=6000, what='an aerodrome without a file says how to get the ground')
+    c.eq(c.js("() => document.querySelectorAll('.mp-gd-fetch, [data-gfetch]').length"), 0, 'no button to read OpenStreetMap', what='fetch buttons')
+    txt = c.js("() => document.querySelector('.mp-gd-none').textContent")
+    c.ok('procédures' in txt.lower() or 'procedures' in txt.lower(), txt, 'the panel says to read the procedures')
+    c.eq(c.js("() => document.querySelector('.mp-gd-procs')?.dataset.go"), 'fuel?focus=dep', 'with a link to the procedures of the departure (LFPO)', what='link')
+    c.tap('.mp-gd-procs')
+    c.until("() => location.hash.startsWith('#fuel')", timeout=6000, what='the link goes to Fuel')
+    c.ok(c.js("() => location.hash").startswith('#fuel'), c.js("() => location.hash"), 'on Fuel (the frame consumes the focus)')
+    # the file is there (read with the procedures): the panel says when
+    c.open('maps', docs=fdocs(_ground_flight()), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js("""async () => { const S = window.__mp.S, fx = await (await fetch('/tests/v3/fixtures/ground_LFPO.json')).json(); fx.cycle = '2026-11-09';
+      S.ctx.aerodb.ground = async icao => icao === 'LFPO' ? fx : null; return true }""")
+    _ground_at(c, 15, 1200)
+    c.js("async () => { const V = await import('/modules/maps/vfr.js'); V.pinAd({ icao: 'LFPO', name: 'LFPO TEST', lat: 48.7233, lon: 2.3794 }) }")
+    c.until("() => !!document.querySelector('.mp-ad-ground')", timeout=8000, what='the aerodrome card offers the ground list')
+    c.tap('.mp-ad-ground')
+    c.until("() => !!document.querySelector('.mp-gd-src')", timeout=8000, what='the panel says when the ground was read')
+    src = c.js("() => document.querySelector('.mp-gd-src').textContent")
+    c.ok('2026-11-09' in src, src, 'with the date of the file')
+    c.eq(c.js("() => !!document.querySelector('.mp-gd-procs, .mp-gd-fetch')"), False, 'no link and no button once the file is there', what='controls')
+    c.until("() => document.querySelectorAll('.mp-gd-row').length > 10", timeout=8000, what='the rows are listed')
+    # the file arrives while the panel is open (AeroDB reads the ground after the procedures and says { ground: ICAO }): the panel reads it again
+    c.open('maps', docs=fdocs(_ground_flight()), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js("""async () => { const S = window.__mp.S, fx = await (await fetch('/tests/v3/fixtures/ground_LFPO.json')).json(); fx.cycle = '2026-11-09'; window.__have = false;
+      S.ctx.aerodb.ground = async icao => icao === 'LFPO' && window.__have ? fx : null; return true }""")
+    _ground_at(c, 15, 1200)
+    c.js("async () => { const V = await import('/modules/maps/vfr.js'); V.pinAd({ icao: 'LFPO', name: 'LFPO TEST', lat: 48.7233, lon: 2.3794 }) }")
+    c.until("() => !!document.querySelector('.mp-ad-ground')", timeout=8000, what='the aerodrome card offers the ground list')
+    c.tap('.mp-ad-ground')
+    c.until("() => !!document.querySelector('.mp-gd-none')", timeout=6000, what='no file yet: the panel says to read the procedures')
+    c.js("async () => { window.__have = true; (await import('/modules/maps/ground.js')).groundChanged('lfpo'); return true }")
+    c.until("() => !!document.querySelector('.mp-gd-src') && !document.querySelector('.mp-gd-none')", timeout=8000, what='the file arrives: the open panel shows it without reopening')
+    c.ok('groundChanged(e.ground)' in (ROOT / 'modules/maps/module.js').read_text(encoding='utf-8'), 'module.js', 'the Map listens to AeroDB’s change { ground } and calls it')
 
 
 _VIEW_JS = "() => { const x = window.__mpMap.getBounds(); return [x.getWest(), x.getSouth(), x.getEast(), x.getNorth()] }"

@@ -2064,7 +2064,26 @@ the Map had seen in between: the same line to within the frame's own sampling.
   « not drawn »), D114 (cost under 16 ms, the light drawing's lines). The fixture `tests/v3/fixtures/ground_LFPO.json` is made from
   OSM data (595 items); the noreg never reads the public instance.
 
-## The ground layer had no way to get its data (9 Nov 2026, SOG-0046 step 2)
+## The ground is read with the procedures, no button of the Map (9 Nov 2026, SOG-0135 — replaces the button of the entry below)
+
+- **Seen**: the user did not find the « Read from OpenStreetMap » button and wants the ground read **with** the procedures, not one more
+  button (ergonomics session). AeroDB reads the ground right after `fetchProcedures`; the Map's side: the button, its running state and
+  its refusals are gone (`fetchFor`, `noneHtml`'s button, `gFetch*` / `gE*` texts, `fetching` / `fetchErr`).
+- **Now**: without a file the panel says « Read the aerodrome's procedures to get the ground » and links to Fuel's procedures of the
+  right side (departure or arrival, from the flight); with a file it says « Ground read with the procedures of <date> » (`cycle`, kept by
+  `sanitize`; shown as the ISO date).
+- **Order of the pushes**: AeroDB's reading of the ground after the procedures (`0e0af0866`) went first, then this panel: pushed the
+  other way round nobody could have read a ground for hours. The Map listens to `on('change', { ground: ICAO })` and reads the file
+  again (`groundChanged`), so a panel opened on « Read the procedures » shows the ground when it arrives. The refusals of the ground
+  reading, said until now by the panel, have no place on the Map any more: they belong to the reading of the procedures.
+- **Test limit**: D120 calls `groundChanged` itself and checks by source that `module.js` calls it on `e.ground`; AeroDB's emit is
+  not driven (it needs the launcher).
+- **A test lesson**: D115 hovered a row with a synthetic event while the real pointer already rested over it (the new sentence above
+  the rows moved them): the highlight was already set, nothing was redrawn, 0 strokes. D115 now moves the pointer away and clears the
+  highlight first.
+- **Noreg** D120 re-aimed (no button; the sentence and the link; the date; no link once the file is there).
+
+## The ground layer had no way to get its data (9 Nov 2026, SOG-0046 step 2; the button was removed the same day, see above)
 
 - **Seen**: the user ranks the taxiways first, yet the whole layer was already on v3 (lines from zoom 14, names from 15, stands and holds
   from 16, list, filter, highlight, runway rows; D112–D115). Cause found by searching the callers: **nothing on any screen called
