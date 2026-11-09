@@ -1454,12 +1454,6 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   no button). No other V3 screen has an aerodrome field today (the Map's search is a place search), so moving the component to
   `frame/lib` now would be a frame component with one user: it is moved when a second user is planned, through the narrow
   `createAdNames(host)` interface. Objection and counter-proposal sent to the ergonomics session.
-- **9 Nov 2026 — the routes drawn on a sketch in the Route step, not on the Map** (SOG-0134 a): the ergonomics session asked for the
-  proposed routes « on the Procedures map ». Fuel draws no map (the Procedures card is a card; the route is drawn by the Map, BUGS
-  SOG's, beside Fuel only in the double view from 980 px), and route/compute gives segment ids, not positions. Way (ii), proposed and not
-  countermanded: a small SVG under the list, the routes resolved by the route reader, highlighted by the row under the pointer or the
-  finger — it works on a phone and needs no contract with the Map; the Map's layer (way (i)) can follow if the base map is wanted.
-  F114; counter-test on 7ccea997d: no sketch.
 - **9 Nov 2026 — homonyms, jumps, and the state of the zone of an unknown point** (SOG-0142): the route reader resolves a name to the
   homonym nearest the previous point and says it; the true search across zones is AeroDB's (`coords(id, { near })`, asked), and the
   reader already passes `near` and picks the nearest of what `coordsAll` gives. The three states of a missing zone (user's correction:
