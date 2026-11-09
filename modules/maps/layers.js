@@ -426,7 +426,7 @@ export function toggleLayers(open = S.dpanel !== 'layers') {
   if (S.dpanel === 'layers') return;
   releaseAd();
   fillLayers();
-  const name = tt(S.mission || S.ctx.query?.mission ? TX.pick : TX.layers);
+  const name = tt(S.mission || S.missionId ? TX.pick : TX.layers);
   openData('layers', 'layers', name, (w, h, el) => {
     if (S.layersEl.parentNode !== el) el.replaceChildren(S.layersEl);
   }, name);

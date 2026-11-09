@@ -65,8 +65,9 @@ export function keptRoute(pts) {
   return (pts || []).filter(p => kept.some(k => String(k.id ?? '') === String(p?.id ?? '') && Math.abs(+k.lat - +p.lat) < 1e-6 &&
     Math.abs(((+k.lon - +p.lon) % 360 + 540) % 360 - 180) < 1e-6));
 }
-/** Vrai si le montage est sur une carte de mission (#maps?mission=…). */
-export const onMission = () => !!S?.ctx.query?.mission;
+/** Vrai si le montage est sur une carte de mission : celle de l'adresse (#maps?mission=…) ou, sans adresse, celle du vol courant
+ *  (flight.mission, écrit par « Préparer ce vol ») tant que le bandeau n'est pas retiré (#maps?flight=1). S.missionId la nomme. */
+export const onMission = () => !!S?.missionId;
 
 /** Longitude à envoyer à un service ou à lire dans un fichier d'aerodb : dans [-180, 180[ ; une longitude qui y est déjà est
  *  rendue telle quelle (pas de bruit d'arrondi sur un vol ordinaire). */

@@ -1157,6 +1157,14 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
 
 ## 15. Mission maps (`mission.js`, `window.MapsMission`)
 
+- **The mission of the flight, no address** (SOG-0137, 9 Nov): without `mission=` the Map reads `flight.mission` (written by « Prepare this
+  flight ») and opens on that mission exactly as `#maps?mission=<ID>` does (`S.missionId`, `deriveMission`); `#maps?flight=1` (the banner's
+  cross, or the flight chosen in Layers) keeps the flight and its layers; a started flight, a mission the repository does not have, the
+  choose mode and the tune mode leave the flight. **The banner** (`.mp-mbar`, top left of the map, clear of the buttons on the right): title,
+  `ID · FAMILY` (the folder `missions/<n>_<FAMILY>/`), the provided map shown and, from two maps, their choice (seven at most), and a cross
+  to remove it. **Legibility**: zones as a light flat tint (no hatching) with their name, points with their role after their name
+  (« XXAA · departure », the roles ORIGIN, DESTINATION, TARGET, ALTERNATE, RDV), the legend (« i ») names each zone kind and each role
+  drawn. Noreg D123.
 - **Address** `#maps?mission=<ID>&map=<file>&zone=<id>`: without `map`, the mission's first map; without `mission`, the planned
   flight. `zone` (V3 § 10.45, SOG-0051; the mission sheet's « activate this zone » link) is the id of a zone of `mission.zones`, case and
   accents ignored: the view is that zone, its circle or the box of its polygon with the margin of the zone type (20 %, 5 km at least),

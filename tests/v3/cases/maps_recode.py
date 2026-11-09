@@ -3702,3 +3702,41 @@ def d122(c):
     c.wait(300)
     c.tap('.mp-chip[data-view="weather"]')   # …and the click again
     c.until("() => !!document.querySelector('.mp-wxmsg [data-wxget]')", timeout=8000, what='the refusal is said with a way to try again')
+
+
+@case('D123', 'Mission on the Map: a flight prepared from a mission opens the Map on it without an address, with a banner (title, id, family, provided map and choice, remove); the legend names the roles', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='V3 spec (SOG-0137): the Map reads flight.mission (written by « Prepare this flight ») without any address parameter; #maps?mission= only opens another one; a banner at the top shows the title, the id, the family, the provided map shown and the choice of the provided maps (seven at most) and removes itself (#maps?flight=1: the flight and its other layers come back); zones are a light flat tint with their name, points carry their role; the legend (i) names the zone kinds and the point roles')
+def d123(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_RAW_JS, [MISSION_PATH, FIXTURE.read_text(encoding='utf-8')])
+    c.open('maps', docs=fdocs(flight(mission='ESSAI1')), airfields=True, wait=False)
+    c.until("() => !!document.querySelector('.mp-mbar') && !document.querySelector('.mp-mbar').hidden", timeout=15000, what='the banner: a flight with a mission opens the Map on it')
+    c.js(_STATE_JS)
+    c.ok('mission=' not in c.js("() => location.hash"), c.js("() => location.hash"), 'without any mission parameter in the address')
+    txt = c.js("() => document.querySelector('.mp-mbar').textContent")
+    c.ok('Mission d\u2019essai' in txt or "Mission d'essai" in txt, txt, 'the banner says the title')
+    c.ok('ESSAI1' in txt and 'ESSAI' in txt.split('ESSAI1')[1], txt, 'the id and the family (the folder 1_ESSAI)')
+    opts = c.js("() => [...document.querySelectorAll('.mp-mbar .mp-mb-sel option')].map(o => o.value)")
+    c.eq(opts, ['carte_generale.png', 'carte_cible.png'], 'the provided maps are offered (seven at most), the first one shown', what='options')
+    c.eq(c.js("() => document.querySelector('.mp-mbar .mp-mb-sel').value"), 'carte_generale.png', 'the provided map shown is selected', what='selected')
+    roles = c.js("() => window.__mp.S.missionPts.map(p => p.sub).filter(Boolean)")
+    c.ok(len(roles) >= 3, str(roles), 'the departure, the arrival and the target carry their role')
+    c.eq(c.js("() => window.__mp.S.mission.zones.length"), 2, 'the zones are the mission’s', what='zones')
+    # the legend names what is drawn
+    c.tap('.mp-chip[data-legend]')
+    c.until("() => document.querySelectorAll('.mp-legend li').length >= 4", timeout=6000, what='the legend lists the zone kinds and the roles')
+    lg = c.js("() => [...document.querySelectorAll('.mp-legend li')].map(l => l.textContent)")
+    c.ok(any(r in lg for r in roles), str(lg), 'a role of a point is named in the legend')
+    c.tap('.mp-chip[data-legend]')
+    # choosing another provided map keeps the mission
+    c.js("() => { const s = document.querySelector('.mp-mbar .mp-mb-sel'); s.value = 'carte_cible.png'; s.dispatchEvent(new Event('change', { bubbles: true })); return true }")
+    c.until("() => location.hash.includes('map=carte_cible.png') && location.hash.includes('mission=ESSAI1')", timeout=6000, what='the choice opens that map of the mission')
+    c.until("() => !!document.querySelector('.mp-mbar') && !document.querySelector('.mp-mbar').hidden", timeout=10000, what='the banner is still there')
+    # removing the banner: the flight and its layers
+    c.tap('.mp-mbar [data-mbx]')
+    c.until("() => location.hash.includes('flight=1')", timeout=6000, what='the cross removes the banner')
+    c.until("() => !document.querySelector('.mp-mbar') || document.querySelector('.mp-mbar').hidden", timeout=10000, what='the banner is gone')
+    c.wait(800)
+    c.js(_STATE_JS)
+    c.eq(c.js("() => window.__mp.S.missionId"), '', 'the Map is on the flight again (its layers, its route)', what='missionId')

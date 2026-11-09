@@ -133,6 +133,7 @@ de TOC / TOD glisse le long de la route avant de se taire (le losange reste).
 de la compagnie. Pour une mission, une seconde liste choisit parmi ses cartes (vue d'ensemble, cible, détail…).
 Chaque carte est redessinée comme dans le studio : même cadre, même réglage d'affichage, avec les points de la
 mission, ses zones hachurées et son cheminement. Le profil vertical montre alors celui de la mission.
+Un vol préparé depuis une mission ouvre la carte sur cette mission, sans rien à saisir : un bandeau en haut donne son titre, son identifiant, sa famille, la carte fournie montrée et, s'il y en a plusieurs, leur choix (sept au plus). Les zones sont un aplat léger avec leur nom, les points portent leur rôle (départ, arrivée, cible…), et la légende (« i ») les nomme. La croix du bandeau le retire : on revient au vol et à toutes ses couches ; choisir une autre mission se fait dans la liste des couches.
 
 <a id="maps-edit"></a>**Modifier la route sur la carte.** Touchez « Modifier sur la carte » (les quatre flèches, à droite de la carte ; une aide s'affiche à la première entrée dans le mode) : les points tournants
 s'entourent d'un cercle. Faites glisser un point jusqu'à un fixe, une balise ou un terrain : il s'y pose (lâché

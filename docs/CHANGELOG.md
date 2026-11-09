@@ -25,6 +25,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 - **Synchronisation: a conflict entry only when a version differs, and the diff on the conflicts screen** (`frame/store/frame_data.js` `mergeText`, `frame/app.js` `renderConflicts`; frame SPEC § 3.4, DECISIONS; noreg A53, A111; SOG-0136, SOG-0043) — « nouvelle brouette de conflits alors que je suis tout seul »:
   line endings, layout, key order and a copy equal to this device's last write are no conflict; an empty remote text is not a version (it left entries with two empty blocks); each entry shows the lines that differ and a blank version says « (vide) ».
+
+- **Map: a flight prepared from a mission opens the Map on that mission, with a banner and a legible drawing** (`modules/maps/mission_view.js`, `state.js`,
+  `module.js`, `render.js`, `sheet_view.js`, `style.js`, `texts.js`; SPEC § 15; noreg D123; SOG-0137). Without any address parameter the Map reads
+  `flight.mission`; a banner at the top gives the title, the id, the family, the provided map shown and the choice of the provided maps (seven
+  at most), and a cross that brings back the flight and its layers (`#maps?flight=1`). Zones are a light flat tint with their name, points
+  carry their role, the legend names the zone kinds and the roles.
+
 - **Fuel: the proposed routes drawn on a sketch** (`modules/fuel/module.js`; Fuel SPEC § 9.3, DECISIONS, help; noreg F114; SOG-0134 a).
   Under the list of the Route step: the chosen route solid, the others faded, the row hovered or pressed highlighted, faulty segments
   red; the checked route drawn the same way. No base map: the whole Map stays one gesture away.

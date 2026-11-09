@@ -986,7 +986,7 @@
     mission: PALETTE.day.missionZone
   };
   /** Zones de la mission : fond, hachures à 45°, liseré blanc et tireté de la couleur de la zone, nom au-dessus. */
-  function drawMissionZones(ctx, zones, toC, scale, pl, profile) {
+  function drawMissionZones(ctx, zones, toC, scale, pl, profile, flat = false) {
     if (!zones?.length || !on(profile, 'missionZones')) return;
     const f = 10 * scale;
     ctx.save();
@@ -1014,20 +1014,22 @@
       }
       ctx.fillStyle = fill;
       ctx.fill(path);
-      ctx.save();
-      ctx.clip(path);
-      ctx.strokeStyle = stroke;
-      ctx.globalAlpha = .3;
-      ctx.lineWidth = Math.max(.8, 1.2 * scale);
-      const cv = ctx.canvas,
-        step = 9 * scale,
-        hatch = new Path2D();
-      for (let x = -cv.height; x < cv.width; x += step) {
-        hatch.moveTo(x, 0);
-        hatch.lineTo(x + cv.height, cv.height);
+      if (!flat) { // la vue de mission : un aplat léger, sans hachures (SOG-0137)
+        ctx.save();
+        ctx.clip(path);
+        ctx.strokeStyle = stroke;
+        ctx.globalAlpha = .3;
+        ctx.lineWidth = Math.max(.8, 1.2 * scale);
+        const cv = ctx.canvas,
+          step = 9 * scale,
+          hatch = new Path2D();
+        for (let x = -cv.height; x < cv.width; x += step) {
+          hatch.moveTo(x, 0);
+          hatch.lineTo(x + cv.height, cv.height);
+        }
+        ctx.stroke(hatch);
+        ctx.restore();
       }
-      ctx.stroke(hatch);
-      ctx.restore();
       ctx.strokeStyle = 'rgba(255,255,255,.9)';
       ctx.lineWidth = Math.max(3, 5 * scale);
       ctx.stroke(path);
@@ -1054,7 +1056,13 @@
     }
     ctx.restore();
   }
-  /** Points de la mission (départ, points tournants, cible, rendez-vous…) : rond plein et nom (libellés réservés). */
+  /** Le texte d'un point de mission : son nom, puis son rôle (sub, dit par la Carte dans la langue) quand il en dit plus. */
+  const pointText = p => {
+    const name = String(p.name || p.id || ''),
+      sub = String(p.sub || '');
+    return sub && sub.toLowerCase() !== name.toLowerCase() ? `${name} · ${sub}` : name;
+  };
+  /** Points de la mission (départ, points tournants, cible, rendez-vous…) : rond plein, nom et rôle (libellés réservés). */
   function drawMissionPoints(ctx, points, toC, W, H, scale, profile) {
     if (!points?.length || !on(profile, 'turningPoints')) return;
     const radius = (+el(profile, 'pointMarker') || 8) * scale / 2,
@@ -1072,7 +1080,7 @@
       ctx.strokeStyle = color;
       ctx.lineWidth = Math.max(1, 2 * scale);
       ctx.stroke();
-      halo(ctx, point.name || point.id, p.x + radius + gap, p.y - radius - gap, font, color);
+      halo(ctx, pointText(point), p.x + radius + gap, p.y - radius - gap, font, color);
     }
   }
   /** Libellés des points de la mission réservés dans le placeur (les cartouches des espaces et des balises les évitent). */
@@ -1091,7 +1099,7 @@
         boxes: [{
           x0: q.x - ms / 2,
           y0: q.y - ms - pf * 1.4,
-          x1: q.x + ms + 6 + String(p.name || p.id).length * pf * .62,
+          x1: q.x + ms + 6 + pointText(p).length * pf * .62,
           y1: q.y + ms / 2
         }]
       });
@@ -1616,7 +1624,7 @@
         } : undefined)
       }, {
         id: 'missionZones',
-        paint: c => drawMissionZones(c, mission?.zones, toC, scale, pl, profile)
+        paint: c => drawMissionZones(c, mission?.zones, toC, scale, pl, profile, !!mission?.flat)
       }, {
         id: 'missionPoints',
         reserve: () => reservePoints(pl, mission?.points, toC, scale, profile),

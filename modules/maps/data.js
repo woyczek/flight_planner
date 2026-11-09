@@ -320,7 +320,7 @@ export const widthNm = b => (b.e - b.w) * 60 * Math.cos((b.s + b.n) / 2 * Math.P
 export const corridorFor = (shown, W) => {
   const nm = +S.profile?.corridorNm || 0;
   if (nm > 0) return W / Math.max(1e-6, shown.e - shown.w) < 300 ? nm : 0;
-  return !S.mission && !S.ctx.query?.mission && S.route.points.length > 1 && widthNm(shown) > WIDE_NM ? FORCED_NM : 0;
+  return !S.mission && !S.missionId && S.route.points.length > 1 && widthNm(shown) > WIDE_NM ? FORCED_NM : 0;
 };
 /** Vrai si l'emprise inner est dans outer. */
 /** Les données de la vue sont à relire (une part d'aerodb arrivée, un autre vol, un autre profil, d'autres réglages) : la lecture

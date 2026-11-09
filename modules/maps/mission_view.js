@@ -5,7 +5,9 @@
 import {
   S,
   esc,
-  tt
+  tt,
+  flightPath,
+  setData
 } from './state.js';
 import {
   unwrapLons
@@ -37,6 +39,25 @@ async function missionList() {
     id: MISSION_YAML.exec(path)?.[1],
     path
   })).filter(x => x.id).sort((a, b) => a.id.localeCompare(b.id));
+}
+/** Le rôle d'un point de mission, dit dans la langue (départ, arrivée, cible, dégagement, rendez-vous) ; '' sans rôle connu. */
+export const roleText = p => {
+  const k = TX.mRoles[p.role] ? p.role : /^RDV|^RENDEZ/i.test(p.id || '') ? 'RDV' : '';
+  return k ? tt(TX.mRoles[k]) : '';
+};
+/** Sans mission dans l'adresse : la Carte lit celle du vol courant (flight.mission, écrit par « Préparer ce vol ») et se montre comme
+ *  pour #maps?mission=<ID> ; #maps?flight=1 (le bandeau retiré, ou le vol choisi dans Couches) garde le vol et ses couches. Une
+ *  mission que le dépôt n'a pas (ou un mode « choisir sur la carte », un réglage) laisse le vol. Pose S.missionId. */
+export async function deriveMission() {
+  const q = S.ctx.query || {};
+  if (S.missionId || q.flight || q.tune || q.choose) return;
+  const f = await S.ctx.data.get(flightPath()).catch(() => null);
+  if (!S) return;
+  const id = typeof f?.mission === 'string' ? f.mission.trim() : '';
+  if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,40}$/.test(id) || f?.started?.at) return; // un vol démarré se regarde en vol
+  const list = await missionList();
+  if (!S) return;
+  if (list.some(x => x.id === id)) S.missionId = id;
 }
 /** Points du cheminement de la mission : route_points écrits par le studio, sinon le texte (vertical_profile.route,
  *  sinon départ, points tournants, destination) résolu par les points de la mission, puis par aerodb. */
@@ -85,7 +106,10 @@ async function missionRoute(mission) {
 }
 /** Mission (re)lue et carte choisie : profil, emprise, cheminement tracé si la carte le demande, profil vertical. */
 export async function applyMission() {
-  const q = S.ctx.query || {},
+  const q = {
+      ...(S.ctx.query || {}),
+      mission: S.missionId
+    },
     list = await missionList(),
     hit = list.find(x => x.id === q.mission);
   if (!S) return;
@@ -119,6 +143,10 @@ export async function applyMission() {
       source: 'builtin-type'
     };
   S.mapDef = m;
+  S.missionPts = M ? M.points.map(p => ({
+    ...p,
+    sub: roleText(p)
+  })) : null;
   S.profile = chosen.profile;
   S.profileSource = chosen.source;
   S.vprofProfile = M?.vprof.profileDef || window.MAPS_PROFILES.find(p => p.id === 'vprof') || null;
@@ -150,6 +178,7 @@ export async function applyMission() {
   showBox(!!M);
   header();
   fillPick();
+  missionUi();
   status();
   schedule();
   buildProfile();
@@ -160,7 +189,7 @@ export async function fillPick() {
     list = S.missions || await missionList();
   if (!S) return;
   S.missions = list;
-  const cur = q.mission ? `m:${q.mission}` : 'flight',
+  const cur = S.missionId ? `m:${S.missionId}` : 'flight',
     html = `<option value="flight">${esc(tt(TX.flight))}</option>${list.length ? `<optgroup label="${esc(tt(TX.missionsGroup))}">${list.map(x => `<option value="m:${esc(x.id)}">${esc(x.id)}</option>`).join('')}</optgroup>` : ''}`;
   if (S.pickEl.innerHTML !== html) S.pickEl.innerHTML = html;
   S.pickEl.value = cur;
@@ -172,7 +201,7 @@ export async function fillPick() {
 }
 /** Adresse de la carte choisie (le cadre remonte le module sur sa nouvelle suite d'adresse). */
 function go(mission, map) {
-  location.hash = mission ? `#maps?mission=${encodeURIComponent(mission)}${map ? `&map=${encodeURIComponent(map)}` : ''}` : '#maps';
+  location.hash = mission ? `#maps?mission=${encodeURIComponent(mission)}${map ? `&map=${encodeURIComponent(map)}` : ''}` : '#maps?flight=1';
 }
 /** Gestes du choix de la carte (contenu Couches) : un vol ou une mission, puis une carte de la mission ; et la mission montrée
  *  relue quand son YAML change. Rend la fonction d'arrêt de l'écoute. */
@@ -181,9 +210,52 @@ export function missionEvents() {
     const v = S.pickEl.value;
     go(v.startsWith('m:') ? v.slice(2) : '', '');
   });
-  S.mapPickEl.addEventListener('change', () => go(S.ctx.query?.mission, S.mapPickEl.value));
-  if (!S.ctx.query?.mission) return () => {};
-  return S.ctx.data.watch('missions/', paths => {
-    if (S && (paths || []).some(p => MISSION_YAML.exec(p)?.[1] === S.ctx.query.mission)) applyMission();
+  S.mapPickEl.addEventListener('change', () => go(S.missionId, S.mapPickEl.value));
+  S.mbarEl.addEventListener('change', e => {
+    if (e.target.matches('.mp-mb-sel')) go(S.missionId, e.target.value);
   });
+  S.mbarEl.addEventListener('click', e => {
+    if (e.target.closest('[data-mbx]')) go('', ''); // le bandeau retiré : le vol et ses couches
+  });
+  if (!S.missionId) return () => {};
+  return S.ctx.data.watch('missions/', paths => {
+    if (S && (paths || []).some(p => MISSION_YAML.exec(p)?.[1] === S.missionId)) applyMission();
+  });
+}
+/** La famille d'une mission : celle du dossier missions/<n>_<FAMILLE>/<ID>/ (rien n'est lu pour la connaître). */
+const familyOf = id => {
+  const hit = (S.missions || []).find(x => x.id === id),
+    m = /^missions\/[^/]*?_([^/]+)\//.exec(hit?.path || '');
+  return m ? m[1] : '';
+};
+/** Le bandeau de mission (SOG-0137) : titre, identifiant, famille, la carte fournie montrée et le choix des cartes (sept au plus),
+ *  et de quoi le retirer — les couches du vol reviennent. Écrit seulement s'il change. */
+export function bannerFill() {
+  const el = S?.mbarEl;
+  if (!el) return;
+  const M = S.mission,
+    on = !!S.missionId && !!M,
+    maps = (M?.maps || []).slice(0, 7),
+    cur = S.mapDef?.file || '',
+    fam = familyOf(S.missionId),
+    html = on ? `<div class="mp-mb-top"><b class="mp-mb-t">${esc(M.title || M.id || S.missionId)}</b><button type="button" class="mp-mb-x" data-mbx title="${esc(tt(TX.mbRemove))}" aria-label="${esc(tt(TX.mbRemove))}">×</button></div>
+<div class="mp-mb-sub"><span class="mp-mb-id">${esc(M.id || S.missionId)}</span>${fam ? ` · <span class="mp-mb-fam">${esc(fam)}</span>` : ''}</div>${maps.length > 1 ? `<label class="mp-mb-map"><span>${esc(tt(TX.mbMap))}</span><select class="mp-mb-sel" aria-label="${esc(tt(TX.mbMap))}">${maps.map(m => `<option value="${esc(m.file)}"${m.file === cur ? ' selected' : ''}>${esc(m.description || m.file)}</option>`).join('')}</select></label>` : maps.length === 1 ? `<div class="mp-mb-sub">${esc(maps[0].description || maps[0].file)}</div>` : ''}` : '';
+  if (el.hidden === on) el.hidden = !on;
+  if (el.innerHTML !== html) el.innerHTML = html;
+  setData(el, 'maps', String(maps.length));
+}
+/** Ce qui change quand la Carte est sur une mission sans l'avoir demandée dans l'adresse : les cases des couches (le choix seul, comme
+ *  pour une adresse), le nom du bouton, le bandeau. */
+export function missionUi() {
+  if (!S) return;
+  const on = !!S.missionId,
+    set = S.layersEl?.querySelector('.mp-layer-set');
+  if (set && set.hidden !== on) set.hidden = on;
+  const name = tt(on ? TX.pick : TX.layers),
+    b = S.layersBtn;
+  if (b && b.title !== name) {
+    b.title = name;
+    b.setAttribute('aria-label', name);
+  }
+  bannerFill();
 }

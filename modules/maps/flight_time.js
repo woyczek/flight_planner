@@ -277,7 +277,7 @@ function haloText(ctx, t, x, y, col) {
 /** Points de la route pour le dessin, avec leur heure estimée de près (300 px par degré et plus) : « ETA 14:52Z », l'heure
  *  locale de l'appareil en plus au départ et à l'arrivée ; placées par render.js avec les libellés de la route (SPEC § 13.2). */
 export function withEta(route, pxDeg) {
-  if (S.ctx.query?.mission || pxDeg < 300) return route;
+  if (S.missionId || pxDeg < 300) return route;
   const eta = etaOf(S.route.flight, Date.now(), {
     path: flownPts()
   });

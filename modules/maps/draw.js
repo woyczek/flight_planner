@@ -635,8 +635,9 @@ function draw() {
     // les terrains de la route et le dégagement : leur nom est la seule boîte de leur point (SPEC § 3)
     onRoute: [...route.map(p => p.id), altn?.id],
     mission: mission && S.mission ? {
-      points: S.mission.points,
-      zones: S.mission.zones
+      points: S.missionPts || S.mission.points, // avec leur rôle dit dans la langue (missionUi)
+      zones: S.mission.zones,
+      flat: true // zones en aplat léger (SOG-0137)
     } : null
   }) || {};
   covFlush(); // les terrains demandés pendant ce dessin partent ensemble ; redessin une fois à l'arrivée du lot

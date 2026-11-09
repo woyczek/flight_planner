@@ -2064,6 +2064,26 @@ the Map had seen in between: the same line to within the frame's own sampling.
   « not drawn »), D114 (cost under 16 ms, the light drawing's lines). The fixture `tests/v3/fixtures/ground_LFPO.json` is made from
   OSM data (595 items); the noreg never reads the public instance.
 
+## The mission on the Map: the flight's mission without an address, a banner, legibility (9 Nov 2026, SOG-0137)
+
+- **Asked** (the user, 5th pull): « illisible et illogique, afficher au moins le titre, réutiliser le réglage de la mission choisie ».
+  Decided by the ergonomics session: (a) the Map reads the current flight's mission (`flight.mission`) without an address parameter;
+  `#maps?mission=` only opens another one; (b) a banner at the top: title, id, family, the provided map shown and the choice (seven at
+  most); (c) legibility: zones as a light flat tint with their name, points with their role, a solid route, a legend of the roles in the
+  inspector, the other layers back when the banner is removed.
+- **Done**: `S.missionId` replaces `ctx.query.mission` everywhere the Map asks « is this a mission map » (`onMission()`): the address
+  first, else `deriveMission` (reads the flight, then the repository's list). `#maps?flight=1` is the way back (the banner's cross, the
+  « planned flight » of the Layers choice); it is an address parameter, so the module is mounted again on the flight. The route was already
+  solid (the mission's trace); not changed.
+- **Choices of mine**: (1) a started flight is not turned into a mission map (it is read in flight); (2) an unknown mission id in the
+  flight leaves the flight, silently (nothing to open); (3) the family comes from the folder name, nothing is read to know it; (4) the
+  mission's « reglage » (`profile_def`, `view`, `resolved_bbox`) was already what the mission map draws: reused as is; (5) the roles of
+  plain turning points are not named (the file does not say), only ORIGIN, DESTINATION, TARGET, ALTERNATE and « RDV… » ids; (6) the zones
+  are flat only in the mission view (`mission.flat`), the studio-like drawing of other callers is unchanged.
+- **Not done**: the banner covers the start of a route near the top of a phone (the first label hides under it); no way to reopen the
+  banner but choosing the mission again; the real mission screen (the user's repository) was not looked at, only the synthetic ESSAI1.
+- **Noreg** D123 (flight with a mission → banner without address, title, id, family, two maps, roles, legend, choosing a map, the cross).
+
 ## Route weather: one action, named by what the pilot wants (9 Nov 2026, SOG-0139)
 
 - **Asked** (the user, 5th pull): a « download AROME » link in place of the « show the weather » button. **Ergonomics session's challenge,

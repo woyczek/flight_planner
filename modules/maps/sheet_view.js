@@ -14,7 +14,8 @@ import {
   show,
   setPressed,
   setOff,
-  got
+  got,
+  onMission
 } from './state.js';
 import {
   createSheet
@@ -164,6 +165,23 @@ function legendRows(view) {
   ] : [];
   return legendOf(view).concat(corr); // la trajectoire prévue reste la première ligne
 }
+/** La légende d'une carte de mission (SOG-0137) : la route, chaque sorte de zone et chaque rôle de point qui sont dessinés. */
+function missionLegend(sw) {
+  const M = S.mission;
+  if (!onMission() || !M) return [];
+  const P = MapsRender.palette(!!S.theme?.dark),
+    rows = [],
+    kinds = [...new Set(M.zones.map(z => z.kind))],
+    roles = [...new Set((S.missionPts || []).map(p => p.sub).filter(Boolean))];
+  const KEY = {
+    search: 'missionSearch',
+    exclusion: 'missionExclusion',
+    mission: 'missionZone'
+  };
+  for (const k of kinds) rows.push([sw('band', (P[KEY[k] || 'missionZone'] || [])[0] || ''), esc(tt(TX.mKinds[k] || TX.mKinds.mission))]);
+  for (const r of roles) rows.push([sw('diamond', S.theme?.fg), esc(r)]);
+  return rows;
+}
 /** Les lignes de la légende hors lecture partielle. */
 function legendOf(view) {
   const sw = (k, c = '') => `<i class="mp-lg-sw mp-lg-${k}" style="--c:${c}"></i>`,
@@ -173,8 +191,9 @@ function legendOf(view) {
     cov = (S.lgOutdated ? [
       [`<i class="mp-lg-sym" aria-hidden="true">${OUTDATED}</i>`, esc(tt(TX.procOutdated))]
     ] : []).concat(covRows(sw));
-  if (!d) return cov;
-  const rows = [];
+  const mis = missionLegend(sw);
+  if (!d) return mis.concat(cov);
+  const rows = [].concat(mis);
   const P = MapsRender.palette(!!S.theme?.dark); // la palette de la Carte (§ 10.29 f)
   if (d.plan) rows.push([sw('line', P.plan), esc(tt(TX.lgPlan))]);
   if (d.tocTod) rows.push([sw('diamond', P.plan), esc(tt(TX.lgToc))]);
@@ -214,7 +233,7 @@ export function dataHead() {
     // cette ligne ; une carte dont le profil n'est pas encore là garde la règle d'avant (la feuille vient avec lui)
     // un vol dont la coupe est en route (deux points au moins, pas une carte de mission) : la feuille a sa hauteur dès l'ouverture,
     // la carte ne change pas de taille quand la coupe arrive (SPEC § 5, une ouverture, une image)
-    coming = !S.prof && !S.ctx?.query?.mission && (S.route?.points?.length || 0) >= 2,
+    coming = !S.prof && !S.missionId && (S.route?.points?.length || 0) >= 2,
     bareBox = !S.boxOn && !S.dpanel && !S.prof && !coming && !!S.layersBtn && !S.layersBtn.hidden,
     has = !!S.dpanel || !!S.prof || coming || bareBox,
     bare = view && keep.sheet === 'default' && !document.documentElement.classList.contains('f-land') ? wx ? wxName() : tt(TX

@@ -475,6 +475,25 @@ export const TX = {
   covCounts: ['SID {s} · STAR {t} · APP {a}', 'SID {s} · STAR {t} · APP {a}', 'SID {s} · STAR {t} · APP {a}',
     'SID {s} · STAR {t} · APP {a}'
   ],
+  // la carte de mission (SOG-0137) : le bandeau, les rôles des points, les sortes de zones
+  mbRemove: ['Retirer le bandeau de mission : revenir au vol et à ses couches',
+    'Remove the mission banner: back to the flight and its layers',
+    'Missionsleiste entfernen: zurück zum Flug und seinen Ebenen', 'Quitar la banda de misión: volver al vuelo y a sus capas'
+  ],
+  mbMap: ['Carte fournie', 'Provided map', 'Mitgelieferte Karte', 'Mapa suministrado'],
+  mRoles: {
+    ORIGIN: ['départ', 'departure', 'Abflug', 'salida'],
+    DESTINATION: ['arrivée', 'arrival', 'Ankunft', 'llegada'],
+    TARGET: ['cible', 'target', 'Ziel', 'objetivo'],
+    ALTERNATE: ['dégagement', 'alternate', 'Ausweichflugplatz', 'alternativo'],
+    RDV: ['rendez-vous', 'rendezvous', 'Treffpunkt', 'encuentro']
+  },
+  mKinds: {
+    search: ['Zone de recherche', 'Search zone', 'Suchzone', 'Zona de búsqueda'],
+    exclusion: ['Zone d’exclusion', 'Exclusion zone', 'Sperrzone', 'Zona de exclusión'],
+    mission: ['Zone de mission', 'Mission zone', 'Missionszone', 'Zona de misión']
+  },
+  lgMRoute: ['Route de la mission', 'Mission route', 'Missionsroute', 'Ruta de la misión'],
   wxTitle: ['Météo de la route', 'Route weather', 'Streckenwetter', 'Meteo de la ruta'],
   wxGetHint: ['lit la prévision et montre la coupe', 'reads the forecast and shows the cross-section',
     'liest die Vorhersage und zeigt den Schnitt',
