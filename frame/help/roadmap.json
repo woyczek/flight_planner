@@ -4,7 +4,7 @@
  "updated": "2026-11-09",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "0350e7f",
+  "organisation": "d5b80ca",
   "fiches": 130,
   "untranslated": 0,
   "priorities": 3
@@ -1253,7 +1253,7 @@
     {
      "id": "SOG-0083",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Pélicandromes de France : un fichier précis dans Téléchargements, à intégrer comme couche",
      "en": "Pelicandromes of France: a specific file in Downloads, to integrate as a layer",
      "de": "Pelicandromes in Frankreich: eine bestimmte Datei in Downloads, als Ebene zu integrieren",
@@ -1325,7 +1325,7 @@
     {
      "id": "SOG-0126",
      "kind": "bug",
-     "state": "planned",
+     "state": "later",
      "fr": "Zone gb (NATS) toujours « ko » après le dépôt des fichiers dans Téléchargements",
      "en": "Zone gb (NATS) still “ko” after dropping the files into Downloads",
      "de": "Zone gb (NATS) weiterhin „ko“ nach Ablage der Dateien in Downloads",
@@ -1421,7 +1421,7 @@
     {
      "id": "SOG-0125",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Importer le RAD et les points FRA depuis un écran (le travail `route/import-rad` n'est joignable d'aucune page)",
      "en": "Import the RAD and the FRA points from a screen (the route/import-rad job is reachable from no page)",
      "de": "RAD und FRA-Punkte von einem Bildschirm importieren (der Job route/import-rad ist von keiner Seite erreichbar)",
@@ -1430,7 +1430,7 @@
     {
      "id": "SOG-0127",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Complétion ADEP / ADEST comme dans RouteSim : liste des terrains, nom sous le champ, bouton d'inversion",
      "en": "ADEP / ADEST completion as in RouteSim: airport list, name under the field, swap button",
      "de": "ADEP/ADEST-Vervollständigung wie in RouteSim: Flugplatzliste, Name unter dem Feld, Tauschknopf",
@@ -1520,7 +1520,7 @@
     {
      "id": "SOG-0071",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Données : revoir l'ergonomie globale de l'écran (choisir, mettre à jour les différences, purger, recalculer les seuls périmés, tout désélectionner, par paquet ou par rectangle)",
      "en": "Data: rework the overall ergonomics of the screen (choose, update the differences, purge, recompute only the outdated ones, deselect all, by package or by rectangle)",
      "de": "Daten: die Gesamtergonomie des Bildschirms überarbeiten (auswählen, Unterschiede aktualisieren, bereinigen, nur veraltete neu berechnen, alles abwählen, nach Paket oder per Rechteck)",
