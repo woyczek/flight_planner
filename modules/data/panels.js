@@ -791,11 +791,16 @@ function pickupProblems(out) {
 }
 /** La question du plan : pour chaque zone le zip trouvé (nom, nombre de fichiers, taille), ce qui manque ou a échoué, où vont les fichiers (sources brutes du poste,
  *  jamais commitées). */
+/** Une liste de lignes bornée à sept, la suite dite « … et n autres » : une question reste lisible, quel que soit le nombre de fichiers (SOG-0151). */
+const capLines = list => list.length > PICKUP_LINES ? [...list.slice(0, PICKUP_LINES), tt(TX.pickupMore, {
+  n: list.length - PICKUP_LINES
+})] : list;
+const PICKUP_LINES = 7;
 export function pickupAsk(out) {
   const problems = pickupProblems(out),
     dest = [...new Set(out.taken.map(t => M.own(M.PICKUP_DEST, t.source)).filter(Boolean))].join(', ');
   return tt(TX.pickupAsk, {
-    taken: out.taken.map(t => t.source === M.OPENAIP ? tt(TX.pickupTakenFiles, {
+    taken: capLines(out.taken.map(t => t.source === M.OPENAIP ? tt(TX.pickupTakenFiles, {
       z: itemName('base', t.zone),
       s: sourceName(t.source),
       n: count('file', t.files.length),
@@ -809,8 +814,8 @@ export function pickupAsk(out) {
       zip: t.zip,
       n: count('file', t.files.length),
       b: M.fmtBytes(t.bytes, lang())
-    })).join(' ; '),
-    missing: problems.length ? ` ${problems.join(' ; ')}.` : '',
+    }))).join(' ; '),
+    missing: problems.length ? ` ${capLines(problems).join(' ; ')}.` : '',
     to: dest
   });
 }

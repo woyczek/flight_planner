@@ -4658,3 +4658,40 @@ def l56(c):
          'after Yes: the real purges, 60 then 18, each on its own zones; the plans of the second asking come first', what='real runs')
     c.eq(c.count('.f-modal'), 0, 'no second question', what='one question')
     c.check_errors()
+
+
+@case('L57', 'Données: a question never exceeds the screen: « Prendre le fichier téléchargé » with sixty files shows seven lines then « … et n autres », the buttons stay in view; any long question scrolls inside its window (max 70 vh)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), night=False,
+      rule='SOG-0151 (rule 13): the plan of the pickup listed every file and the question grew past the screen, the button unreachable; a list in a question is cut at seven lines (« … et n autres »), and the frame’s window (.f-modal) is at most 70 vh high with its text scrolling inside, header and buttons always in view')
+def l57(c):
+    lang = c.lang
+    T = lambda key, after=None, row=0: _trow(key, lang, after, row)
+    cfg, _ = _fixture()
+    sia_zip = {'zone': 'fr', 'source': 'sia', 'zip': 'export_xml_bd_SIA_2026-11-26.zip', 'size': 3000000, 'files': ['a.xml', 'b.xml', 'c.xml'], 'bytes': 5242880}
+    missing = [{'zone': 'gb', 'source': 'nats', 'expected': f'EG_{i:02d}_*.zip'} for i in range(60)]
+    st = _launcher(c, [_pk_plan([sia_zip], missing)], verbs=ALL_VERBS + ['base/pickup'])
+    _open(c, cfg)
+    _all_open(c)
+    _untick(c, 'ca', 'es', 'us')
+    st['start'] = (200, {'job': 'k1'})
+    geo = """() => { const d = document.querySelector('.f-modal>div'), o = d.querySelector('[data-ok]').getBoundingClientRect(), r = d.getBoundingClientRect(), p = d.querySelector('p');
+      return { fits: r.top >= 0 && r.bottom <= innerHeight, btn: o.top >= 0 && o.bottom <= innerHeight, h: Math.round(r.height), vh: innerHeight, inner: p.scrollHeight > p.clientHeight } }"""
+    c.tap('[data-build] [data-verb=pickup]')
+    q = _ask_text(c)
+    more = norm(T('pickupMore').replace('{n}', '53'))
+    c.ok(more in norm(q['text']) and 'EG_06_' in q['text'] and 'EG_07_' not in q['text'], q['text'][-300:], 'sixty files missing: seven lines, then « … et 53 autres »; the eighth is not written')
+    g = c.js(geo)
+    c.ok(g['fits'] and g['btn'] and g['h'] <= g['vh'] * 0.7 + 1, g, 'the question fits the screen (70 vh at most), its buttons in view without scrolling the page')
+    if c.width in (390, 1280):
+        c.shot(f'L57_pickup_{c.width}_{lang}.png')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal')", what='the window closes')
+    # ---- any question: a text far too long scrolls inside the window
+    c.js("() => { window.__long = window.SogFrame.ask(Array.from({ length: 1500 }, (_, i) => 'mot' + i).join(' '), { ok: 'OK' }) }")
+    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=6000, what='the long question')
+    g = c.js(geo)
+    c.ok(g['fits'] and g['btn'] and g['h'] <= g['vh'] * 0.7 + 1 and g['inner'], g, 'a very long question: the window stays within 70 vh, the text scrolls inside it, the buttons stay in view')
+    if c.width in (390, 1280):
+        c.shot(f'L57_long_{c.width}_{lang}.png')
+    c.tap('.f-modal [data-ok]')
+    c.check_errors()

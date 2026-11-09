@@ -962,8 +962,22 @@ p.f-back {
   border-radius: var(--sog-radius);
   padding: 16px;
   width: min(480px, 100%);
-  display: grid;
-  gap: 12px
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* une question ne dépasse jamais l'écran (SOG-0151) : le texte défile dans la fenêtre, les boutons restent à la vue */
+  max-height: min(70vh, calc(100dvh - 32px));
+  overflow: auto
+}
+.f-modal>div>* {
+  flex: none
+}
+.f-modal>div>p,
+.f-modal>div>label {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain
 }
 /* ⚙ de l'en-tête : la pastille de l'état de l'appli (V3_SPECIFICATION.md § 7.1 règle 14) ; verte quand quelque chose s'applique
    (vol en cours, CR à écrire), dessinée dans le bouton (les bords de l'en-tête rognent ce qui dépasse) */

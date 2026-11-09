@@ -1142,6 +1142,7 @@ export const TX = {
   pickup: ['Prendre le fichier téléchargé', 'Take the downloaded file', 'Heruntergeladene Datei übernehmen',
     'Tomar el archivo descargado'
   ],
+  pickupMore: ['… et {n} autres', '… and {n} more', '… und {n} weitere', '… y {n} más'],
   pickupAsk: [
     'Prendre dans Téléchargements : {taken}.{missing} Les fichiers vont dans {to} ; ce sont des sources brutes du poste, jamais commitées.',
     'Take from Downloads: {taken}.{missing} The files go into {to}; they are raw sources of this workstation, never committed.',

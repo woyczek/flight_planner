@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **A question never exceeds the screen: the frame's window is at most 70 vh high with its text scrolling, and « Prendre le fichier téléchargé » lists seven files then « … et n autres »** (`frame/frame.css` `.f-modal`, `modules/data/panels.js` `pickupAsk`; frame SPEC, Data SPEC § 5.8; L57) — SOG-0151: sixty files made the question taller than the phone, its button out of reach.
 - **Map: « Route weather » fills the holes of the wind barbs with the covering model** (`modules/maps/weather.js`, `tips.js`; noreg D127; SOG-0141). A place outside the
   chosen model had no arrow and was never read in silence; the « Route weather » gesture now reads the covering model (GFS through
   Open-Meteo) for those places, fills them, and each barb says its model in the hover.
