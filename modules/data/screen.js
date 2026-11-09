@@ -21,6 +21,7 @@ import {
   kind,
   lang,
   li,
+  PERSONAL,
   S,
   tt,
   VERBS_ROUTE
@@ -142,12 +143,17 @@ export async function load(fresh = false) {
   // lecteur ne le dit qu'à sa prochaine passe) : refresh() la fait relire à la question qui suit (SOG-0072 : « il faut ctrl-maj-F5 pour voir le pays vert »)
   if (fresh) S.ctx.aerodb?.refresh?.();
   const me = S,
-    [cat, pub, zones, byState, stored, status] = await Promise.all([ask('sources'), ask('publication'), ask('zones'), ask(
+    [cat, pub, zones, byState, stored, status, kept] = await Promise.all([ask('sources'), ask('publication'), ask('zones'), ask(
         'coverageByState'),
-      S.ctx.data.get(COVERAGE).catch(() => null), readStatus()
+      S.ctx.data.get(COVERAGE).catch(() => null), readStatus(), S.personalRead ? null : S.ctx.data.get(PERSONAL).catch(() => null)
     ]);
   if (S !== me) return; // démonté, ou remplacé, pendant la lecture
   S.pub.status = status;
+  // les sources sous licence personnelle cochées lors d'un passage d'avant (SOG-0079 : « garder cochées les cases cochées ») : lues une fois par montage, puis la case seule les change
+  if (!S.personalRead) {
+    S.personalRead = true;
+    S.personal = new Set(M.keptPersonal(kept));
+  }
   if (S.outlines === false) S.outlines = null; // un échec de lecture des contours : la lecture suivante réessaie
   const list = Array.isArray(zones) ? zones : null,
     cov = M.coverageIds(stored, list, pub);
@@ -239,6 +245,14 @@ function addZoneHtml() {
   if (!rest.length) return '';
   return `<p><label>${esc(tt(TX.addZone))} <select data-add-zone${frozen() ? ' disabled' : ''}><option value="">${esc(tt(TX.addZonePick))}</option>
     ${rest.map(z => `<option value="${esc(z.id)}">${esc(M.zoneName(zones, z.id, li()))}</option>`).join('')}</select></label></p>`;
+}
+/** Mémorise les sources sous licence personnelle cochées (cache/data/personal.json, ce poste) : écrit à chaque case, pour que la prochaine ouverture les
+ *  retrouve cochées et que « Construire » les envoie sans qu'on y pense (SOG-0079). Une source cochée dont la zone est décochée reste mémorisée : seule sa case la défait. */
+export function savePersonal() {
+  S.ctx.data.put(PERSONAL, {
+    sources: [...S.personal],
+    updated_at: new Date().toISOString()
+  }).catch(() => {});
 }
 /** Ajoute une zone connue à la couverture de ce poste : écrite aussitôt (cache/data/coverage.json), cochée pour « Construire » ; une
  *  zone que personne ne publie est construite et publiée par ce poste (SPEC § 3.2). */

@@ -24,7 +24,7 @@ What the airline publishes for the app — the aeronautical base, the procedures
 
 <a id="data-build"></a>**Build the base.** At the top of the Aeronautical base group, the "Download, build, purge" panel acts on the ticked zones with three buttons, in this order: Download · Build · Purge. "Build" rebuilds the base of the ticked zones on this workstation's launcher: a windowless browser (Edge, else Chrome) builds the zones one after the other, and each one is saved to the data repository as soon as it is ready. Every zone of the coverage is ticked at the start; untick the ones you do not want to redo. The three buttons go grey together, with their reason written once below: "The workstation launcher is needed", "Another operation is running", "Tick at least one zone", "Offline".
 
-<a id="data-build-personal"></a>**Personal-licence sources.** ENAIRE (Spain), NATS (United Kingdom) and the X-Plane data are offered only when a ticked zone uses them, and are never ticked by default: tick them only if the data repository is used by you alone. With X-Plane ticked, the build runs in the page, which is not yet possible here: it will stop with that reason.
+<a id="data-build-personal"></a>**Personal-licence sources.** ENAIRE (Spain), NATS (United Kingdom) and the X-Plane data are offered only when a ticked zone uses them, and are never ticked by default: tick them only if the data repository is used by you alone. With X-Plane ticked, the build runs in the page, which is not yet possible here: it will stop with that reason. **A ticked source is remembered on this workstation**: it is found ticked at each opening of Data and goes out with every “Download” and “Build” without being ticked again, with “Personal · remembered” under it. Only its own box undoes it; unticking a zone does not forget it (it is simply not offered or sent while the zone is unticked).
 
 <a id="data-build-run"></a>**While it builds.** A bar, "n of m zones", the step and the elapsed time; one line per zone says waiting, building (n / m sources), built, failed with its reason, or cancelled. "Stop" asks for the stop: the zone in progress finishes, the zones already built are kept. You can leave the screen: the build goes on in the launcher and is found again when you come back. If the launcher stopped on the way, the screen says "Build interrupted" with the last state of each zone: start again, unticking the zones already done if you like.
 
@@ -57,4 +57,4 @@ What the airline publishes for the app — the aeronautical base, the procedures
 - **Without a launcher**: the screen reads the same way; it shows what is published.
 - **A read that fails**: the section says so in one line, the rest of the screen is drawn.
 
-<!-- fr: ecf5ee0a3bf9 -->
+<!-- fr: 7b248dd25a29 -->

@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data: the ticked personal-licence sources are remembered on the workstation** (`modules/data/screen.js`, `module.js`, `panels.js`, `model_sets.js`, `texts.js`; Data SPEC § 5 and 7; help ×4; L32) — SOG-0079:
+  a source ticked among NATS, ENAIRE, AirNav, X-Plane is written in `cache/data/personal.json`, found ticked at each opening and sent to « Construire » / « Télécharger » without being ticked again;
+  the line under it says « Personnel · mémorisé ». Only its own box undoes it.
 - **Map: memory bounded on a widened window — « not enough memory to open this page »** (`modules/maps/canvas_scale.js` new, `draw.js`,
   `profile_view.js`, `module.js`, `lib/aero_symbols.js`; SPEC § 5; DECISIONS 9 Nov; noreg D117; SOG-0067). No leak found (JS heap, listeners and
   canvases flat over 50 resizes, 200 gestures and 30 Map ↔ page round trips); the cause is the display model: the overlay canvas, its copy

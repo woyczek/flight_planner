@@ -59,6 +59,12 @@ export function personalSources(zoneIds) {
       kind: p.kind
     }));
 }
+/** Les sources personnelles mémorisées (le contenu de cache/data/personal.json) : les identifiants connus de PERSONAL, sans doublon, dans l'ordre de la table ;
+ *  tout le reste (fichier absent, forme inattendue, identifiant inconnu ou venu du prototype) est ignoré. */
+export function keptPersonal(doc) {
+  const asked = new Set(Array.isArray(doc?.sources) ? doc.sources.filter(x => typeof x === 'string') : []);
+  return Object.keys(PERSONAL).filter(id => asked.has(id));
+}
 /** Le code d'échec d'une zone : ceux du verbe, sinon 'unknown' ; pour la purge (codes non fixés par le lanceur) le code court tel quel ;
  *  `loose` (les jeux autres que la base : leurs constructeurs sont en Python, codes non fixés) garde aussi le code court d'une construction ou d'un téléchargement. */
 function zoneCode(verb, error, loose = false) {

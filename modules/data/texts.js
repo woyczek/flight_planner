@@ -194,6 +194,12 @@ export const TX = {
       'Marque solo si el repositorio de datos lo usa únicamente usted (datos de X-Plane, uso personal).'
     ]
   },
+  // sous une source cochée : elle est retenue sur ce poste et partira à chaque Construire / Télécharger tant qu'on ne la décoche pas (SOG-0079)
+  personalKept: ['Personnel · mémorisé : retrouvé coché à chaque ouverture, envoyé à chaque construction',
+    'Personal · remembered: found ticked at each opening, sent with every build',
+    'Persönlich · gemerkt: bei jedem Öffnen angekreuzt, bei jedem Aufbau gesendet',
+    'Personal · recordado: se encuentra marcada en cada apertura, se envía en cada construcción'
+  ],
   xplaneHint: ['X-Plane coché : la construction se fait dans la page, pas encore possible ici',
     'X-Plane ticked: the build runs in the page, not yet possible here',
     'X-Plane angekreuzt: der Aufbau läuft in der Seite, hier noch nicht möglich',

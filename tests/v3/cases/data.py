@@ -3671,3 +3671,53 @@ def l31(c):
     c.until(f"(() => {{ const r = [...document.querySelectorAll('[data-set]')].find(x => x.dataset.set === 'sia'); return !!r && r.dataset.state !== {json.dumps(first)} }})()", timeout=10000, what='the SIA row has left its orange state without a reload')
     c.ok(base_state() not in ('stale-cycle', None), base_state(), 'the SIA row is no longer « cycle gone by »: read again after the refresh, no reload')
     c.check_errors()
+
+
+@case('L32', 'Données: a ticked personal-licence source is remembered on the workstation: found ticked at the next opening, sent to Construire without being ticked again, « personnel · mémorisé » under it', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0079: « garder cochées les cases cochées (base personnelle), sinon on oublie » — the box is a setting of the workstation (cache/data/personal.json), read at each opening and sent as args.personal; only its own box undoes it')
+def l32(c):
+    lang = c.lang
+    _t, cur, prev, _n = _cycles()
+    v_done = _view('done', step='Terminé', done=2, zones={'fr': _zs('built', 4, 4), 'gb': _zs('built', 5, 5)},
+                   result={'built': ['fr', 'gb'], 'failed': [], 'commits': [], 'cycle': cur.isoformat(), 'current': cur.isoformat(), 'stale': False, 'blocking': [],
+                           'sources': {'sia': {'cycle': cur.isoformat(), 'current': cur.isoformat(), 'stale': False}}})
+    st = _launcher(c, [v_done])
+    cfg, _ = _fixture()
+    _open(c, cfg)
+    _untick(c, 'ca', 'es', 'us')
+    boxes = lambda: c.js("[...document.querySelectorAll('[data-personal]')].map(i => [i.dataset.personal, i.checked])")
+    kept = lambda: c.js("[...document.querySelectorAll('[data-personal-kept]')].map(p => p.closest('[data-personal-row]').dataset.personalRow)")
+    c.eq(boxes(), [['nats', False], ['xplane', False]], 'the first time: nothing ticked, as before', what='first time')
+    c.eq(kept(), [], 'nothing remembered, nothing said', what='no note')
+    # ---- ticked: written at once, the line says so
+    c.tap('[data-personal="nats"]')
+    c.tap('[data-personal="xplane"]')
+    doc = c.until_doc('cache/data/personal.json', lambda d: bool(d and sorted(d.get('sources') or []) == ['nats', 'xplane']), what='the two sources written')
+    c.ok(re.fullmatch(r'\d{4}-\d{2}-\d{2}T.*Z', doc.get('updated_at') or ''), doc, 'a UTC time beside the ids')
+    c.eq(kept(), ['nats', 'xplane'], 'the line under each ticked source says it is remembered', what='notes')
+    c.eq(norm(c.text('[data-personal-row="nats"] [data-personal-kept]')), norm(_trow('personalKept', lang)), 'worded in the language of the run', what='note text')
+    # ---- a new opening: ticked again without a gesture, and Construire sends them
+    c.page.reload()
+    c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the screen is drawn again')
+    c.settle()
+    _untick(c, 'ca', 'es', 'us')
+    c.eq(boxes(), [['nats', True], ['xplane', True]], 'found ticked at the next opening, nobody ticked them again', what='after reload')
+    c.eq(kept(), ['nats', 'xplane'], 'and said so', what='notes after reload')
+    c.tap('[data-verb=build]')
+    c.until('document.querySelector("[data-build-result]")', timeout=12000, what='the build ends')
+    c.eq(st['posts'][0]['args'], {'zones': ['fr', 'gb'], 'personal': ['nats', 'xplane']},
+         'the build is sent with the remembered sources', what='body')
+    # ---- only its own box undoes it: unticked, written, gone after a reload
+    c.tap('[data-personal="xplane"]')
+    c.until_doc('cache/data/personal.json', lambda d: bool(d and d.get('sources') == ['nats']), what='the unticked source is forgotten')
+    c.page.reload()
+    c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the screen is drawn a third time')
+    c.settle()
+    _untick(c, 'ca', 'es', 'us')
+    c.eq([boxes(), kept()], [[['nats', True], ['xplane', False]], ['nats']], 'NATS stays ticked, X-Plane stays unticked', what='third opening')
+    # ---- a source whose zone is unticked is not offered, not sent, but not forgotten
+    _untick(c, 'gb')
+    c.eq(boxes(), [['xplane', False]], 'NATS feeds only the UK: not offered any more with it unticked (so not sent)', what='offered')
+    c.eq(c.doc('cache/data/personal.json').get('sources'), ['nats'], 'unticking a zone forgets nothing: the memory belongs to the box', what='memory kept')
+    c.check_errors()

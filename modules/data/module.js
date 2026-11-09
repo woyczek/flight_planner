@@ -22,6 +22,7 @@ import {
   journalWrite,
   load,
   readVerbs,
+  savePersonal,
   statesHtml,
   STYLE
 } from './screen.js';
@@ -139,6 +140,7 @@ function onChange(e) {
   if (!set) return;
   if (t.checked) set.add(id);
   else set.delete(id);
+  if (t.dataset.personal) savePersonal(); // la case est un réglage du poste : retenue (SOG-0079)
   renderBuild();
 }
 /** Le champ des types OACI est tapé : le texte est retenu (sans redessin : la frappe n'est pas dérangée) et l'avertissement des codes refusés
@@ -180,7 +182,8 @@ export async function mount(el, ctx) {
     stops: [],
     again: 0,
     ticked: null, // zones cochées pour la construction (toutes à la première lecture)
-    personal: new Set(), // sources sous licence personnelle cochées (aucune par défaut)
+    personal: new Set(), // sources sous licence personnelle cochées : celles mémorisées sur ce poste (cache/data/personal.json), aucune la première fois
+    personalRead: false, // la mémoire des sources personnelles a été lue (une fois par montage)
     chain: null, // « Tout mettre à jour » en cours : { phase: 'asking' | 'running' | 'stopping' | 'publishing', runs, i, verb, stopped, rows, t0, job }
     chainEnd: null, // la fin de la dernière chaîne : { result, text, rows }
     chainNote: false, // un repère de chaîne sans fin a été trouvé à l'ouverture

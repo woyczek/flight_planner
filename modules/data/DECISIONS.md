@@ -200,3 +200,14 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
   build, download, purge, publication of sheets, publication and of the chain now call `load(true)`: `aerodb.refresh()` first, then the same reads as at the opening.
 - **If it is still orange after this**, the stale part is below the module (the data layer's tree of the launcher, or the service worker's cache of a data file): a report for V3 Frame, with the file that stays old.
 - Case L31 (an aerodb stub that memorises like the real one until `refresh()`; the SIA row leaves « cycle gone by » at the end of a build, no reload), red without the call.
+
+## 10 November 2026 — personal-licence boxes are remembered (SOG-0079)
+
+- The ticked personal-licence sources are a **setting of the workstation**: `cache/data/personal.json` through `ctx.data` (same policy and same place as the coverage and the
+  journal: local to the device, never synchronised or backed up; on a workstation the file is read by the module itself, so it works with or without a launcher). The coordinator
+  suggested `data/local/` through the launcher; `ctx.data` was kept because it gives the same « this workstation » scope with no launcher dependency and no new verb.
+- Why: on Friday (070fd46a4, SOG-0077) the box was forgotten, and a country lost its AWY. An unticked default is right the first time (a licence is an explicit declaration, invariant 1);
+  forgetting it at every visit is not.
+- The memory belongs to the **box**, not to the zones: unticking a zone does not forget a source (it is not offered nor sent meanwhile), only its own box does. A stored id the table of
+  `PERSONAL` does not know is ignored (`keptPersonal`).
+- Counter-test: L32 is red when the memory is not read at the opening (the boxes come back unticked).

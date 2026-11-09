@@ -5,6 +5,7 @@ import {
 } from './texts.js';
 
 export const COVERAGE = 'cache/data/coverage.json'; // { zones: [id], updated_at } : la couverture de ce poste (SPEC § 3.2)
+export const PERSONAL = 'cache/data/personal.json'; // { sources: [id], updated_at } : sources personnelles cochées, mémorisées (SOG-0079)
 export const JOURNAL = 'cache/data/journal.json'; // { ops: [opération], updated_at } : les 50 dernières opérations de ce poste (SPEC § 7)
 export const ROUTE = 'regen/job'; // le travail du lanceur : construction de la base (verbe D5 d'aerodb)
 export const VERBS_ROUTE = 'regen/verbs'; // { verbs: ['base/build', …] } : les opérations que ce lanceur connaît (lue une fois au montage)

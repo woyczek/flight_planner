@@ -616,6 +616,7 @@ function choiceHtml(set, busy) {
     ${pers.length ? `<h3>${esc(tt(TX.personalTitle))}</h3><div data-personal-box>${pers.map(p => `<div class="d-pers" data-personal-row="${p.id}">
       ${optHtml('data-personal', p.id, personalName(p.id), S.personal.has(p.id), busy)}
       <p class="f-muted" data-personal-line>${esc(tt(TX.personalLine[p.kind]))}</p>
+      ${S.personal.has(p.id) ? `<p class="f-ok" data-personal-kept>${esc(tt(TX.personalKept))}</p>` : ''}
       ${p.id === 'xplane' && xplaneOn ? `<p class="f-warn" data-xplane-hint>${esc(tt(TX.xplaneHint))}</p>` : ''}</div>`).join('')}</div>` : ''}`;
   }
   if (set === 'proc') {
