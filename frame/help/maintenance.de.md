@@ -163,7 +163,7 @@ den Ordner `data/` des Starters, auch ohne angekreuztes Kästchen; eine Austausc
 (Konto/Repository), den Zweig und Ihr persönliches Token ein, dann „Testen“ und „Speichern“. Auf einem vom Starter
 bedienten Rechner gibt es kein Token; solange `data/` kein Git-Repository ist, öffnet die Karte den Weg, es zu holen
 oder zu übernehmen; sein entferntes Repository wird in der Karte „Verwaltung“ eingestellt (siehe „Ein Git-Repository
-für data/“).
+für data/“). Auf dem Rechner des Starters beginnt die Karte „Datenzugriff“ mit der Zeile „Datenrepository:“, die Adresse und Zweig des entfernten Repositorys nennt: Der Bildschirm wartet nicht darauf (der Starter braucht zum Lesen mitunter mehrere Sekunden), die Zeile zeigt „…“ und dann ihren Wert, ohne sich zu bewegen; was vom Repository abhängt (zum Beispiel das Feld „Entferntes Repository“ der Administration), erscheint bei seinem Eintreffen.
 
 **Ohne Zugang und ohne Starter keine Basen.** Ein Gerät ohne eingestellten Zugang und ohne Starter — etwa die Website,
 zum ersten Mal auf einem Telefon geöffnet — hat weder die Luftfahrtdatenbasis (Lufträume, Flugplätze, Funkfeuer) noch
@@ -374,6 +374,6 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: 7f1835df4164 -->
+<!-- fr: 7c3482c54bf9 -->
 
 **Die Fluggesellschaft.** Auf der Stufe „Vollständig“ (oder über #settings?card=company) listet die Karte „Fluggesellschaft“ die Gesellschaften aus data/airline/index.json und „Persönlich“: Name, Code, Netzwerke (IVAO, VATSIM, offline) und Zahl der Luftfahrzeuge der Flotte. „Wählen“ macht eine zur aktuellen Gesellschaft dieses Geräts (die Wahl gilt pro Gerät); die aktuelle hat keine Schaltfläche. Solange der Rahmen diese Wahl noch nicht speichern kann, sind die Schaltflächen grau, und die Karte sagt es. „Fluggesellschaft hinzufügen“ fragt nach Name, Code (2 bis 8 Kleinbuchstaben oder Ziffern, nie schon vergeben) und Netzwerken und schreibt dann den Ordner data/airline/<code>/ (Einstellungen und leere Flotte) und trägt ihn in den Index ein; ein vergebener Code überschreibt nichts. Höchstens zwanzig Gesellschaften; alles, was aus data/airline/ gelesen wird, gilt als nicht vertrauenswürdiger Text. Auf dem Rechner des Launchers bietet die Karte, solange Ihre Gesellschaft noch im Stammordner von data/airline/ liegt, die **Migration** an: ein optionaler Code (nach dem Namen vorgeschlagen), „Anzeigen, was geschähe“ (der Name, der Ordner data/airline/<code>/, die Dateien und ihre Größe, die dort leere Flotte), dann „Nach „<code>“ migrieren“. Nichts wird gelöscht oder überschrieben: Die jetzigen Dateien bleiben als Kopie liegen. Unter jeder Gesellschaft (außer „Persönlich“, von Natur aus kommerziell) zwei Einstellungen: die **Art** („Kommerziell“ oder „Staffel (SOG)“; ein zweites Tippen hebt sie auf) und die **Missionskategorien**. Ohne Art ist die Gruppe „Kommerziell“ (Fracht, Passagiere, VIP, Training, Transit, Testflüge, Überführung) inaktiv; die Falte „Missionskategorien“ sagt es. Dort fügen Sie die eigenen Kategorien der Gesellschaft hinzu oder entfernen sie (Gruppe „Virtuell“); die Gruppe der Suite lässt sich nicht ändern, ein schon vergebener Name wird abgelehnt.

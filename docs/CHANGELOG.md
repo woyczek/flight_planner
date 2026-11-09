@@ -19,6 +19,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 - **Fuel: « ⇄ » drawn at the size of the text** (`modules/fuel/module.js`; Fuel SPEC § 9.2; noreg F112; SOG-0140). An icon button
   of 24 px, without border or fill, in a muted tint; its target stays 44 px; nothing else moves in the row.
+- **Settings: the screen is drawn at once, the data repository arrives after** (`frame/settings/settings.js`, `launcher.js`; Settings SPEC § 3 item 7b; help ×4; A106) — SOG-0133: `render` no longer waits for `sync-remote` (git on the workstation, 1.4 s measured): 1 516 ms → 136 ms to the first drawing with a slow launcher;
+  the Access card's line « Dépôt des données : » shows « … » then the address and branch, at a fixed height; what depends on the repository is drawn at its arrival.
 - **Map: `#maps?mission=<ID>&zone=<id>` centres the view on that zone of the mission** (`modules/maps/mission.js`, `mission_view.js`; SPEC § 15;
   noreg D121; SOG-0051, V3 § 10.45). The mission sheet opens the Map from each zone to activate; a zone no map centres (a polygon) used to
   open the first map at its own extent. Now the view is the zone (circle or polygon box, 20 % margin, case ignored); an unknown zone changes

@@ -42,7 +42,7 @@ du lanceur, même sans case cochée ; un usage d'échange le partage en plus par
 **L'accès aux données.** Sur un téléphone ou sur le site, réglez dans « Accès aux données » le dépôt (compte/dépôt), la
 branche et votre jeton personnel, puis « Tester » et « Enregistrer ». Sur un poste servi par le lanceur, pas de jeton ;
 tant que `data/` n'est pas un dépôt git, la carte ouvre la porte pour le récupérer ou le reprendre ; son dépôt distant se
-règle dans la carte « Administration » (voir « Un dépôt git pour data/ »).
+règle dans la carte « Administration » (voir « Un dépôt git pour data/ »). Sur le poste du lanceur, la carte « Accès aux données » commence par une ligne « Dépôt des données : » qui donne l'adresse et la branche du dépôt distant : l'écran ne l'attend pas (le lanceur peut mettre plusieurs secondes à la lire), la ligne affiche « … » puis sa valeur, sans bouger ; ce qui dépend du dépôt (le volet « Dépôt distant » de l'Administration, par exemple) apparaît à son arrivée.
 
 **Sans accès ni lanceur, pas de bases.** Un appareil sans accès réglé et sans lanceur — le site ouvert sur un téléphone
 pour la première fois, par exemple — n'a ni base aéronautique (espaces, terrains, balises) ni base des appareils :

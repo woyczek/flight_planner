@@ -884,7 +884,7 @@ def a20(c):
     c.eq(norm(c.text('[data-screen=sources] h1')), norm(tx(SRC, 'title', c.lang)), 'the title in the language of the run', what='h1')
     c.eq(c.attr('[data-src-back]', 'href'), '#settings', 'a way back to Settings', what='back link')
     src = (ROOT / DATA).read_text(encoding='utf-8')
-    ids = re.findall(r"^\s{4}id: '([a-z0-9]+)',", src, re.M)
+    ids = re.findall(r"^\s{4}id: '([a-z0-9_]+)',", src, re.M)
     rows = c.js("[...document.querySelectorAll('[data-screen=sources] li[data-src]')].map(li => ({ id: li.dataset.src, status: li.dataset.status, chip: li.querySelector('.src-status').textContent.trim(), a: (a => a && { href: a.getAttribute('href'), target: a.target, rel: a.rel, h: a.getBoundingClientRect().height, text: a.textContent.trim() })(li.querySelector('a[data-open]')), text: li.innerText }))")
     c.eq(sorted(r['id'] for r in rows), sorted(ids), 'one line per source of the catalogue', what='source lines')
     for want in ('sia', 'eaip', 'cifp', 'ead', 'dfs', 'enaire', 'nats'):
@@ -4232,4 +4232,42 @@ def a110(c):
     c.wait(3000)
     got = c.js("() => window.__cls")
     c.ok(got['value'] < 0.1, f"CLS {got['value']:.3f}: {got['items']}", 'the cumulative layout shift of Settings at load is under 0.1')
+
+
+@case('A106', 'Settings: the screen is drawn at once; the data repository (read from the launcher, slow) arrives after, in a line of fixed height, and the screen is drawn once more', 'A', tags=('settings',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0133: « plusieurs secondes avant d\u2019afficher l\u2019écran des settings, alors que la version du git est un paramètre accessoire » — the first drawing does not wait for sync-remote (120 ms at most); the line « Dépôt des données » is « … » then the value, same height; what depends on the repository is drawn when it arrives')
+def a106(c):
+    lang = c.lang
+    sj = 'frame/settings/launcher.js'
+    T = lambda k: tx(sj, k, lang, after='Object.assign(T, {')
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False}
+    remote = {'repo': True, 'remote': 'origin', 'url': 'https://example.test/acme/data.git', 'branch': 'main', 'state': 'repo', 'default': ''}
+
+    def launcher(route):
+        path = urllib.parse.urlparse(route.request.url).path
+        body = {}
+        if path.endswith('/__setup/status'):
+            body = status
+        elif path.endswith('/__setup/sync-remote') and route.request.method == 'GET':
+            body = remote
+        elif path.endswith('/__setup/secrets'):
+            body = {'app': {'ivao': {'apiKey': {'set': False, 'hint': ''}}, 'ead': {'user': {'set': False, 'at': ''}, 'password': {'set': False, 'at': ''}}}, 'user': {}}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    # the repository read takes 1.5 s (git on the workstation: measured 1.4 s on the user\u2019s data/)
+    c.page.add_init_script("""(() => { const f = window.fetch; window.fetch = function (u, o) { const url = String((u && u.url) || u); const slow = /sync-remote/.test(url) && (!o || !o.method || o.method === 'GET');
+      return slow ? new Promise(ok => setTimeout(ok, 1500)).then(() => f.apply(this, arguments)) : f.apply(this, arguments) } })()""")
+    c.open('settings?card=access', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-card=\"access\"] [data-git-line]')", timeout=8000, what='the Access card is drawn')
+    t_first = c.js("(() => { const m = performance.getEntriesByName('sog-settings-first').pop(), s = performance.getEntriesByName('sog-settings-start').pop(); return m && s ? m.startTime - s.startTime : null })()")
+    c.ok(t_first is not None and t_first < 300, t_first, 'the first drawing took less than 300 ms although the repository takes 1.5 s (measured: sog-settings-start → sog-settings-first)')
+    line = lambda: c.js("(() => { const e = document.querySelector('[data-git-line]'); const r = e.getBoundingClientRect(); return [e.textContent.trim(), Math.round(r.height), Math.round(r.top)] })()")
+    first = line()
+    c.eq(first[0], '…', 'the line says « … » until the launcher answers', what='pending text')
+    c.eq(c.count('[data-card="remote"]'), 0, 'what depends on the repository is not drawn yet', what='no remote panel')
+    # the value arrives: same height, same place; then the screen is drawn once more with the repository (the panel of the remote repository is in the Administration card)
+    c.until("document.querySelector('[data-git-line]').textContent.includes('example.test')", timeout=8000, what='the repository arrives')
+    second = line()
+    c.eq([second[1], second[2]], [first[1], first[2]], 'the line does not move nor change height when the value arrives', what='fixed block')
+    c.eq(norm(second[0]), norm(T('gitLine').replace('{v}', 'https://example.test/acme/data.git (main)')), 'the value: address and branch', what='value')
     c.check_errors()

@@ -42,7 +42,7 @@ del lanzador, incluso sin casilla marcada; un uso de intercambio la comparte ade
 **El acceso a los datos.** En un teléfono o en el sitio, configure en «Acceso a los datos» el repositorio
 (cuenta/repositorio), la rama y su token personal, luego «Probar» y «Guardar». En un puesto servido por el lanzador no
 hay token; mientras `data/` no es un repositorio git, la tarjeta abre la vía para obtenerlo o retomarlo; su repositorio
-remoto se configura en la tarjeta «Administración» (vea «Un repositorio git para data/»).
+remoto se configura en la tarjeta «Administración» (vea «Un repositorio git para data/»). En el equipo del lanzador, la tarjeta «Acceso a los datos» empieza con una línea «Repositorio de datos:» que da la dirección y la rama del repositorio remoto: la pantalla no la espera (el lanzador puede tardar varios segundos en leerlo), la línea muestra «…» y luego su valor, sin moverse; lo que depende del repositorio (el panel «Repositorio remoto» de la Administración, por ejemplo) aparece cuando llega.
 
 **Sin acceso ni lanzador, no hay bases.** Un dispositivo sin acceso configurado y sin lanzador — el sitio abierto en un
 teléfono por primera vez, por ejemplo — no tiene ni la base aeronáutica (espacios, aeródromos, radioayudas) ni la base
@@ -249,6 +249,6 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: 7f1835df4164 -->
+<!-- fr: 7c3482c54bf9 -->
 
 **La compañía.** En el nivel Completo (o con #settings?card=company), la tarjeta «Compañía» lista las compañías de data/airline/index.json y «Personal»: el nombre, el código, las redes (IVAO, VATSIM, sin conexión) y el número de aeronaves de la flota. «Elegir» convierte una en la compañía actual de este dispositivo (la elección es por dispositivo); la actual no tiene botón. Mientras el marco no sepa aún guardar esta elección, los botones están en gris y la tarjeta lo dice. «Añadir una compañía» pide un nombre, un código (2 a 8 letras minúsculas o cifras, nunca uno ya en uso) y las redes, y luego escribe la carpeta data/airline/<code>/ (ajustes y flota vacía) y la añade al índice; un código en uso no sobrescribe nada. Veinte compañías como máximo; todo lo que se lee de data/airline/ se trata como texto no fiable. En el equipo del lanzador, mientras su compañía siga en la raíz de data/airline/, la tarjeta ofrece **migrarla**: un código opcional (propuesto según el nombre), «Ver lo que se haría» (el nombre, la carpeta data/airline/<code>/, los archivos y su tamaño, la flota que estará vacía allí) y después «Migrar a «<code>»». No se borra ni se sobrescribe nada: los archivos actuales quedan como copia. Bajo cada compañía (salvo «Personal», comercial por naturaleza), dos ajustes: el **tipo** («Comercial» o «Escuadrón (SOG)»; un segundo toque lo quita) y las **categorías de misiones**. Sin tipo, el grupo «Comercial» (carga, pasajeros, VIP, entrenamiento, tránsito, vuelos de prueba, posicionamiento) está inactivo; el pliegue «Categorías de misiones» lo dice. Allí se añaden o se quitan las categorías propias de la compañía (grupo «Virtual»); el grupo de la suite no se modifica y se rechaza un nombre ya usado.

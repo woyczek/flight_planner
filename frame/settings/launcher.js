@@ -20,6 +20,8 @@
   } = window.SogSettingsKit;
   // textes de ce fichier, ajoutés aux textes communs des Réglages (window.SogSettingsT)
   Object.assign(T, {
+    gitLine: ['Dépôt des données : {v}', 'Data repository: {v}', 'Datenrepository: {v}', 'Repositorio de datos: {v}'],
+    gitLineNone: ['aucun dépôt distant', 'no remote repository', 'kein entferntes Repository', 'sin repositorio remoto'],
     remoteNow: ['Actuel : {u} (branche {b})', 'Current: {u} (branch {b})', 'Aktuell: {u} (Zweig {b})', 'Actual: {u} (rama {b})'],
     remoteNowBare: ['Actuel : {u}', 'Current: {u}', 'Aktuell: {u}', 'Actual: {u}'],
     remoteNone: ['Aucun dépôt distant : rien ne part ailleurs que ce poste.',
@@ -523,6 +525,23 @@
       <div class="f-row"><button type="button" class="primary" data-act="${state === 'absent' ? 'gitClone' : 'gitAdopt'}">${esc(t(state === 'absent' ? T.clone : T.adopt))}</button></div>${state === 'absent' ? '' : `<p class="f-muted" data-confirm-hint hidden>${esc(t(T.confirmHint))}</p>`}
       <p><a href="#help?a=${encodeURIComponent(t(T.noGitAnchor))}">${esc(t(T.helpLink))}</a></p>`;
   }
+  /** Le dernier état connu du dépôt distant de data/ (une lecture d'un dessin précédent), ou null : le dessin d'un écran ne l'attend pas (SOG-0133). */
+  const remoteLast = () => remoteNow;
+  /** Le texte de la ligne « Dépôt des données » : « … » tant que le lanceur n'a pas répondu, puis l'adresse et la branche (ou « aucun dépôt distant »). */
+  function gitLineText(t, remote, pending) {
+    if (pending || !remote) return '…';
+    const v = remote.url ? `${remote.url}${/^[\w./-]+$/.test(remote.branch || '') ? ` (${remote.branch})` : ''}` : t(T.gitLineNone);
+    return t(T.gitLine, {
+      v
+    });
+  }
+  /** Peint la ligne « Dépôt des données » de la carte Accès (même hauteur avant et après : une ligne, sans retour) ; sans effet si la carte n'est pas là. */
+  function paintGit(view, t, remote) {
+    const el = view.querySelector('[data-git-line]');
+    if (!el) return;
+    el.textContent = gitLineText(t, remote, false);
+    el.title = remote?.url || '';
+  }
   /** Dépôt distant de data/ (GET /__setup/sync-remote), relu à chaque dessin ; les réponses « dry » mémorisées sont oubliées. */
   async function readRemote() {
     Object.keys(dryCache).forEach(k => delete dryCache[k]);
@@ -537,7 +556,7 @@
       gitState,
       fld
     } = env;
-    return `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2><p>${esc(t(T.accessLauncher))}</p><p data-provider-where><a href="#settings?card=admin&amp;panel=remote">${esc(t(T.accessProvider))}</a></p>${gitState === 'repo' ? '' : gitDoor(gitState, t, fld, remote)}</div>`;
+    return `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2><p>${esc(t(T.accessLauncher))}</p><p data-provider-where><a href="#settings?card=admin&amp;panel=remote">${esc(t(T.accessProvider))}</a></p><p class="f-muted" data-git-line style="height:1.6em;line-height:1.6em;margin:0 0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"${remote?.url ? ` title="${esc(remote.url)}"` : ''}>${esc(gitLineText(t, remote, gitState === 'pending'))}</p>${gitState === 'repo' || gitState === 'pending' ? '' : gitDoor(gitState, t, fld, remote)}</div>`;
   }
   /** Ligne « Fournisseur » en tête du volet du dépôt distant, lue de l'adresse du dépôt distant de data/ (SogConfig.providerOf :
    *  jamais un réglage ; known : les fournisseurs que la configuration de l'appareil donne, pour un GitLab auto-hébergé) : GitLab
@@ -1132,6 +1151,8 @@
       'gitAdopt', 'histResume', 'folderOpen', 'upCheck', 'upGo'
     ],
     readRemote,
+    remoteLast,
+    paintGit,
     accessHtml,
     remoteHtml,
     keysHtml,

@@ -709,7 +709,7 @@ with no box ticked; an exchange usage also shares it through git.
 **Data access.** On a phone or on the website, set in “Data access” the repository (account/repository), the branch and
 your personal token, then “Test” and “Save”. On a workstation served by the launcher there is no token; while `data/` is
 not a git repository, the card opens the door to fetch or take it over; its remote repository is set in the
-“Administration” card (see “A git repository for data/”).
+“Administration” card (see “A git repository for data/”). On the launcher's computer, the “Data access” card starts with a “Data repository:” line giving the address and branch of the remote repository: the screen does not wait for it (the launcher may take several seconds to read it), the line shows “…” then its value, without moving; what depends on the repository (the “Remote repository” panel of Administration, for example) appears when it arrives.
 
 **No access and no launcher, no bases.** A device with no access set and no launcher — the website opened on a phone
 for the first time, for instance — has neither the aeronautical base (airspaces, airfields, beacons) nor the aircraft
@@ -905,6 +905,6 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: 7f1835df4164 -->
+<!-- fr: 7c3482c54bf9 -->
 
 **The airline.** At the “Full” level (or through #settings?card=company), the “Airline” card lists the airlines of data/airline/index.json and “Personal”: the name, the code, the networks (IVAO, VATSIM, off-line) and the number of aircraft in the fleet. “Choose” makes one the current airline of this device (the choice is per device); the current airline has no button. While the frame cannot yet save this choice, the buttons are grey and the card says so. “Add an airline” asks for a name, a code (2 to 8 lower-case letters or digits, never one already taken) and the networks, then writes the folder data/airline/<code>/ (settings and an empty fleet) and adds it to the index; a taken code overwrites nothing. Twenty airlines at most; everything read from data/airline/ is treated as untrusted text. On the launcher's computer, while your airline is still at the root of data/airline/, the card offers to **migrate** it: an optional code (proposed from the name), “See what would be done” (the name, the folder data/airline/<code>/, the files and their size, the fleet that will be empty there), then “Migrate to “<code>””. Nothing is deleted or overwritten: the current files stay in place as a copy. Under each airline (except “Personal”, commercial by nature), two settings: the **kind** (“Commercial” or “Squadron (SOG)”; a second tap clears it) and the **mission categories**. With no kind, the “Commercial” group (cargo, passengers, VIP, training, transit, test flights, positioning) is inactive; the “Mission categories” fold says so. There you add or remove the airline's own categories (the “Virtual” group); the suite's group cannot be edited, and a name already taken is refused.

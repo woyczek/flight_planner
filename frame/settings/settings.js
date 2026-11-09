@@ -716,9 +716,11 @@
       branch: admin?.branch && typeof admin.branch === 'object' ? admin.branch : null
     };
   }
+  const REMOTE_WAIT_MS = 120; // ce que l'écran attend la lecture du dépôt distant avant de se dessiner sans elle
   const DESK = new WeakSet(); // vues qui écoutent déjà « frame-desk »
   /** Dessine l'écran des réglages dans view ; c : contexte du cadre (voir l'en-tête). */
   async function render(view, c) {
+    performance.mark?.('sog-settings-start'); // la mesure du premier dessin (SOG-0133) : de ce repère à « sog-settings-first »
     window.SogSettingsKit.bind(c.launcherRequest); // les routes du lanceur passent par le client du cadre
     const {
       t,
@@ -732,9 +734,17 @@
       prefs = (await c.own.get('device/settings.json')) || {},
       v2 = !prefs.v2 ? v2Settings() : null,
       st = await FD.status(),
-      remote = L ? await P.launcher.readRemote() : null, // dépôt distant de data/ (lanceur)
-      // état de data/ : absent, plain (dossier sans git), repo ; champ state du lanceur, sinon déduit
-      gitState = !L ? '' : remote?.state || (!L.data ? 'absent' : remote?.repo ? 'repo' : 'plain');
+      // dépôt distant de data/ (lanceur) : la lecture part aussitôt mais l'écran ne l'attend pas (SOG-0133 : « plusieurs secondes avant d'afficher l'écran, alors que la version du git est accessoire ») ;
+      // un lanceur qui répond vite (REMOTE_WAIT_MS) donne l'écran d'avant, un lanceur lent donne le dernier état connu (sinon « … ») et l'écran se redessine une fois à l'arrivée
+      remoteP = L ? P.launcher.readRemote() : null,
+      wantsRemote = /[?&](join|import|config|card=assistant)=?/.test(location
+        .hash), // l'assistant « Rejoindre » décide de son accès d'après ce dépôt : il l'attend
+      first = !L ? null : wantsRemote ? await remoteP : await Promise.race([remoteP, new Promise(ok => setTimeout(() => ok(undefined),
+        REMOTE_WAIT_MS))]),
+      late = first === undefined,
+      remote = late ? P.launcher.remoteLast() : first,
+      // état de data/ : absent, plain (dossier sans git), repo ; champ state du lanceur, sinon déduit ; « pending » : le lanceur n'a pas encore répondu
+      gitState = !L ? '' : late && !remote ? 'pending' : remote?.state || (!L.data ? 'absent' : remote?.repo ? 'repo' : 'plain');
     /** Champ libellé (data-f = k) ; o : type, ph (exemple affiché), cap (majuscules), mode (clavier). */
     const fld = (k, row, v, o = {}) => `<label class="f-field">${esc(t(row))}<input data-f="${k}" type="${o.type || 'text'}" value="${esc(v || '')}" autocomplete="off" ${o.mode ? `inputmode="${o.mode}"` : ''} ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} ${o.cap ? 'autocapitalize="characters"' : 'autocapitalize="off"'} spellcheck="false"></label>`;
     // bloc « État » en tête (les lignes de l'ancien pop-up « i » : vol démarré, CR à écrire, données, base, lanceur, position),
@@ -862,6 +872,7 @@
       edgeShow,
       runwayZoom
     });
+    performance.mark?.('sog-settings-first');
 
     /** Carte de l'écran par son nom (data-card). */
     const card = k => view.querySelector(`[data-card="${k}"]`);
@@ -915,6 +926,14 @@
       paintIvaoApp
     });
 
+    // la lecture du dépôt arrive après le premier dessin : la ligne « Dépôt des données » (hauteur fixe) prend sa valeur ; si ce que l'écran en déduit a changé (porte, volet du dépôt distant), un seul
+    // redessin, sauf si une saisie est en cours (le texte tapé ne se perd pas : le prochain dessin lira le nouvel état)
+    if (late) remoteP.then(r => {
+      if (!view.isConnected || !r) return;
+      P.launcher.paintGit(view, t, r);
+      const editing = view.contains(document.activeElement) && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+      if (JSON.stringify(r) !== JSON.stringify(remote) && !editing) render(view, c);
+    });
     // état vivant : synchronisation, données hors ligne, clés, diagnostic
     P.access.live(env); // synchronisation et écritures en attente, vivantes
     P.airline.live(env); // la liste des compagnies (lue de data/airline/)

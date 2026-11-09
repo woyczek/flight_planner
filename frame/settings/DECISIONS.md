@@ -639,3 +639,14 @@ moves code, `S` itself replaced through `setState` alone.
   (`airline/<code>/`, `airline/` for `default`), author and time stamped like them. The kind is written into the file as it was read (`...settings`), never a rebuilt one.
 - **The id of a category** is its name without accents, in lower case with dashes (24 characters); a duplicate of any group (« Fret ») is refused rather than renamed, so a mission that says `fret` keeps meaning the base's.
 - **Counter-test**: without the duplicate check A105 is red (« Fret » would be added). Readers of the categories (Missions, report) are Features SOG's.
+
+## 10 November 2026 — the settings screen is drawn at once (SOG-0133)
+
+- **User's words (5th pull)**: « plusieurs secondes de sleep avant d'afficher l'écran des settings, alors que la version du git est un paramètre accessoire ».
+- **Cause found**: `render` awaited `P.launcher.readRemote()` (`GET /__setup/sync-remote`) before drawing anything. On the workstation that route runs git: `data_sync.remote_info(data/)` took **1.43 s** (then `rewritten()` 0.15 s) on the user's `data/` (E:\DEFA\data, measured the same day; `status()` 0.65 s then 0.22 s). Everything else the first
+  drawing awaits is local (device store, frame status, profiles). The launcher's own cost is the root cause (a subprocess per read, none cached); it is not touched here (the launcher is not Réglages'): to hand to its owner, `remote_info` could read `.git/config` instead of running git.
+- **Measure** (case A106, a launcher whose read takes 1.5 s): time from `sog-settings-start` to `sog-settings-first` **1 516 ms before, 136 ms after** (headless, 390 px). With a fast launcher nothing changes (the read finishes inside the 120 ms the screen is willing to wait).
+- **What the first drawing shows**: everything it knows; the Access card gets a line « Dépôt des données : » of **fixed height** (`1.6em`, one line, ellipsis, the whole address in its title): « … » then `address (branch)` — « aucun dépôt distant » when none. What depends on the repository
+  (the remote-repository panel of Administration, the door « clone / adopt » of a data/ that is not a repository) is not drawn while the state is `pending` (no door shown by mistake) and appears at the arrival, in **one** more drawing, skipped when an input has the focus and when the answer equals the last known state (so a second visit does not redraw).
+- **Why 120 ms and not nothing**: the many cases and the usual fast launcher read it in a few ms; waiting that little keeps the screen identical for them (no flash of « … », no extra drawing) and costs a slow launcher 120 ms.
+- A20's regex of source ids now accepts `_` (the catalogue gained `eurocontrol_rad`; the case was red since AeroDB's SOG-0081 and not for this lot).
