@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Missions: the mission sheet in two levels** (`frame/lib/mission.js`, `modules/missions/module.js`; Missions SPEC § 3, INTEGRATION,
+  DECISIONS, help; noreg N9, N10; SOG-0051, § 10.45). First page: category, the first three risks « hazard → mitigation » (or « Aucun
+  risque déclaré »), teams, zones, « Préparer ce vol »; the detail in foldable sections (description, objectives, zones to activate,
+  rendezvous, route provided, maps provided, payload and aircraft). Zones and maps open the Map, never a PNG when the mission has
+  coordinates; a legacy mission without coordinates shows its PNG. Two screens on a phone (the browser's back returns), side by side
+  from 900 px.
 - **Mission categories: Missions and the report read them** (`frame/lib/mission.js` `categoryOf`, `frame/lib/current_flight.js`
   `missionCategory`, `modules/missions/module.js`, `modules/report/module.js`, `modules/fuel/module.js`; Missions SPEC § 3, report SPEC § 3,
   Fuel INTEGRATION, DECISIONS, help; noreg N11, G7; SOG-0041, the readers' lot of § 10.38). A mission says its category; Missions filters

@@ -27,10 +27,51 @@ export const meta = {
   writes: []
 };
 
+// la fiche en deux niveaux (§ 10.45) : un écran après l'autre sur un module étroit ; côte à côte (première page à gauche, détail au
+// centre) sur un module large, sans « Détail » ni « Retour » du détail
+const STYLE = `[data-module="missions"] .ms-detail{display:none}
+[data-module="missions"] .ms-sheet[data-detail] .ms-first{display:none}
+[data-module="missions"] .ms-sheet[data-detail] .ms-detail{display:block}
+[data-module="missions"] .ms-lines{margin:.2em 0 .4em;padding-left:1.1em}
+[data-module="missions"] .ms-lines li{margin:.15em 0}
+[data-module="missions"] .ms-route{border-collapse:collapse;width:100%}
+[data-module="missions"] .ms-route td{padding:.2em .4em;border-bottom:1px solid var(--sog-border);vertical-align:top}
+[data-module="missions"] .ms-sec{border-top:1px solid var(--sog-border)} /* une section du détail : un filet, pas une carte dans la carte */
+[data-module="missions"] a[data-zonemap],[data-module="missions"] a[data-maplink]{display:inline-flex;align-items:center;min-height:44px} /* cible de 44 px */
+[data-module="missions"] .ms-png{display:block;max-width:100%;height:auto;margin:.4em 0}
+[data-module="missions"] .ms-sec>summary{min-height:44px;display:flex;align-items:center}
+@container (min-width: 900px){
+  [data-module="missions"] .ms-sheet{display:grid;grid-template-columns:minmax(16em,24em) minmax(0,1fr);gap:16px;align-items:start}
+  [data-module="missions"] .ms-sheet .ms-first,[data-module="missions"] .ms-sheet .ms-detail{display:block}
+  [data-module="missions"] .ms-todetail,[data-module="missions"] .ms-tofirst{display:none}
+}`;
+
 const REGISTRY = 'missions/mission_registry.yaml',
   ROWS = 7; // lignes montrées avant « N autres » (sept éléments au plus par écran)
 
 const TX = {
+  // la fiche en deux niveaux (§ 10.45, SOG-0051)
+  detail: ['Détail', 'Detail', 'Details', 'Detalle'],
+  risks: ['Risques', 'Risks', 'Risiken', 'Riesgos'],
+  noRisk: ['Aucun risque déclaré', 'No risk declared', 'Kein Risiko angegeben', 'Ningún riesgo declarado'],
+  teams: ['Équipes', 'Teams', 'Teams', 'Equipos'],
+  zonesCount: ['{n} zone(s)', '{n} zone(s)', '{n} Zone(n)', '{n} zona(s)'],
+  flownOn: ['Volée le {d}', 'Flown on {d}', 'Geflogen am {d}', 'Volada el {d}'],
+  secDesc: ['Description', 'Description', 'Beschreibung', 'Descripción'],
+  secObj: ['Objectifs', 'Objectives', 'Ziele', 'Objetivos'],
+  objPrimary: ['Principal :', 'Primary:', 'Hauptziel:', 'Principal:'],
+  secZones: ['Zones à activer', 'Zones to activate', 'Zu aktivierende Zonen', 'Zonas que activar'],
+  secRdv: ['Rendez-vous', 'Rendezvous', 'Treffpunkte', 'Encuentros'],
+  secRoute: ['Route fournie', 'Route provided', 'Vorgegebene Route', 'Ruta facilitada'],
+  routeNm: ['{n} NM au total', '{n} NM in all', '{n} NM insgesamt', '{n} NM en total'],
+  secMaps: ['Cartes fournies', 'Maps provided', 'Mitgelieferte Karten', 'Mapas facilitados'],
+  secPayload: ['Charge et appareils', 'Payload and aircraft', 'Zuladung und Luftfahrzeuge', 'Carga y aeronaves'],
+  payload: ['Charge', 'Payload', 'Zuladung', 'Carga'],
+  massKg: ['Masse (kg)', 'Mass (kg)', 'Masse (kg)', 'Masa (kg)'],
+  pax: ['Passagers', 'Passengers', 'Passagiere', 'Pasajeros'],
+  onMap: ['Voir sur la Carte', 'See on the Map', 'Auf der Karte zeigen', 'Ver en el Mapa'],
+  polygon: ['polygone', 'polygon', 'Polygon', 'polígono'],
+  minutes: ['{n} min', '{n} min', '{n} min', '{n} min'],
   allCategories: ['Toutes les catégories', 'All categories', 'Alle Kategorien', 'Todas las categorías'],
   category: ['Catégorie', 'Category', 'Kategorie', 'Categoría'],
   search: ['Rechercher une mission', 'Search a mission', 'Mission suchen', 'Buscar una misión'],
@@ -195,6 +236,15 @@ export async function mount(el, ctx) {
     if (!s.open) draw(s);
   };
   window.addEventListener('frame-data-airline', s.onAirline);
+  // le retour du navigateur (même adresse : popstate sans hashchange, le module n'est pas remonté) : le détail revient à la première
+  // page, la première page à la liste
+  s.onPop = () => {
+    if (S !== s || !s.open) return;
+    if (s.open.detail) s.open.detail = false;
+    else s.open = null;
+    draw(s);
+  };
+  window.addEventListener('popstate', s.onPop);
   draw(s);
   let got = await yamlFile(ctx, REGISTRY);
   if (S !== s) return;
@@ -246,6 +296,8 @@ async function unlisted(s, reg) {
 /** Démonte : la compagnie n'est plus suivie. */
 export function unmount() {
   if (S?.onAirline) window.removeEventListener('frame-data-airline', S.onAirline);
+  if (S?.onPop) window.removeEventListener('popstate', S.onPop);
+  for (const u of S?.urls || []) URL.revokeObjectURL(u);
   S = null;
 }
 
@@ -312,7 +364,10 @@ const filtered = s => s.rows.filter(r => ofAirline(s, r) && (!s.family || r.fami
 /** Dessine la liste, ou la mission choisie. */
 function draw(s) {
   s.ctx.helpAnchor?.(() => s.open ? 'missions-open' : 'missions-list');
-  s.el.innerHTML = `<h1>${esc(s.tt(meta.title))}</h1>${s.open ? missionHtml(s) : listHtml(s)}`;
+  for (const u of s.urls || []) URL.revokeObjectURL(u);
+  s.urls = [];
+  s.el.innerHTML = `<style>${STYLE}</style><h1>${esc(s.tt(meta.title))}</h1>${s.open ? missionHtml(s) : listHtml(s)}`;
+  if (s.open?.mission && !s.open.mission.hasCoords) legacyPngs(s);
 }
 
 /** La date d'un compte rendu en « jj/mm/aaaa ». */
@@ -363,23 +418,94 @@ function results(s) {
   else if (!s.open) draw(s);
 }
 
-/** La mission choisie : un résumé plat (titre, trajet, appareil, bloc estimé, résumé, notes), « Préparer ce vol », « Retour ». */
+/** La fiche d'une mission en deux niveaux (§ 10.45, SOG-0051). Première page (sept éléments, règle 13) : titre, catégorie, risques,
+ *  équipes, zones, état, actions ; le détail en sections repliables de sept éléments chacune. Téléphone : deux écrans (« Détail », le
+ *  retour du navigateur revient) ; module large : la première page à gauche, le détail au centre (CSS @container). */
 function missionHtml(s) {
   const {
     row: r,
     mission: m,
     drawn
   } = s.open,
+    why = s.open.why ? `<p class="f-muted" data-why="${esc(s.open.why)}">${esc(s.open.why === 'late' ? s.tt(TX.late) : s.open.why === 'missing' ? s.tt(TX.missing, { p: `missions/${r.folder}/${r.file}` }) : s.tt(TX.unreadable, { e: s.open.err || s.tt(TX.noIdType) }))}</p>` : '';
+  return `<div class="f-card ms-sheet" data-pane="mission" data-id="${esc(r.id)}"${s.open.detail ? ' data-detail' : ''}>
+    <section class="ms-first" data-first>${firstHtml(s, r, m, drawn, why)}</section>
+    <section class="ms-detail" data-detailpane>${m ? detailHtml(s, r, m) : ''}</section></div>`;
+}
+/** Sept lignes au plus, puis « N autres » replié (la règle 13 dans une section). */
+function seven(s, items) {
+  return items.length > 7 ? `${items.slice(0, 7).join('')}<details class="ms-more"><summary class="f-muted">${esc(s.tt(TX.more, { n: items.length - 7 }))}</summary>${items.slice(7).join('')}</details>` : items.join('');
+}
+/** La première page (voir missionHtml). */
+function firstHtml(s, r, m, drawn, why) {
+  const lang = s.ctx.lang?.() || 'fr',
+    cat = m?.category || r.category,
+    catName = catOf(s, {
+      category: cat
+    }) ? MC.nameOf(s.cats, cat, lang) : '',
+    risks = m?.risks || [],
+    teams = m?.teams || [],
+    zones = m?.zones || [],
+    flown = s.flown.get(r.id),
+    kindLine = [m?.type || r.kind, m?.subtype || r.subtype, catName].filter(
+      Boolean); // 2 la catégorie : activité, sous-type, catégorie de la compagnie
+  // 1 le titre, l'id et la famille
+  return `<h2><b>${esc(r.id)}</b> ${esc(m?.title || r.title)} <span class="f-muted">${esc(r.family)}</span>${drawn ? ` <span class="f-badge" data-kind="accent" data-drawn>${esc(s.tt(TX.drawn))}</span>` : ''}</h2>
+    ${kindLine.length ? `<p class="f-muted" data-cat>${esc(kindLine.join(' · '))}</p>` : ''}
+    ${m ? risks.length ? `<div data-risks><h3>${esc(s.tt(TX.risks))}</h3><ul class="ms-lines">${risks.slice(0, 3).map(x => `<li data-risk>${esc(x.hazard)}${x.mitigation ? ` → ${esc(x.mitigation)}` : ''}</li>`).join('')}</ul>${risks.length > 3 ? `<details class="ms-more" data-riskmore><summary class="f-muted">${esc(s.tt(TX.more, { n: risks.length - 3 }))}</summary><ul class="ms-lines">${risks.slice(3).map(x => `<li data-risk>${esc(x.hazard)}${x.mitigation ? ` → ${esc(x.mitigation)}` : ''}</li>`).join('')}</ul></details>` : ''}</div>` :
+    `<div data-risks><p class="f-muted" data-norisk>${esc(s.tt(TX.noRisk))}</p>${m.summary ? `<p data-summary>${esc(m.summary)}</p>` : ''}</div>` : ''}
+    ${teams.length ? `<div data-teams><h3>${esc(s.tt(TX.teams))}</h3><ul class="ms-lines">${seven(s, teams.map(t => `<li data-team>${esc(t.name)}${t.role ? ` <span class="f-muted">${esc(t.role)}</span>` : ''}</li>`))}</ul></div>` : ''}
+    ${zones.length ? `<p data-zones>${esc(s.tt(TX.zonesCount, { n: zones.length }))} : ${esc(zones.slice(0, 7).map(z => [z.id, z.name].filter(Boolean).join(' ')).join(', '))}${zones.length > 7 ? '…' : ''}</p>` : ''}
+    ${flown || why ? `<div data-state>${flown ? `<p class="f-badge" data-kind="ok" data-flown>${esc(s.tt(TX.flownOn, { d: day(flown) }))}</p>` : ''}${why}</div>` : ''}
+    <div class="f-row ms-actions"><a class="f-btn primary" data-do="prepare" href="#fuel?mission=${encodeURIComponent(r.id)}">${esc(s.tt(TX.prepare))}</a>${m ? `<button type="button" class="ms-todetail" data-do="detail">${esc(s.tt(TX.detail))}</button>` : ''}${drawn ? `<button type="button" data-do="draw">${esc(s.tt(TX.drawAgain))}</button>` : ''}<button type="button" data-do="back">${esc(s.tt(TX.back))}</button></div>`;
+}
+/** Une adresse de la Carte pour cette mission (l'application Pilote : la Carte n'est pas dans Compagnie) ; `extra` : map, zone. */
+const mapHref = (r, extra) => `?app=pilot#maps?mission=${encodeURIComponent(r.id)}${Object.entries(extra).filter(([, v]) => v).map(([k, v]) => `&${k}=${encodeURIComponent(v)}`).join('')}`;
+/** Le détail (voir missionHtml) : description, objectifs, zones à activer, rendez-vous, route fournie, cartes fournies, charge et
+ *  appareils ; une section vide n'est pas montrée. */
+function detailHtml(s, r, m) {
+  const sec = (id, title, body, open = false) => body ? `<details class="ms-sec" data-sec="${id}"${open ? ' open' : ''}><summary>${esc(s.tt(title))}</summary>${body}</details>` : '',
+    km = v => `${Math.round(v * 10) / 10} km`,
+    // une carte fournie centrée sur une zone (son centre_ref) : la Carte l'ouvre à cette carte
+    zoneMap = z => m.maps.find(x => x.file && x.centreRef && x.centreRef.toUpperCase() === z.id.toUpperCase())?.file || '',
+    nm = MS.routeNm(m),
+    lines = a => a.length ? `<ul class="ms-lines">${seven(s, a)}</ul>` : '';
+  const desc = [m.summary ? `<p data-summary>${esc(m.summary)}</p>` : '', ...m.details.map(p => `<p>${esc(p)}</p>`), m.notes?.length ? `<ul class="ms-lines">${m.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : ''].filter(Boolean),
+    obj = [m.objectives.primary ? `<p><b>${esc(s.tt(TX.objPrimary))}</b> ${esc(m.objectives.primary)}</p>` : '', lines(m.objectives.secondary.map(x => `<li>${esc(x)}</li>`))].join(''),
+    zones = lines(m.zones.map(z => `<li data-zone="${esc(z.id)}"><b>${esc(z.name || z.id)}</b> <span class="f-muted">${esc([z.kind, z.radiusKm !== null ? km(z.radiusKm) : z.polygon ? s.tt(TX.polygon) : '', z.role, z.timeMin !== null ? s.tt(TX.minutes, { n: z.timeMin }) : ''].filter(Boolean).join(' · '))}</span>${z.lat !== null && z.lon !== null ? ` <a class="f-linkbtn" data-zonemap href="${esc(mapHref(r, { map: zoneMap(z), zone: z.id }))}">${esc(s.tt(TX.onMap))}</a>` : ''}</li>`)),
+    rdv = lines(m.rendezvous.map(p => `<li data-rdv><b>${esc(p.name || p.id)}</b> <span class="f-muted">${esc([p.participants.join(', '), p.role].filter(Boolean).join(' · '))}</span></li>`)),
+    route = m.turns.length ? `<table class="ms-route" data-routetable><tbody>${m.turns.slice(0, 60).map(p => `<tr><td>${esc(p.id)}</td><td>${esc(p.name)}</td><td class="f-muted">${esc(p.role)}</td></tr>`).join('')}</tbody></table>${nm !== null ? `<p class="f-muted" data-routenm>${esc(s.tt(TX.routeNm, { n: nm }))}</p>` : ''}` : '',
+    // les cartes fournies : un lien vers la Carte quand la mission a des coordonnées (jamais l'image) ; l'image du dossier sinon
+    maps = lines(m.maps.filter(x => x.file || x.description).map((x, i) => `<li data-map="${i}"><b>${esc(x.type || x.id || x.file)}</b> <span class="f-muted">${esc(x.description)}</span>${m.hasCoords ? x.file ? ` <a class="f-linkbtn" data-maplink href="${esc(mapHref(r, { map: x.file }))}">${esc(s.tt(TX.onMap))}</a>` : '' : x.file ? `<img class="ms-png" data-png="${esc(x.file)}" alt="${esc(x.description || x.file)}" hidden>` : ''}</li>`)),
+    ac = (m.aircraft || []).map(a => a.type).filter(Boolean).join(', ') || r.types.join(', '),
+    dep = m.origin?.name || r.origin,
+    arr = m.destination?.name || r.destination,
     dl = (k, v) => v ? `<dt>${esc(s.tt(k))}</dt><dd>${esc(v)}</dd>` : '',
-    dep = m?.origin?.name || r.origin,
-    arr = m?.destination?.name || r.destination;
-  return `<div class="f-card" data-pane="mission" data-id="${esc(r.id)}">${drawn ? `<p class="f-badge" data-kind="accent" data-drawn>${esc(s.tt(TX.drawn))}</p>` : ''}
-    <h2><b>${esc(r.id)}</b> ${esc(m?.title || r.title)}</h2>
-    <dl class="f-dl">${dl(TX.category, catOf(s, { category: m?.category || r.category }) ? MC.nameOf(s.cats, m?.category || r.category, s.ctx.lang?.() || 'fr') : '')}${dl(TX.operation, r.operation)}${dl(TX.route, [dep, arr].filter(Boolean).join(' → '))}${dl(TX.aircraft, (m?.aircraft || []).map(a => a.type).filter(Boolean).join(', ') || r.types.join(', '))}${dl(TX.block, hmm(m?.estimate?.blockMin || r.blockMin))}</dl>
-    ${s.open.why ? `<p class="f-muted" data-why="${esc(s.open.why)}">${esc(s.open.why === 'late' ? s.tt(TX.late) : s.open.why === 'missing' ? s.tt(TX.missing, { p: `missions/${r.folder}/${r.file}` }) : s.tt(TX.unreadable, { e: s.open.err || s.tt(TX.noIdType) }))}</p>` : ''}
-    ${m?.summary ? `<p data-summary>${esc(m.summary)}</p>` : ''}
-    ${m?.notes?.length ? `<h3>${esc(s.tt(TX.notes))}</h3><ul>${m.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
-    <div class="f-row"><a class="f-btn primary" data-do="prepare" href="#fuel?mission=${encodeURIComponent(r.id)}">${esc(s.tt(TX.prepare))}</a>${drawn ? `<button type="button" data-do="draw">${esc(s.tt(TX.drawAgain))}</button>` : ''}<button type="button" data-do="back">${esc(s.tt(TX.back))}</button></div></div>`;
+    load = `<dl class="f-dl">${dl(TX.operation, r.operation)}${dl(TX.route, [dep, arr].filter(Boolean).join(' → '))}${dl(TX.aircraft, ac)}${dl(TX.block, hmm(m.estimate?.blockMin || r.blockMin))}${dl(TX.payload, m.payload.description)}${dl(TX.massKg, m.payload.massKg !== null ? String(m.payload.massKg) : '')}${dl(TX.pax, m.payload.passengers !== null ? String(m.payload.passengers) : '')}</dl>${m.constraints?.length ? `<ul class="ms-lines">${m.constraints.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}`;
+  // la place du bouton documentation (SOG-0084, § 10.46) et l'historique des affectations (lot 5) viendront après la charge
+  return `<button type="button" class="ms-tofirst" data-do="first">${esc(s.tt(TX.back))}</button>
+    ${sec('desc', TX.secDesc, desc.join(''), true)}${sec('obj', TX.secObj, obj)}${sec('zones', TX.secZones, zones)}${sec('rdv', TX.secRdv, rdv)}${sec('route', TX.secRoute, route)}${sec('maps', TX.secMaps, maps)}${sec('payload', TX.secPayload, load)}`;
+}
+/** Les images héritées d'une mission sans coordonnées (le dossier de la mission, un nom de fichier vérifié par le lecteur) : lues en
+ *  octets, montrées si ce sont des PNG ; rien sinon. */
+async function legacyPngs(s) {
+  const o = s.open,
+    imgs = [...s.el.querySelectorAll('img[data-png]')];
+  for (const img of imgs) {
+    const file = img.dataset.png,
+      buf = o?.row?.folder ? await Promise.resolve().then(() => window.FrameData?.readBytes?.(`missions/${o.row.folder}/${file}`, {
+        max: 8e6
+      })).catch(() => null) : null;
+    if (S !== s || s.open !== o) return;
+    const b = buf ? new Uint8Array(buf.slice(0, 4)) : null;
+    if (!b || b[0] !== 0x89 || b[1] !== 0x50 || b[2] !== 0x4e || b[3] !== 0x47) continue; // pas un PNG : rien
+    const url = URL.createObjectURL(new Blob([buf], {
+      type: 'image/png'
+    }));
+    (s.urls ||= []).push(url);
+    img.src = url;
+    img.hidden = false;
+  }
 }
 
 /** Ouvre une mission : son fichier lu (le registre suffit s'il ne vient pas, la cause dite) ; un fichier en retard est repris
@@ -393,10 +519,14 @@ async function openMission(s, row, drawn = false) {
   if (S !== s) return;
   const show = g => {
     const mission = g.doc ? MS.readMission(g.doc) : null;
+    const pushed = s.open ? s.open.pushed : (history.pushState({
+      missions: 'open'
+    }, '', location.href), true); // le retour du navigateur revient à la liste
     s.open = {
       row,
       mission,
       drawn,
+      pushed,
       why: g.why || (mission ? '' : 'unreadable'), // un YAML lu sans mission.id ni mission.type : illisible, sans autre message
       err: g.err || ''
     };
@@ -432,7 +562,20 @@ function onClick(s, e) {
       s.all = true;
       return results(s);
     case 'back':
+      // la mission ouverte par un toucher a une entrée d'historique : le retour la referme (popstate), comme le geste du navigateur
+      if (s.open?.pushed) return history.back();
       s.open = null;
       return draw(s);
+    case 'detail':
+      s.open.detail = true;
+      history.pushState({
+        missions: 'detail'
+      }, '', location.href); // le retour du navigateur revient à la première page (popstate, sans changer l'adresse)
+      draw(s);
+      return s.el.querySelector('[data-detailpane]')?.scrollIntoView?.({
+        block: 'start'
+      });
+    case 'first':
+      return history.back();
   }
 }

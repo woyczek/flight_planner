@@ -410,8 +410,158 @@ def n11(c):
     c.tap(f'{M} [data-list] [data-id="X-201A"]')
     c.until(f"!!document.querySelector('{M} [data-pane=mission]')", what='the mission opens')
     names = {'fr': 'Fret', 'en': 'Cargo', 'de': 'Fracht', 'es': 'Carga'}
-    c.ok(names[c.lang] in c.text(f'{M} [data-pane=mission] .f-dl'), c.text(f'{M} [data-pane=mission] .f-dl'), 'the mission says its category')
+    c.ok(names[c.lang] in c.text(f'{M} [data-pane=mission] [data-cat]'), c.text(f'{M} [data-pane=mission] [data-cat]'), 'the mission says its category')
     # « Préparer ce vol »: Fuel writes the mission's category with the flight (the report reads it there)
     c.tap(f'{M} [data-do="prepare"]')
     c.until_doc('pilot/ABC/current_flight.json', lambda d: d and d.get('mission') == 'X-201A' and d.get('missionCategory') == 'fret',
                 'the flight of the mission carries its category', timeout=10000)
+
+
+# § 10.45 (SOG-0051): invented missions of the sheet in two levels — positions, names and texts made up, no AIP content, no user mission
+_SHEET_REGISTRY = """missions:
+  - { id: X-301A, family: TESTSHEET, title: Mission complète, folder: X_SH/X-301A, files: [missionX-301A.yaml] }
+  - { id: X-302A, family: TESTSHEET, title: Mission sans risque, folder: X_SH/X-302A, files: [missionX-302A.yaml] }
+  - { id: X-303A, family: TESTSHEET, title: Mission ancienne, folder: X_SH/X-303A, files: [missionX-303A.yaml] }
+"""
+_SHEET_FULL = """mission: { id: X-301A, type: SAR, subtype: RECHERCHE }
+title: Mission complète
+summary: Une recherche inventée au-dessus d'un terrain d'essai.
+detailed_description: |-
+  Premier paragraphe inventé.
+
+  Second paragraphe inventé.
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test Sud (XTSU), lat: 44.0, lon: 2.0 }
+target: { id: TARGET, name: Cible d'essai, lat: 44.6, lon: 1.4 }
+turning_points:
+  - { id: PT1, name: Point un, role: entrée, lat: 44.8, lon: 1.2 }
+  - { id: PT2, name: Point deux, role: sortie, lat: 44.4, lon: 1.6 }
+rendezvous:
+  - { id: RDV-1, name: Rendez-vous d'essai, lat: 44.5, lon: 1.5, participants: [ALPHA1, BRAVO2], role: ralliement }
+zones:
+  - { id: ZONE-1, name: Secteur nord, kind: search, centre: { lat: 44.7, lon: 1.3 }, radius_km: 12, role: recherche, time_on_task_min: 30 }
+  - { id: ZONE-2, name: Secteur sud, kind: exclusion, points: [{ lat: 44.2, lon: 1.6 }, { lat: 44.2, lon: 1.8 }, { lat: 44.1, lon: 1.7 }] }
+teams:
+  - { name: ALPHA1, service: Service d'essai, type: H135, role: recherche }
+  - { name: BRAVO2, service: Service d'essai, type: H145, role: relais }
+  - { name: CHARLIE3, service: Service d'essai, type: EC25, role: hélitreuillage }
+aircraft: [{ type: H135 }]
+objectives: { primary: Trouver la cible inventée., secondary: [Rester en contact., Rentrer avant la nuit.] }
+payload: { description: Un treuil inventé., mass_kg: 120, passengers: 2 }
+risks:
+  - { hazard: Danger un, mitigation: Parade un }
+  - { hazard: Danger deux, mitigation: Parade deux }
+  - { hazard: Danger trois, mitigation: Parade trois }
+  - { hazard: Danger quatre, mitigation: Parade quatre }
+  - { hazard: Danger cinq, mitigation: Parade cinq }
+maps:
+  - { id: general, filename: generalX-301A.png, type: general, description: Vue générale inventée. }
+  - { id: zone_1, filename: zoneX-301A.png, type: zone, description: Le secteur nord., centre_ref: ZONE-1, range_km: 30 }
+  - { id: bad, filename: ../../secret.png, type: detail, description: Un chemin refusé. }
+"""
+_SHEET_NORISK = """mission: { id: X-302A, type: TRANSPORT }
+title: Mission sans risque
+summary: Un transport inventé sans risque déclaré.
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+"""
+_SHEET_LEGACY = """mission: { id: X-303A, type: TRANSPORT }
+title: Mission ancienne
+summary: Une mission inventée sans aucune coordonnée.
+maps:
+  - { filename: legacyX-303A.png, type: general, description: La carte d'origine. }
+"""
+# a 1 × 1 PNG (invented): the image of the legacy mission, kept where readBytes reads it on a device without launcher (meta « bytes:<path> »)
+_PNG = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0x0D, 0x49, 0x48, 0x44, 0x52, 0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0, 0x1F, 0x15,
+        0xC4, 0x89, 0, 0, 0, 0x0D, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0xF8, 0xCF, 0xC0, 0xF0, 0x1F, 0, 0x05, 0, 0x01, 0xFF, 0x89, 0x99,
+        0x3D, 0x1D, 0, 0, 0, 0, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82]
+_BYTES_JS = """async ([path, bytes]) => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
+  await new Promise((res, rej) => { const tx = db.transaction('meta', 'readwrite'); tx.objectStore('meta').put({ key: 'bytes:' + path, buf: new Uint8Array(bytes).buffer });
+    tx.oncomplete = res; tx.onerror = () => rej(tx.error) }); db.close(); return true }"""
+
+
+def open_sheet(c, mid):
+    """The three invented missions, the list, then the mission `mid` opened."""
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _SHEET_REGISTRY], ['missions/X_SH/X-301A/missionX-301A.yaml', _SHEET_FULL],
+                     ['missions/X_SH/X-302A/missionX-302A.yaml', _SHEET_NORISK], ['missions/X_SH/X-303A/missionX-303A.yaml', _SHEET_LEGACY]])
+    c.js(_BYTES_JS, ['missions/X_SH/X-303A/legacyX-303A.png', _PNG])
+    c.open('missions', wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id=\"{mid}\"]')", timeout=15000, what='the list of missions')
+    c.tap(f'{M} [data-list] [data-id="{mid}"]')
+    c.until(f"!!document.querySelector('{M} [data-pane=mission][data-id=\"{mid}\"] [data-first]')", timeout=10000, what=f'{mid} opens')
+    c.settle()
+
+
+_FIRST_JS = f"""(() => {{ const f = document.querySelector('{M} [data-first]'), vis = e => !!e && e.getBoundingClientRect().height > 0;
+  return {{ blocks: [...f.children].filter(vis).length, risks: [...f.querySelectorAll('[data-risks] > ul [data-risk]')].map(e => e.textContent.trim()),
+    more: f.querySelector('[data-riskmore] summary')?.textContent.trim() || '', teams: f.querySelectorAll('[data-team]').length,
+    zones: f.querySelector('[data-zones]')?.textContent || '', primary: f.querySelectorAll('.primary').length, prepare: !!f.querySelector('[data-do=prepare].primary'),
+    detail: vis(f.querySelector('[data-do=detail]')), cat: f.querySelector('[data-cat]')?.textContent || '', detailShown: vis(document.querySelector('{M} [data-detailpane]')),
+    sw: document.documentElement.scrollWidth, iw: innerWidth }} }})()"""
+
+
+@case('N9', 'Mission sheet, first page: title, category, three risks « danger → parade » and « N autres », teams, zones count, one primary action; no risk said',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.45 / SOG-0051 (user: « les risques sur la première page »): seven elements at most (rule 13), « Préparer ce vol » the one '
+      'primary action, « Détail » the secondary; a mission without risks says « Aucun risque déclaré » and keeps its summary')
+def n9(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    open_sheet(c, 'X-301A')
+    f = c.js(_FIRST_JS)
+    c.le(f['blocks'], 7, 'seven elements at most on the first page', what='elements')
+    c.eq(f['risks'], ['Danger un → Parade un', 'Danger deux → Parade deux', 'Danger trois → Parade trois'], 'three risks « danger → parade »', what='risks')
+    c.eq(norm(f['more']), norm(row(c, 'more').replace('{n}', '2')), 'the two others folded', what='others')
+    c.eq(f['teams'], 3, 'the teams engaged', what='teams')
+    c.ok('ZONE-1' in f['zones'] and 'ZONE-2' in f['zones'] and '2' in f['zones'], f['zones'], 'the zones as a count with their names')
+    c.ok('SAR' in f['cat'] and 'RECHERCHE' in f['cat'], f['cat'], 'the category line: activity and subtype')
+    c.ok(f['primary'] == 1 and f['prepare'] and f['detail'], f, 'one primary action, « Préparer ce vol », and « Détail »')
+    c.ok(not f['detailShown'], f, 'on a phone the detail is a second screen')
+    c.le(f['sw'], f['iw'], 'no horizontal scroll at 390 px', what='scrollWidth')
+    c.shot(f'N9_{c.design}_{c.width}_{c.lang}.png')
+    # a mission without risks says so, and keeps its summary on the first page
+    c.tap(f'{M} [data-do="back"]')
+    c.until(f"!!document.querySelector('{M} [data-pane=list]')", what='back to the list')
+    c.tap(f'{M} [data-list] [data-id="X-302A"]')
+    c.until(f"!!document.querySelector('{M} [data-first] [data-norisk]')", timeout=10000, what='« Aucun risque déclaré »')
+    c.eq(norm(c.text(f'{M} [data-first] [data-norisk]')), norm(row(c, 'noRisk')), 'the sentence', what='no risk')
+    c.ok('sans risque déclaré' in (c.text(f'{M} [data-first] [data-summary]') or ''), 'no summary', 'the summary stays on the first page')
+
+
+@case('N10', 'Mission sheet, detail: each zone and each map provided opens the Map (no PNG with coordinates); a legacy mission without coordinates shows its PNG',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.45 / SOG-0051 (user: « affichage des cartes incluses »): the coordinates are the truth — a Map link, never the studio\'s PNG; '
+      'a PNG only for a mission without coordinates, its file name checked (audit 157); the browser\'s back returns from the detail')
+def n10(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    open_sheet(c, 'X-301A')
+    c.tap(f'{M} [data-do="detail"]')
+    c.until(f"(() => {{ const d = document.querySelector('{M} [data-detailpane]'); return !!d && d.getBoundingClientRect().height > 0 }})()", what='the detail screen')
+    c.ok(not c.js(f"document.querySelector('{M} [data-first]').getBoundingClientRect().height > 0"), 'both shown', 'the detail replaces the first page on a phone')
+    secs = c.js(f"[...document.querySelectorAll('{M} [data-detailpane] [data-sec]')].map(e => e.dataset.sec)")
+    c.eq(secs, ['desc', 'obj', 'zones', 'rdv', 'route', 'maps', 'payload'], 'the sections in the order of the design', what='sections')
+    for sec in secs:
+        c.js(f"document.querySelector('{M} [data-sec={sec}]').open = true")
+    zl = c.js(f"[...document.querySelectorAll('{M} [data-zone]')].map(e => [e.dataset.zone, e.querySelector('a[data-zonemap]')?.getAttribute('href') || ''])")
+    c.eq([z[0] for z in zl], ['ZONE-1', 'ZONE-2'], 'one line per zone', what='zones')
+    c.eq(zl[0][1], '?app=pilot#maps?mission=X-301A&map=zoneX-301A.png&zone=ZONE-1', 'a zone with a map of its own: the Map at that map, centred on it', what='zone 1')
+    c.eq(zl[1][1], '?app=pilot#maps?mission=X-301A&zone=ZONE-2', 'a polygon zone: the Map centred on it', what='zone 2')
+    c.ok(c.js(f"(document.querySelector('{M} [data-zone=\"ZONE-2\"]')?.textContent || '').includes({repr(row(c, 'polygon'))})"), 'no polygon', 'a polygon zone says « polygone »')
+    maps = c.js(f"[...document.querySelectorAll('{M} [data-sec=maps] [data-map]')].map(e => e.querySelector('a[data-maplink]')?.getAttribute('href') || '')")
+    c.eq(maps, ['?app=pilot#maps?mission=X-301A&map=generalX-301A.png', '?app=pilot#maps?mission=X-301A&map=zoneX-301A.png', ''],
+         'each map provided is a Map link; a refused file name (« ../../secret.png ») has none', what='maps')
+    c.eq(c.count(f'{M} img'), 0, 'no PNG when the mission has coordinates', what='no image')
+    c.ok(c.js(f"document.querySelectorAll('{M} [data-routetable] tr').length === 2 && !!document.querySelector('{M} [data-routenm]')"), 'no table', 'the route provided: its points and the distance')
+    c.shot(f'N10_{c.design}_{c.width}_{c.lang}.png')
+    # the browser's back returns to the first page, then to the list
+    c.page.go_back()
+    c.until(f"(() => {{ const f = document.querySelector('{M} [data-first]'); return !!f && f.getBoundingClientRect().height > 0 }})()", what='back: the first page')
+    c.page.go_back()
+    c.until(f"!!document.querySelector('{M} [data-pane=list]')", what='back again: the list')
+    # a legacy mission without coordinates: its PNG, from the mission folder
+    c.tap(f'{M} [data-list] [data-id="X-303A"]')
+    c.until(f"!!document.querySelector('{M} [data-first]')", timeout=10000, what='the legacy mission opens')
+    c.tap(f'{M} [data-do="detail"]')
+    c.js(f"document.querySelector('{M} [data-sec=maps]').open = true")
+    c.until(f"(() => {{ const i = document.querySelector('{M} img[data-png]'); return !!i && !i.hidden && i.complete && i.naturalWidth > 0 }})()", timeout=8000,
+            what='the PNG of the legacy mission is shown')
+    c.eq(c.count(f'{M} a[data-maplink]'), 0, 'no Map link without coordinates', what='no link')

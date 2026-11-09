@@ -56,3 +56,10 @@
   a category or a load. The report does not read the missions: Fuel writes `missionCategory` next to `mission` in the current flight
   (one more field of `CF.FUEL_FIELDS`), and the report reads it when the pilot takes that flight. N11, G7; counter-test on 4d96bf2f4:
   no filter, no load card.
+- **10 Nov 2026 — the mission sheet in two levels** (SOG-0051, § 10.45): the second screen of a phone is a `history.pushState` on
+  the same address (the frame remounts a module at every hash change, which would read the registry again and lose a draw); the
+  browser's back fires `popstate` and the module closes the detail, then the mission. The Map is not in the Company application and
+  its `elsewhere` only sends Fuel to Pilot: the links name the application (`?app=pilot#maps?…`), no frame change. The Map has no
+  `zone` parameter yet (maps SPEC § 15): a zone link carries `zone=<id>` and, when a map provided is centred on that zone, `map=<file>`;
+  `zone` is asked of BUGS SOG. A legacy PNG is read as bytes and shown only with the PNG signature. N9, N10; counter-test on 621aa3720:
+  the sheet never opens in two levels.

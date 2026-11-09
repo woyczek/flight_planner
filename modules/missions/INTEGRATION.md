@@ -16,7 +16,9 @@ addresses).
 | `cache/missions/read.json` | missions | `{ <id>: read_at }`, the device's own "lu" (policy cache) | missions |
 | `cache/missions/status.json` | missions | one status line (assigned missions with a rendezvous in the next seven days), `go: '#missions'` | frame (status block) |
 
-- Pure rules in `frame/lib/mission.js` (reader of the three V2 shapes, `missionFlight(mission, assignment?)`, `pagesOf`),
+- Pure rules in `frame/lib/mission.js` (reader of the three V2 shapes — since 10 Nov 2026 also the sheet's fields, bounded:
+  `risks`, `teams`, `zones`, `rendezvous`, `turns`, `maps` (file names by a strict pattern, never a path), `objectives`, `payload`,
+  `details`, `hasCoords`; `routeNm(mission)`; § 10.45 —, `missionFlight(mission, assignment?)`, `pagesOf`),
   benched without a browser.
 
 ## Addresses

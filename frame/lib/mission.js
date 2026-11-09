@@ -5,9 +5,15 @@
 //
 // API :
 //   readMission(doc) → mission { id, type, subtype, title, summary, organisation, operation, origin, destination, target, points,
-//     routeOrder, aircraft, cruiseLevelFt, cruiseSpeedKt, estimate, notes, constraints, risks, category } ; null sans mission.id ou
-//     mission.type (seuls champs exigés). origin / destination / target : { name, icao, lat, lon } ou null ; points : { id → { id,
-//     name, lat, lon, kind } } (tournants, rendez-vous, zones par leur centre, cible).
+//     routeOrder, aircraft, cruiseLevelFt, cruiseSpeedKt, estimate, notes, constraints, risks, category, teams, zones, rendezvous,
+//     turns, maps, objectives, payload, details, hasCoords } ; null sans mission.id ou mission.type (seuls champs exigés). origin /
+//     destination / target : { name, icao, lat, lon } ou null ; points : { id → { id, name, lat, lon, kind } } (tournants, rendez-vous,
+//     zones par leur centre, cible). La fiche en deux niveaux (§ 10.45, SOG-0051), tout facultatif et borné (le fichier est écrit par
+//     n'importe quel pilote, audit 157) : risks [{ hazard, consequence, mitigation }] (40), teams [{ name, service, type, role }] (40),
+//     zones [{ id, name, kind, lat, lon, radiusKm (≤ 500), polygon, role, timeMin }] (40), rendezvous [{ id, name, lat, lon,
+//     participants, role }] et turns [{ id, name, role, lat, lon }] (60 points), maps [{ id, file (motif strict, un nom de fichier du
+//     dossier de la mission), type, description, centreRef }] (20), objectives { primary, secondary }, payload { description, massKg,
+//     passengers }, details [paragraphe] (2 000 caractères chacun), hasCoords (un lieu, un point ou une zone situé).
 //   readRegistry(doc) → [ligne { id, family, title, operation, types, origin, destination, originIcao, destinationIcao, blockMin,
 //     folder, file, organisation, kind, subtype, callsigns, words, category }] : les lignes du registre, les organisations (…Z) marquées ; folder et file vides quand le
 //     registre en donne un qui n'est pas sûr (le chemin n'est jamais pris tel quel : un pilote peut écrire le registre).
@@ -18,15 +24,29 @@
 //   icaoOf(name) : le code OACI entre parenthèses à la fin d'un nom (« BA 118 Mont-de-Marsan (LFBM) » → « LFBM ») ; '' sinon.
 //   levelFt(text) : « FL240 » → 24000, « 1500 ft » → 1500, un nombre tel quel ; null sinon.
 //   missionFlight(mission, assignment) → { route: { dep, arr, points }, aircraft: { type, registration }, levelFt, speedKt, mission,
-//     category }
+//     category } (le vol que Carburant pose ; § 4 de la SPEC) ; null sans mission.
+//   routeNm(mission) → la longueur en NM du trajet de la mission (origine, points dans l'ordre de missionFlight, destination ; les lieux
+//     sans position sautés) ; null sans deux positions.
 //   categoryOf(v) : l'identifiant de catégorie d'une mission (SOG-0041, § 10.38 ; la forme des identifiants de
 //     frame/lib/mission_categories.js), '' sinon ; le nom et la charge se lisent dans la liste de la compagnie (forAirline).
-//     (le vol que Carburant pose ; § 4 de la SPEC) ; null sans mission.
 
 /** Un texte nettoyé (blancs repliés), '' pour rien. */
 const clean = v => String(v ?? '').replace(/\s+/g, ' ').trim();
 /** Un nombre fini, ou null. */
 const num = v => v === null || v === undefined || v === '' || !Number.isFinite(+v) ? null : +v;
+
+/** Un texte nettoyé et coupé à n caractères. */
+const cut = (v, n = 300) => clean(v).slice(0, n);
+/** Une liste (une valeur seule devient une liste d'un élément), coupée à n éléments. */
+const list = (v, n) => (Array.isArray(v) ? v : v ? [v] : []).slice(0, n);
+/** Une latitude, une longitude dans leurs bornes ; null sinon. */
+const latOf = v => num(v) !== null && Math.abs(+v) <= 90 ? +v : null;
+const lonOf = v => num(v) !== null && Math.abs(+v) <= 180 ? +v : null;
+/** Le nom d'un fichier de carte fourni : un nom seul (ni dossier, ni point en tête), .png ; '' sinon (jamais un chemin, audit 157). */
+const mapFile = v => {
+  const f = clean(v);
+  return /^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}\.png$/i.test(f) ? f : '';
+};
 
 /** Le code OACI à la fin d'un nom (voir l'en-tête). */
 export function icaoOf(name) {
@@ -66,6 +86,75 @@ const centreOf = z => {
   const pts = (z?.points || z?.polygon || z?.vertices || []).filter(p => num(p?.lat) !== null && num(p?.lon) !== null);
   return pts.length ? [pts.reduce((a, p) => a + +p.lat, 0) / pts.length, pts.reduce((a, p) => a + +p.lon, 0) / pts.length] : null;
 };
+
+/** La fiche en deux niveaux (voir l'en-tête, § 10.45) : équipes, zones, rendez-vous, tournants, cartes, objectifs, charge, description. */
+function sheetOf(d) {
+  const zones = list(d.zones, 40).map(z => {
+      const c = centreOf(z),
+        r = num(z?.radius_km ?? z?.radiusKm);
+      return {
+        id: cut(z?.id, 40),
+        name: cut(z?.name, 120),
+        kind: cut(z?.kind, 40),
+        lat: c ? latOf(c[0]) : null,
+        lon: c ? lonOf(c[1]) : null,
+        radiusKm: r !== null && r > 0 && r <= 500 ? r : null,
+        polygon: [z?.points, z?.polygon, z?.vertices].some(a => Array.isArray(a) && a.length > 2),
+        role: cut(z?.role, 200),
+        timeMin: num(z?.time_on_task_min) !== null && +z.time_on_task_min >= 0 && +z.time_on_task_min < 10000 ? Math.round(+z
+          .time_on_task_min) : null
+      };
+    }).filter(z => z.id || z.name),
+    spot = p => ({
+      id: cut(p?.id, 40),
+      name: cut(p?.name, 120),
+      lat: latOf(p?.lat),
+      lon: lonOf(p?.lon),
+      role: cut(p?.role, 200)
+    }),
+    rdv = list(d.rendezvous, 60).map(p => ({
+      ...spot(p),
+      participants: list(p?.participants, 20).map(x => cut(x, 60)).filter(Boolean)
+    })).filter(p => p.id || p.name),
+    turns = list(d.turning_points, 60).map(spot).filter(p => p.id || p.name),
+    o = d.objectives,
+    pl = d.payload && typeof d.payload === 'object' ? d.payload : {},
+    places = [d.origin, d.destination, d.target].filter(p => latOf(p?.lat) !== null && lonOf(p?.lon) !== null);
+  return {
+    summary: String(d.summary ?? '').trim().slice(0, 2000),
+    teams: list(d.teams, 40).map(t => ({
+      name: cut(t?.name, 80),
+      service: cut(t?.service, 120),
+      type: cut(t?.type, 60),
+      role: cut(t?.role, 200)
+    })).filter(t => t.name || t.role),
+    zones,
+    rendezvous: rdv,
+    turns,
+    maps: list(d.maps, 20).map(x => typeof x === 'string' ? {
+      filename: x
+    } : x || {}).map(x => ({
+      id: cut(x.id, 40),
+      file: mapFile(x.filename ?? x.file),
+      type: cut(x.type, 40),
+      description: cut(x.description, 300),
+      centreRef: cut(x.centre_ref ?? x.center_ref, 40)
+    })),
+    objectives: {
+      primary: Array.isArray(o) ? '' : cut(o?.primary, 2000),
+      secondary: (Array.isArray(o) ? o : list(o?.secondary, 20)).slice(0, 20).map(x => cut(x, 300)).filter(Boolean)
+    },
+    payload: {
+      description: cut(pl.description, 2000),
+      massKg: num(pl.mass_kg) !== null && +pl.mass_kg > 0 && +pl.mass_kg < 1e6 ? +pl.mass_kg : null,
+      passengers: Number.isInteger(num(pl.passengers)) && +pl.passengers > 0 && +pl.passengers < 10000 ? +pl.passengers : null
+    },
+    details: String(d.detailed_description ?? '').split(/\n\s*\n/).map(p => p.replace(/\s+/g, ' ').trim().slice(0, 2000)).filter(Boolean)
+      .slice(0, 30),
+    hasCoords: !!(places.length || turns.some(p => p.lat !== null && p.lon !== null) || rdv.some(p => p.lat !== null && p.lon !== null) ||
+      zones.some(z => z.lat !== null && z.lon !== null))
+  };
+}
 
 /** Une liste de textes (une chaîne, une liste, ou rien). */
 const texts = v => (Array.isArray(v) ? v : v ? [v] : []).map(x => typeof x === 'string' ? clean(x) : clean(x?.text || x?.description || ''))
@@ -138,8 +227,17 @@ export function readMission(doc) {
     },
     notes: texts(d.notes),
     constraints: texts(d.payload?.constraints),
-    risks: texts(d.risks),
-    category: categoryOf(m.category ?? d.category)
+    risks: list(d.risks, 40).map(r => typeof r === 'string' ? {
+      hazard: cut(r),
+      consequence: '',
+      mitigation: ''
+    } : {
+      hazard: cut(r?.hazard ?? r?.title ?? r?.name),
+      consequence: cut(r?.consequence),
+      mitigation: cut(r?.mitigation)
+    }).filter(r => r.hazard),
+    category: categoryOf(m.category ?? d.category),
+    ...sheetOf(d)
   };
 }
 
@@ -234,6 +332,24 @@ export function rowOfMission(doc, path) {
     words: [],
     derived: true
   };
+}
+
+/** La longueur du trajet de la mission en NM (voir l'en-tête). */
+export function routeNm(mission) {
+  const f = missionFlight(mission);
+  if (!f) return null;
+  const pts = [mission.origin, ...f.route.points, mission.destination].filter(p => latOf(p?.lat) !== null && lonOf(p?.lon) !== null),
+    rad = Math.PI / 180;
+  if (pts.length < 2) return null;
+  let nm = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1],
+      b = pts[i],
+      h = Math.sin((b.lat - a.lat) * rad / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin((b.lon - a.lon) * rad / 2) **
+      2;
+    nm += 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(h)));
+  }
+  return Math.round(nm);
 }
 
 /** Le vol qu'une mission donne à Carburant (voir l'en-tête). */

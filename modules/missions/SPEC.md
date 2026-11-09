@@ -68,6 +68,22 @@ on the same data. The CPCO (authoring) stays V2 until rebuilt as the third appli
   offers "Tirer encore" (one more draw) — never a silent auto-start. The draw is uniform; no weighting. Every mission of the
   filter flown: said in a notification, nothing drawn. Case N3 (lot 2: the mission is shown as a flat summary — title,
   operation, route, aircraft, estimated block, summary, notes — until the reader of § 5).
+- **The mission sheet in two levels** (V3 spec § 10.45, SOG-0051; replaces the flat summary of lot 2). **First page**, seven
+  elements at most: the title with id and family; the category line (activity, subtype, the airline's category of § 10.38); the
+  risks — three lines « hazard → mitigation » and « N autres » folded — or « Aucun risque déclaré » followed by the summary; the
+  teams (name, role; seven then « N autres »); the zones as a count with their names; the state (« Volée le … », why a file did not
+  come); the actions: « Préparer ce vol » the one primary, « Détail », « Tirer encore » after a draw, « Retour ». **Detail**: foldable
+  sections separated by a rule, seven lines each then « N autres », in this order: description (summary, the paragraphs of
+  `detailed_description`, notes), objectives, zones to activate (name, kind, radius or « polygone », role, time; « Voir sur la
+  Carte »), rendezvous, route provided (the turning points as a table, the length by `routeNm`), maps provided, payload and
+  aircraft (operation, route, aircraft, block, payload, constraints); an empty section is not shown; the documentation button
+  (SOG-0084) and the history of assignments (lot 5) come after. **The Map, never a PNG, when the mission has coordinates**: a zone
+  opens `?app=pilot#maps?mission=<ID>&zone=<zone id>` (with `&map=<file>` when a map provided is centred on that zone), a map
+  provided opens `?app=pilot#maps?mission=<ID>&map=<file>` (the Map is in the Pilot application); a mission without any
+  coordinate shows the PNG of its folder (`FrameData.readBytes`, PNG signature checked, the file name checked by the reader).
+  **Two screens on a narrow module** (« Détail »; the browser's back returns from the detail to the first page, then to the list:
+  `history.pushState` on the same address, `popstate`, the module not remounted); **side by side from 900 px** (container query:
+  first page on the left, detail in the main column). Cases N9, N10 (390 px, captures seen).
 - Below Complet, the list is read-only in the same way; the module needs no level to choose.
 
 ## 4. From the mission to the flight: `missionFlight(mission, assignment?)`
