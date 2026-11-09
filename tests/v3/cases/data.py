@@ -3852,7 +3852,7 @@ _VERBS = ['base/fetch', 'base/build', 'base/purge', 'base/status']
 
 def _zst(state, *reasons, buildable=True):
     """One zone of the launcher\u2019s base/status answer."""
-    return {'state': state, 'reason': reasons[0] if reasons else None, 'reasons': list(reasons), 'buildable': buildable, 'builtCycle': '2026-10-29', 'expectedCycle': '2026-11-26', 'parserVersion': 22}
+    return {'state': state, 'reason': reasons[0] if reasons else None, 'reasons': list(reasons), 'buildable': buildable, 'builtCycle': '2026-10-29', 'expectedCycle': '2026-11-26', 'parserVersion': 23}
 
 
 def _status(zones):
@@ -3860,7 +3860,7 @@ def _status(zones):
     counts = {}
     for z in zones.values():
         counts[z['state']] = counts.get(z['state'], 0) + 1
-    return {'ok': True, 'current': '2026-10-29', 'parserVersion': 22, 'counts': counts, 'zones': zones}
+    return {'ok': True, 'current': '2026-10-29', 'parserVersion': 23, 'counts': counts, 'zones': zones}
 
 
 _NEWER = {'code': 'source-newer', 'source': 'sia', 'cycle': '2026-11-26', 'built': '2026-10-29'}
@@ -3981,7 +3981,7 @@ def l40(c):
     c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/'), lambda r: r.fulfill(status=200, content_type='application/json', body=_ZSTYLE))
     built = _view('done', step='Terminé', jid='j2', zones={'fr': _zs('built', 4, 4, commit='abc1234')}, result={'built': ['fr'], 'failed': [], 'commits': [{'zone': 'fr', 'commit': 'abc1234'}], 'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False, 'blocking': []})
     st = _launcher(c, [built], verbs=_VERBS)
-    parser_old = {'code': 'parser-old', 'built': 21, 'current': 22}
+    parser_old = {'code': 'parser-old', 'built': 22, 'current': 23}
     st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('never-built', {'code': 'never-built'}), 'fr': _zst('stale', _NEWER, parser_old), 'gb': _zst('failed', {'code': 'failed', 'error': 'invalid-output'}),
                             'us': _zst('stale', {'code': 'inputs-changed', 'count': 2, 'names': ['a.json', 'b.json']})})
     cfg, _ = _fixture()
@@ -4000,7 +4000,7 @@ def l40(c):
     c.tap('[data-zone-row=fr] [data-act=zone-why]')
     c.until("!!document.querySelector('[data-zone-why=fr]')", timeout=4000, what='the reasons of France')
     why = norm(c.text('[data-zone-why=fr]'))
-    c.ok(norm(_trow('source-newer', lang, after='  zr: {').split('{source}')[0]) in why and ('v21' in why and 'v22' in why), why, 'the two reasons of France, in words, with their parameters (source newer; parser v21, current v22)')
+    c.ok(norm(_trow('source-newer', lang, after='  zr: {').split('{source}')[0]) in why and ('v22' in why and 'v23' in why), why, 'the two reasons of France, in words, with their parameters (source newer; parser v22, current v23)')
     c.tap('[data-zone-row=us] [data-act=zone-why]')
     c.until("!!document.querySelector('[data-zone-why=us]')", timeout=4000, what='the reasons of the US')
     c.ok('2' in c.text('[data-zone-why=us]'), c.text('[data-zone-why=us]'), 'inputs-changed says its count')
@@ -4030,12 +4030,12 @@ def l40(c):
 
 @case('L41', 'Données: « Mettre à jour » on a base built with an older parser: the question says « n zones, parser changed » once (not n lines), warns that it is long, and says the zones waiting for a file of Downloads; those are not built', 'L', tags=('data',), langs4=True,
       designs=('standard',), screens=False, night=False,
-      rule='SOG-0071 time 2: on the user\u2019s workstation the first update rebuilds every zone (parser 21 → 22), the confirmation says so; a zone that waits for a file (pickup-waiting, not buildable) is said and left out')
+      rule='SOG-0071 time 2: on the user\u2019s workstation the first update rebuilds every zone (parser 22 → 23), the confirmation says so; a zone that waits for a file (pickup-waiting, not buildable) is said and left out')
 def l41(c):
     lang = c.lang
     fetched = _view('done', step='Terminé', result={'fetched': [], 'unchanged': ['ca', 'es', 'fr', 'gb', 'us'], 'failed': [], 'manual': []})
     st = _launcher(c, [fetched], verbs=_VERBS)
-    old = {'code': 'parser-old', 'built': 21, 'current': 22}
+    old = {'code': 'parser-old', 'built': 22, 'current': 23}
     many = ['aa', 'ab', 'ac', 'ad', 'ae', 'af', 'ag', 'ah', 'ai', 'aj', 'ak']
     zones = {z: _zst('stale', old) for z in ['ca', 'es', 'fr', 'us'] + many}
     zones['gb'] = _zst('stale', {'code': 'pickup-waiting', 'source': 'nats', 'set': 'AIP', 'cycle': '2026-11-26', 'zip': 'x.zip'}, buildable=False)
@@ -4051,8 +4051,8 @@ def l41(c):
     c.tap('[data-build] [data-verb=update]')
     q = _ask_text(c)
     nine = norm(_UT('whyMany', lang).replace('{n}', _zones_text(lang, 15)).split('{r}')[0])
-    c.ok(nine in norm(q['text']) and norm(_trow('parser-old', lang, after='  zr: {').split('{built}')[0]) in norm(q['text']), q['text'], 'ONE line for the fifteen zones: « 15 zones : built with an older parser (v21, current v22) »')
-    c.ok(q['text'].count('v21') == 1, q['text'], 'said once, not fifteen times')
+    c.ok(nine in norm(q['text']) and norm(_trow('parser-old', lang, after='  zr: {').split('{built}')[0]) in norm(q['text']), q['text'], 'ONE line for the fifteen zones: « 15 zones : built with an older parser (v22, current v23) »')
+    c.ok(q['text'].count('v22') == 1, q['text'], 'said once, not fifteen times')
     c.ok(norm(_UT('long', lang)) in norm(q['text']), q['text'], 'it says it may take a while')
     c.ok(norm(_UT('waiting', lang).split('{n}')[1].split('{z}')[0]) in norm(q['text']), q['text'], 'and that one zone waits for a file of Downloads (named)')
     st['views'] = [_view('done', step='Terminé', jid='j2', result={'built': [], 'failed': [], 'commits': [], 'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False, 'blocking': []})]
@@ -4192,6 +4192,23 @@ def l46(c):
     _all_open(c)
     c.until("!!document.querySelector('[data-pack=x]')", timeout=12000, what='the agreed shape is drawn')
     c.eq([c.js("[...document.querySelectorAll('[data-pack-regions] > li')].map(l => l.dataset.pack)"), c.js("[...document.querySelectorAll('[data-pack-themes] > li')].map(l => l.dataset.pack)")], [['x'], ['y']], 'the region and the theme; the pack of an unknown kind is dropped', what='both')
+    c.check_errors()
+
+
+@case('L47', 'Données: the DFS row (Germany) says its licence and its credit — CC BY 4.0, DFS — like the other licences', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='AeroDB 450c52b1f (source DFS « ED Routes », parser 23): the credit « DFS, CC BY 4.0 » is in the licence line of the catalogue; the row of the zone that DFS feeds shows it in its detail, as every row shows its licence')
+def l47(c):
+    cfg, _ = _fixture()
+    for z in cfg['zones']:
+        if z['id'] == 'de':
+            z['published'] = True
+    cfg['publication']['base']['de'] = cfg['publication']['base']['ca']
+    _open(c, cfg)
+    _all_open(c)
+    c.until("!!document.querySelector('[data-set=dfs]') || !!document.querySelector('[data-more] [data-set=dfs]')", timeout=8000, what='the DFS row')
+    lic = c.js("(() => { const r = document.querySelector('[data-set=dfs]'); const dt = [...r.querySelectorAll('dt')].find(d => d.nextElementSibling && /DFS/.test(d.nextElementSibling.textContent)); return r.textContent.replace(/\s+/g, ' ') })()")
+    c.ok('DFS' in lic and 'CC BY 4.0' in lic, lic[:300], 'the row of the DFS source carries its licence and its credit: CC BY 4.0, DFS')
     c.check_errors()
 
 
