@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Aircraft: « Depuis le dossier Output »** (`modules/aircraft/sheets.js`, `module.js`; Aircraft SPEC § 6, stats INTEGRATION;
+  noreg M29; SOG-0052 step 2). The journals of the workstation's X-Plane Output folder listed and read through the launcher (AeroDB's
+  job `stats/output`), into the same proposals as a chosen file; « Régler le dossier Output » when none is set.
+
+- **Aircraft and Fuel: RPM table grouped by altitude, a TAS per row** (`modules/aircraft/sheets.js`, `modules/fuel/model.js`;
+  Aircraft SPEC § 6, Fuel SPEC § 3; noreg M28, F102; SOG-0028 (3) (4)). One folding group per altitude in the editor (one curve: the
+  flat table as before); an optional `tasKt` per row, read by Fuel by the flow's rule and taken by the performance model.
+
 - **Fuel: the aircraft of the quote on the result bar, one aircraft search** (`modules/fuel/module.js`; Fuel SPEC § 9.6, DECISIONS;
   noreg F101, F103; SOG-0060). The context line seen at every step starts with the aircraft (« FA50 · F-GXXX », « estimation du type » when no
   sheet serves), a button to the aircraft choice of the step Flight. The Sheets view starts with the same aircraft search as the step
@@ -76,8 +84,7 @@ Alpha: data formats and screens may still change.
   `modules/aircraft/sheets.js`, `sheets_texts.js`; stats SPEC, Aircraft SPEC § 6; noreg F98, M27; SOG-0052, step 1). Journals chosen
   on the device (.csv, .csv.gz), read as untrusted input, never kept; the steady cruise windows of the sheet's type grouped per
   altitude and rpm (weighted median flow, TAS), compared with the sheet's curve of the same altitude; each ticked point goes to the
-  draft, written only through the ordinary review. Ported from the FuelDashboard. Since 9 Nov (step 2, M29): « Depuis le dossier
-  Output » lists and reads the journals of the workstation's X-Plane Output folder through the launcher (AeroDB's `stats/output`).
+  draft, written only through the ordinary review. Ported from the FuelDashboard.
 
 - **Fuel: the typed flow is used when the RPM table does not frame the rpm** (`modules/fuel/model.js` `tableAt`; Fuel SPEC § 3,
   DECISIONS; noreg F97; SOG-0053). A table with a single row with a flow (the S210: 6700 rpm → 11 500 lb/h against 7300 lb/h typed at
@@ -94,8 +101,7 @@ Alpha: data formats and screens may still change.
 - **Aircraft and Fuel: curves per altitude** (`modules/aircraft/sheets.js`, `sheets_texts.js`, `modules/fuel/model.js`, `module.js`;
   Aircraft SPEC § 6, Fuel SPEC § 3; noreg M26, F96; SOG-0028, first part). The curve of an altitude is the rows of the RPM table
   sharing `altFt` (no new field): the monotony hint of SOG-0015 is checked per altitude and names it; « Croisière » says the two rpm
-  rows and the two altitude curves it read. The interpolation is unchanged. Since 9 Nov (M28, F102): the editor shows one folding
-  group per altitude, and each row has an optional TAS (`tasKt`) that Fuel reads by the same rule as the flow.
+  rows and the two altitude curves it read. The interpolation is unchanged.
 
 - **Frame: the current airline** (`frame/store/frame_data.js`; frame INTEGRATION, DECISIONS; noreg A53, A93; V3_SPECIFICATION § 10.38 step 1).
   `FrameData.airline()` → `{ code, name, settings, fleet }`, `airlines()`, `setAirline(code)` and the event `frame-data-airline`; the
