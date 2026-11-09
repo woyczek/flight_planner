@@ -500,6 +500,48 @@ downloads them. Removing them means rewriting that history, which only the owner
 From 28 October 2026 the trials went to a disposable branch `lab/<trigram>` (deleted by "Clean"), and the laboratory itself was
 removed the same day: nothing more is written there. A `lab/<trigram>` branch left on GitHub can simply be deleted.
 
+### Route computation: the jobs `route/compute` and `route/import-rad` (SOG-0081, alpha.5)
+
+The route calculator of RouteSim 2 (E:/DEFA/rad: engine, FRA graph, procedures, vertical profile) runs on the workstation behind two launcher jobs; **the page never computes a route**. The engine is `tools/route_engine/` (copied from RouteSim 2 without change of substance, see its README: the lines that differ carry `SOG-0081`, so that the user's diffs apply as they are). Called like every job: `launcher.job('regen/job', { set: 'route', verb: 'compute', args })`, the result is `job.result`.
+
+**`route/compute`** (≈ 2–10 s on the workstation: the base and the RAD are read at each call, nothing is cached between two calls). The request is **closed**: any other field, a wrong type, a bad code or a date that is not ISO 8601 is refused (400).
+
+| field | type | meaning |
+|---|---|---|
+| `dep`, `arr` | string (1–4 signs) | aerodromes; **the aerodromes at the ends of `route` win** over these two fields |
+| `route` | string (≤ 600) | the request: `LFPO SITET KEPAD EIDW`; the intermediate points are **mandatory passages**, in that order; in `mode: 'validate'` it is the route to check |
+| `via` | string[] (≤ 8) or string | mandatory passages when `route` is not given |
+| `fl` | integer | cruise level, FL010–FL660 |
+| `date` | ISO 8601 | the day the cycles are taken at (default `2026-11-09T12:00`: **always send it**) |
+| `mode` | `'calculate'` (default) \| `'validate'` | complete the request, or check the route as entered |
+| `radius` | number | connection radius to the aerodromes, 1–100 NM (default 40) |
+| `dep_runway`, `arr_runway` | string | imposed runways (empty: the engine compares the connected procedures) |
+| `use_procedures` | boolean | use the coded SID / STAR of `data/proc` |
+| `speed_kt`, `terminal_speed_kt` | number | ground speed in route (450) and on procedures (220) |
+| `climb_fpm`, `descent_fpm` | number | rates (2000, 2000) |
+| `allow_levels` | boolean | step changes allowed (default true: the strategy `adapt`) |
+| `level_strategy` | `'natural'` \| `'adapt'` | vertical strategy |
+| `alternatives` | boolean | ask for alternatives even when the first plan is accepted (they are always searched when it is rejected) |
+| `alternative_levels` | integer[] (≤ 12) or `'190, 210'` | levels to try first (default: FL−020 by steps down to −200) |
+| `enable_fra` | boolean | FRA links (default true) |
+
+Result: `{ ok: true, plan, rad: { title, start } | null, fra: { start } | null }` or `{ ok: false, reason, message }` with `reason` `'invalid'` (the engine refuses the request: unknown point, level, speed…; `message` is the sentence to show), `'no-rad'` (no RAD imported: offer `route/import-rad`), `'failed'`.
+
+`plan` = `{ primary, alternatives[≤ 3], alternative_message, alternative_failures[≤ 40], automatic_alternatives (the primary was rejected), alternative_attempts[≤ 40] { fl, strategy, route, errors[] }, input_route, via, dep, arr }`. `primary` and each alternative are the same shape (`assess` of the engine):
+
+- `ok` (false: `status: 'CALCUL IMPOSSIBLE'` and `error`, **the imposed passages are never removed**), `status`, `generated`, `route` (text), `fl`, `date`, `dep`, `arr`, `distance_nm`, `via`, `via_checks[{ point, passed }]`;
+- `issues[≤ 300]` `{ level: 'ERREUR' | 'REVUE' | …, text }`: a plan is **accepted** when `ok` and no issue has level `ERREUR`; the first errors are the ones to show;
+- `legs[≤ 800]`: `{ start {id, lat, lon}, end, via ('DCT', an airway, a procedure token), kind ('AIRWAY' | 'DCT' | 'FRA' | procedure…), nm, lower, upper (ft), index, distance_start_nm, distance_end_nm, altitude_start_ft, altitude_end_ft, altitude_min_ft, altitude_max_ft, phase, speed_kt, speed_limit_ias, planned_speed_kt, node_constraints, direction, fra_area, from_role, to_role, fra_rows, procedure_id, procedure_name, runways, source_zone, source_cycle, compatible (bool), vertical_errors[], alerts[] }` — **the segments responsible for an error carry `compatible: false` and the exact reason in `alerts` / `vertical_errors`**;
+- `profile`: `{ strategy, feasible, duration_min, max_altitude_ft, speed_kt, climb_fpm, descent_fpm, departure_ft, arrival_ft, climb_nm, descent_nm, holds[{ start_nm, end_nm, altitude_ft, fl }], points[…], note }`;
+- RAD: `rad_source { file, title, start, end_exclusive, sha256 }`, `rad_atomic_rules`, `rad[≤ 100]` mentions `{ sheet, row, id, change, reason, validity, values[], strike_removed, assessment }` (**documentary leads, never established violations**), `rad_count` (the total when cut);
+- `fra_source { file, start, sha256, points }`, `procedures_used[]`, `procedure_coverage`, `coverage[{ zone, cycle, segments }]`, `counts`, `checked[]` (what was checked), `gaps[{ name, reason }]` (**what is not checked: to be shown, « no incompatibility detected » only covers `checked`**), `limitation` (the sentence to show with the plan), `report` (the plain-text report, ≤ 120 000 signs), `truncated[]` (`'legs'`, `'issues'`, `'rad'` when cut).
+
+Size: about 100–300 kB per plan (the profile points and the RAD mentions weigh most). The launcher keeps the last job in `tools/.regen_last.json`: the plan stays there until the next job.
+
+**`route/import-rad`** `{ dry?: true (default), books?: [{ name, size }] }`: like `base/pickup`. The **plan** (`dry`) reads the EUROCONTROL workbooks of Downloads that follow `RAD_<cycle>_v….xlsx` and `eurocontrol-airac-<cycle>-fra-points-….xlsx` and answers `{ files: [{ name, size, kind: 'rad' | 'fra', cycle, title? }], failed: [{ name, error }] }`, writing nothing; the **run** takes only the `books` the plan showed (a file that is no longer the one shown is refused: `failed` `'changed'`; no `books`: `reason: 'not-shown'`) and compiles them into `data/route/rad.json.gz` and `data/route/fra.json.gz` (the same cycle is replaced, the other cycles stay: compiled data are never purged), one commit by the page's author; `{ ok, dry, files, taken, failed, rad: [cycles], fra: [cycles], commit, reason? }`. The workbooks are not copied. **Licence**: EUROCONTROL Network Manager documents, use by the company, published in its private repository only (terms of reuse to be confirmed): the source is in the catalogue (`eurocontrol_rad`, the Données Sources card says so); the page says it before the run.
+
+**What the engine reads**: `data/sia/base/*/<cycle>/{aeroindex, points, navaids, airways}.json` (every zone whose cycle is at most `date`: the airways of the zones that have none are absent from the network, said in `coverage`), `data/proc/manual/<ICAO>.json` and `data/proc/<cycle>/` (SID / STAR, `status: 'doubt'` excluded), `data/route/rad.json.gz` and `fra.json.gz`. Nothing is written by `route/compute`.
+
 ## 5. Costs to know (measured, see DECISIONS.md)
 
 - **Only what you ask for is read.** Asking for the aerodromes around Paris reads France's `meta` and aerodromes

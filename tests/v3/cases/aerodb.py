@@ -4835,6 +4835,175 @@ def k94(c):
     c.ok('Télécharger' in texts[0] and 'Download' in texts[1] and 'Herunterladen' in texts[2] and 'Descargar' in texts[3], '', 'and that the DAH comes by the Download button (nothing to drop in)')
 
 
+@case('K101', 'Workbook reader and compiled RAD / FRA books (SOG-0081): the standard-library reader gives the cells openpyxl gave (struck text removed, rows kept), the compiled files merge by cycle and never lose one', 'K', static=True,
+      rule='SOG-0081 (9 Nov 2026): the EUROCONTROL RAD and FRA workbooks are compiled into data/route/rad.json.gz and fra.json.gz without openpyxl (the launcher is standard library only); the compiled form is RouteSim 2\'s, identical in content: the six workbooks of E:/DEFA/rad give exactly the books RouteSim 2 had compiled (checked on the workstation, not in the noreg)')
+def k101(c):
+    import os
+    import tempfile
+    import zipfile
+    _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, xlsx
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets(True), strike_style_cells={('Annex 2B', 3, 8)}, rich_strike={('Annex 2B', 3, 12): ('Kept ', 'struck')})
+        kind, book = I.read_book(rad)
+        c.eq((kind, book['title'], book['start'], book['end_exclusive'], len(book['sha256'])), ('rad', 'RAD 2611 V1.0 (Rolling RAD Document)', '2026-10-29', '2026-11-26', 64), 'a RAD workbook: its title, the « Valid From » of the cover, 28 days, the SHA-256 of the file', what='rad head')
+        c.eq(sorted(book['sheets']), ['Annex 1', 'Annex 2A', 'Annex 2B', 'Annex 2C', 'Annex 3A ARR', 'Annex 3A Conditions', 'Annex 3A DEP', 'Annex 3B DCT', 'Annex 3B FRA LIM'], 'the nine annexes, the cover apart', what='sheets')
+        row = book['sheets']['Annex 2B'][1]
+        c.eq((row['v'][7], row['v'][11], row['strike_removed']), ('', 'Kept', True), 'a struck cell is emptied, the struck run of a rich text is cut, and the row says it (strike_removed)', what='strike')
+        c.eq((book['sheets']['Annex 2B'][0]['v'][7], book['sheets']['Annex 2B'][0]['strike_removed'], book['headers']['Annex 2B'][3]), ('ZZZZZ', False, 'ID'), 'the other rows are untouched; the headers are kept apart', what='plain')
+        fra = os.path.join(td, 'eurocontrol-airac-2611-fra-points-29-oct-2026.xlsx')
+        RF.write_xlsx(fra, RF.fra_sheets())
+        kind, fb = I.read_book(fra)
+        c.eq((kind, fb['start'], [r['v'][2] for r in fb['rows']], fb['rows'][0]['v'][3]), ('fra', '2026-10-29', ['ABADI', 'ABAKO'], 'N404519'), 'a FRA points workbook: the effective date of the cover, the points, empty cells as empty texts', what='fra')
+        bad = os.path.join(td, 'other.xlsx')
+        RF.write_xlsx(bad, [('Sheet1', [['a', 'b']])])
+        notbook = os.path.join(td, 'x.xlsx')
+        open(notbook, 'wb').write(b'PK not a workbook')
+        errs = []
+        for p in (bad, notbook):
+            try:
+                I.read_book(p)
+            except ValueError as e:
+                errs.append(str(e)[:30])
+        c.eq(len(errs), 2, 'a workbook that is neither a RAD nor FRA points, and a file that is not a workbook: refused (ValueError)', what='refused')
+        # merge by cycle: the same cycle is replaced, the others stay, sorted; written atomically
+        out = os.path.join(td, 'route', 'rad.json.gz')
+        I.write(out, I.merge([], [{'start': '2026-09-03', 'file': 'old'}]))
+        I.write(out, I.merge(I.load(out), [dict(book, file='newer.xlsx')]))
+        I.write(out, I.merge(I.load(out), [dict(book, file='again.xlsx')]))
+        c.eq([(b['start'], b['file']) for b in I.load(out)], [('2026-09-03', 'old'), ('2026-10-29', 'again.xlsx')], 'merge: the same cycle is replaced, the other cycle stays (a compiled datum is never purged)', what='merge')
+        c.eq(I.load(os.path.join(td, 'absent.json.gz')), [], 'a missing or unreadable compiled file is an empty list', what='load')
+        # a DOCTYPE (entities) is refused
+        evil = os.path.join(td, 'evil.xlsx')
+        RF.write_xlsx(evil, [('Cover', [['x']])])
+        with zipfile.ZipFile(evil) as z:
+            parts = {n: z.read(n) for n in z.namelist()}
+        parts['xl/sharedStrings.xml'] = b'<?xml version="1.0"?><!DOCTYPE x [<!ENTITY a "aaaa">]><sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><si><t>&a;</t></si></sst>'
+        with zipfile.ZipFile(evil, 'w') as z:
+            for n, blob in parts.items():
+                z.writestr(n, blob)
+        try:
+            xlsx.sheets(evil)
+            refused = False
+        except (xlsx.XlsxError, ValueError):
+            refused = True
+        c.ok(refused, '', 'a workbook with a DOCTYPE (entities) is refused')
+
+
+@case('K102', 'Job route/import-rad (SOG-0081): the plan shows what Downloads holds, the pilot picks, the books are compiled into data/route/, committed once, a changed file is refused', 'K', static=True,
+      rule='SOG-0081: like base/pickup the plan (dry, the default) lists the EUROCONTROL workbooks of Downloads (name, size, kind, cycle) and writes nothing; the run takes ONLY the books the plan showed and refuses a file that is no longer the one shown; the compiled rad.json.gz and fra.json.gz keep the other cycles; one commit; nothing outside data/route/')
+def k102(c):
+    import os
+    import importlib
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I
+    c.ok(('route', 'import-rad') in RJ.REGISTRY and ('route', 'compute') in RJ.REGISTRY, str(sorted(k for k in RJ.REGISTRY if k[0] == 'route')), 'the verbs route/import-rad and route/compute are loaded by the launcher')
+    check = RJ.REGISTRY[('route', 'import-rad')][1]
+    book = {'name': 'RAD_2611_v1_0.xlsx', 'size': 5}
+    c.eq([check(a) for a in ({}, {'dry': False, 'books': [book]}, {'dry': 'x'}, {'books': 'x'}, {'books': [{'name': '../x.xlsx', 'size': 1}]}, {'books': [{'name': 'other.xlsx', 'size': 1}]}, {'books': [dict(book, size=-1)]},
+                             {'books': [{'name': book['name']}]}, {'x': 1}, None, 'dry')],
+         [{'dry': True}, {'dry': False, 'books': [book]}, None, None, None, None, None, None, None, None, None], 'arguments: dry (true by default), the books the plan showed (a name of the two patterns, a size), nothing else', what='check')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        dl, data = os.path.join(td, 'dl'), os.path.join(td, 'data')
+        os.makedirs(dl)
+        os.makedirs(data)
+        RF.write_xlsx(os.path.join(dl, 'RAD_2611_v1_0.xlsx'), RF.rad_sheets())
+        RF.write_xlsx(os.path.join(dl, 'eurocontrol-airac-2611-fra-points-29-oct-2026.xlsx'), RF.fra_sheets())
+        RF.write_xlsx(os.path.join(dl, 'RAD_2699_v1_0.xlsx'), [('Sheet1', [['not a RAD']])])          # a RAD name, not a RAD workbook
+        open(os.path.join(dl, 'notes.xlsx'), 'wb').write(b'x')                                         # not an EUROCONTROL name: not looked at
+        ctx = {'data': data, 'secrets': td, 'downloads': lambda: [dl]}
+        run = lambda **a: RJ.REGISTRY[('route', 'import-rad')][0](RJ.Job('route', 'import-rad', {}, author='TST'), check(a), ctx)
+        plan = run()
+        c.eq((plan['ok'], plan['dry'], [(f['name'], f['kind'], f['cycle']) for f in plan['files']], [f['name'] for f in plan['failed']], os.path.exists(os.path.join(data, 'route'))),
+             (True, True, [('RAD_2611_v1_0.xlsx', 'rad', '2026-10-29'), ('eurocontrol-airac-2611-fra-points-29-oct-2026.xlsx', 'fra', '2026-10-29')], ['RAD_2699_v1_0.xlsx'], False),
+             'the plan: the two workbooks with their kind and cycle, the unreadable one failed with its name, nothing written', what='plan')
+        shown = [{'name': f['name'], 'size': f['size']} for f in plan['files']]
+        res = run(dry=False)
+        c.eq((res['ok'], res['reason'], res['taken']), (False, 'not-shown', []), 'a run without the books the plan showed takes nothing', what='not shown')
+        res = run(dry=False, books=[dict(shown[0], size=shown[0]['size'] + 1)])
+        c.eq((res['taken'], [f['error'] for f in res['failed'] if f['name'] == shown[0]['name']], os.path.exists(os.path.join(data, 'route', 'rad.json.gz'))), ([], ['changed'], False), 'a file that is no longer the one shown (another size): refused, nothing written', what='changed')
+        res = run(dry=False, books=shown)
+        c.eq((res['ok'], res['taken'], res['rad'], res['fra']), (True, [s['name'] for s in shown], ['2026-10-29'], ['2026-10-29']), 'the two books chosen are taken', what='taken')
+        rad, fra = I.load(os.path.join(data, 'route', 'rad.json.gz')), I.load(os.path.join(data, 'route', 'fra.json.gz'))
+        c.eq(([(b['start'], b['title']) for b in rad], [(b['start'], len(b['rows'])) for b in fra]), ([('2026-10-29', 'RAD 2611 V1.0 (Rolling RAD Document)')], [('2026-10-29', 2)]), 'compiled in data/route/rad.json.gz and fra.json.gz', what='compiled')
+        c.eq(sorted(os.listdir(data)), ['route'], 'nothing else is written in data/ (the workbooks are not copied: licence)', what='only route')
+        # a second cycle arrives: the first stays
+        RF.write_xlsx(os.path.join(dl, 'RAD_2612_v1_0.xlsx'), [(n, rows if n != 'Cover' else [['RAD 2612 V1.0 (Rolling RAD Document)'], ['Valid From 26/11/2026']]) for n, rows in RF.rad_sheets()])
+        plan = run()
+        pick = [{'name': f['name'], 'size': f['size']} for f in plan['files'] if f['name'] == 'RAD_2612_v1_0.xlsx']
+        res = run(dry=False, books=pick)
+        c.eq(([b['start'] for b in I.load(os.path.join(data, 'route', 'rad.json.gz'))], res['rad']), (['2026-10-29', '2026-11-26'], ['2026-11-26']), 'a later cycle is added, the first stays (never purged)', what='second cycle')
+        c.ok(res['commit'] is None, str(res), 'without a data repository there is no commit (and no error)')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        DS = importlib.import_module('data_sync')
+        data, fake = _d5_scene(td)
+        os.makedirs(os.path.join(td, 'dl'))
+        RF.write_xlsx(os.path.join(td, 'dl', 'RAD_2611_v1_0.xlsx'), RF.rad_sheets())
+        ctx = {'data': str(data), 'secrets': td, 'git_cmd': DS.git_cmd, 'git_env': DS.git_env, 'downloads': lambda: [os.path.join(td, 'dl')]}
+        size = os.path.getsize(os.path.join(td, 'dl', 'RAD_2611_v1_0.xlsx'))
+        r = RJ.REGISTRY[('route', 'import-rad')][0](RJ.Job('route', 'import-rad', {}, author='TST'), {'dry': False, 'books': [{'name': 'RAD_2611_v1_0.xlsx', 'size': size}]}, ctx)
+        c.eq((r['ok'], bool(re.fullmatch(r'[0-9a-f]{40}', r.get('commit') or ''))), (True, True), 'with a data repository: the books are committed (one commit)', what='commit')
+        c.ok('route/rad.json.gz' in _d5_git(data, 'show', '--name-only', '--format=', '-1') and _d5_git(data, 'show', '-s', '--format=%an', '-1').strip() == 'TST', _d5_git(data, 'show', '--name-only', '--format=%an', '-1'), 'it holds route/rad.json.gz and is the page\'s author\'s')
+
+
+@case('K103', 'Job route/compute (SOG-0081): the route of the README example (LFPO SITET KEPAD EIDW) on a small base, the mandatory passages kept, a RAD segment rule that makes the plan impossible, a closed request, a bounded answer', 'K', static=True,
+      rule='SOG-0081: RouteSim 2\'s engine (tools/route_engine, copied without change of substance) behind the verb route/compute: a closed request, the plan { primary, alternatives… } on the base of the workstation and the compiled RAD; a mandatory point is never removed (a RAD rule on its segment makes the calculation impossible, said); no RAD imported: said; the answer is bounded')
+def k103(c):
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as PL
+    check, fn = RJ.REGISTRY[('route', 'compute')][1], RJ.REGISTRY[('route', 'compute')][0]
+    req = {'dep': 'LFPO', 'arr': 'EIDW', 'route': 'LFPO SITET KEPAD EIDW', 'fl': 90, 'date': '2026-11-09T12:00', 'enable_fra': False}
+    c.eq((check(req), check(dict(req, speed_kt=300.0, allow_levels=False, alternative_levels=[70, 50])) is not None), (req, True), 'the request is closed: the known fields with their types are accepted', what='accepted')
+    bad = [dict(req, root='/etc'), dict(req, fl='90'), dict(req, fl=True), dict(req, mode='x'), dict(req, dep='LF PO'), dict(req, route='X' * 700), dict(req, via=['A'] * 9), dict(req, date='tomorrow'), dict(req, alternative_levels=list(range(13))), dict(req, enable_fra='yes'), None, 'LFPO', []]
+    c.eq([i for i, b in enumerate(bad) if check(b) is not None], [], 'an unknown field, a wrong type, a bad code, a long route, too many points or levels, a bad date: refused (400)', what='refused')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        ctx = {'data': data, 'secrets': td}
+        run = lambda r: fn(RJ.Job('route', 'compute', {}, author='TST'), r, ctx)
+        r = run(req)
+        c.eq((r['ok'], r['reason']), (False, 'no-rad'), 'no RAD imported on the workstation: said, with the way out (route/import-rad)', what='no rad')
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+        r = run(req)
+        p = r['plan']['primary']
+        c.eq((r['ok'], p['ok'], p['route']), (True, True, 'LFPO DCT OLZOM A1 SITET A1 KEPAD A1 BOYNE DCT EIDW'), 'the calculation joins LFPO, SITET, KEPAD, EIDW by the airway and the two DCT, the mandatory points in order', what='route')
+        c.eq(([(l['start']['id'], l['via'], l['end']['id']) for l in p['legs']], r['plan']['via'], r['rad']), ([('LFPO', 'DCT', 'OLZOM'), ('OLZOM', 'A1', 'SITET'), ('SITET', 'A1', 'KEPAD'), ('KEPAD', 'A1', 'BOYNE'), ('BOYNE', 'DCT', 'EIDW')], ['SITET', 'KEPAD'], {'title': 'RAD 2611 V1.0 (Rolling RAD Document)', 'start': '2026-10-29'}),
+             'the segments with their airway, the mandatory passages, the RAD book the plan was checked against', what='legs')
+        c.ok(p['distance_nm'] > 300 and p['legs'][0]['altitude_start_ft'] == 291 and 'issues' in p and isinstance(p['profile'], dict), str({k: p[k] for k in ('distance_nm', 'status')}), 'distance, vertical profile (from the departure\'s 291 ft) and the checks are there')
+        # control mode: the entered route as is
+        r2 = run(dict(req, mode='validate', route='LFPO DCT OLZOM A1 SITET A1 KEPAD A1 BOYNE DCT EIDW'))
+        c.eq((r2['ok'], r2['plan']['primary']['distance_nm'] == p['distance_nm']), (True, True), 'the control of the calculated route gives the same distance', what='validate')
+        # a RAD rule on the segment SITET -> KEPAD: the mandatory passage is not removed, the calculation is impossible, said
+        RF.write_xlsx(rad, RF.rad_sheets(True))
+        I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+        r3 = run(req)
+        pp = r3['plan']['primary']
+        c.eq((r3['ok'], pp['ok'], pp['status'], 'SITET' in pp['error'] and 'supprimé' in pp['error']), (True, False, 'CALCUL IMPOSSIBLE', True), 'a RAD rule that forbids A1 between SITET and KEPAD: the calculation is impossible and says the imposed passage was not removed', what='block')
+        c.ok(r3['plan']['automatic_alternatives'] is True and isinstance(r3['plan']['alternative_failures'], list) and len(r3['plan']['alternatives']) <= 3, str(r3['plan']['alternative_message']), 'the alternatives are searched (three at most), their failures listed')
+        # an unknown aerodrome and a bad level are said, never an exception
+        r4 = run(dict(req, arr='ZZZZ'))
+        c.eq((r4['ok'], r4['plan']['primary']['ok']), (True, False), 'an aerodrome that is not in the base: the plan says so (CALCUL IMPOSSIBLE)', what='unknown ad')
+        r5 = run(dict(req, fl=5))
+        c.eq((r5['ok'], r5['plan']['primary']['ok'], 'FL010' in r5['plan']['primary']['error']), (True, False, True), 'a level out of FL010-FL660: said', what='bad level')
+    # the answer is bounded
+    big = {'ok': True, 'status': 's', 'route': 'r' * 9000, 'legs': [{'a': i} for i in range(2000)], 'issues': [{'level': 'REVUE', 'text': 't'}] * 1000, 'rad': [{'id': i, 'headers': ['h'] * 5, 'values': ['v']} for i in range(500)], 'report': 'x' * 300000}
+    b = PL.bound_result({'primary': big, 'alternatives': [dict(big)] * 5, 'alternative_failures': ['f' * 9000] * 60, 'alternative_attempts': [{'errors': ['e' * 9000] * 20}] * 60})
+    pb = b['primary']
+    c.eq((len(pb['legs']), len(pb['issues']), len(pb['rad']), pb['rad_count'], len(pb['report']), len(pb['route']), sorted(pb['truncated']), 'headers' in pb['rad'][0], len(b['alternatives'])), (800, 300, 100, 500, 120000, 4000, ['issues', 'legs', 'rad'], False, 3),
+         'bounded: 800 segments, 300 checks, 100 RAD mentions (the total said, no repeated headers), the texts, three alternatives', what='bounded')
+    c.eq((len(b['alternative_failures']), len(b['alternative_failures'][0]), len(b['alternative_attempts']), len(b['alternative_attempts'][0]['errors'])), (40, 4000, 40, 10), 'and the failures and the attempts', what='failures')
+
+
 @case('K65', 'Build job: a zone shows a count of sources only when the builder gives one for it; the build\'s count goes once in the job', 'K', static=True,
       rule='Réglages 1 Nov 2026 (the user saw « construction (90 / 90 sources) » on all 26 zones): the builder\'s counts are global; a zone gets done / total only from a count of its own; job.data inputs = { done, total } once')
 def k65(c):

@@ -632,6 +632,38 @@
       'Protegido por derechos de autor (licencia de la DFS)'
     ]
   }, {
+    id: 'eurocontrol_rad',
+    group: 'proc',
+    zones: [],
+    fetch: {
+      how: 'pick',
+      glob: 'RAD_*.xlsx'
+    },
+    build: {
+      runtime: 'python',
+      id: 'route_engine/import_books'
+    },
+    publish: true,
+    no: 17,
+    status: 'used',
+    cycled: true,
+    n: ['EUROCONTROL : RAD et points FRA (classeurs)', 'EUROCONTROL: RAD and FRA points (workbooks)',
+      'EUROCONTROL: RAD und FRA-Punkte (Arbeitsmappen)', 'EUROCONTROL: RAD y puntos FRA (libros)'
+    ],
+    url: 'https://www.nm.eurocontrol.int/RAD/',
+    gives: [
+      'Le calcul de route : interdictions et conditions du RAD (Rolling RAD Document, un classeur par cycle) et points significatifs FRA (rôles entrée / sortie / intermédiaire, niveaux, horaires), compilés dans data/route/ (job route/import-rad ; fichiers pris dans Téléchargements).',
+      'Route calculation: the RAD restrictions and conditions (Rolling RAD Document, one workbook per cycle) and the FRA significant points (entry / exit / intermediate roles, levels, times), compiled into data/route/ (job route/import-rad; files taken from Downloads).',
+      'Streckenberechnung: Einschränkungen und Bedingungen des RAD (Rolling RAD Document, eine Arbeitsmappe je Zyklus) und signifikante FRA-Punkte (Rollen Eintritt / Austritt / Zwischenpunkt, Ebenen, Zeiten), in data/route/ kompiliert (Job route/import-rad; Dateien aus Downloads).',
+      'Cálculo de ruta: restricciones y condiciones del RAD (Rolling RAD Document, un libro por ciclo) y puntos significativos FRA (funciones entrada / salida / intermedio, niveles, horarios), compilados en data/route/ (trabajo route/import-rad; archivos tomados de Descargas).'
+    ],
+    lic: [
+      'Documents EUROCONTROL Network Manager : usage de la compagnie, publiés dans son dépôt privé seulement (conditions de réutilisation à confirmer)',
+      'EUROCONTROL Network Manager documents: use by the company, published in its private repository only (terms of reuse to be confirmed)',
+      'EUROCONTROL-Network-Manager-Dokumente: Nutzung durch die Gesellschaft, nur in ihrem privaten Repository veröffentlicht (Weiterverwendungsbedingungen zu bestätigen)',
+      'Documentos de EUROCONTROL Network Manager: uso de la compañía, publicados solo en su repositorio privado (condiciones de reutilización por confirmar)'
+    ]
+  }, {
     id: 'eurocontrol',
     group: 'proc',
     zones: [],
