@@ -4,9 +4,9 @@
  "updated": "2026-11-09",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "ef7be99",
+  "organisation": "34c91e7",
   "fiches": 124,
-  "untranslated": 19,
+  "untranslated": 0,
   "priorities": 0
  },
  "owner": "ergonomics session (Simplification interface et ergonomie)",
@@ -314,18 +314,18 @@
      "kind": "feature",
      "state": "planned",
      "fr": "RouteSim (E:\\DEFA\\rad) : s'inspirer de sa disposition (bande de gauche = alternatives d'itinéraires en vue large) ?",
-     "en": "RouteSim (E:\\DEFA\\rad) : s'inspirer de sa disposition (bande de gauche = alternatives d'itinéraires en vue large) ?",
-     "de": "RouteSim (E:\\DEFA\\rad) : s'inspirer de sa disposition (bande de gauche = alternatives d'itinéraires en vue large) ?",
-     "es": "RouteSim (E:\\DEFA\\rad) : s'inspirer de sa disposition (bande de gauche = alternatives d'itinéraires en vue large) ?"
+     "en": "RouteSim (E:\\DEFA\\rad): take inspiration from its layout (left band = route alternatives in wide view)?",
+     "de": "RouteSim (E:\\DEFA\\rad): sich an seinem Layout orientieren (linke Leiste = Routenalternativen in der Weitansicht)?",
+     "es": "RouteSim (E:\\DEFA\\rad): ¿inspirarse en su disposición (banda izquierda = alternativas de ruta en vista amplia)?"
     },
     {
      "id": "SOG-0081",
      "kind": "feature",
      "state": "doing",
      "fr": "Calcul de route automatique et contrôle IFPS / RAD / FRA : intégrer le moteur de RouteSim dans le chemin du pilote (alpha.5)",
-     "en": "Calcul de route automatique et contrôle IFPS / RAD / FRA : intégrer le moteur de RouteSim dans le chemin du pilote (alpha.5)",
-     "de": "Calcul de route automatique et contrôle IFPS / RAD / FRA : intégrer le moteur de RouteSim dans le chemin du pilote (alpha.5)",
-     "es": "Calcul de route automatique et contrôle IFPS / RAD / FRA : intégrer le moteur de RouteSim dans le chemin du pilote (alpha.5)"
+     "en": "Automatic route calculation and IFPS / RAD / FRA check: integrate the RouteSim engine into the pilot’s path (alpha.5)",
+     "de": "Automatische Routenberechnung und IFPS-/RAD-/FRA-Prüfung: die RouteSim-Engine in den Pilotenweg integrieren (alpha.5)",
+     "es": "Cálculo automático de ruta y control IFPS / RAD / FRA: integrar el motor de RouteSim en el camino del piloto (alpha.5)"
     },
     {
      "id": "SOG-0086",
@@ -461,9 +461,9 @@
      "kind": "bug",
      "state": "done",
      "fr": "Carte : « not enough memory to open this page » sur la vue carte élargie",
-     "en": "Carte : « not enough memory to open this page » sur la vue carte élargie",
-     "de": "Carte : « not enough memory to open this page » sur la vue carte élargie",
-     "es": "Carte : « not enough memory to open this page » sur la vue carte élargie"
+     "en": "Map: “not enough memory to open this page” on the enlarged map view",
+     "de": "Karte: „Not enough memory to open this page“ in der vergrößerten Kartenansicht",
+     "es": "Mapa: «not enough memory to open this page» en la vista de mapa ampliada"
     },
     {
      "id": "SOG-0091",
@@ -871,9 +871,9 @@
      "kind": "feature",
      "state": "later",
      "fr": "Génération de routes depuis les fichiers RAD d'Eurocontrol (et le FRA)",
-     "en": "Génération de routes depuis les fichiers RAD d'Eurocontrol (et le FRA)",
-     "de": "Génération de routes depuis les fichiers RAD d'Eurocontrol (et le FRA)",
-     "es": "Génération de routes depuis les fichiers RAD d'Eurocontrol (et le FRA)"
+     "en": "Route generation from Eurocontrol RAD files (and the FRA)",
+     "de": "Routengenerierung aus den RAD-Dateien von Eurocontrol (und dem FRA)",
+     "es": "Generación de rutas a partir de los archivos RAD de Eurocontrol (y del FRA)"
     }
    ]
   },
@@ -996,18 +996,18 @@
      "kind": "feature",
      "state": "later",
      "fr": "Gestion de la flotte (personnelle ou compagnie) : maintenance, heures de vol, carte des appareils, missions de rapatriement à date butoir, ateliers, bases et pélicandromes des Canadair",
-     "en": "Gestion de la flotte (personnelle ou compagnie) : maintenance, heures de vol, carte des appareils, missions de rapatriement à date butoir, ateliers, bases et pélicandromes des Canadair",
-     "de": "Gestion de la flotte (personnelle ou compagnie) : maintenance, heures de vol, carte des appareils, missions de rapatriement à date butoir, ateliers, bases et pélicandromes des Canadair",
-     "es": "Gestion de la flotte (personnelle ou compagnie) : maintenance, heures de vol, carte des appareils, missions de rapatriement à date butoir, ateliers, bases et pélicandromes des Canadair"
+     "en": "Fleet management (personal or airline): maintenance, flight hours, aircraft map, repatriation missions with deadline, workshops, bases and pelicandromes of the Canadairs",
+     "de": "Flottenverwaltung (persönlich oder Gesellschaft): Wartung, Flugstunden, Flugzeugkarte, Rückführungsmissionen mit Stichtag, Werkstätten, Basen und Pelicandromes der Canadair",
+     "es": "Gestión de la flota (personal o de compañía): mantenimiento, horas de vuelo, mapa de aeronaves, misiones de repatriación con fecha límite, talleres, bases y pelicandromes de los Canadair"
     },
     {
      "id": "SOG-0085",
      "kind": "feature",
      "state": "planned",
      "fr": "Compagnies : plusieurs compagnies avec plusieurs niveaux de droits (admin de l'une, pas de l'autre)",
-     "en": "Compagnies : plusieurs compagnies avec plusieurs niveaux de droits (admin de l'une, pas de l'autre)",
-     "de": "Compagnies : plusieurs compagnies avec plusieurs niveaux de droits (admin de l'une, pas de l'autre)",
-     "es": "Compagnies : plusieurs compagnies avec plusieurs niveaux de droits (admin de l'une, pas de l'autre)"
+     "en": "Airlines: several airlines with several rights levels (admin of one, not of another)",
+     "de": "Gesellschaften: mehrere Gesellschaften mit mehreren Rechtestufen (Admin der einen, nicht der anderen)",
+     "es": "Compañías: varias compañías con varios niveles de derechos (admin de una, no de otra)"
     },
     {
      "id": "SOG-0099",
@@ -1074,9 +1074,9 @@
      "kind": "feature",
      "state": "later",
      "fr": "Missions : un bouton vers la documentation générale (phraséologie, interactions, procédures) avec une interface de gestion, pas un wiki",
-     "en": "Missions : un bouton vers la documentation générale (phraséologie, interactions, procédures) avec une interface de gestion, pas un wiki",
-     "de": "Missions : un bouton vers la documentation générale (phraséologie, interactions, procédures) avec une interface de gestion, pas un wiki",
-     "es": "Missions : un bouton vers la documentation générale (phraséologie, interactions, procédures) avec une interface de gestion, pas un wiki"
+     "en": "Missions: a button to the general documentation (phraseology, interactions, procedures) with a management interface, not a wiki",
+     "de": "Missionen: eine Schaltfläche zur allgemeinen Dokumentation (Phraseologie, Interaktionen, Verfahren) mit Verwaltungsoberfläche, kein Wiki",
+     "es": "Misiones: un botón hacia la documentación general (fraseología, interacciones, procedimientos) con una interfaz de gestión, no un wiki"
     }
    ]
   },
@@ -1135,9 +1135,9 @@
      "kind": "feature",
      "state": "done",
      "fr": "Roadmap : replier les voies déjà existantes",
-     "en": "Roadmap : replier les voies déjà existantes",
-     "de": "Roadmap : replier les voies déjà existantes",
-     "es": "Roadmap : replier les voies déjà existantes"
+     "en": "Roadmap: collapse the lanes that already exist",
+     "de": "Fahrplan: bereits vorhandene Bahnen einklappen",
+     "es": "Hoja de ruta: contraer los carriles ya existentes"
     }
    ]
   },
@@ -1186,36 +1186,36 @@
      "kind": "bug",
      "state": "done",
      "fr": "AIP Canada : cartes très floues ; fichiers téléchargés depuis navcanada.ca",
-     "en": "AIP Canada : cartes très floues ; fichiers téléchargés depuis navcanada.ca",
-     "de": "AIP Canada : cartes très floues ; fichiers téléchargés depuis navcanada.ca",
-     "es": "AIP Canada : cartes très floues ; fichiers téléchargés depuis navcanada.ca"
+     "en": "AIP Canada: very blurry charts; files downloaded from navcanada.ca",
+     "de": "AIP Kanada: sehr unscharfe Karten; von navcanada.ca heruntergeladene Dateien",
+     "es": "AIP Canadá: cartas muy borrosas; archivos descargados de navcanada.ca"
     },
     {
      "id": "SOG-0077",
      "kind": "feature",
      "state": "done",
      "fr": "AWY : couverture hors France ? Notation des points d'entrée / sortie du FRA",
-     "en": "AWY : couverture hors France ? Notation des points d'entrée / sortie du FRA",
-     "de": "AWY : couverture hors France ? Notation des points d'entrée / sortie du FRA",
-     "es": "AWY : couverture hors France ? Notation des points d'entrée / sortie du FRA"
+     "en": "AWY: coverage outside France? Notation of FRA entry / exit points",
+     "de": "Luftstraßen: Abdeckung außerhalb Frankreichs? Notation der FRA-Ein- und Ausflugpunkte",
+     "es": "Aerovías: ¿cobertura fuera de Francia? Notación de los puntos de entrada / salida del FRA"
     },
     {
      "id": "SOG-0078",
      "kind": "bug",
      "state": "doing",
      "fr": "AWY à sens unique : le sens n'est pas porté ou pas dessiné",
-     "en": "AWY à sens unique : le sens n'est pas porté ou pas dessiné",
-     "de": "AWY à sens unique : le sens n'est pas porté ou pas dessiné",
-     "es": "AWY à sens unique : le sens n'est pas porté ou pas dessiné"
+     "en": "One-way AWYs: the direction is not carried or not drawn",
+     "de": "Einbahn-Luftstraßen: die Richtung wird nicht geführt oder nicht gezeichnet",
+     "es": "Aerovías de sentido único: el sentido no se registra o no se dibuja"
     },
     {
      "id": "SOG-0083",
      "kind": "feature",
      "state": "later",
      "fr": "Pélicandromes de France : un fichier précis dans Téléchargements, à intégrer comme couche",
-     "en": "Pélicandromes de France : un fichier précis dans Téléchargements, à intégrer comme couche",
-     "de": "Pélicandromes de France : un fichier précis dans Téléchargements, à intégrer comme couche",
-     "es": "Pélicandromes de France : un fichier précis dans Téléchargements, à intégrer comme couche"
+     "en": "Pelicandromes of France: a specific file in Downloads, to integrate as a layer",
+     "de": "Pelicandromes in Frankreich: eine bestimmte Datei in Downloads, als Ebene zu integrieren",
+     "es": "Pelicandromes de Francia: un archivo concreto en Descargas, para integrar como capa"
     },
     {
      "id": "SOG-0102",
@@ -1432,36 +1432,36 @@
      "kind": "feature",
      "state": "done",
      "fr": "Données : cliquer un pays sur la carte pour le basculer, actif ou inactif",
-     "en": "Données : cliquer un pays sur la carte pour le basculer, actif ou inactif",
-     "de": "Données : cliquer un pays sur la carte pour le basculer, actif ou inactif",
-     "es": "Données : cliquer un pays sur la carte pour le basculer, actif ou inactif"
+     "en": "Data: click a country on the map to toggle it, active or inactive",
+     "de": "Daten: ein Land auf der Karte anklicken, um es umzuschalten, aktiv oder inaktiv",
+     "es": "Datos: hacer clic en un país del mapa para alternarlo, activo o inactivo"
     },
     {
      "id": "SOG-0071",
      "kind": "feature",
      "state": "planned",
      "fr": "Données : revoir l'ergonomie globale de l'écran (choisir, mettre à jour les différences, purger, recalculer les seuls périmés, tout désélectionner, par paquet ou par rectangle)",
-     "en": "Données : revoir l'ergonomie globale de l'écran (choisir, mettre à jour les différences, purger, recalculer les seuls périmés, tout désélectionner, par paquet ou par rectangle)",
-     "de": "Données : revoir l'ergonomie globale de l'écran (choisir, mettre à jour les différences, purger, recalculer les seuls périmés, tout désélectionner, par paquet ou par rectangle)",
-     "es": "Données : revoir l'ergonomie globale de l'écran (choisir, mettre à jour les différences, purger, recalculer les seuls périmés, tout désélectionner, par paquet ou par rectangle)"
+     "en": "Data: rework the overall ergonomics of the screen (choose, update the differences, purge, recompute only the outdated ones, deselect all, by package or by rectangle)",
+     "de": "Daten: die Gesamtergonomie des Bildschirms überarbeiten (auswählen, Unterschiede aktualisieren, bereinigen, nur veraltete neu berechnen, alles abwählen, nach Paket oder per Rechteck)",
+     "es": "Datos: revisar la ergonomía global de la pantalla (elegir, actualizar las diferencias, purgar, recalcular solo las obsoletas, deseleccionar todo, por paquete o por rectángulo)"
     },
     {
      "id": "SOG-0072",
      "kind": "bug",
      "state": "done",
      "fr": "Données : un pays reste « nouveau » en orange après recalcul et publication, jusqu'à un rechargement forcé",
-     "en": "Données : un pays reste « nouveau » en orange après recalcul et publication, jusqu'à un rechargement forcé",
-     "de": "Données : un pays reste « nouveau » en orange après recalcul et publication, jusqu'à un rechargement forcé",
-     "es": "Données : un pays reste « nouveau » en orange après recalcul et publication, jusqu'à un rechargement forcé"
+     "en": "Data: a country stays orange “new” after recompute and publication, until a forced reload",
+     "de": "Daten: ein Land bleibt nach Neuberechnung und Veröffentlichung orange „neu“, bis zu einem erzwungenen Neuladen",
+     "es": "Datos: un país sigue en naranja «nuevo» tras recalcular y publicar, hasta una recarga forzada"
     },
     {
      "id": "SOG-0079",
      "kind": "bug",
      "state": "doing",
      "fr": "Données : garder cochées les cases « personnel » des sources",
-     "en": "Données : garder cochées les cases « personnel » des sources",
-     "de": "Données : garder cochées les cases « personnel » des sources",
-     "es": "Données : garder cochées les cases « personnel » des sources"
+     "en": "Data: keep the sources’ “personal” boxes ticked",
+     "de": "Daten: die Kontrollkästchen „persönlich“ der Quellen angehakt lassen",
+     "es": "Datos: mantener marcadas las casillas «personal» de las fuentes"
     }
    ]
   },
@@ -1530,27 +1530,27 @@
      "kind": "bug",
      "state": "done",
      "fr": "Fiches : « Compléter depuis une autre fiche » montre « Douglas DC-3 » quand on édite la Caravelle, et prend de la place",
-     "en": "Fiches : « Compléter depuis une autre fiche » montre « Douglas DC-3 » quand on édite la Caravelle, et prend de la place",
-     "de": "Fiches : « Compléter depuis une autre fiche » montre « Douglas DC-3 » quand on édite la Caravelle, et prend de la place",
-     "es": "Fiches : « Compléter depuis une autre fiche » montre « Douglas DC-3 » quand on édite la Caravelle, et prend de la place"
+     "en": "Aircraft sheets: “Complete from another sheet” shows “Douglas DC-3” when editing the Caravelle, and takes up space",
+     "de": "Flugzeugdatenblätter: „Aus einem anderen Datenblatt ergänzen“ zeigt „Douglas DC-3“ beim Bearbeiten der Caravelle und beansprucht Platz",
+     "es": "Fichas de aeronave: «Completar desde otra ficha» muestra «Douglas DC-3» al editar la Caravelle, y ocupa espacio"
     },
     {
      "id": "SOG-0074",
      "kind": "feature",
      "state": "done",
      "fr": "Unités : afficher l'unité courante dans l'en-tête, visible partout et en défilant",
-     "en": "Unités : afficher l'unité courante dans l'en-tête, visible partout et en défilant",
-     "de": "Unités : afficher l'unité courante dans l'en-tête, visible partout et en défilant",
-     "es": "Unités : afficher l'unité courante dans l'en-tête, visible partout et en défilant"
+     "en": "Units: show the current unit in the header, visible everywhere and while scrolling",
+     "de": "Einheiten: die aktuelle Einheit in der Kopfzeile anzeigen, überall und beim Scrollen sichtbar",
+     "es": "Unidades: mostrar la unidad actual en el encabezado, visible en todas partes y al desplazarse"
     },
     {
      "id": "SOG-0075",
      "kind": "feature",
      "state": "done",
      "fr": "Courbes : des niveaux significatifs (< 5 000, FL100, FL150, FL200, FL300, FL450), extrapolation, données brutes gardées",
-     "en": "Courbes : des niveaux significatifs (< 5 000, FL100, FL150, FL200, FL300, FL450), extrapolation, données brutes gardées",
-     "de": "Courbes : des niveaux significatifs (< 5 000, FL100, FL150, FL200, FL300, FL450), extrapolation, données brutes gardées",
-     "es": "Courbes : des niveaux significatifs (< 5 000, FL100, FL150, FL200, FL300, FL450), extrapolation, données brutes gardées"
+     "en": "Curves: meaningful levels (< 5 000, FL100, FL150, FL200, FL300, FL450), extrapolation, raw data kept",
+     "de": "Kurven: aussagekräftige Ebenen (< 5 000, FL100, FL150, FL200, FL300, FL450), Extrapolation, Rohdaten bleiben erhalten",
+     "es": "Curvas: niveles significativos (< 5 000, FL100, FL150, FL200, FL300, FL450), extrapolación, datos brutos conservados"
     }
    ]
   },
