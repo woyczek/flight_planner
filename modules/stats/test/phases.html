@@ -82,6 +82,8 @@
     quality_flags: 'fuel_missing'
   })); // drapeau : écartée
   rows.push(w('A', 'CRUISE', 6000, 2400, 50)); // 15 s seulement : sous le seuil
+  for (let i = 0; i < 8; i++) rows.push(w('C', 'CRUISE', 12000, 2400, 50)); // 12000 ft, 2400 rpm : 120 s …
+  for (let i = 0; i < 2; i++) rows.push(w('C', 'CRUISE', 12000, 2452, 52)); // … et un petit voisin (2450, 30 s) qui le rejoint
   const csv = [H.join(','), ...rows.map(r => H.map(h => String(r[h] ?? '')).join(',')), 'bad,line'].join('\n');
   const P = PH.parseWindows(csv);
   check('read: every window, the short line skipped', [P.rows.length, P.skipped], [rows.length, 1]);
@@ -94,8 +96,43 @@
     ]),
     [
       [4000, 2300, 38.5, 170, 120, 8, 1],
-      [8000, 2500, 40, 170, 120, 8, 1]
+      [8000, 2500, 40, 170, 120, 8, 1],
+      [12000, 2400, 50, 170, 150, 10, 1]
     ]);
+  check('consolidateGroups: a small neighbour joins the well-supported peak, the label stays the peak',
+    PH.consolidateGroups([{
+      rpm: 2400,
+      records: Array(8).fill({}),
+      peaks: new Map([
+        [2400, 8]
+      ])
+    }, {
+      rpm: 2450,
+      records: Array(2).fill({}),
+      peaks: new Map([
+        [2450, 2]
+      ])
+    }, {
+      rpm: 2800,
+      records: Array(2).fill({}),
+      peaks: new Map([
+        [2800, 2]
+      ])
+    }]).map(g => [g.rpm, g.records.length]), [
+      [2400, 10],
+      [2800, 2]
+    ]);
+  const climb = [];
+  for (let i = 0; i < 24; i++) climb.push(w('D', 'CLIMB', 3000 + i * 300, 8000 + (i % 2) * 20, 120, {
+    mean_vertical_speed_fpm: 1500,
+    mean_ias_kt: 160,
+    mean_throttle_pct: 95
+  }));
+  const cs = PH.phaseSummary(climb, 'CLIMB');
+  check('phaseSummary: the measured climb (rpm, flow, IAS, rate, throttle)', cs && [cs.rpm, cs.flowKgH, cs.iasKt, cs.rateFpm, cs
+    .throttlePct, cs.windows
+  ], [8010, 120, 160, 1500, 95, 24]);
+  check('phaseSummary: under 300 s / 20 windows, nothing', PH.phaseSummary(climb.slice(0, 10), 'CLIMB'), null);
   const sheet = {
     unit: 'lb',
     rpmFuelCurve: [{
@@ -118,7 +155,8 @@
   check('compare: the curve of the same altitude, interpolated on the rpm; nothing at an altitude the sheet lacks',
     K.map(p => [p.altFt, p.rpm, p.sheetKgH, p.deltaPct]), [
       [4000, 2300, 39.9, -3.5],
-      [8000, 2500, null, null]
+      [8000, 2500, null, null],
+      [12000, 2400, null, null]
     ]);
   let refused = '';
   try {

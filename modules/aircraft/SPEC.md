@@ -145,7 +145,10 @@ place of the list (one card, « Retour » goes back), one editor at a time; the 
   size, date; the folder said by its two last names, never its whole path) to tick; « Lire les journaux cochés » has the launcher read
   them (`read`, the text in `_text`, never kept) and they go through the same computation as a chosen file; with the job but no folder,
   « Régler le dossier Output » opens a text field whose path goes to the launcher (`set`, kept in `data/local/`, never versioned); no
-  launcher or no job: nothing shown (M29, a fake launcher).
+  launcher or no job: nothing shown (M29, a fake launcher). The measured **climb and descent** (`phaseSummary`) are one line each
+  under the points: rpm, flow, rate, IAS, the throttle when the journal has it, and the sheet's current rpm and flow; ticked, they
+  fill `climb` / `descent` (`rpmNominal`, `fuelFlowPerHour` in the sheet's unit, `rateFpm`, `iasKt`, `tasKt`) of the draft; the
+  throttle is said, never written (M31).
 - **Fuel read and typed in the unit chosen** (SOG-0032): « Carburant lu et saisi en » offers kg · kg/h, lb · lb/h, l · l/h, US gal ·
   gal/h (the sheet's own unit first); the quantities, the flows and the RPM table are shown converted, the unit written beside each
   field and in the table's head, by the frame's rules (`frame/lib/fuel_units.js` `toKg` / `fromKg`, the density of the sheet, else the

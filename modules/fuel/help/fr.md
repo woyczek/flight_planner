@@ -117,7 +117,7 @@ Sous l'abaque, « Atmosphère réelle au départ » montre la température prév
 les couches d'inversion (la température qui monte avec l'altitude) sont surlignées et dites dessous. La ligne de
 lecture donne, au niveau planifié, la température, l'écart ISA et l'altitude-densité réelles.
 
-Dépliez « Consignes de montée » pour suivre la montée jusqu'au niveau : gaz, régime, badin, vario, débit,
+Le titre de « Consignes de montée » dit le régime de montée de la fiche (« Montée : 8000 rpm »), quand elle en a un. Dépliez-les pour suivre la montée jusqu'au niveau : gaz, régime, badin, vario, débit,
 Mach, temps et carburant cumulés aux paliers, avec le profil dessiné. Le résultat donne carburant bloc, délestage, temps de vol et distance du début
 de descente avant l'arrivée. « Détail du devis » le décompose phase par phase.
 

@@ -1411,3 +1411,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
 - **9 Nov 2026 — one aircraft search, on the step Flight and the Sheets view** (SOG-0060 (b)): the Sheets view reuses the step's
   field and rows as they are (same `data-k="acsearch"` and `data-acres`, so `acResults` and `pickAircraft` serve both, no copy);
   `pickAircraft` no longer assumes the step's panel. F103.
+- **9 Nov 2026 — the climb rpm said in the title of the climb instructions** (SOG-0061, the user: « les gaz impliquent directement
+  les RPMs. « full » = 8000+. on a les yeux rivés sur les rpms »): the target is the sheet's `climb.rpmNominal` (filled by hand or
+  from the measured climb of « Proposer depuis les mesures »), never computed; in the fold's title so it is read without opening it.
+  F104.

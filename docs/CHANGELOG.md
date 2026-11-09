@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Stats, Aircraft, Fuel: neighbouring rpm groups merged, the measured climb and descent, the climb rpm said** (`modules/stats/phases.js`,
+  `modules/aircraft/sheets.js`, `modules/fuel/module.js`; stats SPEC, Aircraft SPEC § 6, Fuel SPEC; noreg F98, M31, F104; SOG-0052
+  suite, SOG-0061). The dashboard's merging of small neighbouring rpm groups within an altitude; the climb and descent windows of the
+  journals proposed as one line each (rpm, flow, rate, IAS, throttle said), filling the draft's climb or descent when ticked; Fuel's
+  climb instructions say the sheet's climb rpm in their title (« Montée : 8000 rpm »).
+
 - **Aircraft: « Courbes » on the sheet** (`modules/aircraft/sheets.js`, `sheets_texts.js`; Aircraft SPEC § 6, DECISIONS; noreg M30;
   SOG-0055). The flow against the rpm, one colour per altitude with a legend, the measured level points over it, in a fold of the
   RPM table's card.

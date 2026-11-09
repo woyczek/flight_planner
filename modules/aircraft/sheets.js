@@ -345,8 +345,33 @@ export function createSheetsView(host) {
       }
       case 'measadd': { // les points cochés vont dans le brouillon ; rien n'est écrit avant « Enregistrer » puis « Appliquer »
         const d = readEditor(p, true),
-          ticked = [...body().querySelectorAll('[data-meas]:checked')].map(i => st.measured?.points?.[+i.dataset.meas]).filter(Boolean);
-        if (!ticked.length) return;
+          ticked = [...body().querySelectorAll('[data-meas]:checked')].map(i => st.measured?.points?.[+i.dataset.meas]).filter(Boolean),
+          phases = [...body().querySelectorAll('[data-measph]:checked')].map(i => i.dataset.measph);
+        if (!ticked.length && !phases.length) return;
+        // la montée ou la descente mesurée : son régime, son débit (unité de la fiche), son vario et ses vitesses dans la phase
+        for (const k of phases) {
+          const q = (st.measured?.phases || []).find(x => x.phase === (k === 'climb' ? 'CLIMB' : 'DESCENT'));
+          if (!q) continue;
+          const v = FU.fromKg(q.flowKgH, storeUnit(d), densityOf(d));
+          d[k] = {
+            ...(d[k] || {}),
+            ...(q.rpm ? {
+              rpmNominal: q.rpm
+            } : {}),
+            ...(v !== null ? {
+              fuelFlowPerHour: Math.round(v * 10) / 10
+            } : {}),
+            ...(q.rateFpm ? {
+              rateFpm: q.rateFpm
+            } : {}),
+            ...(q.iasKt ? {
+              iasKt: q.iasKt
+            } : {}),
+            ...(q.tasKt ? {
+              tasKt: q.tasKt
+            } : {})
+          };
+        }
         for (const q of ticked) {
           const v = FU.fromKg(q.flowKgH, storeUnit(d), densityOf(d)),
             row = {
@@ -531,11 +556,14 @@ export function createSheetsView(host) {
     const points = PH.compare(PH.levelCurves(rows), d, {
       toKg: (v, s) => FU.toKg(v, storeUnit(s), densityOf(s))
     });
+    // la montée et la descente mesurées (SOG-0052 suite, SOG-0061) : régime, débit, vario, vitesses, manette
+    const phases = ['CLIMB', 'DESCENT'].map(ph => PH.phaseSummary(rows, ph)).filter(Boolean);
     st.measured = {
       id: p.id,
-      points
+      points,
+      phases
     };
-    if (!points.length) ctx.notify(tt(TX.measNone, {
+    if (!points.length && !phases.length) ctx.notify(tt(TX.measNone, {
       icao: code
     }), 'warn');
     return editor(p.id, d);
@@ -602,14 +630,20 @@ export function createSheetsView(host) {
   /** La liste des points mesurés à cocher (dans la carte de la table RPM) : altitude, régime, débit mesuré dans l'unité de lecture,
    *  la fiche et l'écart, ou « ligne nouvelle » ; secondes et vols. Rien quand aucun point n'est là. */
   function measuredHtml(p) {
-    const m = st.measured?.id === p.id ? st.measured.points : [];
-    if (!m.length) return '';
+    const m = st.measured?.id === p.id ? st.measured.points : [],
+      ph = st.measured?.id === p.id ? st.measured.phases || [] : [];
+    if (!m.length && !ph.length) return '';
     const vu = viewUnit(p),
       shown = kg => {
         const x = FU.fromKg(kg, vu, densityOf(p));
         return x === null ? '—' : String(Math.round(x * 10) / 10);
       };
-    return `<div class="f-list" data-measlist>${m.map((q, i) => `<label class="f-check" data-measrow="${q.altFt}|${q.rpm}"><input type="checkbox" data-meas="${i}"> ${esc(`${q.altFt} ft · ${q.rpm} rpm · ${shown(q.flowKgH)} ${FLOW[vu]} · `)}${esc(q.sheetKgH === null ? tt(TX.measNew) : tt(TX.measDelta, { v: shown(q.sheetKgH), d: q.deltaPct }))} <small class="f-muted">${esc(tt(TX.measSupport, { s: q.seconds, n: q.flights }))}</small></label>`).join('')}</div><button type="button" data-do="measadd">${esc(tt(TX.measAdd))}</button>`;
+    return `<div class="f-list" data-measlist>${m.map((q, i) => `<label class="f-check" data-measrow="${q.altFt}|${q.rpm}"><input type="checkbox" data-meas="${i}"> ${esc(`${q.altFt} ft · ${q.rpm} rpm · ${shown(q.flowKgH)} ${FLOW[vu]} · `)}${esc(q.sheetKgH === null ? tt(TX.measNew) : tt(TX.measDelta, { v: shown(q.sheetKgH), d: q.deltaPct }))} <small class="f-muted">${esc(tt(TX.measSupport, { s: q.seconds, n: q.flights }))}</small></label>`).join('')}${ph.map(q => {
+      const k = q.phase === 'CLIMB' ? 'climb' : 'descent',
+        cur = p[k] || {},
+        was = [cur.rpmNominal ? `${cur.rpmNominal} rpm` : '', cur.fuelFlowPerHour ? `${fuelShown(p, cur.fuelFlowPerHour)} ${FLOW[vu]}` : ''].filter(Boolean).join(' · ');
+      return `<label class="f-check" data-measphase="${k}"><input type="checkbox" data-measph="${k}"> ${esc([tt(k === 'climb' ? TX.measClimb : TX.measDescent), q.rpm ? `${q.rpm} rpm` : '', `${shown(q.flowKgH)} ${FLOW[vu]}`, q.rateFpm ? `${q.rateFpm} ft/min` : '', q.iasKt ? `IAS ${q.iasKt} kt` : '', q.throttlePct !== null ? tt(TX.measThrottle, { p: q.throttlePct }) : ''].filter(Boolean).join(' · '))}${was ? ` <span class="f-muted">${esc(tt(TX.measSheetWas, { v: was }))}</span>` : ''} <small class="f-muted">${esc(tt(TX.measSupport, { s: q.seconds, n: q.flights }))}</small></label>`;
+    }).join('')}</div><button type="button" data-do="measadd">${esc(tt(TX.measAdd))}</button>`;
   }
 
   // ---------------------------------------------------------------- imports

@@ -126,7 +126,7 @@ ISA-Abweichung mit der Höhe, und Inversionsschichten (die Temperatur steigt mit
 darunter genannt. Die Ablesezeile gibt auf der geplanten Flugfläche die tatsächliche Temperatur, ISA-Abweichung und
 Dichtehöhe an.
 
-Klappen Sie „Steigflug-Vorgaben“ auf, um dem Steigflug bis zur Flugfläche zu folgen: Leistung, Drehzahl,
+Der Titel von „Steigflug-Vorgaben“ nennt die Steigflugdrehzahl des Datenblatts („Steigflug: 8000 U/min“), wenn es eine hat. Klappen Sie sie auf, um dem Steigflug bis zur Flugfläche zu folgen: Leistung, Drehzahl,
 Geschwindigkeit, Steigrate, Durchfluss, Mach, Zeit und Kraftstoff kumuliert an den Stufen, mit gezeichnetem Profil. Das
 Ergebnis gibt Blockkraftstoff, Streckenkraftstoff, Flugzeit und Entfernung des Sinkflugbeginns vor der Ankunft an.
 „Einzelheiten“ schlüsselt es Phase für Phase auf.
@@ -198,4 +198,4 @@ Datenblättern ändert sich nichts.
   Schlüssel sagt es die Karte, und das METAR antwortet stattdessen. Die Wetterkarte sagt, woher die Meldungen stammen.
   Ganz ohne Netz zeigt sie das zuletzt gespeicherte Wetter mit seiner Uhrzeit.
 
-<!-- fr: 753b56e738b4 -->
+<!-- fr: cdf70b139e5c -->

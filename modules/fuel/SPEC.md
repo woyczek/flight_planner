@@ -416,8 +416,9 @@ before the start, in step 5 after (F11).
   arrival, type, route points, registration, callsign, alternate, level), SkyVector (`?fpl=` with the speed / level group, departure,
   points, arrival), Navigraph and ChartFox (departure and arrival pages); plain links in a new tab, an entry greyed with what it lacks
   (no case). The quote's **details** (taxi, climb, cruise, descent with time and distance, contingency, reserve, block, in full
-  words); the **climb instructions** (a drawing of altitude against time with the IAS at each reading, then the table: throttle, RPM,
-  IAS, rate, fuel flow, Mach, time, fuel); the **quote settings** (taxi and reserve minutes, contingency, displayed units, this
+  words); the **climb instructions** (their title says the sheet's climb rpm, « Consignes de montée · Montée : 8000 rpm », from
+  `climb.rpmNominal` only, nothing without it, SOG-0061, F104; a drawing of altitude against time with the IAS at each reading, then
+  the table: throttle, RPM, IAS, rate, fuel flow, Mach, time, fuel); the **quote settings** (taxi and reserve minutes, contingency, displayed units, this
   flight's cruise fuel flow, the weather radius) (no case).
 - **Display units** (the settings fold, one row of four selects that wraps on a phone): fuel kg / lb (`displayUnit`), speed kt / km/h
   (`displaySpeed`), altitude ft / m (`displayAlt`), distance NM / km / SM (`displayDist`); defaults kg (the sheet's unit), kt, ft, NM;

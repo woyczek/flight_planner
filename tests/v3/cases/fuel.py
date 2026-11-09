@@ -2662,3 +2662,21 @@ def f103(c):
     c.until(f"[...document.querySelectorAll('{FUEL} [data-acres] [data-pick]')].some(b => b.textContent.includes('EC25'))", what='the search lists EC25')
     c.tap(f"{FUEL} [data-acres] [data-pick]:has-text('EC25')")
     cf_doc(c, lambda d: ((d.get('aircraft') or {}).get('type') == 'EC25'), 'the flight takes the aircraft picked')
+
+
+@case('F104', 'The climb instructions say the sheet\'s climb rpm in their title, « Consignes de montée · Montée : 8000 rpm »; nothing without it',
+      'F', tags=('fuel', 'aircraft'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0061 (user, 9 Nov: « au moins pour la caravelle : les gaz impliquent directement les RPMs. « full » = 8000+. on a les yeux rivés sur les '
+      'rpms »): the target is climb.rpmNominal of the sheet, never invented; read in the fold\'s title without opening it')
+def f104(c):
+    sheet = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'kg', 'usableFuel': 20000, 'cruise': {'tasKt': 330, 'fuelFlowPerHour': 2000},
+             'climb': {'rpmNominal': 8000, 'fuelFlowPerHour': 2600, 'rateFpm': 1500, 'iasKt': 220}}
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft']['sheetId'] = 'C30J'
+    c.open('fuel', docs=docs + [['aircraft/sheets/C30J.json', sheet, 'document']])
+    wait_quote(c)
+    want = norm(f"{tx(F, 'climbGuide', c.lang)} · {tx(F, 'climbRpm', c.lang).replace('{r}', '8000')}")
+    c.until("(w) => (document.querySelector('[data-module=fuel] details[data-fold=climb] > summary')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w",
+            want, what='the climb rpm of the sheet in the fold\'s title')

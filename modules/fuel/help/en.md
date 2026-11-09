@@ -117,7 +117,7 @@ Below the chart, “Real atmosphere at departure” shows the forecast temperatu
 with altitude, and inversion layers (temperature rising with altitude) are highlighted and stated below. The reading
 line gives, at the planned level, the real temperature, ISA deviation and density altitude.
 
-Unfold “Climb instructions” to follow the climb up to the level: power, RPM, airspeed, rate of climb, fuel flow, Mach,
+The title of “Climb instructions” says the sheet's climb RPM (“Climb: 8000 rpm”) when it has one. Unfold them to follow the climb up to the level: power, RPM, airspeed, rate of climb, fuel flow, Mach,
 time and fuel totals at each step, with the profile drawn. The result gives block fuel, trip fuel, flight time and
 distance of the top of descent before arrival. “Quote details” breaks it down phase by phase.
 
@@ -184,4 +184,4 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: 753b56e738b4 -->
+<!-- fr: cdf70b139e5c -->

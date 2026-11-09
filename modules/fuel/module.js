@@ -470,6 +470,8 @@ const TX = {
   contingency: ['Contingence', 'Contingency', 'Zuschlag', 'Contingencia'],
   reserve: ['Réserve', 'Reserve', 'Reserve', 'Reserva'],
   climbGuide: ['Consignes de montée', 'Climb instructions', 'Steigflug-Vorgaben', 'Consignas de ascenso'],
+  // le régime de montée de la fiche (SOG-0061 : « on a les yeux rivés sur les rpms ») ; jamais inventé : rien sans climb.rpmNominal
+  climbRpm: ['Montée : {r} rpm', 'Climb: {r} rpm', 'Steigflug: {r} U/min', 'Ascenso: {r} rpm'],
   notReached: ['La montée n’atteint pas le niveau (vario sous {r}).', 'The climb does not reach the level (rate under {r}).',
     'Der Steigflug erreicht die Flugfläche nicht (unter {r}).', 'El ascenso no alcanza el nivel (menos de {r}).'
   ],
@@ -4313,7 +4315,13 @@ function refresh() {
   // consignes de montée (repliées)
   const cl = $('[data-climb]'),
     // colonne d'altitude : niveaux de vol tant que l'unité d'altitude est le pied, sinon l'altitude dans l'unité choisie
-    altUnit = unitOf('alt') !== 'ft';
+    altUnit = unitOf('alt') !== 'ft',
+    // la consigne de régime de la fiche (SOG-0061), dite dans le titre du pli, lisible sans l'ouvrir
+    climbRpm = +sheet?.climb?.rpmNominal > 0 ? tt(TX.climbRpm, {
+      r: Math.round(+sheet.climb.rpmNominal)
+    }) : '',
+    clSum = $('[data-fold="climb"] > summary');
+  if (clSum) clSum.textContent = climbRpm ? `${tt(TX.climbGuide)} · ${climbRpm}` : tt(TX.climbGuide);
   if ($('[data-fold="climb"]').open) cl.innerHTML = G ? climbSvg(G, cl) + `<div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">${esc(tt(TX.alt))}${altUnit ? ` (${esc(altLabel())})` : ''}</th><th class="f-num">${esc(tt(TX.thr))}</th><th class="f-num">RPM</th><th class="f-num">IAS (${esc(speedLabel())})</th><th class="f-num">${esc(vsLabel())}</th><th class="f-num">${esc(unit)}/h</th><th class="f-num">Mach</th><th class="f-num">${esc(tt(TX.time))}</th><th class="f-num">${esc(unit)}</th></tr></thead><tbody>
       ${G.rows.map(r => `<tr><td class="f-num">${r.h ? altUnit ? altNum(r.h) : flTxt(r.h) : 'GND'}</td><td class="f-num">${Math.round(r.frac * 100)} %</td><td class="f-num">${r.rpm ? Math.round(r.rpm) : '—'}</td><td class="f-num">${speedNum(r.ias)}</td><td class="f-num">${vsNum(r.roc)}</td><td class="f-num">${Math.round(r.ff)}</td><td class="f-num">${r.mach.toFixed(2)}</td><td class="f-num">${hmm(r.t)}</td><td class="f-num">${Math.round(r.f)}</td></tr>`).join('')}
     </tbody></table></div>${G.reached ? '' : `<p class="f-warn">${esc(tt(TX.notReached, { r: vsTxt(20) }))}</p>`}` : `<p class="f-muted">${esc(tt(C.perf ? TX.noDistance : TX.noModel))}</p>`;

@@ -175,7 +175,7 @@ continua) frente a la atmósfera tipo (guiones): donde la curva se aparta de ell
 altitud, y las capas de inversión (la temperatura que sube con la altitud) se resaltan y se indican debajo. La línea de
 lectura da, al nivel planificado, la temperatura, la desviación ISA y la altitud de densidad reales.
 
-Despliegue «Consignas de ascenso» para seguir el ascenso hasta el nivel: potencia, régimen, velocidad, régimen de
+El título de «Consignas de ascenso» dice el régimen de ascenso de la ficha («Ascenso: 8000 rpm») cuando lo tiene. Despliéguelas para seguir el ascenso hasta el nivel: potencia, régimen, velocidad, régimen de
 ascenso, flujo, Mach, tiempo y combustible acumulados en cada escalón, con el perfil dibujado. El resultado da
 combustible de bloque, combustible de viaje, tiempo de vuelo y distancia del inicio del descenso antes de la llegada.
 «Detalle del cálculo» lo desglosa fase por fase.
@@ -243,7 +243,7 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
   tarjeta lo dice y responde el METAR en su lugar. La tarjeta meteorológica indica de dónde vienen los mensajes. Sin red
   alguna, muestra la última meteorología guardada, con su hora.
 
-<!-- fr: 753b56e738b4 -->
+<!-- fr: cdf70b139e5c -->
 
 <!-- chapter: maps -->
 # Mapa

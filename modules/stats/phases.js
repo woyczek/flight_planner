@@ -13,6 +13,13 @@
 //     flights }] : les fenêtres de croisière exploitables groupées par altitude pression (arrondie à altStep) et par régime
 //     (arrondi à step) ; débit = médiane pondérée par la durée, TAS = moyenne pondérée ; un groupe de moins de minSeconds est
 //     laissé de côté (jamais interpolé). Trié par altitude puis régime.
+//   consolidateGroups(groups, limit = 10, near = 150) → groupes { rpm, records, peaks } fusionnés (consolidateRegimeGroups du
+//     FuelDashboard) : un petit groupe voisin (≤ near rpm, trois fois moins de fenêtres) rejoint le plus fourni, puis au plus `limit`
+//     groupes ; l'étiquette reste le régime arrondi le plus vu (jamais une moyenne qui glisse vers les régimes rares).
+//   phaseSummary(rows, phase) → { phase, rpm, flowKgH, iasKt, tasKt, rateFpm, throttlePct, seconds, windows, flights } ou null :
+//     la montée (CLIMB, vario ≥ 400 ft/min) ou la descente (DESCENT, vario ≤ −400 ft/min) des fenêtres exploitables ; régime et débit
+//     en médiane pondérée, vitesses et vario en moyenne pondérée, manette (mean_throttle_pct) quand la colonne existe ; null sous
+//     300 s ou 20 fenêtres (le seuil du FuelDashboard : « mesures insuffisantes »).
 //   compare(curves, sheet, { toKg }) → [{ ...point, sheetKgH, deltaPct }] : chaque point face à la fiche, la courbe de même
 //     altitude seulement (les lignes de rpmFuelCurve de même altFt), interpolée sur le régime quand deux lignes l'encadrent ;
 //     sheetKgH null sinon (rien à comparer : la ligne est une proposition neuve). toKg(valeur, fiche) ramène l'unité de la fiche.
@@ -98,15 +105,98 @@ export function parseWindows(text) {
 
 /** Fenêtre de croisière exploitable (règle d'eligible du FuelDashboard, la croisière seule). */
 export function eligible(r) {
-  if (!r || r.phase !== 'CRUISE' || isLegacy(r) || duration(r) <= 0 || !(num(r.mean_fuel_flow_kg_h) > 0)) return false;
+  return eligibleFor(r, 'CRUISE');
+}
+/** Fenêtre exploitable d'une phase en vol (CRUISE : |vario| ≤ 100 ; CLIMB : vario ≥ 400 ; DESCENT : vario ≤ −400 ft/min), la règle
+ *  d'eligible du FuelDashboard. */
+export function eligibleFor(r, phase) {
+  if (!r || r.phase !== phase || isLegacy(r) || duration(r) <= 0 || !(num(r.mean_fuel_flow_kg_h) > 0)) return false;
   const cov = num(r.fuel_coverage_pct);
   if (cov === null || cov < 99.9) return false;
   const flows = engineValues(r, 'fuel_flow_kg_h');
   if (!flows.length || flows.length !== num(r.engine_count) || flows.some(v => v === null || v <= 0)) return false;
   if (num(r.mean_pressure_altitude_ft) === null || !(num(r.mean_ias_kt) >= 40)) return false;
   const vs = num(r.mean_vertical_speed_fpm);
-  if (vs === null || Math.abs(vs) > 100) return false;
+  if (vs === null || (phase === 'CRUISE' ? Math.abs(vs) > 100 : phase === 'CLIMB' ? vs < 400 : vs > -400)) return false;
   return !r.quality_flags;
+}
+
+/** Groupes de régime fusionnés (voir l'en-tête ; consolidateRegimeGroups du FuelDashboard, à l'identique). */
+export function consolidateGroups(initial, limit = 10, near = 150) {
+  const support = g => g.records.length,
+    merge = (a, b) => {
+      const peaks = new Map(a.peaks);
+      for (const [rpm, count] of b.peaks) peaks.set(rpm, (peaks.get(rpm) || 0) + count);
+      return {
+        rpm: [...peaks].sort((x, y) => y[1] - x[1] || x[0] - y[0])[0][0],
+        records: [...a.records, ...b.records],
+        peaks
+      };
+    };
+  let groups = initial.map(g => ({
+    ...g,
+    records: [...g.records],
+    peaks: new Map(g.peaks)
+  })).sort((a, b) => a.rpm - b.rpm);
+  while (groups.length > 1) {
+    const cand = [];
+    for (let i = 0; i < groups.length - 1; i++) {
+      const a = groups[i],
+        b = groups[i + 1],
+        small = Math.min(support(a), support(b)),
+        large = Math.max(support(a), support(b)),
+        distance = b.rpm - a.rpm;
+      if (distance <= near && small * 3 <= large) cand.push({
+        i,
+        small,
+        large,
+        distance
+      });
+    }
+    if (!cand.length) break;
+    cand.sort((a, b) => a.small - b.small || a.distance - b.distance || b.large - a.large || a.i - b.i);
+    const i = cand[0].i;
+    groups.splice(i, 2, merge(groups[i], groups[i + 1]));
+    groups.sort((a, b) => a.rpm - b.rpm);
+  }
+  while (groups.length > limit) {
+    const weakest = groups.map((g, i) => ({
+        i,
+        count: support(g)
+      })).sort((a, b) => a.count - b.count || a.i - b.i)[0].i,
+      nb = [weakest - 1, weakest + 1].filter(i => i >= 0 && i < groups.length);
+    nb.sort((a, b) => Math.abs(groups[a].rpm - groups[weakest].rpm) - Math.abs(groups[b].rpm - groups[weakest].rpm) || support(groups[b]) -
+      support(groups[a]) || a - b);
+    const i = Math.min(weakest, nb[0]);
+    groups.splice(i, 2, merge(groups[i], groups[i + 1]));
+    groups.sort((a, b) => a.rpm - b.rpm);
+  }
+  return groups;
+}
+
+/** La montée ou la descente mesurée (voir l'en-tête). */
+export function phaseSummary(rows, phase) {
+  const list = (rows || []).filter(r => eligibleFor(r, phase)),
+    seconds = list.reduce((s, r) => s + duration(r), 0);
+  if (seconds < 300 || list.length < 20) return null;
+  const rpm = weightedMedian(list, 'mean_engine_rpm'),
+    flow = weightedMedian(list, 'mean_fuel_flow_kg_h'),
+    ias = weightedMean(list, 'mean_ias_kt'),
+    tas = weightedMean(list, 'mean_tas_kt'),
+    vs = weightedMean(list, 'mean_vertical_speed_fpm'),
+    thr = weightedMean(list, 'mean_throttle_pct');
+  return {
+    phase,
+    rpm: rpm === null ? null : Math.round(rpm / 10) * 10,
+    flowKgH: flow === null ? null : Math.round(flow * 10) / 10,
+    iasKt: ias === null ? null : Math.round(ias),
+    tasKt: tas === null ? null : Math.round(tas),
+    rateFpm: vs === null ? null : Math.round(Math.abs(vs) / 10) * 10,
+    throttlePct: thr === null ? null : Math.round(thr),
+    seconds: Math.round(seconds),
+    windows: list.length,
+    flights: new Set(list.map(flightKey)).size
+  };
 }
 
 /** Médiane pondérée par la durée d'une valeur des fenêtres (null sans valeur). */
@@ -146,23 +236,35 @@ export function levelCurves(rows, {
   altStep = 1000,
   minSeconds = 60
 } = {}) {
-  const groups = new Map();
+  // par altitude, des groupes par régime arrondi, puis les voisins peu fournis fusionnés (consolidateGroups, comme buildCurve du
+  // FuelDashboard) ; toutes les valeurs recalculées sur les fenêtres d'origine (jamais une médiane de médianes)
+  const byAlt = new Map();
   for (const r of rows || []) {
     if (!eligible(r)) continue;
     const rpm = num(r.mean_engine_rpm);
     if (!(rpm > 0)) continue;
     const altFt = Math.round(num(r.mean_pressure_altitude_ft) / altStep) * altStep,
-      k = Math.round(rpm / step) * step,
-      key = `${altFt}|${k}`;
-    if (!groups.has(key)) groups.set(key, {
-      altFt,
+      k = Math.round(rpm / step) * step;
+    if (!byAlt.has(altFt)) byAlt.set(altFt, new Map());
+    const bins = byAlt.get(altFt);
+    if (!bins.has(k)) bins.set(k, {
       rpm: k,
-      records: []
+      records: [],
+      peaks: new Map()
     });
-    groups.get(key).records.push(r);
+    const b = bins.get(k);
+    b.records.push(r);
+    b.peaks.set(k, b.records.length);
   }
+  const groups = [];
+  for (const [altFt, bins] of byAlt)
+    for (const g of consolidateGroups([...bins.values()], 10, Math.max(150, step))) groups.push({
+      altFt,
+      rpm: g.rpm,
+      records: g.records
+    });
   const out = [];
-  for (const g of groups.values()) {
+  for (const g of groups) {
     const seconds = g.records.reduce((s, r) => s + duration(r), 0);
     if (seconds < minSeconds) continue;
     const flow = weightedMedian(g.records, 'mean_fuel_flow_kg_h'),

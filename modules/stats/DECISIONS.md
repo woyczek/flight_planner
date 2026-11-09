@@ -22,3 +22,10 @@ One entry per decision, newest last. The rules are in [SPEC.md](SPEC.md).
   by the pilot is an untrusted input like every file read by the suite.
 - **Documents** (integrator, 6 Nov evening): INTEGRATION.md and DECISIONS.md added after the evening pass (case I6: every
   module keeps SPEC, INTEGRATION and DECISIONS); content taken from Features SOG's delivery report, nothing new decided.
+
+## 9 November 2026 — neighbouring rpm groups, climb and descent (SOG-0052 suite, SOG-0061, Features SOG)
+
+- **`consolidateRegimeGroups` ported as it is** (`consolidateGroups`), applied within each altitude only (two altitudes are two
+  curves, § 10.37 C): a 2450 rpm group of 30 s next to a 2400 rpm one of 120 s is the same setting read twice, not a row to propose.
+- **Climb and descent as one line each**, never a curve: the sheet keeps single values for them (the user extrapolates, § 10.37 C);
+  the throttle is said but has no field in the sheet, so it is never written (SOG-0061: the rpm is what the pilot watches).

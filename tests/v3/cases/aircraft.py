@@ -802,6 +802,42 @@ def m30(c):
     c.eq(strokes, ['var(--sog-chart-1)', 'var(--sog-muted)'], 'the 4000 ft point in the 4000 ft colour; 8000 ft, no curve there: muted', what='marks')
 
 
+@case('M31', 'Sheets: « Proposer depuis les mesures » also proposes the measured climb (rpm, flow, rate, IAS, throttle said); ticked, it fills the climb of the draft',
+      'M', tags=('aircraft',), designs=('standard',), screens=True, phone=False, langs4=True,
+      rule='SOG-0052 suite and SOG-0061 (user, 9 Nov: « les gaz impliquent directement les RPMs […] le throttle est probablement récupérable depuis '
+      'les csv »): climb windows (vario ≥ 400 ft/min, 300 s and 20 windows at least) give the climb rpm, flow, rate and IAS; the throttle is said, '
+      'never written (no field for it); nothing written before « Enregistrer » and « Appliquer »')
+def m31(c):
+    import tempfile
+    sheet = dict(EC25, id='XMES', name='XMES', icao='XMES', unit='kg', cruise={'tasKt': 140, 'fuelFlowPerHour': 40, 'rpmNominal': 2400},
+                 climb={'rpmNominal': 7100, 'fuelFlowPerHour': 100, 'rateFpm': 1000, 'iasKt': 150},
+                 rpmFuelCurve=[{'rpm': 2200, 'altFt': 4000, 'fuelFlowPerHour': 35}, {'rpm': 2400, 'altFt': 4000, 'fuelFlowPerHour': 45}])
+    sheet.pop('_fields', None)
+    docs = [[f'aircraft/sheets/{x["id"]}.json', x, 'document'] for x in (EC25, C30J, sheet)]
+    c.open('aircraft', docs=LEVEL3 + [['airline/fleet.json', fleet_doc(3), 'document']] + docs + [TYPES, ['cache/aircraft/ui.json', {'view': 'sheets'}, 'cache']],
+           wait=False, app='maintenance')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-id]')", timeout=15000, what='the Fiches list')
+    edit_sheet(c, 'XMES')
+    head = ['schema_version', 'aircraft_icao', 'aircraft_file', 'registration', 'flight_id', 'phase', 'duration_sec', 'mean_fuel_flow_kg_h',
+            'fuel_coverage_pct', 'engine_count', 'engine_fuel_flow_kg_h', 'mean_pressure_altitude_ft', 'mean_ias_kt', 'mean_tas_kt',
+            'mean_vertical_speed_fpm', 'mean_engine_rpm', 'mean_throttle_pct', 'quality_flags']
+    rows = [['0.4.1', 'XMES', 'x.acf', 'F-TEST', 'A', 'CLIMB', 15, 120, 100, 1, 120, 3000 + i * 300, 160, 175, 1500, 8000, 95, ''] for i in range(24)]
+    with tempfile.TemporaryDirectory() as tmp:
+        f = Path(tmp) / 'FuelPhaseMonitor_climb.csv'
+        f.write_text('\n'.join(','.join(str(x) for x in r) for r in [head] + rows), encoding='utf-8')
+        c.page.set_input_files(f'{M} {SHEETS} input[data-measfile]', str(f))
+        c.until(f"!!document.querySelector('{M} {SHEETS} [data-measphase=climb]')", what='the measured climb proposed')
+    line = norm(c.text(f'{M} {SHEETS} [data-measphase=climb]'))
+    for want in ('8000 rpm', '120 kg/h', '1500 ft/min', 'IAS 160 kt', norm(tx(SX, 'measThrottle', c.lang).replace('{p}', '95')), '7100 rpm'):
+        c.ok(want in line, line, f'the climb line says « {want} »')
+    c.page.check(f'{M} {SHEETS} [data-measph=climb]')
+    c.tap(f'{M} {SHEETS} [data-do="measadd"]')
+    c.until(f"document.querySelector('{M} {SHEETS} input[data-path=\"climb.rpmNominal\"]')?.value === '8000'", what='the climb of the draft takes the measured rpm')
+    c.eq([c.js(f"document.querySelector('{M} {SHEETS} input[data-path=\"climb.{k}\"]')?.value") for k in ('rateFpm', 'iasKt')], ['1500', '160'],
+         'rate and IAS of the measured climb in the draft', what='climb fields')
+    c.eq(sheet_of(c, 'XMES')['climb']['rpmNominal'], 7100, 'nothing written before « Enregistrer » and « Appliquer »', what='stored')
+
+
 @case('M25', 'Sheets: the fuel is read and typed in the unit chosen (kg, lb, l, US gal); the sheet keeps its stored unit, an untouched value unchanged',
       'M', tags=('aircraft',), designs=('standard',), screens=False, langs4=True,
       rule='SOG-0032 (« toujours pas de possibilité de lire / écrire en kg ou lb/h ? »): the editor reads and writes in the unit chosen, by '

@@ -97,6 +97,11 @@ export const TX = {
   ],
   measBad: ['{f} : {e}', '{f}: {e}', '{f}: {e}', '{f}: {e}'],
   measNew: ['ligne nouvelle', 'new row', 'neue Zeile', 'fila nueva'],
+  // la montée et la descente mesurées (SOG-0052 suite, SOG-0061)
+  measClimb: ['Montée', 'Climb', 'Steigflug', 'Ascenso'],
+  measDescent: ['Descente', 'Descent', 'Sinkflug', 'Descenso'],
+  measThrottle: ['manette {p} %', 'throttle {p} %', 'Leistungshebel {p} %', 'mando de gases {p} %'],
+  measSheetWas: ['(fiche : {v})', '(sheet: {v})', '(Datenblatt: {v})', '(ficha: {v})'],
   // le dossier Output de X-Plane sur le poste (SOG-0052 étape 2, travail stats/output du lanceur)
   measOutput: ['Depuis le dossier Output', 'From the Output folder', 'Aus dem Output-Ordner', 'Desde la carpeta Output'],
   measOutputRead: ['Lire les journaux cochés', 'Read the ticked journals', 'Angekreuzte Protokolle lesen', 'Leer los registros marcados'],
