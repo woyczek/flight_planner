@@ -304,3 +304,8 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
 
 - « Corrigez la cause puis relancez » was the whole message: the user never knew the cause. The launcher now reports `cause` and `step` (data/local/sync.json); the frame keeps them (closed lists, like every field read from a report) and the panel says them in plain words and the step, in four languages. A cause the page does not know is dropped, not shown; the sentence then says the launcher did not say why, and to update it.
 - Counter-test (L59): `exchange()` without the cause makes every sentence the « did not say why » one.
+
+## 10 November 2026 — evening pass: three escaped defects of the day's lots (L4, L5, A36)
+
+- **L4 and L5**: the « Synoptique monde (GFS) » row (SOG-0138) takes its state from the workstation's `weather/world` status, like the route row (SOG-0125): it is not a state invented without a publication, nor a cycle state. Both cases now leave it out of their count, as they already left out the route row (the tests were wrong, not the page).
+- **A36**: « Tout désélectionner » (`select-none`, SOG-0071 time 1) stayed live without a launcher, against the frame's rule « read only without a launcher: every action grey ». It is grey now (like « Seulement les périmés », which already was); the rectangle cases (L38, L39) install a fake launcher. A36 names the live verbs instead of counting them.

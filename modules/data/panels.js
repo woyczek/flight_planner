@@ -632,7 +632,7 @@ function choiceHtml(set, busy) {
     } = buildZones(),
       pers = M.personalSources(ticked),
       xplaneOn = pers.some(p => p.id === 'xplane' && S.personal.has('xplane'));
-    return `<div class="d-choice"><p class="d-verbs" data-select-row><button type="button" data-verb="select-stale"${busy || !statusKnown() ? ' disabled' : ''}>${esc(tt(TX.upd.selStale))}</button> <button type="button" data-verb="select-none"${busy ? ' disabled' : ''}>${esc(tt(TX.upd.selNone))}</button></p>
+    return `<div class="d-choice"><p class="d-verbs" data-select-row><button type="button" data-verb="select-stale"${busy || !statusKnown() ? ' disabled' : ''}>${esc(tt(TX.upd.selStale))}</button> <button type="button" data-verb="select-none"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.selNone))}</button></p>
     <p class="f-muted" data-selection-line>${esc(selectionLine())}</p>
     ${packsHtml()}
     <div class="d-opts" data-build-zones>${ids.map(z => `<div class="d-zrow" data-zone-row="${esc(z)}">${optHtml('data-build-zone', z, M.zoneName(S.d.zones, z, li()), S.ticked?.has(z), busy)}${zoneStateHtml(z)}</div>`).join('')}</div>

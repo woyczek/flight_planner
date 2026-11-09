@@ -1241,7 +1241,7 @@ def a36(c):
     c.eq(c.count('[data-welcome]'), 0, 'no welcome card of Pilot in Maintenance', what='welcome cards')
     c.eq(c.js(rail), ['data', 'aircraft', 'admin'], 'Maintenance without a launcher: Données, Appareils (§ 10.34 A2), Administration (no V2 page; the help is the « ? »)', what='rail')
     c.eq(c.js(tabs), ['data', 'aircraft'], 'the phone bar of Maintenance: its modules only (help and settings are « ? » and ⚙, 31 Oct 2026)', what='tabs')
-    c.eq(c.js("[...document.querySelectorAll('[data-verb]')].filter(b => !b.disabled).length"), 0, 'read only without a launcher: every action grey', what='enabled [data-verb]')
+    c.eq(c.js("[...document.querySelectorAll('[data-verb]')].filter(b => !b.disabled).map(b => b.dataset.verb)"), [], 'read only without a launcher: every action grey', what='enabled [data-verb]')
     c.ok(c.js('document.title').split(' — ')[0] in ('Maintenance', 'Wartung', 'Mantenimiento'), c.js('document.title'), 'the page is named after the application')
     c.page.goto(f'{c.base}/frame/index.html?app=__proto__#fuel', wait_until='load')
     c.until("!!document.querySelector('[data-module=fuel]')", timeout=15000, what='an unknown application: Pilot')

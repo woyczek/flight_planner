@@ -458,7 +458,7 @@ def l4(c):
     c.eq([c.count('[data-error="publication"]'), c.count('[data-error="zones"]'), c.count('[data-error="states"]')], [1, 1, 1], 'one line per failed call', what='error lines')
     c.eq(norm(c.text('[data-error="publication"]')), norm(tx(TX, 'pubError', c.lang)), 'worded in the language of the run', what='publication error')
     c.eq(c.count('details.f-group'), 4, 'the four groups are still drawn (names and links)', what='groups')
-    c.eq(c.count('[data-set]:not([data-set=route])[data-state]'), 0, 'no state is invented without a publication (the route row takes its own from the workstation memory, SOG-0125)', what='states')
+    c.eq(c.count('[data-set]:not([data-set=route]):not([data-set=world])[data-state]'), 0, 'no state is invented without a publication (the route and world rows take their own from the workstation: its memory, SOG-0125, and its weather/world status, SOG-0138)', what='states')
     c.eq(c.doc('cache/data/coverage.json'), None, 'a degraded read writes no coverage', what='coverage.json')
     c.eq(c.js("[...document.querySelectorAll('[data-build] [data-verb]:not([data-verb=pickup]):not([data-verb=update]):not([data-verb^=select]), [data-publish] [data-verb]')].map(b => b.dataset.verb + (b.disabled ? ':off' : ''))"), ['download:off', 'build:off', 'purge:off', 'publish:off'], 'Télécharger, Construire, Purger and Publier, grey', what='[data-verb]')
     c.check_errors()
@@ -474,7 +474,7 @@ def l5(c):
     lines = c.js("[...document.querySelectorAll('[data-coverage] ul[data-states] > li')].map(li => [li.dataset.reason, li.textContent.replace(/\\s+/g, ' ').trim()])")
     c.ok(lines and 'EG, LF' in lines[0][1], lines[:1], 'without names the line shows the prefixes (EG, LF), without (n aerodromes)')
     c.eq(c.count('[data-set][data-state="parser"]'), 0, 'without the parser constant no row is ever "old parser" (the UK zone is at version 18)', what='parser pills')
-    c.eq(c.count('[data-set]:not([data-set=route])[data-state]'), c.count('[data-set][data-state="ok"], [data-set][data-state="stale-cycle"], [data-set][data-state="stale-age"]'),
+    c.eq(c.count('[data-set]:not([data-set=route]):not([data-set=world])[data-state]'), c.count('[data-set][data-state="ok"], [data-set][data-state="stale-cycle"], [data-set][data-state="stale-age"]'),
          'the other states are the cycle ones', what='states without the constant')
     # aerodb announces { coverage: true }: only the States list is asked for again and redrawn
     c.js("() => { document.querySelector('[data-coverage] [data-more] summary').click(); document.querySelector('[data-set=sia]').dataset.keep = '1' }")
@@ -4502,6 +4502,7 @@ def _rect_open(c):
     c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/'), lambda r: r.fulfill(status=200, content_type='application/json', body=_ZSTYLE))
     cfg, _ = _fixture()
     cfg['outlines'] = _outlines()
+    _launcher(c, [], verbs=_VERBS)   # the selection gestures are grey without a launcher (read only, A36)
     c.page.add_init_script(_ZHOOK_JS)
     _open(c, _sized(cfg))
     _all_open(c)
