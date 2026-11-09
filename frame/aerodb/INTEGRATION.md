@@ -546,7 +546,7 @@ Size: about 100–300 kB per plan (the profile points and the RAD mentions weigh
 |---|---|
 | `action` | `'compute'` (A → B with the imposed passages `via`) or `'check'` (the typed `route` as it is) |
 | `adep`, `adest` | aerodromes (→ `dep`, `arr`) |
-| `fl` | cruise level (hundreds of ft) |
+| `fl` | cruise level (hundreds of ft); **absent or `null`: 180** (the default of the engine, made explicit) |
 | `rwyDep`, `rwyArr` | imposed runways (→ `dep_runway`, `arr_runway`; absent: the engine compares the connected procedures; the procedures are always on) |
 | `date` | ISO 8601 |
 | `via` | compute only: string[] (≤ 8) of ids, the **mandatory passages**, in order |
@@ -559,6 +559,8 @@ Answer: `{ ok, alternatives, segments, issues, rad, fra, report, message, gaps, 
 - `segments` — those of the first alternative (the proposed or the typed route): `{ from, to, via ('DCT', an airway, a procedure token), state: 'ok' | 'error', reasons: [{ kind, text, ruleId?, deltaFt? }] }`. The `text` is the engine's own (French); `kind` is **read from that text**, nothing is invented: `RAD` (with `ruleId`: the rule of the book), `floor` / `ceiling` (profile under the floor / over the ceiling, `deltaFt` = the gap), `FRA`, `direction` (a one-way segment flown against its direction), `continuity` (not in AeroDB), and `altitude` for everything else (procedure constraint, level…).
 - `issues[≤ 300]` — `{ level: 'error' | 'review', text, kind? }` (the engine's `ERREUR` is `error`, everything else `review`). When the engine finds **no plan** (imposed passages impossible), `alternatives` is `[]` and the first issue says why.
 - `rad`, `fra`, `gaps`, `limitation`: as in the engine's form: **always show `limitation` with a plan**.
+
+**Procedure ids**: `sid.id` / `star.id` are the `id` of the procedure record of `data/proc` **verbatim** (never shortened: the transition suffix, if the record's id has one, is kept), the same string as the procedure sheets of AeroDB. **Reasons**: `vertical_errors` and `alerts` of a leg are the same list at the start (a ceiling or floor error is in both), the RAD and direction texts are added to `alerts`: reading `alerts` loses nothing.
 
 **Deviation from the screen's spec** (to settle with Features SOG, nothing blocks): `check` makes the engine run **without** limiting the entered route (`via` is empty in validate mode: the engine's previous behaviour refused a typed route of more than 8 non-airway points, which a route typed by a pilot often is); the controlled route is the typed text.
 

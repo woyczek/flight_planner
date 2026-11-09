@@ -5094,6 +5094,8 @@ def k106(c):
     bad = [dict(base, action='x'), dict(base, route='LFPO X EIDW'), dict(chk, route=''), dict(chk, route=7), dict(base, adep='LF PO'), dict(base, dep='LFPO'), dict(base, root='/'), dict(base, fl='90'), dict(base, via=['A'] * 9), dict(base, rwyDep='24 24 24')]
     c.eq([i for i, b in enumerate(bad) if check(b) is not None], [], 'an unknown action, compute with a route, check without one, a second vocabulary mixed in, a bad code, too many points: refused (400)', what='refused')
     c.eq(V.to_request(base)['via'], ['SITET', 'KEPAD'], 'compute: the typed points are the imposed passages, in order', what='via')
+    nofl = {k: v for k, v in base.items() if k != 'fl'}
+    c.eq((check(nofl) == nofl, check(dict(base, fl=None)) is not None, V.to_request(nofl)['fl'], V.to_request(dict(base, fl=None))['fl'], V.to_request(base)['fl']), (True, True, 180, 180, 90), 'fl absent or null: accepted, the default level of the engine (180) is made explicit', what='fl absent')
     r = V.to_request(dict(chk, rwyDep='24', rwyArr='16'))
     c.eq((r['mode'], r['route'], r['dep_runway'], r['arr_runway'], r['use_procedures']), ('validate', chk['route'], '24', '16', True), 'check: the route as typed, the runways, the procedures on', what='check request')
     c.eq([V.reason_of(t)['kind'] for t in ('Interdiction RAD LF9003', 'Profil minimum 8000 ft sous le plancher 9000 ft (écart 1000 ft).', 'Profil maximum 21424 ft au-dessus du plafond 8500 ft (écart 12924 ft).', 'LFPO : altitude prévue 5000 ft sous la contrainte procédure 6000 ft minimum.', 'Liaison FRA sans entrée', 'Sens interdit : A1 est à sens unique', 'Continuité absente dans AeroDB')],

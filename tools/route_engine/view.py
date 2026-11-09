@@ -12,6 +12,7 @@ import re
 ACTIONS = ('compute', 'check')
 EXTRA = ('radius', 'speed_kt', 'terminal_speed_kt', 'climb_fpm', 'descent_fpm', 'allow_levels', 'use_procedures', 'enable_fra', 'level_strategy', 'alternative_levels', 'alternatives')
 MAX_PROFILE = 200
+DEFAULT_FL = 180                                                         # le défaut du moteur (engine.plan : request.get('fl', 180))
 
 
 def to_request(args):
@@ -22,7 +23,7 @@ def to_request(args):
     action = args.get('action')
     if action not in ACTIONS:
         raise ValueError('action : compute ou check')
-    req = {'dep': args.get('adep', ''), 'arr': args.get('adest', ''), 'fl': args.get('fl'), 'use_procedures': True}
+    req = {'dep': args.get('adep', ''), 'arr': args.get('adest', ''), 'fl': DEFAULT_FL if args.get('fl') is None else args['fl'], 'use_procedures': True}      # fl absent (ou null) : le niveau par défaut du moteur, dit ici plutôt que deviné plus bas
     for src, dst in (('rwyDep', 'dep_runway'), ('rwyArr', 'arr_runway'), ('date', 'date')):
         if args.get(src):
             req[dst] = args[src]
