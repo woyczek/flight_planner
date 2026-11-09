@@ -6,7 +6,7 @@
   "tool": "tools/roadmap_build.py",
   "organisation": "724c5c6",
   "fiches": 66,
-  "untranslated": 1
+  "untranslated": 0
  },
  "owner": "ergonomics session (Simplification interface et ergonomie)",
  "note": {
@@ -828,9 +828,9 @@
      "kind": "feature",
      "state": "doing",
      "fr": "Roadmap : reprioriser depuis l'écran (identifiant lisible et copiable, glisser-déposer du rang et du jalon, écrit par le lanceur dans organisation/PRIORITES.json)",
-     "en": "Roadmap : reprioriser depuis l'écran (identifiant lisible et copiable, glisser-déposer du rang et du jalon, écrit par le lanceur dans organisation/PRIORITES.json)",
-     "de": "Roadmap : reprioriser depuis l'écran (identifiant lisible et copiable, glisser-déposer du rang et du jalon, écrit par le lanceur dans organisation/PRIORITES.json)",
-     "es": "Roadmap : reprioriser depuis l'écran (identifiant lisible et copiable, glisser-déposer du rang et du jalon, écrit par le lanceur dans organisation/PRIORITES.json)"
+     "en": "Roadmap: reprioritise from the screen (readable, copyable id; drag and drop of rank and milestone, written by the launcher to organisation/PRIORITES.json)",
+     "de": "Fahrplan: Prioritäten direkt im Bildschirm ändern (lesbare, kopierbare Kennung; Rang und Meilenstein per Ziehen und Ablegen, vom Launcher in organisation/PRIORITES.json geschrieben)",
+     "es": "Hoja de ruta: repriorizar desde la pantalla (identificador legible y copiable; arrastrar y soltar del rango y del hito, escrito por el lanzador en organisation/PRIORITES.json)"
     }
    ]
   },

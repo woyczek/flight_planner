@@ -193,6 +193,11 @@ Alpha: data formats and screens may still change.
   SOG-0037). A start written to the second or in +02:00 no longer makes the frame remove a good position as a left-over (and a stale one
   is removed whatever the form of the two dates).
 
+### Livraison
+
+- Archive de livraison : `xplane-web-suite-6.0.0-alpha.4.zip` — SHA-256 `6c24d602685d738f8d3e798c5771b834cd1e998e18bd99633a1f879b0890cad7` (code seul, hors dépôt : dossier `dist/`).
+- Module package: `dispos-module-6.0.0-alpha.4.zip` — SHA-256 `84cd09e96bf253ebb587f83f3d83cd7c281e2e345c5f674a2e1a8ab9c57f9b7d` (outside the repository: `dist/` folder).
+
 ## [6.0.0-alpha.3] — 2026-11-06
 
 Third alpha of the V3 **Pilot application**, nine days after the second, with the first **Company application**. The

@@ -63,6 +63,11 @@ repository (step 1), the roadmap generated from the backlog.
   of LFLL are on the chart only (a chart reader would be another work); the 585 kg quote of 6 November was not
   reproduced (the flight was an FA50 without a sheet).
 
+### Delivery
+
+- Delivery archive: `xplane-web-suite-6.0.0-alpha.4.zip` — SHA-256 `6c24d602685d738f8d3e798c5771b834cd1e998e18bd99633a1f879b0890cad7` (code only, outside the repository: `dist/` folder).
+- Module package: `dispos-module-6.0.0-alpha.4.zip` — SHA-256 `84cd09e96bf253ebb587f83f3d83cd7c281e2e345c5f674a2e1a8ab9c57f9b7d` (outside the repository: `dist/` folder).
+
 ## 6.0.0-alpha.3 — 6 November 2026
 
 Third alpha of the **Pilot application** (V3), nine days after the second, and the first **Company application**: the
