@@ -4118,13 +4118,13 @@ def _packs_cfg():
     for z in cfg['zones']:
         if z['id'] == 'de':
             z['publishedKb'] = 8000
-    cfg['packs'] = {'packs': [
-        {'id': 'ouest', 'kind': 'region', 'names': ['Europe de l\u2019Ouest', 'Western Europe', 'Westeuropa', 'Europa occidental'], 'zones': ['fr', 'gb', 'de', 'it', 'zz'], 'partial': ['gb']},
-        {'id': 'asie', 'kind': 'region', 'names': ['Asie', 'Asia', 'Asien', 'Asia'], 'zones': ['jp', 'de']},
-        {'id': 'antarctique', 'kind': 'region', 'names': ['Antarctique', 'Antarctica', 'Antarktis', 'Ant\u00e1rtida'], 'zones': [], 'empty': 'no-zone'},
-        {'id': 'iles', 'kind': 'theme', 'names': ['\u00celes', 'Islands', 'Inseln', 'Islas'], 'zones': ['gb', 'jp', 'es']},
-        {'id': 'bad id', 'kind': 'region', 'names': ['x'], 'zones': ['fr']},
-        {'id': 'weird', 'kind': 'planet', 'names': ['x'], 'zones': ['fr']}]}
+    # the shape aerodb delivers (AeroDb.packs(), INTEGRATION « Country packs »): { regions: [...], themes: [...] }, the kind being the list
+    cfg['packs'] = {'generated': '2026-11-10', 'source': 'test', 'regions': [
+        {'id': 'ouest', 'names': ['Europe de l’Ouest', 'Western Europe', 'Westeuropa', 'Europa occidental'], 'zones': ['fr', 'gb', 'de', 'it', 'zz'], 'partial': ['gb']},
+        {'id': 'asie', 'names': ['Asie', 'Asia', 'Asien', 'Asia'], 'zones': ['jp', 'de']},
+        {'id': 'antarctique', 'names': ['Antarctique', 'Antarctica', 'Antarktis', 'Antártida'], 'zones': [], 'empty': 'no-zone-no-source'},
+        {'id': 'bad id', 'names': ['x'], 'zones': ['fr']}],
+        'themes': [{'id': 'iles', 'names': ['Îles', 'Islands', 'Inseln', 'Islas'], 'zones': ['gb', 'jp', 'es']}]}
     return cfg
 
 
@@ -4138,7 +4138,7 @@ def l44(c):
     _open(c, cfg)
     _all_open(c)
     c.until("!!document.querySelector('[data-packs]')", timeout=8000, what='the packs block')
-    c.eq(c.js("[...document.querySelectorAll('[data-pack-regions] > li')].map(li => li.dataset.pack)"), ['ouest', 'asie', 'antarctique'], 'the region packs in aerodb\u2019s order; a pack with a bad id or an unknown kind is dropped', what='regions')
+    c.eq(c.js("[...document.querySelectorAll('[data-pack-regions] > li')].map(li => li.dataset.pack)"), ['ouest', 'asie', 'antarctique'], 'the region packs in aerodb\u2019s order; a pack with a bad id is dropped', what='regions')
     c.eq(c.js("[...document.querySelectorAll('[data-pack-themes] > li')].map(li => li.dataset.pack)"), ['iles'], 'the theme', what='themes')
     row = lambda p: norm(c.text(f'[data-pack={p}]'))
     ouest_size = _bytes(c, _KB['fr'] + _KB['gb'] + 8000 + 4000)
@@ -4146,7 +4146,7 @@ def l44(c):
     c.eq(c.count('[data-pack=ouest] [data-pack-unknown]') + c.count('[data-pack=ouest] [data-pack-partial]'), 2, 'and it says one zone is unknown, one is « en partie »', what='notes')
     c.eq(norm(c.text('[data-pack=ouest] [data-act=pack-add]')), norm(PT('addAll').replace('{n}', '2')), 'Ajouter tout (2): de and it are not in the coverage yet (fr and gb are)', what='button')
     c.eq(c.count('[data-pack=antarctique] button'), 0, 'an empty pack has no button', what='empty button')
-    c.eq(norm(c.text('[data-pack=antarctique] [data-pack-empty]')), norm(_trow('no-zone', lang, after='emptyWhy: {')), 'and says why', what='empty reason')
+    c.eq(norm(c.text('[data-pack=antarctique] [data-pack-empty]')), norm(_trow('no-zone-no-source', lang, after='emptyWhy: {')), 'and says why', what='empty reason')
     # ---- a theme adds nothing by itself: its fold shows the zones, the ones outside the coverage can be added one by one
     c.eq(c.count('[data-pack=iles] [data-act=pack-add-zone]'), 1, 'the theme lists jp as the one zone to add (gb and es are covered)', what='theme add')
     cov0 = c.doc('cache/data/coverage.json')
@@ -4179,6 +4179,19 @@ def l45(c):
     _all_open(c)
     c.wait(500)
     c.eq(c.count('[data-packs]'), 0, 'an unreadable answer: no block', what='unreadable')
+    c.check_errors()
+
+
+@case('L46', 'Données: the shape agreed first for packs() ({ packs: [{ kind, … }] }) is still read, next to the one aerodb delivers ({ regions, themes })', 'L', tags=('data',),
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0065: the page reads both shapes — the contract proposed by Réglages and the one AeroDb.packs() gives; the kind of a pack comes from its list or its own field')
+def l46(c):
+    cfg, _ = _fixture()
+    cfg['packs'] = {'packs': [{'id': 'x', 'kind': 'region', 'names': ['Test', 'Test', 'Test', 'Test'], 'zones': ['fr']}, {'id': 'y', 'kind': 'theme', 'names': ['Thème', 'Theme', 'Thema', 'Tema'], 'zones': ['gb']}, {'id': 'z', 'kind': 'planet', 'names': ['?'], 'zones': ['fr']}]}
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.until("!!document.querySelector('[data-pack=x]')", timeout=12000, what='the agreed shape is drawn')
+    c.eq([c.js("[...document.querySelectorAll('[data-pack-regions] > li')].map(l => l.dataset.pack)"), c.js("[...document.querySelectorAll('[data-pack-themes] > li')].map(l => l.dataset.pack)")], [['x'], ['y']], 'the region and the theme; the pack of an unknown kind is dropped', what='both')
     c.check_errors()
 
 

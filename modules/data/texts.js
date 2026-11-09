@@ -291,6 +291,9 @@ export const TX = {
     ],
     emptyWhy: {
       'no-zone': ['aucune zone aujourd’hui', 'no zone today', 'heute keine Zone', 'ninguna zona hoy'],
+      'no-zone-no-source': ['aucune zone et aucune source aujourd’hui', 'no zone and no source today', 'heute weder Zone noch Quelle',
+        'hoy ni zona ni fuente'
+      ],
       'no-source': ['aucune source aujourd’hui', 'no source today', 'heute keine Quelle', 'ninguna fuente hoy'],
       unknown: ['vide', 'empty', 'leer', 'vacío']
     }

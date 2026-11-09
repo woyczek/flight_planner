@@ -353,7 +353,7 @@ bounded texts and numbers, hostile ids dropped) leaves the previous state and dr
 
 ### 5.10 Country packs (SOG-0065, V3_SPECIFICATION § 10.42)
 
-Packs come from aerodb: **`ctx.aerodb.packs()` → `{ packs: [{ id, kind: 'region' | 'theme', names: [fr, en, de, es], zones: [ids], partial?: [ids], empty?: 'reason-code', source?, date? }] }`** (the contract the page was written against; a field may be added, none removed). Read with `zones()` at each load (`M.packsOf`: ids `^[a-z0-9-]{1,40}$`, a closed list of kinds,
+Packs come from aerodb: **`await ctx.aerodb.packs()`** → `{ generated, source, regions: [pack], themes: [pack] }`, `pack = { id, names: [fr, en, de, es], zones: [ids], partial?: [ids], empty?: 'no-zone-no-source', basis }` (frame/aerodb/INTEGRATION.md « Country packs »; `null` when unreadable). The page was written first against `{ packs: [{ id, kind: 'region' | 'theme', … }] }`; **it reads both** (`packsOf`), the kind being the list (`regions` / `themes`) or the pack's own field (L46). Read with `zones()` at each load (`M.packsOf`: ids `^[a-z0-9-]{1,40}$`, a closed list of kinds,
 four bounded names, zone ids `^[a-z0-9]{2,8}$`, sixty packs at most, anything else dropped). **Without `packs()`, or with an unreadable answer, nothing is drawn** (no block, no empty title).
 
 - **Where**: in the Couverture card, under « Ajouter un pays » (`packs.js`, `packsHtml`): « Paquets de pays », then the region rows, then « Thèmes ». **A region row**: name, number of countries and size (sum of `publishedKb` of the zones the suite knows, « + » when one lacks), « n en partie » (`partial`), « n inconnue(s) de la suite, ignorée(s) », and **« Ajouter tout (n) »** (n = the known zones not yet in the coverage; grey and « Tout est dans la couverture » when none).

@@ -15,9 +15,15 @@ const text = (v, n = 60) => typeof v === 'string' ? v.replace(/[\p{Cc}\p{Zl}\p{Z
 const ids = v => [...new Set((Array.isArray(v) ? v : []).filter(z => typeof z === 'string' && ZONE_ID.test(z)))].slice(0, ZONES_MAX);
 /** Les paquets lus : [{ id, kind, names: [4 textes], zones, partial (inclus dans zones), empty ('' ou un code court), source, date }], les paquets d'une autre forme écartés, sans doublon d'identifiant ; [] sans réponse lisible. */
 export function packsOf(raw) {
-  const list = raw !== null && typeof raw === 'object' && Array.isArray(raw.packs) ? raw.packs : [],
+  // la forme que livre AeroDb.packs() : { regions: [paquet], themes: [paquet] } (le genre est la liste) ; la forme convenue { packs: [{ kind, … }] } est lue aussi
+  const o = raw !== null && typeof raw === 'object' ? raw : {},
+    tag = (list, kind) => (Array.isArray(list) ? list : []).map(p => p !== null && typeof p === 'object' ? {
+      ...p,
+      kind: kind || p.kind
+    } : p),
+    list = [...tag(o.regions, 'region'), ...tag(o.themes, 'theme'), ...tag(o.packs, '')],
     out = [];
-  for (const p of list.slice(0, PACKS_MAX * 2)) {
+  for (const p of list.slice(0, PACKS_MAX * 4)) {
     const id = typeof p?.id === 'string' && PACK_ID.test(p.id) ? p.id : '',
       kind = PACK_KINDS.includes(p?.kind) ? p.kind : '';
     if (!id || !kind || out.some(o => o.id === id) || out.length >= PACKS_MAX) continue;
