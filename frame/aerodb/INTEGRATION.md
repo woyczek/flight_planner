@@ -540,6 +540,28 @@ Size: about 100–300 kB per plan (the profile points and the RAD mentions weigh
 
 **`route/import-rad`** `{ dry?: true (default), books?: [{ name, size }] }`: like `base/pickup`. The **plan** (`dry`) reads the EUROCONTROL workbooks of Downloads that follow `RAD_<cycle>_v….xlsx` and `eurocontrol-airac-<cycle>-fra-points-….xlsx` and answers `{ files: [{ name, size, kind: 'rad' | 'fra', cycle, title? }], failed: [{ name, error }] }`, writing nothing; the **run** takes only the `books` the plan showed (a file that is no longer the one shown is refused: `failed` `'changed'`; no `books`: `reason: 'not-shown'`) and compiles them into `data/route/rad.json.gz` and `data/route/fra.json.gz` (the same cycle is replaced, the other cycles stay: compiled data are never purged), one commit by the page's author; `{ ok, dry, files, taken, failed, rad: [cycles], fra: [cycles], commit, reason? }`. The workbooks are not copied. **Licence**: EUROCONTROL Network Manager documents, use by the company, published in its private repository only (terms of reuse to be confirmed): the source is in the catalogue (`eurocontrol_rad`, the Données Sources card says so); the page says it before the run.
 
+**The form of the Fuel screen (`action`, 10 Nov 2026, request of Features SOG)**. When `args.action` is present, `route/compute` takes the screen's vocabulary and answers in the screen's shape (`tools/route_engine/view.py`); without `action` it is the engine's form above, unchanged (other callers). The request is closed in the same way (400 otherwise); FL is in hundreds of feet as above; `date` is **always sent**.
+
+| field | meaning |
+|---|---|
+| `action` | `'compute'` (A → B with the imposed passages `via`) or `'check'` (the typed `route` as it is) |
+| `adep`, `adest` | aerodromes (→ `dep`, `arr`) |
+| `fl` | cruise level (hundreds of ft) |
+| `rwyDep`, `rwyArr` | imposed runways (→ `dep_runway`, `arr_runway`; absent: the engine compares the connected procedures; the procedures are always on) |
+| `date` | ISO 8601 |
+| `via` | compute only: string[] (≤ 8) of ids, the **mandatory passages**, in order |
+| `route` | check only: the text typed (≤ 600), controlled as it is (the engine's `validate`) |
+| engine's fields | `radius`, `speed_kt`, `terminal_speed_kt`, `climb_fpm`, `descent_fpm`, `allow_levels`, `level_strategy`, `alternative_levels`, `alternatives`, `enable_fra` keep their meaning; `raw: true` adds the engine's own `plan` to the answer |
+
+Answer: `{ ok, alternatives, segments, issues, rad, fra, report, message, gaps, limitation }` (or `{ ok: false, reason, message }` as above):
+
+- `alternatives[≤ 3]` — compute: the proposed route first when it is accepted, then the engine's alternatives; check: **one** alternative, the typed route. Each: `{ id ('alt1'…), name, route (text), distanceNm, fl, profile: [{ nm, ft }] (thinned to ≤ 200 points), sid: { id, name, runway } | null, star: idem, faults, segments }`. `id` of `sid` / `star` is the AeroDB identifier of the procedure (`LFPO.SID.ELCOB2Q.RW24`); `faults` = the number of segments in error (or of engine errors when more); `name` is **built from the legs**: « Via N160 · A34 » (two airways at most), « Direct FRA », « Direct », followed by « · FL… » when the level differs from the one asked.
+- `segments` — those of the first alternative (the proposed or the typed route): `{ from, to, via ('DCT', an airway, a procedure token), state: 'ok' | 'error', reasons: [{ kind, text, ruleId?, deltaFt? }] }`. The `text` is the engine's own (French); `kind` is **read from that text**, nothing is invented: `RAD` (with `ruleId`: the rule of the book), `floor` / `ceiling` (profile under the floor / over the ceiling, `deltaFt` = the gap), `FRA`, `direction` (a one-way segment flown against its direction), `continuity` (not in AeroDB), and `altitude` for everything else (procedure constraint, level…).
+- `issues[≤ 300]` — `{ level: 'error' | 'review', text, kind? }` (the engine's `ERREUR` is `error`, everything else `review`). When the engine finds **no plan** (imposed passages impossible), `alternatives` is `[]` and the first issue says why.
+- `rad`, `fra`, `gaps`, `limitation`: as in the engine's form: **always show `limitation` with a plan**.
+
+**Deviation from the screen's spec** (to settle with Features SOG, nothing blocks): `check` makes the engine run **without** limiting the entered route (`via` is empty in validate mode: the engine's previous behaviour refused a typed route of more than 8 non-airway points, which a route typed by a pilot often is); the controlled route is the typed text.
+
 **What the engine reads**: `data/sia/base/*/<cycle>/{aeroindex, points, navaids, airways}.json` (every zone whose cycle is at most `date`: the airways of the zones that have none are absent from the network, said in `coverage`), `data/proc/manual/<ICAO>.json` and `data/proc/<cycle>/` (SID / STAR, `status: 'doubt'` excluded), `data/route/rad.json.gz` and `fra.json.gz`. Nothing is written by `route/compute`.
 
 ## 5. Costs to know (measured, see DECISIONS.md)

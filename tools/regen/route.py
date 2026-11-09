@@ -35,7 +35,10 @@ def _paths(data):
 def check_compute(a):
     """Contrôle d'arguments (→ 400 si None) : la demande fermée de route_engine.plan.check_request."""
     try:
-        from route_engine import plan
+        from route_engine import plan, view
+        if isinstance(a, dict) and 'action' in a:                      # la forme de l'écran de Carburant (route_engine/view.py) : validée par la demande du moteur qu'elle devient
+            plan.check_request(view.to_request(a))
+            return dict(a)
         return plan.check_request(a)
     except ValueError:
         return None
@@ -50,12 +53,17 @@ def compute(job, args, ctx):
     if not os.path.isfile(rad_file):
         return {'ok': False, 'reason': 'no-rad', 'message': 'no RAD imported on this workstation: import the EUROCONTROL RAD workbooks first (job route/import-rad)'}
     job.step('route : lecture de la base et calcul', 0, 1, 'calcul')
+    from route_engine import view
+    screen = 'action' in args                                          # la forme de l'écran de Carburant (view.py), sinon celle du moteur (plan.py)
     try:
-        res = plan.compute(args, data, rad_file, fra_file if os.path.isfile(fra_file) else None)
+        request = view.to_request(args) if screen else args
+        res = plan.compute(request, data, rad_file, fra_file if os.path.isfile(fra_file) else None)
     except ValueError as e:
         return {'ok': False, 'reason': 'invalid', 'message': regen_jobs.clean_error(str(e), ctx)[:300]}
     except (OSError, KeyError, TypeError, IndexError, ZeroDivisionError, AttributeError, RecursionError) as e:       # le moteur est une approximation de simulation : une donnée imprévue est dite, jamais une exception muette
         return {'ok': False, 'reason': 'failed', 'message': regen_jobs.clean_error(f'{type(e).__name__}: {e}', ctx)[:300]}
+    if screen:
+        return view.to_view(res, request, include_raw=bool(args.get('raw')))
     p = res['primary']
     rad = p.get('rad_source') or {}
     return {'ok': True, 'plan': res, 'rad': {'title': rad.get('title'), 'start': rad.get('start')} if rad else None, 'fra': {'start': (p.get('fra_source') or {}).get('start')} if p.get('fra_source') else None}

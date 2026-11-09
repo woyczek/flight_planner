@@ -11,6 +11,7 @@ Copied from `E:/DEFA/rad` (RouteSim 2, not versioned) so that the launcher can c
 
 **New, not RouteSim's**:
 
+- `view.py` — the answer in the shape of the Fuel screen (`action` compute / check → `alternatives`, `segments`, `issues`); the job uses it when `action` is present (SOG-0081, 10 Nov).
 - `plan.py` — `plan()` is the port of `server.plan()` (the calculation, the control and the alternatives; if the user changes `plan()` in `server.py`, the diff applies to it); `check_request` (the closed request), `bound_result` (the bounded answer), `compute` (what the job calls).
 - `import_books.py`, `xlsx.py` — the import of the EUROCONTROL workbooks (RAD, FRA points) into `data/route/rad.json.gz` and `fra.json.gz`, **standard library only** (no openpyxl). Checked against RouteSim 2's `import_rad.py` and its compiled files: the two RAD workbooks and the four FRA workbooks of `E:/DEFA/rad/sources` give exactly the same books (content equal, SHA-256 included).
 

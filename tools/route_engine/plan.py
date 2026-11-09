@@ -100,6 +100,8 @@ def plan(request, root):
                 nav.procedures.prepare(ad)
         procedure_names = {p['token'] for p in nav.procedures.items}
         request['via'] = [w for w in words if w != 'DCT' and w not in airways and w not in procedure_names]
+        if request.get('mode', 'calculate') == 'validate':
+            request['via'] = []        # SOG-0081 : le contrôle d'une route saisie n'impose aucun passage (ses points sont les extrémités de ses airways ; plus de 8 d'entre eux refusaient toute route longue)
     if request.get('mode', 'calculate') == 'calculate' and request.get('allow_levels', True):
         request.setdefault('level_strategy', 'adapt')
     try:

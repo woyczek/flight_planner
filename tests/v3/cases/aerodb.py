@@ -5079,6 +5079,56 @@ def k105(c):
         c.eq((a['ok'], b['ok'], {l['direction'] for l in a['legs'] if l['via'] == 'A1'}), (True, True, {text}), f'{direction or "no dir"}: both ways flown, the legs say « {text} »', what=f'both {direction}')
 
 
+@case('K106', 'Job route/compute in the form of the Fuel screen (SOG-0081): action compute / check, adep / adest / rwyDep / rwyArr, alternatives, segments with their reasons by kind, issues error / review', 'K', static=True,
+      rule='Features SOG (10 Nov 2026): the screen of Carburant asks route/compute with { action: compute | check, adep, adest, fl, rwyDep?, rwyArr?, date?, via | route } and reads { ok, alternatives [{ id, name, route, distanceNm, fl, profile, sid, star, faults, segments }], segments [{ from, to, via, state, reasons [{ kind, text, ruleId?, deltaFt? }] }], issues [{ level, text }] }; the engine\'s own form (plan) stays for the other callers')
+def k106(c):
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, view as V
+    check, fn = RJ.REGISTRY[('route', 'compute')][1], RJ.REGISTRY[('route', 'compute')][0]
+    base = {'action': 'compute', 'adep': 'LFPO', 'adest': 'EIDW', 'fl': 90, 'date': '2026-11-09T12:00', 'via': ['SITET', 'KEPAD'], 'enable_fra': False}
+    chk = {'action': 'check', 'adep': 'LFPO', 'adest': 'EIDW', 'fl': 90, 'date': '2026-11-09T12:00', 'route': 'LFPO DCT OLZOM A1 SITET A1 KEPAD A1 BOYNE DCT EIDW', 'enable_fra': False}
+    c.eq((check(base) == base, check(chk) == chk, check(dict(base, rwyDep='24', rwyArr='16')) is not None), (True, True, True), 'the screen\'s arguments are accepted as they are', what='accepted')
+    bad = [dict(base, action='x'), dict(base, route='LFPO X EIDW'), dict(chk, route=''), dict(chk, route=7), dict(base, adep='LF PO'), dict(base, dep='LFPO'), dict(base, root='/'), dict(base, fl='90'), dict(base, via=['A'] * 9), dict(base, rwyDep='24 24 24')]
+    c.eq([i for i, b in enumerate(bad) if check(b) is not None], [], 'an unknown action, compute with a route, check without one, a second vocabulary mixed in, a bad code, too many points: refused (400)', what='refused')
+    c.eq(V.to_request(base)['via'], ['SITET', 'KEPAD'], 'compute: the typed points are the imposed passages, in order', what='via')
+    r = V.to_request(dict(chk, rwyDep='24', rwyArr='16'))
+    c.eq((r['mode'], r['route'], r['dep_runway'], r['arr_runway'], r['use_procedures']), ('validate', chk['route'], '24', '16', True), 'check: the route as typed, the runways, the procedures on', what='check request')
+    c.eq([V.reason_of(t)['kind'] for t in ('Interdiction RAD LF9003', 'Profil minimum 8000 ft sous le plancher 9000 ft (écart 1000 ft).', 'Profil maximum 21424 ft au-dessus du plafond 8500 ft (écart 12924 ft).', 'LFPO : altitude prévue 5000 ft sous la contrainte procédure 6000 ft minimum.', 'Liaison FRA sans entrée', 'Sens interdit : A1 est à sens unique', 'Continuité absente dans AeroDB')],
+         ['RAD', 'floor', 'ceiling', 'altitude', 'FRA', 'direction', 'continuity'], 'the kind of a reason is read from the engine\'s text (RAD with its rule id, floor and ceiling with their gap in feet, altitude by default)', what='kinds')
+    c.eq((V.reason_of('Interdiction RAD LF9003')['ruleId'], V.reason_of('Profil maximum 21424 ft au-dessus du plafond 8500 ft (écart 12924 ft).')['deltaFt']), ('LF9003', 12924), 'the rule id and the gap', what='ids')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets(True))
+        I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+        ctx = {'data': data, 'secrets': td}
+        run = lambda a: fn(RJ.Job('route', 'compute', {}, author='TST'), a, ctx)
+        r = run(chk)                                    # the typed route runs through SITET to KEPAD, which a RAD rule forbids
+        a = r['alternatives'][0]
+        c.eq((r['ok'], len(r['alternatives']), a['route'], a['name'], a['fl'], a['sid'], a['star']), (True, 1, chk['route'], 'Via A1', 90, None, None), 'check: ONE alternative, the typed route, short name « Via A1 », no procedure in this base', what='check alt')
+        bad_seg = [s for s in r['segments'] if s['state'] == 'error']
+        c.eq(([(s['from'], s['to'], s['via']) for s in bad_seg], bad_seg[0]['reasons'][0]['kind'], bad_seg[0]['reasons'][0]['ruleId'], a['faults'], r['segments'] == a['segments']), ([('SITET', 'KEPAD', 'A1')], 'RAD', 'LF9003', 1, True),
+             'the segment SITET-KEPAD is the one in error, reason RAD with its rule id; faults = 1; the top-level segments are the alternative\'s', what='segments')
+        c.ok(any(i['level'] == 'error' and 'LF9003' in i['text'] for i in r['issues']) and r['rad']['start'] == '2026-10-29', str(r['issues'][:2]), 'issues: level error with the RAD rule; the RAD book is named')
+        c.eq([s['state'] for s in r['segments'] if (s['from'], s['to']) != ('SITET', 'KEPAD')], ['ok'] * 4, 'the other segments are ok', what='ok segments')
+        rad2 = os.path.join(td, 'RAD_2612_v1_0.xlsx')           # the same book without the forbidden segment: the route can be calculated
+        RF.write_xlsx(rad2, RF.rad_sheets())
+        I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad2)[1]]))
+        r = run(dict(base, via=['OLZOM']))
+        c.eq((r['ok'], len(r['alternatives']), r['alternatives'][0]['route'], r['alternatives'][0]['faults'], r['alternatives'][0]['profile'][0]), (True, 1, 'LFPO DCT OLZOM A1 BOYNE DCT EIDW', 0, {'nm': 0.0, 'ft': 291}), 'compute: the calculated route, no fault, the profile starts at the departure\'s elevation', what='compute')
+        r = run(dict(base, raw=True, via=['OLZOM']))
+        c.ok('plan' in r and r['plan']['primary']['route'] == 'LFPO DCT OLZOM A1 BOYNE DCT EIDW', '', 'the engine\'s own plan is given only on request (raw: true)')
+        I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+        r = run(base)                                   # SITET to KEPAD forbidden by the RAD: no plan, the imposed passages are not removed
+        c.eq((r['ok'], r['alternatives'], [i['level'] for i in r['issues']][:1], 'supprimé' in r['issues'][0]['text']), (True, [], ['error'], True), 'compute with a RAD rule on an imposed passage: no alternative, one error that says the passage was not removed', what='impossible')
+    c.eq(len(V.thin([{'distance_nm': i, 'altitude_ft': i} for i in range(1000)])) <= 201, True, 'the profile is thinned to about 200 points', what='thin')
+
+
 @case('K65', 'Build job: a zone shows a count of sources only when the builder gives one for it; the build\'s count goes once in the job', 'K', static=True,
       rule='Réglages 1 Nov 2026 (the user saw « construction (90 / 90 sources) » on all 26 zones): the builder\'s counts are global; a zone gets done / total only from a count of its own; job.data inputs = { done, total } once')
 def k65(c):
