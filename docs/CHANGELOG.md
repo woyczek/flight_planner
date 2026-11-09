@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: without a RAD, the Route step leads to Data** (`modules/fuel/module.js`; Fuel SPEC § 9.3, INTEGRATION, DECISIONS, help;
+  noreg F110; SOG-0125). « Aucun RAD importé » and a link to the RAD's line in Maintenance › Données, where it is imported; never an
+  import from Fuel, and no longer the launcher's message naming a job.
 - **Mission categories: the common base and the reader of `categories.json`** (`frame/lib/mission_categories.js`, bench `frame/lib/test/mission_categories.html`; § 10.38; Settings DECISIONS; A104) — SOG-0041:
   `commercial` (cargo, passengers, VIP, training, transit, test flights, positioning) and `virtuel` (the airline's own) by default, the commercial group active only for a « va » airline and the personal one,
   the file of an airline filtered as untrusted input. The Missions and Report readers are Features SOG's.

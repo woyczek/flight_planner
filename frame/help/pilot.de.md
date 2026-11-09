@@ -101,7 +101,7 @@ man nach ICAO-Art („4530N00030E“). Die nächste Zeile gibt Entfernung und re
 eingestellter SimBrief-ID (⚙) übernimmt „Letzter SimBrief-OFP“ Route, Flugfläche, mittleren Wind und Luftfahrzeug Ihres
 letzten Plans auf einmal.
 
-**Route berechnen und prüfen.** An einem Arbeitsplatz, dessen Launcher die Routenberechnung trägt, erscheinen unter dem Feld zwei Schaltflächen: „A → B berechnen“ schlägt Routen von einem Flugplatz zum anderen vor (die getippten Punkte sind vorgeschriebene Überflüge), mit Länge, gehaltener Flugfläche und Anzahl der Regelabweichungen; „Übernehmen“ schreibt Route, SID und STAR der gewählten Route. „Prüfen“ analysiert die getippte Route so, wie sie ist: fehlerhafte Abschnitte werden in der Punkteliste rot, mit ihrem Grund (RAD, FRA, Untergrenze, Obergrenze …), und ihre Anzahl erscheint in der Ergebnisleiste. Ihre Eingabe wird nie ohne „Übernehmen“ ersetzt. Es ist eine Simulations-Vorprüfung, keine IFPS-Validierung.
+**Route berechnen und prüfen.** An einem Arbeitsplatz, dessen Launcher die Routenberechnung trägt, erscheinen unter dem Feld zwei Schaltflächen: „A → B berechnen“ schlägt Routen von einem Flugplatz zum anderen vor (die getippten Punkte sind vorgeschriebene Überflüge), mit Länge, gehaltener Flugfläche und Anzahl der Regelabweichungen; „Übernehmen“ schreibt Route, SID und STAR der gewählten Route. „Prüfen“ analysiert die getippte Route so, wie sie ist: fehlerhafte Abschnitte werden in der Punkteliste rot, mit ihrem Grund (RAD, FRA, Untergrenze, Obergrenze …), und ihre Anzahl erscheint in der Ergebnisleiste. Ihre Eingabe wird nie ohne „Übernehmen“ ersetzt. Ist auf dem Arbeitsplatz kein RAD importiert, führt ein Link zu seiner Zeile in Daten, um es zu importieren. Es ist eine Simulations-Vorprüfung, keine IFPS-Validierung.
 
 Die Schaltfläche „Auto“ neben dem Feld „Route“ trägt die Luftstraßen zwischen den Punkten ein: Für jedes Paar benannter
 Punkte, die ohne Luftstraße aufeinander folgen, sucht sie den kürzesten Weg über die Luftstraßen der veröffentlichten
@@ -256,7 +256,7 @@ Datenblättern ändert sich nichts.
   Schlüssel sagt es die Karte, und das METAR antwortet stattdessen. Die Wetterkarte sagt, woher die Meldungen stammen.
   Ganz ohne Netz zeigt sie das zuletzt gespeicherte Wetter mit seiner Uhrzeit.
 
-<!-- fr: 3ec34b121ffc -->
+<!-- fr: c863bf3040d6 -->
 
 <!-- chapter: maps -->
 # Karte

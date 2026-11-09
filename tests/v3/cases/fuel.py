@@ -2828,7 +2828,7 @@ def _route_launcher(c, verbs):
     answers in the form of the Fuel screen: a computed route and two alternatives to `compute`, two faulty segments to `check`; the posted
     bodies are kept."""
     import urllib.parse
-    st = {'posts': [], 'verbs': verbs}
+    st = {'posts': [], 'verbs': verbs, 'norad': False}
     alts = [_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 270, [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]),
             _alt(2, 'Direct · FL250', 'LFRS NTS1A NEPIX MEN1A LFML', 365, 250, [_seg('LFRS', 'NEPIX'), _seg('NEPIX', 'LFML')]),
             _alt(3, 'Direct · FL190', 'LFRS LUGEN LFML', 380, 190, [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'LFML', {'kind': 'ceiling', 'text': 'plafond 19500 ft', 'deltaFt': 500})],
@@ -2852,7 +2852,8 @@ def _route_launcher(c, verbs):
             body = {'job': 'j' + str(len(st['posts']))}
         elif u.path.endswith('/__setup/regen/job'):
             a = (st['posts'][-1].get('args') or {}) if st['posts'] else {}
-            res = dict(common, ok=True, alternatives=alts, segments=alts[0]['segments'], issues=[], message='2 alternative(s).') if a.get('action') == 'compute' else \
+            res = {'ok': False, 'reason': 'no-rad', 'message': 'no RAD imported on this workstation: import the EUROCONTROL RAD workbooks first (job route/import-rad)'} \
+                if st['norad'] else dict(common, ok=True, alternatives=alts, segments=alts[0]['segments'], issues=[], message='2 alternative(s).') if a.get('action') == 'compute' else \
                 dict(common, ok=True, alternatives=[checked], segments=checked['segments'], issues=[{'level': 'error', 'text': 'RAD LF9999', 'kind': 'RAD'}], message='')
             body = {'id': 'j' + str(len(st['posts'])), 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': '', 'log': [], 'result': res}
         route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
@@ -2900,3 +2901,21 @@ def f109(c):
     open_proc(c)
     c.settle()
     c.eq(c.count(f'{FUEL} [data-reng]:not([hidden])'), 0, 'no job route/compute: no buttons', what='no launcher job')
+
+
+@case('F110', 'Route step without a RAD on the workstation: « Aucun RAD importé » and a link to its line in Data, never an import from Fuel',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0125 (user: « je ne trouve pas où importer les classeurs RAD »): the RAD is a data source like the others; route/compute\'s no-rad '
+      'leads to its line of Data (Maintenance, source eurocontrol_rad); the launcher\'s message, which names a job, is not shown; a fake launcher')
+def f110(c):
+    st = _route_launcher(c, ['route/compute'])
+    st['norad'] = True
+    open_proc(c)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons (the launcher has the job)')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"!!document.querySelector('{FUEL} [data-rrefused=\"no-rad\"]')", what='the no-rad sentence')
+    href = c.js(f"document.querySelector('{FUEL} [data-rrefused=\"no-rad\"] a[data-radlink]')?.getAttribute('href') || ''")
+    c.eq(href, '?app=maintenance#data?source=eurocontrol_rad', 'a link to the RAD line of Data', what='link')
+    said = c.js(f"document.querySelector('{FUEL} [data-routealts]').textContent")
+    c.ok('route/import-rad' not in said and 'EUROCONTROL RAD workbooks' not in said, said, 'the launcher\'s message (a job name) not shown')
+    c.eq(c.count(f'{FUEL} [data-routealts] button'), 0, 'no import button in Fuel', what='no import from Fuel')

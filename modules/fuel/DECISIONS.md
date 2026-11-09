@@ -1444,3 +1444,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   against it (K106), instead of guessed by the page from the same texts; `normalize` only bounds. One mapping, on the side that knows
   the texts. F109's fake launcher answers in that form; counter-test on 4c04527ab (the engine's form): « two faulty segments red »
   never true.
+- **9 Nov 2026 — no RAD: a link to Data, not an import in Fuel** (SOG-0125): the RAD and the FRA points are a data source like the
+  others, imported where the others are (Maintenance › Données). Fuel says « Aucun RAD importé » with a link whose address names the
+  source by its catalogue id (`source=eurocontrol_rad`), so that the Data screen, not Fuel, decides where its line is. The launcher's
+  English message (« … (job route/import-rad) ») is not shown: it names a job, not a place. F110; counter-test on ffafaade4: no link.

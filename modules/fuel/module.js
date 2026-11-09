@@ -214,11 +214,8 @@ const TX = {
   rLimits: ['Ce que le contrôle ne couvre pas', 'What the check does not cover', 'Was die Prüfung nicht abdeckt',
     'Lo que la comprobación no cubre'
   ],
-  rNoRad: ['Aucun RAD importé sur ce poste : importez-le dans Maintenance › Données.',
-    'No RAD imported on this workstation: import it in Maintenance › Data.',
-    'Kein RAD auf diesem Arbeitsplatz importiert: in Wartung › Daten importieren.',
-    'Ningún RAD importado en este puesto: impórtelo en Mantenimiento › Datos.'
-  ],
+  rNoRad: ['Aucun RAD importé', 'No RAD imported', 'Kein RAD importiert', 'Ningún RAD importado'],
+  rNoRadGo: ['Importer dans Données', 'Import in Data', 'In Daten importieren', 'Importar en Datos'],
   rFail: ['Le calcul de route n’a pas répondu.', 'The route computation did not answer.', 'Die Routenberechnung hat nicht geantwortet.',
     'El cálculo de ruta no ha respondido.'
   ],
@@ -3050,7 +3047,10 @@ async function routeAsk(action) {
   }
   const n = RE.normalize(res, act);
   if (!n.ok) {
-    if (box) box.innerHTML = `<p class="f-warn" data-rrefused="${esc(n.reason)}">${esc(n.message || tt(n.reason === 'no-rad' ? TX.rNoRad : TX.rFail))}${n.reason === 'no-rad' ? ` ${esc(tt(TX.rNoRad))}` : ''}</p>`;
+    // SOG-0125 : sans RAD, la phrase et le lien vers sa ligne de Données (l'import se fait là, jamais depuis Carburant) ; le message du
+    // lanceur, qui nomme un travail, n'est pas montré au pilote
+    if (box) box.innerHTML = n.reason === 'no-rad' ? `<p class="f-warn" data-rrefused="no-rad">${esc(tt(TX.rNoRad))} · <a href="${RAD_DATA_HREF}" data-radlink>${esc(tt(TX.rNoRadGo))}</a></p>` :
+      `<p class="f-warn" data-rrefused="${esc(n.reason)}">${esc(n.message || tt(TX.rFail))}</p>`;
     return;
   }
   if (act === 'check') {
@@ -3072,6 +3072,8 @@ async function routeAsk(action) {
   };
   routeAltsDraw();
 }
+/** La ligne du RAD dans Données (application Maintenance, source eurocontrol_rad du catalogue d'AeroDB) : le lien du « no-rad ». */
+const RAD_DATA_HREF = '?app=maintenance#data?source=eurocontrol_rad';
 /** Ce que le contrôle ne couvre pas (le contrat le demande : « aucune incompatibilité » ne vaut que pour ce qui est contrôlé) : la phrase
  *  du moteur et ses domaines hors contrôle, repliés. */
 const limitsHtml = n => n.limitation || n.gaps.length ? `<details class="fu-rlimits" data-rlimits><summary class="f-muted">${esc(tt(TX.rLimits))}</summary>${n.limitation ? `<p class="f-muted">${esc(n.limitation)}</p>` : ''}${n.gaps.map(g => `<p class="f-muted"><b>${esc(g.name)}</b> ${esc(g.reason)}</p>`).join('')}</details>` : '';

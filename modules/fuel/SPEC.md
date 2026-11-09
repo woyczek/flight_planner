@@ -232,7 +232,9 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
   is (action `check`). The request is the closed one of the form of the Fuel screen (`RE.request`); the answer is untrusted input
   (`normalize`: three routes at most, each named by the launcher from its airways, texts and numbers bounded, the reasons' kinds taken
   from the contract's list, procedure ids by shape). A refusal of the engine is said with its sentence
-  (`invalid`), or asks to import the RAD (`no-rad`); what the check does not cover (`limitation`, `gaps`) is a fold under the result. The routes are a list
+  (`invalid`); without a RAD on the workstation (`no-rad`), « Aucun RAD importé » and a link to the RAD's line of Data (Maintenance,
+  `?app=maintenance#data?source=eurocontrol_rad`; SOG-0125, F110): the import is done there, never from Fuel, and the launcher's
+  message, which names a job, is not shown; what the check does not cover (`limitation`, `gaps`) is a fold under the result. The routes are a list
   under the route field — name, length, FL kept, deviations (count) — each with « Prendre », the taken one marked: « Prendre » writes
   the route text through the field's own input (the one path of a typing, SOG-0013) and proposes its SID and STAR to the procedures
   (`propose`: checked against the aerodrome's records, nothing unknown written). The pilot's typing is never replaced without that
