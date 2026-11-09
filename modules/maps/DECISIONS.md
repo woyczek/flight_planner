@@ -1992,8 +1992,13 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Seen on the real drawing** (LFPO, 6 Nov, the Map at zoom 15 and 16): the first list showed « L1 » three times (one taxiway, several OSM
   ways): one row per kind and name now, the row's id is `g:<kind>:<name>`, highlighting and « see » take every piece; the layer's
   attribution sits above the base map's own (same corner, they overlapped).
-- **Not done**: runway rows depend on the threshold vectors being drawn (zoom at or above `runwayZoom`): a view without them lists
-  none; on a phone there is no hover, the touch highlights and frames at once; « Done » closes the panel only (the layer stays drawn).
+- **Runway rows (9 Nov, the leftover of this lot)**: they came from the threshold vectors drawn, so a view below `runwayZoom` listed none.
+  They now come from the sheets of the panel's aerodrome (`S.runways`, read with the flight; `wantRunways` asks for them when the panel
+  opens and the list is redrawn on arrival), a sheet without a position gives no row; the highlight is `runwayVector` (the same vector as
+  the threshold arrows, computed on demand); « see » frames the threshold. Seen on a phone (390 px, the harness's touch context): a
+  highlighted taxiway hid its own names (drawn after them), now drawn under them; rows 44 px high on a touch screen; the attribution
+  is readable above the base map's. Noreg D115.
+- **Not done**: on a phone there is no hover, the touch highlights and frames at once; « Done » closes the panel only (the layer stays drawn).
 - **Noreg** D112 (by zoom, by AeroDB, by the flight's aerodromes), D113 (filter, chips, highlight from the list, touch on the map,
   « not drawn »), D114 (cost under 16 ms, the light drawing's lines). The fixture `tests/v3/fixtures/ground_LFPO.json` is made from
   OSM data (595 items); the noreg never reads the public instance.

@@ -572,7 +572,7 @@ function draw() {
     // couche « Procédures » : le niveau de couverture des terrains visibles (null : couche cachée ou absente)
     cov = mission || pick ? null : covSync(),
     // couche « sol » (§ 10.40) : voies, postes et attentes du départ et de l'arrivée, de près ; les pistes surlignées sont celles déjà tracées
-    gnd = mission || pick ? null : groundLayout(toC, zReal, W, H, rwys);
+    gnd = mission || pick ? null : groundLayout(toC, zReal, W, H);
   if (S.tuneEl) got('tune')?.markTune(zReal, zv, (shown.n + shown.s) / 2, W, H);
   // nos villes dessinées à ce zoom : les noms de lieux du fond s'effacent (sinon « Mérignac » en double)
   baseNames(!!S.profile?.cities && !!S.data?.data?.cities?.length && ['citiesBig', 'citiesMid', 'citiesSmall'].some(zoomOn));

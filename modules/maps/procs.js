@@ -708,6 +708,28 @@ export function runwayArrows(toC, zoom) {
   }
   return out;
 }
+/** Les pistes d'un terrain pour la liste du sol : [{ name }] des fiches de S.runways (lues avec le vol) qui ont une position, sans dépendre
+ *  des vecteurs de seuil dessinés ni du zoom. */
+export const runwaysOf = icao => (S.runways?.get(String(icao || '').toUpperCase()) || []).filter(rw => num(rw?.lat) && num(rw?.lon) && rwNo(
+  rw.id)).map(rw => ({
+  name: rwNo(rw.id)
+}));
+/** Le vecteur de seuil de la piste `name` du terrain `icao`, calculé à la demande de la fiche (le surlignement ne dépend pas de
+ *  runwayZoom) ; null sans fiche, sans position ni relèvement. */
+export function runwayVector(toC, icao, name, col) {
+  const k = String(icao || '').toUpperCase(),
+    list = S.runways?.get(k) || [],
+    rw = list.find(r => rwNo(r.id) === name);
+  return rw ? arrowOf(toC, rw, list, magVarOf(k), col) : null;
+}
+/** La position d'un seuil (lat, lon) de la piste `name` du terrain `icao` : { lat, lon } ou null. */
+export function runwayPoint(icao, name) {
+  const rw = (S.runways?.get(String(icao || '').toUpperCase()) || []).find(r => rwNo(r.id) === name);
+  return rw && num(rw.lat) && num(rw.lon) ? {
+    lat: +rw.lat,
+    lon: +rw.lon
+  } : null;
+}
 /** Les pistes des terrains : une seule réserve, S.runways (Map OACI → fiches d'aerodb ; undefined : demandée, [] : rien), un seul
  *  chemin (refonte R-M4) : les codes pas encore demandés partent à aerodb en un lot, la carte est redessinée à l'arrivée du lot. */
 export function wantRunways(icaos) {
@@ -717,7 +739,7 @@ export function wantRunways(icaos) {
     ask = [...new Set((icaos || []).map(i => String(i || '').toUpperCase()).filter(i => /^[A-Z0-9]{4}$/.test(i) && !M.has(i)))];
   if (!ask.length) return;
   for (const i of ask) M.set(i, undefined);
-  Promise.all(ask.map(i => Promise.resolve().then(() => A.runways(i)).then(l => [i, l || []], () => [i, []]))).then(got => {
+  return Promise.all(ask.map(i => Promise.resolve().then(() => A.runways(i)).then(l => [i, l || []], () => [i, []]))).then(got => {
     if (!S || S.runways !== M) return;
     for (const [i, l] of got) M.set(i, l);
     schedule();

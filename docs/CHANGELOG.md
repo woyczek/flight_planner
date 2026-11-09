@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map, ground layer: the runways are listed from the aerodrome's sheets** (`modules/maps/ground.js`, `procs.js`, `style.js`; SPEC § 5.2;
+  noreg D115; SOG-0046 leftovers). The « Ground » panel listed a runway only when its threshold vector was drawn (zoom at or above
+  `runwayZoom`); it now lists the sheets' runways at any zoom, a row highlights its runway and frames its threshold. Seen on a phone: a
+  highlighted taxiway no longer hides its own names, the rows are 44 px high on a touch screen.
+
 - **Frame: `ctx.airline` follows the current airline** (`frame/app.js` `loadAirline`, `frame/store/frame_data.js`; frame INTEGRATION, DECISIONS;
   noreg A94, A53; V3_SPECIFICATION § 10.38 step 1). The name, site, relay, networks and logo are read from `FrameData.airline()` and follow
   `frame-data-airline` with no reload; the logo stays a checked png / webp and is taken only in the airline's own folder; without an index

@@ -3319,3 +3319,44 @@ def d114(c):
     light = c.js("""() => { const g = document.createElement('canvas').getContext('2d'); let n = 0; const o = g.stroke.bind(g); g.stroke = () => { n++; return o() };
       return import('/modules/maps/ground.js').then(G => { G.groundLight(g, ll => ({ x: 400 + (ll.lng - 2.3794) * 20000, y: 300 - (ll.lat - 48.7233) * 30000 }), 15); return n }) }""")
     c.ok(light > 100, f'{light} strokes', 'the light drawing strokes the taxiway lines (nothing else, no names)')
+
+
+@case('D115', 'Ground panel: the runways are listed from the aerodrome’s sheets, not from the threshold vectors drawn; a runway row highlights and frames', 'D',
+      tags=('maps',), designs=('standard',), night=False, phone=False,
+      rule='V3 spec 10.40 (SOG-0046 leftovers): the runway rows come from S.runways of the panel’s aerodrome (a sheet with a position), whatever the zoom or runwayZoom; the highlight of a runway row is computed from its sheet (runwayVector), « see » frames its threshold at zoom 16 or more')
+def d115(c):
+    _ground_open(c)
+    # two runways with a position and one without: the sheets of LFPO as AeroDB would give them; the threshold vectors never show (runwayZoom 16)
+    c.js("""() => { const S = window.__mp.S; S.runwayZoom = 16;
+      S.runways.set('LFPO', [{ id: '02', lat: 48.7167, lon: 2.3665, qfu: 20 }, { id: '20', lat: 48.7302, lon: 2.3733, qfu: 200 }, { id: 'XX' }]); return true }""")
+    _ground_at(c, 15, 1500)
+    c.js("async () => { const V = await import('/modules/maps/vfr.js'); V.pinAd({ icao: 'LFPO', name: 'LFPO TEST', lat: 48.7233, lon: 2.3794 }) }")
+    c.until("() => !!document.querySelector('.mp-ad-ground')", timeout=8000, what='the aerodrome card offers the ground list')
+    c.tap('.mp-ad-ground')
+    c.until("() => window.__mp.S.dpanel === 'ground'", timeout=6000, what='the ground panel opens')
+    c.until("() => document.querySelectorAll('.mp-gd-row').length > 10", timeout=6000, what='rows listed')
+    rw = c.js("() => [...document.querySelectorAll('.mp-gd-row[data-kind=rwy]')].map(b => b.dataset.id)")
+    c.eq(rw, ['rwy:02', 'rwy:20'], 'the runways of the sheets are listed (the one without a position is not), first', what='runway rows')
+    first = c.js("() => document.querySelector('.mp-gd-row').dataset.kind")
+    c.eq(first, 'rwy', 'runways come before the taxiways', what='first row')
+    c.eq(c.js("() => window.__mp.S.runwayZoom"), 16, 'no threshold vector is drawn at this zoom (the rows do not come from them)', what='runwayZoom')
+    # the highlight of a runway row is drawn from its sheet: a 3.5 px accent line, the spy counts it
+    c.js("""() => { const S = window.__mp.S, t = document.createElement('canvas').getContext('2d'); t.strokeStyle = S.theme.accent; window.__acc = t.strokeStyle; window.__n = 0;
+      const o = CanvasRenderingContext2D.prototype.stroke; CanvasRenderingContext2D.prototype.stroke = function () { if (this.lineWidth === 3.5 && this.strokeStyle === window.__acc) window.__n++; return o.apply(this, arguments) }; window.__oStroke = o; return true }""")
+    c.js("() => { window.__n = 0; return true }")
+    c.js("() => { const b = document.querySelector('.mp-gd-row[data-id=\"rwy:02\"]'); b.dispatchEvent(new PointerEvent('pointerover', { bubbles: true })); return true }")
+    c.wait(700)
+    c.eq(c.js("() => window.__mp.S.ground.hl"), 'rwy:02', 'hovering the runway row highlights it', what='hl')
+    n = c.js("() => window.__n")
+    c.ok(n >= 1, f'{n} accent strokes', 'the runway is drawn highlighted without any threshold vector on the map')
+    c.js("() => { CanvasRenderingContext2D.prototype.stroke = window.__oStroke; return true }")
+    # a touch on the row frames the threshold
+    c.tap('.mp-gd-row[data-id="rwy:20"]')
+    c.wait(700)
+    v = c.js("() => { const m = window.__mpMap, c = m.getCenter(); return { z: m.getZoom(), lat: c.lat, lon: c.lng } }")
+    c.ok(v['z'] >= 15.9 and abs(v['lat'] - 48.7302) < .002 and abs(v['lon'] - 2.3733) < .003, f'{v}', 'a touch on a runway row frames its threshold at zoom 16 or more')
+    # the filter keeps the runways whose name matches
+    c.page.fill('.mp-gd-q', '20')
+    c.wait(300)
+    names = c.js("() => [...document.querySelectorAll('.mp-gd-row')].map(b => b.dataset.id)")
+    c.ok(names and names[0] == 'rwy:20', str(names), 'the filter finds the runway by its number')

@@ -577,12 +577,14 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
   figures are the conservative ones): noreg D114 asserts a median under 16 ms.
 - **The panel** (`openData('ground', 'ground:<ICAO>')`, copied from `choose`): a button « Ground » on the aerodrome card of the departure and
   the arrival (only when `ground()` exists); a filter field (sub-string, no case, no accent), chips Taxiways / Stands / Holds, one row per
-  kind and name (OpenStreetMap cuts a taxiway into several ways: the row stands for all of them and highlights them together; runways first
-  when drawn, then by kind and name, 40 rows at most then « n more: narrow the filter »), the mark « not drawn »
+  kind and name (OpenStreetMap cuts a taxiway into several ways: the row stands for all of them and highlights them together; the aerodrome's runways first
+  — read from its sheets, `S.runways`, whatever the zoom —, then by kind and name, 40 rows at most then « n more: narrow the filter »), the mark « not drawn »
   on the rows whose name found no place, « Done ». Hover or focus of a row calls `setGroundHl(id)` (the map redraws with it highlighted);
   a touch on a row highlights it and frames it (`fitBounds` of the line, `easeTo` zoom 17 of the point); from the map, a touch within 6 px
   of a line or a point (`groundAt` / `groundTap`, the hit list `S.ground.hits`) highlights the element and opens its row. A runway row
-  highlights the threshold vector already drawn (no new drawing). Noreg D112 (layer by zoom and by AeroDB), D113 (panel), D114 (cost).
+  highlights its threshold vector computed from its sheet (`runwayVector`, not the vectors drawn: it does not depend on `runwayZoom`) and « see »
+  frames its threshold at zoom 16 or more. On a touch screen the rows are 44 px high; a highlighted taxiway is drawn under its names.
+  Noreg D112 (layer by zoom and by AeroDB), D113 (panel), D114 (cost), D115 (runway rows).
 
 ## 6. Map contents
 

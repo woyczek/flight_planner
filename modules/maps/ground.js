@@ -25,6 +25,12 @@ import {
 import {
   schedule
 } from './draw.js';
+import {
+  runwaysOf,
+  runwayVector,
+  runwayPoint,
+  wantRunways
+} from './procs.js';
 
 export const Z_LINE = 14,
   Z_NAME = 15,
@@ -144,8 +150,8 @@ const stroke = (c, pts, w, col) => {
 };
 const inside = (pts, W, H) => pts.some(p => p.x > -40 && p.x < W + 40 && p.y > -40 && p.y < H + 40);
 /** La couche de ce dessin : { paint(c, pl), shown } ou null (pas de terrain du vol, zoom trop petit, rien de lu). toC : (lat, lon) → { x, y }
- *  de la vue ; rwys : les vecteurs de seuil déjà tracés (le surlignement d'une piste n'est pas un nouveau dessin). */
-export function groundLayout(toC, zReal, W, H, rwys = []) {
+ *  de la vue. Le surlignement d'une piste se calcule de sa fiche (runwayVector), pas des vecteurs tracés : il ne dépend pas de runwayZoom. */
+export function groundLayout(toC, zReal, W, H) {
   if (!groundIcaos().length) { // pas de terrain du vol, ou AeroDB ne sait pas donner le sol : ni couche ni état
     if (S.ground) { // (les touchers et les marques ne gardent pas l'image d'avant : la liste se remplace à la fin de chaque dessin)
       S.ground.hits = [];
@@ -168,7 +174,6 @@ export function groundLayout(toC, zReal, W, H, rwys = []) {
       icao
     })));
   }
-  g.rwys = rwys;
   if (!items.length && !(g.hl || '').startsWith('rwy:')) return null;
   const dark = !!S.theme?.dark,
     col = dark ? 'rgba(225,225,225,.85)' : 'rgba(60,60,60,.85)',
@@ -207,6 +212,11 @@ export function groundLayout(toC, zReal, W, H, rwys = []) {
           c.fillRect(p.x - 2, p.y - 2, 4, 4);
           c.globalAlpha = 1;
         }
+      // la voie surlignée sous ses noms (vu sur téléphone : le trait épais cachait « L1 » dessiné avant lui)
+      for (const h of shown.filter(s => s.it.kind === 'twy' && grpOf(s.it) === hl)) {
+        stroke(c, h.pts, 6, halo);
+        stroke(c, h.pts, 3.5, S.theme.accent);
+      }
       // les noms : une demande par élément (rang « ground » de la passe de collision), trois places le long d'une voie
       c.font = '10.5px system-ui, sans-serif';
       c.textBaseline = 'middle';
@@ -245,20 +255,15 @@ export function groundLayout(toC, zReal, W, H, rwys = []) {
             c.fillText(it.name, (got.x0 + got.x1) / 2 - w / 2 + 2, (got.y0 + got.y1) / 2);
           }
         }
-      // l'élément surligné, par-dessus tout : plus épais, teinte d'accent
-      for (const h of shown.filter(s => grpOf(s.it) === hl)) {
-        if (h.it.kind === 'twy') {
-          stroke(c, h.pts, 6, halo);
-          stroke(c, h.pts, 3.5, S.theme.accent);
-        } else {
-          c.beginPath();
-          c.arc(h.pts[0].x, h.pts[0].y, 7, 0, Math.PI * 2);
-          c.lineWidth = 3;
-          c.strokeStyle = S.theme.accent;
-          c.stroke();
-        }
+      // le poste ou l'attente surlignés, par-dessus (un anneau d'accent) ; la voie l'a été sous ses noms
+      for (const h of shown.filter(s => s.it.kind !== 'twy' && grpOf(s.it) === hl)) {
+        c.beginPath();
+        c.arc(h.pts[0].x, h.pts[0].y, 7, 0, Math.PI * 2);
+        c.lineWidth = 3;
+        c.strokeStyle = S.theme.accent;
+        c.stroke();
       }
-      const rw = hl?.startsWith('rwy:') ? (g.rwys || []).find(w => `rwy:${w.name}` === hl) : null;
+      const rw = hl?.startsWith('rwy:') ? runwayVector(toC, g.icao, hl.slice(4), S.theme.accent) : null;
       if (rw) {
         stroke(c, [rw.a, rw.b], 6, halo);
         stroke(c, [rw.a, rw.b], 3.5, S.theme.accent);
@@ -349,10 +354,10 @@ const rowsOf = icao => {
     rec = recOf(icao),
     q = fold(g.q),
     rows = [];
-  for (const w of g.rwys || []) rows.push({
+  for (const w of runwaysOf(icao)) rows.push({ // les pistes de la fiche du terrain (pas celles qu'on voit tracées)
     id: `rwy:${w.name}`,
     kind: 'rwy',
-    name: String(w.name)
+    name: w.name
   });
   // les pistes d'abord, puis les voies, les postes, les attentes ; dans chaque nature, par nom (« A1 » avant « A10 »)
   const nat = (a, b) => KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind) || a.name.localeCompare(b.name, 'en', {
@@ -412,6 +417,8 @@ export function openFor(icao) {
   const g = G();
   g.icao = icao;
   if (!recOf(icao)) load(icao);
+  Promise.resolve(wantRunways([icao])).then(() => S && S.dpanel === 'ground' && g.icao === icao &&
+    render()); // les pistes arrivent après la liste
   const title = tt(TX.gTitle, {
     icao
   });
@@ -434,6 +441,15 @@ export function setGroundHl(id, fromMap = false) {
 }
 /** « Voir » : cadre l'élément (la boîte d'un trait, le point au zoom 17). */
 function see(id) {
+  if (id.startsWith('rwy:')) { // une piste : son seuil, assez près pour voir les voies qui y mènent
+    const p = runwayPoint(G().icao, id.slice(4));
+    if (p && S.map) S.map.easeTo({
+      center: [p.lon, p.lat],
+      zoom: Math.max(16, S.map.getZoom()),
+      animate: false
+    });
+    return;
+  }
   const its = [...G().cache.values()].flatMap(r => r.items || []).filter(x => grpOf(x) === id),
     it = its[0];
   if (!it || !S.map) return;
