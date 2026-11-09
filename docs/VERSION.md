@@ -24,7 +24,7 @@ repository (step 1), the roadmap generated from the backlog.
   numbered row); « débit de ce vol » is in the unit of the quote and says it; « Réglages du devis · lb/h » is the first
   fold of the result; the monotony signal names the altitude; « Source » names the altitudes and rpm used.
 - **« Proposer depuis les mesures »** (Maintenance › Appareils): the Fuel Phase Monitor journals (`FuelPhaseMonitor*.csv`)
-  chosen in the browser, or read by the launcher from X-Plane's Output folder; level windows grouped by altitude and rpm,
+  chosen in the browser (the launcher's reading of X-Plane's Output folder is in, its button is not: see the erratum); level windows grouped by altitude and rpm,
   compared with the sheet (deviation in %), rows ticked into the draft, nothing written before « Enregistrer » then
   « Appliquer »; the samples never leave the workstation.
 - **Procedures**: every page of a coding-table family is read and counted; LFLL 58 → 81 procedures, the ILS/LOC finals
@@ -58,6 +58,11 @@ repository (step 1), the roadmap generated from the backlog.
 
 ### Notes
 
+- **Erratum (9 Nov, 10:00)**: four lots announced as pushed were not in the tag (a push refused as non-fast-forward had
+  been read as done): the aircraft named at the head of the result bar (SOG-0060 a and b), the RPM table in collapsible
+  groups per altitude with the optional TAS column (SOG-0028 3 and 4), and the « Depuis le dossier Output » button
+  (the launcher's `stats/output` job is in alpha.4, its screen is not). They are on `v3` right after the tag and belong
+  to alpha.5; the summary above is corrected accordingly.
 - Alpha: `current_flight.json`, `data/local/`, `proc/manual/`, `data/airline/<code>/` may still change.
 - Open: the roadmap screen's filters and milestone strip (alpha.5); the airline migration button; the ILS 17L transitions
   of LFLL are on the chart only (a chart reader would be another work); the 585 kg quote of 6 November was not
