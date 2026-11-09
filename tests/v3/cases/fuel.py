@@ -2812,36 +2812,37 @@ _SID = 'LFRS.SID.NTS1A.RW03.NONE'
 _STAR = 'LFML.STAR.MEN1A.RW13R.NONE'
 
 
-def _leg(a, b, ok=True, alerts=(), vertical=(), proc=None):
-    """A leg of the engine's plan (the contract of frame/aerodb/INTEGRATION.md « Route computation »)."""
-    return {'start': {'id': a}, 'end': {'id': b}, 'via': 'DCT', 'kind': 'DCT', 'nm': 50, 'compatible': ok, 'alerts': list(alerts),
-            'vertical_errors': list(vertical), 'procedure_id': proc, 'procedure_name': (proc or '').split('.')[2] if proc else None}
+def _seg(a, b, *reasons):
+    """A segment in the form of the Fuel screen (frame/aerodb/INTEGRATION.md « Route computation › The form of the Fuel screen »)."""
+    return {'from': a, 'to': b, 'via': 'DCT', 'state': 'error' if reasons else 'ok', 'reasons': [dict(r) for r in reasons]}
 
 
-def _plan(route, nm, ft, legs, errors=()):
-    return {'ok': True, 'status': 'CONTRÔLE PARTIEL — À VÉRIFIER', 'route': route, 'fl': ft // 100, 'distance_nm': nm, 'legs': legs,
-            'issues': [{'level': 'ERREUR', 'text': e} for e in errors], 'profile': {'max_altitude_ft': ft, 'feasible': True},
-            'limitation': 'Précontrôle de simulation, jamais une validation IFPS.', 'gaps': [{'name': 'RAD complet', 'reason': 'Seules les interdictions simples H24.'}]}
+def _alt(i, name, route, nm, fl, segs, sid=True):
+    return {'id': f'alt{i}', 'name': name, 'route': route, 'distanceNm': nm, 'fl': fl, 'profile': [{'nm': 0, 'ft': 500}, {'nm': nm, 'ft': 400}],
+            'sid': {'id': _SID, 'name': 'NTS1A', 'runway': '03'} if sid else None, 'star': {'id': _STAR, 'name': 'MEN1A', 'runway': '13R'} if sid else None,
+            'faults': sum(1 for s in segs if s['state'] == 'error'), 'segments': segs}
 
 
 def _route_launcher(c, verbs):
     """A FAKE launcher (c.context.route on /__setup/, never a real one, never RouteSim): regen/verbs lists `verbs`; the job route/compute
-    answers its contract: a computed route and two alternatives to `calculate`, two faulty legs to `validate`; the posted bodies are kept."""
+    answers in the form of the Fuel screen: a computed route and two alternatives to `compute`, two faulty segments to `check`; the posted
+    bodies are kept."""
     import urllib.parse
     st = {'posts': [], 'verbs': verbs}
-    primary = _plan('LFRS NTS1A LUGEN NEPIX MEN1A LFML', 370, 27000,
-                    [_leg('LFRS', 'LUGEN', proc=_SID), _leg('LUGEN', 'NEPIX'), _leg('NEPIX', 'LFML', proc=_STAR)])
-    alt1 = _plan('LFRS NTS1A NEPIX MEN1A LFML', 365, 25000, [_leg('LFRS', 'NEPIX', proc=_SID), _leg('NEPIX', 'LFML', proc=_STAR)])
-    alt2 = _plan('LFRS LUGEN LFML', 380, 19000, [_leg('LFRS', 'LUGEN'), _leg('LUGEN', 'LFML', ok=False, vertical=['plafond 19500 ft'])],
-                 errors=['LUGEN–LFML : plafond'])
-    checked = _plan('LFRS LUGEN NEPIX LFML', 370, 27000,
-                    [_leg('LFRS', 'LUGEN'), _leg('LUGEN', 'NEPIX', ok=False, alerts=['Interdiction RAD LF9999']),
-                     _leg('NEPIX', 'LFML', ok=False, vertical=['plafond 19500 ft, prévu 27000 ft'])], errors=['RAD LF9999'])
+    alts = [_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 270, [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')]),
+            _alt(2, 'Direct · FL250', 'LFRS NTS1A NEPIX MEN1A LFML', 365, 250, [_seg('LFRS', 'NEPIX'), _seg('NEPIX', 'LFML')]),
+            _alt(3, 'Direct · FL190', 'LFRS LUGEN LFML', 380, 190, [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'LFML', {'kind': 'ceiling', 'text': 'plafond 19500 ft', 'deltaFt': 500})],
+                 sid=False)]
+    checked = _alt(1, 'Direct', 'LFRS LUGEN NEPIX LFML', 370, 270,
+                   [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX', {'kind': 'RAD', 'text': 'Interdiction RAD LF9999', 'ruleId': 'LF9999'}),
+                    _seg('NEPIX', 'LFML', {'kind': 'ceiling', 'text': 'plafond 19500 ft, prévu 27000 ft', 'deltaFt': 7500})], sid=False)
+    common = {'rad': {'title': 'RAD test', 'start': '2026-10-29'}, 'fra': None, 'report': '', 'limitation': 'Précontrôle de simulation, jamais une validation IFPS.',
+              'gaps': [{'name': 'RAD complet', 'reason': 'Seules les interdictions simples H24.'}]}
 
     def handler(route):
         req = route.request
         u = urllib.parse.urlparse(req.url)
-        code, body = 200, {}
+        body = {}
         if u.path.endswith('/__setup/status'):
             body = _LAUNCHER_STATUS
         elif u.path.endswith('/__setup/regen/verbs'):
@@ -2851,10 +2852,10 @@ def _route_launcher(c, verbs):
             body = {'job': 'j' + str(len(st['posts']))}
         elif u.path.endswith('/__setup/regen/job'):
             a = (st['posts'][-1].get('args') or {}) if st['posts'] else {}
-            plan = {'primary': primary, 'alternatives': [alt1, alt2]} if a.get('mode') == 'calculate' else {'primary': checked, 'alternatives': []}
-            res = {'ok': True, 'plan': plan, 'rad': {'title': 'RAD test', 'start': '2026-10-29'}, 'fra': None}
+            res = dict(common, ok=True, alternatives=alts, segments=alts[0]['segments'], issues=[], message='2 alternative(s).') if a.get('action') == 'compute' else \
+                dict(common, ok=True, alternatives=[checked], segments=checked['segments'], issues=[{'level': 'error', 'text': 'RAD LF9999', 'kind': 'RAD'}], message='')
             body = {'id': 'j' + str(len(st['posts'])), 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': '', 'log': [], 'result': res}
-        route.fulfill(status=code, content_type='application/json', body=json.dumps(body))
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
     c.context.route(re.compile(r'/__setup/'), handler)
     return st
 
@@ -2862,13 +2863,13 @@ def _route_launcher(c, verbs):
 @case('F109', 'Route step: « Calculer A → B » lists the launcher\'s routes, « Prendre » writes route, SID and STAR; « Contrôler » marks the faulty segments red with their reason',
       'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
       rule='SOG-0080 / SOG-0081 (user: the route choice, « frein majeur de la première tâche du pilotage »): the job route/compute of the launcher '
-      '(AeroDB, RouteSim; its closed request and its plan), detected by regen/verbs; the pilot\'s typing is never replaced without « Prendre »; what '
+      '(AeroDB, RouteSim; its closed request in the form of the Fuel screen), detected by regen/verbs; the pilot\'s typing is never replaced without « Prendre »; what '
       'is not checked is shown; a fake launcher, never the real engine')
 def f109(c):
     st = _route_launcher(c, ['route/compute'])
     open_proc(c)
     c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons (the launcher has the job)')
-    # Contrôler: the typed route as it is (mode validate)
+    # Contrôler: the typed route as it is (action check)
     c.tap(f'{FUEL} [data-do="rcheck"]')
     c.until(f"document.querySelectorAll('{FUEL} [data-segerr]').length === 2", what='two faulty segments red in the list of points')
     why = c.js(f"[...document.querySelectorAll('{FUEL} [data-segerr]')].map(e => [e.dataset.segerr, (e.querySelector('[data-segwhy]')?.textContent || '').trim()])")
@@ -2876,15 +2877,18 @@ def f109(c):
     c.ok('RAD' in why[0][1] and 'LF9999' in why[0][1] and 'ceiling' in why[1][1], why, 'each with its reason (RAD rule, ceiling)')
     c.until(f"(document.querySelector('{FUEL} .fu-result [data-ctxfaults]')?.textContent || '').includes('2')", what='the count on the context line')
     c.ok(c.js(f"!!document.querySelector('{FUEL} [data-routealts] [data-rlimits]')"), 'no limits', 'what the check does not cover is shown')
-    chk = [p['args'] for p in st['posts'] if (p.get('args') or {}).get('mode') == 'validate'][0]
+    chk = [p['args'] for p in st['posts'] if (p.get('args') or {}).get('action') == 'check'][0]
     typed = cf_doc(c, lambda d: True, 'the flight')['route']['text']
-    c.eq(sorted(chk), sorted(['dep', 'arr', 'route', 'mode', 'date', 'use_procedures', 'fl']), 'a closed request: the contract\'s fields only, none null', what='fields')
-    c.eq([chk['dep'], chk['arr'], chk['route'], chk['fl']], ['LFRS', 'LFML', typed, 270], 'the typed route sent as it is', what='validate args')
+    c.eq(sorted(chk), sorted(['action', 'adep', 'adest', 'route', 'date', 'fl']), 'a closed request: the contract\'s fields only, none null', what='fields')
+    c.eq([chk['adep'], chk['adest'], chk['route'], chk['fl']], ['LFRS', 'LFML', typed, 270], 'the typed route sent as it is', what='check args')
     # Calculer A → B: the typed points are imposed; the computed route and two alternatives; « Prendre » the first alternative
     c.tap(f'{FUEL} [data-do="rcompute"]')
     c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3", what='the computed route and two alternatives')
-    comp = [p['args'] for p in st['posts'] if (p.get('args') or {}).get('mode') == 'calculate'][0]
-    c.eq([comp['route'], comp.get('alternatives')], ['LFRS LUGEN NEPIX LFML', True], 'the typed points as imposed passages, alternatives asked', what='calculate args')
+    comp = [p['args'] for p in st['posts'] if (p.get('args') or {}).get('action') == 'compute'][0]
+    c.eq([sorted(comp), comp['via'], comp['alternatives']], [sorted(['action', 'adep', 'adest', 'via', 'date', 'fl', 'alternatives']), ['LUGEN', 'NEPIX'], True],
+         'the typed points as imposed passages, alternatives asked', what='compute args')
+    names = c.js(f"[...document.querySelectorAll('{FUEL} [data-altlist] [data-alt] b')].map(e => e.textContent.trim())")
+    c.eq(names, ['Via UN10', 'Direct · FL250', 'Direct · FL190'], 'each route named by the launcher', what='names')
     before = cf_doc(c, lambda d: True, 'the flight')['route']['text']
     c.tap(f'{FUEL} [data-alt="1"] [data-do="rtake"]')
     d = cf_doc(c, lambda d: 'LUGEN' not in [p.get('id') for p in (d.get('route') or {}).get('points') or []] and procs_of(d, 'dep').get('sid') == _SID

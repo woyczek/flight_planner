@@ -3018,8 +3018,8 @@ function renderDa(C) {
 
 /** Niveau du plan fixé (ft) : champ, vol courant, résultats. */
 // ---------------------------------------------------------------- calcul et contrôle de route (SOG-0080, SOG-0081)
-/** « Calculer A → B » (calculate : les points saisis sont des passages imposés) ou « Contrôler » (validate : la route saisie telle
- *  quelle), par le travail route/compute du lanceur (contrat d'AeroDB, frame/aerodb/INTEGRATION.md) ; la réponse, nettoyée
+/** « Calculer A → B » (compute : les points saisis sont des passages imposés) ou « Contrôler » (check : la route saisie telle
+ *  quelle), par le travail route/compute du lanceur dans la forme de l'écran (contrat d'AeroDB, frame/aerodb/INTEGRATION.md) ; la réponse, nettoyée
  *  (RE.normalize), donne la liste des itinéraires (calculate) ou les segments fautifs marqués dans la liste des points (validate). Un
  *  refus du moteur est dit avec sa phrase. La saisie n'est jamais touchée ici. */
 async function routeAsk(action) {
@@ -3027,12 +3027,12 @@ async function routeAsk(action) {
     r = S.flight.route || {},
     o = CF.proceduresOf(S.flight),
     box = S.body?.querySelector('[data-routealts]'),
-    mode = action === 'compute' ? 'calculate' : 'validate';
+    act = action === 'compute' ? 'compute' : 'check';
   if (!S.routeEngine || !r.dep || !r.arr) return;
   if (box) box.innerHTML = `<p class="f-muted" data-rbusy>${esc(tt(TX.rBusy))}</p>`;
   const when = Date.parse(S.flight.planned_at || ''),
     args = RE.request({
-      mode,
+      action: act,
       dep: r.dep,
       arr: r.arr,
       points: r.points,
@@ -3048,12 +3048,12 @@ async function routeAsk(action) {
     if (box) box.innerHTML = '';
     return S.ctx.notify(tt(TX.rFail), 'warn');
   }
-  const n = RE.normalize(res, mode);
+  const n = RE.normalize(res, act);
   if (!n.ok) {
     if (box) box.innerHTML = `<p class="f-warn" data-rrefused="${esc(n.reason)}">${esc(n.message || tt(n.reason === 'no-rad' ? TX.rNoRad : TX.rFail))}${n.reason === 'no-rad' ? ` ${esc(tt(TX.rNoRad))}` : ''}</p>`;
     return;
   }
-  if (mode === 'validate') {
+  if (act === 'check') {
     const a = n.plans[0];
     S.rcheck = {
       text: String(r.text || ''),
@@ -3081,9 +3081,9 @@ function routeAltsDraw() {
   const box = S.body?.querySelector('[data-routealts]'),
     A = S.ralts;
   if (!box || !A) return;
-  const name = (a, i) => a.role === 'primary' ? tt(TX.rPrimary) : tt(TX.rVariant, {
+  const name = (a, i) => a.name || (a.role === 'primary' ? tt(TX.rPrimary) : tt(TX.rVariant, {
     n: i
-  });
+  }));
   box.innerHTML = (A.list.length ? `<div class="f-list fu-ralts" data-altlist>${A.list.map((a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}" data-alt="${i}"${i === A.chosen ? ' aria-current="true"' : ''}><span><b>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(a.fl).padStart(3, '0')}` : '', tt(TX.rFaults, { n: a.faults + (a.faults ? 0 : a.errors.length) })].filter(Boolean).join(' · '))}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.calcError || a.errors[0] ? `<small class="f-warn">${esc(a.calcError || a.errors[0])}</small>` : ''}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(TX.rTake))}</button>` : ''}</div>`).join('')}</div>` :
     `<p class="f-muted">${esc(A.n?.message || tt(TX.rNone))}</p>`) + limitsHtml(A.n || {
     limitation: '',

@@ -228,9 +228,10 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
 
 - **The launcher's route engine** (SOG-0080, SOG-0081; RouteSim carried by the launcher, AeroDB's job `route/compute`, detected by
   `regen/verbs`; without it nothing is shown): « Calculer A → B » asks routes from the departure to the arrival, the points typed
-  between them being imposed passages (mode `calculate`, alternatives asked); « Contrôler » checks the typed route as it is (mode
-  `validate`). The request is AeroDB's closed one (`RE.request`); the answer is untrusted input (`normalize`: the computed route then
-  three alternatives at most, texts and numbers bounded, procedure ids by shape). A refusal of the engine is said with its sentence
+  between them being imposed passages (action `compute`, eight at most, alternatives asked); « Contrôler » checks the typed route as it
+  is (action `check`). The request is the closed one of the form of the Fuel screen (`RE.request`); the answer is untrusted input
+  (`normalize`: three routes at most, each named by the launcher from its airways, texts and numbers bounded, the reasons' kinds taken
+  from the contract's list, procedure ids by shape). A refusal of the engine is said with its sentence
   (`invalid`), or asks to import the RAD (`no-rad`); what the check does not cover (`limitation`, `gaps`) is a fold under the result. The routes are a list
   under the route field — name, length, FL kept, deviations (count) — each with « Prendre », the taken one marked: « Prendre » writes
   the route text through the field's own input (the one path of a typing, SOG-0013) and proposes its SID and STAR to the procedures

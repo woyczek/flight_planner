@@ -1438,3 +1438,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   no rail of steps to give way (from 900 px every step is shown, without the step bar), so the routes are a list under the route field at
   every width rather than a left band or a sheet; to reconsider with a layout lot. The engine's answer is normalised in one function so
   that AeroDB's contract, posted after this lot, costs one change. F109 (a fake launcher); counter-test on bc39efbb3: no buttons.
+- **9 Nov 2026 — the route engine in the form of the Fuel screen** (SOG-0081): AeroDB answers `route/compute` in two forms, the
+  engine's (`mode`, `plan`) and the screen's (`action`, `alternatives`, `segments`). The screen takes the second: the kind of a reason
+  (RAD, ceiling…) and the name of a route are read from the engine's own French texts by the launcher, next to the engine and tested
+  against it (K106), instead of guessed by the page from the same texts; `normalize` only bounds. One mapping, on the side that knows
+  the texts. F109's fake launcher answers in that form; counter-test on 4c04527ab (the engine's form): « two faulty segments red »
+  never true.
