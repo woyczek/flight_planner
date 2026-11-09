@@ -1142,6 +1142,12 @@ export const TX = {
   pickup: ['Prendre le fichier téléchargé', 'Take the downloaded file', 'Heruntergeladene Datei übernehmen',
     'Tomar el archivo descargado'
   ],
+  // SOG-0150 : les jeux présents que la construction ne lira pas, la case « personnel » ne déclarant pas la source
+  pickupUnread: ['{z} : {n} jeux {s} présents dans Téléchargements, déjà pris : la case « personnel » ne déclare pas {s}',
+    '{z}: {n} {s} sets in place: the “personal” box does not declare {s}',
+    '{z}: {n} {s}-Datensätze vorhanden: das Feld „persönlich“ nennt {s} nicht',
+    '{z}: {n} conjuntos {s} presentes: la casilla «personal» no declara {s}'
+  ],
   pickupMore: ['… et {n} autres', '… and {n} more', '… und {n} weitere', '… y {n} más'],
   pickupAsk: [
     'Prendre dans Téléchargements : {taken}.{missing} Les fichiers vont dans {to} ; ce sont des sources brutes du poste, jamais commitées.',
@@ -1197,6 +1203,10 @@ export const TX = {
     blocked: ['Rien à prendre : un nom de fichier est à renommer', 'Nothing to take: a file name needs renaming',
       'Nichts zu übernehmen: ein Dateiname muss umbenannt werden',
       'Nada que tomar: un nombre de archivo debe renombrarse'
+    ],
+    inPlace: ['{n} jeu(x) {s} déjà pris : rien de nouveau à prendre', '{n} {s} set(s) already taken: nothing new to take',
+      '{n} {s}-Datensatz/-Datensätze bereits übernommen: nichts Neues zu übernehmen',
+      '{n} conjunto(s) {s} ya tomado(s): nada nuevo que tomar'
     ],
     nothing: ['Rien à prendre dans Téléchargements', 'Nothing to take in Downloads', 'Nichts zum Übernehmen in Downloads',
       'Nada que tomar en Descargas'

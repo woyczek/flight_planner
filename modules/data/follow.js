@@ -514,11 +514,15 @@ export async function startPickup(zonesAttr) {
     known = new Set(S.d?.cov?.ids || []),
     zones = zonesAttr ? zonesAttr.split(',').filter(z => known.has(z)) : buildZones().ticked;
   if (!zones.length || gateOf('base', zones.length, [M.PICKUP.verb]).verbs[M.PICKUP.verb].disabled) return;
+  const personal = selection('base')
+    .personal; // la case « personnel » (SOG-0150) : sans elle le lanceur ne dit pas ce qui est là sans être lu
   await settle(me, await launch('base', M.PICKUP.verb, {
     zones,
+    personal,
     dry: true
   }, zones, true, {
-    zones
+    zones,
+    personal
   }), true);
 }
 /** Fin du plan d'une prise (jamais journalisé) : rien à prendre, ou aucun zip dont le nom soit dans la règle (un zip hors de la règle est dit mais jamais lancé : le lanceur prendrait « le plus récent » sans
@@ -544,6 +548,7 @@ async function endPickupPlan(me, final) {
   if (ask) {
     S.pickupBlocked = split.blocked;
     S.pickupPlan = {
+      personal: selection('base').personal,
       zones: [...new Set([...split.zones, ...(oa ? split.openaip : [])])],
       zips: {
         ...split.zips,
@@ -569,6 +574,7 @@ async function endPickupPlan(me, final) {
       S.pickupPlan = null;
       if (yes && plan) await settle(me, await launch('base', M.PICKUP.verb, {
         zones: plan.zones,
+        personal: plan.personal,
         dry: false,
         zips: plan.zips
       }, plan.zones), true);

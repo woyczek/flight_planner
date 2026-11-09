@@ -768,7 +768,11 @@ function pickupProblems(out) {
     z: itemName('base', x.zone),
     s: sourceName(x.source)
   });
-  return [...(out.skipped || []).map(x => tt(M.own(TX.pickupSkipped, x.why), { // les exports openAIP non lus : dits, jamais pris
+  return [...(out.unread || []).map(x => tt(TX.pickupUnread, { // présents, jamais lus : la case « personnel » ne déclare pas la source
+    z: itemName('base', x.zone),
+    n: x.sets.length,
+    s: x.source.toUpperCase()
+  })), ...(out.skipped || []).map(x => tt(M.own(TX.pickupSkipped, x.why), { // les exports openAIP non lus : dits, jamais pris
     z: itemName('base', x.zone),
     s: sourceName(M.OPENAIP),
     name: x.name
@@ -821,7 +825,12 @@ export function pickupAsk(out) {
 }
 /** Le résumé de la fin d'une prise : { text, hint (« Lancez maintenant Construire » quand des fichiers ont été pris), level }. */
 export function pickupSummary(out) {
-  const text = tt(TX.pickupSum[out.kind], {
+  const placed = out.kind === 'nothing' && out.inPlace
+    ?.length; // rien de nouveau, mais des jeux déjà pris : « Rien à prendre » les cacherait (SOG-0150)
+  const text = placed ? tt(TX.pickupSum.inPlace, {
+    n: out.inPlace.reduce((a, x) => a + x.sets.length, 0),
+    s: [...new Set(out.inPlace.map(x => x.source.toUpperCase()))].join(', ')
+  }) : tt(TX.pickupSum[out.kind], {
     n: count('file', out.files),
     s: M.fmtBytes(out.bytes, lang()),
     f: plural('fetchFails', out.failed.length)

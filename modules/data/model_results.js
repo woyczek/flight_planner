@@ -511,6 +511,18 @@ export function pickupOutcome(final) {
       source: m.source,
       expected: String(m.expected ?? '')
     })),
+    // SOG-0150 : les jeux déjà en place (inPlace) et ceux qui sont là mais que la construction ne lira pas, la case « personnel » ne déclarant pas la source (unread) ; une source hors de la table, une raison autre que « personal » est écartée
+    inPlace = list(r.inPlace).filter(x => Object.hasOwn(PICKUP_DEST, x.source)).slice(0, 80).map(x => ({
+      zone: x.zone,
+      source: x.source,
+      sets: strs(x.sets).slice(0, 12)
+    })),
+    unread = list(r.unread).filter(x => x.why === 'personal' && Object.hasOwn(PICKUP_DEST, x.source)).slice(0, 80).map(x => ({
+      zone: x.zone,
+      source: x.source,
+      cycle: typeof x.cycle === 'string' ? x.cycle.slice(0, 10) : '',
+      sets: strs(x.sets).slice(0, 12)
+    })),
     failed = list(r.failed).map(f => ({
       zone: f.zone,
       source: f.source,
@@ -531,9 +543,12 @@ export function pickupOutcome(final) {
     missing,
     failed,
     skipped,
+    inPlace,
+    unread,
     files: taken.reduce((a, t) => a + t.files.length, 0),
     bytes: taken.reduce((a, t) => a + t.bytes, 0),
-    level: kind === 'done' ? 'ok' : kind === 'failed' ? 'err' : 'warn'
+    level: kind === 'done' && !unread.length ? 'ok' : kind === 'failed' ? 'err' : kind === 'nothing' && inPlace.length && !unread.length ?
+      'ok' : 'warn'
   };
 }
 /** Les zips que le plan a montrés, pour la prise réelle : { <source>: { name, size } } construit des seules entrées `taken` du plan (jamais relu), une par source (la première),

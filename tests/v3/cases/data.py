@@ -2609,13 +2609,14 @@ def l18(c):
 
 
 # ------------------------------------------------------------------------------------------------------ L19
-def _pk_plan(taken=(), missing=(), failed=(), dry=True, state='done', jid='k1', zones=('fr', 'gb'), reason=None, step='', skipped=None, shown=None):
+def _pk_plan(taken=(), missing=(), failed=(), dry=True, state='done', jid='k1', zones=('fr', 'gb'), reason=None, step='', skipped=None, shown=None, extra=None):
     """The view of a base/pickup job: the plan (dry true) or the real run, with the launcher's result shape (tools/regen/base_sources.py)."""
     res = {'ok': reason is None and state != 'running', 'dry': dry, 'taken': list(taken), 'missing': list(missing), 'failed': list(failed)}
     if skipped is not None:
         res['skipped'] = list(skipped)
     if shown is not None:
         res['shown'] = shown
+    res.update(extra or {})
     if reason:
         res['reason'] = reason
     v = _fview({}, state=state, step=step, verb='pickup', args={'zones': list(zones), 'dry': dry}, jid=jid, result=res if state != 'running' else None)
@@ -2654,7 +2655,7 @@ def l19(c):
     c.tap(pk)
     q = _ask_text(c)
     c.eq([norm(q['text']), norm(q['ok']), q['no'], len(st['posts']) - n], [norm(ask), norm(T('pickup')), True, 1], 'ONE question from the plan: the zip found (name, files, size), the file missing with its pattern, where the files go, raw and never committed', what='question')
-    c.eq({k: st['posts'][n][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'pickup', 'args': {'zones': ['fr', 'gb'], 'dry': True}}, 'the plan is a dry run, sent explicitly', what='dry body')
+    c.eq({k: st['posts'][n][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'pickup', 'args': {'zones': ['fr', 'gb'], 'personal': [], 'dry': True}}, 'the plan is a dry run, sent explicitly', what='dry body')
     c.eq([_bv(c), c.js(f"document.querySelector('{pk}').disabled")], [['download:off', 'build:off', 'purge:off'], True], 'every button is grey while the question is open', what='during the question')
     c.tap('.f-modal [data-no]')
     c.until("!document.querySelector('.f-modal')", what='the window closes')
@@ -2673,7 +2674,7 @@ def l19(c):
     c.tap('.f-modal [data-ok]')
     c.until("!!document.querySelector('[data-build] [data-running][data-op=pickup]:not([data-dry])')", timeout=8000, what='the real run is followed')
     c.eq({k: st['posts'][-1][k] for k in ('set', 'verb', 'args')},
-         {'set': 'base', 'verb': 'pickup', 'args': {'zones': ['fr'], 'dry': False, 'zips': {'sia': {'name': sia_zip['zip'], 'size': 3000000}}}},
+         {'set': 'base', 'verb': 'pickup', 'args': {'zones': ['fr'], 'personal': [], 'dry': False, 'zips': {'sia': {'name': sia_zip['zip'], 'size': 3000000}}}},
          'the real body (only the zone with a zip in the plan) says dry false and carries the zip the plan showed (name and size), nothing re-read', what='real body')
     c.eq([_bv(c), c.js(f"document.querySelector('{pk}').disabled"), c.count('[data-build] [data-running] [data-zone-state]'), c.count('[data-build] [data-running] [data-count]'), c.count('[data-build] [data-running] [data-verb=stop]')],
          [['download:off', 'build:off', 'purge:off'], True, 0, 0, 1], 'one operation at a time; the bar has its step, no zone lines, no count; Arrêter', what='running')
@@ -2732,7 +2733,7 @@ def l19(c):
     n = len(st['posts'])
     c.tap(rb)
     _ask_text(c)
-    c.eq({k: st['posts'][n][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'pickup', 'args': {'zones': ['fr', 'gb'], 'dry': True}}, 'the button starts the same plan for those zones', what='button body')
+    c.eq({k: st['posts'][n][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'pickup', 'args': {'zones': ['fr', 'gb'], 'personal': [], 'dry': True}}, 'the button starts the same plan for those zones', what='button body')
     c.tap('.f-modal [data-no]')
     c.until("!document.querySelector('.f-modal')", what='the window closes')
     # ---- H: a zip arrived during the question: the launcher refuses that source (changed), the other is taken; « Relancer le plan » asks the plan again
@@ -2747,7 +2748,7 @@ def l19(c):
     st['start'] = (200, {'job': 'h2'})
     c.tap('.f-modal [data-ok]')
     c.until("document.querySelector('[data-build-result][data-op=pickup]')?.dataset.result === 'partial'", timeout=10000, what='the partial end')
-    c.eq(st['posts'][-1]['args'], {'zones': ['fr', 'gb'], 'dry': False, 'zips': {'sia': {'name': sia_zip['zip'], 'size': 3000000}, 'nats': {'name': nats_zip['zip'], 'size': 2097152}}},
+    c.eq(st['posts'][-1]['args'], {'zones': ['fr', 'gb'], 'personal': [], 'dry': False, 'zips': {'sia': {'name': sia_zip['zip'], 'size': 3000000}, 'nats': {'name': nats_zip['zip'], 'size': 2097152}}},
          'the real body carries both zips of the plan, equal to what it showed', what='real body 2')
     chg = T('pickupChanged').replace('{z}', zname('gb')).replace('{s}', s_nats).replace('{zip}', changed['zip'])
     c.eq([[norm(t) for t in c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent)")], c.count('[data-build-result] b b'),
@@ -2760,7 +2761,7 @@ def l19(c):
     n = len(st['posts'])
     c.tap('[data-build-result] [data-verb=pickup-replan]')
     _ask_text(c)
-    c.eq({k: st['posts'][n][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'pickup', 'args': {'zones': ['gb'], 'dry': True}}, 'the button starts a new dry run (no zips), for that zone', what='replan')
+    c.eq({k: st['posts'][n][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'pickup', 'args': {'zones': ['gb'], 'personal': [], 'dry': True}}, 'the button starts a new dry run (no zips), for that zone', what='replan')
     c.tap('.f-modal [data-no]')
     c.until("!document.querySelector('.f-modal')", what='the window closes')
     # ---- H2: a source the launcher did not see in zips (not-shown, 8965e8c47): said like « changed », with « Relancer le plan »
@@ -2790,7 +2791,7 @@ def l19(c):
     st['start'] = (200, {'job': 'i2'})
     c.tap('.f-modal [data-ok]')
     c.until("document.querySelector('[data-build-result][data-op=pickup]')?.dataset.result === 'done'", timeout=10000, what='the end')
-    c.eq(st['posts'][-1]['args'], {'zones': ['gb'], 'dry': False, 'zips': {'nats': {'name': nats_zip['zip'], 'size': 2097152}}},
+    c.eq(st['posts'][-1]['args'], {'zones': ['gb'], 'personal': [], 'dry': False, 'zips': {'nats': {'name': nats_zip['zip'], 'size': 2097152}}},
          'the real run carries only the ready source: its zone and its zip', what='real body 3')
     c.eq([norm(t) for t in c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent)")], [norm(rename)], 'and the end still says what was not taken', what='rename line')
     # none ready: no question, nothing run, the line is shown
@@ -3500,7 +3501,7 @@ def l28(c):
     c.tap('.f-modal [data-ok]')
     c.until("!!document.querySelector('[data-build-result][data-op=pickup]')", timeout=10000, what='the real run ends')
     real = [p for p in st['posts'] if p.get('args', {}).get('dry') is False]
-    c.eq(real[-1]['args'], {'zones': ['fr'], 'dry': False, 'zips': {'openaip': {'name': 'openaip', 'size': 2489}}},
+    c.eq(real[-1]['args'], {'zones': ['fr'], 'personal': [], 'dry': False, 'zips': {'openaip': {'name': 'openaip', 'size': 2489}}},
          'the real run sends back exactly what the plan showed for openAIP (no zip name, the total size)', what='zips sent')
 
 
@@ -4694,4 +4695,58 @@ def l57(c):
     if c.width in (390, 1280):
         c.shot(f'L57_long_{c.width}_{lang}.png')
     c.tap('.f-modal [data-ok]')
+    c.check_errors()
+
+
+
+@case('L58', 'Données: « Prendre le fichier téléchargé » sends the « personnel » box to base/pickup and says what is already taken and what is there but not read (SOG-0150); « Mettre à jour » carries the same box', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0150 (AeroDB 22e24fe20): base/pickup takes `personal` and answers inPlace [{zone, source, sets}] and unread [{zone, source, why: personal, cycle, sets}]; « Rien à prendre » hid three NATS sets already in place that the build ignored because the box did not declare NATS')
+def l58(c):
+    lang = c.lang
+    li = {'fr': 0, 'en': 1, 'de': 2, 'es': 3}[lang]
+    T = lambda key, after=None, row=0: _trow(key, lang, after, row)
+    cfg, _ = _fixture()
+    gb = next(x['names'][li] for x in cfg['zones'] if x['id'] == 'gb')
+    sets = ['AIP', 'OBS', 'UAS']
+    five = ('ca', 'es', 'fr', 'gb', 'us')
+    in_place = {'inPlace': [{'zone': 'gb', 'source': 'nats', 'sets': sets}]}
+    unread = {**in_place, 'unread': [{'zone': 'gb', 'source': 'nats', 'why': 'personal', 'cycle': '2026-10-29', 'sets': sets}]}
+    st = _launcher(c, [_pk_plan([], [], [], zones=five, extra=unread)], verbs=_VERBS + ['base/pickup'])
+    st['status'] = _status({'gb': _zst('stale', {'code': 'source-unbuilt', 'source': 'nats'}), 'fr': _zst('up-to-date'), 'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'us': _zst('up-to-date')})
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=10000, what='the state of the five zones')
+    lines = lambda: [norm(t) for t in c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent)")]
+    # ---- A: the box does not declare NATS: the plan carries personal: [], the end says « already taken » and « there but not read », never « Rien à prendre »
+    st['start'] = (200, {'job': 'k1'})
+    c.tap('[data-build] [data-verb=pickup]')
+    c.until("document.querySelector('[data-build-result][data-op=pickup]')", timeout=10000, what='the end of the plan')
+    c.eq(st['posts'][-1]['args'].get('personal'), [], 'the plan carries the box: nothing declared', what='personal A')
+    said = norm(c.text('[data-build-result] b'))
+    c.eq(said, norm(T('inPlace', 'pickupSum: {').replace('{n}', '3').replace('{s}', 'NATS')), 'the end says the sets are already taken', what='already taken')
+    c.ok(norm(T('nothing', 'pickupSum: {')) != said, said, 'not « Rien à prendre »')
+    want = norm(T('pickupUnread').replace('{z}', gb).replace('{n}', '3').replace('{s}', 'NATS'))
+    c.eq(lines(), [want], 'the line says the sets are there but not read: the « personnel » box does not declare NATS', what='unread line')
+    # ---- B: the box declares NATS: personal [nats] is sent, nothing is unread
+    c.tap('[data-personal=nats]')
+    st['views'], st['i'], st['start'] = [_pk_plan([], [], [], zones=five, jid='k2', extra=in_place)], 0, (200, {'job': 'k2'})
+    c.tap('[data-build] [data-verb=pickup]')
+    c.until("document.querySelector('[data-build-result][data-op=pickup]') && !document.querySelector('[data-build-result] [data-line]')", timeout=10000, what='the end of the second plan')
+    c.eq(st['posts'][-1]['args'].get('personal'), ['nats'], 'the box declares NATS: it is sent', what='personal B')
+    c.eq(c.count('[data-build-result] [data-line]'), 0, 'declared: nothing is there-but-unread', what='no unread')
+    # ---- C: « Mettre à jour » carries the same box to the download and to the build
+    fetched = _view('done', step='Terminé', jid='j1', result={'fetched': [], 'unchanged': list(five), 'failed': [], 'manual': []})
+    st['views'], st['i'], st['start'] = [fetched], 0, (200, {'job': 'j1'})
+    n = len(st['posts'])
+    c.tap('[data-build] [data-verb=update]')
+    _ask_text(c)
+    st['views'], st['i'], st['start'] = [_view('done', step='Terminé', jid='j2', result={'built': ['gb'], 'failed': [], 'commits': [], 'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False, 'blocking': []})], 0, (200, {'job': 'j2'})
+    c.tap('.f-modal [data-ok]')
+    for _ in range(40):
+        if _posts(st, 'build'):
+            break
+        c.wait(250)
+    c.eq([p['args'].get('personal') for p in st['posts'][n:] if p.get('verb') in ('fetch', 'build')], [['nats'], ['nats']], '« Mettre à jour »: the download and the build both carry personal [nats]', what='update')
+    c.eq(_posts(st, 'build')[0]['args']['zones'], ['gb'], 'only gb (source-unbuilt, buildable) is built', what='build zones')
     c.check_errors()
