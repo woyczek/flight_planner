@@ -4,10 +4,10 @@
  "updated": "2026-11-09",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "d5b80ca",
-  "fiches": 130,
+  "organisation": "da33628",
+  "fiches": 140,
   "untranslated": 0,
-  "priorities": 3
+  "priorities": 4
  },
  "owner": "ergonomics session (Simplification interface et ergonomie)",
  "note": {
@@ -283,7 +283,7 @@
     {
      "id": "SOG-0056",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Écran 1 du pilote : un bouton « Auto » calcule le niveau depuis le carburant et le temps",
      "en": "Pilot screen 1: an “Auto” button calculates the level from fuel and time",
      "de": "Pilotenbildschirm 1: Eine Schaltfläche „Auto“ berechnet die Flugfläche aus Kraftstoff und Zeit",
@@ -401,6 +401,24 @@
      "en": "Route engine in the page (phone): port the engine to JS, RAD / FRA data published",
      "de": "Routen-Engine in der Seite (Telefon): Engine nach JS portieren, RAD/FRA-Daten veröffentlicht",
      "es": "Motor de rutas en la página (teléfono): portar el motor a JS, datos RAD / FRA publicados"
+    },
+    {
+     "id": "SOG-0134",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Route (RAD) : montrer les tracés des itinéraires proposés avant de choisir, et dire quels sont les écarts aux règles",
+     "en": "Route (RAD): draw the proposed routes before choosing, and say which rule deviations",
+     "de": "Route (RAD): vorgeschlagene Routen vor der Wahl zeichnen und die Regelabweichungen benennen",
+     "es": "Ruta (RAD): dibujar las rutas propuestas antes de elegir y decir cuáles son las desviaciones a las reglas"
+    },
+    {
+     "id": "SOG-0140",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Le bouton ⇄ de Carburant est beaucoup trop gros",
+     "en": "The ⇄ button of Fuel is far too big",
+     "de": "Der ⇄-Knopf in Kraftstoff ist viel zu groß",
+     "es": "El botón ⇄ de Combustible es demasiado grande"
     }
    ]
   },
@@ -540,6 +558,15 @@
      "en": "Route trace: a DCT leg dotted, an airway leg solid with the airway's cartouche (request of 1 Nov, after 6 Nov)",
      "de": "Routenspur: ein DCT-Abschnitt gepunktet, ein Luftstraßen-Abschnitt durchgezogen mit der Kartusche der Luftstraße (Wunsch vom 1.11., nach dem 6.11.)",
      "es": "Traza de la ruta: un tramo DCT punteado, un tramo de aerovía continuo con el cartucho de la aerovía (petición del 1/11, después del 6/11)"
+    },
+    {
+     "id": "SOG-0139",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Météo sur la Carte : un lien « télécharger AROME » plutôt qu'un bouton « afficher la météo »",
+     "en": "Weather on the Map: a “download AROME” link rather than a “show weather” button",
+     "de": "Wetter auf der Karte: ein Link „AROME laden“ statt eines Knopfs „Wetter anzeigen“",
+     "es": "Meteo en el Mapa: un enlace «descargar AROME» en vez de un botón «mostrar meteo»"
     }
    ]
   },
@@ -730,6 +757,15 @@
      "en": "TEMSI; world SIGMET and METAR through the launcher relay",
      "de": "TEMSI; SIGMET und METAR der Welt über das Launcher-Relais",
      "es": "TEMSI; SIGMET y METAR del mundo por el relé del lanzador"
+    },
+    {
+     "id": "SOG-0138",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "GFS : toujours pas de carte synoptique ; et une réponse visible, pas entre deux portes",
+     "en": "GFS: still no synoptic map; and a visible answer, not between two doors",
+     "de": "GFS: noch immer keine synoptische Karte; und eine sichtbare Antwort, nicht zwischen Tür und Angel",
+     "es": "GFS: sigue sin haber mapa sinóptico; y una respuesta visible, no entre dos puertas"
     }
    ]
   },
@@ -909,6 +945,27 @@
    ]
   },
   {
+   "id": "pilote-transverse",
+   "app": "pilote",
+   "label": {
+    "fr": "Transverse",
+    "en": "Transverse",
+    "de": "Transverse",
+    "es": "Transverse"
+   },
+   "items": [
+    {
+     "id": "SOG-0131",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Passe d'ergonomie (refactoring) : confronter chaque écran à la roadmap idéale et à l'ergonomie idéale, et challenger les demandes",
+     "en": "Ergonomics pass (refactoring): confront every screen with the ideal roadmap and ergonomics, challenge the requests",
+     "de": "Ergonomie-Durchgang (Refactoring): jeden Bildschirm an idealer Roadmap und Ergonomie messen, Anfragen hinterfragen",
+     "es": "Pasada de ergonomía (refactorización): confrontar cada pantalla con la hoja de ruta y la ergonomía ideales, cuestionar las peticiones"
+    }
+   ]
+  },
+  {
    "id": "pilote-etat-du-vol",
    "app": "pilote",
    "label": {
@@ -967,6 +1024,27 @@
      "de": "Rahmen: liveCheck vergleicht zwei Zeitpunkte als Zeichenketten",
      "es": "Marco: liveCheck compara dos instantes como cadenas",
      "milestone": "6.0.0-alpha.4"
+    }
+   ]
+  },
+  {
+   "id": "compagnie-carte",
+   "app": "compagnie",
+   "label": {
+    "fr": "Carte",
+    "en": "Map",
+    "de": "Karte",
+    "es": "Mapa"
+   },
+   "items": [
+    {
+     "id": "SOG-0137",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Mission sur la Carte : illisible et illogique ; afficher au moins le titre, et réutiliser le réglage de la mission choisie",
+     "en": "Mission on the Map: illegible and illogical; show at least the title, reuse the chosen-mission setting",
+     "de": "Mission auf der Karte: unleserlich und unlogisch; wenigstens den Titel zeigen, die gewählte Mission wiederverwenden",
+     "es": "Misión en el Mapa: ilegible e ilógica; mostrar al menos el título y reutilizar el ajuste de la misión elegida"
     }
    ]
   },
@@ -1194,6 +1272,17 @@
    },
    "items": [
     {
+     "id": "SOG-0065",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Base aéro : regrouper les pays en paquets (continents, régions) et un méta-classement (îles, Himalaya, déserts, forêts, lacs et fleuves, mégalopoles…)",
+     "en": "Aero database: group countries into packs (continents, regions) and a meta-classification (islands, Himalayas, deserts, forests, lakes and rivers, megacities…)",
+     "de": "Aero-Datenbank: Länder zu Paketen (Kontinente, Regionen) zusammenfassen und eine Meta-Klassifizierung (Inseln, Himalaya, Wüsten, Wälder, Seen und Flüsse, Megastädte …)",
+     "es": "Base de datos aero: agrupar los países en paquetes (continentes, regiones) y una metaclasificación (islas, Himalaya, desiertos, bosques, lagos y ríos, megalópolis…)",
+     "milestone": "6.0.0-alpha.5",
+     "rank": 4
+    },
+    {
      "id": "SOG-0054",
      "kind": "feature",
      "state": "done",
@@ -1211,16 +1300,6 @@
      "en": "Aero database: China and Nicosia missing from the list of downloadable packs",
      "de": "Aero-Datenbank: China und Nikosia fehlen in der Liste der herunterladbaren Pakete",
      "es": "Base de datos aero: China y Nicosia ausentes de la lista de paquetes descargables",
-     "milestone": "6.0.0-alpha.5"
-    },
-    {
-     "id": "SOG-0065",
-     "kind": "feature",
-     "state": "planned",
-     "fr": "Base aéro : regrouper les pays en paquets (continents, régions) et un méta-classement (îles, Himalaya, déserts, forêts, lacs et fleuves, mégalopoles…)",
-     "en": "Aero database: group countries into packs (continents, regions) and a meta-classification (islands, Himalayas, deserts, forests, lakes and rivers, megacities…)",
-     "de": "Aero-Datenbank: Länder zu Paketen (Kontinente, Regionen) zusammenfassen und eine Meta-Klassifizierung (Inseln, Himalaya, Wüsten, Wälder, Seen und Flüsse, Megastädte …)",
-     "es": "Base de datos aero: agrupar los países en paquetes (continentes, regiones) y una metaclasificación (islas, Himalaya, desiertos, bosques, lagos y ríos, megalópolis…)",
      "milestone": "6.0.0-alpha.5"
     },
     {
@@ -1405,6 +1484,15 @@
      "en": "Several airlines on one terminal: several administrators, several pilot profiles, one data repository per airline, switching airline without mixing (request of 1 Nov)",
      "de": "Mehrere Gesellschaften auf einem Gerät: mehrere Administratoren, mehrere Pilotenprofile, ein Daten-Repository je Gesellschaft, Wechsel der Gesellschaft ohne Vermischung (Wunsch vom 1.11.)",
      "es": "Varias compañías en un mismo terminal: varios administradores, varios perfiles de piloto, un repositorio de datos por compañía, cambio de compañía sin mezcla (petición del 1/11)"
+    },
+    {
+     "id": "SOG-0132",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Écrans qui bougent : réserver la place d'un bloc qui recevra son contenu plus tard",
+     "en": "Moving screens: reserve the place of a block whose content arrives later",
+     "de": "Springende Bildschirme: Platz für Blöcke reservieren, deren Inhalt später kommt",
+     "es": "Pantallas que se mueven: reservar el sitio de un bloque cuyo contenido llega después"
     }
    ]
   },
@@ -1435,6 +1523,27 @@
      "en": "ADEP / ADEST completion as in RouteSim: airport list, name under the field, swap button",
      "de": "ADEP/ADEST-Vervollständigung wie in RouteSim: Flugplatzliste, Name unter dem Feld, Tauschknopf",
      "es": "Autocompletado ADEP / ADEST como en RouteSim: lista de aeródromos, nombre bajo el campo, botón de intercambio"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-carte",
+   "app": "maintenance",
+   "label": {
+    "fr": "Carte",
+    "en": "Map",
+    "de": "Karte",
+    "es": "Mapa"
+   },
+   "items": [
+    {
+     "id": "SOG-0135",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Lire le sol (taxiways) avec les procédures du terrain, pas par un bouton de plus",
+     "en": "Read the ground (taxiways) with the airport's procedures, not through one more button",
+     "de": "Boden (Rollwege) zusammen mit den Verfahren des Flugplatzes lesen, nicht über einen weiteren Knopf",
+     "es": "Leer el suelo (calles de rodaje) con los procedimientos del aeródromo, no con un botón más"
     }
    ]
   },
@@ -1599,7 +1708,7 @@
     {
      "id": "SOG-0057",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Modification des fiches : les commentaires dégradent l'interface, nécessaires mais mal placés",
      "en": "Editing sheets: comments degrade the interface, needed but badly placed",
      "de": "Bearbeitung der Datenblätter: Kommentare beeinträchtigen die Oberfläche, nötig, aber schlecht platziert",
@@ -1752,6 +1861,15 @@
      "en": "Airline logo: an SVG dropped in is converted to PNG by the app (request of 2 Nov)",
      "de": "Logo der Gesellschaft: ein abgelegtes SVG wird von der App automatisch in PNG umgewandelt (Wunsch vom 2.11.)",
      "es": "Logotipo de la compañía: un SVG depositado se convierte automáticamente a PNG en la aplicación (petición del 2/11)"
+    },
+    {
+     "id": "SOG-0133",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Réglages : plusieurs secondes d'attente avant l'écran, pour une version du dépôt qui n'est qu'accessoire",
+     "en": "Settings: several seconds of waiting before the screen, for a repository version that is only accessory",
+     "de": "Einstellungen: mehrere Sekunden Wartezeit vor dem Bildschirm wegen einer nur nebensächlichen Repository-Version",
+     "es": "Ajustes: varios segundos de espera antes de la pantalla, por una versión del repositorio solo accesoria"
     }
    ]
   },
@@ -1825,6 +1943,15 @@
      "de": "Synchronisation: viele Konflikte in data/, eine Abhilfe suchen",
      "es": "Sincronización: muchos conflictos en data/, buscar una mitigación",
      "milestone": "6.0.0-alpha.4"
+    },
+    {
+     "id": "SOG-0136",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Nouvelle brouette de conflits de synchronisation alors que l'utilisateur est seul",
+     "en": "A new barrowful of sync conflicts while the user is alone",
+     "de": "Eine neue Schubkarre voller Sync-Konflikte, obwohl der Benutzer allein ist",
+     "es": "Una nueva carretilla de conflictos de sincronización estando el usuario solo"
     }
    ]
   },
