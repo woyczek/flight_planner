@@ -84,9 +84,10 @@
   };
 
   /** Fichier de data/sia/ lu sur l'adresse du lanceur (Blob → File : même objet que celui d'un sélecteur de dossier). */
-  async function fetchInput(rel, url = '/data/sia/' + rel.split('/').map(encodeURIComponent).join('/')) {
+  async function fetchInput(rel, url = '/data/sia/' + rel.split('/').map(encodeURIComponent).join('/'), headers = {}) {
       const r = await fetch(url, {
-        cache: 'no-store'
+        cache: 'no-store',
+        headers
       });
       if (!r.ok) throw new Error(`${rel} : HTTP ${r.status}`);
       const f = new File([await r.blob()], rel.split('/').pop());
@@ -119,8 +120,12 @@
         inputs,
         token
       } = o,
-      // les XML bruts du SIA de l'emplacement nouveau : leur nom (racine de data/sia/ avant le déplacement) et l'adresse sous data/local/sources/sia/<cycle>/ (validés : source, cycle, nom)
-      raw = new Map((o.sources || []).map(s => [s.name, `/data/local/sources/${s.source}/${s.cycle}/${encodeURIComponent(s.name)}`])),
+      // les XML bruts du SIA de l'emplacement nouveau : leur nom (racine de data/sia/ avant le déplacement) et la route DU TRAVAIL qui les sert (data/local/ reste caché au reste du monde : le jeton de la réclamation, en en-tête, dit que c'est cette page) ; validés : source, cycle, nom
+      raw = new Map((o.sources || []).map(s => [s.name, `/__setup/regen/job/input?job=${jobId}&source=${encodeURIComponent(s.source)}&cycle=${encodeURIComponent(s.cycle)}&name=${encodeURIComponent(s.name)}`])),
+        rawHeaders = {
+          'X-SOG-Setup': '1',
+          'X-SOG-Job-Token': token
+        },
         cycles = Object.fromEntries(zones.filter(z => Object.hasOwn(o.cycles || {}, z)).map(z => [z, o.cycles[z]]));
       say({
         started: true
@@ -134,7 +139,7 @@
         sources: wanted.length
       });
       for (const rel of wanted) {
-        const f = await fetchInput(rel, raw.get(rel)),
+        const f = await fetchInput(rel, raw.get(rel), raw.has(rel) ? rawHeaders : {}),
           parts = rel.split('/');
         if (parts.length === 1) files.push(f);
         else if (parts[0] === 'zones')(extra.aixm5 ||= []).push(f); // fichiers déposés à la main : lecteur choisi par l'extension
@@ -157,7 +162,8 @@
       const sia = [...inputs, ...raw.keys()].find(rel => rel === `XML_SIA_${cycle}.xml`);
       if (!zones.includes('fr') && sia) {
         const r = await fetch(raw.get(sia) || '/data/sia/' + sia, {
-          cache: 'no-store'
+          cache: 'no-store',
+          headers: raw.has(sia) ? rawHeaders : {}
         });
         if (!r.ok) throw new Error(`${sia} : HTTP ${r.status}`);
         priorityRings = SB.priorityRingsFromXmlSia(new TextDecoder('iso-8859-1').decode(await r.arrayBuffer()));

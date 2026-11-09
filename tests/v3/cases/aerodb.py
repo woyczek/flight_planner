@@ -5513,6 +5513,111 @@ def k115(c):
          'whereIs: a known name is found; an unknown one named by a published airway says where it is, which airway names it, and the zone expected by the country of the point: Sweden is built without points (openAIP carries none), Denmark is not built; a name nowhere is not-found', what='whereIs')
 
 
+@case('K117', 'Moved SIA sources are read through the route of the job, not through data/local/ (SOG-0144): the real launcher builds with them, data/local/sources/ stays hidden, the route needs the token of the claim and only serves what the job offered', 'K', static=True,
+      rule='SOG-0144 (10 Nov 2026, decision of the ergonomics session): « Tout recalculer » failed for every zone (HTTP 404) because the build page read the moved SIA XML at /data/local/sources/…, which the launcher hides (audit of 7 Oct); the page now reads them through GET /__setup/regen/job/input, guarded by the token of its claim, for the files the job offered only, in a stream; data/local/ stays hidden to the rest of the world')
+def k117(c):
+    import http.client
+    import json
+    import os
+    import socket
+    import subprocess
+    import sys
+    import tempfile
+    import time
+    from pathlib import Path
+    RJ, B, fn, check = _d5_modules()
+    # the route's rules, on the real Jobs with a job that offers one moved file
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        (data / 'local' / 'sources' / 'sia' / '2026-10-29').mkdir(parents=True)
+        (data / 'local' / 'sources' / 'sia' / '2026-10-29' / 'XML_SIA_2026-10-29.xml').write_text('<x>ok</x>', encoding='utf-8')
+        (data / 'local' / 'build').mkdir(parents=True)
+        (data / 'local' / 'build' / 'es.json').write_text('{"secret": 1}', encoding='utf-8')
+        stop = {'go': False}
+
+        def verb(job, a, ctx):
+            job.offer({'zones': ['ie'], 'sources': [{'source': 'sia', 'cycle': '2026-10-29', 'name': 'XML_SIA_2026-10-29.xml'}]})
+            while not stop['go'] and not job.cancelled():
+                time.sleep(0.05)
+            return {'ok': True}
+        jobs = RJ.Jobs({('t', 'build'): (verb, lambda a: {})}, {'data': str(data)}, min_gap={})
+        job_id = jobs.start('t', 'build', {})['job']
+        tok = jobs.cur.token
+        good = ('sia', '2026-10-29', 'XML_SIA_2026-10-29.xml')
+        r = jobs.input_file(job_id, tok, *good)
+        c.eq((r['ok'], r['size'], Path(r['path']).read_text(encoding='utf-8')), (True, 9, '<x>ok</x>'), 'the token of the claim and an offered file: the file, its size', what='ok')
+        refusals = {k: jobs.input_file(*a).get('status') for k, a in {
+            'no token': (job_id, '', *good), 'wrong token': (job_id, 'x' * 40, *good), 'other job': ('nope', tok, *good), 'not offered': (job_id, tok, 'sia', '2026-10-29', 'XML_SIA_2026-10-01.xml'),
+            'dot dot': (job_id, tok, 'sia', '2026-10-29', '..'), 'traversal': (job_id, tok, 'sia', '2026-10-29', '../../build/es.json'), 'other folder': (job_id, tok, 'sia', '..', 'es.json'), 'not text': (job_id, tok, 'sia', None, 'a')}.items()}
+        c.eq(refusals, {'no token': 403, 'wrong token': 403, 'other job': 409, 'not offered': 400, 'dot dot': 400, 'traversal': 400, 'other folder': 400, 'not text': 400},
+             'refused: no token or a wrong one (403), another job (409), a file the job did not offer, « .. » or a path (400): nothing of data/local/ but the offered files is ever read through it', what='refusals')
+        os.remove(data / 'local' / 'sources' / 'sia' / '2026-10-29' / 'XML_SIA_2026-10-29.xml')
+        c.eq(jobs.input_file(job_id, tok, *good).get('status'), 404, 'an offered file that is not there: 404', what='absent')
+        stop['go'] = True
+        for _ in range(60):
+            if jobs.cur.data['state'] != 'running':
+                break
+            time.sleep(0.05)
+        c.eq(jobs.input_file(job_id, tok, *good).get('status'), 409, 'once the job is over the token opens nothing', what='over')
+    # the real launcher, the real browser: a build whose SIA XML are in data/local/sources/
+    if not B.find_browser({}):
+        print('NOTE K117: no Edge or Chrome on this workstation: the end-to-end run is not made')
+        return
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        (data / 'sia' / 'openaip').mkdir(parents=True)
+        (data / 'local' / 'sources' / 'sia' / '2026-10-29').mkdir(parents=True)
+        (data / 'local' / 'sources' / 'sia' / '2026-10-29' / 'XML_SIA_2026-10-29.xml').write_text('<?xml version="1.0" encoding="ISO-8859-1"?><SiaExport Date="2026-10-29"/>', encoding='iso-8859-1')
+        (data / 'data_tree.js').write_text('window.DATA_TREE = {};\n', encoding='utf-8')
+        (data / 'sia' / 'openaip' / 'ie_apt.geojson').write_text(json.dumps({'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [-8.0, 53.0]},
+                                                                  'properties': {'_id': 'k117a', 'name': 'TESTFIELD', 'icaoCode': 'EITS', 'type': 2, 'trafficType': [0], 'country': 'IE'}}]}), encoding='utf-8')
+        s = socket.socket()
+        s.bind(('127.0.0.1', 0))
+        port = s.getsockname()[1]
+        s.close()
+        tmp = Path(td) / 'tmp'
+        tmp.mkdir()
+        log = open(Path(td) / 'launcher.log', 'w')
+        p = subprocess.Popen([sys.executable, str(c.root / 'tools' / 'launch.py'), '--port', str(port), '--no-browser', '--data', str(data)], stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, cwd=td,
+                             env={**os.environ, 'TEMP': str(tmp), 'TMP': str(tmp), 'TMPDIR': str(tmp)})
+        try:
+            def call(method, path, body=None, **headers):
+                h = http.client.HTTPConnection('127.0.0.1', port, timeout=30)
+                h.request(method, path, body=json.dumps(body) if body is not None else None, headers=headers)
+                r = h.getresponse()
+                return r.status, r.read()
+            for _ in range(60):
+                try:
+                    if call('GET', '/', **{'Sec-Fetch-Site': 'same-origin'})[0] in (200, 302, 404):
+                        break
+                except OSError:
+                    time.sleep(0.5)
+            same = {'Sec-Fetch-Site': 'same-origin'}
+            c.eq(call('GET', '/data/local/sources/sia/2026-10-29/XML_SIA_2026-10-29.xml', **same)[0], 404, 'data/local/sources/ stays hidden to the rest of the world (the rule of the audit of 7 Oct is untouched)', what='hidden')
+            c.eq(call('GET', '/data/local/build/es.json', **same)[0], 404, 'and so does the rest of data/local/', what='hidden build')
+            q = '/__setup/regen/job/input?job=x&source=sia&cycle=2026-10-29&name=XML_SIA_2026-10-29.xml'
+            c.eq(call('GET', q, **same)[0], 403, 'the route without the X-SOG-Setup header: refused', what='no header')
+            c.eq(call('GET', q, **same, **{'X-SOG-Setup': '1'})[0], 409, 'with the header but no running job of that id: refused (409), never a file', what='no job')
+            hdr = {'X-SOG-Setup': '1', 'Content-Type': 'application/json', 'Sec-Fetch-Site': 'same-origin'}
+            st, raw = call('POST', '/__setup/regen/job', {'set': 'base', 'verb': 'build', 'args': {'zones': ['ie']}, 'author': 'TST'}, **hdr)
+            job = json.loads(raw)['job']
+            end = time.time() + 150
+            while time.time() < end:
+                v = json.loads(call('GET', f'/__setup/regen/job?id={job}', **hdr)[1])
+                if v.get('state') != 'running':
+                    break
+                time.sleep(0.5)
+            z = (v.get('zones') or {}).get('ie') or {}
+            c.eq((v.get('state'), (v.get('result') or {}).get('built'), z.get('message')), ('done', ['ie'], None), 'the real launcher and the real browser build a zone while the SIA XML are in data/local/sources/ (HTTP 404 before: every zone failed)', what='end to end')
+        finally:
+            p.terminate()
+            try:
+                p.wait(10)
+            except subprocess.TimeoutExpired:
+                p.kill()
+            log.close()
+
+
 @case('K65', 'Build job: a zone shows a count of sources only when the builder gives one for it; the build\'s count goes once in the job', 'K', static=True,
       rule='Réglages 1 Nov 2026 (the user saw « construction (90 / 90 sources) » on all 26 zones): the builder\'s counts are global; a zone gets done / total only from a count of its own; job.data inputs = { done, total } once')
 def k65(c):

@@ -1632,6 +1632,29 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         v = regen().claim((a if isinstance(a, dict) else {}).get('job'))
         return self._json(v, v.get('status', 200) if v.get('ok') is False else 200)
 
+    @route('GET', '/__setup/regen/job/input', public='poste')
+    def _get_regen_job_input(self, path):
+        # un XML d'entrée DÉPLACÉ (data/local/sources/…, caché au reste du monde par hidden()) lu par la page sans fenêtre du travail en cours : jeton de sa réclamation en en-tête, le fichier est l'un de ceux
+        # que le travail a offerts (regen_jobs.input_file), servi en flux (SOG-0144)
+        if self._lan() or not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+        one = lambda k: (q.get(k) or [''])[0]
+        v = regen().input_file(one('job'), self.headers.get('X-SOG-Job-Token', ''), one('source'), one('cycle'), one('name'))
+        if not v.get('ok'):
+            return self._json(v, v.get('status', 400))
+        try:
+            f = open(v['path'], 'rb')
+        except OSError:
+            return self._json({'ok': False, 'message': 'no such file'}, 404)
+        with f:
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/octet-stream')
+            self.send_header('Cache-Control', 'no-store')
+            self.send_header('Content-Length', str(v['size']))
+            self.end_headers()
+            shutil.copyfileobj(f, self.wfile, 1 << 20)
+
     @route('POST', '/__setup/regen/job/put', public='poste')
     def _post_regen_job_put(self, path, body):
         # sortie d'une zone rendue par la page sans fenêtre du travail en cours (construction de la base, D5) : jeton du

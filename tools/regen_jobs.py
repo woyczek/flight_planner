@@ -209,6 +209,7 @@ class Job:
 # délai minimal entre deux départs d'un même verbe, en secondes : chaque jeu exporte le sien (tools/regen/<jeu>.py, MIN_GAP ; load_verbs les réunit ici) ; celui d'EAD Basic
 # (30 s, tools/regen/proc.py) fait partie de ses conditions : un terrain par geste, jamais en masse (EAD_BASIC.md § 1)
 MIN_GAP = {}
+SOURCE_PART = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,120}$')     # un nom de dossier ou de fichier de data/local/sources/ : ni séparateur, ni « .. » (le premier signe n'est pas un point), ni espace
 # la raison d'un refus d'arguments (400), dans ses mots : chaque jeu exporte EXPLAIN = { (jeu, verbe): fonction(args) → { reason, message, ...paramètres } | None } ; load_verbs les réunit ici (SOG-0144)
 EXPLAIN = {}
 # les verbes qui ne font que lire : leur travail ne remplace pas le dernier travail qui a écrit (Jobs.work, tools/.regen_last.json › work)
@@ -381,6 +382,29 @@ class Jobs:
                 return {'ok': False, 'status': 409, 'message': 'nothing to claim (not offered, or already claimed)'}
             j._claimed = True
             return {**j._offer, 'ok': True, 'job': j.id, 'token': j.token}
+
+    def input_file(self, id_, token, source, cycle, name):
+        """Un fichier d'entrée DÉPLACÉ que le travail en cours a offert (data/local/sources/<source>/<cycle>/<nom>, que le lanceur ne sert pas comme fichier de data/ : SOG-0144, décision de la session ergonomie) : lu par la page sans fenêtre du travail
+        sur présentation du JETON de sa réclamation. 409 (pas le travail qui tourne), 403 (jeton faux), 400 (ce n'est pas l'un des fichiers que le travail a offerts, nom hors de la règle, chemin qui sort du dossier), 404 (absent) ; sinon
+        { ok, path, size } : la route sert le fichier en flux. Rien d'autre de data/local/ n'est jamais lisible par là : la liste des fichiers est celle de l'offre du travail, jamais un nom de la page."""
+        with self.lock:
+            j = self.cur
+        if not j or j.id != str(id_ or '') or j.data['state'] != 'running':
+            return {'ok': False, 'status': 409, 'message': 'not the running job'}
+        if not isinstance(token, str) or not token or not hmac.compare_digest(token.encode(), j.token.encode()):
+            return {'ok': False, 'status': 403, 'message': 'wrong token'}
+        offered = ((j._offer or {}).get('sources') if isinstance(j._offer, dict) else None) or []
+        if not any(isinstance(s, dict) and (s.get('source'), s.get('cycle'), s.get('name')) == (source, cycle, name) for s in offered) or not all(isinstance(x, str) for x in (source, cycle, name)):
+            return {'ok': False, 'status': 400, 'message': 'not an input of the job'}
+        data = (self.ctx or {}).get('data')
+        if not data or not SOURCE_PART.fullmatch(source) or not SOURCE_PART.fullmatch(cycle) or not SOURCE_PART.fullmatch(name):
+            return {'ok': False, 'status': 400, 'message': 'refused name'}
+        root = os.path.realpath(os.path.join(data, 'local', 'sources'))
+        path = os.path.join(root, source, cycle, name)
+        real = os.path.realpath(path)
+        if not inside(real, root) or os.path.islink(path) or not os.path.isfile(real):
+            return {'ok': False, 'status': 404, 'message': 'no such file'}
+        return {'ok': True, 'path': real, 'size': os.path.getsize(real)}
 
     def put(self, id_, token, zone, files):
         """Sortie d'une zone rendue par la page sans fenêtre du travail en cours : 409 (pas celui qui tourne), 403 (jeton
