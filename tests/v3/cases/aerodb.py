@@ -5665,3 +5665,4 @@ def k75(c):
     k = src.index('c.start()')
     c.ok('if (lnmAuto &&' in src[max(0, k - 400):k] and src.count('c.start()') == 1, 'start', 'aerodb calls start() once, under the explicit option')
 
+

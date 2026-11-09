@@ -519,6 +519,10 @@ def install(data, zone, cycle, texts, entry):
         rel = f'sia/base/{MAJOR}' if name == MAJOR else f'sia/base/{zone}/{cycle}/{name}'
         written += write_if_changed(target_of(data, rel, zone), texts[name])
         paths.append(rel)
+    # SOG-0143 : l'index ne déclare JAMAIS un cycle dont un fichier manque sur le disque (un fichier écrit puis perdu, ou jamais écrit) : contrôlé juste avant de l'écrire, la zone n'est pas publiée sinon
+    gone = [n for n in sorted(texts) if n != MAJOR and not os.path.isfile(target_of(data, f'sia/base/{zone}/{cycle}/{n}', zone))]
+    if gone:
+        raise ValueError(f'incomplete zone folder, index not written: {gone[0]} absent')
     index = target_of(data, 'sia/base/index.json', zone)
     try:
         with open(index, encoding='utf-8') as f:

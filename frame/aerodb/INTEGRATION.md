@@ -700,3 +700,27 @@ The first new source of airways after France, the UK and Spain (decision of the 
 - **Reader** (`AeroSources.aixm5`, `shared/aero_sources.js`): this file has **no point** (no DesignatedPoint, no Navaid): each end of a segment is a reference with its name (`xlink:title`); the reader now names the end by that title and **places it at the end of the segment's curve** (`curveExtent`, `posList`, lat lon for EPSG:4326) when the point is not in the file (NATS and ENAIRE, which carry their points, are read as before). Measured on the real file: **1 797 segments, 399 routes**, every end named and placed, no segment over 500 NM; the direction comes from the availabilities (689 forward only, 578 backward only, 530 both ways) and the levels from `upperLimit` / `lowerLimit`.
 - **Parser version 23** (`shared/sia_base.js` VERSION, `AeroCatalogue.PARSER_VERSION`): the builds before it are shown « à reconstruire » (all the zones are already, since the direction of the airways, parser 22): one « Mettre à jour » rebuilds them, `de` included, once it has the file (`base/fetch` on the zone `de`).
 - **Not done**: the airspaces, the points and the navaids of Germany (other DFS datasets: `ED Airspaces`, `ED Waypoints`… are in the same metadata, not read); the credit « DFS, CC BY 4.0 » is in the catalogue's licence line, to be shown where the data are shown; no end-to-end build of `de` on a real browser was run here (the reader is checked on the real file, the build page uses the same reader).
+
+#### More reasons for `base/status` and a notice (SOG-0143, 10 Nov 2026)
+
+Four codes join the reasons of `base/status`, and the answer gains `notices` per zone (information that does **not** make the zone stale):
+
+| code | where | parameters | buildable | meaning |
+|---|---|---|---|---|
+| `index-orphan` | reasons (first) | `cycle`, `count` | yes | `sia/base/index.json` declares a cycle for the zone whose folder lacks files (`count`: files absent among `meta` and the 12 kinds): the app would say « aucune base installée »; rebuild |
+| `source-unbuilt` | reasons | `source` | yes | the zone was built **without points or airways**, its dated source (ENAIRE, NATS, AirNav, DFS, SIA) has its file on the workstation and is readable (declared « personnel » when the licence asks): built before the file: rebuild |
+| `source-unread` | reasons | `source`, `why: 'personal'` | **no** | the same, but the licence is personal use and the **« personnel » box does not declare it**: the file is there and was not read; declare it (`personal: ['enaire']`) |
+| `source-missing` | reasons | `source` | **no** | the same, and **no file of that source on the workstation**: to download or drop |
+| `no-points` | **notices** | `source: 'openaip'` | — | the zone was built without points or airways **and none of its sources carries any** (openAIP gives airspaces, aerodromes, navaids and VFR points only): not stale, said so that an unknown point (NOSLI, MOKNI, ADVOP in Sweden, Denmark) is understood |
+
+The four-language sentences (the page writes them with `K.t`):
+
+| code | fr | en | de | es |
+|---|---|---|---|---|
+| `index-orphan` | Fichier du cycle {cycle} déclaré mais absent ({count}) : reconstruire | File of cycle {cycle} declared but absent ({count}): rebuild | Datei des Zyklus {cycle} angegeben, aber nicht vorhanden ({count}): neu erstellen | Archivo del ciclo {cycle} declarado pero ausente ({count}): reconstruir |
+| `source-unbuilt` | Construite sans points ni voies, le fichier {source} est là : reconstruire | Built without points or airways, the {source} file is there: rebuild | Ohne Punkte und Strecken erstellt, die {source}-Datei ist da: neu erstellen | Construida sin puntos ni aerovías, el archivo {source} está: reconstruir |
+| `source-unread` | Construite sans points ni voies : le fichier {source} est là mais la case « personnel » ne le déclare pas | Built without points or airways: the {source} file is there but the “personal” box does not declare it | Ohne Punkte und Strecken erstellt: die {source}-Datei ist da, das Feld „persönlich“ nennt sie nicht | Construida sin puntos ni aerovías: el archivo {source} está pero la casilla «personal» no lo declara |
+| `source-missing` | Construite sans points ni voies : le fichier {source} manque | Built without points or airways: the {source} file is missing | Ohne Punkte und Strecken erstellt: die {source}-Datei fehlt | Construida sin puntos ni aerovías: falta el archivo {source} |
+| `no-points` (notice) | Zone sans points ni voies : la source ne les porte pas (openAIP) | Zone without points or airways: the source does not carry them (openAIP) | Zone ohne Punkte und Strecken: die Quelle enthält sie nicht (openAIP) | Zona sin puntos ni aerovías: la fuente no los incluye (openAIP) |
+
+**The build never writes an index that points at an absent file**: `base.install` checks that every file of the zone's folder is on the disk just before it writes `sia/base/index.json`; otherwise it raises (`write-failed` for the zone, nothing published, the index untouched).

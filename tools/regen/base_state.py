@@ -28,8 +28,9 @@ import aero_cycles  # noqa: E402
 import regen_jobs  # noqa: E402
 
 RECORD_DIR = ('local', 'build')
-ORDER = ('never-built', 'failed', 'pickup-waiting', 'source-newer', 'inputs-changed', 'parser-old', 'files-missing', 'source-old')
-BUILDABLE = {'never-built', 'failed', 'source-newer', 'inputs-changed', 'parser-old', 'files-missing'}
+ORDER = ('index-orphan', 'never-built', 'failed', 'pickup-waiting', 'source-newer', 'inputs-changed', 'source-unbuilt', 'parser-old', 'files-missing', 'source-unread', 'source-missing', 'source-old')
+BUILDABLE = {'index-orphan', 'never-built', 'failed', 'source-newer', 'inputs-changed', 'source-unbuilt', 'parser-old', 'files-missing'}
+POINT_SOURCES = ('sia', 'nats', 'enaire', 'airnav', 'dfs')      # les sources dont la suite lit les points ou les voies aériennes (openAIP n'en porte pas)
 MAX_ZONES = 60
 
 
@@ -169,6 +170,26 @@ def waiting_pickups(data, zones, ctx, held):
     return out
 
 
+def _declared(data, zone):
+    """Le cycle que l'index de la base (sia/base/index.json) déclare pour la zone, ou None."""
+    try:
+        with open(os.path.join(data, 'sia', 'base', 'index.json'), encoding='utf-8') as f:
+            e = ((json.load(f) or {}).get('zones') or {}).get(zone)
+        c = e.get('cycle') if isinstance(e, dict) else None
+        return c if isinstance(c, str) and re.fullmatch(r'\d{4}-\d{2}-\d{2}', c) else None
+    except (OSError, ValueError, AttributeError):
+        return None
+
+
+def _data_len(path):
+    try:
+        with open(path, encoding='utf-8') as f:
+            d = (json.load(f) or {}).get('data')
+        return len(d) if isinstance(d, (list, dict)) else None
+    except (OSError, ValueError, AttributeError):
+        return None
+
+
 def zone_states(data, zones, personal, ctx):
     """L'état des zones (voir l'en-tête) : { zone: { state, reason, reasons, buildable, builtCycle, expectedCycle, parserVersion } }."""
     B, S = _ns(('base', 'build')), _ns(('base', 'fetch'))
@@ -181,13 +202,19 @@ def zone_states(data, zones, personal, ctx):
     wait = waiting_pickups(data, zones, ctx, sources)
     out = {}
     for z in zones:
-        reasons = []
+        reasons, notices = [], []
         folders = built_folders(data, z)
         own = aero_cycles.zone_cycle(z, used)
+        declared = _declared(data, z)
+        if declared:
+            gone = [k for k in ('meta', *B.KINDS) if not os.path.isfile(os.path.join(data, 'sia', 'base', z, declared, f'{k}.json'))]
+            if gone:        # l'index annonce un cycle dont des fichiers manquent : l'appli dirait « aucune base installée » (SOG-0143)
+                reasons.append({'code': 'index-orphan', 'cycle': declared, 'count': len(gone)})
         rec = read_record(data, z)
         built = folders[-1] if folders else None
         if not folders:
-            reasons.append({'code': 'never-built'})
+            if not reasons:
+                reasons.append({'code': 'never-built'})
         else:
             if rec and rec.get('failed') and rec['failed'].get('at', '') >= (rec.get('builtAt') or ''):
                 reasons.append({'code': 'failed', 'error': rec['failed'].get('error')})
@@ -206,11 +233,25 @@ def zone_states(data, zones, personal, ctx):
             missing = [k for k in B.KINDS if not os.path.isfile(os.path.join(data, 'sia', 'base', z, built, f'{k}.json'))]
             if missing:
                 reasons.append({'code': 'files-missing', 'count': len(missing)})
+            elif _data_len(os.path.join(data, 'sia', 'base', z, built, 'points.json')) == 0 and _data_len(os.path.join(data, 'sia', 'base', z, built, 'airways.json')) == 0:
+                # construite sans point ni voie : la zone a une source qui en porte (le fichier manque : à fournir) ou n'en a aucune (openAIP : la source ne les porte pas)
+                giving = [s for s in S.sources_of(z) if s in POINT_SOURCES]
+                if giving:
+                    g = giving[0]
+                    there = any((fs := S.file_source(rel)) and fs['source'] == g for rel in inputs)
+                    if not there:
+                        reasons.append({'code': 'source-missing', 'source': g})                    # le fichier de la source n'est pas sur le poste : à fournir
+                    elif g in aero_cycles.PERSONAL_CYCLED and g not in personal:
+                        reasons.append({'code': 'source-unread', 'source': g, 'why': 'personal'})   # le fichier est là, la case « personnel » ne le déclare pas : construit sans
+                    else:
+                        reasons.append({'code': 'source-unbuilt', 'source': g})                    # le fichier est là et lisible : la zone a été construite avant lui
+                else:
+                    notices.append({'code': 'no-points', 'source': 'openaip'})
         reasons += wait.get(z, [])
         reasons.sort(key=lambda r: ORDER.index(r['code']))
         first = reasons[0]['code'] if reasons else None
         state = 'up-to-date' if not reasons else 'never-built' if first == 'never-built' else 'failed' if first == 'failed' else 'stale'
-        out[z] = {'state': state, 'reason': reasons[0] if reasons else None, 'reasons': reasons, 'buildable': any(r['code'] in BUILDABLE for r in reasons), 'builtCycle': built,
+        out[z] = {'state': state, 'reason': reasons[0] if reasons else None, 'reasons': reasons, 'notices': notices, 'buildable': any(r['code'] in BUILDABLE for r in reasons), 'builtCycle': built,
                   'expectedCycle': own or built, 'parserVersion': _meta_version(os.path.join(data, 'sia', 'base', z, built, 'meta.json')) if built else None}
     return out
 

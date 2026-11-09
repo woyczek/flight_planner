@@ -1020,6 +1020,70 @@ def k109(c):
         c.eq(sorted(os.listdir(data / 'local' / 'build')), ['de.json', 'dk.json', 'fr.json', 'it.json', 'nl.json', 'no.json', 'se.json'], 'what each build read is kept apart, under data/local/ (never published)', what='records')
 
 
+@case('K114', 'base/status names two more states (SOG-0143): the index declares a cycle whose files are absent, and a zone built without points or airways (source file missing, or a source that carries none); the build never writes an index that points at an absent file', 'K', static=True,
+      rule='SOG-0143 (10 Nov 2026): Spain, Sweden and Denmark are in the countries but the app says no base installed / unknown points (NOSLI, MOKNI, ADVOP): the index declares 2026-10-29 for es, se, dk while the 29 Oct build had no ENAIRE file (es: no points, no airways) and openAIP carries neither points nor airways (se, dk); base/status says it in codes (index-orphan, source-missing, and the notice no-points) and the build checks that every file of the folder is on the disk before it writes the index')
+def k114(c):
+    RJ, BS, AF, DS = _mods()
+    BA = types.SimpleNamespace(**RJ.REGISTRY[('base', 'build')][0].__globals__)
+    ST = types.SimpleNamespace(**RJ.REGISTRY[('base', 'status')][0].__globals__)
+    status, check_s = RJ.REGISTRY[('base', 'status')]
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        data.mkdir()
+        parser = ST.parser_version()
+
+        def built(zone, cycle='2026-10-29', empty=True, skip_files=False):
+            d = data / 'sia' / 'base' / zone / cycle
+            d.mkdir(parents=True, exist_ok=True)
+            if skip_files:
+                return
+            (d / 'meta.json').write_text(json.dumps({'schema': 2, 'zone': zone, 'cycle': cycle, 'kind': 'meta', 'parserVersion': parser, 'data': {}}), encoding='utf-8')
+            for k in BA.KINDS:
+                if k != 'meta':
+                    (d / f'{k}.json').write_text(json.dumps({'schema': 2, 'zone': zone, 'cycle': cycle, 'kind': k, 'data': [] if empty and k in ('points', 'airways') else [{'id': 'X'}]}), encoding='utf-8')
+
+        def index(**zones):
+            (data / 'sia' / 'base').mkdir(parents=True, exist_ok=True)
+            (data / 'sia' / 'base' / 'index.json').write_text(json.dumps({'schema': 2, 'kind': 'index', 'zones': {z: {'cycle': cy, 'prefixes': [], 'kb': {}, 'cells': {}} for z, cy in zones.items()}}), encoding='utf-8')
+        built('es')              # built without the ENAIRE file read: no points, no airways, the zone has a source that carries them
+        built('ie')              # the same, and no file of its source (AirNav) on the workstation
+        (data / 'sia' / 'aixm5').mkdir(parents=True)
+        (data / 'sia' / 'aixm5' / 'LE_Amdt_A_2026_10_AIP_DS_FULL_EnRoute.xml').write_text('<x/>', encoding='utf-8')     # the ENAIRE file IS on the workstation (as on the user's)
+        built('se')              # openAIP only: a source that carries neither
+        built('dk', skip_files=True)   # the index declares the cycle, the folder is empty
+        built('fr', empty=False)
+        index(es='2026-10-29', se='2026-10-29', dk='2026-10-29', fr='2026-10-29', ie='2026-10-29')
+        ctx = {'data': str(data), 'downloads': lambda: [], 'today': datetime.date(2026, 11, 9)}
+        z = status(RJ.Job('base', 'status', {}), check_s({'zones': ['es', 'se', 'dk', 'fr', 'ie']}), ctx)['zones']
+        c.eq({k: (v['state'], v['reason']['code'] if v['reason'] else None, v['buildable'], [n['code'] for n in v['notices']]) for k, v in z.items() if k in ('es', 'se', 'dk', 'ie')},
+             {'es': ('stale', 'source-unread', False, []), 'se': ('up-to-date', None, False, ['no-points']), 'dk': ('stale', 'index-orphan', True, []), 'ie': ('stale', 'source-missing', False, [])},
+             'es: built without points or airways although ENAIRE carries them and its file is there: not read, the « personnel » box does not declare it (not buildable as it is); ie: the file of the source is not on the workstation; se: openAIP carries neither, said as a notice, the zone is not stale for it; dk: the index declares a cycle whose files are absent: rebuild', what='states')
+        z2 = status(RJ.Job('base', 'status', {}), check_s({'zones': ['es'], 'personal': ['enaire']}), ctx)['zones']['es']
+        c.eq((z2['reason'], z2['buildable']), ({'code': 'source-unbuilt', 'source': 'enaire'}, True), 'with the box declared the file is readable and the zone was built before it: rebuild', what='declared')
+        c.eq((z['es']['reason'], z['se']['notices'][0], z['dk']['reason']), ({'code': 'source-unread', 'source': 'enaire', 'why': 'personal'}, {'code': 'no-points', 'source': 'openaip'}, {'code': 'index-orphan', 'cycle': '2026-10-29', 'count': 13}),
+             'the codes with their parameters: the source that is missing, the source that carries nothing, the cycle the index declares and the number of files absent', what='params')
+        c.eq((z['fr']['state'], z['fr']['notices']), ('up-to-date', []), 'a zone with its points and airways is up to date, no notice', what='fr')
+        # the build never writes an index that points at an absent file (counter-test)
+        index(fr='2026-10-29')
+        before = (data / 'sia' / 'base' / 'index.json').read_text(encoding='utf-8')
+        texts = {f'{k}.json': json.dumps({'schema': 2, 'zone': 'nl', 'cycle': '2026-10-29', 'kind': k, 'parserVersion': parser, 'data': []}) for k in BA.KINDS}
+        entry = {'cycle': '2026-10-29', 'prefixes': [], 'kb': {}, 'cells': {}}
+        g = RJ.REGISTRY[('base', 'build')][0].__globals__
+        real = g['write_if_changed']
+        g['write_if_changed'] = lambda path, text, parsed=None: False if path.endswith('points.json') else real(path, text, parsed)      # a file lost between the writing and the index
+        try:
+            try:
+                BA.install(str(data), 'nl', '2026-10-29', texts, entry)
+                lost = None
+            except ValueError as e:
+                lost = str(e)
+        finally:
+            g['write_if_changed'] = real
+        c.eq((bool(lost) and 'points.json absent' in lost, (data / 'sia' / 'base' / 'index.json').read_text(encoding='utf-8') == before), (True, True), 'a file of the folder is absent when the index is to be written: the zone is not published, the index is untouched', what='no orphan index')
+        paths, written = BA.install(str(data), 'nl', '2026-10-29', texts, entry)
+        c.eq(('sia/base/index.json' in paths, json.loads((data / 'sia' / 'base' / 'index.json').read_text(encoding='utf-8'))['zones']['nl']['cycle']), (True, '2026-10-29'), 'a complete folder: the index is written', what='index written')
+
+
 # ---------------------------------------------------------------------------------------------------------------------------------------------
 @case('K70', 'Ireland (AirNav eAIP): the current issue read from the AIM page, ENR 4.4 points and ENR 3.3 routes read from invented pages in the real markup, written by the launcher under its AIRAC date', 'K', static=True,
       rule='Lot C2 (5 Nov 2026): the zone ie gets its points and airways from the official eAIP (HTML tables, DMS coordinates); the address of the issue is read from the page and checked; the file carries the issue date (its cycle); no licence found: personal-licence source; fixtures are INVENTED in the real markup (the code repository is public, frame/aerodb/test/fixtures/SOURCES.md)')
