@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Aircraft: « Compléter depuis une autre fiche… » chooses nothing in advance** (`modules/aircraft/sheets.js`; Aircraft SPEC § 6;
+  noreg M34, M14; SOG-0073). A button that opens the aircraft search; before, a select showed another sheet as if it were the open one.
+
+- **Fuel and Aircraft: the fuel unit in the module's sticky line** (`modules/fuel/module.js`, `modules/aircraft/sheets.js`; SPECs;
+  noreg F108, M35; SOG-0074). « lb · lb/h » after the aircraft on Fuel's result bar; the sheet editor's head stays at the top with the
+  sheet's name and unit, a tap leading to the unit's choice. Never in the frame's header.
+
 - **Aircraft: the sheet editor without its twenty provenance lines** (`modules/aircraft/sheets.js`, `sheets_texts.js`, help ×4; Aircraft SPEC
   § 6, DECISIONS; noreg M33, M7, M8, M23; SOG-0057, V3 spec § 10.43). The provenance of a field is a mark « • » at the end of its label
   (source and date in its title, said by a tap); each card says its distinct sources once; « Carburant en volume » and « Densité »

@@ -47,6 +47,8 @@ export const SHEETS_STYLE = `[data-module="aircraft"] .ac-g3{--f-min:150px;align
 [data-module="aircraft"] .ac-legend{display:flex;flex-wrap:wrap;gap:4px 12px;margin:4px 0 8px;font-size:var(--sog-size-s)}
 [data-module="aircraft"] .ac-legend i{display:inline-block;width:12px;height:12px;margin-right:4px;vertical-align:-1px;border-radius:2px}
 [data-module="aircraft"] .ac-legend i.ac-meas{background:none;border:2px solid var(--sog-muted);border-radius:0}
+/* SOG-0074 : la ligne de tête de l'éditeur reste en haut (nom de la fiche et unité, celle-ci menant à son choix) */
+[data-module="aircraft"] .ac-edithead{position:sticky;top:0;z-index:5;background:var(--sog-bg);margin-bottom:var(--sog-gap);padding:4px 0}
 [data-module="aircraft"] .ac-mark{color:var(--sog-muted);margin-left:4px;cursor:help;font-size:var(--sog-size-s)}
 [data-module="aircraft"] .ac-sources{font-weight:400;margin-left:6px}
 @media (max-width: 760px){[data-module="aircraft"] .ac-sources{display:block;margin:2px 0 0}}
@@ -431,8 +433,25 @@ export function createSheetsView(host) {
           source: 'eurocontrol'
         });
       }
+      case 'unitgo': { // SOG-0074 : l'unité de la ligne collante mène à son choix (« Carburant lu et saisi en »)
+        const sel = body()?.querySelector('[data-vunitbox] select[data-k="vunit"]');
+        sel?.scrollIntoView({
+          block: 'center'
+        });
+        return sel?.focus();
+      }
+      case 'fillopen': { // SOG-0073 : rien n'est montré tant qu'on n'a pas choisi ; la recherche des appareils (celle du pas Vol)
+        st.fillOpen = !st.fillOpen;
+        await editor(p.id, readEditor(p, true));
+        if (st.fillOpen) {
+          body()?.querySelector('[data-k="fillq"]')?.focus();
+          fillResults('');
+        }
+        return;
+      }
       case 'fill': {
-        const other = st.sheets.find(x => x.id === body().querySelector('[data-k="fillfrom"]')?.value);
+        st.fillOpen = false;
+        const other = st.sheets.find(x => x.id === b.dataset.id && x.id !== p.id);
         if (!other) return;
         return review(p, F.fillProfileGaps(structuredClone(p), F.normalize(structuredClone(other))), {
           src: other.name || other.id,
@@ -511,10 +530,25 @@ export function createSheetsView(host) {
   }
   /** Saisie : la recherche de la liste (les rangées seules sont redessinées, la frappe reste en place). */
   function onInput(e) {
+    if (e.target.dataset?.k === 'fillq') return fillResults(e.target.value);
     if (e.target.dataset?.k !== 'q' || !body()) return;
     st.q = e.target.value;
     const list = body().querySelector('[data-list]');
     if (list) list.innerHTML = rowsHtml();
+  }
+  /** « Compléter depuis une autre fiche… » (SOG-0073) : les fiches que la recherche des appareils d'aerodb trouve (celle du pas Vol de
+   *  Carburant : fiches, flotte, référence ; une ligne par fiche, la fiche ouverte exceptée), sept au plus ; une tape lance la complétion
+   *  (la revue habituelle). La dernière demande seule est dessinée. */
+  async function fillResults(text) {
+    const box = body()?.querySelector('[data-fillres]');
+    if (!box || !st.edit) return;
+    const seq = st.fillSeq = (st.fillSeq || 0) + 1,
+      hits = st.A?.search ? await st.A.search(text, 30).catch(() => []) : [];
+    if (seq !== st.fillSeq || gone()) return;
+    const ids = [...new Set(hits.map(h => h.sheetId).filter(id => id && id !== st.edit.id))].slice(0, 7),
+      rows = ids.map(id => st.sheets.find(x => x.id === id)).filter(Boolean);
+    box.innerHTML = rows.length ? rows.map(x => `<button type="button" class="f-item" data-do="fill" data-id="${esc(x.id)}"><span><b>${esc(x.name || x.id)}</b> <span class="f-muted">${esc([x.icao, x.unit].filter(Boolean).join(' · '))}</span></span></button>`).join('') :
+      `<p class="f-muted">${esc(tt(TX.fillNone))}</p>`;
   }
   /** Changement : le fichier choisi par « Importer ». */
   function onChange(e) {
@@ -1020,11 +1054,12 @@ export function createSheetsView(host) {
         return `<label class="f-field"><span>${lab}${mark}</span><input data-path="${path}" data-type="${type}" value="${esc(v ?? '')}"${type === 'number' ? ' inputmode="decimal"' : ''}>${org}</label>`;
       },
       others = st.sheets.filter(x => x.id !== p.id);
-    b.innerHTML = `<div class="f-row" style="margin-bottom:var(--sog-gap)"><button type="button" data-do="back">${esc(tt(TX.back))}</button><b>${esc(p.name || p.id)}</b><span class="f-muted">${esc(F.profileSourceText(p))}</span></div>
+    b.innerHTML = `<div class="f-row ac-edithead" data-edithead><button type="button" data-do="back">${esc(tt(TX.back))}</button><b>${esc(p.name || p.id)}</b><button type="button" class="f-linkbtn" data-do="unitgo" title="${esc(tt(TX.viewUnit))}">${esc(`${MASS[vu]} · ${FLOW[vu]}`)}</button><span class="f-muted">${esc(F.profileSourceText(p))}</span></div>
     <div class="f-card"><div class="f-row">
       <button type="button" data-do="apd">${esc(tt(TX.eurocontrol))}</button>
-      ${others.length ? `<select data-k="fillfrom" aria-label="${esc(tt(TX.fillFrom))}">${others.map(o => `<option value="${esc(o.id)}"${(o.icao || '') === (p.icao || '-') ? ' selected' : ''}>${esc(o.name || o.id)}</option>`).join('')}</select><button type="button" data-do="fill">${esc(tt(TX.fillFrom))}</button>` : ''}
+      ${others.length ? `<button type="button" data-do="fillopen" aria-expanded="${!!st.fillOpen}">${esc(tt(TX.fillFrom))}…</button>` : ''}
     </div></div>
+    ${st.fillOpen && others.length ? `<div class="f-card" data-fillbox><label class="f-field">${esc(tt(TX.fillFrom))}<input type="search" data-k="fillq" placeholder="${esc(tt(TX.fillSearch))}" autocomplete="off"></label><div class="f-list" data-fillres></div></div>` : ''}
     <details class="f-card"><summary>${esc(tt(TX.gpt))}</summary>
       <div class="f-row"><button type="button" data-do="gpt">${esc(tt(TX.gptPrompt))}</button><button type="button" data-do="gptmiss">${esc(tt(TX.gptMissing))}</button></div>
       <label class="f-field ac-hide">&nbsp;<textarea data-k="gptprompt" rows="4" readonly></textarea></label>

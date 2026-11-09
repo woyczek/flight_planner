@@ -132,6 +132,8 @@ closed). The module declares the writes `airline/` and `pilot/` (merge `record`,
   keep a line of sixty signs at most and a « ? » to their paragraph of the help (`#help?m=aircraft&a=aircraft-fuel-volume`,
   `aircraft-fuel-density`), the explanations themselves being in the help (M23, M33); the fuel fields carry the unit they are read and typed in; airframe and propulsion that aerodb's
   types base gives show « auto · … » and stay empty in the sheet (M7).
+- **The editor's head** (SOG-0074): a sticky line (`data-edithead`) with « Retour », the sheet's name and its unit of reading
+  (« lb · lb/h »), a button that leads to « Carburant lu et saisi en »; the unit is the module's, never the frame's header (M35).
 - **Curves per altitude** (SOG-0028, V3 spec § 10.37 C): the curve of one altitude is the rows of `rpmFuelCurve` sharing `altFt`
   (the column « ft »), the rows without altitude one more curve with the cruise point; no second field (`cruise.curves` was not
   added: one source, SOG-0023). The rule of SOG-0015 (a flow that goes down while the rpm goes up is said, its row in orange, never
@@ -171,7 +173,9 @@ closed). The module declares the writes `airline/` and `pilot/` (merge `record`,
 - **Sources**: an edit, stamped `edit` (M8); « Importer un fichier » (`.csv`, `.json`, `.lnmperf`, `.xml`, `.txt`) and « Coller un
   texte », stamped `import` (M13, M9; the formats: F10); « Compléter avec ChatGPT » copies the request and opens chatgpt.com in a new tab (the request in the address when under 7000
   characters), the reply pasted under it (`perf_prompt.js`), stamped `chatgpt` (M22, M15);
-  « Compléter depuis une autre fiche », the empty fields only (M14); « Compléter (EUROCONTROL) », stamped `eurocontrol` (no case).
+  « Compléter depuis une autre fiche… », the empty fields only (M14): a button, one line, that names no other sheet until asked; it
+  opens the aircraft search of aerodb (the Flight step's: sheets, fleet, reference), one row per sheet, the open one never (SOG-0073,
+  M34); « Compléter (EUROCONTROL) », stamped `eurocontrol` (no case).
 - **New sheet**: « Nouvelle fiche » asks a code, written in capitals; « Créer la fiche » of a company type takes its code without asking;
   a type the registry does not know is a sheet with that id, nothing more; then the review (M12).
 - **Remove**: a question, then `sheets.remove(id)` (M11). **Export**: « Exporter .lnmperf » (refused with the empty fields Little

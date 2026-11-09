@@ -51,6 +51,14 @@ export const TX = {
   fillFrom: ['Compléter depuis une autre fiche', 'Complete from another sheet', 'Aus anderem Datenblatt ergänzen',
     'Completar desde otra ficha'
   ],
+  // SOG-0073 : la recherche de la fiche qui complète (celle des appareils), rien de choisi d'avance
+  fillSearch: ['Fiche, immatriculation, indicatif ou type', 'Sheet, registration, callsign or type',
+    'Datenblatt, Kennzeichen, Rufzeichen oder Typ',
+    'Ficha, matrícula, indicativo o tipo'
+  ],
+  fillNone: ['Aucune autre fiche ne correspond.', 'No other sheet matches.', 'Kein anderes Datenblatt passt.',
+    'Ninguna otra ficha coincide.'
+  ],
   pasted: ['texte collé', 'pasted text', 'eingefügter Text', 'texto pegado'],
   typeCode: ['Code OACI du type', 'ICAO type code', 'ICAO-Typcode', 'Código OACI del tipo'],
   gpt: ['ChatGPT', 'ChatGPT', 'ChatGPT', 'ChatGPT'],

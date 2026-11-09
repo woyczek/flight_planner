@@ -4402,7 +4402,7 @@ function refresh() {
   else {
     const range = !q.windKnown && Number.isFinite(q.blockLow) && Number.isFinite(q.blockHigh) && Math.round(q.blockLow) !== Math.round(q
       .blockHigh);
-    res.innerHTML = `${flightState() ? `<div class="fu-flightstate">${esc(flightState())}</div>` : ''}<div class="f-muted fu-ctx" title="${esc(resultContext(q, range, false))}">${acLineHtml()}${esc(resultContext(q, range, true))}</div>
+    res.innerHTML = `${flightState() ? `<div class="fu-flightstate">${esc(flightState())}</div>` : ''}<div class="f-muted fu-ctx" title="${esc(resultContext(q, range, false))}">${acLineHtml()}<span data-ctxunit>${esc(`${fuelUnitOf(unit)} · ${fuelUnitOf(unit)}/h`)}</span><span aria-hidden="true"> · </span>${esc(resultContext(q, range, true))}</div>
       <div class="fu-big">${range ? `${esc(fuelTxt(q.blockLow, unit))} – ${esc(fuelTxt(q.blockHigh, unit))}` : esc(fuelTxt(q.block, unit))}</div>
       <div class="f-tiles"><span class="f-muted" title="${esc(tt(TX.trip))}">${esc(tt(TX.tripS))}<b>${esc(fuelTxt(q.trip, unit))}</b></span><span class="f-muted" title="${esc(tt(TX.time))}">${esc(tt(TX.time))}<b>${hmm(q.minutes)}</b></span><span class="f-muted" title="${esc(`${tt(TX.tod)} : ${tt(TX.todVal, { d: distTxt(q.todNm) })}`)}">${esc(tt(TX.todS))}<b>${esc(distTxt(q.todNm))}</b></span></div>
       ${q.overMtow ? `<div class="f-warn">${esc(tt(TX.overMtow))}</div>` : ''}${past ? `<div class="f-warn fu-pastdate">${esc(past)}</div>` : ''}`;

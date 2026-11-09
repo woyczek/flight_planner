@@ -12,7 +12,7 @@ die fünf Schritte untereinander. Bei jeder Änderung wird alles neu berechnet: 
 Berechnung und Wind folgen, ohne dass eine Schaltfläche zu drücken ist. Das Ergebnis (Blockkraftstoff,
 Streckenkraftstoff, Zeit, Sinkflugbeginn) bleibt bei jedem Schritt unten im Bildschirm sichtbar, mit der Herkunft des
 Winds („Wind: METAR LFRS“, „Wind: ICON-Vorhersage FL060“, „Wind eingegeben“). Auf einem Telefon braucht diese Leiste drei Zeilen: den Kontext
-(„FA50 · F-GXXX · Block · FL060→090→110→070 · Wind ARPEGE FL060“: zuerst das Luftfahrzeug der Berechnung, „Typschätzung“, wenn kein Datenblatt dient, und ein Tippen darauf öffnet die Wahl des Luftfahrzeugs; vollständig beim Berühren der Zeile), den Blockkraftstoff, dann drei Kacheln
+(„FA50 · F-GXXX · Block · FL060→090→110→070 · Wind ARPEGE FL060“: zuerst das Luftfahrzeug der Berechnung, „Typschätzung“, wenn kein Datenblatt dient, und ein Tippen darauf öffnet die Wahl des Luftfahrzeugs; dann die Kraftstoffeinheit, „lb · lb/h“; vollständig beim Berühren der Zeile), den Blockkraftstoff, dann drei Kacheln
 „Reise“, „Zeit“ und „TOD“ (Sinkflugbeginn). Der Bildschirm öffnet sich immer mit dem Reiter „Berechnung“; die Datenblätter
 öffnen sich über den Reiter „Datenblätter“. Ein ✓ markiert einen ausgefüllten Schritt.
 Flugflächen werden überall gleich geschrieben: als FL ab 5000 ft (FL060), darunter in Fuß (3500 ft).
@@ -198,4 +198,4 @@ Datenblättern ändert sich nichts.
   Schlüssel sagt es die Karte, und das METAR antwortet stattdessen. Die Wetterkarte sagt, woher die Meldungen stammen.
   Ganz ohne Netz zeigt sie das zuletzt gespeicherte Wetter mit seiner Uhrzeit.
 
-<!-- fr: 56c252a80d19 -->
+<!-- fr: 308c6407775d -->

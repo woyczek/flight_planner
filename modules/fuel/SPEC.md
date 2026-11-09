@@ -421,7 +421,8 @@ before the start, in step 5 after (F11).
 - **Result**, sticky at the bottom: block fuel (a range when the wind is unknown), trip, time, top of descent, approximate source and
   MTOW warnings. On a phone, about 100 px at 390 px: a context line on **one line** (ellipsis, the full text in `title`) — « FA50 ·
   F-GXXX · Block · FL060→090→110→070 · wind ARPEGE FL060 », the aircraft of the quote first (SOG-0060: type, registration, « estimation
-  du type » when no sheet serves; a button that opens the step Flight with the aircraft search focused; F101) (levels joined by → without spaces, « FL » once, the wind source short, « unknown wind » for a
+  du type » when no sheet serves; a button that opens the step Flight with the aircraft search focused; F101), then the fuel unit of
+  the quote (« lb · lb/h », SOG-0074, F108) (levels joined by → without spaces, « FL » once, the wind source short, « unknown wind » for a
   range); the big figure at `--sog-h2` under 760 px of module (`--sog-h1` above); then three tiles on one row, label and value each on
   one line: « Trip » (fr « Étape », de « Reise », es « Etapa »), « Time » and « TOD », labels at `--sog-size-xs`, values at
   `--sog-h3`, TOD's value without « before », the full name in each tile's `title`. A started flight shows « Flight started at hh:mm ·

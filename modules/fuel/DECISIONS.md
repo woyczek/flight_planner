@@ -1431,3 +1431,5 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   `trackDeg` (true track: no magnetic variation applied, said). A new level re-draws once, at most twice in a row, so a wind read
   at the new level can never make the level oscillate. The flight carries `level.auto` (a typed level writes `{ ft }` as before).
   F107; counter-test on d8defe46b: no button.
+- **9 Nov 2026 — the fuel unit on the result bar** (SOG-0074, the user: « afficher [l'unité] globalement sur le header ? »; the frame's
+  header carries no module data): right after the aircraft on the context line, so the ellipsis of a phone never hides it. F108.

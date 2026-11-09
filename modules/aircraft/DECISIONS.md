@@ -121,3 +121,8 @@
   mark keeps the information one tap away; the card's « Sources » line says what the card is made of; the five-line explanations
   of SOG-0011 moved to the help with an anchor each. The warnings (monotony, measured deviation, « À compléter ») stay where they
   are. M33; counter-test on a18ffd53f: six provenance lines under the fields.
+- **9 Nov 2026 — « Compléter depuis une autre fiche… » chooses nothing in advance** (SOG-0073, the user: « on choisit de modifier la
+  caravelle, et c'est « douglas dc-3 » qui apparaît »): the select showed its first option as if it were the open sheet. A button and,
+  on demand, the aircraft search (the Flight step's), the open sheet excluded. M34.
+- **9 Nov 2026 — the unit in the module's sticky head, not in the frame's header** (SOG-0074, challenged and half accepted): the unit
+  belongs to a sheet or a quote, not to the application; the editor's head stays at the top with the unit. M35.

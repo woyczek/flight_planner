@@ -425,8 +425,10 @@ def m13(c):
 def m14(c):
     open_sheets(c)
     edit_sheet(c, 'C30J')
-    c.page.select_option(f'{M} {SHEETS} select[data-k="fillfrom"]', 'EC25')
-    c.tap(f'{M} {SHEETS} [data-do="fill"]')
+    c.tap(f'{M} {SHEETS} [data-do="fillopen"]')
+    c.page.fill(f'{M} {SHEETS} input[data-k="fillq"]', 'EC25')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-fillres] [data-do=fill][data-id=EC25]')", what='EC25 found by the search')
+    c.tap(f'{M} {SHEETS} [data-fillres] [data-do="fill"][data-id="EC25"]')
     c.until(f"!!document.querySelector('{M} {SHEETS} [data-review] [data-do=apply]')", what='the review of the completion')
     paths = c.js(f"[...document.querySelectorAll('{M} {SHEETS} [data-review] input[data-path]')].map(i => i.dataset.path)")
     c.ok('maxCrosswindKt' in paths and 'usableFuel' not in paths and 'cruise.tasKt' not in paths, f'{paths}',
@@ -899,6 +901,43 @@ def m33(c):
     for lang in ('fr', 'en', 'de', 'es'):
         text = (ROOT / 'modules' / 'aircraft' / 'help' / f'{lang}.md').read_text(encoding='utf-8')
         c.ok('<a id="aircraft-fuel-volume"></a>' in text and '<a id="aircraft-fuel-density"></a>' in text, lang, f'the two explanations in the help ({lang}) with their anchors')
+
+
+@case('M34', 'Sheets: « Compléter depuis une autre fiche… » shows no other sheet until asked (no select pre-chosen); a search, then the review',
+      'M', tags=('aircraft',), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0073 (user, 9 Nov: « on choisit de modifier la caravelle, et c\'est « douglas dc-3 » qui apparaît […] très perturbant »): a button, one '
+      'line; the aircraft search of aerodb (the Flight step\'s) lists the other sheets, the open one never; a tap → the review of the completion')
+def m34(c):
+    open_sheets(c)
+    edit_sheet(c, 'C30J')
+    bar = c.js(f"(() => {{ const b = document.querySelector('{M} {SHEETS} [data-do=fillopen]'); return {{ select: document.querySelectorAll('{M} {SHEETS} select[data-k=fillfrom]').length, "
+               f"card: b ? b.closest('.f-card').textContent : '', box: document.querySelectorAll('{M} {SHEETS} [data-fillbox]').length }} }})()")
+    c.eq([bar['select'], bar['box'], 'EC25' in bar['card']], [0, 0, False], 'no select, no list, no other sheet named before it is asked', what='closed')
+    c.tap(f'{M} {SHEETS} [data-do="fillopen"]')
+    c.until(f"document.activeElement === document.querySelector('{M} {SHEETS} input[data-k=fillq]')", what='the search opens, focused')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-fillres] [data-id=EC25]')", what='the other sheets listed')
+    c.eq(c.count(f'{M} {SHEETS} [data-fillres] [data-id=C30J]'), 0, 'the open sheet is never offered', what='self')
+    c.tap(f'{M} {SHEETS} [data-fillres] [data-do="fill"][data-id="EC25"]')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-review] [data-do=apply]')", what='the review of the completion')
+
+
+@case('M35', 'Sheets: a sticky line heads the editor, the sheet\'s name and its unit of reading; the unit leads to its choice',
+      'M', tags=('aircraft',), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0074 (the unit is the module\'s): the editor\'s head stays at the top while scrolling (position sticky), « lb · lb/h » for an lb sheet; '
+      'a tap focuses « Carburant lu et saisi en »')
+def m35(c):
+    lb = dict(EC25, id='XLBS', name='XLBS', icao='XLBS', unit='lb', usableFuel=4000, cruise={'tasKt': 141, 'fuelFlowPerHour': 1000})
+    lb.pop('_fields', None)
+    docs = [[f'aircraft/sheets/{x["id"]}.json', x, 'document'] for x in (EC25, lb)]
+    c.open('aircraft', docs=LEVEL3 + [['airline/fleet.json', fleet_doc(3), 'document']] + docs + [TYPES, ['cache/aircraft/ui.json', {'view': 'sheets'}, 'cache']],
+           wait=False, app='maintenance')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-id]')", timeout=15000, what='the Fiches list')
+    edit_sheet(c, 'XLBS')
+    h = c.js(f"(() => {{ const e = document.querySelector('{M} {SHEETS} [data-edithead]'); return {{ pos: getComputedStyle(e).position, "
+             f"name: e.querySelector('b').textContent, unit: e.querySelector('[data-do=unitgo]').textContent.trim() }} }})()")
+    c.eq(h, {'pos': 'sticky', 'name': 'XLBS', 'unit': 'lb · lb/h'}, 'a sticky head: the name and the unit', what='head')
+    c.tap(f'{M} {SHEETS} [data-do="unitgo"]')
+    c.until(f"document.activeElement === document.querySelector('{M} {SHEETS} select[data-k=vunit]')", what='the unit choice has the focus')
 
 
 @case('M25', 'Sheets: the fuel is read and typed in the unit chosen (kg, lb, l, US gal); the sheet keeps its stored unit, an untouched value unchanged',

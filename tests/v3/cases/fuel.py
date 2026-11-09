@@ -2788,3 +2788,19 @@ def f107(c):
     d = cf_doc(c, lambda d: (d.get('aircraft') or {}).get('sheetId') == 'XLOW' and (d.get('level') or {}).get('auto') is True
                and 0 < ((d.get('level') or {}).get('ft') or 0) <= 9000, 'another aircraft, ceiling 9000 ft: the auto level recomputed', timeout=10000)
     c.eq(d['level']['ft'] // 1000 % 2, 1, 'still an odd thousand', what='recomputed')
+
+
+@case('F108', 'The fuel unit is said on the result bar\'s context line, after the aircraft (« … · lb · lb/h · Bloc · FL270 »); it follows the unit chosen',
+      'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0074 (user, 9 Nov: « afficher [l\'unité] globalement sur le header ? »; challenged: the unit is the module\'s, not the frame\'s): the sticky '
+      'line of the module says it, never the frame\'s header')
+def f108(c):
+    docs = flight_docs() + [['pilot/ABC/fuel.json', {'schema': 1, 'displayUnit': 'lb', 'entries': {}}, 'document']]
+    c.open('fuel', docs=docs)
+    wait_quote(c)
+    c.until("(document.querySelector('[data-module=fuel] .fu-result [data-ctxunit]')?.textContent || '') === 'lb · lb/h'", what='lb · lb/h on the context line')
+    c.eq(c.count('header [data-ctxunit], #fHead [data-ctxunit]'), 0, 'not in the frame\'s header', what='header')
+    to_step(c, 3)
+    c.js("document.querySelector('[data-module=fuel] details[data-fold=settings]').open = true")
+    c.page.select_option(f'{FUEL} select[data-k="unit"]', 'kg')
+    c.until("(document.querySelector('[data-module=fuel] .fu-result [data-ctxunit]')?.textContent || '') === 'kg · kg/h'", what='kg · kg/h once kg is chosen')

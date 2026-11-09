@@ -12,7 +12,7 @@ de otro. Todo se recalcula con cada cambio: corrija la ruta, y la meteorología,
 que pulsar. El resultado (combustible de bloque, combustible de viaje, tiempo, inicio del descenso) sigue visible abajo
 en la pantalla en cada paso, con la procedencia del viento («viento: METAR LFRS», «viento: previsión ICON FL060»,
 «viento introducido»). En un teléfono esta barra ocupa tres líneas: el contexto
-(«FA50 · F-GXXX · Bloque · FL060→090→110→070 · viento ARPEGE FL060»: primero la aeronave del cálculo, «estimación del tipo» cuando ninguna ficha sirve, y un toque sobre ella abre la elección de la aeronave; completo al tocar la línea), el combustible de bloque y tres teselas
+(«FA50 · F-GXXX · Bloque · FL060→090→110→070 · viento ARPEGE FL060»: primero la aeronave del cálculo, «estimación del tipo» cuando ninguna ficha sirve, y un toque sobre ella abre la elección de la aeronave; luego la unidad del combustible, «lb · lb/h»; completo al tocar la línea), el combustible de bloque y tres teselas
 «Etapa», «Tiempo» y «TOD» (inicio del descenso). La pantalla se abre siempre en la pestaña «Cálculo»; las fichas se abren
 con la pestaña «Fichas». Una ✓ marca un paso completado. Los niveles se escriben igual en todas partes: en FL a partir de
 5000 ft (FL060), en pies por debajo (3500 ft).
@@ -190,4 +190,4 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
   tarjeta lo dice y responde el METAR en su lugar. La tarjeta meteorológica indica de dónde vienen los mensajes. Sin red
   alguna, muestra la última meteorología guardada, con su hora.
 
-<!-- fr: 56c252a80d19 -->
+<!-- fr: 308c6407775d -->
