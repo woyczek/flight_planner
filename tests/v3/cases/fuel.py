@@ -2919,3 +2919,26 @@ def f110(c):
     said = c.js(f"document.querySelector('{FUEL} [data-routealts]').textContent")
     c.ok('route/import-rad' not in said and 'EUROCONTROL RAD workbooks' not in said, said, 'the launcher\'s message (a job name) not shown')
     c.eq(c.count(f'{FUEL} [data-routealts] button'), 0, 'no import button in Fuel', what='no import from Fuel')
+
+
+@case('F111', 'Step Flight: « ⇄ » between departure and arrival swaps them, the names follow, the old route, procedures and OFP are cleared',
+      'F', tags=('fuel', 'aerodb', 'layout'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0127 (user, from RouteSim: « intéressante »): one button between the two fields; both ends change, so a new pair '
+      '(the rule of 1 Nov: nothing of the old flight survives; a route is never read backwards); 44 px target, nothing over the edge at 390 px')
+def f111(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    open_names(c)
+    before = cf_doc(c, lambda d: d['route'].get('dep') == 'LFRS', 'the flight')
+    c.ok(bool(before['route'].get('text')), before['route'], 'the seeded flight has a route (the swap must clear it)')
+    sel = f'{FUEL} [data-do="adswap"]'
+    c.eq(c.count(sel), 1, 'one ⇄ button on the step Flight', what='the button')
+    box = c.js(f"(() => {{ const b = document.querySelector('{sel}').getBoundingClientRect(), d = document.querySelector('{FUEL} input[data-k=dep]').getBoundingClientRect(), a = document.querySelector('{FUEL} input[data-k=arr]').getBoundingClientRect(); return {{ w: b.width, h: b.height, between: b.left >= d.right - 0.5 && b.right <= a.left + 0.5, r: b.right, iw: innerWidth }} }})()")
+    c.ok(box['w'] >= 43.5 and box['h'] >= 43.5 and box['between'] and box['r'] <= box['iw'], box, '⇄ is a 44 px target between departure and arrival, inside the screen')
+    c.eq(c.js("document.documentElement.scrollWidth <= innerWidth"), True, 'nothing over the edge at 390 px', what='overflow')
+    c.tap(sel)
+    d = cf_doc(c, lambda d: d['route'].get('dep') == 'LFML' and d['route'].get('arr') == 'LFRS', 'departure and arrival swapped in the flight', timeout=8000)
+    c.ok(not d['route'].get('text') and not (d['route'].get('points') or []) and not d['route'].get('procedures') and not d.get('ofp'), d['route'],
+         'a new pair: the old route, procedures and OFP are cleared, never read backwards')
+    c.eq([c.js(f"document.querySelector('{FUEL} input[data-k=dep]').value"), c.js(f"document.querySelector('{FUEL} input[data-k=arr]').value")], ['LFML', 'LFRS'], 'the fields show the swap', what='fields')
+    c.until("document.querySelector('[data-module=fuel] .fu-adname[data-adline=dep]').textContent.includes('Lfml')", what='the name under the departure follows')
+    c.eq(d['route'].get('altn'), 'LFMT', 'the alternate stays', what='alternate')

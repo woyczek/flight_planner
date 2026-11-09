@@ -384,6 +384,7 @@ const TX = {
   newFlightDone: ['Nouveau vol : tout est à saisir, l’appareil est gardé.', 'New flight: everything to enter, the aircraft is kept.',
     'Neuer Flug: alles einzugeben, das Luftfahrzeug bleibt.', 'Vuelo nuevo: todo por introducir, la aeronave se conserva.'
   ],
+  adSwap: ['Inverser départ et arrivée', 'Swap departure and arrival', 'Abflug und Ankunft tauschen', 'Invertir salida y llegada'],
   newPair: ['Nouveau couple de terrains ({dep} → {arr}) : la route, les procédures et l’OFP de l’ancien vol sont effacés.',
     'New pair of aerodromes ({dep} → {arr}): the route, procedures and OFP of the previous flight are cleared.',
     'Neues Flugplatzpaar ({dep} → {arr}): Strecke, Verfahren und OFP des vorigen Flugs sind gelöscht.',
@@ -1556,7 +1557,8 @@ const STYLE = `
 [data-module="fuel"] .fu-pairs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,20em),1fr));gap:6px 16px}
 [data-module="fuel"] .fu-pairs>label.f-field{display:grid;grid-template-columns:minmax(0,11em) minmax(0,1fr);align-items:center;column-gap:8px;margin:0}
 [data-module="fuel"] .fu-pairs>label.f-field>:is(input,select){min-width:0;width:100%}
-[data-module="fuel"] .fu-ads{grid-template-columns:repeat(3,minmax(0,12em));position:relative} /* trois terrains ; position:relative : la liste de propositions s'y pose */
+[data-module="fuel"] .fu-ads{grid-template-columns:minmax(0,12em) auto minmax(0,12em) minmax(0,12em);position:relative} /* départ, ⇄, arrivée, dégagement ; position:relative : la liste de propositions s'y pose */
+[data-module="fuel"] .fu-adswap{align-self:center;min-width:44px;min-height:44px;padding:0 .4em;font-size:1.1em} /* ⇄ (SOG-0127) : une cible de 44 px entre départ et arrivée */
 [data-module="fuel"] .fu-adname{display:block;height:1.4em;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--sog-size-s);color:var(--sog-muted)} /* hauteur réservée, même vide : rien ne bouge */
 [data-module="fuel"] .fu-adname[data-state="unknown"]{font-style:italic}
 [data-module="fuel"] .fu-sug{position:absolute;left:0;right:0;max-width:26em;z-index:30;display:grid;gap:0;margin:0;background:var(--sog-surface);border:1px solid var(--sog-border);border-radius:var(--sog-radius);box-shadow:var(--sog-shadow)} /* par-dessus la page, jamais dans la mise en page */
@@ -1687,7 +1689,7 @@ function renderPlanBody() {
   S.body.innerHTML = `
   <nav class="f-steps fu-steps" aria-label="${esc(tt(TX.stepsNav))}">${TX.stepNames.map((n, i) => `<button type="button" data-step="${i}"${step === i ? ' aria-current="step"' : ''} aria-label="${i + 1} ${esc(tt(n))}"><b>${i + 1}</b><span> ${esc(tt(n))}</span></button>`).join('')}</nav>
   ${sec(0, `<div class="f-card" data-block="flight"><h2>${esc(tt(TX.stepNames[0]))}</h2>
-      <div class="f-grid fu-ads">${[['dep', TX.dep], ['arr', TX.arr], ['altn', TX.altn]].map(([k, label]) => `<label class="f-field">${esc(tt(label))}<input data-k="${k}" value="${esc(r[k] ?? '')}" class="fu-code" autocapitalize="characters" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-adsug"><small class="fu-adname" data-adline="${k}"></small></label>`).join('')}<div class="fu-sug" id="fu-adsug" data-adsug role="listbox" aria-label="${esc(tt(S.AD.texts.listLabel))}" hidden></div></div>
+      <div class="f-grid fu-ads">${[['dep', TX.dep], ['arr', TX.arr], ['altn', TX.altn]].map(([k, label]) => `${k === 'arr' ? `<button type="button" class="fu-adswap" data-do="adswap" title="${esc(tt(TX.adSwap))}" aria-label="${esc(tt(TX.adSwap))}">⇄</button>` : ''}<label class="f-field">${esc(tt(label))}<input data-k="${k}" value="${esc(r[k] ?? '')}" class="fu-code" autocapitalize="characters" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-adsug"><small class="fu-adname" data-adline="${k}"></small></label>`).join('')}<div class="fu-sug" id="fu-adsug" data-adsug role="listbox" aria-label="${esc(tt(S.AD.texts.listLabel))}" hidden></div></div>
       <div class="f-grid fu-flight"><label class="f-field">${esc(tt(TX.level))}<span class="fu-when"><input data-k="fl" value="${esc(f.level?.ft ? Math.round(f.level.ft / 100) : '')}" inputmode="numeric"><button type="button" data-do="levelauto" aria-pressed="${!!f.level?.auto}" title="${esc(tt(TX.levelAutoHint))}">${esc(tt(TX.levelAuto))}</button></span><small class="f-muted" data-lvlauto></small></label><p class="f-muted fu-lvlmix" data-lvlmix hidden></p><label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(whenField(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
       <p class="f-warn" data-pastdate hidden></p>
       <div data-block="aircraft">
@@ -2015,6 +2017,30 @@ function setAd(k, code) {
     scheduleWx();
   }
 }
+/** ⇄ (SOG-0127, comme RouteSim) : le départ et l'arrivée échangés. Les deux bouts changent : c'est un nouveau couple (newPair : la route,
+ *  les procédures et l'OFP de l'aller sont effacés, jamais relus à rebours : les voies, la SID et la STAR ne se lisent pas dans l'autre
+ *  sens) ; un vol démarré devient un autre vol. Sans terrain, rien. */
+function swapAds() {
+  const f = S.flight,
+    r = f.route ||= emptyFlight().route,
+    dep = r.dep || '',
+    arr = r.arr || '';
+  if (!dep && !arr) return;
+  if (f.started?.at) f.started = null; // un autre départ : un autre vol (null et non delete, comme setAd)
+  r.dep = arr;
+  r.arr = dep;
+  for (const k of ['dep', 'arr']) {
+    const el = S.body?.querySelector(`input[data-k="${k}"]`);
+    if (el) el.value = r[k];
+  }
+  S.AD?.paint();
+  if (r.text || r.points?.length) return newPair();
+  markEnds();
+  saveFlight();
+  refresh();
+  resolveRoute();
+  scheduleWx();
+}
 // ---------------------------------------------------------------- nouveau vol, nouveau couple de terrains
 const NEW_PAIR_NM = 150; // au-delà, un terrain changé fait un autre vol (Simplification, 1er nov. 2026)
 
@@ -2171,6 +2197,7 @@ function onPlanClick(e) {
   if (b?.dataset.do === 'simbrief') return loadSimbrief();
   if (b?.dataset.do === 'level') return setLevel(+b.dataset.ft);
   if (b?.dataset.do === 'levelauto') return levelAutoOn();
+  if (b?.dataset.do === 'adswap') return swapAds();
   if (b?.dataset.do === 'alignlvl') return alignLevels();
   if (pick && S.C?.D) {
     const svg = pick.ownerSVGElement,

@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: « ⇄ » swaps departure and arrival** (`modules/fuel/module.js`; Fuel SPEC § 9.2, DECISIONS, help; noreg F111; SOG-0127).
+  One 44 px button between the two fields, as in RouteSim; the swap is a new pair of aerodromes, so the old route, procedures and OFP
+  are cleared, never read backwards. The completion from two characters, seven at most, with the name under the field, was already there.
 - **Fuel: without a RAD, the Route step leads to Data** (`modules/fuel/module.js`; Fuel SPEC § 9.3, INTEGRATION, DECISIONS, help;
   noreg F110; SOG-0125). « Aucun RAD importé » and a link to the RAD's line in Maintenance › Données, where it is imported; never an
   import from Fuel, and no longer the launcher's message naming a job.

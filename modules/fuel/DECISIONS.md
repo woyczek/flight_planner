@@ -1448,3 +1448,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   others, imported where the others are (Maintenance › Données). Fuel says « Aucun RAD importé » with a link whose address names the
   source by its catalogue id (`source=eurocontrol_rad`), so that the Data screen, not Fuel, decides where its line is. The launcher's
   English message (« … (job route/import-rad) ») is not shown: it names a job, not a place. F110; counter-test on ffafaade4: no link.
+- **9 Nov 2026 — « ⇄ » on the step Flight; the aerodrome field stays in Fuel for now** (SOG-0127): the ergonomics session asked for one
+  aerodrome field in the frame, the same everywhere. Fuel already had three of its four behaviours (from two characters, seven at most,
+  the name under the field: `adnames.js` + `suggest.js`, F44–F46); only « ⇄ » was missing, added here (F111; counter-test on 7ef67d3e9:
+  no button). No other V3 screen has an aerodrome field today (the Map's search is a place search), so moving the component to
+  `frame/lib` now would be a frame component with one user: it is moved when a second user is planned, through the narrow
+  `createAdNames(host)` interface. Objection and counter-proposal sent to the ergonomics session.
