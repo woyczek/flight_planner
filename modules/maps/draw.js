@@ -4,6 +4,9 @@
 // procédures. Les données de la vue sont relues (data.js) quand la vue sort de celles chargées.
 
 import {
+  drawAlts
+} from './alts.js';
+import {
   canvasDpr
 } from './canvas_scale.js';
 import {
@@ -689,6 +692,7 @@ function draw() {
   }))); // TOC / TOD : leurs noms là où la passe les a posés
   if (!mission && !pick) drawVfr(ctx, toC);
   S.windHits = !mission && !pick && L.wind && zoomOn('wind') ? drawWinds(ctx, toC) : [];
+  S.altHits = drawAlts(ctx, toC); // les itinéraires proposés par Carburant, sur la route (SOG-0134 a)
   if (!mission && !pick && isStarted(S.route.flight)) drawProgress(ctx, toC);
   S.toC = toC;
   if (S.edit.on) got('edit')?.drawEdit(ctx, toC);

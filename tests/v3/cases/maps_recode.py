@@ -3823,3 +3823,68 @@ def d125(c):
     c.js(_STATE_JS)
     c.wait(1500)
     c.eq(c.js("() => window.__mp.S.gc"), None, 'without a known arrival there is no great circle', what='S.gc')
+
+
+def _alts_doc(**over):
+    """What Fuel publishes (modules/fuel/INTEGRATION.md § 3 bis): two proposed routes between the flight’s ends, the second with a faulty segment."""
+    pts = FLIGHT['route']['points']
+    a = [[p['lat'], p['lon']] for p in pts]
+    b = [a[0], [46.9, 1.0], [45.2, 3.4], a[-1]]
+    return {'schema': 1, 'updated_at': '2026-11-09T16:40:00Z', 'dep': 'LFRS', 'arr': 'LFML', 'mode': 'compute',
+            'alternatives': [{'index': 0, 'name': 'Via UN10', 'route': 'LFRS LUGEN NEPIX LFML', 'ids': [], 'points': a, 'faulty': []},
+                             {'index': 1, 'name': 'Via UN20', 'route': 'LFRS X Y LFML', 'ids': [], 'points': b, 'faulty': [1]}],
+            'chosen': 0, 'hovered': None, **over}
+
+
+_ALT_SPY_JS = """() => { window.__st = []; const o = CanvasRenderingContext2D.prototype.stroke;
+  CanvasRenderingContext2D.prototype.stroke = function () { window.__st.push({ c: this.strokeStyle, w: this.lineWidth, a: this.globalAlpha }); return o.apply(this, arguments) }; return true }"""
+
+
+@case('D126', 'Proposed routes on the Map: the chosen one solid, the others faded, the hovered one thick, the faulty segments red; a tap on a route takes it (event in the double view, #fuel?ralt= alone)', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='fuel INTEGRATION § 3 bis (SOG-0134 a): the routes Fuel publishes (window event fuel-route-alts, document cache/fuel/route_alts.json) are drawn by the Map: chosen solid, the others faded, hovered thick, faulty segments red, only for the flight’s own departure / arrival; a tap on a drawn route is « Take »: maps-route-alt { index } in the double view, #fuel?ralt=<index> on a Map alone; the list of the routes sits over the map')
+def d126(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js(_ALT_SPY_JS)
+    doc = _alts_doc()
+    ev = "(d) => { window.dispatchEvent(new CustomEvent('fuel-route-alts', { detail: d })); return true }"
+    c.js(ev, doc)
+    c.until("() => (window.__mp.S.altHits || []).length === 2", timeout=8000, what='the two proposed routes are drawn')
+    st = c.js("() => window.__st.filter(x => x.c === '#d6173f' || x.a < 1)")
+    c.ok(any(x['c'] == '#d6173f' for x in st), str(st[:4]), 'the faulty segment is red')
+    c.ok(any(x['a'] < 1 and x['a'] > 0 for x in st), str(st[:4]), 'the route that is not chosen is faded')
+    c.ok(c.shown('.mp-alts') and c.count('.mp-al-row') == 2, 'rows', 'the list of the routes sits over the map, one row each')
+    c.eq(c.js("() => document.querySelector('.mp-al-row[data-chosen=\"1\"] .mp-al-n').textContent"), 'Via UN10', 'the chosen one is marked', what='chosen row')
+    c.ok(c.js("() => document.querySelector('.mp-al-row[data-faulty=\"1\"]') !== null"), 'faulty row', 'the faulty one says so')
+    # hovered: thick
+    c.js("() => { window.__st = []; return true }")
+    c.js(ev, _alts_doc(hovered=1))
+    c.until("() => window.__st.some(x => x.w === 7)", timeout=6000, what='the hovered route is drawn thick')
+    # another pair of aerodromes: nothing drawn
+    c.js(ev, _alts_doc(dep='LFPO'))
+    c.until("() => (window.__mp.S.altHits || []).length === 0", timeout=6000, what='a Map of another flight does not draw them')
+    c.js(ev, doc)
+    c.until("() => (window.__mp.S.altHits || []).length === 2", timeout=6000, what='drawn again')
+    # a tap on the second route takes it: a Map alone goes to Fuel with the index
+    p = c.js("""() => { const S = window.__mp.S, h = S.altHits.find(x => x.index === 1), m = h.q[1], r = S.box.getBoundingClientRect(); return { x: r.left + (m.x + h.q[2].x) / 2, y: r.top + (m.y + h.q[2].y) / 2 } }""")
+    c.page.mouse.click(p['x'], p['y'])
+    c.until("() => location.hash.includes('ralt=1')", timeout=6000, what='a tap on a route takes it: #fuel?ralt=1')
+    # in the double view the choice is an event
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js("""() => { window.__picked = []; window.addEventListener('maps-route-alt', e => window.__picked.push(e.detail)); const S = window.__mp.S; S.ctx = { ...S.ctx, query: { ...S.ctx.query, pane: '1' } }; return true }""")
+    c.js(ev, doc)
+    c.until("() => (window.__mp.S.altHits || []).length === 2", timeout=8000, what='drawn in the pane')
+    c.eq(c.js("() => !!document.querySelector('.mp-alts') && !document.querySelector('.mp-alts').hidden"), False, 'beside Fuel the list is Fuel’s: not repeated over the map', what='list in a pane')
+    p = c.js("""() => { const S = window.__mp.S, h = S.altHits.find(x => x.index === 1), m = h.q[1], r = S.box.getBoundingClientRect(); return { x: r.left + (m.x + h.q[2].x) / 2, y: r.top + (m.y + h.q[2].y) / 2 } }""")
+    c.page.mouse.click(p['x'], p['y'])
+    c.until("() => window.__picked.length === 1", timeout=6000, what='the tap is maps-route-alt')
+    c.eq(c.js("() => window.__picked[0]"), {'index': 1}, 'with the index, nothing else', what='detail')
+    # a Map opened afterwards reads the document
+    c.open('maps', docs=fdocs(flight()) + [['cache/fuel/route_alts.json', doc, 'cache']], flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => (window.__mp.S.altHits || []).length === 2", timeout=10000, what='the document is read at mount')

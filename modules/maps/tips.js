@@ -3,6 +3,9 @@
 // point de report, infobulle, curseur sur la route, liste des espaces du point).
 
 import {
+  altsTap
+} from './alts.js';
+import {
   S,
   keep,
   esc,
@@ -247,6 +250,7 @@ export function tapAt(x, y, lat, lon) {
   closeLv();
   if (S.edit.on) return got('edit')?.editTap(x, y);
   if (!onMission() && vrpTap(x, y)) return;
+  if (altsTap(x, y)) return; // un tracé proposé par Carburant touché : « Prendre » (SOG-0134 a)
   if (!onMission() && groundTap(x, y)) return; // un trait ou un point du sol touché : sa ligne dans le panneau (§ 10.40)
   const ad = onMission() ? null : adAt(x, y);
   if (ad) return pinAd(ad);

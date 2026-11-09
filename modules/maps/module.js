@@ -99,6 +99,9 @@ import {
   groundEvents,
   groundChanged
 } from './ground.js';
+import {
+  altsStart
+} from './alts.js';
 
 export const meta = {
   id: 'maps',
@@ -125,7 +128,8 @@ export const meta = {
     merge: 'record'
   }],
   // gardés à l'installation (hors ligne dès la première visite)
-  files: ['state.js?v=0', 'texts.js?v=0', 'style.js?v=0', 'screen.js?v=0', 'draw.js?v=0', 'canvas_scale.js?v=0', 'data.js?v=0',
+  files: ['state.js?v=0', 'texts.js?v=0', 'style.js?v=0', 'screen.js?v=0', 'draw.js?v=0', 'alts.js?v=0', 'canvas_scale.js?v=0',
+    'data.js?v=0',
     'layers.js?v=0',
     'sheet_view.js?v=0', 'profile_view.js?v=0', 'procs.js?v=0', 'choose.js?v=0', 'ground.js?v=0', 'coverage.js?v=0', 'tips.js?v=0',
     'lv.js?v=0',
@@ -169,6 +173,7 @@ ${ctx.query?.tune ? '<section class="mp-tune f-card" aria-live="off"></section>'
 <div class="mp-tip f-card" hidden role="tooltip"></div>
 <div class="mp-tip mp-pcard f-card" hidden role="dialog"></div>
 <div class="mp-mbar f-card" hidden></div>
+<div class="mp-alts f-card" hidden></div>
 </div>
 <div class="mp-data f-sheet-panel" hidden><div class="mp-dhead f-sheet-head"><div class="mp-chips mp-chips-l">${chip('data-mp="layers"', 'layers', ctx.query?.mission ? TX.pick : TX.layers, false).replace('class="mp-chip"', 'class="mp-lchip"')}</div><button type="button" class="mp-grip f-sheet-grip" aria-expanded="true" aria-label="${T(TX.sheetSize)}"><b class="mp-dtitle f-sheet-title"></b></button><div class="mp-chips" role="group" aria-label="${T(TX.segLabel)}"><button type="button" class="mp-whole" hidden title="${T(TX.winWholeHelp)}" aria-label="${T(TX.winWholeHelp)}">${T(TX.winWhole)}</button>${chip('data-view="profile"', 'chart', TX.dataProfile, true)}${chip('data-view="weather" disabled aria-disabled="true"', 'cloud', TX.wxTitle, false)}${chip('data-legend disabled aria-disabled="true"', 'info', TX.legend, false)}</div><button type="button" class="mp-dclose f-sheet-close" data-dclose hidden aria-label="${T(TX.close)}" title="${T(TX.close)}">✕</button></div><div class="mp-legend" role="region" hidden aria-label="${T(TX.legend)}"></div>
 <div class="mp-dprof"><div class="mp-prof" hidden role="img" aria-label="${T(TX.profileLabel)}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas>
@@ -210,6 +215,7 @@ export async function mount(el, ctx) {
     canvas: q('canvas.mp-over'),
     stEl: q('.mp-empty'),
     mbarEl: q('.mp-mbar'),
+    altsEl: q('.mp-alts'),
     profBox: q('.mp-prof'),
     pc: q('canvas.mp-pc'),
     pcur: q('canvas.mp-pcur'),
@@ -344,6 +350,7 @@ export async function mount(el, ctx) {
   if (S.choose) chooseStart();
   schedule();
   if (!S.missionId) S.stops.push(...watchFlight());
+  S.stops.push(altsStart()); // les itinéraires que Carburant propose (SOG-0134 a)
   if (ctx.aerodb?.on) S.stops.push(ctx.aerodb.on('change', e => {
     if (!S || (e?.aircraft && !e.zone && !e.changed)) return; // la base appareils ne touche pas la carte
     if (e?.ground) groundChanged(e.ground); // le sol d'un terrain lu à la suite de ses procédures : le panneau Sol le relit

@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the routes Fuel proposes are drawn on the map** (`modules/maps/alts.js`, `module.js`, `draw.js`, `tips.js`, `texts.js`, `style.js`; SPEC § 5.3; noreg D126;
+  SOG-0134 a; contract fuel INTEGRATION § 3 bis). The routes of « Calculate A → B » and « Check », published by Fuel (event `fuel-route-alts`,
+  document `cache/fuel/route_alts.json`), are drawn by the Map: the chosen one solid, the others faded, the hovered one thick, the faulty
+  segments red; a tap on a route takes it (event `maps-route-alt` beside Fuel, `#fuel?ralt=<index>` on a Map alone); a small list over the map
+  on a Map alone.
+
 - **Data: « Ranger les sources brutes » is visible read only, with its reason** (`modules/data/inventory.js`, `texts.js`; L54, L55) — SOG-0144: the block was empty without a paired launcher; it is shown with its two buttons grey and « Lanceur non appairé » / « Verbe inconnu de ce lanceur » written.
 - **Fuel: « zone manquante » says what is missing, the gesture and the fallbacks** (`modules/fuel/zone_gap.js`, `module.js`,
   `procedures.js`; Fuel SPEC, INTEGRATION, DECISIONS, help; noreg F116, F115; SOG-0143). Under the route for unknown points, and on an

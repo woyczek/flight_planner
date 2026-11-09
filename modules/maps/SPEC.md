@@ -610,6 +610,22 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
   refusals of the reading belong to the procedures' reading (Fuel's notification). AeroDB says `on('change', { ground: ICAO })` when
   it has read the ground after the procedures: the Map reads the file again (`groundChanged`), so an open panel shows it at once. Noreg D120.
 
+### 5.3 The proposed routes (`alts.js`; fuel INTEGRATION § 3 bis, SOG-0134 a)
+
+- **What it draws**: the routes Fuel computes or checks (« Calculate A → B », « Check »), resolved into positions by Fuel and published
+  as the window event `fuel-route-alts` (double view, every change, hover included) and the document `cache/fuel/route_alts.json` (a
+  Map opened afterwards; never written on hover). Read as an untrusted input (`altsSanitize`): schema 1, eight routes at most, 400
+  points each, finite coordinates, `faulty` and `chosen` / `hovered` as integers within the list. The **chosen** route is drawn solid
+  (the route's colour, 4.5 px), the **others faded** (38 % opacity, 3 px), the **hovered** one thick (7 px), the **faulty segments**
+  (`points[k] → points[k + 1]`) in red `#d6173f`; on the screens layer (`drawAlts`, after the map, before the labels' own screens),
+  hits in `S.altHits`. Only for the flight's own pair: `dep` / `arr` of the publication equal the flight's, else nothing; never on a
+  mission map nor while choosing on the map. `alternatives: []` clears.
+- **What it hands back**: a tap within 9 px of a drawn route (or on its row of the list) is « Take » (`altsPick`): in the double view
+  (`ctx.query.pane === '1'` or `with`) the window event `maps-route-alt` with `{ index }`; a Map alone goes to `#fuel?ralt=<index>`. Only
+  an integer of the list, and only for a computation (`mode: 'compute'`; a check has nothing to choose).
+- **The list** (`.mp-alts`, bottom left of the map, 44 px rows on a touch screen): one row per route, the chosen one marked, « fault » said;
+  hovering a row thickens its route on the map. Not shown beside Fuel (Fuel has its own list there). Noreg D126.
+
 ## 6. Map contents
 
 ### 6.1 Map modes

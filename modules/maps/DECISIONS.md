@@ -2064,6 +2064,24 @@ the Map had seen in between: the same line to within the frame's own sampling.
   « not drawn »), D114 (cost under 16 ms, the light drawing's lines). The fixture `tests/v3/fixtures/ground_LFPO.json` is made from
   OSM data (595 items); the noreg never reads the public instance.
 
+## The proposed routes of Fuel on the Map (9 Nov 2026, SOG-0134 a)
+
+- **Asked** (the user, via the ergonomics session, after Features SOG's sketch in Fuel): « pourquoi la carte side by side n'affiche pas
+  les trajets calculés ? on pourrait, en mode téléphone, la faire apparaître très simplifiée mais sans avoir besoin de faire une autre
+  carte » → way (i): the Map draws what Fuel publishes (contract: fuel INTEGRATION § 3 bis, written before the code, in force).
+- **Done as the contract says**: chosen solid, others faded, hovered thick, faulty segments red; a tap takes the route (the event in
+  the double view, `#fuel?ralt=` on a Map alone); everything read is bounded; another pair of aerodromes draws nothing.
+- **Choices of mine**: (1) « the list in a sheet above the map » (the ergonomics text: § 10.37, the left band in the wide view) is a
+  small card over the map, bottom left, not a sheet: a sheet kind needs a button and the sheet is already the profile's; to decide if the
+  user wants it as a sheet; (2) in the double view the card is not shown (Fuel's own list is beside it); (3) the event wins over the
+  document once one has come (`S.altsLive`): the document is written at every change but the hover, the event is fresher; (4) a faulty
+  segment is red over the route's colour, so a route that is also chosen still shows its fault; (5) the hover of a route on the map itself
+  does not highlight it (only the list's rows do): nothing in the contract for it.
+- **Not done**: the Map draws the chosen route on top of the flight's own route (the same line when the flight took it); no « simplified »
+  phone drawing beyond the card; the real publication (Fuel's F114) was not run end to end: the cases publish the same object by hand.
+- **Noreg** D126 (two routes drawn, faded, red segment, thick hovered, another pair: nothing, tap → `#fuel?ralt=1`, pane: event with the index,
+  document read at mount; red without the code).
+
 ## The great-circle route (9 Nov 2026, SOG-0145)
 
 - **Asked** (the user): « afficher la route orthodromique sur la carte ». Ergonomics session's design: the great circle departure →
