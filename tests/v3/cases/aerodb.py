@@ -5618,6 +5618,45 @@ def k117(c):
             log.close()
 
 
+@case('K118', 'A synchronisation says how long each step took, how many git commands it ran and how much it sent (SOG-0149): res.timings in the report and in data/local/sync.json', 'K', static=True,
+      rule='SOG-0149 (10 Nov 2026): the first synchronisation of the day is « too long » (more than two minutes) and nothing says where the time goes: data_sync.run gives, in its report (data/local/sync.json), the duration of each step (settle, commit, prepare, receive, untrack, push), the total, the number of git commands and the time they took, and the bytes the push carried; the numbers are those of the pass, never a path or a content')
+def k118(c):
+    import json
+    import subprocess
+    import sys
+    import tempfile
+    from pathlib import Path
+    sys.path.insert(0, str(c.root / 'tools'))
+    import importlib
+    DS = importlib.import_module('data_sync')
+    tmp = Path(tempfile.mkdtemp(prefix='sog-sync-'))
+    try:
+        remote, a = str(tmp / 'remote.git'), str(tmp / 'A')
+        sh = lambda *args, cwd=str(tmp): subprocess.run(['git', *args], cwd=cwd, check=True, capture_output=True)
+        sh('init', '--bare', '-b', 'main', remote)
+        sh('clone', '-q', remote, a)
+        sh('config', 'user.name', 'essai', cwd=a)
+        sh('config', 'user.email', 'essai@example.invalid', cwd=a)
+        p = Path(a, 'disponibilites', 'AAA', '2026-W44.json')
+        p.parent.mkdir(parents=True)
+        p.write_text(json.dumps({'updated_at': '2026-10-29T10:00:00Z', 'dispos': {'lun': 'x' * 3000}}), encoding='utf-8')
+        r = DS.run(a, 'AAA')
+        t = r['timings']
+        c.eq((r['ok'], sorted(t), sorted(t['steps']), t['gitCalls'] > 3, t['totalMs'] >= t['gitMs'] >= 0, t['sentBytes'] > 0, sum(t['steps'].values()) <= t['totalMs'] + 5),
+             (True, ['gitCalls', 'gitMs', 'sentBytes', 'steps', 'totalMs'], ['commit', 'prepare', 'push', 'receive', 'settle', 'untrack'], True, True, True, True),
+             'a pass that commits and sends: every step has its duration, the git commands are counted and timed, the bytes of the push are given (compressed objects on disk), the steps add up to the total', what='first pass')
+        r = DS.run(a, 'AAA')
+        t = r['timings']
+        c.eq((r['ok'], t['sentBytes'], t['gitCalls'] > 0), (True, 0, True), 'a pass with nothing new sends nothing: 0 bytes', what='nothing to send')
+        saved = json.loads(Path(a, 'local', 'sync.json').read_text(encoding='utf-8'))
+        c.eq((saved['timings']['sentBytes'], sorted(saved['timings']['steps'])), (0, ['commit', 'prepare', 'push', 'receive', 'settle', 'untrack']), 'the numbers are kept in data/local/sync.json with the report', what='sync.json')
+        bad = DS.run(str(tmp / 'nowhere'), 'AAA')
+        c.ok('timings' not in bad or bad['ok'] is False, str(bad)[:120], 'a refused pass (not a repository) stays a refusal')
+    finally:
+        import shutil
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 @case('K65', 'Build job: a zone shows a count of sources only when the builder gives one for it; the build\'s count goes once in the job', 'K', static=True,
       rule='Réglages 1 Nov 2026 (the user saw « construction (90 / 90 sources) » on all 26 zones): the builder\'s counts are global; a zone gets done / total only from a count of its own; job.data inputs = { done, total } once')
 def k65(c):

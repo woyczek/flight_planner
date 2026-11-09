@@ -173,10 +173,14 @@ def lit(env=None):
     return dict(env or git_env(), GIT_LITERAL_PATHSPECS='1')
 
 
+_STATS = {'n': 0, 's': 0.0}      # les commandes git d'un passage de synchronisation : leur nombre et leur durée (res['timings'], SOG-0149)
+
+
 def git(data, *args, env=None, check=False):
     """git -C data … ; rend (code, texte) : git réussi, sa sortie standard seule — ses avertissements (sortie d'erreur :
     « LF will be replaced by CRLF », …) vont au journal, jamais lus comme un chemin ou une valeur ; git en échec, sortie et
     erreurs (le message rendu à la page)."""
+    t0 = time.monotonic()
     try:
         r = subprocess.run(git_cmd('-C', data, *args), capture_output=True, text=True, encoding='utf-8', errors='replace',
                            env=env or git_env(), timeout=TIMEOUT)
@@ -184,6 +188,9 @@ def git(data, *args, env=None, check=False):
         if check:
             raise RuntimeError(str(e))
         return 1, str(e)
+    finally:
+        _STATS['n'] += 1
+        _STATS['s'] += time.monotonic() - t0
     if r.returncode == 0:
         _journal(args, r.stderr, data)
         return 0, r.stdout.strip()
@@ -426,7 +433,7 @@ def remember(data, result):
     """Garde le résultat d'un passage de synchronisation dans data/local/sync.json (propre au poste, ignoré par git)."""
     os.makedirs(os.path.join(data, 'local'), exist_ok=True)  # local/ : propre au poste, ignoré par git
     with open(os.path.join(data, 'local', 'sync.json'), 'w', encoding='utf-8', newline='\n') as f:
-        json.dump({k: result.get(k) for k in ('at', 'author', 'committed', 'received', 'pushed', 'conflicts', 'refused', 'ok')}, f,
+        json.dump({**{k: result.get(k) for k in ('at', 'author', 'committed', 'received', 'pushed', 'conflicts', 'refused', 'ok')}, **({'timings': result['timings']} if 'timings' in result else {})}, f,
                   ensure_ascii=False, indent=1)
 
 
@@ -945,27 +952,42 @@ def run(data, author, name='', gesture=False):
         res['message'] = 'Un rebase est en cours dans data/ : à terminer ou annuler à la main.'
         return res
     who, env = _identity(author, name)
+    # SOG-0149 : la durée de chaque étape et ce que les commandes git ont coûté, dites dans le compte rendu (data/local/sync.json) : une synchronisation « trop longue » se lit par étape
+    begun, marks, last = time.monotonic(), {}, [time.monotonic()]
+    _STATS['n'], _STATS['s'] = 0, 0.0
+
+    def mark(step):
+        now = time.monotonic()
+        marks[step] = round((now - last[0]) * 1000)
+        last[0] = now
     try:
         # 0. fusion laissée en attente par un passage interrompu : conclue ou annulée
         res['settled'] = settle(data)
+        mark('settle')
         # 1. modifications de ce poste
         _commit_local(data, who, env, res, f'Synchronisation {author}', gesture)
+        mark('commit')
         # index suivis sur ce poste (reçus d'une version précédente, puis refaits par le lanceur) : retirés du suivi
         # d'abord, sinon la fusion refuserait d'écraser la copie refaite
         res['untracked'] = untrack_indexes(data, who, env)
         br, up, remote = branch_info(data)
+        mark('prepare')
         if not remote:
             res.update(ok=True, message='Commit local seulement : pas de dépôt distant.' + refused_note(res))
             return res
         # 2. branche distante, 3. conflits fiche par fiche
         _receive(data, who, env, res, remote, up, br)
+        mark('receive')
         if res.get('blocked'):
             raise RuntimeError('Réception refusée par git : fichiers modifiés sur ce poste, hors des données synchronisées, '
                                'que la fusion écraserait : ' + ', '.join(res['blocked']) + '.')
         # index des dossiers reçus suivis : retirés du suivi avant l'envoi
         res['untracked'] += untrack_indexes(data, who, env)
+        mark('untrack')
         # 4. envoi
+        res['timings_bytes'] = _unsent_bytes(data, remote, br)
         git(data, 'push', *([] if up else ['-u']), remote, f'HEAD:{br}', env=env, check=True)
+        mark('push')
         res['pushed'] = True
         res['ok'] = True
         res['message'] = 'Synchronisé.' + _settled_note(res['settled']) + refused_note(res)
@@ -973,8 +995,22 @@ def run(data, author, name='', gesture=False):
         res['ok'] = res['pushed'] = False
         res['message'] = _why(e, data)[-800:] + _abort(data)
     finally:
+        res['timings'] = {'steps': marks, 'totalMs': round((time.monotonic() - begun) * 1000), 'gitCalls': _STATS['n'], 'gitMs': round(_STATS['s'] * 1000), 'sentBytes': res.pop('timings_bytes', None)}
         remember(data, res)
     return res
+
+
+def _unsent_bytes(data, remote, br):
+    """Ce que l'envoi va porter, en octets sur disque (la taille des objets compressés que la branche distante n'a pas) ; None si on ne sait pas ou si c'est trop long à compter (plus de 20 000 objets)."""
+    try:
+        code, out = git(data, 'rev-list', '--objects', 'HEAD', '--not', f'--remotes={remote}')       # ce que les branches de ce dépôt distant n'ont pas (la première fois : tout)
+        names = [l.split(' ', 1)[0] for l in out.splitlines() if l.strip()] if code == 0 else []
+        if not names or len(names) > 20000:
+            return 0 if code == 0 and not names else None
+        r = subprocess.run(git_cmd('-C', data, 'cat-file', '--batch-check=%(objectsize:disk)'), input=('\n').join(names) + '\n', capture_output=True, text=True, encoding='utf-8', errors='replace', env=git_env(), timeout=TIMEOUT)
+        return sum(int(x) for x in r.stdout.split() if x.isdigit()) if r.returncode == 0 else None
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return None
 
 
 def update(data, author=''):
