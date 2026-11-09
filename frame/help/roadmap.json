@@ -4,9 +4,9 @@
  "updated": "2026-11-09",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "91bb9a0",
-  "fiches": 143,
-  "untranslated": 0,
+  "organisation": "c668530",
+  "fiches": 149,
+  "untranslated": 1,
   "priorities": 4
  },
  "owner": "ergonomics session (Simplification interface et ergonomie)",
@@ -562,7 +562,7 @@
     {
      "id": "SOG-0139",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Météo sur la Carte : un lien « télécharger AROME » plutôt qu'un bouton « afficher la météo »",
      "en": "Weather on the Map: a “download AROME” link rather than a “show weather” button",
      "de": "Wetter auf der Karte: ein Link „AROME laden“ statt eines Knopfs „Wetter anzeigen“",
@@ -576,6 +576,24 @@
      "en": "Weather on the Map: the wind arrows are all the same on a route that leaves the model's coverage",
      "de": "Wetter auf der Karte: alle Windpfeile gleich auf einer Route außerhalb der Modellabdeckung",
      "es": "Meteo en el Mapa: las flechas de viento son todas iguales en una ruta que sale de la cobertura del modelo"
+    },
+    {
+     "id": "SOG-0145",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte : afficher la route orthodromique",
+     "en": "Map: show the great-circle route",
+     "de": "Karte: die Großkreisroute anzeigen",
+     "es": "Mapa: mostrar la ruta ortodrómica"
+    },
+    {
+     "id": "SOG-0148",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Météo : la coupe verticale a sa météo, la carte (profil plan) ne l'a pas, données pourtant téléchargées",
+     "en": "Weather: the vertical cut has its weather, the map (plan view) does not, data yet downloaded",
+     "de": "Wetter: der Vertikalschnitt hat sein Wetter, die Karte (Draufsicht) nicht, Daten dennoch geladen",
+     "es": "Meteo: el corte vertical tiene su meteo, el mapa (vista en planta) no, con los datos ya descargados"
     }
    ]
   },
@@ -1418,6 +1436,15 @@
      "en": "Zone gb (NATS) still “ko” after dropping the files into Downloads",
      "de": "Zone gb (NATS) weiterhin „ko“ nach Ablage der Dateien in Downloads",
      "es": "Zona gb (NATS) sigue «ko» tras dejar los archivos en Descargas"
+    },
+    {
+     "id": "SOG-0144",
+     "kind": "bug",
+     "state": "later",
+     "fr": "BLOQUANT : « Tout recalculer » échoue dans la page de construction, 46 zones d'un coup, cause non dite",
+     "en": "BLOQUANT : « Tout recalculer » échoue dans la page de construction, 46 zones d'un coup, cause non dite",
+     "de": "BLOQUANT : « Tout recalculer » échoue dans la page de construction, 46 zones d'un coup, cause non dite",
+     "es": "BLOQUANT : « Tout recalculer » échoue dans la page de construction, 46 zones d'un coup, cause non dite"
     }
    ]
   },
@@ -1536,7 +1563,7 @@
     {
      "id": "SOG-0142",
      "kind": "bug",
-     "state": "planned",
+     "state": "later",
      "fr": "Lecteur de route : les homonymes (PAM aux États-Unis, ALS au Maroc) et les points inconnus dits avec leur zone",
      "en": "Route reader: homonyms (PAM in the USA, ALS in Morocco) and unknown points said with their zone",
      "de": "Routenleser: Homonyme (PAM in den USA, ALS in Marokko) und unbekannte Punkte mit ihrer Zone benannt",
@@ -1670,6 +1697,24 @@
      "en": "Data: keep the sources’ “personal” boxes ticked",
      "de": "Daten: die Kontrollkästchen „persönlich“ der Quellen angehakt lassen",
      "es": "Datos: mantener marcadas las casillas «personal» de las fuentes"
+    },
+    {
+     "id": "SOG-0146",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Données : la page de construction devient très sale avec beaucoup de pays",
+     "en": "Données: the build page gets very messy with many countries",
+     "de": "Daten: die Aufbauseite wird mit vielen Ländern sehr unordentlich",
+     "es": "Datos: la página de construcción se vuelve muy sucia con muchos países"
+    },
+    {
+     "id": "SOG-0147",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Paquets de pays : les retirer comme on les ajoute, voir ce qu'ils couvrent sur la carte, à côté de la carte en vue large",
+     "en": "Country packs: remove them as they are added, see what they cover on the map, beside the map in the wide view",
+     "de": "Länderpakete: ebenso entfernen wie hinzufügen, auf der Karte sehen, was sie abdecken, in der Breitansicht neben der Karte",
+     "es": "Paquetes de países: quitarlos como se añaden, ver qué cubren en el mapa, junto al mapa en vista ancha"
     }
    ]
   },
@@ -1759,6 +1804,27 @@
      "en": "Curves: meaningful levels (< 5 000, FL100, FL150, FL200, FL300, FL450), extrapolation, raw data kept",
      "de": "Kurven: aussagekräftige Ebenen (< 5 000, FL100, FL150, FL200, FL300, FL450), Extrapolation, Rohdaten bleiben erhalten",
      "es": "Curvas: niveles significativos (< 5 000, FL100, FL150, FL200, FL300, FL450), extrapolación, datos brutos conservados"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-lanceur",
+   "app": "maintenance",
+   "label": {
+    "fr": "Lanceur",
+    "en": "Launcher",
+    "de": "Launcher",
+    "es": "Lanzador"
+   },
+   "items": [
+    {
+     "id": "SOG-0149",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "La première synchronisation git de la journée dure plus de deux minutes",
+     "en": "The first git synchronisation of the day takes more than two minutes",
+     "de": "Die erste Git-Synchronisation des Tages dauert über zwei Minuten",
+     "es": "La primera sincronización git del día tarda más de dos minutos"
     }
    ]
   },
@@ -1986,7 +2052,7 @@
     {
      "id": "SOG-0143",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Zone manquante : partout, dire ce qui manque, offrir le geste (Données) et les replis externes (LittleNavMap, Navigraph, ChartFox)",
      "en": "Missing zone: everywhere, say what is missing, offer the gesture (Données) and the external fallbacks (LittleNavMap, Navigraph, ChartFox)",
      "de": "Fehlende Zone: überall sagen, was fehlt, die Geste anbieten (Daten) und die externen Ausweichwege (LittleNavMap, Navigraph, ChartFox)",
