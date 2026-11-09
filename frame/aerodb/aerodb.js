@@ -1051,7 +1051,23 @@
             best = Math.min(best, dn);
           }
       }
-      return out.sort((a, b) => a.distanceNm - b.distanceNm);
+      // SOG-0154 : un identifiant d'AÉRODROME (quatre lettres) se résout à l'aérodrome, sans parler d'homonymes : le « point » ou la « balise » de même identifiant à la même position est le même lieu (le SIA publie le point de référence
+      // de l'aérodrome sous son code OACI), pas un homonyme ; un homonyme est un autre lieu de même genre (PAM de Pampelune et de Panama City)
+      const rank = {
+          aerodrome: 0,
+          navaid: 1,
+          point: 2,
+          vrp: 3
+        },
+        sorted = out.sort((a, b) => a.distanceNm - b.distanceNm || rank[a.kind] - rank[b.kind]),
+        kept = [];
+      for (const x of sorted) {
+        const same = kept.find(y => distNm([+y.item.lat, +y.item.lon], [+x.item.lat, +x.item.lon]) <= 1);
+        if (same) continue;
+        kept.push(x);
+      }
+      return kept.some(x => x.kind === 'aerodrome') && /^[A-Z0-9]{4}$/.test(k.toUpperCase()) ? kept.filter(x => x.kind ===
+        'aerodrome') : kept;
     }
     /** Données d'une sorte d'une zone (lues une fois) : tableau, objet (obstaclemax, meta) ; vides si absentes. */
     function part(z, kind) {

@@ -1494,13 +1494,17 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         with SYNC_LOCK:
             # pont du registre avant (le registre rejoué part dans ce passage) et après (comptes rendus reçus : le
             # registre rejoué partira au passage suivant)
-            registry_bridge()
-            # gesture : bouton « Synchroniser » (sia/base commitée aussi) ; sinon passage de fond (échange du cadre)
-            if self._relay() and getattr(self, 'relay_device', None) and isinstance(a, dict):
-                a['author'] = self.relay_device['trigram']  # relais : l'auteur du jeton de l'appareil
-            r = data_sync.run(DATA, str(a.get('author') or '').upper(), str(a.get('name') or '')[:60], sync_gesture(a))
-            if r.get('received'):
+            try:
                 registry_bridge()
+                # gesture : bouton « Synchroniser » (sia/base commitée aussi) ; sinon passage de fond (échange du cadre)
+                if self._relay() and getattr(self, 'relay_device', None) and isinstance(a, dict):
+                    a['author'] = self.relay_device['trigram']  # relais : l'auteur du jeton de l'appareil
+                r = data_sync.run(DATA, str(a.get('author') or '').upper(), str(a.get('name') or '')[:60], sync_gesture(a))
+                if r.get('received'):
+                    registry_bridge()
+            except Exception as e:  # SOG-0155 : jamais une erreur 500 sans texte : la page dit la cause (le détail nettoyé de data_sync, le type de l'erreur sinon)
+                r = {'ok': False, 'cause': 'launcher-error', 'message': data_sync.clean_text(f'Erreur du lanceur pendant la synchronisation ({type(e).__name__} : {e}).', DATA)[-800:]}
+                say(f"  Synchronisation en échec : {r['message']}")
         if (self._lan() or self._relay()) and not r.get('ok'):
             # appareil appairé du réseau local ou du relais : rien du poste (sortie de git, chemins) ; le détail reste dans la console
             say(f"  Synchronisation demandée par un appareil appairé, en échec : {r.get('message', '')}")

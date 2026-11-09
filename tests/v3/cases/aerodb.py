@@ -5479,7 +5479,7 @@ def k115(c):
       const kinds = ['meta', 'aerodromes', 'navaids', 'points', 'vrp', 'airways'];
       const zone = (z, o = {}) => Object.fromEntries(kinds.map(k => [`sia/base/${z}/2026-10-29/${k}.json`, k === 'meta' ? { schema: 2, zone: z, cycle: '2026-10-29', kind: 'meta', parserVersion: 23, data: {} } : { schema: 2, zone: z, cycle: '2026-10-29', kind: k, data: o[k] || [] }]));
       const files = {
-        ...zone('fr', { navaids: [nav('ALS', 44.13, 4.07, 'ALES')] }), ...zone('es', { navaids: [nav('PAM', 42.77, -1.64, 'PAMPLONA')] }), ...zone('us', { navaids: [nav('PAM', 30.2, -85.7, 'PANAMA CITY')] }),
+        ...zone('fr', { navaids: [nav('ALS', 44.13, 4.07, 'ALES')], aerodromes: [{ id: 'LFLL', icao: 'LFLL', lat: 45.7256, lon: 5.0811, name: 'LYON SAINT EXUPERY' }], points: [{ id: 'LFLL', lat: 45.7256, lon: 5.0811 }, { id: 'ALS', lat: 44.13, lon: 4.07 }] }), ...zone('es', { navaids: [nav('PAM', 42.77, -1.64, 'PAMPLONA')] }), ...zone('us', { navaids: [nav('PAM', 30.2, -85.7, 'PANAMA CITY')] }),
         ...zone('ma', { navaids: [nav('ALS', 33.6, -7.6, 'ALS MAROC')] }), ...zone('se'),
         ...zone('de', { airways: [{ route: 'N850', a: { id: 'NOSLI', lat: 57.9, lon: 12.6 }, b: { id: 'GUDOP', lat: 53.0, lon: 13.1 }, lower: 4000, upper: 66000 }, { route: 'Z703', a: { id: 'ADVOP', lat: 55.7, lon: 9.5 }, b: { id: 'GUDOP', lat: 53.0, lon: 13.1 }, lower: 4000, upper: 66000 }] }),
         'sia/base/index.json': { schema: 2, kind: 'index', zones: { de: { cycle: '2026-10-29', prefixes: ['ED'], kb: { airways: 5, points: 1 } }, se: { cycle: '2026-10-29', prefixes: ['ES'], kb: { airways: 1, points: 1 } } } }
@@ -5497,6 +5497,9 @@ def k115(c):
       out.plain = await db.coords('ALS');
       out.none = await db.coords('NOSLI', { near: [58, 12] });
       out.bad = [await db.coords('', { near: [1, 1] }), await db.coords('PAM', { near: ['x', 1] }).then(x => x && x.homonyms === undefined), (await db.coordsAll('PAM', { near: [44, 4] })).map(x => [x.zone, x.distanceNm > 0])];
+      out.lfll = await db.coords('LFLL', { near: [45, 5] });
+      out.lflAll = (await db.coordsAll('LFLL', { near: [45, 5], all: true })).map(x => [x.kind, x.zone]);
+      out.alsAll = z(await db.coords('ALS', { near: [43, -1], all: true }));
       out.known = (await db.whereIs('PAM', { near: [44.1, 4.1] })).found.zone;
       out.nosli = (await db.whereIs('NOSLI', { near: [58, 12] })).unknown;
       out.advop = (await db.whereIs('ADVOP', { near: [56, 10] })).unknown;
@@ -5506,6 +5509,9 @@ def k115(c):
     c.eq((r['pamEurope'], r['usRead']), ({'zone': 'es', 'name': 'PAMPLONA', 'nm': 263, 'homonyms': []}, False), 'PAM near the south of France is Pamplona (Spain): the nearest; the zone of the United States is not even opened (no zone left can have a nearer place)', what='europe')
     c.eq(r['pamEuropeAll'], {'zone': 'es', 'name': 'PAMPLONA', 'nm': 263, 'homonyms': ['us']}, 'with all: true every published zone is searched and the homonym set aside is said (the United States)', what='all')
     c.eq((r['pamAmerica']['zone'], r['alsFrance']['zone'], r['alsMorocco']['zone']), ('us', 'fr', 'ma'), 'the same name resolves to the place nearest the previous point: PAM near Florida is American, ALS near Spain is French and near Rabat is Moroccan', what='nearest')
+    c.eq((r['lfll']['kind'], r['lfll']['zone'], r['lfll']['homonyms'], r['lflAll']), ('aerodrome', 'fr', [], [['aerodrome', 'fr']]),
+         'SOG-0154: an aerodrome identifier resolves to the aerodrome, with no homonym: the point of the same identifier at the same position (the SIA publishes the reference point of an aerodrome under its ICAO code) is the same place', what='aerodrome')
+    c.eq(r['alsAll'], {'zone': 'fr', 'name': 'ALES', 'nm': 231, 'homonyms': ['ma']}, 'a beacon and a point of the same identifier at the same position are one place: the only homonym of ALS is the Moroccan one, not the French point', what='same place')
     c.eq((r['plain']['kind'], r['plain'].get('homonyms'), r['none']), ('navaid', None, None), 'without a neighbourhood nothing changes (the first place found, no homonym list); an unknown name is null', what='compat')
     c.eq(r['bad'], [None, True, [['es', True]]], 'a bad neighbourhood is ignored (the old way), an empty name is null', what='bad')
     c.eq((r['known'], r['nosli'], r['advop'], r['nowhere']),
@@ -5659,6 +5665,57 @@ def k118(c):
         c.eq((saved['timings']['sentBytes'], sorted(saved['timings']['steps'])), (0, ['commit', 'prepare', 'push', 'receive', 'settle', 'untrack']), 'the numbers are kept in data/local/sync.json with the report', what='sync.json')
         bad = DS.run(str(tmp / 'nowhere'), 'AAA')
         c.ok('timings' not in bad or bad['ok'] is False, str(bad)[:120], 'a refused pass (not a repository) stays a refusal')
+    finally:
+        import shutil
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+@case('K120', 'A failed publication carries its cause (SOG-0155): the code (remote-refused, network, push-rejected, lfs-hook, auth, conflict, busy), the step where it stopped and the text of git, kept in data/local/sync.json', 'K', static=True,
+      rule='SOG-0155 (10 Nov 2026): « La publication a échoué : rien n\'est perdu… Corrigez la cause » -- which cause? data_sync.run gives, with `ok: false`, `cause` (a code the page can say), `step` (settle, commit, prepare, receive, untrack, push) and `message` (the text of git, cleaned), and data/local/sync.json keeps them (it kept neither the message nor the failure before); a success has none; the launcher\'s route never answers a bare 500')
+def k120(c):
+    import json
+    import subprocess
+    import sys
+    import tempfile
+    import importlib
+    from pathlib import Path
+    sys.path.insert(0, str(c.root / 'tools'))
+    DS = importlib.import_module('data_sync')
+    c.eq([DS.cause_of(t) for t in ('error: failed to push some refs ! [rejected] main -> main (non-fast-forward)', 'remote: GitLab: You are not allowed to push code to protected branches', "fatal: unable to access 'https://x/': Could not resolve host: gitlab.com",
+                                   'git@gitlab.com: Permission denied (publickey).', 'error: failed to push: pre-push hook failed: git-lfs', 'CONFLICT (content): Merge conflict in a.json', 'Un rebase est en cours dans data/', 'boom')],
+         ['push-rejected', 'remote-refused', 'network', 'auth', 'lfs-hook', 'conflict', 'busy', 'other'], 'the text of git or of the launcher is sorted into a cause code', what='sort')
+    tmp = Path(tempfile.mkdtemp(prefix='sog-sync-'))
+    try:
+        remote, a = str(tmp / 'remote.git'), str(tmp / 'A')
+        sh = lambda *args, cwd=str(tmp): subprocess.run(['git', *args], cwd=cwd, check=True, capture_output=True)
+        sh('init', '--bare', '-b', 'main', remote)
+        sh('clone', '-q', remote, a)
+        sh('config', 'user.name', 'essai', cwd=a)
+        sh('config', 'user.email', 'essai@example.invalid', cwd=a)
+        p = Path(a, 'disponibilites', 'AAA', '2026-W44.json')
+        p.parent.mkdir(parents=True)
+        p.write_text(json.dumps({'updated_at': '2026-10-29T10:00:00Z', 'dispos': {'lun': 1}}), encoding='utf-8')
+        ok = DS.run(a, 'AAA')
+        c.eq((ok['ok'], 'cause' in ok, 'message' in json.loads(Path(a, 'local', 'sync.json').read_text(encoding='utf-8'))), (True, False, False), 'a success carries no cause and keeps no message', what='success')
+        # the remote refuses the push (a hook of the server): the cause, the step, the text
+        hook = Path(remote, 'hooks', 'pre-receive')
+        hook.write_text('#!/bin/sh\necho "remote: GitLab: You are not allowed to push code to protected branches on this project." >&2\nexit 1\n', encoding='utf-8')
+        hook.chmod(0o755)
+        p.write_text(json.dumps({'updated_at': '2026-10-29T11:00:00Z', 'dispos': {'lun': 2}}), encoding='utf-8')
+        r = DS.run(a, 'AAA')
+        saved = json.loads(Path(a, 'local', 'sync.json').read_text(encoding='utf-8'))
+        c.eq((r['ok'], r['cause'], r['step'], 'not allowed to push' in r['message'], (saved['ok'], saved['cause'], saved['step'], 'not allowed to push' in saved['message'])),
+             (False, 'remote-refused', 'push', True, (False, 'remote-refused', 'push', True)), 'the server refuses the push: remote-refused, stopped at the push, the text of the server is in the message, and all of it is kept in data/local/sync.json', what='refused')
+        hook.unlink()
+        # the remote is unreachable
+        sh('remote', 'set-url', 'origin', str(tmp / 'nowhere.git'), cwd=a)
+        r = DS.run(a, 'AAA')
+        c.eq((r['ok'], r['cause'], r['step']), (False, 'network', 'receive'), 'the remote cannot be reached: network, stopped when receiving', what='network')
+        # back to normal: the next pass succeeds and the failure is gone from the record
+        sh('remote', 'set-url', 'origin', remote, cwd=a)
+        r = DS.run(a, 'AAA')
+        saved = json.loads(Path(a, 'local', 'sync.json').read_text(encoding='utf-8'))
+        c.eq((r['ok'], 'cause' in r, 'cause' in saved), (True, False, False), 'the next pass succeeds: no cause, the record is the success', what='recovered')
     finally:
         import shutil
         shutil.rmtree(tmp, ignore_errors=True)

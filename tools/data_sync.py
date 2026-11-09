@@ -433,7 +433,7 @@ def remember(data, result):
     """Garde le résultat d'un passage de synchronisation dans data/local/sync.json (propre au poste, ignoré par git)."""
     os.makedirs(os.path.join(data, 'local'), exist_ok=True)  # local/ : propre au poste, ignoré par git
     with open(os.path.join(data, 'local', 'sync.json'), 'w', encoding='utf-8', newline='\n') as f:
-        json.dump({**{k: result.get(k) for k in ('at', 'author', 'committed', 'received', 'pushed', 'conflicts', 'refused', 'ok')}, **({'timings': result['timings']} if 'timings' in result else {})}, f,
+        json.dump({**{k: result.get(k) for k in ('at', 'author', 'committed', 'received', 'pushed', 'conflicts', 'refused', 'ok')}, **({'timings': result['timings']} if 'timings' in result else {}), **({k: result[k] for k in ('message', 'cause', 'step') if result.get(k)} if not result.get('ok') else {})}, f,
                   ensure_ascii=False, indent=1)
 
 
@@ -701,6 +701,27 @@ def _why(e, data=''):
     nettoyé (clean_text : ni identifiant d'adresse, ni chemin du poste)."""
     return clean_text(str(e) if isinstance(e, RuntimeError) else f'Erreur du lanceur pendant la synchronisation ({type(e).__name__} : {e}).',
                       data)
+
+
+# SOG-0155 : la CAUSE d'un échec de publication, en un code que la page sait dire (le texte de git reste dans `message`, nettoyé)
+CAUSES = (
+    ('lfs-hook', r'git[- ]lfs|pre-push hook|lfs\.|smudge|filter-process|batch response|LFS'),
+    ('remote-refused', r'pre-receive hook declined|remote rejected|hook declined|protected branch|not allowed|forbidden|403|push declined|GH0\d\d|too large|file size'),
+    ('auth', r'permission denied|authentication failed|could not read from remote repository.*(publickey|permission)|invalid credentials|access denied|401'),
+    ('push-rejected', r'non-fast-forward|\[rejected\]|fetch first|updates were rejected|failed to push some refs'),
+    ('conflict', r'conflict|CONFLICT|unmerged|merge failed|would be overwritten'),
+    ('network', r'could not resolve|unable to access|connection (timed out|refused|reset|closed)|network is unreachable|does not appear to be a git repository|timed out|early eof|ssh: connect|temporary failure'),
+    ('busy', r'rebase (est )?en cours|index\.lock|another git process|Unable to create .*lock'),
+)
+
+
+def cause_of(text):
+    """Le code de la cause d'un échec d'après le texte de git ou du lanceur : lfs-hook, remote-refused, auth, push-rejected, conflict, network, busy ; 'other' sinon."""
+    t = str(text or '')
+    for code, pattern in CAUSES:
+        if re.search(pattern, t, re.I):
+            return code
+    return 'other'
 
 
 def _settled_note(how):
@@ -994,6 +1015,8 @@ def run(data, author, name='', gesture=False):
     except Exception as e:  # toute erreur, git ou du lanceur : fusion annulée, message à la page (jamais au serveur)
         res['ok'] = res['pushed'] = False
         res['message'] = _why(e, data)[-800:] + _abort(data)
+        res['cause'] = 'timeout' if isinstance(e, subprocess.TimeoutExpired) else cause_of(res['message'])
+        res['step'] = next((s for s in ('settle', 'commit', 'prepare', 'receive', 'untrack', 'push') if s not in marks), '')      # l'étape où ça s'est arrêté
     finally:
         res['timings'] = {'steps': marks, 'totalMs': round((time.monotonic() - begun) * 1000), 'gitCalls': _STATS['n'], 'gitMs': round(_STATS['s'] * 1000), 'sentBytes': res.pop('timings_bytes', None)}
         remember(data, res)
