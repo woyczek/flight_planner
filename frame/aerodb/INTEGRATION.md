@@ -588,3 +588,17 @@ Answer: `{ ok, alternatives, segments, issues, rad, fra, report, message, gaps, 
 - **Keeping France offline** (frame's cache, launcher): 13 files, 6.9 MB with the common files, about 180 ms, or 410 ms
   on a phone-like CPU. Afterwards, with the network cut, the questions on France answer from the cache alone (about
   100 ms, or 390 ms on a phone-like CPU, for a first set of questions). Releasing takes 80–200 ms.
+
+### Loading positions of the pelicandromes: the job `pelican/import` (SOG-0083, alpha.5)
+
+The user's file `pelicandromes_positions.yaml` (schema `pelicandromes` v1, WGS84; per site `nom`, `oaci`, `categorie`, `latitude`, `longitude`, `statut`, `source`; « position de chargement uniquement si vérifiée manuellement, ne pas utiliser pour la navigation réelle ») is imported from Downloads into **`data/pelicandromes/<country>.json`**, published in the data repository (one commit by the page's author, only the compiled file; the YAML is not copied). Called like every job: `launcher.job('regen/job', { set: 'pelican', verb: 'import', args })`.
+
+`args` (closed): `{ dry?: true (default), country?: 'fr' (2 letters, default 'fr'), file?: { name, size } }`. The file is found **by the pattern** `pelicandromes_positions*.yaml` in Downloads (the latest; a `.yaml.pdf` copy does not match), never by a path from the page. The plan (`dry`) reads and checks it and answers without writing; the take needs the `file` the plan showed (`not-shown`, `changed` otherwise).
+
+Result: `{ ok, dry, file: { name, size, sha256 } | null, sites, categories: { <category>: n }, rejected: [{ index, error }], written, commit, reason?, message? }`; `reason`: `no-file` (with `expected`: the pattern), `invalid` (not a readable pelicandromes file: `message` says why), `not-shown`, `changed`, `failed`. On this workstation's file: 32 sites, 26 `principal`, 2 `temporaire`, 1 `mobile`, 1 `projet`, 1 `outre-mer`, 1 `à confirmer`, none rejected.
+
+**The compiled file**: `{ schema: 'pelicandromes', version: 1, country, datum: 'WGS84', note, source: { name, size, sha256 }, sites: [{ name, icao, category, lat, lon, status, source, country }] }`. `country` is on the file **and on each site** (the next countries come as `<country>.json` with the same shape). Nothing is timestamped: the same file gives the same bytes, a second take writes nothing and makes no commit. `category` and `status` are free short texts (the categories of the file are not a closed list); a site is rejected, with its index, when its name is missing, its position is missing, not a number or out of range, or its OACI code is not 2–4 letters or digits.
+
+**The file is the user's, so untrusted like everything in `data/`**: at most 256 kB (before it is read), UTF-8 text, at most 500 sites; a reduced YAML grammar of the standard library (one document, scalars, **one list of flat records**: anchors, tags, `{ }` / `[ ]`, `|` / `>` blocks, tabs, nesting and duplicate keys are refused with the line); numbers finite and bounded (latitude ±90, longitude ±180, 7 decimals), booleans and `NaN` are not numbers; texts without control characters, **without `<` or `>`**, blanks collapsed, 200 signs at most. **The consumer sets the texts with `textContent`, never as HTML.** The positions are loading positions checked by hand: the note travels with the file, to be shown wherever they are.
+
+The Map layer (beta.1) is BUGS SOG's: it reads `data/pelicandromes/fr.json` through the data repository like the other published data; no AeroDB API reads it yet.

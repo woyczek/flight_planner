@@ -31,7 +31,7 @@ import outbound  # le User-Agent du lanceur, chaque échec dit en console
 from secrets import token_urlsafe  # jeton d'un travail (le paramètre « secrets » des fonctions est un dossier)
 
 # sorties publiées (chemins de data/) et sorties locales jamais publiées ; caches des sources : data/sia/<source>/
-OUTPUTS = ('sia/base/', 'proc/', 'sia/vfr/', 'AircraftDB/', 'sia/mora.csv', 'route/')       # route/ : le RAD et les points FRA compilés d'EUROCONTROL (SOG-0081)
+OUTPUTS = ('sia/base/', 'proc/', 'sia/vfr/', 'AircraftDB/', 'sia/mora.csv', 'route/', 'pelicandromes/')       # route/ : le RAD et les points FRA compilés d'EUROCONTROL (SOG-0081) ; pelicandromes/ : les positions de chargement (SOG-0083)
 LOCAL = 'local/'
 CACHE_ROOT = 'sia/'
 NOT_CACHES = {'base', 'vfr'}  # sous sia/ : des sorties, pas des caches de sources

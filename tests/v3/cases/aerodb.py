@@ -5131,6 +5131,79 @@ def k106(c):
     c.eq(len(V.thin([{'distance_nm': i, 'altitude_ft': i} for i in range(1000)])) <= 201, True, 'the profile is thinned to about 200 points', what='thin')
 
 
+@case('K108', 'Job pelican/import (SOG-0083): the positions file of Downloads is read with a reduced YAML grammar, checked as an untrusted file, compiled into data/pelicandromes/fr.json; plan then take, a changed file refused', 'K', static=True,
+      rule='SOG-0083 (10 Nov 2026): pelicandromes_positions*.yaml (schema pelicandromes v1, WGS84, 32 sites: nom, oaci, categorie, latitude, longitude, statut, source) is imported from Downloads by pattern, never a path, into data/pelicandromes/<country>.json: numbers bounded, texts cleaned (no control character, no < or >), a country field for the next ones, nothing timestamped, one commit; the file is the user file, so untrusted like everything in data/')
+def k108(c):
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    from regen import pelican as PE
+    fn, check = RJ.REGISTRY[('pelican', 'import')]
+    head = 'schema: pelicandromes\nschema_version: 1\ndatum: WGS84\nnote: Position de chargement uniquement si vérifiée.\nsites:\n'
+    rec = lambda nom, oaci, cat, lat, lon: f'  - nom: {nom}\n    oaci: {oaci}\n    categorie: {cat}\n    latitude: {lat}\n    longitude: {lon}\n    statut: valide\n    source: Position vérifiée manuellement sur OSM\n'
+    good = head + rec('Nîmes-Garons', 'LFTW', 'principal', 43.7497269, 4.4135054) + rec('Le Luc–Le Cannet', 'LFMC', 'principal', 43.3888609, 6.3814935) + rec('Site à confirmer', '', 'à confirmer', 44.1, 5.2)
+    c.eq((check({}), check({'dry': False, 'file': {'name': 'pelicandromes_positions.yaml', 'size': 5}}) is not None, check({'path': '/x'}), check({'country': 'FRA'}), check({'file': {'name': '../x.yaml', 'size': 1}}), check({'file': {'name': 'a.yaml'}})),
+         ({'dry': True, 'country': 'fr'}, True, None, None, None, None), 'the closed request: dry by default, a 2-letter country, the file shown (name, size), nothing else, no path', what='check')
+    doc = PE.parse(good)
+    c.eq((doc['schema'], doc['schema_version'], len(doc['sites']), doc['sites'][0]['latitude'], doc['sites'][2]['oaci']), ('pelicandromes', 1, 3, 43.7497269, None), 'the reduced grammar reads the scalars, the numbers and the empty value of a list of flat records', what='parse')
+    hostile = {
+        'anchor': head + '  - nom: &a X\n', 'flow': head + '  - nom: [1, 2]\n', 'block': head + '  - nom: |\n', 'tag': head + '  - nom: !!str X\n', 'tab': head + '\t- nom: X\n', 'nested': head + '  - nom:\n      sub: 1\n',
+        'dup': head + '  - nom: X\n    nom: Y\n', 'orphan': head + '    nom: X\n', 'text-sites': 'schema: pelicandromes\nsites: x\n'}
+    refused = {k: None for k in hostile}
+    for k, t in hostile.items():
+        try:
+            PE.parse(t)
+        except PE.Refused as e:
+            refused[k] = str(e)[:40]
+    c.eq([k for k, v in refused.items() if v is None], [], 'anchors, tags, flow collections, block scalars, tabs, nesting, duplicate keys, a record without a dash: refused with the line', what='refused grammar')
+    meta = {'name': 'f.yaml', 'size': 1, 'sha256': '0' * 64}
+    bad = [('schema: other\n' + good[good.index('schema_version'):], 'schema'), (good.replace('schema_version: 1', 'schema_version: 2'), 'version'), (good.replace('WGS84', 'NAD27'), 'datum'), (head, 'no site'),
+           (head + rec('X', 'LF', 'a', 91, 4), 'no site')]
+    out = []
+    for t, why in bad:
+        try:
+            PE.compile_file(t, meta, 'fr')
+            out.append(why)
+        except PE.Refused:
+            pass
+    c.eq(out, [], 'another schema, another version, another datum, no site, only out-of-range sites: the file is refused', what='refused file')
+    d, rej = PE.compile_file(head + rec('Bon', 'LFTW', 'principal', 43.1, 4.1) + rec('<script>alert(1)</script>', 'lftw', 'x', 43.2, 4.2) + rec('Trop haut', 'LFMS', 'principal', 99, 4) + rec('OACI faux', 'L F', 'principal', 43, 4)
+                             + '  - nom: Sans latitude\n    longitude: 4\n' + '  - nom: Booléen\n    latitude: true\n    longitude: 4\n' + rec('Rare', 'LFMS', 'principal', 'NaN', 4), meta, 'fr')
+    c.eq(([s['name'] for s in d['sites']], d['sites'][1]['icao'], [r['index'] for r in rej]), (['Bon', 'scriptalert(1)/script'], 'LFTW', [2, 3, 4, 5, 6]), 'a site out of range, with a bad code, without or with a non-numeric position is rejected with its index; the markup characters are removed, the code upper-cased', what='sites')
+    c.eq((d['country'], d['sites'][0]['country'], d['datum'], d['source']), ('fr', 'fr', 'WGS84', meta), 'the country is carried by the file and by each site (the next countries), the source file by its name, size and hash', what='fields')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        dl, data = os.path.join(td, 'Downloads'), os.path.join(td, 'data')
+        os.makedirs(dl)
+        os.makedirs(data)
+        ctx = {'data': data, 'downloads': lambda: [dl]}
+        run = lambda **a: fn(RJ.Job('pelican', 'import', {}, author='TST'), check(a), ctx)
+        r = run()
+        c.eq((r['ok'], r['reason']), (False, 'no-file'), 'nothing in Downloads: said (no-file), with the pattern', what='no file')
+        open(os.path.join(dl, 'pelicandromes_positions.yaml.pdf'), 'w').write('x')
+        open(os.path.join(dl, 'pelicandromes_positions.yaml'), 'w', encoding='utf-8', newline='').write(good)
+        r = run()
+        c.eq((r['ok'], r['dry'], r['sites'], r['categories'], r['written'], os.path.exists(os.path.join(data, 'pelicandromes'))), (True, True, 3, {'principal': 2, 'à confirmer': 1}, False, False), 'the plan: the file by the pattern (not the .pdf), the sites and the categories counted, nothing written', what='plan')
+        r2 = run(dry=False)
+        c.eq((r2['ok'], r2['reason']), (False, 'not-shown'), 'a take without the file the plan showed: refused', what='not shown')
+        f = {'name': r['file']['name'], 'size': r['file']['size']}
+        r3 = run(dry=False, file=f)
+        out = os.path.join(data, 'pelicandromes', 'fr.json')
+        got = json.load(open(out, encoding='utf-8'))
+        c.eq((r3['ok'], r3['written'], got['schema'], got['version'], len(got['sites']), got['sites'][1]['name'], 'imported' in got), (True, True, 'pelicandromes', 1, 3, 'Le Luc–Le Cannet', False), 'the take writes data/pelicandromes/fr.json (accents kept, nothing timestamped)', what='take')
+        r4 = run(dry=False, file=f)
+        c.eq((r4['ok'], r4['written'], r4['commit']), (True, False, None), 'the same file again: nothing written, no commit', what='again')
+        open(os.path.join(dl, 'pelicandromes_positions.yaml'), 'w', encoding='utf-8', newline='').write(good + rec('Autre', 'LFMA', 'principal', 43.5, 5.3))
+        r5 = run(dry=False, file=f)
+        c.eq((r5['ok'], r5['reason']), (False, 'changed'), 'the file is no longer the one the plan showed: refused, the plan is to be made again', what='changed')
+        open(os.path.join(dl, 'pelicandromes_positions.yaml'), 'w', encoding='utf-8', newline='').write('x' * 300000)
+        r6 = run()
+        c.eq((r6['ok'], r6['reason']), (False, 'invalid'), 'a file over the size limit is refused before it is read', what='too large')
+        open(os.path.join(dl, 'pelicandromes_positions.yaml'), 'wb').write(b'\xff\xfe\x00 not text')
+        r7 = run()
+        c.eq((r7['ok'], r7['reason']), (False, 'invalid'), 'not UTF-8: refused', what='binary')
+
+
 @case('K65', 'Build job: a zone shows a count of sources only when the builder gives one for it; the build\'s count goes once in the job', 'K', static=True,
       rule='Réglages 1 Nov 2026 (the user saw « construction (90 / 90 sources) » on all 26 zones): the builder\'s counts are global; a zone gets done / total only from a count of its own; job.data inputs = { done, total } once')
 def k65(c):
