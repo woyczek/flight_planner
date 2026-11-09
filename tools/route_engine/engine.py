@@ -67,7 +67,7 @@ class Nav:
             for w in ways:
                 if not self.valid(w.get('a',{})) or not self.valid(w.get('b',{})): continue
                 a,b=self.add(w['a']),self.add(w['b'])
-                self.edges.append(dict(a=a,b=b,route=w['route'],lower=w.get('lower'),upper=w.get('upper'),
+                self.edges.append(dict(a=a,b=b,route=w['route'],lower=w.get('lower'),upper=w.get('upper'),dir=w.get('dir'),   # SOG-0078 : dir ('F' a→b, 'B' b→a, 'FB' les deux ; absent : inconnu)
                                        nm=nm(self.nodes[a],self.nodes[b]),zone=zone.name))
         if not self.edges: raise ValueError('Aucun segment airway dans les cycles disponibles à cette date.')
         self.fra=fra_module.Fra(self,date,nm)
@@ -105,13 +105,14 @@ class Nav:
         if not candidates: raise ValueError('Aucune position de '+ident+' reliée à l’airway indiquée')
         raise ValueError('Identifiant géographiquement ambigu : '+ident+' ('+str(len(candidates))+' positions encore possibles).')
 
-    def graph(self,fl=None,airway=None):
+    def graph(self,fl=None,airway=None,directed=True):
         g=collections.defaultdict(list)
         for e in self.edges:
             if airway and e['route']!=airway: continue
             if fl is not None and not self.level(e,fl): continue
-            # Source has no directional metadata. Both directions are an explicit simulation assumption.
-            g[e['a']].append((e['b'],e)); g[e['b']].append((e['a'],e))
+            # SOG-0078 : un segment à sens unique (dir 'F' ou 'B', lu dans la source) ne se parcourt que dans son sens ; sans `dir` (source muette), les deux sens restent une hypothèse de simulation.
+            if not directed or e.get('dir')!='B': g[e['a']].append((e['b'],e))
+            if not directed or e.get('dir')!='F': g[e['b']].append((e['a'],e))
         return g
 
     @staticmethod
@@ -425,7 +426,9 @@ def assess(request,_nav=None,_rad=None):
         else:
             active_fra=set()
             p=nav.path(nav.graph(None,via),current,target)
-            if p is None:
+            if p is None and nav.path(nav.graph(None,via,directed=False),current,target) is not None:   # SOG-0078 : le chemin existe à contre-sens d'un segment à sens unique
+                issue('ERREUR',f'Sens interdit : {via} est à sens unique et {nav.nodes[current]["id"]} → {word} le parcourt à contre-sens.')
+            elif p is None:
                 issue('ERREUR',f'Continuité absente dans AeroDB : {nav.nodes[current]["id"]} {via} {word}.')
             else: parsed.extend(p)
         current=target
@@ -436,7 +439,7 @@ def assess(request,_nav=None,_rad=None):
             fra_area=e.get('fra_area'),from_role=e.get('from_role'),to_role=e.get('to_role'),fra_rows=e.get('fra_rows'),nm=round(e['nm'],2),
             lower=e.get('lower'),upper=e.get('upper'),node_constraints=e.get('node_constraints'),planned_speed_kt=e.get('planned_speed_kt'),speed_limit_ias=e.get('speed_limit_ias'),
             procedure_id=e.get('procedure_id'),procedure_name=e.get('procedure_name'),runways=e.get('runways'),source_zone=e.get('zone'),source_cycle=e.get('source_cycle') or nav.cycles.get(e.get('zone')),
-            direction='inconnue' if e['route']!='DCT' else 'non vérifiée'))
+            direction=({'F':'sens unique','B':'sens unique','FB':'double sens'}.get(e.get('dir'),'inconnue') if e['route']!='DCT' else 'non vérifiée')))   # SOG-0078
     dep_elev=nav.ads.get(dep,{}).get('elev'); arr_elev=nav.ads.get(arr,{}).get('elev')
     if dep_elev is None or arr_elev is None: issue('REVUE','Élévation AD absente : 0 ft utilisé pour le modèle vertical de simulation.')
     profile=flight_profile.build(legs,dep_elev or 0,arr_elev or 0,fl,**options,strategy=strategy)

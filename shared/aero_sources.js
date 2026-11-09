@@ -491,8 +491,20 @@
         lo = kid(s, 'lowerLimit'),
         ft = e => e ? (/FL/i.test(e.getAttribute('uom') || '') ? +e.textContent * 100 : /UNL/i.test(e.textContent) ? Infinity : toFt(+e
           .textContent, e.getAttribute('uom'))) : null;
+      // sens (SOG-0078) : les disponibilités de la route (RouteAvailability : direction FORWARD, début → fin ; BACKWARD, fin → début ; BOTH), hors les fermées ; absent : la source ne le dit pas
+      const dirs = new Set;
+      for (const av of kids(s, 'RouteAvailability')) {
+        if (text(av, 'status') === 'CLOSED') continue;
+        const d = text(av, 'direction');
+        if (d === 'BOTH' || d === 'FORWARD') dirs.add('F');
+        if (d === 'BOTH' || d === 'BACKWARD') dirs.add('B');
+      }
+      const dir = ['F', 'B'].filter(x => dirs.has(x)).join('');
       out.aero.airways.push({
         route: routes.get(href(kid(s, 'routeFormed'))) || '',
+        ...(dir ? {
+          dir
+        } : {}),
         a,
         b,
         lower: ft(lo),
@@ -1055,7 +1067,18 @@
           },
           lower: +f[8] * 100,
           upper: +f[9] * 100,
-          nm: 0
+          nm: 0,
+          ...({
+            F: {
+              dir: 'F'
+            },
+            B: {
+              dir: 'B'
+            },
+            N: {
+              dir: 'FB'
+            }
+          })[f[6]] // sens (SOG-0078) : N sans restriction, F de la première à la seconde extrémité, B l'inverse
         });
       }
     } else if (n === 'earth_mora.dat') {
@@ -1122,6 +1145,9 @@
         },
         lower: w.lower,
         upper: w.upper,
+        ...(w.dir ? {
+          dir: w.dir
+        } : {}),
         nm: +(best.d / NM).toFixed(1)
       });
     }

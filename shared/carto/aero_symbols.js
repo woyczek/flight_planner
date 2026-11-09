@@ -213,12 +213,25 @@
     // des routes (shared/mission_routing.js). Niveau en ft : FL × 100, sinon valeur (ft ou m).
     const airways = [];
     const lvl = (b, w) => { const v = +tag(b, `valDistVer${w}`), u = tag(b, `uomDistVer${w}`).toUpperCase(); return !Number.isFinite(v) || !tag(b, `valDistVer${w}`) ? null : u === 'FL' ? v * 100 : u === 'M' ? Math.round(v * 3.28084) : v; };
+    // Sens des segments (SOG-0078) : Rsu (usage d'un segment) porte codeDir, F (du début vers la fin) ou B (de la fin vers le début) ; un segment à double sens a un usage F et un usage B (niveaux pairs / impairs par sens),
+    // un segment à sens unique un seul. Les usages permanents comptent d'abord (codeRteAvbl ≠ CDR…), les usages conditionnels seulement quand il n'y en a pas d'autres.
+    const use = new Map;
+    for (const u of blocks(text, 'Rsu')) {
+      const mid = /<RsgUid mid="(\d+)"/.exec(u)?.[1],
+        d = tag(u, 'codeDir');
+      if (!mid || !/^[FB]$/.test(d)) continue;
+      const e = use.get(mid) || use.set(mid, { perm: new Set, cdr: new Set }).get(mid);
+      (/^CDR/i.test(tag(u, 'codeRteAvbl')) ? e.cdr : e.perm).add(d);
+    }
     for (const b of blocks(text, 'Rsg')) {
       const route = /<RteUid[^>]*>\s*<txtDesig>([^<]+)/.exec(b)?.[1] || '',
         end = w => { const m = new RegExp(`<(\\w+)Uid${w}[^>]*>([\\s\\S]*?)</\\1Uid${w}>`).exec(b); return m ? { id: tag(m[2], 'codeId'), ...geo(m[2]) } : null; },
         a = end('Sta'), z = end('End');
       if (!a || !z || !Number.isFinite(a.lat) || !Number.isFinite(z.lat)) continue;
-      airways.push({ route, a, b: z, lower: lvl(b, 'Lower'), upper: lvl(b, 'Upper'), nm: +tag(b, 'valLen') || null });
+      const u = use.get(/<RsgUid mid="(\d+)"/.exec(b)?.[1]),
+        set = u && (u.perm.size ? u.perm : u.cdr),
+        dir = set ? ['F', 'B'].filter(x => set.has(x)).join('') : '';
+      airways.push({ route, a, b: z, lower: lvl(b, 'Lower'), upper: lvl(b, 'Upper'), nm: +tag(b, 'valLen') || null, ...(dir ? { dir } : {}) });
     }
     return {
       aerodromes,

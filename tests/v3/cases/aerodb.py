@@ -5004,6 +5004,81 @@ def k103(c):
     c.eq((len(b['alternative_failures']), len(b['alternative_failures'][0]), len(b['alternative_attempts']), len(b['alternative_attempts'][0]['errors'])), (40, 4000, 40, 10), 'and the failures and the attempts', what='failures')
 
 
+@case('K104', 'Airway direction (SOG-0078): the SIA (Rsu codeDir), AIXM 5.1 (RouteAvailability direction) and X-Plane (earth_awy sens) readers give `dir`, one-way segments are not both ways', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0078 (10 Nov 2026): « il semble que les AWY à sens unique ne soient pas cartographiées dans aerodb ? » -- the sources DO say it (SIA AIXM 4.5: the usages Rsu of a segment, codeDir F or B, a two-way segment having both; NATS / ENAIRE AIXM 5.1: RouteAvailability direction FORWARD, BACKWARD or BOTH; X-Plane: N, F, B) but no reader kept it; `dir` is now F (start to end), B (end to start), FB (both), absent when the source is silent')
+def k104(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/vrp_sources.html', wait_until='load')
+    c.page.wait_for_function('!!window.AeroSources', timeout=30000)
+    c.page.add_script_tag(url=f'{c.base}/shared/carto/aero_symbols.js')
+    c.page.wait_for_function('!!window.SiaAero && !!window.SiaAero.parseAixm', timeout=30000)
+    r = c.js("""() => {
+      const rsg = (mid, route, a, b) => `<Rsg><RsgUid mid="${mid}"><RteUid mid="1"><txtDesig>${route}</txtDesig></RteUid><DpnUidSta mid="2"><codeId>${a}</codeId><geoLat>480000.00N</geoLat><geoLong>0030000.00E</geoLong></DpnUidSta>
+        <DpnUidEnd mid="3"><codeId>${b}</codeId><geoLat>490000.00N</geoLat><geoLong>0040000.00E</geoLong></DpnUidEnd></RsgUid><codeType>RNAV</codeType><valDistVerUpper>115</valDistVerUpper><uomDistVerUpper>FL</uomDistVerUpper><valDistVerLower>065</valDistVerLower><uomDistVerLower>FL</uomDistVerLower><valLen>33.8</valLen></Rsg>`;
+      const rsu = (mid, avbl, dir) => `<Rsu><RsuUid mid="9${mid}"><RsgUid mid="${mid}"><RteUid mid="1"><txtDesig>X</txtDesig></RteUid></RsgUid><codeRteAvbl>${avbl}</codeRteAvbl><noSeq>10</noSeq><codeDir>${dir}</codeDir></RsuUid></Rsu>`;
+      const sia = '<AIXM-Snapshot>' + [rsg(101, 'L1', 'AAA', 'BBB'), rsg(102, 'L2', 'CCC', 'DDD'), rsg(103, 'L3', 'EEE', 'FFF'), rsg(104, 'L4', 'GGG', 'HHH'), rsg(105, 'L5', 'III', 'JJJ'), rsg(106, 'L6', 'KKK', 'LLL')].join('')
+        + rsu(101, 'NONFUA', 'F') + rsu(102, 'NONFUA', 'B') + rsu(103, 'NONFUA', 'F') + rsu(103, 'NONFUA', 'B') + rsu(104, 'CDR1', 'F') + rsu(106, 'CDR1', 'B') + rsu(106, 'NONFUA', 'F') + '</AIXM-Snapshot>';
+      const out = { sia: Object.fromEntries(window.SiaAero.parseAixm(sia).airways.map(w => [w.route, w.dir === undefined ? null : w.dir])) };
+      const seg = (id, a, b, av) => `<aixm:RouteSegment><aixm:timeSlice><aixm:RouteSegmentTimeSlice><aixm:routeFormed xlink:href="urn:uuid:R${id}"/>
+        <aixm:start><aixm:EnRouteSegmentPoint><aixm:pointChoice_fixDesignatedPoint xlink:href="urn:uuid:${a}"/></aixm:EnRouteSegmentPoint></aixm:start>
+        <aixm:end><aixm:EnRouteSegmentPoint><aixm:pointChoice_fixDesignatedPoint xlink:href="urn:uuid:${b}"/></aixm:EnRouteSegmentPoint></aixm:end>
+        ${av.map(([d, s]) => `<aixm:availability><aixm:RouteAvailability><aixm:direction>${d}</aixm:direction><aixm:status>${s}</aixm:status></aixm:RouteAvailability></aixm:availability>`).join('')}
+        </aixm:RouteSegmentTimeSlice></aixm:timeSlice></aixm:RouteSegment>`;
+      const dp = (id, lat, lon) => `<aixm:DesignatedPoint gml:id="uuid.${id}"><gml:identifier>${id}</gml:identifier><aixm:timeSlice><aixm:DesignatedPointTimeSlice><aixm:designator>${id}</aixm:designator><aixm:type>ICAO</aixm:type><aixm:location><aixm:Point><gml:pos>${lat} ${lon}</gml:pos></aixm:Point></aixm:location></aixm:DesignatedPointTimeSlice></aixm:timeSlice></aixm:DesignatedPoint>`;
+      const rt = n => `<aixm:Route gml:id="uuid.R${n}"><gml:identifier>R${n}</gml:identifier><aixm:timeSlice><aixm:RouteTimeSlice><aixm:designatorSecondLetter>N</aixm:designatorSecondLetter><aixm:designatorNumber>${n}</aixm:designatorNumber></aixm:RouteTimeSlice></aixm:timeSlice></aixm:Route>`;
+      const x5 = '<aixm:AIXMBasicMessage xmlns:aixm="http://www.aixm.aero/schema/5.1" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink">'
+        + [dp('P1', 50, 1), dp('P2', 51, 2), dp('P3', 52, 3)].join('') + [rt(1), rt(2), rt(3), rt(4), rt(5)].join('')
+        + seg(1, 'P1', 'P2', [['FORWARD', 'OPEN']]) + seg(2, 'P1', 'P2', [['BACKWARD', 'OPEN']]) + seg(3, 'P2', 'P3', [['FORWARD', 'OPEN'], ['BACKWARD', 'COND']]) + seg(4, 'P2', 'P3', [['BOTH', 'OPEN']]) + seg(5, 'P1', 'P3', [['FORWARD', 'CLOSED']])
+        + '</aixm:AIXMBasicMessage>';
+      out.aixm5 = window.AeroSources.aixm5(x5).aero.airways.map(w => [w.route, w.dir === undefined ? null : w.dir]);
+      const xp = ['I', '1100 Version', 'ABC LF 11 DEF LF 11 N 2 100 300 L1', 'ABC LF 11 DEF LF 11 F 2 100 300 L2', 'ABC LF 11 DEF LF 11 B 2 100 300 L3'].join('\\n');
+      const nav = { aero: { points: [{ id: 'ABC', lat: 48, lon: 2 }, { id: 'DEF', lat: 49, lon: 3 }], navaids: [] } };
+      const part = window.AeroSources.xplane('earth_awy.dat', xp);
+      out.xplane = part.aero.airways.map(w => [w.route, w.dir === undefined ? null : w.dir]);
+      out.resolved = window.AeroSources.resolveAirways(part.aero.airways, nav.aero.points, nav.aero.navaids).map(w => [w.route, w.dir === undefined ? null : w.dir]);
+      return out;
+    }""")
+    c.eq(r['sia'], {'L1': 'F', 'L2': 'B', 'L3': 'FB', 'L4': 'F', 'L5': None, 'L6': 'F'},
+         'SIA: a segment with one usage F is one-way forward (L1), one usage B backward (L2), both usages two-way (L3); a conditional (CDR) usage counts only when there is no permanent one (L4: F; L6: the permanent F wins over the conditional B); no usage: unknown (L5)', what='sia')
+    c.eq(r['aixm5'], [['N1', 'F'], ['N2', 'B'], ['N3', 'FB'], ['N4', 'FB'], ['N5', None]],
+         'AIXM 5.1: FORWARD is F, BACKWARD is B, FORWARD and BACKWARD or BOTH is FB; a closed availability counts for nothing (N5: unknown)', what='aixm5')
+    c.eq((r['xplane'], r['resolved']), ([['L1', 'FB'], ['L2', 'F'], ['L3', 'B']], [['L1', 'FB'], ['L2', 'F'], ['L3', 'B']]), 'X-Plane: N is two-way, F start to end, B the other way; kept when the ends are resolved on the points', what='xplane')
+
+
+@case('K105', 'The route engine honours the direction of the airways (SOG-0078): a one-way segment is not flown against its direction, said; both ways stays when the source says so or is silent', 'K', static=True,
+      rule='SOG-0078: the files of airways carry `dir` (F: start to end, B: end to start, FB: both, absent: the source does not say); the engine no longer assumes both ways for a segment that says one way: the calculation does not use it against its direction, the control of a route that does says « Sens interdit »; the leg says its direction (sens unique, double sens, inconnue)')
+def k105(c):
+    import os
+    import tempfile
+    _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as PL
+
+    def run(direction, **req):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = os.path.join(td, 'data')
+            os.makedirs(data)
+            RF.make_base(data, direction)
+            rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+            RF.write_xlsx(rad, RF.rad_sheets())
+            I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+            return PL.compute(dict({'dep': 'LFPO', 'arr': 'EIDW', 'fl': 90, 'date': '2026-11-09T12:00', 'enable_fra': False}, **req), data, os.path.join(data, 'route', 'rad.json.gz'), None)['primary']
+    fwd = 'LFPO DCT OLZOM A1 SITET A1 KEPAD A1 BOYNE DCT EIDW'
+    back = 'EIDW DCT BOYNE A1 KEPAD A1 SITET A1 OLZOM DCT LFPO'
+    p = run('F', route='LFPO SITET KEPAD EIDW')
+    c.eq((p['ok'], p['route'], {l['direction'] for l in p['legs'] if l['via'] == 'A1'}), (True, fwd, {'sens unique'}), 'one-way forward (OLZOM to BOYNE): LFPO to EIDW is flown with it, the legs say « sens unique »', what='forward ok')
+    p = run('F', dep='EIDW', arr='LFPO', route='EIDW KEPAD SITET LFPO')
+    c.eq((p['ok'], p['status']), (False, 'CALCUL IMPOSSIBLE'), 'EIDW to LFPO through the same one-way airway: no route (the imposed passages are not removed)', what='forward reverse')
+    p = run('F', dep='EIDW', arr='LFPO', mode='validate', route=back)
+    c.eq((p['ok'], [i['text'] for i in p['issues'] if i['level'] == 'ERREUR'][:1]), (True, ['Sens interdit : A1 est à sens unique et BOYNE → KEPAD le parcourt à contre-sens.']), 'the control of the reversed route says it: « Sens interdit », which segment', what='sens interdit')
+    p = run('B', dep='EIDW', arr='LFPO', route='EIDW KEPAD SITET LFPO')
+    c.eq((p['ok'], p['route']), (True, back), 'one-way backward (BOYNE to OLZOM): EIDW to LFPO is flown with it', what='backward ok')
+    p = run('B', route='LFPO SITET KEPAD EIDW')
+    c.eq((p['ok'], p['status']), (False, 'CALCUL IMPOSSIBLE'), 'and LFPO to EIDW is not', what='backward reverse')
+    for direction, text in (('FB', 'double sens'), (None, 'inconnue')):
+        a, b = run(direction, route='LFPO SITET KEPAD EIDW'), run(direction, dep='EIDW', arr='LFPO', route='EIDW KEPAD SITET LFPO')
+        c.eq((a['ok'], b['ok'], {l['direction'] for l in a['legs'] if l['via'] == 'A1'}), (True, True, {text}), f'{direction or "no dir"}: both ways flown, the legs say « {text} »', what=f'both {direction}')
+
+
 @case('K65', 'Build job: a zone shows a count of sources only when the builder gives one for it; the build\'s count goes once in the job', 'K', static=True,
       rule='Réglages 1 Nov 2026 (the user saw « construction (90 / 90 sources) » on all 26 zones): the builder\'s counts are global; a zone gets done / total only from a count of its own; job.data inputs = { done, total } once')
 def k65(c):

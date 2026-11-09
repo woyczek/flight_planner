@@ -93,7 +93,7 @@ def fra_sheets():
             ('Column Explanation', [['Column content explanation']])]
 
 
-def make_base(data):
+def make_base(data, direction=None):
     """data/sia/base/xx/2026-10-29/ : LFPO and EIDW, four points and the airway A1 between them, the shape of the README example (LFPO SITET KEPAD EIDW)."""
     d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
     os.makedirs(d)
@@ -102,7 +102,7 @@ def make_base(data):
         'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['LFPO', 'PARIS ORLY', 48.72328, 2.37958, 291, 0, 0], ['EIDW', 'DUBLIN', 53.42131, -6.27006, 242, 0, 0]]},
         'points': [{'id': k, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for k, v in nodes.items()],
         'navaids': [],
-        'airways': [{'route': 'A1', 'a': {'id': a, 'lat': nodes[a][0], 'lon': nodes[a][1]}, 'b': {'id': b, 'lat': nodes[b][0], 'lon': nodes[b][1]}, 'lower': 6500, 'upper': 66000}
+        'airways': [{'route': 'A1', 'a': {'id': a, 'lat': nodes[a][0], 'lon': nodes[a][1]}, 'b': {'id': b, 'lat': nodes[b][0], 'lon': nodes[b][1]}, 'lower': 6500, 'upper': 66000, **({'dir': direction} if direction else {})}
                     for a, b in (('OLZOM', 'SITET'), ('SITET', 'KEPAD'), ('KEPAD', 'BOYNE'))],
     }
     for k, v in files.items():

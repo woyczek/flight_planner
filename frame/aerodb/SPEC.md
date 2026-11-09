@@ -69,7 +69,7 @@ removed (§ 5 quinquies); the raw sources never are.
   `obstacleMax`, `moraCells`, `aarXml`, `aarXmlExtra`, `natTracks`, `airac`, …), towns in `sia/base/cities.json`
   { `cities` } for the whole world.
 - In both formats airspace rings are `[[lat, lon], …]`; points carry `lat`, `lon`, `id` (aerodromes `icao`), airways
-  carry `a` and `b` ends. Zone ids are those of `AERODB_ZONES`, plus `nat` (oceanic).
+  carry `a` and `b` ends and, since parser version 22 (SOG-0078), `dir`: `F` (flown from `a` to `b` only), `B` (from `b` to `a` only), `FB` (both ways, as the source says), absent when the source does not say (AirNav, an older build). Zone ids are those of `AERODB_ZONES`, plus `nat` (oceanic).
 - **Same-family overlaps (build statistics, parser version 19).** An airspace record is { `src`, `type`, `cls`, `name`, `key`,
   `lower`, `upper`, `azba`, `admin`, `act`, `info`, `rings`, and, when flagged, `ovl`, `capped` }. At publication, once a zone's
   airspaces are final (after the merge of the sources), `SiaBase.sameFamilyOverlaps` (`shared/sia_base.js`) looks for
