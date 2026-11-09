@@ -5371,9 +5371,10 @@ def k112(c):
       const db = AeroDB.create({ reader: { read: async () => null, list: async () => [], watch: () => () => {} }, lnmperf: false });
       const p = await db.packs();
       const again = await db.packs();
-      return { same: p === again, frozen: Object.isFrozen(p) && Object.isFrozen(p.regions[0]) && Object.isFrozen(p.regions[0].zones), regions: p.regions.length, themes: p.themes.map(t => t.id), generated: p.generated,
+      return { kinds: [p.packs.length, p.packs.filter(x => x.kind === 'region').length, p.packs.filter(x => x.kind === 'theme').length, p.packs[0].date, p.packs[0].source.slice(0, 13), Object.isFrozen(p.packs)], same: p === again, frozen: Object.isFrozen(p) && Object.isFrozen(p.regions[0]) && Object.isFrozen(p.regions[0].zones), regions: p.regions.length, themes: p.themes.map(t => t.id), generated: p.generated,
         tr: p.regions.filter(r => r.zones.includes('tr')).map(r => r.id), antarctica: p.regions.find(r => r.id === 'antarctica'), arctic: p.regions.find(r => r.id === 'arctic').partial, names: p.regions[0].names };
     }""")
+    c.eq(r2['kinds'], [28, 22, 6, r2['kinds'][3], 'Natural Earth', True], 'the shape of the contract with Réglages: packs, one list, `kind` region or theme, date and source on each pack (regions and themes kept as well)', what='packs list')
     c.eq((r2['same'], r2['frozen'], r2['regions'], r2['themes'], r2['tr'], r2['antarctica']['zones'], r2['antarctica']['empty'], r2['arctic'], len(r2['names'])),
          (True, True, 22, ['islands', 'himalaya', 'deserts-steppes', 'forests-jungles', 'lakes-rivers', 'megacities'], ['middle-east', 'mediterranean'], [], 'no-zone-no-source', ['ca', 'fi', 'no', 'ru', 'se', 'us'], 4),
          'AeroDb.packs(): read once, frozen, the regions and themes as in the file, Turkey in two packs (the Middle East, the Mediterranean), Antarctica empty with its reason, the partial zones of the arctic', what='packs()')

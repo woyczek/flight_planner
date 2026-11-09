@@ -2030,12 +2030,15 @@
             .trim().slice(0, n) : '',
             ids = (list, only) => Array.isArray(list) ? [...new Set(list.filter(z => typeof z === 'string' && known.has(z) && (!
               only || only.has(z))))].slice(0, 250) : [],
-            pack = p => {
+            pack = (p, kind, date, source) => {
               if (!p || typeof p !== 'object' || !/^[a-z0-9-]{2,30}$/.test(p.id || '') || !Array.isArray(p.names) || p.names
                 .length !== 4) return null;
               const zones = ids(p.zones);
               return Object.freeze({
                 id: p.id,
+                kind,
+                date,
+                source,
                 names: Object.freeze(p.names.map(n => text(n, 60))),
                 zones: Object.freeze(zones),
                 ...(Array.isArray(p.partial) ? {
@@ -2047,12 +2050,20 @@
                 basis: text(p.basis, 300)
               });
             },
-            list = l => Object.freeze((Array.isArray(l) ? l : []).slice(0, 60).map(pack).filter(Boolean));
+            date = text(raw.generated, 10),
+            source = text(raw.source, 300),
+            list = (l, kind) => Object.freeze((Array.isArray(l) ? l : []).slice(0, 60).map(p => pack(p, kind, date, source))
+              .filter(Boolean)),
+            regions = list(raw.regions, 'region'),
+            themes = list(raw.themes, 'theme');
           return Object.freeze({
-            generated: text(raw.generated, 10),
-            source: text(raw.source, 300),
-            regions: list(raw.regions),
-            themes: list(raw.themes)
+            generated: date,
+            source,
+            regions,
+            themes,
+            packs: Object.freeze([...regions, ...
+              themes
+            ]) // la forme du contrat de Réglages (SOG-0065) : une liste, `kind` dit la sorte
           });
         })();
         packsP.then(v => {
