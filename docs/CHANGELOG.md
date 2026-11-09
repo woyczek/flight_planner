@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the world synoptic is also read under `data/local/weather/world/`** (`frame/lib/weather_store.js`; frame INTEGRATION § 14, DECISIONS;
+  noreg A25; SOG-0138). `weatherStore.world()` tries `<root>/weather/world/` then `<root>/data/local/weather/world/` (what AeroDB writes, never
+  synchronised), in that order and nothing else; none of the two: no publication.
+
 - **Fuel: each rule deviation of a route listed** (`modules/fuel/route_engine.js` `faultLines`, `modules/fuel/module.js`; Fuel SPEC § 9.3,
   INTEGRATION, help; noreg F113; SOG-0134 b). « N écarts aux règles » unfolds into one line per deviation — segment, RAD or FRA rule,
   the engine's sentence — seven then « N autres », for each proposed route and for « Contrôler ».

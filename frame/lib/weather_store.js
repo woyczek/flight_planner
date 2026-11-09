@@ -12,7 +12,8 @@
 //   · METAR et TAF gardés 30 min (cache/weather/metar|taf/<OACI>.json) : aviationweather.gov par le relais du lanceur,
 //     sinon metar.vatsim.net (METAR bruts décodés par frame/lib/metar.js) et avwx.rest (clé de l'appareil, ajoutée par le
 //     cadre) ;
-//   · synoptique monde : la publication des pages (même origine, <racine>/weather/world/), index gardé 6 h dans
+//   · synoptique monde : la publication des pages (même origine, <racine>/weather/world/, sinon <racine>/data/local/weather/world/ que
+//     le lanceur sert de data/local/ : celles d'aerodb, jamais synchronisées), index gardé 6 h dans
 //     cache/weather/world/ ; l'appareil n'appelle jamais Open-Meteo hors de la grille du vol (aloft et grid seulement).
 // Ni page ni stockage propre : la couche de données (data : get, put, remove, cached) et les appels sortants (net.fetch,
 // qui ne lève jamais : 503 marqué x-sog-offline / x-sog-unreachable) sont donnés.
@@ -695,9 +696,25 @@ export function weatherStore({
 
   // ---------------------------------------------------------------- synoptique monde
   const WORLD_DIR = `${PREFIX}world/`,
-    worldUrl = f => new URL(`weather/world/${f}`, root || 'http://invalid/').href;
+    // où sont les pages : la publication (<racine>/weather/world/), sinon ce que le lanceur sert de data/local/ (aerodb les y écrit,
+    // jamais synchronisées, 17 Mo toutes les six heures) ; dans cet ordre, rien d'autre (SOG-0138)
+    WORLD_BASES = ['weather/world/', 'data/local/weather/world/'];
   let worldIdx = null,
-    worldTried = 0;
+    worldTried = 0,
+    worldFrom = 0; // la base qui a répondu en dernier : les échéances d'un index y sont d'abord cherchées
+  /** JSON d'un fichier des pages : la base indiquée d'abord (0 : la publication), puis l'autre ; absent des deux ou en échec : null. */
+  async function worldJson(f, init, first = 0) {
+    for (const i of first === 0 ? [0, 1] : [1, 0]) {
+      try {
+        const j = await (await call(new URL(WORLD_BASES[i] + f, root || 'http://invalid/').href, init)).json();
+        worldFrom = i;
+        return j;
+      } catch {
+        /* absent de cette base : la suivante */
+      }
+    }
+    return null;
+  }
   const worldSteps = new Map();
   const validIndex = w => !!(w && w.schema === 1 && w.lats?.length && w.lons?.length && Array.isArray(w.times) && w.times
     .length && w.files?.length === w.times.length);
@@ -710,13 +727,9 @@ export function weatherStore({
     let got = null;
     if (root && now() - worldTried > WORLD_RETRY) {
       worldTried = now();
-      try {
-        got = await (await call(worldUrl('index.json'), {
-          cache: 'no-cache'
-        })).json();
-      } catch {
-        got = null;
-      }
+      got = await worldJson('index.json', {
+        cache: 'no-cache'
+      });
     }
     if (validIndex(got) && (!ok || got.built > ok.built)) {
       await data.put(`${WORLD_DIR}index.json`, got).catch(() => {});
@@ -747,13 +760,9 @@ export function weatherStore({
       const p = WORLD_DIR + f,
         mine = await data.get(p).catch(() => null);
       if (mine?.vars) return mine;
-      try {
-        const s = await (await call(worldUrl(f))).json();
-        if (s?.vars) await data.put(p, s).catch(() => {});
-        return s?.vars ? s : null;
-      } catch {
-        return null;
-      }
+      const s = await worldJson(f, undefined, worldFrom);
+      if (s?.vars) await data.put(p, s).catch(() => {});
+      return s?.vars ? s : null;
     })());
     return worldSteps.get(key);
   }

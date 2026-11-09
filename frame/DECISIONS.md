@@ -2581,3 +2581,10 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   nothing under it when its content arrives, while the same block without the reservation moves what is under it by its whole height;
   Settings at load has a cumulative layout shift under 0.1 (measured without a launcher: the slow case, a launcher waiting for the
   repository's version, is Réglages' SOG-0133). Red on 824427537 (`ctx.placeholder` absent).
+- **9 Nov 2026 — The world synoptic also under `data/local/weather/world/`** (SOG-0138, the GFS synoptic: AeroDB now writes its pages in `data/local/weather/world/`,
+  never synchronised, regenerable, 17 MB every six hours, served by the launcher; Simplification; V3 Frame): `weatherStore.world()` read only
+  `<root>/weather/world/`. It now tries `<root>/weather/world/` then `<root>/data/local/weather/world/`, in that order and nothing else
+  (`WORLD_BASES`, `worldJson`); the index is looked for in both order each time it is read (every 10 min at most), the steps first where the index
+  was found, then the other (a publication can appear later); absent from both: `null`, « no publication » as before. The publication still wins
+  when present, so a site's published file is never shadowed by a local one. Noreg A25 (the weather bench: first base absent → the second is read, steps
+  too, kept on the device; both absent → `null` after exactly the two asks; the publication present → `data/local/` never asked), red on 7ccea997d.

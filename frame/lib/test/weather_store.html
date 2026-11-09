@@ -141,8 +141,10 @@
           station: u.pathname.split('/').pop(),
           forecast: []
         }) : marked('x-sog-unreachable');
-        if (u.pathname.endsWith('/weather/world/index.json')) return opts.world ? json(opts.world) : json({}, 404);
-        if (u.pathname.includes('/weather/world/')) return json({
+        // les pages du synoptique : <racine>/weather/world/ (par défaut) ou <racine>/data/local/weather/world/ (opts.worldAt)
+        const wp = `/v3/${opts.worldAt || 'weather/world/'}`;
+        if (u.pathname === `${wp}index.json`) return opts.world ? json(opts.world) : json({}, 404);
+        if (u.pathname.startsWith(wp)) return json({
           vars: {
             p: [1013]
           },
@@ -520,6 +522,33 @@
     ck('world : index de l\'appareil de moins de 6 h, rien relu', i2?.file === 's0.json' && !S2.net.calls.some(u => u.includes(
       'index.json')), S2.net.calls.join(' '));
 
+    // le synoptique d'aerodb sous data/local/ (SOG-0138) : la publication d'abord, sinon ce dossier, rien d'autre
+    const LOCAL = 'https://example.test/v3/data/local/weather/world/',
+      PUB = 'https://example.test/v3/weather/world/';
+    S = mk({
+      world: WORLD,
+      worldAt: 'data/local/weather/world/'
+    });
+    const j1 = await S.w.world();
+    ck('world : premiere base absente, index lu sous data/local/weather/world/ apres la publication', j1?.built === built && S.net.calls
+      .indexOf(
+        PUB + 'index.json') >= 0 && S.net.calls.indexOf(LOCAL + 'index.json') > S.net.calls.indexOf(PUB + 'index.json'), S.net.calls.join(
+        ' '));
+    const j2 = await S.w.world(1);
+    ck('world : echeances lues dans la base qui a repondu, gardees sur appareil', j2?.file === 's1.json' && S.data.m.has(
+        'cache/weather/world/s1.json') &&
+      S.net.calls.includes(LOCAL + 's1.json') && !S.net.calls.includes(PUB + 's1.json'), S.net.calls.join(' '));
+    S = mk({
+      world: WORLD
+    });
+    await S.w.world();
+    ck('world : publication presente, data/local/ jamais demande', !S.net.calls.some(u => u.includes('/data/local/')), S.net.calls.join(
+      ' '));
+    S = mk();
+    ck('world : aucune des deux bases, aucune publication (null)', (await S.w.world()) === null && S.net.calls.filter(u => u.endsWith(
+        'index.json')).length ===
+      2, S.net.calls.join(' '));
+
     // ---------------------------------------------------------------- hors ligne
     S = mk();
     await S.w.aloft(route, when);
@@ -538,7 +567,8 @@
     ck('hors ligne : cacheOnly rend null (périmé), sans appel réseau ajouté', offC === null);
     const mo = await S.w.metar(['LFRS']);
     ck('metar hors ligne : offline, sans erreur', mo.offline === true);
-    clock.t = Date.parse('2026-10-28T09:00:00Z');
+    clock.t = Date.parse(
+      '2026-10-28T09:00:00Z');
 
     // ---------------------------------------------------------------- GFS loin de l'Europe
     S = mk();
@@ -549,9 +579,11 @@
       lat: 41,
       lon: -59
     }], when);
-    ck('GFS : cases de 0,25°, modèle gfs_seamless', ag.model.id === 'gfs_seamless' && /latitude=40\.125,41\.125&longitude=-60\.125,-58\.875/
+    ck('GFS : cases de 0,25°, modèle gfs_seamless', ag.model.id === 'gfs_seamless' &&
+      /latitude=40\.125,41\.125&longitude=-60\.125,-58\.875/
       .test(S.net.forecasts()[0]), S.net.forecasts()[0]);
-    ck('run : GFS lu sur ncep_gfs025', S.net.calls.some(u => u.includes('/data/ncep_gfs025/static/meta.json')));
+    ck('run : GFS lu sur ncep_gfs025', S.net.calls.some(u => u.includes(
+      '/data/ncep_gfs025/static/meta.json')));
     // une heure de run gardée pour un autre modèle de métadonnées (avant le 28 oct. : AROME HD) n'est pas resservie
     S = mk();
     await S.data.put('cache/weather/meteofrance_seamless/meta.json', {
@@ -559,7 +591,8 @@
       meta: 'meteofrance_arome_france_hd',
       run: RUN - 3 * 3600
     });
-    ck('run : heure gardée pour un autre modèle ignorée, relue', (await S.w.run('meteofrance_seamless')) === RUN && S.net.calls.length ===
+    ck('run : heure gardée pour un autre modèle ignorée, relue', (await S.w.run('meteofrance_seamless')) === RUN && S.net.calls
+      .length ===
       1);
   } catch (e) {
     ck('exception', false, e.stack || e.message);
