@@ -4405,6 +4405,123 @@ def k87(c):
         c.eq(run({'action': 'clear'})['set'], False, 'clear: the setting is gone', what='clear')
 
 
+SIA_OM = (('PAC-P', 'NTAA', 'NTTB', 'Polynésie', '2026-10-29'), ('PAC-N', 'NWWM', 'NLWW', 'Nouvelle-Calédonie', '2026-10-29'), ('RUN', 'FMEE', 'FMCZ', 'Réunion', '2026-10-01'), ('CAR-SAM-NAM', 'TFFF', 'LFVP', 'Antilles', '2026-10-01'))
+
+
+@case('K88', 'SIA overseas eAIP (SOG-0054): the region of a terrain, the AIRAC folder of each region read from its home page, the jobs proc/eaip-fetch and proc/regions, one case per region', 'K', static=True,
+      rule='SOG-0054 (9 Nov 2026, survey of 6 Nov): the SIA publishes PAC-P, PAC-N, RUN and CAR-SAM-NAM beside FRANCE on the same disc, same layout, same coding tables, each region with its own AIRAC folder (RUN and CAR-SAM-NAM one cycle back on 29 Oct 2026); the suite reads them like France, from the aerodrome page of its region; the zone fr already holds their aerodromes and navaids (AIXM FR_OM)')
+def k88(c):
+    import json
+    import os
+    import sys
+    import tempfile
+    import time
+    import urllib.error
+    RJ = _regen()
+    import proc_sia as S
+    check_ead = RJ.REGISTRY[('proc', 'ead-fetch')][1]
+    check_eaip = RJ.REGISTRY[('proc', 'eaip-fetch')][1]
+    disc = 'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_29_OCT_2026'
+    homes = {'FRANCE': "init('FRANCE','2026','10','29','11')", 'PAC-P': "init('PAC P','2026','10','29','11')", 'PAC-N': "init('PAC N','2026','10','29','11')", 'RUN': "init('RUN','2026','10','01','10')",
+             'CAR-SAM-NAM': "init('CAR SAM NAM','2026','10','01','10')"}
+    asked = []
+
+    def get(url, timeout=60):
+        asked.append(url)
+        m = re.fullmatch(r'https://www\.sia\.aviation-civile\.gouv\.fr/media/dvd/eAIP_\d\d_[A-Z]{3}_\d{4}/([A-Z-]+)/home\.html', url)
+        if not m or m.group(1) not in homes:
+            raise urllib.error.HTTPError(url, 404, 'not found', None, None)
+        return ('<html><body onLoad="' + homes[m.group(1)] + '"></body></html>').encode()
+    for region, ad, ad2, place, date in SIA_OM:
+        c.eq((S.region_of(ad), S.region_of(ad2.lower()), S.region_date(homes[region])), (region, region, date), f'{region} ({place}): {ad} and {ad2} belong to it; its home page gives the folder date {date}', what=f'{region} region')
+        url = S.region_eaip('2026-10-29', region, get)
+        c.eq(url, f'{disc}/{region}/AIRAC-{date}', f'{region}: the folder is the disc of the cycle + the region + the region\'s own date (not the calendar cycle)', what=f'{region} url')
+        c.eq((check_eaip({'icao': ad}), check_eaip({'icao': ad2}), check_ead({'icao': ad}), check_ead({'icao': ad2})), ({'icao': ad}, {'icao': ad2}, None, None), f'{region}: proc/eaip-fetch accepts {ad} and {ad2}, proc/ead-fetch refuses them (the SIA is never read through EAD)', what=f'{region} jobs')
+    c.eq(S.region_eaip('2026-10-29', 'FRANCE', get), disc + '/FRANCE/AIRAC-2026-10-29', 'FRANCE: no call, the metropolitan address as before', what='france')
+    c.eq(sum(1 for u in asked if u.endswith('/FRANCE/home.html')), 0, 'and its home page is not read', what='no france call')
+    c.eq([S.region_of(k) for k in ('LFPO', 'LFVP', 'LFVM', 'FMEP', 'FMMI', 'FMCH', 'EGLL', 'LIRF', 'NTAA', 'SOCA', 'NZAA', 'LF', '', None, 'ntaa ')],
+         ['FRANCE', 'CAR-SAM-NAM', 'CAR-SAM-NAM', 'RUN', None, None, None, None, 'PAC-P', 'CAR-SAM-NAM', None, None, None, None, 'PAC-P'], 'the exact codes come first (LFVP / LFVM are Saint-Pierre-et-Miquelon, FMMI and FMCH are not the SIA\'s), other States and bad codes: none', what='region_of')
+    c.eq([check_eaip({'icao': k}) for k in ('FMMI', 'EGLL', 'NZAA', 'LFPO')], [None, None, None, {'icao': 'LFPO'}], 'proc/eaip-fetch still refuses the other States', what='eaip refuses')
+    c.eq(check_ead({'icao': 'LFPO'}), None, 'and proc/ead-fetch still refuses France', what='ead refuses france')
+    c.eq((S.region_date('init(\'RUN\',\'2026\',\'13\',\'01\',\'10\')'), S.region_date('<html></html>'), S.region_date(None)), (None, None, None), 'an impossible date or a page without one: none', what='bad home')
+    c.eq(S.region_eaip('2026-10-29', 'NOPE', get), None, 'an unknown region: none', what='unknown region')
+    c.eq(S.region_eaip('2026-11-26', 'RUN', lambda u, timeout=60: (_ for _ in ()).throw(OSError('down'))), None, 'a region page that cannot be read: none, the job says it', what='down')
+    # the job proc/regions: one request a region, the file, never a region that cannot be read
+    PR = RJ.REGISTRY[('proc', 'regions')]
+    c.eq((PR[1]({}), PR[1]({'x': 1}), PR[1](None)), ({}, None, None), 'proc/regions takes no argument', what='regions check')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        saved = (S.fetch, time.sleep)
+        S.fetch, time.sleep = get, lambda s: None
+        try:
+            job = RJ.Job('proc', 'regions', {}, author='TST')
+            r = PR[0](job, {}, {'data': td, 'secrets': td})
+        finally:
+            S.fetch, time.sleep = saved
+        cycle = r.get('cycle')
+        out = json.load(open(os.path.join(td, 'proc', 'sia-regions.json'), encoding='utf-8'))
+        c.eq((r['ok'], r['regions'], r['missing']), (True, ['CAR-SAM-NAM', 'FRANCE', 'PAC-N', 'PAC-P', 'RUN'], []), 'proc/regions: the five regions', what='regions job')
+        base = lambda reg, d: f'{S.eaip_url(cycle).rsplit("/FRANCE/", 1)[0]}/{reg}/AIRAC-{d}/html/eAIP/'
+        c.eq({k: v['base'] for k, v in out['regions'].items() if k in ('RUN', 'PAC-P')}, {'RUN': base('RUN', '2026-10-01'), 'PAC-P': base('PAC-P', '2026-10-29')},
+             'sia-regions.json: each region\'s base under its own date, on the disc of the cycle in force', what='regions file')
+        c.eq((out['schema'], sorted(out['regions'])), (1, ['CAR-SAM-NAM', 'FRANCE', 'PAC-N', 'PAC-P', 'RUN']), 'the file: schema 1, the five regions', what='file')
+@case('K89', 'SIA overseas eAIP in aerodb (SOG-0054): the region table mirrors the launcher\'s, chartsUrl answers the region\'s page from proc/sia-regions.json, the coverage and the verb of fetchProcedures follow, chartUrl uses the file\'s own base', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0054 (9 Nov 2026): NTAA, NWWM, FMEE, TFFF, LFVP are SIA terrains: eAIP of their region (the folder date is the region\'s, read by the launcher, never computed from the calendar); France unchanged; any other State null; a file or a regions file whose base leaves the SIA host gives nothing')
+def k89(c):
+    import json
+    _regen()
+    import proc_sia as S
+    regions = {k: {'prefixes': list(v['prefixes']), 'codes': list(v['codes'])} for k, v in S.SIA_REGIONS.items()}
+    disc = 'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_29_OCT_2026'
+    rfile = {'schema': 1, 'cycle': '2026-10-29', 'regions': {r: {'date': d, 'base': f'{disc}/{r}/AIRAC-{d}/html/eAIP/'} for r, d in (('FRANCE', '2026-10-29'), ('PAC-P', '2026-10-29'), ('PAC-N', '2026-10-29'), ('RUN', '2026-10-01'), ('CAR-SAM-NAM', '2026-10-01'))}}
+    hostile = json.loads(json.dumps(rfile))
+    hostile['regions']['PAC-P']['base'] = 'https://evil.example.org/PAC-P/html/eAIP/'
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async ([regions, rfile, hostile, disc]) => {
+      const day = Date.parse('2026-11-09T12:00:00Z'), meta = (z, cy) => ({ schema: 2, zone: z, cycle: cy, kind: 'meta', parserVersion: 21, data: { builtAt: cy + 'T10:00:00Z' } });
+      const rec = { id: 'NTAA.APP.RNPRWY04.RW04', icao: 'NTAA', kind: 'APP', name: 'RNP RWY 04', runways: ['04'], transition: null, status: 'check', source: { kind: 'eaip', ref: 'AD_2_NTAA_DATA_RWY04_RNP_CODE.pdf', file: 'AD_2_NTAA_DATA_RWY04_RNP_CODE.pdf', cycle: '2026-10-29' },
+        points: [{ seq: 1, id: 'AAAAA', lat: -17.5, lon: -149.6, leg: 'IF' }, { seq: 2, id: 'RW04', lat: -17.55, lon: -149.6, leg: 'CF' }] };
+      const file = base => ({ schema: 1, icao: 'NTAA', cycle: '2026-10-29', updated_at: '2026-11-09T08:00:00Z', procedures: [rec], charts: { base, items: [{ path: 'Cartes/NTAA/AD_2_NTAA_IAC_RWY04_FNA_RNP.pdf', kind: 'IAC' }, { path: 'Cartes/NTAA/AD_2_NTAA_DATA_RWY04_RNP_CODE.pdf', kind: 'DATA' }, { path: 'Cartes/NTAA/AD_2_NTAA_ADC_01.pdf', kind: 'ADC' }], vac: null } });
+      const mk = (files, launcher) => AeroDB.create({ reader: { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} }, lnmperf: false, launcher, now: () => day });
+      const out = {};
+      const db = mk({ 'proc/sia-regions.json': rfile, 'proc/manual/NTAA.json': file(`${disc}/PAC-P/AIRAC-2026-10-29/html/eAIP/`), 'sia/base/fr/2026-10-29/meta.json': meta('fr', '2026-10-29') });
+      await db.sources();
+      out.mirror = JSON.stringify(Object.fromEntries(Object.entries(AeroCatalogue.SIA_REGIONS).map(([k, v]) => [k, { prefixes: v.prefixes, codes: v.codes }]))) === JSON.stringify(regions);
+      const codes = ['NTAA', 'NTTB', 'NWWM', 'NLWW', 'FMEE', 'FMCZ', 'TFFF', 'LFVP', 'LFPO', 'FMMI', 'EGLL', 'NZAA', 'LF', ''];
+      out.regionOf = codes.map(k => AeroCatalogue.siaRegionOf(k));
+      out.charts = Object.fromEntries(await Promise.all(codes.map(async k => [k, await db.chartsUrl(k)])));
+      out.none = [await mk({}).chartsUrl('NTAA'), await mk({}).chartsUrl('FMEE'), await mk({}).chartsUrl('LFPO')];
+      out.hostile = await mk({ 'proc/sia-regions.json': hostile }).chartsUrl('NTAA');
+      out.cov = Object.fromEntries(await Promise.all(['NTAA', 'FMEE', 'LFPO', 'FMMI'].map(async k => [k, (await db.coverage(k))?.reason])));
+      const calls = [];
+      const fake = () => ({ info: () => ({ data: true, lan: false }), request: async () => null, job: async (route, body) => { calls.push(body); return { status: 200, result: { ok: false, reason: 'failed', message: 'x' } }; } });
+      const dbf = mk({}, fake());
+      for (const k of ['NTAA', 'FMEE', 'LFPO', 'FMMI']) await dbf.fetchProcedures(k);
+      out.verbs = calls.map(b => [b.args.icao, b.set + '/' + b.verb]);
+      const procs = await db.procedures('NTAA', {});
+      out.proc = procs.map(p => p.id);
+      out.chartUrl = procs.length ? await db.chartUrl(procs[0]) : null;
+      out.rwy = await db.chartUrl({ icao: 'NTAA', kind: 'RWY', id: 'NTAA.RWY.04', name: 'RWY 04', runways: ['04'] });
+      out.badFile = await mk({ 'proc/manual/NTAA.json': file('https://evil.example.org/x/') }).chartUrl(rec);
+      return out;
+    }""", [regions, rfile, hostile, disc])
+    c.ok(r['mirror'], '', 'the region table of catalogue.js is the launcher\'s (proc_sia.SIA_REGIONS): same regions, prefixes and exact codes')
+    codes = ['NTAA', 'NTTB', 'NWWM', 'NLWW', 'FMEE', 'FMCZ', 'TFFF', 'LFVP', 'LFPO', 'FMMI', 'EGLL', 'NZAA', 'LF', '']
+    c.eq(r['regionOf'], ['PAC-P', 'PAC-P', 'PAC-N', 'PAC-N', 'RUN', 'RUN', 'CAR-SAM-NAM', 'CAR-SAM-NAM', 'FRANCE', None, None, None, None, None], 'siaRegionOf: one region per overseas terrain (PAC-P, PAC-N, RUN, CAR-SAM-NAM), LFVP with CAR-SAM-NAM, FMMI and the others none', what='regionOf')
+    ch = r['charts']
+    page = lambda reg, d, k: f'{disc}/{reg}/AIRAC-{d}/html/eAIP/FR-AD-2.{k}-fr-FR.html'
+    c.eq([ch[k] for k in ('NTAA', 'NTTB')], [page('PAC-P', '2026-10-29', 'NTAA'), page('PAC-P', '2026-10-29', 'NTTB')], 'PAC-P (NTAA Faa\'a, NTTB Bora-Bora): the aerodrome page of the region', what='PAC-P')
+    c.eq([ch[k] for k in ('NWWM', 'NLWW')], [page('PAC-N', '2026-10-29', 'NWWM'), page('PAC-N', '2026-10-29', 'NLWW')], 'PAC-N (NWWM Nouméa-Magenta, NLWW Wallis): the aerodrome page of the region', what='PAC-N')
+    c.eq([ch[k] for k in ('FMEE', 'FMCZ')], [page('RUN', '2026-10-01', 'FMEE'), page('RUN', '2026-10-01', 'FMCZ')], 'RUN (FMEE, FMCZ): its own folder date, 2026-10-01 (not the calendar cycle)', what='RUN')
+    c.eq([ch[k] for k in ('TFFF', 'LFVP')], [page('CAR-SAM-NAM', '2026-10-01', 'TFFF'), page('CAR-SAM-NAM', '2026-10-01', 'LFVP')], 'CAR-SAM-NAM (TFFF, LFVP of Saint-Pierre-et-Miquelon): its own folder date', what='CSN')
+    c.eq((ch['LFPO'], ch['FMMI'], ch['EGLL'], ch['NZAA'], ch['LF'], ch['']), (f'{disc}/FRANCE/AIRAC-2026-10-29/html/eAIP/FR-AD-2.LFPO-fr-FR.html', None, None, None, None, None), 'France unchanged; FMMI (Madagascar), another State, a bad code: null', what='others')
+    c.eq((r['none'], r['hostile']), ([None, None, f'{disc}/FRANCE/AIRAC-2026-10-29/html/eAIP/FR-AD-2.LFPO-fr-FR.html'], None), 'no regions file: overseas null (the date is not guessed), France as before; a regions file whose base leaves the SIA host: null', what='no file')
+    c.eq((r['cov']['NTAA'], r['cov']['FMEE'], r['cov']['LFPO'], r['cov']['FMMI'] != 'sia'), ('sia', 'sia', 'sia', True), 'coverage: an overseas terrain not yet read is « sia » (readable on demand, orange) like France; FMMI (Madagascar) is not', what='coverage')
+    c.eq(r['verbs'], [['NTAA', 'proc/eaip-fetch'], ['FMEE', 'proc/eaip-fetch'], ['LFPO', 'proc/eaip-fetch']], 'fetchProcedures: the SIA verb for the overseas terrains and France; FMMI starts nothing (no EAD reading offered)', what='verbs')
+    c.eq((r['chartUrl'], r['rwy']), (f'{disc}/PAC-P/AIRAC-2026-10-29/html/eAIP/Cartes/NTAA/AD_2_NTAA_IAC_RWY04_FNA_RNP.pdf', f'{disc}/PAC-P/AIRAC-2026-10-29/html/eAIP/Cartes/NTAA/AD_2_NTAA_ADC_01.pdf'),
+         'chartUrl: the IAC chart of NTAA RNP 04 and its aerodrome chart, under the base of the file (the PAC-P folder)', what='chartUrl')
+    c.eq(r['badFile'], None, 'a file whose base is not the SIA\'s gives nothing', what='bad file')
+
+
 @case('K58', 'openAIP aerodromes: runways, bearing, hardLen and magVar derived like the SIA gives them to France', 'K', tags=('aerodb',), phone=False,
       rule='aerodb SPEC 2 (aerodrome fields, parser version 20): bearing, hardLen, water, runways and magVar come from the openAIP runways and magneticDeclination; a terrain without runways carries none of the runway fields')
 def k58(c):

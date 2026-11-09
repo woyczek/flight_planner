@@ -1110,6 +1110,62 @@ def eaip_url(cycle):
     return f'https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_{d}_{MONTHS_EN[int(mo) - 1]}_{y}/FRANCE/AIRAC-{y}-{mo}-{d}'
 
 
+# ---- l'outre-mer du SIA (SOG-0054, relevé de frame/aerodb/DECISIONS.md du 6 nov. 2026) : le SIA publie cinq eAIP sur le même disque (…/media/dvd/eAIP_29_OCT_2026/<RÉGION>/) ; même disposition, même format de tables
+# de codage ; le dossier AIRAC de chaque région porte SA date (PAC-P et PAC-N : celle du disque ; RUN et CAR-SAM-NAM : un cycle plus tôt le 29 oct. 2026), écrite dans sa page d'accueil.
+# Miroir de SIA_REGIONS de frame/aerodb/catalogue.js (vérifié par le cas K88). Les codes exacts passent avant les préfixes (LFVM et LFVP sont de CAR-SAM-NAM, non de FRANCE ; FM : Réunion et Mayotte seulement,
+# les autres terrains FM sont de Madagascar et des Comores).
+SIA_REGIONS = {
+    'FRANCE': {'prefixes': ('LF',), 'codes': ()},
+    'PAC-P': {'prefixes': ('NT',), 'codes': ()},               # Polynésie française
+    'PAC-N': {'prefixes': ('NW', 'NL'), 'codes': ()},          # Nouvelle-Calédonie, Wallis-et-Futuna
+    'RUN': {'prefixes': (), 'codes': ('FMCZ', 'FMEE', 'FMEP')},    # La Réunion, Mayotte
+    'CAR-SAM-NAM': {'prefixes': ('TF', 'SO'), 'codes': ('LFVM', 'LFVP')},    # Antilles, Guyane, Saint-Pierre-et-Miquelon
+}
+REGION_HOME = re.compile(r"init\('([^']+)','(\d{4})','(\d{2})','(\d{2})'")      # onLoad de la page d'accueil d'une région : init('RUN','2026','10','01','10')
+
+
+def region_of(icao):
+    """Le dossier de région de l'eAIP du SIA qui publie ce terrain (« FRANCE », « PAC-P », « PAC-N », « RUN », « CAR-SAM-NAM »), ou None (un autre État). Les codes exacts d'abord, puis les préfixes."""
+    k = str(icao or '').strip().upper()
+    if not ICAO_RE.fullmatch(k):
+        return None
+    for region, r in SIA_REGIONS.items():
+        if k in r['codes']:
+            return region
+    for region, r in SIA_REGIONS.items():
+        if k.startswith(r['prefixes']) if r['prefixes'] else False:
+            return region
+    return None
+
+
+def region_date(home_html):
+    """La date AIRAC (AAAA-MM-JJ) que la page d'accueil d'une région (<disque>/<RÉGION>/home.html) donne à son dossier, ou None."""
+    m = REGION_HOME.search(str(home_html))
+    if not m:
+        return None
+    try:
+        datetime(int(m.group(2)), int(m.group(3)), int(m.group(4)))
+    except ValueError:
+        return None
+    return f'{m.group(2)}-{m.group(3)}-{m.group(4)}'
+
+
+def region_eaip(cycle, region, get=None):
+    """Dossier AIRAC de l'eAIP d'une région pour le disque d'un cycle : …/eAIP_29_OCT_2026/<RÉGION>/AIRAC-<date de la région>. FRANCE : eaip_url(cycle), sans appel. Une autre région : sa page d'accueil est lue
+    (une demande) pour sa date ; None si elle ne se lit pas ou ne dit pas sa date. `get(url)` : les octets d'une adresse (fetch par défaut)."""
+    if region == 'FRANCE':
+        return eaip_url(cycle)
+    if region not in SIA_REGIONS:
+        return None
+    disc = eaip_url(cycle).rsplit('/FRANCE/', 1)[0]
+    try:
+        home = (get or fetch)(f'{disc}/{region}/home.html').decode('utf-8', 'replace')
+    except (OSError, ValueError):
+        return None
+    date = region_date(home)
+    return f'{disc}/{region}/AIRAC-{date}' if date else None
+
+
 def url_exists(url, timeout=30):
     """L'adresse répond-elle à une requête HEAD ? (faux au moindre échec : sert à savoir si une carte est publiée)."""
     try:
@@ -1157,17 +1213,18 @@ def download_aerodrome(eaip, icao, cache, get=None):
     return {'fetched': fetched, 'unchanged': unchanged, 'tables': True}
 
 
-def read_aerodrome(eaip, icao, cache, resolve=None, say=print, rows_dir=None, step=None, get=None, vac_exists=None):
+def read_aerodrome(eaip, icao, cache, resolve=None, say=print, rows_dir=None, step=None, get=None, vac_exists=None, cycle=None):
     """Fichier d'UN terrain lu dans l'eAIP (page AD 2, pages DATA et CODE) : build_aerodrome, ou None si la page ne cite aucune table de
     codage (rien à lire : cartes seules). `eaip` : dossier AIRAC (…/FRANCE/AIRAC-AAAA-MM-JJ) ; `cache` : dossier (existant) des PDF déjà
     téléchargés ; `resolve(id)` : position d'un point en route ; `say(texte)` : messages ; `rows_dir` : lignes de chaque PDF (fixtures) ;
     `step(texte, fait, total)` : avancement (le lanceur) ; `get(url)` : les octets d'une adresse (fetch par défaut ; le travail proc/build
     passe une lecture du cache seul) ; `vac_exists(url)` : la carte VAC est-elle publiée (url_exists par défaut). Les erreurs réseau (urllib)
-    et pypdf manquant remontent à l'appelant."""
+    et pypdf manquant remontent à l'appelant. `cycle` : le cycle écrit dans le fichier (SOG-0054 : pour une région d'outre-mer, le cycle du DISQUE lu, non la date propre de son dossier : « en vigueur » se juge sur le
+    calendrier de 28 jours) ; par défaut, la date du dossier AIRAC de l'adresse."""
     if not ICAO_RE.fullmatch(str(icao)):
         raise ValueError(f'code OACI refusé : {icao!r} (quatre lettres ou chiffres)')
     get, vac_exists = get or fetch, vac_exists or url_exists
-    cycle = AIRAC_IN_URL.search(eaip)
+    cycle = AIRAC_IN_URL.search(eaip) if not cycle else re.fullmatch(r'(\d{4}-\d{2}-\d{2})', str(cycle))
     if not cycle:
         raise ValueError('adresse sans « AIRAC-AAAA-MM-JJ »: cycle inconnu')
     cache = Path(cache)

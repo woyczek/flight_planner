@@ -1450,8 +1450,11 @@
     }
     /** Ce qu'un État offre à la demande, hors terrain détenu : [niveau, raison]. Pas d'orange « lnm » : Little Navmap n'a pas encore de
      *  lecteur (§ 10.21, § 10.29) ; un orange sans lecteur promettrait un bouton qui ne fait rien. */
-    function stateCoverage(prefix, ead) {
-      if (prefix === 'LF') return ['orange', 'sia']; // la France : l'eAIP du SIA, quoi qu'en dise EAD_STATES
+    function stateCoverage(prefix, ead, icao) {
+      if (prefix === 'LF' || (icao ? window.AeroCatalogue?.siaRegionOf?.(icao) : Object.values(window.AeroCatalogue?.SIA_REGIONS || {})
+          .some(r => r.prefixes.includes(prefix)))) return ['orange',
+        'sia'
+      ]; // la France et son outre-mer (SOG-0054) : l'eAIP du SIA, quoi qu'en dise EAD_STATES
       const out = ead[prefix]?.outcome;
       if (out === 'read') return ['orange', 'ead'];
       return ['red', COV_WHY.has(out) ? out : 'unknown'];
@@ -1751,8 +1754,10 @@
         if (eadBusy.has(k)) return no('busy');
         // enregistrée avant le premier await : un second appel du même instant trouve la lecture en cours
         const run = (async () => {
-          let source = 'eaip'; // la France : l'eAIP du SIA, jamais EAD_STATES
-          if (!k.startsWith('LF')) {
+          let source =
+            'eaip'; // la France et son outre-mer : l'eAIP du SIA (proc_sia.region_of, catalogue siaRegionOf), jamais EAD_STATES
+          await api.sources().catch(() => null);
+          if (!window.AeroCatalogue?.siaRegionOf?.(k) && !k.startsWith('LF')) {
             const st = (await api.sources().catch(() => null))?.EAD_STATES?.[k.slice(0, 2)];
             if (st?.outcome !== 'read') return no('no-tables', { // ni l'eAIP lu ici ni EAD Basic : rien à lancer
               outcome: st?.outcome ?? null,
@@ -1877,7 +1882,7 @@
           } : {}),
           read_at: h.read_at
         };
-        const [level, reason] = stateCoverage(state, t.ead);
+        const [level, reason] = stateCoverage(state, t.ead, k);
         return {
           level,
           reason,
@@ -2004,11 +2009,18 @@
       async chartsUrl(icao) {
         const k = String(icao || '').trim().toUpperCase();
         if (!/^[A-Z]{4}$/.test(k)) return null;
-        if (/^LF/.test(k)) {
+        await api.sources().catch(() => null);
+        const region = window.AeroCatalogue?.siaRegionOf?.(k);
+        if (region === 'FRANCE') {
           await loadOwn('airac.js', 'AeroAirac');
-          await loadOwn('catalogue.js', 'AeroCatalogue');
           const cycle = (await api.publication()).base?.fr?.inForce || window.AeroAirac.cycleOf(now()).date;
           return `${window.AeroCatalogue.eaipBase(cycle)}/html/eAIP/FR-AD-2.${k}-fr-FR.html`;
+        }
+        if (
+          region
+        ) { // l'outre-mer du SIA (SOG-0054) : la date du dossier AIRAC de la région n'est pas sur le calendrier, le lanceur l'a écrite (proc/sia-regions.json, travail proc/regions)
+          const base = valueOf(await read('proc/sia-regions.json', true))?.regions?.[region]?.base;
+          return typeof base === 'string' && SIA_EAIP_BASE.test(base) && !base.includes('..') ? `${base}FR-AD-2.${k}-fr-FR.html` : null;
         }
         if (/^(LE|GC)/.test(k)) return `https://aip.enaire.es/AIP/contenido_AIP/AD/AD2/${k}/LE_AD_2_${k}_en.html`;
         if (/^EI/.test(k)) {
@@ -2128,7 +2140,8 @@
        *  fichier, sous l'hôte du SIA, + le chemin d'une carte listée par ce même fichier. Rien n'est lu ni téléchargé de la carte. */
       async chartUrl(proc) {
         const k = String(proc?.icao || '').trim().toUpperCase();
-        if (!/^LF[A-Z]{2}$/.test(k) || !proc || typeof proc !== 'object') return null;
+        await api.sources().catch(() => null);
+        if (!window.AeroCatalogue?.siaRegionOf?.(k) || !proc || typeof proc !== 'object') return null;
         let e;
         try {
           e = await procEntry(k);

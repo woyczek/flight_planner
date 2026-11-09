@@ -25,6 +25,41 @@
       [y, m, j] = d.split('-');
     return `https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_${j}_${MON[+m - 1]}_${y}/FRANCE/AIRAC-${d}`;
   }
+  /** Les régions de l'eAIP du SIA (SOG-0054) : le disque (…/eAIP_29_OCT_2026/) en publie cinq, de même disposition et de mêmes tables de codage ; chaque région a son dossier AIRAC, à SA date (écrite dans sa page d'accueil, non
+   *  calculable : le lanceur la lit, proc/regions). Miroir de SIA_REGIONS de tools/proc_sia.py (vérifié par le cas K88) : les codes exacts avant les préfixes (LFVM et LFVP sont de CAR-SAM-NAM, non de FRANCE ; FM : la Réunion et Mayotte
+   *  seulement, les autres terrains FM sont de Madagascar et des Comores). */
+  const SIA_REGIONS = {
+    FRANCE: {
+      prefixes: ['LF'],
+      codes: []
+    },
+    'PAC-P': {
+      prefixes: ['NT'],
+      codes: []
+    },
+    'PAC-N': {
+      prefixes: ['NW', 'NL'],
+      codes: []
+    },
+    RUN: {
+      prefixes: [],
+      codes: ['FMCZ', 'FMEE', 'FMEP']
+    },
+    'CAR-SAM-NAM': {
+      prefixes: ['TF', 'SO'],
+      codes: ['LFVM', 'LFVP']
+    }
+  };
+  /** La région de l'eAIP du SIA qui publie ce terrain (« FRANCE », « PAC-P »…), ou null (un autre État, un code mal formé). */
+  function siaRegionOf(icao) {
+    const k = String(icao ?? '').trim().toUpperCase();
+    if (!/^[A-Z0-9]{4}$/.test(k)) return null;
+    for (const [region, r] of Object.entries(SIA_REGIONS))
+      if (r.codes.includes(k)) return region;
+    for (const [region, r] of Object.entries(SIA_REGIONS))
+      if (r.prefixes.some(p => k.startsWith(p))) return region;
+    return null;
+  }
   /** Nom du paquet CIFP de la FAA : CIFP_<aammjj> (date d'effet du cycle : 2610 → CIFP_261001). */
   function cifpName(cycle) {
     const [y, m, j] = dateOf(cycle).split('-');
@@ -929,6 +964,8 @@
     byId,
     urlOf,
     eaipBase,
+    SIA_REGIONS,
+    siaRegionOf,
     cifpName,
     cifpUrl,
     siaPage,

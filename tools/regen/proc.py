@@ -4,7 +4,7 @@ UN seul travail, deux verbes : `proc/eaip-fetch` (la France, par l'eAIP du SIA, 
 Ce qui les distingue est dans la table SOURCES (qui lit quel État, avec ou sans compte, où est le cache, comment la source est lue, ce qu'on contrôle avant d'installer) ; tout le reste est
 commun et écrit une fois : l'avancement et l'annulation, le journal sans secret, les comptes (`stats`), l'installation par proc_manual, le commit par regen_jobs.commit_outputs, le résultat.
 
-Règle des États, à UN seul endroit (SOURCES[...]['states']) : la France (« LF ») se lit par l'eAIP, jamais par EAD ; tout autre État que la page a choisi (EAD_STATES « read ») par EAD Basic ; `ead-fetch` refuse un code « LF ».
+Règle des États, à UN seul endroit (SOURCES[...]['sia'], proc_sia.region_of) : la France et son outre-mer (LF, NT, NW, NL, FMCZ/FMEE/FMEP, TF, SO, LFVM, LFVP : SOG-0054) se lisent par l'eAIP du SIA de leur région, jamais par EAD ; tout autre État que la page a choisi (EAD_STATES « read ») par EAD Basic ; `ead-fetch` refuse un code du SIA.
 La page (aerodb.fetchProcedures) choisit le verbe d'après le code ; le lanceur REcontrôle ici : un code hors de la France est refusé (400) par `proc/eaip-fetch`, un code français par `proc/ead-fetch`.
 Règle d'EAD Basic (frame/aerodb/EAD_BASIC.md § 1) : un terrain par geste de l'utilisateur, jamais une liste, jamais en masse (MIN_GAP : 30 s entre deux départs d'`ead-fetch`, le plus long gagne).
 Identifiants d'EAD Basic : <secrets>/ead.json { user, password }, sinon EAD_USER / EAD_PASSWORD ; jamais journalisés (sanitize), jamais rendus.
@@ -67,7 +67,10 @@ def _read_eaip(env):
     import proc_ead
     import proc_sia
     cycle = proc_ead.lib_cycle(env.data)                 # cycle en vigueur (la date du dossier AIRAC de l'eAIP)
-    eaip = proc_sia.eaip_url(cycle)
+    region = proc_sia.region_of(env.icao) or 'FRANCE'     # SOG-0054 : l'eAIP du SIA de la région du terrain (FRANCE, PAC-P, PAC-N, RUN, CAR-SAM-NAM) ; le disque est celui du cycle, la date du dossier celle de la région
+    eaip = proc_sia.region_eaip(cycle, region)
+    if not eaip:
+        raise OSError(f'the SIA eAIP of {region} is not readable (home page of the region): try again later')
     cache = os.path.join(env.data, 'local', 'eaip', cycle)
     base = os.path.join(env.data, 'sia', 'base', 'fr', cycle)
     env.cycle = cycle
@@ -76,8 +79,8 @@ def _read_eaip(env):
         resolve = proc_sia.base_resolver(base) if os.path.isdir(base) else None
     except (OSError, ValueError, AttributeError, TypeError):      # base illisible : les points en route sont placés à la lecture
         resolve = None
-    env.say(f'{env.icao}: eAIP du SIA, cycle {cycle}')
-    doc = proc_sia.read_aerodrome(eaip, env.icao, cache, resolve, env.say, step=env.step)
+    env.say(f'{env.icao}: eAIP du SIA' + (f' ({region})' if region != 'FRANCE' else '') + f', cycle {cycle}')
+    doc = proc_sia.read_aerodrome(eaip, env.icao, cache, resolve, env.say, step=env.step, cycle=cycle)
     if doc is None:
         return {'ok': False, 'reason': 'no-tables'}
     dropped = [d.get('reason') or 'name' for d in doc.pop('dropped', [])]      # vraiment retirées (build_aerodrome) : un bloc sans titre qui répète une procédure nommée
@@ -124,7 +127,8 @@ def _commit_message(source, icao):
 SOURCES = {
     'eaip': {
         'verb': 'eaip-fetch',
-        'states': ('LF',),             # la France, et elle seule : son eAIP est publié sans compte (jamais EAD, dont l'échantillon est une édition de 2015)
+        'states': None,
+        'sia': True,                   # les terrains que le SIA publie (la France et son outre-mer : proc_sia.region_of), et eux seuls : son eAIP est publié sans compte (jamais EAD, dont l'échantillon est une édition de 2015)
         'account': False,              # aucun identifiant
         'read': _read_eaip,
         'explain': _explain_eaip,      # les erreurs HTTP de l'eAIP, dites en clair
@@ -135,7 +139,7 @@ SOURCES = {
     'ead': {
         'verb': 'ead-fetch',
         'states': None,                # tout autre État que la page a choisi (EAD_STATES « read ») ; le lanceur ne recontrôle pas EAD_STATES
-        'not_states': ('LF',),         # … sauf la France, qui n'est JAMAIS lue par EAD : ead-fetch refuse un code « LF » (la règle des États est ici, à un seul endroit)
+        'sia': False,                  # … sauf les terrains du SIA (la France et son outre-mer), qui ne sont JAMAIS lus par EAD : ead-fetch refuse un code que proc_sia.region_of connaît (la règle des États est ici, à un seul endroit)
         'account': True,               # <secrets>/ead.json ou EAD_USER / EAD_PASSWORD
         'read': _read_ead,
         'explain': None,
@@ -150,7 +154,7 @@ MIN_GAP = {('proc', 'ead-fetch'): 30}
 def check_icao(source):
     """Contrôle d'arguments d'un verbe (→ 400 si None) : { 'icao': 4 caractères [A-Z0-9] } et rien d'autre ; une liste (« LFBD,LFBO »), un joker, un champ en plus sont refusés (EAD Basic ne se
     lit pas en masse) ; et, pour une source qui n'a qu'un État (`states`), un code de cet État seulement."""
-    states, excluded = SOURCES[source]['states'], SOURCES[source].get('not_states')
+    states, excluded, sia = SOURCES[source]['states'], SOURCES[source].get('not_states'), SOURCES[source].get('sia')
 
     def check(a):
         if not isinstance(a, dict) or set(a) != {'icao'} or not isinstance(a['icao'], str):
@@ -158,6 +162,10 @@ def check_icao(source):
         icao = a['icao'].strip().upper()
         if not re.fullmatch(r'[A-Z0-9]{4}', icao) or (states and not icao.startswith(states)) or (excluded and icao.startswith(excluded)):
             return None
+        if sia is not None:
+            import proc_sia
+            if (proc_sia.region_of(icao) is not None) != sia:
+                return None
         return {'icao': icao}
     return check
 
@@ -272,6 +280,50 @@ def fetch(name):
 
 
 VERBS = {('proc', src['verb']): (fetch(name), check_icao(name)) for name, src in SOURCES.items()}
+
+
+# ---------------------------------------------------------------------------------------------------- l'outre-mer du SIA (SOG-0054)
+def regions(job, args, ctx):
+    """`proc/regions` {} : l'adresse de l'eAIP de chaque région du SIA (FRANCE, PAC-P, PAC-N, RUN, CAR-SAM-NAM) pour le cycle en vigueur : data/proc/sia-regions.json = { schema, cycle, updated_at,
+    regions: { <RÉGION>: { date (celle de son dossier AIRAC, lue dans sa page d'accueil), base (…/<RÉGION>/AIRAC-<date>/html/eAIP/) } } } et UN commit. Une demande par région, une pause entre deux. aerodb s'en
+    sert pour l'adresse de la page d'un terrain d'outre-mer (chartsUrl, chartUrl) sans que ce terrain ait été lu ; la date d'une région n'est pas sur le calendrier (RUN et CAR-SAM-NAM : un cycle de retard le 29 oct. 2026).
+    Une région dont la page d'accueil ne se lit pas n'y est pas (dite) ; rien de lu : « failed », rien n'est écrit. Résultat { ok, cycle, regions: [noms], missing: [noms], commit, warnings }."""
+    import proc_ead
+    import proc_sia
+    data = ctx['data']
+    if regional_pending(ctx):
+        return {'ok': False, 'reason': 'failed', 'message': 'a merge is pending in data/ (interrupted synchronisation): nothing installed; "Synchronise" settles it'}
+    cycle = proc_ead.lib_cycle(data)
+    found, missing = {}, []
+    for k, region in enumerate(proc_sia.SIA_REGIONS):
+        if job.cancelled():
+            return {'ok': False, 'reason': 'cancelled'}
+        job.step(f'{region}: page d’accueil', k, len(proc_sia.SIA_REGIONS), 'régions')
+        url = proc_sia.region_eaip(cycle, region)
+        if url:
+            found[region] = {'date': proc_sia.AIRAC_IN_URL.search(url).group(1), 'base': url + '/html/eAIP/'}
+        else:
+            missing.append(region)
+        time.sleep(EAIP_PAUSE)
+    if not found:
+        return {'ok': False, 'reason': 'failed', 'message': 'no region page of the SIA eAIP could be read (the disc of this cycle is not published yet?)', 'warnings': [f'{r}: page non lue' for r in missing]}
+    path = os.path.join(data, 'proc', 'sia-regions.json')
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + '.tmp'
+    with open(tmp, 'w', encoding='utf-8', newline='\n') as f:
+        json.dump({'schema': 1, 'cycle': cycle, 'updated_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'regions': found}, f, ensure_ascii=False, indent=1)
+        f.write('\n')
+    os.replace(tmp, path)
+    done = regen_jobs.commit_outputs(ctx, getattr(job, 'author', ''), ['proc/sia-regions.json'], f":card_file_box: Eaip du SIA par région, cycle {cycle} : {', '.join(found)}")
+    warnings = [f'{r}: page d’accueil non lue, région absente du fichier' for r in missing] + ([f'git: {done["warning"]}'] if done.get('warning') else [])
+    return {'ok': True, 'cycle': cycle, 'regions': sorted(found), 'missing': missing, 'commit': done.get('commit'), 'warnings': warnings}
+
+
+def regional_pending(ctx):
+    return regen_jobs.merge_pending(ctx)
+
+
+VERBS[('proc', 'regions')] = (regions, lambda a: {} if a == {} else None)
 
 
 # ---------------------------------------------------------------------------------------------------- par État (V3 § 10.34 A1)
