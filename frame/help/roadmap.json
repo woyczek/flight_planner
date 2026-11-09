@@ -4,7 +4,7 @@
  "updated": "2026-11-09",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "5805722",
+  "organisation": "01e0873",
   "fiches": 159,
   "untranslated": 1,
   "priorities": 152
@@ -440,7 +440,7 @@
     {
      "id": "SOG-0157",
      "kind": "bug",
-     "state": "planned",
+     "state": "later",
      "fr": "« Aucune table des procédures publiées » : sans plan B ni consigne — passe par le composant « zone manquante »",
      "en": "“No published procedure table”: no plan B nor instruction — goes through the “missing zone” component",
      "de": "„Keine veröffentlichte Verfahrenstabelle“: kein Plan B, keine Anleitung — über die Komponente „fehlende Zone“",
@@ -449,7 +449,7 @@
     {
      "id": "SOG-0158",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Saisie ADEP / ADEST : trouver « Stockholm » (ville et nom du terrain, pas seulement le code)",
      "en": "ADEP / ADEST entry: find “Stockholm” (city and airport name, not only the code)",
      "de": "ADEP/ADEST-Eingabe: „Stockholm“ finden (Stadt und Flugplatzname, nicht nur der Code)",
@@ -648,7 +648,7 @@
     {
      "id": "SOG-0156",
      "kind": "bug",
-     "state": "planned",
+     "state": "later",
      "fr": "Carte : un point très loin (PAM aux États-Unis) fait ramer la carte en vue double",
      "en": "Map: a very far point (PAM in the USA) makes the map crawl in the dual view",
      "de": "Karte: ein sehr ferner Punkt (PAM in den USA) lässt die Karte in der Doppelansicht kriechen",
@@ -1590,7 +1590,7 @@
     {
      "id": "SOG-0153",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Pays sans source de points ni voies (Suède, Danemark…) : plan B par les données X-Plane en source locale « personnel »",
      "en": "Countries without a source of points or airways (Sweden, Denmark…): plan B through X-Plane data as a personal local source",
      "de": "Länder ohne Quelle für Punkte oder Luftstraßen (Schweden, Dänemark…): Plan B über X-Plane-Daten als persönliche lokale Quelle",
@@ -1599,7 +1599,7 @@
     {
      "id": "SOG-0155",
      "kind": "bug",
-     "state": "planned",
+     "state": "later",
      "fr": "« La publication a échoué : rien n'est perdu… Corrigez la cause puis relancez » : quelle cause ?",
      "en": "“Publishing failed: nothing is lost… Fix the cause and retry”: which cause?",
      "de": "„Veröffentlichung fehlgeschlagen: nichts verloren… Ursache beheben und erneut“: welche Ursache?",
@@ -1742,7 +1742,7 @@
     {
      "id": "SOG-0154",
      "kind": "bug",
-     "state": "planned",
+     "state": "later",
      "fr": "Homonymes : « LFLL : 2 homonymes, le plus proche gardé » — un terrain n'a pas d'homonyme",
      "en": "Homonyms: “LFLL: 2 homonyms, the nearest kept” — an airport has no homonym",
      "de": "Homonyme: „LFLL: 2 Homonyme, das nächste behalten“ — ein Flugplatz hat kein Homonym",
