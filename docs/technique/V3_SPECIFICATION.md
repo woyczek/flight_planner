@@ -1938,3 +1938,44 @@ redesigned for touch at that point.
        deselect all), the zones list; seven elements per row at most. **Owners**: AeroDB (`base/status` with reasons, the
        incremental decision of « Mettre à jour » in the launcher, one case per state), Réglages (the three verbs, the
        states drawn, the selection gestures and the rectangle, one case per gesture); the pack rows come with § 10.42.
+   45. **The mission sheet in two levels: risks on the first page, the detail with its zones and maps previewed on the
+       Map** (user, 6 Nov: "Missions : ok pour l'aperçu. On pourrait avoir les risques sur la première page… on a besoin
+       des autres infos détaillées, pour la suite : description détaillée, équipes engagées, zones à activer. Si infos
+       sur les cartes, un moyen de les prévisualiser (tracé, rdv, etc.). Revoir ce qui est construit en v2"; 9 Nov,
+       priority 3 of alpha.5: "détail des missions et affichage des cartes incluses"; SOG-0051). Ergonomics design of
+       9 Nov after the survey of V2 (`apps/pilot/mes_missions.html`, the registry, the editor, the map studio) and of
+       the 113 mission files of `data/missions` (schema `helo-xp-mission` 1.0 / 2.0). **What V2 taught**: a mission is
+       read as a book (title, « with » line, summary, actions, then target, long description, risks, teams, route table,
+       PNG maps, objectives, remarks, history, sealed envelopes); the risks sit in the third block of the detail; the
+       maps are PNG files produced by the studio from the coordinates, which remain the truth (`origin`, `destination`,
+       `target`, `turning_points[]`, `rendezvous[]`, `zones[]` with centre and radius or polygon, `maps[]` with
+       `centre_ref` and an extent). The fields really filled: `teams[]` 112 of 113, `turning_points[]` 111, `target` 104,
+       `maps[]` 101, `risks[]` 93, `summary` 78, `rendezvous[]` 74, `zones[]` 70, `detailed_description` 49.
+       **Level 1, the first page** (seven elements, rule 13): the title with the id and the family; the category (the
+       family and subtype, and the commercial category of § 10.38 / SOG-0041 when the mission carries `category`); the
+       **risks**, three lines « hazard → mitigation » and « N autres » folded, or « Aucun risque déclaré »; the teams
+       engaged (name and role, seven at most); the zones as a count with their names (« 3 zones : ZONE-1 recherche,
+       … »); the state (flown, assigned to me); and one primary action, « Préparer ce vol » (existing), with « Détail »
+       as the secondary one. The summary stays on this page only when the risks are absent (the page never exceeds
+       seven elements). **Level 2, the detail**: foldable sections, each of seven elements at most, in this order:
+       description (`summary`, then the paragraphs of `detailed_description`); objectives (primary, secondary); **zones
+       to activate**, one line per zone (name, kind, radius or « polygone », role, time on task) with « Voir sur la
+       Carte » that opens the Map centred on that zone; rendezvous (`rendezvous[]`: name, participants, role; the dated
+       rendezvous of the missions SPEC § 6 later); the route provided (`turning_points[]` as a table point, name, role,
+       with the distance by `missionFlight`); **the maps provided**: each `maps[]` entry is a line (type, description)
+       that opens the Map at the entry's `centre_ref` and extent — **never a PNG when coordinates exist**; a legacy PNG
+       is shown, through the mission folder, only for a mission without coordinates; payload and aircraft; the
+       documentation button (SOG-0084, § 10.46 later, its place reserved); the history of assignments (lot 5). On a
+       phone the two levels are two screens (the frame's back gesture returns); in the wide view the first page is the
+       left band and the detail the main column. **The Map** already draws a mission from its coordinates
+       (`modules/maps/mission.js`, layers `missionZones` / `missionPoints`, address `#maps?mission=<ID>&map=<file>`,
+       maps SPEC § 15): the preview is that address with the map or zone named, no image generated. **The reader**
+       (`frame/lib/mission.js`, pure) gains `risks`, `teams`, `zones`, `rendezvous`, `maps`, `objectives`, `payload`,
+       `detailed_description`, all optional and bounded (40 risks, 40 teams, 40 zones, 60 points, 20 maps, 2 000
+       characters per paragraph; latitudes and longitudes in range, radius ≤ 500 km; a map's `filename` matched by a
+       strict pattern and resolved only inside the mission folder; the file is written by any pilot, audit 157).
+       **Owners**: Features SOG (reader, both levels, alpha.5, after SOG-0125 and the readers of SOG-0041), BUGS SOG if
+       the Map address lacks a `zone` parameter. Two cases: N9 (first page: title, category, three risks and « N
+       autres », teams, zones count, one primary action; a mission without risks says so), N10 (detail: each zone has a
+       Map link centred on it, each `maps[]` entry is a Map link and no PNG is shown when coordinates exist, a legacy
+       mission without coordinates shows its PNG); phone 390 seen in a capture; red before.
