@@ -124,7 +124,7 @@ de descente avant l'arrivée. « Détail du devis » le décompose phase par pha
 « Ouvrir dans » prépare le même vol ailleurs, dans un nouvel onglet : SimBrief
 (options du vol préremplies, connexion SimBrief requise), SkyVector (la route tracée, avec vitesse et niveau),
 Navigraph et ChartFox (les cartes des terrains de départ et d'arrivée, connexion requise). Une entrée grisée dit ce
-qui lui manque (terrain, type d'appareil). Rien n'est envoyé qui ne soit déjà dans le vol. Les réglages du devis (roulage, réserve, marge, couloir météo, unités) sont dans le dernier pli.
+qui lui manque (terrain, type d'appareil). Rien n'est envoyé qui ne soit déjà dans le vol. Les réglages du devis (roulage, réserve, marge, couloir météo, unités, débit de ce vol) sont le premier pli du pas Résultat, replié, son titre dit l'unité du carburant (« Réglages du devis · lb/h »).
 
 <a id="fuel-step-5"></a>**5 Départ.** Un récapitulatif d'une page : l'appareil, la route telle qu'elle sera déposée, le niveau (et ses
 paliers), le vent et sa source, le carburant bloc. « Démarrer le vol » lance le plan de vol (mise en route,

@@ -177,8 +177,8 @@ distance of the top of descent before arrival. “Quote details” breaks it dow
 “Open in” prepares the same flight elsewhere, in a new tab: SimBrief (flight options prefilled, SimBrief login
 required), SkyVector (the route drawn, with speed and level), Navigraph and ChartFox (the charts of the departure and
 arrival airfields, login required). A greyed-out entry says what it lacks (airfield, aircraft type). Nothing is sent
-that is not already in the flight. The quote settings (taxi, reserve, margin, weather corridor, units) are in the last
-fold.
+that is not already in the flight. The quote settings (taxi, reserve, margin, weather corridor, units, this flight's fuel flow) are the first
+fold of the Result step, folded, its title saying the fuel unit ("Quote settings · lb/h").
 
 <a id="fuel-step-5"></a>**5 Departure.** A one-page summary: the aircraft, the route as it will be filed, the level (and its steps), the wind
 and its source, the block fuel. “Start the flight” launches the flight plan (start-up, pushback, taxi…). The preparation
@@ -237,7 +237,7 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: 235abbdd7a55 -->
+<!-- fr: 4b9a0d45d573 -->
 
 <!-- chapter: maps -->
 # Map

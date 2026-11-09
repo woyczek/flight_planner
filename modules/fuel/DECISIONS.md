@@ -1401,3 +1401,6 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   label says it, the value is kept in kg/h (the key of always: no migration) through `fuel_units.js`. The « 585 kg for 45 min »
   was not reproduced with the S210 sheet itself (a 370 NM, 59 min probe flew 7427 lb, the table's 25000 ft curve); the flight on
   the user's device at 16:59 was the FA50 estimate. F99; counter-test on 8e89affe7: the label reads « (kg/h, … ».
+- **9 Nov 2026 — the quote settings head the Result step** (SOG-0059 (2), the user: « le bloc réglage du devis est pertinent, mais
+  invisible »): moved from the last fold to the first, still folded, its title saying the unit (« · lb/h ») so the unit is read
+  without opening it; no new card. F100; counter-test on 8baeb0b2d: the first fold was « Densité-altitude ».

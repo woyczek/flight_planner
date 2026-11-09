@@ -388,6 +388,9 @@ before the start, in step 5 after (F11).
 
 ### 9.6 Step 4 — Result
 
+- **Quote settings** (SOG-0059 (2)): the first fold of the step, closed at opening, titled with the fuel unit of the quote
+  (« Réglages du devis · lb/h »): taxi and reserve minutes, contingency, weather corridor, displayed units, « débit de ce vol »
+  (F100). The step keeps six cards (rule 13).
 - **Density altitude** (folded): a chart with the ISA deviation across (−20 to +40 °C, widened to the flight's and the departure's) and
   the density altitude up, one line per pressure altitude (`FlightPerfModel.isa(h, dT).sigma` inverted by bisection); the flight's
   deviation (vertical), the ceiling (`cruise.ceilingFt`, else the model's, horizontal) and their crossing, the pressure altitude where

@@ -2594,3 +2594,19 @@ def f99(c):
     c.page.locator(sel).blur()
     d = c.until_doc('pilot/ABC/fuel.json', lambda d: d and (d.get('entries') or {}).get('C30J'), 'the entry is kept')
     c.eq(round(d['entries']['C30J'], 1), 3311.2, '7300 lb/h kept as 3311.2 kg/h (frame/lib/fuel_units.js)', what='kept')
+
+
+@case('F100', '« Réglages du devis · lb/h » heads the Result step, folded, the fuel unit of the quote in its title',
+      'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0059 (2) (user, 6 Nov: « le bloc réglage du devis est pertinent, mais invisible … tellement caché dans le bas de la 5e page »): '
+      'the first fold of the step, closed at opening, « Réglages du devis · lb/h »; the step keeps its six cards (rule 13)')
+def f100(c):
+    docs = flight_docs() + [['pilot/ABC/fuel.json', {'schema': 1, 'displayUnit': 'lb', 'entries': {}}, 'document']]
+    c.open('fuel', docs=docs)
+    wait_quote(c)
+    to_step(c, 3)
+    r = c.js("""() => { const s = document.querySelector('[data-module=fuel] section.fu-step[data-s="3"]'), first = s.firstElementChild;
+        return { fold: first?.dataset.fold || null, open: !!first?.open, title: (first?.querySelector('summary')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim(),
+                 cards: s.querySelectorAll(':scope > .f-card').length } }""")
+    want = norm(tx(F, 'settings', c.lang)) + ' · lb/h'
+    c.eq([r['fold'], r['open'], norm(r['title']), r['cards']], ['settings', False, want, 6], 'first, folded, the unit in its title, six cards', what='settings fold')

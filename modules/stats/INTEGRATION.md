@@ -15,8 +15,9 @@ No `module.js`, no screen, no mount by the frame: the module is a library for th
 ## 2. Contract
 
 - **Input is untrusted**: `parseWindows` reads a text (a CSV of the Fuel Phase Monitor, schema 0.4) bounded to 64 MB,
-  500 000 rows and 200 columns; a text that is not such a journal is refused with an error the caller shows as a sentence,
-  never as raw text.
+  500 000 rows and 200 columns; a text that is not such a journal is refused with an error (an English message); the
+  caller names the file and that message in a notification (« FuelPhaseMonitor_x.csv : not a Fuel Phase Monitor journal »)
+  and goes on with the other files.
 - **Nothing travels**: the caller chooses the files (a file picker, or the launcher's reading of the simulator's Output
   folder in step 2) and keeps nothing; the raw samples are never published, never written in `data/`, never in git
   (§ 10.37 A). Only the aggregates the user accepts reach a sheet, through the ordinary review of Maintenance › Appareils.

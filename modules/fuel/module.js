@@ -1657,14 +1657,7 @@ function renderPlanBody() {
     </div>
   <div class="f-card"><h2>${esc(tt(TX.wxTitle))}</h2><div data-wx></div></div>
   <div class="f-card"><h2>${esc(tt(TX.aloftTitle))}</h2><div data-aloft></div></div>`)}
-  ${sec(3, `  <details class="f-card" data-fold="da"><summary>${esc(tt(TX.da))}</summary><div data-da></div></details>
-  <div class="f-card" data-block="decision"><h2>${esc(tt(TX.decision))}</h2><div data-dec></div>      <div class="f-grid fu-g3"><label class="f-field">${esc(tt(TX.goal))}<select data-k="goal">${window.FuelLevels.GOALS.map(g => opt(g, tt(TX.goals[g]), (S.settings.goal || 'prof') === g)).join('')}</select></label></div>
-      <div class="f-grid fu-g3 ${(S.settings.goal || 'prof') === 'man' ? '' : 'fu-hide'}" data-manbox>${fld('mias', TX.manIas, speedField(S.manualIn?.ias), 'inputmode="numeric"', { u: speedLabel() })}${fld('mvs', TX.manVs, vsField(S.manualIn?.vs), 'inputmode="numeric"', { u: vsLabel() })}</div>
-</div>
-  <details class="f-card" data-fold="openin"><summary>${esc(tt(TX.openIn))}</summary><p class="f-muted">${esc(tt(TX.openInHint))}</p><div class="f-list fu-links" data-openin></div></details>
-  <details class="f-card" data-fold="details"><summary>${esc(tt(TX.details))}</summary><div data-details></div></details>
-  <details class="f-card" data-fold="climb"><summary>${esc(tt(TX.climbGuide))}</summary><div data-climb></div></details>
-  <details class="f-card" data-fold="settings"><summary>${esc(tt(TX.settings))}</summary>
+  ${sec(3, `<details class="f-card" data-fold="settings"><summary data-settingssum>${esc(`${tt(TX.settings)} · ${S.settings.displayUnit || 'kg'}/h`)}</summary>
     <div class="f-grid fu-g3">${fld('taxiMin', TX.taxiMin, S.settings.taxiMin, 'inputmode="numeric"')}${fld('reserveMin', TX.reserveMin, S.settings.reserveMin, 'inputmode="numeric"')}${fld('contPct', TX.contPct, S.settings.contingencyPct, 'inputmode="decimal"')}${fld('wxRadius', TX.wxRadius, S.settings.wxRadiusNm ?? 10, 'inputmode="numeric"')}
     </div>
     <p class="f-muted" style="margin:8px 0 4px">${esc(tt(TX.units))}</p>
@@ -1672,7 +1665,15 @@ function renderPlanBody() {
       <label class="f-field">${esc(tt(TX.unitFuel))}<select data-k="unit">${['kg', 'lb'].map(u => opt(u, u, (S.settings.displayUnit || 'kg') === u)).join('')}</select></label>
       ${[['speed', TX.unitSpeed, 'unitSpeed'], ['alt', TX.unitAlt, 'unitAlt'], ['dist', TX.unitDist, 'unitDist']].map(([kind, row, k]) => `<label class="f-field">${esc(tt(row))}<select data-k="${k}">${UNITS[kind].list.map(u => opt(u, UNITS[kind].label[u], unitOf(kind) === u)).join('')}</select></label>`).join('')}</div>
     <div data-entrybox></div>
-  </details>`)}
+  </details>
+  <details class="f-card" data-fold="da"><summary>${esc(tt(TX.da))}</summary><div data-da></div></details>
+  <div class="f-card" data-block="decision"><h2>${esc(tt(TX.decision))}</h2><div data-dec></div>      <div class="f-grid fu-g3"><label class="f-field">${esc(tt(TX.goal))}<select data-k="goal">${window.FuelLevels.GOALS.map(g => opt(g, tt(TX.goals[g]), (S.settings.goal || 'prof') === g)).join('')}</select></label></div>
+      <div class="f-grid fu-g3 ${(S.settings.goal || 'prof') === 'man' ? '' : 'fu-hide'}" data-manbox>${fld('mias', TX.manIas, speedField(S.manualIn?.ias), 'inputmode="numeric"', { u: speedLabel() })}${fld('mvs', TX.manVs, vsField(S.manualIn?.vs), 'inputmode="numeric"', { u: vsLabel() })}</div>
+</div>
+  <details class="f-card" data-fold="openin"><summary>${esc(tt(TX.openIn))}</summary><p class="f-muted">${esc(tt(TX.openInHint))}</p><div class="f-list fu-links" data-openin></div></details>
+  <details class="f-card" data-fold="details"><summary>${esc(tt(TX.details))}</summary><div data-details></div></details>
+  <details class="f-card" data-fold="climb"><summary>${esc(tt(TX.climbGuide))}</summary><div data-climb></div></details>
+`)}
   ${sec(4, `<div class="f-card" data-block="summary"><h2>${esc(tt(TX.stepNames[4]))}</h2><div data-sum></div>
       <div class="f-row" data-startrow></div>
       <p class="fu-startnote" data-startnote aria-live="polite"></p>

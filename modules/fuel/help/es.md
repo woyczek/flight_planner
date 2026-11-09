@@ -131,7 +131,7 @@ combustible de bloque, combustible de viaje, tiempo de vuelo y distancia del ini
 requiere sesión en SimBrief), SkyVector (la ruta trazada, con velocidad y nivel), Navigraph y ChartFox (las cartas de
 los aeródromos de salida y llegada, se requiere sesión). Una entrada en gris indica lo que le falta (aeródromo, tipo de
 aeronave). No se envía nada que no esté ya en el vuelo. Los ajustes del cálculo (rodaje, reserva, margen, corredor
-meteorológico, unidades) están en el último desplegable.
+meteorológico, unidades, consumo de este vuelo) son el primer desplegable del paso Resultado, plegado; su título dice la unidad del combustible («Ajustes del cálculo · lb/h»).
 
 <a id="fuel-step-5"></a>**5 Salida.** Un resumen de una página: la aeronave, la ruta tal como se presentará, el nivel (y sus escalones), el
 viento y su fuente, el combustible de bloque. «Iniciar el vuelo» lanza el plan de vuelo (puesta en marcha, retroceso,
@@ -190,4 +190,4 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
   tarjeta lo dice y responde el METAR en su lugar. La tarjeta meteorológica indica de dónde vienen los mensajes. Sin red
   alguna, muestra la última meteorología guardada, con su hora.
 
-<!-- fr: 235abbdd7a55 -->
+<!-- fr: 4b9a0d45d573 -->

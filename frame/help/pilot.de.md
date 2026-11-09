@@ -191,7 +191,7 @@ Ergebnis gibt Blockkraftstoff, Streckenkraftstoff, Flugzeit und Entfernung des S
 SimBrief-Anmeldung nötig), SkyVector (die Route gezeichnet, mit Geschwindigkeit und Flugfläche), Navigraph und ChartFox
 (die Karten von Abflug- und Zielflugplatz, Anmeldung nötig). Ein ausgegrauter Eintrag sagt, was ihm fehlt (Flugplatz,
 Luftfahrzeugtyp). Es wird nichts gesendet, was nicht schon im Flug steht. Die Einstellungen der Berechnung (Rollen,
-Reserve, Zusatzmenge, Wetterkorridor, Einheiten) stehen im letzten aufklappbaren Bereich.
+Reserve, Zusatzmenge, Wetterkorridor, Einheiten, Verbrauch dieses Flugs) sind der erste aufklappbare Bereich des Schritts Ergebnis, eingeklappt; sein Titel nennt die Kraftstoffeinheit („Einstellungen · lb/h“).
 
 <a id="fuel-step-5"></a>**5 Abflug.** Eine Zusammenfassung auf einer Seite: das Luftfahrzeug, die Route, wie sie aufgegeben wird, die Flugfläche
 (und ihre Stufen), der Wind und seine Quelle, der Blockkraftstoff. „Flug starten“ startet den Flugplan (Anlassen,
@@ -254,7 +254,7 @@ Datenblättern ändert sich nichts.
   Schlüssel sagt es die Karte, und das METAR antwortet stattdessen. Die Wetterkarte sagt, woher die Meldungen stammen.
   Ganz ohne Netz zeigt sie das zuletzt gespeicherte Wetter mit seiner Uhrzeit.
 
-<!-- fr: 235abbdd7a55 -->
+<!-- fr: 4b9a0d45d573 -->
 
 <!-- chapter: maps -->
 # Karte

@@ -12,7 +12,8 @@ One entry per decision, newest last. The rules are in [SPEC.md](SPEC.md).
   later step.
 - **What was ported from the FuelDashboard** (`FuelDashboard/index.html`, in the repository since ebed6a6bc): the CSV
   reading, the eligibility of a window, the duration-weighted median of the flow. **Not ported**: the merging of
-  neighbouring rpm groups (`consolidateRegimeGroups`), kept for step 2 with the screen.
+  neighbouring rpm groups (`consolidateRegimeGroups`), kept for the next lot (SOG-0052 suite); the screen itself shipped
+  the same day (M27).
 - **Grouping**: pressure altitude rounded to 1 000 ft, rpm rounded to 50; a group under 60 s is dropped, never
   interpolated. Reason: a sheet row is a steady level, not a transient.
 - **Comparison per altitude only** (§ 10.37 C as amended on 6 Nov): a point is compared with the sheet's rows of the same
