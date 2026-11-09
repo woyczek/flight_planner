@@ -5467,6 +5467,50 @@ def k113(c):
          'the catalogue knows the source: zone de, provider dfs, names in four languages, the licence (the zone table of the page and the file rule are checked against the mirror of the launcher by K52)', what='catalogue')
 
 
+@case('K115', 'Homonyms (SOG-0142): coords(ident, { near }) gives the nearest place of that name (PAM near ALS in Europe, not in America), says the homonyms it set aside; whereIs says why a name is unknown (the zone expected is not built, or has no source of points)', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0142 (10 Nov 2026): the route ESSB DCT NOSLI N850 MOKNI DCT ADVOP Z703 ALS N872 PAM L980 … went through PAM in the United States and ALS in Morocco: a name was resolved to the FIRST place found; the resolution takes the homonym nearest to the previous point, says the others, and for the unknown points (NOSLI, MOKNI, ADVOP, IDRID, MONTO: Sweden, Denmark, Spain) says the zone expected by the country of the point when an airway names it, built or not, with or without points')
+def k115(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const day = Date.parse('2026-11-10T12:00:00Z'), reads = [];
+      const nav = (id, lat, lon, name) => ({ id, lat, lon, name, type: 'VOR' });
+      const kinds = ['meta', 'aerodromes', 'navaids', 'points', 'vrp', 'airways'];
+      const zone = (z, o = {}) => Object.fromEntries(kinds.map(k => [`sia/base/${z}/2026-10-29/${k}.json`, k === 'meta' ? { schema: 2, zone: z, cycle: '2026-10-29', kind: 'meta', parserVersion: 23, data: {} } : { schema: 2, zone: z, cycle: '2026-10-29', kind: k, data: o[k] || [] }]));
+      const files = {
+        ...zone('fr', { navaids: [nav('ALS', 44.13, 4.07, 'ALES')] }), ...zone('es', { navaids: [nav('PAM', 42.77, -1.64, 'PAMPLONA')] }), ...zone('us', { navaids: [nav('PAM', 30.2, -85.7, 'PANAMA CITY')] }),
+        ...zone('ma', { navaids: [nav('ALS', 33.6, -7.6, 'ALS MAROC')] }), ...zone('se'),
+        ...zone('de', { airways: [{ route: 'N850', a: { id: 'NOSLI', lat: 57.9, lon: 12.6 }, b: { id: 'GUDOP', lat: 53.0, lon: 13.1 }, lower: 4000, upper: 66000 }, { route: 'Z703', a: { id: 'ADVOP', lat: 55.7, lon: 9.5 }, b: { id: 'GUDOP', lat: 53.0, lon: 13.1 }, lower: 4000, upper: 66000 }] }),
+        'sia/base/index.json': { schema: 2, kind: 'index', zones: { de: { cycle: '2026-10-29', prefixes: ['ED'], kb: { airways: 5, points: 1 } }, se: { cycle: '2026-10-29', prefixes: ['ES'], kb: { airways: 1, points: 1 } } } }
+      };
+      const reader = { read: async p => { reads.push(p); return p in files ? { value: files[p], rev: 'r' } : null; }, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} };
+      const db = AeroDB.create({ reader, lnmperf: false, now: () => day });
+      const z = x => x && ({ zone: x.zone, name: x.name, nm: Math.round(x.distanceNm), homonyms: (x.homonyms || []).map(h => h.zone) });
+      const out = {};
+      out.pamEurope = z(await db.coords('PAM', { near: [44.1, 4.1] }));
+      out.usRead = reads.some(p => p.includes('sia/base/us/') && !p.endsWith('meta.json'));
+      out.pamEuropeAll = z(await db.coords('PAM', { near: [44.1, 4.1], all: true }));
+      out.pamAmerica = z(await db.coords('PAM', { near: [30.5, -86] }));
+      out.alsFrance = z(await db.coords('ALS', { near: [43, -1] }));
+      out.alsMorocco = z(await db.coords('ALS', { near: [33.5, -7.5] }));
+      out.plain = await db.coords('ALS');
+      out.none = await db.coords('NOSLI', { near: [58, 12] });
+      out.bad = [await db.coords('', { near: [1, 1] }), await db.coords('PAM', { near: ['x', 1] }).then(x => x && x.homonyms === undefined), (await db.coordsAll('PAM', { near: [44, 4] })).map(x => [x.zone, x.distanceNm > 0])];
+      out.known = (await db.whereIs('PAM', { near: [44.1, 4.1] })).found.zone;
+      out.nosli = (await db.whereIs('NOSLI', { near: [58, 12] })).unknown;
+      out.advop = (await db.whereIs('ADVOP', { near: [56, 10] })).unknown;
+      out.nowhere = (await db.whereIs('QQQQQ', { near: [56, 10] })).unknown;
+      return out;
+    }""")
+    c.eq((r['pamEurope'], r['usRead']), ({'zone': 'es', 'name': 'PAMPLONA', 'nm': 263, 'homonyms': []}, False), 'PAM near the south of France is Pamplona (Spain): the nearest; the zone of the United States is not even opened (no zone left can have a nearer place)', what='europe')
+    c.eq(r['pamEuropeAll'], {'zone': 'es', 'name': 'PAMPLONA', 'nm': 263, 'homonyms': ['us']}, 'with all: true every published zone is searched and the homonym set aside is said (the United States)', what='all')
+    c.eq((r['pamAmerica']['zone'], r['alsFrance']['zone'], r['alsMorocco']['zone']), ('us', 'fr', 'ma'), 'the same name resolves to the place nearest the previous point: PAM near Florida is American, ALS near Spain is French and near Rabat is Moroccan', what='nearest')
+    c.eq((r['plain']['kind'], r['plain'].get('homonyms'), r['none']), ('navaid', None, None), 'without a neighbourhood nothing changes (the first place found, no homonym list); an unknown name is null', what='compat')
+    c.eq(r['bad'], [None, True, [['es', True]]], 'a bad neighbourhood is ignored (the old way), an empty name is null', what='bad')
+    c.eq((r['known'], r['nosli'], r['advop'], r['nowhere']),
+         ('es', {'reason': 'no-points', 'zone': 'se', 'via': 'N850', 'position': {'lat': 57.9, 'lon': 12.6}}, {'reason': 'zone-not-built', 'zone': 'dk', 'via': 'Z703', 'position': {'lat': 55.7, 'lon': 9.5}}, {'reason': 'not-found'}),
+         'whereIs: a known name is found; an unknown one named by a published airway says where it is, which airway names it, and the zone expected by the country of the point: Sweden is built without points (openAIP carries none), Denmark is not built; a name nowhere is not-found', what='whereIs')
+
+
 @case('K65', 'Build job: a zone shows a count of sources only when the builder gives one for it; the build\'s count goes once in the job', 'K', static=True,
       rule='Réglages 1 Nov 2026 (the user saw « construction (90 / 90 sources) » on all 26 zones): the builder\'s counts are global; a zone gets done / total only from a count of its own; job.data inputs = { done, total } once')
 def k65(c):

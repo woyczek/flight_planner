@@ -143,6 +143,31 @@
   /** { <zone>: { name: [fr, en, de, es], rings: [[[lon, lat], …]], box: [w, s, e, n], parts: [[w, s, e, n], …], framed: [[[lon, lat], …]] } } :
    *  les contours du fichier, servis tels quels (ordre GeoJSON) et gelés ; box, parts et framed : zoneFrame (box jamais plus large que 180°
    *  de longitude ; ouest ou est peut sortir de [−180, 180]) ; sans anneau, box réunit les parties de AERODB_ZONES. */
+  /** Distance (NM) entre deux points [lat, lon] (grand cercle). */
+  const distNm = (a, b) => {
+    const r = Math.PI / 180,
+      h = Math.sin((b[0] - a[0]) * r / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin((b[1] - a[1]) * r / 2) ** 2;
+    return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(h)));
+  };
+  /** Distance (NM) d'un point [lat, lon] au cadre [ouest, sud, est, nord] d'une zone (0 dedans). */
+  const boxDistNm = (p, box) => !box ? 0 : distNm(p, [Math.min(Math.max(p[0], box[1]), box[3]), Math.min(Math.max(p[1], box[0]), box[
+    2])]);
+  /** La zone dont un contour contient le point (lancer de rayon sur les contours de zoneOutlines) ; null sinon. */
+  const zoneAt = (lat, lon, outlines) => {
+    for (const [id, o] of Object.entries(outlines || {})) {
+      if (o.box && (lon < o.box[0] || lon > o.box[2] || lat < o.box[1] || lat > o.box[3])) continue;
+      for (const ring of o.rings || []) {
+        let c = false;
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++)
+          if ((ring[i][1] > lat) !== (ring[j][1] > lat) && lon < (ring[j][0] - ring[i][0]) * (lat - ring[i][1]) / (ring[j][1] - ring[i][
+              1
+            ]) + ring[i][0]) c = !c;
+        if (c) return id;
+      }
+    }
+    return null;
+  };
+
   function zoneOutlines() {
     outlinesP ||= (window.AERO_ZONES_GEO ? Promise.resolve() : new Promise((ok, ko) => {
       const sc = document.createElement('script');
@@ -986,6 +1011,47 @@
     /** Zones qui couvrent l'emprise b (ouvertes à la demande). */
     async function zonesOf(b) {
       return (await Promise.all((await zonesFor(b)).map(loadZone))).filter(Boolean);
+    }
+    /** Tous les lieux de ce nom, du plus proche de near [lat, lon] au plus éloigné : [{ kind, item, zone, distanceNm }] (coordsAll avec near). Les zones sont ouvertes de la plus proche (cadre) à la plus lointaine ; la recherche s'arrête quand le cadre de la suivante est
+     *  plus loin que le meilleur lieu trouvé : aucune zone restante ne peut en avoir un plus proche. */
+    async function nearestOf(ident, near, all = false) {
+      const k = fold(ident),
+        pub = (await published()).zones || {},
+        outlines = await zoneOutlines().catch(() => ({})),
+        kinds = [
+          ['aerodromes', 'aerodrome'],
+          ['navaids', 'navaid'],
+          ['points', 'point'],
+          ['vrp', 'vrp']
+        ],
+        order = [...new Set([...Object.keys(pub), ...loaded.keys()])].map(id => ({
+          id,
+          d: boxDistNm(near, outlines[id]?.box)
+        })).sort((a, b) => a.d - b.d),
+        out = [];
+      let best = Infinity;
+      for (const {
+          id,
+          d
+        }
+        of order) {
+        if (d > best && !all) break;
+        const z = await loadZone(id);
+        if (!z) continue;
+        for (const [kk, kind] of kinds)
+          for (const item of (await idx(z, `ident:${kk}`)).get(k) || []) {
+            if (!num(item.lat) || !num(item.lon)) continue;
+            const dn = distNm(near, [+item.lat, +item.lon]);
+            out.push({
+              kind,
+              item,
+              zone: id,
+              distanceNm: Math.round(dn * 10) / 10
+            });
+            best = Math.min(best, dn);
+          }
+      }
+      return out.sort((a, b) => a.distanceNm - b.distanceNm);
     }
     /** Données d'une sorte d'une zone (lues une fois) : tableau, objet (obstaclemax, meta) ; vides si absentes. */
     function part(z, kind) {
@@ -2365,8 +2431,14 @@
         return out.sort(byPop).slice(0, n);
       },
       /** Tous les lieux d'un identifiant (aérodrome, balise, point, VRP) : zones dont le manifeste annonce le préfixe OACI,
-       *  zones ouvertes, puis, faute de mieux, les zones publiées une à une — aérodromes d'abord : [{ kind, item }]. */
-      async coordsAll(ident) {
+       *  zones ouvertes, puis, faute de mieux, les zones publiées une à une — aérodromes d'abord : [{ kind, item }].
+       *  `near: [lat, lon]` (SOG-0142, les homonymes : PAM en Espagne et aux États-Unis) : les lieux de ce nom des zones examinées, du plus proche au plus éloigné (`all: true` : de TOUTES les zones publiées, plus long), chacun avec sa zone (`zone`) et sa distance en NM (`distanceNm`) ; les zones sont ouvertes de la plus proche à la plus
+       *  lointaine (cadre de la zone) et la recherche s'arrête quand aucune zone restante ne peut avoir un lieu plus proche que le meilleur trouvé. */
+      async coordsAll(ident, {
+        near,
+        all
+      } = {}) {
+        if (Array.isArray(near) && near.length === 2 && near.every(Number.isFinite)) return nearestOf(ident, near, all === true);
         const k = fold(ident),
           kinds = [
             ['aerodromes', 'aerodrome'],
@@ -2395,14 +2467,83 @@
         return [];
       },
       /** Position d'un identifiant (aérodrome d'abord) : { lat, lon, name, kind } ; null si inconnu. */
-      async coords(ident) {
-        const best = (await api.coordsAll(ident))[0];
-        return best ? {
-          lat: +best.item.lat,
-          lon: +best.item.lon,
-          name: best.item.name || best.item.id || best.item.icao || '',
-          kind: best.kind
-        } : null;
+      async coords(ident, {
+        near,
+        all: every
+      } = {}) {
+        const all = await api.coordsAll(ident, {
+            near,
+            all: every
+          }),
+          best = all[0],
+          place = x => ({
+            lat: +x.item.lat,
+            lon: +x.item.lon,
+            name: x.item.name || x.item.id || x.item.icao || '',
+            kind: x.kind
+          });
+        if (!best) return null;
+        // avec un voisinage : le plus proche, et les homonymes écartés (jamais « le premier trouvé »)
+        return Array.isArray(near) && near.length === 2 && near.every(Number.isFinite) ? {
+          ...place(best),
+          zone: best.zone,
+          distanceNm: best.distanceNm,
+          homonyms: all.slice(1, 6).map(x => ({
+            ...place(x),
+            zone: x.zone,
+            distanceNm: x.distanceNm
+          }))
+        } : place(best);
+      },
+      /** Où est ce nom, et si on ne le trouve pas, pourquoi (SOG-0142) : { found: <coords, avec near : le plus proche et ses homonymes écartés> | null, unknown?: { reason, zone?, via?, position? } }.
+       *  Introuvable parmi les aérodromes, balises, points et VRP des zones publiées, le nom est cherché comme extrémité d'une voie aérienne publiée (une voie le nomme avec sa position) : `unknown.reason` est alors
+       *  'zone-not-built' (la zone du pays où il se trouve n'est pas construite : `zone` est celle qu'on attend) ou 'no-points' (la zone est construite mais sans source de points : openAIP n'en porte pas) ; `via` : la voie qui le nomme ;
+       *  `position` : { lat, lon } d'après la voie. Sinon 'not-found'. */
+      async whereIs(ident, {
+        near,
+        all
+      } = {}) {
+        const found = await api.coords(ident, {
+          near,
+          all
+        });
+        if (found) return {
+          found
+        };
+        const k = fold(ident),
+          pub = (await published()).zones || {},
+          outlines = await zoneOutlines().catch(() => ({}));
+        for (const id of Object.keys(pub).sort()) {
+          if (!(+(pub[id].kb?.[pub[id].cycles?.[pub[id].cycles.length - 1]]?.airways) > 1))
+            continue; // zone sans voies : rien à y lire
+          const z = await loadZone(id);
+          if (!z) continue;
+          for (const w of await part(z, 'airways'))
+            for (const e of [w.a, w.b])
+              if (e && fold(e.id) === k && num(e.lat) && num(e.lon)) {
+                const at = zoneAt(+e.lat, +e.lon, outlines),
+                  built = at && pub[at],
+                  has = built && (+(pub[at].kb?.[pub[at].cycles?.[pub[at].cycles.length - 1]]?.points) > 1);
+                return {
+                  found: null,
+                  unknown: {
+                    reason: !at || !built ? 'zone-not-built' : has ? 'not-found' : 'no-points',
+                    zone: at || null,
+                    via: w.route || '',
+                    position: {
+                      lat: +e.lat,
+                      lon: +e.lon
+                    }
+                  }
+                };
+              }
+        }
+        return {
+          found: null,
+          unknown: {
+            reason: 'not-found'
+          }
+        };
       },
       /** Lieux qui répondent au texte (aérodromes, balises, points, VRP des zones ouvertes ; villes de ces zones et grandes
        *  villes du monde), dans cet ordre : code exact ; aérodrome à code OACI dont le nom commence par le texte ; ville
