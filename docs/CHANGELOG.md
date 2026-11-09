@@ -12,9 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
-- **Fuel: the aircraft of the quote on the result bar** (`modules/fuel/module.js`; Fuel SPEC § 9.6, DECISIONS; noreg F101;
-  SOG-0060, part a). The context line seen at every step starts with the aircraft (« FA50 · F-GXXX », « estimation du type » when no
-  sheet serves), a button to the aircraft choice of the step Flight.
+- **Fuel: the aircraft of the quote on the result bar, one aircraft search** (`modules/fuel/module.js`; Fuel SPEC § 9.6, DECISIONS;
+  noreg F101, F103; SOG-0060). The context line seen at every step starts with the aircraft (« FA50 · F-GXXX », « estimation du type » when no
+  sheet serves), a button to the aircraft choice of the step Flight. The Sheets view starts with the same aircraft search as the step
+  Flight (part b, F103).
 
 ## [6.0.0-alpha.4] — 2026-11-09
 

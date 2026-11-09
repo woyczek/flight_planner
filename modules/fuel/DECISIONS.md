@@ -1408,3 +1408,6 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   écrit !? »): the aircraft was only on the step Flight. It now opens the context line of the bar seen at every step, the estimate
   said when no sheet serves, as a button to the choice. A line of its own made the bar 148 px high at 390 px (F2 red): it stays on
   the context line (one line, ellipsis). F101; counter-test on cc97b1e5d: no aircraft line.
+- **9 Nov 2026 — one aircraft search, on the step Flight and the Sheets view** (SOG-0060 (b)): the Sheets view reuses the step's
+  field and rows as they are (same `data-k="acsearch"` and `data-acres`, so `acResults` and `pickAircraft` serve both, no copy);
+  `pickAircraft` no longer assumes the step's panel. F103.

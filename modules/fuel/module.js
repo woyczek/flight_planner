@@ -2751,9 +2751,10 @@ function pickAircraft(key) {
     at: new Date().toISOString()
   });
   S.manual = null;
-  const panel = S.body.querySelector('[data-acpanel]');
-  panel.classList.add('fu-hide');
-  panel.querySelector('input').value = '';
+  const panel = S.body.querySelector('[data-acpanel]'), // absent de la vue Fiches (sa recherche est redessinée par refresh)
+    field = S.body.querySelector('input[data-k="acsearch"]');
+  panel?.classList.add('fu-hide');
+  if (field) field.value = '';
   saveFlight();
   refresh();
 }
@@ -4340,7 +4341,10 @@ function renderSheets() {
   const F = SH(),
     lang = S.ctx.lang(),
     used = S.flight?.aircraft?.sheetId || '';
+  // SOG-0060 (b) : la recherche d'appareil du pas Vol, la même (mêmes attributs : acResults et pickAircraft servent tels quels)
   S.body.innerHTML = `<p class="f-muted">${esc(tt(TX.sheetsIntro))}</p>
+    <label class="f-field"><input type="search" data-k="acsearch" placeholder="${esc(tt(TX.acSearch))}" aria-label="${esc(tt(TX.acSearch))}" autocomplete="off"></label>
+    <div class="f-list" data-acres></div>
     <div class="f-list" data-sheets>${sheetGroups().map(g => `<h3 class="fu-cat">${esc(tt(TX.sheetCats[g.cat]))}</h3>${g.rows.map(r => {
       if (r.todo) return `<div class="f-item" data-type="${esc(r.todo.type)}"><div><b>${esc(S.A.label?.(r.todo.type) || r.todo.type)}</b>
         <div class="f-muted">${esc(tt(TX.coType, { n: r.todo.registrations.length }))}</div></div>
@@ -4353,7 +4357,8 @@ function renderSheets() {
         <div class="f-row"><button type="button" data-do="use">${esc(tt(TX.useSheet))}</button><a class="f-btn" href="${maintenanceLink(p.id)}">${esc(tt(TX.editInMaint))}</a></div></div>`;
     }).join('')}`).join('') || `<p class="f-card f-muted">${esc(tt(TX.noSheet))}</p>`}</div>`;
   S.body.onclick = e => onSheetsClick(e);
-  S.body.oninput = S.body.onkeydown = S.body.onchange = null;
+  S.body.oninput = e => e.target.dataset?.k === 'acsearch' ? acResults(e.target.value) : null;
+  S.body.onkeydown = S.body.onchange = null;
 }
 /** Liste de l'écran Fiches rangée comme la V2 : par catégorie (hélicoptères, turbopropulseurs, réacteurs, pistons,
  *  autres ; aerodb classify), les fiches, puis les types de la compagnie qui n'en ont pas (« à compléter ») ; par nom. */
@@ -4380,6 +4385,8 @@ function sheetGroups() {
 }
 /** Geste de l'écran Fiches : « Utiliser » choisit cette fiche pour le vol (les liens vers Maintenance sont de simples liens). */
 function onSheetsClick(e) {
+  const pk = e.target.closest('[data-pick]'); // une ligne de la recherche d'appareil (SOG-0060 (b)) : le même choix qu'au pas Vol
+  if (pk) return pickAircraft(pk.dataset.pick);
   const b = e.target.closest('[data-do="use"]');
   if (!b) return;
   const raw = S.sheets.find(x => x.id === b.closest('[data-id]')?.dataset.id);

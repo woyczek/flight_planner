@@ -164,7 +164,7 @@ Flugfläche, Steig- und Sinkprofil — wird geteilt: Karte und Bericht haben ihn
 
 ## Leistungsdatenblätter <a id="fuel-sheets"></a>
 
-Der Reiter „Datenblätter“ listet die Datenblätter der Gesellschaft, geteilt mit allen ihren Geräten, **nur lesbar**: Sie
+Der Reiter „Datenblätter“ beginnt mit derselben Luftfahrzeugsuche wie der Schritt Flug (das Feld „Datenblatt, Kennzeichen, Rufzeichen oder Typ“: ein angetipptes Ergebnis wird das Luftfahrzeug des Flugs). Danach listet er die Datenblätter der Gesellschaft, geteilt mit allen ihren Geräten, **nur lesbar**: Sie
 werden in Wartung › Luftfahrzeuge, Reiter „Datenblätter“ bearbeitet. Sie sind nach Kategorie sortiert (Hubschrauber,
 Turboprops, Strahlflugzeuge, Kolbenmotoren, Andere); jeder von der Gesellschaft genutzte Typ (Flotte, Referenz) ohne
 Datenblatt steht ebenfalls dort, „Leistungen einzutragen“, mit „In der Wartung anlegen“. Jedes Datenblatt sagt, was fehlt,
@@ -198,4 +198,4 @@ Datenblättern ändert sich nichts.
   Schlüssel sagt es die Karte, und das METAR antwortet stattdessen. Die Wetterkarte sagt, woher die Meldungen stammen.
   Ganz ohne Netz zeigt sie das zuletzt gespeicherte Wetter mit seiner Uhrzeit.
 
-<!-- fr: 2b905f63f9b7 -->
+<!-- fr: 753b56e738b4 -->

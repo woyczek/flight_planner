@@ -102,7 +102,8 @@ field has the focus (no case).
 
 Fuel reads the sheets through aerodb, `aircraft().sheets` (`list`, `get`), and never writes them: the editor is the Maintenance
 application's (`modules/aircraft/`, its SPEC § 4). aerodb stamps every changed field with its source and keeps the V2 mirror. Fuel's
-Sheets screen is a read-only list (§ 9; F79). The sheets' pure code (formats read and written, completion, merge, ChatGPT) is
+Sheets screen is a read-only list (§ 9; F79), headed by the aircraft search of the step Flight (the same field, `aircraft().search`
+and the same rows; a pick is the flight's aircraft, SOG-0060 (b), F103). The sheets' pure code (formats read and written, completion, merge, ChatGPT) is
 aerodb's `aircraft().lib` (§ 8; F10).
 
 ## 6. Invariants

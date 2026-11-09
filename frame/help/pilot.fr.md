@@ -207,7 +207,7 @@ descente — est partagé : Carte et Compte rendu l'ont déjà.
 
 ## Les fiches de performances <a id="fuel-sheets"></a>
 
-L'onglet « Fiches » liste les fiches de la compagnie, partagées avec tous ses appareils, **en lecture seule** : elles se
+L'onglet « Fiches » commence par la même recherche d'appareil que le pas Vol (le champ « Fiche, immatriculation, indicatif ou type » : un résultat touché devient l'appareil du vol). Il liste ensuite les fiches de la compagnie, partagées avec tous ses appareils, **en lecture seule** : elles se
 modifient dans Maintenance › Appareils, onglet « Fiches ». Elles sont rangées par catégorie (hélicoptères, turbopropulseurs,
 réacteurs, pistons, autres) ; chaque type utilisé par la compagnie (flotte, référence) qui n'a pas encore de fiche y figure
 aussi, « performances à renseigner », avec « Créer dans Maintenance ». Chaque fiche dit ce qui lui manque, par famille

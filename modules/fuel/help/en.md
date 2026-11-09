@@ -153,7 +153,7 @@ it.
 
 ## Performance sheets <a id="fuel-sheets"></a>
 
-The "Sheets" tab lists the company's sheets, shared with all its devices, **read-only**: they are edited in
+The "Sheets" tab starts with the same aircraft search as the Flight step (the field "Sheet, registration, callsign or type": a result tapped becomes the flight's aircraft). It then lists the company's sheets, shared with all its devices, **read-only**: they are edited in
 Maintenance › Aircraft, "Sheets" tab. They are sorted by category (helicopters, turboprops, jets, piston engines, others);
 every type used by the company (fleet, reference) that has no sheet yet is listed too, "performance to fill in", with
 "Create in Maintenance". Each sheet says what it lacks, by family ("To complete: rpm, speeds, cruise, taxi, runway"),
@@ -184,4 +184,4 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: 2b905f63f9b7 -->
+<!-- fr: 753b56e738b4 -->

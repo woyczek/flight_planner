@@ -2646,3 +2646,19 @@ def f102(c):
           a = M.cruiseSource({ sheet: two, altFt: 4000 }), b = M.cruiseSource({ sheet: one, altFt: 4000 });
         return [Math.round(a.tas), a.tasKind, Math.round(M.modelSheet(two, a).cruise.tasKt), Math.round(b.tas), b.tasKind] }""")
     c.eq(r, [160, 'map', 160, 140, 'profile'], 'framed: 160 kt from the rows, taken by the model; a single row with a TAS: the sheet\'s 140 kt', what='TAS')
+
+
+@case('F103', 'The Sheets view of Fuel has the aircraft search of the step Flight: same search, same rows; a row picked is the flight\'s aircraft',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0060 (b) (user, 9 Nov: « s\'il faut passer par le bouton fiches, il faut le même moteur de recherche que dans les paramètres »): '
+      'the field « Rechercher un appareil » (aircraft().search, the rows of acResults) on the Sheets view; a pick writes the aircraft like the step Flight')
+def f103(c):
+    ec25 = {'id': 'EC25', 'name': 'EC25', 'icao': 'EC25', 'usableFuel': 2000, 'cruise': {'tasKt': 141, 'fuelFlowPerHour': 650}}
+    c25 = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'usableFuel': 20000, 'cruise': {'tasKt': 330, 'fuelFlowPerHour': 2000}}
+    c.open('fuel?view=sheets', docs=flight_docs() + [['aircraft/sheets/EC25.json', ec25, 'document'], ['aircraft/sheets/C30J.json', c25, 'document']])
+    field = f'{FUEL} [data-sheets]'
+    c.until(f"!!document.querySelector('{FUEL} input[data-k=acsearch]') && !!document.querySelector('{field}')", what='the search field on the Sheets view')
+    c.page.fill(f'{FUEL} input[data-k=acsearch]', 'EC25')
+    c.until(f"[...document.querySelectorAll('{FUEL} [data-acres] [data-pick]')].some(b => b.textContent.includes('EC25'))", what='the search lists EC25')
+    c.tap(f"{FUEL} [data-acres] [data-pick]:has-text('EC25')")
+    cf_doc(c, lambda d: ((d.get('aircraft') or {}).get('type') == 'EC25'), 'the flight takes the aircraft picked')
