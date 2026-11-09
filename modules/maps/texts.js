@@ -652,6 +652,8 @@ export const TX = {
   ],
   awHigh: ['voie haute', 'upper airway', 'oberer Flugweg', 'aerovía superior'],
   awLow: ['voie basse', 'lower airway', 'unterer Flugweg', 'aerovía inferior'],
+  awOne: ['sens unique {a} → {b}', 'one way {a} → {b}', 'Einbahn {a} → {b}', 'sentido único {a} → {b}'],
+  awBoth: ['double sens', 'both ways', 'beide Richtungen', 'doble sentido'],
   credit: ['SIA : base publiée, non certifiée', 'SIA: published database, not certified',
     'SIA: veröffentlichte Datenbank, nicht zertifiziert', 'SIA: base publicada, no certificada'
   ]

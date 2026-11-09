@@ -227,6 +227,7 @@
     // un tronçon une seule fois (V3 maps, 30 octobre : « toujours ce recouvrement ») : lu par plusieurs boîtes du couloir, le même
     // tronçon arrivait en objets distincts ; le second, trouvant le milieu pris, glissait son étiquette plus loin sur le même trait
     const once = new Set(),
+      oneWay = [], // les tronçons à sens unique dessinés : leur flèche vient après les étiquettes (SOG-0078)
       endKey = e => e?.id || `${(+e?.lat).toFixed(4)},${(+e?.lon).toFixed(4)}`;
     for (const g of airways) {
       const k = [g.route, ...[endKey(g.a), endKey(g.b)].sort()].join('|');
@@ -251,6 +252,13 @@
       ctx.globalAlpha = 1;
       for (const e of [g.a, g.b])
         if (e?.id) ends.set(`${e.id}|${e.lat.toFixed(3)}|${e.lon.toFixed(3)}`, e);
+      if ((g.dir === 'F' || g.dir === 'B') && len >= ARROW_MIN_PX * scale) oneWay.push({
+        g,
+        P,
+        Q,
+        col,
+        len
+      });
       if (lab && len >= 60 * scale) named.push({
         g,
         P,
@@ -404,8 +412,55 @@
         }
       }
     }
+    if (oneWay.length && env.zoom >= ARROW_ZOOM) drawOneWay(ctx, oneWay, ends.hits, scale);
     ctx.restore();
     return ends;
+  }
+  /** Zoom (MapLibre) à partir duquel un tronçon à sens unique porte sa flèche, et longueur minimale (px) du tronçon qui en porte une. */
+  const ARROW_ZOOM = 9,
+    ARROW_MIN_PX = 18;
+  /** Une flèche par tronçon à sens unique (SOG-0078), dans le sens permis (dir F : de a vers b ; B : de b vers a), au milieu du trait, dans
+   *  la teinte de la voie ; le cartouche du nom occupe ce milieu quand il est posé : la flèche se range alors à côté de lui, du côté qui
+   *  a de la place, et se tait s'il n'y en a pas. Tous les triangles d'une teinte dans un seul tracé (le coût du dessin, D68). */
+  function drawOneWay(ctx, list, hits, scale) {
+    const s = 4.5 * scale,
+      paths = new Map(),
+      placed = new Map(hits.map(h => [h.g, h]));
+    for (const {
+        g,
+        P,
+        Q,
+        col,
+        len
+      }
+      of list) {
+      let u = .5;
+      const h = placed.get(g);
+      if (h) {
+        const t = ((h.x - P.x) * (Q.x - P.x) + (h.y - P.y) * (Q.y - P.y)) / (len * len),
+          m = (h.r + 1.6 * s) / len,
+          fits = [t - m, t + m].filter(v => v >= .1 && v <= .9).sort((x, y) => Math.abs(x - .5) - Math.abs(y - .5));
+        if (!fits.length) continue;
+        u = fits[0];
+      }
+      const a = g.dir === 'F' ? P : Q,
+        b = g.dir === 'F' ? Q : P,
+        dx = (b.x - a.x) / len,
+        dy = (b.y - a.y) / len,
+        cx = P.x + (Q.x - P.x) * u,
+        cy = P.y + (Q.y - P.y) * u,
+        p = paths.get(col) || paths.set(col, new Path2D()).get(col);
+      p.moveTo(cx + dx * s, cy + dy * s);
+      p.lineTo(cx - dx * s * .7 - dy * s * .75, cy - dy * s * .7 + dx * s * .75);
+      p.lineTo(cx - dx * s * .7 + dy * s * .75, cy - dy * s * .7 - dx * s * .75);
+      p.closePath();
+    }
+    ctx.globalAlpha = .9;
+    for (const [col, p] of paths) {
+      ctx.fillStyle = col;
+      ctx.fill(p);
+    }
+    ctx.globalAlpha = 1;
   }
   /** Points des voies dessinées qui ne sont pas des balises (fixes, intersections) : triangle et nom. */
   /** Trait fléché de a vers b (points du canevas). */

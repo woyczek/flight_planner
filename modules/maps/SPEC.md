@@ -95,7 +95,12 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   called right after the route's labels so that the screen reserves its own (the chosen procedures' names and constraints), drawing order:
   1. every label of every layer gets its place from **one collision pass** (below), whatever the layer's drawing order;
   2. airspace shapes (ICAO symbology, `SiaAero.drawAirspaces`);
-  3. airways (all strokes, then all names, so that no stroke crosses a name);
+  3. airways (all strokes, then all names, so that no stroke crosses a name; then **the one-way arrows**, SOG-0078: AeroDB publishes `dir`
+     per segment, `F` (from `a` to `b`), `B` (from `b` to `a`), `FB` (both ways), absent (the source is silent); a segment with `F` or `B`,
+     drawn at an effective zoom of 9 or more and at least 18 px long, carries **one** small filled triangle in the allowed direction, in the
+     airway's colour, at the middle of the stroke, or beside its name's box when that box takes the middle (the side with room, nothing
+     when there is none), all the triangles of a colour in one path; `FB` and no `dir` change nothing; never in the light drawing; the
+     tooltip adds « one way a → b » (the allowed direction) or « both ways »; noreg D118 (the arrows, the cost: +1 ms for 608 arrows) and D119);
   4. aerodromes and navaids (`SiaAero.drawPoints`, § 3.2);
   5. airspace labels;
   6. graticule and MORA (the highest MORA of 2, 4… degree groups when a degree is narrower than 70 px);

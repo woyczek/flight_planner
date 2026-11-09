@@ -110,6 +110,17 @@ export function hideTips() {
   if (S?.ptipEl) S.ptipEl.hidden = true;
 }
 
+/** Le sens d'un tronçon (SOG-0078) : « sens unique LMG → NEPIX » (dir F : de a vers b ; B : de b vers a), « double sens » (FB) ; rien quand la
+ *  source se tait. */
+function awWay(g) {
+  if (g.dir === 'FB') return tt(TX.awBoth);
+  if (g.dir !== 'F' && g.dir !== 'B') return '';
+  const [x, y] = g.dir === 'F' ? [g.a, g.b] : [g.b, g.a];
+  return tt(TX.awOne, {
+    a: x?.id || '…',
+    b: y?.id || '…'
+  });
+}
 /** Deux lignes d'une voie : « UN482 LMG → NEPIX », puis distance, routes vraies aller et retour, plancher|plafond, basse ou
  *  haute. */
 function airwayLines(g) {
@@ -117,7 +128,7 @@ function airwayLines(g) {
     high = (+g.lower || 0) >= 19500 || /^U/.test(g.route);
   return [`${g.route} ${g.a?.id || ''} → ${g.b?.id || ''}`, [Number.isFinite(+g.nm) ? `${Math.round(+g.nm)} NM` : '', g.a && g.b ?
     `${R.deg3(R.trackOf(g.a, g.b))} / ${R.deg3(R.trackOf(g.b, g.a))}` : '', `${R.awLimit(g.lower)}|${R.awLimit(g.upper)}`, tt(high ?
-      TX.awHigh : TX.awLow)
+      TX.awHigh : TX.awLow), awWay(g)
   ].filter(Boolean).join(' · ')];
 }
 /** Balise en une ligne : « VOR BZH 114.50 », « ILS 26 BG 110.30 », « DME CLI CH 32X ». */

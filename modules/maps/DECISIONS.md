@@ -3,6 +3,19 @@
 Memory of the V3 maps module: every choice, dated, with its reason. Chat history is never needed. Separate from
 aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds both roles.
 
+- **9 Nov 2026 — one-way airway segments on the Map** (SOG-0078, the ergonomics session's lot; AeroDB publishes `dir` F | B | FB per segment).
+  - **Asked**: an arrow in the allowed direction, one per segment, at the middle, in the airway's hue, from zoom 9, never in the light drawing; the
+    hover says « one way a → b » or « both ways »; FB and unknown change nothing. **Done as asked**, with one adaptation the ergonomics session
+    left to me: the middle of a segment is where its name's box sits, so the arrow goes **beside the box** (the side with room, `u` .36–.37 in the
+    bench) and is left out if neither side has room; without a box (short segment, names off) it is at the middle. Under 18 px a segment carries none.
+  - **The zoom is the effective zoom** (the one every threshold of the Map compares, frame size included): « zoom 9 » on a small frame is a closer view than on a
+    large one, as for the other layers; `env.zoom` is added to the drawing's frozen environment for it.
+  - **Cost**: the triangles of a colour go in one `Path2D`, filled once; 608 arrows in the bench cost about +1 ms (4.9 → 5.9, 5.2 → 6.1, 6.3 → 7.3 ms); D68 stays
+    under budget, and the light drawing (`light.js`) is untouched.
+  - **Not done / not seen**: not seen on the user's rebuilt fr and gb files (the Map reads `dir` as published; the fixture carries it); a segment
+    with `dir` known only on one of the two records of the same segment (the second is skipped by the existing once-per-segment key).
+  - **Noreg** D118 (bench: F and B each one arrow in the right direction, FB and none have none, none under zoom 9, the cost) and D119 (the hover
+    on the real Map, four languages by the text table).
 - **9 Nov 2026 — the Map's memory on a widened window** (SOG-0067: the user's « not enough memory to open this page » on the widened Map,
   « a leak or a flaw of the display model »).
   - **Measured** (Chromium through the noreg harness, the Map of a flight with its base, CDP heap after a forced collection): **no leak.**

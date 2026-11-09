@@ -3487,3 +3487,86 @@ def d117(c):
     c.until("() => !window.__mp.S", timeout=8000, what='the Map unmounts')
     kept = c.js("() => window.__keep.map(x => x ? x.width + 'x' + x.height : null)")
     c.ok(all(k == '0x0' for k in kept if k), f'{kept}', 'the unmount sets the overlay, its copy and the profile canvases to 0 × 0')
+
+
+# ------------------------------------------------------------------------------------------------------ D118 (one-way airway segments)
+_ONEWAY_JS = r"""() => {
+  const R = window.MapsRender, W = 600, H = 400, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const raw = cv.getContext('2d'), tri = new WeakMap(), fills = [];
+  if (!Path2D.prototype.__d118) { const m = Path2D.prototype.moveTo, l = Path2D.prototype.lineTo;
+    Path2D.prototype.moveTo = function (x, y) { (tri.get(this) || tri.set(this, []).get(this)).push([x, y]); return m.call(this, x, y) };
+    Path2D.prototype.lineTo = function (x, y) { (tri.get(this) || tri.set(this, []).get(this)).push([x, y]); return l.call(this, x, y) };
+    Path2D.prototype.__d118 = true }
+  const ctx = new Proxy(raw, { get(o, p) { if (p === 'fill') return a => { if (a instanceof Path2D) fills.push(tri.get(a) || []); return a ? o.fill(a) : o.fill() };
+      const v = o[p]; return typeof v === 'function' ? v.bind(o) : v }, set(o, p, v) { o[p] = v; return true } });
+  const mk = (route, lat, dir, lon0 = -0.28, lon1 = -0.17) => ({ route, a: { id: route + 'A', lat, lon: lon0 }, b: { id: route + 'B', lat, lon: lon1 }, lower: 6500, upper: 19500, nm: 7, ...(dir ? { dir } : {}) });
+  const NEAR = [{ lat: 44.985, lon: -0.3 }, { lat: 45.105, lon: -0.15 }];
+  const segs = [mk('QF', 45.0, 'F'), mk('QB', 45.03, 'B'), mk('QX', 45.06, 'FB'), mk('QN', 45.09, null)];
+  const draw = (box, aw) => { fills.length = 0; const fit = R.bboxOf(box, box === NEAR ? 0 : 10), { toC, shown } = R.mercator(fit, W, H, 12);
+    R.draw(ctx, { toC, W, H, scale: 1, bbox: shown, profile: R.routeProfile(9000), data: { airways: aw }, route: [], marks: [] }); return { toC, fills: fills.map(f => f.slice()) } };
+  const near = draw(NEAR, segs);
+  // arrows : triangles of three points ; centre, and direction of the tip from the base
+  const arrows = near.fills.flatMap(f => { const o = []; for (let i = 0; i + 2 < f.length; i += 3) { const [t, p, q] = f.slice(i, i + 3), bx = (p[0] + q[0]) / 2, by = (p[1] + q[1]) / 2;
+      o.push({ tip: t, base: [bx, by], dx: t[0] - bx, dy: t[1] - by }) } return o });
+  const on = (ar, s) => { const A = near.toC(s.a.lat, s.a.lon), B = near.toC(s.b.lat, s.b.lon), ax = B.x - A.x, ay = B.y - A.y, L = Math.hypot(ax, ay), cx = (ar.tip[0] + ar.base[0]) / 2, cy = (ar.tip[1] + ar.base[1]) / 2,
+      u = ((cx - A.x) * ax + (cy - A.y) * ay) / (L * L), off = Math.abs((cx - A.x) * ay - (cy - A.y) * ax) / L; return { u, off, fwd: (ar.dx * ax + ar.dy * ay) > 0 } };
+  const per = segs.map(s => arrows.map(a => ({ a, ...on(a, s) })).filter(x => x.off < 2 && x.u > 0 && x.u < 1).map(x => ({ u: +x.u.toFixed(2), fwd: x.fwd })));
+  const far = draw([{ lat: 40, lon: -6 }, { lat: 49, lon: 6 }], segs).fills.flat().length;
+  const wide = draw(NEAR, segs.map(s => ({ ...s, dir: undefined }))).fills.flat().length;
+  // cost : 608 short segments with and without a direction, the same drawing
+  const many = dir => { const o = []; for (let i = 0; i < 608; i++) { const r = Math.floor(i / 16), k = i % 16, la = 44.99 + r * .003, lo = -0.29 + k * .0105; o.push({ route: 'Z' + i, a: { id: 'ZA' + i, lat: la, lon: lo }, b: { id: 'ZB' + i, lat: la + .0008, lon: lo + .011 }, lower: 6500, upper: 19500, nm: 1, ...(dir ? { dir } : {}) }) } return o };
+  const aws = [many(null), many('F')], ts = [[], []];   // interleaved: a load on the machine weighs on both
+  for (let i = 0; i < 21; i++) for (const k of [0, 1]) { const t0 = performance.now(); draw(NEAR, aws[k]); ts[k].push(performance.now() - t0) }
+  const med = t => t.sort((a, b) => a - b)[10], plain = med(ts[0]), withDir = med(ts[1]), nArrows = draw(NEAR, many('F')).fills.flat().length / 3;
+  return { n: arrows.length, per, far, wide, plain, withDir, nArrows };
+}"""
+
+
+@case('D118', 'One-way airway segments: a small arrow in the allowed direction at zoom 9 and over, none for both ways or an unknown direction, the hover says the sense', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0078 (ergonomics, 9 Nov 2026): AeroDB publishes dir F | B | FB per airway segment (absent: the source is silent); a one-way segment carries one discreet arrow in the allowed direction (F: a to b, B: b to a), in the airway’s colour, at zoom 9 and over, never in the light drawing; FB or no dir changes nothing; the hover says « one way a → b » or « both ways »; D68 stays under budget')
+def d118(c):
+    c.page.goto(f'{c.base}/modules/maps/test/render.html', wait_until='load')
+    c.until("() => window.MapsRender && document.getElementById('out') && document.getElementById('out').textContent.length > 20", what='the render bench is drawn')
+    r = c.js(_ONEWAY_JS)
+    c.eq(r['n'], 2, 'two arrows in all: the F segment and the B segment', what=f'arrows {r}')
+    c.eq([len(p) for p in r['per']], [1, 1, 0, 0], 'one arrow on QF, one on QB, none on the both-ways and the unknown-direction segments', what=f'per segment {r["per"]}')
+    c.ok(r['per'][0][0]['fwd'] and not r['per'][1][0]['fwd'], f'{r["per"]}', 'F points from a to b, B from b to a')
+    c.ok(all(0.1 <= p[0]['u'] <= 0.9 for p in r['per'][:2]), f'{r["per"]}', 'each arrow sits on its segment, away from the ends (beside the name’s box when there is one)')
+    c.eq(r['far'], 0, 'zoomed out under 9: no arrow', what='arrows far')
+    c.eq(r['wide'], 0, 'no dir, no arrow', what='arrows without dir')
+    c.ok(r['nArrows'] >= 300, f'{r["nArrows"]} arrows', 'the 608-segment drawing carries its arrows (the cost below is not the cost of nothing)')
+    c.ok(r['withDir'] - r['plain'] < 3 and r['withDir'] < 16, f'{r["plain"]:.1f} ms without, {r["withDir"]:.1f} ms with {r["nArrows"]:.0f} arrows', 'the arrows add under 3 ms, the drawing stays under 16 ms (D68)')
+
+
+@case('D119', 'One-way airway segments: the hover says « one way a → b » (B reversed) or « both ways », and nothing when the source is silent', 'D',
+      tags=('maps',), designs=('standard',), night=False, phone=False,
+      rule='SOG-0078: the hover over an airway’s box says the sense of the segment: « one way a → b » for dir F, « one way b → a » for B (the allowed direction), « both ways » for FB, nothing without dir')
+def d119(c):
+    f = _awy_flight()
+    segs = []
+    for i, (route, dr, lat) in enumerate([('AW1', 'F', 45.0), ('AW2', 'B', 45.0), ('AW3', 'FB', 45.0), ('AW4', None, 45.4)]):
+        lo = lambda k: -0.5 + k * 1.333
+        a, b = ((0, 1), (1, 2), (2, 3), (0, 1))[i]
+        segs.append({'route': route, 'a': {'id': f'P{a + 1}' if lat == 45.0 else 'Q1', 'lat': lat, 'lon': lo(a)}, 'b': {'id': f'P{b + 1}' if lat == 45.0 else 'Q2', 'lat': lat, 'lon': lo(b)},
+                     'lower': 6500, 'upper': 19500, 'nm': 56.0, **({'dir': dr} if dr else {})})
+    c.open('maps', docs=fdocs(f) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airfields=True, airways=segs, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.js("async () => { window.__tips = await import('/modules/maps/tips.js'); return true }")
+    hook_map(c)
+    got = {}
+    # each segment in turn, at a zoom where the airways are drawn
+    for route, lon, lat in [('AW1', 0.17, 45.0), ('AW2', 1.5, 45.0), ('AW3', 2.83, 45.0), ('AW4', 0.17, 45.4)]:
+        c.js("([lo, la]) => { window.__mpMap.jumpTo({ center: [lo, la], zoom: 8.4 }); return true }", [lon, lat])
+        c.wait(900)
+        h = c.js("""(r) => { const h = (window.__mp.S.awHits || []).find(x => x.g.route === r); return h ? window.__tips.tipAt(h.x, h.y) : null }""", route)
+        if h:
+            got[route] = h
+
+    line = lambda r: ' | '.join(got[r]) if got.get(r) else None
+    c.ok(line('AW1') and line('AW2') and line('AW3'), f'{got}', 'the hover of the three segments is read from their boxes')
+    c.ok(re.search(r'sens unique P1 → P2', line('AW1') or ''), f'{got.get("AW1")}', 'dir F: « one way P1 → P2 » (a to b)')
+    c.ok(re.search(r'sens unique P3 → P2', line('AW2') or ''), f'{got.get("AW2")}', 'dir B: « one way P3 → P2 » (b to a: the allowed direction)')
+    c.ok('double sens' in (line('AW3') or '') and 'sens unique' not in (line('AW3') or ''), f'{got.get("AW3")}', 'dir FB: « both ways »')
+    c.ok(line('AW4') and 'sens' not in line('AW4'), f'{got.get("AW4")}', 'no dir: the hover is as before, no word about the sense')

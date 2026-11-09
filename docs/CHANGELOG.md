@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: one-way airway segments carry an arrow** (`modules/maps/render_airspace.js`, `render.js`, `tips.js`, `texts.js`, help ×4; SPEC § 3; DECISIONS 9 Nov; noreg D118,
+  D119; SOG-0078). AeroDB now publishes the direction of each segment (`dir` F, B or FB); a one-way segment has one small arrow in the allowed
+  direction (beside the airway's name box), in the airway's colour, from zoom 9, never in the light drawing; the tooltip says « one way a → b » or « both
+  ways ». Two-way segments and those without `dir` are unchanged. Cost about +1 ms for 608 arrows.
 - **Fuel: « Calculer A → B » and « Contrôler » on the Route step** (`modules/fuel/route_engine.js`, `modules/fuel/module.js`; Fuel SPEC
   § 9.3, INTEGRATION, DECISIONS; noreg F109; SOG-0080, SOG-0081, screen side). With the launcher's route engine (RouteSim, AeroDB's job
   `route/compute`): routes proposed with their length, FL and deviations, « Prendre » writing route, SID and STAR; the typed route checked,

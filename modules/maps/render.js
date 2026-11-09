@@ -1504,7 +1504,8 @@
       const env = Object.freeze({
         theme: T,
         placer: pl,
-        pal
+        pal,
+        zoom: zv
       });
       let labels = [],
         towns = [],
