@@ -2105,6 +2105,7 @@ function markEnds() {
 /** Un nouveau couple de terrains : la route (texte, points, distance, voies d'Auto), les procédures et l'OFP de l'ancien vol effacés,
  *  dit en une ligne ; le reste du vol (appareil, niveau, date) gardé. */
 function newPair() {
+  altsClear(); // un nouveau couple : les itinéraires de l'ancien ne se dessinent plus (INTEGRATION § 3 bis)
   const f = S.flight,
     r = f.route;
   Object.assign(r, {
@@ -3096,6 +3097,7 @@ async function routeAsk(action) {
     act = action === 'compute' ? 'compute' : 'check';
   if (!S.routeEngine || !r.dep || !r.arr) return;
   if (box) box.innerHTML = `<p class="f-muted" data-rbusy>${esc(tt(TX.rBusy))}</p>`;
+  altsClear(); // une nouvelle demande : la Carte n'a plus d'itinéraires à dessiner
   const when = Date.parse(S.flight.planned_at || ''),
     args = RE.request({
       action: act,
@@ -3132,6 +3134,8 @@ async function routeAsk(action) {
     };
     const lines = RE.faultLines(a);
     if (box) box.innerHTML = `${lines.length ? faultsHtml(lines) : `<p class="f-muted" data-rcheck>${esc(tt(TX.rCheckOk))}</p>`}${limitsHtml(n)}`;
+    S.ralts = null;
+    if (a) altsPublish('check', [a], [r.points || []]); // la route tapée est déjà lue : ses points (INTEGRATION § 3 bis)
     renderPts();
     return refresh();
   }
@@ -3141,6 +3145,7 @@ async function routeAsk(action) {
     n
   };
   routeAltsDraw();
+  altsPublish('compute', n.plans); // pour la Carte (INTEGRATION § 3 bis)
 }
 /** « N écarts aux règles » n'est jamais un nombre seul (SOG-0134) : un pli dont le titre dit le nombre et qui liste chaque écart — son
  *  segment, sa règle (l'identifiant du RAD ou du point FRA, sinon son genre), la phrase du moteur — sept lignes puis « N autres ». */
@@ -3168,6 +3173,132 @@ function routeAltsDraw() {
     gaps: []
   });
 }
+// ---------------------------------------------------------------- les itinéraires pour la Carte (SOG-0134 a, INTEGRATION § 3 bis)
+// La Carte dessine les itinéraires (décision d'ergonomie du 9 nov. : une seule carte, la vraie) ; Carburant les lit en positions avec
+// son lecteur de route (RM.routeModel, rien n'est écrit dans le vol) et les publie : l'événement fuel-route-alts (vue double, survol
+// compris) et cache/fuel/route_alts.json (une Carte ouverte ensuite ; jamais au survol). Un appui sur un tracé de la Carte revient en
+// maps-route-alt (vue double) ou en #fuel?ralt=<index> (Carte seule) et vaut « Prendre ».
+const ALTS_DOC = 'cache/fuel/route_alts.json';
+/** Lit les points des itinéraires (gardés : S.alts) puis publie ; `pts` déjà lus (la route contrôlée) : publication immédiate. */
+async function altsPublish(mode, plans, pts) {
+  const s = S,
+    r = S.flight.route || {},
+    known = knownPoints(r, true),
+    got = pts || await Promise.all(plans.map(p => p.route ? Promise.resolve().then(() => RM.routeModel(p.route, {
+      dep: r.dep,
+      arr: r.arr,
+      known,
+      chain: [],
+      base: S.ctx.aerodb
+    })).then(x => x.points || []).catch(() => []) : []));
+  if (gone(s)) return;
+  const ok = q => Number.isFinite(+q?.lat) && Number.isFinite(+q?.lon) && Math.abs(+q.lat) <= 90 && Math.abs(+q.lon) <= 180;
+  S.alts = {
+    mode,
+    dep: r.dep || '',
+    arr: r.arr || '',
+    list: plans.map((p, i) => {
+      const ps = (got[i] || []).filter(ok).slice(0, 400),
+        ids = ps.map(q => String(q.id || '').toUpperCase()),
+        faulty = new Set();
+      // un segment fautif from → to du moteur marque chaque segment points[k] → points[k+1] entre ses deux bouts
+      for (const g of p.segments || []) {
+        if (g.state !== 'error') continue;
+        const a = ids.indexOf(g.from),
+          b = a < 0 ? -1 : ids.indexOf(g.to, a + 1);
+        for (let k = a; a >= 0 && k < b; k++) faulty.add(k);
+      }
+      return {
+        index: i,
+        name: p.name || '',
+        route: p.route || '',
+        sid: p.sid?.id || '',
+        star: p.star?.id || '',
+        ids,
+        points: ps.map(q => [Math.round(+q.lat * 1e5) / 1e5, Math.round(+q.lon * 1e5) / 1e5]),
+        faulty: [...faulty].sort((x, y) => x - y)
+      };
+    }),
+    hovered: null
+  };
+  altsSend(true);
+}
+/** L'objet du contrat (INTEGRATION § 3 bis) ; `hovered` vaut null dans le document. */
+function altsObject(forDoc) {
+  const A = S.alts;
+  return {
+    schema: 1,
+    updated_at: new Date().toISOString(),
+    dep: A?.dep || '',
+    arr: A?.arr || '',
+    mode: A?.mode || 'compute',
+    alternatives: A?.list || [],
+    chosen: !A?.list?.length ? null : A.mode === 'check' ? 0 : S.ralts?.chosen >= 0 ? S.ralts.chosen : 0,
+    hovered: forDoc || !A?.list?.length ? null : A.hovered
+  };
+}
+/** L'événement (toujours) et le document (doc vrai : arrivée, choix, effacement ; jamais au survol). */
+function altsSend(doc) {
+  if (!S) return;
+  window.dispatchEvent(new CustomEvent('fuel-route-alts', {
+    detail: altsObject(false)
+  }));
+  if (doc) Promise.resolve(S.ctx.data.put(ALTS_DOC, altsObject(true))).catch(() => {});
+}
+/** Plus d'itinéraires à dessiner (nouvelle demande, nouveau couple, refus) : alternatives []. */
+function altsClear() {
+  if (!S || !S.alts?.list?.length) return;
+  S.alts = null;
+  altsSend(true);
+}
+/** Survol, appui ou focus clavier d'une ligne de la liste des itinéraires : `hovered` publié par l'événement seul. */
+function altsHover(e) {
+  if (!S?.alts?.list?.length || S.alts.mode !== 'compute') return;
+  const alt = e.target?.closest?.('[data-altlist] [data-alt]'),
+    h = alt ? +alt.dataset.alt : null;
+  if (h === S.alts.hovered) return;
+  S.alts.hovered = Number.isInteger(h) ? h : null;
+  altsSend(false);
+}
+/** Le choix rendu par la Carte (vue double) : un index entier de la liste, et rien d'autre de l'événement ; vaut « Prendre ». */
+function altsPicked(e) {
+  const i = e?.detail?.index;
+  if (!S?.ralts?.list?.length || !Number.isInteger(i) || i < 0 || i >= S.ralts.list.length) return;
+  routeTake(i);
+}
+/** #fuel?ralt=<index> (Carte seule) : le document relu, l'itinéraire pris seulement pour le même couple et un calcul (§ 3 bis). */
+async function altsFromAddress(index) {
+  const s = S,
+    i = Number.isInteger(+index) && /^\d{1,2}$/.test(String(index)) ? +index : -1,
+    d = i >= 0 ? await Promise.resolve(S.ctx.data.get(ALTS_DOC)).catch(() => null) : null,
+    r = S?.flight?.route || {};
+  if (gone(s) || !d || d.mode !== 'compute' || !Array.isArray(d.alternatives) || i >= Math.min(d.alternatives.length, 3)) return;
+  if (String(d.dep || '') !== String(r.dep || '') || String(d.arr || '') !== String(r.arr || '')) return;
+  const proc = (v, kind) => new RegExp(`^[A-Z0-9]{4}\\.${kind}\\.[A-Z0-9.]{1,60}$`).test(String(v || '')) ? {
+    id: String(v)
+  } : null;
+  S.ralts = {
+    list: d.alternatives.slice(0, 3).map(a => ({
+      name: String(a?.name || '').slice(0, 60),
+      route: String(a?.route || '').toUpperCase().split(/\s+/).filter(t => /^[A-Z0-9/]{1,16}$/.test(t)).join(' ').slice(0, 800),
+      sid: proc(a?.sid, 'SID'),
+      star: proc(a?.star, 'STAR'),
+      segments: [],
+      errors: [],
+      faults: 0,
+      accepted: true,
+      distanceNm: null,
+      fl: null
+    })),
+    chosen: -1,
+    n: {
+      limitation: '',
+      gaps: []
+    }
+  };
+  S.alts = null;
+  routeTake(i);
+}
 /** « Prendre » : la route de l'itinéraire écrite comme une saisie (le champ de route et son événement : le seul chemin d'écriture,
  *  SOG-0013), puis sa SID et sa STAR proposées aux procédures (P.propose : vérifiées contre les fiches du terrain, rien d'inconnu écrit). */
 function routeTake(i) {
@@ -3190,6 +3321,7 @@ function routeTake(i) {
   S.ralts.chosen = i;
   S.rcheck = null;
   routeAltsDraw();
+  if (S.alts?.mode === 'compute') altsSend(true); // le choix, pour la Carte (INTEGRATION § 3 bis)
 }
 /** « Auto » (SOG-0056) : le niveau suit le devis (level.auto) ; le prochain dessin choisit le niveau (refresh → levelAuto). */
 function levelAutoOn() {
@@ -5060,7 +5192,7 @@ export async function mount(el, ctx) {
   // « Aucune », une clé absente laisse sa famille ; § 10.23 puis § 10.30 : rwy sid star app apptrans, pas de transition SID / STAR) :
   // prises une fois, ensemble, et retirées de l'adresse (frame/INTEGRATION.md § 6.1)
   const PROPOSAL_KEYS = ['rwy', 'sid', 'star', 'app', 'apptrans'],
-    q = ctx.consume ? ctx.consume('focus', 'mission', 'new', ...PROPOSAL_KEYS) : ctx.query || {},
+    q = ctx.consume ? ctx.consume('focus', 'mission', 'new', 'ralt', ...PROPOSAL_KEYS) : ctx.query || {},
     asked = q.focus;
   if ((asked === 'dep' || asked === 'arr') && PROPOSAL_KEYS.some(k => q[k] != null && q[k] !== '')) S.P.propose(asked, {
     rwy: q.rwy,
@@ -5076,6 +5208,7 @@ export async function mount(el, ctx) {
   // « Préparer ce vol » du module Missions (#fuel?mission=<id>) : reprise une fois le vol courant connu (flightReady)
   S.missionAsked = String(q.mission || '').trim();
   S.newAsked = q.new === '1'; // #fuel?new=1 : « Nouveau vol » demandé par l'adresse (sa question comprise)
+  S.raltAsked = q.ralt ?? ''; // #fuel?ralt=<index> : un itinéraire choisi sur la Carte seule (INTEGRATION § 3 bis)
   if (S.focus === 'arr') S.P.focus('arr'); // la première liste de l'arrivée prend le focus dès qu'elle est dessinée
   S.step = S.focus === 'route' ? 1 : S.focus ? (kept.started?.at ? 4 : 1) : Math.max(0, Math.min(4, +S.ui.step || 0));
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(ctx.t(meta.title))}</h1>
@@ -5090,6 +5223,12 @@ export async function mount(el, ctx) {
   S.body = el.querySelector('[data-body]');
   // liste des terrains proposés (étape Vol) : fermée quand le champ perd le focus ; un appui sur une proposition ne prend pas le focus
   // du champ (sinon le flou la fermerait avant le clic). Posés une fois : l'écran Devis est redessiné, pas son conteneur.
+  // les itinéraires pour la Carte (SOG-0134 a) : la ligne survolée, appuyée ou atteinte au clavier est publiée (hovered), et un tracé
+  // touché sur la Carte en vue double revient ici (maps-route-alt)
+  S.body.addEventListener('pointerover', e => altsHover(e));
+  S.body.addEventListener('focusin', e => altsHover(e));
+  S.onAltPick = e => altsPicked(e);
+  window.addEventListener('maps-route-alt', S.onAltPick);
   S.body.addEventListener('focusout', e => {
     const hits = S?.AD?.hitsFor(e.target?.dataset?.k) || 0; // avant que la liste se ferme
     S?.AD?.onFocusOut(e);
@@ -5228,6 +5367,8 @@ function flightReady() {
   if (!S.refsPending) resumeFlight();
   if (S.missionAsked) applyMission(S.missionAsked);
   else if (S.newAsked) newFlight();
+  else if (S.raltAsked !== '') altsFromAddress(S.raltAsked);
+  S.raltAsked = '';
   S.missionAsked = '';
   S.newAsked = false;
 }
@@ -5331,6 +5472,7 @@ export function unmount() {
   // une série de choix de procédures en attente est écrite ; une lecture en cours n'est pas abandonnée : le travail du poste continue
   // et sa fin est dite (procedures.js)
   S.P.stop();
+  window.removeEventListener('maps-route-alt', S.onAltPick);
   clearTimeout(S.routeTimer);
   clearTimeout(S.roTimer);
   clearTimeout(S.wxTimer);

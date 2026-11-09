@@ -3021,6 +3021,54 @@ def f113(c):
          'the deviating route lists its deviation', what='per route')
 
 
+_ALTS_LISTEN = "() => { window.__alts = []; window.addEventListener('fuel-route-alts', e => window.__alts.push(e.detail)); return true }"
+_ALTS_LAST = "(() => (window.__alts || []).at(-1) || null)()"
+
+
+@case('F114', 'Route step: the proposed routes published for the Map (event and document), the hovered row and the choice too; a route touched on the Map is taken',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0134 (a), voie (i) decided by the ergonomics session on 9 Nov (one map, the real one): Fuel resolves and publishes '
+      '(fuel-route-alts, cache/fuel/route_alts.json, modules/fuel/INTEGRATION.md § 3 bis), draws nothing; maps-route-alt and #fuel?ralt= take a route')
+def f114(c):
+    st = _route_launcher(c, ['route/compute'])
+    open_proc(c)
+    c.js(_ALTS_LISTEN)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"(() => {{ const d = {_ALTS_LAST}; return !!d && d.alternatives.length === 3 }})()", timeout=8000, what='three routes published')
+    d = c.js(_ALTS_LAST)
+    c.eq([d['schema'], d['mode'], d['dep'], d['arr'], d['chosen'], d['hovered']], [1, 'compute', 'LFRS', 'LFML', 0, None], 'the head of the object', what='head')
+    a = d['alternatives']
+    c.ok(all(len(x['points']) == len(x['ids']) >= 2 and all(len(q) == 2 for q in x['points']) for x in a), a, 'each route as positions, with its ids')
+    c.eq(a[2]['ids'], ['LFRS', 'LUGEN', 'LFML'], 'the third route resolved', what='ids')
+    c.eq([x['faulty'] for x in a], [[], [], [1]], 'the faulty segment LUGEN–LFML of the third: segment 1', what='faulty')
+    c.eq([a[0]['sid'], a[0]['star']], [_SID, _STAR], 'the procedures of a route', what='procedures')
+    c.eq(c.count(f'{FUEL} svg[data-rsketch], {FUEL} [data-rsketch]'), 0, 'Fuel draws no sketch: the Map draws', what='no sketch')
+    doc = c.until_doc('cache/fuel/route_alts.json', lambda x: x and len(x.get('alternatives') or []) == 3, 'the document for a Map opened later', timeout=8000)
+    c.eq([doc['hovered'], [x['faulty'] for x in doc['alternatives']]], [None, [[], [], [1]]], 'the document: the same routes, never a hover', what='doc')
+    # hover: published by the event only
+    c.page.hover(f'{FUEL} [data-altlist] [data-alt="1"]')
+    c.until(f"({_ALTS_LAST} || {{}}).hovered === 1", what='hovering a row publishes it')
+    c.eq(c.doc('cache/fuel/route_alts.json').get('hovered'), None, 'the document is not written on hover', what='doc hover')
+    # a route touched on the Map (double view): taken as « Prendre »
+    c.js("window.dispatchEvent(new CustomEvent('maps-route-alt', { detail: { index: 1 } }))")
+    cf_doc(c, lambda d: 'LUGEN' not in [q.get('id') for q in (d.get('route') or {}).get('points') or []] and procs_of(d, 'dep').get('sid') == _SID,
+           'the route touched on the Map is taken (route, SID)', timeout=10000)
+    c.until(f"({_ALTS_LAST} || {{}}).chosen === 1", what='the choice published')
+    c.js("window.dispatchEvent(new CustomEvent('maps-route-alt', { detail: { index: 7 } }))")
+    c.settle()
+    c.eq(c.js(_ALTS_LAST)['chosen'], 1, 'an index outside the list is ignored', what='bad index')
+    # a Map alone: #fuel?ralt=2 takes the third route from the document
+    c.go('fuel?ralt=2')
+    cf_doc(c, lambda d: [w for w in str((d.get('route') or {}).get('text', '')).split() if w != 'DCT'][:3] == ['LFRS', 'LUGEN', 'LFML'], 'the address ralt=2 takes the third route', timeout=12000)
+    # « Contrôler »: the typed route published in mode check
+    c.js(_ALTS_LISTEN)
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcheck]')", timeout=10000, what='the buttons again')
+    c.tap(f'{FUEL} [data-do="rcheck"]')
+    c.until(f"(() => {{ const d = {_ALTS_LAST}; return !!d && d.mode === 'check' && d.alternatives.length === 1 }})()", timeout=8000, what='the checked route published')
+
+
 # SOG-0142: invented names and positions only (no AIP content) — two homonyms PAX (one on the route's side, one across the ocean), a resolved
 # point in Sweden's frame (SWEPT, a zone not published), an invented aerodrome in Corsica (LFZZ) with no published point around it
 _HOMONYM_EXTRA = {'points': [{'id': 'PAX', 'lat': 45.8, 'lon': 1.9, 'type': 'RNAV'}, {'id': 'PAX', 'lat': 39.0, 'lon': -76.0, 'type': 'RNAV'},

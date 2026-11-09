@@ -96,7 +96,7 @@ rumbo verdadero, y de dónde vienen (la ruta, el OFP de SimBrief). Si la ruta no
 los dos campos. Con su identificador SimBrief configurado (⚙), «Último OFP de SimBrief» retoma de una vez la ruta, el
 nivel, el viento medio y la aeronave de su último plan.
 
-**Calcular y comprobar la ruta.** En un puesto cuyo lanzador lleva el cálculo de ruta, aparecen dos botones bajo el campo: «Calcular A → B» propone itinerarios de un aeródromo al otro (los puntos que escribió son pasos impuestos), con su longitud, el FL mantenido y el número de desviaciones de las reglas; «Tomar» escribe la ruta, la SID y la STAR del itinerario elegido. «Comprobar» analiza la ruta escrita tal cual: los segmentos erróneos se ponen en rojo en la lista de puntos con su motivo (RAD, FRA, suelo, techo…), y su número aparece en la barra de resultado; «N desviaciones de las reglas» se despliega en una línea por desviación: el segmento, la regla (el identificador RAD o FRA) y la frase del motor. Su escritura nunca se sustituye sin «Tomar». Sin RAD importado en el puesto, un enlace lleva a su línea en Datos para importarlo. Es un precontrol de simulación, no una validación IFPS.
+**Calcular y comprobar la ruta.** En un puesto cuyo lanzador lleva el cálculo de ruta, aparecen dos botones bajo el campo: «Calcular A → B» propone itinerarios de un aeródromo al otro (los puntos que escribió son pasos impuestos), con su longitud, el FL mantenido y el número de desviaciones de las reglas; «Tomar» escribe la ruta, la SID y la STAR del itinerario elegido. «Comprobar» analiza la ruta escrita tal cual: los segmentos erróneos se ponen en rojo en la lista de puntos con su motivo (RAD, FRA, suelo, techo…), y su número aparece en la barra de resultado; «N desviaciones de las reglas» se despliega en una línea por desviación: el segmento, la regla (el identificador RAD o FRA) y la frase del motor. Los itinerarios se dibujan en el Mapa: junto al Combustible en una pantalla grande, o con «En el mapa»; tocar un trazado lo toma. Su escritura nunca se sustituye sin «Tomar». Sin RAD importado en el puesto, un enlace lleva a su línea en Datos para importarlo. Es un precontrol de simulación, no una validación IFPS.
 
 El botón «Auto» junto al campo «Ruta» inscribe las aerovías entre los puntos: para cada pareja de puntos con nombre que se
 siguen sin aerovía entre ellos, busca el camino más corto por las aerovías de la base publicada, abiertas al nivel previsto
@@ -245,7 +245,7 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
   tarjeta lo dice y responde el METAR en su lugar. La tarjeta meteorológica indica de dónde vienen los mensajes. Sin red
   alguna, muestra la última meteorología guardada, con su hora.
 
-<!-- fr: c0a027d2b81b -->
+<!-- fr: 1f5a3315f1a2 -->
 
 <!-- chapter: maps -->
 # Mapa

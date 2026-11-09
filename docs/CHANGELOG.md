@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the proposed routes published for the Map** (`modules/fuel/module.js`; Fuel SPEC § 9.3, INTEGRATION § 3 bis, DECISIONS, help;
+  noreg F114; SOG-0134 a). The routes of the Route step, resolved into positions, go to the Map (event in the double view, a document for a
+  Map opened later), with the chosen route and the hovered row; a route touched on the Map is taken. The sketch under the list is withdrawn:
+  one map, the real one.
+
 - **Data: a selection of more than 60 zones is built in runs of 60 at most, and a refusal says the launcher's reason** (`modules/data/follow.js` `runChunks`, `update.js`, `chain.js`, `model_sets.js` `chunksOf`, `model_results.js` `refusal`; L49) — SOG-0144: `base/fetch`, `base/build` and `base/purge` take 1 to 60 zones; with 78 ticked « Tout recalculer »
   was refused (« arguments invalides »). « Tout recalculer », « Télécharger », « Mettre à jour » and the chain now cut the selection into runs of 60, one after the other (the next starts when the previous one ends), the progress says « Tranche i sur n », the update's question says it; a refusal relays the launcher's message (« Le lanceur dit : … »).
 ## [Unreleased]
