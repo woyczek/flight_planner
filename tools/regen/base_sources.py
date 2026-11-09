@@ -708,7 +708,8 @@ PICKUP = {
     # le SIA : sous data/local/sources/sia/<cycle>/ (DATA_MAP § 4, lot C2 ; le cycle est celui de la date du fichier), plus la racine de data/sia/
     'sia': {'zip': 'export_xml_bd_SIA_*.zip', 'to': 'local/sources/sia', 'sub': lambda n: (aero_cycles.cycled(n) or ('', ''))[1], 'keep': lambda n: bool(SIA_ROOT.match(n))},
     # NATS : les fichiers EG… seulement (jamais ukmil_aara-tracks.xml ni un autre fichier d'aero_fetch du même dossier)
-    'nats': {'zip': 'EG_*_DS_*_XML.zip', 'to': 'sia/zones/gb',
+    # un zip PAR JEU (AIP, OBS, UAS : trois envois de NATS, arrivés à des moments différents ; SOG-0126 : en prendre un seul laissait l'AIP du 29 oct. dans Téléchargements et gb au cycle du 1er)
+    'nats': {'zip': 'EG_*_DS_*_XML.zip', 'sets': {'AIP': 'EG_AIP_DS_*_XML.zip', 'OBS': 'EG_OBS_DS_*_XML.zip', 'UAS': 'EG_UAS_*_XML.zip'}, 'to': 'sia/zones/gb',
              'keep': lambda n: bool(re.match(r'EG[_-]', n)) and n.lower().endswith('.xml') and not re.search(r'DIFF|DELTA|export-filter|METADATA', n, re.I)},
 }
 PICKUP_MAX = 500 * 1024 * 1024  # un zip déposé plus gros : refusé avant d'être ouvert
@@ -720,6 +721,12 @@ PICKUP_MAX = 500 * 1024 * 1024  # un zip déposé plus gros : refusé avant d'ê
 OPENAIP_FILE = re.compile(r'^(?P<cc>[a-z]{2})_(?P<layer>asp|apt|nav|rpp|hot)(?: \(\d+\))?\.(?P<ext>geojson|json|xml)\Z', re.A | re.I)
 OPENAIP_MAX_FEATURES = 400_000
 PICKUP_NAME = re.compile(r'^[\w .()+-]{1,150}\Z', re.A)  # un nom d'entrée pris (le SAFE_NAME de base.py) : ni séparateur, ni « : »
+
+
+def _units(source):
+    """Les envois d'une source à déposer à la main : [(clé, jeu, motif du zip)] ; une source à jeux (NATS) en a un par jeu (clé « nats:AIP »), les autres un seul (clé = la source, jeu '')."""
+    p = PICKUP[source]
+    return [(f'{source}:{k}', k, pat) for k, pat in p['sets'].items()] if p.get('sets') else [(source, '', p['zip'])]
 
 
 def _dest(data, p, leaf):
@@ -750,8 +757,18 @@ def check_pickup(a):
     return {'zones': zones, 'dry': dry, **({'zips': shown} if 'zips' in a else {})}  # zips: {} dit « rien de montré »
 
 
-def _latest(dirs, pattern):
-    """Le plus récent des fichiers de ces dossiers qui suivent le motif (sans chemin ; ni lien ni dossier), ou ''."""
+def _name_cycle(path):
+    """Le cycle AIRAC (« AAAA-MM-JJ ») de la date de huit chiffres d'un nom de fichier, ou ''."""
+    m = re.findall(r'\d{8}', os.path.basename(path))
+    try:
+        return aero_cycles.airac_start(datetime.date(int(m[-1][:4]), int(m[-1][4:6]), int(m[-1][6:]))) if m else ''
+    except ValueError:
+        return ''
+
+
+def _latest(dirs, pattern, dated=False, until=None):
+    """Le plus récent des fichiers de ces dossiers qui suivent le motif (sans chemin ; ni lien ni dossier), ou ''. dated : d'abord la date de huit chiffres du nom (un envoi ancien téléchargé de nouveau ne passe pas devant le plus récent), puis la date du fichier ;
+    until : le cycle en vigueur : un envoi d'un cycle À VENIR (publié d'avance) ne passe pas devant celui du cycle en vigueur, il n'est pris que s'il n'y en a pas d'autre."""
     found = []
     for d in dirs:
         try:
@@ -759,7 +776,26 @@ def _latest(dirs, pattern):
                 found += [e.path for e in it if fnmatch.fnmatch(e.name, pattern) and not e.is_symlink() and e.is_file(follow_symlinks=False)]
         except OSError:
             continue
+    if dated:
+        key = lambda f: ((re.findall(r'\d{8}', os.path.basename(f)) or [''])[-1], os.path.getmtime(f))
+        now = [f for f in found if not until or not _name_cycle(f) or _name_cycle(f) <= until]
+        return max(now or found, key=key) if found else ''
     return max(found, key=os.path.getmtime) if found else ''
+
+
+def _in_place(data, p, set_):
+    """Le cycle du fichier le plus récent d'un jeu déjà posé là où la construction le lit (None : aucun, ou un jeu qui ne date pas le cycle)."""
+    folder = os.path.join(data, *p['to'].split('/'))
+    best = None
+    try:
+        names = os.listdir(folder)
+    except OSError:
+        return None
+    rel = p['to'].split('/', 1)[1]
+    for n in names:
+        if re.match(rf'EG[_-]{set_}_', n) and (c := aero_cycles.cycled(f'{rel}/{n}')):
+            best = max(best or '', c[1])
+    return best
 
 
 def _openaip_scan(dirs, zones):
@@ -889,6 +925,18 @@ def _openaip_pickup(job, zones, dry, args, ctx, taken, failed, skipped):
     return shown
 
 
+class _Quiet:
+    """Un travail muet : le plan que le contrôle de la prise recalcule n'écrit rien dans le journal du vrai travail."""
+    def log(self, *a, **k):
+        pass
+
+    def step(self, *a, **k):
+        pass
+
+    def cancelled(self):
+        return False
+
+
 def pickup(job, args, ctx):
     """Verbe base/pickup : pour chaque zone, ses sources à déposer à la main que le lanceur sait prendre (PICKUP), puis les exports d'openAIP de Téléchargements. Rend
     { ok, dry, taken: [{ zone, source, zip, files: [noms], bytes }], missing: [{ zone, source, expected }], failed:
@@ -897,26 +945,49 @@ def pickup(job, args, ctx):
     data, dry = ctx['data'], args['dry']
     dirs = list((ctx.get('downloads') or (lambda: []))())
     base = os.path.realpath(data)
-    taken, missing, failed = [], [], []
-    todo = [(z, s) for z in args['zones'] for s in sources_of(z) if s in PICKUP]
-    for n, (z, s) in enumerate(todo):
+    taken, missing, failed, sets, parts = [], [], [], [], []
+    today = aero_cycles.airac_start(ctx.get('today'))  # le cycle en vigueur (ctx['today'] : les bancs d'essai le fixent)
+    held = set()  # (zone, source) à jeux dont le plan montré n'est plus celui d'aujourd'hui (ou qu'il n'a pas montré) : rien n'en est pris
+    if 'zips' in args and not dry and not args.get('_sets_only'):
+        # le contrôle « le fichier montré est le fichier pris » d'une source à jeux : le plan d'aujourd'hui (à blanc), comparé à celui que la page a montré (le nom des zips à prendre mis bout à bout, la somme de leurs tailles)
+        now = {(t['zone'], t['source']): (t['zip'], t['size']) for t in pickup(_Quiet(), {'zones': args['zones'], 'dry': True, '_sets_only': True}, ctx)['taken']}
+        for (z, s), (name, size) in now.items():
+            want = args['zips'].get(s)
+            if not want:
+                failed.append({'zone': z, 'source': s, 'error': 'not-shown'})
+                held.add((z, s))
+            elif (name, size) != (want['name'], want['size']):
+                failed.append({'zone': z, 'source': s, 'error': 'changed', 'zip': name, 'size': size})
+                held.add((z, s))
+    would = {}  # zone → les fichiers que la prise pose (ou poserait, à blanc) : le cycle qui en résulte
+    todo = [(z, s, key, set_, pat) for z in args['zones'] for s in sources_of(z) if s in PICKUP for key, set_, pat in _units(s)]
+    before = {z: _in_place(data, PICKUP['nats'], 'AIP') for z in args['zones'] if 'nats' in sources_of(z)}
+    for n, (z, s, key, set_, pat) in enumerate(todo):
         if job.cancelled():
             break
         p = PICKUP[s]
+        tag = {'set': set_} if set_ else {}
         _step(job, n, len(todo))
-        if 'zips' in args and s not in args['zips']:
+        if (z, s) in held:
+            continue
+        if not set_ and 'zips' in args and s not in args['zips']:
             # avec zips, seules les sources que le plan a montrées sont prises : une source « manquante » au plan dont le zip
             # est arrivé pendant la question n'est pas prise sans contrôle (relecture Sécurisation, ligne 109)
-            failed.append({'zone': z, 'source': s, 'error': 'not-shown'})
+            failed.append({'zone': z, 'source': s, **tag, 'error': 'not-shown'})
             continue
-        zp = _latest(dirs, p['zip'])
+        zp = _latest(dirs, pat, dated=bool(set_), until=today)
+        top = _latest(dirs, pat, dated=True) if set_ and zp else ''
+        later = _name_cycle(top) if top and top != zp else None  # un envoi d'un cycle à venir laissé dans Téléchargements : dit, pas pris
         if not zp:
-            missing.append({'zone': z, 'source': s, 'expected': p['zip']})
+            have = _in_place(data, p, set_) if set_ else None
+            missing.append({'zone': z, 'source': s, **tag, 'expected': pat, **({'have': have} if set_ else {})})
+            if set_:
+                sets.append({'zone': z, 'source': s, 'set': set_, 'state': 'missing', 'have': have})
             continue
-        want = args.get('zips', {}).get(s)
+        want = args.get('zips', {}).get(s) if not set_ else None
         if want and (os.path.basename(zp), os.path.getsize(zp)) != (want['name'], want['size']):
             # le fichier n'est plus celui que le plan a montré : rien de pris pour cette source, le plan est à refaire
-            failed.append({'zone': z, 'source': s, 'error': 'changed', 'zip': os.path.basename(zp), 'size': os.path.getsize(zp)})
+            failed.append({'zone': z, 'source': s, **tag, 'error': 'changed', 'zip': os.path.basename(zp), 'size': os.path.getsize(zp)})
             continue
         try:
             if os.path.getsize(zp) > PICKUP_MAX:
@@ -930,7 +1001,14 @@ def pickup(job, args, ctx):
                     if not i.is_dir() and PICKUP_NAME.match(leaf) and p['keep'](leaf) and _dest(data, p, leaf):
                         pick.setdefault(leaf, i)  # un nom une fois : la première entrée qui le porte
                 if not pick:
-                    failed.append({'zone': z, 'source': s, 'error': 'nothing-to-take', 'zip': os.path.basename(zp)})
+                    failed.append({'zone': z, 'source': s, **tag, 'error': 'nothing-to-take', 'zip': os.path.basename(zp)})
+                    continue
+                have = _in_place(data, p, set_) if set_ else None
+                cyc = next((c[1] for leaf in sorted(pick) if (c := aero_cycles.cycled(f'{p["to"].split("/", 1)[1]}/{leaf}'))), None) if set_ else None
+                if set_ and all(os.path.isfile(_dest(data, p, leaf)) and os.path.getsize(_dest(data, p, leaf)) == i.file_size for leaf, i in pick.items()):
+                    # le jeu est déjà posé tel quel : rien à prendre, dit (un deuxième passage n'écrit rien)
+                    sets.append({'zone': z, 'source': s, 'set': set_, 'state': 'in-place', 'zip': os.path.basename(zp), 'size': os.path.getsize(zp), 'have': have, 'cycle': cyc, **({'later': later} if later else {})})
+                    would.setdefault(z, set()).update(pick)
                     continue
                 out = os.path.join(data, *p['to'].split('/'))
                 if not dry:
@@ -945,15 +1023,31 @@ def pickup(job, args, ctx):
                         with zf.open(i) as src, open(dest + '.tmp', 'wb') as dst:
                             shutil.copyfileobj(src, dst)
                         os.replace(dest + '.tmp', dest)
-                taken.append({'zone': z, 'source': s, 'zip': os.path.basename(zp), 'size': os.path.getsize(zp), 'files': sorted(pick),
-                              'bytes': sum(i.file_size for i in pick.values())})
+                row = {'zone': z, 'source': s, 'zip': os.path.basename(zp), 'size': os.path.getsize(zp), 'files': sorted(pick), 'bytes': sum(i.file_size for i in pick.values())}
+                if not set_:
+                    taken.append(row)
+                else:
+                    parts.append({**row, 'set': set_, 'cycle': cyc})
+                    sets.append({'zone': z, 'source': s, 'set': set_, 'state': 'waiting' if dry else 'taken', 'zip': os.path.basename(zp), 'size': os.path.getsize(zp), 'have': have, 'cycle': cyc, **({'later': later} if later else {})})
+                    would.setdefault(z, set()).update(pick)
                 job.log(f'{z}: {s} ← {os.path.basename(zp)} : {len(pick)} fichier(s)' + (' (à blanc)' if dry else ''))
         except (zipfile.BadZipFile, OSError, ValueError, regen_jobs.TooLarge) as e:
-            failed.append({'zone': z, 'source': s, 'error': str(e)[:120] if isinstance(e, (ValueError, regen_jobs.TooLarge)) else type(e).__name__})
+            failed.append({'zone': z, 'source': s, **tag, 'error': str(e)[:120] if isinstance(e, (ValueError, regen_jobs.TooLarge)) else type(e).__name__})
+    for z, s in dict.fromkeys((x['zone'], x['source']) for x in parts):  # une source à jeux : UNE entrée (comme les autres sources, la page la montre et la rend telle quelle), le détail par jeu dedans
+        mine = [x for x in parts if (x['zone'], x['source']) == (z, s)]
+        taken.append({'zone': z, 'source': s, 'zip': '+'.join(x['zip'] for x in mine), 'size': sum(x['size'] for x in mine), 'files': sorted(f for x in mine for f in x['files']), 'bytes': sum(x['bytes'] for x in mine),
+                      'cycle': next((x['cycle'] for x in mine if x['cycle']), None), 'sets': [{k: x[k] for k in ('set', 'zip', 'size', 'cycle')} for x in mine]})
+    zones = {}  # par zone à jeux : le cycle en place avant, celui qui en résulte (l'AIP date la zone), l'état de chaque jeu
+    for z in before:
+        names = {f'{n}' for n in (os.listdir(os.path.join(data, 'sia', 'zones', z)) if os.path.isdir(os.path.join(data, 'sia', 'zones', z)) else [])} | would.get(z, set())
+        after = max([c[1] for n in names if (c := aero_cycles.cycled(f'zones/{z}/{n}'))] or [None], key=lambda x: x or '')
+        zones[z] = {'before': before[z], 'cycle': after, 'sets': sorted((x for x in sets if x['zone'] == z), key=lambda x: x['set'])}
     skipped = []
+    if args.get('_sets_only'):
+        return {'taken': taken}
     shown = _openaip_pickup(job, args['zones'], dry, args, ctx, taken, failed, skipped)
     reason = 'cancelled' if job.cancelled() else 'failed' if failed and not taken else 'partial' if failed else None
-    res = {'ok': reason is None, 'dry': dry, 'taken': taken, 'missing': missing, 'failed': failed, 'skipped': skipped, **({'shown': shown} if shown else {})}
+    res = {'ok': reason is None, 'dry': dry, 'taken': taken, 'missing': missing, 'failed': failed, 'skipped': skipped, **({'zones': zones} if zones else {}), **({'shown': shown} if shown else {})}
     if reason:
         res['reason'] = reason
     return res

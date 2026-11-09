@@ -14,6 +14,7 @@ Rules covered
   * K57 what aero_fetch takes from a server page or response: ENAIRE file names (strict pattern, resolved under sia/aixm5), the NAV CANADA address (https on its
     own host only), the size of a response (200 MB at most, stopped cleanly).
 """
+import datetime
 import importlib
 import json
 import os
@@ -725,9 +726,9 @@ def k64(c):
     names = ['XML_SIA_2026-10-01.xml', 'AIXM4.5_all_FR_OM_2026-10-29.xml', 'sia-airspaces-2026-10-01.xml', 'zones/gb/EG_AIP_DS_FULL_20261001.xml',
              'zones/gb/EG_OBS_DS_AREA1_FULL_20261030.xml', 'aixm5/LE_Amdt_A_2026_10_AIP_DS_FULL_EnRoute.xml', 'aixm5/LE_Amdt_2026_411_AIP_DS_FULL_Airspace.xml',
              'openaip/de_asp.geojson', 'zones/gb/ukmil_enr52.geojson', 'XML_SIA_2026-13-40.xml', 'miam-enr-5-7-tracks.xml']
-    c.eq([C.cycled(n) for n in names], [('sia', '2026-10-01'), ('sia', '2026-10-29'), ('sia', '2026-10-01'), ('nats', '2026-10-01'), ('nats', '2026-10-29'), None,
+    c.eq([C.cycled(n) for n in names], [('sia', '2026-10-01'), ('sia', '2026-10-29'), ('sia', '2026-10-01'), ('nats', '2026-10-01'), None, None,
                                         None, None, None, None, None],
-         'the cycle in the names: SIA dates, NATS dates (inside 2611: 2611); ENAIRE\'s names say none (« A_2026_10 » is its 10th amendment, not cycle 2610), openAIP, UK Mil, an impossible date: none', what='names')
+         'the cycle in the names: SIA dates, the NATS AIP date only (SOG-0077: the OBS and UAS sets of another date do not date the zone); ENAIRE\'s names say none (« A_2026_10 » is its 10th amendment, not cycle 2610), openAIP, UK Mil, an impossible date: none', what='names')
     # ENAIRE: the cycle is read in the file, the latest validTime start up to today (the EnRoute « A_2026_10 » valid from 29 Oct 2026 is cycle 2611, SOG-0025)
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td0:
         sia = Path(td0) / 'sia'
@@ -747,9 +748,9 @@ def k64(c):
     c.ok(all(s in BS.sources_of(z) for s, z in C.CYCLED.items()), str(C.CYCLED), 'each dated source is a source of its zone in the table')
     c.ok(not any(s in C.CYCLED for z in ('de', 'it', 'us', 'ca', 'nat') for s in BS.sources_of(z)), 'others', 'zones fed only by sources without AIRAC have no dated source')
     rep = C.report(names, d(2026, 11, 1))
-    c.eq(rep, {'sia': {'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False}, 'nats': {'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False},
+    c.eq(rep, {'sia': {'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False}, 'nats': {'cycle': '2026-10-01', 'current': '2026-10-29', 'stale': True},
                'enaire': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'airnav': {'cycle': None, 'current': '2026-10-29', 'stale': False}},
-         'report: the newest cycle of each source (ENAIRE: none without its folder), stale when older than the cycle in force', what='report')
+         'report: the newest cycle of each source (NATS: the AIP alone dates it, SOG-0077; ENAIRE: none without its folder), stale when older than the cycle in force', what='report')
     c.eq(C.report([], d(2026, 11, 1))['sia'], {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'no file: no cycle, not stale', what='no file')
     # base/fetch: the plan (in the view from the start) and the end carry it
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
@@ -864,6 +865,73 @@ def k68(c):
         # nothing in Downloads for a zone: nothing said (openAIP is a fallback), and the other sources are untouched by a pickup
         r5 = BS.pickup(RJ.Job('base', 'pickup', {}), BS.check_pickup({'zones': ['us'], 'dry': True}), ctx)
         c.eq((r5['skipped'], [m['source'] for m in r5['missing']], [t['source'] for t in r5['taken']]), ([], [], []), 'no openAIP export for the zone: no line, never « missing »', what='nothing')
+
+
+@case('K107', 'base/pickup takes the latest zip of EACH NATS set (AIP, OBS, UAS), says what it took, what is missing per set and the cycle that results; a set that arrives after is named and taken by the next pass', 'K', static=True,
+      rule='SOG-0126 (10 Nov 2026): gb stayed at the 1 Oct cycle because the pickup took ONE zip (the latest of EG_*_DS_*_XML.zip) and said nothing of the missing set; the AIP of 29 Oct, arrived a minute later, was left in Downloads. The pickup now takes the latest zip per set, names the sets missing or waiting, and gives the cycle of the zone that results')
+def k107(c):
+    RJ, BS, AF, DS = _mods()
+    import zipfile
+
+    def put(dl, zip_name, xml_name, when):
+        with zipfile.ZipFile(dl / zip_name, 'w') as z:
+            z.writestr(xml_name, '<x/>')
+        os.utime(dl / zip_name, (when, when))
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        dl, data = Path(td) / 'Downloads', Path(td) / 'data'
+        dl.mkdir()
+        data.mkdir()
+        ctx = {'data': str(data), 'downloads': lambda: [str(dl)], 'today': datetime.date(2026, 12, 10)}   # le cycle en vigueur du banc : 26 nov.
+        run = lambda dry, **kw: BS.pickup(RJ.Job('base', 'pickup', {}), BS.check_pickup({'zones': ['gb'], 'dry': dry, **kw}), ctx)
+        put(dl, 'EG_AIP_DS_20261001_XML.zip', 'EG_AIP_DS_FULL_20261001.xml', 1_700_000_000)
+        put(dl, 'EG_UAS_FR_DS_AREA1_FULL_20261029_XML.zip', 'EG_UAS_FR_DS_AREA1_FULL_20261029.xml', 1_700_000_100)
+        r = run(True)
+        nats = [t for t in r['taken'] if t['source'] == 'nats']
+        c.eq([(x['set'], x['cycle']) for x in nats[0]['sets']], [('AIP', '2026-10-01'), ('UAS', None)], 'the plan takes one zip per set that is there, in ONE entry of the source: the AIP (dating the cycle) and the UAS, not only the latest of them', what='plan taken')
+        c.eq((len(nats), nats[0]['zip'], nats[0]['cycle']), (1, 'EG_AIP_DS_20261001_XML.zip+EG_UAS_FR_DS_AREA1_FULL_20261029_XML.zip', '2026-10-01'), 'the entry keeps the form the page reads (zip, size): the names put end to end, the sizes added', what='entry')
+        c.eq([(m['set'], m['expected'], m['have']) for m in r['missing'] if m['source'] == 'nats'], [('OBS', 'EG_OBS_DS_*_XML.zip', None)], 'the set that is not in Downloads is named: OBS, with the name expected and nothing in place', what='plan missing')
+        c.eq((r['zones']['gb']['cycle'], r['zones']['gb']['before']), ('2026-10-01', None), 'the cycle that results is given (the AIP of 1 Oct), and the one in place before (none)', what='cycle plan')
+        c.ok(not (data / 'sia').exists(), '', 'dry: nothing written')
+        r = run(False)
+        c.eq(sorted(os.listdir(data / 'sia' / 'zones' / 'gb')), ['EG_AIP_DS_FULL_20261001.xml', 'EG_UAS_FR_DS_AREA1_FULL_20261029.xml'], 'the two sets taken are written under data/sia/zones/gb/', what='written')
+        # the AIP of 29 Oct and the OBS arrive AFTER the pickup: said waiting, then taken by the next pass; the old AIP stays (nothing purged)
+        put(dl, 'EG_AIP_DS_20261029_XML.zip', 'EG_AIP_DS_FULL_20261029.xml', 1_700_000_200)
+        put(dl, 'EG_OBS_DS_AREA1_FULL_20261029_XML.zip', 'EG_OBS_DS_AREA1_FULL_20261029.xml', 1_700_000_300)
+        r = run(True)
+        z = r['zones']['gb']
+        c.eq((z['before'], z['cycle']), ('2026-10-01', '2026-10-29'), 'the plan says the zone is at 1 Oct and would be at 29 Oct', what='cycle before after')
+        c.eq([(s['set'], s['state'], s.get('have'), s.get('cycle')) for s in z['sets']], [('AIP', 'waiting', '2026-10-01', '2026-10-29'), ('OBS', 'waiting', None, None), ('UAS', 'in-place', None, None)],
+             'per set: the AIP of 29 Oct is waiting in Downloads (1 Oct in place), the OBS is waiting, the UAS is in place and not newer', what='sets')
+        r = run(False)
+        c.eq((r['zones']['gb']['cycle'], sorted(os.listdir(data / 'sia' / 'zones' / 'gb'))),
+             ('2026-10-29', ['EG_AIP_DS_FULL_20261001.xml', 'EG_AIP_DS_FULL_20261029.xml', 'EG_OBS_DS_AREA1_FULL_20261029.xml', 'EG_UAS_FR_DS_AREA1_FULL_20261029.xml']),
+             'the second pass takes them: the zone is at 29 Oct; the old AIP file is kept', what='second pass')
+        c.eq(r['missing'], [], 'nothing missing any more', what='none missing')
+        # the plan shown is the plan taken: a newer zip of a set that arrives between the two is refused
+        put(dl, 'EG_AIP_DS_20261126_XML.zip', 'EG_AIP_DS_FULL_20261126.xml', 1_700_000_400)
+        put(dl, 'EG_OBS_DS_AREA1_FULL_20261126_XML.zip', 'EG_OBS_DS_AREA1_FULL_20261126.xml', 1_700_000_410)
+        shown = {t['source']: {'name': t['zip'], 'size': t['size']} for t in run(True)['taken']}
+        put(dl, 'EG_OBS_DS_AREA1_FULL_20261203_XML.zip', 'EG_OBS_DS_AREA1_FULL_20261203.xml', 1_700_000_500)
+        r = run(False, zips=shown)
+        c.eq(([(f['source'], f['error']) for f in r['failed']], r['taken']), ([('nats', 'changed')], []), 'a newer zip of the OBS set arrived after the plan: the source is refused (changed), nothing taken, the plan is to be made again', what='changed')
+        r = run(False, zips={'nats': {'name': 'x.zip', 'size': 1}})
+        c.eq([(f['source'], f['error']) for f in r['failed']], [('nats', 'changed')], 'a zips that is not the plan: refused', what='other')
+        r = run(False, zips={})
+        c.eq([(f['source'], f['error']) for f in r['failed']], [('nats', 'not-shown')], 'zips given without the source, while sets are waiting: not shown, nothing taken', what='not shown')
+    # a cycle published in advance does not pass in front of the cycle in force: it is said (later), not taken, unless nothing else is there
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        dl, data = Path(td) / 'Downloads', Path(td) / 'data'
+        dl.mkdir()
+        data.mkdir()
+        ctx = {'data': str(data), 'downloads': lambda: [str(dl)], 'today': datetime.date(2026, 11, 9)}   # the cycle in force: 29 Oct
+        run = lambda dry: BS.pickup(RJ.Job('base', 'pickup', {}), BS.check_pickup({'zones': ['gb'], 'dry': dry}), ctx)
+        put(dl, 'EG_AIP_DS_20261126_XML.zip', 'EG_AIP_DS_FULL_20261126.xml', 1_700_000_900)
+        r = run(True)
+        c.eq((r['zones']['gb']['cycle'], [(x['set'], x['state'], x['cycle']) for x in r['zones']['gb']['sets'] if x['state'] != 'missing']), ('2026-11-26', [('AIP', 'waiting', '2026-11-26')]), 'only the AIP of 26 Nov (not in force yet) is there: it is taken, nothing else being available', what='future alone')
+        put(dl, 'EG_AIP_DS_20261029_XML.zip', 'EG_AIP_DS_FULL_20261029.xml', 1_700_000_100)   # older file, older cycle, in force
+        r = run(True)
+        x = next(x for x in r['zones']['gb']['sets'] if x['set'] == 'AIP')
+        c.eq((r['zones']['gb']['cycle'], x['cycle'], x['zip'], x.get('later')), ('2026-10-29', '2026-10-29', 'EG_AIP_DS_20261029_XML.zip', '2026-11-26'), 'both there: the cycle in force (29 Oct) is taken, the one published in advance is said (later: 26 Nov), not taken', what='future later')
 
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------
