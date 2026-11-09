@@ -3018,3 +3018,42 @@ def f113(c):
     c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3", what='three routes')
     c.eq(c.js(f"[...document.querySelectorAll('{FUEL} [data-altlist] [data-alt]')].map(e => e.querySelectorAll('[data-fault]').length)"), [0, 0, 1],
          'the deviating route lists its deviation', what='per route')
+
+
+_SKETCH_JS = f"""(() => {{ const svg = document.querySelector('{FUEL} [data-rsketch] svg');
+  if (!svg) return null;
+  const op = g => +getComputedStyle(g.querySelector('path')).opacity, w = g => parseFloat(getComputedStyle(g.querySelector('path')).strokeWidth);
+  return {{ traces: [...svg.querySelectorAll('[data-trace]')].map(g => [+g.dataset.trace, g.classList.contains('fu-trmain'), op(g), w(g),
+    g.querySelectorAll('[data-bad]').length, (g.querySelector('path').getAttribute('d') || '').split('L').length]), hl: svg.getAttribute('data-hl') }} }})()"""
+
+
+@case('F114', 'Route step: the proposed routes drawn on a sketch under the list — the chosen solid, the others faded, the hovered row highlighted, faulty segments red',
+      'F', tags=('fuel', 'aerodb', 'layout'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0134 (a) (ergonomics, 9 Nov; voie (ii) of Features SOG: a sketch in the Route step, no base map — the whole Map stays one gesture '
+      'away): the routes as soon as they arrive, read with the route reader (no write); its place reserved; a fake launcher')
+def f114(c):
+    st = _route_launcher(c, ['route/compute'])
+    open_proc(c)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"document.querySelectorAll('{FUEL} [data-rsketch] svg [data-trace]').length === 3", timeout=8000, what='three routes drawn on the sketch')
+    t = {x[0]: x for x in c.js(_SKETCH_JS)['traces']}
+    c.ok(t[0][1] and not t[1][1] and not t[2][1], t, 'the computed route is the main trace (no route taken yet)')
+    c.ok(t[0][2] == 1 and t[1][2] < 0.7 and t[2][2] < 0.7, t, 'the main one solid, the others faded')
+    c.ok(t[0][5] >= 3 and t[2][5] >= 2, t, 'each trace goes through its resolved points')
+    c.eq([t[0][4], t[1][4], t[2][4]], [0, 0, 1], 'the faulty segment (LUGEN–LFML of the third) red on its trace', what='red segments')
+    c.page.hover(f'{FUEL} [data-altlist] [data-alt="1"]')
+    c.until(f"document.querySelector('{FUEL} [data-rsketch] svg')?.getAttribute('data-hl') === '1'", what='hovering a row highlights its trace')
+    t = {x[0]: x for x in c.js(_SKETCH_JS)['traces']}
+    c.ok(t[1][2] == 1 and t[1][3] > t[0][3], t, 'the hovered trace drawn full and thick')
+    c.js(f"document.querySelector('{FUEL} [data-altlist] [data-alt=\"2\"]').scrollIntoView({{ block: 'start' }})")
+    c.shot(f'F114_{c.design}_{c.width}_{c.lang}.png')
+    c.page.hover(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"!document.querySelector('{FUEL} [data-rsketch] svg')?.hasAttribute('data-hl')", what='leaving the list: no highlight')
+    # « Prendre » the second: it becomes the main trace
+    c.tap(f'{FUEL} [data-alt="1"] [data-do="rtake"]')
+    c.until(f"document.querySelector('{FUEL} [data-rsketch] svg [data-trace=\"1\"]')?.classList.contains('fu-trmain')", timeout=8000, what='the taken route becomes the main trace')
+    # « Contrôler »: the typed route drawn, its two faulty segments red
+    c.tap(f'{FUEL} [data-do="rcheck"]')
+    c.until(f"document.querySelectorAll('{FUEL} [data-rsketch] svg [data-bad]').length >= 1", timeout=8000, what='the checked route drawn with its faulty segments')
+    c.eq(len(c.js(_SKETCH_JS)['traces']), 1, 'one trace: the route checked', what='check')

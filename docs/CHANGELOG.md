@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the proposed routes drawn on a sketch** (`modules/fuel/module.js`; Fuel SPEC § 9.3, DECISIONS, help; noreg F114; SOG-0134 a).
+  Under the list of the Route step: the chosen route solid, the others faded, the row hovered or pressed highlighted, faulty segments
+  red; the checked route drawn the same way. No base map: the whole Map stays one gesture away.
+
 - **Frame: the world synoptic is also read under `data/local/weather/world/`** (`frame/lib/weather_store.js`; frame INTEGRATION § 14, DECISIONS;
   noreg A25; SOG-0138). `weatherStore.world()` tries `<root>/weather/world/` then `<root>/data/local/weather/world/` (what AeroDB writes, never
   synchronised), in that order and nothing else; none of the two: no publication.

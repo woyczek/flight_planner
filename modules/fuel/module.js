@@ -233,6 +233,7 @@ const TX = {
     altitude: ['altitude', 'altitude', 'Höhe', 'altitud']
   },
   rMore: ['{n} autres', '{n} more', '{n} weitere', '{n} más'],
+  rSketch: ['Croquis des itinéraires', 'Sketch of the routes', 'Skizze der Routen', 'Croquis de los itinerarios'],
   rCheckOk: ['Contrôle : aucun écart détecté (précontrôle de simulation)', 'Check: no deviation found (simulation pre-check)',
     'Prüfung: keine Abweichung gefunden (Simulations-Vorprüfung)', 'Comprobación: ninguna desviación (precontrol de simulación)'
   ],
@@ -1565,6 +1566,17 @@ const STYLE = `
 [data-module="fuel"] .fu-faultlist{margin:.2em 0 .3em;padding-left:1.1em}
 [data-module="fuel"] .fu-faultlist li{margin:.15em 0;overflow-wrap:anywhere} /* un écart par ligne (SOG-0134) : segment · règle · phrase */
 [data-module="fuel"] .fu-faultrule{color:var(--sog-err)}
+/* le croquis des itinéraires (SOG-0134 a) : sa place réservée (rapport fixe), le choisi en plein, les autres estompés, le surligné épais */
+[data-module="fuel"] .fu-sketchbox{width:100%;aspect-ratio:600/260;margin:.4em 0;border:1px solid var(--sog-border);background:var(--sog-surface-2)}
+[data-module="fuel"] .fu-sketch{display:block;width:100%;height:100%}
+[data-module="fuel"] .fu-tr path{fill:none;stroke:var(--sog-muted);stroke-width:2;opacity:.4;stroke-linejoin:round;stroke-linecap:round}
+[data-module="fuel"] .fu-tr.fu-trmain path{stroke:var(--sog-accent);stroke-width:3;opacity:1}
+[data-module="fuel"] .fu-tr path.fu-trbad{stroke:var(--sog-err);stroke-width:3}
+[data-module="fuel"] .fu-sketch[data-hl="0"] [data-trace="0"] path,[data-module="fuel"] .fu-sketch[data-hl="1"] [data-trace="1"] path,
+[data-module="fuel"] .fu-sketch[data-hl="2"] [data-trace="2"] path,[data-module="fuel"] .fu-sketch[data-hl="3"] [data-trace="3"] path{opacity:1;stroke-width:5}
+[data-module="fuel"] .fu-trend{fill:var(--sog-fg)}
+[data-module="fuel"] .fu-trlabel{font-size:18px;fill:var(--sog-fg)}
+[data-module="fuel"] .fu-trpt{fill:var(--sog-accent)}
 [data-module="fuel"] .fu-rfaults>summary,[data-module="fuel"] .fu-faultmore>summary{min-height:44px;display:flex;align-items:center}
 [data-module="fuel"] details.fu-others>summary{cursor:pointer;margin:10px 0 4px;font-weight:600}
 /* SOG-0058 : libellé à gauche dans une colonne fixe, valeur à droite (l'unité dans le libellé) ; la même grille sur la carte Météo et
@@ -3109,7 +3121,8 @@ async function routeAsk(action) {
       errors: a?.errors || []
     };
     const lines = RE.faultLines(a);
-    if (box) box.innerHTML = `${lines.length ? faultsHtml(lines) : `<p class="f-muted" data-rcheck>${esc(tt(TX.rCheckOk))}</p>`}${limitsHtml(n)}`;
+    if (box) box.innerHTML = `${lines.length ? faultsHtml(lines) : `<p class="f-muted" data-rcheck>${esc(tt(TX.rCheckOk))}</p>`}${SKETCH_BOX}${limitsHtml(n)}`;
+    if (a) routeSketch([a], 0, [r.points || []]); // la route tapée est déjà lue : ses points
     renderPts();
     return refresh();
   }
@@ -3140,11 +3153,84 @@ function routeAltsDraw() {
   const name = (a, i) => a.name || (a.role === 'primary' ? tt(TX.rPrimary) : tt(TX.rVariant, {
     n: i
   }));
+  setTimeout(routeAltsSketch); // le croquis, sa place réservée dans le dessin ci-dessous
   box.innerHTML = (A.list.length ? `<div class="f-list fu-ralts" data-altlist>${A.list.map((a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}" data-alt="${i}"${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(a.fl).padStart(3, '0')}` : '', RE.faultLines(a).length ? '' : tt(TX.rFaults, { n: 0 })].filter(Boolean).join(' · '))}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${RE.faultLines(a).length ? faultsHtml(RE.faultLines(a)) : ''}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(TX.rTake))}</button>` : ''}</div>`).join('')}</div>` :
-    `<p class="f-muted">${esc(A.n?.message || tt(TX.rNone))}</p>`) + limitsHtml(A.n || {
+    `<p class="f-muted">${esc(A.n?.message || tt(TX.rNone))}</p>`) + (A.list.length ? SKETCH_BOX : '') + limitsHtml(A.n || {
     limitation: '',
     gaps: []
   });
+}
+/** Après la liste : le croquis des itinéraires (le choisi, sinon le calculé, en plein). */
+function routeAltsSketch() {
+  const A = S.ralts;
+  if (A?.list?.length) routeSketch(A.list, A.chosen >= 0 ? A.chosen : 0, A.pts);
+}
+// ---------------------------------------------------------------- le croquis des itinéraires (SOG-0134 a)
+// Un SVG sous la liste du pas Route : les itinéraires proposés (ou la route contrôlée) d'après leurs points situés (RM.routeModel, la
+// lecture de la route du devis, sans rien écrire), projection équirectangulaire simple, sans fond de carte (la Carte entière est à
+// « Sur la carte ») ; le choisi en plein, les autres estompés, la ligne survolée ou appuyée surlignée (data-hl), les segments fautifs en
+// rouge. Sa place est réservée (même hauteur avant et après la lecture : rien ne saute, § 7.1 règle 22).
+const SKETCH_W = 600,
+  SKETCH_H = 260,
+  SKETCH_BOX = `<div class="fu-sketchbox" data-rsketch></div>`;
+/** Lit les points des itinéraires (gardés dans S.ralts.pts) puis dessine le croquis ; `pts` déjà lus : dessin immédiat. */
+async function routeSketch(plans, main, pts) {
+  const s = S,
+    r = S.flight.route || {},
+    known = knownPoints(r, true),
+    got = pts && pts.length === plans.length ? pts : await Promise.all(plans.map(p => p.route ? Promise.resolve().then(() => RM
+      .routeModel(p.route, {
+        dep: r.dep,
+        arr: r.arr,
+        known,
+        chain: [],
+        base: S.ctx.aerodb
+      })).then(x => x.points || []).catch(() => []) : []));
+  if (gone(s) || !S.body) return;
+  if (S.ralts && plans === S.ralts.list) S.ralts.pts = got;
+  const box = S.body.querySelector('[data-rsketch]');
+  if (box) box.innerHTML = sketchSvg(plans, got, main);
+}
+/** Le SVG du croquis (voir plus haut) ; '' sans deux points situés. */
+function sketchSvg(plans, pts, main) {
+  const ok = p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon),
+    all = pts.flat().filter(ok);
+  if (all.length < 2) return '';
+  const k = Math.cos(all.reduce((a, p) => a + +p.lat, 0) / all.length * Math.PI / 180),
+    X = p => +p.lon * k,
+    Y = p => -p.lat,
+    x0 = Math.min(...all.map(X)),
+    x1 = Math.max(...all.map(X)),
+    y0 = Math.min(...all.map(Y)),
+    y1 = Math.max(...all.map(Y)),
+    m = 24,
+    sc = Math.min((SKETCH_W - 2 * m) / Math.max(x1 - x0, 1e-6), (SKETCH_H - 2 * m) / Math.max(y1 - y0, 1e-6)),
+    ox = (SKETCH_W - (x1 - x0) * sc) / 2,
+    oy = (SKETCH_H - (y1 - y0) * sc) / 2,
+    P = p => [(X(p) - x0) * sc + ox, (Y(p) - y0) * sc + oy].map(v => Math.round(v * 10) / 10),
+    line = ps => ps.filter(ok).map(P).map((q, i) => `${i ? 'L' : 'M'}${q[0]} ${q[1]}`).join(''),
+    order = plans.map((_, i) => i).sort((a, b) => (a === main) - (b === main)), // le choisi dessiné en dernier, par-dessus
+    body = order.map(i => {
+      const ps = pts[i] || [],
+        at = id => ps.find(q => ok(q) && String(q.id || '').toUpperCase() === id),
+        bad = (plans[i].segments || []).filter(g => g.state === 'error').map(g => [at(g.from), at(g.to)]).filter(([a, b]) => a && b);
+      return `<g data-trace="${i}" class="fu-tr${i === main ? ' fu-trmain' : ''}"><path d="${line(ps)}"/>${bad.map(([a, b]) => `<path class="fu-trbad" data-bad d="${line([a, b])}"/>`).join('')}</g>`;
+    }).join(''),
+    ends = [pts[main]?.filter(ok)[0], pts[main]?.filter(ok).at(-1)].filter(Boolean).map(q => {
+      const [x, y] = P(q);
+      return `<circle cx="${x}" cy="${y}" r="4" class="fu-trend"/><text x="${x + 6}" y="${y - 6}" class="fu-trlabel">${esc(String(q.id || ''))}</text>`;
+    }).join(''),
+    // les points tournants du tracé principal : un petit point, sans nom (le croquis reste lisible au téléphone)
+    turns = (pts[main] || []).filter(ok).slice(1, -1).map(q => P(q)).map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.5" class="fu-trpt"/>`).join('');
+  return `<svg class="fu-sketch" viewBox="0 0 ${SKETCH_W} ${SKETCH_H}" role="img" aria-label="${esc(tt(TX.rSketch))}">${body}${turns}${ends}</svg>`;
+}
+/** Survol ou appui d'une ligne de la liste des itinéraires : son tracé surligné sur le croquis ; hors de la liste, plus rien. */
+function sketchHover(e) {
+  const svg = S?.body?.querySelector('[data-rsketch] svg');
+  if (!svg) return;
+  const alt = e.target?.closest?.('[data-altlist] [data-alt]');
+  if (alt) svg.setAttribute('data-hl', alt.dataset.alt);
+  else if (e.type !== 'focusin' || !e.target?.closest?.('[data-rsketch]')) svg.removeAttribute('data-hl');
 }
 /** « Prendre » : la route de l'itinéraire écrite comme une saisie (le champ de route et son événement : le seul chemin d'écriture,
  *  SOG-0013), puis sa SID et sa STAR proposées aux procédures (P.propose : vérifiées contre les fiches du terrain, rien d'inconnu écrit). */
@@ -4994,6 +5080,9 @@ export async function mount(el, ctx) {
   S.body = el.querySelector('[data-body]');
   // liste des terrains proposés (étape Vol) : fermée quand le champ perd le focus ; un appui sur une proposition ne prend pas le focus
   // du champ (sinon le flou la fermerait avant le clic). Posés une fois : l'écran Devis est redessiné, pas son conteneur.
+  // le croquis des itinéraires (SOG-0134 a) : la ligne survolée, appuyée ou atteinte au clavier surligne son tracé
+  S.body.addEventListener('pointerover', e => sketchHover(e));
+  S.body.addEventListener('focusin', e => sketchHover(e));
   S.body.addEventListener('focusout', e => {
     const hits = S?.AD?.hitsFor(e.target?.dataset?.k) || 0; // avant que la liste se ferme
     S?.AD?.onFocusOut(e);

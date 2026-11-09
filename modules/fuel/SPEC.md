@@ -240,7 +240,11 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
   (`invalid`); « N écarts aux règles » is never a number alone (SOG-0134 b, F113): a fold whose title says the count lists one line
   per deviation — the segment, the rule (the RAD or FRA `ruleId`, else its kind), the engine's sentence (`RE.faultLines`: each reason of
   a faulty segment, a faulty segment without reason, then the engine's errors no reason already says, on a « — » line) — seven then
-  « N autres », under each proposed route and as the result of « Contrôler »; without a RAD on the workstation (`no-rad`), « Aucun RAD importé » and a link to the RAD's line of Data (Maintenance,
+  « N autres », under each proposed route and as the result of « Contrôler »; **a sketch under the list** (SOG-0134 a, F114): the
+  routes as soon as they arrive, read into positions by the route reader (`RM.routeModel`, nothing written), an equirectangular SVG
+  without base map, its place reserved (fixed ratio) — the chosen one (else the computed one) solid in the accent, the others faded,
+  the row hovered, pressed or focused highlighted (`data-hl`), faulty segments red; the checked route drawn the same way with its
+  faulty segments; the whole Map stays one gesture away; without a RAD on the workstation (`no-rad`), « Aucun RAD importé » and a link to the RAD's line of Data (Maintenance,
   `?app=maintenance#data?source=eurocontrol_rad`; SOG-0125, F110): the import is done there, never from Fuel, and the launcher's
   message, which names a job, is not shown; what the check does not cover (`limitation`, `gaps`) is a fold under the result. The routes are a list
   under the route field — name, length, FL kept, deviations (count) — each with « Prendre », the taken one marked: « Prendre » writes
