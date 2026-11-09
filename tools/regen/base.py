@@ -568,7 +568,10 @@ def build(job, args, ctx):
     legacy, moved = split_inputs(data, inputs)
     sources = aero_cycles.report(inputs, root=os.path.join(data, 'sia'))
     current = aero_cycles.airac_start()
-    own = {z: aero_cycles.zone_cycle(z, sources) for z in zones}
+    used = aero_cycles.used_sources(sources, personal)      # SOG-0077 : seules les sources LUES datent une zone (NATS, ENAIRE, AirNav : si la case « personnel » les déclare)
+    own = {z: aero_cycles.zone_cycle(z, used) for z in zones}
+    unread = [{'zone': z, 'source': aero_cycles.ZONE_SOURCE[z], 'cycle': sources[aero_cycles.ZONE_SOURCE[z]]['cycle'], 'why': 'personal'} for z in zones
+              if z in aero_cycles.ZONE_SOURCE and aero_cycles.ZONE_SOURCE[z] not in used and sources[aero_cycles.ZONE_SOURCE[z]]['cycle']]    # des fichiers sont là, la licence n'est pas déclarée : non lus, dits
     folder = {z: own[z] or current for z in zones}
     origin = launcher_origin(ctx)
     if not origin:
@@ -691,6 +694,9 @@ def build(job, args, ctx):
     # par zone construite : le cycle de sa source datée (None : sans AIRAC, « du <date> »), le dossier écrit, et les zones bloquantes (source
     # d'un cycle passé : construit quand même, sans refus, mais dit)
     blocking = [{'zone': z, 'source': aero_cycles.ZONE_SOURCE[z], 'cycle': own[z]} for z in built if own[z] and own[z] < current]
+    for u in unread:
+        if u['zone'] in built:
+            job.log(f"{u['zone']}: fichiers {u['source']} du cycle {u['cycle']} présents, NON lus : la source est sous licence d'usage personnel, la case « personnel » ne la déclare pas ; construite sans elle, au cycle en vigueur")
     for b in blocking:
         job.log(f"{b['zone']}: sources {b['source']} du cycle {b['cycle']}, cycle en vigueur {current} : construite pour le cycle précédent")
     res = {'ok': len(built) == len(zones), 'cycle': cycle, 'cycles': {z: own[z] for z in built}, 'folders': {z: folder[z] for z in built},
@@ -700,7 +706,7 @@ def build(job, args, ctx):
            'builtWith': {s: v['cycle'] for s, v in sources.items()},
            'previous': [{'source': s, 'cycle': v['cycle'], 'current': v['current']} for s, v in sources.items() if v['cycle'] and v['stale']],
            'siaFrom': {'new': [m['name'] for m in moved], 'legacy': sorted(rel for rel in legacy if SIA_RAW.match(rel))},
-           'built': built, 'failed': failed,
+           'built': built, 'failed': failed, 'unread': [u for u in unread if u['zone'] in built],
            'commits': [{'zone': z, 'commit': st[z].get('commit')} for z in built], 'zones': {z: dict(st[z]) for z in zones},
            'instances': 1, 'seconds': round(time.time() - t0, 1)}
     if job.cancelled():

@@ -180,10 +180,10 @@
       src: 'navcanAip',
       link: 'https://www.navcanada.ca/en/aeronautical-information/operational-guides.aspx',
       howto: L4(
-        'PDF officiel gratuit, édition en vigueur (tous les 56 jours) trouvée sur la page des guides opérationnels, téléchargée et lue par le lanceur ; à retélécharger à chaque édition. Les données numériques de NAV CANADA sont vendues sous licence : le PDF en tient lieu.',
-        'Free official PDF, current edition (every 56 days) found on the operational guides page, downloaded and read by the launcher; download again at each edition. NAV CANADA digital data are sold under licence: the PDF stands in for them.',
-        'Kostenloses offizielles PDF, gültige Ausgabe (alle 56 Tage) auf der Seite der Betriebshandbücher gefunden, vom Starter heruntergeladen und gelesen; bei jeder Ausgabe neu herunterladen. Die digitalen Daten von NAV CANADA werden unter Lizenz verkauft: das PDF ersetzt sie.',
-        'PDF oficial gratuito, edición vigente (cada 56 días) encontrada en la página de guías operativas, descargada y leída por el lanzador; volver a descargar en cada edición. Los datos digitales de NAV CANADA se venden bajo licencia: el PDF los sustituye.'
+        'Le DAH (PDF officiel gratuit, édition en vigueur tous les 56 jours, page des guides opérationnels) se télécharge et se lit tout seul : bouton Télécharger, rien à déposer ; il se refait à chaque édition. L\'AIP Canada (ENR, AD, SUP ; page aip-canada) n\'est PAS lu : texte courant sans table lisible, les données numériques de NAV CANADA sont vendues sous licence ; inutile de le télécharger.',
+        'The DAH (free official PDF, current edition every 56 days, operational guides page) is downloaded and read by itself: Download button, nothing to drop in; it is redone at each edition. AIP Canada (ENR, AD, SUP; aip-canada page) is NOT read: running text without a readable table, NAV CANADA digital data are sold under licence; no need to download it.',
+        'Das DAH (kostenloses offizielles PDF, gültige Ausgabe alle 56 Tage, Seite der Betriebshandbücher) wird von selbst heruntergeladen und gelesen: Schaltfläche Herunterladen, nichts abzulegen; bei jeder Ausgabe neu. Das AIP Canada (ENR, AD, SUP; Seite aip-canada) wird NICHT gelesen: Fließtext ohne lesbare Tabelle, die digitalen Daten von NAV CANADA werden unter Lizenz verkauft; es muss nicht heruntergeladen werden.',
+        'El DAH (PDF oficial gratuito, edición vigente cada 56 días, página de guías operativas) se descarga y se lee solo: botón Descargar, nada que depositar; se repite en cada edición. El AIP Canadá (ENR, AD, SUP; página aip-canada) NO se lee: texto corrido sin tabla legible, los datos digitales de NAV CANADA se venden bajo licencia; no hace falta descargarlo.'
       ),
       licence: 'NAV CANADA',
       age: 'file'

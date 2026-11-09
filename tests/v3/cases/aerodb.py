@@ -4766,7 +4766,7 @@ def k63(c):
         (data / 'sia' / 'zones' / 'gb').mkdir(parents=True)
         (data / 'sia' / 'zones' / 'gb' / 'EG_AIP_DS_FULL_20261029.xml').write_text('<x/>', encoding='utf-8')   # NATS : le cycle 2611
         _d5_modes(fake, {'fr': 'ok', 'gb': 'ok', 'de': 'ok'})
-        run = _D5Run(RJ, data, fake, {'zones': ['de', 'gb', 'fr']})
+        run = _D5Run(RJ, data, fake, {'zones': ['de', 'gb', 'fr'], 'personal': ['nats']})      # NATS is read only when the personal-licence box declares it (SOG-0077)
         view = run.wait()
         res = view['result']
         cur = B.airac_in_force()
@@ -4782,6 +4782,57 @@ def k63(c):
         c.ok(not stale_fr or any(x.startswith('fr: sources sia du cycle 2026-10-01') for x in view['log']), str(view['log'][-4:]), 'the blocking zone is said in the journal')
         idx = json.loads((data / 'sia' / 'base' / 'index.json').read_text(encoding='utf-8'))
         c.eq({z: idx['zones'][z]['cycle'] for z in ('fr', 'gb', 'de')}, res['folders'], 'the manifest carries each zone\'s cycle', what='manifest')
+
+
+@case('K93', 'Build job: a zone is dated only by a source it READ (SOG-0077): gb built without the personal-licence NATS has no NATS cycle, says why, and a later UAS file does not date the AIP', 'K', static=True,
+      rule='SOG-0077 (9 Nov 2026): the published gb base (folder 2026-11-26) had no airway and no point while the one before it (2026-10-01) had 1 217 and 1 425: it was built without the NATS personal-licence box, yet took the cycle of an UAS file of a LATER cycle (EG_UAS_…_20261126), which hid the good base; the cycle of a zone is its dated source\'s only when that source was read, and only the AIP file dates NATS')
+def k93(c):
+    import importlib
+    import json
+    import tempfile
+    RJ, B, fn, check = _d5_modules()
+    C = importlib.import_module('aero_cycles')
+    names = ['zones/gb/EG_AIP_DS_FULL_20261001.xml', 'zones/gb/EG_UAS_FR_DS_AREA1_FULL_20261126.xml', 'zones/gb/EG_OBS_DS_AREA1_FULL_20261001.xml']
+    rep = C.report(names)
+    c.eq((rep['nats']['cycle'], C.cycled(names[1]), C.cycled(names[2]), C.cycled('zones/gb/EG_AIP_DS_FULL_20261126.xml')), ('2026-10-01', None, None, ('nats', '2026-11-26')),
+         'only the AIP file dates NATS: the UAS file of 2026-11-26 and the obstacles file do not (the AIP of 2026-11-26 would)', what='nats dates')
+    c.eq((sorted(C.used_sources(rep, [])), sorted(C.used_sources(rep, ['nats'])), sorted(C.used_sources(rep, ['enaire']))), (['sia'], ['nats', 'sia'], ['enaire', 'sia']),
+         'used_sources: the SIA always, NATS, ENAIRE and AirNav only when declared', what='used')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, fake = _d5_scene(td)
+        (data / 'sia' / 'zones' / 'gb').mkdir(parents=True)
+        for n in names:
+            (data / 'sia' / n).write_text('<x/>', encoding='utf-8')
+        _d5_modes(fake, {'gb': 'ok'})
+        res = _D5Run(RJ, data, fake, {'zones': ['gb']}).wait()['result']                 # no personal box
+        cur = B.airac_in_force()
+        c.eq((res['cycles'], res['folders'], res['blocking']), ({'gb': None}, {'gb': cur}, []), 'gb built WITHOUT the NATS box: no NATS cycle, written under the cycle in force (never under a later file\'s date)', what='without')
+        c.eq(res['unread'], [{'zone': 'gb', 'source': 'nats', 'cycle': '2026-10-01', 'why': 'personal'}], 'and the result says the NATS files were there and not read', what='unread')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, fake = _d5_scene(td)
+        (data / 'sia' / 'zones' / 'gb').mkdir(parents=True)
+        for n in names:
+            (data / 'sia' / n).write_text('<x/>', encoding='utf-8')
+        _d5_modes(fake, {'gb': 'ok'})
+        res = _D5Run(RJ, data, fake, {'zones': ['gb'], 'personal': ['nats']}).wait()['result']
+        c.eq((res['cycles'], res['folders'], res['unread']), ({'gb': '2026-10-01'}, {'gb': '2026-10-01'}, []), 'gb built WITH the NATS box: the AIP\'s cycle (2026-10-01), not the UAS file\'s 2026-11-26; nothing unread', what='with')
+
+
+@case('K94', 'The Canada card (SOG-0068): the DAH is downloaded and read by itself, AIP Canada (ENR, AD, SUP) is not read, said in the four languages', 'K', static=True,
+      rule='SOG-0068 (9 Nov 2026): « AIP Canada : très flou » -- the card of NAV CANADA gave only the operational guides page and did not say that the AIP Canada pages are not read, so the user downloaded them all; the text now says what is automatic (the DAH) and what is not read (ENR, AD, SUP)')
+def k94(c):
+    import re
+    src = (c.root / 'shared' / 'aero_zones.js').read_text(encoding='utf-8')
+    block = src[src.index('navcan: {'):]
+    block = block[:block.index("licence: 'NAV CANADA'")]
+    howto = block[block.index('howto: L4('):]
+    texts = [ln.strip() for ln in howto.splitlines()[1:] if ln.strip().startswith(chr(39))][:4]
+    c.eq(len(texts), 4, 'four texts (fr, en, de, es)', what='four')
+    marks = (('DAH', 'AIP Canad', 'ENR', 'SUP', 'NAV CANADA'),) * 4
+    for lang, t, ms in zip(('fr', 'en', 'de', 'es'), texts, marks):
+        c.ok(all(m in t for m in ms), t[:120], f'{lang}: names the DAH, AIP Canada, ENR and SUP')
+    c.ok('PAS lu' in texts[0] and 'NOT read' in texts[1] and 'NICHT gelesen' in texts[2] and 'NO se lee' in texts[3], '', 'each text says that the AIP Canada is not read')
+    c.ok('Télécharger' in texts[0] and 'Download' in texts[1] and 'Herunterladen' in texts[2] and 'Descargar' in texts[3], '', 'and that the DAH comes by the Download button (nothing to drop in)')
 
 
 @case('K65', 'Build job: a zone shows a count of sources only when the builder gives one for it; the build\'s count goes once in the job', 'K', static=True,
