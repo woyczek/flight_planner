@@ -83,7 +83,8 @@ what is missing is said in the Result step, never blocking.
   (its `categories.json`, or the common base, through `forAirline`) that carries a `load` adds one card « Charge » on the Flight step
   with one field — « Fret embarqué (kg) » for `freight`, « Passagers » for `passengers` — an integer 0–999 999 or nothing; the record
   carries `load: { category, freightKg | passengers }`. An unknown category, or one without load, is ignored: nothing asked, nothing
-  invented (G7).
+  invented. **The load belongs to the flight's category, not to the draft** (9 Nov): taking a flight of another category, of none or
+  of an unknown one removes the draft's load; the same category keeps the values typed (G7).
 - **Number** at the first save (V2 `crId`): with a mission identifier, `CR<mission>-<next attempt>` (`CRM-016-2`);
   without, the next free number of the family's letter, `CR<letter>-<A01…>-0` (`CRM-A03-0`). Numbers already taken are
   read from the paths of `cr/reports/` and from the `missionId` entries of `cr/missions.yaml` (V2 reports).

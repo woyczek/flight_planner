@@ -22,7 +22,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `missionCategory`, `modules/missions/module.js`, `modules/report/module.js`, `modules/fuel/module.js`; Missions SPEC § 3, report SPEC § 3,
   Fuel INTEGRATION, DECISIONS, help; noreg N11, G7; SOG-0041, the readers' lot of § 10.38). A mission says its category; Missions filters
   by the airline's known categories; a flight of a freight or passenger mission asks its load in the report (freight in kg, passengers),
-  nothing else; an unknown category is ignored.
+  nothing else; an unknown category is ignored; a flight of another category (or none) removes the load of the report's draft.
 - **Data: « Mettre à jour », « Tout recalculer », and the selection gestures of the base** (`modules/data/update.js`, `model_update.js`, `zonemap.js`, `panels.js`; Data SPEC § 5.8; help ×4; L36–L39) — SOG-0071, time 1:
   « Mettre à jour » downloads, then rebuilds only the stale zones after one question that names them, why and the size (provisional criterion: no publication, or a published cycle older than the one the source holds); « Tout recalculer » is the former build;
   « Seulement les périmés », « Tout désélectionner », a « Sélection : n zones · taille » line, and a rectangle on the map (Shift + drag, or two fingers held) that ticks the zones of the coverage it touches, the count said before the release.

@@ -622,11 +622,12 @@ function loadHtml() {
   return `<div class="f-card" data-loadcard="${esc(c.load)}"><h2>${esc(tt(TX.load))}</h2><p class="f-muted" data-loadcat>${esc(MC.nameOf(S.cats, c.id, S.ctx.lang()))}</p>
     <div class="f-grid"><label class="f-field"><span>${esc(tt(k === 'freightKg' ? TX.loadFreight : TX.loadPax))}</span><input data-load="${k}" inputmode="numeric" value="${esc(Number.isFinite(v) ? String(v) : '')}"></label></div></div>`;
 }
-/** La catégorie du vol repris (current_flight.missionCategory) : connue et transportant, elle pose la charge du CR (les valeurs déjà
- *  saisies gardées si c'est la même) ; inconnue, ignorée. */
+/** La catégorie du vol repris (current_flight.missionCategory) : la charge appartient à la catégorie du vol, pas au brouillon
+ *  (Simplification, 9 nov.) — connue et transportant, elle pose la charge du CR (les valeurs déjà saisies gardées si c'est la même) ;
+ *  une autre catégorie, aucune, une inconnue ou une sans charge retirent celle du brouillon. */
 function takeCategory(id) {
   const c = loadCat(MS.categoryOf(id));
-  if (!c) return;
+  if (!c) return void delete S.m.load;
   if (S.m.load?.category !== c.id) S.m.load = {
     category: c.id
   };

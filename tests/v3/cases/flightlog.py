@@ -214,9 +214,9 @@ def g4(c):
     c.check_errors()
 
 
-def _cat_docs(category):
+def _cat_docs(category, draft=False):
     """An invented airline of kind « va » (its commercial group is active: frame/lib/mission_categories.js) and the planned flight of a
-    mission of that category (current_flight.missionCategory, written by Fuel from the mission)."""
+    mission of that category (current_flight.missionCategory, written by Fuel from the mission); draft=True keeps the report's draft."""
     from lib import flight_docs
     docs = flight_docs()
     docs[1][1]['mission'] = 'X-201A'
@@ -224,13 +224,14 @@ def _cat_docs(category):
     return docs + [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}]}, 'document'],
                    ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'kind': 'va'}, 'document'],
                    # an empty draft: each scenario starts a new report (the browser's store outlives c.open, and a draft is the report in progress)
-                   ['cache/report/draft.json', {}, 'cache']]
+                   *([] if draft else [['cache/report/draft.json', {}, 'cache']])]
 
 
 @case('G7', 'Report: a flight of a mission of category « fret » asks the freight carried, « passagers » the passengers; an unknown category is ignored',
       'G', tags=('report', 'missions'), designs=('standard',), screens=False, langs4=True,
       rule='V3 spec 10.38 / SOG-0041: the report of a commercial flight carries the load its category says (freight in kg, passengers), '
-      'nothing else; categories.json absent = the common base; a category the airline does not know is ignored, nothing invented')
+      'nothing else; categories.json absent = the common base; a category the airline does not know is ignored, nothing invented; '
+      'the load belongs to the flight\'s category, not to the draft (another, none or unknown removes it)')
 def g7(c):
     for cat, want in (('fret', 'freight'), ('passagers', 'passengers'), ('zzz-inconnue', None)):
         c.open('report', docs=_cat_docs(cat))
@@ -262,3 +263,20 @@ def g7(c):
                 c.wait(200)
             c.ok(path, 'no record', 'the report is saved')
             c.eq(c.doc(path).get('load'), {'category': 'fret', 'freightKg': 1200}, 'the record carries the category and the freight, nothing else', what='load')
+    # the load belongs to the flight's category, not to the draft (Simplification, 9 Nov): a draft of a freight flight (1 200 kg), then a flight
+    # without category taken: the load is gone
+    c.open('report', docs=_cat_docs('fret'))
+    c.until("!!document.querySelector('[data-module=report] [data-do=current]')", timeout=10000, what='the current-flight card (freight)')
+    c.wait(400)
+    c.tap('[data-module="report"] [data-do="current"]')
+    c.until("!!document.querySelector('[data-module=report] input[data-load=freightKg]')", what='the freight field')
+    c.page.locator('[data-module="report"] input[data-load="freightKg"]').evaluate("e => { e.value = '1200'; e.dispatchEvent(new Event('input', { bubbles: true })) }")
+    c.until_doc('cache/report/draft.json', lambda d: ((d or {}).get('mission') or {}).get('load') == {'category': 'fret', 'freightKg': 1200}, 'the draft keeps the freight', timeout=8000)
+    c.open('report', docs=_cat_docs('', draft=True))
+    c.until("!!document.querySelector('[data-module=report] [data-do=current]')", timeout=10000, what='the current-flight card (no category)')
+    c.wait(400)
+    c.tap('[data-module="report"] [data-do="current"]')
+    c.until("[...document.querySelectorAll('[data-module=report] input')].some(i => i.value === 'F-RAJA')", what='the flight prefills the form')
+    c.settle()
+    c.eq(c.count('[data-module="report"] [data-loadcard]'), 0, 'a flight without category: the draft\'s load is removed', what='no load card')
+    c.until_doc('cache/report/draft.json', lambda d: 'load' not in ((d or {}).get('mission') or {}), 'the draft without load', timeout=8000)
