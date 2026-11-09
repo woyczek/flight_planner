@@ -23,6 +23,9 @@ import {
   TX
 } from './texts.js';
 import {
+  gridWinds
+} from './weather.js';
+import {
   projNow
 } from './draw.js';
 import {
@@ -247,6 +250,29 @@ export function tapAt(x, y, lat, lon) {
 const WIND_STEP_NM = 50;
 /** Vents à dessiner : ceux des points (route.points[].wind), plus des interpolés composante par composante tous les 50 NM. */
 function windPoints() {
+  const g = gridWinds(); // la grille que lit la coupe, quand elle est en réserve (SOG-0148) ; sinon ce que Carburant a écrit
+  if (g) return g;
+  return noRepeat(carburantWinds());
+}
+/** Jamais une même flèche répétée (SOG-0141) : un vent identique (direction, force, température) au précédent, à plus de 100 NM,
+ *  est la signature d'une lecture qui rend la même case hors de la couverture du modèle : il devient un lieu sans vent. */
+function noRepeat(list) {
+  let last = null;
+  return list.map(w => {
+    const same = last && !w.gap && Math.round(+w.dirDeg) === Math.round(+last.dirDeg) && Math.round(+w.kt) === Math.round(+last.kt) &&
+      Math.round(+w.tempC) === Math.round(+last.tempC) && !w.between && Math.hypot(+w.lat - +last.lat, (+w.lon - +last.lon) * Math.cos(+
+        w.lat * Math.PI / 180)) * 60 > 100;
+    if (!w.gap && !w.between) last = w;
+    return same ? {
+      lat: w.lat,
+      lon: w.lon,
+      gap: true,
+      model: ''
+    } : w;
+  });
+}
+
+function carburantWinds() {
   const pts = unwrapLons(keptRoute(S.route.flight?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon))),
     ok = w => w && Number.isFinite(+w.dirDeg) && Number.isFinite(+w.kt),
     out = [];
@@ -363,8 +389,10 @@ export function drawWinds(ctx, toC) {
     hits = [];
   for (const w of windPoints()) {
     const c = toC(w.lat, w.lon);
-    drawBarb(ctx, c, w, S.theme.bg, 5);
-    drawBarb(ctx, c, w, col);
+    if (!w.gap) { // hors couverture : pas de flèche, la place reste touchable (« pas de vent ici »)
+      drawBarb(ctx, c, w, S.theme.bg, 5);
+      drawBarb(ctx, c, w, col);
+    }
     hits.push({
       x: c.x,
       y: c.y,
@@ -377,6 +405,9 @@ export function drawWinds(ctx, toC) {
 const windAt = (x, y) => (S.windHits || []).find(h => Math.hypot(h.x - x, h.y - y) <= 18)?.w || null;
 /** Deux lignes d'infobulle d'un vent : « Vent 270° / 45 kt », puis température, niveau et heure de la prévision. */
 function windLines(w) {
+  if (w.gap) return [tt(w.model ? TX.windGap : TX.windGapRepeat, {
+    m: w.model
+  }), ''];
   const t = Number.isFinite(+w.tempC) && w.tempC !== null ? `${Math.round(+w.tempC)} °C` : '',
     l = +w.levelFt > 0 ? level(+w.levelFt) : '',
     h = fmtZ(w.at);

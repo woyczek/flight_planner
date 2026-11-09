@@ -28,6 +28,9 @@ import {
   openData
 } from './sheet_view.js';
 import {
+  schedule
+} from './draw.js';
+import {
   setCursor,
   windowNm,
   onWindow
@@ -135,6 +138,8 @@ async function loadWeather(key, fetchNow = false) {
     return {
       key,
       state: 'ok',
+      modelId: model?.id || '',
+      modelName: name,
       label: name ? `${name}${run != null ? ` ${run} h` : ''}` : '', // « AROME 12 h » : le modèle choisi par le milieu de la route, dit après coup
       draw: Sx.drawSection,
       legend: Sx.sectionLegend,
@@ -200,6 +205,93 @@ export async function showWeather(force = false) {
   if (!S || S.wxSeq !== seq) return;
   S.wx = st;
   if (S.dpanel === 'weather' && S.dkey === key) open();
+}
+/** Distance entre deux barbules de la carte (NM), comme pour les vents de Carburant. */
+const WIND_STEP_NM = 50;
+/** Les barbules de la carte lues dans la grille que la coupe lit (SOG-0148 : si la coupe a du vent, la carte en a ; aucune lecture de
+ *  plus), une tous les 50 NM le long de la trajectoire. Hors de la couverture du modèle choisi (le milieu de la route le choisit), la
+ *  case de la même grille n'est pas lue : un lieu sans vent (`gap`, pas de flèche, dit « pas de vent ici (hors ARPEGE) » dans
+ *  l'infobulle) ; le modèle qui couvre le lieu n'est pris que s'il a déjà ses cases en réserve (cacheOnly), segment par segment, et il est
+ *  dit. Jamais une même flèche répétée (SOG-0141). Rend [{ lat, lon, dirDeg, kt, tempC, levelFt, at, model, between? | gap, model }]. */
+async function windsOf(st) {
+  const [Sx, A] = await Promise.all([import('../atmosphere/section.js'), import('../atmosphere/atmo.js')]),
+    M = st.o.model,
+    levelFt = st.o.levelFt,
+    out = [],
+    along = M.along || [],
+    picks = along.filter((e, i) => e.nm % WIND_STEP_NM === 0 || i === along.length - 1);
+  for (const e of picks) {
+    const t = st.o.depTime + M.traj.minutesAt(Math.min(e.nm, M.traj.total)) * 60,
+      at = new Date(t * 1000).toISOString(),
+      own = await S.ctx.weather.modelFor(e.lat, e.lon);
+    let x = null,
+      model = st.modelName;
+    if (!own?.id || own.id === st.modelId) x = e.x && !e.x.below && e.x.dirDeg != null ? e.x : null;
+    else {
+      model = own.short || own.name || own.id;
+      try { // un autre modèle couvre ce lieu : ses cases ne sont lues que si elles sont déjà en réserve
+        const r = await S.ctx.weather.grid([{
+          lat: e.lat,
+          lon: e.lon
+        }], t, Sx.sectionVars(levelFt, st.o.route), {
+          model: own.id,
+          cacheOnly: true
+        }).catch(() => null);
+        const loc = r?.locs?.length ? A.locations(r.locs)[0] : null,
+          col = loc ? A.column(loc, A.hourIndex(loc.times, t)) : null,
+          y = col ? A.at(col, e.ft ?? levelFt) : null;
+        x = y && !y.below && y.dirDeg != null ? y : null;
+      } catch {
+        x = null;
+      }
+    }
+    out.push(x ? {
+      lat: e.lat,
+      lon: e.lon,
+      dirDeg: x.dirDeg,
+      kt: x.kt,
+      tempC: Number.isFinite(+x.tC) ? +x.tC : null,
+      levelFt,
+      at,
+      model
+    } : {
+      lat: e.lat,
+      lon: e.lon,
+      gap: true,
+      model: st.modelName
+    });
+  }
+  return out;
+}
+/** Les barbules lues dans la grille, pour ce vol (null : pas encore lues, ou rien en réserve). */
+export const gridWinds = () => S?.wxWinds?.key === wxKey() ? S.wxWinds.list : null;
+/** Demande, une fois par version du vol, les barbules de la grille en réserve (aucune lecture réseau) ; le dessin est redemandé. */
+export async function ensureWinds() {
+  if (!S || !canWeather()) return;
+  const key = wxKey();
+  if (S.wxWindsKey === key) return;
+  S.wxWindsKey = key;
+  let list = null;
+  try {
+    // le modèle de la coupe pèse (champ 200 × 120) : il passe après le profil et le premier dessin, au repos du navigateur (ce n'est
+    // pas un rattrapage de page : rien n'est écrit tant qu'il n'est pas prêt, la carte se dessine d'abord avec ce que Carburant a écrit)
+    await new Promise(r => typeof requestIdleCallback === 'function' ? requestIdleCallback(r, {
+      timeout: 1500
+    }) : setTimeout(r, 300));
+    if (!S || S.wxWindsKey !== key) return;
+    const st = S.wx?.key === key ? S.wx : await loadWeather(key);
+    if (!S || S.wxWindsKey !== key) return;
+    if (S.wx?.key !== key) S.wx = st; // la coupe, ouverte plus tard, ne relit pas ce qui l'a été
+    if (st.state === 'ok') list = await windsOf(st);
+  } catch {
+    list = null;
+  }
+  if (!S || S.wxWindsKey !== key) return;
+  S.wxWinds = {
+    key,
+    list
+  };
+  schedule();
 }
 /** Le nom de la coupe : « Météo de la route », puis « · AROME 12 h » une fois la prévision lue (titre de la poignée et du bouton). */
 export const wxName = () => S?.wx?.state === 'ok' && S.wx.label ? `${tt(TX.wxTitle)} · ${S.wx.label}` : tt(TX.wxTitle);

@@ -20,6 +20,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 - **Data: the world synoptic row, the new reasons of `base/status`, the zone link** (`modules/data/world.js`, `model_world.js`, `status.js`, `update.js`; Data SPEC § 5.11; help ×4; L48, L50, L51) — SOG-0138, SOG-0143: a « Synoptique monde (GFS) » row in the Météo group (state, run, weight; « Construire »; published locally, never synchronised);
   `index-orphan`, `source-unbuilt`, `source-unread`, `source-missing` and the `no-points` notice in four languages; `#data?zone=<id>` ticks that zone and brings « Mettre à jour » on screen.
+
+- **Map: the wind barbs are read from the grid the weather cross-section reads, and a place outside the model's coverage has no arrow** (`modules/maps/weather.js`,
+  `tips.js`, `texts.js`; noreg D124; SOG-0148, SOG-0141). The barbs used only the winds Fuel writes into the route; they now come from the
+  cut's own data (kept, nothing more asked), one every 50 NM, so a route that has a cut has wind. Where the model chosen by the route's
+  middle does not cover (a route leaving Europe), no arrow and the bubble says « No wind here (outside ARPEGE) »; the same arrow is never
+  repeated.
+
 - **Data: a selection of more than 60 zones is built in runs of 60 at most, and a refusal says the launcher's reason** (`modules/data/follow.js` `runChunks`, `update.js`, `chain.js`, `model_sets.js` `chunksOf`, `model_results.js` `refusal`; L49) — SOG-0144: `base/fetch`, `base/build` and `base/purge` take 1 to 60 zones; with 78 ticked « Tout recalculer »
   was refused (« arguments invalides »). « Tout recalculer », « Télécharger », « Mettre à jour » and the chain now cut the selection into runs of 60, one after the other (the next starts when the previous one ends), the progress says « Tranche i sur n », the update's question says it; a refusal relays the launcher's message (« Le lanceur dit : … »).
 - **Fuel: the route reader takes the nearest homonym and says what it cannot place** (`frame/lib/route_model.js`, `modules/fuel/module.js`;

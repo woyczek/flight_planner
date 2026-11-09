@@ -187,6 +187,12 @@ export const TX = {
   progEnable: ['Activer la position', 'Enable the position', 'Position aktivieren', 'Activar la posición'],
   progArrived: ['Arrivé', 'Arrived', 'Angekommen', 'Llegado'],
   progDiverted: ['Déroutement vers {a}', 'Diverted to {a}', 'Ausweichlandung in {a}', 'Desviado a {a}'],
+  windGap: ['Pas de vent ici (hors {m})', 'No wind here (outside {m})', 'Hier kein Wind (außerhalb {m})',
+    'Sin viento aquí (fuera de {m})'
+  ],
+  windGapRepeat: ['Pas de vent ici (la lecture répétait la même valeur)', 'No wind here (the reading repeated the same value)',
+    'Hier kein Wind (die Lesung wiederholte denselben Wert)', 'Sin viento aquí (la lectura repetía el mismo valor)'
+  ],
   windTip: ['Vent {d}° / {k} kt', 'Wind {d}° / {k} kt', 'Wind {d}° / {k} kt', 'Viento {d}° / {k} kt'],
   windSub: ['{t} · {l} · prévision {h}', '{t} · {l} · forecast {h}', '{t} · {l} · Vorhersage {h}', '{t} · {l} · previsión {h}'],
   layerNames: {

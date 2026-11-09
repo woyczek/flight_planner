@@ -2064,6 +2064,26 @@ the Map had seen in between: the same line to within the frame's own sampling.
   « not drawn »), D114 (cost under 16 ms, the light drawing's lines). The fixture `tests/v3/fixtures/ground_LFPO.json` is made from
   OSM data (595 items); the noreg never reads the public instance.
 
+## Wind barbs from the cut's grid; no wind outside the model's coverage (9 Nov 2026, SOG-0148 and SOG-0141)
+
+- **Asked**: « on voit bien le profil vertical et sa météo, le profil plan ne l'a pas ? pourtant les données ont été téléchargées »
+  (SOG-0148); on a route that leaves Europe the barbs were all the same (SOG-0141, linked to GFS).
+- **Cause**: the Map drew only `route.points[].wind`, what Fuel writes from its own wind request (`aloft`), not the grid the cut reads;
+  and out of the chosen model's domain the reading hands back one cell, so every barb repeats.
+- **Done**: `ensureWinds` (weather.js) reads the cut's data once per version of the flight, cache only (`loadWeather`, the result is kept in
+  `S.wx`: the cut opened later does not read again) and `windsOf` takes one wind every 50 NM along the trajectory (`model.along`), at the
+  time the flight passes. `windPoints` (tips.js) uses it first; Fuel's written winds stay the fallback when nothing is kept.
+- **Coverage**: the route's middle chooses the model (`modelFor`). A place that `modelFor` gives to another model has **no arrow**
+  (`gap`, still touchable: the bubble says « No wind here (outside <model>) »); that other model is used for the place only when its cells
+  are already kept (`grid` with `cacheOnly`), and the wind then carries its model's name. Nothing is read from the network for it: the
+  user's rule is « no new reading ».
+- **Never a repeated arrow** (the fallback path too): a Fuel wind identical (direction, force, temperature) to the previous one, 100 NM or
+  more away, is turned into a place without wind (`noRepeat`): a repeated cell has that signature.
+- **Not done**: the covering model is not *fetched* when it is not kept (the ergonomics text allows GFS through Open-Meteo or the world
+  synoptic of SOG-0138; reading it needs a request the user ruled out here: to decide); the model is named per hover, not in the legend.
+- **Noreg** D124 (the arrows are the cut's wind at the departure, nothing asked from the network; places outside the model: gaps with the
+  model's name; one wind repeated at every point: gaps; red without the code).
+
 ## The mission on the Map: the flight's mission without an address, a banner, legibility (9 Nov 2026, SOG-0137)
 
 - **Asked** (the user, 5th pull): « illisible et illogique, afficher au moins le titre, réutiliser le réglage de la mission choisie ».

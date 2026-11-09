@@ -3675,6 +3675,8 @@ def d122(c):
     c.js(_STATE_JS)
     c.js("""() => { const S = window.__mp.S, w = S.ctx.weather, g = w.grid.bind(w); window.__got = null;   // ctx and ctx.weather are frozen: the Map’s state gets a copy
       S.ctx = { ...S.ctx, weather: { ...w, grid: async (...a) => { const r = await g(...a); if (r?.locs?.length && !window.__got) window.__got = JSON.parse(JSON.stringify(r)); return r } } }; return true }""")
+    c.until("() => !!window.__mp.S.wxWinds", timeout=12000, what='the wind barbs have read the kept forecast')
+    c.js("() => { window.__mp.S.wx = null; return true }")   # the wind barbs may have read the kept forecast already: the cut asks again
     c.tap('.mp-chip[data-view="weather"]')
     c.until("() => !!window.__got", timeout=10000, what='the kept forecast is read once')
     got = c.js("() => window.__got")
@@ -3692,7 +3694,8 @@ def d122(c):
     c.tap('.mp-chip[data-view="weather"]')
     c.until("() => { const s = document.querySelector('.mp-dbody svg'); return !!s && s.getBoundingClientRect().height > 0 }", timeout=10000,
             what='the cut is drawn from the click alone')
-    c.eq(c.js("() => window.__calls"), ['cache', 'net'], 'the kept forecast was tried, then read: one gesture', what='store calls')
+    calls = c.js("() => window.__calls")
+    c.ok(calls.count('net') == 1 and calls[-1] == 'net', str(calls), 'the kept forecast was tried (also by the wind barbs), then read once: one gesture')
     c.eq(c.js("() => !!document.querySelector('[data-wxget]')"), False, 'no separate « show » button once the cut is there', what='extra button')
     name = c.attr('.mp-chip[data-view="weather"]', 'title')
     c.ok(name.startswith(want) and ' · ' in name and re.search(r'\d+ h$', name), name, 'the name then says the model and the run: « … · AROME 12 h »')
@@ -3740,3 +3743,49 @@ def d123(c):
     c.wait(800)
     c.js(_STATE_JS)
     c.eq(c.js("() => window.__mp.S.missionId"), '', 'the Map is on the flight again (its layers, its route)', what='missionId')
+
+
+_WINDS_JS = """() => { const S = window.__mp.S; return (S.windHits || []).map(h => ({ gap: !!h.w.gap, model: h.w.model || '', dir: Math.round(+h.w.dirDeg), kt: Math.round(+h.w.kt), lat: h.w.lat, lon: h.w.lon })) }"""
+_REDO_JS = """async () => { const S = window.__mp.S; S.wxWindsKey = null; S.wxWinds = null; S.wx = null; await (await import('/modules/maps/weather.js')).ensureWinds(); return true }"""
+
+
+@case('D124', 'Wind barbs of the Map: read from the grid the cut reads (no network); outside the model’s coverage no arrow, said; never the same arrow repeated', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='V3 spec (SOG-0148, SOG-0141): the barbs come from the grid the vertical cut reads (ctx.weather.grid, cacheOnly: nothing asked), one every 50 NM along the trajectory; a place outside the coverage of the chosen model (the route’s middle chooses it) has no arrow and the hover says « no wind here (outside <model>) », the covering model being used only when its cells are already kept; a wind identical to the previous one 100 NM or more away is a place without wind, never a repeated arrow')
+def d124(c):
+    c.open('maps', flight=True, forecast=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js("""() => { const S = window.__mp.S, w = S.ctx.weather; window.__net = 0; window.__asked = [];
+      S.ctx = { ...S.ctx, weather: { ...w, grid: async (pl, d, v, o) => { window.__asked.push(o?.model + ':' + !!o?.cacheOnly); if (!o?.cacheOnly) window.__net++; return w.grid(pl, d, v, o) } } }; return true }""")
+    c.js(_REDO_JS)
+    c.until("() => (window.__mp.S.windHits || []).some(h => h.w.model)", timeout=12000, what='barbs read from the grid appear')
+    hs = c.js(_WINDS_JS)
+    c.ok(len(hs) >= 3 and not any(h['gap'] for h in hs), str(hs), 'the route is inside the model: an arrow every 50 NM along it, none missing')
+    c.eq(c.js("() => window.__net"), 0, 'nothing was asked from the network', what='network reads')
+    cut = c.js("() => { const m = window.__mp.S.wx?.o?.model?.along?.[0]?.x; return m ? { dir: Math.round(m.dirDeg), kt: Math.round(m.kt) } : null }")
+    c.ok(cut and hs[0]['dir'] == cut['dir'] and hs[0]['kt'] == cut['kt'], f"cut {cut} map {hs[0]}", 'the first arrow is the wind the cut shows at the departure: the same data')
+    # outside the coverage of the chosen model: the second half of the route belongs to another model whose cells are not kept
+    c.js("""() => { const S = window.__mp.S, w = S.ctx.weather, mid = 44.5;
+      S.ctx = { ...S.ctx, weather: { ...w, modelFor: async (la, lo) => la < mid ? { id: 'gfs_seamless', name: 'NOAA GFS', short: 'GFS' } : w.modelFor(la, lo),
+        grid: async (pl, d, v, o) => o?.model === 'gfs_seamless' && pl.length === 1 ? null : w.grid(pl, d, v, o) } }; return true }""")
+    c.js(_REDO_JS)
+    c.until("() => (window.__mp.S.windHits || []).some(h => h.w.gap)", timeout=12000, what='the places outside the model have no wind')
+    hs = c.js(_WINDS_JS)
+    gaps = [h for h in hs if h['gap']]
+    c.ok(gaps and any(not h['gap'] for h in hs), str(hs), 'the places inside the model keep their arrow, the others have none')
+    c.ok(all(h['model'] for h in gaps), str(gaps), 'a place without wind says which model does not cover it')
+    # the same wind written at every point (what a reading that repeats one cell gives): never the same arrow again
+    f = flight()
+    for q in f['route']['points']:
+        q['wind'] = {'dirDeg': 270, 'kt': 45, 'tempC': -30, 'levelFt': 27000, 'at': '2026-10-24T11:00:00Z'}
+    c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js("""() => { const S = window.__mp.S, w = S.ctx.weather; S.ctx = { ...S.ctx, weather: { ...w, grid: async () => null } }; return true }""")
+    c.js(_REDO_JS)
+    c.until("() => (window.__mp.S.windHits || []).length >= 2", timeout=12000, what='the written winds are drawn')
+    hs = c.js(_WINDS_JS)
+    drawn = [h for h in hs if not h['gap']]
+    c.ok(len(drawn) >= 1 and len(drawn) < len(hs), str(hs), 'the same wind repeated far away is a place without wind: some arrows are left out, the first one stays')

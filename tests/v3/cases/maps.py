@@ -118,7 +118,7 @@ def d4(c):
     c.eq(info[0]['title'], names[0], 'the Profile chip is named in the language of the run', what='Profile chip title')
     c.eq(info[0]['pressed'], 'true', 'the Profile chip is pressed by default', what='Profile chip aria-pressed')
     c.ok(info[1]['pressed'] in ('true', 'false'), f'Weather chip aria-pressed {info[1]["pressed"]!r}', 'a toggle (aria-pressed)')
-    c.eq(info[1]['title'], names[1], 'the Weather chip is named in the language of the run', what='Weather chip title')
+    c.ok(info[1]['title'].startswith(names[1]), info[1]['title'], 'the Weather chip is named in the language of the run (then « · model run » once the forecast is read, which the wind barbs do)')
     for i, ch in enumerate(chips):
         c.ge(round(ch['w']), 28, 'icon chips of the bare line are at least 28 px', what=f'chip {i} width')
     # the chips are in the bare line (V3 spec 7.1.13, fourth refinement): 28 px chips, the primitive's touch zone of 44 px (its top is clipped by the sheet's edge)

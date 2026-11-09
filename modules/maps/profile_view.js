@@ -3,6 +3,9 @@
 // route), la ligne sous le profil, la fenêtre sur l'axe des distances (lib/axis_window.js) partagée avec la coupe météo.
 
 import {
+  ensureWinds
+} from './weather.js';
+import {
   canvasDpr
 } from './canvas_scale.js';
 import {
@@ -162,6 +165,7 @@ function showProf(prof, pts) {
   strip();
   status();
   schedule();
+  if (prof) ensureWinds(); // les barbules de la grille de la coupe, après le profil (SOG-0148) : le modèle de la coupe pèse
 }
 /** Taille d'un canvas à son cadre (pixels de l'écran) : { W, H, dpr }. */
 function fit(c, box) {
