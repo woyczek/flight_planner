@@ -4,9 +4,9 @@
  "updated": "2026-11-09",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "1fa0dc2",
-  "fiches": 66,
-  "untranslated": 0,
+  "organisation": "ef7be99",
+  "fiches": 124,
+  "untranslated": 19,
   "priorities": 0
  },
  "owner": "ergonomics session (Simplification interface et ergonomie)",
@@ -229,6 +229,27 @@
  ],
  "lanes": [
   {
+   "id": "pilote-aide",
+   "app": "pilote",
+   "label": {
+    "fr": "Aide",
+    "en": "Help",
+    "de": "Hilfe",
+    "es": "Ayuda"
+   },
+   "items": [
+    {
+     "id": "SOG-0101",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Tutoriel « Rejoindre la compagnie » réécrit pour GitLab (jeton reçu de l'administrateur, pas de compte à créer), captures refaites",
+     "en": "\"Join the airline\" tutorial rewritten for GitLab (token received from the administrator, no account to create), screenshots redone",
+     "de": "Tutorial „Der Gesellschaft beitreten“ für GitLab neu geschrieben (Token vom Administrator, kein Konto anzulegen), Bildschirmfotos erneuert",
+     "es": "Tutorial «Unirse a la compañía» reescrito para GitLab (token recibido del administrador, sin cuenta que crear), capturas rehechas"
+    }
+   ]
+  },
+  {
    "id": "pilote-carburant",
    "app": "pilote",
    "label": {
@@ -241,7 +262,7 @@
     {
      "id": "SOG-0056",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Écran 1 du pilote : un bouton « Auto » calcule le niveau depuis le carburant et le temps",
      "en": "Pilot screen 1: an “Auto” button calculates the level from fuel and time",
      "de": "Pilotenbildschirm 1: Eine Schaltfläche „Auto“ berechnet die Flugfläche aus Kraftstoff und Zeit",
@@ -251,7 +272,7 @@
     {
      "id": "SOG-0058",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant et opération : les cases ne sont pas alignées (textes de longueurs multiples)",
      "en": "Fuel and operation: the boxes are not aligned (texts of varying lengths)",
      "de": "Kraftstoff und Betrieb: Die Felder sind nicht ausgerichtet (Texte unterschiedlicher Länge)",
@@ -287,6 +308,69 @@
      "de": "Steigflugvorgaben: die Soll-Drehzahl (Caravelle: der Schubhebel bestimmt die rpm, „full“ = 8 000+), der Schubhebel aus den CSVs gelesen",
      "es": "Consignas de ascenso: el régimen objetivo (Caravelle: la palanca fija las rpm, « full » = 8 000+), la palanca leída en los CSV",
      "milestone": "6.0.0-alpha.5"
+    },
+    {
+     "id": "SOG-0080",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "RouteSim (E:\\DEFA\\rad) : s'inspirer de sa disposition (bande de gauche = alternatives d'itinéraires en vue large) ?",
+     "en": "RouteSim (E:\\DEFA\\rad) : s'inspirer de sa disposition (bande de gauche = alternatives d'itinéraires en vue large) ?",
+     "de": "RouteSim (E:\\DEFA\\rad) : s'inspirer de sa disposition (bande de gauche = alternatives d'itinéraires en vue large) ?",
+     "es": "RouteSim (E:\\DEFA\\rad) : s'inspirer de sa disposition (bande de gauche = alternatives d'itinéraires en vue large) ?"
+    },
+    {
+     "id": "SOG-0081",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Calcul de route automatique et contrôle IFPS / RAD / FRA : intégrer le moteur de RouteSim dans le chemin du pilote (alpha.5)",
+     "en": "Calcul de route automatique et contrôle IFPS / RAD / FRA : intégrer le moteur de RouteSim dans le chemin du pilote (alpha.5)",
+     "de": "Calcul de route automatique et contrôle IFPS / RAD / FRA : intégrer le moteur de RouteSim dans le chemin du pilote (alpha.5)",
+     "es": "Calcul de route automatique et contrôle IFPS / RAD / FRA : intégrer le moteur de RouteSim dans le chemin du pilote (alpha.5)"
+    },
+    {
+     "id": "SOG-0086",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Édition de la table RPM sur téléphone",
+     "en": "RPM table editing on the phone",
+     "de": "Bearbeiten der RPM-Tabelle auf dem Telefon",
+     "es": "Edición de la tabla RPM en el teléfono"
+    },
+    {
+     "id": "SOG-0087",
+     "kind": "feature",
+     "state": "later",
+     "fr": "TEMSI : vent et météo en route depuis les cartes TEMSI",
+     "en": "TEMSI: en-route wind and weather from TEMSI charts",
+     "de": "TEMSI: Streckenwind und -wetter aus TEMSI-Karten",
+     "es": "TEMSI: viento y meteo en ruta desde las cartas TEMSI"
+    },
+    {
+     "id": "SOG-0088",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Direct vers un point sur instruction du contrôle : chercher le point, reprendre le reste du vol",
+     "en": "Direct to a point on ATC instruction: find the point, rewrite the rest of the flight",
+     "de": "Direkt zu einem Punkt auf Anweisung der Flugsicherung: Punkt suchen, Rest des Flugs neu schreiben",
+     "es": "Directo a un punto por instrucción del control: buscar el punto, reescribir el resto del vuelo"
+    },
+    {
+     "id": "SOG-0089",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Route au format FPL avec piste et procédures (LFPO/07 OPAL2E OPALE DCT …) : lue et écrite",
+     "en": "Route in FPL form with runway and procedures (LFPO/07 OPAL2E OPALE DCT …): read and written",
+     "de": "Route im FPL-Format mit Piste und Verfahren (LFPO/07 OPAL2E OPALE DCT …): gelesen und geschrieben",
+     "es": "Ruta en formato FPL con pista y procedimientos (LFPO/07 OPAL2E OPALE DCT …): leída y escrita"
+    },
+    {
+     "id": "SOG-0090",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Piste en service ou probable d'après le METAR du départ et de l'arrivée",
+     "en": "Runway in use or probable from the departure and arrival METAR",
+     "de": "Betriebspiste oder wahrscheinliche Piste nach dem METAR von Start und Ziel",
+     "es": "Pista en uso o probable según el METAR de salida y llegada"
     }
    ]
   },
@@ -371,6 +455,60 @@
      "de": "Karte: Liste der Punkte und Rollwege von ADEP / ADEST, Suche und Hervorhebung (große Flugplätze)",
      "es": "Mapa: lista de puntos y calles de rodaje del ADEP / ADEST, búsqueda y resaltado (grandes aeródromos)",
      "milestone": "6.0.0-alpha.5"
+    },
+    {
+     "id": "SOG-0067",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Carte : « not enough memory to open this page » sur la vue carte élargie",
+     "en": "Carte : « not enough memory to open this page » sur la vue carte élargie",
+     "de": "Carte : « not enough memory to open this page » sur la vue carte élargie",
+     "es": "Carte : « not enough memory to open this page » sur la vue carte élargie"
+    },
+    {
+     "id": "SOG-0091",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Route probable, traces d'exercice, cartes d'opération, AAR / NAT, zones bâties, relief hors ligne",
+     "en": "Probable route, exercise traces, operation maps, AAR / NAT, built-up areas, offline terrain",
+     "de": "Wahrscheinliche Route, Übungsspuren, Einsatzkarten, AAR / NAT, bebaute Gebiete, Gelände offline",
+     "es": "Ruta probable, trazas de ejercicio, mapas de operación, AAR / NAT, zonas urbanizadas, relieve sin conexión"
+    },
+    {
+     "id": "SOG-0092",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Calques météo sur la carte depuis la bibliothèque de Météo (puce Météo) et bord de la zone du vol : lot 2 après le recodage",
+     "en": "Weather layers on the map from Weather's library (Weather chip) and flight-zone edge: lot 2 after the recode",
+     "de": "Wetterebenen auf der Karte aus der Bibliothek von Wetter (Chip Wetter) und Rand der Flugzone: Los 2 nach der Neuschreibung",
+     "es": "Capas meteorológicas en el mapa desde la biblioteca de Meteo (chip Meteo) y borde de la zona del vuelo: lote 2 tras la recodificación"
+    },
+    {
+     "id": "SOG-0093",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Virages de plus de 90° des procédures tracés avec un rayon selon la vitesse indiquée",
+     "en": "Procedure turns over 90° drawn with a radius from the indicated speed",
+     "de": "Verfahrenskurven über 90° mit einem Radius nach der angezeigten Geschwindigkeit gezeichnet",
+     "es": "Virajes de más de 90° de los procedimientos trazados con un radio según la velocidad indicada"
+    },
+    {
+     "id": "SOG-0094",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Contrôleurs VATSIM et IVAO actifs sur la Carte, une teinte par réseau",
+     "en": "Active VATSIM and IVAO controllers on the Map, one hue per network",
+     "de": "Aktive VATSIM- und IVAO-Lotsen auf der Karte, eine Farbe je Netz",
+     "es": "Controladores VATSIM e IVAO activos en el Mapa, un color por red"
+    },
+    {
+     "id": "SOG-0095",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Trace de la route : un tronçon DCT en pointillé, un tronçon de voie aérienne en trait plein avec le cartouche de la voie (demande du 1/11, après le 6/11)",
+     "en": "Route trace: a DCT leg dotted, an airway leg solid with the airway's cartouche (request of 1 Nov, after 6 Nov)",
+     "de": "Routenspur: ein DCT-Abschnitt gepunktet, ein Luftstraßen-Abschnitt durchgezogen mit der Kartusche der Luftstraße (Wunsch vom 1.11., nach dem 6.11.)",
+     "es": "Traza de la ruta: un tramo DCT punteado, un tramo de aerovía continuo con el cartucho de la aerovía (petición del 1/11, después del 6/11)"
     }
    ]
   },
@@ -393,6 +531,57 @@
      "de": "Direkter Zugriff auf die Verfahrenskarte (VAC, SID, STAR, omni) und die Piste aus Verfahren oder Im Flug",
      "es": "Acceso directo a la carta del procedimiento (VAC, SID, STAR, omni) y a la pista desde Procedimientos o En vuelo",
      "milestone": "6.0.0-alpha.4"
+    }
+   ]
+  },
+  {
+   "id": "pilote-compte-rendu",
+   "app": "pilote",
+   "label": {
+    "fr": "Compte rendu",
+    "en": "Report",
+    "de": "Bericht",
+    "es": "Informe"
+   },
+   "items": [
+    {
+     "id": "SOG-0096",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Inscription sur le site sans copier-coller (web service PHP)",
+     "en": "Recording on the site without copy-paste (PHP web service)",
+     "de": "Eintragen auf der Website ohne Kopieren und Einfügen (PHP-Webservice)",
+     "es": "Inscripción en el sitio sin copiar y pegar (servicio web PHP)"
+    }
+   ]
+  },
+  {
+   "id": "pilote-design",
+   "app": "pilote",
+   "label": {
+    "fr": "Design",
+    "en": "Design",
+    "de": "Design",
+    "es": "Design"
+   },
+   "items": [
+    {
+     "id": "SOG-0116",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Autres designs V2, impression du compte rendu",
+     "en": "Other V2 designs, report printing",
+     "de": "Weitere V2-Designs, Drucken des Berichts",
+     "es": "Otros diseños V2, impresión del informe"
+    },
+    {
+     "id": "SOG-0117",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Teintes, police, règles répétées à promouvoir en jetons (choix de l'utilisateur)",
+     "en": "Hues, font, repeated rules to promote to tokens (user's choice)",
+     "de": "Farbtöne, Schrift, wiederholte Regeln als Tokens (Wahl des Nutzers)",
+     "es": "Tonos, fuente, reglas repetidas a promover en tokens (elección del usuario)"
     }
    ]
   },
@@ -489,6 +678,27 @@
      "de": "Die Übergänge von Steig- und Sinkflug auf beiden Profilen platzieren",
      "es": "Colocar las transiciones de ascenso y descenso en los dos perfiles",
      "milestone": "6.0.0-alpha.3"
+    }
+   ]
+  },
+  {
+   "id": "pilote-meteo",
+   "app": "pilote",
+   "label": {
+    "fr": "Météo",
+    "en": "Weather",
+    "de": "Wetter",
+    "es": "Meteo"
+   },
+   "items": [
+    {
+     "id": "SOG-0097",
+     "kind": "feature",
+     "state": "later",
+     "fr": "TEMSI ; SIGMET et METAR du monde par le relais du lanceur",
+     "en": "TEMSI; world SIGMET and METAR through the launcher relay",
+     "de": "TEMSI; SIGMET und METAR der Welt über das Launcher-Relais",
+     "es": "TEMSI; SIGMET y METAR del mundo por el relé del lanzador"
     }
    ]
   },
@@ -647,6 +857,27 @@
    ]
   },
   {
+   "id": "pilote-route",
+   "app": "pilote",
+   "label": {
+    "fr": "Route",
+    "en": "Route",
+    "de": "Route",
+    "es": "Ruta"
+   },
+   "items": [
+    {
+     "id": "SOG-0076",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Génération de routes depuis les fichiers RAD d'Eurocontrol (et le FRA)",
+     "en": "Génération de routes depuis les fichiers RAD d'Eurocontrol (et le FRA)",
+     "de": "Génération de routes depuis les fichiers RAD d'Eurocontrol (et le FRA)",
+     "es": "Génération de routes depuis les fichiers RAD d'Eurocontrol (et le FRA)"
+    }
+   ]
+  },
+  {
    "id": "pilote-etat-du-vol",
    "app": "pilote",
    "label": {
@@ -759,6 +990,42 @@
      "de": "Import von Journal und Flotte: den Host der Gesellschaftsseite in der Vorschau anzeigen",
      "es": "Importaciones del diario y de la flota: mostrar el host del sitio de la compañía en la vista previa",
      "milestone": "6.0.0-alpha.5"
+    },
+    {
+     "id": "SOG-0082",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Gestion de la flotte (personnelle ou compagnie) : maintenance, heures de vol, carte des appareils, missions de rapatriement à date butoir, ateliers, bases et pélicandromes des Canadair",
+     "en": "Gestion de la flotte (personnelle ou compagnie) : maintenance, heures de vol, carte des appareils, missions de rapatriement à date butoir, ateliers, bases et pélicandromes des Canadair",
+     "de": "Gestion de la flotte (personnelle ou compagnie) : maintenance, heures de vol, carte des appareils, missions de rapatriement à date butoir, ateliers, bases et pélicandromes des Canadair",
+     "es": "Gestion de la flotte (personnelle ou compagnie) : maintenance, heures de vol, carte des appareils, missions de rapatriement à date butoir, ateliers, bases et pélicandromes des Canadair"
+    },
+    {
+     "id": "SOG-0085",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Compagnies : plusieurs compagnies avec plusieurs niveaux de droits (admin de l'une, pas de l'autre)",
+     "en": "Compagnies : plusieurs compagnies avec plusieurs niveaux de droits (admin de l'une, pas de l'autre)",
+     "de": "Compagnies : plusieurs compagnies avec plusieurs niveaux de droits (admin de l'une, pas de l'autre)",
+     "es": "Compagnies : plusieurs compagnies avec plusieurs niveaux de droits (admin de l'une, pas de l'autre)"
+    },
+    {
+     "id": "SOG-0099",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Appli CPCO V3 : planification, affectations, reporting ; appli Client SOG : mes missions à rendre",
+     "en": "CPCO V3 app: planning, assignments, reporting; SOG client app: my missions to deliver",
+     "de": "App CPCO V3: Planung, Zuweisungen, Reporting; App SOG-Client: meine abzugebenden Missionen",
+     "es": "App CPCO V3: planificación, asignaciones, reporting; app Cliente SOG: mis misiones por entregar"
+    },
+    {
+     "id": "SOG-0100",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Extinction progressive de la V2 (décidée ; le rythme ne l'est pas) ; d'ici là les pages V2 vivent à côté de la V3",
+     "en": "Progressive shutdown of V2 (decided; the pace is not); until then V2 pages live next to V3",
+     "de": "Schrittweise Abschaltung der V2 (beschlossen; das Tempo nicht); bis dahin leben die V2-Seiten neben der V3",
+     "es": "Apagado progresivo de la V2 (decidido; el ritmo no); hasta entonces las páginas V2 viven junto a la V3"
     }
    ]
   },
@@ -801,6 +1068,36 @@
      "de": "Missionen in V3 in der Gesellschafts-App: Risiken auf der ersten Seite, ausführliche Beschreibung, beteiligte Teams, zu aktivierende Zonen, Kartenvorschau",
      "es": "Misiones en V3 en la aplicación Compañía: riesgos en la primera página, descripción detallada, equipos comprometidos, zonas por activar, vista previa de las cartas",
      "milestone": "6.0.0-beta.1"
+    },
+    {
+     "id": "SOG-0084",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Missions : un bouton vers la documentation générale (phraséologie, interactions, procédures) avec une interface de gestion, pas un wiki",
+     "en": "Missions : un bouton vers la documentation générale (phraséologie, interactions, procédures) avec une interface de gestion, pas un wiki",
+     "de": "Missions : un bouton vers la documentation générale (phraséologie, interactions, procédures) avec une interface de gestion, pas un wiki",
+     "es": "Missions : un bouton vers la documentation générale (phraséologie, interactions, procédures) avec une interface de gestion, pas un wiki"
+    }
+   ]
+  },
+  {
+   "id": "compagnie-site",
+   "app": "compagnie",
+   "label": {
+    "fr": "Site",
+    "en": "Site",
+    "de": "Site",
+    "es": "Site"
+   },
+   "items": [
+    {
+     "id": "SOG-0098",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Web service PHP du site (pas d'hébergement PHP pour le moment) : flotte et journal en JSON, connexion avec le compte du site, le site comme transport ;…",
+     "en": "PHP web service of the site (no PHP hosting for now): fleet and log as JSON, sign-in with the site account, the site as a transport; GitHub sign-in without a token",
+     "de": "PHP-Webdienst der Website (derzeit kein PHP-Hosting): Flotte und Logbuch als JSON, Anmeldung mit dem Website-Konto, die Website als Transport; GitHub-Anmeldung ohne Token",
+     "es": "Servicio web PHP del sitio (sin alojamiento PHP por ahora): flota y diario en JSON, inicio de sesión con la cuenta del sitio, el sitio como transporte; inicio de sesión GitHub sin token"
     }
    ]
   },
@@ -832,6 +1129,15 @@
      "en": "Roadmap: reprioritise from the screen (readable, copyable id; drag and drop of rank and milestone, written by the launcher to organisation/PRIORITES.json)",
      "de": "Fahrplan: Prioritäten direkt im Bildschirm ändern (lesbare, kopierbare Kennung; Rang und Meilenstein per Ziehen und Ablegen, vom Launcher in organisation/PRIORITES.json geschrieben)",
      "es": "Hoja de ruta: repriorizar desde la pantalla (identificador legible y copiable; arrastrar y soltar del rango y del hito, escrito por el lanzador en organisation/PRIORITES.json)"
+    },
+    {
+     "id": "SOG-0069",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Roadmap : replier les voies déjà existantes",
+     "en": "Roadmap : replier les voies déjà existantes",
+     "de": "Roadmap : replier les voies déjà existantes",
+     "es": "Roadmap : replier les voies déjà existantes"
     }
    ]
   },
@@ -874,6 +1180,180 @@
      "de": "Aero-Datenbank: Länder zu Paketen (Kontinente, Regionen) zusammenfassen und eine Meta-Klassifizierung (Inseln, Himalaya, Wüsten, Wälder, Seen und Flüsse, Megastädte …)",
      "es": "Base de datos aero: agrupar los países en paquetes (continentes, regiones) y una metaclasificación (islas, Himalaya, desiertos, bosques, lagos y ríos, megalópolis…)",
      "milestone": "6.0.0-alpha.5"
+    },
+    {
+     "id": "SOG-0068",
+     "kind": "bug",
+     "state": "done",
+     "fr": "AIP Canada : cartes très floues ; fichiers téléchargés depuis navcanada.ca",
+     "en": "AIP Canada : cartes très floues ; fichiers téléchargés depuis navcanada.ca",
+     "de": "AIP Canada : cartes très floues ; fichiers téléchargés depuis navcanada.ca",
+     "es": "AIP Canada : cartes très floues ; fichiers téléchargés depuis navcanada.ca"
+    },
+    {
+     "id": "SOG-0077",
+     "kind": "feature",
+     "state": "done",
+     "fr": "AWY : couverture hors France ? Notation des points d'entrée / sortie du FRA",
+     "en": "AWY : couverture hors France ? Notation des points d'entrée / sortie du FRA",
+     "de": "AWY : couverture hors France ? Notation des points d'entrée / sortie du FRA",
+     "es": "AWY : couverture hors France ? Notation des points d'entrée / sortie du FRA"
+    },
+    {
+     "id": "SOG-0078",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "AWY à sens unique : le sens n'est pas porté ou pas dessiné",
+     "en": "AWY à sens unique : le sens n'est pas porté ou pas dessiné",
+     "de": "AWY à sens unique : le sens n'est pas porté ou pas dessiné",
+     "es": "AWY à sens unique : le sens n'est pas porté ou pas dessiné"
+    },
+    {
+     "id": "SOG-0083",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Pélicandromes de France : un fichier précis dans Téléchargements, à intégrer comme couche",
+     "en": "Pélicandromes de France : un fichier précis dans Téléchargements, à intégrer comme couche",
+     "de": "Pélicandromes de France : un fichier précis dans Téléchargements, à intégrer comme couche",
+     "es": "Pélicandromes de France : un fichier précis dans Téléchargements, à intégrer comme couche"
+    },
+    {
+     "id": "SOG-0102",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Extrait GeoNames plus complet (Portugal, Irlande)",
+     "en": "Fuller GeoNames extract (Portugal, Ireland)",
+     "de": "Vollständigerer GeoNames-Auszug (Portugal, Irland)",
+     "es": "Extracto de GeoNames más completo (Portugal, Irlanda)"
+    },
+    {
+     "id": "SOG-0103",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Génération des bases (SIA par zone, MORA, base appareils) : faite aujourd'hui par la V2 seule, sur le poste ; il faudra probablement un client lourd, sauf…",
+     "en": "Base generation (SIA by zone, MORA, aircraft base): done today by V2 only, on the workstation; a desktop client will probably be needed, unless something better is found; failing better, that part of V2 is kept",
+     "de": "Erzeugung der Datenbanken (SIA nach Zone, MORA, Luftfahrzeugbasis): heute nur durch die V2 am Arbeitsplatz; wahrscheinlich wird ein Desktop-Client nötig sein, sofern nichts Besseres gefunden wird; andernfalls bleibt dieser Teil der V2",
+     "es": "Generación de las bases (SIA por zona, MORA, base de aeronaves): hoy solo la hace la V2, en el puesto; probablemente hará falta un cliente de escritorio, salvo algo mejor; a falta de algo mejor, se conserva esa parte de la V2"
+    },
+    {
+     "id": "SOG-0104",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Application « Données » dédiée (iOS, Android) : chantier à part, à ouvrir",
+     "en": "Dedicated \"Data\" application (iOS, Android): separate project, to open",
+     "de": "Eigene App „Daten“ (iOS, Android): eigenes Vorhaben, noch zu eröffnen",
+     "es": "Aplicación «Datos» dedicada (iOS, Android): proyecto aparte, por abrir"
+    },
+    {
+     "id": "SOG-0105",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Procédures depuis Little Navmap (Navigraph, X-Plane, MSFS 2020 / 2024) en repli local, jamais publié ; position MSFS par Little Navmap",
+     "en": "Procedures from Little Navmap (Navigraph, X-Plane, MSFS 2020 / 2024) as a local fallback, never published; MSFS position through Little Navmap",
+     "de": "Verfahren aus Little Navmap (Navigraph, X-Plane, MSFS 2020 / 2024) als lokaler Rückfall, nie veröffentlicht; MSFS-Position über Little Navmap",
+     "es": "Procedimientos desde Little Navmap (Navigraph, X-Plane, MSFS 2020 / 2024) como respaldo local, nunca publicados; posición MSFS por Little Navmap"
+    },
+    {
+     "id": "SOG-0106",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Appareils (V3 § 10.35, décidé le 31/10, code après le 6/11) : une fiche est un type + variante sans immatriculation, un appareil une immatriculation (état,…",
+     "en": "Aircraft (V3 § 10.35, decided 31 Oct, code after 6 Nov): a sheet is a type + variant without registration, an aircraft a registration (state, maintenance, hours from the log, history); add = choose the sheet then fill; aircraft \"seen in your flights\" to confirm; shared and personal fleets in the repository",
+     "de": "Luftfahrzeuge (V3 § 10.35, entschieden am 31.10., Code nach dem 6.11.): ein Datenblatt ist ein Typ + Variante ohne Kennzeichen, ein Luftfahrzeug ein Kennzeichen (Zustand, Wartung, Stunden aus dem Logbuch, Historie); Hinzufügen = Datenblatt wählen, dann ausfüllen; „in Ihren Flügen gesehene“ Luftfahrzeuge zum Bestätigen; gemeinsame und persönliche Flotte im Repository",
+     "es": "Aeronaves (V3 § 10.35, decidido el 31/10, código después del 6/11): una ficha es un tipo + variante sin matrícula, una aeronave una matrícula (estado, mantenimiento, horas del diario, historial); añadir = elegir la ficha y luego rellenar; aeronaves «vistas en sus vuelos» por confirmar; flota compartida y flota personal en el repositorio"
+    },
+    {
+     "id": "SOG-0107",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Maintenance des appareils : révision rapide et grande révision tous les n heures (seuils sur la fiche du type, défauts de la compagnie), atterrissage dur…",
+     "en": "Aircraft maintenance: quick check and major overhaul every n hours (thresholds on the type's sheet, airline defaults), hard landing declared in the report, flying beyond allowed and said (derogation); costs as data (hourly cost, fuel price and density, cost of an overhaul)",
+     "de": "Wartung der Luftfahrzeuge: kurze Kontrolle und Grundüberholung alle n Stunden (Schwellen am Typ-Datenblatt, Vorgaben der Gesellschaft), harte Landung im Bericht gemeldet, Überschreitung erlaubt und gesagt (Ausnahme); Kosten als Daten (Stundensatz, Treibstoffpreis und -dichte, Kosten einer Überholung)",
+     "es": "Mantenimiento de las aeronaves: revisión rápida y gran revisión cada n horas (umbrales en la ficha del tipo, valores por defecto de la compañía), aterrizaje duro declarado en el informe, exceder permitido y dicho (derogación); costes como datos (coste horario, precio y densidad del combustible, coste de una revisión)"
+    },
+    {
+     "id": "SOG-0108",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Balance financière : par appareil, par pilote, par compagnie, sur une période ; en lecture seule depuis les coûts (heures, carburant, révisions)",
+     "en": "Financial balance: per aircraft, per pilot, per airline, over a period; read-only from the costs (hours, fuel, overhauls)",
+     "de": "Finanzbilanz: je Luftfahrzeug, je Pilot, je Gesellschaft, über einen Zeitraum; nur lesend aus den Kosten (Stunden, Treibstoff, Überholungen)",
+     "es": "Balance financiero: por aeronave, por piloto, por compañía, en un periodo; solo lectura a partir de los costes (horas, combustible, revisiones)"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre",
+   "app": "maintenance",
+   "label": {
+    "fr": "Cadre",
+    "en": "Frame",
+    "de": "Rahmen",
+    "es": "Marco"
+   },
+   "items": [
+    {
+     "id": "SOG-0109",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Le site web de la compagnie à la place du relais NAS, si son web service existe un jour (même identité, pas une seconde)",
+     "en": "The company website in place of the NAS relay, if its web service ever exists (same identity, not a second one)",
+     "de": "Die Website der Gesellschaft anstelle des NAS-Relais, falls ihr Webdienst je existiert (gleiche Identität, keine zweite)",
+     "es": "El sitio web de la compañía en lugar del relé NAS, si su servicio web existe algún día (misma identidad, no una segunda)"
+    },
+    {
+     "id": "SOG-0110",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Appli iOS / Android (reprise de l'enveloppe)",
+     "en": "iOS / Android app (shell resumed)",
+     "de": "iOS- / Android-App (Wiederaufnahme der Hülle)",
+     "es": "App iOS / Android (retomando el envoltorio)"
+    },
+    {
+     "id": "SOG-0111",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Accueil d'un pilote par un relais sur le NAS : relais et appareils appairés codés sur le poste (R1a), connexion IVAO par le relais (R1b) ; invitations et…",
+     "en": "Pilot onboarding through a relay on the NAS: relay and paired devices coded on the workstation (R1a), IVAO login through the relay (R1b); invitations and deployment next, after a full security review, nothing exposed before the go",
+     "de": "Aufnahme eines Piloten über ein Relais auf dem NAS: Relais und gekoppelte Geräte auf dem Rechner codiert (R1a), IVAO-Anmeldung über das Relais (R1b); Einladungen und Bereitstellung danach, nach vollständiger Sicherheitsprüfung, nichts exponiert vor der Freigabe",
+     "es": "Alta de un piloto mediante un relé en el NAS: relé y dispositivos emparejados codificados en el equipo (R1a), inicio de sesión IVAO por el relé (R1b); invitaciones y despliegue después, tras una revisión de seguridad completa, nada expuesto antes del visto bueno"
+    },
+    {
+     "id": "SOG-0112",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Applications = jeux de modules nommés du même cadre : pilot et maintenance livrés (?app=), choisis par l'adresse ; puis cpco, client, par le rôle",
+     "en": "Applications = named module sets of the same frame: pilot and maintenance delivered (?app=), chosen by the address; then cpco, client, by the role",
+     "de": "Anwendungen = benannte Modulsätze desselben Rahmens: pilot und maintenance geliefert (?app=), gewählt über die Adresse; dann cpco, client, über die Rolle",
+     "es": "Aplicaciones = conjuntos de módulos con nombre del mismo marco: pilot y maintenance entregados (?app=), elegidos por la dirección; luego cpco, client, por el rol"
+    },
+    {
+     "id": "SOG-0113",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "IVAO sur le téléphone : connexion du pilote par le relais (OpenID), son propre jeton sur son appareil, tracker lu en direct",
+     "en": "IVAO on the phone: pilot login through the relay (OpenID), their own token on their device, tracker read directly",
+     "de": "IVAO auf dem Telefon: Anmeldung des Piloten über das Relais (OpenID), eigenes Token auf dem Gerät, Tracker direkt gelesen",
+     "es": "IVAO en el teléfono: inicio de sesión del piloto por el relé (OpenID), su propio token en su dispositivo, tracker leído directamente"
+    },
+    {
+     "id": "SOG-0114",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Missions (après la stabilisation) : missions communes du dépôt lues par tous, une mission engendre le vol (départ, rendez-vous, arrivée) et sa carte, usage…",
+     "en": "Missions (after the stabilisation): common missions of the repository read by all, a mission generates the flight (departure, rendezvous, arrival) and its map, \"crew member\" usage of the Pilot, CPCO as the third application once rebuilt",
+     "de": "Missionen (nach der Stabilisierung): gemeinsame Missionen des Depots für alle lesbar, eine Mission erzeugt den Flug (Abflug, Treffpunkt, Ankunft) und seine Karte, Nutzung „Besatzungsmitglied“ des Piloten, CPCO als dritte Anwendung nach dem Neubau",
+     "es": "Misiones (tras la estabilización): misiones comunes del depósito leídas por todos, una misión genera el vuelo (salida, punto de encuentro, llegada) y su mapa, uso «tripulante» del Piloto, CPCO como tercera aplicación cuando se rehaga"
+    },
+    {
+     "id": "SOG-0115",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Plusieurs compagnies sur un même terminal : plusieurs administrateurs, plusieurs profils de pilote, un dépôt de données par compagnie, le changement de…",
+     "en": "Several airlines on one terminal: several administrators, several pilot profiles, one data repository per airline, switching airline without mixing (request of 1 Nov)",
+     "de": "Mehrere Gesellschaften auf einem Gerät: mehrere Administratoren, mehrere Pilotenprofile, ein Daten-Repository je Gesellschaft, Wechsel der Gesellschaft ohne Vermischung (Wunsch vom 1.11.)",
+     "es": "Varias compañías en un mismo terminal: varios administradores, varios perfiles de piloto, un repositorio de datos por compañía, cambio de compañía sin mezcla (petición del 1/11)"
     }
    ]
   },
@@ -946,6 +1426,42 @@
      "de": "Launcher: Die Headless-Browser der Basis-Builds werden nie beendet",
      "es": "Lanzador: los navegadores sin interfaz de las compilaciones de base nunca se detienen",
      "milestone": "6.0.0-alpha.4"
+    },
+    {
+     "id": "SOG-0070",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Données : cliquer un pays sur la carte pour le basculer, actif ou inactif",
+     "en": "Données : cliquer un pays sur la carte pour le basculer, actif ou inactif",
+     "de": "Données : cliquer un pays sur la carte pour le basculer, actif ou inactif",
+     "es": "Données : cliquer un pays sur la carte pour le basculer, actif ou inactif"
+    },
+    {
+     "id": "SOG-0071",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Données : revoir l'ergonomie globale de l'écran (choisir, mettre à jour les différences, purger, recalculer les seuls périmés, tout désélectionner, par paquet ou par rectangle)",
+     "en": "Données : revoir l'ergonomie globale de l'écran (choisir, mettre à jour les différences, purger, recalculer les seuls périmés, tout désélectionner, par paquet ou par rectangle)",
+     "de": "Données : revoir l'ergonomie globale de l'écran (choisir, mettre à jour les différences, purger, recalculer les seuls périmés, tout désélectionner, par paquet ou par rectangle)",
+     "es": "Données : revoir l'ergonomie globale de l'écran (choisir, mettre à jour les différences, purger, recalculer les seuls périmés, tout désélectionner, par paquet ou par rectangle)"
+    },
+    {
+     "id": "SOG-0072",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Données : un pays reste « nouveau » en orange après recalcul et publication, jusqu'à un rechargement forcé",
+     "en": "Données : un pays reste « nouveau » en orange après recalcul et publication, jusqu'à un rechargement forcé",
+     "de": "Données : un pays reste « nouveau » en orange après recalcul et publication, jusqu'à un rechargement forcé",
+     "es": "Données : un pays reste « nouveau » en orange après recalcul et publication, jusqu'à un rechargement forcé"
+    },
+    {
+     "id": "SOG-0079",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Données : garder cochées les cases « personnel » des sources",
+     "en": "Données : garder cochées les cases « personnel » des sources",
+     "de": "Données : garder cochées les cases « personnel » des sources",
+     "es": "Données : garder cochées les cases « personnel » des sources"
     }
    ]
   },
@@ -1002,12 +1518,39 @@
     {
      "id": "SOG-0057",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Modification des fiches : les commentaires dégradent l'interface, nécessaires mais mal placés",
      "en": "Editing sheets: comments degrade the interface, needed but badly placed",
      "de": "Bearbeitung der Datenblätter: Kommentare beeinträchtigen die Oberfläche, nötig, aber schlecht platziert",
      "es": "Edición de fichas: los comentarios degradan la interfaz, necesarios pero mal ubicados",
      "milestone": "6.0.0-alpha.5"
+    },
+    {
+     "id": "SOG-0073",
+     "kind": "bug",
+     "state": "done",
+     "fr": "Fiches : « Compléter depuis une autre fiche » montre « Douglas DC-3 » quand on édite la Caravelle, et prend de la place",
+     "en": "Fiches : « Compléter depuis une autre fiche » montre « Douglas DC-3 » quand on édite la Caravelle, et prend de la place",
+     "de": "Fiches : « Compléter depuis une autre fiche » montre « Douglas DC-3 » quand on édite la Caravelle, et prend de la place",
+     "es": "Fiches : « Compléter depuis une autre fiche » montre « Douglas DC-3 » quand on édite la Caravelle, et prend de la place"
+    },
+    {
+     "id": "SOG-0074",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Unités : afficher l'unité courante dans l'en-tête, visible partout et en défilant",
+     "en": "Unités : afficher l'unité courante dans l'en-tête, visible partout et en défilant",
+     "de": "Unités : afficher l'unité courante dans l'en-tête, visible partout et en défilant",
+     "es": "Unités : afficher l'unité courante dans l'en-tête, visible partout et en défilant"
+    },
+    {
+     "id": "SOG-0075",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Courbes : des niveaux significatifs (< 5 000, FL100, FL150, FL200, FL300, FL450), extrapolation, données brutes gardées",
+     "en": "Courbes : des niveaux significatifs (< 5 000, FL100, FL150, FL200, FL300, FL450), extrapolation, données brutes gardées",
+     "de": "Courbes : des niveaux significatifs (< 5 000, FL100, FL150, FL200, FL300, FL450), extrapolation, données brutes gardées",
+     "es": "Courbes : des niveaux significatifs (< 5 000, FL100, FL150, FL200, FL300, FL450), extrapolation, données brutes gardées"
     }
    ]
   },
@@ -1066,6 +1609,72 @@
    ]
   },
   {
+   "id": "maintenance-reglages",
+   "app": "maintenance",
+   "label": {
+    "fr": "Réglages",
+    "en": "Réglages",
+    "de": "Réglages",
+    "es": "Réglages"
+   },
+   "items": [
+    {
+     "id": "SOG-0118",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Réglages › Administration : zoom à partir duquel la carte dessine les seuils de piste (maps.runwayZoom, 11 par défaut)",
+     "en": "Settings › Administration: zoom from which the map draws the runway thresholds (maps.runwayZoom, default 11)",
+     "de": "Einstellungen › Verwaltung: Zoomstufe, ab der die Karte die Pistenschwellen zeichnet (maps.runwayZoom, Standard 11)",
+     "es": "Ajustes › Administración: zoom a partir del cual el mapa dibuja los umbrales de pista (maps.runwayZoom, 11 por defecto)"
+    },
+    {
+     "id": "SOG-0119",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Administration : les quatre verbes pour chaque jeu de données (procédures, VAC, types et fiches d'appareils) et « Tout mettre à jour » ; mise à jour de la…",
+     "en": "Administration: the four verbs for every data set (procedures, VAC, aircraft types and sheets) and \"Update everything\"; suite update, workstation backup, folders; fleet and aircraft sheets edited in Maintenance",
+     "de": "Verwaltung: die vier Verben für jeden Datensatz (Verfahren, VAC, Flugzeugtypen und -blätter) und „Alles aktualisieren“; Aktualisierung der Suite, Sicherung des Rechners, Ordner; Flotte und Flugzeugblätter in der Wartung bearbeitet",
+     "es": "Administración: los cuatro verbos para cada conjunto de datos (procedimientos, VAC, tipos y fichas de aeronaves) y «Actualizar todo»; actualización de la suite, copia de seguridad del equipo, carpetas; flota y fichas de aeronaves editadas en Mantenimiento"
+    },
+    {
+     "id": "SOG-0120",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Réglages › Administration : carte « Coûts et maintenance » (monnaie, seuils de révision par défaut, coût horaire, prix et densité du carburant)",
+     "en": "Settings › Administration: a \"Costs and maintenance\" card (currency, default overhaul thresholds, hourly cost, fuel price and density)",
+     "de": "Einstellungen › Verwaltung: Karte „Kosten und Wartung“ (Währung, Standard-Wartungsschwellen, Stundensatz, Treibstoffpreis und -dichte)",
+     "es": "Ajustes › Administración: tarjeta «Costes y mantenimiento» (moneda, umbrales de revisión por defecto, coste horario, precio y densidad del combustible)"
+    },
+    {
+     "id": "SOG-0121",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Administration : la carte « Hôtes que la page peut contacter », en lecture seule, par catégorie et avec l'origine de chaque hôte (code, configuration du…",
+     "en": "Administration: the read-only card \"Hosts this page may contact\", by category and with the origin of each host (code, launcher configuration); a case checks that every provider of the table is there; never an editable list",
+     "de": "Verwaltung: die schreibgeschützte Karte „Hosts, die die Seite kontaktieren darf“, nach Kategorie und mit der Herkunft jedes Hosts (Code, Starter-Konfiguration); ein Fall prüft, dass jeder Anbieter der Tabelle dort ist; nie eine bearbeitbare Liste",
+     "es": "Administración: la tarjeta de solo lectura «Hosts que la página puede contactar», por categoría y con el origen de cada host (código, configuración del lanzador); un caso comprueba que cada proveedor de la tabla está; nunca una lista editable"
+    },
+    {
+     "id": "SOG-0122",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Refonte des fournisseurs de dépôt : une seule table lue par l'export, Rejoindre, Accès, le transport et la politique de contenu ; tout fournisseur déclaré…",
+     "en": "Repository providers refactoring: one table read by the export, Join, Access, the transport and the content policy; any provider declared in administration, pushed through the airline's configuration",
+     "de": "Neuordnung der Repository-Anbieter: eine Tabelle, gelesen von Export, Beitreten, Zugang, Transport und Inhaltsrichtlinie; jeder in der Verwaltung erklärte Anbieter, über die Konfiguration der Gesellschaft verteilt",
+     "es": "Refundición de los proveedores de repositorio: una sola tabla leída por la exportación, Unirse, Acceso, el transporte y la política de contenido; cualquier proveedor declarado en administración, enviado por la configuración de la compañía"
+    },
+    {
+     "id": "SOG-0123",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Logo de la compagnie : un SVG déposé est converti d'office en PNG par l'appli (demande du 2/11)",
+     "en": "Airline logo: an SVG dropped in is converted to PNG by the app (request of 2 Nov)",
+     "de": "Logo der Gesellschaft: ein abgelegtes SVG wird von der App automatisch in PNG umgewandelt (Wunsch vom 2.11.)",
+     "es": "Logotipo de la compañía: un SVG depositado se convierte automáticamente a PNG en la aplicación (petición del 2/11)"
+    }
+   ]
+  },
+  {
    "id": "maintenance-suite",
    "app": "maintenance",
    "label": {
@@ -1084,6 +1693,15 @@
      "de": "Ein Optimierungsdurchgang für die Anzeige- und Ladeleistung",
      "es": "Una pasada de optimización del rendimiento de visualización y de carga",
      "milestone": "6.0.0-alpha.5"
+    },
+    {
+     "id": "SOG-0124",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Exécution sur le poste Windows (Playwright et Chromium à installer) ; en attendant, le runner cloud",
+     "en": "Run on the Windows workstation (Playwright and Chromium to install); the cloud runner meanwhile",
+     "de": "Ausführung am Windows-Arbeitsplatz (Playwright und Chromium zu installieren); bis dahin der Cloud-Runner",
+     "es": "Ejecución en el puesto Windows (Playwright y Chromium por instalar); mientras tanto, el runner en la nube"
     }
    ]
   },
@@ -1267,22 +1885,6 @@
      "kind": "feature"
     },
     {
-     "state": "later",
-     "fr": "Édition de la table RPM sur téléphone",
-     "en": "RPM table editing on the phone",
-     "de": "Bearbeiten der RPM-Tabelle auf dem Telefon",
-     "es": "Edición de la tabla RPM en el teléfono",
-     "kind": "feature"
-    },
-    {
-     "state": "later",
-     "fr": "TEMSI : vent et météo en route depuis les cartes TEMSI",
-     "en": "TEMSI: en-route wind and weather from TEMSI charts",
-     "de": "TEMSI: Streckenwind und -wetter aus TEMSI-Karten",
-     "es": "TEMSI: viento y meteo en ruta desde las cartas TEMSI",
-     "kind": "feature"
-    },
-    {
      "state": "done",
      "fr": "Météo sans lanceur (téléphone) : METAR par metar.vatsim.net sans clé, TAF par une clé personnelle avwx.rest saisie sur l'appareil ; terrains intermédiaires déduits de la route",
      "en": "Weather without a launcher (phone): METAR through metar.vatsim.net without a key, TAF through a personal avwx.rest key entered on the device; en-route airfields derived from the route",
@@ -1336,30 +1938,6 @@
      "en": "Procedures not read: counted per page with their source, never shown as good",
      "de": "Nicht gelesene Verfahren: je Seite gezählt mit Quelle, nie als gut gezeigt",
      "es": "Procedimientos no leídos: contados por página con su fuente, nunca mostrados como buenos",
-     "kind": "feature"
-    },
-    {
-     "state": "planned",
-     "fr": "Direct vers un point sur instruction du contrôle : chercher le point, reprendre le reste du vol",
-     "en": "Direct to a point on ATC instruction: find the point, rewrite the rest of the flight",
-     "de": "Direkt zu einem Punkt auf Anweisung der Flugsicherung: Punkt suchen, Rest des Flugs neu schreiben",
-     "es": "Directo a un punto por instrucción del control: buscar el punto, reescribir el resto del vuelo",
-     "kind": "feature"
-    },
-    {
-     "state": "planned",
-     "fr": "Route au format FPL avec piste et procédures (LFPO/07 OPAL2E OPALE DCT …) : lue et écrite",
-     "en": "Route in FPL form with runway and procedures (LFPO/07 OPAL2E OPALE DCT …): read and written",
-     "de": "Route im FPL-Format mit Piste und Verfahren (LFPO/07 OPAL2E OPALE DCT …): gelesen und geschrieben",
-     "es": "Ruta en formato FPL con pista y procedimientos (LFPO/07 OPAL2E OPALE DCT …): leída y escrita",
-     "kind": "feature"
-    },
-    {
-     "state": "planned",
-     "fr": "Piste en service ou probable d'après le METAR du départ et de l'arrivée",
-     "en": "Runway in use or probable from the departure and arrival METAR",
-     "de": "Betriebspiste oder wahrscheinliche Piste nach dem METAR von Start und Ziel",
-     "es": "Pista en uso o probable según el METAR de salida y llegada",
      "kind": "feature"
     },
     {
@@ -1512,14 +2090,6 @@
      "kind": "feature"
     },
     {
-     "state": "later",
-     "fr": "Route probable, traces d'exercice, cartes d'opération, AAR / NAT, zones bâties, relief hors ligne",
-     "en": "Probable route, exercise traces, operation maps, AAR / NAT, built-up areas, offline terrain",
-     "de": "Wahrscheinliche Route, Übungsspuren, Einsatzkarten, AAR / NAT, bebaute Gebiete, Gelände offline",
-     "es": "Ruta probable, trazas de ejercicio, mapas de operación, AAR / NAT, zonas urbanizadas, relieve sin conexión",
-     "kind": "feature"
-    },
-    {
      "state": "done",
      "fr": "Vol en cours sur la carte et le profil : position prévue et position réelle, avance / retard, écart latéral, ETA par point, « Suivre »",
      "en": "Flight in progress on the map and the profile: planned and actual positions, early / late, cross-track, ETA per point, “Follow”",
@@ -1576,14 +2146,6 @@
      "kind": "feature"
     },
     {
-     "state": "planned",
-     "fr": "Calques météo sur la carte depuis la bibliothèque de Météo (puce Météo) et bord de la zone du vol : lot 2 après le recodage",
-     "en": "Weather layers on the map from Weather's library (Weather chip) and flight-zone edge: lot 2 after the recode",
-     "de": "Wetterebenen auf der Karte aus der Bibliothek von Wetter (Chip Wetter) und Rand der Flugzone: Los 2 nach der Neuschreibung",
-     "es": "Capas meteorológicas en el mapa desde la biblioteca de Meteo (chip Meteo) y borde de la zona del vuelo: lote 2 tras la recodificación",
-     "kind": "feature"
-    },
-    {
      "state": "done",
      "fr": "Carte recodée depuis sa spécification (28/10) : module en fichiers par sujet, heures et position prévue dérivées des temps du devis, mode Édition qui fusionne dans la route, météo par la couche du cadre",
      "en": "Map recoded from its specification (28 Oct): module in files by concern, times and planned position derived from the quote's leg times, Edit mode merging into the route, weather through the frame's layer",
@@ -1624,35 +2186,11 @@
      "kind": "feature"
     },
     {
-     "state": "planned",
-     "fr": "Virages de plus de 90° des procédures tracés avec un rayon selon la vitesse indiquée",
-     "en": "Procedure turns over 90° drawn with a radius from the indicated speed",
-     "de": "Verfahrenskurven über 90° mit einem Radius nach der angezeigten Geschwindigkeit gezeichnet",
-     "es": "Virajes de más de 90° de los procedimientos trazados con un radio según la velocidad indicada",
-     "kind": "feature"
-    },
-    {
-     "state": "planned",
-     "fr": "Contrôleurs VATSIM et IVAO actifs sur la Carte, une teinte par réseau",
-     "en": "Active VATSIM and IVAO controllers on the Map, one hue per network",
-     "de": "Aktive VATSIM- und IVAO-Lotsen auf der Karte, eine Farbe je Netz",
-     "es": "Controladores VATSIM e IVAO activos en el Mapa, un color por red",
-     "kind": "feature"
-    },
-    {
      "state": "done",
      "fr": "Choix de la piste et de la procédure en trois tapes, dans n'importe quel ordre : les trois familles visibles à la fois, seules les compatibles par défaut (« N autres · Toutes »), familles de STAR, transitions en sous-lignes, volet condensé ; seuil de piste en petit vecteur au zoom élevé",
      "en": "Runway and procedure chosen in three taps, in any order: the three families visible at once, compatible rows only by default (\"N more · All\"), STAR families, transitions as sub-rows, condensed pane; runway threshold as a small vector at high zoom",
      "de": "Piste und Verfahren mit drei Tipps in beliebiger Reihenfolge: die drei Familien zugleich sichtbar, standardmäßig nur passende Zeilen („N weitere · Alle“), STAR-Familien, Übergänge als Unterzeilen, kompaktes Fenster; Pistenschwelle als kleiner Vektor bei hohem Zoom",
      "es": "Pista y procedimiento elegidos en tres toques, en cualquier orden: las tres familias visibles a la vez, solo las compatibles por defecto («N más · Todas»), familias de STAR, transiciones en sublíneas, panel condensado; umbral de pista como pequeño vector con zoom alto",
-     "kind": "feature"
-    },
-    {
-     "state": "planned",
-     "fr": "Trace de la route : un tronçon DCT en pointillé, un tronçon de voie aérienne en trait plein avec le cartouche de la voie (demande du 1/11, après le 6/11)",
-     "en": "Route trace: a DCT leg dotted, an airway leg solid with the airway's cartouche (request of 1 Nov, after 6 Nov)",
-     "de": "Routenspur: ein DCT-Abschnitt gepunktet, ein Luftstraßen-Abschnitt durchgezogen mit der Kartusche der Luftstraße (Wunsch vom 1.11., nach dem 6.11.)",
-     "es": "Traza de la ruta: un tramo DCT punteado, un tramo de aerovía continuo con el cartucho de la aerovía (petición del 1/11, después del 6/11)",
      "kind": "feature"
     }
    ]
@@ -1690,14 +2228,6 @@
      "en": "“Save and record on the site” in one gesture; bridge to the V2 registry through the launcher",
      "de": "„Speichern und auf der Website eintragen“ in einem Schritt; Brücke zum V2-Register über den Starter",
      "es": "«Guardar e inscribir en el sitio» en un solo gesto; puente hacia el registro V2 a través del lanzador",
-     "kind": "feature"
-    },
-    {
-     "state": "planned",
-     "fr": "Inscription sur le site sans copier-coller (web service PHP)",
-     "en": "Recording on the site without copy-paste (PHP web service)",
-     "de": "Eintragen auf der Website ohne Kopieren und Einfügen (PHP-Webservice)",
-     "es": "Inscripción en el sitio sin copiar y pegar (servicio web PHP)",
      "kind": "feature"
     },
     {
@@ -1783,14 +2313,6 @@
      "kind": "feature"
     },
     {
-     "state": "later",
-     "fr": "TEMSI ; SIGMET et METAR du monde par le relais du lanceur",
-     "en": "TEMSI; world SIGMET and METAR through the launcher relay",
-     "de": "TEMSI; SIGMET und METAR der Welt über das Launcher-Relais",
-     "es": "TEMSI; SIGMET y METAR del mundo por el relé del lanzador",
-     "kind": "feature"
-    },
-    {
      "state": "done",
      "fr": "Module Météo recodé depuis sa spécification sur la couche météo du cadre (session cloud)",
      "en": "Weather module recoded from its specification on the frame's weather layer (cloud session)",
@@ -1817,14 +2339,6 @@
      "en": "Flight log and fleet by paste or read through the launcher, preview before writing; Airline card (site address)",
      "de": "Flugbuch und Flotte per Einfügen oder Lesen über den Starter, Vorschau vor dem Schreiben; Karte Fluggesellschaft (Adresse der Website)",
      "es": "Diario de vuelos y flota por pegado o lectura a través del lanzador, vista previa antes de escribir; tarjeta Compañía (dirección del sitio)",
-     "kind": "feature"
-    },
-    {
-     "state": "later",
-     "fr": "Web service PHP du site (pas d'hébergement PHP pour le moment) : flotte et journal en JSON, connexion avec le compte du site, le site comme transport ; connexion GitHub sans jeton",
-     "en": "PHP web service of the site (no PHP hosting for now): fleet and log as JSON, sign-in with the site account, the site as a transport; GitHub sign-in without a token",
-     "de": "PHP-Webdienst der Website (derzeit kein PHP-Hosting): Flotte und Logbuch als JSON, Anmeldung mit dem Website-Konto, die Website als Transport; GitHub-Anmeldung ohne Token",
-     "es": "Servicio web PHP del sitio (sin alojamiento PHP por ahora): flota y diario en JSON, inicio de sesión con la cuenta del sitio, el sitio como transporte; inicio de sesión GitHub sin token",
      "kind": "feature"
     }
    ]
@@ -1871,22 +2385,6 @@
      "de": "Starter: ein vorhandenes data/ in das Daten-Repository übernehmen",
      "es": "Lanzador: incorporar un data/ existente al repositorio de datos",
      "kind": "feature"
-    },
-    {
-     "state": "later",
-     "fr": "Appli CPCO V3 : planification, affectations, reporting ; appli Client SOG : mes missions à rendre",
-     "en": "CPCO V3 app: planning, assignments, reporting; SOG client app: my missions to deliver",
-     "de": "App CPCO V3: Planung, Zuweisungen, Reporting; App SOG-Client: meine abzugebenden Missionen",
-     "es": "App CPCO V3: planificación, asignaciones, reporting; app Cliente SOG: mis misiones por entregar",
-     "kind": "feature"
-    },
-    {
-     "state": "planned",
-     "fr": "Extinction progressive de la V2 (décidée ; le rythme ne l'est pas) ; d'ici là les pages V2 vivent à côté de la V3",
-     "en": "Progressive shutdown of V2 (decided; the pace is not); until then V2 pages live next to V3",
-     "de": "Schrittweise Abschaltung der V2 (beschlossen; das Tempo nicht); bis dahin leben die V2-Seiten neben der V3",
-     "es": "Apagado progresivo de la V2 (decidido; el ritmo no); hasta entonces las páginas V2 viven junto a la V3",
-     "kind": "feature"
     }
    ]
   },
@@ -1923,14 +2421,6 @@
      "en": "Map, Weather, Settings chapters and legends assembled in four languages; anchors per paragraph",
      "de": "Kapitel Karte, Wetter, Einstellungen und Legenden in vier Sprachen zusammengestellt; Anker je Absatz",
      "es": "Capítulos Mapa, Meteo, Ajustes y leyendas ensamblados en cuatro idiomas; anclas por párrafo",
-     "kind": "feature"
-    },
-    {
-     "state": "planned",
-     "fr": "Tutoriel « Rejoindre la compagnie » réécrit pour GitLab (jeton reçu de l'administrateur, pas de compte à créer), captures refaites",
-     "en": "\"Join the airline\" tutorial rewritten for GitLab (token received from the administrator, no account to create), screenshots redone",
-     "de": "Tutorial „Der Gesellschaft beitreten“ für GitLab neu geschrieben (Token vom Administrator, kein Konto anzulegen), Bildschirmfotos erneuert",
-     "es": "Tutorial «Unirse a la compañía» reescrito para GitLab (token recibido del administrador, sin cuenta que crear), capturas rehechas",
      "kind": "feature"
     }
    ]
@@ -1987,22 +2477,6 @@
      "kind": "feature"
     },
     {
-     "state": "planned",
-     "fr": "Extrait GeoNames plus complet (Portugal, Irlande)",
-     "en": "Fuller GeoNames extract (Portugal, Ireland)",
-     "de": "Vollständigerer GeoNames-Auszug (Portugal, Irland)",
-     "es": "Extracto de GeoNames más completo (Portugal, Irlanda)",
-     "kind": "feature"
-    },
-    {
-     "state": "later",
-     "fr": "Génération des bases (SIA par zone, MORA, base appareils) : faite aujourd'hui par la V2 seule, sur le poste ; il faudra probablement un client lourd, sauf mieux ; faute de mieux, cette partie de la V2 est gardée",
-     "en": "Base generation (SIA by zone, MORA, aircraft base): done today by V2 only, on the workstation; a desktop client will probably be needed, unless something better is found; failing better, that part of V2 is kept",
-     "de": "Erzeugung der Datenbanken (SIA nach Zone, MORA, Luftfahrzeugbasis): heute nur durch die V2 am Arbeitsplatz; wahrscheinlich wird ein Desktop-Client nötig sein, sofern nichts Besseres gefunden wird; andernfalls bleibt dieser Teil der V2",
-     "es": "Generación de las bases (SIA por zona, MORA, base de aeronaves): hoy solo la hace la V2, en el puesto; probablemente hará falta un cliente de escritorio, salvo algo mejor; a falta de algo mejor, se conserva esa parte de la V2",
-     "kind": "feature"
-    },
-    {
      "state": "done",
      "fr": "État de la base en six valeurs (chargement, prête, accès non réglé, hors ligne, non publiée) ; points de report dédoublonnés à la source (parseur 17, base à reconstruire)",
      "en": "Base state in six values (loading, ready, no access, offline, unpublished); reporting points deduplicated at the source (parser 17, base to rebuild)",
@@ -2043,14 +2517,6 @@
      "kind": "feature"
     },
     {
-     "state": "later",
-     "fr": "Application « Données » dédiée (iOS, Android) : chantier à part, à ouvrir",
-     "en": "Dedicated \"Data\" application (iOS, Android): separate project, to open",
-     "de": "Eigene App „Daten“ (iOS, Android): eigenes Vorhaben, noch zu eröffnen",
-     "es": "Aplicación «Datos» dedicada (iOS, Android): proyecto aparte, por abrir",
-     "kind": "feature"
-    },
-    {
      "state": "done",
      "fr": "Écran « Sources » derrière Administration : une ligne par source utilisée, candidate ou écartée, avec lien, licence et statut, sans récupération ; remplacé par le module Données à son premier lot",
      "en": "\"Sources\" screen behind Administration: one line per source used, candidate or dropped, with link, licence and status, no fetching; replaced by the Data module at its first lot",
@@ -2067,43 +2533,11 @@
      "kind": "feature"
     },
     {
-     "state": "planned",
-     "fr": "Procédures depuis Little Navmap (Navigraph, X-Plane, MSFS 2020 / 2024) en repli local, jamais publié ; position MSFS par Little Navmap",
-     "en": "Procedures from Little Navmap (Navigraph, X-Plane, MSFS 2020 / 2024) as a local fallback, never published; MSFS position through Little Navmap",
-     "de": "Verfahren aus Little Navmap (Navigraph, X-Plane, MSFS 2020 / 2024) als lokaler Rückfall, nie veröffentlicht; MSFS-Position über Little Navmap",
-     "es": "Procedimientos desde Little Navmap (Navigraph, X-Plane, MSFS 2020 / 2024) como respaldo local, nunca publicados; posición MSFS por Little Navmap",
-     "kind": "feature"
-    },
-    {
      "state": "done",
      "fr": "Lecture à la demande par État : la France par l'eAIP du SIA sans identifiants, les États à tables par EAD, sinon Little Navmap",
      "en": "On-demand reading by State: France through the SIA eAIP without credentials, States with tables through EAD, else Little Navmap",
      "de": "Lesen auf Abruf je Staat: Frankreich über das eAIP des SIA ohne Zugangsdaten, Staaten mit Tabellen über EAD, sonst Little Navmap",
      "es": "Lectura bajo demanda por Estado: Francia por el eAIP del SIA sin credenciales, Estados con tablas por EAD, si no Little Navmap",
-     "kind": "feature"
-    },
-    {
-     "state": "planned",
-     "fr": "Appareils (V3 § 10.35, décidé le 31/10, code après le 6/11) : une fiche est un type + variante sans immatriculation, un appareil une immatriculation (état, maintenance, heures depuis le carnet, historique) ; ajouter = choisir la fiche puis renseigner ; appareils « vus dans vos vols » à confirmer ; flotte partagée et flotte perso dans le dépôt",
-     "en": "Aircraft (V3 § 10.35, decided 31 Oct, code after 6 Nov): a sheet is a type + variant without registration, an aircraft a registration (state, maintenance, hours from the log, history); add = choose the sheet then fill; aircraft \"seen in your flights\" to confirm; shared and personal fleets in the repository",
-     "de": "Luftfahrzeuge (V3 § 10.35, entschieden am 31.10., Code nach dem 6.11.): ein Datenblatt ist ein Typ + Variante ohne Kennzeichen, ein Luftfahrzeug ein Kennzeichen (Zustand, Wartung, Stunden aus dem Logbuch, Historie); Hinzufügen = Datenblatt wählen, dann ausfüllen; „in Ihren Flügen gesehene“ Luftfahrzeuge zum Bestätigen; gemeinsame und persönliche Flotte im Repository",
-     "es": "Aeronaves (V3 § 10.35, decidido el 31/10, código después del 6/11): una ficha es un tipo + variante sin matrícula, una aeronave una matrícula (estado, mantenimiento, horas del diario, historial); añadir = elegir la ficha y luego rellenar; aeronaves «vistas en sus vuelos» por confirmar; flota compartida y flota personal en el repositorio",
-     "kind": "feature"
-    },
-    {
-     "state": "planned",
-     "fr": "Maintenance des appareils : révision rapide et grande révision tous les n heures (seuils sur la fiche du type, défauts de la compagnie), atterrissage dur déclaré au compte rendu, dépassement permis et dit (dérogatoire) ; coûts en données (coût horaire, prix et densité du carburant, coût d'une révision)",
-     "en": "Aircraft maintenance: quick check and major overhaul every n hours (thresholds on the type's sheet, airline defaults), hard landing declared in the report, flying beyond allowed and said (derogation); costs as data (hourly cost, fuel price and density, cost of an overhaul)",
-     "de": "Wartung der Luftfahrzeuge: kurze Kontrolle und Grundüberholung alle n Stunden (Schwellen am Typ-Datenblatt, Vorgaben der Gesellschaft), harte Landung im Bericht gemeldet, Überschreitung erlaubt und gesagt (Ausnahme); Kosten als Daten (Stundensatz, Treibstoffpreis und -dichte, Kosten einer Überholung)",
-     "es": "Mantenimiento de las aeronaves: revisión rápida y gran revisión cada n horas (umbrales en la ficha del tipo, valores por defecto de la compañía), aterrizaje duro declarado en el informe, exceder permitido y dicho (derogación); costes como datos (coste horario, precio y densidad del combustible, coste de una revisión)",
-     "kind": "feature"
-    },
-    {
-     "state": "later",
-     "fr": "Balance financière : par appareil, par pilote, par compagnie, sur une période ; en lecture seule depuis les coûts (heures, carburant, révisions)",
-     "en": "Financial balance: per aircraft, per pilot, per airline, over a period; read-only from the costs (hours, fuel, overhauls)",
-     "de": "Finanzbilanz: je Luftfahrzeug, je Pilot, je Gesellschaft, über einen Zeitraum; nur lesend aus den Kosten (Stunden, Treibstoff, Überholungen)",
-     "es": "Balance financiero: por aeronave, por piloto, por compañía, en un periodo; solo lectura a partir de los costes (horas, combustible, revisiones)",
      "kind": "feature"
     }
    ]
@@ -2240,22 +2674,6 @@
      "kind": "feature"
     },
     {
-     "state": "later",
-     "fr": "Le site web de la compagnie à la place du relais NAS, si son web service existe un jour (même identité, pas une seconde)",
-     "en": "The company website in place of the NAS relay, if its web service ever exists (same identity, not a second one)",
-     "de": "Die Website der Gesellschaft anstelle des NAS-Relais, falls ihr Webdienst je existiert (gleiche Identität, keine zweite)",
-     "es": "El sitio web de la compañía en lugar del relé NAS, si su servicio web existe algún día (misma identidad, no una segunda)",
-     "kind": "feature"
-    },
-    {
-     "state": "later",
-     "fr": "Appli iOS / Android (reprise de l'enveloppe)",
-     "en": "iOS / Android app (shell resumed)",
-     "de": "iOS- / Android-App (Wiederaufnahme der Hülle)",
-     "es": "App iOS / Android (retomando el envoltorio)",
-     "kind": "feature"
-    },
-    {
      "state": "done",
      "fr": "Premier écran sans attendre le réseau : champs de Carburant à 0,8 s au premier passage GitHub (compagnie lue en fond, lectures du dépôt partagées)",
      "en": "First screen without waiting for the network: Fuel's fields at 0.8 s on the first GitHub pass (airline read in the background, repository reads shared)",
@@ -2326,46 +2744,6 @@
      "de": "Daten auf GitLab: ein Projekt-Token je Pilot (Kürzel, Rolle Developer, höchstens ein Jahr), vom Administrator unter Wartung › Token der Piloten erstellt und einmal in Einstellungen › Zugang eingefügt",
      "es": "Datos en GitLab: un token de proyecto por piloto (trigrama, rol Developer, un año como máximo), creado por el administrador en Mantenimiento › Tokens de los pilotos y pegado una vez en Ajustes › Acceso",
      "kind": "feature"
-    },
-    {
-     "state": "doing",
-     "fr": "Accueil d'un pilote par un relais sur le NAS : relais et appareils appairés codés sur le poste (R1a), connexion IVAO par le relais (R1b) ; invitations et déploiement ensuite, après relecture sécurité complète, rien d'exposé avant le feu vert",
-     "en": "Pilot onboarding through a relay on the NAS: relay and paired devices coded on the workstation (R1a), IVAO login through the relay (R1b); invitations and deployment next, after a full security review, nothing exposed before the go",
-     "de": "Aufnahme eines Piloten über ein Relais auf dem NAS: Relais und gekoppelte Geräte auf dem Rechner codiert (R1a), IVAO-Anmeldung über das Relais (R1b); Einladungen und Bereitstellung danach, nach vollständiger Sicherheitsprüfung, nichts exponiert vor der Freigabe",
-     "es": "Alta de un piloto mediante un relé en el NAS: relé y dispositivos emparejados codificados en el equipo (R1a), inicio de sesión IVAO por el relé (R1b); invitaciones y despliegue después, tras una revisión de seguridad completa, nada expuesto antes del visto bueno",
-     "kind": "feature"
-    },
-    {
-     "state": "doing",
-     "fr": "Applications = jeux de modules nommés du même cadre : pilot et maintenance livrés (?app=), choisis par l'adresse ; puis cpco, client, par le rôle",
-     "en": "Applications = named module sets of the same frame: pilot and maintenance delivered (?app=), chosen by the address; then cpco, client, by the role",
-     "de": "Anwendungen = benannte Modulsätze desselben Rahmens: pilot und maintenance geliefert (?app=), gewählt über die Adresse; dann cpco, client, über die Rolle",
-     "es": "Aplicaciones = conjuntos de módulos con nombre del mismo marco: pilot y maintenance entregados (?app=), elegidos por la dirección; luego cpco, client, por el rol",
-     "kind": "feature"
-    },
-    {
-     "state": "planned",
-     "fr": "IVAO sur le téléphone : connexion du pilote par le relais (OpenID), son propre jeton sur son appareil, tracker lu en direct",
-     "en": "IVAO on the phone: pilot login through the relay (OpenID), their own token on their device, tracker read directly",
-     "de": "IVAO auf dem Telefon: Anmeldung des Piloten über das Relais (OpenID), eigenes Token auf dem Gerät, Tracker direkt gelesen",
-     "es": "IVAO en el teléfono: inicio de sesión del piloto por el relé (OpenID), su propio token en su dispositivo, tracker leído directamente",
-     "kind": "feature"
-    },
-    {
-     "state": "doing",
-     "fr": "Missions (après la stabilisation) : missions communes du dépôt lues par tous, une mission engendre le vol (départ, rendez-vous, arrivée) et sa carte, usage « équipier » du Pilote, CPCO troisième application quand il sera refait",
-     "en": "Missions (after the stabilisation): common missions of the repository read by all, a mission generates the flight (departure, rendezvous, arrival) and its map, \"crew member\" usage of the Pilot, CPCO as the third application once rebuilt",
-     "de": "Missionen (nach der Stabilisierung): gemeinsame Missionen des Depots für alle lesbar, eine Mission erzeugt den Flug (Abflug, Treffpunkt, Ankunft) und seine Karte, Nutzung „Besatzungsmitglied“ des Piloten, CPCO als dritte Anwendung nach dem Neubau",
-     "es": "Misiones (tras la estabilización): misiones comunes del depósito leídas por todos, una misión genera el vuelo (salida, punto de encuentro, llegada) y su mapa, uso «tripulante» del Piloto, CPCO como tercera aplicación cuando se rehaga",
-     "kind": "feature"
-    },
-    {
-     "state": "later",
-     "fr": "Plusieurs compagnies sur un même terminal : plusieurs administrateurs, plusieurs profils de pilote, un dépôt de données par compagnie, le changement de compagnie sans mélange (demande du 1/11)",
-     "en": "Several airlines on one terminal: several administrators, several pilot profiles, one data repository per airline, switching airline without mixing (request of 1 Nov)",
-     "de": "Mehrere Gesellschaften auf einem Gerät: mehrere Administratoren, mehrere Pilotenprofile, ein Daten-Repository je Gesellschaft, Wechsel der Gesellschaft ohne Vermischung (Wunsch vom 1.11.)",
-     "es": "Varias compañías en un mismo terminal: varios administradores, varios perfiles de piloto, un repositorio de datos por compañía, cambio de compañía sin mezcla (petición del 1/11)",
-     "kind": "feature"
     }
    ]
   },
@@ -2389,27 +2767,11 @@
      "kind": "feature"
     },
     {
-     "state": "planned",
-     "fr": "Autres designs V2, impression du compte rendu",
-     "en": "Other V2 designs, report printing",
-     "de": "Weitere V2-Designs, Drucken des Berichts",
-     "es": "Otros diseños V2, impresión del informe",
-     "kind": "feature"
-    },
-    {
      "state": "done",
      "fr": "Quatre maquettes retenues : metro, swiss, cupertino, material (cabinet abandonné) ; boutons ronds ou carrés selon le design",
      "en": "Four mock-ups retained: metro, swiss, cupertino, material (cabinet dropped); round or square buttons per design",
      "de": "Vier Entwürfe behalten: metro, swiss, cupertino, material (cabinet verworfen); runde oder eckige Tasten je Design",
      "es": "Cuatro maquetas retenidas: metro, swiss, cupertino, material (cabinet abandonado); botones redondos o cuadrados según el diseño",
-     "kind": "feature"
-    },
-    {
-     "state": "later",
-     "fr": "Teintes, police, règles répétées à promouvoir en jetons (choix de l'utilisateur)",
-     "en": "Hues, font, repeated rules to promote to tokens (user's choice)",
-     "de": "Farbtöne, Schrift, wiederholte Regeln als Tokens (Wahl des Nutzers)",
-     "es": "Tonos, fuente, reglas repetidas a promover en tokens (elección del usuario)",
      "kind": "feature"
     },
     {
@@ -2514,59 +2876,11 @@
      "kind": "feature"
     },
     {
-     "state": "planned",
-     "fr": "Réglages › Administration : zoom à partir duquel la carte dessine les seuils de piste (maps.runwayZoom, 11 par défaut)",
-     "en": "Settings › Administration: zoom from which the map draws the runway thresholds (maps.runwayZoom, default 11)",
-     "de": "Einstellungen › Verwaltung: Zoomstufe, ab der die Karte die Pistenschwellen zeichnet (maps.runwayZoom, Standard 11)",
-     "es": "Ajustes › Administración: zoom a partir del cual el mapa dibuja los umbrales de pista (maps.runwayZoom, 11 por defecto)",
-     "kind": "feature"
-    },
-    {
-     "state": "doing",
-     "fr": "Administration : les quatre verbes pour chaque jeu de données (procédures, VAC, types et fiches d'appareils) et « Tout mettre à jour » ; mise à jour de la suite, sauvegarde du poste, dossiers ; flotte et fiches appareils éditées dans Maintenance",
-     "en": "Administration: the four verbs for every data set (procedures, VAC, aircraft types and sheets) and \"Update everything\"; suite update, workstation backup, folders; fleet and aircraft sheets edited in Maintenance",
-     "de": "Verwaltung: die vier Verben für jeden Datensatz (Verfahren, VAC, Flugzeugtypen und -blätter) und „Alles aktualisieren“; Aktualisierung der Suite, Sicherung des Rechners, Ordner; Flotte und Flugzeugblätter in der Wartung bearbeitet",
-     "es": "Administración: los cuatro verbos para cada conjunto de datos (procedimientos, VAC, tipos y fichas de aeronaves) y «Actualizar todo»; actualización de la suite, copia de seguridad del equipo, carpetas; flota y fichas de aeronaves editadas en Mantenimiento",
-     "kind": "feature"
-    },
-    {
-     "state": "planned",
-     "fr": "Réglages › Administration : carte « Coûts et maintenance » (monnaie, seuils de révision par défaut, coût horaire, prix et densité du carburant)",
-     "en": "Settings › Administration: a \"Costs and maintenance\" card (currency, default overhaul thresholds, hourly cost, fuel price and density)",
-     "de": "Einstellungen › Verwaltung: Karte „Kosten und Wartung“ (Währung, Standard-Wartungsschwellen, Stundensatz, Treibstoffpreis und -dichte)",
-     "es": "Ajustes › Administración: tarjeta «Costes y mantenimiento» (moneda, umbrales de revisión por defecto, coste horario, precio y densidad del combustible)",
-     "kind": "feature"
-    },
-    {
      "state": "done",
      "fr": "GitLab fournisseur proposé du dépôt des données (31/10) : un jeton d'accès de projet par pilote (trigramme, Developer, portée api, un an au plus), sans compte GitLab ; carte « Ajouter un pilote » (lien de configuration, « Créer son jeton », message au pilote) ; « Rejoindre » en trois étapes avec le jeton vérifié",
      "en": "GitLab as the proposed provider of the data repository (31 Oct): one project access token per pilot (trigram, Developer, scope api, one year at most), no GitLab account; \"Add a pilot\" card (configuration link, \"Create their token\", message to the pilot); \"Join\" in three steps with the token checked",
      "de": "GitLab als vorgeschlagener Anbieter des Daten-Repositorys (31.10.): ein Projekt-Zugriffstoken je Pilot (Kürzel, Developer, Scope api, höchstens ein Jahr), kein GitLab-Konto; Karte „Piloten hinzufügen“ (Konfigurationslink, „Token erstellen“, Nachricht an den Piloten); „Beitreten“ in drei Schritten mit geprüftem Token",
      "es": "GitLab como proveedor propuesto del repositorio de datos (31/10): un token de acceso de proyecto por piloto (trigrama, Developer, ámbito api, un año como máximo), sin cuenta GitLab; tarjeta «Añadir un piloto» (enlace de configuración, «Crear su token», mensaje al piloto); «Unirse» en tres pasos con el token comprobado",
-     "kind": "feature"
-    },
-    {
-     "state": "planned",
-     "fr": "Administration : la carte « Hôtes que la page peut contacter », en lecture seule, par catégorie et avec l'origine de chaque hôte (code, configuration du lanceur) ; un cas vérifie que chaque fournisseur de la table y est ; jamais une liste modifiable",
-     "en": "Administration: the read-only card \"Hosts this page may contact\", by category and with the origin of each host (code, launcher configuration); a case checks that every provider of the table is there; never an editable list",
-     "de": "Verwaltung: die schreibgeschützte Karte „Hosts, die die Seite kontaktieren darf“, nach Kategorie und mit der Herkunft jedes Hosts (Code, Starter-Konfiguration); ein Fall prüft, dass jeder Anbieter der Tabelle dort ist; nie eine bearbeitbare Liste",
-     "es": "Administración: la tarjeta de solo lectura «Hosts que la página puede contactar», por categoría y con el origen de cada host (código, configuración del lanzador); un caso comprueba que cada proveedor de la tabla está; nunca una lista editable",
-     "kind": "feature"
-    },
-    {
-     "state": "later",
-     "fr": "Refonte des fournisseurs de dépôt : une seule table lue par l'export, Rejoindre, Accès, le transport et la politique de contenu ; tout fournisseur déclaré en administration, poussé par la configuration de la compagnie",
-     "en": "Repository providers refactoring: one table read by the export, Join, Access, the transport and the content policy; any provider declared in administration, pushed through the airline's configuration",
-     "de": "Neuordnung der Repository-Anbieter: eine Tabelle, gelesen von Export, Beitreten, Zugang, Transport und Inhaltsrichtlinie; jeder in der Verwaltung erklärte Anbieter, über die Konfiguration der Gesellschaft verteilt",
-     "es": "Refundición de los proveedores de repositorio: una sola tabla leída por la exportación, Unirse, Acceso, el transporte y la política de contenido; cualquier proveedor declarado en administración, enviado por la configuración de la compañía",
-     "kind": "feature"
-    },
-    {
-     "state": "planned",
-     "fr": "Logo de la compagnie : un SVG déposé est converti d'office en PNG par l'appli (demande du 2/11)",
-     "en": "Airline logo: an SVG dropped in is converted to PNG by the app (request of 2 Nov)",
-     "de": "Logo der Gesellschaft: ein abgelegtes SVG wird von der App automatisch in PNG umgewandelt (Wunsch vom 2.11.)",
-     "es": "Logotipo de la compañía: un SVG depositado se convierte automáticamente a PNG en la aplicación (petición del 2/11)",
      "kind": "feature"
     }
    ]
@@ -2588,14 +2902,6 @@
      "en": "Non-regression suite tests/v3: 118 cases, journeys P1–P6, selection by touched files, replay of a failed test alone then in its scope",
      "de": "Regressionssuite tests/v3: 118 Fälle, Pfade P1–P6, Auswahl nach berührten Dateien, Wiederholung eines fehlgeschlagenen Tests allein und dann in seinem Umfang",
      "es": "Suite de no regresión tests/v3: 118 casos, recorridos P1–P6, selección por archivos tocados, repetición de una prueba fallida sola y luego en su ámbito",
-     "kind": "feature"
-    },
-    {
-     "state": "planned",
-     "fr": "Exécution sur le poste Windows (Playwright et Chromium à installer) ; en attendant, le runner cloud",
-     "en": "Run on the Windows workstation (Playwright and Chromium to install); the cloud runner meanwhile",
-     "de": "Ausführung am Windows-Arbeitsplatz (Playwright und Chromium zu installieren); bis dahin der Cloud-Runner",
-     "es": "Ejecución en el puesto Windows (Playwright y Chromium por instalar); mientras tanto, el runner en la nube",
      "kind": "feature"
     }
    ]

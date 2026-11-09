@@ -241,7 +241,9 @@ def build(org, previous):
     for lane in (previous or {}).get('lanes') or []:
         if lane.get('legacy') or lane.get('id') in LEGACY_APP:
             app = lane.get('app') if lane.get('legacy') else LEGACY_APP[lane['id']]
-            items = [dict(it, kind=it.get('kind', 'feature')) for it in lane.get('items') or []]
+            # the items not yet delivered became fiches on 9 Nov (SOG-0086…): the lane keeps its delivered ones only
+            items = [dict(it, kind=it.get('kind', 'feature')) for it in (lane.get('items') or [])
+                     if it.get('state') == 'done' or it.get('id')]
             legacy.append({'id': lane['id'], 'app': app, 'label': lane['label'], 'legacy': True, 'items': items})
     order = [a[0] for a in APPS]
     all_lanes = sorted(lanes.values(), key=lambda l: (order.index(l['app']), l['label']['fr'])) + \
