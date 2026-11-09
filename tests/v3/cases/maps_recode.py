@@ -17,7 +17,7 @@ import json
 import math
 import re
 
-from lib import AERO_CYCLE, FLIGHT, ROOT, STUB_STYLE, Fail, Skip, case, norm, tx
+from lib import AERO_CYCLE, FLIGHT, ROOT, STUB_STYLE, Fail, Skip, case, forget, norm, tx
 
 M = 'modules/maps/texts.js'
 TRI = 'ABC'
@@ -3664,3 +3664,41 @@ def d121(c):
     # a map of the mission is asked as well: its own extent, at its own scale
     b = view('mission=ESSAI1&zone=Z2&map=carte_generale.png', 'map and zone')
     c.ok(b[0] <= .01 and b[2] >= 5.59, f'view {b}', 'a chosen map keeps its own extent')
+
+
+@case('D122', 'Route weather: one action named « Route weather » reads the forecast when none is kept and shows the cut; the name then says the model and the run', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='V3 spec (SOG-0139): the Weather chip is the one action: kept forecast first, else ctx.weather.grid asked (the click is the request) and the cut shown as soon as the data are in; named « Route weather » (not « Weather cross-section »), then « Route weather · AROME 12 h » (model chosen by the route’s middle, run hour); no separate « show » button; a refused reading says why')
+def d122(c):
+    # a real answer of the store: the synthetic forecast seeded for the planned flight, read once through a spy
+    c.open('maps', flight=True, forecast=True)
+    c.js(_STATE_JS)
+    c.js("""() => { const S = window.__mp.S, w = S.ctx.weather, g = w.grid.bind(w); window.__got = null;   // ctx and ctx.weather are frozen: the Map’s state gets a copy
+      S.ctx = { ...S.ctx, weather: { ...w, grid: async (...a) => { const r = await g(...a); if (r?.locs?.length && !window.__got) window.__got = JSON.parse(JSON.stringify(r)); return r } } }; return true }""")
+    c.tap('.mp-chip[data-view="weather"]')
+    c.until("() => !!window.__got", timeout=10000, what='the kept forecast is read once')
+    got = c.js("() => window.__got")
+    # no forecast kept: the click must read it (the store is stubbed: nothing leaves the test)
+    forget(c.page, c.doc_paths('cache/weather/'), c.base)
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    c.page.add_style_tag(content='#fNotes{display:none!important}')
+    c.js("""(r) => { const S = window.__mp.S, w = S.ctx.weather; window.__calls = []; window.__fail = false;
+      S.ctx = { ...S.ctx, weather: { ...w, grid: async (places, dep, vars, o) => { window.__calls.push(o?.cacheOnly ? 'cache' : 'net'); if (o?.cacheOnly) return null;
+        await new Promise(x => setTimeout(x, 300)); if (window.__fail) throw Object.assign(new Error('x'), { offline: true }); return r } } };
+      return true }""", got)
+    want = row(c, 'wxTitle')
+    c.eq(c.attr('.mp-chip[data-view="weather"]', 'title'), want, 'the chip is named by what the pilot wants: « Route weather »', what='chip title')
+    c.tap('.mp-chip[data-view="weather"]')
+    c.until("() => { const s = document.querySelector('.mp-dbody svg'); return !!s && s.getBoundingClientRect().height > 0 }", timeout=10000,
+            what='the cut is drawn from the click alone')
+    c.eq(c.js("() => window.__calls"), ['cache', 'net'], 'the kept forecast was tried, then read: one gesture', what='store calls')
+    c.eq(c.js("() => !!document.querySelector('[data-wxget]')"), False, 'no separate « show » button once the cut is there', what='extra button')
+    name = c.attr('.mp-chip[data-view="weather"]', 'title')
+    c.ok(name.startswith(want) and ' · ' in name and re.search(r'\d+ h$', name), name, 'the name then says the model and the run: « … · AROME 12 h »')
+    # a refused reading says why and offers to try again
+    c.js("() => { window.__mp.S.wx = null; window.__fail = true; window.__calls = []; return true }")
+    c.tap('.mp-chip[data-view="profile"]')   # back to the profile…
+    c.wait(300)
+    c.tap('.mp-chip[data-view="weather"]')   # …and the click again
+    c.until("() => !!document.querySelector('.mp-wxmsg [data-wxget]')", timeout=8000, what='the refusal is said with a way to try again')

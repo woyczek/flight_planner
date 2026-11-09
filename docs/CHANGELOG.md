@@ -26,6 +26,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   INTEGRATION, help; noreg F113; SOG-0134 b). « N écarts aux règles » unfolds into one line per deviation — segment, RAD or FRA rule,
   the engine's sentence — seven then « N autres », for each proposed route and for « Contrôler ».
 
+- **Map: « Route weather » — one action reads the forecast and shows the cut** (`modules/maps/weather.js`, `sheet_view.js`, `texts.js`; SPEC § 9;
+  noreg D122; SOG-0139). The Weather chip, formerly « Weather cross-section » on kept forecasts only (without one, a link to the Weather
+  module), is now named by what the pilot wants and does it all: the kept forecast, else a reading, then the cut; once read it says the
+  model and the run (« Route weather · AROME 12 h »). A refused reading says why and offers to try again.
+
 - **Frame: `ctx.placeholder(el, height)`, the place of a block that fills later is reserved** (`frame/app.js`, `frame/design/primitives.css`;
   V3_SPECIFICATION § 7.1 rule 22; frame SPEC § 3.2, INTEGRATION, DECISIONS; noreg A110; SOG-0132). The block keeps its height and shows a
   discreet « … » from the first render, then `done()`; the class `f-hold` does the same from a stylesheet; the cumulative layout shift of

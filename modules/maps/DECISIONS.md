@@ -2064,6 +2064,22 @@ the Map had seen in between: the same line to within the frame's own sampling.
   « not drawn »), D114 (cost under 16 ms, the light drawing's lines). The fixture `tests/v3/fixtures/ground_LFPO.json` is made from
   OSM data (595 items); the noreg never reads the public instance.
 
+## Route weather: one action, named by what the pilot wants (9 Nov 2026, SOG-0139)
+
+- **Asked** (the user, 5th pull): a « download AROME » link in place of the « show the weather » button. **Ergonomics session's challenge,
+  followed**: one action, yes, but named by the pilot's goal: « Route weather »; it reads the forecast and shows the cut as soon as
+  the data are in; the model is chosen by the route's middle (`modelFor`), so it is said afterwards: « Route weather · AROME 12 h ».
+  If the user holds to the model's name in the action, he decides.
+- **Done**: the Weather chip is the action. Cache first (as before), then `ctx.weather.grid` without `cacheOnly` (the click is the
+  request; the store asks only for what is missing and keeps the quota). The run's hour is in UTC (`getUTCHours`, « 12 h »); the model
+  name is `model.short` (else `name`), cut to 16 characters and stripped of control characters and `<>`.
+- **Choices of mine**: (1) a path that is not a click (the sheet reopened on the weather view, a flight written) never reads from the
+  network: the panel then shows the one action; (2) a refusal keeps the old link to Weather as a second way and adds « Try again »;
+  (3) the titled head (« Weather · FL… ») is unchanged, the model goes in the chip's title and the bare handle.
+- **Not done**: no progress or cost shown (`ctx.weather.cost` could say « ≈ n calls »); the model's name is not in the click's
+  label before the reading (it is chosen by the route's middle, after the route is known).
+- **Noreg** D122 (store stubbed on a copy of `S.ctx`, which is frozen: no network; cache then read; no extra button; the name; a refusal).
+
 ## The ground is read with the procedures, no button of the Map (9 Nov 2026, SOG-0135 — replaces the button of the entry below)
 
 - **Seen**: the user did not find the « Read from OpenStreetMap » button and wants the ground read **with** the procedures, not one more

@@ -61,7 +61,7 @@ function depTime(f) {
 
 /** Lit la prévision gardée pour le vol montré et prépare le dessin : { key, state: 'ok' | 'none' | 'fail', draw, legend, o } ;
  *  none : rien (ou pas assez) dans le cache pour ce vol ; fail : les fichiers d'Atmosphère n'ont pas pu être chargés. */
-async function loadWeather(key) {
+async function loadWeather(key, fetchNow = false) {
   let Sx, A;
   try {
     [Sx, A] = await Promise.all([import('../atmosphere/section.js'), import('../atmosphere/atmo.js')]);
@@ -83,13 +83,26 @@ async function loadWeather(key) {
     const mid = routeMidpoint(pts),
       places = Sx.sectionPlaces(pts),
       dep = depTime(f),
-      r = await S.ctx.weather.grid(places, dep, Sx.sectionVars(levelFt, pts), {
-        model: (await S.ctx.weather.modelFor(mid.lat, mid.lon))?.id, // ctx.weather est asynchrone (INTEGRATION § 14.1)
-        cacheOnly: true
-      }).catch(() => null);
+      model = await S.ctx.weather.modelFor(mid.lat, mid.lon), // ctx.weather est asynchrone (INTEGRATION § 14.1)
+      ask = cacheOnly => S.ctx.weather.grid(places, dep, Sx.sectionVars(levelFt, pts), {
+        model: model?.id,
+        cacheOnly
+      });
+    let r = await ask(true).catch(() => null),
+      err = null;
+    // « Météo de la route » (SOG-0139) : un seul geste, la prévision gardée d'abord, lue sinon (le clic est la demande ; ctx.weather
+    // ne demande que ce qui manque)
+    if (!r?.locs?.length && fetchNow) r = await ask(false).catch(e => {
+      err = e || {};
+      return null;
+    });
     if (!r?.locs?.length) return {
       key,
-      state: 'none'
+      state: 'none',
+      err: err ? {
+        offline: !!err.offline,
+        quota: !!err.quota
+      } : null
     };
     const o = {
       route: pts,
@@ -117,9 +130,12 @@ async function loadWeather(key) {
       samples: places,
       locs: o.locs
     });
+    const run = Number.isFinite(+r.run) ? new Date(+r.run * 1000).getUTCHours() : null,
+      name = String(model?.short || model?.name || r.model?.short || r.model?.name || '').replace(/[\u0000-\u001f<>]/g, '').slice(0, 16);
     return {
       key,
       state: 'ok',
+      label: name ? `${name}${run != null ? ` ${run} h` : ''}` : '', // « AROME 12 h » : le modèle choisi par le milieu de la route, dit après coup
       draw: Sx.drawSection,
       legend: Sx.sectionLegend,
       o
@@ -165,7 +181,9 @@ const weatherBuild = key => (w, h, el) => {
       dep: r.dep,
       arr: r.arr
     }) : '';
-  return `<a class="mp-wxlink" href="#atmosphere">${esc(name ? tt(TX.wxNoneFor, {
+  // pas de prévision gardée : le geste est là, un seul, nommé par ce que veut le pilote ; une lecture refusée dit pourquoi
+  if (!wx.err) return `<p class="mp-wxmsg"><button type="button" class="f-btn primary mp-wxget" data-wxget>${esc(tt(TX.wxTitle))}</button> <span class="f-muted">${esc(tt(TX.wxGetHint))}</span></p>`;
+  return `<p class="f-muted mp-wxmsg">${esc(tt(wx.err.offline ? TX.wxEOffline : wx.err.quota ? TX.wxEQuota : TX.wxEFail2))} <button type="button" class="f-btn mp-wxget" data-wxget>${esc(tt(TX.wxRetry))}</button></p><a class="mp-wxlink" href="#atmosphere">${esc(name ? tt(TX.wxNoneFor, {
     f: name
   }) : tt(TX.wxNone))}&nbsp;<span>${esc(tt(TX.wxOpen))}</span></a>`;
 };
@@ -173,15 +191,18 @@ const weatherBuild = key => (w, h, el) => {
  *  manquait, Atmosphère ayant pu la charger depuis). Même clé : seulement redessinée. */
 export async function showWeather(force = false) {
   const key = wxKey(),
-    open = () => openData('weather', key, tt(TX.wxTitle), weatherBuild(key), tt(TX.wxLabel));
+    open = () => openData('weather', key, wxName(), weatherBuild(key), tt(TX.wxLabel));
+  if (force && S.wx?.key === key && S.wx.state !== 'ok') S.wx = null; // un geste : la lecture est refaite, et dite
   open();
   if (S.wx?.key === key && !(force && S.wx.state !== 'ok')) return;
   const seq = S.wxSeq = (S.wxSeq || 0) + 1,
-    st = await loadWeather(key);
+    st = await loadWeather(key, force);
   if (!S || S.wxSeq !== seq) return;
   S.wx = st;
   if (S.dpanel === 'weather' && S.dkey === key) open();
 }
+/** Le nom de la coupe : « Météo de la route », puis « · AROME 12 h » une fois la prévision lue (titre de la poignée et du bouton). */
+export const wxName = () => S?.wx?.state === 'ok' && S.wx.label ? `${tt(TX.wxTitle)} · ${S.wx.label}` : tt(TX.wxTitle);
 /** Coupe redessinée (taille, curseur, design, fenêtre) sans relire la prévision. */
 export function redrawWeather() {
   if (S?.dpanel === 'weather') openData('weather', S.dkey, S.dtitle, weatherBuild(S.dkey), S.dlabel);
@@ -254,6 +275,9 @@ export function weatherEvents() {
       if (s != null) setCursor(s);
     });
   };
+  body.addEventListener('click', e => {
+    if (e.target.closest('[data-wxget]') && S.dpanel === 'weather') showWeather(true);
+  });
   body.addEventListener('pointerdown', move);
   body.addEventListener('pointermove', move);
   body.addEventListener('click', e => {

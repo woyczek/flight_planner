@@ -37,8 +37,7 @@ the profile says what is under the cursor: distance from the departure, planned 
 airspace you are in at that point. Under the map, this data block shows the profile; the list of airspaces at a point or
 an airfield's reporting points open in its place when you ask for them, and the profile comes back when they are closed. The cloud chip, (the three chips — profile, cloud, “i” — are always in the top line, at the right; one with nothing to show is only greyed out), replaces it (the profile chip brings it back) with the weather
 cross-section along the route (wind, temperature, cloud, icing) against the flight's level; the cross-section follows the same cursor, and a tap on
-it moves the cursor. It only shows the forecast that Weather has already loaded: without one, the line "No forecast loaded" leads to
-Weather, under Prepare. The last chip, “i” (greyed out while the drawing has no legend), opens the legend of the profile over it (what each line, band and mark is); dragging a finger on the cross-section moves the cursor like on the profile. The profile and the cross-section are drawn to the exact height of the block, their distance axis always in view: on a low block they drop level labels, never the axis.
+it moves the cursor. The “Route weather” button is the one action: it shows the forecast already kept, otherwise it reads it, then names the model chosen by the middle of the route (“Route weather · AROME 12 h”); a refused reading says why and offers to try again. The last chip, “i” (greyed out while the drawing has no legend), opens the legend of the profile over it (what each line, band and mark is); dragging a finger on the cross-section moves the cursor like on the profile. The profile and the cross-section are drawn to the exact height of the block, their distance axis always in view: on a low block they drop level labels, never the axis.
 
 <a id="maps-profile-spaces"></a>**The profile's airspaces.** The profile shows only the airspaces the planned vertical path enters (within 500 ft); overlapping sectors of one family (Dublin's CTAs) make one envelope there, named by the family; free route airspace (FRA) and W or weather research areas appear only when the "Other airspaces" layer is on; at most seven airspaces are named, the others in the list below. The airways the route follows are named blocks there (« UN460 », floor – ceiling): where a space of a higher class (A to D) covers them, that space is drawn, not the airway; a class F space covers nothing. Class E, F and G spaces are drawn in a light fill and named last, so as not to hide the rest.
 
@@ -170,4 +169,4 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: 6ea9ba65869d -->
+<!-- fr: 9e2fe30b79c3 -->

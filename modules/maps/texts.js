@@ -475,7 +475,22 @@ export const TX = {
   covCounts: ['SID {s} · STAR {t} · APP {a}', 'SID {s} · STAR {t} · APP {a}', 'SID {s} · STAR {t} · APP {a}',
     'SID {s} · STAR {t} · APP {a}'
   ],
-  wxTitle: ['Coupe météo', 'Weather cross-section', 'Wetterschnitt', 'Corte meteorológico'],
+  wxTitle: ['Météo de la route', 'Route weather', 'Streckenwetter', 'Meteo de la ruta'],
+  wxGetHint: ['lit la prévision et montre la coupe', 'reads the forecast and shows the cross-section',
+    'liest die Vorhersage und zeigt den Schnitt',
+    'lee la previsión y muestra el corte'
+  ],
+  wxRetry: ['Réessayer', 'Try again', 'Erneut versuchen', 'Reintentar'],
+  wxEOffline: ['Hors ligne : la prévision ne peut pas être lue.', 'Offline: the forecast cannot be read.',
+    'Offline: die Vorhersage kann nicht gelesen werden.',
+    'Sin conexión: no se puede leer la previsión.'
+  ],
+  wxEQuota: ['Limite du jour de la source atteinte : réessayez plus tard.', 'The source’s daily limit is reached: try again later.',
+    'Das Tageslimit der Quelle ist erreicht: später erneut versuchen.', 'Se alcanzó el límite diario de la fuente: inténtelo más tarde.'
+  ],
+  wxEFail2: ['La prévision n’a pas pu être lue.', 'The forecast could not be read.', 'Die Vorhersage konnte nicht gelesen werden.',
+    'No se pudo leer la previsión.'
+  ],
   wxLabel: ['Coupe météo le long de la route', 'Weather cross-section along the route', 'Wetterschnitt entlang der Route',
     'Corte meteorológico a lo largo de la ruta'
   ],

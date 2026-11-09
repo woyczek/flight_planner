@@ -994,8 +994,8 @@ cursor until all fingers are up.
 
 - Drawn by atmosphere's pure renderer `drawSection` (INTEGRATION § 8) against the flight's level, at the body's exact
   size (`minHeight: 0`, no padding, no box of its own), with the shared cursor and the shared window. The data come from the
-  frame's weather layer `ctx.weather` (frame INTEGRATION § 14), cache only: what is already kept for this flight (same route
-  points, level, model and days); the map never asks Open-Meteo and writes no weather file. Departure time: `started.at` if
+  frame's weather layer `ctx.weather` (frame INTEGRATION § 14): what is already kept for this flight (same route points, level,
+  model and days) first, else read by the pilot's click (see « One action »); the map never calls Open-Meteo itself and writes no weather file. Departure time: `started.at` if
   started, else `planned_at`, else now.
 - Atmosphere's files are loaded at the first "Weather" (`meta.lazy`), not at mount; the model is computed once per flight
   and passed.
@@ -1005,9 +1005,14 @@ cursor until all fingers are up.
 - **Legend**: `sectionLegend({ kind: 'cut', layers, strips, cloudRgb, t })` with the `layers` passed to the drawing
   (`WX_LAYERS`) and the `strips` the drawing returned (`geo.strips`, `geo.layers`); each row's SVG placed as is
   (`.mp-lg-svg`, `data-key`).
-- **Without a forecast**: one 44 px line "No forecast for <DEP> → <ARR>: open Weather" (four languages; the plain words
-  when departure or arrival is unknown) with a link to `#atmosphere`; atmosphere's files not loadable (offline, never
-  cached): one muted line says so.
+- **One action, « Route weather »** (SOG-0139, 9 Nov): the chip and the sheet are named by what the pilot wants, « Route weather »
+  (not « Weather cross-section »). The kept forecast is tried first (cache only); without one, the **click** reads it (`ctx.weather.grid`,
+  not cache only: the store asks only for what is missing) and the cut is drawn as soon as the data are in. Once read, the name
+  says the model chosen by the route's middle and the run's hour in UTC: « Route weather · AROME 12 h » (chip title and bare handle).
+  There is no separate « show » button. From a path that is not a click (sheet reopened on the weather view) nothing is read by
+  itself: the panel shows the one action (`data-wxget`, « Route weather »). A refused reading (offline, daily limit, other) says why in
+  its own line with « Try again » and the link to `#atmosphere`; atmosphere's files not loadable (offline, never cached): one muted
+  line says so. Noreg D122.
 
 ## 10. Airspaces at a point
 

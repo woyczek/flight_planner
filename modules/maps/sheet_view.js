@@ -47,6 +47,7 @@ import {
 } from './vfr.js';
 import {
   canWeather,
+  wxName,
   showWeather,
   redrawWeather,
   legendRows as weatherRows
@@ -216,7 +217,7 @@ export function dataHead() {
     coming = !S.prof && !S.ctx?.query?.mission && (S.route?.points?.length || 0) >= 2,
     bareBox = !S.boxOn && !S.dpanel && !S.prof && !coming && !!S.layersBtn && !S.layersBtn.hidden,
     has = !!S.dpanel || !!S.prof || coming || bareBox,
-    bare = view && keep.sheet === 'default' && !document.documentElement.classList.contains('f-land') ? tt(wx ? TX.wxTitle : TX
+    bare = view && keep.sheet === 'default' && !document.documentElement.classList.contains('f-land') ? wx ? wxName() : tt(TX
       .dataProfile) : '',
     own = !!S.dpanel && !wx, // contenu ouvert par openData : son titre
     lay = S.dpanel === 'layers', // « Couches · <vol> » : le contexte comme le profil
@@ -248,6 +249,11 @@ export function dataHead() {
   for (const b of S.segBtns) {
     setPressed(b, (b.dataset.view === 'weather') === wx);
     setOff(b, b.dataset.view === 'weather' ? !canWeather() : !S.prof); // jamais retirée : désactivée sans objet
+    if (b.dataset.view === 'weather') {
+      const n = wxName(); // le nom du bouton suit la prévision lue (« · AROME 12 h »)
+      if (b.title !== n) b.title = n;
+      if (b.getAttribute('aria-label') !== n) b.setAttribute('aria-label', n);
+    }
   }
   legendSync();
   winSync();
