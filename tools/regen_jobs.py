@@ -270,6 +270,8 @@ class Jobs:
         if not self.store:
             return
         j = self.cur.view() if self.cur else self.kept
+        if isinstance(j, dict) and isinstance(j.get('result'), dict):     # une clé du résultat qui commence par « _ » est pour la page seule (le texte d'un journal de vol, stats/output) : jamais écrite ici
+            j = {**j, 'result': {k: v for k, v in j['result'].items() if not str(k).startswith('_')}}
         try:
             tmp = self.store + '.tmp'
             with open(tmp, 'w', encoding='utf-8') as f:

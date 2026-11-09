@@ -4336,6 +4336,75 @@ def k86(c):
         c.eq(sorted(set(idx['zones']) & {'cn', 'cy'}), ['cn', 'cy'], 'and both are in the manifest of published zones: that is what the download list shows', what='manifest')
 
 
+@case('K87', 'Launcher job stats/output (SOG-0052 step 2): the Output folder of X-Plane set on the workstation, the Fuel Phase Monitor journals listed and read by the launcher, the path never given whole, the samples never kept', 'K', static=True,
+      rule='V3 § 10.37 C (9 Nov 2026): the launcher reads X-Plane 12/Output/FuelPhaseMonitor_*.csv itself (setting « dossier Output », local only, never published) and hands the text to modules/stats/phases.js; the full path is never shown, the data and suite folders are refused, a name is a bare journal name, the text is not written in the last-job file')
+def k87(c):
+    import gzip
+    import importlib.util
+    import json
+    import os
+    import tempfile
+    import time
+    RJ = _regen()
+    spec = importlib.util.spec_from_file_location('stats_test', ROOT / 'tools/regen/stats.py')
+    S = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(S)
+    c.ok(('stats', 'output') in RJ.REGISTRY, str(sorted(k for k in RJ.REGISTRY if k[0] == 'stats')), 'the verb stats/output is loaded by the launcher')
+    check = RJ.REGISTRY[('stats', 'output')][1]
+    good = [{'action': 'status'}, {'action': 'clear'}, {'action': 'set', 'folder': 'C:\\X-Plane 12\\Output'}, {'action': 'read', 'name': 'FuelPhaseMonitor_20261106.csv'}, {'action': 'read', 'name': 'FuelPhaseMonitor.csv.gz'}]
+    bad = [{'action': 'read', 'name': n} for n in ('../x.csv', 'FuelPhaseMonitor_..\\x.csv', 'other.csv', 'FuelPhaseMonitor_a.txt', 'FuelPhaseMonitor/a.csv', '', 'FuelPhaseMonitor' + 'x' * 120 + '.csv')] + [
+        {'action': 'read'}, {'action': 'read', 'name': 'FuelPhaseMonitor.csv', 'folder': 'x'}, {'action': 'set'}, {'action': 'set', 'folder': ''}, {'action': 'set', 'folder': 'a\x00b'}, {'action': 'status', 'name': 'x'}, {'action': 'zap'}, {}, None, 'status']
+    c.eq(([check(a) is not None for a in good], [a for a in bad if check(a) is not None]), ([True] * 5, []), 'arguments: four actions, a bare journal name only, nothing else', what='check')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        td = os.path.realpath(td)
+        data, out = os.path.join(td, 'data'), os.path.join(td, 'Sim', 'X-Plane 12', 'Output')
+        os.makedirs(data)
+        os.makedirs(out)
+        csv = 'phase,duration_s,fuel_kgph\nCRUISE,15,310.5\n'
+        open(os.path.join(out, 'FuelPhaseMonitor_20261106.csv'), 'wb').write(csv.encode())
+        with gzip.open(os.path.join(out, 'FuelPhaseMonitor_old.csv.gz'), 'wb') as f:
+            f.write(csv.encode())
+        open(os.path.join(out, 'other.csv'), 'w').write('x')
+        open(os.path.join(out, 'FuelPhaseMonitor_note.txt'), 'w').write('x')
+        os.makedirs(os.path.join(out, 'FuelPhaseMonitor_dir.csv'))
+        ctx = {'data': data, 'secrets': td}
+        job = RJ.Job('stats', 'output', {}, author='TST')
+        run = lambda a: S.output(job, a, ctx)
+        c.eq((run({'action': 'status'})['set'], run({'action': 'status'})['files']), (False, []), 'nothing set: nothing listed', what='unset')
+        c.eq([run({'action': 'set', 'folder': p})['reason'] for p in (os.path.join(td, 'nope'), os.path.join(out, 'other.csv'), data, os.path.join(data, 'sia'), os.path.dirname(os.path.dirname(S.TOOLS)))], ['no-folder', 'no-folder', 'refused', 'no-folder', 'refused'],
+             'refused: a folder that does not exist, a file, the data folder, a parent of the suite', what='refused')
+        r = run({'action': 'set', 'folder': out})
+        c.eq((r['ok'], r['set'], r['label'], [f['name'] for f in r['files']]), (True, True, 'X-Plane 12/Output', ['FuelPhaseMonitor_20261106.csv', 'FuelPhaseMonitor_old.csv.gz']),
+             'set: the label is the last two names, only the two journals are listed (not other.csv, a .txt, a folder)', what='set')
+        c.ok(td not in json.dumps(r) and td not in json.dumps(run({'action': 'status'})), str(r), 'the full path is never in an answer')
+        c.ok(os.path.isfile(os.path.join(data, 'local', 'xp_output.json')) and not os.path.exists(os.path.join(td, 'Sim', 'x')), '', 'the setting is in data/local/ (never versioned, never published)')
+        t = run({'action': 'read', 'name': 'FuelPhaseMonitor_20261106.csv'})
+        g = run({'action': 'read', 'name': 'FuelPhaseMonitor_old.csv.gz'})
+        c.eq((t['ok'], t['_text'], t['size'], g['ok'], g['_text']), (True, csv, len(csv), True, csv), 'read: the text of a journal, a .gz decompressed', what='read')
+        c.eq([run({'action': 'read', 'name': n})['reason'] for n in ('FuelPhaseMonitor_absent.csv', 'FuelPhaseMonitor_dir.csv')], ['no-file', 'no-file'], 'an absent file and a folder are no file', what='absent')
+        S.MAX_BYTES = 10
+        c.eq((run({'action': 'read', 'name': 'FuelPhaseMonitor_20261106.csv'})['reason'], run({'action': 'read', 'name': 'FuelPhaseMonitor_old.csv.gz'})['reason']), ('too-large', 'too-large'), 'over the bound, a plain file or a decompressed one: refused', what='bound')
+        S.MAX_BYTES = 64 * 1024 * 1024
+        # a link that leaves the folder is no journal
+        try:
+            os.symlink(os.path.join(out, 'other.csv'), os.path.join(out, 'FuelPhaseMonitor_link.csv'))
+            linked = run({'action': 'read', 'name': 'FuelPhaseMonitor_link.csv'})['reason'] == 'no-file' and 'FuelPhaseMonitor_link.csv' not in [f['name'] for f in run({'action': 'status'})['files']]
+        except OSError:
+            linked = True                                                                       # no symbolic link without the right to make one (Windows): nothing to prove
+        c.ok(linked, '', 'a symbolic link is neither listed nor read')
+        # through the launcher: the text reaches the page, not the last-job file
+        store = os.path.join(td, 'last.json')
+        jobs = RJ.Jobs(RJ.REGISTRY, ctx=ctx, store=store)
+        started = jobs.start('stats', 'output', {'action': 'read', 'name': 'FuelPhaseMonitor_20261106.csv'}, 'TST')
+        t0 = time.time()
+        while time.time() - t0 < 10 and (jobs.view(started['job']).get('state') != 'done'):
+            time.sleep(0.05)
+        v = jobs.view(started['job'])
+        saved = open(store, encoding='utf-8').read()
+        c.eq((v['state'], v['result'].get('_text'), 'CRUISE' in saved, json.loads(saved)['job']['result'].get('ok')), ('done', csv, False, True), 'through the launcher the page gets the text; the last-job file keeps the answer without it (the samples are never written)', what='store')
+        c.eq(run({'action': 'clear'})['set'], False, 'clear: the setting is gone', what='clear')
+
+
 @case('K58', 'openAIP aerodromes: runways, bearing, hardLen and magVar derived like the SIA gives them to France', 'K', tags=('aerodb',), phone=False,
       rule='aerodb SPEC 2 (aerodrome fields, parser version 20): bearing, hardLen, water, runways and magVar come from the openAIP runways and magneticDeclination; a terrain without runways carries none of the runway fields')
 def k58(c):
