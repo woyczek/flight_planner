@@ -21,6 +21,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Fuel: an aerodrome's code is never said as homonyms** (`frame/lib/route_model.js`; Fuel SPEC, help; noreg F118; SOG-0154). An ICAO code the
   base knows as an aerodrome resolves to it; departure and arrival are never « homonymes ».
 
+- **Data: a failed publication says its cause and the step in the pilot's words** (`frame/store/frame_data.js` `exchange`, `modules/data/model_publish.js`, `publish.js`, `texts.js`; Data SPEC § 5.8; help ×4; L59) — SOG-0155: « La publication a échoué : le serveur a refusé l'envoi… (étape envoi) », never « corrigez la cause » without the cause.
 - **Fix: a synchronisation that sent something no longer fails with « last is not defined »** (`frame/store/transport_launcher.js` `commit`; A113) — the tree cache moved into `shared.last` (SOG-0063) but `commit()` still reset the old variable: a ReferenceError turned into « refused by the server ».
 
 - **Map: a far point no longer weighs on the map — no wind barbs on a view wider than 3 000 NM** (`modules/maps/draw.js`, `data.js`, `weather.js`, `alts.js`, `state.js`,

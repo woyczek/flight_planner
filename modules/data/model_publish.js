@@ -48,6 +48,11 @@ export function publishCounts(st) {
     } : null
   };
 }
+/** Les causes d'un échec de publication que le lanceur sait dire, et les étapes où il s'arrête (SOG-0155) : des listes fermées, tout autre texte est écarté. */
+export const PUBLISH_CAUSES = Object.freeze(['remote-refused', 'push-rejected', 'lfs-hook', 'auth', 'network', 'conflict', 'busy',
+  'timeout', 'launcher-error', 'other'
+]);
+export const PUBLISH_STEPS = Object.freeze(['settle', 'commit', 'prepare', 'receive', 'untrack', 'push']);
 /** La fin d'une publication, d'après le résultat de ctx.data.sync({ gesture: true }) : { kind, committed, held, received, conflicts,
  *  refused, message } ; kind : 'done' (envoyé), 'local' (ok, mais rien n'est parti : pas de dépôt distant), 'no-exchange' (le cadre
  *  n'a fait aucun échange avec le lanceur : trigramme non réglé…), 'failed' (échec : message = ce que dit le lanceur, à défaut le
@@ -60,6 +65,8 @@ export function publishOutcome(r) {
       received: num(x?.received) ?? 0,
       conflicts: Array.isArray(x?.conflicts) ? x.conflicts.length : num(x?.conflicts) ?? 0, // le cadre rend un nombre, le lanceur une liste
       refused: Array.isArray(x?.refused) ? x.refused.length : num(x?.refused) ?? 0,
+      cause: PUBLISH_CAUSES.includes(x?.cause) ? x.cause : '',
+      step: PUBLISH_STEPS.includes(x?.step) ? x.step : '',
       message: String(x?.message || r?.error || r?.warning || '')
     };
   const failed = !r || r.ok === false || x?.ok === false;

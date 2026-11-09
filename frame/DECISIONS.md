@@ -2600,3 +2600,7 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
 - **The user's words**: « quand on télécharge puis sélectionne le fichier téléchargé, une énorme popup apparaît, plus grande que l'écran, sans pouvoir cliquer sur le bouton ». The pickup's question (Data) wrote every file found in one paragraph; the window (`.f-modal>div`) had no height limit, so on a phone the buttons were off screen and the page behind did not scroll.
 - **Two guards, each with its counter-test** (case L57): (1) the frame's window is a flex column with `max-height: min(70vh, calc(100dvh - 32px))`; its text (`p`, `label`) scrolls inside, the row of buttons never moves — any module's question benefits; without the `max-height` the generic long question measures 6 513 px on an 844 px screen. (2) the pickup's question lists seven files at most, then « … et n autres » (`capLines`, `TX.pickupMore`), for the zips found and for the problems; without it the sixtieth file is written.
 - Rule 13 stays the reason: the list is cut at seven, the scroll is the safety net, not the design.
+
+## 10 November 2026 — `exchange()` passes on the cause and the step of a failed pass (SOG-0155)
+
+`result.exchange` now carries `cause` and `step` (closed lists: the ten causes and six steps of `tools/data_sync.py`; anything else is `''`), next to `message` and `code`, for the Données panel (Data SPEC § 5.8). V3 Frame informed by the coordinator. Case L59 through the real adapter and a fake `POST /__setup/sync`.

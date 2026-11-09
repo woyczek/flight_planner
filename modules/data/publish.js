@@ -81,7 +81,13 @@ export function publishLines(o) {
   const lines = [];
   if (o.kind === 'failed') lines.push({
     key: 'failed',
-    text: tt(TX.pubFailed)
+    // la cause et l'étape que le lanceur a données (SOG-0155) ; sans cause (lanceur plus ancien) la phrase le dit, jamais « corrigez la cause » sans la cause
+    text: o.cause ? tt(TX.pubFailedCause, {
+      c: tt(TX.pubCause[o.cause]),
+      s: o.step ? tt(TX.pubStepAt, {
+        s: tt(TX.pubStep[o.step])
+      }) : ''
+    }) : tt(TX.pubFailed)
   });
   else if (o.kind === 'no-exchange') lines.push({
     key: 'no-exchange',

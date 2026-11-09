@@ -299,3 +299,8 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
 - **The user's case**: « Rien à prendre dans Téléchargements » while three NATS sets of gb were already in place — and ignored by the build, because the « personnel » box did not declare NATS. « Nothing to take » was true and useless.
 - **Decision**: the page sends the box (`personal`, always, `[]` when empty) so that the launcher can say `unread`; the end says « déjà pris » (inPlace) and, per source, « présents, non lus : la case « personnel » ne déclare pas NATS ». The remedy is written in the sentence (tick the box); « Mettre à jour » then reads the files (gb `source-unbuilt`, buildable).
 - Counter-tests (L58): without `personal` in the plan the launcher gets `None`; without the inPlace sentence the end reads « Nothing to take in Downloads ».
+
+## 10 November 2026 — a failed publication says why (SOG-0155)
+
+- « Corrigez la cause puis relancez » was the whole message: the user never knew the cause. The launcher now reports `cause` and `step` (data/local/sync.json); the frame keeps them (closed lists, like every field read from a report) and the panel says them in plain words and the step, in four languages. A cause the page does not know is dropped, not shown; the sentence then says the launcher did not say why, and to update it.
+- Counter-test (L59): `exchange()` without the cause makes every sentence the « did not say why » one.

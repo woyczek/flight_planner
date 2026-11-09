@@ -871,11 +871,64 @@ export const TX = {
       '{n} archivos rechazados: no tienen el formato de un archivo de datos'
     ]
   ],
-  pubFailed: ['La publication a échoué : rien n’est perdu, les fichiers restent sur le poste. Corrigez la cause puis relancez.',
-    'The publication failed: nothing is lost, the files stay on this workstation. Fix the cause, then start again.',
-    'Die Veröffentlichung ist fehlgeschlagen: nichts geht verloren, die Dateien bleiben auf dem Rechner. Beheben Sie die Ursache und starten Sie neu.',
-    'La publicación falló: no se pierde nada, los archivos siguen en el equipo. Corrija la causa y vuelva a empezar.'
+  pubFailed: [
+    'La publication a échoué : le lanceur n’a pas dit pourquoi (mettez-le à jour pour le savoir). Rien n’est perdu, les fichiers restent sur le poste.',
+    'The publication failed: the launcher did not say why (update it to find out). Nothing is lost, the files stay on this workstation.',
+    'Die Veröffentlichung ist fehlgeschlagen: Der Starter nennt den Grund nicht (aktualisieren Sie ihn, um ihn zu erfahren). Nichts geht verloren, die Dateien bleiben auf dem Rechner.',
+    'La publicación falló: el lanzador no dijo por qué (actualícelo para saberlo). No se pierde nada, los archivos siguen en el equipo.'
   ],
+  // SOG-0155 : la cause (tools/data_sync.py) dite dans les mots du pilote, et l'étape où l'échange s'est arrêté
+  pubFailedCause: ['La publication a échoué : {c}{s}. Rien n’est perdu, les fichiers restent sur le poste.',
+    'The publication failed: {c}{s}. Nothing is lost, the files stay on this workstation.',
+    'Die Veröffentlichung ist fehlgeschlagen: {c}{s}. Nichts geht verloren, die Dateien bleiben auf dem Rechner.',
+    'La publicación falló: {c}{s}. No se pierde nada, los archivos siguen en el equipo.'
+  ],
+  pubStepAt: [' (étape {s})', ' (step {s})', ' (Schritt {s})', ' (paso {s})'],
+  pubCause: {
+    'remote-refused': ['le serveur a refusé l’envoi : une règle du dépôt, ou un fichier trop gros',
+      'the server refused the upload: a repository rule, or a file too big',
+      'der Server hat das Senden abgelehnt: eine Regel des Repositorys oder eine zu große Datei',
+      'el servidor rechazó el envío: una regla del repositorio o un archivo demasiado grande'
+    ],
+    'push-rejected': ['le dépôt distant a changé entre-temps : relancez, la synchro reprend',
+      'the remote repository changed meanwhile: start again, the sync picks up',
+      'das entfernte Repository hat sich inzwischen geändert: erneut starten, die Synchronisation setzt fort',
+      'el repositorio remoto cambió entretanto: vuelva a empezar, la sincronización continúa'
+    ],
+    'lfs-hook': ['Git LFS bloque l’envoi', 'Git LFS blocks the upload', 'Git LFS blockiert das Senden', 'Git LFS bloquea el envío'],
+    auth: ['l’identifiant ou le jeton est refusé par le serveur', 'the server refused the login or the token',
+      'der Server hat die Anmeldung oder das Token abgelehnt',
+      'el servidor rechazó el identificador o el token'
+    ],
+    network: ['le serveur n’est pas joignable : réseau ou adresse', 'the server cannot be reached: network or address',
+      'der Server ist nicht erreichbar: Netz oder Adresse',
+      'no se puede contactar con el servidor: red o dirección'
+    ],
+    conflict: ['des fichiers sont en conflit avec ceux du dépôt', 'some files conflict with those of the repository',
+      'einige Dateien stehen im Konflikt mit denen des Repositorys',
+      'algunos archivos están en conflicto con los del repositorio'
+    ],
+    busy: ['le dépôt du poste est occupé : une fusion ou un verrou en cours',
+      'this workstation’s repository is busy: a merge or a lock in progress',
+      'das Repository des Rechners ist belegt: eine Zusammenführung oder eine Sperre läuft',
+      'el repositorio del equipo está ocupado: una fusión o un bloqueo en curso'
+    ],
+    timeout: ['le serveur n’a pas répondu à temps', 'the server did not answer in time', 'der Server hat nicht rechtzeitig geantwortet',
+      'el servidor no respondió a tiempo'
+    ],
+    'launcher-error': ['le lanceur a rencontré une erreur', 'the launcher met an error', 'der Starter ist auf einen Fehler gestoßen',
+      'el lanzador encontró un error'
+    ],
+    other: ['cause non identifiée', 'cause not identified', 'Ursache nicht erkannt', 'causa no identificada']
+  },
+  pubStep: {
+    settle: ['mise au net', 'settle', 'Abgleich', 'ajuste'],
+    commit: ['commit', 'commit', 'Commit', 'commit'],
+    prepare: ['préparation', 'preparation', 'Vorbereitung', 'preparación'],
+    receive: ['réception', 'receive', 'Empfang', 'recepción'],
+    untrack: ['index', 'index', 'Index', 'índice'],
+    push: ['envoi', 'push', 'Senden', 'envío']
+  },
   pubLauncherSays: ['Le lanceur dit : {m}', 'The launcher says: {m}', 'Der Starter meldet: {m}', 'El lanzador dice: {m}'],
   // les panneaux des autres groupes (V3 § 10.34, lot A1) : procédures par État, points VFR par cycle, appareils par type, fiches publiées
   setTitle: {

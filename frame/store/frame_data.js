@@ -1103,6 +1103,11 @@
   /** Échange propre au transport (T.exchange) ; un échec ne bloque pas le passage local, il est rapporté (warning). Passage
    *  « manual » (bouton de l'utilisateur) : un geste, le lanceur commite aussi la base aéronautique (sia/base) ; un passage de
    *  fond la laisse sur le poste. */
+  // la cause d'un échec de publication et l'étape où il s'est produit (SOG-0155, tools/data_sync.py) : deux listes fermées, jamais un texte du réseau
+  const SYNC_CAUSES = ['remote-refused', 'push-rejected', 'lfs-hook', 'auth', 'network', 'conflict', 'busy', 'timeout', 'launcher-error',
+      'other'
+    ],
+    SYNC_STEPS = ['settle', 'commit', 'prepare', 'receive', 'untrack', 'push'];
   async function exchange(T, result, reason) {
     if (!T.exchange) return;
     try {
@@ -1121,6 +1126,8 @@
         settled: typeof r.settled === 'string' ? r.settled : '',
         // code d'un refus que la page sait dire (rewritten : historique du dépôt réécrit, à reprendre par un geste)
         code: typeof r.code === 'string' ? r.code.slice(0, 30) : '',
+        cause: SYNC_CAUSES.includes(r.cause) ? r.cause : '',
+        step: SYNC_STEPS.includes(r.step) ? r.step : '',
         message: String(r.message || '').slice(0, 300)
       };
     } catch (e) {

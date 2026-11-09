@@ -4750,3 +4750,44 @@ def l58(c):
     c.eq([p['args'].get('personal') for p in st['posts'][n:] if p.get('verb') in ('fetch', 'build')], [['nats'], ['nats']], '« Mettre à jour »: the download and the build both carry personal [nats]', what='update')
     c.eq(_posts(st, 'build')[0]['args']['zones'], ['gb'], 'only gb (source-unbuilt, buildable) is built', what='build zones')
     c.check_errors()
+
+
+@case('L59', 'Données: the failure of a publication says its cause in the pilot’s words and the step (SOG-0155): three causes, three sentences, passed on by the frame; without a cause the sentence says the launcher did not say, never « fix the cause » alone', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0155 (AeroDB 8482c891e): the report of POST /__setup/sync carries cause (remote-refused, push-rejected, lfs-hook, auth, network, conflict, busy, timeout, launcher-error, other) and step; frame_data.js exchange() keeps them (closed lists), « Publier » says « La publication a échoué : <cause> (étape <step>) »')
+def l59(c):
+    lang = c.lang
+    report = {'ok': False, 'committed': 1, 'received': 0, 'pushed': False, 'conflicts': [], 'refused': [], 'message': 'boom', 'cause': 'other', 'step': 'push'}
+    st = _launcher(c, sync={'changes': 3, 'ahead': 2, 'merging': False, 'last': None})
+    st['report'] = report
+
+    def handler(route):
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(st['report']))
+    c.context.route(re.compile(r'/__setup/sync$'), handler)
+    docs = LEVEL3 + [['device/identity.json', {'trigram': 'ABC'}, 'cache'], ['device/usages.json', {'devices': True}, 'cache']]
+    c.page.add_init_script(_stub(_fixture()[0]))
+    c.open('data', docs=docs, wait=False, app='maintenance')
+    c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the head of the Données screen is drawn')
+    c.settle()
+    word = lambda key, after: norm(_trow(key, lang, after=after))
+    for cause, step in (('remote-refused', 'push'), ('auth', 'push'), ('network', 'receive')):
+        st['report'] = {**report, 'cause': cause, 'step': step}
+        c.js("document.querySelectorAll('.f-note [data-x]').forEach(b => b.click())")
+        c.tap('[data-publish] [data-verb=publish]')
+        _ask_text(c)
+        c.tap('.f-modal [data-ok]')
+        c.until("document.querySelector('[data-publish-result]')?.dataset.result === 'failed'", timeout=10000, what=f'the failure {cause}')
+        want = norm(_trow('pubFailedCause', lang).replace('{c}', _trow(cause, lang, after='  pubCause: {')).replace('{s}', _trow('pubStepAt', lang).replace('{s}', _trow(step, lang, after='  pubStep: {'))))
+        got = _publish_state(c)['lines']
+        c.eq(got, [['failed', want]], f'{cause} at {step}: the cause in the pilot’s words and the step', what=cause)
+        c.until("!document.querySelector('[data-publish] [data-verb=publish]').disabled", timeout=6000, what='the button is live again')
+    # a cause the page does not know, a step outside the list: the cause is dropped, the sentence says the launcher did not say
+    st['report'] = {**report, 'cause': '<img src=x>', 'step': '../../etc'}
+    c.js("document.querySelectorAll('.f-note [data-x]').forEach(b => b.click())")
+    c.tap('[data-publish] [data-verb=publish]')
+    _ask_text(c)
+    c.tap('.f-modal [data-ok]')
+    c.until("document.querySelector('[data-publish-result]')?.dataset.result === 'failed'", timeout=10000, what='the hostile failure')
+    c.eq(_publish_state(c)['lines'], [['failed', norm(_trow('pubFailed', lang))]], 'an unknown cause is never shown: the sentence says the launcher did not say why', what='hostile')
+    c.eq(c.count('[data-publish-result] img'), 0, 'nothing from the report becomes an element', what='escaped')
+    c.check_errors()
