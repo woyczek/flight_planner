@@ -2864,7 +2864,8 @@ def _route_launcher(c, verbs):
             a = (st['posts'][-1].get('args') or {}) if st['posts'] else {}
             res = {'ok': False, 'reason': 'no-rad', 'message': 'no RAD imported on this workstation: import the EUROCONTROL RAD workbooks first (job route/import-rad)'} \
                 if st['norad'] else dict(common, ok=True, alternatives=alts, segments=alts[0]['segments'], issues=[], message='2 alternative(s).') if a.get('action') == 'compute' else \
-                dict(common, ok=True, alternatives=[checked], segments=checked['segments'], issues=[{'level': 'error', 'text': 'RAD LF9999', 'kind': 'RAD'}], message='')
+                dict(common, ok=True, alternatives=[st.get('check') or checked], segments=(st.get('check') or checked)['segments'],
+                     issues=st.get('issues') or [{'level': 'error', 'text': 'RAD LF9999', 'kind': 'RAD'}], message='')
             body = {'id': 'j' + str(len(st['posts'])), 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': '', 'log': [], 'result': res}
         route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
     c.context.route(re.compile(r'/__setup/'), handler)
@@ -2898,7 +2899,7 @@ def f109(c):
     comp = [p['args'] for p in st['posts'] if (p.get('args') or {}).get('action') == 'compute'][0]
     c.eq([sorted(comp), comp['via'], comp['alternatives']], [sorted(['action', 'adep', 'adest', 'via', 'date', 'fl', 'alternatives']), ['LUGEN', 'NEPIX'], True],
          'the typed points as imposed passages, alternatives asked', what='compute args')
-    names = c.js(f"[...document.querySelectorAll('{FUEL} [data-altlist] [data-alt] b')].map(e => e.textContent.trim())")
+    names = c.js(f"[...document.querySelectorAll('{FUEL} [data-altlist] [data-alt] [data-altname]')].map(e => e.textContent.trim())")
     c.eq(names, ['Via UN10', 'Direct · FL250', 'Direct · FL190'], 'each route named by the launcher', what='names')
     before = cf_doc(c, lambda d: True, 'the flight')['route']['text']
     c.tap(f'{FUEL} [data-alt="1"] [data-do="rtake"]')
@@ -2977,3 +2978,43 @@ def f112(c):
     c.shot(f'F112_{c.design}_{c.width}_{c.lang}.png')
     c.tap(f'{FUEL} [data-do="adswap"]')
     cf_doc(c, lambda d: d['route'].get('dep') == 'LFML' and d['route'].get('arr') == 'LFRS', 'the swap still works', timeout=8000)
+
+
+@case('F113', 'Route step: « N écarts aux règles » is never a number alone — a fold lists each deviation with its segment, its rule and the engine\'s sentence, seven then « N autres »',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0134 (b) (user: « 9 écarts aux règles » and nothing else to act on): one line per deviation — the segment, the RAD or FRA rule id '
+      '(else its kind), the engine\'s own sentence; the engine\'s errors without a segment on a « — » line; a fake launcher')
+def f113(c):
+    st = _route_launcher(c, ['route/compute'])
+    R = lambda kind, text, rule=None: dict({'kind': kind, 'text': text}, **({'ruleId': rule} if rule else {}))
+    st['check'] = _alt(1, 'Direct', 'LFRS LUGEN NEPIX LFML', 370, 270, [
+        _seg('LFRS', 'LUGEN', R('RAD', 'Interdiction RAD LF1001', 'LF1001'), R('ceiling', 'plafond 19500 ft, prévu 27000 ft')),
+        _seg('LUGEN', 'NEPIX', R('FRA', 'Point FRA de sortie non respecté', 'LFFRA2')),
+        _seg('NEPIX', 'PT1', R('RAD', 'Interdiction RAD LF1002', 'LF1002'), R('RAD', 'Interdiction RAD LF1003', 'LF1003')),
+        _seg('PT1', 'PT2', R('direction', 'Sens interdit sur UN10'), R('floor', 'plancher FL195, prévu FL180')),
+        {'from': 'PT2', 'to': 'LFML', 'via': 'DCT', 'state': 'error', 'reasons': []}], sid=False)
+    st['issues'] = [{'level': 'error', 'text': 'Continuité : PT2 absent de la base'}, {'level': 'error', 'text': 'Interdiction RAD LF1001'}]
+    open_proc(c)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcheck]')", timeout=10000, what='the two buttons')
+    c.tap(f'{FUEL} [data-do="rcheck"]')
+    c.until(f"!!document.querySelector('{FUEL} [data-routealts] [data-faults]')", what='the fold of the deviations')
+    f = c.js(f"""(() => {{ const d = document.querySelector('{FUEL} [data-routealts] [data-faults]');
+        return {{ sum: d.querySelector(':scope > summary').textContent, top: [...d.querySelectorAll(':scope > ul > [data-fault]')].map(e => e.textContent.trim()),
+          all: d.querySelectorAll('[data-fault]').length, more: d.querySelector('[data-faultmore] > summary')?.textContent || '' }} }})()""")
+    c.ok('9' in f['sum'], f['sum'], 'the fold says the count: nine deviations')
+    c.eq([len(f['top']), f['all']], [7, 9], 'seven lines, then the others folded: nine lines for nine deviations', what='lines')
+    c.ok('2' in f['more'], f['more'], '« 2 autres »')
+    c.ok(f['top'][0].startswith('LFRS–LUGEN') and 'LF1001' in f['top'][0] and 'Interdiction RAD LF1001' in f['top'][0], f['top'][0],
+         'a line: the segment, the rule id, the engine\'s sentence')
+    c.ok('LFFRA2' in f['top'][2] and 'LUGEN–NEPIX' in f['top'][2], f['top'][2], 'a FRA rule by its point')
+    c.js(f"document.querySelector('{FUEL} [data-faults]').open = true; document.querySelector('{FUEL} [data-faultmore]').open = true")
+    rest = c.js(f"[...document.querySelectorAll('{FUEL} [data-faultmore] [data-fault]')].map(e => e.textContent.trim())")
+    c.ok(rest[0].startswith('PT2–LFML') and rest[1].startswith('—') and 'Continuité' in rest[1], rest,
+         'a faulty segment without reason has its line; the engine\'s error without segment on a « — » line; an error already said is not repeated')
+    # the alternatives of « Calculer » carry their own fold when they deviate
+    st.pop('check')
+    st.pop('issues')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3", what='three routes')
+    c.eq(c.js(f"[...document.querySelectorAll('{FUEL} [data-altlist] [data-alt]')].map(e => e.querySelectorAll('[data-fault]').length)"), [0, 0, 1],
+         'the deviating route lists its deviation', what='per route')

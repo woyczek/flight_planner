@@ -222,6 +222,17 @@ const TX = {
   rTake: ['Prendre', 'Take', 'Übernehmen', 'Tomar'],
   rTaken: ['pris', 'taken', 'übernommen', 'tomado'],
   rFaults: ['{n} écart(s)', '{n} deviation(s)', '{n} Abweichung(en)', '{n} desviación(es)'],
+  // le genre d'un écart (SOG-0134), quand le moteur ne donne pas l'identifiant de la règle
+  rKinds: {
+    RAD: ['RAD', 'RAD', 'RAD', 'RAD'],
+    FRA: ['FRA', 'FRA', 'FRA', 'FRA'],
+    direction: ['sens', 'direction', 'Richtung', 'sentido'],
+    floor: ['plancher', 'floor', 'Untergrenze', 'suelo'],
+    ceiling: ['plafond', 'ceiling', 'Obergrenze', 'techo'],
+    continuity: ['continuité', 'continuity', 'Kontinuität', 'continuidad'],
+    altitude: ['altitude', 'altitude', 'Höhe', 'altitud']
+  },
+  rMore: ['{n} autres', '{n} more', '{n} weitere', '{n} más'],
   rCheckOk: ['Contrôle : aucun écart détecté (précontrôle de simulation)', 'Check: no deviation found (simulation pre-check)',
     'Prüfung: keine Abweichung gefunden (Simulations-Vorprüfung)', 'Comprobación: ninguna desviación (precontrol de simulación)'
   ],
@@ -1551,6 +1562,10 @@ const STYLE = `
 [data-module="fuel"] .fu-ralts .fu-raltroute{display:block;word-break:break-word}
 [data-module="fuel"] .fu-pt.fu-pterr{border-color:var(--sog-err);flex-wrap:wrap}
 [data-module="fuel"] .fu-pt .fu-segwhy{flex-basis:100%;order:9;color:var(--sog-err)}
+[data-module="fuel"] .fu-faultlist{margin:.2em 0 .3em;padding-left:1.1em}
+[data-module="fuel"] .fu-faultlist li{margin:.15em 0;overflow-wrap:anywhere} /* un écart par ligne (SOG-0134) : segment · règle · phrase */
+[data-module="fuel"] .fu-faultrule{color:var(--sog-err)}
+[data-module="fuel"] .fu-rfaults>summary,[data-module="fuel"] .fu-faultmore>summary{min-height:44px;display:flex;align-items:center}
 [data-module="fuel"] details.fu-others>summary{cursor:pointer;margin:10px 0 4px;font-weight:600}
 /* SOG-0058 : libellé à gauche dans une colonne fixe, valeur à droite (l'unité dans le libellé) ; la même grille sur la carte Météo et
    les réglages du devis : un libellé long passe à la ligne sans décaler les champs ; plusieurs couples par ligne sur un grand écran */
@@ -3093,7 +3108,8 @@ async function routeAsk(action) {
       faults: a?.faults || 0,
       errors: a?.errors || []
     };
-    if (box) box.innerHTML = `<p class="${S.rcheck.faults || S.rcheck.errors.length ? 'f-warn' : 'f-muted'}" data-rcheck>${esc(S.rcheck.faults ? tt(TX.rCheckN, { n: S.rcheck.faults }) : S.rcheck.errors[0] || tt(TX.rCheckOk))}</p>${limitsHtml(n)}`;
+    const lines = RE.faultLines(a);
+    if (box) box.innerHTML = `${lines.length ? faultsHtml(lines) : `<p class="f-muted" data-rcheck>${esc(tt(TX.rCheckOk))}</p>`}${limitsHtml(n)}`;
     renderPts();
     return refresh();
   }
@@ -3103,6 +3119,12 @@ async function routeAsk(action) {
     n
   };
   routeAltsDraw();
+}
+/** « N écarts aux règles » n'est jamais un nombre seul (SOG-0134) : un pli dont le titre dit le nombre et qui liste chaque écart — son
+ *  segment, sa règle (l'identifiant du RAD ou du point FRA, sinon son genre), la phrase du moteur — sept lignes puis « N autres ». */
+function faultsHtml(lines) {
+  const li = l => `<li data-fault>${[l.seg ? `<b>${esc(l.seg)}</b>` : '<b>—</b>', l.ruleId || l.kind ? `<span class="fu-faultrule">${esc(l.ruleId || tt(TX.rKinds[l.kind] || TX.rKinds.altitude))}</span>` : '', l.text ? esc(l.text) : ''].filter(Boolean).join(' · ')}</li>`;
+  return `<details class="fu-rfaults" data-faults data-rcheck><summary class="f-warn">${esc(tt(TX.rCheckN, { n: lines.length }))}</summary><ul class="fu-faultlist">${lines.slice(0, 7).map(li).join('')}</ul>${lines.length > 7 ? `<details class="fu-faultmore" data-faultmore><summary class="f-muted">${esc(tt(TX.rMore, { n: lines.length - 7 }))}</summary><ul class="fu-faultlist">${lines.slice(7).map(li).join('')}</ul></details>` : ''}</details>`;
 }
 /** La ligne du RAD dans Données (application Maintenance, source eurocontrol_rad du catalogue d'AeroDB) : le lien du « no-rad ». */
 const RAD_DATA_HREF = '?app=maintenance#data?source=eurocontrol_rad';
@@ -3118,7 +3140,7 @@ function routeAltsDraw() {
   const name = (a, i) => a.name || (a.role === 'primary' ? tt(TX.rPrimary) : tt(TX.rVariant, {
     n: i
   }));
-  box.innerHTML = (A.list.length ? `<div class="f-list fu-ralts" data-altlist>${A.list.map((a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}" data-alt="${i}"${i === A.chosen ? ' aria-current="true"' : ''}><span><b>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(a.fl).padStart(3, '0')}` : '', tt(TX.rFaults, { n: a.faults + (a.faults ? 0 : a.errors.length) })].filter(Boolean).join(' · '))}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.calcError || a.errors[0] ? `<small class="f-warn">${esc(a.calcError || a.errors[0])}</small>` : ''}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(TX.rTake))}</button>` : ''}</div>`).join('')}</div>` :
+  box.innerHTML = (A.list.length ? `<div class="f-list fu-ralts" data-altlist>${A.list.map((a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}" data-alt="${i}"${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(a.fl).padStart(3, '0')}` : '', RE.faultLines(a).length ? '' : tt(TX.rFaults, { n: 0 })].filter(Boolean).join(' · '))}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${RE.faultLines(a).length ? faultsHtml(RE.faultLines(a)) : ''}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(TX.rTake))}</button>` : ''}</div>`).join('')}</div>` :
     `<p class="f-muted">${esc(A.n?.message || tt(TX.rNone))}</p>`) + limitsHtml(A.n || {
     limitation: '',
     gaps: []

@@ -10,7 +10,9 @@
 //   run(launcher, args) → Promise<object | null> : le résultat du travail, null sans réponse.
 //   normalize(result, action) → { ok, reason, message, errors: [texte], plans: [plan], limitation, gaps: [{ name, reason }] } :
 //     plan = { role ('primary' | 'alternative'), name, route, distanceNm, fl, accepted, errors: [texte], faults, sid, star,
-//     segments: [{ from, to, via, state, reasons: [{ kind, text }] }] } ; trois itinéraires au plus, un seul en check.
+//     segments: [{ from, to, via, state, reasons: [{ kind, text, ruleId }] }] } ; trois itinéraires au plus, un seul en check.
+//   faultLines(plan) → [{ seg: 'FROM–TO' | '', kind, ruleId, text }] : un écart par ligne (SOG-0134) — chaque motif d'un segment fautif,
+//     un segment fautif sans motif, puis les erreurs du moteur qu'aucun motif ne dit déjà (seg vide).
 
 export const VERB = 'route/compute';
 const KINDS = ['RAD', 'FRA', 'direction', 'floor', 'ceiling', 'continuity', 'altitude'];
@@ -87,9 +89,43 @@ function segOf(s) {
     state: s?.state === 'error' ? 'error' : 'ok',
     reasons: (Array.isArray(s?.reasons) ? s.reasons : []).slice(0, 5).map(x => ({
       kind: KINDS.includes(x?.kind) ? x.kind : 'altitude',
-      text: text(x?.text, 200)
+      text: text(x?.text, 200),
+      // la règle du livre RAD (ou d'un point FRA) : un identifiant court, rien d'autre (entrée non fiable)
+      ruleId: /^[A-Z0-9][A-Z0-9_./-]{0,23}$/i.test(String(x?.ruleId ?? '')) ? String(x.ruleId).toUpperCase() : ''
     })).filter(x => x.text)
   };
+}
+/** Les écarts d'un itinéraire, un par ligne (voir l'en-tête) ; 200 au plus. */
+export function faultLines(plan) {
+  const out = [],
+    said = new Set();
+  for (const sg of plan?.segments || []) {
+    if (sg.state !== 'error') continue;
+    const seg = `${sg.from}–${sg.to}`;
+    if (!sg.reasons.length) out.push({
+      seg,
+      kind: '',
+      ruleId: '',
+      text: ''
+    });
+    for (const r of sg.reasons) {
+      said.add(r.text);
+      out.push({
+        seg,
+        kind: r.kind,
+        ruleId: r.ruleId,
+        text: r.text
+      });
+    }
+  }
+  for (const e of plan?.errors || [])
+    if (!said.has(e) && ![...said].some(t => e.includes(t) || t.includes(e))) out.push({
+      seg: '',
+      kind: '',
+      ruleId: '',
+      text: e
+    });
+  return out.slice(0, 200);
 }
 /** La procédure d'un côté (identifiant AeroDB « LFPO.SID.ELCOB2Q.RW24 », vérifié par sa forme) : { id, name } ou null. */
 function procOf(p, kind) {
