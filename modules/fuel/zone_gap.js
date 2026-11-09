@@ -12,6 +12,10 @@
 //     publication — pas publiée ; tous ses cycles plus anciens que celui en vigueur ; aucun point publié à 60 NM de p.
 //   gapOf(aerodb, p, lang) → Promise<{ id, name, state } | null> : la zone d'une position et son état.
 //   stateText(gap, tt) → la phrase de l'état ; gapHtml(gap, { tt, esc, icao, lnm }) → la ligne en trois temps ('' pour ok).
+//   READABLE : les motifs d'un État dont les procédures se lisent à la demande (eAIP du SIA, EAD Basic) — le bouton de lecture dit
+//     « Lire à la demande » ; procHtml(state, { tt, esc, icao, lnm, lang }) → pour un État dont les procédures ne se lisent pas (tables en
+//     images, étiquettes seules, points, texte, VFR seulement, aucune : SOG-0157), son motif tel que Données le dit et les replis externes ;
+//     '' pour un État lisible ou détenu.
 
 export const STATES = ['absent', 'stale', 'empty'];
 export const TX = {
@@ -33,6 +37,10 @@ export const TX = {
     'Little Navmap en este equipo'
   ]
 };
+
+export const READABLE = ['sia', 'ead'];
+/** Les motifs qui laissent la lecture possible (lisible à la demande, détenu, lu en partie, non relevé) : le bouton de lecture reste. */
+export const KEEP_READ = ['sia', 'ead', 'held', 'partial', 'unknown'];
 
 export const zoneHref = id => `?app=maintenance#data?zone=${encodeURIComponent(id)}`;
 
@@ -102,4 +110,24 @@ export function gapHtml(g, {
     ].filter(Boolean),
     gesture = g.state === 'absent' || g.state === 'stale' ? `<a class="fu-linkbtn" data-zonelink href="${esc(zoneHref(g.id))}">${esc(tt(g.state === 'absent' ? TX.add : TX.update, { z: g.name }))}</a>` : '';
   return `<div class="fu-zonegap" data-zonegap="${esc(g.id)}" data-zstate="${esc(g.state)}"><span class="f-warn" data-gapwhat>${esc(stateText(g, tt))}</span>${gesture}<span class="f-muted" data-gapelse>${esc(tt(TX.elsewhere))} ${outs.join(' · ')}</span></div>`;
+}
+
+/** La ligne des procédures d'un État qui ne se lisent pas (voir l'en-tête) : « Espagne : Étiquettes seules, sans table », puis les replis
+ *  externes ; '' pour un État lisible, détenu ou inconnu. `state` : une entrée de aerodb.coverageByState() { reason, label, names }. */
+export function procHtml(state, {
+  tt,
+  esc,
+  icao = '',
+  lnm = false,
+  lang = 'fr'
+}) {
+  if (!state || KEEP_READ.includes(state.reason)) return '';
+  const i = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(lang)),
+    code = /^[A-Z]{4}$/.test(String(icao || '')) ? String(icao) : '',
+    ext = a => `<a href="${esc(a[1])}" target="_blank" rel="noopener noreferrer" data-ext="${esc(a[0])}">${esc(a[0])}</a>`,
+    outs = [lnm ? `<span data-ext="lnm">${esc(tt(TX.lnm))}</span>` : '', ext(['Navigraph', code ? `https://charts.navigraph.com/airport/${code}` : 'https://charts.navigraph.com/']),
+      ext(['ChartFox', code ? `https://chartfox.org/${code}` : 'https://chartfox.org/'])
+    ].filter(Boolean),
+    what = [state.names?.[i], state.label?.[i] || state.reason].filter(Boolean).join(' : ');
+  return `<div class="fu-zonegap" data-procgap="${esc(code.slice(0, 2))}" data-preason="${esc(state.reason)}"><span class="f-warn" data-gapwhat>${esc(what)}</span><span class="f-muted" data-gapelse>${esc(tt(TX.elsewhere))} ${outs.join(' · ')}</span></div>`;
 }

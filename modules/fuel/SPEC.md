@@ -205,7 +205,9 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
   decision, turns it off; « Auto » turns it on again. Without a sheet (a type estimate) or a route, the button is disabled and its
   title says why. No new model: a filter over the series (F107).
 - **Aerodromes**: departure, arrival, alternate. Each field is a search (F48): from two characters, by code or by name, `aerodb.find`
-  gives at most seven aerodromes with a four-character code, listed as « LFPO Paris-Orly » in one list laid over the page (never the
+  gives aerodromes with a four-character code, then, for a town the text names (two at most), the aerodromes within 40 NM of it, nearest
+  first, the town in the line (« ESSA Arlanda (Stockholm) »; SOG-0158, F119: `find` only searches the aerodromes of the zones already open,
+  `aerodromes({ lat, lon, radiusNm })` opens the town's zone) — seven at most in all, listed as « LFPO Paris-Orly » in one list laid over the page (never the
   native `datalist`; the list of `suggest.js`); ↑ ↓ move, Enter picks, Esc closes, a tap picks (44 px); it closes when the field
   loses the focus (a press on a proposal keeps it, so the click lands); a full code that is the only proposal opens nothing. A pick
   writes the code and fires the field's `input` event: the same path as typing (F45, F46). Only a code reaches the route; leaving a
@@ -290,7 +292,9 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
   (État EI) » when the zone around an aerodrome of the flight has none), and counts in N; never left out (F94).
 - **Homonyms, jumps and the zone of an unknown point** (SOG-0142, F115): a name several places carry resolves to the one **nearest the
   previous resolved point** (the first name: nearest the middle of departure and arrival), never the first found (`routeModel`:
-  `coordsAll(id, { near })`, else `coords(id, { near })`); « PAX : 2 homonymes, le plus proche gardé » and every leg longer than
+  `coordsAll(id, { near })`, else `coords(id, { near })`); an aerodrome's ICAO code the base knows as an aerodrome resolves to the
+  aerodrome, a beacon or a fix of the same name is no homonym of it, and the flight's departure and arrival are never said as homonyms
+  (SOG-0154, F118); « PAX : 2 homonymes, le plus proche gardé » and every leg longer than
   1 000 NM (`JUMP_NM`, « NEPIX → SWEPT : 1 043 NM d'un point au suivant, à vérifier ») are said under the route field
   (`[data-rwarn]`), never corrected silently. An unknown point's row names its **probable zone** (the zone of the resolved point before
   it, by the zones' frames) and the zone's **state**, with the gesture that fits: « base non installée » + « Ajouter <zone> », « base
@@ -352,7 +356,11 @@ before the start, in step 5 after (F11).
   the date of the aerodrome's last reading (`coverage(icao).read_at`, UTC, `fmtDayZ`: F39; ⌛ when `coverage().outdated`), « Relire », the
   records left out (« N non lues » ×4; the old sentence in its `title`; nothing at 0), and « Cartes » (F34, F37, F27, F42). Without data:
   « aucune procédure publiée · Lire les procédures de LFXX » (F14); when the aerodrome's zone is missing, the line « zone manquante »
-  follows (SOG-0143, F116, below).
+  follows (SOG-0143, F116, below). The line first follows the **State's procedures** as Données shows them (« Procédures par État »,
+  `aerodb.coverageByState()[prefix]`; SOG-0157, F120): readable on demand (the SIA's eAIP, EAD Basic) — the read button says « Lire à
+  la demande »; not readable (tables as images, labels only, points, text, VFR only, none) — no read button that would fail again, the
+  State's reason as it is (« Espagne : Étiquettes seules, sans table ») and the external fallbacks on the aerodrome; readable or held — the
+  missing zone of the base, when it is missing. Never a sentence without a gesture.
 - **« Zone manquante »** (SOG-0143, `zone_gap.js`): wherever a zone of the base is missing on the pilot's way — an unknown route point
   (one line per zone under the route field, `[data-zonegaps]`; the point's row keeps the state alone), an aerodrome without procedures
   (in its secondary line, filled at the answer like « Source ») — the same line in three parts: what is missing (the zone's state:

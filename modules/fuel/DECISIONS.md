@@ -1470,3 +1470,8 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   without procedures; the gesture is Données on the zone (Réglages reads `zone=`), never an import from Fuel; the fallbacks are links
   (Navigraph, ChartFox, without referrer) or a name (Little Navmap, only when the launcher says its databases are on this computer); no
   data copied. Counter-test on 887f7b1db: no line on an aerodrome without procedures in a zone not installed.
+- **9 Nov 2026 — the procedures line follows the State, then the zone** (SOG-0157, SOG-0154, SOG-0158): on an aerodrome without
+  procedures, whether its State publishes tables decides what helps (Données' « Procédures par État », `coverageByState`), so it comes
+  before the state of the base zone (which matters to the map and the points); a State whose procedures cannot be read loses the read
+  button, which only failed again (« no-tables »). An ICAO code the base knows as an aerodrome is never a homonym; a town's name brings the
+  aerodromes around it in the completion. F118, F119, F120.

@@ -27,6 +27,8 @@ const TX = {
 };
 /** Nombre de propositions au plus (décision du concepteur : sept). */
 const MAX_SUGGESTIONS = 7;
+/** Rayon autour d'une ville où ses terrains sont proposés (NM ; SOG-0158). */
+const CITY_NM = 40;
 /** Longueur minimale du texte pour proposer. */
 const MIN_CHARS = 2;
 /** Un code de terrain complet : quatre caractères. */
@@ -112,7 +114,9 @@ export function createAdNames(host) {
   }
 
   /** Propose les terrains qui répondent au texte tapé dans le champ `k` (au moins deux caractères). aerodb.find classe les lieux (code
-   *  exact, nom qui commence, ville…) : on garde les aérodromes à code de quatre caractères, sans doublon, sept au plus. */
+   *  exact, nom qui commence, ville…) : on garde les aérodromes à code de quatre caractères, sans doublon ; puis, pour une ville trouvée
+   *  (deux au plus : « stockholm », SOG-0158), les terrains à CITY_NM d'elle, du plus proche au plus loin, la ville dans la ligne
+   *  (« ESSA Arlanda (Stockholm) ») ; sept au plus en tout. */
   async function suggest(k, text) {
     const q = String(text || '').trim(),
       seq = list.ticket();
@@ -130,6 +134,31 @@ export function createAdNames(host) {
         label: String(p.name || '').trim() === code ? '' : String(p.name || '').trim()
       });
       if (hits.length >= MAX_SUGGESTIONS) break;
+    }
+    // SOG-0158 : les terrains autour des villes que le texte nomme (aerodb.aerodromes ouvre leur zone ; find ne cherche les terrains que
+    // dans les zones déjà ouvertes)
+    const cities = (found || []).filter(p => p.kind === 'city' && Number.isFinite(+p.lat) && Number.isFinite(+p.lon)).slice(0, 2);
+    for (const c of cities) {
+      if (hits.length >= MAX_SUGGESTIONS || !ctx.aerodb?.aerodromes) break;
+      const near = await Promise.resolve().then(() => ctx.aerodb.aerodromes({
+        lat: +c.lat,
+        lon: +c.lon,
+        radiusNm: CITY_NM
+      })).catch(() => []);
+      if (!list.live(seq)) return;
+      const d = x => Math.hypot(+x.lat - c.lat, (+x.lon - c.lon) * Math.cos(c.lat * Math.PI / 180));
+      for (const x of (Array.isArray(near) ? near : []).filter(x => Number.isFinite(+x?.lat)).sort((x, y) => d(x) - d(y))) {
+        const code = String(x.icao || x.id || '').trim().toUpperCase();
+        if (!CODE.test(code) || seen.has(code)) continue;
+        seen.add(code);
+        const name = String(x.name || '').trim(),
+          city = String(c.name || '').trim();
+        hits.push({
+          value: code,
+          label: [name && name !== code ? name : '', city ? `(${city})` : ''].filter(Boolean).join(' ')
+        });
+        if (hits.length >= MAX_SUGGESTIONS) break;
+      }
     }
     // le code complet déjà tapé et seul de sa liste : rien à proposer, le champ est juste
     if (hits.length === 1 && hits[0].value === q.toUpperCase()) return list.close();

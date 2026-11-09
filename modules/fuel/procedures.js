@@ -17,7 +17,8 @@
 //     settled(),           fin d'une série de choix (400 ms sans nouveau choix) : un seul devis, une seule écriture
 //     drop(),              les procédures lues du vol sont périmées (le chemin du devis est à relire)
 //     refresh(),           redessine l'écran (devis compris)
-//     zoneGap(icao)        la ligne « zone manquante » d'un terrain sans procédures, '' tant qu'elle n'est pas connue (SOG-0143)
+//     zoneGap(icao),       la ligne « zone manquante » d'un terrain sans procédures, '' tant qu'elle n'est pas connue (SOG-0143)
+//     procState(icao)      l'état des procédures de son État : { readable, demand } ou null tant qu'il n'est pas connu (SOG-0157)
 //   }
 //   api = { sync, render, reset, choose, read, onChange, focus, applyFocus, textModel, snapshot, applyOfp, stop }
 //
@@ -440,9 +441,12 @@ export function createProcedures(host) {
   /** L'unique ligne discrète d'un côté (jamais plus) : « lu le 29/10 16:53Z ⌛ · Relire · 3 non lues » ; sans donnée : « aucune
    *  procédure publiée · Lire les procédures de LFXX ». L'emplacement data-source-slot, à la fin, attend le lien « Source » (§ 10.25). */
   function metaHtml(m, side) {
-    const parts = m.nodata ? [`<span class="fu-procnone">${esc(tt(TX.procNoData))}</span>`, readButton(m.icao, tt(TX.procRead, {
-      icao: m.icao
-    }), false)] : [fileHtml(m), readButton(m.icao, tt(TX.procReread), true)];
+    // SOG-0157 : l'état des procédures de l'État (Données, « Procédures par État »), connu de l'hôte : lisible à la demande → « Lire à la
+    // demande » ; ne se lit pas (tables en images, étiquettes seules…) → pas de bouton qui échouerait, la ligne « zone manquante » le dit
+    const ps = m.nodata ? host.procState?.(m.icao) : null,
+      parts = m.nodata ? [`<span class="fu-procnone">${esc(tt(TX.procNoData))}</span>`, ps && !ps.readable ? '' : readButton(m.icao, ps?.demand ? tt(TX.procReadDemand) : tt(TX.procRead, {
+        icao: m.icao
+      }), false)] : [fileHtml(m), readButton(m.icao, tt(TX.procReread), true)];
     if (m.unread > 0) parts.push(`<span class="fu-procunread" title="${esc([m.partialLabel, tt(m.unread === 1 ? TX.procUnread1 : TX.procUnread, { n: m.unread })].filter(Boolean).join(' · '))}">${esc(tt(m.unread === 1 ? TX.procNotRead1 : TX.procNotRead, { n: m.unread }))}</span>`);
     // SOG-0143 : sans donnée, la ligne « zone manquante » du terrain (sa zone et son état, le geste, les replis externes), remplie à la
     // réponse ; hors de la suite des parties (pas de « · » devant un emplacement encore vide)

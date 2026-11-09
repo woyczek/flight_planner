@@ -28,6 +28,8 @@ export const TX = {
     '{n} procedimientos sin leer en esta página'
   ],
   procNoData: ['aucune procédure publiée', 'no published procedure', 'kein veröffentlichtes Verfahren', 'ningún procedimiento publicado'],
+  // SOG-0157 : le bouton de lecture d'un État lisible à la demande (eAIP du SIA, EAD Basic)
+  procReadDemand: ['Lire à la demande', 'Read on demand', 'Auf Anfrage lesen', 'Leer bajo demanda'],
   procRead: ['Lire les procédures de {icao}', 'Read the procedures of {icao}', 'Verfahren von {icao} lesen',
     'Leer los procedimientos de {icao}'
   ],

@@ -44,6 +44,7 @@ from lib import AERO_CYCLE, ROOT, Fail, Skip, aero_docs, case, flight_docs, norm
 from fixtures.procedures import proc_docs      # the invented procedures the cases seed (V3 spec 10.29 i)
 
 F = 'modules/fuel/module.js'
+PROC_TX = 'modules/fuel/procedures_texts.js'
 PT = 'modules/fuel/procedures_texts.js'      # the texts of the procedures card (moved out of module.js, V3 spec 10.29 d)
 FUEL = '[data-module="fuel"]'
 
@@ -3127,28 +3128,28 @@ def f115(c):
       'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
       rule='SOG-0143 (user: « ESPAGNE : aucune base installée… proposer un moyen de télécharger, expliquer ce qui manque, fallback LittleNavMap, '
       'Navigraph, ChartFox ; valable pour TOUS les pays »): one line in three parts, three elements; links, never data copied; an invented '
-      'aerodrome placed in a zone that is not installed; a fake launcher')
+      'aerodrome (a prefix the catalogue does not survey, so its procedures are not judged) placed in a zone that is not installed; a fake launcher')
 def f116(c):
     st = _route_launcher(c, [])
     st['folders'] = [{'id': 'lnmdb', 'path': '', 'exists': True, 'from': 'lnm'}]
     docs = flight_docs()
     f = docs[1][1]
-    f['route']['arr'] = 'ESZZ'
-    f['route']['text'] = 'LFRS LUGEN NEPIX ESZZ'
-    f['route']['points'][-1] = {'id': 'ESZZ', 'lat': 59.6, 'lon': 17.9}
-    c.open('fuel', docs=docs, airfields=True, aero_extra={'aerodromes': [{'icao': 'ESZZ', 'name': 'ESZZ TEST', 'lat': 59.6, 'lon': 17.9, 'elev': 30}],
+    f['route']['arr'] = 'XSZZ'
+    f['route']['text'] = 'LFRS LUGEN NEPIX XSZZ'
+    f['route']['points'][-1] = {'id': 'XSZZ', 'lat': 59.6, 'lon': 17.9}
+    c.open('fuel', docs=docs, airfields=True, aero_extra={'aerodromes': [{'icao': 'XSZZ', 'name': 'XSZZ TEST', 'lat': 59.6, 'lon': 17.9, 'elev': 30}],
                                                                'cells': {'46': [[-2, 6]], '47': [[-2, 6]]}})   # the index covers LFRS (its points are around it)
     wait_quote(c)
     to_step(c, 1)
-    c.until(f"!!document.querySelector('{FUEL} [data-proc][data-icao=\"ESZZ\"] [data-gap-slot] [data-zonegap]')", timeout=12000,
+    c.until(f"!!document.querySelector('{FUEL} [data-proc][data-icao=\"XSZZ\"] [data-gap-slot] [data-zonegap]')", timeout=12000,
             what='the line « zone manquante » of the aerodrome without procedures')
-    g = c.js(f"""(() => {{ const z = document.querySelector('{FUEL} [data-proc][data-icao="ESZZ"] [data-zonegap]');
+    g = c.js(f"""(() => {{ const z = document.querySelector('{FUEL} [data-proc][data-icao="XSZZ"] [data-zonegap]');
         return {{ zone: z.dataset.zonegap, state: z.dataset.zstate, parts: z.children.length, link: z.querySelector('a[data-zonelink]')?.getAttribute('href') || '',
           ext: [...z.querySelectorAll('[data-ext]')].map(e => [e.dataset.ext, e.getAttribute('href') || '', e.getAttribute('rel') || '']) }} }})()""")
     c.eq([g['zone'], g['state'], g['parts']], ['se', 'absent', 3], 'the zone of the aerodrome, not installed: three parts', what='line')
     c.eq(g['link'], '?app=maintenance#data?zone=se', 'the gesture: Données on that zone', what='gesture')
     c.eq([x[0] for x in g['ext']], ['lnm', 'Navigraph', 'ChartFox'], 'the external fallbacks, Little Navmap first since its databases are on this computer', what='fallbacks')
-    c.eq([g['ext'][1][1], g['ext'][2][1]], ['https://charts.navigraph.com/airport/ESZZ', 'https://chartfox.org/ESZZ'], 'links on the aerodrome', what='links')
+    c.eq([g['ext'][1][1], g['ext'][2][1]], ['https://charts.navigraph.com/airport/XSZZ', 'https://chartfox.org/XSZZ'], 'links on the aerodrome', what='links')
     c.ok(all('noreferrer' in x[2] for x in g['ext'][1:]), g['ext'], 'external links without referrer (nothing sent, nothing copied)')
     c.eq(c.count(f'{FUEL} [data-proc][data-icao="LFRS"] [data-zonegap]'), 0, 'an aerodrome whose zone is there: no line', what='zone present')
 
@@ -3180,3 +3181,87 @@ def f117(c):
     c.until(f"!!document.querySelector('{FUEL} [data-routealts] [data-faults] [data-incomplete]')", what='the incomplete check said')
     c.ok('UN10' in c.text(f'{FUEL} [data-routealts] [data-incomplete]'), c.text(f'{FUEL} [data-routealts] [data-incomplete]'), 'with its « revue » reason')
     c.eq(c.count(f'{FUEL} [data-routealts] p[data-rcheck]'), 0, 'never « aucun écart détecté » for an incomplete check', what='not checked')
+
+
+
+@case('F118', 'Route reader: an aerodrome\'s ICAO code resolves to the aerodrome, never « homonymes »; departure and arrival never said as homonyms',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0154 (user: « LFLL : 2 homonymes, le plus proche gardé. LFPO : 2 homonymes »): a point of the same name is not a homonym of an '
+      'aerodrome; homonyms are said for route points only; invented positions')
+def f118(c):
+    # an invented point named like the departure aerodrome, far away, and a real homonym pair for a route point (PAX)
+    extra = {'points': [{'id': 'LFRS', 'lat': 30.0, 'lon': -20.0, 'type': 'RNAV'}, {'id': 'LFML', 'lat': 60.0, 'lon': 30.0, 'type': 'RNAV'},
+                        {'id': 'PAX', 'lat': 45.8, 'lon': 1.9, 'type': 'RNAV'}, {'id': 'PAX', 'lat': 39.0, 'lon': -76.0, 'type': 'RNAV'}]}
+    c.open('fuel', docs=flight_docs(), airfields=True, aero_extra=extra)
+    wait_quote(c)
+    _route_typed(c, 'LFRS PAX NEPIX LFML')
+    d = cf_doc(c, lambda d: 'PAX' in [q.get('id') for q in (d.get('route') or {}).get('points') or []], 'the route read', timeout=10000)
+    pts = {q['id']: q for q in d['route']['points']}
+    c.ok(abs(pts['LFRS']['lat'] - 47.1569) < 0.01 and abs(pts['LFML']['lat'] - 43.4367) < 0.01, pts, 'departure and arrival: the aerodromes, not the points of the same name')
+    c.until(f"[...document.querySelectorAll('{FUEL} [data-rwarn] [data-rw]')].some(e => e.textContent.includes('PAX'))", what='the route point PAX said as homonyms')
+    said = c.text(f'{FUEL} [data-rwarn]')
+    c.ok('LFRS' not in said and 'LFML' not in said, said, 'never « homonymes » for the departure or the arrival')
+
+
+
+@case('F119', 'Completion: a town\'s name proposes the aerodromes around it, the town in the line',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0158 (user: « je voudrais pouvoir trouver « stockholm » dans la liste de saisie des ADEP / ADEST »): aerodb.find gives the town, '
+      'the aerodromes around it follow (40 NM), seven at most; an invented town and an invented aerodrome whose name does not contain it')
+def f119(c):
+    c.open('fuel', flight=True, airfields=True, aero_extra={'aerodromes': NAMES_BASE + [{'icao': 'LFZV', 'name': 'TESTFIELD', 'lat': 45.95, 'lon': 2.0, 'elev': 200}],
+                                                            'cities': [{'name': 'ZORLVILLE', 'lat': 45.9, 'lon': 1.95, 'pop': 90000}]})
+    wait_quote(c)
+    to_step(c, 0)
+    type_in(c, 'arr', 'zorlv')
+    c.until(f"[...document.querySelectorAll('{FUEL} [data-adsug] [role=option]')].some(o => o.dataset.code === 'LFZV')", timeout=8000,
+            what='the aerodrome near the town is proposed')
+    o = c.js(f"[...document.querySelectorAll('{FUEL} [data-adsug] [role=option]')].map(o => [o.dataset.code, o.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()])")
+    lf = [x for x in o if x[0] == 'LFZV'][0]
+    c.ok('TESTFIELD' in lf[1].upper() and 'ZORLVILLE' in lf[1].upper(), lf, 'the line: code, the aerodrome\'s name and the town')
+    c.le(len(o), 7, 'seven proposals at most', what='proposals')
+
+
+
+def _proc_line_docs(arr, lat, lon):
+    """The planned flight to an invented aerodrome `arr` (its prefix says its State), no procedure seeded anywhere."""
+    docs = flight_docs()
+    f = docs[1][1]
+    f['route']['arr'] = arr
+    f['route']['text'] = f'LFRS LUGEN NEPIX {arr}'
+    f['route']['points'][-1] = {'id': arr, 'lat': lat, 'lon': lon}
+    return docs, {'aerodromes': [{'icao': arr, 'name': arr + ' TEST', 'lat': lat, 'lon': lon, 'elev': 30}], 'cells': {'46': [[-2, 6]], '47': [[-2, 6]]}}
+
+
+_PROC_LINE_JS = f"""(icao) => {{ const p = document.querySelector(`{FUEL} [data-proc][data-icao="${{icao}}"]`); if (!p) return null;
+  const g = p.querySelector('[data-procgap]');
+  return {{ read: p.querySelector('[data-do=procfetch]')?.textContent.trim() ?? null, reason: g?.dataset.preason || '',
+    ext: g ? [...g.querySelectorAll('[data-ext]')].map(e => [e.dataset.ext, e.getAttribute('href') || '']) : [] }} }}"""
+
+
+@case('F120', 'Procedures: an aerodrome of a State whose procedures cannot be read says why (as Données says it) with the external fallbacks and no futile « Lire »; a State readable on demand offers « Lire à la demande »',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0157 (user: « toujours ce bug aucune table des procédures publiées, sans plan B, ni consigne de téléchargement »): the State\'s '
+      'state of « Procédures par État » (coverageByState); never a sentence without a gesture; invented aerodromes of the ES (labels only) and '
+      'EB (EAD Basic) prefixes')
+def f120(c):
+    docs, extra = _proc_line_docs('ESZZ', 59.6, 17.9)
+    c.open('fuel', docs=docs, airfields=True, aero_extra=extra)
+    wait_quote(c)
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-proc][data-icao=\"ESZZ\"] [data-procgap]')", timeout=12000, what='the State\'s state on ESZZ\'s line')
+    e = c.js(_PROC_LINE_JS, 'ESZZ')
+    c.eq(e['reason'], 'labels', 'Spain\'s state: labels only, no table', what='reason')
+    c.eq(e['read'], None, 'no « Lire » that would fail again', what='no futile read')
+    c.eq([x[0] for x in e['ext']], ['Navigraph', 'ChartFox'], 'the external fallbacks on the aerodrome', what='fallbacks')
+    c.ok(e['ext'][0][1].endswith('/ESZZ') and e['ext'][1][1].endswith('/ESZZ'), e['ext'], 'links on ESZZ')
+    c.until(f"(() => {{ const b = document.querySelector('{FUEL} [data-proc][data-icao=\"LFRS\"] [data-do=procfetch]'); return !!b && b.textContent.trim() === {repr(tx(PROC_TX, 'procReadDemand', c.lang))} }})()",
+            timeout=8000, what='LFRS (the SIA\'s eAIP, readable on demand): « Lire à la demande »')
+    # a State read through EAD Basic
+    docs, extra = _proc_line_docs('EBZZ', 50.9, 4.5)
+    c.open('fuel', docs=docs, airfields=True, aero_extra=extra)
+    wait_quote(c)
+    to_step(c, 1)
+    c.until(f"(() => {{ const b = document.querySelector('{FUEL} [data-proc][data-icao=\"EBZZ\"] [data-do=procfetch]'); return !!b && b.textContent.trim() === {repr(tx(PROC_TX, 'procReadDemand', c.lang))} }})()",
+            timeout=12000, what='EBZZ (EAD Basic): « Lire à la demande »')
+    c.eq(c.count(f'{FUEL} [data-proc][data-icao="EBZZ"] [data-procgap]'), 0, 'a readable State: no line of fallbacks', what='readable')

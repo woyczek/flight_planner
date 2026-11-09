@@ -53,7 +53,18 @@ export async function routeModel(text, {
       all = at && typeof base.coordsAll === 'function' ? await Promise.resolve(base.coordsAll(id, {
         near: at
       })).catch(() => []) : [],
-      ok = all.filter(x => Number.isFinite(+x?.item?.lat) && Number.isFinite(+x?.item?.lon));
+      ok = all.filter(x => Number.isFinite(+x?.item?.lat) && Number.isFinite(+x?.item?.lon)),
+      // un code OACI de terrain (quatre lettres) que la base connaît comme aérodrome se résout à ce terrain, sans homonymes : une balise
+      // ou un repère du même nom n'en est pas un (SOG-0154, « LFLL : 2 homonymes ») ; le plus proche si plusieurs terrains le portent
+      ads = /^[A-Z]{4}$/.test(id) ? ok.filter(x => x.kind === 'aerodrome') : [];
+    if (ads.length) {
+      const best = ads.sort((x, y) => nmOf(near, x.item) - nmOf(near, y.item))[0];
+      return {
+        lat: +best.item.lat,
+        lon: +best.item.lon,
+        kind: best.kind
+      };
+    }
     if (ok.length > 1) {
       homonyms.push({
         id,
@@ -243,6 +254,8 @@ export async function routeModel(text, {
     if (!i || i === points.length - 1 || a === prev) delete p.alt_ft;
     if (a) prev = a;
   });
+  // les homonymes ne se disent que pour les points de route, jamais pour le départ et l'arrivée du vol (SOG-0154)
+  homonyms.splice(0, homonyms.length, ...homonyms.filter(h => h.id !== dep && h.id !== arr));
   // les tronçons de plus de JUMP_NM entre deux points consécutifs (un homonyme lointain, un nom mal tapé) : dits, jamais corrigés en silence
   const jumps = [];
   for (let i = 1; i < points.length; i++) {

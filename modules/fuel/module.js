@@ -4119,27 +4119,63 @@ async function unresolvedZones(s, seq, points) {
       lnm: s.lnm
     })).join('');
 }
-/** La ligne « zone manquante » d'un terrain sans procédures (SOG-0143) : demandée une fois par terrain (sa position, sa zone, son état),
- *  rendue vide tant que la réponse n'est pas venue ; à la réponse, les emplacements de ce terrain se remplissent (comme « Source »). */
+/** La ligne d'un terrain sans procédures (SOG-0143, SOG-0157), demandée une fois par terrain et rendue vide tant que la réponse n'est
+ *  pas venue : d'abord l'état des procédures de son État (aerodb.coverageByState, ce que Données montre en « Procédures par État ») —
+ *  ne se lisent pas : leur motif et les replis externes ; sinon, la zone de la base qui manque. À la réponse, la carte est redessinée :
+ *  l'emplacement se remplit et le bouton de lecture suit l'état (procState). */
 function zoneGapOf(icao) {
+  return procGap(icao)?.html || '';
+}
+/** L'état des procédures de l'État d'un terrain, pour la ligne discrète (procedures.js) : { readable, demand } ; null tant qu'inconnu. */
+function procStateOf(icao) {
+  const g = procGap(icao);
+  return g ? {
+    readable: g.readable,
+    demand: g.demand
+  } : null;
+}
+/** La réponse gardée d'un terrain (voir zoneGapOf) : { html, readable, demand } ; null en cours (la demande partie au premier appel). */
+function procGap(icao) {
   const k = String(icao || '').toUpperCase();
-  if (!/^[A-Z]{4}$/.test(k) || !S?.ctx?.aerodb?.zones) return '';
+  if (!/^[A-Z]{4}$/.test(k) || !S?.ctx?.aerodb) return null;
   S.gapAds ||= new Map();
-  if (S.gapAds.has(k)) return S.gapAds.get(k) || '';
+  if (S.gapAds.has(k)) return S.gapAds.get(k);
   S.gapAds.set(k, null);
-  const s = S;
-  Promise.resolve().then(() => s.ctx.aerodb.coords(k)).then(c => c ? ZG.gapOf(s.ctx.aerodb, c, s.ctx.lang?.() || 'fr') : null).then(g => {
+  const s = S,
+    A = s.ctx.aerodb,
+    lang = s.ctx.lang?.() || 'fr';
+  (async () => {
+    const cov = await Promise.resolve().then(() => A.coverageByState?.()).catch(() => null),
+      st = cov?.[k.slice(0, 2)] || null,
+      readable = !st || ZG.KEEP_READ.includes(st.reason),
+      ph = ZG.procHtml(st, {
+        tt,
+        esc,
+        icao: k,
+        lnm: s.lnm,
+        lang
+      });
+    let html = ph;
+    if (!html && A.zones) {
+      const c = await Promise.resolve().then(() => A.coords(k)).catch(() => null),
+        g = c ? await ZG.gapOf(A, c, lang).catch(() => null) : null;
+      html = g ? ZG.gapHtml(g, {
+        tt,
+        esc,
+        icao: k,
+        lnm: s.lnm
+      }) : '';
+    }
     if (gone(s)) return;
-    const html = g ? ZG.gapHtml(g, {
-      tt,
-      esc,
-      icao: k,
-      lnm: s.lnm
-    }) : '';
-    s.gapAds.set(k, html);
+    s.gapAds.set(k, {
+      html,
+      readable,
+      demand: ZG.READABLE.includes(st?.reason)
+    });
+    s.P?.render?.(); // la ligne discrète suit : l'emplacement rempli, le bouton de lecture selon l'état
     for (const el of s.body?.querySelectorAll(`[data-proc][data-icao="${k}"] [data-gap-slot]`) || []) el.innerHTML = html;
-  }).catch(() => {});
-  return '';
+  })().catch(() => {});
+  return null;
 }
 /** Des noms inconnus : quand la base n'a aucun point publié à 60 NM d'un terrain du vol, la ligne le dit (la zone manque, pas le point ;
  *  SOG-0012 : la zone EI de la base n'a que des terrains et des navaids). */
@@ -5097,6 +5133,7 @@ export async function mount(el, ctx) {
   // la carte « Procédures » (modules/fuel/procedures.js) : ce qu'elle demande à l'écran, rien d'autre
   S.P = createProcedures({
     zoneGap: icao => zoneGapOf(icao), // SOG-0143 : la ligne « zone manquante » d'un terrain sans procédures
+    procState: icao => procStateOf(icao), // SOG-0157 : l'état des procédures de son État (le bouton de lecture le suit)
     ctx,
     flight: () => self.flight,
     route: () => self.flight.route ||= emptyFlight().route,
