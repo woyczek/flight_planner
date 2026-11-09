@@ -209,6 +209,10 @@ class Job:
 # délai minimal entre deux départs d'un même verbe, en secondes : chaque jeu exporte le sien (tools/regen/<jeu>.py, MIN_GAP ; load_verbs les réunit ici) ; celui d'EAD Basic
 # (30 s, tools/regen/proc.py) fait partie de ses conditions : un terrain par geste, jamais en masse (EAD_BASIC.md § 1)
 MIN_GAP = {}
+# la raison d'un refus d'arguments (400), dans ses mots : chaque jeu exporte EXPLAIN = { (jeu, verbe): fonction(args) → { reason, message, ...paramètres } | None } ; load_verbs les réunit ici (SOG-0144)
+EXPLAIN = {}
+# les verbes qui ne font que lire : leur travail ne remplace pas le dernier travail qui a écrit (Jobs.work, tools/.regen_last.json › work)
+READ_ONLY = {('base', 'status'), ('route', 'compute')}
 
 
 def clean_error(text, ctx=None):
@@ -243,6 +247,7 @@ class Jobs:
         self.last = {}  # (jeu, verbe) → heure (time.time) du dernier départ
         self.store = store  # tools/.regen_last.json : le dernier travail et les derniers départs, gardés d'un lancement à l'autre
         self.kept = None  # dernier travail d'un lancement précédent (« interrupted » s'il courait encore)
+        self.work = None  # la vue du dernier travail qui n'est pas une simple lecture (une construction, une reprise…) : un base/status juste après ne l'écrase pas
         self.held = ''  # raison d'une suspension des départs (la mise à jour de la suite) ; vide : les travaux partent
         self._load()
 
@@ -256,6 +261,9 @@ class Jobs:
                 v = json.load(f)
         except (OSError, ValueError):
             return
+        w = v.get('work') if isinstance(v, dict) else None
+        if isinstance(w, dict) and isinstance(w.get('id'), str):
+            self.work = w
         j = v.get('job') if isinstance(v, dict) else None
         if isinstance(j, dict) and isinstance(j.get('id'), str):
             if j.get('state') == 'running':
@@ -269,13 +277,15 @@ class Jobs:
         """Écrit le dernier travail (sans secret : son journal est déjà nettoyé) et les derniers départs ; jamais d'erreur."""
         if not self.store:
             return
+        if self.cur and (self.cur.data.get('set'), self.cur.data.get('verb')) not in READ_ONLY:
+            self.work = self.cur.view()
         j = self.cur.view() if self.cur else self.kept
         if isinstance(j, dict) and isinstance(j.get('result'), dict):     # une clé du résultat qui commence par « _ » est pour la page seule (le texte d'un journal de vol, stats/output) : jamais écrite ici
             j = {**j, 'result': {k: v for k, v in j['result'].items() if not str(k).startswith('_')}}
         try:
             tmp = self.store + '.tmp'
             with open(tmp, 'w', encoding='utf-8') as f:
-                json.dump({'job': j, 'last': {f'{a}/{b}': t for (a, b), t in self.last.items()}}, f, ensure_ascii=False)
+                json.dump({'job': j, **({'work': self.work} if self.work else {}), 'last': {f'{a}/{b}': t for (a, b), t in self.last.items()}}, f, ensure_ascii=False)
             os.replace(tmp, self.store)
         except (OSError, TypeError, ValueError):
             pass
@@ -288,7 +298,12 @@ class Jobs:
         fn, check = self.registry[key]
         a = check(args if isinstance(args, dict) else {})
         if a is None:
-            return {'ok': False, 'status': 400, 'message': 'invalid arguments'}
+            why = None
+            try:
+                why = EXPLAIN[key](args if isinstance(args, dict) else {}) if key in EXPLAIN else None
+            except Exception:       # la raison est un plus : un refus reste un refus
+                why = None
+            return {'ok': False, 'status': 400, **(why if isinstance(why, dict) and why.get('message') else {'message': 'invalid arguments'})}
         with self.lock:
             if self.held:
                 return {'ok': False, 'status': 409, 'reason': self.held, 'message': f'no job starts now ({self.held})'}
@@ -599,6 +614,9 @@ def load_verbs(folder=None):
             if taken:
                 raise ValueError(f'verb already defined: {taken[0][0]}/{taken[0][1]}')
             REGISTRY.update(verbs)
+            for k, v in (getattr(mod, 'EXPLAIN', None) or {}).items():
+                if isinstance(k, tuple) and callable(v):
+                    EXPLAIN[k] = v
             # un délai n'est jamais abaissé par un jeu (celui d'EAD Basic fait partie de ses conditions) : le plus long gagne
             for k, v in gaps.items():
                 if isinstance(k, tuple) and isinstance(v, (int, float)):

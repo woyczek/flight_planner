@@ -661,6 +661,7 @@ def build(job, args, ctx):
                     elif 'error' in o:
                         if o['zone'] == '*':
                             fatal.append(str(o['error'])[:300])
+                            job.log('page : ' + str(o['error'])[:300])
                         else:
                             errs[o['zone']] = str(o['error'])[:300]
                     elif isinstance(o.get('sources'), int) or isinstance(o.get('n'), int):
@@ -716,7 +717,7 @@ def build(job, args, ctx):
     failed = [{'zone': z, 'error': st[z].get('error') or st[z]['state']} for z in zones if st[z]['state'] == 'failed']
     if state:
         for f in failed:     # un échec est gardé avec la dernière construction réussie (ses entrées) : la zone est dite « en échec » jusqu'à la prochaine réussie
-            state.mark_failed(data, f['zone'], f['error'])
+            state.mark_failed(data, f['zone'], f['error'], message=st[f['zone']].get('message', ''))      # le TEXTE de l'échec (celui de la page : « fichier : HTTP 404 ») est gardé avec lui, il se perdait avec le dernier travail
     # par zone construite : le cycle de sa source datée (None : sans AIRAC, « du <date> »), le dossier écrit, et les zones bloquantes (source
     # d'un cycle passé : construit quand même, sans refus, mais dit)
     blocking = [{'zone': z, 'source': aero_cycles.ZONE_SOURCE[z], 'cycle': own[z]} for z in built if own[z] and own[z] < current]

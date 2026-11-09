@@ -118,10 +118,10 @@ def write_record(data, zone, **fields):
         return False
 
 
-def mark_failed(data, zone, error, at=None):
+def mark_failed(data, zone, error, at=None, message=''):
     """Garde l'échec de la dernière construction avec ce que la dernière réussie avait lu : la zone est dite « en échec » jusqu'à la prochaine réussie."""
     rec = {k: v for k, v in (read_record(data, zone) or {}).items() if k != 'zone'}
-    return write_record(data, zone, **{**rec, 'failed': {'error': error, 'at': at or time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}})
+    return write_record(data, zone, **{**rec, 'failed': {'error': error, 'at': at or time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), **({'message': str(message)[:300]} if message else {})}})
 
 
 # ----------------------------------------------------------------------------------------------------------------------- l'état
@@ -217,7 +217,7 @@ def zone_states(data, zones, personal, ctx):
                 reasons.append({'code': 'never-built'})
         else:
             if rec and rec.get('failed') and rec['failed'].get('at', '') >= (rec.get('builtAt') or ''):
-                reasons.append({'code': 'failed', 'error': rec['failed'].get('error')})
+                reasons.append({'code': 'failed', 'error': rec['failed'].get('error'), **({'message': rec['failed']['message']} if rec['failed'].get('message') else {})})
             if own and built < own:
                 reasons.append({'code': 'source-newer', 'source': aero_cycles.ZONE_SOURCE[z], 'cycle': own, 'built': built})
             elif own and own < current:
@@ -347,4 +347,56 @@ def update(job, args, ctx):
     return res
 
 
+
+# ----------------------------------------------------------------------------------------------------------------------- la raison d'un refus d'arguments (400), dans ses mots (SOG-0144)
+ALLOWED = {'build': {'zones', 'personal'}, 'status': {'zones', 'personal'}, 'update': {'zones', 'personal', 'fetch'}, 'fetch': {'zones', 'personal'}, 'purge': {'zones', 'what', 'dry'}, 'pickup': {'zones', 'dry', 'zips'}}
+
+
+def explain(verb):
+    """La fonction qui dit pourquoi les arguments d'un verbe du jeu « base » sont refusés : { reason (un code), message (en anglais, que la page traduit d'après le code et ses paramètres), ... paramètres } ; None si elle ne sait pas."""
+    def why(a):
+        B, S = _ns(('base', 'build')), _ns(('base', 'fetch'))
+        if not isinstance(a, dict):
+            return {'reason': 'not-an-object', 'message': 'the arguments are an object'}
+        extra = sorted(set(a) - ALLOWED[verb])
+        if extra:
+            return {'reason': 'unknown-field', 'field': str(extra[0])[:40], 'message': f'unknown field: {str(extra[0])[:40]}'}
+        if 'zones' in a or verb != 'status':
+            zones = a.get('zones')
+            if not isinstance(zones, list):
+                return {'reason': 'zones-missing', 'message': 'zones: a list of zone identifiers is needed'}
+            if not zones:
+                return {'reason': 'no-zone', 'message': 'no zone given'}
+            if len(zones) > MAX_ZONES:
+                return {'reason': 'too-many-zones', 'max': MAX_ZONES, 'count': len(zones), 'message': f'{MAX_ZONES} zones at most per request, {len(zones)} given'}
+            ids = set(B.zone_ids()) if B else set()
+            seen = set()
+            for z in zones:
+                z = z.strip().lower() if isinstance(z, str) else z
+                if not isinstance(z, str):
+                    return {'reason': 'bad-zone', 'message': 'zones: identifiers are texts'}
+                if z not in ids:
+                    return {'reason': 'unknown-zone', 'zone': z[:12], 'message': f'unknown zone: {z[:12]}'}
+                if z in seen:
+                    return {'reason': 'duplicate-zone', 'zone': z, 'message': f'zone given twice: {z}'}
+                seen.add(z)
+        personal = a.get('personal', [])
+        if verb in ('build', 'status', 'update', 'fetch'):
+            if not isinstance(personal, list) or len(personal) > 10:
+                return {'reason': 'bad-source', 'message': 'personal: a list of 10 sources at most'}
+            for p in personal:
+                ok = isinstance(p, str) and re.fullmatch(r'[a-z0-9]{2,12}', p.strip().lower()) and (verb != 'fetch' or not S or p.strip().lower() in S.SOURCES)
+                if not ok:
+                    return {'reason': 'bad-source', 'source': str(p)[:20], 'message': f'source not admitted: {str(p)[:20]}'}
+        if verb == 'update' and not isinstance(a.get('fetch', True), bool):
+            return {'reason': 'bad-field', 'field': 'fetch', 'message': 'fetch: true or false'}
+        if verb in ('purge', 'pickup') and not isinstance(a.get('dry', True), bool):
+            return {'reason': 'bad-field', 'field': 'dry', 'message': 'dry: true or false'}
+        if verb == 'purge' and (not isinstance(a.get('what', ['sources']), list) or any(w not in ('sources', 'caches') for w in a.get('what', []))):
+            return {'reason': 'bad-field', 'field': 'what', 'message': 'what: sources and / or caches'}
+        return None
+    return why
+
+
+EXPLAIN = {('base', v): explain(v) for v in ALLOWED}
 VERBS = {('base', 'status'): (status, check_status), ('base', 'update'): (update, check_update)}

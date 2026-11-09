@@ -975,7 +975,7 @@ def k109(c):
         feed('no', text='changed after the build')                                # the inputs changed
         built('se', cycle='2026-10-01', missing=('airways', 'vrp'))              # two files missing
         record('se')
-        ST.mark_failed(str(data), 'nl', 'page-error', '2026-10-31T10:00:00Z')   # the last build failed
+        ST.mark_failed(str(data), 'nl', 'page-error', '2026-10-31T10:00:00Z', 'AIXM4.5_all_FR_OM_2026-10-01.xml : HTTP 404')   # the last build failed, with the text the page gave
         (data / 'sia' / 'XML_SIA_2026-10-29.xml').write_text('<x/>', encoding='utf-8')                  # fr: the SIA of 29 Oct, built at 1 Oct
         built('fr', cycle='2026-10-01')
         (data / 'sia' / 'zones' / 'gb').mkdir(parents=True)
@@ -991,7 +991,7 @@ def k109(c):
              'one state per zone: de (not dated: a cycle changing makes it nothing) up to date; it never built; dk old parser; no inputs changed; se files missing; nl failed; fr source newer than the build; gb dated source older than the cycle in force (nothing to build)', what='states')
         c.eq((z['dk']['reason'], z['no']['reason'], z['se']['reason'], z['fr']['reason'], z['gb']['reason'], z['nl']['reason']),
              ({'code': 'parser-old', 'built': parser - 1, 'current': parser}, {'code': 'inputs-changed', 'count': 1, 'names': ['openaip/no_asp.geojson']}, {'code': 'files-missing', 'count': 2},
-              {'code': 'source-newer', 'source': 'sia', 'cycle': '2026-10-29', 'built': '2026-10-01'}, {'code': 'source-old', 'source': 'nats', 'cycle': '2026-10-01', 'current': '2026-10-29'}, {'code': 'failed', 'error': 'page-error'}),
+              {'code': 'source-newer', 'source': 'sia', 'cycle': '2026-10-29', 'built': '2026-10-01'}, {'code': 'source-old', 'source': 'nats', 'cycle': '2026-10-01', 'current': '2026-10-29'}, {'code': 'failed', 'error': 'page-error', 'message': 'AIXM4.5_all_FR_OM_2026-10-01.xml : HTTP 404'}),
              'the reasons are codes with their parameters (the page says them in four languages)', what='reasons')
         c.eq((r['counts'], r['current'], r['parserVersion']), ({'up-to-date': 1, 'never-built': 1, 'stale': 5, 'failed': 1}, '2026-10-29', parser), 'the counts, the cycle in force and the parser version', what='counts')
         # a file waiting in Downloads and not taken: the first reason of gb, not buildable until it is taken
@@ -1082,6 +1082,54 @@ def k114(c):
         c.eq((bool(lost) and 'points.json absent' in lost, (data / 'sia' / 'base' / 'index.json').read_text(encoding='utf-8') == before), (True, True), 'a file of the folder is absent when the index is to be written: the zone is not published, the index is untouched', what='no orphan index')
         paths, written = BA.install(str(data), 'nl', '2026-10-29', texts, entry)
         c.eq(('sia/base/index.json' in paths, json.loads((data / 'sia' / 'base' / 'index.json').read_text(encoding='utf-8'))['zones']['nl']['cycle']), (True, '2026-10-29'), 'a complete folder: the index is written', what='index written')
+
+
+@case('K116', 'A refused request (400) names its reason in words and codes; a read-only job does not overwrite the last job that wrote (SOG-0144)', 'K', static=True,
+      rule='SOG-0144 (10 Nov 2026): « Sélection : 78 zones » and « Le lanceur a refusé la demande (arguments invalides) »: base/build takes 60 zones at most and said nothing of it; every refusal of the jeu base says which rule (too-many-zones with max and count, unknown-zone, bad-source, unknown-field…) in English words with a code and its parameters for the page to translate; and base/status no longer replaces, in tools/.regen_last.json, the last job that wrote (the build whose failure text was lost)')
+def k116(c):
+    import json
+    import os
+    import tempfile
+    import time
+    RJ, BS, AF, DS = _mods()
+    jobs = RJ.Jobs(RJ.REGISTRY, {})
+    zones = ['fr', 'de', 'es']
+    many = (['fr', 'de', 'es', 'it', 'gb', 'ie', 'us', 'ca', 'se', 'no'] * 8)[:78]
+    many = sorted({*many}) if False else [f'{a}{b}' for a in 'abcdefghij' for b in 'abcdefgh'][:78]
+    got = {k: jobs.start('base', 'build', a) for k, a in {
+        'many': {'zones': many}, 'unknown': {'zones': ['fr', 'xx']}, 'twice': {'zones': ['fr', 'fr']}, 'none': {'zones': []}, 'missing': {}, 'text': {'zones': [3]}, 'field': {'zones': zones, 'path': '/'},
+        'source': {'zones': zones, 'personal': ['A B']}, 'source2': {'zones': zones, 'personal': ['x' * 50]}}.items()}
+    c.eq({k: (v['status'], v.get('reason')) for k, v in got.items()},
+         {'many': (400, 'too-many-zones'), 'unknown': (400, 'unknown-zone'), 'twice': (400, 'duplicate-zone'), 'none': (400, 'no-zone'), 'missing': (400, 'zones-missing'), 'text': (400, 'bad-zone'), 'field': (400, 'unknown-field'), 'source': (400, 'bad-source'), 'source2': (400, 'bad-source')},
+         'each refusal of base/build gives its reason as a code', what='codes')
+    c.eq((got['many']['max'], got['many']['count'], got['many']['message'], got['unknown']['zone'], got['unknown']['message'], got['source']['source'], got['source']['message'], got['field']['message']),
+         (60, 78, '60 zones at most per request, 78 given', 'xx', 'unknown zone: xx', 'A B', 'source not admitted: A B', 'unknown field: path'),
+         'and in words, with its parameters: 60 zones at most per request, 78 given; unknown zone: xx; source not admitted: A B; unknown field: path', what='words')
+    ok = jobs.start('base', 'status', {'zones': ['fr'], 'personal': ['nats']})
+    c.eq(ok.get('ok'), True, 'a valid request still starts', what='valid')
+    for _ in range(100):
+        if jobs.cur.data['state'] != 'running':
+            break
+        time.sleep(0.1)
+    other = {v: RJ.Jobs(RJ.REGISTRY, {}).start('base', v, a) for v, a in (('update', {'zones': ['fr'], 'fetch': 'x'}), ('status', {'zones': 'fr'}), ('fetch', {'zones': ['fr'], 'personal': ['nope']}), ('purge', {'zones': ['fr'], 'what': ['all']}), ('pickup', {'zones': ['fr'], 'dry': 1}))}
+    c.eq({k: v.get('reason') for k, v in other.items()}, {'update': 'bad-field', 'status': 'zones-missing', 'fetch': 'bad-source', 'purge': 'bad-field', 'pickup': 'bad-field'}, 'the other verbs of the set say theirs: fetch not a boolean, zones not a list, a source of the catalogue that does not exist, what not sources or caches, dry not a boolean', what='other verbs')
+    c.eq(jobs.start('nope', 'nope', {}).get('message'), 'unknown operation nope/nope', 'an unknown operation keeps its own message', what='unknown op')
+    # the last job that wrote is kept next to a read-only one
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        store = os.path.join(td, '.regen_last.json')
+        reg = {('t', 'build'): (lambda job, a, ctx: {'ok': False, 'reason': 'failed', 'message': 'HTTP 404'}, lambda a: {}), ('base', 'status'): (lambda job, a, ctx: {'ok': True}, lambda a: {})}
+        j = RJ.Jobs(reg, {}, min_gap={}, store=store)
+        for key in (('t', 'build'), ('base', 'status')):
+            j.start(*key, {})
+            for _ in range(100):
+                if j.cur.data['state'] != 'running':
+                    break
+                time.sleep(0.05)
+            time.sleep(0.1)
+        saved = json.load(open(store, encoding='utf-8'))
+        c.eq((saved['job']['verb'], saved['work']['verb'], saved['work']['result']['message']), ('status', 'build', 'HTTP 404'), 'tools/.regen_last.json: `job` is the last job (the status), `work` the last job that wrote (the build, with its result): a status no longer erases the text of a failure', what='work kept')
+        again = RJ.Jobs(reg, {}, min_gap={}, store=store)
+        c.eq((again.work or {}).get('verb'), 'build', 'and it is read back at the next start of the launcher', what='work reloaded')
 
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------

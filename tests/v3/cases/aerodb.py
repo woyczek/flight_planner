@@ -3344,6 +3344,8 @@ def k46(c):
         c.eq({z: zs[z].get('error') for z in ('be', 'ch', 'ie')}, {'be': 'page-error', 'ch': 'invalid-output', 'ie': 'invalid-output'},
              'codes: the page said an error for that zone, a file of another zone, a file missing', what='codes')
         c.eq(zs['be'].get('message'), 'boom', "the page's message is given", what='message')
+        rec = json.loads((data / 'local' / 'build' / 'be.json').read_text(encoding='utf-8'))
+        c.eq((rec['failed']['error'], rec['failed']['message']), ('page-error', 'boom'), 'SOG-0144: the text of the failure is kept with the zone (data/local/build/<zone>.json), where it was lost with the last job', what='message kept')
         c.eq((res['ok'], res['reason'], res['built'], res['failed']), (False, 'partial', ['gb', 'nl'], [{'zone': 'be', 'error': 'page-error'}, {'zone': 'ch', 'error': 'invalid-output'}, {'zone': 'ie', 'error': 'invalid-output'}]),
              'the end: not ok, partial, who is built, who failed with its code', what='result')
         c.eq([x['zone'] for x in res['commits']], ['gb', 'nl'], 'the commits, zone by zone', what='commits list')

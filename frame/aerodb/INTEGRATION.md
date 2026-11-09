@@ -733,3 +733,22 @@ A name of a point is not unique in the world (PAM: Pamplona and Panama City; ALS
 - **`coords(ident, { near, all? })`** → `{ lat, lon, name, kind, zone, distanceNm, homonyms: [{ lat, lon, name, kind, zone, distanceNm }] }` (5 at most; **the homonyms set aside**; with the early stop only those of the zones that were opened, with `all: true` every one); `null` when the name is nowhere. A bad `near` is ignored (the old answer).
 - **`whereIs(ident, { near, all? })`** → `{ found: <coords> }`, or `{ found: null, unknown: { reason, zone?, via?, position? } }`. A name that is **not among the aerodromes, beacons, points and VFR points of the published zones** is looked for as **the end of a published airway** (an airway names it and gives its position): `unknown.reason` is **`'zone-not-built'`** (the zone of the country where the point lies, `unknown.zone`, is not built: it is the zone to add), **`'no-points'`** (the zone is built but no source gives it points: openAIP carries none, SOG-0143) or **`'not-found'`** (no airway names it, no `zone`); `via` is the airway that names it and `position` its position **according to that airway**. Example on the route above, with the airways of Germany (DFS): NOSLI (Sweden: `se`), ADVOP (Denmark: `dk`) are known by their airways and said « zone se construite sans points », « zone dk non construite ».
 - **For Carburant's route reader** (Features SOG): resolve each name with `near` = the previous resolved point (or the segment of the route); show the chosen place and, when `homonyms` is not empty, say it; for an unknown name show `unknown` as it is.
+
+**The text of a failure** (SOG-0144, 10 Nov 2026): `data/local/build/<zone>.json` keeps, with `failed: { error, at }`, the **`message`** the build gave for the zone (for a failure of the page itself, the text the page sent: « AIXM4.5_all_FR_OM_2026-10-01.xml : HTTP 404 »), and the job's log says it (`page : …`); `base/status` gives it in the reason: `{ code: 'failed', error, message? }`. The page says « Dernière construction en échec : {message} » (fr), « Last build failed: {message} », « Letzter Build fehlgeschlagen: {message} », « La última construcción falló: {message} ».
+
+**A refused request names its reason** (SOG-0144, 10 Nov 2026): the answer to a refused `launcher.job('regen/job', …)` (HTTP 400) is no longer « invalid arguments » for the verbs of the set `base`: `{ ok: false, status: 400, reason, message, …parameters }`, `message` in English, the page translates from `reason` and the parameters:
+
+| `reason` | parameters | message |
+|---|---|---|
+| `too-many-zones` | `max` (60), `count` | `60 zones at most per request, 78 given` |
+| `unknown-zone` | `zone` | `unknown zone: xx` |
+| `duplicate-zone` | `zone` | `zone given twice: fr` |
+| `no-zone`, `zones-missing`, `bad-zone` | — | no zone given / a list of zone identifiers is needed / identifiers are texts |
+| `bad-source` | `source?` | `source not admitted: yy` (a `personal` source that is not an identifier of the catalogue; 10 at most) |
+| `unknown-field` | `field` | `unknown field: path` |
+| `bad-field` | `field` (`fetch`, `dry`, `what`) | `fetch: true or false`… |
+| `not-an-object` | — | the arguments are an object |
+
+(the verbs `base/build`, `status`, `update`, `fetch`, `purge`, `pickup`; the other sets keep « invalid arguments »). `base/build` and the others take **60 zones at most**: the page cuts a larger selection into slices of 60.
+
+**`tools/.regen_last.json`** now has **`work`**: the last job that is not a simple reading (`base/status`, `route/compute` are read-only), next to `job` (the very last): a `base/status` run right after a build no longer erases the build, its result and its failure text.
