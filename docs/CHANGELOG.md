@@ -89,6 +89,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   characters (a base rebuilt or a folder received changes thousands of files at once). The paths now go in several commands, none
   over 20 000 characters of paths; the result does not depend on the cut.
 
+- **Aerodb: China and Cyprus (Nicosia) are buildable zones, not yet built** (aerodb DECISIONS 9 Nov; noreg K86; SOG-0064, no code). They are absent from the downloadable packages because the list holds published zones and nobody built them: both are in the catalogue, openAIP exports the country, the build job accepts them. To add them: Données › Ajouter un pays › Download › Build, on the workstation.
+
 - **Aerodb: survey of the SIA's overseas eAIP (PAC-P, PAC-N, RUN, CAR-SAM-NAM)** (aerodb DECISIONS 6 Nov; SOG-0054, no code). Same address scheme and same coding tables as the metropolitan eAIP, in another folder with the region's own AIRAC date; the existing reader already reads NTAA (21 procedures), FMEE (79) and TFFF (56); NTAA, NWWM and the other island aerodromes need a region in the addresses and a wider « France » rule. Zones and sources for Monday.
 
 - **Aerodb and launcher: the ground layer of an aerodrome (taxiways, stands, holding points) from OpenStreetMap** (`tools/regen/ground.py`, `frame/aerodb/aerodb.js`; aerodb SPEC and DECISIONS 6 Nov; noreg K84, K85; SOG-0046, V3 § 10.40). The launcher job `ground/fetch` asks Overpass once per aerodrome (never from the page), writes a small bounded `proc/ground/<ICAO>.json` with its manifest and commits it; `AeroDb.ground(icao)` hands the map a bounded, cleaned copy (the file is an untrusted input) and `AeroDb.fetchGround(icao)` is the pilot's gesture. © OpenStreetMap contributors, ODbL: the attribution is in the file.

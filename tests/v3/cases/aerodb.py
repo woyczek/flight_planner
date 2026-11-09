@@ -4305,6 +4305,37 @@ def k85(c):
     c.eq((f['dry']['dry'], f['dryCall']['args']), (True, {'icao': 'LFPO', 'dry': True}), 'dry: the plan only, the job asked with dry', what='dry')
 
 
+@case('K86', 'China (cn) and Cyprus (cy, Nicosia FIR) are buildable zones (SOG-0064): in the catalogue, with an openAIP source, accepted by the build job and published like any zone', 'K', static=True,
+      rule='SOG-0064 (9 Nov 2026): « Chine et Nicosie ne sont pas dans la liste des packages téléchargeables »: the list holds PUBLISHED zones only; both zones are known to the suite (Natural Earth outlines, names in four languages), openAIP exports the country (asp, apt, nav; no rpp), the build job takes them: nobody had built and published them, no code was missing')
+def k86(c):
+    import json
+    import tempfile
+    import importlib.util
+    RJ, B, fn, check = _d5_modules()
+    spec = importlib.util.spec_from_file_location('base_sources_k86', ROOT / 'tools/regen/base_sources.py')
+    BS = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(BS)
+    ids = BS.zone_ids()
+    c.ok('cn' in ids and 'cy' in ids, str(len(ids)), 'both zones are in the catalogue of zones (shared/carto/aero_zones_geo.js)')
+    for z, name in (('cn', 'China'), ('cy', 'Cyprus')):
+        c.eq((BS.sources_of(z), BS.file_source(f'openaip/{z}_asp.geojson'), BS.file_source(f'openaip/{z}_apt.geojson'), BS.file_source(f'openaip/{z}_nav.geojson')),
+             (('openaip', 'mora', 'xplane'),) + ({'zone': z, 'source': 'openaip'},) * 3, f'{z}: the sources are openAIP (airspace, aerodromes, navaids), MORA and X-Plane; the openAIP files are attributed to the zone', what=f'{z} sources')
+        c.eq(check({'zones': [z]}), {'zones': [z], 'personal': []}, f'{z}: the build job accepts it', what=f'{z} check')
+    geo = (c.root / 'shared/carto/aero_zones_geo.js').read_text(encoding='utf-8')
+    c.ok('"cn":{"n":["R' in geo.replace(' ', '') and 'People\'s Republic of China' in geo and '"cy":{"n":["Chypre","Cyprus"' in geo.replace(' ', ''), '', 'the names (fr, en, de, es) are those of the catalogue')
+    c.ok('"cyn"' in geo.replace(' ', '') and BS.sources_of('cyn') == ('openaip', 'mora', 'xplane'), '', 'Northern Cyprus (cyn) is a zone of its own: openAIP has no export for it (404 on 6 Nov), so it stays empty')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data, fake = _d5_scene(td)
+        _d5_modes(fake, {'cn': 'ok', 'cy': 'ok'})
+        run = _D5Run(RJ, data, fake, {'zones': ['cn', 'cy']})
+        view = run.wait()
+        res = view['result']
+        cur = B.airac_in_force()
+        c.eq((res.get('ok'), res['folders']), (True, {'cn': cur, 'cy': cur}), 'a build of cn and cy ends well, each written under the cycle in force (no dated source of their own)', what='build')
+        idx = json.loads((data / 'sia' / 'base' / 'index.json').read_text(encoding='utf-8'))
+        c.eq(sorted(set(idx['zones']) & {'cn', 'cy'}), ['cn', 'cy'], 'and both are in the manifest of published zones: that is what the download list shows', what='manifest')
+
+
 @case('K58', 'openAIP aerodromes: runways, bearing, hardLen and magVar derived like the SIA gives them to France', 'K', tags=('aerodb',), phone=False,
       rule='aerodb SPEC 2 (aerodrome fields, parser version 20): bearing, hardLen, water, runways and magVar come from the openAIP runways and magneticDeclination; a terrain without runways carries none of the runway fields')
 def k58(c):
