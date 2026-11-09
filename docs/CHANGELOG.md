@@ -18,6 +18,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   segments red; a tap on a route takes it (event `maps-route-alt` beside Fuel, `#fuel?ralt=<index>` on a Map alone); a small list over the map
   on a Map alone.
 
+- **Settings: the synchronisation card says how long it took — the last pass and the longest of today, in seconds, step by step** (`frame/settings/sync_summary.js`, `access.js`; settings SPEC § 3 item 7; help ×4; A112) — SOG-0149: settle, commit, prepare, receive, untrack, push, git commands, bytes sent, from `sync-status` `last.timings`; the longest of the day is kept on the device (the launcher keeps the last pass only).
 - **Data: « Ranger les sources brutes » is visible read only, with its reason** (`modules/data/inventory.js`, `texts.js`; L54, L55) — SOG-0144: the block was empty without a paired launcher; it is shown with its two buttons grey and « Lanceur non appairé » / « Verbe inconnu de ce lanceur » written.
 - **Fuel: « zone manquante » says what is missing, the gesture and the fallbacks** (`modules/fuel/zone_gap.js`, `module.js`,
   `procedures.js`; Fuel SPEC, INTEGRATION, DECISIONS, help; noreg F116, F115; SOG-0143). Under the route for unknown points, and on an

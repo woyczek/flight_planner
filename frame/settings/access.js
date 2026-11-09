@@ -136,7 +136,7 @@
       exchange,
       st
     } = env;
-    return `<div class="f-card" data-card="sync"${exchange || st.pending ? '' : ' hidden'}><h2>${esc(t(T.sync))}</h2><p data-sync-head></p><dl class="f-dl" data-sync></dl><div data-queue></div><div data-pushed-box></div><p class="f-muted">${esc(t(T.syncHint))}</p>
+    return `<div class="f-card" data-card="sync"${exchange || st.pending ? '' : ' hidden'}><h2>${esc(t(T.sync))}</h2><p data-sync-head></p><dl class="f-dl" data-sync></dl><div data-sync-timings-box></div><div data-queue></div><div data-pushed-box></div><p class="f-muted">${esc(t(T.syncHint))}</p>
         <div class="f-row"><button type="button" class="primary" data-act="sync">${esc(t(T.sendAll))}</button>${st.conflicts ? `<a href="#conflicts">${esc(t(T.conflicts, { n: st.conflicts }))}</a>` : ''}</div></div>`;
   }
   /** Synchronisation vivante : chiffres et écritures en attente, redessinés à chaque changement d'état. */

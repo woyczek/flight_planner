@@ -3152,14 +3152,14 @@ def _sync_item(path, at='2026-10-30T08:30:00.000Z', deletion=False, error=''):
     return {'path': path, 'module': '', 'at': at, 'deletion': deletion, 'error': error}
 
 
-def _sync_open(c, pend, status=None, pushed=None):
+def _sync_open(c, pend, status=None, pushed=None, extra=()):
     """Opens the Synchronisation card at 390 with the device's cache seeded (the titles read it), pendingList answering `pend`, and a launcher stub answering sync-status with `status` (None: no launcher)."""
     c.page.add_init_script(_SYNC_STUB)
     c.page.goto(f'{c.base}/frame/manifest.webmanifest')
     c.page.evaluate("(p) => sessionStorage.setItem('__pend', JSON.stringify(p))", pend)
     c.page.evaluate("(p) => sessionStorage.setItem('__pushed', JSON.stringify(p))", pushed or [])
     from lib import _seed
-    _seed(c.page, c.base, [['device/level.json', {'level': 3}, 'cache'], ['device/usages.json', {'devices': True}, 'cache']] + _SYNC_DOCS)
+    _seed(c.page, c.base, [['device/level.json', {'level': 3}, 'cache'], ['device/usages.json', {'devices': True}, 'cache']] + _SYNC_DOCS + list(extra))
     c.page.evaluate(_RAW_SEED_JS, list(_SYNC_MISSION))
     if status is not None:
         full = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False}
@@ -4297,4 +4297,61 @@ def a111(c):
     c.eq(diff('pilot/ABC/same.json'), norm(C('sameText')), 'two versions that differ by their line endings only say the same thing', what='same')
     empty = c.js(f"(n) => [...({pick})(n).querySelectorAll('pre:not([data-diff])')].map(p => p.textContent.trim())", 'pilot/ABC/empty.json')
     c.eq(empty, [norm(C('emptyText'))] * 2, 'a blank version is written « (empty) » in both blocks: never a blank block', what='empty blocks')
+    c.check_errors()
+
+
+def _tm_status(total, steps, at=None, git=(12, 1000), sent=38912):
+    """A sync-status answer whose `last` pass carries timings (SOG-0149); a path waits so that the card is shown."""
+    import datetime
+    now = at or datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    return {'repo': True, 'changes': 1, 'changed': ['aircraft/sheets/DB_A320.json'], 'changedTotal': 1, 'toPush': [], 'toPushTotal': 0, 'ahead': 0, 'behind': 0, 'merging': False,
+            'last': {'at': now, 'ok': True, 'timings': {'steps': steps, 'totalMs': total, 'gitCalls': git[0], 'gitMs': git[1], 'sentBytes': sent}}}
+
+
+@case('A112', 'Settings › Synchronisation: the time of the last pass and the longest of the day, in seconds, step by step (SOG-0149); a shorter pass does not replace the longest, another day does; a hostile answer is only numbers', 'A', tags=('settings',),
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule='SOG-0149 (V3 Frame 12cad5326: data_sync.run writes timings in sync.json; the launcher gives them in sync-status last.timings): the card says how long the last pass took and the longest of the day, in seconds, per step; the longest is kept on the device (the launcher keeps the last only); closed list of steps, bounded numbers, no text from the answer')
+def a112(c):
+    lang = c.lang
+    sj = 'frame/settings/sync_summary.js'
+    L = lambda k, after=None: norm(tx(sj, k, lang, after=after) if after else tx(sj, k, lang))
+    step = lambda k: L(k, 'tmStep: {')
+    git = lambda n, sec: L('tmGit').replace('{n}', str(n)).replace('{s}', sec)
+    sent = lambda b: L('tmSent').replace('{b}', b)
+    line = lambda total, parts: f'{total} s' + (' — ' + ' · '.join(parts) if parts else '')
+    dd = lambda which: norm(c.js(f"document.querySelector('[data-card=\"sync\"] [data-sync-timings] [data-tm={which}]')?.textContent || ''"))
+    dt = lambda: [norm(x) for x in c.js("[...document.querySelectorAll('[data-card=\"sync\"] [data-sync-timings] dt')].map(d => d.textContent)")]
+    long_pass = {'commit': 1000, 'receive': 2000, 'push': 4000, 'settle': 20}
+    # ---- A: the first pass of the day is the last and the longest: whole seconds per step, git commands, bytes sent; a step under 50 ms is not said
+    _sync_open(c, [], _tm_status(8000, long_pass))
+    c.until("!!document.querySelector('[data-card=\"sync\"] [data-sync-timings] [data-tm=longest]')", timeout=15000, what='the timings')
+    first = norm(line(8, [f"{step('commit')} 1 s", f"{step('receive')} 2 s", f"{step('push')} 4 s", git(12, '1 s'), sent('38 Ko')]))
+    c.ok(dd('last').startswith(first), dd('last'), 'the last pass: total, then the steps in order, the git commands, the bytes sent (a 20 ms step is not said)')
+    c.ok(dd('longest').startswith(first), dd('longest'), 'the first pass of the day is also the longest')
+    c.eq(dt(), [L('tmLast'), L('tmLongest')], 'the two lines are named', what='labels')
+    # ---- B: a shorter pass later in the day: the last changes, the longest stays (kept on the device across the reload)
+    _sync_open(c, [], _tm_status(3000, {'push': 3000}, git=(4, 0), sent=0))
+    c.until("document.querySelector('[data-card=\"sync\"] [data-sync-timings] [data-tm=last]')?.textContent.trim().startsWith('3 s')", timeout=15000, what='the shorter pass')
+    c.eq(dd('last').startswith(norm(line(3, [f"{step('push')} 3 s", git(4, '0 s')]))), True, 'the last pass is the shorter one, without bytes when nothing was sent', what='last 3')
+    c.ok(dd('longest').startswith(first), dd('longest'), 'the longest of the day stays the 8 s pass: a shorter pass does not replace it')
+    # ---- C: a longer pass replaces it; the record of another day is not today's longest
+    _sync_open(c, [], _tm_status(12000, {'receive': 12000}, git=(2, 0), sent=0))
+    c.until("document.querySelector('[data-card=\"sync\"] [data-sync-timings] [data-tm=longest]')?.textContent.trim().startsWith('12 s')", timeout=15000, what='a longer pass')
+    old_day = ['device/sync_timings.json', {'day': '2000-01-01', 'at': '2000-01-01T08:00:00Z', 'totalMs': 600000, 'steps': {'push': 600000}, 'gitCalls': 1, 'gitMs': 1, 'sentBytes': 1}, 'cache']
+    _sync_open(c, [], _tm_status(5000, {'commit': 5000}, git=(1, 0), sent=0), extra=[old_day])
+    c.until("document.querySelector('[data-card=\"sync\"] [data-sync-timings] [data-tm=longest]')?.textContent.trim().startsWith('5 s')", timeout=15000, what='the day changed')
+    c.ok('600' not in dd('longest'), dd('longest'), 'the longest of another day is forgotten: today\u2019s pass is the longest of today')
+    # ---- D: a hostile answer: a number written as text, a string, a negative number, an unknown step: only numbers are said, nothing becomes an element
+    bad = _tm_status(5000, {'commit': '9000', 'receive': '<img src=x onerror=window.__pwn=1>', 'push': -5, 'evil<b>': 1000}, git=('x', 'y'), sent='a')
+    _sync_open(c, [], bad)
+    c.until("!!document.querySelector('[data-card=\"sync\"] [data-sync-timings] [data-tm=last]')", timeout=15000, what='the hostile pass')
+    c.eq(dd('last').split(' (')[0], '5 s', 'only the total is said: no step, no git, no bytes from a hostile answer', what='hostile')
+    c.ok(c.count('[data-card="sync"] [data-sync-timings] img, [data-card="sync"] [data-sync-timings] b') == 0 and c.js('window.__pwn === undefined'), None, 'nothing from the answer becomes an element')
+    # ---- E: no timings in the answer (an older launcher): nothing is drawn, nothing is invented
+    old = _tm_status(1000, {})
+    del old['last']['timings']
+    _sync_open(c, [], old)
+    c.wait(500)
+    c.eq([c.count('[data-card="sync"] [data-sync-timings] [data-tm=last]'), c.count('[data-card="sync"] [data-sync-timings] [data-tm=longest]')], [0, 1],
+         'a launcher without timings: no « last » line, nothing invented; the longest of today, kept on the device, stays', what='old launcher')
     c.check_errors()

@@ -32,6 +32,21 @@
     sendAll: ['Tout envoyer', 'Send everything', 'Alles senden', 'Enviar todo'],
     // avec un lanceur : ce que le dépôt de data/ attend
     // ce qui vient de partir (FrameData.lastPushed, SOG-0029) : une ligne, la liste repliée dessous
+    // le temps d'une synchronisation (SOG-0149 : data_sync.run, timings de data/local/sync.json)
+    tmLast: ['Dernière synchronisation', 'Last synchronisation', 'Letzte Synchronisation', 'Última sincronización'],
+    tmLongest: ['La plus longue aujourd’hui', 'Longest today', 'Längste heute', 'La más larga hoy'],
+    tmAt: ['à {t}', 'at {t}', 'um {t}', 'a las {t}'],
+    tmSec: ['{n} s', '{n} s', '{n} s', '{n} s'],
+    tmStep: {
+      settle: ['mise au net', 'settle', 'Abgleich', 'ajuste'],
+      commit: ['commit', 'commit', 'Commit', 'commit'],
+      prepare: ['préparation', 'preparation', 'Vorbereitung', 'preparación'],
+      receive: ['réception', 'receive', 'Empfang', 'recepción'],
+      untrack: ['index', 'index', 'Index', 'índice'],
+      push: ['envoi', 'push', 'Senden', 'envío']
+    },
+    tmGit: ['{n} commandes git ({s})', '{n} git commands ({s})', '{n} Git-Befehle ({s})', '{n} comandos git ({s})'],
+    tmSent: ['{b} envoyés', '{b} sent', '{b} gesendet', '{b} enviados'],
     pushedAt: ['Parti à {t}', 'Sent at {t}', 'Gesendet um {t}', 'Enviado a las {t}'],
     pushedOn: ['Parti le {d}', 'Sent on {d}', 'Gesendet am {d}', 'Enviado el {d}'],
     pushedRefused: ['dont {n} refusé(s)', 'of which {n} refused', 'davon {n} abgelehnt', 'de ellos {n} rechazado(s)'],
@@ -271,6 +286,96 @@
     }
     return k.p;
   }
+  // ---------------------------------------------------------------- le temps d'une synchronisation (SOG-0149)
+  const STEPS = ['settle', 'commit', 'prepare', 'receive', 'untrack', 'push'],
+    TM_FILE = 'device/sync_timings.json'; // la plus longue du jour, gardée sur l'appareil (le lanceur ne garde que la dernière)
+  const ms = v => Number.isFinite(v) && v >= 0 ? Math.min(Math.round(v), 36e5 * 24) : null;
+  /** Les temps d'un passage (`last` de sync-status) lus comme une entrée non fiable : { at (ISO), totalMs, steps: { étape: ms }, gitCalls, gitMs, sentBytes } ; null sans temps lisibles. Que des nombres, jamais un chemin. */
+  function timingsOf(last) {
+    const tm = last && typeof last === 'object' && last.timings && typeof last.timings === 'object' ? last.timings : null,
+      total = ms(tm?.totalMs);
+    if (!tm || total === null) return null;
+    const steps = {};
+    for (const k of STEPS) {
+      const v = tm.steps && typeof tm.steps === 'object' && Object.hasOwn(tm.steps, k) ? ms(tm.steps[k]) : null;
+      if (v !== null) steps[k] = v;
+    }
+    return {
+      at: typeof last.at === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(last.at) ? last.at.slice(0, 24) : '',
+      totalMs: total,
+      steps,
+      gitCalls: Number.isInteger(tm.gitCalls) && tm.gitCalls >= 0 ? Math.min(tm.gitCalls, 1e6) : null,
+      gitMs: ms(tm.gitMs),
+      sentBytes: Number.isFinite(tm.sentBytes) && tm.sentBytes >= 0 ? Math.min(tm.sentBytes, 1e12) : null
+    };
+  }
+  /** Des millisecondes en secondes dites dans la langue : « 4,2 s » (une décimale sous 10 s, entières au-delà). */
+  const secText = (t, v) => t(T.tmSec, {
+    n: (v / 1000).toLocaleString(document.documentElement.lang || undefined, {
+      maximumFractionDigits: v < 10000 ? 1 : 0
+    })
+  });
+  /** Des octets dits courts : « 38 Ko » (Ko, Mo : les unités de la suite). */
+  const bytesText = n => n < 1024 ? `${n} o` : n < 1048576 ? `${Math.round(n / 1024)} Ko` : `${(n / 1048576).toFixed(1)} Mo`;
+  /** La ligne d'un passage : « 4,2 s — commit 0,3 s · réception 1,1 s · envoi 2,6 s · 12 commandes git (0,9 s) · 38 Ko envoyés ». */
+  function timingText(env, tm) {
+    const {
+      t,
+      c
+    } = env;
+    const parts = STEPS.filter(k => tm.steps[k] !== undefined && tm.steps[k] >= 50).map(k => `${t(T.tmStep[k])} ${secText(t, tm.steps[k])}`);
+    if (tm.gitCalls !== null) parts.push(t(T.tmGit, {
+      n: tm.gitCalls,
+      s: secText(t, tm.gitMs ?? 0)
+    }));
+    if (tm.sentBytes) parts.push(t(T.tmSent, {
+      b: bytesText(tm.sentBytes)
+    }));
+    return `${secText(t, tm.totalMs)}${parts.length ? ` — ${parts.join(' · ')}` : ''}`;
+  }
+  /** La plus longue synchronisation du jour : celle gardée sur l'appareil, remplacée si le passage lu est d'aujourd'hui et plus long (ou si le jour a changé) ; la valeur à dire, ou null. Écriture silencieuse (un appareil sans stockage ne casse rien). */
+  async function longestToday(env, tm) {
+    const day = new Date().toISOString().slice(0, 10);
+    let saved = null;
+    try {
+      const rec = await env.c.own.get(TM_FILE);
+      saved = rec && rec.day === day ? timingsOf({
+        at: rec.at,
+        timings: rec
+      }) : null;
+    } catch {
+      saved = null;
+    }
+    if (tm && tm.at.slice(0, 10) === day && (!saved || tm.totalMs > saved.totalMs)) {
+      saved = tm;
+      try {
+        await env.c.own.put(TM_FILE, {
+          day,
+          at: tm.at,
+          totalMs: tm.totalMs,
+          steps: tm.steps,
+          gitCalls: tm.gitCalls,
+          gitMs: tm.gitMs,
+          sentBytes: tm.sentBytes
+        });
+      } catch {
+        /* rien à garder : la ligne se dit quand même */
+      }
+    }
+    return saved;
+  }
+  /** Les deux lignes du temps : la dernière synchronisation et la plus longue d'aujourd'hui, en secondes ; vide sans lanceur ou sans temps. */
+  async function timingsHtml(env, status) {
+    const last = timingsOf(status?.last),
+      longest = await longestToday(env, last);
+    if (!last && !longest) return '';
+    const {
+      t,
+      c
+    } = env;
+    const at = tm => tm.at ? ` (${t(T.tmAt, { t: c.time.fmtZ(tm.at) })})` : '';
+    return `<dl class="f-dl" data-sync-timings>${last ? `<dt>${esc(t(T.tmLast))}</dt><dd data-tm="last">${esc(timingText(env, last))}${esc(at(last))}</dd>` : ''}${longest ? `<dt>${esc(t(T.tmLongest))}</dt><dd data-tm="longest">${esc(timingText(env, longest))}${esc(at(longest))}</dd>` : ''}</dl>`;
+  }
   /** Le HTML d'un élément qui attend : suppression, titre (ou chemin en texte), date, état du dépôt, raison de l'erreur. Tout passe par esc. */
   function itemHtml(it, title, env) {
     const {
@@ -342,6 +447,12 @@
     const open = new Set([...box.querySelectorAll('details[open][data-kind-list]')].map(d => d.dataset.kindList));
     const card = box.closest('[data-card]');
     if (card) card.hidden = !exchange && !items.length && !unlisted && !pushed.items.length;
+    const tmBox = view.querySelector('[data-sync-timings-box]');
+    if (tmBox) {
+      const html = await timingsHtml(env, status);
+      if (tokens.get(view) !== token || !view.isConnected) return;
+      tmBox.innerHTML = html;
+    }
     const out = view.querySelector('[data-pushed-box]');
     if (out) {
       const wasOpen = !!out.querySelector('details[data-pushed][open]');
