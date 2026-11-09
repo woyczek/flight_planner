@@ -1053,6 +1053,42 @@ def k73(c):
         c.eq(res['removed']['fr']['files'], 2, 'purge of fr (dry): the raw SIA file of the new place and the eAIP cache; the other sources are not France\'s', what='purge')
 
 
+@case('K90', 'base/move-sources under the synchronisation of data/ (SOG-0030): refused while the launcher\'s synchronisation lock is held, the plan still answers, the lock is taken for the move and given back', 'K', static=True,
+      rule='SOG-0030 (last item): a real move writes in data/ while a synchronisation (git) may be rewriting it; the job takes the launcher\'s synchronisation lock without waiting, refuses with « syncing » when it is held, and holds it during the move so that no synchronisation starts in the middle')
+def k90(c):
+    import threading
+    RJ, BS, AF, DS = _mods()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = _repo(DS, td, {})
+        sia = data / 'sia'
+        sia.mkdir()
+        (sia / 'XML_SIA_2026-10-29.xml').write_text('xml-1029', encoding='utf-8')
+        lock = threading.Lock()
+        ctx = {**_ctx(DS, data), 'sync_lock': lock}
+        run = lambda **a: BS.move_sources(RJ.Job('base', 'move-sources', {}), BS.check_move(a), ctx)
+        new = data / 'local' / 'sources' / 'sia' / '2026-10-29' / 'XML_SIA_2026-10-29.xml'
+        with lock:                                                      # a synchronisation is running
+            held, plan = run(dry=False), run()
+            undo = run(dry=False, undo=True)
+        c.eq((held['ok'], held['reason'], held['moved'], new.exists(), (sia / 'XML_SIA_2026-10-29.xml').is_file()), (False, 'syncing', [], False, True), 'a real move under the synchronisation: refused, nothing moved', what='refused')
+        c.eq((undo['ok'], undo['reason']), (False, 'syncing'), 'the undo too', what='undo')
+        c.eq((plan['ok'], plan['dry'], [m['name'] for m in plan['moved']]), (True, True, ['XML_SIA_2026-10-29.xml']), 'the plan (dry) still answers: it writes nothing', what='plan')
+        seen = []
+        glob = BS.move_sources.__globals__                              # the module the launcher loaded (BS may be a copy of its names)
+        orig = glob['_move_sources']
+
+        def spy(job, args, cx):
+            seen.append(lock.locked())                                  # the lock is held while the move runs
+            return orig(job, args, cx)
+        glob['_move_sources'] = spy
+        try:
+            r = run(dry=False)
+        finally:
+            glob['_move_sources'] = orig
+        c.eq((r['ok'], new.read_text(encoding='utf-8'), seen, lock.locked()), (True, 'xml-1029', [True], False), 'the lock is free: the file moves, the lock was held during the move and is given back', what='moved')
+        c.eq(BS.move_sources(RJ.Job('base', 'move-sources', {}), BS.check_move({'dry': False}), {k: v for k, v in ctx.items() if k != 'sync_lock'})['ok'], True, 'a launcher without the lock in its context (a test, an older one) moves as before', what='no lock')
+
+
 @case('K95', 'airline/migrate: today\'s single airline copied into data/airline/<code>/ (the plan first, an empty fleet said, the index, nothing deleted or overwritten, hostile arguments refused)', 'K',
       static=True, rule='V3_SPECIFICATION 10.38 step 1 (SOG-0039): a one-shot migration in the launcher, dry by default, data/airline/settings.json kept as a copy, a code ^[a-z0-9]{2,8}$ proposed from the name and confirmed, every file of data/airline/ untrusted (10.36)')
 def k95(c):

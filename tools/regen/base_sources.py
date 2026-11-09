@@ -1019,6 +1019,22 @@ def _copy_checked(src, dest, sha):
 
 
 def move_sources(job, args, ctx):
+    """Verbe base/move-sources, refusé sous la synchronisation de data/ (SOG-0030) : un déplacement RÉEL (ni le plan à blanc, ni rien d'autre) prend le verrou de synchronisation du lanceur (ctx['sync_lock'], SYNC_LOCK de
+    tools/launch.py) sans l'attendre et le garde pendant toute l'opération ; une synchronisation en cours le tient : le verbe répond { ok: False, reason: 'syncing' } et ne touche à rien ; une synchronisation qui voudrait partir
+    pendant le déplacement attend la fin. Le reste du contrat est celui de _move_sources."""
+    lock = ctx.get('sync_lock')
+    if args['dry'] or lock is None:
+        return _move_sources(job, args, ctx)
+    if not lock.acquire(blocking=False):
+        return {'ok': False, 'dry': False, 'undo': args['undo'], 'reason': 'syncing', 'moved': [], 'already': [], 'kept': [], 'conflicts': [], 'failed': [],
+                'message': 'data/ is being synchronised: nothing moved; try again when the synchronisation is over'}
+    try:
+        return _move_sources(job, args, ctx)
+    finally:
+        lock.release()
+
+
+def _move_sources(job, args, ctx):
     """Verbe base/move-sources. Rend { ok, dry, undo, moved: [{ name, cycle, from, to, bytes }], already: [noms] (déjà au nouvel emplacement, identiques : l'ancien retiré), kept: [{ name, why }] (ancien gardé :
     'tracked' suivi par git), conflicts: [{ name, why }] ('different' : un autre fichier de même nom à l'autre endroit ; 'present' : le chemin de retour est pris), failed: [{ name, error }], manifest, reason? }.
     À blanc (dry) par défaut : le plan. undo : le manifeste lu à l'envers."""
