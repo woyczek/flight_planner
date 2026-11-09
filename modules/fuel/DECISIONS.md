@@ -1425,3 +1425,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   `airline/fleet.json` only (the airline of today): after the migration it does not know `airline/<code>/fleet.json`, so Fuel makes
   the rows of the fleet's registrations itself; the registry's reading of the current airline is AeroDB's (said to the ergonomics
   session). F106.
+- **9 Nov 2026 — the « Auto » level is a choice in the level decision's series** (SOG-0056, V3 spec § 10.37 D): the series of
+  the level decision is already quoted like the plan at every level (`requoteSeries`), so « Auto » filters it (semicircular rule,
+  bounds) and takes the least fuel, ties within 2 % to the lower; no second model, no loop of quotes. The track is the route's
+  `trackDeg` (true track: no magnetic variation applied, said). A new level re-draws once, at most twice in a row, so a wind read
+  at the new level can never make the level oscillate. The flight carries `level.auto` (a typed level writes `{ ft }` as before).
+  F107; counter-test on d8defe46b: no button.

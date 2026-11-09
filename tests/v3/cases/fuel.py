@@ -2744,3 +2744,47 @@ def f106(c):
     c.until("(document.querySelector('[data-module=fuel] [data-sheets] > [data-id]')?.dataset.id) === 'C30J'", what='Bravo Air: its C-130J first')
     c.eq(c.js(view)['others'], ['EC25'], 'the EC25 among the other sheets', what='bbb')
     # without an index (before the migration) the list is the one of today: F79 and F103, which seed no index
+
+
+@case('F107', '« Auto » level: the semicircular level that burns the least on the route, « FL… (auto) » with the trip time; a typed level holds; a change of aircraft recomputes',
+      'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0056, V3 spec 10.37 D (user, 6 Nov: « on doit saisir un niveau, mais on ne le connaîtra que plus tard. mettre un bouton auto »): a loop over '
+      'the quote\'s level series, odd thousands eastbound, FL030 to the sheet ceiling, ties at 2 % to the lower; typing turns (auto) off; the aircraft changes → again')
+def f107(c):
+    hi = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'kg', 'usableFuel': 20000,
+          'cruise': {'tasKt': 330, 'fuelFlowPerHour': 2000, 'ceilingFt': 25000}}
+    lo = {'id': 'XLOW', 'name': 'XLOW', 'icao': 'C30J', 'unit': 'kg', 'usableFuel': 20000,
+          'cruise': {'tasKt': 300, 'fuelFlowPerHour': 2200, 'ceilingFt': 9000}}
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft']['sheetId'] = 'C30J'
+    c.open('fuel', docs=docs + [['aircraft/sheets/C30J.json', hi, 'document'], ['aircraft/sheets/XLOW.json', lo, 'document']])
+    wait_quote(c)
+    to_step(c, 0)
+    fl = f'{FUEL} input[data-k="fl"]'
+    c.tap(f'{FUEL} [data-do="levelauto"]')
+    c.until(f"() => (document.querySelector('{FUEL} [data-lvlauto]')?.textContent || '').includes('(auto)')", what='« FL… (auto) » said under the field')
+    auto = int(c.js(f"document.querySelector('{fl}').value"))
+    c.ok(auto % 10 == 0 and auto // 10 % 2 == 1 and 30 <= auto <= 250, auto, 'an odd thousand (eastbound, track 125°) between FL030 and the ceiling FL250')
+    d = cf_doc(c, lambda d: (d.get('level') or {}).get('auto') is True and (d.get('quote') or {}).get('levelFt') == auto * 100, 'the auto level written with its quote')
+    trip_auto = d['quote']['trip']
+    # a typed level holds and turns (auto) off; it burns more
+    c.page.fill(fl, '100')
+    c.page.locator(fl).blur()
+    d = cf_doc(c, lambda d: (d.get('quote') or {}).get('levelFt') == 10000, 'the quote at FL100')
+    c.ok(not (d.get('level') or {}).get('auto'), d.get('level'), 'typing turns (auto) off')
+    c.ok(d['quote']['trip'] > trip_auto, f"FL100 {d['quote']['trip']} vs auto {trip_auto}", 'FL100 burns more than the auto level')
+    c.eq(c.js(f"document.querySelector('{FUEL} [data-lvlauto]').textContent.trim()"), '', 'no « (auto) » for a typed level', what='typed')
+    # Auto again, then another aircraft (ceiling 9000 ft): recomputed
+    c.tap(f'{FUEL} [data-do="levelauto"]')
+    c.until(f"(v) => document.querySelector('{fl}').value === v", str(auto), what='Auto again: the auto level')
+    c.tap(f'{FUEL} [data-view="sheets"]')
+    c.until(f"!!document.querySelector('{FUEL} [data-id=\"XLOW\"] [data-do=use]')", what='the Sheets view')
+    c.tap(f'{FUEL} [data-id="XLOW"] [data-do="use"]')
+    c.until(f"!!document.querySelector('{FUEL} [data-view=\"plan\"]')", what='the plan button')
+    if not c.js(f"!!document.querySelector('{fl}')"):
+        c.tap(f'{FUEL} [data-view="plan"]')
+    d = cf_doc(c, lambda d: (d.get('aircraft') or {}).get('sheetId') == 'XLOW' and (d.get('level') or {}).get('auto') is True
+               and 0 < ((d.get('level') or {}).get('ft') or 0) <= 9000, 'another aircraft, ceiling 9000 ft: the auto level recomputed', timeout=10000)
+    c.eq(d['level']['ft'] // 1000 % 2, 1, 'still an odd thousand', what='recomputed')

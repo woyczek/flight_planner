@@ -196,6 +196,14 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
 
 ### 9.2 Step 1 — Flight
 
+- **« Auto » level** (SOG-0056, V3 spec § 10.37 D): a button in the level's row. It sets `level.auto`; after each quote the level
+  is `FuelLevels.autoLevel(D, route.trackDeg, { minFt, maxFt })`: among the flyable levels of the series already quoted
+  (`decisionSeries` + `requoteSeries`), the semicircular ones (track 0–179: odd thousands; 180–359: even), from FL030 (or the highest
+  constraint of a chosen procedure, `route.constraints`, SOG-0003) to the sheet's ceiling (20 000 ft without one), the one that
+  burns the least; within 2 % of fuel, the lower. A line under the field says « FL180 (auto) · 1:02 » (the trip time). The level
+  follows the route, the aircraft and the wind source as long as `level.auto`; a typed level, or « Prendre FL… » of the level
+  decision, turns it off; « Auto » turns it on again. Without a sheet (a type estimate) or a route, the button is disabled and its
+  title says why. No new model: a filter over the series (F107).
 - **Aerodromes**: departure, arrival, alternate. Each field is a search (F48): from two characters, by code or by name, `aerodb.find`
   gives at most seven aerodromes with a four-character code, listed as « LFPO Paris-Orly » in one list laid over the page (never the
   native `datalist`; the list of `suggest.js`); ↑ ↓ move, Enter picks, Esc closes, a tap picks (44 px); it closes when the field

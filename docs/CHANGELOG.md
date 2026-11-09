@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the « Auto » level** (`modules/fuel/module.js`, `levels.js` `autoLevel`; Fuel SPEC § 9.2, DECISIONS; noreg F107; SOG-0056).
+  Next to the level of the step Flight: the semicircular level that burns the least on the route (FL030 to the sheet's ceiling, ties
+  within 2 % to the lower), « FL180 (auto) » and the flight time said, followed when the route, the aircraft or the wind change until
+  a level is typed.
+
 - **Fuel, Aircraft, Missions, Report: the readers of the current airline** (`modules/fuel/module.js`, `modules/aircraft/module.js`,
   `modules/missions/module.js`, `frame/lib/mission.js`, `modules/report/module.js`; SPECs, DECISIONS; noreg F106, M32, N8, G5; V3 spec
   § 10.38 step 1). Fuel's Sheets view and aircraft search put the current airline's fleet first; Maintenance › Aircraft › Fleet reads

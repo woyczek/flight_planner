@@ -346,7 +346,34 @@
     return cl ? cl.nm + m.desc.tas * h / m.desc.rate / 60 : null;
   }
 
+  /** Le niveau « Auto » (SOG-0056, V3 spec § 10.37 D) : parmi les niveaux tenables de la série déjà chiffrée comme le devis
+   *  (decisionSeries puis requoteSeries : D.real), ceux de la règle semi-circulaire pour la route moyenne (cap 0–179 : milliers
+   *  impairs, 180–359 : pairs), entre minFt (FL030, ou la contrainte d'une procédure choisie) et maxFt (plafond de la fiche, sinon
+   *  20 000 ft ; jamais au-dessus de la série), celui qui brûle le moins ; à 2 % près, le plus bas (moins de temps de montée).
+   *  Rend { h, fuel, minutes } ou null (aucun niveau). Une boucle sur la série, jamais un nouveau calcul de modèle. */
+  function autoLevel(D, trackDeg, {
+    minFt = 3000,
+    maxFt = 20000,
+    tie = 0.02
+  } = {}) {
+    if (!D?.real?.length) return null;
+    const east = ((+trackDeg || 0) % 360 + 360) % 360 < 180,
+      top = Math.min(Number.isFinite(+maxFt) && +maxFt > 0 ? +maxFt : 20000, D.hi ?? Infinity),
+      cand = D.real.filter(r => r && Number.isFinite(r.fuel) && r.h >= minFt && r.h <= top && r.h % 1000 === 0 && (r.h / 1000 % 2 ===
+          1) ===
+        east);
+    if (!cand.length) return null;
+    const min = Math.min(...cand.map(r => r.fuel)),
+      pick = cand.filter(r => r.fuel <= min * (1 + tie)).sort((a, b) => a.h - b.h)[0];
+    return {
+      h: pick.h,
+      fuel: pick.fuel,
+      minutes: pick.minutes
+    };
+  }
+
   window.FuelLevels = {
+    autoLevel,
     GOALS,
     TRIP_KEYS,
     extendSeries,

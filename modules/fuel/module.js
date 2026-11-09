@@ -398,6 +398,23 @@ const TX = {
   ],
   levelWind: ['Niveau et vent', 'Level and wind', 'Flugfläche und Wind', 'Nivel y viento'],
   level: ['Niveau (FL)', 'Level (FL)', 'Flugfläche (FL)', 'Nivel (FL)'],
+  // le niveau « Auto » (SOG-0056) : celui qui brûle le moins sur la route (règle semi-circulaire), recalculé tant qu'aucun niveau n'est saisi
+  levelAuto: ['Auto', 'Auto', 'Auto', 'Auto'],
+  levelAutoHint: [
+    'Le niveau qui brûle le moins de carburant sur cette route (règle semi-circulaire), recalculé tant que vous n’en saisissez pas',
+    'The level that burns the least fuel on this route (semicircular rule), computed again as long as you type none',
+    'Die Flugfläche mit dem geringsten Verbrauch auf dieser Route (Halbkreisregel), neu berechnet, solange Sie keine eingeben',
+    'El nivel que menos combustible consume en esta ruta (regla semicircular), recalculado mientras no escriba ninguno'
+  ],
+  levelAutoNoRoute: ['Auto : il faut une route (au moins deux points)', 'Auto: a route is needed (two points at least)',
+    'Auto: eine Route ist nötig (mindestens zwei Punkte)', 'Auto: hace falta una ruta (al menos dos puntos)'
+  ],
+  levelAutoNoSheet: ['Auto : il faut une fiche de l’appareil (pas une estimation du type)',
+    'Auto: an aircraft sheet is needed (not a type estimate)',
+    'Auto: ein Datenblatt des Luftfahrzeugs ist nötig (keine Typschätzung)',
+    'Auto: hace falta una ficha de la aeronave (no una estimación del tipo)'
+  ],
+  levelAutoSaid: ['{fl} (auto) · {t}', '{fl} (auto) · {t}', '{fl} (auto) · {t}', '{fl} (auto) · {t}'],
   goal: ['Montée', 'Climb', 'Steigflug', 'Ascenso'],
   goals: {
     eco: ['Économique', 'Economical', 'Sparsam', 'Económico'],
@@ -1638,7 +1655,7 @@ function renderPlanBody() {
   <nav class="f-steps fu-steps" aria-label="${esc(tt(TX.stepsNav))}">${TX.stepNames.map((n, i) => `<button type="button" data-step="${i}"${step === i ? ' aria-current="step"' : ''} aria-label="${i + 1} ${esc(tt(n))}"><b>${i + 1}</b><span> ${esc(tt(n))}</span></button>`).join('')}</nav>
   ${sec(0, `<div class="f-card" data-block="flight"><h2>${esc(tt(TX.stepNames[0]))}</h2>
       <div class="f-grid fu-ads">${[['dep', TX.dep], ['arr', TX.arr], ['altn', TX.altn]].map(([k, label]) => `<label class="f-field">${esc(tt(label))}<input data-k="${k}" value="${esc(r[k] ?? '')}" class="fu-code" autocapitalize="characters" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-adsug"><small class="fu-adname" data-adline="${k}"></small></label>`).join('')}<div class="fu-sug" id="fu-adsug" data-adsug role="listbox" aria-label="${esc(tt(S.AD.texts.listLabel))}" hidden></div></div>
-      <div class="f-grid fu-flight">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}<p class="f-muted fu-lvlmix" data-lvlmix hidden></p><label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(whenField(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
+      <div class="f-grid fu-flight"><label class="f-field">${esc(tt(TX.level))}<span class="fu-when"><input data-k="fl" value="${esc(f.level?.ft ? Math.round(f.level.ft / 100) : '')}" inputmode="numeric"><button type="button" data-do="levelauto" aria-pressed="${!!f.level?.auto}" title="${esc(tt(TX.levelAutoHint))}">${esc(tt(TX.levelAuto))}</button></span><small class="f-muted" data-lvlauto></small></label><p class="f-muted fu-lvlmix" data-lvlmix hidden></p><label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(whenField(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
       <p class="f-warn" data-pastdate hidden></p>
       <div data-block="aircraft">
       <div class="f-row" data-acsel></div>
@@ -2116,6 +2133,7 @@ function onPlanClick(e) {
     pick = e.target.closest('[data-pick]');
   if (b?.dataset.do === 'simbrief') return loadSimbrief();
   if (b?.dataset.do === 'level') return setLevel(+b.dataset.ft);
+  if (b?.dataset.do === 'levelauto') return levelAutoOn();
   if (b?.dataset.do === 'alignlvl') return alignLevels();
   if (pick && S.C?.D) {
     const svg = pick.ownerSVGElement,
@@ -2959,6 +2977,62 @@ function renderDa(C) {
 }
 
 /** Niveau du plan fixé (ft) : champ, vol courant, résultats. */
+/** « Auto » (SOG-0056) : le niveau suit le devis (level.auto) ; le prochain dessin choisit le niveau (refresh → levelAuto). */
+function levelAutoOn() {
+  const b = S.body?.querySelector('[data-do="levelauto"]');
+  if (!b || b.disabled) return;
+  S.flight.level = {
+    ...(S.flight.level || {}),
+    auto: true
+  };
+  S.autoTries = 0;
+  saveFlight();
+  refresh();
+}
+/** Le niveau « Auto » après un calcul (SOG-0056) : tant que level.auto, le niveau qui brûle le moins (FuelLevels.autoLevel sur la série
+ *  déjà chiffrée, bornée par le plafond de la fiche et par la plus haute contrainte d'une procédure choisie) est posé s'il a changé, puis
+ *  redessiné (deux fois au plus de suite : un vent au nouveau niveau ne fait jamais osciller) ; le bouton dit pourquoi il est inactif ;
+ *  la ligne sous le champ dit « FL180 (auto) · 1:02 ». Rend vrai si un nouveau niveau a été posé (le dessin en cours s'arrête). */
+function levelAuto(C) {
+  const b = S.body?.querySelector('[data-do="levelauto"]'),
+    line = S.body?.querySelector('[data-lvlauto]'),
+    f = S.flight,
+    sheet = C.sheet,
+    noSheet = !sheet || String(sheet.id || '').startsWith('TYPE_') || !C.perf,
+    noRoute = !(C.nm > 0) || (f.route?.points || []).length < 2,
+    why = noSheet ? TX.levelAutoNoSheet : noRoute ? TX.levelAutoNoRoute : null;
+  if (b) {
+    b.disabled = !!why;
+    b.title = tt(why || TX.levelAutoHint);
+    b.setAttribute('aria-pressed', String(!!f.level?.auto));
+  }
+  const cons = Object.values(f.route?.constraints || {}).map(Number).filter(v => v > 0),
+    a = !why && f.level?.auto && C.D ? window.FuelLevels.autoLevel(C.D, +f.route?.trackDeg || 0, {
+      minFt: Math.max(3000, ...cons),
+      maxFt: +sheet?.cruise?.ceilingFt > 0 ? +sheet.cruise.ceilingFt : 20000
+    }) : null;
+  if (a && a.h !== +f.level?.ft && (S.autoTries || 0) < 2) {
+    S.autoTries = (S.autoTries || 0) + 1;
+    f.level = {
+      ft: a.h,
+      auto: true
+    };
+    const i = S.body?.querySelector('[data-k="fl"]');
+    if (i) i.value = Math.round(a.h / 100);
+    renderPts();
+    if (S.aloft) aloftApply();
+    saveFlight();
+    refresh();
+    return true;
+  }
+  S.autoTries = 0;
+  if (line) line.textContent = f.level?.auto && C.q?.hasFuel ? tt(TX.levelAutoSaid, {
+    fl: flTxt(+f.level.ft),
+    t: hmm(C.q.minutes)
+  }) : '';
+  return false;
+}
+
 function setLevel(ft) {
   if (!(ft > 0)) return;
   S.flight.level = {
@@ -4284,6 +4358,7 @@ function refresh() {
     } = C,
     $ = s => S.body.querySelector(s),
     unit = sheet?.unit || 'kg';
+  if (levelAuto(C)) return; // SOG-0056 : un nouveau niveau « Auto » posé, le dessin est refait à ce niveau
   shareProfile(C);
   lvlMix(C);
   S.P.sync(); // choix, terrains, vol démarré : la carte des procédures est redessinée (sur place quand seules les listes changent)
