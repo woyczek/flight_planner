@@ -3789,3 +3789,37 @@ def d124(c):
     hs = c.js(_WINDS_JS)
     drawn = [h for h in hs if not h['gap']]
     c.ok(len(drawn) >= 1 and len(drawn) < len(hs), str(hs), 'the same wind repeated far away is a place without wind: some arrows are left out, the first one stays')
+
+
+@case('D125', 'Great-circle route: the shortest path departure → arrival is drawn as a thin dotted line under the route as soon as both aerodromes are known, its length is in the hover', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='V3 spec (SOG-0145): the great circle between the flight’s departure and arrival, thin dotted, in the muted tint of the route, under the route; shown as soon as both aerodromes are known (the route’s ends carry those codes); its length (NM) in the hover; nothing on a mission map')
+def d125(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js("""() => { window.__dash = 0; const o = CanvasRenderingContext2D.prototype.setLineDash;
+      CanvasRenderingContext2D.prototype.setLineDash = function (a) { if (a && a[0] === 0.1) window.__dash++; return o.apply(this, arguments) }; return true }""")
+    c.js("() => { const m = window.__mpMap, c = m.getCenter(); m.jumpTo({ center: [c.lng + 1e-4, c.lat], zoom: m.getZoom() }); return true }")
+    c.until("() => window.__dash > 0 && !!window.__mp.S.gc", timeout=10000, what='the great circle is drawn')
+    gc = c.js("() => ({ nm: window.__mp.S.gc.nm, dep: window.__mp.S.gc.dep, arr: window.__mp.S.gc.arr, n: window.__mp.S.gc.q.length })")
+    a, b = FLIGHT['route']['points'][0], FLIGHT['route']['points'][-1]
+    R = math.pi / 180
+    h = math.sin((b['lat'] - a['lat']) * R / 2) ** 2 + math.cos(a['lat'] * R) * math.cos(b['lat'] * R) * math.sin((b['lon'] - a['lon']) * R / 2) ** 2
+    want = 2 * 3440.065 * math.asin(math.sqrt(h))
+    c.ok(abs(gc['nm'] - want) < 1, f'{gc} want {want:.1f}', 'its length is the great-circle distance LFRS → LFML')
+    c.eq([gc['dep'], gc['arr']], ['LFRS', 'LFML'], 'between the departure and the arrival', what='ends')
+    # the hover says what it is and how long
+    tip = c.js("""async () => { const T = await import('/modules/maps/tips.js'), q = window.__mp.S.gc.q, m = q[Math.floor(q.length / 2)]; return T.tipAt(m.x, m.y) }""")
+    c.ok(tip and 'LFRS' in tip[0] and 'LFML' in tip[0] and str(round(want)) in tip[1], str(tip), 'the hover names the great-circle route and gives its length')
+    # under the route: its layer comes before the route’s in the drawing
+    src = (ROOT / 'modules/maps/render.js').read_text(encoding='utf-8')
+    c.ok(src.index("id: 'gc'") < src.index("id: 'route',"), 'render.js', 'the great circle is drawn under the route')
+    # not known yet: no arrival, no great circle
+    f = flight()
+    f['route']['arr'] = ''
+    c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.wait(1500)
+    c.eq(c.js("() => window.__mp.S.gc"), None, 'without a known arrival there is no great circle', what='S.gc')

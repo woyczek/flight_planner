@@ -2064,6 +2064,19 @@ the Map had seen in between: the same line to within the frame's own sampling.
   « not drawn »), D114 (cost under 16 ms, the light drawing's lines). The fixture `tests/v3/fixtures/ground_LFPO.json` is made from
   OSM data (595 items); the noreg never reads the public instance.
 
+## The great-circle route (9 Nov 2026, SOG-0145)
+
+- **Asked** (the user): « afficher la route orthodromique sur la carte ». Ergonomics session's design: the great circle departure →
+  arrival, thin dotted, muted tint, under the route, visible as soon as both aerodromes are known, its length in the inspector.
+- **Done as asked**: layer `gc` under `route`; the length in the hover (the hover is the Map's inspector); 48 legs, so a long
+  route curves on the Mercator map as it should. Visible with both aerodromes known = the route's ends carry the flight's `dep` and `arr`.
+- **Choices of mine**: (1) half opacity of the route's own colour, not a grey: it stays tied to the route; (2) the dotted line is made of
+  round dots (0.1 px dash, 6 px gap) so it reads as « dotted » at any zoom; (3) its hover comes after the winds, reporting points,
+  airways and beacons, before the airspaces (it crosses them all); (4) nothing during a gesture's light drawing is guaranteed: it is part of
+  the full drawing only.
+- **Not done**: no toggle in Layers (it is on whenever it can be, like the route); the length is not in the profile sheet.
+- **Noreg** D125 (the length = the great-circle distance, the ends, the hover, the layer order, nothing without an arrival; red without the code).
+
 ## Wind barbs from the cut's grid; no wind outside the model's coverage (9 Nov 2026, SOG-0148 and SOG-0141)
 
 - **Asked**: « on voit bien le profil vertical et sa météo, le profil plan ne l'a pas ? pourtant les données ont été téléchargées »

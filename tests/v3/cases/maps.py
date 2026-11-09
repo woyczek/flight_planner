@@ -112,6 +112,7 @@ def d4(c):
     chips = c.boxes('.mp-chip[data-view]')
     c.eq(len(chips), 2, 'two view chips (Profile, Weather)', what='view chips')
     c.eq(c.js("[...document.querySelectorAll('.mp-chip')].at(-1).hasAttribute('data-legend')"), True, 'the "i" legend chip is the last chip', what='last chip')
+    c.until("() => !document.querySelector('.mp-chip[data-view=profile]').disabled", timeout=15000, what='the profile is built (it is asynchronous: a loaded machine took longer than the open)')
     fixed_chips(c, 'profile with a forecast', legend=True)
     info = c.js("[...document.querySelectorAll('.mp-chip[data-view]')].map(b => ({ title: b.title, label: b.getAttribute('aria-label'), pressed: b.getAttribute('aria-pressed'), hidden: b.hidden }))")
     names = [row(c, 'dataProfile'), row(c, 'wxTitle')]

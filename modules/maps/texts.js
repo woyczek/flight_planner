@@ -187,6 +187,11 @@ export const TX = {
   progEnable: ['Activer la position', 'Enable the position', 'Position aktivieren', 'Activar la posición'],
   progArrived: ['Arrivé', 'Arrived', 'Angekommen', 'Llegado'],
   progDiverted: ['Déroutement vers {a}', 'Diverted to {a}', 'Ausweichlandung in {a}', 'Desviado a {a}'],
+  gcTip: ['Route orthodromique {a} → {b}', 'Great-circle route {a} → {b}', 'Orthodrome {a} → {b}', 'Ruta ortodrómica {a} → {b}'],
+  gcLen: ['{n} NM en ligne droite sur la sphère, la plus courte', '{n} NM straight on the sphere, the shortest',
+    '{n} NM geradeaus auf der Kugel, die kürzeste',
+    '{n} NM en línea recta sobre la esfera, la más corta'
+  ],
   windGap: ['Pas de vent ici (hors {m})', 'No wind here (outside {m})', 'Hier kein Wind (außerhalb {m})',
     'Sin viento aquí (fuera de {m})'
   ],

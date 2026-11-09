@@ -1405,6 +1405,7 @@
     route = [],
     marks: mk = [],
     mission = null,
+    gc = null, // la route orthodromique : ses points en coordonnées de la vue (SOG-0145)
     theme = null,
     level = null,
     detail = 0,
@@ -1636,6 +1637,10 @@
           towns = cityList(shown.cities, profile, toC, bbox, scale, pl);
           if (!first) drawCities(c, towns, profile, scale, W, H);
         }
+      }, {
+        id: 'gc', // la route orthodromique, sous la route (SOG-0145)
+        bare: true,
+        paint: c => PR.drawGreatCircle(c, gc, scale, env)
       }, {
         id: 'route',
         bare: true,

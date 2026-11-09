@@ -164,6 +164,13 @@ export function tipAt(x, y, lat = null, lon = null) {
   if (nv) return [navName(nv.n), nv.merged.length ? tt(TX.navAlso, {
     l: nv.merged.map(navName).join(', ')
   }) : nv.n.name || ''];
+  // la route orthodromique, à 7 px : son nom et sa longueur (SOG-0145) ; la route, les voies et les balises passent avant
+  if (S.gc?.q?.length > 1 && S.gc.q.slice(1).some((p, i) => segDist(x, y, S.gc.q[i], p) <= 7)) return [tt(TX.gcTip, {
+    a: S.gc.dep,
+    b: S.gc.arr
+  }), tt(TX.gcLen, {
+    n: Math.round(S.gc.nm)
+  })];
   const z = (S.zoneHits || []).find(r => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1);
   if (z) return [...MapsRender.sia(z.a), alsoTip(z.a, lat == null ? llAt(x, y) : {
     lat,
@@ -174,6 +181,14 @@ export function tipAt(x, y, lat = null, lon = null) {
   return l.length ? [l[0], l.length > 2 ? `${l[1]} ${tt(TX.tipMore, {
     n: l.length - 2
   })}` : l[1] || ''] : null;
+}
+/** Distance de (x, y) au segment [a, b] (pixels). */
+function segDist(x, y, a, b) {
+  const dx = b.x - a.x,
+    dy = b.y - a.y,
+    l2 = dx * dx + dy * dy,
+    t = l2 ? Math.max(0, Math.min(1, ((x - a.x) * dx + (y - a.y) * dy) / l2)) : 0;
+  return Math.hypot(x - (a.x + t * dx), y - (a.y + t * dy));
 }
 /** Position géographique sous (x, y), longitude dans [-180, 180[ : MapLibre, sinon le Mercator du fond uni ; null sans carte. */
 export function llAt(x, y) {

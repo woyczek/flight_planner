@@ -247,6 +247,13 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - Over a beacon (within 9 px) the tooltip gives "VOR BZH 110.65" and either "also here: ILS 25L BG 109.9" (the
   attached ones) or its name.
 
+- **The great-circle route** (SOG-0145, 9 Nov): `drawGreatCircle` (`render_route.js`), layer `gc` just under `route`: the shortest path
+  between the flight's departure and arrival (the route's two ends, carrying those codes: nothing without a known arrival), 48 legs
+  (`greatCircle` in `state.js`, longitudes kept continuous across the date line), thin dotted line (a 0.1 px dash and a gap: round dots)
+  in the route's tint at half opacity; its screen points are `S.gc.q` (kept by `draw.js`), its length `S.gc.nm`. Over it (within 7 px, after
+  the route's own hits: winds, reporting points, airways, beacons) the tooltip says « Great-circle route LFRS → LFML » and « 366 NM … ».
+  Not on a mission map, not while choosing on the map. Noreg D125.
+
 ## 4. The screen
 
 - **Fixed view** (`meta.fixed: true`, frame INTEGRATION § 9.2): the module root is a flex column at the height of the

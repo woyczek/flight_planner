@@ -65,6 +65,38 @@ export function keptRoute(pts) {
   return (pts || []).filter(p => kept.some(k => String(k.id ?? '') === String(p?.id ?? '') && Math.abs(+k.lat - +p.lat) < 1e-6 &&
     Math.abs(((+k.lon - +p.lon) % 360 + 540) % 360 - 180) < 1e-6));
 }
+/** Le grand cercle de a à b (points { lat, lon }), `n` tronçons : [{ lat, lon }] avec des longitudes continues (au plus 180° d'écart avec
+ *  le départ) ; nm : sa longueur. Rend null pour deux points confondus (moins de 5 NM) ou antipodaux. */
+export function greatCircle(a, b, n = 48) {
+  const R = Math.PI / 180,
+    v = p => [Math.cos(p.lat * R) * Math.cos(p.lon * R), Math.cos(p.lat * R) * Math.sin(p.lon * R), Math.sin(p.lat * R)],
+    A = v(a),
+    B = v(b),
+    d = Math.acos(Math.max(-1, Math.min(1, A[0] * B[0] + A[1] * B[1] + A[2] * B[2]))),
+    nm = d * 3440.065;
+  if (!(nm >= 5) || Math.PI - d < 1e-6) return null;
+  const pts = [];
+  let last = +a.lon;
+  for (let i = 0; i <= n; i++) {
+    const f = i / n,
+      k1 = Math.sin((1 - f) * d) / Math.sin(d),
+      k2 = Math.sin(f * d) / Math.sin(d),
+      x = k1 * A[0] + k2 * B[0],
+      y = k1 * A[1] + k2 * B[1],
+      z = k1 * A[2] + k2 * B[2];
+    let lon = Math.atan2(y, x) / R;
+    lon += Math.round((last - lon) / 360) * 360; // continue : pas de saut à la ligne de changement de date
+    last = lon;
+    pts.push({
+      lat: Math.atan2(z, Math.hypot(x, y)) / R,
+      lon
+    });
+  }
+  return {
+    pts,
+    nm
+  };
+}
 /** Vrai si le montage est sur une carte de mission : celle de l'adresse (#maps?mission=…) ou, sans adresse, celle du vol courant
  *  (flight.mission, écrit par « Préparer ce vol ») tant que le bandeau n'est pas retiré (#maps?flight=1). S.missionId la nomme. */
 export const onMission = () => !!S?.missionId;

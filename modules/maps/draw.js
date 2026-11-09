@@ -12,7 +12,8 @@ import {
   onMission,
   level,
   tileLoader,
-  keptRoute
+  keptRoute,
+  greatCircle
 } from './state.js';
 import {
   nearLon
@@ -392,6 +393,28 @@ function view(W, H) {
     toC: wrapTo(v.toC, (S.fit.w + S.fit.e) / 2)
   };
 }
+/** La route orthodromique (SOG-0145) : le grand cercle du départ à l'arrivée, dès que les deux terrains sont connus (les extrémités de la
+ *  route, de ces codes), en points de la vue ; S.gc garde de quoi la montrer à l'infobulle (la longueur, les extrémités). Rien sur une
+ *  carte de mission ni pendant le choix sur la carte. */
+function gcScreen(mission, pick, toC) {
+  S.gc = null;
+  const r = S.route?.flight?.route,
+    pts = S.route?.points || [],
+    a = pts[0],
+    b = pts.at(-1);
+  if (mission || pick || pts.length < 2 || !r?.dep || !r?.arr || String(a.id || '').toUpperCase() !== String(r.dep).toUpperCase() ||
+    String(b.id || '').toUpperCase() !== String(r.arr).toUpperCase()) return null;
+  const g = greatCircle(a, b);
+  if (!g) return null;
+  const q = g.pts.map(p => toC(p.lat, p.lon));
+  S.gc = {
+    dep: r.dep,
+    arr: r.arr,
+    nm: g.nm,
+    q
+  };
+  return q;
+}
 /** Projection courante pour un geste (toucher, survol), sans repasser par draw(). */
 export function projNow() {
   return S.map ? wrapTo((lat, lon) => S.map.project([lon, lat]), S.map.getCenter().lng) : S.toC;
@@ -634,6 +657,7 @@ function draw() {
     plan: pick ? null : planMarks(ctx, toCs),
     // les terrains de la route et le dégagement : leur nom est la seule boîte de leur point (SPEC § 3)
     onRoute: [...route.map(p => p.id), altn?.id],
+    gc: gcScreen(mission, pick, toC),
     mission: mission && S.mission ? {
       points: S.missionPts || S.mission.points, // avec leur rôle dit dans la langue (missionUi)
       zones: S.mission.zones,

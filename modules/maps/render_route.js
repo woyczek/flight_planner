@@ -240,13 +240,31 @@
     ctx.restore();
   }
 
+  /** La route orthodromique (SOG-0145) : le grand cercle départ → arrivée, en pointillé fin dans la teinte atténuée de la route, sous
+   *  elle. pts : ses points déjà en coordonnées de la vue (draw.js). */
+  function drawGreatCircle(ctx, pts, scale, env) {
+    if (!pts || pts.length < 2) return;
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.globalAlpha = .5;
+    ctx.strokeStyle = env.pal.route;
+    ctx.lineWidth = Math.max(1.2, 1.6 * scale);
+    ctx.setLineDash([.1, Math.max(4, 6 * scale)]); // un point rond tous les quelques pixels : un pointillé fin
+    ctx.beginPath();
+    pts.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y));
+    ctx.stroke();
+    ctx.restore();
+  }
+
   // son espace de noms, gelé (§ 10.29 e) : le noyau l'appelle par MapsRender.parts.route
   Object.defineProperty(R.parts, 'route', {
     value: Object.freeze({
       routeLegs,
       routeLabels,
       planLabels,
-      drawRoute
+      drawRoute,
+      drawGreatCircle
     }),
     enumerable: true
   });
