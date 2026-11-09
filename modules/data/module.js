@@ -34,6 +34,10 @@ import {
   toggleWhy
 } from './status.js';
 import {
+  addPack,
+  addPackZone
+} from './packs.js';
+import {
   selectNone,
   selectStale,
   startUpdate
@@ -81,7 +85,8 @@ export const meta = {
   },
   files: ['model.js', 'model_screen.js', 'model_sets.js', 'model_results.js', 'model_chain.js', 'model_map.js', 'model_publish.js',
     'model_kit.js', 'model_inventory.js', 'texts.js', 'state.js', 'screen.js', 'panels.js', 'zonemap.js', 'follow.js', 'publish.js',
-    'chain.js', 'inventory.js', 'model_route.js', 'model_update.js', 'model_status.js', 'route.js', 'update.js', 'status.js',
+    'chain.js', 'inventory.js', 'model_route.js', 'model_update.js', 'model_status.js', 'model_packs.js', 'route.js', 'update.js',
+    'status.js', 'packs.js',
     '../maps/lib/map_base.js?v=0', '../maps/render.js?v=0', '../../frame/lib/dom.js', '../../frame/lib/time.js'
   ],
   // la carte des zones : MapLibre et les contours, chargés à la demande par le socle de carte (comme la Météo) ; les tuiles, appelées par MapLibre lui-même
@@ -128,6 +133,9 @@ function opOf(v) {
 function onClick(e) {
   const mv = e.target.closest?.('button[data-move]');
   if (mv) return mv.disabled ? undefined : moveClick(mv); // « Ranger les sources brutes » (carte Inventaire)
+  const pk = e.target.closest?.('button[data-act="pack-add"], button[data-act="pack-add-zone"]');
+  if (pk) return pk.disabled ? undefined : pk.dataset.act === 'pack-add' ? addPack(pk.dataset.pack) : addPackZone(pk.dataset
+    .zone); // les paquets de pays (SOG-0065)
   const zw = e.target.closest?.('[data-act="zone-why"]');
   if (zw) return toggleWhy(zw.dataset.zone); // la pastille d'une zone : ses raisons (SOG-0071)
   const rc = e.target.closest?.('[data-act="map-recenter"]');
@@ -179,6 +187,8 @@ function onToggle(e) {
   const g = e.target;
   if (g instanceof HTMLDetailsElement && g.matches('details.f-group') && g.isConnected) S.manual[g.dataset.group] = g.open;
   else if (g instanceof HTMLDetailsElement && g.matches('details.d-journal') && g.isConnected) S.journalOpen = g.open;
+  else if (g instanceof HTMLDetailsElement && g.matches('details.d-pack') && g.isConnected) g.open ? S.packOpen.add(g.dataset.packTheme) : S
+    .packOpen.delete(g.dataset.packTheme);
   if (g instanceof HTMLDetailsElement && g.matches('details.d-inventory') && g.isConnected) {
     if (g.open) openInventory(); // l'inventaire se lit à l'ouverture, une fois
     else S.inventory = null; // fermé : la prochaine ouverture relit (une lecture ratée peut être refaite)
@@ -206,7 +216,8 @@ export async function mount(el, ctx) {
     status: null, // l'état par zone que le lanceur a dit (base/status, M.statusOf) : { current, parserVersion, zones: { id: { state, reasons, buildable } } } ; null : jamais lu
     statusP: null, // la lecture en cours (une seule à la fois)
     statusAsked: false, // l'état a été demandé à l'ouverture
-    whyOpen: new Set(), // les zones dont la pastille montre ses raisons
+    whyOpen: new Set(),
+    packOpen: new Set(), // les filtres thématiques dont le pli est ouvert (SOG-0065) // les zones dont la pastille montre ses raisons
     updating: false, // « Mettre à jour » est entre son téléchargement et sa construction (update.js)
     route: routeInit(), // la ligne « Route (RAD, points FRA) » : phase, plan montré, dernière fin, cycles présents (route.js)
     personalRead: false, // la mémoire des sources personnelles a été lue (une fois par montage)

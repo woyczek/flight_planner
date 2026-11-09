@@ -28,6 +28,8 @@ What the airline publishes for the app — the aeronautical base, the procedures
 
 <a id="data-coverage"></a>**The coverage.** The list of zones (countries, regions) this workstation follows. On the first opening it holds every zone the airline publishes; the list is kept on this device. “Add a country” puts into the coverage a zone the suite knows, even one nobody publishes yet: it is ticked for “Build”.
 
+<a id="data-packs"></a>**Country packs.** Under “Add a country”, when AeroDB gives packs, one row per regional pack (Western Europe, Asia…): its name, its number of countries, its size (the sum of the published sizes), what it holds “in part” or does not know. “Add all (n)” adds to the coverage the n zones that are not there yet, ticked, in one go: a zone already there is never duplicated, and nothing is downloaded or built. An empty pack says why (“no zone today”). **Themes** (islands, deserts…) are filters: a theme shows its zones (those of the coverage, and those to add one by one with “Add”) and adds none by itself.
+
 <a id="data-states"></a>**The States.** Under the coverage, the States are sorted by colour: green, procedures are already published; orange, they can be read on demand; red, nothing is readable. The reason is written on each line, the colour is never alone. Beyond seven lines, "n more" unfolds the rest.
 
 <a id="data-group-base"></a>**Aeronautical base.** One line per source that feeds a zone of the coverage: its cycle, its age ("published 3 days ago"), the number of zones published and a state badge. Tap a line to see the source's link with its address, its licence, the zones it feeds and what each zone has published.
@@ -83,7 +85,7 @@ What the airline publishes for the app — the aeronautical base, the procedures
 - **Without a launcher**: the screen reads the same way; it shows what is published.
 - **A read that fails**: the section says so in one line, the rest of the screen is drawn.
 
-<!-- fr: 406a27ec679a -->
+<!-- fr: 7f9f1cdd8829 -->
 
 <!-- chapter: aircraft -->
 # Aircraft

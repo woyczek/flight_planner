@@ -280,6 +280,7 @@ def _stub(cfg):
     A.publication = async () => { const k = window.__stub.calls = window.__stub.calls || {}; k.publication = (k.publication || 0) + 1; if (window.__stub.fail.includes('publication')) throw new Error('stub: publication');
       return window.__stub.memo ? (window.__stub.memoPub ||= JSON.parse(JSON.stringify(window.__stub.publication))) : window.__stub.publication };
     A.refresh = () => { const k = window.__stub.calls = window.__stub.calls || {}; k.refresh = (k.refresh || 0) + 1; window.__stub.memoPub = null };
+    if (cfg.packs) A.packs = async () => cfg.packs;   // the country packs of aerodb (packs(), SOG-0065): absent unless the case gives them
     A.zones = ok('zones', 'zones'); A.coverageByState = ok('coverageByState', 'states'); A.zoneOutlines = ok('zoneOutlines', 'outlines');
     const s = A.sources; A.sources = async () => { const r = await s.call(A); if (cfg.pv) return { ...r, PARSER_VERSION: cfg.pv }; const { PARSER_VERSION, ...rest } = r; return rest };  // pv null: the catalogue without its constant (aerodb has carried one since 567b94440)
     const on = A.on; A.on = function (ev, fn) { const un = on.call(A, ev, fn); if (ev === 'change') window.__stub.fns.add(fn); return () => { window.__stub.fns.delete(fn); un() } };
@@ -4102,6 +4103,82 @@ def l43(c):
     c.eq(c.js("document.querySelector('[data-verb=select-stale]').disabled"), True, '« Seulement les périmés » is grey: it has no state to read', what='select-stale grey')
     c.wait(400)
     c.eq(len(st['posts']), 0, 'nothing is sent', what='posts')
+    c.check_errors()
+
+
+_PACK_ZONES = [('it', ['Italie', 'Italy', 'Italien', 'Italia'], 4000), ('jp', ['Japon', 'Japan', 'Japan', 'Japón'], 6000)]
+
+
+def _packs_cfg():
+    """The fixture with two more zones the suite knows and nobody publishes (it, jp), sizes, and packs as aerodb would give them."""
+    cfg, _ = _fixture()
+    _sized(cfg)
+    for z, names, kb in _PACK_ZONES:
+        cfg['zones'].append({'id': z, 'names': names, 'frames': [], 'published': False, 'publishedKb': kb})
+    for z in cfg['zones']:
+        if z['id'] == 'de':
+            z['publishedKb'] = 8000
+    cfg['packs'] = {'packs': [
+        {'id': 'ouest', 'kind': 'region', 'names': ['Europe de l\u2019Ouest', 'Western Europe', 'Westeuropa', 'Europa occidental'], 'zones': ['fr', 'gb', 'de', 'it', 'zz'], 'partial': ['gb']},
+        {'id': 'asie', 'kind': 'region', 'names': ['Asie', 'Asia', 'Asien', 'Asia'], 'zones': ['jp', 'de']},
+        {'id': 'antarctique', 'kind': 'region', 'names': ['Antarctique', 'Antarctica', 'Antarktis', 'Ant\u00e1rtida'], 'zones': [], 'empty': 'no-zone'},
+        {'id': 'iles', 'kind': 'theme', 'names': ['\u00celes', 'Islands', 'Inseln', 'Islas'], 'zones': ['gb', 'jp', 'es']},
+        {'id': 'bad id', 'kind': 'region', 'names': ['x'], 'zones': ['fr']},
+        {'id': 'weird', 'kind': 'planet', 'names': ['x'], 'zones': ['fr']}]}
+    return cfg
+
+
+@case('L44', 'Données: country packs (aerodb packs()): a row per region with its size and what is already covered, « Ajouter tout » without a duplicate, themes as a filter that adds nothing by itself, an empty pack with its reason', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0065 (V3_SPECIFICATION § 10.42): a pack is a list of zone ids; the region row says its size (sum of publishedKb), « Ajouter tout » adds the zones of the coverage it lacks (ticked, written once, never a duplicate, nothing built); a theme is a filter that shows zones and adds none by itself; the unknown zones are ignored and said; hostile packs are dropped')
+def l44(c):
+    lang = c.lang
+    PT = lambda key: _trow(key, lang, after='  packs: {')
+    cfg = _packs_cfg()
+    _open(c, cfg)
+    _all_open(c)
+    c.until("!!document.querySelector('[data-packs]')", timeout=8000, what='the packs block')
+    c.eq(c.js("[...document.querySelectorAll('[data-pack-regions] > li')].map(li => li.dataset.pack)"), ['ouest', 'asie', 'antarctique'], 'the region packs in aerodb\u2019s order; a pack with a bad id or an unknown kind is dropped', what='regions')
+    c.eq(c.js("[...document.querySelectorAll('[data-pack-themes] > li')].map(li => li.dataset.pack)"), ['iles'], 'the theme', what='themes')
+    row = lambda p: norm(c.text(f'[data-pack={p}]'))
+    ouest_size = _bytes(c, _KB['fr'] + _KB['gb'] + 8000 + 4000)
+    c.ok(ouest_size in row('ouest') and 'zz' not in row('ouest'), row('ouest'), 'Western Europe: the size is the sum of the known zones (fr, gb, de, it), the zone the suite does not know is not counted')
+    c.eq(c.count('[data-pack=ouest] [data-pack-unknown]') + c.count('[data-pack=ouest] [data-pack-partial]'), 2, 'and it says one zone is unknown, one is « en partie »', what='notes')
+    c.eq(norm(c.text('[data-pack=ouest] [data-act=pack-add]')), norm(PT('addAll').replace('{n}', '2')), 'Ajouter tout (2): de and it are not in the coverage yet (fr and gb are)', what='button')
+    c.eq(c.count('[data-pack=antarctique] button'), 0, 'an empty pack has no button', what='empty button')
+    c.eq(norm(c.text('[data-pack=antarctique] [data-pack-empty]')), norm(_trow('no-zone', lang, after='emptyWhy: {')), 'and says why', what='empty reason')
+    # ---- a theme adds nothing by itself: its fold shows the zones, the ones outside the coverage can be added one by one
+    c.eq(c.count('[data-pack=iles] [data-act=pack-add-zone]'), 1, 'the theme lists jp as the one zone to add (gb and es are covered)', what='theme add')
+    cov0 = c.doc('cache/data/coverage.json')
+    c.js("document.querySelector('[data-pack-theme=iles]').open = true")
+    c.tap('[data-pack=iles] [data-act=pack-add-zone][data-zone=jp]')
+    doc = c.until_doc('cache/data/coverage.json', lambda d: bool(d and 'jp' in (d.get('zones') or [])), what='jp added to the coverage')
+    c.eq(sorted(set(doc['zones']) - set((cov0 or {}).get('zones') or ['ca', 'es', 'fr', 'gb', 'us'])), ['jp'], 'one gesture, one zone added', what='one zone')
+    c.eq(c.count('[data-pack-theme=iles][open]'), 1, 'the fold stays open after the redraw', what='open')
+    # ---- Ajouter tout: de and it enter (ticked, one write), the button turns into « all in the coverage », nothing is built
+    c.js("document.querySelector('[data-packs]').scrollIntoView({ block: 'start' })")
+    if c.width == 390:
+        c.shot(f'L44_packs_{c.width}_{lang}.png')
+    c.tap('[data-pack=ouest] [data-act=pack-add]')
+    doc = c.until_doc('cache/data/coverage.json', lambda d: bool(d and 'it' in (d.get('zones') or []) and 'de' in (d.get('zones') or [])), what='de and it added')
+    c.eq([len(doc['zones']), len(set(doc['zones']))], [8, 8], 'eight distinct zones: nothing was duplicated', what='no duplicate')
+    c.until("[...document.querySelectorAll('[data-build-zone]')].filter(i => i.checked).map(i => i.dataset.buildZone).includes('it')", timeout=6000, what='the added zones are ticked')
+    c.eq([c.js("document.querySelector('[data-pack=ouest] [data-act=pack-add]').disabled"), norm(c.text('[data-pack=ouest] [data-act=pack-add]'))], [True, norm(PT('allIn'))], 'nothing left to add: grey, said', what='all in')
+    c.eq(c.js("document.querySelector('[data-pack=asie] [data-act=pack-add]').disabled"), True, 'Asia (jp, de) is complete too', what='asie')
+    c.eq(c.js("window.__stub.calls.zones ? 1 : 0"), 1, 'the screen read zones()', what='sanity')
+    c.check_errors()
+
+
+@case('L45', 'Données: without aerodb packs() (or with an unreadable answer) the packs block is not drawn', 'L', tags=('data',),
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0065: the packs are invisible until aerodb gives them — no block, no empty title; a hostile answer is read as no pack')
+def l45(c):
+    cfg, _ = _fixture()
+    cfg['packs'] = {'packs': 'nope'}
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.wait(500)
+    c.eq(c.count('[data-packs]'), 0, 'an unreadable answer: no block', what='unreadable')
     c.check_errors()
 
 

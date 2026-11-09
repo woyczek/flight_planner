@@ -8,6 +8,8 @@ Was die Fluggesellschaft für die App veröffentlicht — die Luftfahrtdatenbank
 
 <a id="data-coverage"></a>**Die Abdeckung.** Die Liste der Zonen (Länder, Regionen), die dieser Rechner verfolgt. Beim ersten Öffnen sind es alle Zonen, die die Gesellschaft veröffentlicht; die Liste bleibt auf diesem Gerät. „Land hinzufügen“ nimmt eine Zone, die die Suite kennt, in die Abdeckung auf, auch wenn sie noch niemand veröffentlicht: Sie wird für „Erstellen“ angekreuzt.
 
+<a id="data-packs"></a>**Länderpakete.** Unter „Land hinzufügen“ erscheint, wenn AeroDB Pakete liefert, eine Zeile je Regionalpaket (Westeuropa, Asien …): Name, Zahl der Länder, Größe (Summe der veröffentlichten Größen), was es „teilweise“ enthält oder der Suite unbekannt ist. „Alle hinzufügen (n)“ fügt der Abdeckung die n noch fehlenden Zonen angekreuzt in einem Zug hinzu: Eine schon vorhandene Zone wird nie verdoppelt, und nichts wird heruntergeladen oder gebaut. Ein leeres Paket sagt warum („heute keine Zone“). **Themen** (Inseln, Wüsten …) sind Filter: Ein Thema zeigt seine Zonen (die der Abdeckung und die, die mit „Hinzufügen“ einzeln hinzukommen) und fügt von sich aus keine hinzu.
+
 <a id="data-states"></a>**Die Staaten.** Unter der Abdeckung sind die Staaten nach Farbe geordnet: grün, Verfahren sind bereits veröffentlicht; orange, sie sind auf Anfrage lesbar; rot, nichts ist lesbar. Der Grund steht in jeder Zeile, die Farbe steht nie allein. Ab sieben Zeilen klappt „n weitere“ den Rest auf.
 
 <a id="data-group-base"></a>**Luftfahrtdatenbank.** Eine Zeile pro Quelle, die eine Zone der Abdeckung versorgt: ihr Zyklus, ihr Alter („vor 3 Tagen veröffentlicht“), die Zahl der veröffentlichten Zonen und eine Statusmarke. Tippen Sie auf eine Zeile, um den Link der Quelle mit seiner Adresse, ihre Lizenz, die versorgten Zonen und das zu sehen, was jede Zone veröffentlicht hat.
@@ -63,4 +65,4 @@ Was die Fluggesellschaft für die App veröffentlicht — die Luftfahrtdatenbank
 - **Ohne Starter**: Der Bildschirm wird genauso gelesen; er zeigt, was veröffentlicht ist.
 - **Ein Lesevorgang schlägt fehl**: Der Abschnitt sagt es in einer Zeile, der Rest des Bildschirms wird gezeichnet.
 
-<!-- fr: 406a27ec679a -->
+<!-- fr: 7f9f1cdd8829 -->

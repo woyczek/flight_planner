@@ -31,6 +31,9 @@ import {
   refreshStatus
 } from './status.js';
 import {
+  packsHtml
+} from './packs.js';
+import {
   routeRowHtml,
   showRoute,
   wantRoute
@@ -79,6 +82,11 @@ export const STYLE = `
 [data-module="data"] [data-data-head] p{margin:2px 0}
 [data-module="data"] [data-build] h2,[data-module="data"] [data-build] h3{margin:8px 0 4px}
 [data-module="data"] .d-opts{display:flex;flex-wrap:wrap;gap:0 16px}
+[data-module="data"] .d-packs{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:6px}
+[data-module="data"] .d-packs li{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;overflow-wrap:anywhere}
+[data-module="data"] .d-packs button{min-height:var(--sog-touch)}
+[data-module="data"] details.d-pack{width:100%}
+[data-module="data"] details.d-pack ul{list-style:none;margin:4px 0;padding-left:8px;display:grid;gap:4px}
 [data-module="data"] .d-zrow{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px}
 [data-module="data"] .d-zrow button{min-height:var(--sog-touch)}
 [data-module="data"] .d-zwhy{flex-basis:100%;margin:0 0 4px 28px}
@@ -157,10 +165,11 @@ export async function load(fresh = false) {
   // lecteur ne le dit qu'à sa prochaine passe) : refresh() la fait relire à la question qui suit (SOG-0072 : « il faut ctrl-maj-F5 pour voir le pays vert »)
   if (fresh) S.ctx.aerodb?.refresh?.();
   const me = S,
-    [cat, pub, zones, byState, stored, status, kept, routeMem] = await Promise.all([ask('sources'), ask('publication'), ask('zones'), ask(
+    [cat, pub, zones, byState, stored, status, kept, routeMem, packsRaw] = await Promise.all([ask('sources'), ask('publication'), ask(
+        'zones'), ask(
         'coverageByState'),
       S.ctx.data.get(COVERAGE).catch(() => null), readStatus(), S.personalRead ? null : S.ctx.data.get(PERSONAL).catch(() => null), S
-      .route.read ? null : S.ctx.data.get(ROUTE_MEM).catch(() => null)
+      .route.read ? null : S.ctx.data.get(ROUTE_MEM).catch(() => null), ask('packs')
     ]);
   if (S !== me) return; // démonté, ou remplacé, pendant la lecture
   S.pub.status = status;
@@ -182,7 +191,8 @@ export async function load(fresh = false) {
     pub,
     zones: list,
     byState,
-    cov
+    cov,
+    packs: M.packsOf(packsRaw) // les paquets de pays d'aerodb (packs()), [] sans lui : le bloc n'est alors pas dessiné (SOG-0065)
   };
   // les zones à construire : toutes celles de la couverture à la première lecture (choix de l'utilisateur gardés ensuite)
   S.ticked ||= new Set(cov.ids);
@@ -258,6 +268,7 @@ function coverageHtml() {
   return `<section class="f-card" data-coverage><h2>${esc(tt(TX.coverage))}</h2>${err}
     <p data-zones>${esc(cov.ids.length ? tt(TX.coverageZones, { z: names.join(', ') }) : tt(TX.coverageNone))}</p>
     ${addZoneHtml()}
+    ${packsHtml()}
     <h3>${esc(tt(TX.states))}</h3><div data-states-box>${statesHtml()}</div></section>`;
 }
 /** « Ajouter un pays » : les zones que la suite connaît (zones() d'aerodb, dans l'ordre de leur nom français) hors de la couverture ;
@@ -285,20 +296,28 @@ export function savePersonal() {
 /** Ajoute une zone connue à la couverture de ce poste : écrite aussitôt (cache/data/coverage.json), cochée pour « Construire » ; une
  *  zone que personne ne publie est construite et publiée par ce poste (SPEC § 3.2). */
 export function addZone(id) {
-  const known = (S.d.zones || []).some(z => z.id === id);
-  if (!known || S.d.cov.ids.includes(id) || frozen()) return;
+  addZones([id]);
+}
+/** Ajoute des zones connues à la couverture de ce poste d'un seul coup (celles qui n'y sont pas déjà, jamais un doublon) : cochées pour « Construire », écrites une fois ; rend le nombre de zones ajoutées. Sans effet pendant une marche. */
+export function addZones(list) {
+  if (frozen() || !S.d) return 0;
+  const known = new Set((S.d.zones || []).map(z => z.id)),
+    have = new Set(S.d.cov.ids),
+    add = [...new Set(list)].filter(id => known.has(id) && !have.has(id));
+  if (!add.length) return 0;
   S.d.cov = {
     ...S.d.cov,
-    ids: [...S.d.cov.ids, id],
+    ids: [...S.d.cov.ids, ...add],
     stored: true
   };
   S.ticked ||= new Set();
-  S.ticked.add(id);
+  for (const id of add) S.ticked.add(id);
   S.ctx.data.put(COVERAGE, {
     zones: S.d.cov.ids,
     updated_at: new Date().toISOString()
   }).catch(() => {});
   render();
+  return add.length;
 }
 /** Le nom d'une source datée (SIA France, NATS, ENAIRE) : celui du catalogue dans la langue, à défaut son identifiant. */
 const sourceLabel = id => (catSource(id)?.n?.[li()] || id).replace(/\s*\(.*\)\s*$/, '');

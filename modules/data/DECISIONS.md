@@ -242,3 +242,12 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
 - **While a build runs the launcher answers 409 to `base/status`**: the page does not ask then (`S.run`), the pill « En cours » is its own (`S.run.set === 'base'`, the zones of the run), and the state is read again at the end.
 - **`data-zstate`, not `data-zone-state`**: the latter is already the attribute of the zone lines of a run's result.
 - **Counter-tests**: without the launcher's tone on the map L40 is red (« fr: warn, gb: ok, es: ok »); a build on an unreadable state (instead of stopping) turns L42 red.
+
+## 10 November 2026 — country packs, the page's half (SOG-0065)
+
+- **AeroDB had not delivered `packs()`** (no `packs.json`, no function, no script on origin/v3 at the time); the coordinator chose to code this half against the contract proposed here, behind a function detection, and to send it to AeroDB as it stands: `packs() → { packs: [{ id, kind, names ×4, zones, partial?, empty?, source?, date? }] }`. Nothing about the packs' content is invented here: tests use a fake aerodb.
+- **Where**: the Couverture card, under « Ajouter un pays » — the one place where zones are added; a pack is another way to add several at once.
+- **« Ajouter tout » ticks the zones it adds** (like « Ajouter un pays » and the map): the pilot sees what a following verb would build, and nothing is built. The size the row shows is the **published** size of the zones (what the pilot will download or build, not what is on disk).
+- **A zone the suite does not know** (a pack listing an id `zones()` lacks) is said (« 1 inconnue(s) de la suite ») and ignored, never added; a **hostile pack** (bad id, unknown kind) is dropped by `packsOf`.
+- **Themes never add by themselves**: a fold with the zones and one « Ajouter » each (§ 10.42: « the filter shows which zones to add; it adds nothing by itself »).
+- **Counter-test**: counting the covered zones among those to add (`toAdd: known`) turns L44 red (« Ajouter tout (4) » instead of 2); `addZones` also refuses a zone already covered (a second guard, not alone testable through the button).

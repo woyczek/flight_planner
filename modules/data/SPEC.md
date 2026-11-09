@@ -351,6 +351,17 @@ bounded texts and numbers, hostile ids dropped) leaves the previous state and dr
 - **On the map**: the same states as tones (`STATE_TONE`: green, orange, grey, red, accent); a zone without a known state keeps the tone of the publication, as before. The legend names the five.
 - **« Mettre à jour » and « Seulement les périmés »** read this state (§ 5.8). Without `base/status` in `regen/verbs`: no pill, both grey (`unknown-verb`), « Tout recalculer » unaffected. Cases L36, L37, L40–L43.
 
+### 5.10 Country packs (SOG-0065, V3_SPECIFICATION § 10.42)
+
+Packs come from aerodb: **`ctx.aerodb.packs()` → `{ packs: [{ id, kind: 'region' | 'theme', names: [fr, en, de, es], zones: [ids], partial?: [ids], empty?: 'reason-code', source?, date? }] }`** (the contract the page was written against; a field may be added, none removed). Read with `zones()` at each load (`M.packsOf`: ids `^[a-z0-9-]{1,40}$`, a closed list of kinds,
+four bounded names, zone ids `^[a-z0-9]{2,8}$`, sixty packs at most, anything else dropped). **Without `packs()`, or with an unreadable answer, nothing is drawn** (no block, no empty title).
+
+- **Where**: in the Couverture card, under « Ajouter un pays » (`packs.js`, `packsHtml`): « Paquets de pays », then the region rows, then « Thèmes ». **A region row**: name, number of countries and size (sum of `publishedKb` of the zones the suite knows, « + » when one lacks), « n en partie » (`partial`), « n inconnue(s) de la suite, ignorée(s) », and **« Ajouter tout (n) »** (n = the known zones not yet in the coverage; grey and « Tout est dans la couverture » when none).
+  An empty pack (`empty`, or no zone) shows its reason (`no-zone`, `no-source`, a generic word otherwise) and no button.
+- **« Ajouter tout »** = `addZones(ids)` (screen.js, which « Ajouter un pays » and the map's tap also use): the coverage written **once**, the zones ticked, **no duplicate, nothing downloaded or built**, one sentence says how many.
+- **A theme is a filter** (`kind: 'theme'`): a fold lists its zones — « dans la couverture » or an **« Ajouter »** button each — and adds none by itself; « Ajouter tout » appears in it only for more than one zone to add. The fold stays open across a redraw (`S.packOpen`).
+- Seven elements per row at most. Cases L44 (regions, themes, the empty pack, the duplicate guard, hostile packs dropped; 390 px capture), L45 (invisible without packs()).
+
 ### 5.4 Building on the launcher: one process per zone
 
 The user's request of 29 Oct (V2's « Tout récupérer et recalculer » is slow: built in the browser, on the main thread,

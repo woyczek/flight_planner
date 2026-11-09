@@ -31,6 +31,8 @@ Lo que la aerolínea publica para la aplicación —la base aeronáutica, los pr
 
 <a id="data-coverage"></a>**La cobertura.** La lista de zonas (países, regiones) que sigue este equipo. En la primera apertura son todas las zonas que publica la aerolínea; la lista se guarda en este dispositivo. «Añadir un país» pone en la cobertura una zona que la suite conoce, aunque nadie la publique todavía: queda marcada para «Construir».
 
+<a id="data-packs"></a>**Los paquetes de países.** Bajo «Añadir un país», cuando AeroDB da paquetes, una fila por paquete regional (Europa occidental, Asia…): su nombre, su número de países, su tamaño (la suma de los tamaños publicados), lo que contiene «en parte» o que la suite desconoce. «Añadir todo (n)» añade a la cobertura las n zonas que aún no están, marcadas, de una vez: una zona ya presente nunca se duplica, y no se descarga ni se construye nada. Un paquete vacío dice por qué («ninguna zona hoy»). Los **temas** (islas, desiertos…) son filtros: un tema muestra sus zonas (las de la cobertura y las que se añaden una a una con «Añadir») y no añade ninguna por sí mismo.
+
 <a id="data-states"></a>**Los Estados.** Bajo la cobertura, los Estados se ordenan por color: verde, ya hay procedimientos publicados; naranja, se pueden leer bajo demanda; rojo, nada es legible. El motivo está escrito en cada línea, el color nunca va solo. Pasadas siete líneas, «n más» despliega el resto.
 
 <a id="data-group-base"></a>**Base aeronáutica.** Una línea por fuente que alimenta una zona de la cobertura: su ciclo, su antigüedad («publicado hace 3 días»), el número de zonas publicadas y una etiqueta de estado. Toque una línea para ver el enlace de la fuente con su dirección, su licencia, las zonas que alimenta y lo que ha publicado cada zona.
@@ -86,7 +88,7 @@ Lo que la aerolínea publica para la aplicación —la base aeronáutica, los pr
 - **Sin lanzador**: la pantalla se lee igual; muestra lo que está publicado.
 - **Una lectura que falla**: la sección lo dice en una línea y el resto de la pantalla se dibuja.
 
-<!-- fr: 406a27ec679a -->
+<!-- fr: 7f9f1cdd8829 -->
 
 <!-- chapter: aircraft -->
 # Aeronaves

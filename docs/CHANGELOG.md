@@ -16,6 +16,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   Under the list of the Route step: the chosen route solid, the others faded, the row hovered or pressed highlighted, faulty segments
   red; the checked route drawn the same way. No base map: the whole Map stays one gesture away.
 
+- **Data: country packs, the page's half** (`modules/data/packs.js`, `model_packs.js`, `screen.js` `addZones`; Data SPEC § 5.10; help ×4; L44, L45) — SOG-0065: under « Ajouter un pays », a row per region pack from `ctx.aerodb.packs()` (countries, size, « Ajouter tout (n) » without duplicates, empty packs with their reason)
+  and themes as filters that add nothing by themselves; invisible until aerodb gives `packs()` (contract `{ packs: [{ id, kind, names, zones, partial?, empty?, source?, date? }] }`).
 - **Frame: the world synoptic is also read under `data/local/weather/world/`** (`frame/lib/weather_store.js`; frame INTEGRATION § 14, DECISIONS;
   noreg A25; SOG-0138). `weatherStore.world()` tries `<root>/weather/world/` then `<root>/data/local/weather/world/` (what AeroDB writes, never
   synchronised), in that order and nothing else; none of the two: no publication.

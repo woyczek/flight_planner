@@ -266,6 +266,35 @@ export const TX = {
       'Mayús + arrastrar (ordenador), o dos dedos apoyados medio segundo (teléfono): un rectángulo marca las zonas que toca.'
     ]
   },
+  // les paquets de pays (packs.js, SOG-0065)
+  packs: {
+    title: ['Paquets de pays', 'Country packs', 'Länderpakete', 'Paquetes de países'],
+    themes: ['Thèmes', 'Themes', 'Themen', 'Temas'],
+    themesHint: ['Un thème est un filtre : il montre les zones qu’il touche, il n’en ajoute aucune de lui-même.',
+      'A theme is a filter: it shows the zones it touches and adds none by itself.',
+      'Ein Thema ist ein Filter: Es zeigt die Zonen, die es berührt, und fügt von sich aus keine hinzu.',
+      'Un tema es un filtro: muestra las zonas que toca y no añade ninguna por sí mismo.'
+    ],
+    addAll: ['Ajouter tout ({n})', 'Add all ({n})', 'Alle hinzufügen ({n})', 'Añadir todo ({n})'],
+    allIn: ['Tout est dans la couverture', 'All in the coverage', 'Alles in der Abdeckung', 'Todo está en la cobertura'],
+    addOne: ['Ajouter', 'Add', 'Hinzufügen', 'Añadir'],
+    inCoverage: ['dans la couverture', 'in the coverage', 'in der Abdeckung', 'en la cobertura'],
+    themeCount: ['{n}, {m} à ajouter', '{n}, {m} to add', '{n}, {m} hinzuzufügen', '{n}, {m} por añadir'],
+    partial: ['{n} en partie', '{n} in part', '{n} teilweise', '{n} en parte'],
+    unknown: ['{n} inconnue(s) de la suite, ignorée(s)', '{n} unknown to the suite, ignored', '{n} der Suite unbekannt, ignoriert',
+      '{n} desconocida(s) de la suite, ignorada(s)'
+    ],
+    added: ['{n} ajoutée(s) à la couverture ({p}) : cochées, rien n’est construit.',
+      '{n} added to the coverage ({p}): ticked, nothing is built.',
+      '{n} zur Abdeckung hinzugefügt ({p}): angekreuzt, nichts wird gebaut.',
+      '{n} añadida(s) a la cobertura ({p}): marcadas, no se construye nada.'
+    ],
+    emptyWhy: {
+      'no-zone': ['aucune zone aujourd’hui', 'no zone today', 'heute keine Zone', 'ninguna zona hoy'],
+      'no-source': ['aucune source aujourd’hui', 'no source today', 'heute keine Quelle', 'ninguna fuente hoy'],
+      unknown: ['vide', 'empty', 'leer', 'vacío']
+    }
+  },
   // la ligne « Route (RAD, points FRA) » (route.js, SOG-0125)
   route: {
     name: ['Route (RAD, points FRA)', 'Route (RAD, FRA points)', 'Route (RAD, FRA-Punkte)', 'Ruta (RAD, puntos FRA)'],
