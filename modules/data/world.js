@@ -58,6 +58,7 @@ export async function readWorld() {
   const me = S;
   if (!S.ctx.launcher || !S.known.includes(M.WORLD_JOB.key) || S.world.phase || busyNow()) return;
   S.world.phase = 'reading';
+  renderWorld(); // le bouton est gris pendant la lecture
   const final = await runJob('status', new AbortController());
   if (S !== me) return;
   S.world.phase = null;
@@ -113,7 +114,7 @@ export function worldRowHtml() {
   const st = M.worldState(S.world.status, S.now ?? Date.now()),
     pill = `<span class="f-badge"${kind(st.level)} data-pill>${esc(tt(TX.world.state[st.state]))}</span>`,
     open = S.world.phase === 'running' || !!S.world.result;
-  return `<details class="f-card" data-set="world" data-status="used" data-state="${esc(st.state)}"${open ? ' open' : ''}>
+  return `<details class="f-card" data-set="world" data-status="used" data-phase="${esc(S.world.phase || '')}" data-state="${esc(st.state)}"${open ? ' open' : ''}>
     <summary><span class="d-sum"><b>${esc(tt(TX.world.name))}</b><span class="f-muted" data-world-meta>${esc(metaText())}</span></span>${pill}</summary>${bodyHtml()}</details>`;
 }
 /** Redessine la ligne seule ; l'état ouvert ou replié laissé à la main est gardé hors d'une marche ou d'une fin. */

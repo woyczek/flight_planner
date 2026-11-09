@@ -17,12 +17,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   Map opened later), with the chosen route and the hovered row; a route touched on the Map is taken. The sketch under the list is withdrawn:
   one map, the real one.
 
+- **Data: the world synoptic row, the new reasons of `base/status`, the zone link** (`modules/data/world.js`, `model_world.js`, `status.js`, `update.js`; Data SPEC § 5.11; help ×4; L48, L50, L51) — SOG-0138, SOG-0143: a « Synoptique monde (GFS) » row in the Météo group (state, run, weight; « Construire »; published locally, never synchronised);
+  `index-orphan`, `source-unbuilt`, `source-unread`, `source-missing` and the `no-points` notice in four languages; `#data?zone=<id>` ticks that zone and brings « Mettre à jour » on screen.
 - **Data: a selection of more than 60 zones is built in runs of 60 at most, and a refusal says the launcher's reason** (`modules/data/follow.js` `runChunks`, `update.js`, `chain.js`, `model_sets.js` `chunksOf`, `model_results.js` `refusal`; L49) — SOG-0144: `base/fetch`, `base/build` and `base/purge` take 1 to 60 zones; with 78 ticked « Tout recalculer »
   was refused (« arguments invalides »). « Tout recalculer », « Télécharger », « Mettre à jour » and the chain now cut the selection into runs of 60, one after the other (the next starts when the previous one ends), the progress says « Tranche i sur n », the update's question says it; a refusal relays the launcher's message (« Le lanceur dit : … »).
-## [Unreleased]
-
-### V3
-
 - **Fuel: the route reader takes the nearest homonym and says what it cannot place** (`frame/lib/route_model.js`, `modules/fuel/module.js`;
   Fuel SPEC § 9.3, DECISIONS, help; noreg F115; SOG-0142). A name several places carry resolves to the one nearest the previous point;
   homonyms and legs over 1 000 NM are said under the route; an unknown point names its zone and the zone's state (not installed: « Ajouter »;

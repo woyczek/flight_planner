@@ -20,6 +20,10 @@ Was die Fluggesellschaft für die App veröffentlicht — die Luftfahrtdatenbank
 
 <a id="data-group-weather"></a>**Wetter.** Das Weltwetter und die NAT-Routen werden mit der Website veröffentlicht: Diese Zeilen haben weder Zyklus noch Marke.
 
+<a id="data-world"></a>**Welt-Synoptik (GFS).** In der Gruppe Wetter eine Zeile für die synoptische Weltvorhersage der Atmosphärenkarte: ihr Zustand („Nicht auf diesem Rechner“, solange keine veröffentlicht ist, „Über 12 Std. alt“, wenn sie altert), der GFS-Lauf, die Zahl der Schritte, ihre Größe und ihr Alter. „Aufbauen“ erstellt sie auf dem Rechner (etwa 2 Minuten beim ersten Mal; wenige Sekunden, wenn der Lauf schon da ist, er wird dann wiederverwendet). Sie wird **lokal** in data/local/weather/world/ veröffentlicht: nie synchronisiert oder committet. Ein Fehlschlag nennt seinen Grund (kein Lauf veröffentlicht oder NOAA nicht erreichbar, ungültiger Ordner, Zeit überschritten); die alte Veröffentlichung bleibt.
+
+<a id="data-zone-link"></a>**Verweise auf eine Zone.** `#data?zone=<id>` öffnet die Basis, kreuzt nur diese Zone an und führt zu „Aktualisieren“; eine Zone außerhalb der Abdeckung wird genannt, mit „Land hinzufügen“. Auch die Gründe einer neu zu bauenden Zone zählen: Datei des Zyklus fehlt, gebaut bevor die Datei einer Quelle da war, Datei vorhanden aber Feld „persönlich“ nicht angekreuzt (mit dem Feld neu erstellen), Datei abzulegen. Ein **Hinweis** („Zone ohne Punkte und Strecken: die Quelle enthält sie nicht“) macht die Zone nicht veraltet.
+
 <a id="data-states-pill"></a>**Die Marken.** „Aktuell“: nichts zu tun. „Zyklus überholt“: Der veröffentlichte Zyklus ist älter als der gültige (orange, nach einer Woche rot). „Alter Parser“: von einer älteren Version der Ersteller veröffentlicht. „Über 28 Tage alt“: ein Datensatz ohne Zyklus, vor mehr als 28 Tagen veröffentlicht. „Nicht im Repository“: nichts ist veröffentlicht. Eine Gruppe öffnet sich von selbst, wenn eine ihrer Zeilen Aufmerksamkeit verlangt.
 
 <a id="data-more"></a>**Die weiteren Datensätze.** Höchstens sieben Zeilen pro Gruppe; „n weitere Datensätze“ klappt den Rest und die nur erwogenen oder zurückgestellten Quellen auf (ihr Link, ihre Lizenz, ihr Status).
@@ -65,4 +69,4 @@ Was die Fluggesellschaft für die App veröffentlicht — die Luftfahrtdatenbank
 - **Ohne Starter**: Der Bildschirm wird genauso gelesen; er zeigt, was veröffentlicht ist.
 - **Ein Lesevorgang schlägt fehl**: Der Abschnitt sagt es in einer Zeile, der Rest des Bildschirms wird gezeichnet.
 
-<!-- fr: 7f9f1cdd8829 -->
+<!-- fr: 9615b563e610 -->

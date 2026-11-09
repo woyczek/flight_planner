@@ -260,3 +260,10 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
 - The progress says « Tranche i sur n (60 au plus par construction) »; the update's question says « 78 zones en 2 constructions de 60 au plus, l'une après l'autre ».
 - **A refusal is never « arguments invalides » alone**: `M.refusal` keeps the launcher's `message` (160 characters, no control sign) and `refusedText` writes it after the usual sentence (« Le lanceur dit : … »), in the panel, the notification and the chain. The message is the launcher's own words, not translated.
 - Counter-test: with the threshold removed L49 measures one run of 78.
+
+## 10 November 2026 — the synoptic row, the new reasons, the zone link (SOG-0138, SOG-0143)
+
+- **Synoptic row in the Météo group** (the weather sources are published with the site; this one is made on the workstation): a module-own flow like the route row (`world.js`), taking part in `busyNow()` only **while it builds** (a status read is silent and must not grey the screen), and **not in the chain nor the journal**.
+  The status is read once at the opening (not after other operations: it moves only by its own build). The button is grey **while the state is being read** (`data-phase`), which is also how the case waits for it.
+- **`source-unread` is not buildable and the update says so**: building would give the same zone without points; the cure is the « personnel » box (declared by the pilot, never by the page). The update's second sentence now reads « n ne se construisent pas encore : zone : raison » (it used to say « attendent un fichier de Téléchargements », wrong for these codes).
+- **`#data?zone=<id>` sets the selection to that zone alone** (not added to the others): the link's purpose is to rebuild that zone; a zone not in the coverage is only said (nothing is added by a link).

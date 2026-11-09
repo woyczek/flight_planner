@@ -20,6 +20,10 @@ Lo que la aerolínea publica para la aplicación —la base aeronáutica, los pr
 
 <a id="data-group-weather"></a>**Meteorología.** La meteorología mundial y las rutas NAT se publican con el sitio: estas líneas no tienen ciclo ni etiqueta.
 
+<a id="data-world"></a>**Sinóptico mundial (GFS).** En el grupo Meteorología, una fila para la previsión sinóptica mundial del mapa de Atmósfera: su estado («Ausente del puesto» mientras no haya ninguna publicada, «Más de 12 h» al envejecer), la pasada GFS, el número de pasos, su tamaño y su edad. «Construir» la hace en el puesto (unos 2 minutos la primera vez; unos segundos si la pasada ya está, entonces se reutiliza). Se publica **localmente**, en data/local/weather/world/: nunca sincronizada ni confirmada. Un fallo dice su motivo (ninguna pasada publicada o NOAA inaccesible, carpeta no válida, tiempo agotado) y la publicación anterior se queda.
+
+<a id="data-zone-link"></a>**Enlaces a una zona.** `#data?zone=<id>` abre la base, marca solo esa zona y lleva a «Actualizar»; una zona fuera de la cobertura se dice, con «Añadir un país». También cuentan los motivos de una zona por reconstruir: archivo del ciclo ausente, construida antes de que el archivo de una fuente estuviera, archivo presente pero casilla «personal» sin marcar (reconstruir con la casilla), archivo por dejar. Un **aviso** («zona sin puntos ni aerovías: la fuente no los incluye») no hace caducar la zona.
+
 <a id="data-states-pill"></a>**Las etiquetas.** «Al día»: nada que hacer. «Ciclo superado»: el ciclo publicado es anterior al ciclo vigente (naranja, rojo pasada una semana). «Analizador antiguo»: publicado por una versión anterior de los constructores. «Más de 28 días»: un conjunto sin ciclo, publicado hace más de 28 días. «Ausente del repositorio»: no hay nada publicado. Un grupo se abre solo cuando una de sus líneas requiere atención.
 
 <a id="data-more"></a>**Los demás conjuntos.** Como máximo siete líneas por grupo; «n conjuntos más» despliega el resto y las fuentes solo consideradas o descartadas (su enlace, su licencia, su estado).
@@ -65,4 +69,4 @@ Lo que la aerolínea publica para la aplicación —la base aeronáutica, los pr
 - **Sin lanzador**: la pantalla se lee igual; muestra lo que está publicado.
 - **Una lectura que falla**: la sección lo dice en una línea y el resto de la pantalla se dibuja.
 
-<!-- fr: 7f9f1cdd8829 -->
+<!-- fr: 9615b563e610 -->

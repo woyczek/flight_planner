@@ -4290,6 +4290,73 @@ def l48(c):
     c.check_errors()
 
 
+@case('L50', 'Données: the « Synoptique monde (GFS) » row reads weather/world { action: status } (state, run, weight), « Construire » builds it, the publication is said local to the workstation', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0138 (AeroDB weather/world): a row in the Météo group — absent until a publication exists, then the run, the steps, the weight and the age; « Construire » = action build (128 s the first time, 13 s when the run is already there); the publication is in data/local/weather/world/, never synchronised; a failure says its reason')
+def l50(c):
+    lang = c.lang
+    WT = lambda key: _trow(key, lang, after='  world: {')
+    now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
+    run = now.replace(hour=6, minute=0, second=0).isoformat().replace('+00:00', 'Z')
+    absent = _view('done', step='Terminé', result={'ok': True, 'exists': False})
+    built = _view('done', step='Terminé', jid='j2', result={'ok': True, 'kept': True, 'exists': True, 'run': run, 'built': now.isoformat().replace('+00:00', 'Z'), 'steps': 25, 'files': 51, 'bytes': 17100000, 'age': 0, 'seconds': 13, 'times': [run, run]})
+    failed = _view('done', step='Terminé', jid='j3', result={'ok': False, 'exists': True, 'reason': 'no-run'})
+    st = _launcher(c, [absent], verbs=_VERBS + ['weather/world'])
+    cfg, _ = _fixture()
+    _open(c, cfg)
+    _all_open(c)
+    c.until("!!document.querySelector('[data-set=world]')", timeout=8000, what='the world synoptic row')
+    row = lambda: c.js("(() => { const r = document.querySelector('[data-set=world]'); return [r.dataset.state, r.closest('details.f-group').dataset.group] })()")
+    c.eq(row(), ['absent', 'weather'], 'a row in the weather group; nothing published here yet: absent', what='row')
+    c.eq(norm(c.text('[data-set=world] summary b')), norm(WT('name')), 'its name', what='name')
+    c.eq(norm(c.text('[data-world-meta]')), norm(WT('none')), 'no synoptic on this workstation', what='meta')
+    c.eq(_posts(st, 'world')[0]['args'], {'action': 'status'}, 'the state is read at the opening: action status (no network)', what='status body')
+    c.until("!!document.querySelector('[data-set=world][data-phase=\"\"]')", timeout=3000, what='the row is drawn')
+    for _ in range(40):   # the state read takes a poll of the job: wait until it is over
+        if _posts(st, 'world') and c.js("document.querySelector('[data-set=world]').dataset.phase") == '':
+            break
+        c.wait(250)
+    c.js("document.querySelector('[data-set=world]').open = true")
+    c.eq(norm(c.text('[data-world-local]')), norm(WT('local')), 'the publication is said local to the workstation, never synchronised', what='local')
+    # ---- Construire: action build; the same run already there is reused (13 s)
+    st['views'] = [built]
+    st['i'] = 0
+    st['start'] = (200, {'job': 'j2'})
+    c.js("document.querySelector('[data-set=world]').open = true")
+    c.js("document.querySelector('[data-verb=world-build]').scrollIntoView({block:'center'})")
+    c.tap('[data-verb=world-build]')
+    c.until('!!document.querySelector("[data-world-result][data-result=done]")', timeout=12000, what='the end of the build')
+    c.eq(_posts(st, 'world')[-1]['args'], {'action': 'build'}, 'the gesture builds', what='build body')
+    size = _bytes(c, 17100000 / 1024)
+    c.ok('25' in c.text('[data-world-result]') and size in c.text('[data-world-result]') and '13' in c.text('[data-world-result]'), c.text('[data-world-result]'), 'the end says the steps, the weight and the seconds')
+    c.eq(row()[0], 'ok', 'the row is up to date once published', what='row after')
+    c.ok(size in c.text('[data-world-meta]') and '25' in c.text('[data-world-meta]'), c.text('[data-world-meta]'), 'the summary says the run, the steps and the weight')
+    # ---- a failure says its reason, the publication stays
+    st['views'] = [failed]
+    st['i'] = 0
+    st['start'] = (200, {'job': 'j3'})
+    c.tap('[data-verb=world-build]')
+    c.until('!!document.querySelector("[data-world-result][data-result=failed]")', timeout=12000, what='the failure')
+    c.eq(norm(c.text('[data-world-result]')), norm(_trow('no-run', lang, after='  world: {')), 'no run published or NOAA unreachable: the old publication stays', what='reason')
+    c.eq(row()[0], 'ok', 'the row keeps the old publication', what='row kept')
+    c.check_errors()
+
+
+@case('L51', 'Données: without weather/world in regen/verbs the synoptic row is grey with its reason and nothing is sent', 'L', tags=('data',),
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0138: the verb is read from regen/verbs like the others; an old launcher greys « Construire » with « ne connaît pas encore cette opération »')
+def l51(c):
+    st = _launcher(c, [], verbs=_VERBS)
+    cfg, _ = _fixture()
+    _open(c, cfg)
+    _all_open(c)
+    c.until("!!document.querySelector('[data-set=world]')", timeout=8000, what='the row')
+    c.js("document.querySelector('[data-set=world]').open = true")
+    c.eq([c.js("document.querySelector('[data-verb=world-build]').disabled"), c.attr('[data-set=world] [data-reason]', 'data-reason')], [True, 'unknown-verb'], 'grey, the launcher does not know the verb', what='grey')
+    c.eq(len(_posts(st, 'world')), 0, 'nothing is sent', what='posts')
+    c.check_errors()
+
+
 def _rect_open(c):
     """The Données screen with the base map drawn (flat zones side by side: gb, es west of 0°, fr, us east), everything deselected."""
     c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/'), lambda r: r.fulfill(status=200, content_type='application/json', body=_ZSTYLE))

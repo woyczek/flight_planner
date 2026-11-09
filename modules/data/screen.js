@@ -35,6 +35,10 @@ import {
   wantZone
 } from './update.js';
 import {
+  readWorld,
+  worldRowHtml
+} from './world.js';
+import {
   packsHtml
 } from './packs.js';
 import {
@@ -211,6 +215,10 @@ export async function load(fresh = false) {
   render();
   showRoute();
   showZone();
+  if (!S.world.read) { // l'état du synoptique monde que le lanceur tient (sans réseau), lu une fois à l'ouverture (SOG-0138)
+    S.world.read = true;
+    readWorld();
+  }
   // première ouverture : toutes les zones publiées sont cochées et la couverture est écrite une fois (SPEC § 3.2) ; rien n'est
   // écrit d'une lecture dégradée (zones() en panne) ni d'un dépôt qui ne publie encore aucune zone
   if (!cov.stored && list && cov.ids.length) {
@@ -420,7 +428,7 @@ function groupsHtml() {
     const open = g.id in S.manual ? S.manual[g.id] : g.attention;
     return `<details class="f-group" data-group="${g.id}"${open ? ' open' : ''}><summary><span>${esc(tt(TX.groups[g.id]))}</span><i class="f-status-dot" data-attn${g.attention ? '' : ' hidden'} title="${esc(tt(TX.attention))}"></i></summary>
       ${panelsHtml(g.id)}
-      ${g.rows.map(rowHtml).join('') || (g.more.length || g.id === 'proc' ? '' : `<p class="f-muted">${esc(tt(TX.groupEmpty))}</p>`)}${g.id === 'proc' ? routeRowHtml() : ''}
+      ${g.rows.map(rowHtml).join('') || (g.more.length || g.id === 'proc' || g.id === 'weather' ? '' : `<p class="f-muted">${esc(tt(TX.groupEmpty))}</p>`)}${g.id === 'proc' ? routeRowHtml() : g.id === 'weather' ? worldRowHtml() : ''}
       ${g.more.length ? `<details class="d-more" data-more><summary>${esc(tt(TX.moreSets, { n: g.more.length }))}</summary>${g.more.map(rowHtml).join('')}</details>` : ''}</details>`;
   }).join('')}`;
 }

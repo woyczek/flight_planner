@@ -34,6 +34,10 @@ import {
   toggleWhy
 } from './status.js';
 import {
+  startWorld,
+  worldInit
+} from './world.js';
+import {
   addPack,
   addPackZone
 } from './packs.js';
@@ -86,7 +90,7 @@ export const meta = {
   files: ['model.js', 'model_screen.js', 'model_sets.js', 'model_results.js', 'model_chain.js', 'model_map.js', 'model_publish.js',
     'model_kit.js', 'model_inventory.js', 'texts.js', 'state.js', 'screen.js', 'panels.js', 'zonemap.js', 'follow.js', 'publish.js',
     'chain.js', 'inventory.js', 'model_route.js', 'model_update.js', 'model_status.js', 'model_packs.js', 'route.js', 'update.js',
-    'status.js', 'packs.js',
+    'status.js', 'packs.js', 'model_world.js', 'world.js',
     '../maps/lib/map_base.js?v=0', '../maps/render.js?v=0', '../../frame/lib/dom.js', '../../frame/lib/time.js'
   ],
   // la carte des zones : MapLibre et les contours, chargés à la demande par le socle de carte (comme la Météo) ; les tuiles, appelées par MapLibre lui-même
@@ -149,6 +153,7 @@ function onClick(e) {
   if (v.dataset.verb === 'pickup' || v.dataset.verb === 'pickup-replan') return startPickup(v.dataset.zones);
   if (v.dataset.verb === 'stop-chain') return stopChain();
   if (v.dataset.verb === 'update') return startUpdate();
+  if (v.dataset.verb === 'world-build') return startWorld();
   if (v.dataset.verb === 'select-stale') return selectStale();
   if (v.dataset.verb === 'select-none') return selectNone();
   if (v.dataset.verb === 'route-import') return startRoute();
@@ -217,6 +222,7 @@ export async function mount(el, ctx) {
     statusP: null, // la lecture en cours (une seule à la fois)
     statusAsked: false, // l'état a été demandé à l'ouverture
     whyOpen: new Set(),
+    world: worldInit(), // la ligne « Synoptique monde (GFS) » : phase, état lu, dernière fin (world.js)
     zoneAsked: false, // le lien #data?zone=<id> a été lu (update.js)
     zoneLink: null,
     packOpen: new Set(), // les filtres thématiques dont le pli est ouvert (SOG-0065) // les zones dont la pastille montre ses raisons

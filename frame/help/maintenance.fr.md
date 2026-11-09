@@ -43,6 +43,10 @@ Ce que la compagnie publie pour l'appli — la base aéronautique, les procédur
 
 <a id="data-group-weather"></a>**Météo.** La météo mondiale et les routes NAT sont publiées avec le site : ces lignes n'ont ni cycle ni pastille.
 
+<a id="data-world"></a>**Synoptique monde (GFS).** Dans le groupe Météo, une ligne pour la prévision synoptique mondiale de la carte Atmosphère : son état (« Absent du poste » tant qu'aucune n'est publiée, « Plus de 12 h » quand elle vieillit), le run GFS, le nombre d'étapes, son poids et son âge. « Construire » la fait sur le poste (environ 2 minutes la première fois ; quelques secondes si le run est déjà là, il est alors réutilisé). Elle est publiée **localement**, dans data/local/weather/world/ : jamais synchronisée ni commitée. Un échec dit sa raison (pas de run publié ou NOAA injoignable, dossier invalide, délai dépassé) et l'ancienne publication reste.
+
+<a id="data-zone-link"></a>**Les liens vers une zone.** `#data?zone=<id>` ouvre la base, coche cette zone seule et amène à « Mettre à jour » ; une zone hors de la couverture est dite, avec « Ajouter un pays ». Les raisons d'une zone à reconstruire comptent aussi : fichier du cycle absent, construite avant que le fichier d'une source soit là, fichier présent mais case « personnel » non cochée (reconstruire avec la case), fichier à déposer. Un **avis** (« zone sans points ni voies : la source ne les porte pas ») ne rend pas la zone périmée.
+
 <a id="data-states-pill"></a>**Les pastilles.** « À jour » : rien à faire. « Cycle dépassé » : le cycle publié est plus ancien que le cycle en vigueur (orange, rouge au-delà d'une semaine). « Parseur ancien » : publié par une version plus ancienne des constructeurs. « Plus de 28 jours » : un jeu sans cycle, publié il y a plus de 28 jours. « Absent du dépôt » : rien n'est publié. Un groupe s'ouvre de lui-même quand une de ses lignes demande attention.
 
 <a id="data-more"></a>**Les autres jeux.** Au plus sept lignes par groupe ; « n autres jeux » déplie le reste et les sources seulement envisagées ou écartées (leur lien, leur licence, leur statut).

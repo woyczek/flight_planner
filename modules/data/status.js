@@ -84,7 +84,8 @@ export function zoneState(id) {
 /** Les raisons d'une zone, une phrase chacune. */
 export const zoneReasons = id => (S.status?.zones && Object.hasOwn(S.status.zones, id) ? S.status.zones[id].reasons : []).map(reasonText);
 /** Les avis d'une zone (jamais une raison d'être périmée) : « Zone sans points ni voies : la source ne les porte pas (openAIP) » ; une phrase chacun. */
-export const zoneNotices = id => (S.status?.zones && Object.hasOwn(S.status.zones, id) ? S.status.zones[id].notices || [] : []).map(reasonText);
+export const zoneNotices = id => (S.status?.zones && Object.hasOwn(S.status.zones, id) ? S.status.zones[id].notices || [] : []).map(
+  reasonText);
 /** La pastille d'état d'une zone et, ouverte, ses raisons : la pastille d'une zone à reconstruire, jamais construite ou en échec est un bouton (le toucher dit pourquoi) ; vide sans état connu. */
 export function zoneStateHtml(id) {
   const st = zoneState(id);

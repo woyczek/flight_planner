@@ -11,4 +11,4 @@ export * from './model_route.js';
 export * from './model_update.js';
 export * from './model_status.js';
 export * from './model_packs.js';
-export * from './model_packs.js';
+export * from './model_world.js';

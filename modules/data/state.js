@@ -38,7 +38,8 @@ export async function ask(name) {
 /** Une opération tourne-t-elle sur ce poste, de n'importe quel jeu ? Le nôtre, un autre travail du lanceur, la question d'une purge ou d'une
  *  publication de fiches, une publication : une opération à la fois, tous panneaux confondus. */
 export function busyNow() {
-  return !!S.run || !!S.other || !!S.asking || !!S.pub.phase || !!S.chain || !!S.route?.phase || !!S.updating || !!S.move
+  return !!S.run || !!S.other || !!S.asking || !!S.pub.phase || !!S.chain || !!S.route?.phase || S.world?.phase === 'running' || !!S
+    .updating || !!S.move
     ?.phase; // S.move.phase : le rangement des sources brutes (SOG-0030), plan ou exécution ou question
 }
 /** La phrase d'un refus de départ (M.refusal) : celle de sa clé, puis la raison que le lanceur a donnée (« Le lanceur dit : … »). */

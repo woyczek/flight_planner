@@ -329,6 +329,62 @@ export const TX = {
       unknown: ['vide', 'empty', 'leer', 'vacío']
     }
   },
+  // la ligne « Synoptique monde (GFS) » (world.js, SOG-0138)
+  world: {
+    name: ['Synoptique monde (GFS)', 'World synoptic (GFS)', 'Welt-Synoptik (GFS)', 'Sinóptico mundial (GFS)'],
+    none: ['Aucun synoptique sur ce poste', 'No synoptic on this workstation', 'Keine Synoptik auf diesem Rechner',
+      'Ningún sinóptico en este puesto'
+    ],
+    run: ['run {r}', 'run {r}', 'Lauf {r}', 'pasada {r}'],
+    steps: ['{n} étapes', '{n} steps', '{n} Schritte', '{n} pasos'],
+    age: ['construit il y a {n} h', 'built {n} h ago', 'vor {n} Std. erstellt', 'construido hace {n} h'],
+    ageNow: ['construit à l’instant', 'built just now', 'gerade erstellt', 'construido ahora'],
+    state: {
+      ok: ['À jour', 'Up to date', 'Aktuell', 'Al día'],
+      old: ['Plus de 12 h', 'Over 12 h old', 'Über 12 Std. alt', 'Más de 12 h'],
+      absent: ['Absent du poste', 'Not on this workstation', 'Nicht auf diesem Rechner', 'Ausente del puesto']
+    },
+    hint: [
+      'Prévision synoptique mondiale (NOAA GFS 1°, maille de 5°, jusqu’à +72 h) pour la couche mondiale de la carte Atmosphère. Source : NOAA GFS par NOMADS, sans clé (domaine public).',
+      'World synoptic forecast (NOAA GFS 1°, 5° mesh, up to +72 h) for the world layer of the Atmosphere map. Source: NOAA GFS through NOMADS, no key (public domain).',
+      'Synoptische Weltvorhersage (NOAA GFS 1°, 5°-Gitter, bis +72 Std.) für die Weltebene der Atmosphärenkarte. Quelle: NOAA GFS über NOMADS, ohne Schlüssel (gemeinfrei).',
+      'Previsión sinóptica mundial (NOAA GFS 1°, malla de 5°, hasta +72 h) para la capa mundial del mapa de Atmósfera. Fuente: NOAA GFS por NOMADS, sin clave (dominio público).'
+    ],
+    local: [
+      'Publiée localement, sur ce poste (data/local/weather/world/) : jamais synchronisée ni commitée. Première construction : environ 2 minutes ; si le run est déjà là, quelques secondes.',
+      'Published locally, on this workstation (data/local/weather/world/): never synchronised nor committed. First build: about 2 minutes; if the run is already there, a few seconds.',
+      'Lokal auf diesem Rechner veröffentlicht (data/local/weather/world/): nie synchronisiert oder committet. Erster Aufbau: etwa 2 Minuten; ist der Lauf schon da, wenige Sekunden.',
+      'Publicado localmente, en este puesto (data/local/weather/world/): nunca sincronizado ni confirmado. Primera construcción: unos 2 minutos; si la pasada ya está, unos segundos.'
+    ],
+    build: ['Construire', 'Build', 'Aufbauen', 'Construir'],
+    running: ['Construction en cours…', 'Building…', 'Aufbau läuft …', 'Construyendo…'],
+    done: ['Construit : run {r}, {n} étapes, {s} ({t} s)', 'Built: run {r}, {n} steps, {s} ({t} s)',
+      'Aufgebaut: Lauf {r}, {n} Schritte, {s} ({t} s)', 'Construido: pasada {r}, {n} pasos, {s} ({t} s)'
+    ],
+    kept: ['Le run était déjà publié : réutilisé.', 'The run was already published: reused.',
+      'Der Lauf war schon veröffentlicht: wiederverwendet.', 'La pasada ya estaba publicada: reutilizada.'
+    ],
+    why: {
+      'no-run': ['Aucun run publié ou NOAA injoignable : l’ancienne publication reste.',
+        'No run published or NOAA unreachable: the old publication stays.',
+        'Kein Lauf veröffentlicht oder NOAA nicht erreichbar: die alte Veröffentlichung bleibt.',
+        'Ninguna pasada publicada o NOAA inaccesible: la publicación anterior se queda.'
+      ],
+      invalid: ['Le dossier produit n’est pas une prévision valide : rien n’a été remplacé.',
+        'The produced folder is not a valid forecast: nothing was replaced.',
+        'Der erzeugte Ordner ist keine gültige Vorhersage: nichts wurde ersetzt.',
+        'La carpeta producida no es una previsión válida: no se reemplazó nada.'
+      ],
+      timeout: ['Délai dépassé (15 minutes) : l’ancienne publication reste.', 'Time exceeded (15 minutes): the old publication stays.',
+        'Zeit überschritten (15 Minuten): die alte Veröffentlichung bleibt.',
+        'Tiempo agotado (15 minutos): la publicación anterior se queda.'
+      ],
+      cancelled: ['Construction arrêtée.', 'Build stopped.', 'Aufbau angehalten.', 'Construcción detenida.'],
+      failed: ['La construction a échoué : rien n’a été remplacé.', 'The build failed: nothing was replaced.',
+        'Der Aufbau ist fehlgeschlagen: nichts wurde ersetzt.', 'La construcción falló: no se reemplazó nada.'
+      ]
+    }
+  },
   // la ligne « Route (RAD, points FRA) » (route.js, SOG-0125)
   route: {
     name: ['Route (RAD, points FRA)', 'Route (RAD, FRA points)', 'Route (RAD, FRA-Punkte)', 'Ruta (RAD, puntos FRA)'],
