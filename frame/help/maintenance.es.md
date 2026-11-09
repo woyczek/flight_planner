@@ -89,7 +89,7 @@ La flota de la compañía, tal como la leen las demás pantallas: el informe (ma
 
 ## Cómo usarlo
 
-<a id="aircraft-fleet"></a>**La flota.** Una fila por aeronave: matrícula, tipo, indicativos, base, «fuera de servicio» cuando lo está. La búsqueda filtra por matrícula, tipo, un indicativo o la base; se muestran siete filas, «N más» despliega el resto. «Añadir» abre una aeronave vacía.
+<a id="aircraft-fleet"></a>**La flota.** Una fila por aeronave: matrícula, tipo, indicativos, base, «fuera de servicio» cuando lo está. La búsqueda filtra por matrícula, tipo, un indicativo o la base; se muestran siete filas, «N más» despliega el resto. «Añadir» abre una aeronave vacía. La flota es la de la compañía elegida en Ajustes › Compañía; cambiar de compañía cambia la lista, y una aeronave añadida va a la flota de esa compañía.
 
 <a id="aircraft-edit"></a>**Modificar una aeronave.** Un toque en una fila la abre: identidad (matrícula, tipo, variante, operador) y operación (indicativos separados por comas, base, número táctico, en servicio). Bajo los campos, una línea dice lo que va a cambiar («2 campos cambiados: base, indicativos»); «Guardar» lo escribe. Desde dos caracteres (mayúsculas o no), el campo Tipo propone los tipos de la base y las fichas que coinciden («H145 · Airbus H145 · ficha H145»); un toque, o ↓ y luego Intro, escribe el código del tipo. Un tipo que la base no conoce se guarda tal cual, y la pantalla lo dice. La matrícula es la clave: dos aeronaves no pueden compartirla. La ubicación que da el sitio queda como está. «Retirar» pregunta, y luego la aeronave sale de la flota; su ficha de rendimiento, si la tiene, se conserva.
 
@@ -104,7 +104,7 @@ La flota de la compañía, tal como la leen las demás pantallas: el informe (ma
 - El módulo Sitio también actualiza la flota a partir de la página «Flota» del sitio pegada: los dos escriben el mismo archivo, cada guardado relee el archivo justo antes y cambia una sola aeronave.
 - Nada sale antes de la próxima sincronización.
 
-<!-- fr: 3b420f74a90a -->
+<!-- fr: c1980d46ccb3 -->
 
 <!-- chapter: settings -->
 # Ajustes

@@ -112,3 +112,7 @@
   the flight tool adjusts the flight, not the data). A fold of the existing card rather than a new card (the editor is already over
   seven elements; rule 13); inline SVG, colours from the frame's chart tokens so the design and the night follow; the measured points
   are the ones on screen (never kept). M30.
+- **9 Nov 2026 — the fleet of the current airline** (V3 spec § 10.38 step 1): the path is the airline's `root` + `fleet.json`,
+  checked by shape (never a path taken as is from data, audit 157); « Personnel » writes under `pilot/<trigram>/airline/perso/`, so
+  the module declares `pilot/` like Fuel. The Fleet view of Maintenance is the « Compagnie › Flotte » of the lot (no company module).
+  M32.

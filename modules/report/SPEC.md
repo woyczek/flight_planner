@@ -71,6 +71,8 @@ what is missing is said in the Result step, never blocking.
 
 ## 3. Saving
 
+- **Airline** (V3 spec § 10.38 step 1): the record carries `airline`, the code of the current airline (`ctx.airline.code`,
+  `default` without an index); a record already saved keeps its own (G5).
 - **Number** at the first save (V2 `crId`): with a mission identifier, `CR<mission>-<next attempt>` (`CRM-016-2`);
   without, the next free number of the family's letter, `CR<letter>-<A01…>-0` (`CRM-A03-0`). Numbers already taken are
   read from the paths of `cr/reports/` and from the `missionId` entries of `cr/missions.yaml` (V2 reports).

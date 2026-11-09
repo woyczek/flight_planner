@@ -415,10 +415,16 @@ async function save() {
   m.statistics = M.computeStatistics(m);
   if (tri) m.metadata.reportedBy = tri;
   const path = S.path || reportPath(m),
-    prev = S.path ? (await S.ctx.data.get(path)) || {} : {};
+    prev = S.path ? (await S.ctx.data.get(path)) || {} : {},
+    // § 10.38 étape 1 : le CR porte le code de la compagnie courante (ctx.airline.code) ; un CR déjà enregistré garde la sienne
+    code = v => typeof v === 'string' && /^[a-z0-9]{2,8}$/.test(v) ? v : '',
+    airline = code(prev.airline) || code(S.ctx.airline?.code);
   await S.ctx.data.put(path, {
     ...prev,
     ...structuredClone(m),
+    ...(airline ? {
+      airline
+    } : {}),
     schema: SCHEMA,
     updated_at: new Date().toISOString(),
     by: tri || prev.by || ''

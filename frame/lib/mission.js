@@ -149,6 +149,9 @@ const safeFolder = f => f && f.length <= 200 && f.split('/').every(p => SEGMENT.
 const safeFile = f => f && f.length <= 120 && SEGMENT.test(f) && /\.ya?ml$/i.test(f) ? f : '';
 
 /** Les lignes du registre (voir l'en-tête). */
+/** La compagnie d'une mission (§ 10.38 étape 1) : le code de son champ airline (^[a-z0-9]{2,8}$, la règle des codes du cadre), ''
+ *  sans champ ou pour un code d'une autre forme (une entrée non fiable : la mission va alors à la première compagnie de l'index). */
+export const airlineCode = v => typeof v === 'string' && /^[a-z0-9]{2,8}$/.test(v.trim()) ? v.trim() : '';
 export function readRegistry(doc) {
   return (Array.isArray(doc?.missions) ? doc.missions : []).filter(x => x && clean(x.id)).map(x => {
     const id = clean(x.id);
@@ -166,6 +169,7 @@ export function readRegistry(doc) {
       folder: safeFolder(clean(x.folder)),
       file: safeFile(clean((Array.isArray(x.files) ? x.files : [])[0]) || `mission${id}.yaml`),
       organisation: x.organisation === true || /Z$/.test(id),
+      airline: airlineCode(x.airline),
       // ce que la recherche lit en plus (SOG-0009) : l'activité (type, sous-type : MEDEVAC, BFM…), les indicatifs, les équipes
       // (nom, service, type : SAMU66, SAMU, H135) ; des textes, bornés (le registre s'écrit par n'importe quel pilote)
       kind: clean(x.type),
@@ -214,6 +218,7 @@ export function rowOfMission(doc, path) {
     folder: where.folder,
     file: where.file,
     organisation: m.organisation,
+    airline: airlineCode(doc?.mission?.airline ?? doc?.airline),
     kind: cut(m.type, 40),
     subtype: cut(m.subtype, 40),
     callsigns: m.aircraft.map(a => cut(a.callsign, 40)).filter(Boolean).slice(0, 20),

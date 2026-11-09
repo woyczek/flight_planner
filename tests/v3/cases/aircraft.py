@@ -838,6 +838,43 @@ def m31(c):
     c.eq(sheet_of(c, 'XMES')['climb']['rpmNominal'], 7100, 'nothing written before « Enregistrer » and « Appliquer »', what='stored')
 
 
+# § 10.38 step 1: two invented airlines of one repository (aaa: an EC25, bbb: a C-130J), the index the migration writes
+def airline_docs(index=True):
+    """The documents of two airlines (never the user's): index, settings and fleet of aaa and bbb; index=False: the airline of today only."""
+    if not index:
+        return []
+    return [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}, {'code': 'bbb', 'name': 'Bravo Air'}]}, 'document'],
+            ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air'}, 'document'],
+            ['airline/aaa/fleet.json', {'schema': 1, 'aircraft': [{'registration': 'F-AAAA', 'type': 'EC25'}]}, 'document'],
+            ['airline/bbb/settings.json', {'schema': 1, 'name': 'Bravo Air'}, 'document'],
+            ['airline/bbb/fleet.json', {'schema': 1, 'aircraft': [{'registration': 'F-BBBB', 'type': 'C30J'}]}, 'document']]
+
+
+def set_airline(c, code):
+    """Chooses the current airline as Réglages › Compagnie does (FrameData.setAirline: the event frame-data-airline)."""
+    c.eq(c.js("(code) => window.FrameData.setAirline(code)", code), True, f'the airline {code} is chosen', what='setAirline')
+
+
+@case('M32', 'Fleet: the fleet of the current airline (airline/<code>/fleet.json), followed when the airline changes, added to in its own file; without an index, airline/fleet.json',
+      'M', tags=('aircraft',), designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.38 step 1: the fleet screen reads and writes the fleet of FrameData.airline() (root + fleet.json); frame-data-airline redraws; no index: as before')
+def m32(c):
+    c.open('aircraft', docs=LEVEL3 + airline_docs(), wait=False, app='maintenance')
+    c.until(f"document.querySelectorAll('{M} [data-reg]').length === 1", timeout=15000, what='the fleet of Alpha Air')
+    c.eq(regs(c), ['F-AAAA'], 'Alpha Air: F-AAAA', what='aaa')
+    set_airline(c, 'bbb')
+    c.until(f"(document.querySelector('{M} [data-reg]')?.dataset.reg) === 'F-BBBB'", what='Bravo Air: F-BBBB')
+    c.tap(f'{M} [data-do="add"]')
+    c.until(f"!!document.querySelector('{M} [data-pane=edit]')", what='the editor opens')
+    c.page.fill(f'{M} [data-f="registration"]', 'F-BNEW')
+    c.page.fill(f'{M} [data-f="type"]', 'C30J')
+    c.tap(f'{M} [data-do="save"]')
+    d = c.until_doc('airline/bbb/fleet.json', lambda d: any(a.get('registration') == 'F-BNEW' for a in (d or {}).get('aircraft') or []), 'written in Bravo Air\'s fleet',
+                    timeout=8000)
+    c.eq(sorted(a['registration'] for a in d['aircraft']), ['F-BBBB', 'F-BNEW'], 'Bravo Air\'s fleet, nothing else', what='bbb fleet')
+    c.eq(sorted(a['registration'] for a in c.doc('airline/aaa/fleet.json')['aircraft']), ['F-AAAA'], 'Alpha Air\'s fleet untouched', what='aaa fleet')
+
+
 @case('M25', 'Sheets: the fuel is read and typed in the unit chosen (kg, lb, l, US gal); the sheet keeps its stored unit, an untouched value unchanged',
       'M', tags=('aircraft',), designs=('standard',), screens=False, langs4=True,
       rule='SOG-0032 (« toujours pas de possibilité de lire / écrire en kg ou lb/h ? »): the editor reads and writes in the unit chosen, by '

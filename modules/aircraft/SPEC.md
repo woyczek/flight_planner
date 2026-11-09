@@ -34,6 +34,11 @@ place of the list (one card, « Retour » goes back), one editor at a time; the 
 | **Flotte** | a search; the aircraft (one row each: registration, sheet, callsigns, base, state), seven then « N autres », « Ajouter » (M1); the personal ones marked (L3); the retired folded under « Retirés (n) » (L1); « Vus dans vos vols » (L4) |
 | **Fiches** | a search; the sheets by family (helicopters, turboprops, jets, pistons, others), what each lacks, then the company's types without a sheet; « Importer un fichier », « Coller un texte », « Nouvelle fiche » (M6) |
 
+**The fleet of the current airline** (V3 spec § 10.38 step 1): the Fleet view reads and writes the `fleet.json` of the folder
+`FrameData.airline()` gives (`airline/<code>/`, `airline/` without an index, the personal folder for « Personnel »; a folder of another
+shape falls back to `airline/fleet.json`), follows it, and on `frame-data-airline` reads the new airline's fleet (an open editor is
+closed). The module declares the writes `airline/` and `pilot/` (merge `record`, as Réglages and Fuel) (M32; M1, M2 without index).
+
 ## 3. The aircraft (an instance of a sheet)
 
 - **Fields** (schema 2 of `fleet.json`, L1): `registration` (the key, unique in its fleet), `sheetId` (the sheet it instantiates; empty:

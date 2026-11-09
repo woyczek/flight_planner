@@ -103,7 +103,11 @@ field has the focus (no case).
 Fuel reads the sheets through aerodb, `aircraft().sheets` (`list`, `get`), and never writes them: the editor is the Maintenance
 application's (`modules/aircraft/`, its SPEC § 4). aerodb stamps every changed field with its source and keeps the V2 mirror. Fuel's
 Sheets screen is a read-only list (§ 9; F79), headed by the aircraft search of the step Flight (the same field, `aircraft().search`
-and the same rows; a pick is the flight's aircraft, SOG-0060 (b), F103). The sheets' pure code (formats read and written, completion, merge, ChatGPT) is
+and the same rows; a pick is the flight's aircraft, SOG-0060 (b), F103). **The current airline's fleet** (V3 spec § 10.38 step 1,
+`FrameData.airline().fleet`, read at the mount and again on `frame-data-airline`; untrusted, bounded: registration 2–10 signs, type
+2–4, 200 aircraft): the sheets of its types head the view (« Flotte de Alpha Air »), the other sheets in a folded « Autres fiches (n) »;
+the aircraft search lists its registrations first (aerodb's row when the registry knows it, else a row made from the fleet: type and
+the sheet of that type). An empty fleet, or no index of airlines: the view and the search of today (F106; F79, F103 without index). The sheets' pure code (formats read and written, completion, merge, ChatGPT) is
 aerodb's `aircraft().lib` (§ 8; F10).
 
 ## 6. Invariants

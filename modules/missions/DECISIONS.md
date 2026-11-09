@@ -48,3 +48,6 @@
   no cost when the registry is complete); paths through `missionPath` (two safe segments, the file named after its folder), texts
   bounded (audit 157). « Plus récent que le registre » is not judged: `ctx.data.list` gives no date. N7; counter-test on 94849e74b:
   the 50 files are not listed.
+- **9 Nov 2026 — the list follows the current airline** (V3 spec § 10.38 step 1): no filter before the migration (code `default`),
+  so nothing changes for a repository without index; a mission without `airline` goes to the first airline of the index (the
+  airline of today becomes it at the migration). N8.

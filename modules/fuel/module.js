@@ -740,6 +740,9 @@ const TX = {
     'Company type ({n} aircraft): performance to fill in', 'Typ der Fluggesellschaft ({n} Luftfahrzeug(e)): Leistungen einzutragen',
     'Tipo de la compañía ({n} aeronave(s)): rendimientos por completar'
   ],
+  // § 10.38 : la vue Fiches range d'abord les fiches des types de la flotte de la compagnie courante
+  coSheets: ['Flotte de {a}', 'Fleet of {a}', 'Flotte von {a}', 'Flota de {a}'],
+  otherSheets: ['Autres fiches ({n})', 'Other sheets ({n})', 'Weitere Datenblätter ({n})', 'Otras fichas ({n})'],
   sheetsIntro: ['Fiches de la base partagée, lues ici ; elles se modifient dans Maintenance › Appareils.',
     'Sheets of the shared database, read here; they are edited in Maintenance › Aircraft.',
     'Datenblätter der gemeinsamen Datenbank, hier nur lesbar; bearbeitet wird in Wartung › Luftfahrzeuge.',
@@ -1005,12 +1008,13 @@ async function readSheets() {
   const s = S,
     // types de la compagnie (flotte, référence) : ceux sans fiche sont proposés « à compléter » (comme la V2) ; les deux
     // lectures ensemble
-    [list, co] = await Promise.all([S.A?.sheets ? S.A.sheets.list().catch(() => []) : [], S.A?.fleetTypes ? S.A.fleetTypes()
-      .catch(() => []) : []
+    [list, co, fleet] = await Promise.all([S.A?.sheets ? S.A.sheets.list().catch(() => []) : [], S.A?.fleetTypes ? S.A.fleetTypes()
+      .catch(() => []) : [], readCoFleet()
     ]);
   if (gone(s)) return;
   S.sheets = list;
   S.coTypes = co;
+  S.coFleet = fleet; // § 10.38 : la flotte de la compagnie courante (choix de l'appareil, vue Fiches)
 }
 /** Écrit le vol courant (après un temps calme) : relu juste avant, seuls les champs de fuel remplacés (et dans progress
  *  ses seules clés : progress.actual appartient au cadre), le reste gardé tel qu'il est (frame/lib/current_flight.js). */
@@ -1496,6 +1500,7 @@ function climbSvg(G, box) {
 // couleurs dans --sog-chart-* (suivent le design et la nuit sans redessin)
 const STYLE = `
 [data-module="fuel"] .fu-g3{--f-min:96px}
+[data-module="fuel"] details.fu-others>summary{cursor:pointer;margin:10px 0 4px;font-weight:600}
 /* SOG-0058 : libellé à gauche dans une colonne fixe, valeur à droite (l'unité dans le libellé) ; la même grille sur la carte Météo et
    les réglages du devis : un libellé long passe à la ligne sans décaler les champs ; plusieurs couples par ligne sur un grand écran */
 [data-module="fuel"] .fu-pairs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,20em),1fr));gap:6px 16px}
@@ -2736,8 +2741,27 @@ async function acResults(text) {
   if (!S.A?.search) return box.innerHTML = `<p class="f-muted">${esc(tt(TX.acNoRegistry))}</p>`;
   const s = S,
     seq = S.acSeq = (S.acSeq || 0) + 1,
-    hits = await S.A.search(text, 30).catch(() => []);
+    found = await S.A.search(text, 30).catch(() => []);
   if (gone(s) || seq !== S.acSeq || !S.body) return;
+  // § 10.38 : les appareils de la flotte de la compagnie courante d'abord (la ligne d'aerodb s'il connaît l'immatriculation, sinon une
+  // ligne faite de la flotte : son type, la fiche de ce type s'il y en a une) ; flotte vide : la recherche comme avant
+  const fold = v => String(v || '').toUpperCase(),
+    q = fold(text).trim(),
+    canon = c => fold(S.A?.canonical?.(c) || c),
+    co = (S.coFleet?.aircraft || []).filter(a => !q || [a.registration, a.type, a.callsign].some(v => fold(v).includes(q))),
+    regs = new Set(co.map(a => a.registration)),
+    coHits = co.map(a => found.find(h => h.registration === a.registration) || {
+      kind: 'aircraft',
+      source: 'fleet',
+      key: `co:${a.registration}`,
+      label: [a.registration, a.type, a.callsign].filter(Boolean).join(' — '),
+      sheetId: S.sheets.find(x => canon(x.icao || x.type || x.id) === canon(a.type))?.id || '',
+      type: a.type,
+      registration: a.registration,
+      callsign: a.callsign,
+      name: a.type || a.registration
+    }),
+    hits = [...coHits, ...found.filter(h => !regs.has(h.registration))].slice(0, 30);
   S.acHits = new Map(hits.map(h => [h.key, h]));
   const last = !String(text || '').trim() && S.lastAc?.name ? S.lastAc : null; // recherche vide : le dernier choisi d'abord
   box.innerHTML = (last ? `<button type="button" class="f-item" data-pick="last"><span>${esc([last.name, last.registration, last.callsign].filter(Boolean).join(' — '))}</span><span class="f-badge" data-kind="accent">${esc(tt(TX.origins.last))}</span></button>` : '') + hits.map(h => `<button type="button" class="f-item" data-pick="${esc(h.key)}"><span>${esc(h.label)}${h.kind === 'aircraft' && h.sheetVia ? `<small class="f-muted fu-block">${esc(tt(TX.via[h.sheetVia] || TX.via.estimate))}</small>` : ''}</span><span class="f-badge">${esc([...new Set((h.sources?.length > 1 ? h.sources : [h.source]).map(x => /^fleet/.test(x) ? 'fleet' : x))].map(x => tt(TX.origins[x] || TX.origins.free)).join(' + '))}</span></button>`).join(
@@ -4353,12 +4377,13 @@ function renderSheets() {
   if (S.refsPending) return void(S.body.innerHTML = `<p class="f-muted">${esc(tt(TX.loadingRefs))}</p>`); // fiches pas encore là
   const F = SH(),
     lang = S.ctx.lang(),
-    used = S.flight?.aircraft?.sheetId || '';
-  // SOG-0060 (b) : la recherche d'appareil du pas Vol, la même (mêmes attributs : acResults et pickAircraft servent tels quels)
-  S.body.innerHTML = `<p class="f-muted">${esc(tt(TX.sheetsIntro))}</p>
-    <label class="f-field"><input type="search" data-k="acsearch" placeholder="${esc(tt(TX.acSearch))}" aria-label="${esc(tt(TX.acSearch))}" autocomplete="off"></label>
-    <div class="f-list" data-acres></div>
-    <div class="f-list" data-sheets>${sheetGroups().map(g => `<h3 class="fu-cat">${esc(tt(TX.sheetCats[g.cat]))}</h3>${g.rows.map(r => {
+    used = S.flight?.aircraft?.sheetId || '',
+    A = S.A || {},
+    canon = c => String(A.canonical?.(c) || c || '').toUpperCase(),
+    // § 10.38 : les types de la flotte de la compagnie courante ; vide (ou sans compagnie) : la liste comme avant
+    coTypes = new Set((S.coFleet?.aircraft || []).map(a => canon(a.type)).filter(Boolean)),
+    mine = r => coTypes.size > 0 && !r.todo && coTypes.has(canon(r.sheet.icao || r.sheet.type || r.sheet.id)),
+    rowHtml = r => {
       if (r.todo) return `<div class="f-item" data-type="${esc(r.todo.type)}"><div><b>${esc(S.A.label?.(r.todo.type) || r.todo.type)}</b>
         <div class="f-muted">${esc(tt(TX.coType, { n: r.todo.registrations.length }))}</div></div>
         <div class="f-row"><a class="f-btn" href="${maintenanceLink()}">${esc(tt(TX.createInMaint))}</a></div></div>`;
@@ -4368,10 +4393,56 @@ function renderSheets() {
       return `<div class="f-item" data-id="${esc(p.id)}"><div><a href="${maintenanceLink(p.id)}"><b>${esc(p.name || p.id)}</b></a> <span class="f-muted">${esc(p.icao || '')} · ${esc(p.unit)}</span>${p.id === used ? ` <span class="f-badge" data-kind="ok" data-used>${esc(tt(TX.sheetUsed))}</span>` : ''}
         <div class="f-muted">${esc(F.profileSourceText(p))} · ${esc(miss.length ? tt(TX.missing, { list: miss.join(', ') }) : tt(TX.complete))}${when ? ` · ${esc(tt(TX.updated, { d: new Date(when).toLocaleDateString(lang) }))}` : ''}</div></div>
         <div class="f-row"><button type="button" data-do="use">${esc(tt(TX.useSheet))}</button><a class="f-btn" href="${maintenanceLink(p.id)}">${esc(tt(TX.editInMaint))}</a></div></div>`;
-    }).join('')}`).join('') || `<p class="f-card f-muted">${esc(tt(TX.noSheet))}</p>`}</div>`;
+    },
+    groups = sheetGroups(),
+    grouped = rows => groups.map(g => ({
+      cat: g.cat,
+      rows: g.rows.filter(rows)
+    })).filter(g => g.rows.length).map(g => `<h3 class="fu-cat">${esc(tt(TX.sheetCats[g.cat]))}</h3>${g.rows.map(rowHtml).join('')}`).join(''),
+    ours = groups.flatMap(g => g.rows).filter(mine),
+    others = groups.flatMap(g => g.rows).filter(r => !mine(r));
+  // SOG-0060 (b) : la recherche d'appareil du pas Vol, la même (mêmes attributs : acResults et pickAircraft servent tels quels)
+  S.body.innerHTML = `<p class="f-muted">${esc(tt(TX.sheetsIntro))}</p>
+    <label class="f-field"><input type="search" data-k="acsearch" placeholder="${esc(tt(TX.acSearch))}" aria-label="${esc(tt(TX.acSearch))}" autocomplete="off"></label>
+    <div class="f-list" data-acres></div>
+    <div class="f-list" data-sheets>${ours.length ? `<h3 class="fu-cat" data-cosheets>${esc(tt(TX.coSheets, { a: S.coFleet.name || '' }))}</h3>${ours.map(rowHtml).join('')}${others.length ? `<details class="fu-others" data-othersheets><summary>${esc(tt(TX.otherSheets, { n: others.length }))}</summary>${grouped(r => !mine(r))}</details>` : ''}` : grouped(() => true) || `<p class="f-card f-muted">${esc(tt(TX.noSheet))}</p>`}</div>`;
   S.body.onclick = e => onSheetsClick(e);
   S.body.oninput = e => e.target.dataset?.k === 'acsearch' ? acResults(e.target.value) : null;
   S.body.onkeydown = S.body.onchange = null;
+}
+/** La flotte de la compagnie courante (§ 10.38 étape 1, FrameData.airline()) : { name, aircraft: [{ registration, type, callsign }] }
+ *  bornée et nettoyée (un fichier de data/ est une entrée non fiable, § 10.36 : immatriculation 2 à 10 signes, type 2 à 4, indicatif
+ *  12, 200 appareils au plus) ; aircraft vide sans compagnie, sans flotte ou sans FrameData.airline. */
+async function readCoFleet() {
+  let a = null;
+  try {
+    a = typeof window.FrameData?.airline === 'function' ? await window.FrameData.airline() : null;
+  } catch {
+    a = null;
+  }
+  const list = Array.isArray(a?.fleet?.aircraft) ? a.fleet.aircraft : [],
+    up = (v, re) => {
+      const x = String(v ?? '').trim().toUpperCase();
+      return re.test(x) ? x : '';
+    },
+    seen = new Set(),
+    aircraft = [];
+  for (const e of list.slice(0, 200)) {
+    const registration = up(e?.registration, /^[A-Z0-9-]{2,10}$/),
+      type = up(e?.type, /^[A-Z0-9]{2,4}$/);
+    if (!registration || seen.has(registration)) continue;
+    seen.add(registration);
+    aircraft.push({
+      registration,
+      type,
+      callsign: up(e?.callsign, /^[A-Z0-9 -]{1,12}$/)
+    });
+  }
+  return {
+    code: typeof a?.code === 'string' ? a.code : '',
+    name: typeof a?.name === 'string' ? a.name.slice(0, 80) : '',
+    aircraft
+  };
 }
 /** Liste de l'écran Fiches rangée comme la V2 : par catégorie (hélicoptères, turbopropulseurs, réacteurs, pistons,
  *  autres ; aerodb classify), les fiches, puis les types de la compagnie qui n'en ont pas (« à compléter ») ; par nom. */
@@ -4731,6 +4802,17 @@ export async function mount(el, ctx) {
   S.stops.push(() => window.removeEventListener('frame-layout', onLayout));
   const srTitle = S.srTitle;
   S.stops.push(() => window.removeEventListener('frame-titled', srTitle));
+  // § 10.38 : la compagnie courante change (Réglages › Compagnie) : sa flotte relue, la vue redessinée
+  const onAirline = async () => {
+    if (gone(self)) return;
+    const fleet = await readCoFleet();
+    if (gone(self) || !S.body) return;
+    S.coFleet = fleet;
+    if (S.view === 'sheets') keepScroll(S.body, renderSheets);
+    else if (S.view === 'plan') refresh();
+  };
+  window.addEventListener('frame-data-airline', onAirline);
+  S.stops.push(() => window.removeEventListener('frame-data-airline', onAirline));
   // dessins à la largeur de l'écran
   const ro = new ResizeObserver(() => {
     clearTimeout(S.roTimer);

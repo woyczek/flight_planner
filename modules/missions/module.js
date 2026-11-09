@@ -42,6 +42,12 @@ const TX = {
   back: ['Retour', 'Back', 'Zurück', 'Volver'],
   more: ['{n} autres', '{n} more', '{n} weitere', '{n} más'],
   count: ['{n} missions', '{n} missions', '{n} Missionen', '{n} misiones'],
+  // § 10.38 : la compagnie « personnel » n'a pas de missions de compagnie
+  persoNone: ['Compagnie « Personnel » : pas de missions de compagnie. Choisissez une compagnie dans Réglages › Compagnie.',
+    'Airline « Personnel »: no airline missions. Choose an airline in Settings › Airline.',
+    'Gesellschaft „Personnel“: keine Missionen der Gesellschaft. Wählen Sie eine Gesellschaft unter Einstellungen › Fluggesellschaft.',
+    'Compañía «Personnel»: no hay misiones de compañía. Elija una compañía en Ajustes › Compañía.'
+  ],
   none: ['Aucune mission dans le dépôt (missions/mission_registry.yaml).',
     'No mission in the repository (missions/mission_registry.yaml).',
     'Keine Mission im Repository (missions/mission_registry.yaml).',
@@ -167,6 +173,17 @@ export async function mount(el, ctx) {
   el.onclick = e => onClick(s, e);
   el.oninput = e => onInput(s, e);
   el.onchange = e => onInput(s, e);
+  // § 10.38 : la liste suit la compagnie courante, et la relit quand elle change (Réglages › Compagnie)
+  s.co = await airlineOf();
+  if (S !== s) return;
+  s.onAirline = async () => {
+    const co = await airlineOf();
+    if (S !== s) return;
+    s.co = co;
+    s.all = false;
+    if (!s.open) draw(s);
+  };
+  window.addEventListener('frame-data-airline', s.onAirline);
   draw(s);
   let got = await yamlFile(ctx, REGISTRY);
   if (S !== s) return;
@@ -215,10 +232,41 @@ async function unlisted(s, reg) {
   if (!s.open) s.rows.length === found.length ? draw(s) : results(s);
 }
 
-/** Démonte : rien n'est suivi. */
+/** Démonte : la compagnie n'est plus suivie. */
 export function unmount() {
+  if (S?.onAirline) window.removeEventListener('frame-data-airline', S.onAirline);
   S = null;
 }
+
+/** La compagnie courante pour la liste (§ 10.38 étape 1) : { code, first, filter } — code : celle de l'appareil ; first : la première
+ *  compagnie de l'index (où va une mission sans champ airline) ; filter : faux sans index (code « default », ou un cadre sans
+ *  FrameData.airline) : toutes les missions, comme avant la migration. */
+async function airlineOf() {
+  try {
+    const FD = window.FrameData;
+    if (typeof FD?.airline !== 'function' || typeof FD?.airlines !== 'function') return {
+      code: '',
+      first: '',
+      filter: false
+    };
+    const [a, list] = await Promise.all([FD.airline(), FD.airlines()]),
+      code = String(a?.code || ''),
+      first = String(list?.[0]?.code || '');
+    return {
+      code,
+      first,
+      filter: !!code && code !== 'default'
+    };
+  } catch {
+    return {
+      code: '',
+      first: '',
+      filter: false
+    };
+  }
+}
+/** Une mission de la compagnie courante : son champ airline, sinon la première compagnie de l'index ; toutes sans index. */
+const ofAirline = (s, r) => !s.co?.filter || (r.airline || s.co.first) === s.co.code;
 
 /** Les missions que ce pilote a volées : les comptes rendus (cr/reports/) qui nomment une mission, les miens ou sans auteur. */
 async function flownOf(s) {
@@ -234,7 +282,8 @@ async function flownOf(s) {
 }
 
 /** Les lignes retenues par la recherche et le filtre de famille. */
-const filtered = s => s.rows.filter(r => (!s.family || r.family === s.family) && (!s.q || [r.id, r.title, r.operation, r.family, r.kind,
+const filtered = s => s.rows.filter(r => ofAirline(s, r) && (!s.family || r.family === s.family) && (!s.q || [r.id, r.title, r.operation, r
+  .family, r.kind,
   r.subtype, ...r.callsigns, ...r.words, r.originIcao, r.destinationIcao, r.origin, r
   .destination, ...r.types
 ].some(v => String(v).toUpperCase().includes(s.q.toUpperCase()))));
@@ -251,8 +300,10 @@ const day = d => /^\d{4}-\d{2}-\d{2}$/.test(d) ? d.split('-').reverse().join('/'
 /** La liste : « Tirer au sort », recherche, famille, puis les résultats (resultsHtml). */
 function listHtml(s) {
   const w = s.regWhy;
+  // « personnel » n'a pas de missions de compagnie : la liste vide, dite
+  if (s.co?.filter && s.co.code === 'perso') return `<div class="f-card"><p class="f-muted" data-why="perso">${esc(s.tt(TX.persoNone))}</p></div>`;
   if (!s.rows.length) return `<div class="f-card"><p class="f-muted" data-why="${esc(w?.why || 'none')}">${esc(w?.why === 'loading' ? s.tt(TX.regLoading) : w?.why === 'late' ? s.tt(TX.regLate) : w?.why === 'unreadable' ? s.tt(TX.regUnreadable, { e: w.err }) : s.tt(TX.none))}</p></div>`;
-  const families = [...new Set(s.rows.map(r => r.family).filter(Boolean))].sort();
+  const families = [...new Set(s.rows.filter(r => ofAirline(s, r)).map(r => r.family).filter(Boolean))].sort();
   return `<div class="f-card" data-pane="list"><div class="f-row"><button type="button" class="primary" data-do="draw">${esc(s.tt(TX.draw))}</button></div>
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.search))}</span><input type="search" data-k="q" value="${esc(s.q)}" placeholder="${esc(s.tt(TX.search))}" autocomplete="off"><small class="f-muted" data-searchhint>${esc(s.tt(TX.searchHint))}</small></label>
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.allFamilies))}</span><select data-k="family"><option value="">${esc(s.tt(TX.allFamilies))}</option>${families.map(f => `<option value="${esc(f)}"${s.family === f ? ' selected' : ''}>${esc(f)}</option>`).join('')}</select></label>

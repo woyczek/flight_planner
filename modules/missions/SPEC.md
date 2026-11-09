@@ -44,6 +44,10 @@ on the same data. The CPCO (authoring) stays V2 until rebuilt as the third appli
 
 ## 3. The list: choose, or draw
 
+- **The current airline** (V3 spec § 10.38 step 1): a mission names its airline (`airline: <code>` in its registry row or its file,
+  `MS.airlineCode`, `^[a-z0-9]{2,8}$`); without it, it belongs to the first airline of the index. The list shows the current airline's
+  missions and is drawn again on `frame-data-airline`; « Personnel » has no airline missions (an empty list, said); without an index
+  (code `default`), every mission as before (N8; N2, N7 without index).
 - One screen, the module's main: the missions of the airline, newest series first, grouped by family (the sixteen
   families of the generator prompt, their letter and their name, never hard-coded twice: read from the registry),
   seven rows then "N autres", a search (id, title, aerodrome, type), a filter by family and by aircraft category.

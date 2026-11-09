@@ -73,6 +73,28 @@ def g3(c):
     c.ok(not filled, f'fields filled without any data: {filled}', 'an empty form')
 
 
+@case('G5', 'Report: the record carries the code of the current airline (airline)', 'G', tags=('report',), screens=False,
+      designs=('standard',), rule='V3 spec 10.38 step 1: the CR names its airline (ctx.airline.code); a record already saved keeps its own')
+def g5(c):
+    idx = [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}, {'code': 'bbb', 'name': 'Bravo Air'}]}, 'document'],
+           ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air'}, 'document']]
+    for docs, want in ((idx, 'aaa'),):   # without an index the code is « default »: the frame's A94 (ctx.airline.code)
+        c.open('report', docs=docs)
+        c.until("document.querySelectorAll('[data-module=report] .f-steps button').length === 3", what='the report is drawn')
+        c.wait(600)   # ctx.airline is read in the background (frame-airline)
+        before = set(c.doc_paths('cr/reports/'))
+        c.tap('[data-module="report"] [data-do="save"]')
+        path = None
+        for _ in range(40):
+            got = [p for p in c.doc_paths('cr/reports/') if p not in before]
+            if got:
+                path = got[0]
+                break
+            c.wait(200)
+        c.ok(path, 'no record', 'the report is saved')
+        c.eq(c.doc(path).get('airline'), want, f'the record names its airline ({want})', what='airline')
+
+
 # G4: what the screen of a prefilled report measures (one round trip).  Fields are the inputs and selects of the grids of the
 # visible step; a "card" is the `.f-card` that holds them; the grid's font sizes are those of its labels and its controls.
 _G4_JS = r"""() => {

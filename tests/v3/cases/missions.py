@@ -341,3 +341,43 @@ def n1(c):
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
     c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
          'every check of the bench passes')
+
+# § 10.38 step 1: two invented airlines of one repository (aaa: an EC25, bbb: a C-130J), the index the migration writes
+def airline_docs(index=True):
+    """The documents of two airlines (never the user's): index, settings and fleet of aaa and bbb; index=False: the airline of today only."""
+    if not index:
+        return []
+    return [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}, {'code': 'bbb', 'name': 'Bravo Air'}]}, 'document'],
+            ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air'}, 'document'],
+            ['airline/aaa/fleet.json', {'schema': 1, 'aircraft': [{'registration': 'F-AAAA', 'type': 'EC25'}]}, 'document'],
+            ['airline/bbb/settings.json', {'schema': 1, 'name': 'Bravo Air'}, 'document'],
+            ['airline/bbb/fleet.json', {'schema': 1, 'aircraft': [{'registration': 'F-BBBB', 'type': 'C30J'}]}, 'document']]
+
+
+def set_airline(c, code):
+    """Chooses the current airline as Réglages › Compagnie does (FrameData.setAirline: the event frame-data-airline)."""
+    c.eq(c.js("(code) => window.FrameData.setAirline(code)", code), True, f'the airline {code} is chosen', what='setAirline')
+
+
+_CO_REGISTRY = """missions:
+  - { id: X-101A, family: TESTCO, title: Mission Alpha, airline: aaa, folder: X_CO/X-101A, files: [missionX-101A.yaml] }
+  - { id: X-102A, family: TESTCO, title: Mission sans compagnie, folder: X_CO/X-102A, files: [missionX-102A.yaml] }
+  - { id: X-103A, family: TESTCO, title: Mission Bravo, airline: bbb, folder: X_CO/X-103A, files: [missionX-103A.yaml] }
+"""
+
+
+@case('N8', 'Missions: the list follows the current airline (a mission\'s airline field, none = the first airline of the index); « personnel » has none, said; without an index, all',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.38 step 1: airline: <code> in the mission; absent = default / the first of the index; read again on frame-data-airline; perso: empty, said')
+def n8(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _CO_REGISTRY]] + [[f'missions/X_CO/{i}/mission{i}.yaml', mission_doc(i)] for i in ('X-101A', 'X-102A', 'X-103A')])
+    c.open('missions', docs=airline_docs(), wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id]')", timeout=15000, what='the list of missions')
+    c.eq(ids(c), ['X-102A', 'X-101A'], 'Alpha Air (first of the index): its mission and the one without airline', what='aaa')
+    set_airline(c, 'bbb')
+    c.until(f"[...document.querySelectorAll('{M} [data-list] [data-id]')].map(b => b.dataset.id).join() === 'X-103A'", what='Bravo Air: its mission only')
+    set_airline(c, 'perso')
+    c.until(f"!!document.querySelector('{M} [data-why=perso]')", what='« personnel »: no airline missions, said')
+    c.eq(norm(c.text(f'{M} [data-why=perso]')), norm(row(c, 'persoNone')), 'the sentence', what='perso')
+    # without an index every mission is listed, as before: N2 and N7, which seed no index

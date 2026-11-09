@@ -89,7 +89,7 @@ Die Flotte der Gesellschaft, so wie die anderen Bildschirme sie lesen: der Beric
 
 ## So geht's
 
-<a id="aircraft-fleet"></a>**Die Flotte.** Eine Zeile pro Luftfahrzeug: Kennzeichen, Typ, Rufzeichen, Basis, „außer Dienst“, wenn es so ist. Die Suche filtert nach Kennzeichen, Typ, Rufzeichen oder Basis; sieben Zeilen werden gezeigt, „N weitere“ klappt den Rest aus. „Hinzufügen“ öffnet ein leeres Luftfahrzeug.
+<a id="aircraft-fleet"></a>**Die Flotte.** Eine Zeile pro Luftfahrzeug: Kennzeichen, Typ, Rufzeichen, Basis, „außer Dienst“, wenn es so ist. Die Suche filtert nach Kennzeichen, Typ, Rufzeichen oder Basis; sieben Zeilen werden gezeigt, „N weitere“ klappt den Rest aus. „Hinzufügen“ öffnet ein leeres Luftfahrzeug. Die Flotte ist die der unter Einstellungen › Fluggesellschaft gewählten Gesellschaft; ein Wechsel der Gesellschaft ändert die Liste, und ein hinzugefügtes Luftfahrzeug kommt in die Flotte dieser Gesellschaft.
 
 <a id="aircraft-edit"></a>**Ein Luftfahrzeug ändern.** Ein Tippen auf eine Zeile öffnet es: Identität (Kennzeichen, Typ, Variante, Betreiber) und Betrieb (Rufzeichen durch Kommas getrennt, Basis, taktische Nummer, in Dienst). Unter den Feldern sagt eine Zeile, was sich ändern wird („2 Felder geändert: Basis, Rufzeichen“); „Speichern“ schreibt es. Ab zwei Zeichen (groß oder klein) schlägt das Feld Typ die Typen der Datenbank und die passenden Datenblätter vor („H145 · Airbus H145 · Datenblatt H145“); ein Tippen oder ↓ und dann Enter schreibt den Typcode. Ein Typ, den die Datenbank nicht kennt, wird so übernommen, und der Bildschirm sagt es. Das Kennzeichen ist der Schlüssel: zwei Luftfahrzeuge können es nicht teilen. Der Standort von der Website bleibt, wie er ist. „Ausmustern“ fragt, dann verlässt das Luftfahrzeug die Flotte; sein Leistungsblatt, falls vorhanden, bleibt erhalten.
 
@@ -104,7 +104,7 @@ Die Flotte der Gesellschaft, so wie die anderen Bildschirme sie lesen: der Beric
 - Das Modul Website aktualisiert die Flotte auch aus der eingefügten Seite „Flotte“ der Website: beide schreiben dieselbe Datei, jedes Speichern liest die Datei kurz vorher und ändert nur ein Luftfahrzeug.
 - Nichts geht vor der nächsten Synchronisation hinaus.
 
-<!-- fr: 3b420f74a90a -->
+<!-- fr: c1980d46ccb3 -->
 
 <!-- chapter: settings -->
 # Einstellungen

@@ -87,7 +87,7 @@ La flotte de la compagnie, telle que les autres écrans la lisent : le compte re
 
 ## Comment s'en servir
 
-<a id="aircraft-fleet"></a>**La flotte.** Une ligne par appareil : immatriculation, type, indicatifs, base, « hors service » s'il l'est. La recherche filtre sur l'immatriculation, le type, un indicatif ou la base ; sept lignes sont montrées, « N autres » déplie la suite. « Ajouter » ouvre un appareil vide.
+<a id="aircraft-fleet"></a>**La flotte.** Une ligne par appareil : immatriculation, type, indicatifs, base, « hors service » s'il l'est. La recherche filtre sur l'immatriculation, le type, un indicatif ou la base ; sept lignes sont montrées, « N autres » déplie la suite. « Ajouter » ouvre un appareil vide. La flotte est celle de la compagnie choisie dans Réglages › Compagnie ; changer de compagnie change la liste, et un appareil ajouté va dans la flotte de cette compagnie.
 
 <a id="aircraft-edit"></a>**Modifier un appareil.** Une tape sur une ligne l'ouvre : identité (immatriculation, type, variante, exploitant) et exploitation (indicatifs séparés par des virgules, base, numéro tactique, en service). Sous les champs, une ligne dit ce qui va changer (« 2 champs changés : base, indicatifs ») ; « Enregistrer » l'écrit. Le champ Type propose, dès deux caractères (majuscules ou non), les types de la base et les fiches qui correspondent (« H145 · Airbus H145 · fiche H145 ») ; une tape ou ↓ puis Entrée écrit le code du type. Un type que la base ne connaît pas est gardé tel quel, et l'écran le dit. L'immatriculation est la clé : deux appareils ne peuvent pas l'avoir. La position donnée par le site reste telle quelle. « Retirer » pose la question, puis l'appareil quitte la flotte ; sa fiche de performances, s'il en a une, est gardée.
 

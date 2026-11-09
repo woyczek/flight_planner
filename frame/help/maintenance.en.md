@@ -86,7 +86,7 @@ The company's fleet, as the other screens read it: the report (registration → 
 
 ## How to use it
 
-<a id="aircraft-fleet"></a>**The fleet.** One row per aircraft: registration, type, callsigns, base, "out of service" when it is. The search filters on the registration, the type, a callsign or the base; seven rows are shown, "N more" unfolds the rest. "Add" opens an empty aircraft.
+<a id="aircraft-fleet"></a>**The fleet.** One row per aircraft: registration, type, callsigns, base, "out of service" when it is. The search filters on the registration, the type, a callsign or the base; seven rows are shown, "N more" unfolds the rest. "Add" opens an empty aircraft. The fleet is the one of the airline chosen in Settings › Airline; changing the airline changes the list, and an aircraft added goes into that airline's fleet.
 
 <a id="aircraft-edit"></a>**Editing an aircraft.** A tap on a row opens it: identity (registration, type, variant, operator) and operation (callsigns separated by commas, base, tactical number, in service). Under the fields, a line says what will change ("2 fields changed: base, callsigns"); "Save" writes it. From two characters (upper case or not), the Type field suggests the types of the database and the matching sheets ("H145 · Airbus H145 · sheet H145"); a tap, or ↓ then Enter, writes the type code. A type the database does not know is kept as typed, and the screen says so. The registration is the key: two aircraft cannot share it. The location the site gives stays as it is. "Retire" asks, then the aircraft leaves the fleet; its performance sheet, if it has one, is kept.
 
@@ -101,7 +101,7 @@ The company's fleet, as the other screens read it: the report (registration → 
 - The Site module also updates the fleet from the pasted "Fleet" page of the site: both write the same file, each save reads the file just before and changes one aircraft only.
 - Nothing leaves before the next synchronisation.
 
-<!-- fr: 3b420f74a90a -->
+<!-- fr: c1980d46ccb3 -->
 
 <!-- chapter: settings -->
 # Settings

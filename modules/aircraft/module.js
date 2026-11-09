@@ -34,20 +34,27 @@ export const meta = {
       const n = String(v.name || v.id || m[1]);
       return [`Fiche ${n}`, `Sheet ${n}`, `Datenblatt ${n}`, `Ficha ${n}`];
     }
-    if (path !== 'airline/fleet.json' || !Array.isArray(v?.aircraft)) return null;
+    // la flotte de la compagnie courante (§ 10.38) : airline/fleet.json, airline/<code>/fleet.json ou celle de « personnel »
+    if (!/^(airline\/([a-z0-9]{2,8}\/)?|pilot\/[^/]+\/airline\/perso\/)fleet\.json$/.test(path) || !Array.isArray(v?.aircraft))
+      return null;
     const n = v.aircraft.length;
     return [`Flotte de la compagnie (${n} appareils)`, `Airline fleet (${n} aircraft)`, `Flotte der Gesellschaft (${n} Luftfahrzeuge)`,
       `Flota de la compañía (${n} aeronaves)`
     ];
   },
-  reads: ['airline/', 'cache/aircraft/'],
+  reads: ['airline/', 'pilot/', 'cache/aircraft/'],
   // « Depuis le dossier Output » (SOG-0052 étape 2) : le travail stats/output d'AeroDB (status, set, clear, read), comme fetchProcedures
   launcher: {
     routes: ['regen/job', 'regen/job/cancel'],
     read: []
   },
+  // la flotte de la compagnie courante (§ 10.38) : airline/<code>/fleet.json, ou pilot/<trigramme>/airline/perso/fleet.json pour
+  // « personnel » ; mêmes préfixes et même fusion que Réglages (airline/) et Carburant (pilot/)
   writes: [{
-    prefix: 'airline/fleet.json',
+    prefix: 'airline/',
+    merge: 'record'
+  }, {
+    prefix: 'pilot/',
     merge: 'record'
   }, {
     prefix: 'cache/aircraft/',
@@ -55,7 +62,7 @@ export const meta = {
   }]
 };
 
-const FLEET = 'airline/fleet.json',
+const FLEET = 'airline/fleet.json', // la flotte d'avant § 10.38 (sans index des compagnies) ; sinon fleetPathOf()
   UI = 'cache/aircraft/ui.json', // la vue choisie, gardée sur cet appareil
   STATUS = 'cache/aircraft/status.json'; // la ligne d'état lue par le cadre (frame/INTEGRATION.md § 10.0)
 /** Lignes de la liste montrées avant « N autres » (au plus sept éléments par écran). */
@@ -167,7 +174,9 @@ export async function mount(el, ctx) {
     back: () => {}, // retour à la liste des fiches : rien d'autre à refaire ici (l'aide suit l'état de la vue)
     changed: () => publishStatus(s) // fiches ou types de la flotte changés : la ligne d'état suit
   });
-  const [fleet, ui] = await Promise.all([ctx.data.get(FLEET), Promise.resolve(ctx.data.get(UI)).catch(() => null)]);
+  s.fleetPath = await fleetPathOf();
+  if (S !== s) return;
+  const [fleet, ui] = await Promise.all([ctx.data.get(s.fleetPath), Promise.resolve(ctx.data.get(UI)).catch(() => null)]);
   if (S !== s) return;
   s.fleet = fleet;
   // une fiche demandée par l'adresse (prise une fois, retirée de l'adresse par le cadre) ouvre les Fiches sur son éditeur
@@ -194,18 +203,51 @@ export async function mount(el, ctx) {
   el.onchange = e => s.view === 'sheets' && s.sv.onChange(e);
   draw(s);
   s.sv.load().catch(() => {});
-  s.stop = ctx.data.watch?.(FLEET, async () => {
+  watchFleet(s);
+  // § 10.38 : la compagnie courante change (Réglages › Compagnie) : sa flotte est relue et suivie, l'écran redessiné
+  s.onAirline = async () => {
     if (S !== s) return;
-    s.fleet = await ctx.data.get(FLEET);
+    const path = await fleetPathOf();
+    if (S !== s || path === s.fleetPath) return;
+    s.unwatch?.();
+    s.fleetPath = path;
+    s.fleet = await ctx.data.get(path);
+    if (S !== s) return;
+    s.edit = null;
+    watchFleet(s);
+    publishStatus(s);
+    if (s.view === 'fleet') draw(s);
+  };
+  window.addEventListener('frame-data-airline', s.onAirline);
+}
+/** Suit le fichier de flotte de la compagnie courante (relu et redessiné quand il change). */
+function watchFleet(s) {
+  const path = s.fleetPath;
+  s.unwatch = s.ctx.data.watch?.(path, async () => {
+    if (S !== s || s.fleetPath !== path) return;
+    s.fleet = await s.ctx.data.get(path);
     if (S !== s) return;
     publishStatus(s);
     if (s.view === 'fleet' && !s.edit) draw(s); // l'éditeur ouvert garde sa saisie : l'écriture relira le fichier
   });
 }
+/** Le fichier de flotte de la compagnie courante (§ 10.38 étape 1) : le dossier que FrameData.airline() donne (« airline/ »,
+ *  « airline/<code>/ » ou celui de « personnel ») ; airline/fleet.json sans FrameData.airline ou pour un dossier d'une autre forme
+ *  (une entrée non fiable n'invente jamais un chemin). */
+async function fleetPathOf() {
+  try {
+    const a = typeof window.FrameData?.airline === 'function' ? await window.FrameData.airline() : null,
+      root = String(a?.root || '');
+    return /^(airline\/([a-z0-9]{2,8}\/)?|pilot\/[A-Za-z0-9_-]{1,32}\/airline\/perso\/)$/.test(root) ? `${root}fleet.json` : FLEET;
+  } catch {
+    return FLEET;
+  }
+}
 
 /** Démonte : la flotte et les fiches ne sont plus suivies. */
 export function unmount() {
-  S?.stop?.();
+  S?.unwatch?.();
+  if (S?.onAirline) window.removeEventListener('frame-data-airline', S.onAirline);
   S?.sv?.stop();
   S = null;
 }
@@ -448,7 +490,7 @@ async function save(s) {
   const d = readForm(s),
     by = s.ctx.identity?.trigram || '';
   if (!d.registration) return s.ctx.notify(s.tt(TX.needReg), 'warn');
-  const file = await s.ctx.data.get(FLEET),
+  const file = await s.ctx.data.get(s.fleetPath),
     taken = (file?.aircraft || []).some(a => String(a?.registration || '').toUpperCase() === d.registration);
   if (taken && d.registration !== s.edit.was) return s.ctx.notify(s.tt(TX.dupReg, {
     r: d.registration
@@ -457,7 +499,7 @@ async function save(s) {
     was: s.edit.was,
     by
   });
-  await s.ctx.data.put(FLEET, next);
+  await s.ctx.data.put(s.fleetPath, next);
   if (S !== s) return;
   s.fleet = next;
   s.edit = null;
@@ -476,10 +518,10 @@ async function retire(s) {
     }), {
       ok: s.tt(TX.retire)
     })) return;
-  const next = FL.retire(await s.ctx.data.get(FLEET), r, {
+  const next = FL.retire(await s.ctx.data.get(s.fleetPath), r, {
     by: s.ctx.identity?.trigram || ''
   });
-  await s.ctx.data.put(FLEET, next);
+  await s.ctx.data.put(s.fleetPath, next);
   if (S !== s) return;
   s.fleet = next;
   s.edit = null;

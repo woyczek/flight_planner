@@ -2704,3 +2704,43 @@ def f105(c):
     c.eq(sorted({x[0] for x in seen}), [seen[0][0]], 'every field at the same distance from its label\'s left (one grid on both cards)', what='offsets')
     c.ok(all(x[1] <= 2 for x in seen), seen, 'every field centred on its label (a wrapped label does not push it down)')
     c.ok(all(x[2] >= -1 for x in seen), seen, 'no field beyond its row')
+
+# § 10.38 step 1: two invented airlines of one repository (aaa: an EC25, bbb: a C-130J), the index the migration writes
+def airline_docs(index=True):
+    """The documents of two airlines (never the user's): index, settings and fleet of aaa and bbb; index=False: the airline of today only."""
+    if not index:
+        return []
+    return [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}, {'code': 'bbb', 'name': 'Bravo Air'}]}, 'document'],
+            ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air'}, 'document'],
+            ['airline/aaa/fleet.json', {'schema': 1, 'aircraft': [{'registration': 'F-AAAA', 'type': 'EC25'}]}, 'document'],
+            ['airline/bbb/settings.json', {'schema': 1, 'name': 'Bravo Air'}, 'document'],
+            ['airline/bbb/fleet.json', {'schema': 1, 'aircraft': [{'registration': 'F-BBBB', 'type': 'C30J'}]}, 'document']]
+
+
+def set_airline(c, code):
+    """Chooses the current airline as Réglages › Compagnie does (FrameData.setAirline: the event frame-data-airline)."""
+    c.eq(c.js("(code) => window.FrameData.setAirline(code)", code), True, f'the airline {code} is chosen', what='setAirline')
+
+
+@case('F106', 'Sheets view and aircraft choice follow the current airline\'s fleet: its aircraft first, the other sheets folded; without an index, as before',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='V3 spec 10.38 step 1 (FrameData.airline().fleet): the sheets of the fleet\'s types first (« Flotte de Alpha Air »), the others in « Autres fiches (n) »; '
+      'the fleet\'s registrations first in the search; a change of airline (frame-data-airline) redraws; no index: the list of today')
+def f106(c):
+    ec25 = {'id': 'EC25', 'name': 'EC25', 'icao': 'EC25', 'usableFuel': 2000, 'cruise': {'tasKt': 141, 'fuelFlowPerHour': 650}}
+    c25 = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'usableFuel': 20000, 'cruise': {'tasKt': 330, 'fuelFlowPerHour': 2000}}
+    sheets = [['aircraft/sheets/EC25.json', ec25, 'document'], ['aircraft/sheets/C30J.json', c25, 'document']]
+    view = """() => ({ head: (document.querySelector('[data-module=fuel] [data-cosheets]')?.textContent || '').trim(),
+        ours: [...document.querySelectorAll('[data-module=fuel] [data-sheets] > [data-id]')].map(e => e.dataset.id),
+        others: [...document.querySelectorAll('[data-module=fuel] [data-othersheets] [data-id]')].map(e => e.dataset.id),
+        folded: !document.querySelector('[data-module=fuel] [data-othersheets]')?.open })"""
+    c.open('fuel?view=sheets', docs=flight_docs() + sheets + airline_docs())
+    c.until("!!document.querySelector('[data-module=fuel] [data-cosheets]')", what='the fleet of the current airline heads the sheets')
+    c.eq(c.js(view), {'head': norm(tx(F, 'coSheets', c.lang).replace('{a}', 'Alpha Air')), 'ours': ['EC25'], 'others': ['C30J'], 'folded': True},
+         'Alpha Air: its EC25 first, the C-130J in the folded « Autres fiches »', what='aaa')
+    c.page.fill(f'{FUEL} input[data-k=acsearch]', 'F-')
+    c.until(f"(document.querySelector('{FUEL} [data-acres] [data-pick]')?.textContent || '').includes('F-AAAA')", what='the airline\'s registration first in the search')
+    set_airline(c, 'bbb')
+    c.until("(document.querySelector('[data-module=fuel] [data-sheets] > [data-id]')?.dataset.id) === 'C30J'", what='Bravo Air: its C-130J first')
+    c.eq(c.js(view)['others'], ['EC25'], 'the EC25 among the other sheets', what='bbb')
+    # without an index (before the migration) the list is the one of today: F79 and F103, which seed no index

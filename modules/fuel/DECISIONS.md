@@ -1420,3 +1420,8 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   météo (NM de part et d'autre) » three, so their fields sat lower than their neighbours'. CSS only (`.fu-pairs`, the label a grid of
   two columns); the cards « carbu et opération » of the note are read as these two (the fields of the quote and of the flight's
   weather); the step Flight's aerodrome fields keep their own row (their name line under the code). F105.
+- **9 Nov 2026 — the current airline's fleet first** (V3 spec § 10.38 step 1, the ergonomics session's lot): read through
+  `FrameData.airline()` (the frame's documented API; `ctx.airline` carries no fleet). aerodb's registry still reads
+  `airline/fleet.json` only (the airline of today): after the migration it does not know `airline/<code>/fleet.json`, so Fuel makes
+  the rows of the fleet's registrations itself; the registry's reading of the current airline is AeroDB's (said to the ergonomics
+  session). F106.

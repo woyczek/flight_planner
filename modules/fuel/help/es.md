@@ -159,7 +159,7 @@ tienen.
 
 ## Fichas de rendimiento <a id="fuel-sheets"></a>
 
-La pestaña «Fichas» empieza con la misma búsqueda de aeronave que el paso Vuelo (el campo «Ficha, matrícula, indicativo o tipo»: un resultado tocado pasa a ser la aeronave del vuelo). Luego lista las fichas de la compañía, compartidas con todos sus dispositivos, **en solo lectura**: se
+La pestaña «Fichas» empieza con la misma búsqueda de aeronave que el paso Vuelo (el campo «Ficha, matrícula, indicativo o tipo»: un resultado tocado pasa a ser la aeronave del vuelo). Luego lista las fichas de la compañía (primero las de los tipos de la flota de la compañía actual, las demás plegadas en «Otras fichas»; la búsqueda también da primero sus matrículas), compartidas con todos sus dispositivos, **en solo lectura**: se
 modifican en Mantenimiento › Aeronaves, pestaña «Fichas». Están ordenadas por categoría (helicópteros, turbohélices,
 reactores, pistón, otros); cada tipo que usa la compañía (flota, referencia) y aún no tiene ficha figura también,
 «rendimientos por completar», con «Crear en Mantenimiento». Cada ficha dice lo que le falta, por familia («Por completar:
@@ -190,4 +190,4 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
   tarjeta lo dice y responde el METAR en su lugar. La tarjeta meteorológica indica de dónde vienen los mensajes. Sin red
   alguna, muestra la última meteorología guardada, con su hora.
 
-<!-- fr: cdf70b139e5c -->
+<!-- fr: c55b059ce397 -->

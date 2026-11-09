@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel, Aircraft, Missions, Report: the readers of the current airline** (`modules/fuel/module.js`, `modules/aircraft/module.js`,
+  `modules/missions/module.js`, `frame/lib/mission.js`, `modules/report/module.js`; SPECs, DECISIONS; noreg F106, M32, N8, G5; V3 spec
+  § 10.38 step 1). Fuel's Sheets view and aircraft search put the current airline's fleet first; Maintenance › Aircraft › Fleet reads
+  and writes that airline's `fleet.json`; the missions list shows the airline's missions (« Personnel »: none, said); a report records
+  its airline's code. Without an index of airlines, nothing changes.
+
 - **Fuel: fields aligned on the Weather card and the quote settings** (`modules/fuel/module.js`; Fuel SPEC § 9.6, DECISIONS; noreg
   F105; SOG-0058). One grid, label left in a fixed column, value right: a long label wraps without pushing its field down (390 and
   1280).
