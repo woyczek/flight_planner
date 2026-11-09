@@ -52,7 +52,9 @@ a rectangle of the profile. **Several airlines in one repository, step 1**: the 
 the user's roadmap is generated from the organisation's backlog and milestones (apps pilote, compagnie, maintenance,
 stats; milestones; kind feature / bug), the screen with its filters follows in alpha.5. Also: « Ranger les sources
 brutes », the FuelDashboard in the repository as it is, the SIA's overseas eAIP surveyed, China and Cyprus buildable.
-Alpha: data formats and screens may still change.
+Alpha: data formats and screens may still change. **Erratum (9 Nov, 10:00)**: SOG-0060 (a, b), SOG-0028 (3, 4) and the
+« Depuis le dossier Output » button are not in this tag (a push refused as non-fast-forward had been read as done by its
+session); they follow on `v3` and belong to alpha.5.
 
 ### V3
 
