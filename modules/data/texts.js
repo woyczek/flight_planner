@@ -187,6 +187,41 @@ export const TX = {
     nats: ['NATS (AIP Royaume-Uni)', 'NATS (UK AIP)', 'NATS (AIP Vereinigtes Königreich)', 'NATS (AIP Reino Unido)'],
     xplane: ['X-Plane (données du simulateur)', 'X-Plane (simulator data)', 'X-Plane (Simulatordaten)', 'X-Plane (datos del simulador)']
   },
+  // l'état par zone que dit le lanceur (base/status) et ses raisons, par code (frame/aerodb/INTEGRATION.md « The state per zone ») : les paramètres entre accolades
+  zst: {
+    'up-to-date': ['À jour', 'Up to date', 'Aktuell', 'Al día'],
+    stale: ['À reconstruire', 'To rebuild', 'Neu zu bauen', 'Por reconstruir'],
+    'never-built': ['Jamais construite', 'Never built', 'Noch nie erstellt', 'Nunca construida'],
+    failed: ['En échec', 'Failed', 'Fehlgeschlagen', 'Fallida'],
+    building: ['En cours', 'Running', 'Läuft', 'En curso']
+  },
+  zr: {
+    'never-built': ['Jamais construite', 'Never built', 'Noch nie erstellt', 'Nunca construida'],
+    failed: ['Dernière construction en échec', 'Last build failed', 'Letzter Build fehlgeschlagen', 'La última construcción falló'],
+    'pickup-waiting': ['{set} {cycle} dans Téléchargements, non repris', '{set} {cycle} in Downloads, not taken yet',
+      '{set} {cycle} in Downloads, noch nicht übernommen', '{set} {cycle} en Descargas, sin tomar'
+    ],
+    'source-newer': ['Source {source} du {cycle} plus récente que la construction du {built}',
+      '{source} source of {cycle} newer than the build of {built}', 'Quelle {source} vom {cycle} neuer als der Build vom {built}',
+      'Fuente {source} del {cycle} más reciente que la construcción del {built}'
+    ],
+    'inputs-changed': ['{count} fichier(s) source modifié(s) depuis la construction', '{count} source file(s) changed since the build',
+      '{count} Quelldatei(en) seit dem Build geändert', '{count} archivo(s) fuente modificado(s) desde la construcción'
+    ],
+    'parser-old': ['Construite avec un ancien analyseur (v{built}, actuel v{current})',
+      'Built with an older parser (v{built}, current v{current})', 'Mit einem älteren Parser erstellt (v{built}, aktuell v{current})',
+      'Construida con un analizador antiguo (v{built}, actual v{current})'
+    ],
+    'files-missing': ['{count} fichier(s) manquant(s)', '{count} file(s) missing', '{count} Datei(en) fehlen',
+      'faltan {count} archivo(s)'
+    ],
+    'source-old': ['Source {source} du {cycle}, cycle en vigueur {current} : un fichier plus récent est à déposer',
+      '{source} source of {cycle}, cycle in force {current}: a newer file is to be dropped',
+      'Quelle {source} vom {cycle}, gültiger Zyklus {current}: neuere Datei ablegen',
+      'Fuente {source} del {cycle}, ciclo vigente {current}: falta un archivo más reciente'
+    ],
+    unknown: ['Raison non reconnue', 'Unrecognised reason', 'Unbekannter Grund', 'Motivo no reconocido']
+  },
   // « Mettre à jour » et les gestes de sélection de la base (update.js, SOG-0071)
   upd: {
     update: ['Mettre à jour', 'Update', 'Aktualisieren', 'Actualizar'],
@@ -207,6 +242,18 @@ export const TX = {
       'Aktualisieren: {n} der {t} angekreuzten Zonen neu bauen ({s}). {l}',
       'Actualizar: reconstruir {n} de las {t} zonas marcadas ({s}). {l}'
     ],
+    noStatus: ['L’état des zones n’a pas pu être lu au lanceur : rien n’est reconstruit.',
+      'The state of the zones could not be read from the launcher: nothing is rebuilt.',
+      'Der Zustand der Zonen konnte nicht vom Starter gelesen werden: nichts wird neu gebaut.',
+      'No se pudo leer el estado de las zonas en el lanzador: no se reconstruye nada.'
+    ],
+    whyMany: ['{n} : {r}', '{n}: {r}', '{n}: {r}', '{n}: {r}'],
+    waiting: ['{n} attendent un fichier de Téléchargements ({z}) : « Prendre le fichier téléchargé » d’abord.',
+      '{n} wait for a file from Downloads ({z}): « Take the downloaded file » first.',
+      '{n} warten auf eine Datei aus Downloads ({z}): zuerst „Heruntergeladene Datei übernehmen“.',
+      '{n} esperan un archivo de Descargas ({z}): primero «Tomar el archivo descargado».'
+    ],
+    long: ['Cela peut être long.', 'This may take a while.', 'Das kann dauern.', 'Esto puede tardar.'],
     sizeUnknown: ['taille inconnue', 'size unknown', 'Größe unbekannt', 'tamaño desconocido'],
     whyNever: ['jamais construite', 'never built', 'nie gebaut', 'nunca construida'],
     whyCycle: ['cycle publié {p}, source {t}', 'published cycle {p}, source {t}', 'veröffentlichter Zyklus {p}, Quelle {t}',
@@ -919,8 +966,11 @@ export const TX = {
   mapTone: {
     ok: ['à jour', 'up to date', 'aktuell', 'al día'],
     warn: ['cycle dépassé ou absent', 'cycle out of date or missing', 'Zyklus überholt oder fehlend', 'ciclo superado o ausente'],
+    err: ['en échec', 'failed', 'fehlgeschlagen', 'fallida'],
     accent: ['en cours', 'running', 'läuft', 'en curso'],
-    muted: ['hors couverture', 'not in the coverage', 'nicht in der Abdeckung', 'fuera de la cobertura']
+    muted: ['hors couverture ou jamais construite', 'not in the coverage or never built', 'nicht in der Abdeckung oder nie gebaut',
+      'fuera de la cobertura o nunca construida'
+    ]
   },
   // la ligne d'un État des procédures : ses terrains détenus (LF : avec le cycle publié ; les autres États : relus), et un point de la carte
   heldCycle: ['{n}, cycle {c}', '{n}, cycle {c}', '{n}, Zyklus {c}', '{n}, ciclo {c}'],

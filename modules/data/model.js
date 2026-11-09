@@ -9,3 +9,4 @@ export * from './model_map.js';
 export * from './model_publish.js';
 export * from './model_route.js';
 export * from './model_update.js';
+export * from './model_status.js';

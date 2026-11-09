@@ -28,6 +28,9 @@ import {
   VERBS_ROUTE
 } from './state.js';
 import {
+  refreshStatus
+} from './status.js';
+import {
   routeRowHtml,
   showRoute,
   wantRoute
@@ -76,6 +79,9 @@ export const STYLE = `
 [data-module="data"] [data-data-head] p{margin:2px 0}
 [data-module="data"] [data-build] h2,[data-module="data"] [data-build] h3{margin:8px 0 4px}
 [data-module="data"] .d-opts{display:flex;flex-wrap:wrap;gap:0 16px}
+[data-module="data"] .d-zrow{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px}
+[data-module="data"] .d-zrow button{min-height:var(--sog-touch)}
+[data-module="data"] .d-zwhy{flex-basis:100%;margin:0 0 4px 28px}
 [data-module="data"] .d-opt{display:flex;gap:8px;align-items:center;min-height:var(--sog-touch);overflow-wrap:anywhere}
 [data-module="data"] .d-opt input{flex:none;width:20px;height:20px;margin:0}
 [data-module="data"] .d-pers p{margin:0 0 4px 28px}
@@ -180,6 +186,12 @@ export async function load(fresh = false) {
   };
   // les zones à construire : toutes celles de la couverture à la première lecture (choix de l'utilisateur gardés ensuite)
   S.ticked ||= new Set(cov.ids);
+  if (fresh || !S
+    .statusAsked
+  ) { // l'état par zone du lanceur : à l'ouverture, puis après chaque opération réelle (le pays orange passe au vert sur sa réponse, SOG-0072)
+    S.statusAsked = true;
+    refreshStatus(S.d.cov.ids);
+  }
   wantRoute(); // le lien « ?source=eurocontrol_rad » : le groupe des procédures et la ligne Route s'ouvrent
   render();
   showRoute();

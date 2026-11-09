@@ -616,7 +616,7 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
     `posts`, `cancels` and `syncs` (the reads of sync-status) and can be changed between steps.  `verbs`: what GET regen/verbs answers: None = an old launcher
     (200 with no list), a list = `{ verbs: [...] }`, an int = that status (404...); `st['verbs_calls']` counts the reads.  `inventory`: what GET data/inventory answers (a body, or `(status, body)`; None = an old
     launcher, 404); `st['inventory_calls']` counts the reads."""
-    st = {'posts': [], 'cancels': [], 'views': list(views), 'i': 0, 'current': last, 'cancelled': False, 'start': start, 'syncs': 0,
+    st = {'status': None, 'posts': [], 'cancels': [], 'views': list(views), 'i': 0, 'current': last, 'cancelled': False, 'start': start, 'syncs': 0,
           'sync': sync or {'changes': 0, 'ahead': 0, 'merging': False, 'last': None}, 'verbs': verbs, 'verbs_calls': 0,
           'inventory': inventory, 'inventory_calls': 0}
 
@@ -659,6 +659,8 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
                 code, body = st['start']
                 if code == 409 and busy_view:
                     st['current'] = busy_view
+            elif 'id=' in u.query and st['posts'] and st['posts'][-1].get('verb') == 'status' and st.get('status') is not None:
+                body = {'id': 'jst', 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': 'zones', 'log': [], 'result': st['status'], 'zones': {}}
             elif 'id=' in u.query:
                 if st['cancelled'] and cancel_view:
                     body = cancel_view
@@ -3844,15 +3846,38 @@ def _bytes(c, kb):
     return c.js("async ([kb, lang]) => (await import('/modules/data/model.js')).fmtBytes(kb * 1024, lang)", [kb, c.lang])
 
 
-@case('L36', 'Données: « Mettre à jour » downloads, then rebuilds only the stale zones after ONE question that names them, why and the size; « Tout recalculer » is today\u2019s build; nothing stale: said, no question', 'L', tags=('data',), langs4=True,
+_VERBS = ['base/fetch', 'base/build', 'base/purge', 'base/status']
+
+
+def _zst(state, *reasons, buildable=True):
+    """One zone of the launcher\u2019s base/status answer."""
+    return {'state': state, 'reason': reasons[0] if reasons else None, 'reasons': list(reasons), 'buildable': buildable, 'builtCycle': '2026-10-29', 'expectedCycle': '2026-11-26', 'parserVersion': 22}
+
+
+def _status(zones):
+    """The result of base/status for `zones` ({ id: _zst(...) })."""
+    counts = {}
+    for z in zones.values():
+        counts[z['state']] = counts.get(z['state'], 0) + 1
+    return {'ok': True, 'current': '2026-10-29', 'parserVersion': 22, 'counts': counts, 'zones': zones}
+
+
+_NEWER = {'code': 'source-newer', 'source': 'sia', 'cycle': '2026-11-26', 'built': '2026-10-29'}
+_ALL_OK = lambda: _status({z: _zst('up-to-date') for z in ('ca', 'es', 'fr', 'gb', 'us')})
+_FR_STALE = lambda: _status({'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'fr': _zst('stale', _NEWER), 'gb': _zst('up-to-date'), 'us': _zst('up-to-date')})
+_posts = lambda st, verb: [p for p in st['posts'] if p.get('verb') == verb]
+
+
+@case('L36', 'Données: « Mettre à jour » downloads, reads the launcher\u2019s state (base/status), then rebuilds only the zones that are not up to date after ONE question that names them, why and the size; « Tout recalculer » is today\u2019s build; nothing to do: said, no question', 'L', tags=('data',), langs4=True,
       designs=('standard',), screens=False, night=False,
-      rule='SOG-0071 time 1 (V3_SPECIFICATION § 10.44): three verbs on the selection — Mettre à jour (fetch, then build the zones the page knows are stale: never built, or a published cycle older than the one the source holds), Tout recalculer (the whole selection), Purger; the confirmation names the count and the size')
+      rule='SOG-0071 (V3_SPECIFICATION § 10.44): three verbs on the selection — Mettre à jour (fetch, then base/status, then the build of the zones the LAUNCHER says are not up to date and buildable), Tout recalculer (the whole selection), Purger; the confirmation names the count, the reasons and the size')
 def l36(c):
     lang = c.lang
     _t, cur, prev, _n = _cycles()
     fetched = _view('done', step='Terminé', result={'fetched': ['fr'], 'unchanged': ['ca', 'es', 'gb', 'us'], 'failed': [], 'manual': []})
     built = _view('done', step='Terminé', jid='j2', zones={'fr': _zs('built', 4, 4, commit='abc1234')}, result={'built': ['fr'], 'failed': [], 'commits': [{'zone': 'fr', 'commit': 'abc1234'}], 'cycle': cur.isoformat(), 'current': cur.isoformat(), 'stale': False, 'blocking': []})
-    st = _launcher(c, [fetched], verbs=['base/fetch', 'base/build', 'base/purge'])
+    st = _launcher(c, [fetched], verbs=_VERBS)
+    st['status'] = _FR_STALE()
     cfg, _ = _fixture()
     _open(c, _sized(cfg))
     _all_open(c)
@@ -3861,26 +3886,34 @@ def l36(c):
          'the verbs row: Mettre à jour, Télécharger, Tout recalculer (today\u2019s build), Purger', what='verbs')
     total = sum(_KB.values())
     c.eq(norm(c.text('[data-selection-line]')), norm(_UT('selLine', lang).replace('{z}', _zones_text(lang, 5)) + ' · ' + _bytes(c, total)), 'the selection says its count and its size before any verb', what='selection line')
-    # ---- Mettre à jour: the fetch first, then ONE question that names the stale zone (France: its published cycle is one behind), the reason, the size
+    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the state of the five zones, read at the opening')
+    n0 = len(st['posts'])
+    # ---- Mettre à jour: the fetch, the state, then ONE question that names France (the launcher says: source newer), the reason, the size
     c.tap('[data-build] [data-verb=update]')
     q = _ask_text(c)
-    c.eq({k: st['posts'][0][k] for k in ('set', 'verb')} | {'zones': sorted(st['posts'][0]['args']['zones'])}, {'set': 'base', 'verb': 'fetch', 'zones': ['ca', 'es', 'fr', 'gb', 'us']}, 'the first call is the download of the whole selection', what='fetch body')
+    c.eq([p['verb'] for p in st['posts'][n0:]], ['fetch', 'status'], 'the download first, then the state is read from the launcher', what='order')
+    c.eq(sorted(_posts(st, 'fetch')[0]['args']['zones']), ['ca', 'es', 'fr', 'gb', 'us'], 'the download is that of the whole selection', what='fetch body')
     fr = {'fr': 'France', 'en': 'France', 'de': 'Frankreich', 'es': 'Francia'}[lang]
-    c.ok(fr in q['text'] and _bytes(c, _KB['fr']) in q['text'] and norm(_UT('whyCycle', lang).split('{p}')[0]) in norm(q['text']) and 'Espagne' not in q['text'] and 'Spain' not in q['text'],
-         q['text'], 'the question names France, why (published cycle behind) and the size of France alone; not the zones that are up to date')
+    c.ok(fr in q['text'] and _bytes(c, _KB['fr']) in q['text'] and norm(_trow('source-newer', lang, after='  zr: {').split('{source}')[0]) in norm(q['text']) and 'Espagne' not in q['text'] and 'Spain' not in q['text'],
+         q['text'], 'the question names France, the launcher\u2019s reason and the size of France alone; not the zones that are up to date')
     c.eq(norm(q['ok']), norm(_UT('update', lang)), 'one-word confirmation', what='ok')
     st['views'] = [built]
     st['i'] = 0
     st['start'] = (200, {'job': 'j2'})
+    st['status'] = _ALL_OK()   # what the launcher will say once France is built
     c.tap('.f-modal [data-ok]')
     c.until('document.querySelector("[data-build-result]")', timeout=12000, what='the build ends')
-    c.eq({k: st['posts'][1][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'build', 'args': {'zones': ['fr'], 'personal': []}}, 'only the stale zone is built', what='build body')
-    # ---- nothing stale any more: the download, a sentence, no question, no build
-    c.js("window.__stub.publication.base.fr = { ...window.__stub.publication.base.gb, cycleSource: 'sia' }")
+    c.eq({k: _posts(st, 'build')[0][k] for k in ('set', 'verb', 'args')}, {'set': 'base', 'verb': 'build', 'args': {'zones': ['fr'], 'personal': []}}, 'only the zone the launcher called stale is built', what='build body')
+    for _ in range(40):   # the state is read again at the end of the build: no reload
+        if c.js("[...document.querySelectorAll('[data-zstate]')].map(b => b.dataset.zstate).join() === 'up-to-date,up-to-date,up-to-date,up-to-date,up-to-date'"):
+            break
+        c.wait(200)
+    c.eq(c.js("[...document.querySelectorAll('[data-zstate]')].map(b => b.dataset.zstate)"), ['up-to-date'] * 5, 'after the build the state is read again from the launcher: every zone is up to date', what='state after')
+    # ---- nothing to do: the download, a sentence, no question, no build
     st['views'] = [fetched]
     st['i'] = 0
     st['start'] = (200, {'job': 'j3'})
-    n = len(st['posts'])
+    nb = len(_posts(st, 'build'))
     c.tap('[data-build] [data-verb=update]')
     said = norm(_UT('none', lang).split('{n}')[0])
     for _ in range(48):
@@ -3888,57 +3921,187 @@ def l36(c):
             break
         c.wait(250)
     c.ok(bool(_notes_with(c, said)), None, 'the sentence: nothing to rebuild')
-    c.eq([len(st['posts']) - n, c.count('.f-modal')], [1, 0], 'only the download left, no question, no build', what='nothing stale')
+    c.eq([len(_posts(st, 'build')) - nb, c.count('.f-modal')], [0, 0], 'no question, no build', what='nothing to do')
     # ---- Tout recalculer: today\u2019s build on the whole selection, as it was
     st['views'] = [built]
     st['i'] = 0
     st['start'] = (200, {'job': 'j4'})
     c.tap('[data-build] [data-verb=build]')
     c.until('document.querySelector("[data-build-result]")', timeout=12000, what='the build ends')
-    c.eq(sorted(st['posts'][-1]['args']['zones']), ['ca', 'es', 'fr', 'gb', 'us'], 'Tout recalculer builds the whole selection', what='recompute body')
+    c.eq(sorted(_posts(st, 'build')[-1]['args']['zones']), ['ca', 'es', 'fr', 'gb', 'us'], 'Tout recalculer builds the whole selection', what='recompute body')
     c.check_errors()
 
 
 _ticked = lambda c: c.js("[...document.querySelectorAll('[data-build-zone]')].filter(i => i.checked).map(i => i.dataset.buildZone)")
 
 
-@case('L37', 'Données: « Seulement les périmés » (the stale zones only, the page\u2019s provisional criterion), « Tout désélectionner », the selection line; nothing is written in data/', 'L', tags=('data',), langs4=True,
+@case('L37', 'Données: « Seulement les périmés » (the zones the launcher says are not up to date and buildable), « Tout désélectionner », the selection line; no job is started by a gesture except the state read', 'L', tags=('data',), langs4=True,
       designs=('standard',), screens=False, night=False,
-      rule='SOG-0071 time 1: the selection gestures — only the stale ones, deselect all; the selection stays in the page\u2019s state and is written nowhere before a verb')
+      rule='SOG-0071: the selection gestures — only the stale ones (read from base/status), deselect all; the selection stays in the page\u2019s state and is written nowhere before a verb')
 def l37(c):
     lang = c.lang
-    st = _launcher(c, [], verbs=['base/fetch', 'base/build', 'base/purge'])
+    st = _launcher(c, [], verbs=_VERBS)
+    st['status'] = _FR_STALE()
     cfg, _ = _fixture()
     _open(c, _sized(cfg))
     _all_open(c)
     c.eq(_ticked(c), ['ca', 'es', 'fr', 'gb', 'us'], 'every zone of the coverage is ticked at the first opening', what='first selection')
-    # ---- only the stale ones: France is one cycle behind its source (published cycle older), the others are up to date
+    # ---- only the stale ones: the launcher says France
     c.tap('[data-select-row] [data-verb=select-stale]')
     c.until("[...document.querySelectorAll('[data-build-zone]')].filter(i => i.checked).length === 1", timeout=6000, what='the selection became the stale zones')
-    c.eq(_ticked(c), ['fr'], 'only France, the stale zone, stays ticked', what='stale only')
+    c.eq(_ticked(c), ['fr'], 'only France, the zone the launcher calls stale, stays ticked', what='stale only')
     c.eq(norm(c.text('[data-selection-line]')), norm(_UT('selLine', lang).replace('{z}', _zones_text(lang, 1)) + ' · ' + _bytes(c, _KB['fr'])), 'the line follows: one zone and its size', what='line')
     # ---- deselect all
     c.tap('[data-select-row] [data-verb=select-none]')
     c.until("![...document.querySelectorAll('[data-build-zone]')].some(i => i.checked)", timeout=6000, what='nothing ticked')
     c.eq(norm(c.text('[data-selection-line]')), norm(_UT('selNothing', lang)), 'the line says so', what='nothing line')
     c.eq([c.js("document.querySelector('[data-build] [data-verb=update]').disabled"), c.js("document.querySelector('[data-build] [data-verb=build]').disabled")], [True, True], 'no zone: the verbs are grey', what='verbs grey')
-    # ---- nothing is stale: said, the selection is left as it is
-    c.js("window.__stub.publication.base.fr = { ...window.__stub.publication.base.gb, cycleSource: 'sia' }")
-    c.tap('[data-select-row] [data-verb=select-none]')
-    st['views'] = [_view('done', step='Terminé', result={'fetched': [], 'unchanged': ['gb'], 'failed': [], 'manual': []})]
-    st['i'] = 0
+    # ---- a zone that waits for a file of Downloads is not buildable: « only the stale ones » leaves it out; nothing buildable: said, the selection stays
+    st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'fr': _zst('up-to-date'), 'us': _zst('up-to-date'),
+                            'gb': _zst('stale', {'code': 'pickup-waiting', 'source': 'nats', 'set': 'AIP', 'cycle': '2026-11-26', 'zip': 'x.zip'}, buildable=False)})
     c.tap('[data-build-zone="gb"]')
-    c.tap('[data-build] [data-verb=download]')
-    c.until('document.querySelector("[data-build-result]")', timeout=12000, what='the download ends: the page reads the publication again')
     c.tap('[data-select-row] [data-verb=select-stale]')
     said = norm(_UT('noStale', lang))
     for _ in range(40):
         if _notes_with(c, said):
             break
         c.wait(250)
-    c.ok(bool(_notes_with(c, said)), None, 'no stale zone: said')
+    c.ok(bool(_notes_with(c, said)), None, 'nothing buildable is stale: said')
     c.eq(_ticked(c), ['gb'], 'and the selection stays as it was', what='kept')
-    c.eq([p['verb'] for p in st['posts']], ['fetch'], 'the gestures started no job: the only call is the download', what='posts')
+    c.eq(set(p['verb'] for p in st['posts']), {'status'}, 'the gestures started no job: the only calls read the state', what='posts')
+    c.check_errors()
+
+
+@case('L40', 'Données: the state of each zone is drawn from the launcher\u2019s answer (green, orange with its reason on touch, grey, red; blue while the page builds it), on the list and on the map; the orange country turns green on the answer after a build', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0071 time 2 / SOG-0072: base/status per zone — up-to-date, stale(reason), never-built, failed — with the reason codes translated in four languages; after a build the state is read again and the orange zone turns green without a reload')
+def l40(c):
+    lang = c.lang
+    c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/'), lambda r: r.fulfill(status=200, content_type='application/json', body=_ZSTYLE))
+    built = _view('done', step='Terminé', jid='j2', zones={'fr': _zs('built', 4, 4, commit='abc1234')}, result={'built': ['fr'], 'failed': [], 'commits': [{'zone': 'fr', 'commit': 'abc1234'}], 'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False, 'blocking': []})
+    st = _launcher(c, [built], verbs=_VERBS)
+    parser_old = {'code': 'parser-old', 'built': 21, 'current': 22}
+    st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('never-built', {'code': 'never-built'}), 'fr': _zst('stale', _NEWER, parser_old), 'gb': _zst('failed', {'code': 'failed', 'error': 'invalid-output'}),
+                            'us': _zst('stale', {'code': 'inputs-changed', 'count': 2, 'names': ['a.json', 'b.json']})})
+    cfg, _ = _fixture()
+    cfg['outlines'] = _outlines()
+    c.page.add_init_script(_ZHOOK_JS)
+    _open(c, _sized(cfg))
+    _all_open(c)
+    _zmap_ready(c, 'base')
+    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the five pills')
+    pills = lambda: c.js("Object.fromEntries([...document.querySelectorAll('[data-zone-row]')].map(r => [r.dataset.zoneRow, r.querySelector('[data-zstate]').dataset.zstate]))")
+    c.eq(pills(), {'ca': 'up-to-date', 'es': 'never-built', 'fr': 'stale', 'gb': 'failed', 'us': 'stale'}, 'every zone says the state the launcher gave', what='pills')
+    zs = lambda z: _trow(z, lang, after='  zst: {')
+    c.eq(norm(c.text('[data-zone-row=ca] [data-zstate]')), norm(zs('up-to-date')), 'worded in the language of the run', what='pill text')
+    # the reason on touch: nothing is said until the pill is touched; the codes are translated, the parameters filled
+    c.eq(c.count('[data-zone-why]'), 0, 'the reasons stay folded', what='folded')
+    c.tap('[data-zone-row=fr] [data-act=zone-why]')
+    c.until("!!document.querySelector('[data-zone-why=fr]')", timeout=4000, what='the reasons of France')
+    why = norm(c.text('[data-zone-why=fr]'))
+    c.ok(norm(_trow('source-newer', lang, after='  zr: {').split('{source}')[0]) in why and ('v21' in why and 'v22' in why), why, 'the two reasons of France, in words, with their parameters (source newer; parser v21, current v22)')
+    c.tap('[data-zone-row=us] [data-act=zone-why]')
+    c.until("!!document.querySelector('[data-zone-why=us]')", timeout=4000, what='the reasons of the US')
+    c.ok('2' in c.text('[data-zone-why=us]'), c.text('[data-zone-why=us]'), 'inputs-changed says its count')
+    c.tap('[data-zone-row=fr] [data-act=zone-why]')
+    c.until("!document.querySelector('[data-zone-why=fr]')", timeout=4000, what='a second touch folds the reasons')
+    # the map: the same states as tones (green, orange, grey, red)
+    tone = lambda z: (_zfeat(c, 'base', z) or {}).get('tone')
+    c.eq({z: tone(z) for z in ('fr', 'gb', 'es', 'us')}, {'fr': 'warn', 'gb': 'err', 'es': 'muted', 'us': 'warn'}, 'the map draws the same states: orange, red, grey', what='tones')
+    # ---- a build: blue while the page builds it, and the orange country turns green on the launcher\u2019s answer (SOG-0072)
+    c.tap('[data-select-row] [data-verb=select-none]')
+    c.tap('[data-build-zone="fr"]')
+    st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('never-built', {'code': 'never-built'}), 'fr': _zst('up-to-date'), 'gb': _zst('failed', {'code': 'failed', 'error': 'invalid-output'}),
+                            'us': _zst('stale', {'code': 'inputs-changed', 'count': 2, 'names': ['a.json', 'b.json']})})
+    st['views'] = [_view(step='Zone fr', done=0, total=1, zones={'fr': _zs('building', 1, 4)})] * 3 + [built]
+    st['i'] = 0
+    c.tap('[data-build] [data-verb=build]')
+    for _ in range(30):
+        if c.js("document.querySelector('[data-zone-row=fr] [data-zstate]')?.dataset.zstate") == 'building':
+            break
+        c.wait(150)
+    c.eq(c.js("document.querySelector('[data-zone-row=fr] [data-zstate]')?.dataset.zstate"), 'building', 'while the page builds the zone its pill is « en cours »', what='building')
+    c.until('document.querySelector("[data-build-result]")', timeout=12000, what='the build ends')
+    c.until("document.querySelector('[data-zone-row=fr] [data-zstate]').dataset.zstate === 'up-to-date'", timeout=8000, what='the orange country is green on the launcher\u2019s answer')
+    c.until(f"(() => {{ const m = window.__zm.base, p = m.project({json.dumps(_ZC['fr'])}); const f = m.queryRenderedFeatures([p.x, p.y], {{ layers: ['{_ZFILL}'] }})[0]; return !!f && f.properties.tone === 'ok' }})()", timeout=8000, what='and so is its polygon on the map')
+    c.check_errors()
+
+
+@case('L41', 'Données: « Mettre à jour » on a base built with an older parser: the question says « n zones, parser changed » once (not n lines), warns that it is long, and says the zones waiting for a file of Downloads; those are not built', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0071 time 2: on the user\u2019s workstation the first update rebuilds every zone (parser 21 → 22), the confirmation says so; a zone that waits for a file (pickup-waiting, not buildable) is said and left out')
+def l41(c):
+    lang = c.lang
+    fetched = _view('done', step='Terminé', result={'fetched': [], 'unchanged': ['ca', 'es', 'fr', 'gb', 'us'], 'failed': [], 'manual': []})
+    st = _launcher(c, [fetched], verbs=_VERBS)
+    old = {'code': 'parser-old', 'built': 21, 'current': 22}
+    many = ['aa', 'ab', 'ac', 'ad', 'ae', 'af', 'ag', 'ah', 'ai', 'aj', 'ak']
+    zones = {z: _zst('stale', old) for z in ['ca', 'es', 'fr', 'us'] + many}
+    zones['gb'] = _zst('stale', {'code': 'pickup-waiting', 'source': 'nats', 'set': 'AIP', 'cycle': '2026-11-26', 'zip': 'x.zip'}, buildable=False)
+    st['status'] = _status(zones)
+    cfg, _ = _fixture()
+    for z in many:
+        cfg['zones'].append({'id': z, 'names': [z.upper()] * 4, 'frames': [], 'published': True})
+        cfg['publication']['base'][z] = cfg['publication']['base']['ca']
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-zstate]').length === 16", timeout=10000, what='the state of the sixteen zones')
+    n0 = len(st['posts'])
+    c.tap('[data-build] [data-verb=update]')
+    q = _ask_text(c)
+    nine = norm(_UT('whyMany', lang).replace('{n}', _zones_text(lang, 15)).split('{r}')[0])
+    c.ok(nine in norm(q['text']) and norm(_trow('parser-old', lang, after='  zr: {').split('{built}')[0]) in norm(q['text']), q['text'], 'ONE line for the fifteen zones: « 15 zones : built with an older parser (v21, current v22) »')
+    c.ok(q['text'].count('v21') == 1, q['text'], 'said once, not fifteen times')
+    c.ok(norm(_UT('long', lang)) in norm(q['text']), q['text'], 'it says it may take a while')
+    c.ok(norm(_UT('waiting', lang).split('{n}')[1].split('{z}')[0]) in norm(q['text']), q['text'], 'and that one zone waits for a file of Downloads (named)')
+    st['views'] = [_view('done', step='Terminé', jid='j2', result={'built': [], 'failed': [], 'commits': [], 'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False, 'blocking': []})]
+    st['i'] = 0
+    st['start'] = (200, {'job': 'j2'})
+    c.tap('.f-modal [data-ok]')
+    c.until('document.querySelector("[data-build-result]")', timeout=12000, what='the build ends')
+    zs = _posts(st, 'build')[0]['args']['zones']
+    c.eq([len(zs), 'gb' in zs], [15, False], 'the fifteen buildable zones are built; the zone that waits for its file is not', what='build body')
+    c.check_errors()
+
+
+@case('L42', 'Données: when the launcher’s state cannot be read (a refused or failed base/status), « Mettre à jour » says so and builds nothing; no pill is invented', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0071 time 2: never a build in the dark — without the launcher’s state the update stops after the download and says it; an old launcher without base/status keeps « Mettre à jour » grey with its reason')
+def l42(c):
+    lang = c.lang
+    fetched = _view('done', step='Terminé', result={'fetched': [], 'unchanged': ['ca', 'es', 'fr', 'gb', 'us'], 'failed': [], 'manual': []})
+    st = _launcher(c, [fetched], verbs=_VERBS)
+    st['status'] = {'ok': False, 'reason': 'failed', 'message': 'no'}
+    cfg, _ = _fixture()
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.wait(600)
+    c.eq(c.count('[data-zstate]'), 0, 'an unreadable state draws no pill', what='no pill')
+    c.tap('[data-build] [data-verb=update]')
+    said = norm(_UT('noStatus', lang))
+    for _ in range(48):
+        if _notes_with(c, said):
+            break
+        c.wait(250)
+    c.ok(bool(_notes_with(c, said)), None, 'the update says the state could not be read')
+    c.eq([len(_posts(st, 'build')), c.count('.f-modal')], [0, 0], 'no build, no question: never a build in the dark', what='nothing built')
+    c.check_errors()
+
+
+@case('L43', 'Données: a launcher that does not know base/status keeps « Mettre à jour » and « Seulement les périmés » without an answer: grey with its reason, nothing sent, no pill', 'L', tags=('data',),
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0071 time 2: the verb is read from regen/verbs like the others; an old launcher greys « Mettre à jour » (« ne connaît pas encore cette opération »); « Tout recalculer » (base/build) stays live')
+def l43(c):
+    st = _launcher(c, [], verbs=['base/fetch', 'base/build', 'base/purge'])
+    cfg, _ = _fixture()
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.wait(500)
+    c.eq([c.js("document.querySelector('[data-build] [data-verb=update]').disabled"), c.js("document.querySelector('[data-build] [data-verb=build]').disabled"), c.count('[data-zstate]')], [True, False, 0],
+         'Mettre à jour is grey, Tout recalculer is live, no pill is drawn', what='old launcher')
+    c.eq(c.js("document.querySelector('[data-verb=select-stale]').disabled"), True, '« Seulement les périmés » is grey: it has no state to read', what='select-stale grey')
+    c.wait(400)
+    c.eq(len(st['posts']), 0, 'nothing is sent', what='posts')
     c.check_errors()
 
 

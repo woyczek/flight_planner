@@ -328,16 +328,28 @@ The launcher's job `route/import-rad` (`tools/regen/route.py`, `frame/aerodb/INT
 
 The base panel's row is **Mettre à jour · Télécharger · (Prendre le fichier) · Tout recalculer · Purger**; above the zones list, a row **Seulement les périmés · Tout désélectionner** and the line **Sélection : n zones · taille**.
 
-- **Mettre à jour** (`update.js`, `startUpdate`): the download of the whole selection (the ordinary `base/fetch`, its own result and notification), then `model_update.staleZones` over the selection, then — if some zone is stale — **one question** that
-  names the count (« 1 des 5 zones cochées »), the size (sum of `publishedKb` of those zones, « + » when a size is unknown) and, per zone, why (`jamais construite`, or `cycle publié 2610, source 2611`), then `base/build` on those zones only (the personal
-  sources ticked go with them). Nothing stale: one sentence, no question, no build. A download that fails or is stopped stops the verb. **Provisional criterion** (until the launcher's `base/status` exists): a zone is stale when `publication().base` has no
-  cycle in force for it, or when its published cycle (`inForce`) is older than the cycle its dated source (`cycleSource`) holds — the last known `sources` (the download's result, else the journal), else the AIRAC cycle in force; a zone with no dated source
-  and published is never stale. Time 2 replaces the criterion by the launcher's state.
+- **Mettre à jour** (`update.js`, `startUpdate`): the download of the whole selection (the ordinary `base/fetch`, its own result and notification), then **the launcher's state** (`base/status`, § 5.9) for the selection, then — if some zone is not up to date and
+  buildable — **one question** that names the count (« 1 des 5 zones cochées »), the size (sum of `publishedKb` of those zones, « + » when a size is unknown) and why: the first reason of each zone, **one sentence per reason when it is shared by more than three zones**
+  (« 45 zones : construites avec un ancien analyseur (v21, actuel v22) »), « Cela peut être long » from ten zones; the zones that wait for a file of Downloads (`pickup-waiting`, `source-old`: not buildable) are named and left out (« Prendre le fichier téléchargé » first);
+  then `base/build` on the buildable zones only (the personal sources ticked go with them). Nothing to rebuild: one sentence, no question, no build. A download that fails or is stopped stops the verb; **an unreadable state stops it too, and says so: never a build in the dark**.
+  The page composes the verb (download, state, question, build) instead of the launcher's one-job `base/update`: that job cannot ask between the state and the build, and the question must name what the download just changed.
 - **Tout recalculer** is the build as it was (`data-verb="build"`, no new question: its cost shows in the *Sélection* line before the tap), on the whole selection whatever its state. **Purger** is unchanged (its plan and its question).
-- **Seulement les périmés**: the selection becomes the stale zones of the coverage (same criterion, no download); none: said, the selection stays. **Tout désélectionner**: nothing ticked (the verbs grey). The selection is `S.ticked`, in the page's state: never written to `data/`.
+- **Seulement les périmés**: reads the state (`base/status`) for the coverage, then the selection becomes the zones that are not up to date and buildable (no download); none: said, the selection stays; state unreadable: said. Grey without `base/status` in `regen/verbs`. **Tout désélectionner**: nothing ticked (the verbs grey). The selection is `S.ticked`, in the page's state: never written to `data/`.
 - **The rectangle** (`zonemap.js`, `installRect`): **Shift + drag** on the base map (the map's own Shift-zoom is off), or **two fingers held 400 ms** within 14 px of where they landed (the rectangle runs from one finger to the other; the map's pan and pinch are
   suspended for the gesture and given back after); fingers that move earlier are an ordinary pinch (nothing drawn). The zones of the **coverage** whose frame (`box`) touches the rectangle (longitudes tried at ±360°) are counted live (« 14 pays », in the rectangle's corner)
   and ticked **at the release** (added to the selection, never replacing it); a zone outside the coverage is never added by a rectangle. Cases L36 (verbs), L37 (selection gestures), L38 (rectangle, mouse), L39 (rectangle, two fingers, 390 px capture).
+
+### 5.9 The state per zone, drawn (SOG-0071, time 2)
+
+`base/status` (`status.js`, `model_status.js`; contract in `frame/aerodb/INTEGRATION.md` « The state per zone »): a launcher job, `{ zones: [ids ≤ 60] }`, nothing written, refused (409) while a build runs (so never asked then: the page knows it is building).
+Read at the opening and **again after every real operation** (`load(true)`): that is how the orange country of SOG-0072 turns green on the launcher's answer, not on a reload. One call at a time; an answer that does not read (`M.statusOf`: closed lists of states and codes,
+bounded texts and numbers, hostile ids dropped) leaves the previous state and draws nothing new.
+
+- **On the list**: each zone line carries a pill — `À jour` (green), `À reconstruire` (orange), `Jamais construite` (grey), `En échec` (red), `En cours` (blue, the page's own: a build of the zone is running). The pill of a zone that is not up to date is a button (44 px): a touch opens its
+  **reasons**, a second folds them (`S.whyOpen`, page state). Each reason is a **code** translated in four languages (`TX.zr`: never-built, failed, pickup-waiting, source-newer, inputs-changed, parser-old, files-missing, source-old; an unknown code says it is unknown) with its parameters filled
+  (source name from the catalogue, dates, parser versions, counts).
+- **On the map**: the same states as tones (`STATE_TONE`: green, orange, grey, red, accent); a zone without a known state keeps the tone of the publication, as before. The legend names the five.
+- **« Mettre à jour » and « Seulement les périmés »** read this state (§ 5.8). Without `base/status` in `regen/verbs`: no pill, both grey (`unknown-verb`), « Tout recalculer » unaffected. Cases L36, L37, L40–L43.
 
 ### 5.4 Building on the launcher: one process per zone
 

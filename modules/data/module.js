@@ -31,6 +31,9 @@ import {
   renderBuild
 } from './panels.js';
 import {
+  toggleWhy
+} from './status.js';
+import {
   selectNone,
   selectStale,
   startUpdate
@@ -125,6 +128,8 @@ function opOf(v) {
 function onClick(e) {
   const mv = e.target.closest?.('button[data-move]');
   if (mv) return mv.disabled ? undefined : moveClick(mv); // « Ranger les sources brutes » (carte Inventaire)
+  const zw = e.target.closest?.('[data-act="zone-why"]');
+  if (zw) return toggleWhy(zw.dataset.zone); // la pastille d'une zone : ses raisons (SOG-0071)
   const rc = e.target.closest?.('[data-act="map-recenter"]');
   if (rc) return recenterMap(rc.closest('[data-zone-map]')?.dataset.zoneMap);
   const g = e.target.closest?.('details.f-group > summary')?.parentElement;
@@ -198,6 +203,10 @@ export async function mount(el, ctx) {
     again: 0,
     ticked: null, // zones cochées pour la construction (toutes à la première lecture)
     personal: new Set(), // sources sous licence personnelle cochées : celles mémorisées sur ce poste (cache/data/personal.json), aucune la première fois
+    status: null, // l'état par zone que le lanceur a dit (base/status, M.statusOf) : { current, parserVersion, zones: { id: { state, reasons, buildable } } } ; null : jamais lu
+    statusP: null, // la lecture en cours (une seule à la fois)
+    statusAsked: false, // l'état a été demandé à l'ouverture
+    whyOpen: new Set(), // les zones dont la pastille montre ses raisons
     updating: false, // « Mettre à jour » est entre son téléchargement et sa construction (update.js)
     route: routeInit(), // la ligne « Route (RAD, points FRA) » : phase, plan montré, dernière fin, cycles présents (route.js)
     personalRead: false, // la mémoire des sources personnelles a été lue (une fois par montage)

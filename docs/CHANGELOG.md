@@ -23,6 +23,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   rendezvous, route provided, maps provided, payload and aircraft). Zones and maps open the Map, never a PNG when the mission has
   coordinates; a legacy mission without coordinates shows its PNG. Two screens on a phone (the browser's back returns), side by side
   from 900 px.
+- **Data: the launcher's state per zone, drawn; « Mettre à jour » and « Seulement les périmés » read it** (`modules/data/status.js`, `model_status.js`, `update.js`, `zonemap.js`, `panels.js`; Data SPEC § 5.8–5.9; help ×4; L36, L37, L40–L43) — SOG-0071, time 2:
+  `base/status` per zone read at the opening and after each operation; a pill on each zone (green, orange with its reasons on touch in four languages, grey, red, blue while building) and the same tones on the map — the orange country turns green on the launcher's answer;
+  « Mettre à jour » downloads, reads the state, asks once (« 45 zones : construites avec un ancien analyseur », « Cela peut être long », the zones waiting for a file named and left out) and builds the buildable ones; an unreadable state builds nothing. The provisional criterion of time 1 is removed.
 - **Mission categories: Missions and the report read them** (`frame/lib/mission.js` `categoryOf`, `frame/lib/current_flight.js`
   `missionCategory`, `modules/missions/module.js`, `modules/report/module.js`, `modules/fuel/module.js`; Missions SPEC § 3, report SPEC § 3,
   Fuel INTEGRATION, DECISIONS, help; noreg N11, G7; SOG-0041, the readers' lot of § 10.38). A mission says its category; Missions filters

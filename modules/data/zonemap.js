@@ -83,6 +83,10 @@ function mapToneOf(kind, id) {
     // la base : publiée si la zone a un cycle en vigueur, daté ou non (SOG-0026 : les États-Unis et le Canada n'ont pas de cycle daté, ils ne sont pas « dépassés ») ; les procédures : le cycle de procédures
     b = kind === 'base' ? M.baseOf(pub?.base, [zone]) : null,
     cycle = b ? b.cycle : pub?.proc?.inForce || null;
+  // la base : l'état du lanceur (base/status) quand il est connu pour une zone de la couverture (vert, orange, gris, rouge ; bleu pendant que la page la traite), sinon la teinte de la publication
+  const ds = kind === 'base' && S.d.cov.ids.includes(zone) ? M.drawnState(S.status, zone, !!S.run && S.run.set === kind && S.run.verb !==
+    'purge' && S.ids.includes(id)) : null;
+  if (ds) return M.STATE_TONE[ds];
   return M.mapTone({
     inCoverage: S.d.cov.ids.includes(zone),
     running: !!S.run && S.run.set === kind && S.ids.includes(id),
@@ -114,7 +118,7 @@ export function zoneMapHtml(kind) {
   return `<div class="d-map" data-zone-map="${kind}" role="group" aria-label="${esc(tt(TX.zoneMap[kind]))}"><div data-zone-slot></div>${kind === 'proc' ? '<p class="f-muted" data-point-info role="status"></p>' : ''}
     ${kind === 'base' ? `<p class="f-muted" data-rect-hint>${esc(tt(TX.upd.rectHint))}</p>` : ''}
     <p class="d-map-row"><button type="button" data-act="map-recenter">${esc(tt(TX.mapRecenter))}</button></p>
-    <p class="f-muted" data-zone-legend>${esc(tt(TX.mapLegend))} :${['ok', 'warn', 'accent', 'muted'].map(t => `<span class="d-sw" data-tone="${t}"></span>${esc(tt(TX.mapTone[t]))}`).join(' · ')}${entries.some(e => e.approx) ? ` · ${esc(tt(TX.mapLegendApprox))}` : ''}. ${esc(tt(TX.mapLegendNote))}</p></div>`;
+    <p class="f-muted" data-zone-legend>${esc(tt(TX.mapLegend))} :${['ok', 'warn', 'err', 'accent', 'muted'].map(t => `<span class="d-sw" data-tone="${t}"></span>${esc(tt(TX.mapTone[t]))}`).join(' · ')}${entries.some(e => e.approx) ? ` · ${esc(tt(TX.mapLegendApprox))}` : ''}. ${esc(tt(TX.mapLegendNote))}</p></div>`;
 }
 /** Une couleur du design (un jeton --sog-…) résolue en rgb(), la seule forme que MapLibre lit (il ne lit pas les variables CSS). */
 function token(name) {
@@ -130,6 +134,7 @@ function mapColors() {
   return {
     ok: token('--sog-ok'),
     warn: token('--sog-warn'),
+    err: token('--sog-err'),
     muted: token('--sog-muted'),
     line: token('--sog-accent')
   };

@@ -1,5 +1,5 @@
-// V3 data — « Mettre à jour » et les gestes de sélection de la base (SPEC § 5.8, V3_SPECIFICATION § 10.44, SOG-0071, temps 1) : le verbe qui télécharge puis ne reconstruit que les zones périmées (critère PROVISOIRE de model_update.staleZones, en
-// attendant base/status du lanceur), « Seulement les périmés », « Tout désélectionner » et la ligne de ce que la sélection pèse. La sélection reste dans l'état de la page (S.ticked) : rien n'en est écrit dans data/ avant un verbe.
+// V3 data — « Mettre à jour » et les gestes de sélection de la base (SPEC § 5.8, § 5.9, V3_SPECIFICATION § 10.44, SOG-0071) : le verbe qui télécharge puis ne reconstruit que les zones que le LANCEUR dit pas à jour (base/status) et constructibles, « Seulement les périmés »,
+// « Tout désélectionner » et la ligne de ce que la sélection pèse. La sélection reste dans l'état de la page (S.ticked) : rien n'en est écrit dans data/ avant un verbe.
 import * as M from './model.js';
 import {
   TX
@@ -15,7 +15,6 @@ import {
 import {
   buildZones,
   gateOf,
-  knownSources,
   renderBuild,
   selection
 } from './panels.js';
@@ -23,22 +22,18 @@ import {
   launch,
   settle
 } from './follow.js';
+import {
+  fetchStatus,
+  reasonText,
+  statusKnown
+} from './status.js';
 
-/** Les zones de `ids` périmées d'après ce que la page sait aujourd'hui (la publication, le cycle tenu par chaque source datée, à défaut le cycle en vigueur). */
-export function staleNow(ids) {
-  return M.staleZones({
-    ids,
-    pubBase: S.d?.pub?.base,
-    sources: knownSources(),
-    current: S.airac ? S.airac.cycleOf(S.now ?? Date.now()).date : null
-  });
-}
-/** L'état du bouton « Mettre à jour » : celui de « Télécharger » ET de « Construire » (la raison du premier qui est grisé). */
+/** L'état du bouton « Mettre à jour » : celui de « Télécharger » ET de « Construire », et le lanceur doit connaître base/status (sa raison : la première qui grise). */
 export function updateGate() {
   const g = gateOf('base', selection('base').ids.length);
   return {
-    disabled: g.verbs.fetch.disabled || g.verbs.build.disabled,
-    reason: g.verbs.fetch.reason || g.verbs.build.reason
+    disabled: g.verbs.fetch.disabled || g.verbs.build.disabled || !statusKnown(),
+    reason: g.verbs.fetch.reason || g.verbs.build.reason || (statusKnown() ? null : 'unknown-verb')
   };
 }
 /** La taille d'une sélection en texte (« 78,0 Mo ») ; « + » quand certaines zones n'ont pas de taille connue ; '' sans aucune taille. */
@@ -55,10 +50,14 @@ export function selectionLine() {
     z: count('zone', ids.length)
   }) + (size ? ` · ${size}` : '');
 }
-/** « Seulement les périmés » : la sélection devient les zones de la couverture que le critère dit périmées ; aucune : on le dit, la sélection reste. */
-export function selectStale() {
-  if (frozen() || !S.d) return;
-  const stale = staleNow(buildZones().ids);
+/** « Seulement les périmés » : lit l'état des zones de la couverture au lanceur, puis la sélection devient les zones qui ne sont pas à jour et que la construction peut traiter ; aucune : on le dit, la sélection reste ; l'état illisible : on le dit aussi. */
+export async function selectStale() {
+  if (frozen() || !S.d || !statusKnown()) return;
+  const me = S,
+    st = await fetchStatus(buildZones().ids);
+  if (S !== me) return;
+  if (!st) return S.ctx.notify(tt(TX.upd.noStatus), 'err');
+  const stale = M.updatePlan(st, buildZones().ids).build;
   if (!stale.length) return S.ctx.notify(tt(TX.upd.noStale), 'ok');
   S.ticked = new Set(stale.map(s => s.zone));
   renderBuild();
@@ -69,14 +68,28 @@ export function selectNone() {
   S.ticked = new Set();
   renderBuild();
 }
-/** Les raisons du critère en texte : « France : jamais construite ; Royaume-Uni : cycle publié 2610, source 2611 ». */
-function whyText(stale) {
-  const name = z => M.zoneName(S.d.zones, z, li()),
-    cyc = d => (d && S.airac ? M.cycleName(S.airac, d) : '') || d;
-  return stale.map(s => `${name(s.zone)} : ${s.why === 'never' ? tt(TX.upd.whyNever) : tt(TX.upd.whyCycle, { p: cyc(s.published), t: cyc(s.target) })}`).join(' ; ');
+/** Les raisons de la construction en texte : regroupées par raison quand elles sont communes à plusieurs zones (« 45 zones : construites avec un ancien analyseur (v21, actuel v22) »), sinon zone par zone (« France : jamais construite »). */
+function whyText(build) {
+  const name = z => M.zoneName(S.d.zones, z, li());
+  return M.groupReasons(build.map(b => ({
+    zone: b.zone,
+    reasons: b.reasons
+  }))).map(g => g.zones.length > 3 ? tt(TX.upd.whyMany, {
+    n: count('zone', g.zones.length),
+    r: reasonText(g.reason)
+  }) : g.zones.map(z => `${name(z)} : ${reasonText(build.find(b => b.zone === z).reasons[0] || g.reason)}`).join(' ; ')).join(' ; ');
 }
-/** « Mettre à jour » : télécharger la sélection (comme « Télécharger »), puis, parmi les zones cochées, UNE question qui nomme celles qu'on va reconstruire, pourquoi et leur poids, et la construction de celles-là seules. Rien de périmé :
- *  on le dit, sans question. Un téléchargement qui échoue ou s'arrête arrête le verbe (sa fin est déjà dite). */
+/** Les zones qui attendent un fichier de Téléchargements (pas constructibles) en une phrase ; '' sans. */
+function waitingText(waiting) {
+  if (!waiting.length) return '';
+  return tt(TX.upd.waiting, {
+    n: count('zone', waiting.length),
+    z: waiting.map(w => M.zoneName(S.d.zones, w.zone, li())).join(', ')
+  });
+}
+/** « Mettre à jour » : télécharger la sélection (comme « Télécharger »), lire l'état au lanceur (base/status), puis, parmi les zones cochées, UNE question qui nomme celles qu'on va reconstruire, pourquoi (par raison commune quand elles sont nombreuses), leur poids, et la construction de celles-là
+ *  seules. Les zones qui attendent un fichier de Téléchargements sont dites (« Prendre le fichier téléchargé » d'abord) et ne sont pas construites. Rien à reconstruire : une phrase, sans question. Un téléchargement en échec ou arrêté arrête le verbe (sa fin est déjà dite) ; un état
+ *  illisible aussi (on le dit : jamais une construction à l'aveugle). */
 export async function startUpdate() {
   const me = S;
   if (updateGate().disabled) return;
@@ -87,24 +100,29 @@ export async function startUpdate() {
   await settle(me, await launch('base', 'fetch', M.setArgs('base', 'fetch', sel), sel.ids), true);
   if (S !== me) return;
   const verdict = S.lastOp ? M.chainVerdict('fetch', S.lastOp.out) : 'stop';
-  const stale = verdict === 'stop' ? [] : staleNow(sel.ids);
-  if (verdict === 'stop' || !stale.length) {
+  if (verdict === 'stop') {
+    S.updating = false;
+    return renderBuild();
+  }
+  const st = await fetchStatus(sel.ids);
+  if (S !== me) return;
+  const plan = st ? M.updatePlan(st, sel.ids) : null;
+  if (!plan || !plan.build.length) {
     S.updating = false;
     renderBuild();
-    if (verdict !== 'stop') S.ctx.notify(tt(TX.upd.none, {
+    return S.ctx.notify(!plan ? tt(TX.upd.noStatus) : plan.waiting.length ? `${tt(TX.upd.none, { n: count('zone', plan.upToDate) })} ${waitingText(plan.waiting)}` : tt(TX.upd.none, {
       n: count('zone', sel.ids.length)
-    }), 'ok');
-    return;
+    }), plan ? 'ok' : 'err');
   }
-  const ids = stale.map(s => s.zone);
+  const ids = plan.build.map(b => b.zone);
   S.asking = true; // une opération à la fois : les boutons restent gris pendant la question
   renderBuild();
   const yes = await S.ctx.ask(tt(TX.upd.ask, {
     n: ids.length,
     t: sel.ids.length,
     s: sizeText(ids) || tt(TX.upd.sizeUnknown),
-    l: whyText(stale)
-  }), {
+    l: whyText(plan.build)
+  }) + (ids.length >= 10 ? ` ${tt(TX.upd.long)}` : '') + (plan.waiting.length ? ` ${waitingText(plan.waiting)}` : ''), {
     ok: tt(TX.upd.update)
   });
   if (S !== me) return;
