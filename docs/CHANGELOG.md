@@ -13,10 +13,6 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ### V3
 
 - **Data: the build panel with many countries is clean** (`modules/data/panels.js`, `status.js`, `screen.js`; L52) — SOG-0146: the map and ONE list (wide: list on the right of the map; phone: under it), a zone per aligned line, its state a dot and a short word instead of a framed 44 px pill, the line is the target; the list scrolls inside the panel.
-## [Unreleased]
-
-### V3
-
 - **Fuel: the proposed routes published for the Map** (`modules/fuel/module.js`; Fuel SPEC § 9.3, INTEGRATION § 3 bis, DECISIONS, help;
   noreg F114; SOG-0134 a). The routes of the Route step, resolved into positions, go to the Map (event in the double view, a document for a
   Map opened later), with the chosen route and the hovered row; a route touched on the Map is taken. The sketch under the list is withdrawn:
