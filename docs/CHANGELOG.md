@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Settings › Company: the airline's kind and its mission categories** (`frame/settings/access.js`; Settings SPEC § 3 item 8; help ×4; A105) — SOG-0041: two more elements per line (not « Personnel »): the kind
+  (« Commerciale » / « Escadrille (SOG) », `settings.json`) and a fold of the categories (the common base, the airline's own group « Virtuel » added to or removed from, written in `categories.json`); without a kind the Commercial group is inactive and the fold says so.
 - **Fuel: « ⇄ » swaps departure and arrival** (`modules/fuel/module.js`; Fuel SPEC § 9.2, DECISIONS, help; noreg F111; SOG-0127).
   One 44 px button between the two fields, as in RouteSim; the swap is a new pair of aerodromes, so the old route, procedures and OFP
   are cleared, never read backwards. The completion from two characters, seven at most, with the name under the field, was already there.

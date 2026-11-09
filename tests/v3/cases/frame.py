@@ -4118,3 +4118,74 @@ def a103(c):
       rule='V3_SPECIFICATION § 10.38 (mission categories): frame/lib/mission_categories.js — without a file the base (commercial: cargo, passengers, VIP, training, transit, test flights, positioning; virtual: the airline’s own); commercial only for a « va » or the personal airline; every id, name, load and bound of the file filtered (§ 10.36)')
 def a104(c):
     _bench(c, 'frame/lib/test/mission_categories.html', '__catBench')
+
+
+@case('A105', 'Settings › Company: the airline\u2019s kind (commercial / squadron) and its mission categories (SOG-0041): written by the same path as the other files, the commercial group follows the kind, a hostile file is text', 'A', langs4=True, tags=('airline',),
+      designs=('standard',), screens=False, night=False,
+      rule='V3_SPECIFICATION § 10.38: without a kind there is no commercial category; Réglages › Compagnie sets the kind (settings.json `kind`) and adds / removes the airline\u2019s own categories (categories.json, group virtuel); seven elements at most per line; everything read is untrusted')
+def a105(c):
+    lang = c.lang
+    sj = 'frame/settings/access.js'
+    T = lambda k: tx(sj, k, lang, after='const TA = {')
+    evil = '<img src=x onerror=window.__pwn=1>'
+    hostile = {'schema': 1, 'groups': [{'id': 'virtuel', 'names': {'fr': evil}, 'categories': [{'id': 'bad', 'names': {'fr': evil}}, {'id': 'Bad Id', 'names': {'fr': 'x'}}]}]}
+    docs = [['device/level.json', {'level': 3}, 'cache'],
+            ['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}, {'code': 'bbb', 'name': 'Bravo Air'}]}, 'document'],
+            ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'networks': {'ivao': True}}, 'document'],
+            ['airline/aaa/fleet.json', {'schema': 1, 'aircraft': []}, 'document'],
+            ['airline/bbb/settings.json', {'schema': 1, 'name': 'Bravo Air', 'kind': 'sog'}, 'document'],
+            ['airline/bbb/categories.json', hostile, 'document']]
+    sel = lambda code, extra='': f'[data-card="company"] li[data-airline="{code}"] {extra}'.strip()
+    ready = lambda: c.until("document.querySelectorAll('[data-card=\"company\"] li[data-airline]').length === 3 && !!document.querySelector('[data-cats=aaa]')", timeout=15000, what='the lines with their kind and categories')
+    opened = lambda code: c.js(f"document.querySelector('[data-cats={code}]').open = true")
+    c.open('settings?card=company', docs=docs)
+    ready()
+    c.eq(c.count(sel('perso', '[data-airline-more]')) + c.count(sel('perso', '[data-cats]')), 0, '« Personnel » has neither the kind nor the categories here (it is commercial by nature)', what='perso')
+    pressed = lambda code: c.js(f"[...document.querySelectorAll('[data-card=\"company\"] li[data-airline=\"{code}\"] [data-act=companyKind]')].map(b => [b.dataset.kind, b.getAttribute('aria-pressed')])")
+    c.eq([pressed('aaa'), pressed('bbb')], [[['va', 'false'], ['sog', 'false']], [['va', 'false'], ['sog', 'true']]], 'the kind read from settings.json: none, or a squadron', what='kinds')
+    c.eq(c.js(f"document.querySelector('{sel('bbb')} button').dataset.act"), 'companyChoose', 'the first button of a line is still « Choose » (the current airline has none)', what='first button')
+    c.le(c.js(f"document.querySelector('{sel('aaa')}').children.length"), 7, 'a line has seven elements at most: name, code, networks, fleet, choice, kind, categories', what='elements')
+    summ = lambda code: norm(c.text(f'[data-cats={code}] summary'))
+    c.eq(summ('aaa'), norm(T('catSummary').replace('{n}', '0')), 'no kind: the commercial group is inactive, no category counts', what='no kind count')
+    opened('aaa')
+    c.eq(c.count('[data-cats=aaa] [data-cat-group=commercial] .f-muted'), 1, 'and the commercial group says it is inactive for this kind', what='inactive')
+    # ---- the kind: written in settings.json, the rest of the file kept
+    c.tap(sel('aaa', '[data-act=companyKind][data-kind=va]'))
+    d = c.until_doc('airline/aaa/settings.json', lambda d: bool(d and d.get('kind') == 'va'), what='the kind written')
+    c.ok(d['name'] == 'Alpha Air' and d['networks'] == {'ivao': True} and d.get('by') is not None, d, 'the rest of settings.json is kept')
+    ready()
+    c.eq(pressed('aaa')[0], ['va', 'true'], 'pressed', what='va pressed')
+    c.eq(summ('aaa'), norm(T('catSummary').replace('{n}', '7')), 'a commercial airline: the seven categories of the base', what='va count')
+    c.tap(sel('aaa', '[data-act=companyKind][data-kind=va]'))
+    c.until_doc('airline/aaa/settings.json', lambda d: bool(d) and 'kind' not in d, what='the kind cleared by a second tap')
+    ready()
+    # ---- own categories: added (the base becomes the airline\u2019s file), refused, removed
+    c.tap(sel('aaa', '[data-act=companyKind][data-kind=va]'))
+    c.until_doc('airline/aaa/settings.json', lambda d: bool(d and d.get('kind') == 'va'), what='va again')
+    ready()
+    opened('aaa')
+    c.page.fill('[data-f="cat-aaa"]', 'Évacuation sanitaire')
+    c.tap('[data-act=companyCatAdd][data-code=aaa]')
+    doc = c.until_doc('airline/aaa/categories.json', lambda d: bool(d and d.get('groups')), what='categories.json written')
+    own = [g for g in doc['groups'] if g['id'] == 'virtuel'][0]
+    c.eq([[g['id'], len(g['categories'])] for g in doc['groups']], [['commercial', 7], ['virtuel', 1]], 'the file holds the base\u2019s commercial group and the airline\u2019s own', what='file')
+    c.eq(own['categories'][0]['id'], 'evacuation-sanitaire', 'the id is the name without accents, with dashes', what='id')
+    ready()
+    opened('aaa')
+    c.eq(c.count('[data-cats=aaa] li[data-cat=evacuation-sanitaire]'), 1, 'listed, with its remove button', what='listed')
+    before = c.doc('airline/aaa/categories.json')
+    for name, key in (('Fret', 'catDup'), ('   ', 'catBad'), ('!!!', 'catBad')):
+        c.js("document.querySelector('[data-card=\"company\"] [data-msg]').textContent = ''")
+        c.page.fill('[data-f="cat-aaa"]', name)
+        c.tap('[data-act=companyCatAdd][data-code=aaa]')
+        c.until("document.querySelector('[data-card=\"company\"] [data-msg]').textContent.trim() !== ''", timeout=6000, what=f'the refusal {key}')
+        c.eq(norm(c.text('[data-card="company"] [data-msg]')), norm(T(key)), f'{name!r}: said', what=f'refusal {key}')
+    c.eq(c.doc('airline/aaa/categories.json'), before, 'a duplicate of the base and bad names write nothing', what='refused')
+    c.tap('[data-act=companyCatDel][data-code=aaa][data-cat=evacuation-sanitaire]')
+    c.until_doc('airline/aaa/categories.json', lambda d: bool(d) and [len(g['categories']) for g in d['groups']] == [7, 0], what='removed')
+    # ---- a hostile file: text only, bad ids dropped; a squadron: the commercial group inactive
+    ready()
+    c.ok(c.count('[data-cats=bbb] img') == 0 and c.js('window.__pwn === undefined'), None, 'a hostile name is text: no element, nothing runs')
+    opened('bbb')
+    c.eq(c.js("[...document.querySelectorAll('[data-cats=bbb] li[data-cat]')].map(l => l.dataset.cat)"), ['bad'], 'the id that is not of the permitted form is dropped', what='ids')
+    c.check_errors()

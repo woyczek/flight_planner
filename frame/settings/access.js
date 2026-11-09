@@ -315,6 +315,31 @@
     full: ['Vingt compagnies au plus.', 'Twenty airlines at most.', 'Höchstens zwanzig Fluggesellschaften.',
       'Veinte compañías como máximo.'
     ],
+    // le genre de la compagnie et ses catégories de missions (SOG-0041, § 10.38)
+    kindLabel: ['Genre', 'Kind', 'Art', 'Tipo'],
+    kind: {
+      va: ['Commerciale', 'Commercial', 'Kommerziell', 'Comercial'],
+      sog: ['Escadrille (SOG)', 'Squadron (SOG)', 'Staffel (SOG)', 'Escuadrón (SOG)']
+    },
+    kindSaved: ['Genre enregistré.', 'Kind saved.', 'Art gespeichert.', 'Tipo guardado.'],
+    catSummary: ['Catégories de missions ({n})', 'Mission categories ({n})', 'Missionskategorien ({n})',
+      'Categorías de misiones ({n})'
+    ],
+    catInactive: ['inactif pour ce genre', 'inactive for this kind', 'für diese Art inaktiv', 'inactivo para este tipo'],
+    catName: ['Nom de la catégorie', 'Category name', 'Name der Kategorie', 'Nombre de la categoría'],
+    catDel: ['Retirer', 'Remove', 'Entfernen', 'Quitar'],
+    catBad: ['Nom refusé : 1 à 40 caractères, avec au moins une lettre ou un chiffre.',
+      'Name refused: 1 to 40 characters, with at least one letter or digit.',
+      'Name abgelehnt: 1 bis 40 Zeichen, mit mindestens einem Buchstaben oder einer Ziffer.',
+      'Nombre rechazado: 1 a 40 caracteres, con al menos una letra o cifra.'
+    ],
+    catDup: ['Cette catégorie existe déjà.', 'This category already exists.', 'Diese Kategorie gibt es schon.',
+      'Esta categoría ya existe.'
+    ],
+    catFull: ['Quarante catégories au plus.', 'Forty categories at most.', 'Höchstens vierzig Kategorien.',
+      'Cuarenta categorías como máximo.'
+    ],
+    catSaved: ['Catégories enregistrées.', 'Categories saved.', 'Kategorien gespeichert.', 'Categorías guardadas.'],
     added: ['Compagnie ajoutée : {n}.', 'Airline added: {n}.', 'Fluggesellschaft hinzugefügt: {n}.', 'Compañía añadida: {n}.'],
     failed: ['Écriture impossible.', 'Could not write.', 'Schreiben nicht möglich.', 'No se pudo escribir.'],
     // la migration de la compagnie unique d'aujourd'hui vers son dossier (verbe airline/migrate du lanceur)
@@ -415,16 +440,20 @@
       rows = await Promise.all(list.map(async a => {
         // avant la migration, la compagnie d'aujourd'hui (« default ») est à la racine de data/airline/
         const base = known && a.code === 'default' ? 'airline/' : `airline/${a.code}/`,
-          [s, f] = await Promise.all([ad.get(`${base}settings.json`, {
+          [s, f, cats] = await Promise.all([ad.get(`${base}settings.json`, {
             wait: true
           }).catch(() => null), ad.get(`${base}fleet.json`, {
+            wait: true
+          }).catch(() => null), ad.get(`${base}categories.json`, {
             wait: true
           }).catch(() => null)]);
         return {
           ...a,
           name: typeof s?.name === 'string' && s.name ? s.name.slice(0, 60) : a.name,
           nets: airlineNets(s),
-          fleet: airlineFleet(f)
+          fleet: airlineFleet(f),
+          kind: KINDS.includes(s?.kind) ? s.kind : '',
+          cats // le categories.json lu, tel quel : le module des catégories le filtre
         };
       }));
     return [...rows, {
@@ -433,6 +462,88 @@
       nets: [],
       fleet: null
     }];
+  }
+  const KINDS = ['va', 'sog'];
+  let catLibP = null;
+  /** Le module pur des catégories (frame/lib/mission_categories.js), chargé une fois ; null s'il ne se charge pas (la ligne n'a alors ni genre ni catégories). */
+  const catLib = () => catLibP ||= import(new URL('frame/lib/mission_categories.js', ROOT).href).catch(() => null);
+  /** Le dossier d'une compagnie sous data/ : « airline/ » avant la migration (code default), sinon « airline/<code>/ ». */
+  const airlineBase = code => code === 'default' ? 'airline/' : `airline/${code}/`;
+  /** Le bloc d'une ligne pour le genre et les catégories (deux éléments de plus : sept au plus par ligne) ; rien pour « Personnel » ni sans le module. `lang` : la langue des noms. */
+  function airlineMoreHtml(r, CL, lang, t) {
+    if (r.code === PERSO || !CL) return '';
+    const file = CL.clean(r.cats) || CL.clean(CL.BASE),
+      info = CL.forAirline(r.cats, {
+        code: r.code,
+        settings: {
+          kind: r.kind
+        }
+      }),
+      active = new Set(info.groups.map(g => g.id)),
+      code = esc(r.code);
+    return `<div class="f-row" data-airline-more><span class="f-muted">${esc(t(TA.kindLabel))}</span>${KINDS.map(k => `<button type="button" data-act="companyKind" data-code="${code}" data-kind="${k}" aria-pressed="${r.kind === k}">${esc(t(TA.kind[k]))}</button>`).join('')}</div>
+      <details data-cats="${code}"><summary>${esc(t(TA.catSummary, { n: info.all.length }))}</summary>
+        ${file.groups.map(g => `<p data-cat-group="${esc(g.id)}"><b>${esc(g.names[lang] || g.id)}</b>${active.has(g.id) ? '' : ` <span class="f-muted">${esc(t(TA.catInactive))}</span>`}</p>
+          <ul>${g.categories.map(c => `<li data-cat="${esc(c.id)}">${esc(c.names[lang] || c.id)}${g.id === 'virtuel' ? ` <button type="button" data-act="companyCatDel" data-code="${code}" data-cat="${esc(c.id)}">${esc(t(TA.catDel))}</button>` : ''}</li>`).join('')}</ul>`).join('')}
+        <div class="f-row"><input type="text" maxlength="40" data-f="cat-${code}" aria-label="${esc(t(TA.catName))}" placeholder="${esc(t(TA.catName))}"><button type="button" data-act="companyCatAdd" data-code="${code}">${esc(t(TA.save))}</button></div></details>`;
+  }
+  /** Écrit le genre d'une compagnie dans son settings.json (le fichier lu, le champ `kind` posé ou retiré) ; faux si le fichier manque ou ne s'écrit pas. */
+  async function writeKind(env, code, kind) {
+    const ad = airlineData(env.FD),
+      path = `${airlineBase(code)}settings.json`,
+      s = await ad.get(path, {
+        wait: true
+      }).catch(() => null);
+    if (s === null || typeof s !== 'object' || Array.isArray(s)) return false;
+    const next = {
+      ...s,
+      updated_at: now(),
+      by: env.id?.trigram || ''
+    };
+    if (KINDS.includes(kind)) next.kind = kind;
+    else delete next.kind;
+    try {
+      await ad.put(path, next);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  /** Un identifiant de catégorie d'après son nom : minuscules sans accent, tirets, 24 signes au plus ; '' si rien ne reste. */
+  const catId = name => name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(
+    /^-+|-+$/g, '').slice(0, 24).replace(/-+$/g, '');
+  /** Modifie le groupe « virtuel » (les catégories propres de la compagnie) de son categories.json : le fichier d'aujourd'hui, à défaut la base commune, devient le fichier de la compagnie (il remplace la base). `edit(own, file)` rend '' (fait) ou la clé du refus. Rend '' ou la clé du refus. */
+  async function writeCats(env, code, edit) {
+    const CL = await catLib();
+    if (!CL) return 'failed';
+    const ad = airlineData(env.FD),
+      path = `${airlineBase(code)}categories.json`,
+      file = CL.clean(await ad.get(path, {
+        wait: true
+      }).catch(() => null)) || CL.clean(CL.BASE);
+    let own = file.groups.find(g => g.id === 'virtuel');
+    if (!own) {
+      if (file.groups.length >= CL.GROUPS_MAX) return 'catFull';
+      own = {
+        id: 'virtuel',
+        names: CL.BASE.groups[1].names,
+        categories: []
+      };
+      file.groups.push(own);
+    }
+    const refused = edit(own, file, CL);
+    if (refused) return refused;
+    try {
+      await ad.put(path, {
+        schema: 1,
+        groups: file.groups,
+        updated_at: now(),
+        by: env.id?.trigram || ''
+      });
+      return '';
+    } catch {
+      return 'failed';
+    }
   }
   /** La carte Compagnie : le bloc des lignes (rempli par airlineLive) et le formulaire « Ajouter une compagnie » ; le niveau Complet, ou l'adresse #settings?card=company. */
   function airlineHtml(env) {
@@ -457,12 +568,13 @@
     } = env,
     box = view.querySelector('[data-airlines]');
     if (!box) return;
-    const rows = await readAirlines(FD, t);
+    const [rows, CL] = await Promise.all([readAirlines(FD, t), catLib()]),
+      lang = env.c.lang?.() || 'fr';
     if (!view.isConnected) return;
     const can = typeof FD.setAirline === 'function',
       now = String((typeof FD.airline === 'function' ? await Promise.resolve(FD.airline()).catch(() => null) : null)?.code || ''),
       body = rows.map(r => `<li data-airline="${esc(r.code)}"${r.code === now ? ' data-current' : ''}><b>${esc(r.name)}</b> <code>${esc(r.code)}</code>${r.nets.length ? ` <span class="f-muted">${esc(r.nets.map(k => t(TA.net[k])).join(' · '))}</span>` : ''}${r.fleet === null ? '' : ` <span class="f-muted">${esc(t(TA.fleet, { n: r.fleet }))}</span>`}
-        ${r.code === now ? `<span class="f-muted">${esc(t(TA.current))}</span>` : `<button type="button" data-act="companyChoose" data-code="${esc(r.code)}"${can ? '' : ' disabled'}>${esc(t(TA.choose))}</button>`}</li>`).join('');
+        ${r.code === now ? `<span class="f-muted">${esc(t(TA.current))}</span>` : `<button type="button" data-act="companyChoose" data-code="${esc(r.code)}"${can ? '' : ' disabled'}>${esc(t(TA.choose))}</button>`}${airlineMoreHtml(r, CL, lang, t)}</li>`).join('');
     box.innerHTML = body;
     // la migration : seulement sur le poste du lanceur et tant que la compagnie d'aujourd'hui est encore à la racine
     const mig = view.querySelector('[data-mig]');
@@ -531,6 +643,46 @@
       const code = b.dataset.code || '';
       if (!(AIRLINE_CODE.test(code) || code === PERSO) || typeof FD.setAirline !== 'function') return;
       await FD.setAirline(code);
+      return again();
+    }
+    if (act === 'companyKind' || act === 'companyCatAdd' || act === 'companyCatDel') {
+      const code = b.dataset.code || '';
+      if (!AIRLINE_CODE.test(code)) return;
+      if (act === 'companyKind') {
+        const k = KINDS.includes(b.dataset.kind) ? b.dataset.kind : '',
+          cur = b.getAttribute('aria-pressed') === 'true';
+        if (!await writeKind(env, code, cur ? '' : k)) return say('company', t(TA.failed));
+        c.notify(t(TA.kindSaved), 'ok');
+        return again();
+      }
+      let why;
+      if (act === 'companyCatDel') {
+        const id = b.dataset.cat || '';
+        why = await writeCats(env, code, own => {
+          own.categories = own.categories.filter(x => x.id !== id);
+          return '';
+        });
+      } else {
+        const name = val(`cat-${code}`, card('company')).replace(/\s+/g, ' ').slice(0, 41),
+          id = catId(name);
+        if (!name || name.length > 40 || !id) return say('company', t(TA.catBad));
+        why = await writeCats(env, code, (own, file, CL) => {
+          if (file.groups.some(g => g.categories.some(x => x.id === id))) return 'catDup';
+          if (file.groups.reduce((n, g) => n + g.categories.length, 0) >= CL.CATEGORIES_MAX) return 'catFull';
+          own.categories.push({
+            id,
+            names: {
+              fr: name,
+              en: name,
+              de: name,
+              es: name
+            }
+          });
+          return '';
+        });
+      }
+      if (why) return say('company', t(TA[why] || TA.failed));
+      c.notify(t(TA.catSaved), 'ok');
       return again();
     }
     if (act === 'companyPlan' || act === 'companyMigrate') {
@@ -607,7 +759,7 @@
   }
 
   (window.SogSettingsParts ||= {}).airline = {
-    acts: ['companyChoose', 'companyAdd', 'companyPlan', 'companyMigrate'],
+    acts: ['companyChoose', 'companyAdd', 'companyPlan', 'companyMigrate', 'companyKind', 'companyCatAdd', 'companyCatDel'],
     html: airlineHtml,
     live: airlineLive,
     list: airlineList,

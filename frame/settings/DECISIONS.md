@@ -627,3 +627,15 @@ moves code, `S` itself replaced through `setState` alone.
 - **Readers**: a module reads the airline's `categories.json` with its own adapter (`FrameData.airline().root` + `categories.json`, reads `airline/`), passes the content to `forAirline` and escapes the names it draws; **Missions** (a
   mission says its `category`, the filter) and the **report** (the `load` kind says what a commercial flight carries: freight in kg, passengers; nothing is invented) are Features SOG's lots — no reader here, no change to `frame_data.js`.
 - **Not done here** (needs a decision or belongs to the readers): a place in Réglages › Compagnie to set the airline's `kind` and to edit its categories (without a `kind` the commercial group is inactive for a non-personal airline).
+
+## 10 November 2026 — the airline's kind and its mission categories in Réglages › Compagnie (SOG-0041, part b)
+
+- **Why now**: without a `kind` there is no commercial category (`frame/lib/mission_categories.js`), and the user has two airlines to create quickly. The coordinator confirmed the lot after SOG-0125.
+- **Two elements per line, not a new card**: the kind (two toggle buttons) and a fold of the categories: the line stays at seven elements (name, code, networks, fleet, choice, kind, categories). « Choisir » stays the first button of the line (cases A95 and A102 tap it).
+  « Personnel » has neither: it is commercial by nature (`kindOf` says `perso`) and its folder is under `pilot/<tri>/airline/perso/`, which the airline adapter does not reach; its categories stay the base's.
+- **What is editable**: the airline's **own** group `virtuel` only (add, remove). The suite's `commercial` group is the common base and is not edited per airline (a different list of commercial categories would defeat « common »); it can only be inactive (kind).
+  Editing the base per airline is not asked for; if it is, it is a new lot.
+- **Writing**: the first edit writes the whole file (the base's commercial group + the airline's `virtuel`) because a file that exists replaces the base; later edits change `virtuel` only. Same adapter and prefix as `settings.json` / `fleet.json`
+  (`airline/<code>/`, `airline/` for `default`), author and time stamped like them. The kind is written into the file as it was read (`...settings`), never a rebuilt one.
+- **The id of a category** is its name without accents, in lower case with dashes (24 characters); a duplicate of any group (« Fret ») is refused rather than renamed, so a mission that says `fret` keeps meaning the base's.
+- **Counter-test**: without the duplicate check A105 is red (« Fret » would be added). Readers of the categories (Missions, report) are Features SOG's.

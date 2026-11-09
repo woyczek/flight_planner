@@ -329,6 +329,12 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
    and the index (merged by code); a taken code writes nothing. Every file of `data/airline/` is untrusted (§ 10.36): codes by the rule, names
    by `esc`, at most twenty lines. The one-shot migration of today's single airline is the launcher verb `airline/migrate` (`tools/regen/airline.py`,
    case K95), called from this card (below).
+   **Kind and mission categories** (SOG-0041, § 10.38; case A105): under each airline but « Personnel » (commercial by nature), two more elements (seven at most per line: name, code, networks, fleet,
+   choice, kind, categories). The **kind** is two toggle buttons, « Commerciale » / « Escadrille (SOG) » (`va` / `sog`; a second tap clears it): `kind` of the airline's `settings.json`, the rest of the file kept, written by the
+   same adapter as the other files (`airline/` before the migration for `default`). The **categories** are a fold « Catégories de missions (n) » (n: the active ones, `frame/lib/mission_categories.js`): every group of the airline's
+   `categories.json` (or the common base without one), a group the kind makes inactive says so, and for the `virtuel` group (the airline's own) a field + « Ajouter » and a « Retirer » per category. The first write turns the base
+   into the airline's file (it replaces the base); a name whose id (accents and punctuation removed, 24 characters) already exists in any group, an empty or over-long name, or a forty-first category writes nothing and says why.
+   Everything read is untrusted (the module filters ids, bounds and names; the names are drawn by `esc`).
    **Migrate** (follow-up of SOG-0039; case A102): on the launcher's computer (not a paired device), while the frame's list has `default` (the airline is still at
    the root of `data/airline/`), the card adds a block: an optional code field (`^[a-z0-9]{2,8}$`, empty = proposed from the name), « See what would be done »
    (`regen/job { set: 'airline', verb: 'migrate', args: { dry: true, code? } }`: the name, the code, the files and their size, the fleet said empty, the
