@@ -64,7 +64,7 @@ to go to it, “Next” at the bottom of each step); on a wide screen, the five 
 recomputed at each change: correct the route, and the weather, the quote and the wind follow, with no button to press.
 The result (block fuel, trip fuel, time, top of descent) stays visible at the bottom of the screen at every step, with
 where the wind comes from (“wind: METAR LFRS”, “wind: ICON forecast FL060”, “wind typed”). On a phone this bar takes three lines: the context
-(“Block · FL060→090→110→070 · wind ARPEGE FL060”, in full when touched), the block fuel, then three tiles “Trip”,
+(“FA50 · F-GXXX · Block · FL060→090→110→070 · wind ARPEGE FL060”: the aircraft of the quote first, “type estimate” when no sheet serves, and a tap on it opens the aircraft choice; in full when the line is touched), the block fuel, then three tiles “Trip”,
 “Time” and “TOD” (top of descent). The screen always opens on the “Quote” tab; the sheets open with the “Sheets” tab. A ✓ marks a completed step.
 Levels are written the same way everywhere: as FL from 5,000 ft up (FL060), in feet below (3,500 ft).
 
@@ -237,7 +237,7 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: 4b9a0d45d573 -->
+<!-- fr: 2b905f63f9b7 -->
 
 <!-- chapter: maps -->
 # Map

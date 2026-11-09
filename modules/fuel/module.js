@@ -1592,6 +1592,7 @@ ${PROC_STYLE}
    (primitives du cadre inchangées). */
 [data-module="fuel"] .fu-result{display:block;padding:8px 12px}
 [data-module="fuel"] .fu-result .fu-ctx{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:var(--sog-size-s)}
+[data-module="fuel"] .fu-result .fu-acline{display:inline;padding:0;min-height:0;font:inherit;font-weight:600;vertical-align:baseline}
 [data-module="fuel"] .fu-big{font-size:var(--sog-h1);font-weight:700;line-height:1.2}
 @container (max-width: 759px){
   [data-module="fuel"] .fu-big{font-size:var(--sog-h2)}
@@ -2094,6 +2095,7 @@ function onPlanClick(e) {
   const pk = e.target.closest('[data-pick]');
   if (pk) return pickAircraft(pk.dataset.pick);
   if (e.target.closest('[data-do="acopen"]')) return acOpen();
+  if (e.target.closest('[data-do="acgo"]')) return acGo();
   if (e.target.closest('[data-do="when30"]')) return setWhen(30);
   if (e.target.closest('[data-do="whennow"]')) return setWhen(0);
   const wb = e.target.closest('[data-do="wx"]');
@@ -2754,6 +2756,25 @@ function pickAircraft(key) {
   panel.querySelector('input').value = '';
   saveFlight();
   refresh();
+}
+/** L'appareil du devis dit en clair en tête de la barre de résultat (SOG-0060 : « j'ai planifié un vol en F50 ? Où est-ce
+ *  écrit !? ») : type et immatriculation (« FA50 · F-GXXX »), « estimation du type » quand aucune fiche ne sert ; un bouton qui mène
+ *  au choix de l'appareil. '' sans appareil. */
+function acLineHtml() {
+  const a = S.flight.aircraft || {},
+    sheet = S.C?.sheet,
+    type = a.type || sheet?.icao || '',
+    est = !!sheet && String(sheet.id || '').startsWith('TYPE_'),
+    text = [type, a.registration, est ? tt(TX.via.estimate) : ''].filter(Boolean).join(' · ');
+  return text ? `<button type="button" class="fu-linkbtn fu-acline" data-do="acgo" title="${esc(tt(TX.acChange))}">${esc(text)}</button><span aria-hidden="true"> · </span>` : '';
+}
+/** La ligne de l'appareil touchée : le pas Vol, la recherche d'appareil ouverte, le focus dans son champ. */
+function acGo() {
+  goStep(0);
+  const panel = S.body?.querySelector('[data-acpanel]');
+  if (!panel) return;
+  if (panel.classList.contains('fu-hide')) acOpen();
+  else panel.querySelector('input')?.focus();
 }
 /** Ligne de l'appareil retenu : nom, immatriculation, indicatif, type, badge d'origine, bouton de recherche. */
 function acSelected() {
@@ -4274,7 +4295,7 @@ function refresh() {
   else {
     const range = !q.windKnown && Number.isFinite(q.blockLow) && Number.isFinite(q.blockHigh) && Math.round(q.blockLow) !== Math.round(q
       .blockHigh);
-    res.innerHTML = `${flightState() ? `<div class="fu-flightstate">${esc(flightState())}</div>` : ''}<div class="f-muted fu-ctx" title="${esc(resultContext(q, range, false))}">${esc(resultContext(q, range, true))}</div>
+    res.innerHTML = `${flightState() ? `<div class="fu-flightstate">${esc(flightState())}</div>` : ''}<div class="f-muted fu-ctx" title="${esc(resultContext(q, range, false))}">${acLineHtml()}${esc(resultContext(q, range, true))}</div>
       <div class="fu-big">${range ? `${esc(fuelTxt(q.blockLow, unit))} – ${esc(fuelTxt(q.blockHigh, unit))}` : esc(fuelTxt(q.block, unit))}</div>
       <div class="f-tiles"><span class="f-muted" title="${esc(tt(TX.trip))}">${esc(tt(TX.tripS))}<b>${esc(fuelTxt(q.trip, unit))}</b></span><span class="f-muted" title="${esc(tt(TX.time))}">${esc(tt(TX.time))}<b>${hmm(q.minutes)}</b></span><span class="f-muted" title="${esc(`${tt(TX.tod)} : ${tt(TX.todVal, { d: distTxt(q.todNm) })}`)}">${esc(tt(TX.todS))}<b>${esc(distTxt(q.todNm))}</b></span></div>
       ${q.overMtow ? `<div class="f-warn">${esc(tt(TX.overMtow))}</div>` : ''}${past ? `<div class="f-warn fu-pastdate">${esc(past)}</div>` : ''}`;

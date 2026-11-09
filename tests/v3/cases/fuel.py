@@ -2610,3 +2610,25 @@ def f100(c):
                  cards: s.querySelectorAll(':scope > .f-card').length } }""")
     want = norm(tx(F, 'settings', c.lang)) + ' · lb/h'
     c.eq([r['fold'], r['open'], norm(r['title']), r['cards']], ['settings', False, want, 6], 'first, folded, the unit in its title, six cards', what='settings fold')
+
+
+@case('F101', 'The aircraft of the quote is said in clear at the head of the result bar, « FA50 · estimation du type »; a tap opens the aircraft choice',
+      'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0060 (user, 9 Nov: « apparemment, j\'ai planifié un vol en F50 ? Où est-ce écrit !? »): type and registration on the bar seen at '
+      'every step, the type estimate said; a tap goes to the step Flight with the aircraft search open and focused')
+def f101(c):
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft'] = {'type': 'FA50', 'registration': 'F-GXXX', 'sheetId': '', 'name': 'FA50'}
+    c.open('fuel', docs=docs)
+    wait_quote(c)
+    to_step(c, 2)
+    line = f'{FUEL} .fu-result [data-do="acgo"]'
+    c.until(f"!!document.querySelector('{line}')", what='the aircraft line of the result bar')
+    want = norm(f"FA50 · F-GXXX · {tx(F, 'estimate', c.lang, after='via: {')}")
+    c.eq(norm(c.text(line)), want, 'type, registration and the estimate said', what='aircraft line')
+    c.tap(line)
+    c.until(f"window.__t.shown(document.querySelector('{FUEL} section.fu-step[data-s=\"0\"]')) && !document.querySelector('{FUEL} [data-acpanel]').classList.contains('fu-hide')",
+            what='the step Flight with the aircraft search open')
+    c.until(f"document.activeElement === document.querySelector('{FUEL} [data-k=acsearch]')", what='the search field has the focus')

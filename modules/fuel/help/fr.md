@@ -11,7 +11,7 @@ pas) ; sur un écran large, les cinq pas sont les uns sous les autres. Tout se r
 la route, la météo, le devis et le vent suivent, sans bouton à presser. Le résultat (carburant bloc, délestage, temps,
 début de descente) reste visible en bas de l'écran à chaque pas, avec d'où vient le vent (« vent : METAR LFRS »,
 « vent : prévision ICON FL060 », « vent saisi »). Sur un téléphone, cette barre tient en trois lignes : le contexte
-(« Bloc · FL060→090→110→070 · vent ARPEGE FL060 », en entier si on le touche), le carburant bloc, puis trois tuiles
+(« FA50 · F-GXXX · Bloc · FL060→090→110→070 · vent ARPEGE FL060 » : l'appareil du devis d'abord, « estimation du type » quand aucune fiche ne sert, et une tape sur lui ouvre le choix de l'appareil ; en entier si on touche la ligne), le carburant bloc, puis trois tuiles
 « Étape », « Temps » et « TOD » (début de descente). L'écran s'ouvre toujours sur l'onglet « Devis » ; les fiches
 s'ouvrent par l'onglet « Fiches ». Un ✓ marque un pas rempli. Les niveaux s'écrivent partout de la même
 façon : en FL à partir de 5 000 ft (FL060), en pieds en dessous (3 500 ft).

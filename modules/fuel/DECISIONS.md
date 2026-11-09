@@ -1404,3 +1404,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
 - **9 Nov 2026 — the quote settings head the Result step** (SOG-0059 (2), the user: « le bloc réglage du devis est pertinent, mais
   invisible »): moved from the last fold to the first, still folded, its title saying the unit (« · lb/h ») so the unit is read
   without opening it; no new card. F100; counter-test on 8baeb0b2d: the first fold was « Densité-altitude ».
+- **9 Nov 2026 — the aircraft said on the result bar** (SOG-0060, the user: « apparemment, j'ai planifié un vol en F50 ? Où est-ce
+  écrit !? »): the aircraft was only on the step Flight. It now opens the context line of the bar seen at every step, the estimate
+  said when no sheet serves, as a button to the choice. A line of its own made the bar 148 px high at 390 px (F2 red): it stays on
+  the context line (one line, ellipsis). F101; counter-test on cc97b1e5d: no aircraft line.

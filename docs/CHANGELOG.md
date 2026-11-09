@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the aircraft of the quote on the result bar** (`modules/fuel/module.js`; Fuel SPEC § 9.6, DECISIONS; noreg F101;
+  SOG-0060, part a). The context line seen at every step starts with the aircraft (« FA50 · F-GXXX », « estimation du type » when no
+  sheet serves), a button to the aircraft choice of the step Flight.
+
 ## [6.0.0-alpha.4] — 2026-11-09
 
 Fourth alpha of the V3 **Pilot** and **Company** applications, three days after the third: a day of bug fixes on the
