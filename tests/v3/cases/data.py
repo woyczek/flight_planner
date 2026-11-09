@@ -365,7 +365,7 @@ def l2(c):
     for rid, want in (('sia', 'stale-cycle'), ('openaip', 'stale-cycle'), ('ukmil', 'parser'), ('nats', 'parser'), ('enaire', 'ok'), ('eaip', 'ok'), ('aircraft', 'stale-age')):
         c.eq(allst.get(rid) or _open_and_state(c, rid), want, f'state of {rid}', what=f'data-state {rid}')
     c.eq(g['base']['cycles'].get('sia'), _name(prev), 'the France row carries the cycle published (one behind)', what='data-cycle of sia')
-    c.eq(g['weather']['states'], {}, 'the weather rows have no state', what='weather states')
+    c.eq(g['weather']['states'], {'world': 'absent'}, 'the weather rows from the catalogue have no state; the only one is the world synoptic row (SOG-0138), made on the workstation: absent until published', what='weather states')
     c.eq(c.text('[data-set="ukmil"] .f-badge[data-pill]'), tx(TX, 'parser', lang, after='state: {'), 'the pill is worded in the language of the run', what='ukmil pill')
     # no action button anywhere, no horizontal scroll, 44 px on the summaries
     c.eq([m['verbs'], m['buttons']], [['download:off', 'build:off', 'purge:off', 'publish:off'], 7],
@@ -4354,6 +4354,45 @@ def l51(c):
     c.js("document.querySelector('[data-set=world]').open = true")
     c.eq([c.js("document.querySelector('[data-verb=world-build]').disabled"), c.attr('[data-set=world] [data-reason]', 'data-reason')], [True, 'unknown-verb'], 'grey, the launcher does not know the verb', what='grey')
     c.eq(len(_posts(st, 'world')), 0, 'nothing is sent', what='posts')
+    c.check_errors()
+
+
+@case('L52', 'Données: the build panel with many countries — wide: the map on the left and ONE list on the right (a zone per aligned line, its state as a dot and a short word, no framed pill); phone: the list under the map, one column; every line is 44 px', 'L', tags=('data',), langs4=True,
+      designs=('standard',), night=False,
+      rule='SOG-0146: the list of the zones was two uneven columns with 44 px pills and a large empty area right of the map; now two cells only (map, choice), the list aligned, the state a dot and a word, the reasons on touch as before')
+def l52(c):
+    lang = c.lang
+    c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/'), lambda r: r.fulfill(status=200, content_type='application/json', body=_ZSTYLE))
+    st = _launcher(c, [], verbs=_VERBS)
+    st['status'] = _FR_STALE()
+    cfg, _ = _fixture()
+    cfg['outlines'] = _outlines()
+    for i in range(30):
+        z = f'q{i:02d}'
+        cfg['zones'].append({'id': z, 'names': [f'Pays {i}'] * 4, 'frames': [], 'published': True})
+        cfg['publication']['base'][z] = cfg['publication']['base']['ca']
+    c.page.add_init_script(_ZHOOK_JS)
+    _open(c, _sized(cfg))
+    _all_open(c)
+    _zmap_ready(c, 'base')
+    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the states')
+    c.js("document.querySelector('.d-mapgrid').scrollIntoView({block:'start'})")
+    c.wait(500)
+    g = c.js("""() => { const r = e => { const b = e.getBoundingClientRect(); return { l: Math.round(b.left), t: Math.round(b.top), r: Math.round(b.right), b: Math.round(b.bottom), w: Math.round(b.width), h: Math.round(b.height) } };
+      const map = r(document.querySelector('.d-mapgrid [data-zone-map]')), list = r(document.querySelector('.d-choice')), rows = [...document.querySelectorAll('.d-zrow')].map(r), sts = [...document.querySelectorAll('.d-zrow .d-st')].map(r);
+      return { map, list, items: document.querySelector('.d-mapgrid').children.length, rows: rows.length, minH: Math.min(...rows.map(x => x.h)), lefts: [...new Set(rows.map(x => x.l))].length, stRights: [...new Set(sts.map(x => x.r))].length,
+        framed: document.querySelectorAll('.d-zrow .f-badge').length, sw: document.documentElement.scrollWidth, iw: innerWidth } }""")
+    c.eq([g['items'], g['framed']], [2, 0], 'two cells only (the map, the choice) and no framed pill on the lines', what='structure')
+    c.eq([g['lefts'], g['stRights']], [1, 1], 'every line starts at the same place and every state ends at the same place: aligned', what='aligned')
+    c.ge(g['minH'], 43.5, 'every line is 44 px at least (the whole line is the target)', what='line height')
+    c.le(g['sw'], g['iw'], 'no horizontal scroll', what='scroll')
+    if c.width >= 1024:
+        c.ok(g['list']['l'] >= g['map']['r'] - 1 and g['list']['t'] <= g['map']['t'] + 40, g, 'wide: the list is on the right of the map, at its top')
+    else:
+        c.ok(g['list']['t'] >= g['map']['b'] - 1, g, 'phone: the list is under the map, one column')
+    c.shot(f'L52_{c.width}_{lang}.png')
+    c.tap('[data-zone-row=fr] [data-act=zone-why]')
+    c.until("!!document.querySelector('[data-zone-why=fr]')", timeout=4000, what='the reasons on touch')
     c.check_errors()
 
 

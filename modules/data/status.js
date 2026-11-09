@@ -98,8 +98,9 @@ export function zoneStateHtml(id) {
     reasons = st === 'up-to-date' || st === 'building' ? [] : zoneReasons(id),
     open = S.whyOpen.has(id) && reasons.length,
     label = tt(TX.zst[st]);
-  return `${reasons.length ? `<button type="button" class="f-badge" data-act="zone-why" data-zone="${esc(id)}" data-zstate="${esc(st)}" aria-expanded="${open ? 'true' : 'false'}"${kind(level)}>${esc(label)}</button>` :
-    `<span class="f-badge" data-zstate="${esc(st)}"${kind(level)}>${esc(label)}</span>`}
+  const dot = `<i class="f-dot" aria-hidden="true"${kind(level)}></i>`;
+  return `${reasons.length ? `<button type="button" class="d-st" data-act="zone-why" data-zone="${esc(id)}" data-zstate="${esc(st)}" aria-expanded="${open ? 'true' : 'false'}">${dot}${esc(label)}</button>` :
+    `<span class="d-st" data-zstate="${esc(st)}">${dot}${esc(label)}</span>`}
     ${open ? `<p class="f-muted d-zwhy" data-zone-why="${esc(id)}">${esc(reasons.join(' ; '))}</p>` : ''}${zoneNotices(id).map(n => `<p class="f-muted d-zwhy" data-zone-notice="${esc(id)}">${esc(n)}</p>`).join('')}`;
 }
 /** Le toucher d'une pastille : ouvre ou ferme les raisons de la zone. */

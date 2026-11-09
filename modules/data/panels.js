@@ -624,14 +624,14 @@ function choiceHtml(set, busy) {
     } = buildZones(),
       pers = M.personalSources(ticked),
       xplaneOn = pers.some(p => p.id === 'xplane' && S.personal.has('xplane'));
-    return `<p class="d-verbs" data-select-row><button type="button" data-verb="select-stale"${busy || !statusKnown() ? ' disabled' : ''}>${esc(tt(TX.upd.selStale))}</button> <button type="button" data-verb="select-none"${busy ? ' disabled' : ''}>${esc(tt(TX.upd.selNone))}</button></p>
+    return `<div class="d-choice"><p class="d-verbs" data-select-row><button type="button" data-verb="select-stale"${busy || !statusKnown() ? ' disabled' : ''}>${esc(tt(TX.upd.selStale))}</button> <button type="button" data-verb="select-none"${busy ? ' disabled' : ''}>${esc(tt(TX.upd.selNone))}</button></p>
     <p class="f-muted" data-selection-line>${esc(selectionLine())}</p>
     <div class="d-opts" data-build-zones>${ids.map(z => `<div class="d-zrow" data-zone-row="${esc(z)}">${optHtml('data-build-zone', z, M.zoneName(S.d.zones, z, li()), S.ticked?.has(z), busy)}${zoneStateHtml(z)}</div>`).join('')}</div>
     ${pers.length ? `<h3>${esc(tt(TX.personalTitle))}</h3><div data-personal-box>${pers.map(p => `<div class="d-pers" data-personal-row="${p.id}">
       ${optHtml('data-personal', p.id, personalName(p.id), S.personal.has(p.id), busy)}
       <p class="f-muted" data-personal-line>${esc(tt(TX.personalLine[p.kind]))}</p>
       ${S.personal.has(p.id) ? `<p class="f-ok" data-personal-kept>${esc(tt(TX.personalKept))}</p>` : ''}
-      ${p.id === 'xplane' && xplaneOn ? `<p class="f-warn" data-xplane-hint>${esc(tt(TX.xplaneHint))}</p>` : ''}</div>`).join('')}</div>` : ''}`;
+      ${p.id === 'xplane' && xplaneOn ? `<p class="f-warn" data-xplane-hint>${esc(tt(TX.xplaneHint))}</p>` : ''}</div>`).join('')}</div>` : ''}</div>`;
   }
   if (set === 'proc') {
     const list = procList();
