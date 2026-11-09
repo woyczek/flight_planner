@@ -1237,7 +1237,7 @@ def k73(c):
     RJ, BS, AF, DS = _mods()
     B = importlib.import_module('regen.base')
     C = importlib.import_module('aero_cycles')
-    # 1. the build reads the new place first, then the old; a name at both places is read at the new one
+    # 1. the build reads the old place first (data/sia/: the page reads it without the route of the job), then the new; a name at both places is read at data/sia/ (SOG-0144)
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         data = Path(td) / 'data'
         sia, new = data / 'sia', data / 'local' / 'sources' / 'sia'
@@ -1245,7 +1245,7 @@ def k73(c):
         (new / '2026-10-01').mkdir(parents=True)
         sia.mkdir(parents=True)
         (sia / 'XML_SIA_2026-10-01.xml').write_text('legacy-1001', encoding='utf-8')            # only at the old place
-        (sia / 'AIXM4.5_all_FR_OM_2026-10-29.xml').write_text('legacy-1029', encoding='utf-8')  # at both: the new one wins
+        (sia / 'AIXM4.5_all_FR_OM_2026-10-29.xml').write_text('legacy-1029', encoding='utf-8')  # at both: this one wins (SOG-0144)
         (new / '2026-10-29' / 'AIXM4.5_all_FR_OM_2026-10-29.xml').write_text('new-1029', encoding='utf-8')
         (new / '2026-10-29' / 'XML_SIA_2026-10-29.xml').write_text('new-xml-1029', encoding='utf-8')
         (new / '2026-10-01' / 'sia-airspaces-2026-10-01.xml').write_text('new-air', encoding='utf-8')
@@ -1254,10 +1254,10 @@ def k73(c):
         (new / 'not-a-date' / 'XML_SIA_2026-10-01.xml').write_text('x', encoding='utf-8')       # a folder that is not a cycle date
         inputs = B.list_inputs(str(data))
         read = lambda rel: Path(inputs[rel]).read_text(encoding='utf-8')
-        c.eq({k: read(k) for k in sorted(inputs)}, {'AIXM4.5_all_FR_OM_2026-10-29.xml': 'new-1029', 'XML_SIA_2026-10-01.xml': 'legacy-1001', 'XML_SIA_2026-10-29.xml': 'new-xml-1029', 'sia-airspaces-2026-10-01.xml': 'new-air'},
-             'the new place is read first, the old one as a fall-back; a name at both: the new; a non-SIA name and a folder that is not a cycle date: not read', what='precedence')
+        c.eq({k: read(k) for k in sorted(inputs)}, {'AIXM4.5_all_FR_OM_2026-10-29.xml': 'legacy-1029', 'XML_SIA_2026-10-01.xml': 'legacy-1001', 'XML_SIA_2026-10-29.xml': 'new-xml-1029', 'sia-airspaces-2026-10-01.xml': 'new-air'},
+             'data/sia/ is read first, the new place for what is not there; a name at both: data/sia/ (the copy the page reads without the route of the job); a non-SIA name and a folder that is not a cycle date: not read', what='precedence')
         legacy, moved = B.split_inputs(str(data), inputs)
-        c.eq((legacy, [(m['source'], m['cycle'], m['name']) for m in moved]), (['XML_SIA_2026-10-01.xml'], [('sia', '2026-10-29', 'AIXM4.5_all_FR_OM_2026-10-29.xml'), ('sia', '2026-10-29', 'XML_SIA_2026-10-29.xml'),
+        c.eq((legacy, [(m['source'], m['cycle'], m['name']) for m in moved]), (['AIXM4.5_all_FR_OM_2026-10-29.xml', 'XML_SIA_2026-10-01.xml'], [('sia', '2026-10-29', 'XML_SIA_2026-10-29.xml'),
                                                                                   ('sia', '2026-10-01', 'sia-airspaces-2026-10-01.xml')]),
              'what the page is offered: the entries of data/sia/ apart, and { source, cycle, name } for the new place (it reads /data/local/sources/sia/<cycle>/<name>)', what='split')
         c.eq(B.cycle_of(inputs), '2026-10-29', 'the cycle of the build is the newest date of the SIA names, wherever the files are', what='cycle')

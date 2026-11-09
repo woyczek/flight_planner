@@ -382,7 +382,7 @@ SIA_RAW = aero_cycles.SIA_RAW  # les XML bruts du SIA (la racine de data/sia/ av
 def list_inputs(data):
     """Fichiers que la construction peut lire : { chemin relatif (avec « / »): chemin absolu }. Dans data/sia/ : à la racine les XML (SIA, AIXM, axes ENR 5.7) et mora.csv ; openaip/, aixm5/,
     geojson/ et zones/<zone>/ : les fichiers .xml .geojson .json .txt .air. Les XML bruts du SIA se lisent d'abord dans data/local/sources/sia/<cycle>/ (l'emplacement nouveau) et, à défaut,
-    à l'ancien, la racine de data/sia/ (repli le temps du déplacement) : un même nom aux deux endroits se lit au nouveau. Ni lien, ni nom hors de SAFE_NAME, ni fichier caché. Le tri
+    à l'ancien, la racine de data/sia/ (repli le temps du déplacement) : un même nom aux deux endroits se lit à data/sia/ (SOG-0144 : cette copie-là la page la lit sans route du travail ; avant, l'emplacement nouveau l'emportait). Ni lien, ni nom hors de SAFE_NAME, ni fichier caché. Le tri
     par zone et par source est fait par la page (AeroZones.fileWanted) : une seule règle."""
     root = os.path.join(data, 'sia')
     out = {}
@@ -408,7 +408,7 @@ def list_inputs(data):
     for z in zdirs:
         scan(os.path.join(root, 'zones', z), f'zones/{z}/', lambda n: bool(INPUT_EXT.search(n)))
     for name, (_, path) in aero_cycles.moved_sources(data).items():
-        out[name] = path
+        out.setdefault(name, path)      # SOG-0144 : un même nom aux deux endroits se lit à data/sia/ (la copie que la page lit sur /data/sia/, sans la route du travail : un lanceur plus ancien, un dossier d'entrées copié à la main)
     return out
 
 

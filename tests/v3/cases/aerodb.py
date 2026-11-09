@@ -5566,8 +5566,15 @@ def k117(c):
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         data = Path(td) / 'data'
         (data / 'sia' / 'openaip').mkdir(parents=True)
-        (data / 'local' / 'sources' / 'sia' / '2026-10-29').mkdir(parents=True)
-        (data / 'local' / 'sources' / 'sia' / '2026-10-29' / 'XML_SIA_2026-10-29.xml').write_text('<?xml version="1.0" encoding="ISO-8859-1"?><SiaExport Date="2026-10-29"/>', encoding='iso-8859-1')
+        # the SIA XML arrive as they do on the workstation: by the pickup of Downloads (base/pickup writes them under data/local/sources/sia/<cycle>/)
+        import zipfile
+        dl = Path(td) / 'Downloads'
+        dl.mkdir()
+        with zipfile.ZipFile(dl / 'export_xml_bd_SIA_2026-10-29.zip', 'w') as zf:
+            zf.writestr('XML_SIA_2026-10-29.xml', '<?xml version="1.0" encoding="ISO-8859-1"?><SiaExport Date="2026-10-29"/>')
+        pick, pick_check = RJ.REGISTRY[('base', 'pickup')]
+        got = pick(RJ.Job('base', 'pickup', {}), pick_check({'zones': ['fr'], 'dry': False}), {'data': str(data), 'downloads': lambda: [str(dl)]})
+        c.eq(((data / 'local' / 'sources' / 'sia' / '2026-10-29' / 'XML_SIA_2026-10-29.xml').is_file(), [t['source'] for t in got['taken']]), (True, ['sia']), 'the pickup of the SIA writes the hidden place, as on the workstation', what='pickup')
         (data / 'data_tree.js').write_text('window.DATA_TREE = {};\n', encoding='utf-8')
         (data / 'sia' / 'openaip' / 'ie_apt.geojson').write_text(json.dumps({'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [-8.0, 53.0]},
                                                                   'properties': {'_id': 'k117a', 'name': 'TESTFIELD', 'icaoCode': 'EITS', 'type': 2, 'trafficType': [0], 'country': 'IE'}}]}), encoding='utf-8')
