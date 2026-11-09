@@ -4522,6 +4522,57 @@ def k89(c):
     c.eq(r['badFile'], None, 'a file whose base is not the SIA\'s gives nothing', what='bad file')
 
 
+@case('K91', 'Little Navmap export (SOG-0028 (5)): the cruise written in the .lnmperf is the sheet\'s table at the cruise rpm and the closest altitude when two rows frame the rpm, else the sheet\'s cruise as before', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0028 (5) (Features SOG\'s patch, applied by AeroDB): a sheet\'s rpmFuelCurve is the single source of the flow at a rpm (§ 10.35); the export reads it like Fuel does (modules/fuel/model.js tableAt): the curve of the altitude closest to cruise.refAltFt, at cruise.rpmNominal, interpolated between two numbered rows or the row itself; no rpm, no altitude, no framing rows: the sheet\'s cruise; the import creates no table row (a .lnmperf has neither rpm nor altitude)')
+def k91(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    c.page.add_script_tag(url=f'{c.base}/frame/aerodb/sheets.js')
+    r = c.js("""() => {
+      const S = window.AeroDBSheets, fields = S.PROFILE_FIELDS.filter(([, , , type, lnm = true]) => lnm !== false && type !== 'textarea');
+      const base = unit => {
+        const p = { id: 'T', name: 'Test', icao: 'TEST', unit };
+        for (const [, , path, type] of fields) {
+          const parts = path.split('.');
+          let o = p;
+          parts.slice(0, -1).forEach(k => o = o[k] ||= {});
+          o[parts.at(-1)] = type === 'number' ? 1 : 'x';
+        }
+        return p;
+      };
+      const cruiseOf = xml => { const b = /<Cruise>([\\s\\S]*?)<\\/Cruise>/.exec(xml)[1]; return [+/<FuelFlowLbsGalPerHour>([^<]*)/.exec(b)[1], +/<SpeedKtsTAS>([^<]*)/.exec(b)[1]]; };
+      const make = (unit, cruise, curve) => ({ ...base(unit), cruise: { ...base(unit).cruise, fuelFlowPerHour: 999, tasKt: 111, ...cruise }, rpmFuelCurve: curve });
+      const row = (altFt, rpm, fuelFlowPerHour, tasKt) => ({ altFt, rpm, fuelFlowPerHour, ...(tasKt ? { tasKt } : {}) });
+      const out = { has: typeof S.lnmCruiseFromCurve };
+      if (out.has !== 'function') return out;
+      const cr = { rpmNominal: 2000, refAltFt: 10000 };
+      out.between = cruiseOf(S.toLnmperf(make('lb', cr, [row(10000, 1800, 400, 180), row(10000, 2200, 600, 220), row(5000, 1800, 1, 1), row(5000, 2200, 2, 2)])));
+      out.exact = cruiseOf(S.toLnmperf(make('lb', cr, [row(10000, 1800, 400, 180), row(10000, 2000, 555, 205), row(10000, 2200, 600, 220)])));
+      out.closest = cruiseOf(S.toLnmperf(make('lb', { ...cr, refAltFt: 12000 }, [row(5000, 1800, 1, 1), row(5000, 2200, 3, 3), row(15000, 1800, 300, 150), row(15000, 2200, 500, 190)])));
+      out.outside = cruiseOf(S.toLnmperf(make('lb', { ...cr, rpmNominal: 2500 }, [row(10000, 1800, 400, 180), row(10000, 2200, 600, 220)])));
+      out.noRef = cruiseOf(S.toLnmperf(make('lb', { rpmNominal: 2000, refAltFt: null }, [row(10000, 1800, 400, 180), row(10000, 2200, 600, 220)])));
+      out.noRpm = cruiseOf(S.toLnmperf(make('lb', { rpmNominal: null, refAltFt: 10000 }, [row(10000, 1800, 400, 180), row(10000, 2200, 600, 220)])));
+      out.noCurve = cruiseOf(S.toLnmperf(make('lb', cr, [])));
+      out.noTas = cruiseOf(S.toLnmperf(make('lb', cr, [row(10000, 1800, 400), row(10000, 2200, 600)])));
+      out.kg = cruiseOf(S.toLnmperf(make('kg', cr, [row(10000, 1800, 400, 180), row(10000, 2200, 600, 220)])));
+      out.direct = [S.lnmCruiseFromCurve(null), S.lnmCruiseFromCurve({}), S.lnmCruiseFromCurve({ cruise: { rpmNominal: 2000, refAltFt: 1 }, rpmFuelCurve: [row(1, 1800, 0, 1), row(1, 2200, 600, 1)] }),
+        S.lnmCruiseFromCurve({ cruise: { rpmNominal: '2000', refAltFt: '10000' }, rpmFuelCurve: [row('10000', '1800', '400', '180'), row('10000', '2200', '600', '220')] })];
+      // the import creates no table row
+      const xml = S.toLnmperf(make('lb', cr, [row(10000, 1800, 400, 180), row(10000, 2200, 600, 220)]));
+      const back = S.parseLnmperf(xml, 'T.lnmperf');
+      out.importRows = Array.isArray(back?.rpmFuelCurve) ? back.rpmFuelCurve.length : 0;
+      return out;
+    }""")
+    c.eq(r['has'], 'function', 'AeroDBSheets exports lnmCruiseFromCurve', what='exported')
+    c.eq(r['between'], [500, 200], 'two rows frame the rpm (1800 → 400, 2200 → 600 at 10 000 ft): 500 lb/h and 200 kt at 2000 rpm, not the sheet\'s 999 / 111', what='between')
+    c.eq(r['exact'], [555, 205], 'a row at the rpm: that row', what='exact')
+    c.eq(r['closest'], [400, 170], 'the altitude closest to the reference (12 000 ft: the 15 000 ft curve, not the 5 000 ft one)', what='closest')
+    c.eq((r['outside'], r['noRef'], r['noRpm'], r['noCurve']), ([999, 111], [999, 111], [999, 111], [999, 111]), 'rpm outside the rows, no reference altitude, no cruise rpm, no curve: the sheet\'s cruise, as before', what='fallback')
+    c.eq(r['noTas'], [500, 111], 'rows without a TAS: the flow from the table, the TAS stays the sheet\'s', what='no tas')
+    c.eq([round(x, 1) for x in r['kg']], [round(500 / 0.45359237, 1), round(200, 1)], 'a sheet in kg: the table is converted with the rest (the export is in pounds)', what='kg')
+    c.eq(r['direct'], [{}, {}, {}, {'fuelFlowPerHour': 500, 'tasKt': 200}], 'lnmCruiseFromCurve: nothing without data, a zero flow row is not numbered, strings are read as numbers', what='direct')
+    c.eq(r['importRows'], 0, 'the import creates no table row: a .lnmperf has neither rpm nor altitude, a second source would appear', what='import')
+
+
 @case('K58', 'openAIP aerodromes: runways, bearing, hardLen and magVar derived like the SIA gives them to France', 'K', tags=('aerodb',), phone=False,
       rule='aerodb SPEC 2 (aerodrome fields, parser version 20): bearing, hardLen, water, runways and magVar come from the openAIP runways and magneticDeclination; a terrain without runways carries none of the runway fields')
 def k58(c):

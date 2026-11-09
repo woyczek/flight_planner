@@ -706,6 +706,38 @@
       null ||
       pathGet(p, path) === undefined || pathGet(p, path) === "")).map(x => x[1])
   }
+  /** Débit et TAS de croisière lus dans la courbe d'altitude la plus proche de cruise.refAltFt, au régime cruise.rpmNominal
+   *  (SOG-0028 (5)) : { fuelFlowPerHour, tasKt? } quand deux lignes chiffrées de cette courbe encadrent le régime (ou qu'une ligne y
+   *  est), interpolés linéairement ; {} sinon (sans altitude de référence, sans régime, sans courbe d'altitude). Unité de la fiche. */
+  function lnmCruiseFromCurve(p) {
+    const n = v => v === null || v === undefined || v === "" || !Number.isFinite(+v) ? null : +v,
+      rpm = n(p?.cruise?.rpmNominal),
+      ref = n(p?.cruise?.refAltFt),
+      rows = (Array.isArray(p?.rpmFuelCurve) ? p.rpmFuelCurve : []).filter(r => r && n(r.altFt) !== null && n(r.rpm) > 0 && n(r
+        .fuelFlowPerHour) > 0);
+    if (rpm === null || ref === null || !rows.length) return {};
+    const alts = [...new Set(rows.map(r => n(r.altFt)))],
+      h = alts.reduce((x, y) => Math.abs(y - ref) < Math.abs(x - ref) ? y : x),
+      c = rows.filter(r => n(r.altFt) === h).sort((x, y) => n(x.rpm) - n(y.rpm)),
+      at = c.find(r => n(r.rpm) === rpm),
+      lo = c.filter(r => n(r.rpm) < rpm).at(-1),
+      hi = c.find(r => n(r.rpm) > rpm);
+    if (at) return {
+      fuelFlowPerHour: n(at.fuelFlowPerHour),
+      ...(n(at.tasKt) > 0 ? {
+        tasKt: n(at.tasKt)
+      } : {})
+    };
+    if (!lo || !hi) return {};
+    const t = (rpm - n(lo.rpm)) / (n(hi.rpm) - n(lo.rpm)),
+      mix = k => n(lo[k]) + t * (n(hi[k]) - n(lo[k]));
+    return {
+      fuelFlowPerHour: mix("fuelFlowPerHour"),
+      ...(n(lo.tasKt) > 0 && n(hi.tasKt) > 0 ? {
+        tasKt: mix("tasKt")
+      } : {})
+    };
+  }
   /** Texte .lnmperf d'un profil (Little Navmap). Lève une erreur si des champs requis manquent. */
   function toLnmperf(p) {
     const missing = missingLnmperfFields(p);
@@ -716,6 +748,17 @@
       ...p,
       simbriefAirframeId: ""
     }; // les métadonnées SimBrief restent JSON-only ; Description reste strictement identique
+    // SOG-0028 (5) : la croisière exportée est celle de la courbe d'altitude la plus proche de l'altitude de croisière de la fiche
+    // (cruise.refAltFt ; les lignes de rpmFuelCurve de même altFt), au régime de croisière, quand deux de ses lignes chiffrées
+    // l'encadrent ou qu'une ligne y est (la règle de lecture de Carburant, modules/fuel/model.js tableAt) ; sinon le débit et la TAS
+    // de croisière de la fiche, comme avant. Un .lnmperf n'a ni régime ni altitude : l'import ne crée aucune ligne de table.
+    p = {
+      ...p,
+      cruise: {
+        ...(p.cruise || {}),
+        ...lnmCruiseFromCurve(p)
+      }
+    };
     const now = new Date().toISOString();
     return `<?xml version="1.0" encoding="UTF-8"?>\n<LittleNavmap xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://www.littlenavmap.org/schema/lnmperf.xsd">\n  <AircraftPerf>\n    <Header>\n      <CreationDate>${now}</CreationDate>\n      <FileVersion>1.0</FileVersion>\n      <ProgramName>Flight Performance &amp; Fuel Planner</ProgramName>\n      <ProgramVersion>0.2</ProgramVersion>\n      <Documentation>https://www.littlenavmap.org/lnmperf.html</Documentation>\n    </Header>\n    <Options>\n      <Name>${escXml(p.name||p.id)}</Name>\n      <AircraftType>${escXml(p.icao||p.id)}</AircraftType>\n      <Description>${escXml((p.description||"")+(p.simbriefAirframeId?` | SimBrief airframe ${p.simbriefAirframeId}`:""))}</Description>\n      <FuelAsVolume>${p.fuelAsVolume?1:0}</FuelAsVolume>\n      <JetFuel>${p.jetFuel===false?0:1}</JetFuel>\n    </Options>\n    <Perf>\n      <ContingencyFuelPercent>${Number(p.contingencyPercent||0).toFixed(1)}</ContingencyFuelPercent>\n      <ExtraFuelLbsGal>${Number(p.extraFuel||0).toFixed(3)}</ExtraFuelLbsGal>\n      <MinRunwayLengthFt>${Number(p.minRunwayLengthFt||0).toFixed(3)}</MinRunwayLengthFt>\n      <ReserveFuelLbsGal>${Number(p.reserveFuel||0).toFixed(3)}</ReserveFuelLbsGal>\n      <RunwayType>${escXml(p.runwayType||"HARD")}</RunwayType>\n      <TaxiFuelLbsGal>${Number(p.taxiFuel||0).toFixed(3)}</TaxiFuelLbsGal>\n      <UsableFuelLbsGal>${Number(p.usableFuel||0).toFixed(3)}</UsableFuelLbsGal>\n${lnmPhase("Alternate",p.alternate)}\n${lnmPhase("Climb",p.climb,true)}\n${lnmPhase("Cruise",p.cruise)}\n${lnmPhase("Descent",p.descent,true)}\n    </Perf>\n  </AircraftPerf>\n</LittleNavmap>\n`;
   }
@@ -1891,6 +1934,7 @@
     profilesFromJson,
     parseLnmperf,
     toLnmperf,
+    lnmCruiseFromCurve,
     missingLnmperfFields,
     // OFP SimBrief
     findNavlog,
