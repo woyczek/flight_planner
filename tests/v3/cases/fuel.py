@@ -2746,7 +2746,7 @@ def f106(c):
     # without an index (before the migration) the list is the one of today: F79 and F103, which seed no index
 
 
-@case('F107', '« Auto » level: the semicircular level that burns the least on the route, « FL… (auto) » with the trip time; a typed level holds; a change of aircraft recomputes',
+@case('F107', '« Auto » level: the semicircular level that burns the least on the route, « FL… (auto) » with the trip time; a typed level holds; a change of route or aircraft recomputes',
       'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
       rule='SOG-0056, V3 spec 10.37 D (user, 6 Nov: « on doit saisir un niveau, mais on ne le connaîtra que plus tard. mettre un bouton auto »): a loop over '
       'the quote\'s level series, odd thousands eastbound, FL030 to the sheet ceiling, ties at 2 % to the lower; typing turns (auto) off; the aircraft changes → again')
@@ -2759,7 +2759,7 @@ def f107(c):
     for d in docs:
         if d[0].endswith('current_flight.json'):
             d[1]['aircraft']['sheetId'] = 'C30J'
-    c.open('fuel', docs=docs + [['aircraft/sheets/C30J.json', hi, 'document'], ['aircraft/sheets/XLOW.json', lo, 'document']])
+    c.open('fuel', docs=docs + [['aircraft/sheets/C30J.json', hi, 'document'], ['aircraft/sheets/XLOW.json', lo, 'document']], airfields=True)
     wait_quote(c)
     to_step(c, 0)
     fl = f'{FUEL} input[data-k="fl"]'
@@ -2776,9 +2776,19 @@ def f107(c):
     c.ok(not (d.get('level') or {}).get('auto'), d.get('level'), 'typing turns (auto) off')
     c.ok(d['quote']['trip'] > trip_auto, f"FL100 {d['quote']['trip']} vs auto {trip_auto}", 'FL100 burns more than the auto level')
     c.eq(c.js(f"document.querySelector('{FUEL} [data-lvlauto]').textContent.trim()"), '', 'no « (auto) » for a typed level', what='typed')
-    # Auto again, then another aircraft (ceiling 9000 ft): recomputed
+    # Auto again, then another route (shorter, same ends): the quote follows it at an auto level, (auto) kept
     c.tap(f'{FUEL} [data-do="levelauto"]')
     c.until(f"(v) => document.querySelector('{fl}').value === v", str(auto), what='Auto again: the auto level')
+    nm0 = cf_doc(c, lambda d: (d.get('level') or {}).get('auto') is True, 'the auto flight')['route'].get('distanceNm')
+    to_step(c, 1)
+    rt = f'{FUEL} [data-k="rtext"]'
+    c.page.fill(rt, 'LFRS NEPIX LFML')
+    c.page.locator(rt).blur()
+    d = cf_doc(c, lambda d: (d.get('route') or {}).get('distanceNm') not in (None, nm0) and (d.get('level') or {}).get('auto') is True
+               and (d.get('quote') or {}).get('levelFt') == (d.get('level') or {}).get('ft'), 'another route: the quote recomputed at an auto level, (auto) kept', timeout=10000)
+    c.eq(d['level']['ft'] // 1000 % 2, 1, 'the auto level of the new route: an odd thousand (eastbound)', what='route change')
+    to_step(c, 0)
+    # then another aircraft (ceiling 9000 ft): recomputed
     c.tap(f'{FUEL} [data-view="sheets"]')
     c.until(f"!!document.querySelector('{FUEL} [data-id=\"XLOW\"] [data-do=use]')", what='the Sheets view')
     c.tap(f'{FUEL} [data-id="XLOW"] [data-do="use"]')
