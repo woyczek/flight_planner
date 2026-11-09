@@ -3604,3 +3604,35 @@ def d120(c):
     c.eq(c.js("() => window.__calls"), ['LFPO', 'LFPO', 'LFPO'], 'the reading was asked for the panel’s aerodrome each time', what='calls')
     c.eq(c.js("() => !!document.querySelector('.mp-gd-fetch')"), False, 'the button is gone once there is a file', what='button')
     c.until("() => window.__mp.S.ground.hits.length > 20", timeout=6000, what='the taxiways are drawn at zoom 15 once the file is there')
+
+
+_VIEW_JS = "() => { const x = window.__mpMap.getBounds(); return [x.getWest(), x.getSouth(), x.getEast(), x.getNorth()] }"
+
+
+@case('D121', 'Mission address with zone=<id>: the view is that zone (circle or polygon, 20 % margin, no case); an unknown zone or a chosen map changes nothing', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='maps SPEC § 15 (SOG-0051, V3 § 10.45): #maps?mission=<ID>&zone=<id> centres the view on that zone of mission.zones (its circle, or the box of its polygon, with the margin of the zone type, 20 %), whatever the case of the id; without a known zone, or with &map=<file> of the mission, the view is the map’s own')
+def d121(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_RAW_JS, [MISSION_PATH, FIXTURE.read_text(encoding='utf-8')])
+
+    def view(addr, what):
+        c.open('maps?' + addr, aero=True)
+        c.until("window.__t.shown(document.querySelector('.f-sheet-panel'))", timeout=10000, what=f'the mission profile ({what})')
+        hook_map(c)
+        c.wait(600)
+        return c.js(_VIEW_JS)
+    # a polygon (Z2: lat 44.7–45.0, lon 3.5–4.0), written in lower case in the address
+    b = view('mission=ESSAI1&zone=z2', 'polygon')
+    c.ok(b[0] <= 3.5 and b[2] >= 4.0 and b[1] <= 44.7 and b[3] >= 45.0, f'view {b}', 'the view contains the polygon')
+    c.ok(b[2] - b[0] < 2.0 and b[3] - b[1] < 1.5, f'view {b}', 'and is the zone’s, not the map’s (5.6° wide)')
+    # a circle (Z1: centre 45.6 / 2.8, 15 km)
+    b = view('mission=ESSAI1&zone=Z1', 'circle')
+    c.ok(abs((b[0] + b[2]) / 2 - 2.8) < .08 and abs((b[1] + b[3]) / 2 - 45.6) < .08, f'view {b}', 'the view is centred on the circle')
+    c.ok(b[2] - b[0] < 1.5, f'view {b}', 'and is close to it')
+    # an unknown zone: the map’s own view (resolved_bbox 0.0 / 43.8 / 5.6 / 47.3)
+    b = view('mission=ESSAI1&zone=nowhere', 'unknown zone')
+    c.ok(b[0] <= .01 and b[2] >= 5.59 and b[1] <= 43.81 and b[3] >= 47.29, f'view {b}', 'an unknown zone changes nothing')
+    # a map of the mission is asked as well: its own extent, at its own scale
+    b = view('mission=ESSAI1&zone=Z2&map=carte_generale.png', 'map and zone')
+    c.ok(b[0] <= .01 and b[2] >= 5.59, f'view {b}', 'a chosen map keeps its own extent')

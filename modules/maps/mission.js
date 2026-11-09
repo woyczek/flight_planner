@@ -174,6 +174,13 @@
     if (/cible|target/.test(kind)) return around(c, 100, 62);
     return around(c, 220, 140);
   }
+  /** L'emprise d'une zone de la mission désignée par son id (sans tenir compte de la casse ni des accents), avec la marge du type « zone »
+   *  (20 %, 5 km au moins) : son cercle ou l'emprise de son polygone ; null si la mission n'a pas cette zone (#maps?mission=…&zone=…). */
+  function zoneBox(mission, id) {
+    const k = keyNorm(id),
+      z = k && mission?.zones?.find(q => keyNorm(q.id) === k);
+    return z ? fitGeo(zoneExtent(z), .2, 5) : null;
+  }
   /** Mission du YAML analysé : { id, title, points, zones, maps, vprof }. */
   function parse(root) {
     if (!root || typeof root !== 'object') throw new Error('mission: empty YAML');
@@ -308,6 +315,7 @@
 
   window.MapsMission = {
     parse,
+    zoneBox,
     profileFor,
     routeTokens,
     keyNorm,

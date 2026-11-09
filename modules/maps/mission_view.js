@@ -136,7 +136,9 @@ export async function applyMission() {
     levelFt: M?.vprof.cruiseFt || 0,
     updated: `${q.mission}|${m?.file || ''}|${S.missionRev || ''}`
   };
-  S.fit = viewOf() || m?.extent || MapsRender.bboxOf(unwrapLons([...pts, ...(M?.points || [])]), 10) || {
+  // #maps?mission=…&zone=<id> : la vue est cette zone, sauf si l'adresse désigne une carte fournie (&map=, déjà centrée sur elle, à son échelle)
+  const zoneFit = q.zone && !(q.map && M?.maps.some(x => x.file === q.map)) ? MapsMission.zoneBox(M, q.zone) : null;
+  S.fit = viewOf() || zoneFit || m?.extent || MapsRender.bboxOf(unwrapLons([...pts, ...(M?.points || [])]), 10) || {
     w: -5,
     s: 41,
     e: 10,

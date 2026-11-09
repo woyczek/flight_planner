@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: `#maps?mission=<ID>&zone=<id>` centres the view on that zone of the mission** (`modules/maps/mission.js`, `mission_view.js`; SPEC § 15;
+  noreg D121; SOG-0051, V3 § 10.45). The mission sheet opens the Map from each zone to activate; a zone no map centres (a polygon) used to
+  open the first map at its own extent. Now the view is the zone (circle or polygon box, 20 % margin, case ignored); an unknown zone changes
+  nothing, and a `&map=` of the mission keeps that map's own extent.
+
 - **Missions: the mission sheet in two levels** (`frame/lib/mission.js`, `modules/missions/module.js`; Missions SPEC § 3, INTEGRATION,
   DECISIONS, help; noreg N9, N10; SOG-0051, § 10.45). First page: category, the first three risks « hazard → mitigation » (or « Aucun
   risque déclaré »), teams, zones, « Préparer ce vol »; the detail in foldable sections (description, objectives, zones to activate,

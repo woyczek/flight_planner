@@ -1150,8 +1150,11 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
 
 ## 15. Mission maps (`mission.js`, `window.MapsMission`)
 
-- **Address** `#maps?mission=<ID>&map=<file>`: without `map`, the mission's first map; without `mission`, the planned
-  flight. The choosers are in the Layers content (§ 6.7); the Layers button is named "Map to show".
+- **Address** `#maps?mission=<ID>&map=<file>&zone=<id>`: without `map`, the mission's first map; without `mission`, the planned
+  flight. `zone` (V3 § 10.45, SOG-0051; the mission sheet's « activate this zone » link) is the id of a zone of `mission.zones`, case and
+  accents ignored: the view is that zone, its circle or the box of its polygon with the margin of the zone type (20 %, 5 km at least),
+  on the map the address gives (the first one without `map`). With `&map=<file>` of the mission the map's own extent wins (it is a
+  provided map already centred on the zone, at its scale); a `zone` the mission does not have changes nothing; `view=` still wins. The choosers are in the Layers content (§ 6.7); the Layers button is named "Map to show".
 - **Missions**: listed from the data layer's tree (`list('missions/')`, nothing read to list them); only the chosen
   mission's YAML is read (policy `reference`), parsed with `frame/lib/js-yaml.min.js`, read again on `watch`.
 - **Parsing** (`parseMissionYaml`, the studio's rules): points (origin, destination, target, alternate, turning points,

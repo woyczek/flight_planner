@@ -3,6 +3,14 @@
 Memory of the V3 maps module: every choice, dated, with its reason. Chat history is never needed. Separate from
 aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds both roles.
 
+- **9 Nov 2026 — `zone=<id>` in the mission address** (SOG-0051, V3 § 10.45; asked by Features SOG, whose mission sheet opens the Map from
+  each zone to activate). Before, a zone no map centres (a polygon, the usual case) opened the mission's first map at its own extent, not
+  the zone. Now `MapsMission.zoneBox(mission, id)` (the circle or the polygon's box, `fitGeo` with the zone type's 20 % margin and 5 km
+  minimum: the same box the « zone » type of a map would take) is the view. **Choices of mine**: (1) with `&map=<file>` naming a map of the
+  mission, that map's extent wins — Features' address adds `map` exactly when a provided map is centred on the zone, and that map was
+  drawn at its own scale; (2) an unknown zone changes nothing; (3) `view=` (an imposed view) still wins; (4) the map shown is the one
+  the address gives, the first without `map` (its profile and layers), only the view is the zone's. Noreg D121 (polygon in lower case,
+  circle, unknown zone, map + zone; red without the code).
 - **9 Nov 2026 — one-way airway segments on the Map** (SOG-0078, the ergonomics session's lot; AeroDB publishes `dir` F | B | FB per segment).
   - **Asked**: an arrow in the allowed direction, one per segment, at the middle, in the airway's hue, from zoom 9, never in the light drawing; the
     hover says « one way a → b » or « both ways »; FB and unknown change nothing. **Done as asked**, with one adaptation the ergonomics session
