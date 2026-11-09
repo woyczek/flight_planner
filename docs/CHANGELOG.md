@@ -18,6 +18,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Mission categories: the common base and the reader of `categories.json`** (`frame/lib/mission_categories.js`, bench `frame/lib/test/mission_categories.html`; § 10.38; Settings DECISIONS; A104) — SOG-0041:
   `commercial` (cargo, passengers, VIP, training, transit, test flights, positioning) and `virtuel` (the airline's own) by default, the commercial group active only for a « va » airline and the personal one,
   the file of an airline filtered as untrusted input. The Missions and Report readers are Features SOG's.
+
+- **Map, ground layer: the pilot can now read an aerodrome's taxiways, stands and holds from OpenStreetMap** (`modules/maps/ground.js`, `texts.js`,
+  `style.js`; SPEC § 5.2; noreg D120; SOG-0046 step 2). The layer was complete but nothing on any screen called `AeroDb.fetchGround`, so without
+  a file the Map drew nothing and the « Ground » panel said « No ground data ». The panel of an aerodrome without a file now offers
+  « Read from OpenStreetMap (~30 s) » (the launcher does the one request); refusals (too soon, no launcher, paired device, no data, busy,
+  failed) are said in four languages and the layer is drawn as soon as the file arrives.
+
 - **Map: one-way airway segments carry an arrow** (`modules/maps/render_airspace.js`, `render.js`, `tips.js`, `texts.js`, help ×4; SPEC § 3; DECISIONS 9 Nov; noreg D118,
   D119; SOG-0078). AeroDB now publishes the direction of each segment (`dir` F, B or FB); a one-way segment has one small arrow in the allowed
   direction (beside the airway's name box), in the airway's colour, from zoom 9, never in the light drawing; the tooltip says « one way a → b » or « both

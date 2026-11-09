@@ -2056,6 +2056,21 @@ the Map had seen in between: the same line to within the frame's own sampling.
   « not drawn »), D114 (cost under 16 ms, the light drawing's lines). The fixture `tests/v3/fixtures/ground_LFPO.json` is made from
   OSM data (595 items); the noreg never reads the public instance.
 
+## The ground layer had no way to get its data (9 Nov 2026, SOG-0046 step 2)
+
+- **Seen**: the user ranks the taxiways first, yet the whole layer was already on v3 (lines from zoom 14, names from 15, stands and holds
+  from 16, list, filter, highlight, runway rows; D112–D115). Cause found by searching the callers: **nothing on any screen called
+  `AeroDb.fetchGround`** (only `aerodb.js` and its tests) — « the pilot's gesture from Data » was never built. Without
+  `proc/ground/<ICAO>.json` the Map draws nothing and the « Ground » button of the aerodrome card ended on « No ground data ».
+- **Decision**: the gesture lives where the dead end was, in the Map's own panel (this session's domain): the panel of an aerodrome
+  without a file offers « Read from OpenStreetMap (~30 s) ». The page contacts nothing itself (the launcher's job does the one Overpass
+  request, `ground/fetch`); refusals are said, never silent; on success the file is read again and the layer redrawn. A launcher
+  message is cut and stripped of control characters and `<>` before it is shown (`esc` on top).
+- **Not done**: the same button in the Data page (outside this domain; the ergonomics session may want one there too); the progress step
+  of the job is not shown (its text is the launcher's, French only).
+- **Noreg** D120 (the button, running state, the three answers « too soon 12 s », « no launcher », ok; the rows and the drawing come
+  with the file; red without the code).
+
 ## Shift + drag: a rectangle on the profile (decision 1.7 of the roadmap point, 6 Nov 2026; SOG-0005)
 
 - **Asked** (the user, 5 Nov, 21:59: « je veux pouvoir cliquer / glisser »): select a portion of the profile by dragging. On the whole

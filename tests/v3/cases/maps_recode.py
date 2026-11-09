@@ -3570,3 +3570,37 @@ def d119(c):
     c.ok(re.search(r'sens unique P3 → P2', line('AW2') or ''), f'{got.get("AW2")}', 'dir B: « one way P3 → P2 » (b to a: the allowed direction)')
     c.ok('double sens' in (line('AW3') or '') and 'sens unique' not in (line('AW3') or ''), f'{got.get("AW3")}', 'dir FB: « both ways »')
     c.ok(line('AW4') and 'sens' not in line('AW4'), f'{got.get("AW4")}', 'no dir: the hover is as before, no word about the sense')
+
+
+@case('D120', 'Ground panel: without a file the pilot reads the aerodrome from OpenStreetMap (a button), refusals are said, the layer appears when the file arrives', 'D',
+      tags=('maps',), designs=('standard',), night=False, phone=False,
+      rule='V3 spec 10.40 (SOG-0046): nothing on the screen called AeroDb.fetchGround, so a pilot without proc/ground/<ICAO>.json saw no taxiway and no way to get it; the panel of an aerodrome without a file offers « Read from OpenStreetMap », says why a reading is refused (too soon, no launcher, paired, no data, busy, failed) and redraws when the file arrives')
+def d120(c):
+    c.open('maps', docs=fdocs(_ground_flight()), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js("""async () => { const S = window.__mp.S, fx = await (await fetch('/tests/v3/fixtures/ground_LFPO.json')).json(), a = S.ctx.aerodb;
+      window.__calls = []; window.__have = false; const answers = [{ ok: false, reason: 'too-soon', wait: 12 }, { ok: false, reason: 'no-launcher' }, { ok: true }];
+      a.ground = async icao => icao === 'LFPO' && window.__have ? fx : null;
+      a.fetchGround = async icao => { window.__calls.push(icao); await new Promise(r => setTimeout(r, 400)); const r = answers.shift() || { ok: true }; if (r.ok) window.__have = true; return r };
+      return true }""")
+    _ground_at(c, 15, 1200)
+    c.js("async () => { const V = await import('/modules/maps/vfr.js'); V.pinAd({ icao: 'LFPO', name: 'LFPO TEST', lat: 48.7233, lon: 2.3794 }) }")
+    c.until("() => !!document.querySelector('.mp-ad-ground')", timeout=8000, what='the aerodrome card offers the ground list')
+    c.tap('.mp-ad-ground')
+    c.until("() => window.__mp.S.dpanel === 'ground'", timeout=6000, what='the ground panel opens')
+    c.until("() => !!document.querySelector('.mp-gd-fetch')", timeout=6000, what='an aerodrome without a file offers the reading from OpenStreetMap')
+    c.eq(c.js("() => window.__mp.S.ground.hits.length"), 0, 'nothing is drawn without the file', what='hits')
+    c.tap('.mp-gd-fetch')
+    c.until("() => document.querySelector('.mp-gd-fetch')?.disabled === true", timeout=3000, what='the button is off while the reading runs')
+    c.ok('OpenStreetMap' in c.js("() => document.querySelector('.mp-gd-msg').textContent") , c.js("() => document.querySelector('.mp-gd-msg').textContent"), 'the panel says the reading is running')
+    c.until("() => !!document.querySelector('.mp-gd-err')", timeout=4000, what='a refusal is said')
+    c.ok('12' in c.js("() => document.querySelector('.mp-gd-err').textContent"), c.js("() => document.querySelector('.mp-gd-err').textContent"), '« too soon » says how long to wait')
+    c.tap('.mp-gd-fetch')
+    c.until("() => /injoignable|unreachable/.test(document.querySelector('.mp-gd-err')?.textContent || '')", timeout=4000, what='« no launcher » is said (the previous refusal is replaced)')
+    c.tap('.mp-gd-fetch')
+    c.until("() => document.querySelectorAll('.mp-gd-row').length > 10", timeout=8000, what='the file arrives: the rows are listed')
+    c.eq(c.js("() => window.__calls"), ['LFPO', 'LFPO', 'LFPO'], 'the reading was asked for the panel’s aerodrome each time', what='calls')
+    c.eq(c.js("() => !!document.querySelector('.mp-gd-fetch')"), False, 'the button is gone once there is a file', what='button')
+    c.until("() => window.__mp.S.ground.hits.length > 20", timeout=6000, what='the taxiways are drawn at zoom 15 once the file is there')
