@@ -2680,3 +2680,27 @@ def f104(c):
     want = norm(f"{tx(F, 'climbGuide', c.lang)} · {tx(F, 'climbRpm', c.lang).replace('{r}', '8000')}")
     c.until("(w) => (document.querySelector('[data-module=fuel] details[data-fold=climb] > summary')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w",
             want, what='the climb rpm of the sheet in the fold\'s title')
+
+
+@case('F105', 'Weather card and quote settings: one grid, label left in a fixed column, value right; a long label wraps without moving the fields',
+      'F', tags=('fuel', 'layout'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0058 (user, 6 Nov: « carbu et opération : les cases ne sont pas alignées (multiples longueurs de texte) »; the ergonomics session\'s '
+      'criteria): the same two-column grid on both cards, checked at 390 and 1280: every field starts at the same distance from its label\'s left, '
+      'centred on its label, inside the card')
+def f105(c):
+    c.open('fuel', flight=True)
+    wait_quote(c)
+    geo = """() => [...document.querySelectorAll('[data-module=fuel] .fu-pairs > label.f-field')].filter(l => l.offsetParent).map(l => {
+        const r = l.getBoundingClientRect(), f = l.querySelector('input, select').getBoundingClientRect();
+        return [Math.round(f.left - r.left), Math.round(Math.abs((f.top + f.bottom) / 2 - (r.top + r.bottom) / 2)), Math.round(r.right - f.right)] })"""
+    seen = []
+    for n in (2, 3):
+        to_step(c, n)
+        if n == 3:
+            c.js("document.querySelector('[data-module=fuel] details[data-fold=settings]').open = true")
+            c.settle()
+        seen += c.js(geo)
+    c.ok(len(seen) >= 10, seen, 'the fields of both cards are measured')
+    c.eq(sorted({x[0] for x in seen}), [seen[0][0]], 'every field at the same distance from its label\'s left (one grid on both cards)', what='offsets')
+    c.ok(all(x[1] <= 2 for x in seen), seen, 'every field centred on its label (a wrapped label does not push it down)')
+    c.ok(all(x[2] >= -1 for x in seen), seen, 'no field beyond its row')

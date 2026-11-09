@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: fields aligned on the Weather card and the quote settings** (`modules/fuel/module.js`; Fuel SPEC § 9.6, DECISIONS; noreg
+  F105; SOG-0058). One grid, label left in a fixed column, value right: a long label wraps without pushing its field down (390 and
+  1280).
+
 - **Stats, Aircraft, Fuel: neighbouring rpm groups merged, the measured climb and descent, the climb rpm said** (`modules/stats/phases.js`,
   `modules/aircraft/sheets.js`, `modules/fuel/module.js`; stats SPEC, Aircraft SPEC § 6, Fuel SPEC; noreg F98, M31, F104; SOG-0052
   suite, SOG-0061). The dashboard's merging of small neighbouring rpm groups within an altitude; the climb and descent windows of the

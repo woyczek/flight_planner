@@ -1415,3 +1415,8 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   les RPMs. « full » = 8000+. on a les yeux rivés sur les rpms »): the target is the sheet's `climb.rpmNominal` (filled by hand or
   from the measured climb of « Proposer depuis les mesures »), never computed; in the fold's title so it is read without opening it.
   F104.
+- **9 Nov 2026 — one label / value grid on the Weather card and the quote settings** (SOG-0058, the ergonomics session's criteria;
+  the user: « les cases ne sont pas alignées »): measured at 390 (probe screenshots), « Contingence (%) » took two lines and « Couloir
+  météo (NM de part et d'autre) » three, so their fields sat lower than their neighbours'. CSS only (`.fu-pairs`, the label a grid of
+  two columns); the cards « carbu et opération » of the note are read as these two (the fields of the quote and of the flight's
+  weather); the step Flight's aerodrome fields keep their own row (their name line under the code). F105.

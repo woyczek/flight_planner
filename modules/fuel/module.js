@@ -1496,6 +1496,11 @@ function climbSvg(G, box) {
 // couleurs dans --sog-chart-* (suivent le design et la nuit sans redessin)
 const STYLE = `
 [data-module="fuel"] .fu-g3{--f-min:96px}
+/* SOG-0058 : libellé à gauche dans une colonne fixe, valeur à droite (l'unité dans le libellé) ; la même grille sur la carte Météo et
+   les réglages du devis : un libellé long passe à la ligne sans décaler les champs ; plusieurs couples par ligne sur un grand écran */
+[data-module="fuel"] .fu-pairs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,20em),1fr));gap:6px 16px}
+[data-module="fuel"] .fu-pairs>label.f-field{display:grid;grid-template-columns:minmax(0,11em) minmax(0,1fr);align-items:center;column-gap:8px;margin:0}
+[data-module="fuel"] .fu-pairs>label.f-field>:is(input,select){min-width:0;width:100%}
 [data-module="fuel"] .fu-ads{grid-template-columns:repeat(3,minmax(0,12em));position:relative} /* trois terrains ; position:relative : la liste de propositions s'y pose */
 [data-module="fuel"] .fu-adname{display:block;height:1.4em;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--sog-size-s);color:var(--sog-muted)} /* hauteur réservée, même vide : rien ne bouge */
 [data-module="fuel"] .fu-adname[data-state="unknown"]{font-style:italic}
@@ -1652,7 +1657,7 @@ function renderPlanBody() {
     </div>
     <div class="f-card" data-block="procrows"><h2>${esc(tt(TX.procTitle))}</h2><div class="fu-procbox" data-procbox="route"></div></div>`)}
   ${sec(2, `<div class="f-card" data-block="level"><h2>${esc(tt(TX.stepNames[2]))}</h2>
-      <div class="f-grid fu-g3">${fld('wdir', TX.windDir, f.wind?.dirDeg ?? '', 'inputmode="numeric"')}${fld('wkt', TX.windKt, speedField(f.wind?.speedKt), 'inputmode="numeric"', { u: speedLabel() })}${fld('isa', TX.isa, f.isaDev || '', 'inputmode="numeric"')}</div>
+      <div class="f-grid fu-g3 fu-pairs">${fld('wdir', TX.windDir, f.wind?.dirDeg ?? '', 'inputmode="numeric"')}${fld('wkt', TX.windKt, speedField(f.wind?.speedKt), 'inputmode="numeric"', { u: speedLabel() })}${fld('isa', TX.isa, f.isaDev || '', 'inputmode="numeric"')}</div>
       <p class="f-muted" data-windsrc></p>
       <div class="f-row" data-isahint></div>
       <label class="f-check"><input type="checkbox" data-k="wxreal"${f.weather?.real ? ' checked' : ''}>${esc(tt(TX.wxReal))}</label>
@@ -1661,13 +1666,13 @@ function renderPlanBody() {
   <div class="f-card"><h2>${esc(tt(TX.wxTitle))}</h2><div data-wx></div></div>
   <div class="f-card"><h2>${esc(tt(TX.aloftTitle))}</h2><div data-aloft></div></div>`)}
   ${sec(3, `<details class="f-card" data-fold="settings"><summary data-settingssum>${esc(`${tt(TX.settings)} · ${S.settings.displayUnit || 'kg'}/h`)}</summary>
-    <div class="f-grid fu-g3">${fld('taxiMin', TX.taxiMin, S.settings.taxiMin, 'inputmode="numeric"')}${fld('reserveMin', TX.reserveMin, S.settings.reserveMin, 'inputmode="numeric"')}${fld('contPct', TX.contPct, S.settings.contingencyPct, 'inputmode="decimal"')}${fld('wxRadius', TX.wxRadius, S.settings.wxRadiusNm ?? 10, 'inputmode="numeric"')}
+    <div class="f-grid fu-g3 fu-pairs">${fld('taxiMin', TX.taxiMin, S.settings.taxiMin, 'inputmode="numeric"')}${fld('reserveMin', TX.reserveMin, S.settings.reserveMin, 'inputmode="numeric"')}${fld('contPct', TX.contPct, S.settings.contingencyPct, 'inputmode="decimal"')}${fld('wxRadius', TX.wxRadius, S.settings.wxRadiusNm ?? 10, 'inputmode="numeric"')}
     </div>
     <p class="f-muted" style="margin:8px 0 4px">${esc(tt(TX.units))}</p>
-    <div class="f-grid fu-g3" data-units>
+    <div class="f-grid fu-g3 fu-pairs" data-units>
       <label class="f-field">${esc(tt(TX.unitFuel))}<select data-k="unit">${['kg', 'lb'].map(u => opt(u, u, (S.settings.displayUnit || 'kg') === u)).join('')}</select></label>
       ${[['speed', TX.unitSpeed, 'unitSpeed'], ['alt', TX.unitAlt, 'unitAlt'], ['dist', TX.unitDist, 'unitDist']].map(([kind, row, k]) => `<label class="f-field">${esc(tt(row))}<select data-k="${k}">${UNITS[kind].list.map(u => opt(u, UNITS[kind].label[u], unitOf(kind) === u)).join('')}</select></label>`).join('')}</div>
-    <div data-entrybox></div>
+    <div class="fu-pairs" data-entrybox></div>
   </details>
   <details class="f-card" data-fold="da"><summary>${esc(tt(TX.da))}</summary><div data-da></div></details>
   <div class="f-card" data-block="decision"><h2>${esc(tt(TX.decision))}</h2><div data-dec></div>      <div class="f-grid fu-g3"><label class="f-field">${esc(tt(TX.goal))}<select data-k="goal">${window.FuelLevels.GOALS.map(g => opt(g, tt(TX.goals[g]), (S.settings.goal || 'prof') === g)).join('')}</select></label></div>
