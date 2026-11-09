@@ -28,7 +28,7 @@ What the airline publishes for the app — the aeronautical base, the procedures
 
 <a id="data-coverage"></a>**The coverage.** The list of zones (countries, regions) this workstation follows. On the first opening it holds every zone the airline publishes; the list is kept on this device. “Add a country” puts into the coverage a zone the suite knows, even one nobody publishes yet: it is ticked for “Build”.
 
-<a id="data-packs"></a>**Country packs.** Under “Add a country”, when AeroDB gives packs, one row per regional pack (Western Europe, Asia…): its name, its number of countries, its size (the sum of the published sizes), what it holds “in part” or does not know. “Add all (n)” adds to the coverage the n zones that are not there yet, ticked, in one go: a zone already there is never duplicated, and nothing is downloaded or built. An empty pack says why (“no zone today”). **Themes** (islands, deserts…) are filters: a theme shows its zones (those of the coverage, and those to add one by one with “Add”) and adds none by itself.
+<a id="data-packs"></a>**Country packs.** Beside the map, with the list of zones (under it on a phone), when AeroDB gives packs: one row per regional pack (Western Europe, Asia…) with its number of countries and its size. The row is a **“the whole pack in the coverage” switch**: on, all its zones are in the coverage (ticked); half, some are; turning it on adds the missing ones; **turning it off removes all its zones from the coverage**, after a question that names them: they are unticked and leave this workstation's list, **nothing is purged** (their files stay). Hovering a row with the mouse, or pressing it on a phone, **lights its zones on the map**. An empty pack says why (“no zone and no source today”). **Themes** (islands, deserts…) are filters: a theme shows its zones (those of the coverage, and those to add one by one with “Add”) and adds none by itself.
 
 <a id="data-states"></a>**The States.** Under the coverage, the States are sorted by colour: green, procedures are already published; orange, they can be read on demand; red, nothing is readable. The reason is written on each line, the colour is never alone. Beyond seven lines, "n more" unfolds the rest.
 
@@ -89,7 +89,7 @@ What the airline publishes for the app — the aeronautical base, the procedures
 - **Without a launcher**: the screen reads the same way; it shows what is published.
 - **A read that fails**: the section says so in one line, the rest of the screen is drawn.
 
-<!-- fr: 9615b563e610 -->
+<!-- fr: 502cbe2df50f -->
 
 <!-- chapter: aircraft -->
 # Aircraft

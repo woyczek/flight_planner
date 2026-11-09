@@ -31,7 +31,7 @@ Lo que la aerolínea publica para la aplicación —la base aeronáutica, los pr
 
 <a id="data-coverage"></a>**La cobertura.** La lista de zonas (países, regiones) que sigue este equipo. En la primera apertura son todas las zonas que publica la aerolínea; la lista se guarda en este dispositivo. «Añadir un país» pone en la cobertura una zona que la suite conoce, aunque nadie la publique todavía: queda marcada para «Construir».
 
-<a id="data-packs"></a>**Los paquetes de países.** Bajo «Añadir un país», cuando AeroDB da paquetes, una fila por paquete regional (Europa occidental, Asia…): su nombre, su número de países, su tamaño (la suma de los tamaños publicados), lo que contiene «en parte» o que la suite desconoce. «Añadir todo (n)» añade a la cobertura las n zonas que aún no están, marcadas, de una vez: una zona ya presente nunca se duplica, y no se descarga ni se construye nada. Un paquete vacío dice por qué («ninguna zona hoy»). Los **temas** (islas, desiertos…) son filtros: un tema muestra sus zonas (las de la cobertura y las que se añaden una a una con «Añadir») y no añade ninguna por sí mismo.
+<a id="data-packs"></a>**Los paquetes de países.** Junto al mapa, con la lista de zonas (debajo en un teléfono), cuando AeroDB da paquetes: una fila por paquete regional (Europa occidental, Asia…) con su número de países y su tamaño. La fila es un **interruptor «todo el paquete en la cobertura»**: encendido, todas sus zonas están en la cobertura (marcadas); a medias, una parte lo está; encenderlo añade las que faltan; **apagarlo quita todas sus zonas de la cobertura**, tras una pregunta que las nombra: se desmarcan y salen de la lista de este puesto, **no se purga nada** (sus archivos se quedan). Pasar el ratón por una fila, o pulsarla en un teléfono, **resalta sus zonas en el mapa**. Un paquete vacío dice por qué («hoy ni zona ni fuente»). Los **temas** (islas, desiertos…) son filtros: un tema muestra sus zonas (las de la cobertura y las que se añaden una a una con «Añadir») y no añade ninguna por sí mismo.
 
 <a id="data-states"></a>**Los Estados.** Bajo la cobertura, los Estados se ordenan por color: verde, ya hay procedimientos publicados; naranja, se pueden leer bajo demanda; rojo, nada es legible. El motivo está escrito en cada línea, el color nunca va solo. Pasadas siete líneas, «n más» despliega el resto.
 
@@ -92,7 +92,7 @@ Lo que la aerolínea publica para la aplicación —la base aeronáutica, los pr
 - **Sin lanzador**: la pantalla se lee igual; muestra lo que está publicado.
 - **Una lectura que falla**: la sección lo dice en una línea y el resto de la pantalla se dibuja.
 
-<!-- fr: 9615b563e610 -->
+<!-- fr: 502cbe2df50f -->
 
 <!-- chapter: aircraft -->
 # Aeronaves

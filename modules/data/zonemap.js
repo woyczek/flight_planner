@@ -84,6 +84,7 @@ function mapToneOf(kind, id) {
     b = kind === 'base' ? M.baseOf(pub?.base, [zone]) : null,
     cycle = b ? b.cycle : pub?.proc?.inForce || null;
   // la base : l'état du lanceur (base/status) quand il est connu pour une zone de la couverture (vert, orange, gris, rouge ; bleu pendant que la page la traite), sinon la teinte de la publication
+  if (kind === 'base' && S.packHl?.has(id)) return 'accent'; // la zone d'un paquet survolé ou appuyé (SOG-0147)
   const ds = kind === 'base' && S.d.cov.ids.includes(zone) ? M.drawnState(S.status, zone, !!S.run && S.run.set === kind && S.run.verb !==
     'purge' && S.ids.includes(id)) : null;
   if (ds) return M.STATE_TONE[ds];
@@ -474,4 +475,15 @@ function toggleZone(kind, id) {
   if (set.has(id)) set.delete(id);
   else set.add(id);
   renderBuild();
+}
+/** Surligne sur la carte de la base les zones d'un paquet (survol, appui) ; `ids` vide : plus rien. Seule la carte est redessinée, jamais le panneau. */
+export function highlightZones(ids) {
+  const set = new Set(ids || []);
+  if (set.size === (S.packHl?.size || 0) && [...set].every(z => S.packHl?.has(z))) return;
+  S.packHl = set;
+  const m = S.maps?.base;
+  if (!m?.map || !m.layer) return;
+  const entries = featureEntries('base');
+  m.sig = signature(entries);
+  m.layer.update(M.zoneFeatures(entries), mapColors());
 }

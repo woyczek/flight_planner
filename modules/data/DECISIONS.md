@@ -274,3 +274,11 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
 - **Now**: the grid has **two cells only** — the map and `.d-choice` (the selection row, the line, the list, the personal sources). **Wide** (≥ 1024 px): the map on the left, the choice on the right (1.3 fr / 1 fr), the list scrolling inside (62 vh) so that the panel does not grow with the number of countries. **Phone**: one column, the list under the map.
 - **One zone per line, aligned**: a grid of two columns (name with its box | state); the state is a **dot and a short word** with no frame (`.d-st`); when the zone is not up to date the state is the button that opens the reasons (underlined dotted), still 44 px high: **the line is the target**, no pill is drawn. Reasons and notices on touch as before.
 - Case L52 (4 widths of reading: structure, alignment, 44 px, wide = list right of the map, phone = under; captures 390 and 1 280). Red before: no `.d-choice`, the lines were not in one column.
+
+## 10 November 2026 — packs: a switch, removal, highlight (SOG-0147)
+
+- **The user's words**: packs could be added but not removed, and one could not see what they cover. **One row = one switch** « the whole pack in the coverage » (on / half / off), replacing « Ajouter tout (n) » (kept for the theme folds only): the same control adds and removes, and its state says what is in.
+- **Removal is from the coverage of this workstation, never a purge**: the confirmation names the zones that will be unticked and says nothing is purged. A zone that also belongs to another pack goes too (the question names it): a pack is a list, the coverage is the user's. The data of the zones (published or built) are not touched, whatever the answer.
+- **Highlight**: the zones of a hovered (mouse) or pressed (touch) row take the `accent` tone on the map — the map is redrawn on its own (`highlightZones`), the panel is not. On a phone the press **keeps** the zones lit until the next press elsewhere (a finger cannot hover).
+- **Placement**: the packs moved from the Couverture card into the choice of the base panel (beside the map, above the list): the user chooses countries in one place.
+- Counter-test: removing the question (`yes = true`) turns L53 red (« the question is asked » never true).

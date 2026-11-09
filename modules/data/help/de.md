@@ -8,7 +8,7 @@ Was die Fluggesellschaft für die App veröffentlicht — die Luftfahrtdatenbank
 
 <a id="data-coverage"></a>**Die Abdeckung.** Die Liste der Zonen (Länder, Regionen), die dieser Rechner verfolgt. Beim ersten Öffnen sind es alle Zonen, die die Gesellschaft veröffentlicht; die Liste bleibt auf diesem Gerät. „Land hinzufügen“ nimmt eine Zone, die die Suite kennt, in die Abdeckung auf, auch wenn sie noch niemand veröffentlicht: Sie wird für „Erstellen“ angekreuzt.
 
-<a id="data-packs"></a>**Länderpakete.** Unter „Land hinzufügen“ erscheint, wenn AeroDB Pakete liefert, eine Zeile je Regionalpaket (Westeuropa, Asien …): Name, Zahl der Länder, Größe (Summe der veröffentlichten Größen), was es „teilweise“ enthält oder der Suite unbekannt ist. „Alle hinzufügen (n)“ fügt der Abdeckung die n noch fehlenden Zonen angekreuzt in einem Zug hinzu: Eine schon vorhandene Zone wird nie verdoppelt, und nichts wird heruntergeladen oder gebaut. Ein leeres Paket sagt warum („heute keine Zone“). **Themen** (Inseln, Wüsten …) sind Filter: Ein Thema zeigt seine Zonen (die der Abdeckung und die, die mit „Hinzufügen“ einzeln hinzukommen) und fügt von sich aus keine hinzu.
+<a id="data-packs"></a>**Länderpakete.** Neben der Karte, mit der Zonenliste (auf dem Telefon darunter), wenn AeroDB Pakete liefert: eine Zeile je Regionalpaket (Westeuropa, Asien …) mit Länderzahl und Größe. Die Zeile ist ein **Schalter „das ganze Paket in der Abdeckung“**: an, alle Zonen sind in der Abdeckung (angekreuzt); halb, ein Teil ist es; Einschalten fügt die fehlenden hinzu; **Ausschalten entfernt alle Zonen des Pakets aus der Abdeckung**, nach einer Frage, die sie nennt: Sie werden abgewählt und verschwinden aus der Liste dieses Rechners, **nichts wird gelöscht** (die Dateien bleiben). Mit der Maus über eine Zeile fahren oder sie auf dem Telefon drücken **hebt ihre Zonen auf der Karte hervor**. Ein leeres Paket sagt warum („heute weder Zone noch Quelle“). **Themen** (Inseln, Wüsten …) sind Filter: Ein Thema zeigt seine Zonen (die der Abdeckung und die, die mit „Hinzufügen“ einzeln hinzukommen) und fügt von sich aus keine hinzu.
 
 <a id="data-states"></a>**Die Staaten.** Unter der Abdeckung sind die Staaten nach Farbe geordnet: grün, Verfahren sind bereits veröffentlicht; orange, sie sind auf Anfrage lesbar; rot, nichts ist lesbar. Der Grund steht in jeder Zeile, die Farbe steht nie allein. Ab sieben Zeilen klappt „n weitere“ den Rest auf.
 
@@ -69,4 +69,4 @@ Was die Fluggesellschaft für die App veröffentlicht — die Luftfahrtdatenbank
 - **Ohne Starter**: Der Bildschirm wird genauso gelesen; er zeigt, was veröffentlicht ist.
 - **Ein Lesevorgang schlägt fehl**: Der Abschnitt sagt es in einer Zeile, der Rest des Bildschirms wird gezeichnet.
 
-<!-- fr: 9615b563e610 -->
+<!-- fr: 502cbe2df50f -->

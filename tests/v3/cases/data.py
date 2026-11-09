@@ -368,8 +368,8 @@ def l2(c):
     c.eq(g['weather']['states'], {'world': 'absent'}, 'the weather rows from the catalogue have no state; the only one is the world synoptic row (SOG-0138), made on the workstation: absent until published', what='weather states')
     c.eq(c.text('[data-set="ukmil"] .f-badge[data-pill]'), tx(TX, 'parser', lang, after='state: {'), 'the pill is worded in the language of the run', what='ukmil pill')
     # no action button anywhere, no horizontal scroll, 44 px on the summaries
-    c.eq([m['verbs'], m['buttons']], [['download:off', 'build:off', 'purge:off', 'publish:off'], 7],
-         'the verbs are Télécharger · Tout recalculer · Purger (one panel) then Publier, all grey (no launcher in the suite); the 7 buttons count Mettre à jour (the old « no Mettre à jour » is SOG-0071) and the two selection gestures', what='verbs / buttons')
+    c.eq([m['verbs'], m['buttons']], [['download:off', 'build:off', 'purge:off', 'publish:off'], 8],
+         'the verbs are Télécharger · Tout recalculer · Purger (one panel) then Publier, all grey (no launcher in the suite); the 8 buttons count Mettre à jour, the world synoptic row's « Construire » (SOG-0138) (the old « no Mettre à jour » is SOG-0071) and the two selection gestures', what='verbs / buttons')
     c.eq([c.attr('[data-publish] [data-reason]', 'data-reason'), norm(c.text('[data-publish] [data-reason]'))], ['no-launcher', norm(_trow('no-launcher', lang, 'greyReason: {'))],
          'Publier is grey for the same reason, written once', what='publish reason')
     c.eq(c.count('[data-group=base] > [data-build] + [data-publish]'), 1, 'the Publier panel follows the Construire panel', what='panel order')
@@ -4144,7 +4144,7 @@ def l44(c):
     ouest_size = _bytes(c, _KB['fr'] + _KB['gb'] + 8000 + 4000)
     c.ok(ouest_size in row('ouest') and 'zz' not in row('ouest'), row('ouest'), 'Western Europe: the size is the sum of the known zones (fr, gb, de, it), the zone the suite does not know is not counted')
     c.eq(c.count('[data-pack=ouest] [data-pack-unknown]') + c.count('[data-pack=ouest] [data-pack-partial]'), 2, 'and it says one zone is unknown, one is « en partie »', what='notes')
-    c.eq(norm(c.text('[data-pack=ouest] [data-act=pack-add]')), norm(PT('addAll').replace('{n}', '2')), 'Ajouter tout (2): de and it are not in the coverage yet (fr and gb are)', what='button')
+    c.eq([c.js("document.querySelector('[data-pack-switch=ouest]').checked"), c.js("document.querySelector('[data-pack-switch=ouest]').indeterminate")], [False, True], 'the switch of Western Europe is half on: fr and gb are in the coverage, de and it are not yet', what='switch half')
     c.eq(c.count('[data-pack=antarctique] button'), 0, 'an empty pack has no button', what='empty button')
     c.eq(norm(c.text('[data-pack=antarctique] [data-pack-empty]')), norm(_trow('no-zone-no-source', lang, after='emptyWhy: {')), 'and says why', what='empty reason')
     # ---- a theme adds nothing by itself: its fold shows the zones, the ones outside the coverage can be added one by one
@@ -4159,12 +4159,12 @@ def l44(c):
     c.js("document.querySelector('[data-packs]').scrollIntoView({ block: 'start' })")
     if c.width == 390:
         c.shot(f'L44_packs_{c.width}_{lang}.png')
-    c.tap('[data-pack=ouest] [data-act=pack-add]')
+    c.tap('[data-pack-switch=ouest]')
     doc = c.until_doc('cache/data/coverage.json', lambda d: bool(d and 'it' in (d.get('zones') or []) and 'de' in (d.get('zones') or [])), what='de and it added')
     c.eq([len(doc['zones']), len(set(doc['zones']))], [8, 8], 'eight distinct zones: nothing was duplicated', what='no duplicate')
     c.until("[...document.querySelectorAll('[data-build-zone]')].filter(i => i.checked).map(i => i.dataset.buildZone).includes('it')", timeout=6000, what='the added zones are ticked')
-    c.eq([c.js("document.querySelector('[data-pack=ouest] [data-act=pack-add]').disabled"), norm(c.text('[data-pack=ouest] [data-act=pack-add]'))], [True, norm(PT('allIn'))], 'nothing left to add: grey, said', what='all in')
-    c.eq(c.js("document.querySelector('[data-pack=asie] [data-act=pack-add]').disabled"), True, 'Asia (jp, de) is complete too', what='asie')
+    c.eq([c.js("document.querySelector('[data-pack-switch=ouest]').checked"), c.js("document.querySelector('[data-pack-switch=ouest]').indeterminate")], [True, False], 'the whole pack is in the coverage: the switch is on', what='all in')
+    c.eq(c.js("document.querySelector('[data-pack-switch=asie]').checked"), True, 'Asia (jp, de) is complete too: on', what='asie')
     c.eq(c.js("window.__stub.calls.zones ? 1 : 0"), 1, 'the screen read zones()', what='sanity')
     c.check_errors()
 
@@ -4393,6 +4393,70 @@ def l52(c):
     c.shot(f'L52_{c.width}_{lang}.png')
     c.tap('[data-zone-row=fr] [data-act=zone-why]')
     c.until("!!document.querySelector('[data-zone-why=fr]')", timeout=4000, what='the reasons on touch')
+    c.check_errors()
+
+
+@case('L53', 'Données: a pack is a switch « the whole pack in the coverage »: off removes its zones after a question that names them (unticked, nothing purged); hovering or pressing a row highlights its zones on the map', 'L', tags=('data',), langs4=True,
+      designs=('standard',), night=False,
+      rule='SOG-0147 (V3_SPECIFICATION § 10.42): packs could be added but not removed and did not show what they cover; one row = one switch (on: adds, off: removes all its zones from the coverage, with a confirmation naming what is unticked, never purged), hover (mouse) or press (touch) lights the zones of the row on the map')
+def l53(c):
+    lang = c.lang
+    PT = lambda key: _trow(key, lang, after='  packs: {')
+    c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/'), lambda r: r.fulfill(status=200, content_type='application/json', body=_ZSTYLE))
+    st = _launcher(c, [], verbs=_VERBS)
+    st['status'] = _ALL_OK()
+    cfg = _packs_cfg()
+    cfg['outlines'] = _outlines()
+    c.page.add_init_script(_ZHOOK_JS)
+    _open(c, cfg)
+    _all_open(c)
+    _zmap_ready(c, 'base')
+    c.until("!!document.querySelector('[data-pack-switch=ouest]')", timeout=8000, what='the switches')
+    tone = lambda z: (_zfeat(c, 'base', z) or {}).get('tone')
+    # ---- the packs are beside the map, with the list (wide) or under it (phone): the same cell as the list
+    c.eq(c.js("!!document.querySelector('.d-choice [data-packs]')"), True, 'the packs are in the choice, beside the map and with the list', what='in choice')
+    # ---- hover (mouse): the zones of the row light up, then go back
+    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the states are drawn (the colours settle)')
+    c.wait(400)
+    base_fr = tone('fr')
+    c.js("document.querySelector('[data-pack=ouest]').scrollIntoView({ block: 'center' })")
+    c.page.hover('[data-pack=ouest] label')
+    c.wait(400)
+    c.eq([tone('fr'), tone('gb')], ['accent', 'accent'], 'hovering Western Europe lights fr and gb on the map', what='hover')
+    c.page.mouse.move(5, 5)
+    c.wait(400)
+    c.eq(tone('fr'), base_fr, 'leaving the row puts the colours back', what='leave')
+    # ---- press (touch): the zones stay lit until the next press elsewhere
+    c.js("document.querySelector('[data-pack=ouest]').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch', pointerId: 7 }))")
+    c.wait(400)
+    c.eq(tone('fr'), 'accent', 'a touch press lights the zones and keeps them lit', what='press')
+    c.js("document.querySelector('.d-choice').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch', pointerId: 7 }))")
+    c.wait(400)
+    c.eq(tone('fr'), base_fr, 'a press elsewhere puts the colours back', what='press elsewhere')
+    # ---- off: the question names the zones, No keeps everything
+    c.js("document.querySelector('[data-pack=ouest]').scrollIntoView({ block: 'center' })")
+    c.tap('[data-pack-switch=ouest]')   # half on → on: adds de and it
+    c.until("document.querySelector('[data-pack-switch=ouest]').checked", timeout=6000, what='the pack is in the coverage')
+    cov = c.doc('cache/data/coverage.json')['zones']
+    c.tap('[data-pack-switch=ouest]')   # on → off: a question
+    q = _ask_text(c)
+    names = {'fr': ['France', 'Royaume-Uni'], 'en': ['France', 'United Kingdom'], 'de': ['Frankreich', 'Vereinigtes K'], 'es': ['Francia', 'Reino Unido']}[lang]
+    c.ok(all(n in q['text'] for n in names), q['text'], 'the question names the zones that will be unticked')
+    c.eq(norm(q['ok']), norm(PT('remove')), 'one-word confirmation', what='ok')
+    c.page.click('.f-modal [data-no]')
+    c.until("document.querySelector('[data-pack-switch=ouest]').checked", timeout=6000, what='No: the switch comes back on')
+    c.eq(c.doc('cache/data/coverage.json')['zones'], cov, 'No: the coverage is unchanged', what='kept')
+    # ---- Yes: the zones leave the coverage and the selection; nothing is purged
+    c.tap('[data-pack-switch=ouest]')
+    _ask_text(c)
+    c.page.click('.f-modal [data-ok]')
+    doc = c.until_doc('cache/data/coverage.json', lambda d: bool(d) and 'fr' not in d.get('zones', []) and 'gb' not in d.get('zones', []), what='the pack leaves the coverage')
+    c.ok(all(z in doc['zones'] for z in ('ca', 'es', 'us')), doc, 'the other zones stay')
+    c.eq(c.count('[data-build-zone=fr]') + c.count('[data-build-zone=de]'), 0, 'its zones are gone from the list (and so from the selection)', what='list')
+    c.eq([p['verb'] for p in st['posts'] if p.get('verb') == 'purge'], [], 'nothing is purged: no launcher job', what='no purge')
+    c.eq(c.js("document.querySelector('[data-pack-switch=ouest]').checked"), False, 'the switch is off', what='off')
+    if c.width == 390:
+        c.shot(f'L53_packs_{c.width}_{lang}.png')
     c.check_errors()
 
 

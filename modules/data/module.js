@@ -39,8 +39,12 @@ import {
 } from './world.js';
 import {
   addPack,
-  addPackZone
+  addPackZone,
+  togglePack
 } from './packs.js';
+import {
+  highlightZones
+} from './zonemap.js';
 import {
   selectNone,
   selectStale,
@@ -162,11 +166,33 @@ function onClick(e) {
   if (op) startOp(...op);
   else if (v.dataset.verb === 'publish') startPublish();
 }
+/** La rangée de paquet sous le pointeur (avec ses zones), ou null. */
+const packRow = e => e.target.closest?.('[data-pack][data-zones]');
+/** Le survol (souris) d'une rangée de paquet surligne ses zones sur la carte, le départ de la rangée l'éteint (SOG-0147). */
+function onPackOver(e) {
+  if (e.pointerType === 'touch') return;
+  const r = packRow(e);
+  if (r) highlightZones(r.dataset.zones.split(',').filter(Boolean));
+}
+
+function onPackOut(e) {
+  if (e.pointerType === 'touch') return;
+  const r = packRow(e);
+  if (r && !r.contains(e.relatedTarget)) highlightZones([]);
+}
+/** L'appui (tactile) d'une rangée surligne ses zones et les garde jusqu'au prochain appui ailleurs. */
+function onPackDown(e) {
+  if (e.pointerType !== 'touch') return;
+  const r = packRow(e);
+  highlightZones(r ? r.dataset.zones.split(',').filter(Boolean) : []);
+}
 /** Une case des panneaux (zone, source sous licence personnelle, État des procédures) change : le choix est retenu, le panneau redessiné
  *  (les sources proposées suivent les zones cochées). */
 function onChange(e) {
   const t = e.target;
   if (t instanceof HTMLSelectElement && t.matches('[data-add-zone]')) return t.value && addZone(t.value);
+  if (t instanceof HTMLInputElement && t.dataset.packSwitch) return togglePack(t.dataset.packSwitch, t
+    .checked); // l'interrupteur d'un paquet (SOG-0147)
   if (!(t instanceof HTMLInputElement) || frozen()) return;
   const set = t.dataset.buildZone ? S.ticked : t.dataset.personal ? S.personal : t.dataset.item ? S.picked : null,
     id = t.dataset.buildZone || t.dataset.personal || t.dataset.item;
@@ -274,6 +300,9 @@ export async function mount(el, ctx) {
   // « ? » de l'en-tête : le chapitre au paragraphe du groupe ouvert, sinon à celui du cycle
   ctx.helpAnchor?.(() => helpGroup() ? `data-group-${helpGroup()}` : 'data-cycle');
   S.body.addEventListener('click', onClick);
+  S.body.addEventListener('pointerover', onPackOver);
+  S.body.addEventListener('pointerout', onPackOut);
+  S.body.addEventListener('pointerdown', onPackDown);
   S.body.addEventListener('change', onChange);
   S.body.addEventListener('input', onInput);
   S.onResize = () => { // les cartes reprennent la taille de leur hôte quand la fenêtre change (une seule écoute, retirée au démontage)

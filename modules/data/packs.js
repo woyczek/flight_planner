@@ -14,8 +14,12 @@ import {
   tt
 } from './state.js';
 import {
-  addZones
+  addZones,
+  removeZones
 } from './screen.js';
+import {
+  renderBuild
+} from './panels.js';
 
 /** Le nom d'un paquet dans la langue (index li). */
 const nameOf = p => p.names[li()] || p.names[0];
@@ -29,25 +33,29 @@ const emptyText = p => tt(M.own(TX.packs.emptyWhy, p.empty) || TX.packs.emptyWhy
 function notesHtml(p, st) {
   return `${st.partial ? `<span class="f-muted" data-pack-partial>${esc(tt(TX.packs.partial, { n: st.partial }))}</span> ` : ''}${st.unknown.length ? `<span class="f-muted" data-pack-unknown>${esc(tt(TX.packs.unknown, { n: st.unknown.length }))}</span>` : ''}`;
 }
-/** Le bouton « Ajouter tout » d'un paquet : gris (sa raison dite) quand tout est déjà dans la couverture ou pendant une marche. */
+/** Les zones d'un paquet que la suite connaît, en attribut de la rangée : la surbrillance de la carte les lit (survol ou appui). */
+const zonesAttr = st => ` data-zones="${esc(st.known.join(','))}"`;
+/** Le bouton « Ajouter tout » d'un paquet (les filtres thématiques) : gris (sa raison dite) quand tout est déjà dans la couverture ou pendant une marche. */
 function addAllHtml(p, st) {
   const none = !st.toAdd.length;
   return `<button type="button" data-act="pack-add" data-pack="${esc(p.id)}"${none || frozen() ? ' disabled' : ''}>${esc(none ? tt(TX.packs.allIn) : tt(TX.packs.addAll, { n: st.toAdd.length }))}</button>`;
 }
-/** La rangée d'un paquet régional (sept éléments au plus : nom, pays, taille, mentions, bouton). */
+/** La rangée d'un paquet régional : UN INTERRUPTEUR « tout le paquet dans la couverture » (coché quand toutes ses zones y sont, « à moitié » quand une partie y est) : l'allumer ajoute les zones qui manquent, l'éteindre retire toutes ses
+ *  zones de la couverture après une confirmation qui nomme ce qui sera décoché (jamais purgé). Le survol ou l'appui de la rangée surligne ses zones sur la carte. */
 function regionRow(p) {
   const st = M.packState(p, S.d.zones, S.d.cov.ids);
   if (p.empty || !p.zones.length) return `<li data-pack="${esc(p.id)}" data-empty><b>${esc(nameOf(p))}</b> <span class="f-muted" data-pack-empty>${esc(emptyText(p))}</span></li>`;
-  const size = sizeOf(st);
-  return `<li data-pack="${esc(p.id)}" data-kind="region"><b>${esc(nameOf(p))}</b> <span class="f-muted">${esc([count('country', st.known.length), size].filter(Boolean).join(' · '))}</span>
-    ${notesHtml(p, st)}${addAllHtml(p, st)}</li>`;
+  const all = st.known.length > 0 && !st.toAdd.length,
+    some = st.inCoverage.length > 0 && st.toAdd.length > 0;
+  return `<li data-pack="${esc(p.id)}" data-kind="region"${zonesAttr(st)}><label class="d-opt"><input type="checkbox" role="switch" data-pack-switch="${esc(p.id)}"${all ? ' checked' : ''}${some ? ' data-mixed' : ''}${frozen() ? ' disabled' : ''}><span><b>${esc(nameOf(p))}</b> <span class="f-muted">${esc([count('country', st.known.length), sizeOf(st)].filter(Boolean).join(' · '))}${some ? ` · ${esc(tt(TX.packs.some, { n: st.inCoverage.length }))}` : ''}</span></span></label>
+    ${notesHtml(p, st)}</li>`;
 }
 /** Le filtre d'un paquet thématique : un pli qui montre ses zones (déjà dans la couverture, ou « Ajouter » une à une) ; rien n'est ajouté tant qu'on ne touche pas. */
 function themeRow(p) {
   const st = M.packState(p, S.d.zones, S.d.cov.ids);
   if (p.empty || !p.zones.length) return `<li data-pack="${esc(p.id)}" data-empty><b>${esc(nameOf(p))}</b> <span class="f-muted" data-pack-empty>${esc(emptyText(p))}</span></li>`;
   const cov = new Set(S.d.cov.ids);
-  return `<li data-pack="${esc(p.id)}" data-kind="theme"><details class="d-pack" data-pack-theme="${esc(p.id)}"${S.packOpen.has(p.id) ? ' open' : ''}>
+  return `<li data-pack="${esc(p.id)}" data-kind="theme"${zonesAttr(st)}><details class="d-pack" data-pack-theme="${esc(p.id)}"${S.packOpen.has(p.id) ? ' open' : ''}>
     <summary><b>${esc(nameOf(p))}</b> <span class="f-muted">${esc(tt(TX.packs.themeCount, { n: count('country', st.known.length), m: st.toAdd.length }))}</span></summary>
     <ul>${st.known.map(z => `<li data-pack-zone="${esc(z)}">${esc(M.zoneName(S.d.zones, z, li()))} ${cov.has(z) ? `<span class="f-muted">${esc(tt(TX.packs.inCoverage))}</span>` : `<button type="button" data-act="pack-add-zone" data-zone="${esc(z)}"${frozen() ? ' disabled' : ''}>${esc(tt(TX.packs.addOne))}</button>`}</li>`).join('')}</ul>
     ${notesHtml(p, st)}${st.toAdd.length > 1 ? addAllHtml(p, st) : ''}</details></li>`;
@@ -75,4 +83,36 @@ export function addPack(id) {
 /** Le « Ajouter » d'une zone d'un filtre thématique : la même route que « Ajouter un pays ». */
 export function addPackZone(id) {
   addZones([id]);
+}
+/** Les interrupteurs « à moitié » (aucun attribut HTML ne le dit) : posés après chaque dessin. */
+export function syncPackSwitches(root = S?.body) {
+  for (const el of root?.querySelectorAll('input[data-pack-switch]') || []) el.indeterminate = el.hasAttribute('data-mixed');
+}
+/** Le mot d'un paquet à propos de ses zones : leurs noms dans la langue, cinq au plus puis « … » (la confirmation d'un retrait les nomme). */
+function namesOf(ids) {
+  const names = ids.map(z => M.zoneName(S.d.zones, z, li()));
+  return names.slice(0, 12).join(', ') + (names.length > 12 ? ` … (+${names.length - 12})` : '');
+}
+/** L'interrupteur d'un paquet régional : allumé, « Ajouter tout » ; éteint, une question qui nomme les zones retirées (décochées de la sélection, retirées de la couverture de ce poste, JAMAIS purgées : leurs fichiers restent), puis le retrait ; sans réponse oui, l'interrupteur revient. */
+export async function togglePack(id, on) {
+  const p = (S.d?.packs || []).find(x => x.id === id),
+    me = S;
+  if (!p || frozen()) return renderBuild();
+  const st = M.packState(p, S.d.zones, S.d.cov.ids);
+  if (on) return addPack(id);
+  if (!st.inCoverage.length) return renderBuild();
+  const yes = await S.ctx.ask(tt(TX.packs.removeAsk, {
+    n: count('zone', st.inCoverage.length),
+    p: nameOf(p),
+    z: namesOf(st.inCoverage)
+  }), {
+    ok: tt(TX.packs.remove)
+  });
+  if (S !== me) return;
+  if (!yes) return renderBuild();
+  const n = removeZones(st.inCoverage);
+  if (n) S.ctx.notify(tt(TX.packs.removed, {
+    n: count('zone', n),
+    p: nameOf(p)
+  }), 'ok');
 }

@@ -39,6 +39,10 @@ import {
   statusKnown,
   zoneStateHtml
 } from './status.js';
+import {
+  packsHtml,
+  syncPackSwitches
+} from './packs.js';
 
 /** L'assistant de première installation (page V2 servie par le lanceur : SPEC § 6.5), adresse fixe du dépôt, jamais prise d'une réponse. */
 const FIRST_INSTALL = new URL('../../apps/settings/premier_lancement.html', import.meta.url).pathname;
@@ -626,6 +630,7 @@ function choiceHtml(set, busy) {
       xplaneOn = pers.some(p => p.id === 'xplane' && S.personal.has('xplane'));
     return `<div class="d-choice"><p class="d-verbs" data-select-row><button type="button" data-verb="select-stale"${busy || !statusKnown() ? ' disabled' : ''}>${esc(tt(TX.upd.selStale))}</button> <button type="button" data-verb="select-none"${busy ? ' disabled' : ''}>${esc(tt(TX.upd.selNone))}</button></p>
     <p class="f-muted" data-selection-line>${esc(selectionLine())}</p>
+    ${packsHtml()}
     <div class="d-opts" data-build-zones>${ids.map(z => `<div class="d-zrow" data-zone-row="${esc(z)}">${optHtml('data-build-zone', z, M.zoneName(S.d.zones, z, li()), S.ticked?.has(z), busy)}${zoneStateHtml(z)}</div>`).join('')}</div>
     ${pers.length ? `<h3>${esc(tt(TX.personalTitle))}</h3><div data-personal-box>${pers.map(p => `<div class="d-pers" data-personal-row="${p.id}">
       ${optHtml('data-personal', p.id, personalName(p.id), S.personal.has(p.id), busy)}
@@ -721,6 +726,7 @@ function redrawPanel(box) {
     to = a?.selectionEnd ?? null;
   keepScroll(S.body, () => {
     box.innerHTML = box.matches('[data-update-all]') ? updateAllInner() : setInner(panelId(box));
+    syncPackSwitches(box);
     attachMaps(box); // la carte MapLibre survit au redessin : son hôte reprend la place de l'emplacement
     const el = sel && box.querySelector(sel);
     if (el && !el.disabled) {

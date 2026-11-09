@@ -315,6 +315,19 @@ export const TX = {
     unknown: ['{n} inconnue(s) de la suite, ignorée(s)', '{n} unknown to the suite, ignored', '{n} der Suite unbekannt, ignoriert',
       '{n} desconocida(s) de la suite, ignorada(s)'
     ],
+    some: ['{n} déjà dans la couverture', '{n} already in the coverage', '{n} schon in der Abdeckung', '{n} ya en la cobertura'],
+    remove: ['Retirer', 'Remove', 'Entfernen', 'Quitar'],
+    removeAsk: [
+      'Retirer {n} de la couverture ({p}) : {z}. Elles seront décochées et disparaîtront de la liste de ce poste ; rien n’est purgé, leurs fichiers restent.',
+      'Remove {n} from the coverage ({p}): {z}. They will be unticked and leave this workstation’s list; nothing is purged, their files stay.',
+      '{n} aus der Abdeckung entfernen ({p}): {z}. Sie werden abgewählt und verschwinden aus der Liste dieses Rechners; nichts wird gelöscht, die Dateien bleiben.',
+      'Quitar {n} de la cobertura ({p}): {z}. Se desmarcarán y saldrán de la lista de este puesto; no se purga nada, sus archivos se quedan.'
+    ],
+    removed: ['{n} retirée(s) de la couverture ({p}) : décochées, rien n’est purgé.',
+      '{n} removed from the coverage ({p}): unticked, nothing is purged.',
+      '{n} aus der Abdeckung entfernt ({p}): abgewählt, nichts wird gelöscht.',
+      '{n} quitada(s) de la cobertura ({p}): desmarcadas, no se purga nada.'
+    ],
     added: ['{n} ajoutée(s) à la couverture ({p}) : cochées, rien n’est construit.',
       '{n} added to the coverage ({p}): ticked, nothing is built.',
       '{n} zur Abdeckung hinzugefügt ({p}): angekreuzt, nichts wird gebaut.',

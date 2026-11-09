@@ -145,7 +145,7 @@ export const STYLE = `
 [data-module="data"] .d-map-row{margin:6px 0}
 [data-module="data"] .d-map-row button{min-height:var(--sog-touch);min-width:44px}
 [data-module="data"] .d-mapgrid{display:grid;gap:8px;min-width:0}
-@media (min-width:1024px){[data-module="data"] .d-mapgrid{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}[data-module="data"] .d-choice .d-opts{max-height:62vh;overflow:auto}}
+@media (min-width:1024px){[data-module="data"] .d-mapgrid{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}[data-module="data"] .d-choice .d-opts{max-height:50vh;overflow:auto}[data-module="data"] .d-choice [data-packs]{max-height:24vh;overflow:auto;margin-bottom:8px}}
 [data-module="data"] .d-sw{display:inline-block;width:12px;height:12px;vertical-align:middle;margin:0 4px 0 8px;background:currentColor;border:1px solid}
 [data-module="data"] .d-sw[data-tone=ok]{background:var(--sog-ok);border-color:var(--sog-ok)}
 [data-module="data"] .d-sw[data-tone=warn]{background:var(--sog-warn);border-color:var(--sog-warn)}
@@ -284,7 +284,6 @@ function coverageHtml() {
   return `<section class="f-card" data-coverage><h2>${esc(tt(TX.coverage))}</h2>${err}
     <p data-zones>${esc(cov.ids.length ? tt(TX.coverageZones, { z: names.join(', ') }) : tt(TX.coverageNone))}</p>
     ${addZoneHtml()}
-    ${packsHtml()}
     <h3>${esc(tt(TX.states))}</h3><div data-states-box>${statesHtml()}</div></section>`;
 }
 /** « Ajouter un pays » : les zones que la suite connaît (zones() d'aerodb, dans l'ordre de leur nom français) hors de la couverture ;
@@ -334,6 +333,25 @@ export function addZones(list) {
   }).catch(() => {});
   render();
   return add.length;
+}
+/** Retire des zones de la couverture de CE poste : décochées de la sélection, retirées de la liste, la couverture écrite une fois. **Jamais purgées** : leurs fichiers, publiés ou construits, restent où ils sont (une purge est un verbe du lanceur, avec sa propre question) ; une zone qu'un autre poste publie reste publiée. Rend le nombre de zones retirées ; sans effet pendant une marche. */
+export function removeZones(list) {
+  if (frozen() || !S.d) return 0;
+  const gone = new Set(list),
+    had = S.d.cov.ids.filter(id => gone.has(id));
+  if (!had.length) return 0;
+  S.d.cov = {
+    ...S.d.cov,
+    ids: S.d.cov.ids.filter(id => !gone.has(id)),
+    stored: true
+  };
+  for (const id of had) S.ticked?.delete(id);
+  S.ctx.data.put(COVERAGE, {
+    zones: S.d.cov.ids,
+    updated_at: new Date().toISOString()
+  }).catch(() => {});
+  render();
+  return had.length;
 }
 /** Le nom d'une source datée (SIA France, NATS, ENAIRE) : celui du catalogue dans la langue, à défaut son identifiant. */
 const sourceLabel = id => (catSource(id)?.n?.[li()] || id).replace(/\s*\(.*\)\s*$/, '');

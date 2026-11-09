@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data: a pack is a switch « the whole pack in the coverage », removable, with its zones lit on the map** (`modules/data/packs.js`, `screen.js` `removeZones`, `zonemap.js` `highlightZones`; Data SPEC § 5.10; help ×4; L53) — SOG-0147: on (adds the missing zones), half, off (removes all its zones from the coverage after a question that names them, unticked, never purged);
+  hover or press lights the zones on the map; the packs are beside the map, with the list.
 - **Data: the build panel with many countries is clean** (`modules/data/panels.js`, `status.js`, `screen.js`; L52) — SOG-0146: the map and ONE list (wide: list on the right of the map; phone: under it), a zone per aligned line, its state a dot and a short word instead of a framed 44 px pill, the line is the target; the list scrolls inside the panel.
 - **Fuel: the proposed routes published for the Map** (`modules/fuel/module.js`; Fuel SPEC § 9.3, INTEGRATION § 3 bis, DECISIONS, help;
   noreg F114; SOG-0134 a). The routes of the Route step, resolved into positions, go to the Map (event in the double view, a document for a
