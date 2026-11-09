@@ -1060,9 +1060,9 @@ def f32(c):
 # The "Procédures" card redone (V3 spec 10.29 d, e, f; 10.23): a title with the aerodrome's name, ONE secondary line, a fixed grid
 # identical on both sides, lists updated in place, a series of choices written once.
 def meta_parts(c, side):
-    """The pieces of a side's single secondary line (separators and the empty Source slot left out), or None without the line."""
+    """The pieces of a side's single secondary line (separators, the Source slot and the « zone manquante » slot of SOG-0143 left out), or None without the line."""
     return c.js("""(s) => { const m = document.querySelector('[data-module=fuel] [data-proc="' + s + '"] .fu-procmeta');
-        return m ? [...m.children].filter(e => !e.classList.contains('fu-sep') && !e.hasAttribute('data-source-slot')).map(e => e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()) : null }""", side)
+        return m ? [...m.children].filter(e => !e.classList.contains('fu-sep') && !e.hasAttribute('data-source-slot') && !e.hasAttribute('data-gap-slot')).map(e => e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()) : null }""", side)
 
 
 def select_geometry(c):
@@ -2858,6 +2858,8 @@ def _route_launcher(c, verbs):
             body = _LAUNCHER_STATUS
         elif u.path.endswith('/__setup/regen/verbs'):
             body = {'verbs': st['verbs']}
+        elif u.path.endswith('/__setup/folders'):
+            body = {'folders': st.get('folders', [])}   # the launcher's shape (tools/launch.py _get_folders)
         elif u.path.endswith('/__setup/regen/job') and req.method == 'POST':
             st['posts'].append(json.loads(req.post_data or '{}'))
             body = {'job': 'j' + str(len(st['posts']))}
@@ -3085,7 +3087,8 @@ def _route_typed(c, text):
 
 
 _UNRES_JS = f"""(() => [...document.querySelectorAll('{FUEL} [data-unres-pt]')].map(e => [e.dataset.unresPt, e.dataset.zone || '', e.dataset.zstate || '',
-  (e.querySelector('small')?.textContent || '').trim(), e.querySelector('a[data-zonelink]')?.getAttribute('href') || '']))()"""
+  (e.querySelector('small')?.textContent || '').trim(),
+  document.querySelector(`{FUEL} [data-zonegaps] [data-zonegap="${{e.dataset.zone}}"] a[data-zonelink]`)?.getAttribute('href') || '']))()"""
 
 
 @case('F115', 'Route reader: a name with homonyms resolves to the nearest of the previous point, long jumps are said; an unknown point says its zone and the zone\'s state, with the gesture that fits',
@@ -3117,3 +3120,34 @@ def f115(c):
     u = {x[0]: x for x in c.js(_UNRES_JS)}
     c.eq([u['UNKSE'][1], u['UNKSE'][2], u['UNKSE'][4]], ['se', 'absent', '?app=maintenance#data?zone=se'], 'UNKSE: Sweden, not installed, a link to add it', what='absent')
     c.eq([u['UNKCO'][1], u['UNKCO'][2], u['UNKCO'][4]], ['fr', 'empty', ''], 'UNKCO: France installed but no point around: no gesture in Données', what='empty')
+
+
+
+@case('F116', '« Zone manquante » on an aerodrome without procedures: what is missing, the gesture (Données), the external fallbacks (Little Navmap when on this computer, Navigraph, ChartFox)',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0143 (user: « ESPAGNE : aucune base installée… proposer un moyen de télécharger, expliquer ce qui manque, fallback LittleNavMap, '
+      'Navigraph, ChartFox ; valable pour TOUS les pays »): one line in three parts, three elements; links, never data copied; an invented '
+      'aerodrome placed in a zone that is not installed; a fake launcher')
+def f116(c):
+    st = _route_launcher(c, [])
+    st['folders'] = [{'id': 'lnmdb', 'path': '', 'exists': True, 'from': 'lnm'}]
+    docs = flight_docs()
+    f = docs[1][1]
+    f['route']['arr'] = 'ESZZ'
+    f['route']['text'] = 'LFRS LUGEN NEPIX ESZZ'
+    f['route']['points'][-1] = {'id': 'ESZZ', 'lat': 59.6, 'lon': 17.9}
+    c.open('fuel', docs=docs, airfields=True, aero_extra={'aerodromes': [{'icao': 'ESZZ', 'name': 'ESZZ TEST', 'lat': 59.6, 'lon': 17.9, 'elev': 30}],
+                                                               'cells': {'46': [[-2, 6]], '47': [[-2, 6]]}})   # the index covers LFRS (its points are around it)
+    wait_quote(c)
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-proc][data-icao=\"ESZZ\"] [data-gap-slot] [data-zonegap]')", timeout=12000,
+            what='the line « zone manquante » of the aerodrome without procedures')
+    g = c.js(f"""(() => {{ const z = document.querySelector('{FUEL} [data-proc][data-icao="ESZZ"] [data-zonegap]');
+        return {{ zone: z.dataset.zonegap, state: z.dataset.zstate, parts: z.children.length, link: z.querySelector('a[data-zonelink]')?.getAttribute('href') || '',
+          ext: [...z.querySelectorAll('[data-ext]')].map(e => [e.dataset.ext, e.getAttribute('href') || '', e.getAttribute('rel') || '']) }} }})()""")
+    c.eq([g['zone'], g['state'], g['parts']], ['se', 'absent', 3], 'the zone of the aerodrome, not installed: three parts', what='line')
+    c.eq(g['link'], '?app=maintenance#data?zone=se', 'the gesture: Données on that zone', what='gesture')
+    c.eq([x[0] for x in g['ext']], ['lnm', 'Navigraph', 'ChartFox'], 'the external fallbacks, Little Navmap first since its databases are on this computer', what='fallbacks')
+    c.eq([g['ext'][1][1], g['ext'][2][1]], ['https://charts.navigraph.com/airport/ESZZ', 'https://chartfox.org/ESZZ'], 'links on the aerodrome', what='links')
+    c.ok(all('noreferrer' in x[2] for x in g['ext'][1:]), g['ext'], 'external links without referrer (nothing sent, nothing copied)')
+    c.eq(c.count(f'{FUEL} [data-proc][data-icao="LFRS"] [data-zonegap]'), 0, 'an aerodrome whose zone is there: no line', what='zone present')

@@ -17,6 +17,7 @@ import * as RM from '../../frame/lib/route_model.js'; // la route lue depuis son
 import * as RG from '../../frame/lib/routing.js'; // voies aériennes du bouton « Auto » (bibliothèque du cadre)
 import * as CF from '../../frame/lib/current_flight.js';
 import * as MS from '../../frame/lib/mission.js'; // le vol qu'une mission donne (modules/missions SPEC § 4)
+import * as ZG from './zone_gap.js'; // « zone manquante » : ce qui manque, le geste, les replis externes (SOG-0143)
 import * as RE from './route_engine.js'; // le calcul et le contrôle de route du lanceur (RouteSim, SOG-0080, SOG-0081)
 import * as FU from '../../frame/lib/fuel_units.js'; // les unités du carburant du cadre (SOG-0059 : « débit de ce vol »)
 import * as PR from '../../frame/lib/procedures.js'; // noms, sortie et entrée des procédures pour le texte de route (§ 10.31)
@@ -69,7 +70,7 @@ export const meta = {
   reads: ['pilot/', 'cache/fuel/', 'missions/'], // missions/ : « Préparer ce vol » du module Missions (#fuel?mission=<id>)
   // « Calculer A → B » et « Contrôler » (SOG-0080) : le travail route/compute du lanceur (AeroDB, RouteSim), détecté par regen/verbs
   launcher: {
-    routes: ['regen/job', 'regen/job/cancel', 'regen/verbs'],
+    routes: ['regen/job', 'regen/job/cancel', 'regen/verbs', 'folders'],
     read: []
   },
   // fiches, flotte et référence : par aerodb (aircraft()), qui seul écrit aircraft/sheets/ et le miroir V2
@@ -83,7 +84,7 @@ export const meta = {
   // gardés hors ligne dès la première visite (service worker du cadre)
   files: ['performance_model.js', 'model.js', 'levels.js', 'weather.js', 'winds.js', 'progress.js', 'procedures.js',
     'procedures_texts.js', 'adnames.js', 'routecomplete.js', 'suggest.js',
-    '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js',
+    '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'zone_gap.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/flight_time.js',
     '../../frame/lib/flight_path.js', '../../frame/lib/procedures.js', '../../frame/lib/routing.js', '../../frame/lib/fms.js',
     '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js', '../../frame/lib/clipboard.js',
@@ -357,19 +358,6 @@ const TX = {
   jump: ['{a} → {b} : {nm} NM d’un point au suivant, à vérifier', '{a} → {b}: {nm} NM from one point to the next, to check',
     '{a} → {b}: {nm} NM von einem Punkt zum nächsten, zu prüfen', '{a} → {b}: {nm} NM de un punto al siguiente, a comprobar'
   ],
-  zoneAbsent: ['{z} : base non installée', '{z}: database not installed', '{z}: Datenbank nicht installiert', '{z}: base no instalada'],
-  zoneStale: ['{z} : base installée, fichier du cycle absent — à reconstruire',
-    '{z}: database installed, the cycle\'s file missing — to rebuild',
-    '{z}: Datenbank installiert, Datei des Zyklus fehlt — neu aufzubauen',
-    '{z}: base instalada, falta el archivo del ciclo — por reconstruir'
-  ],
-  zoneEmpty: ['{z} : base installée, mais sa source ne porte ni points ni voies',
-    '{z}: database installed, but its source carries no points or airways',
-    '{z}: Datenbank installiert, aber ihre Quelle enthält weder Punkte noch Luftstraßen',
-    '{z}: base instalada, pero su fuente no tiene puntos ni aerovías'
-  ],
-  zoneAdd: ['Ajouter {z}', 'Add {z}', '{z} hinzufügen', 'Añadir {z}'],
-  zoneUpdate: ['Mettre à jour {z}', 'Update {z}', '{z} aktualisieren', 'Actualizar {z}'],
   ptUnresZone: ['inconnu : aucun point publié autour de {icao} (État {st})', 'unknown: no published point around {icao} (state {st})',
     'unbekannt: kein veröffentlichter Punkt um {icao} (Staat {st})',
     'desconocido: ningún punto publicado alrededor de {icao} (Estado {st})'
@@ -1586,6 +1574,9 @@ const STYLE = `
 [data-module="fuel"] .fu-faultlist{margin:.2em 0 .3em;padding-left:1.1em}
 [data-module="fuel"] .fu-faultlist li{margin:.15em 0;overflow-wrap:anywhere} /* un écart par ligne (SOG-0134) : segment · règle · phrase */
 [data-module="fuel"] .fu-faultrule{color:var(--sog-err)}
+/* « zone manquante » (SOG-0143) : ce qui manque, le geste, les replis externes — trois éléments sur une ou deux lignes */
+[data-module="fuel"] .fu-zonegap{display:flex;flex-wrap:wrap;gap:.2em .8em;align-items:center;margin:.3em 0}
+[data-module="fuel"] .fu-zonegap a[data-zonelink]{min-height:44px;display:inline-flex;align-items:center}
 [data-module="fuel"] .fu-rfaults>summary,[data-module="fuel"] .fu-faultmore>summary{min-height:44px;display:flex;align-items:center}
 [data-module="fuel"] details.fu-others>summary{cursor:pointer;margin:10px 0 4px;font-weight:600}
 /* SOG-0058 : libellé à gauche dans une colonne fixe, valeur à droite (l'unité dans le libellé) ; la même grille sur la carte Météo et
@@ -1747,6 +1738,7 @@ function renderPlanBody() {
       <div data-routealts></div>
       <p class="f-warn" data-unres></p>
       <p class="f-warn" data-rwarn></p>
+      <div data-zonegaps></div>
       <p class="f-row fu-rinfo"><span class="f-muted" data-rinfo></span><button type="button" class="fu-linkbtn" data-do="rmanual">${esc(tt(TX.rmanual))}</button></p>
       <div class="f-grid fu-g3 fu-hide" data-rmanual>${fld('dist', TX.distance, distField(r.distanceNm), 'inputmode="decimal"', { u: distLabel() })}${fld('trk', TX.track, r.trackDeg != null ? Math.round(r.trackDeg) : '', 'inputmode="numeric"')}</div>
       <details data-fold="pts"><summary data-ptsn>${esc(tt(TX.ptsN, { n: (r.points || []).length }))}</summary>
@@ -3567,7 +3559,7 @@ function renderPts() {
   // les noms de la route sans position (SOG-0035) : une ligne chacun, à sa place, avec sa raison ; pour le texte qui les a lus seulement
   const un = S.unres && S.unres.text === S.flight.route?.text ? S.unres.rows : [],
     why = S.unres?.zone ? tt(TX.ptUnresZone, S.unres.zone) : tt(TX.ptUnres),
-    unRows = i => un.filter(x => x.i === i).map(x => `<div class="f-item fu-pt fu-ptunres" data-unres-pt="${esc(x.id)}"${x.gap ? ` data-zone="${esc(x.gap.id)}" data-zstate="${esc(x.gap.state)}"` : ''}><span class="fu-ptid"><b>${esc(x.id)}</b><small class="f-warn">${esc(x.gap ? gapText(x.gap) : why)}</small>${x.gap && (x.gap.state === 'absent' || x.gap.state === 'stale') ? `<a class="fu-linkbtn" data-zonelink href="${esc(zoneHref(x.gap.id))}">${esc(tt(x.gap.state === 'absent' ? TX.zoneAdd : TX.zoneUpdate, { z: x.gap.name }))}</a>` : ''}</span><span class="fu-ptgap"></span></div>`).join('');
+    unRows = i => un.filter(x => x.i === i).map(x => `<div class="f-item fu-pt fu-ptunres" data-unres-pt="${esc(x.id)}"${x.gap ? ` data-zone="${esc(x.gap.id)}" data-zstate="${esc(x.gap.state)}"` : ''}><span class="fu-ptid"><b>${esc(x.id)}</b><small class="f-warn">${esc(x.gap && ZG.stateText(x.gap, tt) || why)}</small></span><span class="fu-ptgap"></span></div>`).join('');
   let cur = plan,
     shown = un.length;
   // SOG-0081 : les segments fautifs du dernier contrôle, s'il porte sur le texte d'aujourd'hui
@@ -4079,45 +4071,6 @@ function resolveRoute(normalize = true) {
   }, 500);
 }
 // ---------------------------------------------------------------- la zone d'un point inconnu (SOG-0142, SOG-0143)
-/** L'adresse de Données sur une zone (application Maintenance ; la clé zone est lue par l'écran Données). */
-const zoneHref = id => `?app=maintenance#data?zone=${encodeURIComponent(id)}`;
-/** La phrase de l'état d'une zone (voir zoneState). */
-const gapText = g => tt(g.state === 'absent' ? TX.zoneAbsent : g.state === 'stale' ? TX.zoneStale : g.state === 'empty' ? TX.zoneEmpty : TX
-  .ptUnres, {
-    z: g.name
-  });
-/** La zone d'une position : celle dont un cadre la contient (le plus petit), sinon la plus proche ; null sans zones. */
-function zoneAt(zones, p) {
-  if (!p || !Number.isFinite(+p.lat)) return null;
-  let best = null;
-  for (const z of zones)
-    for (const [w, s, e, n] of z.frames || []) {
-      const inside = +p.lon >= w && +p.lon <= e && +p.lat >= s && +p.lat <= n,
-        d = inside ? (e - w) * (n - s) : 1e6 + Math.hypot(Math.max(w - p.lon, 0, p.lon - e), Math.max(s - p.lat, 0, p.lat - n));
-      if (!best || d < best.d) best = {
-        z,
-        d
-      };
-    }
-  return best?.z || null;
-}
-/** L'état d'une zone pour un point qu'elle devrait porter — en attendant les codes de base/status d'AeroDB, lu dans la publication :
- *  absent (pas publiée) ; stale (publiée, pas de fichier du cycle en vigueur : à reconstruire) ; empty (publiée, aucun point à 60 NM :
- *  sa source ne porte ni points ni voies) ; ok (la zone est là : le point manque seulement). */
-async function zoneState(z, p) {
-  const A = S.ctx.aerodb;
-  if (!z.published) return 'absent';
-  const pub = await Promise.resolve().then(() => A.publication()).catch(() => null),
-    cur = window.AeroDB?.airacCycles?.(1)?.[0],
-    cycles = Object.keys(pub?.base?.[z.id]?.cycles || {});
-  if (cur && cycles.length && !cycles.some(c => c >= cur)) return 'stale'; // tous ses cycles plus anciens que celui en vigueur
-  const near = await Promise.resolve().then(() => A.points({
-    lat: +p.lat,
-    lon: +p.lon,
-    radiusNm: 60
-  })).catch(() => null);
-  return Array.isArray(near) && !near.length ? 'empty' : 'ok';
-}
 /** La zone probable de chaque point inconnu (celle du point résolu qui le précède, sinon du départ) et son état, sur sa ligne. */
 async function unresolvedZones(s, seq, points) {
   const A = s.ctx.aerodb;
@@ -4128,9 +4081,9 @@ async function unresolvedZones(s, seq, points) {
     memo = new Map();
   for (const row of s.unres.rows) {
     const p = points[row.i] || points[0],
-      z = zoneAt(zones, p);
+      z = ZG.zoneAt(zones, p);
     if (!z) continue;
-    if (!memo.has(z.id)) memo.set(z.id, zoneState(z, p));
+    if (!memo.has(z.id)) memo.set(z.id, ZG.zoneState(A, z, p));
     const state = await memo.get(z.id);
     if (gone(s) || seq !== s.routeSeq) return;
     row.gap = {
@@ -4140,6 +4093,37 @@ async function unresolvedZones(s, seq, points) {
     };
   }
   renderPts();
+  // SOG-0143 : une ligne en trois temps par zone en cause, sous la route (ce qui manque, le geste, les replis externes)
+  const box = s.body?.querySelector('[data-zonegaps]'),
+    seen = new Set();
+  if (box) box.innerHTML = s.unres.rows.map(x => x.gap).filter(g => g && ZG.STATES.includes(g.state) && !seen.has(g.id) && seen.add(g.id))
+    .map(g => ZG.gapHtml(g, {
+      tt,
+      esc,
+      lnm: s.lnm
+    })).join('');
+}
+/** La ligne « zone manquante » d'un terrain sans procédures (SOG-0143) : demandée une fois par terrain (sa position, sa zone, son état),
+ *  rendue vide tant que la réponse n'est pas venue ; à la réponse, les emplacements de ce terrain se remplissent (comme « Source »). */
+function zoneGapOf(icao) {
+  const k = String(icao || '').toUpperCase();
+  if (!/^[A-Z]{4}$/.test(k) || !S?.ctx?.aerodb?.zones) return '';
+  S.gapAds ||= new Map();
+  if (S.gapAds.has(k)) return S.gapAds.get(k) || '';
+  S.gapAds.set(k, null);
+  const s = S;
+  Promise.resolve().then(() => s.ctx.aerodb.coords(k)).then(c => c ? ZG.gapOf(s.ctx.aerodb, c, s.ctx.lang?.() || 'fr') : null).then(g => {
+    if (gone(s)) return;
+    const html = g ? ZG.gapHtml(g, {
+      tt,
+      esc,
+      icao: k,
+      lnm: s.lnm
+    }) : '';
+    s.gapAds.set(k, html);
+    for (const el of s.body?.querySelectorAll(`[data-proc][data-icao="${k}"] [data-gap-slot]`) || []) el.innerHTML = html;
+  }).catch(() => {});
+  return '';
 }
 /** Des noms inconnus : quand la base n'a aucun point publié à 60 NM d'un terrain du vol, la ligne le dit (la zone manque, pas le point ;
  *  SOG-0012 : la zone EI de la base n'a que des terrains et des navaids). */
@@ -5096,6 +5080,7 @@ export async function mount(el, ctx) {
   };
   // la carte « Procédures » (modules/fuel/procedures.js) : ce qu'elle demande à l'écran, rien d'autre
   S.P = createProcedures({
+    zoneGap: icao => zoneGapOf(icao), // SOG-0143 : la ligne « zone manquante » d'un terrain sans procédures
     ctx,
     flight: () => self.flight,
     route: () => self.flight.route ||= emptyFlight().route,
@@ -5223,6 +5208,12 @@ export async function mount(el, ctx) {
   S.body = el.querySelector('[data-body]');
   // liste des terrains proposés (étape Vol) : fermée quand le champ perd le focus ; un appui sur une proposition ne prend pas le focus
   // du champ (sinon le flou la fermerait avant le clic). Posés une fois : l'écran Devis est redessiné, pas son conteneur.
+  // les bases de Little Navmap sur ce poste (le lanceur le dit) : un repli externe de la ligne « zone manquante » (SOG-0143)
+  S.lnm = false;
+  Promise.resolve().then(() => ctx.launcher?.call?.('folders')).then(r => {
+    const list = Array.isArray(r?.folders) ? r.folders : []; // la réponse du lanceur : { folders: [{ id, path, exists, from }] }
+    if (S) S.lnm = list.some(f => f?.id === 'lnmdb' && f.exists === true);
+  }).catch(() => {});
   // les itinéraires pour la Carte (SOG-0134 a) : la ligne survolée, appuyée ou atteinte au clavier est publiée (hovered), et un tracé
   // touché sur la Carte en vue double revient ici (maps-route-alt)
   S.body.addEventListener('pointerover', e => altsHover(e));

@@ -16,7 +16,8 @@
 //     save(),              écrit le vol (saveFlight)
 //     settled(),           fin d'une série de choix (400 ms sans nouveau choix) : un seul devis, une seule écriture
 //     drop(),              les procédures lues du vol sont périmées (le chemin du devis est à relire)
-//     refresh()            redessine l'écran (devis compris)
+//     refresh(),           redessine l'écran (devis compris)
+//     zoneGap(icao)        la ligne « zone manquante » d'un terrain sans procédures, '' tant qu'elle n'est pas connue (SOG-0143)
 //   }
 //   api = { sync, render, reset, choose, read, onChange, focus, applyFocus, textModel, snapshot, applyOfp, stop }
 //
@@ -443,7 +444,10 @@ export function createProcedures(host) {
       icao: m.icao
     }), false)] : [fileHtml(m), readButton(m.icao, tt(TX.procReread), true)];
     if (m.unread > 0) parts.push(`<span class="fu-procunread" title="${esc([m.partialLabel, tt(m.unread === 1 ? TX.procUnread1 : TX.procUnread, { n: m.unread })].filter(Boolean).join(' · '))}">${esc(tt(m.unread === 1 ? TX.procNotRead1 : TX.procNotRead, { n: m.unread }))}</span>`);
-    return parts.filter(Boolean).join('<span class="fu-sep" aria-hidden="true"> · </span>') + ` <span data-source-slot>${slotHtml(m.icao, side)}</span>`;
+    // SOG-0143 : sans donnée, la ligne « zone manquante » du terrain (sa zone et son état, le geste, les replis externes), remplie à la
+    // réponse ; hors de la suite des parties (pas de « · » devant un emplacement encore vide)
+    const gap = m.nodata ? `<span data-gap-slot>${host.zoneGap?.(m.icao) || ''}</span>` : '';
+    return parts.filter(Boolean).join('<span class="fu-sep" aria-hidden="true"> · </span>') + ` <span data-source-slot>${slotHtml(m.icao, side)}</span>${gap}`;
   }
   // l'adresse des cartes officielles de chaque terrain, demandée une fois à aerodb (chartsUrl, lot C2) : une adresse, null (État inconnu
   // d'aerodb) ; absente tant que la réponse n'est pas venue. Les emplacements de ce terrain se remplissent à la réponse

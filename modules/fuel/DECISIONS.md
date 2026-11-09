@@ -1465,3 +1465,8 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   forward commit (515f5e7b8, no history rewritten); Fuel publishes the resolved routes on the contract of INTEGRATION § 3 bis (now in
   force) and takes back a route touched on the Map; BUGS SOG draws the layer and, on a phone, the list of routes as a sheet over the Map
   opened by « Sur la carte » (the Map's own UI). F114; counter-test on 515f5e7b8: nothing published.
+- **9 Nov 2026 — « zone manquante », one component** (SOG-0143): the user asked, for every country, to say what is missing, offer the
+  download and the external fallbacks. One pure component (`zone_gap.js`) serves the unknown points of the Route step and the aerodromes
+  without procedures; the gesture is Données on the zone (Réglages reads `zone=`), never an import from Fuel; the fallbacks are links
+  (Navigraph, ChartFox, without referrer) or a name (Little Navmap, only when the launcher says its databases are on this computer); no
+  data copied. Counter-test on 887f7b1db: no line on an aerodrome without procedures in a zone not installed.

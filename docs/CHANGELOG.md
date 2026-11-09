@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: « zone manquante » says what is missing, the gesture and the fallbacks** (`modules/fuel/zone_gap.js`, `module.js`,
+  `procedures.js`; Fuel SPEC, INTEGRATION, DECISIONS, help; noreg F116, F115; SOG-0143). Under the route for unknown points, and on an
+  aerodrome without procedures: the zone's state (not installed, to rebuild, without points or airways), « Ajouter » or « Mettre à jour » in
+  Données, and the external fallbacks (Little Navmap when on this computer, Navigraph, ChartFox).
+
 - **Data: a pack is a switch « the whole pack in the coverage », removable, with its zones lit on the map** (`modules/data/packs.js`, `screen.js` `removeZones`, `zonemap.js` `highlightZones`; Data SPEC § 5.10; help ×4; L53) — SOG-0147: on (adds the missing zones), half, off (removes all its zones from the coverage after a question that names them, unticked, never purged);
   hover or press lights the zones on the map; the packs are beside the map, with the list.
 - **Data: the build panel with many countries is clean** (`modules/data/panels.js`, `status.js`, `screen.js`; L52) — SOG-0146: the map and ONE list (wide: list on the right of the map; phone: under it), a zone per aligned line, its state a dot and a short word instead of a framed 44 px pill, the line is the target; the list scrolls inside the panel.

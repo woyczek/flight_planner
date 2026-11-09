@@ -348,7 +348,16 @@ before the start, in step 5 after (F11).
 - **Secondary line**, small and muted, one line, the pieces present only: « lu le 29/10 16:53Z ⌛ · Relire · 3 non lues · Cartes »:
   the date of the aerodrome's last reading (`coverage(icao).read_at`, UTC, `fmtDayZ`: F39; ⌛ when `coverage().outdated`), « Relire », the
   records left out (« N non lues » ×4; the old sentence in its `title`; nothing at 0), and « Cartes » (F34, F37, F27, F42). Without data:
-  « aucune procédure publiée · Lire les procédures de LFXX » (F14).
+  « aucune procédure publiée · Lire les procédures de LFXX » (F14); when the aerodrome's zone is missing, the line « zone manquante »
+  follows (SOG-0143, F116, below).
+- **« Zone manquante »** (SOG-0143, `zone_gap.js`): wherever a zone of the base is missing on the pilot's way — an unknown route point
+  (one line per zone under the route field, `[data-zonegaps]`; the point's row keeps the state alone), an aerodrome without procedures
+  (in its secondary line, filled at the answer like « Source ») — the same line in three parts: what is missing (the zone's state:
+  « base non installée », « fichier du cycle absent — à reconstruire », « sa source ne porte ni points ni voies »), the gesture
+  (« Ajouter <zone> » / « Mettre à jour <zone> » to `?app=maintenance#data?zone=<id>`; none for a source without points), and
+  « Ailleurs : » the external fallbacks of this computer — « Little Navmap sur ce poste » when the launcher says its databases are
+  there (`/__setup/folders`, `lnmdb`), Navigraph and ChartFox charts (on the aerodrome when there is one) as links without referrer;
+  never data copied. Three elements (rule 13); a zone that is there makes no line.
 - **A fixed grid**, the same columns on both sides (the box is the grid, each side a subgrid): Runway (6 em) · Procedure (wide) ·
   Transition; the Arrival's second line: · Approach · Approach transition. No select is narrower than its longest option (`minmax(
   max-content, 1fr)`), every option carries its whole label as `title` (then its reasons); under 600 px of module, one column of
