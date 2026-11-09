@@ -4,8 +4,8 @@
  "updated": "2026-11-09",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "c668530",
-  "fiches": 149,
+  "organisation": "4285136",
+  "fiches": 152,
   "untranslated": 1,
   "priorities": 4
  },
@@ -571,7 +571,7 @@
     {
      "id": "SOG-0141",
      "kind": "bug",
-     "state": "planned",
+     "state": "later",
      "fr": "Météo sur la Carte : les flèches de vent sont toutes les mêmes sur une route qui sort de la couverture du modèle",
      "en": "Weather on the Map: the wind arrows are all the same on a route that leaves the model's coverage",
      "de": "Wetter auf der Karte: alle Windpfeile gleich auf einer Route außerhalb der Modellabdeckung",
@@ -580,7 +580,7 @@
     {
      "id": "SOG-0145",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Carte : afficher la route orthodromique",
      "en": "Map: show the great-circle route",
      "de": "Karte: die Großkreisroute anzeigen",
@@ -589,7 +589,7 @@
     {
      "id": "SOG-0148",
      "kind": "bug",
-     "state": "planned",
+     "state": "later",
      "fr": "Météo : la coupe verticale a sa météo, la carte (profil plan) ne l'a pas, données pourtant téléchargées",
      "en": "Weather: the vertical cut has its weather, the map (plan view) does not, data yet downloaded",
      "de": "Wetter: der Vertikalschnitt hat sein Wetter, die Karte (Draufsicht) nicht, Daten dennoch geladen",
@@ -989,6 +989,15 @@
      "en": "Ergonomics pass (refactoring): confront every screen with the ideal roadmap and ergonomics, challenge the requests",
      "de": "Ergonomie-Durchgang (Refactoring): jeden Bildschirm an idealer Roadmap und Ergonomie messen, Anfragen hinterfragen",
      "es": "Pasada de ergonomía (refactorización): confrontar cada pantalla con la hoja de ruta y la ergonomía ideales, cuestionar las peticiones"
+    },
+    {
+     "id": "SOG-0152",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Passe de mercredi : nettoyer et réorganiser les dossiers du dépôt (rad, organisation, fuelplanner… points d'entrée morts → archives)",
+     "en": "Wednesday pass: clean and reorganise the repository folders (rad, organisation, fuelplanner… dead entry points to archives)",
+     "de": "Mittwochsdurchgang: Ordner des Repositorys aufräumen und neu ordnen (rad, organisation, fuelplanner… tote Einstiege ins Archiv)",
+     "es": "Pasada del miércoles: limpiar y reorganizar las carpetas del repositorio (rad, organisation, fuelplanner… entradas muertas a archivos)"
     }
    ]
   },
@@ -1067,7 +1076,7 @@
     {
      "id": "SOG-0137",
      "kind": "bug",
-     "state": "planned",
+     "state": "later",
      "fr": "Mission sur la Carte : illisible et illogique ; afficher au moins le titre, et réutiliser le réglage de la mission choisie",
      "en": "Mission on the Map: illegible and illogical; show at least the title, reuse the chosen-mission setting",
      "de": "Mission auf der Karte: unleserlich und unlogisch; wenigstens den Titel zeigen, die gewählte Mission wiederverwenden",
@@ -1445,6 +1454,15 @@
      "en": "BLOQUANT : « Tout recalculer » échoue dans la page de construction, 46 zones d'un coup, cause non dite",
      "de": "BLOQUANT : « Tout recalculer » échoue dans la page de construction, 46 zones d'un coup, cause non dite",
      "es": "BLOQUANT : « Tout recalculer » échoue dans la page de construction, 46 zones d'un coup, cause non dite"
+    },
+    {
+     "id": "SOG-0150",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "NATS : la reprise dit « rien à prendre » et parle d'openAIP alors que les zips NATS sont dans Téléchargements",
+     "en": "NATS: the pickup says “nothing to take” and talks about openAIP while the NATS zips are in Downloads",
+     "de": "NATS: die Übernahme sagt „nichts zu nehmen“ und spricht von openAIP, obwohl die NATS-Zips in Downloads liegen",
+     "es": "NATS: la recogida dice «nada que tomar» y habla de openAIP mientras los zips NATS están en Descargas"
     }
    ]
   },
@@ -1701,7 +1719,7 @@
     {
      "id": "SOG-0146",
      "kind": "bug",
-     "state": "planned",
+     "state": "later",
      "fr": "Données : la page de construction devient très sale avec beaucoup de pays",
      "en": "Données: the build page gets very messy with many countries",
      "de": "Daten: die Aufbauseite wird mit vielen Ländern sehr unordentlich",
@@ -1710,11 +1728,20 @@
     {
      "id": "SOG-0147",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Paquets de pays : les retirer comme on les ajoute, voir ce qu'ils couvrent sur la carte, à côté de la carte en vue large",
      "en": "Country packs: remove them as they are added, see what they cover on the map, beside the map in the wide view",
      "de": "Länderpakete: ebenso entfernen wie hinzufügen, auf der Karte sehen, was sie abdecken, in der Breitansicht neben der Karte",
      "es": "Paquetes de países: quitarlos como se añaden, ver qué cubren en el mapa, junto al mapa en vista ancha"
+    },
+    {
+     "id": "SOG-0151",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Données : la question de « Prendre le fichier téléchargé » est plus grande que l'écran, boutons inaccessibles",
+     "en": "Données: the “Take the downloaded file” question is taller than the screen, buttons unreachable",
+     "de": "Daten: die Frage „Heruntergeladene Datei nehmen“ ist höher als der Bildschirm, Knöpfe unerreichbar",
+     "es": "Datos: la pregunta «Tomar el archivo descargado» es más alta que la pantalla, botones inaccesibles"
     }
    ]
   },
@@ -1820,7 +1847,7 @@
     {
      "id": "SOG-0149",
      "kind": "bug",
-     "state": "planned",
+     "state": "later",
      "fr": "La première synchronisation git de la journée dure plus de deux minutes",
      "en": "The first git synchronisation of the day takes more than two minutes",
      "de": "Die erste Git-Synchronisation des Tages dauert über zwei Minuten",
