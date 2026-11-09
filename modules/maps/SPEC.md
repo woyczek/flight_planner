@@ -610,6 +610,15 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
   refusals of the reading belong to the procedures' reading (Fuel's notification). AeroDB says `on('change', { ground: ICAO })` when
   it has read the ground after the procedures: the Map reads the file again (`groundChanged`), so an open panel shows it at once. Noreg D120.
 
+### 5.2 bis The world view (SOG-0156)
+
+- A view wider than `WORLD_NM` = 3 000 NM (`widthNm(shown)`, `data.js`; a route to another continent frames to it) is a **world view**
+  (`S.worldView`, set by `draw.js`): the wind barbs are not drawn (unreadable at that scale), the notes say so (« view more than 3 000 NM
+  wide: the wind barbs are hidden; zoom in »), and no weather model is read for a route longer than that (`ensureWinds`). Everything else
+  keeps its own rule (the corridor of 10 NM past `WIDE_NM` = 600 NM already limits what is read). The screen points of the great circle and of
+  the proposed routes are thinned to one per pixel (`thinPx`, `state.js`). The cost of an image does not depend on the route's length.
+  Noreg D128.
+
 ### 5.3 The proposed routes (`alts.js`; fuel INTEGRATION § 3 bis, SOG-0134 a)
 
 - **What it draws**: the routes Fuel computes or checks (« Calculate A → B », « Check »), resolved into positions by Fuel and published

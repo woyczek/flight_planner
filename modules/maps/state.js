@@ -65,6 +65,18 @@ export function keptRoute(pts) {
   return (pts || []).filter(p => kept.some(k => String(k.id ?? '') === String(p?.id ?? '') && Math.abs(+k.lat - +p.lat) < 1e-6 &&
     Math.abs(((+k.lon - +p.lon) % 360 + 540) % 360 - 180) < 1e-6));
 }
+/** Les points d'un tracé en coordonnées de la vue, à raison d'un point par pixel : un point à moins d'un pixel du dernier gardé est omis (le
+ *  dernier point est toujours gardé). Une route de milliers de NM n'a pas plus de points à tracer que de pixels. */
+export function thinPx(q) {
+  if (!q || q.length < 3) return q || [];
+  const out = [q[0]];
+  for (let i = 1; i < q.length - 1; i++) {
+    const l = out[out.length - 1];
+    if (Math.abs(q[i].x - l.x) >= 1 || Math.abs(q[i].y - l.y) >= 1) out.push(q[i]);
+  }
+  out.push(q[q.length - 1]);
+  return out;
+}
 /** Le grand cercle de a à b (points { lat, lon }), `n` tronçons : [{ lat, lon }] avec des longitudes continues (au plus 180° d'écart avec
  *  le départ) ; nm : sa longueur. Rend null pour deux points confondus (moins de 5 NM) ou antipodaux. */
 export function greatCircle(a, b, n = 48) {

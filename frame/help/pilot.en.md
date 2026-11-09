@@ -359,7 +359,7 @@ IVAO, VATSIM, X-Plane or Little Navmap. The estimated times are also shown for a
 each point, and every 50 NM between two points. The staff points to where the wind comes from; a pennant is 50 kt, a
 barb 10 kt, a half barb 5 kt. Tap a barb (or move the mouse over it): the bubble gives the direction, the speed, the
 temperature, the level and the forecast hour. The “Winds aloft” layer hides them.
-The barbs are read from the same forecast as the weather cross-section (nothing more is asked): if the cross-section has wind, the map has. Where the chosen model does not cover the route (the middle of the route chooses it) there is no arrow: the bubble says “No wind here (outside ARPEGE)”; never the same arrow repeated. The “Route weather” gesture then reads the covering model (GFS) for those holes, and each barb says its model in the bubble.
+The barbs are read from the same forecast as the weather cross-section (nothing more is asked): if the cross-section has wind, the map has. Where the chosen model does not cover the route (the middle of the route chooses it) there is no arrow: the bubble says “No wind here (outside ARPEGE)”; never the same arrow repeated. The “Route weather” gesture then reads the covering model (GFS) for those holes, and each barb says its model in the bubble. On a view more than 3,000 NM wide (a route to another continent) the barbs are hidden and the notes say so: zoom in to see them.
 
 **Steps.** If the route sets a level at some points in Fuel, the profile draws the steps: climb, level-off, new
 climb or descent, with the top of climb and top of descent computed again. The route's waypoints are also marked on
@@ -419,7 +419,7 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: f755de60416e -->
+<!-- fr: a767a06c4de0 -->
 
 <!-- chapter: atmosphere -->
 # Weather

@@ -2064,6 +2064,26 @@ the Map had seen in between: the same line to within the frame's own sampling.
   « not drawn »), D114 (cost under 16 ms, the light drawing's lines). The fixture `tests/v3/fixtures/ground_LFPO.json` is made from
   OSM data (595 items); the noreg never reads the public instance.
 
+## A far point does not slow the Map down (9 Nov 2026, SOG-0156)
+
+- **Seen** (the user, 18 h 15): « un point très loin, comme PAM aux États-Unis, fait vraiment ramer la carte si elle est affichée en side ».
+  Hypothesis of the ergonomics session: the route widens the frame to the world and everything is drawn at that scale at every image.
+- **Measured** (harness, route LFRS → KPAM, 4 000 NM, a dense Paris base of 2 000 aerodromes and 600 airspaces, winds written at the four
+  points, median of 14 full drawings at the framed zoom 1.26, the phone harness): **before 4.0 / 4.3 / 4.1 ms, 88 barbs drawn**
+  (Fuel's winds interpolated every 50 NM over the whole route); **after 3.4 / 3.3 / 3.9 ms, 0 barbs**. For the short route of the same base
+  (Europe, zoom 5) a drawing is 3.1 ms. So in this harness a far point is **not** slow per image: the base is synthetic and small; the gain
+  is the barbs (about 0.5 ms and 88 unreadable arrows). I could not reproduce a « ramer » of the real base (the user's world
+  data): the long tasks of a far route were none (0 over 50 ms in 7 s) with the synthetic data. D4 stays the reference for the chips; D68
+  for the drag.
+- **Done, by the rule**: past 3 000 NM wide (`WORLD_NM`) no barbs, said in the notes; no weather model is read for a route longer than
+  3 000 NM (the eager reading of SOG-0148 would have computed 4 000 NM of cut model for arrows that are not drawn); the great circle's and
+  the alternatives' screen points are one per pixel at most. The heavy layers (airspaces, aerodromes, ground) were already limited:
+  past 600 NM the data are read in a 10 NM corridor (`corridorFor`), the ground layer starts at zoom 14.
+- **Not done / to learn**: the real « ramer » is probably on the page that writes the flight (Fuel's keystrokes in the double view rebuild
+  the profile — the corridor boxes of a 4 000 NM route — each time); a measurement on the user's real base and a long-task trace are
+  needed before touching that; the route's own points are not thinned (a route has tens of points, not thousands).
+- **Noreg** D128 (world view: no barbs, the note, a drawing under 16 ms, back to barbs when zoomed in, `thinPx`; red without the code).
+
 ## The proposed routes of Fuel on the Map (9 Nov 2026, SOG-0134 a)
 
 - **Asked** (the user, via the ergonomics session, after Features SOG's sketch in Fuel): « pourquoi la carte side by side n'affiche pas

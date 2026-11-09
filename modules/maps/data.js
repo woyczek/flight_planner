@@ -311,6 +311,9 @@ export const wantBox = shown => S.profile?.corridorNm > 0 && (shown.e - shown.w)
 /** Largeur (NM) au-delà de laquelle la vue n'est lue qu'autour du vol, même « Autour du vol seulement » décochée (garde-fou d'une
  *  vue continent : la puce « i » le dit) ; marge du couloir alors imposé. */
 export const WIDE_NM = 600;
+/** Au-delà, la vue est « le monde » (SOG-0156) : les barbules de vent ne se dessinent pas (illisibles à cette échelle, et une route de
+ *  plusieurs milliers de NM ferait lire et calculer toute une grille pour rien) ; le coût d'une image ne dépend pas de la longueur de la route. */
+export const WORLD_NM = 3000;
 const FORCED_NM = 10;
 /** Largeur d'une emprise en NM, à sa latitude moyenne. */
 export const widthNm = b => (b.e - b.w) * 60 * Math.cos((b.s + b.n) / 2 * Math.PI / 180);

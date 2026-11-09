@@ -25,6 +25,9 @@ import {
   TX
 } from './texts.js';
 import {
+  WORLD_NM
+} from './data.js';
+import {
   openData
 } from './sheet_view.js';
 import {
@@ -307,6 +310,11 @@ export async function ensureWinds() {
   if (!S || !canWeather()) return;
   const key = wxKey();
   if (S.wxWindsKey === key) return;
+  if (S.prof && S.prof.total / FT_NM >
+    WORLD_NM) { // une route de plus de WORLD_NM : pas de modèle de coupe lu pour des barbules qui ne se dessinent pas (SOG-0156)
+    S.wxWindsKey = key;
+    return;
+  }
   S.wxWindsKey = key;
   let list = null;
   try {

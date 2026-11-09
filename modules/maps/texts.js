@@ -191,6 +191,12 @@ export const TX = {
   altCheck: ['Route contrôlée', 'Checked route', 'Geprüfte Route', 'Ruta comprobada'],
   altChosen: ['prise', 'taken', 'gewählt', 'elegida'],
   altFaulty: ['faute', 'fault', 'Fehler', 'falta'],
+  worldNote: [
+    'Vue de plus de 3 000 NM de large : les barbules de vent sont masquées (illisibles à cette échelle) ; zoomez pour les voir.',
+    'View more than 3,000 NM wide: the wind barbs are hidden (unreadable at this scale); zoom in to see them.',
+    'Ansicht von mehr als 3 000 NM Breite: die Windfiedern sind ausgeblendet (in diesem Maßstab unlesbar); zoomen Sie hinein, um sie zu sehen.',
+    'Vista de más de 3 000 NM de ancho: las barbas de viento están ocultas (ilegibles a esta escala); acerque para verlas.'
+  ],
   gcTip: ['Route orthodromique {a} → {b}', 'Great-circle route {a} → {b}', 'Orthodrome {a} → {b}', 'Ruta ortodrómica {a} → {b}'],
   gcLen: ['{n} NM en ligne droite sur la sphère, la plus courte', '{n} NM straight on the sphere, the shortest',
     '{n} NM geradeaus auf der Kugel, die kürzeste',

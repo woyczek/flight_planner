@@ -292,6 +292,7 @@ export async function status() {
   // pour information : fond uni, relief absent (l'état normal hors ligne)
   const soft = [];
   if (S.plain && S.route.points.length) soft.push(`<p>${esc(tt(TX.plain))}</p>`);
+  if (S.worldView) soft.push(`<p>${esc(tt(TX.worldNote))}</p>`); // plus de 3 000 NM de large : pas de barbules (SOG-0156)
   if (S.prof && !S.prof.terrainOk) soft.push(`<p>${esc(tt(TX.noTerrain))}</p>`); // tant que rien n'est arrivé, ou faute de relief
   // la trajectoire verticale : ce qui manque quand elle n'est pas tracée (le niveau), ce qui est estimé quand elle l'est (SOG-0006)
   if (S.prof && !onMission()) {

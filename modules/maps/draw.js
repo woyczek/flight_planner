@@ -16,7 +16,8 @@ import {
   level,
   tileLoader,
   keptRoute,
-  greatCircle
+  greatCircle,
+  thinPx
 } from './state.js';
 import {
   nearLon
@@ -38,8 +39,13 @@ import {
   wantBox,
   corridorFor,
   within,
-  fresh
+  fresh,
+  widthNm,
+  WORLD_NM
 } from './data.js';
+import {
+  status
+} from './screen.js';
 import {
   withEta,
   drawProgress,
@@ -409,7 +415,7 @@ function gcScreen(mission, pick, toC) {
     String(b.id || '').toUpperCase() !== String(r.arr).toUpperCase()) return null;
   const g = greatCircle(a, b);
   if (!g) return null;
-  const q = g.pts.map(p => toC(p.lat, p.lon));
+  const q = thinPx(g.pts.map(p => toC(p.lat, p.lon)));
   S.gc = {
     dep: r.dep,
     arr: r.arr,
@@ -691,7 +697,13 @@ function draw() {
     r: p.r && moved(p.r, mx, my)
   }))); // TOC / TOD : leurs noms là où la passe les a posés
   if (!mission && !pick) drawVfr(ctx, toC);
-  S.windHits = !mission && !pick && L.wind && zoomOn('wind') ? drawWinds(ctx, toC) : [];
+  // une vue de plus de WORLD_NM : pas de barbules (SOG-0156), et le dit dans les notes (écrit seulement quand cela change)
+  const world = !mission && widthNm(shown) > WORLD_NM;
+  if (world !== !!S.worldView) {
+    S.worldView = world;
+    status();
+  }
+  S.windHits = !mission && !pick && !world && L.wind && zoomOn('wind') ? drawWinds(ctx, toC) : [];
   S.altHits = drawAlts(ctx, toC); // les itinéraires proposés par Carburant, sur la route (SOG-0134 a)
   if (!mission && !pick && isStarted(S.route.flight)) drawProgress(ctx, toC);
   S.toC = toC;

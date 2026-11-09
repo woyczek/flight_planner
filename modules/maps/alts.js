@@ -9,7 +9,8 @@ import {
   S,
   esc,
   tt,
-  onMission
+  onMission,
+  thinPx
 } from './state.js';
 import {
   TX
@@ -80,7 +81,7 @@ export function drawAlts(ctx, toC) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   for (const a of [...A.list].sort((x, y) => rank(x) - rank(y))) {
-    const q = a.points.map(p => toC(p.lat, p.lon)),
+    const q = thinPx(a.points.map(p => toC(p.lat, p.lon))), // un point par pixel au plus (SOG-0156)
       on = rank(a) > 0,
       w = a.index === hov ? 7 : a.index === A.chosen ? 4.5 : 3,
       run = (from, to) => {

@@ -3919,3 +3919,47 @@ def d127(c):
     c.ok(len([h for h in hs if h['gap']]) < gaps0 and all(h['model'] == 'GFS' for h in hs if h['other']), str(hs), 'fewer holes, and each filled barb says GFS')
     tip = c.js("""async () => { const T = await import('/modules/maps/tips.js'), h = window.__mp.S.windHits.find(x => x.w.other); return T.tipAt(h.x, h.y) }""")
     c.ok(tip and 'GFS' in tip[1], str(tip), 'the hover says the model of the barb')
+
+
+_FAR_JS = """async () => { const t = []; const m = window.__mpMap;
+  for (let i = 0; i < 12; i++) { const c = m.getCenter(); m.jumpTo({ center: [c.lng + 1e-3 * (i % 2 ? 1 : -1), c.lat], zoom: m.getZoom() });
+    await new Promise(r => setTimeout(r, 450)); const e = performance.getEntriesByName('maps:draw').slice(-1)[0]; if (e) t.push(e.duration) }
+  t.sort((a, b) => a - b); return { n: t.length, med: t[t.length >> 1] || 0, max: t[t.length - 1] || 0, z: m.getZoom() } }"""
+
+
+@case('D128', 'A route that crosses the Atlantic costs no more than a short one: over 3 000 NM wide there are no wind barbs (said in the notes), the route’s points are thinned to one per pixel', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='V3 spec (SOG-0156): the cost of an image does not depend on the length of the route; a view wider than 3 000 NM draws no wind barbs and says so in the notes; no weather model is read for a route longer than that; the screen points of the great circle and of the proposed routes are one per pixel at most')
+def d128(c):
+    pts = [{'id': 'LFRS', 'lat': 47.1569, 'lon': -1.6078}, {'id': 'LUGEN', 'lat': 46.5833, 'lon': -1.2}, {'id': 'NEPIX', 'lat': 44.9, 'lon': 2.4},
+           {'id': 'KPAM', 'lat': 30.07, 'lon': -85.58}]
+    f = flight()
+    f['route']['points'] = pts
+    f['route']['arr'] = 'KPAM'
+    f['route']['text'] = 'LFRS LUGEN NEPIX KPAM'
+    for q in pts:   # winds written at every point: drawn on a short view, not on a world view
+        q['wind'] = {'dirDeg': 270, 'kt': 45, 'tempC': -30, 'levelFt': 27000, 'at': '2026-10-24T11:00:00Z'}
+    ads, spaces, cells = _dense_base()
+    c.page.add_init_script(_FREEZE_AERO)
+    c.open('maps', docs=fdocs(f), flight=False, airfields=True, airspaces=spaces, aero_extra={'aerodromes': ads, 'cells': cells}, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.until("() => window.__mp.S.worldView === true", timeout=20000, what='the framed route is a world view (more than 3 000 NM wide)')
+    c.wait(800)
+    c.eq(c.js("() => (window.__mp.S.windHits || []).length"), 0, 'no wind barbs on a world view', what='barbs')
+    c.until("() => (document.querySelector('.mp-notes')?.textContent || '').includes('000')", timeout=6000, what='the notes say why')
+    # the cost of an image is the same order as a short route’s (the dense base is Paris’s; the route is 4 000 NM long)
+    ms = c.js("""async () => { const t = [], m = window.__mpMap;
+      for (let i = 0; i < 10; i++) { const c = m.getCenter(); m.jumpTo({ center: [c.lng + 1e-3 * (i % 2 ? 1 : -1), c.lat], zoom: m.getZoom() });
+        await new Promise(r => setTimeout(r, 450)); const e = performance.getEntriesByName('maps:draw').slice(-1)[0]; if (e) t.push(e.duration) }
+      t.sort((a, b) => a - b); return { n: t.length, med: t[t.length >> 1] || 0 } }""")
+    c.ok(ms['n'] >= 5 and ms['med'] < 16, f'{ms}', 'a full drawing of the world view is under 16 ms (median)')
+    # zoomed in near the departure: the barbs are back, the note is gone
+    c.js("() => { window.__mpMap.jumpTo({ center: [-1.4, 46.9], zoom: 7 }); return true }")
+    c.until("() => window.__mp.S.worldView === false", timeout=10000, what='no longer a world view')
+    c.until("() => (window.__mp.S.windHits || []).length >= 1", timeout=10000, what='the barbs are drawn again')
+    c.ok(not re.search(r'3[\s,.  ]?000', c.js("() => document.querySelector('.mp-notes')?.textContent || ''") or ''), 'notes', 'the note is gone')
+    # one point per pixel
+    n = c.js("""async () => { const S = await import('/modules/maps/state.js'), q = Array.from({ length: 400 }, (_, i) => ({ x: i * 0.2, y: 3 + Math.sin(i / 40) })); return [q.length, S.thinPx(q).length] }""")
+    c.ok(n[1] <= 90 and n[1] >= 2, str(n), '400 points over 80 px keep at most one per pixel (and the last)')

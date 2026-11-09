@@ -366,7 +366,7 @@ le long de la route : à chaque point, et tous les 50 NM entre deux points. La h
 fanion vaut 50 kt, une barbe 10 kt, une demi-barbe 5 kt. Touchez une barbule (ou passez dessus à la souris) : la bulle
 donne la direction, la force, la température, le niveau et l'heure de la prévision. La couche « Vents en altitude »
 les cache.
-Les barbules sont lues dans la même prévision que la coupe météo (rien de plus n'est demandé) : si la coupe a du vent, la carte en a. Là où le modèle choisi ne couvre pas la route (le milieu de la route le choisit), il n'y a pas de flèche : la bulle dit « Pas de vent ici (hors ARPEGE) » ; jamais la même flèche répétée. Le geste « Météo de la route » lit alors le modèle qui couvre (GFS) pour ces trous, et chaque barbule dit son modèle dans la bulle.
+Les barbules sont lues dans la même prévision que la coupe météo (rien de plus n'est demandé) : si la coupe a du vent, la carte en a. Là où le modèle choisi ne couvre pas la route (le milieu de la route le choisit), il n'y a pas de flèche : la bulle dit « Pas de vent ici (hors ARPEGE) » ; jamais la même flèche répétée. Le geste « Météo de la route » lit alors le modèle qui couvre (GFS) pour ces trous, et chaque barbule dit son modèle dans la bulle. Sur une vue de plus de 3 000 NM de large (une route vers un autre continent), les barbules sont masquées et les notes le disent : zoomez pour les voir.
 
 **Les paliers.** Si la route fixe un niveau à certains points dans Carburant, le profil dessine les paliers : montée,
 palier, nouvelle montée ou descente, avec la fin de montée et le début de descente recalculés. Les points tournants
