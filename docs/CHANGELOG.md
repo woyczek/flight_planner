@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: memory bounded on a widened window — « not enough memory to open this page »** (`modules/maps/canvas_scale.js` new, `draw.js`,
+  `profile_view.js`, `module.js`, `lib/aero_symbols.js`; SPEC § 5; DECISIONS 9 Nov; noreg D117; SOG-0067). No leak found (JS heap, listeners and
+  canvases flat over 50 resizes, 200 gestures and 30 Map ↔ page round trips); the cause is the display model: the overlay canvas, its copy
+  for the gesture and the two profile canvases took the view × the screen's pixel ratio with no bound (about 270 MB at 3440 × 1440 and a ratio
+  of 3). Each is now at most 8 million pixels (a normal window keeps its sharpness); the unmount frees the canvases at once; the airspace
+  hatch tile is made once instead of at every drawing.
+
 - **Stats and Aircraft: measured levels on a ladder of significant levels** (`modules/stats/phases.js` `LADDER`, `levelCurves`,
   `modules/aircraft/sheets.js`; stats SPEC / DECISIONS, Aircraft SPEC § 6; noreg F98, M36; SOG-0075). 1000 to 5000 ft by 1000, then
   FL100 to FL450 by 50 (FL181 → FL200); a level between two measured ones interpolated in pressure, greyed « extrapolé »; the accepted

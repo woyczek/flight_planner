@@ -317,6 +317,12 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   slot of `requestAnimationFrame` for every kind (a full request outranks a light one). A full drawing only notes its two
   geographic corners (`markFrame`, two `unproject`); its bitmap is copied once, at the first move of a gesture (`copyFrame`),
   and after each light drawing — no longer after every full drawing at rest.
+- **The overlay's memory is bounded** (`canvas_scale.js`, SOG-0067): the overlay canvas, its copy for the gesture (`copyFrame`) and the
+  two profile canvases (`mp-pc`, `mp-pcur`) are each the view × the screen's pixel ratio × 4 bytes. `canvasDpr(W, H)` takes the ratio
+  of the screen (3 at most) and lowers it so that none passes `MAX_CANVAS_PX` = 8 million pixels (32 MB; never under 0.5): a
+  1920 × 900 view at a ratio of 2 (6.9 million) is untouched, 3440 × 1440 at 3 (26 million before) is drawn at 1.3. MapLibre bounds its
+  own canvas (`maxCanvasSize`, 4096 × 4096). The unmount sets the four canvases to 0 × 0 (the pixels go back at once, not at the next
+  garbage collection); the hatch tiles of the airspaces (`lib/aero_symbols.js`) are made once for the page, not once a drawing. Noreg D117.
 - **The drawing overflows the view — `OVER` = 0 since 6 Nov 2026** (user, 1 Nov 2026: « un mur » at the edge while panning, until
   the full drawing; then the cost rule prevailed over a comfort nobody asked for, decision 1.1 of 6 Nov: at 5 % the drawing at rest
   cost about 1 ms more, over the ±0.5 ms rule; the mechanism below stays, one constant, `OVER` = .05 brings it back): the overlay

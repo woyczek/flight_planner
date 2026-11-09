@@ -3,6 +3,9 @@
 // route), la ligne sous le profil, la fenêtre sur l'axe des distances (lib/axis_window.js) partagée avec la coupe météo.
 
 import {
+  canvasDpr
+} from './canvas_scale.js';
+import {
   S,
   keep,
   tt,
@@ -163,9 +166,9 @@ function showProf(prof, pts) {
 /** Taille d'un canvas à son cadre (pixels de l'écran) : { W, H, dpr }. */
 function fit(c, box) {
   const r = box.getBoundingClientRect(),
-    dpr = Math.min(3, window.devicePixelRatio || 1),
     W = Math.max(1, Math.round(r.width)),
-    H = Math.max(1, Math.round(r.height));
+    H = Math.max(1, Math.round(r.height)),
+    dpr = canvasDpr(W, H); // bornée par la surface (SOG-0067)
   if (c.width !== Math.round(W * dpr) || c.height !== Math.round(H * dpr)) {
     c.width = Math.round(W * dpr);
     c.height = Math.round(H * dpr);

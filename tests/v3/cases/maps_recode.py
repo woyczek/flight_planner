@@ -3425,3 +3425,65 @@ def d116(c):
     small = c.js(_VP_JS, {'seed': 11, 'count': 600, 'box': [48.3, 49.4, 1.8, 3.0],
                           'points': [{'lat': 48.7233, 'lon': 2.3794, 'name': 'LFPO'}, {'lat': 48.9694, 'lon': 2.4414, 'name': 'LFPB'}]})
     c.ok(small['sameAsRef'] and small['secondSame'], f'{small}', 'a short flight gives the same intervals as the plain algorithm, in both builds')
+
+
+# ------------------------------------------------------------------------------------------------------ D117 (the memory of the Map)
+_MEM_INST_JS = r"""() => { if (window.__mem) return true; const I = window.__mem = { made: 0 }; const ce = document.createElement;
+  document.createElement = function (t, o) { if (String(t).toLowerCase() === 'canvas') I.made++; return ce.call(this, t, o) }; return true }"""
+_MEM_CANVAS_JS = """() => { const S = window.__mp.S, cs = { over: S.canvas, copy: S.frame?.bmp, pc: S.pc, pcur: S.pcur };
+  const o = {}; for (const [k, c] of Object.entries(cs)) o[k] = c ? { w: c.width, h: c.height, css: c.getBoundingClientRect().width } : null; return o }"""
+
+
+@case('D117', 'Map memory: the overlay canvases are bounded in pixels on a wide hi-dpi window, the draw makes no canvas of its own, the unmount frees them, the heap does not grow', 'D',
+      tags=('maps',), designs=('standard',), night=False, phone=False,
+      rule='SOG-0067 (« not enough memory to open this page » on the widened Map): the overlay, its copy for the gesture and the two profile canvases are at most 8 million pixels each (MAX_CANVAS_PX), not the view × the screen ratio without a bound; a normal window keeps its sharpness; the hatch tiles are made once; the unmount sets the canvases to 0 × 0; the JS heap stays flat over resizes and gestures')
+def d117(c):
+    c.open('maps', docs=fdocs(flight()), flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.js(_MEM_INST_JS)
+    hook_map(c)
+    cdp = c.page.context.new_cdp_session(c.page)
+    cdp.send('Performance.enable')
+
+    def heap():
+        cdp.send('HeapProfiler.collectGarbage')
+        c.wait(300)
+        return {m['name']: m['value'] for m in cdp.send('Performance.getMetrics')['metrics']}['JSHeapUsedSize'] / 1048576
+
+    def metrics(w, h, dpr):
+        cdp.send('Emulation.setDeviceMetricsOverride', {'width': w, 'height': h, 'deviceScaleFactor': dpr, 'mobile': False})
+        c.wait(500)
+    # a normal hi-dpi window: the canvases keep the screen's ratio (sharp)
+    metrics(1280, 800, 2)
+    c.js("() => { window.__mpMap.panBy([40, 30], { duration: 0 }); return true }")
+    c.wait(500)
+    o = c.js(_MEM_CANVAS_JS)
+    c.ok(o['over'] and abs(o['over']['w'] - 2 * o['over']['css']) <= 2, f'{o}', 'at 1280 × 800 and a ratio of 2 the overlay is drawn at twice its size (sharp, as before)')
+    h0 = heap()
+    # the same view, widened to an ultra-wide hi-dpi screen: the pixels are bounded
+    for i in range(50):
+        metrics([2560, 1700, 3000, 1900][i % 4] + (i % 5) * 7, [1440, 900, 1200, 1000][i % 4], 3)
+    c.js("""async () => { const m = window.__mpMap; for (let i = 0; i < 100; i++) { if (i % 2) m.jumpTo({ center: [2.3 + (i % 17) * .2, 48.7 + (i % 13) * .1], zoom: 7 + (i % 5) }); else m.panBy([90, -60], { duration: 0 });
+        await new Promise(r => setTimeout(r, 70)) } return true }""")
+    metrics(3440, 1440, 3)
+    c.js("() => { window.__mpMap.panBy([30, 10], { duration: 0 }); return true }")
+    c.wait(900)
+    o = c.js(_MEM_CANVAS_JS)
+    px = {k: v['w'] * v['h'] for k, v in o.items() if v}
+    c.ok(o['over'] and o['copy'] and o['pc'], f'{o}', 'the overlay, its copy for the gesture and the profile canvases exist')
+    c.ok(all(p <= 8.2e6 for p in px.values()), f'{ {k: round(v / 1e6, 1) for k, v in px.items()} } Mpx', 'at 3440 × 1440 and a ratio of 3 none of the overlay canvases passes 8 million pixels (it was 3 to 4 times that)')
+    h1 = heap()
+    c.ok(h1 - h0 < 12, f'{h0:.1f} -> {h1:.1f} MB', 'the JS heap grows by less than 12 MB over 50 resizes and 100 gestures')
+    # the draw makes no canvas of its own (the hatch tiles are made once)
+    metrics(1280, 800, 1)
+    n0 = c.js("() => window.__mem.made")
+    c.js("""async () => { const m = window.__mpMap; for (let i = 0; i < 25; i++) { m.jumpTo({ center: [2.3 + i * .05, 48.7], zoom: 8 }); await new Promise(r => setTimeout(r, 120)) } return true }""")
+    n1 = c.js("() => window.__mem.made")
+    c.ok(n1 - n0 <= 3, f'{n1 - n0} canvases for 25 draws', 'twenty-five draws make at most the three hatch tiles (about a canvas a draw before)')
+    # the unmount frees the canvases at once
+    c.js("() => { const S = window.__mp.S; window.__keep = [S.canvas, S.frame?.bmp, S.pc, S.pcur]; return true }")
+    c.js("() => { location.hash = '#fuel'; return true }")
+    c.until("() => !window.__mp.S", timeout=8000, what='the Map unmounts')
+    kept = c.js("() => window.__keep.map(x => x ? x.width + 'x' + x.height : null)")
+    c.ok(all(k == '0x0' for k in kept if k), f'{kept}', 'the unmount sets the overlay, its copy and the profile canvases to 0 × 0')

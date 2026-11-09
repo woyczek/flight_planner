@@ -3,6 +3,32 @@
 Memory of the V3 maps module: every choice, dated, with its reason. Chat history is never needed. Separate from
 aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds both roles.
 
+- **9 Nov 2026 — the Map's memory on a widened window** (SOG-0067: the user's « not enough memory to open this page » on the widened Map,
+  « a leak or a flaw of the display model »).
+  - **Measured** (Chromium through the noreg harness, the Map of a flight with its base, CDP heap after a forced collection): **no leak.**
+    Over 50 resizes, 200 gestures and 50 more resizes the JS heap stays at 9–12 MB (8.6 at the start), the event listeners at 190–260 and
+    falling back (counts of `addEventListener` and `removeEventListener` rise together), the nodes at 475, the canvases in the page at 4. Over
+    30 round trips Map → Fuel → Map: heap 11.1 → 13.2 MB (flat after the fifth), listeners 191 → 206, one WebGL context per mount and the
+    previous one released by `map.remove()`. The 25 « leaked » add-listener calls per trip are MapLibre's own and do not accumulate.
+  - **The flaw is the display model**: the overlay canvas, its copy for the gesture and the two profile canvases take the view × the
+    screen's ratio (3 at most) × 4 bytes **without a bound**. Measured at 3440 × 1440 and a ratio of 3: 26 Mpx (104 MB) the overlay, 26 Mpx
+    its copy, 13 Mpx (53 MB) each of the profile's two: about 270 MB of canvases of ours, beside MapLibre's (bounded to 4096 × 4096, 67 MB
+    at most, plus its buffers). At 1280 × 800 and a ratio of 2 it is 4 MB a canvas: the memory grows with the area, a widened hi-dpi
+    window is the case that breaks it.
+  - **Done, smallest**: one rule, `canvasDpr(W, H)` (`canvas_scale.js`): the screen's ratio lowered so that a canvas never passes 8 Mpx
+    (32 MB); the ratio of a normal window is kept (sharp), a 3440 × 1440 view is drawn at 1.3 (about 4 canvases × 32 MB at most). The
+    unmount sets the four canvases to 0 × 0. The hatch tile of the airspaces was a canvas made **at every drawing** (the context is a
+    new one each time, `MapsRender.themed`, so its pattern cache never hit): 70 canvases for 50 resizes, small (7 × 7) but an allocation
+    in the hot path; made once now.
+  - **Answer to « would WebGL be faster than OpenFreeMap + vectors »**: the background is already WebGL (MapLibre); what we draw on top is
+    a 2D canvas at 3 to 6 ms a frame. On memory it is the 2D layers that grew without a bound (our four canvases), not the background; the
+    bound above is the answer, a WebGL overlay would hold the same pixels in GPU memory.
+  - **Not done / not measured**: no phone and no Safari (the message is Chrome's; Safari has its own 16.7 Mpx canvas limit, which 8 Mpx stays
+    well under); the GPU memory itself is not readable from the page (the sizes above are the pixels × 4); a resize storm's transient peak
+    (old and new backing stores before a collection) was not isolated; MapLibre's tile cache at a very large size was not measured. If the
+    page still runs out of memory after this, the next suspect is `maxCanvasSize` of MapLibre and its tile cache, then the frame.
+  - **Noreg** D117 (the pixels of the four canvases at 3440 × 1440 and 3 are under 8 Mpx — 26, 26, 13, 13 before; a 1280 × 800 view at 2
+    keeps its ratio; the heap under 12 MB over 50 resizes and 100 gestures; 25 draws make at most 3 canvases; the unmount sets them to 0 × 0).
 - **9 Nov 2026 — the profile's airspaces crossed, 2.8 s → 36 ms** (SOG-0063, the ergonomics session's go after the measurements of the day).
   - **Measured** (real base ie + gb + fr, EIDW–LFPO, 1280 and 390): `inRing` of `lib/vertical_profile.js` took about 3.0 s of the 3.5 s of
     main-thread time at opening, a single task of 2.1–2.3 s; the Map's first draw came at 4.0–4.3 s (0.6 s for LFPO–LFPB). Cause: every one of

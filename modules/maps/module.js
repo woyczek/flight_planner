@@ -388,6 +388,8 @@ export function unmount() {
   }
   cancelDraw();
   cancelProfile();
+  for (const c of [S.canvas, S.frame?.bmp, S.pc, S.pcur])
+    if (c) c.width = c.height = 0; // les pixels rendus tout de suite, sans attendre le ramasse-miettes (SOG-0067)
   try {
     S.map?.remove();
   } catch {

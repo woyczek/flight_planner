@@ -4,6 +4,9 @@
 // procédures. Les données de la vue sont relues (data.js) quand la vue sort de celles chargées.
 
 import {
+  canvasDpr
+} from './canvas_scale.js';
+import {
   S,
   got,
   onMission,
@@ -269,13 +272,13 @@ const OVER = 0;
 function sizeCanvas() {
   const c = S.canvas,
     r = S.box.getBoundingClientRect(),
-    dpr = Math.min(3, window.devicePixelRatio || 1),
     W = Math.max(1, Math.round(r.width)),
     H = Math.max(1, Math.round(r.height)),
     mx = Math.round(W * OVER),
     my = Math.round(H * OVER),
     CW = W + 2 * mx,
-    CH = H + 2 * my;
+    CH = H + 2 * my,
+    dpr = canvasDpr(CW, CH); // bornée par la surface (SOG-0067)
   if (c.width !== Math.round(CW * dpr) || c.height !== Math.round(CH * dpr)) {
     c.width = Math.round(CW * dpr);
     c.height = Math.round(CH * dpr);

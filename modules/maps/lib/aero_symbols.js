@@ -518,13 +518,17 @@
     lineE: '#5b86c8'
   };
   const patterns = new WeakMap();
+  /** Les carreaux de hachures, un par type pour toute la page : le contexte de dessin est refait à chaque image (MapsRender.themed),
+   *  seul le motif en dépend (SOG-0067 : un canvas jeté à chaque dessin). */
+  const tiles = {};
 
   /** Motif de hachures d'un type d'espace (zone réglementée, dangereuse, interdite…), mis en cache par contexte. */
   function hatch(ctx, kind) {
     let m = patterns.get(ctx);
     if (!m) patterns.set(ctx, m = {});
     if (m[kind]) return m[kind];
-    const c = document.createElement('canvas'),
+    if (tiles[kind]) return m[kind] = ctx.createPattern(tiles[kind], 'repeat');
+    const c = tiles[kind] = document.createElement('canvas'),
       n = kind === 'rtba' ? 10 : 7;
     c.width = c.height = n;
     const g = c.getContext('2d');
