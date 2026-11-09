@@ -4080,3 +4080,35 @@ def a102(c):
         c.wait(500)
         c.eq(c.js("(() => { const m = document.querySelector('" + box + "'); return !m || m.hidden })()"), True, 'without launcher the migration block is hidden', what='no launcher')
     c.check_errors()
+
+
+@case('A103', 'The roadmap lanes fold with a touch on their title: folded by default when no card is left undelivered in the current view, the count kept in the title, the choice remembered per device', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0069: each lane folds on its title (a button, aria-expanded); folded by default when it has no undelivered card in the view (tab, filter, milestone); the state is kept in device/roadmap.json; the number of cards stays in the folded title')
+def a103(c):
+    lang = c.lang
+    T = lambda k: tx('frame/help/roadmap.js', k, lang, after='const T = {')
+    fx = _rm_fixture()
+    c.context.route(re.compile(r'/frame/help/roadmap\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    c.open('roadmap', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-kanban] [data-lane]')", timeout=15000, what='the lanes')
+    folded = lambda: c.js("[...document.querySelectorAll('[data-lane]')].map(l => [l.dataset.lane, l.hasAttribute('data-folded')])")
+    shown = lambda lane: c.js("(() => { const col = document.querySelector('[data-lane=\"" + lane + "\"] .f-rm-col[data-state]:not([data-empty])'); return !!col && getComputedStyle(col).display !== 'none' })()")
+    c.eq(folded(), [['fuel', False], ['data', False], ['stat', False]], 'every lane has an undelivered card in the default view: none is folded', what='default')
+    c.eq(norm(c.text('[data-lane="fuel"] [data-lane-count]')), '(2)', 'the number of cards stays in the title', what='count')
+    # ---- a milestone whose items are all delivered: its lanes fold by themselves, the count stays
+    c.tap('[data-ms="alpha.4"]')
+    c.eq(folded(), [['fuel', True], ['data', True]], 'only delivered cards in the view: the lanes are folded by default', what='folded by default')
+    c.eq((shown('fuel'), norm(c.text('[data-lane="fuel"] [data-lane-count]'))), (False, '(1)'), 'a folded lane shows no column, its title says how many cards', what='folded')
+    c.tap('[data-fold="fuel"]')
+    c.eq((folded()[0], shown('fuel'), c.js("document.querySelector('[data-fold=\"fuel\"]').getAttribute('aria-expanded')")), (['fuel', False], True, 'true'), 'a touch on the title unfolds it', what='unfold')
+    c.tap('[data-ms="alpha.4"]')
+    # ---- a lane folded by hand stays folded, on this device
+    c.tap('[data-fold="data"]')
+    c.eq((folded()[1], shown('data'), c.js("document.querySelector('[data-fold=\"data\"]').getAttribute('aria-expanded')")), (['data', True], False, 'false'), 'a touch on a lane\'s title folds it', what='fold')
+    c.eq(c.until_doc('device/roadmap.json', lambda d: d and d.get('fold', {}).get('data') is True, what='the choice stored').get('fold'), {'fuel': False, 'data': True}, 'the choices are kept in device/roadmap.json', what='stored')
+    c.page.reload()
+    c.until("!!document.querySelector('[data-kanban] [data-lane]')", timeout=15000, what='the lanes again')
+    c.eq(folded(), [['fuel', False], ['data', True], ['stat', False]], 'after a reload the lane folded by hand is still folded', what='remembered')
+    c.eq(c.js("document.documentElement.scrollWidth <= window.innerWidth + 1"), True, 'no horizontal scroll', what='scroll')
+    c.check_errors()

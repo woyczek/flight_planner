@@ -114,6 +114,8 @@ session); they follow on `v3` and belong to alpha.5.
   § 9.6, DECISIONS; noreg F99, F100; SOG-0059). The field said and read kg/h whatever the unit chosen (an entry typed in lb/h flew
   as kg/h); it is typed in the unit of the quote, its label says it, kept in kg/h through `frame/lib/fuel_units.js`. « Réglages du
   devis · lb/h » is the first fold of the Result step, folded, instead of the last.
+- **Roadmap: lanes fold with a touch on their title** (`frame/help/roadmap.js`, `frame.css`; frame/help SPEC § 5; A103) — SOG-0069: folded by default when no card is left undelivered in the
+  current view, the count kept in the title, the choice remembered per device.
 - **Settings › Company: « Migrate » the airline into its own folder** (`frame/settings/access.js`; settings SPEC § 3 item 8; help ×4; A102) — the plan first (code proposed from the name, files and
   sizes, an empty fleet said), then the migration, through the launcher verb `airline/migrate`; shown on the launcher's computer while the airline is still at the root of `data/airline/`.
 - **Roadmap: identifier copied, cards dragged to prioritise, written by the launcher** (`frame/help/roadmap.js`, `frame.css`, `frame/app.js` `helpCtx`,

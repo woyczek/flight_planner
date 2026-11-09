@@ -135,3 +135,6 @@ way, not taken (an empty band on every screen while the help loads). noreg A52.
   Races closed (found by A101 at 390): the opening's read of `PRIORITES.json` never redraws the screen under a drag in progress (it waits for the
   drop), and a write waits for that first read, so a gesture made within the first second cannot overwrite what the file already held; the sends
   are queued one after the other, and a send clears only what it sent (a gesture made during it stays pending).
+- **10 Nov 2026 — Folding lanes** (SOG-0069). A folded lane keeps its cards in the page, only hidden (`display: none` on its columns), so nothing is
+  rebuilt by a touch; the default fold looks at the cards the view shows, delivered ones included when they are shown (a milestone view of delivered work
+  opens nothing by itself); the hand-made choice beats the default and is kept per lane id, forever (a lane the file no longer has is simply never read).

@@ -113,6 +113,10 @@ decisions: [DECISIONS.md](DECISIONS.md); how a module gets its help: [INTEGRATIO
   Texts: the language, else English, else French; every text escaped. `build_help.py` checks `kind`, the milestones (state, texts, items
   cited that exist) and the lanes' applications for a schema 2 file. Cases A96 (schema 2 at 390 and 1280, four languages), A98 (the build's check), A97 and A99 (the shipped file)
   (schema 1 unchanged).
+- **Folding lanes** (SOG-0069; case A103): a lane's title is a button (`aria-expanded`): a touch folds or unfolds its columns, the number of
+  cards of the view stays in the title (`(n)`, with « n delivered »). A lane is **folded by default** when it has no undelivered card in the current
+  view (tab, application filter, milestone); a touch makes the choice explicit, kept per device in `device/roadmap.json` (`fold`: lane id → folded,
+  200 lanes at most, booleans only).
 - **Priorities** (SOG-0066, the user's way to reprioritise; case A101, launcher verb case K96):
   - the card starts with its **identifier** in clear (`SOG-0046`, the text's size, bold); a **right click**, or a **long touch** released
     without moving, copies `SOG-0046 — <title>` and says « Copied » (a notification);

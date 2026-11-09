@@ -95,6 +95,10 @@
     return {
       hide: typeof s?.hideDone === 'boolean' ? s.hideDone : true,
       pri,
+      // les voies repliées ou dépliées à la main (identifiant de voie → vrai si repliée) : 200 au plus, des booléens seulement
+      fold: Object.fromEntries(Object.entries(s?.fold && typeof s.fold === 'object' && !Array.isArray(s.fold) ? s.fold : {}).filter(([
+        k, v
+      ]) => k.length <= 80 && typeof v === 'boolean').slice(0, 200)),
       unsent: (Array.isArray(s?.unsent) ? s.unsent : []).filter(k => typeof k === 'string' && Object.hasOwn(pri, k))
     };
   };
@@ -149,6 +153,7 @@
       app: '',
       ms: '',
       hide: saved.hide,
+      fold: saved.fold,
       file: {},
       // les priorités écrites par le lanceur (organisation/PRIORITES.json)
       local: saved.pri,
@@ -182,6 +187,8 @@
       return `<li class="f-rm-item" data-state="${esc(it.state)}"${ranked ? ` data-id="${esc(it.id)}"` : ''}${dates ? ` title="${esc(dates)}"` : ''}>${it.id ? `<span class="f-rm-id">${esc(it.id)}</span> ` : ''}${esc(t(row(it)))}${m ? ` <small class="f-rm-ms">${esc(t(row(m.label || m.id)))}</small>` : ''}${ranked && ui.unsent.has(it.id) ? ` <small class="f-rm-unsent" data-unsent>${esc(t(T.unsent))}</small>` : ''}</li>`;
     };
     const frieze = () => !stones.length ? '' : `<ol class="f-rm-time" aria-label="${esc(t(T.time))}">${stones.map(m => `<li><button type="button" class="f-rm-btn" data-ms="${esc(m.id)}" data-state="${ORDER.includes(m.state) ? esc(m.state) : 'planned'}" aria-pressed="${ui.ms === m.id}"${m.id === current ? ` data-current aria-current="step" title="${esc(t(T.current))}"` : ''}><b>${esc(t(row(m.label || m.id)))}</b>${m.date ? ` <span class="f-muted">${esc(m.date)}</span>` : ''}</button></li>`).join('')}</ol>`;
+    /** Une voie est repliée : par le choix de l'appareil (au dernier toucher), sinon d'office quand elle n'a aucune carte non livrée dans la vue courante (onglet, filtre, jalon). */
+    const folds = (l, own) => Object.hasOwn(ui.fold, l.id) ? ui.fold[l.id] : own.every(i => i.state === 'done');
     const lanes = () => {
       const html = lanesOf().map(l => {
         const own = shown(l, ui.kind),
@@ -190,7 +197,8 @@
           hidden = ui.hide && !ui.ms && done > 0;
         if (!own.length && !hidden) return '';
         const app = apps.find(a => a.id === l.app);
-        return `<section class="f-rm-lane" data-lane="${esc(l.id)}"><h2>${esc(t(row(l.label)))}${app ? ` <span class="f-muted">${esc(t(row(app.label)))}</span>` : ''}${hidden ? ` <span class="f-muted f-rm-done" data-done-count>${esc(t(done === 1 ? T.doneOne : T.doneMany, { n: done }))}</span>` : ''}</h2>${ORDER.map(s => {
+        const folded = folds(l, own);
+        return `<section class="f-rm-lane" data-lane="${esc(l.id)}"${folded ? ' data-folded' : ''}><h2><button type="button" class="f-rm-fold" data-fold="${esc(l.id)}" aria-expanded="${!folded}"><span aria-hidden="true">${folded ? '▸' : '▾'}</span> ${esc(t(row(l.label)))}${app ? ` <span class="f-muted">${esc(t(row(app.label)))}</span>` : ''} <span class="f-muted" data-lane-count>(${own.length})</span>${hidden ? ` <span class="f-muted f-rm-done" data-done-count>${esc(t(done === 1 ? T.doneOne : T.doneMany, { n: done }))}</span>` : ''}</button></h2>${ORDER.map(s => {
           const items = own.filter(i => i.state === s).sort(byRank);
           return `<div class="f-rm-col" data-state="${s}" ${items.length ? '' : 'data-empty'}><h3>${esc(st(s))}</h3><ul>${items.map(card).join('')}</ul></div>`;
         }).join('')}</section>`;
@@ -470,6 +478,15 @@
       if (e.pointerType !== 'touch' && e.pointerType !== 'pen') copy(li.dataset.id);
     };
     view.onclick = e => {
+      const f = e.target.closest?.('button[data-fold]');
+      if (f && view.contains(f)) {
+        const sec = f.closest('[data-lane]');
+        ui.fold[f.dataset.fold] = !sec?.hasAttribute('data-folded');
+        saveStore(c, {
+          fold: ui.fold
+        });
+        return draw(`[data-fold="${CSS.escape(f.dataset.fold)}"]`);
+      }
       const b = e.target.closest?.('button[data-kind],button[data-app],button[data-ms]');
       if (!b || !view.contains(b)) return;
       if (b.dataset.kind) ui.kind = b.dataset.kind === 'bug' ? 'bug' : 'feature';

@@ -755,6 +755,25 @@ p.f-back {
 .f-rm-note {
   border-left: 4px solid var(--sog-warn)
 }
+/* une voie se replie d'un toucher sur son titre ; repliée, ses colonnes ne sont pas montrées et son titre prend la ligne */
+.f-rm-fold {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  cursor: pointer;
+  min-height: 36px;
+  width: 100%
+}
+.f-rm-lane[data-folded] .f-rm-col {
+  display: none
+}
+.f-rm-lane[data-folded] h2 {
+  grid-column: 1 / -1
+}
 /* feuille de route, schéma 2 : frise des jalons, onglets, filtre par application, case « Masquer les livrées » */
 .f-rm-time [data-state="done"] {
   --rm: var(--sog-ok)
