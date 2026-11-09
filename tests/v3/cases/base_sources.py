@@ -1132,6 +1132,49 @@ def k116(c):
         c.eq((again.work or {}).get('verb'), 'build', 'and it is read back at the next start of the launcher', what='work reloaded')
 
 
+@case('K119', 'base/pickup says what is already in place and what is there but not read (SOG-0150): « Rien à prendre » no longer hides three NATS sets that the « personnel » box does not declare', 'K', static=True,
+      rule='SOG-0150 (10 Nov 2026): « Mettre à jour » worked for every zone but gb; the pickup of gb answered only the openAIP lines (« gb_apt.xml n\'est pas lu ») although the three NATS zips were in Downloads: they were already in place, so `taken` was empty and nothing said that they were there and that NATS, a personal-use source, was not read because the box does not declare it; the pickup now says inPlace and, when the page gives the box (personal), unread; declared, nothing is unread')
+def k119(c):
+    RJ, BS, AF, DS = _mods()
+    import zipfile
+
+    def put(dl, zip_name, xml_name):
+        with zipfile.ZipFile(dl / zip_name, 'w') as z:
+            z.writestr(xml_name, '<x/>')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        dl, data = Path(td) / 'Downloads', Path(td) / 'data'
+        dl.mkdir()
+        data.mkdir()
+        put(dl, 'EG_AIP_DS_20261029_XML.zip', 'EG_AIP_DS_FULL_20261029.xml')
+        put(dl, 'EG_OBS_DS_AREA1_FULL_20261029_XML.zip', 'EG_OBS_DS_AREA1_FULL_20261029.xml')
+        put(dl, 'EG_UAS_FR_DS_AREA1_FULL_20261029_XML.zip', 'EG_UAS_FR_DS_AREA1_FULL_20261029.xml')
+        (dl / 'gb_apt.xml').write_text('<OPENAIP DATAFORMAT="1.1"/>', encoding='utf-8')
+        ctx = {'data': str(data), 'downloads': lambda: [str(dl)], 'today': datetime.date(2026, 11, 9)}
+        run = lambda dry, **kw: BS.pickup(RJ.Job('base', 'pickup', {}), BS.check_pickup({'zones': ['gb'], 'dry': dry, **kw}), ctx)
+        c.eq((BS.check_pickup({'zones': ['gb'], 'personal': ['nats']}), BS.check_pickup({'zones': ['gb'], 'personal': 'nats'}), BS.check_pickup({'zones': ['gb'], 'personal': ['N A']})),
+             ({'zones': ['gb'], 'dry': True, 'personal': ['nats']}, None, None), 'the pickup takes the « personnel » box as `personal` (a list of source identifiers), nothing else new', what='check')
+        r = run(False)
+        c.eq((len(r['taken']), 'unread' in r, [s['name'] for s in r['skipped']]), (1, False, ['gb_apt.xml']), 'the first pass takes the three NATS sets; without the box given, nothing is said unread (the page did not say what it declares)', what='first')
+        r = run(True, personal=[])
+        c.eq((r['taken'], r['inPlace'], r['unread'], [s['name'] for s in r['skipped']]),
+             ([], [{'zone': 'gb', 'source': 'nats', 'sets': ['AIP', 'OBS', 'UAS']}], [{'zone': 'gb', 'source': 'nats', 'why': 'personal', 'cycle': '2026-10-29', 'sets': ['AIP', 'OBS', 'UAS']}], ['gb_apt.xml']),
+             'the next pass has nothing to take, but says the three sets are IN PLACE and, the box not declaring NATS, that they are there and NOT READ (the same as for ENAIRE: source-unread), next to the openAIP line', what='unread')
+        r = run(True, personal=['nats'])
+        c.eq((r['taken'], len(r['inPlace']), 'unread' in r), ([], 1, False), 'the box declares NATS: in place, nothing unread: the next build reads them', what='declared')
+        r = run(True)
+        c.eq((len(r['inPlace']), 'unread' in r), (1, False), 'without `personal` the pickup says what is in place and does not guess what the box declares', what='unknown box')
+        ST = types.SimpleNamespace(**RJ.REGISTRY[('base', 'status')][0].__globals__)
+        status, check_s = RJ.REGISTRY[('base', 'status')]
+        (data / 'sia' / 'base' / 'gb' / '2026-10-29').mkdir(parents=True)
+        for k in types.SimpleNamespace(**RJ.REGISTRY[('base', 'build')][0].__globals__).KINDS:
+            (data / 'sia' / 'base' / 'gb' / '2026-10-29' / f'{k}.json').write_text(json.dumps({'data': [] if k in ('points', 'airways') else [{'id': 'x'}]}), encoding='utf-8')
+        (data / 'sia' / 'base' / 'gb' / '2026-10-29' / 'meta.json').write_text(json.dumps({'parserVersion': ST.parser_version(), 'data': {}}), encoding='utf-8')
+        z = status(RJ.Job('base', 'status', {}), check_s({'zones': ['gb'], 'personal': []}), ctx)['zones']['gb']
+        z2 = status(RJ.Job('base', 'status', {}), check_s({'zones': ['gb'], 'personal': ['nats']}), ctx)['zones']['gb']
+        c.eq((z['reason'], z['buildable'], z2['reason'], z2['buildable']), ({'code': 'source-unread', 'source': 'nats', 'why': 'personal'}, False, {'code': 'source-unbuilt', 'source': 'nats'}, True),
+             'and the line of gb says it: built without points or airways, the NATS files are there but the box does not declare them (source-unread); declared, they are read by the next build (source-unbuilt)', what='status')
+
+
 # ---------------------------------------------------------------------------------------------------------------------------------------------
 @case('K70', 'Ireland (AirNav eAIP): the current issue read from the AIM page, ENR 4.4 points and ENR 3.3 routes read from invented pages in the real markup, written by the launcher under its AIRAC date', 'K', static=True,
       rule='Lot C2 (5 Nov 2026): the zone ie gets its points and airways from the official eAIP (HTML tables, DMS coordinates); the address of the issue is read from the page and checked; the file carries the issue date (its cycle); no licence found: personal-licence source; fixtures are INVENTED in the real markup (the code repository is public, frame/aerodb/test/fixtures/SOURCES.md)')

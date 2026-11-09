@@ -746,11 +746,14 @@ def check_pickup(a):
     """Contrôle des arguments de base/pickup (→ 400 si None) : { zones, dry?: vrai (par défaut) / faux, zips?: { <source>:
     { name, size } } } et rien d'autre. zips : le fichier que le plan a montré, par source ; la prise refuse celle dont le zip
     le plus récent n'est plus celui-là (un autre arrivé pendant la question : audit, ligne 95)."""
-    if not isinstance(a, dict) or not set(a) <= {'zones', 'dry', 'zips'}:
+    if not isinstance(a, dict) or not set(a) <= {'zones', 'dry', 'zips', 'personal'}:
         return None
     zones = _zones_arg(a)
     dry = a.get('dry', True)
     zips = a.get('zips', {})
+    personal = a.get('personal')
+    if personal is not None and (not isinstance(personal, list) or len(personal) > 10 or any(not isinstance(p, str) or not re.fullmatch(r'[a-z0-9]{2,12}', p) for p in personal)):
+        return None
     if zones is None or not isinstance(dry, bool) or not isinstance(zips, dict) or len(zips) > len(PICKUP) + 1:
         return None
     shown = {}
@@ -759,7 +762,7 @@ def check_pickup(a):
                 or not isinstance(z['size'], int) or isinstance(z['size'], bool) or z['size'] < 0:
             return None
         shown[s] = {'name': z['name'], 'size': z['size']}
-    return {'zones': zones, 'dry': dry, **({'zips': shown} if 'zips' in a else {})}  # zips: {} dit « rien de montré »
+    return {'zones': zones, 'dry': dry, **({'zips': shown} if 'zips' in a else {}), **({'personal': sorted(set(personal))} if personal is not None else {})}  # zips: {} dit « rien de montré » ; personal : les sources à usage personnel que la case déclare (SOG-0150)
 
 
 def _name_cycle(path):
@@ -1050,9 +1053,15 @@ def pickup(job, args, ctx):
     skipped = []
     if args.get('_sets_only'):
         return {'taken': taken, 'zones': zones}
+    # SOG-0150 : ce qui est DÉJÀ là n'est pas « rien à prendre » : les jeux déjà posés sont dits (inPlace), et, quand la page dit la case « personnel » (personal), ceux d'une source à usage personnel qu'elle ne déclare pas :
+    # présents, jamais lus (la construction les ignore)
+    in_place = [{'zone': z, 'source': 'nats', 'sets': [x['set'] for x in v['sets'] if x['state'] == 'in-place']} for z, v in zones.items() if any(x['state'] == 'in-place' for x in v['sets'])]
+    personal = args.get('personal')
+    unread = [{'zone': z, 'source': 'nats', 'why': 'personal', 'cycle': v['cycle'], 'sets': sorted(x['set'] for x in v['sets'] if x['state'] in ('in-place', 'taken', 'waiting'))} for z, v in zones.items()
+              if personal is not None and 'nats' not in personal and 'nats' in aero_cycles.PERSONAL_CYCLED and any(x['state'] in ('in-place', 'taken', 'waiting') for x in v['sets'])]
     shown = _openaip_pickup(job, args['zones'], dry, args, ctx, taken, failed, skipped)
     reason = 'cancelled' if job.cancelled() else 'failed' if failed and not taken else 'partial' if failed else None
-    res = {'ok': reason is None, 'dry': dry, 'taken': taken, 'missing': missing, 'failed': failed, 'skipped': skipped, **({'zones': zones} if zones else {}), **({'shown': shown} if shown else {})}
+    res = {'ok': reason is None, 'dry': dry, 'taken': taken, 'missing': missing, 'failed': failed, 'skipped': skipped, **({'inPlace': in_place} if in_place else {}), **({'unread': unread} if unread else {}), **({'zones': zones} if zones else {}), **({'shown': shown} if shown else {})}
     if reason:
         res['reason'] = reason
     return res

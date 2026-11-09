@@ -349,7 +349,7 @@ def update(job, args, ctx):
 
 
 # ----------------------------------------------------------------------------------------------------------------------- la raison d'un refus d'arguments (400), dans ses mots (SOG-0144)
-ALLOWED = {'build': {'zones', 'personal'}, 'status': {'zones', 'personal'}, 'update': {'zones', 'personal', 'fetch'}, 'fetch': {'zones', 'personal'}, 'purge': {'zones', 'what', 'dry'}, 'pickup': {'zones', 'dry', 'zips'}}
+ALLOWED = {'build': {'zones', 'personal'}, 'status': {'zones', 'personal'}, 'update': {'zones', 'personal', 'fetch'}, 'fetch': {'zones', 'personal'}, 'purge': {'zones', 'what', 'dry'}, 'pickup': {'zones', 'dry', 'zips', 'personal'}}
 
 
 def explain(verb):
@@ -381,7 +381,8 @@ def explain(verb):
                     return {'reason': 'duplicate-zone', 'zone': z, 'message': f'zone given twice: {z}'}
                 seen.add(z)
         personal = a.get('personal', [])
-        if verb in ('build', 'status', 'update', 'fetch'):
+        if verb in ('build', 'status', 'update', 'fetch', 'pickup'):
+            personal = personal or []
             if not isinstance(personal, list) or len(personal) > 10:
                 return {'reason': 'bad-source', 'message': 'personal: a list of 10 sources at most'}
             for p in personal:

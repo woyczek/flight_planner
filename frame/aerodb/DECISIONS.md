@@ -2753,3 +2753,8 @@ Each decision below is reversible and was taken without asking (the user is away
 ## 10 November 2026 (23 h) — SOG-0081: RouteSim of 17 h 05 ported
 
 - `engine.py`, `fra.py`, `fra_recovery.py`, `recovery.py`, `rad_flight.py` copied as they are but for the marked lines (`SOG-0081`, `SOG-0078`; the control « Sens interdit » re-applied on the new block of « Continuité absente »); **`nav_data.py` ported because the engine imports it**; `plan.py` follows `server.plan()` (data gaps reject a plan, `route_connector`, the coverage gaps for every rejected plan, the routing cache cleared before the fallback, a solver lock; the graph caches are not released: the context is rebuilt at each call). The screen's shape is unchanged; `incomplete` is added to each alternative. K103, K105, K106 green. « Tests toujours en cours sur les routes hautes et longues » still holds on RouteSim's side.
+
+## 10 November 2026 (23 h) — SOG-0150: gb « Rien à prendre » while the NATS zips are in Downloads
+
+- **Found** (a dry pickup of `gb` on the user's Downloads and data): the three NATS sets are **`in-place`** (AIP 29 Oct, OBS, UAS: taken at 29 Oct; gb `before` 2026-10-29), so `taken` is empty and the only lines were the two openAIP `skipped` ones (gb_apt.xml, gb_nav.xml: openAIP XML format, not read). The pickup does not depend on the « personnel » box (it takes NATS either way); what the box decides is whether the **build reads** them. When the box was ticked, gb is `source-unbuilt` (rebuild reads them); not ticked, `source-unread` (INTEGRATION).
+- **Done**: `inPlace` and, with `personal` given by the page, `unread` in the answer of `base/pickup`; `base/status` already said it on gb's line. Not changed: what is taken. K119 (red before: no `inPlace`, no `unread`).
