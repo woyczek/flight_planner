@@ -123,7 +123,8 @@ export const meta = {
     merge: 'record'
   }],
   // gardés à l'installation (hors ligne dès la première visite)
-  files: ['state.js?v=0', 'texts.js?v=0', 'style.js?v=0', 'screen.js?v=0', 'draw.js?v=0', 'data.js?v=0', 'layers.js?v=0',
+  files: ['state.js?v=0', 'texts.js?v=0', 'style.js?v=0', 'screen.js?v=0', 'draw.js?v=0', 'canvas_scale.js?v=0', 'data.js?v=0',
+    'layers.js?v=0',
     'sheet_view.js?v=0', 'profile_view.js?v=0', 'procs.js?v=0', 'choose.js?v=0', 'ground.js?v=0', 'coverage.js?v=0', 'tips.js?v=0',
     'lv.js?v=0',
     'vfr.js?v=0', 'light.js?v=0',
