@@ -81,7 +81,7 @@
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 1e4);
-    c.notify(c.t(T.exported, {
+    c.notify(window.SogSettingsKit.agreeT(c.t)(T.exported, {
       d: d.counts.docs,
       p: d.counts.pending,
       k: bytes(d.counts.bytes, c.t)
@@ -98,7 +98,7 @@
     }
     if (!d || !Array.isArray(d.docs)) return c.notify(c.t(T.badFile), 'err');
     const day = String(d.at || '?').slice(0, 10);
-    if (!await c.ask(c.t(mode === 'replace' ? T.replaceAsk : T.importAsk, {
+    if (!await c.ask(window.SogSettingsKit.agreeT(c.t)(mode === 'replace' ? T.replaceAsk : T.importAsk, {
         d: day
       }))) return;
     let r;
@@ -110,7 +110,7 @@
       return c.notify(c.t(T.badFile), 'err');
     }
     await c.reload();
-    c.notify(c.t(T.imported, {
+    c.notify(window.SogSettingsKit.agreeT(c.t)(T.imported, {
       a: r.added,
       u: r.updated,
       k: r.kept,

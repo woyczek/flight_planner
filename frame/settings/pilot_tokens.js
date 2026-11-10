@@ -225,7 +225,7 @@
   };
 
   function screen(view, ctx) {
-    const t = (row, v) => ctx.t(row, v),
+    const t = window.SogSettingsKit.agreeT(ctx.t),
       R = ctx.routes?.() || null;
     view.innerHTML = `<div class="f-card" data-tokens><h2>${esc(t(K.providerTokens))}</h2><p class="f-muted">${esc(t(T.intro))}</p>
       <div data-tokens-body></div></div>`;

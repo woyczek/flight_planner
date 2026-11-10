@@ -67,7 +67,7 @@
   const TRI = /^[A-Z0-9]{2,5}$/;
 
   function screen(view, ctx) {
-    const t = (row, v) => ctx.t(row, v),
+    const t = window.SogSettingsKit.agreeT(ctx.t), // « {k} appareil(s) » accordé par le nombre (frame/lib/plural.js)
       R = ctx.routes?.() || null;
     view.innerHTML = `<div class="f-card" data-devices><h2>${esc(t(T.title))}</h2><p class="f-muted">${esc(t(T.intro))}</p><div data-devices-body></div></div>`;
     const body = view.querySelector('[data-devices-body]');

@@ -160,7 +160,16 @@
     return out;
   }
 
+  // l'accord des textes (frame/lib/plural.js) : les marques « (s) (x) (en)… » d'un texte sont résolues par le nombre qui les précède (SOG : plus de « (s) » à l'écran) ;
+  // `plReady` : la promesse du chargement du module (un écran asynchrone l'attend), `agreeT(t)` : le `t` du contexte qui accorde
+  let PLM = null;
+  const plReady = import(new URL('frame/lib/plural.js', ROOT).href).then(m => PLM = m).catch(() => null);
+  const agreeT = ct => (row, v) => PLM && v && typeof v === 'object' ? ct([PLM.agree(ct(row), v, ct(['fr', 'en', 'de', 'es']))], v) : ct(
+    row, v);
+
   window.SogSettingsKit = {
+    plReady,
+    agreeT,
     ROOT,
     esc,
     now,

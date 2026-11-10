@@ -5558,4 +5558,17 @@ def a134(c):
     r = c.js('() => window.SogFrame.reloads()')
     c.ok(r['stopped'] and 'redirect: elsewhere' in r['stopped']['cause'], str(r['stopped']), 'the cause is kept for the diagnostic')
     c.ok(len([e for e in r['recent'] if e['k'] == 'self']) == 2 and len(r['routes']) >= 1, str(r), 'two redirects were made, the routes are listed')
+@case('A135', 'Settings: the texts of the Settings screens carry no « (s) » on screen: the kit hands the screens a `t` that agrees the marks with the number before them (« 1 appareil révoqué », « 3 appareils révoqués »)', 'A', langs4=True, tags=('settings',),
+      designs=('standard',), screens=False, night=False,
+      rule='ergonomist, 10 Nov: no more « (s) »; frame/lib/plural.js through SogSettingsKit.agreeT, used by Settings, Devices, the pilot tokens and the backup messages')
+def a135(c):
+    lang = c.lang
+    c.open('settings', docs=LEVEL3)
+    c.until("!!window.SogSettingsKit && !!window.SogFrame && !!window.SogFrame.t", timeout=15000, what='the kit and the frame')
+    row = ['{k} appareil(s) révoqué(s).', '{k} device(s) revoked.', '{k} Gerät(e) widerrufen.', '{k} dispositivo(s) revocado(s).']
+    got = c.js("async (row) => { await SogSettingsKit.plReady; const t = SogSettingsKit.agreeT(SogFrame.t); return [0, 1, 3].map(k => t(row, { k })) }", row)
+    want = {'fr': ['0 appareil révoqué.', '1 appareil révoqué.', '3 appareils révoqués.'], 'en': ['0 devices revoked.', '1 device revoked.', '3 devices revoked.'],
+            'de': ['0 Geräte widerrufen.', '1 Gerät widerrufen.', '3 Geräte widerrufen.'], 'es': ['0 dispositivos revocados.', '1 dispositivo revocado.', '3 dispositivos revocados.']}[lang]
+    c.eq([norm(x) for x in got], [norm(x) for x in want], 'the marks are resolved by the number: fr 0 and 1 singular, the others only 1', what='agreed')
+    c.ok(not any('(' in x for x in got), got, 'no « (s) » is left')
     c.check_errors()
