@@ -4,8 +4,8 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "8133549",
-  "fiches": 209,
+  "organisation": "7add73a",
+  "fiches": 211,
   "untranslated": 1,
   "priorities": 152
  },
@@ -499,6 +499,15 @@
      "en": "Fuel: the alternate aerodrome is not taken into account after it is typed",
      "de": "Kraftstoff: der Ausweichflugplatz wird nach der Eingabe nicht übernommen",
      "es": "Combustible: el aeródromo alternativo no se tiene en cuenta tras escribirlo"
+    },
+    {
+     "id": "SOG-0211",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Route : une coordonnée au format OACI (4959N08712W) est dite « point inconnu »",
+     "en": "Route: a coordinate in ICAO format (4959N08712W) is called an “unknown point”",
+     "de": "Route: eine Koordinate im ICAO-Format (4959N08712W) gilt als „unbekannter Punkt“",
+     "es": "Ruta: una coordenada en formato OACI (4959N08712W) se da como «punto desconocido»"
     }
    ]
   },
@@ -1928,6 +1937,15 @@
      "en": "Procedures and ground: LFOE reads nothing (“0 page read out of 2”), LFBD has no taxiways",
      "de": "Verfahren und Boden: LFOE liest nichts („0 von 2 Seiten gelesen“), LFBD hat keine Rollwege",
      "es": "Procedimientos y suelo: LFOE no lee nada («0 páginas leídas de 2»), LFBD no tiene calles de rodaje"
+    },
+    {
+     "id": "SOG-0210",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "États-Unis : aucune procédure pour KDEN, et le repli Little Navmap annoncé n'a pas de geste",
+     "en": "United States: no procedure for KDEN, and the announced Little Navmap fallback has no gesture",
+     "de": "USA: kein Verfahren für KDEN, und der angekündigte Little-Navmap-Rückgriff hat keine Geste",
+     "es": "Estados Unidos: ningún procedimiento para KDEN, y el recurso anunciado a Little Navmap no tiene gesto"
     }
    ]
   },
@@ -2065,15 +2083,6 @@
      "en": "Frame: after Ctrl + Shift + R, the “Old version · Reload” cartouche shows wrongly",
      "de": "Rahmen: nach Strg + Umschalt + R erscheint die Kartusche „Alte Version · Neu laden“ zu Unrecht",
      "es": "Marco: tras Ctrl + Mayús + R, aparece por error el cartucho «Versión antigua · Recargar»"
-    },
-    {
-     "id": "SOG-0209",
-     "kind": "bug",
-     "state": "doing",
-     "fr": "La page se rafraîchit en boucle",
-     "en": "The page refreshes in a loop",
-     "de": "Die Seite lädt in einer Schleife neu",
-     "es": "La página se recarga en bucle"
     }
    ]
   },
@@ -2125,6 +2134,27 @@
      "en": "Homonyms: “LFLL: 2 homonyms, the nearest kept” — an airport has no homonym",
      "de": "Homonyme: „LFLL: 2 Homonyme, das nächste behalten“ — ein Flugplatz hat kein Homonym",
      "es": "Homónimos: «LFLL: 2 homónimos, se conserva el más cercano»: un aeródromo no tiene homónimo"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-carburant-carte-cadre-donnees",
+   "app": "maintenance",
+   "label": {
+    "fr": "Carburant ; Carte ; cadre (données)",
+    "en": "Carburant ; Carte ; cadre (données)",
+    "de": "Carburant ; Carte ; cadre (données)",
+    "es": "Carburant ; Carte ; cadre (données)"
+   },
+   "items": [
+    {
+     "id": "SOG-0209",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "BLOQUANT : le vol est réécrit en boucle, la synchronisation ne s'arrête pas, les blocs clignotent",
+     "en": "BLOCKING: the flight is rewritten in a loop, the synchronisation never stops, the blocks flicker",
+     "de": "BLOCKIEREND: der Flug wird in einer Schleife neu geschrieben, die Synchronisation hört nicht auf, die Blöcke flackern",
+     "es": "BLOQUEANTE: el vuelo se reescribe en bucle, la sincronización no se detiene, los bloques parpadean"
     }
    ]
   },
