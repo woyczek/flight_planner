@@ -25,13 +25,15 @@ MAX_BYTES = 1536 * 1024 * 1024          # 1,5 Go : l'eAIP suédois hors ligne fa
 CHUNK = 1024 * 1024
 MAX_MEMBERS = 200000                    # un zip de plus de membres : pas une archive attendue (son annuaire n'est pas lu)
 FOLDER = ('local', 'upload')
-EXPECTED = ['sia', 'nats', 'lfv', 'openaip', 'faa', 'ukmil']       # les sources que base/pickup prend (dites avec `unrecognised`)
+EXPECTED = ['sia', 'nats', 'lfv', 'openaip', 'faa', 'ukmil', 'eurocontrol_rad']       # les sources que base/pickup prend (dites avec `unrecognised`)
 REASONS = ('too-large', 'empty', 'type', 'unrecognised', 'busy', 'merge-pending', 'disk', 'refused')
 STATUS = {'too-large': 413, 'empty': 400, 'type': 415, 'unrecognised': 422, 'busy': 409, 'merge-pending': 409, 'disk': 507, 'refused': 403}
 NATS_MEMBER = re.compile(r'^EG_(AIP|OBS|UAS)_.*?(\d{8})\.xml\Z', re.I | re.A)
 SIA_MEMBER = re.compile(r'^(?:AIXM4\.5_all_FR_OM_|XML_SIA_)(\d{4}-\d{2}-\d{2})\.xml\Z', re.I | re.A)
 NASR_NAME = re.compile(r'^(\d{2})_([A-Z][a-z]{2})_(\d{4})_(FIX|AWY|NAV)_CSV(?: \(\d+\))?\.zip\Z', re.A)      # « 29_Oct_2026_FIX_CSV.zip » : le nom que la FAA donne à ses jeux CSV
 NASR_MEMBER = {'FIX': 'FIX_BASE.csv', 'AWY': 'AWY_SEG_ALT.csv', 'NAV': 'NAV_BASE.csv'}
+RAD_NAME = re.compile(r'^RAD_\d{4}_v[\d_]+(?: \(\d+\))?\.xlsx\Z', re.I | re.A)      # tools/route_engine/import_books.py RAD_NAME / FRA_NAME : les classeurs d'EUROCONTROL, sous leur nom d'origine
+FRA_NAME = re.compile(r'^eurocontrol-airac-\d{4}-fra-points-[A-Za-z0-9-]+(?: \(\d+\))?\.xlsx\Z', re.I | re.A)
 OPENAIP_NAME = re.compile(r'^(?P<cc>[a-z]{2})_(?P<layer>asp|apt|nav|rpp)(?: \(\d+\))?\.(?P<ext>geojson|json)\Z', re.A | re.I)    # base_sources.OPENAIP_FILE, sans « hot » ni xml (pas lus)
 
 
@@ -86,6 +88,9 @@ def recognise(path, hint=''):
                     iso = _date_ok(f'{nasr.group(3)}-{months.index(nasr.group(2)) + 1:02d}-{nasr.group(1)}')
                     if iso:
                         return {'source': 'faa', 'zone': 'us', 'name': f'{nasr.group(1)}_{nasr.group(2)}_{nasr.group(3)}_{nasr.group(4)}_CSV.zip', 'cycle': iso}
+            book = 'rad' if RAD_NAME.match(hint or '') else 'fra' if FRA_NAME.match(hint or '') else ''
+            if book and '[Content_Types].xml' in names and 'xl/workbook.xml' in names:          # SOG-0237 : un classeur d'EUROCONTROL (RAD, points FRA) : posé sous son nom d'origine, que route/import-rad lit comme Téléchargements
+                return {'source': 'eurocontrol_rad', 'kind': book, 'zone': '', 'name': re.sub(r' \(\d+\)(?=\.xlsx$)', '', hint, flags=re.I), 'cycle': None}
             sia = sorted(m.group(1) for n in names if (m := SIA_MEMBER.match(n)))
             if sia:
                 return {'source': 'sia', 'zone': 'fr', 'name': f'export_xml_bd_SIA_{sia[-1]}.zip', 'cycle': sia[-1]}
@@ -179,7 +184,7 @@ def receive(rfile, length, hint, data, busy=None, merge_pending=None):
             replaced = False
         else:
             os.replace(tmp, dest)
-        extra = {}
+        extra = {'kind': info['kind']} if info.get('kind') else {}           # eurocontrol_rad : 'rad' ou 'fra' (le classeur)
         if info['source'] == 'faa':                      # le NASR arrive en trois jeux : ce qui est déjà posé pour ce cycle et ce qui manque (SOG-0219), pour que l'écran n'ait pas à compter
             have = sorted(k for k in NASR_MEMBER if os.path.isfile(os.path.join(folder, NASR_NAME.sub(lambda m: f'{m.group(1)}_{m.group(2)}_{m.group(3)}_{k}_CSV.zip', info['name']))))
             extra = {'deposited': have, 'missing': [k for k in NASR_MEMBER if k not in have]}

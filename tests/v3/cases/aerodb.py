@@ -7052,10 +7052,16 @@ def k146(c):
             c.eq((st, r.get('source'), r.get('name'), r.get('zone'), r.get('cycle')), (200, 'faa', '29_Oct_2026_FIX_CSV.zip', 'us', '2026-10-29'), 'an FAA NASR set (the page of the subscription refuses the launcher): the member says the set, the name the cycle', what='faa')
             c.eq((r.get('deposited'), r.get('missing')), (['FIX'], ['AWY', 'NAV']), 'and says which of the three sets are already there for that cycle, and which are missing (the screen needs not count)', what='faa have')
             c.eq(up(fix, 'whatever.zip')[1].get('reason'), 'unrecognised', 'the same zip without the FAA name: the cycle is unknown, not guessed', what='faa name')
+            book = zipped({'[Content_Types].xml': '<x/>', 'xl/workbook.xml': '<x/>'})
+            st, r = up(book, 'RAD_2611_v1_0 (1).xlsx')
+            c.eq((st, r.get('source'), r.get('kind'), r.get('name')), (200, 'eurocontrol_rad', 'rad', 'RAD_2611_v1_0.xlsx'), 'an EUROCONTROL RAD workbook under its own name (SOG-0237): kept under that name for route/import-rad', what='rad')
+            st, r = up(book, 'eurocontrol-airac-2611-fra-points-29-oct-2026.xlsx')
+            c.eq((st, r.get('source'), r.get('kind'), r.get('name')), (200, 'eurocontrol_rad', 'fra', 'eurocontrol-airac-2611-fra-points-29-oct-2026.xlsx'), 'and the FRA points workbook', what='fra points')
+            c.eq(up(book, 'tableau.xlsx')[1].get('reason'), 'unrecognised', 'a workbook under another name: not taken (the pickup looks for the names above)', what='xlsx name')
             st, r = up(b'%PDF-1.4 fake', 'ENR-5-2 (1).pdf')
             c.eq((st, r.get('source'), r.get('name'), r.get('zone')), (200, 'ukmil', 'ENR-5-2.pdf', 'gb'), 'the UK military AIP ENR 5.2 (the server cuts the launcher TLS connection): a PDF with its own name', what='ukmil')
             st, r = up(zipped({'readme.txt': 'hello'}), 'a.zip')
-            c.eq((st, r.get('ok'), r.get('reason'), r.get('expected')), (422, False, 'unrecognised', ['sia', 'nats', 'lfv', 'openaip', 'faa', 'ukmil']), 'a zip that is no source: unrecognised, with the closed list of the sources expected', what='unrecognised')
+            c.eq((st, r.get('ok'), r.get('reason'), r.get('expected')), (422, False, 'unrecognised', ['sia', 'nats', 'lfv', 'openaip', 'faa', 'ukmil', 'eurocontrol_rad']), 'a zip that is no source: unrecognised, with the closed list of the sources expected', what='unrecognised')
             st, r = up(bytes([0, 1, 2]) + b'garbage', 'a.bin')
             c.eq((st, r.get('reason')), (415, 'type'), 'bytes that are no zip, JSON, PDF or XML: type', what='type')
             st, r = up(b'', 'a.zip', {'Content-Length': '0'})
@@ -7082,7 +7088,7 @@ def k146(c):
             sg = http.client.HTTPConnection('127.0.0.1', port, timeout=30)
             sg.request('POST', '/__setup/regen/job/cancel', body=json.dumps({'id': gj.get('job')}), headers={**hdr, 'Content-Type': 'application/json'})
             sg.getresponse().read()
-            c.eq(sorted(x.name for x in folder.iterdir()), ['29_Oct_2026_FIX_CSV.zip', 'AIP_OFFLINE.zip', 'EG_AIP_DS_20261029_XML.zip', 'ENR-5-2.pdf', 'de_apt.geojson', 'export_xml_bd_SIA_2026-10-29.zip'],
+            c.eq(sorted(x.name for x in folder.iterdir()), ['29_Oct_2026_FIX_CSV.zip', 'AIP_OFFLINE.zip', 'EG_AIP_DS_20261029_XML.zip', 'ENR-5-2.pdf', 'RAD_2611_v1_0.xlsx', 'de_apt.geojson', 'eurocontrol-airac-2611-fra-points-29-oct-2026.xlsx', 'export_xml_bd_SIA_2026-10-29.zip'],
                  'only the recognised files are in data/local/upload/: no temporary file left, nothing refused kept', what='folder')
             stray = [str(x) for x in data.rglob('*') if x.is_file() and 'upload' not in x.parts and x.name not in ('data_tree.js', '.defa_instance')]
             c.ok(not stray, str(stray[:6]), 'nothing is written elsewhere in data/')
