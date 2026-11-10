@@ -54,10 +54,11 @@ const STALE_MS = 120e3;
 export const isArrived = f => isStarted(f) && f?.progress?.phase === 'arrived';
 /** Même route (points, niveau, départ) : seule la progression a changé. */
 export const sameRoute = (a, b) => !!a && !!b && JSON.stringify(sigOf(a)) === JSON.stringify(sigOf(b));
-/** Ce qui change la route dessinée : les points, le niveau, le départ, la route et les terrains, les procédures choisies et le
+/** Ce qui change la route dessinée : les points, le niveau, le départ, la route et les terrains (le dégagement aussi : SOG-0205, l'écriture du seul dégagement n'était pas vue), les procédures choisies et le
  *  profil prévu par Carburant (profile.path suit les procédures ; ses distances de montée et de descente et les taux de l'appareil
  *  font la trajectoire verticale de la coupe : un changement de performances la refait, SOG-0006). */
-const sigOf = f => [f.route?.points, f.level?.ft, f.started?.at, f.route?.dep, f.route?.arr, f.route?.procedures, f.profile?.path, f.profile
+const sigOf = f => [f.route?.points, f.level?.ft, f.started?.at, f.route?.dep, f.route?.arr, f.route?.altn, f.route?.procedures, f.profile
+  ?.path, f.profile
   ?.tocNm,
   f.profile?.todNm, f.profile?.climbFpm, f.profile?.climbKt, f.profile?.descentFpm, f.profile?.descentKt
 ];

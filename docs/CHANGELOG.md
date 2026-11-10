@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the alternate changed in Fuel is drawn at once** (`modules/maps/flight_time.js`; DECISIONS; noreg D161; SOG-0205). The signature of the route holds the alternate: its write alone is no longer taken for a progress.
+
 - **Map: three defects seen beside Fuel, and the axis of the profile** (`modules/maps/module.js`, `screen.js`, `alts.js`, `lib/vertical_profile.js`; DECISIONS; noreg D158, D159, D160; SOG-0134). No more « MapsRender is not
   defined » on hover nor « reading 'w' » at the framing; the proposed routes of a past computation are cleared when the route changes; the names of the last points of a tight route no longer pile up.
 

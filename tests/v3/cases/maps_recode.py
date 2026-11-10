@@ -5179,3 +5179,18 @@ def d_axis(c):
     c.ok(any(n['t'] == 'LFML' for n in under) and any(n['t'] == 'LFRS' for n in under), str([n['t'] for n in under]), 'the departure and the arrival are written')
     bad = [(a['t'], b['t']) for i, a in enumerate(under) for b in under[i + 1:] if abs(a['y'] - b['y']) < 6 and abs(a['x'] - b['x']) < (a['w'] + b['w']) / 2]
     c.eq(bad, [], 'no two names of the axis overlap', what=str([(n['t'], round(n['x']), round(n['y'])) for n in under]))
+
+
+@case('D161', 'The alternate changed in Fuel is drawn by the Map beside it within the second: the dotted line goes to the new aerodrome', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0205 refused (« rien. cf. screenshot »: double view, the alternate changed EIDW to LFRN in Fuel, the Map kept the dotted line to EIDW): the signature of the route (flight_time.js sigOf) did not hold route.altn, so a write of the alternate alone was taken for « only the progress changed » and the flight was never read again')
+def d_altn(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    c.open('maps?pane=1', flight=True, airfields=True)
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S.route && window.__mp.S.route.points.length >= 2 && !!window.__mp.S.route.altn", timeout=15000, what='the flight and its alternate are drawn')
+    first = c.js("() => String(window.__mp.S.route.altn.id)")
+    other = 'LFRS' if first != 'LFRS' else 'LFML'    # the aerodromes this bench knows: the route's ends and LFMT
+    c.js("""async (a) => { const S = window.__mp.S, path = `pilot/${S.ctx.identity?.trigram || 'ANON'}/current_flight.json`, f = await S.ctx.data.get(path);
+      await S.ctx.data.put(path, { ...f, route: { ...f.route, altn: a }, updated_at: new Date(Date.now() + 120000).toISOString() }); return true }""", other)
+    c.until("(a) => window.__mp.S.route.altn && String(window.__mp.S.route.altn.id).toUpperCase() === a", other, timeout=2500, what='the Map draws the new alternate within the second')

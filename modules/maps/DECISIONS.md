@@ -2299,6 +2299,11 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done**: the light drawing paints every airway in the low colour (high ones too); a zoom that crosses a threshold *during* a gesture shows the new state only at rest.
 - **Noreg** D141 (zoom 8: the airways are in the light drawing and stroked while moving; zoom 3: none, no stroke; red before: 3 airways at zoom 3).
 
+## The alternate changed in Fuel is drawn at once (10 Nov 2026, SOG-0205 refused: the Map kept the dotted line to the old alternate)
+- **Cause** (found by Features SOG): `sigOf` (`flight_time.js`), the signature `sameRoute` compares, did not hold `route.altn`: a write of the alternate alone looked like « only the progress changed »
+  (`watchFlight` → `progressOnly`), `applyFlight` never ran and `S.route.altn` stayed until a remount. **Done**: `route.altn` is in the signature. **Noreg** D161 (double view, the alternate rewritten from outside:
+  the Map has the new one within 2.5 s; red before).
+
 ## Three defects seen in the user's Chrome, Fuel beside the Map (10 Nov 2026, urgent; SOG-0134)
 - **« ReferenceError: MapsRender is not defined » at each hover** (`tips.js tipAt ← hoverMap ← module.js`): the plain box (no MapLibre yet) listened from the mount, before `loadLibs()` had loaded the
   render core; `plainUi` now ignores the pointer until `window.MapsRender` exists, and a library that fails to load stops the mount with a notification (`libsFailed`) instead of leaving a half-mounted Map.
