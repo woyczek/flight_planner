@@ -290,7 +290,8 @@ export async function readSettings() {
  *  valeurs de départ, SPEC § 6.7). */
 export const saveUi = () => S.ctx.data.put('cache/maps/ui.json', {
   preset: S.preset,
-  layers: S.layers || {}
+  layers: S.layers || {},
+  mission: S.mthemes || {} // la vue retenue par carte de mission (SOG-0171) : « <mission>|<fichier> » → vfr | ifr | base | yaml
 }).catch(() => {});
 
 // ---------------------------------------------------------------- données (aerodb, emprise utile)

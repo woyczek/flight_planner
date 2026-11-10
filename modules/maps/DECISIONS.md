@@ -2268,6 +2268,26 @@ the Map had seen in between: the same line to within the frame's own sampling.
   label before the reading (it is chosen by the route's middle, after the route is known).
 - **Noreg** D122 (store stubbed on a copy of `S.ctx`, which is frozen: no network; cache then read; no extra button; the name; a refusal).
 
+## The view of a mission map, by its use (10 Nov 2026, SOG-0171: the user's reserve on the mission sheet)
+
+- **Asked** (the user: « on affiche les cartes selon différents thèmes : VFR topographique sur la carte « cible » d'un SAR ou HEMS… sur une commerciale,
+  non, mais sur du SO, oui ») and decided by the ergonomics session: (1) the map opens in the view of its use, the YAML `profile` first; (2) target,
+  detail, detail_rdv and zone maps of a non-commercial family in VFR topo, the general map and a commercial mission in the flight's view; (3) a three-way
+  « View » selector in the banner (VFR topo, IFR, Base only), kept per mission map on the device; (4) closing the banner gives the flight's view back.
+- **Found on the way**: the built-in `vfr-detail` profile named a base, `topo`, that the style table does not know (`STYLES`): the target map was drawn
+  on the plain default style, not on a topographic one. VFR topo is now the Map's own VFR profile (`liberty`), so the target map really is topographic.
+- **Choices of mine**: the family is the mission's **folder** (`missions/<letter>_<FAMILY>/`, already used by the banner), not a field of the YAML or a
+  parameter of the link (Features SOG agreed: the file is the one truth; a `type=` in an address can lie); commercial = family COMMERCIAL, COMMERCIALE,
+  CIVIL or CIVILE (the data repository has no commercial folder today: any other family is operational, as asked « everything but commercial »); the
+  profile of a map that carries one is a fourth, first choice in the selector so that « the YAML wins » stays reachable after a change; « Base only »
+  keeps the mission's points, zones and path and drops airways, beacons, aerodromes, obstacles, VRP, cities and spaces; the retained choice is dropped when
+  it equals the use's view; approach maps with no YAML profile follow the flight's view (they used `vfr-simple`: not in the decision). The selector adds a
+  line to the banner (about 60 px at 390).
+- **Not done**: the zoom thresholds the company sets per mode (`repoZoom`) do not apply to a mission map (only the built-in ones); a mission of a
+  family named otherwise than in the folder (a YAML `type` / `subtype`) is not read.
+- **Noreg** D138 (SAR target → VFR topo; SAR general → the flight's view; commercial target → the flight's view; the YAML profile first and offered; the
+  choice kept after a reload, dropped when back to the use's view; closing the banner).
+
 ## Route weather, the gesture made honest (10 Nov 2026, SOG-0139 refused)
 
 - **Measured**: measured on the user's launcher, the Map alone, a fresh local profile, his real

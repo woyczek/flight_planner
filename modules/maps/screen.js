@@ -251,7 +251,7 @@ export async function status() {
   if (S.missionError) empty.push(`<p>${esc(S.missionError)}</p>`);
   else if (onMission() && S.mission) {
     if (!S.mission.maps.length) empty.push(`<p class="f-muted">${esc(tt(TX.noMaps))}</p>`);
-    if (S.profileSource && S.profileSource !== 'copy') warn.push(`<p class="f-muted">${esc(tt(TX.builtin, {
+    if (S.profileSource === 'builtin-id') warn.push(`<p class="f-muted">${esc(tt(TX.builtin, {
       p: S.profile?.name || S.profile?.id || ''
     }))}</p>`);
     const cyc = S.mapDef?.cycle,

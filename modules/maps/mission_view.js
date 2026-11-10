@@ -19,8 +19,13 @@ import {
   schedule
 } from './draw.js';
 import {
-  viewOf
+  viewOf,
+  saveUi,
+  invalidate
 } from './data.js';
+import {
+  themeProfile
+} from './layers.js';
 import {
   header,
   status,
@@ -137,18 +142,15 @@ export async function applyMission() {
   }
   if (!S) return;
   const M = S.mission,
-    m = M ? M.maps.find(x => x.file === q.map) || M.maps[0] || null : null,
-    chosen = m ? MapsMission.profileFor(m, window.MAPS_PROFILES) : {
-      profile: window.MAPS_PROFILES.find(p => p.id === 'ifr-simple'),
-      source: 'builtin-type'
-    };
+    m = M ? M.maps.find(x => x.file === q.map) || M.maps[0] || null : null;
   S.mapDef = m;
+  S.mthemeAuto = themeOf(m, familyOf(S.missionId)); // la vue de l'usage de la carte, ou celle que l'appareil a retenue pour elle
+  const kept = S.mthemes?.[themeKey()];
+  S.mtheme = kept && (kept !== 'yaml' || S.mthemeAuto === 'yaml') ? kept : S.mthemeAuto;
   S.missionPts = M ? M.points.map(p => ({
     ...p,
     sub: roleText(p)
   })) : null;
-  S.profile = chosen.profile;
-  S.profileSource = chosen.source;
   S.vprofProfile = M?.vprof.profileDef || window.MAPS_PROFILES.find(p => p.id === 'vprof') || null;
   const pts = unwrapLons(M ? await missionRoute(M) : []); // cheminement d'un seul tenant au-delà de la ligne de changement de date
   if (!S) return;
@@ -164,6 +166,7 @@ export async function applyMission() {
     levelFt: M?.vprof.cruiseFt || 0,
     updated: `${q.mission}|${m?.file || ''}|${S.missionRev || ''}`
   };
+  S.profile = missionProfile();
   // #maps?mission=…&zone=<id> : la vue est cette zone, sauf si l'adresse désigne une carte fournie (&map=, déjà centrée sur elle, à son échelle)
   const zoneFit = q.zone && !(q.map && M?.maps.some(x => x.file === q.map)) ? MapsMission.zoneBox(M, q.zone) : null;
   S.fit = viewOf() || zoneFit || m?.extent || MapsRender.bboxOf(unwrapLons([...pts, ...(M?.points || [])]), 10) || {
@@ -179,6 +182,52 @@ export async function applyMission() {
   header();
   fillPick();
   missionUi();
+  status();
+  schedule();
+  buildProfile();
+}
+/** Les cartes de ces types, dans une mission d'une famille SO, s'ouvrent en VFR topographique (SOG-0171) ; le commercial garde la vue du vol. */
+const SO_TYPE = /^(target|cible|detail|zone)/i,
+  COMMERCIAL = /^(commercial|commerciale|civil|civile)$/i;
+/** Le YAML de la carte porte-t-il un profil d'affichage (sa copie, ou l'id d'un profil intégré) ? Il l'emporte alors. */
+const ownProfile = m => !!(m?.profileDef || (m?.profileId && window.MAPS_PROFILES.some(p => p.id === m.profileId)));
+/** La vue d'une carte de mission, d'après son usage : son profil (YAML) ; sinon VFR topo pour les cartes cible / détail / rendez-vous / zone
+ *  d'une famille SO ; sinon la vue du vol (VFR topo si le vol l'est, IFR sinon). */
+export const themeOf = (m, fam) => ownProfile(m) ? 'yaml' : fam && !COMMERCIAL.test(fam) && SO_TYPE.test(m?.type || '') ? 'vfr' : ['vfr',
+  'topo'
+].includes(S.preset) ? 'vfr' : 'ifr';
+/** Clef de la vue retenue : la mission et sa carte. */
+const themeKey = () => `${S.missionId}|${S.mapDef?.file || ''}`;
+/** Le profil d'affichage de la carte de mission montrée, selon sa vue. */
+function missionProfile() {
+  const m = S.mapDef;
+  if (S.mtheme === 'yaml' && m) {
+    const c = MapsMission.profileFor(m, window.MAPS_PROFILES);
+    S.profileSource = c.source;
+    return c.profile;
+  }
+  S.profileSource = S.mtheme === S.mthemeAuto ? 'theme' : 'chosen';
+  return {
+    ...themeProfile(S.mtheme, S.route?.levelFt || 0),
+    name: tt(TX.mbThemes[S.mtheme] || TX.mbThemes.ifr)
+  };
+}
+/** Le choix de la vue (bandeau) : retenu pour cette carte sur l'appareil (seulement s'il diffère de la vue de son usage), la carte redessinée. */
+function setTheme(v) {
+  if (!TX.mbThemes[v] || (v === 'yaml' && S.mthemeAuto !== 'yaml')) return;
+  const all = S.mthemes ||= {},
+    key = themeKey();
+  if (v === S.mthemeAuto) delete all[key];
+  else {
+    delete all[key];
+    all[key] = v;
+    for (const k of Object.keys(all).slice(0, -60)) delete all[k];
+  }
+  saveUi();
+  S.mtheme = v;
+  S.profile = missionProfile();
+  invalidate();
+  bannerFill();
   status();
   schedule();
   buildProfile();
@@ -213,6 +262,7 @@ export function missionEvents() {
   S.mapPickEl.addEventListener('change', () => go(S.missionId, S.mapPickEl.value));
   S.mbarEl.addEventListener('change', e => {
     if (e.target.matches('.mp-mb-sel')) go(S.missionId, e.target.value);
+    else if (e.target.matches('.mp-mb-theme')) setTheme(e.target.value);
   });
   S.mbarEl.addEventListener('click', e => {
     if (e.target.closest('[data-mbx]')) go('', ''); // le bandeau retiré : le vol et ses couches
@@ -239,7 +289,7 @@ export function bannerFill() {
     cur = S.mapDef?.file || '',
     fam = familyOf(S.missionId),
     html = on ? `<div class="mp-mb-top"><b class="mp-mb-t">${esc(M.title || M.id || S.missionId)}</b><button type="button" class="mp-mb-x" data-mbx title="${esc(tt(TX.mbRemove))}" aria-label="${esc(tt(TX.mbRemove))}">×</button></div>
-<div class="mp-mb-sub"><span class="mp-mb-id">${esc(M.id || S.missionId)}</span>${fam ? ` · <span class="mp-mb-fam">${esc(fam)}</span>` : ''}</div>${maps.length > 1 ? `<label class="mp-mb-map"><span>${esc(tt(TX.mbMap))}</span><select class="mp-mb-sel" aria-label="${esc(tt(TX.mbMap))}">${maps.map(m => `<option value="${esc(m.file)}"${m.file === cur ? ' selected' : ''}>${esc(m.description || m.file)}</option>`).join('')}</select></label>` : maps.length === 1 ? `<div class="mp-mb-sub">${esc(maps[0].description || maps[0].file)}</div>` : ''}` : '';
+<div class="mp-mb-sub"><span class="mp-mb-id">${esc(M.id || S.missionId)}</span>${fam ? ` · <span class="mp-mb-fam">${esc(fam)}</span>` : ''}</div>${maps.length > 1 ? `<label class="mp-mb-map"><span>${esc(tt(TX.mbMap))}</span><select class="mp-mb-sel" aria-label="${esc(tt(TX.mbMap))}">${maps.map(m => `<option value="${esc(m.file)}"${m.file === cur ? ' selected' : ''}>${esc(m.description || m.file)}</option>`).join('')}</select></label>` : maps.length === 1 ? `<div class="mp-mb-sub">${esc(maps[0].description || maps[0].file)}</div>` : ''}<label class="mp-mb-th"><span>${esc(tt(TX.mbTheme))}</span><select class="mp-mb-theme" aria-label="${esc(tt(TX.mbTheme))}">${['yaml', 'vfr', 'ifr', 'base'].filter(k => k !== 'yaml' || S.mthemeAuto === 'yaml').map(k => `<option value="${k}"${k === S.mtheme ? ' selected' : ''}>${esc(tt(TX.mbThemes[k]))}</option>`).join('')}</select></label>` : '';
   if (el.hidden === on) el.hidden = !on;
   if (el.innerHTML !== html) el.innerHTML = html;
   setData(el, 'maps', String(maps.length));

@@ -140,7 +140,7 @@ nombre de TOC / TOD se desliza a lo largo de la ruta antes de callarse (el rombo
 la aerolínea. Para una misión, una segunda lista elige entre sus mapas (vista de conjunto, objetivo, detalle…). Cada
 mapa se redibuja como en el estudio: mismo marco, mismo perfil de visualización, con los puntos de la misión, sus zonas
 rayadas y su recorrido. El perfil vertical muestra entonces el de la misión.
-Un vuelo preparado desde una misión abre el mapa en esa misión sin nada que escribir: una banda arriba da su título, su identificador, su familia, el mapa suministrado mostrado y, si hay varios, su elección (siete como máximo). Las zonas son una mancha ligera con su nombre, los puntos llevan su función (salida, llegada, objetivo…) y la leyenda («i») las nombra. La cruz de la banda la quita: se vuelve al vuelo con todas sus capas; otra misión se elige en la lista de capas.
+Un vuelo preparado desde una misión abre el mapa en esa misión sin nada que escribir: una banda arriba da su título, su identificador, su familia, el mapa suministrado mostrado y, si hay varios, su elección (siete como máximo). Las zonas son una mancha ligera con su nombre, los puntos llevan su función (salida, llegada, objetivo…) y la leyenda («i») las nombra. La cruz de la banda la quita: se vuelve al vuelo con todas sus capas; otra misión se elige en la lista de capas. El mapa se abre en la vista de su uso: el perfil que lleva el YAML del mapa tiene prioridad; si no, los mapas de objetivo, detalle, cita y zona de una misión operativa (SAR, MEDEVAC, FIRE, LE, ISR, COMBAT, MARITIME, AAR, AIRLIFT, COMMAND: todo salvo comercial) se abren en VFR topo (relieve, obstáculos, VRP, aeródromos VFR, espacios bajos), el mapa general y una misión comercial mantienen la vista del vuelo. La banda ofrece «Vista»: VFR topo, IFR o Solo fondo; la elección se recuerda para ese mapa en el dispositivo, y quitar la banda devuelve la vista del vuelo.
 
 <a id="maps-edit"></a>**Modificar la ruta en el mapa.** Toque «Editar en el mapa» (las cuatro flechas, a la derecha del mapa; la primera vez aparece una breve ayuda): los puntos de giro se rodean de un
 círculo. Arrastre un punto sobre un fijo, una radioayuda o un aeródromo: se coloca allí (soltado en otro lugar, se
@@ -185,4 +185,4 @@ ciclo, una línea lo dice: los espacios aéreos pueden haber cambiado desde ento
 entonces el perfil habitual del tipo de mapa (detallado para un objetivo o un detalle, simplificado si no) y lo indica.
 Basta con abrir la misión en el estudio y guardarla para que conserve después el suyo.
 
-<!-- fr: 2ec3f58f2547 -->
+<!-- fr: 91d2a3820c8a -->

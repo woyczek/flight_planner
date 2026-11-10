@@ -1262,8 +1262,19 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
 - **Drawing fields written by the V2 studio**: `profile_def` (the full display profile, used as is), `resolved_bbox` (the
   extent drawn), `cycle` (AIRAC; a cycle different from aerodb's is said in the notes); in `vertical_profile`:
   `profile_def`, `cycle`, `route_points` [{ name, lat, lon, alt_ft }].
-- **Without them**: the built-in profile of the same id, else of the type (detail, target and rdv → `vfr-detail`;
-  approach → `vfr-simple`; anything else → `ifr-simple`; said in the notes); extent from `view`, else `bbox`, else by type
+- **The view of a mission map** (SOG-0171, ergonomics' decision after the user's reserve): a map opens in the view of its use. The
+  YAML profile (`profile_def`, or `profile` naming a built-in one) comes first (view « yaml »). Else the **target, detail (detail_rdv)
+  and zone** maps of a mission whose folder family is not commercial (SAR, MEDEVAC, FIRE, LE, ISR, COMBAT, MARITIME, AAR, AIRLIFT,
+  COMMAND, … everything but COMMERCIAL / CIVIL) open in **VFR topo** — the Map's VFR profile (`vfr-detail` on the `liberty` base,
+  relief, obstacles, VRP, VFR aerodromes, low spaces; `layers.js` `themeProfile('vfr')`); the **general** map and any map of a
+  commercial mission keep the **flight's view** (VFR topo if the flight's mode is VFR or Topo, else IFR at the mission's level). The
+  banner carries **« View »**: VFR topo / IFR / Base only (no aeronautical layer: the mission keeps its points, zones and path), plus
+  « The map's own profile » when the YAML has one; the choice is kept per mission map on the device (`cache/maps/ui.json`, `mission`:
+  `<mission>|<file>` → view, only when it differs from the use's view, 60 entries at most); removing the banner gives the flight's
+  view (and its layers) back. Noreg D138. (Before: the built-in profile of the same id, else of the type: detail, target and rdv →
+  `vfr-detail` on a base the styles did not know (plain), approach → `vfr-simple`, anything else → `ifr-simple`.) Approach maps with no
+  YAML profile now follow the flight's view.
+- **Without them**: the view above (the old built-in profiles by type are no longer used); extent from `view`, else `bbox`, else by type
   (general: points and zones, 12 % margin; zone: the zone, 20 %; detail 8 × 5 km; target 100 × 62 km; others 220 × 140 km;
   widened to the studio's 1.6 ratio); route from `vertical_profile.route` (or origin, turning points or target,
   destination) through `SiaProfile.parseRoute`, names resolved against the mission's points and zones, then aerodb's

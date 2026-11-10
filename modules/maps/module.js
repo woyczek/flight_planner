@@ -321,6 +321,8 @@ export async function mount(el, ctx) {
   }));
   S.preset = TX.presets[ui.preset] ? ui.preset : 'auto';
   S.layers = ui.layers && typeof ui.layers === 'object' ? ui.layers : {};
+  S.mthemes = Object.fromEntries(Object.entries(ui.mission && typeof ui.mission === 'object' ? ui.mission : {}).filter(([k, v]) => k
+    .length < 200 && ['vfr', 'ifr', 'base', 'yaml'].includes(v)).slice(-60));
   fillModes();
   await deriveMission();
   if (!S) return;

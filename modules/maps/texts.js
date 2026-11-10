@@ -567,6 +567,13 @@ export const TX = {
     'Remove the mission banner: back to the flight and its layers',
     'Missionsleiste entfernen: zurück zum Flug und seinen Ebenen', 'Quitar la banda de misión: volver al vuelo y a sus capas'
   ],
+  mbTheme: ['Vue', 'View', 'Ansicht', 'Vista'],
+  mbThemes: {
+    vfr: ['VFR topo', 'VFR topo', 'VFR Topo', 'VFR topo'],
+    ifr: ['IFR', 'IFR', 'IFR', 'IFR'],
+    base: ['Fond seul', 'Base map only', 'Nur Hintergrund', 'Solo fondo'],
+    yaml: ['Profil de la carte', 'The map’s own profile', 'Profil der Karte', 'Perfil del mapa']
+  },
   mbMap: ['Carte fournie', 'Provided map', 'Mitgelieferte Karte', 'Mapa suministrado'],
   mRoles: {
     ORIGIN: ['départ', 'departure', 'Abflug', 'salida'],

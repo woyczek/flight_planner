@@ -147,8 +147,8 @@ export const ZOOM_KEYS = Object.keys(ZOOM_IFR);
 /** Seuils de départ d'un mode (copie). */
 export const zoomDefaults = mode => structuredClone(VFR_MODES.includes(mode) ? ZOOM_VFR : ZOOM_IFR);
 /** Profil du mode courant, sans ses seuils (SPEC § 6.1). */
-function modeProfile() {
-  if (S.preset === 'vfr') {
+function modeProfile(mode = S.preset, levelFt = S.route.levelFt) {
+  if (mode === 'vfr') {
     // VFR détaillé du studio sur fond topographique, plus les balises, la densité VFR et les FIR (vues de loin)
     const p = structuredClone(window.MAPS_PROFILES.find(x => x.id === 'vfr-detail') || MapsRender.routeProfile(0));
     return {
@@ -163,7 +163,7 @@ function modeProfile() {
       }
     };
   }
-  if (S.preset === 'topo') {
+  if (mode === 'topo') {
     // relief ombré sur fond topographique, surcouche minimale : terrains, villes, obstacles de près
     const p = MapsRender.routeProfile(0);
     return {
@@ -187,10 +187,10 @@ function modeProfile() {
       }
     };
   }
-  if (S.preset === 'cam') {
+  if (mode === 'cam') {
     // vol militaire : l'IFR du niveau du vol, plus R / D / P, TSA / TRA / CBA, le réseau très basse altitude à tous les
     // niveaux et les terrains d'État
-    const p = MapsRender.routeProfile(S.route.levelFt);
+    const p = MapsRender.routeProfile(levelFt);
     return {
       ...p,
       id: 'v3-cam',
@@ -203,16 +203,44 @@ function modeProfile() {
       }
     };
   }
-  return MapsRender.routeProfile(S.preset === 'low' ? 5000 : S.preset === 'high' ? 30000 : S.route.levelFt);
+  return MapsRender.routeProfile(mode === 'low' ? 5000 : mode === 'high' ? 30000 : levelFt);
 }
 /** Profil intégré du mode courant, seuils de départ compris. */
-export function builtinProfile() {
-  const p = modeProfile();
+export function builtinProfile(mode = S.preset, levelFt = S.route.levelFt) {
+  const p = modeProfile(mode, levelFt);
   return {
     ...p,
     elements: {
       ...(p.elements || {}),
-      zoom: zoomDefaults(S.preset)
+      zoom: zoomDefaults(mode)
+    }
+  };
+}
+/** Profil d'une carte de mission selon sa vue (SOG-0171) : « vfr » = le VFR topographique du vol (relief, obstacles, VRP, terrains VFR, espaces
+ *  bas, fond OpenFreeMap liberty), « ifr » = l'IFR du niveau de la mission, « base » = le fond seul (aucune couche aéronautique : la mission
+ *  garde ses points, ses zones et son cheminement). Sans réglages de couches du vol : la carte de mission n'a que son thème. */
+export function themeProfile(theme, levelFt = 0) {
+  if (theme !== 'base') return builtinProfile(theme === 'vfr' ? 'vfr' : 'auto', levelFt);
+  const p = MapsRender.routeProfile(0);
+  return {
+    ...p,
+    id: 'v3-base',
+    base: 'ofm-liberty',
+    cities: false,
+    zones: [],
+    corridorNm: 0,
+    elements: {
+      ...p.elements,
+      airwaysLow: false,
+      airwaysHigh: false,
+      navaids: false,
+      fixes: false,
+      vrpPoints: false,
+      obstacles: false,
+      mora: false,
+      graticule: false,
+      aerodromes: false,
+      agglos: false
     }
   };
 }

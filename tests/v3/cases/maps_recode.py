@@ -311,11 +311,12 @@ def d33(c):
     fill = max((want[2] - want[0]) / (b[2] - b[0]), (want[3] - want[1]) / (b[3] - b[1]))
     c.ge(round(fill, 2), .9, 'resolved_bbox fills the view in one dimension', what='fill ratio')
     c.ok(norm(row(c, 'cycleDiff').replace('{a}', '2026-09-11').replace('{b}', AERO_CYCLE)) in norm(c.text('.mp-notes') or ''), f'notes {c.text(".mp-notes")!r}', 'the notes say the cycle differs')
-    # the second map: its type's built-in profile, said in the notes
+    # the second map: no profile of its own, so the view of its use (SOG-0171: VFR topo for a target map), said by the banner and no longer by a note
     c.open('maps?mission=ESSAI1&map=carte_cible.png', aero=True)
-    c.until(f"(document.querySelector('.mp-notes')?.textContent || '').length > 0", timeout=8000, what='notes of the second map')
-    c.ok(norm(row(c, 'builtin').split('{p}')[0]).strip() in norm(c.text('.mp-notes') or ''),
-         f'notes {c.text(".mp-notes")!r}', 'the notes say the built-in profile of the type is used')
+    c.until("() => !!document.querySelector('.mp-mb-theme')", timeout=8000, what='the banner’s view choice of the second map')
+    c.eq(c.js("() => document.querySelector('.mp-mb-theme').value"), 'vfr', 'a target map opens in VFR topo (its use), shown in the banner', what='view')
+    c.ok(norm(row(c, 'builtin').split('{p}')[0]).strip() not in norm(c.text('.mp-notes') or ''), f'notes {c.text(".mp-notes")!r}',
+         'no note about a built-in profile: the view of its use is not a default to apologise for')
 
 
 # ------------------------------------------------------------------------------------------------------ D34
@@ -4381,3 +4382,59 @@ def d137(c):
     c.js("() => { window.__mode = 'slow'; window.__mp.S.wxDeadline = 0; return true }")
     c.tap('.mp-wxmsg [data-wxget]')
     c.until("() => { const s = document.querySelector('.mp-dbody svg'); return !!s && s.getBoundingClientRect().height > 0 }", timeout=9000, what='« Try again » draws the cut')
+
+
+def _themed(c, fam, mid, hash_, profile_def=False):
+    """Writes a synthetic mission of folder family `fam` (without the studio profile of its general map unless asked) and opens the Map on `hash_`."""
+    text = FIXTURE.read_text(encoding='utf-8').replace('ESSAI1', mid)
+    if not profile_def:
+        text = '\n'.join(l for l in text.split('\n') if not l.lstrip().startswith('profile_def:'))
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_RAW_JS, [f'missions/{fam}/{mid}/mission{mid}.yaml', text])
+    c.open(hash_, docs=fdocs(flight()), airfields=True, wait=False)
+    c.until("() => !!document.querySelector('.mp-mbar') && !document.querySelector('.mp-mbar').hidden", timeout=15000, what='the mission banner')
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S.profile && !!window.__mp.S.mtheme", timeout=8000, what='the mission map has its view')
+
+
+_THEME_JS = """() => { const S = window.__mp.S; return { theme: S.mtheme, auto: S.mthemeAuto, id: S.profile?.id, base: S.profile?.base, src: S.profileSource,
+  sel: document.querySelector('.mp-mb-theme')?.value, opts: [...document.querySelectorAll('.mp-mb-theme option')].map(o => o.value) } }"""
+
+
+@case('D138', 'Mission maps open in the view of their use: a SO mission’s target / detail / zone map in VFR topo, the general map and a commercial mission in the flight’s view, the map’s own profile first; a banner choice (VFR topo, IFR, base only) is kept per map', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0171 (the user, on the mission sheet: « VFR topographique sur la carte cible d’un SAR ou HEMS… sur une commerciale, non »): the YAML profile of the map wins; else target / detail / detail_rdv / zone maps of a non-commercial family open in VFR topo (relief, obstacles, VRP, VFR aerodromes, low spaces, OpenFreeMap liberty); the general map and a commercial mission keep the flight’s view; the banner offers VFR topo / IFR / Base only (kept per mission map on the device); closing the banner gives the flight’s view back')
+def d138(c):
+    # 1. a SAR mission: its target map is VFR topo, its general map the flight’s view (IFR here)
+    _themed(c, '2_SAR', 'SAR1', 'maps?mission=SAR1&map=carte_cible.png')
+    t = c.js(_THEME_JS)
+    c.eq([t['theme'], t['base'], t['src'], t['sel']], ['vfr', 'ofm-liberty', 'theme', 'vfr'], 'SAR, target map: VFR topo on the topographic base, said in the banner', what=str(t))
+    c.eq(t['opts'], ['vfr', 'ifr', 'base'], 'the banner offers three views (no profile of the map’s own here)', what='options')
+    _themed(c, '2_SAR', 'SAR1', 'maps?mission=SAR1&map=carte_generale.png')
+    t = c.js(_THEME_JS)
+    c.eq([t['theme'], t['src']], ['ifr', 'theme'], 'SAR, general map: the flight’s view (IFR)', what=str(t))
+    # 2. a commercial mission keeps the flight’s view even on its target map
+    _themed(c, '3_COMMERCIAL', 'COM1', 'maps?mission=COM1&map=carte_cible.png')
+    t = c.js(_THEME_JS)
+    c.eq([t['theme'], t['base'] != 'ofm-liberty'], ['ifr', True], 'commercial, target map: the flight’s view', what=str(t))
+    # 3. the YAML profile of a map wins over the use
+    _themed(c, '2_SAR', 'SAR2', 'maps?mission=SAR2&map=carte_generale.png', profile_def=True)
+    t = c.js(_THEME_JS)
+    c.eq([t['theme'], t['id'], t['src']], ['yaml', 'essai-copy', 'copy'], 'the YAML profile of the map comes first', what=str(t))
+    c.eq(t['opts'], ['yaml', 'vfr', 'ifr', 'base'], 'and is offered as a first choice', what='options')
+    # 4. the choice of the banner is kept for this map on the device, and only when it differs from the use
+    _themed(c, '2_SAR', 'SAR1', 'maps?mission=SAR1&map=carte_cible.png')
+    c.js("() => { const s = document.querySelector('.mp-mb-theme'); s.value = 'base'; s.dispatchEvent(new Event('change', { bubbles: true })); return true }")
+    c.until("() => window.__mp.S.profile?.id === 'v3-base'", timeout=6000, what='« Base only » redraws the map without aeronautical layers')
+    c.eq(c.js("() => window.__mp.S.profileSource"), 'chosen', 'it is a choice', what='source')
+    _themed(c, '2_SAR', 'SAR1', 'maps?mission=SAR1&map=carte_cible.png')
+    t = c.js(_THEME_JS)
+    c.eq([t['theme'], t['auto']], ['base', 'vfr'], 'the choice survives a reload (kept for this map), the use’s view stays the default', what=str(t))
+    c.js("() => { const s = document.querySelector('.mp-mb-theme'); s.value = 'vfr'; s.dispatchEvent(new Event('change', { bubbles: true })); return true }")
+    c.until("() => window.__mp.S.profile?.base === 'ofm-liberty'", timeout=6000, what='back to the use’s view')
+    c.eq(c.js("() => Object.keys(window.__mp.S.mthemes)"), [], 'the use’s view is not kept as a choice', what='kept')
+    # 5. closing the banner gives the flight’s view back
+    c.tap('.mp-mbar [data-mbx]')
+    c.until("() => location.hash.includes('flight=1')", timeout=6000, what='the cross removes the banner')
+    c.until("() => !!window.__mp?.S && window.__mp.S.missionId === ''", timeout=10000, what='the Map is on the flight again')
+    c.until("() => window.__mp.S.profile && window.__mp.S.profile.id !== 'v3-base'", timeout=8000, what='the flight’s own view')

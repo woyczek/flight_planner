@@ -148,7 +148,7 @@ Zeit oder der Name von TOC / TOD gleitet entlang der Route, bevor sie entfällt 
 Fluggesellschaft. Für eine Mission wählt eine zweite Liste unter ihren Karten (Übersicht, Ziel, Detail…). Jede Karte
 wird wie im Studio neu gezeichnet: gleicher Rahmen, gleiches Anzeigeprofil, mit den Punkten der Mission, ihren
 schraffierten Gebieten und ihrer Route. Das Vertikalprofil zeigt dann das der Mission.
-Ein aus einer Mission vorbereiteter Flug öffnet die Karte auf dieser Mission, ohne Eingabe: eine Leiste oben nennt Titel, Kennung, Familie, die gezeigte mitgelieferte Karte und, wenn es mehrere gibt, deren Auswahl (höchstens sieben). Gebiete sind eine leichte Fläche mit ihrem Namen, Punkte tragen ihre Rolle (Abflug, Ankunft, Ziel …), und die Legende („i“) benennt sie. Das Kreuz der Leiste entfernt sie: zurück zum Flug mit allen seinen Ebenen; eine andere Mission wählt man in der Ebenenliste.
+Ein aus einer Mission vorbereiteter Flug öffnet die Karte auf dieser Mission, ohne Eingabe: eine Leiste oben nennt Titel, Kennung, Familie, die gezeigte mitgelieferte Karte und, wenn es mehrere gibt, deren Auswahl (höchstens sieben). Gebiete sind eine leichte Fläche mit ihrem Namen, Punkte tragen ihre Rolle (Abflug, Ankunft, Ziel …), und die Legende („i“) benennt sie. Das Kreuz der Leiste entfernt sie: zurück zum Flug mit allen seinen Ebenen; eine andere Mission wählt man in der Ebenenliste. Die Karte öffnet sich in der Ansicht ihres Zwecks: das Profil im YAML der Karte hat Vorrang; sonst öffnen sich Ziel-, Detail-, Treffpunkt- und Zonenkarten einer operativen Mission (SAR, MEDEVAC, FIRE, LE, ISR, COMBAT, MARITIME, AAR, AIRLIFT, COMMAND: alles außer kommerziell) in VFR Topo (Relief, Hindernisse, VRP, VFR-Flugplätze, untere Lufträume), die Übersichtskarte und eine kommerzielle Mission behalten die Ansicht des Fluges. Das Banner bietet „Ansicht“: VFR Topo, IFR oder Nur Hintergrund; die Wahl wird für diese Karte auf dem Gerät gemerkt, und das Entfernen des Banners gibt die Ansicht des Fluges zurück.
 
 <a id="maps-edit"></a>**Die Route auf der Karte ändern.** Tippen Sie auf „Auf der Karte bearbeiten“ (die vier Pfeile, rechts auf der Karte; beim ersten Mal erscheint eine kurze Hilfe): die Wegpunkte erhalten einen
 Kreis. Ziehen Sie einen Punkt auf einen Fix, ein Funkfeuer oder einen Flugplatz: er setzt sich dort (anderswo
@@ -195,4 +195,4 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: 2ec3f58f2547 -->
+<!-- fr: 91d2a3820c8a -->
