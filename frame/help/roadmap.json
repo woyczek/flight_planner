@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "0bb7ecf",
+  "organisation": "af836a6",
   "fiches": 170,
   "untranslated": 1,
   "priorities": 152
@@ -635,7 +635,7 @@
     {
      "id": "SOG-0139",
      "kind": "feature",
-     "state": "done",
+     "state": "doing",
      "fr": "Météo sur la Carte : un lien « télécharger AROME » plutôt qu'un bouton « afficher la météo »",
      "en": "Weather on the Map: a “download AROME” link rather than a “show weather” button",
      "de": "Wetter auf der Karte: ein Link „AROME laden“ statt eines Knopfs „Wetter anzeigen“",

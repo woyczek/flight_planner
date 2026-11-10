@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 54,
-  "verdicts": 8
+  "verdicts": 9
  },
  "apps": [
   "pilote",
@@ -325,7 +325,9 @@
    },
    "test": "Compagnie › Missions › une mission › « Préparer ce vol », puis ouvrir la Carte : un bandeau donne le titre et la famille de la mission, les zones sont nommées, les points portent leur rôle ; la croix du bandeau revient au vol.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "ok",
+   "comment": "carrément ! Là c’est inteligent.",
+   "at": "2026-11-10T09:33:06Z"
   },
   {
    "id": "SOG-0138",
@@ -351,7 +353,7 @@
    },
    "test": "Carte avec une route : un seul bouton « Météo de la route » ; après le toucher il devient « Météo de la route · AROME 12 h » et les vents sont dessinés.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "known"
   },
   {
    "id": "SOG-0140",
