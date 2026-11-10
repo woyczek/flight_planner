@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 59,
-  "verdicts": 20
+  "verdicts": 21
  },
  "apps": [
   "pilote",
@@ -695,7 +695,7 @@
     "de": "Seiten außerhalb V3 (Wartung V2, Fuel, Missionen V2, ursprüngliches RAD, Stats V2, Canadair…) unten in der Spalte in einem Eintrag",
     "es": "Páginas fuera de V3 (Mantenimiento V2, fuel, misiones V2, RAD original, estadísticas V2, Canadair…) agrupadas al pie de la columna en una entrada"
    },
-   "test": "Maintenance : plus d'entrée « Page de maintenance (V2) » dans la colonne ; tout en bas, « Anciennes pages (V2) » range les pages V2 par groupe. Sous « Canadair et pélicandromes », ouvrir « Positionner les pélicandromes » : la carte s'affiche, déplacer un site puis exporter → le fichier pelicandromes_positions.yaml est téléchargé ; le fond satellite est dit indisponible sous le lanceur.",
+   "test": "Maintenance : plus d'entrée « Page de maintenance (V2) » dans la colonne ; tout en bas, « Anciennes pages (V2) » range les pages V2 par groupe. Sous « Canadair et pélicandromes », ouvrir « Positionner les pélicandromes » : la carte s'affiche, déplacer un site puis exporter → le fichier pelicandromes_positions.yaml est téléchargé ; le fond satellite est dit indisponible sous le lanceur. Après relance du lanceur : dans l'outil des pélicandromes, le fond satellite (Esri) s'affiche ; plus de ligne « Fond satellite indisponible sous le lanceur ».",
    "since": "2026-11-10",
    "state": "ok",
    "at": "2026-11-10T10:31:29Z"
@@ -805,7 +805,9 @@
    },
    "test": "Compte rendu › Mission › liste « Famille », et Compagnie › Missions : chaque famille se dit par son sigle d'abord puis son nom long (« SAR · Récupération de personnel »), le sigle en gras dans les intertitres ; jamais le nom long seul.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "ok",
+   "comment": "oui, mais on ne sait pas pour quelle compagnie on fait le cr. réserve non bloquante.",
+   "at": "2026-11-10T10:41:07Z"
   }
  ]
 }
