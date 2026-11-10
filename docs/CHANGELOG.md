@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the ground of an aerodrome never read is asked by the Map itself, once** (`modules/maps/ground.js`; DECISIONS; noreg D155; SOG-0203). When the view shows a departure, arrival or alternate
+  at zoom 13 or more whose ground state is `none`, the Map asks `fetchGround` (state « Reading the ground… », then the drawing; a failure is said with its reason and « Try again »).
+
 - **Fuel: the alternate is taken at once** (`modules/fuel/module.js`; DECISIONS; noreg F133; SOG-0205). Its weather comes in the step
   Weather as soon as it is typed, without going to the Map and back.
 - **Fuel: « Calculer A → B » and « Contrôler » never tap without an effect** (`modules/fuel/module.js`, `route_engine.js`; Fuel SPEC,

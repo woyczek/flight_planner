@@ -57,6 +57,7 @@ const G = () => S.ground ||= {
   },
   icao: '', // terrain du panneau
   st: new Map(), // ICAO → { state: 'reading' | 'failed' | 'ok' | 'none', reason, message } : la lecture du sol (AeroDb.groundStatus)
+  auto: new Set(), // terrains dont la Carte a déjà demandé la lecture d'elle-même (une fois : un échec se dit, il ne se rejoue pas tout seul)
   drawn: new Map(), // id → vrai si son nom a trouvé une place au dernier dessin
   hits: [] // { id, x, y | segs } en coordonnées de la vue
 };
@@ -174,6 +175,20 @@ async function status(icao) {
   }
   render();
 }
+/** Le sol d'un terrain du vol qui doit être dessiné n'a jamais été lu (état « none », SOG-0203 : procédures lues avant SOG-0135) : la Carte le demande d'elle-même, une
+ *  seule fois par terrain, sauf si le lanceur dit qu'une lecture est en cours ou qu'elle a échoué (le panneau dit alors pourquoi et offre « Réessayer »). */
+function autoRead(icao) {
+  const g = G(),
+    api = S.ctx.aerodb;
+  if (g.auto.has(icao) || typeof api?.fetchGround !== 'function') return;
+  g.auto.add(icao);
+  const ctx = S.ctx;
+  status(icao).then(() => {
+    if (S?.ctx !== ctx) return;
+    const st = g.st.get(icao)?.state;
+    if (st !== 'failed' && st !== 'reading' && st !== 'ok') retry(icao);
+  });
+}
 /** « Réessayer » : la lecture du sol seule (AeroDb.fetchGround), sans relire les procédures ; l'état dit « en cours » tout de suite. */
 async function retry(icao) {
   const api = S?.ctx?.aerodb,
@@ -227,6 +242,12 @@ export function groundLayout(toC, zReal, W, H) {
       ...it,
       icao
     })));
+    else if (rec.status === 'none') {
+      // seulement un terrain que cette vue montre (celui d'à côté ne se lit pas parce qu'on regarde l'autre)
+      const at0 = (S.route?.points || []).find(p => String(p.id || '').toUpperCase() === icao) || (String(S.route?.altn?.id || '')
+        .toUpperCase() === icao ? S.route.altn : null);
+      if (at0 && inside([toC(at0.lat, at0.lon)], W, H)) autoRead(icao);
+    }
   }
   if (!items.length && !(g.hl || '').startsWith('rwy:')) return null;
   const dark = !!S.theme?.dark,

@@ -5031,3 +5031,35 @@ def d154(c):
     puts = c.js("() => window.__puts")
     c.eq([x for x in puts if 'current_flight' in x], [], 'no write of the flight by the Map in 20 s without a gesture', what=str(puts))
 
+
+_AUTO_JS = """async (mode) => { const S = window.__mp.S, fx = await (await fetch('/tests/v3/fixtures/ground_LFPO.json')).json();
+  window.__fg = []; window.__got = false;
+  S.ctx.aerodb.ground = async icao => window.__got && icao === 'LFPO' ? fx : null;
+  S.ctx.aerodb.groundStatus = async () => window.__busy ? { state: 'reading' } : mode === 'failed' && window.__tried ? { state: 'failed', reason: 'busy', message: 'Overpass busy' } : { state: 'none' };
+  S.ctx.aerodb.fetchGround = async icao => { window.__fg.push(icao); window.__busy = true; await new Promise(r => setTimeout(r, 2500)); window.__busy = false; window.__tried = true; if (mode === 'failed') throw new Error('busy'); window.__got = true; return { ok: true } };
+  return true }"""
+
+
+@case('D155', 'The ground of a flight aerodrome that was never read is asked by the Map itself, once: « reading the ground… » then the drawing; a failure is said with its reason and « Try again », never replayed alone', 'D',
+      tags=('maps',), designs=('standard',), night=False, phone=False,
+      rule='SOG-0203 (LFBD has no taxiway: its ground was never asked, procedures read before SOG-0135; state none, not a failure): the gesture lives where the need is seen: when the Map has to draw the ground of the departure, the arrival or the alternate and the state is none, it asks the reading (fetchGround) itself, once per aerodrome, with the state « reading » then the drawing; if the launcher says failed or reading it does not ask; a failure is told by the panel with « Try again »')
+def d_auto(c):
+    _ground_open(c, aerodb=False)
+    c.js(_AUTO_JS, 'ok')
+    _ground_at(c, 13, 1200)
+    c.until("() => window.__fg.length === 1", timeout=8000, what='the Map asked the ground reading itself')
+    c.eq(c.js("() => window.__mp.S.ground.st.get('LFPO')?.state"), 'reading', 'the state says « reading » while the file is read', what='state')
+    c.until("() => (window.__mp.S.ground.hits || []).length > 50", timeout=12000, what='the ground is drawn once read')
+    _ground_at(c, 14, 600)
+    _ground_at(c, 13, 600)
+    c.eq(c.js("() => window.__fg"), ['LFPO'], 'asked once, not at each drawing', what='calls')
+    # a failure: said, not replayed
+    _ground_open(c, aerodb=False)
+    c.js(_AUTO_JS, 'failed')
+    _ground_at(c, 13, 1200)
+    c.until("() => window.__fg.length === 1", timeout=8000, what='the Map asked once')
+    c.until("() => window.__mp.S.ground.st.get('LFPO')?.state === 'failed'", timeout=8000, what='the failure is kept with its reason')
+    _ground_at(c, 14, 600)
+    _ground_at(c, 13, 600)
+    c.eq(c.js("() => window.__fg.length"), 1, 'the launcher said failed: the Map does not ask again by itself', what='calls after a failure')
+

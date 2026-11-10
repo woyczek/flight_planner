@@ -2299,6 +2299,14 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done**: the light drawing paints every airway in the low colour (high ones too); a zoom that crosses a threshold *during* a gesture shows the new state only at rest.
 - **Noreg** D141 (zoom 8: the airways are in the light drawing and stroked while moving; zoom 3: none, no stroke; red before: 3 airways at zoom 3).
 
+## The Map asks the ground of an aerodrome it has to draw, once (10 Nov 2026, SOG-0203: LFBD has no taxiway)
+- **Cause** (AeroDB's survey): LFBD's ground was never asked (procedures read before SOG-0135); the state is `none`, not a failure, and the Map only offered a link to Fuel.
+- **Done** (`ground.js autoRead`): the gesture lives where the need is seen: when the drawing has to show the ground of an aerodrome of the flight (departure, arrival, alternate) that the view
+  shows, at zoom 13 or more, and its state is `none`, the Map asks the reading (`fetchGround`) itself — once per aerodrome and per mount —, unless the launcher says `reading`, `ok` or `failed`
+  (`groundStatus`). The panel says « Reading the ground… » then the drawing comes (`groundChanged`), or « Ground not read: <reason> · Try again » (the button, never an automatic replay).
+  An aerodrome the view does not show is not asked. The route computation may now run beside a ground reading (2f839cf99).
+- **Noreg** D155 (asked once with state reading, drawn after; a launcher that says failed: not asked again).
+
 ## A flight that names a mission stays in the flight view; the mission is over it (10 Nov 2026, SOG-0193 L1, V3 § 10.47)
 - **Before**: `deriveMission` put `S.missionId` for a flight that names a mission, so every `onMission()` branch switched the Map to the mission view and it lost the weather section,
   procedures, runways, ground, coverage, VFR, route lines, Édition, the Layers boxes and Fuel's proposed routes (the user: « pourquoi pas de météo sur la préparation d'une mission ? »).
