@@ -1708,3 +1708,63 @@ def k139(c):
         ctx['build'] = failing
         r = run(dry=False, build=True, personal=['nats'])
         c.eq((r['ok'], r['reason'], r['update']['failed'][0]['error']), (False, 'build-failed', 'page-error'), 'a build that fails is said (build-failed) with its zone and reason: the files stay taken', what='failing')
+
+
+@case('K153', 'FAA NASR: when the subscription page refuses the launcher (HTTP 403), the cycle is computed from the AIRAC calendar and the data sets are read from nfdc.faa.gov; the launcher never poses as another browser; when nothing answers, the refusal is said with what is kept (SOG-0219)', 'K', static=True,
+      rule='SOG-0219 (10 Nov 2026, the launcher\'s console: « [sortant] échec : www.faa.gov/…/NASR_Subscription/ : HTTP 403 » twice): the HTML page of the subscription answers 403 to the launcher, which declares itself as it is (outbound.UA). Not worked around by posing as a browser. The cycle of the NASR follows the 28-day AIRAC calendar: it is computed (the cycle in force, then the previous one) and the three CSV sets are read from their own host, nfdc.faa.gov; if those do not answer either, the message says the page refuses automatic access, which cycles were tried, and that the points and airways already there are kept')
+def k153(c):
+    import datetime
+    import importlib
+    import json
+    import sys
+    import tempfile
+    import urllib.error
+    from pathlib import Path
+    sys.path.insert(0, str(c.root / 'tools'))
+    RJ, BS, AF, DS = _mods()
+    N = importlib.import_module('faa_nasr')
+    AC = importlib.import_module('aero_cycles')
+    fix, awy, nav = _nasr_zips()
+    cur = AC.airac_start(datetime.date.today())
+    prev = AC.airac_start(datetime.date.fromisoformat(cur) - datetime.timedelta(days=1))
+    zips = {'FIX': fix, 'AWY': awy, 'NAV': nav}
+    kept = AF.get
+    asked = []
+    refuse = lambda u: (_ for _ in ()).throw(urllib.error.HTTPError(u, 403, 'Forbidden', {}, None))
+    try:
+        def fake(missing=()):
+            def get(url, *a, **k):
+                asked.append(url)
+                if url == N.PAGE:
+                    refuse(url)
+                for kind in zips:
+                    if url.endswith(f'_{kind}_CSV.zip'):
+                        if any(m in url for m in missing):
+                            raise urllib.error.HTTPError(url, 404, 'Not Found', {}, None)
+                        return zips[kind]
+                raise AssertionError(url)
+            return get
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            AF.get = fake()
+            r = AF.nasr(td)
+            urls = [u for u in asked if u != N.PAGE]
+            d = datetime.date.fromisoformat(cur)
+            c.eq((r['features'] > 0, [u.split('/')[-1] for u in urls], (Path(td) / 'sia' / 'geojson' / 'faa_nasr.geojson').is_file(), json.loads((Path(td) / 'sia' / 'geojson' / 'faa_nasr.geojson').read_text(encoding='utf-8'))['issue']),
+                 (True, [f'{d.day:02d}_{N.MONTHS[d.month - 1]}_{d.year}_{k}_CSV.zip' for k in ('FIX', 'AWY', 'NAV')], True, cur),
+                 'the page answers 403: the cycle in force is computed from the AIRAC calendar and the three sets are read from nfdc.faa.gov (the file is written, its issue is that cycle)', what='fallback')
+            asked.clear()
+            d2 = datetime.date.fromisoformat(prev)
+            AF.get = fake(missing=(f'{datetime.date.fromisoformat(cur).day:02d}_{N.MONTHS[datetime.date.fromisoformat(cur).month - 1]}_{datetime.date.fromisoformat(cur).year}',))
+            r = AF.nasr(td)
+            c.eq(json.loads((Path(td) / 'sia' / 'geojson' / 'faa_nasr.geojson').read_text(encoding='utf-8'))['issue'], prev, 'the cycle in force not published yet (404): the previous one is read', what='previous')
+            AF.get = lambda url, *a, **k: refuse(url)
+            try:
+                AF.nasr(td)
+                said = ''
+            except ValueError as e:
+                said = str(e)
+            c.ok('refuse l’accès automatique' in said and 'nfdc.faa.gov' in said and cur in said and 'gardés' in said and '403' in said, said, 'nothing answers: the page refuses automatic access, the host and the cycles tried are named, and what is kept is said (the screen shows it as the layer\'s error)')
+    finally:
+        AF.get = kept
+    ob = importlib.import_module('outbound')
+    c.ok(ob.UA and 'Mozilla' not in ob.UA and 'Chrome' not in ob.UA, ob.UA, 'the launcher keeps declaring itself as it is: it never poses as a browser to get past a refusal')

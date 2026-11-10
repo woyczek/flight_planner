@@ -38,7 +38,7 @@ Usage (racine du dépôt) :
 Appelé aussi par le lanceur (POST /__setup/aero-fetch) pour les boutons de Paramètres › Maintenance › Données
 aéronautiques.
 """
-import email.utils, json, os, re, sys, urllib.error, urllib.parse, urllib.request
+import datetime, email.utils, json, os, re, sys, urllib.error, urllib.parse, urllib.request
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 import outbound  # noqa: E402 (le User-Agent du lanceur, chaque échec dit en console)
@@ -185,10 +185,32 @@ def openaip(data, countries, layers=OPENAIP_LAYERS, absent=None, known=()):
 def nasr(data):
     """Le NASR de la FAA (SOG-0153 d) : le cycle en vigueur lu sur la page de l'abonnement, les trois jeux CSV (FIX, AWY, NAV : adresses calculées par tools/faa_nasr.py) lus et convertis en faa_nasr.geojson (points et voies de la zone us) ; le fichier est remplacé seulement s'il change."""
     import faa_nasr
-    issue = faa_nasr.current_cycle(get(faa_nasr.PAGE).decode('utf-8', 'replace'))
-    if not issue:
-        raise ValueError('cycle en vigueur introuvable sur la page du NASR')
-    g, n, m = faa_nasr.convert(*(get(faa_nasr.url(k, issue)) for k in ('FIX', 'AWY', 'NAV')), issue)
+    issue, refused = None, ''
+    try:
+        issue = faa_nasr.current_cycle(get(faa_nasr.PAGE).decode('utf-8', 'replace'))
+    except OSError as e:
+        refused = str(e)                      # SOG-0219 : la page de la FAA (faa.gov) répond HTTP 403 au lanceur, qui se déclare tel qu'il est (jamais un autre navigateur) : le cycle est alors CALCULÉ
+    if issue:
+        cycles = [issue]
+    else:                                     # les cycles du NASR suivent le calendrier AIRAC : celui en vigueur, puis le précédent, lus sur le serveur des jeux (nfdc.faa.gov, une autre adresse que la page)
+        import aero_cycles
+        now = datetime.date.today()
+        cur = aero_cycles.airac_start(now)
+        cycles = [cur, aero_cycles.airac_start(datetime.date.fromisoformat(cur) - datetime.timedelta(days=1))]
+    last = None
+    for cycle in cycles:
+        try:
+            blobs = [get(faa_nasr.url(k, cycle)) for k in ('FIX', 'AWY', 'NAV')]
+        except OSError as e:
+            last = e
+            continue
+        issue = cycle
+        break
+    else:
+        why = (f'la page du NASR refuse l’accès automatique ({refused}) ; ' if refused else 'cycle en vigueur introuvable sur la page du NASR ; ') + \
+            f'les jeux du cycle {" ou ".join(cycles)} ne répondent pas non plus sur {faa_nasr.HOST} ({last}) : points et voies des États-Unis non mis à jour, ceux déjà là sont gardés'
+        raise ValueError(why)
+    g, n, m = faa_nasr.convert(*blobs, issue)
     body = json.dumps(g, separators=(',', ':')).encode('utf-8')
     name = faa_nasr.NAME + '.geojson'
     changed = write(os.path.join(data, 'sia', 'geojson', name), body)
