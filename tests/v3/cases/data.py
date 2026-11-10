@@ -684,7 +684,11 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
                 if code == 409 and busy_view:
                     st['current'] = busy_view
             elif 'id=' in u.query and st['posts'] and st['posts'][-1].get('verb') == 'status' and st.get('status') is not None:
-                body = {'id': 'jst', 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': 'zones', 'log': [], 'result': st['status'], 'zones': {}}
+                res = st['status']
+                if st.get('by_args'):   # like the real launcher: the state of the zones asked for only (60 at most)
+                    want = (st['posts'][-1].get('args') or {}).get('zones')
+                    res = {**res, 'zones': {k: v for k, v in res['zones'].items() if want is None or k in want}}
+                body = {'id': 'jst', 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': 'zones', 'log': [], 'result': res, 'zones': {}}
             elif 'id=' in u.query:
                 if st['cancelled'] and cancel_view:
                     body = cancel_view
@@ -5386,6 +5390,11 @@ def l71(c):
     why = norm(c.text('[data-zone-action=us][data-fetch-failed] .f-muted'))
     c.ok('faa' in why.lower() and '403' in why and norm(_trow('refused', lang, after='  fetchError: {').split('{src}')[1].split('({s})')[0]) in why, why, 'the line of the zone names the source and what it answered: « FAA : download refused (403) », not a bare « HTTP answer »')
     c.eq(c.count('[data-zone-action=us][data-fetch-failed] button[data-verb=retry-fetch]'), 1, 'with « Réessayer » on that line', what='retry button')
+    # the FAA refuses the automatic download: the line of « us » offers « Choisir le fichier… » and the direct link to the three NASR sets; the line of gb (another source) does not
+    UP = lambda key: _trow(key, lang, after='  up: {')
+    c.eq([c.count('[data-zone-action=us] [data-act=zone-upload]'), norm(c.text('[data-zone-action=us] [data-act=zone-upload]')), c.count('[data-zone-action=gb] [data-act=zone-upload]')],
+         [1, norm(UP('choose')), 0], '« Choisir le fichier… » on the line of the zone whose FAA download was refused, not on the other failed zone', what='choose file')
+    c.eq(c.js("[...document.querySelectorAll('[data-nasr-hint] a')].map(a => a.getAttribute('href'))"), ['https://www.faa.gov/air_traffic/flight_info/aeronav/aero_data/NASR_Subscription/'], 'with the direct link of the NASR subscription page', what='nasr link')
     zl = norm(c.text('[data-zone-state=us]'))
     c.ok('403' in zl and 'faa' in zl.lower(), zl, 'the result of the download says the same for the zone')
     if c.width in (390, 1280):
@@ -5450,4 +5459,34 @@ def l72(c):
         c.wait(250)
     c.ok(bool(_notes_with(c, none)), none, 'all green: said, no download, no question')
     c.eq([fetches(), c.count('.f-modal')], [[['us']], 0], 'still the one download of the first update', what='nothing more')
+    c.check_errors()
+
+
+@case('L73', 'Données: « Mettre à jour » on a coverage of 78 zones reads the state of ALL of them (60 at most per read): the 18 zones with the old parser are asked to be rebuilt although the FAA answers 403 (SOG-0180 reopened)', 'L', tags=('data',),
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0180 reopened (the user: « mise à jour qui s’arrête sur le 403 de la FAA », 18 zones left at the old parser, 1 failed, none proposed): the state was read for the first 60 zones only (ids.slice(0, 60)), the others were « unknown » and never proposed to the build; the state is now read by runs of 60 and merged')
+def l73(c):
+    st = _launcher(c, [_F403()], verbs=_VERBS)
+    st['by_args'] = True
+    cfg, _ = _fixture()
+    extra = [f'q{i:02d}' for i in range(73)]
+    for z in extra:
+        cfg['zones'].append({'id': z, 'names': [z.upper()] * 4, 'frames': [], 'published': True})
+        cfg['publication']['base'][z] = cfg['publication']['base']['ca']
+    old = {'code': 'parser-old', 'built': 23, 'current': 28}
+    zones = {z: _ZDL(_zst('up-to-date'), True) for z in ['ca', 'es', 'fr', 'gb'] + extra[:55]}
+    zones['us'] = _ZDL(_zst('stale', {'code': 'source-old', 'source': 'faa', 'cycle': '2026-10-01', 'current': '2026-11-26'}), False)
+    zones.update({z: _ZDL(_zst('stale', old), True) for z in extra[55:]})
+    st['status'] = _status(zones)
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.eq(len(_ticked(c)), 78, 'the coverage of 78 zones is ticked', what='78 ticked')
+    c.until("document.querySelectorAll('[data-zstate]').length === 78", timeout=15000, what='the state of the 78 zones, read at the opening (60 then 18)')
+    n0 = len(st['posts'])
+    c.tap('[data-build] [data-verb=update]')
+    q = _ask_text(c)
+    lens = [len(p['args'].get('zones', [])) for p in st['posts'][n0:] if p['verb'] == 'status']
+    c.eq(lens[:2], [60, 18], 'the state is read for the 78 zones, 60 then 18', what='status reads')
+    c.ok(re.search('[^0-9]19[^0-9]', q['text']) is not None and re.search('[^0-9]78[^0-9]', q['text']) is not None, q['text'][:200], 'the question asks to rebuild 19 of the 78 zones: the 18 with the old parser and the United States, whose download was refused')
+    c.eq([sorted(p['args']['zones']) for p in _posts(st, 'fetch')], [['us']], 'only the zone whose download is not done is downloaded', what='fetch')
     c.check_errors()

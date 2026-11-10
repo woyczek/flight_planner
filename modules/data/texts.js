@@ -156,6 +156,16 @@ export const TX = {
   up: {
     choose: ['Choisir le fichier…', 'Choose the file…', 'Datei wählen…', 'Elegir el archivo…'],
     cancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
+    // la FAA refuse le téléchargement automatique (HTTP 403) : le repli par fichiers choisis à la main (SOG-0180 ; les trois jeux du NASR, que le lanceur reconnaît)
+    nasr: [
+      'La FAA refuse le téléchargement automatique : prenez les trois jeux du cycle (FIX, AWY, NAV) sur {l}, puis « Choisir le fichier… » pour chacun.',
+      'The FAA refuses the automatic download: take the three sets of the cycle (FIX, AWY, NAV) from {l}, then “Choose the file…” for each.',
+      'Die FAA verweigert das automatische Herunterladen: holen Sie die drei Datensätze des Zyklus (FIX, AWY, NAV) von {l}, dann für jeden „Datei wählen…“.',
+      'La FAA rechaza la descarga automática: tome los tres conjuntos del ciclo (FIX, AWY, NAV) de {l}, luego «Elegir el archivo…» para cada uno.'
+    ],
+    nasrPage: ['la page des abonnements NASR', 'the NASR subscription page', 'der NASR-Abonnementseite',
+      'la página de suscripciones del NASR'
+    ],
     running: ['{name} : {p} %', '{name}: {p} %', '{name}: {p} %', '{name}: {p} %'],
     done: ['{name} reconnu : {s}, {z}. La prise suit.', '{name} recognised: {s}, {z}. The pickup follows.',
       '{name} erkannt: {s}, {z}. Die Übernahme folgt.', '{name} reconocido: {s}, {z}. La toma sigue.'
@@ -794,7 +804,9 @@ export const TX = {
     http: ['réponse HTTP', 'HTTP answer', 'HTTP-Antwort', 'respuesta HTTP'],
     httpN: ['HTTP {s}', 'HTTP {s}', 'HTTP {s}', 'HTTP {s}'],
     // la source qui a refusé ou échoué, nommée (SOG-0180 : « États-Unis : FAA : téléchargement refusé (403) »)
-    refused: ['{src} : téléchargement refusé ({s})', '{src}: download refused ({s})', '{src}: Download abgelehnt ({s})', '{src}: descarga rechazada ({s})'],
+    refused: ['{src} : téléchargement refusé ({s})', '{src}: download refused ({s})', '{src}: Download abgelehnt ({s})',
+      '{src}: descarga rechazada ({s})'
+    ],
     srcWhy: ['{src} : {r}', '{src}: {r}', '{src}: {r}', '{src}: {r}'],
     parse: ['fichier illisible', 'unreadable file', 'Datei nicht lesbar', 'archivo ilegible'],
     personal: ['licence non déclarée', 'licence not declared', 'Lizenz nicht erklärt', 'licencia no declarada'],
