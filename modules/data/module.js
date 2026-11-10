@@ -264,6 +264,8 @@ function onToggle(e) {
   if (g instanceof HTMLDetailsElement && g.matches('details.f-group') && g.isConnected) S.manual[g.dataset.group] = g.open;
   else if (g instanceof HTMLDetailsElement && g.matches('details.d-journal') && g.isConnected) S.journalOpen = g.open;
   else if (g instanceof HTMLDetailsElement && g.matches('details.d-moreverbs') && g.isConnected) S.verbsOpen = g.open;
+  else if (g instanceof HTMLDetailsElement && g.matches('details.d-packs-fold') && g.isConnected) S.packsOpen = g
+    .open; // « Paquets de pays », replié d'origine (SOG-0228)
   else if (g instanceof HTMLDetailsElement && g.matches('details.d-pack') && g.isConnected) {
     const key = g.dataset.packTheme || g.dataset.packFold; // un thème, ou le pli « Pays » d'une région (SOG-0186)
     g.open ? S.packOpen.add(key) : S.packOpen.delete(key);
@@ -304,6 +306,7 @@ export async function mount(el, ctx) {
     world: worldInit(), // la ligne « Synoptique monde (GFS) » : phase, état lu, dernière fin (world.js)
     zoneAsked: false, // le lien #data?zone=<id> a été lu (update.js)
     zoneLink: null,
+    packsOpen: false, // le bloc « Paquets de pays » : replié à l'ouverture (SOG-0228), l'ouverture à la main est gardée
     packTab: 'regions', // l'onglet des paquets de pays : regions | themes (SOG-0165)
     packOpen: new Set(), // les filtres thématiques dont le pli est ouvert (SOG-0065) // les zones dont la pastille montre ses raisons
     verbsOpen: false, // le pli « Plus » des verbes de la base (SOG-0071 temps 3)

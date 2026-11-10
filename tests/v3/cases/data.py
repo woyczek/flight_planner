@@ -4211,6 +4211,7 @@ def l44(c):
     _open(c, cfg)
     _all_open(c)
     c.until("!!document.querySelector('[data-packs]')", timeout=8000, what='the packs block')
+    c.js("document.querySelector('[data-packs-fold]').open = true")   # « Paquets de pays » is folded when the screen opens (SOG-0228)
     c.eq(c.js("[...document.querySelectorAll('[data-pack-regions] > li')].map(li => li.dataset.pack)"), ['ouest', 'asie', 'antarctique'], 'the region packs in aerodb\u2019s order; a pack with a bad id is dropped', what='regions')
     c.eq(c.js("[...document.querySelectorAll('[data-pack-themes] > li')].map(li => li.dataset.pack)"), ['iles'], 'the theme', what='themes')
     row = lambda p: norm(c.text(f'[data-pack={p}]'))
@@ -5089,6 +5090,7 @@ def l66(c):
     _open(c, cfg)
     _all_open(c)
     c.until("!!document.querySelector('[data-packs]')", timeout=8000, what='the packs block')
+    c.js("document.querySelector('[data-packs-fold]').open = true")   # « Paquets de pays » is folded when the screen opens (SOG-0228)
     fold = lambda p: f'[data-pack={p}] details[data-pack-fold]'
     c.eq([c.count(fold('ouest')), c.count(fold('asie')), c.count(fold('antarctique'))], [1, 1, 0], 'a fold in each region that has countries, none in an empty pack', what='folds')
     c.eq(c.js("document.querySelector('[data-pack=asie] details[data-pack-fold]').open"), False, 'folded by default', what='folded')
@@ -5198,6 +5200,7 @@ def l68(c):
     _open(c, cfg)
     _all_open(c)
     c.until("!!document.querySelector('[data-packs]') && document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the packs and the states')
+    c.js("document.querySelector('[data-packs-fold]').open = true")   # « Paquets de pays » is folded when the screen opens (SOG-0228)
     btn = lambda p: f'[data-pack={p}] [data-act=update-pack]'
     c.eq([c.count(btn('ouest')), c.count(btn('asie')), c.count(btn('antarctique'))], [1, 0, 0], 'a button on the pack that has countries in the coverage (fr, gb), none on one that has none (jp, de) nor on an empty one', what='buttons')
     c.eq(norm(c.text(btn('ouest'))), norm(UP('updatePack').replace('{n}', '2')), 'it says how many countries it will update: « Mettre à jour (2) »', what='label')
@@ -5600,4 +5603,43 @@ def l75(c):
         c.wait(250)
     c.ok(all('enaire' in (p['args'].get('personal') or []) for p in st['posts'][n:] if p['verb'] == 'status'), [p['args'].get('personal') for p in st['posts'][n:] if p['verb'] == 'status'], '« Mettre à jour » reads the state with the same personal sources')
     c.eq(c.count('.f-modal'), 0, 'nothing to rebuild: no question', what='no question')
+    c.check_errors()
+
+
+@case('L76', 'Données: the minimum before the redesign (SOG-0228) — « Paquets de pays » is folded when the screen opens, a note says what « Zones de la couverture (n) » counts, and a tap on « n à reconstruire » ticks those zones, shows them alone and says what to do', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0228 (the user: « j’ai « 68 à jour, 7 à reconstruire ». je clique sur le bouton, j’ai l’impression qu’il ne se passe rien… je ne sais pas quoi faire pour reconstruire ces 7 … replier « paquets de pays ». expliquer pourquoi « zone de la couverture » est suivi d’un « 75 » »): the packs are folded at the opening (and kept as the pilot leaves them); the count of the coverage is explained; a number of the balance (to rebuild, failed) ticks its zones, reduces the list to them, brings the list into view and says in one line what to do')
+def l76(c):
+    lang = c.lang
+    T = lambda k: _trow(k, lang, after='  balLine: {')
+    st = _launcher(c, [], verbs=_VERBS)
+    st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'fr': _zst('stale', _NEWER), 'gb': _zst('stale', _NEWER), 'us': _zst('stale', _NEWER)})
+    cfg = _packs_cfg()
+    _open(c, cfg)
+    _all_open(c)
+    c.until("!!document.querySelector('[data-packs-fold]') && document.querySelectorAll('[data-zstate]').length === 5 && !!document.querySelector('[data-balance]')", timeout=10000, what='the packs fold, the pills and the balance')
+    # ---- (a) the packs are folded at the opening; opened by hand, they stay so
+    c.eq(c.js("document.querySelector('[data-packs-fold]').open"), False, '« Paquets de pays » is folded when the screen opens', what='packs folded')
+    c.eq(norm(c.text('[data-packs-fold] > summary')), norm(_trow('title', lang, after='  packs: {')), 'its summary is its title', what='packs summary')
+    c.js("document.querySelector('[data-packs-fold]').open = true")
+    c.tap('[data-build-zone=ca]')
+    c.eq(c.js("document.querySelector('[data-packs-fold]').open"), True, 'opened by hand: kept across a redraw', what='packs kept open')
+    c.tap('[data-build-zone=ca]')
+    c.js("document.querySelector('[data-packs-fold]').open = false")
+    # ---- (c) what the number of « Zones de la couverture (n) » counts
+    n_zones = c.js("document.querySelectorAll('[data-build-zone]').length")
+    m_zones = len(cfg['zones'])
+    c.eq(norm(c.text('[data-zones-note]')), norm(_trow('zonesNote', lang).replace('{n}', str(n_zones)).replace('{m}', str(m_zones))), 'a line says what the number counts: the zones the base covers on this workstation, of those the suite knows', what='zones note')
+    # ---- (b) a tap on « n à reconstruire »: the zones are ticked, alone in the list, in view, with the line that says what to do
+    c.js("document.querySelector('[data-build-zone=fr]').click()")   # untick one: the tap must tick it back
+    c.tap('[data-balance] [data-filter=rebuild]')
+    c.until("document.querySelectorAll('[data-zone-row]').length === 3 && !!document.querySelector('[data-filter-line]')", timeout=6000, what='the three zones to rebuild, alone, with their line')
+    c.eq(c.js("[...document.querySelectorAll('[data-zone-row]')].map(r => [r.dataset.zoneRow, r.querySelector('[data-build-zone]').checked])"), [['fr', True], ['gb', True], ['us', True]], 'the zones to rebuild are the only ones listed and they are ticked', what='ticked')
+    want = norm(T('rebuild').replace('{n}', '3').replace('(s)', 's' if lang in ('fr', 'en', 'es') else '').replace('(n)', 'n').replace('(e)', 'e'))
+    c.ok(c.text('[data-filter-line]').strip() != '' and '3' in c.text('[data-filter-line]'), c.text('[data-filter-line]'), 'one line says what to do: ' + want)
+    c.until("(() => { const r = document.querySelector('[data-zones-title]').getBoundingClientRect(); return r.bottom > 0 && r.top < window.innerHeight })()", timeout=4000, what='the list is brought into view')
+    if c.width in (390, 1280):
+        c.shot(f'L76_standard_{c.width}_{lang}_delivered.png')
+    c.tap('[data-balance] [data-filter=rebuild]')
+    c.until("document.querySelectorAll('[data-zone-row]').length === 5 && !document.querySelector('[data-filter-line]')", timeout=6000, what='the whole list again, the line gone')
     c.check_errors()

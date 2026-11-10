@@ -667,6 +667,7 @@ function choiceHtml(set, busy) {
     ${bal.html}
     ${packsHtml()}
     <h4 data-zones-title>${esc(tt(TX.zonesTitle, { n: ids.length }))}</h4>
+    <p class="f-muted" data-zones-note>${esc(tt(TX.zonesNote, { n: ids.length, m: S.d.zones.length }))}</p>${S.zoneFilter && bal.groups ? `<p class="f-ok" data-filter-line>${esc(tt(TX.balLine[S.zoneFilter], { n: shown.length }))}</p>` : ''}
     <div class="d-opts" data-build-zones>${shown.map(z => `<div class="d-zrow" data-zone-row="${esc(z)}">${optHtml('data-build-zone', z, M.zoneName(S.d.zones, z, li()), S.ticked?.has(z), busy)}${zoneStateHtml(z)}${zoneActionHtml(z)}</div>`).join('')}</div>
     ${pers.length ? `<h3>${esc(tt(TX.personalTitle))}</h3><div data-personal-box>
       <label class="d-opt"><input type="checkbox" data-certify${S.certified ? ' checked' : ''}${busy ? ' disabled' : ''}><span><b>${esc(tt(TX.certify))}</b></span></label>

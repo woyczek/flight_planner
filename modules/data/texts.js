@@ -163,7 +163,9 @@ export const TX = {
       'Die FAA verweigert das automatische Herunterladen: holen Sie die drei Datensätze des Zyklus (FIX, AWY, NAV) von {l}, dann für jeden „Datei wählen…“.',
       'La FAA rechaza la descarga automática: tome los tres conjuntos del ciclo (FIX, AWY, NAV) de {l}, luego «Elegir el archivo…» para cada uno.'
     ],
-    nasrWait: ['NASR de la FAA : reçu {h}, il manque {m}.', 'FAA NASR: received {h}, {m} still missing.', 'NASR der FAA: erhalten {h}, es fehlt {m}.', 'NASR de la FAA: recibido {h}, falta {m}.'],
+    nasrWait: ['NASR de la FAA : reçu {h}, il manque {m}.', 'FAA NASR: received {h}, {m} still missing.',
+      'NASR der FAA: erhalten {h}, es fehlt {m}.', 'NASR de la FAA: recibido {h}, falta {m}.'
+    ],
     nasrPage: ['la page des abonnements NASR', 'the NASR subscription page', 'der NASR-Abonnementseite',
       'la página de suscripciones del NASR'
     ],
@@ -294,6 +296,31 @@ export const TX = {
     building: ['En cours', 'Running', 'Läuft', 'En curso']
   },
   // le bilan en une ligne sous « Mettre à jour » (SOG-0180) : chaque nombre est un bouton qui n'affiche que ses zones
+  // la ligne qui suit un nombre du bilan touché (SOG-0228) : ce que sont les zones montrées et quoi faire
+  balLine: {
+    rebuild: ['{n} zone(s) à reconstruire, cochée(s) ci-dessous : « Mettre à jour » s’en charge.',
+      '{n} zone(s) to rebuild, ticked below: “Update” takes care of it.',
+      '{n} Zone(n) neu zu bauen, unten angekreuzt: „Aktualisieren“ übernimmt das.',
+      '{n} zona(s) por reconstruir, marcada(s) abajo: «Actualizar» se encarga.'
+    ],
+    failed: ['{n} zone(s) en échec, cochée(s) ci-dessous : « Mettre à jour » s’en charge.',
+      '{n} zone(s) failed, ticked below: “Update” takes care of it.',
+      '{n} Zone(n) fehlgeschlagen, unten angekreuzt: „Aktualisieren“ übernimmt das.',
+      '{n} zona(s) con fallo, marcada(s) abajo: «Actualizar» se encarga.'
+    ],
+    waiting: ['{n} zone(s) en attente d’un fichier : « Prendre le fichier téléchargé » est sur chaque ligne.',
+      '{n} zone(s) waiting for a file: “Take the downloaded file” is on each line.',
+      '{n} Zone(n) mit ausstehender Datei: „Heruntergeladene Datei übernehmen“ steht in jeder Zeile.',
+      '{n} zona(s) a la espera de un archivo: «Tomar el archivo descargado» está en cada línea.'
+    ],
+    upToDate: ['{n} zone(s) à jour.', '{n} zone(s) up to date.', '{n} Zone(n) aktuell.', '{n} zona(s) al día.']
+  },
+  // ce que compte le nombre de « Zones de la couverture (n) » (SOG-0228) : les zones que la base couvre sur ce poste, sur celles que la suite connaît
+  zonesNote: ['Les zones que la base couvre sur ce poste : {n} sur les {m} que la suite connaît.',
+    'The zones the base covers on this workstation: {n} of the {m} the suite knows.',
+    'Die Zonen, die die Basis auf diesem Rechner abdeckt: {n} von den {m}, die die Suite kennt.',
+    'Las zonas que la base cubre en este equipo: {n} de las {m} que conoce la suite.'
+  ],
   bal: {
     upToDate: [
       ['{n} à jour', '{n} up to date', '{n} aktuell', '{n} al día'],

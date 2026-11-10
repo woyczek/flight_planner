@@ -106,6 +106,9 @@ export const STYLE = `
 [data-module="data"] .d-choice [data-packs] details.d-pack-countries>.d-opts{max-height:min(40vh,260px);overflow-y:auto}
 [data-module="data"] details.d-pack-countries>.d-opts>.d-zrow{padding-left:28px}
 [data-module="data"] details.d-pack>summary.d-packline,[data-module="data"] details.d-pack>summary{min-height:var(--sog-touch);display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;cursor:pointer}
+[data-module="data"] details.d-packs-fold>summary{min-height:var(--sog-touch);display:flex;align-items:center;cursor:pointer}
+[data-module="data"] details.d-packs-fold>summary h3{margin:0}
+[data-module="data"] [data-zones-title]{scroll-margin-top:72px}
 [data-module="data"] .d-packname{flex:1 1 9em;min-width:0}
 [data-module="data"] .d-switch{min-height:var(--sog-touch)}
 [data-module="data"] .d-link{background:none;border:0;padding:0 4px;margin-left:auto;font-size:.875em;color:var(--sog-accent,currentColor);text-decoration:underline;cursor:pointer;min-height:var(--sog-touch)}

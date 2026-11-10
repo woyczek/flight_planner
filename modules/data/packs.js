@@ -88,10 +88,10 @@ export function packsHtml() {
     themes = packs.filter(p => p.kind === 'theme'),
     tab = (S.packTab === 'themes' && themes.length) || !regions.length ? 'themes' : 'regions',
     btn = (k, n) => `<button type="button" data-pack-tab="${k}" aria-pressed="${tab === k}">${esc(tt(k === 'regions' ? TX.packs.regions : TX.packs.themes))} (${n})</button>`;
-  return `<div data-packs><h3>${esc(tt(TX.packs.title))}</h3>
+  return `<details class="d-packs-fold" data-packs-fold${S.packsOpen ? ' open' : ''}><summary><h3>${esc(tt(TX.packs.title))}</h3></summary><div data-packs>
     ${regions.length && themes.length ? `<div class="d-tabs" data-pack-tabs>${btn('regions', regions.length)}${btn('themes', themes.length)}</div>` : ''}
     ${regions.length ? `<ul class="d-packs" data-pack-regions${tab === 'regions' ? '' : ' hidden'}>${regions.map(regionRow).join('')}</ul>` : ''}
-    ${themes.length ? `<div data-pack-themes-box${tab === 'themes' ? '' : ' hidden'}><p class="f-muted">${esc(tt(TX.packs.themesHint))}</p><ul class="d-packs" data-pack-themes>${themes.map(themeRow).join('')}</ul></div>` : ''}</div>`;
+    ${themes.length ? `<div data-pack-themes-box${tab === 'themes' ? '' : ' hidden'}><p class="f-muted">${esc(tt(TX.packs.themesHint))}</p><ul class="d-packs" data-pack-themes>${themes.map(themeRow).join('')}</ul></div>` : ''}</div></details>`;
 }
 /** L'onglet des paquets (Régions | Thèmes) : le choix tient d'un dessin à l'autre. */
 export function setPackTab(tab) {

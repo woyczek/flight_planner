@@ -158,7 +158,13 @@ export function balance() {
 export function setZoneFilter(key) {
   const k = ['upToDate', 'rebuild', 'failed', 'waiting'].includes(key) ? key : null;
   S.zoneFilter = k && S.zoneFilter !== k ? k : null;
+  // un nombre à reconstruire ou en échec : ces zones sont COCHÉES (« Mettre à jour » les prend) et la liste vient sous les yeux (SOG-0228 : « je ne sais pas quoi faire pour reconstruire ces 7 »)
+  const groups = S.zoneFilter ? balance().groups : null;
+  if (groups && (S.zoneFilter === 'rebuild' || S.zoneFilter === 'failed')) S.ticked = new Set(groups[S.zoneFilter]);
   renderBuild();
+  if (S.zoneFilter) setTimeout(() => S?.body?.querySelector('[data-zones-title]')?.scrollIntoView({
+    block: 'start'
+  }), 80); // après le dessin et la relecture qui peut le suivre (la page ne se remet pas à sa place ensuite)
 }
 /** La page des abonnements du NASR de la FAA (le lien direct des trois jeux : FIX, AWY, NAV). */
 const NASR_URL = 'https://www.faa.gov/air_traffic/flight_info/aeronav/aero_data/NASR_Subscription/';

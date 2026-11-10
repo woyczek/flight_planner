@@ -452,3 +452,9 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
 - **User's words**: « non. mettre le chevron d'ouverture sur la ligne même, et réduire le bouton, voire le remplacer par une url ! » and « les gros boutons « mettre à jour » auraient pu être alignés à droite (et beaucoup plus petits) ».
 - **Done**: the summary of the pack's fold is the pack's line (chevron, switch, name, counts, link at the right); the switch is a box alone with the name as its accessible name (a tap on the name unfolds; before, it toggled the whole pack under the finger). The 44 px touch height stays (invisible).
 - **Counter-test**: L66 (the switch in the summary, the link at the right of a one-line-high line from 700 px, no filled button), L68 unchanged.
+
+## 10 November 2026 — the minimum before the redesign of the base screen (SOG-0228; the redesign is SOG-0229)
+
+- **User's words**: « j'ai « 68 à jour, 7 à reconstruire ». je clique sur le bouton, j'ai l'impression qu'il ne se passe rien […] je ne sais pas quoi faire pour reconstruire ces 7 […] replier « paquets de pays » […] expliquer pourquoi « zone de la couverture » est suivi d'un « 75 ». »
+- **Done, nothing more** (the ergonomist's challenge: the whole screen is redone from the specifications; a bigger dressing would be undone): packs folded at the opening; a number of the balance ticks its zones, shows them alone, brings them into view and says what to do; the count of the coverage explained; the update links of the packs small and at the right (SOG-0186).
+- **Counter-test**: L76 (folded and kept, the note with its two numbers, the three zones ticked and alone and in view with their line, the second tap back to the whole list); L44, L66, L68 open the fold first.
