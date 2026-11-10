@@ -4,8 +4,8 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7dd28b7",
-  "fiches": 197,
+  "organisation": "da850c0",
+  "fiches": 198,
   "untranslated": 1,
   "priorities": 152
  },
@@ -2482,6 +2482,27 @@
      "es": "Integrar FuelDashboard V2 en Mantenimiento V3",
      "milestone": "6.0.0-beta.1",
      "rank": 135
+    }
+   ]
+  },
+  {
+   "id": "maintenance-meteo-cadre-relais",
+   "app": "maintenance",
+   "label": {
+    "fr": "Météo ; cadre (relais)",
+    "en": "Météo ; cadre (relais)",
+    "de": "Météo ; cadre (relais)",
+    "es": "Météo ; cadre (relais)"
+   },
+   "items": [
+    {
+     "id": "SOG-0198",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Météo : « prévision de la grille injoignable (hors ligne) » pendant la construction du synoptique, alors que le réseau est là",
+     "en": "Weather: “grid forecast unreachable (offline)” while the synoptic is being built, although the network is there",
+     "de": "Wetter: „Gittervorhersage nicht erreichbar (offline)“ während des Aufbaus der Synoptik, obwohl das Netz da ist",
+     "es": "Meteo: «previsión de la malla inalcanzable (sin conexión)» durante la construcción del sinóptico, aunque hay red"
     }
    ]
   },
