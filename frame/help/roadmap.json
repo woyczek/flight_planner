@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "8dbf6db",
+  "organisation": "e6c9bec",
   "fiches": 197,
   "untranslated": 1,
   "priorities": 152
@@ -2033,7 +2033,7 @@
     {
      "id": "SOG-0194",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Carburant : « Nouveau vol » ne vide rien tout de suite ; la carte à côté ne se redimensionne ni ne se déplace plus",
      "en": "Fuel: “New flight” clears nothing at once; the side map can no longer be resized or moved",
      "de": "Kraftstoff: „Neuer Flug“ leert nichts sofort; die Karte daneben lässt sich nicht mehr verschieben oder skalieren",
