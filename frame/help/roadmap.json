@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "924d966",
+  "organisation": "8dbf6db",
   "fiches": 197,
   "untranslated": 1,
   "priorities": 152
@@ -1824,7 +1824,7 @@
     {
      "id": "SOG-0174",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Des données aéronautiques pour TOUS les pays, à commencer par l'Europe et les États-Unis",
      "en": "Aeronautical data for ALL countries, starting with Europe and the United States",
      "de": "Luftfahrtdaten für ALLE Länder, zuerst Europa und die USA",
