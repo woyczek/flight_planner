@@ -45,9 +45,9 @@ on the same data. The CPCO (authoring) stays V2 until rebuilt as the third appli
 ## 3. The list: choose, or draw
 
 - **The current airline** (V3 spec § 10.38 step 1): a mission names its airline (`airline: <code>` in its registry row or its file,
-  `MS.airlineCode`, `^[a-z0-9]{2,8}$`); without it, it belongs to the first airline of the index. The list shows the current airline's
-  missions and is drawn again on `frame-data-airline`; « Personnel » has no airline missions (an empty list, said); without an index
-  (code `default`), every mission as before (N8; N2, N7 without index).
+  `MS.airlineCode`, `^[a-z0-9]{2,8}$`); without it, it is PERSONAL (`MS.ownerOf` → `perso`; user, 10 Nov: never the first airline
+  of the index). The list shows the current airline's missions (`MS.ownerOf(row) === code`; « Personnel » shows the personal ones) and
+  is drawn again on `frame-data-airline`; without an index (code `default`), every mission as before (N8, N17; N2, N7 without index).
 - **Categories** (V3 spec § 10.38, SOG-0041): a mission says its `category` (registry row or file, `MS.categoryOf`, an id of the form
   of `frame/lib/mission_categories.js`); the airline's categories are its `categories.json` (`FrameData.airline().root`, untrusted,
   filtered by `forAirline`; absent: the common base), the groups active for its kind (`commercial` for `va` and « personnel »). A filter

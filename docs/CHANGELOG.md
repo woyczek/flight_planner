@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Missions: a mission that names no airline is personal** (`frame/lib/mission.js` `ownerOf` / `missionsFor`; Missions SPEC, DECISIONS, help;
+  noreg N17, N8 adapted). It is listed under « Personnel », never under the first airline of the index.
 - **Fuel and Map: the North Atlantic coordinates are route points** (`frame/lib/route_text.js`; DECISIONS; noreg F134; SOG-0211).
   « 5520N » (55°N 020°W) and « 55N20 » (55°N 120°W) are read, placed and counted in the distance, as ddmmNdddmmW and ddNdddW already were.
 - **Map: the ground of an aerodrome never read is asked by the Map itself, once** (`modules/maps/ground.js`; DECISIONS; noreg D155; SOG-0203). When the view shows a departure, arrival or alternate

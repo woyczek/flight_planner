@@ -78,3 +78,9 @@
 - **10 Nov 2026 — the family of the drawn mission** (SOG-0187, user: « tirer au sort une famille : il n'y a plus que le titre court »): the
   sheet's title kept the family's code alone; it now says « **SAR** · Récupération de personnel » on a line of its own under the title
   (famHtml, the function of the list headings). N15; counter-test on origin/v3: the code alone.
+- **10 Nov 2026 — a mission without `airline` is personal** (user, 15 h 50: « toutes les missions sont « ITF », alors qu'en vrai, elles
+  sont perso »; his index has « itf » first, no mission names an airline, so the rule of 9 Nov put them all in ITF): `MS.ownerOf(row)`
+  is the code the mission names, else `perso`, never the first airline of the index; « Personnel » lists them instead of « pas de
+  missions de compagnie ». `MS.missionsFor(rows, code)` is the same rule for Settings' « n missions préparées ». N17 (itf first in the
+  index: a mission without the field is under Personnel, not under itf; `airline: defa` under defa); counter-test on origin/v3: the
+  mission without the field listed under itf. N8 adapted.

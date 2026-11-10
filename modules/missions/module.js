@@ -95,12 +95,6 @@ const TX = {
   back: ['Retour', 'Back', 'Zurück', 'Volver'],
   more: ['{n} autres', '{n} more', '{n} weitere', '{n} más'],
   count: ['{n} missions', '{n} missions', '{n} Missionen', '{n} misiones'],
-  // § 10.38 : la compagnie « personnel » n'a pas de missions de compagnie
-  persoNone: ['Compagnie « Personnel » : pas de missions de compagnie. Choisissez une compagnie dans Réglages › Compagnie.',
-    'Airline « Personnel »: no airline missions. Choose an airline in Settings › Airline.',
-    'Gesellschaft „Personnel“: keine Missionen der Gesellschaft. Wählen Sie eine Gesellschaft unter Einstellungen › Fluggesellschaft.',
-    'Compañía «Personnel»: no hay misiones de compañía. Elija una compañía en Ajustes › Compañía.'
-  ],
   none: ['Aucune mission dans le dépôt (missions/mission_registry.yaml).',
     'No mission in the repository (missions/mission_registry.yaml).',
     'Keine Mission im Repository (missions/mission_registry.yaml).',
@@ -308,9 +302,9 @@ export function unmount() {
   S = null;
 }
 
-/** La compagnie courante pour la liste (§ 10.38 étape 1) : { code, first, filter } — code : celle de l'appareil ; first : la première
- *  compagnie de l'index (où va une mission sans champ airline) ; filter : faux sans index (code « default », ou un cadre sans
- *  FrameData.airline) : toutes les missions, comme avant la migration. */
+/** La compagnie courante pour la liste (§ 10.38 étape 1) : { code, filter, a } — code : celle de l'appareil (« perso » : les missions
+ *  personnelles, celles sans champ airline) ; filter : faux sans index (code « default », ou un cadre sans FrameData.airline) : toutes
+ *  les missions, comme avant la migration. */
 async function airlineOf() {
   try {
     const FD = window.FrameData;
@@ -319,12 +313,10 @@ async function airlineOf() {
       first: '',
       filter: false
     };
-    const [a, list] = await Promise.all([FD.airline(), FD.airlines()]),
-      code = String(a?.code || ''),
-      first = String(list?.[0]?.code || '');
+    const a = await FD.airline(),
+      code = String(a?.code || '');
     return {
       code,
-      first,
       filter: !!code && code !== 'default',
       a
     };
@@ -344,8 +336,8 @@ async function categoriesOf(ctx, a) {
 }
 /** La catégorie d'une ligne, si la compagnie la connaît ({ id, names, load? }) ; null sinon (une catégorie inconnue est ignorée). */
 const catOf = (s, r) => r.category ? s.cats.all.find(c => c.id === r.category) || null : null;
-/** Une mission de la compagnie courante : son champ airline, sinon la première compagnie de l'index ; toutes sans index. */
-const ofAirline = (s, r) => !s.co?.filter || (r.airline || s.co.first) === s.co.code;
+/** Une mission de la compagnie courante : celle que nomme son champ airline, personnelle sans lui (MS.ownerOf) ; toutes sans index. */
+const ofAirline = (s, r) => !s.co?.filter || MS.ownerOf(r) === s.co.code;
 
 /** Les missions que ce pilote a volées : les comptes rendus (cr/reports/) qui nomment une mission, les miens ou sans auteur. */
 async function flownOf(s) {
@@ -383,8 +375,6 @@ const day = d => /^\d{4}-\d{2}-\d{2}$/.test(d) ? d.split('-').reverse().join('/'
 /** La liste : « Tirer au sort », recherche, famille, puis les résultats (resultsHtml). */
 function listHtml(s) {
   const w = s.regWhy;
-  // « personnel » n'a pas de missions de compagnie : la liste vide, dite
-  if (s.co?.filter && s.co.code === 'perso') return `<div class="f-card"><p class="f-muted" data-why="perso">${esc(s.tt(TX.persoNone))}</p></div>`;
   if (!s.rows.length) return `<div class="f-card"><p class="f-muted" data-why="${esc(w?.why || 'none')}">${esc(w?.why === 'loading' ? s.tt(TX.regLoading) : w?.why === 'late' ? s.tt(TX.regLate) : w?.why === 'unreadable' ? s.tt(TX.regUnreadable, { e: w.err }) : s.tt(TX.none))}</p></div>`;
   const families = [...new Set(s.rows.filter(r => ofAirline(s, r)).map(r => r.family).filter(Boolean))].sort(),
     // les catégories connues de la compagnie que ses missions portent, dans l'ordre de sa liste ; sans elles, pas de filtre

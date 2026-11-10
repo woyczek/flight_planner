@@ -29,7 +29,9 @@
     readRegistry,
     icaoOf,
     levelFt,
-    missionFlight
+    missionFlight,
+    ownerOf,
+    missionsFor
   } from '../mission.js?v=0';
   const out = document.getElementById('out'),
     rows = [];
@@ -261,6 +263,26 @@
     .folder === '' &&
     bad[1].file === '' && bad[2].folder === '' && bad[3].folder === 'É_TEST/X-009D' && bad[3].file === 'missionX-009D.yaml', JSON
     .stringify(bad));
+
+  // à qui appartient une mission (l'utilisateur, 10 nov. 15 h 50) : son champ airline, sinon « perso », jamais la première de l'index
+  const owned = [{
+    id: 'A',
+    airline: 'defa'
+  }, {
+    id: 'B'
+  }, {
+    id: 'C',
+    airline: 'ITF<x>'
+  }, {
+    id: 'D',
+    airline: 'itf'
+  }];
+  ck('ownerOf : le code nommé, sinon perso (un code d\'une autre forme : perso)', owned.map(ownerOf).join() === 'defa,perso,perso,itf',
+    owned.map(ownerOf).join());
+  ck('missionsFor : les missions d\'une compagnie, les personnelles sous perso', missionsFor(owned, 'perso').map(r => r.id).join() ===
+    'B,C' &&
+    missionsFor(owned, 'itf').map(r => r.id).join() === 'D' && missionsFor(null, 'itf').length === 0, missionsFor(owned, 'perso').map(r =>
+      r.id).join());
 
   window.__bench = {
     done: true,

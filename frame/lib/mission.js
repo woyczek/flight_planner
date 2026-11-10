@@ -251,12 +251,20 @@ const safeFolder = f => f && f.length <= 200 && f.split('/').every(p => SEGMENT.
 const safeFile = f => f && f.length <= 120 && SEGMENT.test(f) && /\.ya?ml$/i.test(f) ? f : '';
 
 /** Les lignes du registre (voir l'en-tête). */
-/** La compagnie d'une mission (§ 10.38 étape 1) : le code de son champ airline (^[a-z0-9]{2,8}$, la règle des codes du cadre), ''
- *  sans champ ou pour un code d'une autre forme (une entrée non fiable : la mission va alors à la première compagnie de l'index). */
 /** L'identifiant de catégorie d'une mission (voir l'en-tête) : un texte de la forme des identifiants de catégorie, '' sinon (le fichier
  *  est écrit par n'importe quel pilote, audit 157 ; une catégorie inconnue de la compagnie est ignorée par le lecteur qui la cherche). */
 export const categoryOf = v => typeof v === 'string' && /^[a-z0-9][a-z0-9-]{0,23}$/.test(v.trim()) ? v.trim() : '';
+/** La compagnie d'une mission (§ 10.38 étape 1) : le code de son champ airline (^[a-z0-9]{2,8}$, la règle des codes du cadre), ''
+ *  sans champ ou pour un code d'une autre forme (une entrée non fiable : la mission est alors personnelle, ownerOf). */
 export const airlineCode = v => typeof v === 'string' && /^[a-z0-9]{2,8}$/.test(v.trim()) ? v.trim() : '';
+/** Le code de la compagnie « Personnel ». */
+export const PERSONAL = 'perso';
+/** À qui appartient une mission (l'utilisateur, 10 nov. 15 h 50 : « toutes les missions sont « ITF », alors qu'en vrai, elles sont
+ *  perso ») : la compagnie que nomme son champ airline, sinon PERSONAL — jamais « la première compagnie de l'index ». */
+export const ownerOf = row => airlineCode(row?.airline) || PERSONAL;
+/** Les missions (lignes de readRegistry / rowOfMission) d'une compagnie : celles dont ownerOf est son code (Missions, et le compte
+ *  « n missions préparées » de Réglages › Rejoindre). */
+export const missionsFor = (rows, code) => (Array.isArray(rows) ? rows : []).filter(r => ownerOf(r) === code);
 export function readRegistry(doc) {
   return (Array.isArray(doc?.missions) ? doc.missions : []).filter(x => x && clean(x.id)).map(x => {
     const id = clean(x.id);

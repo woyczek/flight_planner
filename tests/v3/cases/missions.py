@@ -366,28 +366,27 @@ _CO_REGISTRY = """missions:
 """
 
 
-@case('N8', 'Missions: the list follows the current airline (a mission\'s airline field, none = the first airline of the index); « personnel » has none, said; without an index, all',
+@case('N8', 'Missions: the list follows the current airline (a mission\'s airline field; none = personal, under « Personnel »); without an index, all',
       'N', tags=('missions',), designs=('standard',), screens=False, langs4=True,
-      rule='V3 spec 10.38 step 1: airline: <code> in the mission; absent = default / the first of the index; read again on frame-data-airline; perso: empty, said')
+      rule='V3 spec 10.38 step 1: airline: <code> in the mission, read again on frame-data-airline; absent = personal (user, 10 Nov 15 h 50, N17)')
 def n8(c):
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _CO_REGISTRY]] + [[f'missions/X_CO/{i}/mission{i}.yaml', mission_doc(i)] for i in ('X-101A', 'X-102A', 'X-103A')])
     c.open('missions', docs=airline_docs(), wait=False, app='company')
     c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id]')", timeout=15000, what='the list of missions')
-    c.eq(ids(c), ['X-102A', 'X-101A'], 'Alpha Air (first of the index): its mission and the one without airline', what='aaa')
+    c.eq(ids(c), ['X-101A'], 'Alpha Air (first of the index): its mission only', what='aaa')
     set_airline(c, 'bbb')
     c.until(f"[...document.querySelectorAll('{M} [data-list] [data-id]')].map(b => b.dataset.id).join() === 'X-103A'", what='Bravo Air: its mission only')
     set_airline(c, 'perso')
-    c.until(f"!!document.querySelector('{M} [data-why=perso]')", what='« personnel »: no airline missions, said')
-    c.eq(norm(c.text(f'{M} [data-why=perso]')), norm(row(c, 'persoNone')), 'the sentence', what='perso')
+    c.until(f"[...document.querySelectorAll('{M} [data-list] [data-id]')].map(b => b.dataset.id).join() === 'X-102A'", what='« personnel »: the mission without airline')
     # without an index every mission is listed, as before: N2 and N7, which seed no index
 
 
 _CAT_REGISTRY = """missions:
-  - { id: X-201A, family: TESTCO, title: Mission fret, category: fret, folder: X_CO/X-201A, files: [missionX-201A.yaml] }
-  - { id: X-202A, family: TESTCO, title: Mission passagers, category: passagers, folder: X_CO/X-202A, files: [missionX-202A.yaml] }
-  - { id: X-203A, family: TESTCO, title: Mission inconnue, category: zzz-inconnue, folder: X_CO/X-203A, files: [missionX-203A.yaml] }
-  - { id: X-204A, family: TESTCO, title: Mission sans catégorie, folder: X_CO/X-204A, files: [missionX-204A.yaml] }
+  - { id: X-201A, family: TESTCO, airline: aaa, title: Mission fret, category: fret, folder: X_CO/X-201A, files: [missionX-201A.yaml] }
+  - { id: X-202A, family: TESTCO, airline: aaa, title: Mission passagers, category: passagers, folder: X_CO/X-202A, files: [missionX-202A.yaml] }
+  - { id: X-203A, family: TESTCO, airline: aaa, title: Mission inconnue, category: zzz-inconnue, folder: X_CO/X-203A, files: [missionX-203A.yaml] }
+  - { id: X-204A, family: TESTCO, airline: aaa, title: Mission sans catégorie, folder: X_CO/X-204A, files: [missionX-204A.yaml] }
 """
 
 
@@ -779,3 +778,36 @@ def n16(c):
         c.tap('[data-module="fuel"] [data-mpane] [data-do="mclose"]')
         c.until("document.querySelector('[data-module=fuel] [data-mpane]').hidden", what='the pane closes')
         c.eq(c.js(_PANE_JS)['step'], before, f'{w} px: still the same step', what='step after closing')
+
+
+
+_OWN_REGISTRY = """missions:
+  - { id: X-111A, family: TESTCO, title: Mission sans champ, folder: X_CO/X-111A, files: [missionX-111A.yaml] }
+  - { id: X-112A, family: TESTCO, title: Mission Delta, airline: ddd, folder: X_CO/X-112A, files: [missionX-112A.yaml] }
+"""
+
+
+@case('N17', 'Missions: a mission that names no airline is personal — under « Personnel », never under the first airline of the index; a mission that names a code is under that code',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=True,
+      rule='user, 10 Nov 15 h 50: « toutes les missions sont « ITF », alors qu\'en vrai, elles sont perso » (his index has itf first, no mission names an '
+      'airline); MS.ownerOf / MS.missionsFor; invented codes iii (first of the index) and ddd; captures 390 and 1 280')
+def n17(c):
+    docs = [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'iii', 'name': 'India Air'}, {'code': 'ddd', 'name': 'Delta Air'}]}, 'document'],
+            ['airline/iii/settings.json', {'schema': 1, 'name': 'India Air', 'kind': 'va'}, 'document'],
+            ['airline/ddd/settings.json', {'schema': 1, 'name': 'Delta Air', 'kind': 'sog'}, 'document']]
+    lst = f"[...document.querySelectorAll('{M} [data-list] [data-id]')].map(b => b.dataset.id).join()"
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _OWN_REGISTRY]] + [[f'missions/X_CO/{i}/mission{i}.yaml', mission_doc(i)] for i in ('X-111A', 'X-112A')])
+        c.open('missions', docs=docs, wait=False, app='company')
+        c.until(f"!!document.querySelector('{M} [data-results] [data-count]')", timeout=15000, what='the list is drawn')
+        set_airline(c, 'iii')  # a choice of an earlier run may be kept: India Air, the first of the index, chosen
+        c.until(f"!!document.querySelector('{M} [data-results] [data-count]')", what='the list of India Air')
+        c.wait(300)
+        c.eq(c.js(lst), '', f'{w} px: India Air (first of the index): no mission (the one without airline is not its own)', what='iii')
+        set_airline(c, 'perso')
+        c.until(f"{lst} === 'X-111A'", what=f'{w} px: « Personnel »: the mission that names no airline')
+        c.shot(f'N17_{c.design}_{w}_{c.lang}.png')
+        set_airline(c, 'ddd')
+        c.until(f"{lst} === 'X-112A'", what=f'{w} px: Delta Air: the mission that names ddd')
