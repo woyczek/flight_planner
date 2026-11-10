@@ -2191,7 +2191,7 @@ function setAd(k, code) {
     }
     resolveRoute();
     scheduleWx();
-  }
+  } else if (r[k] !== was) scheduleWx(); // SOG-0205 : le dégagement saisi est pris tout de suite : sa météo relue (l'étape Météo le montre)
 }
 /** ⇄ (SOG-0127, comme RouteSim) : le départ et l'arrivée échangés. Les deux bouts changent : c'est un nouveau couple (newPair : la route,
  *  les procédures et l'OFP de l'aller sont effacés, jamais relus à rebours : les voies, la SID et la STAR ne se lisent pas dans l'autre

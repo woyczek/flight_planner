@@ -1582,3 +1582,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   passing notification. The launcher is checked at the tap (`RE.answers`, bounded) and its absence said in place of the routes, with
   « Réessayer »; the missing aerodromes are said instead of a silent return. F131 (a fake launcher whose jobs stop answering);
   counter-test on origin/v3: nothing said in place.
+- **10 Nov 2026 — the alternate taken at once** (SOG-0205, user: « à quel moment l'AD de dégagement est-il rafraîchi ? pas après sa
+  saisie, pour sûr. un a/r cartes -> fuel règle le souci »): `setAd` read the weather again for the departure and the arrival only; the
+  alternate's METAR came at the next mount. Now a changed alternate schedules the weather too; its name and its write (the Map beside
+  reads it) were already immediate (F133 checks the three). F133; counter-test on origin/v3: the alternate's weather never came.

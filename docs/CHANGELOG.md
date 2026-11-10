@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the alternate is taken at once** (`modules/fuel/module.js`; DECISIONS; noreg F133; SOG-0205). Its weather comes in the step
+  Weather as soon as it is typed, without going to the Map and back.
 - **Fuel: « Calculer A → B » and « Contrôler » never tap without an effect** (`modules/fuel/module.js`, `route_engine.js`; Fuel SPEC,
   DECISIONS, help; noreg F131; SOG-0208). A stopped launcher is said in place, « Disponible avec le lanceur du poste (il ne répond
   pas) », with « Réessayer ».

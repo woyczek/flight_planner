@@ -3797,3 +3797,28 @@ def f131(c):
     c.tap(f'{FUEL} [data-routealts] [data-rretry]')
     c.until(f"!!document.querySelector('{FUEL} [data-routealts] [data-rcheck], {FUEL} [data-routealts] [data-faults]')", timeout=12000,
             what='« Réessayer » checks the route once the launcher answers')
+
+
+
+@case('F133', 'The alternate typed on the step Flight is taken at once: its name under the field, written with the flight (for the Map beside), its weather in the step Weather — without any navigation',
+      'F', tags=('fuel', 'weather'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0205 (user: « à quel moment l\'AD de dégagement est-il rafraîchi ? pas après sa saisie, pour sûr. un a/r cartes -> fuel règle le souci »): '
+      'setAd skipped the weather for the alternate; read again only at a remount')
+def f133(c):
+    route_metar(c, {'LFRS': (270, 10), 'LFML': (300, 12), 'LFMT': (320, 18)})
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['route']['altn'] = ''
+    c.open('fuel', docs=docs, airfields=True)
+    wait_quote(c)
+    to_step(c, 2)
+    rows = f"[...document.querySelectorAll('{FUEL} [data-wx] .fu-wx .f-row b')].map(b => b.textContent.trim())"
+    c.until(f"{rows}.includes('LFML')", timeout=15000, what='the weather of the flight')
+    c.ok('LFMT' not in c.js(rows), c.js(rows), 'no alternate yet: LFMT not in the weather')
+    to_step(c, 0)
+    c.page.fill(f'{FUEL} input[data-k="altn"]', 'LFMT')
+    c.until_doc('pilot/ABC/current_flight.json', lambda d: d and (d.get('route') or {}).get('altn') == 'LFMT', 'the alternate written with the flight', timeout=8000)
+    c.until(f"(document.querySelector('{FUEL} [data-adline=altn]')?.textContent || '').toLowerCase().includes('lfmt test')", timeout=8000, what='its name under the field')
+    to_step(c, 2)
+    c.until(f"{rows}.includes('LFMT')", timeout=12000, what='the weather of the alternate, without leaving Fuel')
