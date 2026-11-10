@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "07b8088",
+  "organisation": "63b66ae",
   "fiches": 197,
   "untranslated": 1,
   "priorities": 152
@@ -1526,7 +1526,7 @@
     {
      "id": "SOG-0187",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Missions, tirer au sort une famille : le sigle seul, sans le nom long",
      "en": "Missions, drawing a family: the acronym alone, without the long name",
      "de": "Missionen, Familie auslosen: nur das Kürzel, ohne den langen Namen",
