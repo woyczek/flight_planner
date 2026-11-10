@@ -628,7 +628,7 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
   Map opened afterwards; never written on hover). Read as an untrusted input (`altsSanitize`): schema 1, eight routes at most, 400
   points each, finite coordinates, `faulty` and `chosen` / `hovered` as integers within the list. The **chosen** route is drawn solid
   (the route's colour, 4.5 px), the **others faded** (38 % opacity, 3 px), the **hovered** one thick (7 px), the **faulty segments**
-  (`points[k] → points[k + 1]`) in red `#d6173f`; on the screens layer (`drawAlts`, after the map, before the labels' own screens),
+  (`points[k] → points[k + 1]`) in red `#d6173f`; the engine's word per segment (`control`, one entry per `points[k] → points[k + 1]`, kept only when no point was dropped) is drawn on top: `controlled` solid, `incomplete` dashed, `fallback` dotted, `error` red like a faulty segment, `null` as normal, with a key line on the card when any is said; on the screens layer (`drawAlts`, after the map, before the labels' own screens),
   hits in `S.altHits`. Only for the flight's own pair: `dep` / `arr` of the publication equal the flight's, else nothing; never on a
   mission map nor while choosing on the map. `alternatives: []` clears.
 - **What it hands back**: a tap within 9 px of a drawn route (or on its row of the list) is « Take » (`altsPick`): in the double view

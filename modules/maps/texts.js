@@ -227,6 +227,11 @@ export const TX = {
   spMore: ['{n} autres', '{n} more', '{n} weitere', '{n} más'],
   altTitle: ['Itinéraires proposés', 'Proposed routes', 'Vorgeschlagene Routen', 'Rutas propuestas'],
   altCheck: ['Route contrôlée', 'Checked route', 'Geprüfte Route', 'Ruta comprobada'],
+  altKey: ['plein : contrôlé · tireté : incomplet · pointillé : repli · rouge : erreur',
+    'solid: checked · dashed: incomplete · dotted: fallback · red: error',
+    'durchgezogen: geprüft · gestrichelt: unvollständig · gepunktet: Ersatz · rot: Fehler',
+    'continuo: comprobado · rayas: incompleto · puntos: sustituto · rojo: error'
+  ],
   altChosen: ['prise', 'taken', 'gewählt', 'elegida'],
   altFaulty: ['faute', 'fault', 'Fehler', 'falta'],
   corrNote: [

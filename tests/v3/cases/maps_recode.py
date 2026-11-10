@@ -4289,3 +4289,40 @@ def d135(c):
     # the announcement (AeroDB: change { ground }) reaches the open panel: the file is gone and the reading failed again
     c.js("async () => { window.__st = { state: 'failed', reason: 'too-soon', message: '' }; window.__have = false; (await import('/modules/maps/ground.js')).groundChanged('LFPO', false); return true }")
     c.until("() => { const f = document.querySelector('.mp-gd-fail'); return !!f && /(too soon|trop|zu kurz|demasiado)/i.test(f.textContent) }", timeout=6000, what='a failure announced while the panel is open is said, with its reason')
+
+_DASH_SPY_JS = """() => { window.__dash = []; const o = CanvasRenderingContext2D.prototype.setLineDash;
+  CanvasRenderingContext2D.prototype.setLineDash = function (a) { if (a && a.length) window.__dash.push(a.map(x => +x.toFixed(2))); return o.apply(this, arguments) }; return true }"""
+# the engine’s words are told apart from the other dashes of the Map by their signature: incomplete = [2.6 w, 1.6 w], fallback = [.1, 1.9 w]
+_DASH_KINDS_JS = """() => { const w = [3, 4.5, 7], inc = window.__dash.filter(a => w.some(x => Math.abs(a[0] - x * 2.6) < .05 && Math.abs(a[1] - x * 1.6) < .05)).length,
+  fb = window.__dash.filter(a => a[0] === .1 && w.some(x => Math.abs(a[1] - x * 1.9) < .05)).length; return { inc, fb } }"""
+
+
+@case('D136', 'Proposed routes: what the engine says of each segment is drawn — controlled solid, incomplete dashed, fallback dotted, error red', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='fuel INTEGRATION § 3 bis (SOG-0161): each alternative carries `control`, one entry per segment points[k] → points[k + 1] (controlled, incomplete, fallback, error, or null); the Map draws controlled solid, incomplete dashed, fallback dotted and error red like a faulty segment; the card gives the key')
+def d136(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js(_DASH_SPY_JS)
+    ev = "(d) => { window.dispatchEvent(new CustomEvent('fuel-route-alts', { detail: d })); return true }"
+    doc = _alts_doc()
+    c.js(ev, doc)    # no `control`: nothing dashed
+    c.until("() => (window.__mp.S.altHits || []).length === 2", timeout=8000, what='the routes are drawn')
+    c.wait(600)
+    c.eq(c.js(_DASH_KINDS_JS), {'inc': 0, 'fb': 0}, 'without `control` every segment is solid', what='dashes')
+    c.eq(c.js("() => !!document.querySelector('.mp-al-key')"), False, 'and the key is not shown', what='key')
+    doc['alternatives'][0]['control'] = ['fallback', 'incomplete', 'controlled']
+    doc['alternatives'][1]['control'] = ['error', None, 'bogus']
+    c.js(ev, doc)
+    c.until("() => { const w = [3, 4.5, 7]; return window.__dash.some(a => w.some(x => Math.abs(a[0] - x * 2.6) < .05)) }", timeout=8000, what='the dashes of the engine’s words')
+    k = c.js(_DASH_KINDS_JS)
+    c.ok(k['inc'] > 0, str(k), 'an incomplete segment is dashed (long dashes)')
+    c.ok(k['fb'] > 0, str(k), 'a fallback segment is dotted (round dots, wide gaps)')
+    c.eq(c.js("() => window.__mp.S.alts.list[1].control"), ['error', None, None], 'an unknown word is not kept', what='sanitized control')
+    c.until("() => !!document.querySelector('.mp-al-key')", timeout=4000, what='the key is on the card')
+    kt = c.js("() => document.querySelector('.mp-al-key').textContent")
+    c.ok(re.search(r'(pointillé|dotted|gepunktet|puntos)', kt), kt, 'it says what plain, dashed, dotted and red mean')
+    doc['alternatives'][0]['control'] = ['fallback', 'incomplete', 'controlled', 'error', 'error']
+    c.js(ev, doc)
+    c.eq(c.js("() => window.__mp.S.alts.list[0].control.length"), 3, 'one entry per segment at most', what='control length')

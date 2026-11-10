@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the proposed routes show what the engine says of each segment** (`modules/maps/alts.js`, `texts.js`, `style.js`; SPEC § 5.3, DECISIONS, help; noreg D136, D126;
+  SOG-0161). `control` of `route_alts.json`: controlled solid, incomplete dashed, fallback dotted, error red like a faulty segment, not said = as normal; a key line on the card.
+  Also fixes the `faulty` segments of a long route, which pointed at the wrong segments since the thinning of SOG-0156.
+
 - **Fuel: each route says how much of it is controlled** (`modules/fuel/route_engine.js`, `module.js`; Fuel SPEC § 9.3, INTEGRATION § 3 bis,
   DECISIONS, help; noreg F123; SOG-0161). « contrôlé 22 % · incomplet 65 % · repli 14 % » on its line, its sections by layer in a fold,
   « Prendre » repeating the share; the Map receives the control of each segment.

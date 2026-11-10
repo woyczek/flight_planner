@@ -9,8 +9,7 @@ import {
   S,
   esc,
   tt,
-  onMission,
-  thinPx
+  onMission
 } from './state.js';
 import {
   TX
@@ -24,6 +23,8 @@ const DOC = 'cache/fuel/route_alts.json',
   MAX_POINTS = 400,
   HIT_PX = 9,
   RED = '#d6173f';
+/** Ce que le moteur dit d'un tronçon (route/compute) : contrôlé, incomplet, repli, erreur. */
+const CONTROLS = ['controlled', 'incomplete', 'fallback', 'error'];
 const num = (v, lo, hi) => Number.isFinite(+v) && +v >= lo && +v <= hi;
 const clean = (v, n) => typeof v === 'string' ? v.replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n) : '';
 
@@ -38,7 +39,11 @@ export function altsSanitize(raw) {
       lon: +p[1]
     }));
     if (points.length < 2) continue;
+    // control (SOG-0161) : une entrée par tronçon points[k] → points[k + 1] ; lu seulement si aucun point n'a été écarté (les indices resteraient justes)
+    const control = Array.isArray(a.control) && a.points.length === points.length && a.points.length <= MAX_POINTS ?
+      a.control.slice(0, points.length - 1).map(v => CONTROLS.includes(v) ? v : null) : [];
     list.push({
+      control,
       index: Number.isInteger(a.index) ? a.index : list.length,
       name: clean(a.name, 60) || clean(a.route, 60),
       faulty: new Set((Array.isArray(a.faulty) ? a.faulty : []).filter(k => Number.isInteger(k) && k >= 0 && k < points.length - 1)
@@ -81,23 +86,40 @@ export function drawAlts(ctx, toC) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   for (const a of [...A.list].sort((x, y) => rank(x) - rank(y))) {
-    const q = thinPx(a.points.map(p => toC(p.lat, p.lon))), // un point par pixel au plus (SOG-0156)
+    const q = a.points.map(p => toC(p.lat, p
+        .lon)), // les indices des tronçons restent ceux de la route ; un point à moins d'un pixel du dernier tracé est sauté (SOG-0156)
       on = rank(a) > 0,
       w = a.index === hov ? 7 : a.index === A.chosen ? 4.5 : 3,
       run = (from, to) => {
         ctx.beginPath();
-        for (let i = from; i <= to; i++) i === from ? ctx.moveTo(q[i].x, q[i].y) : ctx.lineTo(q[i].x, q[i].y);
+        ctx.moveTo(q[from].x, q[from].y);
+        let last = q[from];
+        for (let i = from + 1; i <= to; i++) {
+          if (i < to && Math.abs(q[i].x - last.x) < 1 && Math.abs(q[i].y - last.y) < 1) continue;
+          ctx.lineTo(q[i].x, q[i].y);
+          last = q[i];
+        }
         ctx.stroke();
-      };
+      },
+      // le dessin d'un tronçon selon le moteur (SOG-0161) : contrôlé plein, incomplet en tireté, repli en pointillé, erreur en rouge comme un tronçon fautif
+      kind = k => a.faulty.has(k) || a.control[k] === 'error' ? 'error' : a.control[k] === 'incomplete' ? 'incomplete' : a.control[k] ===
+      'fallback' ? 'fallback' : 'ok',
+      dash = s => s === 'incomplete' ? [w * 2.6, w * 1.6] : s === 'fallback' ? [.1, w * 1.9] : [];
     ctx.globalAlpha = on ? 1 : .38;
     ctx.strokeStyle = bg;
     ctx.lineWidth = w + 3;
     run(0, q.length - 1);
-    ctx.strokeStyle = col;
     ctx.lineWidth = w;
-    run(0, q.length - 1);
-    ctx.strokeStyle = RED; // les tronçons fautifs, par-dessus
-    for (const k of a.faulty) run(k, k + 1);
+    for (let k = 0; k < q.length - 1;) { // des suites de tronçons de même sorte
+      const s = kind(k);
+      let e = k + 1;
+      while (e < q.length - 1 && kind(e) === s) e++;
+      ctx.strokeStyle = s === 'error' ? RED : col;
+      ctx.setLineDash(dash(s));
+      run(k, e);
+      k = e;
+    }
+    ctx.setLineDash([]);
     hits.push({
       index: a.index,
       q
@@ -151,7 +173,8 @@ export function altsCard() {
   if (!el) return;
   const A = current(),
     on = !!A && !dual() && A.list.length > 0,
-    html = on ? `<b class="mp-al-t">${esc(tt(A.mode === 'check' ? TX.altCheck : TX.altTitle))}</b>${A.list.map(a => `<button type="button" class="mp-al-row" data-alt="${a.index}" data-chosen="${a.index === A.chosen ? 1 : 0}" data-faulty="${a.faulty.size ? 1 : 0}"${A.mode === 'compute' ? '' : ' disabled'}><span class="mp-al-n">${esc(a.name || `#${a.index + 1}`)}</span>${a.index === A.chosen ? `<span class="mp-al-k">${esc(tt(TX.altChosen))}</span>` : ''}${a.faulty.size ? `<span class="mp-al-f">${esc(tt(TX.altFaulty))}</span>` : ''}</button>`).join('')}` : '';
+    said = on && A.list.some(a => a.control.some(Boolean)), // le moteur dit ses tronçons : la clef du dessin
+    html = on ? `<b class="mp-al-t">${esc(tt(A.mode === 'check' ? TX.altCheck : TX.altTitle))}</b>${said ? `<span class="mp-al-key f-muted">${esc(tt(TX.altKey))}</span>` : ''}${A.list.map(a => `<button type="button" class="mp-al-row" data-alt="${a.index}" data-chosen="${a.index === A.chosen ? 1 : 0}" data-faulty="${a.faulty.size ? 1 : 0}"${A.mode === 'compute' ? '' : ' disabled'}><span class="mp-al-n">${esc(a.name || `#${a.index + 1}`)}</span>${a.index === A.chosen ? `<span class="mp-al-k">${esc(tt(TX.altChosen))}</span>` : ''}${a.faulty.size ? `<span class="mp-al-f">${esc(tt(TX.altFaulty))}</span>` : ''}</button>`).join('')}` : '';
   if (el.hidden === on) el.hidden = !on;
   if (el.innerHTML !== html) el.innerHTML = html;
 }
