@@ -51,7 +51,7 @@ Was die Fluggesellschaft für die App veröffentlicht — die Luftfahrtdatenbank
 
 <a id="data-more"></a>**Die weiteren Datensätze.** Höchstens sieben Zeilen pro Gruppe; „n weitere Datensätze“ klappt den Rest und die nur erwogenen oder zurückgestellten Quellen auf (ihr Link, ihre Lizenz, ihr Status).
 
-<a id="data-build"></a>**Die Basis aufbauen.** Am Anfang der Gruppe Luftfahrtdatenbank wirkt das Feld „Herunterladen, aufbauen, bereinigen“ auf die angekreuzten Zonen, mit drei Schaltflächen in dieser Reihenfolge: Herunterladen · Aufbauen · Bereinigen. „Aufbauen“ baut die Basis der angekreuzten Zonen auf dem Starter dieses Rechners neu auf: Ein Browser ohne Fenster (Edge, sonst Chrome) erstellt die Zonen nacheinander, jede wird im Datenrepository gespeichert, sobald sie fertig ist. Zu Beginn sind alle Zonen der Abdeckung angekreuzt; wählen Sie die ab, die Sie nicht neu erstellen wollen. Die drei Schaltflächen sind zusammen grau, der Grund steht nur einmal darunter: „Der Starter des Rechners wird benötigt“, „Ein anderer Vorgang läuft“, „Mindestens eine Zone ankreuzen“, „Offline“.
+<a id="data-build"></a>**Die Basis aufbauen.** Am Anfang der Gruppe Luftfahrtdatenbank wirkt das Feld „Basis aktualisieren“ auf die angekreuzten Zonen, mit drei Schaltflächen in dieser Reihenfolge: Herunterladen · Aufbauen · Bereinigen. „Aufbauen“ baut die Basis der angekreuzten Zonen auf dem Starter dieses Rechners neu auf: Ein Browser ohne Fenster (Edge, sonst Chrome) erstellt die Zonen nacheinander, jede wird im Datenrepository gespeichert, sobald sie fertig ist. Zu Beginn sind alle Zonen der Abdeckung angekreuzt; wählen Sie die ab, die Sie nicht neu erstellen wollen. Die drei Schaltflächen sind zusammen grau, der Grund steht nur einmal darunter: „Der Starter des Rechners wird benötigt“, „Ein anderer Vorgang läuft“, „Mindestens eine Zone ankreuzen“, „Offline“.
 
 <a id="data-build-personal"></a>**Quellen mit persönlicher Lizenz.** ENAIRE (Spanien), NATS (Vereinigtes Königreich), AirNav (Irland) und die X-Plane-Daten werden aufgelistet, wenn eine angekreuzte Zone sie nutzt. **Ein einziges Häkchen** schaltet alle frei: „Ich bestätige, die Daten für meinen persönlichen Gebrauch zu nutzen“ (nie vorab angekreuzt: nur ankreuzen, wenn das Datenrepository nur von Ihnen genutzt wird). Angekreuzt wird es an diesem Rechner gemerkt, bei jedem Öffnen von Daten wieder angekreuzt und geht mit jedem „Herunterladen“, „Aufbauen“ und „Aktualisieren“ mit (alle Quellen zur persönlichen Nutzung der angekreuzten Zonen); nur sein eigenes Kästchen hebt es auf. Was proprietär ist (X-Plane, EUROCONTROL), wird **nur auf diesem Rechner gelesen**: nie in der veröffentlichten Basis noch in einem Export, mit oder ohne Häkchen. Wird X-Plane gelesen, läuft der Aufbau in der Seite, was hier noch nicht möglich ist: Er endet mit diesem Grund. Der Link „Quellen und Lizenzen“ öffnet die Seite, die jede Quelle aufführt (Herausgeber, Lizenz, Quellenangabe, Datum). Ein früheres angekreuztes Kästchen einer Quelle wird zum einen Häkchen.
 
@@ -92,7 +92,7 @@ Was die Fluggesellschaft für die App veröffentlicht — die Luftfahrtdatenbank
 - **Ohne Starter**: Der Bildschirm wird genauso gelesen; er zeigt, was veröffentlicht ist.
 - **Ein Lesevorgang schlägt fehl**: Der Abschnitt sagt es in einer Zeile, der Rest des Bildschirms wird gezeichnet.
 
-<!-- fr: 530e33de8509 -->
+<!-- fr: 7b42f59fe8d5 -->
 
 <!-- chapter: aircraft -->
 # Luftfahrzeuge

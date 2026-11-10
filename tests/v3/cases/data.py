@@ -388,7 +388,8 @@ def l2(c):
     c.eq([norm(x) for x in panel['lines']], [norm(tx(TX, 'licence', lang, after='personalLine: {'))] * 2 + [norm(tx(TX, 'xplane', lang, after='personalLine: {'))],
          'the personal-use line, the X-Plane variant for X-Plane', what='personal lines')
     c.eq([[r[0], norm(r[1])] for r in panel['reasons']], [['no-launcher', norm(_trow('no-launcher', lang, 'greyReason: {'))]], 'the grey button says why, once', what='reason')
-    c.ge(min(panel['labels'] + [panel['btn']]), 44, 'every checkbox line and the button are 44 px', what='touch height')
+    c.ge(min(panel['labels'] + ([panel['btn']] if False else [])), 44 if c.phone else 31, 'every checkbox line is 44 px for a finger, 32 px for a fine pointer (SOG-0168)', what='touch height')
+    c.ge(panel['btn'], 44, 'the button is 44 px', what='button height')
     c.eq([panel['journal']['open'], panel['journal']['last']], [False, True], 'the journal is the foot of the screen, folded', what='journal')
     c.ge(panel['journal']['h'], 44, 'its summary is a 44 px target', what='journal summary')
     c.le(m['sw'], m['iw'], 'no horizontal scroll', what='scrollWidth')
@@ -692,10 +693,11 @@ def _screen_ok(c, what):
     """No horizontal scroll, no element beyond the right edge, 44 px on the build panel's buttons and checkbox lines."""
     m = c.js("""() => { const b = document.querySelector('[data-build]'); return { sw: document.documentElement.scrollWidth, iw: window.innerWidth,
       over: [...b.querySelectorAll('*')].filter(e => e.getBoundingClientRect().width && e.getBoundingClientRect().right > window.innerWidth + 1).slice(0, 3).map(e => e.tagName + '.' + e.className),
-      hs: [...b.querySelectorAll('button, label.d-opt')].filter(e => e.offsetParent).map(e => Math.round(e.getBoundingClientRect().height)) } }""")
+      bs: [...b.querySelectorAll('button')].filter(e => e.offsetParent).map(e => Math.round(e.getBoundingClientRect().height)), ls: [...b.querySelectorAll('label.d-opt')].filter(e => e.offsetParent).map(e => Math.round(e.getBoundingClientRect().height)) } }""")
     c.le(m['sw'], m['iw'], f'{what}: no horizontal scroll', what='scrollWidth')
     c.ok(not m['over'], m['over'], f'{what}: nothing beyond the right edge')
-    c.ge(min(m['hs']), 44, f'{what}: buttons and checkbox lines are 44 px', what='touch height')
+    c.ge(min(m['bs']), 44, f'{what}: the buttons are 44 px', what='button height')
+    c.ge(min(m['ls'] or [99]), 44 if c.phone else 31, f'{what}: checkbox lines are 44 px for a finger, 32 px for a fine pointer', what='touch height')
 
 
 def _head(c):
@@ -2026,10 +2028,11 @@ def _panels_ok(c, what):
     m = c.js("""() => { const ps = [...document.querySelectorAll('[data-set-panel]')];
       return { sw: document.documentElement.scrollWidth, iw: window.innerWidth,
       over: ps.flatMap(b => [...b.querySelectorAll('*')].filter(e => e.getBoundingClientRect().width && e.getBoundingClientRect().right > window.innerWidth + 1)).slice(0, 3).map(e => e.tagName + '.' + e.className),
-      hs: ps.flatMap(b => [...b.querySelectorAll('button, label.d-opt, input[type=text]')].filter(e => e.offsetParent).map(e => Math.round(e.getBoundingClientRect().height))) } }""")
+      bs: ps.flatMap(b => [...b.querySelectorAll('button, input[type=text]')].filter(e => e.offsetParent).map(e => Math.round(e.getBoundingClientRect().height))), ls: ps.flatMap(b => [...b.querySelectorAll('label.d-opt')].filter(e => e.offsetParent).map(e => Math.round(e.getBoundingClientRect().height))) } }""")
     c.le(m['sw'], m['iw'], f'{what}: no horizontal scroll', what='scrollWidth')
     c.ok(not m['over'], m['over'], f'{what}: nothing beyond the right edge')
-    c.ge(min(m['hs']), 44, f'{what}: buttons, checkbox lines and the field are 44 px', what='touch height')
+    c.ge(min(m['bs']), 44, f'{what}: the buttons and the field are 44 px', what='button height')
+    c.ge(min(m['ls'] or [99]), 44 if c.phone else 31, f'{what}: checkbox lines are 44 px for a finger, 32 px for a fine pointer', what='touch height')
 
 
 def _all_open(c):
@@ -4164,13 +4167,21 @@ def l44(c):
     c.eq(c.js("document.querySelector('[data-pack-themes-box]').hidden"), True, 'the themes are behind their tab', what='hidden themes')
     c.tap('[data-pack-tab=themes]')
     c.eq([c.js("document.querySelector('[data-pack-regions]').hidden"), c.js("document.querySelector('[data-pack-themes-box]').hidden")], [True, False], 'the Thèmes tab shows the themes and hides the regions', what='tab switch')
-    c.js("document.querySelector('[data-pack-theme=iles]').open = true")
+    c.tap('[data-pack-theme=iles] > summary')   # a real touch on the title unfolds it
+    c.wait(400)
     cov0 = c.doc('cache/data/coverage.json')
     c.eq(c.js("[...document.querySelectorAll('[data-pack=iles] [data-pack-cov]')].map(i => [i.dataset.packCov, i.checked])"), [['gb', True], ['jp', False], ['es', True]], 'a tick per country: in the coverage or not (gb and es are, jp is not)', what='ticks')
     c.eq(c.count('[data-pack=iles] button'), 0, 'no button in a row of a theme', what='no button')
     geo = c.js("""() => { const r = e => e.getBoundingClientRect(), a = document.querySelector('[data-pack=iles] [data-pack-cov=gb]'), b = document.querySelector('[data-build-zone=gb]');
       return { dx: Math.abs(r(a).left - r(b).left), dh: Math.abs(r(a.closest('.d-zrow')).height - r(b.closest('.d-zrow')).height) } }""")
     c.ok(geo['dx'] <= 1 and geo['dh'] <= 1, geo, 'the ticks of a theme are in the same grid as the zones list: same column, same row height')
+    # the unfolded theme shows its switch and its countries in full, and the zones list follows it without overlap; a list row is 32 px with a fine pointer (mouse), 44 px with a finger (SOG-0168)
+    g = c.js("""() => { const r = e => e.getBoundingClientRect(), rows = [...document.querySelectorAll('[data-pack=iles] .d-zrow')], last = r(rows[rows.length - 1]), zones = r(document.querySelector('[data-build-zones]')),
+      box = r(document.querySelector('[data-packs]')), clipped = rows.filter(x => { for (let p = x.parentElement; p && p !== document.body; p = p.parentElement) { const cs = getComputedStyle(p); if (/(auto|scroll|hidden)/.test(cs.overflowY) && r(x).bottom > r(p).bottom + 1 && p.clientHeight < p.scrollHeight) return true } return false }).length;
+      return { n: rows.length, clipped, overlap: last.bottom > zones.top + 1, inside: last.bottom <= box.bottom + 1, hs: rows.map(x => Math.round(r(x).height)), zh: [...document.querySelectorAll('[data-build-zones] .d-zrow')].map(x => Math.round(r(x).height)) } }""")
+    c.ok(g['n'] == 4 and g['clipped'] == 0 and not g['overlap'] and g['inside'], g, 'the unfolded theme shows its switch and its three countries in full; the zones list starts after it')
+    want = 44 if c.phone else 32
+    c.ok(all(h <= want + 1 and h >= want - 1 for h in g['hs'] + g['zh']), g, f'every list row is {want} px ({"a finger" if c.phone else "a fine pointer"}): the theme rows and the zones list alike')
     if c.width in (390, 1280):
         c.shot(f'L44_themes_{c.width}_{lang}.png')
     c.tap('[data-pack=iles] [data-pack-cov=jp]')
@@ -4415,7 +4426,7 @@ def l52(c):
         framed: document.querySelectorAll('.d-zrow .f-badge').length, sw: document.documentElement.scrollWidth, iw: innerWidth } }""")
     c.eq([g['items'], g['framed']], [2, 0], 'two cells only (the map, the choice) and no framed pill on the lines', what='structure')
     c.eq([g['lefts'], g['stRights']], [1, 1], 'every line starts at the same place and every state ends at the same place: aligned', what='aligned')
-    c.ge(g['minH'], 43.5, 'every line is 44 px at least (the whole line is the target)', what='line height')
+    c.ge(g['minH'], 43.5 if c.phone else 31, 'every line is 44 px for a finger (the whole line is the target), 32 px for a fine pointer', what='line height')
     c.le(g['sw'], g['iw'], 'no horizontal scroll', what='scroll')
     if c.width >= 1024:
         c.ok(g['list']['l'] >= g['map']['r'] - 1 and g['list']['t'] <= g['map']['t'] + 40, g, 'wide: the list is on the right of the map, at its top')

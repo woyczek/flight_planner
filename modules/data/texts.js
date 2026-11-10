@@ -172,9 +172,9 @@ export const TX = {
   zoneMissing: ['non publiée', 'not published', 'nicht veröffentlicht', 'no publicada'],
   procByStatus: ['Terrains par statut', 'Aerodromes by status', 'Flugplätze nach Status', 'Aeródromos por estado'],
   // construire la base (lot D5) : le panneau, la marche, la fin
-  buildTitle: ['Télécharger, construire, purger', 'Download, build, purge', 'Herunterladen, aufbauen, bereinigen',
-    'Descargar, construir, purgar'
-  ],
+  buildTitle: ['Mettre à jour la base', 'Update the base', 'Basis aktualisieren',
+    'Actualizar la base'
+  ], // « Mettre à jour » est l'action principale du panneau (SOG-0071 temps 3), le titre le dit (SOG-0168)
   buildZones: ['Zones concernées', 'Zones affected', 'Betroffene Zonen', 'Zonas afectadas'],
   personalTitle: ['Sources sous licence personnelle', 'Personal-licence sources', 'Quellen mit persönlicher Lizenz',
     'Fuentes con licencia personal'

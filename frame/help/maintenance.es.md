@@ -51,7 +51,7 @@ Lo que la aerolínea publica para la aplicación —la base aeronáutica, los pr
 
 <a id="data-more"></a>**Los demás conjuntos.** Como máximo siete líneas por grupo; «n conjuntos más» despliega el resto y las fuentes solo consideradas o descartadas (su enlace, su licencia, su estado).
 
-<a id="data-build"></a>**Construir la base.** Al principio del grupo Base aeronáutica, el panel «Descargar, construir, purgar» actúa sobre las zonas marcadas con tres botones, en este orden: Descargar · Construir · Purgar. «Construir» rehace la base de las zonas marcadas en el lanzador de este equipo: un navegador sin ventana (Edge o, si no, Chrome) construye las zonas una tras otra y cada una se guarda en el repositorio de datos en cuanto está lista. Al empezar están marcadas todas las zonas de la cobertura; desmarque las que no quiera rehacer. Los tres botones se ponen en gris a la vez, con su motivo escrito una sola vez debajo: «Hace falta el lanzador del equipo», «Hay otra operación en curso», «Marque al menos una zona», «Sin conexión».
+<a id="data-build"></a>**Construir la base.** Al principio del grupo Base aeronáutica, el panel «Actualizar la base» actúa sobre las zonas marcadas con tres botones, en este orden: Descargar · Construir · Purgar. «Construir» rehace la base de las zonas marcadas en el lanzador de este equipo: un navegador sin ventana (Edge o, si no, Chrome) construye las zonas una tras otra y cada una se guarda en el repositorio de datos en cuanto está lista. Al empezar están marcadas todas las zonas de la cobertura; desmarque las que no quiera rehacer. Los tres botones se ponen en gris a la vez, con su motivo escrito una sola vez debajo: «Hace falta el lanzador del equipo», «Hay otra operación en curso», «Marque al menos una zona», «Sin conexión».
 
 <a id="data-build-personal"></a>**Fuentes con licencia personal.** ENAIRE (España), NATS (Reino Unido), AirNav (Irlanda) y los datos de X-Plane se listan si una zona marcada los usa. **Una sola casilla** las desbloquea todas: «Certifico que uso los datos para mi uso personal» (nunca marcada de oficio: márquela solo si el repositorio de datos lo usa únicamente usted). Marcada, se recuerda en este puesto, se encuentra marcada en cada apertura de Datos y sale con cada «Descargar», «Construir» y «Actualizar» (todas las fuentes de uso personal de las zonas marcadas); solo su propia casilla la deshace. Lo que es propietario (X-Plane, EUROCONTROL) se **lee solo en este puesto**: nunca en la base publicada ni en una exportación, con o sin marca. Con X-Plane leído, la construcción se hace en la página, lo que todavía no es posible aquí: terminará con ese motivo. El enlace «Fuentes y licencias» abre la página que recoge cada fuente (editor, licencia, crédito, fecha). Una casilla antigua de una fuente marcada pasa a ser la casilla única.
 
@@ -92,7 +92,7 @@ Lo que la aerolínea publica para la aplicación —la base aeronáutica, los pr
 - **Sin lanzador**: la pantalla se lee igual; muestra lo que está publicado.
 - **Una lectura que falla**: la sección lo dice en una línea y el resto de la pantalla se dibuja.
 
-<!-- fr: 530e33de8509 -->
+<!-- fr: 7b42f59fe8d5 -->
 
 <!-- chapter: aircraft -->
 # Aeronaves

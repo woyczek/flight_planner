@@ -21,6 +21,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   Opening the card used `scrollIntoView`, which scrolls every scrollable ancestor; only the body of the sheet scrolls now. The layout shift of the user's capture was
   not reproduced in the harness: the cause is an inference.
 
+- **Data packs: the unfolded theme shows its switch and its countries in full (the 24 vh scroller is gone); list rows are 32 px with a mouse, 44 px with a finger; the panel is titled « Mettre à jour la base »** (`modules/data/screen.js`, `texts.js`, help ×4; L44, L2, L7, L15, L17, L52) — the ergonomist's three retouches on SOG-0165.
 - **Frame: the tree of `data/` is read from IndexedDB a handful of times per load, not dozens** (`frame/store/frame_data.js`; frame DECISIONS; noreg A121;
   SOG-0169). The head and tree of the repository (10 339 entries on the user's) are one record read about fifty times a load, each read cloning it all
   (BUGS SOG's trace: 1.3 s in the IndexedDB callback on the Map alone); it is now kept in memory and written through (other tabs invalidate it).

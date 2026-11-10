@@ -106,6 +106,8 @@ export const STYLE = `
 [data-module="data"] button.d-st{cursor:pointer;text-decoration:underline dotted}
 [data-module="data"] .d-zwhy{grid-column:1/-1;margin:0 0 4px 28px}
 [data-module="data"] .d-opt{display:flex;gap:8px;align-items:center;min-height:var(--sog-touch);overflow-wrap:anywhere}
+/* au pointeur fin (souris) une ligne de liste est une ligne de texte, pas une cible de doigt : 32 px ; au doigt, 44 px (SOG-0168) */
+@media (pointer:fine){[data-module="data"] .d-opt{min-height:32px}[data-module="data"] .d-zrow{min-height:32px}}
 [data-module="data"] .d-opt input{flex:none;width:20px;height:20px;margin:0}
 [data-module="data"] .d-pers p{margin:0 0 4px 28px}
 [data-module="data"] [data-build] [data-verb],[data-module="data"] [data-set-panel] [data-verb]{min-height:var(--sog-touch);min-width:44px}
@@ -153,7 +155,7 @@ export const STYLE = `
 [data-module="data"] .d-map-row{margin:6px 0}
 [data-module="data"] .d-map-row button{min-height:var(--sog-touch);min-width:44px}
 [data-module="data"] .d-mapgrid{display:grid;gap:8px;min-width:0}
-@media (min-width:1024px){[data-module="data"] .d-mapgrid{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}[data-module="data"] .d-choice .d-opts{max-height:50vh;overflow:auto}[data-module="data"] .d-choice [data-packs]{max-height:24vh;overflow:auto;margin-bottom:8px}}
+@media (min-width:1024px){[data-module="data"] .d-mapgrid{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}[data-module="data"] .d-choice .d-opts{max-height:50vh;overflow:auto}[data-module="data"] .d-choice [data-packs]{margin-bottom:8px}[data-module="data"] .d-choice [data-packs] .d-opts{max-height:none;overflow:visible}}
 [data-module="data"] .d-sw{display:inline-block;width:12px;height:12px;vertical-align:middle;margin:0 4px 0 8px;background:currentColor;border:1px solid}
 [data-module="data"] .d-sw[data-tone=ok]{background:var(--sog-ok);border-color:var(--sog-ok)}
 [data-module="data"] .d-sw[data-tone=warn]{background:var(--sog-warn);border-color:var(--sog-warn)}
