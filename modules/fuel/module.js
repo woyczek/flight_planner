@@ -259,6 +259,25 @@ const TX = {
   },
   rRetry: ['Réessayer', 'Try again', 'Erneut versuchen', 'Reintentar'],
   rTake: ['Choisir', 'Choose', 'Auswählen', 'Elegir'], // SOG-0134 : un appui montre, « Choisir » prend
+  // le carburant de dégagement (SOG-0225)
+  altnLine: ['Dégagement {id} · {nm} NM{fl} · {src} · {w}', 'Alternate {id} · {nm} NM{fl} · {src} · {w}',
+    'Ausweich {id} · {nm} NM{fl} · {src} · {w}',
+    'Alternativo {id} · {nm} NM{fl} · {src} · {w}'
+  ],
+  altnNone: ['Dégagement : aucun terrain saisi', 'Alternate: no aerodrome entered', 'Ausweich: kein Flugplatz eingegeben',
+    'Alternativo: ningún aeródromo introducido'
+  ],
+  altnUnknown: ['Dégagement {id} : position inconnue, non compté', 'Alternate {id}: position unknown, not counted',
+    'Ausweich {id}: Position unbekannt, nicht gezählt',
+    'Alternativo {id}: posición desconocida, no contado'
+  ],
+  altnPending: ['Dégagement {id} : position en lecture…', 'Alternate {id}: reading its position…',
+    'Ausweich {id}: Position wird gelesen…', 'Alternativo {id}: leyendo su posición…'
+  ],
+  altnSheet: ['débit de la fiche', 'flow of the sheet', 'Verbrauch des Datenblatts', 'consumo de la ficha'],
+  altnModel: ['modèle de l’étape', 'model of the trip', 'Modell der Strecke', 'modelo del trayecto'],
+  altnWind: ['vent {d}/{s} kt', 'wind {d}/{s} kt', 'Wind {d}/{s} kt', 'viento {d}/{s} kt'],
+  altnNoWind: ['vent inconnu', 'wind unknown', 'Wind unbekannt', 'viento desconocido'],
   // thème et sous-thème du vol (SOG-0202 T2)
   theme: ['Thème', 'Theme', 'Thema', 'Tema'],
   series: ['Sous-thème', 'Sub-theme', 'Unterthema', 'Subtema'],
@@ -1536,7 +1555,7 @@ function compute() {
       climbLaw: perf ? L.tripLaw(perf, goal, o) : null,
       steps: fp ? pathSteps(fp, distanceNm) : routeSteps(f.route, distanceNm)
     },
-    q = distanceNm > 0 ? M.quote(qIn) : null,
+    q = distanceNm > 0 ? altnAdd(M.quote(qIn), qIn, sheet, levelFt) : null,
     D = perf && q ? L.requoteSeries(L.decisionSeries(perf, {
       distanceNm,
       wc: q.windKnown ? q.wc : 0
@@ -5274,6 +5293,7 @@ function refresh() {
       ${[[TX.taxi, q.taxi], [TX.climb, q.climb], [TX.cruise, q.cruise], ...(q.steps ? [[TX.steps, q.steps]] : []), [TX.descent, q.descent]].map(([l, p]) => `<tr><td>${esc(tt(l))}</td><td class="f-num">${p?.min != null ? hmm(p.min) : ''}</td><td class="f-num">${p?.nm != null ? esc(distTxt(p.nm)) : ''}</td><td class="f-num">${esc(fuelTxt(p?.fuel ?? p, unit))}</td></tr>`).join('')}
       <tr><td><b>${esc(tt(TX.trip))}</b></td><td class="f-num">${hmm(q.minutes)}</td><td></td><td class="f-num"><b>${esc(fuelTxt(q.trip, unit))}</b></td></tr>
       <tr><td>${esc(tt(TX.contingency))}</td><td></td><td></td><td class="f-num">${esc(fuelTxt(q.contingency, unit))}</td></tr>
+      ${altnRow(q, unit)}
       <tr><td>${esc(tt(TX.reserve))}</td><td></td><td></td><td class="f-num">${esc(fuelTxt(q.reserve, unit))}</td></tr>
       <tr><td><b>${esc(tt(TX.block))}</b></td><td></td><td></td><td class="f-num"><b>${esc(fuelTxt(q.block, unit))}</b></td></tr>
     </tbody></table>${q.lawFailed ? `<p class="f-warn">${esc(tt(TX.lawFailed))}</p>` : ''}` : '';
@@ -5986,4 +6006,159 @@ function themeSet(k, v) {
   }
   themesDraw();
   saveFlight();
+}
+
+// ---------------------------------------------------------------- carburant de dégagement (SOG-0225, règle validée le 10 nov.)
+// Distance : l'orthodromie arrivée → dégagement (positions aerodb). La fiche a alternate.fuelFlowPerHour et alternate.tasKt : temps =
+// distance / (TAS + composante du vent sur l'axe), carburant = temps × ce débit (« débit de la fiche ») ; sinon le modèle de l'étape sur
+// cette distance (« modèle de l'étape ») au niveau min(croisière, plafond, distance × 100 ft au FL semi-circulaire du cap, FL050 au moins),
+// sans roulage, contingence ni réserve. Vent : le dernier lu de la route (le profil prévu près de l'arrivée, au niveau du dégagement),
+// sinon le vent du vol, sinon nul et dit « vent inconnu ». Bloc = roulage + étape + contingence + DÉGAGEMENT + réserve finale. Sans
+// terrain : dit, rien ajouté ; sans position : dit, non compté. Jamais le silence.
+/** Les positions de l'arrivée et du dégagement, lues une fois par couple (aerodb), puis le devis redessiné. */
+function altnGeo(r) {
+  const key = `${r.arr || ''}>${r.altn || ''}`,
+    g = S.altnGeo;
+  if (g?.key === key) return g;
+  const s = S,
+    last = (r.points || []).at(-1),
+    arrHere = last && last.id === r.arr && Number.isFinite(+last.lat) && Number.isFinite(+last.lon) ? {
+      lat: +last.lat,
+      lon: +last.lon
+    } : null,
+    ok = c => c && Number.isFinite(+c.lat) && Number.isFinite(+c.lon) ? {
+      lat: +c.lat,
+      lon: +c.lon
+    } : null,
+    at = id => id && S.ctx.aerodb?.coords ? Promise.resolve(S.ctx.aerodb.coords(id)).then(ok, () => null) : Promise.resolve(null);
+  S.altnGeo = {
+    key,
+    state: 'pending'
+  };
+  Promise.all([arrHere || at(r.arr), at(r.altn)]).then(([arr, alt]) => {
+    if (gone(s) || S.altnGeo?.key !== key) return;
+    S.altnGeo = arr && alt ? {
+      key,
+      state: 'ok',
+      arr,
+      alt
+    } : {
+      key,
+      state: 'unknown'
+    };
+    refresh();
+  });
+  return S.altnGeo;
+}
+/** Le dégagement ajouté au devis `q` (q.alternate ; bloc, fourchette comprise) ; `q` rendu tel quel. */
+function altnAdd(q, qIn, sheet, cruiseFt) {
+  if (!q) return q;
+  const r = S.flight.route || {},
+    id = String(r.altn || '').toUpperCase();
+  if (!id) return Object.assign(q, {
+    alternate: {
+      state: 'none'
+    }
+  });
+  const g = altnGeo(r);
+  if (g.state !== 'ok') return Object.assign(q, {
+    alternate: {
+      state: g.state,
+      id
+    }
+  });
+  const M = window.FuelModel,
+    nm = gcNm(g.arr, g.alt),
+    brg = bearing(g.arr, g.alt),
+    // le niveau : distance × 100 ft, au FL semi-circulaire du cap (impair vers l'est, pair vers l'ouest), FL050 au moins, sous la croisière et le plafond
+    fl = (() => {
+      let k = Math.max(5, Math.round(nm / 10));
+      if ((brg < 180) !== (k % 2 === 1)) k += 1;
+      const ceil = +sheet?.cruise?.ceilingFt > 0 ? +sheet.cruise.ceilingFt : Infinity;
+      return Math.max(1000, Math.min(k * 1000, +cruiseFt > 0 ? +cruiseFt : Infinity, ceil));
+    })(),
+    // le vent : le profil prévu le plus près de l'arrivée, au niveau du dégagement ; sinon celui du vol ; sinon nul (dit)
+    A = S.aloft,
+    aloftOk = S.flight.weather?.real && S.flight.windSource?.kind === 'aloft' && A?.profiles?.length && A.key === aloftKey(),
+    w0 = aloftOk ? WD.atLevel(A.profiles.at(-1), fl) : null,
+    fw = S.flight.wind,
+    wind = Number.isFinite(+w0?.dirDeg) && Number.isFinite(+w0?.speedKt) ? w0 : Number.isFinite(+fw?.dirDeg) && Number.isFinite(+fw
+      ?.speedKt) ? fw : null,
+    ff = +sheet?.alternate?.fuelFlowPerHour,
+    tas = +sheet?.alternate?.tasKt;
+  let fuel = null,
+    min = null,
+    src = 'sheet';
+  if (ff > 0 && tas > 0) {
+    const wc = wind ? M.windComponent(brg, +wind.dirDeg, +wind.speedKt) : 0;
+    min = nm / Math.max(80, tas + wc) * 60;
+    fuel = min / 60 * ff;
+  } else {
+    src = 'model';
+    const aq = M.quote({
+      ...qIn,
+      distanceNm: nm,
+      levelFt: fl,
+      trackDeg: brg,
+      wind: wind ? {
+        dirDeg: +wind.dirDeg,
+        speedKt: +wind.speedKt
+      } : {
+        dirDeg: 0,
+        speedKt: 0
+      },
+      taxiMin: 0,
+      reserveMin: 0,
+      contingencyPct: 0,
+      steps: null
+    });
+    fuel = aq?.hasFuel ? +aq.trip : null;
+    min = aq ? +aq.minutes : null;
+  }
+  if (!(fuel > 0)) return Object.assign(q, {
+    alternate: {
+      state: 'unknown',
+      id
+    }
+  });
+  q.alternate = {
+    state: 'ok',
+    id,
+    nm,
+    fl: src === 'model' ? fl : null,
+    min,
+    fuel,
+    src,
+    wind: wind ? {
+      dirDeg: Math.round(+wind.dirDeg),
+      speedKt: Math.round(+wind.speedKt)
+    } : null
+  };
+  for (const k of ['block', 'blockLow', 'blockHigh'])
+    if (Number.isFinite(+q[k])) q[k] = +q[k] + fuel;
+  return q;
+}
+/** La ligne du dégagement au détail du devis : toujours dite (aucun terrain, position inconnue, ou son carburant et d'où il vient). */
+function altnRow(q, unit) {
+  const a = q?.alternate || {
+      state: 'none'
+    },
+    row = (label, time = '', fuel = '') => `<tr data-altnrow="${esc(a.state)}"><td>${esc(label)}</td><td class="f-num">${time}</td><td></td><td class="f-num">${fuel}</td></tr>`;
+  if (a.state === 'none') return row(tt(TX.altnNone));
+  if (a.state === 'pending') return row(tt(TX.altnPending, {
+    id: a.id
+  }));
+  if (a.state !== 'ok') return row(tt(TX.altnUnknown, {
+    id: a.id
+  }));
+  return row(tt(TX.altnLine, {
+    id: a.id,
+    nm: Math.round(a.nm),
+    fl: a.fl ? ` · ${flTxt(a.fl)}` : '',
+    src: tt(a.src === 'sheet' ? TX.altnSheet : TX.altnModel),
+    w: a.wind ? tt(TX.altnWind, {
+      d: String(a.wind.dirDeg).padStart(3, '0'),
+      s: a.wind.speedKt
+    }) : tt(TX.altnNoWind)
+  }), a.min != null ? hmm(a.min) : '', esc(fuelTxt(a.fuel, unit)));
 }

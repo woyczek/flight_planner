@@ -139,6 +139,8 @@ los aeródromos de salida y llegada, se requiere sesión). Una entrada en gris i
 aeronave). No se envía nada que no esté ya en el vuelo. Los ajustes del cálculo (rodaje, reserva, margen, corredor
 meteorológico, unidades, consumo de este vuelo) son el primer desplegable del paso Resultado, plegado; su título dice la unidad del combustible («Ajustes del cálculo · lb/h»).
 
+<a id="fuel-alternate"></a>**Combustible de alternativa.** El combustible de bloque cuenta ahora la alternativa: rodaje + trayecto + contingencia + alternativa + reserva final. Su línea, en el «Detalle del presupuesto», da la distancia de la llegada a la alternativa, el nivel, de dónde viene la cifra (el consumo de alternativa de la ficha, o el modelo del trayecto) y el viento (el de la ruta cerca de la llegada, o «viento desconocido»). Sin alternativa introducida, o sin su posición, la línea lo dice y no se añade nada. El bloque de un vuelo con alternativa es por tanto mayor que antes: es lo previsto.
+
 <a id="fuel-step-5"></a>**5 Salida.** Un resumen de una página: la aeronave, la ruta tal como se presentará, el nivel (y sus escalones), el
 viento y su fuente, el combustible de bloque. «Iniciar el vuelo» lanza el plan de vuelo (puesta en marcha, retroceso,
 rodaje…). La preparación puede tener varios días: por eso empieza rehaciéndolo todo a la hora real — la fecha del vuelo

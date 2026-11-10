@@ -3940,3 +3940,62 @@ def f137(c):
         to_step(c, 1)
         c.eq(c.js(f"document.querySelector('{FUEL} details[data-fold=pts]').open"), False, f'{w} px: opened by hand, closed again at the next opening', what='pts again')
 
+
+
+# SOG-0225: the named flight of the ergonomist (LFPO → LFST, alternate LFRN), at invented test positions (no AIP content)
+_ALT_PTS = {'LFPO': (48.70, 2.40), 'LFST': (48.50, 7.60), 'LFRN': (48.10, -1.70)}
+_ALT_EXTRA = {'aerodromes': [{'icao': k, 'name': k + ' TEST', 'lat': v[0], 'lon': v[1], 'elev': 100} for k, v in _ALT_PTS.items()]}
+_ROWS_JS = f"""[...document.querySelectorAll('{FUEL} [data-details] table tr, {FUEL} [data-fold=details] table tr')].map(tr => [tr.dataset.altnrow || '',
+  tr.children[0]?.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() || '', (tr.children[3]?.textContent || '').replace(/[^0-9]/g, '')])"""
+
+
+def _alt_flight(altn):
+    docs = flight_docs()
+    f = docs[1][1]
+    f['route'] = {'text': 'LFPO LFST', 'dep': 'LFPO', 'arr': 'LFST', 'altn': altn,
+                  'points': [{'id': 'LFPO', 'lat': 48.70, 'lon': 2.40}, {'id': 'LFST', 'lat': 48.50, 'lon': 7.60}], 'distanceNm': 207, 'trackDeg': 95}
+    f['wind'] = None
+    f['windSource'] = None
+    return docs + [['cache/fuel/ui.json', {'open': {'details': True}, 'step': 3}, 'cache']]
+
+
+@case('F138', 'Quote: the alternate fuel is computed and added to the block — taxi + trip + contingency + ALTERNATE + final reserve —, its line says where the figure comes from and the wind; no alternate or no position: said, nothing counted',
+      'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0225 (user: « OUI »; rule validated by the ergonomist on 10 Nov): distance arrival → alternate, the sheet\'s alternate flow and TAS else the '
+      'model of the trip at min(cruise, ceiling, distance × 100 ft on the semicircular FL, FL050 at least); the wind at the arrival end, else nil, said; '
+      'LFPO → LFST, alternate LFRN at invented positions; capture 390')
+def f138(c):
+    import math
+    r = math.pi / 180
+    a, b = _ALT_PTS['LFST'], _ALT_PTS['LFRN']
+    d = math.sin((b[0] - a[0]) * r / 2) ** 2 + math.cos(a[0] * r) * math.cos(b[0] * r) * math.sin((b[1] - a[1]) * r / 2) ** 2
+    nm = round(2 * 3440.065 * math.asin(math.sqrt(d)))
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.open('fuel', docs=_alt_flight('LFRN'), airfields=True, aero_extra=_ALT_EXTRA)
+        wait_quote(c)
+        to_step(c, 3)
+        c.until(f"!!document.querySelector('{FUEL} [data-altnrow=ok]')", timeout=12000, what=f'{w} px: the alternate line, computed')
+        rows = c.js(_ROWS_JS)
+        alt = [x for x in rows if x[0] == 'ok'][0]
+        c.ok('LFRN' in alt[1] and f'{nm} NM' in alt[1], alt, f'{w} px: « Dégagement LFRN · {nm} NM … »')
+        c.ok(norm(row(c, 'altnModel')) in alt[1] and norm(row(c, 'altnNoWind')) in alt[1], alt[1], 'it says the model of the trip and « vent inconnu »')
+        nums = [int(x[2]) for x in rows if x[2]]
+        # the rows with a fuel: taxi, climb, cruise, descent, trip, contingency, alternate, reserve, block
+        taxi, trip, cont, altn, res, block = nums[0], nums[-5], nums[-4], nums[-3], nums[-2], nums[-1]
+        c.ok(altn > 0 and abs(block - (taxi + trip + cont + altn + res)) <= 3, nums, f'{w} px: block = taxi + trip + contingency + alternate + reserve')
+        if w == 390:
+            c.js(f"document.querySelector('{FUEL} [data-altnrow]').scrollIntoView({{block: 'center'}})")
+            c.shot(f'F138_{c.design}_{w}_{c.lang}.png')
+    # no alternate entered: said, nothing added
+    c.open('fuel', docs=_alt_flight(''), airfields=True, aero_extra=_ALT_EXTRA)
+    wait_quote(c)
+    to_step(c, 3)
+    c.until(f"!!document.querySelector('{FUEL} [data-altnrow=none]')", timeout=10000, what='« Dégagement : aucun terrain saisi »')
+    nums = [int(x[2]) for x in c.js(_ROWS_JS) if x[2]]
+    c.ok(abs(nums[-1] - (nums[0] + nums[-4] + nums[-3] + nums[-2])) <= 3, nums, 'without alternate: block = taxi + trip + contingency + reserve')
+    # an alternate the base does not place: said, not counted
+    c.open('fuel', docs=_alt_flight('LFZZ'), airfields=True, aero_extra=_ALT_EXTRA)
+    wait_quote(c)
+    to_step(c, 3)
+    c.until(f"!!document.querySelector('{FUEL} [data-altnrow=unknown]')", timeout=12000, what='« Dégagement LFZZ : position inconnue, non compté »')

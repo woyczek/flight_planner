@@ -186,6 +186,8 @@ arrival airfields, login required). A greyed-out entry says what it lacks (airfi
 that is not already in the flight. The quote settings (taxi, reserve, margin, weather corridor, units, this flight's fuel flow) are the first
 fold of the Result step, folded, its title saying the fuel unit ("Quote settings · lb/h").
 
+<a id="fuel-alternate"></a>**Alternate fuel.** The block fuel now counts the alternate: taxi + trip + contingency + alternate + final reserve. Its line, in "Quote details", gives the distance from the arrival to the alternate, the level, where the figure comes from (the sheet's alternate flow, or the model of the trip) and the wind (the route's near the arrival, or "wind unknown"). Without an alternate entered, or without its position, the line says so and nothing is added. The block of a flight with an alternate is therefore higher than before: this is intended.
+
 <a id="fuel-step-5"></a>**5 Departure.** A one-page summary: the aircraft, the route as it will be filed, the level (and its steps), the wind
 and its source, the block fuel. “Start the flight” launches the flight plan (start-up, pushback, taxi…). The preparation
 may date back several days: so it begins by redoing everything at the real time — the flight date returns to now, the

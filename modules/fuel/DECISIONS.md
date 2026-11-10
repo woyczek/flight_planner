@@ -1612,3 +1612,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   commit opened it: since f917841cd (23 Oct) every fold of Fuel is remembered on the device (`cache/fuel/ui.json`), so a « Points »
   opened once opened every time. The list of points is no longer remembered; the other folds keep their state. F137; counter-test on
   origin/v3: « Points » open.
+- **10 Nov 2026 — the quote carries an alternate fuel** (SOG-0225, user « OUI »; the ergonomist validated the rule with four precisions:
+  the arrival-end wind, the source said, never silent, the order of the block). Every quote with an alternate has a larger block: wanted.
+  The Fuel cases did not compare a block that changes (122 green in French before F138). F138 (LFPO → LFST, alternate LFRN at invented
+  positions); counter-test on origin/v3: no alternate line.

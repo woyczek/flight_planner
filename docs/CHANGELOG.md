@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the quote carries a computed alternate fuel — the block of every flight with an alternate is HIGHER, on purpose** (Fuel SPEC § 3,
+  DECISIONS, help; noreg F138; SOG-0225). Block = taxi + trip + contingency + alternate + final reserve; the line of the detail says the
+  distance, the level, the source (the sheet's alternate flow or the model of the trip) and the wind; without alternate or position, said.
 - **Tools: `tools/repair_ledger_defaults.py`** repairs `data/cr/mission_ledger_defaults.js` refused by the data guard (code after its literal,
   from the V2): the correction moved into the literal, nothing written without `--write` (noreg G14; SOG-0219 (3)).
 - **Fuel: « Points (n) » closed when Fuel opens** (not remembered on the device; noreg F137; SOG-0222).

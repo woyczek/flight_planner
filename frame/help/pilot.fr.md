@@ -186,6 +186,8 @@ de descente avant l'arrivée. « Détail du devis » le décompose phase par pha
 Navigraph et ChartFox (les cartes des terrains de départ et d'arrivée, connexion requise). Une entrée grisée dit ce
 qui lui manque (terrain, type d'appareil). Rien n'est envoyé qui ne soit déjà dans le vol. Les réglages du devis (roulage, réserve, marge, couloir météo, unités, débit de ce vol) sont le premier pli du pas Résultat, replié, son titre dit l'unité du carburant (« Réglages du devis · lb/h »).
 
+<a id="fuel-alternate"></a>**Carburant de dégagement.** Le carburant bloc compte maintenant le dégagement : roulage + étape + contingence + dégagement + réserve finale. Sa ligne, au « Détail du devis », dit la distance de l'arrivée au dégagement, le niveau, d'où vient le chiffre (le débit de dégagement de la fiche, ou le modèle de l'étape) et le vent (celui de la route près de l'arrivée, ou « vent inconnu »). Sans dégagement saisi, ou sans sa position, la ligne le dit et rien n'est ajouté. Le bloc d'un vol avec dégagement est donc plus élevé qu'avant : c'est voulu.
+
 <a id="fuel-step-5"></a>**5 Départ.** Un récapitulatif d'une page : l'appareil, la route telle qu'elle sera déposée, le niveau (et ses
 paliers), le vent et sa source, le carburant bloc. « Démarrer le vol » lance le plan de vol (mise en route,
 repoussage, roulage…). La préparation peut dater de plusieurs jours : il commence donc par tout refaire à l'heure

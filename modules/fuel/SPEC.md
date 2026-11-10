@@ -44,6 +44,16 @@ with a sticky result (§ 9; F1, F2, F4).
 
 All checked by the quote and levels benches (F80) unless said.
 
+- **Alternate fuel** (SOG-0225, 10 Nov 2026; user: « OUI »; rule validated by the ergonomist): the block is taxi + trip + contingency +
+  **alternate** + final reserve. Distance: the great circle arrival → alternate (aerodb's positions, read once per pair). The sheet's
+  `alternate.fuelFlowPerHour` and `alternate.tasKt`: time = distance / (TAS + wind component on the axis), fuel = time × that flow
+  (« débit de la fiche »); else the model of the trip on that distance (« modèle de l'étape ») at min(cruise level, ceiling, distance ×
+  100 ft on the semicircular FL of the course — odd eastbound, even westbound —, FL050 at least), without taxi, contingency nor reserve.
+  Wind: the last one read on the route (the forecast profile nearest the arrival, at the alternate's level), else the flight's, else
+  nil, said « vent inconnu ». A line of the quote's detail says it (« Dégagement LFRN · 372 NM · FL270 · modèle de l'étape · vent
+  inconnu »); no alternate entered: « Dégagement : aucun terrain saisi », nothing added; no position: « … position inconnue, non
+  compté ». F138.
+
 - **Cruise fuel flow and TAS** (`cruiseSource`): the entry for this flight (« Débit de croisière de ce vol », typed in the unit of
   the quote and labelled with it, « lb/h »; kept in kg/h in `pilot/<trigram>/fuel.json` `entries`, converted by
   `frame/lib/fuel_units.js`; SOG-0059, F99); else the sheet (its RPM table at the cruise RPM and the
