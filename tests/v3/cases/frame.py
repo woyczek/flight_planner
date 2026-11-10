@@ -4493,3 +4493,91 @@ def a114(c):
         c.eq(c.js("document.querySelectorAll('[data-lane] [data-drag]').length"), 0, 'no drag in « Par thème »', what='no drag')
         c.eq(len(written() or {}), n, 'nothing written by a gesture in the read-only view', what='nothing written')
     c.check_errors()
+
+
+def _rc_fixture():
+    """A frame/help/recette.json (sog-recette/1): nine new tests, one older than the last recette, one known defect, one passed, one failed, a hostile title."""
+    lab = lambda fr, en: {'fr': fr, 'en': en, 'de': en + ' (de)', 'es': en + ' (es)'}
+    test = lambda n, app='pilote', state='todo', since='2026-11-10', **kw: {'id': f'SOG-{n:04d}', 'app': app, 'title': lab(f'Titre {n}', f'Title {n}'), 'test': f'Aller au test {n}, faire, voir.', 'since': since, 'state': state, **kw}
+    tests = [test(n) for n in range(301, 310)]
+    tests[0]['title'] = lab('<img src=x onerror=window.__pwn=1>', '<img src=x onerror=window.__pwn=1>')
+    tests += [test(310, 'maintenance', since='2026-11-08'), test(311, 'maintenance', 'known'), test(312, 'compagnie', 'ok', since='2026-11-09', at='2026-11-09T18:00:00Z'),
+              test(313, 'compagnie', 'ko', since='2026-11-09', at='2026-11-09T18:05:00Z', comment='le bouton reste gris')]
+    return {'schema': 'sog-recette/1', 'generated': {'tool': 'tools/recette_build.py', 'at': '2026-11-10', 'tests': len(tests), 'verdicts': 2}, 'apps': ['pilote', 'compagnie', 'maintenance', 'stats'], 'tests': tests}
+
+
+@case('A115', 'The Recette screen (SOG-0167): the functional tests of the delivered cards, the day\u2019s first, seven visible; « Validé » / « Refusé » with a comment (required for a refusal), written by the launcher in RECETTE.json, kept on the device « not sent » otherwise; a known defect says « do not retest »', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0167: the user needs a list of daily manual tests with his comments and a passed / failed status; the launcher verb recette/verdict (same path and bounds as roadmap/priorities) writes organisation/RECETTE.json; a refusal without comment is not sent; a defect already known is said on its test so that it is not reported twice')
+def a115(c):
+    import tempfile
+    from pathlib import Path
+    lang = c.lang
+    T = lambda k: tx('frame/help/recette.js', k, lang, after='const T = {')
+    fx = _rc_fixture()
+    c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        (root / 'organisation').mkdir()
+        f = root / 'organisation' / 'RECETTE.json'
+        # the launcher's file already holds the two verdicts of the generated list (it is what the list was generated from)
+        f.write_text(json.dumps({'schema': 'sog-recette/1', 'updated': '2026-11-09T18:05:00Z', 'items': {'SOG-0312': {'verdict': 'ok', 'at': '2026-11-09T18:00:00Z'}, 'SOG-0313': {'verdict': 'ko', 'comment': 'le bouton reste gris', 'at': '2026-11-09T18:05:00Z'}}}), encoding='utf-8')
+        written = lambda: json.loads(f.read_text(encoding='utf-8'))['items'] if f.exists() else None
+        st = _prio_launcher(c, root, verb=('recette', 'verdict'))
+        open_ = lambda: (c.open('recette', docs=LEVEL3), c.until("!!document.querySelector('[data-section=today] li[data-id]')", timeout=15000, what='the tests'))
+        ids = lambda sec: c.js("(k) => [...document.querySelectorAll('[data-section=\"' + k + '\"] li[data-id]')].map(l => l.dataset.id)", sec)
+        open_()
+        # ---- the sections: the day\u2019s first, seven visible, the rest behind a button; the older, the known and the seen folded
+        c.shot(f'A115_recette_{c.width}_{lang}.png')
+        c.eq(len(ids('today')), 7, 'nine new tests: seven visible', what='seven')
+        c.eq(norm(c.text('[data-more=today]')), norm(T('more').replace('{n}', '2')), 'then « Voir les 2 autres »', what='more')
+        c.eq([c.count('[data-section=older]'), c.count('[data-section=known]'), c.count('[data-section=seen]')], [1, 1, 1], 'the older, the known and the seen are sections', what='sections')
+        c.eq(c.js("[...document.querySelectorAll('details[data-section]')].map(d => d.open)"), [False, False, False], 'folded', what='folded')
+        c.eq(norm(c.text('[data-summary]')), norm(T('summary').replace('{a}', '10').replace('{b}', '1').replace('{c}', '1').replace('{d}', '1')), 'the summary counts them', what='summary')
+        c.ok(c.count('[data-section=today] img') == 0 and c.js('window.__pwn === undefined'), 'img', 'a hostile title is text')
+        c.js("document.querySelector('[data-section=known] summary').click()")
+        c.eq([c.count('[data-section=known] [data-ok]'), norm(c.text('[data-section=known] [data-known]'))], [0, norm(T('knownLine'))], 'a known defect says « do not retest » and has no verdict button', what='known')
+        # ---- a refusal without comment is not sent: the line says it
+        first = ids('today')[0]
+        c.tap(f'[data-ko="{first}"]')
+        c.until(f"!!document.querySelector('[data-id=\"{first}\"] [data-need]')", what='the comment is asked')
+        c.eq([norm(c.text(f'[data-id="{first}"] [data-need]')), sorted(written()), len(st['posts'])], [norm(T('need')), ['SOG-0312', 'SOG-0313'], 1], 'asked for a comment; nothing is written (only the first read was made)', what='need')
+        # ---- with a comment: written by the launcher, the test moves to « Déjà vus »
+        c.page.fill(f'[data-comment="{first}"]', 'Le bouton reste gris')
+        c.tap(f'[data-ko="{first}"]')
+        pri = None
+        for _ in range(40):
+            pri = written()
+            if pri and first in pri:
+                break
+            c.wait(250)
+        c.eq([pri[first]['verdict'], pri[first]['comment'], bool(re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ', pri[first]['at']))], ['ko', 'Le bouton reste gris', True], 'the launcher wrote the refusal, its comment and its date', what='written ko')
+        c.until(f"!document.querySelector('[data-section=today] [data-id=\"{first}\"]')", what='the test left the day\u2019s list')
+        second = ids('today')[0]
+        c.tap(f'[data-ok="{second}"]')
+        for _ in range(40):
+            pri = written()
+            if pri and second in pri:
+                break
+            c.wait(250)
+        c.eq([pri[second]['verdict'], 'comment' in pri[second]], ['ok', False], 'a validation needs no comment', what='written ok')
+        c.wait(2500)    # the sends are over
+        # ---- a reload: the verdicts come back from the launcher (the seen section holds the four)
+        c.page.reload()
+        c.until("!!document.querySelector('[data-section=today] li[data-id]')", timeout=15000, what='the screen again')
+        c.until("document.querySelectorAll('[data-section=seen] li[data-id]').length === 4", timeout=15000, what='the verdicts read back')
+        c.eq(sorted(ids('seen')), sorted([first, second, 'SOG-0312', 'SOG-0313']), 'after a reload the verdicts hold', what='reload')
+        # ---- the launcher cannot write: the verdict stays on the device, « not sent »
+        st['up'] = False
+        third = ids('today')[0]
+        c.tap(f'[data-ok="{third}"]')
+        c.until(f"document.querySelector('[data-id=\"{third}\"] [data-unsent]')", what='« not sent » on the test')
+        local = c.until_doc('device/recette.json', lambda d: d and d.get('pending') and d.get('unsent'), what='kept on the device')
+        c.eq([local['unsent'], local['pending'][third]['verdict']], [[third], 'ok'], 'kept in device/recette.json', what='local')
+        # ---- « Remettre à tester » takes a verdict back
+        st['up'] = True
+        c.js("document.querySelector('[data-section=seen]').open = true")
+        c.tap(f'[data-redo="{second}"]')
+        c.until(f"!!document.querySelector('[data-section=today] [data-id=\"{second}\"], [data-section=older] [data-id=\"{second}\"]')", what='back to test')
+        c.eq(c.count(f'[data-section=seen] [data-id="{second}"]'), 0, 'taken back: the test is to do again', what='redo')
+    c.check_errors()

@@ -1503,3 +1503,51 @@ def k96(c):
              'a hostile file is filtered: bad ids, ranks and shapes dropped, an unknown milestone removed (the rank stays), extra keys ignored, a long date ignored', what='hostile')
         f.write_text(json.dumps({'schema': 'sog-priorities/1', 'items': {f'SOG-{n:04d}': {'rank': n + 1} for n in range(900)}}), encoding='utf-8')
         c.eq(len(run(action='get')['items']), 500, 'at most 500 entries are read', what='cap')
+
+
+@case('K121', 'recette/verdict: organisation/RECETTE.json read and replaced by the launcher (no organisation folder said, bad entries refused in a block, a refusal needs a comment, a hostile file filtered, atomic write)', 'K',
+      static=True, rule='SOG-0167: the user\u2019s verdicts on the functional tests are written by the launcher: 1000 entries at most, ids SOG-nnnn, ok or ko, a comment of 600 signs (required for a refusal), an ISO UTC date; a file read is untrusted')
+def k121(c):
+    RJ, BS, AF, DS = _mods()
+    fn, check = RJ.REGISTRY[('recette', 'verdict')]
+    ok_set = {'action': 'set', 'items': {'SOG-0001': {'verdict': 'ok'}}}
+    for bad in (None, 'x', {}, {'action': 'x'}, {'action': 'get', 'items': {}}, {'action': 'set'}, {'action': 'set', 'items': []}, {'action': 'set', 'items': {'SOG-0001': 5}},
+                {'action': 'set', 'items': {'x' * 30: {'verdict': 'ok'}}}, {'action': 'set', 'items': {f'SOG-{n:04d}': {'verdict': 'ok'} for n in range(1001)}}, {'action': 'get', 'path': 'C:/x'}):
+        c.ok(check(bad) is None, repr(bad)[:60], f'recette/verdict refuses {repr(bad)[:50]}')
+    c.eq((check({'action': 'get'}), check(ok_set)), ({'action': 'get'}, ok_set), 'the two good shapes pass', what='check')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        ctx = {'root': str(root)}
+        run = lambda **a: fn(RJ.Job('recette', 'verdict', {}), check(a), ctx)
+        c.eq((run(action='get').get('reason'), run(action='set', items={}).get('reason'), (root / 'organisation').exists()), ('no-organisation', 'no-organisation', False),
+             'no organisation folder: said, nothing created', what='no organisation')
+        org = root / 'organisation'
+        org.mkdir()
+        f = org / 'RECETTE.json'
+        r = run(action='get')
+        c.eq((r['ok'], r['items'], r['exists']), (True, {}, False), 'no file yet: nothing, said', what='absent')
+        good = {'SOG-0002': {'verdict': 'ko', 'comment': 'le bouton reste gris', 'at': '2026-11-10T09:30:00Z'}, 'SOG-0001': {'verdict': 'ok', 'at': '2026-11-10T09:31:00Z'}}
+        r = run(action='set', items=good)
+        doc = json.loads(f.read_text(encoding='utf-8'))
+        c.eq((r['ok'], r['count'], doc['schema'], list(doc['items']), doc['items']['SOG-0002'], bool(re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ', doc['updated'])), list(org.glob('*.tmp'))),
+             (True, 2, 'sog-recette/1', ['SOG-0001', 'SOG-0002'], good['SOG-0002'], True, []), 'a set replaces the file: the schema, the date, the entries by identifier, no temporary file', what='set')
+        r = run(action='get')
+        c.eq((r['items'], r['dropped'], r['exists'], r['updated'] == doc['updated']), (good, 0, True, True), 'a get gives back what was set', what='get')
+        before = f.read_bytes()
+        for bad in ({'SOG-12': {'verdict': 'ok'}}, {'SOG-0003': {'verdict': 'maybe'}}, {'SOG-0003': {}}, {'SOG-0003': {'verdict': 'ko'}}, {'SOG-0003': {'verdict': 'ko', 'comment': '   '}},
+                    {'SOG-0003': {'verdict': 'ok', 'comment': 'x' * 601}}, {'SOG-0003': {'verdict': 'ok', 'comment': 'a\x00b'}}, {'SOG-0003': {'verdict': 'ok', 'at': 'yesterday'}},
+                    {'SOG-0003': {'verdict': 'ok', 'extra': 1}}, {'SOG-0003': {'verdict': 'ok', 'comment': 3}}):
+            r = run(action='set', items={**good, **bad})
+            c.ok(r.get('reason') == 'bad-items' and f.read_bytes() == before, (r.get('reason'), r.get('bad')), f'a bad entry {repr(bad)[:50]} refuses the whole set, nothing written (a refusal needs its comment)')
+        # a hostile file: wrong schema, junk, a refusal without comment, too many entries
+        f.write_text('{not json', encoding='utf-8')
+        c.eq((run(action='get')['items'], run(action='get')['exists']), ({}, True), 'an unreadable file reads as nothing', what='unreadable')
+        f.write_text(json.dumps({'schema': 'other/1', 'items': good}), encoding='utf-8')
+        c.eq(run(action='get')['items'], {}, 'a file of another schema reads as nothing', what='foreign')
+        hostile = {'schema': 'sog-recette/1', 'updated': 'x' * 100, 'items': {'SOG-0001': {'verdict': 'ok'}, 'SOG-0002': {'verdict': 'ko'}, '../x': {'verdict': 'ok'}, 'SOG-0004': 'a',
+                   'SOG-0005': {'verdict': 'ok', 'comment': '<img src=x onerror=1>', 'at': '2026-11-10T09:30:00Z'}, '__proto__': {'verdict': 'ok'}}}
+        f.write_text(json.dumps(hostile), encoding='utf-8')
+        r = run(action='get')
+        c.eq((list(r['items']), r['dropped'], r['updated']), (['SOG-0001', 'SOG-0005'], 4, ''), 'a hostile file is filtered: bad ids and shapes, a refusal without comment dropped, a long date ignored', what='hostile')
+        f.write_text(json.dumps({'schema': 'sog-recette/1', 'items': {f'SOG-{n:04d}': {'verdict': 'ok'} for n in range(1500)}}), encoding='utf-8')
+        c.eq(len(run(action='get')['items']), 1000, 'at most 1000 entries are read', what='cap')

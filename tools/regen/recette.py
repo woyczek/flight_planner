@@ -1,0 +1,134 @@
+"""Le jeu « recette » du lanceur : les verdicts de l'utilisateur sur les tests fonctionnels de la suite (SOG-0167) — chargé par regen_jobs.load_verbs().
+
+Un verbe, `recette/verdict` { action, items? } (ce poste seulement, comme tous les travaux), deux actions, sur le modèle de roadmap/priorities :
+  · `get` : lit organisation/RECETTE.json (à la racine de la suite) et rend { ok, action, schema, updated, items, dropped, exists } ;
+  · `set` { items } : REMPLACE le contenu par `items` (la page envoie la carte complète : ce qu'elle a lu, plus le geste) et rend { ok, action, count, updated }.
+Forme du fichier : { "schema": "sog-recette/1", "updated": "<ISO UTC>", "items": { "SOG-0046": { "verdict": "ok" | "ko", "comment": "…", "at": "<ISO UTC>" }, … } } — 1000 entrées au plus,
+un identifiant ^SOG-\\d{4}$, un verdict `ok` ou `ko`, un commentaire de 600 signes au plus (SANS caractère de commande) qui est OBLIGATOIRE pour un refus (`ko`), une date ISO UTC. C'est l'entrée
+de l'utilisateur : tools/recette_build.py la lit à chaque régénération (un verdict tient tant que la fiche n'est pas livrée de nouveau).
+Règles : le dossier organisation/ absent → { ok: false, reason: 'no-organisation' } (rien n'est créé) ; `set` refuse en bloc ({ ok: false, reason: 'bad-items', bad: [identifiants, 20 au plus] })
+une entrée hors des règles ci-dessus, sans rien écrire ; `get` lit un fichier qui peut venir d'ailleurs : ce qui n'est pas aux règles est écarté (`dropped`), un fichier d'un autre schéma ou
+illisible vaut « rien » ; l'écriture passe par un .tmp puis un remplacement, jamais un chemin rendu."""
+import json
+import os
+import re
+import time
+
+TOOLS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.dirname(TOOLS)
+SCHEMA = 'sog-recette/1'
+FILE = 'RECETTE.json'
+ID = re.compile(r'SOG-\d{4}')
+AT = re.compile(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z')
+MAX_ITEMS = 1000
+MAX_COMMENT = 600
+FILE_MAX = 2 * 1024 * 1024
+BAD_MAX = 20
+
+
+def check(a):
+    """Contrôle d'arguments (→ 400 si None) : { action: 'get' } ou { action: 'set', items: { id: { verdict, comment?, at? } } } et rien d'autre ; la forme seulement (les règles de fond sont dans le verbe)."""
+    if not isinstance(a, dict) or a.get('action') not in ('get', 'set'):
+        return None
+    if a['action'] == 'get':
+        return {'action': 'get'} if set(a) == {'action'} else None
+    items = a.get('items')
+    if set(a) != {'action', 'items'} or not isinstance(items, dict) or len(items) > MAX_ITEMS:
+        return None
+    if not all(isinstance(k, str) and len(k) <= 20 and isinstance(v, dict) for k, v in items.items()):
+        return None
+    return {'action': 'set', 'items': items}
+
+
+def entry(v):
+    """L'entrée nettoyée { verdict, comment?, at? } d'une valeur, ou None si elle n'est pas aux règles : un verdict ok ou ko, un commentaire texte de 600 signes au plus sans caractère de commande (obligatoire,
+    non vide, pour `ko`), une date ISO UTC ; rien d'autre."""
+    if not isinstance(v, dict) or not set(v) <= {'verdict', 'comment', 'at'} or v.get('verdict') not in ('ok', 'ko'):
+        return None
+    out = {'verdict': v['verdict']}
+    if 'comment' in v:
+        c = v['comment']
+        if not isinstance(c, str) or len(c) > MAX_COMMENT or re.search(r'[\x00-\x08\x0b-\x1f\x7f]', c):
+            return None
+        c = c.strip()
+        if c:
+            out['comment'] = c
+    if v['verdict'] == 'ko' and 'comment' not in out:
+        return None
+    if 'at' in v:
+        if not isinstance(v['at'], str) or not AT.fullmatch(v['at']):
+            return None
+        out['at'] = v['at']
+    return out
+
+
+def clean(items):
+    """(entrées aux règles, nombre d'écartées) d'une carte lue d'un fichier : une entrée hors des règles est écartée, 1000 au plus."""
+    out, dropped = {}, 0
+    if not isinstance(items, dict):
+        return out, 0
+    for k, v in list(items.items())[:MAX_ITEMS * 2]:
+        e = entry(v) if isinstance(k, str) and ID.fullmatch(k) else None
+        if e is None:
+            dropped += 1
+            continue
+        out[k] = e
+    if len(out) > MAX_ITEMS:
+        dropped += len(out) - MAX_ITEMS
+        out = dict(list(out.items())[:MAX_ITEMS])
+    return out, dropped
+
+
+def read_file(path):
+    """(items, dropped, exists, updated) du fichier des verdicts ; rien d'un fichier absent, trop gros, illisible ou d'un autre schéma."""
+    try:
+        if os.path.getsize(path) > FILE_MAX:
+            return {}, 0, True, ''
+        with open(path, encoding='utf-8') as f:
+            d = json.load(f)
+    except FileNotFoundError:
+        return {}, 0, False, ''
+    except (OSError, ValueError):
+        return {}, 0, True, ''
+    if not isinstance(d, dict) or d.get('schema') != SCHEMA:
+        return {}, 0, True, ''
+    items, dropped = clean(d.get('items'))
+    upd = d.get('updated')
+    return items, dropped, True, upd if isinstance(upd, str) and len(upd) <= 40 else ''
+
+
+def verdict(job, args, ctx):
+    """Verbe recette/verdict (voir l'en-tête) : lire ou remplacer organisation/RECETTE.json."""
+    root = (ctx or {}).get('root') or ROOT
+    org = os.path.join(root, 'organisation')
+    if not os.path.isdir(org):
+        return {'ok': False, 'action': args['action'], 'reason': 'no-organisation'}
+    path = os.path.join(org, FILE)
+    if args['action'] == 'get':
+        items, dropped, exists, updated = read_file(path)
+        return {'ok': True, 'action': 'get', 'schema': SCHEMA, 'updated': updated, 'items': items, 'dropped': dropped, 'exists': exists}
+    bad = [k for k, v in args['items'].items() if not ID.fullmatch(k) or entry(v) is None]
+    if bad:
+        return {'ok': False, 'action': 'set', 'reason': 'bad-items', 'bad': bad[:BAD_MAX]}
+    items = {k: entry(v) for k, v in args['items'].items()}
+    doc = {'schema': SCHEMA, 'updated': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'items': {k: items[k] for k in sorted(items)}}
+    tmp = path + '.tmp'
+    try:
+        with open(tmp, 'w', encoding='utf-8', newline='\n') as f:
+            f.write(json.dumps(doc, ensure_ascii=False, indent=1) + '\n')
+        os.replace(tmp, path)
+    except OSError:
+        return {'ok': False, 'action': 'set', 'reason': 'failed'}
+    finally:
+        if os.path.exists(tmp):
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+    job.log(f'recette : {len(items)} verdict(s)')
+    return {'ok': True, 'action': 'set', 'count': len(items), 'updated': doc['updated']}
+
+
+VERBS = {
+    ('recette', 'verdict'): (verdict, check),
+}

@@ -2129,7 +2129,7 @@
    *  l'écran (celui du module ; celui des Réglages quand ils sont ouverts par-dessus) ; un second appel, avec l'aide ouverte,
    *  la referme. */
   function openHelp() {
-    if (over && ['help', 'roadmap'].includes(over.id)) return leaveOver();
+    if (over && DOCS.includes(over.id)) return leaveOver();
     const shown = over ? over.id : parseHash().id,
       // le module affiché, ou celui que la barre suit pendant son montage (current n'est posé qu'après)
       at = ['settings', 'device'].includes(shown) ? 'settings' : current?.id || (APP.modules.some(m => m.id === menuActive) ? menuActive :
@@ -2418,9 +2418,11 @@
   // Réglages, aide et feuille de route : scripts classiques injectés à la première ouverture de leur écran (le service
   // worker les garde comme les autres fichiers du cadre) ; le démarrage, le menu et le premier module ne les attendent
   // jamais ; l'aide en page d'un module est chargée après son montage
+  const DOCS = ['help', 'roadmap', 'recette']; // les écrans du cadre qui défilent comme une page (la recette : SOG-0167)
   const LAZY = {
     help: ['lib/markdown.js?v=0', 'help/help.js?v=0'],
     roadmap: ['help/roadmap.js?v=0'],
+    recette: ['help/recette.js?v=0'],
     settings: ['settings/admin_links.js?v=0', 'settings/config.js?v=0', 'settings/join.js?v=0', 'lib/qr.js?v=0',
       'settings/kit.js?v=0', 'settings/launcher.js?v=0', 'settings/sync_summary.js?v=0', 'settings/access.js?v=0',
       'settings/diagnostic.js?v=0',
@@ -2458,7 +2460,8 @@
       }), 'err');
     }
     if (tok !== navSeq || location.hash !== at || !box.isConnected) return;
-    return id === 'help' ? SogHelp.screen(box, helpCtx(), query) : SogRoadmap.screen(box, helpCtx());
+    return id === 'help' ? SogHelp.screen(box, helpCtx(), query) : id === 'recette' ? SogRecette.screen(box, helpCtx()) : SogRoadmap
+      .screen(box, helpCtx());
   }
   /** Aide en page d'un module monté : panneau replié « Comment s'en servir » tiré de son chapitre (frame/help), et carte
    *  d'accueil des tutoriels à la première ouverture ; chargés après le module, jamais avant, et posés SOUS lui (la carte
@@ -2570,7 +2573,7 @@
   const tabModules = tb => (tb.modules || []).filter(id => APP.modules.some(m => m.id === id));
   const tabVisible = tb => tabModules(tb).filter(id => (moduleLevel[id] ?? 1) <= level);
   /** Écran du cadre tel que la barre le nomme : l'appareil est l'écran des Réglages, la feuille de route s'ouvre de l'aide. */
-  const screenBase = id => id === 'device' ? 'settings' : id === 'roadmap' ? 'help' : id;
+  const screenBase = id => id === 'device' ? 'settings' : id === 'roadmap' || id === 'recette' ? 'help' : id;
   /** Écran du cadre affiché ('' : un module) : celui qui couvre le module, ou celui routé seul (aide ouverte par son adresse,
    *  avant tout module : renderMenu('help', 'help')). */
   const shownScreen = (moduleId, screenId) => screenId && (screenId !== moduleId || !APP.modules.some(m => m.id === moduleId)) ?
@@ -2860,8 +2863,8 @@
     view.replaceChildren();
     renderMenu(id, id);
     paintPaneButton(null);
-    if (id === 'help' || id === 'roadmap' || ROUTES[id]) paintFixed(''); // un écran du cadre défile comme une page
-    if (id === 'help' || id === 'roadmap') return showDoc(id, view, h.query);
+    if (DOCS.includes(id) || ROUTES[id]) paintFixed(''); // un écran du cadre défile comme une page
+    if (DOCS.includes(id)) return showDoc(id, view, h.query);
     if (ROUTES[id]) return ROUTES[id](view);
     const entry = APP.modules.find(m => m.id === id) || APP.modules[0];
     if (!entry) return renderSettings(view);
@@ -3040,7 +3043,7 @@
   // aide, feuille de route, réglages, conflits : ouverts depuis un module, ils se montrent dans la zone du module sans
   // le démonter (il est seulement masqué) ; le bouton qui les a ouverts (enfoncé tant qu'ils le sont), Échap ou le retour
   // du navigateur les referment, et l'on retrouve le module tel quel : même adresse, même étape, même défilement
-  const SCREENS = ['help', 'roadmap', 'settings', 'device', 'conflicts', ...APP.screens.map(s => s.id)];
+  const SCREENS = ['help', 'roadmap', 'recette', 'settings', 'device', 'conflicts', ...APP.screens.map(s => s.id)];
   let over = null; // { id, returnHash, scroll, stack: [adresses des écrans du cadre ouverts], sig }
   // ce qu'un module lit à son montage (identité, usages, niveau, langue, transport) : changé pendant que l'écran du cadre
   // était ouvert (réglages), le module est remonté à la fermeture au lieu d'être rendu tel quel
@@ -3074,7 +3077,7 @@
     paintToggles();
     paintPaneButton(null);
     scrollTo(0, 0);
-    if (id === 'help' || id === 'roadmap') return showDoc(id, scr, h.query);
+    if (DOCS.includes(id)) return showDoc(id, scr, h.query);
     return ROUTES[id]?.(scr);
   }
   /** Retire l'écran du cadre ; restore : le module réapparaît à son défilement d'avant. */
@@ -3108,7 +3111,7 @@
   /** Boutons de l'en-tête enfoncés tant que leur écran est ouvert. */
   function paintToggles() {
     const set = (b, on) => b && b.getAttribute('aria-pressed') !== String(on) && b.setAttribute('aria-pressed', String(on));
-    set($('fHelp'), !!over && ['help', 'roadmap'].includes(over.id));
+    set($('fHelp'), !!over && DOCS.includes(over.id));
     set($('fDevice'), !!over && ['settings', 'device'].includes(over.id));
   }
 

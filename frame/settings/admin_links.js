@@ -167,6 +167,16 @@
       'Was geliefert, in Arbeit, geplant ist, Modul für Modul.', 'Lo entregado, en curso, previsto, módulo por módulo.'
     ]
   }, {
+    id: 'recette',
+    href: '#recette',
+    where: 'app',
+    title: ['Recette', 'Acceptance', 'Abnahme', 'Recepción'],
+    text: ['Les tests fonctionnels des fiches livrées : validé ou refusé, avec un commentaire.',
+      'The functional tests of the delivered cards: passed or failed, with a comment.',
+      'Die Funktionstests der gelieferten Karten: bestanden oder abgelehnt, mit Kommentar.',
+      'Las pruebas funcionales de las fichas entregadas: válido o rechazado, con comentario.'
+    ]
+  }, {
     id: 'diag',
     act: 'diagOpen',
     where: 'app',

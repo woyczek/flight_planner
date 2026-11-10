@@ -936,6 +936,60 @@ p.f-back {
     min-height: 44px
   }
 }
+/* la recette (SOG-0167) : une carte par test, un commentaire, Validé / Refusé */
+.f-rc-sec {
+  margin: 0 0 var(--sog-gap)
+}
+.f-rc-sec h2 {
+  font-size: 1.1rem;
+  margin: 12px 0 6px
+}
+.f-rc-sec>summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center
+}
+.f-rc-sec h3 {
+  font-size: .95rem;
+  margin: 10px 0 4px;
+  color: var(--sog-muted)
+}
+.f-rc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px
+}
+.f-rc-item {
+  background: var(--sog-surface);
+  border: 1px solid var(--sog-border);
+  border-left: 4px solid var(--sog-border);
+  border-radius: var(--sog-radius);
+  padding: 8px 10px;
+  overflow-wrap: anywhere
+}
+.f-rc-item[data-state="ok"] {
+  border-left-color: var(--sog-ok)
+}
+.f-rc-item[data-state="ko"] {
+  border-left-color: var(--sog-err, var(--sog-warn))
+}
+.f-rc-item[data-state="known"] {
+  border-left-color: var(--sog-warn)
+}
+.f-rc-item p {
+  margin: 4px 0
+}
+.f-rc-test {
+  font-size: .95em
+}
+.f-rc-item textarea {
+  width: 100%;
+  min-height: 44px;
+  font: inherit
+}
 @container (max-width: 760px) {
   .f-rm-time {
     flex-wrap: nowrap;

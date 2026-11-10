@@ -146,3 +146,11 @@ way, not taken (an empty band on every screen while the help loads). noreg A52.
 - **Read only « Par thème »**: dragging there would hide the new order behind lanes again; the one place to order is « Priorités ».
 - **Phone**: a drag is a poor gesture on a small screen; each card carries Monter, Descendre, Envoyer vers… and the screen shows one column at a time.
 - Cases: A114 (new: theme B above theme A, sent to development, held after a reload, « Par thème » read only; at 390 with the buttons, at 1280 by dragging); A101 moved to the backlog column; A96 and A103 open « Par thème ».
+
+## 10 November 2026 — the Recette screen and the verb recette/verdict (SOG-0167)
+
+- **The user's words**: a page of the manual tests to do every day, with his comments and a passed / failed status, because « tant que tous mes bugs ne sont pas corrigés, je risque de remonter plusieurs fois le même bug ». Generated list from the coordinator (`recette.json`, one test per delivered card); the screen and the verb are ours.
+- **Schema confirmed with the coordinator before coding**: `organisation/RECETTE.json`, `{ schema: 'sog-recette/1', updated, items: { id: { verdict, comment, at } } }`, what `tools/recette_build.py` already reads (600-sign comments, 1000 entries). **A refusal requires its comment** — in the page (nothing is sent without) and in the verb (a `ko` without comment is a `bad-items` refusal of the whole set): a refusal the ergonomist cannot act on is noise.
+- **The launcher's file is the truth once read**: the generated state (`ok`/`ko`) is the first look only; taking a verdict back (« Remettre à tester ») writes a set without the id, which a stale generated file must not resurrect.
+- **« Du jour » is relative to the last recette**: the day of the last verdict made *before today*; a verdict made today must not turn today's other tests into « plus anciens ».
+- Counter-test (A115 / K121): the verb absent makes K121 fail on the registry; A115 fails at the first « Refusé » without comment if the page sends it.
