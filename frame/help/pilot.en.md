@@ -521,7 +521,7 @@ pasted text: an ICAO flight plan, the page of a flight from the IVAO tracker or 
 are filled; the “Prefilled from: …” line under the card’s title says where they come from. If a source gives something else for fields already entered, a button offers
 to replace them.
 
-<a id="report-step-2"></a>**The mission.** At the second step: the family (suggested from your last report), the series, the mission identifier
+<a id="report-step-2"></a>**The mission.** At the second step: the family, said by its acronym then its name ("SAR · Personnel recovery", suggested from your last report), the series, the mission identifier
 if the flight follows one, then the blocks specific to the family. Some blocks only appear for one series (for example
 VIP or ferry for special missions). Until you open this step it is marked "to check" instead of ✓: the family and
 the series of a new report are taken by default.
@@ -578,7 +578,7 @@ flight's line on the clipboard.
   flight's page (IVAO tracker, StatSim) into “Other sources”.
 - **Without a trigram**: the report is written all the same; set your trigram (⚙) so that it is in your name.
 
-<!-- fr: e5f9f49ca996 -->
+<!-- fr: 9ef38567ebad -->
 
 <!-- chapter: flightlog -->
 # My flights

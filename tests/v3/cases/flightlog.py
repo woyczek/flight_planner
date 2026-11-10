@@ -280,3 +280,25 @@ def g7(c):
     c.settle()
     c.eq(c.count('[data-module="report"] [data-loadcard]'), 0, 'a flight without category: the draft\'s load is removed', what='no load card')
     c.until_doc('cache/report/draft.json', lambda d: 'load' not in ((d or {}).get('mission') or {}), 'the draft without load', timeout=8000)
+
+
+
+@case('G8', 'Report: the family list says each family by its acronym first, then its long name (« SAR · Récupération de personnel »), never the long name alone, never the acronym twice',
+      'G', tags=('report',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0179 (user, 10 Nov: « le nom abrégé a disparu. c\'est pourtant comme ça que l\'utilisateur mémorise une looooongue catégorie »): '
+      'the V2 wrote « SAR — … » (shared/mission_core/core.js familyOptions); in a native list the acronym leads, as plain text; captures 390 and 1 280')
+def g8(c):
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.open('report')
+        c.until("document.querySelectorAll('[data-module=report] .f-steps button').length === 3", what='the three steps are drawn')
+        c.tap('[data-module="report"] .f-steps button[data-step="1"]')
+        c.until("!!document.querySelector('[data-module=report] select[data-family]')", what='the family list')
+        opts = c.js("[...document.querySelectorAll('[data-module=report] select[data-family] option')].map(o => [o.value, o.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()])")
+        c.ge(len(opts), 16, f'{w} px: the sixteen families', what='options')
+        bad = [o for o in opts if not o[1].startswith(o[0] + ' · ') or not o[1][len(o[0]) + 3:].strip() or re.match(re.escape(o[0]) + r'\s*[/—–-]', o[1][len(o[0]) + 3:].upper())]
+        c.eq(bad, [], f'{w} px: each option « SIGLE · Nom long », the acronym not repeated', what='options not « SIGLE · long »')
+        sar = dict(opts).get('SAR', '')
+        c.ok(sar.startswith('SAR · ') and sar[6:7].isupper(), sar, f'{w} px: « SAR · Récupération de personnel »')
+        c.js("document.querySelector('[data-module=report] select[data-family]').scrollIntoView({block: 'center'})")
+        c.shot(f'G8_{c.design}_{w}_{c.lang}.png')

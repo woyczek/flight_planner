@@ -54,6 +54,10 @@ on the same data. The CPCO (authoring) stays V2 until rebuilt as the third appli
   « Toutes les catégories » offers the known categories its missions carry, in the airline's order; a category the airline does not know
   is ignored (not offered, not named); the open mission names its category. « Préparer ce vol » hands it to Fuel with the flight
   (`current_flight.missionCategory`), where the report reads it (N11).
+- **A family is said by its acronym first** (SOG-0179, N12): a heading of the list « **SAR** · Récupération de personnel » (the acronym
+  in bold, the long name in plain weight), the filter « SAR · Récupération de personnel » in plain text, the acronym alone for a code
+  the report does not know; the long name never alone; names from `modules/report/vocab.js` (`familyParts`, `familyText`; MEDEVAC,
+  the registry's code, is the report's HEMS).
 - One screen, the module's main: the missions of the airline, newest series first, grouped by family (the sixteen
   families of the generator prompt, their letter and their name, never hard-coded twice: read from the registry),
   seven rows then "N autres", a search (id, title, aerodrome, type), a filter by family and by aircraft category.

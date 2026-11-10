@@ -557,7 +557,7 @@ SimBrief-Flugplan oder einen eingefügten Text zu übernehmen: einen ICAO-Flugpl
 IVAO-Tracker oder von StatSim, ein METAR. Nur leere Felder werden ausgefüllt; die Zeile „Vorausgefüllt aus: …“ unter dem Kartentitel nennt ihre Herkunft. Liefert
 eine Quelle etwas anderes für bereits ausgefüllte Felder, bietet eine Schaltfläche an, sie zu ersetzen.
 
-<a id="report-step-2"></a>**Der Einsatz.** Im zweiten Schritt: die Familie (vorgeschlagen nach Ihrem letzten Bericht), die Serie, die Kennung des
+<a id="report-step-2"></a>**Der Einsatz.** Im zweiten Schritt: die Familie, mit Kürzel und dann Namen („SAR · Personenbergung“, vorgeschlagen nach Ihrem letzten Bericht), die Serie, die Kennung des
 Einsatzes, wenn der Flug einem folgt, dann die Blöcke der Familie. Manche Blöcke erscheinen nur für eine Serie (zum
 Beispiel VIP oder Überführung bei den Sondereinsätzen). Solange Sie diesen Schritt nicht geöffnet haben, steht dort
 „prüfen“ statt ✓: Familie und Serie eines neuen Berichts sind standardmäßig übernommen.
@@ -616,7 +616,7 @@ Telefon, wo Lesezeichen umständlich sind, legt „Felder kopieren“ die Zeile 
 - **Ohne Trigramm**: Der Bericht wird trotzdem geschrieben; stellen Sie Ihr Trigramm ein (⚙), damit er auf Ihren Namen
   lautet.
 
-<!-- fr: e5f9f49ca996 -->
+<!-- fr: 9ef38567ebad -->
 
 <!-- chapter: flightlog -->
 # Meine Flüge

@@ -203,3 +203,10 @@ Memory of the V3 report module: every choice, dated, with its reason. Chat histo
      until that module exists.
   5. Asked of the frame: reading another module's cache file (`cache/fuel/last_ofp.json`), METAR through `ctx.net`
      (optional), a way for one module to call another's function (the hand-off).
+- **10 Nov 2026 — the acronym first** (SOG-0179, user: « on dirait que le nom abrégé a disparu. c'est pourtant comme ça que l'utilisateur
+  mémorise une looooongue catégorie »): it disappeared with the V3 report (lot 2, 8a5a7e3db, and lot 4, 7ca8c5675, which listed
+  `familyLabels` alone where the V2's `familyOptions` wrote « ${id} — ${label} »). A family is now « SAR · Récupération de personnel »
+  everywhere it is said (report family list, Missions headings and filter), from one function of `modules/report/vocab.js`; the long
+  name does not repeat the acronym (« HEMS / MEDEVAC » → « HEMS · MEDEVAC »). The acronym is the family's code; seven codes are words,
+  not acronyms (AIRLIFT, AIRBORNE, MARITIME, SURVEY, COMMAND, COMBAT, SPECIAL): shown as they are, proposals sent to the ergonomist.
+  G8; counter-test on origin/v3 (a3ac92f10): « SAR / récupération de personnel », no acronym first for AIRLIFT….

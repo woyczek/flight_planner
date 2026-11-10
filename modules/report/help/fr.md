@@ -24,7 +24,7 @@ SimBrief, ou un texte collé : un plan de vol OACI, la page d'un vol du tracker 
 champs vides sont remplis ; la ligne « Prérempli depuis : … » sous le titre de la carte dit d'où ils viennent. Si une source donne autre chose pour des champs déjà saisis,
 un bouton propose de les remplacer.
 
-<a id="report-step-2"></a>**La mission.** Au deuxième pas : la famille (proposée d'après votre dernier compte rendu), la série, l'identifiant de
+<a id="report-step-2"></a>**La mission.** Au deuxième pas : la famille, dite par son sigle puis son nom (« SAR · Récupération de personnel », proposée d'après votre dernier compte rendu), la série, l'identifiant de
 la mission si le vol en suit une, puis les blocs propres à la famille. Certains blocs n'apparaissent que pour une
 série (par exemple VIP ou convoyage pour les missions spéciales). Tant que vous n'avez pas ouvert ce pas, il est
 marqué « à voir » au lieu du ✓ : la famille et la série d'un compte rendu neuf sont reprises par défaut.

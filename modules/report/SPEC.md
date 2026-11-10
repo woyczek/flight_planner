@@ -27,7 +27,8 @@ what is missing is said in the Result step, never blocking.
   and the card says where its prefilled fields come from in **one muted line under its title** (§ 2 bis). Then date, registration, type, full callsign, departure,
   arrival, engine start, take-off, landing, shutdown; folded: callsign parts, flight plan callsign, departure and
   return bases, actual landing aerodrome, alternate. Then the **sources** (§ 6).
-- **Mission**: family (the sixteen V2 families; a new report takes the family of my last saved report, HEMS the
+- **Mission**: family (the sixteen V2 families, each said **acronym first, then its long name**: « SAR · Récupération de personnel »,
+  as the V2 wrote « SAR — … »; `vocab.js` `familyText` / `familyParts`, the one source also read by Missions; SOG-0179, G8; a new report takes the family of my last saved report, HEMS the
   first time), series (the family's, first one by default), mission identifier (optional), the common "Task / mission
   order" block (objective, instructions, priority; folded) for the families without an order block of their own
   (`ownOrder`: FIRE, ISR, LE), then the family's blocks, the first one open, the others folded; collections with add

@@ -68,3 +68,10 @@
   in the title); to keep seven elements (rule 13) the state « Volée le … » joins the category line; the detailed description stays in
   the detail. N9 checks the order, the two lines and a mission without a summary (no empty line); counter-test on origin/v3
   (85b356775): no summary on a mission with risks.
+- **10 Nov 2026 — the acronym first** (SOG-0179, user: « on dirait que le nom abrégé a disparu. c'est pourtant comme ça que l'utilisateur
+  mémorise une looooongue catégorie »): it disappeared with the V3 report (lot 2, 8a5a7e3db, and lot 4, 7ca8c5675, which listed
+  `familyLabels` alone where the V2's `familyOptions` wrote « ${id} — ${label} »). A family is now « SAR · Récupération de personnel »
+  everywhere it is said (report family list, Missions headings and filter), from one function of `modules/report/vocab.js`; the long
+  name does not repeat the acronym (« HEMS / MEDEVAC » → « HEMS · MEDEVAC »). The acronym is the family's code; seven codes are words,
+  not acronyms (AIRLIFT, AIRBORNE, MARITIME, SURVEY, COMMAND, COMBAT, SPECIAL): shown as they are, proposals sent to the ergonomist.
+  N12; counter-test on origin/v3 (a3ac92f10): the code alone in the headings and the filter.

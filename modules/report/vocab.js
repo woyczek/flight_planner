@@ -219,7 +219,35 @@ const capabilityGroups = [{
   ]
 }];
 
+// V3 (SOG-0179, 10 nov. : « c'est pourtant comme ça que l'utilisateur mémorise une looooongue catégorie ») : une famille se dit
+// TOUJOURS par son sigle d'abord, puis son nom long, comme la V2 (« SAR — … », shared/mission_core/core.js familyOptions) ; le sigle
+// est le code de la famille (celui du registre des missions : MEDEVAC est la famille HEMS) ; le nom long ne répète pas le sigle
+// (« HEMS / MEDEVAC » → « HEMS · MEDEVAC ») ; un code inconnu n'a que son sigle, jamais un nom long seul. Une seule source pour le
+// compte rendu et les missions.
+const FAMILY_ALIASES = {
+  MEDEVAC: 'HEMS'
+};
+/** { short, long } d'une famille dans la langue ('fr', 'en', 'de', 'es') ; long '' pour un code inconnu. */
+function familyParts(code, lang = 'fr') {
+  const short = String(code ?? '').trim().toUpperCase().slice(0, 24),
+    labels = familyLabels[short] || familyLabels[FAMILY_ALIASES[short]],
+    label = labels ? String(labels[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(lang))] ?? labels[0]) : '',
+    rest = label.toUpperCase().startsWith(short) && /^\s*[/—–-]/.test(label.slice(short.length)) ? label.slice(short.length).replace(
+      /^\s*[/—–-]\s*/, '') : label; // « HEMS / MEDEVAC », « Airlift / logistics » : le sigle n'est pas redit
+  return {
+    short,
+    long: rest ? rest.charAt(0).toLocaleUpperCase() + rest.slice(1) : ''
+  };
+}
+/** Le texte d'une famille pour une liste native : « SAR · Récupération de personnel » ; le sigle seul pour un code inconnu. */
+function familyText(code, lang = 'fr') {
+  const p = familyParts(code, lang);
+  return p.long ? `${p.short} · ${p.long}` : p.short;
+}
+
 export {
+  familyParts,
+  familyText,
   capabilityGroups,
   L,
   opt,

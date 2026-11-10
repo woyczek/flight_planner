@@ -536,7 +536,7 @@ SimBrief, o un texto pegado: un plan de vuelo OACI, la página de un vuelo del t
 se rellenan los campos vacíos; la línea «Rellenado desde: …» bajo el título de la tarjeta dice de dónde vienen. Si una fuente da otra cosa para campos ya rellenados, un
 botón propone sustituirlos.
 
-<a id="report-step-2"></a>**La misión.** En el segundo paso: la familia (propuesta según su último informe), la serie, el identificador de la
+<a id="report-step-2"></a>**La misión.** En el segundo paso: la familia, dicha por su sigla y luego su nombre («SAR · Recuperación de personal», propuesta según su último informe), la serie, el identificador de la
 misión si el vuelo sigue una, y después los bloques propios de la familia. Algunos bloques solo aparecen para una serie
 (por ejemplo VIP o traslado en las misiones especiales). Mientras no abra este paso, aparece «por ver» en lugar
 de ✓: la familia y la serie de un informe nuevo se toman por defecto.
@@ -594,7 +594,7 @@ el formulario, rellena los campos y señala las diferencias. En un teléfono, do
   página del vuelo (tracker IVAO, StatSim) en «Otras fuentes».
 - **Sin trigrama**: el informe se escribe de todos modos; ajuste su trigrama (⚙) para que esté a su nombre.
 
-<!-- fr: e5f9f49ca996 -->
+<!-- fr: 9ef38567ebad -->
 
 <!-- chapter: flightlog -->
 # Mis vuelos

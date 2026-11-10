@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Report and Missions: a family is said by its acronym first** (`modules/report/vocab.js`, `module.js`, `modules/missions/module.js`;
+  SPEC, DECISIONS of both, help; noreg G8, N12; SOG-0179). « SAR · Récupération de personnel » in the report's family list, the Missions
+  headings (acronym in bold) and filter, as the V2 did; the long name never alone.
 - **Frame: the « Old version » cartouche has its own cell and shrinks by steps** (`frame/frame.css`, `frame/app.js`; frame SPEC § 3.6, DECISIONS; noreg A122, A118;
   SOG-0168, the user's refusal). It no longer spills over the sync button or the application name: one line, and when the room is short « Version ancienne · Recharger »
   → « Recharger » → a square dot (the label in `aria-label`); checked with a long sync state at 390, 768 and 1280.
@@ -20,7 +23,6 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   `screen.js`, `texts.js`, `style.js`; SPEC § 15, DECISIONS, help ×4; noreg D138; SOG-0171). The map's YAML profile first; else target / detail / zone maps of a
   non-commercial mission in VFR topo (now really topographic: the old built-in profile named a base the styles did not know), the general map and a commercial
   mission in the flight's view; the banner offers VFR topo / IFR / Base only, kept per map on the device; removing the banner gives the flight's view back.
-
 - **Fuel: an impossible plan lists the engine's proposals apart** (`modules/fuel/route_engine.js`, `module.js`; Fuel SPEC § 9.3,
   INTEGRATION, DECISIONS, help; noreg F125; SOG-0161). « Calculer » asks `proposals: true`; the fallback proposals come under
   « Propositions non validées », each with its share and sections, never said checked; « Prendre » says « à vérifier ».

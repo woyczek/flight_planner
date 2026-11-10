@@ -5,6 +5,10 @@
 // page à page, l'affectation (§ 5–6).
 import * as MS from '../../frame/lib/mission.js';
 import * as MC from '../../frame/lib/mission_categories.js'; // les catégories de la compagnie (SOG-0041, § 10.38)
+import {
+  familyParts,
+  familyText
+} from '../report/vocab.js'; // une famille : son sigle d'abord, puis son nom long (SOG-0179, une seule source avec le compte rendu)
 
 export const meta = {
   id: 'missions',
@@ -33,6 +37,7 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-sheet[data-detail] .ms-first{display:none}
 [data-module="missions"] .ms-sheet[data-detail] .ms-detail{display:block}
 [data-module="missions"] .ms-lines{margin:.2em 0 .4em;padding-left:1.1em}
+[data-module="missions"] [data-famlong]{font-weight:400} /* le sigle en gras, le nom long en clair (SOG-0179) */
 [data-module="missions"] .ms-summary{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;margin:.2em 0 .4em} /* le résumé, deux lignes au plus avec « … » (SOG-0051) */
 [data-module="missions"] .ms-lines li{margin:.15em 0}
 [data-module="missions"] .ms-route{border-collapse:collapse;width:100%}
@@ -387,7 +392,7 @@ function listHtml(s) {
     lang = s.ctx.lang?.() || 'fr';
   return `<div class="f-card" data-pane="list"><div class="f-row"><button type="button" class="primary" data-do="draw">${esc(s.tt(TX.draw))}</button></div>
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.search))}</span><input type="search" data-k="q" value="${esc(s.q)}" placeholder="${esc(s.tt(TX.search))}" autocomplete="off"><small class="f-muted" data-searchhint>${esc(s.tt(TX.searchHint))}</small></label>
-    <label class="f-field"><span class="f-sr">${esc(s.tt(TX.allFamilies))}</span><select data-k="family"><option value="">${esc(s.tt(TX.allFamilies))}</option>${families.map(f => `<option value="${esc(f)}"${s.family === f ? ' selected' : ''}>${esc(f)}</option>`).join('')}</select></label>
+    <label class="f-field"><span class="f-sr">${esc(s.tt(TX.allFamilies))}</span><select data-k="family"><option value="">${esc(s.tt(TX.allFamilies))}</option>${families.map(f => `<option value="${esc(f)}"${s.family === f ? ' selected' : ''}>${esc(familyText(f, s.ctx.lang?.() || 'fr'))}</option>`).join('')}</select></label>
     ${cats.length ? `<label class="f-field"><span class="f-sr">${esc(s.tt(TX.allCategories))}</span><select data-k="category"><option value="">${esc(s.tt(TX.allCategories))}</option>${cats.map(c => `<option value="${esc(c.id)}"${s.category === c.id ? ' selected' : ''}>${esc(MC.nameOf(s.cats, c.id, lang))}</option>`).join('')}</select></label>` : ''}
     <div data-results>${resultsHtml(s)}</div></div>`;
 }
@@ -404,7 +409,7 @@ function resultsHtml(s) {
   let fam = '',
     body = '';
   for (const r of shown) {
-    if (r.family !== fam) body += `<h3 class="f-muted" data-family="${esc(fam = r.family)}">${esc(fam)}</h3>`;
+    if (r.family !== fam) body += `<h3 class="f-muted" data-family="${esc(fam = r.family)}">${famHtml(s, fam)}</h3>`;
     body += row(r);
   }
   return `<p class="f-muted" data-count>${esc(s.tt(TX.count, { n: hits.length }))}</p>
@@ -436,6 +441,11 @@ function missionHtml(s) {
 /** Sept lignes au plus, puis « N autres » replié (la règle 13 dans une section). */
 function seven(s, items) {
   return items.length > 7 ? `${items.slice(0, 7).join('')}<details class="ms-more"><summary class="f-muted">${esc(s.tt(TX.more, { n: items.length - 7 }))}</summary>${items.slice(7).join('')}</details>` : items.join('');
+}
+/** Une famille dans notre rendu (SOG-0179) : le sigle en gras, puis son nom long ; le sigle seul pour un code inconnu. */
+function famHtml(s, code) {
+  const p = familyParts(code, s.ctx.lang?.() || 'fr');
+  return `<b data-famshort>${esc(p.short)}</b>${p.long ? ` · <span data-famlong>${esc(p.long)}</span>` : ''}`;
 }
 /** La première page (voir missionHtml). */
 function firstHtml(s, r, m, drawn, why) {
