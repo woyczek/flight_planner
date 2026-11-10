@@ -26,6 +26,7 @@ import {
   openGroup,
   pickupAsk,
   pickupSummary,
+  pickupProblems,
   purgeAsk,
   purgeSummary,
   renderBuild,
@@ -210,12 +211,31 @@ async function endPickup(final, live, seconds) {
     },
     sm = pickupSummary(out);
   S.pickupBlocked = null;
-  return finishOp('base', M.PICKUP.verb, out, live, {
+  await finishOp('base', M.PICKUP.verb, out, live, {
     sm,
-    note: [sm.text, sm.hint],
+    note: [sm.text, sm.hint, ...(out.kind === 'done' ? pickupProblems(out) :
+  [])], // la construction qui suit remplace le panneau : ce qui reste à dire (un fichier encore absent, un nom à renommer) l'est aussi dans la notification
     entry: opEntry('base', M.PICKUP.verb, out, final, seconds),
     reload: false
   });
+  // prendre le fichier lance de lui-même la construction des zones prises (SOG-0180) : aucune consigne « cliquez ensuite sur… »
+  const zones = [...new Set(out.taken.map(t => t.zone).filter(Boolean))];
+  if (live && !S.chain && zones.length && out.kind === 'done') await buildAfterPickup(zones);
+}
+/** La construction qui suit une prise de fichier (SOG-0180) : les zones prises, de la couverture, avec la case « usage personnel » ; rien si le bouton de construction est gris (une autre opération, pas de lanceur). */
+async function buildAfterPickup(zones) {
+  const me = S,
+    personal = selection('base').personal,
+    ids = zones.filter(z => S.d?.cov?.ids?.includes(z));
+  if (!ids.length || gateOf('base', ids.length).verbs.build.disabled) return;
+  if (ids.length > M.MAX_ZONES) return void await runChunks(me, 'base', 'build', {
+    ids,
+    personal
+  });
+  await settle(me, await launch('base', 'build', M.setArgs('base', 'build', {
+    ids,
+    personal
+  }), ids), true);
 }
 /** La fin commune du plan à blanc d'une opération (purge, fiches, prise du fichier ; jamais journalisé) : un plan arrêté ne dit rien ; sans rien à faire (`result` : ce qu'on montre à la place, avec
  *  `note` et `level` pour la notification) on le dit sans question ; sinon UNE question (`question`, confirmée par `ok`) et `go(yes)` : la suite choisie (lancer l'opération réelle si oui). */

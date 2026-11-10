@@ -245,10 +245,10 @@ export const TX = {
       'Construida sin puntos ni aerovías, el archivo {source} está: reconstruir'
     ],
     'source-unread': [
-      'Construite sans points ni voies : le fichier {source} est là mais la case « personnel » ne le déclare pas : reconstruire avec la case',
-      'Built without points or airways: the {source} file is there but the “personal” box does not declare it: rebuild with the box ticked',
-      'Ohne Punkte und Strecken erstellt: die {source}-Datei ist da, das Feld „persönlich“ nennt sie nicht: mit angekreuztem Feld neu erstellen',
-      'Construida sin puntos ni aerovías: el archivo {source} está pero la casilla «personal» no lo declara: reconstruir con la casilla marcada'
+      'Construite sans points ni voies : le fichier {source} est là mais la coche « Je certifie utiliser les données pour mon usage personnel » n’est pas cochée : cochez-la, puis « Mettre à jour »',
+      'Built without points or airways: the {source} file is there but the “I certify that I use the data for my personal use” box is not ticked: tick it, then “Update”',
+      'Ohne Punkte und Strecken erstellt: die {source}-Datei ist da, aber „Ich bestätige, die Daten für meinen persönlichen Gebrauch zu nutzen“ ist nicht angekreuzt: ankreuzen, dann „Aktualisieren“',
+      'Construida sin puntos ni aerovías: el archivo {source} está pero la casilla «Certifico que uso los datos para mi uso personal» no está marcada: márquela y luego «Actualizar»'
     ],
     'source-missing': ['Construite sans points ni voies : le fichier {source} manque',
       'Built without points or airways: the {source} file is missing', 'Ohne Punkte und Strecken erstellt: die {source}-Datei fehlt',
@@ -1203,10 +1203,11 @@ export const TX = {
     'Tomar el archivo descargado'
   ],
   // SOG-0150 : les jeux présents que la construction ne lira pas, la case « personnel » ne déclarant pas la source
-  pickupUnread: ['{z} : {n} jeux {s} présents dans Téléchargements, déjà pris : la case « personnel » ne déclare pas {s}',
-    '{z}: {n} {s} sets in place: the “personal” box does not declare {s}',
-    '{z}: {n} {s}-Datensätze vorhanden: das Feld „persönlich“ nennt {s} nicht',
-    '{z}: {n} conjuntos {s} presentes: la casilla «personal» no declara {s}'
+  pickupUnread: [
+    '{z} : {n} jeux {s} présents dans Téléchargements, déjà pris : la coche « Je certifie utiliser les données pour mon usage personnel » n’est pas cochée',
+    '{z}: {n} {s} sets in place: the “I certify that I use the data for my personal use” box is not ticked',
+    '{z}: {n} {s}-Datensätze vorhanden: „Ich bestätige, die Daten für meinen persönlichen Gebrauch zu nutzen“ ist nicht angekreuzt',
+    '{z}: {n} conjuntos {s} presentes: la casilla «Certifico que uso los datos para mi uso personal» no está marcada'
   ],
   pickupMore: ['… et {n} autres', '… and {n} more', '… und {n} weitere', '… y {n} más'],
   pickupAsk: [
@@ -1288,7 +1289,9 @@ export const TX = {
     '{z} ({s}): {zip} — nombre de archivo por renombrar: letras, cifras, . _ -'
   ],
   pickupReplan: ['Relancer le plan', 'Run the plan again', 'Plan erneut ausführen', 'Repetir el plan'],
-  pickupHint: ['Lancez maintenant Construire.', 'Now start Build.', 'Starten Sie jetzt Aufbauen.', 'Ahora lance Construir.'],
+  pickupHint: ['La construction de ces zones démarre d’elle-même.', 'These zones are built next, by themselves.',
+    'Diese Zonen werden anschließend von selbst gebaut.', 'Estas zonas se construyen a continuación, por sí solas.'
+  ],
   // « Tout mettre à jour » (SPEC § 5.3) : le bouton, la question, la chaîne, la fin
   updateAll: ['Tout mettre à jour', 'Update all', 'Alle aktualisieren', 'Actualizar todo'],
   updateAllN: ['Tout mettre à jour ({n})', 'Update all ({n})', 'Alle aktualisieren ({n})', 'Actualizar todo ({n})'],

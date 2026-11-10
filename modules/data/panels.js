@@ -763,7 +763,7 @@ function pickupWhy(error) {
   }) : M.own(TX.pickupError, error) ? tt(M.own(TX.pickupError, error)) : String(error ?? '');
 }
 /** Les phrases de ce que la prise n'a pas pu faire : un fichier au nom attendu introuvable dans Téléchargements (le motif est dit), un échec avec son motif. */
-function pickupProblems(out) {
+export function pickupProblems(out) {
   const who = x => ({
     z: itemName('base', x.zone),
     s: sourceName(x.source)
@@ -837,7 +837,8 @@ export function pickupSummary(out) {
   });
   return {
     text,
-    hint: out.files > 0 ? tt(TX.pickupHint) : '',
+    hint: out.kind === 'done' && out.files > 0 ? tt(TX.pickupHint) :
+    '', // la construction suit d'elle-même seulement quand tout est pris : un échec laisse l'écran à ses gestes (Relancer le plan)
     level: out.level
   };
 }

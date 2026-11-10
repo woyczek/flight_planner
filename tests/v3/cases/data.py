@@ -2666,7 +2666,8 @@ def l19(c):
     # ---- C: Yes: the real run (dry false), no zone lines, every button grey; then the summary, the hint, the missing file, one notification, one journal entry
     real_run = _pk_plan([], [], [], dry=False, state='running', jid='k2', step='fr')
     real = _pk_plan([sia_zip], [miss_gb], dry=False, jid='k2')
-    st['views'], st['i'], st['start'] = [plan, real_run, real], 0, (200, {'job': 'k1'})
+    build_done = _view('done', step='Terminé', jid='k4', done=1, zones={'fr': _zs('built', 4, 4)}, result={'built': ['fr'], 'failed': [], 'commits': [], 'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False, 'blocking': []})
+    st['views'], st['i'], st['start'] = [plan, real_run, real, build_done], 0, (200, {'job': 'k1'})
     n = len(st['posts'])
     c.tap(pk)
     _ask_text(c)
@@ -2678,12 +2679,18 @@ def l19(c):
          'the real body (only the zone with a zip in the plan) says dry false and carries the zip the plan showed (name and size), nothing re-read', what='real body')
     c.eq([_bv(c), c.js(f"document.querySelector('{pk}').disabled"), c.count('[data-build] [data-running] [data-zone-state]'), c.count('[data-build] [data-running] [data-count]'), c.count('[data-build] [data-running] [data-verb=stop]')],
          [['download:off', 'build:off', 'purge:off'], True, 0, 0, 1], 'one operation at a time; the bar has its step, no zone lines, no count; Arrêter', what='running')
-    c.until("!!document.querySelector('[data-build-result][data-op=pickup][data-result=done]')", timeout=10000, what='the end of the pickup')
+    # taking the file builds the zones taken by itself (SOG-0180): no « now click… » instruction, the build follows
+    st['start'] = (200, {'job': 'k4'})
+    for _ in range(40):
+        if any(p.get('verb') == 'build' for p in st['posts']):
+            break
+        c.wait(250)
+    c.eq([{k: p[k] for k in ('set', 'verb')} | {'zones': p['args'].get('zones')} for p in st['posts'][-1:]], [{'set': 'base', 'verb': 'build', 'zones': ['fr']}], 'the zones taken (fr) are built right after, nobody clicks anything', what='chained build')
     done = T('done', 'pickupSum: {').replace('{n}', f"3 {FILES[lang][1]}").replace('{s}', _size(5242880, lang))
-    c.eq([norm(c.text('[data-build-result] b')), norm(c.text('[data-build-result] [data-pickup-hint]')), [norm(t) for t in c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent)")]],
-         [norm(done), norm(T('pickupHint')), [norm(miss_txt)]], 'the end: « Pris : 3 fichiers (5,0 Mo) », « Lancez maintenant Construire », the file still missing', what='summary')
+    c.until("!!document.querySelector('[data-build-result][data-op=build], [data-build-result][data-result=done]')", timeout=10000, what='the build ends')
     notes = _notes_with(c, done)
-    c.eq([len(notes), norm(T('pickupHint')) in norm(notes[0])], [1, True], 'ONE notification, with the hint', what='notification')
+    c.eq([len(notes), norm(T('pickupHint')) in norm(notes[0])], [1, True], 'ONE notification for the pickup, which says the zones are built next', what='notification')
+    c.eq(c.count('[data-pickup-hint]') + len([x for x in c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent)") if 'Construire' in x]), c.count('[data-pickup-hint]'), 'no sentence tells the user to click a button afterwards', what='no instruction')
     doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and any(o.get('verb') == 'pickup' for o in d.get('ops', []))), what='the pickup is journaled')
     pks = [o for o in doc['ops'] if o['verb'] == 'pickup']
     c.eq([[o['set'], o['zones'], o['result'], o['files'], o['bytes'], o['failed']] for o in pks], [['base', ['fr'], 'done', 3, 5242880, []]], 'ONE journal entry: the real run only', what='journal')
@@ -2714,7 +2721,7 @@ def l19(c):
     c.until("document.querySelector('[data-build-result][data-op=pickup]')?.dataset.result === 'partial'", timeout=10000, what='the partial end')
     partial = T('partial', 'pickupSum: {').replace('{n}', f"3 {FILES[lang][1]}").replace('{s}', _size(5242880, lang)).replace('{f}', T('fetchFails', row=0).replace('{n}', '1'))
     c.eq([norm(c.text('[data-build-result] b')), [norm(t) for t in c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent)")], c.count('[data-build-result] [data-pickup-hint]')],
-         [norm(partial), [norm(big_txt)], 1], 'partial: what was taken, the failure named, the hint (files were taken)', what='partial')
+         [norm(partial), [norm(big_txt)], 0], 'partial: what was taken, the failure named, no hint and no automatic build (a failure leaves the screen to its gestures)', what='partial')
     # ---- F: the manual sources of a download that the launcher can take carry a button
     man = [{'zone': 'fr', 'source': 'sia', 'url': 'https://www.sia.example/aip', 'name': ['SIA fr', 'SIA en', 'SIA de', 'SIA es'], 'pickup': True, 'expected': 'export_xml_bd_SIA_*.zip'},
            {'zone': 'gb', 'source': 'nats', 'name': ['NATS fr', 'NATS en', 'NATS de', 'NATS es'], 'pickup': True, 'expected': 'EG_*_DS_*_XML.zip'},
@@ -2780,7 +2787,7 @@ def l19(c):
     bad_zip = {**sia_zip, 'zip': 'export_xml_bd_SIA_é.zip'}
     plan5 = _pk_plan([bad_zip, nats_zip], [], [], jid='i1')
     real5 = _pk_plan([nats_zip], [], [], dry=False, jid='i2', zones=('gb',))
-    st['views'], st['i'], st['start'] = [plan5, real5], 0, (200, {'job': 'i1'})
+    st['views'], st['i'], st['start'] = [plan5, real5, build_done], 0, (200, {'job': 'i1'})
     n = len(st['posts'])
     c.tap(pk)
     q = _ask_text(c)
@@ -2790,10 +2797,18 @@ def l19(c):
          'the plan shows the zip with the bad name as « nom de fichier à renommer » and lists only the ready one as to be taken', what='question rename')
     st['start'] = (200, {'job': 'i2'})
     c.tap('.f-modal [data-ok]')
-    c.until("document.querySelector('[data-build-result][data-op=pickup]')?.dataset.result === 'done'", timeout=10000, what='the end')
-    c.eq(st['posts'][-1]['args'], {'zones': ['gb'], 'personal': [], 'dry': False, 'zips': {'nats': {'name': nats_zip['zip'], 'size': 2097152}}},
+    for _ in range(40):
+        if any(p.get('args', {}).get('dry') is False for p in st['posts'][n:]):
+            break
+        c.wait(250)
+    real3 = [p for p in st['posts'][n:] if p.get('args', {}).get('dry') is False]
+    c.eq(real3[-1]['args'], {'zones': ['gb'], 'personal': [], 'dry': False, 'zips': {'nats': {'name': nats_zip['zip'], 'size': 2097152}}},
          'the real run carries only the ready source: its zone and its zip', what='real body 3')
-    c.eq([norm(t) for t in c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent)")], [norm(rename)], 'and the end still says what was not taken', what='rename line')
+    for _ in range(40):
+        if _notes_with(c, rename):
+            break
+        c.wait(250)
+    c.ok(bool(_notes_with(c, rename)), None, 'the notification still says what was not taken (the build that follows replaces the panel)')
     # none ready: no question, nothing run, the line is shown
     plan6 = _pk_plan([bad_zip], [], [], jid='i3', zones=('fr',))
     st['views'], st['i'], st['start'] = [plan6], 0, (200, {'job': 'i3'})
@@ -3505,7 +3520,10 @@ def l28(c):
     c.ok('fr_apt.xml' in q['text'], q['text'], 'and the XML that is not read, by its name')
     st['views'], st['i'], st['start'] = [_pk_plan([taken], dry=False, zones=('fr',), shown=None)], 0, (200, {'job': 'k2'})
     c.tap('.f-modal [data-ok]')
-    c.until("!!document.querySelector('[data-build-result][data-op=pickup]')", timeout=10000, what='the real run ends')
+    for _ in range(40):   # the real run is sent (the build of the zone taken follows it by itself, SOG-0180)
+        if any(p.get('args', {}).get('dry') is False for p in st['posts']):
+            break
+        c.wait(250)
     real = [p for p in st['posts'] if p.get('args', {}).get('dry') is False]
     c.eq(real[-1]['args'], {'zones': ['fr'], 'personal': [], 'dry': False, 'zips': {'openaip': {'name': 'openaip', 'size': 2489}}},
          'the real run sends back exactly what the plan showed for openAIP (no zip name, the total size)', what='zips sent')
@@ -4884,3 +4902,31 @@ def l61(c):
     c.eq(src.count('xplaneHint'), 0, 'the X-Plane hint (a line under a box that no longer exists) is gone', what='hint key')
     panels = (ROOT / 'modules/data/panels.js').read_text(encoding='utf-8')
     c.ok('isLocalOnly' in panels, None, 'the personal sources sent to the verbs leave out those read on this workstation only')
+
+
+@case('L62', 'Données: every button named between quotation marks in a message of the module exists on the screen under that name, in the four languages (one name per gesture) — no more « cliquez sur Recalculer » for a button that is gone (SOG-0180)', 'L', tags=('data',), static=True,
+      rule='SOG-0180 (refused at the recipe: « l’information dit « cliquez sur recalculer ». le bouton n’existe plus »): the words of the messages are checked against the words of the buttons; a name quoted in a message that is not a button of the screen is an orphan')
+def l62(c):
+    src = (ROOT / 'modules/data/texts.js').read_text(encoding='utf-8')
+    src = re.sub(r'^\s*//.*$', '', src, flags=re.M)      # the comments: their apostrophes are not strings
+    src = re.sub(r'(?<=[,;\]\)\}])\s+//[^\n]*', '', src)
+    one = r"'((?:[^'\\]|\\.)*)'"
+    unq = lambda x: re.sub(r"\\(.)", r"\1", x)
+    # the buttons (and the boxes) of the screen: the keys whose 4 strings are a label; every occurrence of a key counts
+    labels = ['download', 'build', 'purge', 'pickup', 'publish', 'stop', 'addZone', 'pickupReplan', 'updateAll', 'update', 'recompute', 'selStale', 'selNone', 'certify', 'licencesLink']
+    allowed = set()
+    for k in labels:
+        for m in re.finditer(r"^\s*" + k + r": \[\s*" + one + r",\s*" + one + r",\s*" + one + r",\s*" + one, src, re.M):
+            allowed |= {unq(g) for g in m.groups()}
+    # names that are not buttons of the screen but panels, layers or other screens' buttons, said as such (the sheets panel of the aircraft group, raw layer names, Fuel and Map's « Relire », the settings path)
+    others = {'Fiches publiées', 'Published sheets', 'Veröffentlichte Datenblätter', 'Fichas publicadas', 'Relire', 'Read again', 'Erneut lesen', 'Volver a leer', 'data', 'hot'}
+    c.ok(len(allowed) >= 40, len(allowed), 'the labels of the screen were read (four languages each)')
+    quote = re.compile(r"«\s*([^»]{2,60}?)\s*»|“([^”]{2,60}?)”|„([^“]{2,60}?)“")
+    orphans = []
+    for m in re.finditer(one, src):
+        text = unq(m.group(1))
+        for q in quote.finditer(text):
+            name = next(g for g in q.groups() if g).strip()
+            if name not in allowed and name not in others:
+                orphans.append(name)
+    c.eq(sorted(set(orphans)), [], 'every quoted button name of a message is the name of a button of the screen', what='orphans')
