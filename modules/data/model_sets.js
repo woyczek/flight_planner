@@ -204,7 +204,8 @@ export const PICKUP = {
 /** Où la prise dépose les fichiers de chaque source (écrit tel que le lanceur le fait : tools/regen/base_sources.py PICKUP) : sources brutes du poste, jamais commitées. */
 export const PICKUP_DEST = {
   sia: 'data/sia/',
-  nats: 'data/sia/zones/gb/'
+  nats: 'data/sia/zones/gb/',
+  lfv: 'data/sia/zones/se/' // SOG-0189 (4) : sans cette ligne, AIP_OFFLINE.zip était « bloqué » (zipSendable) et dit « nom de fichier à renommer » alors que son nom est permis
 };
 /** Les fiches publiées de la compagnie : un seul verbe du jeu « aircraft », son propre panneau (aircraft/publish : plan à blanc, puis la copie). */
 export const SHEETS = {

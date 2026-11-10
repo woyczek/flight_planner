@@ -14,7 +14,7 @@
   // Lecture des fichiers : par le lecteur reçu (couche de données du frame : read(chemin, { policy: 'reference', wait })
   // → { value | text, rev, cached, at } | null ; list(préfixe) → chemins | null ; watch(préfixe, fn)), ou, en attendant
   // le frame, par AeroDB.fetchReader() (lanceur : fichiers servis ; mode GitHub : GitHubData).
-  // API : window.AeroDB = { create({ reader, zones, now }) → service, fetchReader({ root }), airacCycles(n, date), literal, zoneFrame(anneaux),
+  // API : window.AeroDB = { create({ reader, zones, now }) → service, fetchReader({ root }), airacCycles(n, date), vfrParts(index VFR), literal, zoneFrame(anneaux),
   //   declaration() → préfixes lus et écrits par aerodb (à donner à FrameData.adapter) }.
   // Service : status(), state() (loading, ready, noaccess, offline, unpublished, idle : sans lire), refresh(), ready(q),
   //   on('change' | 'state', fn), airspaces(q), aerodromes(q), navaids(q), points(q), airways(q), vrp(q),
@@ -351,6 +351,20 @@
         (m.get(k) || m.set(k, []).get(k)).push(x);
       }
     return m;
+  }
+  /** SOG-0191 : ce que sia/vfr/index.json dit du cycle de chaque part : { cycles: { 'AAAA-MM-JJ': n } | null (jamais écrit : un index d'avant), unknown: n (terrains dont le cycle n'est pas connu), partial: bool }.
+   *  partial : plusieurs cycles, ou des terrains sans cycle à côté de terrains datés, ou `complete` faux (compilation d'un cache incomplet). Une valeur lue qui n'est pas de la forme attendue est écartée. */
+  function vfrParts(vi) {
+    const raw = vi && typeof vi.cycles === 'object' && vi.cycles && !Array.isArray(vi.cycles) ? vi.cycles : null,
+      cycles = raw ? Object.fromEntries(Object.entries(raw).filter(([k, n]) => /^\d{4}-\d{2}-\d{2}$/.test(k) && Number.isInteger(n) &&
+        n >= 0).sort(([a], [b]) => a < b ? -1 : 1).slice(0, 12)) : null,
+      unknown = Number.isInteger(vi?.unknown) && vi.unknown >= 0 ? vi.unknown : 0,
+      groups = (cycles ? Object.keys(cycles).length : 0) + (unknown ? 1 : 0);
+    return {
+      cycles,
+      unknown,
+      partial: groups > 1 || vi?.complete === false
+    };
   }
   /** Cycles AIRAC (dates de début « AAAA-MM-JJ ») : le cycle en vigueur à date puis les n - 1 précédents. */
   function airacCycles(n = 6, date = Date.now()) {
@@ -2160,7 +2174,10 @@
           vfr: vi ? {
             cycle: vi.cycle || vi.source?.cycle || null,
             at: vi.generatedAt || vi.updated_at || null,
-            count: Array.isArray(vi.aerodromes) ? vi.aerodromes.length : Object.keys(vi.aerodromes || {}).length
+            count: Array.isArray(vi.aerodromes) ? vi.aerodromes.length : Object.keys(vi.aerodromes || {}).length,
+            // SOG-0191 : le cycle de chaque part (sia/vfr/index.json : `cycle` est le plus ancien, `cycles` { 'AAAA-MM-JJ': n }, `unknown` : les terrains sans cycle connu) ; null avant la première
+            // construction qui l'écrit. `partial` : plus d'un cycle, ou des terrains de cycle inconnu à côté de terrains datés, ou une compilation que le lanceur dit partielle (complete faux)
+            ...vfrParts(vi)
           } : null,
           aircraft: Array.isArray(air) && air.length ? {
             at: db?.updated_at || db?.generated || null,
@@ -3182,6 +3199,7 @@
     create,
     fetchReader,
     airacCycles,
+    vfrParts,
     literal,
     zoneFrame,
     CYCLED_ZONES,

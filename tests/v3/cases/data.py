@@ -1804,6 +1804,8 @@ _L16_JS = r"""async () => {
   out.pickupEntry = M.setEntry('base', 'pickup', { at: Date.parse('2026-10-30T10:00:00Z'), ids: ['fr', 'gb'], seconds: 2.4, out: M.pickupOutcome({ state: 'done', result: { ok: false, dry: false, taken: [pkTk], missing: [], failed: [pkBg], reason: 'partial' } }), job: 'k9' });
   out.manualFlags = M.fetchOutcome({ state: 'done', result: { ok: true, fetched: [], unchanged: [], failed: [], manual: [{ zone: 'fr', source: 'sia', name: ['a'], pickup: true, expected: 'x*.zip' }, { zone: 'fr', source: 'dircam' }] } }).manual.map(m => [m.source, m.pickup, m.expected]);
   out.pickupDest = M.PICKUP_DEST;
+  const pkl = M.pickupSplit([{ zone: 'se', source: 'lfv', zip: 'AIP_OFFLINE.zip', size: 1073741824 }]);
+  out.splitLfv = [pkl.ready.map(t => t.source), pkl.blocked.length, pkl.zips, pkl.zones];
   // a reason, a set or a source named like a member of Object.prototype is no key of a table of the module
   const BADK = ['constructor', 'toString', '__proto__', 'hasOwnProperty', 'valueOf'];
   const kindsOf = res => ['outcome', 'fetchOutcome', 'purgeOutcome', 'pickupOutcome', 'vfrFetchOutcome', 'sheetsOutcome'].map(fn => M[fn]({ state: 'done', zones: {}, result: res }).kind);
@@ -1941,7 +1943,8 @@ def l16(c):
     c.eq(r['protoSplit'], [0, 3, {}, []], 'a pickup source named so is no source: its zip is blocked, never sent', what='pickupSplit prototype')
     c.eq(r['own'], [1, None, None, None, None, 5, None, None, None], 'own(): the value of an own key only', what='own')
     c.eq(r['bulk'], ['constructor', 'France', 'F', '__proto__'], 'a State prefix named so is written as it is', what='bulkName')
-    c.eq(r['pickupDest'], {'sia': 'data/sia/', 'nats': 'data/sia/zones/gb/'}, 'where the raw files go, as the launcher writes them', what='PICKUP_DEST')
+    c.eq(r['splitLfv'], [['lfv'], 0, {'lfv': {'name': 'AIP_OFFLINE.zip', 'size': 1073741824}}, ['se']], 'SOG-0189 (4): the Swedish AIP_OFFLINE.zip (a permitted name, 1 GB) is READY to be taken, not « nom de fichier à renommer »', what='pickupSplit lfv')
+    c.eq(r['pickupDest'], {'sia': 'data/sia/', 'nats': 'data/sia/zones/gb/', 'lfv': 'data/sia/zones/se/'}, 'where the raw files go, as the launcher writes them', what='PICKUP_DEST')
     c.eq(r['argsProc'], [{'states': ['K', 'LF']}, {'states': ['K']}], 'proc: the States sent are sorted and unique (the launcher takes one or two, « K » before « LF »)', what='setArgs proc')
     c.eq(r['procBuild'], [['partial', ['K'], [{'zone': 'LF', 'error': 'no-cache'}]], ['done', ['LF'], []], ['merge-pending', [], []]],
          'proc/build: built is { State: aerodromes } (a State with none is not built), the failures name the State, no-cache per State; merge-pending is a kind of its own', what='proc build')

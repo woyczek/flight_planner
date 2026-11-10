@@ -135,8 +135,39 @@ def _check(compiled):
     return errors
 
 
-def plan(compiled, data_dir):
-    """Contrôle la compilation et prépare les fichiers (rien n'est écrit)."""
+CYCLE = re.compile(r'\d{4}-\d{2}-\d{2}')
+
+
+def _cycle(v):
+    """Un cycle AIRAC « AAAA-MM-JJ », ou None (jamais une valeur lue d'un fichier prise telle quelle)."""
+    return v if isinstance(v, str) and CYCLE.fullmatch(v) else None
+
+
+def _kept_entries(data_dir, compiled_ads):
+    """SOG-0191 : les terrains déjà publiés que cette compilation ne porte pas, avec leur cycle (celui de l'index, sinon celui de leur fichier, sinon None : publié avant que le cycle soit écrit)."""
+    folder = os.path.join(data_dir, *VFR_DIR)
+    try:
+        old = json.load(open(os.path.join(folder, 'index.json'), encoding='utf-8')).get('aerodromes') or []
+    except (OSError, ValueError, AttributeError):
+        return []
+    kept = []
+    for e in old if isinstance(old, list) else []:
+        k = e.get('ad') if isinstance(e, dict) else None
+        if not isinstance(k, str) or not ICAO.fullmatch(k) or k in compiled_ads or not os.path.isfile(os.path.join(folder, k + '.json')):
+            continue
+        cyc = _cycle(e.get('cycle'))
+        if cyc is None and 'cycle' not in e:
+            try:
+                cyc = _cycle((json.load(open(os.path.join(folder, k + '.json'), encoding='utf-8')).get('source') or {}).get('cycle'))
+            except (OSError, ValueError, AttributeError):
+                cyc = None
+        kept.append({**{x: e[x] for x in ('ad', 'points', 'routes', 'notes', 'unmatched', 'analysis') if x in e}, 'cycle': cyc})
+    return kept
+
+
+def plan(compiled, data_dir, keep_others=False):
+    """Contrôle la compilation et prépare les fichiers (rien n'est écrit). keep_others (SOG-0191) : la compilation ne couvre qu'une partie des terrains (téléchargement interrompu) : les terrains déjà publiés
+    qu'elle ne porte pas sont GARDÉS (jamais retirés), avec leur propre cycle ; l'index dit le cycle de chaque part (`cycles`, `unknown`) et `complete`."""
     errors = _check(compiled)
     if errors:
         return {'ok': False, 'errors': errors, 'files': {}, 'changed': [], 'remove': [], 'summary': {}}
@@ -199,6 +230,7 @@ def plan(compiled, data_dir):
             })
         notes = [{'page': g['pdfPage'], 'title': _title(g['text']), 'text': g['text']} for g in sorted(pgs, key=lambda g: g['pdfPage'])]
         src = a.get('source') if isinstance(a.get('source'), dict) else {}
+        cyc = _cycle(src.get('cycle')) or _cycle(src.get('airac')) or _cycle(src.get('sourceAirac')) or _cycle(compiled.get('sourceAirac'))  # le compilateur écrit `airac` (jamais `cycle`) : le cycle se perdait ici
         it = a.get('interpretation') if isinstance(a.get('interpretation'), dict) else {}
         analysis = {
             'status': a.get('status') if isinstance(a.get('status'), str) and a.get('status') != 'unreviewed' else None,
@@ -213,7 +245,7 @@ def plan(compiled, data_dir):
             'label': LABEL,
             'analysis': analysis,
             'source': {'file': os.path.basename(str(src.get('file') or '').replace('\\', '/')),
-                       'sha256': src.get('sha256') or a.get('fingerprint'), 'cycle': src.get('cycle') or src.get('sourceAirac')},
+                       'sha256': src.get('sha256') or a.get('fingerprint'), 'cycle': cyc},
             'generatedAt': compiled.get('generatedAt'),
             'points': out_pts,
             'routes': out_rts,
@@ -221,8 +253,17 @@ def plan(compiled, data_dir):
         })
         index.append({'ad': k, 'points': sum(1 for p in out_pts if p['role'] == 'reporting_point'), 'routes': len(out_rts),
                       'notes': len(notes), 'unmatched': sum(1 for p in out_pts if p['role'] == 'reporting_point' and not p['vrp']),
-                      'analysis': analysis['status']})
+                      'analysis': analysis['status'], 'cycle': cyc})
         n_pts, n_rts, n_notes = n_pts + index[-1]['points'], n_rts + len(out_rts), n_notes + len(notes)
+    n_compiled = len(index)
+    kept = _kept_entries(data_dir, {e['ad'] for e in index}) if keep_others else []
+    index = sorted(index + kept, key=lambda e: e['ad'])
+    cycles, unknown = {}, 0
+    for e in index:
+        if e.get('cycle'):
+            cycles[e['cycle']] = cycles.get(e['cycle'], 0) + 1
+        else:
+            unknown += 1
     files['/'.join(VFR_DIR + ('index.json', ))] = _dump({
         'schema': 2,
         'status': 'candidate',
@@ -230,12 +271,18 @@ def plan(compiled, data_dir):
         'generatedAt': compiled.get('generatedAt'),
         'sourceSchema': str(compiled.get('schemaVersion')),
         'datasetStatus': compiled.get('datasetStatus'),
+        # SOG-0191 : le cycle de chaque part. `cycle` est le PLUS ANCIEN (un jeu n'est à jour que si toutes ses parts le sont) ; None dès qu'une part n'a pas de cycle connu ; `cycles` : combien de terrains par cycle ; `complete` : faux = compilation partielle
+        'cycle': None if unknown or not cycles else min(cycles),
+        'cycles': dict(sorted(cycles.items())),
+        'unknown': unknown,
+        'complete': not keep_others,
         'aerodromes': index
     })
     folder = os.path.join(data_dir, *VFR_DIR)
     remove = []
+    kept_names = {e['ad'] + '.json' for e in kept}
     if os.path.isdir(folder):
-        remove = sorted('/'.join(VFR_DIR + (f, )) for f in os.listdir(folder) if f.endswith('.json') and '/'.join(VFR_DIR + (f, )) not in files)
+        remove = sorted('/'.join(VFR_DIR + (f, )) for f in os.listdir(folder) if f.endswith('.json') and '/'.join(VFR_DIR + (f, )) not in files and f not in kept_names)
     changed = [p for p, b in files.items() if not os.path.isfile(os.path.join(data_dir, *p.split('/'))) or
                open(os.path.join(data_dir, *p.split('/')), 'rb').read() != b]
     return {
@@ -244,7 +291,7 @@ def plan(compiled, data_dir):
         'files': files,
         'changed': changed,
         'remove': remove,
-        'summary': {'aerodromes': len(index), 'points': n_pts, 'routes': n_rts, 'notes': n_notes, 'interpreted': n_int,
+        'summary': {'aerodromes': len(index), 'compiled': n_compiled, 'kept': len(kept), 'cycles': dict(sorted(cycles.items())), 'unknown': unknown, 'points': n_pts, 'routes': n_rts, 'notes': n_notes, 'interpreted': n_int,
                     'unmatched': unmatched[:40], 'unmatchedCount': len(unmatched), 'changed': len(changed), 'remove': len(remove),
                     'bytes': sum(len(b) for b in files.values()), 'base': len(base)}
     }

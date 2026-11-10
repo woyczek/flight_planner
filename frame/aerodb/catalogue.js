@@ -109,12 +109,26 @@
   // Une ligne par source : { id, no (ligne du tableau 1.2 de docs/technique/V3_DONNEES_REGENERATION.md, ou null), status
   // ('used' : la suite s'en sert aujourd'hui ; 'candidate' : envisagée ; 'abandoned' : écartée, avec sa raison), cycled (adresse
   // du cycle AIRAC en vigueur), n [fr, en, de, es], url (chaîne, ou fonction du cycle), gives [4] (ce qu'elle donne et où cela
-  // va), lic [4] (licence ou conditions, d'après LICENSE.md), how [4] (facultatif : le geste pour l'obtenir), et, facultatifs, pour la page « Sources et licences » : pub (l'éditeur, texte ou [4] ; à défaut le début du nom),
+  // va), lic [4] (licence ou conditions, d'après LICENSE.md), how [4] (facultatif : le geste pour l'obtenir), steps { page: { url, home }, files: [{ name, url?, gives [4] }] } (SOG-0189, facultatif : le pas-à-pas d'une source déposée à la main, lu par stepsOf), et, facultatifs, pour la page « Sources et licences » : pub (l'éditeur, texte ou [4] ; à défaut le début du nom),
   // credit [4] (le crédit obligatoire), date (la date ou l'édition : texte), localOnly (vrai : lu sur ce poste seulement) }. Données seules :
   // l'écran (sources.js) ne fait qu'afficher des liens, aucune récupération.
   const SOURCES = [{
     id: 'sia',
     group: 'base',
+    steps: {
+      page: {
+        url: c => siaPage(c),
+        home: 'https://www.sia.aviation-civile.gouv.fr/'
+      },
+      files: [{
+        name: 'export_xml_bd_SIA_<AAAA-MM-JJ>-v<nn>.zip',
+        gives: ['XML SIA + AIXM 4.5 : toute la base de la France (espaces, terrains, balises, points, voies, obstacles)',
+          'XML SIA + AIXM 4.5: the whole base of France (airspaces, aerodromes, navaids, points, airways, obstacles)',
+          'XML SIA + AIXM 4.5: die ganze Basis Frankreichs (Lufträume, Flugplätze, Funkfeuer, Punkte, Luftstraßen, Hindernisse)',
+          'XML SIA + AIXM 4.5: toda la base de Francia (espacios, aeródromos, radioayudas, puntos, aerovías, obstáculos)'
+        ]
+      }]
+    },
     zones: ['fr'],
     fetch: {
       how: 'pick',
@@ -215,6 +229,19 @@
   }, {
     id: 'dircam',
     group: 'base',
+    steps: {
+      page: {
+        url: 'https://www.dircam.dsae.defense.gouv.fr/fr/milaip',
+        home: 'https://www.dircam.dsae.defense.gouv.fr/'
+      },
+      files: [{
+        name: 'MIAM_OACI_ENR 5.7.pdf',
+        url: 'https://www.dircam.dsae.defense.gouv.fr/images/Stories/Doc/MIAM_OACI/MIAM_OACI_ENR%205.7.pdf',
+        gives: ['ENR 5.7 · axes de ravitaillement en vol de la France', 'ENR 5.7 · air-to-air refuelling tracks of France',
+          'ENR 5.7 · Luftbetankungsstrecken Frankreichs', 'ENR 5.7 · ejes de reabastecimiento en vuelo de Francia'
+        ]
+      }]
+    },
     zones: ['fr'],
     fetch: {
       how: 'pick',
@@ -461,6 +488,30 @@
   }, {
     id: 'nats',
     group: 'base',
+    steps: {
+      page: {
+        url: 'https://nats-uk.ead-it.com/cms-nats/opencms/en/Publications/digital-datasets/',
+        home: 'https://nats-uk.ead-it.com/'
+      },
+      files: [{
+        name: 'EG_AIP_DS_<AAAAMMJJ>_XML.zip',
+        gives: ['AIP · points, routes, balises, espaces et terrains du Royaume-Uni (zone gb)',
+          'AIP · points, routes, navaids, airspaces and aerodromes of the United Kingdom (zone gb)',
+          'AIP · Punkte, Strecken, Funkfeuer, Lufträume und Flugplätze des Vereinigten Königreichs (Zone gb)',
+          'AIP · puntos, rutas, radioayudas, espacios y aeródromos del Reino Unido (zona gb)'
+        ]
+      }, {
+        name: 'EG_OBS_DS_AREA1_FULL_<AAAAMMJJ>_XML.zip',
+        gives: ['Obstacles du Royaume-Uni', 'Obstacles of the United Kingdom', 'Hindernisse des Vereinigten Königreichs',
+          'Obstáculos del Reino Unido'
+        ]
+      }, {
+        name: 'EG_UAS_…_XML.zip',
+        gives: ['Zones UAS (drones) du Royaume-Uni', 'UAS (drone) zones of the United Kingdom',
+          'UAS-Zonen (Drohnen) des Vereinigten Königreichs', 'Zonas UAS (drones) del Reino Unido'
+        ]
+      }]
+    },
     zones: ['gb'],
     fetch: {
       how: 'pick',
@@ -494,6 +545,21 @@
   }, {
     id: 'lfv',
     group: 'base',
+    steps: {
+      page: {
+        url: 'https://www.aro.lfv.se/content/eaip/default_offline.html',
+        home: 'https://www.aro.lfv.se/'
+      },
+      files: [{
+        name: 'AIP_OFFLINE.zip',
+        url: 'https://aro.lfv.se/Content/eaip/AIP_OFFLINE.zip',
+        gives: ['eAIP de la Suède hors ligne (environ 1 Go) · ENR 4.4 points désignés et ENR 3.2 routes RNAV (zone se)',
+          'Sweden eAIP offline (about 1 GB) · ENR 4.4 designated points and ENR 3.2 RNAV routes (zone se)',
+          'Schwedens eAIP offline (rund 1 GB) · ENR 4.4 benannte Punkte und ENR 3.2 RNAV-Strecken (Zone se)',
+          'eAIP de Suecia sin conexión (unos 1 GB) · ENR 4.4 puntos designados y ENR 3.2 rutas RNAV (zona se)'
+        ]
+      }]
+    },
     zones: ['se'],
     fetch: {
       how: 'pick',
@@ -563,6 +629,20 @@
   }, {
     id: 'vac',
     group: 'base',
+    steps: {
+      page: {
+        url: c => `${eaipBase(c).replace(/\/FRANCE\/.*$/, '')}/Atlas-VAC/PDF_AIPparSSection/VAC/AD/AD-2.LFBD.pdf`,
+        home: 'https://www.sia.aviation-civile.gouv.fr/'
+      },
+      files: [{
+        name: 'AD-2.<OACI>.pdf',
+        gives: ['Une carte VAC par terrain (exemple : AD-2.LFBD.pdf) · points de report VFR et leurs séquences',
+          'One VAC chart per aerodrome (example: AD-2.LFBD.pdf) · VFR reporting points and their sequences',
+          'Eine VAC-Karte je Flugplatz (Beispiel: AD-2.LFBD.pdf) · VFR-Meldepunkte und ihre Abfolgen',
+          'Una carta VAC por aeródromo (ejemplo: AD-2.LFBD.pdf) · puntos de notificación VFR y sus secuencias'
+        ]
+      }]
+    },
     zones: ['fr'],
     fetch: {
       how: 'pick',
@@ -805,6 +885,27 @@
     localOnly: true, // lu sur CE poste seulement : propriétaire (X-Plane, EUROCONTROL), jamais dans la base publiée ni dans un export, coche « usage personnel » ou non (SOG-0162)
     group: 'proc',
     zones: [],
+    steps: {
+      page: {
+        url: 'https://www.nm.eurocontrol.int/RAD/',
+        home: 'https://www.nm.eurocontrol.int/'
+      },
+      files: [{
+        name: 'RAD_<cycle>_v….xlsx',
+        gives: ['Le RAD (Rolling RAD Document) : interdictions et conditions de route, un classeur par cycle',
+          'The RAD (Rolling RAD Document): route restrictions and conditions, one workbook per cycle',
+          'Das RAD (Rolling RAD Document): Streckeneinschränkungen und -bedingungen, eine Arbeitsmappe je Zyklus',
+          'El RAD (Rolling RAD Document): restricciones y condiciones de ruta, un libro por ciclo'
+        ]
+      }, {
+        name: 'eurocontrol-airac-<cycle>-fra-points-….xlsx',
+        gives: ['Les points significatifs FRA : rôles entrée / sortie / intermédiaire, niveaux, horaires',
+          'The FRA significant points: entry / exit / intermediate roles, levels, times',
+          'Die signifikanten FRA-Punkte: Rollen Eintritt / Austritt / Zwischenpunkt, Ebenen, Zeiten',
+          'Los puntos significativos FRA: funciones entrada / salida / intermedio, niveles, horarios'
+        ]
+      }]
+    },
     fetch: {
       how: 'pick',
       glob: 'RAD_*.xlsx'
@@ -1155,6 +1256,29 @@
   const byId = id => SOURCES.find(s => s.id === id) || null;
   /** Adresse d'une source pour un cycle (« 2610 », date ou rien : le cycle en vigueur). */
   const urlOf = (s, cycle) => typeof s.url === 'function' ? s.url(cycle || A.cycleOf().id) : s.url;
+  /** SOG-0189 : le pas-à-pas d'une source que l'utilisateur dépose lui-même, ou null (une source que le lanceur télécharge n'en a pas) :
+   *  { id, page: { url (le lien DIRECT de la page où est le fichier, résolu pour le cycle), home (la page d'accueil du site : le repli si le lien direct ne répond plus) },
+   *  files: [{ name (le nom exact du fichier à prendre ; <…> : la partie qui change), url? (le lien direct du fichier lui-même, s'il y en a un), gives [4] (ce qu'il apporte) }] }.
+   *  Le troisième pas (« Prendre le fichier téléchargé ») est le bouton de la page : il n'est pas ici. Données seules : aucun contrôle de lien (la page dit un lien mort et propose `home`). */
+  function stepsOf(id, cycle) {
+    const s = byId(id),
+      st = s && s.steps;
+    if (!st) return null;
+    return {
+      id: s.id,
+      page: {
+        url: typeof st.page.url === 'function' ? st.page.url(cycle || A.cycleOf().id) : st.page.url,
+        home: st.page.home
+      },
+      files: st.files.map(f => ({
+        name: f.name,
+        ...(f.url ? {
+          url: f.url
+        } : {}),
+        gives: f.gives.slice()
+      }))
+    };
+  }
   const G = typeof window !== 'undefined' ? window : self;
   G.AeroCatalogue = {
     SOURCES,
@@ -1166,6 +1290,7 @@
     PARSER_VERSION,
     byId,
     urlOf,
+    stepsOf,
     eaipBase,
     SIA_REGIONS,
     siaRegionOf,

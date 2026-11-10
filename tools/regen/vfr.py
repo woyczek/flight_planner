@@ -14,7 +14,7 @@ celui en vigueur par défaut, calendrier de 28 jours) :
   · `vfr/purge` { cycle?, dry } : le cache (les cartes et leur texte extrait) de ce cycle, ou de tous ; le plan d'abord (dry) ; jamais sia/vfr/
     ni un fichier suivi.
 Vue : job.data['cycles'] = { <cycle>: { state, done, total, error? } } ; résultats : fetch { ok, cycle, fetched, unchanged, notPublished,
-failed: [{ item, error }], reason? }, build { ok, cycle, summary, commit, warning?, failed, reason? }, purge { ok, dry, removed: { files, bytes },
+failed: [{ item, error }], remaining (les cartes encore à prendre), reason? }, build { ok, cycle, summary, commit, warning?, failed, complete, expected, missing (SOG-0191 : faux = un cache incomplet, les terrains déjà publiés qu'il ne couvre pas sont gardés), reason? }, purge { ok, dry, removed: { files, bytes },
 warnings, reason? }."""
 import json
 import os
@@ -88,6 +88,40 @@ def base_icaos(data, cycle):
     return sorted({r.get('icao') for r in rows or [] if isinstance(r, dict) and isinstance(r.get('icao'), str) and ICAO.fullmatch(r['icao'])})
 
 
+STATE = '_state.json'  # dans le cache du cycle : { cycle, expected, absent: [OACI non publiés], at } (SOG-0191)
+
+
+def read_state(data, cycle):
+    """Les terrains que le SIA ne publie pas (404) lors d'un téléchargement de ce cycle : [OACI] ; [] sans état ou état d'un autre cycle (jamais pris tel quel)."""
+    try:
+        with open(os.path.join(cache_dir(data, cycle), STATE), encoding='utf-8') as f:
+            st = json.load(f)
+    except (OSError, ValueError):
+        return []
+    absent = st.get('absent') if isinstance(st, dict) and st.get('cycle') == cycle else None
+    return sorted({x for x in absent if isinstance(x, str) and ICAO.fullmatch(x)}) if isinstance(absent, list) else []
+
+
+def write_state(data, cycle, expected, absent):
+    path = os.path.join(cache_dir(data, cycle), STATE)
+    tmp = path + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump({'cycle': cycle, 'expected': expected, 'absent': sorted(absent), 'at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}, f)
+    os.replace(tmp, path)
+
+
+def coverage(data, cycle, expected=None):
+    """Ce que le cache d'un cycle porte au regard de ce que la base de la France attend : (cartes en cache, terrains attendus, restant à prendre = attendus ni en cache ni connus non publiés)."""
+    folder = cache_dir(data, cycle)
+    try:
+        have = {n[5:9] for n in os.listdir(folder) if re.fullmatch(r'AD-2\.[A-Z0-9]{4}\.pdf', n) and os.path.getsize(os.path.join(folder, n)) > 0}
+    except OSError:
+        have = set()
+    expected = base_icaos(data, cycle) if expected is None else expected
+    absent = set(read_state(data, cycle))
+    return have, expected, [i for i in expected if i not in have and i not in absent]
+
+
 class _View:
     """L'élément du travail (le cycle) à la racine de sa vue."""
 
@@ -121,6 +155,7 @@ def fetch(job, args, ctx):
     eaip = proc_sia.eaip_url(cycle)
     fetched = unchanged = absent = 0
     failed = []
+    not_published = set(read_state(data, cycle)) & set(icaos)  # SOG-0191 : ce que le SIA ne publie pas, retenu d'une passe à l'autre (« reprendre où il s'est arrêté » sait ce qui manque vraiment)
     view.set(state='fetching', total=len(icaos))
     for n, icao in enumerate(icaos):
         if job.cancelled():
@@ -129,11 +164,13 @@ def fetch(job, args, ctx):
         dest = os.path.join(folder, f'AD-2.{icao}.pdf')
         if os.path.isfile(dest) and os.path.getsize(dest) > 0:  # une carte d'un cycle ne change pas
             unchanged += 1
+            not_published.discard(icao)
         else:
             try:
                 status, body = GET(proc_sia.vac_url(eaip, icao))
                 if status in (404, 410):
                     absent += 1
+                    not_published.add(icao)
                 elif status != 200 or not body.startswith(b'%PDF'):
                     failed.append({'item': icao, 'error': f'http-{status}' if status != 200 else 'not-a-pdf'})
                 else:
@@ -147,7 +184,9 @@ def fetch(job, args, ctx):
             time.sleep(PAUSE)
         view.set(done=n + 1)
     job.step('', len(icaos), len(icaos), 'aerodromes')
-    job.log(f'{cycle} : {fetched} téléchargée(s), {unchanged} déjà là, {absent} absente(s), {len(failed)} échec(s)')
+    write_state(data, cycle, len(icaos), not_published)
+    have, _, remaining = coverage(data, cycle, icaos)
+    job.log(f'{cycle} : {fetched} téléchargée(s), {unchanged} déjà là, {absent} absente(s), {len(failed)} échec(s), {len(remaining)} restante(s)')
     if job.cancelled():
         reason = 'cancelled'
     elif absent == len(icaos):
@@ -158,7 +197,7 @@ def fetch(job, args, ctx):
         reason = 'partial' if failed else None
     view.set(state='failed' if reason in ('failed', 'not-published') else 'cancelled' if reason == 'cancelled' else 'done',
              **({'error': reason} if reason else {}))
-    res = {'ok': reason is None, 'cycle': cycle, 'fetched': fetched, 'unchanged': unchanged, 'notPublished': absent, 'failed': failed}
+    res = {'ok': reason is None, 'cycle': cycle, 'fetched': fetched, 'unchanged': unchanged, 'notPublished': absent, 'failed': failed, 'remaining': len(remaining)}  # remaining : les cartes encore à prendre (une passe arrêtée ou en échec ; 0 : le cache est complet)
     if reason:
         res['reason'] = reason
     return res
@@ -193,7 +232,11 @@ def build(job, args, ctx):
         return {'ok': False, 'cycle': cycle, 'reason': 'failed', 'failed': failed, 'summary': compiled.get('summary', {})}
     view.set(done=1)
     job.step('contrôle', 1, 3, 'steps')
-    p = vfr_import.plan(compiled, data)
+    # SOG-0191 : un cache incomplet (téléchargement arrêté) ne remplace pas ce qui est déjà publié : les terrains qu'il ne porte pas sont GARDÉS avec leur cycle, jamais retirés (la construction du 10 nov. 2026
+    # sur 28 cartes avait retiré 390 terrains publiés) ; sans base de la France, on ne peut pas prouver que le cache est complet : même prudence
+    have, expected, missing = coverage(data, cycle)
+    complete = bool(expected) and not missing
+    p = vfr_import.plan(compiled, data, keep_others=not complete)
     if not p['ok']:
         view.set(state='failed', error='invalid')
         return {'ok': False, 'cycle': cycle, 'reason': 'invalid', 'failed': [{'item': 'plan', 'error': str(e)[:200]} for e in p['errors'][:20]],
@@ -205,10 +248,12 @@ def build(job, args, ctx):
         return {'ok': False, 'cycle': cycle, 'reason': 'merge-pending', 'failed': [], 'summary': p['summary']}
     vfr_import.write(p, data)
     s = p['summary']
-    c = regen_jobs.commit_outputs(ctx, job.author, ['sia/vfr/'], f"Points VFR des VAC, cycle {cycle} : {s.get('aerodromes', '?')} terrain(s) ({job.author or '?'})")
+    part = f", en partie : {s.get('compiled', 0)} compilé(s) au cycle {cycle}, {s.get('kept', 0)} gardé(s) d'un cycle antérieur ou inconnu" if not complete else ''
+    c = regen_jobs.commit_outputs(ctx, job.author, ['sia/vfr/'], f"Points VFR des VAC, cycle {cycle} : {s.get('aerodromes', '?')} terrain(s){part} ({job.author or '?'})")
     view.set(done=3, state='done')
     job.step('', 3, 3, 'steps')
-    res = {'ok': True, 'cycle': cycle, 'summary': s, 'commit': c['commit'], 'failed': []}
+    # complete faux : le cache ne couvre pas toute la base (missing : combien de cartes manquent) ; summary.cycles / unknown : combien de terrains par cycle publié
+    res = {'ok': True, 'cycle': cycle, 'summary': s, 'commit': c['commit'], 'failed': [], 'complete': complete, 'expected': len(expected), 'missing': len(missing)}
     if c.get('warning'):
         res['warning'] = c['warning']
     return res

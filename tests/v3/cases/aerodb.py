@@ -4780,7 +4780,7 @@ def k63(c):
         stale_fr = '2026-10-01' < cur
         c.eq((res['stale'], res['blocking']), (stale_fr, [{'zone': 'fr', 'source': 'sia', 'cycle': '2026-10-01'}] if stale_fr else []),
              'only fr blocks (its SIA files of 2610): gb holds its NATS cycle, de has no AIRAC', what='blocking')
-        c.eq({s: v['cycle'] for s, v in res['sources'].items()}, {'sia': '2026-10-01', 'nats': '2026-10-29', 'enaire': None, 'airnav': None}, 'the cycle the workstation holds per dated source', what='sources')
+        c.eq({s: v['cycle'] for s, v in res['sources'].items()}, {'sia': '2026-10-01', 'nats': '2026-10-29', 'enaire': None, 'airnav': None, 'lfv': None}, 'the cycle the workstation holds per dated source (LFV is one since 9b060a061: none held here)', what='sources')
         c.ok(not stale_fr or any(x.startswith('fr: sources sia du cycle 2026-10-01') for x in view['log']), str(view['log'][-4:]), 'the blocking zone is said in the journal')
         idx = json.loads((data / 'sia' / 'base' / 'index.json').read_text(encoding='utf-8'))
         c.eq({z: idx['zones'][z]['cycle'] for z in ('fr', 'gb', 'de')}, res['folders'], 'the manifest carries each zone\'s cycle', what='manifest')
@@ -6612,3 +6612,128 @@ def k140(c):
     c.eq((by['IMM']['kind'], by['IMM']['freq'], by['IMM']['rwy'], by['IMM']['bearing'], by['IMM'].get('loc'), 'dme' in by['IMM']), ('ILS', '111.70', '09L', 89, True, False), 'a localizer alone: same form, the magnetic bearing when there is no true one, flagged `loc`, no DME', what='loc')
     c.eq((by['GLS']['kind'], by['GLS'].get('sys'), by['GLS']['freq']), ('ILS', 'GLS', ''), 'a GLS: kept (no localizer, no frequency), flagged with its system', what='gls')
     c.ok('MK' not in by and len(r) == 3, str(sorted(by)), 'a marker beacon is still not a navaid of the base; the localizer and the DME of an ILS are not listed twice')
+
+
+@case('K141', 'Sources the user drops by hand carry a step-by-step in the catalogue (SOG-0189): the DIRECT link of the page the file is on, the exact name of each file to take and what it brings, a home page as a fallback; the links the user gave are kept to the letter', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0189 (10 Nov 2026, « je t’ai donné des liens directs vers les AIP danois et suédois, tu m’as mis des liens génériques… il faut le prendre par la main, et bien expliquer ce qu’il doit télécharger »): the catalogue held only the front page of each site; every source whose file is dropped by hand (fetch.how = pick, in use) has `steps` and AeroCatalogue.stepsOf(id) gives page.url (direct), page.home (fallback), files[{ name, url?, gives[4] }]; step 3 (« Prendre le fichier téléchargé ») is the page’s button')
+def k141(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/catalogue.html', wait_until='load')
+    r = c.js("""() => {
+      const C = AeroCatalogue, picks = C.SOURCES.filter(s => s.fetch && s.fetch.how === 'pick' && s.status === 'used');
+      return { picks: picks.map(s => s.id), steps: Object.fromEntries(picks.map(s => [s.id, C.stepsOf(s.id, '2610')])), none: C.stepsOf('geonames'), nobody: C.stepsOf('nobody') };
+    }""")
+    https = lambda u: isinstance(u, str) and u.startswith('https://') and ' ' not in u
+    bad = []
+    for sid in r['picks']:
+        st = r['steps'].get(sid)
+        if not st:
+            bad.append(f'{sid}: no steps')
+            continue
+        if not (https(st['page']['url']) and https(st['page']['home'])):
+            bad.append(f'{sid}: page url / home')
+        if st['page']['home'].count('/') != 3:
+            bad.append(f'{sid}: home is not a front page ({st["page"]["home"]})')
+        if not st['files']:
+            bad.append(f'{sid}: no file named')
+        for f in st['files']:
+            if not (isinstance(f['name'], str) and f['name'].strip()) or ('url' in f and not https(f['url'])):
+                bad.append(f'{sid}: file {f.get("name")}')
+            if not (isinstance(f['gives'], list) and len(f['gives']) == 4 and all(isinstance(t, str) and len(t.strip()) > 8 for t in f['gives'])):
+                bad.append(f'{sid}: gives of {f.get("name")} (four languages)')
+    c.ok(not bad and len(r['picks']) >= 6, str(bad) + ' ' + str(r['picks']), 'every source dropped by hand has a direct page, a home page, and at least one named file that says what it brings, in four languages')
+    c.eq((r['none'], r['nobody']), (None, None), 'a source the launcher downloads, or an unknown one, has no step-by-step', what='no steps')
+    st = r['steps']
+    c.eq((st['lfv']['page']['url'], st['lfv']['files'][0]['name'], st['lfv']['files'][0]['url']), ('https://www.aro.lfv.se/content/eaip/default_offline.html', 'AIP_OFFLINE.zip', 'https://aro.lfv.se/Content/eaip/AIP_OFFLINE.zip'),
+         'Sweden: the user’s two links to the letter (the offline eAIP page and the direct download) and the file name the pickup looks for', what='lfv links')
+    c.eq(sorted(f['name'] for f in st['nats']['files']), ['EG_AIP_DS_<AAAAMMJJ>_XML.zip', 'EG_OBS_DS_AREA1_FULL_<AAAAMMJJ>_XML.zip', 'EG_UAS_…_XML.zip'], 'NATS: the three sets the pickup takes, each named', what='nats files')
+    c.eq(st['sia']['page']['url'], 'https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/donnees-aeronautiques-xml-airac-10-26.html', 'SIA: the page of the cycle asked for, resolved at the source (not a front page)', what='sia cycle')
+
+
+@case('K142', 'VFR points: a download stopped half-way, then the build, is « en partie » and loses nothing (SOG-0191): the published set says the cycle of each part (cycles, unknown, complete), the build on an incomplete cache KEEPS the terrains it does not cover, « Mettre à jour » resumes where it stopped, a complete cache replaces the set', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0191 (10 Nov 2026, « on lance un download points vfr, on l’arrête, puis la construction : c’est marqué à jour au lieu de partiellement à jour »): the information was lost at three places: sia/vfr/index.json carried no cycle (the compiler writes `airac`, the importer read `cycle`), the build compiled whatever the cache held and REMOVED every other published terrain (the build of 10 Nov on 28 charts took the set from 418 to 28), and the page read a missing cycle as « no date, never late »')
+def k142(c):
+    import importlib
+    import json
+    import shutil
+    import sys
+    import tempfile
+    from pathlib import Path
+    RJ = _regen()
+    sys.path.insert(0, str(ROOT / 'tools' / 'report-vfr'))
+    V = importlib.import_module('regen.vfr')
+    core, imp = importlib.import_module('vfr_core'), importlib.import_module('vfr_import')
+    tmp = Path(tempfile.mkdtemp(prefix='sog-vfr-part-'))
+    kept = V.GET, V.PAUSE, core.compile_corpus
+    try:
+        data = tmp / 'data'
+        cyc_old, cyc = '2026-10-01', '2026-10-29'
+        base = data / 'sia' / 'base' / 'fr' / cyc
+        base.mkdir(parents=True)
+        wanted = ['LFBD', 'LFBO', 'LFPG', 'LFXX']  # LFXX: not published (404)
+        (base / 'aerodromes.json').write_text(json.dumps({'data': [{'icao': k} for k in wanted]}), encoding='utf-8')
+        # the set published before (V2 import, 23 Oct): three terrains, no cycle written
+        vdir = data / 'sia' / 'vfr'
+        vdir.mkdir(parents=True)
+        for k in ('LFBO', 'LFPG', 'LFMN'):
+            (vdir / f'{k}.json').write_text(json.dumps({'ad': k, 'source': {'file': f'AD-2.{k}.pdf', 'cycle': None}}), encoding='utf-8')
+        (vdir / 'index.json').write_text(json.dumps({'schema': 2, 'aerodromes': [{'ad': k, 'points': 1, 'routes': 0, 'notes': 0, 'unmatched': 0, 'analysis': None} for k in ('LFBO', 'LFMN', 'LFPG')]}), encoding='utf-8')
+
+        def compiled_of(folder, *a, **k):
+            ads = [{'icao': p.stem[5:], 'points': [{'code': 'N', 'coordinates': [-0.7, 44.8], 'role': 'reporting_point'}], 'routes': [], 'source': {'file': p.name, 'sha256': 'x', 'airac': k.get('source_airac')}}
+                   for p in sorted(Path(folder).glob('AD-2.*.pdf'))]
+            return {'schemaVersion': '2.0', 'generatedAt': '2026-11-10T10:00:00+00:00', 'sourceAirac': k.get('source_airac'), 'errors': [], 'summary': {}, 'aerodromes': ads}
+        core.compile_corpus = compiled_of
+        ctx = {'data': str(data), 'secrets': str(tmp / 's'), 'git_cmd': None, 'git_env': dict}
+        V.PAUSE = 0
+        stop = {'after': 1}
+        n = [0]
+
+        class Stopping(RJ.Job):
+            def cancelled(self):
+                return n[0] >= stop['after']
+
+        def get(url):
+            if 'LFXX' in url:
+                return 404, b''
+            n[0] += 1
+            return 200, b'%PDF-1.4 fake'
+        V.GET = get
+        r = V.fetch(Stopping('vfr', 'fetch', {}), {'cycle': cyc, 'icaos': []}, ctx)
+        c.eq((r['reason'], r['fetched'], r['remaining']), ('cancelled', 1, 3), 'a download stopped after one chart says what remains (the three others: nothing guessed)', what='fetch stopped')
+        b = V.build(RJ.Job('vfr', 'build', {}), {'cycle': cyc}, ctx)
+        idx = json.loads((vdir / 'index.json').read_text(encoding='utf-8'))
+        c.eq((b['ok'], b['complete'], b['expected'], b['missing']), (True, False, 4, 3), 'the build on that cache says it is incomplete: 4 expected, 3 missing', what='build partial')
+        c.eq(sorted(e['ad'] for e in idx['aerodromes']), ['LFBD', 'LFBO', 'LFMN', 'LFPG'], 'and loses nothing: the three published terrains are kept beside the one compiled (the build of 10 Nov took 418 to 28)', what='kept')
+        c.eq((idx['cycles'], idx['unknown'], idx['cycle'], idx['complete']), ({cyc: 1}, 3, None, False),
+             'the index says the cycle of each part: one terrain at the new cycle, three of a cycle never written (unknown), no single cycle, not complete', what='index parts')
+        c.ok(all((vdir / f'{k}.json').is_file() for k in ('LFBO', 'LFPG', 'LFMN', 'LFBD')), str(sorted(p.name for p in vdir.iterdir())), 'the files of the kept terrains are still there')
+        c.eq(json.loads((vdir / 'LFBD.json').read_text(encoding='utf-8'))['source']['cycle'], cyc, 'the terrain compiled carries its cycle (the compiler writes `airac`, the importer read `cycle`: it was lost)', what='source cycle')
+        stop['after'] = 99
+        r = V.fetch(RJ.Job('vfr', 'fetch', {}), {'cycle': cyc, 'icaos': []}, ctx)
+        c.eq((r['ok'], r['unchanged'], r['fetched'], r['notPublished'], r['remaining']), (True, 1, 2, 1, 0), 'resumed: the chart already there is not asked again, the two others are taken, the unpublished one is known (nothing remains)', what='resume')
+        r = V.fetch(RJ.Job('vfr', 'fetch', {}), {'cycle': cyc, 'icaos': []}, ctx)
+        c.eq(r['remaining'], 0, 'and an unpublished chart (404) is remembered: it does not count as missing', what='absent remembered')
+        b = V.build(RJ.Job('vfr', 'build', {}), {'cycle': cyc}, ctx)
+        idx = json.loads((vdir / 'index.json').read_text(encoding='utf-8'))
+        c.eq((b['complete'], b['missing'], idx['cycles'], idx['unknown'], idx['cycle'], idx['complete'], sorted(e['ad'] for e in idx['aerodromes'])), (True, 0, {cyc: 3}, 0, cyc, True, ['LFBD', 'LFBO', 'LFPG']),
+             'a complete cache replaces the set: the terrain no longer published (LFMN) goes, all parts are at the new cycle, `cycle` is that cycle', what='complete')
+        c.ok(not (vdir / 'LFMN.json').exists(), 'LFMN.json', 'the file of the withdrawn terrain is removed only by a complete build')
+        # without the base of France nothing proves the cache complete: same prudence
+        shutil.rmtree(base)
+        shutil.rmtree(vdir)
+        vdir.mkdir()
+        (vdir / 'LFZZ.json').write_text(json.dumps({'ad': 'LFZZ', 'source': {'cycle': cyc_old}}), encoding='utf-8')
+        (vdir / 'index.json').write_text(json.dumps({'schema': 2, 'aerodromes': [{'ad': 'LFZZ', 'points': 1, 'routes': 0, 'notes': 0, 'unmatched': 0, 'analysis': None, 'cycle': cyc_old}]}), encoding='utf-8')
+        b = V.build(RJ.Job('vfr', 'build', {}), {'cycle': cyc}, ctx)
+        idx = json.loads((vdir / 'index.json').read_text(encoding='utf-8'))
+        c.eq((b['complete'], idx['cycles'], idx['cycle'], idx['complete']), (False, {cyc_old: 1, cyc: 3}, cyc_old, False), 'no base to prove completeness: the set is kept, two cycles listed, `cycle` is the OLDEST (a set is only up to date if all its parts are)', what='no base')
+    finally:
+        V.GET, V.PAUSE, core.compile_corpus = kept
+        shutil.rmtree(tmp, ignore_errors=True)
+    # the page side: what publication() reads of the index (a pure helper of AeroDB)
+    c.page.goto(f'{c.base}/frame/aerodb/test/catalogue.html', wait_until='load')
+    r = c.js("""() => [AeroDB.vfrParts({ cycles: { '2026-10-29': 28, '2026-10-01': 390 }, unknown: 0, complete: true }), AeroDB.vfrParts({ cycles: { '2026-10-29': 28 }, unknown: 390, complete: true }),
+      AeroDB.vfrParts({ cycles: { '2026-10-29': 418 }, unknown: 0, complete: true }), AeroDB.vfrParts({ cycles: { '2026-10-29': 28 }, complete: false }), AeroDB.vfrParts({ aerodromes: [] }), AeroDB.vfrParts({ cycles: { x: 1, '2026-10-29': -3, '2026-10-01': 2.5 }, unknown: 'a' })]""")
+    c.eq([[x['cycles'], x['unknown'], x['partial']] for x in r], [
+        [{'2026-10-01': 390, '2026-10-29': 28}, 0, True], [{'2026-10-29': 28}, 390, True], [{'2026-10-29': 418}, 0, False], [{'2026-10-29': 28}, 0, True], [None, 0, False], [{}, 0, False]],
+        'publication().vfr says « partial » for two cycles, for dated and undated parts together, and for an incomplete compilation; one cycle complete is not; an index of before has no cycles; a bad value is dropped', what='vfrParts')

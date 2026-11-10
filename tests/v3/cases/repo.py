@@ -1179,7 +1179,7 @@ def i18(c):
             r = V.build(RJ.Job('vfr', 'build', {}), {'cycle': '2026-10-01'}, ctx)
             c.ok(r['reason'] == 'failed' and r['failed'][0]['item'] == 'LFBD' and not (data / 'sia' / 'vfr').exists(), json.dumps(r), 'a compilation error: nothing written')
             core.compile_corpus = lambda *a, **k: {'errors': [], 'summary': {}}
-            imp.plan = lambda compiled, d: {'ok': True, 'errors': [], 'summary': {'aerodromes': 1}, 'changed': ['sia/vfr/LFBD.json'], 'remove': [],
+            imp.plan = lambda compiled, d, **k: {'ok': True, 'errors': [], 'summary': {'aerodromes': 1}, 'changed': ['sia/vfr/LFBD.json'], 'remove': [],
                                             'files': {'sia/vfr/LFBD.json': b'{"icao": "LFBD"}\n'}}
             ctx_git = {**ctx, 'git_cmd': lambda *a: ['git', *a], 'git_env': dict}
             r = V.build(RJ.Job('vfr', 'build', {}, author='ABC'), {'cycle': '2026-10-01'}, ctx_git)

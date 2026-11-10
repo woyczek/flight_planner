@@ -37,6 +37,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Map: the mission window shows even when the list of the missions arrives after the mount** (`modules/maps/mission_view.js`, `module.js`; SPEC § 15, DECISIONS; noreg D148; SOG-0196). A flight that names a
   mission the repository's tree does not give yet (first load) is taken up again when the list changes: the window (provided map, view, cross) appears without a reload, in the double view as on the Map alone.
 
+- **VFR points: a download stopped half-way no longer reads « à jour », and no longer erases the published terrains** (`tools/regen/vfr.py`, `tools/vfr_import.py`,
+  `frame/aerodb/aerodb.js` `vfrParts`; INTEGRATION; noreg K142; SOG-0191). Three losses: `sia/vfr/index.json` carried no cycle (the compiler writes `airac`, the importer read
+  `cycle`), the build compiled whatever the cache held and **removed every other published terrain** (the build of 10 Nov on 28 charts took the set from 418 terrains to 28),
+  and the page read a missing cycle as « never late ». Now the index says the cycle of each part (`cycles`, `unknown`, `complete`; `cycle` is the oldest), `vfr/fetch` says what
+  `remaining` and remembers the charts the SIA does not publish, and `vfr/build` on an incomplete cache **keeps** the terrains it does not cover (`complete: false`, `missing`).
+  `publication().vfr` carries `cycles`, `unknown` and `partial` for the screen.
+- **Sources dropped by hand: a step-by-step with the direct link and the exact file names** (`frame/aerodb/catalogue.js` `steps`, `AeroCatalogue.stepsOf(id)`;
+  INTEGRATION; noreg K141; SOG-0189). Each source whose file the user takes from the Downloads folder (SIA, DIRCAM, NATS, LFV, VAC charts, EUROCONTROL RAD) gives
+  the direct link of the page the file is on (the Swedish ones to the letter of the user's note), the home page as a fallback, and each file to take by its exact
+  name with what it brings in the four languages. **Fix**: the Swedish `AIP_OFFLINE.zip` was refused as « nom de fichier à renommer » (its name is allowed): the
+  page's table of destinations (`PICKUP_DEST`) lacked `lfv`, so the zip was « blocked » before it was sent (noreg L16).
 - **Fuel: the folded summary of the arrival says the ILS** (`modules/fuel/procedures.js`; Fuel SPEC, DECISIONS, help; noreg F127;
   SOG-0176). « I13R · TST 110.30 » when the base carries the ILS of the approach.
 
