@@ -24,8 +24,8 @@ def normalize(request,root):
     if r.get('require_fra') and r.get('unable_rnav'):raise ValueError('FRA imposé et unable RNAV sont incompatibles : le moteur ne traite pas de dérogation aux spécifications PBN du FRA.')
     if r.get('require_fra'):r['enable_fra']=True
     if r.get('unable_rnav'):r['enable_fra']=False
-    preference=float(r.get('fra_preference',.10))
-    if not math.isfinite(preference) or not 0<=preference<=.5:raise ValueError('Préférence FRA : pondération entre 0 et 50 %.')
+    preference=float(r.get('fra_preference',DEFAULT_FRA_PREFERENCE))
+    if not math.isfinite(preference) or not -.3<=preference<=.5:raise ValueError('Préférence FRA : pondération entre −30 % (le réseau d’airways est préféré) et 50 %.')     # SOG-0161 : négative = une préférence pour les airways
     r['fra_preference']=preference if r['traffic']=='IFR' and r.get('enable_fra',True) and not r.get('unable_rnav') else 0
     models=aircraft(root);model=next((m for m in models if m['code']==r.get('aircraft')),None)
     source=(model or {}).get('source','Débits de simulation saisis')
@@ -44,6 +44,11 @@ def normalize(request,root):
     r['_fuel_model']=dict(rates=fuel,aircraft=r.get('aircraft') or None,source=source,
         note='Modèle à débits constants par phase, sans réserve ni taxi, sans masse, vent ou polaire de consommation. Des débits identiques donnent le même classement que la durée.')
     return r
+
+# SOG-0161 : la préférence FRA par défaut était +10 % (un lien FRA coûtait 90 % de sa longueur) : le moteur préférait le direct FRA aux airways publiées ET l'heuristique de A* (distance × le coût minimal par NM, 0,9)
+# se relâchait de 10 % : sur LFPG → LEMD les états à altitudes non dominées explosaient (« Budget de recherche atteint », 32 s). Par défaut −10 % : les airways publiées sont préférées (un détour d'airway
+# de moins de 10 % l'emporte sur un direct FRA) et l'heuristique est serrée (coût minimal par NM = 1). Une préférence positive reste permise (le budget peut alors s'épuiser sur un long trajet).
+DEFAULT_FRA_PREFERENCE=-.10
 
 def edge_cost(edge,request):
     speed=edge.get('planned_speed_kt') or float(request.get('speed_kt',450))

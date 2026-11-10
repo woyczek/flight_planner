@@ -6375,3 +6375,98 @@ def k132(c):
     c.eq((r['fields'][-2:], r['rows']), (['hardLen', 'type'], [['LFPG', 4215, 'AD'], ['LFYY', None, 'HP'], ['LFZZ', None, 'AD'], ['LFMM', None, 'AD']]), 'aeroindex carries hardLen and type (a missing or unknown type is AD, a heliport stays HP)', what='aeroindex')
     sb = (ROOT / 'shared' / 'sia_base.js').read_text(encoding='utf-8')
     c.ok(int(re.search(r'const VERSION =\s*(\d+)', sb).group(1)) >= 27, 'sia_base.js', 'parser version 27 or more: the zones built before have no `type` in their index and are rebuilt (parser-old)')
+
+
+@case('K133', 'Route engine, the published airways are preferred (SOG-0161): by default a link of an airway is not out-bid by a free-route direct, the heuristic of the search stays tight (no « budget reached » on a long continental route), a positive preference still lets the free route win', 'K', static=True,
+      rule='SOG-0161 (10 Nov 2026): LFPG → LEMD failed with « Budget de recherche atteint » (32 s) while it took 1.4 s without FRA: the default FRA preference was +10 % (a free-route link cost 90 % of its length), which preferred the direct to the published airways and loosened the A* heuristic (distance × the cheapest cost per NM, 0.9) so that the non-dominated altitude labels exploded; the default is now −10 %: a published airway wins over a direct when its detour is under 10 %, the heuristic is tight (LFPG → LEMD 1.7 s, 89 % controlled, via Y129 and T430; ESSB → LEMO 22 → 65 % controlled)')
+def k133(c):
+    import gzip
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, planning
+    c.eq(planning.DEFAULT_FRA_PREFERENCE, -.1, 'the default preference is −10 % (airways preferred), no longer +10 %', what='default')
+    fn = RJ.REGISTRY[('route', 'compute')][0]
+    import math
+    nmd = lambda a, b: 3440.065 * 2 * math.asin(math.sqrt(math.sin(math.radians(b[0] - a[0]) / 2) ** 2 + math.cos(math.radians(a[0])) * math.cos(math.radians(b[0])) * math.sin(math.radians(b[1] - a[1]) / 2) ** 2))
+    dms = lambda v, hemi: f"{hemi}{int(abs(v)):02d}{int(round((abs(v) - int(abs(v))) * 60)):02d}00" if hemi == 'N' else f"{hemi}{int(abs(v)):03d}{int(round((abs(v) - int(abs(v))) * 60)):02d}00"
+    # the airway WA1 WA2 WA2a WA3 WA4 makes a dogleg of about 8 % between WA2 and WA3; the free route links WA2 and WA3 (entry and exit points of the area) straight
+    WA2, WA3 = (55.0, 16.0), (52.8, 13.0)
+    L = nmd(WA2, WA3)
+    mid = ((WA2[0] + WA3[0]) / 2, (WA2[1] + WA3[1]) / 2)
+    dlat, dlon = WA3[0] - WA2[0], WA3[1] - WA2[1]
+    k = .205 * L / (math.hypot(dlat * 60, dlon * 60 * math.cos(math.radians(mid[0]))) or 1)
+    WA2A = (mid[0] + (-dlon * k * math.cos(math.radians(mid[0]))), mid[1] + dlat * k / math.cos(math.radians(mid[0])))
+    fir = lambda ident, pos, role: ['', '', ident, dms(pos[0], 'N'), dms(pos[1], 'E'), 'TESTFRA', role, '-', '', '', '-', 'FL195 / FL660', 'H24', 'XXXX', '']
+    rows = [fir('WA2', WA2, 'EX'), fir('WA3', WA3, 'EX')]
+    book = {'file': 'fra-test.xlsx', 'start': '2026-10-29', 'sha256': '0' * 64, 'rows': [{'row': i + 2, 'v': v} for i, v in enumerate(rows)]}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        with open(os.path.join(d, 'aeroindex.json'), encoding='utf-8') as f:
+            ai = json.load(f)
+        ai['data']['rows'] += [['XSTA', 'DEPART', 59.0, 18.0, 20, 0, 0], ['XEND', 'ARRIVE', 50.0, 10.0, 20, 0, 0]]
+        with open(os.path.join(d, 'aeroindex.json'), 'w', encoding='utf-8') as f:
+            json.dump(ai, f)
+        # an airway L9 from 30 NM of the departure to 30 NM of the arrival, a few percent longer than the free-route chain F1 F2 F3 F4
+        nodes = {'WA1': (58.6, 17.6), 'WA2': WA2, 'WA2A': WA2A, 'WA3': WA3, 'WA4': (50.5, 10.2)}
+        for k, fname in (('points', 'points.json'), ('airways', 'airways.json')):
+            with open(os.path.join(d, fname), encoding='utf-8') as f:
+                doc = json.load(f)
+            if k == 'points':
+                doc['data'] += [{'id': n, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for n, v in nodes.items()]
+            else:
+                names = list(nodes)
+                doc['data'] += [{'route': 'L9', 'a': {'id': a, 'lat': nodes[a][0], 'lon': nodes[a][1]}, 'b': {'id': b, 'lat': nodes[b][0], 'lon': nodes[b][1]}, 'lower': 2000, 'upper': 66000} for a, b in zip(names, names[1:])]
+            with open(os.path.join(d, fname), 'w', encoding='utf-8') as f:
+                json.dump(doc, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+        with gzip.open(os.path.join(data, 'route', 'fra.json.gz'), 'wt', encoding='utf-8') as f:
+            json.dump([book], f)
+        ctx = {'data': data, 'secrets': td}
+        run = lambda **kw: fn(RJ.Job('route', 'compute', {}, author='TST'), {'dep': 'XSTA', 'arr': 'XEND', 'fl': 350, 'date': '2026-11-10T12:00', 'enable_fra': True, **kw}, ctx)['plan']['primary']
+        a = run()
+        b = run(fra_preference=.1)
+        c.ok(1.05 < (nmd(WA2, WA2A) + nmd(WA2A, WA3)) / L < 1.10, f'{(nmd(WA2, WA2A) + nmd(WA2A, WA3)) / L:.3f}', 'the airway’s dogleg is 5 to 10 % longer than the free-route link')
+        ways = lambda p: sorted({l['via'] for l in p.get('legs') or [] if l['via'] != 'DCT'})
+        c.eq((a['ok'], ways(a), a['control']['controlled_pct'] > 60), (True, ['L9'], True), 'by default the published airway L9 is flown (the free-route chain is a few percent shorter): most of the distance is controlled', what='airway')
+        c.eq((b['ok'], [l['kind'] for l in b['legs'] if l['kind'] == 'FRA'] != [], b['control']['controlled_pct'] < a['control']['controlled_pct'], b['distance_nm'] < a['distance_nm']), (True, True, True, True), 'with a +10 % FRA preference the free-route link between WA2 and WA3 wins: shorter, less controlled: the preference is still available', what='fra')
+
+
+@case('K134', 'Route engine, a partial route is shown as such (SOG-0161): when no route can be computed, the engine’s fallback proposals reach the screen’s answer as alternatives marked `proposal` and `incomplete`, with their share controlled (nothing: a fallback is never controlled)', 'K', static=True,
+      rule='SOG-0161 (10 Nov 2026): the user asks for « la plus grande route possible » and the engine’s fallback (recovery: a direct, pieces joined, a regional FRA fallback) was only a sentence in the message; the proposals are now returned as alternatives of the screen’s form with `proposal: true`, `incomplete: true` and their `control` (a DCT that nothing publishes is a fallback), so that the page can show them as what they are')
+def k134(c):
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, view
+    fn = RJ.REGISTRY[('route', 'compute')][0]
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        import json
+        with open(os.path.join(d, 'aeroindex.json'), encoding='utf-8') as f:
+            ai = json.load(f)
+        ai['data']['rows'] += [['XSTA', 'DEPART', 59.0, 18.0, 20, 0, 0], ['XEND', 'ARRIVE', 50.0, 10.0, 20, 0, 0]]
+        with open(os.path.join(d, 'aeroindex.json'), 'w', encoding='utf-8') as f:
+            json.dump(ai, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+        plan = fn(RJ.Job('route', 'compute', {}, author='TST'), {'dep': 'XSTA', 'arr': 'XEND', 'fl': 350, 'date': '2026-11-10T12:00', 'enable_fra': False, 'allow_levels': False}, {'data': data, 'secrets': td})['plan']
+        c.eq(plan['primary']['ok'], False, 'no airway near either aerodrome and no free route: no route is computed', what='impossible')
+        v0 = view.to_view(plan, {'fl': 350, 'mode': 'calculate'})
+        c.eq(v0['alternatives'], [], 'by default the contract of before: no route computed, no alternative (the page asks for the proposals with `proposals: true`)', what='default')
+        v = view.to_view(plan, {'fl': 350, 'mode': 'calculate', 'proposals': True})
+        alts = v['alternatives']
+        c.ok(alts and all(a.get('proposal') is True and a.get('incomplete') is True for a in alts), str([(a['name'], a.get('proposal'), a.get('incomplete')) for a in alts]), 'the fallback proposals are the alternatives of the screen, marked proposal and incomplete')
+        c.eq((alts[0]['control']['fallbackPct'], alts[0]['control']['controlledPct'], [s['control'] for s in alts[0]['segments']][:1]), (100.0, 0.0, ['fallback']), 'a DCT that nothing publishes is a fallback: no part of it is controlled', what='control')

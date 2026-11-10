@@ -10,7 +10,7 @@ Réponse : { ok, alternatives: [alt], segments: [seg], issues: [{ level: 'error'
 import re
 
 ACTIONS = ('compute', 'check')
-EXTRA = ('radius', 'speed_kt', 'terminal_speed_kt', 'climb_fpm', 'descent_fpm', 'allow_levels', 'use_procedures', 'enable_fra', 'level_strategy', 'alternative_levels', 'alternatives', 'objective', 'traffic', 'require_fra', 'unable_rnav', 'fra_preference', 'aircraft', 'fuel_climb', 'fuel_cruise', 'fuel_descent')
+EXTRA = ('proposals', 'radius', 'speed_kt', 'terminal_speed_kt', 'climb_fpm', 'descent_fpm', 'allow_levels', 'use_procedures', 'enable_fra', 'level_strategy', 'alternative_levels', 'alternatives', 'objective', 'traffic', 'require_fra', 'unable_rnav', 'fra_preference', 'aircraft', 'fuel_climb', 'fuel_cruise', 'fuel_descent')
 MAX_PROFILE = 200
 DEFAULT_FL = 180                                                         # le défaut du moteur (engine.plan : request.get('fl', 180))
 
@@ -124,6 +124,12 @@ def to_view(plan_result, request, include_raw=False):
         accepted = bool(p.get('ok')) and not any(x['level'] == 'ERREUR' for x in p.get('issues') or [])
         alts = ([alternative(1, p, fl)] if accepted else []) + [alternative(i, a, fl) for i, a in enumerate(plan_result.get('alternatives') or [], 2 if accepted else 1)]
         alts = alts[:3]
+    # SOG-0161 : sans route calculée ni alternative, les propositions de repli du moteur (recovery : un direct, des tronçons raccordés, un repli FRA) sont rendues comme des alternatives `proposal: true`, `incomplete: true` : jamais « contrôlées »,
+    # leur part de distance contrôlée est dans `control` ; la page les montre comme telles (route partielle à examiner)
+    if request.get('mode') == 'calculate' and request.get('proposals') and not alts:      # opt-in : `proposals: true` dans la demande de l'écran (le contrat d'avant : aucune alternative sans route calculée)
+        props = [x for x in ((plan_result.get('recovery') or {}).get('proposals') or []) if x.get('legs')]
+        props.sort(key=lambda x: (-((x.get('control') or {}).get('controlled_pct') or 0), x.get('distance_nm') or 0))
+        alts = [dict(alternative(i, x, fl), proposal=True, incomplete=True) for i, x in enumerate(props[:3], 1)]
     for x in plan_result.get('alternative_failures') or []:
         if not alts:
             issues.append({'level': 'review', 'text': x})
