@@ -2856,6 +2856,8 @@ def _route_launcher(c, verbs):
         req = route.request
         u = urllib.parse.urlparse(req.url)
         body = {}
+        if st.get('down') and '/__setup/regen/' in u.path:   # SOG-0208: the launcher stopped after the mount, its jobs do not answer
+            return route.abort()
         if u.path.endswith('/__setup/status'):
             body = _LAUNCHER_STATUS
         elif u.path.endswith('/__setup/regen/verbs'):
@@ -3772,3 +3774,26 @@ def f132(c):
         d = c.doc(path) or {}
         c.eq([d.get('updated_at'), (d.get('profile') or {}).get('climbFpm')], [at, 1200 + i],
              f'write {i + 1} of the other Fuel: the record is still its own, Fuel did not answer', what='[updated_at, climbFpm]')
+
+
+@case('F131', '« Calculer A → B » and « Contrôler » check the launcher at the tap: stopped, the step Route says « Disponible avec le lanceur du poste (il ne répond pas) » with « Réessayer », which works once it answers again; no tap without an effect',
+      'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0208 (user: « lfpo lfrs, le bouton calculer a-> b n\'a aucun effet ? pourquoi ? » then « trouvé. pas de lanceur. »): the buttons are '
+      'decided at the mount; a launcher stopped afterwards left a tap with no effect said in place; a fake launcher whose jobs stop answering')
+def f131(c):
+    st = _route_launcher(c, ['route/compute'])
+    open_proc(c)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons (the launcher answered at the mount)')
+    st['down'] = True
+    for act in ('rcompute', 'rcheck'):
+        c.tap(f'{FUEL} [data-reng] [data-do="{act}"]')
+        c.until(f"!!document.querySelector('{FUEL} [data-routealts] [data-rnolauncher]')", timeout=12000, what=f'{act}: the stopped launcher said in place')
+        said = norm(c.text(f'{FUEL} [data-routealts] [data-rnolauncher]'))
+        c.ok(said.startswith(norm(tx(F, 'rNoLauncher', c.lang))) and c.count(f'{FUEL} [data-routealts] [data-rretry]') == 1, said,
+             f'{act}: « Disponible avec le lanceur du poste (il ne répond pas) » and « Réessayer »')
+    c.shot(f'F131_{c.design}_{c.width}_{c.lang}.png')
+    # the launcher answers again: « Réessayer » does the gesture
+    st['down'] = False
+    c.tap(f'{FUEL} [data-routealts] [data-rretry]')
+    c.until(f"!!document.querySelector('{FUEL} [data-routealts] [data-rcheck], {FUEL} [data-routealts] [data-faults]')", timeout=12000,
+            what='« Réessayer » checks the route once the launcher answers')

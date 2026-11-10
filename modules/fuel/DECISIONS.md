@@ -1575,3 +1575,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   even when only `updated_at` changed. Now the profile is compared with this instance's own last result, a write equal but for
   `updated_at` / `by` is skipped, and a quote not yet computed does not erase a written profile. F132 (a simulated second Fuel writes
   four times; alone, nothing for 5 s); counter-test on origin/v3: Fuel wrote its profile back.
+
+
+- **10 Nov 2026 — no tap without an effect on the route engine** (SOG-0208, user: « le bouton calculer a-> b n'a aucun effet ? » then
+  « trouvé. pas de lanceur »): the buttons were decided at the mount only; a launcher stopped afterwards left the tap with at best a
+  passing notification. The launcher is checked at the tap (`RE.answers`, bounded) and its absence said in place of the routes, with
+  « Réessayer »; the missing aerodromes are said instead of a silent return. F131 (a fake launcher whose jobs stop answering);
+  counter-test on origin/v3: nothing said in place.

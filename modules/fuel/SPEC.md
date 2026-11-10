@@ -262,7 +262,11 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
 - **The launcher's route engine** (SOG-0080, SOG-0081; RouteSim carried by the launcher, AeroDB's job `route/compute`, detected by
   `regen/verbs`; without it nothing is shown): « Calculer A → B » asks routes from the departure to the arrival, the points typed
   between them being imposed passages (action `compute`, eight at most, alternatives asked); « Contrôler » checks the typed route as it
-  is (action `check`). The request is the closed one of the form of the Fuel screen (`RE.request`); the answer is untrusted input
+  is (action `check`). **No tap without an effect** (SOG-0208, F131): the buttons are decided at the mount, the launcher is checked
+  again at the tap (`RE.answers`, 4 s at most); stopped, the place of the routes says « Disponible avec le lanceur du poste (il ne
+  répond pas). » with « Réessayer » (the same gesture); a missing departure or arrival is said (« Renseignez le départ et
+  l'arrivée. »); a computation that does not answer is said in place with « Réessayer » (it was a passing notification). The
+  request is the closed one of the form of the Fuel screen (`RE.request`); the answer is untrusted input
   (`normalize`: three routes at most, each named by the launcher from its airways, texts and numbers bounded, the reasons' kinds taken
   from the contract's list, procedure ids by shape). A refusal of the engine is said with its sentence
   (`invalid`); « N écarts aux règles » is never a number alone (SOG-0134 b, F113): a fold whose title says the count lists one line

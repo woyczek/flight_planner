@@ -211,6 +211,14 @@ const TX = {
   rCompute: ['Calculer A → B', 'Compute A → B', 'A → B berechnen', 'Calcular A → B'],
   rCheck: ['Contrôler', 'Check', 'Prüfen', 'Comprobar'],
   rBusy: ['Calcul en cours…', 'Computing…', 'Berechnung läuft…', 'Calculando…'],
+  // SOG-0208 : un bouton qui ne fait rien sans le dire est un défaut ; le lanceur est vérifié à l'appui
+  rNoLauncher: ['Disponible avec le lanceur du poste (il ne répond pas).',
+    'Available with the workstation’s launcher (it does not answer).',
+    'Mit dem Launcher des Arbeitsplatzes verfügbar (er antwortet nicht).', 'Disponible con el lanzador del puesto (no responde).'
+  ],
+  rNeedAds: ['Renseignez le départ et l’arrivée.', 'Fill in the departure and the arrival.', 'Abflug und Ankunft eingeben.',
+    'Indique la salida y la llegada.'
+  ],
   rNone: ['Aucun itinéraire proposé.', 'No route proposed.', 'Keine Route vorgeschlagen.', 'Ningún itinerario propuesto.'],
   rPrimary: ['Route calculée', 'Computed route', 'Berechnete Route', 'Ruta calculada'],
   rVariant: ['Variante {n}', 'Alternative {n}', 'Variante {n}', 'Variante {n}'],
@@ -3256,8 +3264,19 @@ async function routeAsk(action) {
     o = CF.proceduresOf(S.flight),
     box = S.body?.querySelector('[data-routealts]'),
     act = action === 'compute' ? 'compute' : 'check';
-  if (!S.routeEngine || !r.dep || !r.arr) return;
+  if (!S.routeEngine) return; // sans moteur au montage, les boutons ne sont pas montrés
+  // SOG-0208 : jamais un appui sans suite — les terrains manquants, puis le lanceur vérifié à l'appui, dits à la place des itinéraires
+  const retry = `<button type="button" class="fu-linkbtn" data-do="${act === 'compute' ? 'rcompute' : 'rcheck'}" data-rretry>${esc(tt(TX.rRetry))}</button>`;
+  if (!r.dep || !r.arr) {
+    if (box) box.innerHTML = `<p class="f-warn" data-rneed>${esc(tt(TX.rNeedAds))}</p>`;
+    return;
+  }
   if (box) box.innerHTML = `<p class="f-muted" data-rbusy>${esc(tt(TX.rBusy))}</p>`;
+  if (!(await RE.answers(S.ctx.launcher))) {
+    if (!gone(s) && box) box.innerHTML = `<p class="f-warn" data-rnolauncher>${esc(tt(TX.rNoLauncher))} ${retry}</p>`;
+    return;
+  }
+  if (gone(s) || !S.body) return;
   altsClear(); // une nouvelle demande : la Carte n'a plus d'itinéraires à dessiner
   const when = Date.parse(S.flight.planned_at || ''),
     args = RE.request({
@@ -3273,9 +3292,9 @@ async function routeAsk(action) {
     }),
     res = await RE.run(S.ctx.launcher, args);
   if (gone(s) || !S.body) return;
-  if (!res) {
-    if (box) box.innerHTML = '';
-    return S.ctx.notify(tt(TX.rFail), 'warn');
+  if (!res) { // le lanceur a répondu à l'appui puis pas au calcul : dit en place, avec « Réessayer »
+    if (box) box.innerHTML = `<p class="f-warn" data-rfail>${esc(tt(TX.rFail))} ${retry}</p>`;
+    return;
   }
   const n = RE.normalize(res, act);
   if (!n.ok) {

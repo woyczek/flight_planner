@@ -25,6 +25,11 @@ export const CONTROLS = ['controlled', 'incomplete', 'fallback', 'error'];
 export const LAYERS = ['SID', 'LOW', 'HIGH', 'FRA', 'STAR', 'APP'];
 
 /** Le lanceur connaît-il le travail route/compute ? (regen/verbs, comme le module Données) */
+/** Le lanceur répond-il encore, à l'instant d'un appui (SOG-0208) : available, borné à `ms` (un lanceur arrêté ne laisse pas l'appui
+ *  sans suite) ; faux sans lanceur, sans réponse ou sans le verbe. */
+export function answers(launcher, ms = 4000) {
+  return Promise.race([available(launcher), new Promise(res => setTimeout(() => res(false), ms))]);
+}
 export async function available(launcher) {
   if (typeof launcher?.call !== 'function' || typeof launcher?.job !== 'function') return false;
   try {
