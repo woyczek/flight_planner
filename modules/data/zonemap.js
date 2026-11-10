@@ -398,6 +398,21 @@ function startMap(kind, m) {
     if (kind === 'proc') startPoints(kind, m);
   });
 }
+/** Appelle `go` quand l'hôte de la carte est à moins de 400 px de l'écran (IntersectionObserver), une seule fois : la bibliothèque de carte (environ 1 Mo) et ses tuiles ne partent pas pour un bloc que l'utilisateur ne voit pas encore (SOG-0164) ;
+ *  sans IntersectionObserver, aussitôt. L'emplacement garde sa taille (règle 22) : rien ne bouge quand la carte arrive. */
+function whenVisible(m, go) {
+  if (m.io || m.starting) return;
+  if (typeof IntersectionObserver !== 'function') return go();
+  m.io = new IntersectionObserver(entries => {
+    if (!entries.some(e => e.isIntersecting)) return;
+    m.io.disconnect();
+    m.io = null;
+    go();
+  }, {
+    rootMargin: '400px'
+  });
+  m.io.observe(m.host);
+}
 /** Pose, dans chaque cadre de carte du dessin (`root`), l'hôte persistant de sa carte à la place de l'emplacement : le panneau est redessiné par innerHTML, l'hôte (et la
  *  carte MapLibre qu'il porte) survit à chaque redessin dans S.maps. Au premier dessin visible la carte démarre (startMap) ; ensuite les zones et les teintes sont remises à
  *  jour (seulement si quelque chose a changé) et la carte reprend la taille de son hôte. Appelée à la fin de chaque dessin des panneaux. */
@@ -419,8 +434,9 @@ export function attachMaps(root = S?.body) {
     };
     slot.replaceWith(m.host);
     if (!m.map) {
-      if (m.host.clientWidth > 0) startMap(kind,
-        m); // dans un groupe replié l'hôte n'a pas de taille : la carte démarre à l'ouverture du groupe
+      if (m.host.clientWidth > 0) whenVisible(m, () => startMap(kind,
+        m
+      )); // dans un groupe replié l'hôte n'a pas de taille : la carte démarre à l'ouverture du groupe ; hors de l'écran, quand elle s'en approche (SOG-0164)
       continue;
     }
     const entries = featureEntries(kind),
@@ -453,6 +469,7 @@ export function recenterMap(kind) {
 export function destroyMaps() {
   for (const m of Object.values(S?.maps || {})) {
     try {
+      m.io?.disconnect();
       m.rectOff?.();
       m.points?.remove();
       m.layer?.remove();

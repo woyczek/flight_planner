@@ -66,6 +66,7 @@ function publishCountsText(n, m) {
  *  attente, le dernier passage ; une ligne d'erreur si sync-status n'a pas répondu. */
 function publishStateHtml() {
   if (!S.ctx.launcher) return '';
+  if (S.pub.reading) return `<p class="f-muted" data-publish-state="reading">${esc(tt(TX.pubReading))}</p>`; // la lecture de data/ est en cours : la place est tenue (SOG-0164)
   const c = M.publishCounts(S.pub.status);
   if (!c.known) return `<p class="f-warn" data-publish-state="unread">${esc(tt(TX.pubUnread))}</p>`;
   const last = c.last ? tt(c.last.pushed ? TX.pubLastSent : TX.pubLastKept, {

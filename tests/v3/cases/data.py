@@ -2881,6 +2881,7 @@ _ZVIEW_JS = """(kind) => { const m = window.__zm[kind], c = m.getCenter(); retur
 
 def _zmap_ready(c, kind, hook=True):
     """Waits for the map of the panel `kind` to be drawn by the module, then makes « Recentrer » hand it to the test (window.__zm[kind])."""
+    c.js(f"document.querySelector('[data-zone-map={kind}]').scrollIntoView({{ block: 'center' }})")   # the map starts when it comes into the screen (SOG-0164)
     c.until(f"!!document.querySelector('[data-zone-map={kind}] .d-map-host .maplibregl-canvas')", timeout=20000, what=f'the {kind} map is drawn on the shared base')
     if hook:
         c.js(f"document.querySelector('[data-zone-map={kind}] .d-map-host').scrollIntoView({{ block: 'center' }})")
@@ -3033,7 +3034,7 @@ def l20(c):
     c.ok(other is not None, ids, 'the Maintenance rail has another entry to leave the module')
     c.js("(h) => { location.hash = '#' + h }", other)
     c.until("!document.querySelector('[data-module=data]')", timeout=8000, what='the module is unmounted')
-    c.eq([c.js('window.__mapResize'), c.js('window.__zmRemoved') - removed, c.count('.maplibregl-canvas')], [0, 2, 0], 'the listener is removed at unmount, and the two maps (base and States) are removed with their canvas', what='listener removed')
+    c.eq([c.js('window.__mapResize'), c.js('window.__zmRemoved') - removed, c.count('.maplibregl-canvas')], [0, 1, 0], 'the listener is removed at unmount, and the map that was started (the base one; the States map starts only when its group is open, SOG-0164) is removed with its canvas', what='listener removed')
     # ---- G2: a real outline for the same zone: not approximate, no legend item
     c.page.evaluate("sessionStorage.setItem('__realUs', '1')")
     c.open('data', docs=LEVEL3, wait=False, app='maintenance')
@@ -3047,6 +3048,11 @@ def l20(c):
     c.open('data', docs=LEVEL3, wait=False, app='maintenance')
     _head(c)
     _all_open(c)
+    for _ in range(20):   # each map tries to start when it comes into the screen: the frames still there are brought in turn
+        c.js("document.querySelector('[data-zone-map]')?.scrollIntoView({ block: 'center' })")
+        c.wait(300)
+        if not c.count('[data-zone-map]'):
+            break
     c.until("!document.querySelector('[data-zone-map]') && !!window.__stub && window.__stub.calls.zoneOutlines >= 1", timeout=20000, what='no map when the base does not come')
     c.eq([c.count('[data-zone-map]'), c.count('.maplibregl-canvas'), c.count('[data-build-zone]'), c.count('[data-error]'), c.count('[data-zone-legend]')], [0, 0, 5, 0, 0],
          'the style is refused: no map, no legend, the list is all there is, no error line', what='no base')
@@ -4526,7 +4532,8 @@ def _rect_open(c):
     c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/'), lambda r: r.fulfill(status=200, content_type='application/json', body=_ZSTYLE))
     cfg, _ = _fixture()
     cfg['outlines'] = _outlines()
-    _launcher(c, [], verbs=_VERBS)   # the selection gestures are grey without a launcher (read only, A36)
+    st = _launcher(c, [], verbs=_VERBS)   # the selection gestures are grey without a launcher (read only, A36)
+    st['status'] = _status({z: _zst('up-to-date') for z in ('ca', 'es', 'fr', 'gb', 'us')})   # the base/status job the page asks for at the opening must be answered
     c.page.add_init_script(_ZHOOK_JS)
     _open(c, _sized(cfg))
     _all_open(c)
@@ -4816,4 +4823,40 @@ def l59(c):
     c.until("document.querySelector('[data-publish-result]')?.dataset.result === 'failed'", timeout=10000, what='the hostile failure')
     c.eq(_publish_state(c)['lines'], [['failed', norm(_trow('pubFailed', lang))]], 'an unknown cause is never shown: the sentence says the launcher did not say why', what='hostile')
     c.eq(c.count('[data-publish-result] img'), 0, 'nothing from the report becomes an element', what='escaped')
+    c.check_errors()
+
+
+@case('L60', 'Données: the opening is usable at once (SOG-0164): the zones are drawn while the state of data/ (sync-status, slow on 10 000 files) is still being read, its line says « reading » in a reserved place; the map library and the tiles do not start before the map comes into the screen', 'L', tags=('data',),
+      designs=('standard',), screens=True, phone=False, night=False,
+      rule='SOG-0164 (the user: the page must be usable in under one second): the first draw no longer waits for GET sync-status; MapLibre (about 1 MB) and its tiles are asked for when the zones map is near the screen, not at the opening')
+def l60(c):
+    lang = c.lang
+    c.page.set_viewport_size({'width': 1280, 'height': 420})      # the map is below the first screen
+    st = _launcher(c, [], verbs=_VERBS, sync={'changes': 3, 'ahead': 2, 'merging': False, 'last': None})
+    st['status'] = _status({z: _zst('up-to-date') for z in ('ca', 'es', 'fr', 'gb', 'us')})
+    cfg, _ = _fixture()
+    cfg['outlines'] = _outlines()
+    c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/'), lambda r: r.fulfill(status=200, content_type='application/json', body=_ZSTYLE))
+    # sync-status answers after 2.5 s (the relevé of a data/ of 10 000 files): the page patches fetch for that route only
+    body = json.dumps({'repo': True, 'branch': 'main', 'behind': 0, 'changes': 3, 'ahead': 2, 'merging': False, 'last': None})
+    c.page.add_init_script("""(() => { window.__ss = 0; const f = window.fetch; window.fetch = function (u, o) { const url = String((u && u.url) || u);
+      if (!url.includes('sync-status')) return f.call(this, u, o); window.__ss++; return new Promise(r => setTimeout(r, 2500)).then(() => new Response(%s, { status: 200, headers: { 'content-type': 'application/json' } })).finally(() => { window.__ss-- }) } })()""" % json.dumps(body))
+    c.page.add_init_script(_ZHOOK_JS)
+    _open(c, _sized(cfg))
+    state = c.js("""() => ({ zones: document.querySelectorAll('[data-build-zone]').length, pending: window.__ss, reading: !!document.querySelector('[data-publish-state=reading]'), readingText: document.querySelector('[data-publish-state=reading]')?.textContent.replace(/\s+/g, ' ').trim() || '', unread: !!document.querySelector('[data-publish-state=unread]'),
+      lib: performance.getEntriesByType('resource').some(e => /maplibre|openfreemap/.test(e.name)), top: Math.round(document.querySelector('[data-zone-map=base]').getBoundingClientRect().top), ih: innerHeight })""")
+    c.ok(state['zones'] == 5 and state['pending'] > 0, state, 'the five zones are drawn while sync-status is still being read')
+    c.ok(state['reading'] and not state['unread'], state, 'the Publier line says « reading », never « could not be read » while it waits')
+    c.ok(state['top'] > state['ih'] + 400 and not state['lib'], state, 'the map is far below the first screen and neither MapLibre nor a tile was asked for')
+    c.eq(norm(state['readingText']), norm(_trow('pubReading', lang)), 'worded in the language of the run', what='reading text')
+    # the answer comes: the line is replaced by the real state
+    c.until("!document.querySelector('[data-publish-state=reading]') && !!document.querySelector('[data-publish-state=changes]')", timeout=10000, what='the state of data/ arrives')
+    # the map comes into the screen: now the library is asked for, and the map is drawn
+    for _ in range(20):   # the reader scrolls down to the map (the page settles under his finger: the gesture is repeated until the map is there)
+        c.js("document.querySelector('[data-zone-map=base]')?.scrollIntoView({ block: 'center' })")
+        if c.count('[data-zone-map=base] .d-map-host .maplibregl-canvas'):
+            break
+        c.wait(500)
+    c.until("!!document.querySelector('[data-zone-map=base] .d-map-host .maplibregl-canvas')", timeout=10000, what='the map is drawn once it is in the screen')
+    c.ok(c.js("performance.getEntriesByType('resource').some(e => /maplibre/.test(e.name))"), None, 'MapLibre was asked for when the map came near')
     c.check_errors()

@@ -55,7 +55,8 @@ import {
   attachMaps
 } from './zonemap.js';
 import {
-  readStatus
+  readStatus,
+  renderPublish
 } from './publish.js';
 import {
   chainName,
@@ -182,14 +183,13 @@ export async function load(fresh = false) {
   // lecteur ne le dit qu'à sa prochaine passe) : refresh() la fait relire à la question qui suit (SOG-0072 : « il faut ctrl-maj-F5 pour voir le pays vert »)
   if (fresh) S.ctx.aerodb?.refresh?.();
   const me = S,
-    [cat, pub, zones, byState, stored, status, kept, routeMem, packsRaw] = await Promise.all([ask('sources'), ask('publication'), ask(
+    [cat, pub, zones, byState, stored, kept, routeMem, packsRaw] = await Promise.all([ask('sources'), ask('publication'), ask(
         'zones'), ask(
         'coverageByState'),
-      S.ctx.data.get(COVERAGE).catch(() => null), readStatus(), S.personalRead ? null : S.ctx.data.get(PERSONAL).catch(() => null), S
+      S.ctx.data.get(COVERAGE).catch(() => null), S.personalRead ? null : S.ctx.data.get(PERSONAL).catch(() => null), S
       .route.read ? null : S.ctx.data.get(ROUTE_MEM).catch(() => null), ask('packs')
     ]);
   if (S !== me) return; // démonté, ou remplacé, pendant la lecture
-  S.pub.status = status;
   // les cycles RAD et points FRA importés sur ce poste (SOG-0125) : lus une fois par montage, puis la fin d'un import les tient à jour
   if (!S.route.read) {
     S.route.read = true;
@@ -218,6 +218,17 @@ export async function load(fresh = false) {
   ) { // l'état par zone du lanceur : à l'ouverture, puis après chaque opération réelle (le pays orange passe au vert sur sa réponse, SOG-0072)
     S.statusAsked = true;
     refreshStatus(S.d.cov.ids);
+  }
+  // l'état de data/ pour « Publier » (GET sync-status, relevé refait : plus d'une seconde sur un dépôt de 10 000 fichiers) ne retient plus le premier dessin (SOG-0164) : la ligne du panneau dit « lecture » (place réservée), puis la réponse
+  // la remplace ; au rechargement d'après une opération, l'ancien état reste affiché jusqu'à la réponse
+  if (S.ctx.launcher) {
+    if (S.pub.status === null) S.pub.reading = true;
+    readStatus().then(st => {
+      if (S !== me) return;
+      S.pub.status = st;
+      S.pub.reading = false;
+      renderPublish();
+    });
   }
   wantZone(); // le lien « #data?zone=<id> » : la base s'ouvre, la zone est cochée
   wantRoute(); // le lien « ?source=eurocontrol_rad » : le groupe des procédures et la ligne Route s'ouvrent

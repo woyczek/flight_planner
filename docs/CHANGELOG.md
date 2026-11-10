@@ -17,6 +17,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   (BUGS SOG's trace: 1.3 s in the IndexedDB callback on the Map alone); it is now kept in memory and written through (other tabs invalidate it).
   On a 10 339-file test launcher: the Map 208 requests / 415–487 ms → 165 / 215–227 ms.
 
+- **Data: the opening no longer waits for what is not on screen — the map library and tiles start when the map comes near the screen, the state of data/ is read after the first draw (« Lecture… » in its reserved place)** (`modules/data/zonemap.js`, `screen.js`, `publish.js`; Data DECISIONS; L60) — SOG-0164 (1) and the sync-status part of (3); the 29 scripts and the job polls are left, with a proposal.
 - **Settings › Administration: no direct button to a V2 page any more** (`frame/settings/admin_links.js`, help ×4; frame/settings SPEC; A120) — SOG-0166 rest: Maintenance V2, First launch and Map studio live in the « Anciennes pages (V2) » screen; the « première installation » link of Données stays, said to be a page of the old version.
 - **Frame: the « Old version · Reload » cartouche in the header** (`frame/index.html`, `frame/frame.css`, `frame/app.js`; frame SPEC § 3.6, DECISIONS; noreg
   A118; SOG-0168). A small square label, white on the alert red, beside the sync button: shown when the page is older than the launcher (or the next

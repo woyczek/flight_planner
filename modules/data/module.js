@@ -290,6 +290,7 @@ export async function mount(el, ctx) {
     other: null, // la vue d'une autre opération du lanceur, tant qu'elle tourne
     pub: {
       status: null,
+      reading: false, // la lecture de sync-status est en cours (premier dessin sans l'attendre, SOG-0164)
       phase: null,
       result: null
     }, // « Publier » : sync-status lu, 'asking' | 'running' | null, la fin { out } ou { unread }

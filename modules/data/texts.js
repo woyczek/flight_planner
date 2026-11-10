@@ -803,6 +803,9 @@ export const TX = {
   pubLastKept: ['Dernier passage : {d} (rien n’a été envoyé)', 'Last pass: {d} (nothing was sent)',
     'Letzter Durchlauf: {d} (nichts wurde gesendet)', 'Último paso: {d} (no se envió nada)'
   ],
+  pubReading: ['Lecture de l’état des fichiers du poste…', 'Reading the state of this workstation’s files…',
+    'Der Zustand der Dateien des Rechners wird gelesen …', 'Leyendo el estado de los archivos del puesto…'
+  ],
   pubUnread: ['L’état des fichiers du poste n’a pas pu être lu : le lanceur ne répond pas.',
     'The state of this workstation’s files could not be read: the launcher does not answer.',
     'Der Stand der Dateien dieses Rechners konnte nicht gelesen werden: der Starter antwortet nicht.',
@@ -1164,7 +1167,8 @@ export const TX = {
     'In data/ wartet eine Zusammenführung: synchronisieren Sie zuerst (Einstellungen › Synchronisierung)',
     'Una fusión espera en data/: sincronice primero (Ajustes › Sincronización)'
   ],
-  firstInstall: ['Ouvrir l’assistant de première installation (page de l’ancienne version)', 'Open the first-install assistant (a page of the old version)',
+  firstInstall: ['Ouvrir l’assistant de première installation (page de l’ancienne version)',
+    'Open the first-install assistant (a page of the old version)',
     'Assistenten der Ersteinrichtung öffnen (Seite der alten Version)',
     'Abrir el asistente de primera instalación (página de la versión antigua)'
   ],
