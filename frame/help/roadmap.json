@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "5b953fc",
+  "organisation": "edacdcd",
   "fiches": 224,
   "untranslated": 1,
   "priorities": 152
@@ -542,7 +542,7 @@
     {
      "id": "SOG-0217",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Calcul de route automatique : entre deux terrains lointains, suivre l'orthodromie",
      "en": "Automatic route computation: between two distant aerodromes, follow the great circle",
      "de": "Automatische Routenberechnung: zwischen zwei fernen Plätzen der Orthodrome folgen",
@@ -2285,7 +2285,7 @@
     {
      "id": "SOG-0221",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Lien « Cartes » : il mène à l'eAIP du cycle précédent",
      "en": "“Charts” link: it leads to the eAIP of the previous cycle",
      "de": "Link „Karten“: führt zur eAIP des vorigen Zyklus",
