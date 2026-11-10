@@ -328,18 +328,19 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
    `#settings?card=company`. The airlines of `data/airline/index.json` (`{ airlines: [{ code, name }] }`) then « Personnel » (`perso`), each
    line: name, code, networks (the booleans `networks.ivao / vatsim / offline` of its `settings.json`, closed list), fleet count (`fleet.json`
    `aircraft.length`, bounded); four elements, under the seven permitted (the logo and the missions count wait for the readers of the
-   other lots). « Choisir » calls `FrameData.setAirline(code)`; the current one (`FrameData.airline().code`) is marked and has no button;
-   **feature-detected**: without `setAirline` every button is grey and the card says why. « Ajouter une compagnie » (name ≤ 60 characters, code
+   other lots). The radio calls `FrameData.setAirline(code)`; the current one (`FrameData.airline().code`) is the checked one;
+   **feature-detected**: without `setAirline` every radio is grey and the card says why. « Créer une compagnie » (name ≤ 60 characters, code
    `^[a-z0-9]{2,8}$`, not `perso`, not taken, twenty airlines at most, networks) writes `airline/<code>/settings.json`, an empty `fleet.json`
    and the index (merged by code); a taken code writes nothing. Every file of `data/airline/` is untrusted (§ 10.36): codes by the rule, names
    by `esc`, at most twenty lines. The one-shot migration of today's single airline is the launcher verb `airline/migrate` (`tools/regen/airline.py`,
    case K95), called from this card (below).
-   **Kind and mission categories** (SOG-0041, § 10.38; case A105): under each airline but « Personnel » (commercial by nature), two more elements (seven at most per line: name, code, networks, fleet,
-   choice, kind, categories). The **kind** is two toggle buttons, « Commerciale » / « Escadrille (SOG) » (`va` / `sog`; a second tap clears it): `kind` of the airline's `settings.json`, the rest of the file kept, written by the
-   same adapter as the other files (`airline/` before the migration for `default`). The **categories** are a fold « Catégories de missions (n) » (n: the active ones, `frame/lib/mission_categories.js`): every group of the airline's
-   `categories.json` (or the common base without one), a group the kind makes inactive says so, and for the `virtuel` group (the airline's own) a field + « Ajouter » and a « Retirer » per category. The first write turns the base
-   into the airline's file (it replaces the base); a name whose id (accents and punctuation removed, 24 characters) already exists in any group, an empty or over-long name, or a forty-first category writes nothing and says why.
-   Everything read is untrusted (the module filters ids, bounds and names; the names are drawn by `esc`).
+   **The card is « Compagnie de cet appareil »** (SOG-0041, step A, § 10.38; case A105; the first version, a « Choisir » button and two toggle buttons per line, was refused at the recipe): a **list of radio buttons**, one line = radio, name, code and a grey line that says the
+   **kind in words** (« Commerciale », « Escadrille SO », « Personnel », or « Genre à choisir »), the networks and the fleet count; three elements, no button. The choice applies at the tap (`FrameData.setAirline`) and **nothing of the list is redrawn**: `paintRows` keeps the node of
+   a line whose HTML is unchanged (the HTML says nothing of the current state), `markCurrent` moves the checked radio and `data-current`; a line whose words changed (the kind) is the only one replaced. A refused choice (`false`) reads the state again.
+   Under the list, the **sheet of the CHOSEN airline** (the others have none), open, nothing to unfold: the **kind** (two radio buttons, « Commerciale » / « Escadrille SO », a sentence each; `va` / `sog`; written in the airline's `settings.json`, the rest of the file kept, same adapter as the other files, `airline/` before the migration for `default`; a kind is
+   chosen, never cleared) and the **mission categories** of that kind (`frame/lib/mission_categories.js`, title with the count): the groups active for the kind, the group `virtuel` (the airline's own) with a « Retirer » per category and the field + « Ajouter une catégorie ». Without a kind the commercial group is not listed and the sheet says to choose; for « Personnel » one line, nothing to set.
+   The first write turns the base into the airline's file (it replaces the base); a name whose id (accents and punctuation removed, 24 characters) already exists in any group, an empty or over-long name, or a forty-first category writes nothing and says why under the sheet (`data-fiche-msg`).
+   Below the sheet, **three gestures in this order**: « Créer une compagnie » (the former « Ajouter », a fold), « Rejoindre une compagnie » (a fold that says it is not available yet: step B), the migration when it applies (below). Everything read is untrusted (the module filters ids, bounds and names; the names are drawn by `esc`).
    **Migrate** (follow-up of SOG-0039; case A102): on the launcher's computer (not a paired device), while the frame's list has `default` (the airline is still at
    the root of `data/airline/`), the card adds a block: an optional code field (`^[a-z0-9]{2,8}$`, empty = proposed from the name), « See what would be done »
    (`regen/job { set: 'airline', verb: 'migrate', args: { dry: true, code? } }`: the name, the code, the files and their size, the fleet said empty, the

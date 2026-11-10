@@ -275,7 +275,7 @@
     PERSO = 'perso',
     INDEX = 'airline/index.json';
   const TA = {
-    title: ['Compagnie', 'Airline', 'Fluggesellschaft', 'Compañía'],
+    title: ['Compagnie de cet appareil', 'This device’s airline', 'Fluggesellschaft dieses Geräts', 'Compañía de este dispositivo'],
     hint: [
       'La compagnie courante de cet appareil : les missions, le compte rendu et la flotte lisent celle-ci. Le choix est propre à l’appareil.',
       'This device’s current airline: the missions, the report and the fleet read this one. The choice is per device.',
@@ -284,8 +284,6 @@
     ],
     perso: ['Personnel', 'Personal', 'Persönlich', 'Personal'],
     fleet: ['{n} appareil(s)', '{n} aircraft', '{n} Luftfahrzeug(e)', '{n} aeronave(s)'],
-    choose: ['Choisir', 'Choose', 'Wählen', 'Elegir'],
-    current: ['courante', 'current', 'aktuell', 'actual'],
     unavailable: ['Le choix n’est pas encore disponible dans ce cadre.', 'Choosing is not yet available in this frame.',
       'Die Auswahl ist in diesem Rahmen noch nicht verfügbar.', 'La elección aún no está disponible en este marco.'
     ],
@@ -293,7 +291,14 @@
       'Keine Fluggesellschaft in data/airline/index.json: Fügen Sie eine hinzu.',
       'Ninguna compañía en data/airline/index.json: añada una.'
     ],
-    add: ['Ajouter une compagnie', 'Add an airline', 'Fluggesellschaft hinzufügen', 'Añadir una compañía'],
+    add: ['Créer une compagnie', 'Create an airline', 'Fluggesellschaft anlegen', 'Crear una compañía'],
+    join: ['Rejoindre une compagnie', 'Join an airline', 'Einer Fluggesellschaft beitreten', 'Unirse a una compañía'],
+    joinHint: [
+      'Pas encore disponible : vous collerez ici l’adresse du site de la flotte de la compagnie ; elle sera lue sur ce poste et montrée avant que rien ne soit écrit.',
+      'Not available yet: you will paste the address of the airline’s fleet website here; it will be read on this workstation and shown before anything is written.',
+      'Noch nicht verfügbar: Sie fügen hier die Adresse der Flottenseite der Gesellschaft ein; sie wird auf diesem Rechner gelesen und gezeigt, bevor etwas geschrieben wird.',
+      'Aún no disponible: pegará aquí la dirección del sitio de la flota de la compañía; se leerá en este equipo y se mostrará antes de escribir nada.'
+    ],
     name: ['Nom', 'Name', 'Name', 'Nombre'],
     code: ['Code (2 à 8 lettres ou chiffres)', 'Code (2 to 8 letters or digits)', 'Code (2 bis 8 Buchstaben oder Ziffern)',
       'Código (2 a 8 letras o cifras)'
@@ -304,7 +309,7 @@
       vatsim: ['VATSIM', 'VATSIM', 'VATSIM', 'VATSIM'],
       offline: ['hors ligne', 'off-line', 'offline', 'sin conexión']
     },
-    save: ['Ajouter', 'Add', 'Hinzufügen', 'Añadir'],
+    save: ['Créer', 'Create', 'Anlegen', 'Crear'],
     badName: ['Donnez un nom (60 caractères au plus).', 'Give a name (60 characters at most).',
       'Geben Sie einen Namen an (höchstens 60 Zeichen).', 'Indique un nombre (60 caracteres como máximo).'
     ],
@@ -319,13 +324,37 @@
     kindLabel: ['Genre', 'Kind', 'Art', 'Tipo'],
     kind: {
       va: ['Commerciale', 'Commercial', 'Kommerziell', 'Comercial'],
-      sog: ['Escadrille (SOG)', 'Squadron (SOG)', 'Staffel (SOG)', 'Escuadrón (SOG)']
+      sog: ['Escadrille SO', 'SO squadron', 'SO-Staffel', 'Escuadrón SO'],
+      perso: ['Personnel', 'Personal', 'Persönlich', 'Personal'],
+      none: ['Genre à choisir', 'Kind to choose', 'Art wählen', 'Tipo por elegir']
     },
+    kindHelp: {
+      va: ['Une compagnie commerciale : fret, passagers, VIP, entraînement, transit, essais en vol, plus vos propres catégories.',
+        'A commercial airline: cargo, passengers, VIP, training, transit, test flights, plus your own categories.',
+        'Eine kommerzielle Gesellschaft: Fracht, Passagiere, VIP, Training, Transit, Testflüge, dazu Ihre eigenen Kategorien.',
+        'Una compañía comercial: carga, pasajeros, VIP, entrenamiento, tránsito, vuelos de prueba, más sus propias categorías.'
+      ],
+      sog: ['Une escadrille SO : ses missions préparées, sans catégorie commerciale, avec vos propres catégories.',
+        'An SO squadron: its prepared missions, no commercial category, with your own categories.',
+        'Eine SO-Staffel: ihre vorbereiteten Missionen, keine kommerzielle Kategorie, dazu Ihre eigenen Kategorien.',
+        'Un escuadrón SO: sus misiones preparadas, sin categoría comercial, con sus propias categorías.'
+      ]
+    },
+    kindUnset: ['Choisissez le genre : les catégories du socle en dépendent.', 'Choose the kind: the base categories depend on it.',
+      'Wählen Sie die Art: die Basiskategorien hängen davon ab.', 'Elija el tipo: las categorías base dependen de él.'
+    ],
+    persoNote: ['Personnel : vos vols hors compagnie, avec les catégories commerciales du socle ; rien à régler ici.',
+      'Personal: your flights outside any airline, with the base commercial categories; nothing to set here.',
+      'Persönlich: Ihre Flüge ohne Gesellschaft, mit den kommerziellen Basiskategorien; hier ist nichts einzustellen.',
+      'Personal: sus vuelos fuera de toda compañía, con las categorías comerciales base; nada que ajustar aquí.'
+    ],
+    ficheTitle: ['Compagnie choisie : {n}', 'Chosen airline: {n}', 'Gewählte Gesellschaft: {n}', 'Compañía elegida: {n}'],
+    catNone: ['Aucune pour l’instant.', 'None yet.', 'Noch keine.', 'Ninguna por ahora.'],
+    catAdd: ['Ajouter une catégorie', 'Add a category', 'Kategorie hinzufügen', 'Añadir una categoría'],
     kindSaved: ['Genre enregistré.', 'Kind saved.', 'Art gespeichert.', 'Tipo guardado.'],
     catSummary: ['Catégories de missions ({n})', 'Mission categories ({n})', 'Missionskategorien ({n})',
       'Categorías de misiones ({n})'
     ],
-    catInactive: ['inactif pour ce genre', 'inactive for this kind', 'für diese Art inaktiv', 'inactivo para este tipo'],
     catName: ['Nom de la catégorie', 'Category name', 'Name der Kategorie', 'Nombre de la categoría'],
     catDel: ['Retirer', 'Remove', 'Entfernen', 'Quitar'],
     catBad: ['Nom refusé : 1 à 40 caractères, avec au moins une lettre ou un chiffre.',
@@ -469,23 +498,32 @@
   const catLib = () => catLibP ||= import(new URL('frame/lib/mission_categories.js', ROOT).href).catch(() => null);
   /** Le dossier d'une compagnie sous data/ : « airline/ » avant la migration (code default), sinon « airline/<code>/ ». */
   const airlineBase = code => code === 'default' ? 'airline/' : `airline/${code}/`;
-  /** Le bloc d'une ligne pour le genre et les catégories (deux éléments de plus : sept au plus par ligne) ; rien pour « Personnel » ni sans le module. `lang` : la langue des noms. */
-  function airlineMoreHtml(r, CL, lang, t) {
-    if (r.code === PERSO || !CL) return '';
-    const file = CL.clean(r.cats) || CL.clean(CL.BASE),
-      info = CL.forAirline(r.cats, {
+  /** La ligne de la liste (jamais un bouton « Choisir ») : bouton radio, nom, code, puis une ligne grise : le genre dit en toutes lettres, les réseaux, la flotte. Le HTML ne dit rien de l'état courant (posé ensuite sur le nœud) : deux dessins qui ne diffèrent que par le choix donnent le même texte. */
+  function airlineRowHtml(r, t, can) {
+    const kind = r.code === PERSO ? t(TA.kind.perso) : t(TA.kind[r.kind || 'none']),
+      meta = [kind, ...r.nets.map(k => t(TA.net[k])), ...(r.fleet === null ? [] : [t(TA.fleet, {
+        n: r.fleet
+      })])].join(' · '),
+      code = esc(r.code);
+    return `<label class="f-co" data-airline="${code}"><input type="radio" name="co-current" value="${code}" data-act="companyChoose" data-code="${code}"${can ? '' : ' disabled'}><span class="f-co-name"><b>${esc(r.name)}</b> <code>${code}</code></span><span class="f-muted" data-co-meta>${esc(meta)}</span></label>`;
+  }
+  /** La fiche de la compagnie CHOISIE (les autres n'en ont pas) : le genre en deux boutons radio, une ligne d'explication chacun ; puis les catégories de missions de ce genre, visibles, avec « Ajouter une catégorie ». « Personnel » : une ligne, rien à régler. `lang` : la langue des noms. */
+  function airlineFicheHtml(r, CL, lang, t) {
+    if (!r) return '';
+    if (r.code === PERSO) return `<p class="f-muted" data-fiche-perso>${esc(t(TA.persoNote))}</p>`;
+    if (!CL) return '';
+    const info = CL.forAirline(r.cats, {
         code: r.code,
         settings: {
           kind: r.kind
         }
       }),
-      active = new Set(info.groups.map(g => g.id)),
       code = esc(r.code);
-    return `<div class="f-row" data-airline-more><span class="f-muted">${esc(t(TA.kindLabel))}</span>${KINDS.map(k => `<button type="button" data-act="companyKind" data-code="${code}" data-kind="${k}" aria-pressed="${r.kind === k}">${esc(t(TA.kind[k]))}</button>`).join('')}</div>
-      <details data-cats="${code}"><summary>${esc(t(TA.catSummary, { n: info.all.length }))}</summary>
-        ${file.groups.map(g => `<p data-cat-group="${esc(g.id)}"><b>${esc(g.names[lang] || g.id)}</b>${active.has(g.id) ? '' : ` <span class="f-muted">${esc(t(TA.catInactive))}</span>`}</p>
-          <ul>${g.categories.map(c => `<li data-cat="${esc(c.id)}">${esc(c.names[lang] || c.id)}${g.id === 'virtuel' ? ` <button type="button" data-act="companyCatDel" data-code="${code}" data-cat="${esc(c.id)}">${esc(t(TA.catDel))}</button>` : ''}</li>`).join('')}</ul>`).join('')}
-        <div class="f-row"><input type="text" maxlength="40" data-f="cat-${code}" aria-label="${esc(t(TA.catName))}" placeholder="${esc(t(TA.catName))}"><button type="button" data-act="companyCatAdd" data-code="${code}">${esc(t(TA.save))}</button></div></details>`;
+    return `<h3>${esc(t(TA.ficheTitle, { n: r.name }))}</h3>
+      <fieldset data-kind-set><legend>${esc(t(TA.kindLabel))}</legend>${KINDS.map(k => `<label class="f-check f-kind"><input type="radio" name="co-kind" value="${k}" data-act="companyKind" data-code="${code}" data-kind="${k}"${r.kind === k ? ' checked' : ''}><span><b>${esc(t(TA.kind[k]))}</b><span class="f-muted">${esc(t(TA.kindHelp[k]))}</span></span></label>`).join('')}</fieldset>
+      <h4 data-cats-title>${esc(t(TA.catSummary, { n: info.all.length }))}</h4>${r.kind ? '' : `<p class="f-muted">${esc(t(TA.kindUnset))}</p>`}
+      ${info.groups.map(g => `<p data-cat-group="${esc(g.id)}"><b>${esc(g.names[lang] || g.id)}</b></p>${g.categories.length ? `<ul class="f-cats">${g.categories.map(c => `<li data-cat="${esc(c.id)}">${esc(c.names[lang] || c.id)}${g.id === 'virtuel' ? ` <button type="button" data-act="companyCatDel" data-code="${code}" data-cat="${esc(c.id)}">${esc(t(TA.catDel))}</button>` : ''}</li>`).join('')}</ul>` : `<p class="f-muted">${esc(t(TA.catNone))}</p>`}`).join('')}
+      <div class="f-row"><input type="text" maxlength="40" data-f="cat-${code}" aria-label="${esc(t(TA.catName))}" placeholder="${esc(t(TA.catName))}"><button type="button" data-act="companyCatAdd" data-code="${code}">${esc(t(TA.catAdd))}</button></div><p class="f-msg" data-fiche-msg></p>`;
   }
   /** Écrit le genre d'une compagnie dans son settings.json (le fichier lu, le champ `kind` posé ou retiré) ; faux si le fichier manque ou ne s'écrit pas. */
   async function writeKind(env, code, kind) {
@@ -545,7 +583,7 @@
       return 'failed';
     }
   }
-  /** La carte Compagnie : le bloc des lignes (rempli par airlineLive) et le formulaire « Ajouter une compagnie » ; le niveau Complet, ou l'adresse #settings?card=company. */
+  /** La carte Compagnie : « Compagnie de cet appareil » (la liste à boutons radio, remplie par airlineLive), la fiche de la compagnie choisie, puis trois gestes dans cet ordre : « Créer une compagnie », « Rejoindre une compagnie », la migration quand elle s'applique ; le niveau Complet, ou l'adresse #settings?card=company. */
   function airlineHtml(env) {
     const {
       t,
@@ -554,12 +592,60 @@
       fld
     } = env;
     if (lvl !== 3 && focus !== 'company') return '';
-    return `<div class="f-card" data-card="company"><h2>${esc(t(TA.title))}</h2><p class="f-muted">${esc(t(TA.hint))}</p><ul class="f-queue" data-airlines></ul><p class="f-warn" data-airline-note hidden></p><div data-mig hidden></div>
+    return `<div class="f-card" data-card="company"><h2>${esc(t(TA.title))}</h2><p class="f-muted">${esc(t(TA.hint))}</p><div class="f-cos" role="radiogroup" aria-label="${esc(t(TA.title))}" data-airlines></div><p class="f-warn" data-airline-note hidden></p><div class="f-fiche" data-airline-fiche></div>
       <details data-airline-add><summary>${esc(t(TA.add))}</summary>${fld('co-name', TA.name, '')}${fld('co-code', TA.code, '')}
       <fieldset><legend>${esc(t(TA.networks))}</legend>${AIRLINE_NETWORKS.map(k => `<label class="f-check"><input type="checkbox" data-co-net="${k}"> ${esc(t(TA.net[k]))}</label>`).join('')}</fieldset>
-      <p class="f-msg" data-msg></p><div class="f-row"><button type="button" class="primary" data-act="companyAdd">${esc(t(TA.save))}</button></div></details></div>`;
+      <p class="f-msg" data-msg></p><div class="f-row"><button type="button" class="primary" data-act="companyAdd">${esc(t(TA.save))}</button></div></details>
+      <details data-airline-join><summary>${esc(t(TA.join))}</summary><p class="f-muted">${esc(t(TA.joinHint))}</p></details>
+      <div data-mig hidden></div></div>`;
   }
-  /** Dessine les lignes : nom, code, réseaux, taille de flotte (quatre éléments, sous les sept permis) et « Choisir » (« courante » sur celle qui l'est) ; le choix passe par FrameData.setAirline, absent : bouton gris et dit. */
+  // par vue : ce que la dernière lecture a rendu (lignes, module des catégories, langue, choix possible, compagnie courante), pour repeindre la fiche sans relire
+  const AIR = new WeakMap();
+  /** Met la liste à jour SANS la redessiner : une ligne dont le HTML est inchangé garde son nœud (le focus, la hauteur, rien ne bouge) ; seule une ligne qui change est remplacée, une ligne nouvelle insérée, une ligne disparue retirée. */
+  function paintRows(box, rows, t, can) {
+    const keys = new Set(rows.map(r => r.code));
+    for (const n of [...box.children])
+      if (!keys.has(n.dataset.airline)) n.remove();
+    rows.forEach((r, i) => {
+      const html = airlineRowHtml(r, t, can),
+        cur = box.children[i];
+      if (cur && cur.dataset.airline === r.code && cur.__html === html) return;
+      const tpl = document.createElement('template');
+      tpl.innerHTML = html;
+      const n = tpl.content.firstElementChild;
+      n.__html = html;
+      if (cur && cur.dataset.airline === r.code) cur.replaceWith(n);
+      else box.insertBefore(n, cur || null);
+    });
+  }
+  /** La compagnie courante : le bouton radio coché et `data-current` sur sa ligne, rien d'autre ne change. */
+  function markCurrent(view, now) {
+    for (const row of view.querySelectorAll('[data-airlines] [data-airline]')) {
+      const on = row.dataset.airline === now;
+      row.toggleAttribute('data-current', on);
+      row.querySelector('input').checked = on;
+    }
+  }
+  /** Repeint la fiche de la compagnie choisie d'après la dernière lecture ; le nœud n'est touché que si son HTML change, et le focus d'un bouton radio du genre est rendu. */
+  function paintFiche(env) {
+    const {
+      view,
+      t
+    } = env, host = view.querySelector('[data-airline-fiche]'), s = AIR.get(view);
+    if (!host || !s) return;
+    const html = airlineFicheHtml(s.rows.find(r => r.code === s.now), s.CL, s.lang, t);
+    if (host.__html === html) return;
+    const kind = document.activeElement?.closest?.('[data-airline-fiche]') ? document.activeElement.dataset?.kind : '';
+    host.innerHTML = html;
+    host.__html = html;
+    if (kind) host.querySelector(`[data-kind="${kind}"]`)?.focus();
+  }
+  /** Dit un message sous la fiche (vide : l'efface). */
+  function ficheSay(env, text) {
+    const m = env.view.querySelector('[data-fiche-msg]');
+    if (m) m.textContent = text || '';
+  }
+  /** Lit les compagnies et peint : la liste à boutons radio (sans redessin des lignes inchangées), la compagnie courante, sa fiche ; la migration et la note comme avant. Le choix passe par FrameData.setAirline, absent : boutons gris et dit. */
   async function airlineLive(env) {
     const {
       view,
@@ -572,10 +658,16 @@
       lang = env.c.lang?.() || 'fr';
     if (!view.isConnected) return;
     const can = typeof FD.setAirline === 'function',
-      now = String((typeof FD.airline === 'function' ? await Promise.resolve(FD.airline()).catch(() => null) : null)?.code || ''),
-      body = rows.map(r => `<li data-airline="${esc(r.code)}"${r.code === now ? ' data-current' : ''}><b>${esc(r.name)}</b> <code>${esc(r.code)}</code>${r.nets.length ? ` <span class="f-muted">${esc(r.nets.map(k => t(TA.net[k])).join(' · '))}</span>` : ''}${r.fleet === null ? '' : ` <span class="f-muted">${esc(t(TA.fleet, { n: r.fleet }))}</span>`}
-        ${r.code === now ? `<span class="f-muted">${esc(t(TA.current))}</span>` : `<button type="button" data-act="companyChoose" data-code="${esc(r.code)}"${can ? '' : ' disabled'}>${esc(t(TA.choose))}</button>`}${airlineMoreHtml(r, CL, lang, t)}</li>`).join('');
-    box.innerHTML = body;
+      now = String((typeof FD.airline === 'function' ? await Promise.resolve(FD.airline()).catch(() => null) : null)?.code || '');
+    AIR.set(view, {
+      rows,
+      CL,
+      lang,
+      now
+    });
+    paintRows(box, rows, t, can);
+    markCurrent(view, now);
+    paintFiche(env);
     // la migration : seulement sur le poste du lanceur et tant que la compagnie d'aujourd'hui est encore à la racine
     const mig = view.querySelector('[data-mig]');
     if (mig) {
@@ -626,7 +718,7 @@
       t,
       fld
     } = env;
-    return `<p class="f-muted">${esc(t(TA.migHint))}</p>${fld('mig-code', TA.migCode, '')}<div class="f-row"><button type="button" data-act="companyPlan">${esc(t(TA.migPlan))}</button></div><div data-mig-plan></div>`;
+    return `<p class="f-muted">${esc(t(TA.migHint))}</p>${fld('mig-code', TA.migCode, '')}<div class="f-row"><button type="button" data-act="companyPlan">${esc(t(TA.migPlan))}</button></div><div data-mig-plan></div><p class="f-msg" data-msg></p>`;
   }
   /** Les gestes de la carte : « Choisir » (FrameData.setAirline(code), le code revérifié) et « Ajouter » (nom, code, réseaux : les dossiers et l'index écrits, jamais un fichier existant écrasé). */
   async function airlineRun(env, act, b) {
@@ -642,18 +734,29 @@
     if (act === 'companyChoose') {
       const code = b.dataset.code || '';
       if (!(AIRLINE_CODE.test(code) || code === PERSO) || typeof FD.setAirline !== 'function') return;
-      await FD.setAirline(code);
-      return again();
+      // le choix s'applique à l'appui : seuls l'état des radios et la fiche changent (aucun redessin de la liste) ; refusé (faux), la lecture dit ce qui est
+      const ok = await FD.setAirline(code),
+        s = AIR.get(env.view);
+      if (ok === false || !s) return airlineLive(env);
+      s.now = code;
+      markCurrent(env.view, code);
+      return paintFiche(env);
     }
     if (act === 'companyKind' || act === 'companyCatAdd' || act === 'companyCatDel') {
       const code = b.dataset.code || '';
       if (!AIRLINE_CODE.test(code)) return;
       if (act === 'companyKind') {
-        const k = KINDS.includes(b.dataset.kind) ? b.dataset.kind : '',
-          cur = b.getAttribute('aria-pressed') === 'true';
-        if (!await writeKind(env, code, cur ? '' : k)) return say('company', t(TA.failed));
+        const k = KINDS.includes(b.dataset.kind) ? b.dataset.kind : '';
+        if (!k) return;
+        if (!await writeKind(env, code, k)) {
+          // le radio a changé d'état pour rien : la fiche se repeint d'après la dernière lecture, puis le dit
+          const host = env.view.querySelector('[data-airline-fiche]');
+          if (host) host.__html = '';
+          paintFiche(env);
+          return ficheSay(env, t(TA.failed));
+        }
         c.notify(t(TA.kindSaved), 'ok');
-        return again();
+        return airlineLive(env);
       }
       let why;
       if (act === 'companyCatDel') {
@@ -665,7 +768,7 @@
       } else {
         const name = val(`cat-${code}`, card('company')).replace(/\s+/g, ' ').slice(0, 41),
           id = catId(name);
-        if (!name || name.length > 40 || !id) return say('company', t(TA.catBad));
+        if (!name || name.length > 40 || !id) return ficheSay(env, t(TA.catBad));
         why = await writeCats(env, code, (own, file, CL) => {
           if (file.groups.some(g => g.categories.some(x => x.id === id))) return 'catDup';
           if (file.groups.reduce((n, g) => n + g.categories.length, 0) >= CL.CATEGORIES_MAX) return 'catFull';
@@ -681,15 +784,23 @@
           return '';
         });
       }
-      if (why) return say('company', t(TA[why] || TA.failed));
+      if (why) return ficheSay(env, t(TA[why] || TA.failed));
       c.notify(t(TA.catSaved), 'ok');
-      return again();
+      return airlineLive(env);
     }
     if (act === 'companyPlan' || act === 'companyMigrate') {
       const root = card('company'),
         out = root.querySelector('[data-mig-plan]'),
-        typed = val('mig-code', root);
-      if (typed && !AIRLINE_CODE.test(typed)) return say('company', t(TA.badCode));
+        typed = val('mig-code', root),
+        // le message de la migration se dit dans son propre bloc (celui de « Créer une compagnie » est replié)
+        migSay = text => {
+          const m = root.querySelector('[data-mig] [data-msg]');
+          if (m) {
+            m.textContent = text || '';
+            m.dataset.kind = 'err';
+          }
+        };
+      if (typed && !AIRLINE_CODE.test(typed)) return migSay(t(TA.badCode));
       const dry = act === 'companyPlan',
         res = migResult(await runMigrate(c, {
           dry,
@@ -702,7 +813,7 @@
           <div class="f-row"><button type="button" class="primary" data-act="companyMigrate">${esc(t(TA.migGo, { c: res.code }))}</button></div>`;
         const field = root.querySelector('[data-f="mig-code"]');
         if (field) field.value = res.code;
-        return say('company', '');
+        return migSay('');
       }
       if (!dry && res.ok) {
         c.notify(t(TA.migDone, {
@@ -711,7 +822,7 @@
         return again();
       }
       if (out) out.innerHTML = '';
-      return say('company', t(TA.migWhy[res.reason || 'failed']));
+      return migSay(t(TA.migWhy[res.reason || 'failed']));
     }
     const r = card('company'),
       name = val('co-name', r).slice(0, 61),

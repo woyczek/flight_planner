@@ -3503,12 +3503,12 @@ def a95(c):
             ['airline/dfa/settings.json', {'schema': 1, 'name': 'DEFA Virtual', 'networks': {'ivao': True, 'vatsim': False, 'offline': False}}, 'document'],
             ['airline/dfa/fleet.json', {'schema': 1, 'aircraft': [{'registration': 'F-AAAA'}, {'registration': 'F-BBBB'}, {'registration': 'F-CCCC'}]}, 'document'],
             ['airline/aiv/settings.json', {'schema': 1, 'name': evil, 'networks': {'ivao': True, 'vatsim': True, 'offline': 'yes'}}, 'document']]
-    rows = lambda: c.js("[...document.querySelectorAll('[data-card=\"company\"] li[data-airline]')].map(li => [li.dataset.airline, li.hasAttribute('data-current'), li.querySelector('b').textContent, !!li.querySelector('button') && li.querySelector('button').disabled])")
+    rows = lambda: c.js("[...document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]')].map(li => [li.dataset.airline, li.hasAttribute('data-current'), li.querySelector('b').textContent, !!li.querySelector('input') && li.querySelector('input').disabled])")
     # ---- 0: the real frame (FrameData.airlines / setAirline, V3 Frame 837f2d2fa): the list is the frame's, the choice is kept by the frame
     c.open('settings?card=company', docs=docs)
-    c.until("document.querySelectorAll('[data-card=\"company\"] li[data-airline]').length === 3", timeout=15000, what='the three lines of the real frame')
+    c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length === 3", timeout=15000, what='the three lines of the real frame')
     c.eq([r[0] for r in rows()], ['dfa', 'aiv', 'perso'], 'the list of the frame itself: the airlines of the index, then personal', what='real list')
-    c.tap('[data-card="company"] li[data-airline="perso"] button')
+    c.tap('[data-card="company"] [data-airlines] [data-airline="perso"] input')
     code = ''
     for _ in range(30):
         code = c.js("FrameData.airline().then(a => a && a.code)")
@@ -3519,11 +3519,11 @@ def a95(c):
     # ---- A: a frame that has not the contract yet (an old one): the list is read from the index, « Choose » is grey and said
     c.page.add_init_script("""(() => { let fd; Object.defineProperty(window, 'FrameData', { configurable: true, get: () => fd, set: v => { fd = v; delete v.setAirline; delete v.airline; delete v.airlines } }) })()""")
     c.open('settings?card=company', docs=docs)
-    c.until("document.querySelectorAll('[data-card=\"company\"] li[data-airline]').length === 3", timeout=15000, what='the three lines: dfa, aiv, personal')
+    c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length === 3", timeout=15000, what='the three lines: dfa, aiv, personal')
     got = rows()
     c.eq([[r[0], r[2]] for r in got], [['dfa', 'DEFA Virtual'], ['aiv', evil], ['perso', T('perso')]], 'the folders found, in order, then « personnel »; a hostile code, an upper-case code, a repeated one and « perso » itself are dropped; a name is text', what='lines')
     c.ok(c.count('[data-card="company"] img') == 0 and c.js("window.__pwn === undefined"), got, 'a hostile name is text: no element, nothing runs')
-    line = lambda code: norm(c.text(f'[data-card="company"] li[data-airline="{code}"]'))
+    line = lambda code: norm(c.text(f'[data-card="company"] [data-airlines] [data-airline="{code}"]'))
     c.ok(norm(T('fleet').replace('{n}', '3')) in line('dfa') and 'IVAO' in line('dfa') and 'VATSIM' not in line('dfa'), line('dfa'), 'a line: the name, the code, the networks read as booleans, the fleet count')
     c.ok('IVAO' in line('aiv') and 'VATSIM' in line('aiv') and norm(T('fleet').replace('{n}', '0')) in line('aiv'), line('aiv'), 'no fleet file: 0; a network that is not exactly true is not shown')
     c.eq([r[3] for r in got], [True, True, True], 'without FrameData.setAirline every choose button is grey', what='grey')
@@ -3531,10 +3531,10 @@ def a95(c):
     # ---- B: with the contract (FrameData.airline / setAirline): the current one marked, the choice sent
     c.page.add_init_script("""(() => { let fd; Object.defineProperty(window, 'FrameData', { configurable: true, get: () => fd, set: v => { fd = v; v.airline = () => ({ code: 'aiv' }); v.setAirline = async code => { window.__chosen = code } } }) })()""")
     c.open('settings?card=company', docs=docs)
-    c.until("document.querySelectorAll('[data-card=\"company\"] li[data-airline]').length === 3", timeout=15000, what='the lines again')
+    c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length === 3", timeout=15000, what='the lines again')
     got = rows()
     c.eq([[r[0], r[1], r[3]] for r in got], [['dfa', False, False], ['aiv', True, False], ['perso', False, False]], 'the current airline is marked and has no button; the others can be chosen', what='current')
-    c.tap('[data-card="company"] li[data-airline="perso"] button')
+    c.tap('[data-card="company"] [data-airlines] [data-airline="perso"] input')
     c.until("window.__chosen === 'perso'", what='setAirline is called with the code')
     # ---- C: add an airline: the folder and the index; a taken or bad code writes nothing
     c.js("document.querySelector('[data-airline-add]').open = true")
@@ -4085,8 +4085,8 @@ def a102(c):
         # ---- a second plan on the same code: refused, said (nothing overwritten)
         before = (data / 'airline' / 'defa' / 'settings.json').read_bytes()
         c.tap(plan_btn)
-        c.until("document.querySelector('[data-card=\"company\"] [data-msg]').textContent.trim() !== ''", timeout=15000, what='a message')
-        c.eq((norm(c.text('[data-card="company"] [data-msg]')) != '', (data / 'airline' / 'defa' / 'settings.json').read_bytes() == before), (True, True), 'a second plan: the airline already has its folder, said; nothing overwritten', what='exists')
+        c.until("document.querySelector('[data-card=\"company\"] [data-mig] [data-msg]').textContent.trim() !== ''", timeout=15000, what='a message')
+        c.eq((norm(c.text('[data-card="company"] [data-mig] [data-msg]')) != '', (data / 'airline' / 'defa' / 'settings.json').read_bytes() == before), (True, True), 'a second plan: the airline already has its folder, said; nothing overwritten', what='exists')
         # ---- a hostile answer: only the closed list is read, nothing runs
         st['raw'] = {'ok': True, 'dry': True, 'code': '<img src=x onerror=window.__pwn=1>', 'name': '<img src=x onerror=window.__pwn=1>', 'files': [{'name': '../../x', 'bytes': 5}, {'name': 'settings.json', 'bytes': 'a'}], 'reason': '<b>x</b>'}
         c.page.fill('[data-card="company"] [data-f="mig-code"]', '')
@@ -4097,7 +4097,7 @@ def a102(c):
         # ---- no launcher: the block is not there
         st['detect'], st['raw'] = False, None
         c.page.reload()
-        c.until("!!document.querySelector('[data-card=\"company\"] [data-airlines] li')", timeout=15000, what='the card without launcher')
+        c.until("!!document.querySelector('[data-card=\"company\"] [data-airlines] [data-airline]')", timeout=15000, what='the card without launcher')
         c.wait(500)
         c.eq(c.js("(() => { const m = document.querySelector('" + box + "'); return !m || m.hidden })()"), True, 'without launcher the migration block is hidden', what='no launcher')
     c.check_errors()
@@ -4141,13 +4141,14 @@ def a104(c):
     _bench(c, 'frame/lib/test/mission_categories.html', '__catBench')
 
 
-@case('A105', 'Settings › Company: the airline\u2019s kind (commercial / squadron) and its mission categories (SOG-0041): written by the same path as the other files, the commercial group follows the kind, a hostile file is text', 'A', langs4=True, tags=('airline',),
-      designs=('standard',), screens=False, night=False,
-      rule='V3_SPECIFICATION § 10.38: without a kind there is no commercial category; Réglages › Compagnie sets the kind (settings.json `kind`) and adds / removes the airline\u2019s own categories (categories.json, group virtuel); seven elements at most per line; everything read is untrusted')
+@case('A105', 'Settings › Company (SOG-0041, step A): a list of radio buttons with the kind said in words, choosing replaces no node of the list, the chosen airline’s sheet (kind radios, mission categories) is open under it, three gestures below; a hostile file is text', 'A', langs4=True, tags=('airline',),
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0041 (refused at the recipe: « plutôt qu’un bouton choisir, un bouton radio — on ne sait pas si c’est un sog ou une compagnie commerciale — ça clignote au choix — où est catégorie de missions ? »): a line = radio, name, kind in words, fleet; the choice applies at the tap and only the radios change; the sheet of the CHOSEN airline holds the kind (two radios with a line each) and the categories of that kind, visible; « Créer », « Rejoindre », the migration; everything read is untrusted')
 def a105(c):
     lang = c.lang
     sj = 'frame/settings/access.js'
     T = lambda k: tx(sj, k, lang, after='const TA = {')
+    K = lambda k: tx(sj, k, lang, after='    kind: {')
     evil = '<img src=x onerror=window.__pwn=1>'
     hostile = {'schema': 1, 'groups': [{'id': 'virtuel', 'names': {'fr': evil}, 'categories': [{'id': 'bad', 'names': {'fr': evil}}, {'id': 'Bad Id', 'names': {'fr': 'x'}}]}]}
     docs = [['device/level.json', {'level': 3}, 'cache'],
@@ -4156,59 +4157,78 @@ def a105(c):
             ['airline/aaa/fleet.json', {'schema': 1, 'aircraft': []}, 'document'],
             ['airline/bbb/settings.json', {'schema': 1, 'name': 'Bravo Air', 'kind': 'sog'}, 'document'],
             ['airline/bbb/categories.json', hostile, 'document']]
-    sel = lambda code, extra='': f'[data-card="company"] li[data-airline="{code}"] {extra}'.strip()
-    ready = lambda: c.until("document.querySelectorAll('[data-card=\"company\"] li[data-airline]').length === 3 && !!document.querySelector('[data-cats=aaa]')", timeout=15000, what='the lines with their kind and categories')
-    opened = lambda code: c.js(f"document.querySelector('[data-cats={code}]').open = true")
+    row = lambda code, extra='': f'[data-card="company"] [data-airlines] [data-airline="{code}"] {extra}'.strip()
+    fiche = lambda extra='': f'[data-card="company"] [data-airline-fiche] {extra}'.strip()
+    ready = lambda: c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length === 3 && !!document.querySelector('[data-airline-fiche] [data-kind-set]')", timeout=15000, what='the lines and the sheet of the chosen airline')
+    mark = lambda: c.js("[...document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]')].forEach(n => { n.__kept = true })")
+    kept = lambda: c.js("[...document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]')].map(n => [n.dataset.airline, !!n.__kept])")
+    meta = lambda code: norm(c.text(row(code, '[data-co-meta]')))
+    checked = lambda sel: c.js(f"[...document.querySelectorAll('{sel}')].map(i => [i.value, i.checked])")
     c.open('settings?card=company', docs=docs)
     ready()
-    c.eq(c.count(sel('perso', '[data-airline-more]')) + c.count(sel('perso', '[data-cats]')), 0, '« Personnel » has neither the kind nor the categories here (it is commercial by nature)', what='perso')
-    pressed = lambda code: c.js(f"[...document.querySelectorAll('[data-card=\"company\"] li[data-airline=\"{code}\"] [data-act=companyKind]')].map(b => [b.dataset.kind, b.getAttribute('aria-pressed')])")
-    c.eq([pressed('aaa'), pressed('bbb')], [[['va', 'false'], ['sog', 'false']], [['va', 'false'], ['sog', 'true']]], 'the kind read from settings.json: none, or a squadron', what='kinds')
-    c.eq(c.js(f"document.querySelector('{sel('bbb')} button').dataset.act"), 'companyChoose', 'the first button of a line is still « Choose » (the current airline has none)', what='first button')
-    c.le(c.js(f"document.querySelector('{sel('aaa')}').children.length"), 7, 'a line has seven elements at most: name, code, networks, fleet, choice, kind, categories', what='elements')
-    summ = lambda code: norm(c.text(f'[data-cats={code}] summary'))
-    c.eq(summ('aaa'), norm(T('catSummary').replace('{n}', '0')), 'no kind: the commercial group is inactive, no category counts', what='no kind count')
-    opened('aaa')
-    c.eq(c.count('[data-cats=aaa] [data-cat-group=commercial] .f-muted'), 1, 'and the commercial group says it is inactive for this kind', what='inactive')
-    # ---- the kind: written in settings.json, the rest of the file kept
-    c.tap(sel('aaa', '[data-act=companyKind][data-kind=va]'))
+    # ---- the list: radio buttons, the kind in words, no « Choose » button
+    c.eq(c.count('[data-card="company"] [data-airlines] button'), 0, 'no « Choose » button in the list', what='buttons')
+    c.eq(c.count('[data-card="company"] [data-airlines] input[type=radio]'), 3, 'one radio button per line (two airlines and « personal »)', what='radios')
+    c.ok(norm(K('none')) in meta('aaa') and norm(K('sog')) in meta('bbb') and norm(K('perso')) in meta('perso'), [meta('aaa'), meta('bbb'), meta('perso')], 'the kind is said in words on each line: not chosen yet, squadron, personal')
+    c.le(c.js(f"document.querySelector('{row('aaa')}').children.length"), 7, 'a line has seven elements at most', what='elements')
+    c.eq(checked('[data-card="company"] [data-airlines] input'), [['aaa', True], ['bbb', False], ['perso', False]], 'the current airline (the first of the index, no choice yet) is the checked radio', what='checked')
+    # ---- the sheet of the CHOSEN airline is open under the list: kind radios with a line each, the categories visible without unfolding
+    c.eq(c.count('[data-card="company"] [data-airline-fiche] details') + c.count('[data-card="company"] [data-airlines] details'), 0, 'nothing to unfold: no folded block in the list nor in the sheet', what='details')
+    c.ok(norm(T('ficheTitle').replace('{n}', 'Alpha Air')) in norm(c.text(fiche('h3'))), norm(c.text(fiche('h3'))), 'the sheet is titled with the chosen airline')
+    c.eq(checked(fiche('[data-act=companyKind]')), [['va', False], ['sog', False]], 'the kind: two radio buttons, none chosen yet', what='kind radios')
+    c.eq(c.count(fiche('.f-kind .f-muted')), 2, 'each kind has its line of explanation', what='explanations')
+    c.ok(c.js(f"(() => {{ const h = document.querySelector('{fiche('[data-cats-title]')}'); return !!h && h.offsetParent !== null }})()"), None, 'the title « Mission categories » is visible without a tap')
+    c.eq(norm(c.text(fiche('[data-cats-title]'))), norm(T('catSummary').replace('{n}', '0')), 'no kind: the commercial group is not shown, no category counts', what='no kind count')
+    # ---- the kind: written in settings.json, the rest of the file kept; the other lines are not redrawn
+    mark()
+    c.tap(fiche('[data-act=companyKind][data-kind=va]'))
     d = c.until_doc('airline/aaa/settings.json', lambda d: bool(d and d.get('kind') == 'va'), what='the kind written')
     c.ok(d['name'] == 'Alpha Air' and d['networks'] == {'ivao': True} and d.get('by') is not None, d, 'the rest of settings.json is kept')
-    ready()
-    c.eq(pressed('aaa')[0], ['va', 'true'], 'pressed', what='va pressed')
-    c.eq(summ('aaa'), norm(T('catSummary').replace('{n}', '7')), 'a commercial airline: the seven categories of the base', what='va count')
-    c.tap(sel('aaa', '[data-act=companyKind][data-kind=va]'))
-    c.until_doc('airline/aaa/settings.json', lambda d: bool(d) and 'kind' not in d, what='the kind cleared by a second tap')
-    ready()
-    # ---- own categories: added (the base becomes the airline\u2019s file), refused, removed
-    c.tap(sel('aaa', '[data-act=companyKind][data-kind=va]'))
-    c.until_doc('airline/aaa/settings.json', lambda d: bool(d and d.get('kind') == 'va'), what='va again')
-    ready()
-    opened('aaa')
+    c.until(f"document.querySelector('{fiche('[data-cats-title]')}').textContent.includes('7')", what='the sheet counts the seven categories of the base')
+    c.eq(checked(fiche('[data-act=companyKind]')), [['va', True], ['sog', False]], 'the commercial radio is the checked one', what='va checked')
+    c.ok(norm(K('va')) in meta('aaa'), meta('aaa'), 'and its line says « Commercial »')
+    c.eq(kept(), [['aaa', False], ['bbb', True], ['perso', True]], 'only the line whose words changed is replaced: the others keep their node', what='kept after kind')
+    c.eq(c.count(fiche('li[data-cat]')), 7, 'the seven commercial categories are listed in the sheet', what='listed')
+    # ---- choosing: no node of the list is replaced; only the radios and the sheet change
+    mark()
+    c.tap(row('bbb', 'input'))
+    c.until("document.querySelector('[data-airline-fiche] h3') && document.querySelector('[data-airline-fiche] h3').textContent.includes('Bravo Air')", what='the sheet of the chosen airline')
+    c.eq(kept(), [['aaa', True], ['bbb', True], ['perso', True]], 'choosing replaces no line of the list (nothing blinks)', what='kept after choice')
+    c.eq(checked('[data-card="company"] [data-airlines] input'), [['aaa', False], ['bbb', True], ['perso', False]], 'only the state of the radios changed', what='checked after')
+    c.eq(c.js("[...document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]')].filter(n => n.hasAttribute('data-current')).map(n => n.dataset.airline)"), ['bbb'], 'data-current moved with it', what='current')
+    c.eq(c.js("FrameData.airline().then(a => a && a.code)"), 'bbb', 'the frame keeps the choice (FrameData.airline)', what='frame')
+    c.eq(c.count(fiche('[data-kind-set]')), 1, 'only the chosen airline has a sheet', what='one sheet')
+    c.eq(checked(fiche('[data-act=companyKind]')), [['va', False], ['sog', True]], 'a squadron: the squadron radio is checked', what='sog checked')
+    c.eq(c.count(fiche('[data-cat-group=commercial]')), 0, 'a squadron has no commercial category', what='no commercial')
+    c.ok(c.count(fiche('img')) == 0 and c.js('window.__pwn === undefined'), None, 'a hostile name is text: no element, nothing runs')
+    c.eq(c.js(f"[...document.querySelectorAll('{fiche('li[data-cat]')}')].map(l => l.dataset.cat)"), ['bad'], 'the id that is not of the permitted form is dropped', what='ids')
+    # ---- « Personal »: a line of words, nothing to set
+    mark()
+    c.tap(row('perso', 'input'))
+    c.until("!!document.querySelector('[data-airline-fiche] [data-fiche-perso]')", what='the personal note')
+    c.eq([c.count(fiche('[data-kind-set]')), c.count(fiche('[data-act=companyCatAdd]')), kept()], [0, 0, [['aaa', True], ['bbb', True], ['perso', True]]], '« Personal »: no kind, no category to set, still no line replaced', what='perso')
+    # ---- own categories of the commercial airline: added (the base becomes the airline’s file), refused, removed
+    c.tap(row('aaa', 'input'))
+    c.until("document.querySelector('[data-airline-fiche] [data-cat-group=commercial]')", what='the commercial sheet again')
     c.page.fill('[data-f="cat-aaa"]', 'Évacuation sanitaire')
-    c.tap('[data-act=companyCatAdd][data-code=aaa]')
+    c.tap(fiche('[data-act=companyCatAdd][data-code=aaa]'))
     doc = c.until_doc('airline/aaa/categories.json', lambda d: bool(d and d.get('groups')), what='categories.json written')
     own = [g for g in doc['groups'] if g['id'] == 'virtuel'][0]
-    c.eq([[g['id'], len(g['categories'])] for g in doc['groups']], [['commercial', 7], ['virtuel', 1]], 'the file holds the base\u2019s commercial group and the airline\u2019s own', what='file')
+    c.eq([[g['id'], len(g['categories'])] for g in doc['groups']], [['commercial', 7], ['virtuel', 1]], 'the file holds the base’s commercial group and the airline’s own', what='file')
     c.eq(own['categories'][0]['id'], 'evacuation-sanitaire', 'the id is the name without accents, with dashes', what='id')
-    ready()
-    opened('aaa')
-    c.eq(c.count('[data-cats=aaa] li[data-cat=evacuation-sanitaire]'), 1, 'listed, with its remove button', what='listed')
+    c.until("!!document.querySelector('[data-airline-fiche] li[data-cat=evacuation-sanitaire]')", what='listed, with its remove button')
     before = c.doc('airline/aaa/categories.json')
     for name, key in (('Fret', 'catDup'), ('   ', 'catBad'), ('!!!', 'catBad')):
-        c.js("document.querySelector('[data-card=\"company\"] [data-msg]').textContent = ''")
+        c.js("document.querySelector('[data-fiche-msg]').textContent = ''")
         c.page.fill('[data-f="cat-aaa"]', name)
-        c.tap('[data-act=companyCatAdd][data-code=aaa]')
-        c.until("document.querySelector('[data-card=\"company\"] [data-msg]').textContent.trim() !== ''", timeout=6000, what=f'the refusal {key}')
-        c.eq(norm(c.text('[data-card="company"] [data-msg]')), norm(T(key)), f'{name!r}: said', what=f'refusal {key}')
+        c.tap(fiche('[data-act=companyCatAdd][data-code=aaa]'))
+        c.until("document.querySelector('[data-fiche-msg]').textContent.trim() !== ''", timeout=6000, what=f'the refusal {key}')
+        c.eq(norm(c.text('[data-fiche-msg]')), norm(T(key)), f'{name!r}: said under the sheet', what=f'refusal {key}')
     c.eq(c.doc('airline/aaa/categories.json'), before, 'a duplicate of the base and bad names write nothing', what='refused')
-    c.tap('[data-act=companyCatDel][data-code=aaa][data-cat=evacuation-sanitaire]')
+    c.tap(fiche('[data-act=companyCatDel][data-code=aaa][data-cat=evacuation-sanitaire]'))
     c.until_doc('airline/aaa/categories.json', lambda d: bool(d) and [len(g['categories']) for g in d['groups']] == [7, 0], what='removed')
-    # ---- a hostile file: text only, bad ids dropped; a squadron: the commercial group inactive
-    ready()
-    c.ok(c.count('[data-cats=bbb] img') == 0 and c.js('window.__pwn === undefined'), None, 'a hostile name is text: no element, nothing runs')
-    opened('bbb')
-    c.eq(c.js("[...document.querySelectorAll('[data-cats=bbb] li[data-cat]')].map(l => l.dataset.cat)"), ['bad'], 'the id that is not of the permitted form is dropped', what='ids')
+    # ---- the three gestures under the sheet, in this order
+    c.eq([norm(x) for x in c.js("[...document.querySelectorAll('[data-card=\"company\"] > details > summary')].map(s => s.textContent)")], [norm(T('add')), norm(T('join'))], '« Create an airline », then « Join an airline » (the migration after them when it applies)', what='gestures')
     c.check_errors()
 
 

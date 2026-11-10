@@ -640,6 +640,14 @@ moves code, `S` itself replaced through `setState` alone.
 - **The id of a category** is its name without accents, in lower case with dashes (24 characters); a duplicate of any group (« Fret ») is refused rather than renamed, so a mission that says `fret` keeps meaning the base's.
 - **Counter-test**: without the duplicate check A105 is red (« Fret » would be added). Readers of the categories (Missions, report) are Features SOG's.
 
+## 10 November 2026 — Réglages › Compagnie: radio list, sheet of the chosen airline, no redraw (SOG-0041, step A)
+
+- **Refused at the recipe (10/11, 11 h 23)**: « plutôt qu'un bouton « choisir », un bouton radio. ergonomie ! on ne sait pas si c'est un sog, ou une compagnie commerciale. En plus, ça clignote au choix. Où est « catégorie de missions » ? ». My earlier decision (« two elements per line, seven at most ») kept the rule and lost the path: the kind was two toggle buttons that said nothing in words, the categories a fold per line, the whole list redrawn at each choice.
+- **A list of radio buttons**: one line = radio, name, code, grey line (kind in words, networks, fleet). The choice applies at the tap. **No redraw**: lines are reconciled by key (`paintRows`: same HTML → same node); the current state is set on the nodes (`markCurrent`), not in the HTML, so a choice changes no text. Counter-test: A105 marks every line node, chooses another airline and asks that none was replaced; red on the former card (no radio, the lines were rebuilt).
+- **The sheet of the chosen airline only** (kind radios with one sentence each, then the categories of the kind, visible): the other airlines have no sheet, so the list stays one line per airline and the user sees where to set the kind. The kind can no longer be cleared (a radio cannot; a company is one or the other).
+- **Messages**: the category refusals are said under the sheet (`data-fiche-msg`), the migration's in its own block (`[data-mig] [data-msg]`): they used to go to the message of « Ajouter », a fold that is closed.
+- **« Rejoindre une compagnie »** is a fold that says it is not available: step B (design at § 10.38, reviewed first) gives it its content; a button that did nothing would be worse. **Not done here**: the three use cases of the user (create with categories and fleet from the base; join by the fleet website) = step B.
+
 ## 10 November 2026 — the settings screen is drawn at once (SOG-0133)
 
 - **User's words (5th pull)**: « plusieurs secondes de sleep avant d'afficher l'écran des settings, alors que la version du git est un paramètre accessoire ».

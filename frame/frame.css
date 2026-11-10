@@ -611,6 +611,85 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   font-family: var(--sog-font-mono);
   font-size: .85em
 }
+/* réglages, carte « Compagnie de cet appareil » : une ligne = bouton radio, nom et code, puis le genre dit en toutes lettres, les réseaux, la flotte ;
+   hauteur tactile (32 px à la souris) ; la fiche de la compagnie choisie dessous (SOG-0041) */
+.f-cos {
+  margin: 4px 0 8px
+}
+.f-co {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 8px;
+  align-items: center;
+  min-height: var(--sog-touch, 44px);
+  padding: 4px 0;
+  border-top: 1px solid var(--sog-border);
+  cursor: pointer;
+  overflow-wrap: anywhere
+}
+.f-co>input {
+  grid-row: 1 / span 2;
+  margin: 0
+}
+.f-co code {
+  font-family: var(--sog-font-mono);
+  font-size: .85em
+}
+.f-co [data-co-meta] {
+  grid-column: 2
+}
+.f-co[data-current] b {
+  text-decoration: underline
+}
+@media (pointer: fine) {
+  .f-co {
+    min-height: 32px
+  }
+}
+.f-fiche {
+  margin: 8px 0
+}
+/* la place est réservée avant l'arrivée de la lecture (règle 22 : rien ne bouge dessous) : trois lignes, puis une fiche de hauteur moyenne ; vide, un :empty la libère */
+.f-cos:empty {
+  min-height: calc(var(--sog-touch, 44px) * 3)
+}
+.f-fiche:empty {
+  min-height: 620px
+}
+@media (min-width: 700px) {
+  .f-fiche:empty {
+    min-height: 380px
+  }
+}
+.f-fiche h3 {
+  margin: 8px 0 4px
+}
+.f-fiche h4 {
+  margin: 12px 0 4px
+}
+.f-kind {
+  align-items: flex-start;
+  padding: 4px 0
+}
+.f-kind>span {
+  display: block
+}
+.f-kind .f-muted {
+  display: block
+}
+.f-cats {
+  margin: 0 0 4px;
+  padding-left: 20px
+}
+[data-card="company"] details {
+  margin-top: 8px
+}
+[data-card="company"] details>summary {
+  min-height: var(--sog-touch, 44px);
+  display: flex;
+  align-items: center;
+  cursor: pointer
+}
 /* réglages, carte Synchronisation en synthèse : la tête (un compte par sorte) et une liste repliée par sorte, à hauteur tactile */
 [data-card="sync"] [data-sync-head] {
   margin: 0 0 8px
