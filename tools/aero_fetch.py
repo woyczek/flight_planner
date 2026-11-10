@@ -38,7 +38,7 @@ Usage (racine du dépôt) :
 Appelé aussi par le lanceur (POST /__setup/aero-fetch) pour les boutons de Paramètres › Maintenance › Données
 aéronautiques.
 """
-import datetime, email.utils, json, os, re, sys, urllib.error, urllib.parse, urllib.request
+import datetime, email.utils, json, os, re, ssl, sys, urllib.error, urllib.parse, urllib.request
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 import outbound  # noqa: E402 (le User-Agent du lanceur, chaque échec dit en console)
@@ -399,7 +399,14 @@ def ukmil(data):
     try:
         raw = get(ukmil_aip.URL, since=mtime(pdf), copy=pdf)
     except OSError as e:
-        return [], [f'UK Mil AIP : {e}']
+        deposited = os.path.join(data, 'local', 'upload', 'ENR-5-2.pdf')      # le PDF choisi à la main (« Choisir le fichier… ») quand le serveur refuse le lanceur
+        try:
+            with open(deposited, 'rb') as f:
+                raw = f.read(MAX_BYTES)
+        except OSError:
+            tls = isinstance(getattr(e, 'reason', e), ssl.SSLError) or 'SSL' in str(e)
+            return [], [f'UK Mil AIP : {e}' + (' (la connexion est coupée pendant la poignée de main TLS, avant toute requête HTTP : l’agent n’y est pour rien)' if tls else '') +
+                        f' ; repli : télécharger {ukmil_aip.URL} dans un navigateur, puis « Choisir le fichier… » sur la ligne du Royaume-Uni (Données)']
     # PDF inchangé (304, ou même contenu) et déjà lu : ni relecture du PDF ni réécriture
     done = unchanged_outputs(folder, 'ukmil_ENR-5-2.pdf', outputs) if raw is None or same(pdf, raw) else None
     if done:

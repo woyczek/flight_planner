@@ -1869,3 +1869,31 @@ def k160(c):
         (data / 'sia' / 'zones' / 'gb' / 'EG_OBS_DS_FULL_20261029.xml').write_text('<y/>', encoding='utf-8')
         z = run(zones=['gb'], personal=[])
         c.eq([x['code'] for x in z['reasons']][0], 'personal-undeclared', 'the code comes before the others (inputs-changed): it is the one the screen says first', what='order')
+
+
+@case('K162', 'UK Mil AIP: when the server cuts the TLS connection of the launcher, the message says so (before any HTTP request: not the agent) and gives the repli; a PDF chosen by hand is taken (SOG-0234)', 'K', static=True,
+      rule='SOG-0234 (10 Nov 2026, the console: « [sortant] échec : www.aidu.mod.uk/aip/pdf/enr/ENR-5-2.pdf : URLError (SSLEOFError) » twice): an SSL EOF is the end of the TLS handshake, before any HTTP request: the user agent plays no part, and the rule stands (no browser posed, no certificate check lowered). The layer says so, gives the direct address and the repli: the PDF downloaded in a browser and chosen by hand (« Choisir le fichier… », recognised under its own name `ENR-5-2.pdf`), which the layer then reads')
+def k162(c):
+    import ssl
+    import sys
+    import tempfile
+    import urllib.error
+    from pathlib import Path
+    sys.path.insert(0, str(c.root / 'tools'))
+    RJ, BS, AF, DS = _mods()
+    kept = AF.get
+    try:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            def cut(url, *a, **k):
+                raise urllib.error.URLError(ssl.SSLEOFError(8, 'EOF occurred in violation of protocol'))
+            AF.get = cut
+            out, errs = AF.ukmil(td)
+            c.ok(out == [] and len(errs) == 1 and 'poignée de main TLS' in errs[0] and 'avant toute requête HTTP' in errs[0] and 'www.aidu.mod.uk' in errs[0] and 'Choisir le fichier' in errs[0], str(errs), 'the cut TLS connection: said as such, with the direct address and the repli')
+            (Path(td) / 'local' / 'upload').mkdir(parents=True)
+            (Path(td) / 'local' / 'upload' / 'ENR-5-2.pdf').write_bytes(b'%PDF-1.4 not an AIP')
+            out, errs = AF.ukmil(td)
+            c.ok(any(o['name'] == 'ukmil_ENR-5-2.pdf' for o in out) and (Path(td) / 'sia' / 'zones' / 'gb' / 'ukmil_ENR-5-2.pdf').is_file(), str(out) + str(errs), 'the PDF chosen by hand is taken when the connection fails (kept beside the others; an unreadable layout is said, not hidden)')
+    finally:
+        AF.get = kept
+    ob = importlib.import_module('outbound') if 'importlib' in globals() else __import__('outbound')
+    c.ok('Mozilla' not in ob.UA, ob.UA, 'and the launcher still declares itself as it is')

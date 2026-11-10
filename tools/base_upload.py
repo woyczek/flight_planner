@@ -25,7 +25,7 @@ MAX_BYTES = 1536 * 1024 * 1024          # 1,5 Go : l'eAIP suédois hors ligne fa
 CHUNK = 1024 * 1024
 MAX_MEMBERS = 200000                    # un zip de plus de membres : pas une archive attendue (son annuaire n'est pas lu)
 FOLDER = ('local', 'upload')
-EXPECTED = ['sia', 'nats', 'lfv', 'openaip', 'faa']       # les sources que base/pickup prend (dites avec `unrecognised`)
+EXPECTED = ['sia', 'nats', 'lfv', 'openaip', 'faa', 'ukmil']       # les sources que base/pickup prend (dites avec `unrecognised`)
 REASONS = ('too-large', 'empty', 'type', 'unrecognised', 'busy', 'merge-pending', 'disk', 'refused')
 STATUS = {'too-large': 413, 'empty': 400, 'type': 415, 'unrecognised': 422, 'busy': 409, 'merge-pending': 409, 'disk': 507, 'refused': 403}
 NATS_MEMBER = re.compile(r'^EG_(AIP|OBS|UAS)_.*?(\d{8})\.xml\Z', re.I | re.A)
@@ -101,6 +101,8 @@ def recognise(path, hint=''):
         if not m:
             raise Refused('unrecognised', 'un JSON dont le nom n’est pas « <pays>_<asp|apt|nav|rpp>.geojson » : pas un export d’openAIP', EXPECTED)
         return {'source': 'openaip', 'zone': m.group('cc').lower(), 'name': f'{m.group("cc").lower()}_{m.group("layer").lower()}.{m.group("ext").lower()}', 'cycle': None}
+    if head[:4] == b'%PDF' and re.fullmatch(r'ENR-5-2(?: \(\d+\))?\.pdf', hint or ''):         # l'ENR 5.2 de l'AIP militaire britannique (SOG-0234 : le serveur coupe la connexion TLS du lanceur)
+        return {'source': 'ukmil', 'zone': 'gb', 'name': 'ENR-5-2.pdf', 'cycle': None}
     if head[:4] == b'%PDF' or first == b'<':
         raise Refused('unrecognised', 'ce type de fichier (PDF, XML seul) n’est pas pris par cet envoi', EXPECTED)
     raise Refused('type', 'ni zip, ni JSON, ni PDF, ni XML')

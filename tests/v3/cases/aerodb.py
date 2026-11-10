@@ -7052,8 +7052,10 @@ def k146(c):
             c.eq((st, r.get('source'), r.get('name'), r.get('zone'), r.get('cycle')), (200, 'faa', '29_Oct_2026_FIX_CSV.zip', 'us', '2026-10-29'), 'an FAA NASR set (the page of the subscription refuses the launcher): the member says the set, the name the cycle', what='faa')
             c.eq((r.get('deposited'), r.get('missing')), (['FIX'], ['AWY', 'NAV']), 'and says which of the three sets are already there for that cycle, and which are missing (the screen needs not count)', what='faa have')
             c.eq(up(fix, 'whatever.zip')[1].get('reason'), 'unrecognised', 'the same zip without the FAA name: the cycle is unknown, not guessed', what='faa name')
+            st, r = up(b'%PDF-1.4 fake', 'ENR-5-2 (1).pdf')
+            c.eq((st, r.get('source'), r.get('name'), r.get('zone')), (200, 'ukmil', 'ENR-5-2.pdf', 'gb'), 'the UK military AIP ENR 5.2 (the server cuts the launcher TLS connection): a PDF with its own name', what='ukmil')
             st, r = up(zipped({'readme.txt': 'hello'}), 'a.zip')
-            c.eq((st, r.get('ok'), r.get('reason'), r.get('expected')), (422, False, 'unrecognised', ['sia', 'nats', 'lfv', 'openaip', 'faa']), 'a zip that is no source: unrecognised, with the closed list of the sources expected', what='unrecognised')
+            c.eq((st, r.get('ok'), r.get('reason'), r.get('expected')), (422, False, 'unrecognised', ['sia', 'nats', 'lfv', 'openaip', 'faa', 'ukmil']), 'a zip that is no source: unrecognised, with the closed list of the sources expected', what='unrecognised')
             st, r = up(bytes([0, 1, 2]) + b'garbage', 'a.bin')
             c.eq((st, r.get('reason')), (415, 'type'), 'bytes that are no zip, JSON, PDF or XML: type', what='type')
             st, r = up(b'', 'a.zip', {'Content-Length': '0'})
@@ -7080,7 +7082,7 @@ def k146(c):
             sg = http.client.HTTPConnection('127.0.0.1', port, timeout=30)
             sg.request('POST', '/__setup/regen/job/cancel', body=json.dumps({'id': gj.get('job')}), headers={**hdr, 'Content-Type': 'application/json'})
             sg.getresponse().read()
-            c.eq(sorted(x.name for x in folder.iterdir()), ['29_Oct_2026_FIX_CSV.zip', 'AIP_OFFLINE.zip', 'EG_AIP_DS_20261029_XML.zip', 'de_apt.geojson', 'export_xml_bd_SIA_2026-10-29.zip'],
+            c.eq(sorted(x.name for x in folder.iterdir()), ['29_Oct_2026_FIX_CSV.zip', 'AIP_OFFLINE.zip', 'EG_AIP_DS_20261029_XML.zip', 'ENR-5-2.pdf', 'de_apt.geojson', 'export_xml_bd_SIA_2026-10-29.zip'],
                  'only the recognised files are in data/local/upload/: no temporary file left, nothing refused kept', what='folder')
             stray = [str(x) for x in data.rglob('*') if x.is_file() and 'upload' not in x.parts and x.name not in ('data_tree.js', '.defa_instance')]
             c.ok(not stray, str(stray[:6]), 'nothing is written elsewhere in data/')
@@ -7238,6 +7240,9 @@ def k148(c):
     R = importlib.import_module('proc_records')
     recs = R.records('LFOE', r, {}, 'x', '2026-10-29')[0]
     c.eq(([x['transition'] for x in recs], [x['kind'] for x in recs]), (['OE401', 'OE402', 'OE403', None], ['APP'] * 4), 'an approach page gives one record per transition AND the final alone (SOG-0216, LFRS: « 4 transitions + 1 finale » = 5 tracés, as the CIFP does)', what='final alone')
+    w = []
+    leg = P._leg(['TF', 'ST415', '-', '046', '048.7', '9.6', '-', '220', '-', '1.0'], True, w.append)
+    c.eq((leg and (leg['id'], leg['crs'], leg['nm'], leg['kt'], leg['alt'], leg['rnp']), w), (('ST415', 46, 9.6, 220, None, 1.0), []), 'LFST RNP 05 (SOG-0232): a row whose two altitude cells are lost and whose speed fell in their place (9 cells for 11) is read without altitude, nothing guessed, no « ligne illisible »', what='lfst row')
     c.eq((P._dircam_leg(['TF', 'IOE04', '-', '329', '329.9', '5.0', '2100', '2100']), P._dircam_leg(['TF', 'IOE04', '329', '5.0']), P._dircam_leg(['TF', 'IOE04', '329', '329.9', '5.0', '2100', '3000', '4000'])), (None, None, None),
          'never by patterns: a row with a dash (a civil page: its columns tell), a TF without true course, three altitudes', what='refused')
 

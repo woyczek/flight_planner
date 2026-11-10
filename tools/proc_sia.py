@@ -396,6 +396,8 @@ def _leg(tokens, rnp, warn, lane=None, fixed=None):
             c += [None] * (want - len(c))
         else:
             d = _fit(c, want, rnp, tokens[0]) if len(c) < want else None
+            if d is None and rnp and len(c) == want - 2 and c[0] and c[5] in (None, 'L', 'R') and c[6] and re.fullmatch(r'\d{2,3}', c[6]) and int(c[6]) < 500 and c[2] and c[3] and c[4]:
+                d = c[:6] + [None, None] + c[6:]            # SOG-0232 (LFST) : les deux cellules d'altitude (mini, maxi) sont vides et perdues, la vitesse (sous 500) tombe dans leur place : « TF ST415 - 046 048.7 9.6 - 220 - 1.0 » (rien n'est deviné : aucune altitude)
             if d is None and rnp and len(c) < want:
                 part = _fit_geometry(c, want, rnp, tokens[0])
                 if part:
