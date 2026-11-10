@@ -4174,7 +4174,8 @@ def l44(c):
     c.eq(c.count('[data-pack=iles] button'), 0, 'no button in a row of a theme', what='no button')
     geo = c.js("""() => { const r = e => e.getBoundingClientRect(), a = document.querySelector('[data-pack=iles] [data-pack-cov=gb]'), b = document.querySelector('[data-build-zone=gb]');
       return { dx: Math.abs(r(a).left - r(b).left), dh: Math.abs(r(a.closest('.d-zrow')).height - r(b.closest('.d-zrow')).height) } }""")
-    c.ok(geo['dx'] <= 1 and geo['dh'] <= 1, geo, 'the ticks of a theme are in the same grid as the zones list: same column, same row height')
+    c.ok(abs(geo['dx'] - 24) <= 1 and geo['dh'] <= 1, geo, 'the ticks of a theme are in the grid of the zones list (same row height), one step in from their switch and from the list')
+    c.eq(norm(c.text('[data-zones-title]')), norm(_trow('zonesTitle', lang).replace('{n}', '5')), 'the zones list has its own title with its count, so a country of a theme and of the coverage are not one list', what='zones title')
     # the unfolded theme shows its switch and its countries in full, and the zones list follows it without overlap; a list row is 32 px with a fine pointer (mouse), 44 px with a finger (SOG-0168)
     g = c.js("""() => { const r = e => e.getBoundingClientRect(), rows = [...document.querySelectorAll('[data-pack=iles] .d-zrow')], last = r(rows[rows.length - 1]), zones = r(document.querySelector('[data-build-zones]')),
       box = r(document.querySelector('[data-packs]')), clipped = rows.filter(x => { for (let p = x.parentElement; p && p !== document.body; p = p.parentElement) { const cs = getComputedStyle(p); if (/(auto|scroll|hidden)/.test(cs.overflowY) && r(x).bottom > r(p).bottom + 1 && p.clientHeight < p.scrollHeight) return true } return false }).length;

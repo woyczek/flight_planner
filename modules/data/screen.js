@@ -98,6 +98,8 @@ export const STYLE = `
 [data-module="data"] .d-packs[hidden],[data-module="data"] [data-pack-themes-box][hidden]{display:none}
 [data-module="data"] details.d-pack{width:100%}
 [data-module="data"] details.d-pack>.d-opts{margin:4px 0}
+[data-module="data"] details.d-pack>.d-opts>.d-zrow:not(:first-child){padding-left:24px}
+[data-module="data"] .d-choice>h4[data-zones-title]{margin:12px 0 4px;font-size:1rem}
 [data-module="data"] .d-tabs{display:flex;gap:8px;margin:0 0 8px}
 [data-module="data"] .d-tabs button{min-height:var(--sog-touch)}
 [data-module="data"] .d-tabs button[aria-pressed="true"]{font-weight:600;outline:2px solid var(--sog-accent);outline-offset:-2px}

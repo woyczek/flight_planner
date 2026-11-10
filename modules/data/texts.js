@@ -175,6 +175,7 @@ export const TX = {
   buildTitle: ['Mettre à jour la base', 'Update the base', 'Basis aktualisieren',
     'Actualizar la base'
   ], // « Mettre à jour » est l'action principale du panneau (SOG-0071 temps 3), le titre le dit (SOG-0168)
+  zonesTitle: ['Zones de la couverture ({n})', 'Zones of the coverage ({n})', 'Zonen der Abdeckung ({n})', 'Zonas de la cobertura ({n})'],
   buildZones: ['Zones concernées', 'Zones affected', 'Betroffene Zonen', 'Zonas afectadas'],
   personalTitle: ['Sources sous licence personnelle', 'Personal-licence sources', 'Quellen mit persönlicher Lizenz',
     'Fuentes con licencia personal'

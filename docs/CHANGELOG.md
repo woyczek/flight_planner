@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Data packs: the zones list has a title « Zones de la couverture (n) » and the countries of a theme are indented under their switch** (`modules/data/panels.js`, `screen.js`, `texts.js`; L44) — the ergonomist's last retouch on SOG-0165.
 - **Old pages: the pelican sites tool, and the group « Canadair et pélicandromes »** (`apps/outils/pelicandromes/index.html`, `frame/legacy.js`; frame DECISIONS;
   noreg A116; SOG-0083). The user's own tool for placing the pelican sites on a map and exporting the YAML is in the repository as it came and linked from the old
   pages; the fire reports are under Missions. Its map libraries and satellite tiles are blocked by the launcher's content policy (a decision, in DECISIONS).
