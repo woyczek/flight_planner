@@ -472,6 +472,36 @@
     themeOne: ['Gardez au moins un thème.', 'Keep at least one theme.', 'Behalten Sie mindestens ein Thema.',
       'Conserve al menos un tema.'
     ],
+    themeAdd: ['Ajouter un thème', 'Add a theme', 'Thema hinzufügen', 'Añadir un tema'],
+    themeShort: ['Sigle (2 à 8 lettres ou chiffres)', 'Acronym (2 to 8 letters or digits)', 'Kürzel (2 bis 8 Buchstaben oder Ziffern)',
+      'Sigla (2 a 8 letras o cifras)'
+    ],
+    themeName: ['Nom du thème', 'Theme name', 'Name des Themas', 'Nombre del tema'],
+    seriesAdd: ['Ajouter une série', 'Add a series', 'Serie hinzufügen', 'Añadir una serie'],
+    seriesName: ['Nom de la série', 'Series name', 'Name der Serie', 'Nombre de la serie'],
+    seriesOf: ['Thème de la série', 'Theme of the series', 'Thema der Serie', 'Tema de la serie'],
+    themeBad: ['Refusé : un sigle de 2 à 8 lettres ou chiffres (une lettre d’abord) et un nom de 1 à 40 caractères.',
+      'Refused: an acronym of 2 to 8 letters or digits (a letter first) and a name of 1 to 40 characters.',
+      'Abgelehnt: ein Kürzel aus 2 bis 8 Buchstaben oder Ziffern (zuerst ein Buchstabe) und ein Name von 1 bis 40 Zeichen.',
+      'Rechazado: una sigla de 2 a 8 letras o cifras (primero una letra) y un nombre de 1 a 40 caracteres.'
+    ],
+    themeDup: ['Ce sigle est déjà pris par un thème.', 'This acronym is already taken by a theme.',
+      'Dieses Kürzel ist schon von einem Thema belegt.', 'Esa sigla ya la usa un tema.'
+    ],
+    themeFull: ['Huit thèmes ajoutés au plus.', 'Eight added themes at most.', 'Höchstens acht hinzugefügte Themen.',
+      'Ocho temas añadidos como máximo.'
+    ],
+    seriesBad: ['Refusé : un nom de 1 à 40 caractères (lettres, chiffres, espace, . / ( ) -).',
+      'Refused: a name of 1 to 40 characters (letters, digits, space, . / ( ) -).',
+      'Abgelehnt: ein Name von 1 bis 40 Zeichen (Buchstaben, Ziffern, Leerzeichen, . / ( ) -).',
+      'Rechazado: un nombre de 1 a 40 caracteres (letras, cifras, espacio, . / ( ) -).'
+    ],
+    seriesDup: ['Cette série existe déjà dans ce thème.', 'This series already exists in this theme.',
+      'Diese Serie gibt es in diesem Thema schon.', 'Esa serie ya existe en este tema.'
+    ],
+    seriesFull: ['Vingt séries ajoutées au plus par thème.', 'Twenty added series at most per theme.',
+      'Höchstens zwanzig hinzugefügte Serien je Thema.', 'Veinte series añadidas como máximo por tema.'
+    ],
     themeSaved: ['Thèmes enregistrés.', 'Themes saved.', 'Themen gespeichert.', 'Temas guardados.'],
     del: ['Retirer', 'Remove', 'Entfernen', 'Quitar'],
     added: ['Compagnie ajoutée : {n}.', 'Airline added: {n}.', 'Fluggesellschaft hinzugefügt: {n}.', 'Compañía añadida: {n}.'],
@@ -643,24 +673,42 @@
     return [`<label class="f-co" data-airline="${code}"><input type="radio" name="co-current" value="${code}" data-act="companyChoose" data-code="${code}"${can ? '' : ' disabled'}><span class="f-co-name"><b>${esc(r.name)}</b> <code>${code}</code></span>`, meta];
   }
   /** Les thèmes dans l'ordre d'AFFICHAGE : COMMERCIAL en tête (le thème d'une compagnie commerciale), puis ceux de la table dans son ordre. */
-  const themesShown = (CL, lang) => {
-    const all = CL.themes(lang);
-    return [...all.filter(x => x.id === 'COMMERCIAL'), ...all.filter(x => x.id !== 'COMMERCIAL')];
+  const themesShown = (CL, lang, added = []) => {
+    const all = CL.themes(lang),
+      i = Math.max(0, CL.LANGS.indexOf(lang)),
+      own = added.map(a => ({
+        id: a.id,
+        short: a.short,
+        name: a.labels[i] || a.labels[0],
+        label: `${a.short} · ${a.labels[i] || a.labels[0]}`,
+        added: true
+      }));
+    return [...all.filter(x => x.id === 'COMMERCIAL'), ...all.filter(x => x.id !== 'COMMERCIAL'), ...own];
   };
   /** Des identifiants de thèmes dans l'ordre d'ÉCRITURE (celui de la table de frame/lib/mission_themes.js), sans doublon. */
-  const themesInTableOrder = (CL, ids) => CL.themes('fr').map(x => x.id).filter(id => ids.includes(id));
+  const themesInTableOrder = (CL, ids, added = []) => [...CL.themes('fr').map(x => x.id), ...added.map(a => a.id)].filter(id => ids
+    .includes(id));
   /** La fiche de la compagnie CHOISIE (les autres n'en ont pas) : le genre en deux boutons radio, une ligne d'explication chacun ; puis les thèmes de missions, un par case (le sigle, le nom), cochés d'après son fichier ou, sans fichier, d'après le genre (rien n'est écrit tant qu'on ne coche pas). « Personnel » : une ligne, rien à régler. `lang` : la langue des noms. */
   function airlineFicheHtml(r, CL, lang, t) {
     if (!r) return '';
     if (r.code === PERSO) return `<p class="f-muted" data-fiche-perso>${esc(t(TA.persoNote))}</p>`;
     if (!CL) return '';
-    const list = themesShown(CL, lang),
+    const doc = CL.cleanThemes(r.themes),
+      added = doc?.added || {
+        themes: [],
+        series: {}
+      },
+      list = themesShown(CL, lang, added.themes),
       chosen = new Set(CL.chosenOf(r.themes, r.kind)),
-      code = esc(r.code);
+      code = esc(r.code),
+      li = CL.LANGS.indexOf(lang) < 0 ? 0 : CL.LANGS.indexOf(lang),
+      seriesList = id => (added.series[id] || []).map(x => `<li data-series="${esc(x.value)}">${esc(x.labels[li] || x.labels[0])} <button type="button" data-act="companySeriesDel" data-code="${code}" data-theme="${esc(id)}" data-series="${esc(x.value)}">${esc(t(TA.del))}</button></li>`).join('');
     return `<h3>${esc(t(TA.ficheTitle, { n: r.name }))}</h3>
       <fieldset data-kind-set><legend>${esc(t(TA.kindLabel))}</legend>${KINDS.map(k => `<label class="f-check f-kind"><input type="radio" name="co-kind" value="${k}" data-act="companyKind" data-code="${code}" data-kind="${k}"${r.kind === k ? ' checked' : ''}><span><b>${esc(t(CL.KIND_NAMES[k]))}</b><span class="f-muted">${esc(t(TA.kindHelp[k]))}</span></span></label>`).join('')}</fieldset>
       <h4 data-themes-title>${esc(t(TA.themeSummary, { n: list.filter(x => chosen.has(x.id)).length, m: list.length }))}</h4>${r.kind ? '' : `<p class="f-muted">${esc(t(TA.kindUnset))}</p>`}<p class="f-muted">${esc(t(TA.themeHint))}</p>
-      <ul class="f-themes" data-themes>${list.map(x => `<li data-theme="${esc(x.id)}"><label class="f-check"><input type="checkbox" data-act="companyTheme" data-code="${code}" data-theme="${esc(x.id)}"${chosen.has(x.id) ? ' checked' : ''}><span>${esc(x.label)}</span></label></li>`).join('')}</ul><p class="f-msg" data-fiche-msg></p>`;
+      <ul class="f-themes" data-themes>${list.map(x => `<li data-theme="${esc(x.id)}"><label class="f-check"><input type="checkbox" data-act="companyTheme" data-code="${code}" data-theme="${esc(x.id)}"${chosen.has(x.id) ? ' checked' : ''}><span>${esc(x.label)}</span></label>${x.added ? ` <button type="button" data-act="companyThemeDel" data-code="${code}" data-theme="${esc(x.id)}">${esc(t(TA.del))}</button>` : ''}${added.series[x.id]?.length ? `<ul class="f-series" data-series-list="${esc(x.id)}">${seriesList(x.id)}</ul>` : ''}</li>`).join('')}</ul>
+      <div class="f-row" data-theme-add><input type="text" maxlength="8" data-f="th-short-${code}" aria-label="${esc(t(TA.themeShort))}" placeholder="${esc(t(TA.themeShort))}" autocapitalize="characters"><input type="text" maxlength="40" data-f="th-name-${code}" aria-label="${esc(t(TA.themeName))}" placeholder="${esc(t(TA.themeName))}"><button type="button" data-act="companyThemeAdd" data-code="${code}">${esc(t(TA.themeAdd))}</button></div>
+      <div class="f-row" data-series-add><select data-f="sr-theme-${code}" aria-label="${esc(t(TA.seriesOf))}">${list.map(x => `<option value="${esc(x.id)}">${esc(x.label)}</option>`).join('')}</select><input type="text" maxlength="40" data-f="sr-name-${code}" aria-label="${esc(t(TA.seriesName))}" placeholder="${esc(t(TA.seriesName))}"><button type="button" data-act="companySeriesAdd" data-code="${code}">${esc(t(TA.seriesAdd))}</button></div><p class="f-msg" data-fiche-msg></p>`;
   }
   /** Écrit le genre d'une compagnie dans son settings.json (le fichier lu, le champ `kind` posé ou retiré) ; faux si le fichier manque ou ne s'écrit pas. */
   async function writeKind(env, code, kind) {
@@ -687,25 +735,33 @@
   /** Un identifiant de catégorie d'après son nom : minuscules sans accent, tirets, 24 signes au plus ; '' si rien ne reste. */
   const catId = name => name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(
     /^-+|-+$/g, '').slice(0, 24).replace(/-+$/g, '');
-  /** Écrit les thèmes cochés d'une compagnie dans son themes.json : { schema, chosen, added (celui du fichier déjà là, jamais perdu), updated_at, by } ; '' (fait) ou la clé du refus. */
-  async function writeThemes(env, code, picked) {
+  /** Modifie le themes.json d'une compagnie : le fichier lu (filtré) ou, sans fichier, les thèmes du genre ; `edit(doc, CL)` change { chosen, added: { themes, series } } et rend '' (fait) ou la clé du refus ; écrit { schema, chosen (ordre de la table, puis les thèmes ajoutés), added, updated_at, by } ; au moins un thème. Rend '' ou la clé du refus. */
+  async function writeThemes(env, code, edit) {
     const CL = await catLib();
     if (!CL) return 'failed';
-    if (!picked.length) return 'themeOne';
-    const chosen = themesInTableOrder(CL, picked); // l'ordre d'écriture est celui de la table, pas celui de l'affichage
     const ad = airlineData(env.FD),
       path = `${airlineBase(code)}themes.json`,
-      old = CL.cleanThemes(await ad.get(path, {
+      raw = await ad.get(path, {
         wait: true
-      }).catch(() => null));
+      }).catch(() => null),
+      kind = AIR.get(env.view)?.rows.find(r => r.code === code)?.kind || '',
+      old = CL.cleanThemes(raw),
+      doc = {
+        chosen: [...CL.chosenOf(raw, kind)],
+        added: {
+          themes: [...(old?.added.themes || [])],
+          series: Object.fromEntries(Object.entries(old?.added.series || {}).map(([k, v]) => [k, [...v]]))
+        }
+      },
+      refused = edit(doc, CL);
+    if (refused) return refused;
+    const chosen = themesInTableOrder(CL, doc.chosen, doc.added.themes);
+    if (!chosen.length) return 'themeOne';
     try {
       await ad.put(path, {
         schema: 1,
         chosen,
-        added: old?.added || {
-          themes: [],
-          series: {}
-        },
+        added: doc.added,
         updated_at: now(),
         by: env.id?.trigram || ''
       });
@@ -714,7 +770,21 @@
       return 'failed';
     }
   }
-  /** La carte Compagnie : « Compagnie de cet appareil » (la liste à boutons radio, remplie par airlineLive), la fiche de la compagnie choisie, puis trois gestes dans cet ordre : « Créer une compagnie », « Rejoindre une compagnie », la migration quand elle s'applique ; le niveau Complet, ou l'adresse #settings?card=company. */
+  /** Le texte d'un libellé saisi : sans caractères de contrôle ni < >, espaces réduits, 40 signes au plus (comme le filtre du fichier). */
+  const themeText = v => String(v ?? '').replace(/[\p{Cc}\p{Zl}\p{Zp}<>]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 41);
+  /** Écrit themes.json par `edit` (writeThemes) puis le dit : le refus sous la fiche (la fiche se repeint d'après la dernière lecture : une case décochée pour rien revient), ou « Thèmes enregistrés » et la relecture. */
+  async function themeWrite(env, code, edit) {
+    const why = await writeThemes(env, code, edit);
+    if (why) {
+      const host = env.view.querySelector('[data-airline-fiche]');
+      if (host) host.__html = '';
+      paintFiche(env);
+      return ficheSay(env, env.t(TA[why] || TA.failed));
+    }
+    env.c.notify(env.t(TA.themeSaved), 'ok');
+    return airlineLive(env);
+  }
+  /** La carte Compagnie : « Compagnie de cet appareil" (la liste à boutons radio, remplie par airlineLive), la fiche de la compagnie choisie, puis trois gestes dans cet ordre : « Créer une compagnie », « Rejoindre une compagnie », la migration quand elle s'applique ; le niveau Complet, ou l'adresse #settings?card=company. */
   function airlineHtml(env) {
     const {
       t,
@@ -1585,18 +1655,70 @@
         c.notify(t(TA.kindSaved), 'ok');
         return airlineLive(env);
       }
-      // un thème coché ou décoché : les cases de la fiche, dans l'ordre de la table, sont le nouveau choix (au moins un) ; themes.json est écrit, `added` gardé
-      const chosen = [...env.view.querySelectorAll('[data-airline-fiche] [data-themes] input[data-theme]')].filter(i => i.checked).map(
-          i => i.dataset.theme),
-        why = await writeThemes(env, code, chosen);
-      if (why) {
-        const host = env.view.querySelector('[data-airline-fiche]');
-        if (host) host.__html = '';
-        paintFiche(env);
-        return ficheSay(env, t(TA[why] || TA.failed));
+      // un thème coché ou décoché : les cases de la fiche sont le nouveau choix (au moins un) ; themes.json est écrit, `added` gardé
+      return themeWrite(env, code, (d, CL) => {
+        d.chosen = [...env.view.querySelectorAll('[data-airline-fiche] [data-themes] input[data-theme]')].filter(i => i.checked)
+          .map(i => i.dataset.theme);
+        return '';
+      });
+    }
+    if (act === 'companyThemeAdd' || act === 'companyThemeDel' || act === 'companySeriesAdd' || act === 'companySeriesDel') {
+      const code = b.dataset.code || '',
+        root = card('company');
+      if (!AIRLINE_CODE.test(code)) return;
+      if (act === 'companyThemeDel') {
+        const id = b.dataset.theme || '';
+        return themeWrite(env, code, d => {
+          d.added.themes = d.added.themes.filter(x => x.id !== id);
+          delete d.added.series[id];
+          d.chosen = d.chosen.filter(x => x !== id);
+          return '';
+        });
       }
-      c.notify(t(TA.themeSaved), 'ok');
-      return airlineLive(env);
+      if (act === 'companySeriesDel') {
+        const id = b.dataset.theme || '',
+          value = b.dataset.series || '';
+        return themeWrite(env, code, d => {
+          d.added.series[id] = (d.added.series[id] || []).filter(x => x.value !== value);
+          if (!d.added.series[id].length) delete d.added.series[id];
+          return '';
+        });
+      }
+      if (act === 'companyThemeAdd') {
+        const short = val(`th-short-${code}`, root).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, ''),
+          name = themeText(val(`th-name-${code}`, root));
+        if (!/^[A-Z][A-Z0-9]{1,7}$/.test(short) || !name || name.length > 40) return ficheSay(env, t(TA.themeBad));
+        return themeWrite(env, code, (d, CL) => {
+          if (CL.THEMES.some(x => x.id === short || x.short === short) || d.added.themes.some(x => x.id === short || x.short ===
+              short)) return 'themeDup';
+          if (d.added.themes.length >= CL.ADDED_MAX.themes) return 'themeFull';
+          d.added.themes.push({
+            id: short,
+            short,
+            labels: [name, name, name, name]
+          });
+          d.chosen.push(short);
+          return '';
+        });
+      }
+      // une série ajoutée à un thème : la valeur est le nom sans accent (la forme permise du fichier), le libellé est le nom tel que saisi, recopié dans les quatre langues
+      const theme = root.querySelector(`[data-f="sr-theme-${code}"]`)?.value || '',
+        name = themeText(val(`sr-name-${code}`, root)),
+        value = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9 _.\/()-]/g, ' ').replace(/\s+/g, ' ').trim()
+        .slice(0, 40);
+      if (!name || name.length > 40 || !/^[A-Za-z0-9][A-Za-z0-9 _.\/()-]{0,39}$/.test(value)) return ficheSay(env, t(TA.seriesBad));
+      return themeWrite(env, code, (d, CL) => {
+        const known = new Set([...(CL.themeOf(theme)?.series || []).map(x => x.value), ...(d.added.series[theme] || []).map(x => x
+          .value)].map(x => x.toLowerCase()));
+        if (!CL.themeOf(theme) && !d.added.themes.some(x => x.id === theme)) return 'failed';
+        if (known.has(value.toLowerCase())) return 'seriesDup';
+        if ((d.added.series[theme] || []).length >= CL.ADDED_MAX.seriesPerTheme) return 'seriesFull';
+        (d.added.series[theme] ||= []).push({
+          value,
+          labels: [name, name, name, name]
+        });
+        return '';
+      });
     }
     if (act === 'companyPlan' || act === 'companyMigrate') {
       const root = card('company'),
@@ -1668,7 +1790,7 @@
     acts: ['companyChoose', 'companyAdd', 'companyNext', 'companyBack', 'companyResume', 'companyStay', 'companyFly',
       'companyJnClip', 'companyJnNext', 'companyJnBack', 'companyJnGo', 'companyJnResume', 'companyJnStay', 'companyJnFly',
       'companyWzSheet', 'companyWzReg', 'companyWzRegDel', 'companyWzLater', 'companyPlan',
-      'companyMigrate', 'companyKind', 'companyTheme'
+      'companyMigrate', 'companyKind', 'companyTheme', 'companyThemeAdd', 'companyThemeDel', 'companySeriesAdd', 'companySeriesDel'
     ],
     html: airlineHtml,
     live: airlineLive,

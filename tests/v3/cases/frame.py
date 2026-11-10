@@ -5807,3 +5807,64 @@ def a141(c):
             c.ok(r['shown'], str(r), f'at {width}: there is room, the chip is there beside the cartouche and the sync state')
 
     c.check_errors()
+
+
+@case('A142', 'Settings › Company (SOG-0202 T3b): « Ajouter un thème » and « Ajouter une série » on the sheet — written in themes.json (`added`, one label copied into the four languages), bounded and refused in words, removable; what is typed is text', 'A', langs4=True, tags=('airline',),
+      designs=('standard',), screens=True, night=False,
+      rule='V3_SPECIFICATION § 10.48 (SOG-0202): the airline adds its own themes (acronym 2 to 8, name 1 to 40, eight at most, never an acronym already taken) and series (name 1 to 40, twenty per theme, never twice in a theme); themes.json { chosen, added: { themes: [{ id, short, labels ×4 }], series: { THEME: [{ value, labels ×4 }] } } } is written by Settings only; a name typed is text (no < >)')
+def a142(c):
+    lang = c.lang
+    sj = 'frame/settings/access.js'
+    T = lambda k: tx(sj, k, lang, after='const TA = {')
+    docs = [['device/level.json', {'level': 3}, 'cache'],
+            ['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}]}, 'document'],
+            ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'networks': {'ivao': True}, 'kind': 'va'}, 'document'],
+            ['airline/aaa/fleet.json', {'schema': 1, 'aircraft': []}, 'document']]
+    fiche = lambda extra='': f'[data-card="company"] [data-airline-fiche] {extra}'.strip()
+    c.open('settings?card=company', docs=docs)
+    c.until("!!document.querySelector('[data-airline-fiche] [data-theme-add]')", timeout=15000, what='the sheet with its two small forms')
+    doc = lambda: c.doc('airline/aaa/themes.json')
+    say = lambda: norm(c.text('[data-fiche-msg]'))
+
+    def refuse(act, fields, key):
+        before = doc()
+        c.js("document.querySelector('[data-fiche-msg]').textContent = ''")
+        for f, v in fields.items():
+            (c.page.select_option if f.startswith('sr-theme') else c.page.fill)(f'[data-f="{f}"]', v)
+        c.tap(fiche(f'[data-act={act}]'))
+        c.until("document.querySelector('[data-fiche-msg]').textContent.trim() !== ''", timeout=6000, what=f'the refusal {key}')
+        c.eq(say(), norm(T(key)), f'refused in words: {key}', what=f'refusal {key}')
+        c.eq(doc(), before, 'and nothing is written', what=f'unchanged after {key}')
+    # ---- a theme of our own: written (one label in the four languages), listed, ticked, removable
+    c.page.fill('[data-f="th-short-aaa"]', 'rsc')
+    c.page.fill('[data-f="th-name-aaa"]', 'Courrier <b>express</b>')
+    c.tap(fiche('[data-act=companyThemeAdd]'))
+    d = c.until_doc('airline/aaa/themes.json', lambda d: bool(d and d.get('added', {}).get('themes')), what='the theme written')
+    c.eq([d['schema'], d['chosen'], d['added']['themes'][0]['id'], d['added']['themes'][0]['short'], len(set(d['added']['themes'][0]['labels']))], [1, ['COMMERCIAL', 'RSC'], 'RSC', 'RSC', 1], 'the Commercial theme of the kind and the new one chosen; id = acronym; one label copied four times', what='theme file')
+    c.ok('<' not in d['added']['themes'][0]['labels'][0] and c.count(fiche('[data-themes] b')) == 0, d['added']['themes'][0]['labels'], 'what is typed is text: no < >, no element drawn')
+    c.until("!!document.querySelector('[data-airline-fiche] li[data-theme=RSC] input:checked')", what='the new theme is listed and ticked')
+    c.eq(norm(c.text(fiche('[data-themes-title]'))), norm(T('themeSummary').replace('{n}', '2').replace('{m}', '18')), 'two of eighteen', what='count')
+    c.eq(c.js(f"[...document.querySelectorAll('{fiche('[data-themes] > li')}')].map(l => l.dataset.theme).slice(-2)"), ['SPECIAL', 'RSC'], 'the added theme comes after the table’s', what='order')
+    # ---- a series of our own, in a built-in theme (the value without accent, the label as typed)
+    c.page.select_option('[data-f="sr-theme-aaa"]', 'HEMS')
+    c.page.fill('[data-f="sr-name-aaa"]', 'Évacuation sanitaire')
+    c.tap(fiche('[data-act=companySeriesAdd]'))
+    d = c.until_doc('airline/aaa/themes.json', lambda d: bool(d and d.get('added', {}).get('series')), what='the series written')
+    c.eq([d['added']['series']['HEMS'][0]['value'], d['added']['series']['HEMS'][0]['labels'][0], len(set(d['added']['series']['HEMS'][0]['labels']))], ['Evacuation sanitaire', 'Évacuation sanitaire', 1], 'the value is the name without accent (the permitted form), the label is the name as typed, copied four times', what='series file')
+    c.until("!!document.querySelector('[data-airline-fiche] [data-series-list=HEMS] li')", what='the series is listed under its theme')
+    c.eq(c.js("document.documentElement.scrollWidth <= window.innerWidth + 1"), True, 'no horizontal scroll with the added theme and its two small forms', what='scroll')
+    if c.width in (390, 1280):
+        c.js(f"document.querySelector('{fiche('[data-theme-add]')}').scrollIntoView({{ block: 'center' }})")
+        c.shot(f'A142_standard_{c.width}_{lang}_delivered.png')
+    # ---- refusals, each in words, nothing written
+    refuse('companyThemeAdd', {'th-short-aaa': '1', 'th-name-aaa': 'X'}, 'themeBad')
+    refuse('companyThemeAdd', {'th-short-aaa': 'hems', 'th-name-aaa': 'Autre'}, 'themeDup')
+    refuse('companySeriesAdd', {'sr-theme-aaa': 'HEMS', 'sr-name-aaa': 'Evacuation Sanitaire'}, 'seriesDup')
+    refuse('companySeriesAdd', {'sr-name-aaa': '   '}, 'seriesBad')
+    # ---- removing: the series, then the theme (with its place in the choice)
+    c.tap(fiche('[data-act=companySeriesDel][data-theme=HEMS]'))
+    c.until_doc('airline/aaa/themes.json', lambda d: bool(d) and not d['added']['series'], what='the series removed')
+    c.tap(fiche('[data-act=companyThemeDel][data-theme=RSC]'))
+    d = c.until_doc('airline/aaa/themes.json', lambda d: bool(d) and not d['added']['themes'], what='the theme removed')
+    c.eq([d['chosen'], d['added']], [['COMMERCIAL'], {'themes': [], 'series': {}}], 'the theme leaves the file and the choice', what='removed')
+    c.check_errors()

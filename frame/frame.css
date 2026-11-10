@@ -776,6 +776,30 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   grid-template-columns: 1fr;
   gap: 0 24px
 }
+.f-themes > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 8px
+}
+.f-themes > li > .f-series {
+  flex-basis: 100%
+}
+[data-theme-add] input, [data-series-add] input, [data-series-add] select {
+  flex: 1 1 100%;
+  min-width: 0;
+  max-width: 100%
+}
+@media (min-width: 700px) {
+  [data-theme-add] input, [data-series-add] input, [data-series-add] select {
+    flex: 1 1 0
+  }
+}
+.f-series {
+  list-style: none;
+  margin: 0 0 4px;
+  padding-left: 28px
+}
 @media (min-width: 700px) {
   .f-themes {
     grid-template-columns: 1fr 1fr
