@@ -1505,9 +1505,9 @@ def k96(c):
         c.eq(len(run(action='get')['items']), 500, 'at most 500 entries are read', what='cap')
 
 
-@case('K121', 'recette/verdict: organisation/RECETTE.json read and replaced by the launcher (no organisation folder said, bad entries refused in a block, a refusal needs a comment, a hostile file filtered, atomic write)', 'K',
+@case('K123', 'recette/verdict: organisation/RECETTE.json read and replaced by the launcher (no organisation folder said, bad entries refused in a block, a refusal needs a comment, a hostile file filtered, atomic write)', 'K',
       static=True, rule='SOG-0167: the user\u2019s verdicts on the functional tests are written by the launcher: 1000 entries at most, ids SOG-nnnn, ok or ko, a comment of 600 signs (required for a refusal), an ISO UTC date; a file read is untrusted')
-def k121(c):
+def k123(c):
     RJ, BS, AF, DS = _mods()
     fn, check = RJ.REGISTRY[('recette', 'verdict')]
     ok_set = {'action': 'set', 'items': {'SOG-0001': {'verdict': 'ok'}}}
