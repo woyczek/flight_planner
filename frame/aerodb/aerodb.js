@@ -2665,7 +2665,7 @@
       },
       /** Propositions de terrains pour une saisie (SOG-0158) : un code, le début d'un nom ou d'un mot de son nom (la ville : « stockholm » trouve « STOCKHOLM / BROMMA »), ou un PAYS (ses quatre noms, son endonyme et ses sigles : « suède », « sverige », « usa ») qui rend ses
        *  principaux terrains, les plus grands d'abord (piste en dur la plus longue). Lit seulement l'index léger des terrains de CHAQUE zone publiée (aeroindex : un dixième de aerodromes.json, 438 Ko pour les 71 zones), une fois, gardé en mémoire : aucune zone n'est ouverte en entier.
-       *  → [{ code, name, lat, lon, zone, country, hardLen, rank }] (rank : 0 code exact, 1 début de code, 2 pays, 3 début de nom, 4 début d'un mot du nom, 5 contient) ; n au plus (7 par défaut). `lang` : l'indice du nom du pays dans `country` (0 fr, 1 en, 2 de, 3 es). */
+       *  → [{ code, name, lat, lon, zone, country, hardLen, type, rank }] (type : AD, AH, HP ou MIL : à rang égal les terrains civils (AD) passent avant les hélistations et les bases militaires ; rank : 0 code exact, 1 début de code, 2 pays, 3 début de nom, 4 début d'un mot du nom, 5 contient) ; n au plus (7 par défaut). `lang` : l'indice du nom du pays dans `country` (0 fr, 1 en, 2 de, 3 es). */
       async suggest(text, {
         n = 7,
         lang = 1
@@ -2693,7 +2693,8 @@
                 lat: +a.lat,
                 lon: +a.lon,
                 zone: id,
-                hardLen: num(a.hardLen) ? +a.hardLen : 0
+                hardLen: num(a.hardLen) ? +a.hardLen : 0,
+                type: /^(AD|AH|HP|MIL)$/.test(String(a.type || '').toUpperCase()) ? String(a.type).toUpperCase() : 'AD'
               });
             }
           }
@@ -2712,6 +2713,7 @@
           zone: a.zone,
           country: country(a.zone),
           hardLen: a.hardLen,
+          type: a.type,
           rank
         });
         for (const a of all) {
@@ -2724,7 +2726,8 @@
           else if (q.length >= 3 && a.fold.includes(q)) rank = 5;
           if (rank >= 0) out.push(row(a, rank));
         }
-        return out.sort((a, b) => a.rank - b.rank || b.hardLen - a.hardLen || a.name.localeCompare(b.name)).slice(0, Math.max(1, Math
+        return out.sort((a, b) => a.rank - b.rank || (a.type === 'AD' ? 0 : 1) - (b.type === 'AD' ? 0 : 1) || b.hardLen - a.hardLen ||
+          a.name.localeCompare(b.name)).slice(0, Math.max(1, Math
           .min(50, n)));
       },
       /** Lieux qui répondent au texte (aérodromes, balises, points, VRP des zones ouvertes ; villes de ces zones et grandes

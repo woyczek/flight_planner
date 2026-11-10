@@ -489,21 +489,34 @@
       where.set(idOf(f), pt);
     }
     // aérodromes
+    const adById = new Map;
     for (const f of doc.getElementsByTagNameNS(NSX, 'AirportHeliport')) {
       const s = slice(f, 'AirportHeliportTimeSlice'),
         p = s && posOf(kid(s, 'ARP') || s);
       if (!p) continue;
-      const el = kid(s, 'fieldElevation');
-      out.aero.aerodromes.push({
-        id: text(s, 'designator'),
-        icao: text(s, 'locationIndicatorICAO') || text(s, 'designator'),
-        name: text(s, 'name'),
-        type: text(s, 'type') || 'AD',
-        lat: p[0],
-        lon: p[1],
-        elev: el ? Math.round(toFt(+el.textContent, el.getAttribute('uom'))) : null,
-        public: !/MIL/.test(text(s, 'controlType'))
-      });
+      const el = kid(s, 'fieldElevation'),
+        ad = {
+          id: text(s, 'designator'),
+          icao: text(s, 'locationIndicatorICAO') || text(s, 'designator'),
+          name: text(s, 'name'),
+          type: text(s, 'type') || 'AD',
+          lat: p[0],
+          lon: p[1],
+          elev: el ? Math.round(toFt(+el.textContent, el.getAttribute('uom'))) : null,
+          public: !/MIL/.test(text(s, 'controlType'))
+        };
+      out.aero.aerodromes.push(ad);
+      adById.set(idOf(f), ad);
+    }
+    // pistes (SOG-0158) : la longueur nominale de la plus longue piste à revêtement DUR de chaque terrain (hardLen, en mètres), pour proposer les principaux terrains d'abord
+    for (const f of doc.getElementsByTagNameNS(NSX, 'Runway')) {
+      const s = slice(f, 'RunwayTimeSlice'),
+        ad = s && adById.get(href(kid(s, 'associatedAirportHeliport'))),
+        len = s && kid(s, 'nominalLength'),
+        comp = s ? text(s, 'composition') : '';
+      if (!ad || !len || !comp || /GRASS|GRAV|GRVL|SAND|EARTH|DIRT|SOD|CLAY|WATER|SNOW|ICE|CORAL|LATERITE|MEMBRANE/i.test(comp)) continue;
+      const m = Math.round((+len.textContent) * (/^FT/i.test(len.getAttribute('uom') || '') ? .3048 : 1));
+      if (Number.isFinite(m) && m > (ad.hardLen || 0)) ad.hardLen = m;
     }
     // tronçons de route (extrémités : points ou balises déjà lus)
     const routes = new Map;

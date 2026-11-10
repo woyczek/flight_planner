@@ -6175,11 +6175,11 @@ def k126(c):
     r = c.js("""async () => {
       const day = Date.parse('2026-11-10T12:00:00Z'), reads = [];
       const kinds = ['meta', 'aerodromes', 'aeroindex', 'navaids', 'points', 'vrp', 'airways', 'airspaces'];
-      const fields = ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar', 'hardLen'];
+      const fields = ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar', 'hardLen', 'type'];
       const zone = (z, rows) => Object.fromEntries(kinds.map(k => [`sia/base/${z}/2026-10-29/${k}.json`, k === 'meta' ? { schema: 2, zone: z, cycle: '2026-10-29', kind: 'meta', parserVersion: 25, data: {} }
-        : k === 'aeroindex' ? { schema: 2, zone: z, cycle: '2026-10-29', kind: k, data: { fields, rows } } : { schema: 2, zone: z, cycle: '2026-10-29', kind: k, data: [] }]));
+        : k === 'aeroindex' ? { schema: 2, zone: z, cycle: '2026-10-29', kind: k, data: { fields, rows: rows.map(r => r.length === 8 ? [...r, 'AD'] : r) } } : { schema: 2, zone: z, cycle: '2026-10-29', kind: k, data: [] }]));
       const files = {
-        ...zone('se', [['ESSA', 'STOCKHOLM / ARLANDA', 59.65, 17.92, 137, 0, 0, 3301], ['ESSB', 'STOCKHOLM / BROMMA', 59.35, 17.94, 47, 0, 0, 1668], ['ESGG', 'GOTEBORG / LANDVETTER', 57.66, 12.28, 506, 0, 0, 3300], ['ESKN', 'SKAVSTA', 58.79, 16.91, 140, 0, 0, null]]),
+        ...zone('se', [['ESSA', 'STOCKHOLM / ARLANDA', 59.65, 17.92, 137, 0, 0, 3301], ['ESSB', 'STOCKHOLM / BROMMA', 59.35, 17.94, 47, 0, 0, 1668], ['ESGG', 'GOTEBORG / LANDVETTER', 57.66, 12.28, 506, 0, 0, 3300], ['ESKN', 'SKAVSTA', 58.79, 16.91, 140, 0, 0, null], ['ESMM', 'MILITARY AIR BASE', 56.0, 14.0, 100, 0, 0, 3900, 'MIL'], ['ESHE', 'HELI PAD', 57.0, 15.0, 10, 0, 0, 3500, 'HP']]),
         ...zone('fr', [['LFPG', 'PARIS CHARLES DE GAULLE', 49.01, 2.55, 392, 0, 0, 4200], ['LFPO', 'PARIS ORLY', 48.72, 2.38, 291, 0, 0, 3650], ['LFLL', 'LYON SAINT EXUPERY', 45.73, 5.08, 821, 0, 0, 4000]]),
         ...zone('us', [['KJFK', 'NEW YORK JOHN F KENNEDY INTL', 40.64, -73.78, 13, 0, 0, 4423], ['KLAX', 'LOS ANGELES INTL', 33.94, -118.41, 125, 0, 0, 3685]]),
         'sia/base/index.json': { schema: 2, kind: 'index', zones: Object.fromEntries(['se', 'fr', 'us'].map(z => [z, { cycle: '2026-10-29', prefixes: [z === 'se' ? 'ES' : z === 'fr' ? 'LF' : 'K'], kb: { aeroindex: 3 } }])) }
@@ -6189,7 +6189,7 @@ def k126(c):
       const codes = async (t, o) => (await db.suggest(t, o)).map(x => x.code + ':' + x.rank);
       const out = {};
       out.stoc = await codes('stoc'); out.stockholm = await codes('Stockholm'); out.bromma = await codes('bromma'); out.essb = await codes('essb'); out.ess = await codes('ess');
-      out.suede = await codes('suède', { n: 2 }); out.sverige = await codes('sverige', { n: 3 }); out.sweden = await codes('SWE', { n: 3 }); out.usa = await codes('usa'); out.uk = await codes('uk'); out.paris = await codes('paris');
+      out.suede = await codes('suède', { n: 2 }); out.suedeAll = (await db.suggest('suède', { n: 10 })).map(x => x.code + ':' + x.type); out.sverige = await codes('sverige', { n: 3 }); out.sweden = await codes('SWE', { n: 3 }); out.usa = await codes('usa'); out.uk = await codes('uk'); out.paris = await codes('paris');
       out.short = (await db.suggest('s')).length; out.n = (await db.suggest('e', { n: 1 })).length + (await db.suggest('es', { n: 2 })).length;
       out.first = (await db.suggest('usa'))[0];
       out.country = [(await db.suggest('suède', { lang: 0, n: 1 }))[0].country, (await db.suggest('suède', { lang: 1, n: 1 }))[0].country];
@@ -6206,6 +6206,8 @@ def k126(c):
     c.ok('Sverige' in r['akaSe'], str(r['akaSe']), 'zones() gives the endonym and the initials under `aka`')
     c.ok('hardLen' in (ROOT / 'shared' / 'sia_base.js').read_text(encoding='utf-8'), 'aeroindex', 'the builder writes hardLen in aeroindex (parser version 25)')
 
+
+    c.eq(r['suedeAll'], ['ESSA:AD', 'ESGG:AD', 'ESSB:AD', 'ESKN:AD', 'ESMM:MIL', 'ESHE:HP'], 'at equal rank the civil aerodromes come before the military base (longest runway of all, 3 900 m) and the heliport: AD, then MIL / HP, each by runway length (SOG-0158: the types come from the light index)', what='types')
 
 @case('K128', 'A failed ground reading is never silent (SOG-0046 / SOG-0135, refused at the acceptance): the job retries a busy Overpass, keeps the last result of each aerodrome (ground/state), and AeroDb.groundStatus says « failed », why and with which text, also after the page is reloaded', 'K', tags=('aerodb',), phone=False,
       rule='SOG-0135 (10 Nov 2026, refused: « rien », data/proc/ground/ never written): after the procedures of LFPO the launcher DID start ground/fetch (its start is in tools/.regen_last.json, 36 s after the procedures job) and it wrote nothing: the failure (a busy Overpass, a refusal while the launcher sent, no data) was swallowed by the background reading and was kept nowhere; K110 saw nothing because its launcher always said yes; the job now retries a busy or unreachable Overpass twice (8 s, 20 s), keeps each aerodrome’s last result in data/local/ground_state.json (read by the read-only job ground/state), and the page keeps and announces the failure (groundStatus; on(‘change’, { ground, groundFailed }))')
@@ -6350,3 +6352,26 @@ def k130(c):
     c.eq(r['five'], [['LONDON FIR', 'FIR', 4]], 'AIXM 5.1 (NATS, ENAIRE): a FIR is kept too', what='aixm5')
     sb = (ROOT / 'shared' / 'sia_base.js').read_text(encoding='utf-8')
     c.ok(int(re.search(r'const VERSION =\s*(\d+)', sb).group(1)) >= 26, 'sia_base.js', 'parser version 26 or more: the zones built before have no FIR outside France and are rebuilt (parser-old)')
+
+
+@case('K132', 'The light index of aerodromes carries the kind and the runway of every source (SOG-0158): aeroindex has `type` (AD, AH, HP, MIL) and `hardLen`; the AIXM 5.1 reader (NATS, ENAIRE) gives each aerodrome the nominal length of its longest HARD runway, a grass or gravel one counts for nothing; parser version 27', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0158 (10 Nov 2026, Features SOG, seen on the user’s real base): suggest put a military base or a heliport before an airport as soon as it had the longest runway, and « uk » could not put EGLL first because the NATS aerodromes had no runway length (230 Runway features with nominalLength and composition in the NATS file, none read); aeroindex gets `type`, the AIXM 5.1 reader gets hardLen from the runways of an aerodrome, parser 27')
+def k132(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const fr = document.createElement('iframe'); document.body.appendChild(fr); const w = fr.contentWindow;
+      const load = src => new Promise((ok, no) => { const s = w.document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error(src)); w.document.head.appendChild(s); });
+      await load('/shared/sia_base.js'); await load('/shared/aero_sources.js');
+      const ad = (id, name, icao, type, lat) => `<aixm:AirportHeliport gml:id="${id}"><gml:identifier>${id}</gml:identifier><aixm:timeSlice><aixm:AirportHeliportTimeSlice gml:id="t${id}"><aixm:interpretation>BASELINE</aixm:interpretation><aixm:designator>${icao}</aixm:designator><aixm:name>${name}</aixm:name><aixm:locationIndicatorICAO>${icao}</aixm:locationIndicatorICAO><aixm:type>${type}</aixm:type><aixm:ARP><aixm:ElevatedPoint><gml:pos>${lat} -0.45</gml:pos></aixm:ElevatedPoint></aixm:ARP></aixm:AirportHeliportTimeSlice></aixm:timeSlice></aixm:AirportHeliport>`;
+      const rwy = (id, adId, len, comp, uom = 'M') => `<aixm:Runway gml:id="${id}"><gml:identifier>${id}</gml:identifier><aixm:timeSlice><aixm:RunwayTimeSlice gml:id="t${id}"><aixm:interpretation>BASELINE</aixm:interpretation><aixm:designator>09/27</aixm:designator><aixm:type>RWY</aixm:type><aixm:nominalLength uom="${uom}">${len}</aixm:nominalLength><aixm:associatedAirportHeliport xlink:href="urn:uuid:${adId}"/><aixm:surfaceProperties><aixm:SurfaceCharacteristics gml:id="s${id}"><aixm:composition>${comp}</aixm:composition></aixm:SurfaceCharacteristics></aixm:surfaceProperties></aixm:RunwayTimeSlice></aixm:timeSlice></aixm:Runway>`;
+      const xml = '<aixm:AIXMBasicMessage xmlns:aixm="http://www.aixm.aero/schema/5.1.1" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink">'
+        + ad('a1', 'LONDON HEATHROW', 'EGLL', 'AD', 51.47) + ad('a2', 'SMALL FIELD', 'EGXX', 'AD', 52.0) + ad('a3', 'NO RUNWAY', 'EGYY', 'AH', 53.0)
+        + rwy('r1', 'a1', 3902, 'ASPH') + rwy('r2', 'a1', 3658, 'CONC') + rwy('r3', 'a2', 1200, 'ASPH') + rwy('r4', 'a2', 1800, 'GRASS') + rwy('r5', 'a2', 3000, 'GRVL', 'FT') + '</aixm:AIXMBasicMessage>';
+      const five = w.AeroSources.aixm5(xml).aero.aerodromes;
+      const idx = w.SiaBase.aeroIndex([{ icao: 'LFPG', name: 'PARIS CDG', lat: 49, lon: 2, hardLen: 4215, type: 'AD' }, { icao: 'LFYY', name: 'A HELIPORT', lat: 48, lon: 2, type: 'HP' }, { icao: 'LFZZ', name: 'NO TYPE', lat: 47, lon: 2 }, { icao: 'LFMM', name: 'ODD TYPE', lat: 46, lon: 2, type: 'weird' }]);
+      return { five: five.map(a => [a.icao, a.type, a.hardLen ?? null]), fields: idx.fields, rows: idx.rows.map(x => [x[0], x[7], x[8]]) };
+    }""")
+    c.eq(r['five'], [['EGLL', 'AD', 3902], ['EGXX', 'AD', 1200], ['EGYY', 'AH', None]], 'AIXM 5.1: the longest HARD runway of each aerodrome (3 902 m, not 3 658), a grass and a gravel runway (even in feet) count for nothing, an aerodrome with no runway has none', what='hardlen')
+    c.eq((r['fields'][-2:], r['rows']), (['hardLen', 'type'], [['LFPG', 4215, 'AD'], ['LFYY', None, 'HP'], ['LFZZ', None, 'AD'], ['LFMM', None, 'AD']]), 'aeroindex carries hardLen and type (a missing or unknown type is AD, a heliport stays HP)', what='aeroindex')
+    sb = (ROOT / 'shared' / 'sia_base.js').read_text(encoding='utf-8')
+    c.ok(int(re.search(r'const VERSION =\s*(\d+)', sb).group(1)) >= 27, 'sia_base.js', 'parser version 27 or more: the zones built before have no `type` in their index and are rebuilt (parser-old)')
