@@ -84,7 +84,7 @@ MILESTONE_STATE = {'livré': 'done', 'livre': 'done', 'en cours': 'doing', 'pré
                    'plus tard': 'later'}
 
 FICHE = re.compile(r'^### (SOG-\d{4}) — (.+?)\s*$', re.M)
-FIELD = re.compile(r'\*\*(Nature|Thème|État|Lot) :\*\*\s*(.+?)(?=\s\*\*|\n|$)')
+FIELD = re.compile(r'\*\*(Nature|Thème|État|Lot) :\*\*\s*(.+?)(?=\s\*\*(?:Nature|Thème|État|Lot|Responsable) :\*\*|\n|$)')   # a value may hold its own emphasis (« **Prêt 8b92d3d6b** ») : only the next field ends it
 
 
 def read(p):
@@ -100,13 +100,24 @@ def slug(s):
     return re.sub(r'[^a-z0-9]+', '-', fold(s)).strip('-') or 'autre'
 
 
+DONE_WORDS = ('livre', 'valide', 'a valider', 'corrige', 'clos', 'repondu', 'cause trouvee et corrigee')
+DOING_WORDS = ('en cours', 'dispatche', 'bloqu', 'releve fait')
+
+
 def state_of(etat):
-    e = fold(etat)
-    if e.startswith('a valider') or e.startswith('clos'):
+    """The state of a fiche from its « État » line as the backlog really writes it: emphasis marks and a leading « (a) » are
+    ignored; delivered words first (« Livré, à valider », « Validé », « Corrigé », « Clos », « Répondu »), then work in
+    progress (« en cours », « dispatché », « bloquant »), then « prêt <sha> » = pushed, hence delivered, unless the same line
+    still says « en cours »; a bare « Prêt » or « Planifié » is planned; the rest is later."""
+    e = re.sub(r'^\s*\([a-z]\)\s*', '', fold(etat).replace('*', '')).strip()
+    head = e[:240]
+    if e.startswith(DONE_WORDS):
         return 'done'
-    if e.startswith('en cours'):
+    if any(w in head for w in DOING_WORDS):
         return 'doing'
-    if e.startswith('pret'):
+    if re.search(r'\bpret(e|s|es)? [0-9a-f]{7,}', head):
+        return 'done'
+    if e.startswith('pret') or e.startswith('planifie') or 'conception ecrite' in head or 'conception a ecrire' in head:
         return 'planned'
     return 'later'
 

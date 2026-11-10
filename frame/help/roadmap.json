@@ -1,11 +1,11 @@
 {
  "schema": "sog-roadmap/1",
  "version": 2,
- "updated": "2026-11-09",
+ "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "01e0873",
-  "fiches": 159,
+  "organisation": "4650468",
+  "fiches": 167,
   "untranslated": 1,
   "priorities": 152
  },
@@ -198,6 +198,24 @@
    }
   },
   {
+   "id": "6.0.0-alpha.6",
+   "label": {
+    "fr": "6.0.0-alpha.6",
+    "en": "6.0.0-alpha.6",
+    "de": "6.0.0-alpha.6",
+    "es": "6.0.0-alpha.6"
+   },
+   "date": "2026-11-21",
+   "state": "planned",
+   "items": [],
+   "content": {
+    "fr": "En développement : ce qui suit l'alpha.5 (colonne « En développement » de la roadmap)",
+    "en": "En développement : ce qui suit l'alpha.5 (colonne « En développement » de la roadmap)",
+    "de": "En développement : ce qui suit l'alpha.5 (colonne « En développement » de la roadmap)",
+    "es": "En développement : ce qui suit l'alpha.5 (colonne « En développement » de la roadmap)"
+   }
+  },
+  {
    "id": "6.0.0-beta.1",
    "label": {
     "fr": "6.0.0-beta.1",
@@ -263,7 +281,7 @@
     {
      "id": "SOG-0128",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Où calculer, la page ou le lanceur ? Billes, tâche avec avant / après, contraintes d'un lanceur — et l'appli Apple / Android à venir",
      "en": "Where to compute, the page or the launcher? Figures, a task with before / after, launcher constraints, and the coming Apple / Android app",
      "de": "Wo rechnen, Seite oder Launcher? Zahlen, Aufgabe mit Vorher/Nachher, Launcher-Zwänge und die kommende Apple/Android-App",
@@ -285,7 +303,7 @@
     {
      "id": "SOG-0056",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Écran 1 du pilote : un bouton « Auto » calcule le niveau depuis le carburant et le temps",
      "en": "Pilot screen 1: an “Auto” button calculates the level from fuel and time",
      "de": "Pilotenbildschirm 1: Eine Schaltfläche „Auto“ berechnet die Flugfläche aus Kraftstoff und Zeit",
@@ -318,7 +336,7 @@
     {
      "id": "SOG-0060",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "Carburant : l'appareil du vol dit en clair ; le choix de l'appareil a le même moteur de recherche que les réglages",
      "en": "Fuel: the flight's aircraft stated in plain words; the aircraft choice has the same search engine as the settings",
      "de": "Kraftstoff: Das Flugzeug des Flugs im Klartext; die Flugzeugauswahl hat dieselbe Suchmaschine wie die Einstellungen",
@@ -350,7 +368,7 @@
     {
      "id": "SOG-0081",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Calcul de route automatique et contrôle IFPS / RAD / FRA : intégrer le moteur de RouteSim dans le chemin du pilote (alpha.5)",
      "en": "Automatic route calculation and IFPS / RAD / FRA check: integrate the RouteSim engine into the pilot’s path (alpha.5)",
      "de": "Automatische Routenberechnung und IFPS-/RAD-/FRA-Prüfung: die RouteSim-Engine in den Pilotenweg integrieren (alpha.5)",
@@ -410,7 +428,7 @@
     {
      "id": "SOG-0129",
      "kind": "feature",
-     "state": "later",
+     "state": "planned",
      "fr": "Moteur de route dans la page (téléphone) : porter le moteur en JS, données RAD / FRA publiées",
      "en": "Route engine in the page (phone): port the engine to JS, RAD / FRA data published",
      "de": "Routen-Engine in der Seite (Telefon): Engine nach JS portieren, RAD/FRA-Daten veröffentlicht",
@@ -420,7 +438,7 @@
     {
      "id": "SOG-0134",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Route (RAD) : montrer les tracés des itinéraires proposés avant de choisir, et dire quels sont les écarts aux règles",
      "en": "Route (RAD): draw the proposed routes before choosing, and say which rule deviations",
      "de": "Route (RAD): vorgeschlagene Routen vor der Wahl zeichnen und die Regelabweichungen benennen",
@@ -430,7 +448,7 @@
     {
      "id": "SOG-0140",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "Le bouton ⇄ de Carburant est beaucoup trop gros",
      "en": "The ⇄ button of Fuel is far too big",
      "de": "Der ⇄-Knopf in Kraftstoff ist viel zu groß",
@@ -440,7 +458,7 @@
     {
      "id": "SOG-0157",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "« Aucune table des procédures publiées » : sans plan B ni consigne — passe par le composant « zone manquante »",
      "en": "“No published procedure table”: no plan B nor instruction — goes through the “missing zone” component",
      "de": "„Keine veröffentlichte Verfahrenstabelle“: kein Plan B, keine Anleitung — über die Komponente „fehlende Zone“",
@@ -454,6 +472,15 @@
      "en": "ADEP / ADEST entry: find “Stockholm” (city and airport name, not only the code)",
      "de": "ADEP/ADEST-Eingabe: „Stockholm“ finden (Stadt und Flugplatzname, nicht nur der Code)",
      "es": "Entrada ADEP / ADEST: encontrar «Estocolmo» (ciudad y nombre del aeródromo, no solo el código)"
+    },
+    {
+     "id": "SOG-0161",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Moteur de route : l'améliorer, pas seulement le recopier — la plus longue route valide IFPS en LOW, HIGH ou FRA, par itérations avec points intermédiaires (ESSB → LEMO)",
+     "en": "Route engine: improve it, not only copy it — the longest IFPS-valid route in LOW, HIGH or FRA, iterating with intermediate points (ESSB → LEMO)",
+     "de": "Routen-Engine: verbessern, nicht nur kopieren — die längste IFPS-gültige Route in LOW, HIGH oder FRA, iterativ mit Zwischenpunkten (ESSB → LEMO)",
+     "es": "Motor de rutas: mejorarlo, no solo copiarlo: la ruta válida IFPS más larga en LOW, HIGH o FRA, iterando con puntos intermedios (ESSB → LEMO)"
     }
    ]
   },
@@ -470,7 +497,7 @@
     {
      "id": "SOG-0011",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Expliquer fuel as volume et fuel density",
      "en": "Explain fuel as volume and fuel density",
      "de": "Fuel as volume und Fuel density erklären",
@@ -537,7 +564,7 @@
     {
      "id": "SOG-0046",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Carte : liste des points et des taxiways de l'ADEP / ADEST, recherche et surlignement (gros terrains)",
      "en": "Map: list of points and taxiways of the ADEP / ADEST, search and highlighting (large airfields)",
      "de": "Karte: Liste der Punkte und Rollwege von ADEP / ADEST, Suche und Hervorhebung (große Flugplätze)",
@@ -608,7 +635,7 @@
     {
      "id": "SOG-0139",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Météo sur la Carte : un lien « télécharger AROME » plutôt qu'un bouton « afficher la météo »",
      "en": "Weather on the Map: a “download AROME” link rather than a “show weather” button",
      "de": "Wetter auf der Karte: ein Link „AROME laden“ statt eines Knopfs „Wetter anzeigen“",
@@ -618,7 +645,7 @@
     {
      "id": "SOG-0141",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "Météo sur la Carte : les flèches de vent sont toutes les mêmes sur une route qui sort de la couverture du modèle",
      "en": "Weather on the Map: the wind arrows are all the same on a route that leaves the model's coverage",
      "de": "Wetter auf der Karte: alle Windpfeile gleich auf einer Route außerhalb der Modellabdeckung",
@@ -628,7 +655,7 @@
     {
      "id": "SOG-0145",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Carte : afficher la route orthodromique",
      "en": "Map: show the great-circle route",
      "de": "Karte: die Großkreisroute anzeigen",
@@ -638,7 +665,7 @@
     {
      "id": "SOG-0148",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "Météo : la coupe verticale a sa météo, la carte (profil plan) ne l'a pas, données pourtant téléchargées",
      "en": "Weather: the vertical cut has its weather, the map (plan view) does not, data yet downloaded",
      "de": "Wetter: der Vertikalschnitt hat sein Wetter, die Karte (Draufsicht) nicht, Daten dennoch geladen",
@@ -648,11 +675,20 @@
     {
      "id": "SOG-0156",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "Carte : un point très loin (PAM aux États-Unis) fait ramer la carte en vue double",
      "en": "Map: a very far point (PAM in the USA) makes the map crawl in the dual view",
      "de": "Karte: ein sehr ferner Punkt (PAM in den USA) lässt die Karte in der Doppelansicht kriechen",
      "es": "Mapa: un punto muy lejano (PAM en EE. UU.) hace que el mapa se arrastre en vista doble"
+    },
+    {
+     "id": "SOG-0163",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Espaces R et D : lire leur texte (activité, conditions) depuis le profil vertical et la carte",
+     "en": "R and D areas: read their text (activity, conditions) from the vertical profile and the map",
+     "de": "R- und D-Gebiete: ihren Text (Aktivität, Bedingungen) aus Vertikalprofil und Karte lesen",
+     "es": "Zonas R y D: leer su texto (actividad, condiciones) desde el perfil vertical y el mapa"
     }
    ]
   },
@@ -858,7 +894,7 @@
     {
      "id": "SOG-0138",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "GFS : toujours pas de carte synoptique ; et une réponse visible, pas entre deux portes",
      "en": "GFS: still no synoptic map; and a visible answer, not between two doors",
      "de": "GFS: noch immer keine synoptische Karte; und eine sichtbare Antwort, nicht zwischen Tür und Angel",
@@ -1069,7 +1105,7 @@
     {
      "id": "SOG-0131",
      "kind": "feature",
-     "state": "later",
+     "state": "planned",
      "fr": "Passe d'ergonomie (refactoring) : confronter chaque écran à la roadmap idéale et à l'ergonomie idéale, et challenger les demandes",
      "en": "Ergonomics pass (refactoring): confront every screen with the ideal roadmap and ergonomics, challenge the requests",
      "de": "Ergonomie-Durchgang (Refactoring): jeden Bildschirm an idealer Roadmap und Ergonomie messen, Anfragen hinterfragen",
@@ -1079,7 +1115,7 @@
     {
      "id": "SOG-0152",
      "kind": "feature",
-     "state": "later",
+     "state": "planned",
      "fr": "Passe de mercredi : nettoyer et réorganiser les dossiers du dépôt (rad, organisation, fuelplanner… points d'entrée morts → archives)",
      "en": "Wednesday pass: clean and reorganise the repository folders (rad, organisation, fuelplanner… dead entry points to archives)",
      "de": "Mittwochsdurchgang: Ordner des Repositorys aufräumen und neu ordnen (rad, organisation, fuelplanner… tote Einstiege ins Archiv)",
@@ -1168,7 +1204,7 @@
     {
      "id": "SOG-0137",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "Mission sur la Carte : illisible et illogique ; afficher au moins le titre, et réutiliser le réglage de la mission choisie",
      "en": "Mission on the Map: illegible and illogical; show at least the title, reuse the chosen-mission setting",
      "de": "Mission auf der Karte: unleserlich und unlogisch; wenigstens den Titel zeigen, die gewählte Mission wiederverwenden",
@@ -1245,7 +1281,7 @@
     {
      "id": "SOG-0082",
      "kind": "feature",
-     "state": "later",
+     "state": "planned",
      "fr": "Gestion de la flotte (personnelle ou compagnie) : maintenance, heures de vol, carte des appareils, missions de rapatriement à date butoir, ateliers, bases et pélicandromes des Canadair",
      "en": "Fleet management (personal or airline): maintenance, flight hours, aircraft map, repatriation missions with deadline, workshops, bases and pelicandromes of the Canadairs",
      "de": "Flottenverwaltung (persönlich oder Gesellschaft): Wartung, Flugstunden, Flugzeugkarte, Rückführungsmissionen mit Stichtag, Werkstätten, Basen und Pelicandromes der Canadair",
@@ -1287,7 +1323,7 @@
     {
      "id": "SOG-0041",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Missions : catégories « commercial » (fret, passagers, VIP, training, transit, essais en vol) et compte rendu d'un vol commercial",
      "en": "Missions: “commercial” categories (cargo, passengers, VIP, training, transit, test flights) and the report of a commercial flight",
      "de": "Missionen: Kategorien „kommerziell“ (Fracht, Passagiere, VIP, Training, Transit, Testflüge) und der Bericht eines kommerziellen Flugs",
@@ -1298,7 +1334,7 @@
     {
      "id": "SOG-0051",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Missions en V3 dans l'application Compagnie : risques en première page, description détaillée, équipes engagées, zones à activer, aperçu des cartes",
      "en": "Missions in V3 in the Airline app: risks on the first page, detailed description, teams involved, zones to activate, chart preview",
      "de": "Missionen in V3 in der Gesellschafts-App: Risiken auf der ersten Seite, ausführliche Beschreibung, beteiligte Teams, zu aktivierende Zonen, Kartenvorschau",
@@ -1320,7 +1356,7 @@
     {
      "id": "SOG-0084",
      "kind": "feature",
-     "state": "later",
+     "state": "planned",
      "fr": "Missions : un bouton vers la documentation générale (phraséologie, interactions, procédures) avec une interface de gestion, pas un wiki",
      "en": "Missions: a button to the general documentation (phraseology, interactions, procedures) with a management interface, not a wiki",
      "de": "Missionen: eine Schaltfläche zur allgemeinen Dokumentation (Phraseologie, Interaktionen, Verfahren) mit Verwaltungsoberfläche, kein Wiki",
@@ -1417,7 +1453,7 @@
     {
      "id": "SOG-0065",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Base aéro : regrouper les pays en paquets (continents, régions) et un méta-classement (îles, Himalaya, déserts, forêts, lacs et fleuves, mégalopoles…)",
      "en": "Aero database: group countries into packs (continents, regions) and a meta-classification (islands, Himalayas, deserts, forests, lakes and rivers, megacities…)",
      "de": "Aero-Datenbank: Länder zu Paketen (Kontinente, Regionen) zusammenfassen und eine Meta-Klassifizierung (Inseln, Himalaya, Wüsten, Wälder, Seen und Flüsse, Megastädte …)",
@@ -1460,7 +1496,7 @@
     {
      "id": "SOG-0077",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "AWY : couverture hors France ? Notation des points d'entrée / sortie du FRA",
      "en": "AWY: coverage outside France? Notation of FRA entry / exit points",
      "de": "Luftstraßen: Abdeckung außerhalb Frankreichs? Notation der FRA-Ein- und Ausflugpunkte",
@@ -1470,7 +1506,7 @@
     {
      "id": "SOG-0078",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "AWY à sens unique : le sens n'est pas porté ou pas dessiné",
      "en": "One-way AWYs: the direction is not carried or not drawn",
      "de": "Einbahn-Luftstraßen: die Richtung wird nicht geführt oder nicht gezeichnet",
@@ -1480,7 +1516,7 @@
     {
      "id": "SOG-0083",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Pélicandromes de France : un fichier précis dans Téléchargements, à intégrer comme couche",
      "en": "Pelicandromes of France: a specific file in Downloads, to integrate as a layer",
      "de": "Pelicandromes in Frankreich: eine bestimmte Datei in Downloads, als Ebene zu integrieren",
@@ -1560,7 +1596,7 @@
     {
      "id": "SOG-0126",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "Zone gb (NATS) toujours « ko » après le dépôt des fichiers dans Téléchargements",
      "en": "Zone gb (NATS) still “ko” after dropping the files into Downloads",
      "de": "Zone gb (NATS) weiterhin „ko“ nach Ablage der Dateien in Downloads",
@@ -1570,7 +1606,7 @@
     {
      "id": "SOG-0144",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "BLOQUANT : « Tout recalculer » échoue dans la page de construction, 46 zones d'un coup, cause non dite",
      "en": "BLOQUANT : « Tout recalculer » échoue dans la page de construction, 46 zones d'un coup, cause non dite",
      "de": "BLOQUANT : « Tout recalculer » échoue dans la page de construction, 46 zones d'un coup, cause non dite",
@@ -1580,7 +1616,7 @@
     {
      "id": "SOG-0150",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "NATS : la reprise dit « rien à prendre » et parle d'openAIP alors que les zips NATS sont dans Téléchargements",
      "en": "NATS: the pickup says “nothing to take” and talks about openAIP while the NATS zips are in Downloads",
      "de": "NATS: die Übernahme sagt „nichts zu nehmen“ und spricht von openAIP, obwohl die NATS-Zips in Downloads liegen",
@@ -1599,7 +1635,7 @@
     {
      "id": "SOG-0155",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "« La publication a échoué : rien n'est perdu… Corrigez la cause puis relancez » : quelle cause ?",
      "en": "“Publishing failed: nothing is lost… Fix the cause and retry”: which cause?",
      "de": "„Veröffentlichung fehlgeschlagen: nichts verloren… Ursache beheben und erneut“: welche Ursache?",
@@ -1690,12 +1726,30 @@
     {
      "id": "SOG-0132",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "Écrans qui bougent : réserver la place d'un bloc qui recevra son contenu plus tard",
      "en": "Moving screens: reserve the place of a block whose content arrives later",
      "de": "Springende Bildschirme: Platz für Blöcke reservieren, deren Inhalt später kommt",
      "es": "Pantallas que se mueven: reservar el sitio de un bloque cuyo contenido llega después",
      "rank": 108
+    },
+    {
+     "id": "SOG-0164",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Maintenance : la page met plus de deux secondes à s'ouvrir (deux appels /__setup/changes de 0,6 et 0,7 s à la suite)",
+     "en": "Maintenance: the page takes more than two seconds to open (two /__setup/changes calls in a row)",
+     "de": "Wartung: die Seite braucht über zwei Sekunden zum Öffnen (zwei /__setup/changes-Aufrufe nacheinander)",
+     "es": "Mantenimiento: la página tarda más de dos segundos en abrirse (dos llamadas /__setup/changes seguidas)"
+    },
+    {
+     "id": "SOG-0166",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Pages hors V3 (Maintenance V2, fuel, missions V2, RAD d'origine, stats V2, canadair…) : regroupées en bas de la colonne, dans une seule entrée",
+     "en": "Pages outside V3 (Maintenance V2, fuel, missions V2, original RAD, stats V2, Canadair…) grouped at the bottom of the column in one entry",
+     "de": "Seiten außerhalb V3 (Wartung V2, Fuel, Missionen V2, ursprüngliches RAD, Stats V2, Canadair…) unten in der Spalte in einem Eintrag",
+     "es": "Páginas fuera de V3 (Mantenimiento V2, fuel, misiones V2, RAD original, estadísticas V2, Canadair…) agrupadas al pie de la columna en una entrada"
     }
    ]
   },
@@ -1712,7 +1766,7 @@
     {
      "id": "SOG-0125",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Importer le RAD et les points FRA depuis un écran (le travail `route/import-rad` n'est joignable d'aucune page)",
      "en": "Import the RAD and the FRA points from a screen (the route/import-rad job is reachable from no page)",
      "de": "RAD und FRA-Punkte von einem Bildschirm importieren (der Job route/import-rad ist von keiner Seite erreichbar)",
@@ -1722,7 +1776,7 @@
     {
      "id": "SOG-0127",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Complétion ADEP / ADEST comme dans RouteSim : liste des terrains, nom sous le champ, bouton d'inversion",
      "en": "ADEP / ADEST completion as in RouteSim: airport list, name under the field, swap button",
      "de": "ADEP/ADEST-Vervollständigung wie in RouteSim: Flugplatzliste, Name unter dem Feld, Tauschknopf",
@@ -1732,7 +1786,7 @@
     {
      "id": "SOG-0142",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "Lecteur de route : les homonymes (PAM aux États-Unis, ALS au Maroc) et les points inconnus dits avec leur zone",
      "en": "Route reader: homonyms (PAM in the USA, ALS in Morocco) and unknown points said with their zone",
      "de": "Routenleser: Homonyme (PAM in den USA, ALS in Marokko) und unbekannte Punkte mit ihrer Zone benannt",
@@ -1742,7 +1796,7 @@
     {
      "id": "SOG-0154",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "Homonymes : « LFLL : 2 homonymes, le plus proche gardé » — un terrain n'a pas d'homonyme",
      "en": "Homonyms: “LFLL: 2 homonyms, the nearest kept” — an airport has no homonym",
      "de": "Homonyme: „LFLL: 2 Homonyme, das nächste behalten“ — ein Flugplatz hat kein Homonym",
@@ -1763,7 +1817,7 @@
     {
      "id": "SOG-0135",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Lire le sol (taxiways) avec les procédures du terrain, pas par un bouton de plus",
      "en": "Read the ground (taxiways) with the airport's procedures, not through one more button",
      "de": "Boden (Rollwege) zusammen mit den Verfahren des Flugplatzes lesen, nicht über einen weiteren Knopf",
@@ -1861,7 +1915,7 @@
     {
      "id": "SOG-0071",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Données : revoir l'ergonomie globale de l'écran (choisir, mettre à jour les différences, purger, recalculer les seuls périmés, tout désélectionner, par paquet ou par rectangle)",
      "en": "Data: rework the overall ergonomics of the screen (choose, update the differences, purge, recompute only the outdated ones, deselect all, by package or by rectangle)",
      "de": "Daten: die Gesamtergonomie des Bildschirms überarbeiten (auswählen, Unterschiede aktualisieren, bereinigen, nur veraltete neu berechnen, alles abwählen, nach Paket oder per Rechteck)",
@@ -1891,7 +1945,7 @@
     {
      "id": "SOG-0146",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "Données : la page de construction devient très sale avec beaucoup de pays",
      "en": "Données: the build page gets very messy with many countries",
      "de": "Daten: die Aufbauseite wird mit vielen Ländern sehr unordentlich",
@@ -1901,7 +1955,7 @@
     {
      "id": "SOG-0147",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Paquets de pays : les retirer comme on les ajoute, voir ce qu'ils couvrent sur la carte, à côté de la carte en vue large",
      "en": "Country packs: remove them as they are added, see what they cover on the map, beside the map in the wide view",
      "de": "Länderpakete: ebenso entfernen wie hinzufügen, auf der Karte sehen, was sie abdecken, in der Breitansicht neben der Karte",
@@ -1911,12 +1965,30 @@
     {
      "id": "SOG-0151",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "Données : la question de « Prendre le fichier téléchargé » est plus grande que l'écran, boutons inaccessibles",
      "en": "Données: the “Take the downloaded file” question is taller than the screen, buttons unreachable",
      "de": "Daten: die Frage „Heruntergeladene Datei nehmen“ ist höher als der Bildschirm, Knöpfe unerreichbar",
      "es": "Datos: la pregunta «Tomar el archivo descargado» es más alta que la pantalla, botones inaccesibles",
      "rank": 125
+    },
+    {
+     "id": "SOG-0162",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Licences : une seule coche « je certifie utiliser les données pour mon usage personnel » déverrouille toutes les sources ; une page recense sources et licences",
+     "en": "Licences: one “personal use” checkbox unlocks every source; one page lists sources and licences",
+     "de": "Lizenzen: ein Häkchen „persönliche Nutzung“ schaltet alle Quellen frei; eine Seite listet Quellen und Lizenzen",
+     "es": "Licencias: una sola casilla «uso personal» desbloquea todas las fuentes; una página recoge fuentes y licencias"
+    },
+    {
+     "id": "SOG-0165",
+     "kind": "bug",
+     "state": "planned",
+     "fr": "Données, thèmes de paquets (Mégalopoles…) : le bouton « Ajouter » est énorme à côté du texte ; page à condenser et à homogénéiser",
+     "en": "Données, pack themes: the “Add” button is huge next to the text; page to condense and make consistent",
+     "de": "Daten, Paket-Themen: der Knopf „Hinzufügen“ ist riesig neben dem Text; Seite verdichten und vereinheitlichen",
+     "es": "Datos, temas de paquetes: el botón «Añadir» es enorme junto al texto; página por condensar y homogeneizar"
     }
    ]
   },
@@ -1977,7 +2049,7 @@
     {
      "id": "SOG-0057",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Modification des fiches : les commentaires dégradent l'interface, nécessaires mais mal placés",
      "en": "Editing sheets: comments degrade the interface, needed but badly placed",
      "de": "Bearbeitung der Datenblätter: Kommentare beeinträchtigen die Oberfläche, nötig, aber schlecht platziert",
@@ -2030,12 +2102,42 @@
     {
      "id": "SOG-0149",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "La première synchronisation git de la journée dure plus de deux minutes",
      "en": "The first git synchronisation of the day takes more than two minutes",
      "de": "Die erste Git-Synchronisation des Tages dauert über zwei Minuten",
      "es": "La primera sincronización git del día tarda más de dos minutos",
      "rank": 134
+    }
+   ]
+  },
+  {
+   "id": "maintenance-maintenance",
+   "app": "maintenance",
+   "label": {
+    "fr": "Maintenance",
+    "en": "Maintenance",
+    "de": "Maintenance",
+    "es": "Maintenance"
+   },
+   "items": [
+    {
+     "id": "SOG-0160",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Roadmap : un mode « Priorités » sans voies pour ordonner toutes les cartes, et les replanifier (en intégration, en développement, backlog)",
+     "en": "Roadmap: a “Priorities” view without lanes to order every card and replan it (in integration, in development, backlog)",
+     "de": "Roadmap: eine Ansicht „Prioritäten“ ohne Bahnen, um alle Karten zu ordnen und umzuplanen (in Integration, in Entwicklung, Backlog)",
+     "es": "Hoja de ruta: una vista «Prioridades» sin carriles para ordenar todas las tarjetas y replanificarlas (en integración, en desarrollo, pendientes)"
+    },
+    {
+     "id": "SOG-0167",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Recette : une page des tests fonctionnels à faire chaque jour, avec mes commentaires et le statut validé / refusé",
+     "en": "Acceptance: a page of the functional tests to do each day, with my comments and an accepted / refused status",
+     "de": "Abnahme: eine Seite mit den täglichen Funktionstests, mit meinen Kommentaren und dem Status angenommen / abgelehnt",
+     "es": "Recepción: una página con las pruebas funcionales diarias, con mis comentarios y el estado validado / rechazado"
     }
    ]
   },
@@ -2169,7 +2271,7 @@
     {
      "id": "SOG-0133",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "Réglages : plusieurs secondes d'attente avant l'écran, pour une version du dépôt qui n'est qu'accessoire",
      "en": "Settings: several seconds of waiting before the screen, for a repository version that is only accessory",
      "de": "Einstellungen: mehrere Sekunden Wartezeit vor dem Bildschirm wegen einer nur nebensächlichen Repository-Version",
@@ -2257,7 +2359,7 @@
     {
      "id": "SOG-0136",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "Nouvelle brouette de conflits de synchronisation alors que l'utilisateur est seul",
      "en": "A new barrowful of sync conflicts while the user is alone",
      "de": "Eine neue Schubkarre voller Sync-Konflikte, obwohl der Benutzer allein ist",
@@ -2267,7 +2369,7 @@
     {
      "id": "SOG-0159",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "BLOQUANT : « synchronisation refusée par le serveur « last is not defined » »",
      "en": "BLOCKING: “synchronisation refused by the server ‘last is not defined’”",
      "de": "BLOCKIEREND: „Synchronisation vom Server abgelehnt ‚last is not defined‘“",
@@ -2288,7 +2390,7 @@
     {
      "id": "SOG-0143",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Zone manquante : partout, dire ce qui manque, offrir le geste (Données) et les replis externes (LittleNavMap, Navigraph, ChartFox)",
      "en": "Missing zone: everywhere, say what is missing, offer the gesture (Données) and the external fallbacks (LittleNavMap, Navigraph, ChartFox)",
      "de": "Fehlende Zone: überall sagen, was fehlt, die Geste anbieten (Daten) und die externen Ausweichwege (LittleNavMap, Navigraph, ChartFox)",
