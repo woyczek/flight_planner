@@ -321,6 +321,10 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
 
 ### 3.1 Navigation
 
+- **« Anciennes pages (V2) »** (10 Nov 2026, § 7.1 rule 23, SOG-0166): the last entry of the column of every application (a hairline above, a
+  muted tint; on a phone the last row of the application menu), opening the frame screen `#legacy` (`frame/legacy.js`) that lists the V2
+  pages by group, each in a new tab. No V2 page is among the V3 entries.
+
 - An application lists its modules, one short **verb** each, seven at most. **Applications** (29 Oct 2026,
   `V3_SPECIFICATION.md` § 2): named sets of modules of the same frame (`APPS` in `frame/app.js`: rail, bottom bar,
   service screens, name), chosen by the address of the page — `/frame/?app=maintenance`; no `app` or an unknown one:

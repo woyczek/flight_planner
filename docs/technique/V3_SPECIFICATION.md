@@ -402,6 +402,13 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
       byte (noreg A110). The frame provides the primitive: `ctx.placeholder(el, height)` (the class `.f-hold` and the variable `--f-hold`
       in `frame/design/primitives.css`), documented in `frame/SPEC.md` § 3.2 and `frame/INTEGRATION.md`. Réglages adopts it first
       (SOG-0133, the wait for the repository's version); the other modules screen by screen at the ergonomics pass of 11 Nov.
+  23. **The V2 pages are one entry at the bottom of the column** (user, 10 Nov, fifth pull: "Page de maintenance v2 : je passe mon temps à
+      cliquer dessus par erreur. regrouper les pages hors v3 en bas de la colonne ou dans une page accessible depuis ce bas de colonne";
+      SOG-0166): every application ends its navigation column with **one entry « Anciennes pages (V2) »**, a hairline above it and a muted
+      tint, which opens the frame screen `#legacy` listing the V2 pages by group (Carburant, Missions, Maintenance, Route, Statistiques,
+      Canadair), each in a new tab. No V2 page is among the V3 entries (the « Page de maintenance (V2) » entry of the Maintenance column is
+      gone). On a phone, where the column is not shown, it is the last row of the application menu (the name button). The list is a
+      file of the frame (`frame/legacy.js`). Noreg A116.
 
 ## 8. Decisions log
 

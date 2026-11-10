@@ -1239,7 +1239,7 @@ def a36(c):
     c.until("!!document.querySelector('[data-module=data]')", timeout=15000, what='Maintenance mounts Données, without a launcher too')
     c.wait(800)
     c.eq(c.count('[data-welcome]'), 0, 'no welcome card of Pilot in Maintenance', what='welcome cards')
-    c.eq(c.js(rail), ['data', 'aircraft', 'admin'], 'Maintenance without a launcher: Données, Appareils (§ 10.34 A2), Administration (no V2 page; the help is the « ? »)', what='rail')
+    c.eq(c.js(rail), ['data', 'aircraft', 'admin', 'legacy'], 'Maintenance without a launcher: Données, Appareils (§ 10.34 A2), Administration, then the one entry of the V2 pages, last (SOG-0166; the help is the « ? »)', what='rail')
     c.eq(c.js(tabs), ['data', 'aircraft'], 'the phone bar of Maintenance: its modules only (help and settings are « ? » and ⚙, 31 Oct 2026)', what='tabs')
     c.eq(c.js("[...document.querySelectorAll('[data-verb]')].filter(b => !b.disabled).map(b => b.dataset.verb)"), [], 'read only without a launcher: every action grey', what='enabled [data-verb]')
     c.ok(c.js('document.title').split(' — ')[0] in ('Maintenance', 'Wartung', 'Mantenimiento'), c.js('document.title'), 'the page is named after the application')
@@ -4580,4 +4580,32 @@ def a115(c):
         c.tap(f'[data-redo="{second}"]')
         c.until(f"!!document.querySelector('[data-section=today] [data-id=\"{second}\"], [data-section=older] [data-id=\"{second}\"]')", what='back to test')
         c.eq(c.count(f'[data-section=seen] [data-id="{second}"]'), 0, 'taken back: the test is to do again', what='redo')
+
+@case('A116', 'The V2 pages are one last entry « Old pages (V2) » of every application, nothing from V2 among the V3 entries; the entry opens the pages by group, each in a new tab', 'A',
+      designs=('standard',), night=False, langs4=True,
+      rule='SOG-0166 / V3_SPECIFICATION 7.1 rule 23 (V3 Frame): one entry « Old pages (V2) » at the very bottom of the navigation column of each application, a hairline above and a muted tint; on a phone, the last row of the application menu; it opens #legacy, the V2 pages by group (Fuel, Missions, Maintenance, Route, Statistics, Canadair), each in a new tab; no V2 page anywhere else in the navigation')
+def a116(c):
+    sj = ROOT / 'frame' / 'legacy.js'
+    groups = ['fuel', 'missions', 'maintenance', 'route', 'stats', 'canadair']
+    title = {'fr': 'Anciennes pages (V2)', 'en': 'Old pages (V2)', 'de': 'Alte Seiten (V2)', 'es': 'Páginas antiguas (V2)'}[c.lang]   # written here: the case fails while a text key is wrong
+    for app in (None, 'company', 'maintenance'):
+        c.open('fuel' if app is None else ('missions' if app == 'company' else 'data'), app=app, docs=LEVEL3, wait=False)
+        c.until("!!document.querySelector('#fView > *')", timeout=20000, what=f'the application {app or "pilot"} is drawn')
+        if c.phone:
+            c.tap('#fApp')
+            c.until("!!document.querySelector('.f-tabpop .f-legacy')", what='the application menu')
+            rows = c.js("[...document.querySelectorAll('.f-tabpop > *')].map(r => r.className.includes('f-legacy'))")
+            c.eq([rows[-1], rows.count(True)], [True, 1], 'on a phone the last row of the application menu is the V2 pages, and only one', what=f'phone menu ({app})')
+            c.tap('.f-tabpop .f-legacy')
+        else:
+            items = c.js("[...document.querySelectorAll('#fMenu li')].map(li => [li.className, li.querySelector('a').getAttribute('href')])")
+            c.eq([items[-1][0], items[-1][1]], ['f-legacy', '#legacy'], 'the last entry of the column is « Old pages (V2) »', what=f'last entry ({app})')
+            c.eq(len([i for i in items if '/apps/' in i[1] or i[1].endswith('.html')]), 0, 'no V2 page among the entries', what=f'V2 hrefs in the column ({app})')
+            c.ok(c.js("getComputedStyle(document.querySelector('#fMenu li.f-legacy')).borderTopWidth") != '0px', '', 'a hairline above the entry')
+            c.tap('#fMenu li.f-legacy a')
+        c.until("!!document.querySelector('[data-screen=legacy]')", timeout=10000, what='the V2 pages screen')
+        c.eq(c.js("[...document.querySelectorAll('[data-screen=legacy] [data-group]')].map(g => g.dataset.group)"), groups, 'the six groups', what=f'groups ({app})')
+        links = c.js("[...document.querySelectorAll('[data-screen=legacy] a[data-legacy]')].map(a => [a.target, a.rel, new URL(a.href).pathname])")
+        c.ok(len(links) >= 20 and all(t == '_blank' and 'noopener' in r and '/apps/' in h for t, r, h in links), str(links[:3]), 'every V2 page opens in a new tab, noopener')
+        c.eq(c.text('[data-screen=legacy] h1'), title, 'the title says what it is', what=f'title ({app})')
     c.check_errors()

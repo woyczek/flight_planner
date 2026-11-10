@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: « Anciennes pages (V2) », one last entry in the column of every application** (`frame/app.js`, `frame/legacy.js`, `frame/frame.css`; V3_SPECIFICATION
+  § 7.1 rule 23; frame SPEC § 3.1, DECISIONS; noreg A116; SOG-0166). The Maintenance column's V2 entry is gone; a hairline and a muted tint set the last
+  entry apart; it opens the V2 pages by group (Carburant, Missions, Maintenance, Route, Statistiques, Canadair), each in a new tab; on a phone it is the
+  last row of the application menu. The Administration card's own V2 buttons (Réglages) are unchanged.
+
 - **Frame: opening Maintenance makes one call to the launcher, and a list does not wait for it** (`frame/store/transport_launcher.js`,
   `frame/store/frame_data.js`; frame SPEC § launcher, DECISIONS; noreg A100; SOG-0164). The head answered is reused for 3 s by every read of the
   same load (the second `__setup/changes` that followed the first is gone), and `list()` answers from the tree of the last pass while the head

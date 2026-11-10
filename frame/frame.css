@@ -263,6 +263,31 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   color: inherit;
   text-decoration: none
 }
+/* « Anciennes pages (V2) » : la dernière entrée, un filet au-dessus et une teinte atténuée (SOG-0166) */
+.f-nav li.f-legacy {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--sog-border)
+}
+.f-nav li.f-legacy a:not([aria-current="page"]) {
+  opacity: .6
+}
+.f-tabpop-row.f-legacy {
+  opacity: .6;
+  border-top: 1px solid var(--sog-border)
+}
+.f-legacy-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px
+}
+.f-legacy-list a {
+  display: block;
+  min-height: var(--sog-touch);
+  line-height: var(--sog-touch)
+}
 .f-nav a[aria-current="page"] {
   background: var(--sog-btn-primary-bg, var(--sog-accent));
   color: var(--sog-btn-primary-ink, var(--sog-accent-ink));

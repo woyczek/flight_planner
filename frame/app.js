@@ -295,13 +295,6 @@
       icon: 'settings',
       level: 3
     }, {
-      id: 'v2',
-      href: '../apps/settings/maintenance.html',
-      label: ['Page de maintenance (V2)', 'Maintenance page (V2)', 'Wartungsseite (V2)', 'Página de mantenimiento (V2)'],
-      icon: 'wrench',
-      level: 3,
-      launcher: true
-    }, {
       // jetons d'accès GitLab des pilotes (G2) : écran de service, avec le lanceur du poste (il garde le jeton de l'administrateur)
       id: 'tokens',
       href: '#pilot-tokens',
@@ -348,6 +341,19 @@
       }
     }]
   };
+  // « Anciennes pages (V2) » (SOG-0166, § 7.1 règle 23) : la dernière entrée de la colonne de chaque application, un écran du cadre (frame/legacy.js)
+  // qui range les pages de la V2 par groupe ; aucune page de la V2 ailleurs dans la navigation
+  const LEGACY = {
+    id: 'legacy',
+    scripts: ['legacy.js?v=0'],
+    level: 1,
+    label: ['Anciennes pages (V2)', 'Old pages (V2)', 'Alte Seiten (V2)', 'Páginas antiguas (V2)']
+  };
+  for (const a of Object.values(APPS)) a.screens = [...(a.screens || []), {
+    id: LEGACY.id,
+    scripts: LEGACY.scripts,
+    level: LEGACY.level
+  }];
   const APP = (() => {
     const id = new URLSearchParams(location.search).get('app') || '';
     return Object.hasOwn(APPS, id) ? APPS[id] : APPS.pilot;
@@ -2545,12 +2551,14 @@
     const ul = $('fMenu'),
       list = visibleModules(),
       links = (APP.links || []).filter(l => (l.level ?? 1) <= level && (!l.launcher || (launcherHere && !launcherHere.lan))),
-      key = lang() + list.map(m => m.id).join(',') + '|' + links.map(l => l.id).join(',');
+      key = lang() + list.map(m => m.id).join(',') + '|' + links.map(l => l.id).join(',') + '|legacy';
     if (key !== menuKey || !ul.children.length) {
       menuKey = key;
       // liens de l'application (écran du cadre « #… » ou page de la suite, dans le même onglet) après ses modules
       ul.innerHTML = list.map(m => `<li><a href="#${esc(m.id)}" data-id="${esc(m.id)}" data-landmark="${esc(m.id)}">${icon(m.icon)}${esc(t(m.label))}</a></li>`).join('') +
-        links.map(l => `<li><a href="${esc(l.href.startsWith('#') ? l.href : new URL(l.href, location.href).href)}" data-link="${esc(l.id)}" data-landmark="settings">${icon(l.icon)}${esc(t(l.label))}</a></li>`).join('');
+        links.map(l => `<li><a href="${esc(l.href.startsWith('#') ? l.href : new URL(l.href, location.href).href)}" data-link="${esc(l.id)}" data-landmark="settings">${icon(l.icon)}${esc(t(l.label))}</a></li>`).join('') +
+        // les pages de la V2 : toujours la dernière entrée, séparée par un filet, teinte atténuée (frame.css .f-legacy)
+        `<li class="f-legacy"><a href="#legacy" data-link="legacy" data-landmark="settings">${icon('file')}${esc(t(LEGACY.label))}</a></li>`;
     }
     // une seule entrée marquée, comme dans la barre : le lien de l'écran du cadre ouvert (Administration, Aide), ou le module
     const scr = shownScreen(active, screen) ? screenBase(screen) : '';
@@ -2762,11 +2770,13 @@
     el.setAttribute('role', 'group');
     el.setAttribute('aria-label', t(T.appSwitch));
     el.innerHTML = apps.map(p => {
-      const cur = p === APP,
-        off = !cur && (p.level || 1) > deviceLevel,
-        need = off ? `<small>${esc(t(T.appNeeds, { l: t(T.levelNames[(p.level || 1) - 1]) }))}</small>` : '';
-      return `<button type="button" class="f-tabpop-row" data-app="${esc(p.id)}"${cur ? ' aria-current="page"' : ''}${off ? ' disabled' : ''}><span class="f-app-ico${p.id === 'company' && appLogo ? ' f-has-logo' : ''}" style="color:${esc(p.tint || 'currentColor')}">${appIconHtml(p)}</span><span>${esc(t(p.name))}${p.id === 'company' && airline.name ? `<small>${esc(airline.name)}</small>` : ''}${need}</span></button>`;
-    }).join('');
+        const cur = p === APP,
+          off = !cur && (p.level || 1) > deviceLevel,
+          need = off ? `<small>${esc(t(T.appNeeds, { l: t(T.levelNames[(p.level || 1) - 1]) }))}</small>` : '';
+        return `<button type="button" class="f-tabpop-row" data-app="${esc(p.id)}"${cur ? ' aria-current="page"' : ''}${off ? ' disabled' : ''}><span class="f-app-ico${p.id === 'company' && appLogo ? ' f-has-logo' : ''}" style="color:${esc(p.tint || 'currentColor')}">${appIconHtml(p)}</span><span>${esc(t(p.name))}${p.id === 'company' && airline.name ? `<small>${esc(airline.name)}</small>` : ''}${need}</span></button>`;
+      }).join('') +
+      // au téléphone, où la colonne n'est pas affichée, les pages de la V2 sont la dernière ligne de ce menu (SOG-0166)
+      `<button type="button" class="f-tabpop-row f-legacy" data-legacy>${icon('file')}<span>${esc(t(LEGACY.label))}</span></button>`;
     el.style.visibility = 'hidden';
     document.body.append(el);
     // sous le bouton, à gauche de la fenêtre au plus près, la pointe (--f-pop-caret) face à l'icône
@@ -2804,6 +2814,10 @@
     window.addEventListener('hashchange', () => closeTabPop(), opt);
     window.addEventListener('resize', () => closeTabPop(), opt);
     el.addEventListener('click', e => {
+      if (e.target.closest('[data-legacy]')) {
+        closeTabPop();
+        return void(location.hash = '#legacy');
+      }
       const p = APPS[e.target.closest('[data-app]:not([disabled])')?.dataset.app];
       if (!p) return;
       closeTabPop();

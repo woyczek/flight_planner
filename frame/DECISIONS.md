@@ -2618,3 +2618,21 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   of `aerodb.published()` (aerodb.js, ~7 ms each, started only when the list is known: ~200 ms in one run of the page), the map library (`modules/maps`,
   1 MB) and the map base tiles (`tiles.openfreemap.org`, 8 requests) loaded for a block that is not the first thing seen, 29 scripts of
   `modules/data` (435 KB) loaded one by one, and the polling of `__setup/regen/job` (4 requests, up to 2 s).
+- **10 Nov 2026 — « Anciennes pages (V2) », one last entry** (SOG-0166, the user's fifth pull: « je passe mon temps à cliquer dessus par erreur » on the
+  Maintenance column's V2 page; Simplification; V3 Frame). **What the V3 frame linked to V2 pages on 10 Nov** (the list asked for): (1) the
+  Maintenance column's entry « Page de maintenance (V2) » (`apps/settings/maintenance.html`, level Complet, launcher only), **removed**; (2) three
+  buttons of the Administration card of Réglages (`frame/settings/admin_links.js`: `maintenance` → `apps/settings/maintenance.html`, `firstLaunch` →
+  `apps/settings/premier_lancement.html`, `mapStudio` → `apps/cpco/map_parser.html`), **not touched** (Réglages' file; the card is an
+  administration page where « V2 » is named in each title); (3) the link of the Données module to `apps/settings/premier_lancement.html`
+  (`modules/data/panels.js`), not touched. Nothing else in `frame/`, `modules/` or the launcher menu links a V2 page. **Decision:** `#legacy` is a frame
+  screen declared for every application (`LEGACY`), its entry always the last of the column (`li.f-legacy`: filet, `opacity .6`) and, on a phone, the last
+  row of the application menu (the column is not shown there; the bottom bar carries the modules only). **The list (`frame/legacy.js`)**, by group, is
+  every HTML page of `apps/` that is not the help or a per-category report form: **Carburant** `planner/flight_performance_planner`,
+  `planner/performance_sheets`; **Missions** `cpco/mission_registry`, `cpco/mission_editor`, `cpco/odv_orders`, `cpco/odv_planning`, `pilot/mes_missions`,
+  `pilot/aujourdhui`, `pilot/disponibilites`, `cr/mission_cr`, `cr/mission_operations_reporting`; **Maintenance** `settings/maintenance` (launcher only: a muted line
+  without it), `premier_lancement`, `parametrage`, `profil`, `apparence`, `centre`, `installation`, `cr/flotte`, `cr/appareil`, `cr/equipage`; **Route**
+  `planner/map_planner`, `cpco/map_parser`; **Statistiques** `landing/LandingPerformance_Dashboard_MultiCSV_i18n` (stats landing V2), `pilot/mes_vols` (stats
+  vol V2); **Canadair** `cr/FIRE/fire_cr`, `cr/FIRE/fire_reporting` (the firefighting reports: my reading of « canadair », **to confirm with the user**).
+  **Not in the repository, so not listed:** « rad d'origine » (`E:/DEFA/rad`, archived per SOG-0152; add the path here when it is served). The
+  pages of `apps/sia/` are copies of `apps/cpco/` and are left out. Each link opens in a new tab with `noopener`. Noreg A116 (the last entry, no V2 href among
+  the column's entries, the hairline, the six groups, each link `_blank`; on a phone the last menu row), red on 77185fe84.
