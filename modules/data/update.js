@@ -16,7 +16,8 @@ import {
   buildZones,
   gateOf,
   renderBuild,
-  selection
+  selection,
+  selectionOf
 } from './panels.js';
 import {
   launch,
@@ -30,8 +31,8 @@ import {
 } from './status.js';
 
 /** L'état du bouton « Mettre à jour » : celui de « Télécharger » ET de « Construire », et le lanceur doit connaître base/status (sa raison : la première qui grise). */
-export function updateGate() {
-  const g = gateOf('base', selection('base').ids.length);
+export function updateGate(ids = null) {
+  const g = gateOf('base', ids ? ids.length : selection('base').ids.length);
   return {
     disabled: g.verbs.fetch.disabled || g.verbs.build.disabled || !statusKnown(),
     reason: g.verbs.fetch.reason || g.verbs.build.reason || (statusKnown() ? null : 'unknown-verb')
@@ -91,10 +92,12 @@ function waitingText(waiting) {
 /** « Mettre à jour » : télécharger la sélection (comme « Télécharger »), lire l'état au lanceur (base/status), puis, parmi les zones cochées, UNE question qui nomme celles qu'on va reconstruire, pourquoi (par raison commune quand elles sont nombreuses), leur poids, et la construction de celles-là
  *  seules. Les zones qui attendent un fichier de Téléchargements sont dites (« Prendre le fichier téléchargé » d'abord) et ne sont pas construites. Rien à reconstruire : une phrase, sans question. Un téléchargement en échec ou arrêté arrête le verbe (sa fin est déjà dite) ; un état
  *  illisible aussi (on le dit : jamais une construction à l'aveugle). */
-export async function startUpdate() {
+export async function startUpdate(zones = null) {
   const me = S;
-  if (updateGate().disabled) return;
-  const sel = selection('base');
+  if (updateGate(zones).disabled) return;
+  const sel = zones ? selectionOf(zones) : selection(
+    'base'
+  ); // `zones` : le « Mettre à jour » d'un paquet (SOG-0188), les seuls pays de ce paquet qui sont dans la couverture ; la sélection cochée ne bouge pas
   S.updating = true;
   renderBuild();
   S.lastOp = null;

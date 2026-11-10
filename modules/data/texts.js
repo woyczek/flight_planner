@@ -284,6 +284,7 @@ export const TX = {
   // « Mettre à jour » et les gestes de sélection de la base (update.js, SOG-0071)
   upd: {
     update: ['Mettre à jour', 'Update', 'Aktualisieren', 'Actualizar'],
+    updatePack: ['Mettre à jour ({n})', 'Update ({n})', 'Aktualisieren ({n})', 'Actualizar ({n})'],
     more: ['Détail', 'Detail', 'Details', 'Detalle'],
     recompute: ['Tout recalculer', 'Rebuild all', 'Alles neu berechnen', 'Recalcular todo'],
     selStale: ['Seulement les périmés', 'Only the stale ones', 'Nur die veralteten', 'Solo las caducadas'],

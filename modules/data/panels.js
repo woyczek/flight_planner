@@ -578,6 +578,13 @@ function opAreaHtml(panel) {
 export function procList() {
   return M.procItems(S.d?.byState, li());
 }
+/** Le choix d'un jeu de zones qui n'est PAS la sélection de la liste (le « Mettre à jour » d'un paquet, SOG-0188) : { ids, personal } avec la case « personnel » appliquée à ces zones ; la sélection cochée n'est pas touchée. */
+export function selectionOf(ids) {
+  return {
+    ids,
+    personal: personalPicked(ids)
+  };
+}
 /** Ce qu'un panneau a choisi : { ids (les éléments, dans l'ordre), personal (base), cycle (date d'effet, points VFR), codes et bad (appareils : les
  *  types valides et les refusés) }. Les États cochés qui ne sont plus proposés ne comptent pas. */
 export function selection(set) {

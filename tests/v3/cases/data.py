@@ -368,8 +368,8 @@ def l2(c):
     c.eq(g['weather']['states'], {'world': 'absent'}, 'the weather rows from the catalogue have no state; the only one is the world synoptic row (SOG-0138), made on the workstation: absent until published', what='weather states')
     c.eq(c.text('[data-set="ukmil"] .f-badge[data-pill]'), tx(TX, 'parser', lang, after='state: {'), 'the pill is worded in the language of the run', what='ukmil pill')
     # no action button anywhere, no horizontal scroll, 44 px on the summaries
-    c.eq([m['verbs'], m['buttons']], [['download:off', 'build:off', 'purge:off', 'publish:off'], 9],
-         'the verbs are Télécharger · Tout recalculer · Purger (one panel) then Publier, all grey (no launcher in the suite); the 9 buttons count Mettre à jour, the two country-pack tabs, the world synoptic row « Construire » (SOG-0138) (the old « no Mettre à jour » is SOG-0071) and the two selection gestures', what='verbs / buttons')
+    c.eq([m['verbs'], m['buttons'] - c.count('[data-act=update-pack]')], [['download:off', 'build:off', 'purge:off', 'publish:off'], 9],
+         'the verbs are Télécharger · Tout recalculer · Purger (one panel) then Publier, all grey (no launcher in the suite); the 9 buttons count Mettre à jour, the two country-pack tabs, the world synoptic row « Construire » (SOG-0138) (the old « no Mettre à jour » is SOG-0071) and the two selection gestures (the « Mettre à jour (n) » of the packs, SOG-0188, are counted apart)', what='verbs / buttons')
     c.eq([c.attr('[data-publish] [data-reason]', 'data-reason'), norm(c.text('[data-publish] [data-reason]'))], ['no-launcher', norm(_trow('no-launcher', lang, 'greyReason: {'))],
          'Publier is grey for the same reason, written once', what='publish reason')
     c.eq(c.count('[data-group=base] > [data-build] + [data-publish]'), 1, 'the Publier panel follows the Construire panel', what='panel order')
@@ -4202,7 +4202,7 @@ def l44(c):
     c.wait(400)
     cov0 = c.doc('cache/data/coverage.json')
     c.eq(c.js("[...document.querySelectorAll('[data-pack=iles] [data-pack-cov]')].map(i => [i.dataset.packCov, i.checked])"), [['gb', True], ['jp', False], ['es', True]], 'a tick per country: in the coverage or not (gb and es are, jp is not)', what='ticks')
-    c.eq(c.count('[data-pack=iles] button'), 0, 'no button in a row of a theme', what='no button')
+    c.eq(c.count('[data-pack=iles] button:not([data-act=update-pack])'), 0, 'no button in a row of a theme but « Mettre à jour (n) » (SOG-0188)', what='no button')
     geo = c.js("""() => { const r = e => e.getBoundingClientRect(), a = document.querySelector('[data-pack=iles] [data-pack-cov=gb]'), b = document.querySelector('[data-build-zone=gb]');
       return { dx: Math.abs(r(a).left - r(b).left), dh: Math.abs(r(a.closest('.d-zrow')).height - r(b.closest('.d-zrow')).height) } }""")
     c.ok(abs(geo['dx'] - 24) <= 1 and geo['dh'] <= 1, geo, 'the ticks of a theme are in the grid of the zones list (same row height), one step in from their switch and from the list')
@@ -5072,6 +5072,8 @@ def l66(c):
     c.eq(c.js("[...document.querySelectorAll('[data-pack=asie] [data-pack-cov]')].map(i => [i.dataset.packCov, i.checked])"), [['jp', False], ['de', False]], 'a tick per country: none of them is in the coverage yet', what='ticks')
     g = c.js("() => { const o = document.querySelector('[data-pack=asie] details[data-pack-fold] > .d-opts'), cs = getComputedStyle(o); return { overflow: cs.overflowY, max: cs.maxHeight } }")
     c.ok(g['overflow'] == 'auto' and g['max'] != 'none', g, 'the open fold has a bounded height and scrolls inside itself')
+    dx = c.js("() => { const r = e => e.getBoundingClientRect(); return r(document.querySelector('[data-pack=asie] [data-pack-cov=jp]')).left - r(document.querySelector('[data-pack-switch=asie]')).left }")
+    c.ok(18 <= dx <= 40, dx, 'the countries of the open fold are one step in from the switch of their pack (they sit under it, not at the same level as the packs)')
     if c.width in (390, 1280):
         c.shot(f"L66_standard_{c.width}_{lang}_delivered.png")   # the delivered state, read by the ergonomist
     c.tap('[data-pack=asie] [data-pack-cov=jp]')
@@ -5149,4 +5151,38 @@ def l67(c):
     st['views'], st['i'] = [cov_ok], 0
     c.tap('[data-cov-reload]')
     c.until("document.querySelectorAll('[data-cov-zone]').length === 3", timeout=10000, what='the table after « Relire »')
+    c.check_errors()
+
+
+@case('L68', 'Données: a pack that has countries in the coverage carries « Mettre à jour (n) »: the update path on those countries only, the ticked selection untouched, at most one question (SOG-0188)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0188 (the user: « pour rafraîchir europe de l\u2019ouest, on déselectionne tous les pays, on clique europe de l\u2019ouest, une popup nous prévient qu\u2019on accepte, et on resélectionne… »): the row of a pack with countries in the coverage has « Mettre à jour (n) »; it runs fetch, state, then the one question about the zones to rebuild, on the pack\u2019s countries in the coverage only, without touching what is ticked')
+def l68(c):
+    lang = c.lang
+    UP = lambda key: _trow(key, lang, after='  upd: {')
+    fetched = _view('done', step='Terminé', jid='j1', result={'fetched': ['fr'], 'unchanged': ['gb'], 'failed': [], 'manual': []})
+    st = _launcher(c, [fetched], verbs=_VERBS)
+    st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'fr': _zst('stale', _NEWER), 'gb': _zst('up-to-date'), 'us': _zst('up-to-date')})
+    cfg = _packs_cfg()
+    _open(c, cfg)
+    _all_open(c)
+    c.until("!!document.querySelector('[data-packs]') && document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the packs and the states')
+    btn = lambda p: f'[data-pack={p}] [data-act=update-pack]'
+    c.eq([c.count(btn('ouest')), c.count(btn('asie')), c.count(btn('antarctique'))], [1, 0, 0], 'a button on the pack that has countries in the coverage (fr, gb), none on one that has none (jp, de) nor on an empty one', what='buttons')
+    c.eq(norm(c.text(btn('ouest'))), norm(UP('updatePack').replace('{n}', '2')), 'it says how many countries it will update: « Mettre à jour (2) »', what='label')
+    ticked = lambda: c.js("[...document.querySelectorAll('[data-build-zone]')].filter(i => i.checked).map(i => i.dataset.buildZone)")
+    before = ticked()
+    n0 = len(st['posts'])
+    c.tap(btn('ouest'))
+    q = _ask_text(c)
+    posts = st['posts'][n0:]
+    c.eq([[p['verb'], sorted(p['args']['zones'])] for p in posts if p['verb'] == 'fetch'], [['fetch', ['fr', 'gb']]], 'the download concerns the countries of the pack that are in the coverage, no other', what='fetch zones')
+    c.ok('fr' in norm(q['text']).lower() or len(q['text']) > 0, q['text'][:200], 'ONE question follows, about the zones to rebuild')
+    c.eq(ticked(), before, 'the ticked selection did not move', what='selection kept')
+    c.eq(c.count('.f-modal'), 1, 'one question', what='one question')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal')", timeout=6000, what='the window closes')
+    c.eq([p['verb'] for p in st['posts'][n0:] if p['verb'] == 'build'], [], 'No: nothing is built', what='no build')
+    c.eq(ticked(), before, 'and the selection is still the same', what='selection kept after No')
+    c.shot(f"L68_standard_{c.page.viewport_size['width']}_{lang}_delivered.png")
     c.check_errors()

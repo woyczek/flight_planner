@@ -391,3 +391,11 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
 - **The frame's `ask` takes titled groups** (a small, backward-compatible option; texts only), not HTML: the module keeps writing sentences and lines, the frame draws and bounds them (seven lines visible per group, the rest scrolls; the window stays within 70 vh).
 - **A rename is an instruction**: « renommez X sans espace ni accent ». AeroDB has already accepted Sweden's `AIP_OFFLINE.zip` (the false « à renommer » came from a missing destination, not the name); the instruction remains for the names the launcher really refuses (accents, spaces).
 - **Counter-test**: L19 and L28 compare the groups and their lines (red before: the question was a paragraph); L57 checks that sixty lines are sixty lines in a scrolling group of seven.
+
+## 10 November 2026 — « Mettre à jour (n) » on a pack (SOG-0188)
+
+- **User's words**: « pour rafraîchir « europe de l'ouest », on déselectionne tous les pays, on clique europe de l'ouest, une popup nous prévient qu'on accepte, et on resélectionne… ». The update path took the ticked selection only, so refreshing a pack meant rebuilding the selection by hand.
+- **One path, a parameter**: `startUpdate(zones)` is the former one with the zones given instead of the selection (`selectionOf` applies the « personnel » box to them); no second update flow, so the question, the chunks over 60 zones and the failures of lot 2 stay single. The selection is neither read nor written.
+- **The button is the only one in a pack row** (SOG-0165 forbade a button per country row): its count is the number of the pack's countries in the coverage, the zones it will touch; a pack with none has no button (nothing to refresh; « Ajouter tout » adds).
+- **SOG-0186 retouch**: the countries of the open fold are one step in from their pack (the ergonomist's capture at 1280 showed them at the level of the packs).
+- **Counter-test**: L68 is red without the button (none exists); L66 checks the indent (18 to 40 px from the switch).

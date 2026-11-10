@@ -154,6 +154,12 @@ function onClick(e) {
   if (pt) return setPackTab(pt.dataset.packTab); // les onglets Régions | Thèmes (SOG-0165)
   if (e.target.closest?.('[data-covtable]') && e.target.closest?.('[data-cov-sort], [data-cov-row], [data-cov-reload]')) return covClick(
     e); // le tableau de couverture (SOG-0174)
+  const up = e.target.closest?.(
+    '[data-act="update-pack"]'); // « Mettre à jour (n) » d'un paquet (SOG-0188) : ses seuls pays de la couverture
+  if (up) {
+    const p = (S.d?.packs || []).find(x => x.id === up.dataset.pack);
+    return up.disabled || !p ? undefined : startUpdate(M.packState(p, S.d.zones, S.d.cov.ids).inCoverage);
+  }
   const zf = e.target.closest?.('[data-act="zone-filter"]');
   if (zf) return setZoneFilter(zf.dataset.filter); // un nombre du bilan : ses zones seules (SOG-0180)
   const zw = e.target.closest?.('[data-act="zone-why"]');
@@ -170,6 +176,7 @@ function onClick(e) {
   if (v.dataset.verb === 'pickup' || v.dataset.verb === 'pickup-replan') return startPickup(v.dataset.zones);
   if (v.dataset.verb === 'stop-chain') return stopChain();
   if (v.dataset.verb === 'update') return startUpdate();
+
   if (v.dataset.verb === 'world-build') return startWorld();
   if (v.dataset.verb === 'select-stale') return selectStale();
   if (v.dataset.verb === 'select-none') return selectNone();

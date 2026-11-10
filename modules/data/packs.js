@@ -20,6 +20,9 @@ import {
 import {
   renderBuild
 } from './panels.js';
+import {
+  updateGate
+} from './update.js';
 
 /** Le nom d'un paquet dans la langue (index li). */
 const nameOf = p => p.names[li()] || p.names[0];
@@ -35,6 +38,12 @@ function notesHtml(p, st) {
 }
 /** Les zones d'un paquet que la suite connaît, en attribut de la rangée : la surbrillance de la carte les lit (survol ou appui). */
 const zonesAttr = st => ` data-zones="${esc(st.known.join(','))}"`;
+/** Le « Mettre à jour (n) » d'un paquet (SOG-0188) : le parcours de mise à jour sur les seuls pays du paquet qui sont dans la couverture (n), sans toucher à la sélection ; absent quand aucun pays du paquet n'y est ; grisé pour la raison du geste (une opération en cours, pas de lanceur, verbe inconnu). */
+function packUpdateHtml(p, st) {
+  if (!st.inCoverage.length) return '';
+  const off = frozen() || updateGate(st.inCoverage).disabled ? ' disabled' : '';
+  return `<p class="d-packact"><button type="button" data-act="update-pack" data-pack="${esc(p.id)}"${off}>${esc(tt(TX.upd.updatePack, { n: st.inCoverage.length }))}</button></p>`;
+}
 /** La rangée d'un paquet régional : UN INTERRUPTEUR « tout le paquet dans la couverture » (coché quand toutes ses zones y sont, « à moitié » quand une partie y est) : l'allumer ajoute les zones qui manquent, l'éteindre retire toutes ses
  *  zones de la couverture après une confirmation qui nomme ce qui sera décoché (jamais purgé). Le survol ou l'appui de la rangée surligne ses zones sur la carte. */
 function regionRow(p) {
@@ -43,7 +52,7 @@ function regionRow(p) {
   const all = st.known.length > 0 && !st.toAdd.length,
     some = st.inCoverage.length > 0 && st.toAdd.length > 0;
   return `<li data-pack="${esc(p.id)}" data-kind="region"${zonesAttr(st)}><label class="d-opt"><input type="checkbox" role="switch" data-pack-switch="${esc(p.id)}"${all ? ' checked' : ''}${some ? ' data-mixed' : ''}${frozen() ? ' disabled' : ''}><span><b>${esc(nameOf(p))}</b> <span class="f-muted">${esc([count('country', st.known.length), sizeOf(st)].filter(Boolean).join(' · '))}${some ? ` · ${esc(tt(TX.packs.some, { n: st.inCoverage.length }))}` : ''}</span></span></label>
-    ${countriesHtml(p, st)}${notesHtml(p, st)}</li>`;
+    ${packUpdateHtml(p, st)}${countriesHtml(p, st)}${notesHtml(p, st)}</li>`;
 }
 /** Le pli « Pays (n) » d'une rangée régionale (SOG-0186), replié par défaut : les pays du paquet dans la même grille que la liste des zones, une case chacun (cochée = déjà dans la couverture) ; cocher ajoute ce pays seul, décocher le retire après la
  *  question des thèmes (jamais purgé), sans rien télécharger ni construire. Ouvert, sa hauteur est bornée et il défile en lui-même : les paquets voisins restent à portée. */
@@ -69,7 +78,7 @@ function themeRow(p) {
       <div class="d-zrow"><label class="d-opt"><input type="checkbox" role="switch" data-pack-switch="${esc(p.id)}"${all ? ' checked' : ''}${some ? ' data-mixed' : ''}${off}><span><b>${esc(tt(TX.packs.themeAll))}</b></span></label></div>
       ${st.known.map(z => `<div class="d-zrow" data-pack-zone-row="${esc(z)}"><label class="d-opt"><input type="checkbox" data-pack-cov="${esc(z)}"${cov.has(z) ? ' checked' : ''}${off}><span>${esc(M.zoneName(S.d.zones, z, li()))}</span></label></div>`).join('')}
     </div>
-    ${notesHtml(p, st)}</details></li>`;
+    ${notesHtml(p, st)}</details>${packUpdateHtml(p, st)}</li>`;
 }
 /** Le bloc des paquets (dans la carte de la couverture) : les paquets régionaux puis les filtres thématiques ; '' sans `packs()` ou sans paquet lisible. */
 export function packsHtml() {
