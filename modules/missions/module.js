@@ -460,7 +460,7 @@ async function flownOf(s) {
 
 /** Les lignes retenues par la recherche et le filtre de famille. */
 const filtered = s => s.rows.filter(r => ofAirline(s, r) && (!s.family || r.family === s.family) && (!s.category || catOf(s, r)?.id === s
-  .category) && (!s.q || [r.id, r.title, r.operation, r
+  .category) && (!s.q || [r.id, r.formerId, r.title, r.operation, r
   .family, r.kind,
   r.subtype, ...r.callsigns, ...r.words, r.originIcao, r.destinationIcao, r.origin, r
   .destination, ...r.types
@@ -504,7 +504,7 @@ function resultsHtml(s) {
   const hits = filtered(s),
     shown = s.all ? hits : hits.slice(0, ROWS),
     row = r => {
-      const f = s.flown.get(r.id),
+      const f = s.flown.get(r.id) ?? (r.formerId ? s.flown.get(r.formerId) : undefined),
         co = coName(s, r);
       return `<button type="button" class="f-item" data-id="${esc(r.id)}"><span><b>${esc(r.id)}</b> ${esc(r.title)}${co ? ` <span class="f-badge" data-co>${esc(co)}</span>` : ''}</span><span class="f-muted">${esc([r.originIcao && r.destinationIcao ? `${r.originIcao} → ${r.destinationIcao}` : r.originIcao, r.types[0], hmm(r.blockMin)].filter(Boolean).join(' · '))}${f !== undefined ? ` <span class="f-badge" data-kind="ok" data-flown>${esc(s.tt(TX.flown, { d: day(f) }))}</span>` : ''}</span></button>`;
     };

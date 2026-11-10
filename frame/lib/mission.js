@@ -245,6 +245,8 @@ export function readMission(doc) {
 // tel quel ; des segments de lettres, chiffres, « _ », « - » et « . » qui ne commencent pas par un point (ni « .. », ni chemin absolu,
 // ni « \ »), un fichier .yaml ou .yml ; sinon vide, et le lecteur dit « chemin refusé »
 const SEGMENT = /^[\p{L}\p{N}_][\p{L}\p{N}_.-]*$/u;
+/** La forme d'un identifiant de mission (« A-001A », « F-071 ») : celle des dossiers de missions/. */
+const MISSION_FORM = /^[A-Z]-\d{3}[A-Z]?$/;
 /** Un dossier sûr sous missions/ (« A_COMBAT/A-001A »), ou ''. */
 const safeFolder = f => f && f.length <= 200 && f.split('/').every(p => SEGMENT.test(p)) ? f : '';
 /** Un nom de fichier de mission sûr (« missionA-001A.yaml »), ou ''. */
@@ -267,9 +269,15 @@ export const ownerOf = row => airlineCode(row?.airline) || PERSONAL;
 export const missionsFor = (rows, code) => (Array.isArray(rows) ? rows : []).filter(r => ownerOf(r) === code);
 export function readRegistry(doc) {
   return (Array.isArray(doc?.missions) ? doc.missions : []).filter(x => x && clean(x.id)).map(x => {
-    const id = clean(x.id);
+    // l'identifiant est celui que disent le dossier et le fichier de la mission (« F_FIRE/F-071 » → F-071) quand le registre garde un
+    // ancien numéro (« 71 », 50 missions du poste de l'utilisateur, SOG-0212) : jamais deux identifiants pour une mission ; l'ancien
+    // reste dans formerId (la recherche le trouve) ; le registre n'est pas touché
+    const reg = clean(x.id),
+      leaf = safeFolder(clean(x.folder)).split('/').pop(),
+      id = MISSION_FORM.test(leaf) && leaf !== reg ? leaf : reg;
     return {
       id,
+      formerId: id !== reg ? reg.slice(0, 40) : '',
       family: clean(x.family || x.type),
       title: clean(x.title),
       operation: clean(x.operation?.name),

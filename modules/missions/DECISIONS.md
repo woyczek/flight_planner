@@ -102,3 +102,7 @@
 - **10 Nov 2026 — the scope of the list: my airline, Personal, all** (SOG-0212 c). A native list above the search, the simplest form;
   the ownership rule is `MS.ownerOf`, the same as the list's; another airline's mission says its airline in a badge and can be prepared
   like any other (the flight is the pilot's). N20; counter-test on origin/v3: no scope list.
+- **10 Nov 2026 — one id per mission: the folder's** (Simplification, after SOG-0212 a: 50 registry rows keep an old number « 71 »
+  for the mission F-071). `readRegistry` takes the id the folder and the file say (`F_FIRE/F-071` → F-071) when it has the form of a
+  mission id and differs from the registry's; the old one stays in `formerId`, found by the search; the registry (the V2 CPCO's data) is
+  not touched. N21; counter-test on origin/v3: the list shows « 123 ».

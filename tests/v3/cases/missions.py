@@ -843,8 +843,8 @@ def n18(c):
         c.eq(c.count(f'{M} [data-pane=mission] [data-why]'), 0, f'{w} px: the summary-first mission is read (no « illisible »)', what='why')
         c.page.go_back()
         # a summary only and an old numeric id (« 71 », folder F-071): the file named after its folder
-        c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"123\"]')", what='back to the list')
-        c.tap(f'{M} [data-list] [data-id="123"]')
+        c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-123A\"]')", what='back to the list')
+        c.tap(f'{M} [data-list] [data-id="X-123A"]')
         c.until(f"!!document.querySelector('{M} [data-pane=mission]')", what='the old-numbered mission opens')
         c.wait(300)
         c.eq(c.count(f'{M} [data-pane=mission] [data-why]'), 0, f'{w} px: a summary only: the file named after its folder is read', what='why (old id)')
@@ -965,3 +965,21 @@ def n20(c):
         c.page.go_back()
         set_airline(c, 'ddd')
         c.until(f"{lst} === 'X-132A'", what=f'{w} px: another airline chosen: back to « Ma compagnie »')
+
+
+
+@case('N21', 'Missions: one id per mission — a registry row that keeps an old number (« 123 ») is listed under the id of its folder and file (« X-123A »); the search finds both',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=True,
+      rule='Simplification 10 Nov (after SOG-0212 a: 50 rows of the user\'s registry keep « 71 » for F-071): the list shows the id the mission\'s sheet says, '
+      'never two ids for one mission; the registry (the V2 CPCO\'s data) is not touched; invented missions')
+def n21(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _SUMMARY_REGISTRY], ['missions/X_CO/X-121A/missionX-121A.yaml', mission_doc('X-121A')],
+                     ['missions/X_CO/X-123A/missionX-123A.yaml', mission_doc('X-123A')]])
+    c.open('missions', wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-121A\"]')", timeout=15000, what='the list of missions')
+    c.ok('123' not in ids(c) and 'X-123A' in ids(c), ids(c), 'the old number is not an id of the list; the folder\'s id is')
+    c.eq(ids(c).count('X-123A'), 1, 'one row for the mission', what='rows')
+    for q in ('123', 'X-123A'):
+        c.page.fill(f'{M} [data-k="q"]', q)
+        c.until(f"[...document.querySelectorAll('{M} [data-list] [data-id]')].map(b => b.dataset.id).join() === 'X-123A'", what=f'the search « {q} » finds it')
