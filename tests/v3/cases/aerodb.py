@@ -6069,3 +6069,45 @@ def k122(c):
             except ValueError:
                 got = 'refused'
             c.eq(got, 'refused', f'{label}: refused with a message, nothing written', what=label)
+
+
+@case('K123', 'Hours and remarks of the airspaces as the AIP publishes them (SOG-0163): the SIA reader gives `hours` (txtRmkWorkHr, Timsh, the code) and `rem` (txtRmk) per space, the AIXM 5.1 reader the notes (the ones on the time interval are the hours); nothing is invented, bounded at 12 lines of 400 signs, absent when the source says nothing; parser version 24', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0163 (10 Nov 2026, BUGS SOG): the sheet of a space R / D / P (modules/maps/lv.js spaceCardHtml) answers « R 61 : actif ? quelles conditions ? » from `hours` and `rem`, which the base did not carry (SIA: 630 R, 129 D, 115 P without any text although the XML has txtRmkWorkHr on 3 961 of its 4 497 airspaces, txtRmk on 3 544 and 142 time sheets)')
+def k123(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      // a fresh frame: the page defines its own `AeroSources` (the Sources screen) and the reader file does not replace it
+      const fr = document.createElement('iframe'); document.body.appendChild(fr); const w = fr.contentWindow;
+      const load = src => new Promise((ok, no) => { const s = w.document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error(src)); w.document.head.appendChild(s); });
+      await load('/shared/sia_base.js'); await load('/shared/aero_sources.js');
+      const ase = (id, type, name, att, rmk = '') => `<Ase><AseUid mid="${id}"><codeType>${type}</codeType><codeId>${name}</codeId></AseUid><txtName>${name}</txtName><codeDistVerUpper>STD</codeDistVerUpper><valDistVerUpper>195</valDistVerUpper><uomDistVerUpper>FL</uomDistVerUpper><codeDistVerLower>HEI</codeDistVerLower><valDistVerLower>0</valDistVerLower><uomDistVerLower>FT</uomDistVerLower>${att ? `<Att>${att}</Att>` : ''}${rmk ? `<txtRmk>${rmk}</txtRmk>` : ''}</Ase>`;
+      const abd = id => `<Abd><AbdUid><AseUid mid="${id}"/></AbdUid><Avx><codeType>GRC</codeType><geoLat>450000N</geoLat><geoLong>0010000E</geoLong></Avx><Avx><codeType>GRC</codeType><geoLat>450000N</geoLat><geoLong>0020000E</geoLong></Avx><Avx><codeType>GRC</codeType><geoLat>460000N</geoLat><geoLong>0020000E</geoLong></Avx></Abd>`;
+      const many = Array.from({ length: 20 }, (_, i) => `line ${i + 1}`).join('#');
+      const xml = `<AIXM-Snapshot>${ase('1', 'R', 'LFR61', '<codeWorkHr>HX</codeWorkHr><txtRmkWorkHr>Possible activation MON-FRI 0800-1700.#(SUM -1HR)</txtRmkWorkHr>', 'Administrator : CCER Bordeaux.#Avoid the area when active.#AZBA charts')}${abd('1')}`
+        + `${ase('2', 'D', 'LFD3', '<codeWorkHr>H24</codeWorkHr><txtRmkWorkHr>H24</txtRmkWorkHr>')}${abd('2')}`
+        + `${ase('3', 'R', 'LFR5', '<codeWorkHr>H24</codeWorkHr>')}${abd('3')}`
+        + `${ase('4', 'D', 'LFD9', '<codeWorkHr>HX</codeWorkHr><Timsh><codeTimeRef>UTC</codeTimeRef><dateValidWef>01-10</dateValidWef><dateValidTil>31-03</dateValidTil><codeDay>MON</codeDay><codeDayTil>FRI</codeDayTil><timeWef>0800</timeWef><timeTil>1700</timeTil></Timsh>', many)}${abd('4')}`
+        + `${ase('5', 'P', 'LFP7', '')}${abd('5')}</AIXM-Snapshot>`;
+      const out = w.SiaBase.parseAixmAirspaces(new w.DOMParser().parseFromString(xml, 'application/xml'));
+      const by = k => out.find(a => a.key === k);
+      const aixm5 = `<AIXMBasicMessage xmlns:aixm="http://www.aixm.aero/schema/5.1.1" xmlns:gml="http://www.opengis.net/gml/3.2"><aixm:Airspace gml:id="a1"><aixm:timeSlice><aixm:AirspaceTimeSlice gml:id="t1"><aixm:type>R</aixm:type><aixm:designator>EGR1</aixm:designator><aixm:name>TEST R</aixm:name>`
+        + `<aixm:activation><aixm:AirspaceActivation gml:id="x"><aixm:annotation><aixm:Note gml:id="n1"><aixm:propertyName>timeInterval</aixm:propertyName><aixm:translatedNote><aixm:LinguisticNote gml:id="l1"><aixm:note lang="eng">Activated by NOTAM.</aixm:note></aixm:LinguisticNote></aixm:translatedNote></aixm:Note></aixm:annotation></aixm:AirspaceActivation></aixm:activation>`
+        + `<aixm:annotation><aixm:Note gml:id="n2"><aixm:propertyName>name</aixm:propertyName><aixm:translatedNote><aixm:LinguisticNote gml:id="l2"><aixm:note lang="eng">Birds of prey.</aixm:note></aixm:LinguisticNote></aixm:translatedNote></aixm:Note></aixm:annotation>`
+        + `<aixm:geometryComponent><aixm:AirspaceGeometryComponent><aixm:theAirspaceVolume><aixm:AirspaceVolume><aixm:upperLimit uom="FL">100</aixm:upperLimit><aixm:horizontalProjection><aixm:Surface><gml:patches><gml:PolygonPatch><gml:exterior><gml:Ring><gml:curveMember><gml:Curve gml:id="c1"><gml:segments><gml:GeodesicString><gml:posList>50 0 50 1 51 1 50 0</gml:posList></gml:GeodesicString></gml:segments></gml:Curve></gml:curveMember></gml:Ring></gml:exterior></gml:PolygonPatch></gml:patches></aixm:Surface></aixm:horizontalProjection></aixm:AirspaceVolume></aixm:theAirspaceVolume></aixm:AirspaceGeometryComponent></aixm:geometryComponent>`
+        + `</aixm:AirspaceTimeSlice></aixm:timeSlice></aixm:Airspace></AIXMBasicMessage>`;
+      let five = null;
+      try { five = w.AeroSources.aixm5(aixm5); } catch (e) { five = { error: String(e) }; }
+      return { n: out.length, r61: by('LFR61'), d3: by('LFD3'), r5: by('LFR5'), d9: by('LFD9'), p7: by('LFP7'), five: five && five.airspaces && five.airspaces[0] ? five.airspaces[0] : five };
+    }""")
+    r61, d3, r5, d9, p7 = (r[k] for k in ('r61', 'd3', 'r5', 'd9', 'p7'))
+    c.eq((r61['hours'], r61['rem'], r61['azba']), (['Possible activation MON-FRI 0800-1700.', '(SUM -1HR)'], ['Administrator : CCER Bordeaux.', 'Avoid the area when active.', 'AZBA charts'], True),
+         'R 61: the hours as published (the « # » of the source separates the lines), the remarks as published, AZBA still detected', what='r61')
+    c.eq((d3['hours'], 'rem' in d3), (['H24'], False), 'a D that works H24: its hours; no remark: no `rem` (absent, not empty)', what='d3')
+    c.eq((r5['hours'], 'rem' in r5, 'hours' in p7, 'rem' in p7), (['H24'], False, False, False), 'only a code H24 gives « H24 »; a space with nothing published carries neither field', what='codes')
+    c.eq((d9['hours'], len(d9['rem']), max(len(x) for x in d9['rem'])), (['MON-FRI 0800-1700 UTC (01-10 → 31-03)'], 12, 7), 'a time sheet is written out; the remarks are bounded at 12 lines', what='d9')
+    c.eq(r['n'], 5, 'every space is still read', what='count')
+    five = r['five']
+    c.eq((five.get('hours'), five.get('rem'), five.get('act')) if isinstance(five, dict) else five, (['Activated by NOTAM.'], ['Birds of prey.'], 'NOTAM'),
+         'AIXM 5.1 (NATS, ENAIRE): the note on the time interval is the hours, the other notes the remarks', what='aixm5')
+    sv = [m.group(1) for m in [re.search(r'const VERSION =\s*(\d+)', (ROOT / 'shared' / 'sia_base.js').read_text(encoding='utf-8'))]]
+    c.eq(sv, ['24'], 'the parser version is 24: the zones built before have no hours or remarks and are rebuilt (parser-old)', what='version')

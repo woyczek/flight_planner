@@ -182,6 +182,12 @@
     admin: z.admin || '',
     act: z.act || '',
     info: z.info || '',
+    ...(Array.isArray(z.hours) && z.hours.length ? {
+      hours: z.hours // les horaires d'activité publiés, tels quels (SOG-0163)
+    } : {}),
+    ...(Array.isArray(z.rem) && z.rem.length ? {
+      rem: z.rem // les conditions et remarques de l'AIP, telles quelles
+    } : {}),
     ...(z.capped ? {
       capped: z.capped // plafond déduit, pas celui de la source : 'classA' (classe E sous la classe A de son État)
     } : {}),
@@ -331,6 +337,14 @@
       if (!KEEP.has(type)) continue;
       const vols = kids(s, 'AirspaceVolume');
       const notes = kids(s, 'note').map(n => n.textContent).join(' ');
+      // SOG-0163 : les notes de l'espace (activation, conditions) ; celles qui portent sur l'intervalle de temps sont ses horaires
+      const noteLines = kids(s, 'Note').map(n => ({
+        time: text(n, 'propertyName') === 'timeInterval',
+        text: kids(n, 'note').map(x => x.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean).join(' ')
+      })).filter(n => n.text);
+      const uniq = list => [...new Set(list)].slice(0, 12).map(x => x.slice(0, 400)),
+        hours = uniq(noteLines.filter(n => n.time).map(n => n.text)),
+        rem = uniq(noteLines.filter(n => !n.time).map(n => n.text));
       for (const v of vols) {
         const rings = kids(v, 'Ring').map(ringOf).filter(r => r.length > 2);
         if (!rings.length) continue;
@@ -345,6 +359,8 @@
           lower: limit(lo?.textContent, lo?.getAttribute('uom'), text(v, 'lowerLimitReference')),
           act: /NOTAM/i.test(notes) ? 'NOTAM' : activable(type) ? 'activable' : '',
           info: '',
+          hours,
+          rem,
           rings
         }));
       }

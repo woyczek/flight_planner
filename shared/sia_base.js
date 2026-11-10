@@ -30,7 +30,7 @@
   const COMPAT =
     14; // plus ancien format encore utilisable tel quel (15 n'ajoute que aero.vrp ; 17 à 21 ne changent pas le format : une base 14 à 20 se lit, signalée « outdated »)
   const VERSION =
-    23; // 23 : les extrémités d'un tronçon AIXM 5.1 sans point dans le fichier (DFS) sont nommées par la référence et placées par la courbe du tronçon ; 22 : sens des voies aériennes (dir : F, B ou FB, d'après le SIA, NATS / ENAIRE et X-Plane ; absent : la source ne le dit pas ; les zones construites avant n'ont pas dir) ; 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp) ; 16 : sources (src) et données d'autres pays (shared/aero_sources.js) ; 17 : un seul point de report VFR par point (le jumeau nu d'openAIP n'est plus ajouté à celui du SIA, AeroSources.merge) ; 18 : limites des espaces OpenAir d'X-Plane en pieds (le M de « MSL » n'est plus des mètres, AeroSources.openair : les zones construites avant sont à reconstruire) ; 19 : secteurs d'une même famille qui se recouvrent avec des planchers différents, signalés (ovl sur les espaces, overlaps dans le meta de la zone ; les zones construites avant n'ont ni l'un ni l'autre) ; 20 : pistes des terrains d'openAIP (bearing, hardLen, water, runways) et magVar, comme le SIA les donne à la France (AeroSources.geojson ; les zones construites avant ne les ont pas) ; 21 : un espace de classe E plafonné au plancher de la classe A de son État (États-Unis, Canada : 17 999 ft AMSL au lieu du « FL 600 » d'openAIP), capped: 'classA'
+    24; // 24 : horaires (hours) et remarques (rem) d'AIP des espaces, tels que la source les publie (SIA : txtRmkWorkHr, Timsh, txtRmk ; AIXM 5.1 : notes), les zones construites avant n'en ont pas ; 23 : les extrémités d'un tronçon AIXM 5.1 sans point dans le fichier (DFS) sont nommées par la référence et placées par la courbe du tronçon ; 22 : sens des voies aériennes (dir : F, B ou FB, d'après le SIA, NATS / ENAIRE et X-Plane ; absent : la source ne le dit pas ; les zones construites avant n'ont pas dir) ; 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp) ; 16 : sources (src) et données d'autres pays (shared/aero_sources.js) ; 17 : un seul point de report VFR par point (le jumeau nu d'openAIP n'est plus ajouté à celui du SIA, AeroSources.merge) ; 18 : limites des espaces OpenAir d'X-Plane en pieds (le M de « MSL » n'est plus des mètres, AeroSources.openair : les zones construites avant sont à reconstruire) ; 19 : secteurs d'une même famille qui se recouvrent avec des planchers différents, signalés (ovl sur les espaces, overlaps dans le meta de la zone ; les zones construites avant n'ont ni l'un ni l'autre) ; 20 : pistes des terrains d'openAIP (bearing, hardLen, water, runways) et magVar, comme le SIA les donne à la France (AeroSources.geojson ; les zones construites avant ne les ont pas) ; 21 : un espace de classe E plafonné au plancher de la classe A de son État (États-Unis, Canada : 17 999 ft AMSL au lieu du « FL 600 » d'openAIP), capped: 'classA'
   const SCRIPT_URL = document.currentScript?.src || location.href;
   /** URL d'un fichier de l'application (chemin depuis la racine : « shared/carto/… »). */
   const appUrl = path => new URL('../' + path, SCRIPT_URL).href;
@@ -918,6 +918,23 @@
     };
   }
 
+  /** Les lignes d'un texte d'AIP (séparateur « # » ou saut de ligne), espaces réduits, vides écartées : 12 lignes de 400 signes au plus (SOG-0163 : horaires et remarques publiés d'un espace, tels quels). */
+  const aipLines = s => String(s || '').split(/#|\r?\n/).map(x => x.replace(/\s+/g, ' ').trim()).filter(Boolean).slice(0, 12).map(x => x
+    .slice(0, 400));
+  /** Les horaires d'activité publiés d'un Ase (SOG-0163) : le texte de txtRmkWorkHr, puis chaque <Timsh> de son <Att> (« MON-FRI 0800-1700 UTC (du 01-10 au 31-03) »), à défaut le code d'horaire s'il en dit plus que « HX ». */
+  function aixmHours(ase) {
+    const out = aipLines(txt(ase, 'txtRmkWorkHr'));
+    for (const t of ase.getElementsByTagName('Timsh')) {
+      const days = [txt(t, 'codeDay'), txt(t, 'codeDayTil')].filter(Boolean).join('-'),
+        times = [txt(t, 'timeWef'), txt(t, 'timeTil')].filter(Boolean).join('-'),
+        dates = [txt(t, 'dateValidWef'), txt(t, 'dateValidTil')].filter(Boolean).join(' → '),
+        line = [days, times, txt(t, 'codeTimeRef'), dates && `(${dates})`].filter(Boolean).join(' ');
+      if (line) out.push(line.slice(0, 400));
+    }
+    const code = txt(ase, 'codeWorkHr').toUpperCase();
+    if (!out.length && /^(H24|HJ|HN|HO)$/.test(code)) out.push(code);
+    return out.slice(0, 12);
+  }
   /** Espaces d'un document AIXM 4.5 (DOM) : métadonnées des Ase, contours des Abd (sommets, arcs, cercles) groupés par
    *  espace ; types hors AIXM_TYPES écartés. [{ type, cls, name, key, lower, upper, azba, admin, act, info, rings }]. */
   function parseAixmAirspaces(doc) {
@@ -939,6 +956,8 @@
         if (code === 'HEI' && +val === 0) return 'SFC';
         return `${val} ${uom === 'M' ? 'm' : 'ft'} ${code === 'HEI' ? 'ASFC' : 'AMSL'}`;
       };
+      const hours = aixmHours(ase),
+        rem = aipLines(txt(ase, 'txtRmk'));
       meta.set(mid, {
         type,
         cls: txt(ase, 'codeClass').toUpperCase(),
@@ -947,7 +966,13 @@
         lower: lim('codeDistVerLower', 'valDistVerLower', 'uomDistVerLower'),
         upper: lim('codeDistVerUpper', 'valDistVerUpper', 'uomDistVerUpper'),
         azba: /AZBA/i.test(txt(ase, 'txtRmk')),
-        ...activationOf(txt(ase, 'txtRmk'))
+        ...activationOf(txt(ase, 'txtRmk')),
+        ...(hours.length ? {
+          hours
+        } : {}),
+        ...(rem.length ? {
+          rem
+        } : {})
       });
     }
     const grouped = new Map;
