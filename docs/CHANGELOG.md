@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Old pages: the pelican sites tool, and the group « Canadair et pélicandromes »** (`apps/outils/pelicandromes/index.html`, `frame/legacy.js`; frame DECISIONS;
+  noreg A116; SOG-0083). The user's own tool for placing the pelican sites on a map and exporting the YAML is in the repository as it came and linked from the old
+  pages; the fire reports are under Missions. Its map libraries and satellite tiles are blocked by the launcher's content policy (a decision, in DECISIONS).
+
 - **Frame: one request per navigation on a workstation, not 130** (`frame/sw.js`, `tools/launch.py`; frame SPEC § 3.6, DECISIONS; noreg A53; SOG-0168).
   The launcher gives one fingerprint of what it serves to the frame (`GET /__setup/frame-stamp`); the service worker compares it with its copies' and,
   equal, serves the copy and asks for nothing else; different, it reads the copies again before answering. A navigation was 267 requests and 298–661 ms

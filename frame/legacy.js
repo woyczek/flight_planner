@@ -47,6 +47,13 @@
     }, {
       path: 'apps/cr/mission_operations_reporting.html',
       label: L('Rapport des opérations', 'Operations reporting', 'Einsatzberichterstattung', 'Informe de operaciones')
+    }, {
+      path: 'apps/cr/FIRE/fire_cr.html',
+      label: L('Compte rendu de feu', 'Fire report', 'Brandbericht', 'Informe de incendio')
+    }, {
+      path: 'apps/cr/FIRE/fire_reporting.html',
+      label: L('Rapport des opérations de feu', 'Fire operations reporting', 'Brandeinsatzbericht',
+        'Informe de operaciones de incendio')
     }]
   }, {
     id: 'maintenance',
@@ -105,15 +112,16 @@
         'Estadísticas de vuelo (Mis vuelos)')
     }]
   }, {
+    // l'outil de l'utilisateur (SOG-0083) : positionner les pélicandromes sur une carte et en extraire le YAML ; les comptes rendus de feu
+    // sont sous Missions
     id: 'canadair',
-    label: L('Canadair', 'Canadair', 'Canadair', 'Canadair'),
+    label: L('Canadair et pélicandromes', 'Canadair and pelican sites', 'Canadair und Löschwasserstellen',
+      'Canadair y helipuertos de carga'),
     pages: [{
-      path: 'apps/cr/FIRE/fire_cr.html',
-      label: L('Compte rendu de feu', 'Fire report', 'Brandbericht', 'Informe de incendio')
-    }, {
-      path: 'apps/cr/FIRE/fire_reporting.html',
-      label: L('Rapport des opérations de feu', 'Fire operations reporting', 'Brandeinsatzbericht',
-        'Informe de operaciones de incendio')
+      path: 'apps/outils/pelicandromes/index.html',
+      label: L('Positionner les pélicandromes (export YAML)', 'Place the pelican sites (YAML export)',
+        'Löschwasserstellen positionieren (YAML-Export)',
+        'Posicionar los puntos de carga de agua (exportación YAML)')
     }]
   }]);
   const T = {

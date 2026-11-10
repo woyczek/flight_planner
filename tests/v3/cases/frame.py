@@ -4608,6 +4608,16 @@ def a116(c):
         links = c.js("[...document.querySelectorAll('[data-screen=legacy] a[data-legacy]')].map(a => [a.target, a.rel, new URL(a.href).pathname])")
         c.ok(len(links) >= 20 and all(t == '_blank' and 'noopener' in r and '/apps/' in h for t, r, h in links), str(links[:3]), 'every V2 page opens in a new tab, noopener')
         c.eq(c.text('[data-screen=legacy] h1'), title, 'the title says what it is', what=f'title ({app})')
+        # the pelican sites tool (SOG-0083) is the Canadair group; the fire reports are under Missions
+        peli = c.js("[...document.querySelectorAll('[data-screen=legacy] [data-group=canadair] a[data-legacy]')].map(a => new URL(a.href).pathname.replace(/^.*\/apps\//, 'apps/'))")
+        fire = c.js("[...document.querySelectorAll('[data-screen=legacy] [data-group=missions] a[data-legacy]')].map(a => new URL(a.href).pathname.replace(/^.*\/apps\//, 'apps/')).filter(p => /FIRE/.test(p))")
+        c.eq((peli, fire), (['apps/outils/pelicandromes/index.html'], ['apps/cr/FIRE/fire_cr.html', 'apps/cr/FIRE/fire_reporting.html']),
+             'the Canadair group carries the pelican sites tool, the fire reports are under Missions', what=f'Canadair group ({app})')
+    # the tool is in the repository as the user wrote it, and calls only these hosts (SOG-0083; its CDN scripts need the policy's decision, DECISIONS)
+    tool = ROOT / 'apps' / 'outils' / 'pelicandromes' / 'index.html'
+    c.ok(tool.is_file(), str(tool), 'the pelican sites tool is in the repository')
+    hosts = sorted(set(re.findall(r'https://([a-z0-9.-]+)/', tool.read_text(encoding='utf-8'))) - {'www.w3.org'})
+    c.eq(hosts, ['cdn.jsdelivr.net', 'server.arcgisonline.com', 'tiles.openfreemap.org', 'unpkg.com'], 'the tool calls only the map libraries, the vector tiles and the satellite tiles', what='hosts')
     c.check_errors()
 
 

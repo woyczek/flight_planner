@@ -2690,3 +2690,16 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   every copy are the new version at that load; launcher stopped → the copy; back with the same fingerprint → the copy; changed → the next version), red on
   f68db9ceb. **Limit:** a file whose date and size do not change (a replaced file with the same size and date) would not show; the launcher's own stamps
   (`?v=`) have the same limit (signature date and size).
+- **10 Nov 2026 — The pelican sites tool is the « Canadair et pélicandromes » group of the old pages** (SOG-0083; the user: « la page surnuméraire, comme rad,
+  qui permet de positionner les pélicandromes et d'en extraire le yaml »; Simplification; V3 Frame). It replaces my reading of « canadair » (the fire reports, which
+  go under **Missions**). **Origin:** the user's own tool, `Downloads/pelicandromes_osm (19).html`, entered **as it came** (13 896 bytes, dated 9 Oct 2026, git blob `7757e1b7`) as
+  `apps/outils/pelicandromes/index.html` on 10 Nov 2026; linked from `#legacy` (group « Canadair et pélicandromes », one page). **What it calls**
+  (read in full, nothing else leaves): `unpkg.com/maplibre-gl@5.9.0` (the stylesheet and the script), `cdn.jsdelivr.net/npm/js-yaml@4.1.0` (the script),
+  `tiles.openfreemap.org/styles/liberty` (the vector style and its tiles, sprites and fonts), `server.arcgisonline.com/ArcGIS/rest/services/World_Imagery`
+  (the satellite tiles); its data stays in the browser's `localStorage` (`pelicandromes-osm-v1`, `pelicandromes-basemap`) and leaves only by the YAML file the user
+  downloads; 32 sites seeded in the page (aerodromes' reference points). **Known problem, a decision for the user / Sécurisation (not taken here):** the launcher's
+  content policy (`script-src 'self' 'unsafe-inline'` + pdf.js and acorn, `connect-src` a fixed list) **blocks both scripts** (`unpkg.com`, `cdn.jsdelivr.net/npm/js-yaml`)
+  and the satellite tiles: the page opens but the map and the YAML do not work (checked with the launcher: « violates the following Content Security Policy
+  directive »). Widening a policy that is audited is a security decision; the options are the two pinned files and the Esri path for **this page only**
+  (a per-page policy in the launcher), or local copies of the two libraries (the page is entered unchanged, so that is an edit of it). A116 pins the hosts the file calls and its
+  presence.
