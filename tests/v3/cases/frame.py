@@ -3554,6 +3554,8 @@ def a95(c):
     c.tap('[data-act="companyNext"]')
     c.until("!document.querySelector('[data-wizard] [data-step-pane=categories]').hidden", timeout=6000, what='the categories step')
     c.tap('[data-act="companyNext"]')
+    c.until("!document.querySelector('[data-wizard] [data-step-pane=fleet]').hidden", timeout=6000, what='the fleet step')
+    c.tap('[data-act="companyNext"]')
     c.until("!document.querySelector('[data-wizard] [data-step-pane=summary]').hidden", timeout=6000, what='the summary step')
     c.tap('[data-act="companyAdd"]')
     d = c.until_doc('airline/atx/settings.json', lambda d: bool(d), what='the settings of the new airline')
@@ -4997,8 +4999,8 @@ def a124(c):
     c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length === 2 && !!document.querySelector('[data-wizard]')", timeout=15000, what='the card and its stepper')
     w = lambda extra='': f'[data-wizard] {extra}'.strip()
     c.js("document.querySelector('[data-airline-add]').open = true")
-    c.eq(c.js("[...document.querySelectorAll('[data-wizard] [data-step-pane]')].map(p => [p.dataset.stepPane, p.hidden])"), [['identity', False], ['categories', True], ['summary', True], ['done', True]], 'one block, the first pane shown', what='panes')
-    c.eq(c.count(w('[data-step-dot]')), 3, 'three steps named in the header (identity, categories, summary)', what='dots')
+    c.eq(c.js("[...document.querySelectorAll('[data-wizard] [data-step-pane]')].map(p => [p.dataset.stepPane, p.hidden])"), [['identity', False], ['categories', True], ['fleet', True], ['summary', True], ['done', True]], 'one block, the first pane shown', what='panes')
+    c.eq(c.count(w('[data-step-dot]')), 4, 'four steps named in the header (identity, categories, fleet, summary)', what='dots')
     c.eq(c.js("[...document.querySelectorAll('[data-wizard] input[name=wz-kind]')].map(i => [i.value, i.checked])"), [['va', True], ['sog', False]], 'the kind: two radio buttons, commercial preselected', what='kind')
     c.eq(c.count(w('[data-wz-kind] .f-muted')), 2, 'each with its sentence', what='sentences')
     c.eq([norm(c.text(w('[data-kind-name=va]'))), norm(c.text(w('[data-kind-name=sog]')))], [norm(KN()['va'][['fr', 'en', 'de', 'es'].index(lang)]), norm(KN()['sog'][['fr', 'en', 'de', 'es'].index(lang)])], 'named by the one source of the kind words', what='kind names')
@@ -5023,13 +5025,17 @@ def a124(c):
     c.until("document.querySelector('[data-wizard]').dataset.step === 'categories'", timeout=6000, what='the categories step')
     h_cats, below = c.js(hh), c.js(top)   # the categories pane is taller than the identity one: the block grew once
     c.tap('[data-act="companyNext"]')
+    c.until("document.querySelector('[data-wizard]').dataset.step === 'fleet'", timeout=6000, what='the fleet step')
+    c.tap('[data-act="companyNext"]')
     c.until("document.querySelector('[data-wizard]').dataset.step === 'summary'", timeout=6000, what='the summary step')
     c.ok(abs(c.js(top) - below) <= 1 and c.js(hh) >= h_cats - 1, [h_cats, below], 'the block never gets shorter from one step to the next: what is under it does not move (rule 22)')
-    c.eq(norm(c.text(w('[data-wz-summary]'))), norm('Rennes Motoculture · ' + KN()['va'][['fr', 'en', 'de', 'es'].index(lang)] + ' · IVAO · ' + T('wzCatCount').replace('{n}', '7')), 'name · kind · networks · number of categories, in words (no file name)', what='summary')
+    c.eq(norm(c.text(w('[data-wz-summary]'))), norm('Rennes Motoculture · ' + KN()['va'][['fr', 'en', 'de', 'es'].index(lang)] + ' · IVAO · ' + T('wzCatCount').replace('{n}', '7') + ' · ' + T('fleet').replace('{n}', '0')), 'name · kind · networks · number of categories, in words (no file name)', what='summary')
     c.eq([c.doc('airline/rmo/settings.json'), c.js('window.__puts.length')], [None, 0], 'nothing is written before the last button', what='nothing written')
     if c.width in (390, 1280):
         c.shot(f'A125_standard_{c.width}_{lang}_summary_delivered.png')
     # ---- « Retour » keeps every value
+    c.tap('[data-act="companyBack"]')
+    c.until("document.querySelector('[data-wizard]').dataset.step === 'fleet'", timeout=6000, what='back to the fleet')
     c.tap('[data-act="companyBack"]')
     c.until("document.querySelector('[data-wizard]').dataset.step === 'categories'", timeout=6000, what='back to the categories')
     c.tap('[data-act="companyBack"]')
@@ -5037,6 +5043,8 @@ def a124(c):
     c.eq([c.js("document.querySelector('[data-wizard] [data-f=co-name]').value"), c.js("document.querySelector('[data-wizard] [data-f=co-code]').value"), c.js("document.querySelector('[data-wizard] [data-co-net=ivao]').checked")], ['Rennes Motoculture', 'rmo', True], 'back keeps the name, the code and the networks', what='kept values')
     c.tap('[data-act="companyNext"]')
     c.until("document.querySelector('[data-wizard]').dataset.step === 'categories'", timeout=6000, what='the categories again')
+    c.tap('[data-act="companyNext"]')
+    c.until("document.querySelector('[data-wizard]').dataset.step === 'fleet'", timeout=6000, what='the fleet again')
     c.tap('[data-act="companyNext"]')
     c.until("document.querySelector('[data-wizard]').dataset.step === 'summary'", timeout=6000, what='the summary again')
     # ---- an interruption at the index: what is done is said, « Reprendre » finishes without overwriting
@@ -5109,8 +5117,9 @@ def a126(c):
     c.until("document.querySelector('[data-wizard]').dataset.step === 'identity'", timeout=6000, what='back')
     nxt('categories')
     c.eq([c.js(f"document.querySelector('{pane} [data-wz-cat=vip]').checked"), c.js(f"document.querySelectorAll('{pane} [data-wz-own] li').length")], [False, 1], 'back and forth keeps the unticked box and the typed category', what='kept')
+    nxt('fleet')
     nxt('summary')
-    c.eq(norm(c.text('[data-wz-summary]')).split(' · ')[-1], norm(T('wzCatCount').replace('{n}', '7')), 'the summary counts the categories kept: six of the base and one of our own', what='count')
+    c.eq(norm(c.text('[data-wz-summary]')).split(' · ')[-2], norm(T('wzCatCount').replace('{n}', '7')), 'the summary counts the categories kept: six of the base and one of our own', what='count')
     c.eq(c.js('window.__puts.length'), 0, 'nothing is written yet', what='no put')
     c.tap('[data-act="companyAdd"]')
     c.until("document.querySelector('[data-wizard]').dataset.step === 'done'", timeout=8000, what='created')
@@ -5123,8 +5132,84 @@ def a126(c):
     c.js("document.querySelector('[data-wizard] input[name=wz-kind][value=sog]').click()")
     nxt('categories')
     c.eq([c.count(pane + ' [data-wz-cat]'), c.count(pane + ' [data-wz-own]')], [0, 1], 'a squadron: no commercial category, only the field for its own', what='squadron')
+    nxt('fleet')
     nxt('summary')
     c.tap('[data-act="companyAdd"]')
     c.until("document.querySelector('[data-wizard]').dataset.step === 'done'", timeout=8000, what='the squadron created')
     c.eq([p for p in c.js('window.__puts') if 'escadril' in p], ['airline/escadril/settings.json', 'airline/escadril/fleet.json'], 'nothing typed, nothing unticked: no categories.json (the base stays the suite\u2019s)', what='no file')
+    c.check_errors()
+
+
+@case('A127', 'Settings › Company › « Créer une compagnie » (SOG-0041, step B3): the fleet from the sheets base — search by type or name, the registration typed, a running list with « Retirer », the title says the count, « Plus tard » allowed; the aircraft are written with the fleet\u2019s own normalisation', 'A', langs4=True, tags=('airline',),
+      designs=('standard',), screens=True, night=False,
+      rule='V3_SPECIFICATION § 10.38 bis step 3 (accepted: « la base » = the aircraft sheets of data/aircraft, the registration typed by the airline): a search over the sheets (aerodb aircraft().sheets.list()), a type chosen then a registration (2 to 10 letters, digits, dashes; once), a running list, the title « Flotte · n appareils », « Plus tard » at the same level; fleet.json gets the aircraft normalised like Maintenance › Aircraft; everything read is text')
+def a127(c):
+    lang = c.lang
+    sj = 'frame/settings/access.js'
+    T = lambda k: tx(sj, k, lang, after='const TA = {')
+    evil = '<img src=x onerror=window.__pwn=1>'
+    sheets = [{'id': 'A320', 'name': 'A320', 'icao': 'A320', 'usableFuel': 18000, 'updated_at': '2026-10-26T10:00:00Z', 'cruise': {'tasKt': 450, 'fuelFlowPerHour': 2400}},
+              {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'usableFuel': 20000, 'updated_at': '2026-10-27T10:00:00Z', 'cruise': {'tasKt': 330, 'fuelFlowPerHour': 2000}},
+              {'id': 'EVIL', 'name': evil, 'icao': 'EVIL', 'usableFuel': 1000, 'updated_at': '2026-10-27T10:00:00Z', 'cruise': {'tasKt': 100, 'fuelFlowPerHour': 100}}]
+    docs = [['device/level.json', {'level': 3}, 'cache'],
+            ['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}]}, 'document'],
+            ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'networks': {'ivao': True}, 'kind': 'va'}, 'document'],
+            ['airline/aaa/fleet.json', {'schema': 1, 'aircraft': []}, 'document']] + [[f'aircraft/sheets/{x["id"]}.json', x, 'document'] for x in sheets]
+    c.open('settings?card=company', docs=docs)
+    c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length === 2 && !!document.querySelector('[data-wizard]')", timeout=15000, what='the card and its stepper')
+    c.js("document.querySelector('[data-airline-add]').open = true")
+    nxt = lambda to: (c.tap('[data-act="companyNext"]'), c.until(f"document.querySelector('[data-wizard]').dataset.step === '{to}'", timeout=6000, what=f'the {to} step'))
+    pane = '[data-step-pane=fleet]'
+    c.page.fill('[data-wizard] [data-f="co-name"]', 'Rennes Motoculture')
+    nxt('categories')
+    nxt('fleet')
+    c.eq(norm(c.text('[data-wz-fleet-title]')), norm(tx(sj, 'fleet', lang, after='    steps: {')), 'with no aircraft the title is the name of the step', what='title empty')
+    c.until(f"document.querySelectorAll('{pane} [data-wz-results] button').length === 3", timeout=8000, what='the sheets of the base are listed')
+    c.ok(c.count(pane + ' img') == 0 and c.js('window.__pwn === undefined'), None, 'a hostile sheet name is text: no element, nothing runs')
+    # ---- search, choose a type, type the registrations
+    c.page.fill('[data-wizard] [data-f="wz-sheet-q"]', 'a32')
+    c.until(f"document.querySelectorAll('{pane} [data-wz-results] button').length === 1", timeout=6000, what='one sheet matches « a32 »')
+    c.tap(f"{pane} [data-wz-results] button[data-id=A320]")
+    c.until(f"!document.querySelector('{pane} [data-wz-pick]').hidden", timeout=6000, what='the type waits for its registration')
+    c.page.fill('[data-wizard] [data-f="wz-reg"]', 'x')
+    c.tap('[data-act="companyWzReg"]')
+    c.eq(norm(c.text('[data-wizard] [data-msg]')), norm(T('wzRegBad')), 'a bad registration: said', what='bad reg')
+    for reg in ('f-gkxa', 'F-GKXB'):
+        c.page.fill('[data-wizard] [data-f="wz-reg"]', reg)
+        c.tap('[data-act="companyWzReg"]')
+        c.until(f"!!document.querySelector('{pane} [data-wz-fleet] li[data-reg=\"{reg.upper()}\"]')", timeout=6000, what=f'{reg} listed')
+    c.page.fill('[data-wizard] [data-f="wz-reg"]', 'F-GKXA')
+    c.tap('[data-act="companyWzReg"]')
+    c.eq(norm(c.text('[data-wizard] [data-msg]')), norm(T('wzRegDup')), 'the same registration twice: said', what='dup')
+    c.eq(norm(c.text('[data-wz-fleet-title]')), norm(T('wzFleetTitle').replace('{n}', '2')), 'the title of the step says how many aircraft are added', what='title count')
+    c.ok(norm(T('wzFleetTitle').replace('{n}', '2')) in norm(c.text('[data-step-dot=fleet]')), norm(c.text('[data-step-dot=fleet]')), 'and so does its dot in the header')
+    c.eq(c.js(f"document.querySelector('{pane} [data-act=companyWzLater]').hidden"), True, '« Plus tard » is only there while the list is empty', what='later hidden')
+    # a second type, then one removed
+    c.page.fill('[data-wizard] [data-f="wz-sheet-q"]', 'c-130')
+    c.until(f"document.querySelectorAll('{pane} [data-wz-results] button').length === 1", timeout=6000, what='C-130J found by its name')
+    c.tap(f"{pane} [data-wz-results] button[data-id=C30J]")
+    c.page.fill('[data-wizard] [data-f="wz-reg"]', 'F-RJAA')
+    c.tap('[data-act="companyWzReg"]')
+    c.until(f"document.querySelectorAll('{pane} [data-wz-fleet] li').length === 3", timeout=6000, what='three aircraft')
+    c.tap(f"{pane} [data-wz-fleet] li[data-reg=F-GKXB] button")
+    c.until(f"document.querySelectorAll('{pane} [data-wz-fleet] li').length === 2", timeout=6000, what='« Retirer »')
+    if c.width in (390, 1280):
+        c.shot(f'A127_standard_{c.width}_{lang}_fleet_delivered.png')
+    nxt('summary')
+    c.eq(norm(c.text('[data-wz-summary]')).split(' · ')[-1], norm(T('fleet').replace('{n}', '2')), 'the summary counts the aircraft', what='summary count')
+    c.tap('[data-act="companyAdd"]')
+    c.until("document.querySelector('[data-wizard]').dataset.step === 'done'", timeout=8000, what='created')
+    fl = c.doc('airline/rennes/fleet.json')
+    c.eq([[a['registration'], a['type'], a['variant']] for a in fl['aircraft']], [['F-GKXA', 'A320', 'A320'], ['F-RJAA', 'C30J', 'C-130J']], 'the aircraft in the file: registration, type of the sheet, variant (its name), in the order added', what='fleet file')
+    c.ok(all(a.get('operational') is True and a.get('callsigns') == [] for a in fl['aircraft']), fl, 'normalised like Maintenance › Aircraft (operational, callsigns)')
+    # ---- « Plus tard »: no aircraft, an empty fleet
+    c.tap('[data-act="companyStay"]')
+    c.page.fill('[data-wizard] [data-f="co-name"]', 'Bravo Air')
+    nxt('categories')
+    nxt('fleet')
+    c.tap(f"{pane} [data-act=companyWzLater]")
+    c.until("document.querySelector('[data-wizard]').dataset.step === 'summary'", timeout=6000, what='« Plus tard » goes on to the summary')
+    c.tap('[data-act="companyAdd"]')
+    c.until("document.querySelector('[data-wizard]').dataset.step === 'done'", timeout=8000, what='created later')
+    c.eq((c.doc('airline/bravo/fleet.json') or {}).get('aircraft'), [], 'an empty fleet, to fill later', what='empty fleet')
     c.check_errors()

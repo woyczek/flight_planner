@@ -313,8 +313,36 @@
     steps: {
       identity: ['Identité', 'Identity', 'Identität', 'Identidad'],
       categories: ['Catégories de vols', 'Flight categories', 'Flugkategorien', 'Categorías de vuelos'],
+      fleet: ['Flotte', 'Fleet', 'Flotte', 'Flota'],
       summary: ['Résumé', 'Summary', 'Zusammenfassung', 'Resumen']
     },
+    wzFleetTitle: ['Flotte · {n} appareil(s)', 'Fleet · {n} aircraft', 'Flotte · {n} Luftfahrzeug(e)', 'Flota · {n} aeronave(s)'],
+    wzFleetHint: [
+      'Choisissez un type dans la base des fiches, puis tapez l’immatriculation. Vous pouvez aussi ajouter les appareils plus tard, depuis Appareils.',
+      'Choose a type in the sheets base, then type the registration. You can also add the aircraft later, from Aircraft.',
+      'Wählen Sie einen Typ in der Datenblatt-Basis, dann tippen Sie das Kennzeichen. Sie können die Luftfahrzeuge auch später unter Luftfahrzeuge hinzufügen.',
+      'Elija un tipo en la base de fichas y escriba la matrícula. También puede añadir las aeronaves más tarde, desde Aeronaves.'
+    ],
+    wzSheetQ: ['Type ou nom d’appareil', 'Aircraft type or name', 'Typ oder Name des Luftfahrzeugs', 'Tipo o nombre de aeronave'],
+    wzReg: ['Immatriculation', 'Registration', 'Kennzeichen', 'Matrícula'],
+    wzRegAdd: ['Ajouter l’appareil', 'Add the aircraft', 'Luftfahrzeug hinzufügen', 'Añadir la aeronave'],
+    wzLater: ['Plus tard', 'Later', 'Später', 'Más tarde'],
+    wzNoSheets: ['Aucune fiche d’appareil lue : ajoutez les appareils plus tard.', 'No aircraft sheet read: add the aircraft later.',
+      'Kein Datenblatt gelesen: Luftfahrzeuge später hinzufügen.', 'Ninguna ficha leída: añada las aeronaves más tarde.'
+    ],
+    wzNoHit: ['Aucune fiche ne correspond.', 'No sheet matches.', 'Kein Datenblatt passt.', 'Ninguna ficha coincide.'],
+    wzPickFirst: ['Choisissez d’abord un type dans la liste.', 'Choose a type in the list first.',
+      'Wählen Sie zuerst einen Typ aus der Liste.',
+      'Elija primero un tipo de la lista.'
+    ],
+    wzRegBad: ['Immatriculation refusée : 2 à 10 lettres, chiffres ou tirets.',
+      'Registration refused: 2 to 10 letters, digits or dashes.',
+      'Kennzeichen abgelehnt: 2 bis 10 Buchstaben, Ziffern oder Bindestriche.',
+      'Matrícula rechazada: 2 a 10 letras, cifras o guiones.'
+    ],
+    wzRegDup: ['Cette immatriculation est déjà dans la liste.', 'This registration is already in the list.',
+      'Dieses Kennzeichen steht schon in der Liste.', 'Esta matrícula ya está en la lista.'
+    ],
     wzCatHint: [
       'Celles du genre sont cochées d’avance : décochez ce que vous ne volez pas, ajoutez les vôtres.',
       'The kind’s own are ticked in advance: untick what you do not fly, add your own.',
@@ -630,7 +658,9 @@
       <div data-mig hidden></div></div>`;
   }
   // les pas de « Créer une compagnie » (V3_SPECIFICATION § 10.38 bis) ; les catégories et la flotte s'y ajoutent avant le résumé (lots B2 et B3)
-  const WZ_STEPS = ['identity', 'categories', 'summary'];
+  const WZ_STEPS = ['identity', 'categories', 'fleet', 'summary'];
+  const WZ_REG = /^[A-Z0-9][A-Z0-9-]{1,9}$/,
+    WZ_FLEET_MAX = 200;
   // par vue : le pas montré et la reprise d'une création interrompue
   const WZ = new WeakMap();
   /** Le stepper « Créer une compagnie » : un bloc construit une fois, à hauteur réservée (règle 22), un volet par pas ; rien n'est écrit avant le dernier bouton. Le genre est préchoisi « Commerciale ». */
@@ -645,6 +675,10 @@
         <fieldset data-wz-kind><legend>${esc(t(TA.kindLabel))}</legend>${KINDS.map(k => `<label class="f-check f-kind"><input type="radio" name="wz-kind" value="${k}"${k === 'va' ? ' checked' : ''}><span><b data-kind-name="${k}"></b><span class="f-muted">${esc(t(TA.kindHelp[k]))}</span></span></label>`).join('')}</fieldset>
         <fieldset><legend>${esc(t(TA.networks))}</legend>${AIRLINE_NETWORKS.map(k => `<label class="f-check"><input type="checkbox" data-co-net="${k}"> ${esc(t(TA.net[k]))}</label>`).join('')}</fieldset></section>
       <section data-step-pane="categories" hidden></section>
+      <section data-step-pane="fleet" hidden><h4 data-wz-fleet-title></h4><p class="f-muted">${esc(t(TA.wzFleetHint))}</p>
+        ${fld('wz-sheet-q', TA.wzSheetQ, '')}<div data-wz-results></div>
+        <div data-wz-pick hidden><p data-wz-picked></p>${fld('wz-reg', TA.wzReg, '', { cap: true })}<div class="f-row"><button type="button" data-act="companyWzReg">${esc(t(TA.wzRegAdd))}</button></div></div>
+        <ul class="f-cats" data-wz-fleet></ul><div class="f-row"><button type="button" data-act="companyWzLater">${esc(t(TA.wzLater))}</button></div></section>
       <section data-step-pane="summary" hidden><p data-wz-summary></p></section>
       <section data-step-pane="done" hidden><p data-wz-done></p><div class="f-row"><button type="button" class="primary" data-act="companyFly">${esc(t(TA.fly))}</button><button type="button" data-act="companyStay">${esc(t(TA.stay))}</button></div></section>
       <p class="f-msg" data-msg></p>
@@ -666,7 +700,7 @@
       resume = !!WZ.get(view)?.resume,
       on = {
         companyBack: name !== 'identity',
-        companyNext: name === 'identity' || name === 'categories',
+        companyNext: name === 'identity' || name === 'categories' || name === 'fleet',
         companyAdd: name === 'summary' && !resume,
         companyResume: name === 'summary' && resume
       };
@@ -758,6 +792,100 @@
       by
     };
   }
+  /** Les fiches d'appareils de la base (aerodb, aircraft().sheets.list()), lues une fois par vue : [{ id, name, type }] bornées (texte de 60 signes, 500 fiches) ; [] sans aerodb. */
+  async function wizardSheets(env) {
+    const st = WZ.get(env.view) || {};
+    if (st.sheets) return st.sheets;
+    let list = [];
+    try {
+      const A = await env.c.aerodb?.()?.aircraft?.();
+      list = (await A?.sheets?.list?.()) || [];
+    } catch {
+      list = [];
+    }
+    const sheets = (Array.isArray(list) ? list : []).slice(0, 500).map(x => ({
+      id: String(x?.id ?? '').slice(0, 24),
+      name: String(x?.name ?? x?.id ?? '').slice(0, 60),
+      type: String(x?.icao ?? x?.type ?? x?.id ?? '').toUpperCase().slice(0, 8)
+    })).filter(x => x.id);
+    WZ.set(env.view, {
+      ...st,
+      sheets
+    });
+    return sheets;
+  }
+  /** Le titre du pas ③ et sa pastille disent combien d'appareils sont ajoutés (« Flotte · 3 appareils »), le bouton « Plus tard » ne se montre que sans appareil. */
+  function wizardFleetPaint(view, t) {
+    const n = view.querySelectorAll('[data-wz-fleet] li').length,
+      title = n ? t(TA.wzFleetTitle, {
+        n
+      }) : t(TA.steps.fleet),
+      h = view.querySelector('[data-wz-fleet-title]'),
+      dot = view.querySelector('[data-step-dot="fleet"]'),
+      later = view.querySelector('[data-act="companyWzLater"]');
+    if (h) h.textContent = title;
+    if (dot) dot.textContent = `${WZ_STEPS.indexOf('fleet') + 1}. ${title}`;
+    if (later) later.hidden = n > 0;
+    return n;
+  }
+  /** Les fiches qui répondent à la recherche (nom, type ou identifiant), huit au plus, une ligne chacune ; la dernière demande seule est dessinée. */
+  async function wizardSheetSearch(env) {
+    const {
+      view,
+      t
+    } = env, box = view.querySelector('[data-wz-results]'), q = (view.querySelector('[data-wizard] [data-f="wz-sheet-q"]')?.value || '')
+      .trim().toLowerCase(),
+      seq = (view.__wzSeq = (view.__wzSeq || 0) + 1), all = await wizardSheets(env);
+    if (!box || seq !== view.__wzSeq) return;
+    const hits = all.filter(x => !q || `${x.id} ${x.name} ${x.type}`.toLowerCase().includes(q)).slice(0, 8);
+    box.innerHTML = !all.length ? `<p class="f-muted">${esc(t(TA.wzNoSheets))}</p>` : hits.length ? `<ul class="f-queue">${hits.map(x => `<li><button type="button" data-act="companyWzSheet" data-id="${esc(x.id)}">${esc(x.name)}${x.type && x.type !== x.name ? ` · ${esc(x.type)}` : ''}</button></li>`).join('')}</ul>` : `<p class="f-muted">${esc(t(TA.wzNoHit))}</p>`;
+  }
+  /** Un type choisi dans la liste : il attend l'immatriculation (le champ prend le focus). */
+  async function wizardSheetPick(env, id) {
+    const {
+      view
+    } = env, x = (await wizardSheets(env)).find(s => s.id === id), pick = view.querySelector('[data-wz-pick]');
+    if (!x || !pick) return;
+    pick.dataset.type = x.type;
+    pick.dataset.variant = x.name;
+    pick.querySelector('[data-wz-picked]').textContent = `${x.name}${x.type && x.type !== x.name ? ` · ${x.type}` : ''}`;
+    pick.hidden = false;
+    pick.querySelector('[data-f="wz-reg"]')?.focus();
+  }
+  /** « Ajouter l'appareil » : l'immatriculation (majuscules, 2 à 10 signes, une fois) avec le type choisi, ajoutée à la liste du pas ③ ; rien n'est écrit. */
+  function wizardRegAdd(env) {
+    const {
+      view,
+      t
+    } = env, pick = view.querySelector('[data-wz-pick]'), field = pick.querySelector('[data-f="wz-reg"]'), reg = field.value.trim()
+      .toUpperCase();
+    wizardSay(view, '');
+    if (!pick.dataset.type) return wizardSay(view, t(TA.wzPickFirst));
+    if (!WZ_REG.test(reg)) return wizardSay(view, t(TA.wzRegBad));
+    const list = view.querySelector('[data-wz-fleet]');
+    if ([...list.children].some(li => li.dataset.reg === reg)) return wizardSay(view, t(TA.wzRegDup));
+    if (list.children.length >= WZ_FLEET_MAX) return wizardSay(view, t(TA.full));
+    const li = document.createElement('li');
+    li.dataset.reg = reg;
+    li.dataset.type = pick.dataset.type;
+    li.dataset.variant = pick.dataset.variant || '';
+    li.append(`${reg} · ${pick.dataset.type} `);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.act = 'companyWzRegDel';
+    b.textContent = t(TA.catDel);
+    li.append(b);
+    list.append(li);
+    field.value = '';
+    field.focus();
+    wizardFleetPaint(view, t);
+  }
+  /** Les appareils du pas ③ : [{ registration, type, variant }]. */
+  const wizardFleet = view => [...view.querySelectorAll('[data-wz-fleet] li')].map(li => ({
+    registration: li.dataset.reg,
+    type: li.dataset.type,
+    variant: li.dataset.variant
+  }));
   /** Ce que l'utilisateur a saisi : { name, code, kind, nets } (la valeur des champs, jamais écrite avant le dernier bouton). */
   function wizardValues(view) {
     const w = view.querySelector('[data-wizard]'),
@@ -801,11 +929,13 @@
   }
   /** Le résumé du dernier pas, en mots de pilote : « Rennes Motoculture · Commerciale · IVAO » (les pas de la catégorie et de la flotte s'y ajoutent). */
   function wizardSummary(env, v) {
-    const KN = AIR.get(env.view)?.CL?.KIND_NAMES;
-    return [v.name, KN ? env.t(KN[v.kind]) : '', ...AIRLINE_NETWORKS.filter(k => v.nets[k]).map(k => env.t(TA.net[k])), env.t(TA
-      .wzCatCount, {
-        n: wizardCats(env.view).n
-      })].filter(Boolean).join(' · ');
+    const KN = AIR.get(env.view)?.CL?.KIND_NAMES,
+      nets = AIRLINE_NETWORKS.filter(k => v.nets[k]).map(k => env.t(TA.net[k]));
+    return [v.name, KN ? env.t(KN[v.kind]) : '', ...nets, env.t(TA.wzCatCount, {
+      n: wizardCats(env.view).n
+    }), env.t(TA.fleet, {
+      n: wizardFleet(env.view).length
+    })].filter(Boolean).join(' · ');
   }
   /** « Suivant » et « Retour » : d'un pas à l'autre (l'identité est vérifiée en quittant le premier), sans rien perdre ; le résumé est composé en y arrivant. */
   async function wizardMove(env, dir) {
@@ -819,6 +949,10 @@
         why = await wizardCheck(env, v);
       if (why) return wizardSay(view, why);
       wizardCatsBuild(env, v.kind);
+    }
+    if (to === 'fleet') {
+      wizardFleetPaint(view, env.t);
+      wizardSheetSearch(env);
     }
     if (to === 'summary') w.querySelector('[data-wz-summary]').textContent = wizardSummary(env, wizardValues(view));
     wizardShow(view, to);
@@ -848,6 +982,8 @@
         by: env.id?.trigram || ''
       },
       catsFile = wizardCatsFile(view, v, stamp.updated_at, stamp.by),
+      FL = await import(new URL('modules/aircraft/fleet.js', ROOT).href).catch(() => null),
+      fleet = wizardFleet(view).map(a => FL ? FL.normalize(a) : a),
       todo = [
         ['settings', `airline/${v.code}/settings.json`, {
           schema: 1,
@@ -861,7 +997,7 @@
         ] : []),
         ['fleet', `airline/${v.code}/fleet.json`, {
           schema: 1,
-          aircraft: [],
+          aircraft: fleet,
           ...stamp
         }],
         ['index', INDEX, {
@@ -918,6 +1054,13 @@
       delete i.dataset.touched;
     }
     for (const i of w.querySelectorAll('[data-co-net]')) i.checked = false;
+    w.querySelector('[data-wz-fleet]')?.replaceChildren();
+    w.querySelector('[data-wz-results]')?.replaceChildren();
+    const pick = w.querySelector('[data-wz-pick]');
+    if (pick) {
+      pick.hidden = true;
+      delete pick.dataset.type;
+    }
     const pane = w.querySelector('[data-step-pane="categories"]');
     if (pane) {
       pane.innerHTML = '';
@@ -934,7 +1077,8 @@
     w.style.minHeight = '';
   }
   /** Les saisies du stepper : le code se propose d'après le nom tant qu'il n'a pas été touché (une écoute par vue). */
-  const WZ_WIRED = new WeakSet();
+  const WZ_WIRED = new WeakSet(),
+    WZ_ENV = new WeakMap();
 
   function wizardWire(view) {
     if (WZ_WIRED.has(view)) return;
@@ -942,6 +1086,7 @@
     view.addEventListener('input', e => {
       const f = e.target?.dataset?.f;
       if (f === 'co-code') e.target.dataset.touched = '1';
+      if (f === 'wz-sheet-q' && WZ_ENV.get(view)) wizardSheetSearch(WZ_ENV.get(view));
       if (f !== 'co-name') return;
       const code = view.querySelector('[data-wizard] [data-f="co-code"]');
       if (code && !code.dataset.touched) code.value = proposeCode(e.target.value);
@@ -1013,6 +1158,7 @@
       lang,
       now
     });
+    WZ_ENV.set(view, env);
     wizardWire(view);
     wizardKindNames(view, CL, t);
     paintRows(box, rows, t, can, CL);
@@ -1178,6 +1324,13 @@
     if (act === 'companyAdd' || act === 'companyResume') return createAirline(env, act === 'companyResume');
     if (act === 'companyStay') return wizardReset(env.view);
     if (act === 'companyWzCatAdd') return wizardCatAdd(env);
+    if (act === 'companyWzSheet') return wizardSheetPick(env, b.dataset.id || '');
+    if (act === 'companyWzReg') return wizardRegAdd(env);
+    if (act === 'companyWzRegDel') {
+      b.closest('li')?.remove();
+      return wizardFleetPaint(env.view, env.t);
+    }
+    if (act === 'companyWzLater') return wizardMove(env, 1);
     if (act === 'companyWzCatDel') return b.closest('li')?.remove();
     if (act === 'companyFly') {
       // « Voler pour cette compagnie » : la compagnie devient la courante, puis Missions
@@ -1190,7 +1343,7 @@
 
   (window.SogSettingsParts ||= {}).airline = {
     acts: ['companyChoose', 'companyAdd', 'companyNext', 'companyBack', 'companyResume', 'companyStay', 'companyFly', 'companyWzCatAdd',
-      'companyWzCatDel', 'companyPlan',
+      'companyWzCatDel', 'companyWzSheet', 'companyWzReg', 'companyWzRegDel', 'companyWzLater', 'companyPlan',
       'companyMigrate', 'companyKind', 'companyCatAdd', 'companyCatDel'
     ],
     html: airlineHtml,
