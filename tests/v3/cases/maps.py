@@ -45,6 +45,7 @@ def aligned(c, what):
 @case('D1', 'Buttons', 'D', tags=('overlay', 'maps'), screens=False, langs4=True, rule='maps lot point 2')
 def d1(c):
     c.open('maps', flight=True)
+    c.until("() => [...document.querySelectorAll('.f-ov-right .f-ov-btn')].filter(b => window.__t.shown(b)).length >= 5", timeout=10000, what='the buttons of the map are shown (under load the route reads later)')
     btns = vis_right(c)
     order = [b['mp'] for b in btns]
     c.eq(order, ['route', 'fit', 'mode', 'edit', 'full'], 'right column: Edit the route, Recentre, mode, Edit (toggle), then the frame\'s full screen', what='visible right buttons in order')
