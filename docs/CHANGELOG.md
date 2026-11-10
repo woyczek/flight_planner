@@ -15,6 +15,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Fuel: the chosen ILS approach says its aid** (`modules/fuel/procedures.js`, `procedures_texts.js`; Fuel SPEC, DECISIONS, help;
   noreg F127; SOG-0176). « ILS 25 · DO 109.35 · axe 246° · DME » under the arrival's lists when the published base carries the ILS of
   the runway; no line otherwise.
+
+- **Map: the complexity cursor is back on the mission maps** (`modules/maps/layers.js`, `mission_view.js`, `draw.js`, `render.js`; SPEC § 6.6, DECISIONS; noreg D145; SOG-0183, regression of SOG-0137).
+  It is in the Layers tab of every view, with its own setting on a mission map (+4 by default: all that the view shows) and it acts on the drawing (zoom thresholds); the flight's setting is untouched.
+
 - **Météo: the world synoptic line leaves the map** (`modules/atmosphere/module.js`, `world_build.js`, `style.js`; SPEC § 4.4, DECISIONS; noreg E18, E2). It is a band above the map, its height reserved
   until the index is read (rule 22), instead of a card over it (E2 « nothing written on the map » was red).
 

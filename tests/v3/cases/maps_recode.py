@@ -4712,3 +4712,24 @@ def d144(c):
     boxes = [box(x) for x in nm if x['t'] in ('XA', 'XB', 'T11')]
     c.ok(not any(hit(p, q) for i, p in enumerate(boxes) for q in boxes[i + 1:]), str(nm), 'no two names overlap')
     c.ok(not any(hit(p, (r['x0'], r['y0'], r['x1'], r['y1'])) for p in boxes for r in rects), str(nm), 'and none overlaps a label of the flight’s route')
+
+
+@case('D145', 'The complexity cursor is in every view of the Map, a mission map included: it has its own setting (the flight’s is untouched), starts at the maximum (all that the view shows) and spares the view and the CPU when lowered', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0183 (regression of SOG-0137; the user: « le curseur a disparu, et on sait qu’il sert à épargner la vue et le cpu »): the complexity cursor is in the Layers tab of every view, a mission map too, at the same place; the view of the use picks the layers, the complexity keeps its setting over it (its own key on a mission map, maximum by default); the effective zoom follows it')
+def d145(c):
+    _themed(c, '2_SAR', 'SAR1', 'maps?mission=SAR1&map=carte_cible.png')
+    c.tap('[data-mp="layers"]')
+    c.until("() => { const e = document.querySelector('.mp-l-detail'); return !!e && e.getBoundingClientRect().height > 0 }", timeout=6000, what='the complexity cursor is shown in the Layers tab of a mission map')
+    c.eq(c.js("() => document.querySelector('input[data-layer=detail]').value"), '4', 'it starts at the maximum on a mission map (all that the view shows)', what='value')
+    c.eq(c.js("() => document.querySelectorAll('.mp-layer-set:not([hidden])').length"), 0, 'the layer boxes stay hidden on a mission map (the view of the use picks the layers)', what='boxes')
+    hook_map(c)
+    c.wait(1200)
+    e0 = c.js("() => +document.querySelector('[data-module=\"maps\"] .mp-map').dataset.zoomEff")
+    c.js("() => { const r = document.querySelector('input[data-layer=detail]'); r.value = '-4'; r.dispatchEvent(new Event('input', { bubbles: true })); return true }")
+    c.until("() => window.__mp.S.layers && window.__mp.S.layers.mission && window.__mp.S.layers.mission.detail === -4", timeout=6000, what='the cursor acts: kept under the mission’s own key')
+    c.wait(1200)
+    e1 = c.js("() => +document.querySelector('[data-module=\"maps\"] .mp-map').dataset.zoomEff")
+    c.ok(e0 - e1 > 6, f'effective zoom {e0} → {e1}', 'lowering it lowers the effective zoom (eight levels): fewer elements, a lighter drawing')
+    c.eq(c.js("() => Object.keys(window.__mp.S.layers)"), ['mission'], 'the flight’s own setting is untouched', what='keys')
+    c.shot('D145_layers_mission.png')

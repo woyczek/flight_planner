@@ -618,7 +618,7 @@ function draw() {
   const pxDeg = W / Math.max(1e-6, shown.e - shown.w),
     zReal = MapsRender.zoomOf(pxDeg),
     FR = frameRef(W, H),
-    zv = mission ? zReal : MapsRender.effectiveZoom(zReal + MapsRender.detailZoom(detailShift()), FR.W, FR.H),
+    zv = MapsRender.effectiveZoom(zReal + MapsRender.detailZoom(detailShift()), FR.W, FR.H),
     zoomOn = k => MapsRender.visibleAt(S.profile, k, zv),
     // procédures choisies (SID, STAR, approche) : mise en page à l'écran ; leurs libellés se réservent dans le placeur de la
     // carte, après ceux de la route
@@ -668,7 +668,7 @@ function draw() {
     marks: viewMarks(shown),
     theme: S.theme,
     level,
-    detail: mission ? 0 : detailShift(),
+    detail: detailShift(),
     hideVrp: mission ? null : vfrVrpIds(),
     lines: mission || pick ? null : routeLines(),
     cov,

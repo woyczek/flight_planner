@@ -300,8 +300,9 @@ export function bannerFill() {
 export function missionUi() {
   if (!S) return;
   const on = !!S.missionId,
-    set = S.layersEl?.querySelector('.mp-layer-set');
-  if (set && set.hidden !== on) set.hidden = on;
+    sets = S.layersEl?.querySelectorAll('.mp-layer-set') || []; // les cases : pas sur une carte de mission ; la Complexité, si (SOG-0183)
+  for (const set of sets)
+    if (set.hidden !== on) set.hidden = on;
   const name = tt(on ? TX.pick : TX.layers),
     b = S.layersBtn;
   if (b && b.title !== name) {

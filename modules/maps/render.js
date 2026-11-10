@@ -1458,11 +1458,11 @@
       // droite ; detailZoom), puis corrigé par la taille du cadre (effectiveZoom) ; carte de mission : tout ce que son
       // profil montre (ni curseur ni taille) ; vol : les seuils de zoom de chaque élément se comparent à ce zoom effectif
       zs = zoomOf(toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x) + detailZoom(detail),
-      zv = mission ? zs : effectiveZoom(zs, frame?.W ?? view?.W ?? W, frame?.H ?? view?.H ?? H),
+      zv = effectiveZoom(zs, frame?.W ?? view?.W ?? W, frame?.H ?? view?.H ?? H),
       tier = tierOf(pxOfZoom(zv));
     profile = migrated(profile); // l'ancien airwayLabels lu comme awLabels (§ 10.29 g)
-    if (!mission) profile = atZoom(profile, zv);
-    const shown = mission ? data : byZoom(data, profile, zv, tier);
+    profile = atZoom(profile, zv);
+    const shown = byZoom(data, profile, zv, tier);
     // une seule passe de collision (SiaAero.pass, SPEC § 3) : les couches sont jouées deux fois, un tour muet qui recense les
     // étiquettes, puis le dessin, chaque étiquette à la place que la liste fermée des priorités (RANK) lui a donnée
     // le canvas déborde de la vue (view) : les traits et les symboles y sont dessinés (pas de « mur » au déplacement), les étiquettes
@@ -1694,7 +1694,7 @@
           shifted: zs,
           effective: zv,
           tier,
-          kept: mission ? null : {
+          kept: {
             airspaces: shown.airspaces?.length || 0,
             // par famille de seuil (asTma, asCtr, asP, asR, asD, …) : ce que les curseurs gardent, pour les mesures
             byKey: (shown.airspaces || []).reduce((n, a) => {

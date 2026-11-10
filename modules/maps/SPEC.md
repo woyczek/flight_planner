@@ -711,6 +711,9 @@ range; the base map's own names hidden while ours are drawn (§ 5).
   one function serves the ranges, the VRP layer, labels, contour lines, the towns' place-name switch and the density tier.
   What needs real room stays in raw pixels per degree: obstacle heights, ETA labels, the "everything in the view is read"
   switch, the overview rule.
+- **The Complexity cursor is in every view, a mission map included** (SOG-0183): the layer boxes are hidden on a mission map (its view of the use picks the layers, § 15), the cursor is not;
+  a mission map has **its own setting** (`S.layers.mission.detail`, `modeKey()`; the flight's is untouched), starting at **+4** (all that the view shows, as before the cursor) and lowering
+  it spares the view and the CPU; the thresholds of § 6.6 now apply to a mission map too (they did not before: it was drawn whole). Noreg D145.
 - **The Complexity slider is a zoom shift and nothing else**; what each zoom shows is the administrator's (§ 14). The step
   is kept per mode on the device (`layers[mode].detail`; an older value is clamped).
 - **Starting values** (`ZOOM_IFR`, `ZOOM_VFR`): in IFR (Auto, Low, High IFR, CAM) the overview shows the route, the winds,

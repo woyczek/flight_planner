@@ -2317,6 +2317,16 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D140 (the width, the airway solid, the SID's tint, the DCT dashed and thinner when not fully checked, the FRA dotted and faded, the fault red, the airway's name and
   the entry / exit written, the key folded in the list and in the map's legend, the hover of a line on the map: highlighted, drawn thick, released); D126 and D136 follow the new widths.
 
+## The complexity cursor is back on the mission maps (10 Nov 2026, SOG-0183, regression of SOG-0137)
+
+- **Where it went**: SOG-0137 hid `.mp-layer-set` as a whole on a mission map, and the cursor was inside it; and the mission drawing ignored the setting (`detail: mission ? 0 : …`, the zoom
+  not shifted, `atZoom` and `byZoom` skipped for a mission): even visible it would have done nothing.
+- **Done**: the cursor leaves the hidden set (`.mp-layer-cx`, always shown); a mission map has its own key (`modeKey()`: `mission`) so that lowering it does not change the flight's complexity,
+  and starts at +4 so that a mission map looks as before until the user spares it; the mission drawing follows the zoom shifted by it and the thresholds of the zoom × complexity table; the
+  counters `zoom.kept` are given for a mission too. `reprofile()` no longer replaces a mission's profile (its view) by the flight's.
+- **Not done**: « Tout remettre » is not offered on a mission map (its boxes are hidden); the setting is per device for all mission maps, not per map.
+- **Noreg** D145 (cursor shown, +4, boxes hidden, acts: eight levels of effective zoom, the flight's setting untouched; red before).
+
 ## The proposed routes write nothing over the flight's route (10 Nov 2026, SOG-0134: the ergonomics' reading of D140's capture)
 
 - **Seen**: the chosen route's points were named in black over the violet names of the flight's route (LFRS twice, AAA over LUGEN, BBB over NEPIX, the DCT dashes across NEPIX); in use the

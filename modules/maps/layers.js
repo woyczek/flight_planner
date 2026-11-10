@@ -323,15 +323,21 @@ export function layerDefaults(B) {
     detail: 0
   };
 }
-/** Couches de départ du mode : celles du profil, puis celles que la compagnie a enregistrées (profiles[mode].layers). */
+/** La clef des choix gardés : le mode du vol, ou « mission » sur une carte de mission (SOG-0183 : sa Complexité est la sienne, elle ne change pas celle du vol). */
+export const modeKey = () => S?.missionId ? 'mission' : S.preset;
+/** Couches de départ du mode : celles du profil, puis celles que la compagnie a enregistrées (profiles[mode].layers) ; une carte de mission part de la Complexité
+ *  maximale (tout ce que son profil montre, comme avant le curseur) et le curseur l'allège. */
 export const baseLayers = () => ({
   ...layerDefaults(flightProfile()),
-  ...(S.repoProfiles?.[S.preset]?.layers || {})
+  ...(S.repoProfiles?.[S.preset]?.layers || {}),
+  ...(S.missionId ? {
+    detail: 4
+  } : {})
 });
 /** Couches du mode courant : celles de départ, puis les choix gardés sur cet appareil. */
 export const layersNow = () => ({
   ...baseLayers(),
-  ...(S.layers?.[S.preset] || {})
+  ...(S.layers?.[modeKey()] || {})
 });
 /** Cran du curseur de Complexité du mode (−4 à +4 ; une valeur plus ancienne est ramenée dans les bornes). */
 export const detailShift = () => Math.max(-4, Math.min(4, Math.round(+layersNow().detail || 0)));
@@ -371,7 +377,7 @@ export function effectiveProfile() {
 }
 /** Profil refait après un changement de couche, de mode ou de réglage : données relues, carte et profil vertical redessinés. */
 export function reprofile() {
-  S.profile = effectiveProfile();
+  if (!S.missionId) S.profile = effectiveProfile(); // une carte de mission garde son profil (sa vue) : seule sa Complexité change
   invalidate();
   if (S.dpanel === 'layers') fillLayers();
   dataHead(); // le titre du volet dit « autour du vol » quand la case l'est
@@ -383,12 +389,12 @@ export function reprofile() {
 export function setLayer(key, value, keep = false) {
   const all = S.layers ||= {};
   if (keep);
-  else if (key == null) delete all[S.preset];
+  else if (key == null) delete all[modeKey()];
   else {
-    const own = all[S.preset] ||= {};
+    const own = all[modeKey()] ||= {};
     if (baseLayers()[key] === value) delete own[key];
     else own[key] = value;
-    if (!Object.keys(own).length) delete all[S.preset];
+    if (!Object.keys(own).length) delete all[modeKey()];
   }
   saveUi();
   if (key === 'cov') { // la couche n'entre pas dans le profil d'affichage : ni données relues ni profil refait
@@ -418,9 +424,10 @@ export function layersHtml(ctx) {
     name = ctx.t(mission ? TX.pick : TX.layers);
   return `<div class="mp-layers" role="group" aria-label="${esc(name)}">
 <div class="mp-layer-set"${mission ? ' hidden' : ''}>
-<label class="mp-l-main"><input type="checkbox" data-layer="corridor"> <span>${esc(ctx.t(TX.layerNames.corridor))}<small class="f-muted">${esc(ctx.t(TX.corrSub))}</small></span></label>
-<label class="mp-l-detail" title="${esc(ctx.t(TX.detailHelp))}">${esc(ctx.t(TX.detail))} <span data-detail-v></span><input type="range" min="-4" max="4" step="1" data-layer="detail" aria-describedby="mp-detail-help"></label>
-<span id="mp-detail-help" class="f-muted mp-l-help">${esc(ctx.t(TX.detailHelp))}</span>
+<label class="mp-l-main"><input type="checkbox" data-layer="corridor"> <span>${esc(ctx.t(TX.layerNames.corridor))}<small class="f-muted">${esc(ctx.t(TX.corrSub))}</small></span></label></div>
+<div class="mp-layer-cx"><label class="mp-l-detail" title="${esc(ctx.t(TX.detailHelp))}">${esc(ctx.t(TX.detail))} <span data-detail-v></span><input type="range" min="-4" max="4" step="1" data-layer="detail" aria-describedby="mp-detail-help"></label>
+<span id="mp-detail-help" class="f-muted mp-l-help">${esc(ctx.t(TX.detailHelp))}</span></div>
+<div class="mp-layer-set"${mission ? ' hidden' : ''}>
 ${LAYER_KEYS.filter(k => k !== 'corridor' && (k !== 'cov' || covAvail())).map(k => `<label><input type="checkbox" data-layer="${k}"> ${esc(ctx.t(TX.layerNames[k]))}</label>`).join('')}
 <button type="button" class="f-btn" data-layers-reset>${esc(ctx.t(TX.layersReset))}</button></div>
 <div class="mp-picks"><select class="mp-pick" aria-label="${esc(ctx.t(TX.pick))}"></select>
