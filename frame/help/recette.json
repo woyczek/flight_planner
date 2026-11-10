@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 59,
-  "verdicts": 22
+  "tests": 62,
+  "verdicts": 24
  },
  "apps": [
   "pilote",
@@ -578,7 +578,9 @@
    },
    "test": "Carburant › SID / STAR sur un terrain sans procédures (ESSB) : la ligne dit ce que publie son État (« Suède : étiquettes seules ») avec Navigraph et ChartFox ; sur un terrain EAD, le bouton dit « Lire à la demande ».",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "ok",
+   "comment": "validé sur le fond. néanmoins, dans la roadmap, on doit avoir un moyen de recréer les procédures même si c’est du texte. En l’espèce, les points airnav sont décrits avec leur coordonnées. ex. lemo, rwy 020 : on voit santi, fl270, arjon, ecitja, lante, apadu, moron. https://aip.enaire.es/AIP/contenido_AIP/AD/AD2/LEMO/LE_AD_2_LEMO_CARR_1_en.pdf  . /a minima/ le nom des procédures. est-ce qu’on a besoin d’un moteur de reconaissance texte pour le convertir en tableau ? est-ce qu’on peut imaginer une superposition à 50% alpha de la page 1 de la chart ? je cherche, c’est pour la roadmap, hein.",
+   "at": "2026-11-10T10:48:05Z"
   },
   {
    "id": "SOG-0158",
@@ -658,9 +660,11 @@
     "de": "R- und D-Gebiete: ihren Text (Aktivität, Bedingungen) aus Vertikalprofil und Karte lesen",
     "es": "Zonas R y D: leer su texto (actividad, condiciones) desde el perfil vertical y el mapa"
    },
-   "test": "Carte avec une route qui traverse des espaces, profil vertical ouvert : un premier appui sur un bloc le surligne et affiche son nom, ses limites et un bouton « Fiche » ; le profil reste en place. « Fiche » (ou un second appui) ouvre la fiche sans déplacer la page ni réduire le profil ; la fermer rend le profil identique. Après « Mettre à jour » : la fiche de R 61 donne ses horaires et conditions.",
+   "test": "Carte avec une route qui traverse des espaces, profil ouvert : un appui sur un bloc le surligne ; « Fiche » ouvre la fiche de l'espace AVEC, à côté (dessous au téléphone), la pile des espaces de ce point en blocs sur l'échelle des niveaux, jamais vide ; toucher un autre bloc change la fiche ; rien ne sort de l'écran.",
    "since": "2026-11-10",
-   "state": "known"
+   "state": "ko",
+   "comment": "noreg : bug d’affichage vertical",
+   "at": "2026-11-10T08:59:08Z"
   },
   {
    "id": "SOG-0164",
@@ -780,6 +784,45 @@
     "es": "Ajustes: han vuelto los parpadeos"
    },
    "test": "Ouvrir Réglages (et Données) : l'écran se dessine une fois et ne clignote plus quand l'état du dépôt arrive ; seuls les blocs qui en dépendent changent, rien ne saute.",
+   "since": "2026-11-10",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0173",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte : en zoom arrière prononcé, déplacer la carte fait apparaître une foule de voies aériennes basses",
+    "en": "Map: at a wide zoom, dragging the map shows a crowd of low airways",
+    "de": "Karte: bei weitem Zoom zeigt das Verschieben eine Flut niedriger Luftstraßen",
+    "es": "Mapa: con zoom amplio, arrastrar el mapa muestra multitud de aerovías bajas"
+   },
+   "test": "Carte en zoom arrière prononcé (Europe entière) : déplacer la carte ne fait plus apparaître les voies aériennes basses, ni pendant le geste ni au relâchement ; en zoomant elles reviennent comme avant.",
+   "since": "2026-11-10",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0175",
+   "app": "pilote",
+   "title": {
+    "fr": "VOR : doubler le cercle des degrés et poser des repères tous les 30°",
+    "en": "VOR: a double compass circle with marks every 30°",
+    "de": "VOR: doppelter Gradkreis mit Marken alle 30°",
+    "es": "VOR: doble círculo de grados con marcas cada 30°"
+   },
+   "test": "Carte à zoom proche sur un VOR : la rose a deux cercles, l'extérieur gradué tous les 10° avec chiffres et petites flèches tous les 30°, l'intérieur fin pour lire un relèvement ; elle est tournée de la déclinaison. À comparer à ta capture de référence.",
+   "since": "2026-11-10",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0177",
+   "app": "pilote",
+   "title": {
+    "fr": "Route longue : trop de marqueurs de distance",
+    "en": "Long route: too many distance markers",
+    "de": "Lange Route: zu viele Distanzmarken",
+    "es": "Ruta larga: demasiados marcadores de distancia"
+   },
+   "test": "Carte avec une route longue (KDEN → LEMO) : une douzaine de repères de distance au plus à l'écran, à pas rond ; sur le profil, l'axe porte quelques repères lisibles (1000, 2000…), plus une bande serrée.",
    "since": "2026-11-10",
    "state": "todo"
   },

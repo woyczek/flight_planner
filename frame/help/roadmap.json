@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7e1a289",
+  "organisation": "55742e0",
   "fiches": 181,
   "untranslated": 1,
   "priorities": 152
@@ -684,7 +684,7 @@
     {
      "id": "SOG-0163",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Espaces R et D : lire leur texte (activité, conditions) depuis le profil vertical et la carte",
      "en": "R and D areas: read their text (activity, conditions) from the vertical profile and the map",
      "de": "R- und D-Gebiete: ihren Text (Aktivität, Bedingungen) aus Vertikalprofil und Karte lesen",
@@ -702,7 +702,7 @@
     {
      "id": "SOG-0173",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Carte : en zoom arrière prononcé, déplacer la carte fait apparaître une foule de voies aériennes basses",
      "en": "Map: at a wide zoom, dragging the map shows a crowd of low airways",
      "de": "Karte: bei weitem Zoom zeigt das Verschieben eine Flut niedriger Luftstraßen",
@@ -711,7 +711,7 @@
     {
      "id": "SOG-0175",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "VOR : doubler le cercle des degrés et poser des repères tous les 30°",
      "en": "VOR: a double compass circle with marks every 30°",
      "de": "VOR: doppelter Gradkreis mit Marken alle 30°",
@@ -720,7 +720,7 @@
     {
      "id": "SOG-0177",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Route longue : trop de marqueurs de distance",
      "en": "Long route: too many distance markers",
      "de": "Lange Route: zu viele Distanzmarken",
