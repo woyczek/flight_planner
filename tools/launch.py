@@ -4230,18 +4230,23 @@ def update_suite(channel, want=''):
         jobs.release()
 
 
+REGEN_LOCK = threading.Lock()   # le premier appel de regen() : une seule lecture des jeux, quel que soit le nombre de requêtes qui arrivent ensemble au démarrage (SOG-0219 : « verb already defined » ×15)
+
+
 def regen():
     """Les travaux du module Données de ce lanceur (un à la fois)."""
     global REGEN
     if REGEN is None:
-        g, env = regen_git()
-        for name, why in regen_jobs.load_verbs():  # tools/regen/<jeu>.py : les verbes de chaque jeu
-            say(f'  Données : {name} laissé de côté ({why}).')
-        # aircraft_publish : la publication de la base des types (verbe aircraft/publish, tools/regen/aircraft.py) reste ici, avec
-        # la synchronisation qu'elle déclenche ; le jeu la reçoit par son contexte
-        REGEN = regen_jobs.Jobs(regen_jobs.REGISTRY, {'data': DATA, 'secrets': SECRETS, 'git_cmd': g, 'git_env': env,
-                                                      'aircraft_publish': aircraft_publish, 'downloads': downloads_dirs, 'sync_lock': SYNC_LOCK, 'lnm_folder': lnm_db_folder},
-                                store=os.path.join(ROOT, 'tools', '.regen_last.json'))
+        with REGEN_LOCK:               # le serveur a un fil par requête : deux premières requêtes à la fois chargeaient chacune les jeux, et la seconde les refusait tous (« verb already defined »)
+            if REGEN is None:
+                g, env = regen_git()
+                for name, why in regen_jobs.load_verbs():  # tools/regen/<jeu>.py : les verbes de chaque jeu
+                    say(f'  Données : {name} laissé de côté ({why}).')
+                # aircraft_publish : la publication de la base des types (verbe aircraft/publish, tools/regen/aircraft.py) reste ici, avec
+                # la synchronisation qu'elle déclenche ; le jeu la reçoit par son contexte
+                REGEN = regen_jobs.Jobs(regen_jobs.REGISTRY, {'data': DATA, 'secrets': SECRETS, 'git_cmd': g, 'git_env': env,
+                                                              'aircraft_publish': aircraft_publish, 'downloads': downloads_dirs, 'sync_lock': SYNC_LOCK, 'lnm_folder': lnm_db_folder},
+                                        store=os.path.join(ROOT, 'tools', '.regen_last.json'))
     return REGEN
 _loaded = {}  # module → date du fichier au chargement
 

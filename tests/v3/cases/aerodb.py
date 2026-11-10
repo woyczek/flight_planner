@@ -7340,3 +7340,64 @@ def k151(c):
          'the refusals of the launcher, in a closed list (an unknown reason is « failed »)', what='reasons')
     c.eq((r['noLauncher'], r['paired']), ('no-launcher', 'paired'), 'without a launcher, or from a paired device: nothing runs', what='refused')
     c.eq((r['forgot'], r['writes']), ([True, False, ['KDEN.SID.BAYLR6.RW08']], 0), 'forgetLnm drops them; nothing was ever written (the records live in the page\'s memory only)', what='memory only')
+
+
+@case('K152', 'The launcher loads the verbs of its sets ONCE, whatever the number of requests that arrive together at start-up (SOG-0219): no « verb already defined » line, no verb lost or doubled; on the real launcher class', 'K', static=True,
+      rule='SOG-0219 (10 Nov 2026, the log of the user\'s launcher): fifteen lines « Données : aircraft.py laissé de côté (verb already defined: aircraft/fetch) », one per set. regen() builds the jobs on its first call; the server has one thread per request, so two first requests at once each loaded every set and the second refused them all. regen() now holds a lock for that first call')
+def k152(c):
+    import http.client
+    import json
+    import os
+    import shutil
+    import socket
+    import subprocess
+    import sys
+    import tempfile
+    import threading
+    import time
+    from pathlib import Path
+    RJ = _regen()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td) / 'root'
+        shutil.copytree(c.root / 'tools', root / 'tools', ignore=shutil.ignore_patterns('__pycache__', '_verify', 'demo', '.regen_last.json'))
+        data = root / 'data'
+        data.mkdir()
+        (data / 'data_tree.js').write_text('window.DATA_TREE = {};\n', encoding='utf-8')
+        s = socket.socket()
+        s.bind(('127.0.0.1', 0))
+        port = s.getsockname()[1]
+        s.close()
+        tmp = Path(td) / 'tmp'
+        tmp.mkdir()
+        log = open(Path(td) / 'launcher.log', 'w')
+        p = subprocess.Popen([sys.executable, str(root / 'tools' / 'launch.py'), '--port', str(port), '--no-browser', '--data', str(data)], stdout=log, stderr=subprocess.STDOUT,
+                             stdin=subprocess.DEVNULL, cwd=td, env={**os.environ, 'TEMP': str(tmp), 'TMP': str(tmp), 'TMPDIR': str(tmp)})
+        try:
+            hdr = {'X-SOG-Setup': '1', 'Sec-Fetch-Site': 'same-origin'}
+            for _ in range(60):
+                try:
+                    http.client.HTTPConnection('127.0.0.1', port, timeout=5).request('GET', '/', headers=hdr)
+                    break
+                except OSError:
+                    time.sleep(0.3)
+            got = []
+
+            def hit():
+                con = http.client.HTTPConnection('127.0.0.1', port, timeout=60)
+                con.request('GET', '/__setup/regen/verbs', headers=hdr)
+                got.append(json.loads(con.getresponse().read()).get('verbs'))
+            threads = [threading.Thread(target=hit) for _ in range(12)]
+            [t.start() for t in threads]
+            [t.join() for t in threads]
+            time.sleep(0.5)
+        finally:
+            p.terminate()
+            try:
+                p.wait(10)
+            except subprocess.TimeoutExpired:
+                p.kill()
+            log.close()
+        text = (Path(td) / 'launcher.log').read_text(encoding='utf-8', errors='replace')
+    want = sorted(f'{a}/{b}' for a, b in RJ.REGISTRY)
+    c.eq((len(got), [v == want for v in got].count(True), text.count('laissé de côté'), text.count('already defined')), (12, 12, 0, 0),
+         'twelve requests at once at start-up: every one sees the same verbs (those of the sets, none lost or doubled) and the log has no « laissé de côté » / « already defined » line', what='load once')
