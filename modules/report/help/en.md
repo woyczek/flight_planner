@@ -6,7 +6,7 @@ move.
 
 ## How to use
 
-<a id="report-steps"></a>**Three steps.** Under the title, "Report for …" says the airline and its kind; until the report is saved, a tap leads to the choice of the airline (Settings › Airline), and once saved it keeps its own. The report is filled in three steps: Flight, Mission, Result. On a phone, one step at a time (“Next”
+<a id="report-steps"></a>**Three steps.** Under the title, "Report for …" says the airline and its kind; until the report is saved, "Change" beside it offers the airlines and "Personal": the choice is made in place, the draft stays as it is; once saved it keeps its own, and the header says "AAA ≠ BBB" when the current airline is not its own. The report is filled in three steps: Flight, Mission, Result. On a phone, one step at a time (“Next”
 at the bottom); on a computer, the three side by side. Nothing is mandatory: what is missing is shown at the last step,
 without ever blocking the save.
 

@@ -183,8 +183,10 @@ const TX = {
   toSee: L('à voir', 'to check', 'prüfen', 'por ver'),
   // la compagnie du compte rendu (SOG-0181) : tant qu'il n'est pas enregistré, un appui mène au choix de la compagnie
   airlineFor: L('Compte rendu pour {a}', 'Report for {a}', 'Bericht für {a}', 'Informe para {a}'),
-  airlineChange: L('Choisir la compagnie (Réglages › Compagnie)', 'Choose the airline (Settings › Airline)',
-    'Fluggesellschaft wählen (Einstellungen › Fluggesellschaft)', 'Elegir la compañía (Ajustes › Compañía)'),
+  // SOG-0181 (refus du 10 nov. : « on peut bien choisir en sortie, mais on ne revient pas sur l'écran « CR » ») : la compagnie se choisit
+  // ICI, sans quitter le compte rendu (FrameData.setAirline, comme le sélecteur de l'en-tête) ; le brouillon reste tel quel
+  airlineChange: L('Changer', 'Change', 'Ändern', 'Cambiar'),
+  airlinePick: L('Compagnie du compte rendu', 'Airline of the report', 'Gesellschaft des Berichts', 'Compañía del informe'),
   warnings: L('Vérifier : {l}.', 'Check: {l}.', 'Prüfen: {l}.', 'Comprobar: {l}.'),
   // sources du préremplissage
   sources: L('Autres sources', 'Other sources', 'Andere Quellen', 'Otras fuentes'),
@@ -484,6 +486,7 @@ async function save() {
     ...snap
   });
   airlineLine();
+  clearTimeout(S.draftTimer); // un brouillon en attente (frappe de moins de 600 ms) ne revient pas après l'enregistrement
   await S.ctx.data.remove(DRAFT).catch(() => {});
   if (S.usedStarted) { // vol démarré rapporté : la carte « Vol en cours » ne le repropose plus
     const kept = (await S.ctx.data.get(STARTED).catch(() => null))?.done || [];
@@ -590,6 +593,8 @@ const crewCol = () => ({
 const STYLE = `
 [data-module="report"] .rp-code{text-transform:uppercase}
 [data-module="report"] .rp-airline{margin:-.2em 0 .6em;font-size:var(--sog-size-s)} /* la compagnie du compte rendu, sous le titre (SOG-0181) ; le jeton du cadre (G4) */
+[data-module="report"] .rp-copick select{margin-left:.4em;max-width:100%} /* le choix de la compagnie sur place (SOG-0181) */
+[data-module="report"] .rp-airline [data-crairline-change]{min-height:44px;padding:0 4px;border:0;border-radius:0;background:none;box-shadow:none;text-shadow:none;color:var(--sog-link);text-decoration:underline;font:inherit;cursor:pointer} /* « Changer » : un lien, pas un bouton plein, à côté d'une phrase */
 [data-module="report"] .rp-airline a{display:inline-flex;align-items:center;min-height:44px}
 [data-module="report"] .rp-step[hidden]{display:none}
 [data-module="report"] .f-steps>[data-todo]::after{content:" · " attr(data-todo);font-weight:400}
@@ -664,11 +669,39 @@ async function airlineLine() {
     live = true;
   }
   if (S !== s) return;
+  // la compagnie du travail montré, pour l'en-tête du cadre (« DFA ≠ AIV » quand elle diffère de la courante ; INTEGRATION § 15.5) : celle
+  // du compte rendu enregistré ; aucune pour un brouillon (il prend la courante)
+  s.ctx.workAirline?.(live ? '' : a?.code || '');
   const words = a ? MC.airlineText(a, s.ctx.lang()) : '';
+  // le choix sur place (brouillon seulement) : les compagnies de l'index, puis « Personnel » ; jamais un code tapé
+  let pick = '';
+  if (live && words && s.coPick) {
+    const list = (await window.FrameData?.airlines?.().catch(() => null) || []).filter(x => /^[a-z0-9]{2,8}$/.test(String(x?.code ||
+          '')) && x.code !==
+        'perso' && x.code !== 'default').slice(0, 40),
+      opts = [...list.map(x => [x.code, String(x.name || x.code).slice(0, 60)]), ['perso', MC.KIND_NAMES.perso[Math.max(0, ['fr', 'en',
+        'de', 'es'
+      ].indexOf(s.ctx.lang()))]]];
+    if (S !== s) return;
+    pick = ` <label class="rp-copick"><span class="f-sr">${esc(tt(TX.airlinePick))}</span><select data-crairline-pick aria-label="${esc(tt(TX.airlinePick))}">${opts.map(([c, n]) => `<option value="${esc(c)}"${c === a?.code ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>`;
+  }
   el.hidden = !words;
   el.dataset.saved = live ? '0' : '1';
-  el.innerHTML = !words ? '' : live ? `<a href="#settings?card=company" data-crairline-go title="${esc(tt(TX.airlineChange))}">${esc(tt(TX.airlineFor, { a: words }))}</a>` :
+  el.innerHTML = !words ? '' : live ? `<span data-crairline-text>${esc(tt(TX.airlineFor, { a: words }))}</span> <button type="button" class="f-linkbtn" data-crairline-change aria-expanded="${s.coPick ? 'true' : 'false'}">${esc(tt(TX.airlineChange))}</button>${pick}` :
     `<span class="f-muted">${esc(tt(TX.airlineFor, { a: words }))}</span>`;
+  el.onclick = e => {
+    if (!e.target.closest('[data-crairline-change]') || S !== s) return;
+    s.coPick = !s.coPick;
+    airlineLine();
+  };
+  el.onchange = async e => {
+    const code = e.target?.closest?.('[data-crairline-pick]')?.value || '';
+    if (S !== s || !/^[a-z0-9]{2,8}$/.test(code) || typeof window.FrameData?.setAirline !== 'function') return;
+    s.coPick = false;
+    await window.FrameData.setAirline(
+      code); // frame-airline : les catégories relues, le compte rendu redessiné (S.onAirline), le brouillon gardé
+    if (S === s) airlineLine();
+  };
 }
 /** Les catégories de la compagnie courante : son categories.json (FrameData.airline().root, entrée non fiable filtrée par forAirline),
  *  à défaut la base commune ; relues quand la compagnie change. */
@@ -915,11 +948,16 @@ function check() {
  *  proposé d'abord, « Vol démarré à hh:mm », avant le dernier vol réseau ; une fois son compte rendu enregistré, il
  *  n'est plus proposé (started.at gardé dans cache/report/started.json). */
 async function prefillCard() {
-  const box = S.body?.querySelector('[data-prefill]');
+  const s = S,
+    box = s?.body?.querySelector('[data-prefill]');
   if (!box) return;
-  const cf = await S.ctx.data.get(`pilot/${S.ctx.identity.trigram || 'ANON'}/current_flight.json`),
-    done = (await S.ctx.data.get(STARTED).catch(() => null))?.done || [],
+  // le compte rendu quitté pendant une lecture : rien n'est lu ni posé sur un module démonté (vu par G12 : « Cannot read properties of
+  // null (reading 'ctx') » quand on quitte le CR juste après un redessin)
+  const cf = await s.ctx.data.get(`pilot/${s.ctx.identity.trigram || 'ANON'}/current_flight.json`);
+  if (S !== s) return;
+  const done = (await s.ctx.data.get(STARTED).catch(() => null))?.done || [],
     started = cf?.started?.at || '';
+  if (S !== s) return;
   S.current = cf && (cf.aircraft?.registration || cf.aircraft?.type || cf.route?.dep) && !(started && done.includes(started)) ? cf :
     null;
   if (!S.current || !S.body) return box.innerHTML = '';
@@ -1280,6 +1318,7 @@ async function onClick(e) {
       airlineLine();
       S.sources = {};
       S.step = 0;
+      clearTimeout(S.draftTimer);
       await S.ctx.data.remove(DRAFT).catch(() => {});
       return render();
     case 'net':
@@ -1417,6 +1456,7 @@ export async function mount(el, ctx) {
 
 export function unmount() {
   if (!S) return;
+  S.ctx.workAirline?.(''); // l'en-tête ne dit plus la compagnie de ce compte rendu
   window.removeEventListener('frame-titled', S.srTitle);
   window.removeEventListener('frame-airline', S.onAirline);
   // un brouillon en attente part quand même (son minuteur garde l'état)

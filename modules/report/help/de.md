@@ -6,7 +6,7 @@ der Fluggesellschaft eingetragen.
 
 ## So geht’s
 
-<a id="report-steps"></a>**Drei Schritte.** Unter dem Titel nennt „Bericht für …“ die Fluggesellschaft und ihre Art; solange der Bericht nicht gespeichert ist, führt ein Tippen zur Wahl der Fluggesellschaft (Einstellungen › Fluggesellschaft), gespeichert behält er seine. Der Bericht wird in drei Schritten ausgefüllt: Flug, Einsatz, Ergebnis. Auf einem Telefon ein
+<a id="report-steps"></a>**Drei Schritte.** Unter dem Titel nennt „Bericht für …“ die Fluggesellschaft und ihre Art; solange der Bericht nicht gespeichert ist, bietet „Ändern“ daneben die Gesellschaften und „Persönlich“ an: die Wahl geschieht an Ort und Stelle, der Entwurf bleibt, wie er ist; gespeichert behält er seine, und die Kopfzeile zeigt „AAA ≠ BBB“, wenn die aktuelle Gesellschaft nicht seine ist. Der Bericht wird in drei Schritten ausgefüllt: Flug, Einsatz, Ergebnis. Auf einem Telefon ein
 Schritt nach dem anderen („Weiter“ unten); auf einem Computer alle drei nebeneinander. Nichts ist Pflicht: Was fehlt,
 wird im letzten Schritt genannt, ohne das Speichern je zu blockieren.
 

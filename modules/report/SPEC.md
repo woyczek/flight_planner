@@ -84,8 +84,11 @@ what is missing is said in the Result step, never blocking.
   it: `settings.json` `kind`, `kindOf`; « Personnel » alone for the personal airline). It is the airline of the aircraft when the report
   is created — the current airline, whose fleet the aircraft comes from —; the first save writes `airlineName` and `airlineKind` with
   `airline`, and a saved report always says those (a report from before without a name: the airline's name of today), whatever the
-  current airline becomes. Until it is saved, the line is a link to Settings › Airline (`#settings?card=company`); a line of its own
-  under the title, since on a phone the frame's header carries the title.
+  current airline becomes. Until it is saved, « Changer » beside the line opens a list of the index's airlines and « Personnel »; a choice
+  calls `FrameData.setAirline` there, without leaving the report (SOG-0181 refused on 10 Nov: « on ne revient pas sur l'écran « CR » »),
+  the draft untouched; a saved report tells the frame its airline (`ctx.workAirline`, frame INTEGRATION § 15.5: the header says « AAA ≠
+  BBB » when the current one differs), cleared at unmount (G12). A line of its own under the title, since on a phone the frame's header
+  carries the title.
 - **Load** (V3 spec § 10.38, SOG-0041): « Utiliser » on the current flight takes its `missionCategory`; a category the airline knows
   (its `categories.json`, or the common base, through `forAirline`) that carries a `load` adds one card « Charge » on the Flight step
   with one field — « Fret embarqué (kg) » for `freight`, « Passagers » for `passengers` — an integer 0–999 999 or nothing; the record

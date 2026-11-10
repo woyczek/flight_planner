@@ -219,3 +219,10 @@ Memory of the V3 report module: every choice, dated, with its reason. Chat histo
   est un grand thème »): moved from `vocab.js` and `families/*.js` to `frame/lib/mission_themes.js`, with no visible change (G10 compares
   the report's lists with `tests/v3/fixtures/report_lists_v2.json`, frozen before the move, ×4 languages; counter-test: one SAR label
   changed in the table turns G10 red). COMMERCIAL, the 17th theme, is in the table but not offered by the report until T2.
+- **10 Nov 2026 — the airline is chosen on the report, never by leaving it** (SOG-0181 refused: « on peut bien choisir en sortie, mais on ne
+  revient pas sur l'écran « CR » »). The link to Settings › Airline is replaced by « Changer » and a list of the index's airlines (codes
+  from the index only, « Personnel » last) calling `FrameData.setAirline`, as the header's selector of SOG-0213 does; the draft stays as
+  it is. A saved report gives its airline to `ctx.workAirline` (the header says « AAA ≠ BBB »), cleared at unmount. Two defects found on
+  the way, both fixed: `prefillCard` read `S.ctx` after an await once the report was left (« Cannot read properties of null (reading
+  'ctx') »), and a save within 600 ms of the last keystroke had its draft written back by the pending timer (the next opening said
+  « brouillon restauré » for a saved report). G12 (red before for each), G9 adapted.

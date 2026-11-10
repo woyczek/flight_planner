@@ -48,6 +48,7 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-sheet[data-detail] .ms-detail{display:block}
 [data-module="missions"] .ms-lines{margin:.2em 0 .4em;padding-left:1.1em}
 [data-module="missions"] [data-famlong]{font-weight:400}
+[data-module="missions"] .f-linkbtn{min-height:44px;padding:0 4px;border:0;border-radius:0;background:none;box-shadow:none;text-shadow:none;color:var(--sog-link);text-decoration:underline;font:inherit;cursor:pointer} /* « Changer », « N autres » : des liens dans le texte (SOG-0223) */
 [data-module="missions"] .ms-fam{display:block;font-size:.72em;margin-top:.15em} /* la famille sous le titre de la fiche : « SAR · Récupération de personnel » (SOG-0187) */ /* le sigle en gras, le nom long en clair (SOG-0179) */
 [data-module="missions"] .ms-summary{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;margin:.2em 0 .4em} /* le résumé, deux lignes au plus avec « … » (SOG-0051) */
 [data-module="missions"] .ms-lines li{margin:.15em 0}

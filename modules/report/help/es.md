@@ -5,7 +5,7 @@ usted completa, guarda — y, si lo desea, el vuelo se registra en el sitio de l
 
 ## Cómo usarlo
 
-<a id="report-steps"></a>**Tres pasos.** Bajo el título, «Informe para …» dice la compañía y su tipo; mientras el informe no está guardado, un toque lleva a la elección de la compañía (Ajustes › Compañía), y una vez guardado conserva la suya. El informe se rellena en tres pasos: Vuelo, Misión, Resultado. En un teléfono, un paso cada vez
+<a id="report-steps"></a>**Tres pasos.** Bajo el título, «Informe para …» dice la compañía y su tipo; mientras el informe no está guardado, «Cambiar» al lado propone las compañías y «Personal»: la elección se hace ahí mismo, el borrador queda tal cual; una vez guardado conserva la suya, y la cabecera dice «AAA ≠ BBB» cuando la compañía actual no es la suya. El informe se rellena en tres pasos: Vuelo, Misión, Resultado. En un teléfono, un paso cada vez
 («Siguiente» abajo); en un ordenador, los tres uno al lado del otro. Nada es obligatorio: lo que falta se indica en el
 último paso, sin bloquear nunca el guardado.
 

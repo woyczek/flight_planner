@@ -326,7 +326,7 @@ def _save_report(c):
     raise Fail('the report is not saved')
 
 
-@case('G9', 'Report: the header says the airline of the report — « Alpha Air · Escadrille SO » —, a tap leads to Settings › Airline until it is saved; a saved report keeps its own airline; « Mes vols » says the airline of each report when there is more than one',
+@case('G9', 'Report: the header says the airline of the report — « Alpha Air · Escadrille SO » —, « Changer » beside it until it is saved; a saved report keeps its own airline; « Mes vols » says the airline of each report when there is more than one',
       'G', tags=('report', 'flightlog'), designs=('standard',), screens=False, langs4=True,
       rule='SOG-0181 (user: « on ne sait pas pour quelle compagnie on fait le cr »): the airline of the aircraft when the report is created, its '
       'name and kind written with the record and never changed after; the kind read where Settings writes it (settings.json kind, '
@@ -341,7 +341,8 @@ def g9(c):
         c.until("(w) => (document.querySelector('[data-module=report] [data-crairline]')?.textContent || '').includes(w)", f'Alpha Air · {words["sog"]}', timeout=8000,
                 what='the header says the current airline and its kind')
         line = c.js(_CO_LINE_JS)
-        c.ok(line['shown'] and line['saved'] == '0' and line['href'] == '#settings?card=company', line, f'{w} px: shown under the title, a tap leads to Settings › Airline while not saved')
+        c.ok(line['shown'] and line['saved'] == '0' and c.count('[data-module=report] [data-crairline] [data-crairline-change]') == 1, line,
+             f'{w} px: shown under the title, « Changer » beside it while not saved (SOG-0181: chosen here)')
         c.shot(f'G9_{c.design}_{w}_{c.lang}.png')
         path = _save_report(c)
         doc = c.doc(path)
@@ -351,7 +352,8 @@ def g9(c):
         c.js("async () => { await window.FrameData.setAirline('bbb'); return true }")
         c.wait(800)
         line = c.js(_CO_LINE_JS)
-        c.ok(f'Alpha Air · {words["sog"]}' in line['text'] and not line['href'], line, 'the saved report keeps its airline when the current one changes')
+        c.ok(f'Alpha Air · {words["sog"]}' in line['text'] and not line['href'] and c.count('[data-module=report] [data-crairline-change]') == 0, line,
+             'the saved report keeps its airline when the current one changes, no « Changer »')
         c.tap('[data-module="report"] [data-do="new"]')
         c.until("(w) => (document.querySelector('[data-module=report] [data-crairline]')?.textContent || '').includes(w)", f'Bravo Air · {words["va"]}', timeout=8000,
                 what='a new report: the current airline')
@@ -452,3 +454,46 @@ def g11(c):
     c.until("!!document.querySelector('[data-module=website] [data-body]')", timeout=10000, what='the Site, mounted to the end, still works')
     c.wait(600)
     c.eq([e for e in c.errors if 'onAirline' in e or 'website' in e], [], 'no error of the Site module', what='errors')
+
+
+
+@case('G12', 'Report: the airline is chosen ON the report (« Changer » beside « Compte rendu pour … »): the draft stays as it was, the screen stays the report; a saved report of another airline is said in the header (« BBB ≠ AAA »)',
+      'G', tags=('report',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0181 refused on 10 Nov (« on peut bien choisir en sortie, mais on ne revient pas sur l\'écran « CR » »): the choice is made on the report '
+      '(FrameData.setAirline, as the header\'s selector of SOG-0213), never by leaving it; ctx.workAirline (frame INTEGRATION § 15.5); captures 390 and 1 280')
+def g12(c):
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.open('report', docs=_CO_IDX)
+        c.until("document.querySelectorAll('[data-module=report] .f-steps button').length === 3", what='the report is drawn')
+        c.js("async () => { await window.FrameData.setAirline('aaa'); return true }")
+        c.until("!!document.querySelector('[data-module=report] [data-crairline]:not([hidden])')", timeout=8000, what='the airline line')
+        if c.js("document.querySelector('[data-module=report] [data-crairline]')?.dataset.saved === '1'"):
+            c.tap('[data-module="report"] [data-do="new"]')  # a report saved by an earlier run of this browser: a new one
+        c.until("!!document.querySelector('[data-module=report] [data-crairline-change]')", timeout=8000, what='« Changer » beside the airline')
+        # a draft: a field typed
+        path = c.js("(() => { const i = [...document.querySelectorAll('[data-module=report] input[data-path]')].find(x => x.type === 'text' && x.getClientRects().length && !x.value); return i ? i.dataset.path : '' })()")
+        c.ok(path, path, 'an empty text field of the report')
+        sel = f'[data-module=report] input[data-path="{path}"]'
+        c.page.fill(sel, 'BROUILLON 42')
+        c.page.locator(sel).blur()
+        c.tap('[data-module="report"] [data-crairline-change]')
+        c.until("!!document.querySelector('[data-module=report] select[data-crairline-pick]')", what='the airlines, on the report')
+        c.eq(c.js("[...document.querySelectorAll('[data-module=report] select[data-crairline-pick] option')].map(o => o.value)"), ['aaa', 'bbb', 'perso'],
+             'the airlines of the index, then Personnel', what='choices')
+        c.shot(f'G12_{c.design}_{w}_{c.lang}.png')
+        c.page.select_option('[data-module=report] select[data-crairline-pick]', 'bbb')
+        c.until("(document.querySelector('[data-module=report] [data-crairline]')?.textContent || '').includes('Bravo Air')", timeout=8000, what=f'{w} px: the report is now for Bravo Air')
+        c.ok(c.js("location.hash").startswith('#report'), c.js("location.hash"), f'{w} px: still on the report')
+        c.until(f"(document.querySelector('{sel}')?.value || '') === 'BROUILLON 42'", what=f'{w} px: the draft as it was')
+        # saved for Bravo Air, then the current airline changes: the header says the report keeps its own
+        c.page.fill(sel, 'BROUILLON 43')  # typed just before saving: its draft timer must not write the draft back after the save
+        _save_report(c)
+        c.until("() => document.querySelector('[data-module=report] [data-crairline]')?.dataset.saved === '1'", what='saved')
+        c.wait(900)
+        c.eq(c.doc('cache/report/draft.json'), None, f'{w} px: no draft left after the save (a pending draft is not written back)', what='draft')
+        c.js("async () => { await window.FrameData.setAirline('aaa'); return true }")
+        c.until("(() => { const e = document.getElementById('fCo'); return !!e && e.hasAttribute('data-differs') && /AAA\s*≠\s*BBB/.test(e.textContent) })()", timeout=8000,
+                what=f'{w} px: the header says « AAA ≠ BBB » (current ≠ the report\'s)')
+        c.go('flightlog')
+        c.until("(() => { const e = document.getElementById('fCo'); return !!e && !e.hasAttribute('data-differs') })()", timeout=8000, what='another screen: no longer said')
