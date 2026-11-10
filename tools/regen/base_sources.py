@@ -754,7 +754,7 @@ def check_pickup(a):
     """Contrôle des arguments de base/pickup (→ 400 si None) : { zones, dry?: vrai (par défaut) / faux, zips?: { <source>:
     { name, size } } } et rien d'autre. zips : le fichier que le plan a montré, par source ; la prise refuse celle dont le zip
     le plus récent n'est plus celui-là (un autre arrivé pendant la question : audit, ligne 95)."""
-    if not isinstance(a, dict) or not set(a) <= {'zones', 'dry', 'zips', 'personal'}:
+    if not isinstance(a, dict) or not set(a) <= {'zones', 'dry', 'zips', 'personal', 'build'} or not isinstance(a.get('build', False), bool):
         return None
     zones = _zones_arg(a)
     dry = a.get('dry', True)
@@ -770,7 +770,7 @@ def check_pickup(a):
                 or not isinstance(z['size'], int) or isinstance(z['size'], bool) or z['size'] < 0:
             return None
         shown[s] = {'name': z['name'], 'size': z['size']}
-    return {'zones': zones, 'dry': dry, **({'zips': shown} if 'zips' in a else {}), **({'personal': sorted(set(personal))} if personal is not None else {})}  # zips: {} dit « rien de montré » ; personal : les sources à usage personnel que la case déclare (SOG-0150)
+    return {'zones': zones, 'dry': dry, **({'build': True} if a.get('build') else {}), **({'zips': shown} if 'zips' in a else {}), **({'personal': sorted(set(personal))} if personal is not None else {})}  # zips: {} dit « rien de montré » ; personal : les sources à usage personnel que la case déclare (SOG-0150)
 
 
 def _name_cycle(path):
@@ -1094,6 +1094,21 @@ def pickup(job, args, ctx):
     res = {'ok': reason is None, 'dry': dry, 'taken': taken, 'missing': missing, 'failed': failed, 'skipped': skipped, **({'inPlace': in_place} if in_place else {}), **({'unread': unread} if unread else {}), **({'zones': zones} if zones else {}), **({'shown': shown} if shown else {})}
     if reason:
         res['reason'] = reason
+    if args.get('build') and not dry and not args.get('_sets_only') and not job.cancelled():
+        # SOG-0180 : « Prendre le fichier » enchaîne la construction des zones dont un fichier vient d'être pris (un seul geste) : base/update sans téléchargement, sur ces zones seulement, avec la même case « personnel » ; son résultat est rendu sous `update`
+        zones_taken = sorted({t['zone'] for t in taken if t.get('source') != 'openaip' or t.get('zone')})
+        if zones_taken:
+            upd, check_upd = regen_jobs.REGISTRY[('base', 'update')]
+            a = check_upd({'zones': zones_taken, 'personal': list(args.get('personal') or []), 'fetch': False})
+            if a is not None:
+                try:
+                    u = upd(job, a, ctx)
+                except Exception as e:      # jamais un échec muet : la prise a eu lieu, la construction dit pourquoi elle n'a pas pu
+                    u = {'ok': False, 'reason': 'failed', 'message': regen_jobs.clean_error(f'{type(e).__name__}: {e}', ctx)[:300]}
+                res['update'] = {k: u[k] for k in ('ok', 'reason', 'message', 'built', 'failed', 'excluded', 'after', 'nothing', 'notBuildable', 'waiting') if k in u}
+                if not u.get('ok') and not res.get('reason'):
+                    res['reason'] = 'build-failed'
+                    res['ok'] = False
     return res
 
 

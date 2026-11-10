@@ -351,7 +351,7 @@ def update(job, args, ctx):
 
 
 # ----------------------------------------------------------------------------------------------------------------------- la raison d'un refus d'arguments (400), dans ses mots (SOG-0144)
-ALLOWED = {'build': {'zones', 'personal'}, 'status': {'zones', 'personal'}, 'update': {'zones', 'personal', 'fetch'}, 'fetch': {'zones', 'personal'}, 'purge': {'zones', 'what', 'dry'}, 'pickup': {'zones', 'dry', 'zips', 'personal'}}
+ALLOWED = {'build': {'zones', 'personal'}, 'status': {'zones', 'personal'}, 'update': {'zones', 'personal', 'fetch'}, 'fetch': {'zones', 'personal'}, 'purge': {'zones', 'what', 'dry'}, 'pickup': {'zones', 'dry', 'zips', 'personal', 'build'}}
 
 
 def explain(verb):

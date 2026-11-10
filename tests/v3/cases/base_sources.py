@@ -1665,3 +1665,46 @@ def k131(c):
         got = 'FIX_BASE' in str(e)
     c.eq(got, True, 'a zip that is not the one expected: said (FIX_BASE.csv absent), nothing written', what='wrong zip')
     c.eq((BS.file_source('geojson/faa_nasr.geojson'), 'nasr' in BS.SOURCES['faa']['args']), ({'zone': 'us', 'source': 'faa'}, True), 'the file is of zone us, source faa; the source asks for the nasr layer', what='mirror')
+
+
+@case('K139', 'base/pickup with `build: true` chains the build of the zones whose file it took (SOG-0180: « prendre le fichier lance de lui-même la construction de cette zone »): one gesture, the result carries what was built, a failure of the build is said, a dry run builds nothing', 'K', static=True,
+      rule='SOG-0180 (10 Nov 2026, acceptance of SOG-0162: « si on clique sur « mettre à jour », puis « prendre le fichier téléchargé », il se passe quoi ? l’information dit « cliquez sur recalculer ». le bouton n’existe plus »): the verbs side: base/pickup takes `build: true` (with the same `personal` as the box): after the files are taken, base/update (no download) builds those zones only; its answer is `update` in the result (built, failed, excluded, after); a dry run (the plan) never builds')
+def k139(c):
+    import zipfile
+    RJ, BS, AF, DS = _mods()
+    built = []
+
+    def put(dl, zip_name, xml_name):
+        with zipfile.ZipFile(dl / zip_name, 'w') as z:
+            z.writestr(xml_name, '<x/>')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        dl, data = Path(td) / 'Downloads', Path(td) / 'data'
+        dl.mkdir()
+        data.mkdir()
+        put(dl, 'EG_AIP_DS_20261029_XML.zip', 'EG_AIP_DS_FULL_20261029.xml')
+        put(dl, 'EG_OBS_DS_AREA1_FULL_20261029_XML.zip', 'EG_OBS_DS_AREA1_FULL_20261029.xml')
+        put(dl, 'EG_UAS_FR_DS_AREA1_FULL_20261029_XML.zip', 'EG_UAS_FR_DS_AREA1_FULL_20261029.xml')
+
+        def fake_build(job, a, cx):
+            built.append((a['zones'], a['personal']))
+            return {'ok': True, 'built': list(a['zones']), 'failed': [], 'cycle': '2026-10-29', 'cycles': {}, 'folders': {}, 'commits': [], 'seconds': 0, 'excluded': [{'source': 'xplane', 'why': 'local-only', 'message': 'xplane : lu sur ce poste seulement'}]}
+        ctx = {'data': str(data), 'downloads': lambda: [str(dl)], 'today': datetime.date(2026, 11, 9), 'build': fake_build}
+        run = lambda **kw: BS.pickup(RJ.Job('base', 'pickup', {}), BS.check_pickup({'zones': ['gb'], **kw}), ctx)
+        c.eq((BS.check_pickup({'zones': ['gb'], 'build': True}), BS.check_pickup({'zones': ['gb'], 'build': 'yes'})), ({'zones': ['gb'], 'dry': True, 'build': True}, None), 'the argument `build` is a boolean, nothing else new', what='check')
+        r = run(dry=True, build=True, personal=['nats'])
+        c.eq((built, 'update' in r), ([], False), 'a dry run (the plan) builds nothing', what='dry')
+        r = run(dry=False, build=True, personal=['nats', 'xplane'])
+        c.eq((built, r['update']['built'], r['update']['excluded'][0]['source'], r['ok']), ([(['gb'], ['nats', 'xplane'])], ['gb'], 'xplane', True), 'the files taken, the zone gb built in the same gesture with the box of the page, its answer in `update`, what was set aside said', what='chained')
+        c.ok('after' in r['update'], str(sorted(r['update'])), 'and the state of the zone after (base/status) comes with it')
+        built.clear()
+        r = run(dry=False, build=False, personal=['nats'])
+        c.eq((built, 'update' in r), ([], False), 'without `build` nothing changes: the files are in place, nothing is built', what='no build')
+
+        def failing(job, a, cx):
+            return {'ok': False, 'reason': 'failed', 'message': 'the build page did not start', 'built': [], 'failed': [{'zone': z, 'error': 'page-error'} for z in a['zones']]}
+        (data / 'sia' / 'zones' / 'gb').mkdir(parents=True, exist_ok=True)
+        for f in list((data / 'sia' / 'zones' / 'gb').iterdir()):
+            f.unlink()
+        ctx['build'] = failing
+        r = run(dry=False, build=True, personal=['nats'])
+        c.eq((r['ok'], r['reason'], r['update']['failed'][0]['error']), (False, 'build-failed', 'page-error'), 'a build that fails is said (build-failed) with its zone and reason: the files stay taken', what='failing')
