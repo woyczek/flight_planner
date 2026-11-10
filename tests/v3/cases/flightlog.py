@@ -430,3 +430,25 @@ def g10(c):
         c.eq(vals, list(want['familyLabels']), f'{w} px: the report offers its sixteen families, in the same order (no visible change)', what='options')
         c.js("document.querySelector('[data-module=report] select[data-family]').scrollIntoView({block: 'center'})")
         c.shot(f'G10_{c.design}_{w}_{c.lang}.png')
+
+
+
+@case('G11', 'Site: leaving it while it is still reading (another page chosen at once) leaves no JavaScript error — the mount stops, nothing is set on an unmounted module',
+      'G', tags=('website',), designs=('standard',), screens=False,
+      rule='A66 red one run in two on origin/v3 (Simplification and V3 Frame, 10 Nov): « TypeError: Cannot set properties of null (setting \'onAirline\') '
+      'at Module.mount (modules/website/module.js:398) »: the mount went on after its reads although unmount had set S to null')
+def g11(c):
+    c.open('fuel', flight=True)
+    # the Site's reads made slow, so that the page is left during them every time (the race of A66, made certain)
+    c.js("""() => { const d = window.FrameData; if (!d || d.__slowSite) return; d.__slowSite = true;
+      const ad = d.adapter; d.adapter = decl => { const a = ad(decl); if (decl?.id !== 'website') return a;
+        const get = a.get; return { ...a, get: (p, o) => new Promise(r => setTimeout(r, 400)).then(() => get(p, o)) } } }""")
+    for _ in range(3):
+        c.js("() => { location.hash = '#website' }")
+        c.wait(60)
+        c.js("() => { location.hash = '#fuel' }")
+        c.wait(700)
+    c.js("() => { location.hash = '#website' }")
+    c.until("!!document.querySelector('[data-module=website] [data-body]')", timeout=10000, what='the Site, mounted to the end, still works')
+    c.wait(600)
+    c.eq([e for e in c.errors if 'onAirline' in e or 'website' in e], [], 'no error of the Site module', what='errors')

@@ -376,7 +376,10 @@ function onClick(e) {
 }
 
 export async function mount(el, ctx) {
-  S = {
+  // ce montage-ci : après chaque lecture, s'il n'est plus le montage courant (une autre page choisie pendant la lecture : unmount
+  // a remis S à null, ou un nouveau montage l'a remplacé), il s'arrête — rien n'est posé sur un état démonté (A66 :
+  // « Cannot set properties of null (setting 'onAirline') », une fois sur deux en passe groupée)
+  const s = S = {
     el,
     ctx,
     text: {},
@@ -392,7 +395,9 @@ export async function mount(el, ctx) {
   window.addEventListener('frame-titled', S.srTitle);
   S.body = el.querySelector('[data-body]');
   S.body.addEventListener('click', onClick);
-  S.airline = W.airlineSettings((await ctx.data.get(SETTINGS)) || ctx.airline || {});
+  const settings = await ctx.data.get(SETTINGS);
+  if (S !== s) return;
+  S.airline = W.airlineSettings(settings || ctx.airline || {});
   // compagnie lue en fond par le cadre (frame INTEGRATION § 6) : arrivée ou changée après le montage (premier passage
   // d'un dépôt), le fichier est relu et les cartes redessinées ; pas pendant une saisie dans le module
   S.onAirline = async () => {
@@ -404,8 +409,12 @@ export async function mount(el, ctx) {
     render();
   };
   window.addEventListener('frame-airline', S.onAirline);
-  S.logDoc = tri() ? await ctx.data.get(logPath()) : null;
-  S.fleetDoc = await ctx.data.get(FLEET);
+  const logDoc = tri() ? await ctx.data.get(logPath()) : null;
+  if (S !== s) return;
+  S.logDoc = logDoc;
+  const fleetDoc = await ctx.data.get(FLEET);
+  if (S !== s) return;
+  S.fleetDoc = fleetDoc;
   render();
   // passage écran ↔ téléphone : carte Compagnie redessinée
   S.mq = matchMedia('(min-width: 980px)');

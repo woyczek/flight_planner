@@ -58,3 +58,7 @@ Memory of the V3 website module: every choice, dated, with its reason. Chat hist
   4. `website_handoff.js` moves to `frame/lib/website.js` (owner website); report imports it from there.
   5. No browser download of the site's pages (another origin); the launcher relay (`/__setup/net`) would need the site
      added to its list — not asked now: paste is enough and the daily V2 download stays on the launcher.
+- **10 Nov 2026 — the mount stops when the page is left during its reads** (A66 red one run in two on origin/v3: « Cannot set
+  properties of null (setting 'onAirline') »): `mount` keeps its own state object and, after each read, stops if it is no longer the
+  current one (unmount set it to null, or another mount replaced it); nothing is set on an unmounted module, no listener added after
+  the unmount. G11 (the Site's reads slowed, the page left three times during them); red before with the same error.

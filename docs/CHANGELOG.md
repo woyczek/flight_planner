@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Site: no error when the page is left while the Site is still reading** (`modules/website/module.js` mount; DECISIONS; noreg G11; A66 intermittent).
 - **Mission themes: one table** (`frame/lib/mission_themes.js`, `frame/lib/airline.js`; V3_SPECIFICATION § 10.48; noreg G10; SOG-0202 T1).
   The report's sixteen families and their series are read from one table, unchanged; the table adds a 17th theme, COMMERCIAL (cargo,
   passengers, empty leg, VIP, training, transit, flight test), and what an airline's own theme file may say, for Settings.
