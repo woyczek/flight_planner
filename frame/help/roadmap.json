@@ -4,8 +4,8 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "23d9dc4",
-  "fiches": 223,
+  "organisation": "5b953fc",
+  "fiches": 224,
   "untranslated": 1,
   "priorities": 152
  },
@@ -836,6 +836,15 @@
      "en": "REGRESSION: the mission window on the map (title, “Provided map”, “View”) is gone",
      "de": "REGRESSION: das Missionsfenster auf der Karte (Titel, „Mitgelieferte Karte“, „Ansicht“) ist verschwunden",
      "es": "REGRESIÓN: ha desaparecido la ventana de la misión sobre el mapa (título, «Carta suministrada», «Vista»)"
+    },
+    {
+     "id": "SOG-0224",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Carte à côté de Carburant : un tracé d'itinéraire proposé reste après le calcul ; deux erreurs dans la console (infobulles, cadrage)",
+     "en": "Map beside Fuel: a proposed route stays drawn after the computation; two console errors (tooltips, framing)",
+     "de": "Karte neben Kraftstoff: eine vorgeschlagene Route bleibt nach der Berechnung gezeichnet; zwei Konsolenfehler (Tooltips, Ausschnitt)",
+     "es": "Mapa junto a Combustible: un itinerario propuesto queda dibujado tras el cálculo; dos errores de consola (ayudas, encuadre)"
     }
    ]
   },
