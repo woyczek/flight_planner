@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "450cb14",
+  "organisation": "ee39604",
   "fiches": 171,
   "untranslated": 1,
   "priorities": 152
@@ -1352,7 +1352,7 @@
     {
      "id": "SOG-0051",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Missions en V3 dans l'application Compagnie : risques en première page, description détaillée, équipes engagées, zones à activer, aperçu des cartes",
      "en": "Missions in V3 in the Airline app: risks on the first page, detailed description, teams involved, zones to activate, chart preview",
      "de": "Missionen in V3 in der Gesellschafts-App: Risiken auf der ersten Seite, ausführliche Beschreibung, beteiligte Teams, zu aktivierende Zonen, Kartenvorschau",

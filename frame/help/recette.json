@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 55,
-  "verdicts": 12
+  "verdicts": 13
  },
  "apps": [
   "pilote",
@@ -50,9 +50,11 @@
     "de": "Missionen in V3 in der Gesellschafts-App: Risiken auf der ersten Seite, ausführliche Beschreibung, beteiligte Teams, zu aktivierende Zonen, Kartenvorschau",
     "es": "Misiones en V3 en la aplicación Compañía: riesgos en la primera página, descripción detallada, equipos comprometidos, zonas por activar, vista previa de las cartas"
    },
-   "test": "Compagnie › Missions › une mission : la première page montre titre, catégorie, trois risques, équipes, zones, « Préparer ce vol » ; « Détail » ouvre description, zones à activer, cartes ; « Voir sur la Carte » d'une zone ouvre la Carte centrée dessus.",
+   "test": "Compagnie › Missions › une mission : la première page montre, dans l'ordre, titre, catégorie, la description courte en deux lignes, puis les risques, les équipes, les zones, « Préparer ce vol » ; « Détail » ouvre description longue, zones à activer, cartes ; « Voir sur la Carte » d'une zone ouvre la Carte centrée dessus.",
    "since": "2026-11-09",
-   "state": "known"
+   "state": "ko",
+   "comment": "oui, mais la description courte, avant les les risques.  addenda au précédent reporting : oui pour la carte, c’est bien. néanmoins, on affiche les cartes selon différents thèmes : VFR topographique sur la carte « cible » d’un SAR ou HEMS, par ex.. Généralement sur une mission SO, la cible est en vfr. d’autres aussi, à réfléchir (ou trancher, ou permettre de changer de vue). sur une commerciale, non, mais sur du SO, oui.  Validé, avec réserves, donc refusé.",
+   "at": "2026-11-10T09:35:59Z"
   },
   {
    "id": "SOG-0056",
