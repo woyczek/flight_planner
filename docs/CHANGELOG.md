@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Missions: a mission whose registry row lists its summary first opens** (`frame/lib/mission.js` `readRegistry`; Missions DECISIONS;
+  noreg N18; SOG-0212 (a)). 62 of the 153 missions of a real repository said « fichier illisible »; a YAML error now says its line.
 - **Missions: « 1 mission », singular** (the count of the list said « 1 missions »; noreg N17).
 - **Missions: a mission that names no airline is personal** (`frame/lib/mission.js` `ownerOf` / `missionsFor`; Missions SPEC, DECISIONS, help;
   noreg N17, N8 adapted). It is listed under « Personnel », never under the first airline of the index.

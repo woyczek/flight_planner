@@ -1,6 +1,8 @@
 """Area N — Missions (modules/missions/SPEC.md): the V2 missions read as they are (frame/lib/mission.js), the list of the airline's missions,
 choose or draw, and the flight handed to Fuel.  Cases: N1–N5.  Invented missions only (names, positions, callsigns, the aerodromes XTST
 and XTSU): no AIP content and no real mission of the user's data."""
+import re
+
 from lib import Fail, case, norm, tx
 
 M = '[data-module="missions"]'
@@ -812,3 +814,45 @@ def n17(c):
         c.shot(f'N17_{c.design}_{w}_{c.lang}.png')
         set_airline(c, 'ddd')
         c.until(f"{lst} === 'X-112A'", what=f'{w} px: Delta Air: the mission that names ddd')
+
+
+
+_SUMMARY_REGISTRY = """missions:
+  - { id: X-121A, family: TESTCO, title: Mission résumé d abord, folder: X_CO/X-121A, files: [summaryX-121A.md, missionX-121A.yaml] }
+  - { id: X-122A, family: TESTCO, title: Mission YAML cassé, folder: X_CO/X-122A, files: [missionX-122A.yaml] }
+  - { id: '123', family: TESTCO, title: Mission ancien numéro, folder: X_CO/X-123A, files: [summaryX-123A.md] }
+"""
+
+
+@case('N18', 'Missions: a mission whose registry row lists its summary first (files: [summary….md, mission….yaml]) opens; a broken YAML file says its line, never only « illisible »',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0212 (a) (user: « beaucoup de « fichier illisible » »): 62 of the 153 rows of his registry list the summary first, the reader took '
+      'only the first file and refused it; invented missions; captures 390 and 1 280')
+def n18(c):
+    broken = 'mission: { id: X-122A, type: TEST }\ntitle: Mission X-122A\nnotes: ok\n  bad: indent\n'  # js-yaml: bad indentation, line 4
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _SUMMARY_REGISTRY], ['missions/X_CO/X-121A/missionX-121A.yaml', mission_doc('X-121A')],
+                         ['missions/X_CO/X-122A/missionX-122A.yaml', broken], ['missions/X_CO/X-123A/missionX-123A.yaml', mission_doc('X-123A')]])
+        c.open('missions', wait=False, app='company')
+        c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-121A\"]')", timeout=15000, what='the list of missions')
+        c.tap(f'{M} [data-list] [data-id="X-121A"]')
+        c.until(f"!!document.querySelector('{M} [data-pane=mission]')", what='the mission opens')
+        c.wait(300)
+        c.eq(c.count(f'{M} [data-pane=mission] [data-why]'), 0, f'{w} px: the summary-first mission is read (no « illisible »)', what='why')
+        c.page.go_back()
+        # a summary only and an old numeric id (« 71 », folder F-071): the file named after its folder
+        c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"123\"]')", what='back to the list')
+        c.tap(f'{M} [data-list] [data-id="123"]')
+        c.until(f"!!document.querySelector('{M} [data-pane=mission]')", what='the old-numbered mission opens')
+        c.wait(300)
+        c.eq(c.count(f'{M} [data-pane=mission] [data-why]'), 0, f'{w} px: a summary only: the file named after its folder is read', what='why (old id)')
+        c.page.go_back()
+        c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-122A\"]')", what='back to the list')
+        c.tap(f'{M} [data-list] [data-id="X-122A"]')
+        c.until(f"!!document.querySelector('{M} [data-pane=mission] [data-why=unreadable]')", what='the broken mission says why')
+        said = norm(c.text(f'{M} [data-pane=mission] [data-why=unreadable]'))
+        at = norm(row(c, 'yamlAt').split('{l}')[0])
+        c.ok(re.search(re.escape(at) + r'\s*4\b', said) and 'indentation' in said, said, f'{w} px: the reason is said at its line (« {at}4 : bad indentation… »)')
+        c.shot(f'N18_{c.design}_{w}_{c.lang}.png')

@@ -84,3 +84,11 @@
   missions de compagnie ». `MS.missionsFor(rows, code)` is the same rule for Settings' « n missions préparées ». N17 (itf first in the
   index: a mission without the field is under Personnel, not under itf; `airline: defa` under defa); counter-test on origin/v3: the
   mission without the field listed under itf. N8 adapted.
+- **10 Nov 2026 — « fichier illisible » on most missions: the registry's first file was a summary** (SOG-0212 (a), user: « beaucoup de
+  « fichier illisible » »). Survey of his repository, read only on this machine (the reading chain of the module run in node, nothing
+  copied): 153 registry rows, 89 read, 62 « illisible (chemin refusé dans le registre) », 2 missing (G-001, G-002: no `G_SURVEY`
+  folder), no YAML error. The 62 rows list `files: [summary<ID>.md, mission<ID>.yaml]` and `readRegistry` took only the first entry,
+  a `.md`, refused as a mission file; 50 of them (F-071…, M-011…) list only the summary and keep an old numeric id (« 71 ») that
+  does not name the file. Now the first `.yaml` of `files`, else the file named after its folder (`F_FIRE/F-071` →
+  `missionF-071.yaml`, the rule of `missionPath`), else `mission<ID>.yaml`: 151 of 153 read, the 2 missing said with their path. A
+  YAML error is said at its line (« ligne 12 : … », js-yaml's reason). N18; counter-test on origin/v3: both « illisible ».

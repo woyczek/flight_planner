@@ -280,7 +280,16 @@ export function readRegistry(doc) {
       destinationIcao: icaoOf(x.destination),
       blockMin: num(x.estimate?.block),
       folder: safeFolder(clean(x.folder)),
-      file: safeFile(clean((Array.isArray(x.files) ? x.files : [])[0]) || `mission${id}.yaml`),
+      // le premier .yaml de la liste (le CPCO écrit souvent « summary<ID>.md » d'abord, parfois seul : 62 missions sur 153 du poste de
+      // l'utilisateur se disaient « illisibles », SOG-0212), sinon le fichier nommé d'après son dossier (« F_FIRE/F-071 » →
+      // missionF-071.yaml, la règle de missionPath ; un ancien identifiant « 71 » ne le nomme pas), sinon mission<ID>.yaml ; un nom
+      // refusé laisse '' (« chemin refusé »)
+      file: (() => {
+        const list = (Array.isArray(x.files) ? x.files : []).slice(0, 20).map(clean).filter(Boolean),
+          yaml = list.find(f => /\.ya?ml$/i.test(f)),
+          leaf = safeFolder(clean(x.folder)).split('/').pop();
+        return yaml ? safeFile(yaml) : safeFile(leaf ? `mission${leaf}.yaml` : `mission${id}.yaml`);
+      })(),
       organisation: x.organisation === true || /Z$/.test(id),
       airline: airlineCode(x.airline),
       category: categoryOf(x.category),

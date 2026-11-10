@@ -125,6 +125,8 @@ const TX = {
     'Missionsdatei noch nicht auf dem Gerät (Synchronisierung): nur das Register wird gezeigt, die Mission erscheint, sobald sie ankommt.',
     'Archivo de la misión aún no está en el dispositivo (sincronización): solo se muestra el registro; la misión aparece en cuanto llegue.'
   ],
+  // une erreur de YAML dite à sa ligne (SOG-0212 : « fichier illisible » sans raison) ; la raison est celle de js-yaml, en anglais
+  yamlAt: ['ligne {l} : {r}', 'line {l}: {r}', 'Zeile {l}: {r}', 'línea {l}: {r}'],
   unreadable: ['Fichier de la mission illisible ({e}) : seul le registre est montré.',
     'Mission file unreadable ({e}): only the registry is shown.',
     'Missionsdatei unlesbar ({e}): nur das Register wird gezeigt.',
@@ -195,9 +197,14 @@ async function parse(text) {
       doc: globalThis.jsyaml.load(text)
     };
   } catch (e) {
+    const line = Number.isInteger(e?.mark?.line) ? e.mark.line + 1 : 0,
+      reason = String(e?.reason || e?.message || e).split('\n')[0].slice(0, 120);
     return {
       why: 'unreadable',
-      err: String(e?.message || e).split('\n')[0].slice(0, 120)
+      err: line ? S?.tt(TX.yamlAt, {
+        l: line,
+        r: reason
+      }) ?? `${line}: ${reason}` : String(e?.message || e).split('\n')[0].slice(0, 120)
     };
   }
 }
