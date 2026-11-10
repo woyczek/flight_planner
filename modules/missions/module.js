@@ -33,6 +33,7 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-sheet[data-detail] .ms-first{display:none}
 [data-module="missions"] .ms-sheet[data-detail] .ms-detail{display:block}
 [data-module="missions"] .ms-lines{margin:.2em 0 .4em;padding-left:1.1em}
+[data-module="missions"] .ms-summary{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;margin:.2em 0 .4em} /* le résumé, deux lignes au plus avec « … » (SOG-0051) */
 [data-module="missions"] .ms-lines li{margin:.15em 0}
 [data-module="missions"] .ms-route{border-collapse:collapse;width:100%}
 [data-module="missions"] .ms-route td{padding:.2em .4em;border-bottom:1px solid var(--sog-border);vertical-align:top}
@@ -418,8 +419,8 @@ function results(s) {
   else if (!s.open) draw(s);
 }
 
-/** La fiche d'une mission en deux niveaux (§ 10.45, SOG-0051). Première page (sept éléments, règle 13) : titre, catégorie, risques,
- *  équipes, zones, état, actions ; le détail en sections repliables de sept éléments chacune. Téléphone : deux écrans (« Détail », le
+/** La fiche d'une mission en deux niveaux (§ 10.45, SOG-0051). Première page (sept éléments, règle 13) : titre, catégorie (et l'état
+ *  « Volée le … »), résumé, risques, équipes, zones, actions ; le détail en sections repliables de sept éléments chacune. Téléphone : deux écrans (« Détail », le
  *  retour du navigateur revient) ; module large : la première page à gauche, le détail au centre (CSS @container). */
 function missionHtml(s) {
   const {
@@ -450,13 +451,17 @@ function firstHtml(s, r, m, drawn, why) {
     kindLine = [m?.type || r.kind, m?.subtype || r.subtype, catName].filter(
       Boolean); // 2 la catégorie : activité, sous-type, catégorie de la compagnie
   // 1 le titre, l'id et la famille
+  // 2 bis l'état (« Volée le … ») rejoint la ligne de catégorie : la première page garde sept éléments avec le résumé (refus de recette
+  // de SOG-0051, 10 nov. : « la description courte, avant les risques »)
+  const flownBadge = flown ? `<span class="f-badge" data-kind="ok" data-flown>${esc(s.tt(TX.flownOn, { d: day(flown) }))}</span>` : '';
   return `<h2><b>${esc(r.id)}</b> ${esc(m?.title || r.title)} <span class="f-muted">${esc(r.family)}</span>${drawn ? ` <span class="f-badge" data-kind="accent" data-drawn>${esc(s.tt(TX.drawn))}</span>` : ''}</h2>
-    ${kindLine.length ? `<p class="f-muted" data-cat>${esc(kindLine.join(' · '))}</p>` : ''}
+    ${kindLine.length || flownBadge ? `<p class="f-muted" data-cat>${esc(kindLine.join(' · '))}${kindLine.length && flownBadge ? ' ' : ''}${flownBadge}</p>` : ''}
+    ${m?.summary ? `<p class="ms-summary" data-summary title="${esc(m.summary)}">${esc(m.summary)}</p>` : ''}
     ${m ? risks.length ? `<div data-risks><h3>${esc(s.tt(TX.risks))}</h3><ul class="ms-lines">${risks.slice(0, 3).map(x => `<li data-risk>${esc(x.hazard)}${x.mitigation ? ` → ${esc(x.mitigation)}` : ''}</li>`).join('')}</ul>${risks.length > 3 ? `<details class="ms-more" data-riskmore><summary class="f-muted">${esc(s.tt(TX.more, { n: risks.length - 3 }))}</summary><ul class="ms-lines">${risks.slice(3).map(x => `<li data-risk>${esc(x.hazard)}${x.mitigation ? ` → ${esc(x.mitigation)}` : ''}</li>`).join('')}</ul></details>` : ''}</div>` :
-    `<div data-risks><p class="f-muted" data-norisk>${esc(s.tt(TX.noRisk))}</p>${m.summary ? `<p data-summary>${esc(m.summary)}</p>` : ''}</div>` : ''}
+    `<div data-risks><p class="f-muted" data-norisk>${esc(s.tt(TX.noRisk))}</p></div>` : ''}
     ${teams.length ? `<div data-teams><h3>${esc(s.tt(TX.teams))}</h3><ul class="ms-lines">${seven(s, teams.map(t => `<li data-team>${esc(t.name)}${t.role ? ` <span class="f-muted">${esc(t.role)}</span>` : ''}</li>`))}</ul></div>` : ''}
     ${zones.length ? `<p data-zones>${esc(s.tt(TX.zonesCount, { n: zones.length }))} : ${esc(zones.slice(0, 7).map(z => [z.id, z.name].filter(Boolean).join(' ')).join(', '))}${zones.length > 7 ? '…' : ''}</p>` : ''}
-    ${flown || why ? `<div data-state>${flown ? `<p class="f-badge" data-kind="ok" data-flown>${esc(s.tt(TX.flownOn, { d: day(flown) }))}</p>` : ''}${why}</div>` : ''}
+    ${why}
     <div class="f-row ms-actions"><a class="f-btn primary" data-do="prepare" href="#fuel?mission=${encodeURIComponent(r.id)}">${esc(s.tt(TX.prepare))}</a>${m ? `<button type="button" class="ms-todetail" data-do="detail">${esc(s.tt(TX.detail))}</button>` : ''}${drawn ? `<button type="button" data-do="draw">${esc(s.tt(TX.drawAgain))}</button>` : ''}<button type="button" data-do="back">${esc(s.tt(TX.back))}</button></div>`;
 }
 /** Une adresse de la Carte pour cette mission (l'application Pilote : la Carte n'est pas dans Compagnie) ; `extra` : map, zone. */

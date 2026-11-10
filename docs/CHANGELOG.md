@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Missions: the sheet gives the summary before the risks** (`modules/missions/module.js`; Missions SPEC, DECISIONS, help; noreg N9;
+  SOG-0051 refused). Two lines at most after the category, on every mission; « Volée le … » moves to the category line.
 - **Fuel: « Changer » drawn at the size of the text** (`modules/fuel/module.js`; Fuel SPEC § 9.2, DECISIONS; noreg F122). The aircraft
   line's gesture no longer stands out as a 44 px framed button: magnifier and word in the accent tint, the 44 px target kept, as ⇄.
 - **Fuel: the Procedures card says the ground reading** (`modules/fuel/procedures.js`, `procedures_texts.js`, `module.js`; Fuel SPEC,

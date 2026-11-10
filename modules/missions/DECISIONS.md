@@ -63,3 +63,8 @@
   `zone` parameter yet (maps SPEC § 15): a zone link carries `zone=<id>` and, when a map provided is centred on that zone, `map=<file>`;
   `zone` is asked of BUGS SOG. A legacy PNG is read as bytes and shown only with the PNG signature. N9, N10; counter-test on 621aa3720:
   the sheet never opens in two levels.
+- **10 Nov 2026 — the summary before the risks** (SOG-0051 refused at acceptance: « oui, mais la description courte, avant les
+  risques »): the first page always gives the summary after the category line, two lines at most (`line-clamp`, « … », its whole text
+  in the title); to keep seven elements (rule 13) the state « Volée le … » joins the category line; the detailed description stays in
+  the detail. N9 checks the order, the two lines and a mission without a summary (no empty line); counter-test on origin/v3
+  (85b356775): no summary on a mission with risks.

@@ -422,10 +422,11 @@ _SHEET_REGISTRY = """missions:
   - { id: X-301A, family: TESTSHEET, title: Mission complète, folder: X_SH/X-301A, files: [missionX-301A.yaml] }
   - { id: X-302A, family: TESTSHEET, title: Mission sans risque, folder: X_SH/X-302A, files: [missionX-302A.yaml] }
   - { id: X-303A, family: TESTSHEET, title: Mission ancienne, folder: X_SH/X-303A, files: [missionX-303A.yaml] }
+  - { id: X-304A, family: TESTSHEET, title: Mission sans résumé, folder: X_SH/X-304A, files: [missionX-304A.yaml] }
 """
 _SHEET_FULL = """mission: { id: X-301A, type: SAR, subtype: RECHERCHE }
 title: Mission complète
-summary: Une recherche inventée au-dessus d'un terrain d'essai.
+summary: Une recherche inventée au-dessus d'un terrain d'essai, longue à dessein pour tenir plus de deux lignes sur un téléphone, avec une fin qui ne doit jamais se lire sur la première page de la fiche.
 detailed_description: |-
   Premier paragraphe inventé.
 
@@ -464,6 +465,12 @@ title: Mission sans risque
 summary: Un transport inventé sans risque déclaré.
 origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
 """
+_SHEET_NOSUMMARY = """mission: { id: X-304A, type: TRANSPORT }
+title: Mission sans résumé
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+risks:
+  - { hazard: Danger seul, mitigation: Parade seule }
+"""
 _SHEET_LEGACY = """mission: { id: X-303A, type: TRANSPORT }
 title: Mission ancienne
 summary: Une mission inventée sans aucune coordonnée.
@@ -483,7 +490,8 @@ def open_sheet(c, mid):
     """The three invented missions, the list, then the mission `mid` opened."""
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _SHEET_REGISTRY], ['missions/X_SH/X-301A/missionX-301A.yaml', _SHEET_FULL],
-                     ['missions/X_SH/X-302A/missionX-302A.yaml', _SHEET_NORISK], ['missions/X_SH/X-303A/missionX-303A.yaml', _SHEET_LEGACY]])
+                     ['missions/X_SH/X-302A/missionX-302A.yaml', _SHEET_NORISK], ['missions/X_SH/X-303A/missionX-303A.yaml', _SHEET_LEGACY],
+                     ['missions/X_SH/X-304A/missionX-304A.yaml', _SHEET_NOSUMMARY]])
     c.js(_BYTES_JS, ['missions/X_SH/X-303A/legacyX-303A.png', _PNG])
     c.open('missions', wait=False, app='company')
     c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id=\"{mid}\"]')", timeout=15000, what='the list of missions')
@@ -497,18 +505,27 @@ _FIRST_JS = f"""(() => {{ const f = document.querySelector('{M} [data-first]'), 
     more: f.querySelector('[data-riskmore] summary')?.textContent.trim() || '', teams: f.querySelectorAll('[data-team]').length,
     zones: f.querySelector('[data-zones]')?.textContent || '', primary: f.querySelectorAll('.primary').length, prepare: !!f.querySelector('[data-do=prepare].primary'),
     detail: vis(f.querySelector('[data-do=detail]')), cat: f.querySelector('[data-cat]')?.textContent || '', detailShown: vis(document.querySelector('{M} [data-detailpane]')),
+    order: [...f.children].filter(vis).map(e => e.matches('h2') ? 'title' : e.matches('[data-cat]') ? 'cat' : e.matches('[data-summary]') ? 'summary' :
+      e.matches('[data-risks]') ? 'risks' : e.matches('[data-teams]') ? 'teams' : e.matches('[data-zones]') ? 'zones' : e.matches('.ms-actions') ? 'actions' : e.tagName),
+    sumLines: (() => {{ const p = f.querySelector('[data-summary]'); if (!p) return 0; const lh = parseFloat(getComputedStyle(p).lineHeight) || 1.4 * parseFloat(getComputedStyle(p).fontSize);
+      return Math.round(p.getBoundingClientRect().height / lh) }})(),
+    sumCut: (() => {{ const p = f.querySelector('[data-summary]'); return !!p && p.scrollHeight > p.clientHeight + 1 }})(),
+    empty: [...f.children].filter(e => !e.textContent.trim() && !e.querySelector('img')).length,
     sw: document.documentElement.scrollWidth, iw: innerWidth }} }})()"""
 
 
-@case('N9', 'Mission sheet, first page: title, category, three risks « danger → parade » and « N autres », teams, zones count, one primary action; no risk said',
+@case('N9', 'Mission sheet, first page: title, category, the summary in two lines at most, three risks « danger → parade » and « N autres », teams, zones count, one primary action; no risk said',
       'N', tags=('missions',), designs=('standard',), screens=False, langs4=True,
-      rule='V3 spec 10.45 / SOG-0051 (user: « les risques sur la première page »): seven elements at most (rule 13), « Préparer ce vol » the one '
-      'primary action, « Détail » the secondary; a mission without risks says « Aucun risque déclaré » and keeps its summary')
+      rule='V3 spec 10.45 / SOG-0051 (user: « les risques sur la première page »; refused 10 Nov: « oui, mais la description courte, avant les '
+      'risques ») : title, category (with the state « Volée le … »), summary (two lines at most, « … »), risks, teams, zones, actions — seven '
+      'at most (rule 13), « Préparer ce vol » the one primary action, « Détail » the secondary; no empty line without a summary')
 def n9(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     open_sheet(c, 'X-301A')
     f = c.js(_FIRST_JS)
     c.le(f['blocks'], 7, 'seven elements at most on the first page', what='elements')
+    c.eq(f['order'], ['title', 'cat', 'summary', 'risks', 'teams', 'zones', 'actions'], 'the summary always comes after the category, before the risks', what='order')
+    c.ok(1 <= f['sumLines'] <= 2 and f['sumCut'], f, 'the summary in two lines at most, cut with « … »')
     c.eq(f['risks'], ['Danger un → Parade un', 'Danger deux → Parade deux', 'Danger trois → Parade trois'], 'three risks « danger → parade »', what='risks')
     c.eq(norm(f['more']), norm(row(c, 'more').replace('{n}', '2')), 'the two others folded', what='others')
     c.eq(f['teams'], 3, 'the teams engaged', what='teams')
@@ -525,6 +542,14 @@ def n9(c):
     c.until(f"!!document.querySelector('{M} [data-first] [data-norisk]')", timeout=10000, what='« Aucun risque déclaré »')
     c.eq(norm(c.text(f'{M} [data-first] [data-norisk]')), norm(row(c, 'noRisk')), 'the sentence', what='no risk')
     c.ok('sans risque déclaré' in (c.text(f'{M} [data-first] [data-summary]') or ''), 'no summary', 'the summary stays on the first page')
+    c.eq(c.js(_FIRST_JS)['order'], ['title', 'cat', 'summary', 'risks', 'actions'], 'before the risk line', what='order')
+    # a mission without a summary has no empty line
+    c.tap(f'{M} [data-do="back"]')
+    c.until(f"!!document.querySelector('{M} [data-pane=list]')", what='back to the list')
+    c.tap(f'{M} [data-list] [data-id="X-304A"]')
+    c.until(f"!!document.querySelector('{M} [data-pane=mission][data-id=\"X-304A\"] [data-first] [data-risk]')", timeout=10000, what='X-304A opens')
+    g = c.js(_FIRST_JS)
+    c.eq([g['order'], g['empty']], [['title', 'cat', 'risks', 'actions'], 0], 'no summary line, no empty line', what='[order, empty blocks]')
 
 
 @case('N10', 'Mission sheet, detail: each zone and each map provided opens the Map (no PNG with coordinates); a legacy mission without coordinates shows its PNG',

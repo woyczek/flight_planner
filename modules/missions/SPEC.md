@@ -69,10 +69,11 @@ on the same data. The CPCO (authoring) stays V2 until rebuilt as the third appli
   filter flown: said in a notification, nothing drawn. Case N3 (lot 2: the mission is shown as a flat summary — title,
   operation, route, aircraft, estimated block, summary, notes — until the reader of § 5).
 - **The mission sheet in two levels** (V3 spec § 10.45, SOG-0051; replaces the flat summary of lot 2). **First page**, seven
-  elements at most: the title with id and family; the category line (activity, subtype, the airline's category of § 10.38); the
-  risks — three lines « hazard → mitigation » and « N autres » folded — or « Aucun risque déclaré » followed by the summary; the
-  teams (name, role; seven then « N autres »); the zones as a count with their names; the state (« Volée le … », why a file did not
-  come); the actions: « Préparer ce vol » the one primary, « Détail », « Tirer encore » after a draw, « Retour ». **Detail**: foldable
+  elements at most: the title with id and family; the category line (activity, subtype, the airline's category of § 10.38) with
+  the state « Volée le … »; **the summary, always, before the risks**, two lines at most cut with « … » (its whole text in the
+  `title`; no line without a summary; SOG-0051 refused at acceptance, 10 Nov: « la description courte, avant les risques »); the
+  risks — three lines « hazard → mitigation » and « N autres » folded — or « Aucun risque déclaré »; the teams (name, role; seven
+  then « N autres »); the zones as a count with their names; why a file did not come (only without a mission file); the actions: « Préparer ce vol » the one primary, « Détail », « Tirer encore » after a draw, « Retour ». **Detail**: foldable
   sections separated by a rule, seven lines each then « N autres », in this order: description (summary, the paragraphs of
   `detailed_description`, notes), objectives, zones to activate (name, kind, radius or « polygone », role, time; « Voir sur la
   Carte »), rendezvous, route provided (the turning points as a table, the length by `routeNm`), maps provided, payload and
