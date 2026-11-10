@@ -16,6 +16,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   two aerodromes) is played with the dual view: the Map beside Fuel is not covered, nothing is inert, a drag pans it, the handle of its sheet answers, and the window
   resizes it. The defect « impossible de la resizer ni de la bouger » is **not reproduced** there; the case stays as a guard of the path.
 
+- **Map: the balloon of the map goes when something else takes the place** (`modules/maps/sheet_view.js`, `layers.js`, `module.js`; DECISIONS; noreg D150; SOG-0192). A panel opens, the « i », profile or weather chip is
+  touched, the modes panel opens, the pointer leaves the map: the balloon disappears.
+
 - **Map: one tab, one role — the Layers tab no longer chooses the flight or the mission** (`modules/maps/layers.js`, `mission_view.js`, `module.js`, help ×4; DECISIONS; noreg D149, J6; SOG-0185 c). The mission window over the map is the
   only place of the mission, its provided map and its view; the Layers tab keeps what is shown and its button is « Layers » on a mission map too.
 

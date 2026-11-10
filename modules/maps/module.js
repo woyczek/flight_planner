@@ -272,6 +272,8 @@ export async function mount(el, ctx) {
   });
   S.box.addEventListener('pointerleave', e => {
     if (e.pointerType !== 'mouse') return;
+    if (S.tipEl && !S.tipEl.hidden) S.tipEl.hidden =
+      true; // le pointeur quitte la carte : son infobulle ne le suit pas ailleurs (SOG-0192)
     linger('map');
     if (S.altHoverMap != null) altsHover(-1e5, -1e5); // le tracé survolé est lâché avec la carte
   });

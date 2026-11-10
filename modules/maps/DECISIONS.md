@@ -2317,6 +2317,13 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D140 (the width, the airway solid, the SID's tint, the DCT dashed and thinner when not fully checked, the FRA dotted and faded, the fault red, the airway's name and
   the entry / exit written, the key folded in the list and in the map's legend, the hover of a line on the map: highlighted, drawn thick, released); D126 and D136 follow the new widths.
 
+## The map's balloon does not outlive what it was about (10 Nov 2026, SOG-0192)
+
+- **Seen**: with a balloon on a space open, the « i » chip opens the legend and the balloon stays (tapped balloons have no timer; the hover ones wait 5 s after the pointer leaves).
+- **Done**: the balloon of the map (and the card of a point) goes when a content opens in the sheet (a new key: `openData`), when a chip of the line is touched (profile, weather, « i »), when the modes panel
+  opens (`toggleModes`), and as soon as a mouse pointer leaves the map (no more 5 s there for a balloon already tapped open; the hover balloon keeps its 5 s only if the pointer stays on the map).
+- **Noreg** D150 (the balloon is shown, then each action: gone; red before).
+
 ## One tab, one role: the mission window is the only place of the mission (10 Nov 2026, SOG-0185 c)
 
 - **Decided** by the ergonomics from the user's capture of the mission window (the one he likes): that window is the **only** place for the choice of the mission, of its provided map and of its view; the Layers

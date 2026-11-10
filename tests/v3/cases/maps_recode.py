@@ -4878,3 +4878,35 @@ def d149(c):
     c.eq(c.attr('[data-mp="layers"]', 'title'), row(c, 'layers'), 'the button is « Layers » on a mission map too', what='title mission')
     c.eq(c.js("() => [...document.querySelectorAll('.mp-mbar select')].map(s => s.className)"), ['mp-mb-sel', 'mp-mb-theme'], 'the window of the mission carries the provided map and the view', what='window')
     c.shot('D149_layers_mission_390.png')
+
+
+@case('D150', 'The map’s balloon goes when something else takes the place: a panel opens, the chip « i », the weather chip or the modes panel is touched, the pointer leaves the map', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0192 (the user: « si on affiche sur le « i » alors qu’un balloon help indique un espace aérien, le balloon reste »): a balloon of the map disappears as soon as a panel opens, a tab changes (profile, weather, « i »), the modes panel opens or the pointer leaves the map')
+def d150(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S.prof", timeout=15000, what='the profile')
+    show = "() => { const t = window.__mp.S.tipEl; t.textContent = 'TMA TEST'; t.hidden = false; return !t.hidden }"
+    gone = "() => window.__mp.S.tipEl.hidden === true"
+    c.js(show)
+    c.tap('.mp-chip[data-legend]')
+    c.until(gone, timeout=3000, what='the « i » chip: the balloon is gone')
+    c.tap('.mp-chip[data-legend]')   # the legend closes again
+    c.js(show)
+    c.tap('[data-mp="layers"]')
+    c.until(gone, timeout=3000, what='the Layers tab opens: the balloon is gone')
+    c.tap('[data-mp="layers"]')
+    c.js(show)
+    c.tap('.mp-chip[data-view="weather"]')
+    c.until(gone, timeout=3000, what='the weather chip: the balloon is gone')
+    c.tap('.mp-chip[data-view="profile"]')
+    c.js(show)
+    c.tap('[data-mp="mode"]')
+    c.until(gone, timeout=3000, what='the modes panel opens: the balloon is gone')
+    c.tap('[data-mp="mode"]')
+    c.js(show)
+    c.wait(300)
+    c.page.mouse.move(300, 300)
+    c.page.mouse.move(2, 2)   # the pointer leaves the map (over the frame’s header)
+    c.until(gone, timeout=3000, what='the pointer leaves the map: the balloon is gone')

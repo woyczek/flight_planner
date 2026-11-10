@@ -292,6 +292,7 @@ export function dataHead() {
  *  neuf ouvre une feuille repliée à sa position par défaut, sans glissement. */
 export function openData(kind, key, title, build, label = title) {
   const fresh = S.dkey !== key;
+  if (fresh) hideTips(); // un contenu neuf prend la place de l'infobulle de la carte (SOG-0192)
   if (fresh && S.sh.pos === 'collapsed') S.sh.set('default', true);
   S.dpanel = kind;
   S.dkey = key;
@@ -396,6 +397,7 @@ export function sheetEvents() {
     if (e.target.closest('[data-dclose]')) closeData();
   });
   S.segEl.addEventListener('click', e => {
+    hideTips(); // une puce (profil, météo, légende « i ») change ce qui est montré : l'infobulle de la carte ne reste pas (SOG-0192)
     if (e.target.closest('[data-legend]')) {
       if (S.legendBtn.disabled) return;
       if (!S.legend && S.sh.pos === 'collapsed') S.sh.set('default', true); // la légende se lit sur le dessin

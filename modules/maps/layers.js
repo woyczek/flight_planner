@@ -28,6 +28,9 @@ import {
   buildProfile
 } from './profile_view.js';
 import {
+  hideTips
+} from './tips.js';
+import {
   openData,
   endData,
   dataHead
@@ -502,6 +505,7 @@ export function fillModes() {
  *  sur deux, la carte être basse) dans la couche de superposition, qui a la taille de la carte. */
 export function toggleModes(open = S.modeOpts.hidden) {
   if (S.modeOpts.hidden === !open) return;
+  if (open) hideTips(); // le panneau des modes remplace l'infobulle de la carte (SOG-0192)
   S.modeOpts.hidden = !open;
   S.modeBtn.setAttribute('aria-expanded', String(open));
   if (!open) return;
