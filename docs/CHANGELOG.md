@@ -43,6 +43,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   layers panel while the grid is read, the error only after the frame's replays; the grid is asked after the route; the synoptic build shows the time elapsed and no « 0/1 ».
 - **Frame: `ctx.ask(…, { sections })` reviewed** (`frame/app.js`; SPEC, DECISIONS; noreg A130; SOG-0197). A null section no longer throws, texts are bounded
   (120 / 300 / 500 characters), a group that scrolls takes the keyboard focus and is named by its title.
+- **Diagnostic: the kept conflicts are listed** (`frame/store/frame_data.js` `conflictList`; bench A53; DECISIONS; SOG-0136). Path, time, side, seen of the ten latest conflicts, never their content; the note explains what they are
+  (most probably the current flight rewritten by two modules, SOG-0209) and how they resolve without loss.
 - **Launcher: the content policy survives a file replaced while it is read** (`tools/launch.py` `csp_policy`, `_mtime`; noreg K154; SOG-0219). A `FileNotFoundError` on `frame/app.js` or the modules' list no longer falls on the request: the previous policy
   is kept (the base one, with no added site, if there is none); restart the launcher.
 - **Frame: a launcher started again is found by the open page, no Shift + F5** (`frame/app.js` `probeLauncher`; INTEGRATION § 15.1, DECISIONS; noreg A138; SOG-0215). The survey of the new launcher (version stamp, `data`, `dataGit`, `lan`)

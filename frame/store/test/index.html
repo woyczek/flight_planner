@@ -401,6 +401,8 @@
         .route.text ===
         'LFRS LFLL' && got.profile.tocNm === 60, [r, got]);
       check('the loser kept whole', cs.length === 1 && JSON.parse(cs[0].lost).profile.tocNm === 99, cs);
+      const dgc = (await FD.diagnostic()).conflictList;
+      check('the diagnostic lists the conflict: path, time, side, seen — never the content', dgc.length === 1 && dgc[0].path === p && dgc[0].at && dgc[0].seen === false && !('lost' in dgc[0]) && !('kept' in dgc[0]), dgc);
     },
     // ---- SOG-0136 (« nouvelle brouette de conflits alors que je suis tout seul ») : une entrée de conflit n'existe que si une version DIFFÈRE ; la copie qui revient est la dernière
     // écriture de cet appareil (fins de ligne, mise en forme, ordre des clés), un texte distant vide n'est pas une version : jamais d'entrée, la locale gagne

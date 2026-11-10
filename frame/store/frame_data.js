@@ -1470,6 +1470,13 @@
       lastReadError,
       // chemins écrits en série depuis le chargement (SOG-0209) : « écritures en série de <chemin> par <module> », dits une fois
       serialWrites: [...serialSeen.values()],
+      // les conflits gardés, sans contenu : quel fichier, quand, de quel côté, vu ou non (dix derniers ; SOG-0136 : « 3 conflits », quels fichiers, à quelle heure)
+      conflictList: (await conflicts()).sort((a, b) => String(b.at).localeCompare(String(a.at))).slice(0, 10).map(c => ({
+        path: String(c.path || '').slice(0, 200),
+        at: c.at,
+        side: c.side,
+        seen: !!c.seen
+      })),
       failures: (await getMeta('failures'))?.list || [] // les cinq derniers échecs de synchronisation, du plus récent
     };
   }

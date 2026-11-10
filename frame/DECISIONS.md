@@ -2850,3 +2850,16 @@ minute and at each return to the foreground (a restart between two passes). Pair
 `FileNotFoundError` fell on the request. Now `_mtime` reads once (0 when the file is not there) and the whole read is guarded: a read that fails keeps the previous policy (tried again at the next call); with no previous one, the base policy with
 no added site (the strictest). Never a wider policy on a failure. Noreg K154, red before (`FileNotFoundError: config/repository_tree`). The launcher must be restarted to take it.
 
+
+## 10 November 2026 — « 3 conflits aujourd'hui » (SOG-0136 refused): what they are and how they resolve
+
+The user, 16:07: « 3 conflits ». What the frame keeps and shows:
+
+- **Which files, when**: the conflicts screen (`#conflicts`, the sync button) lists each kept conflict with its file, its time and its side; the page diagnostic (Settings › About › Diagnostic, the JSON he pastes) now has
+  **`conflictList`** — path, time, side, seen, the ten latest, never the content — beside `serialWrites` and `page.reloads` (bench A53). The frame cannot read the list from here (it lives in the user's IndexedDB): the three
+  lines are in his next diagnostic.
+- **Most probable cause**: the current flight rewritten every 4 to 6 s by two modules (SOG-0209, fixed by the write guard 0d78257f0 and the writers' own fix): `current_flight.json` is a *whole* file (never merged by key), so each
+  crossing of two writes that both left a pass is one conflict, the newest by instant wins and the other is kept whole. To be confirmed by the paths in `conflictList`.
+- **How they resolve without any loss**: nothing is lost at the time of the conflict — the winner is the newest version, the loser is kept entirely (« Reprendre » on its card puts it back as a file, and the next pass sends it). They only count
+  until seen: **« Tout marquer comme vu »** (A92) clears the old ones of a device in one tap, « Vu » one by one. Once the writers no longer loop, new ones stop.
+
