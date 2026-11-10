@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 59,
-  "verdicts": 21
+  "verdicts": 22
  },
  "apps": [
   "pilote",
@@ -483,7 +483,9 @@
    },
    "test": "Carburant avec la météo lue, puis la Carte : les barbules de vent sont là sans rien retélécharger, les mêmes que sur la coupe verticale.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "ok",
+   "comment": "validé, mais toujours pas de GFS.",
+   "at": "2026-11-10T10:41:37Z"
   },
   {
    "id": "SOG-0149",
