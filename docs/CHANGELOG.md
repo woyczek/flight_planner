@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: 40 to 80 wind barbs in the view at any zoom** (`modules/maps/tips.js`; DECISIONS; noreg D166; SOG-0214). Thinned when too many, completed by interpolation between two read winds when too few.
+
 - **Map: ground names — one per taxiway, the aprons named, the alternate read** (`modules/maps/ground.js`, `texts.js`; DECISIONS; noreg D165; SOG-0195, SOG-0135). The ways a taxiway is cut into no longer repeat its
   name; the aprons (U, V, G, M…) from AeroDB are named at zoom 15, before the stands; the alternate's ground is asked as the departure's and the arrival's.
 

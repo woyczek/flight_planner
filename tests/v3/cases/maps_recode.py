@@ -5296,3 +5296,22 @@ def d_names(c):
     c.ok(all(v <= draws for v in per.values()), f'{per} for {draws} drawing(s)', 'a taxiway’s name is written once per drawing, not once per way')
     c.ok(tx.count('U') >= 1 and tx.count('V') >= 1, f'U x{tx.count("U")}, V x{tx.count("V")}', 'the aprons are named at zoom 15, before the stands')
     c.eq(c.js("async () => (await import('/modules/maps/ground.js')).groundIcaos().includes('LFMT')"), True, 'the alternate (LFMT) is a ground aerodrome', what='icaos')
+
+
+@case('D166', 'Wind barbs: between 40 and 80 in the view at any zoom (thinned when too many, completed between two read winds when too few)', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0214 (the user): « barbules : entre 40 et 80 à l’écran à tout zoom »; the list along the trajectory (one wind each 50 NM) gave a handful at a close zoom and a crowd at a wide one; it is thinned above 80 and completed with winds interpolated between two neighbours that were read (never across a place without wind) below 40')
+def d_barbs(c):
+    c.open('maps', flight=True, forecast=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js(_REDO_JS)
+    c.until("() => (window.__mp.S.windHits || []).length > 0", timeout=15000, what='the barbs are there')
+    seen = []
+    for z in (4.5, 6, 7.5, 9, 10.5):
+        c.js("(z) => { window.__mpMap.jumpTo({ center: [1.8, 45.2], zoom: z }); return true }", z)
+        c.wait(1500)
+        n = c.js("() => { const S = window.__mp.S, r = S.box.getBoundingClientRect(); return (S.windHits || []).filter(h => h.x >= 0 && h.x <= r.width && h.y >= 0 && h.y <= r.height).length }")
+        seen.append((z, n))
+    ok = [(z, n) for z, n in seen if z >= 6 and z <= 9]
+    c.ok(all(40 <= n <= 80 for z, n in ok), str(seen), 'between 40 and 80 barbs in the view at the working zooms (the route crosses the view)')

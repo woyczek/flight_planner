@@ -407,12 +407,87 @@ function drawBarb(ctx, c, w, col, lw = 1.8) {
   if (left >= 5) feather(at === 0 ? 4.5 : at, 6);
   ctx.restore();
 }
+/** Entre WIND_MIN et WIND_MAX barbules dans la vue, à tout zoom (SOG-0214) : la liste du long de la trajectoire (un vent tous les 50 NM, ou ceux de Carburant) est éclaircie quand
+ *  elle en met trop dans la vue, et complétée par des vents interpolés entre deux voisins quand elle en met trop peu (un vent qui n'est pas lu mais reliant deux lus : `between`) ; jamais
+ *  de vent inventé à travers un lieu sans vent ou entre deux lieux éloignés de plus de 400 NM. Rend [{ w, c }] des barbules de la vue. */
+const WIND_MIN = 40,
+  WIND_MAX = 80,
+  WIND_TARGET = 60;
+
+function windsInView(list, toC, W, H) {
+  const at = list.map(w => ({
+      w,
+      c: toC(w.lat, w.lon)
+    })),
+    inV = q => q.c.x >= -20 && q.c.x <= W + 20 && q.c.y >= -20 && q.c.y <= H + 20,
+    seen = at.filter(inV);
+  if (seen.length > WIND_MAX) {
+    const stride = Math.ceil(seen.length / WIND_TARGET);
+    return seen.filter((q, i) => i % stride === 0);
+  }
+  if (seen.length >= WIND_MIN || at.length < 2) return seen;
+  // trop peu : des vents interpolés entre deux voisins lus, dans les paires qui touchent la vue
+  const pairs = [];
+  for (let i = 0; i + 1 < at.length; i++) {
+    const a = at[i],
+      b = at[i + 1];
+    if ((inV(a) || inV(b)) && !a.w.gap && !b.w.gap && Number.isFinite(+a.w.kt) && Number.isFinite(+b.w.kt) && Math.hypot(+a.w.lat - +b.w
+        .lat, (+a.w.lon - +b.w.lon) * Math.cos(+a.w.lat * Math.PI / 180)) * 60 < 400) pairs.push([a, b]);
+  }
+  if (!pairs.length) return seen;
+  const uv = w => {
+      const r = +w.dirDeg * Math.PI / 180;
+      return [- +w.kt * Math.sin(r), - +w.kt * Math.cos(r)];
+    },
+    // les barbules à insérer à un pas de `step` px sur chaque paire ; celles qui tombent hors de la vue ne comptent pas (deux essais : le pas est corrigé de ce qui est vu)
+    build = step => {
+      const out = [...seen];
+      for (const [a, b] of pairs) {
+        const ua = uv(a.w),
+          ub = uv(b.w),
+          k = Math.min(200, Math.floor(Math.hypot(a.c.x - b.c.x, a.c.y - b.c.y) / step) - 1);
+        for (let m = 1; m <= k; m++) {
+          const f = m / (k + 1),
+            u1 = ua[0] + (ub[0] - ua[0]) * f,
+            v1 = ua[1] + (ub[1] - ua[1]) * f,
+            w = {
+              ...a.w,
+              lat: +a.w.lat + (+b.w.lat - +a.w.lat) * f,
+              lon: +a.w.lon + (+b.w.lon - +a.w.lon) * f,
+              dirDeg: (Math.atan2(-u1, -v1) * 180 / Math.PI + 360) % 360,
+              kt: Math.hypot(u1, v1),
+              tempC: Number.isFinite(+a.w.tempC) && Number.isFinite(+b.w.tempC) ? +a.w.tempC + (+b.w.tempC - +a.w.tempC) * f : null,
+              between: true
+            },
+            c = toC(w.lat, w.lon);
+          if (inV({
+              c
+            })) out.push({
+            w,
+            c
+          });
+        }
+      }
+      return out;
+    };
+  let step = Math.max(4, pairs.reduce((s, [a, b]) => s + Math.hypot(a.c.x - b.c.x, a.c.y - b.c.y), 0) / WIND_TARGET),
+    out = build(step);
+  for (let t = 0; t < 2 && (out.length < WIND_MIN || out.length > WIND_MAX); t++) {
+    step = Math.max(4, step * (out.length - seen.length) / Math.max(1, WIND_TARGET - seen.length));
+    out = build(step);
+  }
+  return out;
+}
 /** Barbules de la route, sur un liseré du fond de 5 px ; rend les cadres touchés pour l'infobulle : [{ x, y, w }]. */
 export function drawWinds(ctx, toC) {
   const col = MapsRender.palette(!!S.theme?.dark).wind,
     hits = [];
-  for (const w of windPoints()) {
-    const c = toC(w.lat, w.lon);
+  for (const {
+      w,
+      c
+    }
+    of windsInView(windPoints(), toC, S.canvas.width / Math.max(1, window.devicePixelRatio || 1), S.canvas.height / Math.max(1, window
+      .devicePixelRatio || 1))) {
     if (!w.gap) { // hors couverture : pas de flèche, la place reste touchable (« pas de vent ici »)
       drawBarb(ctx, c, w, S.theme.bg, 5);
       drawBarb(ctx, c, w, col);

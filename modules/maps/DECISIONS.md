@@ -2299,6 +2299,16 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done**: the light drawing paints every airway in the low colour (high ones too); a zoom that crosses a threshold *during* a gesture shows the new state only at rest.
 - **Noreg** D141 (zoom 8: the airways are in the light drawing and stroked while moving; zoom 3: none, no stroke; red before: 3 airways at zoom 3).
 
+## Wind barbs: 40 to 80 in the view at any zoom; where they come from (10 Nov 2026, SOG-0214)
+- **Asked**: between 40 and 80 barbs on screen at any zoom; outside AROME the barbs of the model that covers the place, or nothing (« sur LFPO-KDEN toutes dans le même sens »); say where it comes from.
+- **Done**: the list along the trajectory (one wind each 50 NM) is **thinned** by a stride when more than 80 are in the view, and **completed** with winds interpolated between two neighbours that were read (u/v
+  components, temperature; `between: true`; never across a place without wind nor between two places more than 400 NM apart) when fewer than 40, at a pixel step corrected by what falls in the view
+  (`windsInView`, `tips.js`). Noreg D166 (red before: 9, 5, 1, 1 barbs at zooms 4.5 to 9).
+- **Where they come from** (read in the code): (1) the grid the vertical cut reads, when it is kept on the device (`gridWinds`): the model the route's middle picks, the covering model's cells only if already kept,
+  a place outside the model's coverage is a « no wind here » (no arrow, said in the tip), never the same arrow repeated (SOG-0141); (2) without the cut's grid, Fuel's winds at the route points
+  (`carburantWinds`) **interpolated linearly** between them — with few points over a long route (LFPO-KDEN: five points) the interpolation gives arrows that look alike. That is the likely origin of « toutes dans
+  le même sens »: not a model, a straight line between two read winds. The interpolation I added is the same kind and does not hide it: the tip of a barb says its model/level/time when it has them.
+
 ## Ground names: one per taxiway, the aprons named, the alternate read (10 Nov 2026, SOG-0195 + SOG-0135, capture 150548)
 - **The user**: at LFPO « L3 » four times and « L4 » three times in the same place; a name per main taxiway along its trace as soon as it shows; the names of the aprons (U, V, G, M…) before the stands (« roulez
   W47, LN pour parking M02 ») ; « no entry » earlier; the alternate's ground read too. **AeroDB** (fa112082c, K157): `proc/ground/<ICAO>.json` carries `twy` (ref then OSM name; no importance rank),
