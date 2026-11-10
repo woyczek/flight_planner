@@ -5186,3 +5186,43 @@ def l68(c):
     c.eq(ticked(), before, 'and the selection is still the same', what='selection kept after No')
     c.shot(f"L68_standard_{c.page.viewport_size['width']}_{lang}_delivered.png")
     c.check_errors()
+
+
+@case('L69', 'Données: a set with mixed cycles says « en partie à jour : n en 2611, m en 2610 » (never « à jour »); a zone that waits for a file shows the step-by-step of its source — the direct link, the exact file name, what it brings, then the button (SOG-0191, SOG-0189)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0191 (the VFR build of 10 Nov replaced 418 terrains by 28 and the row still said « à jour »): publication().vfr.partial puts the row in the state « partial » with the parts by cycle; SOG-0189 (AeroCatalogue.stepsOf): on the line of a zone that waits for a file, the direct link of the page (the home page as a fallback), the file to take, what it gives, the button')
+def l69(c):
+    lang = c.lang
+    TS = lambda key: _trow(key, lang, after='  steps: {')
+    TP = lambda key: _trow(key, lang, after='  partial: {')
+    cfg, (today, cur, prev, nxt) = _fixture()
+    cfg['publication']['vfr'] = {'cycle': prev.isoformat(), 'at': today.isoformat() + 'T00:00:00Z', 'count': 418, 'cycles': {cur.isoformat(): 28, prev.isoformat(): 385}, 'unknown': 5, 'partial': True}
+    st = _launcher(c, [], verbs=_VERBS + ['base/pickup'])
+    st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'fr': _zst('up-to-date'), 'us': _zst('up-to-date'),
+                            'gb': _zst('stale', {'code': 'pickup-waiting', 'source': 'nats', 'set': 'AIP', 'cycle': '2026-11-26', 'zip': 'x.zip'}, buildable=False)})
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the five pills')
+    # ---- SOG-0191: the VAC row
+    c.eq(_open_and_state(c, 'vac'), 'partial', 'the row is « partial », not « ok » nor only « out of date »', what='state')
+    text = norm(c.js("document.querySelector('[data-set=vac]').textContent"))
+    parts = [(n, cyc) for n, cyc in re.findall(r'(\d+) \S+ (\d{4})\b', text)]
+    c.ok(('28' in dict(parts).keys() or any(n == '28' for n, _ in parts)) and any(n == '385' for n, _ in parts), text[:300], 'the row says the parts by cycle: 28 in the current one, 385 in the previous one')
+    c.ok(norm(TP('line').split('{parts}')[0]) in text, text[:300], 'worded « en partie à jour : … » in the language of the run')
+    c.ok(norm(TP('unknown').replace('{n}', '5')) in text, text[:300], 'and the 5 terrains of unknown cycle')
+    # ---- SOG-0189: the step-by-step on the line of the zone that waits for a file
+    steps = c.js("() => { const s = AeroCatalogue.stepsOf('nats', '2026-11-26'); return s && { page: s.page, files: s.files.map(f => ({ name: f.name, url: f.url || '' })) } }")
+    c.ok(steps and steps['files'], steps, 'the catalogue has a step-by-step for NATS')
+    box = '[data-zone-row=gb] [data-pickup-steps]'
+    c.until(f"!!document.querySelector('{box}')", timeout=6000, what='the step-by-step on the line of the United Kingdom')
+    links = c.js(f"[...document.querySelectorAll('{box} a')].map(a => [a.getAttribute('href'), a.target, a.rel])")
+    c.eq(links[0], [steps['page']['url'], '_blank', 'noopener noreferrer'], 'the first link is the DIRECT link of the page, opened in a new tab', what='page link')
+    c.ok(any(norm(f['name']) in norm(c.text(box)) for f in steps['files']), c.text(box)[:300], 'the exact name of the file is written')
+    c.ok(c.js(f"document.querySelector('{box} > li').hasAttribute('data-step-page')"), None, 'the page comes first')
+    last = c.js(f"[...document.querySelectorAll('{box} > li')].pop().hasAttribute('data-step-then')")
+    c.ok(last, None, 'then the last step points at the button of the line')
+    c.ok(c.count('[data-zone-row=gb] [data-verb=pickup]') == 1 and c.count('[data-zone-row=fr] [data-pickup-steps]') == 0, None, 'the button is on the line, and a zone that waits for nothing has no steps')
+    c.js("document.querySelector('[data-zone-row=gb]').scrollIntoView({ block: 'center' })")
+    if c.width in (390, 1280):
+        c.shot(f'L69_standard_{c.width}_{lang}_delivered.png')
+    c.check_errors()

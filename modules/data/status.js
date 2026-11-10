@@ -132,6 +132,20 @@ export function setZoneFilter(key) {
   S.zoneFilter = k && S.zoneFilter !== k ? k : null;
   renderBuild();
 }
+/** Un lien https en texte sûr : `<a>` ouvert dans un autre onglet seulement si l'adresse est en https:// (sinon le texte seul). */
+const linkHtml = (url, label) => M.isHttps(url) ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>` : esc(label);
+/** Le pas-à-pas d'une source que l'on dépose soi-même (SOG-0189, `AeroCatalogue.stepsOf`) sur la ligne de la zone qui l'attend : ① le lien DIRECT de la page (et, si elle ne répond plus, l'accueil du site), ② chaque fichier à prendre (son nom exact, son lien direct s'il en a un, ce qu'il apporte), ③ le bouton de la ligne ; '' sans pas-à-pas (une source que le lanceur télécharge) ou sans le catalogue. */
+function stepsHtml(id, z) {
+  const r = z.reasons.find(x => x.source),
+    steps = r && typeof S.d?.cat?.stepsOf === 'function' ? S.d.cat.stepsOf(r.source, r.cycle || undefined) : null;
+  if (!steps) return '';
+  const T = TX.steps,
+    [pre, post] = tt(T.file, {
+      f: '\u0000'
+    }).split('\u0000'),
+    files = (Array.isArray(steps.files) ? steps.files : []).slice(0, 6).map(f => `<li data-step-file><span>${esc(pre)}${f.url ? linkHtml(f.url, String(f.name)) : `<code>${esc(String(f.name))}</code>`}${esc(post ?? '')}</span>${Array.isArray(f.gives) ? ` <span class="f-muted">${esc(String(f.gives[li()] ?? f.gives[0] ?? ''))}</span>` : ''}</li>`).join('');
+  return `<ol class="d-zsteps" data-pickup-steps="${esc(id)}"><li data-step-page>${tt(T.page, { l: linkHtml(steps.page?.url, tt(T.pageName)) })}${steps.page?.home ? ` <span class="f-muted">${tt(T.home, { l: linkHtml(steps.page.home, tt(T.homeName)) })}</span>` : ''}</li>${files}<li data-step-then>${esc(tt(T.then))}</li></ol>`;
+}
 /** Ce qu'une zone dit et propose SUR sa ligne (SOG-0180) : une zone qui attend un fichier que seul l'utilisateur dépose le dit (sa première raison) avec « Prendre le fichier » (la prise lance ensuite la construction de la zone) ; une zone en échec a « Réessayer » (la construction de cette zone seule) ;
  *  rien pour les autres. Les boutons sont gris pendant une opération. */
 export function zoneActionHtml(id) {
@@ -142,7 +156,7 @@ export function zoneActionHtml(id) {
   if (st === 'failed') return `<p class="d-zact" data-zone-action="${esc(id)}"><button type="button" data-verb="retry-zone" data-zone="${esc(id)}"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.retry))}</button></p>`;
   if ((st === 'stale' || st === 'never-built') && !z.buildable) {
     const off = busy || gateOf('base', 1, [M.PICKUP.verb]).verbs[M.PICKUP.verb].disabled;
-    return `<p class="d-zact" data-zone-action="${esc(id)}" data-waiting><span class="f-muted">${esc(zoneReasons(id)[0] || tt(TX.zst[st]))}</span> <button type="button" data-verb="pickup" data-zones="${esc(id)}"${off ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button></p>`;
+    return `<p class="d-zact" data-zone-action="${esc(id)}" data-waiting><span class="f-muted">${esc(zoneReasons(id)[0] || tt(TX.zst[st]))}</span> <button type="button" data-verb="pickup" data-zones="${esc(id)}"${off ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button></p>${stepsHtml(id, z)}`;
   }
   return '';
 }

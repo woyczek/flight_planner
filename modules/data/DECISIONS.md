@@ -399,3 +399,10 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
 - **The button is the only one in a pack row** (SOG-0165 forbade a button per country row): its count is the number of the pack's countries in the coverage, the zones it will touch; a pack with none has no button (nothing to refresh; « Ajouter tout » adds).
 - **SOG-0186 retouch**: the countries of the open fold are one step in from their pack (the ergonomist's capture at 1280 showed them at the level of the packs).
 - **Counter-test**: L68 is red without the button (none exists); L66 checks the indent (18 to 40 px from the switch).
+
+## 10 November 2026 — « en partie à jour » and the step-by-step (SOG-0191, SOG-0189)
+
+- **A mixed set is a state of its own**, `partial`, not a variant of « cycle dépassé »: the VFR build of 10 Nov replaced 418 terrains by 28 and the row read « à jour ». Ahead of the stale state because the sentence the user needs is the parts by cycle, not a date. The pill is amber; the line carries the numbers.
+- **The page draws what AeroDB gives and checks nothing**: the step-by-step is `stepsOf` as it is (links only if https, the file name as text in `<code>`), the dead-link fallback is the home page the catalogue provides; no network call is made to test a link.
+- **On the line of the zone, not in a help page**: the user who waits for a file is looking at that line; the same steps are not repeated in the pickup question (SOG-0197 keeps it short).
+- **Counter-test**: L69 (state `partial` and the numbers; the first link is the catalogue's page link, in a new tab with `noopener noreferrer`; the exact file name; the steps absent on a zone that waits for nothing).

@@ -138,12 +138,32 @@ export const TX = {
   },
   // l'étiquette d'état d'une ligne (SPEC § 6.2)
   state: {
+    partial: ['En partie à jour', 'Partly up to date', 'Teilweise aktuell', 'En parte al día'],
     'stale-cycle': ['Cycle dépassé', 'Cycle out of date', 'Zyklus überholt', 'Ciclo superado'],
     'stale-age': ['Plus de 28 jours', 'Over 28 days old', 'Über 28 Tage alt', 'Más de 28 días'],
     parser: ['Parseur ancien', 'Old parser', 'Alter Parser', 'Analizador antiguo'],
     outdated: ['Périmé', 'Outdated', 'Veraltet', 'Caducado'],
     absent: ['Absent du dépôt', 'Not in the repository', 'Nicht im Repository', 'Ausente del repositorio'],
     ok: ['À jour', 'Up to date', 'Aktuell', 'Al día']
+  },
+  // les points VFR aux cycles mélangés (SOG-0191) : « en partie à jour : 28 en 2611, 390 en 2610 »
+  partial: {
+    line: ['en partie à jour : {parts}', 'partly up to date: {parts}', 'teilweise aktuell: {parts}', 'en parte al día: {parts}'],
+    part: ['{n} en {c}', '{n} in {c}', '{n} in {c}', '{n} en {c}'],
+    unknown: ['{n} de cycle inconnu', '{n} of unknown cycle', '{n} mit unbekanntem Zyklus', '{n} de ciclo desconocido']
+  },
+  // le pas-à-pas d'une source qu'on dépose soi-même (SOG-0189, AeroCatalogue.stepsOf), sur la ligne de la zone qui l'attend
+  steps: {
+    page: ['Ouvrez {l}', 'Open {l}', 'Öffnen Sie {l}', 'Abra {l}'],
+    pageName: ['la page de la source', 'the source page', 'die Seite der Quelle', 'la página de la fuente'],
+    home: ['(si ce lien ne répond plus : {l})', '(if this link no longer answers: {l})', '(wenn dieser Link nicht mehr antwortet: {l})',
+      '(si este enlace ya no responde: {l})'
+    ],
+    homeName: ['la page d’accueil du site', 'the site’s home page', 'die Startseite der Webseite', 'la página de inicio del sitio'],
+    file: ['Téléchargez {f}', 'Download {f}', 'Laden Sie {f} herunter', 'Descargue {f}'],
+    then: ['Puis touchez le bouton « Prendre le fichier téléchargé ».', 'Then touch the “Take the downloaded file” button.',
+      'Tippen Sie dann auf „Heruntergeladene Datei übernehmen“.', 'Luego toque el botón «Tomar el archivo descargado».'
+    ]
   },
   // le détail replié d'une ligne
   link: ['Lien', 'Link', 'Link', 'Enlace'],

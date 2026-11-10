@@ -11,7 +11,9 @@ export const AGE_LIMIT_DAYS = 28;
 /** Ordre de priorité des états d'une ligne (SPEC § 6.2) : un seul est montré ; ceux que les données ne permettent pas encore de
  *  calculer (nouveau cycle, source plus récente, non publié) sont listés pour mémoire. `absent` passe avant tout : sans rien de
  *  publié, aucun autre état n'a de sens ; `stale-age` est la règle des 28 jours des jeux sans cycle. */
-export const STATE_ORDER = ['absent', 'stale-cycle', 'new-cycle', 'parser', 'source-newer', 'unpushed', 'outdated', 'stale-age', 'ok'];
+export const STATE_ORDER = ['absent', 'partial', 'stale-cycle', 'new-cycle', 'parser', 'source-newer', 'unpushed', 'outdated', 'stale-age',
+  'ok'
+];
 /** Jeux dont l'état se lit ailleurs que dans la base par zone : source → partie de publication(). */
 export const PUBLISHED_BY = {
   vac: 'vfr',
@@ -105,6 +107,9 @@ export function lowestVersion(list) {
  *  niveau 'ok' | 'warn' | 'err' de la pastille ; l'ordre est celui de STATE_ORDER. */
 export function pickState(f) {
   if (f.absent) return ['absent', 'warn'];
+  if (f.partial) return ['partial',
+    'warn'
+  ]; // un jeu aux cycles mélangés n'est jamais « à jour » ni seulement « dépassé » : il est en partie à jour (SOG-0191)
   if (f.stale) return ['stale-cycle', f.stale];
   if (f.parser) return ['parser', 'warn'];
   if (f.outdated) return ['outdated', 'warn'];
@@ -210,7 +215,8 @@ export function rowOf(src, env) {
     byStatus: null,
     fed: fedZones(src, env.ids),
     attention: false,
-    unknown: false
+    unknown: false,
+    parts: null // les points VFR « en partie à jour » : { list: [{ cycle: 'AANN', n }], unknown } (SOG-0191)
   };
   const part = PUBLISHED_BY[src.id] || (src.group === 'base' ? 'base' : null);
   if (src.status !== 'used' || !part) return row;
@@ -247,6 +253,20 @@ export function rowOf(src, env) {
       row.cycleDate = cycleDateOf(env.airac, v.cycle);
       row.at = v.at ?? null;
       row.counts.aerodromes = v.count;
+      // SOG-0191 (AeroDB : publication().vfr = { cycles: { 'AAAA-MM-JJ': n } | null, unknown, partial }) : entrée non fiable, bornée à dix cycles et à des entiers
+      if (v.partial === true) {
+        const list = Object.entries(v.cycles && typeof v.cycles === 'object' && !Array.isArray(v.cycles) ? v.cycles : {}).filter(([d, n]) =>
+            ISO.test(d) && Number.isInteger(n) && n >= 0).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 10)
+          .map(([d, n]) => ({
+            cycle: cycleName(env.airac, d),
+            n: Math.min(n, 1e9)
+          })).filter(x => x.cycle);
+        row.parts = {
+          list,
+          unknown: Number.isInteger(v.unknown) && v.unknown > 0 ? Math.min(v.unknown, 1e9) : 0
+        };
+        flags.partial = true;
+      }
     }
   } else if (part === 'aircraft') {
     const a = env.pub.aircraft;

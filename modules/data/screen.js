@@ -134,6 +134,8 @@ export const STYLE = `
 @media (pointer:fine){[data-module="data"] .d-covtab button{min-height:32px}}
 [data-module="data"] .d-packact{margin:0 0 4px 28px}
 [data-module="data"] .d-packact button{min-height:var(--sog-touch)}
+[data-module="data"] .d-zsteps{grid-column:1/-1;margin:0 0 6px 28px;padding-left:20px;font-size:var(--sog-size-s)}
+[data-module="data"] .d-zsteps li{min-height:0;margin:2px 0}
 [data-module="data"] .d-bal{margin:4px 0 8px}
 [data-module="data"] .d-bal button{min-height:var(--sog-touch);padding:0 8px}
 [data-module="data"] .d-bal button[aria-pressed="true"]{font-weight:600;outline:2px solid var(--sog-accent);outline-offset:-2px}
@@ -417,7 +419,15 @@ const sourceLabel = id => (catSource(id)?.n?.[li()] || id).replace(/\s*\(.*\)\s*
  *  (publication() n'en donne pas : seulement des nombres de zones, de terrains, de fichiers, de types). */
 function metaText(r) {
   const parts = [];
-  if (r.cycle) parts.push(tt(TX.cycle, {
+  if (r.state === 'partial' && r.parts) parts.push(tt(TX.partial.line, { // SOG-0191 : jamais « à jour » : n en 2611, m en 2610
+    parts: [...r.parts.list.map(x => tt(TX.partial.part, {
+      n: x.n,
+      c: x.cycle
+    })), ...(r.parts.unknown ? [tt(TX.partial.unknown, {
+      n: r.parts.unknown
+    })] : [])].join(', ')
+  }));
+  else if (r.cycle) parts.push(tt(TX.cycle, {
     c: r.cycle
   }) + (r.state === 'stale-cycle' && r.oldestSource ? tt(TX.staleBy, {
     s: sourceLabel(r.oldestSource)
