@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: a flight that names a mission stays in the flight view, the mission over it** (`modules/maps/mission_view.js`, `draw.js`, `render.js`, `sheet_view.js`, `module.js`, `texts.js`; SPEC § 15,
+  DECISIONS, help ×4; noreg D153, D123, D148; SOG-0193 L1). Weather, procedures, Édition, Layers boxes and proposed routes are back for a flight with a mission; its zones, its points with a role
+  and a window with « The mission's map » are drawn over the flight view; the mission view is for `#maps?mission=<ID>`.
+
 - **Fuel: the current flight is no longer rewritten in a loop** (`modules/fuel/module.js`; Fuel SPEC, DECISIONS; noreg F132; SOG-0209).
   Two Fuel on one flight no longer answer each other's profile; a write that would change only `updated_at` is not made.
 - **Fuel: the way back to the mission** (`modules/fuel/module.js`; Fuel SPEC, DECISIONS, help; noreg N16; SOG-0193 L2, § 10.47 b).

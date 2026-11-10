@@ -710,6 +710,12 @@ function draw() {
     // les terrains de la route et le dégagement : leur nom est la seule boîte de leur point (SPEC § 3)
     onRoute: [...route.map(p => p.id), altn?.id],
     gc: gcScreen(mission, pick, toC),
+    // un vol qui nomme une mission : la vue vol, la mission en surimpression (zones en aplat léger, points à rôle ; SOG-0193 L1)
+    aside: !mission && S.missionAside && S.mission ? {
+      points: S.missionPts || [],
+      zones: S.mission.zones,
+      flat: true
+    } : null,
     mission: mission && S.mission ? {
       points: S.missionPts || S.mission.points, // avec leur rôle dit dans la langue (missionUi)
       zones: S.mission.zones,

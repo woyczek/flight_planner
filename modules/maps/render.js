@@ -1405,6 +1405,8 @@
     route = [],
     marks: mk = [],
     mission = null,
+    aside =
+    null, // la mission d'un vol, en surimpression de la vue vol : { points, zones, flat } (SOG-0193 L1) ; ne change rien d'autre au dessin
     frame = null, // la taille que le zoom effectif compare (SOG-0169) : celle du module, pas de la carte (que la feuille fait varier)
     gc = null, // la route orthodromique : ses points en coordonnées de la vue (SOG-0145)
     theme = null,
@@ -1626,12 +1628,12 @@
         } : undefined)
       }, {
         id: 'missionZones',
-        paint: c => drawMissionZones(c, mission?.zones, toC, scale, pl, profile, !!mission?.flat)
+        paint: c => drawMissionZones(c, (mission || aside)?.zones, toC, scale, pl, profile, !!(mission || aside)?.flat)
       }, {
         id: 'missionPoints',
-        reserve: () => reservePoints(pl, mission?.points, toC, scale, profile),
+        reserve: () => reservePoints(pl, (mission || aside)?.points, toC, scale, profile),
         bare: true, // le dessin seul : la place de leurs noms est demandée par reserve
-        paint: c => drawMissionPoints(c, mission?.points, toC, W, H, scale, profile)
+        paint: c => drawMissionPoints(c, (mission || aside)?.points, toC, W, H, scale, profile)
       }, {
         id: 'cities', // les villes après les terrains, balises et points de report : leur place n'est plus réservée d'avance
         paint: c => {

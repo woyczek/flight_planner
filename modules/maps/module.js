@@ -79,6 +79,7 @@ import {
 } from './tips.js';
 import {
   applyMission,
+  loadAside,
   deriveMission,
   retryMission,
   missionEvents
@@ -339,6 +340,7 @@ export async function mount(el, ctx) {
   if (S.missionId) await applyMission();
   else {
     await applyFlight();
+    if (S?.missionAside) loadAside(); // la surimpression arrive quand elle arrive : la carte du vol n'attend pas la mission
   }
   if (!S) return;
   // mode « choisir sur la carte » : les procédures du terrain sont lues avant le fond, qui part de la vue qu'elles donnent (S.fit)

@@ -407,11 +407,13 @@ Die Wegpunkte der Route sind auch auf dem Profil markiert.
 Pistennummern, die Funkfeuer, die Verfahren, die Route (Namen, Zeiten, TOC / TOD), zuletzt den Rest; eine geschätzte
 Zeit oder der Name von TOC / TOD gleitet entlang der Route, bevor sie entfällt (die Raute bleibt).
 
-**Die Missionskarten.** Eine Mission öffnet sich aus Missionen („Auf der Karte ansehen“) oder von selbst bei einem daraus vorbereiteten Flug; ein Fenster oben links auf der Karte ist der einzige Ort, um Mission, mitgelieferte Karte (Übersicht, Ziel, Detail…) und Ansicht zu wählen; die Ebenen stellen nur ein, was angezeigt wird.
+**Ein Flug, der eine Mission nennt.** Die Karte bleibt die des Flugs, mit allem, was sie kann (Wetter, Verfahren, Routenbearbeitung, Ebenen-Felder, vorgeschlagene Routen); die Mission wird darübergelegt: ihre Gebiete, ihre Punkte mit Rolle (Abflug, Ankunft, Ziel …) und oben links ein Fenster mit Titel, Kennung, Familie und „Karte der Mission“.
+
+**Die Missionskarten.** Eine Mission öffnet sich aus Missionen („Auf der Karte ansehen“) oder aus dem Fenster eines Flugs, der sie nennt; ein Fenster oben links auf der Karte ist der einzige Ort, um Mission, mitgelieferte Karte (Übersicht, Ziel, Detail…) und Ansicht zu wählen; die Ebenen stellen nur ein, was angezeigt wird.
 Jede Karte
 wird wie im Studio neu gezeichnet: gleicher Rahmen, gleiches Anzeigeprofil, mit den Punkten der Mission, ihren
 schraffierten Gebieten und ihrer Route. Das Vertikalprofil zeigt dann das der Mission.
-Ein aus einer Mission vorbereiteter Flug öffnet die Karte auf dieser Mission, ohne Eingabe: eine Leiste oben nennt Titel, Kennung, Familie, die gezeigte mitgelieferte Karte und, wenn es mehrere gibt, deren Auswahl (höchstens sieben). Gebiete sind eine leichte Fläche mit ihrem Namen, Punkte tragen ihre Rolle (Abflug, Ankunft, Ziel …), und die Legende („i“) benennt sie. Das Kreuz der Leiste entfernt sie: zurück zum Flug mit allen seinen Ebenen; eine andere Mission wählt man in der Ebenenliste. Die Karte öffnet sich in der Ansicht ihres Zwecks: das Profil im YAML der Karte hat Vorrang; sonst öffnen sich Ziel-, Detail-, Treffpunkt- und Zonenkarten einer operativen Mission (SAR, MEDEVAC, FIRE, LE, ISR, COMBAT, MARITIME, AAR, AIRLIFT, COMMAND: alles außer kommerziell) in VFR Topo (Relief, Hindernisse, VRP, VFR-Flugplätze, untere Lufträume), die Übersichtskarte und eine kommerzielle Mission behalten die Ansicht des Fluges. Das Banner bietet „Ansicht“: VFR Topo, IFR oder Nur Hintergrund; die Wahl wird für diese Karte auf dem Gerät gemerkt, und das Entfernen des Banners gibt die Ansicht des Fluges zurück.
+„Karte der Mission“ (oder „Auf der Karte ansehen“ in Missionen) öffnet die Karte der Mission: eine Leiste oben nennt Titel, Kennung, Familie, die gezeigte mitgelieferte Karte und, wenn es mehrere gibt, deren Auswahl (höchstens sieben). Gebiete sind eine leichte Fläche mit ihrem Namen, Punkte tragen ihre Rolle (Abflug, Ankunft, Ziel …), und die Legende („i“) benennt sie. Das Kreuz der Leiste entfernt sie: zurück zum Flug mit allen seinen Ebenen; eine andere Mission wählt man in der Ebenenliste. Die Karte öffnet sich in der Ansicht ihres Zwecks: das Profil im YAML der Karte hat Vorrang; sonst öffnen sich Ziel-, Detail-, Treffpunkt- und Zonenkarten einer operativen Mission (SAR, MEDEVAC, FIRE, LE, ISR, COMBAT, MARITIME, AAR, AIRLIFT, COMMAND: alles außer kommerziell) in VFR Topo (Relief, Hindernisse, VRP, VFR-Flugplätze, untere Lufträume), die Übersichtskarte und eine kommerzielle Mission behalten die Ansicht des Fluges. Das Banner bietet „Ansicht“: VFR Topo, IFR oder Nur Hintergrund; die Wahl wird für diese Karte auf dem Gerät gemerkt, und das Entfernen des Banners gibt die Ansicht des Fluges zurück.
 
 <a id="maps-edit"></a>**Die Route auf der Karte ändern.** Tippen Sie auf „Auf der Karte bearbeiten“ (die vier Pfeile, rechts auf der Karte; beim ersten Mal erscheint eine kurze Hilfe): die Wegpunkte erhalten einen
 Kreis. Ziehen Sie einen Punkt auf einen Fix, ein Funkfeuer oder einen Flugplatz: er setzt sich dort (anderswo
@@ -458,7 +460,7 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: 7bf714237c88 -->
+<!-- fr: 7b5c7ac7f92b -->
 
 <!-- chapter: atmosphere -->
 # Wetter

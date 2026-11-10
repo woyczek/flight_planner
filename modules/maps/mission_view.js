@@ -65,7 +65,8 @@ export async function deriveMission() {
   const list = await missionList();
   if (!S) return;
   if (list.some(x => x.id === id)) {
-    S.missionId = id;
+    S.missionAside =
+      id; // SOG-0193 L1 : le vol reste en vue vol, la mission passe en surimpression (zones, points à rôle, fenêtre) ; S.missionId ne vient que de l'adresse
     S.missionWanted = '';
   } else S.missionWanted =
     id; // le vol nomme une mission que la liste ne donne pas (encore) : l'arbre du dépôt peut arriver après le montage (SOG-0196)
@@ -73,9 +74,9 @@ export async function deriveMission() {
 /** La liste des missions a changé (l'arbre du dépôt est arrivé, une synchronisation a passé) : la mission que le vol nomme est cherchée de nouveau ; trouvée, la Carte
  *  se met sur elle (bandeau compris) sans qu'on la recharge. */
 export async function retryMission() {
-  if (!S || S.missionId || !S.missionWanted) return;
+  if (!S || S.missionId || S.missionAside || !S.missionWanted) return;
   await deriveMission();
-  if (S?.missionId) await applyMission();
+  if (S?.missionAside) await loadAside();
 }
 /** Points du cheminement de la mission : route_points écrits par le studio, sinon le texte (vertical_profile.route,
  *  sinon départ, points tournants, destination) résolu par les points de la mission, puis par aerodb. */
@@ -122,11 +123,10 @@ async function missionRoute(mission) {
     return [];
   }
 }
-/** Mission (re)lue et carte choisie : profil, emprise, cheminement tracé si la carte le demande, profil vertical. */
-export async function applyMission() {
+/** La mission lue (YAML du dépôt, analysé) dans S.mission, ou S.missionError ; commun à la vue mission (applyMission) et à la surimpression (loadAside). */
+async function loadMission(id) {
   const q = {
-      ...(S.ctx.query || {}),
-      mission: S.missionId
+      mission: id
     },
     list = await missionList(),
     hit = list.find(x => x.id === q.mission);
@@ -153,6 +153,27 @@ export async function applyMission() {
       e: e?.message || e
     });
   }
+}
+/** Le vol nomme une mission (SOG-0193 L1) : la Carte reste en vue vol (météo, procédures, Édition, couches, itinéraires) et la mission passe en surimpression : ses zones,
+ *  ses points à rôle, sa fenêtre ; la carte de la mission (cartes fournies, vues) est un lien de la fenêtre. */
+export async function loadAside() {
+  if (!S?.missionAside) return;
+  await loadMission(S.missionAside);
+  if (!S) return;
+  S.missionPts = S.mission ? S.mission.points.map(p => ({
+    ...p,
+    sub: roleText(p)
+  })).filter(p => p.sub) : null; // ceux qui ont un rôle (départ, arrivée, cible, rendez-vous…) : les autres sont ceux du vol
+  bannerFill();
+  schedule();
+}
+/** Mission (re)lue et carte choisie : profil, emprise, cheminement tracé si la carte le demande, profil vertical. */
+export async function applyMission() {
+  const q = {
+    ...(S.ctx.query || {}),
+    mission: S.missionId
+  };
+  await loadMission(q.mission);
   if (!S) return;
   const M = S.mission,
     m = M ? M.maps.find(x => x.file === q.map) || M.maps[0] || null : null;
@@ -271,10 +292,12 @@ export function missionEvents() {
   });
   S.mbarEl.addEventListener('click', e => {
     if (e.target.closest('[data-mbx]')) go('', ''); // le bandeau retiré : le vol et ses couches
+    else if (e.target.closest('[data-mbo]')) go(S.missionAside, ''); // la carte de la mission (vue mission) depuis le vol
   });
-  if (!S.missionId) return () => {};
+  const id = S.missionId || S.missionAside;
+  if (!id) return () => {};
   return S.ctx.data.watch('missions/', paths => {
-    if (S && (paths || []).some(p => MISSION_YAML.exec(p)?.[1] === S.missionId)) applyMission();
+    if (S && (paths || []).some(p => MISSION_YAML.exec(p)?.[1] === id)) S.missionId ? applyMission() : loadAside();
   });
 }
 /** La famille d'une mission : celle du dossier missions/<n>_<FAMILLE>/<ID>/ (rien n'est lu pour la connaître). */
@@ -289,11 +312,13 @@ export function bannerFill() {
   const el = S?.mbarEl;
   if (!el) return;
   const M = S.mission,
-    on = !!S.missionId && !!M,
+    aside = !S.missionId && !!S.missionAside && !!M, // la mission d'un vol, en surimpression de la vue vol (SOG-0193 L1)
+    on = (!!S.missionId || aside) && !!M,
     maps = (M?.maps || []).slice(0, 7),
     cur = S.mapDef?.file || '',
-    fam = familyOf(S.missionId),
-    html = on ? `<div class="mp-mb-top"><b class="mp-mb-t">${esc(M.title || M.id || S.missionId)}</b><button type="button" class="mp-mb-x" data-mbx title="${esc(tt(TX.mbRemove))}" aria-label="${esc(tt(TX.mbRemove))}">×</button></div>
+    fam = familyOf(S.missionId || S.missionAside),
+    html = aside ? `<div class="mp-mb-top"><b class="mp-mb-t">${esc(M.title || M.id || S.missionAside)}</b></div>
+<div class="mp-mb-sub"><span class="mp-mb-id">${esc(M.id || S.missionAside)}</span>${fam ? ` · <span class="mp-mb-fam">${esc(fam)}</span>` : ''}</div><button type="button" class="f-btn mp-mb-open" data-mbo>${esc(tt(TX.mbOpen))}</button>` : on ? `<div class="mp-mb-top"><b class="mp-mb-t">${esc(M.title || M.id || S.missionId)}</b><button type="button" class="mp-mb-x" data-mbx title="${esc(tt(TX.mbRemove))}" aria-label="${esc(tt(TX.mbRemove))}">×</button></div>
 <div class="mp-mb-sub"><span class="mp-mb-id">${esc(M.id || S.missionId)}</span>${fam ? ` · <span class="mp-mb-fam">${esc(fam)}</span>` : ''}</div>${maps.length > 1 ? `<label class="mp-mb-map"><span>${esc(tt(TX.mbMap))}</span><select class="mp-mb-sel" aria-label="${esc(tt(TX.mbMap))}">${maps.map(m => `<option value="${esc(m.file)}"${m.file === cur ? ' selected' : ''}>${esc(m.description || m.file)}</option>`).join('')}</select></label>` : maps.length === 1 ? `<div class="mp-mb-sub">${esc(maps[0].description || maps[0].file)}</div>` : ''}<label class="mp-mb-th"><span>${esc(tt(TX.mbTheme))}</span><select class="mp-mb-theme" aria-label="${esc(tt(TX.mbTheme))}">${['yaml', 'vfr', 'ifr', 'base'].filter(k => k !== 'yaml' || S.mthemeAuto === 'yaml').map(k => `<option value="${k}"${k === S.mtheme ? ' selected' : ''}>${esc(tt(TX.mbThemes[k]))}</option>`).join('')}</select></label>` : '';
   if (el.hidden === on) el.hidden = !on;
   if (el.innerHTML !== html) el.innerHTML = html;

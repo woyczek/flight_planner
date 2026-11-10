@@ -3732,9 +3732,7 @@ def d123(c):
     txt = c.js("() => document.querySelector('.mp-mbar').textContent")
     c.ok('Mission d\u2019essai' in txt or "Mission d'essai" in txt, txt, 'the banner says the title')
     c.ok('ESSAI1' in txt and 'ESSAI' in txt.split('ESSAI1')[1], txt, 'the id and the family (the folder 1_ESSAI)')
-    opts = c.js("() => [...document.querySelectorAll('.mp-mbar .mp-mb-sel option')].map(o => o.value)")
-    c.eq(opts, ['carte_generale.png', 'carte_cible.png'], 'the provided maps are offered (seven at most), the first one shown', what='options')
-    c.eq(c.js("() => document.querySelector('.mp-mbar .mp-mb-sel').value"), 'carte_generale.png', 'the provided map shown is selected', what='selected')
+    c.eq(c.js("() => [window.__mp.S.missionId, window.__mp.S.missionAside]"), ['', 'ESSAI1'], 'the Map stays in the flight view, the mission is over it (SOG-0193 L1)', what='missionId, missionAside')
     roles = c.js("() => window.__mp.S.missionPts.map(p => p.sub).filter(Boolean)")
     c.ok(len(roles) >= 3, str(roles), 'the departure, the arrival and the target carry their role')
     c.eq(c.js("() => window.__mp.S.mission.zones.length"), 2, 'the zones are the mission’s', what='zones')
@@ -3744,10 +3742,12 @@ def d123(c):
     lg = c.js("() => [...document.querySelectorAll('.mp-legend li')].map(l => l.textContent)")
     c.ok(any(r in lg for r in roles), str(lg), 'a role of a point is named in the legend')
     c.tap('.mp-chip[data-legend]')
-    # choosing another provided map keeps the mission
-    c.js("() => { const s = document.querySelector('.mp-mbar .mp-mb-sel'); s.value = 'carte_cible.png'; s.dispatchEvent(new Event('change', { bubbles: true })); return true }")
-    c.until("() => location.hash.includes('map=carte_cible.png') && location.hash.includes('mission=ESSAI1')", timeout=6000, what='the choice opens that map of the mission')
-    c.until("() => !!document.querySelector('.mp-mbar') && !document.querySelector('.mp-mbar').hidden", timeout=10000, what='the banner is still there')
+    # « The mission's map » opens the mission view (its provided maps, its views), the window follows
+    c.tap('.mp-mbar [data-mbo]')
+    c.until("() => location.hash.includes('mission=ESSAI1')", timeout=6000, what='the button opens the map of the mission')
+    c.until("() => !!document.querySelector('.mp-mbar .mp-mb-sel') && !document.querySelector('.mp-mbar').hidden", timeout=10000, what='the window of the mission view: the provided maps and the views')
+    opts = c.js("() => [...document.querySelectorAll('.mp-mbar .mp-mb-sel option')].map(o => o.value)")
+    c.eq(opts, ['carte_generale.png', 'carte_cible.png'], 'the provided maps are offered (seven at most), the first one shown', what='options')
     # removing the banner: the flight and its layers
     c.tap('.mp-mbar [data-mbx]')
     c.until("() => location.hash.includes('flight=1')", timeout=6000, what='the cross removes the banner')
@@ -4859,7 +4859,8 @@ def d148(c):
         c.js("async () => { await (await import('/modules/maps/mission_view.js')).retryMission(); return true }")
         c.until("() => { const b = document.querySelector('.mp-mbar'); return !!b && !b.hidden && b.getBoundingClientRect().width > 0 }", timeout=10000, what=f'{w}: the window appears without a reload when the list of the missions changes')
         b = c.js(_BANNER_JS)
-        c.ok('ESSAI1' in b['text'] and 'mp-mb-sel' in b['opts'] and 'mp-mb-theme' in b['opts'], str(b), f'{w}: the window carries the mission, the provided map and the view')
+        c.ok('ESSAI1' in b['text'] and not b['opts'], str(b), f'{w}: the window carries the mission and its way to the mission map (the flight stays in its view: no choice of provided map or view)')
+        c.eq(c.js("() => !!document.querySelector('.mp-mbar [data-mbo]')"), True, f'{w}: the button to the mission map', what='button')
         c.shot(f'D148_window_{w}.png')
     # and a mission already in the list is shown at the mount (D123), the double view included
     c.page.goto(c.base + '/frame/manifest.webmanifest')
@@ -4975,4 +4976,58 @@ def d152(c):
             c.js(pick, 'vfr')
             c.until("() => !!window.__mp.S.map.getLayer('mp-hillshade')", timeout=12000, what='relief again')
             c.shot('D152_vfr_general_390.png')
+
+
+@case('D153', 'A flight that names a mission stays in the flight view of the Map (weather, procedures, Edition, Layers boxes, proposed routes), the mission over it: its zones, its points with a role, its window; the mission map is one tap away', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0193 L1 (V3 10.47: the user asked why a mission preparation has no weather, why a flight and a mission differ in the preparation): the Map no longer switches to the mission view for a flight that names a mission (it lost the weather, procedures, runways, ground, Edition, the Layers boxes, Fuel proposed routes); the mission is drawn over the flight view (zones in a light tint with their name, points with a role) and its window says the title, the id, the family and offers the mission map (#maps?mission=ID, the mission view kept for looking at a mission without a flight)')
+def d153(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_RAW_JS, [MISSION_PATH, FIXTURE.read_text(encoding='utf-8')])
+    c.open('maps', docs=fdocs(flight(mission='ESSAI1')), airfields=True, wait=False)
+    c.js("() => { window.__tx = []; const f = CanvasRenderingContext2D.prototype.fillText; CanvasRenderingContext2D.prototype.fillText = function (t) { window.__tx.push(String(t)); return f.apply(this, arguments) }; return true }")
+    c.until("() => !!document.querySelector('.mp-mbar') && !document.querySelector('.mp-mbar').hidden", timeout=15000, what='the mission window')
+    c.js(_STATE_JS)
+    c.eq(c.js("() => [window.__mp.S.missionId, window.__mp.S.missionAside]"), ['', 'ESSAI1'], 'the flight view, the mission aside', what='missionId, missionAside')
+    # what the flight view has (it was lost in the mission view)
+    c.until("() => [...document.querySelectorAll('.f-ov-right .f-ov-btn')].filter(b => window.__t.shown(b)).length >= 4", timeout=10000, what='the buttons of the flight view')
+    c.ok(c.shown('[data-mp="mode"]') and c.shown('[data-mp="edit"]'), 'Mode / Edition missing', 'the buttons Mode and Edition of the flight view')
+    c.ok(c.js("() => window.__mp.S.route.points.length") >= 2, 'no route', 'the flight own route, not the mission one')
+    c.tap('[data-mp="layers"]')
+    c.until("() => !!document.querySelector('.mp-layers')", timeout=6000, what='the Layers tab')
+    c.eq(c.js("() => document.querySelectorAll('.mp-layer-set:not([hidden])').length"), 2, 'the boxes of the Layers tab are there (the flight view)', what='boxes')
+    c.tap('.f-sheet-close')
+    c.until("() => window.__mp.S.mission.zones.some(z => window.__tx.includes(z.name))", timeout=10000, what='a mission zone is drawn over the flight view, with its name')
+    roles = c.js("() => window.__mp.S.missionPts.map(p => p.sub)")
+    c.ok(len(roles) >= 3 and all(roles), str(roles), 'only the points with a role are drawn over (departure, arrival, target...)')
+    c.ok(any(r in t for t in c.js("() => window.__tx") for r in roles), 'no role drawn', 'a point with a role is written with it')
+    # the weather section exists for this flight (the user: no weather in a mission preparation)
+    c.eq(c.js("() => !!window.__mp.S.ctx.weather && !!document.querySelector('.mp-chip[data-view=\"weather\"]')"), True, 'the weather tab of the Map is there', what='weather chip')
+    t = c.js("() => document.querySelector('.mp-mbar').textContent")
+    c.ok('ESSAI1' in t and 'ESSAI' in t.split('ESSAI1')[1], t, 'the window says the id and the family')
+    c.shot('D153_flight_with_mission_390.png')
+
+
+@case('D154', 'The Map never writes the flight without an Edition gesture: in the double view, no gesture for 20 s, with proposed routes arriving and the flight changed from outside, it makes no write of the flight', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0209 (the user: the synchronisation never stops, the flight file committed every 4 to 6 s): the Map writes the flight by one path only (Edition gesture, setRoute, only what it changed); no write at the mount, on a flight change from outside, on proposed routes, on a mission; a write whose only difference is updated_at is never made')
+def d154(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_RAW_JS, [MISSION_PATH, FIXTURE.read_text(encoding='utf-8')])
+    c.open('maps?pane=1', docs=fdocs(flight(mission='ESSAI1')), airfields=True, wait=False)
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S && !!window.__mp.S.route && window.__mp.S.route.points.length >= 2 && !!window.__mp.S.ctx.data", timeout=20000, what='the flight is read')
+    c.js("""() => { const S = window.__mp.S, d = S.ctx.data, o = d.put.bind(d); window.__puts = []; window.__ext = false;
+      d.put = (path, ...a) => { if (!window.__ext) window.__puts.push(String(path)); return o(path, ...a) }; return true }""")
+    hook_map(c)
+    ev = "(d) => { window.dispatchEvent(new CustomEvent('fuel-route-alts', { detail: d })); return true }"
+    c.js(ev, _alts_doc())                                           # proposed routes arrive
+    c.until("() => (window.__mp.S.altHits || []).length >= 1", timeout=8000, what='the proposed routes are drawn')
+    # the flight changes from outside (Fuel): only its updated_at, then its level
+    c.js("""async () => { const S = window.__mp.S, path = S.ctx.data.constructor && `pilot/${S.ctx.identity?.trigram || 'ANON'}/current_flight.json`;
+      window.__ext = true; const f = await S.ctx.data.get(path); await S.ctx.data.put(path, { ...f, updated_at: new Date(Date.now() + 60000).toISOString() }); window.__ext = false; return true }""")
+    c.wait(20000)
+    puts = c.js("() => window.__puts")
+    c.eq([x for x in puts if 'current_flight' in x], [], 'no write of the flight by the Map in 20 s without a gesture', what=str(puts))
 

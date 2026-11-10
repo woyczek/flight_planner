@@ -172,7 +172,7 @@ function legendRows(view) {
 /** La légende d'une carte de mission (SOG-0137) : la route, chaque sorte de zone et chaque rôle de point qui sont dessinés. */
 function missionLegend(sw) {
   const M = S.mission;
-  if (!onMission() || !M) return [];
+  if (!(onMission() || S.missionAside) || !M) return []; // une carte de mission, ou la mission d'un vol en surimpression de la vue vol
   const P = MapsRender.palette(!!S.theme?.dark),
     rows = [],
     kinds = [...new Set(M.zones.map(z => z.kind))],

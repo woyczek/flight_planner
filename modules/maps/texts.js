@@ -579,6 +579,7 @@ export const TX = {
     base: ['Fond seul', 'Base map only', 'Nur Hintergrund', 'Solo fondo'],
     yaml: ['Profil de la carte', 'The map’s own profile', 'Profil der Karte', 'Perfil del mapa']
   },
+  mbOpen: ['Carte de la mission', 'The mission’s map', 'Karte der Mission', 'Mapa de la misión'],
   mbMap: ['Carte fournie', 'Provided map', 'Mitgelieferte Karte', 'Mapa suministrado'],
   mRoles: {
     ORIGIN: ['départ', 'departure', 'Abflug', 'salida'],

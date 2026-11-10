@@ -1278,6 +1278,9 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
 
 ## 15. Mission maps (`mission.js`, `window.MapsMission`)
 
+- **A flight that names a mission stays in the flight view** (SOG-0193 L1, 10 Nov, V3 § 10.47; it replaces the next item's « opens on that mission »): `S.missionId` comes from the address only;
+  `flight.mission` sets `S.missionAside` (`deriveMission`, `loadAside`): the flight's route, profile, layers, weather, procedures and Édition are untouched, and the mission is drawn over the flight view
+  (`aside` of the renderer: zones in a light tint with their name, the points with a role), with its window (title, id, family, « The mission's map » → `#maps?mission=<ID>`) and its legend rows. Noreg D153.
 - **The mission of the flight, no address** (SOG-0137, 9 Nov): without `mission=` the Map reads `flight.mission` (written by « Prepare this
   flight ») and opens on that mission exactly as `#maps?mission=<ID>` does (`S.missionId`, `deriveMission`); `#maps?flight=1` (the banner's
   cross, or the flight chosen in Layers) keeps the flight and its layers; a started flight, a mission the repository does not have, the

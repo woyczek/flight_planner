@@ -2299,6 +2299,18 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done**: the light drawing paints every airway in the low colour (high ones too); a zoom that crosses a threshold *during* a gesture shows the new state only at rest.
 - **Noreg** D141 (zoom 8: the airways are in the light drawing and stroked while moving; zoom 3: none, no stroke; red before: 3 airways at zoom 3).
 
+## A flight that names a mission stays in the flight view; the mission is over it (10 Nov 2026, SOG-0193 L1, V3 § 10.47)
+- **Before**: `deriveMission` put `S.missionId` for a flight that names a mission, so every `onMission()` branch switched the Map to the mission view and it lost the weather section,
+  procedures, runways, ground, coverage, VFR, route lines, Édition, the Layers boxes and Fuel's proposed routes (the user: « pourquoi pas de météo sur la préparation d'une mission ? »).
+- **Done**: `S.missionId` comes from the address only (`#maps?mission=<ID>`, from Missions: the mission view is kept to look at a mission without a flight); for a flight, `deriveMission`
+  sets `S.missionAside` and `loadAside` reads the mission (shared `loadMission`) without touching route, profile or layers. The renderer takes a new `aside` parameter ({ points, zones, flat }:
+  the zones in a light tint with their name, the points **with a role** — the others are the flight's) and changes nothing else (`mission` keeps its meaning of the mission view). The
+  window (`.mp-mbar`) says the title, the id, the family and « The mission's map » (`data-mbo` → `#maps?mission=<ID>`, where the provided maps and the views are); the legend names the zone kinds
+  and the roles. The wide-route forcing (`data.js`) tests `S.missionId` (it tested `S.mission`).
+- **Not done** (other lots of § 10.47, Features SOG): the chip « Mission » in the head of the preparation and its pane (L2), the locked points in the Édition (L3, mine once Fuel writes `lock`),
+  time on area (L4), « Quit the mission » (L5).
+- **Noreg** D153 (flight view kept: Mode / Édition buttons, Layers boxes, weather tab, the flight's route; zone named and role points drawn over it; the window); D123 and D148 follow the window.
+
 ## A mission map's view does what its name says (10 Nov 2026, SOG-0171 reopened: « en vfr topo sur la vue générale, un fond IFR, des hippodromes de ravitaillement, pas de courbes de niveau »)
 - **Causes found** (probe on a CAM flight, general and target maps, each view): (1) the base never followed the view: `setTheme` and `applyMission` replaced `S.profile` but only
   `setPreset` (the flight's mode) swapped the MapLibre style, so a view chosen in the banner (or another map of the mission) kept the style the map was born with: « VFR topo » on
