@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-11",
-  "tests": 111,
+  "tests": 112,
   "verdicts": 43
  },
  "apps": [
@@ -1610,6 +1610,20 @@
    "since": "2026-11-10",
    "state": "todo",
    "delivered": "2026-11-10T17:30:24Z"
+  },
+  {
+   "id": "SOG-0232",
+   "app": "maintenance",
+   "title": {
+    "fr": "LFST : aucune approche (plusieurs RNAV, plusieurs conventionnelles) ; pas de noms de taxiways",
+    "en": "LFST: no approach (several RNAV, several conventional); no taxiway names",
+    "de": "LFST: kein Anflug (mehrere RNAV, mehrere konventionelle); keine Rollwegnamen",
+    "es": "LFST: ninguna aproximación (varias RNAV, varias convencionales); sin nombres de calles de rodaje"
+   },
+   "test": "Lanceur relancé. Carburant, arrivée LFST, étape Procédures : la liste des approches porte aussi celles « ⚑ à vérifier » (elles étaient cachées) ; aucune n'est choisie d'office ; choisie à la main, elle est tracée en pointillé sur la Carte. Sous la liste, « Carte seulement dans l'AIP : … » donne le lien des approches que l'AIP ne publie qu'en carte (conventionnelles, ILS). Côté sol : le panneau Sol dit que la source ne nomme que 13 voies sur 213.",
+   "since": "2026-11-11",
+   "state": "todo",
+   "delivered": "2026-11-10T23:12:54Z"
   },
   {
    "id": "SOG-0233",

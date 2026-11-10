@@ -4,7 +4,7 @@
  "updated": "2026-11-11",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "3619239",
+  "organisation": "dc4f4a5",
   "fiches": 239,
   "untranslated": 0,
   "priorities": 152
@@ -1849,7 +1849,7 @@
     {
      "id": "SOG-0232",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "LFST : aucune approche (plusieurs RNAV, plusieurs conventionnelles) ; pas de noms de taxiways",
      "en": "LFST: no approach (several RNAV, several conventional); no taxiway names",
      "de": "LFST: kein Anflug (mehrere RNAV, mehrere konventionelle); keine Rollwegnamen",
