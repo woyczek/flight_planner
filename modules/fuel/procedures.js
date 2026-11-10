@@ -484,7 +484,10 @@ export function createProcedures(host) {
     const gap = m.nodata ? `<span data-gap-slot>${host.zoneGap?.(m.icao) || ''}</span>` : '';
     // la lecture du sol (SOG-0135) : hors de la suite des parties, son emplacement se remplit à la réponse d'aerodb
     const ground = m.nodata ? '' : `<span data-ground-slot>${groundHtml(m.icao)}</span>`;
-    return parts.filter(Boolean).join('<span class="fu-sep" aria-hidden="true"> · </span>') + ground + ` <span data-source-slot>${slotHtml(m.icao, side)}</span>${gap}`;
+    // SOG-0203 : les avertissements de la dernière lecture, en texte, repliés (« 2 avertissements » seuls ne disaient rien de LFOE)
+    const wl = adOf(m.icao).warnings || [],
+      warn = wl.length ? `<details class="fu-procwarn" data-procwarn><summary>${esc(tt(TX.procWarnList, { n: wl.length }))}</summary><ul>${wl.map(w => `<li>${esc(w)}</li>`).join('')}</ul></details>` : '';
+    return parts.filter(Boolean).join('<span class="fu-sep" aria-hidden="true"> · </span>') + ground + ` <span data-source-slot>${slotHtml(m.icao, side)}</span>${gap}${warn}`;
   }
   // l'adresse des cartes officielles de chaque terrain, demandée une fois à aerodb (chartsUrl, lot C2) : une adresse, null (État inconnu
   // d'aerodb) ; absente tant que la réponse n'est pas venue. Les emplacements de ce terrain se remplissent à la réponse
@@ -1049,6 +1052,10 @@ export function createProcedures(host) {
    *  et les fiches du terrain oubliées ; la carte est redessinée dans tous les cas (le bouton n'est plus occupé). */
   function afterRead(icao, res) {
     if (host.gone()) return;
+    // SOG-0203 : les avertissements de cette lecture, gardés pour la ligne du terrain (textes du lecteur, bornés, échappés au dessin)
+    adOf(icao).warnings = (Array.isArray(res?.warnings) ? res.warnings : []).slice(0, 20).map(w => String(w ?? '').replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 240)).filter(Boolean);
     if (res?.ok) {
       adOf(icao).stats = res.stats || null; // les fiches douteuses de cette lecture (stats.doubt) : comptées sur la ligne discrète
       if (dropAd(icao)) host.drop();

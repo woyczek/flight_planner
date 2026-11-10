@@ -1628,3 +1628,6 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
 - **11 Nov 2026 — « Aides radio » at the step Departure** (SOG-0200): the chosen ILS first, the route's VOR / DME folded below, read in
   aerodb near the route's points that carry their name (1.5 NM; a homonym farther is not the aid of that point). F140 (an invented ILS
   and VOR); counter-test on origin/v3: no block.
+- **11 Nov 2026 — the warnings of a reading are said in text** (SOG-0203, the rest given to Features SOG: LFOE said « 0 page lue sur 2.
+  2 avertissements. » and nothing of them): the warnings of the aerodrome's last reading are kept and listed in a fold under its line
+  (twenty at most, bounded, escaped: texts of the launcher's reader). F141; counter-test on origin/v3: no fold.

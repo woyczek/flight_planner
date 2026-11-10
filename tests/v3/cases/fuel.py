@@ -4087,3 +4087,26 @@ def f140(c):
     to_step(c, 4)
     c.until(f"!!document.querySelector('{FUEL} [data-aids] [data-aidsnone]')", timeout=12000, what='« Aucune aide radio en base pour ce vol »')
 
+
+
+@case('F141', 'Procedures: the warnings of a reading are said in text under the aerodrome\'s line (a fold listing them), not only counted in a notification',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0203 (user: « bug lfoe » — « LFOE : aucune procédure lue. 0 page lue sur 2. 2 avertissements. », and nothing of them): the reader\'s warnings, '
+      'escaped; invented warnings; captures 390 and 1 280')
+def f141(c):
+    c.page.add_init_script("""(() => { let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+        real = v && { ...v, create: (...a) => { const db = v.create(...a);
+          try { db.fetchProcedures = async () => ({ ok: false, reason: 'failed', message: 'no procedure could be read for this aerodrome', stats: { pages: 2, read: 0 },
+            warnings: ['AD_2_TEST_DATA_01.pdf : ligne illisible (9 cellules au lieu de 11) <b>x</b>', 'AD_2_TEST_DATA_02.pdf : coordonnées introuvables'] }) } catch (e) {}
+          return db } } } }) })()""")
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        open_proc(c)
+        wait_rows(c, 'arr')
+        c.tap(f'{FUEL} [data-proc="arr"] [data-do="procfetch"][data-again]')
+        c.until(f"!!document.querySelector('{FUEL} [data-proc=arr] [data-procwarn]')", timeout=10000, what=f'{w} px: the warnings under the line')
+        items = c.js(f"[...document.querySelectorAll('{FUEL} [data-proc=arr] [data-procwarn] li')].map(e => e.textContent)")
+        c.eq(len(items), 2, 'both warnings listed', what='warnings')
+        c.ok('ligne illisible' in items[0] and '<b>x</b>' in items[0] and c.count(f'{FUEL} [data-procwarn] li b') == 0, items, 'said as text, escaped (never markup)')
+        c.js(f"(() => {{ const d = document.querySelector('{FUEL} [data-proc=arr] [data-procwarn]'); d.open = true; d.scrollIntoView({{block: 'center'}}) }})()")
+        c.shot(f'F141_{c.design}_{w}_{c.lang}_delivered.png')

@@ -87,6 +87,10 @@ export const TX = {
     'Lesen von {icao} gestartet: eine Meldung sagt, wann es endet.', 'Lectura de {icao} iniciada: una notificación dirá cuándo termina.'
   ],
   procWarnings: [' {n} avertissements.', ' {n} warnings.', ' {n} Warnungen.', ' {n} advertencias.'],
+  // SOG-0203 : les avertissements de la dernière lecture d'un terrain, dits en texte sous sa ligne (un pli), pas seulement comptés
+  procWarnList: ['Avertissements de la lecture ({n})', 'Warnings of the reading ({n})', 'Warnungen der Lesung ({n})',
+    'Advertencias de la lectura ({n})'
+  ],
   procReading: ['Lecture de {icao}…', 'Reading {icao}…', '{icao} wird gelesen…', 'Leyendo {icao}…'],
   // la lecture du sol d'un terrain sur sa ligne discrète (AeroDb.groundStatus) : les MÊMES mots que le panneau Sol de la Carte
   // (modules/maps/texts.js gReading, gFailed, gWhy, gRetry ; accord avec BUGS SOG, cas F124 qui compare les deux tables)
