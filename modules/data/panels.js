@@ -779,7 +779,7 @@ function pickupWhy(error) {
 export function pickupProblems(out) {
   const who = x => ({
     z: itemName('base', x.zone),
-    s: sourceName(x.source)
+    s: shortSource(x.source) // le nom court : « SIA France », jamais « SIA France (XML SIA + AIXM 4.5) » dans une parenthèse (SOG-0197)
   });
   return [...(out.unread || []).map(x => tt(TX.pickupUnread, { // présents, jamais lus : la case « personnel » ne déclare pas la source
     z: itemName('base', x.zone),
@@ -787,7 +787,7 @@ export function pickupProblems(out) {
     s: x.source.toUpperCase()
   })), ...(out.skipped || []).map(x => tt(M.own(TX.pickupSkipped, x.why), { // les exports openAIP non lus : dits, jamais pris
     z: itemName('base', x.zone),
-    s: sourceName(M.OPENAIP),
+    s: shortSource(M.OPENAIP),
     name: x.name
   })), ...(out.blocked || []).map(t => tt(TX
     .pickupRename, { // un zip dont le nom sort de la règle du lanceur n'est pas pris : à renommer

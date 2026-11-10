@@ -1286,11 +1286,7 @@ export const TX = {
       '{z} · {s}: {n} conjunto(s) presente(s), marque «Certifico que uso los datos para mi uso personal» y luego «Actualizar»'
     ]
   },
-  pickupTaken: ['{z} ({s}) : {zip} ({n}, {b})', '{z} ({s}): {zip} ({n}, {b})', '{z} ({s}): {zip} ({n}, {b})',
-    '{z} ({s}): {zip} ({n}, {b})'
-  ],
   // la prise des exports openAIP (SOG-0027) : des fichiers un à un, pas un zip ; « n fichiers (x Ko) », dont {c} convertis du JSON
-  pickupTakenFiles: ['{z} ({s}) : {n} ({b}){c}', '{z} ({s}): {n} ({b}){c}', '{z} ({s}): {n} ({b}){c}', '{z} ({s}): {n} ({b}){c}'],
   pickupConverted: [', dont {n} convertis du JSON en GeoJSON', ', {n} converted from JSON to GeoJSON',
     ', davon {n} von JSON nach GeoJSON umgewandelt',
     ', {n} convertidos de JSON a GeoJSON'

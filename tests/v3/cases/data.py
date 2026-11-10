@@ -612,6 +612,11 @@ def _agree(text, lang):
     return re.sub(r'(\d+)|\((s|x|es|en|n|e)\)', one, text)
 
 
+def _shortname(name):
+    """The short name of a source: the catalogue's name without its parenthesis (« SIA France (XML SIA + AIXM 4.5) » → « SIA France »)."""
+    return re.sub(r'\s*\(.*\)\s*$', '', name)
+
+
 def _zones_text(lang, n):
     """« 1 zone », « 0 zone », « 3 zones » as the screen counts them (0 and 1 singular in French)."""
     return f'{n} {UNIT_ZONE[lang][0 if _one(lang, n) else 1]}'
@@ -2671,7 +2676,7 @@ def l19(c):
     PK = lambda key: _trow(key, lang, after='  pk: {')
     short = lambda x: re.sub(r'\s*\(.*\)\s*$', '', x)
     take_ln = PK('takeZip').replace('{z}', zname('fr')).replace('{zip}', sia_zip['zip']).replace('{b}', _size(5242880, lang))
-    miss_txt = T('pickupMissing').replace('{z}', zname('gb')).replace('{s}', s_nats).replace('{e}', miss_gb['expected'])
+    miss_txt = T('pickupMissing').replace('{z}', zname('gb')).replace('{s}', _shortname(s_nats)).replace('{e}', miss_gb['expected'])
     fix_ln = PK('fixMissing').replace('{z}', zname('gb')).replace('{s}', short(s_nats)).replace('{e}', miss_gb['expected'])
     ask = {'text': norm(PK('title')), 'sections': [['take', norm(PK('take').replace('{n}', '1')), [norm(take_ln)]], ['fix', norm(PK('fix').replace('{n}', '1')), [norm(fix_ln)]]], 'note': ''}
     plan = _pk_plan([sia_zip], [miss_gb])
@@ -2728,7 +2733,7 @@ def l19(c):
     n = len(st['posts'])
     c.tap(pk)
     c.until("document.querySelector('[data-build-result][data-op=pickup]')?.dataset.result === 'nothing'", timeout=8000, what='nothing to take is said')
-    lines = [norm(T('pickupMissing').replace('{z}', zname('fr')).replace('{s}', s_sia).replace('{e}', 'export_xml_bd_SIA_*.zip')), norm(miss_txt)]
+    lines = [norm(T('pickupMissing').replace('{z}', zname('fr')).replace('{s}', _shortname(s_sia)).replace('{e}', 'export_xml_bd_SIA_*.zip')), norm(miss_txt)]
     c.eq([norm(c.text('[data-build-result] b')), [norm(t) for t in c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent)")], c.count('.f-modal'), len(st['posts']) - n,
           c.count('[data-build-result] [data-pickup-hint]'), len(_notes_with(c, T('nothing', 'pickupSum: {')))],
          [norm(T('nothing', 'pickupSum: {')), lines, 0, 1, 0, 1], 'no file found: the sentence and each missing pattern, no question, no second job, no hint', what='nothing')
@@ -2739,7 +2744,7 @@ def l19(c):
     st['views'], st['i'], st['start'] = [plan2, real2], 0, (200, {'job': 'k4'})
     c.tap(pk)
     q = _ask_text(c)
-    big_txt = T('pickupFailedLine').replace('{z}', zname('gb')).replace('{s}', s_nats).replace('{r}', T('pickupTooLarge').replace('{n}', '500'))
+    big_txt = T('pickupFailedLine').replace('{z}', zname('gb')).replace('{s}', _shortname(s_nats)).replace('{r}', T('pickupTooLarge').replace('{n}', '500'))
     big_q = T('pickupFailedLine').replace('{z}', zname('gb')).replace('{s}', short(s_nats)).replace('{r}', T('pickupTooLarge').replace('{n}', '500'))
     c.eq([q['sections'][0], q['sections'][1]], [['take', norm(PK('take').replace('{n}', '1')), [norm(take_ln)]], ['fix', norm(PK('fix').replace('{n}', '1')), [norm(big_q)]]], 'the failure is in the « to fix » group: the size message in words', what='question 2')
     st['start'] = (200, {'job': 'k5'})
@@ -2783,7 +2788,7 @@ def l19(c):
     c.until("document.querySelector('[data-build-result][data-op=pickup]')?.dataset.result === 'partial'", timeout=10000, what='the partial end')
     c.eq(st['posts'][-1]['args'], {'zones': ['fr', 'gb'], 'personal': [], 'dry': False, 'zips': {'sia': {'name': sia_zip['zip'], 'size': 3000000}, 'nats': {'name': nats_zip['zip'], 'size': 2097152}}},
          'the real body carries both zips of the plan, equal to what it showed', what='real body 2')
-    chg = T('pickupChanged').replace('{z}', zname('gb')).replace('{s}', s_nats).replace('{zip}', changed['zip'])
+    chg = T('pickupChanged').replace('{z}', zname('gb')).replace('{s}', _shortname(s_nats)).replace('{zip}', changed['zip'])
     c.eq([[norm(t) for t in c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent)")], c.count('[data-build-result] b b'),
           norm(c.text('[data-build-result] [data-verb=pickup-replan]')), c.attr('[data-build-result] [data-verb=pickup-replan]', 'data-zones')],
          [[norm(chg)], 0, norm(T('pickupReplan')), 'gb'], 'the refusal is said with the newest name (as text, escaped), with a « Relancer le plan » button for that zone', what='changed')
@@ -2805,7 +2810,7 @@ def l19(c):
     st['start'] = (200, {'job': 'h5'})
     c.tap('.f-modal [data-ok]')
     c.until("document.querySelector('[data-build-result][data-op=pickup]')?.dataset.result === 'partial'", timeout=10000, what='the partial end (not-shown)')
-    ns = T('pickupNotShown').replace('{z}', zname('gb')).replace('{s}', s_nats).replace('{zip}', nshown['zip'])
+    ns = T('pickupNotShown').replace('{z}', zname('gb')).replace('{s}', _shortname(s_nats)).replace('{zip}', nshown['zip'])
     c.eq([[norm(t) for t in c.js("[...document.querySelectorAll('[data-build-result] [data-line]')].map(p => p.textContent)")],
           c.attr('[data-build-result] [data-verb=pickup-replan]', 'data-zones')], [[norm(ns)], 'gb'],
          'a source not shown in the plan is said, nothing taken for it, with « Relancer le plan »', what='not-shown')
@@ -2817,7 +2822,7 @@ def l19(c):
     n = len(st['posts'])
     c.tap(pk)
     q = _ask_text(c)
-    rename = T('pickupRename').replace('{z}', zname('fr')).replace('{s}', s_sia).replace('{zip}', bad_zip['zip'])
+    rename = T('pickupRename').replace('{z}', zname('fr')).replace('{s}', _shortname(s_sia)).replace('{zip}', bad_zip['zip'])
     nats_ln = PK('takeZip').replace('{z}', zname('gb')).replace('{zip}', nats_zip['zip']).replace('{b}', _size(4194304, lang))
     rename_ln = PK('fixRename').replace('{z}', zname('fr')).replace('{s}', short(s_sia)).replace('{zip}', bad_zip['zip'])
     if c.width in (390, 1280):
