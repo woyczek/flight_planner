@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "97a03d1",
+  "organisation": "e7ccc1d",
   "fiches": 170,
   "untranslated": 1,
   "priorities": 152
@@ -467,7 +467,7 @@
     {
      "id": "SOG-0158",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Saisie ADEP / ADEST : trouver « Stockholm » (ville et nom du terrain, pas seulement le code)",
      "en": "ADEP / ADEST entry: find “Stockholm” (city and airport name, not only the code)",
      "de": "ADEP/ADEST-Eingabe: „Stockholm“ finden (Stadt und Flugplatzname, nicht nur der Code)",
@@ -693,7 +693,7 @@
     {
      "id": "SOG-0169",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Espaces aériens : affichage capricieux à zoom égal, la complexité n'en montre pas plus ; pas de FIR hors France",
      "en": "Airspaces: erratic display at the same zoom, complexity shows no more; no FIR outside France",
      "de": "Lufträume: launische Anzeige bei gleichem Zoom, die Komplexität zeigt nicht mehr; keine FIR außerhalb Frankreichs",

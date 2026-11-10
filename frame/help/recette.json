@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 52,
-  "verdicts": 2
+  "tests": 53,
+  "verdicts": 6
  },
  "apps": [
   "pilote",
@@ -377,7 +377,8 @@
    },
    "test": "Carte sur une route qui sort d'Europe, après « Météo de la route » : les flèches de vent diffèrent d'un lieu à l'autre ; hors couverture, pas de flèche ou une flèche dite « GFS » dans son infobulle.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "ok",
+   "at": "2026-11-10T09:16:46Z"
   },
   {
    "id": "SOG-0142",
@@ -426,7 +427,8 @@
    },
    "test": "Carte avec un départ et une arrivée : la route orthodromique est un pointillé fin sous la route ; son infobulle donne sa longueur.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "ok",
+   "at": "2026-11-10T09:16:29Z"
   },
   {
    "id": "SOG-0146",
@@ -543,7 +545,9 @@
    },
    "test": "Carte en vue double avec la route ESSB → LEMO : déplacer la carte, attendre → plus de gel de trois secondes après le geste ni toutes les quelques secondes.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "ok",
+   "comment": "semble ok.",
+   "at": "2026-11-10T09:18:14Z"
   },
   {
    "id": "SOG-0157",
@@ -567,9 +571,11 @@
     "de": "ADEP/ADEST-Eingabe: „Stockholm“ finden (Stadt und Flugplatzname, nicht nur der Code)",
     "es": "Entrada ADEP / ADEST: encontrar «Estocolmo» (ciudad y nombre del aeródromo, no solo el código)"
    },
-   "test": "Recharger la page (accepter « nouvelle version » si elle est proposée), puis Carburant › Vol › Départ : taper « stockholm » → ESSA et ESSB proposés avec « (Stockholm) » ; taper « suède » ou « sweden » → les terrains de Suède, les plus grands d'abord.",
+   "test": "Recharger la page, puis Carburant › Vol › Départ : taper « stoc » → Stockholm Bromma (ESSB) et Arlanda proposés ; « usa » → les terrains principaux des États-Unis ; « swe » → ceux de Suède.",
    "since": "2026-11-10",
-   "state": "known"
+   "state": "ko",
+   "comment": "SWE… fonctionne. STOC… ne fonctionne pas. USA non plus.",
+   "at": "2026-11-10T08:58:53Z"
   },
   {
    "id": "SOG-0159",
@@ -672,6 +678,19 @@
     "es": "El usuario prueba una copia antigua sin saberlo: la nueva versión se aplica sola en un puesto con lanzador, y la versión servida es legible"
    },
    "test": "Faire une fois Ctrl+Maj+R sur la page et relancer le lanceur. Ensuite, après un correctif annoncé, un seul rechargement suffit, sans « Nouvelle version disponible ». Si la page est plus ancienne que le lanceur, un cartouche rouge « Version ancienne · Recharger » apparaît dans l'en-tête ; le toucher recharge.",
+   "since": "2026-11-10",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0169",
+   "app": "pilote",
+   "title": {
+    "fr": "Espaces aériens : affichage capricieux à zoom égal, la complexité n'en montre pas plus ; pas de FIR hors France",
+    "en": "Airspaces: erratic display at the same zoom, complexity shows no more; no FIR outside France",
+    "de": "Lufträume: launische Anzeige bei gleichem Zoom, die Komplexität zeigt nicht mehr; keine FIR außerhalb Frankreichs",
+    "es": "Espacios aéreos: visualización caprichosa con el mismo zoom, la complejidad no muestra más; sin FIR fuera de Francia"
+   },
+   "test": "Carte en IFR, même zoom, feuille du profil repliée puis ouverte : les mêmes espaces restent affichés. Dézoomer : FIR, TMA, CTA et CTR restent visibles sur toute la vue ; une note dit « Espaces R, D, P… hors du couloir masqués » ; décocher « Autour du vol seulement » → ils apparaissent.",
    "since": "2026-11-10",
    "state": "todo"
   },
