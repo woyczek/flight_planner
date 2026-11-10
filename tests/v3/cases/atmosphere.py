@@ -571,9 +571,9 @@ def e18(c):
     c.until(f"window.__t.shown(document.querySelector('{ATM} [data-at=wnote]'))", timeout=12000, what='the line is shown: there is no synoptic on this server')
     t = norm(c.js(f"() => document.querySelector('{ATM} [data-at=wnote]').textContent"))
     c.ok(norm(row(c, 'wbNone')) in t and norm(row(c, 'wbNoLauncher')) in t, t, 'it says the synoptic is missing and where to make it (no launcher serves the test page)')
-    # the line is a band above the map (E2: nothing is written over the map), its height reserved
-    g = c.js(f"() => {{ const a = document.querySelector('{ATM} [data-at=wnote]').getBoundingClientRect(), m = document.querySelector('{ATM} .at-box').getBoundingClientRect(); return [Math.round(a.bottom), Math.round(m.top)] }}")
-    c.ok(g[0] <= g[1] + 1, str(g), 'the band lies above the map, not over it')
+    # the line is the first line of the sheet at the bottom (never over the map nor between the header and the map: E2, B3), above its date slider, its height reserved
+    g = c.js(f"() => {{ const n = document.querySelector('{ATM} [data-at=wnote]'), p = document.querySelector('{ATM} [data-at=data]'), w = document.querySelector('{ATM} [data-at=when]'); return [p.contains(n), !!(n.compareDocumentPosition(w) & Node.DOCUMENT_POSITION_FOLLOWING), n.previousElementSibling && n.previousElementSibling.className] }}")
+    c.ok(g[0] and g[1], str(g), 'the line is in the sheet at the bottom, first line of its content, before the date slider')
     c.shot('E18_band_390.png')
     r = c.js(_WB_JS)
     c.ok(r['none'][0].startswith('wbNone') and 'wbBuild' in r['none'][0], r['none'][0], 'the line says « missing » and offers « Build »')

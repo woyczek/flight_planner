@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Météo: the world synoptic line is the first line of the bottom sheet** (`modules/atmosphere/module.js`; SPEC § 4.4, DECISIONS, help ×4; noreg E18; A14, B3, C4, E2 green again). Neither over the map nor above it: in the sheet, above the
+  date slider, its height reserved.
+
 - **Map: the taxiway lines appear one level of zoom earlier** (`modules/maps/ground.js`; SPEC § 10.40, DECISIONS, help ×4; noreg D112; SOG-0195, first part). From zoom 13 instead of 14; the names and stands unchanged (the names by importance
   wait for AeroDB's report).
 

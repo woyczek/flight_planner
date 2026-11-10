@@ -462,7 +462,7 @@ abajo, redibujado con cada casilla; la cruz o Escape lo cierra. Toque un punto d
 <a id="atmosphere-zones"></a>**La zona del vuelo y el mundo.** Una línea fina rodea la zona del vuelo: dentro, la previsión fina cargada para el vuelo
 (Météo-France AROME 1,3 km y ARPEGE 0,1° sobre Francia, ICON en Europa); fuera, el sinóptico mundial (GFS de la NOAA,
 publicado con una malla de 5°). Los dos modelos no dicen exactamente lo mismo: un salto de las líneas al cruzar la línea
-es normal. El panel de capas nombra los dos modelos y su malla. Sin sinóptico mundial, o con uno de más de 12 h, una banda sobre el mapa lo dice y ofrece «Construir (2 min)»: el lanzador de este equipo lo calcula (GFS de la NOAA, sin clave) y la capa llega al mapa; sin lanzador, la línea dice dónde hacerlo.
+es normal. El panel de capas nombra los dos modelos y su malla. Sin sinóptico mundial, o con uno de más de 12 h, la primera línea de la hoja inferior lo dice y ofrece «Construir (2 min)»: el lanzador de este equipo lo calcula (GFS de la NOAA, sin clave) y la capa llega al mapa; sin lanzador, la línea dice dónde hacerlo.
 
 <a id="atmosphere-date"></a>**La fecha del vuelo.** El cursor bajo el asa adelanta la hora de 0 a 72 horas desde la salida prevista: el mapa, el
 corte y los cortes de punto siguen. Cuando una parte del cursor queda fuera de la previsión leída (una salida prevista ya
@@ -508,7 +508,7 @@ un toque en la leyenda, en la pastilla o Escape la cierra.
   Mapa y Meteo; el Mapa reutiliza su corte meteorológico. Las llamadas del día a Open-Meteo se cuentan en el bloque
   de estado de Ajustes.
 
-<!-- fr: 55fb66d2084b -->
+<!-- fr: 730918eb6af9 -->
 
 <!-- chapter: report -->
 # Informe

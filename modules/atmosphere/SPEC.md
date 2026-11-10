@@ -223,7 +223,7 @@ projected. The cross-section and the sounding are SVG (`section.js`): smooth fie
 - When the view is mostly outside the grid (the grid covers less than 40 % of it, or its centre is outside), the head
   says what is shown (§ 2.3); back in the grid, the cross-section's title returns. No extra button.
 - **The world synoptic line** (SOG-0138, `world_build.js`): without a publication (`ctx.weather.world()` → null), or with one built more than
-  12 h ago, a band above the map (`.at-wnote`, outside `.at-box`: nothing is written over the map, E2; its height reserved by `ctx.placeholder` until the index is read, rule 22) says « World synoptic missing » (or « of <date> ») with **« Build (2 min) »**
+  12 h ago, the first line of the sheet at the bottom (`.at-wnote`, in the panel, above the date slider: nothing over the map, E2, nothing between the header and the map, B3, the map's size untouched, A14, C4; its height reserved by `ctx.placeholder` until the index is read, rule 22) says « World synoptic missing » (or « of <date> ») with **« Build (2 min) »**
   — `ctx.launcher.job('regen/job', { set: 'weather', verb: 'world', args: { action: 'build' } })`, `meta.launcher: { routes: ['regen/job'] }`.
   The job is followed (« Building… n/25 »), one at a time; at its end the layer is read again at once (`wm.reloadWorld()` →
   `ctx.weather.world(null, { fresh: true })`) and a note says it is built. A failure says why in the launcher's reason (`no-run`: NOAA

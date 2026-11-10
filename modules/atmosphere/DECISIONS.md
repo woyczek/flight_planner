@@ -2,6 +2,12 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 10 November 2026 — the world synoptic line goes into the bottom sheet (third and last place; A14, B3, C4 red after the band above the map)
+
+- The band above the map (a51af622e) satisfied E2 and broke B3 (« nothing between header and map »), A14 (the map's left edge in landscape) and C4 (map + panel = the view): a block outside the sheet takes room from the
+  map. Third and last place, ruled by the ergonomics: **the first line of the content of the sheet at the bottom**, above the date slider, its height reserved (`ctx.placeholder`); the sheet overlays the map, the map's size does
+  not change. The zone's cases (A14, B3, C4, E1, E2, E15–E18, `--tag atmosphere`: 19 cases) are green together.
+
 ## 10 November 2026 — the world synoptic line leaves the map (E2 red after SOG-0138; ergonomics' ruling)
 
 - E2 (« nothing written on the map ») failed on `.at-wnote`, which I had put at the map's top left as the brief said. The ruling: the rule wins; the line, its progress (n/25) and its failure

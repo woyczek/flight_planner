@@ -21,7 +21,7 @@ cross or Escape closes it. Touch a point of the map to open its slice.
 <a id="atmosphere-zones"></a>**The flight area and the world.** A thin line surrounds the flight area: inside, the fine forecast loaded for the flight
 (Météo-France AROME 1.3 km and ARPEGE 0.1° over France, ICON in Europe); outside, the world synoptic (NOAA GFS,
 published on a 5° grid). The two models do not say quite the same thing: a jump of the lines where they cross the line
-is normal. The layers panel names both models and their grid. Without a world synoptic, or with one more than 12 h old, a band above the map says so and offers “Build (2 min)”: this workstation’s launcher computes it (NOAA GFS, no key) and the layer arrives on the map; without a launcher, the line says where to do it.
+is normal. The layers panel names both models and their grid. Without a world synoptic, or with one more than 12 h old, the first line of the bottom sheet says so and offers “Build (2 min)”: this workstation’s launcher computes it (NOAA GFS, no key) and the layer arrives on the map; without a launcher, the line says where to do it.
 
 <a id="atmosphere-date"></a>**The flight date.** The slider under the grip moves the time from 0 to 72 hours after the planned departure: the map,
 the cross-section and the slices follow. When part of the slider is outside the forecast read (a planned departure
@@ -65,4 +65,4 @@ the legend, the chip or Escape closes it.
 - What is loaded stays on the device and works offline, in the weather store shared by Fuel, the Map and Weather; the
   Map reuses its weather cross-section. The day's calls to Open-Meteo are counted in the status block of Settings.
 
-<!-- fr: 55fb66d2084b -->
+<!-- fr: 730918eb6af9 -->

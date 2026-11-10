@@ -212,7 +212,6 @@ export async function mount(el, ctx) {
   // ---------------------------------------------------------------- squelette
   el.innerHTML = `<style>${STYLE}</style>
 <h1 class="at-sr">${esc(T('srTitle'))}</h1>
-<div class="at-wnote" data-at="wnote"></div>
 <div class="at-box" data-at="box">
   <div class="at-map" data-at="map"></div><canvas class="at-over" data-at="over" aria-hidden="true"></canvas>
   <div class="at-maptip" data-at="mapTip"></div>
@@ -223,6 +222,7 @@ export async function mount(el, ctx) {
     <button type="button" class="at-whole" data-at="whole" hidden title="${esc(T('winWholeHelp'))}" aria-label="${esc(T('winWholeHelp'))}">${esc(T('winWhole'))}</button>
     <div class="at-chips" role="group" data-at="chips" aria-label="${esc(T('sliceNav'))}" hidden><button type="button" data-at="prev" aria-label="${esc(T('slicePrev'))}" title="${esc(T('slicePrev'))}">◀</button><button type="button" data-at="next" aria-label="${esc(T('sliceNext'))}" title="${esc(T('sliceNext'))}">▶</button><button type="button" class="at-chip-i" data-at="legendBtn" aria-pressed="false" aria-label="${esc(T('legend'))}" title="${esc(T('legend'))}">i</button></div>
     <button type="button" class="f-sheet-close" data-at="dclose" aria-label="${esc(T('backProfile'))}" title="${esc(T('backProfile'))}" hidden>✕</button></div>
+  <div class="at-wnote" data-at="wnote"></div>
   <div class="at-when" data-at="when"><span class="at-track"><input type="range" min="0" max="${SHIFT_MAX}" step="1" value="0" data-at="shift" aria-label="${esc(T('whenAria'))}"><span class="at-cover" data-at="cover" hidden title="${esc(T('coverHelp'))}"></span></span><output data-at="whenOut"></output></div>
   <div class="f-sheet-body at-dbody" data-at="dbody"></div>
 </section>`;
