@@ -12,9 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Missions: the drawn mission says its family in full** (`modules/missions/module.js`; SPEC, DECISIONS; noreg N15; SOG-0187).
+  « **SAR** · Récupération de personnel » under the title of the sheet, as in the list.
 - **Map: « New flight » empties the map** (`modules/maps/draw.js`; DECISIONS; noreg D151; SOG-0194, the Map's part). `draw()` left the previous image when the route had no point: the layer is now redrawn blank and the touch
   lists and the light drawing of the old route are dropped.
-
 - **Fuel: « Nouveau vol » leaves nothing of the old flight** (`modules/fuel/module.js`; Fuel SPEC, DECISIONS; noreg F129, N14;
   SOG-0194). The proposed routes are withdrawn for the Map, the weather read and the route check are emptied with the flight.
 - **Météo: the world synoptic line is the first line of the bottom sheet** (`modules/atmosphere/module.js`; SPEC § 4.4, DECISIONS, help ×4; noreg E18; A14, B3, C4, E2 green again). Neither over the map nor above it: in the sheet, above the

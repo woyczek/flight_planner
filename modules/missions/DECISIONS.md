@@ -75,3 +75,6 @@
   name does not repeat the acronym (« HEMS / MEDEVAC » → « HEMS · MEDEVAC »). The acronym is the family's code; seven codes are words,
   not acronyms (AIRLIFT, AIRBORNE, MARITIME, SURVEY, COMMAND, COMBAT, SPECIAL): shown as they are, proposals sent to the ergonomist.
   N12; counter-test on origin/v3 (a3ac92f10): the code alone in the headings and the filter.
+- **10 Nov 2026 — the family of the drawn mission** (SOG-0187, user: « tirer au sort une famille : il n'y a plus que le titre court »): the
+  sheet's title kept the family's code alone; it now says « **SAR** · Récupération de personnel » on a line of its own under the title
+  (famHtml, the function of the list headings). N15; counter-test on origin/v3: the code alone.

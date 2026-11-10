@@ -54,7 +54,7 @@ on the same data. The CPCO (authoring) stays V2 until rebuilt as the third appli
   « Toutes les catégories » offers the known categories its missions carry, in the airline's order; a category the airline does not know
   is ignored (not offered, not named); the open mission names its category. « Préparer ce vol » hands it to Fuel with the flight
   (`current_flight.missionCategory`), where the report reads it (N11).
-- **A family is said by its acronym first** (SOG-0179, N12): a heading of the list « **SAR** · Récupération de personnel » (the acronym
+- **A family is said by its acronym first** (SOG-0179, N12; the sheet, chosen or drawn, under its title: SOG-0187, N15): a heading of the list « **SAR** · Récupération de personnel » (the acronym
   in bold, the long name in plain weight), the filter « SAR · Récupération de personnel » in plain text, the acronym alone for a code
   the report does not know; the long name never alone; names from `modules/report/vocab.js` (`familyParts`, `familyText`; MEDEVAC,
   the registry's code, is the report's HEMS).
