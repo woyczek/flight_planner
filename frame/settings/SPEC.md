@@ -466,7 +466,7 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
   API keys (IVAO, EAD Basic)" (`panel: keys`, `where: launcher`), "Data sources" `#sources` (aerodb's Sources screen, links only; `copyLink`: under its link the absolute address of the screen built from `location`, and "Copy the link"; it replaced the data laboratory `#datalab` on 28 Oct 2026), roadmap `#roadmap`, diagnostics (`act:
   diagOpen`: opens the folded diagnostics of the About card and scrolls to it); benches `labs/design_primitives.html`,
   `frame/aerodb/bench.html`, `frame/aerodb/offline_bench.html`, `frame/store/test/`, `modules/maps/test/render.html`;
-  V2 pages `apps/settings/maintenance.html`, `apps/settings/premier_lancement.html`, `apps/cpco/map_parser.html`.
+  **no V2 page any more** (SOG-0166, 10 Nov 2026: `maintenance.html`, `premier_lancement.html` and `map_parser.html` buttons removed; the « Anciennes pages (V2) » screen `#legacy` lists them; case A120).
 - Paths are relative to the root of the suite; pages outside the app open in a new tab, the app's own addresses in place.
 - The Settings chapter's section "Administration" writes the same addresses out.
 

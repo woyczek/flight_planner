@@ -319,9 +319,7 @@ werden sie ohne Link genannt); Pfade relativ zur Wurzel der Suite: `labs/design_
 Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftfahrtbasis, online und offline),
 `frame/store/test/` (Datenschicht, gegen das falsche GitHub) und `modules/maps/test/render.html` (Kartendarstellung).
 
-**Die V2-Seiten des Rechners.** Nur gezeigt, wenn ein Starter die Seite bedient: Einstellungen › Wartung
-(`apps/settings/maintenance.html`), Erster Start (`apps/settings/premier_lancement.html`) und das Kartenstudio
-(`apps/cpco/map_parser.html`).
+**Die V2-Seiten.** Keine Schaltfläche mehr in dieser Karte: Alle Seiten der alten Version (Einstellungen › Wartung, Erster Start, Kartenstudio …) liegen im Bildschirm „Alte Seiten (V2)“ (`#legacy`), dem letzten Eintrag der Navigationsspalte jeder Anwendung.
 
 ## Gut zu wissen
 
@@ -380,6 +378,6 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: b276a56cc9cc -->
+<!-- fr: c75cd2a9eb9f -->
 
 **Die Fluggesellschaft.** Auf der Stufe „Vollständig“ (oder über #settings?card=company) listet die Karte „Fluggesellschaft“ die Gesellschaften aus data/airline/index.json und „Persönlich“: Name, Code, Netzwerke (IVAO, VATSIM, offline) und Zahl der Luftfahrzeuge der Flotte. „Wählen“ macht eine zur aktuellen Gesellschaft dieses Geräts (die Wahl gilt pro Gerät); die aktuelle hat keine Schaltfläche. Solange der Rahmen diese Wahl noch nicht speichern kann, sind die Schaltflächen grau, und die Karte sagt es. „Fluggesellschaft hinzufügen“ fragt nach Name, Code (2 bis 8 Kleinbuchstaben oder Ziffern, nie schon vergeben) und Netzwerken und schreibt dann den Ordner data/airline/<code>/ (Einstellungen und leere Flotte) und trägt ihn in den Index ein; ein vergebener Code überschreibt nichts. Höchstens zwanzig Gesellschaften; alles, was aus data/airline/ gelesen wird, gilt als nicht vertrauenswürdiger Text. Auf dem Rechner des Launchers bietet die Karte, solange Ihre Gesellschaft noch im Stammordner von data/airline/ liegt, die **Migration** an: ein optionaler Code (nach dem Namen vorgeschlagen), „Anzeigen, was geschähe“ (der Name, der Ordner data/airline/<code>/, die Dateien und ihre Größe, die dort leere Flotte), dann „Nach „<code>“ migrieren“. Nichts wird gelöscht oder überschrieben: Die jetzigen Dateien bleiben als Kopie liegen. Unter jeder Gesellschaft (außer „Persönlich“, von Natur aus kommerziell) zwei Einstellungen: die **Art** („Kommerziell“ oder „Staffel (SOG)“; ein zweites Tippen hebt sie auf) und die **Missionskategorien**. Ohne Art ist die Gruppe „Kommerziell“ (Fracht, Passagiere, VIP, Training, Transit, Testflüge, Überführung) inaktiv; die Falte „Missionskategorien“ sagt es. Dort fügen Sie die eigenen Kategorien der Gesellschaft hinzu oder entfernen sie (Gruppe „Virtuell“); die Gruppe der Suite lässt sich nicht ändern, ein schon vergebener Name wird abgelehnt.

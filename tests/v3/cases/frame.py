@@ -4714,3 +4714,18 @@ def a119(c):
     c.ok(norm(T('pub').split('{p}')[0]) in norm(sia['text']) and 'SIA France' in sia['text'], sia['text'][:160], 'the publisher is the start of the name when the catalogue gives none')
     c.ok(norm(T('date').split('{d}')[0]) in norm(sia['text']), sia['text'][:200], 'a dated source (the AIRAC cycle) says its date')
     c.check_errors()
+
+
+@case('A120', 'Settings › Administration: no direct button to a V2 page (Maintenance V2, First launch, Map studio) even with a launcher: they live in the « Anciennes pages (V2) » screen (SOG-0166)', 'A',
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0166 (the user: « je passe mon temps à cliquer dessus par erreur »): the three V2 buttons of the Administration card are gone; #legacy lists them; a launcher no longer brings them back')
+def a120(c):
+    full = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False}
+    c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(full)))
+    c.open('settings', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-card=\"admin\"]')", timeout=15000, what='the Administration card')
+    c.wait(600)
+    ids = c.js("[...document.querySelectorAll('[data-card=\"admin\"] li[data-admin]')].map(li => li.dataset.admin)")
+    c.ok(len(ids) > 0 and not any(k in ids for k in ('maintenance', 'firstLaunch', 'mapStudio')), f'entries {ids}', 'with a launcher the card still carries no V2 page button')
+    c.eq(c.count('[data-card="admin"] a[href*="apps/settings/"], [data-card="admin"] a[href*="apps/cpco/"]'), 0, 'no link to a page of apps/ in the card', what='no V2 link')
+    c.check_errors()

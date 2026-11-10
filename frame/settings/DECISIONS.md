@@ -670,3 +670,7 @@ Read-only survey of the workstation's `data/` (E:\DEFA\data, shared by E:\DEFA a
 - **The longest is kept on the device, not asked of the launcher**: `sync.json` keeps the last pass only; a record in `device/sync_timings.json` (cache policy, never synchronised) holds today's longest, replaced by a longer pass and forgotten when the day changes (UTC, like the pass's `at`). A layer without storage still shows the last pass.
 - **Untrusted input**: `last.timings` comes from the launcher, which anyone could stand in front of; only bounded numbers are read, the steps by a closed list, no string from the answer is shown.
 - Counter-test: `ms` taking any value turns A112 red (« commit 9 s » shown for a step written `'9000'`).
+
+## 10 November 2026 — the V2 buttons leave Administration (SOG-0166, rest)
+
+- The user: « je passe mon temps à cliquer dessus par erreur ». V3 Frame delivered `#legacy` (« Anciennes pages (V2) ») and its entry at the foot of each navigation column; the three direct buttons of the Administration card (Maintenance V2, First launch, Map studio) are removed (`admin_links.js`, help ×4). The suite update that the V2 maintenance page offered has its V3 button in the same card (`update`). **One link stays**, said as it is: the « première installation » link of the Données result when `pypdf` is missing (a V3 journey that needs the V2 assistant): its text now says it is a page of the old version. Case A120.

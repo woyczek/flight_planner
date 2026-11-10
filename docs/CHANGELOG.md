@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Settings › Administration: no direct button to a V2 page any more** (`frame/settings/admin_links.js`, help ×4; frame/settings SPEC; A120) — SOG-0166 rest: Maintenance V2, First launch and Map studio live in the « Anciennes pages (V2) » screen; the « première installation » link of Données stays, said to be a page of the old version.
 - **Frame: the « Old version · Reload » cartouche in the header** (`frame/index.html`, `frame/frame.css`, `frame/app.js`; frame SPEC § 3.6, DECISIONS; noreg
   A118; SOG-0168). A small square label, white on the alert red, beside the sync button: shown when the page is older than the launcher (or the next
   version is ready on a device without launcher), a tap reloads; absent it takes nothing and the header does not move.

@@ -188,9 +188,7 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
 `frame/aerodb/bench.html` y `frame/aerodb/offline_bench.html` (base aeronáutica, en línea y sin conexión),
 `frame/store/test/` (capa de datos, contra el GitHub falso) y `modules/maps/test/render.html` (renderizado del mapa).
 
-**Las páginas V2 del puesto.** Solo se muestran cuando un lanzador sirve la página: Ajustes › Mantenimiento
-(`apps/settings/maintenance.html`), Primer inicio (`apps/settings/premier_lancement.html`) y el estudio cartográfico
-(`apps/cpco/map_parser.html`).
+**Las páginas V2.** Ya no hay ningún botón en esta tarjeta: todas las páginas de la versión antigua (Ajustes › Mantenimiento, Primer inicio, estudio cartográfico…) están en la pantalla «Páginas antiguas (V2)» (`#legacy`), la última entrada de la columna de navegación de cada aplicación.
 
 ## Conviene saber
 
@@ -249,6 +247,6 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: b276a56cc9cc -->
+<!-- fr: c75cd2a9eb9f -->
 
 **La compañía.** En el nivel Completo (o con #settings?card=company), la tarjeta «Compañía» lista las compañías de data/airline/index.json y «Personal»: el nombre, el código, las redes (IVAO, VATSIM, sin conexión) y el número de aeronaves de la flota. «Elegir» convierte una en la compañía actual de este dispositivo (la elección es por dispositivo); la actual no tiene botón. Mientras el marco no sepa aún guardar esta elección, los botones están en gris y la tarjeta lo dice. «Añadir una compañía» pide un nombre, un código (2 a 8 letras minúsculas o cifras, nunca uno ya en uso) y las redes, y luego escribe la carpeta data/airline/<code>/ (ajustes y flota vacía) y la añade al índice; un código en uso no sobrescribe nada. Veinte compañías como máximo; todo lo que se lee de data/airline/ se trata como texto no fiable. En el equipo del lanzador, mientras su compañía siga en la raíz de data/airline/, la tarjeta ofrece **migrarla**: un código opcional (propuesto según el nombre), «Ver lo que se haría» (el nombre, la carpeta data/airline/<code>/, los archivos y su tamaño, la flota que estará vacía allí) y después «Migrar a «<code>»». No se borra ni se sobrescribe nada: los archivos actuales quedan como copia. Bajo cada compañía (salvo «Personal», comercial por naturaleza), dos ajustes: el **tipo** («Comercial» o «Escuadrón (SOG)»; un segundo toque lo quita) y las **categorías de misiones**. Sin tipo, el grupo «Comercial» (carga, pasajeros, VIP, entrenamiento, tránsito, vuelos de prueba, posicionamiento) está inactivo; el pliegue «Categorías de misiones» lo dice. Allí se añaden o se quitan las categorías propias de la compañía (grupo «Virtual»); el grupo de la suite no se modifica y se rechaza un nombre ya usado.

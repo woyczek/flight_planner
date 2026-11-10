@@ -242,35 +242,5 @@
       'Darstellung der Karte und ihrer Symbole mit Testdaten, ohne Basis und Starter.',
       'Renderizado del mapa y sus símbolos con datos de prueba, sin base ni lanzador.'
     ]
-  }, {
-    id: 'maintenance',
-    href: 'apps/settings/maintenance.html',
-    where: 'v2',
-    title: ['Paramètres › Maintenance (V2)', 'Settings › Maintenance (V2)', 'Einstellungen › Wartung (V2)',
-      'Ajustes › Mantenimiento (V2)'
-    ],
-    text: ['Bases de données, sources et dossiers, mises à jour de la suite sur ce poste.',
-      'Databases, sources and folders, updates of the suite on this workstation.',
-      'Datenbanken, Quellen und Ordner, Aktualisierungen der Suite auf diesem Rechner.',
-      'Bases de datos, fuentes y carpetas, actualizaciones de la suite en este puesto.'
-    ]
-  }, {
-    id: 'firstLaunch',
-    href: 'apps/settings/premier_lancement.html',
-    where: 'v2',
-    title: ['Premier lancement (V2)', 'First launch (V2)', 'Erster Start (V2)', 'Primer inicio (V2)'],
-    text: ['L’assistant d’installation du poste : dossier des données, dépôt, profil.',
-      'The workstation’s setup assistant: data folder, repository, profile.',
-      'Der Einrichtungsassistent des Rechners: Datenordner, Repository, Profil.',
-      'El asistente de instalación del puesto: carpeta de datos, repositorio, perfil.'
-    ]
-  }, {
-    id: 'mapStudio',
-    href: 'apps/cpco/map_parser.html',
-    where: 'v2',
-    title: ['Studio cartographique (V2)', 'Map studio (V2)', 'Kartenstudio (V2)', 'Estudio cartográfico (V2)'],
-    text: ['Les cartes des missions et leurs profils d’affichage.', 'The mission maps and their display profiles.',
-      'Die Missionskarten und ihre Anzeigeprofile.', 'Los mapas de las misiones y sus perfiles de visualización.'
-    ]
   }]);
 })();

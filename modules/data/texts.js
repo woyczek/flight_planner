@@ -1164,9 +1164,9 @@ export const TX = {
     'In data/ wartet eine Zusammenführung: synchronisieren Sie zuerst (Einstellungen › Synchronisierung)',
     'Una fusión espera en data/: sincronice primero (Ajustes › Sincronización)'
   ],
-  firstInstall: ['Ouvrir l’assistant de première installation', 'Open the first-install assistant',
-    'Assistenten der Ersteinrichtung öffnen',
-    'Abrir el asistente de primera instalación'
+  firstInstall: ['Ouvrir l’assistant de première installation (page de l’ancienne version)', 'Open the first-install assistant (a page of the old version)',
+    'Assistenten der Ersteinrichtung öffnen (Seite der alten Version)',
+    'Abrir el asistente de primera instalación (página de la versión antigua)'
   ],
   // la carte des zones à cocher (même sélection que la liste) : son nom, ce que dit chaque teinte, la légende
   zoneMap: {

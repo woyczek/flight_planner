@@ -309,9 +309,7 @@ nommés sans lien) ; chemins relatifs à la racine de la suite : `labs/design_pr
 `frame/aerodb/bench.html` et `frame/aerodb/offline_bench.html` (base aéronautique, en ligne et hors ligne),
 `frame/store/test/` (couche de données, contre le faux GitHub) et `modules/maps/test/render.html` (rendu de la carte).
 
-**Les pages V2 du poste.** Montrées seulement quand un lanceur sert la page : Paramètres › Maintenance
-(`apps/settings/maintenance.html`), Premier lancement (`apps/settings/premier_lancement.html`) et le studio
-cartographique (`apps/cpco/map_parser.html`).
+**Les pages V2.** Plus aucun bouton dans cette carte : toutes les pages de l'ancienne version (Paramètres › Maintenance, Premier lancement, studio cartographique…) sont rangées dans l'écran « Anciennes pages (V2) » (`#legacy`), dernière entrée de la colonne de navigation de chaque application.
 
 ## Bon à savoir
 
