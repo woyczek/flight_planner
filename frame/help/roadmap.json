@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "af836a6",
+  "organisation": "c8af0c1",
   "fiches": 170,
   "untranslated": 1,
   "priorities": 152
@@ -564,7 +564,7 @@
     {
      "id": "SOG-0046",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Carte : liste des points et des taxiways de l'ADEP / ADEST, recherche et surlignement (gros terrains)",
      "en": "Map: list of points and taxiways of the ADEP / ADEST, search and highlighting (large airfields)",
      "de": "Karte: Liste der Punkte und Rollwege von ADEP / ADEST, Suche und Hervorhebung (große Flugplätze)",
@@ -1844,7 +1844,7 @@
     {
      "id": "SOG-0135",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Lire le sol (taxiways) avec les procédures du terrain, pas par un bouton de plus",
      "en": "Read the ground (taxiways) with the airport's procedures, not through one more button",
      "de": "Boden (Rollwege) zusammen mit den Verfahren des Flugplatzes lesen, nicht über einen weiteren Knopf",

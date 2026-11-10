@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 54,
-  "verdicts": 9
+  "verdicts": 10
  },
  "apps": [
   "pilote",
@@ -35,9 +35,11 @@
     "de": "Karte: Liste der Punkte und Rollwege von ADEP / ADEST, Suche und Hervorhebung (große Flugplätze)",
     "es": "Mapa: lista de puntos y calles de rodaje del ADEP / ADEST, búsqueda y resaltado (grandes aeródromos)"
    },
-   "test": "Carte sur LFPO à zoom 14 après lecture des procédures : taxiways nommés ; dans le panneau Sol, filtrer « W » surligne le tronçon.",
+   "test": "Lanceur relancé. Carburant › SID / STAR : « Relire » les procédures de LFPO, attendre une minute, puis Carte sur Orly à zoom 14, panneau Sol : soit « Sol lu avec les procédures du … » et les taxiways nommés sont dessinés, soit « Sol non lu : raison · Réessayer » ; « Réessayer » relance la lecture seule.",
    "since": "2026-11-09",
-   "state": "known"
+   "state": "ko",
+   "comment": "rien (cf. screenshot, relecture du 10/11 09:00Z)",
+   "at": "2026-11-10T09:04:51Z"
   },
   {
    "id": "SOG-0051",
@@ -297,9 +299,9 @@
     "de": "Boden (Rollwege) zusammen mit den Verfahren des Flugplatzes lesen, nicht über einen weiteren Knopf",
     "es": "Leer el suelo (calles de rodaje) con los procedimientos del aeródromo, no con un botón más"
    },
-   "test": "Lire les procédures de LFPO (Carburant › SID / STAR ou Carte › Procédures), attendre trente secondes, puis Carte sur Orly à zoom 14 : les taxiways sont dessinés et nommés ; le panneau Sol dit « Sol lu avec les procédures du … ».",
+   "test": "Même test que SOG-0046 : après la relecture des procédures de LFPO, le panneau Sol de la Carte dit où en est la lecture du sol, sans bouton à chercher ; un échec est dit avec sa raison.",
    "since": "2026-11-09",
-   "state": "known"
+   "state": "todo"
   },
   {
    "id": "SOG-0136",
