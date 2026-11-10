@@ -25,7 +25,7 @@
    "test": "Réglages › Compagnie : la liste est à boutons radio, chaque ligne dit son genre (« Commerciale », « Escadrille SO », « Personnel ») ; choisir une compagnie ne fait rien clignoter ; dessous, la fiche de la compagnie choisie montre Genre et « Catégories de missions » sans rien déplier, avec « Ajouter une catégorie ». (Créer et rejoindre une compagnie : étape suivante, pas encore.)",
    "since": "2026-11-10",
    "state": "todo",
-   "delivered": "2026-11-10T11:52:16Z",
+   "delivered": "2026-11-10T11:57:32Z",
    "previous": {
     "verdict": "ko",
     "comment": "plutôt qu’un bouton « choisir », un bouton radio. ergonomie ! on ne sait pas si c’est un sog, ou une compagnie commerciale. En plus, ça clignote au choix. Où est « catégorie de missions » ? je cesse de chercher, je laisse l’ergo redéfinir le chemin utilisateur. Use cases : - 1/ je crée une compagnie commerciale, rennes motoculture, je définis les catégories de vol, et j’affecte des appareils depuis la base - 2/ je rejoins une compagnie SO, via un site web de la flotte, je le parse, et je vole les missions pré-préparées dans la base. - 3/ uses cases déjà définis de compagnie locale",
@@ -1034,10 +1034,10 @@
     "de": "Karte: das Luftraumblatt flackert beim Öffnen, und der Reiter „Ebenen“ dient nicht nur der Ebenenwahl",
     "es": "Mapa: la ficha de un espacio parpadea al abrirse y la pestaña «Capas» sirve para algo más que elegir capas"
    },
-   "test": "Carte avec une route qui traverse des espaces, profil ouvert : ouvrir la fiche d'un espace (bloc puis « Fiche ») ne fait plus clignoter la coupe ; la fiche s'ouvre sous l'onglet du profil (sa puce reste allumée, pas celle des Couches), avec son titre et sa croix ; la puce du profil la referme.",
+   "test": "Carte avec une route qui traverse des espaces, profil ouvert : ouvrir la fiche d'un espace ne fait plus clignoter la coupe ; elle s'ouvre sous l'onglet du profil (pas celui des Couches) avec son titre et sa croix. L'onglet « Couches » ne propose plus de choisir le vol ou la mission : seulement ce qui s'affiche ; la mission, sa carte et sa vue se choisissent dans la fenêtre de mission sur la carte.",
    "since": "2026-11-10",
    "state": "todo",
-   "delivered": "2026-11-10T11:23:16Z"
+   "delivered": "2026-11-10T11:58:35Z"
   },
   {
    "id": "SOG-0186",
