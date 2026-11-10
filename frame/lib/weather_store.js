@@ -720,12 +720,13 @@ export function weatherStore({
     .length && w.files?.length === w.times.length);
   /** Index du synoptique : celui de l'appareil s'il a moins de 6 h, sinon celui des pages (gardé à son tour ; pas de nouvel
    *  essai avant 10 min), sinon le plus ancien tant que sa dernière échéance est à venir ; null sans publication. */
-  async function worldIndex() {
+  async function worldIndex(fresh = false) {
     const mine = await data.get(`${WORLD_DIR}index.json`).catch(() => null),
       ok = validIndex(mine) ? mine : null;
-    if (ok && now() - ok.built * 1000 < WORLD_TTL) return ok;
+    if (ok && !fresh && now() - ok.built * 1000 < WORLD_TTL) return ok;
     let got = null;
-    if (root && now() - worldTried > WORLD_RETRY) {
+    if (root && (fresh || now() - worldTried >
+        WORLD_RETRY)) { // fresh : une publication vient d'être faite (le lanceur l'a construite), rien n'attend
       worldTried = now();
       got = await worldJson('index.json', {
         cache: 'no-cache'
@@ -745,10 +746,11 @@ export function weatherStore({
   /** Synoptique monde : sans k, l'index (ou null) ; avec k, l'échéance k de l'index courant (alt : son fichier des niveaux
    *  de pression), de l'appareil d'abord ; null si elle manque. */
   async function world(k = null, {
-    alt = false
+    alt = false,
+    fresh = false // l'index relu tout de suite (après la construction du lanceur), sans le délai de 10 min ni la garde de 6 h
   } = {}) {
-    if (!worldIdx) {
-      worldIdx = worldIndex();
+    if (!worldIdx || fresh) {
+      worldIdx = worldIndex(fresh);
       worldIdx.finally(() => setTimeout(() => worldIdx = null, WORLD_RETRY)).catch(() => {});
     }
     const w = await worldIdx;

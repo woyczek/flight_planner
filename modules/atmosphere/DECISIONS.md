@@ -2,6 +2,24 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 10 November 2026 — the world synoptic line « Build » (SOG-0138 refused, given to the maps session by the ergonomics)
+
+- **Seen** (the user's capture 102550: the Météo screen, a map without synoptic): nothing publishes the world synoptic on his workstation
+  (`data/local/weather/world/` absent), the only gesture was Maintenance › Données, far from the screen where the map is missing.
+- **Done** (ergonomics' decision): a line on the Météo map, shown without a publication or with one older than 12 h, with the one gesture « Build
+  (2 min) » = the launcher's `weather/world { action: 'build' }` through `ctx.launcher.job`, followed (n/25), one at a time, then the layer
+  read again at once; a failure in the pilot's words with « Try again »; without a launcher, where to do it. `world_build.js` (injectable:
+  box, ctx, F, reload), `meta.launcher: { routes: ['regen/job'] }`, `reloadWorld` in `lib/weather_map.js`, and `world(null, { fresh: true })`
+  in `frame/lib/weather_store.js` (the store kept the index 6 h and retried every 10 min: a built publication would not have been seen).
+- **Choices of mine**: « Synoptique monde **absent** » (a synoptic is masculine; the brief said « absente »); the line is at the map's top left, a
+  card (the corner keeps no *button* of a view, E15: this is a status line with its one action, shown only while there is something to say); the
+  12 h threshold is the brief's (`STALE_MS`).
+- **Not done**: the layer is drawn outside the flight's grid only (as before): in the user's capture the view is inside it, so he will see
+  the layer once he moves out; the line does not say that. No cancel button for the build; the end-to-end run on the user's launcher was not made
+  (2 minutes of NOAA reads, writing in his `data/local/`): the cases play the job with a stub.
+- **Noreg** E18 (the line on the test server; the module driven with a stub launcher: button, one build, progress, end, reload once, a note,
+  failures with their reasons, fresh / old / no launcher; every text in four languages).
+
 ## 31 October 2026 — follow-up D: "Load (≈ n calls)" from `ctx.weather.cost`
 
 - **The request** (ergonomics session, 31 Oct, after V3 Frame's `d9609bd7f`): the gap § 14 of lot 0 (no cost before

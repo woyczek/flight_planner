@@ -515,3 +515,72 @@ def e15(c):
     c.tap(f'{ATM} [data-at=layersBtn]')
     c.until(f"!window.__t.shown(document.querySelector('{ATM} .at-layerpop'))", what='a second tap closes it')
     c.eq(c.attr(f'{ATM} [data-at=layersBtn]', 'aria-pressed'), 'false', 'the chip is released', what='pressed')
+
+
+_WB_JS = """async () => {
+  const W = await import('/modules/atmosphere/world_build.js'), TXm = await import('/modules/atmosphere/texts.js');
+  const out = {}, now = () => Date.now() / 1000;
+  const mk = (idx, launcher) => {
+    const box = document.createElement('div'); box.hidden = true; document.body.append(box);
+    const log = { reload: 0, notes: [], jobs: 0 }, st = { idx };
+    const ctx = { weather: { world: async () => st.idx }, launcher, notify: m => log.notes.push(m) };
+    const F = { T: (k, v) => k + (v ? JSON.stringify(v) : ''), fmtWhen: t => 'at' + Math.round(t) };
+    const wb = W.createWorldBuild({ box, ctx, F, reload: async () => { log.reload++ } });
+    return { box, log, st, wb, ctx };
+  };
+  const text = o => o.box.hidden ? '(hidden)' : o.box.textContent.replace(/\\s+/g, ' ').trim();
+  const btn = o => !!o.box.querySelector('[data-at=wbBuild]');
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  // a launcher that follows a job: progress, then an end the scenario chooses
+  let end = null, release = null;
+  const L = { job: async (route, body, o) => { out.body = JSON.stringify([route, body]); L.n = (L.n || 0) + 1; o.onProgress({ done: 3, total: 25 }); await new Promise(r => release = r); return end } };
+  // a. no publication, a launcher: the line and its button
+  let o = mk(null, L); await wait(50);
+  out.none = [text(o), btn(o)];
+  // b. a tap starts the job, once, and says where it is; a second tap changes nothing
+  o.box.querySelector('[data-at=wbBuild]').click(); await wait(30);
+  o.box.querySelector('[data-at=wbBuild]')?.click(); await wait(30);
+  out.building = [text(o), btn(o), L.n];
+  // c. the end: the layer is read again, the line goes, a note says so
+  end = { ok: true, state: 'done', result: { ok: true, built: now() } }; o.st.idx = { built: now() }; release(); await wait(80);
+  out.done = [text(o), o.log.reload, o.log.notes.length];
+  // d. a failure says why and offers to try again; a refusal too soon says the wait
+  L.n = 0; o = mk(null, L); await wait(50);
+  o.box.querySelector('[data-at=wbBuild]').click(); await wait(30);
+  end = { ok: false, state: 'error', result: { ok: false, reason: 'no-run' } }; release(); await wait(80);
+  out.failed = [text(o), btn(o), o.box.querySelector('[role=alert]') ? 'alert' : '-'];
+  o.box.querySelector('[data-at=wbBuild]').click(); await wait(30);
+  end = { ok: false, status: 429, reason: 'too-soon', wait: 29.2 }; release(); await wait(80);
+  out.soon = text(o);
+  // e. a fresh publication says nothing, an old one says its date, none without a launcher says where
+  out.fresh = text(mk({ built: now() - 3600 }, L)); await wait(50);
+  const old = mk({ built: now() - 13 * 3600 }, L); await wait(50); out.old = [text(old), btn(old)];
+  const nl = mk(null, null); await wait(50); out.nolauncher = [text(nl), btn(nl)];
+  // f. every text exists in the four languages
+  out.langs = Object.keys(TXm.TX).filter(k => /^wb/.test(k)).filter(k => { const v = TXm.TX[k]; return !(Array.isArray(v) && v.length === 4 && v.every(x => typeof x === 'string' && x)) });
+  out.keys = Object.keys(TXm.TX).filter(k => /^wb/.test(k)).length;
+  return out;
+}"""
+
+
+@case('E18', 'Synoptic world line: absent or over 12 h old, the Météo screen says so and « Build » runs the launcher’s weather/world job (one at a time), follows it, reads the layer again; without a launcher it says where', 'E',
+      tags=('atmosphere',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0138 refused (the user’s Météo screen without synoptic: nothing publishes it on his workstation): a line over the map says « World synoptic missing » (or « of <date> » over 12 h) with « Build (2 min) » = weather/world { action: build } through ctx.launcher.job (progress n/25, one build at a time, the end reads the layer again and says so); a failure says why (reason of the launcher) with « Try again »; no launcher: « available with the workstation’s launcher »')
+def e18(c):
+    c.open('atmosphere', flight=True)
+    c.until(f"window.__t.shown(document.querySelector('{ATM} [data-at=wnote]'))", timeout=12000, what='the line is shown: there is no synoptic on this server')
+    t = norm(c.js(f"() => document.querySelector('{ATM} [data-at=wnote]').textContent"))
+    c.ok(norm(row(c, 'wbNone')) in t and norm(row(c, 'wbNoLauncher')) in t, t, 'it says the synoptic is missing and where to make it (no launcher serves the test page)')
+    r = c.js(_WB_JS)
+    c.ok(r['none'][0].startswith('wbNone') and 'wbBuild' in r['none'][0], r['none'][0], 'the line says « missing » and offers « Build »')
+    c.ok('regen/job' in r['body'] and '"set":"weather"' in r['body'] and '"verb":"world"' in r['body'] and '"action":"build"' in r['body'], r['body'], 'the button starts weather/world { action: build } through regen/job')
+    c.ok(r['building'][0].startswith('wbBuilding') and '3/25' in r['building'][0] and r['building'][1] is False and r['building'][2] == 1, str(r['building']),
+         'it follows the job (3/25), the button is gone, a second tap does not start a second build')
+    c.eq(r['done'], ['(hidden)', 1, 1], 'the end: the line goes, the layer is read again once, a note says so', what='end')
+    c.ok(r['failed'][0].startswith('wbFailed') and 'wbWhyNoRun' in r['failed'][0] and r['failed'][1] is True and r['failed'][2] == 'alert', str(r['failed']),
+         'a failure says why (NOAA) and offers « Try again »')
+    c.ok('wbWhySoon' in r['soon'] and ':30' in r['soon'], r['soon'], 'a refusal too soon says the wait in seconds')
+    c.eq(r['fresh'], '(hidden)', 'a publication of less than 12 h says nothing', what='fresh')
+    c.ok(r['old'][0].startswith('wbOld') and r['old'][1] is True, str(r['old']), 'a publication of more than 12 h says its date and offers « Build »')
+    c.ok('wbNoLauncher' in r['nolauncher'][0] and r['nolauncher'][1] is False, str(r['nolauncher']), 'without a launcher: where to make it, no button')
+    c.eq(r['langs'], [], 'every text exists in the four languages', what='texts')

@@ -112,5 +112,9 @@ export const STYLE = `
 [data-module="atmosphere"] .at-raw{font:12px/1.4 ui-monospace,monospace;color:var(--sog-muted);white-space:pre-wrap;margin-top:4px}
 [data-module="atmosphere"] .at-form textarea{font:13px/1.4 ui-monospace,monospace;min-height:80px}
 [data-module="atmosphere"] .at-foot{font-size:12px;color:var(--sog-muted);margin:10px 0 0}
+[data-module="atmosphere"] .at-wnote{position:absolute;z-index:4;left:8px;top:8px;max-width:min(420px,calc(100% - 72px));box-sizing:border-box;padding:4px 8px;font-size:12px;display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px}
+[data-module="atmosphere"] .at-wnote[hidden]{display:none}
+[data-module="atmosphere"] .at-wnote .f-btn{min-height:28px;padding:0 10px}
+[data-module="atmosphere"] .at-wb-no{color:var(--sog-muted)}
 [data-module="atmosphere"] .at-hidden{display:none!important}
 `;

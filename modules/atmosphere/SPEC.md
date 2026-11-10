@@ -222,6 +222,15 @@ projected. The cross-section and the sounding are SVG (`section.js`): smooth fie
   the key.
 - When the view is mostly outside the grid (the grid covers less than 40 % of it, or its centre is outside), the head
   says what is shown (§ 2.3); back in the grid, the cross-section's title returns. No extra button.
+- **The world synoptic line** (SOG-0138, `world_build.js`): without a publication (`ctx.weather.world()` → null), or with one built more than
+  12 h ago, a line at the top left of the map (`.at-wnote`) says « World synoptic missing » (or « of <date> ») with **« Build (2 min) »**
+  — `ctx.launcher.job('regen/job', { set: 'weather', verb: 'world', args: { action: 'build' } })`, `meta.launcher: { routes: ['regen/job'] }`.
+  The job is followed (« Building… n/25 »), one at a time; at its end the layer is read again at once (`wm.reloadWorld()` →
+  `ctx.weather.world(null, { fresh: true })`) and a note says it is built. A failure says why in the launcher's reason (`no-run`: NOAA
+  unreachable or no run, the old one stays; `invalid`; `timeout` 15 min; `cancelled`; `too-soon` with its wait in seconds; else failed)
+  with « Try again ». A fresh publication (< 12 h) shows nothing; without a launcher (a paired device, GitHub Pages) the line says
+  « available with the workstation's launcher ». The publication is under `data/local/weather/world/` (never synchronised). The layer
+  itself is drawn outside the flight's grid (§ 5), as before. Noreg E18.
 - No airspace is drawn: rule 21 does not apply.
 
 ## 5. The world synoptic

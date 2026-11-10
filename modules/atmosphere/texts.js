@@ -61,6 +61,38 @@ export const TX = {
     'Weltsynoptik nicht veröffentlicht: außerhalb des Fluggebiets wird nichts abgefragt',
     'Sinóptico mundial no publicado: no se pide nada fuera de la zona del vuelo'
   ],
+  wbNone: ['Synoptique monde absent', 'World synoptic missing', 'Weltsynoptik fehlt', 'Sinóptico mundial ausente'],
+  wbOld: ['Synoptique monde du {at}', 'World synoptic of {at}', 'Weltsynoptik vom {at}', 'Sinóptico mundial del {at}'],
+  wbBuild: ['Construire (2 min)', 'Build (2 min)', 'Erstellen (2 Min.)', 'Construir (2 min)'],
+  wbRetry: ['Réessayer', 'Try again', 'Erneut versuchen', 'Reintentar'],
+  wbNoLauncher: ['disponible avec le lanceur du poste', 'available with the workstation’s launcher',
+    'mit dem Launcher des Rechners verfügbar',
+    'disponible con el lanzador del equipo'
+  ],
+  wbBuilding: ['Construction du synoptique monde…', 'Building the world synoptic…', 'Weltsynoptik wird erstellt…',
+    'Construyendo el sinóptico mundial…'
+  ],
+  wbFailed: ['Synoptique monde non construit : {why}', 'World synoptic not built: {why}', 'Weltsynoptik nicht erstellt: {why}',
+    'Sinóptico mundial no construido: {why}'
+  ],
+  wbWhyNoRun: ['aucune prévision publiée par la NOAA, ou elle est injoignable (l’ancien reste)',
+    'no forecast published by NOAA, or it is unreachable (the old one stays)',
+    'keine Vorhersage der NOAA veröffentlicht oder nicht erreichbar (die alte bleibt)',
+    'la NOAA no ha publicado previsión o no responde (se mantiene la anterior)'
+  ],
+  wbWhyInvalid: ['fichiers invalides, rien n’a été remplacé', 'invalid files, nothing was replaced',
+    'ungültige Dateien, nichts wurde ersetzt', 'archivos no válidos, no se sustituyó nada'
+  ],
+  wbWhyTimeout: ['plus de 15 minutes', 'over 15 minutes', 'über 15 Minuten', 'más de 15 minutos'],
+  wbWhyCancelled: ['annulée', 'cancelled', 'abgebrochen', 'cancelada'],
+  wbWhySoon: ['trop tôt, réessayez dans {n} s', 'too soon, try again in {n} s', 'zu früh, in {n} s erneut versuchen',
+    'demasiado pronto, reinténtelo en {n} s'
+  ],
+  wbWhyFailed: ['la construction a échoué (le lanceur répond-il ?)', 'the build failed (is the launcher answering?)',
+    'die Erstellung ist fehlgeschlagen (antwortet der Launcher?)',
+    'la construcción ha fallado (¿responde el lanzador?)'
+  ],
+  wbDone: ['Synoptique monde construit.', 'World synoptic built.', 'Weltsynoptik erstellt.', 'Sinóptico mundial construido.'],
   worldPoint: ['Synoptique · {p} · {at}', 'Synoptic · {p} · {at}', 'Synoptik · {p} · {at}', 'Sinóptico · {p} · {at}'],
   resMeteofrance: ['Météo-France AROME 1,3 km · ARPEGE 0,1°', 'Météo-France AROME 1.3 km · ARPEGE 0.1°',
     'Météo-France AROME 1,3 km · ARPEGE 0,1°', 'Météo-France AROME 1,3 km · ARPEGE 0,1°'

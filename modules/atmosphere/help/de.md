@@ -21,7 +21,7 @@ sichtbar und wird bei jedem Kästchen neu gezeichnet; das Kreuz oder Esc schlie�
 <a id="atmosphere-zones"></a>**Das Fluggebiet und die Welt.** Eine dünne Linie umgibt das Fluggebiet: innen die für den Flug geladene feine Vorhersage
 (Météo-France AROME 1,3 km und ARPEGE 0,1° über Frankreich, ICON in Europa); außen die Weltsynoptik (NOAA GFS, mit
 einem 5°-Raster veröffentlicht). Die beiden Modelle sagen nicht ganz dasselbe: ein Sprung der Linien an der Grenzlinie
-ist normal. Das Ebenen-Feld nennt beide Modelle und ihr Raster.
+ist normal. Das Ebenen-Feld nennt beide Modelle und ihr Raster. Ohne Weltsynoptik oder mit einer, die älter als 12 h ist, sagt eine Zeile oben links auf der Karte das und bietet „Erstellen (2 Min.)“ an: der Launcher dieses Rechners berechnet sie (NOAA GFS, ohne Schlüssel) und die Ebene erscheint auf der Karte; ohne Launcher sagt die Zeile, wo es geht.
 
 <a id="atmosphere-date"></a>**Das Flugdatum.** Der Regler unter dem Griff verschiebt die Zeit von 0 bis 72 Stunden nach dem geplanten Abflug: Karte,
 Schnitt und Punktschnitte folgen. Liegt ein Teil des Reglers außerhalb der gelesenen Vorhersage (ein geplanter Abflug in
@@ -67,4 +67,4 @@ die Legende, den Chip oder Escape schließt sie.
   die Karte übernimmt seinen Wetterschnitt. Die Aufrufe des Tages bei Open-Meteo werden im Statusblock der
   Einstellungen gezählt.
 
-<!-- fr: 47a41ff86f05 -->
+<!-- fr: ab3431a0d5be -->

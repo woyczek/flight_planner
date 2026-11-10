@@ -68,6 +68,10 @@ export const meta = {
   help: true,
   // la météo passe par la couche du cadre (ctx.weather, frame/INTEGRATION.md § 14), qui garde sa propre réserve
   reads: ['pilot/', 'cache/atmosphere/', 'airline/map_profiles.json'],
+  // le travail weather/world du lanceur de ce poste (SOG-0138 : « Construire » le synoptique monde) ; sans lanceur, ctx.launcher est nul
+  launcher: {
+    routes: ['regen/job']
+  },
   // réglages de l'écran gardés sur l'appareil
   writes: [{
     prefix: 'cache/atmosphere/',
@@ -75,7 +79,7 @@ export const meta = {
   }],
   files: ['style.js?v=0', 'fmt.js?v=0', 'flight.js?v=0', 'wx.js?v=0', 'screen_map.js?v=0', 'screen_cut.js?v=0',
     'screen_details.js?v=0', 'screen_flight.js?v=0', 'screen_layers.js?v=0',
-    'atmo.js?v=0', 'demo.js?v=0', 'world.js?v=0', 'lib/weather_map.js?v=0', 'section.js?v=0', 'texts.js?v=0',
+    'atmo.js?v=0', 'demo.js?v=0', 'world.js?v=0', 'world_build.js?v=0', 'lib/weather_map.js?v=0', 'section.js?v=0', 'texts.js?v=0',
     '../maps/lib/map_base.js?v=0', '../maps/lib/axis_window.js?v=0', '../maps/render.js?v=0',
     '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0', '../../frame/lib/weather_store.js?v=0',
     '../../frame/lib/flight_path.js?v=0', '../../frame/lib/flight_time.js?v=0', '../../frame/lib/icons.js?v=0',
@@ -211,6 +215,7 @@ export async function mount(el, ctx) {
 <div class="at-box" data-at="box">
   <div class="at-map" data-at="map"></div><canvas class="at-over" data-at="over" aria-hidden="true"></canvas>
   <div class="at-maptip" data-at="mapTip"></div>
+  <div class="at-wnote f-card" data-at="wnote" hidden></div>
   <div class="at-layerpop" data-at="layerPop" hidden><div class="at-layerpop-head"><b>${esc(T('layers'))}</b><button type="button" class="at-layerpop-x" data-at="layersClose" aria-label="${esc(T('layersClose'))}" title="${esc(T('layersClose'))}">✕</button></div><div class="at-layers" role="group" aria-label="${esc(T('layers'))}" data-at="layersBox"></div></div>
 </div>
 <section class="f-sheet-panel" data-at="data">
@@ -271,6 +276,16 @@ export async function mount(el, ctx) {
   const map = createMapScreen(app);
   const cut = createCut(app);
   app.wm = map.wm;
+  // la ligne « Synoptique monde » (SOG-0138) : absent ou de plus de 12 h, « Construire » par le lanceur ; chargée avec l'écran (petite)
+  import('./world_build.js').then(m => {
+    if (alive) m.createWorldBuild({
+      box: $('wnote'),
+      ctx,
+      F,
+      reload: () => map.wm.reloadWorld(),
+      alive: () => alive
+    });
+  }, () => {});
 
   // ---------------------------------------------------------------- boutons sur la carte (frame/INTEGRATION.md § 9.3)
   // Couches à gauche ; Vol, Détails, Charger et la puce d'altitude à droite (le plein écran y est ajouté par le cadre)

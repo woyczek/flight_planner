@@ -15,6 +15,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Fuel: an impossible plan lists the engine's proposals apart** (`modules/fuel/route_engine.js`, `module.js`; Fuel SPEC § 9.3,
   INTEGRATION, DECISIONS, help; noreg F125; SOG-0161). « Calculer » asks `proposals: true`; the fallback proposals come under
   « Propositions non validées », each with its share and sections, never said checked; « Prendre » says « à vérifier ».
+
+- **Météo: « World synoptic missing · Build (2 min) »** (`modules/atmosphere/world_build.js`, `module.js`, `lib/weather_map.js`, `texts.js`, `style.js`,
+  `frame/lib/weather_store.js` `world(null, { fresh })`; SPEC § 4.4, DECISIONS, frame INTEGRATION § 14, help ×4; noreg E18; SOG-0138 refused). Without a
+  world synoptic or with one more than 12 h old, a line on the map offers the launcher's `weather/world` build, follows it (n/25) and reads the layer
+  again at the end; a failure says why with « Try again »; without a launcher it says where to do it.
+
 - **Missions: the sheet gives the summary before the risks** (`modules/missions/module.js`; Missions SPEC, DECISIONS, help; noreg N9;
   SOG-0051 refused). Two lines at most after the category, on every mission; « Volée le … » moves to the category line.
 - **Fuel: « Changer » drawn at the size of the text** (`modules/fuel/module.js`; Fuel SPEC § 9.2, DECISIONS; noreg F122). The aircraft

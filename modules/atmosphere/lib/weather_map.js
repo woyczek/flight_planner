@@ -917,6 +917,24 @@ export function createWeatherMap({
       if ('colors' in partial) geo = wgeo = null;
       readGrid();
     },
+    /** Relit le synoptique monde tout de suite (le lanceur vient de le construire, SOG-0138) : l'index, puis ses échéances ; rend la promesse. */
+    reloadWorld() {
+      worldReading = true;
+      worldAsked = Date.now();
+      return weather.world(null, {
+        fresh: true
+      }).then(w => {
+        if (!alive) return;
+        world = w;
+        wgeo = wfields = null;
+        wsteps.clear();
+        wasked.clear();
+        wfailed.clear();
+      }, () => {}).finally(() => {
+        worldReading = false;
+        if (alive) changed();
+      });
+    },
     /** Relit la réserve même si rien n'a changé (après un « Charger »). */
     reload() {
       gridKey = '';
