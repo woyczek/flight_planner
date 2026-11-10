@@ -187,6 +187,43 @@ export const TX = {
   progEnable: ['Activer la position', 'Enable the position', 'Position aktivieren', 'Activar la posición'],
   progArrived: ['Arrivé', 'Arrived', 'Angekommen', 'Llegado'],
   progDiverted: ['Déroutement vers {a}', 'Diverted to {a}', 'Ausweichlandung in {a}', 'Desviado a {a}'],
+  // la fiche d'un espace (SOG-0163)
+  spOpen: ['voir la fiche', 'see the sheet', 'Blatt anzeigen', 'ver la ficha'],
+  spTypes: {
+    R: ['zone réglementée', 'restricted area', 'Beschränkungsgebiet', 'zona restringida'],
+    D: ['zone dangereuse', 'danger area', 'Gefahrengebiet', 'zona peligrosa'],
+    P: ['zone interdite', 'prohibited area', 'Sperrgebiet', 'zona prohibida'],
+    TSA: ['zone temporaire ségréguée', 'temporary segregated area', 'temporär abgetrenntes Gebiet', 'zona segregada temporal'],
+    TRA: ['zone temporaire réservée', 'temporary reserved area', 'temporär reserviertes Gebiet', 'zona reservada temporal'],
+    other: ['espace aérien', 'airspace', 'Luftraum', 'espacio aéreo']
+  },
+  spProhibited: ['interdit', 'prohibited', 'verboten', 'prohibido'],
+  spLimits: ['Limites', 'Limits', 'Grenzen', 'Límites'],
+  spClass: ['classe {c}', 'class {c}', 'Klasse {c}', 'clase {c}'],
+  spActAzba: ['Activation publiée par l’AZBA', 'Activation published by the AZBA', 'Aktivierung von der AZBA veröffentlicht',
+    'Activación publicada por la AZBA'
+  ],
+  spActNotam: ['Activation publiée par NOTAM', 'Activation published by NOTAM', 'Aktivierung per NOTAM veröffentlicht',
+    'Activación publicada por NOTAM'
+  ],
+  spActivity: ['Activité publiée', 'Published activity', 'Veröffentlichte Aktivität', 'Actividad publicada'],
+  spHours: ['Horaires publiés', 'Published hours', 'Veröffentlichte Zeiten', 'Horarios publicados'],
+  spNoHours: ['Horaires publiés : non relevés dans cette base pour cet espace',
+    'Published hours: not carried by this database for this area',
+    'Veröffentlichte Zeiten: in dieser Datenbank für dieses Gebiet nicht enthalten',
+    'Horarios publicados: no recogidos en esta base para este espacio'
+  ],
+  spRemarks: ['Conditions et remarques de l’AIP', 'AIP conditions and remarks', 'Bedingungen und Bemerkungen des AIP',
+    'Condiciones y observaciones del AIP'
+  ],
+  spWho: ['Organisme et fréquence', 'Unit and frequency', 'Stelle und Frequenz', 'Organismo y frecuencia'],
+  spSource: ['Source', 'Source', 'Quelle', 'Fuente'],
+  spActual: ['Activité réelle non connue : horaires publiés seulement (ni NOTAM ni AZBA lus).',
+    'Actual activity not known: published hours only (neither NOTAM nor AZBA read).',
+    'Tatsächliche Aktivität unbekannt: nur veröffentlichte Zeiten (weder NOTAM noch AZBA gelesen).',
+    'Actividad real no conocida: solo horarios publicados (ni NOTAM ni AZBA leídos).'
+  ],
+  spMore: ['{n} autres', '{n} more', '{n} weitere', '{n} más'],
   altTitle: ['Itinéraires proposés', 'Proposed routes', 'Vorgeschlagene Routen', 'Rutas propuestas'],
   altCheck: ['Route contrôlée', 'Checked route', 'Geprüfte Route', 'Ruta comprobada'],
   altChosen: ['prise', 'taken', 'gewählt', 'elegida'],

@@ -100,6 +100,9 @@ import {
   groundChanged
 } from './ground.js';
 import {
+  lvEvents
+} from './lv.js';
+import {
   altsStart
 } from './alts.js';
 
@@ -351,6 +354,7 @@ export async function mount(el, ctx) {
   schedule();
   if (!S.missionId) S.stops.push(...watchFlight());
   S.stops.push(altsStart()); // les itinéraires que Carburant propose (SOG-0134 a)
+  S.stops.push(lvEvents()); // la fiche d'un espace de la liste (SOG-0163)
   if (ctx.aerodb?.on) S.stops.push(ctx.aerodb.on('change', e => {
     if (!S || (e?.aircraft && !e.zone && !e.changed)) return; // la base appareils ne touche pas la carte
     if (e?.ground) groundChanged(e.ground); // le sol d'un terrain lu à la suite de ses procédures : le panneau Sol le relit

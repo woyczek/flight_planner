@@ -486,7 +486,8 @@
         upper: c.a.upper || 'UNL',
         cls: c.a.cls || '',
         act: c.a.act || '',
-        info: c.a.info || ''
+        info: c.a.info || '',
+        a: c.a // l'enregistrement complet : la fiche de l'espace (SOG-0163)
       }))
     };
   }

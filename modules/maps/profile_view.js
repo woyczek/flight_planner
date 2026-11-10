@@ -3,6 +3,9 @@
 // route), la ligne sous le profil, la fenêtre sur l'axe des distances (lib/axis_window.js) partagée avec la coupe météo.
 
 import {
+  openSpace
+} from './lv.js';
+import {
   ensureWinds
 } from './weather.js';
 import {
@@ -464,5 +467,22 @@ export function profileEvents() {
   });
   S.profBox.addEventListener('pointerdown', onProf);
   S.profBox.addEventListener('pointermove', onProf);
+  // un appui sur un bloc d'espace du profil : sa fiche (SOG-0163) — le bloc dont les limites contiennent l'altitude touchée, le plus étroit
+  // d'abord ; un appui ailleurs ne fait que placer le curseur
+  S.profBox.addEventListener('click', e => {
+    const g = S.geo;
+    if (!g || S.axw.active || S.edit.on || S.dpanel || !S.prof) return;
+    const r = S.profBox.getBoundingClientRect(),
+      ft = g.bottom + (1 - (e.clientY - r.top - g.padT) / (g.H - g.padT - g.padB)) * (g.top - g.bottom),
+      SA = window.SiaAero,
+      zones = MapsProfile.at(S.prof, S.cursor).zones.filter(z => z.a),
+      lo = a => SA?.limitFt?.(a.lower, false) || 0,
+      up = a => {
+        const v = SA?.limitFt?.(a.upper, true);
+        return Number.isFinite(v) ? v : Infinity;
+      },
+      hit = zones.filter(z => ft >= lo(z.a) && ft <= up(z.a)).sort((x, y) => (up(x.a) - lo(x.a)) - (up(y.a) - lo(y.a)))[0];
+    if (hit) openSpace(hit.a, zones.map(z => z.a));
+  });
   return [() => S.axw.stop()];
 }

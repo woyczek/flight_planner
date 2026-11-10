@@ -3881,6 +3881,7 @@ def d126(c):
     c.js(ev, doc)
     c.until("() => (window.__mp.S.altHits || []).length === 2", timeout=6000, what='drawn again')
     # a tap on the second route takes it: a Map alone goes to Fuel with the index
+    c.wait(500)   # the last drawing settles (a loaded machine redraws after the event): the touch targets are those of the image
     p = c.js("""() => { const S = window.__mp.S, h = S.altHits.find(x => x.index === 1), m = h.q[1], r = S.box.getBoundingClientRect(); return { x: r.left + (m.x + h.q[2].x) / 2, y: r.top + (m.y + h.q[2].y) / 2 } }""")
     c.page.mouse.click(p['x'], p['y'])
     c.until("() => location.hash.includes('ralt=1')", timeout=6000, what='a tap on a route takes it: #fuel?ralt=1')
@@ -3891,6 +3892,7 @@ def d126(c):
     c.js("""() => { window.__picked = []; window.addEventListener('maps-route-alt', e => window.__picked.push(e.detail)); const S = window.__mp.S; S.ctx = { ...S.ctx, query: { ...S.ctx.query, pane: '1' } }; return true }""")
     c.js(ev, doc)
     c.until("() => (window.__mp.S.altHits || []).length === 2", timeout=8000, what='drawn in the pane')
+    c.wait(500)
     c.eq(c.js("() => !!document.querySelector('.mp-alts') && !document.querySelector('.mp-alts').hidden"), False, 'beside Fuel the list is Fuel’s: not repeated over the map', what='list in a pane')
     p = c.js("""() => { const S = window.__mp.S, h = S.altHits.find(x => x.index === 1), m = h.q[1], r = S.box.getBoundingClientRect(); return { x: r.left + (m.x + h.q[2].x) / 2, y: r.top + (m.y + h.q[2].y) / 2 } }""")
     c.page.mouse.click(p['x'], p['y'])
@@ -4040,3 +4042,68 @@ def d130(c):
     c.ok(r['same'], str(r), 'the spaces kept are those of the complete test')
     c.ok(r['n2'] > 20 and r['same2'], str(r), 'the same at 66 N, where the longitude margin matters')
     c.ok(r['ms'] < 400, f"{r['ms']:.0f} ms", 'a long route among 3 000 spaces: under 400 ms (the complete test took seconds on the user’s base)')
+
+
+_SPACE_CLICK_JS = """(ft) => { const S = window.__mp.S, g = S.geo, cr = S.prof.crossed.find(x => x.a.type === window.__want), n = S.prof.samples.length - 1;
+  const s = S.prof.total * ((cr.i0 + cr.i1) / 2) / n, r = S.profBox.getBoundingClientRect();
+  const x = r.left + g.padL + (g.W - g.padL - g.padR) * (s - (g.w0 || 0)) / ((g.w1 ?? g.total) - (g.w0 || 0));
+  const y = r.top + g.padT + (g.H - g.padT - g.padB) * (1 - (ft - g.bottom) / (g.top - g.bottom)); return { x, y } }"""
+
+
+def _click_until(c, point, cond, what, tries=3):
+    """A click that a loaded machine may lose (a redraw between the target’s measure and the click): measured and clicked again, up to three times."""
+    for k in range(tries):
+        pt = point()
+        c.page.mouse.click(*pt)
+        try:
+            c.until(cond, timeout=4000, what=what)
+            return
+        except Exception:
+            if k == tries - 1:
+                raise
+
+
+@case('D131', 'The sheet of an R or D space: a tap on its block in the profile (or on its row of the list on the map) opens its published data, and says frankly that the real activity is not known', 'D',
+      tags=('maps', 'sheet'), designs=('standard',), night=False, screens=False, langs4=True,
+      rule='V3 (SOG-0163, ergonomics 10 Nov): a click or a tap, not a hover (no hover with a finger, conditions run to several lines): name and type, limits, the activation published (AZBA, NOTAM), the hours and the AIP conditions and remarks as published, unit and frequency, source and date, and « actual activity not known: published hours only »; a P says « prohibited »; seven lines then « n more »')
+def d131(c):
+    ring = lambda la0, la1, lo0, lo1: [[la0, lo0], [la0, lo1], [la1, lo1], [la1, lo0], [la0, lo0]]
+    zones = [{'type': 'R', 'cls': '', 'name': '61', 'key': 'LFR61', 'lower': 'SFC', 'upper': 'FL115', 'azba': True, 'act': 'AZBA', 'admin': 'CCER Bordeaux',
+              'info': 'BORDEAUX ESSAIS 122.9', 'src': 'sia', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]},
+             {'type': 'P', 'cls': '', 'name': '9', 'key': 'LFP9', 'lower': 'SFC', 'upper': 'FL115', 'src': 'sia', 'rings': [ring(44.6, 45.4, 1.9, 2.4)]}]
+    c.open('maps', docs=fdocs(_awy_flight()) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airspaces=zones, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.until("() => !!(window.__mp.S && window.__mp.S.prof && window.__mp.S.prof.crossed.some(x => x.a.type === 'R') && window.__mp.S.prof.crossed.some(x => x.a.type === 'P'))", timeout=15000,
+            what='the profile crosses the R and the P')
+    c.wait(500)
+    # a tap on the R's block in the profile
+    c.js("() => { window.__want = 'R'; return true }")
+    _click_until(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(_SPACE_CLICK_JS, 5000)),
+                 "() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && k.textContent.length > 20 }", 'the sheet of the R opens from its block')
+    t = c.js("() => document.querySelector('.mp-sp-card').textContent")
+    c.ok('R 61' in t, t, 'the sheet names the space: type and name')
+    c.ok('CCER Bordeaux' in t and 'BORDEAUX ESSAIS 122.9' in t, t, 'unit and frequency as the base carries them')
+    c.ok('AZBA' in t, t, 'the activation published by the AZBA')
+    c.ok('NOTAM' in t and re.search(r'(not known|non connue|unbekannt|no conocida)', t), t, 'and a frank line: the real activity is not known (neither NOTAM nor AZBA read)')
+    c.ok(re.search(r'(SIA)', t), t, 'the source')
+    # the same sheet from the map: the list of the spaces at a point, a row opened
+    c.js("() => { window.__mp.S.dpanel && 0; return true }")
+    c.js("() => { const b = document.querySelector('.f-sheet-close'); if (b) b.click(); return true }")
+    c.wait(400)
+    _click_until(c, lambda: xy(c, 44.65, .8), "() => document.querySelectorAll('.mp-lv-list li[data-i]').length >= 1", 'the list of the spaces at this point on the map')
+    c.tap('.mp-lv-list li[data-i]')
+    c.until("() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && /R 61/.test(k.textContent) }", timeout=6000, what='a row of the list opens the sheet')
+    # a P says « prohibited »
+    c.js("() => { const b = document.querySelector('.f-sheet-close'); if (b) b.click(); return true }")
+    c.wait(400)
+    c.js("() => { window.__want = 'P'; return true }")
+    _click_until(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(_SPACE_CLICK_JS, 5000)),
+                 "() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && /P 9/.test(k.textContent) }", 'the sheet of the P opens')
+    t = c.js("() => document.querySelector('.mp-sp-card').textContent")
+    c.ok(re.search(r'(prohibited|interdit|verboten|prohibido)', t, re.I), t, 'a P says it is prohibited')
+    # seven lines, then « n more » (the base will carry hours and remarks: the card is ready for them)
+    many = c.js("""async () => { const L = await import('/modules/maps/lv.js'); return L.spaceCardHtml({ type: 'R', name: '61', lower: 'SFC', upper: 'FL115', act: 'AZBA', admin: 'CCER', info: '122.9', src: 'sia',
+      hours: ['H24', 'MON-FRI 0700-1700', 'SAT 0800-1200'], rem: ['Remark one', 'Remark two', 'Remark three'] }) }""")
+    c.ok('<details>' in many and many.count('<p>') >= 8 and 'MON-FRI 0700-1700' in many and 'Remark two' in many, many[:300], 'hours and remarks as published; seven lines, then « n more »')

@@ -2064,6 +2064,26 @@ the Map had seen in between: the same line to within the frame's own sampling.
   « not drawn »), D114 (cost under 16 ms, the light drawing's lines). The fixture `tests/v3/fixtures/ground_LFPO.json` is made from
   OSM data (595 items); the noreg never reads the public instance.
 
+## The sheet of an airspace (10 Nov 2026, SOG-0163)
+
+- **Asked** (the user, 9 h 15): « un moyen d'avoir le texte pour les espaces R (R61 : est-ce actif, quelles conditions ?), D ; au survol sur le
+  profil vertical, ou au clic ? ». Ergonomics answer: **the click, not the hover** (no hover on a finger; conditions make several lines);
+  the mouse hover keeps today's short label. R and D first, P says « prohibited ».
+- **What the base carries today** (the FR SIA base, 2 559 spaces): R 630 (`admin` 432, `info` 415, `act` 93 « AZBA »), D 129 (`act` 12 « NOTAM »,
+  `admin` 80), P 115; **no hours and no AIP remarks**. So the sheet shows what exists and says what is missing (« published hours: not
+  carried by this database »); it is ready for `hours` / `sched` and `rem` / `remarks` (the names AeroDB will give them are not known: to
+  align when its reading lands).
+- **Done**: `spaceCardHtml` (`lv.js`); a row of the list on the map (the existing « n spaces at this point ») opens it under the chart; a tap on a
+  block of the profile opens the list of the spaces crossed there with the touched one open (the altitude under the finger picks the block,
+  the narrowest first; `MapsProfile.at` now carries the full record, `a`). Seven lines, then « n more ».
+- **Choices of mine**: (1) the sheet replaces the profile in the sheet like the list does (✕ goes back), no new sheet kind; (2) the tap on
+  the profile still places the cursor first (it is the same gesture); (3) the date is the base's cycle (`aerodb.status().cycle`), asked when the
+  sheet opens; (4) R, D, TSA and TRA carry the « actual activity not known » line (their activity varies), the others do not.
+- **Not done**: the hours and remarks themselves (AeroDB's reading, D4); no NOTAM or AZBA reading; the real SIA text of R 61 was not
+  looked at on his base (the synthetic spaces of the case); the profile's block under a finger on a phone is not measured (44 px rows
+  yes, the block is the drawn block).
+- **Noreg** D131 (R: from its block in the profile, from its row on the map; the P; seven lines then « n more »; red without the code).
+
 ## A far point does not slow the Map down (9 Nov 2026, SOG-0156)
 
 - **Seen** (the user, 18 h 15): « un point très loin, comme PAM aux États-Unis, fait vraiment ramer la carte si elle est affichée en side ».

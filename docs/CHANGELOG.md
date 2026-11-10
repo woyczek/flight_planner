@@ -18,6 +18,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   is checked in the background (a list asked while the repository takes 1.5 s: 0 ms instead of 1 514 ms). The launcher's own cost per call is AeroDB's.
 
 - **Roadmap: it opens on « Priorités » — three columns (in integration, in development, backlog), flat cards by rank, the theme as a label; « Par thème » is the read-only lanes** (`frame/help/roadmap.js`, `frame.css`; frame/help SPEC § 5; A114, A101) — SOG-0160: a card is dragged above any card or onto a column (the milestone of the column is written with the rank); on a phone one column at a time with Monter, Descendre, Envoyer vers….
+
+- **Map: the sheet of an airspace — a tap on a space in the profile, or on its row on the map, opens its published data** (`modules/maps/lv.js`, `profile.js`,
+  `profile_view.js`, `module.js`, `texts.js`, `style.js`; SPEC § 10; noreg D131; SOG-0163). Name and type (a P says « prohibited »), limits, the
+  activation published (AZBA, NOTAM), hours and AIP conditions when the base carries them, unit and frequency, source and date, and for R, D, TSA,
+  TRA a frank line: actual activity not known, published hours only. Seven lines, then « n more ». The SIA base does not carry hours or remarks yet:
+  the sheet says so.
+
 - **Map: a long route no longer freezes the map for seconds after the view's data are read** (`modules/maps/render_airspace.js`; noreg D130; SOG-0156). Traced on the
   user's real base (read-only): a single 2.8 s task, in the selection of the airspaces along the route (every route sample tested against
   every vertex of every airspace). Only the samples that can touch a space are tested now, with the same result: 1 286 ms → 45 ms for

@@ -55,6 +55,79 @@ function sameFamilyOverlap(list, read) {
   }
   return [...floors.values()].some(s => s.size > 1);
 }
+/** Sept lignes au plus dans la fiche, puis « n autres » (SOG-0163). */
+const CARD_LINES = 7;
+/** Une valeur de la base en lignes de texte : une chaîne, ou une liste de chaînes (bornées, sans balise) ; rien sinon. */
+const linesOf = v => (Array.isArray(v) ? v : [v]).filter(x => typeof x === 'string' && x.trim()).slice(0, 12).map(x => x.replace(
+  /[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 400));
+/** La fiche d'un espace (SOG-0163 ; un clic ou un appui sur sa ligne de la liste, ou sur son bloc du profil) : nom et type, limites, activité et
+ *  horaires publiés, conditions et remarques de l'AIP telles quelles, organisme et fréquence, source et date, et une phrase franche sur
+ *  l'activité réelle. Ne dit que ce que la base porte (AeroDB relève ce que chaque source donne) ; un P dit « interdit ». */
+export function spaceCardHtml(a) {
+  const type = String(a.type || ''),
+    live = ['R', 'D', 'TSA', 'TRA'].includes(type), // les espaces dont l'activité varie
+    lim = a.lower == null && a.upper == null ? '' : `${MapsRender.siaLimit(a.lower)} | ${MapsRender.siaLimit(a.upper)}`,
+    act = String(a.act || '').toUpperCase(),
+    hours = linesOf(a.hours ?? a.sched),
+    rem = linesOf(a.rem ?? a.remarks),
+    who = [a.admin, a.info].filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()).join(' · '),
+    L = [];
+  L.push(`<b>${esc([type, a.name].filter(Boolean).join(' '))}</b> · ${esc(tt(TX.spTypes[type] || TX.spTypes.other))}${type === 'P' ? ` — <b class="mp-sp-no">${esc(tt(TX.spProhibited))}</b>` : ''}`);
+  if (lim || a.cls) L.push(`${esc(tt(TX.spLimits))} : ${esc([lim, a.cls ? tt(TX.spClass, {
+    c: a.cls
+  }) : ''].filter(Boolean).join(' · '))}`);
+  if (act === 'AZBA' || a.azba) L.push(esc(tt(TX.spActAzba)));
+  else if (act === 'NOTAM') L.push(esc(tt(TX.spActNotam)));
+  else if (act) L.push(`${esc(tt(TX.spActivity))} : ${esc(act)}`);
+  if (hours.length) L.push(...hours.map(h => `${esc(tt(TX.spHours))} : ${esc(h)}`));
+  else if (live) L.push(esc(tt(TX.spNoHours)));
+  if (rem.length) L.push(...rem.map(h => `${esc(tt(TX.spRemarks))} : ${esc(h)}`));
+  if (who) L.push(`${esc(tt(TX.spWho))} : ${esc(who)}`);
+  L.push(`<span class="mp-sp-src">${esc(tt(TX.spSource))} : ${esc(String(a.src || '?').toUpperCase())} <span class="mp-sp-cyc"></span></span>`);
+  if (live) L.push(`<span class="mp-sp-real">${esc(tt(TX.spActual))}</span>`);
+  const shown = L.slice(0, CARD_LINES),
+    more = L.slice(CARD_LINES);
+  return `<div class="mp-sp-lines">${shown.map(x => `<p>${x}</p>`).join('')}</div>${more.length ? `<details><summary>${esc(tt(TX.spMore, {
+    n: more.length
+  }))}</summary>${more.map(x => `<p>${x}</p>`).join('')}</details>` : ''}`;
+}
+/** Une ligne de la liste ouvre la fiche de son espace sous elle (la fiche en place, l'autre se ferme) ; la date de la base se lit une fois. */
+export function lvEvents() {
+  const body = S.dbodyEl,
+    click = e => {
+      const li = e.target.closest?.('.mp-lv-list li[data-i]');
+      if (!li || S?.dpanel !== 'lv') return;
+      const a = (S.lvList || [])[+li.dataset.i],
+        card = body.querySelector('.mp-sp-card');
+      if (!a || !card) return;
+      const open = li.dataset.open === '1';
+      for (const x of body.querySelectorAll('.mp-lv-list li[data-open="1"]')) x.dataset.open = '0';
+      card.hidden = open;
+      if (open) return;
+      li.dataset.open = '1';
+      fillCard(card, a);
+    };
+  body.addEventListener('click', click);
+  body.addEventListener('keydown', e => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('.mp-lv-list li[data-i]')) {
+      e.preventDefault();
+      click(e);
+    }
+  });
+  return () => body.removeEventListener('click', click);
+}
+/** La fiche écrite (et la date de la base, quand AeroDB la donne). */
+function fillCard(card, a) {
+  card.innerHTML = spaceCardHtml(a);
+  card.hidden = false;
+  card.scrollIntoView({
+    block: 'nearest'
+  }); // la fiche sous le graphique : la feuille la montre
+  Promise.resolve(S.ctx?.aerodb?.status?.()).catch(() => null).then(st => {
+    const el = card.querySelector('.mp-sp-cyc');
+    if (el && st?.cycle) el.textContent = `(${String(st.cycle).slice(0, 10)})`;
+  });
+}
 export function levelsHtml(list, bw = 360, bh = 200, also = [], el = null) {
   bh -= also?.length ? 56 : 0; // la ligne repliée « Aussi ici » (44 px + son espacement) reste dans la vue, sous le graphique
   // la même lecture des limites que la coupe verticale (SiaAero.limitRead) : « 800 ASFC » est 800 ft au-dessus du sol, pas le sol
@@ -141,10 +214,10 @@ export function levelsHtml(list, bw = 360, bh = 200, also = [], el = null) {
       deduced = x.capped === 'classA' ? tt(TX.ceilingDeduced) : '',
       tail = [lim, x.cls, deduced].filter(Boolean).join(' · '),
       note = [x.act, x.info, deduced].filter(Boolean).join(' · ');
-    return `<li${note ? ` title="${esc(note)}"` : ''}><span class="mp-lv-n" style="color:${r.col}">${i + 1}</span><span class="mp-lv-txt"><b class="mp-lv-name">${esc(name)}</b>${tail ? `<span class="mp-lv-lim f-muted">${esc(tail)}</span>` : ''}</span></li>`;
+    return `<li data-i="${i}" data-open="${S.lvOpen && S.lvOpen === x ? 1 : 0}" tabindex="0" role="button" aria-label="${esc(`${name} — ${tt(TX.spOpen)}`)}"${note ? ` title="${esc(note)}"` : ''}><span class="mp-lv-n" style="color:${r.col}">${i + 1}</span><span class="mp-lv-txt"><b class="mp-lv-name">${esc(name)}</b>${tail ? `<span class="mp-lv-lim f-muted">${esc(tail)}</span>` : ''}</span></li>`;
   }).join('');
   const fam = sameFamilyOverlap(list, read) ? `<p class="f-muted mp-lv-fam">${esc(tt(TX.levelsFamily))}</p>` : '';
-  return `<div class="mp-lv-body"><svg class="mp-lv" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt(TX.levelsAxis))}">${svg}</svg><ol class="mp-lv-list">${items}</ol></div>${fam}${alsoHtml(also)}`;
+  return `<div class="mp-lv-body"><svg class="mp-lv" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt(TX.levelsAxis))}">${svg}</svg><ol class="mp-lv-list">${items}</ol></div>${fam}${alsoHtml(also)}<div class="mp-sp-card f-card"${S.lvOpen ? '' : ' hidden'} aria-live="polite">${S.lvOpen ? spaceCardHtml(S.lvOpen) : ''}</div>`;
 }
 /** Ligne repliée sous la liste : les espaces écartés du point (FIR, UIR, SIV, secteurs, surface au plafond), par leur nom, sans
  *  colonne ni compte dans le titre (règle 21 amendée). Rien quand il n'y en a pas ; repliée à chaque écriture. */
@@ -163,10 +236,19 @@ export function showLv() {
     also = S.lvAlso || [];
   if (!list?.length) return;
   releaseAd();
-  openData('lv', `lv:${list.map(a => a.id || a.name || '').join('|')}#${also.join('|')}`, list.length === 1 ? tt(TX.levelsTitle1) : tt(
+  openData('lv', `lv:${list.map(a => a.id || a.name || '').join('|')}#${also.join('|')}@${S.lvOpen ? S.lvOpen.key || S.lvOpen.name || '' : ''}`, list.length === 1 ? tt(TX.levelsTitle1) : tt(
     TX.levelsTitle, {
       n: list.length
     }), (w, h, el) => levelsHtml(list, w, h, also, el));
+  const card = S.lvOpen && S.dbodyEl?.querySelector('.mp-sp-card');
+  if (card) fillCard(card, S.lvOpen); // la date de la base s'ajoute à la fiche ouverte d'emblée
+}
+/** La fiche d'un espace du profil (un appui sur son bloc, SOG-0163) : la liste des espaces traversés à cette distance, la fiche de celui-ci ouverte. */
+export function openSpace(a, list) {
+  S.lvList = list;
+  S.lvAlso = [];
+  S.lvOpen = a;
+  showLv();
 }
 /** Espaces au point (lat, lon), sans ceux de la surface au plafond (nommés dans « Aussi ici », pas sur une carte de mission) :
  *  leur liste ouverte dans la feuille ; faux s'il n'y en a aucun (SPEC § 10). */
@@ -178,6 +260,7 @@ export function showLvAt(lat, lon) {
   if (!shown.length) return false;
   S.lvList = shown;
   S.lvAlso = onMission() ? [] : also;
+  S.lvOpen = null; // les fiches s'ouvrent par un appui sur une ligne
   showLv();
   return true;
 }

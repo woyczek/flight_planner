@@ -1074,6 +1074,16 @@ cursor until all fingers are up.
   most three lines, ending with a muted line "Aussi ici : FIR PARIS · SIV POITIERS" (without the hovered space); no SIV /
   FIR among the named spaces; not added to a touch.
 
+- **The sheet of a space** (SOG-0163, 10 Nov): a tap on a row of the list above, or on a space's block in the profile (`click` on the
+  profile: the block whose limits hold the touched altitude, the narrowest first; the list is then the spaces crossed at the cursor), opens
+  under the chart `spaceCardHtml(a)` (`lv.js`) — a click, not a hover: no hover on a finger, and conditions run to several lines. Lines:
+  name and type (a **P says « prohibited »**), limits and class, the activation published (`act`: AZBA, NOTAM; `azba`), the hours (`hours` /
+  `sched`, when the base carries them: else « published hours: not carried by this database » for R, D, TSA, TRA), AIP conditions and
+  remarks (`rem` / `remarks`) as published, unit and frequency (`admin` · `info`), source (`src`) and the base's cycle date, and for R, D,
+  TSA, TRA the frank line « actual activity not known: published hours only (neither NOTAM nor AZBA read) ». Seven lines, then « n more »
+  (`<details>`). The text of the base is bounded and stripped of markup. Today's SIA base carries `act`, `admin`, `info`, `azba`, `src` and
+  no hours nor remarks (AeroDB, SOG-0163, reads what each source gives): the sheet shows what exists and says what does not. Noreg D131.
+
 ## 11. Tooltip
 
 A light `.mp-tip` (class `mp-hover`: `--sog-chart-bg` at 65 %, `--sog-fg`, thin border, 11.5 px, three lines at most) in
