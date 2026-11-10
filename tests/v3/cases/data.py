@@ -4517,6 +4517,7 @@ def l53(c):
     _all_open(c)
     _zmap_ready(c, 'base')
     c.until("!!document.querySelector('[data-pack-switch=ouest]')", timeout=8000, what='the switches')
+    c.js("document.querySelector('[data-packs-fold]').open = true")   # « Paquets de pays » is folded when the screen opens (SOG-0228)
     tone = lambda z: (_zfeat(c, 'base', z) or {}).get('tone')
     # ---- the packs are beside the map, with the list (wide) or under it (phone): the same cell as the list
     c.eq(c.js("!!document.querySelector('.d-choice [data-packs]')"), True, 'the packs are in the choice, beside the map and with the list', what='in choice')
@@ -4525,7 +4526,7 @@ def l53(c):
     c.wait(400)
     base_fr = tone('fr')
     c.js("document.querySelector('[data-pack=ouest]').scrollIntoView({ block: 'center' })")
-    c.page.hover('[data-pack=ouest] label')
+    c.page.hover('[data-pack=ouest] .d-packname', force=True)
     c.wait(400)
     c.eq([tone('fr'), tone('gb')], ['accent', 'accent'], 'hovering Western Europe lights fr and gb on the map', what='hover')
     c.page.mouse.move(5, 5)
@@ -4961,7 +4962,7 @@ def l62(c):
     one = r"'((?:[^'\\]|\\.)*)'"
     unq = lambda x: re.sub(r"\\(.)", r"\1", x)
     # the buttons (and the boxes) of the screen: the keys whose 4 strings are a label; every occurrence of a key counts
-    labels = ['download', 'build', 'purge', 'pickup', 'publish', 'stop', 'addZone', 'pickupReplan', 'updateAll', 'update', 'recompute', 'selStale', 'selNone', 'certify', 'licencesLink', 'retry', 'balShowAll']
+    labels = ['download', 'build', 'purge', 'pickup', 'publish', 'stop', 'addZone', 'pickupReplan', 'updateAll', 'update', 'recompute', 'selStale', 'selNone', 'certify', 'licencesLink', 'retry', 'balShowAll', 'choose']   # « Choisir le fichier… » (SOG-0199: the button on the line of a zone that waits for a file or whose download was refused)
     allowed = set()
     for k in labels:
         for m in re.finditer(r"^\s*" + k + r": \[\s*" + one + r",\s*" + one + r",\s*" + one + r",\s*" + one, src, re.M):
