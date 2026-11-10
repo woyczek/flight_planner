@@ -5213,3 +5213,76 @@ def a127(c):
     c.until("document.querySelector('[data-wizard]').dataset.step === 'done'", timeout=8000, what='created later')
     c.eq((c.doc('airline/bravo/fleet.json') or {}).get('aircraft'), [], 'an empty fleet, to fill later', what='empty fleet')
     c.check_errors()
+
+
+@case('A128', 'Settings › Company › « Rejoindre une compagnie » (SOG-0041, step B4): the fleet page of the website pasted, read on this device and SHOWN before anything is written, then settings, fleet and the index last; an airline already in the list is not joined again; the page is untrusted', 'A', langs4=True, tags=('airline',),
+      designs=('standard',), screens=True, night=False,
+      rule='V3_SPECIFICATION § 10.38 bis, use case 2 (accepted): « Rejoindre » = paste the fleet page (the Website module\u2019s own parser), see « n appareils · m opérateurs », the name and the code proposed, the kind (squadron by default), networks, the address of the site (https, optional); « Rejoindre » writes the settings (kind, site), the fleet read and the index last, never over an existing file; an airline already listed is refused with the way to refresh it; hostile text stays text')
+def a128(c):
+    lang = c.lang
+    sj = 'frame/settings/access.js'
+    T = lambda k: tx(sj, k, lang, after='const TA = {')
+    evil = '<img src=x onerror=window.__pwn=1>'
+    page = '\n'.join(['SO Group',
+                      'A400M Atlas\tF-RBAA\t01\t1\tCOTAM1\tLFOB\tLFOB\t-\toui',
+                      'A400M Atlas\tF-RBAB\t02\t2\tCOTAM2/COTAM3\tLFOB\tLFOB\t-\toui',
+                      'Autre Escadre',
+                      'C130J Hercules\tF-RJAA\t03\t3\tHERC1\tLFRK\tLFRK\t-\tnon',
+                      evil,
+                      'PC12 Pilatus\tF-ZZZZ\t04\t4\t-\tLFRN\tLFRN\t-\toui'])
+    docs = [['device/level.json', {'level': 3}, 'cache'],
+            ['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}]}, 'document'],
+            ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'networks': {'ivao': True}, 'kind': 'va'}, 'document'],
+            ['airline/aaa/fleet.json', {'schema': 1, 'aircraft': []}, 'document']]
+    c.page.add_init_script("""(() => { let fd; window.__puts = []; Object.defineProperty(window, 'FrameData', { configurable: true, get: () => fd, set: v => { fd = v; const a = v.adapter; v.adapter = function () { const ad = a.apply(this, arguments); const put = ad.put; ad.put = async function (p) { window.__puts.push(p); return put.apply(this, arguments) }; return ad } } }) })()""")
+    c.open('settings?card=company', docs=docs)
+    c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length === 2 && !!document.querySelector('[data-join]')", timeout=15000, what='the card and the joining assistant')
+    c.js("document.querySelector('[data-airline-join]').open = true")
+    step = lambda: c.js("document.querySelector('[data-join]').dataset.step")
+    msg = lambda: norm(c.text('[data-join] [data-jn-msg]'))
+    # ---- nothing pasted: said
+    c.tap('[data-act="companyJnNext"]')
+    c.until("document.querySelector('[data-join] [data-jn-msg]').textContent.trim() !== ''", timeout=6000, what='a refusal')
+    c.eq([msg(), step()], [norm(T('jnEmpty')), 'site'], 'nothing pasted: said, still on the page step', what='empty')
+    c.page.fill('[data-join] [data-f="jn-page"]', 'Opérateur\nrien qui ressemble à une flotte')
+    c.tap('[data-act="companyJnNext"]')
+    c.until("document.querySelector('[data-join] [data-jn-msg]').textContent.trim() !== ''", timeout=6000, what='nothing readable')
+    c.eq([msg(), step()], [norm(T('jnNone')), 'site'], 'a page with no aircraft: said', what='none')
+    # ---- the page is read and shown before anything is written
+    c.page.fill('[data-join] [data-f="jn-page"]', page)
+    c.tap('[data-act="companyJnNext"]')
+    c.until("document.querySelector('[data-join]').dataset.step === 'read'", timeout=8000, what='what was read')
+    parsed = c.js("(page) => import('/modules/website/model.js').then(m => { const l = m.parseFleet(page); const ops = {}; for (const a of l) ops[a.operator] = (ops[a.operator] || 0) + 1; return [l.length, Object.keys(ops).length, Object.entries(ops).sort((x, y) => y[1] - x[1])[0][0]] })", page)
+    c.eq(norm(c.text('[data-join] [data-jn-counts]')), norm(T('jnCounts').replace('{n}', str(parsed[0])).replace('{m}', str(parsed[1]))), 'the number of aircraft and of operators, as the Website parser reads them', what='counts')
+    c.eq([c.js("document.querySelector('[data-join] [data-f=jn-name]').value"), c.js("document.querySelector('[data-join] [data-f=jn-code]').value")], [parsed[2][:60], c.js("(n) => n.split(/\\s+/)[0].normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 8)", parsed[2][:60])], 'the name is the operator with most aircraft, the code is proposed from it', what='proposed')
+    c.eq(c.js("[...document.querySelectorAll('[data-join] input[name=jn-kind]')].map(i => [i.value, i.checked])"), [['va', False], ['sog', True]], 'a joined airline is a squadron by default, editable', what='kind')
+    c.ok(c.count('[data-join] img') == 0 and c.js('window.__pwn === undefined'), None, 'a hostile line of the page is text: no element, nothing runs')
+    c.eq(c.js('window.__puts.length'), 0, 'nothing is written while it is only shown', what='no put')
+    if c.width in (390, 1280):
+        c.shot(f'A128_standard_{c.width}_{lang}_read_delivered.png')
+    # ---- refusals: an airline already in the list, a bad address
+    c.page.fill('[data-join] [data-f="jn-code"]', 'aaa')
+    c.tap('[data-act="companyJnGo"]')
+    c.until("document.querySelector('[data-join] [data-jn-msg]').textContent.trim() !== ''", timeout=6000, what='already listed')
+    c.eq(msg(), norm(T('jnTaken')), 'an airline already in the list is not joined again: said, with the way to refresh its fleet', what='taken')
+    c.page.fill('[data-join] [data-f="jn-code"]', 'sog')
+    c.page.fill('[data-join] [data-f="jn-site"]', 'http://sog.example/flotte')
+    c.tap('[data-act="companyJnGo"]')
+    c.until(f"document.querySelector('[data-join] [data-jn-msg]').textContent.trim() !== ''", timeout=6000, what='bad address')
+    c.eq([msg(), c.js('window.__puts.length')], [norm(T('jnBadSite')), 0], 'an address that is not https: said, nothing written', what='bad site')
+    # ---- joining
+    c.page.fill('[data-join] [data-f="jn-site"]', 'https://sog.example/flotte/')
+    c.page.check('[data-join] [data-jn-net="ivao"]')
+    c.tap('[data-act="companyJnGo"]')
+    c.until("document.querySelector('[data-join]').dataset.step === 'done'", timeout=8000, what='joined')
+    c.eq(c.js('window.__puts'), ['airline/sog/settings.json', 'airline/sog/fleet.json', 'airline/index.json'], 'the settings, the fleet read, and the index last', what='order')
+    st = c.doc('airline/sog/settings.json')
+    c.eq([st['name'], st['kind'], st['networks'], st['site']], [parsed[2][:60], 'sog', {'ivao': True, 'vatsim': False, 'offline': False}, 'https://sog.example/flotte'], 'the settings: name, kind, networks, the address of the site (https, no final slash)', what='settings')
+    fl = c.doc('airline/sog/fleet.json')
+    c.eq(sorted(a['registration'] for a in fl['aircraft']), sorted(['F-RBAA', 'F-RBAB', 'F-RJAA', 'F-ZZZZ']), 'the aircraft of the page, by registration', what='fleet')
+    c.eq([[a['type'], a['operational'], a['callsigns']] for a in fl['aircraft'] if a['registration'] == 'F-RBAB'], [['A400M', True, ['COTAM2', 'COTAM3']]], 'with their type, state and callsigns', what='one aircraft')
+    c.until("document.querySelectorAll('[data-card=company] [data-airlines] [data-airline]').length === 3", timeout=8000, what='the list shows the joined airline')
+    c.tap('[data-act="companyJnFly"]')
+    c.until("location.hash.startsWith('#missions')", timeout=8000, what='Missions')
+    c.eq(c.js("FrameData.airline().then(a => a && a.code)"), 'sog', 'the joined airline is the current one', what='current')
+    c.check_errors()

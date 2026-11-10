@@ -293,11 +293,45 @@
     ],
     add: ['Créer une compagnie', 'Create an airline', 'Fluggesellschaft anlegen', 'Crear una compañía'],
     join: ['Rejoindre une compagnie', 'Join an airline', 'Einer Fluggesellschaft beitreten', 'Unirse a una compañía'],
-    joinHint: [
-      'Pas encore disponible : vous collerez ici l’adresse du site de la flotte de la compagnie ; elle sera lue sur ce poste et montrée avant que rien ne soit écrit.',
-      'Not available yet: you will paste the address of the airline’s fleet website here; it will be read on this workstation and shown before anything is written.',
-      'Noch nicht verfügbar: Sie fügen hier die Adresse der Flottenseite der Gesellschaft ein; sie wird auf diesem Rechner gelesen und gezeigt, bevor etwas geschrieben wird.',
-      'Aún no disponible: pegará aquí la dirección del sitio de la flota de la compañía; se leerá en este equipo y se mostrará antes de escribir nada.'
+    jnHint: [
+      'Copiez la page « Flotte » du site de la compagnie et collez-la ici : elle est lue sur cet appareil, et ce qu’elle contient vous est montré avant que rien ne soit écrit.',
+      'Copy the “Fleet” page of the airline’s website and paste it here: it is read on this device, and what it holds is shown to you before anything is written.',
+      'Kopieren Sie die Seite „Flotte“ der Webseite der Gesellschaft und fügen Sie sie hier ein: Sie wird auf diesem Gerät gelesen, und ihr Inhalt wird gezeigt, bevor etwas geschrieben wird.',
+      'Copie la página «Flota» del sitio de la compañía y péguela aquí: se lee en este dispositivo y se le muestra lo que contiene antes de escribir nada.'
+    ],
+    jnPage: ['Collez la page de la flotte', 'Paste the fleet page', 'Seite der Flotte einfügen', 'Pegue la página de la flota'],
+    jnClip: ['Lire le presse-papiers', 'Read the clipboard', 'Zwischenablage lesen', 'Leer el portapapeles'],
+    jnRead: ['Lire la page', 'Read the page', 'Seite lesen', 'Leer la página'],
+    jnGo: ['Rejoindre', 'Join', 'Beitreten', 'Unirse'],
+    jnEmpty: ['Collez d’abord la page de la flotte.', 'Paste the fleet page first.', 'Fügen Sie zuerst die Seite der Flotte ein.',
+      'Pegue primero la página de la flota.'
+    ],
+    jnNone: ['Aucun appareil lu : collez la page « Flotte » du site (le tableau des appareils).',
+      'No aircraft read: paste the “Fleet” page of the website (the table of aircraft).',
+      'Kein Luftfahrzeug gelesen: Fügen Sie die Seite „Flotte“ der Webseite ein (die Tabelle der Luftfahrzeuge).',
+      'Ningún avión leído: pegue la página «Flota» del sitio (la tabla de aeronaves).'
+    ],
+    jnCounts: ['{n} appareil(s) · {m} opérateur(s)', '{n} aircraft · {m} operator(s)', '{n} Luftfahrzeug(e) · {m} Betreiber',
+      '{n} aeronave(s) · {m} operador(es)'
+    ],
+    jnSite: ['Adresse du site (facultatif, pour la relire plus tard)', 'Website address (optional, to read it again later)',
+      'Adresse der Webseite (optional, zum späteren erneuten Lesen)', 'Dirección del sitio (opcional, para releerla más tarde)'
+    ],
+    jnBadSite: ['Adresse refusée : une adresse https:// de 200 signes au plus.',
+      'Address refused: an https:// address of 200 characters at most.',
+      'Adresse abgelehnt: eine https://-Adresse mit höchstens 200 Zeichen.',
+      'Dirección rechazada: una dirección https:// de 200 caracteres como máximo.'
+    ],
+    jnTaken: [
+      'Cette compagnie est déjà dans la liste : la flotte se met à jour par le collage du site, dans l’écran du site de la compagnie.',
+      'This airline is already in the list: its fleet is refreshed by pasting the website, in the airline website screen.',
+      'Diese Gesellschaft steht schon in der Liste: ihre Flotte wird durch Einfügen der Webseite aktualisiert, im Bildschirm der Webseite der Gesellschaft.',
+      'Esta compañía ya está en la lista: su flota se actualiza pegando el sitio, en la pantalla del sitio de la compañía.'
+    ],
+    jnMissions: ['Les missions préparées de cette compagnie sont dans Missions, une fois la compagnie choisie.',
+      'This airline’s prepared missions are in Missions, once the airline is chosen.',
+      'Die vorbereiteten Missionen dieser Gesellschaft stehen unter Missionen, sobald die Gesellschaft gewählt ist.',
+      'Las misiones preparadas de esta compañía están en Misiones, una vez elegida la compañía.'
     ],
     name: ['Nom', 'Name', 'Name', 'Nombre'],
     code: ['Code (2 à 8 lettres ou chiffres)', 'Code (2 to 8 letters or digits)', 'Code (2 bis 8 Buchstaben oder Ziffern)',
@@ -654,7 +688,7 @@
     if (lvl !== 3 && focus !== 'company') return '';
     return `<div class="f-card" data-card="company"><h2>${esc(t(TA.title))}</h2><p class="f-muted">${esc(t(TA.hint))}</p><div class="f-cos" role="radiogroup" aria-label="${esc(t(TA.title))}" data-airlines></div><p class="f-warn" data-airline-note hidden></p><div class="f-fiche" data-airline-fiche></div>
       ${wizardHtml(env)}
-      <details data-airline-join><summary>${esc(t(TA.join))}</summary><p class="f-muted">${esc(t(TA.joinHint))}</p></details>
+      ${joinHtml(env)}
       <div data-mig hidden></div></div>`;
   }
   // les pas de « Créer une compagnie » (V3_SPECIFICATION § 10.38 bis) ; les catégories et la flotte s'y ajoutent avant le résumé (lots B2 et B3)
@@ -960,7 +994,8 @@
   /** Les noms des genres dans les boutons du stepper (une seule source : KIND_NAMES), posés quand le module des catégories est là. */
   function wizardKindNames(view, CL, t) {
     if (!CL?.KIND_NAMES) return;
-    for (const b of view.querySelectorAll('[data-wizard] [data-kind-name]')) b.textContent = t(CL.KIND_NAMES[b.dataset.kindName]);
+    for (const b of view.querySelectorAll('[data-wizard] [data-kind-name], [data-join] [data-kind-name]')) b.textContent = t(CL
+      .KIND_NAMES[b.dataset.kindName]);
   }
   /** « Créer la compagnie » (ou « Reprendre ») : les fichiers dans l'ordre — réglages, flotte, puis l'INDEX en dernier (une compagnie n'est dans la liste que complète) — sans jamais écraser un fichier existant ; un échec à mi-chemin dit ce qui est fait et propose « Reprendre ». */
   async function createAirline(env, resume) {
@@ -1083,7 +1118,19 @@
   function wizardWire(view) {
     if (WZ_WIRED.has(view)) return;
     WZ_WIRED.add(view);
+    // la page de la flotte collée : le HTML du presse-papiers est gardé (les tableaux et les titres d'opérateur), meilleur que le texte
+    view.addEventListener('paste', e => {
+      if (e.target?.dataset?.f !== 'jn-page') return;
+      JN.set(view, {
+        ...JN.get(view),
+        html: e.clipboardData?.getData('text/html') || ''
+      });
+    });
     view.addEventListener('input', e => {
+      if (e.target?.dataset?.f === 'jn-page' && !e.target.value) JN.set(view, {
+        ...JN.get(view),
+        html: ''
+      });
       const f = e.target?.dataset?.f;
       if (f === 'co-code') e.target.dataset.touched = '1';
       if (f === 'wz-sheet-q' && WZ_ENV.get(view)) wizardSheetSearch(WZ_ENV.get(view));
@@ -1091,6 +1138,248 @@
       const code = view.querySelector('[data-wizard] [data-f="co-code"]');
       if (code && !code.dataset.touched) code.value = proposeCode(e.target.value);
     });
+  }
+  // « Rejoindre une compagnie » (§ 10.38 bis) : la page de la flotte collée, lue sur cet appareil, montrée avant d'écrire
+  const JN = new WeakMap(); // par vue : { aircraft (lus), html (la page collée en HTML), resume, code }
+  const JN_MAX = 2000;
+  /** L'assistant « Rejoindre » : un bloc construit une fois, deux pas (la page, ce qui en a été lu) et une fin. */
+  function joinHtml(env) {
+    const {
+      t,
+      fld
+    } = env;
+    return `<details data-airline-join><summary>${esc(t(TA.join))}</summary><div class="f-wizard" data-join data-step="site">
+      <section data-jn-pane="site"><p class="f-muted">${esc(t(TA.jnHint))}</p>
+        <label class="f-field">${esc(t(TA.jnPage))}<textarea data-f="jn-page" rows="6" autocomplete="off" spellcheck="false"></textarea></label>
+        <div class="f-row"><button type="button" data-act="companyJnClip">${esc(t(TA.jnClip))}</button></div></section>
+      <section data-jn-pane="read" hidden><p data-jn-counts></p>${fld('jn-name', TA.name, '')}${fld('jn-code', TA.code, '')}
+        <fieldset><legend>${esc(t(TA.kindLabel))}</legend>${KINDS.map(k => `<label class="f-check f-kind"><input type="radio" name="jn-kind" value="${k}"${k === 'sog' ? ' checked' : ''}><span><b data-kind-name="${k}"></b><span class="f-muted">${esc(t(TA.kindHelp[k]))}</span></span></label>`).join('')}</fieldset>
+        <fieldset><legend>${esc(t(TA.networks))}</legend>${AIRLINE_NETWORKS.map(k => `<label class="f-check"><input type="checkbox" data-jn-net="${k}"> ${esc(t(TA.net[k]))}</label>`).join('')}</fieldset>
+        ${fld('jn-site', TA.jnSite, '')}<p class="f-muted" data-jn-missions>${esc(t(TA.jnMissions))}</p></section>
+      <section data-jn-pane="done" hidden><p data-jn-done></p><div class="f-row"><button type="button" class="primary" data-act="companyJnFly">${esc(t(TA.fly))}</button><button type="button" data-act="companyJnStay">${esc(t(TA.stay))}</button></div></section>
+      <p class="f-msg" data-jn-msg></p>
+      <div class="f-row" data-jn-nav><button type="button" data-act="companyJnBack" hidden>${esc(t(TA.back))}</button><button type="button" class="primary" data-act="companyJnNext">${esc(t(TA.jnRead))}</button><button type="button" class="primary" data-act="companyJnGo" hidden>${esc(t(TA.jnGo))}</button><button type="button" class="primary" data-act="companyJnResume" hidden>${esc(t(TA.resume))}</button></div></div></details>`;
+  }
+  /** Montre un pas de l'assistant (site, read, done) : volets et boutons ; la hauteur du bloc ne diminue pas (règle 22). */
+  function joinShow(view, name) {
+    const w = view.querySelector('[data-join]');
+    if (!w) return;
+    w.style.minHeight = `${Math.max(w.offsetHeight, parseFloat(w.style.minHeight) || 0)}px`;
+    w.dataset.step = name;
+    for (const pane of w.querySelectorAll('[data-jn-pane]')) pane.hidden = pane.dataset.jnPane !== name;
+    const resume = !!JN.get(view)?.resume,
+      nav = w.querySelector('[data-jn-nav]'),
+      on = {
+        companyJnBack: name === 'read',
+        companyJnNext: name === 'site',
+        companyJnGo: name === 'read' && !resume,
+        companyJnResume: name === 'read' && resume
+      };
+    for (const [act, show] of Object.entries(on)) nav.querySelector(`[data-act="${act}"]`).hidden = !show;
+    nav.hidden = name === 'done';
+  }
+  /** Dit un message dans l'assistant (vide : l'efface). */
+  function joinSay(view, text) {
+    const m = view.querySelector('[data-jn-msg]');
+    if (m) {
+      m.textContent = text || '';
+      m.dataset.kind = 'err';
+    }
+  }
+  /** Un appareil lu de la page, ramené à des textes bornés (la page est une entrée non fiable) : l'immatriculation, le type, la variante, l'opérateur, les indicatifs, la base, l'emplacement. */
+  function joinClean(a) {
+    const tx = (v, n) => String(v ?? '').replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, ' ').trim().slice(0, n);
+    return {
+      registration: tx(a?.registration, 12).toUpperCase(),
+      type: tx(a?.type, 12).toUpperCase(),
+      variant: tx(a?.variant, 40),
+      operator: tx(a?.operator, 60),
+      callsigns: (Array.isArray(a?.callsigns) ? a.callsigns : []).slice(0, 6).map(c => tx(c, 12).toUpperCase()).filter(Boolean),
+      base: tx(a?.base, 40),
+      tacticalNumber: tx(a?.tacticalNumber, 20),
+      number: tx(a?.number, 20),
+      operational: a?.operational !== false,
+      location: tx(a?.location, 40)
+    };
+  }
+  /** Lit la page collée (le HTML copié s'il y en a, sinon le texte) par l'analyseur du module Site : les appareils, bornés. */
+  async function joinParse(view) {
+    const st = JN.get(view) || {},
+      raw = String(st.html || view.querySelector('[data-f="jn-page"]')?.value || '').slice(0, 2e6);
+    if (!raw.trim()) return null;
+    const M = await import(new URL('modules/website/model.js', ROOT).href).catch(() => null);
+    return M ? M.parseFleet(raw).slice(0, JN_MAX).map(joinClean).filter(a => a.registration) : [];
+  }
+  /** « Lire la page » : les appareils lus, avec leur nombre et celui des opérateurs, le nom et le code proposés (l'opérateur le plus présent), puis le pas « ce qui a été lu » ; rien n'est écrit. */
+  async function joinNext(env) {
+    const {
+      view,
+      t
+    } = env;
+    joinSay(view, '');
+    const list = await joinParse(view);
+    if (list === null) return joinSay(view, t(TA.jnEmpty));
+    if (!list.length) return joinSay(view, t(TA.jnNone));
+    JN.set(view, {
+      ...JN.get(view),
+      aircraft: list
+    });
+    const ops = new Map();
+    for (const a of list) ops.set(a.operator, (ops.get(a.operator) || 0) + 1);
+    const top = [...ops.entries()].sort((x, y) => y[1] - x[1])[0]?.[0] || '',
+      w = view.querySelector('[data-join]'),
+      name = w.querySelector('[data-f="jn-name"]'),
+      code = w.querySelector('[data-f="jn-code"]');
+    w.querySelector('[data-jn-counts]').textContent = t(TA.jnCounts, {
+      n: list.length,
+      m: ops.size
+    });
+    if (!name.value) name.value = top.slice(0, 60);
+    if (!code.value) code.value = proposeCode(name.value);
+    joinShow(view, 'read');
+  }
+  /** Les saisies du pas « ce qui a été lu » : { name, code, kind, nets, site }. */
+  function joinValues(view) {
+    const w = view.querySelector('[data-join]'),
+      v = k => w.querySelector(`[data-f="${k}"]`)?.value.trim() ?? '';
+    return {
+      name: v('jn-name').slice(0, 61),
+      code: v('jn-code'),
+      kind: w.querySelector('input[name="jn-kind"]:checked')?.value || '',
+      nets: Object.fromEntries(AIRLINE_NETWORKS.map(k => [k, !!w.querySelector(`[data-jn-net="${k}"]`)?.checked])),
+      site: v('jn-site')
+    };
+  }
+  /** « Rejoindre » (ou « Reprendre ») : la compagnie vérifiée comme à la création (une compagnie déjà dans la liste n'est pas rejointe), puis les réglages (avec le genre et, s'il est valable, l'adresse du site), la flotte lue et l'INDEX en dernier ; aucun fichier existant n'est réécrit. */
+  async function joinGo(env, resume) {
+    const {
+      view,
+      t,
+      FD,
+      c
+    } = env, v = joinValues(view), aircraft = JN.get(view)?.aircraft || [];
+    joinSay(view, '');
+    if (!aircraft.length) return joinSay(view, t(TA.jnNone));
+    let site = '';
+    if (v.site) {
+      try {
+        const u = new URL(v.site);
+        if (u.protocol !== 'https:' || v.site.length > 200) throw new Error('site');
+        site = u.origin + u.pathname.replace(/\/$/, '');
+      } catch {
+        return joinSay(view, t(TA.jnBadSite));
+      }
+    }
+    const why = await wizardCheck(env, v, resume);
+    if (why) return joinSay(view, why === t(TA.taken) ? t(TA.jnTaken) : why);
+    const ad = airlineData(FD),
+      list = airlineList(await ad.get(INDEX, {
+        wait: true
+      }).catch(() => null)),
+      stamp = {
+        updated_at: now(),
+        by: env.id?.trigram || ''
+      },
+      todo = [
+        ['settings', `airline/${v.code}/settings.json`, {
+          schema: 1,
+          name: v.name,
+          networks: v.nets,
+          kind: v.kind,
+          ...(site ? {
+            site
+          } : {}),
+          ...stamp
+        }],
+        ['fleet', `airline/${v.code}/fleet.json`, {
+          schema: 1,
+          aircraft,
+          ...stamp
+        }],
+        ['index', INDEX, {
+          schema: 1,
+          airlines: [...list, {
+            code: v.code,
+            name: v.name
+          }],
+          ...stamp
+        }]
+      ],
+      done = [];
+    try {
+      for (const [part, path, body] of todo) {
+        if (part !== 'index' && await ad.get(path, {
+            wait: true
+          }).catch(() => null)) {
+          done.push(part);
+          continue;
+        }
+        await ad.put(path, body);
+        done.push(part);
+      }
+    } catch {
+      JN.set(view, {
+        ...JN.get(view),
+        resume: true
+      });
+      joinShow(view, 'read');
+      return joinSay(view, t(TA.partial, {
+        done: done.map(k => t(TA.part[k])).join(', ') || '—',
+        todo: todo.map(x => x[0]).filter(k => !done.includes(k)).map(k => t(TA.part[k])).join(', ')
+      }));
+    }
+    JN.set(view, {
+      ...JN.get(view),
+      resume: false,
+      code: v.code
+    });
+    view.querySelector('[data-jn-done]').textContent = t(TA.added, {
+      n: v.name
+    });
+    joinShow(view, 'done');
+    c.notify(t(TA.added, {
+      n: v.name
+    }), 'ok');
+    return airlineLive(env);
+  }
+  /** Le presse-papiers (le HTML d'abord, le texte sinon) dans la zone de l'assistant, comme le fait le module Site. */
+  async function joinClip(env) {
+    const {
+      view,
+      t
+    } = env;
+    try {
+      let html = '',
+        text = '';
+      if (navigator.clipboard?.read) {
+        for (const item of await navigator.clipboard.read()) {
+          if (item.types.includes('text/html')) html = await (await item.getType('text/html')).text();
+          if (item.types.includes('text/plain')) text = await (await item.getType('text/plain')).text();
+        }
+      } else text = await navigator.clipboard.readText();
+      JN.set(view, {
+        ...JN.get(view),
+        html
+      });
+      view.querySelector('[data-f="jn-page"]').value = (text || html).slice(0, 2e6);
+      return joinNext(env);
+    } catch {
+      joinSay(view, t(TA.jnEmpty));
+    }
+  }
+  /** « Rester ici » : l'assistant se vide et revient à la page. */
+  function joinReset(view) {
+    const w = view.querySelector('[data-join]');
+    if (!w) return;
+    for (const i of w.querySelectorAll('input[data-f], textarea')) i.value = '';
+    for (const i of w.querySelectorAll('[data-jn-net]')) i.checked = false;
+    const sog = w.querySelector('input[name="jn-kind"][value="sog"]');
+    if (sog) sog.checked = true;
+    JN.set(view, {});
+    joinSay(view, '');
+    w.style.minHeight = '';
+    joinShow(view, 'site');
+    w.style.minHeight = '';
   }
   // par vue : ce que la dernière lecture a rendu (lignes, module des catégories, langue, choix possible, compagnie courante), pour repeindre la fiche sans relire
   const AIR = new WeakMap();
@@ -1323,6 +1612,17 @@
     if (act === 'companyNext' || act === 'companyBack') return wizardMove(env, act === 'companyNext' ? 1 : -1);
     if (act === 'companyAdd' || act === 'companyResume') return createAirline(env, act === 'companyResume');
     if (act === 'companyStay') return wizardReset(env.view);
+    if (act === 'companyJnClip') return joinClip(env);
+    if (act === 'companyJnNext') return joinNext(env);
+    if (act === 'companyJnBack') return joinShow(env.view, 'site');
+    if (act === 'companyJnGo' || act === 'companyJnResume') return joinGo(env, act === 'companyJnResume');
+    if (act === 'companyJnStay') return joinReset(env.view);
+    if (act === 'companyJnFly') {
+      const code = JN.get(env.view)?.code || '';
+      if (AIRLINE_CODE.test(code) && typeof FD.setAirline === 'function') await FD.setAirline(code);
+      joinReset(env.view);
+      location.hash = '#missions';
+    }
     if (act === 'companyWzCatAdd') return wizardCatAdd(env);
     if (act === 'companyWzSheet') return wizardSheetPick(env, b.dataset.id || '');
     if (act === 'companyWzReg') return wizardRegAdd(env);
@@ -1343,6 +1643,7 @@
 
   (window.SogSettingsParts ||= {}).airline = {
     acts: ['companyChoose', 'companyAdd', 'companyNext', 'companyBack', 'companyResume', 'companyStay', 'companyFly', 'companyWzCatAdd',
+      'companyJnClip', 'companyJnNext', 'companyJnBack', 'companyJnGo', 'companyJnResume', 'companyJnStay', 'companyJnFly',
       'companyWzCatDel', 'companyWzSheet', 'companyWzReg', 'companyWzRegDel', 'companyWzLater', 'companyPlan',
       'companyMigrate', 'companyKind', 'companyCatAdd', 'companyCatDel'
     ],
