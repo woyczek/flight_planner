@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 100,
+  "tests": 105,
   "verdicts": 43
  },
  "apps": [
@@ -434,7 +434,7 @@
     "de": "Routenleser: Homonyme (PAM in den USA, ALS in Marokko) und unbekannte Punkte mit ihrer Zone benannt",
     "es": "Lector de ruta: homónimos (PAM en EE. UU., ALS en Marruecos) y puntos desconocidos dichos con su zona"
    },
-   "test": "Lanceur relancé. Carburant › Route, taper « LFRS PAM LFBD » : PAM est Pampelune, le tracé reste en Europe, la distance est de quelques centaines de NM. Puis « Calculer A → B » sur ESSB → LEMO : aucun point aux États-Unis ni au Maroc.",
+   "test": "Lanceur relancé. Carburant › Route, taper « LFRS PAM LFBD » : le tracé ne part plus aux États-Unis ; PAM (qui n'existe pas en France dans la base : un TACAN américain et un VOR néerlandais) est refusé avec « Point loin de la route : PAM ajoute … NM ». Puis « Calculer A → B » sur ESSB → LEMO : aucun point aux États-Unis ni au Maroc.",
    "since": "2026-11-10",
    "state": "todo",
    "delivered": "2026-11-10T17:21:30Z",
@@ -1518,6 +1518,76 @@
    "since": "2026-11-10",
    "state": "todo",
    "delivered": "2026-11-10T17:12:28Z"
+  },
+  {
+   "id": "SOG-0227",
+   "app": "maintenance",
+   "title": {
+    "fr": "Carte : à zoom arrière massif, seuls les aérodromes du SIA restent (France, La Réunion…)",
+    "en": "Map: at a very wide zoom only the SIA aerodromes remain (France, Réunion…)",
+    "de": "Karte: bei sehr weitem Zoom bleiben nur die Flugplätze des SIA (Frankreich, Réunion…)",
+    "es": "Mapa: con el zoom muy alejado solo quedan los aeródromos del SIA (Francia, Reunión…)"
+   },
+   "test": "Carte, zoom arrière massif (l'Atlantique entier) : les grands aérodromes de tous les pays restent (KJFK, EGLL, EDDF…), pas seulement ceux du SIA ; plus de petit terrain français là où un grand terrain étranger a disparu.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T17:29:22Z"
+  },
+  {
+   "id": "SOG-0228",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : en attendant la refonte, replier « Paquets de pays », rapetisser et ranger à droite les « Mettre à jour », dire ce que compte « Zones de la couverture (75) », et mener de « 7 à reconstruire ",
+    "en": "Data: until the redesign, fold “Country packs”, shrink the “Update” buttons, explain “Zones of the coverage (75)”, lead from “7 to rebuild” to the 7 zones",
+    "de": "Daten: bis zur Neugestaltung „Länderpakete“ einklappen, „Aktualisieren“ verkleinern, „Zonen der Abdeckung (75)“ erklären, von „7 neu aufzubauen“ zu den 7 Zonen führen",
+    "es": "Datos: hasta el rediseño, plegar «Paquetes de países», reducir los «Actualizar», explicar «Zonas de la cobertura (75)», llevar de «7 por reconstruir» a las 7 zonas"
+   },
+   "test": "Maintenance › Données : « Paquets de pays » est replié à l'ouverture. Dans le bilan, appuyer sur « n à reconstruire » : la liste « Zones de la couverture » vient sous les yeux, réduite à ces zones, cochées, avec une ligne qui dit quoi faire ; « Mettre à jour » les reconstruit. Sous « Zones de la couverture (n) », une ligne dit ce que compte le nombre.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T17:26:45Z"
+  },
+  {
+   "id": "SOG-0230",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : « Publier » répond « 0 fichier envoyé » après une construction (Suède construite, « Rien à publier »)",
+    "en": "Data: “Publish” answers “0 files sent” after a build (Sweden built, “Nothing to publish”)",
+    "de": "Daten: „Veröffentlichen“ meldet „0 Dateien gesendet“ nach einem Aufbau (Schweden gebaut, „Nichts zu veröffentlichen“)",
+    "es": "Datos: «Publicar» responde «0 archivos enviados» tras una construcción (Suecia construida, «Nada que publicar»)"
+   },
+   "test": "Maintenance › Données : après une construction, « Publier la base » dit « Tout est déjà publié : les commits de la construction sont partis à … » au lieu de « 0 fichier envoyé ».",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T17:30:24Z"
+  },
+  {
+   "id": "SOG-0233",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte : repères de distance le long du vol — des paliers entre 25 et 500 NM ; repères décalés du tracé",
+    "en": "Map: distance marks along the flight — steps between 25 and 500 NM; marks off the track",
+    "de": "Karte: Distanzmarken entlang des Flugs — Stufen zwischen 25 und 500 NM; Marken neben der Linie",
+    "es": "Mapa: marcas de distancia a lo largo del vuelo — escalones entre 25 y 500 NM; marcas fuera del trazado"
+   },
+   "test": "Carte, route KDEN BGNN LFST (ou KDEN DCT LFST) : le trait du vol est une seule courbe (le grand cercle), les repères de distance sont posés dessus, plus de pointillé à côté ; en zoomant et dézoomant il y a toujours entre 5 et 12 repères dans la vue, sans disparition brutale.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T17:29:23Z"
+  },
+  {
+   "id": "SOG-0234",
+   "app": "maintenance",
+   "title": {
+    "fr": "Lanceur : la source militaire britannique (aidu.mod.uk, ENR 5.2) échoue en SSL",
+    "en": "Launcher: the British military source (aidu.mod.uk, ENR 5.2) fails in SSL",
+    "de": "Launcher: die britische Militärquelle (aidu.mod.uk, ENR 5.2) scheitert an SSL",
+    "es": "Lanzador: la fuente militar británica (aidu.mod.uk, ENR 5.2) falla en SSL"
+   },
+   "test": "Lanceur relancé. Maintenance › Données, mise à jour du Royaume-Uni : si aidu.mod.uk coupe la connexion, la ligne le dit (connexion sécurisée coupée par le serveur), donne l'adresse du PDF ENR 5.2 et propose « Choisir le fichier… » ; le fichier choisi est pris.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T17:28:36Z"
   }
  ]
 }

@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "d3ae42b",
+  "organisation": "76ce253",
   "fiches": 234,
   "untranslated": 0,
   "priorities": 152
@@ -858,7 +858,7 @@
     {
      "id": "SOG-0233",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Carte : repères de distance le long du vol — des paliers entre 25 et 500 NM ; repères décalés du tracé",
      "en": "Map: distance marks along the flight — steps between 25 and 500 NM; marks off the track",
      "de": "Karte: Distanzmarken entlang des Flugs — Stufen zwischen 25 und 500 NM; Marken neben der Linie",
@@ -2418,7 +2418,7 @@
     {
      "id": "SOG-0227",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Carte : à zoom arrière massif, seuls les aérodromes du SIA restent (France, La Réunion…)",
      "en": "Map: at a very wide zoom only the SIA aerodromes remain (France, Réunion…)",
      "de": "Karte: bei sehr weitem Zoom bleiben nur die Flugplätze des SIA (Frankreich, Réunion…)",
@@ -2695,7 +2695,7 @@
     {
      "id": "SOG-0228",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Données : en attendant la refonte, replier « Paquets de pays », rapetisser et ranger à droite les « Mettre à jour », dire ce que compte « Zones de la couverture (75) », et mener de « 7 à reconstruire » aux 7 zones",
      "en": "Data: until the redesign, fold “Country packs”, shrink the “Update” buttons, explain “Zones of the coverage (75)”, lead from “7 to rebuild” to the 7 zones",
      "de": "Daten: bis zur Neugestaltung „Länderpakete“ einklappen, „Aktualisieren“ verkleinern, „Zonen der Abdeckung (75)“ erklären, von „7 neu aufzubauen“ zu den 7 Zonen führen",
@@ -2713,7 +2713,7 @@
     {
      "id": "SOG-0230",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Données : « Publier » répond « 0 fichier envoyé » après une construction (Suède construite, « Rien à publier »)",
      "en": "Data: “Publish” answers “0 files sent” after a build (Sweden built, “Nothing to publish”)",
      "de": "Daten: „Veröffentlichen“ meldet „0 Dateien gesendet“ nach einem Aufbau (Schweden gebaut, „Nichts zu veröffentlichen“)",
@@ -2871,7 +2871,7 @@
     {
      "id": "SOG-0234",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Lanceur : la source militaire britannique (aidu.mod.uk, ENR 5.2) échoue en SSL",
      "en": "Launcher: the British military source (aidu.mod.uk, ENR 5.2) fails in SSL",
      "de": "Launcher: die britische Militärquelle (aidu.mod.uk, ENR 5.2) scheitert an SSL",
