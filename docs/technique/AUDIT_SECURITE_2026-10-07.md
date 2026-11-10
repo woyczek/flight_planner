@@ -1008,6 +1008,7 @@ Read-only reviews. Classification: **blocking**, **to fix**, **acceptable**. No 
 | 156 | Frame: the airline's logo read from the data repository and shown by a `blob:` address (02538ab1a) | **to fix** (fixed in 157) |
 | 157 | The airline's logo in PNG or WEBP only, never SVG (a9d29f446): the point of 156 fixed | acceptable |
 | 158 | Data-repository files as untrusted input: mission registry paths (4ac930efa), the site's page links, Missions apps (a15c17d0a) | acceptable, one note |
+| 159 | Review of 10 November (before the refactoring day): file upload `/__setup/base/upload` (3f101da7b, 1805057c5, 0a99d0738, 42aab1ae8, 870408de6), Little Navmap verb and `fetchLnm` (801c90c2b, eaf75ea65), per-page Esri CSP (e60e412d1), relay limits (4c75c1df3), `repair_ledger_defaults.py` (6f23e1a50), UK Mil TLS fallback (d86b81d6d), `personal-undeclared` (e293f3741) | acceptable, four notes |
 
 **1. Launcher 3c-1 — acceptable, two notes.** `/__setup/status` has one shape everywhere (`server`, `data`, `dataGit`,
 `host`, `lan`, `lnm`; `lnm: []` for a paired device). The workstation's settings (`root`, `git`, `dataRepo`, `lfs`, `csp`,
@@ -2332,6 +2333,25 @@ Fuel and the Missions module say “path refused” instead of reading. The Site
 with `target=_blank rel=noopener` (a `javascript:` link is gone). The second commit has no surface. Note: the `site` host of
 `airline/settings.json`, which any pilot's token can now write, is allowed by the frame as an `https` `GET` target and is the
 source of the log and fleet imports; show the host in the import's preview so a change of site is visible.
+
+**159. Review of 10 November (before the refactoring day) — acceptable, four notes.** *Upload.* `POST /__setup/base/upload`
+is declared for this workstation only; `do_POST` applies the LAN and relay gates and `_allowed()` before the stream branch, so
+a LAN device or another origin never reaches the handler, and the body is read in a stream (never in memory), 1.5 GB at most,
+into a temporary file of `data/local/upload/`. The file is recognised by its content (a zip by its member list, a JSON by its
+first sign, a PDF by its signature); the stored name is built only from regex groups (a date, a closed month list, `AIP|OBS|UAS`,
+two letters and a fixed layer), never from the page's name or any path, and the hint is reduced to its last component. The
+NASR and UK Mil fallbacks read those canonical names back with the same size caps as a download, and the TLS fallback only
+adds a message and the deposited PDF: no certificate check is weakened. *Little Navmap.* `proc/lnm` opens the SQLite base
+read-only and immutable from the launcher's own folder (never a page path), with closed arguments and parameterised SQL;
+the procedures stay in the page's memory, the route is refused to LAN devices. *Esri.* One exact host is added to
+`connect-src` for one page path only (a user decision). *Relay.* Two slots per host, four in all, and a deadline on a
+successful body. *Repair tool.* It rebuilds the literal from strictly parsed base64 values, checks the result with
+`data_guard` (whose line terminators include U+2028) and writes only with `--write`, keeping the original. Notes: (1) the
+SQLite URI does not escape `%`; (2) no filter on `lnm` records was found in the FMS/PLN exports or in what a flight saves,
+so the “never exported” promise needs checking (a licence question); (3) `zipfile.ZipFile` reads the whole central
+directory before the `MAX_MEMBERS` test, and the upload handler lacks the `_lan()` refusal the other handlers repeat; (4)
+the relay's error body (`e.read(NET_MAX)`) has no deadline, so a slow-dripping error body from an allowed host holds a slot,
+and the four slots are shared between the workstation's own page and paired devices.
 
 Follow-up: the decision on `settle()` and the notes of 1, 2, 4, 5, 7, 9, 10, 12 to 24, 27, 30, 35 and 38 are with V3 Frame, AeroDB, Settings, Fuel and BUGS SOG (18 and 22 settled in 25, 20 in 26, 28 in 30, 29 in 32, 32 in 34, 34 in 36; the blocking point of 27 lifted in 32; 38 lifted in 40, its residual case closed in 42; 39 settled in 40); the sharing of the track and of the position is the user's decision.
 
