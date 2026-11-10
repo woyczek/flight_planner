@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 99,
-  "verdicts": 45
+  "verdicts": 43
  },
  "apps": [
   "pilote",
@@ -436,10 +436,7 @@
    },
    "test": "Carburant › Route, coller la route ESSB … ALS N872 PAM … LEMO : PAM et ALS sont placés en Europe ; les points inconnus sont listés avec leur zone et son état.",
    "since": "2026-11-09",
-   "state": "ko",
-   "delivered": "2026-11-09T16:04:59Z",
-   "comment": "LFRS PAM LFBD passe toujours pas les USA.",
-   "at": "2026-11-10T16:32:49Z"
+   "state": "known"
   },
   {
    "id": "SOG-0143",
@@ -1049,10 +1046,7 @@
    },
    "test": "Maintenance › Données › « Paquets de pays » : chaque région garde sa case « tout le paquet » et porte un pli « Pays (n) », replié ; ouvert, il liste les pays avec une case chacun ; cocher un pays l'ajoute seul à la couverture, sans rien télécharger.",
    "since": "2026-11-10",
-   "state": "ko",
-   "delivered": "2026-11-10T11:36:49Z",
-   "comment": "non. mettre le chevron d’ouverture sur la ligne même, et réduire le bouton, voire le remplacer par une url !",
-   "at": "2026-11-10T16:25:20Z"
+   "state": "known"
   },
   {
    "id": "SOG-0187",
@@ -1460,10 +1454,10 @@
     "de": "Link „Karten“: führt zur eAIP des vorigen Zyklus",
     "es": "Enlace «Cartas»: lleva al eAIP del ciclo anterior"
    },
-   "test": "Carburant › Procédures › « Cartes » d'un terrain français (LFRS) : le lien ouvre l'eAIP du cycle en vigueur (29 octobre), plus celui du 1er octobre.",
+   "test": "Lanceur relancé. Carburant, un vol vers LFRS, étape Procédures : le lien « Cartes » ouvre l'eAIP du 29 OCT 2026 (l'adresse contient eAIP_29_OCT_2026), pas celui du 01 OCT.",
    "since": "2026-11-10",
    "state": "todo",
-   "delivered": "2026-11-10T15:56:50Z"
+   "delivered": "2026-11-10T17:13:07Z"
   },
   {
    "id": "SOG-0223",

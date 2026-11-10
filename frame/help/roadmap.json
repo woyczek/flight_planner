@@ -4,8 +4,8 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "0440b37",
-  "fiches": 225,
+  "organisation": "d16061a",
+  "fiches": 234,
   "untranslated": 0,
   "priorities": 152
  },
@@ -521,7 +521,7 @@
     {
      "id": "SOG-0225",
      "kind": "feature",
-     "state": "planned",
+     "state": "doing",
      "fr": "Devis : un carburant de dégagement calculé (distance de l'arrivée au terrain de dégagement)",
      "en": "Fuel quote: a computed alternate fuel (distance from the arrival to the alternate aerodrome)",
      "de": "Kraftstoffplan: berechneter Ausweichkraftstoff (Strecke vom Ziel zum Ausweichflugplatz)",
@@ -854,6 +854,15 @@
      "en": "Map beside Fuel: a proposed route stays drawn after the computation; two console errors (tooltips, framing)",
      "de": "Karte neben Kraftstoff: eine vorgeschlagene Route bleibt nach der Berechnung gezeichnet; zwei Konsolenfehler (Tooltips, Ausschnitt)",
      "es": "Mapa junto a Combustible: un itinerario propuesto queda dibujado tras el cálculo; dos errores de consola (ayudas, encuadre)"
+    },
+    {
+     "id": "SOG-0233",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Carte : repères de distance le long du vol — des paliers entre 25 et 500 NM ; repères décalés du tracé",
+     "en": "Map: distance marks along the flight — steps between 25 and 500 NM; marks off the track",
+     "de": "Karte: Distanzmarken entlang des Flugs — Stufen zwischen 25 und 500 NM; Marken neben der Linie",
+     "es": "Mapa: marcas de distancia a lo largo del vuelo — escalones entre 25 y 500 NM; marcas fuera del trazado"
     }
    ]
   },
@@ -1438,6 +1447,27 @@
    ]
   },
   {
+   "id": "compagnie-cadre-compagnie",
+   "app": "compagnie",
+   "label": {
+    "fr": "Cadre ; Compagnie",
+    "en": "Cadre ; Compagnie",
+    "de": "Cadre ; Compagnie",
+    "es": "Cadre ; Compagnie"
+   },
+   "items": [
+    {
+     "id": "SOG-0231",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Flotte et registre des missions : hors de Maintenance, dans un quatrième onglet « CPCO »",
+     "en": "Fleet and mission registry: out of Maintenance, in a fourth tab “CPCO”",
+     "de": "Flotte und Missionsregister: raus aus der Wartung, in einen vierten Reiter „CPCO“",
+     "es": "Flota y registro de misiones: fuera de Mantenimiento, en una cuarta pestaña «CPCO»"
+    }
+   ]
+  },
+  {
    "id": "compagnie-carburant-missions",
    "app": "compagnie",
    "label": {
@@ -1782,6 +1812,27 @@
      "de": "Fahrplan: bereits vorhandene Bahnen einklappen",
      "es": "Hoja de ruta: contraer los carriles ya existentes",
      "rank": 84
+    }
+   ]
+  },
+  {
+   "id": "maintenance-base-carte",
+   "app": "maintenance",
+   "label": {
+    "fr": "Base ; Carte",
+    "en": "Base ; Carte",
+    "de": "Base ; Carte",
+    "es": "Base ; Carte"
+   },
+   "items": [
+    {
+     "id": "SOG-0232",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "LFST : aucune approche (plusieurs RNAV, plusieurs conventionnelles) ; pas de noms de taxiways",
+     "en": "LFST: no approach (several RNAV, several conventional); no taxiway names",
+     "de": "LFST: kein Anflug (mehrere RNAV, mehrere konventionelle); keine Rollwegnamen",
+     "es": "LFST: ninguna aproximación (varias RNAV, varias convencionales); sin nombres de calles de rodaje"
     }
    ]
   },
@@ -2242,7 +2293,7 @@
     {
      "id": "SOG-0142",
      "kind": "bug",
-     "state": "done",
+     "state": "doing",
      "fr": "Lecteur de route : les homonymes (PAM aux États-Unis, ALS au Maroc) et les points inconnus dits avec leur zone",
      "en": "Route reader: homonyms (PAM in the USA, ALS in Morocco) and unknown points said with their zone",
      "de": "Routenleser: Homonyme (PAM in den USA, ALS in Marokko) und unbekannte Punkte mit ihrer Zone benannt",
@@ -2351,6 +2402,27 @@
      "de": "Boden (Rollwege) zusammen mit den Verfahren des Flugplatzes lesen, nicht über einen weiteren Knopf",
      "es": "Leer el suelo (calles de rodaje) con los procedimientos del aeródromo, no con un botón más",
      "rank": 112
+    }
+   ]
+  },
+  {
+   "id": "maintenance-carte-base",
+   "app": "maintenance",
+   "label": {
+    "fr": "Carte ; base",
+    "en": "Carte ; base",
+    "de": "Carte ; base",
+    "es": "Carte ; base"
+   },
+   "items": [
+    {
+     "id": "SOG-0227",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Carte : à zoom arrière massif, seuls les aérodromes du SIA restent (France, La Réunion…)",
+     "en": "Map: at a very wide zoom only the SIA aerodromes remain (France, Réunion…)",
+     "de": "Karte: bei sehr weitem Zoom bleiben nur die Flugplätze des SIA (Frankreich, Réunion…)",
+     "es": "Mapa: con el zoom muy alejado solo quedan los aeródromos del SIA (Francia, Reunión…)"
     }
    ]
   },
@@ -2551,7 +2623,7 @@
     {
      "id": "SOG-0186",
      "kind": "bug",
-     "state": "done",
+     "state": "doing",
      "fr": "Données, paquets de pays : pouvoir choisir un pays dans un paquet (liste repliée)",
      "en": "Data, country packs: choose one country inside a pack (folded list)",
      "de": "Daten, Länderpakete: ein Land innerhalb eines Pakets wählen (eingeklappte Liste)",
@@ -2610,6 +2682,42 @@
      "en": "Data, country map: the outlines of two neighbouring countries do not meet",
      "de": "Daten, Länderkarte: die Umrisse zweier Nachbarländer treffen sich nicht",
      "es": "Datos, mapa de países: los contornos de dos países vecinos no coinciden"
+    },
+    {
+     "id": "SOG-0226",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Données : une zone construite avec une source personnelle est dite « À reconstruire » (Suède : « construite » et « À reconstruire » à la fois)",
+     "en": "Data: a zone built with a personal source is said “To rebuild” (Sweden: “built” and “To rebuild” at once)",
+     "de": "Daten: eine mit persönlicher Quelle gebaute Zone heißt „Neu aufzubauen“ (Schweden: „gebaut“ und „Neu aufzubauen“ zugleich)",
+     "es": "Datos: una zona construida con una fuente personal se dice «Por reconstruir» (Suecia: «construida» y «Por reconstruir» a la vez)"
+    },
+    {
+     "id": "SOG-0228",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Données : en attendant la refonte, replier « Paquets de pays », rapetisser et ranger à droite les « Mettre à jour », dire ce que compte « Zones de la couverture (75) », et mener de « 7 à reconstruire » aux 7 zones",
+     "en": "Data: until the redesign, fold “Country packs”, shrink the “Update” buttons, explain “Zones of the coverage (75)”, lead from “7 to rebuild” to the 7 zones",
+     "de": "Daten: bis zur Neugestaltung „Länderpakete“ einklappen, „Aktualisieren“ verkleinern, „Zonen der Abdeckung (75)“ erklären, von „7 neu aufzubauen“ zu den 7 Zonen führen",
+     "es": "Datos: hasta el rediseño, plegar «Paquetes de países», reducir los «Actualizar», explicar «Zonas de la cobertura (75)», llevar de «7 por reconstruir» a las 7 zonas"
+    },
+    {
+     "id": "SOG-0229",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Données : refonte de l'écran de construction de la base, depuis les spécifications fonctionnelles — proposition de l'ergonome pour le jeudi 12/11",
+     "en": "Data: redesign of the base build screen from the functional specifications — proposal for Thursday 12 Nov",
+     "de": "Daten: Neugestaltung des Aufbau-Bildschirms aus den funktionalen Spezifikationen — Vorschlag für Donnerstag, 12.11.",
+     "es": "Datos: rediseño de la pantalla de construcción de la base desde las especificaciones funcionales — propuesta para el jueves 12/11"
+    },
+    {
+     "id": "SOG-0230",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Données : « Publier » répond « 0 fichier envoyé » après une construction (Suède construite, « Rien à publier »)",
+     "en": "Data: “Publish” answers “0 files sent” after a build (Sweden built, “Nothing to publish”)",
+     "de": "Daten: „Veröffentlichen“ meldet „0 Dateien gesendet“ nach einem Aufbau (Schweden gebaut, „Nichts zu veröffentlichen“)",
+     "es": "Datos: «Publicar» responde «0 archivos enviados» tras una construcción (Suecia construida, «Nada que publicar»)"
     }
    ]
   },
@@ -2747,6 +2855,27 @@
      "en": "Launcher log: sets “left aside”, an exception while files are updated, a repeated warning, FAA answering 403",
      "de": "Launcher-Protokoll: Sätze „beiseitegelassen“, Ausnahme während einer Dateiaktualisierung, wiederholte Warnung, FAA mit 403",
      "es": "Registro del lanzador: conjuntos «dejados de lado», excepción durante una actualización de archivos, aviso repetido, FAA con 403"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-lanceur-base",
+   "app": "maintenance",
+   "label": {
+    "fr": "Lanceur ; base",
+    "en": "Lanceur ; base",
+    "de": "Lanceur ; base",
+    "es": "Lanceur ; base"
+   },
+   "items": [
+    {
+     "id": "SOG-0234",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Lanceur : la source militaire britannique (aidu.mod.uk, ENR 5.2) échoue en SSL",
+     "en": "Launcher: the British military source (aidu.mod.uk, ENR 5.2) fails in SSL",
+     "de": "Launcher: die britische Militärquelle (aidu.mod.uk, ENR 5.2) scheitert an SSL",
+     "es": "Lanzador: la fuente militar británica (aidu.mod.uk, ENR 5.2) falla en SSL"
     }
    ]
   },
