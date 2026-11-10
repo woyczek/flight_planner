@@ -3840,15 +3840,16 @@ def d125(c):
     c.js(_STATE_JS)
     c.wait(1500)
     c.eq(c.js("() => window.__mp.S.gc"), None, 'without a known arrival there is no great circle', what='S.gc')
-    # a direct route is its own great circle: a tap on it still places the cursor (the hover of the dotted line must not take the tap)
+    # a direct route is its own great circle: the line follows it (no dotted line), and a tap on it places the cursor
     f = flight()
     f['route']['points'] = [f['route']['points'][0], f['route']['points'][-1]]
     c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
     c.ready('maps', sheet=True)
     c.js(_STATE_JS)
     hook_map(c)
-    c.until("() => !!window.__mp.S.gc && !!window.__mp.S.prof", timeout=10000, what='the direct route, its great circle and its profile')
+    c.until("() => !!window.__mp.S.prof", timeout=10000, what='the direct route and its profile')
     c.wait(600)
+    c.eq(c.js("() => window.__mp.S.gc"), None, 'a direct route is its own great circle: the line follows it, no dotted one under it (SOG-0233)', what='S.gc')
     a, z = f['route']['points'][0], f['route']['points'][-1]
     p = xy(c, (a['lat'] + z['lat']) / 2, (a['lon'] + z['lon']) / 2)
     c.page.mouse.click(*p)
