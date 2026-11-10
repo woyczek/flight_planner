@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 86,
+  "tests": 88,
   "verdicts": 20
  },
  "apps": [
@@ -1210,6 +1210,20 @@
    "delivered": "2026-11-10T14:00:29Z"
   },
   {
+   "id": "SOG-0201",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données, carte des pays : les contours ne se rejoignent pas entre deux pays voisins",
+    "en": "Data, country map: the outlines of two neighbouring countries do not meet",
+    "de": "Daten, Länderkarte: die Umrisse zweier Nachbarländer treffen sich nicht",
+    "es": "Datos, mapa de países: los contornos de dos países vecinos no coinciden"
+   },
+   "test": "Maintenance › Données, carte des pays, zoom sur une frontière (Biélorussie / Ukraine, France / Espagne) : les deux contours suivent la même ligne, plus de vide ni de chevauchement entre voisins.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T15:02:11Z"
+  },
+  {
    "id": "SOG-0203",
    "app": "maintenance",
    "title": {
@@ -1236,6 +1250,20 @@
    "since": "2026-11-10",
    "state": "todo",
    "delivered": "2026-11-10T14:21:14Z"
+  },
+  {
+   "id": "SOG-0205",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : le terrain de dégagement n'est pas pris en compte après sa saisie",
+    "en": "Fuel: the alternate aerodrome is not taken into account after it is typed",
+    "de": "Kraftstoff: der Ausweichflugplatz wird nach der Eingabe nicht übernommen",
+    "es": "Combustible: el aeródromo alternativo no se tiene en cuenta tras escribirlo"
+   },
+   "test": "Carburant › Vol : saisir un terrain de dégagement : son nom, sa météo et la réserve du devis se mettent à jour tout de suite, sans passer par Carte puis revenir.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T15:05:27Z"
   },
   {
    "id": "SOG-0206",
