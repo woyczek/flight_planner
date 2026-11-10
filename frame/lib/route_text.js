@@ -19,6 +19,9 @@
 //     est donné. Niveaux en /Fnnn d'après alt_ft ; coordonnées OACI pour un point sans nom utilisable. Écrit par textFromTokens
 //     en forme OACI, avec ses « DCT » (refonte § 10.33 R-F4c : un seul écrivain du texte, la Carte et Carburant).
 //   icaoCoord(lat, lon) : « 4530N00030E » (degrés et minutes).
+//   Coordonnées lues par tokenize : « 4530N00030E », « 45N000E », et les formes à cinq signes de l'Atlantique Nord (ARINC 424,
+//   SOG-0211) « 5520N » (55°N 020°W) et « 55N20 » (55°N 120°W), la lettre disant le quadrant (N nord-ouest, E nord-est, S sud-est,
+//   W sud-ouest).
 //   provenance(words, prev) : pour chaque mot du texte, vrai s'il vient du dernier « Auto » (voie ou nœud qu'il a écrit), faux
 //     s'il est posé (tapé par le pilote, départ, arrivée) ; prev : [{ w, g }] gardé avec la route (route.auto.seq) (§ 10.31).
 //   formatLevel(ft, transitionFt = 5000) : une seule notation des niveaux dans la suite — « FL060 » à partir de
@@ -26,6 +29,15 @@
 
 const COORD = /^([A-Z0-9]{2,7})\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)(?:\/(?:[NKM]\d{3,4})?F(\d{3}))?/i,
   ICAO_LL = /^(\d{2})(\d{2})?([NS])(\d{3})(\d{2})?([EW])$/,
+  // SOG-0211 : les points de l'Atlantique Nord à cinq signes (ARINC 424) — « 5520N » = 55°N 020°W, « 55N20 » = 55°N 120°W ; la lettre
+  // dit le quadrant : N = nord / ouest, E = nord / est, S = sud / est, W = sud / ouest
+  NAT_LL = /^(\d{2})(\d{2})([NESW])$|^(\d{2})([NESW])(\d{2})$/,
+  NAT_Q = {
+    N: [1, -1],
+    E: [1, 1],
+    S: [-1, 1],
+    W: [-1, -1]
+  },
   NUM = /^-?\d+(?:\.\d+)?$/,
   GROUP = /^[NKM]\d{3,4}([FASM]\d{3,4})?$/,
   AIRWAY = /^[A-Z]{1,2}\d{1,4}[A-Z]?$/,
@@ -112,7 +124,16 @@ export function tokenize(text) {
       lon: (+m[4] + (+m[5] || 0) / 60) * (m[6] === 'W' ? -1 : 1),
       alt_ft: alt
     });
-    else if (NAME.test(tok) && NUM.test(words[i + 1] || '') && NUM.test(words[i + 2] || '')) {
+    else if ((m = NAT_LL.exec(tok))) {
+      const q = NAT_Q[m[3] || m[5]];
+      out.push({
+        kind: 'coord',
+        id: tok,
+        lat: +(m[1] || m[4]) * q[0],
+        lon: (m[2] ? +m[2] : 100 + +m[6]) * q[1],
+        alt_ft: alt
+      });
+    } else if (NAME.test(tok) && NUM.test(words[i + 1] || '') && NUM.test(words[i + 2] || '')) {
       out.push({
         kind: 'coord',
         id: tok,

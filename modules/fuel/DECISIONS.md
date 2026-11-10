@@ -1586,3 +1586,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   saisie, pour sûr. un a/r cartes -> fuel règle le souci »): `setAd` read the weather again for the departure and the arrival only; the
   alternate's METAR came at the next mount. Now a changed alternate schedules the weather too; its name and its write (the Map beside
   reads it) were already immediate (F133 checks the three). F133; counter-test on origin/v3: the alternate's weather never came.
+- **10 Nov 2026 — every ICAO form of coordinates is a route point** (SOG-0211, user's route « KDEN 4959N08712W DCT 5520N06712W … »:
+  « Point inconnu dans AeroDB »): the refusal came from the launcher's engine (tools/route_engine, AeroDB told); Fuel's reader read the
+  ddmmNdddmmW and ddNdddW forms but not the North Atlantic five-character ones (« 5520N », « 55N20 », ARINC 424), now read in
+  `frame/lib/route_text.js` (the Map's reader too). F134; counter-test on origin/v3: « 4602N » left out of the points.

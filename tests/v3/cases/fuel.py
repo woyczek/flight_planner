@@ -3822,3 +3822,24 @@ def f133(c):
     c.until(f"(document.querySelector('{FUEL} [data-adline=altn]')?.textContent || '').toLowerCase().includes('lfmt test')", timeout=8000, what='its name under the field')
     to_step(c, 2)
     c.until(f"{rows}.includes('LFMT')", timeout=12000, what='the weather of the alternate, without leaving Fuel')
+
+
+
+@case('F134', 'Coordinates are route points in every ICAO form — ddmmNdddmmW, ddNdddW and the North Atlantic five-character forms (« 5520N », « 55N20 ») —: read, placed and counted in the distance, never « unknown »',
+      'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0211 (user\'s route « KDEN 4959N08712W DCT 5520N06712W DCT 5645N04039W DCT 5308N01717W LFRS »: « Point inconnu dans AeroDB » — the '
+      'launcher\'s engine, AeroDB told; Fuel\'s reader read the first two forms, not the ARINC 424 five-character ones)')
+def f134(c):
+    c.open('fuel', docs=flight_docs(), airfields=True)
+    wait_quote(c)
+    to_step(c, 1)
+    text = 'LFRS 4600N00100W DCT 46N002W DCT 4602N LFML'
+    c.page.fill(f'{FUEL} textarea[data-k="rtext"]', text)
+    c.page.locator(f'{FUEL} textarea[data-k="rtext"]').blur()
+    f = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and len((d.get('route') or {}).get('points') or []) == 5, 'the five points of the route', timeout=10000)
+    pts = f['route']['points']
+    c.eq([p['id'] for p in pts], ['LFRS', '4600N00100W', '46N002W', '4602N', 'LFML'], 'each coordinate is a point of the route', what='points')
+    nat = pts[3]
+    c.ok(abs(nat['lat'] - 46) < 1e-6 and abs(nat['lon'] + 2) < 1e-6, nat, '« 4602N » is 46°N 002°W (the quadrant N: north / west)')
+    c.ok(f['route']['distanceNm'] > 400, f['route']['distanceNm'], 'the distance goes through them (LFRS → 1°W → 2°W → LFML, about 460 NM: more than the 364 NM direct)')
+    c.eq(c.count(f'{FUEL} [data-unres] [data-unresrow], {FUEL} [data-unres] li'), 0, 'nothing said unknown', what='unknown points')
