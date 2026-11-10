@@ -136,8 +136,8 @@ descenso habituales. Cuando falta sitio, el mapa escribe primero el nombre del a
 las radioayudas, los procedimientos, la ruta (nombres, horas, TOC / TOD) y por último lo demás; una hora estimada o el
 nombre de TOC / TOD se desliza a lo largo de la ruta antes de callarse (el rombo queda).
 
-**Los mapas de misión.** La lista al pie de las capas (el botón de capas) elige lo que muestra el mapa: el vuelo previsto, o una misión de
-la aerolínea. Para una misión, una segunda lista elige entre sus mapas (vista de conjunto, objetivo, detalle…). Cada
+**Los mapas de misión.** Una misión se abre desde Misiones («Ver en el mapa»), o por sí sola en un vuelo preparado desde ella; una ventana arriba a la izquierda del mapa es el único lugar para elegir la misión, su mapa suministrado (vista de conjunto, objetivo, detalle…) y su vista; la pestaña Capas solo ajusta lo que se muestra.
+Cada
 mapa se redibuja como en el estudio: mismo marco, mismo perfil de visualización, con los puntos de la misión, sus zonas
 rayadas y su recorrido. El perfil vertical muestra entonces el de la misión.
 Un vuelo preparado desde una misión abre el mapa en esa misión sin nada que escribir: una banda arriba da su título, su identificador, su familia, el mapa suministrado mostrado y, si hay varios, su elección (siete como máximo). Las zonas son una mancha ligera con su nombre, los puntos llevan su función (salida, llegada, objetivo…) y la leyenda («i») las nombra. La cruz de la banda la quita: se vuelve al vuelo con todas sus capas; otra misión se elige en la lista de capas. El mapa se abre en la vista de su uso: el perfil que lleva el YAML del mapa tiene prioridad; si no, los mapas de objetivo, detalle, cita y zona de una misión operativa (SAR, MEDEVAC, FIRE, LE, ISR, COMBAT, MARITIME, AAR, AIRLIFT, COMMAND: todo salvo comercial) se abren en VFR topo (relieve, obstáculos, VRP, aeródromos VFR, espacios bajos), el mapa general y una misión comercial mantienen la vista del vuelo. La banda ofrece «Vista»: VFR topo, IFR o Solo fondo; la elección se recuerda para ese mapa en el dispositivo, y quitar la banda devuelve la vista del vuelo.
@@ -185,4 +185,4 @@ ciclo, una línea lo dice: los espacios aéreos pueden haber cambiado desde ento
 entonces el perfil habitual del tipo de mapa (detallado para un objetivo o un detalle, simplificado si no) y lo indica.
 Basta con abrir la misión en el estudio y guardarla para que conserve después el suyo.
 
-<!-- fr: 1b584f0a27a3 -->
+<!-- fr: e71e334ee6ea -->

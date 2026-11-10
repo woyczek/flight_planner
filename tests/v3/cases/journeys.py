@@ -472,15 +472,15 @@ def j6(c):
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     c.js(_RAW_JS, [MISSION_PATH, FIXTURE.read_text(encoding='utf-8')])
     c.open('maps', flight=True, aero=True)
-    c.step('P6', 2, 'Couches: the flight selector lists the mission, choosing it opens its map')
+    c.step('P6', 2, 'the Layers tab no longer chooses the mission (SOG-0185 c); Missions → « Voir sur la Carte » opens its map')
     c.tap('[data-mp="layers"]')
-    c.until("[...document.querySelectorAll('.mp-pick option')].some(o => o.value === 'm:ESSAI1')", what='the mission in the flight selector')
-    c.page.select_option('.mp-pick', 'm:ESSAI1')
+    c.eq(c.js("() => document.querySelectorAll('.mp-pick, .mp-mappick').length"), 0, 'no flight / mission choice in the Layers tab', what='choice in Layers')
+    c.go('maps?mission=ESSAI1')
     c.until("location.hash.startsWith('#maps?mission=ESSAI1')", what='the address of the mission map')
     c.ready('maps')
     c.step('P6', 3, 'the buttons of a mission map')
-    c.until(f"document.querySelector('[data-mp=layers]')?.title === {json.dumps(tx(MP, 'pick', c.lang))}", timeout=8000,
-            what='the Layers button named "Carte à montrer"')
+    c.until(f"document.querySelector('[data-mp=layers]')?.title === {json.dumps(tx(MP, 'layers', c.lang))}", timeout=8000,
+            what='the Layers button still named « Couches »')
     for mp in ('route', 'mode', 'edit'):
         c.ok(not c.shown(f'[data-mp="{mp}"]'), f'[data-mp={mp}] shown on a mission map', 'route-edit buttons hidden')
     c.step('P6', 4, "the mission's points drawn, its profile in the sheet")

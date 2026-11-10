@@ -2317,6 +2317,15 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D140 (the width, the airway solid, the SID's tint, the DCT dashed and thinner when not fully checked, the FRA dotted and faded, the fault red, the airway's name and
   the entry / exit written, the key folded in the list and in the map's legend, the hover of a line on the map: highlighted, drawn thick, released); D126 and D136 follow the new widths.
 
+## One tab, one role: the mission window is the only place of the mission (10 Nov 2026, SOG-0185 c)
+
+- **Decided** by the ergonomics from the user's capture of the mission window (the one he likes): that window is the **only** place for the choice of the mission, of its provided map and of its view; the Layers
+  tab loses « the choice of the flight / of the mission » (`.mp-picks`, `S.pickEl`, `S.mapPickEl`, `fillPick`) and keeps what is shown (complexity, « Around the flight only », the boxes); the modes panel does not change;
+  my proposal to move the families of spaces into the modes panel is dropped. The Layers button is « Layers » on a mission map too (it was « Map to show »).
+- **Consequence** to know: from a plain flight map there is no more list to open a mission: a mission opens from Missions (« Voir sur la Carte ») or by itself for a flight prepared from it; the cross of the window gives the
+  flight back. The journey J6 (P6) now opens the mission map by its address.
+- **Noreg** D149 (no choice in the Layers tab of a flight map nor of a mission map, the button's title, the two choices in the window; red before).
+
 ## The mission window that « jumped » (10 Nov 2026, SOG-0196)
 
 - **Reported**: in « Préparer » (the Map beside Fuel) the window of the mission (title, provided map, view, cross) no longer shows on the Map. The ergonomics suspected one of the lot of noon.

@@ -375,8 +375,8 @@ descent. When room is short, the map writes the aerodrome's name first, then the
 procedures, the route (names, times, TOC / TOD), then the rest; an estimated time or the name of TOC / TOD slides
 along the route before it gives up (the diamond stays).
 
-**Mission maps.** The list at the bottom of the layers (the layers button) chooses what the map shows: the planned flight, or a mission of the
-airline. For a mission, a second list chooses among its maps (overview, target, detail…). Each map is redrawn as in
+**Mission maps.** A mission opens from Missions (“See on the Map”), or by itself for a flight prepared from it; a window at the top left of the map is the only place to choose the mission, its provided map (overview, target, detail…) and its view; the Layers tab only sets what is shown.
+Each map is redrawn as in
 the studio: same frame, same display profile, with the mission's points, its hatched areas and its route. The vertical
 profile then shows the mission's.
 A flight prepared from a mission opens the map on that mission with nothing to type: a banner at the top gives its title, identifier, family, the provided map shown and, when there are several, the choice among them (seven at most). Zones are a light flat tint with their name, points carry their role (departure, arrival, target…), and the legend (“i”) names them. The banner's cross removes it: you are back on the flight with all its layers; another mission is chosen in the layers list. The map opens in the view of its use: the profile carried by the map's YAML comes first; otherwise the target, detail, rendezvous and zone maps of an operational mission (SAR, MEDEVAC, FIRE, LE, ISR, COMBAT, MARITIME, AAR, AIRLIFT, COMMAND: everything but commercial) open in VFR topo (relief, obstacles, VRPs, VFR aerodromes, low spaces), the general map and a commercial mission keep the flight's view. The banner offers “View”: VFR topo, IFR or Base map only; the choice is kept for that map on the device, and removing the banner gives the flight's view back.
@@ -423,7 +423,7 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: 1b584f0a27a3 -->
+<!-- fr: e71e334ee6ea -->
 
 <!-- chapter: atmosphere -->
 # Weather

@@ -299,7 +299,7 @@ def d33(c):
     c.js(_RAW_JS, [MISSION_PATH, FIXTURE.read_text(encoding='utf-8')])
     c.open('maps?mission=ESSAI1', aero=True)
     c.until("window.__t.shown(document.querySelector('.f-sheet-panel'))", timeout=10000, what='the mission profile in the sheet')
-    c.eq(c.attr('[data-mp="layers"]', 'title'), row(c, 'pick'), 'the Layers button is "Map to show"', what='Layers title')
+    c.eq(c.attr('[data-mp="layers"]', 'title'), row(c, 'layers'), 'the Layers button is « Layers » on a mission map too (SOG-0185 c)', what='Layers title')
     for mp in ('route', 'mode', 'edit'):
         c.ok(not c.shown(f'[data-mp="{mp}"]'), f'[data-mp={mp}] shown', 'route, mode and Edit hidden on a mission map')
     c.eq(c.count('.mp-chip'), 3, 'three chips', what='chips')
@@ -4859,3 +4859,22 @@ def d148(c):
     c.open('maps?pane=1', docs=fdocs(flight(mission='ESSAI1')), airfields=True, wait=False)
     c.js(_STATE_JS)
     c.until("() => { const b = document.querySelector('.mp-mbar'); return !!b && !b.hidden }", timeout=12000, what='the window at the mount in the double view')
+
+
+@case('D149', 'One tab, one role: the Layers tab has the elements shown (complexity, « around the flight only », the boxes) and no choice of flight or mission; the mission window is the only place of the mission, its provided map and its view', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0185 (c), decided by the user’s capture of the mission window: the window over the map is the only place for the choice of the mission, of its provided map and of its view; the Layers tab loses « the choice of the flight / of the mission » and keeps what is shown; the modes panel does not change; the Layers button is « Layers » on a mission map too')
+def d149(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    c.tap('[data-mp="layers"]')
+    c.until("() => !!document.querySelector('.mp-layers')", timeout=6000, what='the Layers tab')
+    c.eq(c.js("() => document.querySelectorAll('.mp-pick, .mp-mappick, .mp-picks').length"), 0, 'no choice of flight or mission in the Layers tab (flight map)', what='picks')
+    c.eq(c.attr('[data-mp="layers"]', 'title'), row(c, 'layers'), 'the button is « Layers »', what='title')
+    _themed(c, '2_SAR', 'SAR1', 'maps?mission=SAR1&map=carte_cible.png')
+    c.tap('[data-mp="layers"]')
+    c.until("() => !!document.querySelector('.mp-l-detail')", timeout=6000, what='the Layers tab on a mission map')
+    c.eq(c.js("() => document.querySelectorAll('.mp-pick, .mp-mappick, .mp-picks').length"), 0, 'no choice of flight or mission in the Layers tab (mission map)', what='picks')
+    c.eq(c.attr('[data-mp="layers"]', 'title'), row(c, 'layers'), 'the button is « Layers » on a mission map too', what='title mission')
+    c.eq(c.js("() => [...document.querySelectorAll('.mp-mbar select')].map(s => s.className)"), ['mp-mb-sel', 'mp-mb-theme'], 'the window of the mission carries the provided map and the view', what='window')
+    c.shot('D149_layers_mission_390.png')

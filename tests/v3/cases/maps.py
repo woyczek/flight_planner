@@ -616,7 +616,7 @@ def d10(c):
     c.open('maps?mission=NOSUCH1')
     c.wait(1200)
     lb = c.attr(layers_btn(c), 'title')
-    c.eq(lb, row(c, 'pick'), 'for a mission the Layers button is named "Carte à montrer"', what='Layers button title')
+    c.eq(lb, row(c, 'layers'), 'for a mission the Layers button is still « Layers » (one tab, one role: the elements shown; SOG-0185 c)', what='Layers button title')
     for mp in ('route', 'mode', 'edit', 'follow', 'add', 'undo'):
         c.ok(not c.shown(f'[data-mp="{mp}"]'), f'[data-mp={mp}] is displayed on a mission map', 'route-edit buttons are hidden')
     c.ok(c.shown('.mp-empty'), 'no card for a mission without data', 'a card says the mission is not found')

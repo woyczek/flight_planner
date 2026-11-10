@@ -192,7 +192,6 @@ export async function applyMission() {
   S.cursor = null;
   showBox(!!M);
   header();
-  fillPick();
   missionUi();
   status();
   schedule();
@@ -244,34 +243,13 @@ function setTheme(v) {
   schedule();
   buildProfile();
 }
-/** Choix de la carte : vol prévu, puis chaque mission du dépôt ; pour une mission, ses cartes. */
-export async function fillPick() {
-  const q = S.ctx.query || {},
-    list = S.missions || await missionList();
-  if (!S) return;
-  S.missions = list;
-  const cur = S.missionId ? `m:${S.missionId}` : 'flight',
-    html = `<option value="flight">${esc(tt(TX.flight))}</option>${list.length ? `<optgroup label="${esc(tt(TX.missionsGroup))}">${list.map(x => `<option value="m:${esc(x.id)}">${esc(x.id)}</option>`).join('')}</optgroup>` : ''}`;
-  if (S.pickEl.innerHTML !== html) S.pickEl.innerHTML = html;
-  S.pickEl.value = cur;
-  const maps = S.mission?.maps || [],
-    mh = maps.map(m => `<option value="${esc(m.file)}">${esc(m.description || m.file)}</option>`).join('');
-  S.mapPickEl.hidden = maps.length < 2;
-  if (S.mapPickEl.innerHTML !== mh) S.mapPickEl.innerHTML = mh;
-  if (S.mapDef) S.mapPickEl.value = S.mapDef.file;
-}
 /** Adresse de la carte choisie (le cadre remonte le module sur sa nouvelle suite d'adresse). */
 function go(mission, map) {
   location.hash = mission ? `#maps?mission=${encodeURIComponent(mission)}${map ? `&map=${encodeURIComponent(map)}` : ''}` : '#maps?flight=1';
 }
-/** Gestes du choix de la carte (contenu Couches) : un vol ou une mission, puis une carte de la mission ; et la mission montrée
+/** Gestes de la fenêtre de la mission (le seul endroit du choix de la mission, de sa carte fournie et de sa vue, SOG-0185 c) ; et la mission montrée
  *  relue quand son YAML change. Rend la fonction d'arrêt de l'écoute. */
 export function missionEvents() {
-  S.pickEl.addEventListener('change', () => {
-    const v = S.pickEl.value;
-    go(v.startsWith('m:') ? v.slice(2) : '', '');
-  });
-  S.mapPickEl.addEventListener('change', () => go(S.missionId, S.mapPickEl.value));
   S.mbarEl.addEventListener('change', e => {
     if (e.target.matches('.mp-mb-sel')) go(S.missionId, e.target.value);
     else if (e.target.matches('.mp-mb-theme')) setTheme(e.target.value);
@@ -314,7 +292,7 @@ export function missionUi() {
     sets = S.layersEl?.querySelectorAll('.mp-layer-set') || []; // les cases : pas sur une carte de mission ; la Complexité, si (SOG-0183)
   for (const set of sets)
     if (set.hidden !== on) set.hidden = on;
-  const name = tt(on ? TX.pick : TX.layers),
+  const name = tt(TX.layers),
     b = S.layersBtn;
   if (b && b.title !== name) {
     b.title = name;

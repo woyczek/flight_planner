@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: one tab, one role — the Layers tab no longer chooses the flight or the mission** (`modules/maps/layers.js`, `mission_view.js`, `module.js`, help ×4; DECISIONS; noreg D149, J6; SOG-0185 c). The mission window over the map is the
+  only place of the mission, its provided map and its view; the Layers tab keeps what is shown and its button is « Layers » on a mission map too.
+
 - **Fuel: a mission's plan has its distance** (`frame/lib/mission.js`, `modules/fuel/module.js`; Fuel SPEC, DECISIONS; noreg N13;
   SOG-0193). The origin and destination of the mission keep their coordinates when the base does not know them: no « distance
   inconnue » with a route.

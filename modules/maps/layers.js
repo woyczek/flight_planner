@@ -421,7 +421,7 @@ export async function setPreset(v) {
  *  sur une carte de mission, le choix seul. Construit une fois au montage, gardé (les cases gardent leur focus). */
 export function layersHtml(ctx) {
   const mission = !!ctx.query?.mission,
-    name = ctx.t(mission ? TX.pick : TX.layers);
+    name = ctx.t(TX.layers);
   return `<div class="mp-layers" role="group" aria-label="${esc(name)}">
 <div class="mp-layer-set"${mission ? ' hidden' : ''}>
 <label class="mp-l-main"><input type="checkbox" data-layer="corridor"> <span>${esc(ctx.t(TX.layerNames.corridor))}<small class="f-muted">${esc(ctx.t(TX.corrSub))}</small></span></label></div>
@@ -429,9 +429,7 @@ export function layersHtml(ctx) {
 <span id="mp-detail-help" class="f-muted mp-l-help">${esc(ctx.t(TX.detailHelp))}</span></div>
 <div class="mp-layer-set"${mission ? ' hidden' : ''}>
 ${LAYER_KEYS.filter(k => k !== 'corridor' && (k !== 'cov' || covAvail())).map(k => `<label><input type="checkbox" data-layer="${k}"> ${esc(ctx.t(TX.layerNames[k]))}</label>`).join('')}
-<button type="button" class="f-btn" data-layers-reset>${esc(ctx.t(TX.layersReset))}</button></div>
-<div class="mp-picks"><select class="mp-pick" aria-label="${esc(ctx.t(TX.pick))}"></select>
-<select class="mp-mappick" hidden aria-label="${esc(ctx.t(TX.mapOf))}"></select></div></div>`;
+<button type="button" class="f-btn" data-layers-reset>${esc(ctx.t(TX.layersReset))}</button></div></div>`;
 }
 /** Cases et curseur du contenu selon les couches du mode ; écrits seulement s'ils changent. */
 export function fillLayers() {
@@ -461,7 +459,9 @@ export function toggleLayers(open = S.dpanel !== 'layers') {
   if (S.dpanel === 'layers') return;
   releaseAd();
   fillLayers();
-  const name = tt(S.mission || S.missionId ? TX.pick : TX.layers);
+  const name = tt(TX
+    .layers
+  ); // un onglet, un rôle : les éléments affichés ; le choix de la mission, de sa carte et de sa vue est dans la fenêtre de la mission (SOG-0185 c)
   openData('layers', 'layers', name, (w, h, el) => {
     if (S.layersEl.parentNode !== el) el.replaceChildren(S.layersEl);
   }, name);
