@@ -2221,6 +2221,14 @@ async function newFlight() {
   S.ofp = null;
   S.procs = null;
   S.step = 0;
+  // SOG-0194 : rien de l'ancien vol ne reste à l'écran ni pour la Carte — la météo lue et les vents (le ✓ de l'étape Météo), les
+  // itinéraires proposés (route_alts.json vidé : la Carte ne les dessine plus), le contrôle de la route, les points non reconnus
+  S.wx = null;
+  S.aloft = null;
+  altsClear();
+  S.ralts = null;
+  S.rcheck = null;
+  S.unres = null;
   markEnds();
   S.ctx.notify(tt(TX.newFlightDone), 'ok');
   saveFlight();

@@ -173,7 +173,9 @@ to `[data-module="fuel"]`, built on the frame's tokens and classes; no global sh
 **Quote** (fr « Devis », de « Berechnung », es « Cálculo »; the Plan below) and **Sheets** (F5).
 
 - **Opening**: always on the Plan; the Sheets screen opens by its button or by `#fuel?view=sheets`; the last screen is neither kept
-  nor read at mount (F1). « Nouveau vol » at the head empties the flight after a question (the aircraft kept); a new pair of
+  nor read at mount (F1). « Nouveau vol » at the head empties the flight after a question (the aircraft kept), at the tap, wherever one
+  is, back on the step Flight — the mission unlinked, the weather read, the proposed routes withdrawn from route_alts.json (the Map
+  draws none), the route check and the unknown points (SOG-0194, F129, N14); a new pair of
   aerodromes (one end moved more than 150 NM, or both ends changed) clears the old route, procedures and OFP (F86; DECISIONS 1 Nov). A new device never waits without end: its current flight is awaited a few seconds at most (said
   above the step), the aircraft registry likewise, then the screen is free (F84; DECISIONS 1 Nov 2026). The address may ask, once (`ctx.query.focus`, kept as `S.focus`): `route` (the Map's « Edit the route »,
   `#fuel?from=maps&focus=route`) opens step 2 with the route field focused; `arr` (the Map's « Change ») or `dep` opens the step that

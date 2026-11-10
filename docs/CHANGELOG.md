@@ -12,9 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: « Nouveau vol » leaves nothing of the old flight** (`modules/fuel/module.js`; Fuel SPEC, DECISIONS; noreg F129, N14;
+  SOG-0194). The proposed routes are withdrawn for the Map, the weather read and the route check are emptied with the flight.
 - **Météo: the world synoptic line is the first line of the bottom sheet** (`modules/atmosphere/module.js`; SPEC § 4.4, DECISIONS, help ×4; noreg E18; A14, B3, C4, E2 green again). Neither over the map nor above it: in the sheet, above the
   date slider, its height reserved.
-
 - **Map: the taxiway lines appear one level of zoom earlier** (`modules/maps/ground.js`; SPEC § 10.40, DECISIONS, help ×4; noreg D112; SOG-0195, first part). From zoom 13 instead of 14; the names and stands unchanged (the names by importance
   wait for AeroDB's report).
 
@@ -27,7 +28,6 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 - **Map: one tab, one role — the Layers tab no longer chooses the flight or the mission** (`modules/maps/layers.js`, `mission_view.js`, `module.js`, help ×4; DECISIONS; noreg D149, J6; SOG-0185 c). The mission window over the map is the
   only place of the mission, its provided map and its view; the Layers tab keeps what is shown and its button is « Layers » on a mission map too.
-
 - **Fuel: a mission's plan has its distance** (`frame/lib/mission.js`, `modules/fuel/module.js`; Fuel SPEC, DECISIONS; noreg N13;
   SOG-0193). The origin and destination of the mission keep their coordinates when the base does not know them: no « distance
   inconnue » with a route.

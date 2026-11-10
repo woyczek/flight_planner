@@ -3672,3 +3672,23 @@ def f128(c):
     w3 = c.js("() => { const p = document.querySelector('.f-pane .maplibregl-canvas'); return p ? p.getBoundingClientRect().width : -1 }")
     c.ok(w2 != w1 and w3 > w2, f'{w1} {w2} {w3}', 'after « New flight », resizing the window resizes the Map beside Fuel')
     c.check_errors()
+
+
+@case('F129', '« Nouveau vol » leaves nothing of the old flight for the Map: the proposed routes are withdrawn from route_alts.json and from the step Route at the tap',
+      'F', tags=('fuel', 'maps'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0194 (user: « comment annuler une mission en cours de planif ? … nouveau vol. rien ne disparaît »): « Nouveau vol » empties the '
+      'flight, the steps and what the Map draws from Fuel (INTEGRATION § 3 bis: route_alts.json); a fake launcher')
+def f129(c):
+    _route_launcher(c, ['route/compute'])
+    open_proc(c)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3", what='the proposed routes')
+    c.until_doc('cache/fuel/route_alts.json', lambda x: x and len(x.get('alternatives') or []) == 3, 'the routes published for the Map', timeout=8000)
+    c.tap(f'{FUEL} [data-do="newflight"]')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=8000, what='« Nouveau vol » asks first')
+    c.tap('.f-modal [data-ok]')
+    doc = c.until_doc('cache/fuel/route_alts.json', lambda x: x is not None and not (x.get('alternatives') or []), 'the routes withdrawn for the Map', timeout=4000)
+    c.eq(doc.get('alternatives'), [], 'route_alts.json holds no route: the Map draws none', what='alternatives')
+    c.eq(c.count(f'{FUEL} [data-altlist] [data-alt]'), 0, 'and the step Route lists none', what='listed routes')
+    c.eq(c.js(f"document.querySelector('{FUEL} input[data-k=dep]')?.value || ''"), '', 'the step Flight is empty at once', what='departure')

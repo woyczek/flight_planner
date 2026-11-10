@@ -1547,3 +1547,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   an unpublished aerodrome) was dropped by the route reader, and with it the distance (the points alone, or nothing for a direct
   mission). The flight now carries them as known points at the mission's coordinates (aerodb still first). N13; counter-test on
   origin/v3 (33dabad38): 37 NM for a plan of 74.
+- **10 Nov 2026 — « Nouveau vol » leaves nothing** (SOG-0194, user: « carburant -> devis -> vol -> nouveau vol. rien ne disparaît. -> 2
+  -> 1. vide »): on the exact path (from a mission, the Plan, the step Flight, « Nouveau vol », OK) the step's fields already emptied at
+  once at 390, 1 280 and 1 280 beside the Map (N14, green before and after: the screen of Fuel was not reproduced as stale). What did
+  stay: the proposed routes in route_alts.json (the Map kept drawing them; F129, red on origin/v3 2c68caf74: three routes left), and the
+  weather read of the old flight (the ✓ of the step Weather). Both are emptied now, with the route check and the unknown points. The
+  Map's own drawing of the flight route, which stays on its canvas after the record is emptied (its pane says « Aucun vol prévu »), is
+  the Map's (BUGS SOG told); the frozen side map is V3 Frame's.

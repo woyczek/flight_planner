@@ -668,3 +668,47 @@ origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
 destination: { name: Base Test Sud (XTSU), lat: 44.0, lon: 2.0 }
 aircraft: [{ type: C30J Hercules, cruise_level: FL240, cruise_speed_kt: 300 }]
 """
+
+
+
+_NEW_STATE_JS = """() => { const q = s => document.querySelector('[data-module=fuel] ' + s);
+  return { dep: q('input[data-k=dep]')?.value || '', arr: q('input[data-k=arr]')?.value || '', rtext: q('[data-k=rtext]')?.value || '',
+    step: [...document.querySelectorAll('[data-module=fuel] .fu-steps [data-step]')].findIndex(b => b.getAttribute('aria-current') === 'step'),
+    tiles: !!q('.fu-result .f-tiles b'), done: [...document.querySelectorAll('[data-module=fuel] .fu-steps [data-step]')].filter(b => b.textContent.includes('✓')).length } }"""
+
+
+@case('N14', 'Preparing a mission, « Nouveau vol » on the step Flight empties every step, the linked mission and the quote at the tap, and stays on the step Flight — no navigation needed to see it',
+      'N', tags=('missions', 'fuel'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0194 (user: « comment annuler une mission en cours de planif ? carburant -> devis -> vol -> nouveau vol. rien ne disparaît. -> 2 -> 1. '
+      'vide »): the exact path — the mission\'s flight in Fuel, the Plan, the step Flight, « Nouveau vol », OK — read at once, at 390 and 1 280')
+def n14(c):
+    for w, beside in ((390, False), (1280, False), (1280, True)):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        seed_texts(c)
+        c.open('missions', docs=docs(), wait=False, app='company')
+        c.until(f"!!document.querySelector('{M} [data-pane=list] [data-id]')", timeout=15000, what='the list of missions is drawn')
+        c.go('fuel?with=maps&mission=X-002A' if beside else 'fuel?mission=X-002A')
+        c.until_doc('pilot/ABC/current_flight.json', lambda d: d and d.get('mission') == 'X-002A', 'the flight of the mission is written', timeout=10000)
+        c.until("(document.querySelector('[data-module=fuel] input[data-k=dep]')?.value || '') === 'XTST'", timeout=10000, what='the step Flight shows the mission')
+        b = "[data-module=fuel] .fu-steps [data-step='0']"
+        if c.js(f"!!document.querySelector(\"{b}\")"):
+            c.js(f"document.querySelector(\"{b}\").click()")
+        c.settle()
+        c.tap('[data-module="fuel"] [data-do="newflight"]')
+        c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=8000, what='« Nouveau vol » asks first')
+        c.tap('.f-modal [data-ok]')
+        c.until("!document.querySelector('.f-modal')", what='the question is closed')
+        try:
+            c.until(f"(() => {{ const s = ({_NEW_STATE_JS})(); return !s.dep && !s.arr && !s.rtext }})()", timeout=3000, what='-')
+        except Fail:
+            pass
+        after = c.js(_NEW_STATE_JS)
+        c.eq([after['dep'], after['arr'], after['rtext']], ['', '', ''], f'{w} px: departure, arrival and route empty at once, on the step Flight itself', what='[dep, arr, route]')
+        c.ok(after['step'] in (0, -1) and not after['tiles'], after, f'{w} px: the step Flight, no quote left')
+        c.eq(after['done'], 0, f'{w} px: no step keeps its ✓ (the weather read of the old flight is gone too)', what='steps done')
+        d = c.until_doc('pilot/ABC/current_flight.json', lambda d: d and not (d.get('route') or {}).get('dep') and not d.get('mission'), 'the flight written empty, mission unlinked')
+        r = d.get('route') or {}
+        c.eq([r.get('text') or '', len(r.get('points') or []), r.get('distanceNm') or 0, d.get('profile')], ['', 0, 0, None],
+             f'{w} px: the record has no route left — no text, no points, no distance, no profile: the Map has nothing to draw', what='[text, points, distance, profile]')
+        c.wait(3000)
+        c.shot(f'N14_{c.design}_{w}{"_map" if beside else ""}_{c.lang}.png')
