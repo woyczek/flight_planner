@@ -196,7 +196,8 @@ export function levelsHtml(list, bw = 360, bh = 200, also = [], el = null) {
     step = nice(raw - from),
     top = Math.ceil(raw / step) * step,
     bot = from ? Math.max(0, Math.floor((lo0 - (raw - lo0) * .12) / step) * step) : 0,
-    narrow = bw < 600,
+    narrow = bw <
+    440, // sous 440 px la liste passe sous la pile (téléphone) ; au-delà, à sa droite, même dans un volet de Carte à côté de Carburant (SOG-0163 : « dans le profil vertical »)
     L = narrow ? 40 : 46,
     // le graphique garde la largeur que ses colonnes demandent (22 px au plus sur un téléphone, 14 au moins : le numéro reste lisible),
     // l'axe et ses libellés, la marge ; il n'est borné que par 60 % du bloc. Il ne cède jamais à la liste : c'est la liste qui passe sur
@@ -210,7 +211,8 @@ export function levelsHtml(list, bw = 360, bh = 200, also = [], el = null) {
     tailPx = Math.max(0, ...list.map(a => a.lower == null && a.upper == null ? 0 : `${MapsRender.siaLimit(a.lower)}|${MapsRender.siaLimit(a.upper)}`.length + (a.cls ? 4 : 0))) * fs * .95 * .92 *
     .6,
     pitch = Math.max(14, Math.min(22, (bw - 12 - (fs * .95 * 2.4 + tailPx + 4) - L - 6) / Math.max(1, rows.length))),
-    W = Math.min(bw, Math.round(Math.max(floorW, narrow ? Math.min(bw * .6, L + 6 + rows.length * pitch) : Math.min(400, bw * .6, Math.max(
+    W = Math.min(bw, Math.round(Math.max(floorW, narrow ? Math.min(bw * .6, L + 6 + rows.length * pitch) : Math.min(400, bw * (bw < 600 ?
+      .45 : .6), Math.max(
       240, L + 12 + rows.length * 36))))),
     // avec la ligne « Aussi ici », le plancher de la hauteur laisse la place de la ligne
     // au téléphone la pile reste en haut de la feuille quand la fiche est ouverte (elle ne défile pas avec elle) : elle ne prend alors que le

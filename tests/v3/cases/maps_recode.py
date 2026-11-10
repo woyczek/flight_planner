@@ -3260,7 +3260,11 @@ def d112(c):
     c.ok(st and st['twy'] > 50 and st['pts'] == 0 and st['asked'] == 0, f'{st}', 'at 14: the same, still no name')
     _ground_at(c, 15, 1200)
     st = c.js(_GSTAT)
-    c.ok(st['twy'] > 20 and st['pts'] == 0 and 8 < st['names'] <= st['asked'], f'{st}', 'at 15: the lines and the names of the taxiways, no stand')
+    holds = c.js("() => (window.__mp.S.ground.hits || []).filter(h => h.id && !h.pts && /^hold|^h/.test(String(h.id))).length")
+    c.ok(st['twy'] > 20 and 8 < st['names'] <= st['asked'], f'{st}', 'at 15: the lines and the names of the taxiways')
+    nh15 = c.js("() => { const g = window.__mp.S.ground, r = [...g.cache.values()].find(x => x.items); const hs = new Set(r.items.filter(i => i.kind === 'hold').map(i => i.id)); return [g.hits.filter(h => !h.pts && hs.has(h.id)).length, g.hits.filter(h => !h.pts && !hs.has(h.id)).length] }")
+    c.ok(nh15[0] > 0 and nh15[1] == 0, str(nh15), 'at 15 the hold points (red) are there, no stand yet (SOG-0195: the user reads them as « no entry »)')
+    c.shot('D112_holds_at_15_delivered.png')
     _ground_at(c, 16, 1200, _PARK_AT)
     st = c.js(_GSTAT)
     c.ok(st['twy'] > 8 and st['pts'] > 8 and st['names'] > 8, f'{st}', 'at 16: stands and holds as points, with their names')
@@ -5386,3 +5390,28 @@ def d_unnamed(c):
     c.until("() => !!document.querySelector('.mp-gd-unnamed')", timeout=8000, what='the panel says some taxiways have no name')
     t = c.js("() => document.querySelector('.mp-gd-unnamed').textContent")
     c.ok(re.search(r'\d+', t) is not None and ('OpenStreetMap' in t), t, 'it says how many and that the source does not name them')
+
+
+@case('D170', 'The sheet of a space in a pane of the width of a Map beside Fuel (about 500 px): the card is beside the stack, as from 440 px of body; under 440 px (a phone) it stays under', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0163 (the user: « dans le profil vertical »; ergonomics proposal: the threshold at 440 px instead of 600): beside Fuel the pane is about half a screen, the list of the spaces went under the stack; it is now to its right from 440 px, tight, on two lines per space')
+def d_lvwide(c):
+    ring = lambda la0, la1, lo0, lo1: [[la0, lo0], [la0, lo1], [la1, lo1], [la1, lo0], [la0, lo0]]
+    zones = [{'type': 'R', 'cls': '', 'name': '61', 'key': 'LFR61', 'lower': 'SFC', 'upper': 'FL115', 'src': 'sia', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]},
+             {'type': 'D', 'cls': '', 'name': '62', 'key': 'LFD62', 'lower': 'SFC', 'upper': 'FL195', 'src': 'sia', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]}]
+    for w, beside in ((500, True), (420, False)):
+        c.page.set_viewport_size({'width': w, 'height': 844})
+        c.open('maps', docs=fdocs(_awy_flight()) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airspaces=zones, wait=False)
+        c.ready('maps', sheet=True)
+        c.js(_STATE_JS)
+        c.until("() => !!(window.__mp.S && window.__mp.S.prof && window.__mp.S.prof.crossed.some(x => x.a.type === 'R'))", timeout=15000, what=f'{w}: the profile crosses the R')
+        c.wait(900)
+        c.js("async () => { const S = window.__mp.S; (await import('/modules/maps/profile_view.js')).setCursor(S.prof.total * .33); window.__want = 'R'; return true }")
+        _open_space_from_profile(c, "() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && k.textContent.length > 20 }", f'the sheet of an R opens ({w} px)')
+        c.wait(600)
+        g = c.js(_STACK_JS)
+        c.shot(f'D170_sheet_{w}_delivered.png')
+        if beside:
+            c.ok(g['card'][0] >= g['stack'][2] - 1, str(g), f'{w} px: the card is beside the stack')
+        else:
+            c.ok(g['card'][1] >= g['stack'][3] - 1, str(g), f'{w} px: the card is under the stack')

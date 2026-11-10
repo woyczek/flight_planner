@@ -2299,6 +2299,12 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done**: the light drawing paints every airway in the low colour (high ones too); a zoom that crosses a threshold *during* a gesture shows the new state only at rest.
 - **Noreg** D141 (zoom 8: the airways are in the light drawing and stroked while moving; zoom 3: none, no stroke; red before: 3 airways at zoom 3).
 
+## The hold points from the names' zoom; the list of the spaces to the right of the stack from 440 px (11 Nov 2026, the user's answers of 10 Nov evening: SOG-0195, SOG-0163)
+- **SOG-0195 « no entry »**: the user reads the red hold points as « no entry » and wants them earlier: shown (and named) from zoom 15, the zoom of the taxiway names, not 16 (the stands stay at 16). D112
+  (red before: no hold at 15), capture `D112_holds_at_15_delivered.png`.
+- **SOG-0163**: « dans le profil vertical »: the sheet of a space (`lv.js`) puts its card/list to the right of the stack from 440 px of sheet body (was 600), the stack taking 45 % of the width between 440 and 600
+  (tight, two lines per space); under 440 (a phone) it stays under. D170 at 500 and 420 px, captures `D170_sheet_500_delivered.png`, `D170_sheet_420_delivered.png`.
+
 ## Aerodromes at a wide zoom: the rank does not depend on the country (10 Nov 2026, SOG-0227, capture 164151); the ground without names (SOG-0232)
 - **SOG-0227 — cause** (found in the code, checked on the real files served by the user's launcher, read-only): the base has 80 zones (the US: 6 034 aerodromes, Canada 442…), all with a runway length and `public`;
   but `controlled` (the tower) and `afis` exist only in the SIA files (the AIXM parser); the FAA's, for one, has no such field. `AD_RANK` read the missing field as « no tower »: a small French field with a tower

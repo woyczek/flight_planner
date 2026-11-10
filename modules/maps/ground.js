@@ -277,7 +277,8 @@ export function groundLayout(toC, zReal, W, H) {
         it,
         pts
       });
-    } else if (it.kind === 'apron' ? at(zReal, Z_NAME) : at(zReal, Z_PARK)) { // les aires (leur nom) dès le zoom des noms, avant les postes
+    } else if (it.kind === 'apron' || it.kind === 'hold' ? at(zReal, Z_NAME) : at(zReal,
+        Z_PARK)) { // les aires (leur nom) et les points d'attente (rouges : « no entry ») dès le zoom des noms, avant les postes (SOG-0195)
       const p = toC(it.point[1], it.point[0]);
       if (p.x > -10 && p.x < W + 10 && p.y > -10 && p.y < H + 10) shown.push({
         it,
@@ -363,18 +364,17 @@ export function groundLayout(toC, zReal, W, H) {
             got = put(`gnd:${grpOf(list[0].it)}`, list.map(s => s.it.id), at3, w);
           if (got) write(got, name, w);
         }
-        // 3. les postes et les attentes, au zoom des postes
-        if (at(zReal, Z_PARK))
-          for (const s of shown) {
-            const it = s.it;
-            if (!it.name || it.kind === 'twy' || it.kind === 'apron') continue;
-            const w = c.measureText(it.name).width + 4,
-              got = put(`gnd:${it.id}`, [it.id], [{
-                x: s.pts[0].x + 4 + w / 2,
-                y: s.pts[0].y
-              }], w);
-            if (got) write(got, it.name, w);
-          }
+        // 3. les attentes (au zoom des noms), puis les postes (au zoom des postes)
+        for (const s of shown) {
+          const it = s.it;
+          if (!it.name || it.kind === 'twy' || it.kind === 'apron' || it.kind !== 'hold' && !at(zReal, Z_PARK)) continue;
+          const w = c.measureText(it.name).width + 4,
+            got = put(`gnd:${it.id}`, [it.id], [{
+              x: s.pts[0].x + 4 + w / 2,
+              y: s.pts[0].y
+            }], w);
+          if (got) write(got, it.name, w);
+        }
       }
       // le poste ou l'attente surlignés, par-dessus (un anneau d'accent) ; la voie l'a été sous ses noms
       for (const h of shown.filter(s => s.it.kind !== 'twy' && grpOf(s.it) === hl)) {
