@@ -5092,8 +5092,11 @@ def l66(c):
     fold = lambda p: f'[data-pack={p}] details[data-pack-fold]'
     c.eq([c.count(fold('ouest')), c.count(fold('asie')), c.count(fold('antarctique'))], [1, 1, 0], 'a fold in each region that has countries, none in an empty pack', what='folds')
     c.eq(c.js("document.querySelector('[data-pack=asie] details[data-pack-fold]').open"), False, 'folded by default', what='folded')
-    c.eq(norm(c.text(fold('asie') + ' > summary')), norm(PT('countries').replace('{n}', '2')), 'titled « Pays (2) » in the language of the run', what='summary')
-    c.eq(c.count('[data-pack=asie] [data-pack-switch=asie]'), 1, 'the switch of the pack stays', what='switch')
+    # SOG-0186 refused at 17:25 (« mettre le chevron d'ouverture sur la ligne même, et réduire le bouton ») : the chevron IS the line of the pack — the summary holds the switch, the name and the counts; « Mettre à jour (n) » is a discreet link at its right, in that line
+    c.eq(c.count(fold('asie') + ' > summary [data-pack-switch=asie]'), 1, 'the switch of the pack is in the summary: the chevron is on the line itself', what='switch')
+    c.ok(c.js("document.querySelector('[data-pack=asie] [data-pack-switch=asie]').getAttribute('aria-label')") in c.text(fold('asie') + ' > summary') and '2' in c.text(fold('asie') + ' > summary'), c.text(fold('asie') + ' > summary'), 'the summary says the name and the counts of the pack, not a line of its own « Pays (2) »')
+    g0 = c.js("() => { const r = e => e.getBoundingClientRect(), s = document.querySelector('[data-pack=ouest] details[data-pack-fold] > summary'), u = s.querySelector('[data-act=update-pack]'); return u ? { h: Math.round(r(s).height), right: Math.round(r(s).right - r(u).right), small: getComputedStyle(u).textDecorationLine, bg: getComputedStyle(u).backgroundColor } : null }")
+    c.ok(g0 is not None and g0['right'] <= 24 and (g0['h'] <= 60 or c.width < 700) and g0['bg'] == 'rgba(0, 0, 0, 0)', g0, '« Mettre à jour (n) » is a discreet link (no filled button) at the right of the pack line, which stays one line high from 700 px (it wraps below that)')
     c.tap(fold('asie') + ' > summary')
     c.wait(300)
     cov0 = c.doc('cache/data/coverage.json')
@@ -5101,7 +5104,7 @@ def l66(c):
     g = c.js("() => { const o = document.querySelector('[data-pack=asie] details[data-pack-fold] > .d-opts'), cs = getComputedStyle(o); return { overflow: cs.overflowY, max: cs.maxHeight } }")
     c.ok(g['overflow'] == 'auto' and g['max'] != 'none', g, 'the open fold has a bounded height and scrolls inside itself')
     dx = c.js("() => { const r = e => e.getBoundingClientRect(); return r(document.querySelector('[data-pack=asie] [data-pack-cov=jp]')).left - r(document.querySelector('[data-pack-switch=asie]')).left }")
-    c.ok(18 <= dx <= 40, dx, 'the countries of the open fold are one step in from the switch of their pack (they sit under it, not at the same level as the packs)')
+    c.ok(0 <= dx <= 40, dx, 'the countries of the open fold sit under the switch of their pack, not left of it (the chevron is on the pack’s line)')
     if c.width in (390, 1280):
         c.shot(f"L66_standard_{c.width}_{lang}_delivered.png")   # the delivered state, read by the ergonomist
     c.tap('[data-pack=asie] [data-pack-cov=jp]')

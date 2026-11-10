@@ -105,7 +105,11 @@ export const STYLE = `
 [data-module="data"] details.d-pack>.d-opts>.d-zrow:not(:first-child){padding-left:24px}
 [data-module="data"] .d-choice [data-packs] details.d-pack-countries>.d-opts{max-height:min(40vh,260px);overflow-y:auto}
 [data-module="data"] details.d-pack-countries>.d-opts>.d-zrow{padding-left:28px}
-[data-module="data"] details.d-pack-countries>summary{min-height:var(--sog-touch);display:flex;align-items:center;cursor:pointer;padding-left:28px}
+[data-module="data"] details.d-pack>summary.d-packline,[data-module="data"] details.d-pack>summary{min-height:var(--sog-touch);display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;cursor:pointer}
+[data-module="data"] .d-packname{flex:1 1 9em;min-width:0}
+[data-module="data"] .d-switch{min-height:var(--sog-touch)}
+[data-module="data"] .d-link{background:none;border:0;padding:0 4px;margin-left:auto;font-size:.875em;color:var(--sog-accent,currentColor);text-decoration:underline;cursor:pointer;min-height:var(--sog-touch)}
+[data-module="data"] .d-link[disabled]{color:inherit;opacity:.5;cursor:default;text-decoration:none}
 [data-module="data"] .d-choice>h4[data-zones-title]{margin:12px 0 4px;font-size:1rem}
 [data-module="data"] .d-tabs{display:flex;gap:8px;margin:0 0 8px}
 [data-module="data"] .d-tabs button{min-height:var(--sog-touch)}
@@ -132,8 +136,6 @@ export const STYLE = `
 [data-module="data"] .d-covsrc{margin:0;padding-left:16px}
 @media (max-width:480px){[data-module="data"] .d-covtab{font-size:.7rem}[data-module="data"] .d-covtab th,[data-module="data"] .d-covtab td{padding:2px 1px}[data-module="data"] .d-covtab button{padding:0 1px}}
 @media (pointer:fine){[data-module="data"] .d-covtab button{min-height:32px}}
-[data-module="data"] .d-packact{margin:0 0 4px 28px}
-[data-module="data"] .d-packact button{min-height:var(--sog-touch)}
 [data-module="data"] .d-zsteps{grid-column:1/-1;margin:0 0 6px 28px;padding-left:20px;font-size:var(--sog-size-s)}
 [data-module="data"] .d-zsteps li{min-height:0;margin:2px 0}
 [data-module="data"] .d-zup{grid-column:1/-1;margin:0 0 4px 28px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}

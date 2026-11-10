@@ -676,3 +676,5 @@ The launcher's verb `base/move-sources` (`{ dry?: true, undo?: false }`, `tools/
   as bounded whole numbers, forty files at most; no path, no free text. Cases: L29 (every state, with its counter-test).
 - **Cases**: K67 (the Python inventory on a test repository), I36 (the route: the workstation only, seven places, nothing written),
   L26 (the card: folded, one read when opened, the seven lines, unreadable said, a hostile answer).
+
+- **SOG-0186 retaken + SOG-0228 (d) (10 Nov 2026, 17:25 refusal: « mettre le chevron d'ouverture sur la ligne même, et réduire le bouton, voire le remplacer par une url ! »)**: a pack's line is its `summary` — the chevron on the line itself, the switch (a box alone: the name is not its label, so a tap on the name unfolds instead of adding the whole pack), the name and the counts, and « Mettre à jour (n) » as a **discreet link** at the right (`.d-link`, no filled button; it wraps below the name at 390 px); a theme's line is the same. No more « Pays (n) » line nor `.d-packact` line below the pack. Cases L66, L68.

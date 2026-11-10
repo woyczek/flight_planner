@@ -42,7 +42,7 @@ const zonesAttr = st => ` data-zones="${esc(st.known.join(','))}"`;
 function packUpdateHtml(p, st) {
   if (!st.inCoverage.length) return '';
   const off = frozen() || updateGate(st.inCoverage).disabled ? ' disabled' : '';
-  return `<p class="d-packact"><button type="button" data-act="update-pack" data-pack="${esc(p.id)}"${off}>${esc(tt(TX.upd.updatePack, { n: st.inCoverage.length }))}</button></p>`;
+  return `<button type="button" class="d-link" data-act="update-pack" data-pack="${esc(p.id)}"${off}>${esc(tt(TX.upd.updatePack, { n: st.inCoverage.length }))}</button>`;
 }
 /** La rangée d'un paquet régional : UN INTERRUPTEUR « tout le paquet dans la couverture » (coché quand toutes ses zones y sont, « à moitié » quand une partie y est) : l'allumer ajoute les zones qui manquent, l'éteindre retire toutes ses
  *  zones de la couverture après une confirmation qui nomme ce qui sera décoché (jamais purgé). Le survol ou l'appui de la rangée surligne ses zones sur la carte. */
@@ -51,16 +51,16 @@ function regionRow(p) {
   if (p.empty || !p.zones.length) return `<li data-pack="${esc(p.id)}" data-empty><b>${esc(nameOf(p))}</b> <span class="f-muted" data-pack-empty>${esc(emptyText(p))}</span></li>`;
   const all = st.known.length > 0 && !st.toAdd.length,
     some = st.inCoverage.length > 0 && st.toAdd.length > 0;
-  return `<li data-pack="${esc(p.id)}" data-kind="region"${zonesAttr(st)}><label class="d-opt"><input type="checkbox" role="switch" data-pack-switch="${esc(p.id)}"${all ? ' checked' : ''}${some ? ' data-mixed' : ''}${frozen() ? ' disabled' : ''}><span><b>${esc(nameOf(p))}</b> <span class="f-muted">${esc([count('country', st.known.length), sizeOf(st)].filter(Boolean).join(' · '))}${some ? ` · ${esc(tt(TX.packs.some, { n: st.inCoverage.length }))}` : ''}</span></span></label>
-    ${packUpdateHtml(p, st)}${countriesHtml(p, st)}${notesHtml(p, st)}</li>`;
+  const line = `<label class="d-opt d-switch"><input type="checkbox" role="switch" data-pack-switch="${esc(p.id)}"${all ? ' checked' : ''}${some ? ' data-mixed' : ''}${frozen() ? ' disabled' : ''} aria-label="${esc(nameOf(p))}"></label><span class="d-packname"><b>${esc(nameOf(p))}</b> <span class="f-muted">${esc([count('country', st.known.length), sizeOf(st)].filter(Boolean).join(' · '))}${some ? ` · ${esc(tt(TX.packs.some, { n: st.inCoverage.length }))}` : ''}</span></span>${packUpdateHtml(p, st)}`;
+  return `<li data-pack="${esc(p.id)}" data-kind="region"${zonesAttr(st)}>${countriesHtml(p, st, line)}${notesHtml(p, st)}</li>`;
 }
 /** Le pli « Pays (n) » d'une rangée régionale (SOG-0186), replié par défaut : les pays du paquet dans la même grille que la liste des zones, une case chacun (cochée = déjà dans la couverture) ; cocher ajoute ce pays seul, décocher le retire après la
  *  question des thèmes (jamais purgé), sans rien télécharger ni construire. Ouvert, sa hauteur est bornée et il défile en lui-même : les paquets voisins restent à portée. */
-function countriesHtml(p, st) {
+function countriesHtml(p, st, line) {
   const cov = new Set(S.d.cov.ids),
     off = frozen() ? ' disabled' : '',
     key = `c:${p.id}`;
-  return `<details class="d-pack d-pack-countries" data-pack-fold="${esc(key)}"${S.packOpen.has(key) ? ' open' : ''}><summary>${esc(tt(TX.packs.countries, { n: st.known.length }))}</summary>
+  return `<details class="d-pack d-pack-countries" data-pack-fold="${esc(key)}"${S.packOpen.has(key) ? ' open' : ''}><summary class="d-packline">${line}</summary>
     <div class="d-opts" data-pack-zones>${st.known.map(z => `<div class="d-zrow" data-pack-zone-row="${esc(z)}"><label class="d-opt"><input type="checkbox" data-pack-cov="${esc(z)}"${cov.has(z) ? ' checked' : ''}${off}><span>${esc(M.zoneName(S.d.zones, z, li()))}</span></label></div>`).join('')}</div></details>`;
 }
 /** Un thème : un pli (son nom, le nombre de pays et ce qui reste à ajouter) qui montre ses pays dans la MÊME grille que la liste des zones — une case (dans la couverture ou non), le nom — l'état d'un pays de la couverture est dit une fois, dans la liste des zones — et, en tête, un interrupteur
@@ -73,12 +73,12 @@ function themeRow(p) {
     some = st.inCoverage.length > 0 && st.toAdd.length > 0,
     off = frozen() ? ' disabled' : '';
   return `<li data-pack="${esc(p.id)}" data-kind="theme"${zonesAttr(st)}><details class="d-pack" data-pack-theme="${esc(p.id)}"${S.packOpen.has(p.id) ? ' open' : ''}>
-    <summary><b>${esc(nameOf(p))}</b> <span class="f-muted">${esc(tt(TX.packs.themeCount, { n: count('country', st.known.length), m: st.toAdd.length }))}</span></summary>
+    <summary><b>${esc(nameOf(p))}</b> <span class="f-muted">${esc(tt(TX.packs.themeCount, { n: count('country', st.known.length), m: st.toAdd.length }))}</span>${packUpdateHtml(p, st)}</summary>
     <div class="d-opts" data-pack-zones>
       <div class="d-zrow"><label class="d-opt"><input type="checkbox" role="switch" data-pack-switch="${esc(p.id)}"${all ? ' checked' : ''}${some ? ' data-mixed' : ''}${off}><span><b>${esc(tt(TX.packs.themeAll))}</b></span></label></div>
       ${st.known.map(z => `<div class="d-zrow" data-pack-zone-row="${esc(z)}"><label class="d-opt"><input type="checkbox" data-pack-cov="${esc(z)}"${cov.has(z) ? ' checked' : ''}${off}><span>${esc(M.zoneName(S.d.zones, z, li()))}</span></label></div>`).join('')}
     </div>
-    ${notesHtml(p, st)}</details>${packUpdateHtml(p, st)}</li>`;
+    ${notesHtml(p, st)}</details></li>`;
 }
 /** Le bloc des paquets (dans la carte de la couverture) : les paquets régionaux puis les filtres thématiques ; '' sans `packs()` ou sans paquet lisible. */
 export function packsHtml() {
