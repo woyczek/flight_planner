@@ -520,6 +520,10 @@
     ivaoFail: ['Connexion à IVAO refusée ({e}).', 'IVAO sign-in refused ({e}).', 'IVAO-Anmeldung abgelehnt ({e}).',
       'Inicio de sesión en IVAO rechazado ({e}).'
     ],
+    // coupe-boucle des rechargements (SOG-0209) : la cause est dite telle que le cadre la connaît (technique, en anglais)
+    loop: ['Rechargements en série arrêtés : {c}', 'Chain of reloads stopped: {c}', 'Serie von Neuladungen angehalten: {c}',
+      'Serie de recargas detenida: {c}'
+    ],
     // ctx.needLauncher : la raison, dite pareil dans tous les modules (SOG-0208)
     need: {
       none: [
@@ -2435,7 +2439,7 @@
   async function goStatus(go) {
     if (go === 'live') return void(gpsWatch !== null ? liveApi().disable() : liveApi().enable());
     if (go === 'update') return void reloadNewVersion();
-    if (go === 'reload') return void location.reload();
+    if (go === 'reload') return void selfNavigate('reload: status line', () => location.reload());
     if (go === 'retry-launcher') return void recheckLauncher().then(ok => notify(t(ok ? T.need.back : T.need.still), ok ? 'ok' :
       'warn'));
     if (go.startsWith('card:')) {
@@ -2496,7 +2500,8 @@
         to = '#report?from=flightlog';
       } else to = '#flightlog';
     }
-    if (to.startsWith('?')) return void location.assign(new URL(to, location.href).href); // une autre application du cadre
+    if (to.startsWith('?')) return void selfNavigate(`app: ${to}`, () => location.assign(new URL(to, location.href)
+      .href)); // une autre application du cadre
     // même adresse : rien ne change, sauf pour un CR (report reprend le passage à son montage, donc il est monté de nouveau)
     if (location.hash === to) return go.startsWith('report:') ? route() : undefined;
     if (isModule(to.slice(1).split('?')[0]) && !to.includes('from=')) viaMenu = true;
@@ -3103,7 +3108,7 @@
       const p = APPS[e.target.closest('[data-app]:not([disabled])')?.dataset.app];
       if (!p) return;
       closeTabPop();
-      if (p !== APP) location.replace(appHref(p));
+      if (p !== APP) selfNavigate(`app: ${p.id}`, () => location.replace(appHref(p)));
     }, opt);
     el.querySelector('[aria-current]')?.focus({
       preventScroll: true
@@ -3119,16 +3124,25 @@
    *  navigation à la fois : chaque appel prend un jeton, et une reprise après un await dont le jeton n'est plus le dernier
    *  abandonne sans rien écrire (la vue est déjà vidée par la navigation suivante, qui a démonté le module en cours de montage). */
   async function route() {
+    routeLog.push({
+      t: Date.now(),
+      h: location.hash.slice(0, 80)
+    });
+    if (routeLog.length > 20) routeLog.shift();
     sayUpdate(); // un changement d'écran : la note d'une nouvelle version différée revient (5 min au plus souvent)
     // retour de l'OpenID d'IVAO arrivé sans recharger la page (même document) : jetons rangés, adresse remplacée, puis le routage
     if (location.hash.startsWith('#ivao-return?')) return void takeIvaoReturn().then(route);
     // ancienne adresse d'un écran gardée en renvoi (l'adresse remplacée : le retour arrière ne la rejoue pas)
     const moved = MOVED[parseHash().id];
-    if (moved) return void location.replace(`#${moved}`);
+    if (moved && selfNavigate(`redirect: moved ${parseHash().id} → ${moved}`, () => location.replace(`#${moved}`), {
+        auto: true
+      })) return;
     // l'adresse d'un module d'une autre application que celle-ci lui passe (APP.elsewhere : « Préparer ce vol » de Compagnie
     // ouvre Carburant dans Pilote) : la même adresse dans cette application-là
     const away = APPS[APP.elsewhere?.[parseHash().id]];
-    if (away && away !== APP) return void location.replace(appHref(away).replace(/#.*$/, location.hash));
+    if (away && away !== APP && selfNavigate(`redirect: elsewhere ${parseHash().id} → ${away.id}`, () => location.replace(appHref(away).replace(/#.*$/, location.hash)), {
+        auto: true
+      })) return;
     const h = parseHash(),
       id = h.id || visibleModules()[0]?.id || 'settings';
     // écrans du cadre (aide, feuille de route, réglages, conflits) par-dessus le module courant, qui reste monté
@@ -3950,7 +3964,9 @@
             launcher: launcherHere ? {
               host: launcherHere.host,
               lan: launcherHere.lan
-            } : null
+            } : null,
+            // SOG-0209 : les rechargements du cadre (dix dernières secondes), la série arrêtée avec sa cause, les dernières adresses routées
+            reloads: reloadsState()
           },
           aerodb: a ? {
             source: a.source,
@@ -4485,6 +4501,7 @@
   let aerodb = null,
     configured = null; // transport branché (missing : usages d'échange sans moyen d'échange ici)
   async function boot() {
+    noteLoad();
     try {
       Icons = await import(new URL('frame/lib/icons.js', ROOT).href);
     } catch (e) {
@@ -4564,7 +4581,8 @@
       adoptAnon();
     });
     // le cartouche « Version ancienne » : recharge (page plus ancienne que le lanceur), ou prend la version suivante prête (appareil sans lanceur)
-    $('fStale').onclick = () => $('fStale').dataset.go === 'update' ? reloadNewVersion() : location.reload();
+    $('fStale').onclick = () => $('fStale').dataset.go === 'update' ? reloadNewVersion() : selfNavigate('reload: stale cartouche', () =>
+      location.reload());
     window.addEventListener('resize', fitStale);
     $('fSync').onclick = async () => {
       if (over?.id === 'conflicts') return leaveOver();
@@ -4707,6 +4725,89 @@
       urls: [...await moduleFiles(), ...await helpFiles()]
     })).catch(e => console.warn('service worker', e));
   }
+  // ---- coupe-boucle des rechargements que le cadre déclenche lui-même (SOG-0209, « refresh en boucle ») : un rechargement ou une redirection de page
+  // (version nouvelle, redirection d'une application à l'autre, écran déplacé) passe par selfNavigate, qui le note dans sessionStorage (il survit
+  // au rechargement, pas à l'onglet fermé). Au troisième en dix secondes, un geste de l'utilisateur passe toujours, mais un rechargement SANS geste
+  // (`auto`) est refusé : la page reste, le dit (notification) et garde la cause dans le diagnostic (page.reloads). Chaque chargement de page est noté
+  // aussi (type de navigation) : trois chargements en dix secondes dont le cadre n'est pas l'auteur (le navigateur, un autre script) sont dits de même.
+  const NAV_KEY = 'sog-frame-nav',
+    NAV_WINDOW_MS = 10000,
+    NAV_MAX = 3;
+  let navStopped = null; // { cause, at } : la série arrêtée de cette page
+  const routeLog = []; // les dernières adresses routées (diagnostic) : { t, h }
+  const navLog = () => {
+    try {
+      return (JSON.parse(sessionStorage.getItem(NAV_KEY) || '[]') || []).filter(e => e && Date.now() - e.t < NAV_WINDOW_MS);
+    } catch {
+      return []; // stockage indisponible : pas de coupe-boucle, jamais d'erreur
+    }
+  };
+  const navNote = e => {
+    try {
+      sessionStorage.setItem(NAV_KEY, JSON.stringify([...navLog(), e].slice(-8)));
+    } catch {
+      /* stockage indisponible */
+    }
+  };
+
+  function navStop(cause) {
+    navStopped = {
+      cause,
+      at: new Date().toISOString(),
+      log: navLog()
+    };
+    console.warn('reload loop stopped:', cause, navStopped.log);
+    notify(t(T.loop, {
+      c: cause
+    }), 'err', {
+      key: 'reload-loop'
+    });
+  }
+  /** Le cadre recharge ou redirige la page : go() est appelé, sauf pour un rechargement sans geste (auto) qui serait le troisième en dix secondes
+   *  (ou après un arrêt) : rend false, la page reste. cause : technique, en anglais (« redirect: elsewhere missions → company »). */
+  function selfNavigate(cause, go, {
+    auto = false
+  } = {}) {
+    const before = navLog().filter(e => e.k === 'self').length;
+    if (auto && (navStopped || before >= NAV_MAX - 1)) {
+      if (!navStopped) navStop(cause);
+      return false;
+    }
+    navNote({
+      t: Date.now(),
+      k: 'self',
+      cause,
+      auto
+    });
+    go();
+    return true;
+  }
+  /** Ce que le diagnostic de la page en garde (et window.SogFrame.reloads) : la série arrêtée avec sa cause, les rechargements des dix dernières
+   *  secondes, les dernières adresses routées. */
+  const reloadsState = () => ({
+    stopped: navStopped,
+    recent: navLog(),
+    routes: routeLog.slice(-10)
+  });
+  /** Au chargement : noté ; trois chargements en dix secondes : la série est dite (le cadre arrête alors ses rechargements sans geste). */
+  function noteLoad() {
+    let type = '';
+    try {
+      type = performance.getEntriesByType('navigation')[0]?.type || '';
+    } catch {
+      /* pas de chronologie de navigation */
+    }
+    navNote({
+      t: Date.now(),
+      k: 'load',
+      type
+    });
+    const log = navLog();
+    if (log.filter(e => e.k === 'load').length >= NAV_MAX) {
+      const own = [...log].reverse().find(e => e.k === 'self');
+      navStop(own ? own.cause : `not the frame (${type || 'unknown'} navigation)`);
+    }
+  }
   /** Nouvelle version prête (le service worker l'a relue entière) : ready ; at : quand la note l'a dite la dernière fois. */
   const update = {
     ready: false,
@@ -4751,7 +4852,7 @@
     } catch (e) {
       console.warn('reload', e);
     }
-    location.reload();
+    selfNavigate('reload: new version', () => location.reload());
   }
   /** Fichiers de tous les modules de l'application, à garder dès l'installation : le point d'entrée de chacun et les
    *  fichiers que son meta.files déclare (chemins relatifs à module.js) ; ceux de meta.lazy (lourds, gardés à leur
@@ -4783,6 +4884,7 @@
     askText,
     net,
     syncNow,
+    reloads: reloadsState,
     airline: () => airline,
     cutAccess,
     get aerodb() {

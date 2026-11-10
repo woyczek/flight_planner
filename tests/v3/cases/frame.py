@@ -5529,3 +5529,33 @@ def a133(c):
     got = c.js(LAUNCHER_NOTES)
     c.eq([[norm(got[0][0]), got[0][1]]] if got else [], [[norm(L['lan'][lang]), None]], 'a note says it is the computer’s function, without Retry', what='note lan')
     c.check_errors()
+
+
+LOOP_TEXT = {'fr': 'Rechargements en série arrêtés', 'en': 'Chain of reloads stopped', 'de': 'Serie von Neuladungen angehalten', 'es': 'Serie de recargas detenida'}
+
+
+@case('A134', 'A cause of reload that repeats does not reload more than twice: the third in ten seconds is refused, the page stays and says why (SOG-0209)', 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule='SOG-0209 (the user, 15:20: « refresh en boucle »): the reloads and redirects the frame makes itself (new version, redirect from one application to the other, moved screen) are noted in sessionStorage; the third in ten seconds without a gesture is refused — the page stays, a notification says « Chain of reloads stopped: <cause> », the cause is kept in the page diagnostic (page.reloads, window.SogFrame.reloads())')
+def a134(c):
+    # a loop made on purpose: Company sends #missions back to Pilot, which sends it to Company (the real table has no such cycle)
+    app = (ROOT / 'frame' / 'app.js').read_text(encoding='utf-8')
+    old = "elsewhere: {\n      fuel: 'pilot'\n    }"
+    if old not in app:
+        old = re.search(r"elsewhere: \{\s*fuel: 'pilot'\s*\}", app).group(0)
+    looped = app.replace(old, "elsewhere: { fuel: 'pilot', missions: 'pilot' }")
+    c.context.route(re.compile(r'/frame/app\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=looped))
+    loads = []
+    c.page.on('load', lambda: loads.append(c.page.url))
+    c.page.add_init_script("Object.defineProperty(navigator, 'serviceWorker', { get: () => undefined })")
+    c.open('missions', docs=LEVEL3, wait=False)
+    c.until("!!document.querySelector('#fNotes .f-note')", timeout=20000, what='the note that stops the series')
+    c.wait(2500)    # a fourth page load would show here
+    text = norm(c.js("[...document.querySelectorAll('#fNotes .f-note span')].map(s => s.textContent).join(' | ')"))
+    c.ok(norm(LOOP_TEXT[c.lang]) in text and 'redirect: elsewhere missions' in text, text, 'the note says the series is stopped and why')
+    pages = [u for u in loads if '/frame/index.html' in u]
+    c.ok(len(pages) == 3, str(pages), 'the page loaded three times (Pilot, Company, Pilot: two redirects), then stayed')
+    r = c.js('() => window.SogFrame.reloads()')
+    c.ok(r['stopped'] and 'redirect: elsewhere' in r['stopped']['cause'], str(r['stopped']), 'the cause is kept for the diagnostic')
+    c.ok(len([e for e in r['recent'] if e['k'] == 'self']) == 2 and len(r['routes']) >= 1, str(r), 'two redirects were made, the routes are listed')
+    c.check_errors()

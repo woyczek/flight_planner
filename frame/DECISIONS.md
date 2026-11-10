@@ -2782,3 +2782,25 @@ from the service worker's copy of `index.html`, stamped. Fix at the source: `too
 `index.html` (same ETag). The page keeps comparing stamps as before (a page served without any stamp by a launcher is the launcher's fault). Noreg K144, red
 before (`folder: '0'`). The launcher must be restarted to take it.
 
+## 10 November 2026 — a loop-breaker for the reloads the frame makes itself (SOG-0209, « refresh en boucle »)
+
+The user, 15:20: « bug en cours : refresh en boucle ». Not reproduced (the ergonomist's tab, Fuel with the Map beside it: no reload in 30 s). Whatever the cause:
+
+- **Survey: the paths of the frame that reload or redirect the page.** `location.reload()`: the cartouche (a click), the « Reload » of the Status line (a click), the
+  « Reload » of a new version (`reloadNewVersion`, a click), the error box when the app's files did not load (a click). `location.assign` of another application of
+  the frame (a tap). `location.replace`: the application list (a click), and **two without any gesture** in `route()`: `MOVED` (`#relay-devices` → `#devices`, a hash only)
+  and `APP.elsewhere` (`#missions` of Pilot → Company, `#fuel` of Company → Pilot: a page load). Nothing else: `sw.js` posts messages and never navigates (no
+  `controllerchange` handler either), the `frame-stamp` check only compares and refreshes the service worker's copies, the cartouche only shows. The two tables
+  have no cycle today (Pilot → Company for `missions`, Company → Pilot for `fuel`); a cycle would loop. So **the frame has no automatic reload of its own**:
+  a series seen by the user comes from a cycle in `elsewhere`, from something outside (browser, another script, a duplicated tab), or from a screen that
+  remounts in a loop (a hash redirect between two modules): the last is not a reload, which the diagnostic now lists (`page.reloads.routes`, the last ten routed addresses).
+- **Commits of the day**: 9ee030612 (stamp), 93601544f (cartouche), b0dde906a (relay queue) change no navigation: none calls `reload` / `replace` / `assign`.
+  A relaunched launcher does not reload an open page (the stamp is read at the start and the service worker serves the copy at the next navigation); a duplicated
+  tab copies `sessionStorage` (the breaker's log: at worst a series is seen one tab sooner, for ten seconds).
+- **The breaker**: `selfNavigate(cause, go, { auto })` (`frame/app.js`) notes each reload or redirect in `sessionStorage` (`sog-frame-nav`, ten seconds, survives the reload).
+  A reload without a gesture (`auto`: the two `route()` redirects) is refused when two were already made in ten seconds — the page stays, a notification says
+  « Chain of reloads stopped: <cause> » (four languages), the cause is kept in the page diagnostic (`page.reloads.stopped`, also `window.SogFrame.reloads()`). A gesture of the user always goes
+  through. Each page load is noted too (navigation type): three loads in ten seconds not made by the frame (« not the frame (reload navigation) ») are said at the third, and the
+  frame refuses its own automatic reloads from then on.
+- Counter-proof: noreg A134 (a cycle made on purpose by serving `app.js` with `elsewhere` Company → Pilot for `missions`: three loads, then the note and the cause), red before (it loops).
+

@@ -1269,6 +1269,12 @@ What the user sees when it has gone: the sync button reads « Launcher not answe
 has a line « The workstation's launcher is not answering any more » (a tap retries). Features SOG applies it to « Calculer A → B » and
 « Contrôler ».
 
+### 15.1b The page does not reload in a loop (SOG-0209)
+
+The frame notes every reload or redirect it makes (`sessionStorage`, ten seconds). A reload **without a gesture** that would be the third in ten seconds is refused: the
+page stays and says « Chain of reloads stopped: <cause> »; the cause is in the page diagnostic (`page.reloads`) and `window.SogFrame.reloads()`. A module never reloads the page
+(`location.reload` / `location.replace` of the page are the frame's: use `ctx.consume`, `location.hash`); an `elsewhere` table of an application (`APPS`) must have no cycle.
+
 ### 15.2 `ctx.publish` — generated files to the data repository, without a launcher
 
 For outputs too big for the data layer's batch (records, 5,000 changes, a copy kept on the device): 20–60 MB, hundreds of
