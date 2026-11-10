@@ -1,0 +1,573 @@
+{
+ "schema": "sog-recette/1",
+ "generated": {
+  "tool": "tools/recette_build.py",
+  "at": "2026-11-10",
+  "tests": 43,
+  "verdicts": 0
+ },
+ "apps": [
+  "pilote",
+  "compagnie",
+  "maintenance",
+  "stats"
+ ],
+ "tests": [
+  {
+   "id": "SOG-0041",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions : catégories « commercial » (fret, passagers, VIP, training, transit, essais en vol) et compte rendu d'un vol commercial",
+    "en": "Missions: “commercial” categories (cargo, passengers, VIP, training, transit, test flights) and the report of a commercial flight",
+    "de": "Missionen: Kategorien „kommerziell“ (Fracht, Passagiere, VIP, Training, Transit, Testflüge) und der Bericht eines kommerziellen Flugs",
+    "es": "Misiones: categorías « comercial » (carga, pasajeros, VIP, entrenamiento, tránsito, vuelos de prueba) e informe de un vuelo comercial"
+   },
+   "test": "Réglages › Compagnie : donner son genre à une compagnie (« Commerciale »), ouvrir « Catégories de missions » ; préparer une mission de catégorie fret, voler, puis le compte rendu demande « Fret embarqué (kg) ».",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0046",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte : liste des points et des taxiways de l'ADEP / ADEST, recherche et surlignement (gros terrains)",
+    "en": "Map: list of points and taxiways of the ADEP / ADEST, search and highlighting (large airfields)",
+    "de": "Karte: Liste der Punkte und Rollwege von ADEP / ADEST, Suche und Hervorhebung (große Flugplätze)",
+    "es": "Mapa: lista de puntos y calles de rodaje del ADEP / ADEST, búsqueda y resaltado (grandes aeródromos)"
+   },
+   "test": "Carte sur LFPO à zoom 14 après lecture des procédures : taxiways nommés ; dans le panneau Sol, filtrer « W » surligne le tronçon.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0051",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions en V3 dans l'application Compagnie : risques en première page, description détaillée, équipes engagées, zones à activer, aperçu des cartes",
+    "en": "Missions in V3 in the Airline app: risks on the first page, detailed description, teams involved, zones to activate, chart preview",
+    "de": "Missionen in V3 in der Gesellschafts-App: Risiken auf der ersten Seite, ausführliche Beschreibung, beteiligte Teams, zu aktivierende Zonen, Kartenvorschau",
+    "es": "Misiones en V3 en la aplicación Compañía: riesgos en la primera página, descripción detallada, equipos comprometidos, zonas por activar, vista previa de las cartas"
+   },
+   "test": "Compagnie › Missions › une mission : la première page montre titre, catégorie, trois risques, équipes, zones, « Préparer ce vol » ; « Détail » ouvre description, zones à activer, cartes ; « Voir sur la Carte » d'une zone ouvre la Carte centrée dessus.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0056",
+   "app": "pilote",
+   "title": {
+    "fr": "Écran 1 du pilote : un bouton « Auto » calcule le niveau depuis le carburant et le temps",
+    "en": "Pilot screen 1: an “Auto” button calculates the level from fuel and time",
+    "de": "Pilotenbildschirm 1: Eine Schaltfläche „Auto“ berechnet die Flugfläche aus Kraftstoff und Zeit",
+    "es": "Pantalla 1 del piloto: un botón « Auto » calcula el nivel a partir del combustible y el tiempo"
+   },
+   "test": "Carburant › Vol, avec une route et une fiche : toucher « Auto » à côté du niveau → « FL… (auto) » et le temps de vol s'affichent ; changer la route → le niveau est recalculé ; taper un niveau à la main → « (auto) » disparaît.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0057",
+   "app": "maintenance",
+   "title": {
+    "fr": "Modification des fiches : les commentaires dégradent l'interface, nécessaires mais mal placés",
+    "en": "Editing sheets: comments degrade the interface, needed but badly placed",
+    "de": "Bearbeitung der Datenblätter: Kommentare beeinträchtigen die Oberfläche, nötig, aber schlecht platziert",
+    "es": "Edición de fichas: los comentarios degradan la interfaz, necesarios pero mal ubicados"
+   },
+   "test": "Maintenance › Appareils › une fiche : plus de ligne de provenance sous chaque champ, une marque « • » en fin de libellé (son survol dit la source), une seule ligne « Sources » par carte ; « Carburant en volume » renvoie à l'aide par un « ? ».",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0060",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : l'appareil du vol dit en clair ; le choix de l'appareil a le même moteur de recherche que les réglages",
+    "en": "Fuel: the flight's aircraft stated in plain words; the aircraft choice has the same search engine as the settings",
+    "de": "Kraftstoff: Das Flugzeug des Flugs im Klartext; die Flugzeugauswahl hat dieselbe Suchmaschine wie die Einstellungen",
+    "es": "Combustible: la aeronave del vuelo dicha en claro; la elección de aeronave usa el mismo motor de búsqueda que los ajustes"
+   },
+   "test": "Carburant › Résultat : l'appareil du devis est écrit en tête de la barre (« FA50 · F-GXXX ») avec un bouton vers son choix. Dans Fiches, la recherche d'appareil est la même que dans les Réglages.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0065",
+   "app": "maintenance",
+   "title": {
+    "fr": "Base aéro : regrouper les pays en paquets (continents, régions) et un méta-classement (îles, Himalaya, déserts, forêts, lacs et fleuves, mégalopoles…)",
+    "en": "Aero database: group countries into packs (continents, regions) and a meta-classification (islands, Himalayas, deserts, forests, lakes and rivers, megacities…)",
+    "de": "Aero-Datenbank: Länder zu Paketen (Kontinente, Regionen) zusammenfassen und eine Meta-Klassifizierung (Inseln, Himalaya, Wüsten, Wälder, Seen und Flüsse, Megastädte …)",
+    "es": "Base de datos aero: agrupar los países en paquetes (continentes, regiones) y una metaclasificación (islas, Himalaya, desiertos, bosques, lagos y ríos, megalópolis…)"
+   },
+   "test": "Maintenance › Données › Paquets : les régions (Europe du Nord…) et les thèmes (Îles, Mégalopoles…) sont listés avec leur nombre de pays et leur taille ; l'Antarctique est vide avec sa raison.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0066",
+   "app": "maintenance",
+   "title": {
+    "fr": "Roadmap : reprioriser depuis l'écran (identifiant lisible et copiable, glisser-déposer du rang et du jalon, écrit par le lanceur dans organisation/PRIORITES.json)",
+    "en": "Roadmap: reprioritise from the screen (readable, copyable id; drag and drop of rank and milestone, written by the launcher to organisation/PRIORITES.json)",
+    "de": "Fahrplan: Prioritäten direkt im Bildschirm ändern (lesbare, kopierbare Kennung; Rang und Meilenstein per Ziehen und Ablegen, vom Launcher in organisation/PRIORITES.json geschrieben)",
+    "es": "Hoja de ruta: repriorizar desde la pantalla (identificador legible y copiable; arrastrar y soltar del rango y del hito, escrito por el lanzador en organisation/PRIORITES.json)"
+   },
+   "test": "Maintenance › Feuille de route : glisser une carte au-dessus d'une autre, recharger la page → l'ordre est tenu ; appui long sur un identifiant → il est copié.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0067",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte : « not enough memory to open this page » sur la vue carte élargie",
+    "en": "Map: “not enough memory to open this page” on the enlarged map view",
+    "de": "Karte: „Not enough memory to open this page“ in der vergrößerten Kartenansicht",
+    "es": "Mapa: «not enough memory to open this page» en la vista de mapa ampliada"
+   },
+   "test": "Carte en fenêtre élargie sur le grand écran, la laisser ouverte et la redimensionner plusieurs fois → plus de « not enough memory ».",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0070",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : cliquer un pays sur la carte pour le basculer, actif ou inactif",
+    "en": "Data: click a country on the map to toggle it, active or inactive",
+    "de": "Daten: ein Land auf der Karte anklicken, um es umzuschalten, aktiv oder inaktiv",
+    "es": "Datos: hacer clic en un país del mapa para alternarlo, activo o inactivo"
+   },
+   "test": "Maintenance › Données › carte des zones : toucher un pays gris → il entre dans la couverture, coché ; le retoucher → décoché.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0071",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : revoir l'ergonomie globale de l'écran (choisir, mettre à jour les différences, purger, recalculer les seuls périmés, tout désélectionner, par paquet ou par rectangle)",
+    "en": "Data: rework the overall ergonomics of the screen (choose, update the differences, purge, recompute only the outdated ones, deselect all, by package or by rectangle)",
+    "de": "Daten: die Gesamtergonomie des Bildschirms überarbeiten (auswählen, Unterschiede aktualisieren, bereinigen, nur veraltete neu berechnen, alles abwählen, nach Paket oder per Rechteck)",
+    "es": "Datos: revisar la ergonomía global de la pantalla (elegir, actualizar las diferencias, purgar, recalcular solo las obsoletas, deseleccionar todo, por paquete o por rectángulo)"
+   },
+   "test": "Maintenance › Données › Base aéronautique : « Mettre à jour » est le seul bouton en vue ; il pose une seule question qui nomme les zones à reconstruire et leur raison ; les autres verbes sont sous « Plus » ; « Seulement les périmés », « Tout désélectionner » et le rectangle (Maj + glisser) cochent ce qu'ils disent.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0072",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : un pays reste « nouveau » en orange après recalcul et publication, jusqu'à un rechargement forcé",
+    "en": "Data: a country stays orange “new” after recompute and publication, until a forced reload",
+    "de": "Daten: ein Land bleibt nach Neuberechnung und Veröffentlichung orange „neu“, bis zu einem erzwungenen Neuladen",
+    "es": "Datos: un país sigue en naranja «nuevo» tras recalcular y publicar, hasta una recarga forzada"
+   },
+   "test": "Après une construction réussie, la zone passe au vert sur la carte et dans la liste sans recharger la page.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0073",
+   "app": "maintenance",
+   "title": {
+    "fr": "Fiches : « Compléter depuis une autre fiche » montre « Douglas DC-3 » quand on édite la Caravelle, et prend de la place",
+    "en": "Aircraft sheets: “Complete from another sheet” shows “Douglas DC-3” when editing the Caravelle, and takes up space",
+    "de": "Flugzeugdatenblätter: „Aus einem anderen Datenblatt ergänzen“ zeigt „Douglas DC-3“ beim Bearbeiten der Caravelle und beansprucht Platz",
+    "es": "Fichas de aeronave: «Completar desde otra ficha» muestra «Douglas DC-3» al editar la Caravelle, y ocupa espacio"
+   },
+   "test": "Maintenance › Appareils › modifier la Caravelle : plus de boîte « Douglas DC-3 » en haut ; « Compléter depuis une autre fiche » est un bouton.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0078",
+   "app": "maintenance",
+   "title": {
+    "fr": "AWY à sens unique : le sens n'est pas porté ou pas dessiné",
+    "en": "One-way AWYs: the direction is not carried or not drawn",
+    "de": "Einbahn-Luftstraßen: die Richtung wird nicht geführt oder nicht gezeichnet",
+    "es": "Aerovías de sentido único: el sentido no se registra o no se dibuja"
+   },
+   "test": "Carte à zoom 9 ou plus sur une voie aérienne à sens unique de France : une flèche discrète donne le sens.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0079",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : garder cochées les cases « personnel » des sources",
+    "en": "Data: keep the sources’ “personal” boxes ticked",
+    "de": "Daten: die Kontrollkästchen „persönlich“ der Quellen angehakt lassen",
+    "es": "Datos: mantener marcadas las casillas «personal» de las fuentes"
+   },
+   "test": "Maintenance › Données : cocher la case d'usage personnel, recharger la page → elle est toujours cochée.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0081",
+   "app": "pilote",
+   "title": {
+    "fr": "Calcul de route automatique et contrôle IFPS / RAD / FRA : intégrer le moteur de RouteSim dans le chemin du pilote (alpha.5)",
+    "en": "Automatic route calculation and IFPS / RAD / FRA check: integrate the RouteSim engine into the pilot’s path (alpha.5)",
+    "de": "Automatische Routenberechnung und IFPS-/RAD-/FRA-Prüfung: die RouteSim-Engine in den Pilotenweg integrieren (alpha.5)",
+    "es": "Cálculo automático de ruta y control IFPS / RAD / FRA: integrar el motor de RouteSim en el camino del piloto (alpha.5)"
+   },
+   "test": "Carburant › Route, LFPO → EIDW : « Calculer A → B » propose des itinéraires en moins de dix secondes ; « Contrôler » une route saisie marque ses segments fautifs ; « Prendre » écrit la route, la SID et la STAR.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0125",
+   "app": "maintenance",
+   "title": {
+    "fr": "Importer le RAD et les points FRA depuis un écran (le travail `route/import-rad` n'est joignable d'aucune page)",
+    "en": "Import the RAD and the FRA points from a screen (the route/import-rad job is reachable from no page)",
+    "de": "RAD und FRA-Punkte von einem Bildschirm importieren (der Job route/import-rad ist von keiner Seite erreichbar)",
+    "es": "Importar el RAD y los puntos FRA desde una pantalla (el trabajo route/import-rad no es accesible desde ninguna página)"
+   },
+   "test": "Maintenance › Données › Procédures › ligne « Route (RAD, points FRA) » : « Importer de Téléchargements » montre d'abord les classeurs trouvés, puis les importe ; dans Carburant, sans RAD, le pas Route dit « Aucun RAD importé » avec un lien vers cette ligne.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0126",
+   "app": "maintenance",
+   "title": {
+    "fr": "Zone gb (NATS) toujours « ko » après le dépôt des fichiers dans Téléchargements",
+    "en": "Zone gb (NATS) still “ko” after dropping the files into Downloads",
+    "de": "Zone gb (NATS) weiterhin „ko“ nach Ablage der Dateien in Downloads",
+    "es": "Zona gb (NATS) sigue «ko» tras dejar los archivos en Descargas"
+   },
+   "test": "Maintenance › Données : « Prendre le fichier téléchargé » avec les trois zips NATS dans Téléchargements → les trois jeux sont pris ou dits déjà pris, le cycle de gb est dit.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0127",
+   "app": "maintenance",
+   "title": {
+    "fr": "Complétion ADEP / ADEST comme dans RouteSim : liste des terrains, nom sous le champ, bouton d'inversion",
+    "en": "ADEP / ADEST completion as in RouteSim: airport list, name under the field, swap button",
+    "de": "ADEP/ADEST-Vervollständigung wie in RouteSim: Flugplatzliste, Name unter dem Feld, Tauschknopf",
+    "es": "Autocompletado ADEP / ADEST como en RouteSim: lista de aeródromos, nombre bajo el campo, botón de intercambio"
+   },
+   "test": "Carburant › Vol : le bouton ⇄ entre Départ et Arrivée échange les deux terrains ; la route de l'aller est effacée avec une notification.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0133",
+   "app": "maintenance",
+   "title": {
+    "fr": "Réglages : plusieurs secondes d'attente avant l'écran, pour une version du dépôt qui n'est qu'accessoire",
+    "en": "Settings: several seconds of waiting before the screen, for a repository version that is only accessory",
+    "de": "Einstellungen: mehrere Sekunden Wartezeit vor dem Bildschirm wegen einer nur nebensächlichen Repository-Version",
+    "es": "Ajustes: varios segundos de espera antes de la pantalla, por una versión del repositorio solo accesoria"
+   },
+   "test": "Ouvrir Réglages : l'écran apparaît tout de suite ; la ligne « Dépôt des données » montre « … » puis sa valeur, sans que rien ne bouge.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0134",
+   "app": "pilote",
+   "title": {
+    "fr": "Route (RAD) : montrer les tracés des itinéraires proposés avant de choisir, et dire quels sont les écarts aux règles",
+    "en": "Route (RAD): draw the proposed routes before choosing, and say which rule deviations",
+    "de": "Route (RAD): vorgeschlagene Routen vor der Wahl zeichnen und die Regelabweichungen benennen",
+    "es": "Ruta (RAD): dibujar las rutas propuestas antes de elegir y decir cuáles son las desviaciones a las reglas"
+   },
+   "test": "Carburant › Route avec la Carte à côté (vue double) : après « Calculer A → B », les itinéraires sont tracés sur la Carte, le choisi en plein ; survoler une ligne de la liste épaissit son tracé ; « N écarts aux règles » se déplie en une ligne par écart.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0135",
+   "app": "maintenance",
+   "title": {
+    "fr": "Lire le sol (taxiways) avec les procédures du terrain, pas par un bouton de plus",
+    "en": "Read the ground (taxiways) with the airport's procedures, not through one more button",
+    "de": "Boden (Rollwege) zusammen mit den Verfahren des Flugplatzes lesen, nicht über einen weiteren Knopf",
+    "es": "Leer el suelo (calles de rodaje) con los procedimientos del aeródromo, no con un botón más"
+   },
+   "test": "Lire les procédures de LFPO (Carburant › SID / STAR ou Carte › Procédures), attendre trente secondes, puis Carte sur Orly à zoom 14 : les taxiways sont dessinés et nommés ; le panneau Sol dit « Sol lu avec les procédures du … ».",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0136",
+   "app": "maintenance",
+   "title": {
+    "fr": "Nouvelle brouette de conflits de synchronisation alors que l'utilisateur est seul",
+    "en": "A new barrowful of sync conflicts while the user is alone",
+    "de": "Eine neue Schubkarre voller Sync-Konflikte, obwohl der Benutzer allein ist",
+    "es": "Una nueva carretilla de conflictos de sincronización estando el usuario solo"
+   },
+   "test": "Réglages › Synchronisation › Conflits : « Tout marquer comme vu » ; après une heure de travail dans Carburant, aucune nouvelle entrée « version d'un autre appareil » sans différence réelle ; une entrée montre ses lignes qui diffèrent.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0137",
+   "app": "compagnie",
+   "title": {
+    "fr": "Mission sur la Carte : illisible et illogique ; afficher au moins le titre, et réutiliser le réglage de la mission choisie",
+    "en": "Mission on the Map: illegible and illogical; show at least the title, reuse the chosen-mission setting",
+    "de": "Mission auf der Karte: unleserlich und unlogisch; wenigstens den Titel zeigen, die gewählte Mission wiederverwenden",
+    "es": "Misión en el Mapa: ilegible e ilógica; mostrar al menos el título y reutilizar el ajuste de la misión elegida"
+   },
+   "test": "Compagnie › Missions › une mission › « Préparer ce vol », puis ouvrir la Carte : un bandeau donne le titre et la famille de la mission, les zones sont nommées, les points portent leur rôle ; la croix du bandeau revient au vol.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0138",
+   "app": "pilote",
+   "title": {
+    "fr": "GFS : toujours pas de carte synoptique ; et une réponse visible, pas entre deux portes",
+    "en": "GFS: still no synoptic map; and a visible answer, not between two doors",
+    "de": "GFS: noch immer keine synoptische Karte; und eine sichtbare Antwort, nicht zwischen Tür und Angel",
+    "es": "GFS: sigue sin haber mapa sinóptico; y una respuesta visible, no entre dos puertas"
+   },
+   "test": "Maintenance › Données › Météo › « Synoptique monde (GFS) » › « Construire » (deux minutes la première fois), puis Atmosphère : la carte synoptique s'affiche avec l'heure du modèle.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0139",
+   "app": "pilote",
+   "title": {
+    "fr": "Météo sur la Carte : un lien « télécharger AROME » plutôt qu'un bouton « afficher la météo »",
+    "en": "Weather on the Map: a “download AROME” link rather than a “show weather” button",
+    "de": "Wetter auf der Karte: ein Link „AROME laden“ statt eines Knopfs „Wetter anzeigen“",
+    "es": "Meteo en el Mapa: un enlace «descargar AROME» en vez de un botón «mostrar meteo»"
+   },
+   "test": "Carte avec une route : un seul bouton « Météo de la route » ; après le toucher il devient « Météo de la route · AROME 12 h » et les vents sont dessinés.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0140",
+   "app": "pilote",
+   "title": {
+    "fr": "Le bouton ⇄ de Carburant est beaucoup trop gros",
+    "en": "The ⇄ button of Fuel is far too big",
+    "de": "Der ⇄-Knopf in Kraftstoff ist viel zu groß",
+    "es": "El botón ⇄ de Combustible es demasiado grande"
+   },
+   "test": "Carburant › Vol : le ⇄ est petit, de la taille du texte, et reste facile à toucher au doigt.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0141",
+   "app": "pilote",
+   "title": {
+    "fr": "Météo sur la Carte : les flèches de vent sont toutes les mêmes sur une route qui sort de la couverture du modèle",
+    "en": "Weather on the Map: the wind arrows are all the same on a route that leaves the model's coverage",
+    "de": "Wetter auf der Karte: alle Windpfeile gleich auf einer Route außerhalb der Modellabdeckung",
+    "es": "Meteo en el Mapa: las flechas de viento son todas iguales en una ruta que sale de la cobertura del modelo"
+   },
+   "test": "Carte sur une route qui sort d'Europe, après « Météo de la route » : les flèches de vent diffèrent d'un lieu à l'autre ; hors couverture, pas de flèche ou une flèche dite « GFS » dans son infobulle.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0142",
+   "app": "maintenance",
+   "title": {
+    "fr": "Lecteur de route : les homonymes (PAM aux États-Unis, ALS au Maroc) et les points inconnus dits avec leur zone",
+    "en": "Route reader: homonyms (PAM in the USA, ALS in Morocco) and unknown points said with their zone",
+    "de": "Routenleser: Homonyme (PAM in den USA, ALS in Marokko) und unbekannte Punkte mit ihrer Zone benannt",
+    "es": "Lector de ruta: homónimos (PAM en EE. UU., ALS en Marruecos) y puntos desconocidos dichos con su zona"
+   },
+   "test": "Carburant › Route, coller la route ESSB … ALS N872 PAM … LEMO : PAM et ALS sont placés en Europe ; les points inconnus sont listés avec leur zone et son état.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0143",
+   "app": "maintenance",
+   "title": {
+    "fr": "Zone manquante : partout, dire ce qui manque, offrir le geste (Données) et les replis externes (LittleNavMap, Navigraph, ChartFox)",
+    "en": "Missing zone: everywhere, say what is missing, offer the gesture (Données) and the external fallbacks (LittleNavMap, Navigraph, ChartFox)",
+    "de": "Fehlende Zone: überall sagen, was fehlt, die Geste anbieten (Daten) und die externen Ausweichwege (LittleNavMap, Navigraph, ChartFox)",
+    "es": "Zona ausente: en todas partes, decir qué falta, ofrecer el gesto (Datos) y los recursos externos (LittleNavMap, Navigraph, ChartFox)"
+   },
+   "test": "Carburant › Route avec un point d'un pays sans points : une ligne dit ce qui manque, propose le geste vers Données (zone cochée, « Mettre à jour » prêt) et les replis Navigraph et ChartFox.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0144",
+   "app": "maintenance",
+   "title": {
+    "fr": "BLOQUANT : « Tout recalculer » échoue dans la page de construction, 46 zones d'un coup, cause non dite"
+   },
+   "test": "Maintenance › Données › Plus › « Tout recalculer » sur toute la sélection (plus de 60 zones) : deux constructions de suite, « Tranche 1 sur 2 », toutes les zones construites ; en cas d'échec, la zone dit la phrase exacte.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0145",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte : afficher la route orthodromique",
+    "en": "Map: show the great-circle route",
+    "de": "Karte: die Großkreisroute anzeigen",
+    "es": "Mapa: mostrar la ruta ortodrómica"
+   },
+   "test": "Carte avec un départ et une arrivée : la route orthodromique est un pointillé fin sous la route ; son infobulle donne sa longueur.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0146",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : la page de construction devient très sale avec beaucoup de pays",
+    "en": "Données: the build page gets very messy with many countries",
+    "de": "Daten: die Aufbauseite wird mit vielen Ländern sehr unordentlich",
+    "es": "Datos: la página de construcción se vuelve muy sucia con muchos países"
+   },
+   "test": "Maintenance › Données sur grand écran avec 78 zones : la liste est à droite de la carte, une zone par ligne, l'état en point et mot court ; elle défile sans allonger la page.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0147",
+   "app": "maintenance",
+   "title": {
+    "fr": "Paquets de pays : les retirer comme on les ajoute, voir ce qu'ils couvrent sur la carte, à côté de la carte en vue large",
+    "en": "Country packs: remove them as they are added, see what they cover on the map, beside the map in the wide view",
+    "de": "Länderpakete: ebenso entfernen wie hinzufügen, auf der Karte sehen, was sie abdecken, in der Breitansicht neben der Karte",
+    "es": "Paquetes de países: quitarlos como se añaden, ver qué cubren en el mapa, junto al mapa en vista ancha"
+   },
+   "test": "Maintenance › Données › Paquets : l'interrupteur d'une région ajoute toutes ses zones ; l'éteindre les retire après une question qui les nomme ; survoler la rangée surligne ses pays sur la carte.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0148",
+   "app": "pilote",
+   "title": {
+    "fr": "Météo : la coupe verticale a sa météo, la carte (profil plan) ne l'a pas, données pourtant téléchargées",
+    "en": "Weather: the vertical cut has its weather, the map (plan view) does not, data yet downloaded",
+    "de": "Wetter: der Vertikalschnitt hat sein Wetter, die Karte (Draufsicht) nicht, Daten dennoch geladen",
+    "es": "Meteo: el corte vertical tiene su meteo, el mapa (vista en planta) no, con los datos ya descargados"
+   },
+   "test": "Carburant avec la météo lue, puis la Carte : les barbules de vent sont là sans rien retélécharger, les mêmes que sur la coupe verticale.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0149",
+   "app": "maintenance",
+   "title": {
+    "fr": "La première synchronisation git de la journée dure plus de deux minutes",
+    "en": "The first git synchronisation of the day takes more than two minutes",
+    "de": "Die erste Git-Synchronisation des Tages dauert über zwei Minuten",
+    "es": "La primera sincronización git del día tarda más de dos minutos"
+   },
+   "test": "Réglages › Synchronisation, après la première synchro du matin : « La plus longue aujourd'hui » dit la durée de chaque étape ; noter l'étape qui prend les deux minutes.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0150",
+   "app": "maintenance",
+   "title": {
+    "fr": "NATS : la reprise dit « rien à prendre » et parle d'openAIP alors que les zips NATS sont dans Téléchargements",
+    "en": "NATS: the pickup says “nothing to take” and talks about openAIP while the NATS zips are in Downloads",
+    "de": "NATS: die Übernahme sagt „nichts zu nehmen“ und spricht von openAIP, obwohl die NATS-Zips in Downloads liegen",
+    "es": "NATS: la recogida dice «nada que tomar» y habla de openAIP mientras los zips NATS están en Descargas"
+   },
+   "test": "Maintenance › Données, case d'usage personnel cochée : « Prendre le fichier téléchargé » dit « n jeux NATS déjà pris » ; construire gb → la zone est verte avec ses voies.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0151",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : la question de « Prendre le fichier téléchargé » est plus grande que l'écran, boutons inaccessibles",
+    "en": "Données: the “Take the downloaded file” question is taller than the screen, buttons unreachable",
+    "de": "Daten: die Frage „Heruntergeladene Datei nehmen“ ist höher als der Bildschirm, Knöpfe unerreichbar",
+    "es": "Datos: la pregunta «Tomar el archivo descargado» es más alta que la pantalla, botones inaccesibles"
+   },
+   "test": "Maintenance › Données › Plus › Télécharger puis « Prendre le fichier téléchargé » : la question tient dans l'écran, ses boutons sont visibles, la liste est repliée à sept lignes.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0154",
+   "app": "maintenance",
+   "title": {
+    "fr": "Homonymes : « LFLL : 2 homonymes, le plus proche gardé » — un terrain n'a pas d'homonyme",
+    "en": "Homonyms: “LFLL: 2 homonyms, the nearest kept” — an airport has no homonym",
+    "de": "Homonyme: „LFLL: 2 Homonyme, das nächste behalten“ — ein Flugplatz hat kein Homonym",
+    "es": "Homónimos: «LFLL: 2 homónimos, se conserva el más cercano»: un aeródromo no tiene homónimo"
+   },
+   "test": "Carburant › Route avec LFLL ou LFPO en départ : plus de message « 2 homonymes » pour un terrain.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0155",
+   "app": "maintenance",
+   "title": {
+    "fr": "« La publication a échoué : rien n'est perdu… Corrigez la cause puis relancez » : quelle cause ?",
+    "en": "“Publishing failed: nothing is lost… Fix the cause and retry”: which cause?",
+    "de": "„Veröffentlichung fehlgeschlagen: nichts verloren… Ursache beheben und erneut“: welche Ursache?",
+    "es": "«La publicación falló: nada se pierde… Corrija la causa y reintente»: ¿qué causa?"
+   },
+   "test": "Au prochain échec de publication : le message dit sa cause (« push refusé », « réseau », « crochet LFS ») et l'étape, plus « Corrigez la cause ».",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0156",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte : un point très loin (PAM aux États-Unis) fait ramer la carte en vue double",
+    "en": "Map: a very far point (PAM in the USA) makes the map crawl in the dual view",
+    "de": "Karte: ein sehr ferner Punkt (PAM in den USA) lässt die Karte in der Doppelansicht kriechen",
+    "es": "Mapa: un punto muy lejano (PAM en EE. UU.) hace que el mapa se arrastre en vista doble"
+   },
+   "test": "Carte en vue double avec la route ESSB → LEMO : déplacer la carte, attendre → plus de gel de trois secondes après le geste ni toutes les quelques secondes.",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0157",
+   "app": "pilote",
+   "title": {
+    "fr": "« Aucune table des procédures publiées » : sans plan B ni consigne — passe par le composant « zone manquante »",
+    "en": "“No published procedure table”: no plan B nor instruction — goes through the “missing zone” component",
+    "de": "„Keine veröffentlichte Verfahrenstabelle“: kein Plan B, keine Anleitung — über die Komponente „fehlende Zone“",
+    "es": "«Ninguna tabla de procedimientos publicada»: sin plan B ni instrucción; pasa por el componente «zona ausente»"
+   },
+   "test": "Carburant › SID / STAR sur un terrain sans procédures (ESSB) : la ligne dit ce que publie son État (« Suède : étiquettes seules ») avec Navigraph et ChartFox ; sur un terrain EAD, le bouton dit « Lire à la demande ».",
+   "since": "2026-11-09",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0159",
+   "app": "maintenance",
+   "title": {
+    "fr": "BLOQUANT : « synchronisation refusée par le serveur « last is not defined » »",
+    "en": "BLOCKING: “synchronisation refused by the server ‘last is not defined’”",
+    "de": "BLOCKIEREND: „Synchronisation vom Server abgelehnt ‚last is not defined‘“",
+    "es": "BLOQUEANTE: «sincronización rechazada por el servidor ‘last is not defined’»"
+   },
+   "test": "Modifier un vol dans Carburant puis synchroniser : plus de « refusé par le serveur : last is not defined ».",
+   "since": "2026-11-09",
+   "state": "todo"
+  }
+ ]
+}
