@@ -180,7 +180,7 @@ ${ctx.query?.tune ? '<section class="mp-tune f-card" aria-live="off"></section>'
 </div>
 <div class="mp-data f-sheet-panel" hidden><div class="mp-dhead f-sheet-head"><div class="mp-chips mp-chips-l">${chip('data-mp="layers"', 'layers', ctx.query?.mission ? TX.pick : TX.layers, false).replace('class="mp-chip"', 'class="mp-lchip"')}</div><button type="button" class="mp-grip f-sheet-grip" aria-expanded="true" aria-label="${T(TX.sheetSize)}"><b class="mp-dtitle f-sheet-title"></b></button><div class="mp-chips" role="group" aria-label="${T(TX.segLabel)}"><button type="button" class="mp-whole" hidden title="${T(TX.winWholeHelp)}" aria-label="${T(TX.winWholeHelp)}">${T(TX.winWhole)}</button>${chip('data-view="profile"', 'chart', TX.dataProfile, true)}${chip('data-view="weather" disabled aria-disabled="true"', 'cloud', TX.wxTitle, false)}${chip('data-legend disabled aria-disabled="true"', 'info', TX.legend, false)}</div><button type="button" class="mp-dclose f-sheet-close" data-dclose hidden aria-label="${T(TX.close)}" title="${T(TX.close)}">✕</button></div><div class="mp-legend" role="region" hidden aria-label="${T(TX.legend)}"></div>
 <div class="mp-dprof"><div class="mp-prof" hidden role="img" aria-label="${T(TX.profileLabel)}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas>
-<div class="mp-tip f-card" hidden role="tooltip"></div></div>
+<div class="mp-tip f-card" hidden role="tooltip"></div><div class="mp-spsel f-card" hidden></div></div>
 <div class="mp-strip" aria-live="polite"></div></div>
 <div class="mp-dbody f-sheet-body" hidden role="region" tabindex="-1"></div>
 <div class="mp-notes f-muted" aria-live="polite"></div></div>`;
@@ -223,6 +223,7 @@ export async function mount(el, ctx) {
     pc: q('canvas.mp-pc'),
     pcur: q('canvas.mp-pcur'),
     stripEl: q('.mp-strip'),
+    selEl: q('.mp-spsel'),
     layersEl: lay.firstElementChild, // le contenu Couches, gardé : posé dans la feuille à son ouverture
     cardEl: q('.mp-pcard'),
     dataEl: q('.mp-data'),

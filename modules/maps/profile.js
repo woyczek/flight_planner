@@ -396,6 +396,7 @@
     H,
     scale = .8,
     window: win = null,
+    select = null, // l'espace choisi (surligné)
     placer = null // le placeur de la passe de la coupe (profile_view.js)
   }) {
     const geo = P().draw(ctx, data, {
@@ -410,6 +411,7 @@
       abbrev: true,
       limits: false,
       strictLabels: true,
+      select,
       maxLabels: 7, // au plus 7 espaces étiquetés par écran ; les autres dans la liste du dessous
       reserveBottom: 18 * scale, // marques NM posées par module.js au bas de la coupe
       placer

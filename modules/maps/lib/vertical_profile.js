@@ -542,6 +542,7 @@
     scale = 1,
     limitFt,
     title = '',
+    select = null, // V3 maps (ajout, sans effet par défaut) : l'espace choisi (l'enregistrement), surligné
     abbrev = false,
     limits = true, // altitudes (plancher – plafond) sous le nom des espaces (profil d'affichage : zoneLimitsShow)
     // V3 maps (ajout, sans effet par défaut) : strictLabels — les espaces où entre la trajectoire prévue passent d'abord,
@@ -724,6 +725,13 @@
       if (!window.SiaAero.limitRead(a.upper, true).ok) ctx.setLineDash([4 * scale, 3 * scale]);
       ctx.stroke();
       ctx.setLineDash([]);
+      if (select && a === select) { // l'espace choisi (SOG-0163) : un fond plus net et un contour épais
+        ctx.globalAlpha = .28;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = 3 * scale;
+        ctx.stroke();
+      }
       ctx.globalAlpha = 1;
       const mid = Math.round((i0 + i1) / 2);
       let entered = false;

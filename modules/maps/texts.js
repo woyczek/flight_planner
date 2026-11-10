@@ -188,6 +188,7 @@ export const TX = {
   progArrived: ['Arrivé', 'Arrived', 'Angekommen', 'Llegado'],
   progDiverted: ['Déroutement vers {a}', 'Diverted to {a}', 'Ausweichlandung in {a}', 'Desviado a {a}'],
   // la fiche d'un espace (SOG-0163)
+  spBtn: ['Fiche', 'Sheet', 'Blatt', 'Ficha'],
   spOpen: ['voir la fiche', 'see the sheet', 'Blatt anzeigen', 'ver la ficha'],
   spTypes: {
     R: ['zone réglementée', 'restricted area', 'Beschränkungsgebiet', 'zona restringida'],

@@ -1105,7 +1105,7 @@ cursor until all fingers are up.
   FIR among the named spaces; not added to a touch.
 
 - **The sheet of a space** (SOG-0163, 10 Nov): a tap on a row of the list above, or on a space's block in the profile (`click` on the
-  profile: the block whose limits hold the touched altitude, the narrowest first; the list is then the spaces crossed at the cursor), opens
+  profile, in two gestures: a first tap **chooses** the block whose limits hold the touched altitude, the narrowest first — highlighted, its name and limits and a « Sheet » button in a label over the profile (`.mp-spsel`; the strip under the profile is hidden unless the sheet is expanded) — and a second tap on the chosen block, or the button, opens the list of the spaces crossed at the cursor; a tap outside any block chooses nothing; the profile is never replaced without an explicit gesture), opens
   under the chart `spaceCardHtml(a)` (`lv.js`) — a click, not a hover: no hover on a finger, and conditions run to several lines. Lines:
   name and type (a **P says « prohibited »**), limits and class, the activation published (`act`: AZBA, NOTAM; `azba`), the hours (`hours` /
   `sched`, when the base carries them: else « published hours: not carried by this database » for R, D, TSA, TRA), AIP conditions and

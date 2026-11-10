@@ -21,6 +21,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   noreg A116; SOG-0083). The user's own tool for placing the pelican sites on a map and exporting the YAML is in the repository as it came and linked from the old
   pages; the fire reports are under Missions. Its map libraries and satellite tiles are blocked by the launcher's content policy (a decision, in DECISIONS).
 
+- **Map: on the profile, a first tap on a space chooses it, a second tap (or the « Sheet » button) opens its sheet** (`modules/maps/profile_view.js`, `profile.js`,
+  `lib/vertical_profile.js`, `module.js`, `texts.js`, `style.js`; SPEC § 10; noreg D134, D131, D133; ergonomics decision after the recette's refusal of SOG-0163). The chosen
+  block is highlighted, its name and limits and the button show over the profile; a tap outside any block chooses nothing; the profile is never replaced without an explicit gesture.
+
 - **Frame: one request per navigation on a workstation, not 130** (`frame/sw.js`, `tools/launch.py`; frame SPEC § 3.6, DECISIONS; noreg A53; SOG-0168).
   The launcher gives one fingerprint of what it serves to the frame (`GET /__setup/frame-stamp`); the service worker compares it with its copies' and,
   equal, serves the copy and asks for nothing else; different, it reads the copies again before answering. A navigation was 267 requests and 298–661 ms

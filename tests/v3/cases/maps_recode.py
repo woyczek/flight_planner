@@ -4065,6 +4065,15 @@ def _click_until(c, point, cond, what, tries=3):
                 raise
 
 
+def _open_space_from_profile(c, cond, what):
+    """The gesture of the sheet of a space on the profile (SOG-0163, ergonomics 10 Nov): a tap on the block chooses it (the strip under the profile names it and offers « Sheet »),
+    a second tap on the chosen block (or the button) opens the sheet."""
+    _click_until(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(_SPACE_CLICK_JS, 5000)), "() => !!document.querySelector('.mp-spsel [data-spfiche]')", f'{what}: the block is chosen')
+    c.eq(c.js("() => !!document.querySelector('.mp-sp-card') && !document.querySelector('.mp-sp-card').hidden"), False, 'the first tap does not open the sheet', what=f'{what}: sheet before the button')
+    c.tap('.mp-spsel [data-spfiche]')
+    c.until(cond, timeout=6000, what=what)
+
+
 @case('D131', 'The sheet of an R or D space: a tap on its block in the profile (or on its row of the list on the map) opens its published data, and says frankly that the real activity is not known', 'D',
       tags=('maps', 'sheet'), designs=('standard',), night=False, screens=False, langs4=True,
       rule='V3 (SOG-0163, ergonomics 10 Nov): a click or a tap, not a hover (no hover with a finger, conditions run to several lines): name and type, limits, the activation published (AZBA, NOTAM), the hours and the AIP conditions and remarks as published, unit and frequency, source and date, and « actual activity not known: published hours only »; a P says « prohibited »; seven lines then « n more »')
@@ -4082,8 +4091,7 @@ def d131(c):
     c.wait(500)
     # a tap on the R's block in the profile
     c.js("() => { window.__want = 'R'; return true }")
-    _click_until(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(_SPACE_CLICK_JS, 5000)),
-                 "() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && k.textContent.length > 20 }", 'the sheet of the R opens from its block')
+    _open_space_from_profile(c, "() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && k.textContent.length > 20 }", 'the sheet of the R opens from its block')
     t = c.js("() => document.querySelector('.mp-sp-card').textContent")
     c.ok('R 61' in t, t, 'the sheet names the space: type and name')
     c.ok('CCER Bordeaux' in t and 'BORDEAUX ESSAIS 122.9' in t, t, 'unit and frequency as the base carries them')
@@ -4095,14 +4103,20 @@ def d131(c):
     c.js("() => { const b = document.querySelector('.f-sheet-close'); if (b) b.click(); return true }")
     c.wait(400)
     _click_until(c, lambda: xy(c, 44.65, .8), "() => document.querySelectorAll('.mp-lv-list li[data-i]').length >= 1", 'the list of the spaces at this point on the map')
-    c.tap('.mp-lv-list li[data-i]')
-    c.until("() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && /R 61/.test(k.textContent) }", timeout=6000, what='a row of the list opens the sheet')
+    for k in range(3):   # a tap a redraw may lose: again, up to three times
+        c.tap('.mp-lv-list li[data-i]')
+        try:
+            c.until("() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && /R 61/.test(k.textContent) }", timeout=3000, what='a row of the list opens the sheet')
+            break
+        except Exception:
+            if k == 2:
+                raise
+            c.wait(300)
     # a P says « prohibited »
     c.js("() => { const b = document.querySelector('.f-sheet-close'); if (b) b.click(); return true }")
     c.wait(400)
     c.js("() => { window.__want = 'P'; return true }")
-    _click_until(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(_SPACE_CLICK_JS, 5000)),
-                 "() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && /P 9/.test(k.textContent) }", 'the sheet of the P opens')
+    _open_space_from_profile(c, "() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && /P 9/.test(k.textContent) }", 'the sheet of the P opens')
     t = c.js("() => document.querySelector('.mp-sp-card').textContent")
     c.ok(re.search(r'(prohibited|interdit|verboten|prohibido)', t, re.I), t, 'a P says it is prohibited')
     # seven lines, then « n more » (the base will carry hours and remarks: the card is ready for them)
@@ -4191,8 +4205,7 @@ def d133(c):
         c.js("() => { window.__sIV = []; const o = Element.prototype.scrollIntoView; Element.prototype.scrollIntoView = function () { window.__sIV.push((this.className || '').toString()); return o.apply(this, arguments) }; return true }")
         g0 = c.js(_GEO_SHEET)
         c.js("() => { window.__want = 'R'; return true }")
-        _click_until(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(_SPACE_CLICK_JS, 5000)),
-                     "() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && k.textContent.length > 20 }", f'the sheet of the R opens ({w} px)')
+        _open_space_from_profile(c, "() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && k.textContent.length > 20 }", f'the sheet of the R opens ({w} px)')
         c.wait(700)
         g1 = c.js(_GEO_SHEET)
         c.eq(g1['panel'], g0['panel'], 'the sheet keeps its place and its height while the sheet of the space is open', what=f'{w}: panel')
@@ -4205,3 +4218,40 @@ def d133(c):
         c.wait(900)
         g2 = c.js(_GEO_SHEET)
         c.eq([g2['panel'], g2['box'], g2['pc']], [g0['panel'], g0['box'], g0['pc']], 'closed: the sheet, the map and the profile are exactly as at the opening (width and height of the graph)', what=f'{w}: after')
+
+
+@case('D134', 'Profile: a tap on a space block chooses it (highlight, its name and limits and a « Sheet » button under the profile); only a second tap on it, or the button, opens the sheet; a tap elsewhere chooses nothing; the profile is never replaced without an explicit gesture', 'D',
+      tags=('maps', 'sheet'), designs=('standard',), night=False, screens=False, langs4=True,
+      rule='ergonomics 10 Nov (the user’s refusal of SOG-0163, « affichage fortement impacté »): on a profile crowded with blocks the first tap anywhere opened the sheet and replaced the profile: now a first tap on a block chooses it, a second tap on the chosen block or the strip’s button opens the sheet, a tap outside any block deselects, and the profile’s geometry does not change while choosing')
+def d134(c):
+    ring = lambda la0, la1, lo0, lo1: [[la0, lo0], [la0, lo1], [la1, lo1], [la1, lo0], [la0, lo0]]
+    zones = [{'type': 'R', 'cls': '', 'name': '61', 'key': 'LFR61', 'lower': 'SFC', 'upper': 'FL115', 'src': 'sia', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]}]
+    c.open('maps', docs=fdocs(_awy_flight()) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airspaces=zones, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.prof && window.__mp.S.prof.crossed.some(x => x.a.type === 'R'))", timeout=15000, what='the profile crosses the R')
+    c.wait(700)
+    g0 = c.js(_GEO_SHEET)
+    c.js("() => { window.__want = 'R'; return true }")
+    # first tap on the block: chosen, not opened
+    _click_until(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(_SPACE_CLICK_JS, 5000)), "() => !!document.querySelector('.mp-spsel [data-spfiche]')", 'the block is chosen')
+    st = c.js("() => ({ dpanel: window.__mp.S.dpanel, sel: !!window.__mp.S.selSpace, strip: document.querySelector('.mp-spsel').textContent, card: !!document.querySelector('.mp-sp-card') && !document.querySelector('.mp-sp-card').hidden })")
+    c.ok(st['dpanel'] is None and st['sel'] and not st['card'], str(st), 'one tap chooses the block: the profile stays, nothing opens')
+    c.ok('R 61' in st['strip'], st['strip'], 'the label over the profile names it, with its limits, and offers the button')
+    c.eq(c.js(_GEO_SHEET)['pc'], g0['pc'], 'the profile keeps its geometry while a block is chosen', what='pc')
+    # a tap elsewhere (above the block's ceiling): nothing chosen
+    pt = c.js("() => { const S = window.__mp.S, g = S.geo, r = S.profBox.getBoundingClientRect(); return { x: r.left + g.padL + (g.W - g.padL - g.padR) * .88, y: r.top + g.padT + (g.H - g.padT - g.padB) * .5 } }")   # 88 % along the route: past the R
+    c.page.mouse.click(pt['x'], pt['y'])
+    c.until("() => !window.__mp.S.selSpace && !document.querySelector('.mp-spsel [data-spfiche]')", timeout=5000, what='a tap outside any block chooses nothing')
+    # choose again, then a second tap on the chosen block opens the sheet
+    _click_until(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(_SPACE_CLICK_JS, 5000)), "() => !!window.__mp.S.selSpace", 'chosen again')
+    pt = c.js(_SPACE_CLICK_JS, 5000)
+    c.page.mouse.click(pt['x'], pt['y'])
+    c.until("() => window.__mp.S.dpanel === 'lv' && !!document.querySelector('.mp-sp-card') && !document.querySelector('.mp-sp-card').hidden", timeout=6000, what='the second tap on the chosen block opens the sheet')
+    c.js("() => { const b = document.querySelector('.f-sheet-close'); if (b) b.click(); return true }")
+    c.wait(800)
+    c.eq(c.js(_GEO_SHEET)['pc'], g0['pc'], 'closed: the profile is as it was', what='pc after')
+    # the button opens it too
+    c.until("() => !!document.querySelector('.mp-spsel [data-spfiche]')", timeout=5000, what='the choice is kept when the sheet closes')
+    c.tap('.mp-spsel [data-spfiche]')
+    c.until("() => window.__mp.S.dpanel === 'lv'", timeout=6000, what='the button opens the sheet')

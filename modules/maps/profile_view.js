@@ -150,6 +150,9 @@ export async function buildProfile() {
 /** La coupe calculée posée (S.prof) et dessinée : fenêtre gardée tant que la route est la même, la feuille, la bande, l'état. */
 function showProf(prof, pts) {
   S.prof = prof;
+  if (S.selSpace && !prof?.crossed?.some(c => c.a === S.selSpace)) S.selSpace =
+    null; // le profil refait : l'espace choisi n'est plus traversé
+  selFill();
   // fenêtre : gardée tant que la route est la même (le niveau ou les taux ont pu changer), remise dès que ses points diffèrent
   const sig = prof ? pts.map(p => `${p.id || ''}:${(+p.lat).toFixed(4)},${(+p.lon).toFixed(4)}`).join('|') : '',
     same = !!keep.win && keep.win.sig === sig;
@@ -231,6 +234,7 @@ function paintProfile(ctx, pl, W, H) {
     H,
     scale: W < 500 ? .78 : 1,
     window: windowNm(),
+    select: S.selSpace,
     placer: pl
   });
   // paliers de contraintes des procédures choisies, sur la trajectoire prévue
@@ -389,6 +393,25 @@ export const yAtAlt = (g, a) => g.padT + (g.H - g.padT - g.padB) * (1 - (Math.mi
 export const altAtY = (g, y) => g.bottom + (1 - (y - g.padT) / (g.H - g.padT - g.padB)) * (g.top - g.bottom);
 /** Ligne sous le profil (feuille agrandie) : distance, altitude prévue, relief ou MORA, espaces sous le curseur du plus haut
  *  au plus bas, ou « hors des espaces montrés » ; vide sans curseur. */
+/** L'espace choisi dans le profil (SOG-0163) : son nom et ses limites et le bouton « Fiche », sur le profil (la ligne dessous n'est visible que feuille ouverte à fond) ; écrit seulement s'il change. */
+function selFill() {
+  const el = S?.selEl;
+  if (!el) return;
+  const sel = S.selSpace && S.prof ? MapsRender.sia(S.selSpace)[0] : '';
+  if (el.dataset.k === sel) return;
+  el.dataset.k = sel;
+  el.hidden = !sel;
+  if (!sel) return el.replaceChildren();
+  const b = document.createElement('button'),
+    t = document.createElement('span');
+  b.type = 'button';
+  b.className = 'f-btn mp-sp-btn';
+  b.dataset.spfiche = '1';
+  b.textContent = tt(TX.spBtn);
+  t.textContent = sel;
+  el.replaceChildren(t, b);
+}
+
 function strip() {
   if (!S?.stripEl) return;
   let text = '';
@@ -482,7 +505,23 @@ export function profileEvents() {
         return Number.isFinite(v) ? v : Infinity;
       },
       hit = zones.filter(z => ft >= lo(z.a) && ft <= up(z.a)).sort((x, y) => (up(x.a) - lo(x.a)) - (up(y.a) - lo(y.a)))[0];
-    if (hit) openSpace(hit.a, zones.map(z => z.a));
+    if (!hit) { // un appui hors d'un bloc : plus d'espace choisi (le profil n'est jamais remplacé sans geste explicite)
+      if (S.selSpace) {
+        S.selSpace = null;
+        drawProfile();
+        selFill();
+      }
+      return;
+    }
+    if (S.selSpace === hit.a) return openSelected(zones.map(z => z.a)); // le second appui sur le bloc choisi ouvre sa fiche
+    S.selSpace = hit.a; // le premier le choisit : surligné, son nom et ses limites et le bouton « Fiche » sur le profil
+    drawProfile();
+    selFill();
   });
+  S.selEl?.addEventListener('click', e => {
+    if (e.target.closest?.('[data-spfiche]') && S.selSpace) openSelected(S.prof ? MapsProfile.at(S.prof, S.cursor).zones.map(z => z.a)
+      .filter(Boolean) : []);
+  });
+  const openSelected = list => openSpace(S.selSpace, list.includes(S.selSpace) ? list : [S.selSpace, ...list]);
   return [() => S.axw.stop()];
 }

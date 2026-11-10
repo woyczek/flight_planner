@@ -247,6 +247,11 @@ export const STYLE = `
 [data-module="maps"] .mp-lv-list li[data-open="1"]{background:color-mix(in srgb,var(--sog-accent) 12%,transparent)}
 [data-module="maps"] .mp-lv-list li[data-i]{position:relative}
 @media (pointer:coarse){[data-module="maps"] .mp-lv-list li[data-i]::after{content:'';position:absolute;inset:-9px 0}} /* a 44 px target without changing the row's height */
+[data-module="maps"] .mp-spsel{position:absolute;z-index:3;left:56px;top:2px;display:flex;align-items:center;gap:4px;max-width:calc(100% - 64px);padding:2px 4px 2px 8px;font-size:12px;white-space:nowrap}
+[data-module="maps"] .mp-spsel[hidden]{display:none}
+[data-module="maps"] .mp-spsel span{overflow:hidden;text-overflow:ellipsis}
+[data-module="maps"] .mp-sp-btn{margin-left:4px;min-height:28px;padding:0 10px}
+@media (pointer:coarse){[data-module="maps"] .mp-sp-btn{min-height:44px}}
 [data-module="maps"] .mp-sp-card{margin:8px 0;padding:8px 10px;font-size:13px;line-height:1.35;white-space:normal}
 [data-module="maps"] .mp-sp-card[hidden]{display:none}
 [data-module="maps"] .mp-sp-card p{margin:2px 0}

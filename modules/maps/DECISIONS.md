@@ -2126,6 +2126,10 @@ the Map had seen in between: the same line to within the frame's own sampling.
   place with the old code too, at 390 / 590 / 1 280 and in the real double view with his flight), so that this is the cause of his capture is an inference,
   not a proof. Also: a tap on the profile now opens the list when it lands on a block (SOG-0163) — in a profile crowded with blocks almost every tap does: to ask
   him whether that is what he saw.
+- **Two gestures on the profile (ergonomics decision, 10 Nov, after the refusal)**: on a dense profile a first tap anywhere opened the sheet and replaced the profile (too
+  easy). Now: a first tap on a block chooses it (`S.selSpace`, highlight in `vertical_profile.js` `select`, label `.mp-spsel` over the profile with the name, the limits and
+  « Sheet »), a second tap on it or the button opens the sheet, a tap outside any block deselects. The label sits over the profile's top left (it hides a little of the plot,
+  and of the TOC label): the strip under the profile would be the natural place but it is hidden unless the sheet is expanded. Noreg D134 (red before: one tap opened the sheet).
 - **Noreg** D131 (R: from its block in the profile, from its row on the map; the P; seven lines then « n more »; red without the code).
 
 ## A far point does not slow the Map down (9 Nov 2026, SOG-0156)
