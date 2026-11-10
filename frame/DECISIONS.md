@@ -2735,3 +2735,26 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   launcher (GitHub Pages) puts its policy in a `meta` tag per page built by `build_pages.py`, which this does not touch: there the satellite stays blocked and the line says so.
   Noreg I40 (the table is the one page; the general policy has no Esri host; the page's differs only by the host, in `connect-src`; `script-src` identical; the header uses the
   per-page value only for a path of the table), red before (no `PAGES`). One line added to the security audit (Appendix A, hosts contacted). The launcher is to be restarted.
+
+## 10 November 2026 — relayed calls queue in the frame, « busy » is replayed (SOG-0198)
+
+SOG-0178 bounded the launcher's relay (two per host, four in all, the next refused at once: 503, `X-SOG-Reason: busy`, `Retry-After`) so that a slow
+outside service never freezes the pages; nothing on the page side read that answer. The Weather grid (several Open-Meteo calls together) was refused
+and said « offline » (the user, 14:21, building the synoptic).
+
+- **Queue on the page side** (`relayTake` in `frame/app.js`): the same bounds (`RELAY_PER_HOST` 2, `RELAY_TOTAL` 4), first come first served, a full host
+  never holding back another. A caller never sees « busy ». The two bounds must change together with `NET_PER_HOST` / `NET_TOTAL` of the launcher.
+- **A « busy » received anyway** (another tab, another workstation) is replayed after `Retry-After` (0.25 to 10 s, 2 s without header), three times at
+  most, the slot given back while waiting; then returned as it is (503, `x-sog-reason: busy`, never « offline »).
+- **The reason is returned**: `x-sog-reason` on the response (busy, timeout, reset, refused, unreachable, http-<code>); the « offline » response made by
+  the frame for a 502 carries it (it lost it before); `x-sog-offline` remains the only sign of « offline ».
+- Not done here: the Weather screen still words a failed call itself (`modules/atmosphere/wx.js`, `weather_store.js` `call`); it can now tell « busy »
+  from « offline » by `x-sog-reason` (BUGS SOG).
+- Counter-proof: noreg A129, red on the previous `ctx.net` (ten calls: more than two at once; busy not replayed; reason lost), green now.
+
+## 10 November 2026 — review of `ctx.ask(…, { sections, note })` (SOG-0197, added by Settings)
+
+Accepted as written, with four corrections in `askSections` (`frame/app.js`): a null or non-object section no longer throws; the texts are bounded
+(title 120, line 300, note 500 characters, « … » at the cut) as the groups already were (six, 500 lines); a group that scrolls (more than seven lines)
+is focusable and named by its title (a keyboard could not read the rest of the list); the doc comments of `ask` and `askSections` were swapped. Escaping
+was right (`esc` on every text and on the group `id`); a question without `sections` has exactly the markup it had. Noreg A130, red before (null section).

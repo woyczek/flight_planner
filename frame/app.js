@@ -807,10 +807,19 @@
       onReady(m, close);
     });
   }
-  /** Question oui / non : promesse de vrai (OK) ou faux. */
-  /** `o.sections` : [{ title, lines: [texte] }] — des groupes titrés d'une ligne par élément (sept lignes visibles, le reste défile), `o.note` : une phrase grise ; que des textes, jamais du HTML. */
-  const askSections = o => (Array.isArray(o.sections) ? o.sections : []).slice(0, 6).map(g => `<section data-ask-section="${esc(g.id || '')}"><h4>${esc(g.title)}</h4><ul class="f-ask-lines">${(Array.isArray(g.lines) ? g.lines : []).slice(0, 500).map(l => `<li>${esc(l)}</li>`).join('')}</ul></section>`).join('') + (o.note ? `<p class="f-muted">${esc(o.note)}</p>` :
-    '');
+  /** Les groupes titrés d'une question (`o.sections` : [{ id, title, lines: [texte] }], six au plus, 500 lignes de 300 caractères au plus,
+   *  un titre de 120) et sa note grise (`o.note`, 500 caractères) : que des textes, échappés, jamais du HTML. Sept lignes visibles par
+   *  groupe, le reste défile dans le groupe ; un groupe qui défile se prend au clavier (tabindex, nommé par son titre) : sans cela, un
+   *  clavier ne pourrait pas lire la suite. */
+  const cut = (v, n) => {
+    const s = String(v ?? '');
+    return s.length > n ? `${s.slice(0, n - 1)}…` : s;
+  };
+  const askSections = o => (Array.isArray(o.sections) ? o.sections : []).filter(g => g && typeof g === 'object').slice(0, 6).map(g => {
+    const lines = (Array.isArray(g.lines) ? g.lines : []).slice(0, 500);
+    return `<section data-ask-section="${esc(g.id || '')}"><h4>${esc(cut(g.title, 120))}</h4><ul class="f-ask-lines"${lines.length > 7 ? ` tabindex="0" aria-label="${esc(cut(g.title, 120))}"` : ''}>${lines.map(l => `<li>${esc(cut(l, 300))}</li>`).join('')}</ul></section>`;
+  }).join('') + (o.note ? `<p class="f-muted">${esc(cut(o.note, 500))}</p>` : '');
+  /** Question oui / non : promesse de vrai (OK) ou faux ; `o.ok`, `o.cancel` : les libellés des boutons ; `o.sections`, `o.note` : askSections. */
   const ask = (text, o = {}) => modal(`<p>${esc(text)}</p>${askSections(o)}<div class="f-row"><button type="button" class="primary" data-ok>${esc(o.ok || t(T.ok))}</button><button type="button" data-no>${esc(o.cancel || t(T.cancel))}</button></div>`,
     (m, close) => {
       m.querySelector('[data-ok]').onclick = () => close(true);
@@ -831,13 +840,67 @@
 
   // ---------------------------------------------------------------- appels sortants des modules
   /** Réponse « hors ligne » immédiate (statut 503, en-tête x-sog-offline), jamais d'exception. */
-  const offline = () => new Response(null, {
+  const offline = reason => new Response(null, {
     status: 503,
     statusText: 'offline',
-    headers: {
+    headers: reason ? {
+      'x-sog-offline': '1',
+      'x-sog-reason': reason
+    } : {
       'x-sog-offline': '1'
     }
   });
+  // SOG-0198 : le lanceur borne le relais (tools/launch.py NET_PER_HOST 2, NET_TOTAL 4) et refuse le suivant tout de suite (503, X-SOG-Reason:
+  // busy, Retry-After). Le cadre fait donc la queue AVANT d'appeler : deux appels à la fois par hôte, quatre en tout, les suivants attendent
+  // leur tour (dans l'ordre d'arrivée) et un appelant ne voit jamais « occupé » ; un « occupé » reçu quand même (un autre onglet, un autre
+  // poste) est rejoué après Retry-After, BUSY_RETRIES fois au plus, puis rendu tel quel. Les mêmes bornes que le lanceur : tout changement
+  // d'un côté se fait de l'autre.
+  const RELAY_PER_HOST = 2,
+    RELAY_TOTAL = 4,
+    BUSY_RETRIES = 3,
+    BUSY_DEFAULT_S = 2,
+    BUSY_MAX_S = 10,
+    BUSY_MIN_S = .25;
+  const relayQ = {
+    all: 0,
+    host: new Map(),
+    wait: []
+  };
+  /** Les places libres : la plus ancienne attente qui peut partir part (l'ordre d'arrivée, sans qu'un hôte plein retienne les autres). */
+  function relayPump() {
+    for (let i = 0; i < relayQ.wait.length && relayQ.all < RELAY_TOTAL; i++) {
+      const w = relayQ.wait[i];
+      if ((relayQ.host.get(w.host) || 0) >= RELAY_PER_HOST) continue;
+      relayQ.wait.splice(i--, 1);
+      relayQ.all++;
+      relayQ.host.set(w.host, (relayQ.host.get(w.host) || 0) + 1);
+      w.go();
+    }
+  }
+  /** Une place de relais pour cet hôte, attendue au besoin ; rend la fonction qui la libère (une fois). */
+  function relayTake(host) {
+    return new Promise(res => {
+      relayQ.wait.push({
+        host,
+        go: () => {
+          let done = false;
+          res(() => {
+            if (done) return;
+            done = true;
+            relayQ.all--;
+            relayQ.host.set(host, (relayQ.host.get(host) || 1) - 1);
+            relayPump();
+          });
+        }
+      });
+      relayPump();
+    });
+  }
+  /** Retry-After du lanceur en secondes, borné (BUSY_MIN_S à BUSY_MAX_S) ; 2 s sans en-tête lisible. */
+  const busyDelay = r => {
+    const n = parseFloat(r.headers.get('retry-after'));
+    return Math.min(BUSY_MAX_S, Math.max(BUSY_MIN_S, Number.isFinite(n) ? n : BUSY_DEFAULT_S)) * 1000;
+  };
   // sites relayés par le lanceur (clés et CORS de son côté : tools/launch.py, POST /__setup/net) ; sans lanceur, appel
   // direct seulement vers ceux qui l'autorisent (CORS) ; tout autre site extérieur : 503 marqué x-sog-unreachable
   // météo : aviationweather.gov (METAR / TAF, pas de CORS) par le relais seulement ; sans lanceur, METAR par
@@ -1070,23 +1133,39 @@
       try {
         if (u.origin === location.origin) return await fetch(u, init);
         if (launcherHere && (RELAY.includes(u.hostname) || site)) {
-          // le relais rend la réponse du site telle quelle (pas du JSON du lanceur) : le seul appel direct du cadre au lanceur
-          const r = await fetch(new URL('__setup/net', ROOT), {
-            method: 'POST',
-            cache: 'no-store',
-            headers: {
-              'X-SOG-Setup': '1',
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              url: u.href,
-              method: init.method || 'GET',
-              accept: new Headers(init.headers || {}).get('Accept') || '',
-              contentType: new Headers(init.headers || {}).get('Content-Type') || '',
-              body: typeof init.body === 'string' ? init.body : undefined
-            })
+          // le relais rend la réponse du site telle quelle (pas du JSON du lanceur) : le seul appel direct du cadre au lanceur ; en file par hôte
+          // (relayTake), un « occupé » reçu quand même rejoué (SOG-0198) ; la raison du lanceur (X-SOG-Reason : busy, timeout, reset, refused,
+          // unreachable, http-<code>) est rendue à l'appelant telle quelle, X-SOG-Offline restant le seul signe de « hors ligne »
+          const body = JSON.stringify({
+            url: u.href,
+            method: init.method || 'GET',
+            accept: new Headers(init.headers || {}).get('Accept') || '',
+            contentType: new Headers(init.headers || {}).get('Content-Type') || '',
+            body: typeof init.body === 'string' ? init.body : undefined
           });
-          return r.headers.get('x-sog-offline') ? offline() : r;
+          for (let n = 0;; n++) {
+            const free = await relayTake(u.hostname);
+            let r;
+            try {
+              if (init.signal?.aborted) return offline('aborted');
+              r = await fetch(new URL('__setup/net', ROOT), {
+                method: 'POST',
+                cache: 'no-store',
+                headers: {
+                  'X-SOG-Setup': '1',
+                  'Content-Type': 'application/json'
+                },
+                body
+              });
+            } finally {
+              free();
+            }
+            if (r.status === 503 && r.headers.get('x-sog-reason') === 'busy' && n < BUSY_RETRIES) {
+              await new Promise(res => setTimeout(res, busyDelay(r)));
+              continue;
+            }
+            return r.headers.get('x-sog-offline') ? offline(r.headers.get('x-sog-reason') || 'unreachable') : r;
+          }
         }
         if (u.hostname === 'avwx.rest') {
           // TAF sans lanceur : la clé de l'appareil est ajoutée ici ; sans clé, 503 tout de suite
@@ -1105,7 +1184,7 @@
             init);
         return unreachable();
       } catch {
-        return offline();
+        return offline('unreachable');
       }
     }
   };

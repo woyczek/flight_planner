@@ -5297,3 +5297,95 @@ def a128(c):
     c.until("location.hash.startsWith('#missions')", timeout=8000, what='Missions')
     c.eq(_airline_code(c, 'sog'), 'sog', 'the joined airline is the current one', what='current')
     c.check_errors()
+
+
+# the fake launcher of A129: /__setup/status says a launcher is here; /__setup/net is answered by the page itself (a patched fetch), after a delay, so that
+# the calls overlap and the case can count how many are in flight at once, per host and in all
+FAKE_RELAY = """(() => {
+  const real = window.fetch.bind(window), st = window.__relay = { cur: 0, max: 0, host: {}, maxHost: 0, log: [], busy: {} };
+  window.fetch = (input, init) => {
+    const url = typeof input === 'string' ? input : input?.url || String(input);
+    if (!url.includes('__setup/net')) return real(input, init);
+    const a = JSON.parse(init.body), u = new URL(a.url), key = u.hostname + u.pathname;
+    st.cur++; st.max = Math.max(st.max, st.cur); st.host[u.hostname] = (st.host[u.hostname] || 0) + 1; st.maxHost = Math.max(st.maxHost, st.host[u.hostname]);
+    st.log.push(key);
+    return new Promise(res => setTimeout(() => {
+      st.cur--; st.host[u.hostname]--;
+      const mk = (status, headers, body = 'ok') => res(new Response(body, { status, headers }));
+      if (u.pathname === '/busyonce' && (st.busy[key] = (st.busy[key] || 0) + 1) === 1) return mk(503, { 'X-SOG-Reason': 'busy', 'Retry-After': '0' });
+      if (u.pathname === '/busy') return mk(503, { 'X-SOG-Reason': 'busy', 'Retry-After': '0' });
+      if (u.pathname === '/timeout') return mk(502, { 'X-SOG-Offline': '1', 'X-SOG-Reason': 'timeout' }, 'unreachable');
+      if (u.pathname === '/refused') return mk(502, { 'X-SOG-Offline': '1', 'X-SOG-Reason': 'refused' }, 'unreachable');
+      if (u.pathname === '/http404') return mk(404, { 'X-SOG-Reason': 'http-404' }, 'no');
+      mk(200, {}, 'ok');
+    }, 60));
+  };
+})()"""
+
+
+@case('A129', 'ctx.net: the calls to one host queue in the frame (two at a time, four in all), a « busy » is replayed, the launcher’s reason reaches the caller (SOG-0198)', 'A',
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0198 (the user saw « Carte : prévision de la grille injoignable (hors ligne) » with the network up): the launcher refuses a relay beyond two per host and four in all (503, X-SOG-Reason: busy, Retry-After) and no page read it; the frame now queues the calls (the callers never see « busy »), replays a « busy » received anyway (Retry-After, three times at most), and returns the launcher’s reason as it is (X-SOG-Reason: busy, timeout, reset, refused, unreachable, http-<code>); X-SOG-Offline stays the only sign of « offline »')
+def a129(c):
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False}
+    c.context.add_init_script(FAKE_RELAY)
+    c.context.route(re.compile(r'/modules/atmosphere/module\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=CTX_MODULE))
+    c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(status)))
+    c.open('atmosphere', wait=False)
+    c.until('!!window.__ctx', timeout=15000, what='the module and its ctx')
+    c.until('!!window.__relay', what='the fake relay')
+    # a launcher is here (the frame reads /__setup/status once at the start)
+    c.wait(1500)
+    call = """async (urls) => { const rs = await Promise.all(urls.map(u => window.__ctx.net.fetch(u))); return rs.map(r => [r.status, r.headers.get('x-sog-offline'), r.headers.get('x-sog-reason')]) }"""
+    one = 'https://api.open-meteo.com/v1/forecast?n='
+    res = c.js(call, [one + str(i) for i in range(10)])
+    st = c.js('window.__relay')
+    c.eq([r[0] for r in res], [200] * 10, 'ten calls to one host: all succeed, none refused', what='ten calls')
+    c.ok(st['maxHost'] <= 2 and st['max'] <= 2, str(st), 'never more than two at once for one host')
+    c.ok(len(st['log']) == 10, str(len(st['log'])), 'each call reached the launcher once')
+    # two hosts, six calls each: two per host, four in all
+    c.js('() => { window.__relay.max = 0; window.__relay.maxHost = 0; window.__relay.log = [] }')
+    res = c.js(call, [f'https://api.open-meteo.com/a?n={i}' for i in range(6)] + [f'https://aviationweather.gov/b?n={i}' for i in range(6)] + [f'https://api.vatsim.net/c?n={i}' for i in range(2)])
+    st = c.js('window.__relay')
+    c.eq([r[0] for r in res], [200] * 14, 'three hosts, fourteen calls: all succeed', what='three hosts')
+    c.ok(st['maxHost'] <= 2 and 2 < st['max'] <= 4, str(st), 'at most two per host and four in all, and the slots are used (more than two at once)')
+    # a « busy » received anyway (another tab) is replayed
+    c.js('() => { window.__relay.log = [] }')
+    res = c.js(call, ['https://api.open-meteo.com/busyonce'])
+    c.eq([res[0][0], c.js('window.__relay.log.length')], [200, 2], 'a « busy » from the launcher is replayed: the caller gets the answer', what='busy once')
+    c.js('() => { window.__relay.log = [] }')
+    res = c.js(call, ['https://api.open-meteo.com/busy'])
+    c.eq([res[0][0], res[0][1], res[0][2], c.js('window.__relay.log.length')], [503, None, 'busy', 4], 'always « busy »: replayed three times, then rendered as it is (503, busy, not « offline »)', what='busy always')
+    # the reason reaches the caller; « offline » is the sign of the network only
+    res = c.js(call, ['https://api.open-meteo.com/timeout', 'https://api.open-meteo.com/refused', 'https://api.open-meteo.com/http404'])
+    c.eq(res, [[503, '1', 'timeout'], [503, '1', 'refused'], [404, None, 'http-404']], 'timeout, refused: offline with their reason; an HTTP error: its status and reason, not offline', what='reasons')
+    c.check_errors()
+
+
+@case('A130', 'ctx.ask with sections: texts only, bounded, a scrolling group is reachable by keyboard, a plain question is unchanged (SOG-0197 review)', 'A',
+      designs=('standard',), screens=False, night=False,
+      rule='review of the `sections` option of ctx.ask (Settings, 8fd6f63a0): a title, a line or the note is a text (escaped, bounded: 120, 300, 500 characters), a null section is skipped, six groups and 500 lines at most; a group that scrolls (more than seven lines) takes the focus (tabindex) and is named by its title; a question without sections has the same markup as before')
+def a130(c):
+    c.context.route(re.compile(r'/modules/atmosphere/module\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=CTX_MODULE))
+    c.open('atmosphere', wait=False)
+    c.until('!!window.__ctx', timeout=15000, what='the module and its ctx')
+    c.js("""() => { window.__q = window.__ctx.ask('Question ?', { ok: 'Go', cancel: 'Non', note: 'x'.repeat(900) + '<img src=x onerror=window.__pwn=1>',
+      sections: [null, { id: 'a"><b>', title: '<img src=x onerror=window.__pwn=1>' + 'T'.repeat(300), lines: ['ligne <b>1</b>', 'l'.repeat(900), 3, 4, 5, 6, 7, 8] },
+        { id: 'b', title: 'Court', lines: ['un', 'deux'] }, ...Array.from({ length: 7 }, (_, i) => ({ id: 's' + i, title: 'S' + i, lines: [] }))] }); return true }""")
+    c.until("!!document.querySelector('.f-modal [data-ask-section]')", what='the question with groups')
+    r = c.js("""() => { const m = document.querySelector('.f-modal'), g = [...m.querySelectorAll('[data-ask-section]')], first = g[0], second = g[1];
+      return { groups: g.length, img: m.querySelectorAll('img, b').length, pwn: window.__pwn === undefined, title: first.querySelector('h4').textContent.length,
+        long: Math.max(...[...first.querySelectorAll('li')].map(l => l.textContent.length)), lines: first.querySelectorAll('li').length,
+        tab: [first.querySelector('ul').getAttribute('tabindex'), second.querySelector('ul').getAttribute('tabindex')], label: first.querySelector('ul').getAttribute('aria-label').length,
+        note: m.querySelector('p.f-muted').textContent.length, id: first.dataset.askSection } }""")
+    c.eq([r['groups'], r['img'], r['pwn']], [6, 0, True], 'six groups at most, a null one skipped, nothing is markup, nothing runs', what='groups')
+    c.eq([r['title'], r['long'], r['lines'], r['note'], r['label']], [120, 300, 8, 500, 120], 'a title, a line and the note are bounded', what='bounds')
+    c.eq(r['tab'], ['0', None], 'the group that scrolls takes the focus, the short one does not', what='tabindex')
+    c.tap('.f-modal [data-ok]')
+    ok = c.js('() => window.__q')
+    c.eq(ok, True, 'OK answers true', what='ok')
+    c.js("() => { window.__p = window.__ctx.ask('Simple ?'); return true }")
+    c.until("!!document.querySelector('.f-modal')", what='the plain question')
+    c.eq([c.count('.f-modal [data-ask-section]'), c.count('.f-modal .f-muted'), c.count('.f-modal [data-ok]'), c.count('.f-modal [data-no]')], [0, 0, 1, 1], 'a question without sections: the same markup as before', what='plain')
+    c.tap('.f-modal [data-no]')
+    c.check_errors()

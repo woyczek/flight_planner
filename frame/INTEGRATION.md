@@ -227,7 +227,20 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
     (any other method gets a 503); without a launcher, a direct read works only if the site allows it (CORS);
   - one path of a shared host is called directly, https and GET only: the Terrarium elevation tiles
     (`s3.amazonaws.com/elevation-tiles-prod/`, the Map's relief and contours); the rest of that host gets the 503;
-  - any other outside site gets a 503 carrying `x-sog-unreachable`.
+  - any other outside site gets a 503 carrying `x-sog-unreachable`;
+  - **relayed calls are queued by the frame** (SOG-0198, 10 Nov 2026): the launcher serves two relayed calls at once per
+    host and four in all (`tools/launch.py` `NET_PER_HOST`, `NET_TOTAL`) and refuses the next at once. The frame keeps the
+    same bounds on its side (`RELAY_PER_HOST`, `RELAY_TOTAL`): the calls beyond them **wait their turn**, in order of
+    arrival. Fire as many calls as you need, in `Promise.all` if you like (the Weather grid does): none is refused for
+    being "busy". A "busy" still received (another tab, another workstation) is replayed after its `Retry-After`
+    (0.25 to 10 s, 2 s by default), three times at most, then returned as it is. A queued call is not timed by the
+    launcher (its 15 s start when the launcher takes it);
+  - **the launcher's reason reaches you** in the response header `x-sog-reason`: `busy` (503, only after the replays),
+    `timeout`, `reset`, `refused`, `unreachable` (these four come with `x-sog-offline`: the network, or the site, did not
+    answer), `http-<code>` (the site answered an error: its status and body are returned as they are). **`x-sog-offline`
+    is the only sign of "offline"**: a 503 `busy` or a 404 is not offline, so do not word it as such (the Weather screen
+    said "offline" for a call the launcher had refused). An aborted call (`init.signal`) while it waits answers `offline`
+    with the reason `aborted`.
   Never call `fetch` directly. Only string bodies are relayed.
 - `ctx.level` (read, 28 Oct 2026): the device's usage level, 1 Everyday, 2 Advanced, 3 Full (a getter: the value of the
   moment, after a change in Settings too). It shapes what a screen offers (the Map keeps "Save for the airline" for the

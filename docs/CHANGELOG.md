@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: `ctx.ask(…, { sections })` reviewed** (`frame/app.js`; SPEC, DECISIONS; noreg A130; SOG-0197). A null section no longer throws, texts are bounded
+  (120 / 300 / 500 characters), a group that scrolls takes the keyboard focus and is named by its title.
+- **Frame: the relayed calls queue in the frame, a « busy » is replayed, the launcher's reason reaches the caller** (`frame/app.js` `ctx.net`;
+  INTEGRATION, DECISIONS; noreg A129; SOG-0198). The launcher refuses a relay beyond two per host and four in all (SOG-0178) and no page read
+  its answer: the Weather grid, which fires several Open-Meteo calls at once, got refusals and called them « offline ». The calls now wait
+  their turn in the frame (same bounds), a « busy » received anyway is replayed after `Retry-After` (three times at most), and the reason
+  (`x-sog-reason`: busy, timeout, reset, refused, unreachable, http-<code>) is returned as it is; `x-sog-offline` stays the only sign of « offline ».
 - **Fuel: « Nouveau vol » is never lost while the flight is being read** (`modules/fuel/module.js`; Fuel SPEC, DECISIONS; noreg F130;
   SOG-0194). The button says « Vol en cours de lecture… » and the new flight is made as soon as the flight is read.
 - **Aircraft: whose fleet, and the sheet's name opens it** (`modules/aircraft/module.js`, `sheets.js`; SPEC, DECISIONS, help; noreg M37;
