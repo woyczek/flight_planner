@@ -715,8 +715,14 @@
       <fieldset data-kind-set><legend>${esc(t(TA.kindLabel))}</legend>${KINDS.map(k => `<label class="f-check f-kind"><input type="radio" name="co-kind" value="${k}" data-act="companyKind" data-code="${code}" data-kind="${k}"${r.kind === k ? ' checked' : ''}><span><b>${esc(t(CL.KIND_NAMES[k]))}</b><span class="f-muted">${esc(t(TA.kindHelp[k]))}</span></span></label>`).join('')}</fieldset>
       <h4 data-themes-title>${esc(t(TA.themeSummary, { n: list.filter(x => chosen.has(x.id)).length, m: list.length }))}</h4>${r.kind ? '' : `<p class="f-muted">${esc(t(TA.kindUnset))}</p>`}<p class="f-muted">${esc(t(TA.themeHint))}</p>
       <ul class="f-themes" data-themes>${list.map(x => `<li data-theme="${esc(x.id)}"><label class="f-check"><input type="checkbox" data-act="companyTheme" data-code="${code}" data-theme="${esc(x.id)}"${chosen.has(x.id) ? ' checked' : ''}><span>${esc(x.label)}</span></label>${x.added ? ` <button type="button" data-act="companyThemeDel" data-code="${code}" data-theme="${esc(x.id)}">${esc(t(TA.del))}</button>` : ''}${added.series[x.id]?.length ? `<ul class="f-series" data-series-list="${esc(x.id)}">${seriesList(x.id)}</ul>` : ''}</li>`).join('')}</ul>
-      <div class="f-row" data-theme-add><input type="text" maxlength="8" data-f="th-short-${code}" aria-label="${esc(t(TA.themeShort))}" placeholder="${esc(t(TA.themeShort))}" autocapitalize="characters"><input type="text" maxlength="40" data-f="th-name-${code}" aria-label="${esc(t(TA.themeName))}" placeholder="${esc(t(TA.themeName))}"><button type="button" data-act="companyThemeAdd" data-code="${code}">${esc(t(TA.themeAdd))}</button></div>
-      <div class="f-row" data-series-add><select data-f="sr-theme-${code}" aria-label="${esc(t(TA.seriesOf))}">${list.map(x => `<option value="${esc(x.id)}">${esc(x.label)}</option>`).join('')}</select><input type="text" maxlength="40" data-f="sr-name-${code}" aria-label="${esc(t(TA.seriesName))}" placeholder="${esc(t(TA.seriesName))}"><button type="button" data-act="companySeriesAdd" data-code="${code}">${esc(t(TA.seriesAdd))}</button></div><p class="f-msg" data-fiche-msg></p>`;
+      <details data-theme-add><summary>${esc(t(TA.themeAdd))}…</summary>
+        <label class="f-field">${esc(t(TA.themeShort))}<input type="text" maxlength="8" data-f="th-short-${code}" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+        <label class="f-field">${esc(t(TA.themeName))}<input type="text" maxlength="40" data-f="th-name-${code}" autocomplete="off" spellcheck="false"></label>
+        <div class="f-row"><button type="button" class="primary" data-act="companyThemeAdd" data-code="${code}">${esc(t(TA.themeAdd))}</button></div></details>
+      <details data-series-add><summary>${esc(t(TA.seriesAdd))}…</summary>
+        <label class="f-field">${esc(t(TA.seriesOf))}<select data-f="sr-theme-${code}">${list.map(x => `<option value="${esc(x.id)}">${esc(x.label)}</option>`).join('')}</select></label>
+        <label class="f-field">${esc(t(TA.seriesName))}<input type="text" maxlength="40" data-f="sr-name-${code}" autocomplete="off" spellcheck="false"></label>
+        <div class="f-row"><button type="button" class="primary" data-act="companySeriesAdd" data-code="${code}">${esc(t(TA.seriesAdd))}</button></div></details><p class="f-msg" data-fiche-msg></p>`;
   }
   /** Écrit le genre d'une compagnie dans son settings.json (le fichier lu, le champ `kind` posé ou retiré) ; faux si le fichier manque ou ne s'écrit pas. */
   async function writeKind(env, code, kind) {
@@ -781,12 +787,14 @@
   /** Le texte d'un libellé saisi : sans caractères de contrôle ni < >, espaces réduits, 40 signes au plus (comme le filtre du fichier). */
   const themeText = v => String(v ?? '').replace(/[\p{Cc}\p{Zl}\p{Zp}<>]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 41);
   /** Écrit themes.json par `edit` (writeThemes) puis le dit : le refus sous la fiche (la fiche se repeint d'après la dernière lecture : une case décochée pour rien revient), ou « Thèmes enregistrés » et la relecture. */
-  async function themeWrite(env, code, edit) {
+  async function themeWrite(env, code, edit, repaint = false) {
     const why = await writeThemes(env, code, edit);
     if (why) {
       const host = env.view.querySelector('[data-airline-fiche]');
-      if (host) host.__html = '';
-      paintFiche(env);
+      if (host && repaint) { // une case refusée revient ; un formulaire d'ajout reste tel que saisi
+        host.__html = '';
+        paintFiche(env);
+      }
       return ficheSay(env, env.t(TA[why] || TA.failed));
     }
     env.c.notify(env.t(TA.themeSaved), 'ok');
@@ -1718,7 +1726,7 @@
         d.chosen = [...env.view.querySelectorAll('[data-airline-fiche] [data-themes] input[data-theme]')].filter(i => i.checked)
           .map(i => i.dataset.theme);
         return '';
-      });
+      }, true);
     }
     if (act === 'companyThemeAdd' || act === 'companyThemeDel' || act === 'companySeriesAdd' || act === 'companySeriesDel') {
       const code = b.dataset.code || '',

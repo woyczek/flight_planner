@@ -4204,7 +4204,7 @@ def a105(c):
     c.le(c.js(f"document.querySelector('{row('aaa')}').children.length"), 7, 'a line has seven elements at most', what='elements')
     c.eq(checked('[data-card="company"] [data-airlines] input'), [['aaa', True], ['bbb', False], ['perso', False]], 'the current airline (the first of the index, no choice yet) is the checked radio', what='checked')
     # ---- the sheet of the CHOSEN airline is open under the list: kind radios with a line each, the themes visible without unfolding
-    c.eq(c.count('[data-card="company"] [data-airline-fiche] details') + c.count('[data-card="company"] [data-airlines] details'), 0, 'nothing to unfold: no folded block in the list nor in the sheet', what='details')
+    c.eq([c.count('[data-card="company"] [data-airline-fiche] details'), c.count('[data-card="company"] [data-airlines] details')], [2, 0], 'nothing to unfold in the list; in the sheet only the two folded forms « Ajouter un thème… » and « Ajouter une série… » (SOG-0202 T3b)', what='details')
     c.ok(norm(T('ficheTitle').replace('{n}', 'Alpha Air')) in norm(c.text(fiche('h3'))), norm(c.text(fiche('h3'))), 'the sheet is titled with the chosen airline')
     c.eq(checked(fiche('[data-act=companyKind]')), [['va', False], ['sog', False]], 'the kind: two radio buttons, none chosen yet', what='kind radios')
     c.eq(c.count(fiche('.f-kind .f-muted')), 2, 'each kind has its line of explanation', what='explanations')
@@ -5836,12 +5836,15 @@ def a142(c):
             ['airline/aaa/fleet.json', {'schema': 1, 'aircraft': []}, 'document']]
     fiche = lambda extra='': f'[data-card="company"] [data-airline-fiche] {extra}'.strip()
     c.open('settings?card=company', docs=docs)
-    c.until("!!document.querySelector('[data-airline-fiche] [data-theme-add]')", timeout=15000, what='the sheet with its two small forms')
+    c.until("!!document.querySelector('[data-airline-fiche] [data-theme-add]')", timeout=15000, what='the sheet with its two folded forms')
+    c.eq(c.js("[...document.querySelectorAll('[data-airline-fiche] [data-theme-add], [data-airline-fiche] [data-series-add]')].map(d => [d.tagName, d.open])"), [['DETAILS', False], ['DETAILS', False]], 'the two forms are folded behind « Ajouter un thème… » and « Ajouter une série… »', what='folded')
+    opn = lambda sel: c.js(f"document.querySelector('[data-airline-fiche] {sel}').open = true")
     doc = lambda: c.doc('airline/aaa/themes.json')
     say = lambda: norm(c.text('[data-fiche-msg]'))
 
     def refuse(act, fields, key):
         before = doc()
+        opn('[data-theme-add]' if act == 'companyThemeAdd' else '[data-series-add]')
         c.js("document.querySelector('[data-fiche-msg]').textContent = ''")
         for f, v in fields.items():
             (c.page.select_option if f.startswith('sr-theme') else c.page.fill)(f'[data-f="{f}"]', v)
@@ -5850,6 +5853,8 @@ def a142(c):
         c.eq(say(), norm(T(key)), f'refused in words: {key}', what=f'refusal {key}')
         c.eq(doc(), before, 'and nothing is written', what=f'unchanged after {key}')
     # ---- a theme of our own: written (one label in the four languages), listed, ticked, removable
+    opn('[data-theme-add]')
+    c.eq(c.count(fiche('[data-theme-add] label.f-field')), 2, 'opened: two fields, each with a visible label', what='labels')
     c.page.fill('[data-f="th-short-aaa"]', 'rsc')
     c.page.fill('[data-f="th-name-aaa"]', 'Courrier <b>express</b>')
     c.tap(fiche('[data-act=companyThemeAdd]'))
@@ -5857,9 +5862,11 @@ def a142(c):
     c.eq([d['schema'], d['chosen'], d['added']['themes'][0]['id'], d['added']['themes'][0]['short'], len(set(d['added']['themes'][0]['labels']))], [1, ['COMMERCIAL', 'RSC'], 'RSC', 'RSC', 1], 'the Commercial theme of the kind and the new one chosen; id = acronym; one label copied four times', what='theme file')
     c.ok('<' not in d['added']['themes'][0]['labels'][0] and c.count(fiche('[data-themes] b')) == 0, d['added']['themes'][0]['labels'], 'what is typed is text: no < >, no element drawn')
     c.until("!!document.querySelector('[data-airline-fiche] li[data-theme=RSC] input:checked')", what='the new theme is listed and ticked')
+    c.eq(c.js("document.querySelector('[data-airline-fiche] [data-theme-add]').open"), False, 'the form is folded again after the addition', what='refolded')
     c.eq(norm(c.text(fiche('[data-themes-title]'))), norm(T('themeSummary').replace('{n}', '2').replace('{m}', '18')), 'two of eighteen', what='count')
     c.eq(c.js(f"[...document.querySelectorAll('{fiche('[data-themes] > li')}')].map(l => l.dataset.theme).slice(-2)"), ['SPECIAL', 'RSC'], 'the added theme comes after the table’s', what='order')
     # ---- a series of our own, in a built-in theme (the value without accent, the label as typed)
+    opn('[data-series-add]')
     c.page.select_option('[data-f="sr-theme-aaa"]', 'HEMS')
     c.page.fill('[data-f="sr-name-aaa"]', 'Évacuation sanitaire')
     c.tap(fiche('[data-act=companySeriesAdd]'))
@@ -5868,8 +5875,10 @@ def a142(c):
     c.until("!!document.querySelector('[data-airline-fiche] [data-series-list=HEMS] li')", what='the series is listed under its theme')
     c.eq(c.js("document.documentElement.scrollWidth <= window.innerWidth + 1"), True, 'no horizontal scroll with the added theme and its two small forms', what='scroll')
     if c.width in (390, 1280):
+        opn('[data-theme-add]')
         c.js(f"document.querySelector('{fiche('[data-theme-add]')}').scrollIntoView({{ block: 'center' }})")
-        c.shot(f'A142_standard_{c.width}_{lang}_delivered.png')
+        c.shot(f'A142_standard_{c.width}_{lang}_delivered.png')   # the theme form opened, its labels visible
+        c.js("document.querySelector('[data-airline-fiche] [data-theme-add]').open = false")
     # ---- refusals, each in words, nothing written
     refuse('companyThemeAdd', {'th-short-aaa': '1', 'th-name-aaa': 'X'}, 'themeBad')
     refuse('companyThemeAdd', {'th-short-aaa': 'hems', 'th-name-aaa': 'Autre'}, 'themeDup')

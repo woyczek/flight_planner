@@ -785,15 +785,14 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
 .f-themes > li > .f-series {
   flex-basis: 100%
 }
-[data-theme-add] input, [data-series-add] input, [data-series-add] select {
-  flex: 1 1 100%;
-  min-width: 0;
-  max-width: 100%
+[data-theme-add], [data-series-add] {
+  margin-top: 8px
 }
-@media (min-width: 700px) {
-  [data-theme-add] input, [data-series-add] input, [data-series-add] select {
-    flex: 1 1 0
-  }
+[data-theme-add] .f-field, [data-series-add] .f-field {
+  margin: 8px 0
+}
+[data-series-add] select {
+  max-width: 100%
 }
 .f-series {
   list-style: none;
