@@ -711,6 +711,7 @@ Four codes join the reasons of `base/status`, and the answer gains `notices` per
 | `source-unbuilt` | reasons | `source` | yes | the zone was built **without points or airways**, its dated source (ENAIRE, NATS, AirNav, DFS, SIA) has its file on the workstation and is readable (declared « personnel » when the licence asks): built before the file: rebuild |
 | `source-unread` | reasons | `source`, `why: 'personal'` | **no** | the same, but the licence is personal use and the **« personnel » box does not declare it**: the file is there and was not read; declare it (`personal: ['enaire']`) |
 | `source-missing` | reasons | `source` | **no** | the same, and **no file of that source on the workstation**: to download or drop |
+| `personal-undeclared` | reasons (before `inputs-changed`) | `source` (one of `nats`, `enaire`, `airnav`, `lfv`) | **no** | (SOG-0226) the zone was built with a source under a personal licence that the **« personnel » box no longer declares**: the files of that source are not counted as `inputs-changed`; to declare the box again, a build without it would drop the source; K160 |
 | `no-points` | **notices** | `source: 'openaip'` | — | the zone was built without points or airways **and none of its sources carries any** (openAIP gives airspaces, aerodromes, navaids and VFR points only): not stale, said so that an unknown point (NOSLI, MOKNI, ADVOP in Sweden, Denmark) is understood |
 
 The four-language sentences (the page writes them with `K.t`):

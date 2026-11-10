@@ -1838,3 +1838,34 @@ def k159(c):
         c.eq((len(asked), sorted(asked[0]) if asked else None, res['built'], [x['zone'] for x in res['failed']]), (1, ['de', 'us'], ['de'], ['us']),
              'then the update went on: the state was read and the zones to build were built (de built; us, whose sources are not there, said in `failed`), it did not stop on the 403', what='built')
         c.ok((data / 'sia' / 'openaip' / 'de_asp.geojson').is_file(), 'de_asp', 'and the files of the zone that answered are on the workstation')
+
+
+@case('K160', 'base/status says `personal-undeclared` { source } for a zone built with a personal-licence source that the box no longer declares, before `inputs-changed`, not buildable; declared again, the zone is up to date (SOG-0226)', 'K', static=True,
+      rule='SOG-0226 (Réglages, 10 Nov 2026): zone_states([se], personal=[]) answered « inputs-changed : zones/se/lfv_se_enr_20261029.geojson » for a zone built with lfv when the box no longer declares it; the screen could not tell « personal source » from a file name. A dedicated code `personal-undeclared { source }` (the build carries a source of PERSONAL_CYCLED, `personal` does not declare it), placed before inputs-changed (its own files are no longer counted as changed inputs), NOT buildable (a build without the declaration would drop the source: the user declares it first)')
+def k160(c):
+    RJ, BS, AF, DS = _mods()
+    BA = types.SimpleNamespace(**RJ.REGISTRY[('base', 'build')][0].__globals__)
+    ST = types.SimpleNamespace(**RJ.REGISTRY[('base', 'status')][0].__globals__)
+    status, check_s = RJ.REGISTRY[('base', 'status')]
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        (data / 'sia' / 'zones' / 'gb').mkdir(parents=True)
+        (data / 'sia' / 'zones' / 'gb' / 'EG_AIP_DS_FULL_20261029.xml').write_text('<x/>', encoding='utf-8')
+        d = data / 'sia' / 'base' / 'gb' / '2026-10-29'
+        d.mkdir(parents=True)
+        parser = ST.parser_version()
+        (d / 'meta.json').write_text(json.dumps({'schema': 2, 'zone': 'gb', 'cycle': '2026-10-29', 'kind': 'meta', 'parserVersion': parser, 'data': {}}), encoding='utf-8')
+        for k in BA.KINDS:
+            if k != 'meta':
+                (d / f'{k}.json').write_text('{}', encoding='utf-8')
+        ST.write_record(data, 'gb', cycle='2026-10-29', builtAt='2026-10-30T10:00:00Z', parserVersion=parser, personal=['nats'], inputs=ST.signature(ST.inputs_of(str(data), 'gb', {'nats'})))
+        ctx = {'data': str(data), 'downloads': lambda: [], 'today': datetime.date(2026, 11, 9)}
+        run = lambda **a: status(RJ.Job('base', 'status', {}), check_s(a), ctx)['zones']['gb']
+        z = run(zones=['gb'], personal=[])
+        c.eq(([x['code'] for x in z['reasons']], z['reasons'][0], z['state'], z['buildable']), (['personal-undeclared'], {'code': 'personal-undeclared', 'source': 'nats'}, 'stale', False),
+             'built with NATS, the box does not declare it any more: one reason, with the source, no « inputs-changed » for its own file, stale but not buildable', what='undeclared')
+        z = run(zones=['gb'], personal=['nats'])
+        c.eq((z['state'], z['reasons']), ('up-to-date', []), 'declared again: up to date', what='declared')
+        (data / 'sia' / 'zones' / 'gb' / 'EG_OBS_DS_FULL_20261029.xml').write_text('<y/>', encoding='utf-8')
+        z = run(zones=['gb'], personal=[])
+        c.eq([x['code'] for x in z['reasons']][0], 'personal-undeclared', 'the code comes before the others (inputs-changed): it is the one the screen says first', what='order')

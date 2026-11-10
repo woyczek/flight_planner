@@ -28,7 +28,7 @@ import aero_cycles  # noqa: E402
 import regen_jobs  # noqa: E402
 
 RECORD_DIR = ('local', 'build')
-ORDER = ('index-orphan', 'never-built', 'failed', 'pickup-waiting', 'source-newer', 'inputs-changed', 'source-unbuilt', 'parser-old', 'files-missing', 'source-unread', 'source-missing', 'source-old')
+ORDER = ('index-orphan', 'never-built', 'failed', 'pickup-waiting', 'source-newer', 'personal-undeclared', 'inputs-changed', 'source-unbuilt', 'parser-old', 'files-missing', 'source-unread', 'source-missing', 'source-old')
 BUILDABLE = {'index-orphan', 'never-built', 'failed', 'source-newer', 'inputs-changed', 'source-unbuilt', 'parser-old', 'files-missing'}
 POINT_SOURCES = ('sia', 'nats', 'enaire', 'airnav', 'dfs', 'lfv', 'faa')      # les sources dont la suite lit les points ou les voies aériennes (openAIP n'en porte pas)
 MAX_ZONES = 60
@@ -253,9 +253,13 @@ def zone_states(data, zones, personal, ctx):
                 reasons.append({'code': 'source-newer', 'source': aero_cycles.ZONE_SOURCE[z], 'cycle': own, 'built': built})
             elif own and own < current:
                 reasons.append({'code': 'source-old', 'source': aero_cycles.ZONE_SOURCE[z], 'cycle': own, 'current': current})
+            undeclared = [x for x in aero_cycles.PERSONAL_CYCLED if rec and x in (rec.get('personal') or []) and x not in personal]
+            for x in undeclared:                # SOG-0226 : construite avec une source sous licence personnelle que la case « personnel » ne déclare plus : le dit en code, pas par le nom d'un de ses fichiers
+                reasons.append({'code': 'personal-undeclared', 'source': x})
             if rec and isinstance(rec.get('inputs'), dict) and not rec.get('failed'):
                 now = signature(inputs_of(data, z, personal), rec['inputs'])
                 changed = sorted({k for k in now if k not in rec['inputs'] or rec['inputs'][k].get('sha256') != now[k]['sha256']} | {k for k in rec['inputs'] if k not in now})
+                changed = [k for k in changed if not ((fs := S.file_source(k)) and fs['source'] in undeclared)]        # les fichiers de la source non déclarée ne sont pas des « entrées changées » : c'est la raison ci-dessus
                 if changed:
                     reasons.append({'code': 'inputs-changed', 'count': len(changed), 'names': changed[:3]})
             version = _meta_version(os.path.join(data, 'sia', 'base', z, built, 'meta.json'))
