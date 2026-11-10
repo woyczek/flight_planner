@@ -5920,3 +5920,91 @@ def k75(c):
     c.ok('if (lnmAuto &&' in src[max(0, k - 400):k] and src.count('c.start()') == 1, 'start', 'aerodb calls start() once, under the explicit option')
 
 
+@case('K121', 'EUROCONTROL FRA points as a LOCAL layer (SOG-0153): the job route/fra-points reads the book in force on the workstation, the page answers NOSLI / MOKNI / ADVOP from it when no published zone has them, in memory only, never written; a published place still wins', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0153 (10 Nov 2026, decision of the user: « Points FRA, on prend »): ESSB → LEMO failed on NOSLI, MOKNI, ADVOP, which only the FRA book names (Sweden and Denmark have no point source: openAIP carries none); the book is read on each workstation (EUROCONTROL, the company’s use, private data repository only), served to the page by a read-only job, kept in memory, and never copied into data/sia/base')
+def k121(c):
+    import gzip
+    import importlib
+    import json
+    import os
+    import sys
+    import tempfile
+    import time
+    from pathlib import Path
+    RJ = _regen()
+    R = importlib.import_module('regen.route')
+    row = lambda i, v: {'row': i, 'v': v}
+    book = lambda start, rows: {'file': f'fra-{start}.xlsx', 'start': start, 'sha256': '0' * 64, 'rows': rows}
+    fir = lambda ident, lat, lon, f: ['', '', ident, lat, lon, 'BOREALIS FRA', 'I', '-', '', '', '-', 'FL285 / FL660', 'H24', f, '']
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        (data / 'route').mkdir(parents=True)
+        books = [book('2026-10-01', [row(2, fir('OLDPT', 'N590000', 'E0170000', 'ESAA'))]),
+                 book('2026-10-29', [row(2, fir('NOSLI', 'N590416', 'E0171529', 'ESAA')), row(3, fir('MOKNI', 'N573847', 'E0150405', 'ESAA')), row(4, fir('ADVOP', 'N560714', 'E0120702', 'EKDK')),
+                                     row(5, fir('NOSLI', 'N590416', 'E0171529', 'ESAA')), row(6, fir('BAD', 'x', 'y', 'ESAA')), row(7, ['DEL'] + fir('GONE', 'N590000', 'E0170000', 'ESAA')[1:])]),
+                 book('2026-11-26', [row(2, fir('FUTUR', 'N590000', 'E0170000', 'ESAA'))])]
+        with gzip.open(data / 'route' / 'fra.json.gz', 'wt', encoding='utf-8') as f:
+            json.dump(books, f)
+
+        class Job:
+            def step(self, *a):
+                pass
+        ctx = {'data': str(data)}
+        res = R.fra_points(Job(), {'date': '2026-11-10'}, ctx)
+        ids = sorted(p[0] for p in res['_points'])
+        c.eq((res['ok'], res['cycle'], res['count'], ids), (True, '2026-10-29', 3, ['ADVOP', 'MOKNI', 'NOSLI']),
+             'the book in force on the date (not the next cycle, not the old one), a duplicate and an unreadable row dropped, a deleted row dropped', what='job')
+        nosli = [p for p in res['_points'] if p[0] == 'NOSLI'][0]
+        c.ok(abs(nosli[1] - 59.07111) < 1e-4 and abs(nosli[2] - 17.25806) < 1e-4 and nosli[3] == 'ESAA', str(nosli), 'the position is read from the book (degrees, minutes, seconds) with its FIR')
+        c.eq((R.check_fra_points({}), R.check_fra_points({'date': '2026-11-10'}), R.check_fra_points({'x': 1}), R.check_fra_points({'date': '10 Nov'})), ({}, {'date': '2026-11-10'}, None, None),
+             'arguments: none, or a date; anything else is a 400', what='check')
+        c.eq(R.fra_points(Job(), {}, {'data': str(Path(td) / 'nowhere')})['reason'], 'no-fra', 'without the book: no-fra, said', what='no book file')
+        # through the real jobs: the points reach the page, never the last-job file, and a read does not replace the last job that wrote
+        store = os.path.join(td, '.regen_last.json')
+        reg = {('t', 'build'): (lambda job, a, x: {'ok': True}, lambda a: {}), ('route', 'fra-points'): (lambda job, a, x: R.fra_points(job, a, ctx), R.check_fra_points)}
+        j = RJ.Jobs(reg, ctx, min_gap={}, store=store)
+        for key in (('t', 'build'), ('route', 'fra-points')):
+            j.start(*key, {})
+            for _ in range(100):
+                if j.cur.data['state'] != 'running':
+                    break
+                time.sleep(0.05)
+            time.sleep(0.1)
+        saved = open(store, encoding='utf-8').read()
+        c.eq(('_points' in saved, 'NOSLI' in saved, json.loads(saved)['work']['verb'], len(j.cur.view()['result']['_points'])), (False, False, 'build', 3),
+             'the page gets the points; tools/.regen_last.json never holds them; the read does not replace the last job that wrote', what='store')
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const day = Date.parse('2026-11-10T12:00:00Z'), kinds = ['meta', 'aerodromes', 'navaids', 'points', 'vrp', 'airways'];
+      const zone = (z, o = {}) => Object.fromEntries(kinds.map(k => [`sia/base/${z}/2026-10-29/${k}.json`, k === 'meta' ? { schema: 2, zone: z, cycle: '2026-10-29', kind: 'meta', parserVersion: 23, data: {} } : { schema: 2, zone: z, cycle: '2026-10-29', kind: k, data: o[k] || [] }]));
+      const files = { ...zone('se', { aerodromes: [{ id: 'ESSB', icao: 'ESSB', lat: 59.354, lon: 17.941, name: 'BROMMA' }] }), ...zone('fr', { points: [{ id: 'MOKNI', lat: 45.0, lon: 2.0 }] }),
+        'sia/base/index.json': { schema: 2, kind: 'index', zones: { se: { cycle: '2026-10-29', prefixes: ['ES'], kb: { airways: 1, points: 1 } }, fr: { cycle: '2026-10-29', prefixes: ['LF'], kb: { airways: 1, points: 1 } } } } };
+      const reader = { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} };
+      const calls = [], points = [['NOSLI', 59.07111, 17.25806, 'ESAA'], ['MOKNI', 57.64639, 15.06806, 'ESAA'], ['ADVOP', 56.12056, 12.11722, 'EKDK'], ['BAD<>', 1, 2, 'X'], ['NOPOS', 'x', 2, 'X']];
+      let ok = true;
+      const launcher = { info: () => ({}), job: async (route, body) => { calls.push([route, body.set, body.verb]); return ok ? { state: 'done', result: { ok: true, cycle: '2026-10-29', count: points.length, _points: points } } : { state: 'done', result: { ok: false, reason: 'no-fra' } }; } };
+      const db = AeroDB.create({ reader, launcher, lnmperf: false, now: () => day });
+      const out = {};
+      out.nosli = await db.coords('NOSLI');
+      out.near = await db.coords('NOSLI', { near: [58, 12] });
+      out.advop = (await db.whereIs('ADVOP')).found;
+      out.published = await db.coords('MOKNI');
+      out.publishedNear = await db.coords('MOKNI', { near: [57.5, 15] });
+      out.bad = [await db.coords('BAD'), await db.coords('NOPOS')];
+      out.aerodrome = (await db.coords('ESSB')).kind;
+      out.calls = calls.slice();
+      const none = AeroDB.create({ reader, lnmperf: false, now: () => day });
+      out.noLauncher = await none.coords('NOSLI');
+      ok = false;
+      const before = calls.length, down = AeroDB.create({ reader, launcher, lnmperf: false, now: () => day });
+      out.noBook = [await down.coords('NOSLI'), await down.coords('NOSLI')];
+      out.noBookCalls = calls.length - before;
+      return out;
+    }""")
+    c.eq((r['nosli']['kind'], r['nosli']['local'], r['nosli']['source'], r['nosli']['fir'], round(r['nosli']['lat'], 3)), ('point', True, 'eurocontrol-fra', 'ESAA', 59.071),
+         'NOSLI, in no published zone, is the FRA point of the workstation: a point, flagged local, with its source and its FIR', what='nosli')
+    c.eq((r['near']['local'], r['near']['zone'], r['near']['distanceNm'] > 50, r['advop']['source']), (True, 'fra', True, 'eurocontrol-fra'), 'with a neighbourhood too, and whereIs finds it (found, not unknown)', what='near')
+    c.eq((r['published'].get('local'), r['publishedNear'].get('local'), r['publishedNear']['zone']), (None, None, 'fr'), 'a place of a published zone wins: the FRA book is read only when nothing is found there', what='published')
+    c.eq((r['bad'], r['aerodrome'], r['noLauncher']), ([None, None], 'aerodrome', None), 'an identifier or a position that is not one is dropped; without a launcher there is no FRA layer', what='bad')
+    c.eq(r['calls'], [['regen/job', 'route', 'fra-points']], 'one read-only job asks for the points, once (kept in memory)', what='calls')
+    c.eq((r['noBook'], r['noBookCalls']), ([None, None], 1), 'without a book on the workstation the answer is null and the job is not asked again within 30 s', what='no book')

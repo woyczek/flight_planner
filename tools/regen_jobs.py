@@ -213,7 +213,7 @@ SOURCE_PART = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,120}$')     # un nom de 
 # la raison d'un refus d'arguments (400), dans ses mots : chaque jeu exporte EXPLAIN = { (jeu, verbe): fonction(args) → { reason, message, ...paramètres } | None } ; load_verbs les réunit ici (SOG-0144)
 EXPLAIN = {}
 # les verbes qui ne font que lire : leur travail ne remplace pas le dernier travail qui a écrit (Jobs.work, tools/.regen_last.json › work)
-READ_ONLY = {('base', 'status'), ('route', 'compute'), ('stats', 'output')}
+READ_ONLY = {('base', 'status'), ('route', 'compute'), ('route', 'fra-points'), ('stats', 'output')}
 
 
 def clean_error(text, ctx=None):

@@ -9,6 +9,7 @@ Le moteur est RouteSim 2 (tools/route_engine : engine, fra, procedures, flight_p
   · `route/import-rad` { dry?: vrai (par défaut), books?: [{ name, size }] } : lit les classeurs RAD (RAD_<cycle>_v….xlsx) et les points FRA (eurocontrol-airac-<cycle>-fra-points-….xlsx) de Téléchargements (comme base/pickup : le plan
     montre ce qui est là, le pilote choisit, la prise refuse un fichier qui n'est plus celui montré) et les COMPILE dans data/route/rad.json.gz et data/route/fra.json.gz (un cycle du classeur remplace le même cycle ;
     les autres restent : une donnée compilée n'est jamais purgée), UN commit. Rend { ok, dry, files: [{ name, size, kind: 'rad' | 'fra', cycle, title? }], taken: [noms], failed: [{ name, error }], rad: [cycles], fra: [cycles], commit, reason? }.
+  · `route/fra-points` { date? } (SOG-0153, lecture seule) : les points du classeur FRA en vigueur à cette date, pour la LECTURE LOCALE de la page : { ok, cycle, count, _points: [[id, lat, lon, FIR]] } (« _points » : pour la page seule, jamais écrit) ; sans classeur { ok: False, reason: 'no-fra' }.
 Licence des classeurs : EUROCONTROL NM (RAD et points FRA), usage de la compagnie, publiés dans son dépôt privé seulement ; la page le dit avant la prise (SOURCES, frame/aerodb/DECISIONS.md).
 Python : bibliothèque standard (le lecteur de classeurs route_engine/xlsx.py ; pas d'openpyxl).
 """
@@ -177,4 +178,49 @@ def import_rad(job, args, ctx):
     return res
 
 
-VERBS = {('route', 'compute'): (compute, check_compute), ('route', 'import-rad'): (import_rad, check_import)}
+# ----------------------------------------------------------------------------------------------------------------------- route/fra-points
+def check_fra_points(a):
+    """Contrôle d'arguments (→ 400 si None) : aucun, ou { date?: AAAA-MM-JJ } (le cycle du classeur est celui de cette date, aujourd'hui par défaut)."""
+    if not isinstance(a, dict) or set(a) - {'date'}:
+        return None
+    d = a.get('date')
+    if d is not None and not (isinstance(d, str) and re.fullmatch(r'\d{4}-\d\d-\d\d', d)):
+        return None
+    return dict(a)
+
+
+def fra_points(job, args, ctx):
+    """Les points du classeur FRA d'EUROCONTROL en vigueur, pour la LECTURE LOCALE de la page (SOG-0153) : { ok, cycle, count, _points: [[id, lat, lon, FIR]] }. Rien n'est écrit : la clé « _points » est pour la page seule (regen_jobs ne
+    l'écrit pas dans tools/.regen_last.json) et ces points n'entrent jamais dans data/sia/base (licence : voir l'en-tête du module). Sans classeur : { ok: False, reason: 'no-fra' }."""
+    import datetime as dt
+    from route_engine import fra as fra_module, import_books
+    _, fra_file = _paths(ctx['data'])
+    if not os.path.isfile(fra_file):
+        return {'ok': False, 'reason': 'no-fra', 'message': 'no EUROCONTROL FRA points imported on this workstation (job route/import-rad)'}
+    try:
+        books = import_books.load(fra_file)
+    except (OSError, ValueError) as e:
+        return {'ok': False, 'reason': 'failed', 'message': regen_jobs.clean_error(f'{type(e).__name__}: {e}', ctx)[:300]}
+    when = args.get('date') or dt.date.today().isoformat()
+    books = [b for b in books if isinstance(b, dict) and isinstance(b.get('start'), str) and isinstance(b.get('rows'), list)]
+    if not books:
+        return {'ok': False, 'reason': 'no-fra', 'message': 'the FRA file holds no book'}
+    inforce = [b for b in books if b['start'] <= when]
+    book = max(inforce or books, key=lambda b: b['start'])        # le cycle de la date, à défaut le plus récent qui la précède, à défaut le plus ancien
+    seen, points = set(), []
+    for r in book['rows']:
+        v = r.get('v') if isinstance(r, dict) else None
+        if not isinstance(v, list) or len(v) < 14 or not isinstance(v[2], str) or not v[2] or v[0] == 'DEL':
+            continue
+        lat, lon = fra_module.coord(str(v[3])), fra_module.coord(str(v[4]))
+        if lat is None or lon is None:
+            continue
+        key = (v[2].strip().upper(), round(lat, 4), round(lon, 4))
+        if key in seen:
+            continue
+        seen.add(key)
+        points.append([key[0], round(lat, 5), round(lon, 5), str(v[13]).split(',')[0][:4]])
+    return {'ok': True, 'cycle': book['start'], 'count': len(points), '_points': points}
+
+
+VERBS = {('route', 'compute'): (compute, check_compute), ('route', 'import-rad'): (import_rad, check_import), ('route', 'fra-points'): (fra_points, check_fra_points)}

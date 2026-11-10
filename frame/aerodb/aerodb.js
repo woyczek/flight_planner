@@ -2454,7 +2454,10 @@
         near,
         all
       } = {}) {
-        if (Array.isArray(near) && near.length === 2 && near.every(Number.isFinite)) return nearestOf(ident, near, all === true);
+        if (Array.isArray(near) && near.length === 2 && near.every(Number.isFinite)) {
+          const found = await nearestOf(ident, near, all === true);
+          return found.length ? found : fraItems(fold(ident), near);
+        }
         const k = fold(ident),
           kinds = [
             ['aerodromes', 'aerodrome'],
@@ -2480,7 +2483,8 @@
             out = z ? await look(z) : [];
           if (out.length) return out;
         }
-        return [];
+        return fraItems(
+          k); // aucun lieu des zones publiées : le point FRA du classeur EUROCONTROL de ce poste, s'il y en a un (SOG-0153)
       },
       /** Position d'un identifiant (aérodrome d'abord) : { lat, lon, name, kind } ; null si inconnu. */
       async coords(ident, {
@@ -2496,7 +2500,12 @@
             lat: +x.item.lat,
             lon: +x.item.lon,
             name: x.item.name || x.item.id || x.item.icao || '',
-            kind: x.kind
+            kind: x.kind,
+            ...(x.local ? {
+              local: true,
+              source: x.source,
+              fir: x.fir
+            } : {})
           });
         if (!best) return null;
         // avec un voisinage : le plus proche, et les homonymes écartés (jamais « le premier trouvé »)
@@ -2714,6 +2723,70 @@
           if (had?.cycle && had.cycle >= current) return; // le fichier du cycle en vigueur : rien à relire
           await api.fetchGround(k);
         })().catch(() => {});
+      },
+      fraLocal = {
+        p: null,
+        failedAt: -Infinity
+      },
+      /** Les points du classeur FRA d'EUROCONTROL en vigueur, lus sur CE poste par le lanceur (travail route/fra-points, SOG-0153) et gardés en mémoire seulement : { cycle, by: Map(identifiant → [{ id, lat, lon, fir }]) }, ou null (sans lanceur, appareil du réseau local,
+       *  classeur non importé, lanceur occupé : redemandé au plus une fois par 30 s). Jamais écrit, jamais exporté : licence EUROCONTROL (usage de la compagnie), ces points ne sont pas dans la base publiée. */
+      fraPoints = () => {
+        if (fraLocal.p) return fraLocal.p;
+        if (typeof launcher?.job !== 'function' || !launcher.info?.() || launcher.info().lan || now() - fraLocal.failedAt < 30000)
+          return Promise.resolve(null);
+        fraLocal.p = (async () => {
+          const res = (await launcher.job('regen/job', {
+            set: 'route',
+            verb: 'fra-points',
+            args: {}
+          }))?.result;
+          if (res?.ok !== true || !Array.isArray(res._points)) throw new Error('no FRA points');
+          const by = new Map();
+          for (const x of res._points.slice(0, 30000)) {
+            if (!Array.isArray(x) || typeof x[0] !== 'string' || !/^[A-Za-z0-9]{1,7}$/.test(x[0]) || !num(x[1]) || !num(x[2]))
+              continue;
+            const key = fold(x[0]);
+            if (!by.has(key)) by.set(key, []);
+            by.get(key).push({
+              id: x[0],
+              lat: +x[1],
+              lon: +x[2],
+              fir: String(x[3] || '').slice(0, 4)
+            });
+          }
+          return {
+            cycle: /^\d{4}-\d{2}-\d{2}$/.test(res.cycle) ? res.cycle : null,
+            by
+          };
+        })().catch(() => {
+          fraLocal.p = null;
+          fraLocal.failedAt = now();
+          return null;
+        });
+        return fraLocal.p;
+      },
+      /** Le point FRA de ce nom, à défaut de tout lieu des zones publiées : [{ kind: 'point', item, zone: 'fra', local: true, source: 'eurocontrol-fra', fir, cycle, distanceNm? }] — `local` : lu sur ce poste, pas dans la base publiée. */
+      fraItems = async (k, near) => {
+        const f = await fraPoints(),
+          list = f?.by.get(k);
+        if (!list) return [];
+        return list.map(x => ({
+          kind: 'point',
+          item: {
+            id: x.id,
+            lat: x.lat,
+            lon: x.lon,
+            name: x.id
+          },
+          zone: 'fra',
+          local: true,
+          source: 'eurocontrol-fra',
+          fir: x.fir,
+          cycle: f.cycle,
+          ...(near ? {
+            distanceNm: Math.round(distNm(near, [x.lat, x.lon]) * 10) / 10
+          } : {})
+        })).sort((a, b) => (a.distanceNm ?? 0) - (b.distanceNm ?? 0));
       };
     const procWatch = async paths => {
       let index = false;
