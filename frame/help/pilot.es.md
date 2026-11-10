@@ -88,6 +88,8 @@ Junto a la fecha, el reloj «+30» pone el vuelo dentro de 30 min (redondeado a 
 «Ahora» vuelve a la hora actual: la meteorología de los aeródromos (el TAF si cubre esa hora) y los vientos en altura se
 vuelven a leer en el acto.
 
+<a id="fuel-theme"></a>**Tema y subtema.** Bajo la fecha, «Tema» y «Subtema» dicen lo que va a hacer: un vuelo de carga, de pasajeros, de ensayo, una misión SAR… Opcionales, los rellena la misión que prepara y solo proponen los temas de su compañía (una compañía comercial: CAT · Transporte aéreo comercial). El informe los toma y puede cambiarlos: olvidados aquí, se eligen allí.
+
 <a id="fuel-step-2"></a>**2 Ruta.** Escriba la ruta en el campo «Ruta» (Intro la valida), siempre visible: los puntos, las aerovías y los
 niveles, como en un plan de vuelo («LFBO TOU UN460 NTS/F280 LFRN»). También puede pegar ahí un plan de vuelo OACI o la
 lista de un OFP. Al salir del campo, la ruta se pone en limpio: en mayúsculas en una línea, sin DCT ni grupos
@@ -549,7 +551,7 @@ de ✓: la familia y la serie de un informe nuevo se toman por defecto.
 el combustible a la salida y al aterrizaje. Las incoherencias — horas desordenadas, fecha futura, combustible que
 aumenta — se señalan.
 
-<a id="report-load"></a>**Carga.** Un vuelo preparado desde una misión de carga o de pasajeros añade, en el último paso, la tarjeta «Carga» con un solo campo: la carga embarcada en kg o el número de pasajeros. Cualquier otra misión no añade nada.
+<a id="report-load"></a>**Carga.** «Usar» toma el tema y el subtema del vuelo (su familia y su serie); puede cambiarlos, el informe tiene la última palabra. Una serie que transporta (Carga, Pasajeros, VIP) añade, en el último paso, la tarjeta «Carga» con un solo campo: la carga embarcada en kg o el número de pasajeros. Cualquier otra serie no añade nada.
 
 <a id="report-measures"></a>**Mediciones.** Al final del último paso, «Mediciones» lee los registros del Fuel Phase Monitor («Elegir registros», o «Desde la carpeta Output» en el puesto) y propone el vuelo cuya matrícula y horas UTC coinciden con este informe; «Guardar este vuelo» pone su combustible consumido, su duración y sus fases en el informe, guardados con él. Nada más del registro se guarda.
 

@@ -11,6 +11,7 @@ import * as T from './text_import.js';
 import * as Fpl from './fpl.js';
 import * as LF from '../../frame/lib/last_flight.js';
 import * as MC from '../../frame/lib/mission_categories.js'; // les catégories de la compagnie (SOG-0041)
+import * as MT from '../../frame/lib/mission_themes.js'; // les thèmes de la compagnie, la charge d'une série (SOG-0202 T2)
 import * as MS from '../../frame/lib/mission.js'; // categoryOf
 import * as CF from '../../frame/lib/current_flight.js';
 import {
@@ -31,6 +32,7 @@ import {
   fmtDateZ
 } from '../../frame/lib/time.js'; // heures en UTC, l'heure locale seulement à la mise en route
 import AAR from './families/aar.js';
+import COMMERCIAL from './families/commercial.js'; // le 17e thème (SOG-0202 T2)
 import AIRBORNE from './families/airborne.js';
 import AIRLIFT from './families/airlift.js';
 import COMBAT from './families/combat.js';
@@ -81,7 +83,7 @@ export const meta = {
     '../../frame/lib/procedures.js',
     '../../frame/lib/route_text.js',
     '../../frame/lib/website.js',
-    'families/aar.js',
+    'families/aar.js', 'families/commercial.js', '../../frame/lib/mission_themes.js',
     'families/airborne.js', 'families/airlift.js', 'families/combat.js', 'families/command.js', 'families/fire.js',
     'families/flight_inspection.js', 'families/hadr.js', 'families/hems.js', 'families/isr.js', 'families/law_enforcement.js',
     'families/maritime.js', 'families/sar.js', 'families/sof.js', 'families/special.js', 'families/survey.js', '../../frame/lib/dom.js',
@@ -91,6 +93,7 @@ export const meta = {
 
 const FAMILIES = {
     AAR,
+    COMMERCIAL,
     AIRBORNE,
     AIRLIFT,
     COMBAT,
@@ -715,18 +718,48 @@ async function loadCategories() {
     doc = null;
   }
   if (S) S.cats = MC.forAirline(doc, a);
+  // les thèmes de la compagnie (SOG-0202 T2) : la liste des familles ne propose qu'eux (et celle du compte rendu, toujours gardée)
+  const th = a?.root ? await Promise.resolve().then(() => S?.ctx.data.get(`${a.root}themes.json`)).catch(() => null) : null;
+  if (S) S.themeIds = new Set(MT.chosenOf(th, MC.kindOf(a)));
 }
 /** La catégorie connue de la compagnie, avec sa charge ({ id, names, load }) ; null pour une catégorie inconnue ou sans charge. */
 const loadCat = id => (S.cats?.all || []).find(c => c.id === id && c.load) || null;
 /** La carte « Charge » du pas Vol : un seul champ, celui que la charge de la catégorie demande (fret en kg, ou passagers) ; rien
  *  sans catégorie connue qui transporte. */
 function loadHtml() {
-  const c = loadCat(S.m.load?.category);
+  const c = loadNow();
   if (!c) return '';
   const k = c.load === 'freight' ? 'freightKg' : 'passengers',
-    v = S.m.load[k];
-  return `<div class="f-card" data-loadcard="${esc(c.load)}"><h2>${esc(tt(TX.load))}</h2><p class="f-muted" data-loadcat>${esc(MC.nameOf(S.cats, c.id, S.ctx.lang()))}</p>
+    v = S.m.load?.[k];
+  return `<div class="f-card" data-loadcard="${esc(c.load)}"><h2>${esc(tt(TX.load))}</h2><p class="f-muted" data-loadcat>${esc(c.name)}</p>
     <div class="f-grid"><label class="f-field"><span>${esc(tt(k === 'freightKg' ? TX.loadFreight : TX.loadPax))}</span><input data-load="${k}" inputmode="numeric" value="${esc(Number.isFinite(v) ? String(v) : '')}"></label></div></div>`;
+}
+/** Ce que le vol du CR transporte (SOG-0202 T2) : la charge de sa série (COMMERCIAL / CARGO → fret), le compte rendu ayant le dernier
+ *  mot sur sa famille et sa série ; sinon celle de l'ancienne catégorie gardée (SOG-0041) ; { load, name } ou null. */
+function loadNow() {
+  const k = MT.loadOf(S.m.family, S.m.series);
+  if (k) {
+    const sr = MT.themeOf(S.m.family)?.series.find(x => x.value === S.m.series);
+    return {
+      load: k,
+      name: sr ? sr.labels[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(S.ctx.lang()))] || sr.labels[0] : ''
+    };
+  }
+  const c = loadCat(S.m.load?.category);
+  return c ? {
+    load: c.load,
+    name: MC.nameOf(S.cats, c.id, S.ctx.lang())
+  } : null;
+}
+/** Le thème et le sous-thème du vol repris (SOG-0202 T2 : choisis à l'étape Vol de Carburant, remplis par la mission ; une ancienne
+ *  catégorie lue par la migration) : la famille et la série du CR quand le compte rendu sait remplir ce thème ; il pourra les changer. */
+function takeTheme(cf) {
+  const mig = MT.fromCategory(cf?.missionCategory),
+    th = MT.themeOf(cf?.theme)?.id || mig?.theme || '',
+    sr = cf?.theme ? cf.series : mig?.series;
+  if (!th || !FAMILIES[th]) return;
+  S.m.family = th;
+  S.m.series = (FAMILIES[th].series || []).some(x => x.value === sr) ? sr : FAMILIES[th].series?.[0]?.value || '';
 }
 /** La catégorie du vol repris (current_flight.missionCategory) : la charge appartient à la catégorie du vol, pas au brouillon
  *  (Simplification, 9 nov.) — connue et transportant, elle pose la charge du CR (les valeurs déjà saisies gardées si c'est la même) ;
@@ -879,7 +912,7 @@ function renderBody() {
       <section class="rp-step" data-s="1"${step === 1 ? '' : ' hidden'}>
         <div class="f-card"><h2>${esc(tt(TX.steps[1]))}</h2>
           ${srcLine(shownFields([FIELDS.series, FIELDS.missionNumber]))}
-          <div class="f-grid"><label class="f-field"><span>${esc(tt(TX.family))}</span><select data-family>${Object.keys(V.familyLabels).filter(k => FAMILIES[k]).map(k => `<option value="${k}"${k === m.family ? ' selected' : ''}>${esc(V.familyText(k, S.ctx.lang()))}</option>`).join('')}</select></label>
+          <div class="f-grid"><label class="f-field"><span>${esc(tt(TX.family))}</span><select data-family>${Object.keys(V.familyLabels).filter(k => FAMILIES[k] && (!S.themeIds || S.themeIds.has(k) || k === m.family)).map(k => `<option value="${k}"${k === m.family ? ' selected' : ''}>${esc(V.familyText(k, S.ctx.lang()))}</option>`).join('')}</select></label>
           ${control(FIELDS.series, m.series)}${control(FIELDS.missionNumber, m.metadata.missionNumber)}</div></div>
         ${F.ownOrder ? '' : `<details class="f-card"><summary>${esc(tt(TX.tasking))}</summary>${grid([FIELDS.objective, FIELDS.instructions, FIELDS.priority])}</details>`}
         ${(F.blocks || []).filter(shown).map((b, i) => `<details class="f-card"${i === 0 ? ' open' : ''}><summary>${esc(tt(b.title))}</summary>${b.collection ? collection(b.collection) : grid(b.fields)}</details>`).join('')}
@@ -1247,7 +1280,8 @@ function onInput(e) {
     }
     return;
   }
-  if (el.dataset.load && S.m.load) {
+  if (el.dataset.load && loadNow()) {
+    S.m.load ||= {};
     // la charge : un entier de 0 à 999 999, vide sinon (rien d'inventé)
     const t = el.value.trim();
     if (/^\d{1,6}$/.test(t)) S.m.load[el.dataset.load] = +t;
@@ -1256,7 +1290,10 @@ function onInput(e) {
   }
   if (!el.dataset.path) return;
   const [path, v] = readControl(el);
+  const loadWas = path === 'series' ? loadNow()?.load || '' : '';
   M.set(S.m, path, v);
+  if (path === 'series' && (loadNow()?.load || '') !== loadWas) queueMicrotask(() => S?.body &&
+    render()); // la carte « Charge » suit la série
   delete S.sources[path];
   if (S.tzOrigin?.[path]) delete S.tzOrigin[path]; // heure d'un ancien CR retouchée : « saisi … locale » ne la décrit plus
   saveDraft();
@@ -1353,6 +1390,7 @@ async function onClick(e) {
         r = cf.route || {};
       S.usedStarted = cf.started?.at || ''; // ce compte rendu est celui du vol démarré
       takeCategory(cf.missionCategory); // SOG-0041 : la charge que demande la catégorie de sa mission
+      takeTheme(cf); // SOG-0202 T2 : le thème et le sous-thème du vol
       return fill({
         'aircraft.0.registration': a.registration,
         'aircraft.0.type': a.type,

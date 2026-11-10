@@ -2094,4 +2094,14 @@ redesigned for touch at that point.
        table and its readers, T1, T2, T4, T5), Settings (the screens, T3). **Lots**: T1 the table and its readers, no visible
        change (G10: the report's lists equal `tests/v3/fixtures/report_lists_v2.json`, taken before the move, in four languages);
        T2 the flight carries theme / series, the load read from the series, the old ids read through the migration; T3 Settings'
-       screens; T4 the Missions series filter; T5 `mission_categories.js` removed.
+       screens; T4 the Missions series filter; T5 `mission_categories.js` removed. **The user's three questions** (10 Nov, recette of
+       T1): « À quel moment, je décide de faire une mission fret, passagers, essais en vol... ? » — at the step Flight of Fuel: two lists
+       « Thème » / « Sous-thème », optional, filled by the mission (its category migrated, else its family and the series of its
+       subtype), written with the flight (`theme`, `series`); « à quel moment le cr match ce choix ? » — the report takes them at
+       « Utiliser » (its family and series) and can change them: it has the last word, and its load card follows its series (CARGO →
+       freight, PASSENGERS / VIP → passengers); « que faire si j'ai oublié de choisir au départ du vol… ? » — nothing is lost: the report
+       chooses them. The lists offer only the themes of the airline (its `themes.json`, else its kind), the flight's or the report's own
+       kept. **T2 delivered**: `mission_themes.js` `MIGRATION` / `fromCategory`, `loadOf`, `seriesFor`, `forAirline`; Fuel's two lists
+       (N23); the report's family COMMERCIAL (`families/commercial.js`, letter E, sigle CAT), its families limited to the airline's
+       themes, the flight's theme and series taken, the load by series (G13; G7, G8, G10 adapted); Missions says a migrated category by
+       its theme and series.

@@ -12,13 +12,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Mission themes in Fuel, the report and Missions** (SOG-0202 T2, V3_SPECIFICATION § 10.48; noreg N23, G13; G7, G8, G10 adapted). Theme and
+  sub-theme on the step Flight (optional, filled by the mission, the airline's themes); the report takes them and has the last word, its family
+  COMMERCIAL (CAT, report letter E), its load following the series; an old category (« fret ») read as COMMERCIAL / CARGO.
 - **Map: aerodromes at a wide zoom ranked alike for every country; the ground panel says when the source does not name the taxiways** (`modules/maps/lib/aero_symbols.js`, `ground.js`, `texts.js`; DECISIONS; noreg D168,
   D169; SOG-0227, SOG-0232). A missing tower field is no longer « no tower » (it put the SIA's small fields before KJFK).
 
 - **Map: one path for a direct leg** (`modules/maps/render.js`, `render_route.js`, `light.js`, `draw.js`; DECISIONS; noreg D167; SOG-0233). The solid line follows the great circle (cut), the distance marks are on it
   (they were interpolated in latitude and longitude, off the line by up to ten pixels at Greenland), the dotted great circle goes for a direct route; the marks' step is chosen on the length of the route really
   in the view: 5 to 12 marks at any zoom, no sudden disappearance.
-
 - **Missions: the notifications agree with their number** (« 1 mission changée de compagnie : elle part … »; noreg N22).
 - **Report: the airline is chosen on the report** (Report SPEC, DECISIONS, help; noreg G12, G9 adapted; SOG-0181). « Changer » beside
   « Compte rendu pour … », the draft kept; a saved report of another airline is said in the header; no draft written back after a save.

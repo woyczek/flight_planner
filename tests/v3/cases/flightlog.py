@@ -232,7 +232,8 @@ def _cat_docs(category, draft=False):
       'G', tags=('report', 'missions'), designs=('standard',), screens=False, langs4=True,
       rule='V3 spec 10.38 / SOG-0041: the report of a commercial flight carries the load its category says (freight in kg, passengers), '
       'nothing else; categories.json absent = the common base; a category the airline does not know is ignored, nothing invented; '
-      'the load belongs to the flight\'s category, not to the draft (another, none or unknown removes it)')
+      'SOG-0202 T2 (§ 10.48): the category is read as its theme and series (fret → COMMERCIAL / CARGO), the load is the series\' and the report has '
+      'the last word on its family and series: a flight without theme keeps them')
 def g7(c):
     for cat, want in (('fret', 'freight'), ('passagers', 'passengers'), ('zzz-inconnue', None)):
         c.open('report', docs=_cat_docs(cat))
@@ -243,7 +244,10 @@ def g7(c):
         c.settle()
         got = c.js("[...document.querySelectorAll('[data-module=report] [data-loadcard]')].map(e => [e.dataset.loadcard, [...e.querySelectorAll('input[data-load]')].map(i => i.dataset.load)])")
         if want is None:
-            c.eq(got, [], f'an unknown category ({cat}) is ignored: no load asked', what='unknown category')
+            fam = c.js("[document.querySelector('[data-module=report] select[data-family]')?.value || '', (document.querySelector('[data-module=report] [data-path=series]') || {}).value || '']")
+            c.ok(fam[0] != 'ZZZ-INCONNUE' and 'zzz' not in str(fam).lower(), fam, f'an unknown category ({cat}) invents no family nor series')
+            exp = [['freight', ['freightKg']]] if fam == ['COMMERCIAL', 'CARGO'] else [['passengers', ['passengers']]] if fam[0] == 'COMMERCIAL' and fam[1] in ('PASSENGERS', 'VIP') else []
+            c.eq(got, exp, 'the load asked is the series\' only (nothing from the unknown category)', what='unknown category')
             continue
         c.eq(got, [[want, ['freightKg' if want == 'freight' else 'passengers']]], f'the category {cat} asks one field: its load', what=cat)
         if want == 'freight':
@@ -279,8 +283,9 @@ def g7(c):
     c.tap('[data-module="report"] [data-do="current"]')
     c.until("[...document.querySelectorAll('[data-module=report] input')].some(i => i.value === 'F-RAJA')", what='the flight prefills the form')
     c.settle()
-    c.eq(c.count('[data-module="report"] [data-loadcard]'), 0, 'a flight without category: the draft\'s load is removed', what='no load card')
-    c.until_doc('cache/report/draft.json', lambda d: 'load' not in ((d or {}).get('mission') or {}), 'the draft without load', timeout=8000)
+    # SOG-0202 T2: the report has the last word on its family and series; a flight without theme keeps them, and the load follows the series
+    c.eq(c.js("document.querySelector('[data-module=report] select[data-family]')?.value"), 'COMMERCIAL', 'a flight without theme: the report keeps its family', what='family kept')
+    c.eq(c.count('[data-module="report"] [data-loadcard="freight"]'), 1, 'the load follows the series (CARGO: freight)', what='load card')
 
 
 
@@ -297,7 +302,8 @@ def g8(c):
         c.until("!!document.querySelector('[data-module=report] select[data-family]')", what='the family list')
         opts = c.js("[...document.querySelectorAll('[data-module=report] select[data-family] option')].map(o => [o.value, o.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim()])")
         c.ge(len(opts), 16, f'{w} px: the sixteen families', what='options')
-        bad = [o for o in opts if not o[1].startswith(o[0] + ' · ') or not o[1][len(o[0]) + 3:].strip() or re.match(re.escape(o[0]) + r'\s*[/—–-]', o[1][len(o[0]) + 3:].upper())]
+        short = lambda v: 'CAT' if v == 'COMMERCIAL' else v  # the acronym of a theme (SOG-0202: COMMERCIAL is said CAT)
+        bad = [o for o in opts if not o[1].startswith(short(o[0]) + ' · ') or not o[1][len(short(o[0])) + 3:].strip() or re.match(re.escape(short(o[0])) + r'\s*[/—–-]', o[1][len(short(o[0])) + 3:].upper())]
         c.eq(bad, [], f'{w} px: each option « SIGLE · Nom long », the acronym not repeated', what='options not « SIGLE · long »')
         sar = dict(opts).get('SAR', '')
         c.ok(sar.startswith('SAR · ') and sar[6:7].isupper(), sar, f'{w} px: « SAR · Récupération de personnel »')
@@ -429,7 +435,7 @@ def g10(c):
         c.tap('[data-module="report"] .f-steps button[data-step="1"]')
         c.until("!!document.querySelector('[data-module=report] select[data-family]')", what='the family list')
         vals = c.js("[...document.querySelectorAll('[data-module=report] select[data-family] option')].map(o => o.value)")
-        c.eq(vals, list(want['familyLabels']), f'{w} px: the report offers its sixteen families, in the same order (no visible change)', what='options')
+        c.eq(vals, list(want['familyLabels']) + ['COMMERCIAL'], f'{w} px: the report offers its sixteen families in the same order, then COMMERCIAL (T2: no kind = the seventeen themes)', what='options')
         c.js("document.querySelector('[data-module=report] select[data-family]').scrollIntoView({block: 'center'})")
         c.shot(f'G10_{c.design}_{w}_{c.lang}.png')
 
@@ -497,3 +503,39 @@ def g12(c):
                 what=f'{w} px: the header says « AAA ≠ BBB » (current ≠ the report\'s)')
         c.go('flightlog')
         c.until("(() => { const e = document.getElementById('fCo'); return !!e && !e.hasAttribute('data-differs') })()", timeout=8000, what='another screen: no longer said')
+
+
+
+@case('G13', 'Report: it takes the theme and sub-theme of the flight (COMMERCIAL / PASSENGERS) and can change them — it has the last word; the family list offers the airline\'s themes; the load follows the sub-theme; a COMMERCIAL report is numbered E',
+      'G', tags=('report',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0202 T2 (user, 10 Nov: « à quel moment le cr match ce choix ? que faire si j\'ai oublié de choisir au départ du vol… ? »): the report takes them '
+      'at « Utiliser » and can change them; COMMERCIAL: family of its own, letter E (CRE-…), sigle CAT; captures 390 and 1 280')
+def g13(c):
+    from lib import flight_docs
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        docs = flight_docs()
+        docs[1][1]['theme'] = 'COMMERCIAL'
+        docs[1][1]['series'] = 'PASSENGERS'
+        docs += [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}]}, 'document'],
+                 ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'kind': 'va'}, 'document'],
+                 ['cache/report/draft.json', {}, 'cache']]
+        c.open('report', docs=docs)
+        c.until("!!document.querySelector('[data-module=report] [data-do=current]')", timeout=10000, what='the current-flight card')
+        c.wait(400)  # the airline's themes are read at mount
+        c.tap('[data-module="report"] [data-do="current"]')
+        c.tap('[data-module="report"] .f-steps button[data-step="1"]')  # the step Mission (a phone shows one step at a time)
+        c.until("document.querySelector('[data-module=report] select[data-family]')?.value === 'COMMERCIAL'", what=f'{w} px: the flight\'s theme taken')
+        c.eq(c.js("(document.querySelector('[data-module=report] [data-path=series]') || {}).value"), 'PASSENGERS', 'its sub-theme taken', what='series')
+        c.eq(c.js("[...document.querySelectorAll('[data-module=report] select[data-family] option')].map(o => o.value)"), ['COMMERCIAL'],
+             'a commercial airline: its themes only', what='families')
+        c.ok(c.js("(document.querySelector('[data-module=report] select[data-family] option') || {}).textContent || ''").startswith('CAT · '), '', 'said by its sigle CAT')
+        c.until("!!document.querySelector('[data-module=report] [data-loadcard=passengers]')", what='PASSENGERS asks the passengers')
+        c.shot(f'G13_{c.design}_{w}_{c.lang}.png')
+        # the report has the last word: another sub-theme, the load follows
+        c.page.select_option('[data-module=report] [data-path=series]', 'CARGO')
+        c.until("!!document.querySelector('[data-module=report] [data-loadcard=freight]')", what=f'{w} px: CARGO chosen in the report asks the freight')
+        path = _save_report(c)
+        c.ok(path.split('/')[-1].startswith('CRE-'), path, f'{w} px: a COMMERCIAL report is numbered E')
+        d = c.doc(path)
+        c.eq([d.get('family'), d.get('series')], ['COMMERCIAL', 'CARGO'], 'the record keeps the report\'s choice', what='record')

@@ -32,7 +32,7 @@ the series of a new report are taken by default.
 fuel at departure and at landing. Inconsistencies — times out of order, a future date, fuel that goes up — are
 flagged.
 
-<a id="report-load"></a>**Load.** A flight prepared from a cargo or passenger mission adds, on the last step, the “Load” card with a single field: the freight carried in kg, or the number of passengers. Any other mission adds nothing.
+<a id="report-load"></a>**Load.** “Use” takes the flight's theme and sub-theme (its family and series); you can change them, the report has the last word. A series that carries (Cargo, Passengers, VIP) adds, on the last step, the “Load” card with a single field: the freight carried in kg, or the number of passengers. Any other series adds nothing.
 
 <a id="report-measures"></a>**Measurements.** At the end of the last step, "Measurements" reads the Fuel Phase Monitor journals ("Choose journals", or "From the Output folder" on the workstation) and proposes the flight whose registration and UTC times overlap this report; "Keep this flight" puts its fuel used, its duration and its phases in the report, saved with it. Nothing else of the journal is kept.
 

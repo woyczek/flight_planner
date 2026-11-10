@@ -6,7 +6,9 @@
 // page à page, l'affectation (§ 5–6).
 import * as MS from '../../frame/lib/mission.js';
 import * as ADD from './add.js'; // « Ajouter des missions » : la lecture des YAML avant toute écriture (SOG-0212 b)
-import * as MOVE from './move.js'; // changer la compagnie d'une mission : le champ airline retouché dans le texte (SOG-0223)
+import * as MOVE from './move.js';
+import *
+as MT from '../../frame/lib/mission_themes.js'; // le thème d'une ancienne catégorie (SOG-0202 T2) // changer la compagnie d'une mission : le champ airline retouché dans le texte (SOG-0223)
 import * as MC from '../../frame/lib/mission_categories.js'; // les catégories de la compagnie (SOG-0041, § 10.38)
 import {
   familyParts,
@@ -604,7 +606,10 @@ function famHtml(s, code) {
 function firstHtml(s, r, m, drawn, why) {
   const lang = s.ctx.lang?.() || 'fr',
     cat = m?.category || r.category,
-    catName = catOf(s, {
+    mig = MT.fromCategory(cat), // SOG-0202 T2 : une ancienne catégorie dite par son thème et sa série (« fret » → CAT · Fret)
+    catName = mig ? [familyText(mig.theme, lang), MT.themeOf(mig.theme)?.series.find(x => x.value === mig.series)?.labels[Math.max(0, ['fr',
+      'en', 'de', 'es'
+    ].indexOf(lang))]].filter(Boolean).join(' · ') : catOf(s, {
       category: cat
     }) ? MC.nameOf(s.cats, cat, lang) : '',
     risks = m?.risks || [],

@@ -226,3 +226,9 @@ Memory of the V3 report module: every choice, dated, with its reason. Chat histo
   the way, both fixed: `prefillCard` read `S.ctx` after an await once the report was left (« Cannot read properties of null (reading
   'ctx') »), and a save within 600 ms of the last keystroke had its draft written back by the pending timer (the next opening said
   « brouillon restauré » for a saved report). G12 (red before for each), G9 adapted.
+- **10 Nov 2026 — the report takes the flight's theme and has the last word; the load follows the series** (SOG-0202 T2; user: « à
+  quel moment le cr match ce choix ? que faire si j'ai oublié de choisir au départ du vol… ? »). The rule of 9 Nov (« the load belongs to
+  the flight's category, not to the draft ») becomes: the load belongs to the report's series; « Utiliser » sets the series from the
+  flight's theme when it has one, a flight without theme keeps the report's family and series. A new report after a COMMERCIAL one
+  starts on COMMERCIAL / CARGO (G5: the family of the last report, its first series), so it asks the freight until the series changes.
+  G13; G7 adapted.

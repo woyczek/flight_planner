@@ -92,6 +92,8 @@ Neben dem Datum legt die Uhr „+30“ den Flug 30 Min. in die Zukunft (auf 5 Mi
 hinzu), und „Jetzt“ kehrt zur aktuellen Uhrzeit zurück: Flugplatzwetter (die TAF, wenn sie diese Uhrzeit abdeckt) und
 Höhenwinde werden sofort neu gelesen.
 
+<a id="fuel-theme"></a>**Thema und Unterthema.** Unter dem Datum sagen „Thema“ und „Unterthema“, was Sie vorhaben: ein Fracht-, Passagier- oder Erprobungsflug, eine SAR-Mission… Sie sind freiwillig, werden von der vorbereiteten Mission ausgefüllt und bieten nur die Themen Ihrer Gesellschaft an (eine kommerzielle Gesellschaft: CAT · Gewerblicher Luftverkehr). Der Bericht übernimmt sie und kann sie ändern: hier vergessen, dort gewählt.
+
 <a id="fuel-step-2"></a>**2 Route.** Tippen Sie die Route in das stets sichtbare Feld „Route“ (die Eingabetaste bestätigt sie): die Punkte, die
 Luftstraßen und die Flugflächen, wie in einem Flugplan („LFBO TOU UN460 NTS/F280 LFRN“). Sie können dort auch einen
 ICAO-Flugplan oder die Liste eines OFP einfügen. Wenn Sie das Feld verlassen, wird die Route bereinigt: in
@@ -570,7 +572,7 @@ Beispiel VIP oder Überführung bei den Sondereinsätzen). Solange Sie diesen Sc
 der Kraftstoff beim Start und bei der Landung. Unstimmigkeiten — Zeiten in falscher Reihenfolge, Datum in der Zukunft,
 Kraftstoff, der zunimmt — werden gemeldet.
 
-<a id="report-load"></a>**Zuladung.** Ein aus einer Fracht- oder Passagiermission vorbereiteter Flug fügt im letzten Schritt die Karte „Zuladung“ mit einem einzigen Feld hinzu: die beförderte Fracht in kg oder die Zahl der Passagiere. Jede andere Mission fügt nichts hinzu.
+<a id="report-load"></a>**Zuladung.** „Verwenden“ übernimmt Thema und Unterthema des Flugs (Familie und Serie); Sie können sie ändern, der Bericht hat das letzte Wort. Eine Serie, die etwas befördert (Fracht, Passagiere, VIP), fügt im letzten Schritt die Karte „Zuladung“ mit einem einzigen Feld hinzu: die beförderte Fracht in kg oder die Zahl der Passagiere. Jede andere Serie fügt nichts hinzu.
 
 <a id="report-measures"></a>**Messungen.** Am Ende des letzten Schritts liest „Messungen“ die Protokolle des Fuel Phase Monitor („Protokolle wählen“ oder „Aus dem Output-Ordner“ am Arbeitsplatz) und schlägt den Flug vor, dessen Kennzeichen und UTC-Zeiten diesen Bericht überdecken; „Diesen Flug behalten“ übernimmt seinen Verbrauch, seine Dauer und seine Phasen in den Bericht, mit ihm gespeichert. Sonst wird nichts aus dem Protokoll behalten.
 

@@ -17,6 +17,10 @@ import * as RM from '../../frame/lib/route_model.js'; // la route lue depuis son
 import * as RG from '../../frame/lib/routing.js'; // voies aériennes du bouton « Auto » (bibliothèque du cadre)
 import * as CF from '../../frame/lib/current_flight.js';
 import * as MS from '../../frame/lib/mission.js'; // le vol qu'une mission donne (modules/missions SPEC § 4)
+import * as MT from '../../frame/lib/mission_themes.js'; // thème et sous-thème du vol (SOG-0202 T2, § 10.48)
+import {
+  kindOf
+} from '../../frame/lib/airline.js';
 import * as ZG from './zone_gap.js'; // « zone manquante » : ce qui manque, le geste, les replis externes (SOG-0143)
 import * as RE from './route_engine.js'; // le calcul et le contrôle de route du lanceur (RouteSim, SOG-0080, SOG-0081)
 import * as RL from '../../frame/lib/route_legend.js'; // la légende commune des itinéraires avec la Carte (SOG-0134)
@@ -89,7 +93,7 @@ export const meta = {
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/flight_time.js',
     '../../frame/lib/flight_path.js', '../../frame/lib/procedures.js', '../../frame/lib/routing.js', '../../frame/lib/fms.js',
     '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js', '../../frame/lib/clipboard.js',
-    '../../frame/lib/time.js', '../../frame/lib/geo.js',
+    '../../frame/lib/time.js', '../../frame/lib/geo.js', '../../frame/lib/mission_themes.js', '../../frame/lib/airline.js',
     // importés depuis (R-F1, R-F4a, § 10.27, la météo du cadre) : gardés hors ligne eux aussi dès l’installation
     '../../frame/lib/wind.js', '../../frame/lib/route_model.js', '../../frame/lib/adnames.js', '../../frame/lib/metar.js',
     '../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/route_legend.js'
@@ -255,6 +259,10 @@ const TX = {
   },
   rRetry: ['Réessayer', 'Try again', 'Erneut versuchen', 'Reintentar'],
   rTake: ['Choisir', 'Choose', 'Auswählen', 'Elegir'], // SOG-0134 : un appui montre, « Choisir » prend
+  // thème et sous-thème du vol (SOG-0202 T2)
+  theme: ['Thème', 'Theme', 'Thema', 'Tema'],
+  series: ['Sous-thème', 'Sub-theme', 'Unterthema', 'Subtema'],
+  themeNone: ['— aucun —', '— none —', '— keins —', '— ninguno —'],
   rTaken: ['pris', 'taken', 'übernommen', 'tomado'],
   rFaults: ['{n} écart(s)', '{n} deviation(s)', '{n} Abweichung(en)', '{n} desviación(es)'],
   // le genre d'un écart (SOG-0134), quand le moteur ne donne pas l'identifiant de la règle
@@ -1102,7 +1110,9 @@ const emptyFlight = () => ({
   wind: null,
   isaDev: 0,
   planned_at: null,
-  ofp: null
+  ofp: null,
+  theme: '',
+  series: ''
 });
 /** Heure de l'appareil du champ datetime-local (« 2026-10-24T14:30 ») → ISO UTC (« 2026-10-24T12:30:00Z ») ; null si
  *  vide ou illisible. */
@@ -1868,6 +1878,7 @@ function renderPlanBody() {
       <div class="f-grid fu-ads">${[['dep', TX.dep], ['arr', TX.arr], ['altn', TX.altn]].map(([k, label]) => `${k === 'arr' ? `<button type="button" class="fu-adswap" data-do="adswap" title="${esc(tt(TX.adSwap))}" aria-label="${esc(tt(TX.adSwap))}">⇄</button>` : ''}<label class="f-field">${esc(tt(label))}<input data-k="${k}" value="${esc(r[k] ?? '')}" class="fu-code" autocapitalize="characters" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-adsug"><small class="fu-adname" data-adline="${k}"></small></label>`).join('')}<div class="fu-sug" id="fu-adsug" data-adsug role="listbox" aria-label="${esc(tt(S.AD.texts.listLabel))}" hidden></div></div>
       <div class="f-grid fu-flight"><label class="f-field">${esc(tt(TX.level))}<span class="fu-when"><input data-k="fl" value="${esc(f.level?.ft ? Math.round(f.level.ft / 100) : '')}" inputmode="numeric"><button type="button" data-do="levelauto" aria-pressed="${!!f.level?.auto}" title="${esc(tt(TX.levelAutoHint))}">${esc(tt(TX.levelAuto))}</button></span><small class="f-muted" data-lvlauto></small></label><p class="f-muted fu-lvlmix" data-lvlmix hidden></p><label class="f-field" title="${esc(tt(TX.wxDateHint))}">${wxDateLabel()}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(whenField(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
       <p class="f-warn" data-pastdate hidden></p>
+      <div class="f-grid fu-themes" data-themes></div>
       <div data-block="aircraft">
       <div class="f-row" data-acsel></div>
       <div class="fu-hide" data-acpanel>
@@ -1964,6 +1975,7 @@ function renderPlanBody() {
     S.wxTried = true;
     wxFetch(false);
   }
+  themesDraw();
   // les itinéraires proposés redessinés avec le corps (SOG-0134, refus du 10 nov. : « ça fait disparaître leur version texte à
   // gauche » — le corps redessiné, après un choix ou un vol relu, laissait leur boîte vide)
   if (S.ralts) routeAltsDraw();
@@ -1981,6 +1993,7 @@ function onPlanInput(e) {
   // l'appareil tapés là disparaîtraient en laissant un devis « 0 ft » ; le dernier état lu gagne, les champs sont redessinés
   if (S.flightPending) return;
   const r = f.route ||= emptyFlight().route;
+  if (k === 'theme' || k === 'series') return themeSet(k, v);
   switch (k) {
     case 'acsearch':
       return acResults(v);
@@ -2313,7 +2326,9 @@ async function newFlight() {
     weather: null,
     windSource: null,
     mission: null,
-    missionCategory: ''
+    missionCategory: '',
+    theme: '',
+    series: ''
   };
   S.ofp = null;
   S.procs = null;
@@ -4937,6 +4952,13 @@ async function applyMission(id) {
   S.ofp = null;
   f.mission = mf.mission;
   f.missionCategory = mf.category || row?.category || ''; // SOG-0041 : celle du fichier, sinon celle du registre
+  // SOG-0202 T2 : le thème et le sous-thème que la mission donne — sa catégorie migrée (« fret » → COMMERCIAL / CARGO), sinon sa famille
+  // (mission.type) et la série qui répond à son sous-type ; rien d'inventé
+  const mig = MT.fromCategory(f.missionCategory),
+    th = mig?.theme || MT.themeOf(mission?.type)?.id || '';
+  f.theme = th;
+  f.series = mig?.series || (th ? MT.seriesFor(th, mission?.subtype) : '');
+  themesDraw();
   markEnds();
   mChipDraw();
   ctx.notify(tt(TX.missionLoaded, {
@@ -5639,6 +5661,8 @@ export async function mount(el, ctx) {
   S.body.addEventListener('focusin', e => altsHover(e));
   S.onAltPick = e => altsPicked(e);
   window.addEventListener('maps-route-alt-show', S.onAltPick);
+  S.onCoThemes = () => themesLoad();
+  window.addEventListener('frame-airline', S.onCoThemes);
   S.body.addEventListener('focusout', e => {
     const hits = S?.AD?.hitsFor(e.target?.dataset?.k) || 0; // avant que la liste se ferme
     S?.AD?.onFocusOut(e);
@@ -5871,6 +5895,7 @@ async function completeMount(self) {
     S.settingsPending = false;
   }
   S.refsPending = false;
+  themesLoad(); // les thèmes de la compagnie, pour l'étape Vol (SOG-0202 T2)
   if (S.view === 'plan') renderPlan();
   else keepScroll(S.body, renderSheets);
   // le vol encore attendu (flightArrives) : il reprendra le vol à son arrivée ; sinon la reprise, devis compris
@@ -5888,9 +5913,63 @@ export function unmount() {
   // et sa fin est dite (procedures.js)
   S.P.stop();
   window.removeEventListener('maps-route-alt-show', S.onAltPick);
+  window.removeEventListener('frame-airline', S.onCoThemes);
   clearTimeout(S.routeTimer);
   clearTimeout(S.roTimer);
   clearTimeout(S.wxTimer);
   S.body = null;
   S = null;
+}
+
+// ---------------------------------------------------------------- thème et sous-thème du vol (SOG-0202 T2, § 10.48)
+// L'utilisateur, 10 nov. : « À quel moment je décide de faire une mission fret, passagers, essais en vol… ? » — à l'étape Vol, facultatif,
+// rempli par la mission ; le compte rendu les reprend et peut les changer (il a le dernier mot). Les listes : les thèmes de la compagnie
+// (data/airline/<code>/themes.json écrit par Réglages, sinon ceux de son genre), le thème du vol toujours gardé.
+/** Les thèmes de la compagnie courante, lus une fois par montage et à chaque changement de compagnie. */
+async function themesLoad() {
+  const s = S;
+  let a = null,
+    doc = null;
+  try {
+    a = await window.FrameData?.airline?.();
+    doc = a?.root ? await s.ctx.data.get(`${a.root}themes.json`).catch(() => null) : null;
+  } catch {
+    doc = null;
+  }
+  if (gone(s)) return;
+  s.themeDoc = doc;
+  s.themeKind = kindOf(a);
+  themesDraw();
+}
+/** Les deux listes de l'étape Vol. */
+function themesDraw() {
+  const box = S?.body?.querySelector('[data-themes]');
+  if (!box) return;
+  const f = S.flight,
+    lang = S.ctx.lang(),
+    i = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(lang)),
+    list = MT.forAirline(S.themeDoc, S.themeKind, f.theme),
+    th = list.find(t => t.id === f.theme),
+    name = t => {
+      const x = MT.themes(lang).find(y => y.id === t.id);
+      return x ? x.label : `${t.short} · ${t.labels[i] || t.labels[0]}`;
+    },
+    none = `<option value="">${esc(tt(TX.themeNone))}</option>`;
+  box.innerHTML = `<label class="f-field">${esc(tt(TX.theme))}<select data-k="theme">${none}${list.map(t => `<option value="${esc(t.id)}"${t.id === f.theme ? ' selected' : ''}>${esc(name(t))}</option>`).join('')}</select></label>
+    <label class="f-field">${esc(tt(TX.series))}<select data-k="series"${th?.series.length ? '' : ' disabled'}>${none}${(th?.series || []).map(x => `<option value="${esc(x.value)}"${x.value === f.series ? ' selected' : ''}>${esc(x.labels[i] || x.labels[0])}</option>`).join('')}</select></label>`;
+}
+/** Un thème ou un sous-thème choisi : écrit avec le vol (un autre thème vide le sous-thème). */
+function themeSet(k, v) {
+  const f = S.flight,
+    val = String(v || '');
+  if (k === 'theme') {
+    if (val === (f.theme || '')) return;
+    f.theme = MT.themeOf(val)?.id || (MT.THEME_ID.test(val) ? val : '');
+    f.series = '';
+  } else {
+    if (val === (f.series || '')) return;
+    f.series = MT.SERIES_ID.test(val) ? val : '';
+  }
+  themesDraw();
+  saveFlight();
 }

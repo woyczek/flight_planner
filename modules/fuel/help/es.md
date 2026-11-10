@@ -35,6 +35,8 @@ Junto a la fecha, el reloj «+30» pone el vuelo dentro de 30 min (redondeado a 
 «Ahora» vuelve a la hora actual: la meteorología de los aeródromos (el TAF si cubre esa hora) y los vientos en altura se
 vuelven a leer en el acto.
 
+<a id="fuel-theme"></a>**Tema y subtema.** Bajo la fecha, «Tema» y «Subtema» dicen lo que va a hacer: un vuelo de carga, de pasajeros, de ensayo, una misión SAR… Opcionales, los rellena la misión que prepara y solo proponen los temas de su compañía (una compañía comercial: CAT · Transporte aéreo comercial). El informe los toma y puede cambiarlos: olvidados aquí, se eligen allí.
+
 <a id="fuel-step-2"></a>**2 Ruta.** Escriba la ruta en el campo «Ruta» (Intro la valida), siempre visible: los puntos, las aerovías y los
 niveles, como en un plan de vuelo («LFBO TOU UN460 NTS/F280 LFRN»). También puede pegar ahí un plan de vuelo OACI o la
 lista de un OFP. Al salir del campo, la ruta se pone en limpio: en mayúsculas en una línea, sin DCT ni grupos

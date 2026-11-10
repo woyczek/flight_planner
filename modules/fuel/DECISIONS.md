@@ -1597,3 +1597,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   draws it. A tap on a row, or `maps-route-alt-show` from the Map (BUGS SOG's contract), sets `shown` (row marked, detail unfolded,
   published); « Prendre » becomes « Choisir », the only take with `#fuel?ralt=`. F135; F114 adapted; counter-test on origin/v3: a tap
   shows nothing.
+- **10 Nov 2026 — theme and sub-theme on the step Flight** (SOG-0202 T2; user: « À quel moment, je décide de faire une mission fret,
+  passagers, essais en vol... ? »). Optional lists, filled by the mission, offered from the airline's themes; written with the flight for
+  the report, which has the last word. N23 (a mission « fret » → COMMERCIAL / CARGO; FIRE « GAAR »; a commercial airline offers
+  COMMERCIAL only; the flight's theme kept); counter-test on origin/v3: no theme written.

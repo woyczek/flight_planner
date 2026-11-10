@@ -16,7 +16,10 @@
 //                          perso et sans genre → les dix-sept
 //   chosenOf(doc, kind)    les thèmes d'une compagnie : son fichier s'il en a un (filtré), sinon defaultChosen(kind) — rien n'est écrit
 //                          tant qu'on ne coche pas
-//   Sigle de COMMERCIAL (« CAT », Commercial Air Transport de l'AESA) et sa lettre (« E ») : proposés, à valider par l'utilisateur.
+//   Sigle de COMMERCIAL (« CAT », Commercial Air Transport de l'AESA) et sa lettre (« E ») : validés par l'utilisateur (« CAT, E. go. »).
+//   T2 : MIGRATION / fromCategory(id) (les catégories de SOG-0041 lues comme thème / série), loadOf(theme, series) (la charge d'une
+//   série), seriesFor(theme, texte) (la série qui répond au sous-type d'une mission), forAirline(doc, kind, keep) (les thèmes d'une
+//   compagnie pour une liste, ses séries ajoutées comprises).
 export const LANGS = ['fr', 'en', 'de', 'es'];
 export const THEME_ID = /^[A-Z][A-Z0-9_]{1,23}$/;
 export const SERIES_ID = /^[A-Za-z0-9][A-Za-z0-9 _.\/()-]{0,39}$/;
@@ -789,4 +792,69 @@ export function defaultChosen(kind) {
 export function chosenOf(doc, kind) {
   const c = cleanThemes(doc);
   return c?.chosen ? c.chosen : defaultChosen(kind);
+}
+// ---------------------------------------------------------------- T2 : ce que lisent Carburant, le compte rendu et Missions (§ 10.48)
+/** Les identifiants de catégorie de SOG-0041 (frame/lib/mission_categories.js, base commune) et leur thème / série : une mission ou un vol
+ *  qui porte encore une catégorie est lu avec son thème (« fret » → COMMERCIAL / CARGO) ; rien n'est réécrit. */
+export const MIGRATION = Object.freeze({
+  fret: Object.freeze(['COMMERCIAL', 'CARGO']),
+  passagers: Object.freeze(['COMMERCIAL', 'PASSENGERS']),
+  positionnement: Object.freeze(['COMMERCIAL', 'EMPTY_LEG']),
+  vip: Object.freeze(['COMMERCIAL', 'VIP']),
+  training: Object.freeze(['COMMERCIAL', 'TRAINING']),
+  transit: Object.freeze(['COMMERCIAL', 'TRANSIT']),
+  'essais-en-vol': Object.freeze(['COMMERCIAL', 'FLIGHT_TEST'])
+});
+/** Le thème et la série d'une ancienne catégorie : { theme, series } ou null. */
+export function fromCategory(id) {
+  const m = MIGRATION[String(id ?? '').trim()];
+  return m ? {
+    theme: m[0],
+    series: m[1]
+  } : null;
+}
+/** Ce que transporte un vol d'une série (« freight », « passengers ») ; '' sans charge, ou pour une série inconnue. */
+export function loadOf(theme, series) {
+  return themeOf(theme)?.series.find(s => s.value === series)?.load || '';
+}
+/** La série d'un thème qui répond à un texte (la valeur, ou un libellé ×4, sans casse) : le sous-type d'une mission (« GAAR ») ; '' sinon. */
+export function seriesFor(theme, text) {
+  const k = String(text ?? '').trim().toLowerCase();
+  if (!k) return '';
+  return themeOf(theme)?.series.find(s => s.value.toLowerCase() === k || s.labels.some(l => String(l).toLowerCase() === k))?.value || '';
+}
+/** Les thèmes d'une compagnie pour une liste (Carburant, le compte rendu) : ceux qu'elle a choisis (son fichier, sinon son genre), dans
+ *  l'ordre de la table, puis ceux qu'elle a ajoutés ; chacun avec ses séries (les ajoutées à la suite) — [{ id, short, labels, added,
+ *  series: [{ value, labels, load }] }]. `keep` : un thème à garder même s'il n'est pas choisi (celui du vol ou du compte rendu). */
+export function forAirline(doc, kind, keep = '') {
+  const c = cleanThemes(doc),
+    chosen = new Set(c?.chosen || defaultChosen(kind)),
+    k = String(keep || '').toUpperCase(),
+    more = c?.added?.series || {},
+    out = THEMES.filter(t => chosen.has(t.id) || t.id === k).map(t => ({
+      id: t.id,
+      short: t.short,
+      labels: t.labels,
+      added: false,
+      series: [...t.series.map(s => ({
+        value: s.value,
+        labels: s.labels,
+        load: s.load || ''
+      })), ...(more[t.id] || []).map(s => ({
+        ...s,
+        load: ''
+      }))]
+    }));
+  for (const t of c?.added?.themes || [])
+    if (chosen.has(t.id) || t.id === k) out.push({
+      id: t.id,
+      short: t.short,
+      labels: t.labels,
+      added: true,
+      series: (more[t.id] || []).map(s => ({
+        ...s,
+        load: ''
+      }))
+    });
+  return out;
 }

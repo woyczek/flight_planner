@@ -176,8 +176,9 @@ const capabilityGroups = [{
 const FAMILY_ALIASES = MT.ALIASES;
 /** { short, long } d'une famille dans la langue ('fr', 'en', 'de', 'es') ; long '' pour un code inconnu. */
 function familyParts(code, lang = 'fr') {
-  const short = String(code ?? '').trim().toUpperCase().slice(0, 24),
-    labels = familyLabels[short] || familyLabels[FAMILY_ALIASES[short]],
+  const id = String(code ?? '').trim().toUpperCase().slice(0, 24),
+    short = MT.THEMES.find(t => t.id === id)?.short || id, // le sigle du thème : COMMERCIAL se dit CAT (SOG-0202)
+    labels = familyLabels[id] || familyLabels[FAMILY_ALIASES[id]],
     label = labels ? String(labels[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(lang))] ?? labels[0]) : '',
     rest = label.toUpperCase().startsWith(short) && /^\s*[/—–-]/.test(label.slice(short.length)) ? label.slice(short.length).replace(
       /^\s*[/—–-]\s*/, '') : label; // « HEMS / MEDEVAC », « Airlift / logistics » : le sigle n'est pas redit

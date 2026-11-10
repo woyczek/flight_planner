@@ -86,6 +86,8 @@ Next to the date, the “+30” clock sets the flight 30 min from now (rounded t
 goes back to the current time: the aerodrome weather (the TAF if it covers that time) and the winds aloft are read again
 at once.
 
+<a id="fuel-theme"></a>**Theme and sub-theme.** Under the date, "Theme" and "Sub-theme" say what you are going to do: a cargo flight, a passenger flight, a test flight, a SAR mission… Optional, they are filled by the mission you prepare and offer only your airline's themes (a commercial airline: CAT · Commercial air transport). The report takes them and can change them: forgotten here, they are chosen there.
+
 <a id="fuel-step-2"></a>**2 Route.** Type the route in the “Route” field (Enter confirms it), always visible: the points, the airways and the
 levels, as in a flight plan (“LFBO TOU UN460 NTS/F280 LFRN”). You can also paste an ICAO flight plan or the list of an
 OFP there. When you leave the field, the route is tidied up: in capitals on one line, without DCT or speed-level groups,
@@ -534,7 +536,7 @@ the series of a new report are taken by default.
 fuel at departure and at landing. Inconsistencies — times out of order, a future date, fuel that goes up — are
 flagged.
 
-<a id="report-load"></a>**Load.** A flight prepared from a cargo or passenger mission adds, on the last step, the “Load” card with a single field: the freight carried in kg, or the number of passengers. Any other mission adds nothing.
+<a id="report-load"></a>**Load.** “Use” takes the flight's theme and sub-theme (its family and series); you can change them, the report has the last word. A series that carries (Cargo, Passengers, VIP) adds, on the last step, the “Load” card with a single field: the freight carried in kg, or the number of passengers. Any other series adds nothing.
 
 <a id="report-measures"></a>**Measurements.** At the end of the last step, "Measurements" reads the Fuel Phase Monitor journals ("Choose journals", or "From the Output folder" on the workstation) and proposes the flight whose registration and UTC times overlap this report; "Keep this flight" puts its fuel used, its duration and its phases in the report, saved with it. Nothing else of the journal is kept.
 

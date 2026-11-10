@@ -2,6 +2,7 @@
 choose or draw, and the flight handed to Fuel.  Cases: N1–N5.  Invented missions only (names, positions, callsigns, the aerodromes XTST
 and XTSU): no AIP content and no real mission of the user's data."""
 import re
+import time
 
 from lib import Fail, case, norm, tx
 
@@ -1060,3 +1061,86 @@ def n22(c):
         c.tap(f'{M} [data-do="addwrite"]')
         c.until(f"!document.querySelector('{M} [data-pane=add]')", what='added')
         c.ok('airline: ddd' in (c.js(_TEXT_OF, 'missions/X_TESTCO/X-155A/missionX-155A.yaml') or ''), '', f'{w} px: the added mission is Delta Air\'s')
+
+
+
+_THEME_REGISTRY = """missions:
+  - { id: X-601A, family: TESTCO, title: Mission fret, category: fret, folder: X_CO/X-601A, files: [missionX-601A.yaml] }
+  - { id: X-602A, family: FIRE, title: Mission feu, folder: F_FIRE/X-602A, files: [missionX-602A.yaml] }
+"""
+_THEME_FIRE = """mission: { id: X-602A, type: FIRE, subtype: GAAR }
+title: Mission feu
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test Sud (XTSU), lat: 44.0, lon: 2.0 }
+"""
+_THEME_FRET = """mission: { id: X-601A, type: TESTCO, category: fret }
+title: Mission fret
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test Sud (XTSU), lat: 44.0, lon: 2.0 }
+"""
+
+
+@case('N23', 'Theme and sub-theme of the flight, on the step Flight of Fuel: offered from the airline\'s themes (a commercial airline: COMMERCIAL), filled by the mission (« fret » → COMMERCIAL / CARGO, FIRE « GAAR »), chosen freely, written with the flight',
+      'N', tags=('missions', 'fuel'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0202 T2 (user, 10 Nov: « À quel moment, je décide de faire une mission fret, passagers, essais en vol... ? »): at the step Flight, '
+      'optional, filled by the mission; the lists offer only the themes of the airline (themes.json, else its kind), the flight\'s kept; invented missions '
+      'and airlines; captures 390 and 1 280')
+def n23(c):
+    co = [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}, {'code': 'bbb', 'name': 'Bravo Air'}]}, 'document'],
+          ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'kind': 'va'}, 'document'],
+          ['airline/bbb/settings.json', {'schema': 1, 'name': 'Bravo Air', 'kind': 'sog'}, 'document']]
+    flight = "async () => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) }); " \
+             "const get = st => new Promise(res => { try { const q = db.transaction(st).objectStore(st).get('pilot/ABC/current_flight.json'); q.onsuccess = () => res(q.result); q.onerror = () => res(null) } catch { res(null) } }); " \
+             "const row = (await get('pending')) || (await get('docs')); db.close(); try { const f = JSON.parse(row.text); return [f.theme || '', f.series || ''] } catch { return null } }"
+    opts = lambda k: c.js(f"[...document.querySelectorAll('[data-module=fuel] select[data-k={k}] option')].map(o => o.value)")
+
+    def flight_is(want, what, timeout=12000):
+        # the written flight (queue, then cache), polled here: an async expression in c.until would be a Promise, true at once
+        end = time.time() + timeout / 1000
+        got = None
+        while time.time() < end:
+            got = c.js(f'({flight})()')
+            if got == want:
+                return
+            c.wait(200)
+        raise Fail(f'{what}: {got}', str(want), 'pilot/ABC/current_flight.json theme / series')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _THEME_REGISTRY], ['missions/X_CO/X-601A/missionX-601A.yaml', _THEME_FRET],
+                         ['missions/F_FIRE/X-602A/missionX-602A.yaml', _THEME_FIRE]])
+        c.open('missions', docs=co, wait=False, app='company')
+        c.until(f"!!document.querySelector('{M} [data-results] [data-count]')", timeout=15000, what='the list is drawn')
+        set_airline(c, 'aaa')
+        c.go('fuel?mission=X-601A')
+        for _ in range(20):  # the flight of an earlier run has a route: « replace the current flight? » is asked, answered yes
+            if c.js("!!document.querySelector('.f-modal [data-ok]')"):
+                c.tap('.f-modal [data-ok]')
+                break
+            if c.js(f'({flight})()') == ['COMMERCIAL', 'CARGO']:
+                break
+            c.wait(200)
+        flight_is(['COMMERCIAL', 'CARGO'], f'{w} px: the mission « fret » fills COMMERCIAL / CARGO')
+        c.until("!!document.querySelector('[data-module=fuel] select[data-k=theme]')", timeout=8000, what='the theme list on the step Flight')
+        c.until("document.querySelectorAll('[data-module=fuel] select[data-k=theme] option').length === 2", what='the airline\'s themes read')
+        c.eq(opts('theme'), ['', 'COMMERCIAL'], f'{w} px: a commercial airline: COMMERCIAL only (and « aucun »)', what='themes')
+        c.eq(c.js("document.querySelector('[data-module=fuel] select[data-k=series]').value"), 'CARGO', 'the sub-theme filled', what='series')
+        c.eq(opts('series'), ['', 'CARGO', 'PASSENGERS', 'EMPTY_LEG', 'VIP', 'TRAINING', 'TRANSIT', 'FLIGHT_TEST'], 'the seven sub-themes of COMMERCIAL', what='series list')
+        c.shot(f'N23_{c.design}_{w}_{c.lang}.png')
+        c.page.select_option('[data-module=fuel] select[data-k=series]', 'PASSENGERS')
+        flight_is(['COMMERCIAL', 'PASSENGERS'], f'{w} px: the chosen sub-theme written')
+        c.page.select_option('[data-module=fuel] select[data-k=theme]', '')
+        flight_is(['', ''], 'no theme: none written (optional)')
+        c.ok(c.js("document.querySelector('[data-module=fuel] select[data-k=series]').disabled"), '', 'without a theme, no sub-theme')
+        # a mission of a military family: its theme and the series of its subtype, kept in the list although not the airline's
+        c.go('missions')  # a mission is taken at Fuel's mount: from Missions, « Préparer ce vol », as the pilot does
+        c.until(f"!!document.querySelector('{M} select[data-k=scope]')", timeout=15000, what='Missions')
+        c.page.select_option(f'{M} select[data-k=scope]', 'all')  # X-602A names no airline: personal, found in « Toutes les compagnies »
+        c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-602A\"]')", what='X-602A listed')
+        c.tap(f'{M} [data-list] [data-id="X-602A"]')
+        c.tap(f'{M} [data-do="prepare"]')
+        c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=15000, what='« replace the current flight? » asked (the flight has a route)')
+        c.tap('.f-modal [data-ok]')
+        flight_is(['FIRE', 'GAAR'], f'{w} px: FIRE « GAAR » from the mission')
+        c.wait(1500)
+        c.eq(opts('theme'), ['', 'FIRE', 'COMMERCIAL'], 'the flight\'s theme kept in the list, with the airline\'s', what='themes kept')

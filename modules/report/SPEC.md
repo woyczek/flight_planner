@@ -196,3 +196,9 @@ thresholds for the track when the aircraft (or the family's default category) is
 2. A record is the V2 entry plus `schema`, `updated_at`, `by`: the bridge never has to translate a field.
 3. The module writes only `cr/reports/` and its device cache; it never writes `cr/missions.yaml`.
 4. Network only through `ctx.net`; no token, no key, no native dialog, no global style sheet.
+- **Theme and sub-theme** (SOG-0202 T2, V3 spec § 10.48): the family is the theme, the series its sub-theme. The 17th family
+  COMMERCIAL (`families/commercial.js`: no block of its own, its series from `mission_themes.js`, letter E, sigle CAT). The family list
+  offers the families of the airline's themes (`themes.json`, else its kind; the report's own kept). « Utiliser » takes the flight's
+  `theme` / `series` (or its old `missionCategory` migrated); the report can change them — it has the last word — and the load card
+  follows its series (`loadOf`: CARGO → freight, PASSENGERS / VIP → passengers), else the old category's load. G13; G7 (the load is the
+  series', a flight without theme keeps the report's family and series), G8 (COMMERCIAL said CAT), G10 (COMMERCIAL offered) adapted.

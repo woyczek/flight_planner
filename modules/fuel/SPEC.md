@@ -210,6 +210,12 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
 
 ### 9.2 Step 1 — Flight
 
+- **Theme and sub-theme** (SOG-0202 T2, V3 spec § 10.48): two lists under the date, optional (« — aucun — »), written with the flight
+  as `theme` / `series` (`frame/lib/current_flight.js` FUEL_FIELDS); offered from the airline's themes (`themes.json` under
+  `FrameData.airline().root`, else its kind: `mission_themes.js` `forAirline`), the flight's theme always kept; read again on
+  `frame-airline`. A mission fills them (`applyMission`): its category migrated (`fromCategory`: « fret » → COMMERCIAL / CARGO), else
+  its family (`mission.type`) and the series matching its subtype (`seriesFor`); another theme empties the sub-theme. N23.
+
 - **« Auto » level** (SOG-0056, V3 spec § 10.37 D): a button in the level's row. It sets `level.auto`; after each quote the level
   is `FuelLevels.autoLevel(D, route.trackDeg, { minFt, maxFt })`: among the flyable levels of the series already quoted
   (`decisionSeries` + `requoteSeries`), the semicircular ones (track 0–179: odd thousands; 180–359: even), from FL030 (or the highest

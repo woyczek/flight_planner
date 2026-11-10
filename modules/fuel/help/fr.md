@@ -30,6 +30,8 @@ l'indicatif choisis suivent le vol jusqu'au compte rendu. La ligne « Croisière
 
 À côté de la date, l'horloge « +30 » pose le vol dans 30 min (arrondi aux 5 min ; chaque appui ajoute 30 min) et « Maint. » revient à l'heure courante : la météo des terrains (le TAF s'il couvre cette heure) et les vents en altitude sont relus aussitôt.
 
+<a id="fuel-theme"></a>**Thème et sous-thème.** Sous la date, « Thème » et « Sous-thème » disent ce que vous allez faire : un vol de fret, de passagers, d'essais, une mission SAR… Facultatifs, ils sont remplis par la mission que vous préparez et ne proposent que les thèmes de votre compagnie (une compagnie commerciale : CAT · Transport aérien commercial). Le compte rendu les reprend et peut les changer : oubliés ici, ils se choisissent là.
+
 <a id="fuel-step-2"></a>**2 Route.** Tapez la route dans le champ « Route » (Entrée la valide),
 toujours visible : les points, les voies aériennes et les niveaux, comme dans un plan de vol (« LFBO TOU UN460
 NTS/F280 LFRN »). Vous pouvez aussi y coller un plan de vol OACI ou la liste d'un OFP. Quand vous quittez le champ, la
