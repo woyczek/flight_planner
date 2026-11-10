@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 49,
+  "tests": 51,
   "verdicts": 0
  },
  "apps": [
@@ -604,7 +604,7 @@
     "de": "R- und D-Gebiete: ihren Text (Aktivität, Bedingungen) aus Vertikalprofil und Karte lesen",
     "es": "Zonas R y D: leer su texto (actividad, condiciones) desde el perfil vertical y el mapa"
    },
-   "test": "Carte avec une route qui traverse un espace R ou D, profil vertical ouvert : toucher le bloc de l'espace → sa fiche s'ouvre sous le graphique (nom, limites, organisme, fréquence, activation AZBA ou NOTAM). Les horaires et conditions de l'AIP ne sont pas encore là : en cours chez AeroDB.",
+   "test": "Maintenance › Données › « Mettre à jour » (la base se reconstruit : analyseur 24), puis Carte avec une route qui traverse R 61, profil vertical ouvert : toucher le bloc de l'espace → sa fiche donne limites, organisme, fréquence, horaires publiés et conditions de l'AIP, et dit que l'activité réelle n'est pas connue.",
    "since": "2026-11-10",
    "state": "todo"
   },
@@ -620,6 +620,19 @@
    "test": "Relancer le lanceur, puis ouvrir Maintenance › Données : la page est utilisable en moins d'une seconde, sans temps mort avant l'affichage.",
    "since": "2026-11-10",
    "state": "todo"
+  },
+  {
+   "id": "SOG-0165",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données, thèmes de paquets (Mégalopoles…) : le bouton « Ajouter » est énorme à côté du texte ; page à condenser et à homogénéiser",
+    "en": "Données, pack themes: the “Add” button is huge next to the text; page to condense and make consistent",
+    "de": "Daten, Paket-Themen: der Knopf „Hinzufügen“ ist riesig neben dem Text; Seite verdichten und vereinheitlichen",
+    "es": "Datos, temas de paquetes: el botón «Añadir» es enorme junto al texto; página por condensar y homogeneizar"
+   },
+   "test": "Maintenance › Données › Paquets : « Régions » et « Thèmes » sont deux onglets d'un même bloc ; dans un thème (Mégalopoles), chaque pays est une ligne avec une case, alignée comme la liste des zones, sans bouton « Ajouter ».",
+   "since": "2026-11-10",
+   "state": "known"
   },
   {
    "id": "SOG-0166",
@@ -644,6 +657,19 @@
     "es": "Recepción: una página con las pruebas funcionales diarias, con mis comentarios y el estado validado / rechazado"
    },
    "test": "Relancer le lanceur, puis Maintenance › Recette : valider un test, en refuser un autre avec un commentaire, recharger → les verdicts sont tenus ; un refus sans commentaire n'est pas envoyé.",
+   "since": "2026-11-10",
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0168",
+   "app": "maintenance",
+   "title": {
+    "fr": "L'utilisateur teste une vieille copie sans le savoir : la nouvelle version s'applique seule sur un poste avec lanceur, et la version servie est lisible",
+    "en": "The user tests an old copy without knowing: the new version applies by itself on a workstation with a launcher, and the served version is readable",
+    "de": "Der Benutzer testet unwissentlich eine alte Kopie: die neue Version greift auf einem Rechner mit Launcher von selbst, und die ausgelieferte Version ist lesbar",
+    "es": "El usuario prueba una copia antigua sin saberlo: la nueva versión se aplica sola en un puesto con lanzador, y la versión servida es legible"
+   },
+   "test": "Faire une fois Ctrl+Maj+R sur la page et relancer le lanceur. Ensuite, après un correctif annoncé, un seul rechargement suffit, sans « Nouvelle version disponible ». Si la page est plus ancienne que le lanceur, un cartouche rouge « Version ancienne · Recharger » apparaît dans l'en-tête ; le toucher recharge.",
    "since": "2026-11-10",
    "state": "todo"
   }
