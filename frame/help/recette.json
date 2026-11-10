@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 53,
-  "verdicts": 6
+  "tests": 54,
+  "verdicts": 8
  },
  "apps": [
   "pilote",
@@ -338,7 +338,9 @@
    },
    "test": "Maintenance › Données › Météo › « Synoptique monde (GFS) » › « Construire » (deux minutes la première fois), puis Atmosphère : la carte synoptique s'affiche avec l'heure du modèle.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "ko",
+   "comment": "screenshot. {  \"at\": \"2026-11-10T09:26:02.375Z\",  \"app\": \"pilot\",  \"suite\": {   \"version\": \"v6.0.0-alpha.4-173-g6399f5a28\",   \"date\": \"2026-11-10\",   \"time\": \"10:19\",   \"web\": \"https://framagit.org/asr/flight_planner\"  },  \"transport\": \"launcher\",  \"online\": true,  \"syncing\": false,  \"lastSync\": \"2026-11-10T09:21:40.172Z\",  \"lastError\": \"\",  \"pending\": 1,  \"queue\": [   {    \"path\": \"pilot/RBR/current_flight.json\",    \"module\": \"fuel\",    \"at\": \"2026-11-10T09:21:31.301Z\",    \"deletion\": false   }  ],  \"conflicts\": 0,  \"tree\": {   \"head\": \"19c0b8a6436d\",   \"at\": \"2026-11-10T09:21:30.334Z\",   \"fi",
+   "at": "2026-11-10T09:26:17Z"
   },
   {
    "id": "SOG-0139",
@@ -643,6 +645,19 @@
    "state": "todo"
   },
   {
+   "id": "SOG-0165",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données, thèmes de paquets (Mégalopoles…) : le bouton « Ajouter » est énorme à côté du texte ; page à condenser et à homogénéiser",
+    "en": "Données, pack themes: the “Add” button is huge next to the text; page to condense and make consistent",
+    "de": "Daten, Paket-Themen: der Knopf „Hinzufügen“ ist riesig neben dem Text; Seite verdichten und vereinheitlichen",
+    "es": "Datos, temas de paquetes: el botón «Añadir» es enorme junto al texto; página por condensar y homogeneizar"
+   },
+   "test": "Maintenance › Données › Paquets de pays › onglet « Thèmes » : ouvrir « Îles » → « Tout le thème » et ses pays sont des lignes à case, entièrement visibles, serrées à la souris ; plus de bouton « Ajouter ».",
+   "since": "2026-11-10",
+   "state": "todo"
+  },
+  {
    "id": "SOG-0166",
    "app": "maintenance",
    "title": {
@@ -677,7 +692,7 @@
     "de": "Der Benutzer testet unwissentlich eine alte Kopie: die neue Version greift auf einem Rechner mit Launcher von selbst, und die ausgelieferte Version ist lesbar",
     "es": "El usuario prueba una copia antigua sin saberlo: la nueva versión se aplica sola en un puesto con lanzador, y la versión servida es legible"
    },
-   "test": "Faire une fois Ctrl+Maj+R sur la page et relancer le lanceur. Ensuite, après un correctif annoncé, un seul rechargement suffit, sans « Nouvelle version disponible ». Si la page est plus ancienne que le lanceur, un cartouche rouge « Version ancienne · Recharger » apparaît dans l'en-tête ; le toucher recharge.",
+   "test": "Relancer le lanceur et faire une fois Ctrl+Maj+R. Ensuite un seul rechargement suffit après un correctif, sans « Nouvelle version disponible », et la page se charge aussi vite qu'avant. Si la page est plus ancienne que le lanceur, un cartouche rouge « Version ancienne · Recharger » apparaît dans l'en-tête.",
    "since": "2026-11-10",
    "state": "todo"
   },
@@ -692,7 +707,8 @@
    },
    "test": "Carte en IFR, même zoom, feuille du profil repliée puis ouverte : les mêmes espaces restent affichés. Dézoomer : FIR, TMA, CTA et CTR restent visibles sur toute la vue ; une note dit « Espaces R, D, P… hors du couloir masqués » ; décocher « Autour du vol seulement » → ils apparaissent.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "ok",
+   "at": "2026-11-10T09:25:07Z"
   },
   {
    "id": "SOG-0170",

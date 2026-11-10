@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "e7ccc1d",
+  "organisation": "a42fea0",
   "fiches": 170,
   "untranslated": 1,
   "priorities": 152
@@ -2011,7 +2011,7 @@
     {
      "id": "SOG-0165",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Données, thèmes de paquets (Mégalopoles…) : le bouton « Ajouter » est énorme à côté du texte ; page à condenser et à homogénéiser",
      "en": "Données, pack themes: the “Add” button is huge next to the text; page to condense and make consistent",
      "de": "Daten, Paket-Themen: der Knopf „Hinzufügen“ ist riesig neben dem Text; Seite verdichten und vereinheitlichen",
