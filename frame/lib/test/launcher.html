@@ -361,6 +361,172 @@
     const M3 = S.c.forModule(DECL);
     ck('read : chemin encodé dans l\'adresse (espaces)', (await M3.read('sia/a b.json')).status === 404 && S.f.calls.at(-1).route
       .endsWith('/data/sia/a%20b.json'), S.f.calls.at(-1).route);
+
+    // ---------------------------------------------------------------- upload : un fichier envoyé avec avancement et annulation (SOG-0199)
+    {
+      const UP = {
+        routes: ['base/upload', 'echo']
+      };
+      /** XMLHttpRequest simulé : journal de l'envoi, avancement par morceaux, réponse choisie par le test. */
+      const fakeXhr = (o = {}) => {
+        const log = [];
+        const make = () => {
+          const x = {
+            headers: {},
+            upload: {},
+            open(m, u) {
+              x.method = m;
+              x.url = u;
+            },
+            setRequestHeader(k, v) {
+              x.headers[k] = v;
+            },
+            abort() {
+              x.aborted = true;
+              setTimeout(() => x.onabort?.());
+            },
+            send(body) {
+              x.body = body;
+              log.push(x);
+              if (o.hang) return;
+              setTimeout(() => {
+                if (o.offline) return x.onerror?.();
+                for (const f of [.25, .5, 1]) x.upload.onprogress?.({
+                  loaded: Math.round(body.size * f),
+                  total: body.size,
+                  lengthComputable: true
+                });
+                x.status = o.status || 200;
+                x.responseText = o.text ?? JSON.stringify({
+                  ok: true,
+                  received: body.size
+                });
+                x.onload?.();
+              });
+            }
+          };
+          return x;
+        };
+        return {
+          log,
+          make
+        };
+      };
+      const up = (o = {}) => {
+        const xr = fakeXhr(o);
+        let lost = 0;
+        const f = fake();
+        return {
+          xr,
+          f,
+          lost: () => lost,
+          M: launcherClient({
+            root: ROOT,
+            info: {
+              host: 'pc',
+              data: true,
+              dataGit: true,
+              lan: false
+            },
+            fetch: f.fetch,
+            xhr: xr.make,
+            onLost: () => lost++,
+            poll: 5
+          }).forModule(UP)
+        };
+      };
+      const file = new Blob([new Uint8Array(4000)]);
+      let U = up();
+      const seen = [];
+      const r = await U.M.upload('base/upload', file, {
+        name: 'LFPO é.pdf',
+        onProgress: (l, t) => seen.push([l, t])
+      });
+      const x0 = U.xr.log[0];
+      ck('upload : POST sur la route déclarée, octets du fichier en corps, en-tête X-SOG-Setup, Content-Type octets', x0.method ===
+        'POST' && x0.url ===
+        `${ROOT}__setup/base/upload` && x0.body === file && x0.headers['X-SOG-Setup'] === '1' && x0.headers['Content-Type'] ===
+        'application/octet-stream', JSON.stringify([x0.method, x0.url, x0.headers]));
+      ck('upload : X-SOG-Name = indice du nom, encodé', x0.headers['X-SOG-Name'] === encodeURIComponent('LFPO é.pdf'), x0.headers[
+        'X-SOG-Name']);
+      ck('upload : avancement (chargé, total) pendant l\'envoi', JSON.stringify(seen) === '[[1000,4000],[2000,4000],[4000,4000]]', JSON
+        .stringify(seen));
+      ck('upload : réponse { ok: true, status, body } (le JSON du lanceur)', r.ok === true && r.status === 200 && r.body.received === 4000,
+        JSON.stringify(r));
+      const n1 = U.xr.log.length;
+      const rf = await U.M.upload('secrets', file);
+      ck('upload : route non déclarée refusée (403), sans envoi', rf.ok === false && rf.status === 403 && rf.refused === true && U.xr.log
+        .length === n1, JSON
+        .stringify(rf));
+      ck('upload : « .. » et route hors liste refusées, sans envoi', (await U.M.upload('base/../secrets', file)).refused === true && (
+        await U.M.upload(
+          'base/uploadx', file)).refused === true && U.xr.log.length === n1);
+      ck('upload : ce n\'est pas un fichier → refus, sans envoi', (await U.M.upload('base/upload', 'texte')).ok === false && U.xr.log
+        .length === n1);
+      ck('upload : sans nom, pas d\'en-tête X-SOG-Name', await (async () => {
+        const V = up();
+        await V.M.upload('base/upload', file);
+        return !('X-SOG-Name' in V.xr.log[0].headers);
+      })());
+      ck('upload : nom : contrôles retirés, 200 caractères au plus', await (async () => {
+        const V = up();
+        await V.M.upload('base/upload', file, {
+          name: `a\u0000b\n${'x'.repeat(500)}`
+        });
+        const h = decodeURIComponent(V.xr.log[0].headers['X-SOG-Name']);
+        return h.length === 200 && !/[\u0000-\u001f]/.test(h);
+      })());
+      // refus du lanceur : même forme que call
+      U = up({
+        status: 429,
+        text: JSON.stringify({
+          message: 'too soon',
+          reason: 'too-soon',
+          wait: 9,
+          secret: 'never'
+        })
+      });
+      const rr = await U.M.upload('base/upload', file);
+      ck('upload : refus du lanceur → { ok: false, status, route, message, reason, wait }, rien d\'autre', rr.ok === false && rr.status ===
+        429 && rr.reason ===
+        'too-soon' && rr.wait === 9 && !('secret' in rr), JSON.stringify(rr));
+      ck('upload : 404 → « unknown route » (lanceur plus ancien)', (await up({
+        status: 404,
+        text: '{}'
+      }).M.upload('base/upload', file)).message === 'unknown route');
+      // réseau coupé
+      U = up({
+        offline: true
+      });
+      const ro = await U.M.upload('base/upload', file);
+      ck('upload : réseau coupé → { ok: false, offline: true }, le cadre prévenu (onLost)', ro.ok === false && ro.offline === true && U
+        .lost() === 1, JSON.stringify(ro));
+      // annulation
+      U = up({
+        hang: true
+      });
+      const ac = new AbortController();
+      const pending = U.M.upload('base/upload', file, {
+        signal: ac.signal
+      });
+      await new Promise(r => setTimeout(r, 5));
+      ac.abort();
+      const ra = await pending;
+      ck('upload : annulation par signal → { ok: false, aborted: true }, envoi interrompu', ra.ok === false && ra.aborted === true && U.xr
+        .log[0].aborted === true, JSON
+        .stringify(ra));
+      const ac2 = new AbortController();
+      ac2.abort();
+      const n2 = (U = up()).xr.log.length;
+      ck('upload : signal déjà arrêté → aborted, sans envoi', (await U.M.upload('base/upload', file, {
+        signal: ac2.signal
+      })).aborted === true && U.xr.log.length === n2);
+      ck('upload : écouteur d\'avancement en échec → l\'envoi se termine', (await up().M.upload('base/upload', file, {
+        onProgress: () => {
+          throw new Error('x');
+        }
+      })).ok === true);
+    }
   } catch (e) {
     ck('exception', false, e.stack || e.message);
   }

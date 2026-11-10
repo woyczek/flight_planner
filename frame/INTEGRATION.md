@@ -1101,6 +1101,7 @@ launcher: { routes: ['regen/', 'vfr-import'], read: ['sia/', 'proc/', 'local/'] 
 | `job(route, body, { onProgress, signal })` | starts a long job and follows it to its end: `{ ok, state, result, … }` |
 | `resume(route, { onProgress, signal })` | follows the job running on that route (a reloaded page), or gives the last one's end; null without a job |
 | `read(path, { signal, onBytes })` | `{ ok, stream (ReadableStream), size }` of `data/<path>`, same origin; `onBytes(n)` as it reads |
+| `upload(route, file, { name, onProgress(loaded, total), signal })` | sends a `Blob` / `File` (up to several GB: it leaves the disk, not the memory) as the body of a POST (`application/octet-stream`, header `X-SOG-Setup`) to a **declared** route, with progress and cancel (XMLHttpRequest: `fetch` has no upload progress). `name`: a hint of the file name (`X-SOG-Name`, URL-encoded, controls removed, 200 characters). Gives `{ ok: true, status, body }` (the launcher's JSON), a refusal in the shape of a call's (`{ ok: false, status, route, message, reason?, wait? }`; 403 and no sending for an undeclared route), `{ ok: false, offline: true }` (network cut: the frame marks the launcher as gone), `{ ok: false, aborted: true }` (signal). Never throws (SOG-0199) |
 
 **A refusal has one shape**: `{ ok: false, status, route, message, reason?, wait? }`. `status` is the launcher's HTTP status
 (403 for a route or a path not declared, then also `refused: true`, without any call); `reason` (a short code, 40

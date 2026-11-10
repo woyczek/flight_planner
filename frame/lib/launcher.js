@@ -6,6 +6,7 @@
 //   · forModule(decl, { life }) → { info(), call, job, resume, read } : routes et préfixes de lecture déclarés seulement,
 //     tout le reste refusé sans appel ({ ok: false, status: 403, refused: true, route }) ; life (AbortSignal) : le
 //     démontage du module arrête les suivis de travaux en cours (le travail, lui, continue sur le lanceur : resume) ;
+//   · upload(route, fichier, { name, onProgress, signal }) : envoi d'un fichier (octets en corps) avec avancement et annulation (SOG-0199) ;
 //   · protocole des travaux longs, fixe : POST <route> corps → { job: id } ; GET <route>?id=… → { id, state ('running' |
 //     'done' | 'error' | 'cancelled'), step, done, total, unit, log, result } ; POST <route>/cancel { id } ; GET <route>
 //     sans id → le travail en cours ou le dernier ({ job: null } sans travail). Déclarer la route d'un travail (« regen/job »)
@@ -42,6 +43,8 @@ export function launcherClient({
   root,
   info = null,
   fetch: get = (...a) => fetch(...a),
+  xhr: newXhr = () => new XMLHttpRequest(),
+  onLost = () => {}, // un envoi qui échoue par le réseau (le lanceur ne répond plus) : le cadre le marque (SOG-0208)
   poll = 1000
 }) {
   async function request(route, {
@@ -250,6 +253,106 @@ export function launcherClient({
         size: +res.headers.get('Content-Length') || null
       };
     }
+    /** Envoie un fichier (Blob ou File, jusqu'à plusieurs Go : il part du disque, pas de la mémoire) à une route déclarée du lanceur, le corps étant ses octets
+     *  (POST, application/octet-stream) ; `name` : un indice du nom (en-tête X-SOG-Name, encodé, 200 caractères) ; onProgress(loaded, total) pendant l'envoi
+     *  (XMLHttpRequest : fetch n'a pas d'avancement d'envoi) ; signal : annule. Mêmes refus que call (route non déclarée : 403 sans appel) ; même forme de réponse
+     *  — le JSON du lanceur (`{ ok: true, status, body }`), un refus `{ ok: false, status, route, message, reason? }`, `{ ok: false, offline: true }` si le réseau est
+     *  coupé, `{ ok: false, aborted: true }` si le signal l'a arrêté. Jamais d'exception. */
+    function upload(route, file, {
+      name = '',
+      onProgress,
+      signal
+    } = {}) {
+      const r = routeOf(route);
+      if (!r || !allowed(r, routes)) return Promise.resolve(refuse(route));
+      if (typeof Blob === 'undefined' || !(file instanceof Blob)) return Promise.resolve({
+        ok: false,
+        route: r,
+        message: 'not a file'
+      });
+      if (signal?.aborted) return Promise.resolve({
+        ok: false,
+        aborted: true,
+        route: r
+      });
+      return new Promise(done => {
+        const x = newXhr();
+        let over = false;
+        const end = v => {
+          if (over) return;
+          over = true;
+          signal?.removeEventListener('abort', stop);
+          done(v);
+        };
+        const stop = () => {
+          try {
+            x.abort();
+          } catch {
+            /* déjà fini */
+          }
+          end({
+            ok: false,
+            aborted: true,
+            route: r
+          });
+        };
+        signal?.addEventListener('abort', stop, {
+          once: true
+        });
+        x.open('POST', new URL(`__setup/${r}`, root).href);
+        x.setRequestHeader('X-SOG-Setup', '1');
+        x.setRequestHeader('Content-Type', 'application/octet-stream');
+        const hint = encodeURIComponent(String(name || '').replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 200));
+        if (hint) x.setRequestHeader('X-SOG-Name', hint);
+        x.responseType = 'text';
+        if (x.upload) x.upload.onprogress = e => {
+          try {
+            onProgress?.(e.loaded, e.lengthComputable ? e.total : file.size);
+          } catch {
+            /* écouteur du module en échec : l'envoi continue */
+          }
+        };
+        x.onerror = x.ontimeout = () => {
+          onLost();
+          end({
+            ok: false,
+            offline: true,
+            route: r
+          });
+        };
+        x.onabort = () => end({
+          ok: false,
+          aborted: true,
+          route: r
+        });
+        x.onload = () => {
+          let body = {};
+          try {
+            body = JSON.parse(x.responseText || '{}');
+          } catch {
+            /* réponse qui n'est pas du JSON */
+          }
+          if (x.status >= 400) return end({
+            ok: false,
+            status: x.status,
+            route: r,
+            message: x.status === 404 ? 'unknown route' : String(body?.message || body?.error || `HTTP ${x.status}`),
+            ...(typeof body?.reason === 'string' ? {
+              reason: body.reason.slice(0, 40)
+            } : {}),
+            ...(Number.isFinite(body?.wait) ? {
+              wait: body.wait
+            } : {})
+          });
+          end({
+            ok: true,
+            status: x.status,
+            body: body && typeof body === 'object' ? body : {}
+          });
+        };
+        x.send(file);
+      });
+    }
     return Object.freeze({
       info: () => info ? {
         ...info
@@ -257,7 +360,8 @@ export function launcherClient({
       call,
       job,
       resume,
-      read
+      read,
+      upload
     });
   }
 

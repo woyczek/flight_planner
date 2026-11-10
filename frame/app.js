@@ -1156,7 +1156,8 @@
       lcClient = LC.launcherClient({
         root: ROOT,
         info: launcherHere,
-        fetch: launcherFetch
+        fetch: launcherFetch,
+        onLost: () => setLauncherDown(true)
       });
     }
     return lcClient;
