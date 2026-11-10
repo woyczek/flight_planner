@@ -5272,3 +5272,27 @@ def d_second(c):
     t = c.js("(d) => { const t0 = performance.now(); window.dispatchEvent(new CustomEvent('fuel-route-alts', { detail: d })); return new Promise(r => { const f = () => (window.__mp.S.altHits || []).length === 3 ? r(Math.round(performance.now() - t0)) : requestAnimationFrame(f); f() }) }", b)
     c.le(t, 1000, 'the second computation is on the map within a second of its event (measured %d ms)' % t, what='delay in ms')
     c.eq(c.js("() => window.__mp.S.altShow"), None, 'the route shown of the first computation is released', what='altShow')
+
+
+@case('D165', 'Ground names: a taxiway has one name (the ways OpenStreetMap cuts it into do not each repeat it), the aprons (U, V, G, M…) are named from the names’ zoom, before the stands, the alternate’s ground is read too', 'D',
+      tags=('maps',), designs=('standard',), night=False, phone=False,
+      rule='SOG-0195 + SOG-0135 (capture 150548: at LFPO « L3 » four times and « L4 » three times in the same place): names of the same taxiway are merged into one on its longest visible stretch; the aprons of AeroDB (kind apron: name, outline, centre) are named at zoom 15, before the stands (16): the controller says « taxi W47, LN, to stand M02 »; the departure, the arrival and the alternate are ground aerodromes')
+def d_names(c):
+    _ground_open(c)
+    c.js("""async () => { const S = window.__mp.S, fx = await S.ctx.aerodb.ground('LFPO'), cnt = {}; for (const it of fx.items) if (it.kind === 'twy' && it.name) cnt[it.name] = (cnt[it.name] || 0) + 1;
+      window.__multi = Object.entries(cnt).filter(([, n]) => n > 1).sort((a, b) => b[1] - a[1]).map(([k]) => k).slice(0, 6);
+      const items = fx.items.concat([{ id: 'ap-U', kind: 'apron', name: 'U', point: [2.3794, 48.7233], line: [[2.376, 48.7225], [2.383, 48.7225], [2.383, 48.7245], [2.376, 48.7245]] },
+                                     { id: 'ap-V', kind: 'apron', name: 'V', point: [2.3858, 48.7263], line: [[2.383, 48.7255], [2.389, 48.7255], [2.389, 48.7272]] }]);
+      S.ctx.aerodb.ground = async icao => icao === 'LFPO' ? { ...fx, items } : null; S.ground = null; window.__tx = [];
+      const f = CanvasRenderingContext2D.prototype.fillText; CanvasRenderingContext2D.prototype.fillText = function (t) { window.__tx.push(String(t)); return f.apply(this, arguments) }; return true }""")
+    _ground_at(c, 15, 1800)
+    c.js("() => { window.__tx = []; window.__mp.S.map.panBy([4, 4], { duration: 0 }); return true }")
+    c.wait(1500)
+    tx = c.js("() => window.__tx")
+    multi = c.js("() => window.__multi")
+    c.ok(len(multi) > 0, str(multi), 'the fixture has taxiways cut into several ways')
+    draws = max(1, tx.count('U'))
+    per = {m: tx.count(m) for m in multi}
+    c.ok(all(v <= draws for v in per.values()), f'{per} for {draws} drawing(s)', 'a taxiway’s name is written once per drawing, not once per way')
+    c.ok(tx.count('U') >= 1 and tx.count('V') >= 1, f'U x{tx.count("U")}, V x{tx.count("V")}', 'the aprons are named at zoom 15, before the stands')
+    c.eq(c.js("async () => (await import('/modules/maps/ground.js')).groundIcaos().includes('LFMT')"), True, 'the alternate (LFMT) is a ground aerodrome', what='icaos')

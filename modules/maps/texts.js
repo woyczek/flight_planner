@@ -446,6 +446,7 @@ export const TX = {
   ],
   gKinds: {
     twy: ['Voies', 'Taxiways', 'Rollwege', 'Calles'],
+    apron: ['Aires', 'Aprons', 'Vorfelder', 'Plataformas'],
     park: ['Postes', 'Stands', 'Standplätze', 'Puestos'],
     hold: ['Attentes', 'Holds', 'Wartepunkte', 'Esperas']
   },

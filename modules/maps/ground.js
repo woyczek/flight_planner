@@ -40,7 +40,7 @@ export const Z_LINE = 13, // un cran plus tôt qu'avant (SOG-0195 : « les taxiw
   ATTRIBUTION = '© OpenStreetMap contributors, ODbL';
 // zoom de la Carte (MapLibre, celui des autres seuils : COVER_ZOOM, runwayZoom) ; la tolérance absorbe l'arrondi de la vue (14 posé → 13,9999)
 const at = (z, min) => z >= min - .02;
-const KINDS = ['twy', 'park', 'hold'],
+const KINDS = ['twy', 'apron', 'park', 'hold'],
   CAPS = {
     items: 4000,
     points: 600
@@ -52,6 +52,7 @@ const G = () => S.ground ||= {
   q: '', // filtre du panneau
   kinds: {
     twy: true,
+    apron: true,
     park: true,
     hold: true
   },
@@ -78,7 +79,17 @@ export function sanitize(raw) {
       name = String(it.name ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 24);
     if (!id || seen.has(id)) continue;
     let o;
-    if (Array.isArray(it.line)) {
+    if (it.kind === 'apron') { // une aire de trafic : son contour et son centre (où se pose son nom), jamais remplie
+      const line = Array.isArray(it.line) ? it.line.slice(0, CAPS.points).map(ll).filter(Boolean) : [],
+        p = ll(it.point);
+      if (!p || (line.length && line.length < 3)) continue;
+      o = {
+        point: p,
+        ...(line.length ? {
+          line
+        } : {})
+      };
+    } else if (Array.isArray(it.line)) {
       const line = it.line.slice(0, CAPS.points).map(ll).filter(Boolean);
       if (line.length < 2) continue;
       o = {
@@ -94,6 +105,9 @@ export function sanitize(raw) {
     seen.add(id);
     const pts = o.line || [o.point];
     items.push({
+      ...(it.gate === true ? {
+        gate: true // une porte (et non un poste de stationnement)
+      } : {}),
       id,
       kind: it.kind,
       name,
@@ -115,7 +129,8 @@ export function groundIcaos() {
   if (onMission() || !S.ctx?.aerodb || typeof S.ctx.aerodb.ground !== 'function') return [];
   const r = S.route?.flight?.route,
     pts = S.route?.points || [],
-    ids = [r?.dep || pts[0]?.id, r?.arr || pts.at(-1)?.id].map(x => String(x || '').toUpperCase()).filter(x => /^[A-Z0-9]{4}$/.test(x));
+    ids = [r?.dep || pts[0]?.id, r?.arr || pts.at(-1)?.id, S.route?.altn?.id || r?.altn].map(x => String(x || '').toUpperCase()).filter(x =>
+      /^[A-Z0-9]{4}$/.test(x));
   return [...new Set(ids)];
 }
 
@@ -262,7 +277,7 @@ export function groundLayout(toC, zReal, W, H) {
         it,
         pts
       });
-    } else if (at(zReal, Z_PARK)) {
+    } else if (it.kind === 'apron' ? at(zReal, Z_NAME) : at(zReal, Z_PARK)) { // les aires (leur nom) dès le zoom des noms, avant les postes
       const p = toC(it.point[1], it.point[0]);
       if (p.x > -10 && p.x < W + 10 && p.y > -10 && p.y < H + 10) shown.push({
         it,
@@ -280,7 +295,7 @@ export function groundLayout(toC, zReal, W, H) {
       for (const s of shown)
         if (s.it.kind === 'twy' && grpOf(s.it) !== hl) stroke(c, s.pts, 2, col);
       for (const s of shown)
-        if (s.it.kind !== 'twy') {
+        if (s.it.kind !== 'twy' && s.it.kind !== 'apron') {
           const p = s.pts[0];
           c.fillStyle = s.it.kind === 'hold' ? '#d6173f' : S.theme.accent;
           c.globalAlpha = grpOf(s.it) === hl ? 1 : .85;
@@ -292,44 +307,75 @@ export function groundLayout(toC, zReal, W, H) {
         stroke(c, h.pts, 6, halo);
         stroke(c, h.pts, 3.5, S.theme.accent);
       }
-      // les noms : une demande par élément (rang « ground » de la passe de collision), trois places le long d'une voie
+      // les noms (rang « ground » de la passe de collision) : une voie n'a qu'UN nom — OpenStreetMap la découpe en tronçons de même nom (« L3 » quatre fois au même endroit) : le groupe demande une
+      // fois, sur le tronçon visible le plus long (trois places le long de lui) ; les aires de trafic (U, V, G, M…) sont demandées avant les postes, à leur centre
       c.font = '10.5px system-ui, sans-serif';
       c.textBaseline = 'middle';
-      const drawn = new Map();
-      if (pl && at(zReal, Z_NAME))
-        for (const s of shown) {
-          const it = s.it;
-          if (!it.name || (it.kind !== 'twy' && !at(zReal, Z_PARK))) continue;
-          const w = c.measureText(it.name).width + 4,
-            spots = it.kind === 'twy' ? [.5, .25, .75].map(f => {
-              const i = Math.min(s.pts.length - 1, Math.floor((s.pts.length - 1) * f));
-              return s.pts[i];
-            }) : [{
-              x: s.pts[0].x + 4 + w / 2,
-              y: s.pts[0].y
-            }],
-            boxes = spots.map(p => ({
+      const drawn = new Map(),
+        put = (key, ids, spots, w) => {
+          const got = MapsRender.kit.ask(pl, {
+            layer: 'points',
+            rank: 'ground',
+            key,
+            anchor: spots[0],
+            boxes: spots.map(p => ({
               x0: p.x - w / 2,
               y0: p.y - 7,
               x1: p.x + w / 2,
               y1: p.y + 7
-            })),
-            got = MapsRender.kit.ask(pl, {
-              layer: 'points',
-              rank: 'ground',
-              key: `gnd:${it.id}`,
-              anchor: spots[0],
-              boxes
-            });
-          drawn.set(it.id, !!got);
-          if (got) {
-            c.lineWidth = 3;
-            c.strokeStyle = halo;
-            c.strokeText(it.name, (got.x0 + got.x1) / 2 - w / 2 + 2, (got.y0 + got.y1) / 2);
-            c.fillStyle = dark ? '#eee' : '#222';
-            c.fillText(it.name, (got.x0 + got.x1) / 2 - w / 2 + 2, (got.y0 + got.y1) / 2);
-          }
+            }))
+          });
+          for (const id of ids) drawn.set(id, !!got);
+          return got;
+        },
+        write = (got, name, w) => {
+          c.lineWidth = 3;
+          c.strokeStyle = halo;
+          c.strokeText(name, (got.x0 + got.x1) / 2 - w / 2 + 2, (got.y0 + got.y1) / 2);
+          c.fillStyle = dark ? '#eee' : '#222';
+          c.fillText(name, (got.x0 + got.x1) / 2 - w / 2 + 2, (got.y0 + got.y1) / 2);
+        },
+        len = pts => pts.slice(1).reduce((a, p, k) => a + Math.hypot(p.x - pts[k].x, p.y - pts[k].y), 0);
+      if (pl && at(zReal, Z_NAME)) {
+        // 1. les aires de trafic, à leur centre
+        c.font = 'bold 11.5px system-ui, sans-serif';
+        for (const s of shown) {
+          const it = s.it;
+          if (it.kind !== 'apron' || !it.name) continue;
+          const w = c.measureText(it.name).width + 4,
+            got = put(`gnd:${it.id}`, [it.id], [s.pts[0]], w);
+          if (got) write(got, it.name, w);
         }
+        c.font = '10.5px system-ui, sans-serif';
+        // 2. les voies : un nom par groupe (nature + nom), sur son tronçon visible le plus long
+        const byName = new Map();
+        for (const s of shown)
+          if (s.it.kind === 'twy' && s.it.name) {
+            const k = grpOf(s.it);
+            if (!byName.has(k)) byName.set(k, []);
+            byName.get(k).push(s);
+          }
+        for (const list of byName.values()) {
+          const name = list[0].it.name,
+            w = c.measureText(name).width + 4,
+            best = list.slice().sort((a, b) => len(b.pts) - len(a.pts))[0],
+            at3 = [.5, .25, .75].map(f => best.pts[Math.min(best.pts.length - 1, Math.floor((best.pts.length - 1) * f))]),
+            got = put(`gnd:${grpOf(list[0].it)}`, list.map(s => s.it.id), at3, w);
+          if (got) write(got, name, w);
+        }
+        // 3. les postes et les attentes, au zoom des postes
+        if (at(zReal, Z_PARK))
+          for (const s of shown) {
+            const it = s.it;
+            if (!it.name || it.kind === 'twy' || it.kind === 'apron') continue;
+            const w = c.measureText(it.name).width + 4,
+              got = put(`gnd:${it.id}`, [it.id], [{
+                x: s.pts[0].x + 4 + w / 2,
+                y: s.pts[0].y
+              }], w);
+            if (got) write(got, it.name, w);
+          }
+      }
       // le poste ou l'attente surlignés, par-dessus (un anneau d'accent) ; la voie l'a été sous ses noms
       for (const h of shown.filter(s => s.it.kind !== 'twy' && grpOf(s.it) === hl)) {
         c.beginPath();

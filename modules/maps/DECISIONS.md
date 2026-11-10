@@ -2299,6 +2299,16 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done**: the light drawing paints every airway in the low colour (high ones too); a zoom that crosses a threshold *during* a gesture shows the new state only at rest.
 - **Noreg** D141 (zoom 8: the airways are in the light drawing and stroked while moving; zoom 3: none, no stroke; red before: 3 airways at zoom 3).
 
+## Ground names: one per taxiway, the aprons named, the alternate read (10 Nov 2026, SOG-0195 + SOG-0135, capture 150548)
+- **The user**: at LFPO « L3 » four times and « L4 » three times in the same place; a name per main taxiway along its trace as soon as it shows; the names of the aprons (U, V, G, M…) before the stands (« roulez
+  W47, LN pour parking M02 ») ; « no entry » earlier; the alternate's ground read too. **AeroDB** (fa112082c, K157): `proc/ground/<ICAO>.json` carries `twy` (ref then OSM name; no importance rank),
+  `park` (`gate: true` for a gate), NEW `apron` (name, outline `line`, centre `point`), `hold`; files already read have no apron: « Try again » re-reads.
+- **Done**: (1) the ways OpenStreetMap cuts a taxiway into share one name: one request per group (kind + name) on its longest visible stretch (three places along it), not one per way — the repeated « L3 »;
+  (2) `apron` is a kind (sanitised with its outline and centre, chip « Aprons ») named at its centre from the names' zoom (15), **before** the stands (16); a `gate` is kept on the item; (3) the alternate
+  of the flight is a ground aerodrome (`groundIcaos`), read by the Map itself like the others (SOG-0203).
+- **Not done**: « no entry » earlier — I do not know what it names (a hold sign? an item name?): to say; the aprons' outline is not drawn (« jamais d'aprons remplis »), the name only.
+- **Noreg** D165 (red before: `LF` six times in one drawing; the aprons U and V named at 15; the alternate in `groundIcaos`).
+
 ## A tap on a proposed route shows it, it does not take it (10 Nov 2026, SOG-0134 refused: clicking a route on the Map beside Fuel chose it and made Fuel's list vanish)
 - **Ergonomics' ruling**: a click on a route on the map SHOWS it (highlighted) without choosing it and without making Fuel's list disappear; the choice is Fuel's own button « Choose » (Features SOG).
 - **Done**: a tap (`altsTap`) pins the route as shown (`S.altShow`: drawn thick, full strength; a second tap releases it) and tells Fuel with a NEW window event `maps-route-alt-show`

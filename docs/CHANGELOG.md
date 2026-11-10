@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: ground names — one per taxiway, the aprons named, the alternate read** (`modules/maps/ground.js`, `texts.js`; DECISIONS; noreg D165; SOG-0195, SOG-0135). The ways a taxiway is cut into no longer repeat its
+  name; the aprons (U, V, G, M…) from AeroDB are named at zoom 15, before the stands; the alternate's ground is asked as the departure's and the arrival's.
+
 - **Fuel: a proposed route is shown by a tap, taken by « Choisir »; the list stays** (Fuel SPEC, INTEGRATION § 3 bis, DECISIONS, help;
   noreg F135, F114 adapted; SOG-0134). The Map's tap shows too (`maps-route-alt-show`, BUGS SOG).
 - **Missions: change a mission's airline** (`modules/missions/move.js`; Missions SPEC § 3 ter, DECISIONS, help; noreg N22; SOG-0223). On its
