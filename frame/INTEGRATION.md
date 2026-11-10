@@ -1245,6 +1245,30 @@ in the launcher; `resume` finds it again.
   simulator's position, the local network's access): no piece of the frame calls the launcher with `fetch` any more,
   except the network relay (`/__setup/net`, whose answer is the relayed site's, not JSON).
 
+**A gesture that needs the launcher is never mute** (SOG-0208, 10 Nov 2026: « le bouton Calculer A → B n'a aucun effet ? … pas de lanceur »).
+A button that goes through the launcher must not test `ctx.launcher` and silently return. Three things in `ctx`:
+
+- `ctx.launcherState()`: `'up'` (a launcher serves the page), `'down'` (it answered, it does not any more: stopped,
+  restarted), `'none'` (none serves this page: a site, a file opened by hand, a launcher started after the page) or `'lan'`
+  (a paired device: its routes are refused). The window event `frame-launcher` (`detail.state`) says it when it changes
+  (`down`, then `up` again; `none` → `up` when `Retry` finds one). The frame learns it from what it already does: a call of
+  the launcher client that fails by the network, the data transport's last error; a launcher that is gone is looked for every
+  8 s, and a call that answers finds it again.
+- `ctx.needLauncher({ retry })`, **synchronous**: gives the module's `ctx.launcher` when it can be used (state `up`, `meta.launcher`
+  declared); otherwise **null, after one notification, the same for every module**, in the four languages, that says why:
+  « the launcher of the workstation does not answer: start it again, then retry » (`down`), « no launcher serves this page: open
+  the suite through your computer's launcher » (`none`), « this function is offered only on the computer that runs the
+  launcher » (`lan`, no button). `none` and `down` carry a **Retry** button: it looks for the launcher again; found, it says so and
+  calls your `retry()` (the gesture again); not found, it says why again, with its button. A missing declaration is
+  logged and said as a developer's message (`undeclared`).
+- Use it as the first line of the handler: `const L = ctx.needLauncher({ retry: compute }); if (!L) return;`, then `L.call(…)` or
+  `L.job(…)`. A call that fails with `{ offline: true }` after that is the launcher gone in the middle: the state is already `down` (header,
+  status block) and the next press says why.
+
+What the user sees when it has gone: the sync button reads « Launcher not answering » (not « Offline »), and the Status block
+has a line « The workstation's launcher is not answering any more » (a tap retries). Features SOG applies it to « Calculer A → B » and
+« Contrôler ».
+
 ### 15.2 `ctx.publish` — generated files to the data repository, without a launcher
 
 For outputs too big for the data layer's batch (records, 5,000 changes, a copy kept on the device): 20–60 MB, hundreds of

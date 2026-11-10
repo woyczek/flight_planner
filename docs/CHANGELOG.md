@@ -21,6 +21,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 - **Frame: `ctx.ask(…, { sections })` reviewed** (`frame/app.js`; SPEC, DECISIONS; noreg A130; SOG-0197). A null section no longer throws, texts are bounded
   (120 / 300 / 500 characters), a group that scrolls takes the keyboard focus and is named by its title.
+- **Frame: a gesture that needs the launcher is never mute** (`frame/app.js` `ctx.launcherState`, `ctx.needLauncher`, event `frame-launcher`; INTEGRATION § 15.1, SPEC, DECISIONS;
+  noreg A132, A133; SOG-0208). No launcher, a launcher that has gone, a paired device: one notification in the four languages says why (with « Retry » that looks for the
+  launcher again and replays the gesture); the sync button reads « Launcher not answering » instead of « Offline », and the Status block has a line that retries.
+- **Launcher: a forced reload no longer says « Old version · Reload »** (`tools/launch.py` `_stamped`; noreg K144; SOG-0204). Ctrl+Shift+R asks for the folder `/frame/`, served without
+  the stamps (`app.js?v=0`): the page took « 0 » for its stamp and called itself older. The folder is now served stamped like `index.html`. Restart the launcher.
 - **Frame: the relayed calls queue in the frame, a « busy » is replayed, the launcher's reason reaches the caller** (`frame/app.js` `ctx.net`;
   INTEGRATION, DECISIONS; noreg A129; SOG-0198). The launcher refuses a relay beyond two per host and four in all (SOG-0178) and no page read
   its answer: the Weather grid, which fires several Open-Meteo calls at once, got refusals and called them « offline ». The calls now wait

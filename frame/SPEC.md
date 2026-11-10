@@ -802,7 +802,7 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
   launcher that does not answer in 2 s leaves the copy. The page loaded is the one the launcher serves now, at the first load after a fix. The note « Reload »
   stays on every other device (phone, GitHub Pages), where it protects a flight in progress. The page says when it is older than the launcher:
   the launcher's status gives the stamp it puts on `frame/app.js` today (`app`), the page its own (the `?v=` of its script); different, a line
-  « This page is older than the launcher: reload » in the Status block, a tap reloads (A117); the version line gives the commit's time too (`version.time`).
+  « This page is older than the launcher: reload » in the Status block, a tap reloads (A117); the launcher serves the folder of a page (`/frame/`, the address of a forced reload) with the same stamps as `index.html` (K144, SOG-0204: before, `app.js?v=0` made the page say it was old after Ctrl+Shift+R); a launcher that stops is a line of the Status block and the sync button's label (« Launcher not answering », A131, SOG-0208: `ctx.launcherState`, `ctx.needLauncher`, INTEGRATION § 15.1); the version line gives the commit's time too (`version.time`).
   The same fact is a **cartouche in the header** beside the sync button (`#fStale`: square corners, white on the design's alert red `--sog-err`, contrast AA,
   « Old version · Reload ×4 »), shown only when the page is older than the launcher or, on a device without launcher, when the next version is ready (a
   tap reloads, or takes it); `hidden` otherwise: nothing reserved, the header keeps its height (not a banner: it would push the screen, § 7.1 rule 22; A118).

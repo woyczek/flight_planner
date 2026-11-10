@@ -401,6 +401,8 @@
       pending: ['{n} en attente', '{n} pending', '{n} ausstehend', '{n} pendiente(s)'],
       syncing: ['Synchronisation…', 'Syncing…', 'Synchronisiere…', 'Sincronizando…'],
       offline: ['Hors ligne', 'Offline', 'Offline', 'Sin conexión'],
+      // le lanceur du poste ne répond plus (le réseau n'y est pour rien) : dit comme cela, pas « hors ligne » (SOG-0208)
+      launcherLost: ['Lanceur injoignable', 'Launcher not answering', 'Starter antwortet nicht', 'Lanzador sin respuesta'],
       conflicts: ['{n} conflit(s)', '{n} conflict(s)', '{n} Konflikt(e)', '{n} conflicto(s)'],
       error: ['Erreur de synchronisation', 'Sync error', 'Sync-Fehler', 'Error de sincronización'],
       // erreurs de la couche de données, dans la langue de l'appli (le détail d'un serveur reste tel qu'il l'a dit)
@@ -518,11 +520,52 @@
     ivaoFail: ['Connexion à IVAO refusée ({e}).', 'IVAO sign-in refused ({e}).', 'IVAO-Anmeldung abgelehnt ({e}).',
       'Inicio de sesión en IVAO rechazado ({e}).'
     ],
+    // ctx.needLauncher : la raison, dite pareil dans tous les modules (SOG-0208)
+    need: {
+      none: [
+        'Cette fonction passe par le lanceur du poste, et aucun lanceur ne sert cette page : ouvrez la suite par le lanceur de votre ordinateur.',
+        'This function goes through the workstation’s launcher, and no launcher serves this page: open the suite through your computer’s launcher.',
+        'Diese Funktion läuft über den Starter des Arbeitsplatzes, und diese Seite wird von keinem Starter ausgeliefert: Öffnen Sie die Suite über den Starter Ihres Rechners.',
+        'Esta función pasa por el lanzador del puesto y ningún lanzador sirve esta página: abra la suite desde el lanzador de su ordenador.'
+      ],
+      down: ['Le lanceur du poste ne répond pas : relancez-le, puis réessayez.',
+        'The workstation’s launcher is not answering: start it again, then retry.',
+        'Der Starter des Arbeitsplatzes antwortet nicht: Starten Sie ihn neu und versuchen Sie es erneut.',
+        'El lanzador del puesto no responde: vuelva a iniciarlo y reintente.'
+      ],
+      lan: ['Cette fonction n’est offerte que sur l’ordinateur qui porte le lanceur, pas sur un appareil appairé.',
+        'This function is offered only on the computer that runs the launcher, not on a paired device.',
+        'Diese Funktion gibt es nur auf dem Rechner, auf dem der Starter läuft, nicht auf einem gekoppelten Gerät.',
+        'Esta función solo se ofrece en el ordenador que ejecuta el lanzador, no en un dispositivo emparejado.'
+      ],
+      undeclared: ['Ce module n’a pas déclaré les routes du lanceur dont il a besoin (meta.launcher).',
+        'This module has not declared the launcher routes it needs (meta.launcher).',
+        'Dieses Modul hat die benötigten Starter-Routen nicht deklariert (meta.launcher).',
+        'Este módulo no ha declarado las rutas del lanzador que necesita (meta.launcher).'
+      ],
+      retry: ['Réessayer', 'Retry', 'Erneut versuchen', 'Reintentar'],
+      back: ['Le lanceur répond de nouveau.', 'The launcher is answering again.', 'Der Starter antwortet wieder.',
+        'El lanzador responde de nuevo.'
+      ],
+      still: ['Le lanceur ne répond toujours pas.', 'The launcher is still not answering.', 'Der Starter antwortet weiterhin nicht.',
+        'El lanzador sigue sin responder.'
+      ]
+    },
     tabsNav: ['Navigation principale', 'Main navigation', 'Hauptnavigation', 'Navegación principal'],
     // bloc d'état en tête des Réglages et pastille du ⚙ de l'en-tête (frame/SPEC.md § 3.1)
     info: {
       news: ['à voir', 'something to see', 'Hinweise vorhanden', 'algo que ver'],
       title: ['État', 'Status', 'Status', 'Estado'],
+      // le lanceur du poste vient de disparaître (SOG-0208) : ce qui en dépend s'arrête, la copie de l'appareil reste utilisable
+      launcherDown: ['Le lanceur du poste ne répond plus', 'The workstation’s launcher is not answering any more',
+        'Der Starter des Arbeitsplatzes antwortet nicht mehr', 'El lanzador del puesto ya no responde'
+      ],
+      launcherDownSub: [
+        'Les calculs et les mises à jour qui passent par lui sont arrêtés ; vos documents restent sur cet appareil. Touchez pour réessayer.',
+        'What goes through it (calculations, updates) is stopped; your documents stay on this device. Touch to try again.',
+        'Was darüber läuft (Berechnungen, Aktualisierungen), ist angehalten; Ihre Dokumente bleiben auf diesem Gerät. Zum Wiederholen tippen.',
+        'Lo que pasa por él (cálculos, actualizaciones) está detenido; sus documentos se quedan en este dispositivo. Toque para reintentar.'
+      ],
       trailShared: [
         'Votre position est partagée avec le groupe et reste dans l’historique du dépôt ; la trace de votre vol reste sur cet appareil.',
         'Your position is shared with the group and stays in the repository’s history; the track of your flight stays on this device.',
@@ -1035,6 +1078,72 @@
   let LC = null,
     lcFor = null,
     lcClient = null;
+  // ---- l'état du lanceur (SOG-0208) : 'none' (aucun ne sert la page), 'lan' (appareil appairé : ses routes y sont refusées), 'up', 'down' (il
+  // répondait, il ne répond plus : arrêté, redémarré). Ce que le cadre en sait vient de ce qu'il fait déjà : le client du lanceur (un appel qui
+  // échoue par le réseau) et le transport des données (sa dernière erreur « hors ligne »). Un lanceur 'down' est cherché de nouveau toutes les 8 s ;
+  // l'état change une fois, l'événement `frame-launcher` { state } de window le dit (modules : ctx.launcherState, ctx.needLauncher).
+  let launcherDown = false,
+    launcherWatch = 0;
+  const LAUNCHER_PROBE_MS = 8000;
+  const launcherState = () => !launcherHere ? 'none' : launcherHere.lan ? 'lan' : launcherDown ? 'down' : 'up';
+  /** Le lanceur ne répond plus (pour le libellé du bouton de synchronisation : ce n'est pas « hors ligne »). */
+  const launcherLost = () => launcherState() === 'down';
+  /** Pose l'état « le lanceur ne répond plus » (une seule fois par changement) : l'événement, le bloc d'état, le bouton. */
+  function setLauncherDown(v) {
+    if (!launcherHere || v === launcherDown) return;
+    launcherDown = v;
+    if (v) launcherWatch ||= setInterval(() => void recheckLauncher(), LAUNCHER_PROBE_MS);
+    else {
+      clearInterval(launcherWatch);
+      launcherWatch = 0;
+    }
+    window.dispatchEvent(new CustomEvent('frame-launcher', {
+      detail: {
+        state: launcherState()
+      }
+    }));
+    if (lastStatus) paintSync(lastStatus);
+    else paintStatus();
+  }
+  /** Cherche le lanceur de nouveau (« Réessayer », la veille d'un lanceur parti, un lanceur lancé après la page) : vrai s'il répond ; un lanceur
+   *  trouvé alors qu'aucun n'était connu rebranche le transport, comme au démarrage. */
+  let probing = null;
+  const recheckLauncher = () => probing ||= probeLauncher().finally(() => {
+    probing = null;
+  });
+  async function probeLauncher() {
+    const found = await FD.launcher.detect().catch(() => null);
+    if (!found) return false;
+    if (!launcherHere) {
+      launcherHere = found;
+      await loadDevice();
+      readVersion();
+      window.dispatchEvent(new CustomEvent('frame-launcher', {
+        detail: {
+          state: launcherState()
+        }
+      }));
+    }
+    // l'erreur « hors ligne » du transport s'efface avec une passe réussie : sans elle, l'état de la synchronisation, relu aussitôt, dirait de nouveau « parti »
+    if (launcherDown) {
+      await FD.sync().catch(() => {});
+      const st = await FD.status().catch(() => null);
+      if (st) lastStatus = st;
+    }
+    setLauncherDown(false);
+    return true;
+  }
+  /** fetch du client du lanceur : un appel qui échoue par le réseau (le lanceur ne répond plus) le marque ; une réponse, quelle qu'elle soit, dit qu'il est là. */
+  async function launcherFetch(...a) {
+    try {
+      const r = await fetch(...a);
+      if (launcherDown) void recheckLauncher();
+      return r;
+    } catch (e) {
+      if (e?.name !== 'AbortError') setLauncherDown(true);
+      throw e;
+    }
+  }
   /** Client du lanceur qui sert la page (refait si la détection change) ; null sans lanceur. */
   const launcherClient = () => {
     if (!LC || !launcherHere) return null;
@@ -1042,7 +1151,8 @@
       lcFor = launcherHere;
       lcClient = LC.launcherClient({
         root: ROOT,
-        info: launcherHere
+        info: launcherHere,
+        fetch: launcherFetch
       });
     }
     return lcClient;
@@ -2090,7 +2200,14 @@
       go: s.conflicts ? '#conflicts' : s.lastError === 'invalid repository address' ? 'card:access' : 'card:sync,usages',
       attn: ATTENTION.has(syncState(s)[0])
     });
-    if (s?.transport === 'launcher') items.push({
+    if (launcherState() === 'down') items.push({
+      k: 'launcher-down',
+      text: t(T.info.launcherDown),
+      sub: t(T.info.launcherDownSub),
+      attn: true,
+      go: 'retry-launcher'
+    });
+    else if (s?.transport === 'launcher') items.push({
       k: 'launcher',
       text: t(T.info.launcher, {
         h: launcherHere?.host || location.hostname,
@@ -2319,6 +2436,8 @@
     if (go === 'live') return void(gpsWatch !== null ? liveApi().disable() : liveApi().enable());
     if (go === 'update') return void reloadNewVersion();
     if (go === 'reload') return void location.reload();
+    if (go === 'retry-launcher') return void recheckLauncher().then(ok => notify(t(ok ? T.need.back : T.need.still), ok ? 'ok' :
+      'warn'));
     if (go.startsWith('card:')) {
       const card = go.slice(5).split(',').map(k => $('fView').querySelector(`[data-card="${k}"]`)).find(c => c && !c.hidden);
       card?.scrollIntoView({
@@ -2469,6 +2588,10 @@
     if (s.conflicts) return ['conflicts', t(T.sync.conflicts, {
       n: s.conflicts
     })];
+    // le lanceur du poste ne répond plus : dit comme cela, pas « hors ligne » ni « cet appareil seul » (SOG-0208)
+    if (launcherLost(s)) return ['offline', s.pending ? `${t(T.sync.launcherLost)} · ${t(T.sync.pending, {
+      n: s.pending
+    })}` : t(T.sync.launcherLost)];
     // transport local (cet appareil seul) : rien n'est jamais « à envoyer » ; une écriture en attente y est vidée aussitôt dans
     // la copie (FD.sync local) et ne demande pas l'attention, même l'instant où elle attend (SPEC § 3)
     if (s.transport === 'local') return ['local', t(T.sync.local)];
@@ -2486,6 +2609,8 @@
   /** Écrit l'état du bouton (seulement s'il change). */
   function paintSync(s) {
     lastStatus = s;
+    // le transport du lanceur n'a pas pu l'atteindre : le lanceur est parti (le réseau n'y est pour rien : c'est en local)
+    if (s.transport === 'launcher' && s.lastError === 'offline') setLauncherDown(true);
     paintStatus(); // le bloc d'état et la pastille du ⚙ : même état
     const [state, label] = syncState(s);
     // infobulle : l'état, puis les écritures en attente (chemin, module, heure ; cinq au plus) et la dernière erreur
@@ -3474,9 +3599,46 @@
 
   /** Contexte d'un module : son adaptateur de données (ses préfixes déclarés), aerodb, textes, notifications, questions,
    *  appels sortants, identité et compagnie en lecture seule, suite de l'adresse (query). */
+  /** La raison pour laquelle un geste qui passe par le lanceur ne part pas (none, down, lan, undeclared), en une notification, la même pour tous les
+   *  modules (SOG-0208) ; « Réessayer » (none, down) cherche le lanceur de nouveau : trouvé, il le dit et rappelle `retry`, sinon la raison revient,
+   *  avec son « Réessayer ». */
+  function sayLauncher(why, retry) {
+    const again = why === 'none' || why === 'down';
+    notify(t(T.need[why]), 'warn', {
+      key: 'launcher-need',
+      ...(again ? {
+        action: {
+          label: t(T.need.retry),
+          run: async () => {
+            if (!await recheckLauncher()) return sayLauncher(launcherState() === 'down' ? 'down' : 'none', retry);
+            notify(t(T.need.back), 'ok', {
+              key: 'launcher-need'
+            });
+            try {
+              await retry?.();
+            } catch (e) {
+              console.error(e);
+            }
+          }
+        }
+      } : {})
+    });
+  }
+
   function ctxFor(entry, meta, query = Object.freeze({}), root = null, inPane = false, life = null) {
     let lcOf = null,
       lcMod = null;
+    const moduleLauncher = () => {
+      const c = meta.launcher && !launcherHere?.lan ? launcherClient() : null;
+      if (c && lcOf !== c) {
+        lcOf = c;
+        lcMod = c.forModule(meta.launcher, {
+          life,
+          author: () => identity.trigram || ''
+        });
+      }
+      return c ? lcMod : null;
+    };
     return {
       app: APP.id,
       data: FD.adapter({
@@ -3495,15 +3657,21 @@
       // le lanceur du poste (INTEGRATION § 15.1) : ce que meta.launcher déclare ({ routes, read }) ; null sans lanceur, sur un
       // appareil appairé du réseau local (ses routes y sont refusées) ou sans déclaration
       get launcher() {
-        const c = meta.launcher && !launcherHere?.lan ? launcherClient() : null;
-        if (c && lcOf !== c) {
-          lcOf = c;
-          lcMod = c.forModule(meta.launcher, {
-            life,
-            author: () => identity.trigram || ''
-          });
-        }
-        return c ? lcMod : null;
+        return moduleLauncher();
+      },
+      // l'état du lanceur ('up', 'down', 'none', 'lan') et l'aide commune d'un geste qui en dépend (INTEGRATION § 15.3, SOG-0208) :
+      // needLauncher({ retry }) rend ctx.launcher, ou null en disant POURQUOI (la même notification pour tous, avec « Réessayer ») ;
+      // un geste qui passe par le lanceur ne reste jamais muet
+      launcherState,
+      needLauncher: ({
+        retry
+      } = {}) => {
+        const st = launcherState(),
+          c = st === 'up' && meta.launcher ? launcherClient() : null;
+        if (c) return moduleLauncher();
+        if (st === 'up') console.error(`needLauncher: the module ${entry.id} declares no meta.launcher`);
+        sayLauncher(st === 'up' ? 'undeclared' : st, retry);
+        return null;
       },
       // publication de fichiers générés par l'accès GitHub de l'appareil (INTEGRATION § 15.2) : chemins de meta.publish
       publish: (groups, opts) => publishFor(entry.id, meta, groups, opts),

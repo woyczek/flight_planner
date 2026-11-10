@@ -5400,8 +5400,132 @@ def a130(c):
     c.eq([c.count('.f-modal [data-ask-section]'), c.count('.f-modal .f-muted'), c.count('.f-modal [data-ok]'), c.count('.f-modal [data-no]')], [0, 0, 1, 1], 'a question without sections: the same markup as before', what='plain')
     c.tap('.f-modal [data-no]')
     c.check_errors()
+
 @case('A131', 'The agreement of a noun with its number (frame/lib/plural.js): fr 0 and 1 singular, en / de / es only 1; the marks (s) (x) (es) (en) (n) (e) of a text are resolved by the number that precedes them', 'A', tags=('settings',),
       designs=('standard',), screens=False, night=False,
       rule='ergonomist, 10 Nov: no more « (s) » on screen — « 2 appareils », « 1 appareil », « 0 appareil » (fr) — by a small pure function; the bench reports every assertion')
 def a131(c):
     _bench(c, 'frame/lib/test/plural.html', '__pluralBench')
+
+
+
+LAUNCHER_MODULE = "export const meta = { id: 'atmosphere', launcher: { routes: ['calc'] } }; export function mount(el, ctx) { window.__ctx = ctx; window.__ev = []; window.addEventListener('frame-launcher', e => window.__ev.push(e.detail.state)); el.textContent = 'ctx' }; export function unmount() {}"
+LAUNCHER_TEXTS = {
+    'none': {'fr': 'Cette fonction passe par le lanceur du poste, et aucun lanceur ne sert cette page : ouvrez la suite par le lanceur de votre ordinateur.',
+             'en': 'This function goes through the workstation’s launcher, and no launcher serves this page: open the suite through your computer’s launcher.',
+             'de': 'Diese Funktion läuft über den Starter des Arbeitsplatzes, und diese Seite wird von keinem Starter ausgeliefert: Öffnen Sie die Suite über den Starter Ihres Rechners.',
+             'es': 'Esta función pasa por el lanzador del puesto y ningún lanzador sirve esta página: abra la suite desde el lanzador de su ordenador.'},
+    'down': {'fr': 'Le lanceur du poste ne répond pas : relancez-le, puis réessayez.', 'en': 'The workstation’s launcher is not answering: start it again, then retry.',
+             'de': 'Der Starter des Arbeitsplatzes antwortet nicht: Starten Sie ihn neu und versuchen Sie es erneut.', 'es': 'El lanzador del puesto no responde: vuelva a iniciarlo y reintente.'},
+    'lan': {'fr': 'Cette fonction n’est offerte que sur l’ordinateur qui porte le lanceur, pas sur un appareil appairé.',
+            'en': 'This function is offered only on the computer that runs the launcher, not on a paired device.',
+            'de': 'Diese Funktion gibt es nur auf dem Rechner, auf dem der Starter läuft, nicht auf einem gekoppelten Gerät.',
+            'es': 'Esta función solo se ofrece en el ordenador que ejecuta el lanzador, no en un dispositivo emparejado.'},
+    'back': {'fr': 'Le lanceur répond de nouveau.', 'en': 'The launcher is answering again.', 'de': 'Der Starter antwortet wieder.', 'es': 'El lanzador responde de nuevo.'},
+    'retry': {'fr': 'Réessayer', 'en': 'Retry', 'de': 'Erneut versuchen', 'es': 'Reintentar'},
+    'label': {'fr': 'Lanceur injoignable', 'en': 'Launcher not answering', 'de': 'Starter antwortet nicht', 'es': 'Lanzador sin respuesta'},
+    'line': {'fr': 'Le lanceur du poste ne répond plus', 'en': 'The workstation’s launcher is not answering any more', 'de': 'Der Starter des Arbeitsplatzes antwortet nicht mehr',
+             'es': 'El lanzador del puesto ya no responde'},
+}
+LAUNCHER_NOTES = "() => [...document.querySelectorAll('#fNotes .f-note')].map(n => [n.querySelector('span')?.textContent || '', n.querySelector('[data-act]')?.textContent || null])"
+LAUNCHER_STATUS = {'server': True, 'root': '', 'git': True, 'data': False, 'dataGit': False, 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False, 'lnm': []}
+
+
+@case('A132', 'A gesture that needs the launcher is never mute: ctx.needLauncher says why, with « Retry »; the header and the status block say when the launcher has gone (SOG-0208)', 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule='SOG-0208 (the user: « le bouton calculer A → B n’a aucun effet ? … trouvé. pas de lanceur. »): ctx.launcherState() (up, down, none, lan) and the window event `frame-launcher`; ctx.needLauncher({ retry }) returns the module’s launcher or null with one notification for every module (the reason; « Retry » looks for the launcher again and calls retry); when a launcher that answered stops, the sync button says « launcher not answering » (not « offline ») and the status block has a line that retries; a call that answers finds it again')
+def a132(c):
+    L = LAUNCHER_TEXTS
+    lang = c.lang
+    live = {'up': True}
+
+    def launcher(route):
+        path = urllib.parse.urlparse(route.request.url).path
+        if not live['up']:
+            return route.abort()
+        body = LAUNCHER_STATUS if path.endswith('/__setup/status') else {'ok': True}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/modules/atmosphere/module\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=LAUNCHER_MODULE))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    c.open('atmosphere', wait=False)
+    c.until('!!window.__ctx', timeout=15000, what='the module and its ctx')
+    c.wait(1500)
+    # up: the launcher of the module, nothing said
+    c.eq(c.js('() => window.__ctx.launcherState()'), 'up', 'a launcher serves the page: up', what='up')
+    c.eq(c.js('() => { const l = window.__ctx.needLauncher({}); return !!l && typeof l.call === "function" }'), True, 'needLauncher gives the module’s launcher', what='need up')
+    c.eq(c.js(LAUNCHER_NOTES), [], 'and says nothing', what='no note')
+    # the launcher stops: a call fails, the state goes down, the event is sent once
+    live['up'] = False
+    c.js('async () => { await window.__ctx.launcher.call("calc") }')
+    c.until("window.__ctx.launcherState() === 'down'", what='down')
+    c.eq(c.js('() => window.__ev'), ['down'], 'the event frame-launcher says « down », once', what='event')
+    label = norm(c.js("document.querySelector('#fSync .f-lbl').textContent"))
+    c.ok(norm(L['label'][lang]) in label, label, 'the sync button says « launcher not answering » (not « offline »)')
+    # the gesture: needLauncher says why, with Retry, the same note for every module
+    c.eq(c.js('() => { window.__retried = 0; return window.__ctx.needLauncher({ retry: () => { window.__retried++ } }) }'), None, 'a gesture that needs it: null', what='need down')
+    got = c.js(LAUNCHER_NOTES)
+    c.eq([[norm(got[0][0]), norm(got[0][1] or '')]] if got else [], [[norm(L['down'][lang]), norm(L['retry'][lang])]], 'one note: the reason and « Retry »', what='note down')
+    # the status block says it too (Settings): a line that retries
+    c.js("() => { location.hash = '#settings' }")
+    c.until("!!document.querySelector('[data-card=\"status\"] li[data-k=\"launcher-down\"]')", timeout=10000, what='the status line')
+    line = c.js("document.querySelector('[data-card=\"status\"] li[data-k=\"launcher-down\"]').textContent")
+    c.ok(norm(L['line'][lang]) in norm(line), line, 'the status block says the launcher has gone')
+    c.eq(c.js("document.querySelector('[data-card=\"status\"] li[data-k=\"launcher-down\"] [data-go]')?.dataset.go"), 'retry-launcher', 'a tap retries', what='go')
+    # Retry while it is still gone: nothing is retried
+    c.tap('#fNotes .f-note [data-act]')
+    c.wait(800)
+    c.eq(c.js('() => window.__retried'), 0, 'Retry while it is still gone: nothing is retried', what='retried 0')
+    # it comes back: Retry finds it, says so, calls retry; the state, the header and the block follow
+    live['up'] = True
+    c.tap('#fNotes .f-note [data-act]')
+    c.until('window.__retried === 1', timeout=8000, what='retried')
+    c.until("window.__ctx.launcherState() === 'up'", what='up again')
+    c.eq(c.js('() => window.__ev'), ['down', 'up'], 'the event says « up » again', what='event up')
+    c.until("!document.querySelector('[data-card=\"status\"] li[data-k=\"launcher-down\"]')", what='the line is gone')
+    c.ok(norm(L['label'][lang]) not in norm(c.js("document.querySelector('#fSync .f-lbl').textContent")), '', 'the sync button no longer says it')
+    # a launcher that stops and comes back is found again by a call that answers
+    live['up'] = False
+    c.js('async () => { await window.__ctx.launcher.call("calc") }')
+    c.until("window.__ctx.launcherState() === 'down'", what='down again')
+    live['up'] = True
+    c.js('async () => { await window.__ctx.launcher.call("calc") }')
+    c.until("window.__ctx.launcherState() === 'up'", timeout=10000, what='found again by a call that answers')
+    # and by itself, without any call: the frame looks for it every 8 s while it is gone
+    if lang == 'fr':
+        live['up'] = False
+        c.js('async () => { await window.__ctx.launcher.call("calc") }')
+        c.until("window.__ctx.launcherState() === 'down'", what='down a third time')
+        live['up'] = True
+        c.until("window.__ctx.launcherState() === 'up'", timeout=14000, what='found again by the watch (8 s)')
+    c.check_errors()
+
+
+@case('A133', 'ctx.needLauncher without a launcher (a site, the file opened by hand) and on a paired device says why, in the language of the app (SOG-0208)', 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule='SOG-0208: no launcher serves the page → « none » (and « Retry » looks for one, finds none, says so again); a paired device of the local network (lan) → « lan », without Retry (the routes are refused there); ctx.launcher stays null, as before')
+def a133(c):
+    L = LAUNCHER_TEXTS
+    lang = c.lang
+    c.context.route(re.compile(r'/modules/atmosphere/module\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=LAUNCHER_MODULE))
+    c.open('atmosphere', wait=False)
+    c.until('!!window.__ctx', timeout=15000, what='the module and its ctx')
+    c.wait(1200)
+    c.eq([c.js('() => window.__ctx.launcherState()'), c.js('() => window.__ctx.launcher')], ['none', None], 'no launcher: « none », ctx.launcher null as before', what='none')
+    c.eq(c.js('() => window.__ctx.needLauncher({})'), None, 'the gesture: null', what='need none')
+    got = c.js(LAUNCHER_NOTES)
+    c.eq([[norm(got[0][0]), norm(got[0][1] or '')]] if got else [], [[norm(L['none'][lang]), norm(L['retry'][lang])]], 'a note says no launcher serves the page, with « Retry »', what='note none')
+    c.tap('#fNotes .f-note [data-act]')
+    c.wait(900)
+    got = c.js(LAUNCHER_NOTES)
+    c.eq([norm(got[0][0])] if got else [], [norm(L['none'][lang])], 'Retry finds none: the reason again', what='still none')
+    # a paired device: the launcher is there but its routes are refused
+    status = {**LAUNCHER_STATUS, 'lan': True}
+    c.context.route(re.compile(r'/__setup/'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(status)))
+    c.page.reload(wait_until='load')
+    c.until('!!window.__ctx', timeout=15000, what='the module again')
+    c.wait(1500)
+    c.eq([c.js('() => window.__ctx.launcherState()'), c.js('() => window.__ctx.launcher')], ['lan', None], 'a paired device: « lan », ctx.launcher null', what='lan')
+    c.js('() => { window.__ctx.needLauncher({}) }')
+    got = c.js(LAUNCHER_NOTES)
+    c.eq([[norm(got[0][0]), got[0][1]]] if got else [], [[norm(L['lan'][lang]), None]], 'a note says it is the computer’s function, without Retry', what='note lan')
+    c.check_errors()

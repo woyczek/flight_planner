@@ -847,6 +847,10 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         """Page, script ou feuille de design servi avec ses empreintes ?v=… posées (tools/version_stamps.py) et un ETag
         (son empreinte) : une page inchangée répond 304, un fichier versionné reste en cache. Vrai si servi ici."""
         f = self.translate_path(self.path)
+        # le dossier d'une page (« /frame/ », l'adresse d'un rechargement forcé ou d'un signet) est sa page index.html : servie avec les mêmes empreintes
+        # (SOG-0204 : sans elles, `app.js?v=0` — la page se croyait plus ancienne que le lanceur et le disait)
+        if os.path.isdir(f) and self.path.split('?')[0].endswith('/') and os.path.isfile(os.path.join(f, 'index.html')):
+            f = os.path.join(f, 'index.html')
         try:
             if not os.path.isfile(f) or not version_stamps.stamped(f):
                 return False

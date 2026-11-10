@@ -2656,3 +2656,45 @@ def i40(c):
     src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
     c.ok("csp_policy(path if path in cspmod.PAGES else '')" in src, '', 'the header uses the page’s policy for a path of the table only')
 
+
+
+@case('K144', 'The folder of a page (« /frame/ ») is served with the same fingerprints as index.html: a forced reload no longer says « old version » (SOG-0204)', 'K', static=True,
+      rule='SOG-0204 (the user: « shift + ctrl + r affiche le bouton « page pas à jour, recharger » »): a forced reload bypasses the service worker and asks the folder (/frame/), which the launcher served as a plain file (`app.js?v=0`): the page compared its stamp « 0 » with the launcher’s and said it was older; the folder is index.html, stamped the same way (the stamp of frame/app.js in /__setup/status is the one both give)')
+def k144(c):
+    import http.client
+    import importlib
+    import json
+    import re as _re
+    import sys
+    import threading
+    sys.path.insert(0, str(c.root / 'tools'))
+    L = importlib.import_module('launch')
+    srv = L.Server(('127.0.0.1', 0), L.Setup)
+    port = srv.server_address[1]
+    kept_port = getattr(L.Setup, 'port', None)
+    L.Setup.port = port
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    hdr = {'Host': f'127.0.0.1:{port}', 'X-SOG-Setup': '1', 'Sec-Fetch-Site': 'same-origin'}
+
+    def get(path):
+        cn = http.client.HTTPConnection('127.0.0.1', port, timeout=20)
+        cn.request('GET', path, headers=hdr)
+        r = cn.getresponse()
+        body = r.read().decode('utf-8', 'replace')
+        out = (r.status, r.getheader('ETag'), body)
+        cn.close()
+        return out
+    try:
+        stamp = lambda body: (_re.search(r'app\.js\?v=([0-9a-zA-Z]+)', body) or [None, None])[1]
+        status = json.loads(get('/__setup/status')[2])
+        index = get('/frame/index.html')
+        folder = get('/frame/')
+        query = get('/frame/?app=maintenance')
+        c.ok(bool(status.get('app')) and status['app'] != '0', str(status.get('app')), 'the launcher gives the stamp of frame/app.js')
+        c.eq(stamp(index[2]), status['app'], 'index.html carries the launcher’s stamp', what='index.html')
+        c.eq(stamp(folder[2]), status['app'], 'the folder /frame/ carries it too (not « 0 »: a page that says it is older than the launcher)', what='folder')
+        c.eq((stamp(query[2]), folder[1] == index[1]), (status['app'], True), 'the folder with a query (?app=maintenance) as well, and the same ETag as index.html', what='folder with query')
+    finally:
+        srv.shutdown()
+        srv.server_close()
+        L.Setup.port = kept_port

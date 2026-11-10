@@ -2758,3 +2758,27 @@ Accepted as written, with four corrections in `askSections` (`frame/app.js`): a 
 (title 120, line 300, note 500 characters, « … » at the cut) as the groups already were (six, 500 lines); a group that scrolls (more than seven lines)
 is focusable and named by its title (a keyboard could not read the rest of the list); the doc comments of `ask` and `askSections` were swapped. Escaping
 was right (`esc` on every text and on the group `id`); a question without `sections` has exactly the markup it had. Noreg A130, red before (null section).
+
+## 10 November 2026 — a gesture that needs the launcher is never mute (SOG-0208)
+
+The user pressed « Calculer A → B » and nothing happened; the cause was that no launcher served the page (« trouvé. pas de lanceur. »). The module
+tested `ctx.launcher` and returned.
+
+- **What the frame offered** (survey): `ctx.launcher` null in three cases (none, paired device, undeclared) with no way to tell them apart; no state, no event
+  when a launcher disappears or returns; the sync button called a stopped launcher « offline ».
+- **`ctx.launcherState()` + the event `frame-launcher`**: one state (`up`, `down`, `none`, `lan`), fed by the launcher client (a call that fails by the network
+  marks it `down`; any answer finds it again) and by the transport's last error; a launcher that is gone is looked for every 8 s.
+- **`ctx.needLauncher({ retry })`**: the module's launcher or null with the one notification (the reason, in four languages; « Retry » for `none` and
+  `down` looks again and calls `retry`; not found, the reason comes back with its button). Synchronous, so the handler's flow stays as it was.
+- **The header and the Status block**: when it has gone, the sync button reads « Launcher not answering » (state `offline`, before the « on this device »
+  label) and the block has a line that retries. When there is no launcher at all, nothing is added to the header: on a site that is normal.
+- Counter-proof: noreg A132 (stopping fake launcher, the event, the label, the note, Retry still gone / back, the watch) and A133 (none, lan), red before.
+
+## 10 November 2026 — a forced reload no longer says « old version » (SOG-0204)
+
+Cause: Ctrl+Shift+R bypasses the service worker, so the page is asked of the launcher as the folder (`/frame/`), which `_stamped` did not recognise as a
+page (not a file): it was served as is, `app.js?v=0`; the page took « 0 » for its stamp and compared it with the launcher's (A117's rule). Normal loads came
+from the service worker's copy of `index.html`, stamped. Fix at the source: `tools/launch.py` `_stamped` serves the folder's `index.html` stamped like
+`index.html` (same ETag). The page keeps comparing stamps as before (a page served without any stamp by a launcher is the launcher's fault). Noreg K144, red
+before (`folder: '0'`). The launcher must be restarted to take it.
+
