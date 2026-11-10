@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "4e590ad",
+  "organisation": "fa8f27e",
   "fiches": 185,
   "untranslated": 1,
   "priorities": 152
@@ -810,7 +810,7 @@
     {
      "id": "SOG-0181",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Compte rendu : dire pour quelle compagnie on l'écrit",
      "en": "Report: say which airline it is written for",
      "de": "Bericht: sagen, für welche Gesellschaft er geschrieben wird",

@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 63,
-  "verdicts": 27
+  "tests": 64,
+  "verdicts": 30
  },
  "apps": [
   "pilote",
@@ -113,7 +113,9 @@
    },
    "test": "Maintenance › Données › Paquets : les régions (Europe du Nord…) et les thèmes (Îles, Mégalopoles…) sont listés avec leur nombre de pays et leur taille ; l'Antarctique est vide avec sa raison.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "ok",
+   "comment": "presque.   Ergo : ce n’était pas si mal de choisir un pays parmi un package, tu a complètement tout supprimé. replié, ça pourrait être bien ?",
+   "at": "2026-11-10T11:23:07Z"
   },
   {
    "id": "SOG-0066",
@@ -153,7 +155,8 @@
    },
    "test": "Maintenance › Données › carte des zones : toucher un pays gris → il entre dans la couverture, coché ; le retoucher → décoché.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "ok",
+   "at": "2026-11-10T11:23:18Z"
   },
   {
    "id": "SOG-0071",
@@ -694,7 +697,8 @@
    },
    "test": "Maintenance › Données › Paquets de pays › onglet « Thèmes » : ouvrir « Îles » → « Tout le thème » et ses pays sont des lignes à case, entièrement visibles, serrées à la souris ; plus de bouton « Ajouter ».",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "ok",
+   "at": "2026-11-10T11:22:44Z"
   },
   {
    "id": "SOG-0166",
@@ -859,6 +863,19 @@
    "state": "ok",
    "comment": "oui, mais on ne sait pas pour quelle compagnie on fait le cr. réserve non bloquante.",
    "at": "2026-11-10T10:41:07Z"
+  },
+  {
+   "id": "SOG-0181",
+   "app": "pilote",
+   "title": {
+    "fr": "Compte rendu : dire pour quelle compagnie on l'écrit",
+    "en": "Report: say which airline it is written for",
+    "de": "Bericht: sagen, für welche Gesellschaft er geschrieben wird",
+    "es": "Informe: decir para qué compañía se escribe"
+   },
+   "test": "Compte rendu : sous le titre, « Compte rendu pour <compagnie> · <genre> » ; tant que le CR n'est pas enregistré, le toucher mène au choix de la compagnie ; un CR enregistré garde sa compagnie même si tu en changes ensuite. « Mes vols » dit la compagnie sur chaque ligne dès qu'il y en a plus d'une.",
+   "since": "2026-11-10",
+   "state": "todo"
   },
   {
    "id": "SOG-0183",
