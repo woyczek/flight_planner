@@ -85,6 +85,9 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - airspaces R, D, P, TRA, CTR, TMA, CTA within 10 NM of the route;
   - below FL195 low airways and airspaces below 19,500 ft; from FL195 high airways and airspaces above;
   - aerodromes (public and state), VOR / TACAN / DME / NDB, MORA, graticule.
+  - **The VOR rose** (SOG-0175, at a close zoom, `roseSize`): two concentric circles at the standard of a VFR chart — the outer one graduated every 10° (a long tick across the band,
+    a number and a small outward arrow every 30°; the numbers upright, beyond the arrows, from a symbol of 6 px), the inner one thin, to read a bearing — turned to the
+    station's declination (its own `magVar` when the record has one, else the nearest point's of the base). Noreg D143.
 - `selectAirspaces(list, profile, route)`: kept by family, floor and ceiling (`SiaAero.limitFt`) and the white or
   black list, then by the corridor (a route sample inside the airspace, or an edge within `corridorNm`).
 - `bboxOf(points, marginNm)`, `distances(points)` (great circle, NM), `marks(points, stepNm)` (every 10 NM, every 50 NM

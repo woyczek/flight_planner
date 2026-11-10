@@ -4626,3 +4626,34 @@ def d142(c):
     r2 = c.js(_MARKS_JS)
     c.ok(r2['visible'] <= 12 and r2['step'] < wide, str(r2), f'closer (the step was {wide} NM): a smaller round step, still a dozen at most')
     c.ok(all(n % r2['step'] == 0 for n in r2['nm']), str(r2), 'the marks are multiples of the step')
+
+
+_ROSE_JS = """([n, s, mv, big]) => {
+  const cv = document.createElement('canvas'); cv.width = 400; cv.height = 400; const ctx = cv.getContext('2d'), log = { arcs: [], texts: [], rot: [], moves: 0 };
+  const arc = ctx.arc.bind(ctx), ft = ctx.fillText.bind(ctx), rot = ctx.rotate.bind(ctx), mt = ctx.moveTo.bind(ctx);
+  ctx.arc = (x, y, r, a, b) => { log.arcs.push(+r.toFixed(2)); return arc(x, y, r, a, b) }; ctx.fillText = (t, x, y) => { log.texts.push(String(t)); return ft(t, x, y) };
+  ctx.rotate = a => { log.rot.push(+(a * 180 / Math.PI).toFixed(2)); return rot(a) }; ctx.moveTo = (x, y) => { log.moves++; return mt(x, y) };
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 400, 400); if (big) ctx.scale(3, 3); window.SiaAero.drawNavaid(ctx, n, big ? { x: 67, y: 67 } : { x: 200, y: 200 }, s, 0, mv, 3.2);
+  if (big) log.png = cv.toDataURL('image/png'); return log }"""
+
+
+@case('D143', 'The VOR rose at a close zoom: two circles (the outer graduated every 10°, long ticks, numbers and small arrows every 30°; the inner one thin, to read a bearing), turned to the station’s declination', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0175 (ergonomics 10 Nov): at a close zoom the VOR rose is a doubled degrees circle: outside graduated every 10° with long ticks, numbers and small arrows every 30°, inside a thin circle to read a bearing, oriented to the station’s declination (the station’s own, else the nearest point’s), at the standard of a VFR chart')
+def d143(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    r = c.js(_ROSE_JS, [{'kind': 'VOR', 'id': 'ABC'}, 8, 12, True])
+    R = 8 * 3.2
+    big = sorted({a for a in r['arcs'] if a > 8})
+    c.eq(big, [round(R - 8 * .85, 2), round(R, 2)], 'two circles: the outer one at the rose’s radius, the inner one inside it', what=str(r['arcs']))
+    c.eq(sorted(int(t) for t in r['texts']), list(range(30, 331, 30)), 'a number every 30° (30 … 330)', what=str(r['texts']))
+    c.ok(r['rot'] and abs(r['rot'][0] - 12) < .01, str(r['rot']), 'turned to the declination of the nearest point (12°) when the station carries none')
+    r2 = c.js(_ROSE_JS, [{'kind': 'VOR', 'id': 'ABC', 'magVar': -5}, 8, 12, False])
+    c.ok(r2['rot'] and abs(r2['rot'][0] + 5) < .01, str(r2['rot']), 'the station’s own declination first (−5°)')
+    r3 = c.js(_ROSE_JS, [{'kind': 'VOR', 'id': 'ABC'}, 4.5, 0, False])
+    c.eq(r3['texts'], [], 'a small symbol draws no number (they would not read)', what=str(r3['texts']))
+    c.ok(len([a for a in r3['arcs'] if a > 8]) == 2, str(r3['arcs']), 'but keeps its two circles')
+    if os.environ.get('D143_SHOT'):
+        import base64
+        open(f"{os.environ['D143_SHOT']}.png", 'wb').write(base64.b64decode(r['png'].split(',')[1]))

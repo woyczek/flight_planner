@@ -2268,6 +2268,18 @@ the Map had seen in between: the same line to within the frame's own sampling.
   label before the reading (it is chosen by the route's middle, after the route is known).
 - **Noreg** D122 (store stubbed on a copy of `S.ctx`, which is frozen: no network; cache then read; no extra button; the name; a refusal).
 
+## The VOR rose at the standard of a VFR chart (10 Nov 2026, SOG-0175)
+
+- **Asked** (ergonomics): at a close zoom the degrees circle doubled: outside graduated every 10° (long ticks, numbers and small arrows every 30°), inside a thin one to read a
+  bearing, oriented to the station's declination. The user's capture was not in the folder: made to the standard of a VFR chart.
+- **Done** (`aero_symbols.js drawNavaid`): outer circle R (the rose's size), inner circle R − 0.85 s; 36 ticks (short every 10°, across the band every 30°); a small outward
+  triangle every 30° (the north's wider); the numbers 30 … 330 upright beyond the arrows (from s = 6 px; none below, the two circles stay); the whole rose turned by the station's
+  `magVar`, else the nearest point's (before: only the nearest point's).
+- **Choices of mine**: numbers in degrees (30, 60 …), not tens (3, 6 …); no « N » at the north (its arrow is wider); the numbers outside rather than inside (they collided inside at 8 px).
+- **Not done**: the real station's declination (the navaid records carry none today: the nearest aerodrome's is used); a drawing of the rose over a chart background was not compared with
+  a chart.
+- **Noreg** D143 (the symbol drawn on a canvas: two circles, eleven numbers, the declination (nearest point's, then the station's own), no number on a small symbol).
+
 ## Distance marks at a round step that follows the length and the zoom (10 Nov 2026, SOG-0177; capture 101525, KDEN → LEMO 4 392 NM)
 
 - **Seen**: on the profile the bottom axis was a band of unreadable markers every 50 NM (87 of them), and on the map the points were as dense.

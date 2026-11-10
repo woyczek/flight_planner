@@ -1166,21 +1166,55 @@
           }
         if (n.dme && !n.tacan) ctx.strokeRect(-s * .95, -s * .95, s * 1.9, s * 1.9);
         dot(s * .12);
-        if (n.kind === 'VOR' && rose > 0 && s >= 4) { // rose au nord magnétique, taille réglable
+        if (n.kind === 'VOR' && rose > 0 && s >= 4) { // rose au nord magnétique de la station, taille réglable (SOG-0175)
+          // deux cercles : l'extérieur gradué tous les 10° (trait long, chiffre et petite flèche tous les 30°), l'intérieur fin qui sert à lire un
+          // relèvement ; la rose est tournée de la déclinaison de la station (la sienne si l'enregistrement la porte, sinon celle du point le plus proche)
+          const R = s * rose,
+            r2 = R - s * .85,
+            dec = n.magVar != null && n.magVar !== '' && Number.isFinite(+n.magVar) ? +n.magVar : magVar;
           ctx.save();
-          ctx.rotate(magVar * Math.PI / 180);
+          ctx.rotate(dec * Math.PI / 180);
           ctx.lineWidth = Math.max(.6, s / 12);
-          ctx.globalAlpha = .6;
+          ctx.globalAlpha = .75;
           ctx.beginPath();
-          ctx.arc(0, 0, s * rose, 0, Math.PI * 2);
+          ctx.arc(0, 0, R, 0, Math.PI * 2);
           ctx.stroke();
+          ctx.globalAlpha = .45;
+          ctx.lineWidth = Math.max(.4, s / 20);
+          ctx.beginPath();
+          ctx.arc(0, 0, r2, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.globalAlpha = .75;
+          const label = s >= 6; // les chiffres ne se lisent pas plus bas
+          ctx.font = `700 ${(s * .95).toFixed(1)}px Arial,sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
           for (let k = 0; k < 36; k++) {
             const t = k * Math.PI / 18,
-              l = k % 9 === 0 ? s * .9 : k % 3 === 0 ? s * .5 : s * .25;
+              big = k % 3 === 0,
+              sn = Math.sin(t),
+              cs = -Math.cos(t);
+            ctx.lineWidth = Math.max(big ? .8 : .5, big ? s / 10 : s / 16);
             ctx.beginPath();
-            ctx.moveTo(Math.sin(t) * s * rose, -Math.cos(t) * s * rose);
-            ctx.lineTo(Math.sin(t) * (s * rose - l), -Math.cos(t) * (s * rose - l));
+            ctx.moveTo(sn * R, cs * R);
+            ctx.lineTo(sn * (big ? r2 : R - s * .35), cs * (big ? r2 : R - s * .35));
             ctx.stroke();
+            if (big) { // la petite flèche, hors du cercle, pointe vers l'extérieur ; le nord en est plus large
+              const a = s * (k === 0 ? .42 : .3);
+              ctx.beginPath();
+              ctx.moveTo(sn * (R + s * .55), cs * (R + s * .55));
+              ctx.lineTo(sn * R - cs * a, cs * R + sn * a);
+              ctx.lineTo(sn * R + cs * a, cs * R - sn * a);
+              ctx.closePath();
+              ctx.fill();
+              if (label && k) { // le chiffre (30, 60…), droit (contre-tourné de la déclinaison), au-delà de la flèche
+                ctx.save();
+                ctx.translate(sn * (R + s * 1.35), cs * (R + s * 1.35));
+                ctx.rotate(-dec * Math.PI / 180);
+                ctx.fillText(String(k * 10), 0, 0);
+                ctx.restore();
+              }
+            }
           }
           ctx.restore();
         }

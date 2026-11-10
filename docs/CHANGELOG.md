@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the VOR rose at the standard of a VFR chart** (`modules/maps/lib/aero_symbols.js`; SPEC § 3.2, DECISIONS; noreg D143; SOG-0175). Two circles at a close zoom: the outer graduated
+  every 10° with long ticks, numbers and small arrows every 30°, the inner one thin to read a bearing, turned to the station's declination.
+
 - **Fuel and Map: one legend for the routes** (`frame/lib/route_legend.js`, new; `modules/fuel/module.js`; Fuel SPEC § 9.3,
   INTEGRATION § 3 bis, DECISIONS, help; frame SPEC; noreg F126; SOG-0134 refused). Each section says its nature — airway, DCT, FRA,
   SID, STAR, approach, deviation — with the stroke and the word the Map draws; a folded « Légende »; route_alts.json gives `via` and
