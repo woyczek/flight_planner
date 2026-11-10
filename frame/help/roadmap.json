@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "76ce253",
+  "organisation": "43004a2",
   "fiches": 234,
   "untranslated": 0,
   "priorities": 152
@@ -512,7 +512,7 @@
     {
      "id": "SOG-0222",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Carburant › Route : le pli « Points » doit être fermé par défaut",
      "en": "Fuel › Route: the “Points” fold must be closed by default",
      "de": "Kraftstoff › Route: der Abschnitt „Punkte“ muss standardmäßig geschlossen sein",
@@ -1084,7 +1084,7 @@
     {
      "id": "SOG-0220",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Fiches d'appareils : une valeur convertie s'affiche avec treize décimales",
      "en": "Aircraft sheets: a converted value shows thirteen decimals",
      "de": "Flugzeugblätter: ein umgerechneter Wert zeigt dreizehn Nachkommastellen",

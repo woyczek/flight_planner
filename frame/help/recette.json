@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 106,
+  "tests": 108,
   "verdicts": 43
  },
  "apps": [
@@ -434,10 +434,10 @@
     "de": "Routenleser: Homonyme (PAM in den USA, ALS in Marokko) und unbekannte Punkte mit ihrer Zone benannt",
     "es": "Lector de ruta: homónimos (PAM en EE. UU., ALS en Marruecos) y puntos desconocidos dichos con su zona"
    },
-   "test": "Lanceur relancé. Carburant › Route, taper « LFRS PAM LFBD » : le tracé ne part plus aux États-Unis ; PAM (qui n'existe pas en France dans la base : un TACAN américain et un VOR néerlandais) est refusé avec « Point loin de la route : PAM ajoute … NM ». Puis « Calculer A → B » sur ESSB → LEMO : aucun point aux États-Unis ni au Maroc.",
+   "test": "Lanceur relancé. Carburant › Route, taper « LFRS PAM LFBD » : le tracé ne part plus aux États-Unis ; sous la route, PAM est dit non placé (loin de la route). Sur ta route ESSB → LEMO : PAM (Pampus, Pays-Bas) est dit inconnu près de la route — la zone Pays-Bas de ta base n'a pas encore de points —, aucun point aux États-Unis ni au Maroc.",
    "since": "2026-11-10",
    "state": "todo",
-   "delivered": "2026-11-10T17:21:30Z",
+   "delivered": "2026-11-10T17:38:21Z",
    "previous": {
     "verdict": "ko",
     "comment": "LFRS PAM LFBD passe toujours pas les USA.",
@@ -1478,6 +1478,20 @@
    "delivered": "2026-11-10T15:59:00Z"
   },
   {
+   "id": "SOG-0220",
+   "app": "pilote",
+   "title": {
+    "fr": "Fiches d'appareils : une valeur convertie s'affiche avec treize décimales",
+    "en": "Aircraft sheets: a converted value shows thirteen decimals",
+    "de": "Flugzeugblätter: ein umgerechneter Wert zeigt dreizehn Nachkommastellen",
+    "es": "Fichas de aeronaves: un valor convertido muestra trece decimales"
+   },
+   "test": "Maintenance › Appareils, une fiche vue dans une autre unité que celle où elle a été saisie (S210, TBM9) : un débit converti se lit avec deux chiffres significatifs (« 12000 lb/h », plus de treize décimales) ; une valeur que tu saisis reste telle que tu l'as écrite.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T17:46:06Z"
+  },
+  {
    "id": "SOG-0221",
    "app": "maintenance",
    "title": {
@@ -1490,6 +1504,20 @@
    "since": "2026-11-10",
    "state": "todo",
    "delivered": "2026-11-10T17:13:07Z"
+  },
+  {
+   "id": "SOG-0222",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant › Route : le pli « Points » doit être fermé par défaut",
+    "en": "Fuel › Route: the “Points” fold must be closed by default",
+    "de": "Kraftstoff › Route: der Abschnitt „Punkte“ muss standardmäßig geschlossen sein",
+    "es": "Combustible › Ruta: el pliegue «Puntos» debe estar cerrado por defecto"
+   },
+   "test": "Carburant › Route : le pli « Points (n) » est fermé à l'ouverture, même si tu l'avais ouvert la fois d'avant ; les autres plis gardent leur état.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T17:48:53Z"
   },
   {
    "id": "SOG-0223",
