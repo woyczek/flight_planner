@@ -288,7 +288,8 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
   (« Voie (HIGH) »); a folded « Légende » under the list gives them all, the same table the Map draws with; **the routes are drawn by the Map** (SOG-0134 a, F114;
   INTEGRATION § 3 bis): Fuel resolves them into positions with the route reader and publishes them (the event `fuel-route-alts` in
   the double view, hover included; `cache/fuel/route_alts.json` for a Map opened afterwards), the chosen one and the hovered row with
-  them; a route touched on the Map comes back as « Prendre » (`maps-route-alt`, or `#fuel?ralt=<index>` from a Map alone); Fuel draws
+  them; a tap on a row or on a trace of the Map SHOWS the route (marked, its detail unfolded, `shown`; `maps-route-alt-show`), only
+  « Choisir » takes it (or `#fuel?ralt=<index>` from a Map alone), and the list stays when the step is drawn again (SOG-0134); Fuel draws
   no map of its own; without a RAD on the workstation (`no-rad`), « Aucun RAD importé » and a link to the RAD's line of Data (Maintenance,
   `?app=maintenance#data?source=eurocontrol_rad`; SOG-0125, F110): the import is done there, never from Fuel, and the launcher's
   message, which names a job, is not shown; what the check does not cover (`limitation`, `gaps`) is a fold under the result. The routes are a list

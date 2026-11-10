@@ -295,7 +295,9 @@ hand a choice back. Contract written before the code, for both sides.
   procedures' tints, a deviation red. Since fee38e622 the Map reads the table itself (`natureOf`, `dash`, `label`, `hint`, `tint`; its
   case D140 compares its key and strokes with it): a faulty segment keeps its nature's stroke and turns red, and the name is written
   along the line only for the nature `awy` (never on a SID / STAR leg, whose `via` is the procedure's name).
-- `chosen`: the index of the route taken (« Prendre »), else the computed one (0); `null` when there is no route. `hovered`: the
+- `chosen`: the index of the route taken (« Choisir »), else the computed one (0); `null` when there is no route. `shown` (since 10 Nov
+  2026, SOG-0134): the index of the route shown — a tap on its row, or on its trace in the Map —, else `null` (never in the document);
+  `hovered` falls back to it. `hovered`: the
   index of the row under the pointer, the finger or the keyboard focus, else `null`.
 - **Clearing**: a new request, a new pair of aerodromes (`newPair`) or a refusal publishes `alternatives: []`.
 - `dep` / `arr` are the flight's at publication: a Map that shows another flight's pair does not draw them.
@@ -306,11 +308,14 @@ hand a choice back. Contract written before the code, for both sides.
 once one segment is said; `control` is read only when no point of `points` was dropped (its indices would lie otherwise), cut to
 `points.length − 1` entries. Fuel draws nothing (the sketch of a8d158da8 is withdrawn).
 
-**What the Map hands back** — a tap on a route chooses it, as « Prendre »:
-- double view: the window event **`maps-route-alt`** (`CustomEvent`, `detail: { index }`), which Fuel listens to;
-- a Map alone (phone): the address **`#fuel?ralt=<index>`**; Fuel consumes `ralt` at mount (`ctx.consume`), reads
-  `cache/fuel/route_alts.json` and takes `alternatives[index]` only when its `dep` / `arr` are the flight's and `mode` is `compute`
-  (route text through the route field, SID and STAR through `P.propose`, as « Prendre »).
+**What the Map hands back** (SOG-0134 refused on 10 Nov — « si on clique sur l'itinéraire (carte ou fuel), ça l'affiche, mais ne le
+choisit pas ; il faut spécifiquement le bouton « choisir » pour valider »; contract with BUGS SOG, Map e369a3510):
+- double view: a tap on a trace SHOWS it: the window event **`maps-route-alt-show`** (`CustomEvent`, `detail: { index }`, `index`
+  an integer of the list or `null` when released); Fuel marks the row, unfolds its detail and publishes `shown`; nothing is taken.
+  `maps-route-alt` (the take) is no longer sent by the Map nor listened to by Fuel: the choice is Fuel's « Choisir »;
+- a Map alone (phone): its button « Choisir cet itinéraire » opens **`#fuel?ralt=<index>`**; Fuel consumes `ralt` at mount
+  (`ctx.consume`), reads `cache/fuel/route_alts.json` and takes `alternatives[index]` only when its `dep` / `arr` are the flight's and
+  `mode` is `compute` (route text through the route field, SID and STAR through `P.propose`, as « Choisir »).
 - Values are bounded on both sides (an index is an integer within the list; nothing else is read from the event).
 
 ## 4. Quote settings — `pilot/<trigram>/fuel.json`

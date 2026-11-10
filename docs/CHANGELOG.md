@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: a proposed route is shown by a tap, taken by « Choisir »; the list stays** (Fuel SPEC, INTEGRATION § 3 bis, DECISIONS, help;
+  noreg F135, F114 adapted; SOG-0134). The Map's tap shows too (`maps-route-alt-show`, BUGS SOG).
 - **Missions: change a mission's airline** (`modules/missions/move.js`; Missions SPEC § 3 ter, DECISIONS, help; noreg N22; SOG-0223). On its
   sheet, in a batch of the list shown, or when adding from YAML; said before writing; only the `airline` field of the file changes.
 - **Map: a tap on a proposed route shows it, it does not take it** (`modules/maps/alts.js`, `texts.js`; DECISIONS; noreg D126, D164; SOG-0134). New window event `maps-route-alt-show { index }` for Fuel; a Map alone

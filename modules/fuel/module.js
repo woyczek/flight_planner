@@ -254,7 +254,7 @@ const TX = {
     ]
   },
   rRetry: ['Réessayer', 'Try again', 'Erneut versuchen', 'Reintentar'],
-  rTake: ['Prendre', 'Take', 'Übernehmen', 'Tomar'],
+  rTake: ['Choisir', 'Choose', 'Auswählen', 'Elegir'], // SOG-0134 : un appui montre, « Choisir » prend
   rTaken: ['pris', 'taken', 'übernommen', 'tomado'],
   rFaults: ['{n} écart(s)', '{n} deviation(s)', '{n} Abweichung(en)', '{n} desviación(es)'],
   // le genre d'un écart (SOG-0134), quand le moteur ne donne pas l'identifiant de la règle
@@ -1658,6 +1658,8 @@ const STYLE = `
 [data-module="fuel"] .fu-g3{--f-min:96px}
 /* SOG-0080 / 0081 : les itinéraires proposés, un segment fautif dans la liste des points */
 [data-module="fuel"] .fu-ralts .f-item[aria-current]{border-color:var(--sog-accent)}
+[data-module="fuel"] .fu-ralts .f-item.fu-raltshown{box-shadow:inset 0 0 0 2px var(--sog-accent);cursor:default} /* la ligne montrée (SOG-0134) */
+[data-module="fuel"] .fu-ralts .f-item[data-alt]{cursor:pointer}
 [data-module="fuel"] .fu-ralts .fu-raltroute{display:block;word-break:break-word}
 [data-module="fuel"] .fu-pt.fu-pterr{border-color:var(--sog-err);flex-wrap:wrap}
 [data-module="fuel"] .fu-pt .fu-segwhy{flex-basis:100%;order:9;color:var(--sog-err)}
@@ -1962,6 +1964,9 @@ function renderPlanBody() {
     S.wxTried = true;
     wxFetch(false);
   }
+  // les itinéraires proposés redessinés avec le corps (SOG-0134, refus du 10 nov. : « ça fait disparaître leur version texte à
+  // gauche » — le corps redessiné, après un choix ou un vol relu, laissait leur boîte vide)
+  if (S.ralts) routeAltsDraw();
 }
 /** Champ changé dans Devis : vol courant ou réglages mis à jour, route relue si elle change, résultats redessinés. */
 function onPlanInput(e) {
@@ -2393,6 +2398,8 @@ function onPlanClick(e) {
   if (e.target.closest('[data-do="acgo"]')) return acGo();
   const rb = e.target.closest('[data-do="rcompute"],[data-do="rcheck"],[data-do="rtake"]');
   if (rb) return rb.dataset.do === 'rtake' ? routeTake(+rb.dataset.i) : routeAsk(rb.dataset.do === 'rcompute' ? 'compute' : 'check');
+  const ar = e.target.closest('[data-altlist] [data-alt]');
+  if (ar && !e.target.closest('summary, a, button, input')) return altsShow(+ar.dataset.alt);
   if (e.target.closest('[data-do="when30"]')) return setWhen(30);
   if (e.target.closest('[data-do="whennow"]')) return setWhen(0);
   const wb = e.target.closest('[data-do="wx"]');
@@ -3385,7 +3392,10 @@ function routeAltsDraw() {
   const both = A.list.map((a, i) => [a, i]),
     routes = both.filter(([a]) => !a.proposal),
     props = both.filter(([a]) => a.proposal);
-  const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}" data-alt="${i}"${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(a.fl).padStart(3, '0')}` : '', RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults, { n: 0 }), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.control ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, a.proposal))}</small>` : ''}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${sectionsHtml(a)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(TX.rTake))}</button>` : ''}</div>`;
+  // SOG-0134 : la ligne montrée (un appui sur elle ou sur son tracé dans la Carte) est marquée et son détail déplié ; « Choisir » la prend
+  const unfold = (html, i) => i === A.shown ? html.replace(/<details class="fu-r(faults|sections)"/g, '<details open class="fu-r$1"') :
+    html;
+  const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(a.fl).padStart(3, '0')}` : '', RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults, { n: 0 }), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.control ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, a.proposal))}</small>` : ''}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${sectionsHtml(a)}`, i)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(TX.rTake))}</button>` : ''}</div>`;
   box.innerHTML = (routes.length ? `<div class="f-list fu-ralts" data-altlist>${routes.map(([a, i]) => row(a, i)).join('')}</div>` :
     `<p class="f-muted" data-rnone>${esc(A.n?.message || tt(TX.rNone))}</p>`) + (props.length ?
     `<h4 class="fu-rprophead" data-proposals-head>${esc(tt(TX.rProposals))}</h4><div class="f-list fu-ralts" data-altlist data-proposals>${props.map(([a, i]) => row(a, i)).join('')}</div>` :
@@ -3398,7 +3408,7 @@ function routeAltsDraw() {
 // La Carte dessine les itinéraires (décision d'ergonomie du 9 nov. : une seule carte, la vraie) ; Carburant les lit en positions avec
 // son lecteur de route (RM.routeModel, rien n'est écrit dans le vol) et les publie : l'événement fuel-route-alts (vue double, survol
 // compris) et cache/fuel/route_alts.json (une Carte ouverte ensuite ; jamais au survol). Un appui sur un tracé de la Carte revient en
-// maps-route-alt (vue double) ou en #fuel?ralt=<index> (Carte seule) et vaut « Prendre ».
+// maps-route-alt-show (vue double) et le MONTRE ; « Choisir » le prend ici, ou #fuel?ralt=<index> depuis une Carte seule (SOG-0134).
 const ALTS_DOC = 'cache/fuel/route_alts.json';
 /** Lit les points des itinéraires (gardés : S.alts) puis publie ; `pts` déjà lus (la route contrôlée) : publication immédiate. */
 async function altsPublish(mode, plans, pts) {
@@ -3479,8 +3489,21 @@ function altsObject(forDoc) {
     mode: A?.mode || 'compute',
     alternatives: A?.list || [],
     chosen: !A?.list?.length ? null : A.mode === 'check' ? 0 : S.ralts?.chosen >= 0 ? S.ralts.chosen : 0,
-    hovered: forDoc || !A?.list?.length ? null : A.hovered
+    hovered: forDoc || !A?.list?.length ? null : A.hovered ?? shownOf(),
+    shown: forDoc || !A?.list?.length ? null : shownOf() // SOG-0134 : la ligne montrée (un appui), que la Carte surligne
   };
+}
+/** La ligne montrée (SOG-0134), ou null. */
+const shownOf = () => Number.isInteger(S?.ralts?.shown) && S.ralts.shown >= 0 ? S.ralts.shown : null;
+/** Montre un itinéraire (un appui sur sa ligne, ou sur son tracé dans la Carte : maps-route-alt-show) : marqué, détail déplié, surligné
+ *  dans la Carte ; rien n'est pris (« Choisir » prend). null : plus rien de montré. */
+function altsShow(i) {
+  if (!S?.ralts?.list?.length) return;
+  const k = Number.isInteger(i) && i >= 0 && i < S.ralts.list.length ? i : -1;
+  if (k === (S.ralts.shown ?? -1)) return;
+  S.ralts.shown = k;
+  routeAltsDraw();
+  if (S.alts?.mode === 'compute') altsSend(false);
 }
 /** L'événement (toujours) et le document (doc vrai : arrivée, choix, effacement ; jamais au survol). */
 function altsSend(doc) {
@@ -3505,11 +3528,13 @@ function altsHover(e) {
   S.alts.hovered = Number.isInteger(h) ? h : null;
   altsSend(false);
 }
-/** Le choix rendu par la Carte (vue double) : un index entier de la liste, et rien d'autre de l'événement ; vaut « Prendre ». */
+/** Le tracé touché dans la Carte (vue double, maps-route-alt-show, contrat de BUGS SOG du 10 nov.) : un index entier de la liste, ou
+ *  null quand il est relâché, et rien d'autre de l'événement ; il MONTRE la ligne, il ne la prend pas (SOG-0134). */
 function altsPicked(e) {
   const i = e?.detail?.index;
-  if (!S?.ralts?.list?.length || !Number.isInteger(i) || i < 0 || i >= S.ralts.list.length) return;
-  routeTake(i);
+  if (!S?.ralts?.list?.length) return;
+  if (i === null) return altsShow(-1);
+  if (Number.isInteger(i) && i >= 0 && i < S.ralts.list.length) altsShow(i);
 }
 /** #fuel?ralt=<index> (Carte seule) : le document relu, l'itinéraire pris seulement pour le même couple et un calcul (§ 3 bis). */
 async function altsFromAddress(index) {
@@ -5609,11 +5634,11 @@ export async function mount(el, ctx) {
     if (S) S.lnm = list.some(f => f?.id === 'lnmdb' && f.exists === true);
   }).catch(() => {});
   // les itinéraires pour la Carte (SOG-0134 a) : la ligne survolée, appuyée ou atteinte au clavier est publiée (hovered), et un tracé
-  // touché sur la Carte en vue double revient ici (maps-route-alt)
+  // touché sur la Carte en vue double revient ici, montré (maps-route-alt-show)
   S.body.addEventListener('pointerover', e => altsHover(e));
   S.body.addEventListener('focusin', e => altsHover(e));
   S.onAltPick = e => altsPicked(e);
-  window.addEventListener('maps-route-alt', S.onAltPick);
+  window.addEventListener('maps-route-alt-show', S.onAltPick);
   S.body.addEventListener('focusout', e => {
     const hits = S?.AD?.hitsFor(e.target?.dataset?.k) || 0; // avant que la liste se ferme
     S?.AD?.onFocusOut(e);
@@ -5862,7 +5887,7 @@ export function unmount() {
   // une série de choix de procédures en attente est écrite ; une lecture en cours n'est pas abandonnée : le travail du poste continue
   // et sa fin est dite (procedures.js)
   S.P.stop();
-  window.removeEventListener('maps-route-alt', S.onAltPick);
+  window.removeEventListener('maps-route-alt-show', S.onAltPick);
   clearTimeout(S.routeTimer);
   clearTimeout(S.roTimer);
   clearTimeout(S.wxTimer);

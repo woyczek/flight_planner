@@ -1590,3 +1590,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   « Point inconnu dans AeroDB »): the refusal came from the launcher's engine (tools/route_engine, AeroDB told); Fuel's reader read the
   ddmmNdddmmW and ddNdddW forms but not the North Atlantic five-character ones (« 5520N », « 55N20 », ARINC 424), now read in
   `frame/lib/route_text.js` (the Map's reader too). F134; counter-test on origin/v3: « 4602N » left out of the points.
+- **10 Nov 2026 — a tap shows a proposed route, « Choisir » takes it; the list never disappears** (SOG-0134 refused: « si on clique sur
+  un itinéraire sur la carte en sidecar, ça fait disparaître leur version texte à gauche. … 1/ si on clique sur l'itinéraire (carte ou
+  fuel), ça l'affiche, mais ne le choisit pas ; 2/ il faut spécifiquement le bouton « choisir » pour valider »). The list disappeared
+  because the step's body, drawn again (after a choice, a flight read again), left the box of the routes empty: `renderPlanBody` now
+  draws it. A tap on a row, or `maps-route-alt-show` from the Map (BUGS SOG's contract), sets `shown` (row marked, detail unfolded,
+  published); « Prendre » becomes « Choisir », the only take with `#fuel?ralt=`. F135; F114 adapted; counter-test on origin/v3: a tap
+  shows nothing.

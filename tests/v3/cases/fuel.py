@@ -3034,10 +3034,11 @@ _ALTS_LISTEN = "() => { window.__alts = []; window.addEventListener('fuel-route-
 _ALTS_LAST = "(() => (window.__alts || []).at(-1) || null)()"
 
 
-@case('F114', 'Route step: the proposed routes published for the Map (event and document), the hovered row and the choice too; a route touched on the Map is taken',
+@case('F114', 'Route step: the proposed routes published for the Map (event and document), the hovered row and the choice too; a route touched on the Map is shown, not taken',
       'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
       rule='SOG-0134 (a), voie (i) decided by the ergonomics session on 9 Nov (one map, the real one): Fuel resolves and publishes '
-      '(fuel-route-alts, cache/fuel/route_alts.json, modules/fuel/INTEGRATION.md § 3 bis), draws nothing; maps-route-alt and #fuel?ralt= take a route')
+      '(fuel-route-alts, cache/fuel/route_alts.json, modules/fuel/INTEGRATION.md § 3 bis), draws nothing; maps-route-alt-show shows a route (SOG-0134 refused '
+      'on 10 Nov: « si on clique sur l\'itinéraire (carte ou fuel), ça l\'affiche, mais ne le choisit pas »), « Choisir » and #fuel?ralt= take it')
 def f114(c):
     st = _route_launcher(c, ['route/compute'])
     open_proc(c)
@@ -3059,14 +3060,19 @@ def f114(c):
     c.page.hover(f'{FUEL} [data-altlist] [data-alt="1"]')
     c.until(f"({_ALTS_LAST} || {{}}).hovered === 1", what='hovering a row publishes it')
     c.eq(c.doc('cache/fuel/route_alts.json').get('hovered'), None, 'the document is not written on hover', what='doc hover')
-    # a route touched on the Map (double view): taken as « Prendre »
-    c.js("window.dispatchEvent(new CustomEvent('maps-route-alt', { detail: { index: 1 } }))")
-    cf_doc(c, lambda d: 'LUGEN' not in [q.get('id') for q in (d.get('route') or {}).get('points') or []] and procs_of(d, 'dep').get('sid') == _SID,
-           'the route touched on the Map is taken (route, SID)', timeout=10000)
-    c.until(f"({_ALTS_LAST} || {{}}).chosen === 1", what='the choice published')
-    c.js("window.dispatchEvent(new CustomEvent('maps-route-alt', { detail: { index: 7 } }))")
+    # a route touched on the Map (double view): SHOWN here (marked, published), not taken; « Choisir » takes it
+    before = (c.doc('pilot/ABC/current_flight.json') or {}).get('route', {}).get('text', '')
+    c.js("window.dispatchEvent(new CustomEvent('maps-route-alt-show', { detail: { index: 1 } }))")
+    c.until(f"!!document.querySelector('{FUEL} [data-altlist] [data-alt=\"1\"][data-shown]') && ({_ALTS_LAST} || {{}}).shown === 1", what='the route touched on the Map is shown')
     c.settle()
-    c.eq(c.js(_ALTS_LAST)['chosen'], 1, 'an index outside the list is ignored', what='bad index')
+    c.eq((c.doc('pilot/ABC/current_flight.json') or {}).get('route', {}).get('text', ''), before, 'shown, not taken: the route of the flight unchanged', what='not taken')
+    c.js("window.dispatchEvent(new CustomEvent('maps-route-alt-show', { detail: { index: 7 } }))")
+    c.settle()
+    c.eq(c.js(_ALTS_LAST)['shown'], 1, 'an index outside the list is ignored', what='bad index')
+    c.tap(f'{FUEL} [data-alt="1"] [data-do="rtake"]')
+    cf_doc(c, lambda d: 'LUGEN' not in [q.get('id') for q in (d.get('route') or {}).get('points') or []] and procs_of(d, 'dep').get('sid') == _SID,
+           '« Choisir » takes it (route, SID)', timeout=10000)
+    c.until(f"({_ALTS_LAST} || {{}}).chosen === 1", what='the choice published')
     # a Map alone: #fuel?ralt=2 takes the third route from the document
     c.go('fuel?ralt=2')
     cf_doc(c, lambda d: [w for w in str((d.get('route') or {}).get('text', '')).split() if w != 'DCT'][:3] == ['LFRS', 'LUGEN', 'LFML'], 'the address ralt=2 takes the third route', timeout=12000)
@@ -3843,3 +3849,38 @@ def f134(c):
     c.ok(abs(nat['lat'] - 46) < 1e-6 and abs(nat['lon'] + 2) < 1e-6, nat, '« 4602N » is 46°N 002°W (the quadrant N: north / west)')
     c.ok(f['route']['distanceNm'] > 400, f['route']['distanceNm'], 'the distance goes through them (LFRS → 1°W → 2°W → LFML, about 460 NM: more than the 364 NM direct)')
     c.eq(c.count(f'{FUEL} [data-unres] [data-unresrow], {FUEL} [data-unres] li'), 0, 'nothing said unknown', what='unknown points')
+
+
+
+@case('F135', 'Proposed routes: a tap on a row SHOWS it (marked, its detail unfolded, published to the Map), it does not take it; « Choisir » takes it; the list stays after the choice and after the step is drawn again',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0134 refused on 10 Nov (« un second calcul successif n\'affiche pas la carte… si on clique sur un itinéraire sur la carte en sidecar, ça fait '
+      'disparaître leur version texte à gauche. … 1/ si on clique sur l\'itinéraire (carte ou fuel), ça l\'affiche, mais ne le choisit pas ; 2/ il faut '
+      'spécifiquement le bouton « choisir » pour valider »); the Map is BUGS SOG\'s (maps-route-alt-show); captures 390 and 1 280')
+def f135(c):
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        st = _route_launcher(c, ['route/compute'])
+        open_proc(c)
+        c.js(_ALTS_LISTEN)
+        c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+        c.tap(f'{FUEL} [data-do="rcompute"]')
+        c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3", timeout=8000, what='three routes')
+        before = (c.doc('pilot/ABC/current_flight.json') or {}).get('route', {}).get('text', '')
+        c.tap(f'{FUEL} [data-altlist] [data-alt="2"] [data-altname]')
+        c.until(f"!!document.querySelector('{FUEL} [data-altlist] [data-alt=\"2\"][data-shown]')", what=f'{w} px: the tapped row is shown')
+        c.ok(c.js(f"!!document.querySelector('{FUEL} [data-alt=\"2\"] details[data-faults][open], {FUEL} [data-alt=\"2\"] details[data-sections][open]')"), '',
+             f'{w} px: its detail unfolded')
+        c.until(f"({_ALTS_LAST} || {{}}).shown === 2", what='shown to the Map')
+        c.settle()
+        c.eq((c.doc('pilot/ABC/current_flight.json') or {}).get('route', {}).get('text', ''), before, f'{w} px: a tap does not take', what='not taken')
+        c.eq(norm(c.text(f'{FUEL} [data-alt="2"] [data-do=rtake]')), norm(row(c, 'rTake')), 'its button says « Choisir »', what='button')
+        c.shot(f'F135_{c.design}_{w}_{c.lang}.png')
+        c.tap(f'{FUEL} [data-alt="2"] [data-do="rtake"]')
+        cf_doc(c, lambda d: [x for x in str((d.get('route') or {}).get('text', '')).split() if x != 'DCT'][:3] == ['LFRS', 'LUGEN', 'LFML'], '« Choisir » takes it', timeout=10000)
+        c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3", what=f'{w} px: the list stays after the choice')
+        # the step drawn again (another step, then back): the list is still there
+        to_step(c, 0)
+        to_step(c, 1)
+        c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3 && !!document.querySelector('{FUEL} [data-alt=\"2\"][aria-current]')",
+                what=f'{w} px: the list and the choice stay when the step is drawn again')
