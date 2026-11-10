@@ -12,7 +12,7 @@ import re
 import json
 import threading
 
-from . import engine, fra, planning, recovery
+from . import engine, fra, layered, planning, recovery
 
 FIELDS = {
     'dep': str, 'arr': str, 'route': str, 'via': (list, str), 'fl': int, 'date': str, 'mode': str, 'radius': (int, float), 'dep_runway': str, 'arr_runway': str,
@@ -265,6 +265,8 @@ def plan(request, root):
             repli = dict(proposals=[], pieces=[], note='Repli : ' + str(e))
         if repli.get('proposals'):
             message = 'Calcul réseau incomplet : ' + str(len(repli['proposals'])) + ' propositions de repli, dont ' + str(repli.get('fra_pieces', 0)) + ' portion(s) FRA. Les raccords DCT restent non validés.'
+    for r in [primary, *alternatives, *((repli or {}).get('proposals') or [])]:        # SOG-0161 : chaque tronçon classé (contrôlé / incomplet / repli / erreur), par couche, et le pourcentage de la distance contrôlée
+        layered.annotate(r, rad)
     return dict(primary=primary, alternatives=alternatives, recovery=repli, coverage_gaps=coverage_gaps, rad_search_attempts=rad_retries, alternative_message=message, alternative_failures=list(dict.fromkeys(failures)),
                 search=dict(algorithm='A* avec labels altitude ; variantes par pénalisation des liens', last=nav.last_search if hasattr(nav, 'last_search') else None, total_seconds=round(time.perf_counter() - started, 3)),
                 automatic_alternatives=rejected, alternative_attempts=tested, input_route=request.get('route', ''), via=request.get('via', []), dep=request.get('dep'), arr=request.get('arr'))

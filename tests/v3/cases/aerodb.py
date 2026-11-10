@@ -6111,3 +6111,58 @@ def k124(c):
          'AIXM 5.1 (NATS, ENAIRE): the note on the time interval is the hours, the other notes the remarks', what='aixm5')
     sv = [m.group(1) for m in [re.search(r'const VERSION =\s*(\d+)', (ROOT / 'shared' / 'sia_base.js').read_text(encoding='utf-8'))]]
     c.eq(sv, ['24'], 'the parser version is 24: the zones built before have no hours or remarks and are rebuilt (parser-old)', what='version')
+
+
+@case('K125', 'Route engine, the longest route that can be said (SOG-0161): no SID / STAR and no airway at the ends, the departure joins the FRA gate that its climb can reach, every leg is classed (controlled / incomplete / fallback) by layer with the share of the distance controlled', 'K', static=True,
+      rule='SOG-0161 (10 Nov 2026, the user): ESSB → LEMO answered « CALCUL IMPOSSIBLE » (« portes FRA proches au plancher minimal FL285, non atteignable… ») because the engine joined an aerodrome only to a point within 40 NM and no SID of Sweden is read; the FRA book names the departure and arrival points of each aerodrome (« D », « A »), the floor of the free-route area (FL285) is reached after the climb distance (~107 NM at 2000 ft/min and 450 kt): the gate is a connector beyond the radius when the climb can reach it, never one that it cannot; the result says, leg by leg and by layer (SID, LOW, HIGH, FRA, STAR), what is controlled, what is a candidate (FRA) and what is a simulation fallback, and the share of the distance controlled')
+def k125(c):
+    import gzip
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I
+    fn = RJ.REGISTRY[('route', 'compute')][0]
+    fir = lambda ident, lat, lon, role, term, arr, dep, floor: ['', '', ident, lat, lon, 'TESTFRA', role, term, arr, dep, '-', f'FL{floor} / FL660', 'H24', 'XXXX', '']
+    rows = [fir('GATED', 'N570000', 'E0170000', 'I', 'D', '', 'XSTA', 285), fir('NEARD', 'N583000', 'E0180000', 'I', 'D', '', 'XSTA', 285),
+            fir('MIDA1', 'N550000', 'E0150000', 'I', '-', '', '', 285), fir('MIDA2', 'N530000', 'E0130000', 'I', '-', '', '', 285), fir('MIDA3', 'N523000', 'E0113000', 'I', '-', '', '', 285),
+            fir('GATEA', 'N520000', 'E0100000', 'I', 'A', 'XEND', '', 285)]
+    book = {'file': 'fra-test.xlsx', 'start': '2026-10-29', 'sha256': '0' * 64, 'rows': [{'row': i + 2, 'v': v} for i, v in enumerate(rows)]}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        # two aerodromes with no airway near them and no procedure: Sweden's case (the only airways of the base are far away, in France and Ireland)
+        with open(os.path.join(d, 'aeroindex.json'), encoding='utf-8') as f:
+            ai = json.load(f)
+        ai['data']['rows'] += [['XSTA', 'DEPART', 59.0, 18.0, 20, 0, 0], ['XEND', 'ARRIVE', 50.0, 10.0, 300, 0, 0]]
+        with open(os.path.join(d, 'aeroindex.json'), 'w', encoding='utf-8') as f:
+            json.dump(ai, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+        with gzip.open(os.path.join(data, 'route', 'fra.json.gz'), 'wt', encoding='utf-8') as f:
+            json.dump([book], f)
+        ctx = {'data': data, 'secrets': td}
+        r = fn(RJ.Job('route', 'compute', {}, author='TST'), {'dep': 'XSTA', 'arr': 'XEND', 'fl': 350, 'date': '2026-11-10T12:00', 'enable_fra': True}, ctx)
+        p = r['plan']['primary']
+        legs = p.get('legs') or []
+        c.eq((r['ok'], p['ok']), (True, True), 'the plan exists: the departure joins the FRA book, the arrival leaves it', what='plan')
+        ids = [legs[0]['start']['id']] + [l['end']['id'] for l in legs] if legs else []
+        c.eq((ids[:2], ids[-2:], 'NEARD' in ids), (['XSTA', 'GATED'], ['GATEA', 'XEND'], False),
+             'the departure joins GATED (120 NM, the climb to FL285 needs 107 NM) and NOT NEARD (30 NM: the floor cannot be reached); the arrival leaves by GATEA', what='gates')
+        c.eq([(legs[0]['layer'], legs[0]['control']), set((l['layer'], l['control']) for l in legs[1:-1]) == {('FRA', 'incomplete')}, (legs[-1]['layer'], legs[-1]['control'])], [('SID', 'fallback'), True, ('STAR', 'fallback')],
+             'each leg is classed by layer: the connectors are fallbacks (no SID, no STAR read), the FRA links are candidates', what='legs')
+        ctl = p['control']
+        c.eq([(s['layer'], s['control']) for s in ctl['sections']], [('SID', 'fallback'), ('FRA', 'incomplete'), ('STAR', 'fallback')], 'neighbouring legs of the same layer and class form one section', what='sections')
+        c.ok(ctl['controlled_pct'] == 0 and 5 < ctl['fallback_pct'] < 40 and abs(ctl['controlled_pct'] + ctl['incomplete_pct'] + ctl['fallback_pct'] + ctl['error_pct'] - 100) < .2, str({k: v for k, v in ctl.items() if k != 'sections'}),
+             'the shares of the distance add up to 100 %: nothing here is controlled, the connectors are a small part')
+        c.ok(legs[0]['nm'] >= 107 and 'SID' in legs[0]['control_reason'], str(legs[0]['control_reason']), 'the first connector is at least the climb distance and says that no SID was read')
+        # the screen's shape carries the classes (Fuel's form)
+        from route_engine import view
+        v = view.to_view(r['plan'], {'fl': 350, 'mode': 'calculate'})
+        a0 = v['alternatives'][0]
+        c.eq((a0['control']['controlledPct'], [s['control'] for s in a0['segments']][:2], a0['segments'][0]['layer'], [s['layer'] for s in a0['control']['sections']]), (0, ['fallback', 'incomplete'], 'SID', ['SID', 'FRA', 'STAR']),
+             'the screen’s answer gives, by alternative, the share controlled and its sections, and by segment its class and its layer', what='view')

@@ -2,8 +2,9 @@
 Point roles, numeric levels, simple UTC windows and entry/exit FLOS are enforced.
 The workbooks do not provide area polygons or NPZ geometry; links remain candidates.
 """
-import collections,datetime as dt,gzip,json,math,re
+import collections,datetime as dt,gzip,heapq,json,math,re
 from pathlib import Path
+CORRIDOR_EXCESS_NM=250   # SOG-0161 : détour maximal d'un point FRA par rapport à un tronçon dep → passages → arr (recherche « normale »)
 FRA_FILE=None   # SOG-0081 : chemin de fra.json.gz posé par le travail du lanceur (data/route/fra.json.gz) ; None : à côté du module, comme RouteSim 2
 
 def coord(text):
@@ -62,14 +63,36 @@ class Fra:
 
     def graph(self,g,dep,arr,fl,when,via=(),steps=False,density="normal"):
         nav=self.nav
+        # SOG-0161 : les distances de ce graphe (des millions d'appels de nm) se calculent sur des positions dont le sinus et le cosinus sont faits une fois (même formule que engine.nm)
+        trig={}
+        def tr(p):
+            t=trig.get(id(p))
+            if t is None:
+                la=math.radians(p['lat']);t=trig[id(p)]=(la,math.radians(p['lon']),math.cos(la),p)
+            return t
+        gmemo={}
+        def to_goal(o,tg):      # distance d'un candidat à un but : la même pour tous les points de départ, calculée une fois
+            k=(o['state'],id(tg[3]))
+            v=gmemo.get(k)
+            if v is None:v=gmemo[k]=fast(tr(nav.nodes[o['key']]),tg)
+            return v
+        def fast(a,b):
+            return 3440.065*2*math.asin(min(1,math.sqrt(math.sin((b[0]-a[0])/2)**2+a[2]*b[2]*math.sin((b[1]-a[1])/2)**2)))
         resolved=nav.resolve_sequence(via,nav.resolve(dep),nav.resolve(arr))
         anchor=[nav.ads[dep],nav.ads[arr]]+[nav.nodes[k] for k in resolved]
         latlo=min(p['lat'] for p in anchor)-4; lathi=max(p['lat'] for p in anchor)+4
         lonlo=min(p['lon'] for p in anchor)-6; lonhi=max(p['lon'] for p in anchor)+6
         groups=collections.defaultdict(list)
+        # SOG-0161 : recherche « normale » : seuls les points dont le détour par rapport à un tronçon dep → passages → arr ne dépasse pas 250 NM (une ellipse de ~460 NM de demi-largeur au milieu d'un trajet de 1 600 NM) sont des sommets du graphe ;
+        # « wide » (le deuxième essai automatique du plan) garde toute l'emprise : le graphe FRA coûtait 12 s sur ESSB → LEMO, le détour borné en coûte 3
+        legs=[(tr(x),tr(y),fast(tr(x),tr(y))) for x,y in zip(anchor,anchor[1:])]
+        def in_corridor(p):
+            if density=='wide' or not legs:return True
+            q=tr(p)
+            return any(fast(a,q)+fast(q,b)-d<=CORRIDOR_EXCESS_NM for a,b,d in legs)
         for r in self.records:
             p=nav.nodes[r['key']]
-            if not (latlo<=p['lat']<=lathi and lonlo<=p['lon']<=lonhi) or not self.eligible(r,fl,when,steps):continue
+            if not (latlo<=p['lat']<=lathi and lonlo<=p['lon']<=lonhi) or not in_corridor(p) or not self.eligible(r,fl,when,steps):continue
             state=r['key']+'|FRA|'+r['area']+'|'+str(r['row']);nav.nodes[state]=p
             r=dict(r,state=state);groups[r['area']].append(r)
             enter=('E' in r['enroute'] and parity(r['flos'],fl,'E')) or ('D' in r['terminal'] and self.airport_match(r['dep'],dep))
@@ -77,6 +100,7 @@ class Fra:
             gate=dict(route='DCT',nm=0,kind='FRA_GATE',fra_area=r['area'],lower=r['lower'],upper=r['upper'])
             if enter:g.setdefault(r['key'],[]).append((state,gate))
             if leave:g.setdefault(state,[]).append((r['key'],gate))
+        cand_cache={}
         for area,records in groups.items():
             cells=collections.defaultdict(list)
             for r in records:
@@ -84,23 +108,27 @@ class Fra:
             for r in records:
                 can_depart='E' in r['enroute'] or r['enroute']=='I' or 'D' in r['terminal'] and self.airport_match(r['dep'],dep)
                 if not can_depart:continue
-                p=nav.nodes[r['key']]; la,lo=math.floor(p['lat']),math.floor(p['lon']);neighbors=[]
+                p=nav.nodes[r['key']]; la,lo=math.floor(p['lat']),math.floor(p['lon']);neighbors=[];tp=tr(p)
                 # Distances here are graph search settings, not FRA legal limits.
                 # Wider search retries are automatic if the first topology fails.
                 max_nm=900 if density=='wide' else 500
-                candidates=records if density=='wide' else [o for x in range(la-9,la+10) for y in range(lo-16,lo+17) for o in cells.get((x,y),[])]
+                if density=='wide':candidates=records
+                else:                       # les points d'une même case de 1° partagent leur liste de candidats (SOG-0161)
+                    candidates=cand_cache.get((area,la,lo))
+                    if candidates is None:candidates=cand_cache[(area,la,lo)]=[o for x in range(la-9,la+10) for y in range(lo-16,lo+17) for o in cells.get((x,y),[])]
                 for other in candidates:
                     if other['key']==r['key']:continue
                     if not ('X' in other['enroute'] or other['enroute']=='I' or 'A' in other['terminal'] and self.airport_match(other['arr'],arr)):continue
                     if max(r['lower'],other['lower'])>min(r['upper'],other['upper']):continue
-                    d=self.nm(p,nav.nodes[other['key']])
+                    d=fast(tp,tr(nav.nodes[other['key']]))
                     if .1<d<=max_nm:neighbors.append((d,other))
                 neighbors.sort(key=lambda pair:pair[0])
                 goals=[nav.nodes[k] for k in resolved]+[nav.ads[arr]]
-                goals=sorted(goals,key=lambda goal:self.nm(p,goal))[:2]+[nav.ads[arr]]
+                goals=sorted(goals,key=lambda goal:fast(tp,tr(goal)))[:2]+[nav.ads[arr]]
                 chosen=neighbors[:(100 if density=='wide' else 24)]
                 chosen += [(d,o) for d,o in neighbors if 'X' in o['enroute']][:(40 if density=='wide' else 12)]
-                for goal in goals:chosen += sorted(neighbors,key=lambda pair:self.nm(nav.nodes[pair[1]['key']],goal))[:8]
+                for goal in goals:
+                    tg=tr(goal);chosen += heapq.nsmallest(8,neighbors,key=lambda pair:to_goal(pair[1],tg))
                 # Retain candidates in each compass sector, including directions
                 # away from the arrival when a mandatory waypoint requires it.
                 sectors=collections.defaultdict(list)

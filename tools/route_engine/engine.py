@@ -237,6 +237,28 @@ class Nav:
 
     def path(self,g,start,end):return self.search(g,start,end)
 
+    def terminal_gates(self,airport,isdep,ad,g,incoming,terminal,radius,have,other):
+        """SOG-0161 : sans SID ni STAR, les portes FRA que le classeur EUROCONTROL publie pour CET aérodrome (point « D » de départ, « A » d'arrivée, l'aérodrome nommé dans la ligne) sont des raccords possibles
+        AU-DELÀ du rayon : le plancher d'une zone FRA (FL285 en Suède et au Danemark) est atteint après une distance de montée (2000 ft/min, 450 kt : ~107 NM) que la SID parcourt ; un point plus proche n'est pas atteignable,
+        un point plus loin d'une marge de 120 NM n'est pas un raccord. Le raccord reste un DCT de simulation (connector), dit « revue » par le contrôle : aucune SID complète n'a été lue. [(distance NM, nœud)]"""
+        fra=getattr(self,'fra',None)
+        if not(fra and fra.book):return [],set()
+        role,col='D' if isdep else 'A','dep' if isdep else 'arr'
+        speed=float(terminal.get('speed_kt',450));rate=float(terminal.get('climb_fpm' if isdep else 'descent_fpm',2000));elev=float(self.ads[ad].get('elev') or 0)
+        detour=lambda k:nm(self.nodes[airport],self.nodes[k])+nm(self.nodes[k],other)
+        out,unreachable=[],set()
+        network={x for e in self.edges for x in (e['a'],e['b'])}
+        for k in set(g)|set(incoming):
+            if '|' in k or k not in self.nodes:continue
+            records=[r for r in fra.by_key.get(k,[]) if role in r['terminal'] and fra.airport_match(r[col],ad) and isinstance(r['lower'],(int,float))]
+            if not records:continue
+            d=nm(self.nodes[airport],self.nodes[k]);need=max(0,(min(r['lower'] for r in records)-elev))/rate*speed/60
+            if d<need-.1:
+                if k not in network:unreachable.add(k)      # une porte FRA plus proche que la distance de montée, qui n'est sur aucun airway : pas un raccord (le profil vertical la refuserait)
+            elif k not in have and d<=max(radius,need+120):out.append((detour(k),d,k))
+        out=[(d,k) for _,d,k in sorted(out)[:6]]       # les six portes les mieux placées (détour minimal vers l'autre aérodrome) : toutes les portes d'un grand aérodrome (LFPG : 20) font grossir le graphe jusqu'à épuiser le budget de recherche (LFPG → LEMD)
+        return out,unreachable
+
     def routing_graph(self,dep,arr,fl,radius,blocks=(),profile_options=None,allow_steps=False,via=(),when=None,enable_fra=True,terminal=None):
         terminal=terminal or {}
         cost_fields={k:terminal.get(k) for k in ['objective','fra_preference','unable_rnav','use_procedures','dep_runway','arr_runway','terminal_speed_kt','speed_kt','_fuel_model','search_density','_rad_avoid']}
@@ -302,6 +324,8 @@ class Nav:
             if used_procs.get(dep if isdep else arr):continue
             near=sorted((nm(self.nodes[airport],self.nodes[k]),k) for k in set(g)|set(incoming) if k not in [a,b] and '|FRA|' not in k)
             near=[(d,k) for d,k in near if d<=radius]
+            gates,unreachable=self.terminal_gates(airport,isdep,dep if isdep else arr,g,incoming,terminal,radius,{k for d,k in near},self.nodes[b if isdep else a])   # SOG-0161
+            near=[(d,k) for d,k in near if k not in unreachable]+gates
             if not near: raise ValueError(f'Aucun point du réseau au FL{fl:03d} à moins de {radius:g} NM de {self.nodes[airport]["id"]}. Couverture ou niveau insuffisant.')
             for d,k in near:
                 ids=(self.nodes[airport]['id'],self.nodes[k]['id']) if isdep else (self.nodes[k]['id'],self.nodes[airport]['id'])

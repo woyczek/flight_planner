@@ -67,7 +67,8 @@ def reason_of(text):
 
 def segment(leg):
     reasons = [reason_of(t) for t in dict.fromkeys(leg.get('alerts') or [])]
-    return {'from': leg['start']['id'], 'to': leg['end']['id'], 'via': leg['via'], 'state': 'error' if reasons or leg.get('compatible') is False else 'ok', 'reasons': reasons}
+    return {'from': leg['start']['id'], 'to': leg['end']['id'], 'via': leg['via'], 'state': 'error' if reasons or leg.get('compatible') is False else 'ok', 'reasons': reasons,
+            **({'control': leg['control'], 'layer': leg['layer'], 'controlReason': leg['control_reason']} if leg.get('control') else {})}       # SOG-0161 : controlled | incomplete | fallback | error, la couche (SID, LOW, HIGH, FRA, STAR), pourquoi
 
 
 def issue_kind(text):
@@ -104,7 +105,9 @@ def alternative(i, r, requested_fl):
     segs = [segment(l) for l in r.get('legs') or []]
     errors = [x for x in r.get('issues') or [] if x['level'] == 'ERREUR']
     return {'id': f'alt{i}', 'name': name_of(r, requested_fl), 'route': r.get('route', ''), 'distanceNm': r.get('distance_nm'), 'fl': r.get('fl'), 'profile': thin((r.get('profile') or {}).get('points')),
-            'sid': procedure(r, 'SID'), 'star': procedure(r, 'STAR'), 'faults': max(sum(1 for s in segs if s['state'] == 'error'), len(errors)), 'incomplete': bool(r.get('data_gaps')), 'segments': segs}
+            'sid': procedure(r, 'SID'), 'star': procedure(r, 'STAR'), 'faults': max(sum(1 for s in segs if s['state'] == 'error'), len(errors)), 'incomplete': bool(r.get('data_gaps')), 'segments': segs,
+            **({'control': {'controlledPct': r['control']['controlled_pct'], 'incompletePct': r['control']['incomplete_pct'], 'fallbackPct': r['control']['fallback_pct'], 'errorPct': r['control']['error_pct'],
+                            'sections': [{'layer': s['layer'], 'control': s['control'], 'from': s['from'], 'to': s['to'], 'nm': s['nm'], 'reason': s['reason']} for s in r['control']['sections']]}} if r.get('control') else {})}
 
 
 def to_view(plan_result, request, include_raw=False):
