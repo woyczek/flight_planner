@@ -141,7 +141,7 @@
           station: u.pathname.split('/').pop(),
           forecast: []
         }) : marked('x-sog-unreachable');
-        // les pages du synoptique : <racine>/weather/world/ (par défaut) ou <racine>/data/local/weather/world/ (opts.worldAt)
+        // les pages du synoptique : <racine>/weather/world/ (par défaut) ou <racine>/data/weather/world/ (opts.worldAt)
         const wp = `/v3/${opts.worldAt || 'weather/world/'}`;
         if (u.pathname === `${wp}index.json`) return opts.world ? json(opts.world) : json({}, 404);
         if (u.pathname.startsWith(wp)) return json({
@@ -523,14 +523,14 @@
       'index.json')), S2.net.calls.join(' '));
 
     // le synoptique d'aerodb sous data/local/ (SOG-0138) : la publication d'abord, sinon ce dossier, rien d'autre
-    const LOCAL = 'https://example.test/v3/data/local/weather/world/',
+    const LOCAL = 'https://example.test/v3/data/weather/world/',
       PUB = 'https://example.test/v3/weather/world/';
     S = mk({
       world: WORLD,
-      worldAt: 'data/local/weather/world/'
+      worldAt: 'data/weather/world/'
     });
     const j1 = await S.w.world();
-    ck('world : premiere base absente, index lu sous data/local/weather/world/ apres la publication', j1?.built === built && S.net.calls
+    ck('world : premiere base absente, index lu sous data/weather/world/ apres la publication', j1?.built === built && S.net.calls
       .indexOf(
         PUB + 'index.json') >= 0 && S.net.calls.indexOf(LOCAL + 'index.json') > S.net.calls.indexOf(PUB + 'index.json'), S.net.calls.join(
         ' '));

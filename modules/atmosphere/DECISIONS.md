@@ -28,7 +28,7 @@ The memory of the V3 atmosphere module: every choice, dated, with its reason. Ne
 ## 10 November 2026 — the world synoptic line « Build » (SOG-0138 refused, given to the maps session by the ergonomics)
 
 - **Seen** (the user's capture 102550: the Météo screen, a map without synoptic): nothing publishes the world synoptic on his workstation
-  (`data/local/weather/world/` absent), the only gesture was Maintenance › Données, far from the screen where the map is missing.
+  (`data/weather/world/` absent), the only gesture was Maintenance › Données, far from the screen where the map is missing.
 - **Done** (ergonomics' decision): a line on the Météo map, shown without a publication or with one older than 12 h, with the one gesture « Build
   (2 min) » = the launcher's `weather/world { action: 'build' }` through `ctx.launcher.job`, followed (n/25), one at a time, then the layer
   read again at once; a failure in the pilot's words with « Try again »; without a launcher, where to do it. `world_build.js` (injectable:

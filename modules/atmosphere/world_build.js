@@ -1,7 +1,7 @@
 // V3 atmosphere — la ligne « Synoptique monde » (SOG-0138) : sans publication du synoptique monde, ou avec une publication de plus de 12 h,
 // une ligne sur la carte le dit et offre « Construire » — le travail weather/world { action: 'build' } du lanceur de ce poste (tools/regen/
 // weather.py, GFS 1° par NOMADS, environ 2 min), suivi pas à pas ; la couche arrive sur la carte quand il est fini. Sans lanceur, la ligne
-// dit où le faire. Jamais d'appel hors du lanceur ; aucune écriture : le lanceur publie sous data/local/weather/world/ (jamais synchronisé).
+// dit où le faire. Jamais d'appel hors du lanceur ; aucune écriture : le lanceur publie sous data/weather/world/ (jamais synchronisé).
 
 import {
   esc

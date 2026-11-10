@@ -421,10 +421,10 @@ export const TX = {
       'Previsión sinóptica mundial (NOAA GFS 1°, malla de 5°, hasta +72 h) para la capa mundial del mapa de Atmósfera. Fuente: NOAA GFS por NOMADS, sin clave (dominio público).'
     ],
     local: [
-      'Publiée localement, sur ce poste (data/local/weather/world/) : jamais synchronisée ni commitée. Première construction : environ 2 minutes ; si le run est déjà là, quelques secondes.',
-      'Published locally, on this workstation (data/local/weather/world/): never synchronised nor committed. First build: about 2 minutes; if the run is already there, a few seconds.',
-      'Lokal auf diesem Rechner veröffentlicht (data/local/weather/world/): nie synchronisiert oder committet. Erster Aufbau: etwa 2 Minuten; ist der Lauf schon da, wenige Sekunden.',
-      'Publicado localmente, en este puesto (data/local/weather/world/): nunca sincronizado ni confirmado. Primera construcción: unos 2 minutos; si la pasada ya está, unos segundos.'
+      'Publiée localement, sur ce poste (data/weather/world/) : jamais synchronisée ni commitée. Première construction : environ 2 minutes ; si le run est déjà là, quelques secondes.',
+      'Published locally, on this workstation (data/weather/world/): never synchronised nor committed. First build: about 2 minutes; if the run is already there, a few seconds.',
+      'Lokal auf diesem Rechner veröffentlicht (data/weather/world/): nie synchronisiert oder committet. Erster Aufbau: etwa 2 Minuten; ist der Lauf schon da, wenige Sekunden.',
+      'Publicado localmente, en este puesto (data/weather/world/): nunca sincronizado ni confirmado. Primera construcción: unos 2 minutos; si la pasada ya está, unos segundos.'
     ],
     build: ['Construire', 'Build', 'Aufbauen', 'Construir'],
     running: ['Construction en cours…', 'Building…', 'Aufbau läuft …', 'Construyendo…'],

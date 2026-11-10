@@ -4366,7 +4366,7 @@ def l48(c):
 
 @case('L50', 'Données: the « Synoptique monde (GFS) » row reads weather/world { action: status } (state, run, weight), « Construire » builds it, the publication is said local to the workstation', 'L', tags=('data',), langs4=True,
       designs=('standard',), screens=False, night=False,
-      rule='SOG-0138 (AeroDB weather/world): a row in the Météo group — absent until a publication exists, then the run, the steps, the weight and the age; « Construire » = action build (128 s the first time, 13 s when the run is already there); the publication is in data/local/weather/world/, never synchronised; a failure says its reason')
+      rule='SOG-0138 (AeroDB weather/world): a row in the Météo group — absent until a publication exists, then the run, the steps, the weight and the age; « Construire » = action build (128 s the first time, 13 s when the run is already there); the publication is in data/weather/world/, never synchronised; a failure says its reason')
 def l50(c):
     lang = c.lang
     WT = lambda key: _trow(key, lang, after='  world: {')

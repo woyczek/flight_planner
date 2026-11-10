@@ -3021,10 +3021,10 @@ def sites_view():
 # ---- V3 frame : transport « lanceur » de la couche de données (frame/store/transport_launcher.js). Le dossier data/ du
 # poste est le dépôt : arbre { chemin: empreinte git du fichier } (gardée par taille et date), tête = empreinte de cet
 # arbre ; un lot d'écritures s'écrit d'un coup, un commit local si data/ est un dépôt git (l'échange avec le dépôt
-# distant reste le passage de synchronisation, /__setup/sync). Hors de l'arbre : .git, local/, copies de conflits et
+# distant reste le passage de synchronisation, /__setup/sync). Hors de l'arbre : .git, local/, weather/ (le synoptique monde construit sur le poste, ignoré par git, SOG-0138), copies de conflits et
 # d'avant restauration, index régénérés, repère du lanceur, sources du SIA (seules sia/base/, la base publiée, et
 # sia/vfr/, les points VFR tirés des VAC, sont vues).
-FRAME_SKIP = re.compile(r'(^|/)(\.git|_conflits|_avant_restauration)(/|$)|^local(/|$)|(^|/)_index\.json$|^\.defa_instance$|^sia/(?=.)(?!(base|vfr)(/|$))')
+FRAME_SKIP = re.compile(r'(^|/)(\.git|_conflits|_avant_restauration)(/|$)|^(local|weather)(/|$)|(^|/)_index\.json$|^\.defa_instance$|^sia/(?=.)(?!(base|vfr)(/|$))')
 FRAME_LOCK = threading.Lock()
 _frame_memo = {}  # chemin → ((taille, date), empreinte)
 

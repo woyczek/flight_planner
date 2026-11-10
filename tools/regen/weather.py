@@ -6,7 +6,7 @@ sur le poste, rien ne lançait l'outil : pas de carte. Un travail le lance.
 Un verbe, `weather/world` { action?: 'build' (par défaut) | 'status' } :
   · `status` : { ok, exists, run, built, step, times: [première, dernière échéance], steps, files, bytes, age } — ce que la publication du poste contient (jamais d'appel réseau) ;
   · `build` : exécute tools/build_world_weather.py (bibliothèque standard ; NOMADS de la NOAA, GFS 1°, sans clé ni quota) vers un dossier de travail, CONTRÔLE ce qu'il a écrit (un index de schéma 1, des fichiers nommés par lui seul, taille et nombre bornés), puis le
-    met en place d'un coup dans data/local/weather/world/ (`local/` : propre au poste, jamais synchronisé ni commité : une publication de plusieurs Mo toutes les six heures n'a rien à faire dans l'historique git). La publication d'avant sert de reprise
+    met en place d'un coup dans data/weather/world/ (SOG-0138 : data/local/ n'est servi à personne, hidden() du lanceur ; data/weather/ l'est, et n'est ni dans l'arbre du lanceur, FRAME_SKIP, ni dans git : `weather/` dans data/.gitignore et dans .git/info/exclude, posés ici s'ils manquent ; une publication de plusieurs Mo toutes les six heures n'a rien à faire dans l'historique). L'ancienne publication de data/local/weather/world/ est déplacée une fois, pas reconstruite. La publication d'avant sert de reprise
     (`--keep file://…`) : même run de GFS → rien n'est redemandé à la NOAA. Rend { ok, kept, run, built, times, steps, files, bytes, seconds, reason?, message? } ; reason : 'no-run' (aucun run publié / NOAA injoignable : l'ancienne publication reste), 'invalid' (le dossier produit n'est pas conforme : rien n'est remplacé), 'timeout', 'cancelled', 'failed'.
 Rien n'est lu hors de la NOAA ; aucun chemin, aucune adresse ne vient de la page. Un départ par dix minutes au plus (MIN_GAP)."""
 import json
@@ -25,7 +25,8 @@ if TOOLS not in sys.path:
 import regen_jobs  # noqa: E402  (le socle : inside, child_env)
 
 SCRIPT = os.path.join(TOOLS, 'build_world_weather.py')
-DEST = ('local', 'weather', 'world')
+DEST = ('weather', 'world')
+LEGACY = ('local', 'weather', 'world')      # là où les premières versions l'écrivaient (jamais servi par le lanceur)
 TIMEOUT = 900                      # secondes pour toute la lecture (le serveur de la NOAA répond par échéance)
 MAX_FILES = 2 * 25 + 1             # un index, deux fichiers par échéance, 25 échéances
 MAX_BYTES = 40 * 1024 * 1024       # la publication fait quelques Mo : au-delà, refusée
@@ -98,16 +99,83 @@ def _read_lines(proc, job, lines):
             del lines[:-50]
 
 
+IGNORED = ('weather', 'weather/', '/weather', '/weather/')
+
+
+def _ignore(data):
+    """`weather/` dans data/.gitignore (le dépôt des données est celui de l'utilisateur : une ligne ajoutée, jamais commitée ici) et dans .git/info/exclude (ignoré tout de suite, sans rien à commiter). 'added' si .gitignore a changé (une ligne reste à commiter), 'present', ou 'none' (pas un dépôt)."""
+    gi, git = os.path.join(data, '.gitignore'), os.path.join(data, '.git')
+    if not (os.path.exists(git) or os.path.isfile(gi)):
+        return 'none'
+    state = 'present'
+    try:
+        with open(gi, 'r', encoding='utf-8', newline='') as f:
+            text = f.read()
+    except OSError:
+        text = ''
+    if not any(line.strip() in IGNORED for line in text.splitlines()):
+        eol = '\r\n' if '\r\n' in text else '\n'
+        add = ('' if not text or text.endswith('\n') else eol) + '# Synoptique monde (GFS) construit sur le poste (travail weather/world) : jamais synchronisé ni publié' + eol + 'weather/' + eol
+        try:
+            with open(gi, 'a', encoding='utf-8', newline='') as f:
+                f.write(add)
+            state = 'added'
+        except OSError:
+            state = 'none'
+    if os.path.isdir(git):
+        ex = os.path.join(git, 'info', 'exclude')
+        try:
+            try:
+                with open(ex, 'r', encoding='utf-8') as f:
+                    cur = f.read()
+            except OSError:
+                cur = ''
+            if not any(line.strip() in IGNORED for line in cur.splitlines()):
+                os.makedirs(os.path.dirname(ex), exist_ok=True)
+                with open(ex, 'a', encoding='utf-8', newline='\n') as f:
+                    f.write(('' if not cur or cur.endswith('\n') else '\n') + 'weather/\n')
+        except OSError:
+            pass
+    return state
+
+
+def _migrate(data):
+    """La publication d'avant (data/local/weather/world/, que le lanceur ne sert pas) est déplacée une fois vers data/weather/world/ : pas reconstruite. Si la nouvelle existe déjà, l'ancienne (conforme, de nos noms) est retirée. True si déplacée."""
+    old, new = os.path.join(data, *LEGACY), os.path.join(data, *DEST)
+    if not os.path.isdir(old) or os.path.islink(old):
+        return False
+    moved = False
+    try:
+        if not os.path.exists(new):
+            if not _valid(old):
+                return False
+            os.makedirs(os.path.dirname(new), exist_ok=True)
+            os.replace(old, new)
+            moved = True
+        elif _valid(old):
+            shutil.rmtree(old, ignore_errors=True)
+        for d in (os.path.dirname(old), os.path.dirname(os.path.dirname(old))):
+            try:
+                os.rmdir(d)          # data/local/weather, puis data/local s'ils sont vides (jamais autrement)
+            except OSError:
+                break
+    except OSError:
+        return moved
+    return moved
+
+
 def run(job, args, ctx):
     data = ctx['data']
     dest = os.path.join(data, *DEST)
+    moved = _migrate(data)
     if args['action'] == 'status':
-        return {'ok': True, **_summary(dest)}
+        return {'ok': True, **_summary(dest), **({'migrated': True} if moved else {})}
     base = os.path.realpath(data)
     parent = os.path.dirname(dest)
     if not regen_jobs.inside(parent, base):
         return {'ok': False, 'reason': 'failed', 'message': 'unsafe path'}
     os.makedirs(parent, exist_ok=True)
+    ignored = _ignore(data)
     t0 = time.time()
     work = tempfile.mkdtemp(prefix='.world-', dir=parent)
     out = os.path.join(work, 'world')
@@ -143,7 +211,7 @@ def run(job, args, ctx):
             os.replace(dest, old)
         os.replace(out, dest)
         shutil.rmtree(old, ignore_errors=True)
-        return {'ok': True, 'kept': any('reprise' in x for x in lines), **_summary(dest), 'seconds': round(time.time() - t0, 1)}
+        return {'ok': True, 'kept': any('reprise' in x for x in lines), **_summary(dest), 'gitignore': ignored, **({'migrated': True} if moved else {}), 'seconds': round(time.time() - t0, 1)}
     except OSError as e:
         return {'ok': False, 'reason': 'failed', 'message': str(e)[:200], 'seconds': round(time.time() - t0, 1)}
     finally:

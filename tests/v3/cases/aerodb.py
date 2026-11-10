@@ -5269,7 +5269,7 @@ def k110(c):
     c.eq((r['nodata']['ok'], r['nodata']['source'], r['nodata']['commit'], r['nodata']['calls']), (True, 'eaip', 'p2', ['proc/eaip-fetch', 'ground/fetch']), 'a ground read that finds nothing changes nothing to the procedures answer', what='nodata')
 
 
-@case('K111', 'Job weather/world (SOG-0138): the world forecast tool is run by the launcher, its output checked, put in place at once in data/local/weather/world/, the old one kept when it fails; status without network', 'K', static=True,
+@case('K111', 'Job weather/world (SOG-0138): the world forecast tool is run by the launcher, its output checked, put in place at once in data/weather/world/ (git-ignored, served by the launcher), the old one kept when it fails; status without network', 'K', static=True,
       rule='SOG-0138 (10 Nov 2026): the Atmosphere world map reads pages published by tools/build_world_weather.py but no launcher job ran it, nothing was published on the workstation; the job runs it, checks what it wrote (schema 1 index, known file names, bounded size and count), replaces the publication in one move, never commits it (data/local/), reuses the previous publication (--keep) and says its run, its steps and its size')
 def k111(c):
     import json
@@ -5307,7 +5307,7 @@ def k111(c):
         script = os.path.join(td, 'fake_world.py')
         open(script, 'w', encoding='utf-8').write(fake)
         ctx = {'data': data, 'script': script}
-        dest = os.path.join(data, 'local', 'weather', 'world')
+        dest = os.path.join(data, 'weather', 'world')
         jobs = []
         run = lambda mode='ok', **a: (open(os.path.join(td, 'mode.txt'), 'w').write(mode), jobs.append(RJ.Job('weather', 'world', {})), fn(jobs[-1], check(a), ctx))[2]
         r = run(action='status')
@@ -5321,21 +5321,39 @@ def k111(c):
             c.eq((r['ok'], r['reason'], os.path.exists(dest)), (False, 'invalid', False), f'{mode}: a folder that is not a valid world forecast is never put in place', what=mode)
         r = run('ok')
         c.eq((r['ok'], r['exists'], r['steps'], r['files'], r['step'], r['run'], r['times'], os.path.exists(os.path.join(dest, 'index.json'))), (True, True, 3, 7, 5, '2027-01-15T05:13:20Z', ['2027-01-15T08:00:00Z', '2027-01-15T14:00:00Z'], True),
-             'a valid output is put in place in data/local/weather/world/: the run, the steps, the files and their size said', what='ok')
+             'a valid output is put in place in data/weather/world/: the run, the steps, the files and their size said', what='ok')
         v = jobs[-1].view()
         c.eq((v['done'], v['total'], v['unit'], v['step'], [x for x in v['log'] if '@etape' in x]), (3, 3, 'étapes', 'synoptique monde : échéance 3 sur 3', []),
              'the tool says « @etape k/n » for each forecast time read: the job reports it as its progress (3 / 3 étapes) and keeps the progress lines out of its log (SOG-0198: « 0 / 1 étapes » for 119 s)', what='progress')
         c.eq(open(os.path.join(td, 'args.txt')).read(), '', 'the first build has no previous publication: no --keep', what='no keep')
-        c.eq(sorted(os.listdir(os.path.join(data, 'local', 'weather'))), ['world'], 'nothing else is left next to the publication (no work folder, no old one)', what='clean')
+        c.eq(sorted(os.listdir(os.path.join(data, 'weather'))), ['world'], 'nothing else is left next to the publication (no work folder, no old one)', what='clean')
         r = run('ok')
         keep = open(os.path.join(td, 'args.txt')).read()
-        c.eq((r['ok'], keep.startswith('file:///'), keep.endswith('/local/weather/world/')), (True, True, True), 'a second build replaces it and gives the previous publication to the tool (--keep, a file address: the same GFS run is not asked of the NOAA again)', what='keep')
+        c.eq((r['ok'], keep.startswith('file:///'), keep.endswith('/data/weather/world/')), (True, True, True), 'a second build replaces it and gives the previous publication to the tool (--keep, a file address: the same GFS run is not asked of the NOAA again)', what='keep')
         r = run('none')
         c.eq((r['ok'], r['reason'], os.path.isfile(os.path.join(dest, 'index.json'))), (False, 'no-run', True), 'when the tool finds nothing the previous publication stays', what='old stays')
         r = run('stray')
         c.eq((r['reason'], os.path.isfile(os.path.join(dest, 'index.json'))), ('invalid', True), 'an invalid output does not replace the previous publication either', what='old stays 2')
         r = run(action='status')
         c.eq((r['exists'], r['steps'], r['age'] is not None and r['age'] > 0), (True, 3, True), 'status reads the publication in place: steps and age', what='status')
+        # SOG-0138: the first versions wrote under data/local/ (never served): the publication is moved once, not rebuilt
+        legacy = os.path.join(data, 'local', 'weather', 'world')
+        os.makedirs(os.path.dirname(legacy))
+        os.replace(dest, legacy)
+        r = run(action='status')
+        c.eq((r['exists'], r.get('migrated'), os.path.exists(legacy), os.path.isdir(os.path.join(data, 'local')), os.path.isfile(os.path.join(dest, 'index.json'))), (True, True, False, False, True),
+             'an old publication of data/local/weather/world/ is moved once to data/weather/world/ (the empty folders left are removed): no rebuild, no 17 MB lost', what='migrated')
+        # the data repository: `weather/` in data/.gitignore (and .git/info/exclude), put by the build, once; without a repository nothing is written
+        r = run('ok')
+        c.eq((r['gitignore'], os.path.exists(os.path.join(data, '.gitignore'))), ('none', False), 'a data folder that is not a git repository: no .gitignore created', what='no repo')
+        open(os.path.join(data, '.gitignore'), 'w', newline='').write('local/')
+        os.makedirs(os.path.join(data, '.git'))
+        r = run('ok')
+        r2 = run('ok')
+        gi = open(os.path.join(data, '.gitignore'), newline='').read().splitlines()
+        ex = open(os.path.join(data, '.git', 'info', 'exclude')).read().split()
+        c.eq((r['gitignore'], r2['gitignore'], gi.count('weather/'), gi[0], ex.count('weather/')), ('added', 'present', 1, 'local/', 1),
+             'the build puts `weather/` in data/.gitignore (a line left to commit in the data repository: said) and in .git/info/exclude, once; the next build finds it there', what='gitignore')
 
 
 @case('K112', 'Country packs and thematic filters (SOG-0065, § 10.42): packs.json from Natural Earth and hand lists, a pack is a list of zones (many-to-many), a theme is a filter that adds nothing; AeroDb.packs() gives them cleaned', 'K', tags=('aerodb',), phone=False,
@@ -6748,3 +6766,97 @@ def k142(c):
     c.eq([[x['cycles'], x['unknown'], x['partial']] for x in r], [
         [{'2026-10-01': 390, '2026-10-29': 28}, 0, True], [{'2026-10-29': 28}, 390, True], [{'2026-10-29': 418}, 0, False], [{'2026-10-29': 28}, 0, True], [None, 0, False], [{}, 0, False]],
         'publication().vfr says « partial » for two cycles, for dated and undated parts together, and for an incomplete compilation; one cycle complete is not; an index of before has no cycles; a bad value is dropped', what='vfrParts')
+
+
+@case('K143', 'The world forecast the job publishes is READABLE by the page on the REAL launcher (SOG-0138, third refusal): after a build, index.json and a forecast time come back by the way the page tries, and data/local/ stays 404 for every other path', 'K', static=True,
+      rule='SOG-0138 (10 Nov 2026, « la couche gfs n\'est toujours pas là »): the job wrote data/local/weather/world/ (17 MB, 51 files), the page reads <root>/weather/world/ then <root>/data/local/weather/world/, and the real launcher answers 404 to both (hidden(): data/local is never served, audit of 7 Oct); the cases played a fake launcher or a site that serves data/local. Same fault as SOG-0144. Played here on a COPY of the launcher (its own root, its own data) whose forecast tool is replaced by a fake that writes a valid publication, started through the real job route')
+def k143(c):
+    import http.client
+    import json
+    import os
+    import shutil
+    import socket
+    import subprocess
+    import sys
+    import tempfile
+    import time
+    from pathlib import Path
+    fake = (
+        'import json, os, sys\n'
+        'out = sys.argv[1]\n'
+        'os.makedirs(out)\n'
+        't = [1_800_000_000 + 10800 * k for k in range(3)]\n'
+        'names = ["2027-01-15T%02d.json" % (8 + 3 * k) for k in range(3)]\n'
+        'for n in names + [x.replace(".json", "-alt.json") for x in names]:\n'
+        '    open(os.path.join(out, n), "w").write("{}")\n'
+        'idx = {"schema": 1, "model": "gfs", "run": 1_799_990_000, "built": 1_700_000_000, "step": 5, "times": t, "files": names, "altFiles": [x.replace(".json", "-alt.json") for x in names]}\n'
+        'json.dump(idx, open(os.path.join(out, "index.json"), "w"))\n'
+        'print("synoptique monde : 3 \u00e9ch\u00e9ances")\n')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td) / 'root'                  # a copy of the launcher: its root is its own, nothing of this checkout is written
+        shutil.copytree(c.root / 'tools', root / 'tools', ignore=shutil.ignore_patterns('__pycache__', '_verify', 'demo', '.regen_last.json'))
+        (root / 'tools' / 'build_world_weather.py').write_text(fake, encoding='utf-8')
+        data = root / 'data'
+        data.mkdir()
+        (data / 'data_tree.js').write_text('window.DATA_TREE = {};\n', encoding='utf-8')
+        (data / 'local').mkdir()
+        (data / 'local' / 'secret.json').write_text('{"private": true}', encoding='utf-8')
+        (data / '.git').mkdir()                       # a data repository (empty is enough: the verb only writes its ignore lines)
+        (data / '.gitignore').write_text('local/\n', encoding='utf-8')
+        s = socket.socket()
+        s.bind(('127.0.0.1', 0))
+        port = s.getsockname()[1]
+        s.close()
+        tmp = Path(td) / 'tmp'
+        tmp.mkdir()
+        log = open(Path(td) / 'launcher.log', 'w')
+        p = subprocess.Popen([sys.executable, str(root / 'tools' / 'launch.py'), '--port', str(port), '--no-browser', '--data', str(data)], stdout=log, stderr=subprocess.STDOUT,
+                             stdin=subprocess.DEVNULL, cwd=td, env={**os.environ, 'TEMP': str(tmp), 'TMP': str(tmp), 'TMPDIR': str(tmp)})
+        try:
+            hdr = {'X-SOG-Setup': '1', 'Content-Type': 'application/json', 'Sec-Fetch-Site': 'same-origin'}
+
+            def call(method, path, body=None, **h):
+                con = http.client.HTTPConnection('127.0.0.1', port, timeout=30)
+                con.request(method, path, body=json.dumps(body) if body is not None else None, headers={**hdr, **h})
+                r = con.getresponse()
+                return r.status, r.read()
+            for _ in range(60):
+                try:
+                    if call('GET', '/')[0] in (200, 302, 404):
+                        break
+                except OSError:
+                    time.sleep(0.5)
+            st, raw = call('POST', '/__setup/regen/job', {'set': 'weather', 'verb': 'world', 'args': {}, 'author': 'TST'})
+            job = json.loads(raw).get('job')
+            v = {}
+            end = time.time() + 60
+            while job and time.time() < end:
+                v = json.loads(call('GET', f'/__setup/regen/job?id={job}')[1])
+                if v.get('state') != 'running':
+                    break
+                time.sleep(0.3)
+            c.eq((v.get('state'), (v.get('result') or {}).get('ok')), ('done', True), 'the job runs on the real launcher (its tool is the fake) and publishes', what='job')
+            # the ways the page tries, in its order (frame/lib/weather_store.js WORLD_BASES)
+            ways = ['/weather/world/', '/data/weather/world/']
+            got = next((w for w in ways if call('GET', w + 'index.json')[0] == 200), None)
+            c.ok(got is not None, 'index.json: ' + ', '.join(f'{w} -> {call("GET", w + "index.json")[0]}' for w in ways), 'the page gets index.json from the real launcher by one of the ways it tries (today: 404 on both)')
+            if got is not None:
+                f = '2027-01-15T08.json'
+                c.eq((got, call('GET', got + f)[0], call('GET', got + '2027-01-15T08-alt.json')[0]), ('/data/weather/world/', 200, 200), 'the page gets it under data/weather/world/ (its second base): index.json, a forecast time, its pressure levels', what='a time')
+            # whatever the way chosen, data/local/ stays closed: any other file of it is 404 (the audit of 7 Oct), including the forecast folder as the old path read it, but for the closed names
+            c.eq((call('GET', '/data/local/secret.json')[0], call('GET', '/data/local/weather/../secret.json')[0], call('GET', '/data/local/weather/world/index.json')[0]), (404, 404, 404),
+                 'data/local/ stays 404 for every path (hidden() is unchanged: nothing of it opened)', what='closed')
+            # the tree of the launcher (/__setup/changes: what is offered to the synchronisation and copied to the devices) does not count the publication
+            tree = json.loads(call('GET', '/__setup/changes')[1]).get('tree') or {}
+            c.ok(tree and not [k for k in tree if k.startswith(('weather/', 'local/'))], str(sorted(tree)[:8]), 'the tree of the launcher counts neither the forecast files nor data/local/ (never proposed to the synchronisation, never copied to a device)')
+            # the data repository: the line is put by the verb, the old publication moved once (not rebuilt)
+            c.eq(((data / '.gitignore').read_text(encoding='utf-8').splitlines().count('weather/'), 'weather/' in (data / '.git' / 'info' / 'exclude').read_text(encoding='utf-8').split()), (1, True),
+                 'the verb put `weather/` in data/.gitignore (once) and in .git/info/exclude (git ignores it at once, nothing to commit for that)', what='gitignore')
+            c.eq((r := (v.get('result') or {})).get('gitignore'), 'added', 'and says a line is left to commit in the data repository', what='said')
+        finally:
+            p.terminate()
+            try:
+                p.wait(10)
+            except subprocess.TimeoutExpired:
+                p.kill()
+            log.close()

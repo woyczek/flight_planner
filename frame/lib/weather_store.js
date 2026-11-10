@@ -12,7 +12,7 @@
 //   · METAR et TAF gardés 30 min (cache/weather/metar|taf/<OACI>.json) : aviationweather.gov par le relais du lanceur,
 //     sinon metar.vatsim.net (METAR bruts décodés par frame/lib/metar.js) et avwx.rest (clé de l'appareil, ajoutée par le
 //     cadre) ;
-//   · synoptique monde : la publication des pages (même origine, <racine>/weather/world/, sinon <racine>/data/local/weather/world/ que
+//   · synoptique monde : la publication des pages (même origine, <racine>/weather/world/, sinon <racine>/data/weather/world/ que
 //     le lanceur sert de data/local/ : celles d'aerodb, jamais synchronisées), index gardé 6 h dans
 //     cache/weather/world/ ; l'appareil n'appelle jamais Open-Meteo hors de la grille du vol (aloft et grid seulement).
 // Ni page ni stockage propre : la couche de données (data : get, put, remove, cached) et les appels sortants (net.fetch,
@@ -702,7 +702,7 @@ export function weatherStore({
   const WORLD_DIR = `${PREFIX}world/`,
     // où sont les pages : la publication (<racine>/weather/world/), sinon ce que le lanceur sert de data/local/ (aerodb les y écrit,
     // jamais synchronisées, 17 Mo toutes les six heures) ; dans cet ordre, rien d'autre (SOG-0138)
-    WORLD_BASES = ['weather/world/', 'data/local/weather/world/'];
+    WORLD_BASES = ['weather/world/', 'data/weather/world/'];
   let worldIdx = null,
     worldTried = 0,
     worldFrom = 0; // la base qui a répondu en dernier : les échéances d'un index y sont d'abord cherchées

@@ -1,5 +1,5 @@
 // V3 data — la ligne « Synoptique monde (GFS) » du groupe Météo (SPEC § 5.11, SOG-0138) : l'état de la publication que le lanceur tient (weather/world { action: 'status' } : le run, l'âge, le poids, sans réseau) et « Construire » (le même travail, `build` : environ 2 minutes la première fois, 13 s
-// quand le run est déjà là). La publication est LOCALE au poste (data/local/weather/world/) : jamais synchronisée ni commitée, la ligne le dit. Même gabarit que les autres jeux (résumé, pastille, détail replié) ; ne calcule aucune prévision : le lanceur l'a faite.
+// quand le run est déjà là). La publication est LOCALE au poste (data/weather/world/) : jamais synchronisée ni commitée, la ligne le dit. Même gabarit que les autres jeux (résumé, pastille, détail replié) ; ne calcule aucune prévision : le lanceur l'a faite.
 import * as M from './model.js';
 import {
   TX

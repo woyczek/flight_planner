@@ -229,7 +229,7 @@ projected. The cross-section and the sounding are SVG (`section.js`): smooth fie
   `ctx.weather.world(null, { fresh: true })`) and a note says it is built. A failure says why in the launcher's reason (`no-run`: NOAA
   unreachable or no run, the old one stays; `invalid`; `timeout` 15 min; `cancelled`; `too-soon` with its wait in seconds; else failed)
   with « Try again ». A fresh publication (< 12 h) shows nothing; without a launcher (a paired device, GitHub Pages) the line says
-  « available with the workstation's launcher ». The publication is under `data/local/weather/world/` (never synchronised). The layer
+  « available with the workstation's launcher ». The publication is under `data/weather/world/` (never synchronised). The layer
   itself is drawn outside the flight's grid (§ 5), as before. Noreg E18.
 - No airspace is drawn: rule 21 does not apply.
 
