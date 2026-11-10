@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 69,
-  "verdicts": 18
+  "verdicts": 17
  },
  "apps": [
   "pilote",
@@ -802,9 +802,12 @@
    },
    "test": "Relancer le lanceur, puis Maintenance › Recette : valider un test, en refuser un autre avec un commentaire, recharger → les verdicts sont tenus ; un refus sans commentaire n'est pas envoyé.",
    "since": "2026-11-10",
-   "state": "ok",
-   "delivered": "2026-11-10T08:39:55Z",
-   "at": "2026-11-10T10:31:35Z"
+   "state": "todo",
+   "delivered": "2026-11-10T11:42:18Z",
+   "previous": {
+    "verdict": "ok",
+    "at": "2026-11-10T10:31:35Z"
+   }
   },
   {
    "id": "SOG-0168",

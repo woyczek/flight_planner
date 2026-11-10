@@ -5,7 +5,7 @@
  "generated": {
   "tool": "tools/roadmap_build.py",
   "organisation": "7e8d67e",
-  "fiches": 186,
+  "fiches": 197,
   "untranslated": 1,
   "priorities": 152
  },
@@ -752,6 +752,24 @@
      "en": "Map: an airspace sheet flickers when it opens, and the “Layers” tab is used for more than choosing layers",
      "de": "Karte: das Luftraumblatt flackert beim Öffnen, und der Reiter „Ebenen“ dient nicht nur der Ebenenwahl",
      "es": "Mapa: la ficha de un espacio parpadea al abrirse y la pestaña «Capas» sirve para algo más que elegir capas"
+    },
+    {
+     "id": "SOG-0192",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Carte : l'infobulle d'un espace reste affichée quand on ouvre le « i »",
+     "en": "Map: an airspace tooltip stays when the “i” panel opens",
+     "de": "Karte: der Luftraum-Tooltip bleibt, wenn das „i“-Feld geöffnet wird",
+     "es": "Mapa: la ayuda emergente de un espacio se queda al abrir el panel «i»"
+    },
+    {
+     "id": "SOG-0196",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "RÉGRESSION : la fenêtre de la mission posée sur la carte (titre, « Carte fournie », « Vue ») a disparu",
+     "en": "REGRESSION: the mission window on the map (title, “Provided map”, “View”) is gone",
+     "de": "REGRESSION: das Missionsfenster auf der Karte (Titel, „Mitgelieferte Karte“, „Ansicht“) ist verschwunden",
+     "es": "REGRESIÓN: ha desaparecido la ventana de la misión sobre el mapa (título, «Carta suministrada», «Vista»)"
     }
    ]
   },
@@ -1273,6 +1291,27 @@
    ]
   },
   {
+   "id": "compagnie-carburant-missions",
+   "app": "compagnie",
+   "label": {
+    "fr": "Carburant ; Missions",
+    "en": "Carburant ; Missions",
+    "de": "Carburant ; Missions",
+    "es": "Carburant ; Missions"
+   },
+   "items": [
+    {
+     "id": "SOG-0193",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Préparer une mission, c'est préparer un vol : mêmes étapes, météo comprise ; distance calculée ; temps sur zone",
+     "en": "Preparing a mission is preparing a flight: same steps, weather included; distance computed; time on station",
+     "de": "Eine Mission vorbereiten heißt einen Flug vorbereiten: gleiche Schritte samt Wetter; Distanz berechnet; Zeit im Einsatzgebiet",
+     "es": "Preparar una misión es preparar un vuelo: mismos pasos, meteo incluida; distancia calculada; tiempo en zona"
+    }
+   ]
+  },
+  {
    "id": "compagnie-carte",
    "app": "compagnie",
    "label": {
@@ -1401,6 +1440,27 @@
    ]
   },
   {
+   "id": "compagnie-appareils",
+   "app": "compagnie",
+   "label": {
+    "fr": "Fiches appareil",
+    "en": "Aircraft sheets",
+    "de": "Flugzeugdatenblätter",
+    "es": "Fichas de aeronave"
+   },
+   "items": [
+    {
+     "id": "SOG-0190",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Flotte : dire de quelle compagnie on parle ; un appui sur le nom de l'appareil ouvre sa modification",
+     "en": "Fleet: say which airline it is; tapping the aircraft's name opens its editing",
+     "de": "Flotte: sagen, um welche Gesellschaft es geht; ein Tipp auf den Namen öffnet die Bearbeitung",
+     "es": "Flota: decir de qué compañía se trata; tocar el nombre del aparato abre su edición"
+    }
+   ]
+  },
+  {
    "id": "compagnie-missions",
    "app": "compagnie",
    "label": {
@@ -1462,6 +1522,15 @@
      "de": "Pelikandrome → Befüllanlage für X-Plane (Plugin FIRE_FIGHTING_FSX3D, Szenerie oder eigenes Plugin): zu untersuchen",
      "es": "Pelicandromos → instalación de recarga para X-Plane (plugin FIRE_FIGHTING_FSX3D, escenario o plugin dedicado): por estudiar",
      "rank": 80
+    },
+    {
+     "id": "SOG-0187",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Missions, tirer au sort une famille : le sigle seul, sans le nom long",
+     "en": "Missions, drawing a family: the acronym alone, without the long name",
+     "de": "Missionen, Familie auslosen: nur das Kürzel, ohne den langen Namen",
+     "es": "Misiones, sortear una familia: solo la sigla, sin el nombre largo"
     }
    ]
   },
@@ -1952,6 +2021,27 @@
    ]
   },
   {
+   "id": "maintenance-carburant-cadre",
+   "app": "maintenance",
+   "label": {
+    "fr": "Carburant ; cadre",
+    "en": "Carburant ; cadre",
+    "de": "Carburant ; cadre",
+    "es": "Carburant ; cadre"
+   },
+   "items": [
+    {
+     "id": "SOG-0194",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Carburant : « Nouveau vol » ne vide rien tout de suite ; la carte à côté ne se redimensionne ni ne se déplace plus",
+     "en": "Fuel: “New flight” clears nothing at once; the side map can no longer be resized or moved",
+     "de": "Kraftstoff: „Neuer Flug“ leert nichts sofort; die Karte daneben lässt sich nicht mehr verschieben oder skalieren",
+     "es": "Combustible: «Nuevo vuelo» no vacía nada al instante; el mapa lateral ya no se redimensiona ni se mueve"
+    }
+   ]
+  },
+  {
    "id": "maintenance-carte",
    "app": "maintenance",
    "label": {
@@ -1970,6 +2060,27 @@
      "de": "Boden (Rollwege) zusammen mit den Verfahren des Flugplatzes lesen, nicht über einen weiteren Knopf",
      "es": "Leer el suelo (calles de rodaje) con los procedimientos del aeródromo, no con un botón más",
      "rank": 112
+    }
+   ]
+  },
+  {
+   "id": "maintenance-carte-base-sol",
+   "app": "maintenance",
+   "label": {
+    "fr": "Carte ; base (sol)",
+    "en": "Carte ; base (sol)",
+    "de": "Carte ; base (sol)",
+    "es": "Carte ; base (sol)"
+   },
+   "items": [
+    {
+     "id": "SOG-0195",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Taxiways : affichés trop tard au zoom, sans nom ; pas de nom des parkings",
+     "en": "Taxiways: shown too late in the zoom, unnamed; no apron names",
+     "de": "Rollwege: zu spät im Zoom angezeigt, ohne Namen; keine Vorfeldnamen",
+     "es": "Calles de rodaje: mostradas demasiado tarde en el zoom, sin nombre; sin nombres de plataformas"
     }
    ]
   },
@@ -2154,6 +2265,42 @@
      "en": "Data, country packs: choose one country inside a pack (folded list)",
      "de": "Daten, Länderpakete: ein Land innerhalb eines Pakets wählen (eingeklappte Liste)",
      "es": "Datos, paquetes de países: elegir un país dentro de un paquete (lista plegada)"
+    },
+    {
+     "id": "SOG-0188",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Données, paquets : mettre à jour un paquet sans tout décocher puis recocher",
+     "en": "Data, packs: update a pack without unticking and ticking everything again",
+     "de": "Daten, Pakete: ein Paket aktualisieren, ohne alles ab- und wieder anzuwählen",
+     "es": "Datos, paquetes: actualizar un paquete sin desmarcar y volver a marcar todo"
+    },
+    {
+     "id": "SOG-0189",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Sources à télécharger soi-même : des liens directs (AIP danois, suédois) et un pas-à-pas qui dit quel fichier prendre",
+     "en": "Sources to download yourself: direct links (Danish, Swedish AIP) and a step-by-step that says which file to take",
+     "de": "Selbst herunterzuladende Quellen: direkte Links (dänische, schwedische AIP) und eine Schritt-für-Schritt-Anleitung",
+     "es": "Fuentes para descargar uno mismo: enlaces directos (AIP danés y sueco) y un paso a paso que dice qué archivo tomar"
+    },
+    {
+     "id": "SOG-0191",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Points VFR : un téléchargement arrêté puis une construction donnent « à jour » au lieu de « en partie à jour »",
+     "en": "VFR points: a stopped download then a build say “up to date” instead of “partly up to date”",
+     "de": "VFR-Punkte: abgebrochener Download und Aufbau melden „aktuell“ statt „teilweise aktuell“",
+     "es": "Puntos VFR: una descarga detenida y una construcción dicen «al día» en vez de «parcialmente al día»"
+    },
+    {
+     "id": "SOG-0197",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Données : la question de « Prendre le fichier téléchargé » est un pavé illisible",
+     "en": "Data: the question of “Take the downloaded file” is an unreadable block of text",
+     "de": "Daten: die Rückfrage von „Heruntergeladene Datei übernehmen“ ist ein unlesbarer Textblock",
+     "es": "Datos: la pregunta de «Tomar el archivo descargado» es un bloque de texto ilegible"
     }
    ]
   },
