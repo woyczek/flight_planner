@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: choosing a provided map frames it** (`modules/maps/screen.js`; DECISIONS; noreg D156; SOG-0184 b). The camera kept after a gesture belongs to the mission and the map it was given on; the contours of
+  the VFR topo view are proved on real tiles (capture).
+
 - **Map: a mission map has the Layers boxes, its view changes only the base** (`modules/maps/layers.js`, `mission_view.js`, `draw.js`, `sheet_view.js`; DECISIONS; noreg D145, D152; SOG-0185, SOG-0184 c and d).
   The boxes (airways, spaces, refuelling tracks, contours…) act on a mission map as on a flight's map; VFR topo = topographic base, relief and contours; « Base only » = the IFR base without objects; the
   objects of a military mission (refuelling tracks, RTBA) stay whatever the view; the Layers title no longer repeats the mission.

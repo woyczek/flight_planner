@@ -360,6 +360,9 @@ export function helpAnchor() {
 /** Signature du vol que la carte cadre : départ, arrivée, texte de la route, procédures choisies (sans leur date) ; un cadrage
  *  de l'utilisateur n'est gardé que pour elle (SPEC § 5, retour cadré). */
 export const flightSig = () => {
+  if (S?.missionId) return JSON.stringify(['mission', S.missionId, S.mapDef?.file ||
+    ''
+  ]); // une carte de mission : le cadrage gardé est celui de CETTE carte (SOG-0184 b)
   const r = S?.route?.flight?.route || {},
     p = r.procedures || {};
   return JSON.stringify([r.dep || '', r.arr || '', r.text || '', p.dep || null, p.arr || null]);

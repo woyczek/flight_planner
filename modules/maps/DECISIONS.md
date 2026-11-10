@@ -2299,6 +2299,14 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done**: the light drawing paints every airway in the low colour (high ones too); a zoom that crosses a threshold *during* a gesture shows the new state only at rest.
 - **Noreg** D141 (zoom 8: the airways are in the light drawing and stroked while moving; zoom 3: none, no stroke; red before: 3 airways at zoom 3).
 
+## Choosing a provided map frames it; the contours are there on real tiles (10 Nov 2026, SOG-0184 a and b refused)
+- **(b) Cause**: the camera the user's gesture keeps (`keep.cam`) was keyed on the flight (`flightSig`), which is empty on a mission map: the same key for every provided map of every mission, so after a
+  move or a resize the kept camera won over the extent of the map chosen — « sans effet, à part un clignotement ». `flightSig` is now `mission|id|file` on a mission map; D156 (red before: the map stayed
+  at the user's spot).
+- **(a) Contours**: proved on the real thing — the bench with the real network (openfreemap liberty, Terrarium tiles), SAR1's target map in VFR topo at zoom 10: the relief and the brown contour lines,
+  the master lines with their altitude (« 2500 ») and the intermediate ones (capture `D147_vfr_contours_real_tiles_390.png`, written by a one-off probe, not kept in the suite: it needs the network). The
+  user's launcher on port 8000 serves an older checkout (no `.mp-mb-theme` list in its Map yet: measured, read-only): what he sees there is that build, not this one.
+
 ## A mission map has the Layers boxes; its view changes only the base; the objects are the mission's and the boxes' (10 Nov 2026, SOG-0185 refused again, SOG-0184 c and d; it replaces what SOG-0171 and SOG-0183 said)
 - **The user** (capture 160736): on a mission map the Layers tab was titled « Couches · T-084 · ISÈRE — … · Vue générale de la mission… » and showed only the complexity; he wants the boxes as on a flight's
   map, the title without the mission or the provided map (they are in the window); « Base only » is the base of the IFR view, not the VFR one; « on se souvient que c'est intéressant d'avoir le RTBA allumé

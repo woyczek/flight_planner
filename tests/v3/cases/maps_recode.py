@@ -5077,3 +5077,22 @@ def d_auto(c):
     _ground_at(c, 13, 600)
     c.eq(c.js("() => window.__fg.length"), 1, 'the launcher said failed: the Map does not ask again by itself', what='calls after a failure')
 
+
+@case('D156', 'Choosing a provided map frames that map, even after the user moved or resized the map: the camera kept by a gesture belongs to the map it was given on', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0184 (b) (the user: « le choix de la carte fournie est sans effet, à part un clignotement, si on a resize / déplacé la carte »): the camera kept after a gesture was keyed on the flight (empty on a mission map): it applied to every provided map of every mission; it is now keyed on the mission and the map')
+def d_frame(c):
+    _themed(c, '2_SAR', 'SAR1', 'maps?mission=SAR1&map=carte_generale.png')
+    hook_map(c)
+    c.until("() => !!window.__mpMap && window.__mp.S.map === window.__mpMap", timeout=12000, what='the base map')
+    c.wait(800)
+    # the user moves the map (a gesture), far from both maps
+    c.js("() => { const S = window.__mp.S, m = window.__mpMap; S.gesture = true; m.jumpTo({ center: [10, 50], zoom: 6 }); return true }")
+    c.wait(600)
+    c.eq(c.js("() => window.__mp.S.map.getCenter().lng > 9"), True, 'the user’s gesture took the map away', what='moved')
+    c.js("() => { const s = document.querySelector('.mp-mb-sel'); s.value = 'carte_cible.png'; s.dispatchEvent(new Event('change', { bubbles: true })); return true }")
+    c.until("() => location.hash.includes('map=carte_cible.png')", timeout=6000, what='the other map is chosen')
+    c.until("() => !!window.__mp.S && !!window.__mp.S.map && !!window.__mp.S.mapDef && window.__mp.S.mapDef.file === 'carte_cible.png'", timeout=15000, what='the other map is shown')
+    c.wait(1200)
+    d = c.js("() => { const S = window.__mp.S, m = S.map.getCenter(), f = S.fit; return { c: [m.lng, m.lat], fit: [(f.w + f.e) / 2, (f.s + f.n) / 2], z: S.map.getZoom() } }")
+    c.ok(abs(d['c'][0] - d['fit'][0]) < 1.5 and abs(d['c'][1] - d['fit'][1]) < 1.5, str(d), 'the map is framed on the chosen provided map, not left where the user had moved it')
