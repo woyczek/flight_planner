@@ -571,7 +571,7 @@
     "de": "ADEP/ADEST-Eingabe: „Stockholm“ finden (Stadt und Flugplatzname, nicht nur der Code)",
     "es": "Entrada ADEP / ADEST: encontrar «Estocolmo» (ciudad y nombre del aeródromo, no solo el código)"
    },
-   "test": "Recharger la page, puis Carburant › Vol › Départ : taper « stoc » → Stockholm Bromma (ESSB) et Arlanda proposés ; « usa » → les terrains principaux des États-Unis ; « swe » → ceux de Suède.",
+   "test": "Recharger la page, puis Carburant › Vol › Départ : taper « stoc » → Arlanda (ESSA) en tête et Bromma (ESSB) dans les sept ; « usa » → les grands terrains des États-Unis ; « swe » → ceux de Suède. Après « Mettre à jour », l'ordre par taille de piste s'affine.",
    "since": "2026-11-10",
    "state": "ko",
    "comment": "SWE… fonctionne. STOC… ne fonctionne pas. USA non plus.",
@@ -664,7 +664,7 @@
     "de": "Seiten außerhalb V3 (Wartung V2, Fuel, Missionen V2, ursprüngliches RAD, Stats V2, Canadair…) unten in der Spalte in einem Eintrag",
     "es": "Páginas fuera de V3 (Mantenimiento V2, fuel, misiones V2, RAD original, estadísticas V2, Canadair…) agrupadas al pie de la columna en una entrada"
    },
-   "test": "Maintenance : plus d'entrée « Page de maintenance (V2) » dans la colonne ; tout en bas, « Anciennes pages (V2) » ouvre une page qui range les pages V2 par groupe, chacune dans un nouvel onglet.",
+   "test": "Maintenance : plus d'entrée « Page de maintenance (V2) » dans la colonne ; tout en bas, « Anciennes pages (V2) » range les pages V2 par groupe. Sous « Canadair et pélicandromes », ouvrir « Positionner les pélicandromes » : la carte s'affiche, déplacer un site puis exporter → le fichier pelicandromes_positions.yaml est téléchargé ; le fond satellite est dit indisponible sous le lanceur.",
    "since": "2026-11-10",
    "state": "todo"
   },
@@ -703,7 +703,7 @@
     "de": "Lufträume: launische Anzeige bei gleichem Zoom, die Komplexität zeigt nicht mehr; keine FIR außerhalb Frankreichs",
     "es": "Espacios aéreos: visualización caprichosa con el mismo zoom, la complejidad no muestra más; sin FIR fuera de Francia"
    },
-   "test": "Carte en IFR, même zoom, feuille du profil repliée puis ouverte : les mêmes espaces restent affichés. Dézoomer : FIR, TMA, CTA et CTR restent visibles sur toute la vue ; une note dit « Espaces R, D, P… hors du couloir masqués » ; décocher « Autour du vol seulement » → ils apparaissent.",
+   "test": "Carte en IFR, même zoom, feuille du profil repliée puis ouverte : les mêmes espaces restent affichés. Dézoomer : FIR, TMA, CTA et CTR restent visibles sur toute la vue ; une note dit « Espaces R, D, P… hors du couloir masqués » ; décocher « Autour du vol seulement » → ils apparaissent. Après « Mettre à jour » (analyseur 26) : à zoom large, les FIR des pays voisins (Espagne, Allemagne, Royaume-Uni…) sont dessinées, plus seulement celles de la France.",
    "since": "2026-11-10",
    "state": "ok",
    "at": "2026-11-10T09:25:07Z"
