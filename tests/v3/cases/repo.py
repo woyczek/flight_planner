@@ -2523,3 +2523,116 @@ def i39(c):
         L._frame_memo.update(kept[1])
         shutil.rmtree(tmp, ignore_errors=True)
         shutil.rmtree(outside, ignore_errors=True)
+
+
+@case('K136', 'The launcher never freezes on a slow or failing outside service (SOG-0178): the relay of /__setup/net is short (connect 5 s, whole answer 15 s), bounded (two at a time per host, four in all: the browser keeps connections for the pages), the next is refused at once with « busy », the reason is readable, and the pages answer meanwhile', 'K', static=True,
+      rule='SOG-0178 (10 Nov 2026, « Chrome freezé. je redémarre le lanceur »): the server has one thread per connection and no lock in the relay; what froze was the browser: the launcher speaks HTTP/1.0 (one connection per request), Chrome opens six connections per origin at most, and six relays waiting 20 s on a dead host take them all, so the pages and files wait behind them; the relay is now short and bounded, refuses the surplus at once (503, X-SOG-Reason busy) and says why it failed (timeout, reset, refused, http-502)')
+def k136(c):
+    import http.client
+    import importlib
+    import json
+    import sys
+    import threading
+    import time
+    import urllib.error
+    sys.path.insert(0, str(c.root / 'tools'))
+    L = importlib.import_module('launch')
+    mode = {'slow': 1.2, 'raise': None, 'status': 200}
+    opens = []
+
+    class Fake:
+        def open(self, req, timeout=None):
+            opens.append((req.full_url, timeout))
+            time.sleep(mode['slow'])
+            if mode['raise'] is not None:
+                raise mode['raise']
+            if mode['status'] >= 400:
+                import io
+                raise urllib.error.HTTPError(req.full_url, mode['status'], 'x', {'Content-Type': 'text/plain'}, io.BytesIO(b'bad'))
+
+            class R:
+                status = mode['status']
+                headers = {'Content-Type': 'application/json'}
+
+                def __enter__(s):
+                    return s
+
+                def __exit__(s, *a):
+                    return False
+
+                def read(s, n=-1):
+                    d = getattr(s, '_d', None)
+                    if d is None:
+                        s._d = d = b'{"ok":1}'
+                        return d
+                    return b''
+            return R()
+    kept = L.NET_OPENER
+    L.NET_OPENER = Fake()
+    srv = L.Server(('127.0.0.1', 0), L.Setup)
+    port = srv.server_address[1]
+    kept_port = getattr(L.Setup, 'port', None)
+    L.Setup.port = port
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    hdr = {'Host': f'127.0.0.1:{port}', 'X-SOG-Setup': '1', 'Sec-Fetch-Site': 'same-origin', 'Content-Type': 'application/json'}
+
+    def relay(host='api.open-meteo.com'):
+        t = time.perf_counter()
+        cn = http.client.HTTPConnection('127.0.0.1', port, timeout=20)
+        cn.request('POST', '/__setup/net', json.dumps({'url': f'https://{host}/v1/forecast', 'method': 'GET'}), hdr)
+        r = cn.getresponse()
+        body = r.read()
+        out = (r.status, r.getheader('X-SOG-Reason'), round((time.perf_counter() - t) * 1000), body[:60])
+        cn.close()
+        return out
+
+    def home():
+        t = time.perf_counter()
+        cn = http.client.HTTPConnection('127.0.0.1', port, timeout=20)
+        cn.request('GET', '/__setup/status', headers=hdr)
+        r = cn.getresponse()
+        r.read()
+        cn.close()
+        return r.status, round((time.perf_counter() - t) * 1000)
+    try:
+        # ten relays on a host that does not answer (here: 1.2 s instead of 15) and, meanwhile, the pages
+        res, errs = [], []
+        ts = [threading.Thread(target=lambda: res.append(relay())) for _ in range(10)]
+        for t in ts:
+            t.start()
+        time.sleep(.3)
+        h = [home() for _ in range(5)]
+        for t in ts:
+            t.join()
+        busy = [x for x in res if x[0] == 503]
+        c.eq((len(res), len(busy), len(opens)), (10, 8, 2), 'ten relays asked on one host: two leave (two at a time per host), eight are refused', what='ten')
+        c.ok(all(x[1] == 'busy' and x[2] < 1000 for x in busy), str(busy[:3]), 'the refused ones are told at once (under a second, not the 15 s of a relay), « busy », with the reason in X-SOG-Reason')
+        c.ok(all(s == 200 and ms < 1000 for s, ms in h), str(h), 'the launcher answers its other requests meanwhile (every one under a second)')
+        c.eq(sorted(timeout for _, timeout in opens), [5, 5], 'the connection is given 5 s', what='connect')
+        # the cap in all: four, not more, over several hosts
+        opens.clear()
+        res = []
+        hosts = ['api.open-meteo.com', 'api.open-meteo.com', 'aviationweather.gov', 'aviationweather.gov', 'api.vatsim.net', 'api.vatsim.net']
+        ts = [threading.Thread(target=lambda h=h: res.append(relay(h))) for h in hosts]
+        for t in ts:
+            t.start()
+        for t in ts:
+            t.join()
+        c.eq((len(opens), len([x for x in res if x[0] == 503])), (4, 2), 'six relays on three hosts: four in all leave (the browser keeps two connections for the pages), two are refused', what='total')
+        # the slots come back: a good answer, then the readable reasons
+        mode['slow'] = 0
+        r = relay()
+        c.eq((r[0], r[1]), (200, None), 'once they are free a relay works again', what='freed')
+        for exc, want in ((TimeoutError('timed out'), 'timeout'), (urllib.error.URLError(ConnectionResetError()), 'reset'), (urllib.error.URLError(ConnectionRefusedError()), 'refused'), (urllib.error.URLError(OSError('unreachable')), 'unreachable')):
+            mode['raise'] = exc
+            r = relay()
+            c.eq((r[0], r[1]), (502, want), f'{type(exc).__name__}: 502 with the reason « {want} »', what=want)
+        mode['raise'] = None
+        mode['status'] = 502
+        r = relay()
+        c.eq((r[0], r[1]), (502, 'http-502'), 'an HTTP 502 of the service itself: passed on with its reason', what='http')
+    finally:
+        srv.shutdown()
+        srv.server_close()
+        L.NET_OPENER = kept
+        L.Setup.port = kept_port

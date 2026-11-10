@@ -3184,6 +3184,43 @@ def registry_bridge():
 NET_HOSTS = {'www.simbrief.com': '', 'api.ivao.aero': 'ivao', 'api.vatsim.net': '', 'data.vatsim.net': '', 'my.vatsim.net': '',
              'aviationweather.gov': '', 'metar.vatsim.net': '', 'api.open-meteo.com': ''}
 NET_MAX = 8 * 1048576
+# SOG-0178 : un service extérieur lent ou en erreur ne doit jamais figer le lanceur, donc la page. Le serveur a un fil par connexion et aucun verrou dans le relais : ce qui bloquait, c'est le NAVIGATEUR : le lanceur parle en HTTP/1.0 (une connexion par requête), Chrome ouvre six
+# connexions au plus par origine, et six relais en attente de 20 s occupent toutes les connexions de 127.0.0.1:<port> : les pages, les fichiers et /__setup/ attendent derrière. Remède : des relais COURTS (connexion 5 s, réponse entière 15 s) et BORNÉS (deux à la fois par hôte,
+# quatre en tout : il reste toujours deux connexions du navigateur pour les pages ; le suivant est refusé tout de suite, « occupé »).
+NET_CONNECT_S, NET_TOTAL_S = 5, 15
+NET_PER_HOST, NET_TOTAL = 2, 4
+_net_slots = {'lock': threading.Lock(), 'host': {}, 'all': 0}
+
+
+def net_acquire(host):
+    """Prend une place de relais pour cet hôte (deux par hôte, quatre en tout) ; False si elles sont prises : le relais est refusé aussitôt."""
+    with _net_slots['lock']:
+        if _net_slots['all'] >= NET_TOTAL or _net_slots['host'].get(host, 0) >= NET_PER_HOST:
+            return False
+        _net_slots['all'] += 1
+        _net_slots['host'][host] = _net_slots['host'].get(host, 0) + 1
+        return True
+
+
+def net_release(host):
+    with _net_slots['lock']:
+        _net_slots['all'] = max(0, _net_slots['all'] - 1)
+        _net_slots['host'][host] = max(0, _net_slots['host'].get(host, 0) - 1)
+
+
+def _read_capped(r, cap, deadline):
+    """Le corps d'une réponse, au plus `cap` octets et avant `deadline` (time.monotonic) : un serveur qui goutte-à-goutte ne tient pas le relais au-delà."""
+    parts, n = [], 0
+    while True:
+        if time.monotonic() > deadline:
+            raise TimeoutError('timeout')
+        chunk = r.read(min(65536, cap - n + 1))
+        if not chunk:
+            return b''.join(parts)
+        n += len(chunk)
+        if n > cap:
+            return b''.join(parts)[:cap]
+        parts.append(chunk)
 
 
 def airline_host():
@@ -3226,6 +3263,7 @@ class _RelayHTTPS(http.client.HTTPSConnection):
             self.sock.close()
             raise NotPublic(f'adresse non publique : {ip}')
         self.sock = self._context.wrap_socket(self.sock, server_hostname=self._tunnel_host or self.host)
+        self.sock.settimeout(NET_TOTAL_S)      # la connexion s'est faite dans NET_CONNECT_S (timeout de la requête) ; chaque lecture ensuite dans NET_TOTAL_S
 
 
 class _RelayHTTPSHandler(urllib.request.HTTPSHandler):
@@ -3271,19 +3309,25 @@ def frame_net(a, site_ok=True):
         data = a['body'].encode('utf-8')
         headers['Content-Type'] = str(a.get('contentType') or 'application/json')
     req = urllib.request.Request(url, data=data, method=method, headers=headers)
+    if not net_acquire(u.hostname):      # SOG-0178 : tout de suite, sans attendre : la page réessaie plus tard
+        return 503, {'Content-Type': 'application/json', 'X-SOG-Reason': 'busy', 'Retry-After': '2'}, json.dumps({'error': 'occupé', 'busy': True}).encode()
+    deadline = time.monotonic() + NET_TOTAL_S
+    why = lambda e: 'timeout' if isinstance(e, (TimeoutError, socket.timeout)) or 'timed out' in str(e).lower() else 'reset' if isinstance(e, (ConnectionResetError, ConnectionAbortedError)) else 'refused' if isinstance(e, ConnectionRefusedError) else 'unreachable'
     try:
-        with NET_OPENER.open(req, timeout=20) as r:
-            return r.status, {'Content-Type': r.headers.get('Content-Type') or 'application/octet-stream'}, r.read(NET_MAX)
+        with NET_OPENER.open(req, timeout=NET_CONNECT_S) as r:
+            return r.status, {'Content-Type': r.headers.get('Content-Type') or 'application/octet-stream'}, _read_capped(r, NET_MAX, deadline)
     except urllib.error.HTTPError as e:
-        return e.code, {'Content-Type': e.headers.get('Content-Type') or 'text/plain'}, e.read(NET_MAX)
+        return e.code, {'Content-Type': e.headers.get('Content-Type') or 'text/plain', 'X-SOG-Reason': f'http-{e.code}'}, e.read(NET_MAX)
     except urllib.error.URLError as e:
         if isinstance(e.reason, NotPublic):
             return 403, {'Content-Type': 'application/json'}, json.dumps({'error': str(e.reason)}).encode()
-        return 502, {'Content-Type': 'text/plain', 'X-SOG-Offline': '1'}, b'unreachable'
+        return 502, {'Content-Type': 'text/plain', 'X-SOG-Offline': '1', 'X-SOG-Reason': why(e.reason)}, b'unreachable'
     except NotPublic as e:
         return 403, {'Content-Type': 'application/json'}, json.dumps({'error': str(e)}).encode()
-    except (OSError, ValueError):
-        return 502, {'Content-Type': 'text/plain', 'X-SOG-Offline': '1'}, b'unreachable'
+    except (OSError, ValueError) as e:
+        return 502, {'Content-Type': 'text/plain', 'X-SOG-Offline': '1', 'X-SOG-Reason': why(e)}, b'unreachable'
+    finally:
+        net_release(u.hostname)
 
 
 def csp_policy():
