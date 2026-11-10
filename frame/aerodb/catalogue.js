@@ -138,6 +138,11 @@
       'Die Basis Frankreichs: Lufträume, Flugplätze, Funkfeuer, Punkte, VFR-Meldepunkte, Luftstraßen, Hindernisse (Zone fr).',
       'La base de Francia: espacios, aeródromos, radioayudas, puntos, puntos de notificación VFR, aerovías, obstáculos (zona fr).'
     ],
+    pub: 'SIA France (DGAC)',
+    credit: ['Source : SIA, date de l’extraction', 'Source: SIA, date of the extract', 'Quelle: SIA, Datum des Auszugs',
+      'Fuente: SIA, fecha de la extracción'
+    ],
+    localOnly: false,
     lic: ['Licence ouverte du SIA (source et date citées)', 'SIA open licence (source and date named)',
       'Offene Lizenz des SIA (Quelle und Datum genannt)', 'Licencia abierta del SIA (fuente y fecha citadas)'
     ],
@@ -168,6 +173,11 @@
       'Die Städte jeder Zone und die Großstädte der Welt (Karte, Ortssuche).',
       'Las ciudades de cada zona y las grandes ciudades del mundo (mapa, búsqueda de lugares).'
     ],
+    pub: 'GeoNames',
+    credit: ['GeoNames, CC BY 4.0 (geonames.org)', 'GeoNames, CC BY 4.0 (geonames.org)', 'GeoNames, CC BY 4.0 (geonames.org)',
+      'GeoNames, CC BY 4.0 (geonames.org)'
+    ],
+    localOnly: false,
     lic: ['CC BY 4.0', 'CC BY 4.0', 'CC BY 4.0', 'CC BY 4.0']
   }, {
     id: 'mora',
@@ -192,6 +202,13 @@
       'Das Gelände: Vertikalschnitt, MORA-Gitter.',
       'El relieve: corte vertical, rejilla MORA.'
     ],
+    pub: 'Sources ouvertes multiples (relief, OpenStreetMap)',
+    credit: ['Chaque source est citée ; OpenStreetMap : © contributeurs OpenStreetMap, ODbL',
+      'Each source is cited; OpenStreetMap: © OpenStreetMap contributors, ODbL',
+      'Jede Quelle wird genannt; OpenStreetMap: © OpenStreetMap-Mitwirkende, ODbL',
+      'Se cita cada fuente; OpenStreetMap: © colaboradores de OpenStreetMap, ODbL'
+    ],
+    localOnly: false,
     lic: ['Sources ouvertes multiples, chacune citée', 'Several open sources, each named', 'Mehrere offene Quellen, jede genannt',
       'Varias fuentes abiertas, cada una citada'
     ]
@@ -217,6 +234,11 @@
     gives: ['Les axes de ravitaillement en vol de la France.', 'The air-to-air refuelling tracks of France.',
       'Die Luftbetankungsstrecken Frankreichs.', 'Los ejes de reabastecimiento en vuelo de Francia.'
     ],
+    pub: 'DIRCAM (Armée de l’Air et de l’Espace)',
+    credit: ['Source : DIRCAM, MILAIP (origine citée)', 'Source: DIRCAM, MILAIP (origin cited)',
+      'Quelle: DIRCAM, MILAIP (Herkunft genannt)', 'Fuente: DIRCAM, MILAIP (origen citado)'
+    ],
+    localOnly: false,
     lic: ['MILAIP : réutilisation non commerciale, origine citée', 'MILAIP: non-commercial reuse, origin named',
       'MILAIP: nichtkommerzielle Nutzung, Herkunft genannt', 'MILAIP: reutilización no comercial, origen citado'
     ]
@@ -242,6 +264,13 @@
       'Die Tiefflugzonen und Betankungsstrecken des Vereinigten Königreichs (Zone gb).',
       'Las zonas de vuelo a baja altitud y los ejes de reabastecimiento del Reino Unido (zona gb).'
     ],
+    pub: 'UK Military AIP (Ministry of Defence)',
+    credit: ['Contains public sector information licensed under the Open Government Licence v3.0',
+      'Contains public sector information licensed under the Open Government Licence v3.0',
+      'Contains public sector information licensed under the Open Government Licence v3.0',
+      'Contains public sector information licensed under the Open Government Licence v3.0'
+    ],
+    localOnly: false,
     lic: ['Open Government Licence v3.0', 'Open Government Licence v3.0', 'Open Government Licence v3.0',
       'Open Government Licence v3.0'
     ]
@@ -267,6 +296,11 @@
       'Die Lufträume Kanadas (Zone ca), aus dem datierten DAH-Leitfaden.',
       'Los espacios de Canadá (zona ca), según la guía DAH fechada.'
     ],
+    pub: 'NAV CANADA',
+    credit: ['Source : NAV CANADA, Designated Airspace Handbook', 'Source: NAV CANADA, Designated Airspace Handbook',
+      'Quelle: NAV CANADA, Designated Airspace Handbook', 'Fuente: NAV CANADA, Designated Airspace Handbook'
+    ],
+    localOnly: false,
     lic: ['NAV CANADA, usage de la suite', 'NAV CANADA, the suite’s use', 'NAV CANADA, Nutzung der Suite',
       'NAV CANADA, uso de la suite'
     ]
@@ -294,6 +328,11 @@
       'Lufträume, Flugplätze, Funkfeuer und Meldepunkte der Zonen ohne offene amtliche Quelle.',
       'Espacios, aeródromos, radioayudas y puntos de notificación de las zonas sin fuente oficial abierta.'
     ],
+    pub: 'openAIP',
+    credit: ['© contributeurs openAIP, CC BY-NC 4.0 (non commercial)', '© openAIP contributors, CC BY-NC 4.0 (non-commercial)',
+      '© openAIP-Mitwirkende, CC BY-NC 4.0 (nicht kommerziell)', '© colaboradores de openAIP, CC BY-NC 4.0 (no comercial)'
+    ],
+    localOnly: false,
     lic: ['CC BY-NC 4.0 (non commercial)', 'CC BY-NC 4.0 (non-commercial)', 'CC BY-NC 4.0 (nicht kommerziell)',
       'CC BY-NC 4.0 (no comercial)'
     ]
@@ -319,6 +358,9 @@
       'Die Basis Spaniens (Zone es); keine Verfahren in den veröffentlichten Datensätzen.',
       'La base de España (zona es); sin procedimientos en los conjuntos publicados.'
     ],
+    pub: 'ENAIRE (Espagne)',
+    credit: ['Source : ENAIRE', 'Source: ENAIRE', 'Quelle: ENAIRE', 'Fuente: ENAIRE'],
+    localOnly: false,
     lic: ['Conditions d’ENAIRE : usage personnel', 'ENAIRE’s terms: personal use', 'Bedingungen von ENAIRE: persönliche Nutzung',
       'Condiciones de ENAIRE: uso personal'
     ]
@@ -347,6 +389,10 @@
       'Die ATS-Strecken (Airways) Deutschlands (Zone de) mit Flugflächen und Richtung; noch keine Lufträume oder Punkte.',
       'Las rutas ATS (aerovías) de Alemania (zona de), con sus niveles y sentido; aún sin espacios ni puntos.'
     ],
+    pub: 'DFS Deutsche Flugsicherung',
+    credit: ['Source : DFS, CC BY 4.0', 'Source: DFS, CC BY 4.0', 'Quelle: DFS, CC BY 4.0', 'Fuente: DFS, CC BY 4.0'],
+    date: '2026-10-28',
+    localOnly: false,
     lic: ['CC BY 4.0, crédit DFS', 'CC BY 4.0, credit DFS', 'CC BY 4.0, Quellenangabe DFS', 'CC BY 4.0, crédito DFS']
   }, {
     id: 'airnav',
@@ -373,6 +419,11 @@
       'Die benannten Punkte und RNAV-Strecken Irlands (Zone ie); keine Verfahren: der irische eAIP gibt sie nur auf Karten.',
       'Los puntos designados y las rutas RNAV de Irlanda (zona ie); sin procedimientos: el eAIP irlandés los da solo en cartas.'
     ],
+    pub: 'AirNav Ireland',
+    credit: ['Source : AirNav Ireland (eAIP)', 'Source: AirNav Ireland (eAIP)', 'Quelle: AirNav Ireland (eAIP)',
+      'Fuente: AirNav Ireland (eAIP)'
+    ],
+    localOnly: false,
     lic: ['Aucune licence de réutilisation trouvée : usage personnel', 'No reuse licence found: personal use',
       'Keine Weiterverwendungslizenz gefunden: persönliche Nutzung',
       'Sin licencia de reutilización: uso personal'
@@ -401,6 +452,11 @@
       'Die Lufträume der Vereinigten Staaten (Zone us).',
       'Los espacios de Estados Unidos (zona us).'
     ],
+    pub: 'FAA (États-Unis)',
+    credit: ['Source : FAA (domaine public)', 'Source: FAA (public domain)', 'Quelle: FAA (gemeinfrei)',
+      'Fuente: FAA (dominio público)'
+    ],
+    localOnly: false,
     lic: ['Domaine public (FAA)', 'Public domain (FAA)', 'Gemeinfrei (FAA)', 'Dominio público (FAA)']
   }, {
     id: 'nats',
@@ -424,6 +480,11 @@
       'Die Basis des Vereinigten Königreichs (Zone gb).',
       'La base del Reino Unido (zona gb).'
     ],
+    pub: 'NATS (Royaume-Uni)',
+    credit: ['Source : NATS, UK ICAO AIP Dataset', 'Source: NATS, UK ICAO AIP Dataset', 'Quelle: NATS, UK ICAO AIP Dataset',
+      'Fuente: NATS, UK ICAO AIP Dataset'
+    ],
+    localOnly: false,
     lic: ['Conditions de NATS (inscription) : usage personnel', 'NATS terms (registration): personal use',
       'Bedingungen von NATS (Registrierung): persönliche Nutzung', 'Condiciones de NATS (registro): uso personal'
     ],
@@ -454,6 +515,14 @@
       'Die benannten Punkte (ENR 4.4) und RNAV-Strecken (ENR 3.2) Schwedens (Zone se); keine Verfahren: SID und STAR stehen nur auf PDF-Karten.',
       'Los puntos designados (ENR 4.4) y las rutas RNAV (ENR 3.2) de Suecia (zona se); sin procedimientos: las SID y STAR solo están en cartas PDF.'
     ],
+    pub: 'LFV (Suède), sous l’autorité de l’Agence suédoise des transports',
+    credit: ['Source : LFV, AIP Suède (aucune condition de réutilisation publiée)',
+      'Source: LFV, AIP Sweden (no reuse condition published)',
+      'Quelle: LFV, AIP Schweden (keine Weiterverwendungsbedingung veröffentlicht)',
+      'Fuente: LFV, AIP Suecia (sin condición de reutilización publicada)'
+    ],
+    date: '2026-11-10',
+    localOnly: false,
     lic: [
       'AIP publié sous l’autorité de l’Agence suédoise des transports, produit par LFV ; aucune condition de réutilisation donnée (ES-GEN 0.1) : usage personnel, lu sur ce poste',
       'AIP published by authority of the Swedish Transport Agency, produced by LFV; no reuse condition given (ES-GEN 0.1): personal use, read on this workstation',
@@ -485,6 +554,11 @@
     gives: ['Les routes de l’Atlantique Nord, deux fois par jour (zone nat).', 'The North Atlantic tracks, twice a day (zone nat).',
       'Die Nordatlantik-Routen, zweimal täglich (Zone nat).', 'Las rutas del Atlántico Norte, dos veces al día (zona nat).'
     ],
+    pub: 'FAA (États-Unis)',
+    credit: ['Source : FAA, tracks NAT (domaine public)', 'Source: FAA, NAT tracks (public domain)',
+      'Quelle: FAA, NAT-Tracks (gemeinfrei)', 'Fuente: FAA, tracks NAT (dominio público)'
+    ],
+    localOnly: false,
     lic: ['Domaine public (FAA)', 'Public domain (FAA)', 'Gemeinfrei (FAA)', 'Dominio público (FAA)']
   }, {
     id: 'vac',
@@ -509,6 +583,9 @@
       'Die VFR-Meldepunkte und ihre Abfolgen, Karte für Karte (Beispiel: LFBD).',
       'Los puntos de notificación VFR y sus secuencias, carta por carta (ejemplo: LFBD).'
     ],
+    pub: 'SIA (DGAC, France)',
+    credit: ['Source : SIA, cartes VAC', 'Source: SIA, VAC charts', 'Quelle: SIA, VAC-Karten', 'Fuente: SIA, cartas VAC'],
+    localOnly: false,
     lic: ['Licence ouverte du SIA (source et date citées)', 'SIA open licence (source and date named)',
       'Offene Lizenz des SIA (Quelle und Datum genannt)', 'Licencia abierta del SIA (fuente y fecha citadas)'
     ]
@@ -535,6 +612,9 @@
       'Die RNAV- und RNP-Verfahren (Codiertabellen der AD-2-Seiten).',
       'Los procedimientos RNAV y RNP (tablas de codificación de las páginas AD 2).'
     ],
+    pub: 'SIA (DGAC, France)',
+    credit: ['Source : SIA, eAIP France', 'Source: SIA, eAIP France', 'Quelle: SIA, eAIP Frankreich', 'Fuente: SIA, eAIP Francia'],
+    localOnly: false,
     lic: ['Licence ouverte du SIA (source et date citées)', 'SIA open licence (source and date named)',
       'Offene Lizenz des SIA (Quelle und Datum genannt)', 'Licencia abierta del SIA (fuente y fecha citadas)'
     ]
@@ -563,6 +643,11 @@
       'Die codierten Verfahren der Vereinigten Staaten (SID, STAR, Anflüge).',
       'Los procedimientos codificados de Estados Unidos (SID, STAR, aproximaciones).'
     ],
+    pub: 'FAA (États-Unis)',
+    credit: ['Source : FAA, CIFP (domaine public, avis conservé)', 'Source: FAA, CIFP (public domain, notice kept)',
+      'Quelle: FAA, CIFP (gemeinfrei, Hinweis beibehalten)', 'Fuente: FAA, CIFP (dominio público, aviso conservado)'
+    ],
+    localOnly: false,
     lic: ['Domaine public (FAA), avis conservé', 'Public domain (FAA), notice kept', 'Gemeinfrei (FAA), Hinweis beibehalten',
       'Dominio público (FAA), aviso conservado'
     ]
@@ -589,6 +674,11 @@
       'Winde und Temperaturen der Welt, alle 6 Stunden mit der Website veröffentlicht.',
       'Los vientos y temperaturas del mundo, publicados con el sitio cada 6 horas.'
     ],
+    pub: 'NOAA (États-Unis)',
+    credit: ['Source : NOAA, NOMADS (domaine public)', 'Source: NOAA, NOMADS (public domain)', 'Quelle: NOAA, NOMADS (gemeinfrei)',
+      'Fuente: NOAA, NOMADS (dominio público)'
+    ],
+    localOnly: false,
     lic: ['Domaine public (NOAA)', 'Public domain (NOAA)', 'Gemeinfrei (NOAA)', 'Dominio público (NOAA)']
   }, {
     id: 'aircraft',
@@ -615,6 +705,13 @@
       'Die Musterbasis (ICAO Doc 8643, mit EUROCONTROL und Wikidata abgeglichen) und die Leistungen (EUROCONTROL APD, SimBrief): AircraftDB/.',
       'La base de tipos (OACI Doc 8643, cotejada con EUROCONTROL, Wikidata) y de prestaciones (EUROCONTROL APD, SimBrief): AircraftDB/.'
     ],
+    pub: 'OACI, EUROCONTROL',
+    credit: ['© OACI, © EUROCONTROL : dépôt privé seulement, jamais le site public',
+      '© ICAO, © EUROCONTROL: private repository only, never the public site',
+      '© ICAO, © EUROCONTROL: nur privates Repository, nie die öffentliche Seite',
+      '© OACI, © EUROCONTROL: solo repositorio privado, nunca el sitio público'
+    ],
+    localOnly: false,
     lic: ['© OACI, © EUROCONTROL : dépôt privé seulement, jamais le site public',
       '© ICAO, © EUROCONTROL: private repository only, never the public site',
       '© ICAO, © EUROCONTROL: nur privates Repository, nie die öffentliche Website',
@@ -692,6 +789,13 @@
       'Die Verfahren Deutschlands („ED Procedure“); zurückgestellt: Lizenz nötig, Anfrage aufgegeben (28. Oktober 2026).',
       'Los procedimientos de Alemania («ED Procedure»); descartada: hace falta licencia, solicitud abandonada (28 de octubre de 2026).'
     ],
+    pub: 'DFS Deutsche Flugsicherung',
+    credit: ['Source : DFS (protégé par le droit d’auteur, licence de la DFS demandée)',
+      'Source: DFS (copyrighted, DFS licence requested)', 'Quelle: DFS (urheberrechtlich geschützt, DFS-Lizenz angefragt)',
+      'Fuente: DFS (protegido por derechos de autor, licencia de la DFS solicitada)'
+    ],
+    date: '2026-10-25',
+    localOnly: false,
     lic: ['Protégé par le droit d’auteur (licence de la DFS)', 'Copyrighted (DFS licence)',
       'Urheberrechtlich geschützt (Lizenz der DFS)',
       'Protegido por derechos de autor (licencia de la DFS)'

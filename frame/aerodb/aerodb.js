@@ -2086,26 +2086,38 @@
        *  constructeurs ; avant eux, at = updated_at du meta.json et by = null. Rien n'est gardé en mémoire de zone. */
       async publication() {
         const l = await published(),
-          base = {};
-        for (const [id, z] of Object.entries(l.zones || {})) {
-          const cycles = {};
-          await Promise.all(z.cycles.map(async c => {
-            const split = z.split.has(c),
-              v = split ? valueOf(await read(`${PUB}${id}/${c}/meta.json`, true)) : null; // l'ancien format entier n'est pas lu (toute la zone)
-            cycles[c] = {
-              parserVersion: v?.parserVersion ?? null,
-              at: v?.builtAt ?? v?.data?.builtAt ?? v?.updated_at ?? null,
-              by: v?.builtBy ?? v?.data?.builtBy ?? null,
-              format: split ? 'split' : 'whole'
-            };
-          }));
-          base[id] = {
-            cycles: Object.fromEntries(Object.keys(cycles).sort().map(k => [k, cycles[k]])),
-            inForce: pickCycle(z.cycles),
-            // la source datée dont le cycle est celui de la zone ('sia', 'nats', 'enaire') ; null : une zone sans cycle (jamais « dépassée », « datée du » at)
-            cycleSource: Object.hasOwn(CYCLED_ZONES, id) ? CYCLED_ZONES[id] : null
-          };
-        }
+          base = {},
+          done = new Map();
+        // SOG-0164 : les meta.json de chaque cycle de chaque zone se lisent six zones à la fois (27 lectures EN SÉRIE à l'ouverture de Maintenance), le résultat gardant l'ordre des zones
+        const zoneIds = Object.keys(l.zones || {});
+        let next = 0;
+        await Promise.all(Array.from({
+          length: Math.min(6, zoneIds.length)
+        }, async () => {
+          while (next < zoneIds.length) {
+            const id = zoneIds[next++],
+              z = l.zones[id],
+              cycles = {};
+            await Promise.all(z.cycles.map(async c => {
+              const split = z.split.has(c),
+                v = split ? valueOf(await read(`${PUB}${id}/${c}/meta.json`, true)) :
+                null; // l'ancien format entier n'est pas lu (toute la zone)
+              cycles[c] = {
+                parserVersion: v?.parserVersion ?? null,
+                at: v?.builtAt ?? v?.data?.builtAt ?? v?.updated_at ?? null,
+                by: v?.builtBy ?? v?.data?.builtBy ?? null,
+                format: split ? 'split' : 'whole'
+              };
+            }));
+            done.set(id, {
+              cycles: Object.fromEntries(Object.keys(cycles).sort().map(k => [k, cycles[k]])),
+              inForce: pickCycle(z.cycles),
+              // la source datée dont le cycle est celui de la zone ('sia', 'nats', 'enaire') ; null : une zone sans cycle (jamais « dépassée », « datée du » at)
+              cycleSource: Object.hasOwn(CYCLED_ZONES, id) ? CYCLED_ZONES[id] : null
+            });
+          }
+        }));
+        for (const id of zoneIds) base[id] = done.get(id);
         // procédures : les cycles de la liste du lecteur, sinon les cycles AIRAC récents dont l'index se lit
         const listed = await listOf('proc/'),
           dates = Array.isArray(listed) ? [...new Set(listed.map(x => /^proc\/(\d{4}-\d{2}-\d{2})\/index\.json$/.exec(x)).filter(
@@ -2352,10 +2364,31 @@
         })();
         groundBusy.set(k, run);
         try {
-          return await run;
+          const out = await run;
+          noteGround(k, out);
+          return out;
         } finally {
           groundBusy.delete(k);
         }
+      },
+      /** Où en est la couche sol d'un terrain (SOG-0135, refus de recette du 10 nov. : une lecture du sol qui échoue ne se tait plus) : { state: 'none' (rien lu, rien tenté) | 'reading' | 'ok' | 'failed', reason?, message?, at?, wait? }. `failed` garde la raison
+       *  (`busy` : le lanceur faisait autre chose ou envoyait ; `too-soon`, `failed` : Overpass occupé ou injoignable, `no-data` : OpenStreetMap n'a rien sur ce terrain…) et le texte du lanceur, tels que le dernier essai les a dits ; le lanceur garde le dernier résultat de chaque terrain
+       *  (data/local/ground_state.json, travail ground/state) : ils survivent à un rechargement de la page. Le panneau Sol de la Carte et la ligne des procédures disent « Sol non lu : <raison> · Réessayer » (Réessayer : fetchGround). */
+      async groundStatus(icao) {
+        const k = String(icao || '').trim().toUpperCase();
+        if (!/^[A-Z0-9]{4}$/.test(k)) return {
+          state: 'none'
+        };
+        if (groundBusy.has(k)) return {
+          state: 'reading'
+        };
+        if (!groundSt.has(k)) await loadGroundState();
+        if (groundSt.has(k)) return {
+          ...groundSt.get(k)
+        };
+        return {
+          state: (await api.ground(k).catch(() => null)) ? 'ok' : 'none'
+        };
       },
       /** L'adresse du PDF de la carte officielle d'une procédure, ou null (V3 § 10.39, SOG-0045) : `proc` est la fiche telle que procedures() la donne (SID, STAR, approche), ou, pour la piste,
        *  `{ icao, kind: 'RWY', id, name, runways: [piste] }` (la réponse est alors la carte d'aérodrome ADC, sinon la carte VAC de l'atlas VFR). SIA seulement (LF…) : la carte IAC / SID / STAR choisie
@@ -2843,79 +2876,128 @@
         at: 0
       }, // l'index des noms de terrains de toutes les zones publiées (suggest), construit une fois
       groundBusy = new Map(), // OACI → lecture de la couche sol en cours
-      /** La couche sol d'un terrain, lue à la suite de ses procédures (SOG-0135) si son fichier manque ou date d'avant le cycle en vigueur ; en arrière-plan : la réponse des procédures ne l'attend pas, un échec (lanceur occupé, rien dans OpenStreetMap, trop tôt) est sans suite. fetchGround dit le changement (on('change', { ground })). */
-      readGroundAfter = k => {
-        (async () => {
-          const had = await api.ground(k).catch(() => null),
-            current = window.AeroAirac?.cycleOf?.(now())?.date || '';
-          if (had?.cycle && had.cycle >= current) return; // le fichier du cycle en vigueur : rien à relire
-          await api.fetchGround(k);
-        })().catch(() => {});
+      groundSt = new Map(), // OACI → { state: 'ok' | 'failed', reason?, message?, at } : le dernier résultat (groundStatus)
+      groundLoad = {
+        at: -Infinity
       },
-      fraLocal = {
-        p: null,
-        failedAt: -Infinity
+      /** Garde le résultat d'une lecture du sol (ni un « à blanc » ni une annulation) et annonce l'échec : on('change', { ground, groundFailed: true }). */
+      noteGround = (k, out) => {
+        if (out?.ok === true && out.dry !== true) groundSt.set(k, {
+          state: 'ok',
+          at: now()
+        });
+        else if (out?.ok === false && out.reason !== 'cancelled') {
+          groundSt.set(k, {
+            state: 'failed',
+            reason: String(out.reason || 'failed'),
+            message: String(out.message || '').slice(0, 300),
+            at: now(),
+            ...(Number.isFinite(out.wait) ? {
+              wait: out.wait
+            } : {})
+          });
+          emit({
+            ground: k,
+            groundFailed: true
+          });
+        }
       },
-      /** Les points du classeur FRA d'EUROCONTROL en vigueur, lus sur CE poste par le lanceur (travail route/fra-points, SOG-0153) et gardés en mémoire seulement : { cycle, by: Map(identifiant → [{ id, lat, lon, fir }]) }, ou null (sans lanceur, appareil du réseau local,
-       *  classeur non importé, lanceur occupé : redemandé au plus une fois par 30 s). Jamais écrit, jamais exporté : licence EUROCONTROL (usage de la compagnie), ces points ne sont pas dans la base publiée. */
-      fraPoints = () => {
-        if (fraLocal.p) return fraLocal.p;
-        if (typeof launcher?.job !== 'function' || !launcher.info?.() || launcher.info().lan || now() - fraLocal.failedAt < 30000)
-          return Promise.resolve(null);
-        fraLocal.p = (async () => {
+      /** Les derniers résultats que le lanceur a gardés (travail ground/state, lecture seule) : pour un terrain sans résultat en mémoire (page rechargée) ; au plus une fois par minute, un lanceur occupé ou absent n'y change rien. */
+      loadGroundState = async () => {
+          if (typeof launcher?.job !== 'function' || !launcher.info?.() || launcher.info().lan || now() - groundLoad.at < 60000) return;
+          groundLoad.at = now();
           const res = (await launcher.job('regen/job', {
-            set: 'route',
-            verb: 'fra-points',
+            set: 'ground',
+            verb: 'state',
             args: {}
-          }))?.result;
-          if (res?.ok !== true || !Array.isArray(res._points)) throw new Error('no FRA points');
-          const by = new Map();
-          for (const x of res._points.slice(0, 30000)) {
-            if (!Array.isArray(x) || typeof x[0] !== 'string' || !/^[A-Za-z0-9]{1,7}$/.test(x[0]) || !num(x[1]) || !num(x[2]))
-              continue;
-            const key = fold(x[0]);
-            if (!by.has(key)) by.set(key, []);
-            by.get(key).push({
-              id: x[0],
-              lat: +x[1],
-              lon: +x[2],
-              fir: String(x[3] || '').slice(0, 4)
+          }).catch(() => null))?.result;
+          if (res?.ok !== true || !res.aerodromes || typeof res.aerodromes !== 'object') return;
+          for (const [k, v] of Object.entries(res.aerodromes).slice(0, 400)) {
+            if (!/^[A-Z0-9]{4}$/.test(k) || !v || typeof v !== 'object' || groundSt.has(k)) continue;
+            groundSt.set(k, v.ok === true ? {
+              state: 'ok',
+              at: String(v.at || '')
+            } : {
+              state: 'failed',
+              reason: String(v.reason || 'failed').slice(0, 20),
+              message: String(v.message || '').slice(0, 300),
+              at: String(v.at || '')
             });
           }
-          return {
-            cycle: /^\d{4}-\d{2}-\d{2}$/.test(res.cycle) ? res.cycle : null,
-            by
-          };
-        })().catch(() => {
-          fraLocal.p = null;
-          fraLocal.failedAt = now();
-          return null;
-        });
-        return fraLocal.p;
-      },
-      /** Le point FRA de ce nom, à défaut de tout lieu des zones publiées : [{ kind: 'point', item, zone: 'fra', local: true, source: 'eurocontrol-fra', fir, cycle, distanceNm? }] — `local` : lu sur ce poste, pas dans la base publiée. */
-      fraItems = async (k, near) => {
-        const f = await fraPoints(),
-          list = f?.by.get(k);
-        if (!list) return [];
-        return list.map(x => ({
-          kind: 'point',
-          item: {
-            id: x.id,
-            lat: x.lat,
-            lon: x.lon,
-            name: x.id
-          },
-          zone: 'fra',
-          local: true,
-          source: 'eurocontrol-fra',
-          fir: x.fir,
-          cycle: f.cycle,
-          ...(near ? {
-            distanceNm: Math.round(distNm(near, [x.lat, x.lon]) * 10) / 10
-          } : {})
-        })).sort((a, b) => (a.distanceNm ?? 0) - (b.distanceNm ?? 0));
-      };
+        },
+        /** La couche sol d'un terrain, lue à la suite de ses procédures (SOG-0135) si son fichier manque ou date d'avant le cycle en vigueur ; en arrière-plan : la réponse des procédures ne l'attend pas, un échec (lanceur occupé, rien dans OpenStreetMap, trop tôt) est sans suite. fetchGround dit le changement (on('change', { ground })). */
+        readGroundAfter = k => {
+          (async () => {
+            const had = await api.ground(k).catch(() => null),
+              current = window.AeroAirac?.cycleOf?.(now())?.date || '';
+            if (had?.cycle && had.cycle >= current) return; // le fichier du cycle en vigueur : rien à relire
+            await api.fetchGround(k);
+          })().catch(() => {});
+        },
+        fraLocal = {
+          p: null,
+          failedAt: -Infinity
+        },
+        /** Les points du classeur FRA d'EUROCONTROL en vigueur, lus sur CE poste par le lanceur (travail route/fra-points, SOG-0153) et gardés en mémoire seulement : { cycle, by: Map(identifiant → [{ id, lat, lon, fir }]) }, ou null (sans lanceur, appareil du réseau local,
+         *  classeur non importé, lanceur occupé : redemandé au plus une fois par 30 s). Jamais écrit, jamais exporté : licence EUROCONTROL (usage de la compagnie), ces points ne sont pas dans la base publiée. */
+        fraPoints = () => {
+          if (fraLocal.p) return fraLocal.p;
+          if (typeof launcher?.job !== 'function' || !launcher.info?.() || launcher.info().lan || now() - fraLocal.failedAt < 30000)
+            return Promise.resolve(null);
+          fraLocal.p = (async () => {
+            const res = (await launcher.job('regen/job', {
+              set: 'route',
+              verb: 'fra-points',
+              args: {}
+            }))?.result;
+            if (res?.ok !== true || !Array.isArray(res._points)) throw new Error('no FRA points');
+            const by = new Map();
+            for (const x of res._points.slice(0, 30000)) {
+              if (!Array.isArray(x) || typeof x[0] !== 'string' || !/^[A-Za-z0-9]{1,7}$/.test(x[0]) || !num(x[1]) || !num(x[2]))
+                continue;
+              const key = fold(x[0]);
+              if (!by.has(key)) by.set(key, []);
+              by.get(key).push({
+                id: x[0],
+                lat: +x[1],
+                lon: +x[2],
+                fir: String(x[3] || '').slice(0, 4)
+              });
+            }
+            return {
+              cycle: /^\d{4}-\d{2}-\d{2}$/.test(res.cycle) ? res.cycle : null,
+              by
+            };
+          })().catch(() => {
+            fraLocal.p = null;
+            fraLocal.failedAt = now();
+            return null;
+          });
+          return fraLocal.p;
+        },
+        /** Le point FRA de ce nom, à défaut de tout lieu des zones publiées : [{ kind: 'point', item, zone: 'fra', local: true, source: 'eurocontrol-fra', fir, cycle, distanceNm? }] — `local` : lu sur ce poste, pas dans la base publiée. */
+        fraItems = async (k, near) => {
+          const f = await fraPoints(),
+            list = f?.by.get(k);
+          if (!list) return [];
+          return list.map(x => ({
+            kind: 'point',
+            item: {
+              id: x.id,
+              lat: x.lat,
+              lon: x.lon,
+              name: x.id
+            },
+            zone: 'fra',
+            local: true,
+            source: 'eurocontrol-fra',
+            fir: x.fir,
+            cycle: f.cycle,
+            ...(near ? {
+              distanceNm: Math.round(distNm(near, [x.lat, x.lon]) * 10) / 10
+            } : {})
+          })).sort((a, b) => (a.distanceNm ?? 0) - (b.distanceNm ?? 0));
+        };
     const procWatch = async paths => {
       let index = false;
       const icaos = new Set();

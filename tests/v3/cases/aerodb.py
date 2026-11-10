@@ -4193,7 +4193,7 @@ def k84(c):
         calls.append(url)
         return state['reply']
     state = {'reply': (200, answer)}
-    G.GET = get
+    G.GET, G.SLEEP = get, lambda w: None     # the retries of a busy server do not sleep in the noreg (K128)
     with tempfile.TemporaryDirectory() as td:
         ctx = {'data': td, 'secrets': td}
         run = lambda a: G.fetch(RJ.Job('ground', 'fetch', a, author='TST'), a, ctx)
@@ -6205,3 +6205,119 @@ def k126(c):
     c.eq((r['first']['country'], r['country'], r['heavy']), ('United States of America', ['Suède', 'Sweden'], 0), 'each proposal says its country in the language asked, and no airway, airspace or full aerodrome file was read', what='light')
     c.ok('Sverige' in r['akaSe'], str(r['akaSe']), 'zones() gives the endonym and the initials under `aka`')
     c.ok('hardLen' in (ROOT / 'shared' / 'sia_base.js').read_text(encoding='utf-8'), 'aeroindex', 'the builder writes hardLen in aeroindex (parser version 25)')
+
+
+@case('K128', 'A failed ground reading is never silent (SOG-0046 / SOG-0135, refused at the acceptance): the job retries a busy Overpass, keeps the last result of each aerodrome (ground/state), and AeroDb.groundStatus says « failed », why and with which text, also after the page is reloaded', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0135 (10 Nov 2026, refused: « rien », data/proc/ground/ never written): after the procedures of LFPO the launcher DID start ground/fetch (its start is in tools/.regen_last.json, 36 s after the procedures job) and it wrote nothing: the failure (a busy Overpass, a refusal while the launcher sent, no data) was swallowed by the background reading and was kept nowhere; K110 saw nothing because its launcher always said yes; the job now retries a busy or unreachable Overpass twice (8 s, 20 s), keeps each aerodrome’s last result in data/local/ground_state.json (read by the read-only job ground/state), and the page keeps and announces the failure (groundStatus; on(‘change’, { ground, groundFailed }))')
+def k128(c):
+    import json
+    import os
+    import tempfile
+    import urllib.error
+    RJ, G = _ground_job()
+    answer = (ROOT / 'frame/aerodb/test/fixtures/ground/LFPO.overpass.json').read_bytes()
+    calls, slept = [], []
+    seq = {'replies': []}
+
+    def get(url, timeout=120):
+        calls.append(url)
+        r = seq['replies'].pop(0) if len(seq['replies']) > 1 else seq['replies'][0]
+        if isinstance(r, Exception):
+            raise r
+        return r
+    G.GET, G.SLEEP = get, slept.append
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        ctx = {'data': td, 'secrets': td}
+        run = lambda icao: G.fetch(RJ.Job('ground', 'fetch', {'icao': icao}, author='TST'), {'icao': icao, 'dry': False}, ctx)
+        state = lambda: RJ.REGISTRY[('ground', 'state')][0](RJ.Job('ground', 'state', {}), {}, ctx)['aerodromes']
+        c.eq(state(), {}, 'ground/state: nothing yet', what='empty')
+        # a busy Overpass twice, then the answer: retried (8 s then 20 s), written, the success kept
+        seq['replies'] = [(429, b''), (504, b''), (200, answer)]
+        r = run('LFPO')
+        c.eq((r['ok'], len(calls), slept, os.path.isfile(os.path.join(td, 'proc', 'ground', 'LFPO.json')), state()['LFPO']['ok']), (True, 3, [8, 20], True, True),
+             'HTTP 429 then 504 then 200: two retries (8 s, 20 s), the file is written and the success is kept', what='retry')
+        # busy for good: failed after three tries, said with its text and kept
+        calls.clear(); slept.clear()
+        seq['replies'] = [(429, b'')]
+        r = run('LFPG')
+        st = state()['LFPG']
+        c.eq((r['ok'], r['reason'], '429' in r['message'], len(calls), st['ok'], st['reason'], '429' in st['message']), (False, 'failed', True, 3, False, 'failed', True), 'a server busy for the three tries: failed, said (429) and kept for the aerodrome', what='busy')
+        # an unreachable server: the exception is retried, then said, kept
+        calls.clear(); slept.clear()
+        seq['replies'] = [urllib.error.URLError('timed out')]
+        r = run('LFMN')
+        c.eq((r['ok'], len(calls), state()['LFMN']['ok'], 'timed out' in state()['LFMN']['message']), (False, 3, False, True), 'a server that does not answer: three tries, failed, the cause kept', what='network')
+        # no data: kept too (« Sol non lu : OpenStreetMap n’a rien »)
+        seq['replies'] = [(200, b'{"elements": []}')]
+        run('LFZZ')
+        c.eq((state()['LFZZ']['reason'], state()['LFPO']['ok']), ('no-data', True), 'no element: no-data kept for that aerodrome, the others unchanged', what='no-data')
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const day = Date.parse('2026-11-10T12:00:00Z'), changes = [];
+      const mk = (groundAnswer, stateAnswer) => {
+        const calls = [];
+        const launcher = { info: () => ({}), job: async (route, body) => {
+          calls.push(body.set + '/' + body.verb);
+          if (body.set === 'proc') return { state: 'done', result: { ok: true, icao: 'LFPO', procedures: 1, warnings: [], commit: null, source: 'eaip' } };
+          if (body.verb === 'state') return { state: 'done', result: stateAnswer };
+          return groundAnswer;
+        } };
+        const reader = { read: async () => null, list: async () => [], watch: () => () => {}, revalidate: async () => null };
+        const db = AeroDB.create({ reader, launcher, lnmperf: false, now: () => day });
+        db.on('change', e => { if (e && e.ground) changes.push(e); });
+        return { db, calls };
+      };
+      const out = {};
+      // the real path: the procedures are read, the ground follows in the background and the launcher answers « busy » (it was sending): not silent
+      const a = mk({ status: 409, state: 'error', result: null, message: 'no job starts now (sync)' });
+      await a.db.fetchProcedures('LFPO');
+      await new Promise(r => setTimeout(r, 300));
+      out.afterBusy = await a.db.groundStatus('LFPO');
+      out.changeBusy = changes.map(x => [x.ground, x.groundFailed === true]);
+      // a failure of the job itself (Overpass busy): its text is kept
+      const b = mk({ state: 'done', result: { ok: false, reason: 'failed', message: 'Overpass answered HTTP 429 (busy: try again in a minute)' } });
+      out.beforeTry = await b.db.groundStatus('LFPO');
+      await b.db.fetchGround('LFPO');
+      out.failed = await b.db.groundStatus('LFPO');
+      // the launcher remembers: a page reloaded asks ground/state and says it too
+      const c2 = mk(null, { ok: true, aerodromes: { LFPO: { at: '2026-11-10T10:00:55Z', ok: false, reason: 'failed', message: 'Overpass answered HTTP 429' }, EGLL: { at: '2026-11-10T10:05:00Z', ok: true } } });
+      out.reloaded = [await c2.db.groundStatus('LFPO'), await c2.db.groundStatus('EGLL'), await c2.db.groundStatus('LFMN')];
+      out.reloadCalls = c2.calls;
+      out.bad = (await c2.db.groundStatus('x')).state;
+      return out;
+    }""")
+    c.eq((r['afterBusy']['state'], r['afterBusy']['reason'], r['changeBusy']), ('failed', 'busy', [['LFPO', True]]), 'after the procedures, the background reading of the ground meets a busy launcher: the status says failed / busy and the change is announced (it was silent)', what='busy')
+    c.eq((r['beforeTry']['state'], r['failed']['state'], r['failed']['reason'], '429' in r['failed']['message']), ('none', 'failed', 'failed', True), 'nothing tried: none; a failed job: failed with the launcher’s text', what='failed')
+    c.eq(([x['state'] for x in r['reloaded']], r['reloaded'][0].get('message'), r['reloadCalls'], r['bad']), (['failed', 'ok', 'none'], 'Overpass answered HTTP 429', ['ground/state'], 'none'),
+         'a reloaded page asks the launcher once (ground/state): the last failure of LFPO is there, EGLL is ok, LFMN none; a bad code is none', what='reloaded')
+
+
+@case('K129', 'publication() reads the zones’ meta.json six at a time, not one zone after the other (SOG-0164, the Maintenance page took 27 serial requests to open): same answer, same order, at most six reads in flight', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0164 (10 Nov 2026, measured by V3 Frame): AeroDb.publication() awaited each zone’s meta.json in turn; with a reader that takes 25 ms a read, 30 zones took 750 ms and more; read six zones at a time they take about a sixth of it')
+def k129(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const day = Date.parse('2026-11-10T12:00:00Z'), ids = Array.from({ length: 30 }, (_, i) => 'z' + String(i).padStart(2, '0'));
+      const files = {};
+      for (const id of ids) {
+        files[`sia/base/${id}/2026-10-29/meta.json`] = { schema: 2, zone: id, cycle: '2026-10-29', kind: 'meta', parserVersion: 25, builtAt: '2026-11-10T08:00:00Z', data: {} };
+        files[`sia/base/${id}/2026-10-29/aeroindex.json`] = { schema: 2, zone: id, cycle: '2026-10-29', kind: 'aeroindex', data: { fields: ['icao', 'name', 'lat', 'lon'], rows: [] } };
+      }
+      files['sia/base/index.json'] = { schema: 2, kind: 'index', zones: Object.fromEntries(ids.map(id => [id, { cycle: '2026-10-29', prefixes: ['XX'], kb: { meta: 1 } }])) };
+      let flight = 0, peak = 0, metaReads = 0;
+      const reader = { read: async p => {
+        const isMeta = p.endsWith('/meta.json');
+        if (isMeta) { metaReads++; flight++; peak = Math.max(peak, flight); await new Promise(r => setTimeout(r, 25)); flight--; }
+        return p in files ? { value: files[p], rev: 'r' } : null;
+      }, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} };
+      const db = AeroDB.create({ reader, lnmperf: false, now: () => day });
+      await db.publication().catch(() => null); // warms the manifest (the index and the listing are not the subject)
+      flight = 0; peak = 0; metaReads = 0;
+      const db2 = AeroDB.create({ reader, lnmperf: false, now: () => day });
+      await db2.zones().catch(() => null);
+      const t = performance.now(), pub = await db2.publication(), ms = Math.round(performance.now() - t);
+      return { ms, peak, metaReads, keys: Object.keys(pub.base), first: pub.base.z00 };
+    }""")
+    c.eq((r['keys'] == sorted(r['keys']), len(r['keys']), r['first']['cycles']['2026-10-29']['parserVersion'], r['first']['cycles']['2026-10-29']['at']), (True, 30, 25, '2026-11-10T08:00:00Z'), 'the answer is the same: the 30 zones in order, each with its cycle, parser version and build date', what='answer')
+    c.ok(r['peak'] <= 6 and r['peak'] >= 2, f"peak {r['peak']}, {r['metaReads']} reads", 'at most six reads in flight, and more than one (it is parallel)')
+    c.ok(r['ms'] < 400, f"{r['ms']} ms for 30 zones at 25 ms a read", 'it takes a sixth of the serial time (750 ms): under 400 ms')

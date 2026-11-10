@@ -1800,7 +1800,7 @@ def i26(c):
     bsrc = (c.root / 'tools' / 'regen' / 'base_sources.py').read_text(encoding='utf-8')
     # lot C2 (5 Nov): the two pickup call sites build their destination through _dest(), the one caller of data_path for them
     c.eq((bsrc.count('_dest(data, p, leaf)') - bsrc.count('def _dest(data, p, leaf)'), bool(re.search(r"def _dest\(data, p, leaf\):.*?return data_sync\.data_path\(data, f'\{p\[\"to\"\]\}/", bsrc, re.S))),
-         (4, True), 'each name goes through the data/ path rule (Windows reserved names, a final dot or space), security review of 25beba925; since lot C2 through _dest(); four call sites since SOG-0126 (one zip per NATS set): the name kept, the file already in place (twice, on the same line), the file written', what='pickup names')
+         (5, True), 'each name goes through the data/ path rule (Windows reserved names, a final dot or space), security review of 25beba925; since lot C2 through _dest(); five call sites since SOG-0153 b (the LFV conversion writes its file through _dest() too), four since SOG-0126 (one zip per NATS set): the name kept, the file already in place (twice, on the same line), the file written', what='pickup names')
 
 
 @case('I25', 'Updating the suite by channel: the plan first, fast-forward only, refusals', 'I', static=True,

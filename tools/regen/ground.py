@@ -13,9 +13,10 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.error
 import urllib.parse
-from datetime import date
+from datetime import date, datetime, timezone
 
 TOOLS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if TOOLS not in sys.path:
@@ -40,6 +41,69 @@ def _download(url, timeout=120):
 
 
 GET = _download  # remplacé par les essais : aucun appel réel dans la noreg
+SLEEP = time.sleep   # idem : les essais ne dorment pas
+RETRY_WAITS = (8, 20)   # SOG-0135 : un Overpass occupé (429, 502, 503, 504) ou injoignable est réessayé deux fois (8 s puis 20 s) avant de dire l'échec : un « rien » silencieux a été vu sur le poste de l'utilisateur
+STATE_FILE = ('local', 'ground_state.json')   # le dernier résultat par terrain (data/local/ : jamais commité) : la page le relit pour dire « Sol non lu : <raison> », même après un rechargement
+STATE_MAX = 300
+
+
+def _get(job, url):
+    """(statut, octets) d'Overpass, réessayé si le serveur est occupé ou injoignable ; l'exception d'un dernier essai est relevée telle quelle."""
+    for n in range(len(RETRY_WAITS) + 1):
+        try:
+            status, body = GET(url)
+        except (OSError, urllib.error.URLError) as e:
+            if n >= len(RETRY_WAITS) or job.cancelled():
+                raise
+            status, body, why = 0, b'', type(e).__name__
+        else:
+            why = f'HTTP {status}'
+        if status not in (0, 429, 502, 503, 504) or n >= len(RETRY_WAITS) or job.cancelled():
+            return status, body
+        job.log(f'Overpass : {why}, nouvel essai dans {RETRY_WAITS[n]} s')
+        SLEEP(RETRY_WAITS[n])
+    return status, body
+
+
+def _remember(data, icao, result):
+    """Garde le résultat d'un terrain dans data/local/ground_state.json : { at, ok, reason?, message? } ; ne lève jamais."""
+    path = os.path.join(data, *STATE_FILE)
+    try:
+        try:
+            with open(path, encoding='utf-8') as f:
+                state = json.load(f)
+            if not isinstance(state, dict) or not isinstance(state.get('aerodromes'), dict):
+                raise ValueError
+        except (OSError, ValueError):
+            state = {'schema': 1, 'aerodromes': {}}
+        entry = {'at': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'), 'ok': result.get('ok') is True}
+        if not entry['ok']:
+            entry['reason'] = str(result.get('reason') or 'failed')[:20]
+            entry['message'] = str(result.get('message') or '')[:300]
+        state['aerodromes'].pop(icao, None)
+        state['aerodromes'][icao] = entry
+        while len(state['aerodromes']) > STATE_MAX:
+            state['aerodromes'].pop(next(iter(state['aerodromes'])))
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path + '.tmp', 'w', encoding='utf-8') as f:
+            json.dump(state, f, ensure_ascii=False)
+        os.replace(path + '.tmp', path)
+    except (OSError, TypeError, ValueError):
+        pass
+
+
+def state(job, args, ctx):
+    """Verbe ground/state (lecture seule) : { ok, aerodromes: { <OACI>: { at, ok, reason?, message? } } } — le dernier résultat de ground/fetch par terrain."""
+    try:
+        with open(os.path.join(ctx['data'], *STATE_FILE), encoding='utf-8') as f:
+            v = json.load(f)
+        return {'ok': True, 'aerodromes': v.get('aerodromes') if isinstance(v, dict) and isinstance(v.get('aerodromes'), dict) else {}}
+    except (OSError, ValueError):
+        return {'ok': True, 'aerodromes': {}}
+
+
+def check_state(a):
+    return {} if a == {} or a is None else None
 
 
 def query(icao):
@@ -154,6 +218,17 @@ def _write(path, text):
 
 
 def fetch(job, args, ctx):
+    """Verbe ground/fetch : voir l'en-tête ; le résultat de chaque lecture (réussie ou non, hors « à blanc ») est gardé dans data/local/ground_state.json."""
+    try:
+        result = _fetch(job, args, ctx)
+    except Exception as e:      # jamais un échec muet : le travail l'aurait dit, et le fichier d'état aussi
+        result = {'ok': False, 'reason': 'failed', 'message': regen_jobs.clean_error(f'{type(e).__name__}: {e}', ctx)[:300]}
+    if not args.get('dry') and isinstance(result, dict):
+        _remember(ctx['data'], args['icao'], result)
+    return result
+
+
+def _fetch(job, args, ctx):
     icao, data = args['icao'], ctx['data']
     if regen_jobs.merge_pending(ctx):
         return {'ok': False, 'reason': 'failed', 'message': 'a merge is pending in data/ (interrupted synchronisation): nothing installed; "Synchronise" settles it'}
@@ -162,7 +237,7 @@ def fetch(job, args, ctx):
     warnings = []
     try:
         job.step(f'{icao}: Overpass ({HOST}), une requête', 0, 1, 'requête')
-        status, body = GET(URL + urllib.parse.quote(query(icao)))
+        status, body = _get(job, URL + urllib.parse.quote(query(icao)))
         if job.cancelled():
             return {'ok': False, 'reason': 'cancelled'}
         if status != 200:
@@ -198,4 +273,4 @@ def fetch(job, args, ctx):
             'file': f'proc/ground/{icao}.json'}
 
 
-VERBS = {('ground', 'fetch'): (fetch, check)}
+VERBS = {('ground', 'fetch'): (fetch, check), ('ground', 'state'): (state, check_state)}
