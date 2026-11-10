@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "2cfa2a6",
+  "organisation": "1f4a54d",
   "fiches": 179,
   "untranslated": 1,
   "priorities": 152
@@ -1838,7 +1838,7 @@
     {
      "id": "SOG-0168",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "L'utilisateur teste une vieille copie sans le savoir : la nouvelle version s'applique seule sur un poste avec lanceur, et la version servie est lisible",
      "en": "The user tests an old copy without knowing: the new version applies by itself on a workstation with a launcher, and the served version is readable",
      "de": "Der Benutzer testet unwissentlich eine alte Kopie: die neue Version greift auf einem Rechner mit Launcher von selbst, und die ausgelieferte Version ist lesbar",
