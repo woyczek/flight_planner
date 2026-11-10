@@ -6507,3 +6507,38 @@ def k135(c):
     c.eq((r['published']['lat'], r['published'].get('local')), (45, None), 'a place of a published zone wins over the X-Plane layer', what='published')
     c.eq((r['bad'], r['noProvider'], r['asked']), ([None, None], None, 1), 'an identifier or a position that is not one is dropped; without the reader there is no layer; the folder is read once (kept in memory)', what='bounds')
     c.eq((r['down'], r['downAsked'], r['writes']), ([None, None], 1, 0), 'a folder that cannot be read (not granted) gives nothing, is not asked again within 30 s, and nothing was ever written by the layer', what='down')
+
+
+@case('K137', 'base/coverage: the coverage table of the aeronautical data by country, read from the base (SOG-0174): per zone the counts of aerodromes, navaids, points, airways, airspaces, FIR, the procedures and the ground layers held, the sources declared and present; nothing guessed, nothing written', 'K', static=True,
+      rule='SOG-0174 (roadmap: « des données aéro pour TOUS les pays, à commencer par l’Europe et les États-Unis »): on the user’s data of 10 Nov, 71 zones read in 1 s: 56 have navaids, 5 have airways (fr, gb, de, es, ie), 1 has FIR (fr, before parser 26), Sweden and the United States have no point or airway before LFV and the NASR are read; the table is read from the files (counts per kind of the last published cycle, FIR = airspaces of type FIR or UIR, procedures and ground layers by ICAO prefix of the zone), the licence of each source is the catalogue’s, shown by the page')
+def k137(c):
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    fn, check = RJ.REGISTRY[('base', 'coverage')]
+    c.eq((check({}), check({'zones': ['fr']}), ('base', 'coverage') in RJ.READ_ONLY), ({}, None, True), 'no argument, read only (it does not replace the last job that wrote)', what='contract')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        cyc = os.path.join(data, 'sia', 'base', 'se', '2026-10-29')
+        os.makedirs(cyc)
+        w = lambda path, obj: (os.makedirs(os.path.dirname(path), exist_ok=True), open(path, 'w', encoding='utf-8').write(json.dumps(obj)))
+        for kind, rows in (('aerodromes', [{'id': 'ESSA'}, {'id': 'ESSB'}]), ('navaids', [{'id': 'ARL'}]), ('points', []), ('airways', []), ('vrp', [{'id': 'v'}]),
+                           ('airspaces', [{'type': 'CTR', 'name': 'a'}, {'type': 'FIR', 'name': 'STOCKHOLM FIR'}, {'type': 'UIR', 'name': 'u'}])):
+            w(os.path.join(cyc, kind + '.json'), {'schema': 2, 'data': rows})
+        w(os.path.join(cyc, 'meta.json'), {'schema': 2, 'parserVersion': 26, 'data': {}})
+        w(os.path.join(data, 'sia', 'base', 'index.json'), {'schema': 2, 'zones': {'se': {'cycle': '2026-10-29', 'prefixes': ['ES']}, 'xx': {'cycle': '2026-10-29', 'prefixes': ['XX']}}})
+        w(os.path.join(data, 'proc', 'manual', 'ESSA.json'), {'procedures': []})
+        w(os.path.join(data, 'proc', 'manual', 'LFPO.json'), {'procedures': []})
+        w(os.path.join(data, 'proc', 'ground', 'ESSB.json'), {'items': []})
+        w(os.path.join(data, 'sia', 'openaip', 'se_asp.geojson'), {'type': 'FeatureCollection', 'features': []})
+        r = fn(RJ.Job('base', 'coverage', {}), {}, {'data': data})
+        z = r['zones']
+        c.eq(sorted(z), ['se', 'xx'], 'one entry per published zone of the index', what='zones')
+        se = z['se']
+        c.eq((se['counts'], se['cycle'], se['parserVersion']), ({'aerodromes': 2, 'navaids': 1, 'points': 0, 'airways': 0, 'airspaces': 3, 'vrp': 1, 'fir': 2}, '2026-10-29', 26), 'the counts of each kind, the FIR and UIR among the airspaces, the cycle and the parser of the build', what='counts')
+        c.eq((se['procedures'], se['ground'], se['has']), (1, 1, {'points': False, 'navaids': True, 'airways': False, 'airspaces': True, 'fir': True, 'procedures': True, 'ground': True}),
+             'the procedures and ground layers held for the aerodromes of the zone only (ES…: ESSA and ESSB, not LFPO); yes / no per column: no point, no airway for Sweden', what='has')
+        c.eq((se['sources']['present'], 'lfv' in se['sources']['declared']), (['openaip'], True), 'the sources present in data/sia (openAIP) and those declared (LFV among them, not yet present)', what='sources')
+        c.eq((z['xx']['counts']['points'], z['xx']['has']['procedures'], z['xx']['cycle']), (0, False, '2026-10-29'), 'a zone without files: counts at 0, nothing invented', what='empty')
+        c.ok(not os.path.exists(os.path.join(data, 'local')), 'no data/local', 'nothing is written')
