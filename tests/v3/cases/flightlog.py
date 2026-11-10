@@ -493,7 +493,7 @@ def g12(c):
         c.wait(900)
         c.eq(c.doc('cache/report/draft.json'), None, f'{w} px: no draft left after the save (a pending draft is not written back)', what='draft')
         c.js("async () => { await window.FrameData.setAirline('aaa'); return true }")
-        c.until("(() => { const e = document.getElementById('fCo'); return !!e && e.hasAttribute('data-differs') && /AAA\s*≠\s*BBB/.test(e.textContent) })()", timeout=8000,
+        c.until("(() => { const e = document.getElementById('fCo'); return !!e && e.hasAttribute('data-differs') && /AAA\s*≠/.test(e.textContent) && /BBB/.test(e.title) })()", timeout=8000,
                 what=f'{w} px: the header says « AAA ≠ BBB » (current ≠ the report\'s)')
         c.go('flightlog')
         c.until("(() => { const e = document.getElementById('fCo'); return !!e && !e.hasAttribute('data-differs') })()", timeout=8000, what='another screen: no longer said')
