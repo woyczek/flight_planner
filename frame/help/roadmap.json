@@ -4,8 +4,8 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "294431f",
-  "fiches": 234,
+  "organisation": "7283730",
+  "fiches": 237,
   "untranslated": 0,
   "priorities": 152
  },
@@ -777,7 +777,7 @@
     {
      "id": "SOG-0173",
      "kind": "bug",
-     "state": "done",
+     "state": "later",
      "fr": "Carte : en zoom arrière prononcé, déplacer la carte fait apparaître une foule de voies aériennes basses",
      "en": "Map: at a wide zoom, dragging the map shows a crowd of low airways",
      "de": "Karte: bei weitem Zoom zeigt das Verschieben eine Flut niedriger Luftstraßen",
@@ -1459,7 +1459,7 @@
     {
      "id": "SOG-0231",
      "kind": "feature",
-     "state": "later",
+     "state": "doing",
      "fr": "Flotte et registre des missions : hors de Maintenance, dans un quatrième onglet « CPCO »",
      "en": "Fleet and mission registry: out of Maintenance, in a fourth tab “CPCO”",
      "de": "Flotte und Missionsregister: raus aus der Wartung, in einen vierten Reiter „CPCO“",
@@ -1812,6 +1812,27 @@
      "de": "Fahrplan: bereits vorhandene Bahnen einklappen",
      "es": "Hoja de ruta: contraer los carriles ya existentes",
      "rank": 84
+    }
+   ]
+  },
+  {
+   "id": "maintenance-base-carburant",
+   "app": "maintenance",
+   "label": {
+    "fr": "Base ; Carburant",
+    "en": "Base ; Carburant",
+    "de": "Base ; Carburant",
+    "es": "Base ; Carburant"
+   },
+   "items": [
+    {
+     "id": "SOG-0236",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Procédures en doute : une page qui les liste et permet de les valider à la main",
+     "en": "Procedures in doubt: a page that lists them and lets the pilot validate them by hand",
+     "de": "Verfahren im Zweifel: eine Seite, die sie auflistet und von Hand bestätigen lässt",
+     "es": "Procedimientos en duda: una página que los lista y permite validarlos a mano"
     }
    ]
   },
@@ -2257,6 +2278,15 @@
      "en": "When the launcher comes back, the page does not reconnect by itself",
      "de": "Wenn der Launcher zurückkommt, verbindet sich die Seite nicht von selbst",
      "es": "Cuando vuelve el lanzador, la página no se reconecta sola"
+    },
+    {
+     "id": "SOG-0235",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "BLOQUANT : une compagnie disparaît de la liste de l'appareil (DEFA) — la couche de données garde un document plus ancien que l'arbre",
+     "en": "BLOCKING: an airline vanishes from the device's list (DEFA) — the data layer keeps a document older than its tree",
+     "de": "BLOCKIEREND: eine Gesellschaft verschwindet aus der Liste des Geräts (DEFA) — die Datenschicht behält ein Dokument, das älter ist als ihr Baum",
+     "es": "BLOQUEANTE: una compañía desaparece de la lista del dispositivo (DEFA) — la capa de datos guarda un documento más antiguo que su árbol"
     }
    ]
   },
@@ -2718,6 +2748,27 @@
      "en": "Data: “Publish” answers “0 files sent” after a build (Sweden built, “Nothing to publish”)",
      "de": "Daten: „Veröffentlichen“ meldet „0 Dateien gesendet“ nach einem Aufbau (Schweden gebaut, „Nichts zu veröffentlichen“)",
      "es": "Datos: «Publicar» responde «0 archivos enviados» tras una construcción (Suecia construida, «Nada que publicar»)"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-donnees-aide",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données ; aide",
+    "en": "Données ; aide",
+    "de": "Données ; aide",
+    "es": "Données ; aide"
+   },
+   "items": [
+    {
+     "id": "SOG-0237",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "EUROCONTROL : dire à l'utilisateur comment créer son compte et prendre les classeurs",
+     "en": "EUROCONTROL: tell the user how to create the account and get the workbooks",
+     "de": "EUROCONTROL: dem Nutzer sagen, wie das Konto angelegt und die Arbeitsmappen geholt werden",
+     "es": "EUROCONTROL: decir al usuario cómo crear la cuenta y obtener los libros"
     }
    ]
   },

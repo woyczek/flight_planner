@@ -854,13 +854,7 @@
    },
    "test": "Carte en zoom arrière prononcé (Europe entière) : déplacer la carte et zoomer en arrière ne fait plus apparaître les voies aériennes basses, et aucun quart de la carte n'est dessiné comme à un autre zoom pendant le geste. (Non reproduit au banc : si tu le revois, une capture et le niveau de zoom.)",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T16:37:40Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "presque. voir screenshot : comportement bizarre comme si l’affichage du quart haut gauche avait un niveau de zoom différent ?",
-    "at": "2026-11-10T14:58:02Z"
-   }
+   "state": "known"
   },
   {
    "id": "SOG-0174",
