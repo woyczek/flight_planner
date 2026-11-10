@@ -1497,3 +1497,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   fifteen names are re-ranked on their full records (civil, military, heliports; runway); the re-rank can go once the light index carries
   both (asked). Measured there: « stoc » → ESSA first, « swe » → ESSA, ESGG, « usa » → KDEN, KLAS. Counter-test on 6024579af (the refused
   code): « stoc » never puts the main aerodrome first.
+- **10 Nov 2026 — the step Flight after two refusals at acceptance** (SOG-0056: « mauvais placement du label, écran devenu brouillon »;
+  SOG-0060: « le bouton de recherche est au bout du monde »), from the user's capture: Level and Flight date on one row aligned on their
+  top, « Auto » in the row of the level field, one help line « auto · 1:12 »; the date's parenthesis hidden on a narrow module (it wrapped
+  the label and lowered the field); « Changer » with its label right after the aircraft line, which wraps rather than cutting the name.
+  F122 measures it at 390 and 1 280 px and the captures were looked at; counter-test on origin/v3 (69f5622c2): the date 150 px under the
+  level, « Auto » under the field.

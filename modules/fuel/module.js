@@ -116,6 +116,7 @@ const TX = {
     'Ficha, matrícula, indicativo o tipo'
   ],
   acChange: ['Changer d’appareil', 'Change aircraft', 'Luftfahrzeug wechseln', 'Cambiar de aeronave'],
+  acChangeShort: ['Changer', 'Change', 'Wechseln', 'Cambiar'],
   loadingRefs: ['Chargement des appareils et des fiches…', 'Loading aircraft and sheets…',
     'Luftfahrzeuge und Datenblätter werden geladen…', 'Cargando aeronaves y fichas…'
   ],
@@ -475,7 +476,7 @@ const TX = {
     'Auto: ein Datenblatt des Luftfahrzeugs ist nötig (keine Typschätzung)',
     'Auto: hace falta una ficha de la aeronave (no una estimación del tipo)'
   ],
-  levelAutoSaid: ['{fl} (auto) · {t}', '{fl} (auto) · {t}', '{fl} (auto) · {t}', '{fl} (auto) · {t}'],
+  levelAutoSaid: ['auto · {t}', 'auto · {t}', 'auto · {t}', 'auto · {t}'], // une ligne sous le champ (le niveau est dans le champ)
   goal: ['Montée', 'Climb', 'Steigflug', 'Ascenso'],
   goals: {
     eco: ['Économique', 'Economical', 'Sparsam', 'Económico'],
@@ -1611,9 +1612,17 @@ const STYLE = `
 [data-module="fuel"] .fu-sugitem:last-child{border-bottom-width:0}
 [data-module="fuel"] .fu-sugitem[aria-selected="true"]{background:var(--sog-surface-2);box-shadow:inset 3px 0 0 var(--sog-accent)}
 [data-module="fuel"] .fu-sugitem span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-[data-module="fuel"] .fu-flight{display:flex;flex-wrap:wrap;align-items:flex-end} /* niveau et date à leur largeur utile ; la date passe dessous sur un téléphone */
-[data-module="fuel"] .fu-flight>.f-field:first-child{flex:0 0 8em}
-[data-module="fuel"] .fu-flight>.f-field:last-child{flex:1 1 20em;max-width:26em;min-width:0} /* min-width:0 : la date ne pousse pas la ligne au-delà de l'écran */
+/* l'étape Vol, rangée 2 (SOG-0056, refus de recette : « mauvais placement du label, écran devenu brouillon ») : Niveau | Date du vol, alignés
+   par le haut (les deux libellés sur la même ligne de base), « Auto » collé à droite du champ Niveau dans sa rangée, sous lui une seule
+   ligne d'aide comme le nom d'un terrain sous son champ ; la date garde sa place même à 390 px */
+[data-module="fuel"] .fu-flight{display:flex;flex-wrap:wrap;align-items:flex-start}
+[data-module="fuel"] .fu-flight>.f-field:first-child{flex:0 0 7.5em;min-width:0}
+[data-module="fuel"] .fu-flight>.f-field:first-child .fu-when button{padding:0 8px}
+[data-module="fuel"] .fu-flight>.f-field:first-child .fu-when{flex-wrap:nowrap}
+[data-module="fuel"] .fu-flight>.f-field:first-child .fu-when input{flex:1 1 3.5em;min-width:3.5em}
+[data-module="fuel"] .fu-flight>.f-field:last-child{flex:1 1 11em;max-width:26em;min-width:0} /* min-width:0 : la date ne pousse pas la ligne au-delà de l'écran */
+@container (max-width: 559px){[data-module="fuel"] .fu-lblnote{display:none}} /* le libellé de la date tient sur une ligne au téléphone */
+[data-module="fuel"] .fu-flight [data-lvlauto]{display:block;height:1.4em;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} /* une ligne, hauteur réservée */
 [data-module="fuel"] .fu-when{display:flex;flex-wrap:wrap;gap:4px;align-items:stretch} /* champ d'abord, les deux boutons passent dessous quand la place manque */
 [data-module="fuel"] .fu-when input{flex:1 1 11em;min-width:0}
 [data-module="fuel"] .fu-when button{flex:none;min-width:44px;min-height:44px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;gap:2px}
@@ -1628,9 +1637,12 @@ const STYLE = `
 [data-module="fuel"] .f-list[data-sheets] .f-item>.f-row{justify-content:flex-end}
 @container (max-width: 479px){[data-module="fuel"] .f-list[data-sheets] .f-item>div:first-child{grid-column:1/-1} [data-module="fuel"] .f-list[data-sheets] .f-item>.f-row{grid-column:1/3;grid-row:2} [data-module="fuel"] .f-list[data-sheets] .f-item::after{grid-row:2}}
 [data-module="fuel"] .fu-block{display:block}
-[data-module="fuel"] [data-acsel]{flex-wrap:nowrap}
+[data-module="fuel"] [data-acsel]{flex-wrap:wrap;row-gap:4px} /* la ligne passe à la ligne plutôt que de couper le nom (SOG-0060) */
+[data-module="fuel"] [data-acsel]>b{white-space:nowrap}
 [data-module="fuel"] [data-acsel] .f-muted{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-[data-module="fuel"] [data-acsel] button{margin-left:auto;flex:none}
+/* la ligne de l'appareil porte son geste dans son flux (SOG-0060, refus de recette : « le bouton de recherche est au bout du monde ») :
+   « Changer » suit le texte, rien n'est aligné seul à droite */
+[data-module="fuel"] [data-acsel] button[data-do="acopen"]{flex:none;min-height:44px;display:inline-flex;align-items:center;gap:4px;padding:0 10px}
 [data-module="fuel"] .fu-svg{display:block;max-width:100%;height:auto;touch-action:manipulation}
 [data-module="fuel"] .fu-svg text{font-size:11px;fill:var(--sog-muted)}
 [data-module="fuel"] .fu-grid{stroke:var(--sog-chart-grid);stroke-width:1}
@@ -1734,7 +1746,7 @@ function renderPlanBody() {
   <nav class="f-steps fu-steps" aria-label="${esc(tt(TX.stepsNav))}">${TX.stepNames.map((n, i) => `<button type="button" data-step="${i}"${step === i ? ' aria-current="step"' : ''} aria-label="${i + 1} ${esc(tt(n))}"><b>${i + 1}</b><span> ${esc(tt(n))}</span></button>`).join('')}</nav>
   ${sec(0, `<div class="f-card" data-block="flight"><h2>${esc(tt(TX.stepNames[0]))}</h2>
       <div class="f-grid fu-ads">${[['dep', TX.dep], ['arr', TX.arr], ['altn', TX.altn]].map(([k, label]) => `${k === 'arr' ? `<button type="button" class="fu-adswap" data-do="adswap" title="${esc(tt(TX.adSwap))}" aria-label="${esc(tt(TX.adSwap))}">⇄</button>` : ''}<label class="f-field">${esc(tt(label))}<input data-k="${k}" value="${esc(r[k] ?? '')}" class="fu-code" autocapitalize="characters" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-adsug"><small class="fu-adname" data-adline="${k}"></small></label>`).join('')}<div class="fu-sug" id="fu-adsug" data-adsug role="listbox" aria-label="${esc(tt(S.AD.texts.listLabel))}" hidden></div></div>
-      <div class="f-grid fu-flight"><label class="f-field">${esc(tt(TX.level))}<span class="fu-when"><input data-k="fl" value="${esc(f.level?.ft ? Math.round(f.level.ft / 100) : '')}" inputmode="numeric"><button type="button" data-do="levelauto" aria-pressed="${!!f.level?.auto}" title="${esc(tt(TX.levelAutoHint))}">${esc(tt(TX.levelAuto))}</button></span><small class="f-muted" data-lvlauto></small></label><p class="f-muted fu-lvlmix" data-lvlmix hidden></p><label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(whenField(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
+      <div class="f-grid fu-flight"><label class="f-field">${esc(tt(TX.level))}<span class="fu-when"><input data-k="fl" value="${esc(f.level?.ft ? Math.round(f.level.ft / 100) : '')}" inputmode="numeric"><button type="button" data-do="levelauto" aria-pressed="${!!f.level?.auto}" title="${esc(tt(TX.levelAutoHint))}">${esc(tt(TX.levelAuto))}</button></span><small class="f-muted" data-lvlauto></small></label><p class="f-muted fu-lvlmix" data-lvlmix hidden></p><label class="f-field" title="${esc(tt(TX.wxDateHint))}">${wxDateLabel()}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(whenField(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
       <p class="f-warn" data-pastdate hidden></p>
       <div data-block="aircraft">
       <div class="f-row" data-acsel></div>
@@ -2945,10 +2957,17 @@ function acSelected() {
   const a = S.flight.aircraft || {},
     sheet = S.C?.sheet,
     origin = a.source || (a.sheetId ? 'sheet' : a.type ? 'free' : '');
-  box.innerHTML = `${sheet ? `<b>${esc(a.name || sheet.name || sheet.id)}</b><span class="f-muted">${esc([a.registration, a.callsign, a.type || sheet.icao].filter(Boolean).join(' · '))}</span>${origin ? `<span class="f-badge" data-kind="accent">${esc(tt(TX.origins[origin] || TX.origins.free))}</span>` : ''}` : `<span class="f-muted">${esc(tt(TX.acNone))}</span>`}
-    <button type="button" data-do="acopen" aria-label="${esc(tt(TX.acChange))}" title="${esc(tt(TX.acChange))}">${svg('search')}</button>`;
+  box.innerHTML = `${sheet ? `<b>${esc(a.name || sheet.name || sheet.id)}</b><span class="f-muted">${esc([...new Set([a.registration, a.callsign, a.type || sheet.icao].filter(Boolean))].join(' · '))}</span>${origin ? `<span class="f-badge" data-kind="accent">${esc(tt(TX.origins[origin] || TX.origins.free))}</span>` : ''}` : `<span class="f-muted">${esc(tt(TX.acNone))}</span>`}
+    <button type="button" data-do="acopen" title="${esc(tt(TX.acChange))}">${svg('search')}<span>${esc(tt(TX.acChangeShort))}</span></button>`;
 }
 
+/** Le libellé de la date du vol : « Date du vol » et sa précision « (heure locale de l'appareil) » dans un span que le module étroit ne
+ *  montre pas (SOG-0056 : à 390 px le libellé sur deux lignes décalait le champ ; le title du champ garde l'explication). */
+function wxDateLabel() {
+  const t = tt(TX.wxDate),
+    k = t.indexOf(' (');
+  return k > 0 ? `${esc(t.slice(0, k))}<span class="fu-lblnote">${esc(t.slice(k))}</span>` : esc(t);
+}
 // ---------------------------------------------------------------- écart ISA et altitude-densité
 /** Altitude-densité (ft) d'une altitude pression h (ft) à ISA + dT : l'altitude standard de même densité
  *  (FlightPerfModel.isa, inversée par dichotomie). */

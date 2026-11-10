@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the step Flight laid out again after the acceptance** (`modules/fuel/module.js`; Fuel SPEC § 9.2, DECISIONS, help; noreg F122;
+  SOG-0056, SOG-0060 refused). Level and Flight date on one row, « Auto » beside the level, one help line « auto · time »; « Changer »
+  right after the aircraft line instead of a lone magnifier on the right.
+
 - **Map, ground panel: it says when the ground could not be read, and why, with « Try again »** (`modules/maps/ground.js`, `module.js`, `texts.js`; SPEC § 5.2; noreg D135; SOG-0046 / 0135 refused by the
   user). The launcher had started the reading and written nothing, the failure was swallowed. The panel now says « Reading the ground… », or « Ground not read: <reason> (<the launcher's words>) »
   with a « Try again » that reads the ground alone; the state survives a reload (AeroDb.groundStatus).

@@ -200,7 +200,10 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
   is `FuelLevels.autoLevel(D, route.trackDeg, { minFt, maxFt })`: among the flyable levels of the series already quoted
   (`decisionSeries` + `requoteSeries`), the semicircular ones (track 0–179: odd thousands; 180–359: even), from FL030 (or the highest
   constraint of a chosen procedure, `route.constraints`, SOG-0003) to the sheet's ceiling (20 000 ft without one), the one that
-  burns the least; within 2 % of fuel, the lower. A line under the field says « FL180 (auto) · 1:02 » (the trip time). The level
+  burns the least; within 2 % of fuel, the lower. One line under the field says « auto · 1:02 » (the trip time), never on two lines, like an aerodrome's name under its field;
+  « Auto » is a toggle stuck to the right of the field, in its row, and Level and Flight date share one row aligned on their top (the
+  date's « (heure locale de l'appareil) » is left to its title on a narrow module, so both labels hold on one line; SOG-0056 refused at
+  acceptance, F122, captures 390 and 1 280). The level
   follows the route, the aircraft and the wind source as long as `level.auto`; a typed level, or « Prendre FL… » of the level
   decision, turns it off; « Auto » turns it on again. Without a sheet (a type estimate) or a route, the button is disabled and its
   title says why. No new model: a filter over the series (F107).
@@ -229,7 +232,9 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
 - **Flight date**: one value, `current_flight.planned_at`, with « +30 » and « Now »; the quote's weather and the Map read this date
   (F6). A flight not started dated more than a minute ago says « Vol daté du {d}, dans le passé : météo et NOTAM ne valent plus. » on
   this step and on the plan; it blocks nothing (F43).
-- **Aircraft**: one line — the chosen aircraft (name, registration, callsign, type) with its origin, and a search button that unfolds
+- **Aircraft**: one line — the chosen aircraft (name, registration, callsign, type; each value once) with its origin, followed in its
+  flow by the text button « Changer » with the magnifier (SOG-0060 refused at acceptance: « au bout du monde »; nothing is aligned alone
+  on the right; the line wraps rather than cutting the name; F122) that unfolds
   one field and its results from `aircraft().search(text)` (sheets → fleet → reference → types → free code, each with its origin; an
   aircraft shows the sheet that will serve it: its own, its type's, or the type estimate). Choosing writes `aircraft().aircraftOf(hit)`
   into the current flight. No default sheet: a flight without aircraft takes the last one chosen on the device

@@ -2766,7 +2766,7 @@ def f107(c):
     to_step(c, 0)
     fl = f'{FUEL} input[data-k="fl"]'
     c.tap(f'{FUEL} [data-do="levelauto"]')
-    c.until(f"() => (document.querySelector('{FUEL} [data-lvlauto]')?.textContent || '').includes('(auto)')", what='« FL… (auto) » said under the field')
+    c.until(f"() => (document.querySelector('{FUEL} [data-lvlauto]')?.textContent || '').includes('auto')", what='« auto · 1:28 » said under the field')
     auto = int(c.js(f"document.querySelector('{fl}').value"))
     c.ok(auto % 10 == 0 and auto // 10 % 2 == 1 and 30 <= auto <= 250, auto, 'an odd thousand (eastbound, track 125°) between FL030 and the ceiling FL250')
     d = cf_doc(c, lambda d: (d.get('level') or {}).get('auto') is True and (d.get('quote') or {}).get('levelFt') == auto * 100, 'the auto level written with its quote')
@@ -3334,3 +3334,43 @@ def f121(c):
     o = opts('swe', 'ESZA', '« swe »: Sweden\'s main civil aerodrome first')
     c.ok('ENZZ' not in o, o, 'a Norwegian aerodrome is not Sweden\'s')
     c.ok('LFZW' not in o[:6], o, '« DUNKESWELL » (swe in the middle of a name) after the country')
+
+
+
+_FLIGHT_ROW_JS = f"""(() => {{ const r = e => e ? e.getBoundingClientRect() : null, fl = document.querySelector('{FUEL} input[data-k="fl"]'),
+    lv = fl.closest('.f-field'), dt = document.querySelector('{FUEL} input[data-k="wxdate"]').closest('.f-field'),
+    au = document.querySelector('{FUEL} [data-do="levelauto"]'), help = document.querySelector('{FUEL} [data-lvlauto]'),
+    acb = document.querySelector('{FUEL} [data-acsel] [data-do="acopen"]'), prev = acb?.previousElementSibling;
+  const card = dt.closest('.f-card'), pad = card ? parseFloat(getComputedStyle(card).paddingRight) || 0 : 0;
+  return {{ dtRight: r(document.querySelector('{FUEL} input[data-k="wxdate"]')).right, cardIn: card ? r(card).right - pad : innerWidth, lvTop: r(lv).top, dtTop: r(dt).top, flIn: r(fl).top, dtIn: r(document.querySelector('{FUEL} input[data-k="wxdate"]')).top, autoTop: r(au).top, flTop: r(fl).top, autoLeft: r(au).left, flRight: r(fl).right,
+    help: help.textContent.trim(), helpH: r(help).height, helpLines: help.scrollHeight > help.clientHeight + 1 || getComputedStyle(help).whiteSpace !== 'nowrap',
+    acLabel: (acb?.textContent || '').trim(), acGap: acb && prev ? r(acb).left - r(prev).right : null,
+    acRightAlone: acb ? getComputedStyle(acb).marginLeft === 'auto' : null, sw: document.documentElement.scrollWidth, iw: innerWidth }} }})()"""
+
+
+@case('F122', 'Step Flight: Level and Flight date side by side on one top line, « Auto » in the row of the level field, one help line under it; the aircraft line carries « Changer » right after its text',
+      'F', tags=('fuel', 'layout'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0056 and SOG-0060 refused at acceptance (user, 10 Nov: « mauvais placement du label, écran devenu brouillon »; « le bouton de '
+      'recherche est au bout du monde (le seul à être aligné à droite) et on ne le voit pas ») — captures 390 and 1 280 looked at')
+def f122(c):
+    hi = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'kg', 'usableFuel': 20000, 'cruise': {'tasKt': 330, 'fuelFlowPerHour': 2000, 'ceilingFt': 25000}}
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft']['sheetId'] = 'C30J'
+            d[1]['level'] = {'ft': 27000, 'auto': True}
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.open('fuel', docs=docs + [['aircraft/sheets/C30J.json', hi, 'document']])
+        wait_quote(c)
+        to_step(c, 0)
+        c.until(f"(document.querySelector('{FUEL} [data-lvlauto]')?.textContent || '').includes('auto')", timeout=10000, what='the auto help line')
+        m = c.js(_FLIGHT_ROW_JS)
+        c.ok(abs(m['lvTop'] - m['dtTop']) < 1.5, m, f'{w} px: Level and Flight date start on the same top line')
+        c.ok(abs(m['flIn'] - m['dtIn']) < 1.5, m, f'{w} px: the two fields on one line too (the date label on one line)')
+        c.ok(m['dtRight'] <= m['cardIn'] + 0.5, m, f'{w} px: the date field stays inside the card')
+        c.ok(abs(m['autoTop'] - m['flTop']) < 4 and m['autoLeft'] >= m['flRight'] - 1, m, f'{w} px: « Auto » in the row of the level field, on its right')
+        c.ok(not m['helpLines'] and m['helpH'] < 26 and not m['help'].startswith('FL'), m, f'{w} px: one help line « auto · time » under the level')
+        c.ok(m['acLabel'] and m['acGap'] is not None and m['acGap'] < 16 and not m['acRightAlone'], m, f'{w} px: « Changer » follows the aircraft line, with a label')
+        c.le(m['sw'], m['iw'], f'{w} px: no horizontal scroll', what='scrollWidth')
+        c.shot(f'F122_{c.design}_{w}_{c.lang}.png')
