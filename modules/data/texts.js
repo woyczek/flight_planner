@@ -945,6 +945,18 @@ export const TX = {
     'Una fusión espera en data/: la publicación la concluye primero'
   ],
   pubLastSent: ['Dernière publication : {d}', 'Last publication: {d}', 'Letzte Veröffentlichung: {d}', 'Última publicación: {d}'],
+  // rien à publier parce que tout est déjà parti (SOG-0230 : « 0 fichiers envoyés » après une construction) : la construction range ses commits sur le poste, le passage de fond du cadre les envoie
+  pubClean: ['Tout est déjà publié : les commits de la construction sont partis à {d} (dernière publication), rien de plus à envoyer.',
+    'Everything is already published: the build’s commits left at {d} (last publication), nothing more to send.',
+    'Alles ist schon veröffentlicht: die Commits des Aufbaus sind um {d} gegangen (letzte Veröffentlichung), nichts weiter zu senden.',
+    'Todo está ya publicado: los commits de la construcción salieron a las {d} (última publicación), nada más que enviar.'
+  ],
+  // une publication dont les commits étaient déjà faits (la construction les a faits) : on dit ce qui est parti, jamais « fichiers commités : 0 » seul
+  pubDoneCommits: ['Envoyé : {n} commit(s) déjà fait(s) par la construction. Fichiers reçus : {r}',
+    'Sent: {n} commit(s) already made by the build. Files received: {r}',
+    'Gesendet: {n} Commit(s), schon vom Aufbau erstellt. Empfangene Dateien: {r}',
+    'Enviado: {n} commit(s) ya hecho(s) por la construcción. Archivos recibidos: {r}'
+  ],
   pubLastKept: ['Dernier passage : {d} (rien n’a été envoyé)', 'Last pass: {d} (nothing was sent)',
     'Letzter Durchlauf: {d} (nichts wurde gesendet)', 'Último paso: {d} (no se envió nada)'
   ],

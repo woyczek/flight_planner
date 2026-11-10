@@ -72,9 +72,12 @@ function publishStateHtml() {
   const last = c.last ? tt(c.last.pushed ? TX.pubLastSent : TX.pubLastKept, {
     d: fmtDateZ(c.last.at, lang())
   }) : '';
+  // rien à envoyer ET un dernier passage qui a poussé : « tout est déjà publié » (la construction range ses commits sur le poste, le passage de fond du cadre les envoie : « Publier » n'a alors plus rien à faire, et le dit)
+  const clean = c.nothing && c.last?.pushed;
   return `${c.nothing ? '' : `<p data-publish-state="changes">${esc(publishCountsText(c.changes, c.ahead))}</p>`}
+    ${clean ? `<p data-publish-state="clean">${esc(tt(TX.pubClean, { d: fmtDateZ(c.last.at, lang()) }))}</p>` : ''}
     ${c.merging ? `<p class="f-warn" data-publish-merge>${esc(tt(TX.pubMerge))}</p>` : ''}
-    ${last ? `<p class="f-muted" data-publish-last>${esc(last)}</p>` : ''}`;
+    ${last && !clean ? `<p class="f-muted" data-publish-last>${esc(last)}</p>` : ''}`;
 }
 /** La fin de la dernière publication : les lignes du résumé (la première dit ce qui est parti), puis ce qui est resté sur le poste,
  *  les conflits, les refus ; pour un échec, la phrase et ce que dit le lanceur (texte, jamais du HTML). [{ key, text }]. */
@@ -94,6 +97,14 @@ export function publishLines(o) {
     key: 'no-exchange',
     text: tt(TX.pubNoExchange)
   });
+  else if (o.kind === 'done' && o.committed === 0 && o.sent?.commits > 0) lines
+    .push({ // les commits étaient déjà faits (la construction) : ce qui est parti, pas « 0 fichier commité »
+      key: o.kind,
+      text: tt(TX.pubDoneCommits, {
+        n: o.sent.commits,
+        r: o.received
+      })
+    });
   else lines.push({
     key: o.kind,
     text: tt(o.kind === 'done' ? TX.pubDone : TX.pubLocal, {
@@ -224,5 +235,11 @@ export async function startPublish(skipAsk = false) {
     };
   }
   if (S !== me) return;
-  await endPublish(me, M.publishOutcome(r));
+  await endPublish(me, {
+    ...M.publishOutcome(r),
+    sent: {
+      files: c.changes,
+      commits: c.ahead
+    }
+  }); // ce qui était à envoyer avant le passage : les commits de la construction sont déjà faits
 }

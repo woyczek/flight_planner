@@ -1188,7 +1188,9 @@ def l12(c):
     c.ok(st['syncs'] > syncs, st['syncs'], 'sync-status is read again')
     c.until("document.querySelector('[data-publish] [data-reason]')?.dataset.reason === 'nothing'", what='the re-read finds nothing left to publish')
     s = _publish_state(c)
-    c.eq([s['disabled'], norm(s['reasonText']), s['reasons'], s['state'], s['result'], s['buildDisabled']], [True, norm(_trow('nothing', lang, 'pubReason: {')), 1, None, 'done', False],
+    clean = norm(_trow('pubClean', lang).split('{d}')[0])
+    c.ok(s['state'] is not None and s['state'].startswith(clean) and '10:00Z' in s['state'], s['state'], 'what is true is said (SOG-0230): everything is already published, since the last publication, instead of a bare « nothing »')
+    c.eq([s['disabled'], norm(s['reasonText']), s['reasons'], s['result'], s['buildDisabled']], [True, norm(_trow('nothing', lang, 'pubReason: {')), 1, 'done', False],
          'nothing left: Publier grey with « Rien à publier » written once (no second line), the result stays, Construire is live', what='after')
     doc = c.until_doc('cache/data/journal.json', lambda d: bool(d and d.get('ops')), what='the journal is written')
     e = doc['ops'][-1]
@@ -5642,4 +5644,31 @@ def l76(c):
         c.shot(f'L76_standard_{c.width}_{lang}_delivered.png')
     c.tap('[data-balance] [data-filter=rebuild]')
     c.until("document.querySelectorAll('[data-zone-row]').length === 5 && !document.querySelector('[data-filter-line]')", timeout=6000, what='the whole list again, the line gone')
+    c.check_errors()
+
+
+@case('L77', 'Données: « Publier » says what is true after a build (SOG-0230): the commits the build made are sent by the frame’s background pass, so there is nothing left (« Tout est déjà publié… ») and a publication whose commits were already made says what went, never « fichiers commités : 0 » alone', 'L',
+      tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0230 (the user: « on met à jour, on reconstruit, on publie : « 0 fichiers envoyés ». la suède, s’affiche construite, mais rien à publier »; the survey: the build commits « construite sur le poste » in data/, the pass of the frame pushes them, the last publication is the minute of the build): nothing to publish after a pass that pushed says « tout est déjà publié », a publication of commits already made says the commits that left')
+def l77(c):
+    lang = c.lang
+    # ---- A: nothing left, the last pass pushed (the build's commits already left): said, with the time
+    st = _pub_open(c, {'changes': 0, 'ahead': 0, 'merging': False, 'last': {'at': '2026-11-10T17:05:00Z', 'pushed': True}})
+    s = _publish_state(c)
+    clean = norm(_trow('pubClean', lang).split('{d}')[0])
+    c.ok(s['state'] is not None and s['state'].startswith(clean) and '17:05Z' in s['state'], s['state'], 'everything is already published, at 17:05Z, with the build: said instead of a bare « Rien à publier »')
+    c.eq([s['disabled'], s['reason']], [True, 'nothing'], 'and « Publier » stays grey for it', what='grey')
+    if c.width in (390, 1280):
+        c.js("document.querySelector('[data-publish]').scrollIntoView({ block: 'center' })")
+        c.shot(f'L77_standard_{c.width}_{lang}_delivered.png')
+    # ---- B: two commits already made by the build wait; the publication says what left, not « 0 files committed »
+    result = {'ok': True, 'exchange': {'committed': 0, 'held': 0, 'received': 0, 'pushed': True, 'conflicts': 0, 'refused': 0}}
+    st = _pub_open(c, {'changes': 0, 'ahead': 2, 'merging': False, 'last': {'at': '2026-11-10T17:05:00Z', 'pushed': True}}, result=result, launcher=st)
+    c.tap('[data-publish] [data-verb=publish]')
+    _ask_text(c)
+    c.tap('.f-modal [data-ok]')
+    c.until("!!document.querySelector('[data-publish-result]')", timeout=8000, what='the result is drawn')
+    s = _publish_state(c)
+    first = s['lines'][0][1] if s['lines'] else ''
+    c.ok(first.startswith(norm(_trow('pubDoneCommits', lang).split('{n}')[0])) and '2' in first, s['lines'], 'the commits that left are said (two, already made by the build), never « committed files: 0 » alone')
     c.check_errors()
