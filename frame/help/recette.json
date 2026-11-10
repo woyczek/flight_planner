@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 96,
-  "verdicts": 41
+  "tests": 97,
+  "verdicts": 43
  },
  "apps": [
   "pilote",
@@ -802,8 +802,10 @@
    },
    "test": "Ouvrir la Carte, puis Maintenance › Données : l'affichage arrive nettement plus vite qu'hier (moins d'une seconde pour Données, lanceur relancé).",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T09:02:39Z"
+   "state": "ko",
+   "delivered": "2026-11-10T09:02:39Z",
+   "comment": "ce n’est pas  fonctionnel, mais technique. rien à en faire.",
+   "at": "2026-11-10T16:20:10Z"
   },
   {
    "id": "SOG-0171",
@@ -888,8 +890,10 @@
    },
    "test": "Carburant › Procédures, arrivée sur un terrain français avec une approche ILS choisie : sous le choix de l'approche, « ILS <piste> · <indicatif> <fréquence> · axe <cap>° » ; arrivée repliée, le résumé dit « I<piste> · <indicatif> <fréquence> ». Sur la Carte, l'infobulle de l'ILS donne la même fréquence. Après « Mettre à jour » : pareil sur un terrain britannique ou espagnol.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T11:31:14Z"
+   "state": "ko",
+   "delivered": "2026-11-10T11:31:14Z",
+   "comment": "encore faudrait-il touver un AD avec un ILS … refusé par manque de cas de test.",
+   "at": "2026-11-10T16:22:31Z"
   },
   {
    "id": "SOG-0177",
@@ -988,9 +992,15 @@
     "de": "VFR-Topo: keine Höhenlinien (V2 hatte sie)",
     "es": "VFR topo: sin curvas de nivel (la V2 las tenía)"
    },
-   "test": "Compagnie › Missions › une mission SO › carte cible en vue VFR topo, à zoom de travail : les courbes de niveau sont dessinées sous les espaces et la route ; avec la complexité basse, seules les courbes maîtresses restent. Dis si la carte rame à zoom proche.",
+   "test": "Carte d'une mission, vue « VFR topo », zoom de travail : relief ET courbes de niveau cotées ; choisir une autre carte fournie la recadre même après avoir déplacé la carte ; « Fond seul » donne le fond de la vue IFR ; sur une mission militaire, les hippodromes de ravitaillement et le RTBA restent quelle que soit la vue.",
    "since": "2026-11-10",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-10T16:23:20Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "peut-être… la poupup sur la carte a disparu. pardon, « ça dépend ». vérification : le relief est revenu, mais pas les courbes de niveau. autre bug ? le choix de la carte fournie est sans effet, à part un clignottement, si on a resize / déplacé la carte. « fond seul » : c’est censé être le même fond que « IFR », pas que « VFR ». on se souvient que c’est intéressant d’avoir le rtba allumé, et les hippo de ravitaillement, sur les missions militaires…",
+    "at": "2026-11-10T15:06:54Z"
+   }
   },
   {
    "id": "SOG-0185",
@@ -1001,9 +1011,15 @@
     "de": "Karte: das Luftraumblatt flackert beim Öffnen, und der Reiter „Ebenen“ dient nicht nur der Ebenenwahl",
     "es": "Mapa: la ficha de un espacio parpadea al abrirse y la pestaña «Capas» sirve para algo más que elegir capas"
    },
-   "test": "Carte avec une route qui traverse des espaces, profil ouvert : ouvrir la fiche d'un espace ne fait plus clignoter la coupe ; elle s'ouvre sous l'onglet du profil (pas celui des Couches) avec son titre et sa croix. L'onglet « Couches » ne propose plus de choisir le vol ou la mission : seulement ce qui s'affiche ; la mission, sa carte et sa vue se choisissent dans la fenêtre de mission sur la carte.",
+   "test": "Carte d'une mission, onglet Couches : les cases des couches sont là comme sur une carte de vol, et le titre de l'onglet ne redit plus la mission ni la carte fournie. Fiche d'un espace : elle s'ouvre sous l'onglet du profil, sans clignoter.",
    "since": "2026-11-10",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-10T16:23:19Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "ben non… cf. screenshot.",
+    "at": "2026-11-10T15:07:37Z"
+   }
   },
   {
    "id": "SOG-0186",
@@ -1141,9 +1157,15 @@
     "de": "REGRESSION: das Missionsfenster auf der Karte (Titel, „Mitgelieferte Karte“, „Ansicht“) ist verschwunden",
     "es": "REGRESIÓN: ha desaparecido la ventana de la misión sobre el mapa (título, «Carta suministrada», «Vista»)"
    },
-   "test": "Compagnie › Missions › une mission › « Préparer ce vol » : sur la carte à côté de Carburant, la fenêtre de la mission (titre, « Carte fournie », « Vue ») est là dès la première ouverture, sans recharger ; pareil sur la Carte seule.",
+   "test": "Compagnie › Missions › une mission › « Préparer ce vol » : sur la carte à côté de Carburant, la fenêtre de mission porte « Carte fournie » et « Vue » ; choisir une carte fournie la montre sur place, sans quitter Carburant ; la croix rend la carte du vol.",
    "since": "2026-11-10",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-10T16:23:22Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "sur la vue carburant, on n’a qu’un bouton « carte de la mission » qui renvoie vers les cartes.",
+    "at": "2026-11-10T15:09:07Z"
+   }
   },
   {
    "id": "SOG-0197",
@@ -1238,9 +1260,15 @@
     "de": "Kraftstoff: der Ausweichflugplatz wird nach der Eingabe nicht übernommen",
     "es": "Combustible: el aeródromo alternativo no se tiene en cuenta tras escribirlo"
    },
-   "test": "Carburant › Vol : saisir un terrain de dégagement : son nom, sa météo et la réserve du devis se mettent à jour tout de suite, sans passer par Carte puis revenir.",
+   "test": "Carburant › Vol, carte à côté : changer le terrain de dégagement (par exemple de EIDW à LFRN) : le trait pointillé de la carte va au nouveau dégagement dans les deux secondes, sans aller-retour.",
    "since": "2026-11-10",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-10T16:23:24Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "rien. cf. screenshot.",
+    "at": "2026-11-10T16:01:59Z"
+   }
   },
   {
    "id": "SOG-0206",
@@ -1383,6 +1411,20 @@
    "since": "2026-11-10",
    "state": "todo",
    "delivered": "2026-11-10T15:56:50Z"
+  },
+  {
+   "id": "SOG-0224",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte à côté de Carburant : un tracé d'itinéraire proposé reste après le calcul ; deux erreurs dans la console (infobulles, cadrage)",
+    "en": "Map beside Fuel: a proposed route stays drawn after the computation; two console errors (tooltips, framing)",
+    "de": "Karte neben Kraftstoff: eine vorgeschlagene Route bleibt nach der Berechnung gezeichnet; zwei Konsolenfehler (Tooltips, Ausschnitt)",
+    "es": "Mapa junto a Combustible: un itinerario propuesto queda dibujado tras el cálculo; dos errores de consola (ayudas, encuadre)"
+   },
+   "test": "Carburant avec la carte à côté : après « Calculer A → B » et le choix d'un itinéraire, plus aucun tracé d'itinéraire proposé ne reste sur la carte ; survoler une voie ou une balise affiche de nouveau son infobulle ; à l'ouverture, la carte est cadrée sur tout le vol. Si un tracé reste : l'heure, et je regarde la console.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T16:23:23Z"
   }
  ]
 }

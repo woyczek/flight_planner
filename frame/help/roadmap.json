@@ -4,8 +4,8 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "d332b8f",
-  "fiches": 224,
+  "organisation": "b2de122",
+  "fiches": 225,
   "untranslated": 1,
   "priorities": 152
  },
@@ -494,7 +494,7 @@
     {
      "id": "SOG-0205",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Carburant : le terrain de dégagement n'est pas pris en compte après sa saisie",
      "en": "Fuel: the alternate aerodrome is not taken into account after it is typed",
      "de": "Kraftstoff: der Ausweichflugplatz wird nach der Eingabe nicht übernommen",
@@ -517,6 +517,15 @@
      "en": "Fuel › Route: the “Points” fold must be closed by default",
      "de": "Kraftstoff › Route: der Abschnitt „Punkte“ muss standardmäßig geschlossen sein",
      "es": "Combustible › Ruta: el pliegue «Puntos» debe estar cerrado por defecto"
+    },
+    {
+     "id": "SOG-0225",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Devis : un carburant de dégagement calculé (distance de l'arrivée au terrain de dégagement)",
+     "en": "Fuel quote: a computed alternate fuel (distance from the arrival to the alternate aerodrome)",
+     "de": "Kraftstoffplan: berechneter Ausweichkraftstoff (Strecke vom Ziel zum Ausweichflugplatz)",
+     "es": "Presupuesto de combustible: combustible de alternativo calculado (distancia de la llegada al alternativo)"
     }
    ]
   },
@@ -804,7 +813,7 @@
     {
      "id": "SOG-0184",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "VFR topo : pas de courbes de niveau (la V2 en avait)",
      "en": "VFR topo: no contour lines (V2 had them)",
      "de": "VFR-Topo: keine Höhenlinien (V2 hatte sie)",
@@ -813,7 +822,7 @@
     {
      "id": "SOG-0185",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Carte : la fiche d'un espace clignote à l'ouverture, et l'onglet « Couches » sert à autre chose qu'à choisir les couches",
      "en": "Map: an airspace sheet flickers when it opens, and the “Layers” tab is used for more than choosing layers",
      "de": "Karte: das Luftraumblatt flackert beim Öffnen, und der Reiter „Ebenen“ dient nicht nur der Ebenenwahl",
@@ -831,7 +840,7 @@
     {
      "id": "SOG-0196",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "RÉGRESSION : la fenêtre de la mission posée sur la carte (titre, « Carte fournie », « Vue ») a disparu",
      "en": "REGRESSION: the mission window on the map (title, “Provided map”, “View”) is gone",
      "de": "REGRESSION: das Missionsfenster auf der Karte (Titel, „Mitgelieferte Karte“, „Ansicht“) ist verschwunden",
@@ -840,7 +849,7 @@
     {
      "id": "SOG-0224",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Carte à côté de Carburant : un tracé d'itinéraire proposé reste après le calcul ; deux erreurs dans la console (infobulles, cadrage)",
      "en": "Map beside Fuel: a proposed route stays drawn after the computation; two console errors (tooltips, framing)",
      "de": "Karte neben Kraftstoff: eine vorgeschlagene Route bleibt nach der Berechnung gezeichnet; zwei Konsolenfehler (Tooltips, Ausschnitt)",
