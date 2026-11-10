@@ -573,3 +573,34 @@ def g14(c):
         c.ok('"19:50"' in base64.b64decode(re.search(r'\nledgerName:"([^"]*)"', out).group(1)).decode('utf-8'), out[:200], 'the correction is in the literal: « 19:50 »')
         c.ok(out.startswith('// Registres CSV embarqués') and os.path.exists(path + '.avant'), p.stdout[-300:], 'the head comment kept, the original kept beside (.avant)')
 
+
+
+@case('G15', 'Report: a family the airline ADDED (Settings) is offered with its families, said « SIGLE · Nom », with its added series; the common form only, no load card',
+      'G', tags=('report',), designs=('standard',), screens=False, langs4=True,
+      rule='Refactoring day 11 Nov (ergonomist\'s queue, after Settings\' T3b): « une famille ajoutée est aussi une famille du compte rendu : formulaire commun seul, '
+      'sans charge propre »; an invented family GLD of an invented airline; captures 390 and 1 280')
+def g15(c):
+    from lib import flight_docs
+    th = {'schema': 1, 'chosen': ['COMMERCIAL', 'GLD'], 'added': {'themes': [{'id': 'GLD', 'short': 'GLD', 'labels': ['Planeur', 'Glider', 'Segelflug', 'Planeador']}],
+                                                               'series': {'GLD': [{'value': 'WINCH', 'labels': ['Treuil', 'Winch', 'Winde', 'Torno']}]}}}
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        docs = flight_docs() + [['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}]}, 'document'],
+                                ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'kind': 'va'}, 'document'],
+                                ['airline/aaa/themes.json', th, 'document'], ['cache/report/draft.json', {}, 'cache']]
+        c.open('report', docs=docs)
+        c.until("document.querySelectorAll('[data-module=report] .f-steps button').length === 3", what='the report is drawn')
+        c.js("async () => { await window.FrameData.setAirline('aaa'); return true }")
+        c.tap('[data-module="report"] .f-steps button[data-step="1"]')
+        c.until("[...document.querySelectorAll('[data-module=report] select[data-family] option')].some(o => o.value === 'GLD')", timeout=8000,
+                what=f'{w} px: the added family offered')
+        opts = c.js("[...document.querySelectorAll('[data-module=report] select[data-family] option')].map(o => [o.value, o.textContent.trim()])")
+        c.ok(['GLD', {'fr': 'GLD · Planeur', 'en': 'GLD · Glider', 'de': 'GLD · Segelflug', 'es': 'GLD · Planeador'}[c.lang]] in opts, opts, 'said « SIGLE · Nom »')
+        c.page.select_option('[data-module=report] select[data-family]', 'GLD')
+        c.until("(document.querySelector('[data-module=report] [data-path=series]') || {}).value === 'WINCH'", what='its added series')
+        c.eq(c.count('[data-module="report"] [data-loadcard]'), 0, 'no load card of its own', what='load')
+        c.js("document.querySelector('[data-module=report] select[data-family]').scrollIntoView({block: 'center'})")
+        c.shot(f'G15_{c.design}_{w}_{c.lang}_delivered.png')
+        path = _save_report(c)
+        d = c.doc(path)
+        c.eq([d.get('family'), d.get('series')], ['GLD', 'WINCH'], f'{w} px: the report saved with its family and series', what='record')

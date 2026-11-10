@@ -91,6 +91,8 @@ export const meta = {
   ]
 };
 
+// les familles ajoutées par la compagnie (lot du 11/11 : « une famille ajoutée est aussi une famille du compte rendu ») : id → thème
+const ADDED = {};
 const FAMILIES = {
     AAR,
     COMMERCIAL,
@@ -721,6 +723,41 @@ async function loadCategories() {
   // les thèmes de la compagnie (SOG-0202 T2) : la liste des familles ne propose qu'eux (et celle du compte rendu, toujours gardée)
   const th = a?.root ? await Promise.resolve().then(() => S?.ctx.data.get(`${a.root}themes.json`)).catch(() => null) : null;
   if (S) S.themeIds = new Set(MT.chosenOf(th, MC.kindOf(a)));
+  if (S) addedFamilies(MT.forAirline(th, MC.kindOf(a)).filter(t => t.added));
+}
+/** Les familles AJOUTÉES par la compagnie (Réglages, themes.json ; entrée non fiable filtrée par MT.cleanThemes : identifiant à la
+ *  règle, jamais celui d'une famille de la table) sont aussi des familles du compte rendu : le formulaire commun seul, sans bloc ni
+ *  charge propres, leurs séries (ajoutées) ; numéro de CR à la lettre X (une famille sans lettre, la règle de la V2). Les anciennes
+ *  ajoutées sont retirées de FAMILIES à chaque lecture. */
+function addedFamilies(list) {
+  for (const id of Object.keys(ADDED)) {
+    delete FAMILIES[id];
+    delete ADDED[id];
+  }
+  for (const t of list) {
+    if (FAMILIES[t.id]) continue; // jamais une famille de la table
+    ADDED[t.id] = t;
+    FAMILIES[t.id] = {
+      id: t.id,
+      idPrefix: t.short,
+      defaultCategory: 'fixed',
+      pages: {},
+      title: [...t.labels],
+      series: t.series.map(x => ({
+        value: x.value,
+        label: [...x.labels]
+      })),
+      events: [],
+      blocks: []
+    };
+  }
+}
+/** Le texte d'une famille pour une liste : celui du vocabulaire, ou, pour une famille ajoutée, « SIGLE · Nom » d'après ses libellés. */
+function famText(k) {
+  const t = ADDED[k];
+  if (!t) return V.familyText(k, S.ctx.lang());
+  const name = t.labels[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(S.ctx.lang()))] || t.labels[0];
+  return name && name !== t.short ? `${t.short} · ${name}` : t.short;
 }
 /** La catégorie connue de la compagnie, avec sa charge ({ id, names, load }) ; null pour une catégorie inconnue ou sans charge. */
 const loadCat = id => (S.cats?.all || []).find(c => c.id === id && c.load) || null;
@@ -912,7 +949,7 @@ function renderBody() {
       <section class="rp-step" data-s="1"${step === 1 ? '' : ' hidden'}>
         <div class="f-card"><h2>${esc(tt(TX.steps[1]))}</h2>
           ${srcLine(shownFields([FIELDS.series, FIELDS.missionNumber]))}
-          <div class="f-grid"><label class="f-field"><span>${esc(tt(TX.family))}</span><select data-family>${Object.keys(V.familyLabels).filter(k => FAMILIES[k] && (!S.themeIds || S.themeIds.has(k) || k === m.family)).map(k => `<option value="${k}"${k === m.family ? ' selected' : ''}>${esc(V.familyText(k, S.ctx.lang()))}</option>`).join('')}</select></label>
+          <div class="f-grid"><label class="f-field"><span>${esc(tt(TX.family))}</span><select data-family>${[...Object.keys(V.familyLabels), ...Object.keys(ADDED)].filter(k => FAMILIES[k] && (!S.themeIds || S.themeIds.has(k) || k === m.family)).map(k => `<option value="${esc(k)}"${k === m.family ? ' selected' : ''}>${esc(famText(k))}</option>`).join('')}</select></label>
           ${control(FIELDS.series, m.series)}${control(FIELDS.missionNumber, m.metadata.missionNumber)}</div></div>
         ${F.ownOrder ? '' : `<details class="f-card"><summary>${esc(tt(TX.tasking))}</summary>${grid([FIELDS.objective, FIELDS.instructions, FIELDS.priority])}</details>`}
         ${(F.blocks || []).filter(shown).map((b, i) => `<details class="f-card"${i === 0 ? ' open' : ''}><summary>${esc(tt(b.title))}</summary>${b.collection ? collection(b.collection) : grid(b.fields)}</details>`).join('')}

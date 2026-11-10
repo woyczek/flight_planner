@@ -202,3 +202,7 @@ thresholds for the track when the aircraft (or the family's default category) is
   `theme` / `series` (or its old `missionCategory` migrated); the report can change them — it has the last word — and the load card
   follows its series (`loadOf`: CARGO → freight, PASSENGERS / VIP → passengers), else the old category's load. G13; G7 (the load is the
   series', a flight without theme keeps the report's family and series), G8 (COMMERCIAL said CAT), G10 (COMMERCIAL offered) adapted.
+- **An added family is a family of the report** (11 Nov 2026, lot of the refactoring day; SOG-0202): a family the airline added in
+  Settings (`themes.json` `added.themes`, filtered by `MT.cleanThemes`, never the id of a family of the table) is offered with the
+  airline's families, said « SIGLE · Nom » from its labels, with its added series; the common form only — no block, no load card of its
+  own; its report number takes the letter X (a family without a letter, the V2 rule). G15.

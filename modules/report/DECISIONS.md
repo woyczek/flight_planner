@@ -239,3 +239,7 @@ Memory of the V3 report module: every choice, dated, with its reason. Chat histo
   « 19:50 » fix of the embedded HEMS ledger), migrated as it was in 3.0.0; `tools/data_guard.py` rightly refuses code there. The data
   repository is the user's: `tools/repair_ledger_defaults.py` moves the fix into the literal, removes the code, checks the result with
   the guard, writes only with `--write` and keeps the original (`.avant`). G14 (invented ledgers in a temporary folder).
+- **11 Nov 2026 — an added family is a family of the report, with the common form only** (ergonomist's queue of the refactoring day,
+  after Settings' T3b). The report's `FAMILIES` gets the airline's added families at each reading of `themes.json` (the previous ones
+  removed); they have no block nor load of their own, and their report number takes the letter X. Decision to bring to the user: a
+  letter of their own for added families (none is free by rule today). G15; counter-test on origin/v3: the added family not offered.
