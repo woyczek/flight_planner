@@ -4,8 +4,8 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "55742e0",
-  "fiches": 181,
+  "organisation": "6161ed5",
+  "fiches": 182,
   "untranslated": 1,
   "priorities": 152
  },
@@ -1733,6 +1733,15 @@
      "en": "Aeronautical data for ALL countries, starting with Europe and the United States",
      "de": "Luftfahrtdaten für ALLE Länder, zuerst Europa und die USA",
      "es": "Datos aeronáuticos para TODOS los países, empezando por Europa y Estados Unidos"
+    },
+    {
+     "id": "SOG-0182",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Procédures hors France : les recréer depuis le texte des cartes (a minima leurs noms), et superposer la carte publiée à la Carte",
+     "en": "Procedures outside France: rebuild them from the text of the charts (at least their names), and overlay the published chart on the Map",
+     "de": "Verfahren außerhalb Frankreichs: aus dem Text der Karten nachbauen (mindestens die Namen) und die veröffentlichte Karte über die Karte legen",
+     "es": "Procedimientos fuera de Francia: recrearlos desde el texto de las cartas (al menos sus nombres) y superponer la carta publicada al Mapa"
     }
    ]
   },
