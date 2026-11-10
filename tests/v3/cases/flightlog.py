@@ -11,6 +11,7 @@ Rules covered
 Cases: G1 G2 G3 G4.  Seeding: `lib.pending_doc()` (cache policy) through the frame's IndexedDB cache, no launcher.
 """
 import json
+import os
 import re
 
 from lib import ROOT, Fail, Skip, case, norm, tx
@@ -539,3 +540,36 @@ def g13(c):
         c.ok(path.split('/')[-1].startswith('CRE-'), path, f'{w} px: a COMMERCIAL report is numbered E')
         d = c.doc(path)
         c.eq([d.get('family'), d.get('series')], ['COMMERCIAL', 'CARGO'], 'the record keeps the report\'s choice', what='record')
+
+
+
+@case('G14', 'The V2 report ledgers file refused by the data guard (code after its literal) is repaired by tools/repair_ledger_defaults.py: the correction moved into the literal, the code removed, nothing written without --write, the original kept',
+      'G', static=True, rule='SOG-0219 (3) (the launcher wrote seven times « Fichier de données refusé … data\cr\mission_ledger_defaults.js — texte après le littéral »): '
+      'the V2 file of 23 Sep, migrated as it was, ends with a block of code fixing « 1:50 » → « 19:50 »; tools/data_guard.py refuses any code after the literal; '
+      'invented ledger texts in a temporary folder, never the user\'s data')
+def g14(c):
+    import base64, subprocess, sys, tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import data_guard
+    led = base64.b64encode('"missionId";"time"\n"X-001";"1:50";"ok"\n'.encode('utf-8')).decode('ascii')
+    gaar = base64.b64encode('"missionId";"risk"\n"X-002";"low"\n'.encode('utf-8')).decode('ascii')
+    text = ('// Registres CSV embarqués (essai, inventés).\nwindow.MissionLedgerDefaultsB64={\ngaarLedgerName:"' + gaar + '",\nledgerName:"' + led + '"\n};\n'
+            '// Preserve the exact value.\n{\n  const binary=atob(window.MissionLedgerDefaultsB64.ledgerName);\n}\n')
+    with tempfile.TemporaryDirectory() as d:
+        path = os.path.join(d, 'mission_ledger_defaults.js')
+        open(path, 'w', encoding='utf-8', newline='\n').write(text)
+        try:
+            data_guard.check(text)
+            refused = ''
+        except data_guard.Refused as e:
+            refused = str(e)
+        c.eq(refused, 'texte après le littéral', 'the file as the V2 left it is refused by the guard', what='before')
+        tool = [sys.executable, '-I', str(ROOT / 'tools/repair_ledger_defaults.py'), path]
+        p = subprocess.run(tool, capture_output=True, text=True, encoding='utf-8', env={**os.environ, 'PYTHONIOENCODING': 'utf-8'})
+        c.eq([p.returncode, open(path, encoding='utf-8').read() == text], [0, True], 'without --write: said, nothing written', what='dry run')
+        p = subprocess.run(tool + ['--write'], capture_output=True, text=True, encoding='utf-8', env={**os.environ, 'PYTHONIOENCODING': 'utf-8'})
+        out = open(path, encoding='utf-8').read()
+        c.eq(data_guard.check(out), 'literal', 'the repaired file passes the guard', what='after')
+        c.ok('"19:50"' in base64.b64decode(re.search(r'\nledgerName:"([^"]*)"', out).group(1)).decode('utf-8'), out[:200], 'the correction is in the literal: « 19:50 »')
+        c.ok(out.startswith('// Registres CSV embarqués') and os.path.exists(path + '.avant'), p.stdout[-300:], 'the head comment kept, the original kept beside (.avant)')
+

@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Tools: `tools/repair_ledger_defaults.py`** repairs `data/cr/mission_ledger_defaults.js` refused by the data guard (code after its literal,
+  from the V2): the correction moved into the literal, nothing written without `--write` (noreg G14; SOG-0219 (3)).
 - **Fuel: « Points (n) » closed when Fuel opens** (not remembered on the device; noreg F137; SOG-0222).
 - **Aircraft sheets: a converted value is shown with two significant digits** (`modules/aircraft/sheets.js`; DECISIONS; noreg M38; SOG-0220).
   « 12407.61611576491 lb/h » reads « 12000 lb/h »; a typed value stays as typed, the sheet keeps its value until the field is edited.

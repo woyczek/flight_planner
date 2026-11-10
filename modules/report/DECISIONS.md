@@ -232,3 +232,10 @@ Memory of the V3 report module: every choice, dated, with its reason. Chat histo
   flight's theme when it has one, a flight without theme keeps the report's family and series. A new report after a COMMERCIAL one
   starts on COMMERCIAL / CARGO (G5: the family of the last report, its first series), so it asks the freight until the series changes.
   G13; G7 adapted.
+- **10 Nov 2026 — the V2 ledgers file refused by the guard: a repair tool, run by the user** (SOG-0219 (3): « Fichier de données refusé …
+  data\cr\mission_ledger_defaults.js — texte après le littéral », seven times). Nothing in V3 reads it: the V2 reporting pages
+  (`apps/cr/*/…_reporting.html`, through `shared/mission_reporting_config.js`) ask for it at each opening, hence one refusal per page.
+  The file came from the V2 (`shared/mission_ledger_defaults.js`, 23 Sep) with a block of code after its literal (a « 1:50 » →
+  « 19:50 » fix of the embedded HEMS ledger), migrated as it was in 3.0.0; `tools/data_guard.py` rightly refuses code there. The data
+  repository is the user's: `tools/repair_ledger_defaults.py` moves the fix into the literal, removes the code, checks the result with
+  the guard, writes only with `--write` and keeps the original (`.avant`). G14 (invented ledgers in a temporary folder).
