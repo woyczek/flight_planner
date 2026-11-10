@@ -2835,3 +2835,11 @@ three times within ten seconds had the third refused. A loop is a **chain**: eac
 storm detection counts loads of type `reload` only (a redirect loop is `navigate`; the harness `goto`s several times in one tab). Noreg A137 (Pilot ↔ Company four times in a row, nothing stopped),
 red on bf27aaec3; A134 (the real cycle: still three loads then the note), N4, N13, N14 green again.
 
+
+## 10 November 2026 — a launcher started again is found without Shift + F5 (SOG-0215)
+
+The user: « quand le lanceur revient, il faut shift + f5, alerte cartouche rouge « application dépassée - recharger », et là ça marche enfin ». Two gaps (the first closed by 65aec52a0, his trial probably on a page older than it):
+the page did not know the launcher had gone (state `down`, 8 s watch), and, when it found it again, it **kept the old survey** (`launcherHere`) — so a launcher restarted on a newer version never showed the cartouche. Now `probeLauncher`
+replaces the survey when the stamp, the version, the host or `data` / `dataGit` / `lan` differ (wiring redone with `loadDevice` only when `data`, `dataGit` or `lan` changed), repaints the status and the version, and is called every
+minute and at each return to the foreground (a restart between two passes). Pairing of other devices is the launcher's own state (read from it again, not kept on the page). Noreg A138, red before (the cartouche never appears).
+

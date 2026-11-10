@@ -1123,7 +1123,8 @@
   async function probeLauncher() {
     const found = await FD.launcher.detect().catch(() => null);
     if (!found) return false;
-    if (!launcherHere) {
+    const was = launcherHere;
+    if (!was) {
       launcherHere = found;
       await loadDevice();
       readVersion();
@@ -1132,6 +1133,15 @@
           state: launcherState()
         }
       }));
+    } else if (launcherDown || found.app !== was.app || found.version?.version !== was.version?.version || found.host !== was.host ||
+      found.data !== was.data ||
+      found.dataGit !== was.dataGit || found.lan !== was.lan) {
+      // un lanceur relancé peut servir une autre version (le cartouche « Version ancienne · Recharger » vient de lui-même, sans Maj + F5) ou un autre état de data/ (SOG-0215)
+      const wiring = found.data !== was.data || found.dataGit !== was.dataGit || found.lan !== was.lan;
+      launcherHere = found;
+      if (wiring) await loadDevice();
+      readVersion();
+      paintStatus();
     }
     // l'erreur « hors ligne » du transport s'efface avec une passe réussie : sans elle, l'état de la synchronisation, relu aussitôt, dirait de nouveau « parti »
     if (launcherDown) {
@@ -4651,6 +4661,8 @@
     window.addEventListener('frame-data-airline', () =>
       loadAirline()); // un autre choix de compagnie (Réglages) : nom, site, logo suivent
     setInterval(() => FD.status().then(paintSync), 30e3); // « il y a 4 min » vieillit
+    // le lanceur est revu chaque minute et au retour au premier plan : relancé en moins d'une passe, il change de version sans que la page l'apprenne (SOG-0215)
+    setInterval(() => void(launcherHere && !launcherDown && recheckLauncher()), 60e3);
     window.addEventListener('hashchange', route);
     infoData.watch('cache/', paths => {
       if (paths.some(p => /^cache\/[\w-]+\/status\.json$/.test(p))) readModuleLines();
@@ -4669,7 +4681,10 @@
     });
     window.addEventListener('offline', () => FD.status().then(paintSync));
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') FD.status().then(paintSync); // téléphone rallumé : état du moment
+      if (document.visibilityState === 'visible') {
+        FD.status().then(paintSync); // téléphone rallumé : état du moment
+        if (launcherHere) void recheckLauncher();
+      }
     });
     offlineApp();
     levelsP = readLevels();

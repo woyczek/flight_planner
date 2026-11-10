@@ -5616,3 +5616,43 @@ def a137(c):
     c.ok('Rechargements' not in notes and 'Chain of reloads' not in notes and 'Neuladungen' not in notes and 'recargas' not in notes, notes, 'no note says a series was stopped')
     c.eq(c.js('() => window.SogFrame.reloads().stopped'), None, 'nothing is marked stopped', what='stopped')
     c.check_errors()
+
+
+@case('A138', 'A launcher that is started again is found by the open page, with no Shift + F5: the state comes back, and if it serves a newer version the « Old version · Reload » cartouche appears by itself (SOG-0215)', 'A',
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0215 (the user: « quand le lanceur revient, il faut shift + f5, alerte cartouche rouge « application dépassée - recharger », et là ça marche enfin »): a launcher that stopped is looked for every 8 s (state down → up); the page that was open takes the new launcher’s survey (version stamp, data) and shows the cartouche when its own stamp differs; a launcher restarted between two passes is seen again at the next return to the foreground (and every minute); never Shift + F5')
+def a138(c):
+    live = {'up': True, 'app': ''}
+
+    def launcher(route):
+        path = urllib.parse.urlparse(route.request.url).path
+        if not live['up']:
+            return route.abort()
+        body = {**LAUNCHER_STATUS, **({'app': live['app']} if live['app'] else {})} if path.endswith('/__setup/status') else {'ok': True}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/modules/atmosphere/module\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=LAUNCHER_MODULE))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    c.page.add_init_script("Object.defineProperty(navigator, 'serviceWorker', { get: () => undefined })")
+    c.open('atmosphere', wait=False)
+    c.until('!!window.__ctx', timeout=15000, what='the module and its ctx')
+    c.wait(1500)
+    stale = "() => !document.getElementById('fStale').hidden"
+    c.eq([c.js('() => window.__ctx.launcherState()'), c.js(stale)], ['up', False], 'a launcher serves the page, it gives no stamp: no cartouche', what='start')
+    # the launcher stops, then comes back with a newer version: found by itself, the cartouche appears
+    live['up'] = False
+    c.js('async () => { await window.__ctx.launcher.call("calc") }')
+    c.until("window.__ctx.launcherState() === 'down'", what='down')
+    live.update(up=True, app='abcd1234')
+    c.until("window.__ctx.launcherState() === 'up'", timeout=14000, what='found again by the page (no Shift + F5)')
+    c.until(stale, timeout=5000, what='the cartouche appears by itself')
+    c.eq(c.js("document.getElementById('fStale').dataset.go"), 'reload', 'a tap reloads', what='go')
+    # a restart between two passes (never seen down): at the next return to the foreground the new version is taken
+    live['app'] = 'abcd1234'
+    c.page.reload(wait_until='load')
+    c.until('!!window.__ctx', timeout=15000, what='the module again')
+    c.wait(1200)
+    c.eq(c.js(stale), True, 'the page loaded with another stamp than the launcher’s: the cartouche is there', what='stale at load')
+    live['app'] = ''
+    c.js('() => document.dispatchEvent(new Event("visibilitychange"))')
+    c.until("document.getElementById('fStale').hidden", timeout=8000, what='the launcher no longer gives a stamp: the cartouche goes (the survey was taken again)')
+    c.check_errors()

@@ -1268,7 +1268,8 @@ A button that goes through the launcher must not test `ctx.launcher` and silentl
   (a paired device: its routes are refused). The window event `frame-launcher` (`detail.state`) says it when it changes
   (`down`, then `up` again; `none` → `up` when `Retry` finds one). The frame learns it from what it already does: a call of
   the launcher client that fails by the network, the data transport's last error; a launcher that is gone is looked for every
-  8 s, and a call that answers finds it again.
+  8 s, and a call that answers finds it again. **A launcher started again is taken as it is** (SOG-0215): its survey (version stamp, `data`, `dataGit`, `lan`) replaces the page's, so the
+  « Old version · Reload » cartouche appears by itself when it serves a newer version; one restarted between two passes is seen at the next return to the foreground and every minute. Never Shift + F5.
 - `ctx.needLauncher({ retry })`, **synchronous**: gives the module's `ctx.launcher` when it can be used (state `up`, `meta.launcher`
   declared); otherwise **null, after one notification, the same for every module**, in the four languages, that says why:
   « the launcher of the workstation does not answer: start it again, then retry » (`down`), « no launcher serves this page: open
