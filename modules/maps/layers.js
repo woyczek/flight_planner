@@ -25,7 +25,8 @@ import {
   invalidate
 } from './data.js';
 import {
-  buildProfile
+  buildProfile,
+  clearSel
 } from './profile_view.js';
 import {
   hideTips
@@ -474,6 +475,7 @@ export function fillLayers() {
 /** Contenu Couches ouvert dans la feuille (ou fermé) : titre « Couches · <vol> », la croix ramène le profil ; le bouton de la
  *  colonne de gauche est pressé tant qu'il est ouvert. Un seul contenu à la fois : un terrain épinglé est relâché. */
 export function toggleLayers(open = S.dpanel !== 'layers') {
+  if (open) clearSel(); // l'espace choisi sur le profil ne reste pas sous le volet des couches (SOG-0192)
   if (!open) return endData('layers');
   if (S.dpanel === 'layers') return;
   releaseAd();
@@ -521,7 +523,10 @@ export function fillModes() {
  *  sur deux, la carte être basse) dans la couche de superposition, qui a la taille de la carte. */
 export function toggleModes(open = S.modeOpts.hidden) {
   if (S.modeOpts.hidden === !open) return;
-  if (open) hideTips(); // le panneau des modes remplace l'infobulle de la carte (SOG-0192)
+  if (open) {
+    hideTips(); // le panneau des modes remplace l'infobulle de la carte (SOG-0192)
+    clearSel();
+  }
   S.modeOpts.hidden = !open;
   S.modeBtn.setAttribute('aria-expanded', String(open));
   if (!open) return;

@@ -396,6 +396,14 @@ export const yAtAlt = (g, a) => g.padT + (g.H - g.padT - g.padB) * (1 - (Math.mi
 export const altAtY = (g, y) => g.bottom + (1 - (y - g.padT) / (g.H - g.padT - g.padB)) * (g.top - g.bottom);
 /** Ligne sous le profil (feuille agrandie) : distance, altitude prévue, relief ou MORA, espaces sous le curseur du plus haut
  *  au plus bas, ou « hors des espaces montrés » ; vide sans curseur. */
+/** Plus d'espace choisi dans le profil (un autre volet s'ouvre : la légende, la météo, les couches, les modes ; SOG-0192) : sa pastille « nom, limites, Fiche » s'en va. */
+export function clearSel() {
+  if (!S?.selSpace) return;
+  S.selSpace = null;
+  S.selList = null;
+  selFill();
+  drawProfile();
+}
 /** L'espace choisi dans le profil (SOG-0163) : son nom et ses limites et le bouton « Fiche », sur le profil (la ligne dessous n'est visible que feuille ouverte à fond) ; écrit seulement s'il change. */
 function selFill() {
   const el = S?.selEl;

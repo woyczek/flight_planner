@@ -5194,3 +5194,28 @@ def d_altn(c):
     c.js("""async (a) => { const S = window.__mp.S, path = `pilot/${S.ctx.identity?.trigram || 'ANON'}/current_flight.json`, f = await S.ctx.data.get(path);
       await S.ctx.data.put(path, { ...f, route: { ...f.route, altn: a }, updated_at: new Date(Date.now() + 120000).toISOString() }); return true }""", other)
     c.until("(a) => window.__mp.S.route.altn && String(window.__mp.S.route.altn.id).toUpperCase() === a", other, timeout=2500, what='the Map draws the new alternate within the second')
+
+
+@case('D162', 'The space chosen on the profile (its strip « name, limits, Sheet ») goes when another panel opens: the legend, the weather, the layers, the modes', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0192 refused (capture 160820: after a tap on a space, « R 205 /11 FL115|FL195 · Fiche » stayed over the legend panel): the chosen block and its strip belong to the profile; any other panel replaces them')
+def d_sel(c):
+    ring = lambda la0, la1, lo0, lo1: [[la0, lo0], [la0, lo1], [la1, lo1], [la1, lo0], [la0, lo0]]
+    zones = [{'type': 'R', 'cls': '', 'name': '61', 'key': 'LFR61', 'lower': 'SFC', 'upper': 'FL115', 'src': 'sia', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]},
+             {'type': 'P', 'cls': '', 'name': '9', 'key': 'LFP9', 'lower': 'SFC', 'upper': 'FL115', 'src': 'sia', 'rings': [ring(44.6, 45.4, 1.9, 2.4)]}]
+    c.open('maps', docs=fdocs(_awy_flight()) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airspaces=zones, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.until("() => !!(window.__mp.S && window.__mp.S.prof && window.__mp.S.prof.crossed.some(x => x.a.type === 'R'))", timeout=15000, what='the profile crosses the R')
+    c.wait(500)
+    c.js("() => { window.__want = 'R'; return true }")
+    chosen = "() => !!document.querySelector('.mp-spsel [data-spfiche]') && !document.querySelector('.mp-spsel').hidden"
+    gone = "() => !window.__mp.S.selSpace && (!document.querySelector('.mp-spsel [data-spfiche]') || document.querySelector('.mp-spsel').hidden)"
+    for what, tap, undo in (('the legend', '.mp-chip[data-legend]', '.mp-chip[data-legend]'), ('the weather chip', '.mp-chip[data-view="weather"]', '.mp-chip[data-view="profile"]'),
+                            ('the Layers tab', '[data-mp="layers"]', '[data-mp="layers"]'), ('the modes panel', '[data-mp="mode"]', '[data-mp="mode"]')):
+        _click_until(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(_SPACE_CLICK_JS, 5000)), chosen, f'{what}: the block is chosen')
+        c.tap(tap)
+        c.until(gone, timeout=3000, what=f'{what} opens: the strip of the chosen space is gone')
+        c.tap(undo)
+        c.wait(300)

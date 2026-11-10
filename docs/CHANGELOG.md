@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the space chosen on the profile goes when another panel opens** (`modules/maps/profile_view.js`, `sheet_view.js`, `layers.js`; DECISIONS; noreg D162; SOG-0192). Its strip « name, limits, Sheet » no longer stays over the legend.
+
 - **Missions: one id per mission** (`frame/lib/mission.js` `readRegistry`; noreg N21). A registry row that keeps an old number (« 71 ») is
   listed under the id of its folder (« F-071 »); the search finds both.
 - **Site: no error when the page is left while the Site is still reading** (`modules/website/module.js` mount; DECISIONS; noreg G11; A66 intermittent).

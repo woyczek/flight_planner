@@ -2299,6 +2299,10 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done**: the light drawing paints every airway in the low colour (high ones too); a zoom that crosses a threshold *during* a gesture shows the new state only at rest.
 - **Noreg** D141 (zoom 8: the airways are in the light drawing and stroked while moving; zoom 3: none, no stroke; red before: 3 airways at zoom 3).
 
+## The space chosen on the profile goes when another panel opens (10 Nov 2026, SOG-0192 refused again, capture 160820)
+- **Cause**: the pastille « R 205 /11 FL115|FL195 · Fiche » of the legend capture is not a balloon (`hideTips` handled those): it is the strip of the block chosen on the profile (`S.selSpace`, SOG-0163),
+  which nothing cleared when another panel opened. **Done**: `clearSel()` (profile_view) on the legend, weather, Layers and modes; the profile chip keeps it. **Noreg** D162 (red before: the legend).
+
 ## The alternate changed in Fuel is drawn at once (10 Nov 2026, SOG-0205 refused: the Map kept the dotted line to the old alternate)
 - **Cause** (found by Features SOG): `sigOf` (`flight_time.js`), the signature `sameRoute` compares, did not hold `route.altn`: a write of the alternate alone looked like « only the progress changed »
   (`watchFlight` → `progressOnly`), `applyFlight` never ran and `S.route.altn` stayed until a remount. **Done**: `route.altn` is in the signature. **Noreg** D161 (double view, the alternate rewritten from outside:

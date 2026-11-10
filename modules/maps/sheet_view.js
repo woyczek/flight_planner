@@ -32,7 +32,8 @@ import {
 } from './screen.js';
 import {
   drawProfile,
-  winSync
+  winSync,
+  clearSel
 } from './profile_view.js';
 import {
   toggleModes
@@ -399,6 +400,8 @@ export function sheetEvents() {
   });
   S.segEl.addEventListener('click', e => {
     hideTips(); // une puce (profil, météo, légende « i ») change ce qui est montré : l'infobulle de la carte ne reste pas (SOG-0192)
+    if (!e.target.closest('[data-view="profile"]'))
+      clearSel(); // ni la pastille de l'espace choisi sur le profil : « R 205 · Fiche » par-dessus la légende
     if (e.target.closest('[data-legend]')) {
       if (S.legendBtn.disabled) return;
       if (!S.legend && S.sh.pos === 'collapsed') S.sh.set('default', true); // la légende se lit sur le dessin
