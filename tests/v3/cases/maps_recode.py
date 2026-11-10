@@ -3888,7 +3888,7 @@ def d126(c):
     c.until("() => (window.__mp.S.altHits || []).length === 2", timeout=6000, what='drawn again')
     # a tap on the second route takes it: a Map alone goes to Fuel with the index
     c.wait(500)   # the last drawing settles (a loaded machine redraws after the event): the touch targets are those of the image
-    _click_until(c, lambda: (lambda p: (p['x'], p['y']))(c.js("""() => { const S = window.__mp.S, h = S.altHits.find(x => x.index === 1), m = h.q[1], r = S.box.getBoundingClientRect(); return { x: r.left + (m.x + h.q[2].x) / 2, y: r.top + (m.y + h.q[2].y) / 2 } }""")),
+    _click_until(c, lambda: (lambda p: (p['x'], p['y']))(c.js("""() => { const S = window.__mp.S; if (!S) return { x: 1, y: 1 }; const h = S.altHits.find(x => x.index === 1), m = h.q[1], r = S.box.getBoundingClientRect(); return { x: r.left + (m.x + h.q[2].x) / 2, y: r.top + (m.y + h.q[2].y) / 2 } }""")),
                  "() => location.hash.includes('ralt=1')", 'a tap on a route takes it: #fuel?ralt=1')
     # in the double view the choice is an event
     c.open('maps', flight=True)
@@ -3899,7 +3899,7 @@ def d126(c):
     c.until("() => (window.__mp.S.altHits || []).length === 2", timeout=8000, what='drawn in the pane')
     c.wait(500)
     c.eq(c.js("() => !!document.querySelector('.mp-alts') && !document.querySelector('.mp-alts').hidden"), False, 'beside Fuel the list is Fuel’s: not repeated over the map', what='list in a pane')
-    _click_until(c, lambda: (lambda p: (p['x'], p['y']))(c.js("""() => { const S = window.__mp.S, h = S.altHits.find(x => x.index === 1), m = h.q[1], r = S.box.getBoundingClientRect(); return { x: r.left + (m.x + h.q[2].x) / 2, y: r.top + (m.y + h.q[2].y) / 2 } }""")),
+    _click_until(c, lambda: (lambda p: (p['x'], p['y']))(c.js("""() => { const S = window.__mp.S; if (!S) return { x: 1, y: 1 }; const h = S.altHits.find(x => x.index === 1), m = h.q[1], r = S.box.getBoundingClientRect(); return { x: r.left + (m.x + h.q[2].x) / 2, y: r.top + (m.y + h.q[2].y) / 2 } }""")),
                  "() => window.__picked.length >= 1", 'the tap is maps-route-alt')
     c.eq(c.js("() => window.__picked[0]"), {'index': 1}, 'with the index, nothing else', what='detail')
     # a Map opened afterwards reads the document
