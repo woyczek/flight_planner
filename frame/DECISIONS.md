@@ -2827,3 +2827,11 @@ Settings' `frame/lib/plural.js` (`plural`, `agree`) resolves the marks `(s) (x) 
 now runs `agree` before replacing the `{keys}`, **only when `vars` holds a number** (a text without a number, or a numeric string, is left as it is: no mark is guessed). The module is
 imported at boot (before it loads, `t` behaves as before) and kept by the service worker. `SogSettingsKit.agreeT` stays valid on top (it agrees a text first; the second pass finds no mark). Noreg A136.
 
+## 10 November 2026 — the loop-breaker only stops a chain (regression found by Features SOG: N4, N13, N14 red)
+
+bf27aaec3 counted every automatic redirect of `route()` (`elsewhere`, `MOVED`) in the last ten seconds: Missions → « Prepare this flight » → Fuel is a redirect Company → Pilot, and a test (or a user) doing it
+three times within ten seconds had the third refused. A loop is a **chain**: each page is born of the previous redirect and redirects again at its first routing. Now a redirect is « without a gesture »
+(`auto`) only when it is made at the first `route()` of a page that was born of a redirect of the frame less than 5 s before (`bootedBySelf`); a change of address made in the page is never refused. The start-up
+storm detection counts loads of type `reload` only (a redirect loop is `navigate`; the harness `goto`s several times in one tab). Noreg A137 (Pilot ↔ Company four times in a row, nothing stopped),
+red on bf27aaec3; A134 (the real cycle: still three loads then the note), N4, N13, N14 green again.
+

@@ -3130,6 +3130,8 @@
    *  navigation à la fois : chaque appel prend un jeton, et une reprise après un await dont le jeton n'est plus le dernier
    *  abandonne sans rien écrire (la vue est déjà vidée par la navigation suivante, qui a démonté le module en cours de montage). */
   async function route() {
+    const first = !routed;
+    routed = true;
     routeLog.push({
       t: Date.now(),
       h: location.hash.slice(0, 80)
@@ -3141,13 +3143,13 @@
     // ancienne adresse d'un écran gardée en renvoi (l'adresse remplacée : le retour arrière ne la rejoue pas)
     const moved = MOVED[parseHash().id];
     if (moved && selfNavigate(`redirect: moved ${parseHash().id} → ${moved}`, () => location.replace(`#${moved}`), {
-        auto: true
+        auto: first && bootedBySelf
       })) return;
     // l'adresse d'un module d'une autre application que celle-ci lui passe (APP.elsewhere : « Préparer ce vol » de Compagnie
     // ouvre Carburant dans Pilote) : la même adresse dans cette application-là
     const away = APPS[APP.elsewhere?.[parseHash().id]];
     if (away && away !== APP && selfNavigate(`redirect: elsewhere ${parseHash().id} → ${away.id}`, () => location.replace(appHref(away).replace(/#.*$/, location.hash)), {
-        auto: true
+        auto: first && bootedBySelf
       })) return;
     const h = parseHash(),
       id = h.id || visibleModules()[0]?.id || 'settings';
@@ -4735,12 +4737,17 @@
   // ---- coupe-boucle des rechargements que le cadre déclenche lui-même (SOG-0209, « refresh en boucle ») : un rechargement ou une redirection de page
   // (version nouvelle, redirection d'une application à l'autre, écran déplacé) passe par selfNavigate, qui le note dans sessionStorage (il survit
   // au rechargement, pas à l'onglet fermé). Au troisième en dix secondes, un geste de l'utilisateur passe toujours, mais un rechargement SANS geste
-  // (`auto`) est refusé : la page reste, le dit (notification) et garde la cause dans le diagnostic (page.reloads). Chaque chargement de page est noté
-  // aussi (type de navigation) : trois chargements en dix secondes dont le cadre n'est pas l'auteur (le navigateur, un autre script) sont dits de même.
+  // (`auto`) est refusé : la page reste, le dit (notification) et garde la cause dans le diagnostic (page.reloads). Une redirection est « sans geste »
+  // seulement quand elle est un maillon d'une chaîne : faite au PREMIER routage d'une page elle-même née d'une redirection du cadre (moins de 5 s) ; un
+  // changement d'adresse fait dans la page (un bouton, « Préparer ce vol » trois fois de suite) ne l'est jamais (SOG-0209, régression N4 / N13 / N14).
+  // Chaque chargement de page par rechargement (type « reload ») est noté aussi : trois en dix secondes dont le cadre n'est pas l'auteur (le navigateur,
+  // un autre script) sont dits de même.
   const NAV_KEY = 'sog-frame-nav',
     NAV_WINDOW_MS = 10000,
     NAV_MAX = 3;
-  let navStopped = null; // { cause, at } : la série arrêtée de cette page
+  let navStopped = null, // { cause, at } : la série arrêtée de cette page
+    bootedBySelf = false, // cette page est née d'un rechargement ou d'une redirection du cadre (moins de 5 s)
+    routed = false; // le premier routage de la page a eu lieu
   const routeLog = []; // les dernières adresses routées (diagnostic) : { t, h }
   const navLog = () => {
     try {
@@ -4804,13 +4811,14 @@
     } catch {
       /* pas de chronologie de navigation */
     }
+    bootedBySelf = navLog().some(e => e.k === 'self' && Date.now() - e.t < 5000);
     navNote({
       t: Date.now(),
       k: 'load',
       type
     });
     const log = navLog();
-    if (log.filter(e => e.k === 'load').length >= NAV_MAX) {
+    if (log.filter(e => e.k === 'load' && e.type === 'reload').length >= NAV_MAX) {
       const own = [...log].reverse().find(e => e.k === 'self');
       navStop(own ? own.cause : `not the frame (${type || 'unknown'} navigation)`);
     }

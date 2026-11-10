@@ -1286,7 +1286,9 @@ has a line « The workstation's launcher is not answering any more » (a tap ret
 
 ### 15.1b The page does not reload in a loop (SOG-0209)
 
-The frame notes every reload or redirect it makes (`sessionStorage`, ten seconds). A reload **without a gesture** that would be the third in ten seconds is refused: the
+The frame notes every reload or redirect it makes (`sessionStorage`, ten seconds). A redirect that is **a link of a chain** — made at the first routing of a page that was
+itself born of a redirect of the frame (under 5 s) — and that would be the third in ten seconds is refused (an address change made in the page, a button, is never a link: « Prepare this
+flight » three times in a row is not a loop): the
 page stays and says « Chain of reloads stopped: <cause> »; the cause is in the page diagnostic (`page.reloads`) and `window.SogFrame.reloads()`. A module never reloads the page
 (`location.reload` / `location.replace` of the page are the frame's: use `ctx.consume`, `location.hash`); an `elsewhere` table of an application (`APPS`) must have no cycle.
 

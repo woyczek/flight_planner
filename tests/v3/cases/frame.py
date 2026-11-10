@@ -5593,3 +5593,21 @@ def a136(c):
     c.eq(norm(c.js("() => window.SogFrame.t(['Le fichier (s)', 'The file (s)', 'x', 'x'])")), 'Le fichier (s)' if c.lang == 'fr' else 'The file (s)' if c.lang == 'en' else 'x',
          'without a number the text is left as it is', what='no number')
     c.check_errors()
+
+
+@case('A137', 'Redirects made by the user’s own moves are never stopped: Pilot ↔ Company four times in a row, no « chain of reloads » note (SOG-0209 regression: N4, N13, N14)', 'A',
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0209 + Features SOG (bf27aaec3 turned N4, N13 and N14 red): the loop-breaker refuses only a redirect that is a link of a chain — made at the first routing of a page that was itself born of a redirect of the frame (less than 5 s) — never an address change made in the page (« Prepare this flight » from Company to Pilot and back, several times in a few seconds)')
+def a137(c):
+    c.page.add_init_script("Object.defineProperty(navigator, 'serviceWorker', { get: () => undefined })")
+    c.open('missions', docs=LEVEL3, wait=False, app='company')
+    c.until("!!document.querySelector('[data-module=missions]')", timeout=20000, what='Missions in Company')
+    for _ in range(2):
+        c.js("() => { location.hash = '#fuel' }")                 # Company sends Fuel to Pilot: a page load
+        c.until("!location.search.includes('app=company') && !!document.querySelector('[data-module=fuel]')", timeout=20000, what='Fuel in Pilot')
+        c.js("() => { location.hash = '#missions' }")             # Pilot sends Missions to Company
+        c.until("location.search.includes('app=company') && !!document.querySelector('[data-module=missions]')", timeout=20000, what='Missions in Company again')
+    notes = c.js("[...document.querySelectorAll('#fNotes .f-note span')].map(s => s.textContent).join(' | ')")
+    c.ok('Rechargements' not in notes and 'Chain of reloads' not in notes and 'Neuladungen' not in notes and 'recargas' not in notes, notes, 'no note says a series was stopped')
+    c.eq(c.js('() => window.SogFrame.reloads().stopped'), None, 'nothing is marked stopped', what='stopped')
+    c.check_errors()
