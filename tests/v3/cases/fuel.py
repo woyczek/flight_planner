@@ -3594,3 +3594,81 @@ def f127(c):
     c.eq(c.js(f"(() => {{ const e = document.querySelector('{FUEL} [data-proc=arr] [data-appaid]'); return e ? [e.hidden, e.textContent.trim()] : null }})()"), [True, ''],
          'without an ILS in the base: no line (hidden, empty)', what='[hidden, text]')
     c.ok('I13R' in c.js(summ) and not any('110' in x for x in c.js(summ)), c.js(summ), 'and the summary says the approach alone')
+
+
+@case('F128', 'Fuel beside the Map: after « New flight » the Map beside it is still pannable and the pane still resizable (SOG-0194)', 'F', tags=('fuel', 'maps'),
+      designs=('standard',), screens=True, phone=False, night=False,
+      rule='SOG-0194 (2) — NOT reproduced here, kept as a guard of the path —, the user: « carburant -> devis -> vol -> nouveau vol … lfpo / lfmt -> la carte en sidecar s’affiche. impossible de la resizer ni de la bouger »: after « New flight » in Fuel with the dual view, the Map beside it answers a drag (the pan) and the pane keeps its handle; no element covers it, nothing is inert')
+def f128(c):
+    c.open('fuel', flight=False, docs=proc_flight(started=True, actual=(46.2, 1.4)), airfields=True,
+           aero_extra={'aerodromes': [{'icao': 'LFPO', 'name': 'LFPO TEST', 'lat': 48.7233, 'lon': 2.3794, 'elev': 90}], 'cells': {'48': [[0, 4]]}})
+    c.until("!!document.querySelector('.f-pane [data-module=maps] .maplibregl-canvas')", timeout=20000, what='the Map beside Fuel')
+    c.wait(1500)
+    c.js("async () => { window.__mp = await import('/modules/maps/state.js'); return true }")
+    probe = """() => { const pane = document.querySelector('.f-pane'), cv = pane?.querySelector('.maplibregl-canvas'), S = window.__mp.S;
+      if (!pane || !cv) return { ok: false };
+      const r = cv.getBoundingClientRect(), pts = [[.5, .5], [.3, .3], [.7, .7]].map(([a, b]) => document.elementFromPoint(r.left + r.width * a, r.top + r.height * b));
+      const covered = pts.filter(e => !e || !pane.contains(e)).length;
+      const inert = [...pane.querySelectorAll('[inert]')].length + (pane.hasAttribute('inert') ? 1 : 0) + (document.getElementById('fView').hasAttribute('inert') ? 1 : 0);
+      const c = S.map?.getCenter?.();
+      return { ok: true, covered, inert, modal: document.querySelectorAll('.f-modal').length, center: c ? [+c.lng.toFixed(5), +c.lat.toFixed(5)] : null,
+        pe: getComputedStyle(cv).pointerEvents, w: Math.round(r.width), h: Math.round(r.height), rect: [Math.round(r.left), Math.round(r.top)],
+        drag: S.map?.dragPan?.isEnabled?.(), zoom: S.map?.scrollZoom?.isEnabled?.() } }"""
+    drag = """async () => { const S = window.__mp.S, cv = document.querySelector('.f-pane .maplibregl-canvas'), r = cv.getBoundingClientRect(), a = S.map.getCenter();
+      return [r.left + r.width / 2, r.top + r.height / 2, a.lng, a.lat] }"""
+    before = c.js(probe)
+    c.ok(before['ok'] and before['covered'] == 0 and before['inert'] == 0, str(before), 'at the start the Map beside Fuel is reachable')
+
+    def pan():
+        x, y, lng, lat = c.js(drag)
+        c.page.mouse.move(x, y)
+        c.page.mouse.down()
+        c.page.mouse.move(x + 90, y + 40, steps=8)
+        c.page.mouse.up()
+        c.wait(400)
+        n = c.js("() => { const c = window.__mp.S.map.getCenter(); return [c.lng, c.lat] }")
+        return abs(n[0] - lng) + abs(n[1] - lat) > 1e-6
+    c.ok(pan(), str(c.js(probe)), 'the Map beside Fuel answers a drag')
+    # the pane’s handle (the sheet of the Map, frame/lib/sheet.js): a tap on it changes the position; a drag moves it
+    sheet = "() => { const r = document.querySelector('.f-pane [data-module=maps]'); return r ? [r.dataset.sheet || '', !!r.querySelector('.f-sheet-head')] : null }"
+
+    def handle():
+        s0 = c.js(sheet)
+        c.page.locator('.f-pane [data-module=maps] .f-sheet-head').first.evaluate("el => el.scrollIntoView({ block: 'nearest' })")
+        b = c.page.locator('.f-pane [data-module=maps] .f-sheet-head').first.bounding_box()
+        x, y = b['x'] + b['width'] / 2, b['y'] + b['height'] / 2
+        c.page.mouse.move(x, y)
+        c.page.mouse.down()
+        c.page.mouse.move(x, y - 120, steps=8)
+        c.page.mouse.up()
+        c.wait(600)
+        return [s0, c.js(sheet)]
+    c.ok(c.js(sheet) and c.js(sheet)[1], str(c.js("() => [document.querySelector('.f-pane')?.className, [...document.querySelectorAll('.f-pane *')].slice(0, 12).map(e => e.tagName + '.' + e.className + '[' + (e.dataset.sheet || '') + ']')]")), 'the Map beside Fuel has its sheet and its handle')
+    h0 = handle()
+    c.ok(h0[0][0] != h0[1][0], str(h0), 'at the start a drag on the handle changes the sheet’s position')
+    # the user’s path: a quote, the flight started, « New flight », two aerodromes
+    c.tap(f'{FUEL} [data-do="newflight"]')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", what='a started flight: the question')
+    c.tap('.f-modal [data-ok]')
+    c.until_doc('pilot/ABC/current_flight.json', lambda d: d and not d['route'].get('dep') and not d['route'].get('arr'), 'the flight is emptied', timeout=10000)
+    c.wait(1200)
+    mid = c.js(probe)
+    c.ok(mid['ok'] and mid['covered'] == 0 and mid['inert'] == 0 and mid['modal'] == 0, str(mid), 'after « New flight »: the Map is not covered, nothing inert, no dialog left')
+    set_icao(c, 'dep', 'LFPO')
+    set_icao(c, 'arr', 'LFMT')
+    c.wait(2500)
+    after = c.js(probe)
+    c.ok(after['ok'] and after['covered'] == 0 and after['inert'] == 0, str(after), 'after the two aerodromes: the Map is still reachable')
+    c.ok(pan(), str(c.js(probe)), 'after « New flight » and two aerodromes, the Map beside Fuel still answers a drag')
+    h1 = handle()
+    c.ok(h1[0][0] != h1[1][0], str(h1), 'after « New flight » and two aerodromes, the handle of the sheet still answers a drag')
+    # the pane resized with the window: the Map’s canvas follows (the Map reads the size of its element again)
+    w1 = c.js("() => document.querySelector('.f-pane .maplibregl-canvas').getBoundingClientRect().width")
+    c.page.set_viewport_size({'width': 1100, 'height': 800})
+    c.wait(1200)
+    w2 = c.js("() => { const p = document.querySelector('.f-pane .maplibregl-canvas'); return p ? p.getBoundingClientRect().width : -1 }")
+    c.page.set_viewport_size({'width': 1500, 'height': 800})
+    c.wait(1200)
+    w3 = c.js("() => { const p = document.querySelector('.f-pane .maplibregl-canvas'); return p ? p.getBoundingClientRect().width : -1 }")
+    c.ok(w2 != w1 and w3 > w2, f'{w1} {w2} {w3}', 'after « New flight », resizing the window resizes the Map beside Fuel')
+    c.check_errors()

@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Tests: Fuel beside the Map, after « New flight »** (`tests/v3/cases/fuel.py` F128; SOG-0194 (2), the frame's part). The user's path (a started flight with a position, « New flight »,
+  two aerodromes) is played with the dual view: the Map beside Fuel is not covered, nothing is inert, a drag pans it, the handle of its sheet answers, and the window
+  resizes it. The defect « impossible de la resizer ni de la bouger » is **not reproduced** there; the case stays as a guard of the path.
+
 - **Map: one tab, one role — the Layers tab no longer chooses the flight or the mission** (`modules/maps/layers.js`, `mission_view.js`, `module.js`, help ×4; DECISIONS; noreg D149, J6; SOG-0185 c). The mission window over the map is the
   only place of the mission, its provided map and its view; the Layers tab keeps what is shown and its button is « Layers » on a mission map too.
 
