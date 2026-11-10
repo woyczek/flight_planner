@@ -261,6 +261,7 @@ The conflicts seen more than 30 days ago are dropped at the first pass of a load
     said "offline" for a call the launcher had refused). An aborted call (`init.signal`) while it waits answers `offline`
     with the reason `aborted`.
   Never call `fetch` directly. Only string bodies are relayed.
+  - **abandon a call with `init.signal`** (SOG-0198, challenge of the frame): an aborted call answers at once `offline` with the reason `aborted`, whether it was queued or in flight; it gives its place back (the launcher finishes its own call).
 - `ctx.level` (read, 28 Oct 2026): the device's usage level, 1 Everyday, 2 Advanced, 3 Full (a getter: the value of the
   moment, after a change in Settings too). It shapes what a screen offers (the Map keeps "Save for the airline" for the
   Full level); it is not a right: what the data repository refuses stays refused whatever the level.

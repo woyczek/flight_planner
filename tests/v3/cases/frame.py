@@ -5330,7 +5330,8 @@ FAKE_RELAY = """(() => {
     const a = JSON.parse(init.body), u = new URL(a.url), key = u.hostname + u.pathname;
     st.cur++; st.max = Math.max(st.max, st.cur); st.host[u.hostname] = (st.host[u.hostname] || 0) + 1; st.maxHost = Math.max(st.maxHost, st.host[u.hostname]);
     st.log.push(key);
-    return new Promise(res => setTimeout(() => {
+    return new Promise((res, rej) => { init.signal?.addEventListener('abort', () => { st.cur--; st.host[u.hostname]--; rej(new DOMException('aborted', 'AbortError')) }, { once: true }); setTimeout(() => {
+      if (init.signal?.aborted) return;
       st.cur--; st.host[u.hostname]--;
       const mk = (status, headers, body = 'ok') => res(new Response(body, { status, headers }));
       if (u.pathname === '/busyonce' && (st.busy[key] = (st.busy[key] || 0) + 1) === 1) return mk(503, { 'X-SOG-Reason': 'busy', 'Retry-After': '0' });
@@ -5339,7 +5340,7 @@ FAKE_RELAY = """(() => {
       if (u.pathname === '/refused') return mk(502, { 'X-SOG-Offline': '1', 'X-SOG-Reason': 'refused' }, 'unreachable');
       if (u.pathname === '/http404') return mk(404, { 'X-SOG-Reason': 'http-404' }, 'no');
       mk(200, {}, 'ok');
-    }, 60));
+    }, u.pathname.startsWith('/slow') ? 1500 : 60) });
   };
 })()"""
 
@@ -5952,4 +5953,36 @@ def a144(c):
     c.eq(c.js('window.__puts'), ['airline/index.json'], 'nothing but the index is written (the folder is left as it is)', what='puts')
     c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length === 3", timeout=8000, what='listed')
     c.eq(c.js("document.querySelector('[data-wizard] [data-adopt]').hidden"), True, 'the offer goes away', what='offer gone')
+    c.check_errors()
+
+
+@case('A145', 'ctx.net: a relayed call the caller gave up (signal) frees its place at once, queued or in flight; nothing is sent for one abandoned while it waits', 'A',
+      designs=('standard',), screens=False, night=False,
+      rule='challenge à rebours of the frame (11 Nov): a caller that aborts (leaving a screen) kept its place in the relay queue and its request until the launcher answered (15 s at most): the next calls waited behind it or were refused « busy »; now an abort rejects the request of the page, answers « offline: aborted » and gives the place back; a call abandoned while it waits leaves the queue and never reaches the launcher')
+def a145(c):
+    status = {'server': True, 'root': '', 'git': True, 'data': False, 'dataGit': False, 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False}
+    c.context.add_init_script(FAKE_RELAY)
+    c.context.route(re.compile(r'/modules/atmosphere/module\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=CTX_MODULE))
+    c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(status)))
+    c.open('atmosphere', wait=False)
+    c.until('!!window.__ctx && !!window.__relay', timeout=15000, what='the module and the fake relay')
+    c.wait(1500)
+    res = c.js("""async () => {
+      const t0 = performance.now(), ac = new AbortController(), host = 'https://api.open-meteo.com/slow?n=';
+      // two slow calls take the two places of the host; a third waits; the fourth is abandoned while it waits
+      const a = window.__ctx.net.fetch(host + 1), b = window.__ctx.net.fetch(host + 2), w = window.__ctx.net.fetch(host + 3, { signal: ac.signal });
+      await new Promise(r => setTimeout(r, 200));
+      ac.abort();
+      const waited = await w, tw = performance.now() - t0;
+      const ac2 = new AbortController(), inflight = window.__ctx.net.fetch(host + 4, { signal: ac2.signal });
+      await Promise.all([a, b]);
+      const t1 = performance.now(), flying = window.__ctx.net.fetch(host + 5, { signal: ac2.signal });
+      await new Promise(r => setTimeout(r, 200));
+      ac2.abort();
+      const f = await flying, tf = performance.now() - t1, i = await inflight;
+      return { waited: [waited.status, waited.headers.get('x-sog-offline'), waited.headers.get('x-sog-reason'), Math.round(tw)], flying: [f.status, f.headers.get('x-sog-reason'), Math.round(tf)], sent: window.__relay.log.filter(k => k.endsWith('/slow')).length, inflight: i.headers.get('x-sog-reason') } }""")
+    c.eq(res['waited'][:3], [503, '1', 'aborted'], 'a call abandoned while it waits answers « offline: aborted »', what='aborted while waiting')
+    c.ok(res['waited'][3] < 900, str(res), 'at once (the slow calls ahead of it last 1.5 s)')
+    c.ok(res['flying'][2] < 900 and res['flying'][1] == 'aborted', str(res), 'a call abandoned in flight answers at once, not at the end of the launcher’s answer')
+    c.ok(res['sent'] <= 4, str(res), 'the one abandoned while it waited never reached the launcher (at most the four others)')
     c.check_errors()

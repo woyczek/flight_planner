@@ -941,11 +941,13 @@
     }
   }
   /** Une place de relais pour cet hôte, attendue au besoin ; rend la fonction qui la libère (une fois). */
-  function relayTake(host) {
+  function relayTake(host, signal) {
     return new Promise(res => {
-      relayQ.wait.push({
+      if (signal?.aborted) return res(null);
+      const w = {
         host,
         go: () => {
+          signal?.removeEventListener('abort', leave);
           let done = false;
           res(() => {
             if (done) return;
@@ -955,7 +957,17 @@
             relayPump();
           });
         }
+      };
+      // un appelant qui renonce en attendant sa place la quitte : rien ne part, la place suivante est à celui d'après (null : abandonné)
+      const leave = () => {
+        const i = relayQ.wait.indexOf(w);
+        if (i >= 0) relayQ.wait.splice(i, 1);
+        res(null);
+      };
+      signal?.addEventListener('abort', leave, {
+        once: true
       });
+      relayQ.wait.push(w);
       relayPump();
     });
   }
@@ -1285,10 +1297,10 @@
             body: typeof init.body === 'string' ? init.body : undefined
           });
           for (let n = 0;; n++) {
-            const free = await relayTake(u.hostname);
+            const free = await relayTake(u.hostname, init.signal);
+            if (!free) return offline('aborted');
             let r;
             try {
-              if (init.signal?.aborted) return offline('aborted');
               r = await fetch(new URL('__setup/net', ROOT), {
                 method: 'POST',
                 cache: 'no-store',
@@ -1296,7 +1308,9 @@
                   'X-SOG-Setup': '1',
                   'Content-Type': 'application/json'
                 },
-                body
+                body,
+                signal: init
+                  .signal // un appel abandonné rend sa place tout de suite (le lanceur finit le sien, la place suivante le rejouera « occupé »)
               });
             } finally {
               free();
@@ -1324,8 +1338,8 @@
           return await fetch(u,
             init);
         return unreachable();
-      } catch {
-        return offline('unreachable');
+      } catch (e) {
+        return offline(e?.name === 'AbortError' ? 'aborted' : 'unreachable');
       }
     }
   };
