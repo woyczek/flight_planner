@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Weather screen: a refusal says its reason, a wait is not a red notification** (`modules/atmosphere`, `modules/maps/weather.js`, `frame/lib/weather_store.js`; DECISIONS; noreg E19, E18;
+  SOG-0198). The launcher's reason (busy, timeout, reset, refused, HTTP code) is shown instead of « offline » (kept for `X-SOG-Offline` alone); « reading the forecast grid… » in the
+  layers panel while the grid is read, the error only after the frame's replays; the grid is asked after the route; the synoptic build shows the time elapsed and no « 0/1 ».
+
 - **Frame: `ctx.ask(…, { sections })` reviewed** (`frame/app.js`; SPEC, DECISIONS; noreg A130; SOG-0197). A null section no longer throws, texts are bounded
   (120 / 300 / 500 characters), a group that scrolls takes the keyboard focus and is named by its title.
 - **Frame: the relayed calls queue in the frame, a « busy » is replayed, the launcher's reason reaches the caller** (`frame/app.js` `ctx.net`;

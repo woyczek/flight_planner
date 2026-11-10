@@ -2,6 +2,17 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 10 November 2026 — the grid's read says what it does and why it fails (SOG-0198)
+- **Cause** (the user's synoptic build, 14:22): since SOG-0178 the launcher relays two calls per host and refuses the next (503, `X-SOG-Reason: busy`); the map's grid and the
+  route and the aerodromes were asked at once, and a refusal was shown as « offline » in a red notification.
+- **Done**: (a) `weather_store.call` carries the launcher's reason on the error (`reason`: busy, timeout, reset, refused, unreachable, `http-<code>`); `wx.why` says it in words
+  (« le lanceur est occupé… », « Open-Meteo n'a pas répondu à temps (15 s) », HTTP code…) and says « offline » only when the launcher says it without another reason; the Map's
+  weather (`modules/maps/weather.js`) does the same. (b) A wait is not an error: while the grid is read the layers panel says « map: reading the forecast grid… » (`S.gridRun`);
+  the failure is told (notification and panel line, with the reason and « Load ») only once the frame's replays (V3 Frame, `ctx.net`) are spent. (c) The grid is asked once the
+  route is read and drawn (no more than the route and the aerodromes at the same time); it already was a single multi-point Open-Meteo call per group of cells.
+- **The synoptic build line** says the time elapsed (« Building the world synoptic… 3/25 · 1 min 12 s », a clock repainted each second, text-compared) and drops a « 0/1 » (one step is no step).
+- **Noreg** E19 (route served, grid held then refused busy: the panel says reading, the notification says busy and never offline, the grid's call after the route's), E18 (time elapsed).
+
 ## 10 November 2026 — the world synoptic line goes into the bottom sheet (third and last place; A14, B3, C4 red after the band above the map)
 
 - The band above the map (a51af622e) satisfied E2 and broke B3 (« nothing between header and map »), A14 (the map's left edge in landscape) and C4 (map + panel = the view): a block outside the sheet takes room from the

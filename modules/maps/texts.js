@@ -603,6 +603,17 @@ export const TX = {
     'Offline: die Vorhersage kann nicht gelesen werden.',
     'Sin conexión: no se puede leer la previsión.'
   ],
+  wxEBusy: ['Le lanceur est occupé (trop d’appels à la fois) : réessayez dans un instant.',
+    'The launcher is busy (too many calls at once): try again in a moment.',
+    'Der Starter ist ausgelastet (zu viele Aufrufe gleichzeitig): gleich erneut versuchen.',
+    'El lanzador está ocupado (demasiadas llamadas a la vez): inténtelo en un momento.'
+  ],
+  wxERelay: ['La source n’a pas répondu à temps (délai de 15 s).', 'The source did not answer in time (15 s limit).',
+    'Die Quelle hat nicht rechtzeitig geantwortet (Limit 15 s).', 'La fuente no respondió a tiempo (límite de 15 s).'
+  ],
+  wxEConn: ['La connexion a été coupée ou refusée par la source.', 'The connection was cut or refused by the source.',
+    'Die Verbindung wurde von der Quelle getrennt oder abgelehnt.', 'La fuente cortó o rechazó la conexión.'
+  ],
   wxEQuota: ['Limite du jour de la source atteinte : réessayez plus tard.', 'The source’s daily limit is reached: try again later.',
     'Das Tageslimit der Quelle ist erreicht: später erneut versuchen.', 'Se alcanzó el límite diario de la fuente: inténtelo más tarde.'
   ],

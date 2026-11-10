@@ -171,9 +171,12 @@ export function weatherStore({
   const path = (model, cell, day) => `${PREFIX}${model}/${cell}/${day}.json`;
   /** Réponse d'un appel sortant ; hors ligne, injoignable ou refusé : erreur marquée. */
   async function call(url, init) {
-    const r = await net.fetch(url, init);
+    const r = await net.fetch(url, init),
+      why = r.headers?.get?.('x-sog-reason') ||
+      ''; // la raison du lanceur (busy, timeout, reset, refused, unreachable, http-<code>), rendue telle quelle
     if (r.headers?.get?.('x-sog-offline')) throw fail('offline', {
-      offline: true
+      offline: true,
+      reason: why
     });
     if (r.headers?.get?.('x-sog-unreachable')) throw fail('unreachable', {
       unreachable: true
@@ -185,8 +188,9 @@ export function weatherStore({
       } catch {
         /* corps illisible */
       }
-      throw fail(reason || `HTTP ${r.status}`, {
-        status: r.status
+      throw fail(reason || why || `HTTP ${r.status}`, {
+        status: r.status,
+        reason: why
       });
     }
     return r;

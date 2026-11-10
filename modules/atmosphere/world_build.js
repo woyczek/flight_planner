@@ -35,9 +35,16 @@ export function createWorldBuild({
     n: 0,
     total: 0,
     why: '',
-    wait: 0
+    wait: 0,
+    since: 0 // le début de la construction (ms) : la durée écoulée est dite tant que le lanceur ne donne pas de vraies étapes
   };
-  let html = '';
+  let html = '',
+    tick = 0;
+  /** « 45 s », « 1 min 12 s » : la durée écoulée de la construction. */
+  const lapse = ms => {
+    const s = Math.max(0, Math.floor(ms / 1000));
+    return s < 60 ? `${s} s` : `${Math.floor(s / 60)} ${T('wbMin')} ${s % 60} s`;
+  };
   /** Réécrit la ligne seulement si son texte change. */
   function paint() {
     const old = S.index === null || (S.index && Date.now() - S.index.built * 1000 > STALE_MS),
@@ -45,7 +52,8 @@ export function createWorldBuild({
     let h = '';
     if (show) {
       const can = !!ctx.launcher;
-      if (S.phase === 'building') h = `<span role="status">${esc(T('wbBuilding'))}${S.total ? ` ${S.n}/${S.total}` : ''}</span>`;
+      // les étapes du lanceur (n/25) quand il en donne, une seule étape n'en est pas une ; la durée écoulée dans tous les cas
+      if (S.phase === 'building') h = `<span role="status">${esc(T('wbBuilding'))}${S.total > 1 ? ` ${S.n}/${S.total}` : ''} · ${esc(lapse(Date.now() - S.since))}</span>`;
       else {
         const what = S.phase === 'failed' ? `${esc(T('wbFailed', {
           why: T(WHY[S.why] || 'wbWhyFailed', {
@@ -95,9 +103,13 @@ export function createWorldBuild({
       n: 0,
       total: 0,
       why: '',
-      wait: 0
+      wait: 0,
+      since: Date.now()
     });
     paint();
+    // une horloge, pas un rattrapage : la durée écoulée avance chaque seconde (paint n'écrit que si le texte change), arrêtée à la fin
+    clearInterval(tick);
+    tick = setInterval(() => alive() && S.phase === 'building' ? paint() : clearInterval(tick), 1000);
     let r = null;
     try {
       r = await ctx.launcher.job('regen/job', {
@@ -121,6 +133,7 @@ export function createWorldBuild({
     } catch {
       r = null;
     }
+    clearInterval(tick);
     if (!alive()) return;
     const res = r?.result;
     if (r && r.ok !== false && !['error', 'cancelled', 'interrupted'].includes(r.state) && res?.ok !== false) {

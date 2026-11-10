@@ -127,8 +127,19 @@ export function createWx(ctx, T, demo) {
 
   /** Raison d'un échec, dans les mots de l'écran (marques de la couche météo : quota, offline, unreachable, incomplete,
    *  status). */
+  const REASON = {
+      busy: 'whyBusy',
+      timeout: 'whyTimeout',
+      reset: 'whyReset',
+      refused: 'whyRefused'
+    },
+    http = e => /^http-(\d+)$/.exec(e?.reason || '')?.[1];
+  // « hors ligne » seulement quand le lanceur le dit sans autre raison (X-SOG-Offline, raison unreachable ou aucune) : occupé, délai,
+  // connexion coupée ou refusée, statut HTTP disent leur raison (SOG-0198)
   const why = e => e?.quota ? T('quotaDay') : e?.status === 429 || /limit exceeded/i.test(e?.message || '') ? T('quotaIp') :
-    e?.offline || e?.unreachable ? T('offline') : e?.incomplete ? T('incomplete') : String(e?.message || e);
+    REASON[e?.reason] ? T(REASON[e.reason]) : http(e) ? T('whyHttp', {
+      c: http(e)
+    }) : e?.offline ? T('offline') : e?.unreachable ? T('notReachable') : e?.incomplete ? T('incomplete') : String(e?.message || e);
 
   return {
     forecast,

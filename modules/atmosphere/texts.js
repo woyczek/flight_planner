@@ -69,6 +69,7 @@ export const TX = {
     'mit dem Launcher des Rechners verfügbar',
     'disponible con el lanzador del equipo'
   ],
+  wbMin: ['min', 'min', 'Min.', 'min'],
   wbBuilding: ['Construction du synoptique monde…', 'Building the world synoptic…', 'Weltsynoptik wird erstellt…',
     'Construyendo el sinóptico mundial…'
   ],
@@ -418,6 +419,36 @@ export const TX = {
   mapLevelAria: ['Altitude de la carte', 'Altitude of the map', 'Höhe der Karte', 'Altitud del mapa'],
   mapLoad: ['carte : « Charger » pour lire la grille', 'map: "Load" to read the grid', 'Karte: „Laden“ zum Lesen des Rasters',
     'mapa: «Cargar» para leer la cuadrícula'
+  ],
+  // la raison dite par le lanceur quand une lecture échoue (jamais « hors ligne » sans X-SOG-Offline)
+  whyBusy: ['le lanceur est occupé (trop d’appels à la fois) : réessayez dans un instant',
+    'the launcher is busy (too many calls at once): try again in a moment',
+    'der Starter ist ausgelastet (zu viele Aufrufe gleichzeitig): gleich erneut versuchen',
+    'el lanzador está ocupado (demasiadas llamadas a la vez): inténtelo en un momento'
+  ],
+  whyTimeout: ['Open-Meteo n’a pas répondu à temps (délai de 15 s)', 'Open-Meteo did not answer in time (15 s limit)',
+    'Open-Meteo hat nicht rechtzeitig geantwortet (Limit 15 s)', 'Open-Meteo no respondió a tiempo (límite de 15 s)'
+  ],
+  whyReset: ['la connexion a été coupée par le service', 'the connection was cut by the service',
+    'die Verbindung wurde vom Dienst getrennt',
+    'el servicio cortó la conexión'
+  ],
+  whyRefused: ['la connexion a été refusée par le service', 'the connection was refused by the service',
+    'der Dienst hat die Verbindung abgelehnt',
+    'el servicio rechazó la conexión'
+  ],
+  whyHttp: ['le service a répondu HTTP {c}', 'the service answered HTTP {c}', 'der Dienst antwortete mit HTTP {c}',
+    'el servicio respondió HTTP {c}'
+  ],
+  notReachable: ['service non autorisé depuis cet appareil', 'service not allowed from this device',
+    'Dienst von diesem Gerät aus nicht erlaubt',
+    'servicio no permitido desde este dispositivo'
+  ],
+  mapReading: ['carte : lecture de la grille de prévision…', 'map: reading the forecast grid…', 'Karte: Vorhersageraster wird gelesen…',
+    'mapa: leyendo la cuadrícula de previsión…'
+  ],
+  mapFailed: ['carte : grille non lue ({m}) — « Charger » pour réessayer', 'map: grid not read ({m}) — "Load" to try again',
+    'Karte: Raster nicht gelesen ({m}) — „Laden“ zum erneuten Versuch', 'mapa: cuadrícula no leída ({m}) — «Cargar» para reintentar'
   ],
   mapUnreachable: ['Carte : prévision de la grille injoignable ({m}).', 'Map: grid forecast unreachable ({m}).',
     'Karte: Rastervorhersage nicht erreichbar ({m}).', 'Mapa: previsión de la cuadrícula inaccesible ({m}).'

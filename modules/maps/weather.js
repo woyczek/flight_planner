@@ -127,6 +127,8 @@ async function loadWeather(key, fetchNow = false, gesture = null) {
       state: 'none',
       err: fetchNow ? {
         offline: !!err?.offline,
+        reason: String(err?.reason ||
+          ''), // la raison du lanceur (busy, timeout, reset, refused…) : « hors ligne » seulement sans autre raison
         quota: !!err?.quota,
         timeout: !!(err?.timeout || err?.stale),
         status: Number.isFinite(+err?.status) ? +err.status : 0,
@@ -225,7 +227,8 @@ const weatherBuild = key => (w, h, el) => {
   // pas de prévision gardée : le geste est là, un seul, nommé par ce que veut le pilote ; une lecture refusée dit pourquoi
   if (!wx.err) return `<p class="mp-wxmsg"><button type="button" class="f-btn primary mp-wxget" data-wxget>${esc(tt(TX.wxTitle))}</button> <span class="f-muted">${esc(tt(TX.wxGetHint))}</span></p>`;
   const E = wx.err,
-    why = E.offline ? TX.wxEOffline : E.quota ? TX.wxEQuota : E.timeout ? TX.wxETimeout : E.why === 'level' ? TX.wxELevel : E.why ===
+    why = E.reason === 'busy' ? TX.wxEBusy : E.reason === 'timeout' ? TX.wxERelay : E.reason === 'reset' || E.reason === 'refused' ? TX
+    .wxEConn : E.offline ? TX.wxEOffline : E.quota ? TX.wxEQuota : E.timeout ? TX.wxETimeout : E.why === 'level' ? TX.wxELevel : E.why ===
     'points' ? TX.wxEPoints :
     E.why === 'empty' ? TX.wxEEmpty : TX.wxEFail2,
     again = E.why !== 'level' && E.why !== 'points'; // un vol sans niveau ou sans deux points ne se règle pas en réessayant

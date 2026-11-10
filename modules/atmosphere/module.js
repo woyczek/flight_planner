@@ -820,9 +820,8 @@ export async function mount(el, ctx) {
       S.run = await wx.run(S.mdl.id);
       if (stale()) return;
       flightSum();
-      // la grille de la carte (lourde) arrive après la route ; la coupe s'affiche sans l'attendre
-      const gridP = wx.forecast(gq.g.places, gVars, opt);
-      gridP.catch(() => {});
+      // la grille de la carte (lourde) n'est demandée qu'une fois la route lue et dessinée : le lanceur ne relaie que deux appels à la fois
+      // par hôte (SOG-0198), la route et les terrains d'abord, la grille ensuite, sans les faire concurrence
       const [route, wxr] = await Promise.all([wx.forecast(smp, rVars, opt), wx.aerodromes(f, cacheOnly).catch(() => null)]);
       if (stale()) return;
       S.daySpent = await wx.spentToday();
@@ -844,6 +843,8 @@ export async function mount(el, ctx) {
         },
         run: route.run || S.run,
         grid: null,
+        gridRun: null,
+        gridWhy: '',
         wx: wxr,
         sel: 0,
         local: null
@@ -855,14 +856,24 @@ export async function mount(el, ctx) {
       warnRange();
       map.fitMap();
       let grid;
+      // une attente n'est pas une erreur : l'état « lecture de la grille… » est dit dans le volet des couches, la couche arrive quand elle
+      // arrive ; l'échec n'est dit (avec la raison du lanceur) qu'une fois les rejeux du cadre épuisés
+      S.gridRun = cacheOnly ? null : 'reading';
+      layersCard();
       try {
-        grid = await gridP;
+        grid = await wx.forecast(gq.g.places, gVars, opt);
       } catch (e) {
-        if (!stale() && !e?.stale) app.notify(T('mapUnreachable', {
-          m: wx.why(e)
-        }), true);
+        if (!stale() && !e?.stale) {
+          S.gridRun = 'failed';
+          S.gridWhy = wx.why(e);
+          layersCard();
+          app.notify(T('mapUnreachable', {
+            m: S.gridWhy
+          }), true);
+        }
         return;
       }
+      S.gridRun = null;
       if (stale()) return;
       if (!grid) return layersCard();
       S.grid = {

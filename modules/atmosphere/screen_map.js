@@ -471,7 +471,9 @@ export function createMapScreen(app) {
   /** Ce que montre la carte (heure, niveau et lignes), en tête des couches ; « Charger » quand la grille manque. */
   function mapNote() {
     const i = wm.info();
-    if (i.state !== 'ok' && S.traj) return T('mapLoad');
+    if (i.state !== 'ok' && S.traj) return S.gridRun === 'reading' ? T('mapReading') : S.gridRun === 'failed' ? T('mapFailed', {
+      m: S.gridWhy
+    }) : T('mapLoad');
     return [i.time ? fmtHM(i.time) : '', i.pLabel].filter(Boolean).join(' · ');
   }
   /** Contenu « point hors de la zone du vol » : toutes les valeurs du synoptique monde en ce point, à l'heure de la carte. */

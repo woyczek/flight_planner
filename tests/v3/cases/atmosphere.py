@@ -533,7 +533,7 @@ _WB_JS = """async () => {
   const wait = ms => new Promise(r => setTimeout(r, ms));
   // a launcher that follows a job: progress, then an end the scenario chooses
   let end = null, release = null;
-  const L = { job: async (route, body, o) => { out.body = JSON.stringify([route, body]); L.n = (L.n || 0) + 1; o.onProgress({ done: 3, total: 25 }); await new Promise(r => release = r); return end } };
+  const L = { job: async (route, body, o) => { out.body = JSON.stringify([route, body]); L.n = (L.n || 0) + 1; L.on = o.onProgress; o.onProgress({ done: 3, total: 25 }); await new Promise(r => release = r); return end } };
   // a. no publication, a launcher: the line and its button
   let o = mk(null, L); await wait(50);
   out.none = [text(o), btn(o)];
@@ -541,6 +541,8 @@ _WB_JS = """async () => {
   o.box.querySelector('[data-at=wbBuild]').click(); await wait(30);
   o.box.querySelector('[data-at=wbBuild]')?.click(); await wait(30);
   out.building = [text(o), btn(o), L.n];
+  // b2. a job that gives no real steps (0 of 1): no « 0/1 », the time elapsed instead, moving on by itself
+  const t0 = text(o); L.on({ done: 0, total: 1 }); await wait(1300); out.lapse = [t0, text(o)];
   // c. the end: the layer is read again, the line goes, a note says so
   end = { ok: true, state: 'done', result: { ok: true, built: now() } }; o.st.idx = { built: now() }; release(); await wait(80);
   out.done = [text(o), o.log.reload, o.log.notes.length];
@@ -580,6 +582,9 @@ def e18(c):
     c.ok('regen/job' in r['body'] and '"set":"weather"' in r['body'] and '"verb":"world"' in r['body'] and '"action":"build"' in r['body'], r['body'], 'the button starts weather/world { action: build } through regen/job')
     c.ok(r['building'][0].startswith('wbBuilding') and '3/25' in r['building'][0] and r['building'][1] is False and r['building'][2] == 1, str(r['building']),
          'it follows the job (3/25), the button is gone, a second tap does not start a second build')
+    c.ok('3/25' in r['lapse'][0] and ' s' in r['lapse'][0], str(r['lapse']), 'the line says the time elapsed next to the steps')
+    c.ok('0/1' not in r['lapse'][1] and r['lapse'][1].startswith('wbBuilding') and r['lapse'][1] != r['lapse'][0] and r['lapse'][1].endswith(' s'), str(r['lapse']),
+         'without real steps (0 of 1): no « 0/1 », the time elapsed instead, and it moves on by itself every second')
     c.eq(r['done'], ['(hidden)', 1, 1], 'the end: the line goes, the layer is read again once, a note says so', what='end')
     c.ok(r['failed'][0].startswith('wbFailed') and 'wbWhyNoRun' in r['failed'][0] and r['failed'][1] is True and r['failed'][2] == 'alert', str(r['failed']),
          'a failure says why (NOAA) and offers « Try again »')
@@ -588,3 +593,60 @@ def e18(c):
     c.ok(r['old'][0].startswith('wbOld') and r['old'][1] is True, str(r['old']), 'a publication of more than 12 h says its date and offers « Build »')
     c.ok('wbNoLauncher' in r['nolauncher'][0] and r['nolauncher'][1] is False, str(r['nolauncher']), 'without a launcher: where to make it, no button')
     c.eq(r['langs'], [], 'every text exists in the four languages', what='texts')
+
+
+_OM_CORS = {'access-control-allow-origin': '*', 'access-control-expose-headers': 'x-sog-reason'}
+
+
+def _om_answer(url):
+    """An Open-Meteo answer in its own format for a forecast URL (constant values): what the route needs."""
+    from urllib.parse import parse_qs, urlparse
+    from datetime import datetime, timezone
+    q = parse_qs(urlparse(url).query)
+    lats, lons = q['latitude'][0].split(','), q['longitude'][0].split(',')
+    vars_ = q['hourly'][0].split(',')
+    d0 = datetime.fromisoformat(q['start_date'][0]).replace(tzinfo=timezone.utc).timestamp()
+    d1 = datetime.fromisoformat(q['end_date'][0]).replace(tzinfo=timezone.utc).timestamp() + 23 * 3600
+    times = list(range(int(d0), int(d1) + 1, 3600))
+    one = lambda la, lo: {'latitude': float(la), 'longitude': float(lo), 'elevation': 100, 'hourly': {'time': times, **{v: [10] * len(times) for v in vars_}}}
+    return [one(a, b) for a, b in zip(lats, lons)]
+
+
+@case('E19', 'The grid’s read says what it is doing and why it failed: a wait is a line in the layers panel, not a red notification; a refusal says the launcher’s reason (busy), never « offline »; the grid is asked after the route', 'E',
+      tags=('atmosphere',), screens=False, designs=('standard',), night=False, langs4=True,
+      rule='SOG-0198 (the user’s synoptic build, 10 Nov 14:22): the launcher relays two calls per host and refuses the next one (503, X-SOG-Reason: busy); the grid’s several calls at once were read as « offline » and shown in a red notification: (a) « offline » only with X-SOG-Offline, otherwise the launcher’s reason (busy, timeout, reset, refused, HTTP code); (b) the wait is « reading the grid… » in the panel; the error only once the frame’s replays are spent; (c) the grid is asked once the route is read')
+def e19(c):
+    import json
+    log = []
+    gate = {'grid': 'wait'}
+
+    def om(route):
+        url = route.request.url
+        if '/data/' in url:                                   # the run's static meta: nothing
+            return route.fulfill(status=404, headers=_OM_CORS, body='')
+        n = len(_om_answer(url))
+        log.append(n)
+        if n <= 24:                                           # the route: served
+            return route.fulfill(status=200, content_type='application/json', headers=_OM_CORS, body=json.dumps(_om_answer(url)))
+        while gate['grid'] == 'wait':                          # the grid: held, then refused as the launcher does
+            c.page.wait_for_timeout(100)
+        route.fulfill(status=503, content_type='application/json', headers={**_OM_CORS, 'x-sog-reason': 'busy'}, body=json.dumps({'error': 'occupé', 'busy': True}))
+    c.context.route(re.compile(r'^https://api\.open-meteo\.com/'), om)
+    c.open('atmosphere', flight=True)
+    c.until("!!document.querySelector('.at-load')", timeout=12000, what='the Load button')
+    c.js("() => { document.querySelector('.at-load').click(); return true }")
+    c.until("() => !!window.__mp_probe || document.querySelectorAll('[data-module=atmosphere] [data-at=dbody] svg').length > 0", timeout=20000, what='the route is read and drawn')
+    c.tap(f'{ATM} [data-at=layersBtn]')
+    c.until(f"() => !!document.querySelector('{ATM} .at-layerpop .at-mapnote')", timeout=6000, what='the layers panel has its map line')
+    t = norm(c.js(f"() => document.querySelector('{ATM} .at-layerpop .at-mapnote').textContent"))
+    c.ok(norm(row(c, 'mapReading')) in t, t, 'the wait is said in the layers panel: reading the grid')
+    c.ok(not any(norm(row(c, 'mapUnreachable').split('{')[0]) in norm(n) for n in c.notes()), str(c.notes()), 'and it is not a notification')
+    c.ok(log[0] <= 24 and len(log) >= 2 and log[1] > 24, str(log), 'the route’s call went out first, the grid’s after it')
+    gate['grid'] = 'go'
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\s\u00a0\u202f]+/g, ' ').includes(w))", norm(row(c, 'whyBusy')), timeout=10000, what='the failure is told once the grid answered')
+    notes = ' | '.join(c.js("() => window.__notes"))
+    c.ok(norm(row(c, 'whyBusy')) in norm(notes), notes, 'the failure says the launcher is busy')
+    c.ok(norm(row(c, 'offline')) not in norm(notes), notes, 'and never « offline »')
+    t = norm(c.js(f"() => document.querySelector('{ATM} .at-layerpop .at-mapnote').textContent"))
+    c.ok(norm(row(c, 'whyBusy')) in t, t, 'the layers panel keeps the reason, with « Load » to try again')
+
