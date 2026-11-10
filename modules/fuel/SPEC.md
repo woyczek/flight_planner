@@ -264,7 +264,10 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
   (AeroDB 9a7f1dde3, F125): « Calculer » asks `proposals: true`; when no route is computed, the engine's fallback proposals come back
   marked `proposal` and are listed apart under « Propositions non validées » (« Proposition 1 »…), after the engine's message, never
   mixed with the checked routes, each with its share in numbers (never « contrôlé » alone, even at 100 %) and its sections; « Prendre »
-  says « Proposition non validée prise : à vérifier — <share> »; **the routes are drawn by the Map** (SOG-0134 a, F114;
+  says « Proposition non validée prise : à vérifier — <share> »; **the nature of each section** (SOG-0134 refused at acceptance, F126):
+  the sections fold says each section's nature with the stroke and the word of the common legend (`frame/lib/route_legend.js`: « Voie »,
+  « DCT (direct) », « FRA (route libre) », « SID », « STAR », « Approche », « Écart aux règles »), the layer in brackets when it adds
+  (« Voie (HIGH) »); a folded « Légende » under the list gives them all, the same table the Map draws with; **the routes are drawn by the Map** (SOG-0134 a, F114;
   INTEGRATION § 3 bis): Fuel resolves them into positions with the route reader and publishes them (the event `fuel-route-alts` in
   the double view, hover included; `cache/fuel/route_alts.json` for a Map opened afterwards), the chosen one and the hovered row with
   them; a route touched on the Map comes back as « Prendre » (`maps-route-alt`, or `#fuel?ralt=<index>` from a Map alone); Fuel draws

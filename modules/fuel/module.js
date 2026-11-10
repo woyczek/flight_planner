@@ -19,6 +19,7 @@ import * as CF from '../../frame/lib/current_flight.js';
 import * as MS from '../../frame/lib/mission.js'; // le vol qu'une mission donne (modules/missions SPEC § 4)
 import * as ZG from './zone_gap.js'; // « zone manquante » : ce qui manque, le geste, les replis externes (SOG-0143)
 import * as RE from './route_engine.js'; // le calcul et le contrôle de route du lanceur (RouteSim, SOG-0080, SOG-0081)
+import * as RL from '../../frame/lib/route_legend.js'; // la légende commune des itinéraires avec la Carte (SOG-0134)
 import * as FU from '../../frame/lib/fuel_units.js'; // les unités du carburant du cadre (SOG-0059 : « débit de ce vol »)
 import * as PR from '../../frame/lib/procedures.js'; // noms, sortie et entrée des procédures pour le texte de route (§ 10.31)
 import * as FMS from '../../frame/lib/fms.js'; // plan de vol écrit pour X-Plane (.fms) et MSFS (.pln), V3 § 10.28
@@ -91,7 +92,7 @@ export const meta = {
     '../../frame/lib/time.js', '../../frame/lib/geo.js',
     // importés depuis (R-F1, R-F4a, § 10.27, la météo du cadre) : gardés hors ligne eux aussi dès l’installation
     '../../frame/lib/wind.js', '../../frame/lib/route_model.js', '../../frame/lib/adnames.js', '../../frame/lib/metar.js',
-    '../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js'
+    '../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/route_legend.js'
   ]
 };
 
@@ -243,6 +244,7 @@ const TX = {
     error: ['erreur', 'error', 'Fehler', 'error']
   },
   rSections: ['Tronçons ({n})', 'Sections ({n})', 'Abschnitte ({n})', 'Tramos ({n})'],
+  rLegend: ['Légende', 'Legend', 'Legende', 'Leyenda'], // les natures des tronçons, mêmes mots et mêmes traits que la Carte (SOG-0134)
   rTakenShare: ['Itinéraire pris — {share}.', 'Route taken — {share}.', 'Route übernommen — {share}.', 'Itinerario tomado: {share}.'],
   // un plan impossible : les propositions de repli du moteur, à part (AeroDB 9a7f1dde3), jamais dites contrôlées
   rProposals: ['Propositions non validées', 'Unvalidated proposals', 'Nicht bestätigte Vorschläge', 'Propuestas no validadas'],
@@ -1603,7 +1605,17 @@ const STYLE = `
 [data-module="fuel"] .fu-faultlist li{margin:.15em 0;overflow-wrap:anywhere} /* un écart par ligne (SOG-0134) : segment · règle · phrase */
 [data-module="fuel"] .fu-faultrule{color:var(--sog-err)}
 [data-module="fuel"] .fu-rprophead{margin:.8em 0 .2em;font-size:.95em;color:var(--sog-warn)} /* « Propositions non validées » (plan impossible) */
-[data-module="fuel"] .fu-rshare{display:block} /* le partage contrôlé / incomplet / repli, sous la route de l'itinéraire (SOG-0161) */
+[data-module="fuel"] .fu-rshare{display:block}
+/* la légende commune des itinéraires (SOG-0134, frame/lib/route_legend.js) : un trait à son motif puis son mot */
+[data-module="fuel"] .rl-legend{display:flex;flex-wrap:wrap;gap:.25em 1em;align-items:center}
+[data-module="fuel"] .rl-item{display:inline-flex;align-items:center;gap:.35em;white-space:nowrap}
+[data-module="fuel"] .rl-hint{color:var(--sog-muted);white-space:normal}
+[data-module="fuel"] .rl-route{color:var(--sog-fg)}
+[data-module="fuel"] .rl-sid{color:var(--sog-ok)}
+[data-module="fuel"] .rl-star{color:var(--sog-warn)}
+[data-module="fuel"] .rl-app{color:var(--sog-accent)}
+[data-module="fuel"] .rl-err{color:var(--sog-err)}
+[data-module="fuel"] .fu-rsections .rl-legend{display:inline-flex} /* le partage contrôlé / incomplet / repli, sous la route de l'itinéraire (SOG-0161) */
 [data-module="fuel"] .fu-ctrl-controlled{color:var(--sog-ok)}
 [data-module="fuel"] .fu-ctrl-incomplete,[data-module="fuel"] .fu-ctrl-fallback{color:var(--sog-warn)}
 [data-module="fuel"] .fu-ctrl-error{color:var(--sog-err)}
@@ -3220,10 +3232,20 @@ function shareText(c, proposal = false) {
   ].filter(([k, v]) => k !== 'error' || v > 0).map(([k, v]) => `${tt(TX.rCtrl[k])} ${v} %`).join(' · '); // insécables : jamais « 14 / % »
 }
 /** Le pli des tronçons d'un itinéraire, par couche (SOG-0161) : « SID · LFPO–ROTOX · repli · 12 NM · <raison> », sept puis « N autres ». */
-function sectionsHtml(c) {
-  const list = c?.sections || [];
+function sectionsHtml(a) {
+  const list = a?.control?.sections || [];
   if (!list.length) return '';
-  const li = x => `<li data-section="${esc(x.control)}" data-layer="${esc(x.layer)}">${[`<b>${esc(x.layer || '—')}</b>`, esc(`${x.from}–${x.to}`), `<span class="fu-ctrl-${esc(x.control)}">${esc(tt(TX.rCtrl[x.control]))}</span>`, x.nm !== null ? esc(`${x.nm} NM`) : '', x.reason ? esc(x.reason) : ''].filter(Boolean).join(' · ')}</li>`;
+  // SOG-0134 : la nature du tronçon (voie, DCT, FRA, SID, STAR, approche), d'après la voie de son premier segment et sa couche, dite
+  // avec le trait et le mot de la légende commune (frame/lib/route_legend.js, la même que la Carte)
+  const natOf = x => RL.natureOf((a.segments || []).find(g => g.from === x.from)?.via, x.layer);
+  // la nature connue : son trait et son mot, la couche entre parenthèses seulement quand elle ajoute (« Voie (HIGH) ») ; sinon la couche
+  const head = x => {
+    const n = natOf(x),
+      word = RL.labelOf(n, S.ctx.lang());
+    if (!n) return `<b>${esc(x.layer || '—')}</b>`;
+    return `<b>${RL.legendHtml(S.ctx.lang(), [n], { hint: false })}</b>${x.layer && !word.startsWith(x.layer) ? ` <span class="f-muted">(${esc(x.layer)})</span>` : ''}`;
+  };
+  const li = x => `<li data-section="${esc(x.control)}" data-layer="${esc(x.layer)}" data-nature="${esc(natOf(x))}">${[head(x), esc(`${x.from}–${x.to}`), `<span class="fu-ctrl-${esc(x.control)}">${esc(tt(TX.rCtrl[x.control]))}</span>`, x.nm !== null ? esc(`${x.nm} NM`) : '', x.reason ? esc(x.reason) : ''].filter(Boolean).join(' · ')}</li>`;
   return `<details class="fu-rsections" data-sections><summary class="f-muted">${esc(tt(TX.rSections, { n: list.length }))}</summary><ul class="fu-faultlist">${list.slice(0, 7).map(li).join('')}</ul>${list.length > 7 ? `<details class="fu-faultmore"><summary class="f-muted">${esc(tt(TX.rMore, { n: list.length - 7 }))}</summary><ul class="fu-faultlist">${list.slice(7).map(li).join('')}</ul></details>` : ''}</details>`;
 }
 /** La ligne du RAD dans Données (application Maintenance, source eurocontrol_rad du catalogue d'AeroDB) : le lien du « no-rad ». */
@@ -3247,11 +3269,11 @@ function routeAltsDraw() {
   const both = A.list.map((a, i) => [a, i]),
     routes = both.filter(([a]) => !a.proposal),
     props = both.filter(([a]) => a.proposal);
-  const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}" data-alt="${i}"${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(a.fl).padStart(3, '0')}` : '', RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults, { n: 0 }), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.control ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, a.proposal))}</small>` : ''}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${sectionsHtml(a.control)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(TX.rTake))}</button>` : ''}</div>`;
+  const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}" data-alt="${i}"${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(a.fl).padStart(3, '0')}` : '', RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults, { n: 0 }), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.control ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, a.proposal))}</small>` : ''}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${sectionsHtml(a)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(TX.rTake))}</button>` : ''}</div>`;
   box.innerHTML = (routes.length ? `<div class="f-list fu-ralts" data-altlist>${routes.map(([a, i]) => row(a, i)).join('')}</div>` :
     `<p class="f-muted" data-rnone>${esc(A.n?.message || tt(TX.rNone))}</p>`) + (props.length ?
     `<h4 class="fu-rprophead" data-proposals-head>${esc(tt(TX.rProposals))}</h4><div class="f-list fu-ralts" data-altlist data-proposals>${props.map(([a, i]) => row(a, i)).join('')}</div>` :
-    '') + limitsHtml(A.n || {
+    '') + (A.list.length ? `<details class="fu-rlegend" data-rlegend><summary class="f-muted">${esc(tt(TX.rLegend))}</summary>${RL.legendHtml(S.ctx.lang())}</details>` : '') + limitsHtml(A.n || {
     limitation: '',
     gaps: []
   });
@@ -3284,7 +3306,19 @@ async function altsPublish(mode, plans, pts) {
       const ps = (got[i] || []).filter(ok).slice(0, 400),
         ids = ps.map(q => String(q.id || '').toUpperCase()),
         faulty = new Set(),
-        control = ps.length > 1 ? Array(ps.length - 1).fill(null) : [];
+        control = ps.length > 1 ? Array(ps.length - 1).fill(null) : [],
+        via = ps.length > 1 ? Array(ps.length - 1).fill('') : [],
+        layer = ps.length > 1 ? Array(ps.length - 1).fill('') : [];
+      // SOG-0134 : la voie (UN10, DCT, FRA) et la couche de chaque segment points[k] → points[k+1], d'après les segments du moteur, pour
+      // que la Carte dessine la nature du tronçon (frame/lib/route_legend.js)
+      for (const g of p.segments || []) {
+        const a = ids.indexOf(g.from),
+          b = a < 0 ? -1 : ids.indexOf(g.to, a + 1);
+        for (let k = a; a >= 0 && k < b; k++) {
+          via[k] ||= RL.viaOf(g.via, g.layer);
+          layer[k] ||= RL.LAYERS.includes(g.layer) ? g.layer : '';
+        }
+      }
       // SOG-0161 : l'état de contrôle de chaque segment points[k] → points[k+1], d'après les tronçons du moteur (sections, sinon segments)
       for (const g of [...(p.control?.sections || []), ...(p.segments || [])]) {
         if (!RE.CONTROLS.includes(g.control)) continue;
@@ -3309,6 +3343,8 @@ async function altsPublish(mode, plans, pts) {
         points: ps.map(q => [Math.round(+q.lat * 1e5) / 1e5, Math.round(+q.lon * 1e5) / 1e5]),
         faulty: [...faulty].sort((x, y) => x - y),
         control,
+        via,
+        layer,
         proposal: p.proposal === true // une proposition d'un plan impossible, non validée (la Carte peut la dire)
       };
     }),

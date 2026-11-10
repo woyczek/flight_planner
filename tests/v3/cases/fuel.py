@@ -3513,3 +3513,41 @@ def f125(c):
     c.tap(f'{FUEL} [data-proposals] [data-alt="0"] [data-do="rtake"]')
     want = norm(row(c, 'rTakenProposal').split('{share}')[0])
     c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w))", want, what='« Prendre » says « proposition non validée : à vérifier »')
+
+
+
+_LEGEND_JS = """async (lang) => { const L = await import('/frame/lib/route_legend.js');
+  return { natures: L.NATURES.map(n => n.id), labels: L.NATURES.map(n => n.label[Math.max(0, L.LANGS.indexOf(lang))]),
+    dashes: L.NATURES.map(n => n.dash.join(' ')) } }"""
+
+
+@case('F126', 'Route step: the nature of each section — airway, DCT, FRA, SID, STAR, approach, deviation — with the same words and strokes as the Map (one legend, frame/lib/route_legend.js); route_alts.json gives the Map the airway and the layer of each segment',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0134 refused at acceptance (« on ne voit ni les points ni les awy, ni si c\'est du DCT, du FRA… même couleur, très gros, sans '
+      'légende »): one table of natures, words ×4 and strokes read by Fuel and by the Map (BUGS SOG draws); via / layer per segment k in '
+      'route_alts.json, as control; a fake launcher')
+def f126(c):
+    st = _route_launcher(c, ['route/compute'])
+    segs = [dict(_ctl_seg('LFRS', 'LUGEN', 'controlled', 'SID'), via='NTS1A'), dict(_ctl_seg('LUGEN', 'NEPIX', 'controlled', 'HIGH'), via='UN10'),
+            dict(_ctl_seg('NEPIX', 'LFML', 'incomplete', 'FRA', 'lien FRA'), via='DCT')]
+    st['alts'] = [dict(_alt(1, 'Via UN10', 'LFRS LUGEN NEPIX LFML', 370, 270, segs, sid=False),
+                       control={'controlledPct': 70, 'incompletePct': 30, 'fallbackPct': 0, 'errorPct': 0,
+                                'sections': [{'layer': g['layer'], 'control': g['control'], 'from': g['from'], 'to': g['to'], 'nm': 120, 'reason': g['controlReason']} for g in segs]})]
+    open_proc(c)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 1", what='the route')
+    table = c.js(_LEGEND_JS, c.lang)
+    leg = c.js(f"""[...document.querySelectorAll('{FUEL} [data-rlegend] [data-nature]')].map(e => [e.dataset.nature, e.firstElementChild?.nextSibling?.textContent.trim() || '',
+        e.querySelector('line')?.getAttribute('stroke-dasharray') || ''])""")
+    c.eq([x[0] for x in leg], table['natures'], 'the legend lists the natures of the common table, in its order', what='legend natures')
+    c.eq([x[1] for x in leg], table['labels'], 'with its words, in the language of the screen', what='legend words')
+    c.eq([x[2] for x in leg], table['dashes'], 'and its strokes (DCT dashed, FRA dotted, the others solid)', what='legend strokes')
+    c.js(f"document.querySelector('{FUEL} [data-alt=\"0\"] [data-sections]').open = true")
+    nat = c.js(f"[...document.querySelectorAll('{FUEL} [data-alt=\"0\"] [data-sections] [data-section]')].map(e => [e.dataset.nature, !!e.querySelector('[data-nature] line')])")
+    c.eq(nat, [['sid', True], ['awy', True], ['fra', True]], 'each section says its nature with the stroke of the legend', what='sections')
+    doc = c.until_doc('cache/fuel/route_alts.json', lambda x: x and len(x.get('alternatives') or []) == 1, 'the route published for the Map', timeout=8000)
+    a = doc['alternatives'][0]
+    c.eq([a.get('via'), a.get('layer')], [['NTS1A', 'UN10', 'FRA'], ['SID', 'HIGH', 'FRA']], 'the airway (a direct of the FRA layer is FRA) and the layer of each segment, for the Map', what='[via, layer]')
+    c.js(f"document.querySelector('{FUEL} [data-rlegend]').open = true; document.querySelector('{FUEL} [data-rlegend]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F126_{c.design}_{c.width}_{c.lang}.png')

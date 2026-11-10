@@ -12,17 +12,19 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel and Map: one legend for the routes** (`frame/lib/route_legend.js`, new; `modules/fuel/module.js`; Fuel SPEC § 9.3,
+  INTEGRATION § 3 bis, DECISIONS, help; frame SPEC; noreg F126; SOG-0134 refused). Each section says its nature — airway, DCT, FRA,
+  SID, STAR, approach, deviation — with the stroke and the word the Map draws; a folded « Légende »; route_alts.json gives `via` and
+  `layer` per segment.
 - **Pelican sites tool: the Esri satellite background works under the launcher** (`tools/csp_policy.py`, `tools/launch.py`; frame DECISIONS; security audit Appendix A; noreg I40;
   SOG-0083, the user: « oui pour esri »). A content policy **for that page only** admits `https://server.arcgisonline.com` in `connect-src`; nothing for scripts, nothing for
   any other page, the general policy unchanged byte for byte. The launcher must be restarted.
-
 - **Data: the single « usage personnel » box no longer blocks a rebuild — X-Plane (read on this workstation only) is never sent to the verbs and the texts that asked to untick it are gone** (`modules/data/panels.js`, `model_sets.js`, `texts.js`; L61, L7, L10, L15, L32, L58) — SOG-0162, refused at the recipe.
 
 - **Map: the proposed routes tell what each stretch is** (`modules/maps/alts.js`, `tips.js`, `module.js`, `sheet_view.js`, `texts.js`, `style.js`; SPEC § 5.4, DECISIONS, help ×4;
   noreg D140, D126, D136; SOG-0134 refused). A line as wide as the flight's route (the chosen solid, the others faded); an airway solid with its name along it, DCT dashed, FRA
   dotted, SID / STAR / approach in the procedures' tint, a fault red, a thinner line when not fully checked (from the new per-segment `via` and `layer` of `route_alts.json`);
   the chosen route's points marked and named; a collapsible key in the list and in the map's legend; hovering a line on the map highlights it.
-
 - **Report and Missions: a family is said by its acronym first** (`modules/report/vocab.js`, `module.js`, `modules/missions/module.js`;
   SPEC, DECISIONS of both, help; noreg G8, N12; SOG-0179). « SAR · Récupération de personnel » in the report's family list, the Missions
   headings (acronym in bold) and filter, as the V2 did; the long name never alone.

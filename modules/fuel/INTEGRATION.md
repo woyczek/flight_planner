@@ -287,7 +287,12 @@ hand a choice back. Contract written before the code, for both sides.
   `control` (since 10 Nov 2026, SOG-0161; one entry per segment `k`, so `points.length − 1` entries): `controlled`, `incomplete`,
   `fallback`, `error` or `null` (not said), from the engine's sections (then its segments) mapped onto the points the same way; the Map
   draws `controlled` solid, `incomplete` dashed, `fallback` dotted. `proposal: true` (since 10 Nov 2026): a fallback proposal of an
-  impossible plan, never validated (Fuel lists it apart, under « Propositions non validées »).
+  impossible plan, never validated (Fuel lists it apart, under « Propositions non validées »). `via` and `layer` (since 10 Nov 2026,
+  SOG-0134; one entry per segment `k`, mapped from the engine's segments like `faulty`): `via[k]` the airway (UN10, T11…), a procedure
+  name on a SID / STAR leg, `DCT`, `FRA` (a direct of the FRA layer) or '' (`route_legend.js` `viaOf`); `layer[k]` SID | LOW | HIGH |
+  FRA | STAR | APP | ''. The Map draws the nature of each segment from them with **`frame/lib/route_legend.js`** (`natureOf`, the same
+  table, words and strokes as Fuel's legend): airway solid with its name, DCT dashed, FRA dotted, SID / STAR / approach in the
+  procedures' tints, a deviation red.
 - `chosen`: the index of the route taken (« Prendre »), else the computed one (0); `null` when there is no route. `hovered`: the
   index of the row under the pointer, the finger or the keyboard focus, else `null`.
 - **Clearing**: a new request, a new pair of aerodromes (`newPair`) or a refusal publishes `alternatives: []`.

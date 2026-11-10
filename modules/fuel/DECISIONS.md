@@ -1523,3 +1523,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   the list of checked routes; their share is always in numbers (« contrôlé 100 % · … » rather than « contrôlé » alone: a proposal is
   never validated); « Prendre » says « non validée : à vérifier »; route_alts.json carries `proposal` so that the Map may say it too.
   F125; counter-test on origin/v3 (95c5fc071): no proposal listed.
+- **10 Nov 2026 — one legend for the routes, Fuel and Map** (SOG-0134 refused at acceptance: « on ne voit ni les points ni les awy, ni
+  si c'est du DCT, du FRA… même couleur, très gros, sans légende »): the natures of a section, their words ×4 and their strokes live in
+  ONE file, `frame/lib/route_legend.js` (in frame/lib: neither module depends on the other), written by Features SOG only; the Map
+  (BUGS SOG) draws with it, Fuel says each section's nature and a folded legend with it. route_alts.json gains `via` and `layer` per
+  segment. « Écart aux règles » rather than « Faute »: the word the Route step already uses (« N écarts aux règles »). The capture at 390
+  showed « SID · ── SID »: the layer is said only when it adds (« Voie (HIGH) »). F126; counter-test on origin/v3 (23bea2d17): no legend.
