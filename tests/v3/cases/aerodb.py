@@ -6071,9 +6071,9 @@ def k122(c):
             c.eq(got, 'refused', f'{label}: refused with a message, nothing written', what=label)
 
 
-@case('K123', 'Hours and remarks of the airspaces as the AIP publishes them (SOG-0163): the SIA reader gives `hours` (txtRmkWorkHr, Timsh, the code) and `rem` (txtRmk) per space, the AIXM 5.1 reader the notes (the ones on the time interval are the hours); nothing is invented, bounded at 12 lines of 400 signs, absent when the source says nothing; parser version 24', 'K', tags=('aerodb',), phone=False,
+@case('K124', 'Hours and remarks of the airspaces as the AIP publishes them (SOG-0163): the SIA reader gives `hours` (txtRmkWorkHr, Timsh, the code) and `rem` (txtRmk) per space, the AIXM 5.1 reader the notes (the ones on the time interval are the hours); nothing is invented, bounded at 12 lines of 400 signs, absent when the source says nothing; parser version 24', 'K', tags=('aerodb',), phone=False,
       rule='SOG-0163 (10 Nov 2026, BUGS SOG): the sheet of a space R / D / P (modules/maps/lv.js spaceCardHtml) answers « R 61 : actif ? quelles conditions ? » from `hours` and `rem`, which the base did not carry (SIA: 630 R, 129 D, 115 P without any text although the XML has txtRmkWorkHr on 3 961 of its 4 497 airspaces, txtRmk on 3 544 and 142 time sheets)')
-def k123(c):
+def k124(c):
     c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
     r = c.js("""async () => {
       // a fresh frame: the page defines its own `AeroSources` (the Sources screen) and the reader file does not replace it
