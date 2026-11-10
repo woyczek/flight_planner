@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "503fae2",
+  "organisation": "1304324",
   "fiches": 179,
   "untranslated": 1,
   "priorities": 152
@@ -702,7 +702,7 @@
     {
      "id": "SOG-0173",
      "kind": "bug",
-     "state": "planned",
+     "state": "doing",
      "fr": "Carte : en zoom arrière prononcé, déplacer la carte fait apparaître une foule de voies aériennes basses",
      "en": "Map: at a wide zoom, dragging the map shows a crowd of low airways",
      "de": "Karte: bei weitem Zoom zeigt das Verschieben eine Flut niedriger Luftstraßen",
@@ -711,7 +711,7 @@
     {
      "id": "SOG-0175",
      "kind": "bug",
-     "state": "planned",
+     "state": "doing",
      "fr": "VOR : doubler le cercle des degrés et poser des repères tous les 30°",
      "en": "VOR: a double compass circle with marks every 30°",
      "de": "VOR: doppelter Gradkreis mit Marken alle 30°",
@@ -720,7 +720,7 @@
     {
      "id": "SOG-0177",
      "kind": "bug",
-     "state": "planned",
+     "state": "doing",
      "fr": "Route longue : trop de marqueurs de distance",
      "en": "Long route: too many distance markers",
      "de": "Lange Route: zu viele Distanzmarken",
@@ -774,7 +774,7 @@
     {
      "id": "SOG-0179",
      "kind": "bug",
-     "state": "planned",
+     "state": "doing",
      "fr": "Compte rendu de mission : le nom abrégé de la catégorie a disparu (« SAR - Recherche / sauvetage »)",
      "en": "Mission report: the short name of the category is gone (“SAR - Search and rescue”)",
      "de": "Missionsbericht: das Kürzel der Kategorie ist verschwunden („SAR - Suche / Rettung“)",
@@ -1507,7 +1507,7 @@
     {
      "id": "SOG-0176",
      "kind": "feature",
-     "state": "planned",
+     "state": "doing",
      "fr": "Fréquences d'ILS : prévues, codées, affichées ?",
      "en": "ILS frequencies: planned, coded, displayed?",
      "de": "ILS-Frequenzen: geplant, kodiert, angezeigt?",
@@ -2214,7 +2214,7 @@
     {
      "id": "SOG-0178",
      "kind": "bug",
-     "state": "planned",
+     "state": "doing",
      "fr": "Lanceur : un service extérieur lent ou en erreur (Open-Meteo, Overpass) fige le lanceur, puis l'appli et Chrome",
      "en": "Launcher: a slow or failing outside service (Open-Meteo, Overpass) freezes the launcher, then the app and Chrome",
      "de": "Launcher: ein langsamer oder fehlerhafter externer Dienst (Open-Meteo, Overpass) friert Launcher, App und Chrome ein",
@@ -2392,7 +2392,7 @@
     {
      "id": "SOG-0172",
      "kind": "bug",
-     "state": "planned",
+     "state": "doing",
      "fr": "Réglages : les clignotements sont revenus",
      "en": "Settings: the flicker is back",
      "de": "Einstellungen: das Flackern ist zurück",
