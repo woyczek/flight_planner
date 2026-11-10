@@ -5,8 +5,9 @@
 
 Inputs, all in the organisation folder (the single source, like the roadmap of tools/roadmap_build.py):
   · BACKLOG.md          the fiches (`### SOG-xxxx — title`, **Thème**, **État**): the title, the application and the state;
-  · RECETTE_TESTS.json  { tests: { "SOG-xxxx": { since: "YYYY-MM-DD", test: "where to go, what to do, what to see" } } },
-                        one functional test per delivered fiche, written by the ergonomist in the pilot's words;
+  · RECETTE_TESTS.json  { tests: { "SOG-xxxx": { since: "YYYY-MM-DD", test: "where to go, what to do, what to see",
+                        rewritten?: "YYYY-MM-DDTHH:MM:SSZ" } } }, one functional test per delivered fiche, written by the
+                        ergonomist in the pilot's words;
   · RECETTE.json        the user's verdicts, written by the launcher from the screen (sog-recette/1 :
                         { items: { "SOG-xxxx": { verdict: "ok" | "ko", comment, at } } }); optional;
   · roadmap_i18n.json   the translated titles (en, de, es), shared with the roadmap.
@@ -20,6 +21,8 @@ test (French: the user's language of work), since, state: 'todo' | 'known' | 'ok
 `delivered` is the date (UTC) of the newest commit the state of the fiche cites: its last delivery. A verdict older than it is no
 longer in force: the test is 'todo' again and the old verdict is kept in `previous` ({ verdict, comment?, at }), so that the
 screen can say « delivered again since your refusal » (the user, 10 Nov 2026: « je ne vois pas de màj de la page de recette »).
+A test rewritten after a refusal that was about the test itself (the user, 10 Nov 2026: « refusé par manque de cas de test »)
+carries `rewritten` (UTC): it counts as a delivery, so the refusal no longer stands and the new test is to be done.
 Every text is bounded; the verdict file is read as an untrusted input (written through a screen)."""
 import argparse
 import datetime
@@ -39,6 +42,9 @@ ID = re.compile(r'^SOG-\d{4}$')
 HEAD = re.compile(r'^### (SOG-\d{4}) — (.+)$', re.M)
 SHA = re.compile(r'(?<![0-9a-zA-Z])[0-9a-f]{7,12}(?![0-9a-zA-Z])')
 _COMMITS = None
+
+
+STAMP = re.compile(r'^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$')
 
 
 def commits():
@@ -128,6 +134,9 @@ def build(org):
                'test': t['test'][:700], 'since': str(t.get('since', ''))[:10], 'state': state}
         v = vs.get(fid)
         d = delivered_at(f['etat']) if state == 'todo' else ''
+        rw = t.get('rewritten')
+        if state == 'todo' and isinstance(rw, str) and STAMP.match(rw):
+            d = max(d, rw)                   # a rewritten test is to be done again, like a new delivery
         if d:
             row['delivered'] = d
         if v and state == 'todo':            # a verdict stands while the fiche is delivered; a fiche open again is « known »

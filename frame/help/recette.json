@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 97,
-  "verdicts": 43
+  "verdicts": 44
  },
  "apps": [
   "pilote",
@@ -422,8 +422,10 @@
    },
    "test": "Carburant › Route, coller la route ESSB … ALS N872 PAM … LEMO : PAM et ALS sont placés en Europe ; les points inconnus sont listés avec leur zone et son état.",
    "since": "2026-11-09",
-   "state": "todo",
-   "delivered": "2026-11-09T16:04:59Z"
+   "state": "ko",
+   "delivered": "2026-11-09T16:04:59Z",
+   "comment": "LFRS PAM LFBD passe toujours pas les USA.",
+   "at": "2026-11-10T16:32:49Z"
   },
   {
    "id": "SOG-0143",
@@ -639,8 +641,9 @@
    },
    "test": "Modifier un vol dans Carburant puis synchroniser : plus de « refusé par le serveur : last is not defined ».",
    "since": "2026-11-09",
-   "state": "todo",
-   "delivered": "2026-11-09T17:25:43Z"
+   "state": "ok",
+   "delivered": "2026-11-09T17:25:43Z",
+   "at": "2026-11-10T16:27:52Z"
   },
   {
    "id": "SOG-0160",
@@ -792,22 +795,6 @@
    "at": "2026-11-10T09:25:07Z"
   },
   {
-   "id": "SOG-0170",
-   "app": "maintenance",
-   "title": {
-    "fr": "Cadre : l'arbre de data/ relu cinquante fois dans IndexedDB à chaque chargement (clonage de 10 339 entrées)",
-    "en": "Frame: the data/ tree read fifty times from IndexedDB at each load (10,339 entries cloned)",
-    "de": "Rahmen: der data/-Baum wird bei jedem Laden fünfzigmal aus IndexedDB gelesen (10 339 Einträge geklont)",
-    "es": "Marco: el árbol de data/ leído cincuenta veces de IndexedDB en cada carga (10 339 entradas clonadas)"
-   },
-   "test": "Ouvrir la Carte, puis Maintenance › Données : l'affichage arrive nettement plus vite qu'hier (moins d'une seconde pour Données, lanceur relancé).",
-   "since": "2026-11-10",
-   "state": "ko",
-   "delivered": "2026-11-10T09:02:39Z",
-   "comment": "ce n’est pas  fonctionnel, mais technique. rien à en faire.",
-   "at": "2026-11-10T16:20:10Z"
-  },
-  {
    "id": "SOG-0171",
    "app": "compagnie",
    "title": {
@@ -845,9 +832,15 @@
     "de": "Karte: bei weitem Zoom zeigt das Verschieben eine Flut niedriger Luftstraßen",
     "es": "Mapa: con zoom amplio, arrastrar el mapa muestra multitud de aerovías bajas"
    },
-   "test": "Carte en zoom arrière prononcé (Europe entière) : déplacer la carte ne fait plus apparaître les voies aériennes basses, ni pendant le geste ni au relâchement ; en zoomant elles reviennent comme avant.",
+   "test": "Carte en zoom arrière prononcé (Europe entière) : déplacer la carte et zoomer en arrière ne fait plus apparaître les voies aériennes basses, et aucun quart de la carte n'est dessiné comme à un autre zoom pendant le geste. (Non reproduit au banc : si tu le revois, une capture et le niveau de zoom.)",
    "since": "2026-11-10",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-10T16:37:40Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "presque. voir screenshot : comportement bizarre comme si l’affichage du quart haut gauche avait un niveau de zoom différent ?",
+    "at": "2026-11-10T14:58:02Z"
+   }
   },
   {
    "id": "SOG-0174",
@@ -888,12 +881,15 @@
     "de": "ILS-Frequenzen: geplant, kodiert, angezeigt?",
     "es": "Frecuencias ILS: ¿previstas, codificadas, mostradas?"
    },
-   "test": "Carburant › Procédures, arrivée sur un terrain français avec une approche ILS choisie : sous le choix de l'approche, « ILS <piste> · <indicatif> <fréquence> · axe <cap>° » ; arrivée repliée, le résumé dit « I<piste> · <indicatif> <fréquence> ». Sur la Carte, l'infobulle de l'ILS donne la même fréquence. Après « Mettre à jour » : pareil sur un terrain britannique ou espagnol.",
+   "test": "Carburant, un vol LFRS → LFPO, étape Procédures : à l'arrivée, choisir l'approche « ILS … RWY 24 » : sous le choix, « ILS 24 · OLO 110.9 · axe 242° · DME » ; l'arrivée repliée dit « I24 · OLO 110.9 ». Autre cas : arrivée LFLL, « ILS RWY 35L » : SAN 110.75, axe 355°. Sur la Carte, l'infobulle de l'ILS donne la même fréquence. (Une approche ILS n'est proposée que sur LFPO, LFPG, LFLL et LFBO aujourd'hui : ailleurs, pas de ligne, c'est attendu.)",
    "since": "2026-11-10",
-   "state": "ko",
-   "delivered": "2026-11-10T11:31:14Z",
-   "comment": "encore faudrait-il touver un AD avec un ILS … refusé par manque de cas de test.",
-   "at": "2026-11-10T16:22:31Z"
+   "state": "todo",
+   "delivered": "2026-11-10T16:33:03Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "encore faudrait-il touver un AD avec un ILS … refusé par manque de cas de test.",
+    "at": "2026-11-10T16:22:31Z"
+   }
   },
   {
    "id": "SOG-0177",
@@ -950,9 +946,10 @@
     "de": "Daten: den ganzen Aktualisierungsweg der Basis überarbeiten (eine Geste, Meldungen nennen vorhandene Schaltflächen)",
     "es": "Datos: rehacer todo el recorrido de actualización de la base (un solo gesto, mensajes que nombran botones que existen)"
    },
-   "test": "Maintenance › Données › « Mettre à jour » : la mise à jour va au bout même si une zone échoue ; sous la sélection, un bilan en une ligne (à jour · à reconstruire · en échec · attend un fichier) dont chaque nombre montre ses zones ; une zone en échec porte « Réessayer » sur sa ligne ; une zone qui attend un fichier dit lequel et porte « Prendre le fichier téléchargé », qui lance ensuite sa construction tout seul ; aucun message ne cite un bouton qui n'existe pas.",
+   "test": "Relancer le lanceur. Maintenance › Données, ta couverture de 78 zones : chaque zone a sa pastille d'état (les 18 dernières n'en avaient pas). « Mettre à jour » : une ligne dit ce qui va être fait (« n à télécharger, n à reconstruire, n déjà à jour ») ; ce qui est à jour n'est pas refait ; la question de reconstruction propose les zones restées à l'ancien analyseur ; la zone que la FAA refuse dit « FAA : téléchargement refusé (403) » avec « Réessayer », « Choisir le fichier… » et le lien de la page NASR, et le reste va au bout.",
    "since": "2026-11-10",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-10T16:28:52Z"
   },
   {
    "id": "SOG-0181",
@@ -1032,8 +1029,10 @@
    },
    "test": "Maintenance › Données › « Paquets de pays » : chaque région garde sa case « tout le paquet » et porte un pli « Pays (n) », replié ; ouvert, il liste les pays avec une case chacun ; cocher un pays l'ajoute seul à la couverture, sans rien télécharger.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T11:36:49Z"
+   "state": "ko",
+   "delivered": "2026-11-10T11:36:49Z",
+   "comment": "non. mettre le chevron d’ouverture sur la ligne même, et réduire le bouton, voire le remplacer par une url !",
+   "at": "2026-11-10T16:25:20Z"
   },
   {
    "id": "SOG-0187",
@@ -1115,9 +1114,15 @@
     "de": "Karte: der Luftraum-Tooltip bleibt, wenn das „i“-Feld geöffnet wird",
     "es": "Mapa: la ayuda emergente de un espacio se queda al abrir el panel «i»"
    },
-   "test": "Carte : survoler un espace pour faire apparaître son infobulle, puis toucher le « i » (ou le profil, ou la météo) : l'infobulle disparaît ; elle disparaît aussi quand le pointeur quitte la carte.",
+   "test": "Carte, profil ouvert : appuyer sur un espace (sa bande « nom, limites · Fiche » apparaît), puis ouvrir le « i » de la légende, la météo, les couches ou les modes : la bande s'en va. Pareil pour l'infobulle d'un espace survolé.",
    "since": "2026-11-10",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-10T16:37:38Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "c’est aussi valable après un clic sur un airspace (screenshot)",
+    "at": "2026-11-10T15:08:35Z"
+   }
   },
   {
    "id": "SOG-0193",
@@ -1337,10 +1342,10 @@
     "de": "Missionen: „Datei unlesbar“ bei vielen Missionen; eine Mission oder einen Satz aus einer YAML hinzufügen; in einer anderen Gesellschaft suchen",
     "es": "Misiones: «archivo ilegible» en muchas misiones; añadir una misión o un lote desde un YAML; buscar en otra compañía"
    },
-   "test": "Compagnie › Missions. (1) Tes missions ne sont plus sous ITF mais sous « Personnel », et presque plus aucune n'est dite « fichier illisible » (deux manquent au dépôt, dites avec leur chemin). (2) « Ajouter des missions » : choisis un ou plusieurs fichiers YAML, ou colle un YAML : l'écran montre ce qu'il a lu et ce qu'il refuse avec la raison, puis « Ajouter (n) » ; une mission qui existe déjà n'est remplacée que si tu coches. (La recherche dans une autre compagnie et le changement de compagnie : à venir.)",
+   "test": "Compagnie › Missions. (1) Tes missions ne sont plus sous ITF mais sous « Personnel », et presque plus aucune n'est dite « fichier illisible » (deux manquent au dépôt, dites avec leur chemin). (2) « Ajouter des missions » : choisis un ou plusieurs fichiers YAML, ou colle un YAML : l'écran montre ce qu'il a lu et ce qu'il refuse avec la raison, puis « Ajouter (n) » ; une mission qui existe déjà n'est remplacée que si tu coches. (3) Sous les boutons, « Ma compagnie · Personnel · Toutes les compagnies » : « Toutes » montre aussi les missions des autres compagnies, chacune avec le nom de la sienne. (Changer une mission de compagnie : à venir.)",
    "since": "2026-11-10",
    "state": "todo",
-   "delivered": "2026-11-10T16:04:27Z"
+   "delivered": "2026-11-10T16:24:20Z"
   },
   {
    "id": "SOG-0213",
@@ -1411,6 +1416,20 @@
    "since": "2026-11-10",
    "state": "todo",
    "delivered": "2026-11-10T15:56:50Z"
+  },
+  {
+   "id": "SOG-0223",
+   "app": "compagnie",
+   "title": {
+    "fr": "Changer une mission de compagnie (une par une, ou en lot)",
+    "en": "Move a mission to another airline (one by one, or in a batch)",
+    "de": "Eine Mission einer anderen Gesellschaft zuweisen (einzeln oder im Stapel)",
+    "es": "Cambiar una misión de compañía (una a una o en lote)"
+   },
+   "test": "Compagnie › Missions. Une par une : ouvrir une mission, « Compagnie : Personnel · Changer », « Passer à » une compagnie : la phrase dit ce qui va changer, puis « Écrire ». En lot : réduire la liste (portée, famille ou recherche), « Attribuer à une compagnie… », décocher celles à laisser, « Écrire (n) » ; une mission illisible est dite et laissée telle quelle. La liste montre ensuite la nouvelle compagnie de chacune.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T16:39:56Z"
   },
   {
    "id": "SOG-0224",

@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "b2de122",
+  "organisation": "bd13d58",
   "fiches": 225,
   "untranslated": 1,
   "priorities": 152
@@ -777,7 +777,7 @@
     {
      "id": "SOG-0173",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Carte : en zoom arrière prononcé, déplacer la carte fait apparaître une foule de voies aériennes basses",
      "en": "Map: at a wide zoom, dragging the map shows a crowd of low airways",
      "de": "Karte: bei weitem Zoom zeigt das Verschieben eine Flut niedriger Luftstraßen",
@@ -831,7 +831,7 @@
     {
      "id": "SOG-0192",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Carte : l'infobulle d'un espace reste affichée quand on ouvre le « i »",
      "en": "Map: an airspace tooltip stays when the “i” panel opens",
      "de": "Karte: der Luftraum-Tooltip bleibt, wenn das „i“-Feld geöffnet wird",
@@ -1712,7 +1712,7 @@
     {
      "id": "SOG-0223",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Changer une mission de compagnie (une par une, ou en lot)",
      "en": "Move a mission to another airline (one by one, or in a batch)",
      "de": "Eine Mission einer anderen Gesellschaft zuweisen (einzeln oder im Stapel)",
@@ -2542,7 +2542,7 @@
     {
      "id": "SOG-0180",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "Données : revoir tout le parcours de mise à jour de la base (un seul geste, des messages qui nomment des boutons qui existent)",
      "en": "Data: rework the whole base update path (one gesture, messages that name buttons that exist)",
      "de": "Daten: den ganzen Aktualisierungsweg der Basis überarbeiten (eine Geste, Meldungen nennen vorhandene Schaltflächen)",
