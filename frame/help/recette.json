@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 95,
+  "tests": 96,
   "verdicts": 41
  },
  "apps": [
@@ -1299,6 +1299,20 @@
    "state": "ok",
    "delivered": "2026-11-10T15:09:27Z",
    "at": "2026-11-10T16:02:08Z"
+  },
+  {
+   "id": "SOG-0212",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions : « fichier illisible » sur beaucoup de missions ; ajouter une mission ou un lot de missions depuis un YAML ; chercher dans une autre compagnie",
+    "en": "Missions: “unreadable file” on many missions; add a mission or a batch of missions from a YAML; search in another airline",
+    "de": "Missionen: „Datei unlesbar“ bei vielen Missionen; eine Mission oder einen Satz aus einer YAML hinzufügen; in einer anderen Gesellschaft suchen",
+    "es": "Misiones: «archivo ilegible» en muchas misiones; añadir una misión o un lote desde un YAML; buscar en otra compañía"
+   },
+   "test": "Compagnie › Missions. (1) Tes missions ne sont plus sous ITF mais sous « Personnel », et presque plus aucune n'est dite « fichier illisible » (deux manquent au dépôt, dites avec leur chemin). (2) « Ajouter des missions » : choisis un ou plusieurs fichiers YAML, ou colle un YAML : l'écran montre ce qu'il a lu et ce qu'il refuse avec la raison, puis « Ajouter (n) » ; une mission qui existe déjà n'est remplacée que si tu coches. (La recherche dans une autre compagnie et le changement de compagnie : à venir.)",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T16:04:27Z"
   },
   {
    "id": "SOG-0213",

@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "63bba4b",
+  "organisation": "d332b8f",
   "fiches": 224,
   "untranslated": 1,
   "priorities": 152
@@ -1694,7 +1694,7 @@
     {
      "id": "SOG-0212",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Missions : « fichier illisible » sur beaucoup de missions ; ajouter une mission ou un lot de missions depuis un YAML ; chercher dans une autre compagnie",
      "en": "Missions: “unreadable file” on many missions; add a mission or a batch of missions from a YAML; search in another airline",
      "de": "Missionen: „Datei unlesbar“ bei vielen Missionen; eine Mission oder einen Satz aus einer YAML hinzufügen; in einer anderen Gesellschaft suchen",
