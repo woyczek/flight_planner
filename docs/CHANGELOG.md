@@ -28,6 +28,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   layers panel while the grid is read, the error only after the frame's replays; the grid is asked after the route; the synoptic build shows the time elapsed and no « 0/1 ».
 - **Frame: `ctx.ask(…, { sections })` reviewed** (`frame/app.js`; SPEC, DECISIONS; noreg A130; SOG-0197). A null section no longer throws, texts are bounded
   (120 / 300 / 500 characters), a group that scrolls takes the keyboard focus and is named by its title.
+- **Frame: the texts of `frame/app.js` and `ctx.t` agree with their number** (`frame/app.js` `t`, `frame/sw.js` keeps `lib/plural.js`; noreg A136; thanks to Settings' `plural.js`). The marks
+  `(s) (x) (es) (en) (n) (e)` of a text are resolved by the `{n}` that precedes them, when the caller gives a number: « 1 conflit », « 2 conflits » (fr: 0 and 1 singular), « 1 conflict » / « 0 conflicts ».
 - **Data layer: a write that changes nothing is not made, and a series of writes is held** (`frame/store/frame_data.js` `sameAsKept`, `holdSerial`, `FrameData.guard`; INTEGRATION § 5, DECISIONS;
   bench A53; SOG-0209). The cause of « refresh en boucle »: two modules rewrote `current_flight.json` every 4 to 6 s, one synchronisation each time. `put` of the kept content (but
   for `updated_at`) writes nothing, says nothing, syncs nothing (`force` to write anyway); a path written without a gesture that goes back to a content it already had in 30 s is in

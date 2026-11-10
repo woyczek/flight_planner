@@ -389,9 +389,14 @@
   };
   /** Texte d'une ligne [fr, en, de, es] dans la langue de l'appli, {nom} remplacés ; espace fine avant : ; ! ? en
    *  français. */
+  // l'accord des textes (frame/lib/plural.js, chargé au démarrage) : les marques « (s) (x) (en)… » d'un texte sont résolues d'après le nombre `{n}` qui les précède,
+  // seulement quand l'appelant donne un nombre ; avant le chargement du module, ou sans nombre, le texte part tel quel
+  let PLURAL = null;
   const t = (row, v = {}) => {
     const l = lang(),
-      s = String((Array.isArray(row) ? row[LANGS.indexOf(l)] || row[0] : row) ?? '').replace(/\{(\w+)\}/g, (m, k) => v[k] ?? m);
+      raw = String((Array.isArray(row) ? row[LANGS.indexOf(l)] || row[0] : row) ?? ''),
+      s = (PLURAL && Object.values(v).some(x => typeof x === 'number') ? PLURAL.agree(raw, v, l) : raw).replace(/\{(\w+)\}/g, (m, k) =>
+        v[k] ?? m);
     return l === 'fr' ? s.replace(/ ([:;!?»])/g, ' $1').replace(/« /g, '« ') : s;
   };
   const T = {
@@ -4508,6 +4513,7 @@
     } catch (e) {
       console.warn('frame/lib/icons.js', e);
     }
+    PLURAL = await import(new URL('frame/lib/plural.js', ROOT).href).catch(() => null);
     headIcon('fHelp', 'help');
     headIcon('fDevice', 'settings');
     document.title = `${t(APP.name)} — SOG`;

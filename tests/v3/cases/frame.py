@@ -5572,3 +5572,24 @@ def a135(c):
     c.eq([norm(x) for x in got], [norm(x) for x in want], 'the marks are resolved by the number: fr 0 and 1 singular, the others only 1', what='agreed')
     c.ok(not any('(' in x for x in got), got, 'no « (s) » is left')
     c.check_errors()
+
+
+@case('A136', 'The frame’s own texts agree with their number: « {n} conflit(s) » gives « 1 conflit » and « 2 conflits »; without a number a text is left as it is (ctx.t, SOG)', 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule='ergonomist, 10 Nov (no more « (s) » on screen): t() of frame/app.js — the ctx.t every module receives — resolves the marks (s) (x) (es) (en) (n) (e) by frame/lib/plural.js, from the number {n} that precedes them, only when the caller gives a number; fr: 0 and 1 singular, en / de / es: only 1')
+def a136(c):
+    c.open('fuel', wait=False)
+    c.until('!!window.SogFrame', timeout=15000, what='the frame')
+    c.wait(800)
+    rows = {'fr': ['{n} conflit(s) à examiner', 'x', 'x', 'x'], 'en': ['x', '{n} conflict(s) to review', 'x', 'x'], 'de': ['x', 'x', '{n} Konflikt(e) zu prüfen', 'x'],
+            'es': ['x', 'x', 'x', '{n} conflicto(s) por revisar']}[c.lang]
+    ask = "(n) => window.SogFrame.t(%s, { n })" % json.dumps(rows)
+    got = {n: norm(c.js(ask, n)) for n in (0, 1, 2)}
+    want = {'fr': {0: '0 conflit à examiner', 1: '1 conflit à examiner', 2: '2 conflits à examiner'},
+            'en': {0: '0 conflicts to review', 1: '1 conflict to review', 2: '2 conflicts to review'},
+            'de': {0: '0 Konflikte zu prüfen', 1: '1 Konflikt zu prüfen', 2: '2 Konflikte zu prüfen'},
+            'es': {0: '0 conflictos por revisar', 1: '1 conflicto por revisar', 2: '2 conflictos por revisar'}}[c.lang]
+    c.eq(got, want, '0, 1 and 2 agree (fr: 0 and 1 singular; en, de, es: only 1)', what='agreement')
+    c.eq(norm(c.js("() => window.SogFrame.t(['Le fichier (s)', 'The file (s)', 'x', 'x'])")), 'Le fichier (s)' if c.lang == 'fr' else 'The file (s)' if c.lang == 'en' else 'x',
+         'without a number the text is left as it is', what='no number')
+    c.check_errors()

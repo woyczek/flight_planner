@@ -56,7 +56,9 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
 - `meta.level` (1 to 3, 1 by default): the menu lists the module only when the device's usage level, chosen in
   Settings, is at least this one (1 discovery, 2 everyday, 3 full); a hidden module stays reachable by `#id`.
 - Texts are rows `[fr, en, de, es]` passed to `ctx.t`, French first, every text translated (tooltips, statuses and
-  composed sentences included).
+  composed sentences included). **No « (s) » on screen**: write the agreement mark after the word, the number before it
+  (`'{n} conflit(s)'`) and pass the number (`ctx.t(row, { n })`): `ctx.t` resolves `(s) (x) (es) (en) (n) (e)` by `frame/lib/plural.js` (fr: 0 and 1 singular;
+  en, de, es: only 1). Without a number in the variables the text is left as it is.
 - No global style sheet: use the frame's tokens and classes (§ 3.2 of the SPEC).
 - `files`: every other file the module imports (scripts, data, images), as paths relative to `module.js` — the whole chain:
   a `frame/lib/` file imported by one of the module's own files counts too (noreg I26 checks it statically, with `lazy`). The frame

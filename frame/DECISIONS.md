@@ -2821,3 +2821,9 @@ nothing); the frame now guards the data layer, whatever the module (`frame/store
    were one commit each. Not changed: the delay stays 2 s (a longer one delays what the user did on purpose).
 - Counter-proof: bench scenarios of frame/store/test (A53): identical put nothing, ping-pong of two modules (14 writes: at most 7 events and 7 commits, one per window after the third), red before.
 
+## 10 November 2026 — `t()` of the frame agrees with the number (no more « (s) » on screen)
+
+Settings' `frame/lib/plural.js` (`plural`, `agree`) resolves the marks `(s) (x) (es) (en) (n) (e)` from the `{n}` before them. `t(row, vars)` of `frame/app.js` — also the `ctx.t` of every module —
+now runs `agree` before replacing the `{keys}`, **only when `vars` holds a number** (a text without a number, or a numeric string, is left as it is: no mark is guessed). The module is
+imported at boot (before it loads, `t` behaves as before) and kept by the service worker. `SogSettingsKit.agreeT` stays valid on top (it agrees a text first; the second pass finds no mark). Noreg A136.
+
