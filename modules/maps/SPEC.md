@@ -1107,6 +1107,11 @@ cursor until all fingers are up.
 
 ## 10. Airspaces at a point
 
+- **The sheet of a space is a view of the profile tab, not of Layers** (SOG-0185): its title (« n spaces at this point ») and its cross stay in the sheet's line, the chips of the drawing
+  stay beside them with the **profile chip pressed** (the Layers icon is not), and the profile chip closes the sheet (back to the profile). The sheet's body is built once, with the size it
+  keeps: if the body had no size when it was first built it is built again at once, in the same frame, never replaced a few hundred ms later; the card is written only if it changes.
+  Between the tap and the rest the map is redrawn four times at most. Noreg D146.
+
 - **Opening**: a tap or a click on the map, when no barb nor airway box is under the finger (an airspace label does not
   count), opens the list in the sheet if at least one airspace is there (`MapsRender.airspacesAround(list, lat, lon,
   data.flat)`); another tap replaces it; ✕, Escape or a tap on an empty spot close it.

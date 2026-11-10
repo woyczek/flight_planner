@@ -146,7 +146,8 @@ function showIn(body, el) {
 }
 /** La fiche écrite (et la date de la base, quand AeroDB la donne). */
 function fillCard(card, a) {
-  card.innerHTML = spaceCardHtml(a);
+  const html = spaceCardHtml(a);
+  if (card.innerHTML !== html) card.innerHTML = html; // écrite seulement si elle change (un second passage ne la fait pas clignoter)
   card.hidden = false;
   showIn(S.dbodyEl, card); // la fiche sous le graphique : le corps de la feuille la montre
   Promise.resolve(S.ctx?.aerodb?.status?.()).catch(() => null).then(st => {

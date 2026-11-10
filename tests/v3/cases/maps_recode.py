@@ -4733,3 +4733,46 @@ def d145(c):
     c.ok(e0 - e1 > 6, f'effective zoom {e0} → {e1}', 'lowering it lowers the effective zoom (eight levels): fewer elements, a lighter drawing')
     c.eq(c.js("() => Object.keys(window.__mp.S.layers)"), ['mission'], 'the flight’s own setting is untouched', what='keys')
     c.shot('D145_layers_mission.png')
+
+
+_FLICK_JS = """() => { const q = s => document.querySelector(s), t0 = performance.now(), log = { body: [], map: 0, node: null }, ms = () => Math.round(performance.now() - t0);
+  const o = CanvasRenderingContext2D.prototype.clearRect; CanvasRenderingContext2D.prototype.clearRect = function () { if (this.canvas.classList.contains('mp-over')) { log.map++; (log.st ||= []).push([ms(), (new Error().stack || '').split(String.fromCharCode(10)).slice(2, 6).map(x => x.trim().replace('/modules/maps/', '').slice(-60)).join(' < ')]) } return o.apply(this, arguments) };
+  new MutationObserver(m => { const s = q('.mp-dbody svg.mp-lv'); if (s && !log.node) log.node = s; log.body.push([ms(), m.length, s === log.node]) }).observe(q('.mp-dbody'), { childList: true, subtree: true });
+  window.__fl = log; return true }"""
+
+
+_LV_HEAD_JS = """() => { const q = s => document.querySelector(s), shown = e => !!e && !e.hidden && e.getBoundingClientRect().width > 0, seg = q('.mp-chips:not(.mp-chips-l)');
+  const chips = [...document.querySelectorAll('.mp-chip[data-view]')].map(b => [b.dataset.view, b.getAttribute('aria-pressed'), shown(b)]);
+  return { title: (q('.f-sheet-head .f-sheet-title') || {}).textContent, layers: q('[data-mp="layers"]').getAttribute('aria-pressed'), chips, close: shown(q('.f-sheet-close')), panel: window.__mp.S.dpanel } }"""
+
+
+@case('D146', 'The sheet of a space opens in one drawing (its body is built once, with the size it keeps), and is a view of the profile: the profile chip is pressed, the title and the cross are the sheet’s, never under the Layers icon', 'D',
+      tags=('maps', 'sheet'), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0185 (the user: « le clignotement au double clic sur un espace… la vue coupe clignote tant que la fenêtre n’a pas réduit au max… l’onglet couches sert à autre chose que choisir les éléments à afficher »): measured between the tap and the rest: the body of the sheet is built once and not replaced later (the same graph node), the map redrawn three times at most; the sheet of a space is a view of the profile tab (chip pressed, its title, its cross) and not of Layers; the chip of the profile closes it')
+def d146(c):
+    ring = lambda la0, la1, lo0, lo1: [[la0, lo0], [la0, lo1], [la1, lo1], [la1, lo0], [la0, lo0]]
+    zones = [{'type': 'R', 'cls': '', 'name': '61', 'key': 'LFR61', 'lower': 'SFC', 'upper': 'FL115', 'azba': True, 'act': 'AZBA', 'src': 'sia', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]},
+             {'type': 'D', 'cls': '', 'name': '62', 'key': 'LFD62', 'lower': 'SFC', 'upper': 'FL195', 'src': 'sia', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]}]
+    for w, h, q in ((390, 844, 'maps'), (1280, 760, 'maps?pane=1')):
+        c.page.set_viewport_size({'width': w, 'height': h})
+        c.open(q, docs=fdocs(_awy_flight()) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airspaces=zones, wait=False)
+        c.ready('maps', sheet=True)
+        c.js(_STATE_JS)
+        c.until("() => !!(window.__mp.S && window.__mp.S.prof && window.__mp.S.prof.crossed.some(x => x.a.type === 'R'))", timeout=15000, what=f'the profile ({w} px)')
+        c.wait(1500)
+        c.js(_FLICK_JS)
+        c.js("async () => { const S = window.__mp.S; (await import('/modules/maps/profile_view.js')).setCursor(S.prof.total * .33); window.__want = 'R'; return true }")
+        c.wait(600)
+        c.js("() => { window.__fl.map = 0; window.__fl.body = []; return true }")   # from the first tap
+        _open_space_from_profile(c, "() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && k.textContent.length > 20 }", f'the sheet of an R opens ({w} px)')
+        c.wait(2200)
+        fl = c.js("() => window.__fl")
+        t0 = fl['body'][0][0] if fl['body'] else 0
+        c.ok(fl['body'] and all(b[2] for b in fl['body']), str(fl), f'{w}: the graph of the sheet is built once: the same node from the first drawing to the rest (never replaced)')
+        c.ok(fl['map'] <= 4, str(fl['map']), f'{w}: the map is redrawn four times at most between the tap and the rest')
+        g = c.js(_LV_HEAD_JS)
+        c.eq([g['panel'], g['layers']], ['lv', 'false'], f'{w}: the Layers icon is not the sheet’s: it is not pressed', what=str(g))
+        c.ok(('profile', 'true', True) in [tuple(x) for x in g['chips']] and g['close'] and g['title'], str(g), f'{w}: the sheet is a view of the profile tab: its chip is pressed, its title and its cross are shown')
+        c.shot(f'D146_sheet_{w}.png')
+        c.tap('.mp-chip[data-view="profile"]')
+        c.until("() => window.__mp.S.dpanel === null", timeout=4000, what=f'{w}: the chip of the profile closes the sheet')

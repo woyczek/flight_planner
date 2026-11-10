@@ -41,7 +41,8 @@ import {
   hideTips
 } from './tips.js';
 import {
-  showLv
+  showLv,
+  closeLv
 } from './lv.js';
 import {
   unpinAd
@@ -267,9 +268,12 @@ export function dataHead() {
   if (S.dtitleEl.textContent !== (bare ? '' : title)) S.dtitleEl.textContent = bare ? '' : title;
   if (S.dtitleEl.title !== (bare ? '' : tip)) S.dtitleEl.title = bare ? '' : tip;
   show(S.dcloseEl, own);
-  show(S.segEl, !own);
+  // la fiche d'un espace (« n espaces sur ce point ») est une vue du profil, pas des Couches (SOG-0185) : les puces du dessin restent dans la ligne, celle du profil
+  // pressée, et le titre et la croix sont ceux de la fiche ; les autres contenus (Couches, terrain, choix) gardent leur ligne titrée
+  const lvView = S.dpanel === 'lv';
+  show(S.segEl, !own || lvView);
   for (const b of S.segBtns) {
-    setPressed(b, (b.dataset.view === 'weather') === wx);
+    setPressed(b, lvView ? b.dataset.view === 'profile' : (b.dataset.view === 'weather') === wx);
     setOff(b, b.dataset.view === 'weather' ? !canWeather() : !S.prof); // jamais retirée : désactivée sans objet
     if (b.dataset.view === 'weather') {
       const n = wxName(); // le nom du bouton suit la prévision lue (« · AROME 12 h »)
@@ -299,14 +303,24 @@ export function openData(kind, key, title, build, label = title) {
     S.dbodyEl.textContent = '';
   }
   dataHead(); // d'abord : la ligne nue ou titrée fixe la hauteur que le contenu va prendre
-  const html = build(S.dbodyEl.clientWidth || 360, S.dbodyEl.clientHeight || 200, S.dbodyEl);
-  if (typeof html !== 'string') S.dhtml = null; // le constructeur a dessiné lui-même dans la zone
-  else if (S.dhtml !== html) {
-    S.dhtml = html;
-    S.dbodyEl.innerHTML = html;
-  }
+  const w0 = S.dbodyEl.clientWidth || 360,
+    h0 = S.dbodyEl.clientHeight || 200,
+    put = (w, h) => {
+      const html = build(w, h, S.dbodyEl);
+      if (typeof html !== 'string') S.dhtml = null; // le constructeur a dessiné lui-même dans la zone
+      else if (S.dhtml !== html) {
+        S.dhtml = html;
+        S.dbodyEl.innerHTML = html;
+      }
+    };
+  put(w0, h0);
   if (fresh) S.dbodyEl.scrollTop = 0;
   sheetFit(); // la feuille prend la hauteur du contenu, plafonnée
+  // la feuille a sa hauteur : si le corps n'a plus la taille avec laquelle le contenu a été construit (il venait d'apparaître : 0 × 0), il est refait tout de suite à la bonne,
+  // dans la même image — sinon un second dessin, à l'arrêt de la feuille, remplaçait le premier de quelques centaines de ms plus tard (SOG-0185 : « ça clignote »)
+  const w1 = S.dbodyEl.clientWidth,
+    h1 = S.dbodyEl.clientHeight;
+  if (fresh && w1 && h1 && (w1 !== w0 || h1 !== h0)) put(w1, h1);
   legendSync();
   winSync();
 }
@@ -387,6 +401,8 @@ export function sheetEvents() {
     }
     const b = e.target.closest('[data-view]'),
       v = b?.dataset.view;
+    if (S.dpanel === 'lv' && v === 'profile' && !b.disabled)
+      return closeLv(); // la puce du profil est celle de la fiche : la refermer rend le profil
     if (!v || b.disabled || (v === 'weather') === (S.dpanel === 'weather')) return;
     if (S.sh.pos === 'collapsed') S.sh.set('default', true);
     keep.view = v;

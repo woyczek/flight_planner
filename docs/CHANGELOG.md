@@ -15,6 +15,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Report and « Mes vols »: the airline of the report** (`modules/report/module.js`, `modules/flightlog/`, `frame/lib/mission_categories.js`
   `KIND_NAMES`, `airlineText`; SPEC, DECISIONS, help; noreg G9; SOG-0181). « Compte rendu pour SO Group · Escadrille SO » under the title,
   a link to Settings › Airline until saved, kept with the record; « Mes vols » says it on each report line when more than one airline exists.
+
+- **Map: the sheet of a space is a view of the profile tab, built in one drawing** (`modules/maps/sheet_view.js`, `lv.js`; SPEC § 10, DECISIONS; noreg D146; SOG-0185 a, b). The profile chip is pressed
+  with the sheet's title and cross (not the Layers icon) and closes it; the body is built once at its settled size and the card is written only if it changes.
+
 - **Fuel: the chosen ILS approach says its aid** (`modules/fuel/procedures.js`, `procedures_texts.js`; Fuel SPEC, DECISIONS, help;
   noreg F127; SOG-0176). « ILS 25 · DO 109.35 · axe 246° · DME » under the arrival's lists when the published base carries the ILS of
   the runway; no line otherwise.

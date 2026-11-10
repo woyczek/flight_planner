@@ -2317,6 +2317,17 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Noreg** D140 (the width, the airway solid, the SID's tint, the DCT dashed and thinner when not fully checked, the FRA dotted and faded, the fault red, the airway's name and
   the entry / exit written, the key folded in the list and in the map's legend, the hover of a line on the map: highlighted, drawn thick, released); D126 and D136 follow the new widths.
 
+## The sheet of a space: one drawing, a view of the profile tab (10 Nov 2026, SOG-0185 (a) and (b); (c) proposed apart)
+
+- **Measured** (bench, 390 and 1 280, from the first tap on a block to the rest): the body of the sheet is built once (two DOM writes in one frame), no later replacement of the graph node, the
+  sheet's panel changes height once (1 280: 246 → 237 px at about 70 ms), the map's overlay is redrawn 2 times after the first tap (the choice, then the open) plus once more when the box settles; the
+  profile canvas is hidden while the sheet is open. The blinking of the user's machine is **not reproduced** on the bench (no tiles, little data): what I could remove: the first build of a body that
+  had just appeared was made with a 360 × 200 default and replaced by the settled one 130 ms later (it is now rebuilt at once in the same frame when its size differs, `openData`); the card was
+  rewritten each time (now only if it changes). If it still blinks on his machine, I need his capture with the time.
+- **(b) Done**: the sheet of a space keeps the chips of the drawing with the profile chip pressed, its title and its cross; the Layers icon is no longer the one it sits under; the profile chip closes
+  it. Noreg D146.
+- **(c) Not coded**: the split between the window over the map (« Préparer le vol » view) and the Layers tab is proposed apart, before coding, as asked.
+
 ## The complexity cursor is back on the mission maps (10 Nov 2026, SOG-0183, regression of SOG-0137)
 
 - **Where it went**: SOG-0137 hid `.mp-layer-set` as a whole on a mission map, and the cursor was inside it; and the mission drawing ignored the setting (`detail: mission ? 0 : …`, the zoom
