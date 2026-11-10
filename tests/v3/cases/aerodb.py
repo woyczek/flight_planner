@@ -4218,7 +4218,7 @@ def k84(c):
         c.eq(sorted(set(by) & {'w104', 'r105', 'n205', 'wx', 'w105'}), [], 'dropped: the one-point taxiway, the relation, the invalid latitude, the non-numeric id (the duplicate is kept once)', what='dropped')
         c.ok(any('laissé(s) de côté' in w for w in r['warnings']), str(r['warnings']), 'and said')
         idx = json.loads(open(os.path.join(td, 'proc', 'ground', 'index.json'), encoding='utf-8').read())
-        c.eq(idx['aerodromes']['LFPO'], {'cycle': doc['cycle'], 'twy': 4, 'park': 3, 'hold': 1, 'bytes': os.path.getsize(out)}, 'the manifest proc/ground/index.json: the cycle, the counts and the size per aerodrome', what='manifest')
+        c.eq(idx['aerodromes']['LFPO'], {'cycle': doc['cycle'], 'twy': 4, 'park': 3, 'hold': 1, 'apron': 0, 'bytes': os.path.getsize(out)}, 'the manifest proc/ground/index.json: the cycle, the counts (the apron count joined with SOG-0195, K157) and the size per aerodrome', what='manifest')
         c.eq([i['kind'] for i in doc['items']], ['twy'] * 4 + ['park'] * 3 + ['hold'], 'taxiways first, then stands, then holding points (so a cap drops the least useful)', what='order')
         # an aerodrome OpenStreetMap does not know: nothing is written
         state['reply'] = (200, b'{"elements": []}')
