@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 94,
-  "verdicts": 35
+  "tests": 95,
+  "verdicts": 41
  },
  "apps": [
   "pilote",
@@ -653,13 +653,9 @@
    },
    "test": "Aide › Roadmap : l'écran s'ouvre « Par thème » ; « Priorités » est un mode qu'on choisit ; s'il a été choisi, il est retenu sur l'appareil.",
    "since": "2026-11-10",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-10T15:35:48Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "oui, mais par thème par défaut. c’est un « mode priorités », pas un default.",
-    "at": "2026-11-10T15:11:14Z"
-   }
+   "at": "2026-11-10T16:02:35Z"
   },
   {
    "id": "SOG-0161",
@@ -716,8 +712,9 @@
    },
    "test": "Relancer le lanceur, puis ouvrir Maintenance › Données : la page est utilisable en moins d'une seconde, sans temps mort avant l'affichage.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T09:17:05Z"
+   "state": "ok",
+   "delivered": "2026-11-10T09:17:05Z",
+   "at": "2026-11-10T16:04:54Z"
   },
   {
    "id": "SOG-0165",
@@ -819,13 +816,9 @@
    },
    "test": "Carte d'une mission (générale, régionale, cible), liste « Vue » : « VFR topo » donne un fond topographique avec relief et courbes de niveau, sans hippodromes de ravitaillement ni voies ; « IFR » donne le fond IFR et ses objets ; le choix est retenu par carte.",
    "since": "2026-11-10",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-10T14:24:47Z",
-   "previous": {
-    "verdict": "ok",
-    "comment": "oui. ok aussi pour le détail et la vue double. sauf pour la complexité. le curseurs a disparu, et on sait qu’il sert à épargner la vue et le cpu. le vfr topo n’a pas de courbes de niveau ?? il avait ça en v2. Le clignottement au double clic sur un espace ? la vue coupe clignotte tant que la fenêtre n’a pas réduit au max.  Autant j’aime bien la vue « préparer le vol » avec la popup sur la carte, autant c’est déstabilisant d’avoir l’onglet « couches » qui sert à autre chose que choisir les éléments à afficher. Ça doublonne avec la popup en plus.",
-    "at": "2026-11-10T11:01:58Z"
-   }
+   "at": "2026-11-10T16:02:19Z"
   },
   {
    "id": "SOG-0172",
@@ -1121,8 +1114,9 @@
    },
    "test": "Compagnie › Missions › une mission › « Préparer ce vol ». (1) La Carte à côté reste la carte du vol : météo, procédures, édition de la route, cases de Couches ; la mission est dessinée par-dessus (zones, cible, points à rôle) avec sa fenêtre et « Carte de la mission ». (2) Dans Carburant, la puce « Mission <ID> » en haut ouvre la fiche (risques en tête) sans quitter l'étape : c'est le retour vers la mission. (3) Le devis a une distance dès qu'il y a une route. Dis si les listes « Carte fournie » et « Vue » te manquent dans la fenêtre. (Points verrouillés, temps sur zone, « Quitter la mission » : à venir.)",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T14:55:14Z"
+   "state": "ok",
+   "delivered": "2026-11-10T14:55:14Z",
+   "at": "2026-11-10T16:02:27Z"
   },
   {
    "id": "SOG-0194",
@@ -1246,8 +1240,7 @@
    },
    "test": "Carburant › Vol : saisir un terrain de dégagement : son nom, sa météo et la réserve du devis se mettent à jour tout de suite, sans passer par Carte puis revenir.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T15:05:27Z"
+   "state": "known"
   },
   {
    "id": "SOG-0206",
@@ -1260,8 +1253,9 @@
    },
    "test": "Après relance du lanceur. Carburant › Route : choisir un itinéraire, une piste et une SID, puis « Contrôler » tout de suite : le contrôle répond (quelques secondes), même pendant que le sol du terrain se lit en fond ; s'il ne peut pas, il dit pourquoi (lanceur occupé, hors ligne…) avec « Réessayer ».",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T14:41:04Z"
+   "state": "ok",
+   "delivered": "2026-11-10T14:41:04Z",
+   "at": "2026-11-10T16:02:06Z"
   },
   {
    "id": "SOG-0208",
@@ -1302,8 +1296,23 @@
    },
    "test": "Après relance du lanceur. Carburant › Route, saisir « KDEN 4959N08712W DCT 5520N06712W DCT 5645N04039W DCT 5308N01717W LFRS » puis « Calculer A → B » ou « Contrôler » : les coordonnées sont acceptées comme points, plus de « Point inconnu dans AeroDB : 4959N08712W ».",
    "since": "2026-11-10",
+   "state": "ok",
+   "delivered": "2026-11-10T15:09:27Z",
+   "at": "2026-11-10T16:02:08Z"
+  },
+  {
+   "id": "SOG-0213",
+   "app": "maintenance",
+   "title": {
+    "fr": "En-tête de l'appli : dire la compagnie courante, et en changer vite depuis le sélecteur d'application",
+    "en": "App header: say the current airline, and switch quickly from the application picker",
+    "de": "Kopfzeile der App: die aktuelle Gesellschaft nennen und schnell über die App-Auswahl wechseln",
+    "es": "Cabecera de la app: decir la compañía actual y cambiarla rápido desde el selector de aplicación"
+   },
+   "test": "Avec au moins deux compagnies : à côté du nom de l'appli, une puce avec le code de la compagnie (« Pilote · ITF ») ; un appui ouvre la liste des compagnies, un choix en change sans quitter l'écran ; le menu des applications ne liste aucune compagnie. Avec une seule compagnie : pas de puce.",
+   "since": "2026-11-10",
    "state": "todo",
-   "delivered": "2026-11-10T15:09:27Z"
+   "delivered": "2026-11-10T16:02:56Z"
   },
   {
    "id": "SOG-0215",

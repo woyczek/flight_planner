@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "e87bd44",
+  "organisation": "63bba4b",
   "fiches": 224,
   "untranslated": 1,
   "priorities": 152
@@ -494,7 +494,7 @@
     {
      "id": "SOG-0205",
      "kind": "bug",
-     "state": "done",
+     "state": "doing",
      "fr": "Carburant : le terrain de dégagement n'est pas pris en compte après sa saisie",
      "en": "Fuel: the alternate aerodrome is not taken into account after it is typed",
      "de": "Kraftstoff: der Ausweichflugplatz wird nach der Eingabe nicht übernommen",
@@ -2183,7 +2183,7 @@
     {
      "id": "SOG-0213",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "En-tête de l'appli : dire la compagnie courante, et en changer vite depuis le sélecteur d'application",
      "en": "App header: say the current airline, and switch quickly from the application picker",
      "de": "Kopfzeile der App: die aktuelle Gesellschaft nennen und schnell über die App-Auswahl wechseln",
