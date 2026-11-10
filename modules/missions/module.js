@@ -1,9 +1,11 @@
 // V3 missions — les missions de la compagnie (modules/missions/SPEC.md § 1–4, lot 2 réduit du 31 octobre 2026) : la liste des missions
 // communes du dépôt par famille, une recherche et un filtre de famille, « Choisir » (un résumé plat de la mission), « Tirer au sort »
-// parmi celles que le pilote n'a pas encore volées, et « Préparer ce vol » par la porte de Carburant (#fuel?mission=<id>). Le module lit,
-// n'écrit rien : les missions ont un seul auteur (le CPCO de la V2), le vol est écrit par Carburant. Pas encore : l'enveloppe, le lecteur
+// parmi celles que le pilote n'a pas encore volées, et « Préparer ce vol » par la porte de Carburant (#fuel?mission=<id>). Le module
+// n'écrit que les missions qu'un pilote ajoute depuis des fichiers YAML (« Ajouter des missions », SOG-0212 b, lecture dans add.js) ;
+// le vol est écrit par Carburant. Pas encore : l'enveloppe, le lecteur
 // page à page, l'affectation (§ 5–6).
 import * as MS from '../../frame/lib/mission.js';
+import * as ADD from './add.js'; // « Ajouter des missions » : la lecture des YAML avant toute écriture (SOG-0212 b)
 import * as MC from '../../frame/lib/mission_categories.js'; // les catégories de la compagnie (SOG-0041, § 10.38)
 import {
   familyParts,
@@ -15,7 +17,9 @@ export const meta = {
   apps: ['company'], // l'application Compagnie (?app=company), seule (décision de l'utilisateur, 1er nov. 2026)
   level: 1,
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
-  files: ['../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/mission_categories.js', '../report/vocab.js'],
+  files: ['add.js', '../../frame/lib/mission.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/mission_categories.js',
+    '../report/vocab.js'
+  ],
   reads: ['missions/', 'cr/',
     'airline/'
   ], // les missions et leur registre ; les comptes rendus (« volée le … ») ; les catégories de la compagnie
@@ -28,7 +32,12 @@ export const meta = {
       s = `${m[1]}${t ? ` ${t}` : ''}`;
     return [s, s, s, s];
   },
-  writes: []
+  // les missions ajoutées depuis un YAML (SOG-0212 b) : missions/<lettre>_<FAMILLE>/<ID>/mission<ID>.yaml, jamais le registre (une vue
+  // dérivée des fichiers, SOG-0036 : les fichiers hors registre sont listés à l'affichage suivant)
+  writes: [{
+    prefix: 'missions/',
+    merge: 'record'
+  }]
 };
 
 // la fiche en deux niveaux (§ 10.45) : un écran après l'autre sur un module étroit ; côte à côte (première page à gauche, détail au
@@ -96,6 +105,71 @@ const TX = {
   more: ['{n} autres', '{n} more', '{n} weitere', '{n} más'],
   count: ['{n} missions', '{n} missions', '{n} Missionen', '{n} misiones'],
   count1: ['{n} mission', '{n} mission', '{n} Mission', '{n} misión'], // le singulier : fr 0 et 1, en / de / es 1 (frame/lib/plural.js)
+  // « Ajouter des missions » (SOG-0212 b) : choisir ou coller du YAML, voir ce qui est lu, puis écrire
+  add: ['Ajouter des missions', 'Add missions', 'Missionen hinzufügen', 'Añadir misiones'],
+  addHint: [
+    'Un ou plusieurs fichiers YAML de missions (un fichier peut en porter plusieurs), ou un YAML collé. Rien n’est écrit avant « Ajouter ».',
+    'One or more YAML mission files (a file may hold several), or a pasted YAML. Nothing is written before « Add ».',
+    'Eine oder mehrere YAML-Missionsdateien (eine Datei kann mehrere enthalten) oder eingefügtes YAML. Vor „Hinzufügen“ wird nichts geschrieben.',
+    'Uno o varios archivos YAML de misiones (un archivo puede contener varias), o un YAML pegado. Nada se escribe antes de «Añadir».'
+  ],
+  addFiles: ['Fichiers YAML', 'YAML files', 'YAML-Dateien', 'Archivos YAML'],
+  addPaste: ['ou collez un YAML ici', 'or paste a YAML here', 'oder YAML hier einfügen', 'o pegue un YAML aquí'],
+  pasted: ['texte collé', 'pasted text', 'eingefügter Text', 'texto pegado'],
+  addRead: ['Lire', 'Read', 'Lesen', 'Leer'],
+  addNothing: ['Choisissez un fichier ou collez un YAML.', 'Choose a file or paste a YAML.',
+    'Wählen Sie eine Datei oder fügen Sie YAML ein.',
+    'Elija un archivo o pegue un YAML.'
+  ],
+  addFound: ['{n} mission(s) lue(s)', '{n} mission(s) read', '{n} Mission(en) gelesen', '{n} misión(es) leída(s)'],
+  addRefused: ['Refusées', 'Refused', 'Abgelehnt', 'Rechazadas'],
+  addDo: ['Ajouter ({n})', 'Add ({n})', 'Hinzufügen ({n})', 'Añadir ({n})'],
+  personal: ['Personnel', 'Personal', 'Persönlich', 'Personal'],
+  exists: ['existe déjà : remplacer ?', 'already exists: replace?', 'existiert bereits: ersetzen?', 'ya existe: ¿reemplazar?'],
+  added: ['{n} mission(s) ajoutée(s) : elles partent à la prochaine synchronisation.',
+    '{n} mission(s) added: they leave at the next synchronisation.',
+    '{n} Mission(en) hinzugefügt: Sie gehen bei der nächsten Synchronisierung.',
+    '{n} misión(es) añadida(s): salen en la próxima sincronización.'
+  ],
+  addedElsewhere: ['{n} d’entre elles ne sont pas de cette compagnie (Personnel ou une autre) : elles ne sont pas dans cette liste.',
+    '{n} of them are not of this airline (Personal or another): they are not in this list.',
+    '{n} davon gehören nicht zu dieser Gesellschaft (Persönlich oder eine andere): Sie stehen nicht in dieser Liste.',
+    '{n} de ellas no son de esta compañía (Personal u otra): no están en esta lista.'
+  ],
+  addFailed: ['Écriture refusée ({e}) : rien d’autre n’est écrit.', 'Write refused ({e}): nothing else is written.',
+    'Schreiben abgelehnt ({e}): nichts weiter wird geschrieben.', 'Escritura rechazada ({e}): no se escribe nada más.'
+  ],
+  // les raisons d'un refus (add.js)
+  why_tooMany: ['trop de fichiers ou de missions à la fois (20 fichiers, 200 missions)',
+    'too many files or missions at once (20 files, 200 missions)',
+    'zu viele Dateien oder Missionen auf einmal (20 Dateien, 200 Missionen)',
+    'demasiados archivos o misiones a la vez (20 archivos, 200 misiones)'
+  ],
+  why_tooBig: ['fichier trop gros (1 Mo au plus)', 'file too big (1 MB at most)', 'Datei zu groß (höchstens 1 MB)',
+    'archivo demasiado grande (1 MB como máximo)'
+  ],
+  why_yaml: ['YAML illisible, ligne {l} : {m}', 'unreadable YAML, line {l}: {m}', 'YAML unlesbar, Zeile {l}: {m}',
+    'YAML ilegible, línea {l}: {m}'
+  ],
+  why_noMission: ['pas une mission (mission.id et mission.type attendus)', 'not a mission (mission.id and mission.type expected)',
+    'keine Mission (mission.id und mission.type erwartet)', 'no es una misión (se esperan mission.id y mission.type)'
+  ],
+  why_badId: ['identifiant hors règle (« A-001A » : une lettre, trois chiffres, une lettre ou rien)',
+    'id outside the rule (« A-001A »: a letter, three digits, a letter or nothing)',
+    'Kennung außerhalb der Regel („A-001A“: ein Buchstabe, drei Ziffern, ein Buchstabe oder nichts)',
+    'identificador fuera de la regla («A-001A»: una letra, tres cifras, una letra o nada)'
+  ],
+  why_badFamily: ['famille (mission.type) hors règle : des majuscules, comme COMBAT',
+    'family (mission.type) outside the rule: capitals, like COMBAT',
+    'Familie (mission.type) außerhalb der Regel: Großbuchstaben, wie COMBAT',
+    'familia (mission.type) fuera de la regla: mayúsculas, como COMBAT'
+  ],
+  why_organisation: ['organisation d’exercice (…Z) : pas un vol', 'exercise organisation (…Z): not a flight',
+    'Übungsorganisation (…Z): kein Flug',
+    'organización de ejercicio (…Z): no es un vuelo'
+  ],
+  refusedLine: ['{w} : {r}', '{w}: {r}', '{w}: {r}', '{w}: {r}'],
+  why_twice: ['en double dans ce qui est lu', 'twice in what is read', 'doppelt im Gelesenen', 'duplicada en lo leído'],
   none: ['Aucune mission dans le dépôt (missions/mission_registry.yaml).',
     'No mission in the repository (missions/mission_registry.yaml).',
     'Keine Mission im Repository (missions/mission_registry.yaml).',
@@ -225,7 +299,8 @@ export async function mount(el, ctx) {
     open: null, // { row, mission, drawn, why, err } : la mission choisie
     regWhy: {
       why: 'loading'
-    } // le registre pas encore lu, en retard ou illisible ; null une fois lu
+    }, // le registre pas encore lu, en retard ou illisible ; null une fois lu
+    add: null // « Ajouter des missions » ouvert : { items, refused, replace: Set } (items null : le choix des fichiers)
   };
   el.onclick = e => onClick(s, e);
   el.oninput = e => onInput(s, e);
@@ -373,7 +448,7 @@ function draw(s) {
   s.ctx.helpAnchor?.(() => s.open ? 'missions-open' : 'missions-list');
   for (const u of s.urls || []) URL.revokeObjectURL(u);
   s.urls = [];
-  s.el.innerHTML = `<style>${STYLE}</style><h1>${esc(s.tt(meta.title))}</h1>${s.open ? missionHtml(s) : listHtml(s)}`;
+  s.el.innerHTML = `<style>${STYLE}</style><h1>${esc(s.tt(meta.title))}</h1>${s.open ? missionHtml(s) : s.add ? addHtml(s) : listHtml(s)}`;
   if (s.open?.mission && !s.open.mission.hasCoords) legacyPngs(s);
 }
 
@@ -383,13 +458,13 @@ const day = d => /^\d{4}-\d{2}-\d{2}$/.test(d) ? d.split('-').reverse().join('/'
 /** La liste : « Tirer au sort », recherche, famille, puis les résultats (resultsHtml). */
 function listHtml(s) {
   const w = s.regWhy;
-  if (!s.rows.length) return `<div class="f-card"><p class="f-muted" data-why="${esc(w?.why || 'none')}">${esc(w?.why === 'loading' ? s.tt(TX.regLoading) : w?.why === 'late' ? s.tt(TX.regLate) : w?.why === 'unreadable' ? s.tt(TX.regUnreadable, { e: w.err }) : s.tt(TX.none))}</p></div>`;
+  if (!s.rows.length) return `<div class="f-card"><div class="f-row"><button type="button" data-do="add">${esc(s.tt(TX.add))}</button></div><p class="f-muted" data-why="${esc(w?.why || 'none')}">${esc(w?.why === 'loading' ? s.tt(TX.regLoading) : w?.why === 'late' ? s.tt(TX.regLate) : w?.why === 'unreadable' ? s.tt(TX.regUnreadable, { e: w.err }) : s.tt(TX.none))}</p></div>`;
   const families = [...new Set(s.rows.filter(r => ofAirline(s, r)).map(r => r.family).filter(Boolean))].sort(),
     // les catégories connues de la compagnie que ses missions portent, dans l'ordre de sa liste ; sans elles, pas de filtre
     held = new Set(s.rows.filter(r => ofAirline(s, r)).map(r => catOf(s, r)?.id).filter(Boolean)),
     cats = s.cats.all.filter(c => held.has(c.id)),
     lang = s.ctx.lang?.() || 'fr';
-  return `<div class="f-card" data-pane="list"><div class="f-row"><button type="button" class="primary" data-do="draw">${esc(s.tt(TX.draw))}</button></div>
+  return `<div class="f-card" data-pane="list"><div class="f-row"><button type="button" class="primary" data-do="draw">${esc(s.tt(TX.draw))}</button><button type="button" data-do="add">${esc(s.tt(TX.add))}</button></div>
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.search))}</span><input type="search" data-k="q" value="${esc(s.q)}" placeholder="${esc(s.tt(TX.search))}" autocomplete="off"><small class="f-muted" data-searchhint>${esc(s.tt(TX.searchHint))}</small></label>
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.allFamilies))}</span><select data-k="family"><option value="">${esc(s.tt(TX.allFamilies))}</option>${families.map(f => `<option value="${esc(f)}"${s.family === f ? ' selected' : ''}>${esc(familyText(f, s.ctx.lang?.() || 'fr'))}</option>`).join('')}</select></label>
     ${cats.length ? `<label class="f-field"><span class="f-sr">${esc(s.tt(TX.allCategories))}</span><select data-k="category"><option value="">${esc(s.tt(TX.allCategories))}</option>${cats.map(c => `<option value="${esc(c.id)}"${s.category === c.id ? ' selected' : ''}>${esc(MC.nameOf(s.cats, c.id, lang))}</option>`).join('')}</select></label>` : ''}
@@ -556,6 +631,18 @@ async function openMission(s, row, drawn = false) {
 
 /** Saisie : la recherche et la famille filtrent la liste. */
 function onInput(s, e) {
+  if (s.add?.items && e.target?.dataset?.replace) {
+    e.target.checked ? s.add.replace.add(e.target.dataset.replace) : s.add.replace.delete(e.target.dataset.replace);
+    const b = s.el.querySelector('[data-do=addwrite]');
+    if (b) {
+      const n = toWrite(s).length;
+      b.textContent = s.tt(TX.addDo, {
+        n
+      });
+      b.disabled = !n;
+    }
+    return;
+  }
   const k = e.target?.dataset?.k;
   if (k !== 'q' && k !== 'family' && k !== 'category') return;
   s[k] = e.target.value;
@@ -595,5 +682,99 @@ function onClick(s, e) {
       });
     case 'first':
       return history.back();
+    case 'add':
+      s.add = {
+        items: null,
+        refused: [],
+        replace: new Set()
+      };
+      return draw(s);
+    case 'addcancel':
+      s.add = null;
+      return draw(s);
+    case 'addread':
+      return addRead(s);
+    case 'addwrite':
+      return addWrite(s);
   }
+}
+
+// ---------------------------------------------------------------- « Ajouter des missions » (SOG-0212 b)
+/** Les missions lues qui seront écrites : les nouvelles, et celles qui existent quand « remplacer » est coché. */
+const toWrite = s => (s.add?.items || []).filter(i => !i.exists || s.add.replace.has(i.id));
+/** L'écran : le choix (fichiers, texte collé), puis ce qui est lu avant d'écrire. */
+function addHtml(s) {
+  const a = s.add,
+    head = `<h2>${esc(s.tt(TX.add))}</h2>`;
+  if (!a.items) return `<div class="f-card" data-pane="add">${head}<p class="f-muted">${esc(s.tt(TX.addHint))}</p>
+    <label class="f-field"><span>${esc(s.tt(TX.addFiles))}</span><input type="file" data-k="addfiles" accept=".yaml,.yml,text/yaml,application/yaml" multiple></label>
+    <label class="f-field"><span class="f-sr">${esc(s.tt(TX.addPaste))}</span><textarea data-k="addtext" rows="8" spellcheck="false" placeholder="${esc(s.tt(TX.addPaste))}"></textarea></label>
+    <div class="f-row"><button type="button" class="primary" data-do="addread">${esc(s.tt(TX.addRead))}</button><button type="button" data-do="addcancel">${esc(s.tt(TX.back))}</button></div></div>`;
+  const lang = s.ctx.lang?.() || 'fr',
+    n = toWrite(s).length,
+    item = i => `<div class="f-item" data-add="${esc(i.id)}"><span><b>${esc(i.id)}</b> ${esc(i.title)}</span><span class="f-muted">${esc([familyText(i.family, lang), i.series, i.airline || s.tt(TX.personal)].filter(Boolean).join(' · '))}</span>${i.exists ? `<label class="f-check"><input type="checkbox" data-replace="${esc(i.id)}"${a.replace.has(i.id) ? ' checked' : ''}> ${esc(s.tt(TX.exists))}</label>` : ''}</div>`,
+    why = r => s.tt(TX[`why_${r.reason}`] || TX.why_noMission, {
+      l: r.line || '?',
+      m: r.msg || ''
+    });
+  return `<div class="f-card" data-pane="add">${head}<p class="f-muted" data-found>${esc(s.tt(TX.addFound, { n: a.items.length }))}</p>
+    <div class="f-list" data-addlist>${a.items.map(item).join('')}</div>
+    ${a.refused.length ? `<h3 class="f-muted">${esc(s.tt(TX.addRefused))}</h3><ul data-refused>${a.refused.map(r => `<li data-reason="${esc(r.reason)}">${esc(s.tt(TX.refusedLine, { w: [r.name, r.id].filter(Boolean).join(' · '), r: why(r) }))}</li>`).join('')}</ul>` : ''}
+    <div class="f-row"><button type="button" class="primary" data-do="addwrite"${n ? '' : ' disabled'}>${esc(s.tt(TX.addDo, { n }))}</button><button type="button" data-do="addcancel">${esc(s.tt(TX.back))}</button></div></div>`;
+}
+/** « Lire » : les fichiers choisis et le texte collé, lus par add.js ; rien n'est écrit. */
+async function addRead(s) {
+  const files = [...(s.el.querySelector('[data-k=addfiles]')?.files || [])],
+    pasted = s.el.querySelector('[data-k=addtext]')?.value || '',
+    sources = [];
+  for (const f of files.slice(0, ADD.LIMITS.files + 1)) sources.push({
+    name: f.name,
+    // un fichier trop gros n'est pas lu en entier : add.js le refuse à sa taille
+    text: f.size > ADD.LIMITS.bytes ? ' '.repeat(ADD.LIMITS.bytes + 1) : await f.text().catch(() => '')
+  });
+  if (pasted.trim()) sources.push({
+    name: s.tt(TX.pasted),
+    text: pasted
+  });
+  if (!sources.length) return s.ctx.notify(s.tt(TX.addNothing), 'warn');
+  if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+  const paths = new Set(await Promise.resolve().then(() => s.ctx.data.list('missions/')).catch(() => null) || []),
+    known = new Map(s.rows.map(r => [r.id, r]));
+  if (S !== s || !s.add) return;
+  const got = ADD.read(sources, {
+    yaml: globalThis.jsyaml,
+    known,
+    paths
+  });
+  s.add = {
+    ...got,
+    replace: new Set()
+  };
+  draw(s);
+}
+/** « Ajouter (n) » : chaque mission à sa place ; la liste les montre aussitôt (celles de la compagnie courante). */
+async function addWrite(s) {
+  const list = toWrite(s);
+  if (!list.length) return;
+  let done = 0;
+  for (const i of list) {
+    try {
+      await s.ctx.data.put(i.path, i.text, {
+        module: 'missions'
+      });
+    } catch (e) {
+      s.ctx.notify(s.tt(TX.addFailed, {
+        e: String(e?.message || e).slice(0, 120)
+      }), 'error');
+      break;
+    }
+    done++;
+    const row = MS.rowOfMission(i.doc, i.path);
+    if (row) s.rows = [...s.rows.filter(r => r.id !== i.id), row].sort((a, b) => b.id.localeCompare(a.id));
+  }
+  if (S !== s) return;
+  const away = list.slice(0, done).filter(i => s.co?.filter && MS.ownerOf(i) !== s.co.code).length;
+  if (done) s.ctx.notify(`${s.tt(TX.added, { n: done })}${away ? ` ${s.tt(TX.addedElsewhere, { n: away })}` : ''}`, 'ok');
+  s.add = null;
+  draw(s);
 }

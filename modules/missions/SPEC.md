@@ -91,6 +91,18 @@ on the same data. The CPCO (authoring) stays V2 until rebuilt as the third appli
   first page on the left, detail in the main column). Cases N9, N10 (390 px, captures seen).
 - Below Complet, the list is read-only in the same way; the module needs no level to choose.
 
+### 3 bis. Add missions from YAML (SOG-0212 b)
+
+- « Ajouter des missions » (list header, also when the list is empty): files chosen (`<input type=file multiple>`, .yaml / .yml) and/or a
+  pasted YAML, read by `modules/missions/add.js` `read(sources, { yaml, known, paths })` (pure): several documents (`---`), a
+  `missions:` list, a top-level list or one mission; bounds 20 files, 1 MB each, 200 missions; id `^[A-Z]-\d{3}[A-Z]?$`, family
+  (`mission.type`) `^[A-Z][A-Z0-9_]{1,23}$`; an organisation (…Z), a duplicate in what is read, a file that is not a mission or not
+  YAML (its line said) are refused with the reason. The screen shows what is read (id, title, family, series, airline or « Personnel »)
+  and what is refused BEFORE writing. « Ajouter (n) » writes each mission at `missions/<letter>_<FAMILY>/<ID>/mission<ID>.yaml` — a path
+  built from the id and family, never from the file —, or at the existing mission's own path when its id is already listed, only if
+  « remplacer ? » is ticked; a file holding one mission is written as it is (comments kept), a mission of a pool is rewritten
+  (`jsyaml.dump`). The registry is not written: a mission file absent from it is listed at the next display (SOG-0036). N19.
+
 ## 4. From the mission to the flight: `missionFlight(mission, assignment?)`
 
 Pure function of `frame/lib/mission.js`, benched, one output shape consumed by Fuel through its "Nouveau vol :

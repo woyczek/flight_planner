@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Missions: « Ajouter des missions » from YAML files or a pasted YAML** (`modules/missions/add.js`; Missions SPEC § 3 bis, DECISIONS,
+  help; noreg N19; SOG-0212 b). A pool in one file, what is read and refused shown before writing, an existing mission replaced only when ticked.
 - **Missions: a mission whose registry row lists its summary first opens** (`frame/lib/mission.js` `readRegistry`; Missions DECISIONS;
   noreg N18; SOG-0212 (a)). 62 of the 153 missions of a real repository said « fichier illisible »; a YAML error now says its line.
 - **Missions: « 1 mission », singular** (the count of the list said « 1 missions »; noreg N17).

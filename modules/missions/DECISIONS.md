@@ -92,3 +92,10 @@
   does not name the file. Now the first `.yaml` of `files`, else the file named after its folder (`F_FIRE/F-071` →
   `missionF-071.yaml`, the rule of `missionPath`), else `mission<ID>.yaml`: 151 of 153 read, the 2 missing said with their path. A
   YAML error is said at its line (« ligne 12 : … », js-yaml's reason). N18; counter-test on origin/v3: both « illisible ».
+- **10 Nov 2026 — « Ajouter des missions » from YAML, without writing the registry** (SOG-0212 b, user: « rajouter rapidement la
+  possibilité d'ajouter une mission (ou un pool de missions) depuis un yaml »). The shortest form that works: choose files or paste, see
+  what is read and refused, « Ajouter (n) ». The registry (17 000 lines on the user's machine, written by the CPCO) is NOT rewritten,
+  against the brief: rewriting it means a full re-dump (comments and layout lost) and a merge conflict with every CPCO export, while
+  mission files absent from it are already listed at each display (SOG-0036); the added missions show at once. Existing missions are
+  replaced only when ticked, at their own path (never a second copy elsewhere). Untrusted input: bounds, id and family rules, the
+  path built from them. N19; counter-test on origin/v3: no « Ajouter des missions ».
