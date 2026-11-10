@@ -4,8 +4,8 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "9bba6f0",
-  "fiches": 222,
+  "organisation": "26e4c7e",
+  "fiches": 223,
   "untranslated": 1,
   "priorities": 152
  },
@@ -1690,6 +1690,15 @@
      "en": "Missions: “unreadable file” on many missions; add a mission or a batch of missions from a YAML; search in another airline",
      "de": "Missionen: „Datei unlesbar“ bei vielen Missionen; eine Mission oder einen Satz aus einer YAML hinzufügen; in einer anderen Gesellschaft suchen",
      "es": "Misiones: «archivo ilegible» en muchas misiones; añadir una misión o un lote desde un YAML; buscar en otra compañía"
+    },
+    {
+     "id": "SOG-0223",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Changer une mission de compagnie (une par une, ou en lot)",
+     "en": "Move a mission to another airline (one by one, or in a batch)",
+     "de": "Eine Mission einer anderen Gesellschaft zuweisen (einzeln oder im Stapel)",
+     "es": "Cambiar una misión de compañía (una a una o en lote)"
     }
    ]
   },
@@ -2515,7 +2524,7 @@
     {
      "id": "SOG-0180",
      "kind": "bug",
-     "state": "done",
+     "state": "later",
      "fr": "Données : revoir tout le parcours de mise à jour de la base (un seul geste, des messages qui nomment des boutons qui existent)",
      "en": "Data: rework the whole base update path (one gesture, messages that name buttons that exist)",
      "de": "Daten: den ganzen Aktualisierungsweg der Basis überarbeiten (eine Geste, Meldungen nennen vorhandene Schaltflächen)",
@@ -2736,7 +2745,7 @@
     {
      "id": "SOG-0160",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Roadmap : un mode « Priorités » sans voies pour ordonner toutes les cartes, et les replanifier (en intégration, en développement, backlog)",
      "en": "Roadmap: a “Priorities” view without lanes to order every card and replan it (in integration, in development, backlog)",
      "de": "Roadmap: eine Ansicht „Prioritäten“ ohne Bahnen, um alle Karten zu ordnen und umzuplanen (in Integration, in Entwicklung, Backlog)",
