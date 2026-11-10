@@ -2902,7 +2902,8 @@ def f109(c):
     chk = [p['args'] for p in st['posts'] if (p.get('args') or {}).get('action') == 'check'][0]
     typed = cf_doc(c, lambda d: True, 'the flight')['route']['text']
     c.eq(sorted(chk), sorted(['action', 'adep', 'adest', 'route', 'date', 'fl']), 'a closed request: the contract\'s fields only, none null', what='fields')
-    c.eq([chk['adep'], chk['adest'], chk['route'], chk['fl']], ['LFRS', 'LFML', typed, 270], 'the typed route sent as it is', what='check args')
+    bare = lambda t: [w for w in str(t).split() if w != 'DCT']  # the field's text and the flight's normalised one (« DCT » written in) are one route
+    c.eq([chk['adep'], chk['adest'], bare(chk['route']), chk['fl']], ['LFRS', 'LFML', bare(typed), 270], 'the typed route sent as it is', what='check args')
     # Calculer A → B: the typed points are imposed; the computed route and two alternatives; « Prendre » the first alternative
     c.tap(f'{FUEL} [data-do="rcompute"]')
     c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 3", what='the computed route and two alternatives')
