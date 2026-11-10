@@ -5355,3 +5355,33 @@ def d_gcpath(c):
     c.wait(2000)
     c.eq(c.js("() => !!window.__mp.S.gc"), False, 'a direct route has no dotted great circle beside its line (the line is the great circle)', what='dotted')
     c.shot('D167_gc_path_390.png')
+
+
+@case('D168', 'At a wide zoom the aerodromes kept are the most important ones of any country: a field the base does not carry (the tower, in a foreign file) is not « no »', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0227 (the user: « à zoom arrière massif, on ne voit plus que les AD du SIA, y compris FMEE »): the rank of an aerodrome used `controlled` and `afis`, fields only the SIA files carry (the FAA, Canadian… files have none: the field is missing); a small French field with a tower (1 000 + 400 + a short runway) outranked KJFK (1 000 + a long runway); a missing field is unknown, the tower is then deduced from the runway (hard, 2 000 m and up)')
+def d_adrank(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    r = c.js("""() => { const R = window.SiaAero.adRank, fr = { icao: 'LFXX', hardLen: 1200, controlled: true, public: true, runways: [{}] }, frNo = { icao: 'LFYY', hardLen: 1200, controlled: false, public: true, runways: [{}] },
+      us = { icao: 'KJFK', hardLen: 4423, public: true, runways: [{}, {}, {}, {}] }, usSmall = { icao: 'KXYZ', hardLen: 900, public: true, runways: [{}] }, frBig = { icao: 'LFPG', hardLen: 4200, controlled: true, public: true, runways: [{}, {}, {}, {}] };
+      return { fr: R(fr), frNo: R(frNo), us: R(us), usSmall: R(usSmall), frBig: R(frBig) } }""")
+    c.ok(r['us'] > r['fr'], str(r), 'a large foreign airport (no tower field) outranks a small French field with a tower')
+    c.ok(r['usSmall'] < r['fr'] and r['usSmall'] <= r['frNo'] + 1, str(r), 'a small foreign field does not outrank the French ones of the same size')
+    c.ok(abs(r['us'] - r['frBig']) < 150, str(r), 'two large airports of two countries rank alike')
+
+
+@case('D169', 'The ground panel says when the source does not name the taxiways: « n of m have no name in the source »', 'D',
+      tags=('maps',), designs=('standard',), night=False, phone=False,
+      rule='SOG-0232 (« TWY : pas de labels sur LFST ? »): proc/ground/LFST.json (OpenStreetMap) carries 213 taxiway lines, 13 with a name; a map without names is not a defect of the Map: the panel says how many are unnamed')
+def d_unnamed(c):
+    _ground_open(c)
+    c.js("""async () => { const S = window.__mp.S, fx = await S.ctx.aerodb.ground('LFPO'), items = fx.items.map((it, i) => it.kind === 'twy' && i % 2 ? { ...it, name: '' } : it);
+      S.ctx.aerodb.ground = async icao => icao === 'LFPO' ? { ...fx, items } : null; S.ground = null; return true }""")
+    _ground_at(c, 16, 1500, _PARK_AT)
+    c.js("async () => { const V = await import('/modules/maps/vfr.js'); V.pinAd({ icao: 'LFPO', name: 'LFPO TEST', lat: 48.7233, lon: 2.3794 }) }")
+    c.until("() => !!document.querySelector('.mp-ad-ground')", timeout=8000, what='the aerodrome card offers the ground list')
+    c.tap('.mp-ad-ground')
+    c.until("() => !!document.querySelector('.mp-gd-unnamed')", timeout=8000, what='the panel says some taxiways have no name')
+    t = c.js("() => document.querySelector('.mp-gd-unnamed').textContent")
+    c.ok(re.search(r'\d+', t) is not None and ('OpenStreetMap' in t), t, 'it says how many and that the source does not name them')

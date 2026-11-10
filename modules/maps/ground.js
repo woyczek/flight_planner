@@ -522,9 +522,16 @@ const listHtml = icao => {
   const rec = recOf(icao);
   if (!rec || rec.status === 'loading') return `<p class="mp-gd-msg">${esc(tt(TX.gLoading))}</p>`;
   if (rec.status === 'none') return noneHtml(icao);
-  const rows = rowsOf(icao);
-  if (!rows.length) return `<p class="mp-gd-msg">${esc(tt(TX.gNoMatch))}</p>`;
-  return srcHtml(rec) + rows.slice(0, ROWS_MAX).map(rowHtml).join('') + (rows.length > ROWS_MAX ? `<p class="mp-gd-msg">${esc(tt(TX.gMore, {
+  const rows = rowsOf(icao),
+    tw = rec.items.filter(it => it.kind === 'twy'),
+    unnamed = tw.filter(it => !it.name).length,
+    // la source ne nomme pas tout (OpenStreetMap : LFST, 13 voies nommées sur 213) : dit, pour qu'une carte sans noms ne passe pas pour un défaut (SOG-0232)
+    said = unnamed ? `<p class="mp-gd-msg f-muted mp-gd-unnamed">${esc(tt(TX.gUnnamed, {
+      n: unnamed,
+      m: tw.length
+    }))}</p>` : '';
+  if (!rows.length) return said + `<p class="mp-gd-msg">${esc(tt(TX.gNoMatch))}</p>`;
+  return srcHtml(rec) + said + rows.slice(0, ROWS_MAX).map(rowHtml).join('') + (rows.length > ROWS_MAX ? `<p class="mp-gd-msg">${esc(tt(TX.gMore, {
     n: rows.length - ROWS_MAX
   }))}</p>` : '');
 };

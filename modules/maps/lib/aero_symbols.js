@@ -1383,7 +1383,12 @@
    *  la longueur de la plus longue piste en dur, le nombre de pistes, un terrain d'État ou public ; un héliport, un terrain d'eau et un
    *  terrain militaire fermé au public derrière. Un nombre fini, sans effet de bord ; une valeur du fichier hors norme ne compte pas. */
   const num = (v, max) => Number.isFinite(+v) ? Math.min(max, Math.max(0, +v)) : 0;
-  const AD_RANK = a => (/^[A-Z]{4}$/.test(a.icao || '') ? 1000 : 0) + (a.controlled ? 400 : a.afis ? 150 : 0) + num(a.hardLen, 5000) /
+  // la tour et l'AFIS ne sont connus que des terrains du SIA (le fichier de la FAA, des Pays-Bas, de la Chine… ne les porte pas : le champ manque) : un champ absent n'est pas « non » —
+  // à rang égal un petit terrain français à tour passait avant KJFK, et à zoom arrière on ne voyait plus que ceux du SIA (SOG-0227) ; sans le champ, la tour est déduite de la piste
+  // (en dur, 2 000 m et plus), le même rang pour tous les pays
+  const hasTwr = a => a.controlled !== undefined ? !!a.controlled : num(a.hardLen, 5000) >= 2000,
+    hasAfis = a => a.afis !== undefined ? !!a.afis : false,
+    AD_RANK = a => (/^[A-Z]{4}$/.test(a.icao || '') ? 1000 : 0) + (hasTwr(a) ? 400 : hasAfis(a) ? 150 : 0) + num(a.hardLen, 5000) /
     10 + 25 * Math.min(4,
       Array.isArray(a.runways) ? a.runways.length : num(a.hardLen, 1) > 0 ? 1 : 0) + (a.state ? 50 : 0) + (a.public ? 20 : 0) - (a
       .type === 'HP' ? 600 : 0) -
@@ -1562,6 +1567,7 @@
     pass,
     drawPoints,
     drawAerodrome,
+    adRank: a => AD_RANK(a),
     drawNavaid,
     drawObstacle
   };

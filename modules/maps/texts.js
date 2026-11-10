@@ -452,6 +452,11 @@ export const TX = {
   },
   gRunway: ['Piste', 'Runway', 'Piste', 'Pista'],
   gFilter: ['Filtrer par nom', 'Filter by name', 'Nach Namen filtern', 'Filtrar por nombre'],
+  gUnnamed: ['{n} voies sur {m} n’ont pas de nom dans la source (OpenStreetMap) : elles sont tracées, pas nommées.',
+    '{n} of {m} taxiways have no name in the source (OpenStreetMap): they are drawn, not named.',
+    '{n} von {m} Rollwegen haben in der Quelle keinen Namen (OpenStreetMap): sie sind gezeichnet, nicht benannt.',
+    '{n} de {m} calles no tienen nombre en la fuente (OpenStreetMap): se dibujan, sin nombre.'
+  ],
   gNotDrawn: ['non dessiné', 'not drawn', 'nicht gezeichnet', 'no dibujado'],
   gLoading: ['Lecture des données du sol…', 'Reading the ground data…', 'Bodendaten werden gelesen…', 'Leyendo los datos del suelo…'],
   gNone: ['Lisez les procédures du terrain pour avoir le sol', 'Read the aerodrome’s procedures to get the ground',

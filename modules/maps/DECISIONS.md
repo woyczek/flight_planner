@@ -2299,6 +2299,15 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done**: the light drawing paints every airway in the low colour (high ones too); a zoom that crosses a threshold *during* a gesture shows the new state only at rest.
 - **Noreg** D141 (zoom 8: the airways are in the light drawing and stroked while moving; zoom 3: none, no stroke; red before: 3 airways at zoom 3).
 
+## Aerodromes at a wide zoom: the rank does not depend on the country (10 Nov 2026, SOG-0227, capture 164151); the ground without names (SOG-0232)
+- **SOG-0227 — cause** (found in the code, checked on the real files served by the user's launcher, read-only): the base has 80 zones (the US: 6 034 aerodromes, Canada 442…), all with a runway length and `public`;
+  but `controlled` (the tower) and `afis` exist only in the SIA files (the AIXM parser); the FAA's, for one, has no such field. `AD_RANK` read the missing field as « no tower »: a small French field with a tower
+  (1 000 + 400 + 120) outranked KJFK (1 000 + 442 + 100) and, at a wide zoom, where only the best of the view are kept, only the SIA's remained — Réunion, Guyane, Tahiti. It is the Map's rank, not the base.
+  **Done**: a missing field is unknown, not « no » (`hasTwr`: the field when present, else deduced from the runway — hard, 2 000 m and more); the same rank for all countries. Noreg D168 (red before: KJFK 1 562 < LFXX 1 565).
+  AeroDB: no change needed; adding the tower to the other files would refine it (said).
+- **SOG-0232, ground side**: `proc/ground/LFST.json` (OpenStreetMap, 10 Nov) carries 213 taxiway lines and 55 aprons, **13 taxiways with a name** and no apron name: the Map has nothing to write. The ground
+  panel now says it (« n taxiways of m have no name in the source (OpenStreetMap): they are drawn, not named »). D169.
+
 ## One path for a direct leg: the line, the marks and the great circle (10 Nov 2026, SOG-0233; captures 171614, 171816, 171826, 171832, KDEN BGNN LFST)
 - **Three paths on the map**: (1) the solid line, straight between the route points — on a Mercator map that is a rhumb line, not the way a direct is flown; (2) the fine dotted great circle KDEN → LFST
   (SOG-0145, a reference for the whole route); (3) the marks « 1250, 1500… » (round dots with their NM), beside the solid line. **Which was right**: the **distance** — `distances()` is the great-circle
