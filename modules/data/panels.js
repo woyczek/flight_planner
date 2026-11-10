@@ -74,7 +74,7 @@ function personalName(id) {
   return catSource(id)?.n?.[li()] || tt(TX.personalName[id]);
 }
 /** Les sources sous licence personnelle cochées ET proposées (celles d'une zone décochée ne partent pas). */
-function personalPicked(ticked) {
+export function personalPicked(ticked) {
   return S.certified ? M.personalSources(ticked).filter(p => !M.isLocalOnly(p)).map(p => p.id) :
 []; // la coche unique débloque les sources à usage personnel des zones cochées, sauf celles lues sur ce poste seulement (jamais envoyées)
 }

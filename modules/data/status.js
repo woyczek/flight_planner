@@ -22,6 +22,7 @@ import {
 import {
   buildZones,
   gateOf,
+  personalPicked,
   renderBuild,
   sourcesWhy
 } from './panels.js';
@@ -33,11 +34,15 @@ export const statusKnown = () => !!S.known?.includes('base/status');
  *  tant qu'une lecture n'a pas abouti ; une lecture en cours pendant un autre appel rend le même résultat. Ne lève jamais. */
 export function fetchStatus(ids) {
   if (!S.ctx.launcher || !statusKnown() || S.run) return Promise.resolve(null);
-  if (S.statusP) return S.statusP;
   const me = S,
     parts = ids?.length ? M.chunksOf(ids) : [
       []
-    ];
+    ],
+    key = JSON.stringify([ids || [], S.certified ===
+      true
+    ]); // la même demande : la lecture en cours ; une autre (la case « usage personnel » a changé) : elle attend la fin de celle-là
+  if (S.statusP) return S.statusKey === key ? S.statusP : S.statusP.then(() => S !== me ? null : fetchStatus(ids));
+  S.statusKey = key;
   S.statusP = (async () => {
     let st = null;
     try {
@@ -45,8 +50,10 @@ export function fetchStatus(ids) {
         const part = M.statusOf(await S.ctx.launcher.job(ROUTE, {
           set: 'base',
           verb: 'status',
+          // `personal` : exactement ce que la construction envoie (la coche unique « Je certifie… » cochée : les sources personnelles de ces zones ; décochée : aucune) — sans lui une zone construite avec LFV, NATS, ENAIRE ou AirNav se disait « à reconstruire » pour toujours (inputs-changed)
           args: zones.length ? {
-            zones
+            zones,
+            personal: personalPicked(zones)
           } : {}
         }, {
           onProgress: () => {},

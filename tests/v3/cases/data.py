@@ -685,6 +685,8 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
                     st['current'] = busy_view
             elif 'id=' in u.query and st['posts'] and st['posts'][-1].get('verb') == 'status' and st.get('status') is not None:
                 res = st['status']
+                if callable(res):   # the answer depends on what was asked (args: zones, personal), like the real launcher's
+                    res = res((st['posts'][-1].get('args') or {}))
                 if st.get('by_args'):   # like the real launcher: the state of the zones asked for only (60 at most)
                     want = (st['posts'][-1].get('args') or {}).get('zones')
                     res = {**res, 'zones': {k: v for k, v in res['zones'].items() if want is None or k in want}}
@@ -5554,4 +5556,45 @@ def l74(c):
         c.wait(250)
     c.eq(fetches(), [['us'], ['us']], 'the third set: the download of us runs (it reads the three files)', what='fetch after three')
     c.eq([p['args']['zones'] for p in _posts(st, 'build')], [['us']], 'then the build of us', what='build')
+    c.check_errors()
+
+
+@case('L75', 'Données: the state of the zones is read with the SAME personal sources as the build sends — a zone built with a personal source is « à jour », not « à reconstruire » for ever; the box « Je certifie… » re-reads the state (SOG-0180, the user: « nonsense. qu’est-ce qui est vrai ? »)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='the user, 10 Nov 18:06 (a screen that says « À reconstruire » on Sweden and, just under, « Base construite : Suède construite »): base/status was asked with zones only; the launcher compares the build with the sources it is told are allowed (personal), so a zone built with LFV was « inputs-changed » for ever; the status carries `personal` = what the build sends (the box ticked: the personal sources of those zones; unticked: none), and is read again when the box changes')
+def l75(c):
+    lang = c.lang
+
+    def status(args):   # the real launcher: a zone built with ENAIRE is up to date only when the status is told that ENAIRE may be read
+        asked = args.get('personal') or []
+        es = _zst('up-to-date') if 'enaire' in asked else _zst('stale', {'code': 'inputs-changed', 'count': 1, 'names': ['zones/es/enaire_es_enr.geojson']})
+        return _status({'ca': _zst('up-to-date'), 'es': es, 'fr': _zst('up-to-date'), 'gb': _zst('up-to-date'), 'us': _zst('up-to-date')})
+    st = _launcher(c, [], verbs=_VERBS)
+    st['status'] = status
+    st['by_args'] = True
+    cfg, _ = _fixture()
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the five pills')
+    states = lambda: c.js("[...document.querySelectorAll('[data-zstate]')].map(e => e.dataset.zstate)")
+    asked = lambda: [p['args'].get('personal') for p in st['posts'] if p['verb'] == 'status']
+    c.eq(asked()[0], [], 'the box is not ticked: the opening asks the state with no personal source', what='personal unticked')
+    c.ok('stale' in states(), states(), 'and Spain, built with ENAIRE, is said stale (the launcher cannot read the personal file)')
+    # ---- the box ticked: the same sources as the build, the state is read again, Spain is up to date
+    n = len(st['posts'])
+    c.tap('[data-certify]')
+    c.until("[...document.querySelectorAll('[data-zstate]')].every(e => e.dataset.zstate === 'up-to-date')", timeout=8000, what='every zone up to date once the state is read with the personal sources')
+    ask2 = [p['args'].get('personal') for p in st['posts'][n:] if p['verb'] == 'status']
+    c.ok(bool(ask2) and 'enaire' in ask2[-1], ask2, 'the state was read again with the personal sources the build would send (ENAIRE)')
+    if c.width in (390, 1280):
+        c.shot(f'L75_standard_{c.width}_{lang}_delivered.png')
+    # ---- « Mettre à jour » reads the state with them too: nothing to rebuild, said
+    n = len(st['posts'])
+    c.tap('[data-build] [data-verb=update]')
+    for _ in range(40):
+        if any(p['verb'] == 'status' for p in st['posts'][n:]):
+            break
+        c.wait(250)
+    c.ok(all('enaire' in (p['args'].get('personal') or []) for p in st['posts'][n:] if p['verb'] == 'status'), [p['args'].get('personal') for p in st['posts'][n:] if p['verb'] == 'status'], '« Mettre à jour » reads the state with the same personal sources')
+    c.eq(c.count('.f-modal'), 0, 'nothing to rebuild: no question', what='no question')
     c.check_errors()

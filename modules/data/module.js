@@ -31,6 +31,7 @@ import {
   renderBuild
 } from './panels.js';
 import {
+  refreshStatus,
   toggleWhy
 } from './status.js';
 import {
@@ -235,6 +236,8 @@ function onChange(e) {
   if (t.dataset.certify !== undefined) { // la coche unique « usage personnel » (SOG-0162) : un réglage du poste, retenu
     S.certified = t.checked;
     savePersonal();
+    if (S.d?.cov?.ids) refreshStatus(S.d.cov
+      .ids); // l'état par zone dépend de la coche (les sources personnelles comptent dans « fichiers changés ») : relu
     return renderBuild();
   }
   const set = t.dataset.buildZone ? S.ticked : t.dataset.item ? S.picked : null,
