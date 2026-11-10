@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: « Nouveau vol » is never lost while the flight is being read** (`modules/fuel/module.js`; Fuel SPEC, DECISIONS; noreg F130;
+  SOG-0194). The button says « Vol en cours de lecture… » and the new flight is made as soon as the flight is read.
 - **Aircraft: whose fleet, and the sheet's name opens it** (`modules/aircraft/module.js`, `sheets.js`; SPEC, DECISIONS, help; noreg M37;
   SOG-0190). « Flotte de Alpha Air · Escadrille SO »; in Fiches, a tap on the name or the line opens the sheet, no button alone on the right.
 - **Missions: the drawn mission says its family in full** (`modules/missions/module.js`; SPEC, DECISIONS; noreg N15; SOG-0187).

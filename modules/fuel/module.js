@@ -431,6 +431,8 @@ const TX = {
     'Der Flug ist gestartet. Ein neuer Flug gibt ihn auf (er wird dem Bericht nicht mehr als gestartet angeboten); das Luftfahrzeug bleibt.',
     'El vuelo está iniciado. Empezar uno nuevo lo abandona (ya no se propone al informe como iniciado); la aeronave se queda.'
   ],
+  // SOG-0194 : un appui pendant la lecture du vol n'est jamais ignoré : le bouton le dit, le geste se fait dès que le vol est lu
+  newWaiting: ['Vol en cours de lecture…', 'Reading the flight…', 'Flug wird gelesen…', 'Leyendo el vuelo…'],
   newFlightDone: ['Nouveau vol : tout est à saisir, l’appareil est gardé.', 'New flight: everything to enter, the aircraft is kept.',
     'Neuer Flug: alles einzugeben, das Luftfahrzeug bleibt.', 'Vuelo nuevo: todo por introducir, la aeronave se conserva.'
   ],
@@ -2195,12 +2197,28 @@ function newPair() {
 }
 /** « Nouveau vol » : après la question (si le vol est démarré ou porte déjà quelque chose), le vol courant remis à vide — départ,
  *  arrivée, route, procédures, niveau, OFP, devis, départ et mission — ; l'appareil reste (un choix de l'appareil, pas du vol). */
+/** Le bouton « Nouveau vol » de l'en-tête (hors du corps inerte pendant la lecture du vol) : occupé, il dit l'attente (SOG-0194). */
+function newBusy(on) {
+  const b = S?.body?.parentElement?.querySelector('[data-do="newflight"]');
+  if (!b) return;
+  if (on && !b.dataset.label) b.dataset.label = b.textContent;
+  b.disabled = !!on;
+  b.toggleAttribute('aria-busy', !!on);
+  b.textContent = on ? tt(TX.newWaiting) : b.dataset.label || tt(TX.newFlight);
+  if (!on) delete b.dataset.label;
+}
 async function newFlight() {
   const s = S,
     f = S.flight,
     r = f.route || {},
     started = !!f.started?.at;
-  if (S.flightPending) return;
+  // SOG-0194 : pendant la lecture du vol courant, l'appui n'est pas perdu : le bouton dit l'attente et flightReady fait le geste dès
+  // que le vol est lu (la question posée à ce moment, une seule fois)
+  if (S.flightPending) {
+    S.newAsked = true;
+    return newBusy(true);
+  }
+  newBusy(false);
   if ((started || r.text || r.dep || r.arr || r.points?.length || f.level?.ft || f.mission) && !(await S.ctx.ask(tt(started ? TX
       .newFlightStarted : TX.newFlightAsk)))) return;
   if (gone(s)) return;

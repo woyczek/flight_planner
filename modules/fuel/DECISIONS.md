@@ -1554,3 +1554,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   weather read of the old flight (the ✓ of the step Weather). Both are emptied now, with the route check and the unknown points. The
   Map's own drawing of the flight route, which stays on its canvas after the record is emptied (its pane says « Aucun vol prévu »), is
   the Map's (BUGS SOG told); the frozen side map is V3 Frame's.
+- **10 Nov 2026 — « Nouveau vol » during the reading of the flight** (SOG-0194, the ergonomist's decision on my lead): the button is in
+  the head, outside the body made inert while a new device reads its current flight, and `newFlight` returned without a word
+  (`if (S.flightPending) return`) — very likely the user's « rien ne disparaît », then everything empty after going through the steps.
+  Now the tap sets `newAsked` (the address `?new=1` already used it: flightReady makes the new flight once the flight is read) and the
+  button says « Vol en cours de lecture… ». The other gestures outside the inert body: the tabs Devis / Fiches only (they change the
+  view, write nothing, and work during the reading). F130 (the page taps the moment the body waits: the wait is short and uneven);
+  counter-test on origin/v3: the button unchanged, nothing made.

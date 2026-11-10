@@ -3692,3 +3692,33 @@ def f129(c):
     c.eq(doc.get('alternatives'), [], 'route_alts.json holds no route: the Map draws none', what='alternatives')
     c.eq(c.count(f'{FUEL} [data-altlist] [data-alt]'), 0, 'and the step Route lists none', what='listed routes')
     c.eq(c.js(f"document.querySelector('{FUEL} input[data-k=dep]')?.value || ''"), '', 'the step Flight is empty at once', what='departure')
+
+
+
+# the tap made by the page itself the moment the body waits (the wait of a new device is short and uneven: a tap from the case could land after
+# it); the button's state just after the tap kept in window.__nb
+_TAP_WHILE_READING = """(() => { window.__nb = null; const o = new MutationObserver(() => { const m = document.querySelector('[data-module=fuel]'),
+  b = m?.querySelector('[data-body]'), x = m?.querySelector('[data-do=newflight]');
+  if (window.__nb || !b?.inert || !x) return;
+  x.click(); window.__nb = { busy: x.hasAttribute('aria-busy'), off: x.disabled, t: x.textContent.trim() }; o.disconnect() });
+  o.observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['inert'] }) })()"""
+
+
+@case('F130', '« Nouveau vol » tapped while the current flight is still being read is never lost: the button says the wait at once, and the new flight is made as soon as the flight is read',
+      'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0194 (the ergonomist: « rien ne disparaît » — a tap during flightPending returned without a word, the button being outside the inert '
+      'body): the wait of F84 (a first synchronisation that never answers, FLIGHT_WAIT_MS), a tap on « Nouveau vol » during it')
+def f130(c):
+    held = []
+    c.context.add_init_script(_GITLAB_PILOT)
+    c.context.add_init_script(_TAP_WHILE_READING)
+    c.context.route(re.compile(r'^https://gitlab\.com/'), lambda r: held.append(r))
+    c.open('fuel', flight=False, wait=False)
+    c.until("!!window.__nb", timeout=15000, what='« Nouveau vol » tapped while the flight is being read (the body waits)')
+    b = c.js('window.__nb')
+    c.ok(b['busy'] and b['off'] and b['t'] == tx(F, 'newWaiting', c.lang), b, 'the button says the wait at once (busy, « Vol en cours de lecture… »)')
+    want = norm(tx(F, 'newFlightDone', c.lang))
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", want, timeout=12000,
+            what='the new flight is made as soon as the flight is read')
+    b = c.js("(() => { const b = document.querySelector('[data-module=fuel] [data-do=newflight]'); return { busy: b.hasAttribute('aria-busy'), off: b.disabled, t: b.textContent.trim() } })()")
+    c.ok(not b['busy'] and not b['off'] and b['t'] == tx(F, 'newFlight', c.lang), b, 'the button is back to « Nouveau vol »')
