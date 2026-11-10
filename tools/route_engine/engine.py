@@ -26,6 +26,29 @@ def nm(a,b):
     d=math.sin((y-x)/2)**2+math.cos(x)*math.cos(y)*math.sin(math.radians(b['lon']-a['lon'])/2)**2
     return 3440.065*2*math.asin(min(1,math.sqrt(d)))
 
+_LL=re.compile(r'(\d{2})(\d{2})?([NS])(\d{3})(\d{2})?([EW])')
+_NAT_A=re.compile(r'(\d{2})(\d{2})([NEWS])')      # « 5520N » : 55°N 020°W (la longitude à deux chiffres, moins de 100°)
+_NAT_B=re.compile(r'(\d{2})([NEWS])(\d{2})')      # « 55N20 » : 55°N 120°W (le « 1 » des centaines est omis)
+_QUADRANT={'N':(1,-1),'E':(1,1),'S':(-1,1),'W':(-1,-1)}      # ARINC 424 : N = nord / ouest, E = nord / est, S = sud / est, W = sud / ouest
+
+def coordinate(ident):
+    """(lat, lon) d'un point donné par ses coordonnées dans une route (SOG-0211) : « 4959N08712W » / « 49N087W » (ddmm?N dddmm?W, E et S de même) et les formes NAT à cinq signes d'ARINC 424 (« 5520N » = 55°N 020°W, « 55N20 » = 55°N 120°W ; quadrant N = N/O, E = N/E, S = S/E, W = S/O) ; None sinon."""
+    t=str(ident or '').strip().upper()
+    m=_LL.fullmatch(t)
+    if m:
+        la=int(m.group(1))+int(m.group(2) or 0)/60; lo=int(m.group(4))+int(m.group(5) or 0)/60
+        if la>90 or lo>180 or int(m.group(2) or 0)>59 or int(m.group(5) or 0)>59: return None
+        return (-la if m.group(3)=='S' else la, -lo if m.group(6)=='W' else lo)
+    m=_NAT_A.fullmatch(t)
+    if m: la,lo,q=int(m.group(1)),int(m.group(2)),m.group(3)
+    else:
+        m=_NAT_B.fullmatch(t)
+        if not m: return None
+        la,q,lo=int(m.group(1)),m.group(2),100+int(m.group(3))
+    if la>90 or lo>180: return None
+    sl,so=_QUADRANT[q]
+    return (sl*la, so*lo)
+
 def load(path):
     return json.loads(Path(path).read_text(encoding='utf-8-sig'))
 
@@ -106,8 +129,15 @@ class Nav:
         self.ids[ident].append(key)
         return key
 
+    def keys_of(self,ident):
+        """Les positions d'un identifiant : celles de la base ; à défaut, le point que ses coordonnées donnent (SOG-0211 : « KDEN 4959N08712W DCT 5520N06712W … », la route de l'utilisateur) ; [] sinon."""
+        keys=self.ids.get(ident,[])
+        if keys: return keys
+        p=coordinate(ident)
+        return [self.add(dict(id=ident,lat=p[0],lon=p[1]))] if p else []
+
     def resolve(self,ident):
-        candidates=self.ids.get(ident,[])
+        candidates=self.keys_of(ident)
         if not candidates: raise ValueError('Point inconnu dans AeroDB : '+ident)
         if len(candidates)>1: raise ValueError('Identifiant géographiquement ambigu : '+ident+' ('+str(len(candidates))+' positions).')
         return candidates[0]
@@ -119,7 +149,7 @@ class Nav:
         if not names:return []
         paths=[(0.,start,[])]
         for ident in names:
-            ident=str(ident).strip().upper();keys=self.ids.get(ident,[])
+            ident=str(ident).strip().upper();keys=self.keys_of(ident)
             if not keys:raise ValueError('Point inconnu dans AeroDB : '+ident)
             next_paths=[]
             for key in keys:
@@ -133,13 +163,13 @@ class Nav:
         return best[1]
 
     def resolve_context(self,ident,previous=None,via='DCT',following=()):
-        candidates=list(self.ids.get(ident,[]))
+        candidates=list(self.keys_of(ident))
         if not candidates: return self.resolve(ident)
         if len(candidates)>1 and previous and via!='DCT':
             g=self.graph(None,via)
             candidates=[k for k in candidates if self.path(g,previous,k) is not None]
         if len(candidates)>1 and len(following)>=2 and following[0] in {e['route'] for e in self.edges}:
-            g=self.graph(None,following[0]); ends=self.ids.get(following[1],[])
+            g=self.graph(None,following[0]); ends=self.keys_of(following[1])
             candidates=[k for k in candidates if any(self.path(g,k,end) is not None for end in ends)]
         if len(candidates)==1: return candidates[0]
         if not candidates: raise ValueError('Aucune position de '+ident+' reliée à l’airway indiquée')

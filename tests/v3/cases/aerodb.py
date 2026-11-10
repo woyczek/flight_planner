@@ -7256,3 +7256,32 @@ def k149(c):
     iso = [{'geometry': {'type': 'Polygon', 'coordinates': [[[5, 5], [6, 5], [6.4, 5.5], [6, 6], [5, 6], [5, 5]]]}}]
     r = list(B.rings(iso[0]['geometry'], 0, B.edge_owners(iso), {}))
     c.ok(len(r) == 1 and r[0][0] == r[0][-1], str(r), 'an island (no neighbour): a closed ring as before')
+
+
+@case('K150', 'The route engine reads coordinates as points (SOG-0211): ddmmN dddmmW / ddNdddW, and the NAT forms of ARINC 424 (5520N = 55°N 020°W, 55N20 = 55°N 120°W, quadrants N = N/W, E = N/E, S = S/E, W = S/W); a point of the base keeps priority', 'K', static=True,
+      rule='SOG-0211 (10 Nov 2026): « Point inconnu dans AeroDB : 4959N08712W » — the route « KDEN 4959N08712W DCT 5520N06712W DCT 5645N04039W DCT 5308N01717W LFRS » is read by Fuel\'s reader but « Contrôler » / « Calculer » refused it: the engine only knew the identifiers of the base. A word that is no identifier of the base and reads as a coordinate is now a point (a node at that position); an identifier of the base wins over a coordinate reading; an impossible value (latitude over 90, minutes over 59) stays unknown')
+def k150(c):
+    import collections
+    import importlib
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    E = importlib.import_module('route_engine.engine')
+    near = lambda a, b: a is not None and abs(a[0] - b[0]) < 1e-4 and abs(a[1] - b[1]) < 1e-4
+    got = {w: E.coordinate(w) for w in ('4959N08712W', '49N087W', '5520N', '55N20', '4010W', '3010E', '3010S', '55E20', '5308N01717W', '1030S17512E')}
+    want = {'4959N08712W': (49 + 59 / 60, -(87 + 12 / 60)), '49N087W': (49, -87), '5520N': (55, -20), '55N20': (55, -120), '4010W': (-40, -10), '3010E': (30, 10), '3010S': (-30, 10), '55E20': (55, 120),
+            '5308N01717W': (53 + 8 / 60, -(17 + 17 / 60)), '1030S17512E': (-(10 + 30 / 60), 175 + 12 / 60)}
+    c.ok(all(near(got[k], want[k]) for k in want), str({k: got[k] for k in want if not near(got[k], want[k])}), 'ddmmN dddmmW, ddNdddW, and the NAT forms with their quadrants: the positions of the user\'s route and of the rules')
+    c.eq([E.coordinate(w) for w in ('KDEN', 'ABC12', '9960N', '4960N08712W', '4959N18112W', '5520X', '', None, 'LFRS', 'N0450F370')], [None] * 10, 'an identifier, a bad latitude (over 90), minutes over 59, a longitude over 180, a bad quadrant: not a coordinate', what='refused')
+    nav = object.__new__(E.Nav)
+    nav.nodes, nav.ids = {}, collections.defaultdict(list)
+    lfrs = nav.add(dict(id='LFRS', lat=47.15, lon=-1.61))
+    c.eq(nav.resolve('4959N08712W') == nav.resolve('4959N08712W'), True, 'a coordinate resolves to a point (twice: the same node)', what='resolve')
+    c.eq(nav.resolve_sequence(['4959N08712W', '5520N', 'LFRS'])[2], lfrs, 'a sequence mixes coordinates and identifiers of the base', what='sequence')
+    nav.add(dict(id='5530N', lat=10.0, lon=10.0))
+    c.eq(nav.nodes[nav.resolve('5530N')]['lat'], 10.0, 'an identifier of the base wins over a coordinate reading', what='priority')
+    try:
+        nav.resolve('9960N')
+        bad = False
+    except ValueError as e:
+        bad = 'Point inconnu' in str(e)
+    c.ok(bad, 'no error', 'an impossible value stays « Point inconnu »')
