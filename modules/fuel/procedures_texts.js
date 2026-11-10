@@ -93,6 +93,8 @@ export const TX = {
     eaip: ['Lecture de l’eAIP du SIA…', 'Reading the SIA eAIP…', 'eAIP des SIA wird gelesen…', 'Leyendo el eAIP del SIA…'],
     ead: ['Lecture d’EAD Basic…', 'Reading EAD Basic…', 'EAD Basic wird gelesen…', 'Leyendo EAD Basic…']
   },
+  // le pays d'un refus « no-tables » (SOG-0210 : le message prenait le terrain pour un État)
+  procState: [' (pays : {s})', ' (country: {s})', ' (Land: {s})', ' (país: {s})'],
   // ajouté au refus « no-tables » quand aerodb dit que ce poste a des bases de Little Navmap (lnm: true)
   procLnm: [' Little Navmap a une base sur ce poste.', ' Little Navmap has a database on this workstation.',
     ' Little Navmap hat eine Datenbank auf diesem Arbeitsplatz.', ' Little Navmap tiene una base en este puesto.'
@@ -142,10 +144,10 @@ export const TX = {
       'Dieses Gerät ist mit dem Arbeitsplatz gekoppelt: {icao} wird dort gelesen. Für diesen Flug liefert Ihr SimBrief-OFP SID und STAR.',
       'Este dispositivo está emparejado con el puesto: {icao} se lee en el puesto. Para este vuelo, su OFP de SimBrief aporta la SID y la STAR.'
     ],
-    'no-tables': ['Aucune table de procédures publiée pour cet État ({icao}).{l}',
-      'No procedure tables published for this State ({icao}).{l}',
-      'Für diesen Staat sind keine Verfahrenstabellen veröffentlicht ({icao}).{l}',
-      'No hay tablas de procedimientos publicadas para este Estado ({icao}).{l}'
+    'no-tables': ['Aucune table de procédures publiée pour {icao}{s}.{l}',
+      'No procedure tables published for {icao}{s}.{l}',
+      'Für {icao} sind keine Verfahrenstabellen veröffentlicht{s}.{l}',
+      'No hay tablas de procedimientos publicadas para {icao}{s}.{l}'
     ],
     'no-credentials': ['Les identifiants EAD Basic manquent sur le poste : à régler dans Réglages › Clés du lanceur.',
       'The EAD Basic credentials are missing on the workstation: set them in Settings › Launcher keys.',

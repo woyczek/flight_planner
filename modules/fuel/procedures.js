@@ -1001,6 +1001,9 @@ export function createProcedures(host) {
           }) : '',
         wn,
         w: Math.max(1, Math.ceil(+res?.wait || 30)), // too-soon : secondes avant la lecture suivante (EAD Basic, 30 s entre deux)
+        s: res?.reason === 'no-tables' && Array.isArray(res.state) && res.state.length === 4 ? ctx.t(TX.procState, {
+          s: ctx.t(res.state)
+        }) : '',
         l: res?.reason === 'no-tables' && res.lnm ? ctx.t(TX.procLnm) : '' // indice : les bases de Little Navmap du poste (§ 10.21)
       }, 'warn');
     }

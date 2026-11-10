@@ -214,6 +214,11 @@ SOURCE_PART = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,120}$')     # un nom de 
 EXPLAIN = {}
 # les verbes qui ne font que lire : leur travail ne remplace pas le dernier travail qui a écrit (Jobs.work, tools/.regen_last.json › work)
 READ_ONLY = {('base', 'status'), ('base', 'coverage'), ('route', 'compute'), ('route', 'fra-points'), ('ground', 'state'), ('stats', 'output')}
+# SOG-0206 : la page lit seule, en fond, la couche sol d'un terrain (ground/fetch, ~30 s) dès qu'elle a lu ses procédures ; le contrôle de route que le pilote lance à ce moment-là
+# était refusé (409 « a job is already running ») et l'écran disait « n'a pas répondu ». Un travail de SIDE (le calcul et le contrôle de route, qui ne font que lire la base et les
+# procédures) part donc à côté d'un travail de BACKGROUND (qui n'écrit que proc/ground/, jamais ce que le calcul lit) : un seul à côté à la fois, jamais à côté d'un autre travail.
+BACKGROUND = {('ground', 'fetch')}
+SIDE = {('route', 'compute')}
 
 
 def clean_error(text, ctx=None):
@@ -244,6 +249,7 @@ class Jobs:
         self.ctx = ctx or {}
         self.lock = threading.Lock()
         self.cur = None
+        self.side = None  # le travail de SIDE qui court à côté d'une lecture de fond (SOG-0206), ou le dernier : view(id) et cancel(id) le trouvent
         self.min_gap = dict(MIN_GAP if min_gap is None else min_gap)
         self.last = {}  # (jeu, verbe) → heure (time.time) du dernier départ
         self.store = store  # tools/.regen_last.json : le dernier travail et les derniers départs, gardés d'un lancement à l'autre
@@ -310,14 +316,22 @@ class Jobs:
         with self.lock:
             if self.held:
                 return {'ok': False, 'status': 409, 'reason': self.held, 'message': f'no job starts now ({self.held})'}
+            side = False
             if self.cur and self.cur.data['state'] == 'running':
-                return {'ok': False, 'status': 409, 'message': 'a job is already running', 'job': self.cur.id}
+                if key in SIDE and (self.cur.data.get('set'), self.cur.data.get('verb')) in BACKGROUND and not (self.side and self.side.data['state'] == 'running'):
+                    side = True       # à côté de la lecture de fond, jamais à côté d'un autre travail
+                else:
+                    return {'ok': False, 'status': 409, 'reason': 'busy', 'message': 'a job is already running', 'job': self.cur.id}
             gap, now = self.min_gap.get(key), time.time()
             if gap and key in self.last and now - self.last[key] < gap:
                 wait = max(1, int(gap - (now - self.last[key]) + 0.999))
                 return {'ok': False, 'status': 429, 'reason': 'too-soon', 'wait': wait, 'message': f'too soon: wait {wait} s'}
             self.last[key] = now
-            job = self.cur = Job(*key, a, clean=lambda t: clean_error(t, self.ctx), author=author)
+            job = Job(*key, a, clean=lambda t: clean_error(t, self.ctx), author=author)
+            if side:
+                self.side = job
+            else:
+                self.cur = job
             self._save()
         threading.Thread(target=self._run, args=(job, fn, a), daemon=True).start()
         return {'ok': True, 'job': job.id}
@@ -346,7 +360,7 @@ class Jobs:
         """Suspend les départs (start refusé avec reason why) si aucun travail ne tourne ; False sinon. view, cancel, claim et
         put répondent pendant la suspension : le verrou n'est tenu que le temps de poser le drapeau."""
         with self.lock:
-            if self.held or self.cur and self.cur.data['state'] == 'running':
+            if self.held or self.cur and self.cur.data['state'] == 'running' or self.side and self.side.data['state'] == 'running':
                 return False
             self.held = str(why or 'held')
             return True
@@ -359,15 +373,19 @@ class Jobs:
     def view(self, id_=None):
         """Le travail id_ ({ ok: False, status: 410 } s'il n'est plus là) ; sans id_, le courant ou le dernier."""
         with self.lock:
-            j = self.cur
+            j, s = self.cur, self.side
         v = j.view() if j else self.kept  # sans travail dans ce lancement : celui du précédent (« interrupted » s'il courait)
         if id_:
+            if s and s.id == id_ and not (v and v.get('id') == id_):
+                return s.view()
             return v if v and v.get('id') == id_ else {'ok': False, 'status': 410, 'message': 'no such job'}
         return {'job': v}
 
     def cancel(self, id_):
         with self.lock:
             j = self.cur
+            if self.side and self.side.id == id_:
+                j = self.side
         if not j or j.id != id_:
             return {'ok': False, 'status': 410, 'message': 'no such job'}
         j._cancel.set()

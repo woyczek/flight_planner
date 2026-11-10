@@ -2862,6 +2862,9 @@ def _route_launcher(c, verbs):
             body = {'verbs': st['verbs']}
         elif u.path.endswith('/__setup/folders'):
             body = {'folders': st.get('folders', [])}   # the launcher's shape (tools/launch.py _get_folders)
+        elif u.path.endswith('/__setup/regen/job') and req.method == 'POST' and st.get('busy'):
+            route.fulfill(status=409, content_type='application/json', body=json.dumps({'ok': False, 'reason': 'busy', 'message': 'a job is already running', 'job': 'g1'}))
+            return
         elif u.path.endswith('/__setup/regen/job') and req.method == 'POST':
             st['posts'].append(json.loads(req.post_data or '{}'))
             body = {'job': 'j' + str(len(st['posts']))}
@@ -3722,3 +3725,21 @@ def f130(c):
             what='the new flight is made as soon as the flight is read')
     b = c.js("(() => { const b = document.querySelector('[data-module=fuel] [data-do=newflight]'); return { busy: b.hasAttribute('aria-busy'), off: b.disabled, t: b.textContent.trim() } })()")
     c.ok(not b['busy'] and not b['off'] and b['t'] == tx(F, 'newFlight', c.lang), b, 'the button is back to « Nouveau vol »')
+
+
+@case('F200', 'Route step: a check the launcher refuses (another job runs: 409) says WHY and offers « Réessayer », never a bare « n’a pas répondu » (SOG-0206)',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0206 (10 Nov 2026): after the choice of a route, a runway and a SID, « Contrôler » answered « le contrôle n’a pas répondu »: the launcher had refused the job (409, the ground of the terrain being read in the background) and the screen kept the refusal to itself; the reason is now said (busy, offline, stopped, failed) with « Réessayer », which asks again')
+def f200(c):
+    st = _route_launcher(c, ['route/compute'])
+    open_proc(c)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons (the launcher has the job)')
+    st['busy'] = True
+    c.tap(f'{FUEL} [data-do="rcheck"]')
+    c.until(f"!!document.querySelector('{FUEL} [data-routealts] [data-rrefused=busy]')", what='the refusal says its reason')
+    c.ok(c.js(f"!!document.querySelector('{FUEL} [data-routealts] [data-rrefused=busy] [data-rretry]')"), 'no retry', 'with « Réessayer »')
+    txt = c.js(f"document.querySelector('{FUEL} [data-routealts] [data-rrefused=busy]').textContent")
+    c.ok('répondu' not in txt and 'answer' not in txt.lower().replace('another operation', ''), txt, 'and never « n’a pas répondu »')
+    st['busy'] = False
+    c.tap(f'{FUEL} [data-rrefused=busy] [data-rretry]')
+    c.until(f"document.querySelectorAll('{FUEL} [data-segerr]').length === 2", what='« Réessayer » asks again: the check answers')

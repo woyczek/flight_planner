@@ -73,7 +73,9 @@ export function request({
   return out;
 }
 
-/** Un appel du travail route/compute ; le résultat ({ ok, … }) ou null. */
+/** Un appel du travail route/compute ; le résultat ({ ok, … }), ou, sans résultat, la RAISON dite (SOG-0206 : « le contrôle n'a pas répondu »
+ *  sans cause) : { ok: false, reason: 'busy' (un autre travail du poste tourne : 409), 'offline' (lanceur injoignable), 'stopped' (travail
+ *  arrêté ou interrompu), 'failed' (le travail a échoué sans résultat) } ; null sans lanceur (rien n'a été demandé). */
 export async function run(launcher, args) {
   if (typeof launcher?.job !== 'function') return null;
   try {
@@ -82,9 +84,18 @@ export async function run(launcher, args) {
       verb: 'compute',
       args
     });
-    return r?.result && typeof r.result === 'object' ? r.result : null;
+    if (r?.result && typeof r.result === 'object') return r.result;
+    const reason = r?.status === 409 ? 'busy' : r?.offline ? 'offline' : r?.cancelled || ['cancelled', 'interrupted'].includes(r?.state) ?
+      'stopped' : 'failed';
+    return {
+      ok: false,
+      reason
+    };
   } catch {
-    return null;
+    return {
+      ok: false,
+      reason: 'offline'
+    };
   }
 }
 
@@ -194,7 +205,7 @@ function altOf(a, role, errors, reviews = []) {
 export function normalize(res, action = 'compute') {
   if (!res || res.ok !== true) return {
     ok: false,
-    reason: ['invalid', 'no-rad', 'failed'].includes(res?.reason) ? res.reason : 'failed',
+    reason: ['invalid', 'no-rad', 'failed', 'busy', 'offline', 'stopped'].includes(res?.reason) ? res.reason : 'failed',
     message: text(res?.message, 300),
     errors: [],
     plans: [],

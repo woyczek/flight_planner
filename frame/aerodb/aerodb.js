@@ -1935,6 +1935,10 @@
             const st = (await api.sources().catch(() => null))?.EAD_STATES?.[k.slice(0, 2)];
             if (st?.outcome !== 'read') return no('no-tables', { // ni l'eAIP lu ici ni EAD Basic : rien à lancer
               outcome: st?.outcome ?? null,
+              // le PAYS, jamais le terrain pris pour un État (SOG-0210 : « pour cet État (KDEN) ») : ses noms [fr, en, de, es], ou null
+              state: Array.isArray(st?.names) && st.names.length === 4 ? [...st.names] : k.startsWith('K') ? [
+                'États-Unis', 'United States', 'USA', 'Estados Unidos'
+              ] : null,
               lnm: Array.isArray(launcher.info()?.lnm) && launcher.info().lnm.length > 0
             });
             source = 'ead';

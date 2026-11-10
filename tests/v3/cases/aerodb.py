@@ -6860,3 +6860,102 @@ def k143(c):
             except subprocess.TimeoutExpired:
                 p.kill()
             log.close()
+
+
+@case('K144', 'The route check is not refused while the page reads a terrain\'s ground in the background (SOG-0206): on the REAL launcher class a route/compute job starts beside a ground/fetch job and answers, a second one or any other job is still refused with its reason (busy), the job is followed by its id', 'K', static=True,
+      rule='SOG-0206 (10 Nov 2026, « après le choix d\'un itinéraire, d\'une piste et d\'une SID, « contrôler » donne « le contrôle n\'a pas répondu »\xa0»): the page reads the ground of the terrain by itself (ground/fetch, about 30 s) as soon as it has read its procedures; the launcher runs one job at a time and answered 409 « a job is already running » to the check, which the screen turned into « n\'a pas répondu ». A computation of the route only reads the base and the procedures: it may run beside the background ground read (never beside another job, one at a time); the refusal says its reason')
+def k144(c):
+    import http.client
+    import json
+    import os
+    import shutil
+    import socket
+    import subprocess
+    import sys
+    import tempfile
+    import time
+    from pathlib import Path
+    ground = (
+        'import time\n'
+        'def fetch(job, args, ctx):\n'
+        '    end = time.time() + 25\n'
+        '    while time.time() < end and not job.cancelled():\n'
+        '        time.sleep(0.1)\n'
+        '    return {"ok": True}\n'
+        'VERBS = {("ground", "fetch"): (fetch, lambda a: dict(a) if isinstance(a, dict) else None)}\n')
+    route = (
+        'import time\n'
+        'def compute(job, args, ctx):\n'
+        '    time.sleep(float(args.get("sleep", 0)))\n'
+        '    return {"ok": True, "alternatives": []}\n'
+        'VERBS = {("route", "compute"): (compute, lambda a: dict(a) if isinstance(a, dict) else None)}\n')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td) / 'root'
+        shutil.copytree(c.root / 'tools', root / 'tools', ignore=shutil.ignore_patterns('__pycache__', '_verify', 'demo', '.regen_last.json'))
+        (root / 'tools' / 'regen' / 'ground.py').write_text(ground, encoding='utf-8')
+        (root / 'tools' / 'regen' / 'route.py').write_text(route, encoding='utf-8')
+        data = root / 'data'
+        data.mkdir()
+        (data / 'data_tree.js').write_text('window.DATA_TREE = {};\n', encoding='utf-8')
+        s = socket.socket()
+        s.bind(('127.0.0.1', 0))
+        port = s.getsockname()[1]
+        s.close()
+        tmp = Path(td) / 'tmp'
+        tmp.mkdir()
+        log = open(Path(td) / 'launcher.log', 'w')
+        p = subprocess.Popen([sys.executable, str(root / 'tools' / 'launch.py'), '--port', str(port), '--no-browser', '--data', str(data)], stdout=log, stderr=subprocess.STDOUT,
+                             stdin=subprocess.DEVNULL, cwd=td, env={**os.environ, 'TEMP': str(tmp), 'TMP': str(tmp), 'TMPDIR': str(tmp)})
+        try:
+            hdr = {'X-SOG-Setup': '1', 'Content-Type': 'application/json', 'Sec-Fetch-Site': 'same-origin'}
+
+            def call(method, path, body=None):
+                con = http.client.HTTPConnection('127.0.0.1', port, timeout=30)
+                con.request(method, path, body=json.dumps(body) if body is not None else None, headers=hdr)
+                r = con.getresponse()
+                raw = r.read()
+                try:
+                    return r.status, json.loads(raw)
+                except ValueError:
+                    return r.status, {}
+            for _ in range(60):
+                try:
+                    if call('GET', '/')[0] in (200, 302, 404):
+                        break
+                except OSError:
+                    time.sleep(0.5)
+            start = lambda sv, a=None: call('POST', '/__setup/regen/job', {'set': sv[0], 'verb': sv[1], 'args': a or {}, 'author': 'TST'})
+            view = lambda i: call('GET', f'/__setup/regen/job?id={i}')[1]
+
+            def until(i, secs=10):
+                end, v = time.time() + secs, {}
+                while time.time() < end:
+                    v = view(i)
+                    if v.get('state') != 'running':
+                        break
+                    time.sleep(0.1)
+                return v
+            st, g = start(('ground', 'fetch'), {'icao': 'LFBD'})
+            c.eq(st, 200, 'the ground of the terrain is read in the background (the page does it by itself after the procedures)', what='ground started')
+            st, ck = start(('route', 'compute'), {'action': 'check'})
+            c.eq(st, 200, 'the route check starts beside it (it was 409 « a job is already running »: « n\'a pas répondu »)', what='check starts')
+            v = until(ck.get('job'))
+            c.eq((v.get('state'), (v.get('result') or {}).get('ok'), view(g.get('job')).get('state')), ('done', True, 'running'), 'the check answers by its id while the ground read goes on', what='check done')
+            st, slow = start(('route', 'compute'), {'action': 'check', 'sleep': 3})
+            st2, again = start(('route', 'compute'), {'action': 'check'})
+            c.eq((st, st2, again.get('reason')), (200, 409, 'busy'), 'only one beside at a time: a second check while one runs is refused with its reason (busy)', what='second')
+            st3, other = start(('weather', 'world'), {})
+            c.eq((st3, other.get('reason')), (409, 'busy'), 'and any other job is still refused beside the ground read (one at a time), with its reason', what='other')
+            c.eq(call('POST', '/__setup/regen/job/cancel', {'id': slow.get('job')})[0], 200, 'the side job is cancelled by its id', what='cancel side')
+            until(slow.get('job'))
+            call('POST', '/__setup/regen/job/cancel', {'id': g.get('job')})
+            until(g.get('job'))
+            st, alone = start(('route', 'compute'), {'action': 'check'})
+            c.eq((st, until(alone.get('job')).get('state')), (200, 'done'), 'alone, as before', what='alone')
+        finally:
+            p.terminate()
+            try:
+                p.wait(10)
+            except subprocess.TimeoutExpired:
+                p.kill()
+            log.close()

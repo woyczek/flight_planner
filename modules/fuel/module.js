@@ -222,6 +222,30 @@ const TX = {
   rFail: ['Le calcul de route n’a pas répondu.', 'The route computation did not answer.', 'Die Routenberechnung hat nicht geantwortet.',
     'El cálculo de ruta no ha respondido.'
   ],
+  // SOG-0206 : la cause quand le travail n'a rien rendu (jamais « n'a pas répondu » sans raison), avec « Réessayer »
+  rWhy: {
+    busy: ['Le poste termine une autre opération (lecture du sol, mise à jour des données…) : réessayez dans un instant.',
+      'The workstation is finishing another operation (ground reading, data update…): try again in a moment.',
+      'Der Rechner beendet gerade einen anderen Vorgang (Bodenlesung, Datenaktualisierung…): gleich noch einmal versuchen.',
+      'El puesto está terminando otra operación (lectura del suelo, actualización de datos…): inténtelo de nuevo en un momento.'
+    ],
+    offline: ['Le lanceur du poste ne répond pas : vérifiez qu’il tourne, puis réessayez.',
+      'The workstation launcher does not answer: check that it is running, then try again.',
+      'Der Launcher des Rechners antwortet nicht: prüfen, ob er läuft, dann erneut versuchen.',
+      'El lanzador del puesto no responde: compruebe que está en marcha y vuelva a intentarlo.'
+    ],
+    stopped: ['Le calcul a été arrêté avant la fin (lanceur relancé ou travail annulé) : réessayez.',
+      'The computation was stopped before the end (launcher restarted or job cancelled): try again.',
+      'Die Berechnung wurde vor dem Ende abgebrochen (Launcher neu gestartet oder Job abgebrochen): erneut versuchen.',
+      'El cálculo se detuvo antes del final (lanzador reiniciado o trabajo cancelado): inténtelo de nuevo.'
+    ],
+    failed: ['Le calcul a échoué sans donner de résultat (le journal du lanceur en dit la cause) : réessayez.',
+      'The computation failed without a result (the launcher log says why): try again.',
+      'Die Berechnung ist ohne Ergebnis fehlgeschlagen (das Launcher-Protokoll nennt die Ursache): erneut versuchen.',
+      'El cálculo falló sin resultado (el registro del lanzador dice por qué): inténtelo de nuevo.'
+    ]
+  },
+  rRetry: ['Réessayer', 'Try again', 'Erneut versuchen', 'Reintentar'],
   rTake: ['Prendre', 'Take', 'Übernehmen', 'Tomar'],
   rTaken: ['pris', 'taken', 'übernommen', 'tomado'],
   rFaults: ['{n} écart(s)', '{n} deviation(s)', '{n} Abweichung(en)', '{n} desviación(es)'],
@@ -3247,7 +3271,7 @@ async function routeAsk(action) {
     // SOG-0125 : sans RAD, la phrase et le lien vers sa ligne de Données (l'import se fait là, jamais depuis Carburant) ; le message du
     // lanceur, qui nomme un travail, n'est pas montré au pilote
     if (box) box.innerHTML = n.reason === 'no-rad' ? `<p class="f-warn" data-rrefused="no-rad">${esc(tt(TX.rNoRad))} · <a href="${RAD_DATA_HREF}" data-radlink>${esc(tt(TX.rNoRadGo))}</a></p>` :
-      `<p class="f-warn" data-rrefused="${esc(n.reason)}">${esc(n.message || tt(TX.rFail))}</p>`;
+      `<p class="f-warn" data-rrefused="${esc(n.reason)}">${esc(!n.message && TX.rWhy[n.reason] ? tt(TX.rWhy[n.reason]) : n.message || tt(TX.rFail))}${!n.message && ['busy', 'offline', 'stopped', 'failed'].includes(n.reason) ? ` <button type="button" data-do="${act === 'compute' ? 'rcompute' : 'rcheck'}" data-rretry>${esc(tt(TX.rRetry))}</button>` : ''}</p>`;
     return;
   }
   if (act === 'check') {
