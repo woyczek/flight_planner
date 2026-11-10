@@ -4,8 +4,8 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "49183f7",
-  "fiches": 211,
+  "organisation": "4ed798f",
+  "fiches": 212,
   "untranslated": 1,
   "priorities": 152
  },
@@ -1621,6 +1621,15 @@
      "en": "Missions, drawing a family: the acronym alone, without the long name",
      "de": "Missionen, Familie auslosen: nur das Kürzel, ohne den langen Namen",
      "es": "Misiones, sortear una familia: solo la sigla, sin el nombre largo"
+    },
+    {
+     "id": "SOG-0212",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "Missions : « fichier illisible » sur beaucoup de missions ; ajouter une mission ou un lot de missions depuis un YAML ; chercher dans une autre compagnie",
+     "en": "Missions: “unreadable file” on many missions; add a mission or a batch of missions from a YAML; search in another airline",
+     "de": "Missionen: „Datei unlesbar“ bei vielen Missionen; eine Mission oder einen Satz aus einer YAML hinzufügen; in einer anderen Gesellschaft suchen",
+     "es": "Misiones: «archivo ilegible» en muchas misiones; añadir una misión o un lote desde un YAML; buscar en otra compañía"
     }
    ]
   },
