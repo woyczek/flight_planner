@@ -756,7 +756,7 @@
     {
      "id": "SOG-0192",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Carte : l'infobulle d'un espace reste affichée quand on ouvre le « i »",
      "en": "Map: an airspace tooltip stays when the “i” panel opens",
      "de": "Karte: der Luftraum-Tooltip bleibt, wenn das „i“-Feld geöffnet wird",
