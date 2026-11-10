@@ -38,9 +38,9 @@ import {
   worldInit
 } from './world.js';
 import {
-  addPack,
-  addPackZone,
-  togglePack
+  togglePack,
+  togglePackZone,
+  setPackTab
 } from './packs.js';
 import {
   highlightZones
@@ -141,9 +141,8 @@ function opOf(v) {
 function onClick(e) {
   const mv = e.target.closest?.('button[data-move]');
   if (mv) return mv.disabled ? undefined : moveClick(mv); // « Ranger les sources brutes » (carte Inventaire)
-  const pk = e.target.closest?.('button[data-act="pack-add"], button[data-act="pack-add-zone"]');
-  if (pk) return pk.disabled ? undefined : pk.dataset.act === 'pack-add' ? addPack(pk.dataset.pack) : addPackZone(pk.dataset
-    .zone); // les paquets de pays (SOG-0065)
+  const pt = e.target.closest?.('button[data-pack-tab]');
+  if (pt) return setPackTab(pt.dataset.packTab); // les onglets Régions | Thèmes (SOG-0165)
   const zw = e.target.closest?.('[data-act="zone-why"]');
   if (zw) return toggleWhy(zw.dataset.zone); // la pastille d'une zone : ses raisons (SOG-0071)
   const rc = e.target.closest?.('[data-act="map-recenter"]');
@@ -191,6 +190,8 @@ function onPackDown(e) {
 function onChange(e) {
   const t = e.target;
   if (t instanceof HTMLSelectElement && t.matches('[data-add-zone]')) return t.value && addZone(t.value);
+  if (t instanceof HTMLInputElement && t.dataset.packCov) return togglePackZone(t.dataset.packCov, t.checked, t.closest('[data-pack]')
+    ?.dataset.pack); // un pays d'un thème : sa case (SOG-0165)
   if (t instanceof HTMLInputElement && t.dataset.packSwitch) return togglePack(t.dataset.packSwitch, t
     .checked); // l'interrupteur d'un paquet (SOG-0147)
   if (!(t instanceof HTMLInputElement) || frozen()) return;
@@ -252,6 +253,7 @@ export async function mount(el, ctx) {
     world: worldInit(), // la ligne « Synoptique monde (GFS) » : phase, état lu, dernière fin (world.js)
     zoneAsked: false, // le lien #data?zone=<id> a été lu (update.js)
     zoneLink: null,
+    packTab: 'regions', // l'onglet des paquets de pays : regions | themes (SOG-0165)
     packOpen: new Set(), // les filtres thématiques dont le pli est ouvert (SOG-0065) // les zones dont la pastille montre ses raisons
     verbsOpen: false, // le pli « Plus » des verbes de la base (SOG-0071 temps 3)
     planSink: null, // les plans de purge des tranches d'une purge de plus de 60 zones (follow.js purgeChunks)

@@ -301,15 +301,14 @@ export const TX = {
   // les paquets de pays (packs.js, SOG-0065)
   packs: {
     title: ['Paquets de pays', 'Country packs', 'Länderpakete', 'Paquetes de países'],
+    regions: ['Régions', 'Regions', 'Regionen', 'Regiones'],
     themes: ['Thèmes', 'Themes', 'Themen', 'Temas'],
-    themesHint: ['Un thème est un filtre : il montre les zones qu’il touche, il n’en ajoute aucune de lui-même.',
-      'A theme is a filter: it shows the zones it touches and adds none by itself.',
-      'Ein Thema ist ein Filter: Es zeigt die Zonen, die es berührt, und fügt von sich aus keine hinzu.',
-      'Un tema es un filtro: muestra las zonas que toca y no añade ninguna por sí mismo.'
+    themesHint: ['Cochez un pays pour l’ajouter à la couverture ; décochez-le pour l’en retirer (rien n’est purgé).',
+      'Tick a country to add it to the coverage; untick it to remove it (nothing is purged).',
+      'Kreuzen Sie ein Land an, um es zur Abdeckung hinzuzufügen; entfernen Sie das Häkchen, um es zu entfernen (nichts wird gelöscht).',
+      'Marque un país para añadirlo a la cobertura; desmárquelo para quitarlo (no se purga nada).'
     ],
-    addAll: ['Ajouter tout ({n})', 'Add all ({n})', 'Alle hinzufügen ({n})', 'Añadir todo ({n})'],
-    allIn: ['Tout est dans la couverture', 'All in the coverage', 'Alles in der Abdeckung', 'Todo está en la cobertura'],
-    addOne: ['Ajouter', 'Add', 'Hinzufügen', 'Añadir'],
+    themeAll: ['Tout le thème', 'The whole theme', 'Das ganze Thema', 'Todo el tema'],
     inCoverage: ['dans la couverture', 'in the coverage', 'in der Abdeckung', 'en la cobertura'],
     themeCount: ['{n}, {m} à ajouter', '{n}, {m} to add', '{n}, {m} hinzuzufügen', '{n}, {m} por añadir'],
     partial: ['{n} en partie', '{n} in part', '{n} teilweise', '{n} en parte'],

@@ -309,3 +309,11 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
 
 - **L4 and L5**: the « Synoptique monde (GFS) » row (SOG-0138) takes its state from the workstation's `weather/world` status, like the route row (SOG-0125): it is not a state invented without a publication, nor a cycle state. Both cases now leave it out of their count, as they already left out the route row (the tests were wrong, not the page).
 - **A36**: « Tout désélectionner » (`select-none`, SOG-0071 time 1) stayed live without a launcher, against the frame's rule « read only without a launcher: every action grey ». It is grey now (like « Seulement les périmés », which already was); the rectangle cases (L38, L39) install a fake launcher. A36 names the live verbs instead of counting them.
+
+## 10 November 2026 — themes: a tick per country, one block with two tabs (SOG-0165)
+
+- **The user's words**: « le bouton « ajouter » est beaucoup trop gros par rapport au texte… si on utilise un bouton et pas une coche, collé à du texte, il ne devrait pas dépasser autant de la ligne ». The coordinator's rule, applied: **in a list row the action is the row or a box; a drawn button lives only in a row of buttons; the 44 px target is never a size of drawing.** A theme's countries are therefore ticks in the grid of the zones list, not « Ajouter » buttons; « Ajouter tout » (a button) is gone, replaced by the « Tout le thème » switch.
+- **One block, two tabs** (Régions | Thèmes) instead of two stacked lists: the page is shorter, and the two ways to choose countries sit in one place.
+- **Not repeated**: the state pill (a button that opens the reasons) is not drawn on the theme rows — it would double every pill of the zones list a screen below, and be a button inside a row; the coordinator's « (case, nom, état) » is kept for the zones list, the theme grid gives box and name.
+- Unticking removes from the coverage **after a question** (as the region switch does); nothing is ever purged.
+- Case L44 is the case of this fiche (red before: no tabs, an « Ajouter » button per country). L52, L53 count rows of the zones list only.

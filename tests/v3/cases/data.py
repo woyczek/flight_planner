@@ -4130,7 +4130,7 @@ def _packs_cfg():
 
 
 @case('L44', 'Données: country packs (aerodb packs()): a row per region with its size and what is already covered, « Ajouter tout » without a duplicate, themes as a filter that adds nothing by itself, an empty pack with its reason', 'L', tags=('data',), langs4=True,
-      designs=('standard',), screens=False, night=False,
+      designs=('standard',), screens=True, night=False,
       rule='SOG-0065 (V3_SPECIFICATION § 10.42): a pack is a list of zone ids; the region row says its size (sum of publishedKb), « Ajouter tout » adds the zones of the coverage it lacks (ticked, written once, never a duplicate, nothing built); a theme is a filter that shows zones and adds none by itself; the unknown zones are ignored and said; hostile packs are dropped')
 def l44(c):
     lang = c.lang
@@ -4148,17 +4148,37 @@ def l44(c):
     c.eq([c.js("document.querySelector('[data-pack-switch=ouest]').checked"), c.js("document.querySelector('[data-pack-switch=ouest]').indeterminate")], [False, True], 'the switch of Western Europe is half on: fr and gb are in the coverage, de and it are not yet', what='switch half')
     c.eq(c.count('[data-pack=antarctique] button'), 0, 'an empty pack has no button', what='empty button')
     c.eq(norm(c.text('[data-pack=antarctique] [data-pack-empty]')), norm(_trow('no-zone-no-source', lang, after='emptyWhy: {')), 'and says why', what='empty reason')
-    # ---- a theme adds nothing by itself: its fold shows the zones, the ones outside the coverage can be added one by one
-    c.eq(c.count('[data-pack=iles] [data-act=pack-add-zone]'), 1, 'the theme lists jp as the one zone to add (gb and es are covered)', what='theme add')
-    cov0 = c.doc('cache/data/coverage.json')
+    # ---- SOG-0165: regions and themes in ONE block with two tabs; a theme is a grid of ticks (box, name, state) like the zones list, no button in a row
+    c.eq(c.js("[...document.querySelectorAll('[data-pack-tabs] button')].map(b => [b.dataset.packTab, b.getAttribute('aria-pressed')])"), [['regions', 'true'], ['themes', 'false']], 'one block, two tabs: Régions first', what='tabs')
+    c.eq(c.js("[...document.querySelectorAll('[data-pack-tabs] button')].map(b => b.textContent.replace(/\\s+/g, ' ').trim())"), [norm(PT('regions')) + ' (3)', norm(PT('themes')) + ' (1)'], 'named in the language of the run, with their counts', what='tab names')
+    c.eq(c.js("document.querySelector('[data-pack-themes-box]').hidden"), True, 'the themes are behind their tab', what='hidden themes')
+    c.tap('[data-pack-tab=themes]')
+    c.eq([c.js("document.querySelector('[data-pack-regions]').hidden"), c.js("document.querySelector('[data-pack-themes-box]').hidden")], [True, False], 'the Thèmes tab shows the themes and hides the regions', what='tab switch')
     c.js("document.querySelector('[data-pack-theme=iles]').open = true")
-    c.tap('[data-pack=iles] [data-act=pack-add-zone][data-zone=jp]')
+    cov0 = c.doc('cache/data/coverage.json')
+    c.eq(c.js("[...document.querySelectorAll('[data-pack=iles] [data-pack-cov]')].map(i => [i.dataset.packCov, i.checked])"), [['gb', True], ['jp', False], ['es', True]], 'a tick per country: in the coverage or not (gb and es are, jp is not)', what='ticks')
+    c.eq(c.count('[data-pack=iles] button'), 0, 'no button in a row of a theme', what='no button')
+    geo = c.js("""() => { const r = e => e.getBoundingClientRect(), a = document.querySelector('[data-pack=iles] [data-pack-cov=gb]'), b = document.querySelector('[data-build-zone=gb]');
+      return { dx: Math.abs(r(a).left - r(b).left), dh: Math.abs(r(a.closest('.d-zrow')).height - r(b.closest('.d-zrow')).height) } }""")
+    c.ok(geo['dx'] <= 1 and geo['dh'] <= 1, geo, 'the ticks of a theme are in the same grid as the zones list: same column, same row height')
+    if c.width in (390, 1280):
+        c.shot(f'L44_themes_{c.width}_{lang}.png')
+    c.tap('[data-pack=iles] [data-pack-cov=jp]')
     doc = c.until_doc('cache/data/coverage.json', lambda d: bool(d and 'jp' in (d.get('zones') or [])), what='jp added to the coverage')
-    c.eq(sorted(set(doc['zones']) - set((cov0 or {}).get('zones') or ['ca', 'es', 'fr', 'gb', 'us'])), ['jp'], 'one gesture, one zone added', what='one zone')
+    c.eq(sorted(set(doc['zones']) - set((cov0 or {}).get('zones') or ['ca', 'es', 'fr', 'gb', 'us'])), ['jp'], 'ticking a country adds that one zone', what='one zone')
     c.eq(c.count('[data-pack-theme=iles][open]'), 1, 'the fold stays open after the redraw', what='open')
+    c.tap('[data-pack=iles] [data-pack-cov=jp]')
+    q = _ask_text(c)
+    c.eq(norm(q['ok']), norm(PT('remove')), 'unticking asks first (the zone leaves the coverage, nothing is purged)', what='ask')
+    c.page.click('.f-modal [data-ok]')
+    doc = c.until_doc('cache/data/coverage.json', lambda d: bool(d) and 'jp' not in (d.get('zones') or []), what='jp removed from the coverage')
+    c.eq(c.js("document.querySelector('[data-pack=iles] [data-pack-cov=jp]').checked"), False, 'and the box is unticked', what='unticked')
+    c.tap('[data-pack=iles] [data-pack-cov=jp]')
+    doc = c.until_doc('cache/data/coverage.json', lambda d: bool(d and 'jp' in (d.get('zones') or [])), what='jp added again')
+    c.tap('[data-pack-tab=regions]')
     # ---- Ajouter tout: de and it enter (ticked, one write), the button turns into « all in the coverage », nothing is built
     c.js("document.querySelector('[data-packs]').scrollIntoView({ block: 'start' })")
-    if c.width == 390:
+    if c.width in (390, 1280):
         c.shot(f'L44_packs_{c.width}_{lang}.png')
     c.tap('[data-pack-switch=ouest]')
     doc = c.until_doc('cache/data/coverage.json', lambda d: bool(d and 'it' in (d.get('zones') or []) and 'de' in (d.get('zones') or [])), what='de and it added')
@@ -4380,7 +4400,7 @@ def l52(c):
     c.js("document.querySelector('.d-mapgrid').scrollIntoView({block:'start'})")
     c.wait(500)
     g = c.js("""() => { const r = e => { const b = e.getBoundingClientRect(); return { l: Math.round(b.left), t: Math.round(b.top), r: Math.round(b.right), b: Math.round(b.bottom), w: Math.round(b.width), h: Math.round(b.height) } };
-      const map = r(document.querySelector('.d-mapgrid [data-zone-map]')), list = r(document.querySelector('.d-choice')), rows = [...document.querySelectorAll('.d-zrow')].map(r), sts = [...document.querySelectorAll('.d-zrow .d-st')].map(r);
+      const map = r(document.querySelector('.d-mapgrid [data-zone-map]')), list = r(document.querySelector('.d-choice')), rows = [...document.querySelectorAll('[data-build-zones] .d-zrow')].map(r), sts = [...document.querySelectorAll('[data-build-zones] .d-zrow .d-st')].map(r);
       return { map, list, items: document.querySelector('.d-mapgrid').children.length, rows: rows.length, minH: Math.min(...rows.map(x => x.h)), lefts: [...new Set(rows.map(x => x.l))].length, stRights: [...new Set(sts.map(x => x.r))].length,
         framed: document.querySelectorAll('.d-zrow .f-badge').length, sw: document.documentElement.scrollWidth, iw: innerWidth } }""")
     c.eq([g['items'], g['framed']], [2, 0], 'two cells only (the map, the choice) and no framed pill on the lines', what='structure')
@@ -4507,6 +4527,7 @@ def _rect_open(c):
     _open(c, _sized(cfg))
     _all_open(c)
     _zmap_ready(c, 'base')
+    c.wait(800)   # the launcher and the coverage settle (a late read must not tick everything again)
     c.tap('[data-select-row] [data-verb=select-none]')
     c.until("![...document.querySelectorAll('[data-build-zone]')].some(i => i.checked)", timeout=6000, what='nothing ticked')
 

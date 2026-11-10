@@ -17,6 +17,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   entry apart; it opens the V2 pages by group (Carburant, Missions, Maintenance, Route, Statistiques, Canadair), each in a new tab; on a phone it is the
   last row of the application menu. The Administration card's own V2 buttons (Réglages) are unchanged.
 
+- **Data: regions and themes in one block with two tabs; a theme is a tick per country in the grid of the zones list, no more « Ajouter » button** (`modules/data/packs.js`, `module.js`, `screen.js`, `texts.js`; Data SPEC § 5.10; help ×4; L44) — SOG-0165: ticking adds the country to the coverage, unticking removes it after a question, a « Tout le thème » switch heads the grid.
 - **Frame: opening Maintenance makes one call to the launcher, and a list does not wait for it** (`frame/store/transport_launcher.js`,
   `frame/store/frame_data.js`; frame SPEC § launcher, DECISIONS; noreg A100; SOG-0164). The head answered is reused for 3 s by every read of the
   same load (the second `__setup/changes` that followed the first is gone), and `list()` answers from the tree of the last pass while the head
