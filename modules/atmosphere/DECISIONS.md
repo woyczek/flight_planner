@@ -2,6 +2,12 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 10 November 2026 — the world synoptic line leaves the map (E2 red after SOG-0138; ergonomics' ruling)
+
+- E2 (« nothing written on the map ») failed on `.at-wnote`, which I had put at the map's top left as the brief said. The ruling: the rule wins; the line, its progress (n/25) and its failure
+  reasons live in a **band above the map**, outside `.at-box`, with its height reserved (`ctx.placeholder(band, 34)`) until the index is read, then kept if there is something to say, released
+  otherwise (one shift of the map at load when the synoptic is fresh). Nothing changes in the gesture. Noreg E18 checks the band is above the map; E2 is in the gate of the atmosphere cases.
+
 ## 10 November 2026 — the world synoptic line « Build » (SOG-0138 refused, given to the maps session by the ergonomics)
 
 - **Seen** (the user's capture 102550: the Météo screen, a map without synoptic): nothing publishes the world synoptic on his workstation

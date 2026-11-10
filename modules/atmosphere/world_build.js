@@ -25,6 +25,7 @@ export function createWorldBuild({
   ctx,
   F,
   reload,
+  hold = null, // ctx.placeholder : la place de la bande tant que l'index n'est pas lu
   alive = () => true
 }) {
   const T = F.T;
@@ -60,7 +61,15 @@ export function createWorldBuild({
       html = h;
       box.innerHTML = h;
     }
-    if (box.hidden !== !h) box.hidden = !h;
+    if (!holding && box.hidden !== !h) box.hidden = !h;
+  }
+  let holding = !!hold;
+  /** L'index lu : la bande garde sa hauteur si elle a quelque chose à dire, sinon la réserve s'en va (une fois). */
+  function release() {
+    if (!holding) return;
+    holding = false;
+    hold(!!html);
+    paint();
   }
   /** L'index de la publication, tel que le cadre le garde. */
   function read() {
@@ -70,10 +79,12 @@ export function createWorldBuild({
         built: +w.built
       } : null;
       paint();
+      release();
     }, () => {
       if (!alive()) return;
       S.index = null;
       paint();
+      release();
     });
   }
   /** Lance la construction (une à la fois) et la suit ; la couche de la carte est relue à la fin. */

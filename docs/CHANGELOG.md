@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Météo: the world synoptic line leaves the map** (`modules/atmosphere/module.js`, `world_build.js`, `style.js`; SPEC § 4.4, DECISIONS; noreg E18, E2). It is a band above the map, its height reserved
+  until the index is read (rule 22), instead of a card over it (E2 « nothing written on the map » was red).
+
 - **Map: the proposed routes write nothing over the flight's route** (`modules/maps/alts.js`, `draw.js`, `texts.js`, `lv.js`; SPEC § 5.4, DECISIONS; noreg D144, D140; SOG-0134). A point the flight's route
   already names is not named again, the strokes pass under its labels (names, NM marks, TOC / TOD), no name overlaps another, « écart » in the list; « UNL » no longer overlaps the scale's graduation.
 

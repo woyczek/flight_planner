@@ -21,7 +21,7 @@ bas, redessinée à chaque case ; la croix ou Échap le ferme. Touchez un point 
 <a id="atmosphere-zones"></a>**La zone du vol et le monde.** Un trait fin entoure la zone du vol : dedans, la prévision fine chargée pour le vol
 (Météo-France AROME 1,3 km et ARPEGE 0,1° sur la France, ICON en Europe) ; dehors, le synoptique mondial (GFS de la
 NOAA, publié avec une maille de 5°). Les deux modèles ne disent pas tout à fait la même chose : un saut des lignes au
-passage du trait est normal. Le panneau des couches nomme les deux modèles et leur maille. Sans synoptique monde, ou avec un synoptique de plus de 12 h, une ligne en haut à gauche de la carte le dit et propose « Construire (2 min) » : le lanceur de ce poste le calcule (GFS de la NOAA, sans clé) et la couche arrive sur la carte ; sans lanceur, la ligne dit où le faire.
+passage du trait est normal. Le panneau des couches nomme les deux modèles et leur maille. Sans synoptique monde, ou avec un synoptique de plus de 12 h, une bande au-dessus de la carte le dit et propose « Construire (2 min) » : le lanceur de ce poste le calcule (GFS de la NOAA, sans clé) et la couche arrive sur la carte ; sans lanceur, la ligne dit où le faire.
 
 <a id="atmosphere-date"></a>**La date du vol.** Le curseur sous la poignée avance l'heure de 0 à 72 heures à partir du départ prévu : la carte, la
 coupe et les tranches suivent. Quand une partie du curseur sort de la prévision lue (un départ prévu déjà passé, des

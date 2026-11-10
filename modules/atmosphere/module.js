@@ -212,10 +212,10 @@ export async function mount(el, ctx) {
   // ---------------------------------------------------------------- squelette
   el.innerHTML = `<style>${STYLE}</style>
 <h1 class="at-sr">${esc(T('srTitle'))}</h1>
+<div class="at-wnote" data-at="wnote"></div>
 <div class="at-box" data-at="box">
   <div class="at-map" data-at="map"></div><canvas class="at-over" data-at="over" aria-hidden="true"></canvas>
   <div class="at-maptip" data-at="mapTip"></div>
-  <div class="at-wnote f-card" data-at="wnote" hidden></div>
   <div class="at-layerpop" data-at="layerPop" hidden><div class="at-layerpop-head"><b>${esc(T('layers'))}</b><button type="button" class="at-layerpop-x" data-at="layersClose" aria-label="${esc(T('layersClose'))}" title="${esc(T('layersClose'))}">✕</button></div><div class="at-layers" role="group" aria-label="${esc(T('layers'))}" data-at="layersBox"></div></div>
 </div>
 <section class="f-sheet-panel" data-at="data">
@@ -277,9 +277,12 @@ export async function mount(el, ctx) {
   const cut = createCut(app);
   app.wm = map.wm;
   // la ligne « Synoptique monde » (SOG-0138) : absent ou de plus de 12 h, « Construire » par le lanceur ; chargée avec l'écran (petite)
+  const holdNote = ctx.placeholder?.($('wnote'),
+    34); // la bande « Synoptique monde » garde sa place tant que l'index n'est pas lu (règle 22 : rien ne saute)
   import('./world_build.js').then(m => {
     if (alive) m.createWorldBuild({
       box: $('wnote'),
+      hold: holdNote,
       ctx,
       F,
       reload: () => map.wm.reloadWorld(),
