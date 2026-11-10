@@ -3466,7 +3466,7 @@ def a92(c):
 
 
 _NOUNS = {'aircraft': {'fr': ('appareil', 'appareils'), 'en': ('aircraft', 'aircraft'), 'de': ('Luftfahrzeug', 'Luftfahrzeuge'), 'es': ('aeronave', 'aeronaves')},
-          'category': {'fr': ('catégorie', 'catégories'), 'en': ('category', 'categories'), 'de': ('Kategorie', 'Kategorien'), 'es': ('categoría', 'categorías')},
+          'theme': {'fr': ('thème', 'thèmes'), 'en': ('theme', 'themes'), 'de': ('Thema', 'Themen'), 'es': ('tema', 'temas')},
           'operator': {'fr': ('opérateur', 'opérateurs'), 'en': ('operator', 'operators'), 'de': ('Betreiber', 'Betreiber'), 'es': ('operador', 'operadores')}}
 
 
@@ -3575,7 +3575,7 @@ def a95(c):
     fill('Air Test', 'atx')
     c.page.check('[data-card="company"] [data-co-net="ivao"]')
     c.tap('[data-act="companyNext"]')
-    c.until("!document.querySelector('[data-wizard] [data-step-pane=categories]').hidden", timeout=6000, what='the categories step')
+    c.until("!document.querySelector('[data-wizard] [data-step-pane=themes]').hidden", timeout=6000, what='the themes step')
     c.tap('[data-act="companyNext"]')
     c.until("!document.querySelector('[data-wizard] [data-step-pane=fleet]').hidden", timeout=6000, what='the fleet step')
     c.tap('[data-act="companyNext"]')
@@ -4170,23 +4170,23 @@ def a104(c):
     _bench(c, 'frame/lib/test/mission_categories.html', '__catBench')
 
 
-@case('A105', 'Settings › Company (SOG-0041, step A): a list of radio buttons with the kind said in words, choosing replaces no node of the list, the chosen airline’s sheet (kind radios, mission categories) is open under it, three gestures below; a hostile file is text', 'A', langs4=True, tags=('airline',),
+@case('A105', 'Settings › Company (SOG-0041, step A): a list of radio buttons with the kind said in words, choosing replaces no node of the list, the chosen airline’s sheet (kind radios, mission themes) is open under it, three gestures below; a hostile file is text', 'A', langs4=True, tags=('airline',),
       designs=('standard',), screens=True, night=False,
-      rule='SOG-0041 (refused at the recipe: « plutôt qu’un bouton choisir, un bouton radio — on ne sait pas si c’est un sog ou une compagnie commerciale — ça clignote au choix — où est catégorie de missions ? »): a line = radio, name, kind in words, fleet; the choice applies at the tap and only the radios change; the sheet of the CHOSEN airline holds the kind (two radios with a line each) and the categories of that kind, visible; « Créer », « Rejoindre », the migration; everything read is untrusted')
+      rule='SOG-0041 (refused at the recipe: « plutôt qu’un bouton choisir, un bouton radio — on ne sait pas si c’est un sog ou une compagnie commerciale — ça clignote au choix — où est catégorie de missions ? »): a line = radio, name, kind in words, fleet; the choice applies at the tap and only the radios change; the sheet of the CHOSEN airline holds the kind (two radios with a line each) and the mission themes (SOG-0202 T3), visible; « Créer », « Rejoindre », the migration; everything read is untrusted')
 def a105(c):
     lang = c.lang
     sj = 'frame/settings/access.js'
     T = lambda k: tx(sj, k, lang, after='const TA = {')
-    KN = lambda: c.js("import('/frame/lib/mission_categories.js').then(m => m.KIND_NAMES)")   # the words of the kind: one source, shared with the report and Mes vols (SOG-0181)
+    KN = lambda: c.js("import('/frame/lib/airline.js').then(m => m.KIND_NAMES)")   # the words of the kind: one source, shared with the report and Mes vols (SOG-0181)
     K = lambda k: KN()[k][['fr', 'en', 'de', 'es'].index(lang)]
     evil = '<img src=x onerror=window.__pwn=1>'
-    hostile = {'schema': 1, 'groups': [{'id': 'virtuel', 'names': {'fr': evil}, 'categories': [{'id': 'bad', 'names': {'fr': evil}}, {'id': 'Bad Id', 'names': {'fr': 'x'}}]}]}
+    hostile = {'schema': 1, 'chosen': ['HEMS', 'NOPE', evil, 'bad id'], 'added': {'themes': [{'id': 'BAD', 'short': 'BAD', 'labels': [evil]}, {'id': 'x', 'labels': ['y']}], 'series': {'HEMS': [{'value': evil, 'labels': [evil]}]}}}
     docs = [['device/level.json', {'level': 3}, 'cache'],
             ['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}, {'code': 'bbb', 'name': 'Bravo Air'}]}, 'document'],
             ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'networks': {'ivao': True}}, 'document'],
             ['airline/aaa/fleet.json', {'schema': 1, 'aircraft': []}, 'document'],
             ['airline/bbb/settings.json', {'schema': 1, 'name': 'Bravo Air', 'kind': 'sog'}, 'document'],
-            ['airline/bbb/categories.json', hostile, 'document']]
+            ['airline/bbb/themes.json', hostile, 'document']]
     row = lambda code, extra='': f'[data-card="company"] [data-airlines] [data-airline="{code}"] {extra}'.strip()
     fiche = lambda extra='': f'[data-card="company"] [data-airline-fiche] {extra}'.strip()
     ready = lambda: c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length === 3 && !!document.querySelector('[data-airline-fiche] [data-kind-set]')", timeout=15000, what='the lines and the sheet of the chosen airline')
@@ -4203,23 +4203,25 @@ def a105(c):
     c.ok(norm(K('none')) in meta('aaa') and norm(K('sog')) in meta('bbb') and norm(K('perso')) in meta('perso'), [meta('aaa'), meta('bbb'), meta('perso')], 'the kind is said in words on each line: not chosen yet, squadron, personal')
     c.le(c.js(f"document.querySelector('{row('aaa')}').children.length"), 7, 'a line has seven elements at most', what='elements')
     c.eq(checked('[data-card="company"] [data-airlines] input'), [['aaa', True], ['bbb', False], ['perso', False]], 'the current airline (the first of the index, no choice yet) is the checked radio', what='checked')
-    # ---- the sheet of the CHOSEN airline is open under the list: kind radios with a line each, the categories visible without unfolding
+    # ---- the sheet of the CHOSEN airline is open under the list: kind radios with a line each, the themes visible without unfolding
     c.eq(c.count('[data-card="company"] [data-airline-fiche] details') + c.count('[data-card="company"] [data-airlines] details'), 0, 'nothing to unfold: no folded block in the list nor in the sheet', what='details')
     c.ok(norm(T('ficheTitle').replace('{n}', 'Alpha Air')) in norm(c.text(fiche('h3'))), norm(c.text(fiche('h3'))), 'the sheet is titled with the chosen airline')
     c.eq(checked(fiche('[data-act=companyKind]')), [['va', False], ['sog', False]], 'the kind: two radio buttons, none chosen yet', what='kind radios')
     c.eq(c.count(fiche('.f-kind .f-muted')), 2, 'each kind has its line of explanation', what='explanations')
-    c.ok(c.js(f"(() => {{ const h = document.querySelector('{fiche('[data-cats-title]')}'); return !!h && h.offsetParent !== null }})()"), None, 'the title « Mission categories » is visible without a tap')
-    c.eq(norm(c.text(fiche('[data-cats-title]'))), norm(T('catSummary').replace('{n}', '0')), 'no kind: the commercial group is not shown, no category counts', what='no kind count')
+    c.ok(c.js(f"(() => {{ const h = document.querySelector('{fiche('[data-themes-title]')}'); return !!h && h.offsetParent !== null }})()"), None, 'the title « Mission themes » is visible without a tap')
+    c.eq(norm(c.text(fiche('[data-themes-title]'))), norm(T('themeSummary').replace('{n}', '17').replace('{m}', '17')), 'no kind and no file: the seventeen themes are ticked in advance', what='no kind count')
+    c.eq(c.count(fiche('li[data-theme]')), 17, 'seventeen themes listed, one box each', what='listed')
     # ---- the kind: written in settings.json, the rest of the file kept; the other lines are not redrawn
     mark()
     c.tap(fiche('[data-act=companyKind][data-kind=va]'))
     d = c.until_doc('airline/aaa/settings.json', lambda d: bool(d and d.get('kind') == 'va'), what='the kind written')
     c.ok(d['name'] == 'Alpha Air' and d['networks'] == {'ivao': True} and d.get('by') is not None, d, 'the rest of settings.json is kept')
-    c.until(f"document.querySelector('{fiche('[data-cats-title]')}').textContent.includes('7')", what='the sheet counts the seven categories of the base')
+    c.until(f"document.querySelector('{fiche('[data-themes-title]')}').textContent.replace(/\\D+/g, ' ').trim() === '1 17'", what='a commercial airline: one theme of seventeen ticked in advance')
     c.eq(checked(fiche('[data-act=companyKind]')), [['va', True], ['sog', False]], 'the commercial radio is the checked one', what='va checked')
     c.ok(norm(K('va')) in meta('aaa'), meta('aaa'), 'and its line says « Commercial »')
     c.eq(kept(), [['aaa', True], ['bbb', True], ['perso', True]], 'the line whose words changed has its grey text replaced IN PLACE (SOG-0218): no node of the list is replaced', what='kept after kind')
-    c.eq(c.count(fiche('li[data-cat]')), 7, 'the seven commercial categories are listed in the sheet', what='listed')
+    c.eq(c.js(f"[...document.querySelectorAll('{fiche('input[data-theme]')}')].filter(i => i.checked).map(i => i.dataset.theme)"), ['COMMERCIAL'], 'only the Commercial theme is ticked in advance', what='ticked')
+    c.eq(c.doc('airline/aaa/themes.json'), None, 'nothing is written until a box is ticked', what='no file')
     # ---- choosing: no node of the list is replaced; only the radios and the sheet change
     mark()
     c.tap(row('bbb', 'input'))
@@ -4230,34 +4232,28 @@ def a105(c):
     c.eq(_airline_code(c, 'bbb'), 'bbb', 'the frame keeps the choice (FrameData.airline)', what='frame')
     c.eq(c.count(fiche('[data-kind-set]')), 1, 'only the chosen airline has a sheet', what='one sheet')
     c.eq(checked(fiche('[data-act=companyKind]')), [['va', False], ['sog', True]], 'a squadron: the squadron radio is checked', what='sog checked')
-    c.eq(c.count(fiche('[data-cat-group=commercial]')), 0, 'a squadron has no commercial category', what='no commercial')
+    c.eq(c.js(f"[...document.querySelectorAll('{fiche('input[data-theme]')}')].filter(i => i.checked).map(i => i.dataset.theme)"), ['HEMS'], 'the file of the squadron is read: its chosen themes, the unknown and hostile ids dropped', what='ticked squadron')
     c.ok(c.count(fiche('img')) == 0 and c.js('window.__pwn === undefined'), None, 'a hostile name is text: no element, nothing runs')
-    c.eq(c.js(f"[...document.querySelectorAll('{fiche('li[data-cat]')}')].map(l => l.dataset.cat)"), ['bad'], 'the id that is not of the permitted form is dropped', what='ids')
     # ---- « Personal »: a line of words, nothing to set
     mark()
     c.tap(row('perso', 'input'))
     c.until("!!document.querySelector('[data-airline-fiche] [data-fiche-perso]')", what='the personal note')
-    c.eq([c.count(fiche('[data-kind-set]')), c.count(fiche('[data-act=companyCatAdd]')), kept()], [0, 0, [['aaa', True], ['bbb', True], ['perso', True]]], '« Personal »: no kind, no category to set, still no line replaced', what='perso')
-    # ---- own categories of the commercial airline: added (the base becomes the airline’s file), refused, removed
+    c.eq([c.count(fiche('[data-kind-set]')), c.count(fiche('[data-act=companyTheme]')), kept()], [0, 0, [['aaa', True], ['bbb', True], ['perso', True]]], '« Personal »: no kind, no theme to set, still no line replaced', what='perso')
+    # ---- ticking a theme writes themes.json (the table order, `added` kept); the last one cannot be unticked
     c.tap(row('aaa', 'input'))
-    c.until("document.querySelector('[data-airline-fiche] [data-cat-group=commercial]')", what='the commercial sheet again')
-    c.page.fill('[data-f="cat-aaa"]', 'Évacuation sanitaire')
-    c.tap(fiche('[data-act=companyCatAdd][data-code=aaa]'))
-    doc = c.until_doc('airline/aaa/categories.json', lambda d: bool(d and d.get('groups')), what='categories.json written')
-    own = [g for g in doc['groups'] if g['id'] == 'virtuel'][0]
-    c.eq([[g['id'], len(g['categories'])] for g in doc['groups']], [['commercial', 7], ['virtuel', 1]], 'the file holds the base’s commercial group and the airline’s own', what='file')
-    c.eq(own['categories'][0]['id'], 'evacuation-sanitaire', 'the id is the name without accents, with dashes', what='id')
-    c.until("!!document.querySelector('[data-airline-fiche] li[data-cat=evacuation-sanitaire]')", what='listed, with its remove button')
-    before = c.doc('airline/aaa/categories.json')
-    for name, key in (('Fret', 'catDup'), ('   ', 'catBad'), ('!!!', 'catBad')):
-        c.js("document.querySelector('[data-fiche-msg]').textContent = ''")
-        c.page.fill('[data-f="cat-aaa"]', name)
-        c.tap(fiche('[data-act=companyCatAdd][data-code=aaa]'))
-        c.until("document.querySelector('[data-fiche-msg]').textContent.trim() !== ''", timeout=6000, what=f'the refusal {key}')
-        c.eq(norm(c.text('[data-fiche-msg]')), norm(T(key)), f'{name!r}: said under the sheet', what=f'refusal {key}')
-    c.eq(c.doc('airline/aaa/categories.json'), before, 'a duplicate of the base and bad names write nothing', what='refused')
-    c.tap(fiche('[data-act=companyCatDel][data-code=aaa][data-cat=evacuation-sanitaire]'))
-    c.until_doc('airline/aaa/categories.json', lambda d: bool(d) and [len(g['categories']) for g in d['groups']] == [7, 0], what='removed')
+    c.until("document.querySelector('[data-airline-fiche] [data-themes]')", what='the commercial sheet again')
+    c.tap(fiche('[data-act=companyTheme][data-code=aaa][data-theme=HEMS]'))
+    doc = c.until_doc('airline/aaa/themes.json', lambda d: bool(d and d.get('chosen')), what='themes.json written')
+    c.eq([doc['schema'], doc['chosen'], doc['added']], [1, ['HEMS', 'COMMERCIAL'], {'themes': [], 'series': {}}], 'the chosen themes in the order of the table, nothing added', what='file')
+    c.until(f"document.querySelector('{fiche('[data-themes-title]')}').textContent.replace(/\\D+/g, ' ').trim() === '2 17'", what='the title counts two')
+    c.tap(fiche('[data-act=companyTheme][data-code=aaa][data-theme=COMMERCIAL]'))
+    c.until_doc('airline/aaa/themes.json', lambda d: bool(d) and d['chosen'] == ['HEMS'], what='unticked')
+    before = c.doc('airline/aaa/themes.json')
+    c.js("document.querySelector('[data-fiche-msg]').textContent = ''")
+    c.tap(fiche('[data-act=companyTheme][data-code=aaa][data-theme=HEMS]'))
+    c.until("document.querySelector('[data-fiche-msg]').textContent.trim() !== ''", timeout=6000, what='the refusal themeOne')
+    c.eq(norm(c.text('[data-fiche-msg]')), norm(T('themeOne')), 'the last theme cannot be unticked: said under the sheet', what='refusal')
+    c.eq(c.doc('airline/aaa/themes.json'), before, 'and nothing is written', what='refused')
     # ---- the three gestures under the sheet, in this order
     c.eq([norm(x) for x in c.js("[...document.querySelectorAll('[data-card=\"company\"] > details > summary')].map(s => s.textContent)")], [norm(T('add')), norm(T('join'))], '« Create an airline », then « Join an airline » (the migration after them when it applies)', what='gestures')
     c.check_errors()
@@ -5019,7 +5015,7 @@ def a124(c):
     lang = c.lang
     sj = 'frame/settings/access.js'
     T = lambda k: tx(sj, k, lang, after='const TA = {')
-    KN = lambda: c.js("import('/frame/lib/mission_categories.js').then(m => m.KIND_NAMES)")
+    KN = lambda: c.js("import('/frame/lib/airline.js').then(m => m.KIND_NAMES)")
     docs = [['device/level.json', {'level': 3}, 'cache'],
             ['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}]}, 'document'],
             ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'networks': {'ivao': True}, 'kind': 'va'}, 'document'],
@@ -5030,8 +5026,8 @@ def a124(c):
     c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length === 2 && !!document.querySelector('[data-wizard]')", timeout=15000, what='the card and its stepper')
     w = lambda extra='': f'[data-wizard] {extra}'.strip()
     c.js("document.querySelector('[data-airline-add]').open = true")
-    c.eq(c.js("[...document.querySelectorAll('[data-wizard] [data-step-pane]')].map(p => [p.dataset.stepPane, p.hidden])"), [['identity', False], ['categories', True], ['fleet', True], ['summary', True], ['done', True]], 'one block, the first pane shown', what='panes')
-    c.eq(c.count(w('[data-step-dot]')), 4, 'four steps named in the header (identity, categories, fleet, summary)', what='dots')
+    c.eq(c.js("[...document.querySelectorAll('[data-wizard] [data-step-pane]')].map(p => [p.dataset.stepPane, p.hidden])"), [['identity', False], ['themes', True], ['fleet', True], ['summary', True], ['done', True]], 'one block, the first pane shown', what='panes')
+    c.eq(c.count(w('[data-step-dot]')), 4, 'four steps named in the header (identity, themes, fleet, summary)', what='dots')
     c.eq(c.js("[...document.querySelectorAll('[data-wizard] input[name=wz-kind]')].map(i => [i.value, i.checked])"), [['va', True], ['sog', False]], 'the kind: two radio buttons, commercial preselected', what='kind')
     c.eq(c.count(w('[data-wz-kind] .f-muted')), 2, 'each with its sentence', what='sentences')
     c.eq([norm(c.text(w('[data-kind-name=va]'))), norm(c.text(w('[data-kind-name=sog]')))], [norm(KN()['va'][['fr', 'en', 'de', 'es'].index(lang)]), norm(KN()['sog'][['fr', 'en', 'de', 'es'].index(lang)])], 'named by the one source of the kind words', what='kind names')
@@ -5053,14 +5049,14 @@ def a124(c):
     top = "document.querySelector('[data-airline-join]').getBoundingClientRect().top + scrollY"
     hh = "document.querySelector('[data-wizard]').getBoundingClientRect().height"
     c.tap('[data-act="companyNext"]')
-    c.until("document.querySelector('[data-wizard]').dataset.step === 'categories'", timeout=6000, what='the categories step')
-    h_cats, below = c.js(hh), c.js(top)   # the categories pane is taller than the identity one: the block grew once
+    c.until("document.querySelector('[data-wizard]').dataset.step === 'themes'", timeout=6000, what='the themes step')
+    h_cats, below = c.js(hh), c.js(top)   # the themes pane is taller than the identity one: the block grew once
     c.tap('[data-act="companyNext"]')
     c.until("document.querySelector('[data-wizard]').dataset.step === 'fleet'", timeout=6000, what='the fleet step')
     c.tap('[data-act="companyNext"]')
     c.until("document.querySelector('[data-wizard]').dataset.step === 'summary'", timeout=6000, what='the summary step')
     c.ok(abs(c.js(top) - below) <= 1 and c.js(hh) >= h_cats - 1, [h_cats, below], 'the block never gets shorter from one step to the next: what is under it does not move (rule 22)')
-    c.eq(norm(c.text(w('[data-wz-summary]'))), norm('Rennes Motoculture · ' + KN()['va'][['fr', 'en', 'de', 'es'].index(lang)] + ' · IVAO · ' + _noun(lang, 'category', 7) + ' · ' + _noun(lang, 'aircraft', 0)), 'name · kind · networks · number of categories, in words (no file name)', what='summary')
+    c.eq(norm(c.text(w('[data-wz-summary]'))), norm('Rennes Motoculture · ' + KN()['va'][['fr', 'en', 'de', 'es'].index(lang)] + ' · IVAO · ' + _noun(lang, 'theme', 1) + ' · ' + _noun(lang, 'aircraft', 0)), 'name · kind · networks · number of categories, in words (no file name)', what='summary')
     c.eq([c.doc('airline/rmo/settings.json'), c.js('window.__puts.length')], [None, 0], 'nothing is written before the last button', what='nothing written')
     if c.width in (390, 1280):
         c.shot(f'A125_standard_{c.width}_{lang}_summary_delivered.png')
@@ -5068,12 +5064,12 @@ def a124(c):
     c.tap('[data-act="companyBack"]')
     c.until("document.querySelector('[data-wizard]').dataset.step === 'fleet'", timeout=6000, what='back to the fleet')
     c.tap('[data-act="companyBack"]')
-    c.until("document.querySelector('[data-wizard]').dataset.step === 'categories'", timeout=6000, what='back to the categories')
+    c.until("document.querySelector('[data-wizard]').dataset.step === 'themes'", timeout=6000, what='back to the themes')
     c.tap('[data-act="companyBack"]')
     c.until("document.querySelector('[data-wizard]').dataset.step === 'identity'", timeout=6000, what='back to identity')
     c.eq([c.js("document.querySelector('[data-wizard] [data-f=co-name]').value"), c.js("document.querySelector('[data-wizard] [data-f=co-code]').value"), c.js("document.querySelector('[data-wizard] [data-co-net=ivao]').checked")], ['Rennes Motoculture', 'rmo', True], 'back keeps the name, the code and the networks', what='kept values')
     c.tap('[data-act="companyNext"]')
-    c.until("document.querySelector('[data-wizard]').dataset.step === 'categories'", timeout=6000, what='the categories again')
+    c.until("document.querySelector('[data-wizard]').dataset.step === 'themes'", timeout=6000, what='the themes again')
     c.tap('[data-act="companyNext"]')
     c.until("document.querySelector('[data-wizard]').dataset.step === 'fleet'", timeout=6000, what='the fleet again')
     c.tap('[data-act="companyNext"]')
@@ -5101,9 +5097,9 @@ def a124(c):
     c.check_errors()
 
 
-@case('A126', 'Settings › Company › « Créer une compagnie » (SOG-0041, step B2): the categories of the kind are ticked in advance, unticked ones are not written, own ones are added (same rules as the sheet), categories.json is written only when it differs from the base, between the settings and the fleet', 'A', langs4=True, tags=('airline',),
+@case('A126', 'Settings › Company › « Créer une compagnie » (SOG-0041 step B2, SOG-0202 T3): the themes of the kind are ticked in advance, themes.json is written only when the ticks differ from the kind’s default, between the settings and the fleet', 'A', langs4=True, tags=('airline',),
       designs=('standard',), screens=True, night=False,
-      rule='V3_SPECIFICATION § 10.38 bis, step 2: the base categories of the kind come ticked (an unticked one is simply not written), a free field adds the airline\u2019s own (name 1 to 40, id without accents, never the duplicate of a base category or of one already typed, forty at most), « Retour » keeps ticks and typed categories; categories.json is written only when it differs from the base (settings, categories, fleet, index); a squadron has no commercial category')
+      rule='V3_SPECIFICATION § 10.38 bis step 2 + § 10.48 (SOG-0202 T3): the seventeen themes (frame/lib/mission_themes.js) are listed; a commercial airline comes with COMMERCIAL ticked, a squadron with the sixteen military, « Retour » keeps the ticks; themes.json is written only when the ticks differ from defaultChosen(kind) (settings, themes, fleet, index); nothing ticked differently: no file')
 def a126(c):
     lang = c.lang
     sj = 'frame/settings/access.js'
@@ -5116,58 +5112,42 @@ def a126(c):
     c.open('settings?card=company', docs=docs)
     c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length === 2 && !!document.querySelector('[data-wizard]')", timeout=15000, what='the card and its stepper')
     c.js("document.querySelector('[data-airline-add]').open = true")
-    step = lambda: c.js("document.querySelector('[data-wizard]').dataset.step")
     nxt = lambda to: (c.tap('[data-act="companyNext"]'), c.until(f"document.querySelector('[data-wizard]').dataset.step === '{to}'", timeout=6000, what=f'the {to} step'))
-    pane = '[data-step-pane=categories]'
+    pane = '[data-step-pane=themes]'
+    ticked = lambda: c.js(f"[...document.querySelectorAll('{pane} [data-wz-theme]')].filter(i => i.checked).map(i => i.dataset.wzTheme)")
     c.page.fill('[data-wizard] [data-f="co-name"]', 'Rennes Motoculture')
-    nxt('categories')
-    c.eq(c.js(f"[...document.querySelectorAll('{pane} [data-wz-cat]')].map(i => [i.dataset.wzCat, i.checked])"), [['fret', True], ['passagers', True], ['vip', True], ['training', True], ['transit', True], ['essais-en-vol', True], ['positionnement', True]], 'a commercial airline: the seven categories of the base, all ticked in advance', what='base ticked')
-    c.eq(c.count(pane + ' [data-wz-group=commercial]'), 1, 'under their group', what='group')
-    # untick one, add two of our own, refuse a duplicate and a bad name
-    c.js(f"document.querySelector('{pane} [data-wz-cat=vip]').click()")
-    for name, key in (('Fret', 'catDup'), ('!!!', 'catBad')):
-        c.page.fill('[data-wizard] [data-f="wz-cat"]', name)
-        c.tap('[data-act="companyWzCatAdd"]')
-        c.until("document.querySelector('[data-wizard] [data-msg]').textContent.trim() !== ''", timeout=6000, what=f'the refusal {key}')
-        c.eq(norm(c.text('[data-wizard] [data-msg]')), norm(T(key)), f'{name!r}: said', what=f'refusal {key}')
-    for name in ('Évacuation sanitaire', 'Épandage'):
-        c.page.fill('[data-wizard] [data-f="wz-cat"]', name)
-        c.tap('[data-act="companyWzCatAdd"]')
-        c.until(f"!!document.querySelector('{pane} [data-wz-own] li[data-name=\"{name}\"]')", timeout=6000, what=f'{name} listed')
-    c.eq(c.js(f"[...document.querySelectorAll('{pane} [data-wz-own] li')].map(l => l.dataset.wzOwn)"), ['evacuation-sanitaire', 'epandage'], 'two own categories, ids without accents', what='own')
-    c.page.fill('[data-wizard] [data-f="wz-cat"]', 'Évacuation Sanitaire')
-    c.tap('[data-act="companyWzCatAdd"]')
-    c.until("document.querySelector('[data-wizard] [data-msg]').textContent.trim() !== ''", timeout=6000, what='a duplicate of an own one is refused')
-    c.eq(norm(c.text('[data-wizard] [data-msg]')), norm(T('catDup')), 'an own category typed twice: refused', what='own duplicate')
-    c.tap(f'{pane} [data-wz-own] li[data-wz-own=epandage] button')
-    c.eq(c.js(f"[...document.querySelectorAll('{pane} [data-wz-own] li')].map(l => l.dataset.wzOwn)"), ['evacuation-sanitaire'], '« Retirer » removes it from the list', what='removed')
+    nxt('themes')
+    c.eq(c.count(pane + ' [data-wz-theme]'), 17, 'the seventeen themes, one box each', what='listed')
+    c.eq(ticked(), ['COMMERCIAL'], 'a commercial airline: the Commercial theme ticked in advance', what='default ticked')
+    # tick one more, untick none
+    c.js(f"document.querySelector('{pane} [data-wz-theme=HEMS]').click()")
     if c.width in (390, 1280):
-        c.shot(f'A126_standard_{c.width}_{lang}_categories_delivered.png')
-    # « Retour » keeps the ticks and the typed category
+        c.shot(f'A126_standard_{c.width}_{lang}_themes_delivered.png')
+    # « Retour » keeps the ticks
     c.tap('[data-act="companyBack"]')
     c.until("document.querySelector('[data-wizard]').dataset.step === 'identity'", timeout=6000, what='back')
-    nxt('categories')
-    c.eq([c.js(f"document.querySelector('{pane} [data-wz-cat=vip]').checked"), c.js(f"document.querySelectorAll('{pane} [data-wz-own] li').length")], [False, 1], 'back and forth keeps the unticked box and the typed category', what='kept')
+    nxt('themes')
+    c.eq(sorted(ticked()), ['COMMERCIAL', 'HEMS'], 'back and forth keeps the ticks', what='kept')
     nxt('fleet')
     nxt('summary')
-    c.eq(norm(c.text('[data-wz-summary]')).split(' · ')[-2], norm(_noun(lang, 'category', 7)), 'the summary counts the categories kept: six of the base and one of our own', what='count')
+    c.eq(norm(c.text('[data-wz-summary]')).split(' · ')[-2], norm(_noun(lang, 'theme', 2)), 'the summary counts the themes kept: two', what='count')
     c.eq(c.js('window.__puts.length'), 0, 'nothing is written yet', what='no put')
     c.tap('[data-act="companyAdd"]')
     c.until("document.querySelector('[data-wizard]').dataset.step === 'done'", timeout=8000, what='created')
-    c.eq(c.js('window.__puts'), ['airline/rennes/settings.json', 'airline/rennes/categories.json', 'airline/rennes/fleet.json', 'airline/index.json'], 'the settings, the categories, the fleet, and the index last', what='order')
-    doc = c.doc('airline/rennes/categories.json')
-    c.eq([[g['id'], [x['id'] for x in g['categories']]] for g in doc['groups']], [['commercial', ['fret', 'passagers', 'training', 'transit', 'essais-en-vol', 'positionnement']], ['virtuel', ['evacuation-sanitaire']]], 'categories.json: the base without the unticked one, and the airline\u2019s own group', what='file')
-    # a squadron: no commercial category; nothing typed, nothing unticked: no file
+    c.eq(c.js('window.__puts'), ['airline/rennes/settings.json', 'airline/rennes/themes.json', 'airline/rennes/fleet.json', 'airline/index.json'], 'the settings, the themes, the fleet, and the index last', what='order')
+    doc = c.doc('airline/rennes/themes.json')
+    c.eq([doc['schema'], doc['chosen'], doc['added']], [1, ['HEMS', 'COMMERCIAL'], {'themes': [], 'series': {}}], 'themes.json: the ticked themes, in the order of the table', what='file')
+    # a squadron: the sixteen military themes ticked in advance; nothing changed: no file
     c.tap('[data-act="companyStay"]')
     c.page.fill('[data-wizard] [data-f="co-name"]', 'Escadrille Test')
     c.js("document.querySelector('[data-wizard] input[name=wz-kind][value=sog]').click()")
-    nxt('categories')
-    c.eq([c.count(pane + ' [data-wz-cat]'), c.count(pane + ' [data-wz-own]')], [0, 1], 'a squadron: no commercial category, only the field for its own', what='squadron')
+    nxt('themes')
+    c.eq([len(ticked()), 'COMMERCIAL' in ticked()], [16, False], 'a squadron: the sixteen military themes, not the commercial one', what='squadron')
     nxt('fleet')
     nxt('summary')
     c.tap('[data-act="companyAdd"]')
     c.until("document.querySelector('[data-wizard]').dataset.step === 'done'", timeout=8000, what='the squadron created')
-    c.eq([p for p in c.js('window.__puts') if 'escadril' in p], ['airline/escadril/settings.json', 'airline/escadril/fleet.json'], 'nothing typed, nothing unticked: no categories.json (the base stays the suite\u2019s)', what='no file')
+    c.eq([p for p in c.js('window.__puts') if 'escadril' in p], ['airline/escadril/settings.json', 'airline/escadril/fleet.json'], 'ticks as the kind’s default: no themes.json (the kind stays the rule)', what='no file')
     c.check_errors()
 
 
@@ -5192,7 +5172,7 @@ def a127(c):
     nxt = lambda to: (c.tap('[data-act="companyNext"]'), c.until(f"document.querySelector('[data-wizard]').dataset.step === '{to}'", timeout=6000, what=f'the {to} step'))
     pane = '[data-step-pane=fleet]'
     c.page.fill('[data-wizard] [data-f="co-name"]', 'Rennes Motoculture')
-    nxt('categories')
+    nxt('themes')
     nxt('fleet')
     c.eq(norm(c.text('[data-wz-fleet-title]')), norm(tx(sj, 'fleet', lang, after='    steps: {')), 'with no aircraft the title is the name of the step', what='title empty')
     c.until(f"document.querySelectorAll('{pane} [data-wz-results] button').length === 3", timeout=8000, what='the sheets of the base are listed')
@@ -5236,7 +5216,7 @@ def a127(c):
     # ---- « Plus tard »: no aircraft, an empty fleet
     c.tap('[data-act="companyStay"]')
     c.page.fill('[data-wizard] [data-f="co-name"]', 'Bravo Air')
-    nxt('categories')
+    nxt('themes')
     nxt('fleet')
     c.tap(f"{pane} [data-act=companyWzLater]")
     c.until("document.querySelector('[data-wizard]').dataset.step === 'summary'", timeout=6000, what='« Plus tard » goes on to the summary')
@@ -5740,11 +5720,11 @@ def a140(c):
             ['airline/bbb/settings.json', {'schema': 1, 'name': 'Bravo Air', 'kind': 'sog'}, 'document'],
             ['airline/bbb/fleet.json', {'schema': 1, 'aircraft': [{'type': 'C30J', 'registration': 'F-RAJA'}]}, 'document'],
             ['airline/ccc/settings.json', {'schema': 1, 'name': 'Charlie Air', 'kind': 'va'}, 'document']]
-    # the files of each airline (settings, fleet, categories) come back 2.5 s late, the index at once: a slow device, a relay (the data adapter reads them from the page’s store)
+    # the files of each airline (settings, fleet, themes) come back 2.5 s late, the index at once: a slow device, a relay (the data adapter reads them from the page’s store)
     c.page.add_init_script(CLS_PROBE)
     c.page.add_init_script("""(() => { const get = IDBObjectStore.prototype.get;
       IDBObjectStore.prototype.get = function (key) { const q = get.call(this, key);
-        if (!/^airline\\/[a-z0-9_-]+\\/(settings|fleet|categories)\\.json$/.test(String(key))) return q;
+        if (!/^airline\\/[a-z0-9_-]+\\/(settings|fleet|themes)\\.json$/.test(String(key))) return q;
         const late = { get result() { return q.result }, get error() { return q.error } };
         q.onsuccess = () => setTimeout(() => late.onsuccess && late.onsuccess({ target: late }), 2500);
         q.onerror = () => setTimeout(() => late.onerror && late.onerror({ target: late }), 2500);

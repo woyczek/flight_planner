@@ -291,11 +291,11 @@
         ['Luftfahrzeug', 'Luftfahrzeuge'],
         ['aeronave', 'aeronaves']
       ],
-      category: [
-        ['catégorie', 'catégories'],
-        ['category', 'categories'],
-        ['Kategorie', 'Kategorien'],
-        ['categoría', 'categorías']
+      theme: [
+        ['thème', 'thèmes'],
+        ['theme', 'themes'],
+        ['Thema', 'Themen'],
+        ['tema', 'temas']
       ],
       operator: [
         ['opérateur', 'opérateurs'],
@@ -364,7 +364,7 @@
     save: ['Créer la compagnie', 'Create the airline', 'Fluggesellschaft anlegen', 'Crear la compañía'],
     steps: {
       identity: ['Identité', 'Identity', 'Identität', 'Identidad'],
-      categories: ['Catégories de vols', 'Flight categories', 'Flugkategorien', 'Categorías de vuelos'],
+      themes: ['Thèmes de vols', 'Flight themes', 'Flugthemen', 'Temas de vuelos'],
       fleet: ['Flotte', 'Fleet', 'Flotte', 'Flota'],
       summary: ['Résumé', 'Summary', 'Zusammenfassung', 'Resumen']
     },
@@ -395,14 +395,11 @@
     wzRegDup: ['Cette immatriculation est déjà dans la liste.', 'This registration is already in the list.',
       'Dieses Kennzeichen steht schon in der Liste.', 'Esta matrícula ya está en la lista.'
     ],
-    wzCatHint: [
-      'Celles du genre sont cochées d’avance : décochez ce que vous ne volez pas, ajoutez les vôtres.',
-      'The kind’s own are ticked in advance: untick what you do not fly, add your own.',
-      'Die der Art sind vorab angekreuzt: entfernen Sie, was Sie nicht fliegen, und fügen Sie eigene hinzu.',
-      'Las del tipo vienen marcadas: desmarque lo que no vuela y añada las suyas.'
-    ],
-    wzNoBase: ['Ce genre n’a pas de catégorie commune : ajoutez les vôtres.', 'This kind has no common category: add your own.',
-      'Diese Art hat keine gemeinsame Kategorie: fügen Sie eigene hinzu.', 'Este tipo no tiene categorías comunes: añada las suyas.'
+    wzThemeHint: [
+      'Ceux du genre sont cochés d’avance : décochez ce que vous ne volez pas.',
+      'The kind’s own are ticked in advance: untick what you do not fly.',
+      'Die der Art sind vorab angekreuzt: entfernen Sie, was Sie nicht fliegen.',
+      'Los del tipo vienen marcados: desmarque lo que no vuela.'
     ],
     next: ['Suivant', 'Next', 'Weiter', 'Siguiente'],
     back: ['Retour', 'Back', 'Zurück', 'Atrás'],
@@ -416,7 +413,7 @@
     ],
     part: {
       settings: ['les réglages', 'the settings', 'die Einstellungen', 'los ajustes'],
-      categories: ['les catégories', 'the categories', 'die Kategorien', 'las categorías'],
+      themes: ['les thèmes', 'the themes', 'die Themen', 'los temas'],
       fleet: ['la flotte', 'the fleet', 'die Flotte', 'la flota'],
       index: ['l’inscription dans la liste', 'the entry in the list', 'der Eintrag in der Liste', 'la inscripción en la lista']
     },
@@ -439,46 +436,44 @@
     // le genre de la compagnie et ses catégories de missions (SOG-0041, § 10.38)
     kindLabel: ['Genre', 'Kind', 'Art', 'Tipo'],
     kindHelp: {
-      va: ['Une compagnie commerciale : fret, passagers, VIP, entraînement, transit, essais en vol, plus vos propres catégories.',
-        'A commercial airline: cargo, passengers, VIP, training, transit, test flights, plus your own categories.',
-        'Eine kommerzielle Gesellschaft: Fracht, Passagiere, VIP, Training, Transit, Testflüge, dazu Ihre eigenen Kategorien.',
-        'Una compañía comercial: carga, pasajeros, VIP, entrenamiento, tránsito, vuelos de prueba, más sus propias categorías.'
+      va: [
+        'Une compagnie commerciale : le thème Commercial (fret, passagers, rapatriement à vide, VIP, entraînement, transit, essais en vol).',
+        'A commercial airline: the Commercial theme (cargo, passengers, empty leg, VIP, training, transit, test flights).',
+        'Eine kommerzielle Gesellschaft: das Thema Kommerziell (Fracht, Passagiere, Leerflug, VIP, Training, Transit, Testflüge).',
+        'Una compañía comercial: el tema Comercial (carga, pasajeros, vuelo en vacío, VIP, entrenamiento, tránsito, vuelos de prueba).'
       ],
-      sog: ['Une escadrille SO : ses missions préparées, sans catégorie commerciale, avec vos propres catégories.',
-        'An SO squadron: its prepared missions, no commercial category, with your own categories.',
-        'Eine SO-Staffel: ihre vorbereiteten Missionen, keine kommerzielle Kategorie, dazu Ihre eigenen Kategorien.',
-        'Un escuadrón SO: sus misiones preparadas, sin categoría comercial, con sus propias categorías.'
+      sog: ['Une escadrille SO : ses missions préparées, les seize thèmes militaires.',
+        'An SO squadron: its prepared missions, the sixteen military themes.',
+        'Eine SO-Staffel: ihre vorbereiteten Missionen, die sechzehn militärischen Themen.',
+        'Un escuadrón SO: sus misiones preparadas, los dieciséis temas militares.'
       ]
     },
-    kindUnset: ['Choisissez le genre : les catégories du socle en dépendent.', 'Choose the kind: the base categories depend on it.',
-      'Wählen Sie die Art: die Basiskategorien hängen davon ab.', 'Elija el tipo: las categorías base dependen de él.'
+    kindUnset: ['Choisissez le genre : les thèmes cochés d’avance en dépendent.',
+      'Choose the kind: the themes ticked in advance depend on it.',
+      'Wählen Sie die Art: die vorab angekreuzten Themen hängen davon ab.',
+      'Elija el tipo: los temas marcados de antemano dependen de él.'
     ],
-    persoNote: ['Personnel : vos vols hors compagnie, avec les catégories commerciales du socle ; rien à régler ici.',
-      'Personal: your flights outside any airline, with the base commercial categories; nothing to set here.',
-      'Persönlich: Ihre Flüge ohne Gesellschaft, mit den kommerziellen Basiskategorien; hier ist nichts einzustellen.',
-      'Personal: sus vuelos fuera de toda compañía, con las categorías comerciales base; nada que ajustar aquí.'
+    persoNote: ['Personnel : vos vols hors compagnie, avec tous les thèmes ; rien à régler ici.',
+      'Personal: your flights outside any airline, with every theme; nothing to set here.',
+      'Persönlich: Ihre Flüge ohne Gesellschaft, mit allen Themen; hier ist nichts einzustellen.',
+      'Personal: sus vuelos fuera de toda compañía, con todos los temas; nada que ajustar aquí.'
     ],
     ficheTitle: ['Compagnie choisie : {n}', 'Chosen airline: {n}', 'Gewählte Gesellschaft: {n}', 'Compañía elegida: {n}'],
-    catNone: ['Aucune pour l’instant.', 'None yet.', 'Noch keine.', 'Ninguna por ahora.'],
-    catAdd: ['Ajouter une catégorie', 'Add a category', 'Kategorie hinzufügen', 'Añadir una categoría'],
     kindSaved: ['Genre enregistré.', 'Kind saved.', 'Art gespeichert.', 'Tipo guardado.'],
-    catSummary: ['Catégories de missions ({n})', 'Mission categories ({n})', 'Missionskategorien ({n})',
-      'Categorías de misiones ({n})'
+    // les thèmes de missions de la compagnie (SOG-0202 T3, V3_SPECIFICATION § 10.48) : cochés d'avance par le genre, écrits seulement quand on coche autrement
+    themeSummary: ['Thèmes de missions ({n} sur {m})', 'Mission themes ({n} of {m})', 'Missionsthemen ({n} von {m})',
+      'Temas de misiones ({n} de {m})'
     ],
-    catName: ['Nom de la catégorie', 'Category name', 'Name der Kategorie', 'Nombre de la categoría'],
-    catDel: ['Retirer', 'Remove', 'Entfernen', 'Quitar'],
-    catBad: ['Nom refusé : 1 à 40 caractères, avec au moins une lettre ou un chiffre.',
-      'Name refused: 1 to 40 characters, with at least one letter or digit.',
-      'Name abgelehnt: 1 bis 40 Zeichen, mit mindestens einem Buchstaben oder einer Ziffer.',
-      'Nombre rechazado: 1 a 40 caracteres, con al menos una letra o cifra.'
+    themeHint: ['Les thèmes que cette compagnie vole : ses missions et le compte rendu ne proposent que ceux-là.',
+      'The themes this airline flies: its missions and the report offer only these.',
+      'Die Themen, die diese Gesellschaft fliegt: ihre Missionen und der Bericht bieten nur diese an.',
+      'Los temas que vuela esta compañía: sus misiones y el informe solo ofrecen estos.'
     ],
-    catDup: ['Cette catégorie existe déjà.', 'This category already exists.', 'Diese Kategorie gibt es schon.',
-      'Esta categoría ya existe.'
+    themeOne: ['Gardez au moins un thème.', 'Keep at least one theme.', 'Behalten Sie mindestens ein Thema.',
+      'Conserve al menos un tema.'
     ],
-    catFull: ['Quarante catégories au plus.', 'Forty categories at most.', 'Höchstens vierzig Kategorien.',
-      'Cuarenta categorías como máximo.'
-    ],
-    catSaved: ['Catégories enregistrées.', 'Categories saved.', 'Kategorien gespeichert.', 'Categorías guardadas.'],
+    themeSaved: ['Thèmes enregistrés.', 'Themes saved.', 'Themen gespeichert.', 'Temas guardados.'],
+    del: ['Retirer', 'Remove', 'Entfernen', 'Quitar'],
     added: ['Compagnie ajoutée : {n}.', 'Airline added: {n}.', 'Fluggesellschaft hinzugefügt: {n}.', 'Compañía añadida: {n}.'],
     failed: ['Écriture impossible.', 'Could not write.', 'Schreiben nicht möglich.', 'No se pudo escribir.'],
     // la migration de la compagnie unique d'aujourd'hui vers son dossier (verbe airline/migrate du lanceur)
@@ -585,7 +580,7 @@
     nets: [],
     fleet: null,
     kind: '',
-    cats: null,
+    themes: null,
     loading: true
   })), {
     code: PERSO,
@@ -602,11 +597,11 @@
       rows = await Promise.all(list.map(async a => {
         // avant la migration, la compagnie d'aujourd'hui (« default ») est à la racine de data/airline/
         const base = known && a.code === 'default' ? 'airline/' : `airline/${a.code}/`,
-          [s, f, cats] = await Promise.all([ad.get(`${base}settings.json`, {
+          [s, f, themes] = await Promise.all([ad.get(`${base}settings.json`, {
             wait: true
           }).catch(() => null), ad.get(`${base}fleet.json`, {
             wait: true
-          }).catch(() => null), ad.get(`${base}categories.json`, {
+          }).catch(() => null), ad.get(`${base}themes.json`, {
             wait: true
           }).catch(() => null)]);
         return {
@@ -615,7 +610,7 @@
           nets: airlineNets(s),
           fleet: airlineFleet(f),
           kind: KINDS.includes(s?.kind) ? s.kind : '',
-          cats // le categories.json lu, tel quel : le module des catégories le filtre
+          themes // le themes.json lu, tel quel : le module des thèmes le filtre (cleanThemes)
         };
       }));
     return [...rows, {
@@ -630,8 +625,13 @@
   /** Le module pur de l'accord (frame/lib/plural.js), chargé une fois ; null s'il ne se charge pas (les noms restent alors au pluriel). */
   const plLib = () => plP ||= import(new URL('frame/lib/plural.js', ROOT).href).catch(() => null);
   let catLibP = null;
-  /** Le module pur des catégories (frame/lib/mission_categories.js), chargé une fois ; null s'il ne se charge pas (la ligne n'a alors ni genre ni catégories). */
-  const catLib = () => catLibP ||= import(new URL('frame/lib/mission_categories.js', ROOT).href).catch(() => null);
+  /** Les modules purs des thèmes de missions (frame/lib/mission_themes.js) et du genre de la compagnie (frame/lib/airline.js), chargés une fois et réunis ; null s'ils ne se chargent pas (la ligne n'a alors ni genre ni thèmes). */
+  const catLib = () => catLibP ||= Promise.all([import(new URL('frame/lib/mission_themes.js', ROOT).href), import(new URL(
+    'frame/lib/airline.js', ROOT).href)]).then(([T, A]) => ({
+    ...T,
+    KIND_NAMES: A.KIND_NAMES,
+    kindOf: A.kindOf
+  })).catch(() => null);
   /** Le dossier d'une compagnie sous data/ : « airline/ » avant la migration (code default), sinon « airline/<code>/ ». */
   const airlineBase = code => code === 'default' ? 'airline/' : `airline/${code}/`;
   /** La ligne de la liste (jamais un bouton « Choisir ») : bouton radio, nom, code, puis une ligne grise : le genre dit en toutes lettres, les réseaux, la flotte. Le HTML ne dit rien de l'état courant (posé ensuite sur le nœud) : deux dessins qui ne diffèrent que par le choix donnent le même texte. */
@@ -642,23 +642,18 @@
       code = esc(r.code);
     return [`<label class="f-co" data-airline="${code}"><input type="radio" name="co-current" value="${code}" data-act="companyChoose" data-code="${code}"${can ? '' : ' disabled'}><span class="f-co-name"><b>${esc(r.name)}</b> <code>${code}</code></span>`, meta];
   }
-  /** La fiche de la compagnie CHOISIE (les autres n'en ont pas) : le genre en deux boutons radio, une ligne d'explication chacun ; puis les catégories de missions de ce genre, visibles, avec « Ajouter une catégorie ». « Personnel » : une ligne, rien à régler. `lang` : la langue des noms. */
+  /** La fiche de la compagnie CHOISIE (les autres n'en ont pas) : le genre en deux boutons radio, une ligne d'explication chacun ; puis les thèmes de missions, un par case (le sigle, le nom), cochés d'après son fichier ou, sans fichier, d'après le genre (rien n'est écrit tant qu'on ne coche pas). « Personnel » : une ligne, rien à régler. `lang` : la langue des noms. */
   function airlineFicheHtml(r, CL, lang, t) {
     if (!r) return '';
     if (r.code === PERSO) return `<p class="f-muted" data-fiche-perso>${esc(t(TA.persoNote))}</p>`;
     if (!CL) return '';
-    const info = CL.forAirline(r.cats, {
-        code: r.code,
-        settings: {
-          kind: r.kind
-        }
-      }),
+    const list = CL.themes(lang),
+      chosen = new Set(CL.chosenOf(r.themes, r.kind)),
       code = esc(r.code);
     return `<h3>${esc(t(TA.ficheTitle, { n: r.name }))}</h3>
       <fieldset data-kind-set><legend>${esc(t(TA.kindLabel))}</legend>${KINDS.map(k => `<label class="f-check f-kind"><input type="radio" name="co-kind" value="${k}" data-act="companyKind" data-code="${code}" data-kind="${k}"${r.kind === k ? ' checked' : ''}><span><b>${esc(t(CL.KIND_NAMES[k]))}</b><span class="f-muted">${esc(t(TA.kindHelp[k]))}</span></span></label>`).join('')}</fieldset>
-      <h4 data-cats-title>${esc(t(TA.catSummary, { n: info.all.length }))}</h4>${r.kind ? '' : `<p class="f-muted">${esc(t(TA.kindUnset))}</p>`}
-      ${info.groups.map(g => `<p data-cat-group="${esc(g.id)}"><b>${esc(g.names[lang] || g.id)}</b></p>${g.categories.length ? `<ul class="f-cats">${g.categories.map(c => `<li data-cat="${esc(c.id)}">${esc(c.names[lang] || c.id)}${g.id === 'virtuel' ? ` <button type="button" data-act="companyCatDel" data-code="${code}" data-cat="${esc(c.id)}">${esc(t(TA.catDel))}</button>` : ''}</li>`).join('')}</ul>` : `<p class="f-muted">${esc(t(TA.catNone))}</p>`}`).join('')}
-      <div class="f-row"><input type="text" maxlength="40" data-f="cat-${code}" aria-label="${esc(t(TA.catName))}" placeholder="${esc(t(TA.catName))}"><button type="button" data-act="companyCatAdd" data-code="${code}">${esc(t(TA.catAdd))}</button></div><p class="f-msg" data-fiche-msg></p>`;
+      <h4 data-themes-title>${esc(t(TA.themeSummary, { n: list.filter(x => chosen.has(x.id)).length, m: list.length }))}</h4>${r.kind ? '' : `<p class="f-muted">${esc(t(TA.kindUnset))}</p>`}<p class="f-muted">${esc(t(TA.themeHint))}</p>
+      <ul class="f-cats" data-themes>${list.map(x => `<li data-theme="${esc(x.id)}"><label class="f-check"><input type="checkbox" data-act="companyTheme" data-code="${code}" data-theme="${esc(x.id)}"${chosen.has(x.id) ? ' checked' : ''}><span>${esc(x.label)}</span></label></li>`).join('')}</ul><p class="f-msg" data-fiche-msg></p>`;
   }
   /** Écrit le genre d'une compagnie dans son settings.json (le fichier lu, le champ `kind` posé ou retiré) ; faux si le fichier manque ou ne s'écrit pas. */
   async function writeKind(env, code, kind) {
@@ -685,31 +680,24 @@
   /** Un identifiant de catégorie d'après son nom : minuscules sans accent, tirets, 24 signes au plus ; '' si rien ne reste. */
   const catId = name => name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(
     /^-+|-+$/g, '').slice(0, 24).replace(/-+$/g, '');
-  /** Modifie le groupe « virtuel » (les catégories propres de la compagnie) de son categories.json : le fichier d'aujourd'hui, à défaut la base commune, devient le fichier de la compagnie (il remplace la base). `edit(own, file)` rend '' (fait) ou la clé du refus. Rend '' ou la clé du refus. */
-  async function writeCats(env, code, edit) {
+  /** Écrit les thèmes cochés d'une compagnie dans son themes.json : { schema, chosen, added (celui du fichier déjà là, jamais perdu), updated_at, by } ; '' (fait) ou la clé du refus. */
+  async function writeThemes(env, code, chosen) {
     const CL = await catLib();
     if (!CL) return 'failed';
+    if (!chosen.length) return 'themeOne';
     const ad = airlineData(env.FD),
-      path = `${airlineBase(code)}categories.json`,
-      file = CL.clean(await ad.get(path, {
+      path = `${airlineBase(code)}themes.json`,
+      old = CL.cleanThemes(await ad.get(path, {
         wait: true
-      }).catch(() => null)) || CL.clean(CL.BASE);
-    let own = file.groups.find(g => g.id === 'virtuel');
-    if (!own) {
-      if (file.groups.length >= CL.GROUPS_MAX) return 'catFull';
-      own = {
-        id: 'virtuel',
-        names: CL.BASE.groups[1].names,
-        categories: []
-      };
-      file.groups.push(own);
-    }
-    const refused = edit(own, file, CL);
-    if (refused) return refused;
+      }).catch(() => null));
     try {
       await ad.put(path, {
         schema: 1,
-        groups: file.groups,
+        chosen,
+        added: old?.added || {
+          themes: [],
+          series: {}
+        },
         updated_at: now(),
         by: env.id?.trigram || ''
       });
@@ -732,8 +720,8 @@
       ${joinHtml(env)}
       <div data-mig hidden></div></div>`;
   }
-  // les pas de « Créer une compagnie » (V3_SPECIFICATION § 10.38 bis) ; les catégories et la flotte s'y ajoutent avant le résumé (lots B2 et B3)
-  const WZ_STEPS = ['identity', 'categories', 'fleet', 'summary'];
+  // les pas de « Créer une compagnie » (V3_SPECIFICATION § 10.38 bis) ; les thèmes et la flotte s'y ajoutent avant le résumé (lots B2 et B3, SOG-0202 T3)
+  const WZ_STEPS = ['identity', 'themes', 'fleet', 'summary'];
   const WZ_REG = /^[A-Z0-9][A-Z0-9-]{1,9}$/,
     WZ_FLEET_MAX = 200;
   // par vue : le pas montré et la reprise d'une création interrompue
@@ -749,7 +737,7 @@
       <section data-step-pane="identity">${fld('co-name', TA.name, '')}${fld('co-code', TA.code, '')}
         <fieldset data-wz-kind><legend>${esc(t(TA.kindLabel))}</legend>${KINDS.map(k => `<label class="f-check f-kind"><input type="radio" name="wz-kind" value="${k}"${k === 'va' ? ' checked' : ''}><span><b data-kind-name="${k}"></b><span class="f-muted">${esc(t(TA.kindHelp[k]))}</span></span></label>`).join('')}</fieldset>
         <fieldset><legend>${esc(t(TA.networks))}</legend>${AIRLINE_NETWORKS.map(k => `<label class="f-check"><input type="checkbox" data-co-net="${k}"> ${esc(t(TA.net[k]))}</label>`).join('')}</fieldset></section>
-      <section data-step-pane="categories" hidden></section>
+      <section data-step-pane="themes" hidden></section>
       <section data-step-pane="fleet" hidden><h4 data-wz-fleet-title></h4><p class="f-muted">${esc(t(TA.wzFleetHint))}</p>
         ${fld('wz-sheet-q', TA.wzSheetQ, '')}<div data-wz-results></div>
         <div data-wz-pick hidden><p data-wz-picked></p>${fld('wz-reg', TA.wzReg, '', { cap: true })}<div class="f-row"><button type="button" data-act="companyWzReg">${esc(t(TA.wzRegAdd))}</button></div></div>
@@ -775,94 +763,48 @@
       resume = !!WZ.get(view)?.resume,
       on = {
         companyBack: name !== 'identity',
-        companyNext: name === 'identity' || name === 'categories' || name === 'fleet',
+        companyNext: name === 'identity' || name === 'themes' || name === 'fleet',
         companyAdd: name === 'summary' && !resume,
         companyResume: name === 'summary' && resume
       };
     for (const [act, show] of Object.entries(on)) nav.querySelector(`[data-act="${act}"]`).hidden = !show;
     nav.hidden = name === 'done';
   }
-  /** Le volet « Catégories de vols » : celles du socle pour le genre, cochées d'avance, puis les propres de la compagnie (champ + « Ajouter une catégorie ») ; construit quand le genre change seulement : un coche ou une catégorie saisie ne se perd pas d'un aller-retour. */
-  function wizardCatsBuild(env, kind) {
+  /** Le volet « Thèmes de vols » : les thèmes du genre cochés d'avance (CL.defaultChosen), les autres décochés ; construit quand le genre change seulement : une coche ne se perd pas d'un aller-retour. */
+  function wizardThemesBuild(env, kind) {
     const {
       view,
       t
-    } = env, pane = view.querySelector('[data-step-pane="categories"]'), A = AIR.get(view), CL = A?.CL, lang = A?.lang || 'fr';
+    } = env, pane = view.querySelector('[data-step-pane="themes"]'), A = AIR.get(view), CL = A?.CL, lang = A?.lang || 'fr';
     if (!pane || pane.dataset.kind === kind) return;
     pane.dataset.kind = kind;
-    const base = CL ? CL.forAirline(null, {
-        code: 'new',
-        settings: {
-          kind
-        }
-      }).groups.filter(g => g.id !== 'virtuel') : [],
-      own = CL?.BASE.groups.find(g => g.id === 'virtuel');
-    pane.innerHTML = `<p class="f-muted">${esc(t(TA.wzCatHint))}</p>
-      ${base.length ? base.map(g => `<fieldset data-wz-group="${esc(g.id)}"><legend>${esc(g.names[lang] || g.id)}</legend>${g.categories.map(x => `<label class="f-check"><input type="checkbox" data-wz-cat="${esc(x.id)}" checked> ${esc(x.names[lang] || x.id)}</label>`).join('')}</fieldset>`).join('') : `<p class="f-muted">${esc(t(TA.wzNoBase))}</p>`}
-      <h4>${esc(own?.names[lang] || '')}</h4><ul class="f-cats" data-wz-own></ul>
-      <div class="f-row"><input type="text" maxlength="40" data-f="wz-cat" aria-label="${esc(t(TA.catName))}" placeholder="${esc(t(TA.catName))}"><button type="button" data-act="companyWzCatAdd">${esc(t(TA.catAdd))}</button></div>`;
+    const on = new Set(CL ? CL.defaultChosen(kind) : []);
+    pane.innerHTML = `<p class="f-muted">${esc(t(TA.wzThemeHint))}</p>
+      <ul class="f-cats" data-wz-themes>${CL ? CL.themes(lang).map(x => `<li><label class="f-check"><input type="checkbox" data-wz-theme="${esc(x.id)}"${on.has(x.id) ? ' checked' : ''}><span>${esc(x.label)}</span></label></li>`).join('') : ''}</ul>`;
   }
-  /** Les catégories saisies au pas ② : { off: [identifiants du socle décochés], own: [{ id, name }] }, et le nombre de catégories retenues. */
-  function wizardCats(view) {
-    const pane = view.querySelector('[data-step-pane="categories"]'),
-      boxes = [...pane.querySelectorAll('[data-wz-cat]')],
-      own = [...pane.querySelectorAll('[data-wz-own] li')].map(li => ({
-        id: li.dataset.wzOwn,
-        name: li.dataset.name
-      }));
+  /** Les thèmes cochés au pas ② : { chosen: [identifiants dans l'ordre de la table], n }. */
+  function wizardThemes(view) {
+    const chosen = [...view.querySelectorAll('[data-step-pane="themes"] [data-wz-theme]')].filter(b => b.checked).map(b => b.dataset
+      .wzTheme);
     return {
-      off: boxes.filter(b => !b.checked).map(b => b.dataset.wzCat),
-      own,
-      n: boxes.filter(b => b.checked).length + own.length
+      chosen,
+      n: chosen.length
     };
   }
-  /** Ajoute une catégorie propre à la liste du pas ② (mêmes règles que la fiche : nom de 1 à 40 signes, identifiant sans accent, jamais le doublon d'une catégorie du socle ni d'une déjà saisie, quarante au plus). */
-  function wizardCatAdd(env) {
-    const {
-      view,
-      t
-    } = env, pane = view.querySelector('[data-step-pane="categories"]'), CL = AIR.get(view)?.CL, field = pane.querySelector(
-        '[data-f="wz-cat"]'),
-      name = field.value.replace(/\s+/g, ' ').trim().slice(0, 41), id = catId(name);
-    if (!CL) return;
-    if (!name || name.length > 40 || !id) return wizardSay(view, t(TA.catBad));
-    const taken = new Set([...CL.clean(CL.BASE).groups.flatMap(g => g.categories.map(x => x.id)), ...[...pane.querySelectorAll(
-      '[data-wz-own] li')].map(li => li.dataset.wzOwn)]);
-    if (taken.has(id)) return wizardSay(view, t(TA.catDup));
-    if (wizardCats(view).n >= CL.CATEGORIES_MAX) return wizardSay(view, t(TA.catFull));
-    wizardSay(view, '');
-    const li = document.createElement('li');
-    li.dataset.wzOwn = id;
-    li.dataset.name = name;
-    li.append(name, ' ');
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.dataset.act = 'companyWzCatDel';
-    b.textContent = t(TA.catDel);
-    li.append(b);
-    pane.querySelector('[data-wz-own]').append(li);
-    field.value = '';
-  }
-  /** Le fichier categories.json du stepper : la base commune sans les catégories décochées, et le groupe propre de la compagnie ; null quand il ne diffère pas de la base (rien n'est alors écrit : la base reste celle de la suite). */
-  function wizardCatsFile(view, v, now_, by) {
+  /** Le fichier themes.json du stepper ; null quand les thèmes cochés sont ceux du genre (rien n'est alors écrit : le genre reste la règle). */
+  function wizardThemesFile(view, v, now_, by) {
     const CL = AIR.get(view)?.CL,
-      c = wizardCats(view);
-    if (!CL || (!c.off.length && !c.own.length)) return null;
-    const groups = CL.clean(CL.BASE).groups.map(g => ({
-      ...g,
-      categories: g.id === 'virtuel' ? c.own.map(x => ({
-        id: x.id,
-        names: {
-          fr: x.name,
-          en: x.name,
-          de: x.name,
-          es: x.name
-        }
-      })) : g.categories.filter(x => !c.off.includes(x.id))
-    })).filter(g => g.categories.length);
+      c = wizardThemes(view);
+    if (!CL || !c.n) return null;
+    const def = CL.defaultChosen(v.kind);
+    if (def.length === c.n && def.every(id => c.chosen.includes(id))) return null;
     return {
       schema: 1,
-      groups,
+      chosen: c.chosen,
+      added: {
+        themes: [],
+        series: {}
+      },
       updated_at: now_,
       by
     };
@@ -948,7 +890,7 @@
     const b = document.createElement('button');
     b.type = 'button';
     b.dataset.act = 'companyWzRegDel';
-    b.textContent = t(TA.catDel);
+    b.textContent = t(TA.del);
     li.append(b);
     list.append(li);
     field.value = '';
@@ -1006,7 +948,7 @@
   function wizardSummary(env, v) {
     const KN = AIR.get(env.view)?.CL?.KIND_NAMES,
       nets = AIRLINE_NETWORKS.filter(k => v.nets[k]).map(k => env.t(TA.net[k]));
-    return [v.name, KN ? env.t(KN[v.kind]) : '', ...nets, nounText(env.view, 'category', wizardCats(env.view).n), nounText(env.view,
+    return [v.name, KN ? env.t(KN[v.kind]) : '', ...nets, nounText(env.view, 'theme', wizardThemes(env.view).n), nounText(env.view,
       'aircraft', wizardFleet(env.view).length)].filter(Boolean).join(' · ');
   }
   /** « Suivant » et « Retour » : d'un pas à l'autre (l'identité est vérifiée en quittant le premier), sans rien perdre ; le résumé est composé en y arrivant. */
@@ -1020,7 +962,7 @@
       const v = wizardValues(view),
         why = await wizardCheck(env, v);
       if (why) return wizardSay(view, why);
-      wizardCatsBuild(env, v.kind);
+      wizardThemesBuild(env, v.kind);
     }
     if (to === 'fleet') {
       wizardFleetPaint(view, env.t);
@@ -1054,7 +996,7 @@
         updated_at: now(),
         by: env.id?.trigram || ''
       },
-      catsFile = wizardCatsFile(view, v, stamp.updated_at, stamp.by),
+      themesFile = wizardThemesFile(view, v, stamp.updated_at, stamp.by),
       FL = await import(new URL('modules/aircraft/fleet.js', ROOT).href).catch(() => null),
       fleet = wizardFleet(view).map(a => FL ? FL.normalize(a) : a),
       todo = [
@@ -1065,8 +1007,8 @@
           kind: v.kind,
           ...stamp
         }],
-        ...(catsFile ? [
-          ['categories', `airline/${v.code}/categories.json`, catsFile]
+        ...(themesFile ? [
+          ['themes', `airline/${v.code}/themes.json`, themesFile]
         ] : []),
         ['fleet', `airline/${v.code}/fleet.json`, {
           schema: 1,
@@ -1134,7 +1076,7 @@
       pick.hidden = true;
       delete pick.dataset.type;
     }
-    const pane = w.querySelector('[data-step-pane="categories"]');
+    const pane = w.querySelector('[data-step-pane="themes"]');
     if (pane) {
       pane.innerHTML = '';
       delete pane.dataset.kind;
@@ -1617,7 +1559,7 @@
       markCurrent(env.view, code);
       return paintFiche(env);
     }
-    if (act === 'companyKind' || act === 'companyCatAdd' || act === 'companyCatDel') {
+    if (act === 'companyKind' || act === 'companyTheme') {
       const code = b.dataset.code || '';
       if (!AIRLINE_CODE.test(code)) return;
       if (act === 'companyKind') {
@@ -1633,34 +1575,17 @@
         c.notify(t(TA.kindSaved), 'ok');
         return airlineLive(env);
       }
-      let why;
-      if (act === 'companyCatDel') {
-        const id = b.dataset.cat || '';
-        why = await writeCats(env, code, own => {
-          own.categories = own.categories.filter(x => x.id !== id);
-          return '';
-        });
-      } else {
-        const name = val(`cat-${code}`, card('company')).replace(/\s+/g, ' ').slice(0, 41),
-          id = catId(name);
-        if (!name || name.length > 40 || !id) return ficheSay(env, t(TA.catBad));
-        why = await writeCats(env, code, (own, file, CL) => {
-          if (file.groups.some(g => g.categories.some(x => x.id === id))) return 'catDup';
-          if (file.groups.reduce((n, g) => n + g.categories.length, 0) >= CL.CATEGORIES_MAX) return 'catFull';
-          own.categories.push({
-            id,
-            names: {
-              fr: name,
-              en: name,
-              de: name,
-              es: name
-            }
-          });
-          return '';
-        });
+      // un thème coché ou décoché : les cases de la fiche, dans l'ordre de la table, sont le nouveau choix (au moins un) ; themes.json est écrit, `added` gardé
+      const chosen = [...env.view.querySelectorAll('[data-airline-fiche] [data-themes] input[data-theme]')].filter(i => i.checked).map(
+          i => i.dataset.theme),
+        why = await writeThemes(env, code, chosen);
+      if (why) {
+        const host = env.view.querySelector('[data-airline-fiche]');
+        if (host) host.__html = '';
+        paintFiche(env);
+        return ficheSay(env, t(TA[why] || TA.failed));
       }
-      if (why) return ficheSay(env, t(TA[why] || TA.failed));
-      c.notify(t(TA.catSaved), 'ok');
+      c.notify(t(TA.themeSaved), 'ok');
       return airlineLive(env);
     }
     if (act === 'companyPlan' || act === 'companyMigrate') {
@@ -1713,7 +1638,6 @@
       joinReset(env.view);
       location.hash = '#missions';
     }
-    if (act === 'companyWzCatAdd') return wizardCatAdd(env);
     if (act === 'companyWzSheet') return wizardSheetPick(env, b.dataset.id || '');
     if (act === 'companyWzReg') return wizardRegAdd(env);
     if (act === 'companyWzRegDel') {
@@ -1721,7 +1645,6 @@
       return wizardFleetPaint(env.view, env.t);
     }
     if (act === 'companyWzLater') return wizardMove(env, 1);
-    if (act === 'companyWzCatDel') return b.closest('li')?.remove();
     if (act === 'companyFly') {
       // « Voler pour cette compagnie » : la compagnie devient la courante, puis Missions
       const code = WZ.get(env.view)?.code || '';
@@ -1732,10 +1655,10 @@
   }
 
   (window.SogSettingsParts ||= {}).airline = {
-    acts: ['companyChoose', 'companyAdd', 'companyNext', 'companyBack', 'companyResume', 'companyStay', 'companyFly', 'companyWzCatAdd',
+    acts: ['companyChoose', 'companyAdd', 'companyNext', 'companyBack', 'companyResume', 'companyStay', 'companyFly',
       'companyJnClip', 'companyJnNext', 'companyJnBack', 'companyJnGo', 'companyJnResume', 'companyJnStay', 'companyJnFly',
-      'companyWzCatDel', 'companyWzSheet', 'companyWzReg', 'companyWzRegDel', 'companyWzLater', 'companyPlan',
-      'companyMigrate', 'companyKind', 'companyCatAdd', 'companyCatDel'
+      'companyWzSheet', 'companyWzReg', 'companyWzRegDel', 'companyWzLater', 'companyPlan',
+      'companyMigrate', 'companyKind', 'companyTheme'
     ],
     html: airlineHtml,
     live: airlineLive,
