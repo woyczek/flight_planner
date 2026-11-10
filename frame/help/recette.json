@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 69,
-  "verdicts": 30
+  "verdicts": 18
  },
  "apps": [
   "pilote",
@@ -24,9 +24,13 @@
    },
    "test": "Réglages › Compagnie : la liste est à boutons radio, chaque ligne dit son genre (« Commerciale », « Escadrille SO », « Personnel ») ; choisir une compagnie ne fait rien clignoter ; dessous, la fiche de la compagnie choisie montre Genre et « Catégories de missions » sans rien déplier, avec « Ajouter une catégorie ». (Créer et rejoindre une compagnie : étape suivante, pas encore.)",
    "since": "2026-11-10",
-   "state": "ko",
-   "comment": "plutôt qu’un bouton « choisir », un bouton radio. ergonomie ! on ne sait pas si c’est un sog, ou une compagnie commerciale. En plus, ça clignote au choix. Où est « catégorie de missions » ? je cesse de chercher, je laisse l’ergo redéfinir le chemin utilisateur. Use cases : - 1/ je crée une compagnie commerciale, rennes motoculture, je définis les catégories de vol, et j’affecte des appareils depuis la base - 2/ je rejoins une compagnie SO, via un site web de la flotte, je le parse, et je vole les missions pré-préparées dans la base. - 3/ uses cases déjà définis de compagnie locale",
-   "at": "2026-11-10T10:23:04Z"
+   "state": "todo",
+   "delivered": "2026-11-10T11:05:00Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "plutôt qu’un bouton « choisir », un bouton radio. ergonomie ! on ne sait pas si c’est un sog, ou une compagnie commerciale. En plus, ça clignote au choix. Où est « catégorie de missions » ? je cesse de chercher, je laisse l’ergo redéfinir le chemin utilisateur. Use cases : - 1/ je crée une compagnie commerciale, rennes motoculture, je définis les catégories de vol, et j’affecte des appareils depuis la base - 2/ je rejoins une compagnie SO, via un site web de la flotte, je le parse, et je vole les missions pré-préparées dans la base. - 3/ uses cases déjà définis de compagnie locale",
+    "at": "2026-11-10T10:23:04Z"
+   }
   },
   {
    "id": "SOG-0046",
@@ -39,9 +43,13 @@
    },
    "test": "Lanceur relancé. Carburant › SID / STAR : « Relire » les procédures de LFPO, attendre une minute, puis Carte sur Orly à zoom 14, panneau Sol : soit « Sol lu avec les procédures du … » et les taxiways nommés sont dessinés, soit « Sol non lu : raison · Réessayer » ; « Réessayer » relance la lecture seule.",
    "since": "2026-11-09",
-   "state": "ko",
-   "comment": "rien (cf. screenshot, relecture du 10/11 09:00Z)",
-   "at": "2026-11-10T09:04:51Z"
+   "state": "todo",
+   "delivered": "2026-11-10T09:51:19Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "rien (cf. screenshot, relecture du 10/11 09:00Z)",
+    "at": "2026-11-10T09:04:51Z"
+   }
   },
   {
    "id": "SOG-0051",
@@ -54,9 +62,13 @@
    },
    "test": "Compagnie › Missions › une mission : la première page montre, dans l'ordre, titre, catégorie, la description courte en deux lignes, puis les risques, les équipes, les zones, « Préparer ce vol » ; « Détail » ouvre description longue, zones à activer, cartes ; « Voir sur la Carte » d'une zone ouvre la Carte centrée dessus.",
    "since": "2026-11-09",
-   "state": "ko",
-   "comment": "oui, mais la description courte, avant les les risques.  addenda au précédent reporting : oui pour la carte, c’est bien. néanmoins, on affiche les cartes selon différents thèmes : VFR topographique sur la carte « cible » d’un SAR ou HEMS, par ex.. Généralement sur une mission SO, la cible est en vfr. d’autres aussi, à réfléchir (ou trancher, ou permettre de changer de vue). sur une commerciale, non, mais sur du SO, oui.  Validé, avec réserves, donc refusé.",
-   "at": "2026-11-10T09:35:59Z"
+   "state": "todo",
+   "delivered": "2026-11-10T10:02:52Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "oui, mais la description courte, avant les les risques.  addenda au précédent reporting : oui pour la carte, c’est bien. néanmoins, on affiche les cartes selon différents thèmes : VFR topographique sur la carte « cible » d’un SAR ou HEMS, par ex.. Généralement sur une mission SO, la cible est en vfr. d’autres aussi, à réfléchir (ou trancher, ou permettre de changer de vue). sur une commerciale, non, mais sur du SO, oui.  Validé, avec réserves, donc refusé.",
+    "at": "2026-11-10T09:35:59Z"
+   }
   },
   {
    "id": "SOG-0056",
@@ -69,9 +81,13 @@
    },
    "test": "Carburant › Vol : « Niveau (FL) » et « Date du vol » sont sur la même rangée, alignés ; « Auto » est collé à droite du champ Niveau ; dessous, une seule ligne « auto · durée ». Changer la route → le niveau est recalculé ; taper un niveau → « auto » disparaît.",
    "since": "2026-11-09",
-   "state": "ko",
-   "comment": "accepté, mais régression sur l’affichage. mauvais placement du label, écran devenu brouillon (screenshot)",
-   "at": "2026-11-10T09:05:53Z"
+   "state": "todo",
+   "delivered": "2026-11-10T11:26:59Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "accepté, mais régression sur l’affichage. mauvais placement du label, écran devenu brouillon (screenshot)",
+    "at": "2026-11-10T09:05:53Z"
+   }
   },
   {
    "id": "SOG-0057",
@@ -85,6 +101,7 @@
    "test": "Maintenance › Appareils › une fiche : plus de ligne de provenance sous chaque champ, une marque « • » en fin de libellé (son survol dit la source), une seule ligne « Sources » par carte ; « Carburant en volume » renvoie à l'aide par un « ? ».",
    "since": "2026-11-09",
    "state": "ok",
+   "delivered": "2026-11-09T10:10:12Z",
    "at": "2026-11-10T10:33:37Z"
   },
   {
@@ -98,9 +115,13 @@
    },
    "test": "Carburant › Vol : le bouton « Changer » (avec la loupe) suit immédiatement le nom de l'appareil, dans sa ligne ; il ouvre la recherche d'appareil. Carburant › Résultat : l'appareil du devis est écrit en tête de la barre.",
    "since": "2026-11-09",
-   "state": "ko",
-   "comment": "le bouton de recherche est au bout du monde (le seul à être aligné à droite) et on ne le voit pas. ergonomie.",
-   "at": "2026-11-10T09:06:29Z"
+   "state": "todo",
+   "delivered": "2026-11-10T09:58:28Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "le bouton de recherche est au bout du monde (le seul à être aligné à droite) et on ne le voit pas. ergonomie.",
+    "at": "2026-11-10T09:06:29Z"
+   }
   },
   {
    "id": "SOG-0065",
@@ -114,6 +135,7 @@
    "test": "Maintenance › Données › Paquets : les régions (Europe du Nord…) et les thèmes (Îles, Mégalopoles…) sont listés avec leur nombre de pays et leur taille ; l'Antarctique est vide avec sa raison.",
    "since": "2026-11-09",
    "state": "ok",
+   "delivered": "2026-11-09T15:48:35Z",
    "comment": "presque.   Ergo : ce n’était pas si mal de choisir un pays parmi un package, tu a complètement tout supprimé. replié, ça pourrait être bien ?",
    "at": "2026-11-10T11:23:07Z"
   },
@@ -169,7 +191,8 @@
    },
    "test": "Maintenance › Données › Base aéronautique : « Mettre à jour » est le seul bouton en vue ; il pose une seule question qui nomme les zones à reconstruire et leur raison ; les autres verbes sont sous « Plus » ; « Seulement les périmés », « Tout désélectionner » et le rectangle (Maj + glisser) cochent ce qu'ils disent.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-09T15:09:29Z"
   },
   {
    "id": "SOG-0072",
@@ -235,6 +258,7 @@
    "test": "Carburant › Route, LFPO → EIDW : « Calculer A → B » propose des itinéraires en moins de dix secondes ; « Contrôler » une route saisie marque ses segments fautifs ; « Prendre » écrit la route, la SID et la STAR.",
    "since": "2026-11-09",
    "state": "ok",
+   "delivered": "2026-11-09T16:57:23Z",
    "at": "2026-11-10T09:06:49Z"
   },
   {
@@ -248,7 +272,8 @@
    },
    "test": "Maintenance › Données › Procédures › ligne « Route (RAD, points FRA) » : « Importer de Téléchargements » montre d'abord les classeurs trouvés, puis les importe ; dans Carburant, sans RAD, le pas Route dit « Aucun RAD importé » avec un lien vers cette ligne.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-09T14:36:17Z"
   },
   {
    "id": "SOG-0126",
@@ -261,7 +286,8 @@
    },
    "test": "Maintenance › Données : « Prendre le fichier téléchargé » avec les trois zips NATS dans Téléchargements → les trois jeux sont pris ou dits déjà pris, le cycle de gb est dit.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-09T14:29:16Z"
   },
   {
    "id": "SOG-0127",
@@ -274,7 +300,8 @@
    },
    "test": "Carburant › Vol : le bouton ⇄ entre Départ et Arrivée échange les deux terrains ; la route de l'aller est effacée avec une notification.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-09T14:27:48Z"
   },
   {
    "id": "SOG-0133",
@@ -287,7 +314,8 @@
    },
    "test": "Ouvrir Réglages : l'écran apparaît tout de suite ; la ligne « Dépôt des données » montre « … » puis sa valeur, sans que rien ne bouge.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-09T15:23:07Z"
   },
   {
    "id": "SOG-0134",
@@ -300,9 +328,13 @@
    },
    "test": "Carburant › Route avec la Carte à côté, après « Calculer A → B » : les itinéraires sont tracés fins ; une voie est en trait plein avec son nom, un direct en tirets, une route libre (FRA) en pointillé, un écart aux règles en rouge ; les points ne sont nommés qu'une fois ; « Légende » (repliée) dit les mêmes traits et les mêmes mots sur la Carte et dans l'écran Route.",
    "since": "2026-11-10",
-   "state": "ko",
-   "comment": "oui, ça fonctionne. c’est moche, on ne voit pas ni les points ni les awy, ni si c’est du DCT, du FRA… parce que c’est uniforméement de la même couleur, très gros, et sans légende. Réserves donc.",
-   "at": "2026-11-10T10:16:08Z"
+   "state": "todo",
+   "delivered": "2026-11-10T11:09:43Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "oui, ça fonctionne. c’est moche, on ne voit pas ni les points ni les awy, ni si c’est du DCT, du FRA… parce que c’est uniforméement de la même couleur, très gros, et sans légende. Réserves donc.",
+    "at": "2026-11-10T10:16:08Z"
+   }
   },
   {
    "id": "SOG-0135",
@@ -315,7 +347,8 @@
    },
    "test": "Même test que SOG-0046 : après la relecture des procédures de LFPO, le panneau Sol de la Carte dit où en est la lecture du sol, sans bouton à chercher ; un échec est dit avec sa raison.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-10T09:33:26Z"
   },
   {
    "id": "SOG-0136",
@@ -328,7 +361,8 @@
    },
    "test": "Réglages › Synchronisation › Conflits : « Tout marquer comme vu » ; après une heure de travail dans Carburant, aucune nouvelle entrée « version d'un autre appareil » sans différence réelle ; une entrée montre ses lignes qui diffèrent.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-09T16:03:16Z"
   },
   {
    "id": "SOG-0137",
@@ -342,6 +376,7 @@
    "test": "Compagnie › Missions › une mission › « Préparer ce vol », puis ouvrir la Carte : un bandeau donne le titre et la famille de la mission, les zones sont nommées, les points portent leur rôle ; la croix du bandeau revient au vol.",
    "since": "2026-11-09",
    "state": "ok",
+   "delivered": "2026-11-09T16:24:21Z",
    "comment": "carrément ! Là c’est inteligent.",
    "at": "2026-11-10T09:33:06Z"
   },
@@ -356,9 +391,13 @@
    },
    "test": "Pilote › Météo, carte dézoomée au-delà de la zone du vol : en haut à gauche « Synoptique monde absent · Construire (2 min) » ; l'appui montre l'avancement (n/25) puis la carte synoptique s'affiche avec l'heure du modèle, sans quitter l'écran. Un échec dit sa raison avec « Réessayer ».",
    "since": "2026-11-10",
-   "state": "ko",
-   "comment": "screenshot. {  \"at\": \"2026-11-10T09:26:02.375Z\",  \"app\": \"pilot\",  \"suite\": {   \"version\": \"v6.0.0-alpha.4-173-g6399f5a28\",   \"date\": \"2026-11-10\",   \"time\": \"10:19\",   \"web\": \"https://framagit.org/asr/flight_planner\"  },  \"transport\": \"launcher\",  \"online\": true,  \"syncing\": false,  \"lastSync\": \"2026-11-10T09:21:40.172Z\",  \"lastError\": \"\",  \"pending\": 1,  \"queue\": [   {    \"path\": \"pilot/RBR/current_flight.json\",    \"module\": \"fuel\",    \"at\": \"2026-11-10T09:21:31.301Z\",    \"deletion\": false   }  ],  \"conflicts\": 0,  \"tree\": {   \"head\": \"19c0b8a6436d\",   \"at\": \"2026-11-10T09:21:30.334Z\",   \"fi",
-   "at": "2026-11-10T09:26:17Z"
+   "state": "todo",
+   "delivered": "2026-11-10T11:12:30Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "screenshot. {  \"at\": \"2026-11-10T09:26:02.375Z\",  \"app\": \"pilot\",  \"suite\": {   \"version\": \"v6.0.0-alpha.4-173-g6399f5a28\",   \"date\": \"2026-11-10\",   \"time\": \"10:19\",   \"web\": \"https://framagit.org/asr/flight_planner\"  },  \"transport\": \"launcher\",  \"online\": true,  \"syncing\": false,  \"lastSync\": \"2026-11-10T09:21:40.172Z\",  \"lastError\": \"\",  \"pending\": 1,  \"queue\": [   {    \"path\": \"pilot/RBR/current_flight.json\",    \"module\": \"fuel\",    \"at\": \"2026-11-10T09:21:31.301Z\",    \"deletion\": false   }  ],  \"conflicts\": 0,  \"tree\": {   \"head\": \"19c0b8a6436d\",   \"at\": \"2026-11-10T09:21:30.334Z\",   \"fi",
+    "at": "2026-11-10T09:26:17Z"
+   }
   },
   {
    "id": "SOG-0139",
@@ -371,9 +410,13 @@
    },
    "test": "Carte avec une route : toucher « Météo de la route » affiche tout de suite « Lecture de la météo de la route… » avec les secondes ; plusieurs appuis ne lancent qu'une lecture ; à la fin les vents sont dessinés, ou une raison est dite avec « Réessayer ». La page reste utilisable pendant la lecture. (Le gel du lanceur quand Open-Meteo coupe est suivi à part : SOG-0178.)",
    "since": "2026-11-10",
-   "state": "ko",
-   "comment": "Oui. mais meteo toujours cassée (et bloque le lanceur en cas de clic, peut-être multiple : le bouton est bleu, il reste bleu même après un clic, on ne sait pas ce que fait le lanceur, et rien ne s’affiche. ?). bloque chrome. Néanmoins, stricto-sensu, le bouton fait son taf…",
-   "at": "2026-11-10T09:28:04Z"
+   "state": "todo",
+   "delivered": "2026-11-10T10:06:38Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "Oui. mais meteo toujours cassée (et bloque le lanceur en cas de clic, peut-être multiple : le bouton est bleu, il reste bleu même après un clic, on ne sait pas ce que fait le lanceur, et rien ne s’affiche. ?). bloque chrome. Néanmoins, stricto-sensu, le bouton fait son taf…",
+    "at": "2026-11-10T09:28:04Z"
+   }
   },
   {
    "id": "SOG-0140",
@@ -387,6 +430,7 @@
    "test": "Carburant › Vol : le ⇄ est petit, de la taille du texte, et reste facile à toucher au doigt.",
    "since": "2026-11-09",
    "state": "ok",
+   "delivered": "2026-11-09T15:15:14Z",
    "at": "2026-11-10T10:16:31Z"
   },
   {
@@ -401,6 +445,7 @@
    "test": "Carte sur une route qui sort d'Europe, après « Météo de la route » : les flèches de vent diffèrent d'un lieu à l'autre ; hors couverture, pas de flèche ou une flèche dite « GFS » dans son infobulle.",
    "since": "2026-11-09",
    "state": "ok",
+   "delivered": "2026-11-09T16:41:20Z",
    "at": "2026-11-10T09:16:46Z"
   },
   {
@@ -414,7 +459,8 @@
    },
    "test": "Carburant › Route, coller la route ESSB … ALS N872 PAM … LEMO : PAM et ALS sont placés en Europe ; les points inconnus sont listés avec leur zone et son état.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-09T16:04:59Z"
   },
   {
    "id": "SOG-0143",
@@ -427,7 +473,8 @@
    },
    "test": "Carburant › Route avec un point d'un pays sans points : une ligne dit ce qui manque, propose le geste vers Données (zone cochée, « Mettre à jour » prêt) et les replis Navigraph et ChartFox.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-09T16:43:32Z"
   },
   {
    "id": "SOG-0144",
@@ -451,6 +498,7 @@
    "test": "Carte avec un départ et une arrivée : la route orthodromique est un pointillé fin sous la route ; son infobulle donne sa longueur.",
    "since": "2026-11-09",
    "state": "ok",
+   "delivered": "2026-11-09T16:47:06Z",
    "at": "2026-11-10T09:16:29Z"
   },
   {
@@ -464,7 +512,8 @@
    },
    "test": "Maintenance › Données sur grand écran avec 78 zones : la liste est à droite de la carte, une zone par ligne, l'état en point et mot court ; elle défile sans allonger la page.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-09T16:36:39Z"
   },
   {
    "id": "SOG-0147",
@@ -477,7 +526,8 @@
    },
    "test": "Maintenance › Données › Paquets : l'interrupteur d'une région ajoute toutes ses zones ; l'éteindre les retire après une question qui les nomme ; survoler la rangée surligne ses pays sur la carte.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-09T16:42:44Z"
   },
   {
    "id": "SOG-0148",
@@ -505,7 +555,8 @@
    },
    "test": "Réglages › Synchronisation, après la première synchro du matin : « La plus longue aujourd'hui » dit la durée de chaque étape ; noter l'étape qui prend les deux minutes.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-09T16:39:23Z"
   },
   {
    "id": "SOG-0150",
@@ -518,7 +569,8 @@
    },
    "test": "Maintenance › Données, case d'usage personnel cochée : « Prendre le fichier téléchargé » dit « n jeux NATS déjà pris » ; construire gb → la zone est verte avec ses voies.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-09T17:11:02Z"
   },
   {
    "id": "SOG-0151",
@@ -531,7 +583,8 @@
    },
    "test": "Maintenance › Données › Plus › Télécharger puis « Prendre le fichier téléchargé » : la question tient dans l'écran, ses boutons sont visibles, la liste est repliée à sept lignes.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-09T17:05:23Z"
   },
   {
    "id": "SOG-0154",
@@ -544,7 +597,8 @@
    },
    "test": "Carburant › Route avec LFLL ou LFPO en départ : plus de message « 2 homonymes » pour un terrain.",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-09T17:33:02Z"
   },
   {
    "id": "SOG-0155",
@@ -557,7 +611,8 @@
    },
    "test": "Au prochain échec de publication : le message dit sa cause (« push refusé », « réseau », « crochet LFS ») et l'étape, plus « Corrigez la cause ».",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-09T17:34:32Z"
   },
   {
    "id": "SOG-0156",
@@ -571,6 +626,7 @@
    "test": "Carte en vue double avec la route ESSB → LEMO : déplacer la carte, attendre → plus de gel de trois secondes après le geste ni toutes les quelques secondes.",
    "since": "2026-11-09",
    "state": "ok",
+   "delivered": "2026-11-09T18:00:44Z",
    "comment": "semble ok.",
    "at": "2026-11-10T09:18:14Z"
   },
@@ -586,6 +642,7 @@
    "test": "Carburant › SID / STAR sur un terrain sans procédures (ESSB) : la ligne dit ce que publie son État (« Suède : étiquettes seules ») avec Navigraph et ChartFox ; sur un terrain EAD, le bouton dit « Lire à la demande ».",
    "since": "2026-11-09",
    "state": "ok",
+   "delivered": "2026-11-09T17:33:02Z",
    "comment": "validé sur le fond. néanmoins, dans la roadmap, on doit avoir un moyen de recréer les procédures même si c’est du texte. En l’espèce, les points airnav sont décrits avec leur coordonnées. ex. lemo, rwy 020 : on voit santi, fl270, arjon, ecitja, lante, apadu, moron. https://aip.enaire.es/AIP/contenido_AIP/AD/AD2/LEMO/LE_AD_2_LEMO_CARR_1_en.pdf  . /a minima/ le nom des procédures. est-ce qu’on a besoin d’un moteur de reconaissance texte pour le convertir en tableau ? est-ce qu’on peut imaginer une superposition à 50% alpha de la page 1 de la chart ? je cherche, c’est pour la roadmap, hein.",
    "at": "2026-11-10T10:48:05Z"
   },
@@ -600,9 +657,13 @@
    },
    "test": "Recharger la page, puis Carburant › Vol › Départ : taper « stoc » → Arlanda (ESSA) en tête et Bromma (ESSB) dans les sept ; « usa » → les grands terrains des États-Unis ; « swe » → ceux de Suède. Après « Mettre à jour », l'ordre par taille de piste s'affine.",
    "since": "2026-11-10",
-   "state": "ko",
-   "comment": "SWE… fonctionne. STOC… ne fonctionne pas. USA non plus.",
-   "at": "2026-11-10T08:58:53Z"
+   "state": "todo",
+   "delivered": "2026-11-10T09:28:58Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "SWE… fonctionne. STOC… ne fonctionne pas. USA non plus.",
+    "at": "2026-11-10T08:58:53Z"
+   }
   },
   {
    "id": "SOG-0159",
@@ -615,7 +676,8 @@
    },
    "test": "Modifier un vol dans Carburant puis synchroniser : plus de « refusé par le serveur : last is not defined ».",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-09T17:25:43Z"
   },
   {
    "id": "SOG-0160",
@@ -628,7 +690,8 @@
    },
    "test": "Maintenance › Feuille de route : elle s'ouvre sur « Priorités », trois colonnes sans voies ; glisser une carte au-dessus d'une carte d'un autre thème, puis la glisser sur « En développement » ; recharger → l'ordre et la colonne sont tenus.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-10T08:30:44Z"
   },
   {
    "id": "SOG-0161",
@@ -654,9 +717,13 @@
    },
    "test": "Maintenance › Données, la case « Je certifie utiliser les données pour mon usage personnel » cochée : « Mettre à jour » lance la reconstruction de la base et va au bout ; plus aucun message ne demande de décocher X-Plane. Le lien « Sources et licences » donne éditeur et licence de chaque source.",
    "since": "2026-11-10",
-   "state": "ko",
-   "comment": "refusé. ça empêche de reconstruire (il ne veut pas construire x-plane, et tout est bloqué). En passant, si on clique sur « mettre à jour », puis « prendre le fichier téléchargé », il se passe quoi ? l’information dit « cliquez sur recalculer ». le bouton n’existe plus.  Revoir tout ce process de mise à jour.",
-   "at": "2026-11-10T10:27:05Z"
+   "state": "todo",
+   "delivered": "2026-11-10T10:34:33Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "refusé. ça empêche de reconstruire (il ne veut pas construire x-plane, et tout est bloqué). En passant, si on clique sur « mettre à jour », puis « prendre le fichier téléchargé », il se passe quoi ? l’information dit « cliquez sur recalculer ». le bouton n’existe plus.  Revoir tout ce process de mise à jour.",
+    "at": "2026-11-10T10:27:05Z"
+   }
   },
   {
    "id": "SOG-0163",
@@ -669,9 +736,13 @@
    },
    "test": "Carte avec une route qui traverse des espaces, profil ouvert : un appui sur un bloc le surligne ; « Fiche » ouvre la fiche de l'espace AVEC, à côté (dessous au téléphone), la pile des espaces de ce point en blocs sur l'échelle des niveaux, jamais vide ; toucher un autre bloc change la fiche ; rien ne sort de l'écran.",
    "since": "2026-11-10",
-   "state": "ko",
-   "comment": "noreg : bug d’affichage vertical",
-   "at": "2026-11-10T08:59:08Z"
+   "state": "todo",
+   "delivered": "2026-11-10T11:09:43Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "noreg : bug d’affichage vertical",
+    "at": "2026-11-10T08:59:08Z"
+   }
   },
   {
    "id": "SOG-0164",
@@ -684,7 +755,8 @@
    },
    "test": "Relancer le lanceur, puis ouvrir Maintenance › Données : la page est utilisable en moins d'une seconde, sans temps mort avant l'affichage.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-10T09:17:05Z"
   },
   {
    "id": "SOG-0165",
@@ -698,6 +770,7 @@
    "test": "Maintenance › Données › Paquets de pays › onglet « Thèmes » : ouvrir « Îles » → « Tout le thème » et ses pays sont des lignes à case, entièrement visibles, serrées à la souris ; plus de bouton « Ajouter ».",
    "since": "2026-11-10",
    "state": "ok",
+   "delivered": "2026-11-10T09:24:21Z",
    "at": "2026-11-10T11:22:44Z"
   },
   {
@@ -711,8 +784,12 @@
    },
    "test": "Maintenance : plus d'entrée « Page de maintenance (V2) » dans la colonne ; tout en bas, « Anciennes pages (V2) » range les pages V2 par groupe. Sous « Canadair et pélicandromes », ouvrir « Positionner les pélicandromes » : la carte s'affiche, déplacer un site puis exporter → le fichier pelicandromes_positions.yaml est téléchargé ; le fond satellite est dit indisponible sous le lanceur. Après relance du lanceur : dans l'outil des pélicandromes, le fond satellite (Esri) s'affiche ; plus de ligne « Fond satellite indisponible sous le lanceur ».",
    "since": "2026-11-10",
-   "state": "ok",
-   "at": "2026-11-10T10:31:29Z"
+   "state": "todo",
+   "delivered": "2026-11-10T10:39:30Z",
+   "previous": {
+    "verdict": "ok",
+    "at": "2026-11-10T10:31:29Z"
+   }
   },
   {
    "id": "SOG-0167",
@@ -726,6 +803,7 @@
    "test": "Relancer le lanceur, puis Maintenance › Recette : valider un test, en refuser un autre avec un commentaire, recharger → les verdicts sont tenus ; un refus sans commentaire n'est pas envoyé.",
    "since": "2026-11-10",
    "state": "ok",
+   "delivered": "2026-11-10T08:39:55Z",
    "at": "2026-11-10T10:31:35Z"
   },
   {
@@ -740,6 +818,7 @@
    "test": "Un seul rechargement suffit après un correctif, sans « Nouvelle version disponible ». Quand la page est plus ancienne que le lanceur, un cartouche rouge sombre apparaît dans l'en-tête, sur une ligne, sans recouvrir ses voisins : « Version ancienne · Recharger » en vue large, « Recharger » quand la place manque (téléphone, état de synchronisation long) ; le toucher recharge.",
    "since": "2026-11-10",
    "state": "ok",
+   "delivered": "2026-11-10T10:24:59Z",
    "at": "2026-11-10T10:31:43Z"
   },
   {
@@ -754,6 +833,7 @@
    "test": "Carte en IFR, même zoom, feuille du profil repliée puis ouverte : les mêmes espaces restent affichés. Dézoomer : FIR, TMA, CTA et CTR restent visibles sur toute la vue ; une note dit « Espaces R, D, P… hors du couloir masqués » ; décocher « Autour du vol seulement » → ils apparaissent. Après « Mettre à jour » (analyseur 26) : à zoom large, les FIR des pays voisins (Espagne, Allemagne, Royaume-Uni…) sont dessinées, plus seulement celles de la France.",
    "since": "2026-11-10",
    "state": "ok",
+   "delivered": "2026-11-10T09:09:10Z",
    "at": "2026-11-10T09:25:07Z"
   },
   {
@@ -767,7 +847,8 @@
    },
    "test": "Ouvrir la Carte, puis Maintenance › Données : l'affichage arrive nettement plus vite qu'hier (moins d'une seconde pour Données, lanceur relancé).",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-10T09:02:39Z"
   },
   {
    "id": "SOG-0171",
@@ -781,6 +862,7 @@
    "test": "Compagnie › Missions › une mission SO (SAR, HEMS…) › « Voir sur la Carte » de la carte cible : elle s'ouvre sur un fond VFR topographique (relief, obstacles, terrains VFR), plus sur un fond uni ; le bandeau porte « Vue » : VFR topo / IFR / Fond seul, et le choix est retenu pour cette carte. Retirer le bandeau rend la vue du vol.",
    "since": "2026-11-10",
    "state": "ok",
+   "delivered": "2026-11-10T10:19:55Z",
    "comment": "oui. ok aussi pour le détail et la vue double. sauf pour la complexité. le curseurs a disparu, et on sait qu’il sert à épargner la vue et le cpu. le vfr topo n’a pas de courbes de niveau ?? il avait ça en v2. Le clignottement au double clic sur un espace ? la vue coupe clignotte tant que la fenêtre n’a pas réduit au max.  Autant j’aime bien la vue « préparer le vol » avec la popup sur la carte, autant c’est déstabilisant d’avoir l’onglet « couches » qui sert à autre chose que choisir les éléments à afficher. Ça doublonne avec la popup en plus.",
    "at": "2026-11-10T11:01:58Z"
   },
@@ -795,7 +877,8 @@
    },
    "test": "Ouvrir Réglages (et Données) : l'écran se dessine une fois et ne clignote plus quand l'état du dépôt arrive ; seuls les blocs qui en dépendent changent, rien ne saute.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-10T10:27:31Z"
   },
   {
    "id": "SOG-0173",
@@ -808,7 +891,8 @@
    },
    "test": "Carte en zoom arrière prononcé (Europe entière) : déplacer la carte ne fait plus apparaître les voies aériennes basses, ni pendant le geste ni au relâchement ; en zoomant elles reviennent comme avant.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-10T10:44:36Z"
   },
   {
    "id": "SOG-0175",
@@ -821,7 +905,8 @@
    },
    "test": "Carte à zoom proche sur un VOR (Pontoise, Melun, Deauville) : un seul grand cercle fin (environ 5 NM), graduations vers l'intérieur tous les 10°, seulement les chiffres 0, 9, 18, 27 à l'intérieur, une pointe aux points cardinaux, la flèche du nord magnétique depuis la station. À comparer à tes cartes : taille du cercle, sens des chiffres.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-10T11:35:56Z"
   },
   {
    "id": "SOG-0176",
@@ -834,7 +919,8 @@
    },
    "test": "Carburant › Procédures, arrivée sur un terrain français avec une approche ILS choisie : sous le choix de l'approche, « ILS <piste> · <indicatif> <fréquence> · axe <cap>° » ; arrivée repliée, le résumé dit « I<piste> · <indicatif> <fréquence> ». Sur la Carte, l'infobulle de l'ILS donne la même fréquence. Après « Mettre à jour » : pareil sur un terrain britannique ou espagnol.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-10T11:31:14Z"
   },
   {
    "id": "SOG-0177",
@@ -847,7 +933,8 @@
    },
    "test": "Carte avec une route longue (KDEN → LEMO) : une douzaine de repères de distance au plus à l'écran, à pas rond ; sur le profil, l'axe porte quelques repères lisibles (1000, 2000…), plus une bande serrée.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-10T10:44:39Z"
   },
   {
    "id": "SOG-0178",
@@ -860,7 +947,8 @@
    },
    "test": "Après relance du lanceur : Carte avec une route, toucher plusieurs fois « Météo de la route », y compris quand Open-Meteo répond mal : les autres pages et onglets continuent de se charger, Chrome ne se fige plus ; au pire la météo dit « occupé » ou sa raison avec « Réessayer ».",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-10T10:28:49Z"
   },
   {
    "id": "SOG-0179",
@@ -874,6 +962,7 @@
    "test": "Compte rendu › Mission › liste « Famille », et Compagnie › Missions : chaque famille se dit par son sigle d'abord puis son nom long (« SAR · Récupération de personnel »), le sigle en gras dans les intertitres ; jamais le nom long seul.",
    "since": "2026-11-10",
    "state": "ok",
+   "delivered": "2026-11-10T10:31:34Z",
    "comment": "oui, mais on ne sait pas pour quelle compagnie on fait le cr. réserve non bloquante.",
    "at": "2026-11-10T10:41:07Z"
   },
@@ -888,7 +977,8 @@
    },
    "test": "Maintenance › Données › « Mettre à jour » : la mise à jour va au bout même si une zone échoue ; sous la sélection, un bilan en une ligne (à jour · à reconstruire · en échec · attend un fichier) dont chaque nombre montre ses zones ; une zone en échec porte « Réessayer » sur sa ligne ; une zone qui attend un fichier dit lequel et porte « Prendre le fichier téléchargé », qui lance ensuite sa construction tout seul ; aucun message ne cite un bouton qui n'existe pas.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-10T11:26:14Z"
   },
   {
    "id": "SOG-0181",
@@ -901,7 +991,8 @@
    },
    "test": "Compte rendu : sous le titre, « Compte rendu pour <compagnie> · <genre> » ; tant que le CR n'est pas enregistré, le toucher mène au choix de la compagnie ; un CR enregistré garde sa compagnie même si tu en changes ensuite. « Mes vols » dit la compagnie sur chaque ligne dès qu'il y en a plus d'une.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-10T11:22:00Z"
   },
   {
    "id": "SOG-0183",
@@ -914,7 +1005,8 @@
    },
    "test": "Compagnie › Missions › une mission › « Voir sur la Carte » : le curseur de complexité est là, comme sur la Carte du vol, et le déplacer allège ou enrichit la carte de mission.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-10T11:15:22Z"
   },
   {
    "id": "SOG-0184",
@@ -927,7 +1019,8 @@
    },
    "test": "Compagnie › Missions › une mission SO › carte cible en vue VFR topo, à zoom de travail : les courbes de niveau sont dessinées sous les espaces et la route ; avec la complexité basse, seules les courbes maîtresses restent. Dis si la carte rame à zoom proche.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-10T11:27:22Z"
   },
   {
    "id": "SOG-0185",
@@ -940,7 +1033,8 @@
    },
    "test": "Carte avec une route qui traverse des espaces, profil ouvert : ouvrir la fiche d'un espace (bloc puis « Fiche ») ne fait plus clignoter la coupe ; la fiche s'ouvre sous l'onglet du profil (sa puce reste allumée, pas celle des Couches), avec son titre et sa croix ; la puce du profil la referme.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-10T11:23:16Z"
   },
   {
    "id": "SOG-0186",
@@ -953,7 +1047,8 @@
    },
    "test": "Maintenance › Données › « Paquets de pays » : chaque région garde sa case « tout le paquet » et porte un pli « Pays (n) », replié ; ouvert, il liste les pays avec une case chacun ; cocher un pays l'ajoute seul à la couverture, sans rien télécharger.",
    "since": "2026-11-10",
-   "state": "todo"
+   "state": "todo",
+   "delivered": "2026-11-10T11:36:49Z"
   }
  ]
 }
