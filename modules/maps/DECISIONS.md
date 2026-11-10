@@ -2118,6 +2118,14 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done**: the hours and remarks themselves (AeroDB's reading, D4); no NOTAM or AZBA reading; the real SIA text of R 61 was not
   looked at on his base (the synthetic spaces of the case); the profile's block under a finger on a phone is not measured (44 px rows
   yes, the block is the drawn block).
+- **Refusal of the recette (10 Nov, 9 h 59: « bug d'affichage vertical »; capture 095804: in the double view the map takes the whole height and the
+  profile sheet is reduced to its toolbar at the bottom)**: the only new thing that can move a page is `card.scrollIntoView` in `fillCard`, which scrolls **every**
+  scrollable ancestor (the page, the pane of the double view), not only the body of the sheet. Replaced by `showIn(body, el)`: only the body of the sheet scrolls.
+  Noreg D133 (the card calls no `scrollIntoView`; nothing outside the body scrolls; the sheet, the map and the profile are exactly as at the opening once closed; 390 and
+  1 280 in the pane): **red before on the `scrollIntoView` call only** — I could **not** reproduce the shift of the layout itself in the harness (the sheet kept its height and
+  place with the old code too, at 390 / 590 / 1 280 and in the real double view with his flight), so that this is the cause of his capture is an inference,
+  not a proof. Also: a tap on the profile now opens the list when it lands on a block (SOG-0163) — in a profile crowded with blocks almost every tap does: to ask
+  him whether that is what he saw.
 - **Noreg** D131 (R: from its block in the profile, from its row on the map; the P; seven lines then « n more »; red without the code).
 
 ## A far point does not slow the Map down (9 Nov 2026, SOG-0156)

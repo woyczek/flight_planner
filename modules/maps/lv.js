@@ -117,13 +117,20 @@ export function lvEvents() {
   });
   return () => body.removeEventListener('click', click);
 }
+/** Fait défiler le corps de la feuille, et lui seul, pour montrer el : jamais `scrollIntoView`, qui fait défiler tous les ancêtres défilables (la page,
+ *  le volet de la vue double) et pousse la feuille hors de l'écran — « sizing vertical non recalculé », refus de recette de SOG-0163. */
+function showIn(body, el) {
+  if (!body || !el) return;
+  const b = body.getBoundingClientRect(),
+    r = el.getBoundingClientRect();
+  if (r.bottom > b.bottom) body.scrollTop += r.bottom - b.bottom;
+  if (r.top < b.top) body.scrollTop -= b.top - r.top;
+}
 /** La fiche écrite (et la date de la base, quand AeroDB la donne). */
 function fillCard(card, a) {
   card.innerHTML = spaceCardHtml(a);
   card.hidden = false;
-  card.scrollIntoView({
-    block: 'nearest'
-  }); // la fiche sous le graphique : la feuille la montre
+  showIn(S.dbodyEl, card); // la fiche sous le graphique : le corps de la feuille la montre
   Promise.resolve(S.ctx?.aerodb?.status?.()).catch(() => null).then(st => {
     const el = card.querySelector('.mp-sp-cyc');
     if (el && st?.cycle) el.textContent = `(${String(st.cycle).slice(0, 10)})`;

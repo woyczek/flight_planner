@@ -4165,3 +4165,43 @@ def d132(c):
     full, note_f, _ = _classes(c, 'auto', 4, 5, corridor=False)
     c.ok(b1 < full and {'asR', 'asD', 'asP'} <= full, f'{sorted(b1)} -> {sorted(full)}', 'with the corridor unticked the view is read whole: R, D and P appear (they were hidden by the corridor)')
     c.ok(not note_f, str(note_f), 'and the note is gone')
+
+
+_GEO_SHEET = """() => { const q = s => document.querySelector(s), r = e => { if (!e) return null; const b = e.getBoundingClientRect(); return [Math.round(b.left), Math.round(b.top), Math.round(b.width), Math.round(b.height)] };
+  const sc = []; for (let e = q('.mp-data'); e; e = e.parentElement) if (e.scrollTop) sc.push((e.className || e.tagName).toString().slice(0, 30) + ':' + e.scrollTop);
+  return { panel: r(q('.mp-data')), box: r(q('.mp-box')), pc: r(q('canvas.mp-pc')), body: r(q('.mp-dbody')), card: r(q('.mp-sp-card')), cardShown: !!q('.mp-sp-card') && !q('.mp-sp-card').hidden,
+           scrolled: sc, doc: [document.scrollingElement.scrollTop, innerHeight] } }"""
+
+
+@case('D133', 'The sheet of a space does not move the page: the profile keeps its geometry when the sheet opens and closes, nothing scrolls outside the sheet’s body, the map and the sheet keep their heights', 'D',
+      tags=('maps', 'sheet'), designs=('standard',), night=False, screens=False, langs4=True,
+      rule='user 10 Nov, refusal of SOG-0163 (« l\'affichage est fortement impacté, sizing vertical non recalculé »; capture 095804: in the double view the map takes the whole height and the profile sheet is reduced to its toolbar at the bottom): opening the sheet of a space must scroll the body of the sheet only (scrollIntoView scrolled every scrollable ancestor, the pane too); the profile’s width and height are the same after it closes, the sheet’s and the map’s heights never change, the sheet is where it was')
+def d133(c):
+    ring = lambda la0, la1, lo0, lo1: [[la0, lo0], [la0, lo1], [la1, lo1], [la1, lo0], [la0, lo0]]
+    zones = [{'type': 'R', 'cls': '', 'name': '61', 'key': 'LFR61', 'lower': 'SFC', 'upper': 'FL115', 'azba': True, 'act': 'AZBA', 'admin': 'CCER Bordeaux',
+              'info': 'BORDEAUX ESSAIS 122.9', 'src': 'sia', 'hours': ['H24', 'MON-FRI 0700-1700', 'SAT 0800-1200'], 'rem': ['Remark one', 'Remark two'], 'rings': [ring(44.6, 45.4, 0.4, 1.2)]}]
+    for w, h, q in ((390, 844, 'maps'), (1280, 760, 'maps?pane=1')):
+        c.page.set_viewport_size({'width': w, 'height': h})
+        c.open(q, docs=fdocs(_awy_flight()) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airspaces=zones, wait=False)
+        c.ready('maps', sheet=True)
+        c.js(_STATE_JS)
+        c.until("() => !!(window.__mp.S && window.__mp.S.prof && window.__mp.S.prof.crossed.some(x => x.a.type === 'R'))", timeout=15000, what=f'the profile ({w} px)')
+        c.wait(900)
+        # every scrollIntoView of the sheet's card is a call that scrolls the ancestors too: none must happen
+        c.js("() => { window.__sIV = []; const o = Element.prototype.scrollIntoView; Element.prototype.scrollIntoView = function () { window.__sIV.push((this.className || '').toString()); return o.apply(this, arguments) }; return true }")
+        g0 = c.js(_GEO_SHEET)
+        c.js("() => { window.__want = 'R'; return true }")
+        _click_until(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(_SPACE_CLICK_JS, 5000)),
+                     "() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && k.textContent.length > 20 }", f'the sheet of the R opens ({w} px)')
+        c.wait(700)
+        g1 = c.js(_GEO_SHEET)
+        c.eq(g1['panel'], g0['panel'], 'the sheet keeps its place and its height while the sheet of the space is open', what=f'{w}: panel')
+        c.eq(g1['box'], g0['box'], 'the map keeps its place and its height', what=f'{w}: map box')
+        c.ok(not g1['scrolled'] and g1['doc'][0] == 0, str(g1['scrolled']) + str(g1['doc']), 'nothing scrolls outside the body of the sheet (the page, the pane)')
+        c.eq([x for x in c.js('() => window.__sIV') if 'mp-sp-card' in x], [], 'the card does not call scrollIntoView', what=f'{w}: scrollIntoView')
+        pb, cd = g1['body'], g1['card']
+        c.ok(g1['cardShown'] and cd and pb and cd[1] >= pb[1] - 1 and cd[1] < pb[1] + pb[3], f'card {cd} body {pb}', 'the card starts inside the body of the sheet (reachable by scrolling it)')
+        c.js("() => { const b = document.querySelector('.f-sheet-close'); if (b) b.click(); return true }")
+        c.wait(900)
+        g2 = c.js(_GEO_SHEET)
+        c.eq([g2['panel'], g2['box'], g2['pc']], [g0['panel'], g0['box'], g0['pc']], 'closed: the sheet, the map and the profile are exactly as at the opening (width and height of the graph)', what=f'{w}: after')

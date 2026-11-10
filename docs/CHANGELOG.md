@@ -17,6 +17,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   equal, serves the copy and asks for nothing else; different, it reads the copies again before answering. A navigation was 267 requests and 298–661 ms
   with the previous revalidation (101 requests and 34–44 ms before SOG-0168); it is now 1 request and 33–121 ms, and a fix still arrives at the first load.
 
+- **Map: the sheet of a space no longer scrolls the page or the pane** (`modules/maps/lv.js`; noreg D133; refusal of SOG-0163 by the recette: « sizing vertical non recalculé »).
+  Opening the card used `scrollIntoView`, which scrolls every scrollable ancestor; only the body of the sheet scrolls now. The layout shift of the user's capture was
+  not reproduced in the harness: the cause is an inference.
+
 - **Frame: the tree of `data/` is read from IndexedDB a handful of times per load, not dozens** (`frame/store/frame_data.js`; frame DECISIONS; noreg A121;
   SOG-0169). The head and tree of the repository (10 339 entries on the user's) are one record read about fifty times a load, each read cloning it all
   (BUGS SOG's trace: 1.3 s in the IndexedDB callback on the Map alone); it is now kept in memory and written through (other tabs invalidate it).
