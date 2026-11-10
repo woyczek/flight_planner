@@ -3353,16 +3353,29 @@ def frame_net(a, site_ok=True):
         net_release(u.hostname)
 
 
+def _mtime(p):
+    """Date d'un fichier ; 0 s'il est absent ou disparaît pendant la lecture (un seul appel : pas de course entre « existe » et « date »)."""
+    try:
+        return os.path.getmtime(p)
+    except OSError:
+        return 0
+
+
 def csp_policy(page=''):
     """Valeur de l'en-tête Content-Security-Policy (refaite quand la configuration, les sites autorisés ou les modules
     de l'appli V3 changent : meta.net, hôtes que leurs bibliothèques appellent elles-mêmes) ; page : une page de cspmod.PAGES, qui a la sienne."""
     if page:
         return cspmod.value([*config_sites(), *user_sites(), *cspmod.module_hosts(ROOT)], page=page)
-    key = tuple(os.path.getmtime(p) if os.path.exists(p) else 0 for p in
-                (SITES_FILE, os.path.join(ROOT, 'config', 'repository_tree'), os.path.join(ROOT, 'repository_tree'),
-                 os.path.join(ROOT, 'frame', 'app.js'), *cspmod.module_files(ROOT)))
-    if _csp['key'] != key:
-        _csp.update(key=key, value=cspmod.value([*config_sites(), *user_sites(), *cspmod.module_hosts(ROOT)]))
+    # SOG-0219 : un fichier remplacé pendant la lecture (git, un alignement du dossier) ne fait pas tomber la requête : une lecture qui échoue garde la valeur
+    # précédente (réessayée à l'appel suivant) ; sans valeur précédente, la politique de base, sans site ajouté (la plus stricte)
+    try:
+        key = tuple(_mtime(p) for p in (SITES_FILE, os.path.join(ROOT, 'config', 'repository_tree'), os.path.join(ROOT, 'repository_tree'),
+                                         os.path.join(ROOT, 'frame', 'app.js'), *cspmod.module_files(ROOT)))
+        if _csp['key'] != key:
+            _csp.update(key=key, value=cspmod.value([*config_sites(), *user_sites(), *cspmod.module_hosts(ROOT)]))
+    except OSError:
+        if not _csp['value']:
+            _csp['value'] = cspmod.value([])
     return _csp['value']
 
 

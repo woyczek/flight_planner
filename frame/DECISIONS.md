@@ -2843,3 +2843,10 @@ the page did not know the launcher had gone (state `down`, 8 s watch), and, when
 replaces the survey when the stamp, the version, the host or `data` / `dataGit` / `lan` differ (wiring redone with `loadDevice` only when `data`, `dataGit` or `lan` changed), repaints the status and the version, and is called every
 minute and at each return to the foreground (a restart between two passes). Pairing of other devices is the launcher's own state (read from it again, not kept on the page). Noreg A138, red before (the cartouche never appears).
 
+
+## 10 November 2026 — the launcher's content policy survives a file replaced while it is read (SOG-0219 (2))
+
+`csp_policy()` (`tools/launch.py`) read the dates of the files it depends on with « exists » then « getmtime » (a race) and listed the modules from `frame/app.js`: while an alignment of the folder replaced the file, a
+`FileNotFoundError` fell on the request. Now `_mtime` reads once (0 when the file is not there) and the whole read is guarded: a read that fails keeps the previous policy (tried again at the next call); with no previous one, the base policy with
+no added site (the strictest). Never a wider policy on a failure. Noreg K154, red before (`FileNotFoundError: config/repository_tree`). The launcher must be restarted to take it.
+

@@ -2698,3 +2698,47 @@ def k144(c):
         srv.shutdown()
         srv.server_close()
         L.Setup.port = kept_port
+
+
+@case('K154', 'The launcher’s content policy survives a file replaced while it is read: a failing read keeps the previous value, the request does not fail (SOG-0219)', 'K', static=True,
+      rule='SOG-0219 (the ergonomist, 10 Nov: « FileNotFoundError … frame\app.js » raised in csp_policy while an alignment of E:\DEFA replaced the file): csp_policy() read the dates of the files it depends on with « exists » then « getmtime » (a race) and listed the modules from frame/app.js; any OSError there fell on the request; now a read that fails keeps the previous policy (tried again at the next call), and without a previous one the base policy with no added site')
+def k154(c):
+    import importlib
+    import sys
+    sys.path.insert(0, str(c.root / 'tools'))
+    L = importlib.import_module('launch')
+    first = L.csp_policy()
+    c.ok(first.startswith('connect-src'), first[:40], 'the policy is built')
+    real_mtime, real_files = L.os.path.getmtime, L.cspmod.module_files
+    try:
+        # the date of a file read while it is replaced
+        L._csp['key'] = None
+        L.os.path.getmtime = lambda p: (_ for _ in ()).throw(FileNotFoundError(p))
+        try:
+            got = L.csp_policy()
+            ok = True
+        except OSError as e:
+            got, ok = str(e), False
+        c.ok(ok and got == first, got[:80], 'a date that cannot be read: the previous policy, no exception')
+        L.os.path.getmtime = real_mtime
+        # the list of the modules (frame/app.js) read while it is replaced
+        L._csp['key'] = None
+        L.cspmod.module_files = lambda root: (_ for _ in ()).throw(FileNotFoundError('frame/app.js'))
+        try:
+            got = L.csp_policy()
+            ok = True
+        except OSError as e:
+            got, ok = str(e), False
+        c.ok(ok and got == first, got[:80], 'the list of modules cannot be read: the previous policy, no exception')
+        # no previous policy at all: the base one, without any added site
+        L._csp.update(key=None, value='')
+        try:
+            base = L.csp_policy()
+            ok = True
+        except OSError as e:
+            base, ok = str(e), False
+        c.ok(ok and base.startswith('connect-src') and 'server.arcgisonline.com' not in base, base[:80], 'no previous policy: the base policy, no exception')
+    finally:
+        L.os.path.getmtime, L.cspmod.module_files = real_mtime, real_files
+        L._csp.update(key=None, value='')
+    c.eq(L.csp_policy(), first, 'back to normal: the policy is built again from the files', what='back')
