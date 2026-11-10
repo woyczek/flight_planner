@@ -4625,6 +4625,8 @@ def a117(c):
         body = {'server': True, 'data': False, 'dataGit': False, 'host': 'TEST', 'lan': False, 'lnm': [], 'version': ver,
                 **({'app': state['app']} if state['app'] else {})} if u.endswith('/__setup/status') else {}
         route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    # the page served is the one the case writes: no service worker here (its copy would answer a navigation before the network route does)
+    c.page.add_init_script("Object.defineProperty(navigator, 'serviceWorker', { get: () => undefined })")
     c.context.unroute(re.compile(r'/__setup/'))
     c.context.route(re.compile(r'/__setup/'), launcher)
     # the page loaded with another stamp than the launcher's today: the line, last but the version

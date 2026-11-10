@@ -794,9 +794,12 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
   `frame/lib/test/sw_update.html`, A53). Known limit: with two tabs open, the one that reloads takes the new version for
   both, and the other may still mix until its own reload.
 - **On a workstation with the launcher** (page served by the loopback: `localhost`, `127.0.0.1`, `[::1]`; 10 Nov 2026, SOG-0168): no question, and
-  no second load. At each page load the service worker asks the launcher again for every copy (conditional: `If-None-Match`, a 304 carries no body),
-  replaces the ones that changed in place and drops the ones the launcher no longer serves, before answering the page; 4 s at most, a launcher that
-  does not answer leaves the copy. The page loaded is the one the launcher serves now, at the first load after a fix. The note « Reload »
+  no second load. At each page load the service worker makes **one request**: the launcher's fingerprint of everything it serves to the frame
+  (`GET /__setup/frame-stamp`: path, date and size of every file of `frame/` and `modules/` without `test/` and of the icon, hashed, kept 1 s in
+  memory). Equal to the one of its copies: it serves the copy and asks for **nothing else**, not even the file-by-file revalidation of the copy-first mode.
+  Different: it asks again for every copy (conditional: `If-None-Match`, a 304 carries no body), replaces the ones that changed in place, drops the
+  ones the launcher no longer serves, then keeps the new fingerprint (4 s at most; a read cut short keeps the old one: another try at the next load). A
+  launcher that does not answer in 2 s leaves the copy. The page loaded is the one the launcher serves now, at the first load after a fix. The note « Reload »
   stays on every other device (phone, GitHub Pages), where it protects a flight in progress. The page says when it is older than the launcher:
   the launcher's status gives the stamp it puts on `frame/app.js` today (`app`), the page its own (the `?v=` of its script); different, a line
   « This page is older than the launcher: reload » in the Status block, a tap reloads (A117); the version line gives the commit's time too (`version.time`).

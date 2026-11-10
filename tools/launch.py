@@ -950,6 +950,13 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                            'host': socket.gethostname(), 'lan': self._lan(), 'lnm': [] if self._lan() else lnm_db_kinds(),
                            'version': suite_version(), 'app': app_stamp()})
 
+    @route('GET', '/__setup/frame-stamp')
+    def _get_frame_stamp(self, path):
+        # une seule demande par navigation du service worker (SOG-0168) : l'empreinte de tout ce que le lanceur sert au cadre
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json({'stamp': frame_fingerprint()})
+
     @route('GET', '/__setup/workstation', public='poste')
     def _get_workstation(self, path):
         # réglages du poste pour ses propres pages (V2 : premier lancement, Paramètres, cadre de page) : chemin
@@ -2538,6 +2545,46 @@ def suite_version():
         v = {'version': desc[:80], 'date': m.group(1) if m else date[:10], 'time': m.group(2) if m else '', 'web': suite_web()} if desc else None
     _suite_version.update(at=time.monotonic(), v=v)
     return v
+
+
+_frame_fp = {'at': 0.0, 'v': ''}
+
+
+def frame_fingerprint():
+    """Empreinte unique de ce que le lanceur sert au cadre (frame/, modules/, sans les dossiers test/, et l'icône) : le chemin, la date et la
+    taille de chaque fichier, hachés. Le service worker la compare à celle de sa copie (SOG-0168) : égale, il sert sa copie sans rien
+    redemander ; différente, il relit ce qui a changé. Gardée une seconde en mémoire (un chargement de page = beaucoup de demandes)."""
+    now = time.monotonic()
+    if _frame_fp['v'] and now - _frame_fp['at'] < 1:
+        return _frame_fp['v']
+    h = hashlib.sha1()
+
+    def walk(folder):
+        try:
+            with os.scandir(folder) as it:
+                entries = sorted(it, key=lambda e: e.name)
+        except OSError:
+            return
+        for e in entries:
+            if e.is_dir(follow_symlinks=False):
+                if e.name != 'test':
+                    walk(e.path)
+            else:
+                try:
+                    st = e.stat(follow_symlinks=False)
+                except OSError:
+                    continue
+                h.update(f'{os.path.relpath(e.path, ROOT)}|{st.st_mtime_ns}|{st.st_size};'.encode('utf-8', 'surrogateescape'))
+    for sub in ('frame', 'modules'):
+        walk(os.path.join(ROOT, sub))
+    h.update(b'assets/favicon-flight.svg')
+    try:
+        st = os.stat(os.path.join(ROOT, 'assets', 'favicon-flight.svg'))
+        h.update(f'|{st.st_mtime_ns}|{st.st_size}'.encode())
+    except OSError:
+        pass
+    _frame_fp.update(at=now, v=h.hexdigest()[:16])
+    return _frame_fp['v']
 
 
 def app_stamp():

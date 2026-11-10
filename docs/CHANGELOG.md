@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: one request per navigation on a workstation, not 130** (`frame/sw.js`, `tools/launch.py`; frame SPEC § 3.6, DECISIONS; noreg A53; SOG-0168).
+  The launcher gives one fingerprint of what it serves to the frame (`GET /__setup/frame-stamp`); the service worker compares it with its copies' and,
+  equal, serves the copy and asks for nothing else; different, it reads the copies again before answering. A navigation was 267 requests and 298–661 ms
+  with the previous revalidation (101 requests and 34–44 ms before SOG-0168); it is now 1 request and 33–121 ms, and a fix still arrives at the first load.
+
 - **Frame: the tree of `data/` is read from IndexedDB a handful of times per load, not dozens** (`frame/store/frame_data.js`; frame DECISIONS; noreg A121;
   SOG-0169). The head and tree of the repository (10 339 entries on the user's) are one record read about fifty times a load, each read cloning it all
   (BUGS SOG's trace: 1.3 s in the IndexedDB callback on the Map alone); it is now kept in memory and written through (other tabs invalidate it).

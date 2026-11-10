@@ -50,7 +50,10 @@
       net = {
         version: 'v2',
         fail: '', // une adresse dont la relecture échoue (réseau perdu en route)
-        down: false // le serveur ne répond plus (lanceur arrêté)
+        down: false, // le serveur ne répond plus (lanceur arrêté)
+        stamp: 's1', // l'empreinte de ce que le lanceur sert (GET /__setup/frame-stamp)
+        files: 0, // demandes de fichiers faites au serveur (hors empreinte)
+        stamps: 0 // demandes d'empreinte
       },
       messages = [];
     for (const k of await caches.keys())
@@ -73,6 +76,13 @@
       fakeFetch = async input => {
         const u = String(input?.url || input).split('?')[0];
         if (net.down || net.fail && u === net.fail) throw new TypeError('Failed to fetch');
+        if (u.endsWith('/__setup/frame-stamp')) {
+          net.stamps++;
+          return new Response(JSON.stringify({
+            stamp: net.stamp
+          }));
+        }
+        net.files++;
         return new Response(`${net.version} ${u}`);
       };
     const src = await (await fetch('../../sw.js', {
@@ -161,6 +171,7 @@
     };
     net.version = 'v2';
     net.fail = '';
+    net.files = net.stamps = 0;
     const lpage = await lask(L, 'navigate');
     const lall = await Promise.all(lfiles.map(liveText));
     ck('lanceur présent : la page chargée est la nouvelle version, dès ce chargement', lpage.startsWith('v2'), lpage);
@@ -168,11 +179,30 @@
         'v2')) &&
       !(await caches.has('sog-frame-v1-next')), JSON.stringify(lall));
     ck('lanceur présent : aucune annonce « Nouvelle version » (rien à accepter)', lmsgs.length === 0, lmsgs.join());
+    // empreinte égale : UNE demande, rien d'autre (aucune copie redemandée, aucune revérification fichier par fichier)
     net.version = 'v3';
+    net.files = net.stamps = 0;
+    const lsame = await lask(L, 'navigate');
+    await lask(L + 'app.js');
+    await lask(L + 'settings/settings.js');
+    ck('empreinte égale : la copie est servie (rien n’a changé pour le lanceur)', lsame.startsWith('v2'), lsame);
+    ck('empreinte égale : une seule demande au lanceur (l’empreinte), aucun fichier redemandé', net.stamps === 1 && net.files === 0,
+      `empreintes ${net.stamps}, fichiers ${net.files}`);
+    // empreinte différente : les copies sont relues, la page chargée est la nouvelle
+    net.stamp = 's2';
+    net.files = net.stamps = 0;
+    const lnew = await lask(L, 'navigate');
+    ck('empreinte différente : la page chargée est la nouvelle version, dès ce chargement', lnew.startsWith('v3') && (await Promise.all(
+        lfiles.map(liveText))).every(t => t?.startsWith('v3')),
+      lnew);
+    net.version = 'v4';
     net.down = true;
-    ck('lanceur arrêté : la copie tient, la page se charge', (await lask(L, 'navigate')).startsWith('v2'));
+    ck('lanceur arrêté : la copie tient, la page se charge', (await lask(L, 'navigate')).startsWith('v3'));
     net.down = false;
-    ck('lanceur de retour : la version suivante est prise au chargement qui suit', (await lask(L, 'navigate')).startsWith('v3'));
+    ck('lanceur de retour, même empreinte : la copie, rien de relu', (await lask(L, 'navigate')).startsWith('v3'));
+    net.stamp = 's3';
+    ck('lanceur de retour, empreinte changée : la version suivante est prise au chargement qui suit', (await lask(L, 'navigate'))
+      .startsWith('v4'));
   } catch (e) {
     ck('exception', false, e.stack || String(e));
   }

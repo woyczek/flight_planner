@@ -2675,3 +2675,18 @@ route) → 4 (the route table read by the frame and I10) → 2 (one pairing modu
   cross-tab flag), the JSON parse of a cached document at every read (`valueOf`, 83 ms in the trace; a shared parsed copy would need callers that never
   mutate), and `cache/data/coverage.json`, a 121 ms write at every load of Maintenance › Données (the Données module's). The trace of 90 s idle (0 requests,
   0.3 % CPU) says nothing is polling.
+- **10 Nov 2026 — One request per navigation, not 130** (SOG-0168; the user: « relecture à chaque chargement, n'est-ce pas faire et défaire ? Tu l'as mis en place
+  pour optimisation, non ? »: right in part; Simplification: one fingerprint; V3 Frame). **Measured** (Chrome with the service worker active, a real launcher
+  on a `data/` of 10 339 files, loopback, 163 copies in the cache, four reloads each): before SOG-0168 (copy first, revalidation in the background) 101
+  service-worker requests, page answered in 3–5 ms, loaded in 34–44 ms; with the conditional revalidation of every copy at each navigation (3511460a7)
+  **267 requests (147 conditional), page answered in 267–605 ms, loaded in 298–661 ms**, ten to fifteen times the load time, because the page waited for the
+  147 and the copy-first mode still revalidated each file it served; now **1 request** (the fingerprint, 7–29 ms on the launcher), page answered in 10–29 ms,
+  loaded in 33–121 ms (reloads 2 to 4; the first navigation after the install reads every copy once: 165 requests, 337 ms). **How:** the launcher answers
+  `GET /__setup/frame-stamp` with one fingerprint of what it serves to the frame (`frame_fingerprint`, a `scandir` of `frame/` and `modules/` without
+  `test/`, `(path, mtime_ns, size)` hashed, 1 s in memory: a file's date invalidates it); the service worker keeps the fingerprint of its copies
+  (`__sog-frame-stamp` in the copies' cache), compares at each navigation, and on a difference reads every copy again (`syncLocal`) before answering; in the
+  local mode the copy is served without the file-by-file revalidation. A mute or slow (2 s) launcher leaves the copy. A fingerprint kept only when the whole
+  read succeeded. Noreg A53 (the service worker bench: equal fingerprint → one request and no file asked, the copy served; a different one → the page and
+  every copy are the new version at that load; launcher stopped → the copy; back with the same fingerprint → the copy; changed → the next version), red on
+  f68db9ceb. **Limit:** a file whose date and size do not change (a replaced file with the same size and date) would not show; the launcher's own stamps
+  (`?v=`) have the same limit (signature date and size).

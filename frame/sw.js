@@ -124,13 +124,15 @@ async function serve(req, e) {
       'x-sog-offline': '1'
     }
   }));
-  // un chargement de page prend la version suivante complète, d'un coup, avant de lire quoi que ce soit ; avec le lanceur du poste, toutes les
-  // copies sont d'abord revérifiées auprès de lui (4 s au plus : un lanceur qui ne répond pas laisse la copie)
-  if (req.mode === 'navigate' && LOCAL) await Promise.race([syncLocal(c), new Promise(r => setTimeout(r, 4000))]);
+  // un chargement de page prend la version suivante complète, d'un coup, avant de lire quoi que ce soit ; avec le lanceur du poste, UNE demande
+  // (son empreinte de ce qu'il sert) : égale à celle de la copie, rien d'autre n'est demandé ; différente, les copies sont relues d'abord
+  if (req.mode === 'navigate' && LOCAL) await localCheck(c);
   else if (req.mode === 'navigate' && await stageReady()) await swap(c);
   const key = keyOf(req.url),
     hit = await c.match(key),
     old = hit?.clone(); // copie lue plus tard pour la comparaison (le corps de hit part à la page)
+  // poste avec lanceur : la copie est celle du lanceur (empreinte vérifiée à la navigation), aucun fichier n'est revérifié un à un
+  if (LOCAL && hit) return hit;
   // la page est revérifiée à l'adresse de sa copie (…/frame/index.html) : un serveur peut répondre autrement pour le
   // dossier (le lanceur ne pose ses empreintes ?v= que sur index.html) et chaque chargement verrait sinon une nouvelle
   // version — l'avis « Nouvelle version » revenait en boucle
@@ -156,12 +158,40 @@ async function serve(req, e) {
     }
   });
 }
-/** Poste avec lanceur : chaque copie est redemandée au lanceur (conditionnel : ETag, 304 sans corps) avant que la page soit servie ; celle
- *  qui a changé est remplacée sur place, celle que le lanceur ne sert plus est retirée ; un échec (lanceur occupé) laisse la copie. La page
- *  chargée est ainsi celle que le lanceur sert maintenant, au premier chargement qui suit un correctif, sans « nouvelle version » à accepter. */
+/** Clé, dans le cache des copies, de l'empreinte du lanceur au moment où elles ont été relues. */
+const STAMP = `${self.location.origin}${SCOPE}__sog-frame-stamp`;
+/** Poste avec lanceur, à chaque navigation : UNE demande, l'empreinte de tout ce que le lanceur sert au cadre (GET /__setup/frame-stamp). Égale
+ *  à celle de la copie : rien d'autre n'est demandé. Différente : toutes les copies relues d'abord (syncLocal, 4 s au plus), puis la nouvelle
+ *  empreinte gardée. Lanceur muet ou lent (2 s) : la copie. La page chargée est celle que le lanceur sert maintenant, au premier chargement qui
+ *  suit un correctif, sans « nouvelle version » à accepter (SOG-0168). */
+async function localCheck(c) {
+  let stamp = null;
+  try {
+    const r = await fetch(`${self.location.origin}${ROOT}__setup/frame-stamp`, {
+      cache: 'no-store',
+      headers: {
+        'X-SOG-Setup': '1'
+      },
+      signal: AbortSignal.timeout?.(2000)
+    });
+    if (r.ok) stamp = String((await r.json())?.stamp || '') || null;
+  } catch {
+    /* lanceur muet ou lent : la copie */
+  }
+  if (!stamp) return;
+  const mine = await (await c.match(STAMP))?.text();
+  if (mine === stamp) return;
+  const done = await Promise.race([syncLocal(c), new Promise(r => setTimeout(() => r(false), 4000))]);
+  if (done) await c.put(STAMP, new Response(stamp));
+}
+/** Les copies relues auprès du lanceur (conditionnel : ETag, 304 sans corps) ; celle qui a changé est remplacée sur place, celle que le lanceur
+ *  ne sert plus est retirée ; un échec (lanceur occupé) laisse la copie et rend false (l'empreinte n'est pas gardée : nouvel essai à la navigation
+ *  suivante). */
 async function syncLocal(c) {
   await caches.delete(STAGE).catch(() => {}); // une version suivante à moitié relue n'a plus d'objet
+  let ok = true;
   await Promise.all((await c.keys()).map(async req => {
+    if (req.url === STAMP) return;
     try {
       const had = await c.match(req),
         tag = had?.headers.get('etag'),
@@ -175,9 +205,10 @@ async function syncLocal(c) {
       if (r.status === 404) return void await c.delete(req);
       if (r.ok && (await had.clone().text()) !== (await r.clone().text())) await c.put(req.url, r);
     } catch {
-      /* lanceur occupé ou arrêté : la copie reste */
+      ok = false; // lanceur occupé ou arrêté : la copie reste
     }
   }));
+  return ok;
 }
 /** La version suivante est-elle complète (STAGE marqué READY) ? */
 const stageReady = async () => !!(await (await caches.open(STAGE).catch(() => null))?.match(READY));
