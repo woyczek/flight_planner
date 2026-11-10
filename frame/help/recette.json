@@ -2,8 +2,8 @@
  "schema": "sog-recette/1",
  "generated": {
   "tool": "tools/recette_build.py",
-  "at": "2026-11-10",
-  "tests": 109,
+  "at": "2026-11-11",
+  "tests": 111,
   "verdicts": 43
  },
  "apps": [
@@ -434,10 +434,10 @@
     "de": "Routenleser: Homonyme (PAM in den USA, ALS in Marokko) und unbekannte Punkte mit ihrer Zone benannt",
     "es": "Lector de ruta: homónimos (PAM en EE. UU., ALS en Marruecos) y puntos desconocidos dichos con su zona"
    },
-   "test": "Lanceur relancé. Carburant › Route, taper « LFRS PAM LFBD » : le tracé ne part plus aux États-Unis ; sous la route, PAM est dit non placé (loin de la route). Sur ta route ESSB → LEMO : PAM (Pampus, Pays-Bas) est dit inconnu près de la route — la zone Pays-Bas de ta base n'a pas encore de points —, aucun point aux États-Unis ni au Maroc.",
+   "test": "Lanceur relancé. Sur ta route ESSB → LEMO : PAM est placé aux Pays-Bas (Pampus), aucun point aux États-Unis ni au Maroc. Sur « LFRS PAM LFBD » : PAM n'est pas placé et c'est dit sous la route (« loin de la route » : Pampus ajoute plus de 700 NM à un trajet de 145).",
    "since": "2026-11-10",
    "state": "todo",
-   "delivered": "2026-11-10T17:38:21Z",
+   "delivered": "2026-11-10T23:06:38Z",
    "previous": {
     "verdict": "ko",
     "comment": "LFRS PAM LFBD passe toujours pas les USA.",
@@ -1638,6 +1638,34 @@
    "since": "2026-11-10",
    "state": "todo",
    "delivered": "2026-11-10T17:28:36Z"
+  },
+  {
+   "id": "SOG-0235",
+   "app": "maintenance",
+   "title": {
+    "fr": "BLOQUANT : une compagnie disparaît de la liste de l'appareil (DEFA) — la couche de données garde un document plus ancien que l'arbre",
+    "en": "BLOCKING: an airline vanishes from the device's list (DEFA) — the data layer keeps a document older than its tree",
+    "de": "BLOCKIEREND: eine Gesellschaft verschwindet aus der Liste des Geräts (DEFA) — die Datenschicht behält ein Dokument, das älter ist als ihr Baum",
+    "es": "BLOQUEANTE: una compañía desaparece de la lista del dispositivo (DEFA) — la capa de datos guarda un documento más antiguo que su árbol"
+   },
+   "test": "Recharger la page (Maj + F5 une fois), puis Réglages › Compagnie : DEFA Virtual est revenue dans la liste, sans rien recréer. Si elle manquait encore : dans « Créer une compagnie », taper son code : « Reprendre cette compagnie » la remet dans la liste.",
+   "since": "2026-11-11",
+   "state": "todo",
+   "delivered": "2026-11-10T22:43:43Z"
+  },
+  {
+   "id": "SOG-0237",
+   "app": "maintenance",
+   "title": {
+    "fr": "EUROCONTROL : dire à l'utilisateur comment créer son compte et prendre les classeurs",
+    "en": "EUROCONTROL: tell the user how to create the account and get the workbooks",
+    "de": "EUROCONTROL: dem Nutzer sagen, wie das Konto angelegt und die Arbeitsmappen geholt werden",
+    "es": "EUROCONTROL: decir al usuario cómo crear la cuenta y obtener los libros"
+   },
+   "test": "Lanceur relancé. Maintenance › Données › Procédures, ligne « Route (RAD, points FRA) » : une ligne dit où créer le compte EUROCONTROL (lien) ; « Choisir le fichier… » prend le classeur RAD ou le classeur des points FRA téléchargé, puis l'import suit. Dis-moi si le lien mène bien au formulaire d'inscription : il n'a pas été vérifié.",
+   "since": "2026-11-11",
+   "state": "todo",
+   "delivered": "2026-11-10T23:02:41Z"
   }
  ]
 }

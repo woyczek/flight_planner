@@ -1,11 +1,11 @@
 {
  "schema": "sog-roadmap/1",
  "version": 2,
- "updated": "2026-11-10",
+ "updated": "2026-11-11",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "e86c478",
-  "fiches": 238,
+  "organisation": "3619239",
+  "fiches": 239,
   "untranslated": 0,
   "priorities": 152
  },
@@ -2282,11 +2282,32 @@
     {
      "id": "SOG-0235",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "BLOQUANT : une compagnie disparaît de la liste de l'appareil (DEFA) — la couche de données garde un document plus ancien que l'arbre",
      "en": "BLOCKING: an airline vanishes from the device's list (DEFA) — the data layer keeps a document older than its tree",
      "de": "BLOCKIEREND: eine Gesellschaft verschwindet aus der Liste des Geräts (DEFA) — die Datenschicht behält ein Dokument, das älter ist als ihr Baum",
      "es": "BLOQUEANTE: una compañía desaparece de la lista del dispositivo (DEFA) — la capa de datos guarda un documento más antiguo que su árbol"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-carte-lanceur",
+   "app": "maintenance",
+   "label": {
+    "fr": "Cadre ; Carte ; Lanceur",
+    "en": "Cadre ; Carte ; Lanceur",
+    "de": "Cadre ; Carte ; Lanceur",
+    "es": "Cadre ; Carte ; Lanceur"
+   },
+   "items": [
+    {
+     "id": "SOG-0239",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Challenge à rebours du 11/11 : risques de stabilité relevés par les sessions (trois corrigés, dix à décider ou à mesurer)",
+     "en": "Backward challenge of 11 Nov: stability risks found by the sessions (three fixed, ten to decide or measure)",
+     "de": "Rückblickende Prüfung vom 11.11.: von den Sitzungen gefundene Stabilitätsrisiken (drei behoben, zehn zu entscheiden oder zu messen)",
+     "es": "Revisión a posteriori del 11/11: riesgos de estabilidad hallados por las sesiones (tres corregidos, diez por decidir o medir)"
     }
    ]
   },
@@ -2764,7 +2785,7 @@
     {
      "id": "SOG-0237",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "EUROCONTROL : dire à l'utilisateur comment créer son compte et prendre les classeurs",
      "en": "EUROCONTROL: tell the user how to create the account and get the workbooks",
      "de": "EUROCONTROL: dem Nutzer sagen, wie das Konto angelegt und die Arbeitsmappen geholt werden",
