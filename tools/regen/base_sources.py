@@ -112,6 +112,11 @@ SOURCES = {
             'NATS — UK AIP (AIXM 5.1)',
             'NATS — AIP Vereinigtes Königreich (AIXM 5.1)',
             'NATS — AIP Reino Unido (AIXM 5.1)'), link='https://nats-uk.ead-it.com/cms-nats/opencms/en/Publications/digital-datasets/', personal='licence'),
+    'lfv': _src('manual', (
+            'LFV — AIP Suède (eAIP hors ligne : points ENR 4.4, routes RNAV ENR 3.2)',
+            'LFV — Sweden AIP (offline eAIP: ENR 4.4 points, ENR 3.2 RNAV routes)',
+            'LFV — AIP Schweden (Offline-eAIP: ENR-4.4-Punkte, ENR-3.2-RNAV-Strecken)',
+            'LFV — AIP Suecia (eAIP sin conexión: puntos ENR 4.4, rutas RNAV ENR 3.2)'), link='https://aro.lfv.se/Editorial/View/IAIP?folderId=4', personal='licence'),
     'ukmil': _src('download', (
             'UK Mil AIP — ENR 5.2 : basse altitude, VATA, ravitaillement (AARA)',
             'UK Mil AIP — ENR 5.2: low flying, VATA, air-to-air refuelling (AARA)',
@@ -145,7 +150,7 @@ SOURCES = {
 }
 COMMON = ('openaip', 'mora', 'xplane')
 OWN = {'nat': ('nat', 'xplane')}  # zones hors pays : leurs seules sources
-EXTRA = {'fr': ('sia', 'dircam'), 'de': ('dfs',), 'gb': ('nats', 'ukmil'), 'es': ('enaire',), 'ie': ('airnav',), 'us': ('faa', 'faaclass'), 'ca': ('navcan',)}
+EXTRA = {'fr': ('sia', 'dircam'), 'de': ('dfs',), 'gb': ('nats', 'ukmil'), 'es': ('enaire',), 'ie': ('airnav',), 'se': ('lfv',), 'us': ('faa', 'faaclass'), 'ca': ('navcan',)}
 SIA_ROOT = re.compile(r'^(AIXM4\.5_all_FR_OM_|XML_SIA_|sia-airspaces-)\d{4}-\d{2}-\d{2}\.xml\Z', re.I | re.A)
 
 
@@ -716,6 +721,9 @@ PICKUP = {
     # un zip PAR JEU (AIP, OBS, UAS : trois envois de NATS, arrivés à des moments différents ; SOG-0126 : en prendre un seul laissait l'AIP du 29 oct. dans Téléchargements et gb au cycle du 1er)
     'nats': {'zip': 'EG_*_DS_*_XML.zip', 'sets': {'AIP': 'EG_AIP_DS_*_XML.zip', 'OBS': 'EG_OBS_DS_*_XML.zip', 'UAS': 'EG_UAS_*_XML.zip'}, 'to': 'sia/zones/gb',
              'keep': lambda n: bool(re.match(r'EG[_-]', n)) and n.lower().endswith('.xml') and not re.search(r'DIFF|DELTA|export-filter|METADATA', n, re.I)},
+    # LFV (Suède) : l'eAIP hors ligne (AIP_OFFLINE.zip, ~1 Go dont presque tout en cartes PDF) n'est JAMAIS déployé : tools/lfv_eaip.py en lit la page de couverture, l'ENR 4.4 et les pages ENR 3.2 et la prise écrit seulement
+    # zones/se/lfv_se_enr_AAAAMMJJ.geojson (160 Ko) ; 'max' : la taille du zip qu'on accepte d'OUVRIR (son annuaire seul est lu)
+    'lfv': {'zip': 'AIP_OFFLINE*.zip', 'to': 'sia/zones/se', 'max': 2 * 1024 * 1024 * 1024, 'convert': True, 'keep': lambda n: bool(re.fullmatch(r'lfv_se_enr_\d{8}\.geojson', n))},
 }
 PICKUP_MAX = 500 * 1024 * 1024  # un zip déposé plus gros : refusé avant d'être ouvert
 # Les exports d'openAIP (https://www.openaip.net/data/exports), téléchargés par l'utilisateur dans Téléchargements : un fichier par pays et par couche,
@@ -998,6 +1006,28 @@ def pickup(job, args, ctx):
             failed.append({'zone': z, 'source': s, **tag, 'error': 'changed', 'zip': os.path.basename(zp), 'size': os.path.getsize(zp)})
             continue
         try:
+            if p.get('convert'):
+                # une source CONVERTIE (LFV) : l'archive n'est pas déployée, on en lit les pages utiles et on écrit le GeoJSON (sia/zones/se/lfv_se_enr_AAAAMMJJ.geojson), jamais l'archive
+                if os.path.getsize(zp) > p.get('max', PICKUP_MAX):
+                    raise regen_jobs.TooLarge(f'zip over {p.get("max", PICKUP_MAX) // 1048576} MB')
+                import lfv_eaip
+                g, issue, n_pts, n_seg, n_routes = lfv_eaip.convert(zp)
+                leaf = lfv_eaip.out_name(issue)
+                dest = _dest(data, p, leaf)
+                if not dest or not PICKUP_NAME.match(leaf) or not p['keep'](leaf):
+                    raise ValueError('unsafe-path')
+                payload = json.dumps(g, ensure_ascii=False).encode('utf-8')
+                if not dry:
+                    os.makedirs(os.path.dirname(dest), exist_ok=True)
+                    if not regen_jobs.inside(os.path.dirname(dest), base):
+                        raise ValueError('unsafe-path')
+                    with open(dest + '.tmp', 'wb') as dst:
+                        dst.write(payload)
+                    os.replace(dest + '.tmp', dest)
+                taken.append({'zone': z, 'source': s, 'zip': os.path.basename(zp), 'size': os.path.getsize(zp), 'files': [leaf], 'bytes': len(payload), 'cycle': aero_cycles.airac_start(datetime.date.fromisoformat(issue)),
+                              'points': n_pts, 'segments': n_seg, 'routes': n_routes})
+                job.log(f'{z}: {s} ← {os.path.basename(zp)} : {n_pts} points, {n_seg} tronçons' + (' (à blanc)' if dry else ''))
+                continue
             if os.path.getsize(zp) > PICKUP_MAX:
                 raise regen_jobs.TooLarge(f'zip over {PICKUP_MAX // 1048576} MB')
             with zipfile.ZipFile(zp) as zf:

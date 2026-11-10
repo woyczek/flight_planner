@@ -749,7 +749,7 @@ def k64(c):
     c.ok(not any(s in C.CYCLED for z in ('de', 'it', 'us', 'ca', 'nat') for s in BS.sources_of(z)), 'others', 'zones fed only by sources without AIRAC have no dated source')
     rep = C.report(names, d(2026, 11, 1))
     c.eq(rep, {'sia': {'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False}, 'nats': {'cycle': '2026-10-01', 'current': '2026-10-29', 'stale': True},
-               'enaire': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'airnav': {'cycle': None, 'current': '2026-10-29', 'stale': False}},
+               'enaire': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'airnav': {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'lfv': {'cycle': None, 'current': '2026-10-29', 'stale': False}},
          'report: the newest cycle of each source (NATS: the AIP alone dates it, SOG-0077; ENAIRE: none without its folder), stale when older than the cycle in force', what='report')
     c.eq(C.report([], d(2026, 11, 1))['sia'], {'cycle': None, 'current': '2026-10-29', 'stale': False}, 'no file: no cycle, not stale', what='no file')
     # base/fetch: the plan (in the view from the start) and the end carry it
@@ -763,7 +763,7 @@ def k64(c):
             view, res = _run(RJ, BS, 'fetch', {'zones': ['de']}, ctx)
         cur = C.airac_start()
         want = {'sia': {'cycle': '2026-10-01', 'current': cur, 'stale': '2026-10-01' < cur}, 'nats': {'cycle': '2026-10-01', 'current': cur, 'stale': '2026-10-01' < cur},
-                'enaire': {'cycle': None, 'current': cur, 'stale': False}, 'airnav': {'cycle': None, 'current': cur, 'stale': False}}
+                'enaire': {'cycle': None, 'current': cur, 'stale': False}, 'airnav': {'cycle': None, 'current': cur, 'stale': False}, 'lfv': {'cycle': None, 'current': cur, 'stale': False}}
         c.eq((view['sources'], res['sources']), (want, want), 'the plan and the end of base/fetch give the cycle held per dated source', what='fetch sources')
 
 
@@ -1049,18 +1049,18 @@ def k114(c):
         built('ie')              # the same, and no file of its source (AirNav) on the workstation
         (data / 'sia' / 'aixm5').mkdir(parents=True)
         (data / 'sia' / 'aixm5' / 'LE_Amdt_A_2026_10_AIP_DS_FULL_EnRoute.xml').write_text('<x/>', encoding='utf-8')     # the ENAIRE file IS on the workstation (as on the user's)
-        built('se')              # openAIP only: a source that carries neither
+        built('no')              # openAIP only: a source that carries neither
         built('dk', skip_files=True)   # the index declares the cycle, the folder is empty
         built('fr', empty=False)
         index(es='2026-10-29', se='2026-10-29', dk='2026-10-29', fr='2026-10-29', ie='2026-10-29')
         ctx = {'data': str(data), 'downloads': lambda: [], 'today': datetime.date(2026, 11, 9)}
-        z = status(RJ.Job('base', 'status', {}), check_s({'zones': ['es', 'se', 'dk', 'fr', 'ie']}), ctx)['zones']
-        c.eq({k: (v['state'], v['reason']['code'] if v['reason'] else None, v['buildable'], [n['code'] for n in v['notices']]) for k, v in z.items() if k in ('es', 'se', 'dk', 'ie')},
-             {'es': ('stale', 'source-unread', False, []), 'se': ('up-to-date', None, False, ['no-points']), 'dk': ('stale', 'index-orphan', True, []), 'ie': ('stale', 'source-missing', False, [])},
+        z = status(RJ.Job('base', 'status', {}), check_s({'zones': ['es', 'no', 'dk', 'fr', 'ie']}), ctx)['zones']
+        c.eq({k: (v['state'], v['reason']['code'] if v['reason'] else None, v['buildable'], [n['code'] for n in v['notices']]) for k, v in z.items() if k in ('es', 'no', 'dk', 'ie')},
+             {'es': ('stale', 'source-unread', False, []), 'no': ('up-to-date', None, False, ['no-points']), 'dk': ('stale', 'index-orphan', True, []), 'ie': ('stale', 'source-missing', False, [])},
              'es: built without points or airways although ENAIRE carries them and its file is there: not read, the « personnel » box does not declare it (not buildable as it is); ie: the file of the source is not on the workstation; se: openAIP carries neither, said as a notice, the zone is not stale for it; dk: the index declares a cycle whose files are absent: rebuild', what='states')
         z2 = status(RJ.Job('base', 'status', {}), check_s({'zones': ['es'], 'personal': ['enaire']}), ctx)['zones']['es']
         c.eq((z2['reason'], z2['buildable']), ({'code': 'source-unbuilt', 'source': 'enaire'}, True), 'with the box declared the file is readable and the zone was built before it: rebuild', what='declared')
-        c.eq((z['es']['reason'], z['se']['notices'][0], z['dk']['reason']), ({'code': 'source-unread', 'source': 'enaire', 'why': 'personal'}, {'code': 'no-points', 'source': 'openaip'}, {'code': 'index-orphan', 'cycle': '2026-10-29', 'count': 13}),
+        c.eq((z['es']['reason'], z['no']['notices'][0], z['dk']['reason']), ({'code': 'source-unread', 'source': 'enaire', 'why': 'personal'}, {'code': 'no-points', 'source': 'openaip'}, {'code': 'index-orphan', 'cycle': '2026-10-29', 'count': 13}),
              'the codes with their parameters: the source that is missing, the source that carries nothing, the cycle the index declares and the number of files absent', what='params')
         c.eq((z['fr']['state'], z['fr']['notices']), ('up-to-date', []), 'a zone with its points and airways is up to date, no notice', what='fr')
         # the build never writes an index that points at an absent file (counter-test)
@@ -1551,3 +1551,55 @@ def k123(c):
         c.eq((list(r['items']), r['dropped'], r['updated']), (['SOG-0001', 'SOG-0005'], 4, ''), 'a hostile file is filtered: bad ids and shapes, a refusal without comment dropped, a long date ignored', what='hostile')
         f.write_text(json.dumps({'schema': 'sog-recette/1', 'items': {f'SOG-{n:04d}': {'verdict': 'ok'} for n in range(1500)}}), encoding='utf-8')
         c.eq(len(run(action='get')['items']), 1000, 'at most 1000 entries are read', what='cap')
+
+
+@case('K127', 'LFV (Sweden) wired as a source (SOG-0153 b): the pickup converts AIP_OFFLINE.zip of Downloads without unpacking it (plan first, then the file written, a foreign archive refused), the cycle comes from the edition date, the file belongs to zone se and source lfv, the catalogue and the mirror know it with its licence line', 'K', static=True,
+      rule='SOG-0153 (b) (10 Nov 2026): the user left AIP_OFFLINE.zip (988 MB) in Downloads; « Mettre à jour » takes it by conversion (tools/lfv_eaip.py) — the archive is opened for its pages ENR 4.4 and ENR 3.2 only and sia/zones/se/lfv_se_enr_<date>.geojson (160 KB) is the only thing written; LFV is a personal-use source (no reuse condition in the archive), declared by the single box of Données (modules/data: PERSONAL lfv); the file is zone se, source lfv, cycle of its edition; K52 and L1 compare the mirrors')
+def k127(c):
+    import importlib
+    import json
+    import zipfile
+    RJ, BS, AF, DS = _mods()
+    AC = importlib.import_module('aero_cycles')
+    cell = lambda t: f'<td rowspan="1" colspan="1"><span>{t}</span></td>'
+    row = lambda rid, *cells: f'<tr id="{rid}">' + ''.join(cell(x) for x in cells) + '</tr>'
+    cover = '<html><body><h1>SWEDEN</h1><p>Effective date : 29 OCT 2026</p></body></html>'
+    enr44 = '<table>' + row('NOSLIENR44', 'NOSLI', '590422N 0171529E', 'N850, T31') + row('MOKNIENR44', 'MOKNI', '573847N 0150405E', 'N850') + '</table>'
+    n850 = '<table>' + row('723', 'N850 (RNAV)') + ''.join(row(i, '∆', f'{i} {pos}') + row(i + 'row8', 'FL 660') + row(i + 'row9', 'FL 095') for i, pos in (('NOSLI', '590422N 0171529E'), ('MOKNI', '573847N 0150405E'))) + '</table>'
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        dl, data = Path(td) / 'Downloads', Path(td) / 'data'
+        dl.mkdir()
+        data.mkdir()
+        with zipfile.ZipFile(dl / 'AIP_OFFLINE (1).zip', 'w', zipfile.ZIP_DEFLATED) as z:
+            z.writestr('ES-Cover Page-en-GB.html', cover)
+            z.writestr('eAIP/ES-ENR 4.4-en-GB.html', enr44)
+            z.writestr('eAIP/ES-ENR 3.2 N850-en-GB.html', n850)
+            z.writestr('documents/PDF/ES-ENR 6.1.pdf', b'%PDF' + b'0' * 5000)
+        ctx = {'data': str(data), 'downloads': lambda: [str(dl)], 'today': datetime.date(2026, 11, 10)}
+        run = lambda dry: BS.pickup(RJ.Job('base', 'pickup', {}), BS.check_pickup({'zones': ['se'], 'dry': dry}), ctx)
+        r = run(True)
+        t = r['taken']
+        c.eq((len(t), t[0]['source'], t[0]['zone'], t[0]['files'], t[0]['points'], t[0]['segments'], t[0]['cycle'], t[0]['zip']), (1, 'lfv', 'se', ['lfv_se_enr_20261029.geojson'], 2, 1, '2026-10-29', 'AIP_OFFLINE (1).zip'),
+             'the plan converts the archive of Downloads (« (1) » of a second download included) and says what it would write: the file, its points and segments, its cycle', what='plan')
+        c.ok(not (data / 'sia' / 'zones' / 'se').exists(), 'nothing written by the plan', 'the plan writes nothing')
+        r = run(False)
+        out = data / 'sia' / 'zones' / 'se' / 'lfv_se_enr_20261029.geojson'
+        g = json.loads(out.read_text(encoding='utf-8'))
+        c.eq((out.is_file(), sorted(p.name for p in out.parent.iterdir()), len(g['features']), g['issue']), (True, ['lfv_se_enr_20261029.geojson'], 3, '2026-10-29'), 'the run writes the GeoJSON of the edition and nothing else (the archive is not unpacked, no .tmp left)', what='written')
+        c.eq((AC.cycled('zones/se/lfv_se_enr_20261029.geojson'), BS.file_source('zones/se/lfv_se_enr_20261029.geojson'), AC.ZONE_SOURCE.get('se'), 'lfv' in AC.PERSONAL_CYCLED),
+             (('lfv', '2026-10-29'), {'zone': 'se', 'source': 'lfv'}, 'lfv', True), 'the cycle is the edition’s, the file is zone se and source lfv, a personal-use source read only when the box declares it', what='mirror')
+        c.eq((BS.sources_of('se')[0], BS.SOURCES['lfv']['kind'], BS.SOURCES['lfv']['personal'], BS.PICKUP['lfv']['zip']), ('lfv', 'manual', 'licence', 'AIP_OFFLINE*.zip'), 'zone se lists LFV first; the source is manual, personal-use, expected as AIP_OFFLINE*.zip', what='catalog')
+        # a foreign archive: refused, said, nothing written
+        (dl / 'AIP_OFFLINE (1).zip').unlink()
+        with zipfile.ZipFile(dl / 'AIP_OFFLINE.zip', 'w') as z:
+            z.writestr('index.html', '<html/>')
+        out.unlink()
+        r = run(False)
+        c.eq((r['taken'], [f['error'][:19] for f in r['failed']], out.exists()), ([], ['ce n’est pas l’eAIP'], False), 'an archive that is not the LFV eAIP: said (« ce n’est pas l’eAIP hors ligne de LFV »), nothing taken, nothing written', what='foreign')
+        (dl / 'AIP_OFFLINE.zip').unlink()
+        r = run(True)
+        c.eq((r['taken'], r['missing']), ([], [{'zone': 'se', 'source': 'lfv', 'expected': 'AIP_OFFLINE*.zip'}]), 'no archive in Downloads: the name expected is said', what='missing')
+    cat = (ROOT / 'frame' / 'aerodb' / 'catalogue.js').read_text(encoding='utf-8')
+    zj = (ROOT / 'shared' / 'aero_zones.js').read_text(encoding='utf-8')
+    c.ok("id: 'lfv'" in cat and "zones: ['se']" in cat and 'ES-GEN 0.1' in cat and "se: ['lfv']" in zj and "personal: 'licence'" in zj[zj.index('lfv: {'):zj.index('lfv: {') + 3500], 'catalogue.js / aero_zones.js',
+         'the catalogue entry (with the licence line in four languages) and the JS mirror exist, personal-use')

@@ -88,6 +88,31 @@
       personal: 'licence', // aucune licence de réutilisation trouvée : la case dit qu'elle ne vaut que pour un dépôt à soi
       age: 'file'
     },
+    // eAIP hors ligne de la Suède (LFV, « AIP_OFFLINE.zip » déposé dans Téléchargements) : « Mettre à jour » en lit l'ENR 4.4 (points) et l'ENR 3.2 (routes RNAV) sans déployer l'archive (tools/lfv_eaip.py) et écrit zones/se/lfv_se_enr_AAAAMMJJ.geojson.
+    // Aucune condition de réutilisation dans l'archive (ES-GEN 0.1 : publié sous l'autorité de l'Agence suédoise des transports, produit par LFV) : usage personnel, en attendant la réponse de aip@lfv.se (SOG-0153 b)
+    lfv: {
+      kind: 'manual',
+      readable: true,
+      label: L4('LFV — AIP Suède (eAIP hors ligne : points ENR 4.4, routes RNAV ENR 3.2)',
+        'LFV — Sweden AIP (offline eAIP: ENR 4.4 points, ENR 3.2 RNAV routes)',
+        'LFV — AIP Schweden (Offline-eAIP: ENR-4.4-Punkte, ENR-3.2-RNAV-Strecken)',
+        'LFV — AIP Suecia (eAIP sin conexión: puntos ENR 4.4, rutas RNAV ENR 3.2)'),
+      gives: L4('points désignés (ENR 4.4), routes RNAV (ENR 3.2) ; pas les procédures SID / STAR, qui ne sont que sur cartes PDF',
+        'designated points (ENR 4.4), RNAV routes (ENR 3.2); not the SID / STAR procedures, which are on PDF charts only',
+        'benannte Punkte (ENR 4.4), RNAV-Strecken (ENR 3.2); nicht die Verfahren SID / STAR, die nur auf PDF-Karten stehen',
+        'puntos designados (ENR 4.4), rutas RNAV (ENR 3.2); no los procedimientos SID / STAR, que solo están en cartas PDF'),
+      link: 'https://aro.lfv.se/Editorial/View/IAIP?folderId=4',
+      downloads: 'AIP_OFFLINE*.zip', // l'archive de l'eAIP hors ligne, prise dans Téléchargements ; seules quelques pages en sont lues (le zip pèse ~1 Go)
+      howto: L4(
+        'Télécharger l’eAIP hors ligne de la Suède (« AIP_OFFLINE.zip », environ 1 Go) sur le site de LFV et le laisser dans Téléchargements : « Mettre à jour » en lit les points et les routes sans le déployer. À refaire à chaque cycle AIRAC.',
+        'Download the offline eAIP of Sweden (“AIP_OFFLINE.zip”, about 1 GB) from the LFV website and leave it in Downloads: “Update” reads its points and routes without unpacking it. To redo at each AIRAC cycle.',
+        'Das Offline-eAIP von Schweden („AIP_OFFLINE.zip“, rund 1 GB) auf der LFV-Website herunterladen und im Download-Ordner lassen: „Aktualisieren“ liest Punkte und Strecken, ohne es zu entpacken. Bei jedem AIRAC-Zyklus zu wiederholen.',
+        'Descargar el eAIP sin conexión de Suecia («AIP_OFFLINE.zip», unos 1 GB) del sitio de LFV y dejarlo en Descargas: «Actualizar» lee sus puntos y rutas sin descomprimirlo. A repetir en cada ciclo AIRAC.'
+      ),
+      licence: 'LFV (usage personnel)',
+      personal: 'licence', // aucune condition de réutilisation trouvée : la case dit qu'elle ne vaut que pour un dépôt à soi
+      age: 'file'
+    },
     faa: {
       kind: 'download',
       readable: true,
@@ -283,6 +308,7 @@
     gb: ['nats', 'ukmil'],
     es: ['enaire'],
     ie: ['airnav'],
+    se: ['lfv'],
     us: ['faa', 'faaclass'],
     ca: ['navcan']
   };

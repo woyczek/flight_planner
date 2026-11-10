@@ -6110,7 +6110,7 @@ def k124(c):
     c.eq((five.get('hours'), five.get('rem'), five.get('act')) if isinstance(five, dict) else five, (['Activated by NOTAM.'], ['Birds of prey.'], 'NOTAM'),
          'AIXM 5.1 (NATS, ENAIRE): the note on the time interval is the hours, the other notes the remarks', what='aixm5')
     sv = [m.group(1) for m in [re.search(r'const VERSION =\s*(\d+)', (ROOT / 'shared' / 'sia_base.js').read_text(encoding='utf-8'))]]
-    c.eq(sv, ['24'], 'the parser version is 24: the zones built before have no hours or remarks and are rebuilt (parser-old)', what='version')
+    c.ok(int(sv[0]) >= 24, str(sv), 'the parser version is 24 or more: the zones built before have no hours or remarks and are rebuilt (parser-old)')
 
 
 @case('K125', 'Route engine, the longest route that can be said (SOG-0161): no SID / STAR and no airway at the ends, the departure joins the FRA gate that its climb can reach, every leg is classed (controlled / incomplete / fallback) by layer with the share of the distance controlled', 'K', static=True,
@@ -6166,3 +6166,42 @@ def k125(c):
         a0 = v['alternatives'][0]
         c.eq((a0['control']['controlledPct'], [s['control'] for s in a0['segments']][:2], a0['segments'][0]['layer'], [s['layer'] for s in a0['control']['sections']]), (0, ['fallback', 'incomplete'], 'SID', ['SID', 'FRA', 'STAR']),
              'the screen’s answer gives, by alternative, the share controlled and its sections, and by segment its class and its layer', what='view')
+
+
+@case('K126', 'Suggestions of aerodromes for an input, across every published zone, from the light index (SOG-0158): a code, the start of a name or of a word of it (the town), a country by its four names, its endonym or its initials, the main aerodromes first; no zone is opened whole', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0158 (10 Nov 2026, refused at the acceptance: « SWE… fonctionne. STOC… ne fonctionne pas. USA non plus »): the input of the aerodrome fields found only the zones the flight had opened; AeroDb.suggest reads the light index of every published zone (aeroindex, a tenth of aerodromes.json, 438 KB for the 71 zones), kept in memory, and answers a code, a name (« stockholm » finds « STOCKHOLM / BROMMA »), a country (« suède », « sverige », « usa ») with its main aerodromes, the longest hard runway first (hardLen, new column of aeroindex, parser version 25); zones() gives the endonyms and initials under `aka`')
+def k126(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const day = Date.parse('2026-11-10T12:00:00Z'), reads = [];
+      const kinds = ['meta', 'aerodromes', 'aeroindex', 'navaids', 'points', 'vrp', 'airways', 'airspaces'];
+      const fields = ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar', 'hardLen'];
+      const zone = (z, rows) => Object.fromEntries(kinds.map(k => [`sia/base/${z}/2026-10-29/${k}.json`, k === 'meta' ? { schema: 2, zone: z, cycle: '2026-10-29', kind: 'meta', parserVersion: 25, data: {} }
+        : k === 'aeroindex' ? { schema: 2, zone: z, cycle: '2026-10-29', kind: k, data: { fields, rows } } : { schema: 2, zone: z, cycle: '2026-10-29', kind: k, data: [] }]));
+      const files = {
+        ...zone('se', [['ESSA', 'STOCKHOLM / ARLANDA', 59.65, 17.92, 137, 0, 0, 3301], ['ESSB', 'STOCKHOLM / BROMMA', 59.35, 17.94, 47, 0, 0, 1668], ['ESGG', 'GOTEBORG / LANDVETTER', 57.66, 12.28, 506, 0, 0, 3300], ['ESKN', 'SKAVSTA', 58.79, 16.91, 140, 0, 0, null]]),
+        ...zone('fr', [['LFPG', 'PARIS CHARLES DE GAULLE', 49.01, 2.55, 392, 0, 0, 4200], ['LFPO', 'PARIS ORLY', 48.72, 2.38, 291, 0, 0, 3650], ['LFLL', 'LYON SAINT EXUPERY', 45.73, 5.08, 821, 0, 0, 4000]]),
+        ...zone('us', [['KJFK', 'NEW YORK JOHN F KENNEDY INTL', 40.64, -73.78, 13, 0, 0, 4423], ['KLAX', 'LOS ANGELES INTL', 33.94, -118.41, 125, 0, 0, 3685]]),
+        'sia/base/index.json': { schema: 2, kind: 'index', zones: Object.fromEntries(['se', 'fr', 'us'].map(z => [z, { cycle: '2026-10-29', prefixes: [z === 'se' ? 'ES' : z === 'fr' ? 'LF' : 'K'], kb: { aeroindex: 3 } }])) }
+      };
+      const reader = { read: async p => { reads.push(p); return p in files ? { value: files[p], rev: 'r' } : null; }, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} };
+      const db = AeroDB.create({ reader, lnmperf: false, now: () => day });
+      const codes = async (t, o) => (await db.suggest(t, o)).map(x => x.code + ':' + x.rank);
+      const out = {};
+      out.stoc = await codes('stoc'); out.stockholm = await codes('Stockholm'); out.bromma = await codes('bromma'); out.essb = await codes('essb'); out.ess = await codes('ess');
+      out.suede = await codes('suède', { n: 2 }); out.sverige = await codes('sverige', { n: 3 }); out.sweden = await codes('SWE', { n: 3 }); out.usa = await codes('usa'); out.uk = await codes('uk'); out.paris = await codes('paris');
+      out.short = (await db.suggest('s')).length; out.n = (await db.suggest('e', { n: 1 })).length + (await db.suggest('es', { n: 2 })).length;
+      out.first = (await db.suggest('usa'))[0];
+      out.country = [(await db.suggest('suède', { lang: 0, n: 1 }))[0].country, (await db.suggest('suède', { lang: 1, n: 1 }))[0].country];
+      out.heavy = reads.filter(p => /aerodromes\\.json|airways|airspaces/.test(p)).length;
+      out.akaSe = (await db.zones()).find(z => z.id === 'se').aka;
+      return out;
+    }""")
+    c.eq((r['stoc'], r['stockholm']), (['ESSA:3', 'ESSB:3'], ['ESSA:3', 'ESSB:3']), '« stoc » and « Stockholm » find Arlanda and Bromma (the start of the name), the longest runway first', what='town')
+    c.eq((r['bromma'], r['essb'], r['ess']), (['ESSB:4'], ['ESSB:0'], ['ESSA:1', 'ESSB:1']), 'a word of the name (« bromma »), the exact code first, the start of a code (the longest runway first)', what='words')
+    c.eq((r['suede'], r['sverige'], r['sweden'], r['usa']), (['ESSA:2', 'ESGG:2'], ['ESSA:2', 'ESGG:2', 'ESSB:2'], ['ESSA:2', 'ESGG:2', 'ESSB:2'], ['KJFK:2', 'KLAX:2']),
+         'a country by its French name, its endonym, the start of its English name (« SWE ») or its initials (« usa »): its main aerodromes, the longest hard runway first, only those with a four-letter code', what='country')
+    c.eq((r['uk'], r['paris'], r['short'], r['n']), ([], ['LFPG:3', 'LFPO:3'], 0, 2), 'a zone that is not published gives nothing (« uk »), « paris » finds both Paris aerodromes, one letter gives nothing, n bounds the list', what='bounds')
+    c.eq((r['first']['country'], r['country'], r['heavy']), ('United States of America', ['Suède', 'Sweden'], 0), 'each proposal says its country in the language asked, and no airway, airspace or full aerodrome file was read', what='light')
+    c.ok('Sverige' in r['akaSe'], str(r['akaSe']), 'zones() gives the endonym and the initials under `aka`')
+    c.ok('hardLen' in (ROOT / 'shared' / 'sia_base.js').read_text(encoding='utf-8'), 'aeroindex', 'the builder writes hardLen in aeroindex (parser version 25)')

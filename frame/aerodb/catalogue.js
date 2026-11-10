@@ -431,6 +431,42 @@
       'Nach der Registrierung: die ZIP-Datei EG_…_DS_…_XML.zip.', 'Tras registrarse: el ZIP EG_…_DS_…_XML.zip.'
     ]
   }, {
+    id: 'lfv',
+    group: 'base',
+    zones: ['se'],
+    fetch: {
+      how: 'pick',
+      glob: 'AIP_OFFLINE*.zip',
+      name: 'AIP_OFFLINE.zip'
+    },
+    build: {
+      runtime: 'worker',
+      id: 'geojson'
+    },
+    publish: true,
+    no: 20,
+    status: 'used',
+    n: ['LFV (eAIP de Suède)', 'LFV (Sweden eAIP)', 'LFV (eAIP Schweden)', 'LFV (eAIP de Suecia)'],
+    url: 'https://aro.lfv.se/Editorial/View/IAIP?folderId=4',
+    gives: [
+      'Les points désignés (ENR 4.4) et les routes RNAV (ENR 3.2) de la Suède (zone se) ; pas de procédures : les SID et STAR ne sont que sur cartes PDF.',
+      'The designated points (ENR 4.4) and RNAV routes (ENR 3.2) of Sweden (zone se); no procedures: the SIDs and STARs are on PDF charts only.',
+      'Die benannten Punkte (ENR 4.4) und RNAV-Strecken (ENR 3.2) Schwedens (Zone se); keine Verfahren: SID und STAR stehen nur auf PDF-Karten.',
+      'Los puntos designados (ENR 4.4) y las rutas RNAV (ENR 3.2) de Suecia (zona se); sin procedimientos: las SID y STAR solo están en cartas PDF.'
+    ],
+    lic: [
+      'AIP publié sous l’autorité de l’Agence suédoise des transports, produit par LFV ; aucune condition de réutilisation donnée (ES-GEN 0.1) : usage personnel, lu sur ce poste',
+      'AIP published by authority of the Swedish Transport Agency, produced by LFV; no reuse condition given (ES-GEN 0.1): personal use, read on this workstation',
+      'AIP im Auftrag der schwedischen Verkehrsbehörde veröffentlicht, von LFV erstellt; keine Weiterverwendungsbedingung angegeben (ES-GEN 0.1): persönliche Nutzung, auf diesem Rechner gelesen',
+      'AIP publicado por la Agencia sueca de transporte, producido por LFV; sin condición de reutilización (ES-GEN 0.1): uso personal, leído en este equipo'
+    ],
+    how: [
+      'Le fichier AIP_OFFLINE.zip (eAIP hors ligne, environ 1 Go), laissé dans Téléchargements : seules quelques pages en sont lues.',
+      'The file AIP_OFFLINE.zip (offline eAIP, about 1 GB), left in Downloads: only a few pages of it are read.',
+      'Die Datei AIP_OFFLINE.zip (Offline-eAIP, rund 1 GB) im Download-Ordner: nur einige Seiten werden gelesen.',
+      'El archivo AIP_OFFLINE.zip (eAIP sin conexión, unos 1 GB), dejado en Descargas: solo se leen algunas páginas.'
+    ]
+  }, {
     id: 'nat',
     group: 'weather',
     zones: ['nat'],
@@ -1009,7 +1045,7 @@
   /** Version du format de la base publiée que les constructeurs écrivent (`parserVersion` des meta.json) : la valeur de `VERSION` de
    *  shared/sia_base.js, DOIT la suivre (le cas K21 lit les deux fichiers et compare). Le module Données la montre à côté de celle d'une zone
    *  publiée pour dire « à reconstruire ». */
-  const PARSER_VERSION = 24;
+  const PARSER_VERSION = 25;
   const GROUPS = ['base', 'proc', 'aircraft', 'weather'];
   const ORDER = ['used', 'candidate', 'abandoned'];
   const byId = id => SOURCES.find(s => s.id === id) || null;

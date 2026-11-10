@@ -215,7 +215,66 @@
       fr: 'sia',
       gb: 'nats',
       es: 'enaire',
-      ie: 'airnav'
+      ie: 'airnav',
+      se: 'lfv'
+    },
+    // les noms d'un pays que ses habitants ou l'usage courant donnent (SOG-0158) : l'endonyme (« Sverige »), les sigles et les noms d'usage (« usa », « uk », « holland ») ; les quatre noms de la zone (fr, en, de, es) sont dans `names`
+    AKA = {
+      ad: ['Andorra'],
+      al: ['Shqipëria', 'Shqiperia'],
+      at: ['Österreich', 'Osterreich'],
+      ax: ['Åland'],
+      ba: ['Bosna i Hercegovina', 'BiH'],
+      be: ['België', 'Belgique'],
+      by: ['Belarus'],
+      ch: ['Schweiz', 'Suisse', 'Svizzera'],
+      cy: ['Kýpros', 'Kibris'],
+      de: ['Deutschland', 'BRD'],
+      dk: ['Danmark'],
+      dz: ['Algérie'],
+      ee: ['Eesti'],
+      eg: ['Misr'],
+      es: ['España'],
+      fi: ['Suomi'],
+      fo: ['Føroyar'],
+      gb: ['UK', 'GB', 'Great Britain', 'England', 'Albion'],
+      gl: ['Kalaallit Nunaat', 'Grønland'],
+      gr: ['Ellada', 'Hellas'],
+      hr: ['Hrvatska'],
+      hu: ['Magyarország', 'Magyarorszag'],
+      ie: ['Éire', 'Eire'],
+      il: ['Yisrael'],
+      im: ['Mann'],
+      in: ['Bharat'],
+      is: ['Ísland'],
+      it: ['Italia'],
+      jo: ['Urdun'],
+      kh: ['Kampuchea'],
+      lb: ['Lubnan'],
+      lt: ['Lietuva'],
+      lu: ['Lëtzebuerg'],
+      lv: ['Latvija'],
+      ma: ['Maroc'],
+      me: ['Crna Gora'],
+      mk: ['Severna Makedonija', 'Macedonia'],
+      mm: ['Burma'],
+      nl: ['Nederland', 'Holland'],
+      no: ['Norge', 'Noreg'],
+      ph: ['Pilipinas'],
+      ps: ['Filastin'],
+      se: ['Sverige'],
+      sy: ['Suriyah'],
+      th: ['Prathet Thai', 'Siam'],
+      tj: ['Tojikiston'],
+      tm: ['Türkmenistan'],
+      tn: ['Tunisie'],
+      tr: ['Türkiye', 'Turkiye'],
+      us: ['USA', 'US', 'United States', 'United States of America', 'America', 'États-Unis', 'Etats-Unis', 'Estados Unidos',
+        'Vereinigte Staaten'
+      ],
+      va: ['Vaticano', 'Holy See'],
+      vn: ['Việt Nam'],
+      xk: ['Kosova']
     },
     MARGIN = .5, // marge des cadres de zone (côtes, eaux territoriales, espaces au large), comme la V2
     WIDE = 400; // au-delà de ce nombre de cases, un espace va dans la liste « large » (FIR, UIR) plutôt que case par case
@@ -2160,6 +2219,7 @@
         return Object.entries(zones).map(([id, z]) => ({
           id,
           names: z.n || [id, id, id, id],
+          aka: AKA[id] || [], // l'endonyme, les sigles et les noms d'usage (SOG-0158)
           frames: z.b || [],
           published: !!(l.zones && l.zones[id])
         })).sort((a, b) => a.names[0].localeCompare(b.names[0], 'fr'));
@@ -2570,6 +2630,70 @@
           }
         };
       },
+      /** Propositions de terrains pour une saisie (SOG-0158) : un code, le début d'un nom ou d'un mot de son nom (la ville : « stockholm » trouve « STOCKHOLM / BROMMA »), ou un PAYS (ses quatre noms, son endonyme et ses sigles : « suède », « sverige », « usa ») qui rend ses
+       *  principaux terrains, les plus grands d'abord (piste en dur la plus longue). Lit seulement l'index léger des terrains de CHAQUE zone publiée (aeroindex : un dixième de aerodromes.json, 438 Ko pour les 71 zones), une fois, gardé en mémoire : aucune zone n'est ouverte en entier.
+       *  → [{ code, name, lat, lon, zone, country, hardLen, rank }] (rank : 0 code exact, 1 début de code, 2 pays, 3 début de nom, 4 début d'un mot du nom, 5 contient) ; n au plus (7 par défaut). `lang` : l'indice du nom du pays dans `country` (0 fr, 1 en, 2 de, 3 es). */
+      async suggest(text, {
+        n = 7,
+        lang = 1
+      } = {}) {
+        const q = fold(text);
+        if (q.length < 2) return [];
+        const pub = (await published()).zones || {};
+        if (nameIndex.p && now() - nameIndex.at > 300000) nameIndex.p =
+          null; // une zone reconstruite change ses terrains : l'index est refait après cinq minutes
+        if (!nameIndex.p) nameIndex.at = now();
+        if (!nameIndex.p) nameIndex.p = (async () => {
+          const out = [];
+          for (const id of Object.keys(pub)) {
+            const z = await loadZone(id).catch(() => null);
+            if (!z) continue;
+            const list = z.split ? await liteAerodromes(z).catch(() => []) : await part(z, 'aerodromes');
+            for (const a of list || []) {
+              if (!a?.icao && !a?.id) continue;
+              const code = String(a.icao || a.id).toUpperCase();
+              if (!/^[A-Z0-9]{3,4}$/.test(code) || !num(a.lat) || !num(a.lon)) continue;
+              out.push({
+                code,
+                name: String(a.name || ''),
+                fold: fold(a.name || ''),
+                lat: +a.lat,
+                lon: +a.lon,
+                zone: id,
+                hardLen: num(a.hardLen) ? +a.hardLen : 0
+              });
+            }
+          }
+          return out;
+        })();
+        const all = await nameIndex.p,
+          names = id => zones[id]?.n || [id, id, id, id],
+          country = id => names(id)[Math.min(3, Math.max(0, lang))] || id,
+          countries = Object.keys(zones).filter(id => pub[id] && [...names(id), ...(AKA[id] || [])].some(x => fold(x).startsWith(q))),
+          out = [];
+        const row = (a, rank) => ({
+          code: a.code,
+          name: a.name,
+          lat: a.lat,
+          lon: a.lon,
+          zone: a.zone,
+          country: country(a.zone),
+          hardLen: a.hardLen,
+          rank
+        });
+        for (const a of all) {
+          let rank = -1;
+          if (a.code === q.toUpperCase()) rank = 0;
+          else if (a.code.startsWith(q.toUpperCase())) rank = 1;
+          else if (countries.includes(a.zone) && /^[A-Z]{4}$/.test(a.code)) rank = 2;
+          else if (a.fold.startsWith(q)) rank = 3;
+          else if (a.fold.split(/[^A-Z0-9]+/).some(w => w.startsWith(q))) rank = 4;
+          else if (q.length >= 3 && a.fold.includes(q)) rank = 5;
+          if (rank >= 0) out.push(row(a, rank));
+        }
+        return out.sort((a, b) => a.rank - b.rank || b.hardLen - a.hardLen || a.name.localeCompare(b.name)).slice(0, Math.max(1, Math
+          .min(50, n)));
+      },
       /** Lieux qui répondent au texte (aérodromes, balises, points, VRP des zones ouvertes ; villes de ces zones et grandes
        *  villes du monde), dans cet ordre : code exact ; aérodrome à code OACI dont le nom commence par le texte ; ville
        *  (les plus peuplées d'abord) ; autre lieu dont le code ou le nom commence par le texte ; puis ceux qui le
@@ -2714,6 +2838,10 @@
           items
         };
       },
+      nameIndex = {
+        p: null,
+        at: 0
+      }, // l'index des noms de terrains de toutes les zones publiées (suggest), construit une fois
       groundBusy = new Map(), // OACI → lecture de la couche sol en cours
       /** La couche sol d'un terrain, lue à la suite de ses procédures (SOG-0135) si son fichier manque ou date d'avant le cycle en vigueur ; en arrière-plan : la réponse des procédures ne l'attend pas, un échec (lanceur occupé, rien dans OpenStreetMap, trop tôt) est sans suite. fetchGround dit le changement (on('change', { ground })). */
       readGroundAfter = k => {

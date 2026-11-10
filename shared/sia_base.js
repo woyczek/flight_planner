@@ -30,7 +30,7 @@
   const COMPAT =
     14; // plus ancien format encore utilisable tel quel (15 n'ajoute que aero.vrp ; 17 à 21 ne changent pas le format : une base 14 à 20 se lit, signalée « outdated »)
   const VERSION =
-    24; // 24 : horaires (hours) et remarques (rem) d'AIP des espaces, tels que la source les publie (SIA : txtRmkWorkHr, Timsh, txtRmk ; AIXM 5.1 : notes), les zones construites avant n'en ont pas ; 23 : les extrémités d'un tronçon AIXM 5.1 sans point dans le fichier (DFS) sont nommées par la référence et placées par la courbe du tronçon ; 22 : sens des voies aériennes (dir : F, B ou FB, d'après le SIA, NATS / ENAIRE et X-Plane ; absent : la source ne le dit pas ; les zones construites avant n'ont pas dir) ; 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp) ; 16 : sources (src) et données d'autres pays (shared/aero_sources.js) ; 17 : un seul point de report VFR par point (le jumeau nu d'openAIP n'est plus ajouté à celui du SIA, AeroSources.merge) ; 18 : limites des espaces OpenAir d'X-Plane en pieds (le M de « MSL » n'est plus des mètres, AeroSources.openair : les zones construites avant sont à reconstruire) ; 19 : secteurs d'une même famille qui se recouvrent avec des planchers différents, signalés (ovl sur les espaces, overlaps dans le meta de la zone ; les zones construites avant n'ont ni l'un ni l'autre) ; 20 : pistes des terrains d'openAIP (bearing, hardLen, water, runways) et magVar, comme le SIA les donne à la France (AeroSources.geojson ; les zones construites avant ne les ont pas) ; 21 : un espace de classe E plafonné au plancher de la classe A de son État (États-Unis, Canada : 17 999 ft AMSL au lieu du « FL 600 » d'openAIP), capped: 'classA'
+    25; // 25 : longueur de la plus longue piste en dur (hardLen) dans l'index léger des terrains (aeroindex), pour proposer les principaux terrains d'un pays ; 24 : horaires (hours) et remarques (rem) d'AIP des espaces, tels que la source les publie (SIA : txtRmkWorkHr, Timsh, txtRmk ; AIXM 5.1 : notes), les zones construites avant n'en ont pas ; 23 : les extrémités d'un tronçon AIXM 5.1 sans point dans le fichier (DFS) sont nommées par la référence et placées par la courbe du tronçon ; 22 : sens des voies aériennes (dir : F, B ou FB, d'après le SIA, NATS / ENAIRE et X-Plane ; absent : la source ne le dit pas ; les zones construites avant n'ont pas dir) ; 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp) ; 16 : sources (src) et données d'autres pays (shared/aero_sources.js) ; 17 : un seul point de report VFR par point (le jumeau nu d'openAIP n'est plus ajouté à celui du SIA, AeroSources.merge) ; 18 : limites des espaces OpenAir d'X-Plane en pieds (le M de « MSL » n'est plus des mètres, AeroSources.openair : les zones construites avant sont à reconstruire) ; 19 : secteurs d'une même famille qui se recouvrent avec des planchers différents, signalés (ovl sur les espaces, overlaps dans le meta de la zone ; les zones construites avant n'ont ni l'un ni l'autre) ; 20 : pistes des terrains d'openAIP (bearing, hardLen, water, runways) et magVar, comme le SIA les donne à la France (AeroSources.geojson ; les zones construites avant ne les ont pas) ; 21 : un espace de classe E plafonné au plancher de la classe A de son État (États-Unis, Canada : 17 999 ft AMSL au lieu du « FL 600 » d'openAIP), capped: 'classA'
   const SCRIPT_URL = document.currentScript?.src || location.href;
   /** URL d'un fichier de l'application (chemin depuis la racine : « shared/carto/… »). */
   const appUrl = path => new URL('../' + path, SCRIPT_URL).href;
@@ -2340,7 +2340,9 @@
   /** Index léger des terrains d'une zone (V3 : frame/aerodb SPEC § 2) : les terrains à code OACI seulement, en lignes
    *  compactes { fields, rows } — code, nom, position, altitude, axe de piste, déclinaison —, lu par l'appli Pilote
    *  pour trouver un terrain ou ceux d'une route sans lire aerodromes.json (dix fois plus lourd). */
-  const AEROINDEX_FIELDS = ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'];
+  const AEROINDEX_FIELDS = ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar',
+    'hardLen'
+  ]; // hardLen : la plus longue piste en dur en mètres (SOG-0158 : les terrains principaux d'un pays), null si la source ne la dit pas
 
   function aeroIndex(list) {
     const n = (v, d) => {
@@ -2350,7 +2352,7 @@
     return {
       fields: AEROINDEX_FIELDS,
       rows: (list || []).filter(a => /^[A-Z]{4}$/.test(String(a?.icao || '').toUpperCase())).map(a => [String(a.icao).toUpperCase(),
-        String(a.name || ''), n(a.lat, 5), n(a.lon, 5), n(a.elev, 0), n(a.bearing, 0), n(a.magVar, 2)
+        String(a.name || ''), n(a.lat, 5), n(a.lon, 5), n(a.elev, 0), n(a.bearing, 0), n(a.magVar, 2), n(a.hardLen, 0)
       ])
     };
   }
