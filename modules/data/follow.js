@@ -224,6 +224,21 @@ async function endPickup(final, live, seconds) {
 }
 /** « Réessayer » sur la ligne d'une zone en échec (SOG-0180) : la construction de cette zone seule, avec la case « usage personnel » ; rien si le bouton de construction est gris. */
 export const retryZone = zone => /^[a-z0-9]{2,8}$/.test(zone || '') ? buildAfterPickup([zone]) : undefined;
+/** Le téléchargement de la zone puis, si sa source déposée est bonne, sa construction (SOG-0180) : la couche NASR de la FAA n'est pas produite par la construction mais par base/fetch, qui lit les trois jeux déposés (FIX, AWY, NAV) ; la zone se construit ensuite d'après ce fichier. Un échec de la source `faa` se dit (le téléchargement l'a dit) et rien ne se construit ; celui de `faaclass` seul n'empêche pas la construction. */
+export async function fetchThenBuild(zone) {
+  const me = S,
+    personal = selection('base').personal;
+  if (!/^[a-z0-9]{2,8}$/.test(zone || '') || !S.d?.cov?.ids?.includes(zone) || gateOf('base', 1).verbs.fetch.disabled) return;
+  S.lastOp = null;
+  await settle(me, await launch('base', 'fetch', M.setArgs('base', 'fetch', {
+    ids: [zone],
+    personal
+  }), [zone]), true);
+  const out = S.lastOp?.out;
+  if (S !== me || !out || ['cancelled', 'interrupted', 'no-codes', 'no-script'].includes(out.kind)) return;
+  if (out.failed.some(f => f.zone === zone && f.source === 'faa')) return;
+  await buildAfterPickup([zone]);
+}
 /** La construction qui suit une prise de fichier (SOG-0180) : les zones prises, de la couverture, avec la case « usage personnel » ; rien si le bouton de construction est gris (une autre opération, pas de lanceur). */
 async function buildAfterPickup(zones) {
   const me = S,

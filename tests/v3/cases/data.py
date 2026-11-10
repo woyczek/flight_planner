@@ -5490,3 +5490,63 @@ def l73(c):
     c.ok(re.search('[^0-9]19[^0-9]', q['text']) is not None and re.search('[^0-9]78[^0-9]', q['text']) is not None, q['text'][:200], 'the question asks to rebuild 19 of the 78 zones: the 18 with the old parser and the United States, whose download was refused')
     c.eq([sorted(p['args']['zones']) for p in _posts(st, 'fetch')], [['us']], 'only the zone whose download is not done is downloaded', what='fetch')
     c.check_errors()
+
+
+@case('L74', 'Données: the three NASR sets of the FAA chosen by hand (the download answers 403): each one is counted and what is missing is said; the third runs the download of the zone, which reads them, then its build (SOG-0180, AeroDB K153)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='AeroDB (K153): the NASR layer is produced by base/fetch (it reads the three files put in data/local/upload/), not by the build: after EACH recognised upload of source faa the screen counts the sets of the cycle; at the third it chains base/fetch { zones: [us] } then base/build when the faa source is downloaded; before, it says which set is missing')
+def l74(c):
+    lang = c.lang
+    UP = lambda key: _trow(key, lang, after='  up: {')
+    st = _launcher(c, [_F403()], verbs=_VERBS)
+    st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'fr': _zst('up-to-date'), 'gb': _zst('up-to-date'),
+                            'us': _zst('stale', {'code': 'source-old', 'source': 'faa', 'cycle': '2026-10-01', 'current': '2026-11-26'}, buildable=False)})
+    sent = []
+
+    def upload(route):
+        name = urllib.parse.unquote(route.request.headers.get('x-sog-name', ''))
+        sent.append(name)
+        route.fulfill(status=200, content_type='application/json', body=json.dumps({'ok': True, 'source': 'faa', 'zone': 'us', 'cycle': '2026-10-29', 'name': name, 'replaced': True}))
+    c.context.route(re.compile(r'/__setup/base/upload'), upload)
+    cfg, _ = _fixture()
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-zstate]').length === 5", timeout=8000, what='the five pills')
+    c.tap('[data-build] [data-verb=update]')
+    btn = '[data-zone-action=us] [data-act=zone-upload]'
+    c.until(f"!!document.querySelector('{btn}') && !document.querySelector('{btn}').disabled", timeout=8000, what='« Choisir le fichier… » on the line of the refused zone')
+    fetches = lambda: [sorted(p['args']['zones']) for p in _posts(st, 'fetch')]
+    c.eq(fetches(), [['us']], 'the update downloaded us once (refused)', what='fetch before')
+
+    def choose(name):
+        c.until(f"!document.querySelector('{btn}').disabled", timeout=8000, what='the button is live')
+        with c.page.expect_file_chooser() as fc:
+            c.tap(btn)
+        fc.value.set_files({'name': name, 'mimeType': 'application/zip', 'buffer': b'PK\x03\x04' + b'x' * 996})
+
+    def said(have, miss):
+        want = norm(UP('nasrWait').replace('{h}', have).replace('{m}', miss))
+        for _ in range(30):
+            if _notes_with(c, want):
+                return True
+            c.wait(250)
+        return False
+    choose('29_Oct_2026_FIX_CSV.zip')
+    c.ok(said('FIX', 'AWY, NAV'), None, 'a first set: said, with what is missing')
+    c.eq(fetches(), [['us']], 'and nothing is downloaded yet', what='fetch after one')
+    choose('29_Oct_2026_AWY_CSV.zip')
+    c.ok(said('FIX, AWY', 'NAV'), None, 'a second set: said, one is missing')
+    c.eq(fetches(), [['us']], 'still nothing downloaded', what='fetch after two')
+    # the third: the download of the zone reads the three, then the build
+    fetch_ok = _fview({'us': _fz('done', 3, 3, {'faa': {'state': 'downloaded', 'files': 3, 'bytes': 900}})}, state='done', step='Terminé', done=1, total=1,
+                      result={'ok': True, 'fetched': ['us'], 'unchanged': [], 'failed': [], 'manual': []})
+    built = _view('done', step='Terminé', jid='j3', zones={'us': _zs('built', 4, 4, commit='abc1234')}, result={'built': ['us'], 'failed': [], 'commits': [{'zone': 'us', 'commit': 'abc1234'}], 'cycle': '2026-10-29', 'current': '2026-10-29', 'stale': False, 'blocking': []})
+    st['views'], st['i'], st['start'] = [fetch_ok, built], 0, (200, {'job': 'j2'})
+    choose('29_Oct_2026_NAV_CSV.zip')
+    for _ in range(60):
+        if _posts(st, 'build'):
+            break
+        c.wait(250)
+    c.eq(fetches(), [['us'], ['us']], 'the third set: the download of us runs (it reads the three files)', what='fetch after three')
+    c.eq([p['args']['zones'] for p in _posts(st, 'build')], [['us']], 'then the build of us', what='build')
+    c.check_errors()

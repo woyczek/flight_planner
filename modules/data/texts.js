@@ -163,6 +163,7 @@ export const TX = {
       'Die FAA verweigert das automatische Herunterladen: holen Sie die drei Datensätze des Zyklus (FIX, AWY, NAV) von {l}, dann für jeden „Datei wählen…“.',
       'La FAA rechaza la descarga automática: tome los tres conjuntos del ciclo (FIX, AWY, NAV) de {l}, luego «Elegir el archivo…» para cada uno.'
     ],
+    nasrWait: ['NASR de la FAA : reçu {h}, il manque {m}.', 'FAA NASR: received {h}, {m} still missing.', 'NASR der FAA: erhalten {h}, es fehlt {m}.', 'NASR de la FAA: recibido {h}, falta {m}.'],
     nasrPage: ['la page des abonnements NASR', 'the NASR subscription page', 'der NASR-Abonnementseite',
       'la página de suscripciones del NASR'
     ],

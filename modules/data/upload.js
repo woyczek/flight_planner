@@ -16,6 +16,7 @@ import {
   renderBuild
 } from './panels.js';
 import {
+  fetchThenBuild,
   startPickup
 } from './follow.js';
 
@@ -78,6 +79,9 @@ function outcome(r) {
     return {
       kind: body.replaced === false ? 'same' : 'ok',
       zone,
+      source: typeof body.source === 'string' ? body.source : '',
+      cycle: /^\d{4}-\d{2}-\d{2}$/.test(String(body.cycle ?? '')) ? body.cycle : '',
+      file: name,
       text: tt(body.replaced === false ? TX.up.same : TX.up.done, {
         name,
         s: src,
@@ -103,6 +107,22 @@ function outcome(r) {
     kind: 'fail',
     text: tt(TX.up.failed)
   };
+}
+/** Les trois jeux du NASR de la FAA que le lanceur lit ensemble (le nom d'origine de la FAA dit lequel : « 29_Oct_2026_FIX_CSV.zip »). */
+const NASR_SETS = ['FIX', 'AWY', 'NAV'];
+/** Un jeu NASR de la FAA vient d'être reconnu : l'écran compte les envois du cycle (le lanceur ne le dit pas dans la vue) ; au troisième, le téléchargement de la zone lit les trois puis la construction part ; avant, il dit ce qui manque. */
+async function faaSet(out, zone) {
+  const got = S.nasr ||= {},
+    key = out.cycle || '-',
+    names = got[key] ||= new Set();
+  if (names.size < 12) names.add(out.file.toUpperCase());
+  const have = NASR_SETS.filter(k => [...names].some(n => n.includes(k)));
+  if (have.length < NASR_SETS.length && names.size < NASR_SETS.length) return S.ctx.notify(tt(TX.up.nasrWait, {
+    h: have.join(', ') || String(names.size),
+    m: NASR_SETS.filter(k => !have.includes(k)).join(', ')
+  }), 'warn');
+  delete got[key];
+  await fetchThenBuild(out.zone || zone);
 }
 /** Envoie le fichier choisi : un seul à la fois, l'avancement sur la ligne de la zone, la fin en une notification ; un envoi réussi enchaîne la construction de la zone reconnue (celle de la ligne à défaut). */
 export async function startUpload(zone, file) {
@@ -136,5 +156,8 @@ export async function startUpload(zone, file) {
   renderBuild();
   S.ctx.notify(out.text, out.kind === 'fail' ? 'err' : 'ok');
   // le fichier est rangé là où « Prendre le fichier téléchargé » lit (data/local/upload/) : le parcours normal suit — le plan, la prise, puis la construction de la zone reconnue
-  if (out.kind !== 'fail') await startPickup(out.zone || zone);
+  if (out.kind === 'fail') return;
+  if (out.source === 'faa') return faaSet(out,
+    zone); // la FAA : trois jeux à déposer, lus par le téléchargement de la zone (AeroDB), pas par la prise
+  await startPickup(out.zone || zone);
 }
