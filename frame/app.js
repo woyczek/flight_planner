@@ -530,10 +530,10 @@
     co: {
       title: ['Compagnie', 'Airline', 'Fluggesellschaft', 'Aerolínea'],
       label: ['Compagnie : {a}', 'Airline: {a}', 'Fluggesellschaft: {a}', 'Aerolínea: {a}'],
-      differs: ['Ce travail reste à la compagnie {w} ; la compagnie courante est {c}.',
-        'This work stays with airline {w}; the current airline is {c}.',
-        'Diese Arbeit bleibt bei der Fluggesellschaft {w}; die aktuelle ist {c}.',
-        'Este trabajo sigue con la aerolínea {w}; la actual es {c}.'
+      differs: ['Ce vol ou ce compte rendu est pour la compagnie {w} ; la compagnie de l’appareil est {c}.',
+        'This flight or report is for airline {w}; the device’s airline is {c}.',
+        'Dieser Flug oder Bericht gehört zur Fluggesellschaft {w}; die des Geräts ist {c}.',
+        'Este vuelo o informe es para la aerolínea {w}; la del dispositivo es {c}.'
       ]
     },
     // coupe-boucle des rechargements (SOG-0209) : la cause est dite telle que le cadre la connaît (technique, en anglais)
@@ -1423,6 +1423,7 @@
       } : {}),
       networks: Object.freeze(nets),
       name: str(v.name),
+      kind: str(v.kind), // le genre (va | sog) : l'en-tête et la liste des compagnies le disent par mission_categories.js
       site: str(v.site),
       logo: str(v.logo), // le logo de la compagnie : un fichier du dépôt des données (airline/…), lu par readLogo
       pages: Object.freeze({
@@ -1437,9 +1438,6 @@
    *  (événement « frame-airline » sur window ; ctx.airline donne toujours la dernière). Le premier module n'attend
    *  jamais cette lecture : au premier passage d'un dépôt, elle coûte toute la chaîne de lecture de l'arbre. */
   async function loadAirline(ms = 0) {
-    // la compagnie courante de l'appareil (FrameData.airline, § 10.38) : ses réglages, son dossier ; sans index.json, celle d'aujourd'hui
-    // (airline/settings.json, code default)
-    // (un FrameData sans airline(), celui d'un cadre simulé d'avant § 10.38 : le réglage seul, comme avant)
     const read = Promise.resolve(typeof FD.airline === 'function' ? FD.airline() : Promise.resolve(airlineData.get(AIRLINE, {
         wait: true
       })).then(v => ({
@@ -1450,6 +1448,16 @@
       a = await (ms ? Promise.race([read, new Promise(res => setTimeout(() => res(undefined), ms))]) : read);
     if (a === undefined) return;
     airlineKnown = true;
+    // le nombre de compagnies connues (la puce de l'en-tête n'existe que s'il y en a au moins deux) ; lu après la compagnie : l'index est alors là
+    if (typeof FD.airlines === 'function') FD.airlines().then(l => {
+      if (l.length !== airlineCount) {
+        airlineCount = l.length;
+        paintCo();
+      }
+    }).catch(() => {});
+    // la compagnie courante de l'appareil (FrameData.airline, § 10.38) : ses réglages, son dossier ; sans index.json, celle d'aujourd'hui
+    // (airline/settings.json, code default)
+    // (un FrameData sans airline(), celui d'un cadre simulé d'avant § 10.38 : le réglage seul, comme avant)
     const next = airlineOf(a?.settings ?? null, a?.code || '');
     readLogo(next.logo, a?.root); // le fichier a pu changer sans que le réglage change : relu par révision, sans frais
     if (JSON.stringify(next) === JSON.stringify(airline)) return;
@@ -1543,26 +1551,36 @@
   // travail que le module montre (un compte rendu, un vol préparé : ctx.workAirline) garde une autre compagnie que la courante (il la garde : rien n'est réécrit en silence, SOG-0181)
   let workAirline = null; // { module, code } : la compagnie du travail montré, dite par le module
   const coCode = c => String(c || '').slice(0, 8).toUpperCase();
-  /** La puce de l'en-tête ; rien pour le code « default » (une seule compagnie, sans index) ou sans compagnie ; écrite seulement si elle change. */
+  /** La puce de l'en-tête : le code de la compagnie de l'appareil, SEULEMENT s'il existe au moins deux compagnies (« Personnel » compte) et que celle-ci a un code (pas « default » : une seule
+   *  compagnie, sans index) ; « ITF ≠ » quand le travail montré en garde une autre ; le nom entier et le genre en infobulle et nom accessible. Écrite seulement si elle change ; cède, en dernier
+   *  recours, au cartouche et à l'état de synchronisation (fitStale). */
+  let airlineCount = 0; // les compagnies connues, « personnel » comprise (FrameData.airlines)
   function paintCo() {
-    const el = $('fCo'),
-      btn = $('fApp');
-    if (!el || !btn) return;
+    const el = $('fCo');
+    if (!el) return;
     const cur = airline.code && airline.code !== 'default' ? airline.code : '',
-      work = workAirline && workAirline.module === current?.id && workAirline.code && workAirline.code !== cur ? workAirline.code : '',
-      txt = cur ? work ? `${coCode(cur)} ≠ ${coCode(work)}` : coCode(cur) : '',
-      title = cur ? work ? t(T.co.differs, {
+      want = !!cur && airlineCount >= 2,
+      work = want && workAirline && workAirline.module === current?.id && workAirline.code && workAirline.code !== cur ? workAirline
+      .code : '',
+      txt = want ? work ? `${coCode(cur)} ≠` : coCode(cur) : '',
+      who = KM ? KM.airlineText({
+        code: cur,
+        name: airline.name,
+        kind: airline.kind
+      }, lang()) : airline.name || coCode(cur),
+      title = want ? work ? t(T.co.differs, {
         w: coCode(work),
         c: coCode(cur)
       }) : t(T.co.label, {
-        a: airline.name || coCode(cur)
+        a: who || coCode(cur)
       }) : '';
     if (el.textContent !== txt) el.textContent = txt;
-    if (el.hidden !== !txt) el.hidden = !txt;
+    if (el.dataset.want !== (want ? '1' : '')) el.dataset.want = want ? '1' : '';
     if (el.title !== title) el.title = title;
+    if ((el.getAttribute('aria-label') || '') !== title) title ? el.setAttribute('aria-label', title) : el.removeAttribute('aria-label');
     if (el.toggleAttribute) el.toggleAttribute('data-differs', !!work);
-    const aria = cur ? `${t(APP.name)} · ${work ? title : t(T.co.label, { a: airline.name || coCode(cur) })}` : '';
-    if ((btn.getAttribute('aria-label') || '') !== aria) aria ? btn.setAttribute('aria-label', aria) : btn.removeAttribute('aria-label');
+    el.hidden = !want;
+    fitStale(); // la place : la puce cède en dernier recours
   }
   /** Les compagnies du sélecteur : { code, name, kind, current }, sept au plus (« personnel » toujours : la dernière) ; le genre vient des réglages de chacune. */
   async function airlineChoices() {
@@ -2419,7 +2437,7 @@
       el.dataset.go = next;
       el.hidden = !next;
     }
-    if (!next) return;
+    if (!next) return void fitStale(); // pas de cartouche : la puce de la compagnie reprend sa place si elle tient
     // le libellé entier reste en aria-label à tout palier, la phrase en infobulle
     const tag = t(T.info.staleTag),
       full = t(T.info.stale);
@@ -2432,8 +2450,10 @@
    *  bouton de synchronisation montre tout son texte (au dernier palier, il tronque avec des points de suspension). Écrit seulement si le texte change. */
   function fitStale() {
     const el = $('fStale'),
-      head = el?.parentElement;
-    if (!el || el.hidden || !head) return;
+      head = el?.parentElement,
+      co = $('fCo');
+    if (!el || !head) return;
+    if (co && co.dataset.want) co.hidden = false; // la puce voulue est montrée d'abord ; elle cède en dernier recours (SOG-0213)
     const sync = $('fSync'),
       texts = [t(T.info.staleTag), t(T.info.staleShort), ''],
       clash = () => {
@@ -2447,14 +2467,29 @@
         // un voisin dont le texte est tronqué (le nom de l'application réduit à « P… », la synchronisation en points de suspension) est un conflit
         // aussi : le cartouche cède avant lui
         const name = $('fName'),
-          cut = [...head.children].some(x => x !== el && !x.hidden && x.getClientRects().length && x.scrollWidth > x.clientWidth + 1);
+          cut = [...head.children].some(x => x !== el && x !== co && !x.hidden && x.getClientRects().length && x.scrollWidth > x
+            .clientWidth + 1);
         return head.scrollWidth > head.clientWidth + 1 || sync.scrollWidth > sync.clientWidth + 1 || cut || (name && name.scrollWidth >
           name.clientWidth + 1);
       };
-    for (let tier = 0; tier < texts.length; tier++) {
-      if (el.dataset.tier !== String(tier)) el.dataset.tier = String(tier);
-      if (el.textContent !== texts[tier]) el.textContent = texts[tier];
-      if (!clash()) return;
+    /** Les paliers du cartouche, du libellé entier à la pastille ; vrai si l'un tient. */
+    const tiers = () => {
+      for (let tier = 0; tier < texts.length; tier++) {
+        if (el.dataset.tier !== String(tier)) el.dataset.tier = String(tier);
+        if (el.textContent !== texts[tier]) el.textContent = texts[tier];
+        if (!clash()) return true;
+      }
+      return false;
+    };
+    if (el.hidden) {
+      if (co && !co.hidden && clash()) co.hidden = true; // pas de cartouche : la puce seule cède si l'en-tête ne tient pas
+      return;
+    }
+    if (tiers()) return;
+    // rien ne tient avec la puce : elle cède, en dernier recours, au profit du cartouche et de l'état de synchronisation
+    if (co && !co.hidden) {
+      co.hidden = true;
+      tiers();
     }
   }
 
@@ -3121,12 +3156,10 @@
     return `${location.pathname}${s ? `?${s}` : ''}#${app.modules[0]?.id || ''}`;
   }
   /** Ouvre (ou ferme, s'il l'est) la liste des applications sous le bouton du nom. */
-  async function toggleAppPop() {
+  function toggleAppPop() {
     if (tabPop) return closeTabPop();
     const a = $('fApp'),
-      apps = Object.values(APPS),
-      cos = await airlineChoices(); // les compagnies (sept au plus) : lues avant de dessiner, le menu ne bouge pas ensuite
-    if (tabPop) return; // un second appui pendant la lecture
+      apps = Object.values(APPS);
     const el = document.createElement('div');
     el.className = 'f-tabpop f-down';
     el.setAttribute('role', 'group');
@@ -3138,13 +3171,43 @@
         return `<button type="button" class="f-tabpop-row" data-app="${esc(p.id)}"${cur ? ' aria-current="page"' : ''}${off ? ' disabled' : ''}><span class="f-app-ico${p.id === 'company' && appLogo ? ' f-has-logo' : ''}" style="color:${esc(p.tint || 'currentColor')}">${appIconHtml(p)}</span><span>${esc(t(p.name))}${p.id === 'company' && airline.name ? `<small>${esc(airline.name)}</small>` : ''}${need}</span></button>`;
       }).join('') +
       // au téléphone, où la colonne n'est pas affichée, les pages de la V2 sont la dernière ligne de ce menu (SOG-0166)
-      `<button type="button" class="f-tabpop-row f-legacy" data-legacy>${icon('file')}<span>${esc(t(LEGACY.label))}</span></button>` +
-      // les compagnies, sous les applications : des boutons radio, un appui change de compagnie sans quitter l'écran (SOG-0213)
-      (cos.length > 1 ? `<div role="radiogroup" aria-label="${esc(t(T.co.title))}"><p class="f-hco-title">${esc(t(T.co.title))}</p>${cos.map(c => `<button type="button" role="radio" aria-checked="${c.current}" class="f-tabpop-row f-hco-row" data-co="${esc(c.code)}"><span class="f-hco-dot" aria-hidden="true"></span><span>${esc(KM ? KM.airlineText(c, lang()) : c.name)}<small>${esc(coCode(c.code))}</small></span></button>`).join('')}</div>` : '');
+      `<button type="button" class="f-tabpop-row f-legacy" data-legacy>${icon('file')}<span>${esc(t(LEGACY.label))}</span></button>`;
+    openPop(a, $('fAppIco') || a, el, e => {
+      if (e.target.closest('[data-legacy]')) {
+        closeTabPop();
+        return void(location.hash = '#legacy');
+      }
+      const p = APPS[e.target.closest('[data-app]:not([disabled])')?.dataset.app];
+      if (!p) return;
+      closeTabPop();
+      if (p !== APP) selfNavigate(`app: ${p.id}`, () => location.replace(appHref(p)));
+    });
+  }
+  /** La liste des compagnies, ouverte par la puce de l'en-tête (SOG-0213) : des boutons radio (sept au plus, « Personnel » en dernier), le nom et le genre ; un appui change la compagnie de
+   *  l'appareil, ferme la liste et laisse l'écran où il est (l'événement frame-data-airline remet la compagnie, la puce et les écrans à jour) ; rien n'est ajouté au sélecteur d'application. */
+  async function toggleCoPop() {
+    if (tabPop) return closeTabPop();
+    const a = $('fCo'),
+      cos = await airlineChoices(); // lues avant de dessiner : la liste ne bouge pas ensuite
+    if (tabPop || !cos.length) return; // un second appui pendant la lecture
+    const el = document.createElement('div');
+    el.className = 'f-tabpop f-down';
+    el.setAttribute('role', 'radiogroup');
+    el.setAttribute('aria-label', t(T.co.title));
+    el.innerHTML = `<p class="f-hco-title">${esc(t(T.co.title))}</p>` + cos.map(c => `<button type="button" role="radio" aria-checked="${c.current}" class="f-tabpop-row f-hco-row" data-co="${esc(c.code)}"><span class="f-hco-dot" aria-hidden="true"></span><span>${esc(KM ? KM.airlineText(c, lang()) : c.name)}<small>${esc(coCode(c.code))}</small></span></button>`).join('');
+    openPop(a, a, el, e => {
+      const co = e.target.closest('[data-co]');
+      if (!co) return;
+      closeTabPop(true);
+      if (co.getAttribute('aria-checked') !== 'true') void FD.setAirline(co.dataset.co);
+    });
+  }
+  /** Pose une liste sous son bouton `a` (la pointe face à `caretEl`) et la rend vivante : fermée par un appui ailleurs, un défilement, un changement d'adresse ou de taille ; onClick : ses lignes. */
+  function openPop(a, caretEl, el, onClick) {
     el.style.visibility = 'hidden';
     document.body.append(el);
     // sous le bouton, à gauche de la fenêtre au plus près, la pointe (--f-pop-caret) face à l'icône
-    const r = ($('fAppIco') || a).getBoundingClientRect(),
+    const r = caretEl.getBoundingClientRect(),
       w = el.offsetWidth,
       cx = r.left + r.width / 2,
       x = Math.min(Math.max(cx - 24, 8), document.documentElement.clientWidth - w - 8);
@@ -3177,24 +3240,8 @@
     });
     window.addEventListener('hashchange', () => closeTabPop(), opt);
     window.addEventListener('resize', () => closeTabPop(), opt);
-    el.addEventListener('click', e => {
-      if (e.target.closest('[data-legacy]')) {
-        closeTabPop();
-        return void(location.hash = '#legacy');
-      }
-      const co = e.target.closest('[data-co]');
-      if (co) {
-        closeTabPop(true);
-        if (co.getAttribute('aria-checked') !== 'true') void FD.setAirline(co.dataset
-          .co); // l'événement frame-data-airline remet la compagnie, la puce et les écrans à jour
-        return;
-      }
-      const p = APPS[e.target.closest('[data-app]:not([disabled])')?.dataset.app];
-      if (!p) return;
-      closeTabPop();
-      if (p !== APP) selfNavigate(`app: ${p.id}`, () => location.replace(appHref(p)));
-    }, opt);
-    el.querySelector('[aria-current]')?.focus({
+    el.addEventListener('click', onClick, opt);
+    el.querySelector('[aria-current],[aria-checked="true"]')?.focus({
       preventScroll: true
     });
   }
@@ -4614,6 +4661,7 @@
     paintAppIcon(); // le logo de la compagnie pour Compagnie, sinon l'icône teintée
     $('fApp').title = t(T.appSwitch);
     $('fApp').onclick = toggleAppPop;
+    $('fCo').onclick = toggleCoPop; // la puce de la compagnie : sa liste (SOG-0213)
     paintFavicon();
     paintStatus();
     $('fHelp').setAttribute('aria-label', t(T.help));

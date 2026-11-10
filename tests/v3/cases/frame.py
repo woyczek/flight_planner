@@ -3953,7 +3953,7 @@ def a101(c):
         NOTE = "(w) => (window.__notes || []).some(n => n.replace(/[\s  ]+/g, ' ').includes(w))"
         col = '[data-col="backlog"] li[data-id]'
         ids = lambda: c.js("[...document.querySelectorAll('[data-col=\"backlog\"] li[data-id]')].map(l => l.dataset.id)")
-        open_ = lambda: (c.open('roadmap', docs=LEVEL3 + [['device/roadmap.json', {'col': 'backlog'}, 'cache']]), c.until("!!document.querySelector('[data-kanban] li[data-id]')", timeout=15000, what='the cards with an identifier'))
+        open_ = lambda: (c.open('roadmap', docs=LEVEL3 + [['device/roadmap.json', {'col': 'backlog', 'view': 'priorities'}, 'cache']]), c.until("!!document.querySelector('[data-kanban] li[data-id]')", timeout=15000, what='the cards with an identifier'))
         open_()
         c.eq(ids(), ['SOG-0006', 'SOG-0007', 'SOG-0008'], 'the file\'s order at first', what='first order')
         # ---- the identifier, in clear, the text\'s size; copied with the title by a right click
@@ -5663,57 +5663,71 @@ def _co_docs(n=2):
     return docs
 
 
-CO_HEAD = """() => { const h = document.querySelector('.f-head'), kids = [...h.children].filter(e => !e.hidden && e.getBoundingClientRect().width > 0), co = document.getElementById('fCo');
-  const r = kids.flatMap(e => e.id === 'fApp' ? [e, ...e.children] : [e]).filter(e => !e.hidden).map(e => [e.id || e.className, e.getBoundingClientRect()]); const clash = [];
+CO_HEAD = """() => { const h = document.querySelector('.f-head'), kids = [...h.children].filter(e => !e.hidden && e.getClientRects().length), co = document.getElementById('fCo');
+  const r = kids.map(e => [e.id || e.className, e.getBoundingClientRect()]); const clash = [];
   for (let i = 0; i < r.length; i++) for (let j = i + 1; j < r.length; j++) { const a = r[i][1], b = r[j][1];
-    if (r[i][0] === 'f-app' || r[j][0] === 'f-app') continue;
     if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1) clash.push([r[i][0], r[j][0]]) }
-  return { text: co.textContent, title: co.title, aria: document.getElementById('fApp').getAttribute('aria-label') || '', one: co.getBoundingClientRect().height < parseFloat(getComputedStyle(co).fontSize) * 2.2,
-    over: h.scrollWidth > h.clientWidth, clash } }"""
+  const nm = document.getElementById('fName'), cut = kids.filter(e => e !== co && e.id !== 'fStale' && e.scrollWidth > e.clientWidth + 1).map(e => e.id || e.className);
+  return { shown: !co.hidden, text: co.textContent, title: co.title, aria: co.getAttribute('aria-label') || '', tag: co.tagName, one: co.getBoundingClientRect().height < parseFloat(getComputedStyle(co).fontSize) * 2.2,
+    over: h.scrollWidth > h.clientWidth, clash, cut, nameCut: !!nm && nm.scrollWidth > nm.clientWidth + 1 } }"""
 
 
-@case('A139', 'The header says the current airline beside the application’s name (« Pilote · AIV »: the code, the whole name in the tooltip), the selector of the name lists the airlines (seven at most, « Personnel » included) as radio buttons: a tap changes the airline and stays on the screen; when the work shown keeps another airline the header says so (SOG-0213)', 'A',
+@case('A139', 'The header says the current airline by a chip beside the application’s name, only when at least two airlines exist (« Personnel » counts); a tap on the chip opens the list of the airlines as radio buttons (seven at most) and a choice changes the airline without leaving the screen; nothing is added to the application selector; the chip says when the work shown is for another airline (SOG-0213)', 'A',
       designs=('standard',), screens=True, night=False, langs4=True,
-      rule='SOG-0213 (the user, after the refusal of SOG-0190: « toujours rien dans l’entête… possibilité de changer rapidement de compagnie… quand on clique sur « pilote », on a « compagnie ITF »… (on n’en aura jamais plus de 7) »): (a) the header says the current airline beside the application’s name — the code, the whole name in the tooltip and the accessible name — in one piece at 390 (no wrap, no overlap); (b) the selector that opens on the name carries, under the applications, the airlines as radio buttons (seven at most, « Personnel » included): a tap changes the airline without leaving the screen; (c) ctx.workAirline(code): when the work shown keeps another airline than the current one, the header says it (« DFA ≠ AIV »), nothing is rewritten; the words of the kind come from frame/lib/mission_categories.js, one source')
+      rule='SOG-0213 (the user: « oui pour ta contre-proposition »): (1) a chip with the code of the device’s airline beside the application’s name, shown only when at least two airlines exist (« Personnel » counts) and this one has a code; the whole name and the kind in the tooltip and the accessible name; (2) a tap on the chip opens the airlines as radio buttons (seven at most, « Personnel » last), a choice changes the device’s airline and stays on the screen; NOTHING is added to the application selector; (3) ctx.workAirline(code): when the work shown is for another airline the chip says it (a mark « ≠ » and the tooltip « this flight or report is for X ») and nothing is rewritten; (4) the words of the kind come from frame/lib/mission_categories.js, one source')
 def a139(c):
     lang = c.lang
     c.context.route(re.compile(r'/modules/atmosphere/module\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=WORK_MODULE))
     c.open('atmosphere', docs=_co_docs(2), wait=False)
-    c.until('!!window.__ctx && !document.getElementById("fCo").hidden', timeout=20000, what='the module and the airline code in the header')
-    c.wait(600)
+    c.until('!!window.__ctx', timeout=20000, what='the module')
+    c.wait(2500)
     r = c.js(CO_HEAD)
-    c.eq([r['text'], r['one'], r['over'], [x for x in r['clash'] if 'fApp' not in x]], ['AIV', True, False, []], '(a) the code of the current airline beside the name: one piece, the header does not overflow, nothing overlaps', what='chip')
-    c.ok('Air Inter Va' in r['title'] and 'Air Inter Va' in r['aria'], str(r), 'the whole name is in the tooltip and in the accessible name of the button')
+    c.ok(r['shown'], str(r), 'the chip is shown')
+    c.eq([r['tag'], r['text'], r['one'], r['over'], r['clash'], r['cut'], r['nameCut']], ['BUTTON', 'AIV', True, False, [], [], False], '(1) a chip with the code of the device’s airline: a button, in one piece, nothing overlaps, nothing is cut', what='chip')
+    c.ok('Air Inter Va' in r['title'] and 'Air Inter Va' in r['aria'] and norm(CO_KINDS['va'][lang]) in norm(r['aria']), str(r), 'the whole name and the kind are in the tooltip and the accessible name')
     c.shot(f'A139_header_{c.width}_{lang}.png')
-    # (b) the selector: the applications, then the airlines as radio buttons
+    # the application selector holds the applications only
     c.tap('#fApp')
-    c.until("!!document.querySelector('.f-tabpop [data-co]')", what='the selector with the airlines')
+    c.until("!!document.querySelector('.f-tabpop [data-app]')", what='the application selector')
+    c.eq(c.count('.f-tabpop [data-co]'), 0, 'nothing about the airlines is added to the application selector', what='no airline in the app selector')
+    c.tap('#fApp')
+    c.until("!document.querySelector('.f-tabpop')", what='closed')
+    # (2) the chip opens the list
+    c.tap('#fCo')
+    c.until("!!document.querySelector('.f-tabpop [data-co]')", what='the list of the airlines')
     rows = c.js("[...document.querySelectorAll('.f-tabpop [data-co]')].map(b => [b.dataset.co, b.getAttribute('role'), b.getAttribute('aria-checked'), b.textContent.replace(/\\s+/g, ' ').trim()])")
-    c.eq([[x[0], x[1], x[2]] for x in rows], [['aiv', 'radio', 'true'], ['dfa', 'radio', 'false'], ['perso', 'radio', 'false']], '(b) the airlines of the index, then « Personnel », as radio buttons, the current one checked', what='rows')
+    c.eq([[x[0], x[1], x[2]] for x in rows], [['aiv', 'radio', 'true'], ['dfa', 'radio', 'false'], ['perso', 'radio', 'false']], '(2) the airlines of the index, then « Personnel », as radio buttons, the current one checked', what='rows')
     c.ok(norm(CO_KINDS['va'][lang]) in norm(rows[0][3]) and norm(CO_KINDS['sog'][lang]) in norm(rows[1][3]) and norm(CO_KINDS['perso'][lang]) in norm(rows[2][3]), str(rows), 'the words of the kind are the single source of mission_categories.js')
-    c.shot(f'A139_selector_{c.width}_{lang}.png')
+    c.shot(f'A139_list_{c.width}_{lang}.png')
     hash0 = c.hash()
     c.tap('.f-tabpop [data-co="dfa"]')
     c.until("document.getElementById('fCo').textContent === 'DFA'", what='the chip follows the choice')
-    c.eq([c.count('.f-tabpop'), c.hash(), _airline_code(c, 'dfa')], [0, hash0, 'dfa'], 'a tap changes the airline, closes the menu and stays on the screen', what='changed')
-    # (c) the work shown keeps another airline: the header says it, nothing is rewritten
+    c.eq([c.count('.f-tabpop'), c.hash(), _airline_code(c, 'dfa')], [0, hash0, 'dfa'], 'a choice changes the airline, closes the list and stays on the screen', what='changed')
+    # (3) the work shown is for another airline: the chip says it, nothing is rewritten
     c.js("() => window.__ctx.workAirline('aiv')")
     c.until("document.getElementById('fCo').dataset.differs !== undefined", what='the difference is said')
     r = c.js(CO_HEAD)
-    c.eq([r['text'], [x for x in r['clash'] if 'fApp' not in x], r['over']], ['DFA ≠ AIV', [], False], '(c) the header says the work keeps another airline: both codes, no overlap', what='differs')
-    c.ok('AIV' in r['title'] and 'DFA' in r['title'], r['title'], 'the tooltip says which one the work keeps and which is current')
+    c.eq([r['text'], r['clash'], r['over'], r['nameCut']], ['DFA ≠', [], False, False], '(3) the chip carries a mark when the work shown is for another airline', what='differs')
+    c.ok('AIV' in r['title'] and 'DFA' in r['title'], r['title'], 'the tooltip says which airline the work is for and which is the device’s')
     c.shot(f'A139_differs_{c.width}_{lang}.png')
     c.js("() => window.__ctx.workAirline('')")
     c.until("document.getElementById('fCo').dataset.differs === undefined", what='no difference left')
-    c.eq(c.js("document.getElementById('fCo').textContent"), 'DFA', 'back to the current airline alone', what='cleared')
+    c.eq(c.js("document.getElementById('fCo').textContent"), 'DFA', 'back to the code alone', what='cleared')
     # seven at most, « Personnel » included
     c.js("() => FrameData.reset()")
     c.open('atmosphere', docs=_co_docs(9), wait=False)
     c.until('!!window.__ctx && !document.getElementById("fCo").hidden', timeout=20000, what='nine airlines')
-    c.tap('#fApp')
-    c.until("!!document.querySelector('.f-tabpop [data-co]')", what='the selector')
+    c.tap('#fCo')
+    c.until("!!document.querySelector('.f-tabpop [data-co]')", what='the list')
     codes = c.js("[...document.querySelectorAll('.f-tabpop [data-co]')].map(b => b.dataset.co)")
     c.eq([len(codes), codes[-1]], [7, 'perso'], 'nine airlines known: seven rows, « Personnel » is the last', what='seven')
+    # without an index (one airline, code default): no chip
+    c.js("() => FrameData.reset()")
+    c.open('atmosphere', docs=[['device/level.json', {'level': 3}, 'cache'], ['airline/settings.json', {'name': 'DEFA Virtual'}, 'document']], wait=False)
+    c.until('!!window.__ctx', timeout=20000, what='the module, no index')
+    c.wait(1200)
+    c.eq(c.js("document.getElementById('fCo').hidden"), True, 'a single airline without an index (code default): no chip', what='no chip')
+    c.check_errors()
 
 @case('A140', 'Settings › Company (SOG-0218): the list of airlines is drawn from the index at once although the files of each airline arrive late (a slow device or relay); the grey lines are filled after, in place, nothing moves', 'A', langs4=True, tags=('airline',),
       designs=('standard',), screens=True, night=False,
@@ -5760,4 +5774,36 @@ def a140(c):
     cls = c.js('window.__cls')
     c.ok(cls['value'] < 0.1, cls, 'the layout shift of the screen at load, details included, stays under 0.1 (rule 22)')
     c.shot(f"A140_standard_{c.page.viewport_size['width']}_delivered.png")
+
+
+@case('A141', 'The airline chip with the « Old version » cartouche and a long sync state: nothing overlaps, nothing is cut, at 390, 768 and 1280; the chip gives way as a last resort (SOG-0213)', 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule='SOG-0213 + SOG-0168: the header has one row; the cartouche and the sync state come first; the chip disappears only when even the cartouche’s smallest step does not fit; at every width no rectangle of the header cuts another and the header does not overflow')
+def a141(c):
+    c.page.add_init_script("""(() => { let fd; Object.defineProperty(window, 'FrameData', { configurable: true, get: () => fd, set(v) {
+      if (v && typeof v.status === 'function' && !v.__w) { v.__w = 1; const st = v.status, on = v.onStatus;
+        v.status = async () => ({ ...(await st.apply(v)), transport: 'github', syncing: false, online: false, lastError: '', conflicts: 0, pending: 11, queue: [] }); v.onStatus = fn => on.call(v, s => fn({ ...s, transport: 'github', syncing: false, online: false, lastError: '', conflicts: 0, pending: 11, queue: [] })) }
+      fd = v } }) })()""")
+
+    def launcher(route):
+        u = urllib.parse.urlparse(route.request.url).path
+        body = {'server': True, 'data': False, 'dataGit': False, 'host': 'TEST', 'lan': False, 'lnm': [], 'app': 'abcd1234'} if u.endswith('/__setup/status') else {}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.unroute(re.compile(r'/__setup/'))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    c.open('settings', docs=_co_docs(2), wait=False)
+    c.until("document.getElementById('fStale') && !document.getElementById('fStale').hidden", timeout=15000, what='the cartouche')
+    c.until("/11/.test(document.querySelector('#fSync .f-lbl').textContent)", timeout=15000, what='the long sync state')
+    c.wait(900)
+    for width in (390, 768, 1280):
+        c.page.set_viewport_size({'width': width, 'height': 900})
+        c.wait(900)
+        r = c.js(CO_HEAD)
+        if c.lang == 'fr':
+            (ROOT / 'tests' / 'v3' / 'shots').mkdir(parents=True, exist_ok=True)
+            c.page.screenshot(path=str(ROOT / 'tests' / 'v3' / 'shots' / f'A140_header_{width}.png'), clip={'x': 0, 'y': 0, 'width': width, 'height': 72})
+        c.eq([r['clash'], r['over'], r['nameCut']], [[], False, False], f'at {width}: no rectangle of the header cuts another, it does not overflow, the application name is whole', what=f'fit at {width}')
+        if width >= 768:
+            c.ok(r['shown'], str(r), f'at {width}: there is room, the chip is there beside the cartouche and the sync state')
+
     c.check_errors()
