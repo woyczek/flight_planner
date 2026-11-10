@@ -101,6 +101,15 @@
             x: 1
           }
         }, 429);
+        if (route.startsWith('unrec')) return json({
+          ok: false,
+          message: 'not recognised',
+          reason: 'unrecognised',
+          expected: route === 'unrec' ? ['sia', 'nats', 'lfv', 'openaip'] : route === 'unrecmany' ? Array.from({
+            length: 11
+          }, (_, i) => `s${i}`) : ['sia', 'Bad Name!'],
+          secret: 'never handed on'
+        }, 422);
         if (route === 'boom') return json({
           message: 'kaput'
         }, 500);
@@ -189,7 +198,7 @@
     };
   };
   const DECL = {
-    routes: ['regen/', 'echo', 'array', 'boom', 'missing', 'slow'],
+    routes: ['regen/', 'echo', 'array', 'boom', 'missing', 'slow', 'unrec', 'unrecmany', 'unrecbad'],
     read: ['sia/', 'proc/']
   };
 
@@ -228,6 +237,11 @@
     ck('call : route non déclarée refusée (403), sans appel', ref.ok === false && ref.status === 403 && ref.refused && ref.route ===
       'secrets' && S.f.calls.length === n0, JSON.stringify(ref));
     ck('call : préfixe « regen/ » ne couvre pas « regenx »', (await M.call('regenx')).refused === true);
+    const ue = await M.call('unrec');
+    ck('call : refus avec une liste fermée `expected` (identifiants courts) → rendue avec le refus, rien d’autre du corps', ue.status === 422 && ue.reason ===
+      'unrecognised' && JSON.stringify(ue.expected) === '["sia","nats","lfv","openaip"]' && !('secret' in ue), JSON.stringify(ue));
+    ck('call : `expected` de plus de dix éléments, ou avec un mot hors [a-z0-9_-] : écarté', !('expected' in await M.call('unrecmany')) && !('expected' in await M
+      .call('unrecbad')));
     ck('call : route exacte déclarée acceptée', (await M.call('echo')).method === 'GET');
     ck('call : corps → POST', (await M.call('echo', {
       x: 1

@@ -27,6 +27,12 @@ export function dataPathOf(path) {
   const parts = p.split('/');
   return parts.some(x => x === '..' || x === '.' || x === '') ? '' : p;
 }
+/** Ce que le lanceur attendait, rendu avec son refus : `expected`, une liste fermée de mots courts (10 au plus, 20 signes, [a-z0-9_-] : les identifiants de
+ *  sources d'AeroDB, par exemple) ; rien d'autre du corps ne passe. */
+const expectedOf = b => Array.isArray(b?.expected) && b.expected.length <= 10 && b.expected.every(x => typeof x === 'string' &&
+  /^[a-z0-9_-]{1,20}$/.test(x)) ? {
+  expected: [...b.expected]
+} : {};
 /** Vrai si x relève d'un préfixe déclaré : égal, ou sous un préfixe terminé par « / ». */
 const under = (x, list) => [].concat(list || []).some(p => typeof p === 'string' && p && (x === p || p.endsWith('/') && x.startsWith(p)));
 /** Route permise par une déclaration : sous elle, ou l'annulation d'une route déclarée (<route>/cancel, protocole des travaux). */
@@ -123,7 +129,8 @@ export function launcherClient({
         } : {}),
         ...(Number.isFinite(res.body?.wait) ? {
           wait: res.body.wait
-        } : {})
+        } : {}),
+        ...expectedOf(res.body)
       };
       return res.body && typeof res.body === 'object' && !Array.isArray(res.body) ? res.body : {
         ok: true,
@@ -342,7 +349,8 @@ export function launcherClient({
             } : {}),
             ...(Number.isFinite(body?.wait) ? {
               wait: body.wait
-            } : {})
+            } : {}),
+            ...expectedOf(body)
           });
           end({
             ok: true,
