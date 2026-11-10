@@ -155,9 +155,10 @@ def m5(c):
     open_sheets(c)
     c.until(f"!!document.querySelector('{M} {SHEETS} [data-id] [data-do=edit]')", what='the sheets are listed')
     lay = c.js(f"""(() => [...document.querySelectorAll('{M} {SHEETS} .f-list .f-item')].map(r => {{ const b = r.getBoundingClientRect(),
-        t = r.firstElementChild.getBoundingClientRect(), a = r.querySelector('.f-row').getBoundingClientRect();
-        return [r.dataset.id || r.dataset.type, Math.round(100 * t.width / b.width), a.top >= t.bottom - 1] }}))()""")
-    c.ok(all(w >= 80 and under for _, w, under in lay), f'{lay}', 'at 390 px the text of a row takes the width (80 % or more) and its actions go under it')
+        t = r.firstElementChild.getBoundingClientRect(), a = r.querySelector('.f-row')?.getBoundingClientRect();
+        return [r.dataset.id || r.dataset.type, Math.round(100 * t.width / b.width), !a || a.top >= t.bottom - 1] }}))()""")
+    # since SOG-0190 the name is the row's button: no action row is left; one that came back would still go under the text
+    c.ok(all(w >= 80 and under for _, w, under in lay), f'{lay}', 'at 390 px the text of a row takes the width (80 % or more), no action beside it')
     # the sheet editor, every group open: two columns at most, each field at its own height (an empty input never grows to the row)
     edit_sheet(c, 'EC25')
     c.js(f"document.querySelectorAll('{M} {SHEETS} details').forEach(d => d.open = true)")
@@ -1030,3 +1031,36 @@ def m15(c):
     c.tap(f'{M} {SHEETS} [data-do="apply"]')
     d = c.until_doc('aircraft/sheets/EC25.json', lambda d: d and d['cruise']['tasKt'] == 148, 'the reply is written')
     c.eq(d['_fields']['cruise.tasKt']['source'], 'chatgpt', 'the stamp names ChatGPT', what='_fields')
+
+
+
+_KIND_JS = """async (lang) => { const M = await import('/frame/lib/mission_categories.js'), i = Math.max(0, M.LANGS.indexOf(lang)); return M.KIND_NAMES.sog[i] }"""
+
+
+@case('M37', 'Fleet says whose fleet it is — « Flotte de Alpha Air · Escadrille SO » —; in Sheets the name of a sheet is the button that opens it (the whole line too), no lone button on the right',
+      'M', tags=('aircraft',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0190 (user: « dans la page de flotte, on ne sait pas de quelle compagnie on parle. … pourquoi un clic sur « caravelle III » si on a '
+      'cherché, ne permet pas directement de modifier ? le bouton est à droite, la souris est à gauche… un simple titre cliquable suffirait »): '
+      'the airline and its kind from the source of SOG-0181 (mission_categories airlineText); captures 390 and 1 280')
+def m37(c):
+    docs = [d if d[0] != 'airline/aaa/settings.json' else ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'kind': 'sog'}, 'document'] for d in airline_docs()]
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.open('aircraft', docs=LEVEL3 + docs + [['cache/aircraft/ui.json', {'view': 'fleet'}, 'cache']], wait=False, app='maintenance')
+        c.until(f"document.querySelectorAll('{M} [data-reg]').length === 1", timeout=15000, what='the fleet of Alpha Air')
+        set_airline(c, 'aaa')
+        kind = c.js(_KIND_JS, c.lang)
+        c.until(f"(w) => (document.querySelector('{M} [data-fleetof]')?.textContent || '').includes(w)", f'Alpha Air · {kind}', timeout=8000,
+                what='the head says whose fleet it is')
+        c.shot(f'M37_fleet_{c.design}_{w}_{c.lang}.png')
+        # Sheets: the name is the button, no lone button at the end of the line
+        open_sheets(c)
+        c.until(f"!!document.querySelector('{M} {SHEETS} [data-id]')", timeout=10000, what='the sheets are listed')
+        rows = c.js(f"""[...document.querySelectorAll('{M} {SHEETS} .f-item[data-id]')].map(r => {{ const b = r.querySelectorAll('button');
+            return {{ n: b.length, name: b[0]?.classList.contains('ac-sheetname') && b[0].dataset.do === 'edit', lone: !!r.querySelector(':scope > .f-row > button') }} }})""")
+        c.ok(rows and all(r['n'] == 1 and r['name'] and not r['lone'] for r in rows), rows, f'{w} px: one button per line, the name, none alone on the right')
+        c.shot(f'M37_sheets_{c.design}_{w}_{c.lang}.png')
+        # a tap on the line, away from the name, opens the sheet
+        first = c.js(f"document.querySelector('{M} {SHEETS} .f-item[data-id]').dataset.id")
+        c.js(f"(() => {{ const r = document.querySelector('{M} {SHEETS} .f-item[data-id]'), m = r.querySelector('.f-muted:last-child') || r; m.click(); return true }})()")
+        c.until(f"!!document.querySelector('{M} {SHEETS} [data-do=save]')", timeout=8000, what=f'a tap on the line of {first} opens it')

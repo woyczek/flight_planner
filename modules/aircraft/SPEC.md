@@ -38,6 +38,9 @@ place of the list (one card, « Retour » goes back), one editor at a time; the 
 `FrameData.airline()` gives (`airline/<code>/`, `airline/` without an index, the personal folder for « Personnel »; a folder of another
 shape falls back to `airline/fleet.json`), follows it, and on `frame-data-airline` reads the new airline's fleet (an open editor is
 closed). The module declares the writes `airline/` and `pilot/` (merge `record`, as Réglages and Fuel) (M32; M1, M2 without index).
+**Whose fleet** (SOG-0190, M37): the head says « Flotte de Alpha Air · Escadrille SO » (`mission_categories.js` `airlineText`, the
+source of SOG-0181), « Ajouter » follows it in its flow, never alone on the right. **In Fiches, the name is the button**: a sheet's name
+opens its editor (a type without a sheet: its creation), the whole line does too; no lone « Modifier » at the end of the line.
 
 ## 3. The aircraft (an instance of a sheet)
 

@@ -16,6 +16,7 @@ import {
   createSheetsView,
   SHEETS_STYLE
 } from './sheets.js';
+import * as MC from '../../frame/lib/mission_categories.js'; // la compagnie dite comme Réglages la dit (SOG-0190, même source que SOG-0181)
 
 export const meta = {
   id: 'aircraft',
@@ -23,7 +24,8 @@ export const meta = {
   level: 3,
   title: ['Appareils', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves'],
   files: ['fleet.js', 'sheets.js', 'sheets_texts.js', 'perf_prompt.js', '../fuel/suggest.js', '../../frame/lib/clipboard.js',
-    '../../frame/lib/dom.js', '../../frame/lib/fuel_units.js', '../stats/phases.js', '../stats/journals.js'
+    '../../frame/lib/dom.js', '../../frame/lib/fuel_units.js', '../stats/phases.js', '../stats/journals.js',
+    '../../frame/lib/mission_categories.js'
   ],
   // titre lisible d'un document en attente de synchronisation (la carte Synchronisation des Réglages, Simplification 1er nov. 2026) :
   // une fiche (aircraft/sheets/<id>.json) ou la flotte ; [fr, en, de, es], ou null (valeur absente ou illisible) ; pur, sans lecture
@@ -70,6 +72,7 @@ const ROWS = 7;
 
 const TX = {
   fleet: ['Flotte', 'Fleet', 'Flotte', 'Flota'],
+  fleetOf: ['Flotte de {a}', 'Fleet of {a}', 'Flotte von {a}', 'Flota de {a}'], // SOG-0190 : « Flotte de SO Group · Escadrille SO »
   sheets: ['Fiches', 'Sheets', 'Datenblätter', 'Fichas'],
   statusCount: ['{n} appareils, {m} fiches', '{n} aircraft, {m} sheets', '{n} Luftfahrzeuge, {m} Datenblätter',
     '{n} aeronaves, {m} fichas'
@@ -133,7 +136,7 @@ const TX = {
 
 /** Le style du module (aucune feuille globale : les jetons et les classes du cadre, ces quelques règles en plus). */
 const STYLE = `[data-module="aircraft"] .ac-head{align-items:center;gap:8px}
-[data-module="aircraft"] .ac-head>button{margin-left:auto}
+[data-module="aircraft"] .ac-head{flex-wrap:wrap} /* « Ajouter » suit l'en-tête dans son flux, jamais seul à droite (SOG-0190) */
 [data-module="aircraft"] .ac-row{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;width:100%;min-height:44px;text-align:left}
 [data-module="aircraft"] .ac-group{position:relative;border:0;padding:0;margin:0 0 12px;display:grid;gap:4px}
 [data-module="aircraft"] .ac-sug{position:absolute;left:0;right:0;max-width:26em;z-index:30;display:grid;gap:0;margin:0;background:var(--sog-surface);border:1px solid var(--sog-border);border-radius:var(--sog-radius);box-shadow:var(--sog-shadow)}
@@ -202,11 +205,15 @@ export async function mount(el, ctx) {
   el.oninput = e => s.view === 'sheets' ? s.sv.onInput(e) : onInput(s, e);
   el.onchange = e => s.view === 'sheets' && s.sv.onChange(e);
   draw(s);
+  coOf(s).then(() => S === s && s.view === 'fleet' && !s.edit && draw(s)); // la compagnie de la flotte, dans l'en-tête (SOG-0190)
   s.sv.load().catch(() => {});
   watchFleet(s);
   // § 10.38 : la compagnie courante change (Réglages › Compagnie) : sa flotte est relue et suivie, l'écran redessiné
   s.onAirline = async () => {
     if (S !== s) return;
+    await coOf(s); // le nom ou le genre a pu changer sans changer de dossier
+    if (S !== s) return;
+    if (s.view === 'fleet' && !s.edit) draw(s);
     const path = await fleetPathOf();
     if (S !== s || path === s.fleetPath) return;
     s.unwatch?.();
@@ -230,6 +237,20 @@ function watchFleet(s) {
     publishStatus(s);
     if (s.view === 'fleet' && !s.edit) draw(s); // l'éditeur ouvert garde sa saisie : l'écriture relira le fichier
   });
+}
+/** La compagnie de la flotte affichée, dite comme Réglages la dit (SOG-0190) : « SO Group · Escadrille SO », « Personnel » ; gardée
+ *  dans s.co ('' sans FrameData.airline). */
+async function coOf(s) {
+  try {
+    const a = typeof window.FrameData?.airline === 'function' ? await window.FrameData.airline() : null;
+    s.co = a?.code ? MC.airlineText({
+      code: String(a.code),
+      name: typeof a.name === 'string' ? a.name.slice(0, 60) : '',
+      kind: MC.kindOf(a)
+    }, s.ctx.lang?.() || 'fr') : '';
+  } catch {
+    s.co = '';
+  }
 }
 /** Le fichier de flotte de la compagnie courante (§ 10.38 étape 1) : le dossier que FrameData.airline() donne (« airline/ »,
  *  « airline/<code>/ » ou celui de « personnel ») ; airline/fleet.json sans FrameData.airline ou pour un dossier d'une autre forme
@@ -323,7 +344,7 @@ function listHtml(s) {
     hits = all.filter(a => FL.matches(a, s.q)),
     shown = s.all ? hits : hits.slice(0, ROWS),
     row = a => `<button type="button" class="f-item ac-row" data-reg="${esc(a.registration)}"><span><b>${esc(a.registration)}</b> ${esc(a.type || '')}${a.variant ? ` <span class="f-muted">${esc(a.variant)}</span>` : ''}</span><span class="f-muted">${esc([(a.callsigns || []).join(' '), a.base].filter(Boolean).join(' · '))}${a.operational === false ? ` <span class="f-badge" data-kind="warn">${esc(s.tt(TX.out))}</span>` : ''}</span></button>`;
-  return `<div class="f-card" data-pane="fleet"><div class="f-row ac-head"><b>${esc(s.tt(TX.fleet))}</b> <span class="f-muted" data-count>${esc(s.tt(TX.count, { n: all.length }))}</span><button type="button" class="primary" data-do="add">${esc(s.tt(TX.add))}</button></div>
+  return `<div class="f-card" data-pane="fleet"><div class="f-row ac-head"><b data-fleetof>${esc(s.co ? s.tt(TX.fleetOf, { a: s.co }) : s.tt(TX.fleet))}</b> <span class="f-muted" data-count>${esc(s.tt(TX.count, { n: all.length }))}</span><button type="button" class="primary" data-do="add">${esc(s.tt(TX.add))}</button></div>
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.search))}</span><input type="search" data-k="q" value="${esc(s.q)}" placeholder="${esc(s.tt(TX.search))}" autocomplete="off"></label>
     <div class="f-list" data-list>${!all.length ? `<p class="f-muted">${esc(s.tt(TX.none))}</p>` : !hits.length ? `<p class="f-muted">${esc(s.tt(TX.noHit))}</p>` : shown.map(row).join('')}</div>
     ${hits.length > shown.length ? `<button type="button" class="f-linkbtn" data-do="more">${esc(s.tt(TX.more, { n: hits.length - shown.length }))}</button>` : ''}</div>`;

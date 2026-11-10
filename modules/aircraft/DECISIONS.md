@@ -126,3 +126,8 @@
   on demand, the aircraft search (the Flight step's), the open sheet excluded. M34.
 - **9 Nov 2026 — the unit in the module's sticky head, not in the frame's header** (SOG-0074, challenged and half accepted): the unit
   belongs to a sheet or a quote, not to the application; the editor's head stays at the top with the unit. M35.
+- **10 Nov 2026 — whose fleet, and the name as the button** (SOG-0190, user: « dans la page de flotte, on ne sait pas de quelle compagnie on
+  parle. … le bouton est à droite, la souris est à gauche… un simple titre cliquable suffirait »): the Fleet head says the airline and its
+  kind (the source of SOG-0181); in Fiches the sheet's name opens it (the whole line too), the lone « Modifier » / « Créer la fiche » at
+  the end of the line removed; « Ajouter » no longer pushed alone to the right (the 390 capture showed it on a line of its own). M37;
+  counter-test on origin/v3: « Flotte » alone.

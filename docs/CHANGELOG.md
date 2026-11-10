@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Aircraft: whose fleet, and the sheet's name opens it** (`modules/aircraft/module.js`, `sheets.js`; SPEC, DECISIONS, help; noreg M37;
+  SOG-0190). « Flotte de Alpha Air · Escadrille SO »; in Fiches, a tap on the name or the line opens the sheet, no button alone on the right.
 - **Missions: the drawn mission says its family in full** (`modules/missions/module.js`; SPEC, DECISIONS; noreg N15; SOG-0187).
   « **SAR** · Récupération de personnel » under the title of the sheet, as in the list.
 - **Map: « New flight » empties the map** (`modules/maps/draw.js`; DECISIONS; noreg D151; SOG-0194, the Map's part). `draw()` left the previous image when the route had no point: the layer is now redrawn blank and the touch

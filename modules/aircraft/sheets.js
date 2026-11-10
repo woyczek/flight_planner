@@ -55,7 +55,10 @@ export const SHEETS_STYLE = `[data-module="aircraft"] .ac-g3{--f-min:150px;align
 [data-module="aircraft"] tr.ac-rpmwarn td{background:color-mix(in srgb, var(--sog-warn) 18%, transparent)}
 [data-module="aircraft"] .ac-cat{margin:var(--sog-gap) 0 4px;font-size:1em;color:var(--sog-muted)}
 [data-module="aircraft"] [data-sheets] .f-list .f-item>div:first-child{min-width:0}
-[data-module="aircraft"] [data-sheets] .f-list .f-item>div:first-child>:is(a,b):first-child{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+[data-module="aircraft"] [data-sheets] .f-list .f-item:is([data-id],[data-type]){cursor:pointer} /* toute la ligne ouvre la fiche (SOG-0190) */
+[data-module="aircraft"] [data-sheets] .ac-sheetname{min-height:0;min-width:0;padding:0;margin:0;border:0;background:none;box-shadow:none;font:inherit;font-weight:700;color:var(--sog-accent);text-align:start;cursor:pointer}
+[data-module="aircraft"] [data-sheets] .ac-sheetname:hover,[data-module="aircraft"] [data-sheets] .ac-sheetname:focus-visible{text-decoration:underline}
+[data-module="aircraft"] [data-sheets] .f-list .f-item>div:first-child>:is(a,b,button):first-child{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
 [data-module="aircraft"] [data-sheets] .f-list .f-item>.f-row{justify-content:flex-end}
 @container (max-width: 479px){[data-module="aircraft"] [data-sheets] .f-list .f-item>div:first-child{grid-column:1/-1} [data-module="aircraft"] [data-sheets] .f-list .f-item>.f-row{grid-column:1/3;grid-row:2} [data-module="aircraft"] [data-sheets] .f-list .f-item::after{grid-row:2}}
 [data-module="aircraft"] .ac-origin{display:block}`;
@@ -218,15 +221,14 @@ export function createSheetsView(host) {
       groups = sheetGroups();
     if (!groups.length) return `<p class="f-card f-muted">${esc(tt(st.q.trim() ? TX.noHit : TX.noSheet))}</p>`;
     return groups.map(g => `<h3 class="ac-cat">${esc(tt(TX.sheetCats[g.cat]))}</h3>${g.rows.map(r => {
-      if (r.todo) return `<div class="f-item" data-type="${esc(r.todo.type)}"><div><b>${esc(st.A.label?.(r.todo.type) || r.todo.type)}</b>
-        <div class="f-muted">${esc(tt(TX.coType, { n: r.todo.registrations.length }))}</div></div>
-        <div class="f-row"><button type="button" data-do="newfor">${esc(tt(TX.createSheet))}</button></div></div>`;
+      // SOG-0190 : le nom est le bouton (toute la ligne aussi), aucun bouton seul à droite ; « Créer la fiche » dit en clair sous le nom
+      if (r.todo) return `<div class="f-item" data-type="${esc(r.todo.type)}"><div><button type="button" class="ac-sheetname" data-do="newfor" title="${esc(tt(TX.createSheet))}">${esc(st.A.label?.(r.todo.type) || r.todo.type)}</button>
+        <div class="f-muted">${esc(tt(TX.coType, { n: r.todo.registrations.length }))} · ${esc(tt(TX.createSheet))}</div></div></div>`;
       const p = F.normalize(structuredClone(r.sheet)),
         miss = F.sheetMissingFamilies(F.sheetMissingPaths(p)).map(f => tt(TX.missingFamily[f])),
         when = F.profileWhen(p);
-      return `<div class="f-item" data-id="${esc(p.id)}"><div><b>${esc(p.name || p.id)}</b> <span class="f-muted">${esc(p.icao || '')} · ${esc(p.unit)}</span>
-        <div class="f-muted">${esc(F.profileSourceText(p))} · ${esc(miss.length ? tt(TX.missing, { list: miss.join(', ') }) : tt(TX.complete))}${when ? ` · ${esc(tt(TX.updated, { d: new Date(when).toLocaleDateString(lang) }))}` : ''}</div></div>
-        <div class="f-row"><button type="button" data-do="edit">${esc(tt(TX.edit))}</button></div></div>`;
+      return `<div class="f-item" data-id="${esc(p.id)}"><div><button type="button" class="ac-sheetname" data-do="edit" title="${esc(tt(TX.edit))}">${esc(p.name || p.id)}</button> <span class="f-muted">${esc(p.icao || '')} · ${esc(p.unit)}</span>
+        <div class="f-muted">${esc(F.profileSourceText(p))} · ${esc(miss.length ? tt(TX.missing, { list: miss.join(', ') }) : tt(TX.complete))}${when ? ` · ${esc(tt(TX.updated, { d: new Date(when).toLocaleDateString(lang) }))}` : ''}</div></div></div>`;
     }).join('')}`).join('');
   }
   /** Dessine la liste des fiches et les gestes d'import. */
@@ -260,7 +262,9 @@ export function createSheetsView(host) {
       e.preventDefault();
       return ctx.notify(mk.getAttribute('title') || '', 'info');
     }
-    const b = e.target.closest('[data-do]');
+    // un appui ailleurs sur la ligne d'une fiche fait le geste de son nom (SOG-0190 : toute la ligne ouvre la fiche)
+    const b = e.target.closest('[data-do]') || e.target.closest('[data-sheets] .f-item:is([data-id],[data-type])')?.querySelector(
+      '.ac-sheetname[data-do]');
     if (!b || !body() || !st.loaded) return;
     const F = SH(),
       id = b.closest('[data-id]')?.dataset.id,
