@@ -7232,3 +7232,27 @@ def k148(c):
          (True, -3.0, 39, 5.0, 39, 6.0, None, {'type': 'at', 'ft': 3200}), 'the runway point (overfly, vertical angle), a leg without altitude (none invented), the missed approach\'s last leg', what='approach')
     c.eq((P._dircam_leg(['TF', 'IOE04', '-', '329', '329.9', '5.0', '2100', '2100']), P._dircam_leg(['TF', 'IOE04', '329', '5.0']), P._dircam_leg(['TF', 'IOE04', '329', '329.9', '5.0', '2100', '3000', '4000'])), (None, None, None),
          'never by patterns: a row with a dash (a civil page: its columns tell), a TF without true course, three altitudes', what='refused')
+
+
+@case('K149', 'Zone outlines: two neighbours keep the SAME vertices on their common border (SOG-0201): a shared border is simplified once, not once per country (gaps of up to 9 km between Belarus and Ukraine)', 'K', static=True,
+      rule='SOG-0201 (10 Nov 2026, Réglages\' survey): tools/build_aero_zones.py simplified EACH country ring alone (Douglas-Peucker, 0.08°): the two neighbours kept different vertices of their common border, measured gaps up to 0.081° (9 km) BY/UA, 0.093° FR/ES, 0.063° FR/DE. The border (the edges two countries carry) is cut at the junctions, each arc simplified ONCE in a canonical direction, the result given to both')
+def k149(c):
+    import importlib
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    B = importlib.import_module('build_aero_zones')
+    zig = [(1, 0.0), (1.069, 0.069), (1.052, 0.138), (0.984, 0.207), (0.952, 0.276), (1.002, 0.345), (0.981, 0.414), (1.057, 0.483), (0.961, 0.552), (0.995, 0.621), (1.017, 0.69), (1.082, 0.759), (1.001, 0.828), (0.956, 0.897), (1.051, 0.966), (1.024, 1.034), (0.95, 1.103), (1.082, 1.172), (1.097, 1.241), (1.062, 1.31), (1.08, 1.379), (0.962, 1.448), (1.046, 1.517), (1.08, 1.586), (1.037, 1.655), (0.994, 1.724), (0.92, 1.793), (0.987, 1.862), (1.022, 1.931), (1, 2.0)]
+    # a jagged border (every vertex under the tolerance of 0.08 from its neighbours' chord, so each ring alone drops different ones)
+    a_ring = [[0, 0]] + [list(p) for p in zig] + [[0, 2], [0, 0]]
+    b_ring = [[2, 0], [2, 2]] + [list(p) for p in zig[::-1]] + [[2, 0]]
+    feats = [{'geometry': {'type': 'Polygon', 'coordinates': [a_ring]}}, {'geometry': {'type': 'Polygon', 'coordinates': [b_ring]}}]
+    border = lambda rs: {tuple(p) for r in rs for p in r if 0.85 <= p[0] <= 1.15 and 0 <= p[1] <= 2}
+    own, cache = B.edge_owners(feats), {}
+    new_a, new_b = [list(B.rings(f['geometry'], i, own, cache)) for i, f in enumerate(feats)]
+    old_a, old_b = [list(B.rings(f['geometry'])) for f in feats]
+    c.ok(border(new_a) == border(new_b) and len(border(new_a)) >= 2, f'{sorted(border(new_a))} / {sorted(border(new_b))}', 'with the shared border: the two neighbours keep exactly the same vertices on it')
+    c.ok(border(old_a) != border(old_b), f'{sorted(border(old_a))} / {sorted(border(old_b))}', 'the control: each ring simplified alone, the borders differ (the fault of SOG-0201)')
+    c.ok(all(r[0] == r[-1] and len(r) >= 4 for r in new_a + new_b), 'ring', 'the rings stay closed')
+    iso = [{'geometry': {'type': 'Polygon', 'coordinates': [[[5, 5], [6, 5], [6.4, 5.5], [6, 6], [5, 6], [5, 5]]]}}]
+    r = list(B.rings(iso[0]['geometry'], 0, B.edge_owners(iso), {}))
+    c.ok(len(r) == 1 and r[0][0] == r[0][-1], str(r), 'an island (no neighbour): a closed ring as before')
