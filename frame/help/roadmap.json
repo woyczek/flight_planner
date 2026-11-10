@@ -4,8 +4,8 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "926971a",
-  "fiches": 208,
+  "organisation": "8133549",
+  "fiches": 209,
   "untranslated": 1,
   "priorities": 152
  },
@@ -2060,11 +2060,20 @@
     {
      "id": "SOG-0204",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Cadre : après Ctrl + Maj + R, le cartouche « Version ancienne · Recharger » s'affiche à tort",
      "en": "Frame: after Ctrl + Shift + R, the “Old version · Reload” cartouche shows wrongly",
      "de": "Rahmen: nach Strg + Umschalt + R erscheint die Kartusche „Alte Version · Neu laden“ zu Unrecht",
      "es": "Marco: tras Ctrl + Mayús + R, aparece por error el cartucho «Versión antigua · Recargar»"
+    },
+    {
+     "id": "SOG-0209",
+     "kind": "bug",
+     "state": "doing",
+     "fr": "La page se rafraîchit en boucle",
+     "en": "The page refreshes in a loop",
+     "de": "Die Seite lädt in einer Schleife neu",
+     "es": "La página se recarga en bucle"
     }
    ]
   },
