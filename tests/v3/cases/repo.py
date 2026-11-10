@@ -2458,3 +2458,68 @@ def i38(c):
              [False, True, False, True, False], 'unreadable: not identical; spacing: identical; other value: different; stamps ignored; lists compared as they are', what='same_content')
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+@case('I39', 'Launcher: the tree of data/ (GET /__setup/changes) is read in well under 50 ms when nothing has changed (SOG-0164): the same heads and trees as before, no link or junction followed', 'I', static=True,
+      rule='SOG-0164 (10 Nov 2026): the page Maintenance took 2.5 s to open; /__setup/changes answered in 593 ms, then 703 ms, with nothing changed: frame_tree walked data/ with os.walk and two system calls per file (islink, stat); os.scandir gives the size, the date and the reparse attribute with the listing (about 20 ms for 10 000 files against 350 ms)')
+def i39(c):
+    import hashlib
+    import importlib
+    import json
+    import subprocess
+    import time
+    sys.path.insert(0, str(c.root / 'tools'))
+    L = importlib.import_module('launch')
+    tmp = Path(tempfile.mkdtemp(prefix='sog-tree-'))
+    outside = Path(tempfile.mkdtemp(prefix='sog-tree-out-'))
+    kept = L.DATA, dict(L._frame_memo)
+    try:
+        data = tmp / 'data'
+        want = {}
+        for i in range(6000):
+            rel = f'pilot/P{i % 40:02d}/d{i % 7}/f{i}.json'
+            body = ('{"i": %d}' % i).encode()
+            f = data / rel
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_bytes(body)
+            want[rel] = hashlib.sha1(b'blob %d' % len(body) + bytes([0]) + body).hexdigest()
+        for skipped in ('.git/config', 'local/a.json', 'sia/raw/x.xml', 'pilot/P00/_conflits/a.json', 'pilot/P00/_index.json', '.defa_instance'):
+            f = data / skipped
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_bytes(b'{}')
+        (data / 'sia' / 'base' / 'fr').mkdir(parents=True)
+        (data / 'sia' / 'base' / 'fr' / 'points.json').write_bytes(b'[]')
+        want['sia/base/fr/points.json'] = hashlib.sha1(b'blob 2' + bytes([0]) + b'[]').hexdigest()
+        (outside / 'secret.json').write_bytes(b'{"s": 1}')
+        linked = False
+        try:
+            if os.name == 'nt':
+                linked = subprocess.run(['cmd', '/c', 'mklink', '/J', str(data / 'pilot' / 'link'), str(outside)], capture_output=True).returncode == 0
+            else:
+                os.symlink(outside, data / 'pilot' / 'link')
+                linked = True
+        except OSError:
+            linked = False
+        L.DATA = str(data)
+        L._frame_memo.clear()
+        head, tree = L.frame_tree()
+        c.eq((tree == want, head == hashlib.sha1(json.dumps(sorted(want.items())).encode()).hexdigest()), (True, True),
+             f'the tree is the git blob hash of every file but the excluded places ({len(want)} files), the head is the hash of the tree; linked folder tried: {linked}', what='tree')
+        c.ok(not any(k.startswith('pilot/link') for k in tree), str([k for k in tree if 'link' in k]), 'a link or a junction is not followed')
+        best = 1e9
+        for _ in range(7):
+            t = time.perf_counter()
+            h2, _ = L.frame_tree()
+            best = min(best, (time.perf_counter() - t) * 1000)
+        c.eq(h2, head, 'nothing changed: the same head', what='same head')
+        c.ok(best < 50, f'{best:.0f} ms for {len(want)} files', 'nothing changed: the tree is read in under 50 ms (best of 7)')
+        f = data / 'pilot' / 'P01' / 'd1' / 'f1.json'
+        f.write_bytes(b'{"i": 1000}')
+        h3, t3 = L.frame_tree()
+        c.ok(h3 != head and t3['pilot/P01/d1/f1.json'] != tree['pilot/P01/d1/f1.json'], h3, 'a changed file changes the head')
+    finally:
+        L.DATA = kept[0]
+        L._frame_memo.clear()
+        L._frame_memo.update(kept[1])
+        shutil.rmtree(tmp, ignore_errors=True)
+        shutil.rmtree(outside, ignore_errors=True)

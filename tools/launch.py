@@ -1049,8 +1049,9 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             return self._json({'error': 'refusé'}, 403)
         since = (urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('since') or [''])[0]
         with FRAME_LOCK:
-            # appareil du réseau local : l'arbre calculé il y a moins de 2 s sert de nouveau (un lot l'efface)
-            fresh = self._lan() and _tree_memo['v'] and time.monotonic() - _tree_memo['at'] < 2
+            # l'arbre calculé il y a moins d'une seconde (deux secondes pour un appareil du réseau local) sert de nouveau : deux
+            # appels à la suite (SOG-0164) ne parcourent data/ qu'une fois ; un lot l'efface
+            fresh = _tree_memo['v'] and time.monotonic() - _tree_memo['at'] < (2 if self._lan() else 1)
             if fresh:
                 head, tree = _tree_memo['v']
             else:
@@ -2972,32 +2973,46 @@ _frame_memo = {}  # chemin → ((taille, date), empreinte)
 
 def frame_tree():
     """(tête, arbre) de data/ : empreinte git de chaque fichier (relue seulement si sa taille ou sa date change) ; ni
-    lien ni jonction suivis (un dossier relié ailleurs ferait sortir l'arbre de data/, ou le ferait boucler)."""
+    lien ni jonction suivis (un dossier relié ailleurs ferait sortir l'arbre de data/, ou le ferait boucler).
+    Le parcours se fait par os.scandir : sous Windows la taille, la date et l'attribut de point d'analyse (lien,
+    jonction) viennent avec la liste du dossier, sans un appel système de plus par fichier (SOG-0164 : ~350 ms
+    pour 10 000 fichiers avec os.walk et os.stat, ~25 ms ainsi)."""
     out = {}
-    linked = lambda p: os.path.islink(p) or getattr(os.path, 'isjunction', lambda q: False)(p)  # isjunction : Python 3.12+
-    for d, dirs, files in os.walk(DATA):
-        rel_d = os.path.relpath(d, DATA).replace(os.sep, '/')
-        rel_d = '' if rel_d == '.' else rel_d + '/'
-        dirs[:] = [x for x in dirs if not FRAME_SKIP.search(rel_d + x + '/') and not linked(os.path.join(d, x))]
-        for f in files:
-            rel = rel_d + f
-            if FRAME_SKIP.search(rel):
-                continue
-            full = os.path.join(d, f)
-            if linked(full):
-                continue
-            try:
-                st = os.stat(full)
-            except OSError:
-                continue
-            key = (st.st_size, st.st_mtime_ns)
-            m = _frame_memo.get(rel)
-            if not m or m[0] != key:
-                with open(full, 'rb') as fh:
-                    b = fh.read()
-                m = (key, hashlib.sha1(b'blob %d\0' % len(b) + b).hexdigest())
-                _frame_memo[rel] = m
-            out[rel] = m[1]
+    REPARSE = 0x400  # FILE_ATTRIBUTE_REPARSE_POINT : lien symbolique ou jonction
+
+    def walk(rel_d, d):
+        try:
+            it = os.scandir(d)
+        except OSError:
+            return
+        with it:
+            for e in it:
+                rel = rel_d + e.name
+                try:
+                    if e.is_symlink():
+                        continue
+                    isdir = e.is_dir(follow_symlinks=False)
+                    st = e.stat(follow_symlinks=False)
+                except OSError:
+                    continue
+                if getattr(st, 'st_file_attributes', 0) & REPARSE:
+                    continue
+                if isdir:
+                    if not FRAME_SKIP.search(rel + '/'):
+                        walk(rel + '/', e.path)
+                elif not FRAME_SKIP.search(rel):
+                    key = (st.st_size, st.st_mtime_ns)
+                    m = _frame_memo.get(rel)
+                    if not m or m[0] != key:
+                        try:
+                            with open(e.path, 'rb') as fh:
+                                b = fh.read()
+                        except OSError:
+                            continue
+                        m = (key, hashlib.sha1(b'blob %d\0' % len(b) + b).hexdigest())
+                        _frame_memo[rel] = m
+                    out[rel] = m[1]
+    walk('', DATA)
     return hashlib.sha1(json.dumps(sorted(out.items())).encode()).hexdigest(), out
 
 
@@ -4371,6 +4386,14 @@ def main():
     # tutoriel d'installation : dans l'Aide (version de la langue de la suite), ou hors ligne en HTML
     say(f'  Tutoriel d’installation, pas à pas : http://127.0.0.1:{port}/apps/aide/aide.html?doc=tutorial/installation.fr.md')
     say('  (hors ligne : docs/tutorial/installation.fr.html ; English: docs/tutorial/installation.en.html)')
+    def warm_tree():
+        # les empreintes des fichiers de data/ sont lues une fois au démarrage, pas à l'ouverture de la première page (SOG-0164)
+        try:
+            with FRAME_LOCK:
+                frame_tree()
+        except Exception:
+            pass
+    threading.Thread(target=warm_tree, daemon=True).start()
     if not a.no_browser:
         threading.Thread(target=lambda: (time.sleep(0.8), webbrowser.open(url)), daemon=True).start()
     say('')
