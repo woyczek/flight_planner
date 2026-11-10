@@ -1052,6 +1052,8 @@ def m37(c):
         kind = c.js(_KIND_JS, c.lang)
         c.until(f"(w) => (document.querySelector('{M} [data-fleetof]')?.textContent || '').includes(w)", f'Alpha Air · {kind}', timeout=8000,
                 what='the head says whose fleet it is')
+        one = {'fr': '1 appareil', 'en': '1 aircraft', 'de': '1 Luftfahrzeug', 'es': '1 aeronave'}[c.lang]
+        c.eq(c.js(f"(document.querySelector('{M} [data-count]')?.textContent || '').trim()"), one, f'{w} px: one aircraft said in the singular', what='count')
         c.shot(f'M37_fleet_{c.design}_{w}_{c.lang}.png')
         # Sheets: the name is the button, no lone button at the end of the line
         open_sheets(c)
