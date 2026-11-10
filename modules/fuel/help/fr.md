@@ -137,6 +137,8 @@ qui lui manque (terrain, type d'appareil). Rien n'est envoyé qui ne soit déjà
 <a id="fuel-alternate"></a>**Carburant de dégagement.** Le carburant bloc compte maintenant le dégagement : roulage + étape + contingence + dégagement + réserve finale. Sa ligne, au « Détail du devis », dit la distance de l'arrivée au dégagement, le niveau, d'où vient le chiffre (le débit de dégagement de la fiche, ou le modèle de l'étape) et le vent (celui de la route près de l'arrivée, ou « vent inconnu »). Sans dégagement saisi, ou sans sa position, la ligne le dit et rien n'est ajouté. Le bloc d'un vol avec dégagement est donc plus élevé qu'avant : c'est voulu.
 
 <a id="fuel-step-5"></a>**5 Départ.** Un récapitulatif d'une page : l'appareil, la route telle qu'elle sera déposée, le niveau (et ses
+
+**Aides radio.** Sous le résumé, « Aides radio » donne d'un coup d'œil l'ILS de l'approche choisie (piste, indicatif, fréquence, axe, DME), puis, replié, les VOR / DME de la route dans l'ordre du vol, chacun avec sa fréquence et le tronçon où il sert. Rien n'est inventé : sans aide dans la base, la carte le dit.
 paliers), le vent et sa source, le carburant bloc. « Démarrer le vol » lance le plan de vol (mise en route,
 repoussage, roulage…). La préparation peut dater de plusieurs jours : il commence donc par tout refaire à l'heure
 réelle — la date du vol revient à maintenant, la météo des terrains et les vents en altitude sont relus, le devis

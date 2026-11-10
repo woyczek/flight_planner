@@ -1625,3 +1625,6 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   automatic choice; the shared rule `PR.isDoubt` is unchanged (the Map: BUGS SOG told). The line « Carte seulement dans l'AIP » waits for
   `AeroDb.chartOnly` (AeroDB, promised for today): Fuel calls it only when it exists. Phase 2 (a page to validate them by hand) is the
   user's to decide. F139 (an invented approach of LFML read in doubt); counter-test on origin/v3: not listed.
+- **11 Nov 2026 — « Aides radio » at the step Departure** (SOG-0200): the chosen ILS first, the route's VOR / DME folded below, read in
+  aerodb near the route's points that carry their name (1.5 NM; a homonym farther is not the aid of that point). F140 (an invented ILS
+  and VOR); counter-test on origin/v3: no block.

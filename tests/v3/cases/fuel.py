@@ -4051,3 +4051,39 @@ def f139(c):
     c.settle()
     c.wait(800)
     c.eq(procs_of(c.doc('pilot/ABC/current_flight.json'), 'arr').get('app'), 'LFML.APP.I13R.RW13R.NONE', 'an address cannot propose an approach in doubt', what='proposal')
+
+
+
+def _aids_extra():
+    """The invented ILS of the test LFML and an invented VOR at the route's point LUGEN (made-up frequency; not an AIP value)."""
+    import lib
+    p = next(x for x in lib.FLIGHT['route']['points'] if x['id'] == 'LUGEN')
+    e = _ils_extra()
+    e['navaids'] = [*e['navaids'], {'kind': 'VOR', 'id': 'LUGEN', 'name': 'LUGEN TEST', 'freq': '113.50', 'lat': p['lat'], 'lon': p['lon']}]
+    e['cells'] = {'46': [[-2, 4]]}  # the base's index covers LUGEN (west of the default cells)
+    return e
+
+
+@case('F140', 'Step Departure: a block « Aides radio » — the ILS of the chosen approach first (runway, ident, frequency, axis, DME), then the route\'s VOR / DME folded, each with its leg; nothing invented, « aucune aide » said',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0200 (user: « sur l\'écran 5 : la liste des VORs qui servent à guider, c\'est une option, mais surtout l\'ILS choisie. un seul coup d\'œil, les infos utiles »): '
+      'aerodb.navaids near each route point that carries the name; an invented ILS and VOR; captures 390 and 1 280')
+def f140(c):
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        open_proc(c, procs=_ILS_PROCS, aero_extra=_aids_extra())
+        to_step(c, 4)
+        c.until(f"/110\.30/.test(document.querySelector('{FUEL} [data-aids] [data-aidils]')?.textContent || '')", timeout=12000, what=f'{w} px: the ILS of the approach first')
+        ils = norm(c.text(f'{FUEL} [data-aids] [data-aidils]'))
+        c.ok('13R' in ils and 'TST' in ils and '134' in ils and 'DME' in ils, ils, 'runway, ident, frequency, axis, DME')
+        c.until(f"!!document.querySelector('{FUEL} [data-aids] [data-aidsroute] [data-aid=LUGEN]')", timeout=12000, what='the VOR of the route')
+        c.eq(c.js(f"document.querySelector('{FUEL} [data-aidsroute]').open"), False, 'the route\'s VOR / DME folded by default', what='folded')
+        vor = norm(c.js(f"document.querySelector('{FUEL} [data-aid=LUGEN]').textContent"))
+        c.ok('113.50' in vor and 'LFRS' in vor and 'NEPIX' in vor, vor, 'ident, kind, frequency and its leg (LFRS → NEPIX)')
+        c.js(f"document.querySelector('{FUEL} [data-block=aids]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F140_{c.design}_{w}_{c.lang}_delivered.png')
+    # no aid in the base for this flight: said, nothing invented
+    open_proc(c, procs={'dep': {'rwy': '03'}, 'arr': {'rwy': '13R'}, 'by': 'fuel', 'at': '2026-10-28T09:00:00Z'})
+    to_step(c, 4)
+    c.until(f"!!document.querySelector('{FUEL} [data-aids] [data-aidsnone]')", timeout=12000, what='« Aucune aide radio en base pour ce vol »')
+

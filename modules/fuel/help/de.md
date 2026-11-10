@@ -148,6 +148,8 @@ Reserve, Zusatzmenge, Wetterkorridor, Einheiten, Verbrauch dieses Flugs) sind de
 <a id="fuel-alternate"></a>**Ausweichkraftstoff.** Der Blockkraftstoff zählt jetzt den Ausweichflugplatz mit: Rollen + Strecke + Reserve für Unvorhergesehenes + Ausweich + Endreserve. Seine Zeile im „Detail des Kostenvoranschlags“ nennt die Entfernung von der Ankunft zum Ausweichflugplatz, die Flugfläche, woher die Zahl kommt (Ausweichverbrauch des Datenblatts oder Modell der Strecke) und den Wind (der Route nahe der Ankunft, oder „Wind unbekannt“). Ohne eingegebenen Ausweichflugplatz oder ohne seine Position sagt es die Zeile, und nichts wird hinzugefügt. Der Block eines Flugs mit Ausweichflugplatz ist daher höher als zuvor: das ist gewollt.
 
 <a id="fuel-step-5"></a>**5 Abflug.** Eine Zusammenfassung auf einer Seite: das Luftfahrzeug, die Route, wie sie aufgegeben wird, die Flugfläche
+
+**Funknavigationshilfen.** Unter der Zusammenfassung zeigt „Funknavigationshilfen“ auf einen Blick das ILS des gewählten Anflugs (Piste, Kennung, Frequenz, Kurs, DME), dann, eingeklappt, die VOR / DME der Route in der Reihenfolge des Flugs, jedes mit seiner Frequenz und dem Abschnitt, auf dem es dient. Nichts wird erfunden: ohne Hilfe in der Basis sagt es die Karte.
 (und ihre Stufen), der Wind und seine Quelle, der Blockkraftstoff. „Flug starten“ startet den Flugplan (Anlassen,
 Zurückstoßen, Rollen…). Die Vorbereitung kann mehrere Tage alt sein: Deshalb wird zuerst alles auf die tatsächliche
 Uhrzeit gebracht — das Flugdatum springt auf jetzt zurück, Flugplatzwetter und Höhenwinde werden neu gelesen, die

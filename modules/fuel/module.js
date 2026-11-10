@@ -259,6 +259,14 @@ const TX = {
   },
   rRetry: ['Réessayer', 'Try again', 'Erneut versuchen', 'Reintentar'],
   rTake: ['Choisir', 'Choose', 'Auswählen', 'Elegir'], // SOG-0134 : un appui montre, « Choisir » prend
+  // le bloc « Aides radio » de l'étape Départ (SOG-0200)
+  aidsTitle: ['Aides radio', 'Radio aids', 'Funknavigationshilfen', 'Radioayudas'],
+  aidsRoute: ['VOR / DME de la route ({n})', 'VOR / DME of the route ({n})', 'VOR / DME der Route ({n})', 'VOR / DME de la ruta ({n})'],
+  aidsNone: ['Aucune aide radio en base pour ce vol.', 'No radio aid in the base for this flight.',
+    'Keine Funknavigationshilfe in der Basis für diesen Flug.',
+    'Ninguna radioayuda en la base para este vuelo.'
+  ],
+  aidsLeg: ['{a} → {b}', '{a} → {b}', '{a} → {b}', '{a} → {b}'],
   // le carburant de dégagement (SOG-0225)
   altnLine: ['Dégagement {id} · {nm} NM{fl} · {src} · {w}', 'Alternate {id} · {nm} NM{fl} · {src} · {w}',
     'Ausweich {id} · {nm} NM{fl} · {src} · {w}',
@@ -1959,6 +1967,7 @@ function renderPlanBody() {
       <div class="f-row" data-startrow></div>
       <p class="fu-startnote" data-startnote aria-live="polite"></p>
       <p class="f-muted">${esc(tt(TX.startHint))}</p></div>
+    <div class="f-card" data-block="aids"><h2>${esc(tt(TX.aidsTitle))}</h2><div data-aids></div></div>
     <div class="f-card fu-hide" data-block="procs"><h2>${esc(tt(TX.procTitle))}</h2><div class="fu-procbox" data-procbox="start"></div></div>
     <div class="f-card fu-hide" data-progcard><h2>${esc(tt(TX.progTitle))}</h2><div data-prog></div><p class="f-muted">${esc(tt(TX.progHint))}</p></div>
     <div class="f-card" data-block="fms"><h2>${esc(tt(TX.fmsTitle))}</h2><p class="f-muted">${esc(tt(TX.fmsHint))}</p><div class="f-row">${[['xp11', TX.fmsXp11], ['xp10', TX.fmsXp10], ['pln', TX.fmsPln]].map(([k, t]) => `<button type="button" data-do="fms" data-fms="${k}" disabled>${esc(tt(t))}</button>`).join('')}</div></div>`, true)}
@@ -5246,6 +5255,7 @@ function refresh() {
   fmsState();
   acSelected();
   renderSummary(C);
+  aidsDraw();
   updateProgress();
   const done = stepsDone(C);
   S.body.querySelectorAll('.fu-steps button').forEach((b, i) => b.toggleAttribute('data-done', !!done[i]));
@@ -5562,6 +5572,7 @@ export async function mount(el, ctx) {
     plan: () => self.view === 'plan',
     key: () => procsKey(self.flight),
     gone: () => gone(self),
+    aidsChanged: () => !gone(self) && aidsDraw(), // l'ILS de l'approche choisie arrivé : le bloc « Aides radio » (SOG-0200)
     pending: () => !!self.refsPending,
     save: () => S === self && saveFlight(),
     settled: procsSettled,
@@ -6161,4 +6172,58 @@ function altnRow(q, unit) {
       s: a.wind.speedKt
     }) : tt(TX.altnNoWind)
   }), a.min != null ? hmm(a.min) : '', esc(fuelTxt(a.fuel, unit)));
+}
+
+// ---------------------------------------------------------------- aides radio de l'étape Départ (SOG-0200)
+// L'utilisateur : « sur l'écran 5 : la liste des VORs qui servent à guider, c'est une option, mais surtout l'ILS choisie. un seul coup
+// d'œil, les infos utiles ». En premier l'ILS de l'approche choisie (la ligne de la carte des procédures), dessous, replié, les VOR / DME
+// de la route dans l'ordre du vol (indicatif, sorte, fréquence, tronçon où ils servent), lus dans aerodb près de chaque point de la route
+// qui porte leur nom (1,5 NM) ; rien d'inventé quand la base ne porte pas l'aide.
+const AID_KINDS = /^(VOR|VORDME|VOR-DME|DME|TACAN|VORTAC)$/i;
+/** Les VOR / DME de la route, lus une fois par route (une clé : les identifiants et positions des points), puis le bloc redessiné. */
+function routeAids() {
+  const pts = (S.flight.route?.points || []).filter(p => p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon)),
+    key = pts.map(p => `${p.id}@${(+p.lat).toFixed(3)},${(+p.lon).toFixed(3)}`).join(' ');
+  if (S.aidsKey === key) return S.aidsList;
+  const s = S;
+  S.aidsKey = key;
+  S.aidsList = null;
+  if (typeof S.ctx.aerodb?.navaids !== 'function' || pts.length < 3) {
+    S.aidsList = [];
+    return S.aidsList;
+  }
+  Promise.all(pts.slice(1, -1).map((p, i) => Promise.resolve().then(() => S.ctx.aerodb.navaids({
+    lat: +p.lat,
+    lon: +p.lon,
+    radiusNm: 5
+  })).then(list => {
+    // le même nom à 1,5 NM au plus du point de la route (un homonyme plus loin n'est pas l'aide de ce point)
+    const n = (list || []).find(x => String(x?.id || '').toUpperCase() === String(p.id || '').toUpperCase() && AID_KINDS.test(
+        String(x?.kind || '')) &&
+      Number.isFinite(+x.lat) && Number.isFinite(+x.lon) && gcNm(p, x) <= 1.5);
+    return n && /^\d{3}\.\d{1,3}$/.test(String(n.freq || '')) ? {
+      id: String(n.id).toUpperCase().slice(0, 5),
+      kind: String(n.kind).toUpperCase().slice(0, 8),
+      freq: String(n.freq),
+      leg: tt(TX.aidsLeg, {
+        a: pts[i].id,
+        b: pts[i + 2].id
+      })
+    } : null;
+  }, () => null))).then(list => {
+    if (gone(s) || S.aidsKey !== key) return;
+    S.aidsList = list.filter(Boolean);
+    aidsDraw();
+  });
+  return null;
+}
+/** Le bloc « Aides radio » : l'ILS de l'approche choisie d'abord, puis les VOR / DME de la route repliés ; dit quand il n'y a rien. */
+function aidsDraw() {
+  const box = S?.body?.querySelector('[data-aids]');
+  if (!box) return;
+  const ils = S.P?.approachAid?.() || '',
+    vors = routeAids(),
+    list = vors?.length ? `<details class="fu-aidsroute" data-aidsroute><summary>${esc(tt(TX.aidsRoute, { n: vors.length }))}</summary><ul class="fu-aidlist">${vors.map(v => `<li data-aid="${esc(v.id)}"><b>${esc(v.id)}</b> ${esc(v.kind)} ${esc(v.freq)} <span class="f-muted">${esc(v.leg)}</span></li>`).join('')}</ul></details>` : '',
+    html = ils || list ? `${ils ? `<p class="fu-aidils" data-aidils><b>${ils}</b></p>` : ''}${list}` : vors === null ? '' : `<p class="f-muted" data-aidsnone>${esc(tt(TX.aidsNone))}</p>`;
+  if (box.innerHTML !== html) box.innerHTML = html;
 }

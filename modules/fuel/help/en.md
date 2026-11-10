@@ -138,6 +138,8 @@ fold of the Result step, folded, its title saying the fuel unit ("Quote settings
 <a id="fuel-alternate"></a>**Alternate fuel.** The block fuel now counts the alternate: taxi + trip + contingency + alternate + final reserve. Its line, in "Quote details", gives the distance from the arrival to the alternate, the level, where the figure comes from (the sheet's alternate flow, or the model of the trip) and the wind (the route's near the arrival, or "wind unknown"). Without an alternate entered, or without its position, the line says so and nothing is added. The block of a flight with an alternate is therefore higher than before: this is intended.
 
 <a id="fuel-step-5"></a>**5 Departure.** A one-page summary: the aircraft, the route as it will be filed, the level (and its steps), the wind
+
+**Radio aids.** Under the summary, "Radio aids" gives at a glance the ILS of the chosen approach (runway, ident, frequency, course, DME), then, folded, the VOR / DME of the route in the order of the flight, each with its frequency and the leg it serves. Nothing is invented: without an aid in the base, the card says so.
 and its source, the block fuel. “Start the flight” launches the flight plan (start-up, pushback, taxi…). The preparation
 may date back several days: so it begins by redoing everything at the real time — the flight date returns to now, the
 aerodrome weather and the winds aloft are read again, the quote is redone — and says in one line what has changed (“wind

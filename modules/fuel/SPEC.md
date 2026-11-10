@@ -582,6 +582,13 @@ before the start, in step 5 after (F11).
 
 ### 9.7 Step 5 — Departure
 
+- **« Aides radio »** (SOG-0200, 11 Nov 2026; the user: « sur l'écran 5 : la liste des VORs qui servent à guider, c'est une option,
+  mais surtout l'ILS choisie. un seul coup d'œil, les infos utiles »): a card under the summary — first the ILS of the chosen approach
+  (the line of the procedures' card: « ILS 13R · TST 110.30 · axe 134° · DME », `P.approachAid`), then, folded by default, « VOR / DME
+  de la route (n) »: each route point (between departure and arrival) that carries the name of a VOR / DME / TACAN of the base within
+  1.5 NM (`aerodb.navaids`), in the order of the flight, with its kind, frequency and leg (« LFRS → NEPIX »); nothing invented: without
+  any, « Aucune aide radio en base pour ce vol. ». F140.
+
 - **Summary**: one page — aircraft, departure and arrival named in full (`LFRS` and its name, before and after the start), normalised
   route, level and steps, wind and source, block fuel; the planned times name the first and last point when they are those aerodromes
   (F47).

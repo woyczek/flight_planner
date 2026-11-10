@@ -197,6 +197,8 @@ meteorológico, unidades, consumo de este vuelo) son el primer desplegable del p
 <a id="fuel-alternate"></a>**Combustible de alternativa.** El combustible de bloque cuenta ahora la alternativa: rodaje + trayecto + contingencia + alternativa + reserva final. Su línea, en el «Detalle del presupuesto», da la distancia de la llegada a la alternativa, el nivel, de dónde viene la cifra (el consumo de alternativa de la ficha, o el modelo del trayecto) y el viento (el de la ruta cerca de la llegada, o «viento desconocido»). Sin alternativa introducida, o sin su posición, la línea lo dice y no se añade nada. El bloque de un vuelo con alternativa es por tanto mayor que antes: es lo previsto.
 
 <a id="fuel-step-5"></a>**5 Salida.** Un resumen de una página: la aeronave, la ruta tal como se presentará, el nivel (y sus escalones), el
+
+**Radioayudas.** Bajo el resumen, «Radioayudas» da de un vistazo el ILS de la aproximación elegida (pista, indicativo, frecuencia, eje, DME) y luego, plegados, los VOR / DME de la ruta en el orden del vuelo, cada uno con su frecuencia y el tramo donde sirve. Nada se inventa: sin ayuda en la base, la tarjeta lo dice.
 viento y su fuente, el combustible de bloque. «Iniciar el vuelo» lanza el plan de vuelo (puesta en marcha, retroceso,
 rodaje…). La preparación puede tener varios días: por eso empieza rehaciéndolo todo a la hora real — la fecha del vuelo
 vuelve a ahora, la meteorología de los aeródromos y los vientos en altura se vuelven a leer, el cálculo se rehace — y

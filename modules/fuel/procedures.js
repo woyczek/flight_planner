@@ -708,7 +708,10 @@ export function createProcedures(host) {
         };
       }).catch(() => null).then(v => {
         aids.set(k, v || null);
-        if (!host.gone() && v) render(); // la ligne et le résumé du titre (une réponse par piste : pas de boucle)
+        if (!host.gone() && v) {
+          render(); // la ligne et le résumé du titre (une réponse par piste : pas de boucle)
+          host.aidsChanged?.(); // le bloc « Aides radio » de l'étape Départ (SOG-0200)
+        }
       });
     }
     return aids.get(k);
@@ -742,6 +745,14 @@ export function createProcedures(host) {
       axis: String(x.axis).padStart(3, '0')
     }) : `${t[1] === 'I' ? 'ILS' : 'LOC'} ${t[2]} · ${x.id} ${x.freq}`;
     return esc(line + (x.dme ? ' · DME' : ''));
+  }
+  /** L'ILS de l'approche choisie à l'arrivée, pour le bloc « Aides radio » de l'étape Départ (SOG-0200) : le texte de la ligne de la
+   *  carte des procédures (« ILS 13R · ITST 110.30 · axe 132° · DME »), '' sans approche ILS / LOC ou sans ILS en base (rien d'inventé). */
+  function approachAid() {
+    const icao = String(host.flight()?.route?.arr || '').toUpperCase();
+    return /^[A-Z0-9]{4}$/.test(icao) ? aidHtml({
+      icao
+    }) : '';
   }
   /** Pose la ligne de l'aide (cachée quand elle est vide : pas de place laissée). */
   function setAid(el, m) {
@@ -1226,6 +1237,7 @@ export function createProcedures(host) {
   }
 
   const api = {
+    approachAid,
     sync,
     render,
     propose,
