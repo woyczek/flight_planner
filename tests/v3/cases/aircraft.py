@@ -1112,3 +1112,23 @@ def m38(c):
         d = c.until_doc(f'aircraft/sheets/{sid}.json', lambda d: d and (d.get('cruise') or {}).get('fuelFlowPerHour') == 12500.5, 'the typed value written', timeout=8000)
         c.eq([d['cruise']['fuelFlowPerHour'], d['climb']['fuelFlowPerHour']], [12500.5, 429.9014112605113], f'{w} px: the untouched value kept, the typed one taken as typed', what='saved')
 
+
+
+@case('M39', 'Aircraft: one view per entry — from Compagnie (#aircraft?view=fleet) the Fleet only, from Maintenance (#aircraft?view=sheets) the Sheets only, titled with its name, no bar of two views; an old address keeps both',
+      'M', tags=('aircraft',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0231 (user, 10 Nov: « 2 entrées » of Compagnie, not a fourth application; V3 Frame adds the entries in frame/app.js APPS); captures 390 and 1 280')
+def m39(c):
+    docs = LEVEL3 + [['airline/fleet.json', fleet_doc(3), 'document']] + SHEET_DOCS + [TYPES]
+    title = "(document.querySelector('[data-module=aircraft] > h1')?.textContent || '').trim()"
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        # the module's side (the entry of Compagnie is V3 Frame's, frame/app.js APPS: its case opens it from there)
+        c.open('aircraft?view=fleet', docs=docs, wait=False, app='maintenance')
+        c.until(f"!!document.querySelector('{M} [data-pane=fleet]')", timeout=15000, what=f'{w} px: the Fleet asked by the address')
+        c.eq([c.count(f'{M} [data-view]'), c.js(title)], [0, tx(AC, 'fleet', c.lang)], 'the Fleet only, titled « Flotte », no bar of two views', what='company')
+        c.shot(f'M39_{c.design}_{w}_{c.lang}_delivered.png')
+        c.open('aircraft?view=sheets', docs=docs, wait=False, app='maintenance')
+        c.until(f"!!document.querySelector('{M} {SHEETS}')", timeout=15000, what=f'{w} px: the Sheets, from Maintenance')
+        c.eq([c.count(f'{M} [data-view]'), c.js(title)], [0, tx(AC, 'sheets', c.lang)], 'the Sheets only, titled « Fiches »', what='maintenance')
+    c.open('aircraft', docs=docs, wait=False, app='maintenance')
+    c.until(f"document.querySelectorAll('{M} [data-view]').length === 2", timeout=15000, what='an old address: both views, as before')

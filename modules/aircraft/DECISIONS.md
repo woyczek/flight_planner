@@ -137,3 +137,7 @@
   unit, or a value the sheet keeps with more than three decimals (what an import's conversion left: the S210 and the TBM9 of the user's
   repository hold them); typed: shown as typed. The sheet keeps its value until the field is edited (`fuelRead` compares with the text
   shown). M38; counter-test on origin/v3: « 429.9014112605113 ».
+- **11 Nov 2026 — the Fleet in Compagnie, the Sheets in Maintenance** (SOG-0231, the user: « 2 entrées » of Compagnie, not a fourth
+  application; V3 Frame's survey). The module reads `view` from the address (consumed once) and shows one view; V3 Frame adds the
+  entries (`frame/app.js` APPS). « Registre des missions » has no V3 screen (the list of Missions is its derived view): nothing coded,
+  the ergonomist writes its design. M39; counter-test on origin/v3: the two-view bar shown.

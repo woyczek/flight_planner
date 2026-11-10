@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Aircraft: one view per entry** — the Fleet from Compagnie (`?view=fleet`), the Sheets from Maintenance (`?view=sheets`) (SPEC, DECISIONS; noreg M39; SOG-0231).
 - **Report: a family added by the airline is a family of the report**, with the common form only (Report SPEC, DECISIONS; noreg G15).
 - **Fuel: the approaches read in doubt are listed « ⚑ à vérifier »**, their reasons in the tooltip, chosen only by hand (Fuel SPEC, DECISIONS,
   help; `frame/lib/flight_path.js`; noreg F139; SOG-0232 phase 1). The approaches charted only in the AIP get a line once AeroDB gives them.

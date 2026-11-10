@@ -20,7 +20,9 @@ import * as MC from '../../frame/lib/mission_categories.js'; // la compagnie dit
 
 export const meta = {
   id: 'aircraft',
-  apps: ['maintenance'],
+  // SOG-0231 (l'utilisateur, 10 nov. : « 2 entrées » de Compagnie) : la Flotte s'ouvre aussi depuis Compagnie (#aircraft?view=fleet),
+  // les Fiches restent dans Maintenance (#aircraft?view=sheets) ; les entrées sont celles du cadre (frame/app.js APPS)
+  apps: ['maintenance', 'company'],
   level: 3,
   title: ['Appareils', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves'],
   files: ['fleet.js', 'sheets.js', 'sheets_texts.js', 'perf_prompt.js', '../fuel/suggest.js', '../../frame/lib/clipboard.js',
@@ -184,8 +186,12 @@ export async function mount(el, ctx) {
   if (S !== s) return;
   s.fleet = fleet;
   // une fiche demandée par l'adresse (prise une fois, retirée de l'adresse par le cadre) ouvre les Fiches sur son éditeur
-  s.openSheet = String(ctx.consume?.('sheet')?.sheet || '').trim();
-  s.view = s.openSheet || ui?.view === 'sheets' ? 'sheets' : 'fleet';
+  // et la vue demandée par l'entrée du cadre (SOG-0231 : ?view=fleet depuis Compagnie, ?view=sheets depuis Maintenance) : le module
+  // n'en montre alors qu'une, sans la barre des deux vues ; sans elle (une ancienne adresse), comme avant
+  const q = ctx.consume?.('sheet', 'view') || {};
+  s.openSheet = String(q.sheet || '').trim();
+  s.only = !s.openSheet && ['fleet', 'sheets'].includes(q.view) ? q.view : '';
+  s.view = s.openSheet ? 'sheets' : s.only || (ui?.view === 'sheets' ? 'sheets' : 'fleet');
   // complétion du champ Type de l'éditeur : un choix écrit le code du type, puis rend au champ l'évènement input d'une frappe
   s.TS = createSuggestList({
     body: () => S === s ? s.el : null,
@@ -330,8 +336,10 @@ function draw(s) {
   s.ctx.helpAnchor?.(() => s.view === 'sheets' ? s.sv.editing() ? 'aircraft-sheet-edit' : 'aircraft-sheets' : s.edit ? 'aircraft-edit' :
     'aircraft-fleet');
   const tab = (v, label) => `<button type="button" data-view="${v}" aria-pressed="${s.view === v}">${esc(s.tt(label))}</button>`,
-    tabs = s.edit ? '' : `<div class="f-tabs" role="group" aria-label="${esc(s.tt(meta.title))}">${tab('fleet', TX.fleet)}${tab('sheets', TX.sheets)}</div>`;
-  s.el.innerHTML = `<style>${STYLE}${SHEETS_STYLE}</style><h1>${esc(s.tt(meta.title))}</h1>${tabs}${s.view === 'sheets' ? '<div data-sheets></div>' : s.edit ? editorHtml(s) : listHtml(s)}`;
+    tabs = s.edit || s.only ? '' : `<div class="f-tabs" role="group" aria-label="${esc(s.tt(meta.title))}">${tab('fleet', TX.fleet)}${tab('sheets', TX.sheets)}</div>`,
+    // une seule vue (l'entrée du cadre l'a demandée) : son nom en titre
+    title = s.only ? TX[s.only] : meta.title;
+  s.el.innerHTML = `<style>${STYLE}${SHEETS_STYLE}</style><h1>${esc(s.tt(title))}</h1>${tabs}${s.view === 'sheets' ? '<div data-sheets></div>' : s.edit ? editorHtml(s) : listHtml(s)}`;
   if (s.view === 'sheets') {
     const id = s.openSheet;
     s.openSheet = '';

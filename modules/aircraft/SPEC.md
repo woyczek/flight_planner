@@ -205,3 +205,7 @@ second (L2, with Fuel). The report keeps a registration as typed when it is in n
 - A status line in `cache/aircraft/status.json` (frame INTEGRATION § 10.0): « N appareils, M fiches[, K types de la flotte sans fiche] »,
   shown in Maintenance's status block, linked to `#aircraft`; written only when it changes (M6).
 - Help chapter `modules/aircraft/help/{fr,en,de,es}.md`, anchors `aircraft-…` (the help's own cases).
+- **One view per entry** (SOG-0231, 11 Nov 2026; the user: « 2 entrées » of Compagnie): the module belongs to Maintenance and Compagnie
+  (`meta.apps`); the frame's entries open `#aircraft?view=fleet` (Compagnie: « Flotte ») and `#aircraft?view=sheets` (Maintenance:
+  « Fiches »); with `view`, the module shows that view only, titled with its name, without the bar of two views; without it (an old
+  address), both as before; `?sheet=<id>` still opens the Fiches on that sheet. M39.
