@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "70928bf",
+  "organisation": "0bb7ecf",
   "fiches": 170,
   "untranslated": 1,
   "priorities": 152
@@ -684,7 +684,7 @@
     {
      "id": "SOG-0163",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Espaces R et D : lire leur texte (activité, conditions) depuis le profil vertical et la carte",
      "en": "R and D areas: read their text (activity, conditions) from the vertical profile and the map",
      "de": "R- und D-Gebiete: ihren Text (Aktivität, Bedingungen) aus Vertikalprofil und Karte lesen",

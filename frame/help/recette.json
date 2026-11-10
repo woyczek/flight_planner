@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 54,
-  "verdicts": 7
+  "verdicts": 8
  },
  "apps": [
   "pilote",
@@ -625,9 +625,11 @@
     "de": "R- und D-Gebiete: ihren Text (Aktivität, Bedingungen) aus Vertikalprofil und Karte lesen",
     "es": "Zonas R y D: leer su texto (actividad, condiciones) desde el perfil vertical y el mapa"
    },
-   "test": "Maintenance › Données › « Mettre à jour » (la base se reconstruit : analyseur 24), puis Carte avec une route qui traverse R 61, profil vertical ouvert : toucher le bloc de l'espace → sa fiche donne limites, organisme, fréquence, horaires publiés et conditions de l'AIP, et dit que l'activité réelle n'est pas connue.",
+   "test": "Carte avec une route qui traverse des espaces, profil vertical ouvert : un premier appui sur un bloc le surligne et affiche son nom, ses limites et un bouton « Fiche » ; le profil reste en place. « Fiche » (ou un second appui) ouvre la fiche sans déplacer la page ni réduire le profil ; la fermer rend le profil identique. Après « Mettre à jour » : la fiche de R 61 donne ses horaires et conditions.",
    "since": "2026-11-10",
-   "state": "known"
+   "state": "ko",
+   "comment": "noreg : bug d’affichage vertical",
+   "at": "2026-11-10T08:59:08Z"
   },
   {
    "id": "SOG-0164",
