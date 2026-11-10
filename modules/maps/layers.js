@@ -219,11 +219,26 @@ export function builtinProfile(mode = S.preset, levelFt = S.route.levelFt) {
     }
   };
 }
-/** Profil d'une carte de mission selon sa vue (SOG-0171) : « vfr » = le VFR topographique du vol (relief, obstacles, VRP, terrains VFR, espaces
- *  bas, fond OpenFreeMap liberty), « ifr » = l'IFR du niveau de la mission, « base » = le fond seul (aucune couche aéronautique : la mission
+/** Profil d'une carte de mission selon sa vue (SOG-0171) : « vfr » = le VFR topographique du vol (relief ombré et courbes de niveau, obstacles, VRP, terrains
+ *  VFR, espaces bas, fond OpenFreeMap liberty), sans les objets IFR (axes de ravitaillement, tracks NAT, voies : le profil du studio « vfr-detail » porte les
+ *  axes, que seul le mode CAM du vol allume), « ifr » = l'IFR du niveau de la mission, « base » = le fond seul (aucune couche aéronautique : la mission
  *  garde ses points, ses zones et son cheminement). Sans réglages de couches du vol : la carte de mission n'a que son thème. */
 export function themeProfile(theme, levelFt = 0) {
-  if (theme !== 'base') return builtinProfile(theme === 'vfr' ? 'vfr' : 'auto', levelFt);
+  if (theme === 'vfr') {
+    const p = builtinProfile('vfr', levelFt);
+    return {
+      ...p,
+      hillshade: true,
+      elements: {
+        ...p.elements,
+        aarTracks: false,
+        natTracks: false,
+        airwaysLow: false,
+        airwaysHigh: false
+      }
+    };
+  }
+  if (theme !== 'base') return builtinProfile('auto', levelFt);
   const p = MapsRender.routeProfile(0);
   return {
     ...p,

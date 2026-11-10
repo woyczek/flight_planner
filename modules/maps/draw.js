@@ -498,11 +498,13 @@ const DEM = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}
  *  tant que le style n'est pas prêt (posée au chargement du style). */
 export function relief() {
   const m = S?.map;
-  if (!m?.isStyleLoaded?.()) return;
-  const want = !!S.profile?.hillshade,
-    has = !!m.getLayer('mp-hillshade');
-  if (want === has) return;
+  if (!m) return;
   try {
+    // pas isStyleLoaded() : faux tant que les sources du style se chargent, donc au « style.load » d'un setStyle (SOG-0171 rouvert : le relief ne venait pas
+    // après un changement de vue) ; un style qui n'est pas encore posé refuse (getLayer, addSource) et la pose est reprise à son chargement
+    const want = !!S.profile?.hillshade,
+      has = !!m.getLayer('mp-hillshade');
+    if (want === has) return;
     if (!want) return m.removeLayer('mp-hillshade');
     if (!m.getSource('mp-dem')) m.addSource('mp-dem', {
       type: 'raster-dem',

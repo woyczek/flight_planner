@@ -2299,6 +2299,19 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done**: the light drawing paints every airway in the low colour (high ones too); a zoom that crosses a threshold *during* a gesture shows the new state only at rest.
 - **Noreg** D141 (zoom 8: the airways are in the light drawing and stroked while moving; zoom 3: none, no stroke; red before: 3 airways at zoom 3).
 
+## A mission map's view does what its name says (10 Nov 2026, SOG-0171 reopened: « en vfr topo sur la vue générale, un fond IFR, des hippodromes de ravitaillement, pas de courbes de niveau »)
+- **Causes found** (probe on a CAM flight, general and target maps, each view): (1) the base never followed the view: `setTheme` and `applyMission` replaced `S.profile` but only
+  `setPreset` (the flight's mode) swapped the MapLibre style, so a view chosen in the banner (or another map of the mission) kept the style the map was born with: « VFR topo » on
+  an IFR base; (2) the studio's `vfr-detail` profile carries `aarTracks`; the flight's VFR mode overrides it with its layers (on in CAM only), a mission map did not: refuelling
+  racetracks in « VFR topo »; (3) the mission's « VFR topo » had no shaded relief (only the flight's Topo mode has it); (4) `relief()` waited for `isStyleLoaded()`, false at the
+  `style.load` of a `setStyle` (the sources still loading): the relief was never laid after a style change (the flight's mode change too).
+- **Done**: the base follows the view (`restyle`: `setStyle(…, { diff: false })` when the profile's style changes, so « style.load » always comes and lays the relief; the diff of two
+  styles would remove our own layer without a word); `themeProfile('vfr')` = the VFR profile + `hillshade` and without `aarTracks`, `natTracks`, airways; `relief()` no longer waits for
+  `isStyleLoaded()` (a style not yet set refuses, the laying is taken again at its load). The general map still opens in the flight's view (SOG-0171): the banner says the real view and
+  the chosen one applies.
+- **Noreg** D152 (general and target maps, under a CAM flight: IFR first, then VFR topo → base really swapped, relief laid, no refuelling track, no airway, contours; back to IFR → base
+  swapped back, relief gone); capture `D152_vfr_general_390.png`. The real tiles (liberty, Terrarium) are seen only on the user's workstation.
+
 ## The complexity cursor is back where it was on a flight's map (10 Nov 2026, SOG-0183 refused: « il a été déplacé dans le cas général ! ce n'était pas le propos »)
 - **Cause**: cc6b3fb05 split the Layers content in three blocks to show the cursor on a mission map; the middle block (`.mp-layer-cx`) was a plain grid item, so the cursor's line was
   squeezed into the first column (170 px of 354 at 390) instead of spanning the content. The other blocks were already `display: contents`.

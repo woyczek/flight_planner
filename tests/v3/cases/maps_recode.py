@@ -4392,14 +4392,14 @@ def d137(c):
     c.until("() => { const s = document.querySelector('.mp-dbody svg'); return !!s && s.getBoundingClientRect().height > 0 }", timeout=9000, what='« Try again » draws the cut')
 
 
-def _themed(c, fam, mid, hash_, profile_def=False):
+def _themed(c, fam, mid, hash_, profile_def=False, preset=None):
     """Writes a synthetic mission of folder family `fam` (without the studio profile of its general map unless asked) and opens the Map on `hash_`."""
     text = FIXTURE.read_text(encoding='utf-8').replace('ESSAI1', mid)
     if not profile_def:
         text = '\n'.join(l for l in text.split('\n') if not l.lstrip().startswith('profile_def:'))
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     c.js(_RAW_JS, [f'missions/{fam}/{mid}/mission{mid}.yaml', text])
-    c.open(hash_, docs=fdocs(flight()), airfields=True, wait=False)
+    c.open(hash_, docs=fdocs(flight()) + ([['cache/maps/ui.json', {'preset': preset, 'layers': {}}, 'cache']] if preset else []), airfields=True, wait=False)
     c.until("() => !!document.querySelector('.mp-mbar') && !document.querySelector('.mp-mbar').hidden", timeout=15000, what='the mission banner')
     c.js(_STATE_JS)
     c.until("() => !!window.__mp.S.profile && !!window.__mp.S.mtheme", timeout=8000, what='the mission map has its view')
@@ -4942,3 +4942,37 @@ def d151(c):
             timeout=4000, what='the layer is blank within 4 s of the empty flight')
     c.eq(c.js("() => [window.__mp.S.awHits.length, window.__mp.S.adHits.length, (window.__mp.S.altHits || []).length, !!window.__mp.S.lightSrc]"), [0, 0, 0, False], 'no touch list nor light drawing of the old route is kept', what='lists')
     c.shot('D151_empty_390.png')
+
+
+_MVIEW_JS = """() => { const S = window.__mp.S, E = S.profile.elements || {}, m = S.map;
+  return { theme: S.mtheme, id: S.profile.id, base: S.profile.base, hill: !!(m && m.getLayer('mp-hillshade')), aar: !!E.aarTracks, nat: !!E.natTracks, awl: !!E.airwaysLow, awh: !!E.airwaysHigh,
+    contours: !!(S.profile.layers?.contours || E.vfrDensity), styles: (window.__styles || []).slice() } }"""
+
+
+@case('D152', 'A mission map’s view does what its name says on every map (general, target), under any flight view: « VFR topo » = the topographic base (really swapped), relief and contours, no IFR objects (refuelling tracks, airways); « IFR » = the IFR base and its objects', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0171 reopened (« en vfr topo sur la vue générale, on a un fond IFR, des hippodromes de ravitaillement, et pas de courbes de niveau ; sur la vue régionale, idem pour les objets, mais sur un fond VFR, sans relief »): the base style follows the view (it stayed the one the map was born with), the VFR view has no refuelling tracks (the studio’s vfr-detail profile carries them, only the flight’s CAM mode lights them), and has the shaded relief')
+def d152(c):
+    for m in ('carte_generale.png', 'carte_cible.png'):
+        _themed(c, '2_SAR', 'SAR1', 'maps?mission=SAR1&map=' + m, preset='cam')    # a military flight: the CAM view lights the refuelling tracks
+        c.until("() => !!window.__mp.S.map && window.__mp.S.map.isStyleLoaded()", timeout=12000, what=f'{m}: the base map is loaded')
+        c.js("() => { window.__styles = []; const m = window.__mp.S.map, o = m.setStyle.bind(m); m.setStyle = (s, ...a) => { window.__styles.push(String(s)); return o(s, ...a) }; return true }")
+        pick = "(v) => { const s = document.querySelector('.mp-mb-theme'); s.value = v; s.dispatchEvent(new Event('change', { bubbles: true })); return true }"
+        c.js(pick, 'ifr')    # whatever the map opened in, start from the IFR view: the next choice must swap the base
+        c.until("() => window.__mp.S.mtheme === 'ifr' && !window.__mp.S.map.getLayer('mp-hillshade')", timeout=12000, what=f'{m}: IFR first')
+        c.js("() => { window.__styles = []; return true }")
+        c.js(pick, 'vfr')
+        c.until("() => window.__mp.S.mtheme === 'vfr' && !!window.__mp.S.map.getLayer('mp-hillshade')", timeout=12000, what=f'{m}, VFR topo: the relief is laid')
+        t = c.js(_MVIEW_JS)
+        c.eq([t['base'], t['aar'], t['nat'], t['awl'], t['awh'], t['contours']], ['ofm-liberty', False, False, False, False, True], f'{m}, VFR topo: topographic base, no refuelling track, no airway, contours', what=str(t))
+        c.ok(len(t['styles']) >= 1 and 'liberty' in t['styles'][-1], str(t['styles']), f'{m}, VFR topo: the MapLibre base was really swapped to the topographic style')
+        c.js(pick, 'ifr')
+        c.until("() => window.__mp.S.mtheme === 'ifr' && !window.__mp.S.map.getLayer('mp-hillshade')", timeout=12000, what=f'{m}, IFR: the relief is gone')
+        t = c.js(_MVIEW_JS)
+        c.eq([t['base'], t['hill'], t['awl']], ['positron', False, True], f'{m}, IFR: the IFR base and its airways, no relief', what=str(t))
+        c.ok(len(t['styles']) >= 2 and 'liberty' not in t['styles'][-1], str(t['styles']), f'{m}, IFR: the base was swapped back')
+        if m == 'carte_generale.png':
+            c.js(pick, 'vfr')
+            c.until("() => !!window.__mp.S.map.getLayer('mp-hillshade')", timeout=12000, what='relief again')
+            c.shot('D152_vfr_general_390.png')
+

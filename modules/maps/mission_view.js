@@ -16,7 +16,8 @@ import {
   TX
 } from './texts.js';
 import {
-  schedule
+  schedule,
+  relief
 } from './draw.js';
 import {
   viewOf,
@@ -29,7 +30,8 @@ import {
 import {
   header,
   status,
-  showBox
+  showBox,
+  styleFor
 } from './screen.js';
 import {
   buildProfile
@@ -177,7 +179,9 @@ export async function applyMission() {
     levelFt: M?.vprof.cruiseFt || 0,
     updated: `${q.mission}|${m?.file || ''}|${S.missionRev || ''}`
   };
+  const before = S.map ? styleFor() : '';
   S.profile = missionProfile();
+  restyle(before);
   // #maps?mission=…&zone=<id> : la vue est cette zone, sauf si l'adresse désigne une carte fournie (&map=, déjà centrée sur elle, à son échelle)
   const zoneFit = q.zone && !(q.map && M?.maps.some(x => x.file === q.map)) ? MapsMission.zoneBox(M, q.zone) : null;
   S.fit = viewOf() || zoneFit || m?.extent || MapsRender.bboxOf(unwrapLons([...pts, ...(M?.points || [])]), 10) || {
@@ -223,6 +227,15 @@ function missionProfile() {
     name: tt(TX.mbThemes[S.mtheme] || TX.mbThemes.ifr)
   };
 }
+/** Le fond suit la vue (SOG-0171 rouvert : « VFR topo » sur un fond IFR, sans relief) : le style MapLibre change quand celui du profil a changé (carte
+ *  d'une autre vue, vue choisie dans le bandeau), le relief ombré est posé ou retiré sinon. Sans carte MapLibre encore, rien : elle naît avec le bon style. */
+function restyle(before) {
+  if (!S.map) return;
+  if (styleFor() !== before) S.map.setStyle(styleFor(), {
+    diff: false // un style entier rechargé : « style.load » vient toujours (la différence entre deux styles retirerait notre relief sans rien dire)
+  });
+  else relief();
+}
 /** Le choix de la vue (bandeau) : retenu pour cette carte sur l'appareil (seulement s'il diffère de la vue de son usage), la carte redessinée. */
 function setTheme(v) {
   if (!TX.mbThemes[v] || (v === 'yaml' && S.mthemeAuto !== 'yaml')) return;
@@ -236,7 +249,9 @@ function setTheme(v) {
   }
   saveUi();
   S.mtheme = v;
+  const before = S.map ? styleFor() : '';
   S.profile = missionProfile();
+  restyle(before);
   invalidate();
   bannerFill();
   status();

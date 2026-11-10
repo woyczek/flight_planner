@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: a mission map's view does what its name says** (`modules/maps/mission_view.js`, `layers.js`, `draw.js`; DECISIONS; noreg D152; SOG-0171 reopened). The base now follows the view
+  chosen in the banner (it kept the style the map was born with); « VFR topo » has the shaded relief, the contours and no refuelling tracks, tracks or airways; the relief is laid
+  after any change of base.
+
 - **Map: the complexity cursor is back where it was** (`modules/maps/style.js`; DECISIONS; noreg D17, D145; SOG-0183 refused). Its line spans the whole width of the Layers content again
   on a flight's map (it had been squeezed into one grid column since cc6b3fb05); on a mission map it is at the top, on the whole width.
 
