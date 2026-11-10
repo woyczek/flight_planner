@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7e4e2ba",
+  "organisation": "c7a4384",
   "fiches": 186,
   "untranslated": 1,
   "priorities": 152
@@ -711,7 +711,7 @@
     {
      "id": "SOG-0175",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "VOR : doubler le cercle des degrés et poser des repères tous les 30°",
      "en": "VOR: a double compass circle with marks every 30°",
      "de": "VOR: doppelter Gradkreis mit Marken alle 30°",
@@ -1543,7 +1543,7 @@
     {
      "id": "SOG-0176",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Fréquences d'ILS : prévues, codées, affichées ?",
      "en": "ILS frequencies: planned, coded, displayed?",
      "de": "ILS-Frequenzen: geplant, kodiert, angezeigt?",

@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 67,
+  "tests": 68,
   "verdicts": 30
  },
  "apps": [
@@ -819,9 +819,22 @@
     "de": "VOR: doppelter Gradkreis mit Marken alle 30°",
     "es": "VOR: doble círculo de grados con marcas cada 30°"
    },
-   "test": "Carte à zoom proche sur un VOR : la rose a deux cercles, l'extérieur gradué tous les 10° avec chiffres et petites flèches tous les 30°, l'intérieur fin pour lire un relèvement ; elle est tournée de la déclinaison. À comparer à ta capture de référence.",
+   "test": "Carte à zoom proche sur un VOR (Pontoise, Melun, Deauville) : un seul grand cercle fin (environ 5 NM), graduations vers l'intérieur tous les 10°, seulement les chiffres 0, 9, 18, 27 à l'intérieur, une pointe aux points cardinaux, la flèche du nord magnétique depuis la station. À comparer à tes cartes : taille du cercle, sens des chiffres.",
    "since": "2026-11-10",
-   "state": "known"
+   "state": "todo"
+  },
+  {
+   "id": "SOG-0176",
+   "app": "maintenance",
+   "title": {
+    "fr": "Fréquences d'ILS : prévues, codées, affichées ?",
+    "en": "ILS frequencies: planned, coded, displayed?",
+    "de": "ILS-Frequenzen: geplant, kodiert, angezeigt?",
+    "es": "Frecuencias ILS: ¿previstas, codificadas, mostradas?"
+   },
+   "test": "Carburant › Procédures, arrivée sur un terrain français avec une approche ILS choisie : sous le choix de l'approche, « ILS <piste> · <indicatif> <fréquence> · axe <cap>° » ; arrivée repliée, le résumé dit « I<piste> · <indicatif> <fréquence> ». Sur la Carte, l'infobulle de l'ILS donne la même fréquence. Après « Mettre à jour » : pareil sur un terrain britannique ou espagnol.",
+   "since": "2026-11-10",
+   "state": "todo"
   },
   {
    "id": "SOG-0177",
