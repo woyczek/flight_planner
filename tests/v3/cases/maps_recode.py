@@ -3901,19 +3901,25 @@ def d126(c):
     c.wait(500)   # the last drawing settles (a loaded machine redraws after the event): the touch targets are those of the image
     c.js("() => { window.__hs = []; window.addEventListener('hashchange', () => window.__hs.push(location.hash)); return true }")   # Fuel consumes `ralt` at mount: the address is read when it changes, not afterwards
     _click_until(c, lambda: (lambda p: (p['x'], p['y']))(c.js("""() => { const S = window.__mp.S; if (!S) return { x: 1, y: 1 }; const h = S.altHits.find(x => x.index === 1), m = h.q[1], n = h.q[2], r = S.box.getBoundingClientRect(), card = document.querySelector('.mp-alts'), cr = card && !card.hidden ? card.getBoundingClientRect() : null; const at = f => ({ x: r.left + m.x + (n.x - m.x) * f, y: r.top + m.y + (n.y - m.y) * f }); const free = [.5, .35, .65, .25, .75, .15, .85].map(at).find(p => !cr || p.x < cr.left - 6 || p.x > cr.right + 6 || p.y < cr.top - 6 || p.y > cr.bottom + 6); return free || at(.5) }""")),
-                 "() => window.__hs.some(h => h.includes('ralt=1')) || location.hash.includes('ralt=1')", 'a tap on a route takes it: #fuel?ralt=1', tries=6)
+                 "() => window.__mp.S.altShow === 1", 'a tap on a route SHOWS it (SOG-0134: it does not take it)', tries=6)
+    c.wait(300)
+    c.ok(not c.js("() => window.__hs.some(h => h.includes('ralt=')) || location.hash.includes('ralt=')"), 'the address changed', 'a tap on a route does not go to Fuel')
+    c.until("() => !!document.querySelector('.mp-alts [data-alttake]')", timeout=4000, what='a Map alone offers « Choose this route » for the shown one')
+    c.tap('.mp-alts [data-alttake]')
+    c.until("() => window.__hs.some(h => h.includes('ralt=1')) || location.hash.includes('ralt=1')", timeout=6000, what='the button takes it: #fuel?ralt=1')
     # in the double view the choice is an event
     c.open('maps', flight=True)
     c.js(_STATE_JS)
     hook_map(c)
-    c.js("""() => { window.__picked = []; window.addEventListener('maps-route-alt', e => window.__picked.push(e.detail)); const S = window.__mp.S; S.ctx = { ...S.ctx, query: { ...S.ctx.query, pane: '1' } }; return true }""")
+    c.js("""() => { window.__picked = []; window.__shown = []; window.addEventListener('maps-route-alt', e => window.__picked.push(e.detail)); window.addEventListener('maps-route-alt-show', e => window.__shown.push(e.detail)); const S = window.__mp.S; S.ctx = { ...S.ctx, query: { ...S.ctx.query, pane: '1' } }; return true }""")
     c.js(ev, doc)
     c.until("() => (window.__mp.S.altHits || []).length === 2", timeout=8000, what='drawn in the pane')
     c.wait(500)
     c.eq(c.js("() => !!document.querySelector('.mp-alts') && !document.querySelector('.mp-alts').hidden"), False, 'beside Fuel the list is Fuel’s: not repeated over the map', what='list in a pane')
     _click_until(c, lambda: (lambda p: (p['x'], p['y']))(c.js("""() => { const S = window.__mp.S; if (!S) return { x: 1, y: 1 }; const h = S.altHits.find(x => x.index === 1), m = h.q[1], n = h.q[2], r = S.box.getBoundingClientRect(), card = document.querySelector('.mp-alts'), cr = card && !card.hidden ? card.getBoundingClientRect() : null; const at = f => ({ x: r.left + m.x + (n.x - m.x) * f, y: r.top + m.y + (n.y - m.y) * f }); const free = [.5, .35, .65, .25, .75, .15, .85].map(at).find(p => !cr || p.x < cr.left - 6 || p.x > cr.right + 6 || p.y < cr.top - 6 || p.y > cr.bottom + 6); return free || at(.5) }""")),
-                 "() => window.__picked.length >= 1", 'the tap is maps-route-alt', tries=6)
-    c.eq(c.js("() => window.__picked[0]"), {'index': 1}, 'with the index, nothing else', what='detail')
+                 "() => window.__shown.length >= 1", 'the tap is maps-route-alt-show', tries=6)
+    c.eq(c.js("() => window.__shown[0]"), {'index': 1}, 'with the index, nothing else', what='detail')
+    c.eq(c.js("() => window.__picked.length"), 0, 'a tap never takes a route (Fuel’s own button does): no maps-route-alt', what='taken')
     # a Map opened afterwards reads the document
     c.open('maps', docs=fdocs(flight()) + [['cache/fuel/route_alts.json', doc, 'cache']], flight=False, airfields=True, wait=False)
     c.ready('maps', sheet=True)
@@ -5241,3 +5247,28 @@ def d_zoomout(c):
     thr = c.js("() => { const S = window.__mp.S; return +document.querySelector('[data-module=\"maps\"] .mp-map').dataset.zoomEff }")
     below = [g for g in got if g[0] <= 4.25]
     c.ok(len(below) >= 5 and all(g[1] == below[0][1] for g in below), str(got), 'no airway segment is stroked by the light drawings once the zoom is well below the airways’ threshold')
+
+
+@case('D164', 'After a second computation the Map follows in the second: the new proposed routes replace the old ones within a second, nothing of the first computation stays', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0134 refused (« après un second calcul la carte suit dans la seconde »; ergonomics: measure the delay): a second fuel-route-alts replaces the first; the Map has the new lines in its touch list and its image within a second of the event, the shown one of the first computation is released')
+def d_second(c):
+    import copy
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    c.open('maps?pane=1', flight=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.until("() => !!window.__mp.S.route && window.__mp.S.route.points.length >= 2", timeout=15000, what='the flight is read')
+    ev = "(d) => { window.dispatchEvent(new CustomEvent('fuel-route-alts', { detail: d })); return true }"
+    a = _alts_doc()
+    c.js(ev, a)
+    c.until("() => (window.__mp.S.altHits || []).length === 2", timeout=8000, what='the first computation is drawn')
+    c.js("() => { window.__mp.S.altShow = 1; return true }")    # one of them was shown
+    b = copy.deepcopy(a)
+    third = copy.deepcopy(b['alternatives'][0])
+    third['index'] = 2
+    third['points'] = [[la + .15, lo + .15] for la, lo in third['points']]
+    b['alternatives'].append(third)
+    t = c.js("(d) => { const t0 = performance.now(); window.dispatchEvent(new CustomEvent('fuel-route-alts', { detail: d })); return new Promise(r => { const f = () => (window.__mp.S.altHits || []).length === 3 ? r(Math.round(performance.now() - t0)) : requestAnimationFrame(f); f() }) }", b)
+    c.le(t, 1000, 'the second computation is on the map within a second of its event (measured %d ms)' % t, what='delay in ms')
+    c.eq(c.js("() => window.__mp.S.altShow"), None, 'the route shown of the first computation is released', what='altShow')

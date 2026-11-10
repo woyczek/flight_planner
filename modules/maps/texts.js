@@ -225,6 +225,7 @@ export const TX = {
     'Actividad real no conocida: solo horarios publicados (ni NOTAM ni AZBA leídos).'
   ],
   spMore: ['{n} autres', '{n} more', '{n} weitere', '{n} más'],
+  altTake: ['Choisir cet itinéraire', 'Choose this route', 'Diese Route wählen', 'Elegir esta ruta'],
   altTitle: ['Itinéraires proposés', 'Proposed routes', 'Vorgeschlagene Routen', 'Rutas propuestas'],
   altCheck: ['Route contrôlée', 'Checked route', 'Geprüfte Route', 'Ruta comprobada'],
   altKey: ['plein : contrôlé · tireté : incomplet · pointillé : repli · rouge : erreur',

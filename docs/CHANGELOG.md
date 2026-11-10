@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: a tap on a proposed route shows it, it does not take it** (`modules/maps/alts.js`, `texts.js`; DECISIONS; noreg D126, D164; SOG-0134). New window event `maps-route-alt-show { index }` for Fuel; a Map alone
+  has a « Choose this route » button; a second computation replaces the first within a second and releases the route shown.
+
 - **Map: the light drawing of a gesture serves only near the zoom of the full drawing** (`modules/maps/draw.js`; DECISIONS; noreg D163; SOG-0173, not reproduced: guard).
 
 - **Map: the space chosen on the profile goes when another panel opens** (`modules/maps/profile_view.js`, `sheet_view.js`, `layers.js`; DECISIONS; noreg D162; SOG-0192). Its strip « name, limits, Sheet » no longer stays over the legend.

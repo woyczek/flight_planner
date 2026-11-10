@@ -2299,6 +2299,16 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done**: the light drawing paints every airway in the low colour (high ones too); a zoom that crosses a threshold *during* a gesture shows the new state only at rest.
 - **Noreg** D141 (zoom 8: the airways are in the light drawing and stroked while moving; zoom 3: none, no stroke; red before: 3 airways at zoom 3).
 
+## A tap on a proposed route shows it, it does not take it (10 Nov 2026, SOG-0134 refused: clicking a route on the Map beside Fuel chose it and made Fuel's list vanish)
+- **Ergonomics' ruling**: a click on a route on the map SHOWS it (highlighted) without choosing it and without making Fuel's list disappear; the choice is Fuel's own button « Choose » (Features SOG).
+- **Done**: a tap (`altsTap`) pins the route as shown (`S.altShow`: drawn thick, full strength; a second tap releases it) and tells Fuel with a NEW window event `maps-route-alt-show`
+  `{ index }` (`index: null` when released) so that Fuel can highlight its row; `maps-route-alt` (the take) is no longer sent by the Map's tap. A Map alone (no Fuel beside) keeps a way to choose: its
+  list rows now show, and a « Choose this route » button under the list takes the shown one (`#fuel?ralt=<i>`, as before). A new computation (other lines) releases the shown route; a hover of Fuel's
+  list (same lines) does not.
+- **Delay after a second computation**: measured by D164, the new lines are in the Map's touch list within one frame of the event (the case demands under a second).
+- **To agree with Features SOG**: Fuel listens `maps-route-alt-show` (not yet) and no longer takes on a Map tap; until it does, a tap in the double view is a highlight on the map only.
+- **Noreg** D126 (a tap shows: `altShow`, the address untouched, the button takes; in the pane the event is `-show`, `maps-route-alt` never), D164.
+
 ## SOG-0173 refused again: what is known, what is not (10 Nov 2026, capture 155727)
 - **The capture** (dual view, wide zoom, « Voies basses » ticked, complexity +1): low airways drawn only over the UK, the aerodromes everywhere. **Not reproduced**: the bench's pan and zoom-out gestures (D141,
   D163) never stroke an airway the full drawing would not. **Two readings**, none proved: (1) the airways really are at their threshold at rest (complexity +1) and only the region whose data was loaded

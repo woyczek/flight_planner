@@ -123,7 +123,7 @@ export function drawAlts(ctx, toC, avoid = []) {
     },
     bg = S.theme?.bg || '#fff',
     fg = S.theme?.fg || '#17202a',
-    hov = S.altHover ?? A.hovered,
+    hov = S.altHover ?? S.altShow ?? A.hovered, // le survolé, sinon le montré (un appui), sinon celui que la liste de Carburant survole
     rank = a => a.index === hov ? 2 : a.index === A.chosen ? 1 : 0,
     hits = [],
     // les cadres des noms déjà posés (jamais deux noms l'un sur l'autre), ceux de la route du vol d'abord (avoid : ses étiquettes, en coordonnées de la vue)
@@ -356,10 +356,24 @@ export function altsPick(i) {
   else location.hash = `#fuel?ralt=${i}`;
   return true;
 }
-/** Un appui sur la carte en (x, y) : sur un tracé proposé, c'est « Prendre » (vrai) ; sinon rien (faux). */
+/** Un itinéraire proposé MONTRÉ (SOG-0134 : un appui sur un tracé ne le choisit pas) : surligné, gardé jusqu'à un autre appui ; Carburant en est prévenu (l'événement maps-route-alt-show,
+ *  { index } ou { index: null }) pour surligner sa ligne ; le choisir est un autre geste (le bouton de sa liste, ou ci-dessous pour une Carte seule). */
+function altsShow(i) {
+  S.altShow = S.altShow === i ? null : i;
+  window.dispatchEvent(new CustomEvent('maps-route-alt-show', {
+    detail: {
+      index: S.altShow
+    }
+  }));
+  altsCard();
+  schedule();
+}
+/** Un appui sur la carte en (x, y) : sur un tracé proposé, il est montré, pas choisi (vrai) ; sinon rien (faux). */
 export function altsTap(x, y) {
   const i = altAt(x, y);
-  return i >= 0 && altsPick(i);
+  if (i < 0) return false;
+  altsShow(i);
+  return true;
 }
 /** La liste des itinéraires au-dessus de la carte (une Carte seule : en vue double Carburant a la sienne) : une ligne par route, le choisi
  *  marqué, une faute dite ; un appui prend. Écrite seulement si elle change. */
@@ -370,7 +384,7 @@ export function altsCard() {
     on = !!A && !dual() && A.list.length > 0,
     said = on && A.list.some(a => a.control.some(Boolean)), // le moteur dit ses tronçons : la clef du dessin
     legend = on ? altsLegendRows() : [],
-    html = on ? `<b class="mp-al-t">${esc(tt(A.mode === 'check' ? TX.altCheck : TX.altTitle))}</b>${said && !A.list.some(natureKnown) ? `<span class="mp-al-key f-muted">${esc(tt(TX.altKey))}</span>` : ''}${legend.length ? `<details class="mp-al-leg"><summary>${esc(tt(TX.altLegend))}</summary><ul>${legend.map(r => `<li>${r[0]}<span>${r[1]}</span></li>`).join('')}</ul></details>` : ''}${A.list.map(a => `<button type="button" class="mp-al-row" data-alt="${a.index}" data-chosen="${a.index === A.chosen ? 1 : 0}" data-faulty="${a.faulty.size ? 1 : 0}"${A.mode === 'compute' ? '' : ' disabled'}><span class="mp-al-n">${esc(a.name || `#${a.index + 1}`)}</span>${a.index === A.chosen ? `<span class="mp-al-k">${esc(tt(TX.altChosen))}</span>` : ''}${a.faulty.size ? `<span class="mp-al-f">${esc(tt(TX.altFaulty))}</span>` : ''}</button>`).join('')}` : '';
+    html = on ? `<b class="mp-al-t">${esc(tt(A.mode === 'check' ? TX.altCheck : TX.altTitle))}</b>${said && !A.list.some(natureKnown) ? `<span class="mp-al-key f-muted">${esc(tt(TX.altKey))}</span>` : ''}${legend.length ? `<details class="mp-al-leg"><summary>${esc(tt(TX.altLegend))}</summary><ul>${legend.map(r => `<li>${r[0]}<span>${r[1]}</span></li>`).join('')}</ul></details>` : ''}${A.list.map(a => `<button type="button" class="mp-al-row" data-alt="${a.index}" data-chosen="${a.index === A.chosen ? 1 : 0}" data-faulty="${a.faulty.size ? 1 : 0}"${A.mode === 'compute' ? '' : ' disabled'}><span class="mp-al-n">${esc(a.name || `#${a.index + 1}`)}</span>${a.index === A.chosen ? `<span class="mp-al-k">${esc(tt(TX.altChosen))}</span>` : ''}${a.faulty.size ? `<span class="mp-al-f">${esc(tt(TX.altFaulty))}</span>` : ''}</button>`).join('')}${A.mode === 'compute' && A.list.some(a => a.index === S.altShow) ? `<button type="button" class="f-btn mp-al-take" data-alttake>${esc(tt(TX.altTake))}</button>` : ''}` : '';
   if (el.hidden === on) el.hidden = !on;
   if (el.innerHTML !== html) el.innerHTML = html;
 }
@@ -385,6 +399,10 @@ function put(raw) {
   S.alts = altsSanitize(raw);
   S.altsRoute = routeKey();
   S.altsAt = Date.now();
+  const sig = S.alts ? JSON.stringify(S.alts.list.map(a => a.points)) : '';
+  if (sig !== S.altsSig || !S.alts?.list.some(a => a.index === S.altShow)) S.altShow =
+    null; // un nouveau calcul (d'autres tracés) : plus rien de montré ; un survol de Carburant (mêmes tracés), si
+  S.altsSig = sig;
   if (S.alts && !S.alts.list.length) S.alts = null; // effacé : nouvelle demande, autre couple, refus
   S.altHover = null;
   altsCard();
@@ -412,8 +430,9 @@ export function altsStart() {
     if (S && (paths || []).some(p => p === DOC)) readDoc();
   }));
   S.altsEl?.addEventListener('click', e => {
+    if (e.target.closest('[data-alttake]')) return Number.isInteger(S.altShow) && altsPick(S.altShow);
     const b = e.target.closest('[data-alt]');
-    if (b) altsPick(+b.dataset.alt);
+    if (b && !b.disabled) altsShow(+b.dataset.alt);
   });
   S.altsEl?.addEventListener('pointerover', e => {
     const b = e.target.closest('[data-alt]');
