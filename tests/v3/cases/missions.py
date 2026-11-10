@@ -808,6 +808,7 @@ def n17(c):
         c.eq(c.js(lst), '', f'{w} px: India Air (first of the index): no mission (the one without airline is not its own)', what='iii')
         set_airline(c, 'perso')
         c.until(f"{lst} === 'X-111A'", what=f'{w} px: « Personnel »: the mission that names no airline')
+        c.eq(norm(c.text(f'{M} [data-count]')), norm(row(c, 'count1').replace('{n}', '1')), f'{w} px: « 1 mission », singular (« 1 missions » before)', what='count')
         c.shot(f'N17_{c.design}_{w}_{c.lang}.png')
         set_airline(c, 'ddd')
         c.until(f"{lst} === 'X-112A'", what=f'{w} px: Delta Air: the mission that names ddd')

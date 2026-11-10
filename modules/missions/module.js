@@ -95,6 +95,7 @@ const TX = {
   back: ['Retour', 'Back', 'Zurück', 'Volver'],
   more: ['{n} autres', '{n} more', '{n} weitere', '{n} más'],
   count: ['{n} missions', '{n} missions', '{n} Missionen', '{n} misiones'],
+  count1: ['{n} mission', '{n} mission', '{n} Mission', '{n} misión'], // le singulier : fr 0 et 1, en / de / es 1 (frame/lib/plural.js)
   none: ['Aucune mission dans le dépôt (missions/mission_registry.yaml).',
     'No mission in the repository (missions/mission_registry.yaml).',
     'Keine Mission im Repository (missions/mission_registry.yaml).',
@@ -388,6 +389,9 @@ function listHtml(s) {
     <div data-results>${resultsHtml(s)}</div></div>`;
 }
 
+/** Le singulier pour n (la règle de frame/lib/plural.js : fr 0 et 1, sinon 1 seul). */
+const one = (s, n) => (s.ctx.lang?.() || 'fr') === 'fr' ? n < 2 : n === 1;
+
 /** Les résultats : leur nombre, les missions groupées par famille, sept lignes puis « N autres » ; seuls redessinés pendant la
  *  frappe (le champ de recherche reste en place, avec son curseur). */
 function resultsHtml(s) {
@@ -403,7 +407,7 @@ function resultsHtml(s) {
     if (r.family !== fam) body += `<h3 class="f-muted" data-family="${esc(fam = r.family)}">${famHtml(s, fam)}</h3>`;
     body += row(r);
   }
-  return `<p class="f-muted" data-count>${esc(s.tt(TX.count, { n: hits.length }))}</p>
+  return `<p class="f-muted" data-count>${esc(s.tt(one(s, hits.length) ? TX.count1 : TX.count, { n: hits.length }))}</p>
     <div class="f-list" data-list>${hits.length ? body : `<p class="f-muted">${esc(s.tt(TX.noHit))}</p>`}</div>
     ${hits.length > shown.length ? `<button type="button" class="f-linkbtn" data-do="more">${esc(s.tt(TX.more, { n: hits.length - shown.length }))}</button>` : ''}`;
 }
