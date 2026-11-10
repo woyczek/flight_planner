@@ -628,7 +628,15 @@ none, its document's name (`source.file`, else `ref`, `name`) in the row's `titl
   Map opened afterwards; never written on hover). Read as an untrusted input (`altsSanitize`): schema 1, eight routes at most, 400
   points each, finite coordinates, `faulty` and `chosen` / `hovered` as integers within the list. The **chosen** route is drawn solid
   (the route's colour, 4.5 px), the **others faded** (38 % opacity, 3 px), the **hovered** one thick (7 px), the **faulty segments**
-  (`points[k] → points[k + 1]`) in red `#d6173f`; the engine's word per segment (`control`, one entry per `points[k] → points[k + 1]`, kept only when no point was dropped) is drawn on top: `controlled` solid, `incomplete` dashed, `fallback` dotted, `error` red like a faulty segment, `null` as normal, with a key line on the card when any is said; on the screens layer (`drawAlts`, after the map, before the labels' own screens),
+  (`points[k] → points[k + 1]`) in red `#d6173f`; **what each stretch is** (SOG-0134 refused 10 Nov: « moche, ni les points ni les awy, ni DCT / FRA, sans légende »): the line is **4 px, the width of
+  the flight's route** (the hovered one 6.5 px), the chosen one solid and the others faded (38 %); per segment `via` (airway ident, `DCT`, `FRA`) and `layer` (SID, LOW, HIGH,
+  FRA, STAR, APP), read like `control` (bounded, same indices, empty without the field): an **airway** solid with its **name along the line** (on the longest stretch of each
+  run, when it fits; chosen and hovered routes only), **DCT** dashed, **FRA** dotted, **SID / STAR / approach** in the procedures' tints (`procs.js colOf`), a **fault** red, a
+  stretch **not fully checked** (`control` incomplete or fallback) a thinner line (0.6 ×) — when the nature is known the dash belongs to the nature, so the SOG-0161 dashes
+  apply only to a route that does not say it. The **points of the chosen (or hovered) route** are marked and named (`ids`): the entry, the exit and the changes of airway or
+  layer always, the others when 70 px from the last and their name finds room (no two names over one another). A **collapsible key** in the list card and the same rows in
+  the map's legend (only the kinds that are drawn); **hovering a line on the map** highlights it like its row (`altsHover`, released with the map). Noreg D140. The engine's
+  word per segment (`control`, one entry per `points[k] → points[k + 1]`, kept only when no point was dropped) is drawn on top: `controlled` solid, `incomplete` dashed, `fallback` dotted, `error` red like a faulty segment, `null` as normal, with a key line on the card when any is said; on the screens layer (`drawAlts`, after the map, before the labels' own screens),
   hits in `S.altHits`. Only for the flight's own pair: `dep` / `arr` of the publication equal the flight's, else nothing; never on a
   mission map nor while choosing on the map. `alternatives: []` clears.
 - **What it hands back**: a tap within 9 px of a drawn route (or on its row of the list) is « Take » (`altsPick`): in the double view

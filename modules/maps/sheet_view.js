@@ -54,6 +54,9 @@ import {
   legendRows as weatherRows
 } from './weather.js';
 import {
+  altsLegendRows
+} from './alts.js';
+import {
   covRows
 } from './coverage.js';
 import {
@@ -191,7 +194,7 @@ function legendOf(view) {
     cov = (S.lgOutdated ? [
       [`<i class="mp-lg-sym" aria-hidden="true">${OUTDATED}</i>`, esc(tt(TX.procOutdated))]
     ] : []).concat(covRows(sw));
-  const mis = missionLegend(sw);
+  const mis = missionLegend(sw).concat(altsLegendRows()); // les itinéraires proposés par Carburant (SOG-0134), quand ils sont dessinés
   if (!d) return mis.concat(cov);
   const rows = [].concat(mis);
   const P = MapsRender.palette(!!S.theme?.dark); // la palette de la Carte (§ 10.29 f)

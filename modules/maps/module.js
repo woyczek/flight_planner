@@ -103,7 +103,8 @@ import {
   lvEvents
 } from './lv.js';
 import {
-  altsStart
+  altsStart,
+  altsHover
 } from './alts.js';
 
 export const meta = {
@@ -271,7 +272,9 @@ export async function mount(el, ctx) {
     hoverMap(e.clientX - r.left, e.clientY - r.top);
   });
   S.box.addEventListener('pointerleave', e => {
-    if (e.pointerType === 'mouse') linger('map');
+    if (e.pointerType !== 'mouse') return;
+    linger('map');
+    if (S.altHoverMap != null) altsHover(-1e5, -1e5); // le tracé survolé est lâché avec la carte
   });
   S.box.addEventListener('click', e => {
     if (plainUi(e)) return;

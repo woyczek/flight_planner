@@ -268,6 +268,11 @@ export const STYLE = `
 [data-module="maps"] .mp-alts{position:absolute;z-index:4;left:8px;bottom:8px;max-width:min(360px,calc(100% - 16px));padding:6px 8px;box-sizing:border-box}
 [data-module="maps"] .mp-alts[hidden]{display:none}
 [data-module="maps"] .mp-al-t{display:block;font-size:12px;color:var(--sog-muted);margin:0 0 2px}
+[data-module="maps"] .mp-al-leg{margin:0 0 2px;font-size:11px}
+[data-module="maps"] .mp-al-leg summary{cursor:pointer;color:var(--sog-muted);list-style:none}
+[data-module="maps"] .mp-al-leg ul{margin:2px 0 0;padding:0;list-style:none}
+[data-module="maps"] .mp-al-leg li{display:flex;align-items:center;gap:6px;line-height:1.5}
+[data-module="maps"] .mp-al-sw{flex:none}
 [data-module="maps"] .mp-al-key{display:block;font-size:11px;margin:0 0 2px}
 [data-module="maps"] .mp-al-row{display:flex;align-items:center;gap:8px;width:100%;min-height:36px;margin:0;padding:0 6px;border:0;border-bottom:1px solid var(--sog-border);background:none;color:var(--sog-fg);font:inherit;font-size:13px;text-align:left;cursor:pointer}
 [data-module="maps"] .mp-al-row[data-chosen="1"]{font-weight:700;background:color-mix(in srgb,var(--sog-accent) 12%,transparent)}

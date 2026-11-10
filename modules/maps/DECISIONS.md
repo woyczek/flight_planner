@@ -2268,6 +2268,24 @@ the Map had seen in between: the same line to within the frame's own sampling.
   label before the reading (it is chosen by the route's middle, after the route is known).
 - **Noreg** D122 (store stubbed on a copy of `S.ctx`, which is frozen: no network; cache then read; no extra button; the name; a refusal).
 
+## The proposed routes tell what each stretch is (10 Nov 2026, SOG-0134 refused: « moche… uniformément de la même couleur, très gros, sans légende »)
+
+- **Ergonomics' decision**: (a) the line has the width of the flight's route, the chosen solid, the others faded; (b) the style says the nature of the stretch: airway = solid
+  with its name along it, DCT = dashes, FRA = dots, SID / STAR = the procedures' tint, fault = red; (c) the chosen route's points marked and named, decluttered when wide; (d)
+  a short collapsible key in the list's card; (e) hovering a line on the map highlights it; the same codes as Fuel's Route screen.
+- **Contract asked of Fuel** (Features SOG, additive, same mapping as `faulty` / `control`): per segment `via` (airway ident, `DCT`, `FRA`, '' unknown) and `layer`
+  (SID | LOW | HIGH | FRA | STAR | APP | ''); `ids` already there. The Map reads them when present and draws as before without them; the cases publish them by hand.
+- **Conflict settled by me**: SOG-0161 asked incomplete = dashed, fallback = dotted, and this one DCT = dashed, FRA = dotted. Both cannot own the dash. When the nature is
+  known the dash is the nature's and a not-fully-checked stretch is drawn **thinner** (0.6 ×; the key says it); a route that does not say its nature keeps the SOG-0161 dashes.
+  To be confirmed by the ergonomics session.
+- **Choices of mine**: widths 4 px / 6.5 px (the route is 4 px on the map, 7.5 px with its halo); the key's words « Voie (son nom le long du trait) », « DCT (direct) »,
+  « FRA (route libre) », SID, STAR, « Approche », « Faute » — to match Fuel's Route screen (asked of Features SOG); names along the line only on the chosen and hovered routes
+  (the others are faded: names would clutter); a point of the chosen route is named only if its name finds room; the hover also highlights from the list's rows (as before).
+- **Not done**: no name for the SID / STAR along the line (their tint is the key); at wide zoom the intermediate points are dropped, not summarised; the end-to-end with the
+  engine's real `via` / `layer` (not published yet).
+- **Noreg** D140 (the width, the airway solid, the SID's tint, the DCT dashed and thinner when not fully checked, the FRA dotted and faded, the fault red, the airway's name and
+  the entry / exit written, the key folded in the list and in the map's legend, the hover of a line on the map: highlighted, drawn thick, released); D126 and D136 follow the new widths.
+
 ## The sheet of a space keeps its stack of levels (10 Nov 2026, SOG-0163 refused again; captures 103950 / 103959 / 104008)
 
 - **Seen**: the open sheet left an **empty scale** and the card went out of the screen. Cause: the graph was `position: sticky` inside `.mp-lv-body`, a

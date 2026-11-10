@@ -3880,7 +3880,7 @@ def d126(c):
     # hovered: thick
     c.js("() => { window.__st = []; return true }")
     c.js(ev, _alts_doc(hovered=1))
-    c.until("() => window.__st.some(x => x.w === 7)", timeout=6000, what='the hovered route is drawn thick')
+    c.until("() => window.__st.some(x => x.w === 6.5)", timeout=6000, what='the hovered route is drawn thick')
     # another pair of aerodromes: nothing drawn
     c.js(ev, _alts_doc(dep='LFPO'))
     c.until("() => (window.__mp.S.altHits || []).length === 0", timeout=6000, what='a Map of another flight does not draw them')
@@ -4295,8 +4295,8 @@ def d135(c):
 _DASH_SPY_JS = """() => { window.__dash = []; const o = CanvasRenderingContext2D.prototype.setLineDash;
   CanvasRenderingContext2D.prototype.setLineDash = function (a) { if (a && a.length) window.__dash.push(a.map(x => +x.toFixed(2))); return o.apply(this, arguments) }; return true }"""
 # the engine’s words are told apart from the other dashes of the Map by their signature: incomplete = [2.6 w, 1.6 w], fallback = [.1, 1.9 w]
-_DASH_KINDS_JS = """() => { const w = [3, 4.5, 7], inc = window.__dash.filter(a => w.some(x => Math.abs(a[0] - x * 2.6) < .05 && Math.abs(a[1] - x * 1.6) < .05)).length,
-  fb = window.__dash.filter(a => a[0] === .1 && w.some(x => Math.abs(a[1] - x * 1.9) < .05)).length; return { inc, fb } }"""
+_DASH_KINDS_JS = """() => { const w = [4, 6.5], inc = window.__dash.filter(a => w.some(x => Math.abs(a[0] - x * 2.6) < .05 && Math.abs(a[1] - x * 1.6) < .05)).length,
+  fb = window.__dash.filter(a => a[0] === .1 && w.some(x => Math.abs(a[1] - x * 2) < .05)).length; return { inc, fb } }"""
 
 
 @case('D136', 'Proposed routes: what the engine says of each segment is drawn — controlled solid, incomplete dashed, fallback dotted, error red', 'D',
@@ -4317,7 +4317,7 @@ def d136(c):
     doc['alternatives'][0]['control'] = ['fallback', 'incomplete', 'controlled']
     doc['alternatives'][1]['control'] = ['error', None, 'bogus']
     c.js(ev, doc)
-    c.until("() => { const w = [3, 4.5, 7]; return window.__dash.some(a => w.some(x => Math.abs(a[0] - x * 2.6) < .05)) }", timeout=8000, what='the dashes of the engine’s words')
+    c.until("() => { const w = [4, 6.5]; return window.__dash.some(a => w.some(x => Math.abs(a[0] - x * 2.6) < .05)) }", timeout=8000, what='the dashes of the engine’s words')
     k = c.js(_DASH_KINDS_JS)
     c.ok(k['inc'] > 0, str(k), 'an incomplete segment is dashed (long dashes)')
     c.ok(k['fb'] > 0, str(k), 'a fallback segment is dotted (round dots, wide gaps)')
@@ -4494,3 +4494,64 @@ def d139(c):
     c.until("() => document.querySelectorAll('svg.mp-lv rect.mp-lv-col').length === 1", timeout=4000, what='the stack of an FL195 | UNL space')
     g3 = c.js(_STACK_JS)
     c.ok(g3['colsInBody'] and 'SFC' not in g3['labels'] and len(g3['labels']) >= 2, str(g3), 'framed on its limits: the scale starts near FL195, the block is drawn, no « SFC »')
+
+
+_NAT_SPY_JS = """() => { window.__ns = []; window.__tx = []; const o = CanvasRenderingContext2D.prototype.stroke, f = CanvasRenderingContext2D.prototype.fillText;
+  CanvasRenderingContext2D.prototype.stroke = function () { window.__ns.push({ c: this.strokeStyle, w: +this.lineWidth.toFixed(2), a: this.globalAlpha, d: this.getLineDash().map(x => +x.toFixed(2)) }); return o.apply(this, arguments) };
+  CanvasRenderingContext2D.prototype.fillText = function (t) { window.__tx.push(String(t)); return f.apply(this, arguments) }; return true }"""
+
+
+@case('D140', 'Proposed routes tell what each stretch is: the width of the flight’s route, an airway solid with its name along it, DCT dashed, FRA dotted, SID / STAR in the procedures’ tint, a fault red, a thin line when not fully checked; the chosen route’s points marked and named; a key; the hover of a line on the map highlights it', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0134 refused (« moche : ni les points ni les awy, ni si c’est du DCT, du FRA… uniformément de la même couleur, très gros, sans légende »): per segment `via` (airway, DCT, FRA) and `layer` (SID, LOW, HIGH, FRA, STAR, APP) published by Fuel as `faulty` / `control`; a line 4 px as the flight’s route, the chosen one solid, the others faded; airway = solid + name along, DCT = dashes, FRA = dots, SID / STAR / approach = the procedures’ tints, fault = red, not fully checked = thinner; the points of the chosen route named (entry, exit, changes of airway always); a collapsible key; the hover of a line highlights it')
+def d140(c):
+    c.open('maps', flight=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js(_NAT_SPY_JS)
+    ev = "(d) => { window.dispatchEvent(new CustomEvent('fuel-route-alts', { detail: d })); return true }"
+    doc = _alts_doc()
+    a = doc['alternatives'][0]
+    n = len(a['points'])     # 4 points, 3 stretches: SID, airway UN10, DCT
+    a['ids'] = ['LFRS', 'AAA', 'BBB', 'LFML'][:n]
+    a['via'] = ['', 'UN10', 'DCT'][:n - 1]
+    a['layer'] = ['SID', 'LOW', ''][:n - 1]
+    a['control'] = [None, None, 'incomplete'][:n - 1]
+    b = doc['alternatives'][1]
+    b['via'] = ['FRA', 'FRA', 'T11']
+    b['layer'] = ['FRA', 'FRA', 'LOW']
+    c.js(ev, doc)
+    c.until("() => (window.__mp.S.altHits || []).length === 2", timeout=8000, what='the routes are drawn')
+    c.wait(700)
+    st = c.js("() => window.__ns")
+    ch = [x for x in st if x['a'] == 1]
+    fade = [x for x in st if x['a'] < 1]
+    c.ok(any(x['w'] == 4 and x['d'] == [] and x['c'] == '#8e24aa' for x in ch), str(ch[:6]), 'the airway: 4 px, the width of the flight’s route, solid, the route’s colour')
+    green = lambda h: h.startswith('#') and int(h[3:5], 16) > int(h[1:3], 16) + 40 and int(h[3:5], 16) > int(h[5:7], 16) + 40
+    c.ok(any(green(x['c']) and x['w'] == 4 for x in ch), str(ch[:6]), 'the SID in the procedures’ tint (green)')
+    c.ok(any(x['w'] == 2.4 and x['d'] == [12, 8.8] for x in ch), str(ch[:8]), 'the DCT not fully checked: dashes, and thinner')
+    c.ok(any(x['d'] and x['d'][0] == .1 for x in fade), str(fade[:6]), 'the FRA stretches of the other route: dots, faded')
+    c.ok(any(x['c'] == '#d6173f' for x in st), 'no red', 'the faulty stretch is red')
+    if os.environ.get('D140_SHOT'):
+        c.page.screenshot(path=f"{os.environ['D140_SHOT']}_{c.width}.png")
+    tx = c.js("() => window.__tx")
+    c.ok('UN10' in tx, str(tx), 'the airway’s name is written along it')
+    c.ok('LFRS' in tx and 'LFML' in tx, str(tx), 'the entry and the exit of the chosen route are named')
+    # the key: collapsible in the list, and in the map’s legend
+    c.until("() => !!document.querySelector('.mp-alts .mp-al-leg')", timeout=4000, what='a collapsible key in the list')
+    lg = c.js("() => [...document.querySelectorAll('.mp-alts .mp-al-leg li')].map(l => l.textContent)")
+    c.ok(any('DCT' in t for t in lg) and any('FRA' in t for t in lg) and any('SID' in t for t in lg), str(lg), 'it names DCT, FRA and the SID, the stretches that are drawn')
+    c.eq(c.js("() => document.querySelector('.mp-alts .mp-al-leg').open"), False, 'folded', what='key open')
+    c.tap('.mp-chip[data-legend]')
+    c.until("() => [...document.querySelectorAll('.mp-legend li')].some(l => /DCT/.test(l.textContent))", timeout=6000, what='the map’s legend lists the same lines')
+    c.tap('.mp-chip[data-legend]')
+    # the hover of the other line on the map highlights it
+    pt = c.js("() => { const S = window.__mp.S, h = S.altHits.find(x => x.index === 1), m = h.q[1], r = S.box.getBoundingClientRect(); return { x: r.left + (m.x + h.q[2].x) / 2, y: r.top + (m.y + h.q[2].y) / 2 } }")
+    c.wait(1000)   # the mouse events that follow a touch are ignored for a moment
+    c.js("() => { window.__ns = []; return true }")
+    c.page.mouse.move(pt['x'], pt['y'])
+    c.page.mouse.move(pt['x'] + 1, pt['y'] + 1)
+    c.until("() => window.__mp.S.altHover === 1", timeout=4000, what='the line under the pointer is highlighted')
+    c.until("() => window.__ns.some(x => x.w === 6.5)", timeout=4000, what='and drawn thick')
+    c.page.mouse.move(5, 5)
+    c.until("() => window.__mp.S.altHover === null", timeout=4000, what='and let go when the pointer leaves it')

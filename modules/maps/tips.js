@@ -3,7 +3,8 @@
 // point de report, infobulle, curseur sur la route, liste des espaces du point).
 
 import {
-  altsTap
+  altsTap,
+  altsHover
 } from './alts.js';
 import {
   S,
@@ -215,6 +216,7 @@ export function llAt(x, y) {
  *  sinon rien (l'infobulle reste 5 s). */
 export function hoverMap(x, y) {
   if (S.choose) return chooseHover(x, y); // mode choix : seul ce qu'on peut choisir réagit
+  altsHover(x, y); // un itinéraire proposé survolé est surligné (SOG-0134)
   const t = tipAt(x, y),
     ad = t || onMission() ? null : adAt(x, y);
   previewAd(ad?.icao || null);
