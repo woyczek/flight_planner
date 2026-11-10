@@ -2268,6 +2268,15 @@ the Map had seen in between: the same line to within the frame's own sampling.
   label before the reading (it is chosen by the route's middle, after the route is known).
 - **Noreg** D122 (store stubbed on a copy of `S.ctx`, which is frozen: no network; cache then read; no extra button; the name; a refusal).
 
+## The light drawing of a gesture draws what the rest draws (10 Nov 2026, SOG-0173; capture 095804)
+
+- **Seen**: at a pronounced zoom-out, panning the map made a crowd of low airways (FR, UK, DE) appear, which the map at rest does not show.
+- **Cause**: `render.js` handed the light drawing (`light.js`, during a gesture) `shown.airways`, the loaded list, instead of the airways its own drawing traced; the zoom
+  thresholds (`awLow` / `awHigh`, the zoom × complexity table of SOG-0169) cut the airways at rest only.
+- **Done**: the light drawing's airways are the loaded ones the drawing's profile keeps on (`airwaysLow` / `airwaysHigh` after the zoom cut), high and low apart.
+- **Not done**: the light drawing paints every airway in the low colour (high ones too); a zoom that crosses a threshold *during* a gesture shows the new state only at rest.
+- **Noreg** D141 (zoom 8: the airways are in the light drawing and stroked while moving; zoom 3: none, no stroke; red before: 3 airways at zoom 3).
+
 ## The proposed routes tell what each stretch is (10 Nov 2026, SOG-0134 refused: « moche… uniformément de la même couleur, très gros, sans légende »)
 
 - **Ergonomics' decision**: (a) the line has the width of the flight's route, the chosen solid, the others faded; (b) the style says the nature of the stretch: airway = solid

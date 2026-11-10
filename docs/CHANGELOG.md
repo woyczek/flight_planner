@@ -21,6 +21,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   any other page, the general policy unchanged byte for byte. The launcher must be restarted.
 
 - **Data: taking the downloaded file builds the zones taken by itself; the messages name only buttons that exist (static case)** (`modules/data/follow.js`, `panels.js`, `texts.js`; Data DECISIONS; L62, L19, L28) — SOG-0180 lot 1: « Lancez maintenant Construire » and the « personnel » box are gone from the messages.
+
+- **Map: panning at a wide zoom no longer makes the low airways appear** (`modules/maps/render.js`; SPEC § 4.2, DECISIONS; noreg D141; SOG-0173). The light drawing of a
+  gesture painted every loaded airway, not those the full drawing's zoom thresholds had kept: it now draws the same airways, during, after and outside a gesture.
+
 - **Data: the single « usage personnel » box no longer blocks a rebuild — X-Plane (read on this workstation only) is never sent to the verbs and the texts that asked to untick it are gone** (`modules/data/panels.js`, `model_sets.js`, `texts.js`; L61, L7, L10, L15, L32, L58) — SOG-0162, refused at the recipe.
 
 - **Map: the proposed routes tell what each stretch is** (`modules/maps/alts.js`, `tips.js`, `module.js`, `sheet_view.js`, `texts.js`, `style.js`; SPEC § 5.4, DECISIONS, help ×4;

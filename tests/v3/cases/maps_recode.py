@@ -4555,3 +4555,39 @@ def d140(c):
     c.until("() => window.__ns.some(x => x.w === 6.5)", timeout=4000, what='and drawn thick')
     c.page.mouse.move(5, 5)
     c.until("() => window.__mp.S.altHover === null", timeout=4000, what='and let go when the pointer leaves it')
+
+
+_PAN_SPY_JS = """() => { window.__aw = 0; const o = CanvasRenderingContext2D.prototype.stroke, low = MapsRender.palette(!!window.__mp.S.theme?.dark).airwayLow;
+  if (!window.__awSpy) { window.__awSpy = true; CanvasRenderingContext2D.prototype.stroke = function () { if (this.strokeStyle === window.__awLow) window.__aw++; return o.apply(this, arguments) } }
+  const c = document.createElement('canvas').getContext('2d'); c.strokeStyle = low; window.__awLow = c.strokeStyle; return window.__awLow }"""
+
+
+@case('D141', 'Airways follow the same thresholds during, after and outside a gesture: at a wide zoom a pan does not make the low airways appear (the light drawing of a gesture drew every loaded one), at a close zoom it keeps them', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0173 (capture 095804): « en zoom arrière prononcé, déplacer la carte fait apparaître une foule de voies basses qu’on ne voit pas au repos »: the light drawing of a gesture (light.js) painted the airways of the list the full drawing had loaded, not the ones it had drawn; the same zoom thresholds (awLow / awHigh of the zoom × complexity table) before, during and after a move')
+def d141(c):
+    zones, segs = _awy_rows()
+    c.open('maps', docs=fdocs(_awy_flight()) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airspaces=zones, airways=segs, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.wait(1500)
+    c.js(_PAN_SPY_JS)
+    for z, want in ((8, True), (3, False)):
+        c.js("(z) => { window.__mpMap.jumpTo({ center: [1.5, 45], zoom: z }); return true }", z)
+        c.wait(1800)    # the full drawing at rest
+        eff = c.js("() => +document.querySelector('[data-module=\"maps\"] .mp-map').dataset.zoomEff")
+        n = c.js("() => window.__mp.S.lightSrc ? window.__mp.S.lightSrc.airways.length : -1")
+        if want:
+            c.ok(n > 0, f'zoom {z} (effective {eff}): {n} airways in the light drawing', 'at a close zoom the light drawing keeps the airways the full drawing drew')
+        else:
+            c.eq(n, 0, f'at zoom {z} (effective {eff}) the full drawing traces no airway: the light drawing of a gesture has none either', what='light airways')
+        c.js("() => { window.__aw = 0; return true }")
+        c.js("() => { window.__mpMap.panBy([60, 40], { duration: 0 }); return true }")
+        c.js("() => new Promise(r => { let n = 0; const f = () => { window.__mpMap.panBy([20, 10], { duration: 0 }); if (++n < 6) requestAnimationFrame(f); else r(true) }; f() })")
+        c.wait(900)
+        a = c.js("() => window.__aw")
+        if want:
+            c.ok(a > 0, f'{a} airway strokes during and after a move at zoom {z}', 'the airways are drawn while moving')
+        else:
+            c.eq(a, 0, f'no airway stroke while moving at zoom {z}', what='airway strokes')

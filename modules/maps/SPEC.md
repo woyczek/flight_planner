@@ -312,7 +312,8 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 
 ## 5. The map
 
-- Pan and pinch, no rotation, no pitch, Mercator, north up. During a gesture, a light drawing at most every 120 ms (lines
+- Pan and pinch, no rotation, no pitch, Mercator, north up. During a gesture, a light drawing at most every 120 ms, **of what the last full drawing actually drew** (the airways are the
+  ones its zoom thresholds kept, low and high apart: the same thresholds during, after and outside a gesture, SOG-0173; noreg D141) (lines
   only: airspaces, airways, route; `light.js`), the last image copied in between; a light drawing over 8 ms leaves the rest of
   the gesture to the copy; the full drawing (labels, collisions, vectors, readings) at rest — end of the gesture or 150 ms
   without movement.

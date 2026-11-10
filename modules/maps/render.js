@@ -1716,7 +1716,10 @@
         // des symboles), jamais la liste d'avant (sixième lecture, manque 7)
         light: mission ? null : {
           airspaces: shown.airspaces || [],
-          airways: shown.airways || [],
+          // les voies que ce dessin a réellement tracées : les mêmes seuils pendant, après et hors geste (SOG-0173 : en zoom arrière le dessin léger
+          // d'un déplacement faisait apparaître toutes les voies basses chargées, que le repos ne trace pas)
+          airways: (shown.airways || []).filter(g => (+g.lower || 0) >= 19500 || /^U/.test(g.route) ? on(profile, 'airwaysHigh') : on(
+            profile, 'airwaysLow')),
           aerodromes: pts.drawn || [],
           navaids: (pts.navs || []).map(h => h.n)
         },
