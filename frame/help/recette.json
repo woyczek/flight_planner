@@ -392,7 +392,7 @@
    "test": "Pilote › Météo, carte dézoomée au-delà de la zone du vol : en haut à gauche « Synoptique monde absent · Construire (2 min) » ; l'appui montre l'avancement (n/25) puis la carte synoptique s'affiche avec l'heure du modèle, sans quitter l'écran. Un échec dit sa raison avec « Réessayer ».",
    "since": "2026-11-10",
    "state": "todo",
-   "delivered": "2026-11-10T11:12:30Z",
+   "delivered": "2026-11-10T12:08:27Z",
    "previous": {
     "verdict": "ko",
     "comment": "screenshot. {  \"at\": \"2026-11-10T09:26:02.375Z\",  \"app\": \"pilot\",  \"suite\": {   \"version\": \"v6.0.0-alpha.4-173-g6399f5a28\",   \"date\": \"2026-11-10\",   \"time\": \"10:19\",   \"web\": \"https://framagit.org/asr/flight_planner\"  },  \"transport\": \"launcher\",  \"online\": true,  \"syncing\": false,  \"lastSync\": \"2026-11-10T09:21:40.172Z\",  \"lastError\": \"\",  \"pending\": 1,  \"queue\": [   {    \"path\": \"pilot/RBR/current_flight.json\",    \"module\": \"fuel\",    \"at\": \"2026-11-10T09:21:31.301Z\",    \"deletion\": false   }  ],  \"conflicts\": 0,  \"tree\": {   \"head\": \"19c0b8a6436d\",   \"at\": \"2026-11-10T09:21:30.334Z\",   \"fi",
@@ -937,7 +937,7 @@
    "test": "Carte avec une route longue (KDEN → LEMO) : une douzaine de repères de distance au plus à l'écran, à pas rond ; sur le profil, l'axe porte quelques repères lisibles (1000, 2000…), plus une bande serrée.",
    "since": "2026-11-10",
    "state": "todo",
-   "delivered": "2026-11-10T10:44:39Z"
+   "delivered": "2026-11-10T12:08:24Z"
   },
   {
    "id": "SOG-0178",
