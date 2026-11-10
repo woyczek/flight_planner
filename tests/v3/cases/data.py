@@ -5734,3 +5734,26 @@ def l78(c):
     c.eq(len(_posts(st, 'pickup')) + len(_posts(st, 'build')), 0, 'no zone pickup, no build of a zone', what='no zone job')
     c.tap('[data-verb=route-no]')
     c.check_errors()
+
+
+@case('L79', 'Données: « Mettre à jour » never says « the N ticked are up to date » for zones whose state the launcher did not give (challenge of Réglages, 11 Nov)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=False, night=False,
+      rule='the update said TX.upd.none with n = every ticked zone when nothing was to rebuild, even when the launcher had answered for some zones only (a zone without a state is neither up to date nor stale): a false « all up to date »; it now counts the zones the launcher said up to date and says how many have no state')
+def l79(c):
+    lang = c.lang
+    st = _launcher(c, [_view('done', step='Terminé', result={'ok': True, 'fetched': [], 'unchanged': ['gb', 'us'], 'failed': [], 'manual': []})], verbs=_VERBS)
+    st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'fr': _zst('up-to-date')})   # gb and us: no state given (they are downloaded, still without a state)
+    cfg, _ = _fixture()
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.until("document.querySelectorAll('[data-zstate]').length === 3", timeout=8000, what='the three states given')
+    c.tap('[data-build] [data-verb=update]')
+    head = norm(_trow('none', lang, after='  upd: {').split('{n}')[0])
+    for _ in range(30):
+        if _notes_with(c, head):
+            break
+        c.wait(250)
+    said = _notes_with(c, head)
+    c.ok(bool(said), said, 'the update says nothing is to rebuild')
+    c.ok('3' in said[0] and '5' not in said[0], said, 'only the three zones the launcher said up to date are counted (3), not the five ticked')
+    c.check_errors()

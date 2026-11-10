@@ -145,9 +145,12 @@ export async function startUpdate(zones = null) {
   if (!plan || !plan.build.length) {
     S.updating = false;
     renderBuild();
-    return S.ctx.notify(!plan ? tt(TX.upd.noStatus) : plan.waiting.length ? `${tt(TX.upd.none, { n: count('zone', plan.upToDate) })} ${waitingText(plan.waiting)}` : tt(TX.upd.none, {
-      n: count('zone', sel.ids.length)
-    }), plan ? 'ok' : 'err');
+    return S.ctx.notify(!plan ? tt(TX.upd.noStatus) : [plan.upToDate || !plan.unknown ? tt(TX.upd
+      .none, { // le nombre dit est celui des zones que le lanceur a dites à jour (jamais toutes les cochées)
+        n: count('zone', plan.upToDate)
+      }) : '', plan.waiting.length ? waitingText(plan.waiting) : '', plan.unknown ? tt(TX.upd.noState, {
+      n: count('zone', plan.unknown)
+    }) : ''].filter(Boolean).join(' '), plan ? plan.unknown ? 'warn' : 'ok' : 'err');
   }
   const ids = plan.build.map(b => b.zone);
   S.asking = true; // une opération à la fois : les boutons restent gris pendant la question

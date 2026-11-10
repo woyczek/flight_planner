@@ -420,6 +420,10 @@ export const TX = {
       'Nichts neu zu bauen: die {n} angekreuzten sind aktuell',
       'Nada que reconstruir: las {n} marcadas están al día'
     ],
+    // des zones cochées dont le lanceur n'a donné aucun état : ni à jour ni périmées, dites à part (jamais comptées à jour)
+    noState: ['{n} sans état donné par le lanceur.', '{n} without a state from the launcher.', '{n} ohne Zustand vom Starter.',
+      '{n} sin estado dado por el lanzador.'
+    ],
     ask: ['Mettre à jour : reconstruire {n} des {t} zones cochées ({s}). {l}', 'Update: rebuild {n} of the {t} ticked zones ({s}). {l}',
       'Aktualisieren: {n} der {t} angekreuzten Zonen neu bauen ({s}). {l}',
       'Actualizar: reconstruir {n} de las {t} zonas marcadas ({s}). {l}'
