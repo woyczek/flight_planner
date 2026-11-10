@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "508301b",
+  "organisation": "9bba6f0",
   "fiches": 212,
   "untranslated": 1,
   "priorities": 152
@@ -2461,7 +2461,7 @@
     {
      "id": "SOG-0199",
      "kind": "bug",
-     "state": "doing",
+     "state": "done",
      "fr": "Données : choisir soi-même le fichier quand « Prendre le fichier téléchargé » ne l'a pas trouvé",
      "en": "Data: pick the file yourself when “Take the downloaded file” did not find it",
      "de": "Daten: die Datei selbst wählen, wenn „Heruntergeladene Datei übernehmen“ sie nicht gefunden hat",

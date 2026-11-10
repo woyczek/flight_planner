@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
-  "tests": 89,
+  "tests": 90,
   "verdicts": 20
  },
  "apps": [
@@ -1208,6 +1208,20 @@
    "since": "2026-11-10",
    "state": "todo",
    "delivered": "2026-11-10T14:00:29Z"
+  },
+  {
+   "id": "SOG-0199",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : choisir soi-même le fichier quand « Prendre le fichier téléchargé » ne l'a pas trouvé",
+    "en": "Data: pick the file yourself when “Take the downloaded file” did not find it",
+    "de": "Daten: die Datei selbst wählen, wenn „Heruntergeladene Datei übernehmen“ sie nicht gefunden hat",
+    "es": "Datos: elegir uno mismo el archivo cuando «Tomar el archivo descargado» no lo ha encontrado"
+   },
+   "test": "Après relance du lanceur. Maintenance › Données, une zone qui attend un fichier (Suède, Royaume-Uni) : à côté de « Prendre le fichier téléchargé », « Choisir le fichier… » ouvre le sélecteur ; choisis ton AIP_OFFLINE.zip : une barre d'avancement, puis « … reconnu : LFV, Suède. La prise suit. », et la zone se construit. Un fichier non reconnu le dit clairement.",
+   "since": "2026-11-10",
+   "state": "todo",
+   "delivered": "2026-11-10T15:16:27Z"
   },
   {
    "id": "SOG-0201",
