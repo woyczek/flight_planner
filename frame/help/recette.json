@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 59,
-  "verdicts": 18
+  "verdicts": 20
  },
  "apps": [
   "pilote",
@@ -82,7 +82,8 @@
    },
    "test": "Maintenance › Appareils › une fiche : plus de ligne de provenance sous chaque champ, une marque « • » en fin de libellé (son survol dit la source), une seule ligne « Sources » par carte ; « Carburant en volume » renvoie à l'aide par un « ? ».",
    "since": "2026-11-09",
-   "state": "todo"
+   "state": "ok",
+   "at": "2026-11-10T10:33:37Z"
   },
   {
    "id": "SOG-0060",
@@ -640,9 +641,11 @@
     "de": "Lizenzen: ein Häkchen „persönliche Nutzung“ schaltet alle Quellen frei; eine Seite listet Quellen und Lizenzen",
     "es": "Licencias: una sola casilla «uso personal» desbloquea todas las fuentes; una página recoge fuentes y licencias"
    },
-   "test": "Maintenance › Données : une seule case « Je certifie utiliser les données pour mon usage personnel » remplace les cases par source ; cochée, les sources qu'elle débloque sont listées dessous ; le lien « Sources et licences » ouvre la page qui donne éditeur et licence de chaque source.",
+   "test": "Maintenance › Données, la case « Je certifie utiliser les données pour mon usage personnel » cochée : « Mettre à jour » lance la reconstruction de la base et va au bout ; plus aucun message ne demande de décocher X-Plane. Le lien « Sources et licences » donne éditeur et licence de chaque source.",
    "since": "2026-11-10",
-   "state": "known"
+   "state": "ko",
+   "comment": "refusé. ça empêche de reconstruire (il ne veut pas construire x-plane, et tout est bloqué). En passant, si on clique sur « mettre à jour », puis « prendre le fichier téléchargé », il se passe quoi ? l’information dit « cliquez sur recalculer ». le bouton n’existe plus.  Revoir tout ce process de mise à jour.",
+   "at": "2026-11-10T10:27:05Z"
   },
   {
    "id": "SOG-0163",

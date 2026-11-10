@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "6830dff",
+  "organisation": "9ec367f",
   "fiches": 180,
   "untranslated": 1,
   "priorities": 152
@@ -2077,7 +2077,7 @@
     {
      "id": "SOG-0162",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Licences : une seule coche « je certifie utiliser les données pour mon usage personnel » déverrouille toutes les sources ; une page recense sources et licences",
      "en": "Licences: one “personal use” checkbox unlocks every source; one page lists sources and licences",
      "de": "Lizenzen: ein Häkchen „persönliche Nutzung“ schaltet alle Quellen frei; eine Seite listet Quellen und Lizenzen",
