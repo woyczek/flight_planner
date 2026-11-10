@@ -42,6 +42,19 @@ def current_cycle(page):
         return None
 
 
+def deposited(data, iso):
+    """Les trois jeux CSV d'un cycle que l'utilisateur a choisis à la main (data/local/upload/, tools/base_upload.py : nom canonique « 29_Oct_2026_FIX_CSV.zip ») : [FIX, AWY, NAV] en octets, ou None s'il en manque un. Lecture seule ; jamais un chemin de la page."""
+    out = []
+    for k in KINDS:
+        p = os.path.join(data, 'local', 'upload', os.path.basename(url(k, iso)))
+        try:
+            with open(p, 'rb') as f:
+                out.append(f.read(MEMBER_MAX * 3))
+        except OSError:
+            return None
+    return out
+
+
 def url(kind, iso):
     """L'adresse du jeu CSV d'un cycle : https://nfdc.faa.gov/webContent/28DaySub/extra/29_Oct_2026_FIX_CSV.zip (calculée ici)."""
     if kind not in KINDS or not re.fullmatch(r'\d{4}-\d{2}-\d{2}', str(iso)):

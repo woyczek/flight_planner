@@ -7047,8 +7047,12 @@ def k146(c):
             c.eq((st, r.get('source'), r.get('name'), r.get('zone')), (200, 'lfv', 'AIP_OFFLINE.zip', 'se'), 'the Swedish eAIP: recognised by its cover page and ENR 4.4, whatever it was called', what='lfv')
             st, r = up(b'{"type":"FeatureCollection","features":[]}', 'de_apt (1).geojson')
             c.eq((st, r.get('source'), r.get('name'), r.get('zone')), (200, 'openaip', 'de_apt.geojson', 'de'), 'an openAIP export: JSON, its name says country and layer', what='openaip')
+            fix = zipped({'FIX_BASE.csv': 'FIX_ID,LAT_DECIMAL,LONG_DECIMAL'})
+            st, r = up(fix, '29_Oct_2026_FIX_CSV (1).zip')
+            c.eq((st, r.get('source'), r.get('name'), r.get('zone'), r.get('cycle')), (200, 'faa', '29_Oct_2026_FIX_CSV.zip', 'us', '2026-10-29'), 'an FAA NASR set (the page of the subscription refuses the launcher): the member says the set, the name the cycle', what='faa')
+            c.eq(up(fix, 'whatever.zip')[1].get('reason'), 'unrecognised', 'the same zip without the FAA name: the cycle is unknown, not guessed', what='faa name')
             st, r = up(zipped({'readme.txt': 'hello'}), 'a.zip')
-            c.eq((st, r.get('ok'), r.get('reason'), r.get('expected')), (422, False, 'unrecognised', ['sia', 'nats', 'lfv', 'openaip']), 'a zip that is no source: unrecognised, with the closed list of the sources expected', what='unrecognised')
+            c.eq((st, r.get('ok'), r.get('reason'), r.get('expected')), (422, False, 'unrecognised', ['sia', 'nats', 'lfv', 'openaip', 'faa']), 'a zip that is no source: unrecognised, with the closed list of the sources expected', what='unrecognised')
             st, r = up(bytes([0, 1, 2]) + b'garbage', 'a.bin')
             c.eq((st, r.get('reason')), (415, 'type'), 'bytes that are no zip, JSON, PDF or XML: type', what='type')
             st, r = up(b'', 'a.zip', {'Content-Length': '0'})
@@ -7075,7 +7079,7 @@ def k146(c):
             sg = http.client.HTTPConnection('127.0.0.1', port, timeout=30)
             sg.request('POST', '/__setup/regen/job/cancel', body=json.dumps({'id': gj.get('job')}), headers={**hdr, 'Content-Type': 'application/json'})
             sg.getresponse().read()
-            c.eq(sorted(x.name for x in folder.iterdir()), ['AIP_OFFLINE.zip', 'EG_AIP_DS_20261029_XML.zip', 'de_apt.geojson', 'export_xml_bd_SIA_2026-10-29.zip'],
+            c.eq(sorted(x.name for x in folder.iterdir()), ['29_Oct_2026_FIX_CSV.zip', 'AIP_OFFLINE.zip', 'EG_AIP_DS_20261029_XML.zip', 'de_apt.geojson', 'export_xml_bd_SIA_2026-10-29.zip'],
                  'only the recognised files are in data/local/upload/: no temporary file left, nothing refused kept', what='folder')
             stray = [str(x) for x in data.rglob('*') if x.is_file() and 'upload' not in x.parts and x.name not in ('data_tree.js', '.defa_instance')]
             c.ok(not stray, str(stray[:6]), 'nothing is written elsewhere in data/')

@@ -1763,7 +1763,13 @@ def k153(c):
                 said = ''
             except ValueError as e:
                 said = str(e)
-            c.ok('refuse l’accès automatique' in said and 'nfdc.faa.gov' in said and cur in said and 'gardés' in said and '403' in said, said, 'nothing answers: the page refuses automatic access, the host and the cycles tried are named, and what is kept is said (the screen shows it as the layer\'s error)')
+            c.ok('refuse l’accès automatique' in said and 'nfdc.faa.gov' in said and cur in said and 'gardés' in said and '403' in said and 'Choisir le fichier' in said, said,
+                 'nothing answers: the page refuses automatic access, the host and the cycles tried are named, what is kept is said, and the repli too (the three sets downloaded in a browser, then « Choisir le fichier… »)')
+            (Path(td) / 'local' / 'upload').mkdir(parents=True)
+            for k in ('FIX', 'AWY', 'NAV'):                      # the user chose the three sets by hand (K146 recognises them and puts them under the FAA's own name)
+                (Path(td) / 'local' / 'upload' / f'{d.day:02d}_{N.MONTHS[d.month - 1]}_{d.year}_{k}_CSV.zip').write_bytes(zips[k])
+            r = AF.nasr(td)
+            c.eq((r['features'] > 0, json.loads((Path(td) / 'sia' / 'geojson' / 'faa_nasr.geojson').read_text(encoding='utf-8'))['issue']), (True, cur), 'with the three sets deposited by hand the layer is built from them when the FAA refuses', what='deposited')
     finally:
         AF.get = kept
     ob = importlib.import_module('outbound')
@@ -1802,3 +1808,25 @@ def k158(c):
         z2 = run(zones=['it'])['zones']['it']['download']
         c.eq((z2['done'], z2['sources']), (False, {}), 'openAIP has no export of it for this cycle (the launcher knows it): it is not waited for', what='absent')
         c.ok(not [x for x in (data / 'sia').rglob('*') if x.is_file() and x.name not in ('de_asp.geojson', 'no_asp.geojson', 'faa_sua.geojson', 'dfs_ed_procedures.xml')], 'written', 'read only: nothing was written')
+
+
+@case('K159', 'A refused download never stops the rest: base/update with one source answering 403 (the FAA) downloads the other zones, builds the zones whose sources are there, and says the failed zone with its reason (SOG-0219 / SOG-0180)', 'K', static=True,
+      rule='SOG-0219 (10 Nov 2026, the user: « NASR subscriptions : 403 … ça bloque la mise à jour qui s\'arrête dessus »): « Mettre à jour » stopped on the 403 of the FAA and the other zones were neither downloaded nor rebuilt. A download that fails is a failure of ITS zone and source: base/fetch keeps going with the others (`failed: [{ zone, source, error: http, status: 403 }]`, `reason: partial`), base/update then reads the state and builds what it can; the failed zone is said in the result')
+def k159(c):
+    RJ, BS, AF, DS = _mods()
+    update, check_u = RJ.REGISTRY[('base', 'update')]
+    geo = json.dumps({'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [10, 51]}, 'properties': {'_id': 'a', 'name': 'X', 'country': 'DE'}}]}).encode()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = _repo(DS, td, {})
+        ctx = _ctx(DS, data)
+        asked = []
+        ctx['build'] = lambda job, a, cx: (asked.append(list(a['zones'])), {'ok': True, 'built': [z for z in a['zones'] if z != 'us'], 'failed': [{'zone': 'us', 'error': 'no-input'}]})[1]
+        net = _Net(AF, {'de_asp': geo, 'de_apt': geo, 'de_': ('http', 404), 'NASR_Subscription': ('http', 403), 'nfdc.faa.gov': ('http', 403), 'FeatureServer': ('http', 403), 'us_': ('http', 404)})
+        with net:
+            res = update(RJ.Job('base', 'update', {}), check_u({'zones': ['de', 'us'], 'personal': []}), ctx)
+        f = res['fetched']
+        c.eq((f['ok'], f['fetched'], sorted((x['zone'], x['source'], x['error'], x.get('status')) for x in f['failed'] if x['zone'] == 'us')), (False, ['de'], [('us', 'faa', 'http', 403), ('us', 'faaclass', 'http', 403)]),
+             'the FAA answers 403: its zone is a failure with its source and its status; the other zone (de) was downloaded all the same', what='fetch')
+        c.eq((len(asked), sorted(asked[0]) if asked else None, res['built'], [x['zone'] for x in res['failed']]), (1, ['de', 'us'], ['de'], ['us']),
+             'then the update went on: the state was read and the zones to build were built (de built; us, whose sources are not there, said in `failed`), it did not stop on the 403', what='built')
+        c.ok((data / 'sia' / 'openaip' / 'de_asp.geojson').is_file(), 'de_asp', 'and the files of the zone that answered are on the workstation')

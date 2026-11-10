@@ -25,11 +25,13 @@ MAX_BYTES = 1536 * 1024 * 1024          # 1,5 Go : l'eAIP suédois hors ligne fa
 CHUNK = 1024 * 1024
 MAX_MEMBERS = 200000                    # un zip de plus de membres : pas une archive attendue (son annuaire n'est pas lu)
 FOLDER = ('local', 'upload')
-EXPECTED = ['sia', 'nats', 'lfv', 'openaip']       # les sources que base/pickup prend (dites avec `unrecognised`)
+EXPECTED = ['sia', 'nats', 'lfv', 'openaip', 'faa']       # les sources que base/pickup prend (dites avec `unrecognised`)
 REASONS = ('too-large', 'empty', 'type', 'unrecognised', 'busy', 'merge-pending', 'disk', 'refused')
 STATUS = {'too-large': 413, 'empty': 400, 'type': 415, 'unrecognised': 422, 'busy': 409, 'merge-pending': 409, 'disk': 507, 'refused': 403}
 NATS_MEMBER = re.compile(r'^EG_(AIP|OBS|UAS)_.*?(\d{8})\.xml\Z', re.I | re.A)
 SIA_MEMBER = re.compile(r'^(?:AIXM4\.5_all_FR_OM_|XML_SIA_)(\d{4}-\d{2}-\d{2})\.xml\Z', re.I | re.A)
+NASR_NAME = re.compile(r'^(\d{2})_([A-Z][a-z]{2})_(\d{4})_(FIX|AWY|NAV)_CSV(?: \(\d+\))?\.zip\Z', re.A)      # « 29_Oct_2026_FIX_CSV.zip » : le nom que la FAA donne à ses jeux CSV
+NASR_MEMBER = {'FIX': 'FIX_BASE.csv', 'AWY': 'AWY_SEG_ALT.csv', 'NAV': 'NAV_BASE.csv'}
 OPENAIP_NAME = re.compile(r'^(?P<cc>[a-z]{2})_(?P<layer>asp|apt|nav|rpp)(?: \(\d+\))?\.(?P<ext>geojson|json)\Z', re.A | re.I)    # base_sources.OPENAIP_FILE, sans « hot » ni xml (pas lus)
 
 
@@ -77,6 +79,13 @@ def recognise(path, hint=''):
                     return {'source': 'lfv', 'zone': 'se', 'name': 'AIP_OFFLINE.zip', 'cycle': None}
             except ImportError:
                 pass
+            nasr = NASR_NAME.match(hint or '')                    # le NASR de la FAA (SOG-0219 : la page de l'abonnement refuse le lanceur, le fichier se dépose à la main) : le contenu dit le jeu, le nom dit le cycle
+            if nasr and NASR_MEMBER[nasr.group(4)] in names:
+                months = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
+                if nasr.group(2) in months:
+                    iso = _date_ok(f'{nasr.group(3)}-{months.index(nasr.group(2)) + 1:02d}-{nasr.group(1)}')
+                    if iso:
+                        return {'source': 'faa', 'zone': 'us', 'name': f'{nasr.group(1)}_{nasr.group(2)}_{nasr.group(3)}_{nasr.group(4)}_CSV.zip', 'cycle': iso}
             sia = sorted(m.group(1) for n in names if (m := SIA_MEMBER.match(n)))
             if sia:
                 return {'source': 'sia', 'zone': 'fr', 'name': f'export_xml_bd_SIA_{sia[-1]}.zip', 'cycle': sia[-1]}
