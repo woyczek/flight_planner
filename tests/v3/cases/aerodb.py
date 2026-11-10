@@ -6862,7 +6862,7 @@ def k143(c):
             log.close()
 
 
-@case('K144', 'The route check is not refused while the page reads a terrain\'s ground in the background (SOG-0206): on the REAL launcher class a route/compute job starts beside a ground/fetch job and answers, a second one or any other job is still refused with its reason (busy), the job is followed by its id', 'K', static=True,
+@case('K145', 'The route check is not refused while the page reads a terrain\'s ground in the background (SOG-0206): on the REAL launcher class a route/compute job starts beside a ground/fetch job and answers, a second one or any other job is still refused with its reason (busy), the job is followed by its id', 'K', static=True,
       rule='SOG-0206 (10 Nov 2026, « après le choix d\'un itinéraire, d\'une piste et d\'une SID, « contrôler » donne « le contrôle n\'a pas répondu »\xa0»): the page reads the ground of the terrain by itself (ground/fetch, about 30 s) as soon as it has read its procedures; the launcher runs one job at a time and answered 409 « a job is already running » to the check, which the screen turned into « n\'a pas répondu ». A computation of the route only reads the base and the procedures: it may run beside the background ground read (never beside another job, one at a time); the refusal says its reason')
 def k144(c):
     import http.client
