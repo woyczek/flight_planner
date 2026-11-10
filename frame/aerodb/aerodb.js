@@ -429,6 +429,9 @@
     // info() → relevé | null, job(route, corps, { onProgress, signal }) → fin du travail suivi (client du cadre) | null } ;
     // sans lui (bancs d'aerodb), lnmperf.js appelle le lanceur lui-même et fetchProcedures() répond 'no-launcher'
     launcher = null,
+    // les points de navigation d'X-Plane (Navigraph / Jeppesen : propriétaires), lus par la PAGE dans le dossier d'X-Plane de l'utilisateur (le cadre donne le lecteur : { points: async () => [[identifiant, lat, lon], …] }) ; gardés en mémoire seulement, jamais écrits dans la
+    // base ni exportés (SOG-0153 e) ; sans lecteur, pas de couche
+    xplane = null,
     access = () =>
     true, // l'appareil a-t-il de quoi lire la base (lanceur, dépôt réglé) ? Sans cela, « non réglé » et non « non publiée »
     // borne d'une lecture de la base (ms) : passé ce délai, la lecture rend « rien » (illisible, redemandée ensuite), jamais
@@ -2979,10 +2982,59 @@
           return fraLocal.p;
         },
         /** Le point FRA de ce nom, à défaut de tout lieu des zones publiées : [{ kind: 'point', item, zone: 'fra', local: true, source: 'eurocontrol-fra', fir, cycle, distanceNm? }] — `local` : lu sur ce poste, pas dans la base publiée. */
+        xpLocal = {
+          p: null,
+          failedAt: -Infinity
+        },
+        /** Les points du dossier d'X-Plane de l'utilisateur (option `xplane`), en mémoire : Map(identifiant → [{ id, lat, lon }]) ou null ; redemandé au plus une fois par 30 s après un échec. Jamais écrit, jamais exporté (Navigraph / Jeppesen). */
+        xplanePoints = () => {
+          if (xpLocal.p) return xpLocal.p;
+          if (typeof xplane?.points !== 'function' || now() - xpLocal.failedAt < 30000) return Promise.resolve(null);
+          xpLocal.p = (async () => {
+            const rows = await xplane.points();
+            if (!Array.isArray(rows)) throw new Error('no X-Plane points');
+            const by = new Map();
+            for (const x of rows.slice(0, 400000)) {
+              if (!Array.isArray(x) || typeof x[0] !== 'string' || !/^[A-Za-z0-9]{1,7}$/.test(x[0]) || !num(x[1]) || !num(x[2]))
+                continue;
+              const key = fold(x[0]);
+              if (!by.has(key)) by.set(key, []);
+              by.get(key).push({
+                id: x[0],
+                lat: +x[1],
+                lon: +x[2]
+              });
+            }
+            return by;
+          })().catch(() => {
+            xpLocal.p = null;
+            xpLocal.failedAt = now();
+            return null;
+          });
+          return xpLocal.p;
+        },
+        /** Le point d'un identifiant dans l'une des couches LOCALES, dans cet ordre : le classeur FRA d'EUROCONTROL, puis le dossier d'X-Plane ; jamais dans la base publiée (SOG-0153 a, e). */
         fraItems = async (k, near) => {
           const f = await fraPoints(),
             list = f?.by.get(k);
-          if (!list) return [];
+          if (!list) {
+            const xp = (await xplanePoints())?.get(k);
+            return xp ? xp.map(x => ({
+              kind: 'point',
+              item: {
+                id: x.id,
+                lat: x.lat,
+                lon: x.lon,
+                name: x.id
+              },
+              zone: 'xplane',
+              local: true,
+              source: 'xplane',
+              ...(near ? {
+                distanceNm: Math.round(distNm(near, [x.lat, x.lon]) * 10) / 10
+              } : {})
+            })).sort((a, b) => (a.distanceNm ?? 0) - (b.distanceNm ?? 0)) : [];
+          }
           return list.map(x => ({
             kind: 'point',
             item: {

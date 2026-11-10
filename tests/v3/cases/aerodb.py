@@ -6470,3 +6470,40 @@ def k134(c):
         alts = v['alternatives']
         c.ok(alts and all(a.get('proposal') is True and a.get('incomplete') is True for a in alts), str([(a['name'], a.get('proposal'), a.get('incomplete')) for a in alts]), 'the fallback proposals are the alternatives of the screen, marked proposal and incomplete')
         c.eq((alts[0]['control']['fallbackPct'], alts[0]['control']['controlledPct'], [s['control'] for s in alts[0]['segments']][:1]), (100.0, 0.0, ['fallback']), 'a DCT that nothing publishes is a fallback: no part of it is controlled', what='control')
+
+
+@case('K135', 'X-Plane points as a LOCAL layer of the page (SOG-0153 e): AeroDb.coords / whereIs answer an identifier no published zone and no FRA book has from the X-Plane folder the page reads (Navigraph / Jeppesen), in memory only, flagged local; never a write', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0153 (e) (10 Nov 2026, the user: « x-plane : tous les utilisateurs en auront, on garde »; guard of the ergonomics session: nothing of Navigraph / Jeppesen is committed or published): the frame gives AeroDb a reader of X-Plane’s points (option `xplane: { points }`), the layer sits after the published zones and the FRA book, in memory, flagged `local: true, source: ‘xplane’`; the survey of the user’s data/ found nothing of X-Plane ever written (the build refuses `xplane`: it stays in the page)')
+def k135(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const day = Date.parse('2026-11-10T12:00:00Z'), kinds = ['meta', 'aerodromes', 'navaids', 'points', 'vrp', 'airways'];
+      const zone = (z, o = {}) => Object.fromEntries(kinds.map(k => [`sia/base/${z}/2026-10-29/${k}.json`, k === 'meta' ? { schema: 2, zone: z, cycle: '2026-10-29', kind: 'meta', parserVersion: 27, data: {} } : { schema: 2, zone: z, cycle: '2026-10-29', kind: k, data: o[k] || [] }]));
+      const files = { ...zone('fr', { points: [{ id: 'MOKNI', lat: 45.0, lon: 2.0 }] }), 'sia/base/index.json': { schema: 2, kind: 'index', zones: { fr: { cycle: '2026-10-29', prefixes: ['LF'], kb: { points: 1 } } } } };
+      const writes = [];
+      const reader = { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {}, write: async p => writes.push(p), put: async p => writes.push(p) };
+      let asked = 0, fail = false;
+      const xplane = { points: async () => { asked++; if (fail) throw new Error('folder not granted'); return [['IDRID', 59.2, 17.5], ['AGOPA', 59.4, 17.9], ['BAD<>', 1, 2], ['NOPOS', 'x', 2], ['MOKNI', 10, 10]]; } };
+      const db = AeroDB.create({ reader, xplane, lnmperf: false, now: () => day });
+      const out = {};
+      out.idrid = await db.coords('IDRID');
+      out.near = await db.coords('AGOPA', { near: [59, 17] });
+      out.where = (await db.whereIs('IDRID')).found;
+      out.published = await db.coords('MOKNI');
+      out.bad = [await db.coords('BAD'), await db.coords('NOPOS')];
+      out.asked = asked;
+      const none = AeroDB.create({ reader, lnmperf: false, now: () => day });
+      out.noProvider = await none.coords('IDRID');
+      fail = true;
+      const down = AeroDB.create({ reader, xplane, lnmperf: false, now: () => day });
+      const before = asked;
+      out.down = [await down.coords('IDRID'), await down.coords('IDRID')];
+      out.downAsked = asked - before;
+      out.writes = writes.length;
+      return out;
+    }""")
+    c.eq((r['idrid']['kind'], r['idrid']['local'], r['idrid']['source'], round(r['idrid']['lat'], 1)), ('point', True, 'xplane', 59.2), 'IDRID (a SID point of Sweden, in no published zone and no FRA book) comes from the X-Plane folder: a point, flagged local, source xplane', what='idrid')
+    c.eq((r['near']['zone'], r['near']['distanceNm'] > 20, r['where']['source']), ('xplane', True, 'xplane'), 'with a neighbourhood too, and whereIs finds it', what='near')
+    c.eq((r['published']['lat'], r['published'].get('local')), (45, None), 'a place of a published zone wins over the X-Plane layer', what='published')
+    c.eq((r['bad'], r['noProvider'], r['asked']), ([None, None], None, 1), 'an identifier or a position that is not one is dropped; without the reader there is no layer; the folder is read once (kept in memory)', what='bounds')
+    c.eq((r['down'], r['downAsked'], r['writes']), ([None, None], 1, 0), 'a folder that cannot be read (not granted) gives nothing, is not asked again within 30 s, and nothing was ever written by the layer', what='down')
