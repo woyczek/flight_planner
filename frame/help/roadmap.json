@@ -4,7 +4,7 @@
  "updated": "2026-11-10",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "a42fea0",
+  "organisation": "60cea58",
   "fiches": 170,
   "untranslated": 1,
   "priorities": 152
@@ -903,7 +903,7 @@
     {
      "id": "SOG-0138",
      "kind": "bug",
-     "state": "done",
+     "state": "doing",
      "fr": "GFS : toujours pas de carte synoptique ; et une réponse visible, pas entre deux portes",
      "en": "GFS: still no synoptic map; and a visible answer, not between two doors",
      "de": "GFS: noch immer keine synoptische Karte; und eine sichtbare Antwort, nicht zwischen Tür und Angel",

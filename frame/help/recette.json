@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-10",
   "tests": 54,
-  "verdicts": 8
+  "verdicts": 7
  },
  "apps": [
   "pilote",
@@ -338,9 +338,7 @@
    },
    "test": "Maintenance › Données › Météo › « Synoptique monde (GFS) » › « Construire » (deux minutes la première fois), puis Atmosphère : la carte synoptique s'affiche avec l'heure du modèle.",
    "since": "2026-11-09",
-   "state": "ko",
-   "comment": "screenshot. {  \"at\": \"2026-11-10T09:26:02.375Z\",  \"app\": \"pilot\",  \"suite\": {   \"version\": \"v6.0.0-alpha.4-173-g6399f5a28\",   \"date\": \"2026-11-10\",   \"time\": \"10:19\",   \"web\": \"https://framagit.org/asr/flight_planner\"  },  \"transport\": \"launcher\",  \"online\": true,  \"syncing\": false,  \"lastSync\": \"2026-11-10T09:21:40.172Z\",  \"lastError\": \"\",  \"pending\": 1,  \"queue\": [   {    \"path\": \"pilot/RBR/current_flight.json\",    \"module\": \"fuel\",    \"at\": \"2026-11-10T09:21:31.301Z\",    \"deletion\": false   }  ],  \"conflicts\": 0,  \"tree\": {   \"head\": \"19c0b8a6436d\",   \"at\": \"2026-11-10T09:21:30.334Z\",   \"fi",
-   "at": "2026-11-10T09:26:17Z"
+   "state": "known"
   },
   {
    "id": "SOG-0139",
