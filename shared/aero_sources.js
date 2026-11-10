@@ -410,7 +410,8 @@
         ['VOR', 'VOR'],
         ['NDB', 'NDB'],
         ['DME', 'DME'],
-        ['TACAN', 'TACAN']
+        ['TACAN', 'TACAN'],
+        ['Localizer', 'LOC']
       ])
       for (const f of doc.getElementsByTagNameNS(NSX, tag)) {
         const s = slice(f, tag + 'TimeSlice'),
@@ -426,7 +427,8 @@
           lon: p[1]
         });
       }
-    const used = new Set;
+    const used = new Set,
+      pendingIls = [];
     for (const f of doc.getElementsByTagNameNS(NSX, 'Navaid')) {
       const s = slice(f, 'NavaidTimeSlice');
       if (!s) continue;
@@ -436,7 +438,16 @@
       const main = parts.find(p => p.kind === 'VOR') || parts.find(p => p.kind === 'NDB') || parts.find(p => p.kind === 'TACAN') || parts[
         0];
       const p = posOf(kid(s, 'location') || s) || (main && [main.lat, main.lon]);
-      if (!p || /^(ILS|LOC|LOC_DME|ILS_DME|MKR|GLS|MLS)/.test(t)) continue;
+      if (/^(ILS|LOC|GLS|MLS)/.test(t)) {
+        pendingIls.push({
+          s,
+          t,
+          parts,
+          p
+        }); // SOG-0176 : l'ILS d'une direction de piste est écrit plus bas, quand les terrains, pistes et directions de piste sont lus
+        continue;
+      }
+      if (!p || /^MKR/.test(t)) continue;
       const kind = /VORTAC/.test(t) ? 'VOR' : /VOR/.test(t) ? 'VOR' : /NDB/.test(t) ? 'NDB' : /TACAN/.test(t) ? 'TACAN' : /DME/.test(t) ?
         'DME' : main?.kind || 'VOR';
       const n = {
@@ -455,7 +466,7 @@
       where.set(idOf(f), n);
     }
     for (const [k, e] of equip)
-      if (!used.has(e) && e.id) {
+      if (!used.has(e) && e.id && e.kind !== 'LOC') {
         const n = {
           kind: e.kind,
           id: e.id,
@@ -489,7 +500,8 @@
       where.set(idOf(f), pt);
     }
     // aérodromes
-    const adById = new Map;
+    const adById = new Map,
+      rwyAd = new Map; // identifiant de piste → son terrain (SOG-0176 : l'ILS d'une direction de piste)
     for (const f of doc.getElementsByTagNameNS(NSX, 'AirportHeliport')) {
       const s = slice(f, 'AirportHeliportTimeSlice'),
         p = s && posOf(kid(s, 'ARP') || s);
@@ -514,9 +526,58 @@
         ad = s && adById.get(href(kid(s, 'associatedAirportHeliport'))),
         len = s && kid(s, 'nominalLength'),
         comp = s ? text(s, 'composition') : '';
+      if (ad) rwyAd.set(idOf(f), ad);
       if (!ad || !len || !comp || /GRASS|GRAV|GRVL|SAND|EARTH|DIRT|SOD|CLAY|WATER|SNOW|ICE|CORAL|LATERITE|MEMBRANE/i.test(comp)) continue;
       const m = Math.round((+len.textContent) * (/^FT/i.test(len.getAttribute('uom') || '') ? .3048 : 1));
       if (Number.isFinite(m) && m > (ad.hardLen || 0)) ad.hardLen = m;
+    }
+    // directions de piste (SOG-0176) : désignation, cap (vrai, à défaut magnétique) et terrain, pour les ILS que les balises nomment
+    const rwyDir = new Map;
+    for (const f of doc.getElementsByTagNameNS(NSX, 'RunwayDirection')) {
+      const s = slice(f, 'RunwayDirectionTimeSlice');
+      if (!s) continue;
+      const b = ['trueBearing', 'magneticBearing'].map(k => kid(s, k)).map(e => e && e.textContent.trim() !== '' ? +e.textContent : NaN)
+        .find(Number.isFinite);
+      rwyDir.set(idOf(f), {
+        rwy: text(s, 'designator'),
+        bearing: Number.isFinite(b) ? (Math.round(b) % 360 + 360) % 360 : null,
+        ad: rwyAd.get(href(kid(s, 'usedRunway')))
+      });
+    }
+    for (const {
+        s,
+        t,
+        parts,
+        p
+      }
+      of pendingIls) {
+      // l'ILS d'une direction de piste, de la même forme que ceux du SIA (id, name « LFGJ 05 », freq, ad, rwy, bearing, dme, position du radiophare d'alignement)
+      const loc = parts.find(q => q.kind === 'LOC'),
+        dir = rwyDir.get(href(kid(s, 'runwayDirection'))),
+        pos = loc ? [loc.lat, loc.lon] : p;
+      if (!pos) continue;
+      const icao = dir?.ad?.icao || '',
+        n = {
+          kind: 'ILS',
+          id: loc?.id || text(s, 'designator') || '',
+          name: [icao, dir?.rwy].filter(Boolean).join(' ') || text(s, 'name'),
+          freq: loc?.freq || '',
+          ...(icao ? {
+            ad: icao
+          } : {}),
+          ...(dir?.rwy ? {
+            rwy: dir.rwy
+          } : {}),
+          ...(dir?.bearing != null ? {
+            bearing: dir.bearing
+          } : {}),
+          lat: pos[0],
+          lon: pos[1]
+        };
+      if (/DME/.test(t) || parts.some(q => q.kind === 'DME')) n.dme = true;
+      if (/^LOC/.test(t)) n.loc = true;
+      if (/^(GLS|MLS)/.test(t)) n.sys = t.slice(0, 3);
+      out.aero.navaids.push(n);
     }
     // tronçons de route (extrémités : points ou balises déjà lus)
     const routes = new Map;

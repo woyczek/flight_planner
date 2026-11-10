@@ -6581,3 +6581,34 @@ def k138(c):
         status, check_s = RJ.REGISTRY[('base', 'status')]
         st = status(RJ.Job('base', 'status', {}), check_s({'zones': ['ie'], 'personal': ['xplane', 'nats']}), {'data': str(data)})
         c.eq(st['excluded'], [{'source': 'xplane', 'why': 'local-only', 'message': 'xplane : lu sur ce poste seulement'}], 'base/status says it as well (and keeps answering for the zones)', what='status')
+
+
+@case('K140', 'ILS and localizers of the AIXM 5.1 files (NATS, ENAIRE) are read like the SIA’s (SOG-0176): a `kind: ILS` navaid with ident, frequency, aerodrome, runway, axis, DME and the position of the localizer, instead of being skipped; a localizer alone, a GLS and a marker beacon; parser version 28', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0176 (10 Nov 2026, « les fréquences d’ILS sont prévues ? codées ? affichées ? »): only the SIA gave ILS (200 records in France, with the frequency); the AIXM 5.1 reader skipped ILS / LOC / GLS / MLS although the NATS file models them (82 ILS navaids, 85 localizers with their frequency, the Navaid linking its equipment and its runway direction); they are now records of the same form in navaids.json, so that the Map and the procedures read them unchanged; the zones built before are rebuilt (parser 28)')
+def k140(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const fr = document.createElement('iframe'); document.body.appendChild(fr); const w = fr.contentWindow;
+      await new Promise((ok, no) => { const s = w.document.createElement('script'); s.src = '/shared/aero_sources.js'; s.onload = ok; s.onerror = () => no(new Error('aero_sources.js')); w.document.head.appendChild(s); });
+      const slice = (tag, id, body) => `<aixm:${tag}><gml:identifier>${id}</gml:identifier><aixm:timeSlice><aixm:${tag}TimeSlice><aixm:interpretation>BASELINE</aixm:interpretation>${body}</aixm:${tag}TimeSlice></aixm:timeSlice></aixm:${tag}>`;
+      const loc = (id, ident, f, lat, lon) => slice('Localizer', id, `<aixm:designator>${ident}</aixm:designator><aixm:frequency uom="MHz">${f}</aixm:frequency><aixm:location><aixm:ElevatedPoint><gml:pos>${lat} ${lon}</gml:pos></aixm:ElevatedPoint></aixm:location>`);
+      const nav = (id, type, ident, eq, rd) => slice('Navaid', id, `<aixm:type>${type}</aixm:type><aixm:designator>${ident}</aixm:designator>${eq.map(e => `<aixm:navaidEquipment><aixm:NavaidComponent><aixm:theNavaidEquipment xlink:href="urn:uuid:${e}"/></aixm:NavaidComponent></aixm:navaidEquipment>`).join('')}${rd ? `<aixm:runwayDirection xlink:href="urn:uuid:${rd}"/>` : ''}`);
+      const xml = '<aixm:AIXMBasicMessage xmlns:aixm="http://www.aixm.aero/schema/5.1.1" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink">'
+        + slice('AirportHeliport', 'ad1', '<aixm:designator>EGLL</aixm:designator><aixm:name>LONDON HEATHROW</aixm:name><aixm:locationIndicatorICAO>EGLL</aixm:locationIndicatorICAO><aixm:type>AD</aixm:type><aixm:ARP><aixm:ElevatedPoint><gml:pos>51.47 -0.45</gml:pos></aixm:ElevatedPoint></aixm:ARP>')
+        + slice('Runway', 'rw1', '<aixm:designator>09L/27R</aixm:designator><aixm:type>RWY</aixm:type><aixm:associatedAirportHeliport xlink:href="urn:uuid:ad1"/>')
+        + slice('RunwayDirection', 'rd1', '<aixm:designator>27R</aixm:designator><aixm:trueBearing>269.6</aixm:trueBearing><aixm:usedRunway xlink:href="urn:uuid:rw1"/>')
+        + slice('RunwayDirection', 'rd2', '<aixm:designator>09L</aixm:designator><aixm:magneticBearing>89.4</aixm:magneticBearing><aixm:usedRunway xlink:href="urn:uuid:rw1"/>')
+        + loc('lz1', 'IND', '110.3', 51.4649, -0.4343) + slice('DME', 'dm1', '<aixm:designator>IND</aixm:designator><aixm:frequency uom="MHz">110.3</aixm:frequency><aixm:channel>40X</aixm:channel><aixm:location><aixm:ElevatedPoint><gml:pos>51.4649 -0.4343</gml:pos></aixm:ElevatedPoint></aixm:location>')
+        + nav('n1', 'ILS_DME', 'IWQ', ['lz1', 'dm1'], 'rd1')
+        + loc('lz2', 'IMM', '111.7', 51.4777, -0.4851) + nav('n2', 'LOC', 'IMM', ['lz2'], 'rd2')
+        + nav('n3', 'GLS', 'GLS', [], null).replace('</aixm:NavaidTimeSlice>', '<aixm:location><aixm:ElevatedPoint><gml:pos>51.0 -0.5</gml:pos></aixm:ElevatedPoint></aixm:location></aixm:NavaidTimeSlice>')
+        + nav('n4', 'MKR', 'MK', [], null).replace('</aixm:NavaidTimeSlice>', '<aixm:location><aixm:ElevatedPoint><gml:pos>51.0 -0.5</gml:pos></aixm:ElevatedPoint></aixm:location></aixm:NavaidTimeSlice>')
+        + '</aixm:AIXMBasicMessage>';
+      return w.AeroSources.aixm5(xml).aero.navaids;
+    }""")
+    by = {n['id']: n for n in r}
+    c.eq(by['IND'], {'kind': 'ILS', 'id': 'IND', 'name': 'EGLL 27R', 'freq': '110.30', 'ad': 'EGLL', 'rwy': '27R', 'bearing': 270, 'lat': 51.4649, 'lon': -0.4343, 'dme': True},
+         'an ILS / DME: the record of the SIA’s form: ident of the localizer, « EGLL 27R », frequency, aerodrome, runway, axis (true bearing, rounded), DME, position of the localizer', what='ils')
+    c.eq((by['IMM']['kind'], by['IMM']['freq'], by['IMM']['rwy'], by['IMM']['bearing'], by['IMM'].get('loc'), 'dme' in by['IMM']), ('ILS', '111.70', '09L', 89, True, False), 'a localizer alone: same form, the magnetic bearing when there is no true one, flagged `loc`, no DME', what='loc')
+    c.eq((by['GLS']['kind'], by['GLS'].get('sys'), by['GLS']['freq']), ('ILS', 'GLS', ''), 'a GLS: kept (no localizer, no frequency), flagged with its system', what='gls')
+    c.ok('MK' not in by and len(r) == 3, str(sorted(by)), 'a marker beacon is still not a navaid of the base; the localizer and the DME of an ILS are not listed twice')
