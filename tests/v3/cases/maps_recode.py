@@ -5219,3 +5219,25 @@ def d_sel(c):
         c.until(gone, timeout=3000, what=f'{what} opens: the strip of the chosen space is gone')
         c.tap(undo)
         c.wait(300)
+
+
+@case('D163', 'A gesture that changes the zoom does not show the airways of the last full drawing at the new zoom: zooming out from a close zoom, no low airway is stroked once the zoom has moved by a level', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0173 refused again (capture 155727: « comme si l’affichage du quart haut gauche avait un niveau de zoom différent »): the light drawing of a gesture repaints the lists of the last full drawing, traced at the thresholds of ITS zoom; pinching out from a close zoom showed the low airways at a wide zoom, over a base at the wide one; the light drawing now serves only within half a level of the zoom of the full drawing, the image copy alone beyond')
+def d_zoomout(c):
+    zones, segs = _awy_rows()
+    c.open('maps', docs=fdocs(_awy_flight()) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airspaces=zones, airways=segs, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.wait(1500)
+    c.js(_PAN_SPY_JS)
+    c.js("() => { window.__mpMap.jumpTo({ center: [1.5, 45], zoom: 8 }); return true }")
+    c.wait(1800)    # the full drawing at rest, with its airways
+    c.ok(c.js("() => window.__mp.S.lightSrc ? window.__mp.S.lightSrc.airways.length : -1") > 0, 'no airway at zoom 8', 'the full drawing at a close zoom has airways')
+    c.js("() => { window.__aw = 0; return true }")
+    # the gesture: zoom out from 8 to 3 in quick moves (no rest in between); the strokes counted per step: below the airways’ threshold none may be added by the light drawings
+    got = c.js("""() => new Promise(r => { const m = window.__mpMap, out = []; let i = 0, z = 8; const step = () => { z -= .25; m.jumpTo({ zoom: z }); out.push([z, window.__aw]); if (++i < 20) setTimeout(step, 30); else r(out) }; step() })""")
+    thr = c.js("() => { const S = window.__mp.S; return +document.querySelector('[data-module=\"maps\"] .mp-map').dataset.zoomEff }")
+    below = [g for g in got if g[0] <= 4.25]
+    c.ok(len(below) >= 5 and all(g[1] == below[0][1] for g in below), str(got), 'no airway segment is stroked by the light drawings once the zoom is well below the airways’ threshold')

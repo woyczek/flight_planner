@@ -124,7 +124,10 @@ function tick(kind) {
     if (!S) return;
     if (k === 'full' || !S.map || !S.frame?.bmp || !S.lightSrc)
       return draw(); // pas de source du dessin léger (carte de mission, route vide) : le dessin complet
-    if (sched.lightOn && performance.now() - sched.lastLight >= LIGHT_MS) light();
+    // le dessin léger reprend les listes du dernier dessin complet, tracées aux seuils de SON zoom : un geste qui change de zoom d'un demi-niveau ou plus (pincer, molette) les
+    // ferait paraître à un autre zoom que le fond (SOG-0173 : « comme si le quart haut gauche avait un autre niveau de zoom ») : la copie de l'image seule, jusqu'au repos
+    if (sched.lightOn && performance.now() - sched.lastLight >= LIGHT_MS && Math.abs(S.map.getZoom() - (S.lightZoom ?? S.map
+        .getZoom())) < .5) light();
     else follow();
   });
 }
@@ -728,6 +731,7 @@ function draw() {
   covFlush(); // les terrains demandés pendant ce dessin partent ensemble ; redessin une fois à l'arrivée du lot
   // ce que le dessin léger d'un geste reprendra (pas sur une carte de mission ni pendant le choix sur la carte) ; la route est le
   // chemin volé (SID, STAR et approche choisies à la place des tronçons de route qu'elles remplacent, SPEC § 5), sinon la route
+  S.lightZoom = S.map ? S.map.getZoom() : null; // le zoom de ce dessin complet : ses listes ne valent que près de lui pour le dessin léger
   S.lightSrc = mission || pick || !got0.light ? null : {
     ...got0.light,
     route: S.route.flown?.length > 1 ? S.route.flown : route

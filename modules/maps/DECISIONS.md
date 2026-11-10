@@ -2299,6 +2299,13 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Not done**: the light drawing paints every airway in the low colour (high ones too); a zoom that crosses a threshold *during* a gesture shows the new state only at rest.
 - **Noreg** D141 (zoom 8: the airways are in the light drawing and stroked while moving; zoom 3: none, no stroke; red before: 3 airways at zoom 3).
 
+## SOG-0173 refused again: what is known, what is not (10 Nov 2026, capture 155727)
+- **The capture** (dual view, wide zoom, « Voies basses » ticked, complexity +1): low airways drawn only over the UK, the aerodromes everywhere. **Not reproduced**: the bench's pan and zoom-out gestures (D141,
+  D163) never stroke an airway the full drawing would not. **Two readings**, none proved: (1) the airways really are at their threshold at rest (complexity +1) and only the region whose data was loaded
+  shows them while the newly exposed area waits for the read at rest — a loading latency seen as « another zoom level »; (2) the light drawing repainting the lists of the last full drawing after a zoom change.
+- **Done** for (2), a guard that is right in itself: the light drawing serves only within half a level of the zoom of the full drawing (`S.lightZoom`); beyond, the image copy alone. D163 keeps the zoom-out
+  gesture (it was not red before: it is a regression guard, said as such). **Asked**: for (1), his zoom level and complexity when it happens, and whether the whole map fills at rest.
+
 ## The space chosen on the profile goes when another panel opens (10 Nov 2026, SOG-0192 refused again, capture 160820)
 - **Cause**: the pastille « R 205 /11 FL115|FL195 · Fiche » of the legend capture is not a balloon (`hideTips` handled those): it is the strip of the block chosen on the profile (`S.selSpace`, SOG-0163),
   which nothing cleared when another panel opened. **Done**: `clearSel()` (profile_view) on the legend, weather, Layers and modes; the profile chip keeps it. **Noreg** D162 (red before: the legend).
