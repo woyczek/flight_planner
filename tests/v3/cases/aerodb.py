@@ -6027,7 +6027,7 @@ def k121(c):
     c.eq((r['nosli']['kind'], r['nosli']['local'], r['nosli']['source'], r['nosli']['fir'], round(r['nosli']['lat'], 3)), ('point', True, 'eurocontrol-fra', 'ESAA', 59.071),
          'NOSLI, in no published zone, is the FRA point of the workstation: a point, flagged local, with its source and its FIR', what='nosli')
     c.eq((r['near']['local'], r['near']['zone'], r['near']['distanceNm'] > 50, r['advop']['source']), (True, 'fra', True, 'eurocontrol-fra'), 'with a neighbourhood too, and whereIs finds it (found, not unknown)', what='near')
-    c.eq((r['published'].get('local'), r['publishedNear'].get('local'), r['publishedNear']['zone']), (None, None, 'fr'), 'a place of a published zone wins: the FRA book is read only when nothing is found there', what='published')
+    c.eq((r['published'].get('local'), r['publishedNear'].get('local'), r['publishedNear']['zone']), (None, True, 'fra'), 'without a neighbourhood a place of a published zone wins; with one the points of the FRA book are homonyms like the others and the NEAREST wins (SOG-0142: MOKNI of the book in Sweden, near the route, against a published one at 45°N 2°E)', what='published')
     c.eq((r['bad'], r['aerodrome'], r['noLauncher']), ([None, None], 'aerodrome', None), 'an identifier or a position that is not one is dropped; without a launcher there is no FRA layer', what='bad')
     c.eq(r['calls'], [['regen/job', 'route', 'fra-points']], 'one read-only job asks for the points, once (kept in memory)', what='calls')
     c.eq((r['noBook'], r['noBookCalls']), ([None, None], 1), 'without a book on the workstation the answer is null and the job is not asked again within 30 s', what='no book')
@@ -7537,6 +7537,10 @@ def k161(c):
       const db = AeroDB.create({ reader: { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} }, lnmperf: false, now: () => Date.parse('2026-11-10T12:00:00Z') });
       const near = [47.15, -1.61];
       const a = await db.coords('PAM', { near }), b = await db.coords('PAM', { near, maxNm: 1500 }), d = await db.coords('PAM', { near, maxNm: 5000 }), e = await db.coords('PAM', { maxNm: 1500 });
-      return { a: a && Math.round(a.distanceNm), b, d: d && Math.round(d.distanceNm), e: e && e.lat };
+      const launcher = { info: () => ({}), job: async () => ({ state: 'done', result: { ok: true, cycle: cycle, count: 1, _points: [['PAM', 52.33472, 5.09222, 'EHAA']] } }) };
+      const db2 = AeroDB.create({ reader: { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} }, launcher, lnmperf: false, now: () => Date.parse('2026-11-10T12:00:00Z') });
+      const f = await db2.coords('PAM', { near }), g = await db2.coords('PAM', { near, maxNm: 1500 }), h = await db2.coords('PAM');
+      return { a: a && Math.round(a.distanceNm), b, d: d && Math.round(d.distanceNm), e: e && e.lat, f: f && [Math.round(f.lat), f.local, f.source, f.homonyms.length], g: g && g.lat, h: h && h.lat };
     }""")
+    c.eq((r['f'], r['g'], r['h']), ([52, True, 'eurocontrol-fra', 1], 52.33472, 30.074), 'the user case: PAM published only at Tyndall, PAM (Pampus, Netherlands) in the FRA book of the workstation: with the route as neighbourhood the FRA one wins (the Tyndall one stays a homonym, and maxNm 1500 keeps the right one); without a neighbourhood the published one as before', what='fra homonym')
     c.eq((r['a'], r['b'], r['d'], r['e']), (3877, None, 3877, 30.074), 'coords with a neighbourhood: the only PAM is 3 877 NM away; with maxNm 1500: null (not the first found); with 5000 or without a neighbourhood: found', what='maxNm')

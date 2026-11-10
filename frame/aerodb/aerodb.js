@@ -2697,8 +2697,12 @@
         all
       } = {}) {
         if (Array.isArray(near) && near.length === 2 && near.every(Number.isFinite)) {
-          const found = await nearestOf(ident, near, all === true);
-          return found.length ? found : fraItems(fold(ident), near);
+          const found = await nearestOf(ident, near, all === true),
+            // SOG-0142 : avec un voisinage, les points du classeur FRA d'EUROCONTROL de ce poste sont des homonymes comme les autres (« PAM » : Pampus, aux Pays-Bas, est dans le classeur ; le seul PAM publié était Tyndall, aux États-Unis) : le plus proche gagne ;
+            // un point du classeur à moins de 0,1° d'un lieu publié est le même point
+            fra = (await fraItems(fold(ident), near)).filter(f => !found.some(x => Math.abs(+x.item.lat - +f.item.lat) < 0.1 && Math
+              .abs(+x.item.lon - +f.item.lon) < 0.1));
+          return [...found, ...fra].sort((a, b) => (a.distanceNm ?? 1e9) - (b.distanceNm ?? 1e9));
         }
         const k = fold(ident),
           kinds = [
