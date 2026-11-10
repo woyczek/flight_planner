@@ -44,8 +44,8 @@ export async function ask(name) {
  *  publication de fiches, une publication : une opération à la fois, tous panneaux confondus. */
 export function busyNow() {
   return !!S.run || !!S.other || !!S.asking || !!S.pub.phase || !!S.chain || !!S.route?.phase || S.world?.phase === 'running' || !!S
-    .updating || !!S.move
-    ?.phase; // S.move.phase : le rangement des sources brutes (SOG-0030), plan ou exécution ou question
+    .updating || !!S.upload || !!S.move
+    ?.phase; // S.upload : un envoi de fichier au lanceur (SOG-0199) ; S.move.phase : le rangement des sources brutes (SOG-0030), plan ou exécution ou question
 }
 /** La phrase d'un refus de départ (M.refusal) : celle de sa clé, puis la raison que le lanceur a donnée (« Le lanceur dit : … »). */
 export const refusedText = f => tt(TX.refused[f?.key] || TX.refused.failed, {

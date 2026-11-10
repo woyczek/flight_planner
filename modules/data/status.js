@@ -16,6 +16,10 @@ import {
   tt
 } from './state.js';
 import {
+  uploadHtml,
+  uploadOff
+} from './upload.js';
+import {
   buildZones,
   gateOf,
   renderBuild
@@ -156,7 +160,7 @@ export function zoneActionHtml(id) {
   if (st === 'failed') return `<p class="d-zact" data-zone-action="${esc(id)}"><button type="button" data-verb="retry-zone" data-zone="${esc(id)}"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.retry))}</button></p>`;
   if ((st === 'stale' || st === 'never-built') && !z.buildable) {
     const off = busy || gateOf('base', 1, [M.PICKUP.verb]).verbs[M.PICKUP.verb].disabled;
-    return `<p class="d-zact" data-zone-action="${esc(id)}" data-waiting><span class="f-muted">${esc(zoneReasons(id)[0] || tt(TX.zst[st]))}</span> <button type="button" data-verb="pickup" data-zones="${esc(id)}"${off ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button></p>${stepsHtml(id, z)}`;
+    return `<p class="d-zact" data-zone-action="${esc(id)}" data-waiting><span class="f-muted">${esc(zoneReasons(id)[0] || tt(TX.zst[st]))}</span> <button type="button" data-verb="pickup" data-zones="${esc(id)}"${off ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button> <button type="button" data-act="zone-upload" data-zone="${esc(id)}"${uploadOff() ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button></p>${uploadHtml(id)}${stepsHtml(id, z)}`;
   }
   return '';
 }

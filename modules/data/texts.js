@@ -152,6 +152,59 @@ export const TX = {
     part: ['{n} en {c}', '{n} in {c}', '{n} in {c}', '{n} en {c}'],
     unknown: ['{n} de cycle inconnu', '{n} of unknown cycle', '{n} mit unbekanntem Zyklus', '{n} de ciclo desconocido']
   },
+  // « Choisir le fichier… » (SOG-0199) : l'envoi d'un fichier choisi au lanceur, qui le reconnaît par son contenu
+  up: {
+    choose: ['Choisir le fichier…', 'Choose the file…', 'Datei wählen…', 'Elegir el archivo…'],
+    cancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
+    running: ['{name} : {p} %', '{name}: {p} %', '{name}: {p} %', '{name}: {p} %'],
+    done: ['{name} reconnu : {s}, {z}. La prise suit.', '{name} recognised: {s}, {z}. The pickup follows.',
+      '{name} erkannt: {s}, {z}. Die Übernahme folgt.', '{name} reconocido: {s}, {z}. La toma sigue.'
+    ],
+    same: ['{name} est déjà là : rien n’est réécrit ({s}, {z}).', '{name} is already there: nothing is rewritten ({s}, {z}).',
+      '{name} ist schon da: nichts wird neu geschrieben ({s}, {z}).', '{name} ya está: no se reescribe nada ({s}, {z}).'
+    ],
+    aborted: ['Envoi annulé.', 'Upload cancelled.', 'Senden abgebrochen.', 'Envío cancelado.'],
+    offline: ['Le lanceur ne répond pas : l’envoi n’a pas abouti.', 'The launcher does not answer: the upload did not complete.',
+      'Der Launcher antwortet nicht: das Senden ist nicht gelungen.', 'El lanzador no responde: el envío no se completó.'
+    ],
+    unknownRoute: ['Ce lanceur ne connaît pas encore l’envoi : relancez-le avec la dernière version.',
+      'This launcher does not know uploads yet: restart it with the latest version.',
+      'Dieser Launcher kennt das Senden noch nicht: Starten Sie ihn mit der neuesten Version neu.',
+      'Este lanzador aún no conoce el envío: reinícielo con la última versión.'
+    ],
+    failed: ['L’envoi a échoué.', 'The upload failed.', 'Das Senden ist fehlgeschlagen.', 'El envío falló.'],
+    why: {
+      'too-large': ['Fichier trop gros : 1,5 Go au plus.', 'File too large: 1.5 GB at most.', 'Datei zu groß: höchstens 1,5 GB.',
+        'Archivo demasiado grande: 1,5 GB como máximo.'
+      ],
+      empty: ['Fichier vide.', 'Empty file.', 'Leere Datei.', 'Archivo vacío.'],
+      type: ['Ni zip, ni xml, ni pdf, ni xlsx : ce n’est pas un fichier de source.',
+        'Not a zip, xml, pdf or xlsx: this is not a source file.', 'Weder Zip, XML, PDF noch XLSX: das ist keine Quelldatei.',
+        'Ni zip, ni xml, ni pdf, ni xlsx: no es un archivo de fuente.'
+      ],
+      unrecognised: ['Ce fichier ne ressemble à aucune source prise ici. Sources prises par l’envoi : {s}.',
+        'This file looks like no source taken here. Sources the upload takes: {s}.',
+        'Diese Datei gleicht keiner hier übernommenen Quelle. Quellen, die das Senden übernimmt: {s}.',
+        'Este archivo no se parece a ninguna fuente tomada aquí. Fuentes que toma el envío: {s}.'
+      ],
+      busy: ['Le lanceur a un autre travail en cours : réessayez quand il aura fini.',
+        'The launcher is busy with another job: try again when it is over.',
+        'Der Launcher hat einen anderen Auftrag: versuchen Sie es nach dessen Ende erneut.',
+        'El lanzador está ocupado con otro trabajo: reinténtelo cuando termine.'
+      ],
+      'merge-pending': ['Une fusion est en attente dans data/ : terminez-la d’abord.', 'A merge is pending in data/: finish it first.',
+        'In data/ steht eine Zusammenführung an: schließen Sie sie zuerst ab.', 'Hay una fusión pendiente en data/: termínela primero.'
+      ],
+      disk: ['Le disque du poste est plein ou illisible.', 'The workstation’s disk is full or unreadable.',
+        'Die Festplatte des Rechners ist voll oder nicht lesbar.', 'El disco del equipo está lleno o ilegible.'
+      ],
+      refused: ['Le lanceur refuse l’envoi depuis un appareil du réseau local.',
+        'The launcher refuses uploads from a local-network device.',
+        'Der Launcher lehnt das Senden von einem Gerät im lokalen Netz ab.',
+        'El lanzador rechaza el envío desde un dispositivo de la red local.'
+      ]
+    }
+  },
   // le pas-à-pas d'une source qu'on dépose soi-même (SOG-0189, AeroCatalogue.stepsOf), sur la ligne de la zone qui l'attend
   steps: {
     page: ['Ouvrez {l}', 'Open {l}', 'Öffnen Sie {l}', 'Abra {l}'],

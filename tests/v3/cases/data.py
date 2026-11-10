@@ -353,8 +353,8 @@ def l2(c):
     for x in m['groups']:
         c.le(len(x['visible']), 7, f'group {x["id"]}', what='visible rows')
     c.eq(len(g['base']['visible']), 7, 'the base has eleven used sets: seven visible', what='base rows visible')
-    c.eq(g['base']['more']['text'], norm(tx(TX, 'moreSets', lang).replace('{n}', '4')), 'four more sets under the fold', what='base fold')
-    c.ok(all(r.endswith(':used') for r in g['base']['more']['rows']), g['base']['more']['rows'], 'the surplus of the base is made of used sets')
+    c.eq(g['base']['more']['text'], norm(tx(TX, 'moreSets', lang).replace('{n}', '5')), 'five more under the fold: four used sets and the candidate Naviair', what='base fold')
+    c.ok(sum(r.endswith(':used') for r in g['base']['more']['rows']) == 4 and all(r.endswith((':used', ':candidate')) for r in g['base']['more']['rows']), g['base']['more']['rows'], 'the surplus of the base: the used sets, then the candidates after them (Naviair is a candidate of the catalogue)')
     c.eq(g['proc']['visible'], ['eaip', 'cifp', 'route'], 'procedures: eAIP and CIFP visible, then the route row (SOG-0125: one row more)', what='proc rows')
     c.eq(g['proc']['more']['rows'], ['ead:candidate', 'xpcifp:candidate', 'dfs:abandoned', 'eurocontrol:abandoned'], 'candidates, then set-aside sources: only in the fold, no state', what='proc fold')
     # the states of the rows (stale base for France, the parser constant 3 against UK zone at 2)
@@ -5000,7 +5000,7 @@ def l63(c):
     c.tap('[data-balance] [data-filter=""]')
     c.until("document.querySelectorAll('[data-zone-row]').length === 5", timeout=4000, what='the whole list again')
     # ---- the actions are on the lines of their zones, and only there
-    c.eq(c.js("[...document.querySelectorAll('[data-zone-action]')].map(p => [p.dataset.zoneAction, [...p.querySelectorAll('button')].map(b => b.dataset.verb)])"), [['es', ['retry-zone']], ['gb', ['pickup']]], '« Réessayer » on the failed zone, « Prendre le fichier » on the waiting one, nothing on the others', what='actions')
+    c.eq(c.js("[...document.querySelectorAll('[data-zone-action]')].map(p => [p.dataset.zoneAction, [...p.querySelectorAll('button[data-verb]')].map(b => b.dataset.verb)])"), [['es', ['retry-zone']], ['gb', ['pickup']]], '« Réessayer » on the failed zone, « Prendre le fichier » on the waiting one, nothing on the others', what='actions')
     c.eq([norm(c.text('[data-zone-row=es] [data-verb=retry-zone]')), norm(c.text('[data-zone-row=gb] [data-verb=pickup]'))], [norm(_UT('retry', lang)), norm(_trow('pickup', lang))], 'worded in the language of the run (the same name as the button of the screen)', what='labels')
     c.ok('x.zip' in c.text('[data-zone-row=gb] [data-zone-action]') or c.text('[data-zone-row=gb] [data-zone-action]').strip() != '', None, 'the waiting zone says what it waits for on its own line')
     c.shot(f"L63_standard_{c.page.viewport_size['width']}_delivered.png")   # the delivered state, read by the ergonomist
@@ -5247,4 +5247,106 @@ def l69(c):
     c.js("document.querySelector('[data-zone-row=gb]').scrollIntoView({ block: 'center' })")
     if c.width in (390, 1280):
         c.shot(f'L69_standard_{c.width}_{lang}_delivered.png')
+    c.check_errors()
+
+
+@case('L70', 'Données: « Choisir le fichier… » on the line of a zone that waits for a file sends the chosen file to the launcher (POST base/upload, raw bytes, the name encoded), says what the launcher recognised, then runs the normal pickup; every refusal is said in words (SOG-0199)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0199 (the user: « AIP_offline.zip est bien téléchargé pour la suède, mais pas récupéré »): beside « Prendre le fichier téléchargé », « Choisir le fichier… » opens the system chooser and sends the file (ctx.launcher.upload, XMLHttpRequest: progress, cancel); the launcher recognises it by its content and puts it where the pickup reads; the page then follows the usual path (the plan of base/pickup, the pickup, the build); a refusal (closed list of reasons) is said in words')
+def l70(c):
+    lang = c.lang
+    UP = lambda key: _trow(key, lang, after='  up: {')
+    st = _launcher(c, [_pk_plan([], [], [], jid='k1')], verbs=_VERBS + ['base/pickup'])   # the plan finds nothing to take: no question, the buttons are free again
+    st['start'] = (200, {'job': 'k1'})
+    st['status'] = _status({'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'fr': _zst('up-to-date'), 'us': _zst('up-to-date'),
+                            'gb': _zst('stale', {'code': 'pickup-waiting', 'source': 'nats', 'set': 'AIP', 'cycle': '2026-11-26', 'zip': 'x.zip'}, buildable=False)})
+    sent = []
+    answer = {'status': 200, 'body': {'ok': True, 'source': 'nats', 'zone': 'gb', 'name': 'EG_AIP_DS_20261126_XML.zip', 'size': 5004, 'replaced': True, 'sha256': 'ab' * 32}}
+
+    hold = {'on': False, 'routes': []}
+
+    def upload(route):
+        req = route.request
+        if hold['on']:   # the answer is held: the upload is « in progress » for the screen
+            hold['routes'].append(route)
+            return
+        sent.append({'method': req.method, 'headers': {k.lower(): v for k, v in req.headers.items()}, 'size': len(req.post_data_buffer or b'')})
+        route.fulfill(status=answer['status'], content_type='application/json', body=json.dumps(answer['body']))
+    c.context.route(re.compile(r'/__setup/base/upload'), upload)
+    cfg, _ = _fixture()
+    _open(c, _sized(cfg))
+    _all_open(c)
+    btn = '[data-zone-row=gb] [data-act=zone-upload]'
+    c.until(f"!!document.querySelector('{btn}')", timeout=8000, what='the button on the line of the waiting zone')
+    c.eq([norm(c.text(btn)), c.count('[data-zone-row=fr] [data-act=zone-upload]'), c.js(f"document.querySelector('{btn}').disabled")], [norm(UP('choose')), 0, False], 'named in the language of the run, on the waiting zone only, live', what='button')
+    pick = lambda name='AIP OFFLINE é.zip', size=5000: (c.page.expect_file_chooser(), name, size)
+
+    def choose(name='AIP OFFLINE é.zip', size=5000):
+        with c.page.expect_file_chooser() as fc:
+            c.js(f"document.querySelector('{btn}').click()")   # a toast of the previous answer may cover the button
+            pass
+        fc.value.set_files({'name': name, 'mimeType': 'application/zip', 'buffer': b'PK\x03\x04' + b'x' * (size - 4)})
+    # ---- recognised: the bytes are sent as they are, the name encoded; then the normal pickup (its plan) follows
+    n0 = len(st['posts'])
+    choose()
+    c.until("window.__notes && window.__notes.length > 0" if False else "true", timeout=2000, what='sent')
+    for _ in range(40):
+        if sent:
+            break
+        c.wait(250)
+    c.eq([sent[0]['method'], sent[0]['headers'].get('content-type'), sent[0]['size']], ['POST', 'application/octet-stream', 5000], 'a POST of the raw bytes, octet-stream', what='request')
+    c.eq(sent[0]['headers'].get('x-sog-name'), urllib.parse.quote('AIP OFFLINE é.zip', safe="-_.!~*'()"), 'the name is only a hint, URL-encoded (spaces and accents survive)', what='name header')
+    c.ok('x-sog-setup' in sent[0]['headers'], sorted(sent[0]['headers']), 'with the header of this workstation')
+    done = norm(UP('done').split('{s}')[0].replace('{name}', 'EG_AIP_DS_20261126_XML.zip'))
+    for _ in range(30):
+        if _notes_with(c, done):
+            break
+        c.wait(250)
+    c.ok(bool(_notes_with(c, done)), None, 'the launcher’s answer is said: the file it put away, its source and its zone')
+    for _ in range(40):
+        if _posts(st, 'pickup'):
+            break
+        c.wait(250)
+    c.eq([{k: p['args'].get(k) for k in ('zones', 'dry')} for p in _posts(st, 'pickup')[:1]], [{'zones': ['gb'], 'dry': True}], 'then the usual path: the plan of the pickup for the recognised zone', what='pickup plan')
+    if c.width in (390, 1280):
+        c.js("document.querySelector('[data-zone-row=gb]').scrollIntoView({ block: 'center' })")
+        c.shot(f"L70_standard_{c.width}_{lang}_delivered.png")
+    c.wait(2500)   # the plan of the pickup ends (nothing to take): the buttons are free again
+    # ---- an upload in progress: the line says it (bar, name), every other gesture is grey, « Annuler » stops it and says so
+    c.until(f"!document.querySelector('{btn}').disabled", timeout=8000, what='the button is live')
+    hold['on'] = True
+    choose('long.zip', 4000)
+    c.until("!!document.querySelector('[data-zone-row=gb] [data-uploading]')", timeout=8000, what='the upload line')
+    c.eq([norm(c.text('[data-zone-row=gb] [data-up-text]')).startswith('long.zip'), c.js("document.querySelector('[data-zone-row=gb] [data-act=zone-upload]').disabled"), c.js("document.querySelector('[data-zone-row=gb] [data-verb=pickup]').disabled"), c.js("document.querySelector('[data-build] [data-verb=update]').disabled")], [True, True, True, True], 'the line shows the upload; « Choisir », « Prendre » and « Mettre à jour » are grey while it lasts (one at a time)', what='in progress')
+    c.js("document.querySelector('[data-zone-row=gb] [data-act=upload-cancel]').click()")
+    for _ in range(30):
+        if _notes_with(c, norm(UP('aborted'))):
+            break
+        c.wait(250)
+    c.ok(bool(_notes_with(c, norm(UP('aborted')))), None, '« Annuler » stops the sending and says so')
+    c.eq(c.count('[data-uploading]'), 0, 'the line of the upload is gone', what='line gone')
+    hold['on'] = False
+    # ---- refusals, each in words and each without a pickup
+    for status, reason, extra, key in ((422, 'unrecognised', {'expected': ['sia', 'nats']}, 'unrecognised'), (409, 'busy', {}, 'busy'), (415, 'type', {}, 'type'), (413, 'too-large', {}, 'too-large'), (507, 'disk', {}, 'disk')):
+        answer.update({'status': status, 'body': {'ok': False, 'reason': reason, 'message': 'x', **extra}})
+        want = norm(UP(key).split('{s}')[0])
+        n_before = len(_posts(st, 'pickup'))
+        c.until(f"!document.querySelector('{btn}').disabled", timeout=8000, what='the button is live again')
+        choose()
+        for _ in range(30):
+            if _notes_with(c, want):
+                break
+            c.wait(250)
+        c.ok(bool(_notes_with(c, want)), reason, f'{reason}: said in words')
+        c.eq(len(_posts(st, 'pickup')), n_before, f'{reason}: no pickup follows a refusal', what=f'no pickup after {reason}')
+    # ---- the same file already there: said, nothing rewritten
+    answer.update({'status': 200, 'body': {'ok': True, 'source': 'nats', 'zone': 'gb', 'name': 'EG_AIP_DS_20261126_XML.zip', 'size': 5000, 'replaced': False}})
+    c.until(f"!document.querySelector('{btn}').disabled", timeout=8000, what='the button is live again')
+    choose()
+    same = norm(UP('same').split('{name}')[0] + 'EG_AIP_DS_20261126_XML.zip')
+    for _ in range(30):
+        if _notes_with(c, 'EG_AIP_DS_20261126_XML.zip'):
+            break
+        c.wait(250)
+    c.ok(bool(_notes_with(c, 'EG_AIP_DS_20261126_XML.zip')), None, 'a file already there: said, with its name')
     c.check_errors()

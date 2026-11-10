@@ -83,6 +83,11 @@ import {
   openInventory
 } from './inventory.js';
 import {
+  cancelUpload,
+  chooseFile,
+  startUpload
+} from './upload.js';
+import {
   closeCovTable,
   covClick,
   openCovTable
@@ -97,13 +102,13 @@ export const meta = {
   launcher: {
     // regen/job couvre aussi son annulation regen/job/cancel (cadre, f70eba426) ; sync-status : l'état de data/ avant la
     // question de « Publier » (GET, jamais de POST /__setup/sync : la publication passe par ctx.data.sync)
-    routes: ['regen/job', 'regen/verbs', 'sync-status', 'data/inventory'],
+    routes: ['regen/job', 'regen/verbs', 'sync-status', 'data/inventory', 'base/upload'],
     read: []
   },
   files: ['model.js', 'model_screen.js', 'model_sets.js', 'model_results.js', 'model_chain.js', 'model_map.js', 'model_publish.js',
     'model_kit.js', 'model_inventory.js', 'texts.js', 'state.js', 'screen.js', 'panels.js', 'zonemap.js', 'follow.js', 'publish.js',
     'chain.js', 'inventory.js', 'model_route.js', 'model_update.js', 'model_status.js', 'model_packs.js', 'route.js', 'update.js',
-    'status.js', 'packs.js', 'model_world.js', 'world.js', 'model_coverage.js', 'covtable.js', '../../frame/lib/plural.js',
+    'status.js', 'packs.js', 'model_world.js', 'world.js', 'model_coverage.js', 'covtable.js', 'upload.js', '../../frame/lib/plural.js',
     '../maps/lib/map_base.js?v=0', '../maps/render.js?v=0', '../../frame/lib/dom.js', '../../frame/lib/time.js'
   ],
   // la carte des zones : MapLibre et les contours, chargés à la demande par le socle de carte (comme la Météo) ; les tuiles, appelées par MapLibre lui-même
@@ -154,6 +159,9 @@ function onClick(e) {
   if (pt) return setPackTab(pt.dataset.packTab); // les onglets Régions | Thèmes (SOG-0165)
   if (e.target.closest?.('[data-covtable]') && e.target.closest?.('[data-cov-sort], [data-cov-row], [data-cov-reload]')) return covClick(
     e); // le tableau de couverture (SOG-0174)
+  const uc = e.target.closest?.(
+    '[data-act="zone-upload"], [data-act="upload-cancel"]'); // « Choisir le fichier… » et « Annuler » de la ligne d'une zone (SOG-0199)
+  if (uc) return uc.dataset.act === 'upload-cancel' ? cancelUpload() : chooseFile(uc.dataset.zone);
   const up = e.target.closest?.(
     '[data-act="update-pack"]'); // « Mettre à jour (n) » d'un paquet (SOG-0188) : ses seuls pays de la couverture
   if (up) {
@@ -215,6 +223,12 @@ function onChange(e) {
     ?.dataset.pack); // un pays d'un thème : sa case (SOG-0165)
   if (t instanceof HTMLInputElement && t.dataset.packSwitch) return togglePack(t.dataset.packSwitch, t
     .checked); // l'interrupteur d'un paquet (SOG-0147)
+  if (t instanceof HTMLInputElement && t.matches(
+      '[data-upload-input]')) { // le fichier choisi (SOG-0199) : envoyé au lanceur, le champ est vidé pour pouvoir choisir le même
+    const f = t.files?.[0];
+    t.value = '';
+    return f ? startUpload(S.uploadZone, f) : undefined;
+  }
   if (!(t instanceof HTMLInputElement) || frozen()) return;
   if (t.dataset.certify !== undefined) { // la coche unique « usage personnel » (SOG-0162) : un réglage du poste, retenu
     S.certified = t.checked;
@@ -324,6 +338,7 @@ export async function mount(el, ctx) {
     }, // « Publier » : sync-status lu, 'asking' | 'running' | null, la fin { out } ou { unread }
     journal: [],
     journalOpen: false,
+    upload: null, // l'envoi d'un fichier choisi au lanceur (SOG-0199) : { zone, name, loaded, total, ctrl }
     cov: null, // le tableau de couverture par pays (SOG-0174) : lu à l'ouverture seulement, { open, state, rows, sort, openRows }
     inventory: null, // la carte « Inventaire des données » : lue à l'ouverture seulement, { open, state, rows }
     move: null, // « Ranger les sources brutes » (SOG-0030) : { undo, phase: 'planning' | 'asking' | 'running' | null, kind: 'asking' | 'nothing' | 'done' | 'refused', view, why }

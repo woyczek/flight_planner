@@ -136,6 +136,9 @@ export const STYLE = `
 [data-module="data"] .d-packact button{min-height:var(--sog-touch)}
 [data-module="data"] .d-zsteps{grid-column:1/-1;margin:0 0 6px 28px;padding-left:20px;font-size:var(--sog-size-s)}
 [data-module="data"] .d-zsteps li{min-height:0;margin:2px 0}
+[data-module="data"] .d-zup{grid-column:1/-1;margin:0 0 4px 28px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+[data-module="data"] .d-zup progress{width:min(100%,220px)}
+[data-module="data"] .d-zup button{min-height:var(--sog-touch)}
 [data-module="data"] .d-bal{margin:4px 0 8px}
 [data-module="data"] .d-bal button{min-height:var(--sog-touch);padding:0 8px}
 [data-module="data"] .d-bal button[aria-pressed="true"]{font-weight:600;outline:2px solid var(--sog-accent);outline-offset:-2px}
@@ -535,7 +538,7 @@ function renderBody() {
   }) : null;
   S.attn = M.staleGroups(S
     .groups); // les groupes dont le cycle publié est dépassé : le point d'attention de « Construire » et de « Tout mettre à jour »
-  S.body.innerHTML = `${headHtml()}${coverageHtml()}${updateAllHtml()}${groupsHtml()}${covTableHtml()}${inventoryHtml()}${journalHtml()}`;
+  S.body.innerHTML = `<input type="file" data-upload-input hidden tabindex="-1" aria-hidden="true">${headHtml()}${coverageHtml()}${updateAllHtml()}${groupsHtml()}${covTableHtml()}${inventoryHtml()}${journalHtml()}`;
 }
 /** Le texte d'un mot du journal (verbe, résultat, jeu) dans la langue : celui de la table `map`, à défaut le mot tel que le journal le porte. */
 const wordOf = (map, key) => tt(M.own(map, key) || [key, key, key, key]);
