@@ -2815,3 +2815,7 @@ Each decision below is reversible and was taken without asking (the user is away
 
 - **`publication()`** read the `meta.json` of the zones **in series** (27 requests to open Maintenance): six zones at a time now, the answer and its order unchanged (K129: 30 zones at 25 ms a read, at most six in flight, under 400 ms against 750 ms and more). The index `sia/base/index.json` was not changed to carry what `meta.json` gives: the parallel reads were enough, and a second place to keep in step with each rebuild costs more than it saves.
 - **Catalogue, fields of the « Sources et licences » page**: every source now carries `pub` (the publisher), `credit` ([fr, en, de, es], the credit its licence requires), `localOnly` (false for all: the EUROCONTROL and X-Plane sources are not catalogue sources, they are those of Données' groups, `local` there) and `date` for the three whose terms were read on a known day (DFS 28 Oct and 25 Oct, LFV 10 Nov); the others show the cycle's date when they have one.
+
+## 10 November 2026 (afternoon) — SOG-0169: FIR outside France
+
+- **Cause**: `KEEP` of `shared/aero_sources.js` dropped FIR / UIR (« n'apportent rien aux cartes de mission »), although openAIP carries 126 FIR (32 countries) and the map draws them since 1bdb93979. **Done**: kept, rings simplified to 0.01° (230 KB for all of them), parser 26, K130. Asked by BUGS SOG (« oui, fais-le », weight and profile noise answered by them). Not measured: the AIXM 5.1 FIR of NATS / ENAIRE on the real files (the reader keeps them, the fixture proves it).

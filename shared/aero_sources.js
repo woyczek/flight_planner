@@ -169,6 +169,40 @@
   }
   const closed = r => r.length > 2 && (r[0][0] !== r[r.length - 1][0] || r[0][1] !== r[r.length - 1][1]) ? [...r, r[0]] : r;
   const cell = (lat, lon) => `${Math.floor(lat)}|${Math.floor(lon)}`;
+  /** Anneau [[lat, lon]…] simplifié (Douglas-Peucker, tolérance en degrés) : les contours d'une FIR comptent des milliers de points dont la Carte n'a pas besoin (SOG-0169 : lus et dessinés à chaque vue large). Garde le premier, le dernier et les sommets qui s'écartent de plus de `tol`. */
+  function simplifyRing(ring, tol = .01) {
+    if (ring.length < 200) return ring;
+    const keep = new Uint8Array(ring.length),
+      stack = [
+        [0, ring.length - 1]
+      ];
+    keep[0] = keep[ring.length - 1] = 1;
+    const away = (p, a, b) => {
+      const dx = b[1] - a[1],
+        dy = b[0] - a[0],
+        len = dx * dx + dy * dy;
+      if (!len) return Math.hypot(p[1] - a[1], p[0] - a[0]);
+      const t = Math.max(0, Math.min(1, ((p[1] - a[1]) * dx + (p[0] - a[0]) * dy) / len));
+      return Math.hypot(p[1] - (a[1] + t * dx), p[0] - (a[0] + t * dy));
+    };
+    while (stack.length) {
+      const [i, j] = stack.pop();
+      let far = -1,
+        at = 0;
+      for (let k = i + 1; k < j; k++) {
+        const d = away(ring[k], ring[i], ring[j]);
+        if (d > far) {
+          far = d;
+          at = k;
+        }
+      }
+      if (far > tol) {
+        keep[at] = 1;
+        stack.push([i, at], [at, j]);
+      }
+    }
+    return ring.filter((_, i) => keep[i]);
+  }
   /** Espace : champs manquants complétés (modèle de la base). */
   const zone = (src, z) => ({
     src,
@@ -191,11 +225,11 @@
     ...(z.capped ? {
       capped: z.capped // plafond déduit, pas celui de la source : 'classA' (classe E sous la classe A de son État)
     } : {}),
-    rings: (z.rings || []).map(closed).filter(r => r.length > 3)
+    rings: (z.rings || []).map(r => /^(FIR|UIR)$/.test(z.type || '') ? simplifyRing(r) : r).map(closed).filter(r => r.length > 3)
   });
-  /** Types gardés (les autres — FIR, secteurs, parachutage, vol à voile… — n'apportent rien aux cartes de mission). */
+  /** Types gardés (les autres — secteurs, parachutage, vol à voile… — n'apportent rien aux cartes de mission) ; FIR et UIR (SOG-0169) : des repères de carte, jamais des volumes à franchir (le profil vertical les écarte), leurs anneaux simplifiés à 0,01°. */
   const KEEP = new Set(['P', 'R', 'D', 'W', 'A', 'TRA', 'TSA', 'MOA', 'MTR', 'CTR', 'CTA', 'TMA', 'ATZ', 'MATZ', 'TMZ', 'RMZ', 'RMZ-TMZ',
-    'SIV', 'ADIZ', 'TIZ', 'TIA', 'MCTR', 'HTZ', 'LFA'
+    'SIV', 'ADIZ', 'TIZ', 'TIA', 'MCTR', 'HTZ', 'LFA', 'FIR', 'UIR'
   ]);
   /** Type d'un espace AIXM 5.1 / FAA / divers ramené au vocabulaire de la base. */
   function normType(t) {

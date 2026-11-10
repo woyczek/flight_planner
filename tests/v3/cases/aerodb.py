@@ -6321,3 +6321,32 @@ def k129(c):
     c.eq((r['keys'] == sorted(r['keys']), len(r['keys']), r['first']['cycles']['2026-10-29']['parserVersion'], r['first']['cycles']['2026-10-29']['at']), (True, 30, 25, '2026-11-10T08:00:00Z'), 'the answer is the same: the 30 zones in order, each with its cycle, parser version and build date', what='answer')
     c.ok(r['peak'] <= 6 and r['peak'] >= 2, f"peak {r['peak']}, {r['metaReads']} reads", 'at most six reads in flight, and more than one (it is parallel)')
     c.ok(r['ms'] < 400, f"{r['ms']} ms for 30 zones at 25 ms a read", 'it takes a sixth of the serial time (750 ms): under 400 ms')
+
+
+@case('K130', 'FIR and UIR of the sources that carry them (SOG-0169): the openAIP and AIXM 5.1 readers keep them as airspaces of type FIR / UIR, their rings simplified to 0.01° (thousands of points become a few hundred), the other spaces untouched; parser version 26', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0169 (10 Nov 2026, the user: « Pas d\\u2019affichage de FIR hors France ? »): only France carried FIR / UIR in the base; the openAIP exports of the user carry 126 FIR in 32 countries (type 10) and the reader dropped them in its list of kept types; they are kept now as reference lines of the map (the vertical profile ignores the asFir family), rings simplified to 0.01° because the Map reads and draws them at every wide view')
+def k130(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const fr = document.createElement('iframe'); document.body.appendChild(fr); const w = fr.contentWindow;
+      await new Promise((ok, no) => { const s = w.document.createElement('script'); s.src = '/shared/aero_sources.js'; s.onload = ok; s.onerror = () => no(new Error('aero_sources.js')); w.document.head.appendChild(s); });
+      const circle = (lat, lon, r, n) => Array.from({ length: n + 1 }, (_, i) => [lon + r * Math.sin(2 * Math.PI * i / n) / Math.cos(lat * Math.PI / 180), lat + r * Math.cos(2 * Math.PI * i / n)]);
+      const feat = (type, name, ring) => ({ type: 'Feature', properties: { _id: 'id-' + name, country: 'SE', type, name, icaoClass: 0, upperLimit: { value: 660, unit: 6, referenceDatum: 2 }, lowerLimit: { value: 0, unit: 0, referenceDatum: 0 } }, geometry: { type: 'Polygon', coordinates: [ring] } });
+      const fc = { type: 'FeatureCollection', features: [feat(10, 'STOCKHOLM FIR', circle(59, 15, 3, 4000)), feat(11, 'NORDIC UIR', circle(62, 15, 4, 2500)), feat(4, 'SMALL CTR', circle(59.6, 17.9, .2, 40)), feat(26, 'BIG CTA', circle(58, 12, 1, 600))] };
+      const out = w.AeroSources.geojson(fc, 'se_asp.geojson'), by = n => out.airspaces.find(a => a.name === n);
+      const area = ring => Math.abs(ring.reduce((s, p, i) => { const q = ring[(i + 1) % ring.length]; return s + (p[0] * q[1] - q[0] * p[1]); }, 0)) / 2;
+      const fir = by('STOCKHOLM FIR'), ref = circle(59, 15, 3, 4000).map(([lo, la]) => [la, lo]);
+      // AIXM 5.1 : a FIR of the NATS / ENAIRE kind
+      const aixm = `<AIXMBasicMessage xmlns:aixm="http://www.aixm.aero/schema/5.1.1" xmlns:gml="http://www.opengis.net/gml/3.2"><aixm:Airspace gml:id="a1"><aixm:timeSlice><aixm:AirspaceTimeSlice gml:id="t1"><aixm:type>FIR</aixm:type><aixm:designator>EGTT</aixm:designator><aixm:name>LONDON FIR</aixm:name>`
+        + `<aixm:geometryComponent><aixm:AirspaceGeometryComponent><aixm:theAirspaceVolume><aixm:AirspaceVolume><aixm:upperLimit uom="FL">660</aixm:upperLimit><aixm:horizontalProjection><aixm:Surface><gml:patches><gml:PolygonPatch><gml:exterior><gml:Ring><gml:curveMember><gml:Curve gml:id="c1"><gml:segments><gml:GeodesicString><gml:posList>50 0 50 1 51 1 50 0</gml:posList></gml:GeodesicString></gml:segments></gml:Curve></gml:curveMember></gml:Ring></gml:exterior></gml:PolygonPatch></gml:patches></aixm:Surface></aixm:horizontalProjection></aixm:AirspaceVolume></aixm:theAirspaceVolume></aixm:AirspaceGeometryComponent></aixm:geometryComponent>`
+        + `</aixm:AirspaceTimeSlice></aixm:timeSlice></aixm:Airspace></AIXMBasicMessage>`;
+      const five = w.AeroSources.aixm5(aixm).airspaces;
+      return { types: out.airspaces.map(a => [a.name, a.type, a.rings[0].length]), firArea: area(fir.rings[0]) / area(ref), firBox: [Math.min(...fir.rings[0].map(p => p[0])), Math.max(...fir.rings[0].map(p => p[0]))], five: five.map(a => [a.name, a.type, a.rings[0].length]) };
+    }""")
+    by = {n: (t, k) for n, t, k in r['types']}
+    c.eq((by['STOCKHOLM FIR'][0], by['NORDIC UIR'][0], by['SMALL CTR'], by['BIG CTA'][0]), ('FIR', 'UIR', ('CTR', 41), 'CTA'), 'the FIR (openAIP type 10) and the UIR (type 11) are kept as such; a small CTR keeps its 41 points', what='types')
+    c.ok(20 < by['STOCKHOLM FIR'][1] < 450 and 20 < by['NORDIC UIR'][1] < 450 and by['BIG CTA'][1] == 601, str(r['types']), 'a FIR of 4 000 points and a UIR of 2 500 come down to a few hundred; a CTA of 600 points is untouched (only the FIR and UIR are simplified)')
+    c.ok(.99 < r['firArea'] < 1.01 and abs(r['firBox'][0] - 56) < .02 and abs(r['firBox'][1] - 62) < .02, str((r['firArea'], r['firBox'])), 'the shape holds: area within 1 %, extent within 0.02°')
+    c.eq(r['five'], [['LONDON FIR', 'FIR', 4]], 'AIXM 5.1 (NATS, ENAIRE): a FIR is kept too', what='aixm5')
+    sb = (ROOT / 'shared' / 'sia_base.js').read_text(encoding='utf-8')
+    c.ok(int(re.search(r'const VERSION =\s*(\d+)', sb).group(1)) >= 26, 'sia_base.js', 'parser version 26 or more: the zones built before have no FIR outside France and are rebuilt (parser-old)')
