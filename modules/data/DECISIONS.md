@@ -369,3 +369,10 @@ in `docs/technique/V3_DONNEES_REGENERATION.md`; the dedicated phone application 
 - **Buttons on the line, not under the list**: « Réessayer » and « Prendre le fichier téléchargé » reuse the existing paths (`buildAfterPickup`, `startPickup(zone)`), so the question, the plan and the chain of lot 1 stay single. The label is the one of the screen's button (rule of words, L62).
 - **Not done here**: the line of the zones of the other sets (procedures, VFR, aircraft) keeps its current form; the sources read on this workstation only (X-Plane, EUROCONTROL) are still said by their lines of the personal box, not as a balance line (the balance counts zones).
 - **Counter-tests**: L64 is red with `chainVerdict` in `runChunks` ([60] runs instead of [60, 18]); L65 is red with `chainVerdict` in `startUpdate` (no question after a half failed download); L63 is red without the balance and the actions.
+
+## 10 November 2026 — a fold of countries in each region pack (SOG-0186)
+
+- **Why**: SOG-0165 replaced the buttons of the packs by switches and tabs and removed choosing one country inside a region; the user: « ce n'était pas si mal de choisir un pays parmi un package, tu as complètement tout supprimé. replié, ça pourrait être bien ? ».
+- **What**: the switch stays; a folded « Pays (n) » under it lists the countries (one tick each, the grid of the zones list). A theme already had that list as its whole body; a region now has it as an option, so both kinds tick a country the same way (`togglePackZone`).
+- **Not a second path**: the ticks reuse `togglePackZone` and `addZones` / `removeZones`; no new write, no verb. The open fold scrolls inside itself so a region of 40 countries does not push the neighbours away.
+- **Found on the way**: the « en partie » state of a switch is a property, not HTML; it was set only after a panel redraw, so a country ticked through a full draw left the switch plain. `render()` now sets it too.

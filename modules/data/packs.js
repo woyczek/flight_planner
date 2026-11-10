@@ -43,7 +43,16 @@ function regionRow(p) {
   const all = st.known.length > 0 && !st.toAdd.length,
     some = st.inCoverage.length > 0 && st.toAdd.length > 0;
   return `<li data-pack="${esc(p.id)}" data-kind="region"${zonesAttr(st)}><label class="d-opt"><input type="checkbox" role="switch" data-pack-switch="${esc(p.id)}"${all ? ' checked' : ''}${some ? ' data-mixed' : ''}${frozen() ? ' disabled' : ''}><span><b>${esc(nameOf(p))}</b> <span class="f-muted">${esc([count('country', st.known.length), sizeOf(st)].filter(Boolean).join(' · '))}${some ? ` · ${esc(tt(TX.packs.some, { n: st.inCoverage.length }))}` : ''}</span></span></label>
-    ${notesHtml(p, st)}</li>`;
+    ${countriesHtml(p, st)}${notesHtml(p, st)}</li>`;
+}
+/** Le pli « Pays (n) » d'une rangée régionale (SOG-0186), replié par défaut : les pays du paquet dans la même grille que la liste des zones, une case chacun (cochée = déjà dans la couverture) ; cocher ajoute ce pays seul, décocher le retire après la
+ *  question des thèmes (jamais purgé), sans rien télécharger ni construire. Ouvert, sa hauteur est bornée et il défile en lui-même : les paquets voisins restent à portée. */
+function countriesHtml(p, st) {
+  const cov = new Set(S.d.cov.ids),
+    off = frozen() ? ' disabled' : '',
+    key = `c:${p.id}`;
+  return `<details class="d-pack d-pack-countries" data-pack-fold="${esc(key)}"${S.packOpen.has(key) ? ' open' : ''}><summary>${esc(tt(TX.packs.countries, { n: st.known.length }))}</summary>
+    <div class="d-opts" data-pack-zones>${st.known.map(z => `<div class="d-zrow" data-pack-zone-row="${esc(z)}"><label class="d-opt"><input type="checkbox" data-pack-cov="${esc(z)}"${cov.has(z) ? ' checked' : ''}${off}><span>${esc(M.zoneName(S.d.zones, z, li()))}</span></label></div>`).join('')}</div></details>`;
 }
 /** Un thème : un pli (son nom, le nombre de pays et ce qui reste à ajouter) qui montre ses pays dans la MÊME grille que la liste des zones — une case (dans la couverture ou non), le nom — l'état d'un pays de la couverture est dit une fois, dans la liste des zones — et, en tête, un interrupteur
  *  « tout le thème » ; plus aucun bouton dans une ligne (SOG-0165) : cocher un pays l'ajoute à la couverture, le décocher l'en retire après une question (jamais purgé). */

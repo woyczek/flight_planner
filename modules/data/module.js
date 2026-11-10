@@ -231,8 +231,10 @@ function onToggle(e) {
   if (g instanceof HTMLDetailsElement && g.matches('details.f-group') && g.isConnected) S.manual[g.dataset.group] = g.open;
   else if (g instanceof HTMLDetailsElement && g.matches('details.d-journal') && g.isConnected) S.journalOpen = g.open;
   else if (g instanceof HTMLDetailsElement && g.matches('details.d-moreverbs') && g.isConnected) S.verbsOpen = g.open;
-  else if (g instanceof HTMLDetailsElement && g.matches('details.d-pack') && g.isConnected) g.open ? S.packOpen.add(g.dataset.packTheme) : S
-    .packOpen.delete(g.dataset.packTheme);
+  else if (g instanceof HTMLDetailsElement && g.matches('details.d-pack') && g.isConnected) {
+    const key = g.dataset.packTheme || g.dataset.packFold; // un thème, ou le pli « Pays » d'une région (SOG-0186)
+    g.open ? S.packOpen.add(key) : S.packOpen.delete(key);
+  }
   if (g instanceof HTMLDetailsElement && g.matches('details.d-inventory') && g.isConnected) {
     if (g.open) openInventory(); // l'inventaire se lit à l'ouverture, une fois
     else S.inventory = null; // fermé : la prochaine ouverture relit (une lecture ratée peut être refaite)

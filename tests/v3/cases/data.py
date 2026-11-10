@@ -5032,3 +5032,37 @@ def l65(c):
     c.ok(len(q['text']) > 0, q, 'a download that half failed: the update goes on, the question asks about the zones to rebuild (the zones are independent)')
     c.eq([p['verb'] for p in st['posts'] if p['verb'] in ('fetch', 'build')], ['fetch'], 'and nothing is built before the answer', what='posts')
     c.check_errors()
+
+
+@case('L66', 'Données: each region pack keeps its switch and has a folded « Pays (n) » listing its countries, one tick each (ticked = already in the coverage): ticking adds that country alone, nothing is downloaded or built (SOG-0186)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0186 (recipe of SOG-0065: « ce n\u2019était pas si mal de choisir un pays parmi un package… replié, ça pourrait être bien ? »): the switch of a pack stays (all of it), and a fold « Pays (n) », folded by default, lists the pack\u2019s countries with a tick each; ticking adds one country to the coverage, nothing is fetched or built; the open fold has a bounded height and scrolls inside itself')
+def l66(c):
+    lang = c.lang
+    PT = lambda key: _trow(key, lang, after='  packs: {')
+    cfg = _packs_cfg()
+    _open(c, cfg)
+    _all_open(c)
+    c.until("!!document.querySelector('[data-packs]')", timeout=8000, what='the packs block')
+    fold = lambda p: f'[data-pack={p}] details[data-pack-fold]'
+    c.eq([c.count(fold('ouest')), c.count(fold('asie')), c.count(fold('antarctique'))], [1, 1, 0], 'a fold in each region that has countries, none in an empty pack', what='folds')
+    c.eq(c.js("document.querySelector('[data-pack=asie] details[data-pack-fold]').open"), False, 'folded by default', what='folded')
+    c.eq(norm(c.text(fold('asie') + ' > summary')), norm(PT('countries').replace('{n}', '2')), 'titled « Pays (2) » in the language of the run', what='summary')
+    c.eq(c.count('[data-pack=asie] [data-pack-switch=asie]'), 1, 'the switch of the pack stays', what='switch')
+    c.tap(fold('asie') + ' > summary')
+    c.wait(300)
+    cov0 = c.doc('cache/data/coverage.json')
+    c.eq(c.js("[...document.querySelectorAll('[data-pack=asie] [data-pack-cov]')].map(i => [i.dataset.packCov, i.checked])"), [['jp', False], ['de', False]], 'a tick per country: none of them is in the coverage yet', what='ticks')
+    g = c.js("() => { const o = document.querySelector('[data-pack=asie] details[data-pack-fold] > .d-opts'), cs = getComputedStyle(o); return { overflow: cs.overflowY, max: cs.maxHeight } }")
+    c.ok(g['overflow'] == 'auto' and g['max'] != 'none', g, 'the open fold has a bounded height and scrolls inside itself')
+    if c.width in (390, 1280):
+        c.shot(f"L66_standard_{c.width}_{lang}_delivered.png")   # the delivered state, read by the ergonomist
+    c.tap('[data-pack=asie] [data-pack-cov=jp]')
+    doc = c.until_doc('cache/data/coverage.json', lambda d: bool(d and 'jp' in (d.get('zones') or [])), what='jp added to the coverage')
+    c.eq(sorted(set(doc['zones']) - set((cov0 or {}).get('zones') or ['ca', 'es', 'fr', 'gb', 'us'])), ['jp'], 'ticking a country adds that one zone and no other', what='one zone')
+    c.until("document.querySelector('[data-pack=asie] details[data-pack-fold]').open && document.querySelector('[data-pack-switch=asie]').indeterminate", timeout=6000, what='the fold stays open and the switch becomes half on')
+    c.eq(c.js("document.querySelector('[data-pack=asie] details[data-pack-fold]').open"), True, 'the fold stays open after the draw', what='still open')
+    c.eq([p['verb'] for p in c.js("window.__posts || []")], [], 'nothing is downloaded or built', what='no job')
+    c.tap('[data-pack=asie] [data-pack-switch=asie]')
+    c.until_doc('cache/data/coverage.json', lambda d: bool(d and 'de' in (d.get('zones') or [])), what='« the whole pack » still adds the rest')
+    c.check_errors()

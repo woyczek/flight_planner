@@ -39,7 +39,8 @@ import {
   worldRowHtml
 } from './world.js';
 import {
-  packsHtml
+  packsHtml,
+  syncPackSwitches
 } from './packs.js';
 import {
   routeRowHtml,
@@ -99,6 +100,9 @@ export const STYLE = `
 [data-module="data"] details.d-pack{width:100%}
 [data-module="data"] details.d-pack>.d-opts{margin:4px 0}
 [data-module="data"] details.d-pack>.d-opts>.d-zrow:not(:first-child){padding-left:24px}
+[data-module="data"] .d-choice [data-packs] details.d-pack-countries>.d-opts{max-height:min(40vh,260px);overflow-y:auto}
+[data-module="data"] details.d-pack-countries>.d-opts>.d-zrow:not(:first-child){padding-left:0}
+[data-module="data"] details.d-pack-countries>summary{min-height:var(--sog-touch);display:flex;align-items:center;cursor:pointer;padding-left:28px}
 [data-module="data"] .d-choice>h4[data-zones-title]{margin:12px 0 4px;font-size:1rem}
 [data-module="data"] .d-tabs{display:flex;gap:8px;margin:0 0 8px}
 [data-module="data"] .d-tabs button{min-height:var(--sog-touch)}
@@ -263,6 +267,8 @@ export async function load(fresh = false) {
 function render() {
   if (!S?.body || !S.d) return;
   keepScroll(S.body, renderBody);
+  syncPackSwitches(S
+    .body); // « à moitié » ne s'écrit pas en HTML : posé après chaque dessin, aussi celui d'un pays coché dans un paquet (SOG-0186)
   attachMaps(); // les panneaux sont neufs : les cartes MapLibre reprennent la place de leur emplacement
 }
 /** En-tête : le cycle AIRAC en vigueur avec ses dates et le prochain, puis le lanceur du poste. */

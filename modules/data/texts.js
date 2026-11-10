@@ -343,6 +343,7 @@ export const TX = {
       'Kreuzen Sie ein Land an, um es zur Abdeckung hinzuzufügen; entfernen Sie das Häkchen, um es zu entfernen (nichts wird gelöscht).',
       'Marque un país para añadirlo a la cobertura; desmárquelo para quitarlo (no se purga nada).'
     ],
+    countries: ['Pays ({n})', 'Countries ({n})', 'Länder ({n})', 'Países ({n})'],
     themeAll: ['Tout le thème', 'The whole theme', 'Das ganze Thema', 'Todo el tema'],
     inCoverage: ['dans la couverture', 'in the coverage', 'in der Abdeckung', 'en la cobertura'],
     themeCount: ['{n}, {m} à ajouter', '{n}, {m} to add', '{n}, {m} hinzuzufügen', '{n}, {m} por añadir'],
