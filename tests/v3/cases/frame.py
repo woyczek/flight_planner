@@ -3464,6 +3464,17 @@ def a92(c):
     c.check_errors()
 
 
+def _airline_code(c, want, timeout=8000):
+    """The code of the current airline once it is `want` (FrameData may not exist yet right after a navigation: the wait is explicit, never a direct read); '' if it never is."""
+    got = ''
+    for _ in range(timeout // 200):
+        got = c.js("window.FrameData && typeof FrameData.airline === 'function' ? FrameData.airline().then(a => (a && a.code) || '').catch(() => '') : ''")
+        if got == want:
+            break
+        c.wait(200)
+    return got
+
+
 @case('A93', 'The current airline: FrameData.airline() / setAirline, the event, the choice that survives a reload, the « default » fallback without an index', 'A',
       tags=('data',), designs=('standard',), screens=False, night=False,
       rule='V3_SPECIFICATION 10.38 step 1 (V3 Frame): FrameData.airline() = { code, name, settings, fleet } of the current airline, setAirline(code), the event frame-data-airline when it changes, the choice a setting of the device kept through a reload; no data/airline/index.json yet: the airline of today (code default)')
@@ -4204,7 +4215,7 @@ def a105(c):
     c.eq(kept(), [['aaa', True], ['bbb', True], ['perso', True]], 'choosing replaces no line of the list (nothing blinks)', what='kept after choice')
     c.eq(checked('[data-card="company"] [data-airlines] input'), [['aaa', False], ['bbb', True], ['perso', False]], 'only the state of the radios changed', what='checked after')
     c.eq(c.js("[...document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]')].filter(n => n.hasAttribute('data-current')).map(n => n.dataset.airline)"), ['bbb'], 'data-current moved with it', what='current')
-    c.eq(c.js("FrameData.airline().then(a => a && a.code)"), 'bbb', 'the frame keeps the choice (FrameData.airline)', what='frame')
+    c.eq(_airline_code(c, 'bbb'), 'bbb', 'the frame keeps the choice (FrameData.airline)', what='frame')
     c.eq(c.count(fiche('[data-kind-set]')), 1, 'only the chosen airline has a sheet', what='one sheet')
     c.eq(checked(fiche('[data-act=companyKind]')), [['va', False], ['sog', True]], 'a squadron: the squadron radio is checked', what='sog checked')
     c.eq(c.count(fiche('[data-cat-group=commercial]')), 0, 'a squadron has no commercial category', what='no commercial')
@@ -5066,7 +5077,7 @@ def a124(c):
     # ---- the end: « Voler pour cette compagnie »
     c.tap('[data-act="companyFly"]')
     c.until("location.hash.startsWith('#missions')", timeout=8000, what='Missions')
-    c.eq(c.js("FrameData.airline().then(a => a && a.code)"), 'rmo', 'the new airline is the current one', what='current')
+    c.eq(_airline_code(c, 'rmo'), 'rmo', 'the new airline is the current one', what='current')
     c.check_errors()
 
 
@@ -5284,5 +5295,5 @@ def a128(c):
     c.until("document.querySelectorAll('[data-card=company] [data-airlines] [data-airline]').length === 3", timeout=8000, what='the list shows the joined airline')
     c.tap('[data-act="companyJnFly"]')
     c.until("location.hash.startsWith('#missions')", timeout=8000, what='Missions')
-    c.eq(c.js("FrameData.airline().then(a => a && a.code)"), 'sog', 'the joined airline is the current one', what='current')
+    c.eq(_airline_code(c, 'sog'), 'sog', 'the joined airline is the current one', what='current')
     c.check_errors()
