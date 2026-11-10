@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-11",
-  "tests": 113,
+  "tests": 114,
   "verdicts": 43
  },
  "apps": [
@@ -1255,6 +1255,20 @@
    "delivered": "2026-11-10T15:16:27Z"
   },
   {
+   "id": "SOG-0200",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant, étape Départ : un tableau des aides radio du vol (l'ILS choisi d'abord, puis les VOR qui guident)",
+    "en": "Fuel, Departure step: a board of the flight's radio aids (the chosen ILS first, then the guiding VORs)",
+    "de": "Kraftstoff, Schritt Abflug: eine Tafel der Funkhilfen des Flugs (zuerst das gewählte ILS, dann die leitenden VOR)",
+    "es": "Combustible, paso Salida: un tablero de las ayudas radio del vuelo (primero el ILS elegido, luego los VOR que guían)"
+   },
+   "test": "Carburant, un vol avec une approche ILS choisie (LFRS → LFPO, « ILS … RWY 24 »), étape 5 Départ : un bloc « Aides radio » donne d'un coup d'œil l'ILS choisi (piste, indicatif, fréquence, axe, DME) ; les VOR et DME de la route sont repliés dessous.",
+   "since": "2026-11-11",
+   "state": "todo",
+   "delivered": "2026-11-10T23:31:59Z"
+  },
+  {
    "id": "SOG-0201",
    "app": "maintenance",
    "title": {
@@ -1291,10 +1305,10 @@
     "de": "Verfahren und Boden: LFOE liest nichts („0 von 2 Seiten gelesen“), LFBD hat keine Rollwege",
     "es": "Procedimientos y suelo: LFOE no lee nada («0 páginas leídas de 2»), LFBD no tiene calles de rodaje"
    },
-   "test": "Après relance du lanceur. (1) Carburant › Procédures, terrain LFOE : « Lire les procédures de LFOE » lit ses pages (5 procédures) au lieu de « 0 page lue sur 2 ». (2) Un vol vers ou depuis LFBD, Carte zoomée sur le terrain : « Lecture du sol… » puis les taxiways s'affichent sans rien demander ; en cas d'échec, la raison et « Réessayer ».",
-   "since": "2026-11-10",
+   "test": "Carburant › Procédures, un terrain dont la lecture a des avertissements (LFOE) : sous la ligne du terrain, un pli dit les avertissements en texte, plus seulement leur nombre.",
+   "since": "2026-11-11",
    "state": "todo",
-   "delivered": "2026-11-10T15:14:07Z"
+   "delivered": "2026-11-10T23:37:52Z"
   },
   {
    "id": "SOG-0204",

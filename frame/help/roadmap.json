@@ -4,7 +4,7 @@
  "updated": "2026-11-11",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "73a63e8",
+  "organisation": "d79cb99",
   "fiches": 239,
   "untranslated": 0,
   "priorities": 152
@@ -485,7 +485,7 @@
     {
      "id": "SOG-0200",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Carburant, étape Départ : un tableau des aides radio du vol (l'ILS choisi d'abord, puis les VOR qui guident)",
      "en": "Fuel, Departure step: a board of the flight's radio aids (the chosen ILS first, then the guiding VORs)",
      "de": "Kraftstoff, Schritt Abflug: eine Tafel der Funkhilfen des Flugs (zuerst das gewählte ILS, dann die leitenden VOR)",
