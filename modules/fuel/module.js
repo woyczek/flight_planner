@@ -235,6 +235,15 @@ const TX = {
     altitude: ['altitude', 'altitude', 'Höhe', 'altitud']
   },
   rMore: ['{n} autres', '{n} more', '{n} weitere', '{n} más'],
+  // le contrôle par tronçon (SOG-0161) : trois mots et trois nombres, jamais « contrôlé » seul avant 100 %
+  rCtrl: {
+    controlled: ['contrôlé', 'checked', 'geprüft', 'controlado'],
+    incomplete: ['incomplet', 'incomplete', 'unvollständig', 'incompleto'],
+    fallback: ['repli', 'fallback', 'Ersatz', 'respaldo'],
+    error: ['erreur', 'error', 'Fehler', 'error']
+  },
+  rSections: ['Tronçons ({n})', 'Sections ({n})', 'Abschnitte ({n})', 'Tramos ({n})'],
+  rTakenShare: ['Itinéraire pris — {share}.', 'Route taken — {share}.', 'Route übernommen — {share}.', 'Itinerario tomado: {share}.'],
   // un itinéraire dont le contrôle est incomplet faute de données (SOG-0081, RouteSim du 9 nov. 17 h 05) : jamais présenté comme contrôlé
   rIncomplete: ['contrôle incomplet', 'incomplete check', 'unvollständige Prüfung', 'control incompleto'],
   rIncompleteWhy: ['Contrôle incomplet faute de données : ce qui n’a pas pu être vérifié n’est pas un écart, ni une route validée.',
@@ -1587,6 +1596,10 @@ const STYLE = `
 [data-module="fuel"] .fu-faultlist{margin:.2em 0 .3em;padding-left:1.1em}
 [data-module="fuel"] .fu-faultlist li{margin:.15em 0;overflow-wrap:anywhere} /* un écart par ligne (SOG-0134) : segment · règle · phrase */
 [data-module="fuel"] .fu-faultrule{color:var(--sog-err)}
+[data-module="fuel"] .fu-rshare{display:block} /* le partage contrôlé / incomplet / repli, sous la route de l'itinéraire (SOG-0161) */
+[data-module="fuel"] .fu-ctrl-controlled{color:var(--sog-ok)}
+[data-module="fuel"] .fu-ctrl-incomplete,[data-module="fuel"] .fu-ctrl-fallback{color:var(--sog-warn)}
+[data-module="fuel"] .fu-ctrl-error{color:var(--sog-err)}
 [data-module="fuel"] .fu-raltinc{opacity:.72} /* contrôle incomplet (SOG-0081) : teinte atténuée, jamais l'air d'une route contrôlée */
 /* « zone manquante » (SOG-0143) : ce qui manque, le geste, les replis externes — trois éléments sur une ou deux lignes */
 [data-module="fuel"] .fu-zonegap{display:flex;flex-wrap:wrap;gap:.2em .8em;align-items:center;margin:.3em 0}
@@ -3179,6 +3192,25 @@ function faultsHtml(lines, plan = null) {
   const inc = plan?.incomplete ? `<li data-incomplete><b>${esc(tt(TX.rIncomplete))}</b> · ${esc(plan.reviews?.length ? plan.reviews.join(' · ') : tt(TX.rIncompleteWhy))}</li>` : '';
   return `<details class="fu-rfaults" data-faults data-rcheck><summary class="f-warn">${esc([lines.length ? tt(TX.rCheckN, { n: lines.length }) : '', plan?.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}</summary><ul class="fu-faultlist">${inc}${lines.slice(0, 7).map(li).join('')}</ul>${lines.length > 7 ? `<details class="fu-faultmore" data-faultmore><summary class="f-muted">${esc(tt(TX.rMore, { n: lines.length - 7 }))}</summary><ul class="fu-faultlist">${lines.slice(7).map(li).join('')}</ul></details>` : ''}</details>`;
 }
+/** Le partage d'un itinéraire (SOG-0161) : « contrôlé 22 % · incomplet 65 % · repli 14 % » (l'erreur si elle a une part) ; « contrôlé »
+ *  seul seulement à 100 % ; '' sans contrôle. */
+function shareText(c) {
+  if (!c) return '';
+  if (c.controlledPct >= 100) return tt(TX.rCtrl.controlled);
+  return [
+    ['controlled', c.controlledPct],
+    ['incomplete', c.incompletePct],
+    ['fallback', c.fallbackPct],
+    ['error', c.errorPct]
+  ].filter(([k, v]) => k !== 'error' || v > 0).map(([k, v]) => `${tt(TX.rCtrl[k])} ${v} %`).join(' · '); // insécables : jamais « 14 / % »
+}
+/** Le pli des tronçons d'un itinéraire, par couche (SOG-0161) : « SID · LFPO–ROTOX · repli · 12 NM · <raison> », sept puis « N autres ». */
+function sectionsHtml(c) {
+  const list = c?.sections || [];
+  if (!list.length) return '';
+  const li = x => `<li data-section="${esc(x.control)}" data-layer="${esc(x.layer)}">${[`<b>${esc(x.layer || '—')}</b>`, esc(`${x.from}–${x.to}`), `<span class="fu-ctrl-${esc(x.control)}">${esc(tt(TX.rCtrl[x.control]))}</span>`, x.nm !== null ? esc(`${x.nm} NM`) : '', x.reason ? esc(x.reason) : ''].filter(Boolean).join(' · ')}</li>`;
+  return `<details class="fu-rsections" data-sections><summary class="f-muted">${esc(tt(TX.rSections, { n: list.length }))}</summary><ul class="fu-faultlist">${list.slice(0, 7).map(li).join('')}</ul>${list.length > 7 ? `<details class="fu-faultmore"><summary class="f-muted">${esc(tt(TX.rMore, { n: list.length - 7 }))}</summary><ul class="fu-faultlist">${list.slice(7).map(li).join('')}</ul></details>` : ''}</details>`;
+}
 /** La ligne du RAD dans Données (application Maintenance, source eurocontrol_rad du catalogue d'AeroDB) : le lien du « no-rad ». */
 const RAD_DATA_HREF = '?app=maintenance#data?source=eurocontrol_rad';
 /** Ce que le contrôle ne couvre pas (le contrat le demande : « aucune incompatibilité » ne vaut que pour ce qui est contrôlé) : la phrase
@@ -3193,7 +3225,7 @@ function routeAltsDraw() {
   const name = (a, i) => a.name || (a.role === 'primary' ? tt(TX.rPrimary) : tt(TX.rVariant, {
     n: i
   }));
-  box.innerHTML = (A.list.length ? `<div class="f-list fu-ralts" data-altlist>${A.list.map((a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}" data-alt="${i}"${a.incomplete ? ' data-incomplete' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(a.fl).padStart(3, '0')}` : '', RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults, { n: 0 }), a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(TX.rTake))}</button>` : ''}</div>`).join('')}</div>` :
+  box.innerHTML = (A.list.length ? `<div class="f-list fu-ralts" data-altlist>${A.list.map((a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}" data-alt="${i}"${a.incomplete ? ' data-incomplete' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(a.fl).padStart(3, '0')}` : '', RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults, { n: 0 }), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.control ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control))}</small>` : ''}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${sectionsHtml(a.control)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(TX.rTake))}</button>` : ''}</div>`).join('')}</div>` :
     `<p class="f-muted">${esc(A.n?.message || tt(TX.rNone))}</p>`) + limitsHtml(A.n || {
     limitation: '',
     gaps: []
@@ -3226,7 +3258,15 @@ async function altsPublish(mode, plans, pts) {
     list: plans.map((p, i) => {
       const ps = (got[i] || []).filter(ok).slice(0, 400),
         ids = ps.map(q => String(q.id || '').toUpperCase()),
-        faulty = new Set();
+        faulty = new Set(),
+        control = ps.length > 1 ? Array(ps.length - 1).fill(null) : [];
+      // SOG-0161 : l'état de contrôle de chaque segment points[k] → points[k+1], d'après les tronçons du moteur (sections, sinon segments)
+      for (const g of [...(p.control?.sections || []), ...(p.segments || [])]) {
+        if (!RE.CONTROLS.includes(g.control)) continue;
+        const a = ids.indexOf(g.from),
+          b = a < 0 ? -1 : ids.indexOf(g.to, a + 1);
+        for (let k = a; a >= 0 && k < b; k++) control[k] ||= g.control;
+      }
       // un segment fautif from → to du moteur marque chaque segment points[k] → points[k+1] entre ses deux bouts
       for (const g of p.segments || []) {
         if (g.state !== 'error') continue;
@@ -3242,7 +3282,8 @@ async function altsPublish(mode, plans, pts) {
         star: p.star?.id || '',
         ids,
         points: ps.map(q => [Math.round(+q.lat * 1e5) / 1e5, Math.round(+q.lon * 1e5) / 1e5]),
-        faulty: [...faulty].sort((x, y) => x - y)
+        faulty: [...faulty].sort((x, y) => x - y),
+        control
       };
     }),
     hovered: null
@@ -3347,7 +3388,10 @@ function routeTake(i) {
   S.ralts.chosen = i;
   S.rcheck = null;
   routeAltsDraw();
-  if (a.incomplete) S.ctx.notify(tt(TX.rTakenIncomplete), 'warn'); // SOG-0081 : la confirmation redit le contrôle incomplet
+  if (a.control) S.ctx.notify(tt(TX.rTakenShare, {
+    share: shareText(a.control)
+  }), a.control.controlledPct >= 100 ? 'ok' : 'warn'); // SOG-0161 : la confirmation redit le partage
+  else if (a.incomplete) S.ctx.notify(tt(TX.rTakenIncomplete), 'warn'); // SOG-0081 : la confirmation redit le contrôle incomplet
   if (S.alts?.mode === 'compute') altsSend(true); // le choix, pour la Carte (INTEGRATION § 3 bis)
 }
 /** « Auto » (SOG-0056) : le niveau suit le devis (level.auto) ; le prochain dessin choisit le niveau (refresh → levelAuto). */

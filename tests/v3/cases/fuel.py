@@ -3374,3 +3374,44 @@ def f122(c):
         c.ok(m['acLabel'] and m['acGap'] is not None and m['acGap'] < 16 and not m['acRightAlone'], m, f'{w} px: « Changer » follows the aircraft line, with a label')
         c.le(m['sw'], m['iw'], f'{w} px: no horizontal scroll', what='scrollWidth')
         c.shot(f'F122_{c.design}_{w}_{c.lang}.png')
+
+
+
+def _ctl_seg(a, b, control, layer, reason=''):
+    """A segment of the screen's form with its control (SOG-0161: controlled | incomplete | fallback | error, and its layer)."""
+    return dict(_seg(a, b), control=control, layer=layer, controlReason=reason)
+
+
+@case('F123', 'Route step: each proposed route says its share — controlled / incomplete / fallback in three words and three numbers, never « contrôlé » alone before 100 % —, its sections by layer, « Prendre » repeats it, the Map gets the control of each segment',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0161 (AeroDB: the longest controlled route; reference ESSB → LEMO 22 / 65 / 14): control per route and per section, from the '
+      'launcher\'s answer; route_alts.json carries control per segment for the Map\'s layer (BUGS SOG); a fake launcher')
+def f123(c):
+    st = _route_launcher(c, ['route/compute'])
+    segs = [_ctl_seg('LFRS', 'LUGEN', 'fallback', 'SID', 'connecteur de simulation : aucune SID lue'),
+            _ctl_seg('LUGEN', 'NEPIX', 'incomplete', 'FRA', 'lien FRA : rôles et niveaux contrôlés, volumes non lus'),
+            _ctl_seg('NEPIX', 'LFML', 'fallback', 'STAR', 'connecteur de simulation : aucune STAR lue')]
+    part = dict(_alt(1, 'Direct FRA', 'LFRS LUGEN NEPIX LFML', 370, 270, segs, sid=False),
+                control={'controlledPct': 22, 'incompletePct': 65, 'fallbackPct': 14, 'errorPct': 0,
+                         'sections': [{'layer': g['layer'], 'control': g['control'], 'from': g['from'], 'to': g['to'], 'nm': 120, 'reason': g['controlReason']} for g in segs]})
+    full = dict(_alt(2, 'Via UN10', 'LFRS LUGEN NEPIX LFML', 372, 270, [_ctl_seg('LFRS', 'LUGEN', 'controlled', 'SID'), _ctl_seg('LUGEN', 'NEPIX', 'controlled', 'HIGH'),
+                                                                        _ctl_seg('NEPIX', 'LFML', 'controlled', 'STAR')], sid=False),
+                control={'controlledPct': 100, 'incompletePct': 0, 'fallbackPct': 0, 'errorPct': 0, 'sections': []})
+    st['alts'] = [part, full]
+    open_proc(c)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 2", what='two routes')
+    shares = c.js(f"[...document.querySelectorAll('{FUEL} [data-altlist] [data-alt] [data-share]')].map(e => e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim())")
+    c.eq(len(shares), 2, 'each route says its share', what='shares')
+    c.ok(shares[0].count('%') == 3 and '22 %' in shares[0] and '65 %' in shares[0] and '14 %' in shares[0], shares, 'three words and three numbers: 22 / 65 / 14')
+    c.ok('%' not in shares[1] and shares[1], shares, '« contrôlé » alone only at 100 %')
+    c.js(f"document.querySelector('{FUEL} [data-alt=\"0\"] [data-sections]').open = true")
+    sec = c.js(f"[...document.querySelectorAll('{FUEL} [data-alt=\"0\"] [data-sections] [data-section]')].map(e => [e.dataset.layer, e.dataset.section])")
+    c.eq(sec, [['SID', 'fallback'], ['FRA', 'incomplete'], ['STAR', 'fallback']], 'the sections by layer with their state', what='sections')
+    c.js(f"document.querySelector('{FUEL} [data-alt=\"0\"]').scrollIntoView({{ block: 'start' }})")
+    c.shot(f'F123_{c.design}_{c.width}_{c.lang}.png')
+    doc = c.until_doc('cache/fuel/route_alts.json', lambda x: x and len(x.get('alternatives') or []) == 2, 'the routes published for the Map', timeout=8000)
+    c.eq(doc['alternatives'][0].get('control'), ['fallback', 'incomplete', 'fallback'], 'the control of each segment, for the Map\'s layer', what='control')
+    c.tap(f'{FUEL} [data-alt="0"] [data-do="rtake"]')
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w))", '22 %', what='« Prendre » repeats the share')

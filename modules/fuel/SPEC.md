@@ -256,7 +256,10 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
   « N autres », under each proposed route and as the result of « Contrôler »; **an incomplete check** (`incomplete: true`, RouteSim of
   9 Nov 17 h 05: data missing, its reasons as « revue » issues) is never shown as checked (F117): its row muted with « contrôle
   incomplet » in its line, a first line in its fold with the reasons (in « Contrôler ») or the sentence of what it means, never
-  « aucun écart détecté », and « Prendre » says it in its notification; **the routes are drawn by the Map** (SOG-0134 a, F114;
+  « aucun écart détecté », and « Prendre » says it in its notification; **the share of what is controlled** (SOG-0161, F123; AeroDB's
+  `control`): each route's line says « contrôlé 22 % · incomplet 65 % · repli 14 % » (the error when it has a share; « contrôlé » alone
+  only at 100 %), a fold lists its sections by layer (SID, LOW, HIGH, FRA, STAR, APP) with their state and reason, seven then « N autres »,
+  « Prendre » repeats the share, and route_alts.json gives the Map the control of each segment; **the routes are drawn by the Map** (SOG-0134 a, F114;
   INTEGRATION § 3 bis): Fuel resolves them into positions with the route reader and publishes them (the event `fuel-route-alts` in
   the double view, hover included; `cache/fuel/route_alts.json` for a Map opened afterwards), the chosen one and the hovered row with
   them; a route touched on the Map comes back as « Prendre » (`maps-route-alt`, or `#fuel?ralt=<index>` from a Map alone); Fuel draws

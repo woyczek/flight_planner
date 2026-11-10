@@ -1503,3 +1503,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   the label and lowered the field); « Changer » with its label right after the aircraft line, which wraps rather than cutting the name.
   F122 measures it at 390 and 1 280 px and the captures were looked at; counter-test on origin/v3 (69f5622c2): the date 150 px under the
   level, « Auto » under the field.
+- **10 Nov 2026 — the share of what is controlled** (SOG-0161, after AeroDB's « longest controlled route »): a route is never said
+  « contrôlé » before 100 %; its line gives the three shares in words and numbers (non-breaking spaces: the capture showed « 14 / % » cut),
+  its fold the sections by layer; route_alts.json gains `control` per segment so that the Map tints them (BUGS SOG told). F123; counter-test
+  on 181e553c6: no share said.

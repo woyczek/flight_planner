@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: each route says how much of it is controlled** (`modules/fuel/route_engine.js`, `module.js`; Fuel SPEC § 9.3, INTEGRATION § 3 bis,
+  DECISIONS, help; noreg F123; SOG-0161). « contrôlé 22 % · incomplet 65 % · repli 14 % » on its line, its sections by layer in a fold,
+  « Prendre » repeating the share; the Map receives the control of each segment.
 - **Fuel: the step Flight laid out again after the acceptance** (`modules/fuel/module.js`; Fuel SPEC § 9.2, DECISIONS, help; noreg F122;
   SOG-0056, SOG-0060 refused). Level and Flight date on one row, « Auto » beside the level, one help line « auto · time »; « Changer »
   right after the aircraft line instead of a lone magnifier on the right.

@@ -13,11 +13,16 @@
 //     segments: [{ from, to, via, state, reasons: [{ kind, text, ruleId }] }] } ; trois itinéraires au plus, un seul en check.
 //   Un itinéraire au contrôle incomplet faute de données (RouteSim du 9 nov. 17 h 05 : incomplete: true, ses raisons dans les issues
 //     « revue ») porte incomplete et reviews (les raisons, en check seulement : celles de la route contrôlée) ; il n'est jamais accepted.
+//   Le contrôle par tronçon et par couche (SOG-0161, AeroDB « la plus longue route contrôlée ») : un plan porte control { controlledPct,
+//     incompletePct, fallbackPct, errorPct, sections: [{ layer, control, from, to, nm, reason }] } (ou null), un segment control, layer,
+//     controlReason ; control vaut controlled | incomplete | fallback | error, layer SID | LOW | HIGH | FRA | STAR | APP.
 //   faultLines(plan) → [{ seg: 'FROM–TO' | '', kind, ruleId, text }] : un écart par ligne (SOG-0134) — chaque motif d'un segment fautif,
 //     un segment fautif sans motif, puis les erreurs du moteur qu'aucun motif ne dit déjà (seg vide).
 
 export const VERB = 'route/compute';
 const KINDS = ['RAD', 'FRA', 'direction', 'floor', 'ceiling', 'continuity', 'altitude'];
+export const CONTROLS = ['controlled', 'incomplete', 'fallback', 'error'];
+export const LAYERS = ['SID', 'LOW', 'HIGH', 'FRA', 'STAR', 'APP'];
 
 /** Le lanceur connaît-il le travail route/compute ? (regen/verbs, comme le module Données) */
 export async function available(launcher) {
@@ -89,6 +94,9 @@ function segOf(s) {
     to: ident(s?.to),
     via: text(s?.via, 16).toUpperCase(),
     state: s?.state === 'error' ? 'error' : 'ok',
+    control: CONTROLS.includes(s?.control) ? s.control : '',
+    layer: LAYERS.includes(s?.layer) ? s.layer : '',
+    controlReason: text(s?.controlReason, 200),
     reasons: (Array.isArray(s?.reasons) ? s.reasons : []).slice(0, 5).map(x => ({
       kind: KINDS.includes(x?.kind) ? x.kind : 'altitude',
       text: text(x?.text, 200),
@@ -137,6 +145,25 @@ function procOf(p, kind) {
     name: text(p?.name, 20).toUpperCase()
   } : null;
 }
+/** Le contrôle d'un itinéraire (voir l'en-tête), borné : des pourcentages de 0 à 100, cinquante tronçons au plus ; null sans contrôle. */
+function controlOf(c) {
+  if (!c || typeof c !== 'object') return null;
+  const pct = v => num(v, 0, 100) !== null ? Math.round(+v) : 0;
+  return {
+    controlledPct: pct(c.controlledPct),
+    incompletePct: pct(c.incompletePct),
+    fallbackPct: pct(c.fallbackPct),
+    errorPct: pct(c.errorPct),
+    sections: (Array.isArray(c.sections) ? c.sections : []).slice(0, 50).map(x => ({
+      layer: LAYERS.includes(x?.layer) ? x.layer : '',
+      control: CONTROLS.includes(x?.control) ? x.control : '',
+      from: ident(x?.from),
+      to: ident(x?.to),
+      nm: num(x?.nm, 0, 20000) !== null ? Math.round(+x.nm) : null,
+      reason: text(x?.reason, 200)
+    })).filter(x => x.control)
+  };
+}
 /** Un itinéraire de la réponse, borné. */
 function altOf(a, role, errors, reviews = []) {
   const segments = (Array.isArray(a?.segments) ? a.segments : []).slice(0, 800).map(segOf).filter(s => s.from && s.to),
@@ -154,6 +181,7 @@ function altOf(a, role, errors, reviews = []) {
     faults,
     sid: procOf(a?.sid, 'SID'),
     star: procOf(a?.star, 'STAR'),
+    control: controlOf(a?.control),
     segments
   };
 }
