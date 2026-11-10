@@ -1481,3 +1481,12 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   zone); a country's name did not: it now matches the zones' names (fr, en, de, es) and lists the zone's aerodromes by longest hard runway.
   The endonyms (« Sverige ») and a light index of names across zones are AeroDB's (asked). Counter-test on 1cd5afe98: « suède » proposes
   nothing.
+- **10 Nov 2026 — SOG-0158 refused at acceptance, the order of the proposals** (« SWE… fonctionne. STOC… ne fonctionne pas. USA non plus. »):
+  reproduced read-only on the user's real base (a diagnostic page loading the real aerodb.js and the real `createAdNames` on
+  `E:\DEFA\data`, no Fuel mounted, no launcher): « stoc » proposed hospital heliports nearest the town centre before Arlanda and Bromma
+  (sorted by distance); « swe » and « usa » were crowded out by names holding the letters in their middle (DUNKESWELL, ROSWELL,
+  LAMPEDUSA), and a far namesake town (Stockton) opened another zone; « usa » matched no zone name. F121 had one town, two aerodromes,
+  no heliport, no noisy opened zone and a full prefix (« zorlst »): it could not see any of it. Now: codes, country (names, aliases),
+  names by a word, towns; main ones first (civil, military, heliports; runway); a country's own ICAO prefixes. Limit, said to AeroDB: the
+  NATS records of gb carry no `hardLen`, so « uk » cannot put EGLL first. Counter-test on 0db129707: « stoc » never puts the main
+  aerodrome first.

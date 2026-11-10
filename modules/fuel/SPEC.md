@@ -204,12 +204,16 @@ dual view), else `#maps?from=fuel`; hidden while the Map is beside Fuel (`ctx.la
   follows the route, the aircraft and the wind source as long as `level.auto`; a typed level, or « Prendre FL… » of the level
   decision, turns it off; « Auto » turns it on again. Without a sheet (a type estimate) or a route, the button is disabled and its
   title says why. No new model: a filter over the series (F107).
-- **Aerodromes**: departure, arrival, alternate. Each field is a search (F48): from two characters, by code or by name, `aerodb.find`
-  gives aerodromes with a four-character code, then, for a town the text names (two at most), the aerodromes within 40 NM of it, nearest
-  first, the town in the line (« ESSA Arlanda (Stockholm) »; SOG-0158, F119: `find` only searches the aerodromes of the zones already open,
-  `aerodromes({ lat, lon, radiusNm })` opens the town's zone) — then, for a country's name (the names of aerodb's zones in four languages: « suède », « sweden »;
-  SOG-0158 reopened, F121), its aerodromes the largest first (longest hard runway, `hardLen`), the country in the line — a zone the flight
-  has not opened included (`aerodromes({ bbox })` opens it); seven at most in all, listed as « LFPO Paris-Orly » in one list laid over the page (never the
+- **Aerodromes**: departure, arrival, alternate. Each field is a search (F48): from two characters, seven aerodromes with a
+  four-character code at most, in this order (SOG-0158, after the refusal at acceptance of 10 Nov, F121): the codes that start with the
+  text (« LFP »); a **country** — the names of aerodb's zones (fr, en, de, es) by their start, or an alias of `COUNTRY_ALIASES` in
+  `adnames.js` (initials, usual names, names in the country's language: « usa », « uk », « royaume-uni », « angleterre », « sverige ») —
+  its aerodromes, only its own ICAO prefixes (a rectangular frame overlaps its neighbours), the country in the line; the aerodromes whose
+  name has a **word** that starts with the text (« orly »); the aerodromes within 40 NM of a **town** whose name starts with the text (two
+  towns at most), the town in the line (« ESSA Stockholm/Arlanda (Stockholm) »); then the rest of what `find` gives (the text in the middle
+  of a name). Countries, names and towns put **the main ones first**: civil aerodromes, then military (`type` MIL), then heliports (HP),
+  each by longest hard runway (`hardLen`; a base without it, NATS, keeps its order). Countries and towns search every installed zone,
+  opened or not (`aerodromes()` opens it); `find` only the opened ones; each listed as « LFPO Paris-Orly » in one list laid over the page (never the
   native `datalist`; the list of `suggest.js`); ↑ ↓ move, Enter picks, Esc closes, a tap picks (44 px); it closes when the field
   loses the focus (a press on a proposal keeps it, so the click lands); a full code that is the only proposal opens nothing. A pick
   writes the code and fires the field's `input` event: the same path as typing (F45, F46). Only a code reaches the route; leaving a

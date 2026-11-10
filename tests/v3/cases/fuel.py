@@ -3268,49 +3268,68 @@ def f120(c):
 
 
 
-def _closed_zone_docs(zone='se', prefix='ES', cells=None, aerodromes=(), towns=(), major=()):
-    """The published base of the flight (zone fr, opened by the flight) and a SECOND zone, published but never opened by the flight: its
-    index entry (cycle, prefixes, kb, cells) and its split files (meta, aerodromes, aeroindex as { fields, rows }, cities) in the shapes
-    aerodb reads (frame/aerodb/aerodb.js listZones, part, liteAerodromes, nameCities), plus the world's major towns (cities_major.json).
-    Every value is invented (SOG-0158: the proof without copying data)."""
-    docs = aero_docs(airfields=True)
+def _closed_zone_docs(zones, fr_extra=None, major=()):
+    """The published base of the flight (zone fr, opened by the flight; `fr_extra`: more of its aerodromes) and more zones, published but
+    never opened by the flight: for each, its index entry (cycle, prefixes, kb, cells) and its split files (meta, aerodromes, aeroindex as
+    { fields, rows }, cities) in the shapes aerodb reads (frame/aerodb/aerodb.js listZones, part, liteAerodromes, nameCities), checked
+    read-only against the user's data/sia/base; plus the world's major towns (cities_major.json, { data }). Every value is invented
+    (SOG-0158: the proof without copying data). `zones`: { id: { prefix, cells, aerodromes, towns } }."""
+    docs = aero_docs(airfields=True, extra={'aerodromes': list(fr_extra or [])} if fr_extra else None)
     idx = [d for d in docs if d[0] == 'sia/base/index.json'][0][1]
-    idx['zones'][zone] = {'cycle': AERO_CYCLE, 'prefixes': [prefix], 'kb': {'meta': 1, 'aerodromes': 2, 'aeroindex': 1, 'cities': 1},
-                          'cells': cells or {}}
-
-    def kind(k, data):
-        return [f'sia/base/{zone}/{AERO_CYCLE}/{k}.json', {'schema': 2, 'zone': zone, 'cycle': AERO_CYCLE, 'kind': k, 'parserVersion': 1,
-                                                           'data': data, 'updated_at': f'{AERO_CYCLE}T00:00:00Z'}, 'reference']
     fields = ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar']
-    docs += [kind('meta', {}), kind('aerodromes', list(aerodromes)),
-             kind('aeroindex', {'fields': fields, 'rows': [[a.get(f) for f in fields] for a in aerodromes]}),
-             kind('cities', list(towns)),
-             ['sia/base/cities_major.json', {'data': list(major)}, 'reference']]
+    for zone, z in zones.items():
+        idx['zones'][zone] = {'cycle': AERO_CYCLE, 'prefixes': [z['prefix']], 'kb': {'meta': 1, 'aerodromes': 2, 'aeroindex': 1, 'cities': 1},
+                              'cells': z['cells']}
+
+        def kind(k, data, zone=zone):
+            return [f'sia/base/{zone}/{AERO_CYCLE}/{k}.json', {'schema': 2, 'zone': zone, 'cycle': AERO_CYCLE, 'kind': k, 'parserVersion': 1,
+                                                               'data': data, 'updated_at': f'{AERO_CYCLE}T00:00:00Z'}, 'reference']
+        ads = z['aerodromes']
+        docs += [kind('meta', {}), kind('aerodromes', list(ads)),
+                 kind('aeroindex', {'fields': fields, 'rows': [[a.get(f) for f in fields] for a in ads]}), kind('cities', list(z.get('towns', [])))]
+    docs.append(['sia/base/cities_major.json', {'schema': 1, 'kind': 'cities_major', 'data': list(major)}, 'reference'])
     return docs
 
 
-@case('F121', 'Completion across the installed zones: a town or a country of a zone the flight has not opened proposes its aerodromes',
+def _ad(icao, name, lat, lon, kind='AD', hard=None):
+    return {'id': icao, 'icao': icao, 'name': name, 'type': kind, 'lat': lat, 'lon': lon, 'elev': 20, 'public': True, 'magVar': 5, 'bearing': 10,
+            'hardLen': hard, 'water': False}
+
+
+_TOWN = {'name': 'Stockholm', 'lat': 59.33, 'lon': 18.07, 'population': 1500000}
+_SE = {'prefix': 'ES', 'cells': {'57': [[11, 13]], '59': [[17, 19]], '68': [[15, 17]]}, 'towns': [_TOWN],
+       'aerodromes': [_ad('ESZA', 'NORDFIELD', 59.65, 17.92, hard=3300), _ad('ESZB', 'STOCKHOLM TESTFIELD', 59.35, 17.95, hard=1600),
+                      _ad('ESZH', 'STOCKHOLM HOSPITAL', 59.33, 18.07, 'HP'), _ad('ESZM', 'MILBASE', 59.9, 17.6, 'MIL', 3500),
+                      _ad('ENZZ', 'NORDNORGE', 68.4, 16.0, hard=2800)]
+       + [_ad(f'ESZ{c}', f'SMALLFIELD {c}', 57.7, 12.0 + n / 10, hard=800) for n, c in enumerate('CDEFG')]}
+_US = {'prefix': 'K', 'cells': {'39': [[-106, -103]], '34': [[-119, -117]]},
+       'aerodromes': [_ad('KZZA', 'TEST INTL', 39.8, -104.7, hard=4000), _ad('KZZB', 'TEST FIELD', 39.7, -104.9, hard=1500),
+                      _ad('KZZM', 'TEST AFB', 34.9, -117.9, 'MIL', 4500)]}
+# aerodromes of the opened zone whose names hold the typed letters in their middle (they crowded the list out: DUNKESWELL, LAMPEDUSA)
+_FR_NOISE = [_ad('LFZW', 'DUNKESWELL TEST', 45.5, 2.5, hard=1200), _ad('LFZQ', 'LAMPEDUSA TEST', 45.6, 2.6, hard=1200)]
+_OPTS_JS = f"[...document.querySelectorAll('{FUEL} [data-adsug] [role=option]')].map(o => o.dataset.code)"
+
+
+@case('F121', 'Completion across the installed zones: « stoc » (a town), « usa » (an alias), « swe » (a country) propose the main aerodromes of zones the flight has not opened, before names that merely hold the letters',
       'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
-      rule='SOG-0158 reopened (user: « on ne peut pas trouver ESSB à partir de la saisie stockholm ou suède ni sweden »): the completion searches '
-      'every installed zone, not only the opened ones; a country name (French, English, …) proposes its aerodromes, the largest first, seven at '
-      'most; the second zone is published and never opened by the flight, in the shapes aerodb reads; invented values')
+      rule='SOG-0158, refused at acceptance (user, 10 Nov: « SWE… fonctionne. STOC… ne fonctionne pas. USA non plus. »): codes, then a country '
+      '(names, aliases, initials), then names by a word, then the aerodromes around a town; the main ones first (civil, then military, then '
+      'heliports; longest hard runway); a country\'s own ICAO prefixes only; zones published and never opened, in the shapes aerodb reads; invented values')
 def f121(c):
-    ads = [{'icao': 'ESZB', 'name': 'ZORLSTAD TESTFIELD', 'lat': 59.35, 'lon': 17.95, 'elev': 14, 'bearing': 120, 'magVar': 6, 'hardLen': 1600,
-            'public': True},
-           {'icao': 'ESZA', 'name': 'NORDFIELD', 'lat': 59.65, 'lon': 17.92, 'elev': 42, 'bearing': 10, 'magVar': 6, 'hardLen': 3300, 'public': True}]
-    docs = flight_docs() + _closed_zone_docs(cells={'59': [[17, 19]]}, aerodromes=ads,
-                                             towns=[{'name': 'ZORLSTAD', 'lat': 59.33, 'lon': 18.07, 'population': 900000}],
-                                             major=[{'name': 'ZORLSTAD', 'lat': 59.33, 'lon': 18.07, 'population': 900000}])
+    docs = flight_docs() + _closed_zone_docs({'se': _SE, 'us': _US}, fr_extra=_FR_NOISE, major=[_TOWN])
     c.open('fuel', docs=docs)
     wait_quote(c)
     to_step(c, 0)
-    type_in(c, 'arr', 'zorlst')
-    c.until(f"[...document.querySelectorAll('{FUEL} [data-adsug] [role=option]')].some(o => o.dataset.code === 'ESZB')", timeout=10000,
-            what='a town of a zone the flight has not opened proposes its aerodrome')
-    # a country's name: French, then English
-    for name in ('suède', 'sweden'):
-        type_in(c, 'arr', name)
-        c.until(f"[...document.querySelectorAll('{FUEL} [data-adsug] [role=option]')].some(o => o.dataset.code === 'ESZB')", timeout=10000,
-                what=f'« {name} » proposes the aerodromes of the country')
-        codes = c.js(f"[...document.querySelectorAll('{FUEL} [data-adsug] [role=option]')].map(o => o.dataset.code)")
-        c.eq(codes[:2], ['ESZA', 'ESZB'], f'« {name} »: the largest first (longest hard runway)', what='order')
+
+    def opts(text, want, what):
+        type_in(c, 'arr', text)
+        c.until(f"(w) => {{ const o = {_OPTS_JS}; return o.length > 0 && o[0] === w }}", want, timeout=12000, what=what)
+        return c.js(_OPTS_JS)
+    o = opts('stoc', 'ESZA', '« stoc »: the main aerodrome around the town first')
+    c.eq(o[:4], ['ESZA', 'ESZB', 'ESZM', 'ESZH'], '« stoc »: civil by runway, then the military base, then the heliport', what='stoc')
+    o = opts('usa', 'KZZA', '« usa »: the United States\' main aerodrome first')
+    c.eq(o[:3], ['KZZA', 'KZZB', 'KZZM'], '« usa »: the country\'s aerodromes, the main first', what='usa')
+    c.ok('LFZQ' not in o or o.index('LFZQ') > 2, o, '« LAMPEDUSA » (usa in the middle of a name) after the country')
+    o = opts('swe', 'ESZA', '« swe »: Sweden\'s main aerodrome first')
+    c.ok('ENZZ' not in o, o, 'a Norwegian aerodrome inside Sweden\'s frame is not Sweden\'s')
+    c.ok('LFZW' not in o[:4], o, '« DUNKESWELL » (swe in the middle of a name) after the country')
