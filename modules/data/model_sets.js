@@ -17,6 +17,10 @@ export const PERSONAL = {
     kind: 'licence',
     zones: ['es']
   },
+  lfv: {
+    kind: 'licence',
+    zones: ['se']
+  },
   nats: {
     kind: 'licence',
     zones: ['gb']
