@@ -1795,6 +1795,61 @@ redesigned for touch at that point.
        is natural on GitLab and GitHub); `pilot/` follows the pilot, not the airline; "personnel" never gets a remote.
        Nothing is engaged before the beta; step 1 is written so that `data/airline/<code>/` becomes the root of a repository
        without renaming anything.
+   38 bis. **Step B of the airline path: create a commercial airline, join an SO airline, a local airline** (user, 10 Nov, recipe of SOG-0041:
+       « 1/ je crée une compagnie commerciale, rennes motoculture, je définis les catégories de vol, et j'affecte des appareils depuis la base ;
+       2/ je rejoins une compagnie SO, via un site web de la flotte, je le parse, et je vole les missions pré-préparées dans la base ; 3/ use cases
+       déjà définis de compagnie locale »). Step A (chooser as radio buttons, sheet of the chosen airline, three gestures) is delivered; this is the
+       design of the two gestures it leaves, **written for the ergonomist's review before any code**. Owner: Réglages (the screens, the writes);
+       Features SOG for the reader sides (fleet, missions) it only reuses.
+       **What exists, step by step (read from the code, 10 Nov).**
+       | Step | Exists | Missing |
+       |---|---|---|
+       | 1① identity of a new airline | « Créer une compagnie »: name ≤ 60, code `^[a-z0-9]{2,8}$` (not `perso`, not taken, 20 at most), networks; writes `airline/<code>/settings.json`, an empty `fleet.json`, the index (merged by code), never over an existing file | the kind (set afterwards in the sheet), a code proposed from the name (the migration does it, `airline/migrate`), no step structure |
+       | 1② categories | the sheet's list of the kind's categories, own group `virtuel` (add / remove); the base is all-on and not edited per airline | choosing among the base's categories at creation (« le socle du genre coché d'avance »), writing `categories.json` once |
+       | 1③ fleet from the base | Maintenance › Aircraft › Fleet adds one aircraft at a time to the CURRENT airline's `fleet.json` (choose a sheet by type, then the aircraft's own fields; `modules/aircraft/fleet.js` `normalize` / `upsert`) | adding several, in the creation flow, by type search and registration; « plus tard »; and what « la base » is (question 1) |
+       | 1④ end | `FrameData.setAirline(code)`; Missions reads the current airline (`airlineOf`: the missions that say `airline: <code>`, one without the field goes to the first airline of the index; « personnel » has none) | « Voler pour cette compagnie »: choose it and open Missions, which says there is no mission yet for a new airline |
+       | 2① the fleet site | the Website module: a pasted Flotte page (clipboard HTML first, then text) → `parseFleet` / `mergeFleet` (pure, `modules/website/model.js`), a preview (new, changed, kept) before « Save »; « Read through the launcher » (`ctx.net`, GET only) when the airline setting gives the page; no login, no API (the site's rule) | a door from the Compagnie screen that starts from the page and creates the airline (today the paste needs the airline to exist and its `airline/settings.json` page set) |
+       | 2② what is read, shown before writing | the website preview lists aircraft | « n appareils, n opérateurs, genre Escadrille SO, nom, code » and the missions count, before any write |
+       | 2③ the missions | the V2 missions are in the shared repository (`missions/…`); Missions lists them (registry + files) and filters by `airline` | the link between a joined SO airline and its missions (question 2) |
+       | 3 local airline | step 1 with networks « hors ligne » and no site: works today through « Créer » | nothing of its own: it goes through the same screens |
+       **Design.** Both gestures open a **stepper on the same screen** (one block under the three gestures, built once, the steps shown and hidden in a
+       region whose height is reserved, rule 22: nothing jumps; « Retour » never loses a typed value; nothing is written before the last step; a
+       single primary button per step, rule 13). The list and the sheet above stay as they are.
+       **« Créer une compagnie » (use case 1), three steps and an end.** ① *Identité*: name; code (proposed from the name as `airline/migrate`
+       does, editable, refused as in step A); **genre** (two radio buttons with their sentence, « Commerciale » preselected here); networks. ②
+       *Catégories de vols*: the kind's base categories as checkboxes, all ticked (an unticked one is simply not written), then a free field « Ajouter
+       une catégorie » for the own group (same rules as the sheet: id, duplicates, 40 at most). ③ *Flotte*: « Ajouter des appareils depuis la base »
+       (search by type or registration, one result list, a tap adds it to a running list with « Retirer » and a count; « Plus tard » is a button of
+       the same level, not a link); the aircraft are written with the fleet's own rules (`normalize`, one registration once). **End**: one
+       summary line per step, then « Créer la compagnie » (primary), which writes in this order `settings.json` (with `kind`), `categories.json`
+       (only when it differs from the base), `fleet.json`, and **the index last** (an airline appears in the list only when complete; a failure
+       half-way leaves files without index, said, and a second « Créer » finishes them without overwriting); then « Voler pour cette compagnie »
+       (`setAirline`, open Missions) and « Rester ici ».
+       **« Rejoindre une compagnie » (use case 2), two steps.** ① *La flotte du site*: a large field « Collez la page de la flotte » + « Lire le
+       presse-papiers » (the website's reading), and, only on the launcher's computer with a site address typed, « Lire par le lanceur » (`ctx.net`,
+       GET); the parsers are the Website module's own, imported (`parseFleet`, `mergeFleet`), never a second one. ② *Ce que j'ai lu*, **shown before
+       anything is written**: the number of aircraft and of operators, the kind (« Escadrille SO » by default, editable), the name and the code
+       proposed (editable), the missions found for this code (question 2); « Rejoindre » (primary) writes `settings.json` (name, kind, networks, the
+       site address when typed so that the Website module can refresh later), `fleet.json` (the merged aircraft), the index, then chooses the
+       airline. An airline that already exists is **not** joined again here (« déjà dans la liste »): refreshing its fleet is the Website
+       module's paste, unchanged.
+       **Local airline (use case 3)** is step 1 of « Créer » with « hors ligne » and no site: no other screen.
+       **Everything read stays untrusted** (§ 10.36): the pasted page and the answer of `ctx.net` go through the Website parsers (bounded fields),
+       names are drawn by `esc`, codes by the rule, counts bounded; nothing of the page is a path.
+       **Cases (each red before)**: creation writes nothing until the last button, then the files in the order above and the index last; a code
+       taken or invalid stops at step 1 with the reason; unticked categories are absent from `categories.json`; « Retour » keeps every value;
+       a hostile page is text; joining shows the counts then writes the fleet merged by registration and chooses the airline; an existing airline is
+       refused; each at 390 and 1 280, four languages.
+       **Lots, in this order**: B1 stepper frame + step ① + the writes (a creation without categories or fleet works end to end); B2 step ②; B3
+       step ③ (after question 1); B4 « Rejoindre » (after question 2). Each delivered alone with its captures.
+       **Questions to settle before B3 and B4** — 1. *« La base » for the fleet*: the aircraft **sheets** of `data/aircraft/` (a type: the airline
+       then types the registration), or a **registry of real aircraft** (`AircraftDB/aircraft_db.js`, V2) that the V3 aircraft module does not
+       use today? I propose the sheets (single-source, § 10.35) and a registration typed, the registry being a later, separate lot. 2. *Missions of a
+       joined SO airline*: the reader accepts an `airline` field on a mission, but a mission without one (the V2 CPCO writes none that I could find) goes to the first airline of the index, and the fleet
+       site does not list missions (READING § 1). So « les missions pré-préparées » can only mean the repository's: I propose that joining shows
+       « n missions pour ce code » (0 for a new code) and says that the missions of an SO airline are those that name its code; the alternative is
+       a launcher-side tagging of the missions of the SO (Features SOG). 3. *The genre of a joined airline*: « Escadrille SO » by default, or read from
+       the site? The page does not say it; I propose the default.
    39. **The official chart of a procedure, from Procédures and from the in-flight screen** (user, 6 Nov: "accès directe à
        la carte de la procédure (VAC, SID, STAR, omni), de la piste via l'onglet « procédures », ou « en vol »"; SOG-0045,
        after SOG-0024 / SOG-0031 which open the aerodrome's official page). Ergonomics design of 6 Nov, alpha.5. A
