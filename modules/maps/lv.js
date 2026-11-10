@@ -79,12 +79,13 @@ export function spaceCardHtml(a) {
   if (act === 'AZBA' || a.azba) L.push(esc(tt(TX.spActAzba)));
   else if (act === 'NOTAM') L.push(esc(tt(TX.spActNotam)));
   else if (act) L.push(`${esc(tt(TX.spActivity))} : ${esc(act)}`);
+  // la phrase franche reste dans les sept premières lignes, quel que soit le nombre de lignes d'horaires et de remarques (AeroDB en donne douze de chaque)
+  if (live) L.push(`<span class="mp-sp-real">${esc(tt(TX.spActual))}</span>`);
   if (hours.length) L.push(...hours.map(h => `${esc(tt(TX.spHours))} : ${esc(h)}`));
   else if (live) L.push(esc(tt(TX.spNoHours)));
   if (rem.length) L.push(...rem.map(h => `${esc(tt(TX.spRemarks))} : ${esc(h)}`));
   if (who) L.push(`${esc(tt(TX.spWho))} : ${esc(who)}`);
   L.push(`<span class="mp-sp-src">${esc(tt(TX.spSource))} : ${esc(String(a.src || '?').toUpperCase())} <span class="mp-sp-cyc"></span></span>`);
-  if (live) L.push(`<span class="mp-sp-real">${esc(tt(TX.spActual))}</span>`);
   const shown = L.slice(0, CARD_LINES),
     more = L.slice(CARD_LINES);
   return `<div class="mp-sp-lines">${shown.map(x => `<p>${x}</p>`).join('')}</div>${more.length ? `<details><summary>${esc(tt(TX.spMore, {

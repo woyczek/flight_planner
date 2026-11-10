@@ -4107,3 +4107,8 @@ def d131(c):
     many = c.js("""async () => { const L = await import('/modules/maps/lv.js'); return L.spaceCardHtml({ type: 'R', name: '61', lower: 'SFC', upper: 'FL115', act: 'AZBA', admin: 'CCER', info: '122.9', src: 'sia',
       hours: ['H24', 'MON-FRI 0700-1700', 'SAT 0800-1200'], rem: ['Remark one', 'Remark two', 'Remark three'] }) }""")
     c.ok('<details>' in many and many.count('<p>') >= 8 and 'MON-FRI 0700-1700' in many and 'Remark two' in many, many[:300], 'hours and remarks as published; seven lines, then « n more »')
+    # AeroDB gives up to twelve lines of hours and twelve of remarks: the frank line and the activation stay in the seven lines shown
+    big = c.js("""async () => { const L = await import('/modules/maps/lv.js'); return L.spaceCardHtml({ type: 'R', name: '61', lower: 'SFC', upper: 'FL115', act: 'AZBA', admin: 'CCER', info: '122.9', src: 'sia',
+      hours: Array.from({ length: 12 }, (_, i) => 'HOURS ' + i), rem: Array.from({ length: 12 }, (_, i) => 'REM ' + i) }) }""")
+    shown = big.split('<details>')[0]
+    c.ok(re.search(r'(not known|non connue|unbekannt|no conocida)', shown) and 'AZBA' in shown and 'HOURS 0' in shown and '<details>' in big, shown[:300], 'with twelve lines of hours and of remarks the frank line, the activation and the first hours stay in the seven lines shown')

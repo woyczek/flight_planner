@@ -1080,7 +1080,8 @@ cursor until all fingers are up.
   name and type (a **P says « prohibited »**), limits and class, the activation published (`act`: AZBA, NOTAM; `azba`), the hours (`hours` /
   `sched`, when the base carries them: else « published hours: not carried by this database » for R, D, TSA, TRA), AIP conditions and
   remarks (`rem` / `remarks`) as published, unit and frequency (`admin` · `info`), source (`src`) and the base's cycle date, and for R, D,
-  TSA, TRA the frank line « actual activity not known: published hours only (neither NOTAM nor AZBA read) ». Seven lines, then « n more »
+  TSA, TRA the frank line « actual activity not known: published hours only (neither NOTAM nor AZBA read) » (placed right after the activation,
+  before the hours and remarks: AeroDB gives up to twelve lines of each, the frank line stays in the seven shown). Seven lines, then « n more »
   (`<details>`). The text of the base is bounded and stripped of markup. Today's SIA base carries `act`, `admin`, `info`, `azba`, `src` and
   no hours nor remarks (AeroDB, SOG-0163, reads what each source gives): the sheet shows what exists and says what does not. Noreg D131.
 

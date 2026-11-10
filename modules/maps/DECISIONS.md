@@ -2079,6 +2079,9 @@ the Map had seen in between: the same line to within the frame's own sampling.
 - **Choices of mine**: (1) the sheet replaces the profile in the sheet like the list does (✕ goes back), no new sheet kind; (2) the tap on
   the profile still places the cursor first (it is the same gesture); (3) the date is the base's cycle (`aerodb.status().cycle`), asked when the
   sheet opens; (4) R, D, TSA and TRA carry the « actual activity not known » line (their activity varies), the others do not.
+- **AeroDB aligned (f9bf7e838)**: `hours` and `rem` as arrays of strings, optional, at most 12 lines of 400 signs (SIA AIXM 4.5: `hours` = txtRmkWorkHr lines,
+  the time sheets, then H24 / HJ / HN / HO; `rem` = txtRmk lines). With twelve lines of each, the frank line would have fallen under « n more »: it now
+  comes right after the activation (noreg D131, red before). The user's base has none of it until it is rebuilt (parser 24).
 - **Not done**: the hours and remarks themselves (AeroDB's reading, D4); no NOTAM or AZBA reading; the real SIA text of R 61 was not
   looked at on his base (the synthetic spaces of the case); the profile's block under a finger on a phone is not measured (44 px rows
   yes, the block is the drawn block).
